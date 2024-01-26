@@ -2303,7 +2303,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Shouldn't happen because of parser construction. *)
         Error.fatal_from loc
           (Error.NotYetImplemented
-             "Constants or let-bindings have to be initialized.")
+             "Constants or let-bindings must be initialized.")
     | { keyword; initial_value = None; ty = Some ty; name } ->
         (* Here keyword = GDK_Var or GDK_Config. *)
         if IMap.mem name env.global.storage_types then
@@ -2315,16 +2315,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         if is_global_ignored name then env
         else add_global_storage name t keyword env
     | { keyword; initial_value = Some e; ty = Some ty; name } ->
-        let t, e = annotate_expr env e in
+        let t, e' = annotate_expr env e in
         if not (Types.type_satisfies env t ty) then
-          conflict e [ ty.desc ] t
+          conflict e' [ ty.desc ] t
         else if is_global_ignored name then env
         else add_global_storage name ty keyword env
     | { initial_value = None; ty = None; _ } ->
         (* Shouldn't happen because of parser construction. *)
         Error.fatal_from loc
           (Error.NotYetImplemented
-             "Global storage declaration should have an initial value \
+             "Global storage declaration must have an initial value \
               or a type.")
     (* End *)
 

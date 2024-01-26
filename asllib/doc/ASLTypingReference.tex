@@ -72,6 +72,8 @@
 \newcommand\annotatelocaldeclitemuninit[1]{\texttt{annotate\_local\_decl\_item\_uninit}(#1)}
 \newcommand\checkvarnotinenv[1]{\texttt{check\_var\_not\_in\_env}(#1)}
 \newcommand\annotatesubprogram[1]{\texttt{annotate\_subprogram}(#1)}
+\newcommand\declaredecl[1]{\texttt{annotate\_decl}(#1)}
+\newcommand\annotatespec[1]{\texttt{annotate\_spec}(#1)}
 
 \newcommand\tenv[0]{\texttt{env}}
 \newcommand\newenv[0]{\texttt{new\_env}}
@@ -2164,7 +2166,7 @@ The annotation rewrites the input expression in the following cases, making the 
   The result of annotating the expression \texttt{e} in \texttt{env} is
 \texttt{t,new\_e} and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} is a literal \texttt{v};
+  \item \texttt{e} is a literal expression \texttt{v};
   \item \texttt{t} is the type of \texttt{v} determined by the syntactic label of \texttt{v};
   \item \texttt{new\_e} is \texttt{e}.
   \end{itemize}
@@ -5577,8 +5579,8 @@ This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 \chapter{Typing of Global Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Annotating a global declaration \texttt{d} in an environment \texttt{env} results in 
-a new environment \texttt{env'}, which contains the declared element, and one of the following applies:
+Declaring a global declaration \texttt{d} in an environment \texttt{env} ($\declaredecl{\tenv, \texttt{d}}$)
+results in a new environment \texttt{env'}, which contains the declared element, and one of the following applies:
 \begin{itemize}
   \item TypingRule.DeclareOneFunc (see Section~\ref{sec:TypingRule.DeclareOneFunc}).
   \item TypingRule.DeclareGlobalStorage (see Section~\ref{sec:TypingRule.DeclareGlobalStorage}).
@@ -5587,7 +5589,7 @@ a new environment \texttt{env'}, which contains the declared element, and one of
 
 \section{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
 \subsection{Prose}
-Annotating a subprogram declaration \texttt{func\_sig} in a given environment \texttt{env} results
+Declaring a subprogram declaration \texttt{func\_sig} in a given environment \texttt{env} results
 in \texttt{new\_env} and all of the following applies:
 \begin{itemize}
   \item \texttt{name} is the identifier associated with the subprogram declaration;
@@ -5649,22 +5651,22 @@ and then use them to annotate a subprogram declaration.
   \texttt{new\_env} = (G'', L^\tenv)
 }
 {
-  \texttt{annotate\_decl}(\tenv, \texttt{func\_sig}) = G''
+  \declaredecl(\tenv, \texttt{func\_sig}) = G''
 }
 \end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
 
-This relates to \identr{PGFC}.
+This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.
 
 \section{TypingRule.DeclareGlobalStorage \label{sec:TypingRule.DeclareGlobalStorage}}
 \subsection{Prose}
 Annotating a global storage declaration \texttt{d} in a given environment \texttt{env} results
 in \texttt{new\_env} and one of the following applies:
-\begin{itemize}
+\begin{enumerate}[label=Case \arabic*:]
   \item All of the following apply:
   \begin{itemize}
-    \item \texttt{d} declares a global constant named \name, with initial value \texttt{e}, and without a type annotation.
+    \item \texttt{d} declares a global constant named \name, with initial value expression \texttt{e}, and without a type annotation.
     \item \texttt{v} is the literal computed in \tenv\ by evaluating \texttt{e}.
     \item \texttt{t} is the type inferred for \texttt{v}
     \item \texttt{new\_env} is \tenv\ extended with a declaration of the constant \name, with initial value \texttt{v} and type \texttt{t}.
@@ -5672,7 +5674,7 @@ in \texttt{new\_env} and one of the following applies:
 
   \item All of the following apply:
   \begin{itemize}
-    \item \texttt{d} declares a global constant named \name, with initial value \texttt{e}, and type annotation \texttt{ty}.
+    \item \texttt{d} declares a global constant named \name, with initial value expression \texttt{e}, and type annotation \texttt{ty}.
     \item \texttt{v} is the literal computed in \tenv\ by evaluating \texttt{e}.
     \item \texttt{t} is the type inferred for \texttt{v}.
     \item \texttt{t} type-satisfies \texttt{ty} in \tenv.
@@ -5681,56 +5683,185 @@ in \texttt{new\_env} and one of the following applies:
 
   \item All of the following apply:
   \begin{itemize}
-    \item \texttt{d} declares a global constant or global let with no initial.
-    \item An exception ``Constants or let-bindings have to be initialized.'' is raised.
+    \item \texttt{d} declares a global constant or global let with no initial value expression.
+    \item An error ``\texttt{Constants or let-bindings must be initialized}'' is raised.
   \end{itemize}
 
   \item All of the following apply:
   \begin{itemize}
-    \item \texttt{d} declares a global variable or config named \name, with no initial value, and type annotation \texttt{ty}.
-    \item \texttt{name} is not yet declared in the environment.
-    \item \texttt{v} is the literal computed in \tenv\ by evaluating \texttt{e}.
-    \item \texttt{t} is the type inferred for \texttt{v}.
-    \item \texttt{t} type-satisfies \texttt{ty} in \tenv.
-    \item \texttt{new\_env} is \tenv\ extended with a declaration of the constant \name, with initial value \texttt{v} and type \texttt{ty}.
+    \item \texttt{d} declares a global variable or config named \name, with no initial value expression, and type annotation \texttt{ty}.
+    \item One of the following apply:
+    \begin{itemize}
+      \item All of the following apply:
+      \begin{itemize}
+        \item \texttt{name} is not yet declared in the global environment.
+        \item \texttt{new\_env} is \tenv\ extended with a declaration of the global storage element named \name, and type \texttt{ty}.
+      \end{itemize}
+      \item An error ``\texttt{identifier already declared}'' is raised.
+    \end{itemize}
   \end{itemize}
-\end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global storage element with named \name, with initial value expression \texttt{e}, and no type.
+    \item \texttt{t} is the type resulting from annotating the expression \texttt{e} in \tenv.
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the global storage element named \name\ and type \texttt{ty}.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global storage element with named \name, with initial value expression \texttt{e}, and type annotation \texttt{ty}.
+    \item \texttt{t, e'} is the result of annotating the expression \texttt{e} in \tenv.
+    \item One of the following apply:
+    \begin{itemize}
+      \item \texttt{t} does not type-satisfy \texttt{ty} in \tenv.
+      \item A ``Conflicting types'' error is raised.
+    \end{itemize}
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the global storage element named \name\ and type \texttt{ty}.
+  \end{itemize}
+\end{enumerate}
 
 \subsection{Example}
 \subsection{Code}
 \VerbatimInput[firstline=\DeclareGlobalStorageBegin, lastline=\DeclareGlobalStorageEnd]{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
+\newcommand\gsd[0]{\texttt{gsd}}
+\begin{mathpar}
+  \inferrule[Case 1]{
+    \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\rangle, \textsf{name}:\name \}\\
+    \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
+    \vt = \texttt{type\_of\_literal}(\vv)\\
+    \newenv = \texttt{declare\_const}(\tenv, \name, \vt, \vv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+  \and
+  \inferrule[Case 2]{
+    \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
+    \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
+    \vt = \texttt{type\_of\_literal}(\vv)\\
+    \typesat(\tenv, \vt, \tty)\\
+    \newenv = \texttt{declare\_const}(\tenv, \name, \tty, \vv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+  \and
+  \inferrule[Case 4]{
+    \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle \tty \rangle, \textsf{name}:\name \}\\
+    \texttt{k} \in \{\texttt{GDK\_Config}, \texttt{GDK\_Var}\}\\
+    G^\tenv.\storagetypes(\name) = \bot\\
+    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+  \and
+  \inferrule[Case 5]{
+    \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\rangle, \textsf{name}:\name \}\\
+    G^\tenv.\storagetypes(\name) = \bot\\
+    \annotateexpr{\tenv, \ve} = (\vt, \Ignore)\\
+    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\vt, \texttt{k})], L^\tenv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+  \and
+  \inferrule[Case 6]{
+    \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
+    G^\tenv.\storagetypes(\name) = \bot\\
+    \annotateexpr{\tenv, \ve} = (\vt, \ve')\\
+    \typesat(\tenv, \vt, \tty)\\
+    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+\end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
+This relates to \identr{YSPM}
 
 \section{TypingRule.DeclareType \label{sec:TypingRule.DeclareType}}
 \subsection{Prose}
-Annotating a type named \texttt{name} with a type specification \texttt{ty} 
-and optional extra fields \texttt{s} in a given environment \texttt{env} results
+Declaring a type named \texttt{name} with a type specification \texttt{ty},
+optionally a supertype \texttt{sup} and extra fields \texttt{fields}, in a given environment \texttt{env} results
 in \texttt{env'} and all of the following applies:
+\begin{enumerate}
+  \item All of the following apply:
+  \begin{itemize}
+    \item \name\ is already declared in \tenv.
+    \item An error ``identifier already declared'' is raised.
+  \end{itemize}
+  \item All of the following apply:
+  \begin{itemize}
+    \item \name\ is not declared in \tenv.
+    \item  \tenv',\tty' are the result of attempting to add \texttt{name} as a subtype of \texttt{sup} and 
+    constructing the type \tty' as \tty\ with the added fields \texttt{fields} in \tenv.
+    \item \tty' is a valid type.
+    \item \tenv'' is \tenv' extended with \tty'.
+    \item If \tty' has the structure of an enumeration than \newenv\ is \tenv'' extended with the declarations of constants for each identifier,
+    and otherwise \newenv\ is \tenv''.
+  \end{itemize}
+\end{enumerate}
 
 \subsection{Example}
 \subsection{Code}
 \VerbatimInput[firstline=\DeclareTypeBegin, lastline=\DeclareTypeEnd]{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
+\newcommand\attemptaddsubtype[0]{\texttt{attempt\_add\_subtype}}
+\newcommand\attemptaddenum[0]{\texttt{attempt\_add\_enum}}
+\newcommand\checkisvalidtype[0]{\texttt{check\_is\_valid\_type}}
+
+\begin{mathpar}
+  % \inferrule{ \astlabel(\tty) \not\in \{\TRecord, \TException, \TBits\} }
+  % { \checkisvalidtype(\tenv, \tty) }
+  % \and
+  \inferrule{
+    \checkvarnotinenv{\tenv, \name}\\
+    \attemptaddsubtype(\tenv, \tty, \vs) = (\tenv', \tty')\\
+    \checkisvalidtype(\tenv, \tty')\\
+    \tenv'' = (G^{\tenv'}.\storagetypes[\name\mapsto \tty'], L^{\tenv'})\\
+    \attemptaddenum(\tenv'', \tty') = \newenv
+  }
+  { \declaredecl{\name, \tty, \vs} = \newenv }
+\end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
+This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Specifications}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+An ASL specification consists of a list of declarations.
+Type checking the specification is considered successful if all declarations can be successfully annotated.
+
+\newcommand\decls[0]{\texttt{decls}}
+
 \section{TypingRule.Specification \label{sec:TypingRule.Specification}}
 \subsection{Prose}
+Annotating an ASL specification \texttt{decls} in an environment \texttt{env} results in a rewritten specification \texttt{decls'}
+and a new environment \texttt{new\_env} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ordered\_decls} is the result of topologically ordering \texttt{decls} according to their
+  mutual dependencies.
+  \item \newenv\ is the result of declaring all global declarations in \texttt{ordered\_decls} in \tenv.
+  \item \texttt{decls'} is the result of annotating every declaration in \texttt{decls} in the environment \newenv.
+\end{itemize}
+
 \subsection{Example}
 \subsection{Code}
 \VerbatimInput[firstline=\SpecificationBegin, lastline=\SpecificationEnd]{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \texttt{order\_topologically}(\tenv, \decls) = \texttt{ordered\_decls}\\
+    \texttt{ordered\_decls} = [i=1..k: \texttt{d}_i]\\
+    \tenv_0 = \tenv\\
+    i=1..k: \tenv_{i} = \declaredecl{\tenv_{i-1}, \texttt{d}_{i-1}}\\
+    \newenv = \tenv_{k}\\
+    \decls' = [i=1..k: \texttt{annotate\_decl}(\newenv, \texttt{d}_i) ]
+  }
+  { \annotatespec{\tenv, \decls} = (\decls', \newenv) }
+\end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
+This relates to \identi{LWQQ}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}
