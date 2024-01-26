@@ -5663,7 +5663,7 @@ This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and 
 \subsection{Prose}
 Annotating a global storage declaration \texttt{d} in a given environment \texttt{env} results
 in \texttt{new\_env} and one of the following applies:
-\begin{enumerate}[label=Case \arabic*:]
+\begin{itemize}
   \item All of the following apply:
   \begin{itemize}
     \item \texttt{d} declares a global constant named \name, with initial value expression \texttt{e}, and without a type annotation.
@@ -5692,12 +5692,11 @@ in \texttt{new\_env} and one of the following applies:
     \item \texttt{d} declares a global variable or config named \name, with no initial value expression, and type annotation \texttt{ty}.
     \item One of the following apply:
     \begin{itemize}
-      \item All of the following apply:
+      \item An error ``\texttt{identifier already declared}'' is raised and all of the following apply:
       \begin{itemize}
         \item \texttt{name} is not yet declared in the global environment.
         \item \texttt{new\_env} is \tenv\ extended with a declaration of the global storage element named \name, and type \texttt{ty}.
       \end{itemize}
-      \item An error ``\texttt{identifier already declared}'' is raised.
     \end{itemize}
   \end{itemize}
 
@@ -5719,7 +5718,7 @@ in \texttt{new\_env} and one of the following applies:
     \end{itemize}
     \item \texttt{new\_env} is \tenv\ extended with a declaration of the global storage element named \name\ and type \texttt{ty}.
   \end{itemize}
-\end{enumerate}
+\end{itemize}
 
 \subsection{Example}
 \subsection{Code}
@@ -5778,7 +5777,7 @@ This relates to \identr{YSPM} and \identr{FWQM}.
 \subsection{Prose}
 Declaring a type named \texttt{name} with a type specification \texttt{ty},
 optionally a supertype \texttt{sup} and extra fields \texttt{fields}, in a given environment \texttt{env} results
-in \texttt{env'} and all of the following applies:
+in \texttt{env'} and one of the following applies:
 \begin{enumerate}
   \item All of the following apply:
   \begin{itemize}
