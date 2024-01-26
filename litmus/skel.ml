@@ -1193,6 +1193,10 @@ module Make
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
                   load (dump_a_v v)
+            | (Indirect,Array _) ->
+                let load = U.do_load t (wrap addr) in
+                sprintf "%s != %s"
+                  load (sprintf "%s_values[_j]" a)
             | Indirect,_ ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s" load (A.Out.dump_v v)
