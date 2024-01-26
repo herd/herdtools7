@@ -21,7 +21,7 @@
 \newcommand\isnonprimitive[0]{\texttt{is\_non\_primitive}}
 \newcommand\isprimitive[0]{\texttt{is\_primitive}}
 
-\newcommand\underconstrainedinteger[0]{\textsf{unconstrained\_integer}}
+\newcommand\underconstrainedinteger[0]{\textsf{underconstrained\_integer}}
 \newcommand\isunconstrainedinteger[0]{\textsf{unconstrained\_integer}}
 \newcommand\isunderconstrainedinteger[0]{\textsf{under\_constrained\_integer}}
 \newcommand\iswellconstrainedinteger[0]{\textsf{well\_constrained\_integer}}
@@ -1254,7 +1254,9 @@ We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
   }{\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vs) = \TBits \\
-  n \in \Z \\ \dynamicdomain(\tenv, \vt) = \dynamicdomain(\tenv, \vs) = \{n\} }
+\texttt{undetermined\_width}(\tenv, \vt)\\  
+\texttt{undetermined\_width}(\tenv, \vs)
+}
 {\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vt) = \TBits \\
