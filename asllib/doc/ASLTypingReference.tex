@@ -10,7 +10,6 @@
 \newcommand\astlabel[0]{\textsf{label}}
 \newcommand\Ignore[0]{\texttt{\_}}
 
-\newcommand\RuleComment[1]{// \textit{#1}}
 \newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
 \newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
 \newcommand\isbuiltin[0]{\texttt{is\_builtin}}
@@ -21,7 +20,7 @@
 \newcommand\isnonprimitive[0]{\texttt{is\_non\_primitive}}
 \newcommand\isprimitive[0]{\texttt{is\_primitive}}
 
-\newcommand\underconstrainedinteger[0]{\textsf{unconstrained\_integer}}
+\newcommand\underconstrainedinteger[0]{\textsf{underconstrained\_integer}}
 \newcommand\isunconstrainedinteger[0]{\textsf{unconstrained\_integer}}
 \newcommand\isunderconstrainedinteger[0]{\textsf{under\_constrained\_integer}}
 \newcommand\iswellconstrainedinteger[0]{\textsf{well\_constrained\_integer}}
@@ -176,8 +175,10 @@ The ASL type system is defined over the ASL abstract syntax, which is given in~\
 
 \section{Environments}
 
-An \emph{environment} is what the type rules operate over: a structure, which amongst
-other things, associates types to variables. Intuitively, the typing of a
+A \emph{static environment} is what the type rules operate over: a structure, which amongst
+other things, associates types to variables. 
+Throughout this document, we will use the term environment for static environment, unless otherwise stated. 
+Intuitively, the typing of a
 program makes an initial environment evolve, with new types as given by the
 variable declarations of the program.
 %
@@ -207,24 +208,16 @@ Environments $\tenv \in \mathbb{E}$ are formally defined below (referring to sym
 The global environment and local environment consist of various components. 
 We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a given environment.
 
-To update a function component $f$ (e.g., $\declaredtypes$) of an environment $E$ (either local or global)
-with a new mapping $x \mapsto v$, we use the notation $E.f[x \mapsto v]$ to stand for $E[f \mapsto E.f[x \mapsto v]]$.
+To update a function component $f$ (e.g., $\declaredtypes$) of an environment $\tenv$ (either local or global)
+with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to stand for $\tenv[f \mapsto E.f[x \mapsto v]]$.
 
 \section{Type System}
 A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$. 
-We refer to $P_1,\ldots,P_k$ as the \emph{premises} of the rule and to the verdict $\vs$ as its \emph{conclusion}.
+We refer to $P_1,\ldots,P_k$ as the \emph{premises} of the rule and to the verdict $S$ as its \emph{conclusion}.
 When the set of premises is empty, we may omit them entirely.
-%
-We sometimes precede rules by comments like so:
-\[
-\begin{array}{c}
-\RuleComment{comment}\\
-\inferrule{P_1 \\ .. \\ P_k}{S} \enspace.
-\end{array} 
-\]
 
 When all the premises of a rule hold (with all free variables occurring in the rule implicitly interpreted as universally quantified),
-we can conclude that the verdict $\vs$ holds.
+we can conclude that the verdict $S$ holds.
 %
 The premises typically inspect the label of an AST node and the information associated with the children of the node in a given environment.
 
@@ -1254,11 +1247,15 @@ We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
   }{\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vs) = \TBits \\
-  n \in \Z \\ \dynamicdomain(\tenv, \vt) = \dynamicdomain(\tenv, \vs) = \{n\} }
+\texttt{undetermined\_width}(\tenv, \vs)\\
+\subsumes(\reasoner, \tenv, \vs, \vt) 
+}
 {\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vt) = \TBits \\
-\subsumes(\reasoner, \tenv, \vs, \vt) }
+\texttt{undetermined\_width}(\tenv, \vt)\\  
+\subsumes(\reasoner, \tenv, \vs, \vt) 
+}
 {\domsubtypesat(\tenv, \vt, \vs)}
 \end{mathpar}
 \end{emptyformal}
