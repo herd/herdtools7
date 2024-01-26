@@ -157,12 +157,15 @@ This is related to \identr{BNCY}.
 
 \subsection{Domains}
 
-The transliteration of the notion of domains will be made more complete in the
-future.
+The formalization of type domains is complete for all types.
+In particular, it addresses the weakness with under-constrained integers.
+The definition is still weak when it comes to bitvectors of undetermined width (\url{text}).
+This will be addressed by a future proposal.
 
 \subsection{Global storage declarations}
 
-Global storage declarations are not transliterated.
+Global storage declarations are transliterated.
+The formal rules need a bit more refinement (e.g., defining \texttt{declare\_const} and \texttt{reduce\_constants}).
 
 This is related to \identr{FWQM}.
 
