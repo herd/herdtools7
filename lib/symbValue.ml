@@ -50,8 +50,9 @@ module
   type csym = int
 
   let pp_csym i = sprintf "S%i" i
-  let compare_csym v1 v2 = Misc.int_compare v1 v2
   let equal_csym v1 v2 = v1 == v2
+  let compare_csym v1 v2 = Misc.int_compare v1 v2
+
 
   type cst = Cst.v
 

@@ -34,6 +34,7 @@ module type S =
 (* flexible variables *)
       type csym = int (* Opened by Susmit, lose pointless abstraction *)
       val pp_csym : csym -> string
+      val equal_csym : csym -> csym -> bool
       val compare_csym : csym -> csym -> int
 
 (* Values, ie constants + variables, that should be instanciated

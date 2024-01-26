@@ -92,10 +92,12 @@ module type S =  sig
   val cycle_to_rel : elt0 list -> t
   val cycle_option_to_rel : elt0 list option -> t
 
-  exception Cyclic
 (* Topological sort *)
+  exception Cyclic
+  val topo_kont : (elt0 -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
   val topo :  Elts.t -> t -> elt0 list
 
+  val pseudo_topo_kont :  (elt0 -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
 
 (****************************************************)
 (* Continuation based all_topos (see next function) *)
@@ -113,6 +115,10 @@ module type S =  sig
 
 
   val all_topos : bool (* verbose *)-> Elts.t -> t -> elt0 list list
+
+(* Strongly connected compoments, processed in inverse dependency order. *)
+  val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
+
 
 (* Is the parent relation of a hierarchy *)
   val is_hierarchy : Elts.t -> t -> bool
@@ -365,7 +371,6 @@ and module Elts = MySet.Make(O) =
           None
         with Cycle e -> Some (List.rev e)
 
-      let fold = ME.fold
 
 (***************)
 (* Reachablity *)
@@ -491,28 +496,44 @@ and module Elts = MySet.Make(O) =
       | None -> empty
       | Some cy -> cycle_to_rel cy
 
-
+(********************)
 (* Topological sort *)
+(********************)
     exception Cyclic
 
-    let topo all_nodes t =
+    let topo_kont kont res all_nodes t =
       let m = M.to_map t in
       let rec dfs above n (o,seen as r) =
         if Elts.mem n above then raise Cyclic
         else if Elts.mem n seen then r
         else
-          let o,seen =
+          let res,seen =
             Elts.fold (dfs (Elts.add n above))
               (M.succs n m) (o,Elts.add n seen) in
-          n::o,seen in
-      let all_succs =
-        Elts.unions
-          (M.fold (fun _ ns k -> ns::k) m []) in
-      let ns = Elts.diff all_nodes all_succs in
-      let o,_ =
+          kont n res,seen in
+      let ns = all_nodes in
+      let o,_seen =
         Elts.fold
-          (dfs Elts.empty) ns ([],Elts.empty) in
+          (dfs Elts.empty) ns (res,Elts.empty) in
+      (* Some node has not been visited, we have a cycle *)
       o
+
+    let topo all_nodes t = topo_kont Misc.cons [] all_nodes t
+
+
+    let pseudo_topo_kont kont res all_nodes t =
+      let m = M.to_map t in
+      let rec dfs n (res,seen as r) =
+        if Elts.mem n seen then r
+        else
+          let res,seen =
+            Elts.fold dfs
+              (M.succs n m) (res,Elts.add n seen) in
+          kont n res,seen in
+      (* Search graph from non-successors *)
+      let ns = all_nodes in
+      let res,_ = Elts.fold dfs ns (res,Elts.empty) in
+      res
 
 (* New version of all_topos *)
     module EMap =
@@ -598,6 +619,71 @@ and module Elts = MySet.Make(O) =
         end
       end ;
       nss
+
+(*
+ * Strongly connected compponets, Tarjan's algorithm.
+ * From R. Sedgwick's book "Algorithms".
+ *)
+    module SCC = struct
+      module NodeMap = M.ME
+
+      type state =
+        { id : int;
+          visit : int NodeMap.t;
+          stack : elt0 list; }
+
+      let rec pop_until n ns =
+        match ns with
+        | [] -> assert false
+        | m::ns ->
+           if O.compare n m = 0 then [m],ns
+           else
+             let ms,ns = pop_until n ns in
+             m::ms,ns
+
+      let zyva kont res nodes edges =
+
+        let m = M.to_map edges in
+
+        let rec dfs n ((res,s) as r) =
+          try
+            NodeMap.find n s.visit,r
+          with
+          | Not_found ->
+             let min = s.id in
+             let s = {
+                 id = min + 1;
+                 visit = NodeMap.add n min s.visit;
+                 stack = n :: s.stack;
+               } in
+             let min,(res,s) as r =
+               Elts.fold
+                 (fun n (m0,r) ->
+                   let m1,r = dfs n r in  Misc.min_int m0 m1,r)
+                 (M.succs n m)
+                 (min,(res,s)) in
+             let valk =
+               try NodeMap.find n s.visit with Not_found -> assert false in
+             if not (Misc.int_eq min valk) then
+               r (* n is part of previously returned scc *)
+             else
+               let scc,stack = pop_until n s.stack in
+               let visit =
+                 List.fold_left
+                   (fun visit n -> NodeMap.add n max_int visit)
+                   s.visit scc in
+               let res = kont scc res in
+               min,(res,{ s with stack; visit; }) in
+
+        let (res,_) =
+          Elts.fold
+            (fun n r -> let _,r = dfs n r in r)
+            nodes
+            (res,{id=0; visit=NodeMap.empty; stack=[];} ) in
+        res
+    end
+
+    let scc_kont kont res nodes edges = SCC.zyva kont res nodes edges
 
 (* Is the parent relation of a hierarchy *)
     let is_hierarchy nodes edges =

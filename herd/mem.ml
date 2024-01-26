@@ -164,6 +164,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let kvm = C.variant Variant.VMSA
     let self = C.variant Variant.Ifetch
     let asl = C.variant Variant.ASL
+    let oota = C.variant Variant.OOTA
     let unroll =
       match C.unroll with
       | None -> Opts.unroll_default A.arch
@@ -835,6 +836,8 @@ let match_reg_events es =
                   (A.V.pp_v v_stored) ;
                 assert false)
           rfm csn in
+      if  C.debug.Debug_herd.solver then
+        prerr_endline "++ Solve  registers" ;
       match VC.solve csn with
       | VC.NoSolns ->
          if C.debug.Debug_herd.solver then
@@ -1077,6 +1080,8 @@ let match_reg_events es =
                 loads stores cns in
             if dbg then eprintf "\n%!" ;
             (* And solve *)
+            if C.debug.Debug_herd.solver then
+              prerr_endline "++ Solve memory" ;
             match VC.solve cns with
             | VC.NoSolns ->
                if C.debug.Debug_herd.solver then begin
@@ -1119,7 +1124,6 @@ let match_reg_events es =
           let module PP = Pretty.Make(S) in
           prerr_endline "Unsolvable system" ;
           PP.show_es_rfm test es rfm ;
-          prerr_endline "Unsolvable system"
         end ;
       assert (true || rfmap_is_cyclic es rfm);
       res
@@ -2068,7 +2072,8 @@ Please use `-variant self` as an argument to herd7 to enable it."
               match cs with
               | _::_
                    when
-                     (not C.initwrites || not do_deps)
+                     (not oota)
+                     && (not C.initwrites || not do_deps)
                      && not asl
                      && Misc.is_none ofail
                 ->
