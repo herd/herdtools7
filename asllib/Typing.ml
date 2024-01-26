@@ -2123,6 +2123,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
+  (* Begin DeclareOneFunc *)
   let declare_one_func loc (func_sig : 'a func) env =
     let env, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
@@ -2142,6 +2143,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           func_sig.args
     in
     add_subprogram name' (ast_func_to_func_sig func_sig) env
+    |: TypingRule.DeclareOneFunc
+  (* End *)
 
   let declare_const loc name t v env =
     if IMap.mem name env.global.storage_types then
@@ -2223,6 +2226,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         ()
     | _ -> ()
 
+  (* Begin DeclareType *)
   let declare_type loc name ty s env =
     let () =
       if false then
@@ -2273,7 +2277,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let () = if false then Format.eprintf "Declared %s.@." name in
     res
+  (* End *)
 
+  (* Begin DeclareGlobalStorage *)
   let declare_global_storage loc gsd env =
     let () = if false then Format.eprintf "Declaring %s@." gsd.name in
     best_effort env @@ fun _ ->
@@ -2298,7 +2304,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Shouldn't happen because of parser construction. *)
         Error.fatal_from loc
           (Error.NotYetImplemented
-             "Constants or let-bindings have to be initialized.")
+             "Constants or let-bindings must be initialized.")
     | { keyword; initial_value = None; ty = Some ty; name } ->
         (* Here keyword = GDK_Var or GDK_Config. *)
         if IMap.mem name env.global.storage_types then
@@ -2310,17 +2316,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         if is_global_ignored name then env
         else add_global_storage name t keyword env
     | { keyword; initial_value = Some e; ty = Some ty; name } ->
-        let t, e = annotate_expr env e in
+        let t, e' = annotate_expr env e in
         if not (Types.type_satisfies env t ty) then
-          conflict e [ ty.desc ] t
+          conflict e' [ ty.desc ] t
         else if is_global_ignored name then env
         else add_global_storage name ty keyword env
     | { initial_value = None; ty = None; _ } ->
         (* Shouldn't happen because of parser construction. *)
         Error.fatal_from loc
           (Error.NotYetImplemented
-             "Global storage declaration should have an initial value \
-              or a type.")
+             "Global storage declaration must have an initial value or \
+              a type.")
+  (* End *)
 
   let build_global ast =
     let def d =
@@ -2355,6 +2362,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
+  (* Begin Specification *)
   let type_check_ast ast env =
     let env = build_global ast env in
     let () =
@@ -2375,6 +2383,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     (List.map annotate ast, env)
 end
+(* End *)
 
 module TypeCheck = Annotate (struct
   let check = `TypeCheck

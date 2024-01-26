@@ -5,6 +5,8 @@
 \input{ASLASTLines}
 \newcommand{\tests}{../tests/ASLTypingReference.t/}
 
+\newcommand\dynamicdomain[0]{\textsf{dyn-dom}}
+
 \newcommand\astlabel[0]{\textsf{label}}
 \newcommand\Ignore[0]{\texttt{\_}}
 
@@ -33,7 +35,6 @@
 \newcommand\makeanonymous[0]{\texttt{make\_anonymous}}
 \newcommand\structsubtypesat[0]{\texttt{structural\_subtype\_satisfies}}
 \newcommand\domsubtypesat[0]{\texttt{domain\_subtype\_satisfies}}
-\newcommand\domainissubset[0]{\texttt{domain\_is\_subset}}
 \newcommand\subtypesat[0]{\texttt{subtype\_satisfies}}
 \newcommand\typesat[0]{\texttt{type\_satisfies}}
 \newcommand\canassignto[0]{\;\texttt{can\_assign\_to}\;}
@@ -72,6 +73,8 @@
 \newcommand\annotatelocaldeclitemuninit[1]{\texttt{annotate\_local\_decl\_item\_uninit}(#1)}
 \newcommand\checkvarnotinenv[1]{\texttt{check\_var\_not\_in\_env}(#1)}
 \newcommand\annotatesubprogram[1]{\texttt{annotate\_subprogram}(#1)}
+\newcommand\declaredecl[1]{\texttt{annotate\_decl}(#1)}
+\newcommand\annotatespec[1]{\texttt{annotate\_spec}(#1)}
 
 \newcommand\tenv[0]{\texttt{env}}
 \newcommand\newenv[0]{\texttt{new\_env}}
@@ -177,6 +180,11 @@ An \emph{environment} is what the type rules operate over: a structure, which am
 other things, associates types to variables. Intuitively, the typing of a
 program makes an initial environment evolve, with new types as given by the
 variable declarations of the program.
+%
+Technically, an environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
+distinct components: the global environment $G^\tenv$---pertaining to AST nodes
+appearing outside of a given subprogram, and the local environment
+$L^\tenv$---pertaining to AST nodes appearing inside a given subprogram.
 
 Environments $\tenv \in \mathbb{E}$ are formally defined below (referring to symbols defined in the abstract syntax):
 \[
@@ -192,18 +200,15 @@ Environments $\tenv \in \mathbb{E}$ are formally defined below (referring to sym
 \subtypes		            &=& \identifier \partialto \identifier\\
 \subprograms	          &=& \identifier \partialto \func\\
 \subprogramrenamings	  &=& \identifier \rightarrow 2^\func\\
-\returntype             &=& \{\langle\rangle, \langle \ty \rangle\}
+\returntype             &=& \langle \ty \rangle
 \end{array}
 \]
 
-Technically, an environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
-distinct components: the global environment $G^\tenv$---pertaining to AST nodes
-appearing outside of a given subprogram, and the local environment
-$L^\tenv$---pertaining to AST nodes appearing inside a given subprogram.
-%
-We will drop the superscripts when they are obvious from the context.
-%
-The global environment and local environment consist of various maps. We will use the notation $G.m$ and $L.m$ to access the $m$ component of a given environment.
+The global environment and local environment consist of various components. 
+We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a given environment.
+
+To update a function component $f$ (e.g., $\declaredtypes$) of an environment $E$ (either local or global)
+with a new mapping $x \mapsto v$, we use the notation $E.f[x \mapsto v]$ to stand for $E[f \mapsto E.f[x \mapsto v]]$.
 
 \section{Type System}
 A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$. 
@@ -820,8 +825,31 @@ may appear internally.
 \section{TypingRule.Domain}
 
   \subsection{Prose}
-  The domain of a type in a given environment is the set of values which storage elements of that type may hold.
-  This is used to establish \emph{type satisfaction}~\ref{sec:TypingRule.TypeSatisfaction}.
+  The \emph{dynamic domain} of a type is the set of values which storage elements of that type may hold 
+  \underline{in a given runtime environment}.
+  %
+  The \emph{static domain} of a type is the set of values which storage elements of that type may hold
+  \underline{across all possible runtime environments}.
+  %
+  The reason that for this distinction is that the sets of values
+  considered for bitevector types, array types, constrained integers, and constrained bitvectors, 
+  can be parameterized by configuration variables and subprogram parameters whose values are only determined during runtime. 
+
+  When the dynamic domain of a type equals the static domain of a type, we will simply refer to both
+  types of domains as the \emph{domain} of that type.
+
+  \paragraph{Subsumption Testing.}
+  One of the conditions for determining whether an assignment is type-correct is whether the dynamic domain of the
+  right hand side type is contained in the dynamic domain of the left hand side type~\ref{sec:TypingRule.DomainSubtypeSatisfaction},
+  for any given runtime environment.
+  %
+  This requires symbolic reasoning over the constraints associated with the types.
+  We approximate this symbolic reasoning by employing a conservative symbolic reasoning procedure,
+  which we refer to as a \emph{subsumption test}.
+  If the subsumption test returns a positive answer, it means that the containment between the runtime domains holds across all
+  runtime environment.
+  Otherwise, the subsumption test returns a ``don't know'' answer, which is interpreted by the type checker pessimistically,
+  effectively assuming that there might be a counterexample.
 
   \subsection{Example}
   The domain of \texttt{integer} is the infinite set of all integers.
@@ -830,44 +858,77 @@ may appear internally.
 
   The domain of \texttt{integer {2,16}} is the set containing the integers \texttt{2} and \texttt{16}.
 
-  The domain of \texttt{bits({2,16})} is the set containing all 2-bit and all 16-bit binary sequences.
+  THe domain of \texttt{enumeration \{GREEN, ORANGE, RED\}} is the set containing the values
+  \texttt{GREEN}, \texttt{ORANGE}, and \texttt{RED} and so is the runtime domain 
+  of \texttt{type TrafficLights of enumeration \{GREEN, ORANGE, RED\}}.
+
+  The static domain of \texttt{bits({2,16})} is the set containing all 2-bit and all 16-bit binary sequences.
+
+  The domain of \texttt{(integer, integer)} is the set containing all pairs of integers.
+
+  The domain of \texttt{record \{a: integer;  b: boolean\}} contains all functions that map \texttt{a} to an integer and \texttt{b} to a Boolean value.
+
+  The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singleton) set containing the value $c$,
+  which is assigned to \texttt{N} by a given runtime environment. The static domain of that parameter
+  is the infinite set of all integers.
 
   \subsection{Code}
       \VerbatimInput[firstline=\DomainBegin, lastline=\DomainEnd]{../types.ml}
 
 \begin{emptyformal}
       \subsection{Formally}
-Notice that for the types of arrays, constrained integers, and constrained bitvectors, depend on statically evaluable expressions.
-Therefore, their domains take as an input a runtime environment $\tenv$ and evaluate the expressions and constraints needed to establish
-concrete values (e.g., the length of an array).
+      \newcommand\runtimeenv[0]{E}
 
-Underconstrained integers are parameterized. Therefore, their domain requires supplying an integer value for the respective parameter.
-We use the notation $\emptylist_N$ to name the parameter, since it is not part of the current abstract syntax.
+      \newcommand\subsumes[0]{\texttt{subsumes}}
+      \newcommand\reasoner[0]{\texttt{reasoner}}
+
+      We denote a runtime environment that assigns values to global storage elements (more specifically, config variables)
+      and subprogram parameters by $E \in \mathbb{R}$.
+      We denote by $\tenv \in mathbb{E}$ a static environment, which assigns identifiers to types.
+      We denote the runtime domain of a type $\vt$ in the environments $\tenv$ and $E$ by $\dynamicdomain(\tenv, E, \vt)$.
+      
+      For two types $\vt$ and $\vs$, a symbolic reasoning engine \reasoner\ and a static environment \tenv,
+      we write $\subsumes(\reasoner, \tenv, \vt, \vs)$ to mean that the symbolic reasoning
+      engine \reasoner\ has returned a positive answer. That is, the following holds:
+      \[
+        \begin{array}{l}
+        \subsumes(\reasoner, \tenv, \vt, \vs) \Rightarrow \\
+       \forall E\in\mathbb{R}.\ \dynamicdomain(\tenv, E, \vt) \supseteq \dynamicdomain(\tenv, E, \vs) \enspace.
+        \end{array}
+      \]
+      In this case, we say that \vt\ \emph{subsumes} \vs.
+
+      In this document, we leave the symbolic reasoning engine unspecified. We will define it in detail in a future version.
+
+We denote by $\llbracket \runtimeenv \rrbracket N$ the integer value given to the underconstrained parameter $N$ in the environment $\runtimeenv$.
+%
+Since currently the abstract syntax does not specify the parameter name of an underconstrained integer,
+we use the notation $\emptylist_N$ to name the parameter.
 
 \begin{mathpar}
-\inferrule{}{ \dom(\tenv, \TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }
 \and
-\inferrule{}{ \dom(\tenv, \TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }
 \and
-\inferrule{}{ \dom(\tenv, \TReal) = \Q }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TReal) = \Q }
 \and
-\inferrule[Domain of Unconstrained integer]{}{\dom(\tenv, \unconstrainedinteger) = \Z }
+\inferrule[Domain of Unconstrained integer]{}{\dynamicdomain(\tenv, \runtimeenv, \unconstrainedinteger) = \Z }
 \and
-\inferrule[Domain of a Well-constrained integer]{}{ \dom(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint(E, c_i)}
+\inferrule[Domain of a Well-constrained integer]{}{ \runtimeenv(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint(\tenv, \runtimeenv, c_i)}
 \and
-\inferrule[Domain of Underconstrained integer]{}{\dom(\tenv, \TInt(\langle \emptylist_N \rangle) = \lambda N.\ \{N\} }
+\inferrule[Domain of Underconstrained integer]{}{\dynamicdomain(\tenv, \runtimeenv, \TInt(\langle \emptylist_N \rangle) = \{ \llbracket\runtimeenv\rrbracket N \} }
 \and
-\inferrule{}{ \dom(\tenv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
 \and
-\inferrule{}{ \dom(\tenv, \TBits(c, \textit{bfl})) = \\ \lambda E.\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(E, c) \} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(\tenv, E, c) \} }
 \and
-\inferrule{}{ \dom(\tenv, \TTuple([\tty_{1..k}])) = \dom(\tenv,\tty_1) \times \ldots \times \dom(\tenv,\tty_k) }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TTuple([\tty_{1..k}])) = \bigtimes_{i=1}^k \dynamicdomain(\tenv, \runtimeenv,\tty_i) }
 \and
-\inferrule{}{ \dom(\tenv, \TArray(\ve, \tty)) = \\ \lambda E.\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr(E, \ve)\; v_{1..k} \in \dom(\tenv, \tty)  \} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TArray(\ve, \tty)) = \\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr(E, \ve), \; v_{1..k} \in \dynamicdomain(\tenv, \runtimeenv, \tty)  \} }
 \and
-\inferrule{L \in \{\TRecord, \TException\}}{ \dom(\tenv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dom(\tenv, \{f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k\}(f))}
+\inferrule{L \in \{\TRecord, \TException\}}{ \dynamicdomain(\tenv, \runtimeenv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dynamicdomain(\tenv, \runtimeenv, [f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k](f))}
 \and
-\inferrule{G^\tenv.\declaredtypes(\id)=\tty}{\dom(\tenv, \TNamed(\id)) = \dom(\tty)}
+\inferrule{G^\tenv.\declaredtypes(\id)=\tty}{\dynamicdomain(\tenv, \runtimeenv, \TNamed(\id)) = \dynamicdomain(\tenv, \runtimeenv, \tty)}
 \end{mathpar}
 \end{emptyformal}
 
@@ -1159,7 +1220,7 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ struc
  \item All of the following apply:
     \begin{itemize}
     \item \texttt{s} does not have the structure of an aggregate type or bitvector type;
-    \item the domain of \texttt{t} is a subset of the domain of \texttt{s}.
+    \item the domain of \texttt{t} is subsumed by the domain of \texttt{s}.
     \end{itemize}
 
   \item All of the following apply:
@@ -1169,7 +1230,7 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ struc
       \item \texttt{s} has the structure of a bitvector type with undetermined width;
       \item \texttt{t} has the structure of a bitvector type with undetermined width;
       \end{itemize}
-   \item the domain of \texttt{t} is a subset of the domain of \texttt{s}.
+   \item the domain of \texttt{t} is subsumed by the domain of \texttt{s}.
    \end{itemize}
   \end{itemize}
 
@@ -1189,15 +1250,16 @@ We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
 \inferrule{\tstruct(\tenv, \vt)=\vt' \\
 \tstruct(\tenv, \vs)=\vs'  \\
   \astlabel(\vs') \in \{\TReal, \TString, \TBool, \TEnum, \TInt\} \\
-  \domainissubset(\tenv, \vt', \vs')
+  \subsumes(\reasoner, \tenv, \vs', \vt')\\
   }{\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vs) = \TBits \\
-  n \in \Z \\ \dom(\tenv, \vt) = \dom(\tenv, \vs) = \{n\} }
+  n \in \Z \\ \dynamicdomain(\tenv, \vt) = \dynamicdomain(\tenv, \vs) = \{n\} }
 {\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vt) = \TBits \\
-\domainissubset(\tenv, \vt, \vs) }{\domsubtypesat(\tenv, \vt, \vs)}
+\subsumes(\reasoner, \tenv, \vs, \vt) }
+{\domsubtypesat(\tenv, \vt, \vs)}
 \end{mathpar}
 \end{emptyformal}
 
@@ -1490,8 +1552,8 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
         \begin{itemize}
         \item \texttt{s} is an anonymous type;
         \item \texttt{t} is an anonymous type;
-	\item \texttt{ty} is the well-constrained integer type whose domain is the union of the
-	  domains of \texttt{s} and \texttt{t}.      
+	\item \texttt{ty} is the well-constrained integer type whose runtime domain is the union of the
+	  runtime domains of \texttt{s} and \texttt{t}, for every runtime environment.
         \end{itemize}
       \end{itemize}
     \end{itemize}
@@ -2159,7 +2221,7 @@ The annotation rewrites the input expression in the following cases, making the 
   The result of annotating the expression \texttt{e} in \texttt{env} is
 \texttt{t,new\_e} and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} is a literal \texttt{v};
+  \item \texttt{e} is a literal expression \texttt{v};
   \item \texttt{t} is the type of \texttt{v} determined by the syntactic label of \texttt{v};
   \item \texttt{new\_e} is \texttt{e}.
   \end{itemize}
@@ -3102,7 +3164,7 @@ expression that is unresolvable to an integer. For example:
       \item \texttt{t''} is a structural subtype of \texttt{t'} in \texttt{env};
       \item \texttt{t''} is not a domain subtype of \texttt{t'} in \texttt{env};
       \item an execution-time check that the expression evaluates to a value in the
-        domain of the required type is required.
+        runtime domain of the required type is required.
       \item \texttt{new\_e} is the expression denoting a Checked Type
         Conversion of \texttt{new\_e'} in the type \texttt{t'}.
      \end{itemize}
@@ -4317,7 +4379,7 @@ the following apply:
     L^\tenv.\storagetypes(\vx) = \bot\\
     \tyopt = \langle\rangle\\
     \vt = \tty\\
-    \newenv = (G^\tenv, L^\tenv[\storagetypes \mapsto L^\tenv[\vx \mapsto (\vt, \ldk)]])
+    \newenv = (G^\tenv, L^\tenv.\storagetypes[\vx \mapsto (\vt, \ldk)])
   }
   {
     \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(\vx, \langle\vt\rangle))
@@ -4328,7 +4390,7 @@ the following apply:
   L^\tenv.\storagetypes(\vx) = \bot\\
   \tyopt = \langle\vt\rangle\\
   \canbeinitializedwith(\tenv, \vt, \tty)\\
-  \newenv = (G^\tenv, L^\tenv[\storagetypes \mapsto L^\tenv[x \mapsto (\vt, \ldk)]])
+  \newenv = (G^\tenv, L^\tenv.\storagetypes[x \mapsto (\vt, \ldk)])
 }
 {
   \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(\vx, \langle\vt\rangle))
@@ -5350,7 +5412,7 @@ new\_stmt)} and all of the following apply:
     \astlabel(\tstruct(\tty)) = \TException\\
     \texttt{name\_opt} = \langle\name\rangle\\
     \checkvarnotinenv{\tenv, \name}\\
-    \tenv' = (G^\tenv, L^\tenv[\storagetypes \mapsto L^\tenv[\name \mapsto (\tty, \texttt{LDK\_Let})]])\\
+    \tenv' = (G^\tenv, L^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{LDK\_Let})])\\
     \texttt{new\_stmt'} = \annotateblock{\tenv', \texttt{stmt}}
   }
   {
@@ -5568,7 +5630,294 @@ the following apply:
 This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 \identr{TJKQ}, \identi{LFJZ}, \identi{BZVB}, \identi{RQQB}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Typing of Global Declarations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Declaring a global declaration \texttt{d} in an environment \texttt{env} ($\declaredecl{\tenv, \texttt{d}}$)
+results in a new environment \texttt{env'}, which contains the declared element, and one of the following applies:
+\begin{itemize}
+  \item TypingRule.DeclareOneFunc (see Section~\ref{sec:TypingRule.DeclareOneFunc}).
+  \item TypingRule.DeclareGlobalStorage (see Section~\ref{sec:TypingRule.DeclareGlobalStorage}).
+  \item TypingRule.DeclareType (see Section~\ref{sec:TypingRule.DeclareType}).
+\end{itemize}
+
+\section{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
+\subsection{Prose}
+Declaring a subprogram declaration \texttt{func\_sig} in a given environment \texttt{env} results
+in \texttt{new\_env} and all of the following applies:
+\begin{itemize}
+  \item \texttt{name} is the identifier associated with the subprogram declaration;
+  \item \texttt{env} does not contain another subprogram declaration for \texttt{name} that clashes with \texttt{func\_sig};
+  \item \texttt{new\_env} is \texttt{env} where 
+  \texttt{func\_sig} has been added to the set of subprograms declared with \texttt{name} (\subprogramrenamings)
+  and \texttt{name} is associated with \texttt{func\_sig}.
+\end{itemize}
+
+\subsection{Example}
+\subsection{Code}
+\VerbatimInput[firstline=\DeclareOneFuncBegin, lastline=\DeclareOneFuncEnd]{../Typing.ml}
+\begin{emptyformal}
+  \subsection{Formally}
+
+\newcommand\funcsig[0]{\texttt{func\_sig}}
+\newcommand\subprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
+\newcommand\hassubprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
+\newcommand\subprogramclash[0]{\texttt{subprogram\_clash}}
+\newcommand\argsclash[0]{\texttt{args\_clash}}
+
+We define the helper rules \hassubprogramtypeclash, \argsclash, and subprogramclash\ to determined whether
+two subprogram clash in terms of their subprogram types and their lists of argument types,
+and then use them to annotate a subprogram declaration.
+
+\begin{mathpar}
+\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Function}, \Ignore)}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \texttt{ST\_Function})}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Procedure}, \Ignore)}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \texttt{ST\_Procedure})}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Getter}, \texttt{ST\_Getter})}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Setter}, \texttt{ST\_Setter})}
+\and
+\inferrule{
+  \texttt{t\_args1} = [i=1..k: (\Ignore, \vt_i)]\\
+  \texttt{s\_args1} = [i=1..k: (\Ignore, \vs_i)]\\
+  j \in 1..k\\
+  \typeclashes(\tenv, \vt_j, \vs_j)
+}
+{\argsclash(\tenv, \texttt{t\_args}, \texttt{s\_args})}
+\and
+\inferrule{
+  \argsclash(\texttt{f}.\subprogramtype, \texttt{g}.\subprogramtype)\\
+  \argsclash(\texttt{f}.\vargs, \texttt{g}.\vargs)\\
+}
+{ \subprogramclash(\texttt{f}, \texttt{g}) }
+\and
+\inferrule{
+  \name = \funcsig.\name\\
+  \texttt{same\_named} = G^\tenv.\subprogramrenamings(\name)\\
+  \texttt{fo} \in \texttt{same\_named}: \neg\subprogramclash(\tenv, \funcsig, \texttt{fo})\\
+  G' = G^\tenv.\subprogramrenamings[\name \mapsto \texttt{same\_named} \cup \{\funcsig\}]\\
+  G'' = G'.\subprograms[\name \mapsto \funcsig]\\
+  \texttt{new\_env} = (G'', L^\tenv)
+}
+{
+  \declaredecl(\tenv, \texttt{func\_sig}) = G''
+}
+\end{mathpar}
+\end{emptyformal}
+\subsection{Comments}
+
+This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.
+
+\section{TypingRule.DeclareGlobalStorage \label{sec:TypingRule.DeclareGlobalStorage}}
+\subsection{Prose}
+Annotating a global storage declaration \texttt{d} in a given environment \texttt{env} results
+in \texttt{new\_env} and one of the following applies:
+\begin{itemize}
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global constant named \name, with initial value expression \texttt{e}, and without a type annotation.
+    \item \texttt{v} is the literal computed in \tenv\ by evaluating \texttt{e}.
+    \item \texttt{t} is the type inferred for \texttt{v}
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the constant \name, with initial value \texttt{v} and type \texttt{t}.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global constant named \name, with initial value expression \texttt{e}, and type annotation \texttt{ty}.
+    \item \texttt{v} is the literal computed in \tenv\ by evaluating \texttt{e}.
+    \item \texttt{t} is the type inferred for \texttt{v}.
+    \item \texttt{t} type-satisfies \texttt{ty} in \tenv.
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the constant \name, with initial value \texttt{v} and type \texttt{ty}.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global constant or global let with no initial value expression.
+    \item An error ``\texttt{Constants or let-bindings must be initialized}'' is raised.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global variable or config named \name, with no initial value expression, and type annotation \texttt{ty}.
+    \item One of the following apply:
+    \begin{itemize}
+      \item An error ``\texttt{identifier already declared}'' is raised and all of the following apply:
+      \begin{itemize}
+        \item \texttt{name} is not yet declared in the global environment.
+        \item \texttt{new\_env} is \tenv\ extended with a declaration of the global storage element named \name, and type \texttt{ty}.
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global storage element with named \name, with initial value expression \texttt{e}, and no type.
+    \item \texttt{t} is the type resulting from annotating the expression \texttt{e} in \tenv.
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the global storage element named \name\ and type \texttt{ty}.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global storage element with named \name, with initial value expression \texttt{e}, and type annotation \texttt{ty}.
+    \item \texttt{t, e'} is the result of annotating the expression \texttt{e} in \tenv.
+    \item One of the following apply:
+    \begin{itemize}
+      \item \texttt{t} does not type-satisfy \texttt{ty} in \tenv.
+      \item A ``Conflicting types'' error is raised.
+    \end{itemize}
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the global storage element named \name\ and type \texttt{ty}.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Example}
+\subsection{Code}
+\VerbatimInput[firstline=\DeclareGlobalStorageBegin, lastline=\DeclareGlobalStorageEnd]{../Typing.ml}
+\begin{emptyformal}
+  \subsection{Formally}
+\newcommand\gsd[0]{\texttt{gsd}}
+\begin{mathpar}
+  \inferrule[Case 1]{
+    \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\rangle, \textsf{name}:\name \}\\
+    \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
+    \vt = \texttt{type\_of\_literal}(\vv)\\
+    \newenv = \texttt{declare\_const}(\tenv, \name, \vt, \vv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+  \and
+  \inferrule[Case 2]{
+    \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
+    \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
+    \vt = \texttt{type\_of\_literal}(\vv)\\
+    \typesat(\tenv, \vt, \tty)\\
+    \newenv = \texttt{declare\_const}(\tenv, \name, \tty, \vv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+  \and
+  \inferrule[Case 4]{
+    \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle \tty \rangle, \textsf{name}:\name \}\\
+    \texttt{k} \in \{\texttt{GDK\_Config}, \texttt{GDK\_Var}\}\\
+    G^\tenv.\storagetypes(\name) = \bot\\
+    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+  \and
+  \inferrule[Case 5]{
+    \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\rangle, \textsf{name}:\name \}\\
+    G^\tenv.\storagetypes(\name) = \bot\\
+    \annotateexpr{\tenv, \ve} = (\vt, \Ignore)\\
+    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\vt, \texttt{k})], L^\tenv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+  \and
+  \inferrule[Case 6]{
+    \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
+    G^\tenv.\storagetypes(\name) = \bot\\
+    \annotateexpr{\tenv, \ve} = (\vt, \ve')\\
+    \typesat(\tenv, \vt, \tty)\\
+    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
+  }
+  { \declaredecl{\tenv, \gsd} = \newenv }
+\end{mathpar}
+\end{emptyformal}
+\subsection{Comments}
+This relates to \identr{YSPM} and \identr{FWQM}.
+
+\section{TypingRule.DeclareType \label{sec:TypingRule.DeclareType}}
+\subsection{Prose}
+Declaring a type named \texttt{name} with a type specification \texttt{ty},
+optionally a supertype \texttt{sup} and extra fields \texttt{fields}, in a given environment \texttt{env} results
+in \texttt{env'} and one of the following applies:
+\begin{enumerate}
+  \item All of the following apply:
+  \begin{itemize}
+    \item \name\ is already declared in \tenv.
+    \item An error ``identifier already declared'' is raised.
+  \end{itemize}
+  \item All of the following apply:
+  \begin{itemize}
+    \item \name\ is not declared in \tenv.
+    \item  \tenv',\tty' are the result of attempting to add \texttt{name} as a subtype of \texttt{sup} and 
+    constructing the type \tty' as \tty\ with the added fields \texttt{fields} in \tenv.
+    \item \tty' is a valid type.
+    \item \tenv'' is \tenv' extended with \tty'.
+    \item If \tty' has the structure of an enumeration than \newenv\ is \tenv'' extended with the declarations of constants for each identifier,
+    and otherwise \newenv\ is \tenv''.
+  \end{itemize}
+\end{enumerate}
+
+\subsection{Example}
+\subsection{Code}
+\VerbatimInput[firstline=\DeclareTypeBegin, lastline=\DeclareTypeEnd]{../Typing.ml}
+\begin{emptyformal}
+  \subsection{Formally}
+\newcommand\attemptaddsubtype[0]{\texttt{attempt\_add\_subtype}}
+\newcommand\attemptaddenum[0]{\texttt{attempt\_add\_enum}}
+\newcommand\checkisvalidtype[0]{\texttt{check\_is\_valid\_type}}
+
+\begin{mathpar}
+  % \inferrule{ \astlabel(\tty) \not\in \{\TRecord, \TException, \TBits\} }
+  % { \checkisvalidtype(\tenv, \tty) }
+  % \and
+  \inferrule{
+    \checkvarnotinenv{\tenv, \name}\\
+    \attemptaddsubtype(\tenv, \tty, \vs) = (\tenv', \tty')\\
+    \checkisvalidtype(\tenv, \tty')\\
+    \tenv'' = (G^{\tenv'}.\storagetypes[\name\mapsto \tty'], L^{\tenv'})\\
+    \attemptaddenum(\tenv'', \tty') = \newenv
+  }
+  { \declaredecl{\name, \tty, \vs} = \newenv }
+\end{mathpar}
+\end{emptyformal}
+\subsection{Comments}
+This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Typing of Specifications}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+An ASL specification consists of a list of declarations.
+Type checking the specification is considered successful if all declarations can be successfully annotated.
+
+\newcommand\decls[0]{\texttt{decls}}
+
+\section{TypingRule.Specification \label{sec:TypingRule.Specification}}
+\subsection{Prose}
+Annotating an ASL specification \texttt{decls} in an environment \texttt{env} results in a rewritten specification \texttt{decls'}
+and a new environment \texttt{new\_env} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ordered\_decls} is the result of topologically ordering \texttt{decls} according to their
+  mutual dependencies.
+  \item \newenv\ is the result of declaring all global declarations in \texttt{ordered\_decls} in \tenv.
+  \item \texttt{decls'} is the result of annotating every declaration in \texttt{decls} in the environment \newenv.
+\end{itemize}
+
+\subsection{Example}
+\subsection{Code}
+\VerbatimInput[firstline=\SpecificationBegin, lastline=\SpecificationEnd]{../Typing.ml}
+\begin{emptyformal}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \texttt{order\_topologically}(\tenv, \decls) = \texttt{ordered\_decls}\\
+    \texttt{ordered\_decls} = [i=1..k: \texttt{d}_i]\\
+    \tenv_0 = \tenv\\
+    i=1..k: \tenv_{i} = \declaredecl{\tenv_{i-1}, \texttt{d}_{i-1}}\\
+    \newenv = \tenv_{k}\\
+    \decls' = [i=1..k: \texttt{annotate\_decl}(\newenv, \texttt{d}_i) ]
+  }
+  { \annotatespec{\tenv, \decls} = (\decls', \newenv) }
+\end{mathpar}
+\end{emptyformal}
+\subsection{Comments}
+This relates to \identi{LWQQ}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}
 \bibliography{ASL}
 
