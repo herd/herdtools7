@@ -2142,8 +2142,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    add_subprogram name' (ast_func_to_func_sig func_sig) env |: TypingRule.DeclareOneFunc
-(* End *)
+    add_subprogram name' (ast_func_to_func_sig func_sig) env
+    |: TypingRule.DeclareOneFunc
+  (* End *)
 
   let declare_const loc name t v env =
     if IMap.mem name env.global.storage_types then
@@ -2324,9 +2325,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Shouldn't happen because of parser construction. *)
         Error.fatal_from loc
           (Error.NotYetImplemented
-             "Global storage declaration must have an initial value \
-              or a type.")
-    (* End *)
+             "Global storage declaration must have an initial value or \
+              a type.")
+  (* End *)
 
   let build_global ast =
     let def d =
