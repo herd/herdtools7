@@ -25,6 +25,7 @@ module type I = sig
 
   type special
   val specials : special list
+  val pp_i : int -> string
 end
 
 module type S = sig
@@ -38,6 +39,7 @@ module type S = sig
   val of_loc : Code.loc -> location
   val of_reg : Code.proc -> arch_reg -> location
 
+  val pp_i : int -> string
   val pp_location : location -> string
   val pp_location_brk : location -> string
   val location_compare : location -> location -> int
@@ -111,6 +113,8 @@ with type arch_reg = I.arch_reg and type special = I.special
         if I.is_symbolic r then I.pp_reg r
         else sprintf "%i:%s" i (I.pp_reg r)
     | Loc loc -> sprintf "[%s]" (pp_symbol loc)
+
+  let pp_i = I.pp_i
 
   let location_compare loc1 loc2 = match loc1,loc2 with
   | Reg _,Loc _ -> -1

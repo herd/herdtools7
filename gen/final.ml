@@ -120,7 +120,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let open C.E in
           match e.C.E.edge with
           | Rf _ | Fr _ | Ws _ | Hat
-          | Back _|Leave _|Irf _|Ifr _ -> true
+          | Back _|Leave _ -> true
           | Rmw rmw -> C.A.show_rmw_reg rmw
           | Po _ | Fenced _ | Dp _ ->
               begin match C.E.loc_sd e with
@@ -186,6 +186,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
             | Code.Pte ->
                 Some (P evt.C.C.pte)
+            | Code.Instr ->
+              let s = C.A.pp_i evt.C.C.ins in
+              Some (S s)
             end
         | Some Code.W ->
            assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;

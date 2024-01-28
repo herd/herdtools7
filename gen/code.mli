@@ -90,7 +90,7 @@ type info = (string * string) list
 val plain : string
 
 (* Memory bank (for MTE, KVM)  *)
-type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a | Pair
+type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a | Pair | Instr
 
 val pp_bank : 'a bank -> string
 

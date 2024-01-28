@@ -362,7 +362,10 @@ let pp_reg r = match r with
 | Vreg _ -> pp_simd_vector_reg r
 | SIMDreg _ -> pp_simd_scalar_reg vvrs r
 | _ -> pp_xreg r
-
+let pp_i n = match n with
+  | 1 -> "instr:\"NOP\""
+  | 0 -> "instr:\"B .+12\""
+  | _ -> Warn.fatal "instruction currently not supported"
 let pp_wreg r = match r with
 | Symbolic_reg r -> "W%" ^ r
 | Internal i -> Printf.sprintf "i%i" i

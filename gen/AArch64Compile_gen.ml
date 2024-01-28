@@ -478,14 +478,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
         let emit_fetch st _p init lab =
           let rA,st = next_reg st in
-          let lab0 = Label.next_label "L" in
-          let lab1 = Label.next_label "L" in
+          let lab0 = ".+12" in
+          let lab1 = ".+8" in
           let cs =
             Label (lab,Instruction (b lab0))::
             Instruction (mov rA 2)::
             Instruction (b lab1)::
-            Label (lab0,Instruction (mov rA 1))::
-            Label (lab1,Nop)::
+            Instruction (mov rA 1)::
             [] in
           rA,init,cs,st
 
@@ -1189,7 +1188,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
     let emit_obs t = match t with
-    | Code.Ord-> emit_load_mixed naturalsize 0
+    | Code.Ord | Code.Instr-> emit_load_mixed naturalsize 0
     | Code.Pte->
         fun st p init loc ->
         let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
@@ -1231,9 +1230,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,None ->
             let r,init,cs,st = LDR.emit_fetch st p init lab in
             Some r,init,cs,st
-        | W,None ->
+        | W,(None | Some (Instr, None)) ->
             let init,cs,st = STR.emit_store_nop st p init lab in
             None,init,cs,st
+        | R, Some (Instr, None) ->
+            let r,init,cs,st = LDR.emit_load st p init lab in
+            Some r,init,cs,st
         | _,_ -> Warn.fatal "Not Yet (%s,%s)!!!"
               (pp_dir d) (C.debug_evt e)
         end
@@ -1357,6 +1359,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = emit_stp opt idx st p init loc e in
             None,init,cs,st
         | W,Some (Pair _,Some _) -> assert false
+        | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
         | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
             let emit = match rk with
             | Read -> LDR.emit_load_var
@@ -1776,6 +1779,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,pseudo cs0@cs,st
           | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
+          | (R|W), Some (Instr, _) -> Warn.fatal "No dependency to code location"
           | W,Some (Atomic rw,None) ->
               let r,init,cs,st =
                 emit_sta_idx (tr_rw rw) st p init loc r2 e.C.v in
@@ -2010,6 +2014,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Warn.fatal "No store acquire"
           | Some (AcqPc _,_) ->
               Warn.fatal "No store acquirePc"
+          | Some (Instr, _) -> Warn.fatal "No Plain Write to label (code location)"
           | Some (Plain a,Some (sz,o)) ->
               let module S =
                 STORE

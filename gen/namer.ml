@@ -64,10 +64,6 @@ module Make
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
          | Insert f -> Some (sprintf "[%s]" (Misc.lowercase (A.pp_fence f)))
-         | Irf Ext -> Some "irfe"
-         | Irf Int -> Some "irfi"
-         | Ifr Ext -> Some "ifre"
-         | Ifr Int -> Some "ifri"
          | Store -> Some "store"
          | Node _ -> assert false
          | _ -> None
@@ -77,14 +73,14 @@ module Make
            -> true
          |Rf _|Ws _|Fr _
          |Id|Hat|Leave _|Back _
-         |Insert _|Store|Node _|Rmw _|Irf _|Ifr _
+         |Insert _|Store|Node _|Rmw _
            -> false
        and ambiguous_source = function
          | Po _|Fenced _
            -> true
          |Dp _| Rf _|Ws _|Fr _
          |Id|Hat|Leave _|Back _
-         |Insert _|Store|Node _|Rmw _|Irf _|Ifr _
+         |Insert _|Store|Node _|Rmw _
            -> false
 
        let plain  = Misc.lowercase (A.pp_plain)
