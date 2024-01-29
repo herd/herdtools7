@@ -10,8 +10,8 @@
 (* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
 (* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
 (* experimental, and as yet unreleased version of ASL.                        *)
-(* This material is work in progress, more precisely at pre-Alpha quality as  *)
-(* per Arm’s quality standards.                                               *)
+(* This material is work in progress, more precisely at pre-Alpha quaElity as  *)
+(* per Arm’s quaElity standards.                                               *)
 (* In particular, this means that it would be premature to base any           *)
 (* production tool development on this material.                              *)
 (* However, any feedback, question, query and feature request would be most   *)
@@ -320,7 +320,7 @@ module TypingRule = struct
     | LowestCommonAncestor
     | CheckUnop
     | CheckBinop
-    | Lit
+    | ELit
     | CTC
     | ELocalVarConstant
     | ELocalVar
@@ -457,7 +457,7 @@ module TypingRule = struct
     | CheckUnop -> "CheckUnop"
     | CheckBinop -> "CheckBinop"
     | LowestCommonAncestor -> "LowestCommonAncestor"
-    | Lit -> "Lit"
+    | ELit -> "ELit"
     | CTC -> "CTC"
     | ELocalVarConstant -> "ELocalVarConstant"
     | ELocalVar -> "ELocalVar"
@@ -597,7 +597,7 @@ module TypingRule = struct
       CheckUnop;
       CheckBinop;
       LowestCommonAncestor;
-      Lit;
+      ELit;
       CTC;
       ELocalVarConstant;
       ELocalVar;

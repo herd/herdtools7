@@ -18,3 +18,4 @@ ASL Typing Reference:
   [1]
 //  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
   $ aslref TypingRule.CheckBinOp.asl
+  $ aslref TypingRule.Lit.asl

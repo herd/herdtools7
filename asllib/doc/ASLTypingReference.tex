@@ -74,6 +74,7 @@
 \newcommand\annotatesubprogram[1]{\texttt{annotate\_subprogram}(#1)}
 \newcommand\declaredecl[1]{\texttt{annotate\_decl}(#1)}
 \newcommand\annotatespec[1]{\texttt{annotate\_spec}(#1)}
+\newcommand\annotateliteral[1]{\texttt{annotate\_literal}(#1)}
 
 \newcommand\tenv[0]{\texttt{env}}
 \newcommand\newenv[0]{\texttt{new\_env}}
@@ -83,6 +84,7 @@
 \newcommand\va[0]{\texttt{a}}
 \newcommand\vc[0]{\texttt{c}}
 \newcommand\vf[0]{\texttt{f}}
+\newcommand\vl[0]{\texttt{l}}
 \newcommand\vp[0]{\texttt{p}}
 \newcommand\vo[0]{\texttt{o}}
 \newcommand\vx[0]{\texttt{x}}
@@ -929,7 +931,7 @@ we use the notation $\emptylist_N$ to name the parameter.
   This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
   \identr{RLQP}, \identr{LYDS}, \identr{SVDJ}, \identi{WLPJ}, \identr{FWMM},
   \identi{WPWL}, \identi{CDVY}, \identi{KFCR}, \identi{BBQR}, \identr{ZWGH},
-  \identr{DKGQ}, \identr{DHZT}, \identi{HSWR}.
+  \identr{DKGQ}, \identr{DHZT}, \identi{HSWR}, \identd{YZBQ}.
 
 \section{Constrained Types}
 
@@ -1062,7 +1064,7 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 \section{TypingRule.StructuralSubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
 
 \subsection{Prose}
-\texttt{t} structurally-subtype-satisfies \texttt{s} in environment \tenv, if one of the following applies:
+Type \texttt{t} structurally-subtype-satisfies type \texttt{s} in environment \tenv, if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
@@ -2175,7 +2177,7 @@ an environment \tenv.  Formally, the result of annotating the expression
 \texttt{e} in \tenv\ is either the pair \texttt{t, new\_e}, where \texttt{t} is a type and
 \texttt{new\_e} is a rewritten expression, or an error, and one of the following applies:
 \begin{itemize}
-\item TypingRule.Lit (see Section~\ref{sec:TypingRule.Lit});
+\item TypingRule.ELit (see Section~\ref{sec:TypingRule.ELit});
 \item TypingRule.ELocalVarConstant (see Section~\ref{sec:TypingRule.ELocalVarConstant})
 \item TypingRule.ELocalVar (see Section~\ref{sec:TypingRule.ELocalVar})
 \item TypingRule.EGlobalVarConstant (see Section~\ref{sec:TypingRule.EGlobalVarConstant})
@@ -2212,37 +2214,71 @@ The annotation rewrites the input expression in the following cases, making the 
   \item Slicing expressions that correspond to array accesses are replaced with array access expressions.
 \end{itemize}
 
+
 \section{TypingRule.Lit \label{sec:TypingRule.Lit}}
+
+Annotating literals is done via the function $\annotateliteral{\cdot}$,
+which we use in this chapter as well as in subsequent chapters.
+
+\subsection{Prose}
+The result of annotating a literal expression \texttt{l} is \texttt{t} and one of the following apply:
+\begin{itemize}
+\item \texttt{l} is an integer literal \texttt{n} and \texttt{t} is the well-constrained integer type, constraining
+its set to the single value \texttt{n};
+\item \texttt{l} is a Boolean literal and \texttt{t} is the Boolean type;
+\item \texttt{l} is a real literal and \texttt{t} is the real type;
+\item \texttt{l} is a string literal and \texttt{t} is the string type; 
+\item \texttt{l} is a bitvector literal of length \texttt{n} and \texttt{t} is the bitvector type of fixed width \texttt{n}.
+\end{itemize}
+
+\subsection{Example: TypingRule.Lit.asl}
+In the following example, we show several literals and their corresponding types in comments:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Lit.asl}
+
+\subsection{Code}
+\VerbatimInput[firstline=\LitBegin, lastline=\LitEnd]{../Typing.ml}
+
+\begin{emptyformal}
+\subsection{Formally}
+
+\begin{mathpar}
+\inferrule{}{\annotateliteral{\Elit{n}}= \TInt(\langle[\texttt{Constraint\_Exact}(\Elit{n})]\rangle)}
+\and
+\inferrule{}{\annotateliteral{\eliteral{\lbool(\Ignore)}}= \TBool}
+\and
+\inferrule{}{\annotateliteral{\eliteral{\lreal(\Ignore)}}= \TReal}
+\and
+\inferrule{}{\annotateliteral{\eliteral{\lstring(\Ignore)}}= \TString}
+\and
+\inferrule{\vl = \eliteral{\lbitvector(b_{1..n})}}
+{\annotateliteral{\vl}= \TBits(\texttt{Bitwidth\_SingleExpr}(\Elit{n}), \emptylist)}
+\end{mathpar}
+
+\end{emptyformal}
+
+\section{TypingRule.ELit \label{sec:TypingRule.ELit}}
 
   \subsection{Prose}
   The result of annotating the expression \texttt{e} in \texttt{env} is
 \texttt{t,new\_e} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} is a literal expression \texttt{v};
-  \item \texttt{t} is the type of \texttt{v} determined by the syntactic label of \texttt{v};
+  \item \texttt{t} is the type of the literal \texttt{v};
   \item \texttt{new\_e} is \texttt{e}.
   \end{itemize}
 
   \subsection{Example}
 
   \subsection{Code}
-  \VerbatimInput[firstline=\LitBegin, lastline=\LitEnd]{../Typing.ml}
+  \VerbatimInput[firstline=\ELitBegin, lastline=\ELitEnd]{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
-  
 \begin{mathpar}
-\inferrule{\ve = \Elit{n}}{\annotateexpr{\tenv, \ve}= (\TInt(\langle[\texttt{Constraint\_Exact}(\Elit{n})]\rangle), \ve)}
-\and
-\inferrule{\ve = \eliteral{\lbool(\Ignore)}}{\annotateexpr{\tenv, \ve}= (\TBool, \ve)}
-\and
-\inferrule{\ve = \eliteral{\lreal(\Ignore)}}{\annotateexpr{\tenv, \ve}= (\TReal, \ve)}
-\and
-\inferrule{\ve = \eliteral{\lstring(\Ignore)}}{\annotateexpr{\tenv, \ve}= (\TString, \ve)}
-\and
-\inferrule{\ve = \eliteral{\lbitvector(b_{1..n})}}
-{\annotateexpr{\tenv, \ve}= (\TBits(\texttt{Bitwidth\_SingleExpr}(\Elit{n}), \emptylist), \ve)}
+\inferrule{\ve \in \literal \\ \vt = \annotateliteral{\ve} \\ \newe = \tenv}
+{\annotateexpr{\tenv, \ve} = (\vt, \newe)}
 \end{mathpar}
+
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -5703,7 +5739,7 @@ and then use them to annotate a subprogram declaration.
   \texttt{new\_env} = (G'', L^\tenv)
 }
 {
-  \declaredecl(\tenv, \texttt{func\_sig}) = G''
+  \declaredecl{\tenv, \texttt{func\_sig}} = G''
 }
 \end{mathpar}
 \end{emptyformal}
@@ -5778,11 +5814,12 @@ in \texttt{new\_env} and one of the following applies:
 \begin{emptyformal}
   \subsection{Formally}
 \newcommand\gsd[0]{\texttt{gsd}}
+
 \begin{mathpar}
   \inferrule[Case 1]{
     \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\rangle, \textsf{name}:\name \}\\
     \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
-    \vt = \texttt{type\_of\_literal}(\vv)\\
+    \vt = \annotateliteral{\vv}\\
     \newenv = \texttt{declare\_const}(\tenv, \name, \vt, \vv)
   }
   { \declaredecl{\tenv, \gsd} = \newenv }
@@ -5790,7 +5827,7 @@ in \texttt{new\_env} and one of the following applies:
   \inferrule[Case 2]{
     \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
     \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
-    \vt = \texttt{type\_of\_literal}(\vv)\\
+    \vt = \annotateliteral{\vv}\\
     \typesat(\tenv, \vt, \tty)\\
     \newenv = \texttt{declare\_const}(\tenv, \name, \tty, \vv)
   }
