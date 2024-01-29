@@ -99,7 +99,7 @@ let hex_alpha = ['a'-'f' 'A'-'F']
 let hex_lit = '0' 'x' (digit | hex_alpha) ('_' | digit | hex_alpha)*
 let real_lit = digit ('_' | digit)* '.' digit ('_' | digit)*
 let alpha = ['a'-'z' 'A'-'Z']
-let string_lit = '"' [^ '"']* '"'
+let string_chars = ([^ '"' '\\'] | ('\\' ['n' 't' '"' '\\']))*
 let bits = ['0' '1' 'z' ' ']*
 let mask = ['0' '1' 'x' ' ']*
 let identifier = (alpha | '_') (alpha|digit|'_')*
@@ -111,7 +111,7 @@ rule token = parse
     | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | real_lit as lxm          { REAL_LIT(Q.of_string lxm)        }
-    | '"' ([^ '"']* as lxm) '"' { STRING_LIT(lxm)                 }
+    | '"' (string_chars as lxm) '"' { STRING_LIT(lxm)             }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
     | '\'' (mask as lxm) '\''  { mask_lit lxm                     }
     | '!'                      { BNOT                             }

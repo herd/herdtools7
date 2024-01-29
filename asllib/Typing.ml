@@ -108,13 +108,15 @@ let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
         T_Int (WellConstrained constraints) |> add_pos_from_st ty
     | _ -> ty
 
-let infer_value = function
+(* Begin Lit *)
+let annotate_literal = function
   | L_Int _ as v -> integer_exact' (literal v)
   | L_Bool _ -> T_Bool
   | L_Real _ -> T_Real
   | L_String _ -> T_String
   | L_BitVector bv ->
       Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
+(* End *)
 
 exception ConstraintMinMaxTop
 
@@ -975,8 +977,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let here x = add_pos_from e x in
     match e.desc with
-    (* Begin Lit *)
-    | E_Literal v -> (infer_value v |> here, e) |: TypingRule.Lit
+    (* Begin ELit *)
+    | E_Literal v -> (annotate_literal v |> here, e) |: TypingRule.ELit
     (* End *)
     (* Begin CTC *)
     | E_CTC (e', t') ->
@@ -2292,7 +2294,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | { keyword = GDK_Constant; initial_value = Some e; ty = None; name }
       ->
         let v = reduce_constants env e in
-        let t = infer_value v |> add_pos_from e in
+        let t = annotate_literal v |> add_pos_from e in
         declare_const loc name t v env
     | {
      keyword = GDK_Constant;
@@ -2301,7 +2303,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
      name;
     } ->
         let v = reduce_constants env e in
-        let t = infer_value v |> add_pos_from e in
+        let t = annotate_literal v |> add_pos_from e in
         if Types.type_satisfies env t ty then
           declare_const loc name ty v env
         else conflict e [ ty.desc ] t

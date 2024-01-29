@@ -16,3 +16,4 @@ ASL Typing Reference:
   Some text
 //  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
   $ aslref TypingRule.CheckBinOp.asl
+  $ aslref TypingRule.Lit.asl
