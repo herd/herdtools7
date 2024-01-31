@@ -5,10 +5,20 @@
 \input{ASLASTLines}
 \newcommand{\tests}{../tests/ASLTypingReference.t/}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Static environment macros
+\newcommand\constantsvalues[0]{\textsf{constants\_values}}
+\newcommand\storagetypes[0]{\textsf{storage\_types}}
+\newcommand\returntype[0]{\textsf{return\_type}}
+\newcommand\declaredtypes[0]{\textsf{declared\_types}}
+\newcommand\subtypes[0]{\textsf{subtypes}}
+\newcommand\subprograms[0]{\textsf{subprograms}}
+\newcommand\subprogramrenamings[0]{\textsf{subprogram\_renamings}}
+
 \newcommand\dynamicdomain[0]{\textsf{dyn-dom}}
 
 \newcommand\astlabel[0]{\textsf{label}}
-\newcommand\Ignore[0]{\texttt{\_}}
+\newcommand\tstruct[0]{\texttt{get\_structure}}
 
 \newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
 \newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
@@ -73,6 +83,8 @@
 \newcommand\annotatesubprogram[1]{\texttt{annotate\_subprogram}(#1)}
 \newcommand\declaredecl[1]{\texttt{annotate\_decl}(#1)}
 \newcommand\annotatespec[1]{\texttt{annotate\_spec}(#1)}
+\newcommand\evalconstraint[1]{\texttt{eval\_constraint}(#1)}
+\newcommand\evalexpr[1]{\texttt{eval\_expr}(#1)}
 \newcommand\annotateliteral[1]{\texttt{annotate\_literal}(#1)}
 
 \newcommand\tenv[0]{\texttt{env}}
@@ -152,7 +164,7 @@
 \newcommand\otherwise[0]{\texttt{otherwise}}
 
 \author{Arm Architecture Technology Group}
-\title{ASL Typing Reference \\ 
+\title{ASL Typing Reference \\
        DDI 0622}
 \begin{document}
 \maketitle
@@ -170,15 +182,15 @@
 The purpose of this document is to describe, in a definitive way, which ASL programs are considered \emph{valid}. Validity is defined in terms of a \emph{type system}~\cite{TypeSystemsLucaCardelli}. That is, a set of \emph{type rules}.
 
 \section{Abstract Syntax}
-An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled structured tree. 
+An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled structured tree.
 %
 The ASL type system is defined over the ASL abstract syntax, which is given in~\cite{ASLAbstractSyntaxReference}.
 
 \section{Environments}
 
 A \emph{static environment} is what the type rules operate over: a structure, which amongst
-other things, associates types to variables. 
-Throughout this document, we will use the term environment for static environment, unless otherwise stated. 
+other things, associates types to variables.
+Throughout this document, we will use the term environment for static environment, unless otherwise stated.
 Intuitively, the typing of a
 program makes an initial environment evolve, with new types as given by the
 variable declarations of the program.
@@ -188,10 +200,10 @@ distinct components: the global environment $G^\tenv$---pertaining to AST nodes
 appearing outside of a given subprogram, and the local environment
 $L^\tenv$---pertaining to AST nodes appearing inside a given subprogram.
 
-Environments $\tenv \in \mathbb{E}$ are formally defined below (referring to symbols defined in the abstract syntax):
+Environments $\tenv \in \staticenvs$ are formally defined below (referring to symbols defined in the abstract syntax):
 \[
 \begin{array}{rcl}
-\mathbb{E} 	            &=& \mathbb{G} \times \mathbb{L}\\
+\staticenvs 	          &=& \mathbb{G} \times \mathbb{L}\\
 \mathbb{G} 	            &=& \declaredtypes \times \constantsvalues \times \storagetypes\\
   			                & & \times\ \subtypes \times \subprograms \times \subprogramrenamings\\
 \mathbb{L} 	            &=& \constantsvalues \times \storagetypes \times \returntype\\
@@ -206,14 +218,14 @@ Environments $\tenv \in \mathbb{E}$ are formally defined below (referring to sym
 \end{array}
 \]
 
-The global environment and local environment consist of various components. 
+The global environment and local environment consist of various components.
 We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a given environment.
 
 To update a function component $f$ (e.g., $\declaredtypes$) of an environment $\tenv$ (either local or global)
 with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to stand for $\tenv[f \mapsto E.f[x \mapsto v]]$.
 
 \section{Type System}
-A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$. 
+A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$.
 We refer to $P_1,\ldots,P_k$ as the \emph{premises} of the rule and to the verdict $S$ as its \emph{conclusion}.
 When the set of premises is empty, we may omit them entirely.
 
@@ -290,7 +302,7 @@ For a partial function $f$, we write $f(x) = \bot$ to denote that $x$ is not in 
 \newcommand\Elit[1]{\texttt{E}(#1)}
 We use the shorthand $\Elit{n}$ for the expression denoting the literal integer value $n$. That is, $\texttt{E\_Literal}(\texttt{L\_Int}(n))$.
 
-We use the shorthand notation $\underconstrainedinteger$ to denote the underconstraint integer type: $\TInt(\langle\emptylist\rangle)$
+We use the shorthand notation $\underconstrainedinteger$ to denote the underconstraint integer type: $\TInt(\texttt{UnConstrained})$
 and $\unconstrainedinteger$ to denote the unconstrained integer type: $\TInt(\langle\rangle)$.
 
 Reacall that a subset of AST nodes are either labels or labelled tuples.
@@ -359,7 +371,7 @@ The builtin singular type \texttt{color} consists in two constants
 \begin{formal}
    \subsection{Formally}
 \begin{mathpar}
-\inferrule{\astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\} }{\isbuiltinsingular(\tty)} \\ 
+\inferrule{\astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\} }{\isbuiltinsingular(\tty)} \\
 \end{mathpar}
 
 \end{formal}
@@ -492,7 +504,7 @@ The partial function $\tstruct : \ty \partialto \ty$ \emph{structure}, which ass
       \begin{itemize}
       \item $\tty$ is a named type;
       \item the structure of $\tty$ is a builtin singular type.
-      \end{itemize} 
+      \end{itemize}
     \end{itemize}
 
     \subsection{Example}
@@ -529,7 +541,7 @@ type C of B;
     \item All of the following apply:
       \begin{itemize}
       \item $\tty$ is a named type;
-      \item the structure of $\tty$ is a builtin aggregate. 
+      \item the structure of $\tty$ is a builtin aggregate.
       \end{itemize}
     \end{itemize}
 
@@ -546,7 +558,7 @@ type C of B;
 
 \begin{formal}
       \subsection{Formally}
-      
+
 \begin{mathpar}
 \inferrule{\isbuiltinaggregate(\tty)}{\isaggregate(\tenv, \tty)}\\
 \and
@@ -561,7 +573,7 @@ type C of B;
 
 \section{TypingRule.NonPrimitiveType}
 
-    \subsection{Prose} 
+    \subsection{Prose}
     A type $\tty$ is non-primitive if one of the following applies:
     \begin{itemize}
     \item $\tty$ is a named type;
@@ -573,7 +585,7 @@ type C of B;
     \item All of the following apply:
       \begin{itemize}
       \item $\tty$ is an array of type $\tty'$
-      \item $\tty'$ is non-primitive; 
+      \item $\tty'$ is non-primitive;
       \end{itemize}
     \item All of the following apply:
       \begin{itemize}
@@ -588,7 +600,7 @@ type C of B;
     \end{itemize}
 
     \subsection{Example}
-    
+
 The following types are non-primitive:
 
 \begin{tabular}{ll}
@@ -731,7 +743,7 @@ whose structure is \texttt{integer}.
 
 \begin{emptyformal}
       \subsection{Formally}
-      
+
 Let $\sortbyid([i=1..k: (\id_i,\tty_i)]) = [i=1..k: (\id_i',\tty_i')]$ be the input list sorted according to the identifier component (lexicographically).
 
 \begin{mathpar}
@@ -743,14 +755,14 @@ Let $\sortbyid([i=1..k: (\id_i,\tty_i)]) = [i=1..k: (\id_i',\tty_i')]$ be the in
 \and
 \inferrule{}{\tstruct(\tenv, \TArray(\ve, \vt)) = \TArray(\ve, \tstruct(\tenv, \vt))}
 \and
-\inferrule{L \in \{\TRecord, \TException\}}{\tstruct(\tenv, L(\fields)) = \\ 
+\inferrule{L \in \{\TRecord, \TException\}}{\tstruct(\tenv, L(\fields)) = \\
  L(\sortbyid([\tstruct(\tenv, \vt) \;|\; (\id,\vt) \in \fields]))}
-\end{mathpar} 
-      
+\end{mathpar}
+
 \end{emptyformal}
     \subsection{Comments}
-    The structure of a type is the equivalent primitive type that can hold the same values. 
-    
+    The structure of a type is the equivalent primitive type that can hold the same values.
+
     This is related to \identd{FXQV}.
 
 \section{TypingRule.Anonymize \label{sec:anonymize}}
@@ -764,12 +776,12 @@ applies:
         \item One of the following applies:
         \item All of the following apply:
         \begin{itemize}
-        \item \texttt{ty'} is the type declared for \texttt{x}; 
+        \item \texttt{ty'} is the type declared for \texttt{x};
         \item \texttt{ta} is the underlying type of \texttt{ty'};
         \end{itemize}
         \item All of the following apply:
         \begin{itemize}
-        \item \texttt{x} is not declared in the global environment; 
+        \item \texttt{x} is not declared in the global environment;
         \item an error ``\texttt{Undefined Identifier}'' is raised;
         \end{itemize}
         \item All of the following apply:
@@ -779,7 +791,7 @@ applies:
       \end{itemize}
     \end{itemize}
 \end{itemize}
-  
+
 \subsection{Example}
 Consider the following example:
 \begin{verbatim}
@@ -809,7 +821,7 @@ The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
 \and
 \inferrule{\astlabel(\tty) \neq \TNamed}
 {\makeanonymous(\tenv, \tty) = \tty}
-\end{mathpar} 
+\end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
 This is a helper function, which we use to inspect the type that is akin to the
@@ -819,15 +831,15 @@ may appear internally.
 \section{TypingRule.Domain}
 
   \subsection{Prose}
-  The \emph{dynamic domain} of a type is the set of values which storage elements of that type may hold 
+  The \emph{dynamic domain} of a type is the set of values which storage elements of that type may hold
   \underline{in a given runtime environment}.
   %
   The \emph{static domain} of a type is the set of values which storage elements of that type may hold
   \underline{across all possible runtime environments}.
   %
   The reason that for this distinction is that the sets of values
-  considered for bitevector types, array types, constrained integers, and constrained bitvectors, 
-  can be parameterized by configuration variables and subprogram parameters whose values are only determined during runtime. 
+  considered for bitevector types, array types, constrained integers, and constrained bitvectors,
+  can be parameterized by configuration variables and subprogram parameters whose values are only determined during runtime.
 
   When the dynamic domain of a type equals the static domain of a type, we will simply refer to both
   types of domains as the \emph{domain} of that type.
@@ -853,7 +865,7 @@ may appear internally.
   The domain of \texttt{integer {2,16}} is the set containing the integers \texttt{2} and \texttt{16}.
 
   THe domain of \texttt{enumeration \{GREEN, ORANGE, RED\}} is the set containing the values
-  \texttt{GREEN}, \texttt{ORANGE}, and \texttt{RED} and so is the runtime domain 
+  \texttt{GREEN}, \texttt{ORANGE}, and \texttt{RED} and so is the runtime domain
   of \texttt{type TrafficLights of enumeration \{GREEN, ORANGE, RED\}}.
 
   The static domain of \texttt{bits({2,16})} is the set containing all 2-bit and all 16-bit binary sequences.
@@ -871,58 +883,55 @@ may appear internally.
 
 \begin{emptyformal}
       \subsection{Formally}
-      \newcommand\runtimeenv[0]{E}
+      \newcommand\denv[0]{\texttt{denv}}
 
       \newcommand\subsumes[0]{\texttt{subsumes}}
       \newcommand\reasoner[0]{\texttt{reasoner}}
 
       We denote a runtime environment that assigns values to global storage elements (more specifically, config variables)
-      and subprogram parameters by $E \in \mathbb{R}$.
-      We denote by $\tenv \in \mathbb{E}$ a static environment, which assigns identifiers to types.
-      We denote the runtime domain of a type $\vt$ in the environments $\tenv$ and $E$ by $\dynamicdomain(\tenv, E, \vt)$.
-      
+      and subprogram parameters by $\denv \in \dynamicenvs$.
+      We denote by $\tenv \in \staticenvs$ a static environment, which assigns identifiers to types.
+      We denote the runtime domain of a type $\vt$ in the environments $\tenv$ and $\denv$ by $\dynamicdomain(\tenv, \denv, \vt)$.
+
       For two types $\vt$ and $\vs$, a symbolic reasoning engine \reasoner\ and a static environment \tenv,
       we write $\subsumes(\reasoner, \tenv, \vt, \vs)$ to mean that the symbolic reasoning
       engine \reasoner\ has returned a positive answer. That is, the following holds:
       \[
         \begin{array}{l}
         \subsumes(\reasoner, \tenv, \vt, \vs) \Rightarrow \\
-       \forall E\in\mathbb{R}.\ \dynamicdomain(\tenv, E, \vt) \supseteq \dynamicdomain(\tenv, E, \vs) \enspace.
+       \forall \denv\in\dynamicenvs.\ \dynamicdomain(\tenv, \denv, \vt) \supseteq \dynamicdomain(\tenv, \denv, \vs) \enspace.
         \end{array}
       \]
       In this case, we say that \vt\ \emph{subsumes} \vs.
 
       In this document, we leave the symbolic reasoning engine unspecified. We will define it in detail in a future version.
 
-We denote by $\llbracket \runtimeenv \rrbracket N$ the integer value given to the underconstrained parameter $N$ in the environment $\runtimeenv$.
-%
-Since currently the abstract syntax does not specify the parameter name of an underconstrained integer,
-we use the notation $\emptylist_N$ to name the parameter.
+We denote by $\denv[N]$ the integer value given to the underconstrained parameter $N$ in the environment $\denv$.
 
 \begin{mathpar}
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TReal) = \Q }
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TReal) = \Q }
 \and
-\inferrule[Domain of Unconstrained integer]{}{\dynamicdomain(\tenv, \runtimeenv, \unconstrainedinteger) = \Z }
+\inferrule[Domain of Unconstrained integer]{}{\dynamicdomain(\tenv, \denv, \unconstrainedinteger) = \Z }
 \and
-\inferrule[Domain of a Well-constrained integer]{}{ \runtimeenv(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint(\tenv, \runtimeenv, c_i)}
+\inferrule[Domain of a Well-constrained integer]{}{ \denv(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint{\tenv, \denv, c_i}}
 \and
-\inferrule[Domain of Underconstrained integer]{}{\dynamicdomain(\tenv, \runtimeenv, \TInt(\langle \emptylist_N \rangle) = \{ \llbracket\runtimeenv\rrbracket N \} }
+\inferrule[Domain of Underconstrained integer]{}{\dynamicdomain(\tenv, \denv, \TInt(\langle \emptylist_N \rangle) = \{ \llbracket\denv\rrbracket N \} }
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(\tenv, E, c) \} }
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint{\tenv, E, c} \} }
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TTuple([\tty_{1..k}])) = \bigtimes_{i=1}^k \dynamicdomain(\tenv, \runtimeenv,\tty_i) }
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TTuple([\tty_{1..k}])) = \bigtimes_{i=1}^k \dynamicdomain(\tenv, \denv,\tty_i) }
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TArray(\ve, \tty)) = \\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr(E, \ve), \; v_{1..k} \in \dynamicdomain(\tenv, \runtimeenv, \tty)  \} }
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TArray(\ve, \tty)) = \\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr{E, \ve}, \; v_{1..k} \in \dynamicdomain(\tenv, \denv, \tty)  \} }
 \and
-\inferrule{L \in \{\TRecord, \TException\}}{ \dynamicdomain(\tenv, \runtimeenv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dynamicdomain(\tenv, \runtimeenv, [f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k](f))}
+\inferrule{L \in \{\TRecord, \TException\}}{ \dynamicdomain(\tenv, \denv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dynamicdomain(\tenv, \denv, [f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k](f))}
 \and
-\inferrule{G^\tenv.\declaredtypes(\id)=\tty}{\dynamicdomain(\tenv, \runtimeenv, \TNamed(\id)) = \dynamicdomain(\tenv, \runtimeenv, \tty)}
+\inferrule{G^\tenv.\declaredtypes(\id)=\tty}{\dynamicdomain(\tenv, \denv, \TNamed(\id)) = \dynamicdomain(\tenv, \denv, \tty)}
 \end{mathpar}
 \end{emptyformal}
 
@@ -956,7 +965,7 @@ we use the notation $\emptylist_N$ to name the parameter.
 \inferrule{}{\isunderconstrainedinteger(\tenv, \TInt(\langle \emptylist \rangle))}
 \and
 \inferrule{i=1..k: \isstaticallyevaluable(\tenv, c_i)}{\iswellconstrainedinteger(\tenv, \TInt(\langle [c_{1..k}]\rangle))}
-\end{mathpar}  
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -991,7 +1000,7 @@ In the following example \texttt{subInt} is a subtype of itself and of \texttt{s
 type superInt of integer;
 type subInt of integer subtypes superInt;
 \end{verbatim}
- 
+
   \subsection{Code}
     \VerbatimInput[firstline=\SubtypeBegin, lastline=\SubtypeEnd]{../types.ml}
 
@@ -1014,10 +1023,10 @@ We define the subtyping relation between two named types in a given environment 
 \and
 \inferrule{\tty \neq \tty' \\ \subtypes(\tenv, \tty, \tty') \\ \subtypes(\tenv, \tty', \tty)}{\error(\texttt{"subtyping cycle exists!"})}
 \end{mathpar}
-	  
+
   \subsection{Comments}
-  Since the subtype relation is a partial order, it is reflexive, viz, 
-  every type is also a subtype of itself. 
+  Since the subtype relation is a partial order, it is reflexive, viz,
+  every type is also a subtype of itself.
 
   Since the subtype relation is a partial order, it is transitive, viz, if A is
   a subtype of B and B is a subtype of C then A is a subtype of C.
@@ -1039,7 +1048,7 @@ We define the subtyping relation between two named types in a given environment 
 
   \subsection{Prose}
   \texttt{t} is a supertype of \texttt{s} if and only if \texttt{s} is a subtype of \texttt{t}.
-  
+
 \todocomment{
 ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just applies to the same arguments in reverse order. I recommend removing this section.
 }
@@ -1163,9 +1172,9 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 
 \begin{emptyformal}
     \subsection{Formally}
-    
+
 We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ structurally-subtype-satisfies type $\vt$ in the environment $\tenv$.
-    
+
 \begin{mathpar}
 \inferrule{\makeanonymous(\tenv, \vs)=\TInt(\Ignore) \\ \makeanonymous(\tenv, \vt)=\TInt(\Ignore) }{\structsubtypesat(\tenv, \vs, \vt)}
 \and
@@ -1178,24 +1187,24 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ struc
 \bitwidthequal(\tenv, c_s, c_t) \\ \bitfieldsincluded(\tenv, \vls, \vlt)}{\structsubtypesat(\tenv, \vs, \vt)}
 \and
 \inferrule{
-  \makeanonymous(\tenv, \vs)=\TArray(\vls,e_s) \\ 
-  \makeanonymous(\tenv, \vs)=\TArray(\vlt,e_t) \\ 
-  \exprequal(\tenv, \vls, \vlt) \\ 
+  \makeanonymous(\tenv, \vs)=\TArray(\vls,e_s) \\
+  \makeanonymous(\tenv, \vs)=\TArray(\vlt,e_t) \\
+  \exprequal(\tenv, \vls, \vlt) \\
   \typeequal(\tenv, e_s, e_t)}
   {\structsubtypesat(\tenv, \vs, \vt)}
 \and
 \inferrule[($\typesat(\tenv, \vs \vt)$ is defined in Section~\ref{sec:TypingRule.TypeSatisfaction})]
 { \makeanonymous(\tenv, \vs)=\TTuple(\vs_{1..k}) \\
-  \makeanonymous(\tenv, \vt)=\TTuple(\vt_{1..k}) \\ 
+  \makeanonymous(\tenv, \vt)=\TTuple(\vt_{1..k}) \\
   \typesat(\tenv, \vs_1, \vt_1) \ldots \typesat(\tenv, \vs_k, \vt_k)}
   {\structsubtypesat(\tenv, \vs, \vt)}
 \and
 \inferrule{
   L \in \{\TRecord, \TException\}\\
-  \makeanonymous(\tenv, \vs)=L((i_1,\vs_1),\ldots,(i_k,\vs_k)) \\ 
-  \makeanonymous(\tenv, \vt)=L((j_1,\vt_1),\ldots,(j_n,\vt_n)) \\ 
-  f : 1..k \rightarrow_{\textsf{one-to-one}} 1..n \\ 
-  i_1 = j_{f(1)},\ldots,i_k = j_{f(k)} \\ 
+  \makeanonymous(\tenv, \vs)=L((i_1,\vs_1),\ldots,(i_k,\vs_k)) \\
+  \makeanonymous(\tenv, \vt)=L((j_1,\vt_1),\ldots,(j_n,\vt_n)) \\
+  f : 1..k \rightarrow_{\textsf{one-to-one}} 1..n \\
+  i_1 = j_{f(1)},\ldots,i_k = j_{f(k)} \\
   \typeequal(\tenv, \vs_1, \vt_{f(1)}),\ldots,\typeequal(\tenv, \vs_k, \vt_{f(k)})
 }
 {\structsubtypesat(\tenv, \vs, \vt)}
@@ -1248,13 +1257,13 @@ We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vs) = \TBits \\
 \texttt{undetermined\_width}(\tenv, \vs)\\
-\subsumes(\reasoner, \tenv, \vs, \vt) 
+\subsumes(\reasoner, \tenv, \vs, \vt)
 }
 {\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vt) = \TBits \\
-\texttt{undetermined\_width}(\tenv, \vt)\\  
-\subsumes(\reasoner, \tenv, \vs, \vt) 
+\texttt{undetermined\_width}(\tenv, \vt)\\
+\subsumes(\reasoner, \tenv, \vs, \vt)
 }
 {\domsubtypesat(\tenv, \vt, \vs)}
 \end{mathpar}
@@ -1270,7 +1279,7 @@ We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
     \begin{itemize}
     \item \texttt{t} structural-subtype-satisfies \texttt{s};
     \item \texttt{t} domain-subtype-satisfies \texttt{s}.
-    \end{itemize} 
+    \end{itemize}
 
   \subsection{Example}
 
@@ -1294,7 +1303,7 @@ We denote that type $\vt$ subtype-satisfies type $\vs$ in an environment $\tenv$
 \subsection{Prose}
 
 \texttt{t} type-satisfies \texttt{s} if one of the following applies:
- 
+
  \begin{itemize}
  \item \texttt{t} is a subtype of \texttt{s};
  \item All of the following apply:
@@ -1346,7 +1355,7 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 \and
 \inferrule{\isanonymous(\tenv, \vs) \\ \subtypesat(\tenv, \vt, \vs)}{\typesat(\tenv, \vt, \vs)}
 \and
-\inferrule{w_t,w_s \in \bitsconstraint \\ 
+\inferrule{w_t,w_s \in \bitsconstraint \\
   \tstruct(\tenv, \vt)=\TBits(w_t, \emptylist) \\
   \tstruct(\tenv, \vs)=\TBits(w_s, \Ignore) \\
   \bitwidthequal(\tenv, w_s, w_t)}
@@ -1358,10 +1367,10 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 \subsection{Comments}
   Since the subtype relation is a partial order, it is reflexive. Therefore
   every type \texttt{t} is a subtype of itself, and as a consequence, every type \texttt{t}
-  type-satisfies itself. 
-  
+  type-satisfies itself.
+
   This is related to \identr{FMXK} and \identi{NLFD}.
-  
+
 \section{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
 
   \subsection{Prose}
@@ -1389,19 +1398,19 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
     \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \tstruct(\tenv, \vt) = \vt' \\ 
+  \tstruct(\tenv, \vt) = \vt' \\
   \tstruct(\tenv, \vs) = \vs' \\
   \astlabel(\vt')=\astlabel(\vs') \in \{\TInt, \TReal, \TString, \TBits, \TEnum\}
 }{\typeclashes(\tenv, \vt, \vs)}
 \and
 \inferrule{
-  \tstruct(\tenv, \vt) = \TArray(\Ignore, \vt') \\ 
+  \tstruct(\tenv, \vt) = \TArray(\Ignore, \vt') \\
   \tstruct(\tenv, \vs) = \TArray(\Ignore, \vs') \\
   \typeclashes(\tenv, \vt', \vs')
 }{\typeclashes(\tenv, \vt, \vs)}
 \and
 \inferrule{
-  \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\ 
+  \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
   i=1..k: \typeclashes(\tenv, \vt_i, \vs_i)
 }{\typeclashes(\tenv, \vt, \vs)}
@@ -1424,9 +1433,9 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 \section{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
 
 \subsection{Prose}
-  Annotating a given conditional expression (see Section~\ref{sec:TypingRule.ECond}), 
+  Annotating a given conditional expression (see Section~\ref{sec:TypingRule.ECond}),
   requires finding a single type such that can be used to annotate the results of both sub-expressions.
-  This leads to the notion of a \emph{lowest common ancestor} of two types. 
+  This leads to the notion of a \emph{lowest common ancestor} of two types.
 
   The lowest common ancestor of types \texttt{s} and \texttt{t} is \texttt{ty} and one of the following applies:
   \begin{itemize}
@@ -1492,7 +1501,7 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
         \item \texttt{s} is an anonymous type;
         \item \texttt{t} is an anonymous type;
 	\item \texttt{ty} is the tuple type where the type of each element is the lowest common
-	  ancestor of the types of the corresponding elements of \texttt{s} and \texttt{t}. 
+	  ancestor of the types of the corresponding elements of \texttt{s} and \texttt{t}.
         \end{itemize}
     \end{itemize}
 
@@ -1550,14 +1559,14 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
         \begin{itemize}
         \item \texttt{s} is an anonymous type;
         \item \texttt{t} is an anonymous type;
-	\item \texttt{ty} is the unconstrained integer type. 
+	\item \texttt{ty} is the unconstrained integer type.
         \end{itemize}
     \end{itemize}
 
   \item All of the following apply:
     \begin{itemize}
     \item Either \texttt{s} or \texttt{t} have the structure of an under-constrained integer type;
-    \item \texttt{ty} is the under-constrained integer type. 
+    \item \texttt{ty} is the under-constrained integer type.
     \end{itemize}
 
   \item \texttt{ty} is undefined.
@@ -1701,7 +1710,7 @@ Rules for unconstrained integers:
 \inferrule{
   \isanonymous(\tenv, \vs) \\
   \isanonymous(\tenv, \vt) \\
-  \tstruct(\tenv, \vt) = \TInt(\Ignore) \\ 
+  \tstruct(\tenv, \vt) = \TInt(\Ignore) \\
   \tstruct(\tenv, \vs) = \isunconstrainedinteger \\
 }
 {\lca(\tenv, \vt, \vs) = \unconstrainedinteger}
@@ -1719,13 +1728,13 @@ Rules for underconstrained integers:
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \vt) = \isunderconstrainedinteger \\
-  \tstruct(\tenv, \vs) = \TInt(\Ignore) \\  
+  \tstruct(\tenv, \vs) = \TInt(\Ignore) \\
 }
 {\lca(\tenv, \vt, \vs) = \isunderconstrainedinteger}
 \and
 \inferrule{
   \tstruct(\tenv, \vs) = \isunderconstrainedinteger \\
-  \tstruct(\tenv, \vt) = \TInt(\Ignore) \\  
+  \tstruct(\tenv, \vt) = \TInt(\Ignore) \\
 }
 {\lca(\tenv, \vt, \vs) = \isunderconstrainedinteger}
 \end{mathpar}
@@ -1819,7 +1828,7 @@ Rules for underconstrained integers:
 
 \begin{emptyformal}
     \subsection{Formally}
-    
+
 \begin{mathpar}
 \inferrule{\typesat(\tenv, \vt, \TBool)}{\CheckUnop(\tenv, \texttt{"!"}, \vt) = \TBool}
 \and
@@ -1853,7 +1862,7 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 
 \subsection{Goal}
   Determine the result type of a binary operator, give the types of its operands.
-  
+
 \subsection{Prose}
   \texttt{t} is the result of checking compatibility of a binary operator \texttt{op} with
   types \texttt{t1} and \texttt{t2} and one of the following applies:
@@ -1886,9 +1895,9 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 		    \item \texttt{t2} has the structure of a bitvector;
     		\item \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
     		\item \texttt{t} is the bitvector type of width \texttt{w}.
-          \end{itemize}    
+          \end{itemize}
     	\item \texttt{t2} type-satisfies \texttt{integer};
-      \end{itemize}    
+      \end{itemize}
     \item \texttt{t} is the bitvector type of width \texttt{w}.
     \end{itemize}
 
@@ -1962,8 +1971,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
         \item \texttt{t2} has the structure of an unconstrained integer;
         \item \texttt{t} is an unconstrained integer;
         \end{itemize}
-      \item One of the following applies: 
-       \begin{itemize} 
+      \item One of the following applies:
+       \begin{itemize}
        \item All of the following apply:
           \begin{itemize}
           \item \texttt{t1} has the structure of an under-constrained integer;
@@ -2020,7 +2029,7 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \begin{mathpar}
 \inferrule{
   \texttt{op} \in  \{\texttt{"\&\&"}, \texttt{"||"}, \texttt{"-->"}, \texttt{"<->"}\}\\
-  \typesat(\tenv, \vt1, \TBool) \\ 
+  \typesat(\tenv, \vt1, \TBool) \\
   \typesat(\tenv, \vttwo, \TBool)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TBool}
@@ -2194,7 +2203,7 @@ The result of annotating a literal \texttt{l} is \texttt{t} and one of the follo
 its set to the single value \texttt{n};
 \item \texttt{l} is a Boolean literal and \texttt{t} is the Boolean type;
 \item \texttt{l} is a real literal and \texttt{t} is the real type;
-\item \texttt{l} is a string literal and \texttt{t} is the string type; 
+\item \texttt{l} is a string literal and \texttt{t} is the string type;
 \item \texttt{l} is a bitvector literal of length \texttt{n} and \texttt{t} is the bitvector type of fixed width \texttt{n}.
 \end{itemize}
 
@@ -2245,7 +2254,7 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Prose}
   The result of annotating the expression \texttt{e} in \texttt{env} is
-\texttt{t,new\_e} and all of the following apply:  
+\texttt{t,new\_e} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a local variable \texttt{x};
   \item \texttt{x} is bound to a local constant~\texttt{v} of type \texttt{ty} in the local environment given by \texttt{env};
@@ -2276,10 +2285,10 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Prose}
   The result of annotating the expression \texttt{e} in \texttt{env} is
-\texttt{t,new\_e} and all of the following apply: 
+\texttt{t,new\_e} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a local variable \texttt{x};
-  \item \texttt{x} is not bound to a local constant; 
+  \item \texttt{x} is not bound to a local constant;
   \item \texttt{x} has type \texttt{ty} in the local environment given by \texttt{env};
   \item \texttt{t} is \texttt{ty};
   \item \texttt{new\_e} is \texttt{e}.
@@ -2295,7 +2304,7 @@ In the following example, we show several literals and their corresponding types
 \begin{mathpar}
 \inferrule{
   L^\tenv.\constantsvalues(\vx) = \bot\\
-  L^\tenv.\storagetypes(\vx) =  (\tty, k) \\ 
+  L^\tenv.\storagetypes(\vx) =  (\tty, k) \\
   k \in \{\texttt{LDK\_Var}, \texttt{LDK\_Let}\}
   }
 {\annotateexpr{\tenv, \evar(\vx)} = (\tty, \evar(\vx))}
@@ -2308,7 +2317,7 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Prose}
   The result of annotating the expression \texttt{e} in \texttt{env} is
-\texttt{t,new\_e} and all of the following apply: 
+\texttt{t,new\_e} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a global variable \texttt{x};
   \item \texttt{x} is bound to a global constant~\texttt{v} of type \texttt{ty} in the global environment given by \texttt{env};
@@ -2338,7 +2347,7 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Prose}
   The result of annotating the expression \texttt{e} in \texttt{env} is
-\texttt{t,new\_e} and all of the following apply: 
+\texttt{t,new\_e} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a global variable \texttt{x};
   \item \texttt{x} is not bound to constant in the global environment given by \texttt{env};
@@ -2384,8 +2393,8 @@ In the following example, we show several literals and their corresponding types
 
 \begin{emptyformal}
   \subsection{Formally}
-  
-\begin{mathpar}  
+
+\begin{mathpar}
 \inferrule{
   G^\tenv.\constantsvalues(\vx) = \bot\\
   G^\tenv.\storagetypes(\vx) = (\tty, k)\\
@@ -2595,7 +2604,7 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
     \subsection{Formally}
 \begin{mathpar}
 \inferrule{ \annotatecall{\tenv, \name, \vargs, \eqs, \texttt{ST\_Function}} = (\name, \vargs', \eqs', \langle \vt \rangle)  }
-{\annotateexpr{\tenv, \texttt{E\_Call}(\name, \vargs, \eqs)} = 
+{\annotateexpr{\tenv, \texttt{E\_Call}(\name, \vargs, \eqs)} =
 (\vt, \texttt{E\_Call}(\name, \vargs', \eqs'))}
 \end{mathpar}
 \end{emptyformal}
@@ -2884,7 +2893,7 @@ L \in \{\TRecord, \TException\}\\
 
 \begin{emptyformal}
     \subsection{Formally}
-\begin{mathpar}  
+\begin{mathpar}
 \inferrule{
 \annotateexpr{\tenv, \veone} = (\texttt{t\_e1}, \vetwo)\\
 \makeanonymous(\tenv, \texttt{t\_e1}) = \TBits(\Ignore, \bitfields)\\
@@ -3028,7 +3037,7 @@ i=1..k: \astlabel(\tstruct(\tenv, \vt_i)) = \TBits\\
 \getbitvectorwidth(\tenv, \texttt{ts}) = \vw
 }
 {
-\annotateexpr{\tenv, \texttt{E\_Concat}(\texttt{li})} = (\TBits(w, \emptylist)), 
+\annotateexpr{\tenv, \texttt{E\_Concat}(\texttt{li})} = (\TBits(w, \emptylist)),
 \texttt{E\_Concat}(\texttt{es}, \langle\rangle))
 }
 \]
@@ -3252,12 +3261,12 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
-\begin{mathpar}  
+\begin{mathpar}
 \inferrule{
   \vle = \texttt{LE\_Discard}\\
   \newle = \vle
 }
-{ 
+{
   \annotatelexpr{\tenv, \vte} = \newle
 }
 \end{mathpar}
@@ -3796,7 +3805,7 @@ Annotating a slice~\texttt{slice} in an environment~\texttt{env}
   \subsection{Prose}
    Annotating a slice~\texttt{slice} in an environment~\texttt{env}
 (\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
-length)} and all of the following apply: 
+length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slice} gives an index \texttt{i};
    \item \texttt{(offset, length)} is the result of applying TypingRule.SliceLength to \texttt{i, i+:1}.
@@ -3821,7 +3830,7 @@ length)} and all of the following apply:
 (\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
 length)} and all of the following apply:
    \begin{itemize}
-   \item \texttt{slice} gives \texttt{offset} and \texttt{length}; 
+   \item \texttt{slice} gives \texttt{offset} and \texttt{length};
    \item \texttt{t\_offset, offset'} is the result of annotating \texttt{offset} in \texttt{env};
    \item \texttt{t\_length, length'} is the result of annotating \texttt{length} in \texttt{env};
    \item \texttt{t\_offset} has the structure of an integer type;
@@ -4619,7 +4628,7 @@ environment \texttt{new\_env} and all of the following apply:
     \VerbatimInput[firstline=\SReturnOneBegin, lastline=\SReturnOneEnd]{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}      
+    \subsection{Formally}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -5203,7 +5212,7 @@ environment \texttt{new\_env} and all of the following apply:
     \vs = \texttt{S\_Decl}(\texttt{LDK\_Constant}, \ldi, \langle\ve\rangle)\\
     \annotateexpr{\tenv, \ve} = (\vte, \ve')\\
     \vv = \reduceconstants{\tenv, \ve}\\
-    \declarelocalconstant{\tenv, \ldi} = (\tenv', \vte, \vv, \ldi')\\ 
+    \declarelocalconstant{\tenv, \ldi} = (\tenv', \vte, \vv, \ldi')\\
     \news = \texttt{S\_Decl}(\texttt{LDK\_Constant}, \ldi', \langle\ve'\rangle)\\
     \newenv = \tenv'
   }
@@ -5554,7 +5563,7 @@ the following apply:
    \item \texttt{new\_body} is the result of annotating \texttt{body} in
      \texttt{env5}.
    \item \texttt{f'} is the function \texttt{f} with \texttt{new\_body} substituted for \texttt{body}.
- \end{itemize} 
+ \end{itemize}
 
   \subsection{Example}
 
@@ -5612,7 +5621,7 @@ in \texttt{new\_env} and all of the following applies:
 \begin{itemize}
   \item \texttt{name} is the identifier associated with the subprogram declaration;
   \item \texttt{env} does not contain another subprogram declaration for \texttt{name} that clashes with \texttt{func\_sig};
-  \item \texttt{new\_env} is \texttt{env} where 
+  \item \texttt{new\_env} is \texttt{env} where
   \texttt{func\_sig} has been added to the set of subprograms declared with \texttt{name} (\subprogramrenamings)
   and \texttt{name} is associated with \texttt{func\_sig}.
 \end{itemize}
@@ -5805,7 +5814,7 @@ in \texttt{env'} and one of the following applies:
   \item All of the following apply:
   \begin{itemize}
     \item \name\ is not declared in \tenv.
-    \item  \tenv',\tty' are the result of attempting to add \texttt{name} as a subtype of \texttt{sup} and 
+    \item  \tenv',\tty' are the result of attempting to add \texttt{name} as a subtype of \texttt{sup} and
     constructing the type \tty' as \tty\ with the added fields \texttt{fields} in \tenv.
     \item \tty' is a valid type.
     \item \tenv'' is \tenv' extended with \tty'.

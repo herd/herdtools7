@@ -1,6 +1,197 @@
 \documentclass{book}
 \input{ASLmacros}
 
+\newcommand\torexpr[0]{\textsf{rexpr}}
+\newcommand\semantic[1]{\llbracket #1 \rrbracket}
+\newcommand\tododefine[1]{\texttt{#1}}
+
+\newcommand\xgraph[0]{\textsf{g}}
+\newcommand\emptygraph[0]{\xgraph_{\emptyset}}
+\newcommand\Nodes[0]{\mathcal{N}}
+\newcommand\Read[0]{\text{Read}}
+\newcommand\Write[0]{\text{Write}}
+\newcommand\Labels[0]{\mathcal{L}}
+\newcommand\XGraphs[0]{\mathcal{G}}
+\newcommand\WriteEffect[0]{\textsf{WriteEffect}}
+\newcommand\ReadEffect[0]{\textsf{ReadEffect}}
+
+\newcommand\tenv[0]{\textsf{tenv}}
+\newcommand\denv[0]{\textsf{denv}}
+\newcommand\vals[0]{\mathcal{V}}
+\newcommand\ordered[3]{{#1}\xrightarrow{#2}{#3}}
+\newcommand\nvliteral[1]{\texttt{NV\_Literal}(#1)}
+\newcommand\nvvector[1]{\texttt{NV\_Vector}(#1)}
+\newcommand\nvrecord[1]{\texttt{NV\_Record}(#1)}
+
+\newcommand\configmode[1]{\texttt{mode}({#1})}
+\newcommand\graphof[1]{\texttt{graph}({#1})}
+\newcommand\withgraph[2]{{#1}(\texttt{graph}\mapsto{#2})}
+\newcommand\environof[1]{\texttt{environ}({#1})}
+\newcommand\withenviron[2]{{#1}(\texttt{environ}\mapsto{#2})}
+
+\newcommand\evalarrow[0]{\rightsquigarrow}
+\newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
+\newcommand\rightdownarrow[0]{\rotatebox[origin=c]{270}{$\Rsh$}}
+\newcommand\terminateas[0]{\;\sslash\;}
+\newcommand\ExprThrowsConfig[0]{\texttt{\#T}}
+\newcommand\ErrorConfig[0]{\texttt{\#E}}
+\newcommand\OrAbnormal[0]{\terminateas \ExprThrowsConfig, \ErrorConfig}
+
+\newcommand\evalexpr[1]{\texttt{eval\_expr}(#1)}
+\newcommand\evallexpr[1]{\texttt{eval\_lexpr}(#1)}
+\newcommand\evalexprlist[1]{\texttt{eval\_expr\_list}(#1)}
+\newcommand\evalexprlistm[1]{\texttt{eval\_expr\_list\_m}(#1)}
+\newcommand\evalpattern[1]{\texttt{eval\_pattern}(#1)}
+\newcommand\evallocaldecl[1]{\texttt{eval\_local\_decl}(#1)}
+\newcommand\evalslices[1]{\texttt{eval\_slices}(#1)}
+\newcommand\evalslice[1]{\texttt{eval\_slice}(#1)}
+\newcommand\evalstmt[1]{\texttt{eval\_stmt}(#1)}
+\newcommand\evalblock[1]{\texttt{eval\_block}(#1)}
+\newcommand\evalloop[1]{\texttt{eval\_loop}(#1)}
+\newcommand\evalfor[1]{\texttt{eval\_for}(#1)}
+\newcommand\evalcatchers[1]{\texttt{eval\_catchers}(#1)}
+\newcommand\evalfunc[1]{\texttt{eval\_func}(#1)}
+\newcommand\evalconstraint[1]{\texttt{eval\_constraint}(#1)}
+\newcommand\evalcall[1]{\texttt{eval\_call}(#1)}
+\newcommand\evalmultiassignment[1]{\texttt{multi\_assign}(#1)}
+\newcommand\rethrowimplicit[0]{\texttt{rethrow\_implicit}}
+
+\newcommand\findfunc[0]{\texttt{find\_func}}
+%\newcommand\baseval[0]{\textsf{base\_val}}
+\newcommand\unknownval[0]{\texttt{unknown\_val}}
+\newcommand\typesatisfies[0]{\texttt{type\_satisfies}}
+
+\newcommand\exprvals[0]{\textsf{ExprVals}}
+\newcommand\Normal[0]{\textsf{Normal}}
+\newcommand\Throwing[0]{\textsf{Throwing}}
+\newcommand\Continuing[0]{\textsf{Continuing}}
+\newcommand\Returning[0]{\textsf{Returning}}
+\newcommand\Error[0]{\textsf{Error}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Names for variables appearing in rules
+
+\newcommand\newenv[0]{\texttt{new\_env}}
+\newcommand\env[0]{\texttt{env}}
+\newcommand\envone[0]{\texttt{env1}}
+\newcommand\envtwo[0]{\texttt{env2}}
+\newcommand\envthree[0]{\texttt{env3}}
+\newcommand\envfour[0]{\texttt{env4}}
+\newcommand\envp[0]{\texttt{env'}}
+\newcommand\vc[0]{\texttt{c}}
+\newcommand\ve[0]{\texttt{e}}
+\newcommand\vi[0]{\texttt{i}}
+\newcommand\vg[0]{\texttt{g}}
+\newcommand\vgp[0]{\texttt{g'}}
+\newcommand\vvp[0]{\texttt{v'}}
+\newcommand\vep[0]{\texttt{e'}}
+\newcommand\vm[0]{\texttt{m}}
+\newcommand\vp[0]{\texttt{p}}
+\newcommand\vv[0]{\texttt{v}}
+\newcommand\vx[0]{\texttt{x}}
+\newcommand\vs[0]{\texttt{s}}
+\newcommand\vt[0]{\texttt{t}}
+\newcommand\vvsg[0]{\texttt{vsg}}
+\newcommand\vvs[0]{\texttt{vs}}
+\newcommand\vms[0]{\texttt{ms}}
+\newcommand\vle[0]{\texttt{le}}
+\newcommand\vles[0]{\texttt{les}}
+\newcommand\vre[0]{\texttt{re}}
+\newcommand\vres[0]{\texttt{res}}
+\newcommand\vvone[0]{\texttt{v1}}
+\newcommand\vvtwo[0]{\texttt{v2}}
+\newcommand\vsone[0]{\texttt{s1}}
+\newcommand\vstwo[0]{\texttt{s2}}
+\newcommand\vmone[0]{\texttt{m1}}
+\newcommand\vmtwo[0]{\texttt{m2}}
+\newcommand\veone[0]{\texttt{e1}}
+\newcommand\vetwo[0]{\texttt{e2}}
+\newcommand\vgone[0]{\texttt{g1}}
+\newcommand\vgtwo[0]{\texttt{g2}}
+\newcommand\vgthree[0]{\texttt{g3}}
+\newcommand\vgfour[0]{\texttt{g4}}
+\newcommand\ebv[0]{\texttt{e\_bv}}
+\newcommand\mbv[0]{\texttt{m\_bv}}
+\newcommand\mcond[0]{\texttt{m\_cond}}
+\newcommand\vbv[0]{\texttt{v\_bv}}
+\newcommand\mpositions[0]{\texttt{m\_positions}}
+\newcommand\slices[0]{\texttt{slices}}
+\newcommand\positions[0]{\texttt{positions}}
+\newcommand\name[0]{\texttt{name}}
+\newcommand\args[0]{\texttt{args}}
+\newcommand\actualargs[0]{\texttt{actual\_args}}
+\newcommand\namedargs[0]{\texttt{named\_args}}
+\newcommand\params[0]{\texttt{params}}
+\newcommand\earray[0]{\texttt{e\_array}}
+\newcommand\eindex[0]{\texttt{e\_index}}
+\newcommand\marray[0]{\texttt{m\_array}}
+\newcommand\mindex[0]{\texttt{m\_index}}
+\newcommand\varray[0]{\texttt{v\_array}}
+\newcommand\vindex[0]{\texttt{v\_index}}
+\newcommand\efields[0]{\texttt{e\_fields}}
+\newcommand\names[0]{\texttt{names}}
+\newcommand\fields[0]{\texttt{fields}}
+\newcommand\vvfields[0]{\texttt{v\_fields}}
+\newcommand\erecord[0]{\texttt{e\_record}}
+\newcommand\vrecord[0]{\texttt{v\_record}}
+\newcommand\fieldname[0]{\texttt{field\_name}}
+\newcommand\elist[0]{\texttt{e\_list}}
+\newcommand\vlist[0]{\texttt{v\_list}}
+\newcommand\stm[0]{\texttt{stm}}
+\newcommand\blockenv[0]{\texttt{block\_env}}
+\newcommand\rearray[0]{\texttt{re\_array}}
+\newcommand\rvarray[0]{\texttt{rv\_array}}
+\newcommand\rmarray[0]{\texttt{rm\_array}}
+\newcommand\rerecord[0]{\texttt{re\_record}}
+\newcommand\rmrecord[0]{\texttt{rm\_record}}
+\newcommand\rvrecord[0]{\texttt{rv\_record}}
+\newcommand\vlelist[0]{\texttt{le\_list}}
+\newcommand\vmlist[0]{\texttt{vm\_list}}
+\newcommand\start[0]{\texttt{start}}
+\newcommand\mstart[0]{\texttt{m\_start}}
+\newcommand\vstart[0]{\texttt{v\_start}}
+\newcommand\vend[0]{\texttt{v\_end}}
+\newcommand\estart[0]{\texttt{e\_start}}
+\newcommand\elength[0]{\texttt{e\_length}}
+\newcommand\length[0]{\texttt{length}}
+\newcommand\mlength[0]{\texttt{m\_length}}
+\newcommand\vlength[0]{\texttt{v\_length}}
+\newcommand\etop[0]{\texttt{e\_top}}
+\newcommand\vvtop[0]{\texttt{v\_top}}
+\newcommand\mtop[0]{\texttt{m\_top}}
+\newcommand\efactor[0]{\texttt{e\_factor}}
+\newcommand\mfactor[0]{\texttt{m\_factor}}
+\newcommand\vfactor[0]{\texttt{v\_factor}}
+\newcommand\range[0]{\texttt{range}}
+\newcommand\ranges[0]{\texttt{ranges}}
+\newcommand\ldi[0]{\texttt{ldi}}
+\newcommand\ldis[0]{\texttt{ldis}}
+\newcommand\liv[0]{\texttt{liv}}
+\newcommand\minitopt[0]{\texttt{m\_init\_opt}}
+\newcommand\les[0]{\texttt{les}}
+\newcommand\exprs[0]{\texttt{exprs}}
+\newcommand\wid[0]{\texttt{wid}}
+\newcommand\es[0]{\texttt{es}}
+\newcommand\ms[0]{\texttt{ms}}
+\newcommand\body[0]{\texttt{body}}
+\newcommand\dir[0]{\texttt{dir}}
+\newcommand\catchers[0]{\texttt{catchers}}
+\newcommand\otherwiseopt[0]{\texttt{otherwise\_opt}}
+\newcommand\iswhile[0]{\texttt{is\_while}}
+\newcommand\econd[0]{\texttt{e\_cond}}
+\newcommand\condm[0]{\texttt{cond\_m}}
+\newcommand\condv[0]{\texttt{cond\_v}}
+\newcommand\condg[0]{\texttt{cond\_g}}
+\newcommand\vindexname[0]{\texttt{index\_name}}
+\newcommand\envthrow[0]{\texttt{env\_throw}}
+\newcommand\envthrowone[0]{\texttt{env\_throw1}}
+\newcommand\denvthrow[0]{\texttt{denv\_throw}}
+\newcommand\sm[0]{\texttt{s\_m}}
+\newcommand\sg[0]{\texttt{s\_g}}
+\newcommand\ety[0]{\texttt{e\_ty}}
+\newcommand\vvty[0]{\texttt{v\_ty}}
+\newcommand\nameopt[0]{\texttt{name\_opt}}
+
 \input{ASLSemanticsLines}
 
 \newcommand{\testdir}{../tests/ASLSemanticsReference.t}
@@ -19,160 +210,632 @@
 
 \chapter{Preamble}
 
-The semantics of ASL are embodied in a function that takes as input an ASL program
-and returns all possible behaviours of that program.
+The semantics of ASL defines all valid behaviors of a given ASL specification.
+More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
+or AST, for short. Second, a type checker analyzes the \emph{parsed AST} for correctness and, if successful,
+returns a \emph{static environment} and a \emph{typed AST}. Finally, tools such as interpreters and verifiers
+can operate over the typed AST, based on the definition of the semantics, to test and analyze a given specification.
 
-\section{Environments}
+The abstract syntax, parsed AST, and typed AST are defined in the abstract syntax reference~\cite{ASLAbstractSyntaxReference}.
+The ASL type system, which defines the set of parsed ASTs that are considered valid and how to
+produce the corresponding typed ASTs and static environments is defined in the typing reference~\cite{ASLTypingReference}.
 
-An environment is what the semantics operates over: a structure
-which amongst other things associates values to variables.
-Intuitively, the evaluation of a program makes an initial
-environment evolve, with new values as given by the operations
-of the program. Environments map names to variables and subprograms.
+\paragraph{Basic Semantic Concepts.}
+The semantics is constructively defined via \emph{configurations}, \emph{transitions}, and \emph{semantic rules}.
+Intuitively, configurations represent intermediate states during the execution of a program and they encapsulate
+the information needed to transition into other configurations.
+Configurations include a \emph{dynamic environment}, which binds variables to values;
+the typed AST node that needs to be ``evaluated''; a \emph{mode}, which distinguishes between different kinds of states, for example
+states where an exception was raised and states where no exception was raised; a \herd\ \emph{execution graph} in the case of a
+\emph{concurrent semantics}; and possible other bits of information, for example intermediate expression values.
+Semantic rules define the set of possible transitions.
 
-\section{Variables}
-Variables have two different possible scopes: global to the whole program which
-come with an initial value and cannot be declared inside a subprogram, or local
-to a subprogram. Global variables are initialised at the start of the evaluation
-of the program.
+\paragraph{Execution.}
+A valid execution of an ASL specification transitions from an \emph{initial configuration} to an output configuration.
+Such a transition is defined by transitions over the AST nodes making up the specification.
 
-\section{Functions}
-Functions are declared statically: they are declared before the start of the
-program and are not values, thus a subprogram call uses directly a function name.
+\paragraph{Primitive Subprograms.}
+The semantics of ASL is parameterized by a set of primitive subprograms ---
+subprograms whose implementation is not defined by an ASL body and whose effect on the dynamic environment
+is defined externally. Critically, access to memory is given by primitive subprograms.
 
-Formally, an environment $E \in \mathcal{E}$ is a pair of a binding from global
-variable names to their value, and a binding from local variable names to their
-values:
+We define two types of semantics --- a \emph{sequential semantics} and a \emph{concurrent semantics}.
+Each semantics operates over a different kind of environment.
 
+\paragraph{Sequential Semantics.}
+The sequential semantics corresponds to executing an ASL specification in the context of a single (conceptual) process
+of execution --- notice that ASL does not contain any concurrency constructs. Access to memory is hidden away
+in primitive subprograms that interface with a map-like memory implementation that does not reorder memory accesses
+and serves one access at a time.
+
+\paragraph{Concurrent Semantics.}
+The concurrent semantics extends the sequential semantics with \herd\ execution graphs.
+Intuitively, these graphs define read and write effects to variables and constraints over those effects.
+Together with the constraints that define the ARM memory model~\cite{AlglaveDGHM21}, these graphs axiomatically define
+the valid sequences of read and write operations induced by a given specification.
+
+\section{Mathematical Notations and Conventions}
+
+\input{ASLNotations.tex}
+
+\paragraph{OCaml-style Notations.}
+We use the notation $L(v_{1..k})$, where $L$ is a label and $v_{1..k}$ is a (possibly-singleton) tuple of abstract values,
+to denote the tuple $(L,v_{1..k})$.
+We also write $L(T_{1..k})$, where $T_{1..k}$ denote mathematical type of values, to stand for
+$\{L\} \times T_1 \times \ldots \times T_k$.
 %
+We later use these notations to define \emph{semantic configurations} and \emph{native values}, \underline{not to be confused with labelled AST nodes}.
+%
+The notation $\langle \cdot \rangle$ stands for empty-or-singleton sets, where $\None\triangleq\langle\rangle$ denotes
+an empty set and $\langle v \rangle$ denotes a set containing the single element $v$.
+%
+The notation $\langle T \rangle$, where $T$ denotes a mathematical type of values, stands for
+$\{ \langle\rangle \} \cup \{\langle v \rangle \;|\; v \in T\}$.
+
+\paragraph{Misclleaneous.}
+We define the following shorthand notations for the true and false expressions:
+\newcommand\etrue[0]{\texttt{ETrue}}
+\newcommand\efalse[0]{\texttt{EFalse}}
 \[
-  \mathcal{E} = \left( \X \hookrightarrow \mathcal{V} \right)
-         % \times \left( \X^\text{F} \hookrightarrow {\X^\text{L}}^* \times \mathcal{S} \right)
-         \times \left( \X \hookrightarrow \mathcal{V} \right)
+\begin{array}{rcl}
+  \etrue &\triangleq& \texttt{E\_Literal}(\texttt{L\_Bool}(\texttt{True}))\\
+  \efalse &\triangleq& \texttt{E\_Literal}(\texttt{L\_Bool}(\texttt{False}))\\
+\end{array}
 \]
 
-We define some notations, for an environment $E = (G, F, L)$, a variable $x$
-and a value $v$:
+We write $Z(z)$ as a shorthand for an integer $\nvliteral{\lint(z)}$,
+$B(b)$ as a shorthand for a Boolean native value $\nvliteral{\lbool(b)}$,
+and $R(r)$ for a real native value $\nvliteral{\lreal(r)}$.
+
+\section{Configurations}
+
+Configurations express intermediate states related by \emph{semantic transitions}.
+Configurations wrap together elements such as environments and AST nodes
+and associate them with a \emph{mode}, which helps determine how to semantic transitions.
 %
+More precisely, semantic transitions relate two sets of configurations ---
+\emph{input configurations} and \emph{output configurations}.
+Input configurations consist of an environment and an AST node.
+Output configurations consist of an output environment, values,
+and \herd\ execution graphs.
+
+We now explain the components appearing in configurations.
+
+\subsection{Native Values}
+The semantics of an ASL specification associates \emph{native values} to variables.
+The set of native values is the minimal set defined by the following recursive rules (\texttt{NV} stands for Native Value):
 \begin{mathpar}
-  E\globals \triangleq G
+  \inferrule[Basis Set: Integers, Reals, Booleans, Strings, and Bitvectors]{\vv \in \literal}
+  { \nvliteral{v} \in \vals }
   \and
-  % E^\text{F} \triangleq F
-  % \and
-  E\locals \triangleq L
+  \inferrule[Tuple Values and Array Values]{i=1..k: v_i \in \vals}
+  { \nvvector{v_{1..k}} \in \vals }
   \and
-  \text{Env}(G, L) \triangleq E
-  \and
-  E[x \mapsto v] \triangleq
+  \inferrule[Record Values]{i=1..k: \id_i \in \identifier \\ i=1..k: v_i \in \vals}
+  { \nvrecord{[i=1..k: \id_i\mapsto v_i]} \in \vals }
+\end{mathpar}
+
+\subsection{Dynamic Environments}
+
+A \emph{sequential dynamic environment}, or \emph{dynamic environment}, for short, is a structure which,
+amongst other things, associates native values to variables.
+Formally, a sequential environment $\denv \in \dynamicenvs$ is a pair consisting of a partial function from global
+variable names to their native value, and a partial function from local variable names to their
+native values:
+\[
+\begin{array}{rcl}
+  \dynamicenvs          &\triangleq&  \mathbb{G} \times \mathbb{L} \\
+  \mathbb{G}            &\triangleq&  (\identifier \partialto \vals) \\
+  \mathbb{L}            &\triangleq&  (\identifier \partialto \vals) \\
+\end{array}
+\]
+
+The native value associated with a variable $\vx$ in an environment $\denv = (G^\denv, L^\denv)$,
+denoted as $\denv[\vx]$, is defined as follows:
+\begin{mathpar}
+  \denv[\vx] \triangleq
     \left\{
       \begin{array}{ll}
-        (G[x \mapsto v], L) &\text{if}\ x \in \dom (G) \\
-        (G, L[x \mapsto v]) &\text{otherwise} \\
+        G^\denv(\vx) & \text{if}\ \vx \in \dom(G^\denv) \\
+        L^\denv(\vx) & \text{otherwise} \\
       \end{array}
     \right.
 \end{mathpar}
-%
-The notation $E\globals$ refers to the global part of the environment, and
-$E\locals$ to the local variable mappings, and $\text{Env} (G, L)$ is the
-environment formed with the global mappings in $G$ and the local from $L$.
-%
-The notation $E[x \mapsto v]$ is the environment $E$ modified so $x$ is bound
-to $v$.
-%
-Furthermore, $v?$ refers to $v$ or $\bot$, and the usage of $v$ without a
-question mark implies that $v \neq \bot$.
-%
-In particular, the over-writing of a variable in an environment depends on
-whether the variable is a global or local variable.
+We note that this function will always be well-defined in our semantics, since the typed AST
+disallows referencing variables that have not been declared, and we will only reference a local
+variable in the context of the function containing it.
 
-\section{Evaluation}
+Updating the native value of a variable $\vx$ to $\vv$ in an an environment $\denv$, denoted as
+$\denv[\vx \mapsto \vv]$, is defined as follows:
+%
+\begin{mathpar}
+  \denv[\vx \mapsto \vv] \triangleq
+    \left\{
+      \begin{array}{ll}
+        (G^\denv[\vx \mapsto v], L^\denv) & \text{if}\ \vx \in \dom(G^\denv) \\
+        (G^\denv, L^\denv[\vx \mapsto \vv]) & \text{otherwise} \\
+      \end{array}
+    \right.
+\end{mathpar}
 
-Evaluating a program is evaluating its ``main'' subprogram.
-Constructively, evaluating a program requires following its
-Abstract Syntax Tree and evaluating each of its components.
+% Furthermore, $v?$ refers to $v$ or $\bot$, and the usage of $v$ without a
+% question mark implies that $v \neq \bot$.
 
-The semantics of a program are given by applying a set of
-\texttt{eval\_<label>} functions. Each \texttt{eval\_<label>} function
-describes how to evaluate a specific label, as follows.
-\begin{itemize}
-\item \texttt{eval\_expr} evaluates expressions: it takes an
-environment and an expression and returns a value and a
-new environment (see Chapter~\ref{chap:eval_expr});
-\item \texttt{eval\_lexpr} evaluates left-hand sides of assignments: it takes
-an environment, the left-hand side of an assignment and a value to be written,
-and returns a environment updated with the new value (see
-Chapter~\ref{chap:eval_lexpr});
-\item \texttt{eval\_slices} evaluates slices (see Chapter~\ref{chap:eval_slices});
-\item \texttt{eval\_patterns} evaluates patterns (see Chapter~\ref{chap:eval_pattern});
-\item \texttt{eval\_local\_decl} evaluates local declarations (see Chapter~\ref{chap:eval_local_decl});
-\item \texttt{eval\_stmt} evaluates statements: it takes an
-environment and a statement and returns a new
-environment, viz, the environment updated with the side-effects
-of the statement (see Chapter~\ref{chap:eval_stmt});
-\item \texttt{eval\_block} evaluates blocks (see Chapter~\ref{chap:eval_block});
-\item \texttt{eval\_loop} evaluates both \texttt{while} and \texttt{repeat} loops (see Section~\ref{sec:SemanticsRule.Loop});
-\item \texttt{eval\_for} evaluates \texttt{for} loops (see Section~\ref{sec:SemanticsRule.For});
-\item \texttt{eval\_catchers} evaluates catchers (see Chapter~\ref{chap:eval_catchers});
-\item \texttt{eval\_func} evaluates subprograms: it takes an
-environment, a subprogram name and its arguments, and returns a
-list of the return values of the subprogram (see Chapter~\ref{chap:eval_func}).
-\end{itemize}
+\subsection{Static Environments}
+
+A \emph{static environment} $\tenv \in \staticenvs$ (also referred to as a \emph{type environment})
+is produced by the type-checker from the parsed AST.
+%
+The ASL semantics requires a static environment in order to select the right catch clause for a thrown exception
+and find the AST for a called subprogram from its name:
+\[
+  \begin{array}{rcl}
+    \findfunc       &:& \staticenvs \times \identifier \partialto \subprogrambody\\
+ %   \baseval       &:& \ty \partialto \vals\\
+    \typesatisfies  &:& \staticenvs \times (\ty \times \ty) \rightarrow \{\True, \False\}
+  \end{array}
+\]
+The partial function $\findfunc$ returns the typed AST of the subprogram for a given identifier, or $\bot$,
+if none exists. Recall that ASL allows subprogram overloading.
+We assume that the typed AST renames each function uniquely so that it can be accessed based
+on its name alone.
+%
+The function $\typesatisfies(\texttt{t}, \texttt{s})$ returns true if the type \texttt{t} type-satisfies the type \texttt{s}.
+
+Environments simply pair static environments with dynamic environments:
+$\envs = \staticenvs \times \dynamicenvs$. We write $\env \in \envs$ to range over environments.
+%
+We note that our semantics always maintains the same static environment.
+
+\subsection{Execution Graphs}
+
+The concurrent semantics of an ASL specification utilizes \herd\ \emph{execution graphs}~\cite{AlglaveDGHM21},
+which track the read/write effects over variables, yielded by the sequential semantics, and the \emph{ordering constraints}
+between those effects.
+
+Formally, an execution graph $\xgraph = (N^\xgraph, E^\xgraph, O^\xgraph) \in \XGraphs$
+is defined via a set of \emph{nodes} ($N^\xgraph$), \emph{edges} ($E^\xgraph$), and \emph{output nodes} ($O^\xgraph$):
+\[
+\begin{array}{rcl}
+  \XGraphs   	    &\triangleq& \pow{\Nodes} \times \pow{\Nodes \times \Nodes \times \Labels} \times \Nodes  \\
+  \Nodes            &\triangleq& \N \times \{ \Read, \Write \} \times \identifier \\
+  \Labels           &\triangleq& \{ \asldata, \aslctrl, \aslpo \}
+\end{array}
+\]
+
+Nodes represent unique read/write effects. Formally, a node $(u,l,\id)$ associates a unique instance counter $u$
+to an \emph{ordering label} $l$, which specifies whether it represents a read or write effect to a variable named $\id$.
+
+An edges represents an ordering constraint between two effects, which can be one of the following:
+\begin{description}
+\item[$\asldata$] Represents a \emph{data dependency}.
+That is, when a write effect reads/write over the data written by another write effect.
+\item[$\aslctrl$] Represents a \emph{control dependency}.
+That is, when a read effect to a variable determines the flow of control (e.g., which condition of a branch is taken),
+which then leads to another read/write effect.
+\item[$\aslpo$] Represents a \emph{program order}.
+That is, when two effects are defined to be ordered according to the sequential semantics of the program.
+\end{description}
+
+An execution graph is \emph{well-formed} if all nodes have unique instance counters, edges connect graph nodes,
+and the output nodes are contained in the set of nodes:
+\[
+  \begin{array}{rcl}
+  \forall n, n' \in N^\xgraph &.& n=(u,l,\id) \wedge n=(u',l',\id') \;\Rightarrow\; u \neq u' \\
+  \forall e \in E^\xgraph &.& e=(n, n', l) \;\Rightarrow\; n, n' \in N^\xgraph \\
+  & & O^\xgraph \subseteq N^\xgraph \enspace.
+  \end{array}
+\]
+
+We denote the empty execution graph $\emptygraph \triangleq (\emptyset, \emptyset, \emptyset)$.
+%
+We define the following functions, which return an execution graph that represents a single read/write effect to a variable \texttt{x}:
+\[
+  \begin{array}{rclll}
+    \WriteEffect(\texttt{x}) &\triangleq& (\{n\}, \emptyset, \{n\}) & \text{where } n=(u, \Write, \texttt{x}), & u\in\N \text{ is fresh}\\
+    \ReadEffect(\texttt{x})  &\triangleq& (\{n\}, \emptyset, \{n\}) & \text{where } n=(u, \Read, \texttt{x}),   & u\in\N \text{ is fresh}\\
+  \end{array}
+\]
+
+We also define two ways to combine execution graphs --- \emph{unordered combination} and \emph{ordered combination}.
+
+Given two execution graphs $S_1 = (N_1, E_1, O_1)$ and $S_1 = (N_2, E_2, O_2)$ their unordered combination,
+denoted $S_1 \parallel S_2$ is defined as follows:
+\[
+  S_1 \parallel S_2\triangleq (N_1 \cup N_2, E_1 \cup E_2, O_1 \cup O_2) \enspace.
+\]
+Intuitively, this combination conveys the fact that there are no ordering constraints between the effects
+in the arguments graphs.
+
+Given two execution graphs $S_1 = (N_1, E_1, O_1)$ and $S_1 = (N_2, E_2, O_2)$ and an ordering label $l$,
+the ordered combination $\ordered{S_1}{l}{S_2}$ is defined as follows:
+\[
+  \ordered{S_1}{l}{S_2} \triangleq (N_1 \cup N_2, E_1 \cup E_2 \cup (O_1 \times N_2 \times \{l\}, O_2)) \enspace.
+\]
+Intuitively, this combination constrains the output effects of $S_1$ to appear before any effect of $S_2$ with respect
+to the given ordering label.
+
+\subsection{Input Configurations and Output Configurations}
+
+Each input configuration corresponds to a group of AST node types that is associated with a corresponding
+label, for example the label \texttt{expr} corresponds to the semantic relation for the expression AST node type.
+We write $\texttt{label}(n)$ to denote that an AST node $n$ belongs to label \texttt{label}.
+%
+We use configuration modes of the form $\texttt{eval\_label}$ for input configurations to express the intuition
+that the input configuration $\texttt{eval\_label}(\env, n)$, where $\env$ is an environment
+and $n$ belongs to \texttt{label},
+should be ``semantically evaluated'' (to yield an output configuration $L'(v'_{1..n})$).
+
+ASL semantics mainly utilizes the following types of output configurations:
+\begin{description}
+  \item[Normal Values.] Configurations in $\Normal((\vals \times \XGraphs), \envs)$,
+  $\Normal(((\vals \times \vals)^* \times \XGraphs), \envs)$, $\Normal(\XGraphs, \envs)$, and
+  $\Normal((\vals^* \times \XGraphs), \envs)$
+  represent intermediate results (values and/or mutated environments) generated while evaluating statements.
+
+  \item[Exceptions.] Configurations in $\Throwing((\langle\vals \times \ty\rangle \times \XGraphs, \envs)$
+  represent thrown exceptions,
+  either without an exception value (as in \texttt{throw;}) or ones with an exception value and an associated type.
+
+  \item[Returned Values.] Configurations in $\Returning((\vals^* \times \XGraphs), \envs)$
+  represent values being returned by the currently executing subprogram
+  (which might be tuples of values).
+
+  \item[Subprogram In-flight.] Configurations in $\Continuing(\XGraphs, \envs)$
+  represent the fact that a subprogram has more statements to execute.
+
+  \item[Dynamic Errors.] Configurations in $\Error(\texttt{<string>})$
+  represent runtime errors (for example, division by zero).
+  The actual strings in an error configuration are not considered part of the specification.
+  That is, an implementation of the semantics may use other strings.
+\end{description}
+
+We refer to configurations with the $\Throwing$ mode and $\Error$ mode as \emph{abnormal configurations}.
+
+\subsection{Extracting and Substituting Elements of Configurations}
+
+We define the \emph{mode} of a configuration $C=M(\ldots)$, denoted $\configmode{C}$, as the mode label $M$.
+
+Given a configuration $C$, we define the the graph component of the configuration, $\graphof{C}$,
+and the environment of the configuration, $\environof{C}$, as follows:
+\[
+\begin{array}{lcc}
+  C & \graphof{C} & \environof{C}\\
+  \hline
+  \Normal((\vv,\vg), \env) & \vg & \env\\
+  \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \vg & \env\\
+  \Normal(\vg, \env) & \vg & \env\\
+  \Normal(i=1..k: \vv_i, \vg) & \vg & \env\\
+  \Throwing((\vx,\vg), \env) & \vg & \env\\
+  \Returning((i=1..k: \vv_i,\vg), \env) & \vg & \env\\
+  \Continuing(\vg, \env) & \vg & \env\\
+\end{array}
+\]
+
+Given a configuration $C$, we define $\withgraph{C}{\vgp}$ to be a configuration
+like $C$ where the graph component is substituted with $\vgp$:
+\[
+\begin{array}{ll}
+  C & \withgraph{C}{\vgp}\\
+  \hline
+  \Normal((\vv,\vg), \env) & \Normal((\vv,\vgp), \env)\\
+  \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vgp), \env)\\
+  \Normal(\vg, \env) & \Normal(\vgp, \env)\\
+  \Normal(i=1..k: \vv_i, \vg) & \Normal(i=1..k: \vv_i, \vgp)\\
+  \Throwing((\vx,\vg), \env) & \Throwing((\vx,\vgp), \env)\\
+  \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vgp), \env)\\
+  \Continuing(\vg, \env) & \Continuing(\vgp, \env)\\
+\end{array}
+\]
+Similarly, we define the $\withenviron{C}{\envp}$ to be a configuration
+like $C$ where the environment component, if one exists, is substituted with $\envp$:
+\[
+\begin{array}{ll}
+  \textbf{Configuration} & \withenviron{C}{\envp}\\
+  \hline
+  \Normal((\vv,\vg), \env) & \Normal((\vv,\vg), \envp)\\
+  \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \envp)\\
+  \Normal(\vg, \env) & \Normal(\vg, \envp)\\
+  \Normal(i=1..k: \vv_i, \vg) & \Normal(i=1..k: \vv_i, \vg)\\
+  \Throwing((\vx,\vg), \env) & \Throwing((\vx,\vg), \envp)\\
+  \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vg), \envp)\\
+  \Continuing(\vg, \env) & \Continuing(\vg, \envp)\\
+\end{array}
+\]
+
+\section{Semantic Evaluation}
+
+The semantics of the various types of AST nodes is given by a set of \emph{semantic relations} between
+input configurations and output configurations.
+The reason that relations, rather than functions, are used is due to the
+non-determinism inherent in the \texttt{UNKOWN} expression,
+the choice of execution graph node identifiers,
+and potential non-determinism in the primitive subprograms.
+
+\newcommand\TError[0]{\textsf{TError}}
+\newcommand\TNormal[0]{\textsf{TNormal}}
+\newcommand\TThrowing[0]{\textsf{TThrowing}}
+\newcommand\TContinuing[0]{\textsf{TContinuing}}
+\newcommand\TReturning[0]{\textsf{TReturning}}
+\newcommand\TConfig[0]{\textsf{TConfig}}
+We define the following shorthands for the types of different configurations:
+\[
+  \begin{array}{rcl}
+    \TNormal        &\triangleq& \Normal(\XGraphs, \envs)\\
+    \TNormal(\vals)   &\triangleq& \Normal((\vals \times \XGraphs), \envs)\\
+    \TNormal((\vals \times \vals)^*)   &\triangleq& \Normal(((\vals \times \vals)^* \times \XGraphs), \envs)\\
+    \TNormal(\vals^*) &\triangleq& \Normal((\vals^* \times \XGraphs), \envs)\\
+    \TThrowing        &\triangleq& \Throwing(\langle\vals \times \ty\rangle \times \XGraphs, \envs)\\
+    \TContinuing      &\triangleq& \Continuing(\XGraphs, \envs)\\
+    \TReturning       &\triangleq& \Returning((\vals^* \times \XGraphs), \envs)\\
+    \TError           &\triangleq& \Error(\texttt{<string>})\\
+    \hline
+    \TConfig          &\triangleq& \TNormal \cup \TNormal(\vals) \cup \TNormal((\vals \times \vals)^*) \cup \\
+    & & \TNormal(\vals^*) \cup \TThrowing \cup \TContinuing \cup \\
+    & & \TReturning \cup \TError
+  \end{array}
+\]
+
+ASL defines the following relations between input configurations and output configurations
+for the corresponding labels (input configurations reference AST elements~\cite{ASLAbstractSyntaxReference}
+\expr, \lexpr, \stmt, \slice, \localdeclitem, \identifier, \fordirection, and \catcher):
+
+\begin{tabular}{ll}
+  \textbf{\texttt{label}} & \textbf{Input Configurations $\bigtimes$ Output Configurations} \\
+  \hline
+  \hline
+  \texttt{expr}         & $\evalexpr{\envs \times \expr} \bigtimes$\\
+                        & $\TNormal(\vals) \cup \TThrowing \cup \TError$\\
+  \hline
+  \texttt{lexpr}        & $\evallexpr{\envs \times \lexpr \times (\vals \times \XGraphs)} \bigtimes$\\
+                        & $\TNormal \cup \TThrowing \cup \TError$\\
+  \hline
+  \texttt{slices}       & $\evalslices{\envs \times \slice^*} \bigtimes$\\
+                        & $\TNormal((\vals \times \vals)^*) \cup \Throwing \cup \TError$ \\
+  \hline
+  \texttt{pattern}      & $\evalpattern{\envs \times \expr \times \vals} \bigtimes$\\
+                        & $\TNormal(\vals)$ \\
+  \hline
+  \texttt{local\_decl}  & $\evallocaldecl{\envs \times \localdeclitem \times \langle\vals\times\XGraphs\rangle} \bigtimes$\\
+  & $\TNormal$ \\
+  \hline
+  \texttt{stmt}         & $\evalstmt{\envs \times \stmt} \bigtimes$\\
+                        & $\TReturning \cup \TContinuing \cup \TThrowing \cup \TError$ \\
+  \hline
+  \texttt{block}        & $\evalblock{\envs \times \stmt} \bigtimes$\\
+                        & $\TReturning \cup \TContinuing \cup \TThrowing \cup \TError$ \\
+  \hline
+  \texttt{loop}         & $\evalloop{\envs \times \{\True,\False\} \times \expr \times \stmt} \bigtimes$\\
+                        & $\TReturning \cup \TContinuing \cup \TThrowing \cup \TError$ \\
+  \hline
+  \texttt{for}          & $\evalfor{\envs \times \identifier \times \vals \times \fordirection \times \vals} \bigtimes$\\
+                        & $\TReturning \cup \TContinuing \cup \TThrowing \cup \TError$ \\
+  \hline
+  \texttt{catchers}     & $\evalcatchers{\envs \times \catcher^* \times \langle\stmt\rangle \times \TConfig} \bigtimes$\\
+                        & $\TReturning \cup \TContinuing \cup \TThrowing \cup \TError$ \\
+  \hline
+  \texttt{func}         & $\evalfunc{\envs \times \identifier \times (\vals \times \XGraphs)^* \times (\identifier\times\vals)^*} \bigtimes$ \\
+                        & $\TNormal(\vals^*) \cup \TThrowing \cup \TError$ \\
+  \end{tabular}
+
+  We use the notation $C \evalarrow C'$ for an element of a semantic relation.
+%  We denote elements of a semantic relation by $\texttt{eval\_<label>}(\env, n) \evalarrow L'(v'_{1..n})$.
+%We define the semantic relation $\semantic{\texttt{label}}$, for each label, as
+% the set of all its semantic transitions:
+% \[
+%   \semantic{\texttt{label}} \triangleq \{ \texttt{eval\_<label>}(\env, n) \evalarrow L'(v'_{1..n})  \;|\;
+% \env \in \envs,\; \texttt{label}(n) \} \enspace.
+% \]
+
+\subsection{Natural Semantics.}
+We define semantic relations using semantic rules, which are defined inductively over the structure of AST nodes.
+That is, a rule defining a semantic transition for a non-leaf AST node is defined in terms semantic transitions for its children nodes.
+%
+% When a semantic transition $\texttt{eval\_label}(\env, n) \evalarrow C$ is determined to take place according
+% to the rules of the semantics we will say that $\texttt{eval\_label}$ \emph{evaluates} the environment \env\
+% and node $n$ and returns the configuration $C$.
+This style of semantics is known as \emph{natural semantics}~\cite{SemanticsWithApplicationsBook} (or \emph{big-step semantics}).
+%
+One implication of utilizing this style of semantics is that non-terminating loops and non-terminating
+recursive subprograms calls are not assigned any meaning as there are no semantic transitions that they can take.
+
+\subsubsection{Evaluation Example}
+
+The example shows how the rules for expression literals and binary operator expressions can be combined
+to infer a transition from an input configuration with a compound expression to an output configuration
+with the value resulting from the intuitive calculation of the expression.
+
+\newcommand\emptyenv[0]{\underline{e}}
+
+For succinctness, we write $E(\texttt{<expression>})$
+for the AST node parsed from an expression $\texttt{<expression>}$.
+We also replace $v=\texttt{apply\_binop}(\op, v_1, v_2)$ with the shorter $v=v_1 \op\ v_2$.
+%
+We write $\emptyenv$ to stand for a trivial environment (that is, one where all mappings are empty functions).
+
+Notice that, we have dropped the execution graph component and simplified pairs of the form $(v,g)$,
+where $v$ is a native value and $g$ is an execution graph, to just $v$.
+This is because we are interested in demonstrating the sequential semantics (also, the execution graphs
+in this case are all empty).
+
+\begin{tiny}
+\begin{mathpar}
+  \inferrule*{
+  \inferrule*{
+    \inferrule*{}{ \evalexpr{\emptyenv, E(1)} \evalarrow \Normal(Z(1), \emptyenv) } \\\\
+    \inferrule*{}{ \evalexpr{\emptyenv, E(2)} \evalarrow \Normal(Z(2), \emptyenv) } \\\\
+    Z(3) = Z(1)\texttt{+}Z(2)
+  }
+  {
+    \evalexpr{ \emptyenv, E(1+2) } \evalarrow
+    \Normal(Z(3), \emptyenv)
+  }
+  \\
+  \inferrule*{
+    \inferrule*{}{ \evalexpr{\emptyenv, E(4)} \evalarrow \Normal(Z(4), \emptyenv) } \\\\
+    \inferrule*{}{ \evalexpr{\emptyenv, E(5)} \evalarrow \Normal(Z(5), \emptyenv) } \\\\
+    Z(9) = Z(4)\texttt{+}Z(5)
+  }
+  {
+    \evalexpr{ \emptyenv, E(4+5) } \evalarrow
+    \Normal(Z(9), \emptyenv)
+  }
+  \\
+  Z(27) = Z(3)\texttt{*}Z(9)
+  }
+  {
+    \evalexpr{ \emptyenv, E((1+2)*(4+5)) } \evalarrow
+    \Normal(Z(27), \emptyenv)
+  }
+  \end{mathpar}
+\end{tiny}
+
+\subsubsection{No Undefined Behaviors.}
+Our semantics is defined for well-typed ASL specifications.
+Our semantics gets stuck only in cases of non-terminating executions
+(for example, non-terminating loops, or infinite recursion).
+Otherwise, for every input configuration there is at least one rule that can be used to take a semantic transition.
+
+\subsection{Short-Circuit Rule Templates}
+
+Short-circuit rule templates allow us to succinctly define sets of rules.
+Specifically, they allow us to capture situations where if a transition
+into an output configuration occurs in a premise then the rest of the rule
+can be ignored as the input configuration in the verdict also transitions
+into that output configuration. These output configurations are usually
+due to raised exceptions or dynamic errors.
+
+A template rule:
+\begin{mathpar}
+  \inferrule{
+    i=1..k: P_i\\\\
+    C \evalarrow C' \terminateas E\\\\
+    j=1..n: Q_i\\
+  }
+  {
+    D \evalarrow D'
+  }
+\end{mathpar}
+
+Stands for the following pair of rules (the second of which is possibly a template rule itself):
+\begin{mathpar}
+  \inferrule[(Short-circuited)]{
+    i=1..k: P_i\\\\
+    C \evalarrow E
+  }
+  {
+    D \evalarrow E
+  }
+\and
+  \inferrule{
+    i=1..k: P_i\\\\
+    C \evalarrow C' \\\\
+    j=1..n: Q_i\\
+  }
+  {
+    D \evalarrow D'
+  }
+\end{mathpar}
+
+We allow several short-cirtcuiting configurations in a template.
+Specifically, a template rule:
+\begin{mathpar}
+  \inferrule{
+    i=1..k: P_i\\\\
+    C \evalarrow C' \terminateas E_{1...m}\\\\
+    j=1..n: Q_i\\
+  }
+  {
+    D \evalarrow D'
+  }
+\end{mathpar}
+Stands for the set of template rules
+\begin{mathpar}
+  \inferrule{
+    i=1..k: P_i\\\\
+    C \evalarrow C' \terminateas E_1\\\\
+    j=1..n: Q_i\\
+  }
+  {
+    D \evalarrow D'
+  }
+\and
+\inferrule{\ldots}{}
+\and
+\inferrule{
+  i=1..k: P_i\\\\
+  C \evalarrow C' \terminateas E_m\\\\
+  j=1..n: Q_i\\
+}
+{
+  D \evalarrow D'
+}
+\end{mathpar}
+
+We introduce the following shorthands for abnormal configurations:
+$\ExprThrowsConfig \triangleq \Throwing((\vv, \vg), \newenv)$
+and $\ErrorConfig \triangleq \Error(\vs)$.
+
+\subsection{ASL Semantic Rules}
+
+The set of ASL semantic rules is grouped by labels as follows:
+
+\begin{tabular}{lll}
+\textbf{\texttt{label}} & \textbf{Description} & \textbf{Chapter/Section} \\
+\hline
+\texttt{expr} & Expressions & Chapter~\ref{chap:eval_expr}\\
+\texttt{lexpr} & Left-hand sides of assignments & Chapter~\ref{chap:eval_lexpr}\\
+\texttt{slices} & Slices & Chapter~\ref{chap:eval_slices}\\
+\texttt{pattern} & Patterns & Chapter~\ref{chap:eval_pattern}\\
+\texttt{local\_decl} & Local declarations & Chapter~\ref{chap:eval_local_decl}\\
+\texttt{stmt} & Statements & Chapter~\ref{chap:eval_stmt}\\
+\texttt{block} & Statement blocks & Chapter~\ref{chap:eval_block}\\
+\texttt{loop} & \texttt{while} and \texttt{repeat} loops & Section~\ref{sec:SemanticsRule.Loop}\\
+\texttt{for} & \texttt{for} loops & Section~\ref{sec:SemanticsRule.For}\\
+\texttt{catchers} & Exception catchers & Chapter~\ref{chap:eval_catchers}\\
+\texttt{func} & Subprograms & Chapter~\ref{chap:eval_func}
+\end{tabular}\\
 
 \chapter{Reading guide}
 
-The definition of each \texttt{eval\_<label>} function is given by a number of
-rules, which follow the possible shapes the \texttt{label} can have. For
-example, an expression can be a literal, or a binary operator, amongst other
-things. Each of those has its own evaluation rule: SemanticsRule.Lit in
-Section~\ref{sec:SemanticsRule.Lit}, Semantics.Binop in
-Section~\ref{sec:SemanticsRule.Binop} respectively.
+The set of rules for each label is further split according to the the ``shape'' of the AST node.
+For example, expressions are split into literal expressions, binary operation expressions, etc.
+Each such subset of rules is named accordingly and appears in a section with the same name.
+For example, the rule for literal expressions is named SemanticsRule.Lit and defined in
+Section~\ref{sec:SemanticsRule.Lit}.
 
 Each rule is presented using the following template:
 \begin{itemize}
-\item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at \url{~/herdtools7/asllib};
+\item a Prose paragraph gives the rule in English, and corresponds, as much as possible, to the code of the reference implementation ASLRef given at
+ \url{~/herdtools7/asllib};
 \item one or several Example, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLSemanticsReference.t}
 \item a Code paragraph which gives a verbatim of the corresponding implementation in the interpreter of ASLRef \url{~/herdtools7/asllib/Interpreter.ml};
-\item a Formal paragraph for the sequential case, which gives a formal
-definition of the rule: the sequential case essentially gives the same
-information as the Prose paragraph;
-\item a Formal paragraph for the concurrent case: the concurrent case augments
-the information given by the sequential case with a set of \texttt{herd7}
-execution graphs. This enables building, for each AArch64 instruction, the
-Intrinsic dependencies used by the AArch64 memory model from this instruction's
-ASL code.
+\item a Formal paragraph, which provides semantic rules that essentially give the same information as the Prose paragraph, for both
+the sequential semantics and the concurrent semantics, in the form of \herd\ \emph{execution graphs}.
+The latter enable building, for each AArch64 instruction,
+the Intrinsic dependencies used by the AArch64 memory model from the ASL code of the instruction.
 \end{itemize}
-%
-Formally, the semantics of different language constructs are given by the functions
-$\interp{\cdot}_F$ that map an environment to a set of pair of values and
-environments, where $F$ is a given set of ASL subprograms.
-%
-In the following, for simplicity, we will omit the indices $F$ from the
-semantics definitions, apart when defined, as they are constant in the whole
-evaluation.
-%
-Furthermore, the variable names inside set definitions are implicitly
-quantified. For example the two following definitions are equivalent:
-%
-\begin{gather*}
-  X + Y \triangleq \left\{ n \st{} n_1 \in X \ \text{and}\ n_2 \in Y \text{and}\ n = n_1 + n_2 \right\}
-  \\
-  X + Y \triangleq \left\{ n \st{} \exists n_1 \in X, \exists n_2 \in Y, n = n_1 + n_2 \right\}
-\end{gather*}
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Expressions \label{chap:eval_expr}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\texttt{eval\_expr} specifies how to evaluate an expression \texttt{e} in an
-environment \texttt{env}.
+We will use $M$ to range over the modes $\Normal$ and $\Throwing$.
+We will say that a semantic transition \emph{terminates normally} when the mode of the output configuration is $\Normal$,
+\emph{terminates exceptionally} when the mode of the output configuration is $\Throwing$,
+\emph{terminates erroneously} when the mode of the output configuration is $\Error$,
+and \emph{terminates abnormally} when it either terminates exceptionally or erroneously.
 
-Evaluation of the expression \texttt{e} under an environment \texttt{env} is
-either a value \texttt{v} together with a potentially updated
-environment \texttt{new\_env}, or an error, and one of the following applies:
+A semantic transition for an expression $\ve$ in an environment $\env$ is
+a native value $\vv$ coupled with an execution graph $\vg$,
+and a potentially updated environment $\newenv$,
+denoted as $\evalexpr{\env, \ve} \evalarrow M((\vv, \vg), \newenv)$,
+and $\vv$ is either a native value (when $M=\Normal$), an empty set (when $M=\Throwing$), or a singleton set (when $M=\Throwing$)
+with an exception native value with its type, and one of the following applies:
 \begin{itemize}
 \item SemanticsRule.Lit (see Section~\ref{sec:SemanticsRule.Lit});
 \item SemanticsRule.ELocalVar (see Section~\ref{sec:SemanticsRule.ELocalVar})
 \item SemanticsRule.EGlobalVar (see Section~\ref{sec:SemanticsRule.EGlobalVar})
-\item SemanticsRule.EUndefIdent (see Section~\ref{sec:SemanticsRule.EUndefIdent})
 \item SemanticsRule.BinopAnd (see Section~\ref{sec:SemanticsRule.BinopAnd})
 \item SemanticsRule.BinopOr (see Section~\ref{sec:SemanticsRule.BinopOr})
 \item SemanticsRule.BinopImpl (see Section~\ref{sec:SemanticsRule.BinopImpl})
@@ -191,17 +854,55 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
 \item SemanticsRule.CTC (see Section~\ref{sec:SemanticsRule.CTC})
 \end{itemize}
 
+\section{Evaluating Lists of Expressions}
+
+We define the following helper rule for evaluating a list of expresions $\vle$ in an environment $\env$,
+with no dependencies between the graphs generated by the evaluation of the individual sub-expressions.
+(Recall that $+$ stands for list concatenation.)
+\begin{mathpar}
+  \inferrule[(Empty List)]{}
+  {
+    \evalexprlist{\env, \emptylist} \evalarrow \Normal((\emptylist, \empty), \env)
+  }
+\and
+  \inferrule[(Non-empty List)]{
+    \texttt{le} = [\ve] + \vle'\\
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \envp) \OrAbnormal\\
+    \evalexprlist{\envp, \vle'} \evalarrow \Normal((\vvs, \vgtwo), \newenv) \OrAbnormal\\
+    \vg = \vgone \parallel \vgtwo \\
+    \vv = [\vvone] + \vvs
+  }
+  {
+    \evalexprlist{\env, \vle} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
+
+We also define the following helper rule for evaluating a list of expresions $\vle$ in an environment $\env$,
+and returning a list of values associated with graphs:
+\begin{mathpar}
+  \inferrule[(Empty List)]{}
+  {
+    \evalexprlistm{\env, \emptylist} \evalarrow \Normal((\emptylist, \empty), \env)
+  }
+\and
+  \inferrule[(Non-empty List)]{
+    \evalexpr{\env, \ve} \evalarrow \Normal(\vm, \envp) \OrAbnormal\\
+    \evalexprlistm{\envp, \vle} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
+  }
+  {
+    \evalexprlistm{\env, [\ve] + \vle} \evalarrow \Normal([\vm] + \vms), \newenv)
+  }
+\end{mathpar}
 
 \section{SemanticsRule.Lit \label{sec:SemanticsRule.Lit}}
 
   \subsection{Prose}
-  Evaluation of the expression \texttt{e} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  Evaluation of a literal expression of a value \texttt{v}
+  in environment \env\ is the configuration
+  \texttt{\Normal(res,env,g)} and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} denotes a Literal \texttt{l};
-  \item \texttt{res} is a value \texttt{v};
-  \item \texttt{v} is the value of \texttt{l};
-  \item \texttt{new\_env} is \texttt{env}.
+  \item \texttt{res} is the native value corresponding to \texttt{v};
+  \item \texttt{g} is the empty graph, as literal do not yield any read/write effects.
   \end{itemize}
 
   \subsection{Example}
@@ -213,20 +914,12 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \VerbatimInput[firstline=\LitBegin, lastline=\LitEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-  The evaluation of a literal value \texttt{v} associates any environment
-\texttt{env} to itself coupled with \texttt{v}:
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{\vres = \nvliteral{\vv} \\ \vg = \emptygraph}
+  { \evalexpr{\env, \texttt{E\_Literal}(\vv)} \evalarrow \Normal(\vres, \env, \vg) }
+\end{mathpar}
 
-\begin{align}
-  \interp{\texttt{v}}(\texttt{env}) & \triangleq \left\{ (\texttt{v}, \texttt{env}) \right\}
-  \label{eq:sem-seq-lit}
-  \end{align}
-
-  \subsection{Formally: concurrent case}
-  \begin{align}
-  \interp{\texttt{v}}(\texttt{env}) & \triangleq \left\{ (\texttt{v}, \texttt{env}, \varnothing) \right\}
-  \label{eq:sem-conc-lit}
-  \end{align}
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -235,13 +928,13 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
 \section{SemanticsRule.ELocalVar \label{sec:SemanticsRule.ELocalVar}}
 
   \subsection{Prose}
-  Evaluation of the expression \texttt{e} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  Let \texttt{e} be an expression denoting a variable \texttt{x}.
+  Evaluation of \texttt{e} under environment \texttt{env} terminates normally with
+  \texttt{((v,g),env)} and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} denotes a variable \texttt{x} which is bound locally in \texttt{env};
-  \item \texttt{res} is a value \texttt{v};
-  \item \texttt{v} is the value of \texttt{x} in \texttt{env};
-  \item \texttt{new\_env} is \texttt{env}.
+  \item \texttt{x} which is bound locally in \texttt{env};
+  \item \texttt{v} is the native value of \texttt{x} in \texttt{env};
+  \item \texttt{g} is the graph containing a single read effect for \texttt{x}.
   \end{itemize}
 
   \subsection{Example: SemanticsRuleELocalVar.asl}
@@ -253,36 +946,29 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \VerbatimInput[firstline=\ELocalVarBegin, lastline=\ELocalVarEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-  The evaluation of a variable \texttt{x} in an environment \texttt{env} that maps \texttt{x} to \texttt{v}
-  is the tuple $(\texttt{v},\texttt{env})$:
-  \begin{align}
-  \interp{\texttt{x}}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env})) \right\}
-  \label{eq:sem-seq-var}
-  \end{align}
-
-  \subsection{Formally: concurrent case}
-  \begin{align}
-  \interp{x}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env}, \texttt{R(x)}) \right\}
-  \label{eq:sem-conc-var}
-  \end{align}
+  \subsection{Formally}
+  \begin{mathpar}
+  \inferrule{\env=(\tenv, \denv)\\
+    \vv = \denv[\vx] \\ \vg = \ReadEffect(\vx)}
+  {\evalexpr{\env, \evar(\vx)} \evalarrow \Normal((\vv, \vg), \env)}
+  \end{mathpar}
 \end{formal}
 
   \subsection{Comments}
   When there exists a global variable called \texttt{x} then an ASL program
   cannot use the name \texttt{x} as a local variable. ASLRef checks that this
-  property, sometimes called ``banning shadowing'', is true at type-checking.
+  property, sometimes called ``banning shadowing'', holds at type-checking time.
 
 \section{SemanticsRule.EGlobalVar \label{sec:SemanticsRule.EGlobalVar}}
 
   \subsection{Prose}
-  Evaluation of the expression \texttt{e} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  Let \texttt{e} be an expression denoting a variable \texttt{x}.
+  Evaluation of \texttt{e} under environment \texttt{env} terminates normally with
+  \texttt{((v,g),env)} and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} denotes a variable \texttt{x} which is bound globally in \texttt{env};
-  \item \texttt{res} is a value \texttt{v};
-  \item \texttt{v} is the value of \texttt{x} in \texttt{env};
-  \item \texttt{new\_env} is \texttt{env}.
+  \item \texttt{x} which is bound globally in \texttt{env};
+  \item \texttt{v} is the native value of \texttt{x} in \texttt{env};
+  \item \texttt{g} is the graph containing a single read effect for \texttt{x}.
   \end{itemize}
 
   \subsection{Example: SemanticsRuleEGlobalVar.asl}
@@ -291,81 +977,47 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
     the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
     uses the rule SemanticsRule.EGlobalVar.
 
-%  \subsection{Example: SemanticsRuleEGlobalVarError.asl}
-%    The program:
-%    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGlobalVarError.asl}
-%    raises a type error because \texttt{x} is already declared locally in
-%    \texttt{stdlib.asl}.
-
   \subsection{Code}
   \VerbatimInput[firstline=\EGlobalVarBegin, lastline=\EGlobalVarEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-  \begin{align}
-  \interp{\texttt{x}}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env})) \right\}
-  \label{eq:sem-seq-var}
-  \end{align}
-
-  \subsection{Formally: concurrent case}
-  \begin{align}
-  \interp{\texttt{x}}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env}, \texttt{R(x)}) \right\}
-  \label{eq:sem-conc-var}
-  \end{align}
+  \subsection{Formally}
+Due to how $\denv[\cdot]$ distinguishes between local variables and global variables,
+we can use the same rule as for local variable expressions:
+  \begin{mathpar}
+  \inferrule{
+    \env=(\tenv, \denv)\\
+    \vv = \denv[\vx] \\ \vg = \ReadEffect(\vx)}
+  {\evalexpr{\denv, \evar(\vx)} \evalarrow \Normal((\vv, \vg), \env)}
+  \end{mathpar}
 \end{formal}
-
-\isempty{\subsection{Comments}}
-
-\section{SemanticsRule.EUndefIdent \label{sec:SemanticsRule.EUndefIdent}}
-
-  \subsection{Prose}
-  Evaluation of the expression \texttt{e} under environment \texttt{env} is
-  \texttt{res} and all of the following apply:
-  \begin{itemize}
-  \item \texttt{e} denotes a variable \texttt{x} which is not bound in \texttt{env};
-  \item \texttt{res} is an ``\texttt{Undefined Identifier}'' error.
-  \end{itemize}
-
-  \subsection{Example: SemanticsRule.EUndefIdent.asl}
-    The program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUndefIdent.asl}
-    raises an \texttt{Undefined Identifier} error: the variable \texttt{y} is
-    undefined in the environment where $\mathtt{x}$ is bound to $\mathtt{42}$.
-
-  \subsection{Code}
-  \VerbatimInput[firstline=\EUndefIdentBegin, lastline=\EUndefIdentEnd]{../Interpreter.ml}
-
-\begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.BinopAnd \label{sec:SemanticsRule.BinopAnd}}
 
   \subsection{Prose}
-  Evaluation of the expression \texttt{e} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
-  \begin{itemize}
-  \item \texttt{e} denotes a conjunction over two expressions \texttt{e1} and \texttt{e2};
-  \item \texttt{(res,new\_env)} is the result of the evaluation of \texttt{if
-e1 then e2 else false} (see Section~\ref{sec:SemanticsRule.ECond}).
-  \end{itemize}
+  An expression \texttt{e}, which denotes a logical conjunction of two expressions \texttt{e1} and \texttt{e2},
+  is evaluated as \texttt{if e1 then e2 else false} (see Section~\ref{sec:SemanticsRule.ECond}).
 
   \subsection{Example: SemanticsRule.EBinopAndFalse.asl}
 
  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopAndFalse.asl}
-    the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is not called.
+    the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
 
   \subsection{Code}
   \VerbatimInput[firstline=\BinopAndBegin, lastline=\BinopAndEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \texttt{E\_Cond}(\texttt{e1}, \texttt{e2}, \efalse)} \evalarrow C
+  }
+  {
+  \evalexpr{\env, \texttt{E\_Binop}(\texttt{BAND}, \texttt{e1}, \texttt{e2})} \evalarrow C
+  }
+\end{mathpar}
 \end{emptyformal}
 
   \subsection{Comments}
@@ -373,25 +1025,25 @@ e1 then e2 else false} (see Section~\ref{sec:SemanticsRule.ECond}).
 
 \section{SemanticsRule.BinopOr \label{sec:SemanticsRule.BinopOr}}
   \subsection{Prose}
-  Evaluation of the expression \texttt{e} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
-  \begin{itemize}
-  \item \texttt{e} denotes a disjunction over two expressions \texttt{e1} and \texttt{e2};
-  \item \texttt{(res,new\_env)} is the result of the evaluation of \texttt{if
-e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
-  \end{itemize}
+  An expression \texttt{e}, which denotes a logical disjunction over two expressions \texttt{e1} and \texttt{e2},
+  is evaluated as \texttt{if e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
 
   \subsection{Example: SemanticsRule.EBinopOrTrue.asl}
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopOrTrue.asl}
-    the expression \texttt{(0 == 1) \textbar\textbar \&\& (1 == 1)} evaluates to the value \texttt{TRUE}.
+  The expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \texttt{TRUE}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\BinopOrBegin, lastline=\BinopOrEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \begin{mathpar}
+    \inferrule{
+      \evalexpr{\env, \texttt{E\_Cond}(\texttt{e1}, \etrue, \texttt{e2})} \evalarrow C
+    }
+    {
+    \evalexpr{\env, \texttt{E\_Binop}(\texttt{BAND}, \texttt{e1}, \texttt{e2})} \evalarrow C
+    }
+  \end{mathpar}
 \end{emptyformal}
 
   \subsection{Comments}
@@ -400,11 +1052,8 @@ e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
 \section{SemanticsRule.BinopImpl \label{sec:SemanticsRule.BinopImpl}}
 
   \subsection{Prose}
-  All of the following apply:
-  \begin{itemize}
-  \item \texttt{e} denotes an implication over two expressions \texttt{e1} and \texttt{e2};
-  \item \texttt{e} is evaluated as \texttt{if e1 then e2 else true}.
-  \end{itemize}
+  An expression \texttt{e}, which denotes an implication over two expressions \texttt{e1} and \texttt{e2},
+  is evaluated as \texttt{if e1 then e2 else true} (see Section~\ref{sec:SemanticsRule.ECond}).
 
   \subsection{Example: SemanticsRule.EBinopImplExFalso.asl}
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopImplExFalso.asl}
@@ -413,9 +1062,14 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \texttt{TRU
   \subsection{Code}
   \VerbatimInput[firstline=\BinopImplBegin, lastline=\BinopImplEnd]{../Interpreter.ml}
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \begin{mathpar}
+    \inferrule{
+      \evalexpr{\env, \texttt{E\_Cond}(\texttt{e1}, \texttt{e2}, \etrue)} \evalarrow C
+    }
+    {
+    \evalexpr{\env, \texttt{E\_Binop}(\texttt{BAND}, \texttt{e1}, \texttt{e2})} \evalarrow C
+    }
+  \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -424,16 +1078,17 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \texttt{TRU
 \section{SemanticsRule.Binop \label{sec:SemanticsRule.Binop}}
 
   \subsection{Prose}
-Evaluation of the expression \texttt{e} under environment \texttt{env} is \texttt{(res,new\_env)} and all of the following apply:
+  Let \texttt{e} denote a binary expression with operator \texttt{op} and two sub-expressions \texttt{e1} and \texttt{e2}.
+  Evaluation of \texttt{e} under environment \texttt{env} is either $\Normal((\vv, \vg), \newenv)$
+  or an abnormal configuration, and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} denotes a Binary Operator \texttt{op} over two expressions \texttt{e1} and \texttt{e2};
-  \item The evaluation of the expression \texttt{e1} under \texttt{env} is \texttt{v1};
-  \item \texttt{env'} is the result of modifying \texttt{env} after evaluation of the expression \texttt{e1} under \texttt{env};
-  \item The evaluation of the expression \texttt{e2} under \texttt{env} is \texttt{v2};
-  \item \texttt{new\_env} is the result of modifying \texttt{env'} after evaluation of the expression \texttt{e2} under \texttt{env'};
-  \item \texttt{v} is the result of applying the Binary Operator \texttt{op} to \texttt{v1} and \texttt{v2};
-  \item \texttt{res} is \texttt{v};
-  \item \texttt{new\_env} is \texttt{env}.
+    \item The evaluation of the expression \texttt{e1} under \texttt{env} either terminates normally,
+    yielding \texttt{((v1,g1),env')}, or it terminates abnormally, short-circuiting the entire evaluation;
+    \item The evaluation of the expression \texttt{e2} under \texttt{env'} terminates normally,
+    yielding \texttt{((v2,g2),new\_env)}, or it terminates abnormally, short-circuiting the entire evaluation;
+    \item \texttt{v} is the result of applying the Binary Operator \texttt{op} to \texttt{v1} and \texttt{v2};
+    \item \texttt{g} is the parallel combination of \texttt{g1} and \texttt{g2}.
+    \item The entire expression terminates normally.
   \end{itemize}
 
   \subsection{Example: SemanticsRule.EBinopPlusAssert.asl}
@@ -455,52 +1110,175 @@ Evaluation of the expression \texttt{e} under environment \texttt{env} is \textt
   \VerbatimInput[firstline=\BinopBegin, lastline=\BinopEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
+  \subsection{Formally}
+We first define the helper relation
+$\binop : (\op \times \vals \times \vals) \bigtimes (\vals \cup \Error(\texttt{<string>}))$,
+which evaluates an operator over a pair of native values:
+\begin{mathpar}
+  \inferrule{ n = a + b }{
+    \binop(\texttt{"+"}, Z(a), Z(b)) \evalarrow Z(n)
+  }
+  \and
+  \inferrule{ n = a - b }{
+    \binop(\texttt{"-"}, Z(a), Z(b)) \evalarrow Z(\texttt{n})
+  }
+  \and
+  \inferrule{ n = a \times b }{
+    \binop(\texttt{"*"}, Z(a), Z(b)) \evalarrow Z(\texttt{n})
+  }
+  \and
+  \inferrule{  b > 0 \\
+    n = a \div b \\
+    a = n \times b}{
+    \binop(\texttt{"/"}, Z(a), Z(b)) \evalarrow Z(b)
+  }
+  \and
+  \inferrule{  b \leq 0 }{
+    \binop(\texttt{"/"}, Z(a), Z(b)) \evalarrow \Error(\texttt{"/ denominator error!"})
+  }
+  \and
+  \inferrule{  b > 0 \\
+  n = a \div b \\
+  n \not\in \Z
+  }{
+    \binop(\texttt{"/"}, Z(a), Z(b)) \evalarrow \Error(\texttt{"/ indivisibility error!"})
+  }
+  \and
+  \inferrule{  b > 0 \\
+  a \geq 0 \\
+  n = \lfloor a \div b \rfloor
+  }{ \binop(\texttt{"DIVRM"}, Z(a), Z(b)) \evalarrow Z(n)) }
+  \and
+  \inferrule{  b > 0 \\
+  a < 0 \\
+  n = -(\lceil (-a) \div b \rceil)
+  }{ \binop(\texttt{"DIVRM"}, Z(a), Z(b)) \evalarrow Z(n)) }
+  \and
+  \inferrule{  b \leq 0 }{ \binop(\texttt{"DIVRM"}, Z(a), Z(b)) \evalarrow \Error(\texttt{"DIVRM denominator error!"}) }
+  \and
+  \inferrule{  b > 0 \\
+    \binop(\texttt{DIVRM}, Z(a), Z(b)) \evalarrow c \\
+    n = a - (b \times c)
+  }{ \binop(\texttt{"MOD"}, Z(a), Z(b)) \evalarrow Z(n)) }
+  \and
+  \inferrule{  b \leq 0
+  }{ \binop(\texttt{"MOD"}, Z(a), Z(b)) \evalarrow \Error(\texttt{"MOD denominator error!"}) }
+  \and
+  \inferrule{  b \geq 0 \\ n = a^b
+  }{ \binop(\texttt{"\^{}"}, Z(a), Z(b)) \evalarrow Z(n)}
+  \and
+  \inferrule{  b < 0 \\ n = a^b
+  }{ \binop(\texttt{"\^{}"}, Z(a), Z(b)) \evalarrow \Error(\texttt{"POW exponent error!"}) }
+  \and
+  \inferrule{  \binop(\texttt{"*"}, Z(a), \binop(\texttt{"\^{}"}, Z(2), Z(b))) \evalarrow C
+  }{ \binop(\texttt{"<<"}, Z(a), Z(b)) \evalarrow C}
+  \and
+  \inferrule{  \binop(\texttt{"DIVRM"}, Z(a), \binop(\texttt{"\^{}"}, Z(2), Z(b))) \evalarrow C
+  }{ \binop(\texttt{">>"}, Z(a), Z(b)) \evalarrow C}
+\end{mathpar}
 
-  \begin{align}
-  \interp{\texttt{e1} + \texttt{e2}} (\texttt{env}) & \triangleq
-    \left\{ (v, \texttt{new\_env}) \st{}
-    \begin{aligned}
-      & \texttt{v1} + \texttt{v2} = \texttt{v}
-      \\ \text{and}\ &
-      (\texttt{v1}, \texttt{env'}) \in{} \interp{\texttt{e1}} (E)
-      \\ \text{and}\ &
-      (\texttt{v2}, \texttt{new\_env}) \in{} \interp{\texttt{e2}} (\texttt{env'})
-    \end{aligned}
-    \right\}
-  \label{eq:sem-seq-plus}
-  \end{align}
+\begin{mathpar}
+  \inferrule{  a = b }{ \binop(\texttt{"=="}, Z(a), Z(b)) \evalarrow B(\True)}
+  \and
+  \inferrule{  a \neq b }{ \binop(\texttt{"=="}, Z(a), Z(b)) \evalarrow B(\False)}
+  \and
+  \inferrule{  a = b }{ \binop(\texttt{"!="}, Z(a), Z(b)) \evalarrow B(\False)}
+  \and
+  \inferrule{  a \neq b }{ \binop(\texttt{"!="}, Z(a), Z(b)) \evalarrow B(\True)}
+  \and
+  \inferrule{  a \leq b }{ \binop(\texttt{"<="}, Z(a), Z(b)) \evalarrow B(\True)}
+  \and
+  \inferrule{  a > b }{ \binop(\texttt{"<="}, Z(a), Z(b)) \evalarrow B(\False)}
+  \and
+  \inferrule{  a < b }{ \binop(\texttt{"<"}, Z(a), Z(b)) \evalarrow B(\True)}
+  \and
+  \inferrule{  a \geq b }{ \binop(\texttt{"<"}, Z(a), Z(b)) \evalarrow B(\False)}
+  \and
+  \inferrule{  a \geq b }{ \binop(\texttt{">="}, Z(a), Z(b)) \evalarrow B(\True)}
+  \and
+  \inferrule{  a < b }{ \binop(\texttt{">="}, Z(a), Z(b)) \evalarrow B(\False)}
+  \and
+  \inferrule{  a > b }{ \binop(\texttt{">"}, Z(a), Z(b)) \evalarrow B(\True)}
+  \and
+  \inferrule{  a \leq b }{ \binop(\texttt{">"}, Z(a), Z(b)) \evalarrow B(\False)}
+\end{mathpar}
 
-  \subsection{Formally: concurrent case}
-  For the ordering constraints, the different arguments of a n-ary subprogram
-are considered computed in parallel:
-  \begin{align}
-    \interp{\texttt{e1} + \texttt{e2}} (\texttt{env}) & \triangleq
-    \left\{ (\texttt{v}, \texttt{new\_env}, S_1 \parallel S_2) \st{}
-    \begin{aligned}
-      & \texttt{v1} + \texttt{v2} = \texttt{v}
-      \\ \text{and}\ &
-      (\texttt{v1}, \texttt{env'}, S_1) \in{} \interp{\texttt{e1}} (\texttt{env})
-      \\ \text{and}\ &
-      (\texttt{v2}, \texttt{new\_env}, S_2) \in{} \interp{\texttt{e2}} (\texttt{env'})
-    \end{aligned}
-    \right\}
-  \label{eq:sem-conc-plus}
-  \end{align}
+In the following definitions, we
+employ the usual meaning of logical conjunction $\wedge$, logical disjunction $\vee$,
+and logical negation $\neg$.
+
+\begin{mathpar}
+\inferrule{}{ \binop(\texttt{"\&\&"}, B(a), B(b)) \evalarrow B(a \wedge b)}
+\and
+\inferrule{}{ \binop(\texttt{"||"}, B(a), B(b)) \evalarrow B(a \vee b)}
+\and
+\inferrule{}{ \binop(\texttt{"-->"}, B(a), B(b)) \evalarrow B(\neg a \vee b)}
+\and
+\inferrule{
+  c = ((\neg a) \vee b) \wedge ((\neg b) \vee a)
+}{ \binop(\texttt{"<->"}, B(a), B(b)) \evalarrow B(c)}
+\and
+\inferrule{
+  \binop(\texttt{"<->"}, B(a), B(b)) \evalarrow B(c)
+}{ \binop(\texttt{"=="}, B(a), B(b)) \evalarrow B(c)}
+\and
+\inferrule{
+  \binop(\texttt{"<->"}, B(a), B(b)) \evalarrow B(c)
+}{ \binop(\texttt{"!="}, B(a), B(b)) \evalarrow B(\neg c)}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule{}{\binop(\texttt{"+"}, R(a), R(b)) \evalarrow R(a+b)}
+\and
+\inferrule{}{\binop(\texttt{"-"}, R(a), R(b)) \evalarrow R(a-b)}
+\and
+\inferrule{}{\binop(\texttt{"*"}, R(a), R(b)) \evalarrow R(a\times b)}
+\and
+\inferrule{b \neq 0}{\binop(\texttt{"/"}, R(a), R(b)) \evalarrow R(a\div b)}
+\and
+\inferrule{b = 0}{\binop(\texttt{"/"}, R(a), R(b)) \evalarrow \Error(\texttt{"/ denominator is 0!})}
+\and
+\inferrule{b \geq 0}{\binop(\texttt{"\^{}"}, R(a), R(b)) \evalarrow R(a^b)}
+\and
+\inferrule{b < 0}{\binop(\texttt{"\^{}"}, R(a), R(b)) \evalarrow \Error(\texttt{"Negative exponent!})}
+\end{mathpar}
+
+Finally, we employ the definition of $\binop$ to define the rule for a binary operator expression:
+  \begin{mathpar}
+    \inferrule{
+      \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envp) \OrAbnormal \\
+      \evalexpr{ \envp, \vetwo } \evalarrow \Normal((\vmtwo, \vgtwo), \newenv) \OrAbnormal \\
+      \vmone = (\vvone, \vgone) \\
+      \vmtwo = (\vvtwo, \vgtwo) \\
+      \binop(\op, \vvone, \vvtwo) \evalarrow \vv \terminateas \ErrorConfig\\
+      \vg = \vgone \parallel \vgtwo
+    }
+    {
+      \evalexpr{ \env, \texttt{E\_Binop}(\op, \veone, \vetwo) } \evalarrow
+      \Normal((\vv, \vg), \newenv)
+    }
+  \end{mathpar}
 \end{formal}
 
 \subsection{Comments}
-  This is related to \identr{BKNT}.
+  This is related to \identr{XKGC} and \identr{BKNT}.
+
+Notice that when one of the sub-expressions terminates exceptionally,
+the other exception is guaranteed by the type-checker to be side effect-free and non-throwing (\identi{QJTN}).
+
+The semantics takes a semantic transition over the left sub-expression before the right sub-expression.
+This is an artbirary choice as the type-checker must ensure that either order of evaluation of the operands
+yields the same result.
 
 \section{SemanticsRule.Unop \label{sec:SemanticsRule.Unop}}
-
   \subsection{Prose}
-  All of the following apply:
-  \begin{itemize}
-  \item \texttt{e} denotes a Unary Operator \texttt{op} over an expression \texttt{e'} in an environment \texttt{env};
-  \item The evaluation of the expression \texttt{e'} under \texttt{env} is \texttt{v',new\_env};
-  \item \texttt{v, new\_env} is the result of applying the Unary Operator \texttt{op} to \texttt{v'}.
-  \end{itemize}
+  Let \texttt{e} denote a unary expression with operator \texttt{op} and the sub-expression \texttt{e'}.
+  Evaluation of \texttt{e}
+  under environment \texttt{env} is $\Normal((\vv, \vg), \newenv)$ and all of the following apply:
+\begin{itemize}
+  \item The evaluation of the expression \texttt{e'} under \texttt{env} terminates normally with \texttt{(v',g),new\_env};
+  \item \texttt{v} is the result of applying the unary operator \texttt{op} to \texttt{v'}.
+\end{itemize}
 
   \subsection{Example: SemanticsRule.EUnopAssert.asl}
     In the program:
@@ -511,9 +1289,16 @@ are considered computed in parallel:
   \VerbatimInput[firstline=\UnopBegin, lastline=\UnopEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{ \env, \vep} \evalarrow \Normal((\vvp,\vg), \newenv)\\
+    \tododefine{unop}(\op, \vvp) = \vv
+  }
+  {
+    \evalexpr{ \env, \texttt{E\_Unop}(\op, \vep) } \evalarrow
+    \Normal((\vv, \vg), \newenv)
+  }
+  \end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -521,11 +1306,30 @@ are considered computed in parallel:
 \section{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
 
   \subsection{Prose}
-  All of the following apply:
+  Let \texttt{e} denote a conditional expression with condition sub-expression \texttt{e\_cond},
+  \textit{then} sub-expression \texttt{e1}, and \textit{else} sub-expression \texttt{e2}.
+  Evaluating \texttt{e} in the environment \texttt{env} results either in $\Normal((\vres,\vg),\newenv)$
+  or an abnormal configuration, and one of the following applies:
   \begin{itemize}
-  \item \texttt{e} denotes a conditional expression \texttt{e\_cond} with two options \texttt{e1} and \texttt{e2};
-  \item The evaluation of the conditional expression \texttt{e\_cond} under \texttt{env} is \texttt{m\_cond};
-  \item The evaluation of \texttt{e1} or \texttt{e2}, depending on \texttt{m\_cond}, is \texttt{v}.
+    \item (Condition Normal True) All of the following apply:
+    \begin{itemize}
+      \item The evaluation of the conditional expression in \texttt{env} terminates normally with the true value,
+            \texttt{env'}, and the execution \texttt{g1}, or it terminates abnormally, thereby short-circuiting the entire evaluation;
+      \item The evaluation of the expression \texttt{e1} in the environment \texttt{env'} terminates normally with the value
+            \texttt{v}, the environment \texttt{new\_env}, and the execution graph \texttt{g2},
+            or it terminates abnormally, thereby short-circuiting the entire evaluation;
+      \item The resulting graph is \texttt{g1} connected to \texttt{g2} via the label $\aslctrl$.
+    \end{itemize}
+
+    \item (Condition Normal False) All of the following apply:
+    \begin{itemize}
+      \item The evaluation of the conditional expression in \texttt{env} terminates normally with the false value,
+            \texttt{env'}, and the execution \texttt{g1}, or it terminates abnormally, thereby short-circuiting the entire evaluation;
+      \item The evaluation of the expression \texttt{e2} in the environment \texttt{env'} terminates with the value
+            \texttt{v}, the environment \texttt{new\_env}, and the execution graph \texttt{g2},
+            or it terminates abnormally, thereby short-circuiting the entire evaluation;
+      \item The resulting graph is \texttt{g1} connected to \texttt{g2} via the label $\aslctrl$.
+    \end{itemize}
   \end{itemize}
 
   \subsection{Example: SemanticsRule.ECondFalse.asl}
@@ -544,9 +1348,29 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\ECondBegin, lastline=\ECondEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+\begin{mathpar}
+  \inferrule[(Condition True)]{
+    \evalexpr{\env, \texttt{e\_cond}} \evalarrow \Normal(\mcond, \envp) \OrAbnormal\\
+    \mcond = (\nvliteral{\texttt{L\_Bool}(\True)}, \vgone)\\
+    \evalexpr{\envp, \veone} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\
+    \vg = \ordered{\vgone}{\aslctrl}{\vgtwo}
+  }
+  {
+    \evalexpr{\env, \texttt{E\_Cond}(\texttt{e\_cond}, \veone, \vetwo)} \evalarrow
+    \Normal((\vv, \vg), \newenv)
+  }
+\and
+\inferrule[(Condition False)]{
+  \evalexpr{\env, \texttt{e\_cond}} \evalarrow \Normal(\mcond, \envp) \OrAbnormal\\
+  \mcond = (\nvliteral{\texttt{L\_Bool}(\False)}, \vgone)\\
+  \evalexpr{\envp, \vetwo} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\
+  \vg = \ordered{\vgone}{\aslctrl}{\vgtwo}
+}
+{
+  \evalexpr{\env, \texttt{E\_Cond}(\texttt{e\_cond}, \veone, \vetwo)} \evalarrow
+  \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
 \end{emptyformal}
 
   \subsection{Comments}
@@ -555,9 +1379,12 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \section{SemanticsRule.ESlice \label{sec:SemanticsRule.ESlice}}
 
   \subsection{Prose}
+  Let \texttt{e} denote a slicing expression of the bitvector \texttt{e\_bv} and list of slices \texttt{slices}.
+  Evaluating \texttt{e} in the environment \texttt{env} either results in $\Normal((\vres,\vg),\newenv)$,
+  or an abnormal configuration, and one of the following applies:
+
   All of the following apply:
   \begin{itemize}
-  \item \texttt{e} denotes an expression \texttt{e\_bv} sliced as per \texttt{slices};
   \item The evaluation of \texttt{e\_bv} under \texttt{env} is \texttt{v\_bv};
   \item The evaluation of \texttt{slices} under \texttt{env} is \texttt{positions};
   \item \texttt{v} is the value read in \texttt{v\_bv} from \texttt{positions}.
@@ -572,9 +1399,21 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\ESliceBegin, lastline=\ESliceEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ebv} \evalarrow \Normal(\mbv, \envone)  \OrAbnormal\\
+    \mbv = (\vbv,\vgone) \\
+    \evalslices{\envone, \slices} \evalarrow \Normal(\mpositions, \envp)  \OrAbnormal \\
+    \mpositions = (\positions, \vgtwo) \\
+    \tododefine{read\_from\_bitvector}(\vbv, \positions) \evalarrow (\vv, \vgthree)\\
+    \newenv = \envp \\
+    \vg = \ordered{(\vgone \parallel \vgtwo)}{\asldata}{\vgthree}
+  }
+  {
+    \evalexpr{\env, \texttt{E\_Slice}(\ebv, \slices)} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -582,10 +1421,10 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \section{SemanticsRule.ECall \label{sec:SemanticsRule.ECall}}
 
   \subsection{Prose}
+  Let \texttt{e} denote a subprogram call \texttt{(name, params, actual\_args)}.
   Evaluation of the expression \texttt{e} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  \texttt{\Normal((res,g),new\_env)}, or an abnormal configuration, and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} denotes a subprogram call \texttt{(name, params, actual\_args)};
   \item The evaluation of that subprogram call under \texttt{env} is \texttt{ms};
   \item \texttt{res} is a value \texttt{v};
   \item \texttt{v} is the value read from \texttt{ms};
@@ -602,9 +1441,27 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\ECallBegin, lastline=\ECallEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalcall{\env, \name, \actualargs, \params} \evalarrow \Normal(\vms, \newenv)  \OrAbnormal\\
+    \vms = [(\vv, \vg)]
+  }
+  {
+    \evalexpr{\env, \texttt{E\_Call}(\name, \actualargs, \params)} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\and
+\inferrule{
+  \evalcall{\env, \name, \actualargs, \params} \evalarrow \Normal(\vms, \newenv)  \OrAbnormal\\
+  \vms = [i=1..k: (\vv_i, \vg_i)]\\
+  \vvs = [i=1..k: \vv_i]\\
+  \vg = \vg_1 \parallel \ldots \parallel \vg_k \\
+  \vv = \texttt{create\_vector}(\vvs)
+}
+{
+  \evalexpr{\env, \texttt{E\_Call}(\name, \actualargs, \params)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -648,9 +1505,21 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\EGetArrayBegin, lastline=\EGetArrayEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+  \begin{mathpar}
+    \inferrule{
+      \evalexpr{\env, \earray} \evalarrow \Normal(\marray, \envone)  \OrAbnormal\\
+      \evalexpr{\envone, \eindex} \evalarrow \Normal(\mindex, \envp)  \OrAbnormal\\
+      \marray = (\varray, \vgone)\\
+      \mindex = (\vindex, \vgtwo)\\
+      \vi = \nvliteral{\texttt{L\_Int}(\vindex)}\\
+      \tododefine{get\_index}(\vi, \varray) = \vv\\
+      \vg = \vgone \parallel \vgtwo\\
+    }
+    {
+      \evalexpr{\env, \texttt{E\_GetArray}(\earray, \eindex)} \evalarrow \Normal((\vv, \vg), \newenv)
+    }
+  \end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -679,9 +1548,21 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\ERecordBegin, lastline=\ERecordEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \efields = [i=1..k: (\id_i, \ve_i)]\\
+    \names = [i=1..k: \id_i] \\
+    \fields = [i=1..k: \ve_i] \\
+    \evalexprlist{\env, \fields} \evalarrow \Normal((\vvfields,\vg), \envp)  \OrAbnormal\\
+    \vvfields = (i=1..k: \vv_i)\\
+    \vv = \nvrecord{[i=1..k: \id_i\mapsto\vv_i]}\\
+    \newenv = \envp
+  }
+  {
+    \evalexpr{\env, \texttt{E\_Record}(\Ignore, \efields)} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -708,9 +1589,17 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\EGetFieldBegin, lastline=\EGetFieldEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \erecord} \evalarrow \Normal((\vrecord, \vg), \envp)  \OrAbnormal\\
+    \tododefine{get\_field}(\fieldname, \vrecord) = \vv\\
+    \newenv = \envp
+  }
+  {
+    \evalexpr{\env, \texttt{E\_GetField}(\erecord, \fieldname)} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 
@@ -738,9 +1627,17 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\EConcatBegin, lastline=\EConcatEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \envp)  \OrAbnormal\\
+    \tododefine{concat\_bitvectors}(\vlist) = \vv\\
+    \newenv = \envp
+  }
+  {
+    \evalexpr{\env, \texttt{E\_Concat}(\elist)} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -768,36 +1665,39 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\ETupleBegin, lastline=\ETupleEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \envp)  \OrAbnormal\\
+    \tododefine{create\_vector}(\vlist) = \vv\\
+    \newenv = \envp
+  }
+  {
+    \evalexpr{\env, \texttt{E\_Tuple}(\elist)} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.EUnknown \label{sec:SemanticsRule.EUnknown}}
 
-  \subsection{Domain of a type}
+  \paragraph{Domain of a Type.}
 
-  The domain of a type $t$, written $D(t)$, is defined as follows:
-  \[
-  D(t) \triangleq \left\{
-    \begin{array}{ll}
-      \{\text{true}, \text{false} \} & \text{if } t \text{ is boolean}  \\
-      \mathbb{Z}                     & \text{if } t \text{ is integer}  \\
-      {\{0, 1\}}^n                   & \text{if } t \text{ is bits} (n) \\
-    \end{array}
-  \right.
-  \]
+  The domain of a type $\vt$ in an environment $\env=(\tenv,\denv)$,
+  denoted by $\textsf{dyn-dom}(\tenv, \denv, \vt)$, is defined by the type system~\cite{ASLTypingReference}.
+  Intuitively, it is the set of values that a type may store. The reason that the dynamic environment is
+  needed to determine the domain is due to subprogram parameters, which constrain integer parameters to
+  a singleton value domain.
 
   \subsection{Prose}
-  Evaluation of the expression \texttt{e} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  Evaluation of the expression \texttt{e} under environment \texttt{env} terminates normally with
+  \texttt{(v,new\_env,g)} and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} denotes a type \texttt{t};
-  \item \texttt{res} is a value \texttt{v};
+  \item \texttt{e} denotes the \texttt{UNKNOWN} expression annotated with type \texttt{t};
   \item \texttt{v} is a value in the domain of \texttt{t};
   \item \texttt{new\_env} is \texttt{env}.
+  \item \texttt{g} is the empty execution graph.
   \end{itemize}
 
   \subsection{Example: SemanticsRule.EUnknownInteger3.asl}
@@ -816,19 +1716,16 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\EUnknownBegin, lastline=\EUnknownEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-
-  \begin{align}
-  \interp{\syntt{unknown:}\ t} (E) & \triangleq \left\{ (v, E) \st{} v \in{} D(t) \right\}
-  \label{eq:sem-seq-unknown}
-  \end{align}
-
-  \subsection{Formally: concurrent case}
-
-  \begin{align}
-  \interp{\syntt{unknown:} t} (E) & \triangleq \left\{ (v, E, \varnothing) \st{} v \in{} D(t) \right\}
-  \label{eq:sem-conc-unknown}
-  \end{align}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{\env=(\tenv, \denv)\\
+    \vv \in \textsf{dyn-dom}(\tenv, \env, \vt) \\
+  \newenv = \env
+  }
+  {
+    \evalexpr{\env, \texttt{E\_Unknown}} \evalarrow \Normal(\newenv, \vv, \emptygraph)
+  }
+\end{mathpar}
 \end{formal}
 
 \subsection{Comments}
@@ -861,9 +1758,18 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\EPatternBegin, lastline=\EPatternEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \envp)  \OrAbnormal\\
+    \evalpattern{\env, \ve, \vvone, \vp} \evalarrow \Normal(\vv, \vgtwo)\\
+    \newenv = \envp\\
+    \vg = \ordered{\vgone}{\asldata}{\vgtwo}
+  }
+  {
+    \evalexpr{\env, \texttt{E\_Pattern}(\ve, \vp)} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -905,15 +1811,32 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
                 {../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv)  \OrAbnormal\\
+    \tododefine{is\_val\_of\_type}(\ve, \env, \vv, \vt)
+  }
+  {
+    \evalexpr{\env, \texttt{E\_CTC}(\ve, \vt)} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\and
+\inferrule{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\Ignore, \vg), \newenv)\\
+  \neg\tododefine{is\_val\_of\_type}(\ve, \env, \vv, \vt)
+}
+{
+  \evalexpr{\env, \texttt{E\_CTC}(\ve, \vt)} \evalarrow \Error(\texttt{"Type mismatch!"})
+}
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
   This is related to \identr{WZVX}, \identi{VQLX}, \identr{YCPX}, \identi{TCST}, \identi{CGRH}.
 
-\chapter{Evaluation of Left-Hand-Side Expressions \label{chap:eval_lexpr}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Evaluation of Left-Hand Side Expressions \label{chap:eval_lexpr}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Evaluation of the left-hand-side expression \texttt{le} associated with a
 value \texttt{v} under an environment \texttt{env} is either \texttt{new\_env}
@@ -922,13 +1845,41 @@ or an error is raised and one of the following applies:
 \item SemanticsRule.LEDiscard (see Section~\ref{sec:SemanticsRule.LEDiscard});
 \item SemanticsRule.LELocalVar (see Section~\ref{sec:SemanticsRule.LELocalVar});
 \item SemanticsRule.LEGlobalVar (see Section~\ref{sec:SemanticsRule.LEGlobalVar});
-\item SemanticsRule.LEUndefIdentV0 (see Section~\ref{sec:SemanticsRule.LEUndefIdentV0});
-\item SemanticsRule.LEUndefIdentV1 (see Section~\ref{sec:SemanticsRule.LEUndefIdentV1});
 \item SemanticsRule.LESlice (see Section~\ref{sec:SemanticsRule.LESlice});
 \item SemanticsRule.LESetArray (see Section~\ref{sec:SemanticsRule.LESetArray});
 \item SemanticsRule.LESetField (see Section~\ref{sec:SemanticsRule.LESetField});
 \item SemanticsRule.LEDestructuring (see Section~\ref{sec:SemanticsRule.LEDestructuring}).
 \end{itemize}
+
+\section{Evaluating Multi-assignments}
+We employ the following helper semantic relation to evaluate multi-assignments.
+That is, simultaneous assignments of a tuple of values to a tuple of left-hand side expressions.
+\[
+  \begin{array}{rl}
+    \evalmultiassignment{\envs \times \expr^* \times (\vals \times \XGraphs)^*} \bigtimes
+      & \Normal(\XGraphs, \envs)\ \cup \\
+      & \Throwing((\langle\vals \times \ty\rangle \times \XGraphs, \envs)\ \cup \\
+      & \Error(\texttt{<string>})
+  \end{array}
+\]
+
+The relation is defined via the following rules:
+\begin{mathpar}
+  \inferrule{}
+  {
+    \evalmultiassignment{\env, \emptylist, \emptylist} \evalarrow \Normal(\env, \emptygraph)
+  }
+\and
+\inferrule{
+  \evallexpr{\env, \vle, \vm} \evalarrow \Normal(\envp, \vgone) \OrAbnormal\\
+  \evalmultiassignment{\envp, \vlelist, \vmlist} \evalarrow \Normal(\newenv, \vgtwo) \OrAbnormal\\
+  \vg = \ordered{\vgone}{\aslpo}{\vgtwo}
+}
+{
+  \evalmultiassignment{\env, [\vle] + \vlelist, [\vm] + \vmlist} \evalarrow \Normal(\newenv, \vg)
+}
+
+\end{mathpar}
 
 \section{SemanticsRule.LEDiscard \label{sec:SemanticsRule.LEDiscard}}
 
@@ -950,9 +1901,11 @@ of the following apply:
   \VerbatimInput[firstline=\LEDiscardBegin, lastline=\LEDiscardEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+  \begin{mathpar}
+    \inferrule{}
+    { \evallexpr{\env, \texttt{LE\_Discard}, (\vv, \vg)} \evalarrow \Normal(\vg, \env) }
+  \end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -978,9 +1931,14 @@ of the following apply:
   \VerbatimInput[firstline=\LELocalVarBegin, lastline=\LELocalVarEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+  \begin{mathpar}
+    \inferrule{
+      \newenv = \env[\vx \mapsto \vv]\\
+      \vg' = \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
+    }
+    { \evallexpr{\env, \texttt{LE\_Var}(\vx), (\vv, \vg)} \evalarrow \Normal(\vg',\newenv) }
+  \end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1006,64 +1964,14 @@ of the following apply:
   \VerbatimInput[firstline=\LEGlobalVarBegin, lastline=\LEGlobalVarEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
-
-\section{SemanticsRule.LEUndefIdentV0 \label{sec:SemanticsRule.LEUndefIdentV0}}
-
-    \subsection{Prose}
-    Evaluation of the left-hand-side expression \texttt{le} associated with a
-value \texttt{v} under an environment \texttt{env} is \texttt{new\_env} and all
-of the following apply:
-    \begin{itemize}
-    \item \texttt{le} denotes a variable \texttt{x} which is not bound in \texttt{env};
-    \item the ASL language version is \texttt{V0};
-    \item \texttt{new\_env} is \texttt{env} where \texttt{x} has been declared
-a local variable bound to the value \texttt{v}.
-    \end{itemize}
-
-  \subsection{Example: SemanticsRule.LEUndefIdentV0.asl}
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEUndefIdentV0.asl}
-
-  \subsection{Code}
-  \VerbatimInput[firstline=\LEUndefIdentZeroBegin, lastline=\LEUndefIdentZeroEnd]{../Interpreter.ml}
-
-\begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
-
-\section{SemanticsRule.LEUndefIdentV1 \label{sec:SemanticsRule.LEUndefIdentV1}}
-
-    \subsection{Prose}
-    All of the following apply:
-    \begin{itemize}
-    \item \texttt{le} denotes a variable \texttt{x} which is not bound in \texttt{env};
-    \item the ASL language version is \texttt{V1};
-    \item an \texttt{UndefinedIdentifier} error is raised.
-    \end{itemize}
-
-    \subsection{Example: SemanticsRule.LEUndefIdentV1.asl}
-    In the program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEUndefIdentV1.asl}
-    the evaluation of the left-hand-side expression \texttt{y} within \texttt{y
-= 3;} raises an ``Undefined identifier'' error in the environment where
-\texttt{x} is bound to \texttt{42}.
-
-  \subsection{Code}
-  \VerbatimInput[firstline=\LEUndefIdentOneBegin, lastline=\LEUndefIdentOneEnd]{../Interpreter.ml}
-
-\begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+  \begin{mathpar}
+    \inferrule{
+      \newenv = \env[\vx \mapsto \vv]\\
+      \vg' = \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
+    }
+    { \evallexpr{\env, \texttt{LE\_Var}(\vx), (\vv, \vg)} \evalarrow \Normal(\vg',\newenv) }
+  \end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1092,9 +2000,20 @@ of the following apply:
   \VerbatimInput[firstline=\LESliceBegin, lastline=\LESliceEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+  \begin{mathpar}
+    \inferrule{
+      \vm = (\vv, \vg)\\
+      \evalexpr{\env, \torexpr(\ebv)} \evalarrow \Normal(\mbv,\envone) \OrAbnormal\\
+      \evalslices{\envone, \slices} \evalarrow \Normal(\mpositions, \envtwo) \OrAbnormal\\
+      \mpositions = (\vgone, \positions)\\
+      \vbv = (\mbv, \vgtwo)\\
+      \tododefine{write\_to\_bitvector}(\positions, \vv, \vbv) \evalarrow (\vv',\vgthree) \OrAbnormal\\
+      \vg' = \ordered{(\vg \parallel \vgone \parallel \vgtwo)}{\asldata}{\vgthree}\\
+      \evallexpr{\env, \texttt{LE\_Slice}(\ebv, \slices), (\vv', \vg')} \evalarrow C
+    }
+    { \evallexpr{\envtwo, \ebv, \vm} \evalarrow C }
+  \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -1126,9 +2045,20 @@ of the following apply:
   \VerbatimInput[firstline=\LESetArrayBegin, lastline=\LESetArrayEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vm = (\vv, \vg)\\
+    \evalexpr{\env, \torexpr(\rearray)} \evalarrow \Normal(\rmarray, \envone) \OrAbnormal\\
+    \evalexpr{\envone, \eindex} \evalarrow \Normal(\mindex, \envtwo) \OrAbnormal\\
+    \mindex = (\vindex, \vgone)\\
+    \rmarray = (\rvarray, \vgtwo)\\
+    \tododefine{set\_index}(\vindex, \vv, \rvarray) = \vv'\\
+    \vm' = (\vv', \vgone \parallel \vgtwo)\\
+    \evallexpr{\envtwo, \rearray, \vm'} \evalarrow C
+  }
+  { \evallexpr{\env, \texttt{LE\_SetArray}(\rearray, \eindex), \vm} \evalarrow C }
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -1161,9 +2091,18 @@ of the following apply:
   \VerbatimInput[firstline=\LESetFieldBegin, lastline=\LESetFieldEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vm = (\vv, \vg)\\
+    \evalexpr{\env, \torexpr(\rerecord)} \evalarrow \Normal(\rmrecord, \envone) \OrAbnormal\\
+    \rmrecord = (\rvrecord, \vgone)\\
+    \tododefine{set\_field}(\fieldname, \vv, \rvrecord) = \vv'\\
+    \vm' = (\vv', \vg \parallel \vgone)\\
+    \evallexpr{\env1, \rerecord, \vm'} \evalarrow C
+  }
+  { \evallexpr{\env, \texttt{LE\_SetField}(\rerecord, \fieldname), \vm} \evalarrow C }
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -1191,19 +2130,47 @@ of the following apply:
   \VerbatimInput[firstline=\LEDestructuringBegin, lastline=\LEDestructuringEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vm = (\vv, \vg)\\
+    \vlelist = [\vle_{i=1..k}]\\
+    i=1..k: \tododefine{get\_index}(i, \vv)=(\vv_i, \vg_i)\\
+    \vmlist = [i=1..k: (\vv_i, \ordered{\vg}{\asldata}{\vg_i})]\\
+    \evalmultiassignment{\env, \vlelist, \vmlist} \evalarrow C
+  }
+  { \evallexpr{\env, \texttt{LE\_Destructuring}(\vlelist), \vm} \evalarrow C }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Slices \label{chap:eval_slices}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \texttt{eval\_slices env slices} is the list of pair \texttt{(start\_n, length\_n)} that
 corresponds to the start (included) and the length of each slice in
 \texttt{slices}.
 
-Evaluation of the slice \texttt{s} under environment \texttt{env} is
+We define evaluation of a list of slices in terms of the following rules,
+which make use of the rules for evaluating a single slice, in the sequel of this chapter:
+\begin{mathpar}
+  \inferrule{}
+  {
+    \evalslices{\env, \emptylist} \evalarrow \Normal((\emptylist, \emptygraph), \env)
+  }
+  \and
+  \inferrule{
+    \evalslice{\env, \slice} \evalarrow \Normal((\range, \vgone), \envone) \OrAbnormal\\
+    \evalslices{\envone, \slices} \evalarrow \Normal((\ranges, \vgtwo), \newenv) \OrAbnormal\\
+  }
+  {
+    \evalslices{\env, \slice + \slices} \evalarrow \Normal([\range] + \ranges, \vgone \parallel \vgtwo), \newenv)
+  }
+\end{mathpar}
+
+Evaluation of a single slice \texttt{s} under environment \texttt{env} is
 \texttt{((start, length), new\_env)}, or an error, and one of the following applies:
 \begin{itemize}
 \item SemanticsRule.SliceSingle (see Section~\ref{sec:SemanticsRule.SliceSingle}),
@@ -1236,9 +2203,15 @@ of the following apply:
   \VerbatimInput[firstline=\SliceSingleBegin, lastline=\SliceSingleEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evallexpr{\env, \ve} \evalarrow \Normal((\start, \vg), \newenv) \OrAbnormal\\
+  }
+  {
+    \evalslice{\env, \texttt{Slice\_Single}(\ve)} \evalarrow \Normal(((\start, Z(1)), \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1269,9 +2242,19 @@ apply:
   \VerbatimInput[firstline=\SliceLengthBegin, lastline=\SliceLengthEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evallexpr{\env, \estart} \evalarrow \Normal(\mstart, \envone) \OrAbnormal\\
+    \evallexpr{\envone, \elength} \evalarrow \Normal(\mlength, \newenv) \OrAbnormal\\
+    \mstart = (\vstart, \vgone)\\
+    \mlength = (\vlength, \vgtwo)\\
+    \vg = \vgone \parallel \vgtwo
+  }
+  {
+    \evalslice{\env, \texttt{Slice\_Length}(\estart, \elength)} \evalarrow \\ \Normal(((\vstart, \vlength), \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1303,9 +2286,20 @@ apply:
   \VerbatimInput[firstline=\SliceRangeBegin, lastline=\SliceRangeEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evallexpr{\env, \etop} \evalarrow \Normal(\mtop, \envone) \OrAbnormal\\
+    \mtop = (\vvtop, \vgone)\\
+    \evallexpr{\envone, \estart} \evalarrow \Normal(\mstart, \newenv) \OrAbnormal\\
+    \mstart = (\vstart, \vgtwo)\\
+    \binop(\texttt{"+"}, Z(1), \binop(\texttt{"-"}, \vvtop, \vstart)) \evalarrow \length\\
+    \vg = \vgone \parallel \vgtwo
+  }
+  {
+    \evalslice{\env, \texttt{Slice\_Range}(\etop, \estart)} \evalarrow \\ \Normal(((\start, \length), \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1341,14 +2335,28 @@ apply:
   \VerbatimInput[firstline=\SliceStarBegin, lastline=\SliceStarEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evallexpr{\env, \efactor} \evalarrow \Normal(\mfactor, \envone) \OrAbnormal\\
+    \mfactor = (\vfactor, \vgone)\\
+    \evallexpr{\envone, \elength} \evalarrow \Normal(\mlength, \newenv) \OrAbnormal\\
+    \mlength = (\vlength, \vgtwo)\\
+    \binop(\texttt{"*"}, \vfactor, \vlength) \evalarrow \length \\
+    \vg = \vgone \parallel \vgtwo
+  }
+  {
+    \evalslice{\env, \texttt{Slice\_Star}(\efactor, \elength)} \evalarrow \\ \Normal(((\start, \length), \vg), \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Patterns \label{chap:eval_pattern}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \texttt{eval\_pattern env pos v p} determines if \texttt{v} matches the pattern \texttt{p}.
 
 Evaluation of the pattern \texttt{p} under environment \texttt{env} with
@@ -1655,7 +2663,9 @@ following applies:
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Local Declarations \label{chap:eval_local_decl}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \texttt{eval\_local\_decl ldi env m\_init\_opt} declares local variables
 \texttt{ldi} in \texttt{env} with an optional initialisation value
@@ -1689,9 +2699,13 @@ Evaluation of the local variables \texttt{ldi} under the environment
   \VerbatimInput[firstline=\LDDiscardBegin, lastline=\LDDiscardEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  {
+    \evallocaldecl{\env, \texttt{LDI\_Discard}, \Ignore} \evalarrow \Normal(\emptygraph, \env)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1723,9 +2737,17 @@ local variable bound to value \texttt{m}.
   \VerbatimInput[firstline=\LDVarBegin, lastline=\LDVarEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vm = (\vv, \vgone)\\
+    \tododefine{declare\_local\_identifier}(\env, \vx, \vv)=(\newenv, \vgtwo)\\
+    \vg = \ordered{\vgone}{\asldata}{\vgtwo}
+  }
+  {
+    \evallocaldecl{\env, \texttt{LDI\_Var}(\vx), \langle \vm\rangle} \evalarrow \Normal(\vg, \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1755,9 +2777,15 @@ Evaluation of the local variables \texttt{ldi} under the environment
   \VerbatimInput[firstline=\LDTypedBegin, lastline=\LDTypedEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evallocaldecl{\env, \ldi', \langle \vm\rangle} \evalarrow C
+  }
+  {
+    \evallocaldecl{\env, \texttt{LDI\_Typed}(\ldi', \Ignore), \langle \vm\rangle} \evalarrow C
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1785,9 +2813,45 @@ evaluation of \texttt{3}) in \texttt{env}.
   \VerbatimInput[firstline=\LDTupleBegin, lastline=\LDTupleEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
+\newcommand\ldituplefolder[1]{\texttt{ldi\_tuple\_folder}(#1)}
 
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+We first define the helper semantic relation
+\[
+    \ldituplefolder{\envs \times \localdeclitem^* \times (\vals \times \XGraphs)^*} \bigtimes
+     \Normal(\XGraphs, \envs)
+\]
+via the following rules:
+\begin{mathpar}
+  \inferrule{}
+  {
+    \ldituplefolder{\env, \emptylist, \emptylist} \evalarrow \Normal(\emptygraph, \env)
+  }
+\and
+  \inferrule{
+    \vm = (\vv, \vgone)\\
+    \evallocaldecl{\env, \ldi', \langle\vm\rangle} \evalarrow \Normal(\vgone, \envone)\\
+    \ldituplefolder{\envone, \ldis, \liv} \evalarrow \Normal(\vgtwo, \newenv)\\
+    \vg = \vgone \parallel \vgtwo
+  }
+  {
+    \ldituplefolder{\env, [\ldi'] + \ldis, [\vm] + \liv} \evalarrow \Normal(\vg, \newenv)
+  }
+\end{mathpar}
+
+We now use the helper rules to define the rule for local declaration item tuples:
+\begin{mathpar}
+  \inferrule{
+    \vm = (\vv, \vg)\\
+    \ldis = \ldi_{1..k}\\
+    i=1..k: \tododefine{get\_index}(i, \vv)=(\vv_i,\vg_i)\\
+    \liv = [i=1..k: (\vv_i, \ordered{\vg}{\asldata}{\vg_i})]\\
+    \ldituplefolder{\env, \ldis, \liv} \evalarrow C
+  }
+  {
+    \evallocaldecl{\env, \texttt{LDI\_Tuple}(\ldis), \langle \vm\rangle} \evalarrow C
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1819,18 +2883,43 @@ evaluation of \texttt{3}) in \texttt{env}.
   \VerbatimInput[firstline=\LDUninitialisedTypedBegin, lastline=\LDUninitialisedTypedEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vm = (\tododefine{base\_value}(\env, \vt), \emptygraph)\\
+    \evallocaldecl{\env, \ldi', \langle \vm \rangle} \evalarrow C
+  }
+  {
+    \evallocaldecl{\env, \texttt{LDI\_Ttyped}(\ldi', \vt), \None} \evalarrow C
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Statements \label{chap:eval_stmt}}
-Evaluation \texttt{eval\_stmt env s} of a statement \texttt{s} under
-environment \texttt{env} is either a \texttt{Throwing}, an interruption
-\texttt{Returning vs} or a new environment \texttt{new\_env}. Formally, one of
-the following applies:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The semantic relation for statements is defined as follows:
+\[
+  \semantic{\texttt{stmt}} : \evalstmt{\envs \times \stmt} \times \left(
+    \begin{array}{ll}
+    \Continuing(\XGraphs, \envs) &\cup\\
+    \Returning((\vals^* \times \XGraphs), \envs) &\cup\\
+    \Throwing((\langle\vals \times \ty\rangle \times \XGraphs), \envs)&
+    \end{array}
+  \right) \enspace.
+\]
+
+Input configurations consist of an environment and a statement that should be evaluated in that environment.
+Output configurations are in one of three \emph{modes}: \emph{continuing mode} configurations, which signify
+the flow of control should pass to the next statement in the current subprogram;
+\emph{returning mode} configurations, which signify that the flow of control should resume with the caller
+of the current subprogram with a list of returned values;
+and \emph{throwing mode} configurations, which signify that an exception was raised, either without an exception value (as in \texttt{throw;}),
+or with a given exception value and an associated exception type.
+
 \begin{itemize}
 \item SemanticsRule.SPass (see Section~\ref{sec:SemanticsRule.SPass}),
 \item SemanticsRule.SAssign (see Section~\ref{sec:SemanticsRule.SAssign}),
@@ -1873,17 +2962,11 @@ the following applies:
   \VerbatimInput[firstline=\SPassBegin, lastline=\SPassEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-  \begin{align}
-  \interp{\syntt{pass}} (\texttt{env}) & \triangleq \{ (\bot, \texttt{env}) \}
-  \label{eq:sem-seq-spass}
-\end{align}
-
-  \subsection{Formally: concurrent case}
-  \begin{align}
-  \interp{\syntt{pass}} (\texttt{env}) & \triangleq \{ (\bot, \texttt{env}, \varnothing) \}
-  \label{eq:sem-conc-spass}
-  \end{align}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  { \evalstmt{\env, \texttt{S\_Pass}} \evalarrow \Continuing(\emptygraph, \env) }
+\end{mathpar}
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -1910,21 +2993,16 @@ the following applies:
   \VerbatimInput[firstline=\SAssignBegin, lastline=\SAssignEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-  \begin{align}
-    \interp{\texttt{le = re}} (\texttt{env}) \triangleq
-      \left\{ \left(\bot, \texttt{env'}[\texttt{le} \mapsto \texttt{v} ]\right) \st{} (\texttt{v}, \texttt{env'}) \in \interp{\texttt{re}} (\texttt{env}) \right\}
-    \label{eq:sem-seq-sassign}
-  \end{align}
-
-  \subsection{Formally: concurrent case}
-  \begin{align}
-    \interp{\texttt{le = re}} (\texttt{env}) \triangleq
-      \left\{ \left(\bot, \texttt{env'}[\texttt{le} \mapsto \texttt{v} ], S \xrightarrow{\asldata} \texttt{W(le)}\right) \st{}
-        (\texttt{v}, \texttt{env'}, S) \in \interp{\texttt{re}} (\texttt{E})
-      \right\}
-    \label{eq:sem-conc-sassign}
-  \end{align}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \vre} \evalarrow \Normal((\vv, \vgone), \envp) \OrAbnormal\\
+    \evallexpr{\envp, \vle, (\vv, \vgone)} \evalarrow \Normal(\vg, \newenv) \OrAbnormal
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Assign}(\vle, \vre)} \evalarrow \Continuing(\vg, \newenv)
+  }
+\end{mathpar}
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -1949,9 +3027,28 @@ the following applies:
   \VerbatimInput[firstline=\SAssignCallBegin, lastline=\SAssignCallEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
+  \subsection{Formally}
+\newcommand\lexprisvar[0]{\texttt{lexpr\_is\_var}}
 
-  \subsection{Formally: concurrent case}
+We first define two simple rules for the predicate $\lexprisvar$, which holds when a left-hand side expression
+represents a variable, and then define the evaluation of assigning from a subprogram call.
+\begin{mathpar}
+  \inferrule{}{ \lexprisvar(\texttt{LE\_Var}(\Ignore)) }
+  \and
+  \inferrule{}{ \lexprisvar(\texttt{LE\_Discard}) }
+  \and
+  \inferrule{
+    \vles = \vle_{i=1..k}\\
+    i=1..k: \tododefine{lexpr\_is\_var}(\vle_i)\\
+    \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal((\vvs, \vgone), \envp) \OrAbnormal\\
+    \evalmultiassignment{\envp, \vles, \vvs} \evalarrow \Normal(\vgtwo, \newenv) \OrAbnormal\\
+    \vg = \ordered{\vgone}{\aslpo}{\vgtwo}
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Assign}(\texttt{LE\_Destructuring}(\les),\texttt{E\_Call}(\name, \args, \namedargs))} \\
+    \evalarrow \Continuing(\vg, \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1976,9 +3073,19 @@ statement \texttt{(b,x)} assigns the value \texttt{TRUE} to the mutable variable
   \VerbatimInput[firstline=\SAssignTupleBegin, lastline=\SAssignTupleEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vles = [\vle_{i=1..k}]\\
+    i=1..k: \tododefine{lexpr\_is\_var}(\vle_i)\\
+    \evalexprlistm{\env, \exprs} \evalarrow \Normal(\vms, \envp) \OrAbnormal\\
+    \evalmultiassignment{\envp, \les, \vms} \evalarrow \Normal(\vg, \newenv) \OrAbnormal
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Assign}(\texttt{LE\_Destructuring}(\vles), \texttt{E\_Tuple}(\exprs))} \\
+    \evalarrow \Continuing(\vg, \newenv)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2003,9 +3110,13 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
   \VerbatimInput[firstline=\SReturnNoneBegin, lastline=\SReturnNoneEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  {
+    \evalstmt{\env, \texttt{S\_Return}(\None)} \evalarrow \Returning((\emptylist, \emptygraph), \env)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2032,9 +3143,18 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
   \VerbatimInput[firstline=\SReturnOneBegin, lastline=\SReturnOneEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envp) \OrAbnormal\\
+    \wid \in \identifier\text{ is fresh}\\
+    \tododefine{write\_identifier}(\wid, \envp, \vv) = \vgtwo\\
+    \vg = \ordered{\vgone}{\asldata}{\vgtwo}
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Return}(\langle\ve\rangle)} \evalarrow \Returning(([\vv], \vg), \envp)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2060,24 +3180,53 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
   \VerbatimInput[firstline=\SReturnSomeBegin, lastline=\SReturnSomeEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-  \begin{align}
-  \interp{\syntt{return}\ e} (E) & \triangleq \interp{e} (E)
-  \label{eq:sem-seq-sreturn}
-  \end{align}
+  \subsection{Formally}
+\newcommand\writefolder[1]{\texttt{write\_folder}(#1)}
 
-  \subsection{Formally: concurrent case}
-  \begin{align}
-  \interp{\syntt{return}\ e} (E) & \triangleq \interp{e} (E)
-  \label{eq:sem-conc-sreturn}
-  \end{align}
+We first define the helper relation
+\[
+  \writefolder{\envs, (\vals\times\XGraphs)^*} \bigtimes (\vals^*, \XGraphs)
+\]
+
+via the following two rules:
+\begin{mathpar}
+  \inferrule{}{
+    \writefolder{\env, \emptylist} \evalarrow (\emptylist, \emptygraph)
+  }
+  \and
+  \inferrule{
+    \wid \in \identifier\text{ is fresh}\\
+    \vm = (\vv, \vg)\\
+    \tododefine{write\_identifier}(\wid, \env, \vv) \evalarrow \vgone\\
+    \writefolder{\env, (\vms, \vgone)} \evalarrow (\vvs', \vgtwo)\\
+  }
+  {
+    \writefolder{\env, ([\vm] + \vms, \vg)} \evalarrow ([\vv] + \vvs', \ordered{\vg}{\aslpo}{ (\ordered{\vgone}{\asldata}{\vgtwo}) })
+  }
+\end{mathpar}
+
+We now use the helper relation to define the rule for returning a tuple of values:
+\begin{mathpar}
+  \inferrule{
+    \evalexprlistm{\env, \es} \evalarrow \Normal(\ms, \newenv) \OrAbnormal\\
+    \writefolder{\env, \ms} \evalarrow (\vvs, \vg)
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Return}(\langle\texttt{E\_Tuple}(\es)\rangle)} \evalarrow \Returning((\vvs, \vg), \newenv)
+  }
+\end{mathpar}
 \end{formal}
 
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SSeq \label{sec:SemanticsRule.SSeq}}
-
   \subsection{Prose}
+  The semantics of~\texttt{s1; s2} is the semantics of~\texttt{s2} applied to the results
+  of the semantics of~\texttt{s1} if they do not perform an early return, in which
+  case it is the semantics of~\texttt{s1}.
+  The evaluation of two statements introduces an $\aslpo$ arrow between the two
+  graphs produced by their interpretations.
+
   Evaluation of the statement \texttt{s} under environment \texttt{env} is
 \texttt{new\_env} and all of the following apply:
   \begin{itemize}
@@ -2095,50 +3244,26 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
   \VerbatimInput[firstline=\SSeqBegin, lastline=\SSeqEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-  The semantics of~\texttt{s1; s2} is the semantics of~\texttt{s2} applied to the results
-  of the semantics of~\texttt{s1} if they do not perform an early return, in which
-  case it is the semantics of~\texttt{s1}.
-  \begin{align}
-    \interp{\texttt{s1; s2}} (\texttt{env}) \triangleq
-      \left\{ (\texttt{v?}, \texttt{new\_env}) \st{}
-      \begin{aligned}
-        & (\texttt{v}, \texttt{new\_env}) \in \interp{\texttt{s1}} (\texttt{env})
-        \\ \text{or}\ &
-        \left(
-        \begin{aligned}
-            & (\bot{}, \texttt{env'}) \in \interp{\texttt{s1}} (\texttt{env})
-            \\ \text{and}\ &
-            (\texttt{v?}, \texttt{new\_env}) \in \interp{\texttt{s2}} (\texttt{env'})
-        \end{aligned}
-        \right)
-      \end{aligned}
-      \right\}
-    \label{eq:sem-seq-sseq}
-  \end{align}
-
-  \subsection{Formally: concurrent case}
-  The evaluation of two statements introduces an $\aslpo$ arrow between the two
-graphs produced by their interpretations:
-  \begin{align}
-    \interp{\texttt{s1; s2}} (\texttt{env}) \triangleq
-      \left\{ (\texttt{v?}, \texttt{new\_env}, S) \st{}
-      \begin{aligned}
-        & (\texttt{v}, \texttt{new\_env}, S) \in \interp{\texttt{s1}} (\texttt{env})
-        \\ \text{or}\ &
-        \left(
-        \begin{aligned}
-            & (\bot{}, \texttt{env'}, S') \in \interp{\texttt{s1}} (\texttt{env})
-            \\ \text{and}\ &
-            (v, \texttt{new\_env}, S'') \in \interp{\texttt{s2}} (\texttt{env'})
-            \\ \text{and}\ &
-            S = S' \xrightarrow{\aslpo} S''
-        \end{aligned}
-        \right)
-      \end{aligned}
-      \right\}
-    \label{eq:sem-conc-sseq}
-  \end{align}
+  \subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \Returning(\vvsg, \envp),\ExprThrowsConfig,\ErrorConfig\\
+  \evalstmt{\envone, \vstwo} \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal\\
+  \vg = \ordered{\vgone}{\aslpo}{\vgtwo}
+}
+{
+  \evalstmt{\env, \texttt{S\_Seq}(\vsone, \vstwo)} \evalarrow \Continuing(\vg, \envtwo)
+}
+\and
+\inferrule{
+  \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone)\\
+  \evalstmt{\envone, \vstwo} \evalarrow \Returning(\vvsg, \envtwo)\\
+  \vg = \ordered{\vgone}{\aslpo}{\vgtwo}
+}
+{
+  \evalstmt{\env, \texttt{S\_Seq}(\vsone, \vstwo)} \evalarrow \Returning(\vg, \envtwo)
+}
+\end{mathpar}
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -2164,9 +3289,15 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SCallBegin, lastline=\SCallEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\vg, \envp) \OrAbnormal
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Call}(\name, \args, \namedargs)} \evalarrow \Continuing(\vg, \envp)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2192,58 +3323,28 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SCondBegin, lastline=\SCondEnd]{../Interpreter.ml}
 
 \begin{formal}
-  \subsection{Formally: sequential case}
-  The semantics of a conditional statement $\ife{e}{s_1}{s_2}$ chooses between
-  the semantics of~$s_1$ or $s_2$ depending on the evaluation of $e$:
-  \begin{align}
-    \interp{\begin{array}{l}
-      \syntt{if}\ e\\
-      \syntt{then}\ s_1\\
-      \syntt{else}\ s_2\ \syntt{end}
-    \end{array}} (E) \triangleq
-    % \interp{\ife{e}{s_1}{s_2}} (E) & \triangleq
-      \left\{ (v?, E'') \st{} \
-      \begin{aligned}
-        & (b, E') \in \interp{e} (E)
-        \\ \text{and}\ &
-        \left( \begin{aligned}
-          & \left(b = \syntt{true} \ \text{and} \ s' = s_1 \right)
-          \\ \text{or}\ &
-          \left( b = \syntt{false} \ \text{and}\ s' = s_2 \right)
-        \end{aligned} \right)
-        \\ \text{and}\ &
-        (v?, E'') \in \interp{s'} (E')
-      \end{aligned}
-      \right\}
-    \label{eq:sem-seq-scond}
-  \end{align}
-
-  \subsection{Formally: concurrent case}
-  A conditional statement introduces control dependencies $\aslctrl$ between its
-  condition and its body:
-  \begin{align}
-    \interp{\begin{array}{l}
-      \syntt{if}\ e\\
-      \syntt{then}\ s_1\\
-      \syntt{else}\ s_2\ \syntt{end}
-    \end{array}} (E) \triangleq
-      \left\{ (v, E'', S'') \st{} \
-      \begin{aligned}
-        & (b, E', S) \in \interp{e} (E)
-        \\ \text{and}\ &
-        \left( \begin{aligned}
-          & \left(b = \syntt{true}\ \text{and}\ s' = s_1 \right)
-          \\ \text{or}\ &
-          \left( b = \syntt{false}\ \text{and}\ s' = s_2 \right)
-        \end{aligned} \right)
-        \\ \text{and}\ &
-        (v, E'', S') \in \interp{s'} (E')
-        \\ \text{and}\ &
-        S'' = S \xrightarrow{\aslctrl} S'
-      \end{aligned}
-      \right\}
-    \label{eq:sem-conc-scond}
-  \end{align}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envp) \OrAbnormal\\
+    \vv = B(\True)\\
+    \evalblock{\envp, \vsone} \evalarrow C \OrAbnormal\\
+    \vg = \ordered{\vgone}{\aslctrl}{\graphof{C}}
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Cond}(\ve, \vsone, \vstwo)} \evalarrow \withgraph{C}{\vg}
+  }
+\and
+\inferrule{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envp) \OrAbnormal\\
+  \vv = B(\False)\\
+  \evalblock{\envp, \vsone} \evalarrow C \OrAbnormal\\
+  \vg = \ordered{\vgone}{\aslctrl}{\graphof{C}}
+}
+{
+  \evalstmt{\env, \texttt{S\_Cond}(\ve, \vsone, \vstwo)} \evalarrow \withgraph{C}{\vg}
+}
+\end{mathpar}
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -2268,9 +3369,20 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SCaseBegin, lastline=\SCaseEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
+  \subsection{Formally}
+A case statement is syntactic sugar for a ``condition-ladder''.
+We use the AST-to-AST function \tododefine{case\_to\_conds} to convert a case statement
+into a corresponding conditional statement.
 
-  \subsection{Formally: concurrent case}
+\begin{mathpar}
+  \inferrule{
+    \tododefine{case\_to\_conds}(\ve, \texttt{alts}) = \vs\\
+    \evalstmt{\env, \vs} \evalarrow C
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Case}(\ve, \texttt{alts})} \evalarrow C
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2306,9 +3418,24 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SAssertBegin, lastline=\SAssertEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vg), \envp) \OrAbnormal\\
+    \vv = B(\True)
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Assert}(\ve)} \evalarrow \Continuing(\vg, \envp)
+  }
+  \and
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vg), \envp)\\
+    \vv = B(\False)
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Assert}(\ve)} \evalarrow \Error(\texttt{"Assertion failed!"})
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2333,9 +3460,15 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SWhileBegin, lastline=\SWhileEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalloop{\env, \True, \ve, \body} \evalarrow C
+  }
+  {
+    \evalstmt{\env, \texttt{S\_While}(\ve, \body)} \evalarrow C
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2360,9 +3493,16 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SRepeatBegin, lastline=\SRepeatEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalblock{\env, \body} \evalarrow \Continuing(\vgone, \envone) \terminateas \Returning(\vvsg, \envp),\ExprThrowsConfig,\ErrorConfig\\
+    \evalloop{\envone, \False, \ve, \body} \evalarrow C
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Repeat}(\ve, \body)} \evalarrow C
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2387,9 +3527,21 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SForBegin, lastline=\SForEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+Recall that the expression for the \texttt{for} loop range are side-effect-free, which means they are guaranteed to terminate normally.
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \vvone} \evalarrow \Normal((\vvone, \vgone), \env)\\
+    \evalexpr{\env, \veone} \evalarrow \Normal((\vvtwo, \vgtwo), \env)\\
+    \tododefine{declare\_local\_identifier}(\env, \id, \vvone) \evalarrow (\vgthree,\envone)\\
+    \evalfor{\env, \id, \vvone, \dir, \vvtwo, \vs} \evalarrow \Normal(\vgfour, \envtwo) \OrAbnormal\\
+    \tododefine{remove\_local}(\envtwo, \id) = \envthree\\
+    \vg = \ordered{(\vgone \parallel \vgtwo)}{\asldata}{ \ordered{\vgthree}{\aslpo}{\vgfour}   }
+  }
+  {
+    \evalstmt{\env, \texttt{S\_For}(\id, \veone, \dir, \vetwo, \vs)} \evalarrow \Continuing(\vg, \envthree)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2413,9 +3565,13 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SThrowNoneBegin, lastline=\SThrowNoneEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  {
+    \evalstmt{\env, \texttt{S\_Throw}(\None)} \evalarrow \Throwing((\None, \emptygraph), \env)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2440,9 +3596,18 @@ graphs produced by their interpretations:
   \VerbatimInput[firstline=\SThrowSomeTypedBegin, lastline=\SThrowSomeTypedEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+\subsection{Formally}
+  \begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\
+    \vgtwo = \WriteEffect(\name)\\
+    \name\in\identifier \text{ is fresh}\\
+    \vg' = \ordered{\vgone}{\asldata}{\vgtwo}
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Throw}(\langle\ve, \langle\vt\rangle\rangle)} \evalarrow \Throwing((\langle(\vv,\vt)\rangle, \vg'), \env)
+  }
+  \end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2457,7 +3622,7 @@ graphs produced by their interpretations:
     \item \texttt{s\_m} is the evaluation of the block \texttt{s'} under \texttt{env};
     \item \texttt{new\_env} is \texttt{env} modified after evaluation of the
 catchers \\ \texttt{(catchers otherwise\_opt s\_m)} as per
-Chapter~\ref{chap:eval_catchers}.  
+Chapter~\ref{chap:eval_catchers}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.STry.asl}
@@ -2469,9 +3634,16 @@ Chapter~\ref{chap:eval_catchers}.
   \VerbatimInput[firstline=\STryBegin, lastline=\STryEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalblock{\env, \vs} \evalarrow C \OrAbnormal\\
+    \evalcall{\env, \catchers, \otherwiseopt, C} \evalarrow C'
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Try}(\vs, \catchers, \otherwiseopt)} \evalarrow C'
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2496,9 +3668,16 @@ Chapter~\ref{chap:eval_catchers}.
   \VerbatimInput[firstline=\SDeclSomeBegin, lastline=\SDeclSomeEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal(\vm, \envone) \OrAbnormal\\
+    \evallocaldecl{\envone, \vs, \ldi, \langle\vm\rangle} \evalarrow \Normal(\vg, \envp)\\
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Decl}(\Ignore, \ldi, \langle\ve\rangle)} \evalarrow \Continuing(\vg, \envp)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2523,14 +3702,22 @@ Chapter~\ref{chap:eval_catchers}.
   \VerbatimInput[firstline=\SDeclNoneBegin, lastline=\SDeclNoneEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evallocaldecl{\envone, \vs, \ldi, \None} \evalarrow \Normal(\vg, \envp)\\
+  }
+  {
+    \evalstmt{\env, \texttt{S\_Decl}(\Ignore, \ldi, \langle\ve\rangle)} \evalarrow \Continuing(\vg, \envp)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Blocks \label{chap:eval_block}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{SemanticsRule.Block \label{sec:SemanticsRule.Block}}
 
@@ -2558,14 +3745,45 @@ is defined before the block and hence still exists after the block.
     \VerbatimInput[firstline=\BlockBegin,lastline=\BlockEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-    \subsection{Formally: sequential case}
+    \subsection{Formally}
+The \emph{restriction} of a function $f : X \rightarrow Y$ to a subset of its domain values
+$A \subseteq \dom(f)$, denoted as $f|_A$, is defined as follows (by defining the graph of the resulting function):
+\[
+  f|_A \triangleq \{ (x, f(x)) \;|\; x \in A \} \enspace.
+\]
 
-  \subsection{Formally: concurrent case}
+\begin{mathpar}
+  \inferrule{
+    \env=(\tenv,\denv)\\
+    \blockenv = (\tenv, (G^\denv, \emptylist))\\
+    \evalstmt{\env, \stm} \evalarrow \Continuing(\vg, \blockenv') \OrAbnormal\\
+    \blockenv'=(\tenv, \denv')\\
+    \newenv = (\tenv, (G^{\denv'}, L^{\denv'}|_{\dom(L^\denv)}))
+  }
+  {
+    \evalblock{\env, \stm} \evalarrow \Continuing(\vg, \newenv)
+  }
+  \and
+  \inferrule{
+    \env=(\tenv,\denv)\\
+    \blockenv = (\tenv, (G^\denv, \emptylist))\\
+    \evalstmt{\env, \stm} \evalarrow \Returning((\vv_{1..k},\vg), \blockenv')\\
+    \blockenv'=(\tenv, \denv')\\
+    \newenv = (\tenv, (G^{\denv'}, L^{\denv'}|_{\dom(L^\denv)}))
+  }
+  {
+    \evalblock{\env, \stm} \evalarrow \Returning((\vv_{1..k},\vg), \newenv)
+  }
+\end{mathpar}
+
+That is, evaluating a block discards the bindings for variables declared inside $\stm$.
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Loops \label{chap:eval_loops}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The evaluation of loop is a common part of the evaluation of multiple loop
 statements.
@@ -2612,9 +3830,27 @@ eventually leading to exiting the loop;
     \VerbatimInput[firstline=\LoopBegin, lastline=\LoopEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-    \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+    \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \econd} \evalarrow \Normal(\condm, \envone) \OrAbnormal\\
+    \condm = (B(\False), \vgone)
+  }
+  {
+    \evalloop{\env, \econd, \body} \evalarrow \Continuing(\vgone, \envone)
+  }
+\and
+  \inferrule{
+    \evalexpr{\env, \econd} \evalarrow \Normal(\condm, \envone)\\
+    \condm = (B(\True), \vgone)\\
+    \evalblock{\envone, \body} \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal\\
+    \evalloop{\envtwo, \iswhile, \econd, \body} \evalarrow \Continuing(\vgthree, \envthree)\\
+    \vg = \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
+  }
+  {
+    \evalloop{\env, \econd, \body} \evalarrow \Continuing(\vg, \envthree)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2654,9 +3890,80 @@ applies:
     \VerbatimInput[firstline=\ForBegin, lastline=\ForEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-    \subsection{Formally: sequential case}
+    \subsection{Formally}
+    Intuitively, a \texttt{for}-loop \texttt{for $i$ = $e_1$ to $e_2$ do $S$} is syntactic sugar for
+    \texttt{$i$ = $e_1$; while $i$ < $e_2$ do $S$; $i$=$i$+1 end}.
+    Similarly, \texttt{for $i$ = $e_1$ downto $e_2$ do $S$} is syntactic sugar for
+    \texttt{$i$ = $e_1$; while $i$ > $e_2$ do $S$; $i$=$i$-1 end}. The important difference between
+    the statement involving the \texttt{while} loop and the original \texttt{for} loop is that the
+    scope of the counter variable is restricted to the body of the \texttt{for}. Notice that this
+    aspect is already handled by the rule for \texttt{S\_For}.
 
-  \subsection{Formally: concurrent case}
+    To reflect this, we constructs the following two ASTs for each of the cases for the direction of the loop:
+\[
+\begin{array}{rcl}
+  \texttt{Ei}         &\triangleq& \texttt{E\_Var}(\vindexname)\\
+  \texttt{plus\_one}   &\triangleq& \texttt{S\_Assign}(\texttt{Ei}, \texttt{E\_Binop}(\texttt{"+"}, \texttt{Ei}, \texttt{E\_Lit}(\texttt{L\_Int}(1))))\\
+  \texttt{Up\_for\_body}  &\triangleq& \texttt{S\_Seq}(\body, \texttt{plus\_one})\\
+  \texttt{Up\_cond}       &\triangleq& \texttt{E\_Binop}(\texttt{LT}, \texttt{Ei}, \vend)\\
+  \texttt{Up\_for}       &\triangleq& \texttt{S\_Seq}(\texttt{S\_Assign}(\texttt{Ei}, \vstart), \texttt{S\_While}(\texttt{Up\_cond}, \texttt{Up\_for\_body}))\\
+  \hline
+  \texttt{minus\_one}   &\triangleq& \texttt{S\_Assign}(\texttt{Ei}, \texttt{E\_Binop}(\texttt{"-"}, \texttt{Ei}, \texttt{E\_Lit}(\texttt{L\_Int}(1))))\\
+  \texttt{Down\_for\_body}  &\triangleq& \texttt{S\_Seq}(\body, \texttt{minus\_one})\\
+  \texttt{Down\_cond}       &\triangleq& \texttt{E\_Binop}(\texttt{GT}, \texttt{Ei}, \vend)\\
+  \texttt{Down\_for}       &\triangleq& \texttt{S\_Seq}(\texttt{S\_Assign}(\texttt{Ei}, \vstart), \texttt{S\_While}(\texttt{Down\_cond}, \texttt{Down\_for\_body}))
+\end{array}
+\]
+
+  We now use the (de-sugared) ASTs to evaluate the statement:
+\begin{mathpar}
+  \inferrule{
+    \evalstmt{\env, \texttt{Up\_for}} \evalarrow C
+  }
+  {
+    \evalfor{\env, \vindexname, \vstart, \texttt{Up}, \vend, \body} \evalarrow C
+  }
+  \and
+  \inferrule{
+    \evalstmt{\env, \texttt{Down\_for}} \evalarrow C
+  }
+  {
+    \evalfor{\env, \vindexname, \vstart, \texttt{Down}, \vend, \body} \evalarrow C
+  }
+\end{mathpar}
+
+% \newcommand\compfordir[0]{\texttt{comp\_for\_dir}}
+% \newcommand\opfordir[0]{\texttt{op\_for\_dir}}
+% \[
+%   \begin{array}{rl}
+%     \compfordir = &\lambda d.\
+%  \left\{
+%   \begin{array}{ll}
+%     \texttt{LT}, & x=\texttt{Up}\\
+%     \texttt{GT}, & x=\texttt{Down}\\
+%   \end{array}\right.\\
+%   \opfordir = &\lambda d.\
+%  \left\{
+%   \begin{array}{ll}
+%     \texttt{PLUS}, & x=\texttt{Up}\\
+%     \texttt{MINUS}, & x=\texttt{Down}\\
+%   \end{array}\right.
+% \end{array}
+%   \]
+
+% \begin{mathpar}
+%   \inferrule{
+%     %\op = \dir=\texttt{UP} ? \texttt{LT} : \texttt{GT}\\
+%     \tododefine{read\_identifier}(\env, \vindexname, \vstart) \evalarrow \vgone\\
+%     \binop(\compfordir(\dir), \vend, \vstart) \evalarrow \condm\\
+%     \condm = (\condv, \condg)\\
+%     \ordered{\vgone}{\asldata}{\condg}\\
+%     %\opfordir(\dir)
+%   }
+%   {
+%     \evalfor{\env, \vindexname, \vstart, \dir, \vend, \body} \evalarrow
+%   }
+% \end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2674,6 +3981,59 @@ Formally, one of the following applies:
 \item SemanticsRule.CatchNone (see Section~\ref{sec:SemanticsRule.CatchNone}),
 \item SemanticsRule.CatchNoThrow (see Section~\ref{sec:SemanticsRule.CatchNoThrow}).
 \end{itemize}
+
+\newcommand\findcatcher[0]{\texttt{find\_catcher}}
+We define the (recursive) helper function $\findcatcher : (\staticenvs \times \ty, \catcher^*) \rightarrow \langle \catcher \rangle$,
+which returns the first catcher clause that matches the given type (as a singleton set), or an empty set:
+\begin{mathpar}
+  \inferrule{}{\findcatcher(\tenv, \vvty, \emptylist) \evalarrow \None}
+\and
+\inferrule{
+  \vc = (\nameopt, \ety, \vs) \\
+  \typesatisfies(\tenv, \vvty, \ety)
+}
+{
+  \findcatcher(\tenv, \vvty, \vc + \catchers) = \langle\vc\rangle
+}
+\and
+\inferrule{
+  \vc = (\nameopt, \ety, \vs) \\
+  \neg\typesatisfies(\tenv, \vvty, \ety)\\
+  \findcatcher(\tenv, \vvty, \catchers) = C
+}
+{
+  \findcatcher(\tenv, \vvty, \vc + \catchers) = C
+}
+\end{mathpar}
+
+We define the helper relation
+\[
+  \rethrowimplicit : (\identifier \times \ty \times \TConfig) \rightarrow \TConfig
+\]
+via the following rules:
+\begin{mathpar}
+  \inferrule{}
+  {
+    \rethrowimplicit(\vv, \vvty, \Throwing((\None, \vg), \envthrowone)) \evalarrow \\
+    \Throwing((\langle(\vv, \vvty)\rangle, \vg), \envthrowone)
+  }
+\and
+\inferrule{}
+{
+  \rethrowimplicit(\vv, \vvty, \Throwing((\langle(\vv', \vvty')\rangle, \vg), \envthrowone)) \evalarrow \\
+  \Throwing((\langle(\vv', \vvty')\rangle, \vg), \envthrowone)
+}
+\and
+\inferrule{
+  \configmode{C} \neq \Throwing
+}
+{
+  \rethrowimplicit(\Ignore, \Ignore, C, \Ignore)) \evalarrow C
+}
+\end{mathpar}
+This function changes \emph{implicit throwing configurations}, that is, $\Throwing$ configurations with an empty
+variable name and exception type, such that they include the given variable name and exception type.
+Other configurations remain unchanged.
 
 \section{SemanticsRule.Catch \label{sec:SemanticsRule.Catch}}
 
@@ -2707,9 +4067,22 @@ Formally, one of the following applies:
   \VerbatimInput[firstline=\CatchBegin, lastline=\CatchEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \sm = \Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)\\
+    \env = (\tenv, (G^\denv, L^\denv))\\
+    \envthrow = (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+    \envone = (\tenv, (G^{\denvthrow}, L^{\denv}))\\
+    \findcatcher(\tenv, \vvty, \catchers) = \langle (\None, \Ignore, \vs) \rangle\\
+    \evalblock{\envone, \vs} \evalarrow C \terminateas \ErrorConfig\\
+    \rethrowimplicit(\vv, \vvty, C) = D\\
+    \vg = \ordered{\sg}{\aslpo}{\graphof{D}}
+  }
+  {
+    \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{D}{\vg}
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2751,9 +4124,25 @@ Formally, one of the following applies:
   \VerbatimInput[firstline=\CatchNamedBegin, lastline=\CatchNamedEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \sm = \Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)\\
+    \env = (\tenv, (G^\denv, L^\denv))\\
+    \envthrow = (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+    \envone = (\tenv, (G^{\denvthrow}, L^{\denv}))\\
+    \findcatcher(\tenv, \vvty, \catchers) = \langle (\langle\name\rangle, \Ignore, \vs) \rangle\\
+    \tododefine{read\_value\_from}(\vv) = (\vvone, \vgone)\\
+    \tododefine{declare\_local\_identifier\_m}(\envone, \name, (\veone, \vgone)) = (\envtwo, \vgtwo)\\
+    \evalblock{\envtwo, \vs} \evalarrow C \terminateas \ErrorConfig\\
+    \envthree = \environof{C}\\
+    \rethrowimplicit(\vv, \vvty, \withenviron{C}{\tododefine{remove\_local}(\envthree)}) = D\\
+    \vg = \ordered{\sg}{\aslpo}{ \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\graphof{D}} }
+  }
+  {
+    \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{D}{\vg}
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2789,9 +4178,22 @@ Formally, one of the following applies:
   \VerbatimInput[firstline=\CatchOtherwiseBegin, lastline=\CatchOtherwiseEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+  \begin{mathpar}
+  \inferrule{
+    \sm = \Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)\\
+    \env = (\tenv, (G^\denv, L^\denv))\\
+    \envthrow = (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+    \envone = (\tenv, (G^{\denvthrow}, L^{\denv}))\\
+    \findcatcher(\tenv, \vvty, \catchers) = \None\\
+    \evalblock{\envone, \vs} \evalarrow C \terminateas \ErrorConfig\\
+    \rethrowimplicit(\vv, \vvty, C) = D\\
+    \vg = \ordered{\sg}{\aslpo}{\graphof{D}}
+  }
+  {
+    \evalcatchers{\env, \catchers, \langle\vs\rangle, \sm} \evalarrow \withgraph{D}{\vg}
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2816,9 +4218,17 @@ Formally, one of the following applies:
   \VerbatimInput[firstline=\CatchNoneBegin, lastline=\CatchNoneEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+\subsection{Formally}
+  \begin{mathpar}
+  \inferrule{
+    \sm = \Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)\\
+    \env = (\tenv, (G^\denv, L^\denv))\\
+    \findcatcher(\tenv, \vvty, \catchers) = \None
+  }
+  {
+    \evalcatchers{\env, \catchers, \None, \sm} \evalarrow \sm
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2840,9 +4250,32 @@ Formally, one of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\CatchNoThrowBegin, lastline=\CatchNoThrowEnd]{../Interpreter.ml}
 
-    \subsection{Comments}
+  % For some reason the emptyformal environment here fails LaTeX compilation.
+  %\begin{emptyformal}
+    \subsection{Formally}
+      \begin{mathpar}
+      \inferrule{
+        \sm = \Throwing((\None, \sg), \envthrow)
+      }
+      {
+        \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+      }
+      \and
+      \inferrule{
+        \configmode{\sm} = \Normal
+      }
+      {
+        \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+      }
+    \end{mathpar}
+  %\end{emptyformal}
 
+  \isempty{\subsection{Comments}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Functions \label{chap:eval_func}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \texttt{eval\_func genv name pos actual\_args params} evaluates the subprogram \\
 named \texttt{name} in the global environment \texttt{genv}, with
 \texttt{actual\_args} the list of actual arguments, and \texttt{params} the
@@ -2850,35 +4283,9 @@ list of arguments deduced by type equality. This is a new global environment
 \texttt{new\_genv} and a list of values \texttt{vs}, or an error is raised.
 One of the following applies:
 \begin{itemize}
-\item SemanticsRule.FUndefIdent (see Section~\ref{sec:SemanticsRule.FUndefIdent}),
 \item SemanticsRule.FPrimitive (see Section~\ref{sec:SemanticsRule.FPrimitive}),
 \item SemanticsRule.FCall (see Section~\ref{sec:SemanticsRule.FCall}).
 \end{itemize}
-
-\section{SemanticsRule.FUndefIdent \label{sec:SemanticsRule.FUndefIdent}}
-
-  \subsection{Prose}
-  All of the following apply:
-  \begin{itemize}
-  \item \texttt{name} is undeclared in \texttt{genv};
-  \item an \texttt{UndefinedIdentifier} error is raised.
-  \end{itemize}
-
-  \subsection{Example: SemanticsRule.FUndefIdent.asl}
-  The program:
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.FUndefIdent.asl}
-  raises an \texttt{UndefinedIdentifier "Foo"} error.
-
-  \subsection{Code}
-  \VerbatimInput[firstline=\FUndefIdentBegin, lastline=\FUndefIdentEnd]{../Interpreter.ml}
-
-\begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.FPrimitive \label{sec:SemanticsRule.FPrimitive}}
 
@@ -2899,9 +4306,13 @@ One of the following applies:
   \VerbatimInput[firstline=\FPrimitiveBegin, lastline=\FPrimitiveEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  {
+    \evalfunc{\env, \name, \actualargs} \evalarrow
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2944,7 +4355,7 @@ One of the following applies:
   \interp{f (e_1, \dotsc e_n)} (E_0) & \triangleq
     \left\{ (v, E') \st{}
     \begin{aligned}
-      & \forall i \in \llbracket 1, n \rrbracket, (v_i, E_i) \in \interp{e_i} (E_{i - 1})
+      & \forall i \in \semantic{ 1, n }, (v_i, E_i) \in \interp{e_i} (E_{i - 1})
       \\ \text{and}\ &
       (v, E') \in \interp{\left\langle f, v_1, \dotsc v_n \right\rangle} \left(E_n\right)
     \end{aligned}
@@ -2961,7 +4372,7 @@ One of the following applies:
     \interp{f (e_i)} (E_0) \triangleq
       \left\{ (v, E', S) \st{}
       \begin{aligned}
-        & % \forall i \in \llbracket 1, n \rrbracket,
+        & % \forall i \in \semantic{ 1, n },
           (v_i, E_i, S_i) \in \interp{e_i} (E_{i - 1})
         \\ \text{and}\ &
         (v, E', S) \in \interp{\left\langle f, (v_i,S_i) \right\rangle} \left(E_n\right)

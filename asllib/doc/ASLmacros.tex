@@ -1,13 +1,13 @@
 \usepackage{amsmath}  % Classic math package
-\usepackage{amssymb}  % Classic math package 
-\usepackage{mathtools}  % Additional math package 
+\usepackage{amssymb}  % Classic math package
+\usepackage{mathtools}  % Additional math package
 \usepackage{graphicx}  % For figures
 \usepackage{caption}  % For figure captions
 \usepackage{subcaption}  % For subfigure captions
 \usepackage{url}  % Automatically escapes urls
 \usepackage{hyperref}  % Insert links inside pdfs
 \usepackage[inline]{enumitem}  % For inline lists
-\usepackage[export]{adjustbox}  % For centering too wide figures 
+\usepackage[export]{adjustbox}  % For centering too wide figures
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
 \usepackage{fancyvrb}
@@ -26,12 +26,14 @@
 \input{ifformal}
 \input{iftodo}
 \input{control}
+
+\newcommand\herd[0]{\texttt{herd7}}
 \fvset{fontsize=\small}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
 \setlist[itemize,1]{label=\textbullet}
-\setlist[itemize,2]{label=\textasteriskcentered} 
+\setlist[itemize,2]{label=\textasteriskcentered}
 \setlist[itemize,3]{label=\textendash}
 \setlist[itemize,4]{label=$\triangleright$}
 \setlist[itemize,5]{label=+}
@@ -52,7 +54,8 @@
 \setlist[itemize,20]{label=\textendash}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Abstract Syntax macros
+% Abstract Syntax macros
+% These are used by the AST reference, typing rerence, and semantics reference.
 
 \newcommand\emptylist[0]{[\ ]}
 
@@ -119,27 +122,19 @@
 \newcommand\TNamed[0]{\texttt{T\_Named}}
 
 \newcommand\identifier[0]{\textsf{identifier}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand\id[0]{\texttt{id}}
 \newcommand\op[0]{\texttt{op}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Typing macros
-\newcommand\staticloc[1]{#1.\textsf{local}}
-\newcommand\constantsvalues[0]{\textsf{constants\_values}}
-\newcommand\storagetypes[0]{\textsf{storage\_types}}
-\newcommand\returntype[0]{\textsf{return\_type}}
-\newcommand\declaredtypes[0]{\textsf{declared\_types}}
-\newcommand\subtypes[0]{\textsf{subtypes}}
-\newcommand\subprograms[0]{\textsf{subprograms}}
-\newcommand\subprogramrenamings[0]{\textsf{subprogram\_renamings}}
-\newcommand\staticglob[1]{#1.\textsf{global}}
 
-\newcommand\entails[0]{\vdash}
-\newcommand\tstruct[0]{\texttt{get\_structure}}
+\newcommand\Ignore[0]{\texttt{\_}}
+\newcommand\None[0]{\texttt{None}}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\envs[0]{\mathbb{E}}
+\newcommand\staticenvs[0]{\mathbb{SE}}
+\newcommand\dynamicenvs[0]{\mathbb{DE}}
 
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
@@ -148,7 +143,6 @@
 \newcommand\syntt[1]{\mathtt{#1}}
 \newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
 \newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
-\newcommand\env[1]{\left\langle #1 \right\rangle}
 \newcommand\reducesto{\ \to\ }
 \newcommand\llbracket{[|}
 \newcommand\rrbracket{|]}
@@ -161,13 +155,12 @@
 \newcommand\N[0]{\mathbb{N}}
 \newcommand\Q[0]{\mathbb{Q}}
 \newcommand\Z[0]{\mathbb{Z}}
+\newcommand\pow[1]{\mathcal{P}(#1)}
 \newcommand\asldata[0]{\mathtt{asl\_data}}
 \newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
 \newcommand\aslpo[0]{\mathtt{asl\_po}}
 \DeclareMathOperator{\dom}{dom}
 \newcommand\partialto[0]{\rightharpoonup}
-\newcommand\evalexpr[0]{\texttt{eval\_expr}}
-\newcommand\evalconstraint[0]{\texttt{eval\_constraint}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Ident info

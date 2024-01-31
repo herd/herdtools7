@@ -503,8 +503,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EPattern *)
     | E_Pattern (e, p) ->
-        let** v, env' = eval_expr env e in
-        let* v = eval_pattern env e v p in
+        let** v1, env' = eval_expr env e in
+        let* v = eval_pattern env e v1 p in
         return_normal (v, env') |: SemanticsRule.EPattern
   (* End *)
 
@@ -649,35 +649,35 @@ module Make (B : Backend.S) (C : Config) = struct
                 >>= return_normal |: SemanticsRule.LEUndefIdentV0))
     (* End *)
     (* Begin LESlice *)
-    | LE_Slice (re_bv, slices) ->
-        let*^ rm_bv, env = expr_of_lexpr re_bv |> eval_expr env in
-        let*^ m_positions, env = eval_slices env slices in
+    | LE_Slice (e_bv, slices) ->
+        let*^ m_bv, env1 = expr_of_lexpr e_bv |> eval_expr env in
+        let*^ m_positions, env2 = eval_slices env1 slices in
         let new_m_bv =
-          let* v = m and* positions = m_positions and* rv_bv = rm_bv in
-          B.write_to_bitvector positions v rv_bv
+          let* v = m and* positions = m_positions and* v_bv = m_bv in
+          B.write_to_bitvector positions v v_bv
         in
-        eval_lexpr ver re_bv env new_m_bv |: SemanticsRule.LESlice
+        eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
     (* End *)
     (* Begin LESetArray *)
     | LE_SetArray (re_array, e_index) ->
-        let*^ rm_array, env = expr_of_lexpr re_array |> eval_expr env in
-        let*^ m_index, env = eval_expr env e_index in
+        let*^ rm_array, env1 = expr_of_lexpr re_array |> eval_expr env in
+        let*^ m_index, env2 = eval_expr env1 e_index in
         let m' =
           let* v = m and* v_index = m_index and* rv_array = rm_array in
           match B.v_to_int v_index with
           | None -> fatal_from le (Error.UnsupportedExpr e_index)
           | Some i -> B.set_index i v rv_array
         in
-        eval_lexpr ver re_array env m' |: SemanticsRule.LESetArray
+        eval_lexpr ver re_array env2 m' |: SemanticsRule.LESetArray
     (* End *)
     (* Begin LESetField *)
     | LE_SetField (re_record, field_name) ->
-        let*^ rm_record, env = expr_of_lexpr re_record |> eval_expr env in
+        let*^ rm_record, env1 = expr_of_lexpr re_record |> eval_expr env in
         let m' =
           let* v = m and* rv_record = rm_record in
           B.set_field field_name v rv_record
         in
-        eval_lexpr ver re_record env m' |: SemanticsRule.LESetField
+        eval_lexpr ver re_record env1 m' |: SemanticsRule.LESetField
     (* End *)
     (* Begin LEDestructuring *)
     | LE_Destructuring le_list ->
@@ -728,26 +728,26 @@ module Make (B : Backend.S) (C : Config) = struct
       (* End *)
       (* Begin SliceLength *)
       | Slice_Length (e_start, e_length) ->
-          let*^ start, env1 = eval_expr env e_start in
-          let*^ length, new_env = eval_expr env1 e_length in
-          let* start = start and* length = length in
-          return_normal ((start, length), new_env) |: SemanticsRule.SliceLength
+          let*^ m_start, env1 = eval_expr env e_start in
+          let*^ m_length, new_env = eval_expr env1 e_length in
+          let* v_start = m_start and* v_length = m_length in
+          return_normal ((v_start, v_length), new_env) |: SemanticsRule.SliceLength
       (* End *)
       (* Begin SliceRange *)
       | Slice_Range (e_top, e_start) ->
-          let*^ v_top, env1 = eval_expr env e_top in
-          let*^ start, new_env = eval_expr env1 e_start in
-          let* v_top = v_top and* start = start in
-          let* length = B.binop MINUS v_top start >>= B.binop PLUS one in
-          return_normal ((start, length), new_env) |: SemanticsRule.SliceRange
+          let*^ m_top, env1 = eval_expr env e_top in
+          let*^ m_start, new_env = eval_expr env1 e_start in
+          let* v_top = m_top and* v_start = m_start in
+          let* length = B.binop MINUS v_top v_start >>= B.binop PLUS one in
+          return_normal ((v_start, length), new_env) |: SemanticsRule.SliceRange
       (* End *)
       (* Begin SliceStar *)
       | Slice_Star (e_factor, e_length) ->
-          let*^ v_factor, env1 = eval_expr env e_factor in
-          let*^ length, new_env = eval_expr env1 e_length in
-          let* v_factor = v_factor and* length = length in
-          let* start = B.binop MUL v_factor length in
-          return_normal ((start, length), new_env) |: SemanticsRule.SliceStar
+          let*^ m_factor, env1 = eval_expr env e_factor in
+          let*^ m_length, new_env = eval_expr env1 e_length in
+          let* v_factor = m_factor and* v_length = m_length in
+          let* start = B.binop MUL v_factor v_length in
+          return_normal ((start, v_length), new_env) |: SemanticsRule.SliceStar
       (* End *)
     in
     fold_par_list eval_one env
@@ -889,20 +889,20 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Assign
         ({ desc = LE_Destructuring les; _ }, { desc = E_Tuple exprs; _ }, ver)
       when List.for_all lexpr_is_var les ->
-        let**| vs, env' = eval_expr_list_m env exprs in
-        let**| new_env = protected_multi_assign ver env' s les vs in
+        let**| ms, env' = eval_expr_list_m env exprs in
+        let**| new_env = protected_multi_assign ver env' s les ms in
         return_continue new_env |: SemanticsRule.SAssignTuple
     (* End *)
     (* Begin SAssign *)
     | S_Assign (le, re, ver) ->
-        let*^ v, env' = eval_expr env re in
-        let**| new_env = eval_lexpr ver le env' v in
+        let*^ m, env' = eval_expr env re in
+        let**| new_env = eval_lexpr ver le env' m in
         return_continue new_env |: SemanticsRule.SAssign
     (* End *)
     (* Begin SReturnSome *)
     | S_Return (Some { desc = E_Tuple es; _ }) ->
-        let**| ms, env = eval_expr_list_m env es in
-        let scope = IEnv.get_scope env in
+        let**| ms, new_env = eval_expr_list_m env es in
+        let scope = IEnv.get_scope new_env in
         let folder acc m =
           let*| i, vs = acc in
           let* v = m in
@@ -910,7 +910,7 @@ module Make (B : Backend.S) (C : Config) = struct
           return (i + 1, v :: vs)
         in
         let*| _i, vs = List.fold_left folder (return (0, [])) ms in
-        return_return env (List.rev vs) |: SemanticsRule.SReturnSome
+        return_return new_env (List.rev vs) |: SemanticsRule.SReturnSome
     (* End *)
     (* Begin SReturnOne *)
     | S_Return (Some e) ->
@@ -924,8 +924,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin SSeq *)
     | S_Seq (s1, s2) ->
-        let*> env' = eval_stmt env s1 in
-        eval_stmt env' s2 |: SemanticsRule.SSeq
+        let*> env1 = eval_stmt env s1 in
+        eval_stmt env1 s2 |: SemanticsRule.SSeq
     (* End *)
     (* Begin SCall *)
     | S_Call (name, args, named_args) ->
@@ -955,9 +955,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin SRepeat *)
     | S_Repeat (body, e) ->
-        let*> env = eval_block env body in
-        let env = IEnv.tick_push_bis env in
-        eval_loop false env e body |: SemanticsRule.SRepeat
+        let*> env1 = eval_block env body in
+        let env2 = IEnv.tick_push_bis env1 in
+        eval_loop false env2 e body |: SemanticsRule.SRepeat
     (* End *)
     (* Begin SFor *)
     | S_For (id, e1, dir, e2, s) ->
@@ -1066,15 +1066,15 @@ module Make (B : Backend.S) (C : Config) = struct
       stmt_eval_type =
     (* Evaluate the condition: "Is the for loop terminated?" *)
     let cond_m =
-      let op = match dir with Up -> LT | Down -> GT in
+      let comp_for_dir = match dir with Up -> LT | Down -> GT in
       let* () = B.on_read_identifier index_name (IEnv.get_scope env) v_start in
-      B.binop op v_end v_start
+      B.binop comp_for_dir v_end v_start
     in
     (* Increase the loop counter *)
     let step env index_name v_start dir =
-      let op = match dir with Up -> PLUS | Down -> MINUS in
+      let op_for_dir = match dir with Up -> PLUS | Down -> MINUS in
       let* () = B.on_read_identifier index_name (IEnv.get_scope env) v_start in
-      let* v_step = B.binop op v_start one in
+      let* v_step = B.binop op_for_dir v_start one in
       let* env = assign_local_identifier env index_name v_step in
       return (v_step, env)
     in

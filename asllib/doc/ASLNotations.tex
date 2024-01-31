@@ -1,0 +1,33 @@
+\paragraph{Functions and Products.}
+The notation $A \partialto B$ denotes a partial function from a subset of $A$, denoted $\dom(A)$, to $B$.
+For a partial function $f$, we write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$.
+%
+The notation $f[x \mapsto v]$ is the function $f$ modified so that $x$ is bound
+to $v$: $f[x \mapsto v] \triangleq \lambda\ z.\ \begin{cases}
+  f(z) & \text{if } z \neq x\\
+  v & \text{if } z = x \enspace .
+\end{cases}$
+%
+The notation $A \times B$ stands for the Cartesian product of sets $A$ and $B$: $A \times B \triangleq \{(a,b) \;|\; a \in A, b \in B\}$.
+
+\paragraph{Sequences and Lists.}
+We use the notation $a..b$ as a shorthand for the sequence $a,\ldots,b$ and $x_{a..b}$ as a shorthand for the sequence $x_a,\ldots,x_b$.
+%
+In particular, we use the notation $p(x_{1..k})$ to denote that a predicate $p$ holds for the list of arguments $x_{1..k}$.
+%
+We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterized by $i$,
+to denote the sequence of expressions $V(1) \ldots V(k)$.
+The expression $[i=1..k: V(i)]$, denotes the list $[V(1),\ldots,V(k)]$.
+%
+We use `+' to denote concatenation of lists, defined as follows: $\emptylist + L = L$, $L + \emptylist = L$, and $[i=1..k: l_i] + [j=1..n: m_j] = [l_{1..k}, m_{1..n}]$.
+
+We write $T^*$ for a sequence of zero or more values from $T$ and $T^+$ for a sequences of one or more values from $T$.
+
+\paragraph{Rules.}
+The following notation states that when the \emph{premises} $P_{1..k}$ hold then the \emph{verdict} $C$ holds as well:
+\begin{mathpar}
+  \inferrule{P_1 \and \ldots \and P_k}{C}
+\end{mathpar}
+%
+We write `$\Ignore$' for a fresh universally quantified variable whose name is irrelevant for understanding the rule,
+and can thus be omitted.
