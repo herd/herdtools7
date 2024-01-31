@@ -108,10 +108,11 @@ module Make
 
       (* Statistic struct may not be initialised when dynamically allocated *)
       let do_stats = not do_dynalloc
+
       let do_inlined = (* inline topology description *)
-        match Cfg.mode,Cfg.driver with
-        | (Mode.Kvm|Mode.PreSi),Driver.C -> not do_dynalloc
-        | _,_ -> true
+        match Cfg.driver with
+        | Driver.C -> false
+        | _ -> true
 
       open CType
       module G = Global_litmus
@@ -247,7 +248,6 @@ module Make
             end
           end
         end ;
-        if not do_inlined then O.o "#include \"topology.h\"" ;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
         O.o "#define PCTR PRIu32" ;
@@ -552,6 +552,7 @@ module Make
 (**************)
 (* Topologies *)
 (**************)
+
       let is_active = match Cfg.alloc with
         | Alloc.Dynamic -> false
         | Alloc.Static|Alloc.Before -> not Cfg.is_kvm
@@ -616,6 +617,7 @@ module Make
               let file_name = doc.Name.file
               let nthreads = n
               let avail = DP.avail
+              let do_affinity = do_affinity
               let smt = Cfg.smt
               let nsockets = Cfg.nsockets
               let smtmode = Cfg.smtmode
@@ -624,15 +626,8 @@ module Make
               let inlined = true
             end) (O) in
           ignore (Topo.dump_alloc (get_addrs test))
-        end else begin
-          O.f "#define inst inst_%d" n ;
-          O.f "#define role role_%d" n ;
-          O.f "#define group group_%d" n;
-          O.f "#define SCANSZ scansz_%d" n ;
-          O.f "#define SCANLINE scanline_%d" n ;
-          O.o "" ;
-          ()
-        end
+        end else
+          UD.dump_topology_external n
 
 (************)
 (* Outcomes *)

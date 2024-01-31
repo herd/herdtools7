@@ -88,6 +88,40 @@ module PteValUtil(P:PteVal.S) = struct
     | None -> s
 end
 
+module type PConfig = sig
+  val avail : int option
+  val mode : Mode.t
+  val affinity : Affinity.t
+  val smt : int
+  val smtmode : Smt.t
+end
+
+module Param(Cfg:PConfig) = struct
+
+  let do_affinity =
+    let open Affinity in
+    match Cfg.affinity with
+    | Affinity.No -> false
+    | Incr _|Random|Custom|Scan -> true
+
+  let do_cores =
+    do_affinity
+    &&  Cfg.smt >= 1
+    &&
+      (match Cfg.smtmode with
+       | Smt.No -> false
+       | Smt.Seq|Smt.End -> true)
+
+  let mk_dsa n =
+    let open Mode in
+    match Cfg.mode with
+    | PreSi | Kvm -> true
+    | Std ->
+       do_cores
+       && (match Cfg.avail with Some a -> a >= n | None -> false)
+
+end
+
 module Make
     (Cfg:Config)
     (P:sig type code end)
@@ -199,7 +233,9 @@ module Make
         (* Dump function to translate back opcodes into instructions *)
         val dump_opcode : env -> T.t -> unit
 
-      end
+       (* Dump topology-definitions as renaming of external ones *)
+        val dump_topology_external : int -> unit
+end
 
     end = struct
 
@@ -989,5 +1025,26 @@ module Make
             O.oi "else return \"???\";" ;
             O.o "}"
           end
+
+        let dump_topology_external n =
+          O.o "#include \"topology.h\"" ;
+          let open Mode in
+          begin match Cfg.mode with
+          | PreSi|Kvm ->
+             O.f "#define inst inst_%d" n ;
+             O.f "#define role role_%d" n ;
+          | Std ->
+             O.f "#define cpu_scan cpu_scan_%d" n
+          end ;
+          O.f "#define group group_%d" n;
+          O.f "#define SCANSZ scansz_%d" n ;
+          O.f "#define SCANLINE scanline_%d" n ;
+          begin match Cfg.mode with
+          | Mode.Std  ->
+             O.o "static count_t ngroups[SCANSZ];"
+          | Mode.PreSi|Mode.Kvm -> ()
+          end ;
+          O.o ""
+
       end
     end

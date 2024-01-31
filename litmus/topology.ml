@@ -22,6 +22,7 @@ module type Config = sig
   val file_name : string
   val nthreads : int
   val avail : int
+  val do_affinity : bool
   val smt : int
   val nsockets : int
   val smtmode : Smt.t
@@ -40,11 +41,14 @@ end = struct
   open Cfg
   open Printf
 
-let () =
-  if verbose > 0 && smtmode = Smt.No then
+  let () =
+    if verbose > 0 && smtmode = Smt.No then
     Warn.warn_always
       "%s smtmode not specified, defaulting to static thread allocation"
       (Pos.str_pos0 file_name)
+
+(* Trivial mapping when no affinity *)
+  let smtmode =  if do_affinity then smtmode else Smt.No
 
 (* Get reasonable default values when topology is not specified *)
   let set_ifnone def x =  match smtmode with
@@ -55,9 +59,11 @@ let () =
   let nsockets = set_ifnone 1 nsockets
 
   let smt,nsockets =
-    if smt*nsockets  > avail then
+    if smt*nsockets  > avail || nthreads >= 5 then
       avail,1
     else smt,nsockets
+
+  let smt = if smt <= 0 then 1 else smt
 
   let () =
     if avail mod smt != 0 || (avail/smt) mod nsockets != 0 then
@@ -325,21 +331,29 @@ let part pp_part maxelt maxpart k r =
       O.f "#define %s %i" "SCANSZ" scansz ;
       O.f "#define %s %i" "SCANLINE" sz
     end ;
-      begin match Cfg.mode with
-    | Mode.Std ->
+    begin match Cfg.mode with
+    | Mode.Std when inlined ->
         O.o "" ;
         O.o "static count_t ngroups[SCANSZ];"
-    | Mode.PreSi|Mode.Kvm -> ()
+    | Mode.Std|Mode.PreSi|Mode.Kvm -> ()
     end ;
     O.o "" ;
     { scansz=scansz; scanline=sz; }
 
   let std_handle groups =
 (* Actual virtual proc numbers *)
-    O.o "static int cpu_scan[] = {" ;
+    if inlined then
+      O.o "static const int cpu_scan[] = {"
+    else
+      O.f "static const int _cpu_scan_%d[] = {" nthreads ;
     let all_gs =  groups [] procs in
     O.o "};" ;
     O.o "" ;
+    if not inlined then begin
+      O.f "const int *cpu_scan_%d = &_cpu_scan_%d[0];"
+        nthreads nthreads ;
+      O.o ""
+    end ;
     handle_groups (nthreads*ninst) (List.rev all_gs)
 
   let handle_table name mk gss cpus =

@@ -1241,7 +1241,7 @@ op_t *launch_cached(f_t *f,void *a) {
 void perm_prefix_ints(unsigned *st,int *_t, int m, int n) {
   int k;
   for (k = 0 ; k < m ; k++) {
-    int j = k+rand_k(st,n-k);
+    int j = k+rand_k(st,m-k);
     int x = _t[k]; _t[k] = _t[j]; _t[j] = x;
   }
 }

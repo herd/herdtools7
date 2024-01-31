@@ -102,6 +102,9 @@ module Make
       open Constant
       open CType
 
+(* Shared configuration *)
+      module Param = SkelUtil.Param(Cfg)
+
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
       let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
@@ -214,15 +217,20 @@ module Make
 
       let do_dynamicalloc = not do_staticalloc
 
+      let do_inlined =
+        let open Driver in
+        match Cfg.driver with
+        | C -> false
+        | Shell|XCode -> true
+
       open Launch
+
       let launch = Cfg.launch
       let affinity = Cfg.affinity
       let smt = Cfg.smt
       let smtmode = Cfg.smtmode
 
-      let do_affinity = match affinity with
-      | Affinity.No -> false
-      | Affinity.Incr _|Affinity.Random|Affinity.Custom|Affinity.Scan -> true
+      let do_affinity = Param.do_affinity
 
 (* Check is custom affinity is possible *)
       let mk_dca test =
@@ -247,19 +255,10 @@ module Make
         | None -> false,""
         | Some s -> true,s
 
-      let do_cores =
-        do_affinity &&
-        smt >= 1 &&
-        (match smtmode with
-        | Smt.No -> false
-        | Smt.Seq|Smt.End -> true)
+      let do_cores = Param.do_cores
 
 (* Check if scanning affinity is possible *)
-      let mk_dsa test =
-        let n =  T.get_nprocs test in
-        n < 5 &&
-        do_cores &&
-        (match Cfg.avail with Some a -> a >= n | None -> false)
+      let mk_dsa test = Param.mk_dsa (T.get_nprocs test)
 
       let do_force_affinity = Cfg.force_affinity
       let do_numeric_labels = Cfg.numeric_labels
@@ -705,25 +704,29 @@ module Make
 
 
       let dump_topology doc test =
-        let n = T.get_nprocs test in
-        let module Topo =
-          Topology.Make
-            (struct
-              let verbose = Cfg.verbose
-              let file_name = doc.Name.file
-              let nthreads = n
-              let avail = match Cfg.avail with
-              | None -> 0
-              | Some a -> a
-
-              let smt = Cfg.smt
-              let nsockets = Cfg.nsockets
-              let smtmode = Cfg.smtmode
-              let mode = Mode.Std
-              let is_active = true
-              let inlined = true
-            end) (O) in
-        ignore (Topo.dump_alloc [])
+        if mk_dsa test then
+          let n = T.get_nprocs test in
+          if do_inlined then begin
+            let module Topo =
+              Topology.Make
+                (struct
+                  let verbose = Cfg.verbose
+                  let file_name = doc.Name.file
+                  let nthreads = n
+                  let avail = match Cfg.avail with
+                    | None -> assert false (* Guarderd by mk_dsa *)
+                    | Some a -> a
+                  let do_affinity = do_affinity
+                  let smt = Cfg.smt
+                  let nsockets = Cfg.nsockets
+                  let smtmode = Cfg.smtmode
+                  let mode = Mode.Std
+                  let is_active = true
+                  let inlined = true
+                end) (O) in
+              ignore (Topo.dump_alloc [])
+          end else
+            UD.dump_topology_external n
 
 (*************)
 (* Variables *)
@@ -2121,7 +2124,7 @@ module Make
             do_break indent3 ;
             O.oiii "int idx_scan = n_run % SCANSZ;" ;
             if do_verbose_barrier then O.oiii "ctx.group = group[idx_scan];" ;
-            O.oiii "int *from =  &cpu_scan[SCANLINE*idx_scan];" ;
+            O.oiii "const int *from =  &cpu_scan[SCANLINE*idx_scan];" ;
             O.oiii "from += N*_a->z_id;" ;
             O.oiii "for (int k = 0 ; k < N ; k++) _a->cpus[k] = from[k];" ;
             O.oiii "pb_wait(_a->p_barrier);"
@@ -2559,7 +2562,7 @@ module Make
           O.oi "int aff_cpus[aff_cpus_sz];" ;
           O.oi "prm.aff_mode = cmd->aff_mode;" ;
           O.oi "prm.ncpus = aff_cpus_sz;" ;
-          O.oi "prm.ncpus_used = N*n_exe;"
+          O.oi "prm.ncpus_used = max(n_avail,N*n_exe);" ;
         end ;
         O.o "/* Show parameters to user */" ;
         O.oi "if (prm.verbose) {" ;
@@ -2639,7 +2642,7 @@ module Make
           end ;
           if mk_dsa test then begin
             O.oi "} else if (cmd->aff_mode == aff_topo) {" ;
-            O.oii "int *from = &cpu_scan[ntopo * SCANLINE];" ;
+            O.oii "const int *from = &cpu_scan[ntopo * SCANLINE];" ;
             O.oii "for (int k = 0 ; k < aff_cpus_sz ; k++) {" ;
             O.oiii "aff_cpus[k] = *from++;" ;
             O.oii "}" ;
@@ -2939,8 +2942,8 @@ module Make
         UD.dump_getinstrs test ;
         dump_read_timebase () ;
         dump_threads test ;
-        if mk_dsa test then dump_topology doc test ;
-        let cpys = dump_def_ctx env test in
+        dump_topology doc test ;
+        let cpys = dump_def_ctx  env test in
         dump_filter env test ;
         dump_cond_fun env test ;
         dump_defs_outs doc env test ;
