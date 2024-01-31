@@ -1,0 +1,13 @@
+AArch64 A017
+Stable=X30
+{
+ (* necessary to generate an initial write for P0:L1 *)
+ 0:X1=P0:L1;
+}
+ P0           ;
+ BL L0        ;
+L1:           ;
+ NOP          ;
+L0:           ;
+ LDR W0,[X30] ;
+forall(0:X0=instr:"NOP")

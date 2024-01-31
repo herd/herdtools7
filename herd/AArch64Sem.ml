@@ -2405,6 +2405,16 @@ module Make
             "illegal argument for the indirect branch instruction %s \
             (must be a label)" (AArch64.dump_instruction i)
 
+      let get_link_addr test ii =
+        let lbl =
+          let open BranchTarget in
+          let a = ii.A.addr + 4 in
+          let lbls = test.Test_herd.entry_points a in
+          Label.norm lbls in
+        match lbl with
+        | Some l -> ii.A.addr2v l
+        | None ->  V.intToV (ii.A.addr + 4)
+
 (********************)
 (* Main entry point *)
 (********************)
@@ -2441,7 +2451,7 @@ module Make
            >>= fun v -> commit_bcc ii
            >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt  ii l))
         | I_BL l ->
-           let v_ret = V.intToV (ii.A.addr + 4) in
+           let v_ret = get_link_addr test ii in
            write_reg AArch64Base.linkreg v_ret ii
            >>= fun () -> M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret]))
 
@@ -2449,7 +2459,7 @@ module Make
             read_reg_ord r ii >>= do_indirect_jump test [] i ii
 
         | I_BLR r as i ->
-           let v_ret = V.intToV (ii.A.addr + 4) in
+           let v_ret = get_link_addr test ii in
            write_reg AArch64Base.linkreg v_ret ii
            >>= fun () -> read_reg_ord r ii
            >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i ii
