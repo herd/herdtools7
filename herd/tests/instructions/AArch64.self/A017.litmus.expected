@@ -1,0 +1,10 @@
+Test A017 Required
+States 1
+0:X0=NOP;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=NOP)
+Observation A017 Always 1 0
+Hash=46b8ce018c9628c159332ad9f5900cf9
+
