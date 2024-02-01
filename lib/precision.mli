@@ -14,18 +14,18 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Reaction to faults, tag common to litmus and herd *)
+(** Reaction to tag mismatches common to litmus and herd *)
 
 type t =
-  | Handled      (* Do nothing special *)
-  | Fatal        (* Jump to end of code *)
-  | LoadsFatal   (* Only faults on loads jump to end of code, stores do nothing *)
-  | Skip         (* Skip instruction *)
+  | Synchronous  (** The fault raises a synchronous exception. (MTE) *)
+  | Asynchronous (** The fault doesn't raise a synchronous exception. (MTE) *)
+  | Asymmetric
+  (** An attempt to read from a location with a mismatched tag raises
+      a synchronous exception and an attempt to write from a location
+      with a mismatched tag, records the mismatch and allows the write
+      to happen. (MTE) *)
 
 val default : t
 val tags : string list
 val parse : string -> t option
 val pp : t -> string
-
-val is_fatal : t -> bool
-val is_skip : t -> bool

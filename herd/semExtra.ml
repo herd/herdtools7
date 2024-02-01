@@ -21,7 +21,8 @@ module type Config = sig
   val verbose : int
   val optace : OptAce.t
   val debug : Debug_herd.t
-  val precision : Precision.t
+  val fault_handling : Fault.Handling.t
+  val mte_precision : Precision.t
   val variant : Variant.t -> bool
   val endian : Endian.t option
   val unroll : int option

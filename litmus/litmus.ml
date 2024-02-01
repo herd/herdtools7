@@ -68,7 +68,7 @@ let opts =
    begin
      let module Opt = struct
        include Variant_litmus
-       let setnow tag = set_precision precision tag
+       let setnow tag = set_fault_handling fault_handling tag
      end in
      let module P = ParseTag.MakeS(Opt) in
    P.parse "-variant" Option.variant "select a variation" end ;
@@ -305,7 +305,8 @@ let () =
           end
       | Some b -> b
       let ascall = !ascall
-      let precision = !precision
+      let fault_handling = !fault_handling
+      let mte_precision = Precision.Synchronous
       let variant = !variant
       let nocatch = false
       let crossrun = match !mode,!crossrun with

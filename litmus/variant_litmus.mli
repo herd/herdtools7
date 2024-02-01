@@ -16,7 +16,7 @@
 
 type t =
   | Self (* Self modifying code *)
-  | Precise of Precision.t
+  | FaultHandling of Fault.Handling.t
   | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
@@ -28,4 +28,5 @@ val parse : string -> t option
 val pp : t -> string
 val ok : t -> Archs.t -> bool
 val compare : t -> t -> int
-val set_precision : Precision.t ref -> t -> bool
+val set_fault_handling : Fault.Handling.t ref -> t -> bool
+val set_mte_precision : Precision.t ref -> t -> bool

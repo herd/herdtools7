@@ -1,0 +1,10 @@
+Test B007 Required
+States 1
+0:X2=0; 1:X2=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=0 /\ 1:X2=1)
+Observation B007 Always 1 0
+Hash=a8f826b9b17927e1c9b398a95db3fd99
+

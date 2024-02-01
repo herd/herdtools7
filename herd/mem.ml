@@ -33,7 +33,8 @@ module type CommonConfig = sig
   val check_filter : bool
   val maxphantom : int option
   val variant : Variant.t -> bool
-  val precision : Precision.t
+  val fault_handling : Fault.Handling.t
+  val mte_precision : Precision.t
 end
 
 module type Config = sig
@@ -554,7 +555,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             addr in
           EM.failcodeT (Misc.UserError msg) true
 
-      and add_fault re_exec inst dir fetch_proc proc env seen addr nexts =
+      and add_fault re_exec inst fetch_proc proc env seen addr nexts =
         match env.A.fh_code,re_exec with
         | Some _, true ->
            let e = "Fault inside a fault handler" in
@@ -564,11 +565,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | None, true ->
            EM.unitcodeT false
         | None, false ->
-           let open Precision in
-           match C.precision,dir with
-           | Fatal,_ | LoadsFatal,Dir.R -> EM.unitcodeT true
-           | Skip,_ -> add_code false fetch_proc proc env seen nexts
-           | Handled,_ | LoadsFatal,Dir.W ->
+           let open Fault.Handling in
+           match C.fault_handling with
+           | Fatal -> EM.unitcodeT true
+           | Skip -> add_code false fetch_proc proc env seen nexts
+           | Handled ->
               add_next_instr true fetch_proc proc env seen addr inst nexts
 
       and next_instr re_exec inst fetch_proc proc env seen addr nexts b =
@@ -578,8 +579,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           add_code re_exec fetch_proc proc env seen nexts
       | S.B.Jump (tgt,_) ->
           add_tgt re_exec true proc env seen addr tgt
-      | S.B.Fault dir ->
-          add_fault re_exec inst dir fetch_proc proc env seen addr nexts
+      | S.B.Fault _ ->
+          add_fault re_exec inst fetch_proc proc env seen addr nexts
       | S.B.FaultRet tgt ->
           add_tgt false true proc env seen addr tgt
       | S.B.CondJump (v,tgt) ->

@@ -170,7 +170,7 @@ let morearch = ref MoreArch.No
 let carch = ref `Unknown
 let mode = ref Mode.Std
 let usearch = ref UseArch.Trad
-let precision = ref Precision.default
+let fault_handling = ref Fault.Handling.default
 let variant = ref (fun _ -> false)
 
 (* Arch dependent options *)

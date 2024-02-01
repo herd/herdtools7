@@ -43,7 +43,7 @@ module type Config = sig
   val cacheflush : bool
   val exit_cond : bool
   include DumpParams.Config
-  val precision : Precision.t
+  val precision : Fault.Handling.t
   val variant : Variant_litmus.t -> bool
 end
 
@@ -98,7 +98,7 @@ module Make
       Cfg.ascall || Cfg.is_kvm || do_label_init || CfgLoc.need_prelude
       || Cfg.variant Variant_litmus.Self
 
-    let do_precise = Precision.is_fatal Cfg.precision
+    let do_precise = Fault.Handling.is_fatal Cfg.precision
 
     let do_dynalloc =
         let open Alloc in
@@ -364,7 +364,7 @@ module Make
              Insert.insert O.o "instruction.h" ;
              O.o "" ;
              begin
-               let open Precision in
+               let open Fault.Handling in
                match Cfg.precision with
                | Fatal ->
                   O.o "#define PRECISE 1" ;
@@ -373,8 +373,6 @@ module Make
                   O.o "#define FAULT_SKIP 1" ;
                   O.o ""
                | Handled -> ()
-               | LoadsFatal ->
-                  Warn.user_error "No asymetric mode for litmus kvm variant"
              end ;
 
              let insert_ins_ops () =

@@ -1,0 +1,10 @@
+Test B005 Required
+States 1
+0:X2=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=1)
+Observation B005 Always 1 0
+Hash=92ce7c8ed051bc37bffd09f2abe7bb5d
+

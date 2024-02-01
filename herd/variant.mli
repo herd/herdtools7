@@ -39,7 +39,8 @@ type t =
  (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)
   | DontCheckMixed
   | MemTag           (* Memory Tagging, synonym of MTE *)
-  | TagPrecise of Precision.t (* Fault handling *)
+  | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
+  | FaultHandling of Fault.Handling.t (* Fault handling *)
   | TooFar         (* Do not discard candidates with TooFar events *)
   | Morello
   | Neon
@@ -79,11 +80,11 @@ type t =
   | T of int
 (* ASL Processing *)
   (* In AArch64 arch, use ASL to interprete AArch64 instructions when possible. *)
-  | ASL 
+  | ASL
   (* While interpreting ASL litmus test, include AArch64 shared pseudocode. *)
-  | ASL_AArch64 
+  | ASL_AArch64
   (* When using aarch ASL, use ASL version v0 or v1 *)
-  | ASLVersion of [ `ASLv0 | `ASLv1 ] 
+  | ASLVersion of [ `ASLv0 | `ASLv1 ]
 (* ASL Typing control *)
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* Signed Int128 types *)
@@ -107,4 +108,5 @@ val get_default :  Archs.t -> t -> bool
 (* Get value for switchable variant *)
 val get_switch : Archs.t -> t -> (t -> bool) -> bool
 
-val set_precision : Precision.t ref -> t -> bool
+val set_mte_precision : Precision.t ref -> t -> bool
+val set_fault_handling : Fault.Handling.t ref -> t -> bool

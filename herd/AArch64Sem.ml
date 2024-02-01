@@ -1033,17 +1033,14 @@ module Make
             B.Fault dir
         else
           let open Precision in
-          match C.precision,dir with
-          | (Fatal,_)|(LoadsFatal,(Dir.R)) ->
-             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Exit
-          | (Handled,_)|(LoadsFatal,Dir.W) ->
+          match C.mte_precision,dir with
+          | (Synchronous,_)|(Asymmetric,(Dir.R)) ->
+             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Fault dir
+          | (Asynchronous,_)|(Asymmetric,Dir.W) ->
              fun ma ->
              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
              let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
              mm ma >>! B.Next []
-          | Skip,_ ->
-             fun _ ->
-               Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
 
 (* KVM mode *)
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
@@ -1199,7 +1196,9 @@ module Make
         lift_memop rA Dir.R true memtag
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
-            let memtag_sync = memtag && (C.precision = Fatal || C.precision = LoadsFatal) in
+            let memtag_sync =
+              memtag && (C.mte_precision = Synchronous ||
+                         C.mte_precision = Asymmetric) in
             if memtag_sync || Access.is_physical ac then
               M.bind_ctrldata ma (mop ac)
             else
@@ -1212,7 +1211,7 @@ module Make
         lift_memop rA Dir.W true memtag
           (fun ac ma mv ->
             let open Precision in
-            let memtag_sync = memtag && C.precision = Fatal in
+            let memtag_sync = memtag && C.mte_precision = Synchronous in
             if memtag_sync || (is_branching && Access.is_physical ac) then begin
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv

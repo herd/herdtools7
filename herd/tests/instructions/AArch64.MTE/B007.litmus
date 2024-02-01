@@ -1,0 +1,11 @@
+AArch64 B007
+Variant=mte,asym,fatal
+{
+ 0:X1=x:red;
+ 1:X1=x:red;
+}
+ P0          |  P1         ;
+ LDR W0,[X1] | MOV W0,#2   ;
+ MOV W2,#1   | STR W0,[X1] ;
+             | MOV W2,#1   ;
+forall(0:X2=0 /\ 1:X2=1)

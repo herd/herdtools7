@@ -63,3 +63,20 @@ module type S = sig
 end
 
 module Make : functor (A:I) -> S with type loc_global := A.arch_global and type fault_type := A.fault_type
+
+(** Reaction to faults common to litmus and herd when the test doesn't specify a fault handler *)
+module Handling : sig
+  type t =
+    | Handled      (** After a fault retry the faulting instruction *)
+    | Fatal        (** After a fault exit the execution *)
+    | Skip         (** After a fault skip the faulting instruction *)
+
+
+  val default : t
+  val tags : string list
+  val parse : string -> t option
+  val pp : t -> string
+
+  val is_fatal : t -> bool
+  val is_skip : t -> bool
+end

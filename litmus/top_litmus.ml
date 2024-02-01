@@ -56,7 +56,8 @@ module type CommonConfig = sig
   val gcc : string
   val c11 : bool
   val ascall : bool
-  val precision : Precision.t
+  val fault_handling : Fault.Handling.t
+  val mte_precision : Precision.t
   val variant : Variant_litmus.t -> bool
   val nocatch : bool
   val stdio : bool
@@ -115,7 +116,7 @@ module type Config = sig
   val noccs : int
   val timelimit : float option
   val check_nstates : string -> int option
-  val precision : Precision.t
+  val fault_handling : Fault.Handling.t
   (* End of additions *)
   include Skel.Config
   include Run_litmus.Config
@@ -404,9 +405,11 @@ end = struct
           TestVariant.Make
             (struct
               module Opt = Variant_litmus
-              let set_precision = Variant_litmus.set_precision
               let info = splitted.Splitter.info
-              let precision = OT.precision
+              let mte_precision = OT.mte_precision
+              let set_mte_precision = Variant_litmus.set_mte_precision
+              let fault_handling = OT.fault_handling
+              let set_fault_handling = Variant_litmus.set_fault_handling
               let variant = OT.variant
             end) in
         (* Then call appropriate compiler, depending upon arch *)
@@ -430,11 +433,11 @@ end = struct
           let asmcomment = OT.asmcomment
           let hexa = OT.hexa
           let mode = OT.mode
-          let precision = TestConf.precision
+          let precision = TestConf.fault_handling
         end in
         let module Cfg = struct
           include OT
-          let precision = TestConf.precision
+          let precision = TestConf.fault_handling
           let variant = TestConf.variant
           include ODep
           let debuglexer = debuglexer

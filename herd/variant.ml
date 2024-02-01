@@ -41,7 +41,8 @@ type t =
   | DontCheckMixed
 (* Tags *)
   | MemTag
-  | TagPrecise of Precision.t (* Fault handling *)
+  | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
+  | FaultHandling of Fault.Handling.t (* Fault handling *)
   | TooFar
   | Morello
   | Neon
@@ -99,7 +100,7 @@ let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";"vmsa";"kvm";]@
-    Precision.tags @
+    Precision.tags @ Fault.Handling.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
     "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
@@ -159,18 +160,22 @@ let parse s = match Misc.lowercase s with
 | "nv2" | "NV2" -> Some NV2
 | s ->
    begin
-     match Precision.parse s with
-     | Some p -> Some (TagPrecise p)
-     | None ->
-        if String.length s = 3 then
-          match s.[0],s.[1],s.[2] with
-          | 't', ('0'..'9' as c1),('0'..'9' as c2) ->
-             let n =
-               (Char.code c1 - Char.code '0')*10 +
+     match Fault.Handling.parse s with
+     | Some p -> Some (FaultHandling p)
+     | None -> begin
+         match Precision.parse s with
+         | Some p -> Some (MTEPrecision p)
+         | None ->
+           if String.length s = 3 then
+             match s.[0],s.[1],s.[2] with
+             | 't', ('0'..'9' as c1),('0'..'9' as c2) ->
+               let n =
+                 (Char.code c1 - Char.code '0')*10 +
                  (Char.code c2 - Char.code '0') in
-             Some (T n)
-          | _ -> None
-        else None
+               Some (T n)
+             | _ -> None
+           else None
+       end
    end
 
 let pp = function
@@ -190,7 +195,8 @@ let pp = function
   | DontCheckMixed -> "DontCheckMixed"
   | NotWeakPredicated -> "NotWeakPredicated"
   | MemTag -> "memtag"
-  | TagPrecise p -> Precision.pp p
+  | MTEPrecision p -> Precision.pp p
+  | FaultHandling p -> Fault.Handling.pp p
   | TooFar -> "TooFar"
   | Morello -> "Morello"
   | Neon -> "Neon"
@@ -249,6 +255,10 @@ let get_switch a v f =
   let d = get_default a v in
   if f v then not d else d
 
-let set_precision r tag = match tag with
-  | TagPrecise p -> r := p ; true
+let set_fault_handling r = function
+  | FaultHandling p -> r := p; true
+  | _ -> false
+
+let set_mte_precision r = function
+  | MTEPrecision p -> r := p; true
   | _ -> false

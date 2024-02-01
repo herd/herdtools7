@@ -15,33 +15,21 @@
 (****************************************************************************)
 
 type t =
-  | Handled      (* Do nothing special *)
-  | Fatal        (* Jump to end of code *)
-  | LoadsFatal   (* Only faults on loads jump to end of code, stores do nothing *)
-  | Skip         (* Skip instruction *)
+  | Synchronous
+  | Asynchronous
+  | Asymmetric
 
-let default = Handled
+let default = Synchronous
 
-let tags =  ["handled"; "fatal"; "loadsfatal"; "faultToNext"; ]
+let tags =  [ "synchronous"; "sync"; "asynchronous"; "async"; "asymmetric"; "asym" ]
 
-let parse s = match s with
-  | "imprecise"|"handled"|"asynchronous"|"async" -> Some Handled
-  | "precise"|"fatal"|"synchronous"|"sync" -> Some Fatal
-  | "loadsfatal"|"asymmetric"|"asym" -> Some LoadsFatal
-  | "faulttonext"|"skip" -> Some Skip
+let parse = function
+  | "synchronous"|"sync" -> Some Synchronous
+  | "asynchronous"|"async" -> Some Asynchronous
+  | "asymmetric"|"asym" -> Some Asymmetric
   | _ -> None
 
 let pp = function
-  | Handled -> "handled"
-  | Fatal -> "fatal"
-  | LoadsFatal -> "loadsfatal"
-  | Skip -> "faulToNext"
-
-let is_fatal = function
-  | Fatal -> true
-  | Handled|LoadsFatal|Skip -> false
-
-let is_skip = function
-  | Skip -> true
-  | Handled|Fatal|LoadsFatal -> false
-
+  | Synchronous -> "synchronous"
+  | Asynchronous -> "asynchronous"
+  | Asymmetric -> "asymmetric"
