@@ -95,6 +95,7 @@ module Make
            (CfgLoc:
               sig
                 val label_init : Label.Full.Set.t
+                val all_labels : Label.Full.full list
                 val need_prelude : bool
               end) = struct
       module G = Global_litmus
@@ -107,7 +108,8 @@ module Make
 
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
-      let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
+      let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init &&
+                               CfgLoc.all_labels = [])
 
       let do_ascall =
         (* Self-modifing code or label constants in init section
@@ -1083,6 +1085,8 @@ module Make
                (fun rloc ->
                  let sloc = A.dump_rloc_tag rloc in
                  match U.find_rloc_type rloc env with
+                 | Pointer t when CType.is_ins_t t ->
+                   sprintf " instr_symb_name[o[%s_f]]" sloc
                  | Pointer _ -> sprintf "pretty_addr[o[%s_f]]" sloc
                  | Array (t,sz) ->
                      let rec pp_rec k =
@@ -1091,8 +1095,6 @@ module Make
                            (CType.dump (register_type rloc (CType.Base t)))
                            sloc k::pp_rec (k+1) in
                      String.concat "," (pp_rec 0)
-                 | t when CType.is_ins_t t ->
-                    sprintf "pretty_opcode(o[%s_f])" sloc
                  | t ->
                     sprintf "(%s)o[%s_f]"
                        (CType.dump (register_type rloc t)) sloc)
@@ -1405,7 +1407,7 @@ module Make
             O.fx indent "_a->%s = _a->%s;" (tag_malloc a) a ;
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
-        if do_self || CfgLoc.need_prelude then begin
+        if do_self || CfgLoc.need_prelude || U.label_in_outs test then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o "" ;
           if do_self then begin
@@ -2225,6 +2227,10 @@ module Make
               let t = U.find_rloc_type rloc env in
               let t = CType.strip_attributes t in
               begin match t,rloc with
+              | t,_ when CType.is_ins_ptr_t t ->
+                O.fiii "size_t %s = get_instr_symb_id(&ctx, %s%s);"
+                  (dump_rloc_copy rloc) (dump_ctx_rloc "ctx." rloc)
+                  (if do_self then ", _i" else "")
               | CType.Array (t,_),_ ->
                   O.fiii "%s *%s = %s;"
                     t
@@ -2314,10 +2320,12 @@ module Make
               | _ ->
                   O.fx indent "o[%s_f] = %s;"
                     (A.dump_rloc_tag rloc)
-                    (if CType.is_ptr t then
-                      sprintf "idx_addr(&ctx,_i,%s)" (dump_rloc_copy rloc)
-                    else
-                      dump_rloc_copy rloc))
+                    (if CType.is_ins_ptr_t t then
+                       (dump_rloc_copy rloc)
+                     else if CType.is_ptr t then
+                       sprintf "idx_addr(&ctx,_i,%s)" (dump_rloc_copy rloc)
+                     else
+                       dump_rloc_copy rloc))
             (U.get_displayed_locs test) ;
           O.ox indent "add_outcome(hist,1,o,cond);" ;
           if mk_dsa test then begin
@@ -2933,6 +2941,9 @@ module Make
           MakeLoc
             (struct
               let label_init = T.get_init_labels test
+
+              let all_labels = T.all_labels test
+
               let need_prelude =
                 not (Label.Full.Set.is_empty label_init)
                 || Misc.consp (T.from_labels test)
@@ -2940,6 +2951,8 @@ module Make
         let open MLoc in
         let env = U.build_env test in
         dump_header test ;
+        if U.label_in_outs test then
+          UD.dump_label_defs (T.all_labels test) ;
         UD.dump_getinstrs test ;
         dump_read_timebase () ;
         dump_threads test ;
@@ -2949,10 +2962,15 @@ module Make
         dump_cond_fun env test ;
         dump_defs_outs doc env test ;
         (* Note: does nothing when no label is here *)
-        UD.define_label_offsets test (T.get_init_labels test) ;
+        let lbls_in_outs = T.C.get_labels test.T.condition in
+        let lbls = Label.Full.Set.union lbls_in_outs (T.get_init_labels test) in
+        UD.define_label_offsets test lbls ;
         dump_check_globals env doc test ;
         dump_templates env doc.Name.name test ;
         dump_reinit env test cpys ;
+        let nprocs = T.get_nprocs test in
+        if U.label_in_outs test then
+          UD.dump_label_funcs do_self (T.all_labels test) nprocs ;
         dump_zyva doc cpys env test ;
         if do_vp then UD.prelude doc test ;
         dump_run doc env test ;

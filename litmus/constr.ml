@@ -47,6 +47,7 @@ module type S = sig
 
 (* Collect instructions *)
   val get_instrs: cond -> V.Instr.Set.t
+  val get_labels: cond -> Label.Full.Set.t
 end
 
 open ConstrGen
@@ -104,12 +105,12 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
       | LV (_,v) ->
             let rec f v k = match v with
             | Symbolic (Virtual {name=s;offset=0;tag=None;_}) -> Strings.add s k
-            | Concrete _|PteVal _|Instruction _ -> k
+            | Concrete _|PteVal _|Instruction _|Label _ -> k
             | ConcreteVector vs ->
                 List.fold_right f vs k
             | ConcreteRecord vs ->
                 StringMap.fold_values f vs k
-            | Label _|Symbolic _|Tag _|Frozen _
+            | Symbolic _|Tag _|Frozen _
               -> assert false in
             f v k
       | LL _|FF _ -> k
@@ -143,6 +144,12 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
         | LV (_,Constant.Instruction i) -> V.Instr.Set.add i k
         | LV _ | LL _ | FF _ -> k in
       ConstrGen.fold_constr fold_atom c V.Instr.Set.empty
+
+    let get_labels c =
+      let fold_atom a k = match a with
+        | LV (_,Constant.Label (p, l)) -> Label.Full.Set.add (p, l) k
+        | LV _ | LL _ | FF _ -> k in
+      ConstrGen.fold_constr fold_atom c Label.Full.Set.empty
 
 
   end

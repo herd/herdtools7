@@ -81,6 +81,7 @@ rule token = parse
 | "_Atomic" { ATOMIC }
 | "ATOMIC_INIT" { ATOMICINIT }
 | "instr:" '"' ([^'"']+ as i) '"' { INSTR i }
+| "label:" '"' 'P'? (decimal as p) ':' ([^'"']+ as l)  '"' { LABEL ((int_of_string p), l) }
 | '`' ([^'`']+ as i) '`' { VALUE i }
 (*for GPU*)
 | ".reg" {PTX_REG_DEC}

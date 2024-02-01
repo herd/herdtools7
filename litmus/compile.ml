@@ -51,7 +51,7 @@ module Generic
 
       let base =  A.base_type
       let pointer = CType.Pointer base
-      let code_pointer = Pointer (Base "ins_t")
+      let code_pointer = Pointer (CType.ins_t)
       let tag = Base "tag_t"
       let base_array sz = CType.Array ("int", sz)
       let pteval_t = CType.pteval_t

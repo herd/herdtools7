@@ -1,0 +1,10 @@
+Test A258 Required
+States 1
+0:X0=label:"P0:L0";
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=label:"P0:L0")
+Observation A258 Always 1 0
+Hash=e0cbeef721bbbb5cb7dd570a9b680cea
+

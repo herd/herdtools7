@@ -50,6 +50,7 @@ val is_pte : t -> bool
 val is_array : t -> bool
 val is_atomic : t -> bool
 val is_ins_t : t -> bool
+val is_ins_ptr_t : t -> bool
 
 val strip_atomic : t -> t
 val strip_volatile : t -> t

@@ -9,7 +9,7 @@ static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
   fault_info_t flt;
   unsigned long far;
 
-  flt.instr_symb = get_instr_symb_id(lbls, pc);
+  flt.instr_symb = get_instr_symb_id(lbls, (ins_t *)pc);
   if (get_far(esr, &far)) {
     flt.data_symb = idx_addr((intmax_t *)far, vars_ptr[w->instance]);
   } else {

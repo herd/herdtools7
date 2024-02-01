@@ -126,6 +126,10 @@ let rec is_ins_t = function
   | Atomic t | Volatile t | Const t -> is_ins_t t
   | Array _|Base _|Pointer _ -> false
 
+let is_ins_ptr_t = function
+  | Pointer p -> is_ins_t p
+  | Atomic _ | Volatile _ | Const _ | Array _|Base _ -> false
+
 let rec strip_atomic = function
   | Volatile t -> Volatile (strip_atomic t)
   | Atomic t -> strip_atomic t (* We handle the case where we have malformed types *)
