@@ -1029,13 +1029,12 @@ module Make
       let lift_fault_memtag mfault mm dir ii =
         if has_handler ii then
           fun ma ->
-            M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 ii) >>!
-            B.Fault dir
+            M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Fault
         else
           let open Precision in
           match C.mte_precision,dir with
           | (Synchronous,_)|(Asymmetric,(Dir.R)) ->
-             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Fault dir
+             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Fault
           | (Asynchronous,_)|(Asymmetric,Dir.W) ->
              fun ma ->
              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
@@ -1059,11 +1058,11 @@ module Make
       let lift_kvm dir updatedb is_tag mop ma an ii mphy =
         let mfault ma a ft =
           if is_tag then
-            insert_commit_to_fault ma (fun _ -> mzero) (Some "Tag") ii >>! B.Fault dir
+            insert_commit_to_fault ma (fun _ -> mzero) (Some "Tag") ii >>! B.Fault
           else
             insert_commit_to_fault ma
               (fun _ -> mk_fault (Some a) dir an ii ft None) None ii >>|
-            set_elr_el1 ii >>! B.Fault dir in
+            set_elr_el1 ii >>! B.Fault in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb is_tag a ma an ii
             ((let m = mop Access.PTE ma in
@@ -1090,7 +1089,7 @@ module Make
               (fun a_phy ma ->
                  delayed_check_tags a_virt (Some a_phy) ma ii
                    (fun ma -> ma >>= M.ignore >>= B.next1T)
-                   (fun ma -> ma >>! B.Fault dir)) in
+                   (fun ma -> ma >>! B.Fault)) in
           let cond_check_tag ma a_virt =
             (* Only read and check the tag if the attrs of the PTE
                allow it *)
@@ -1107,7 +1106,7 @@ module Make
                let ma = M.para_bind_output_right mtag_op (fun _ -> ma) in
                match tag_op with
                | B.Next _ -> mphy ma a_virt
-               | B.Fault _ ->
+               | B.Fault ->
                  let ft = Some FaultType.AArch64.TagCheck in
                  let mm = fun ma -> mphy ma a_virt in
                  let fault = lift_fault_memtag
@@ -2311,11 +2310,11 @@ module Make
                        (function
                          | B.Next _ ->
                            fun mstz -> mstz >>| do_stg >>= M.ignore >>= B.next1T
-                         | B.Fault _ ->
+                         | B.Fault ->
                            fun mstz ->  mstz >>| mstg >>= M.ignore >>= B.next1T
                          | _ ->
                            Warn.fatal "Unexpected return value do_stg")
-                 | B.Fault _ ->
+                 | B.Fault ->
                    fun mstg -> mstg
                  | _ -> Warn.fatal "Unexpected return value do_stz"))
             (M.delay_kont "do_stz" do_stz
@@ -2323,7 +2322,7 @@ module Make
                  | B.Next _ ->
                    (* Force the solver to drop this, already handled above *)
                    fun _ -> M.assertT V.zero B.nextT
-                 | B.Fault _ ->
+                 | B.Fault ->
                    fun mstz -> mstz
                  | _ -> Warn.fatal "Unexpected return value do_stz"))
         else
@@ -3039,7 +3038,7 @@ module Make
            let (>>!) = M.(>>!) in
            let ft = Some FaultType.AArch64.UndefinedInstruction in
            let m_fault = mk_fault None Dir.R Annot.N ii ft None in
-           m_fault >>| set_elr_el1 ii >>! B.Fault Dir.R
+           m_fault >>| set_elr_el1 ii >>! B.Fault
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _) as i ->
@@ -3104,7 +3103,7 @@ module Make
                           (Some "Invalid") in
                       commit_pred ii
                         >>*= fun () -> m_fault >>| set_elr_el1 ii
-                          >>! B.Fault Dir.R
+                          >>! B.Fault
                     end
         else do_build_semantics test inst ii
 

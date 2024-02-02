@@ -579,7 +579,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           add_code re_exec fetch_proc proc env seen nexts
       | S.B.Jump (tgt,_) ->
           add_tgt re_exec true proc env seen addr tgt
-      | S.B.Fault _ ->
+      | S.B.Fault ->
           add_fault re_exec inst fetch_proc proc env seen addr nexts
       | S.B.FaultRet tgt ->
           add_tgt false true proc env seen addr tgt
