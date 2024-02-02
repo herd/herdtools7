@@ -384,6 +384,9 @@ let emit_joker st init = None,init,[],st
 (* Fences *)
 
     let emit_fence st _ init _ f = init,[Instruction (match f with Sync -> SYNC)],st
+    let emit_fence_dp st a init b f _ r _ =
+      let init,cs,st = emit_fence st a init b f in
+      Some r,init,cs,st
     let stronger_fence = Sync
 
 (* Check load *)

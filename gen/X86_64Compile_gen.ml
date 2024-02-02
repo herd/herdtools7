@@ -426,6 +426,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
            [X86_64.Instruction (I_CLFLUSH (opt,Effaddr_rm64 ea))] in
          init,cs,st
 
+    let emit_fence_dp st a init b f _ r _ =
+      let init,cs,st = emit_fence st a init b f in
+      Some r,init,cs,st
     let stronger_fence = Fence MFENCE
 
     (* Check load *)

@@ -438,6 +438,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (**********)
 
     let emit_fence st _ init _ f = init,[Instruction (AV.FenceIns f)],st
+    let emit_fence_dp st a init b f _ r _ =
+      let init,cs,st = emit_fence st a init b f in
+      Some r,init,cs,st
     let stronger_fence = strong
 
         (* Dependencies *)

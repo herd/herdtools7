@@ -215,9 +215,15 @@ let get_fence n =
                    fs is))
             chk loc_writes st p ro_prev init ns
       | E.Insert f ->
+          let ro_prev,init,cs,st, n1 = match ro_prev with
+          | No  -> let init, cs, st = Comp.emit_fence st p init n f in
+              None, init, cs, st, n
+          | Yes (dp,r1,n1) ->
+            let ro_prev,init,cs,st =
+              Comp.emit_fence_dp st p init n f dp r1 n1 in
+              ro_prev,init,cs,st, n1 in
           let init,is,finals,st =
-            compile_proc pref chk loc_writes st p ro_prev init ns in
-          let init,cs,st = Comp.emit_fence st p init n f in
+            compile_proc pref chk loc_writes st p (edge_to_prev_load ro_prev n1) init ns in
           init,cs@is,finals,st
       | _ ->
           let o,init,i,st = emit_access ro_prev st p init n in
