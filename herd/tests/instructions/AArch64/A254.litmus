@@ -1,0 +1,11 @@
+AArch64 A254
+Variant=NV2
+{
+ uint64_t nvmem[100];
+ 0:VNCR_EL2=nvmem;
+ 1:X1=nvmem;
+}
+ P0             | P1              ;
+ MOV X0,#1      | LDR X0,[X1,560] ;
+ MSR ELR_EL1,X0 |                 ;
+exists(1:X0=1)

@@ -1,0 +1,11 @@
+Test A255 Allowed
+States 2
+1:X0=0;
+1:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:X0=1)
+Observation A255 Sometimes 1 1
+Hash=816546a4a005c4130428e8d3a0100626
+

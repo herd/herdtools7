@@ -93,6 +93,7 @@ type t =
 (* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
   | Warn
   | Telechat
+  | NV2
 
 val compare : t -> t -> int
 val equal : t -> t -> bool
