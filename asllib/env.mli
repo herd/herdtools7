@@ -29,9 +29,6 @@ module type RunTimeConf = sig
   type v
   (** Stored elements of the environment. *)
 
-  type primitive
-  (** Types of primitive functions stored in the environment. *)
-
   val unroll : int
   (** [unroll] is the number of time a loop can be unrolled. *)
 end
@@ -42,7 +39,7 @@ module RunTime (C : RunTimeConf) : sig
   (* -------------------------------------------------------------------------*)
   (** {2 Types and constructors.} *)
 
-  type func = int ref * C.primitive AST.func
+  type func = int ref * AST.func
   (** A function has an index that keeps a unique calling index. *)
 
   type global = {

@@ -31,7 +31,7 @@ type strictness = [ `Silence | `Warn | `TypeCheck ]
 (** Possible strictness of type-checking. *)
 
 val type_check_ast :
-  strictness -> 'p AST.t -> StaticEnv.env -> 'p AST.t * StaticEnv.env
+  strictness -> AST.t -> StaticEnv.env -> AST.t * StaticEnv.env
 (** Typechecks the AST, and returns an AST with type inference holes filled.
 
     @raise Error.ASLException if the AST does not type-checks.

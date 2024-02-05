@@ -121,10 +121,12 @@ let map2_desc f thing1 thing2 =
 let s_pass = add_dummy_pos S_Pass
 let s_then = map2_desc (fun s1 s2 -> S_Seq (s1, s2))
 let boolean = T_Bool |> add_dummy_pos
-let integer = T_Int None |> add_dummy_pos
+let integer' = T_Int UnConstrained
+let integer = integer' |> add_dummy_pos
+let integer_exact' e = T_Int (WellConstrained [ Constraint_Exact e ])
+let integer_exact e = integer_exact' e |> add_dummy_pos
 let string = T_String |> add_dummy_pos
 let real = T_Real |> add_dummy_pos
-let underconstrained_integer = T_Int (Some []) |> add_dummy_pos
 
 let stmt_from_list : stmt list -> stmt =
   let is_not_s_pass = function { desc = S_Pass; _ } -> false | _ -> true in
@@ -194,8 +196,10 @@ and use_slice acc = function
 and use_ty acc t =
   match t.desc with
   | T_Named s -> ISet.add s acc
-  | T_Int None | T_Enum _ | T_Bool | T_Real | T_String -> acc
-  | T_Int (Some cs) -> use_constraints acc cs
+  | T_Int (UnConstrained | UnderConstrained _)
+  | T_Enum _ | T_Bool | T_Real | T_String ->
+      acc
+  | T_Int (WellConstrained cs) -> use_constraints acc cs
   | T_Tuple li -> List.fold_left use_ty acc li
   | T_Record fields | T_Exception fields -> fold_named_list use_ty acc fields
   | T_Array (e, t') -> use_ty (use_e acc e) t'
@@ -322,8 +326,7 @@ let rec expr_equal eq e1 e2 =
   | E_Literal _, _ | _, E_Literal _ -> false
   | E_Tuple li1, E_Tuple li2 -> list_equal (expr_equal eq) li1 li2
   | E_Tuple _, _ | _, E_Tuple _ -> false
-  | E_CTC (e1, t1), E_CTC (e2, t2) ->
-      expr_equal eq e1 e2 && type_equal eq t1 t2
+  | E_CTC (e1, t1), E_CTC (e2, t2) -> expr_equal eq e1 e2 && type_equal eq t1 t2
   | E_CTC _, _ | _, E_CTC _ -> false
   | E_Unop (o1, e1), E_Unop (o2, e2) -> o1 = o2 && expr_equal eq e1 e2
   | E_Unop _, _ | _, E_Unop _ -> false
@@ -363,9 +366,12 @@ and type_equal eq t1 t2 =
   | T_Bool, T_Bool
   | T_Real, T_Real
   | T_String, T_String
-  | T_Int None, T_Int None ->
+  | T_Int UnConstrained, T_Int UnConstrained ->
       true
-  | T_Int (Some c1), T_Int (Some c2) -> constraints_equal eq c1 c2
+  | T_Int (UnderConstrained (i1, _)), T_Int (UnderConstrained (i2, _)) ->
+      i1 == i2
+  | T_Int (WellConstrained c1), T_Int (WellConstrained c2) ->
+      constraints_equal eq c1 c2
   | T_Bits (w1, bf1), T_Bits (w2, bf2) ->
       bitwidth_equal eq w1 w2 && bitfields_equal eq bf1 bf2
   | T_Array (l1, t1), T_Array (l2, t2) ->
@@ -506,12 +512,24 @@ exception FailedConstraintOp
 
 let constraint_binop op =
   let do_op c1 c2 =
-    match (c1, c2) with
-    | Constraint_Exact e1, Constraint_Exact e2 ->
+    match (c1, c2, op) with
+    | Constraint_Exact e1, Constraint_Exact e2, _ ->
         Constraint_Exact (binop op e1 e2)
+    | Constraint_Exact e1, Constraint_Range (e21, e22), PLUS ->
+        Constraint_Range (binop op e1 e21, binop op e1 e22)
+    | Constraint_Exact e1, Constraint_Range (e21, e22), MINUS ->
+        Constraint_Range (binop op e1 e22, binop op e1 e21)
+    | Constraint_Range (e11, e12), Constraint_Exact e2, (PLUS | MINUS) ->
+        Constraint_Range (binop op e11 e2, binop op e12 e2)
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22), PLUS ->
+        Constraint_Range (binop op e11 e21, binop op e12 e22)
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22), MINUS ->
+        Constraint_Range (binop op e11 e22, binop op e12 e21)
     | _ -> raise_notrace FailedConstraintOp
   in
-  fun cs1 cs2 -> try list_cross do_op cs1 cs2 with FailedConstraintOp -> []
+  fun cs1 cs2 ->
+    try WellConstrained (list_cross do_op cs1 cs2)
+    with FailedConstraintOp -> UnConstrained
 
 let rec subst_expr substs e =
   (* WARNING: only subst runtime vars. *)
@@ -538,8 +556,8 @@ let rec subst_expr substs e =
   | E_Unknown _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
 
-let dag_fold (def : 'p AST.decl -> identifier) (use : 'p AST.decl -> ISet.t)
-    (folder : 'p AST.decl -> 'a -> 'a) (ast : 'p AST.t) : 'a -> 'a =
+let dag_fold (def : AST.decl -> identifier) (use : AST.decl -> ISet.t)
+    (folder : AST.decl -> 'a -> 'a) (ast : AST.t) : 'a -> 'a =
   let def_use_map =
     List.fold_left
       (fun def_use_map d ->
@@ -582,35 +600,6 @@ let scope_compare s1 s2 =
   | Scope_Local (n1, i1), Scope_Local (n2, i2) ->
       let n = Int.compare i1 i2 in
       if n != 0 then n else String.compare n1 n2
-
-let no_primitive (ast : 'p t) : 'q t =
-  let one d =
-    let here = add_pos_from d in
-    match d.desc with
-    | D_GlobalStorage g -> D_GlobalStorage g |> here
-    | D_TypeDecl (a, b, c) -> D_TypeDecl (a, b, c) |> here
-    | D_Func { body = SB_Primitive _; _ } -> assert false
-    | D_Func
-        {
-          body = SB_ASL s;
-          args;
-          name;
-          return_type;
-          subprogram_type;
-          parameters;
-        } ->
-        D_Func
-          {
-            body = SB_ASL s;
-            args;
-            name;
-            return_type;
-            subprogram_type;
-            parameters;
-          }
-        |> here
-  in
-  List.map one ast
 
 let rec is_simple_expr e =
   match e.desc with
@@ -677,8 +666,10 @@ let rename_locals map_name ast =
     | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)
   and map_t t =
     map_desc_st' t @@ function
-    | T_Real | T_String | T_Bool | T_Enum _ | T_Named _ | T_Int None -> t.desc
-    | T_Int (Some cs) -> T_Int (Some (map_cs cs))
+    | T_Real | T_String | T_Bool | T_Enum _ | T_Named _
+    | T_Int (UnConstrained | UnderConstrained _) ->
+        t.desc
+    | T_Int (WellConstrained cs) -> T_Int (WellConstrained (map_cs cs))
     | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)
     | T_Tuple li -> T_Tuple (List.map map_t li)
     | T_Array (_, _) -> failwith "Not yet implemented: offuscate array types"
@@ -723,11 +714,13 @@ let rename_locals map_name ast =
     | LDI_Tuple (ldis, t) ->
         LDI_Tuple (List.map map_ldi ldis, Option.map map_t t)
   and map_body = function
-    | SB_Primitive _ as b -> b
+    | SB_Primitive as b -> b
     | SB_ASL s -> SB_ASL (map_s s)
   and map_func f =
     let map_args li = List.map (fun (name, t) -> (map_name name, map_t t)) li in
-    let map_nargs li = List.map (fun (name, t) -> (map_name name, Option.map map_t t)) li in
+    let map_nargs li =
+      List.map (fun (name, t) -> (map_name name, Option.map map_t t)) li
+    in
     {
       f with
       parameters = map_nargs f.parameters;

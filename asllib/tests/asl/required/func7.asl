@@ -5,7 +5,7 @@ end
 
 func f1 {M} (x: bits(M)) => integer {0..M}
 begin
-  return Len(x);
+  return Len(x) as integer {0..M};
 end
 
 func f2 (L: integer) => bits(L)

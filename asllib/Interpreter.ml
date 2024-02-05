@@ -38,9 +38,9 @@ let _dbg = false
 module type S = sig
   module B : Backend.S
 
-  val run_env : (AST.identifier * B.value) list -> B.ast -> B.value B.m
-  val run : B.ast -> B.value B.m
-  val run_typed : B.ast -> StaticEnv.env -> B.value B.m
+  val run_env : (AST.identifier * B.value) list -> AST.t -> B.value B.m
+  val run : AST.t -> B.value B.m
+  val run_typed : AST.t -> StaticEnv.env -> B.value B.m
 end
 
 module type Config = sig
@@ -58,7 +58,6 @@ module Make (B : Backend.S) (C : Config) = struct
 
   module EnvConf = struct
     type v = B.value
-    type primitive = B.primitive
 
     let unroll = C.unroll
   end
@@ -227,7 +226,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
   let build_genv env0 eval_expr base_value (static_env : StaticEnv.env)
-      (ast : B.primitive AST.t) =
+      (ast : AST.t) =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then
@@ -268,6 +267,21 @@ module Make (B : Backend.S) (C : Config) = struct
       | Throwing (v, g) -> Throwing (v, g) |> return |> Fun.const)
 
   let ( let*^ ) = bind_env
+
+  (* Primitives handling *)
+  (* ------------------- *)
+  let primitive_runtimes =
+    List.to_seq B.primitives
+    |> Seq.map
+         AST.(fun ({ name; subprogram_type = _; _ }, f) -> (name, f))
+    |> Hashtbl.of_seq
+
+  let primitive_decls =
+    List.map (fun (f, _) -> D_Func f |> add_dummy_pos) B.primitives
+
+  let () =
+    if false then
+      Format.eprintf "@[<v 2>Primitives:@ %a@]@." PP.pp_t primitive_decls
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -541,12 +555,24 @@ module Make (B : Backend.S) (C : Config) = struct
     let or' prev here = prev >>= B.binop BOR here in
     let rec in_values v ty =
       match (Types.get_structure (IEnv.to_static env) ty).desc with
-      | T_Real | T_Bool | T_Enum _ | T_String | T_Int None -> m_true
+      | T_Real | T_Bool | T_Enum _ | T_String | T_Int UnConstrained ->
+          m_true
+      | T_Int (UnderConstrained _) ->
+          (* This cannot happen, because:
+             1. Forgetting now about named types, or any kind of compound type,
+                you cannot ask: [expr as ty] if ty is the unconstrained integer
+                because there is no syntax for it.
+             2. You cannot construct a type that is an alias for the
+                underconstrained integer type.
+             3. You cannot put the underconstrained integer type in a compound
+                type.
+          *)
+          failwith "Cannot perform a CTC on the under-constrained type."
       | T_Bits (e, _) ->
           let* v' = eval_expr_sef env e
           and* v_length = B.bitvector_length v in
           B.binop EQ_OP v_length v'
-      | T_Int (Some constraints) ->
+      | T_Int (WellConstrained constraints) ->
           let fold prev = function
             | Constraint_Exact e ->
                 let* v' = eval_expr_sef env e in
@@ -1207,9 +1233,10 @@ module Make (B : Backend.S) (C : Config) = struct
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin FPrimitive *)
-    | Some (r, { body = SB_Primitive body; _ }) ->
+    | Some (r, { body = SB_Primitive; _ }) ->
         let scope = Scope_Local (name, !r) in
         let () = incr r in
+        let body = Hashtbl.find primitive_runtimes name in
         let* ms = body actual_args in
         let _, vsm =
           List.fold_right
@@ -1306,9 +1333,16 @@ module Make (B : Backend.S) (C : Config) = struct
         L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum li ->
         IMap.find (List.hd li) env.global.static.constants_values |> lit
-    | T_Int None | T_Int (Some []) -> L_Int Z.zero |> lit
-    | T_Int (Some (Constraint_Exact e :: _))
-    | T_Int (Some (Constraint_Range (e, _) :: _)) ->
+    | T_Int UnConstrained -> L_Int Z.zero |> lit
+    | T_Int (UnderConstrained _) ->
+        failwith
+          "Cannot request the base value of a under-constrained integer."
+    | T_Int (WellConstrained []) ->
+        failwith
+          "A well constrained integer cannot have an empty list of \
+           constraints."
+    | T_Int (WellConstrained (Constraint_Exact e :: _))
+    | T_Int (WellConstrained (Constraint_Range (e, _) :: _)) ->
         eval_expr_sef env e
     | T_Named _ -> assert false
     | T_Real -> L_Real Q.zero |> lit
@@ -1341,7 +1375,7 @@ module Make (B : Backend.S) (C : Config) = struct
         List.init length (Fun.const v) |> B.create_vector
 
   (* Begin TopLevel *)
-  let run_typed_env env (ast : B.ast) (static_env : StaticEnv.env) :
+  let run_typed_env env (ast : AST.t) (static_env : StaticEnv.env) :
       B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in
     let*| res = eval_func env "main" dummy_annotated [] [] in
@@ -1360,8 +1394,9 @@ module Make (B : Backend.S) (C : Config) = struct
 
   let run_typed ast env = run_typed_env [] ast env
 
-  let run_env (env : (AST.identifier * B.value) list) (ast : B.ast) :
+  let run_env (env : (AST.identifier * B.value) list) (ast : AST.t) :
       B.value m =
+    let ast = List.rev_append primitive_decls ast in
     let ast = Builder.with_stdlib ast in
     let ast, static_env =
       Typing.type_check_ast C.type_checking_strictness ast

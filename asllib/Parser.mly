@@ -149,11 +149,11 @@ let make_ty_decl_subtype (x, s) =
 
 (* ------------------------------------------------------------------------- *)
 
-%type <unit AST.t> ast
+%type <AST.t> ast
 %start ast
 
 (* This start-point is for .opn files in arm-pseudocodes for instructions. *)
-%type <unit AST.t> opn
+%type <AST.t> opn
 %start opn
 
 (* Parse statements, as one *)
@@ -322,8 +322,10 @@ let colon_for_type == COLON | COLON_COLON
 
 (* Constrained types helpers *)
 
-let int_constraints == braced(nclist(int_constraint_elt))
-let int_constraint_elt ==
+let int_constraints_opt == int_constraints | { UnConstrained }
+let int_constraints == ~=braced(nclist(int_constraint)); < WellConstrained >
+
+let int_constraint ==
   | ~=expr;                     < Constraint_Exact >
   | e1=expr; SLICING; e2=expr;  < Constraint_Range >
 
@@ -365,7 +367,7 @@ let bitfield ==
 (* Also called ty in grammar.bnf *)
 let ty :=
   annotated (
-    | INTEGER; c = ioption(int_constraints);            < T_Int       >
+    | INTEGER; c = int_constraints_opt;                 < T_Int       >
     | REAL;                                             { T_Real      }
     | BOOLEAN;                                          { T_Bool      }
     | STRING;                                           { T_String    }
@@ -383,7 +385,7 @@ let ty :=
 let as_ty == colon_for_type; ty
 let typed_identifier == pair(IDENTIFIER, as_ty)
 let ty_opt == ioption(as_ty)
-let implicit_t_int == annotated ( ~=some(int_constraints) ; <T_Int> )
+let implicit_t_int == annotated ( ~=int_constraints ; <T_Int> )
 
 
 (* ------------------------------------------------------------------------

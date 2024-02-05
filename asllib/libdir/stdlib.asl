@@ -121,20 +121,20 @@ func LowestSetBit{N}(x: bits(N)) => integer{0..N}
 begin
   for i = 0 to N-1 do
     if x[i] == '1' then
-      return i;
+      return i as integer{0..N};
     end
   end
-  return N;
+  return N as integer {0..N};
 end
 
 func HighestSetBit{N}(x: bits(N)) => integer{-1..N-1}
 begin
   for i = N-1 downto 0 do
     if x[i] == '1' then
-      return i;
+      return i as integer {-1..N-1};
     end
   end
-  return -1;
+  return -1 as {-1..N-1};
 end
 
 func Zeros(N :: integer) => bits(N)
@@ -179,7 +179,7 @@ end
 
 // Leading sign bits in a bitvector. Count the number of consecutive
 // bits following the leading bit, that are equal to it.
-func CountLeadingSignBits{N}(x::bits(N)) => integer{0..N}
+func CountLeadingSignBits{N}(x::bits(N)) => integer{0..N-1}
 begin
   return CountLeadingZeroBits(x[N-1:1] EOR x[N-2:0]);
 end
@@ -213,7 +213,7 @@ end
 // Logical left shift with carry out.
 func LSL_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
 begin
-    return (LSL(x, shift), x[N-shift]);
+    return (LSL(x, shift as integer {0..N-1}), x[N-shift]);
 end
 
 // Logical right shift, shifting zeroes into higher bits.
@@ -225,7 +225,7 @@ end
 // Logical right shift with carry out.
 func LSR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
 begin
-    return (LSR(x, shift), x[shift-1]);
+    return (LSR(x, shift as integer {0..N-1}), x[shift-1]);
 end
 
 // Arithmetic right shift, shifting sign bits into higher bits.
@@ -237,7 +237,7 @@ end
 // Arithmetic right shift with carry out.
 func ASR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
 begin
-    return (ASR(x, shift), x[shift-1]);
+    return (ASR(x, shift as integer {0..N-1}), x[shift-1]);
 end
 
 // Rotate right.
@@ -249,5 +249,5 @@ end
 // Rotate right with carry out.
 func ROR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
 begin
-    return (ROR(x, shift), x[shift-1]);
+    return (ROR(x, shift as integer {0..N-1}), x[shift-1]);
 end

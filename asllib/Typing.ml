@@ -64,6 +64,16 @@ let reduce_constants env e =
       then undefined_identifier e x
       else raise error)
 
+let reduce_constraint env = function
+  | Constraint_Exact e -> Constraint_Exact (reduce_expr env e)
+  | Constraint_Range (e1, e2) ->
+      Constraint_Range (reduce_expr env e1, reduce_expr env e2)
+
+let reduce_constraints env = function
+  | (UnConstrained | UnderConstrained _) as c -> c
+  | WellConstrained constraints ->
+      WellConstrained (List.map (reduce_constraint env) constraints)
+
 let sum = function
   | [] -> !$0
   | [ x ] -> x
@@ -93,13 +103,13 @@ let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     match ty.desc with
     | T_Bits (e, fields) ->
         T_Bits (subst_expr eqs e, fields) |> add_pos_from_st ty
-    | T_Int (Some constraints) ->
+    | T_Int (WellConstrained constraints) ->
         let constraints = subst_constraints eqs constraints in
-        T_Int (Some constraints) |> add_pos_from_st ty
+        T_Int (WellConstrained constraints) |> add_pos_from_st ty
     | _ -> ty
 
 let infer_value = function
-  | L_Int _ as v -> T_Int (Some [ Constraint_Exact (literal v) ])
+  | L_Int _ as v -> integer_exact' (literal v)
   | L_Bool _ -> T_Bool
   | L_Real _ -> T_Real
   | L_String _ -> T_String
@@ -137,12 +147,9 @@ let max_constraint env = function
 let min_max_constraints m_constraint m =
   let rec do_rec env = function
     | [] ->
-        let () =
-          if false then
-            Format.eprintf "MinMax constraint found no constraint.@."
-        in
-        raise
-          ConstraintMinMaxTop (* for underconstraint bitvector types. *)
+        failwith
+          "A well-constrained integer cannot have an empty list of \
+           constraints."
     | [ c ] -> m_constraint env c
     | c :: cs ->
         let i = m_constraint env c and j = do_rec env cs in
@@ -438,8 +445,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   (** [check_type_satisfies t1 t2] if [t1 <: t2]. *)
   let check_type_satisfies loc env t1 t2 () =
+    let () =
+      if false then
+        Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1
+          PP.pp_ty t2
+    in
     if Types.type_satisfies env t1 t2 then ()
-    else conflict loc [ t1.desc ] t2
+    else conflict loc [ t2.desc ] t1
 
   (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
   let check_structure_boolean loc env t1 () =
@@ -455,7 +467,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let check_structure_integer loc env t () =
     match (Types.get_structure env t).desc with
     | T_Int _ -> ()
-    | _ -> conflict loc [ T_Int None ] t
+    | _ -> conflict loc [ integer' ] t
 
   let check_structure_exception loc env t () =
     let t_struct = Types.get_structure env t in
@@ -501,7 +513,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | _ -> false
 
   let t_bool = T_Bool |> __POS_OF__ |> add_pos_from_pos_of
-  let t_int = T_Int None |> __POS_OF__ |> add_pos_from_pos_of
+  let t_int = T_Int UnConstrained |> __POS_OF__ |> add_pos_from_pos_of
   let t_real = T_Real |> __POS_OF__ |> add_pos_from_pos_of
 
   let expr_is_strict_positive e =
@@ -529,6 +541,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let constraints_is_non_negative =
     List.for_all constraint_is_non_negative
+
+  let constraint_binop env op cs1 cs2 =
+    constraint_binop op cs1 cs2 |> reduce_constraints env
 
   (* Begin CheckBinop *)
   let check_binop loc env op t1 t2 : ty =
@@ -608,49 +623,45 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             T_Bool |> with_loc
         | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> (
-            (* TODO: ensure that we mean "has the structure of"
-               instead of "is" *)
-            let struct1 = Types.get_structure env t1
-            and struct2 = Types.get_structure env t2 in
+            (* TODO: ensure that we mean "has the structure of" instead of
+               "is" *)
+            let struct1 = Types.get_well_constrained_structure env t1
+            and struct2 = Types.get_well_constrained_structure env t2 in
             match (struct1.desc, struct2.desc) with
-            | T_Int None, T_Int _ | T_Int _, T_Int None ->
-                (* Rule ZYWY:
-                   If both operands of an integer binary primitive
+            | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained
+              ->
+                (* Rule ZYWY: If both operands of an integer binary primitive
                    operator are integers and at least one of them is an
                    unconstrained integer then the result shall be an
                    unconstrained integer. *)
                 (* TODO: check that no other checks are necessary. *)
-                T_Int None |> with_loc
-            | T_Int (Some []), T_Int (Some _)
-            | T_Int (Some _), T_Int (Some []) ->
-                (* Rule BZKW:
-                   If both operands of an integer binary primitive
-                   operator are constrained integers and at least one of
-                   them is the under-constrained integer then the result
-                   shall be an under-constrained integer. *)
-                T_Int (Some []) |> with_loc
-            | T_Int (Some cs1), T_Int (Some cs2) ->
-                (* Rule KFYS: If both operands of an integer binary
-                   primitive operation are well-constrained integers,
-                   then it shall return a constrained integer whose
-                   constraint is calculated by applying the operation
-                   to all possible value pairs. *)
-                let () =
+                T_Int UnConstrained |> with_loc
+            | T_Int (UnderConstrained _), _
+            | _, T_Int (UnderConstrained _) ->
+                assert false (* We used to_well_constrained before *)
+            | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
+                (* Rule KFYS: If both operands of an integer binary primitive
+                   operation are well-constrained integers, then it shall
+                   return a constrained integer whose constraint is calculated
+                   by applying the operation to all possible value pairs. *)
+                let+ () =
                   match op with
                   | DIV ->
-                      (* TODO cs1 divides cs1 ?
-                         How is it expressable in
-                         term of constraints? *)
-                      check_true' (constraints_is_strict_positive cs2) ()
+                      (* TODO cs1 divides cs1 ? How is it expressable in term of constraints? *)
+                      check_true' (constraints_is_strict_positive cs2)
                   | DIVRM | MOD ->
                       (* assert cs2 strict-positive *)
-                      check_true' (constraints_is_strict_positive cs2) ()
+                      check_true' (constraints_is_strict_positive cs2)
                   | SHL | SHR ->
                       (* assert cs2 non-negative *)
-                      check_true' (constraints_is_non_negative cs2) ()
-                  | _ -> ()
+                      check_true' (constraints_is_non_negative cs2)
+                  | _ -> fun () -> ()
                 in
-                T_Int (Some (constraint_binop op cs1 cs2)) |> with_loc
+                let cs =
+                  best_effort UnConstrained (fun _ ->
+                      constraint_binop env op cs1 cs2)
+                in
+                T_Int cs |> with_loc
             | T_Real, T_Real -> (
                 match op with
                 | PLUS | MINUS | MUL -> T_Real |> with_loc
@@ -680,48 +691,25 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (check_type_satisfies loc env t1 t_int)
             (check_type_satisfies loc env t1 t_real)
         in
-        match (Types.get_structure env t1).desc with
-        | T_Int None -> T_Int None |> add_pos_from loc
-        | T_Int (Some cs) ->
+        let struct1 = Types.get_well_constrained_structure env t1 in
+        match struct1.desc with
+        | T_Int UnConstrained -> T_Int UnConstrained |> add_pos_from loc
+        | T_Int (WellConstrained cs) ->
             let neg e = E_Unop (NEG, e) |> add_pos_from e in
             let constraint_minus = function
               | Constraint_Exact e -> Constraint_Exact (neg e)
               | Constraint_Range (top, bot) ->
                   Constraint_Range (neg bot, neg top)
             in
-            T_Int (Some (List.map constraint_minus cs))
+            T_Int (WellConstrained (List.map constraint_minus cs))
             |> add_pos_from loc
+        | T_Int (UnderConstrained _) ->
+            assert false (* We used to_well_constrained just before. *)
         | _ -> (* fail case *) t1)
     | NOT ->
         let+ () = check_structure_bits loc env t1 in
         t1 |: TypingRule.CheckUnop
   (* End *)
-
-  (* Rules:
-     - GNTS: It is illegal for a storage element whose type has the structure
-       of the under-constrained integer to be assigned a value whose type has
-       the structure of the under-constrained integer.
-     - LXQZ: A storage element of type S, where S is any type that does not have the
-       structure of the under-constrained integer type, may only be
-       assigned or initialized with a value of type T if T type-satisfies S
-  *)
-  (* TODO: incomplete. *)
-  (* Begin CanAssignTo *)
-  let can_assign_to env s t =
-    let s_struct = Types.get_structure env s
-    and t_struct = Types.get_structure env t in
-    match (s_struct.desc, t_struct.desc) with
-    | T_Int (Some []), T_Int (Some []) -> false
-    | _ -> Types.type_satisfies env t s |: TypingRule.CanAssignTo
-  (* End *)
-
-  let check_can_assign_to loc env s t () =
-    if can_assign_to env s t then ()
-    else
-      let () =
-        if false then Format.eprintf "%a <-- %a@." PP.pp_ty s PP.pp_ty t
-      in
-      fatal_from loc (Error.ConflictingTypes ([ s.desc ], t))
 
   let rec annotate_slices env =
     (* Rules:
@@ -942,7 +930,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               Format.eprintf "Checking calling arg from %a to %a@."
                 PP.pp_ty caller_arg PP.pp_ty callee_arg
           in
-          let+ () = check_can_assign_to loc env callee_arg caller_arg in
+          let+ () = check_type_satisfies loc env caller_arg callee_arg in
           ())
         callee_arg_types caller_arg_types
     in
@@ -1230,7 +1218,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 let wanted_t_index =
                   let t_int =
                     T_Int
-                      (Some
+                      (WellConstrained
                          [ Constraint_Range (!$0, binop MINUS size !$1) ])
                     |> here
                   in
@@ -1250,9 +1238,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       check_type_satisfies e env t_index' wanted_t_index
                     in
                     (ty', E_GetArray (e'', e_index') |> here)
-                | _ -> conflict e [ T_Int None; default_t_bits ] t_e')
+                | _ -> conflict e [ integer'; default_t_bits ] t_e')
             | _ ->
-                conflict e [ T_Int None; default_t_bits ] t_e'
+                conflict e [ integer'; default_t_bits ] t_e'
                 |: TypingRule.EGetArray))
     (* End *)
     | E_GetField (e1, field_name) -> (
@@ -1392,7 +1380,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* End *)
                 | None -> undefined_identifier le x)
           in
-          check_can_assign_to le env ty t_e ()
+          check_type_satisfies le env t_e ty ()
         in
         le
     (* Begin LEDestructuring *)
@@ -1422,7 +1410,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              fun () ->
               let width = slices_width env slices |> reduce_expr env in
               let t = T_Bits (width, []) |> here in
-              check_can_assign_to le env t t_e ()
+              check_type_satisfies le env t_e t ()
             in
             let slices2 = best_effort slices (annotate_slices env) in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
@@ -1430,11 +1418,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Begin LESetArray *)
         | T_Array (size, t) -> (
             let le2 = annotate_lexpr env le1 t_le1 in
-            let+ () = check_can_assign_to le2 env t t_e in
+            let+ () = check_type_satisfies le2 env t_e t in
             let wanted_t_index =
               let t_int =
                 T_Int
-                  (Some [ Constraint_Range (!$0, binop MINUS size !$1) ])
+                  (WellConstrained
+                     [ Constraint_Range (!$0, binop MINUS size !$1) ])
                 |> here
               in
               match size.desc with
@@ -1473,7 +1462,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                (* Begin LESetStructuredField *)
                | Some t -> t
              in
-             let+ () = check_can_assign_to le env t t_e in
+             let+ () = check_type_satisfies le env t_e t in
              LE_SetField (le2, field)
              |> here |: TypingRule.LESetStructuredField
              (* End *)
@@ -1504,7 +1493,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    (t, slices) |: TypingRule.LESetBitFieldTyped
                (* End *)
              in
-             let+ () = check_can_assign_to le1 env t t_e in
+             let+ () = check_type_satisfies le1 env t_e t in
              let le2 = LE_Slice (le1, slices) |> here in
              annotate_lexpr env le2 t_e
          (* Begin LESetBadField *)
@@ -1544,7 +1533,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | L_Int z -> Z.to_int z
           | _ ->
               fatal_from le
-              @@ MismatchType ("bitvector width", [ T_Int None ])
+              @@ MismatchType ("bitvector width", [ integer' ])
         in
         let annotate_one (les, widths, sum) le =
           let e = expr_of_lexpr le in
@@ -1580,7 +1569,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     *)
     let s_struct = Types.get_structure env s in
     match s_struct.desc with
-    | T_Int (Some []) -> (* TODO *) assert false
+    | T_Int (UnderConstrained _) -> (* TODO *) assert false
     | _ -> Types.type_satisfies env t s
 
   let check_can_be_initialized_with loc env s t () =
@@ -1854,15 +1843,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | S_For (id, e1, dir, e2, s') ->
         let t1, e1' = annotate_expr env e1
         and t2, e2' = annotate_expr env e2 in
-        let+ () = check_structure_integer s' env t1 in
-        let+ () = check_structure_integer s' env t2 in
+        let struct1 = Types.get_well_constrained_structure env t1
+        and struct2 = Types.get_well_constrained_structure env t2 in
         let cs =
-          match
-            ( (Types.get_structure env t1).desc,
-              (Types.get_structure env t2).desc )
-          with
-          | T_Int None, T_Int _ | T_Int _, T_Int None -> None
-          | T_Int (Some cs1), T_Int (Some cs2) -> (
+          match (struct1.desc, struct2.desc) with
+          | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained
+            ->
+              UnConstrained
+          | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) -> (
               try
                 let bot_cs, top_cs =
                   match dir with Up -> (cs1, cs2) | Down -> (cs2, cs1)
@@ -1870,15 +1858,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 let bot = min_constraints env bot_cs
                 and top = max_constraints env top_cs in
                 if bot <= top then
-                  Some
+                  WellConstrained
                     [ Constraint_Range (expr_of_z bot, expr_of_z top) ]
-                else Some cs1
+                else WellConstrained cs1
               with ConstraintMinMaxTop ->
                 (* TODO: this case is not specified by the LRM. *)
-                Some [])
-          | _ -> None
-          (* only happens in relaxed type-checking mode
-             because of check_structure_integer earlier. *)
+                UnConstrained)
+          | T_Int (UnderConstrained _), T_Int _
+          | T_Int _, T_Int (UnderConstrained _) ->
+              assert false
+          | T_Int _, _ -> conflict s [ integer' ] t2
+          | _, _ -> conflict s [ integer' ] t1
+          (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
         in
         let ty = T_Int cs |> here in
         let s'' =
@@ -2027,8 +2018,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetArray _ -> assert false
 
   (* Begin Subprogram *)
-  let annotate_subprogram loc (env : env) (f : 'p AST.func) : 'p AST.func
-      =
+  let annotate_subprogram loc (env : env) (f : AST.func) : AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
     (* Build typing local environment. *)
     let env1 =
@@ -2047,7 +2037,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let ty =
           match ty_opt with
           | Some ty -> ty
-          | None -> ASTUtils.underconstrained_integer
+          | None -> Types.under_constrained_ty x
         in
         let+ () = check_var_not_in_env loc env2 x in
         add_local x ty LDK_Let env2
@@ -2059,12 +2049,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       match ty.desc with
       | T_Bits ({ desc = E_Var x; _ }, _) -> (
           match StaticEnv.type_of_opt env x with
-          | Some { desc = T_Int None; _ } ->
-              add_local x ASTUtils.underconstrained_integer LDK_Let env''
+          | Some { desc = T_Int UnConstrained; _ } ->
+              let ty = Types.under_constrained_ty x in
+              add_local x ty LDK_Let env''
           | Some _ -> env''
           | None ->
-              add_local x ASTUtils.underconstrained_integer LDK_Let env''
-          )
+              let ty = Types.under_constrained_ty x in
+              add_local x ty LDK_Let env'')
       | _ -> env''
     in
     (* Resolve dependently typed identifiers in the arguments. *)
@@ -2073,21 +2064,25 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       List.fold_left one_arg env3 f.args
     in
     (* Resolve dependently typed identifiers in the result type. *)
+    let env5 = env4 in
+    (*
     let env5 =
       match f.return_type with
       | None -> env4
       | Some { desc = T_Bits ({ desc = E_Var x; _ }, _); _ } -> (
           match StaticEnv.type_of_opt env x with
-          | Some { desc = T_Int None; _ } ->
-              add_local x ASTUtils.underconstrained_integer LDK_Let env4
+          | Some { desc = T_Int UnConstrained; _ } ->
+              let ty = new_under_constrained_integer x in
+              add_local x ty LDK_Let env4
           | _ -> env4)
       | _ -> env4
     in
+    *)
     (* Annotate body *)
     let body =
       match f.body with
       | SB_ASL body -> body
-      | SB_Primitive _ -> assert false
+      | SB_Primitive -> assert false
     in
     let new_body = try_annotate_block env5 body in
     (* Optionnally rename the function if needs be *)
@@ -2124,7 +2119,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (******************************************************************************)
 
   (* Begin DeclareOneFunc *)
-  let declare_one_func loc (func_sig : 'a func) env =
+  let declare_one_func loc (func_sig : func) env =
     let env, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
       FunctionRenaming.add_new_func loc env func_sig.name func_sig.args
@@ -2142,9 +2137,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    add_subprogram name' (ast_func_to_func_sig func_sig) env
-    |: TypingRule.DeclareOneFunc
-  (* End *)
+    add_subprogram name' func_sig env
 
   let declare_const loc name t v env =
     if IMap.mem name env.global.storage_types then
@@ -2346,7 +2339,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     ASTUtils.dag_fold def use process_one_decl ast
 
-  let rename_primitive loc env (f : 'a AST.func) =
+  let rename_primitive loc env (f : AST.func) =
     let name =
       best_effort f.name @@ fun _ ->
       let _, name, _, _ =
@@ -2375,7 +2368,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       match d.desc with
       | D_Func ({ body = SB_ASL _; _ } as f) ->
           D_Func (try_annotate_subprogram d env f) |> here
-      | D_Func ({ body = SB_Primitive _; _ } as f) ->
+      | D_Func ({ body = SB_Primitive; _ } as f) ->
           D_Func (rename_primitive d env f) |> here
       | D_GlobalStorage gsd ->
           D_GlobalStorage (try_annotate_gsd env gsd) |> here

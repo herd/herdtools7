@@ -23,21 +23,19 @@
 open AST
 open ASTUtils
 
-type func_sig = unit AST.func
-
 type global = {
   declared_types : ty IMap.t;
   constants_values : literal IMap.t;
   storage_types : (ty * global_decl_keyword) IMap.t;
   subtypes : identifier IMap.t;
-  subprograms : func_sig IMap.t;
+  subprograms : AST.func IMap.t;
   subprogram_renamings : ISet.t IMap.t;
 }
 
 type local = {
   constants_values : literal IMap.t;
   storage_types : (ty * local_decl_keyword) IMap.t;
-  return_type: ty option;
+  return_type : ty option;
 }
 
 type env = { global : global; local : local }
@@ -61,7 +59,9 @@ module PPEnv = struct
       (ISet.to_seq s)
 
   let pp_local f { constants_values; storage_types; return_type } =
-    fprintf f "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - @[return type:@ %a@]@]"
+    fprintf f
+      "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
+       @[return type:@ %a@]@]"
       (pp_map PP.pp_literal) constants_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
@@ -99,17 +99,6 @@ end
 let pp_env = PPEnv.pp_env
 let pp_global = PPEnv.pp_global
 
-let ast_func_to_func_sig : 'a AST.func -> func_sig = function
-  | { name; args; return_type; parameters; subprogram_type; body = _ } ->
-      {
-        name;
-        args;
-        return_type;
-        parameters;
-        subprogram_type;
-        body = SB_Primitive ();
-      }
-
 (** An empty global static environment. *)
 let empty_global =
   {
@@ -122,7 +111,12 @@ let empty_global =
   }
 
 (** An empty local static env. *)
-let empty_local = { constants_values = IMap.empty; storage_types = IMap.empty; return_type = None }
+let empty_local =
+  {
+    constants_values = IMap.empty;
+    storage_types = IMap.empty;
+    return_type = None;
+  }
 
 let empty_local_return_type return_type = { empty_local with return_type }
 

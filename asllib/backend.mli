@@ -152,6 +152,6 @@ module type S = sig
   type primitive = value m list -> value m list m
   (** primitive types that go with this AST. *)
 
-  type ast = primitive AST.t
-  (** The considered AST type. *)
+  val primitives : (AST.func * primitive) list
+  (** The list of primitives that a backend provides. *)
 end

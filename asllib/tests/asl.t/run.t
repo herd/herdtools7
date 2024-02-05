@@ -94,7 +94,7 @@ Constrained-type satisfaction:
   [1]
 
   $ cat >type-sat.asl <<EOF
-  > func illegal_f5(N: integer, b: bits(N))
+  > func illegal_f5 {N} (b: bits(N))
   > begin
   >   // N is under-constrained integer
   >   var x: integer { 2, 4} = N;
@@ -104,7 +104,7 @@ Constrained-type satisfaction:
   $ aslref type-sat.asl
   File type-sat.asl, line 4, characters 2 to 29:
   ASL Typing error: a subtype of integer {2, 4} was expected,
-    provided integer {}.
+    provided integer {N}.
   [1]
 
   $ cat >type-sat.asl <<EOF
@@ -118,7 +118,7 @@ Constrained-type satisfaction:
   $ aslref type-sat.asl
   File type-sat.asl, line 4, characters 2 to 29:
   ASL Typing error: a subtype of integer {2, 4} was expected,
-    provided integer {}.
+    provided integer {N}.
   [1]
 
 Runtime checks:
@@ -153,3 +153,34 @@ Runtime checks:
 
   $ aslref under-constrained-used.asl
 
+UnderConstrained integers:
+  $ aslref bad-underconstrained-call.asl
+  File bad-underconstrained-call.asl, line 9, characters 9 to 23:
+  ASL Typing error: a subtype of integer {0..(M - 1)} was expected,
+    provided integer {M}.
+  [1]
+  $ aslref bad-underconstrained-call-02.asl
+  File bad-underconstrained-call-02.asl, line 8, characters 2 to 13:
+  ASL Typing error: a subtype of integer {M} was expected,
+    provided integer {3}.
+  [1]
+  $ aslref bad-underconstrained-call-03.asl
+  File bad-underconstrained-call-03.asl, line 8, characters 2 to 17:
+  ASL Typing error: a subtype of integer {M} was expected,
+    provided integer {(M + 1)}.
+  [1]
+  $ aslref bad-underconstrained-ctc.asl
+  File bad-underconstrained-ctc.asl, line 3, characters 12 to 13:
+  ASL Execution error: Mismatch type:
+    value 4 does not belong to type integer {(N - 1)}.
+  [1]
+  $ aslref bad-underconstrained-return.asl
+  File bad-underconstrained-return.asl, line 3, characters 2 to 15:
+  ASL Typing error: a subtype of integer {0..N} was expected,
+    provided integer {(N + 1)}.
+  [1]
+  $ aslref bad-underconstrained-return-02.asl
+  File bad-underconstrained-return-02.asl, line 3, characters 2 to 11:
+  ASL Typing error: a subtype of integer {0..N} was expected,
+    provided integer {5}.
+  [1]
