@@ -49,6 +49,7 @@ module IMap = struct
 end
 
 let dummy_pos = Lexing.dummy_pos
+let desc v = v.desc
 let annotated desc pos_start pos_end = { desc; pos_start; pos_end }
 let add_dummy_pos desc = annotated desc dummy_pos dummy_pos
 let dummy_annotated = add_dummy_pos ()
@@ -417,9 +418,9 @@ end
 let lid_of_lexpr =
   let rec tr le =
     match le.desc with
-    | LE_Discard -> LDI_Discard None
-    | LE_Var x -> LDI_Var (x, None)
-    | LE_Destructuring les -> LDI_Tuple (List.map tr les, None)
+    | LE_Discard -> LDI_Discard
+    | LE_Var x -> LDI_Var x
+    | LE_Destructuring les -> LDI_Tuple (List.map tr les)
     | _ -> raise Exit
   in
   fun le -> try Some (tr le) with Exit -> None
@@ -474,7 +475,7 @@ let case_to_conds : stmt -> stmt =
       let x = fresh_var "case" in
       let assign =
         let pos = e.pos_start in
-        let le = LDI_Var (x, Some integer) in
+        let le = LDI_Typed (LDI_Var x, integer) in
         annotated (S_Decl (LDK_Let, le, Some e)) pos e.pos_end
       in
       S_Seq (assign, cases_to_cond x cases)
@@ -709,10 +710,10 @@ let rename_locals map_name ast =
     | LE_SetFields (le, f) -> LE_SetFields (map_le le, f)
     | LE_Destructuring les -> LE_Destructuring (List.map map_le les)
   and map_ldi = function
-    | LDI_Discard t -> LDI_Discard (Option.map map_t t)
-    | LDI_Var (x, t) -> LDI_Var (map_name x, Option.map map_t t)
-    | LDI_Tuple (ldis, t) ->
-        LDI_Tuple (List.map map_ldi ldis, Option.map map_t t)
+    | LDI_Discard as ldi -> ldi
+    | LDI_Var x -> LDI_Var (map_name x)
+    | LDI_Typed (ldi, t) -> LDI_Typed (map_ldi ldi, map_t t)
+    | LDI_Tuple ldis -> LDI_Tuple (List.map map_ldi ldis)
   and map_body = function
     | SB_Primitive as b -> b
     | SB_ASL s -> SB_ASL (map_s s)

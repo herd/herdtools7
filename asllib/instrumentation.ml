@@ -72,12 +72,9 @@ module SemanticsRule = struct
     | PTuple
     | LDDiscard
     | LDVar
-    | LDTypedVar
-    | LDUninitialisedVar
+    | LDTyped
     | LDTuple
-    | LDTypedTuple
-    | LDUninitialisedTuple
-    | LDUninitialisedTypedTuple
+    | LDUninitialisedTyped
     | SPass
     | SAssignCall
     | SAssignTuple
@@ -112,7 +109,7 @@ module SemanticsRule = struct
     | CatchOtherwise
     | CatchNone
     | CatchNoThrow
-    | TopLevel 
+    | TopLevel
 
   let to_string : t -> string = function
     | Lit -> "Lit"
@@ -163,12 +160,9 @@ module SemanticsRule = struct
     | PTuple -> "PTuple"
     | LDDiscard -> "LDDiscard"
     | LDVar -> "LDVar"
-    | LDTypedVar -> "LDTypedVar"
-    | LDUninitialisedVar -> "LDUninitialisedVar"
+    | LDTyped -> "LDTyped"
     | LDTuple -> "LDTuple"
-    | LDTypedTuple -> "LDTypedTuple"
-    | LDUninitialisedTuple -> "LDUninitialisedTuple"
-    | LDUninitialisedTypedTuple -> "LDUninitialisedTypedTuple"
+    | LDUninitialisedTyped -> "LDUninitialisedTyped"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
     | SAssignTuple -> "SAssignTuple"
@@ -240,6 +234,11 @@ module SemanticsRule = struct
       LESetField;
       LESetFields;
       LEDestructuring;
+      LDDiscard;
+      LDVar;
+      LDTyped;
+      LDTuple;
+      LDUninitialisedTyped;
       SPass;
       SAssignCall;
       SAssignTuple;
@@ -309,7 +308,7 @@ module TypingRule = struct
     | PrimitiveType
     | Structure
     | Canonical
-    | Domain 
+    | Domain
     | Subtype
     | StructuralSubtypeSatisfaction
     | DomainSubtypeSatisfaction
@@ -383,16 +382,13 @@ module TypingRule = struct
     | PTupleBadArity
     | PTuple
     | PTupleConflict
-    | LDDiscardNone
-    | LDDiscardSome
-    | LDUninitialisedVar
-    | LDUninitialisedTypedVar
+    | LDDiscard
     | LDVar
-    | LDTypedVar
-    | LDUninitialisedTuple
-    | LDUninitialisedTypedTuple
+    | LDTyped
     | LDTuple
-    | LDTypedTuple
+    | LDUninitialisedVar
+    | LDUninitialisedTyped
+    | LDUninitialisedTuple
     | SPass
     | SAssignCall
     | SAssignTuple
@@ -492,13 +488,13 @@ module TypingRule = struct
     | LEGlobalVar -> "LEGlobalVar"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
-    | LESetBadStructuredField -> "LESetBadStructuredField" 
-    | LESetStructuredField -> "LESetStructuredField" 
-    | LESetBadBitField -> "LESetBadBitField" 
-    | LESetBitField -> "LESetBitField" 
-    | LESetBitFieldNested -> "LESetBitFieldNested" 
-    | LESetBitFieldTyped -> "LESetBitFieldTyped" 
-    | LESetBadField -> "LESetBadField" 
+    | LESetBadStructuredField -> "LESetBadStructuredField"
+    | LESetStructuredField -> "LESetStructuredField"
+    | LESetBadBitField -> "LESetBadBitField"
+    | LESetBitField -> "LESetBitField"
+    | LESetBitFieldNested -> "LESetBitFieldNested"
+    | LESetBitFieldTyped -> "LESetBitFieldTyped"
+    | LESetBadField -> "LESetBadField"
     | LESetFields -> "LESetFields"
     | LEConcat -> "LEConcat"
     | LEDestructuring -> "LEDestructuring"
@@ -519,16 +515,13 @@ module TypingRule = struct
     | PTupleBadArity -> "PTupleBadArity"
     | PTuple -> "PTuple"
     | PTupleConflict -> "PTupleConflict"
-    | LDDiscardNone -> "LDDiscardNone"
-    | LDDiscardSome -> "LDDiscardSome"
+    | LDDiscard -> "LDDiscardNone"
+    | LDTyped -> "LDTyped"
     | LDVar -> "LDVar"
-    | LDTypedVar -> "LDTypedVar"
     | LDUninitialisedVar -> "LDUninitialisedVar"
-    | LDUninitialisedTypedVar -> "LDUninitialisedTypedVar"
+    | LDUninitialisedTyped -> "LDUninitialisedTyped"
     | LDTuple -> "LDTuple"
-    | LDTypedTuple -> "LDTypedTuple"
     | LDUninitialisedTuple -> "LDUninitialisedTuple"
-    | LDUninitialisedTypedTuple -> "LDUninitialisedTypedTuple"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
     | SAssignTuple -> "SAssignTuple"
@@ -554,7 +547,7 @@ module TypingRule = struct
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
-    | FCallBadArity -> "FCallBadArity" 
+    | FCallBadArity -> "FCallBadArity"
     | FCallSetter -> "FCallSetter"
     | FCallGetter -> "FCallGetter"
     | FCallMismatch -> "FCallMismatch"

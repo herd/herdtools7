@@ -274,9 +274,30 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\localdeclitem &::=& \texttt{LDI\_Var}(\identifier, \ty?)\\
-  &|& \texttt{LDI\_Discard}(\ty?)\\
-  &|& \texttt{LDI\_Tuple}(\localdeclitem^*, \ty?)\\
+  & & \ASTComment{A left-hand side of a declaration statement.}\\
+  & & \ASTComment{In the following example of a declaration statement:}\\
+  & & \ASTComment{\Verb|let (x, -, z): (integer, integer, integer \{0..32\}) = (2, 3, 4);|}\\
+  & & \ASTComment{\Verb|(x, -, z): (integer, integer, integer \{0..32\})| is the}\\
+  & & \ASTComment{local declaration item:}\\
+  \hline
+\localdeclitem &::=
+    & \texttt{LDI\_Discard}\\
+  & & \ASTComment{The ignored local declaration item, for example used in: \Verb!let - = 42;!.}\\
+  &|& \texttt{LDI\_Var}(\identifier)\\
+  & & \ASTComment{\texttt{LDI\_Var x} is the variable declaration of the variable \texttt{x}, used for example in:}\\
+  & & \ASTComment{\texttt{let x = 42;}.}\\
+  &|& \texttt{LDI\_Tuple}(\localdeclitem^*)\\
+  & & \ASTComment{\texttt{LDI\_Tuple ldis} is the tuple declarations of the items in \texttt{ldis},}\\
+  & & \ASTComment{used for example in: \texttt{let (x, y, -, z) = (1, 2, 3, 4);}}\\
+  & & \ASTComment{Note that a the list here must be at least 2 items long.}\\
+  &|& \texttt{LDI\_Typed}(\localdeclitem, \ty)\\
+  & & \ASTComment{\texttt{LDI\_Typed (ldi, t)} declares the item \texttt{ldi} with type \texttt{t}, used for example in:} \\
+  & & \ASTComment{\texttt{let x: integer = 4;}}
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
 \fordirection &::=& \texttt{Up} \;|\; \texttt{Down}\\
 \end{array}
 \]

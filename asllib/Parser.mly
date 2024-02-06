@@ -50,8 +50,11 @@ open ASTUtils
 
 let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
 
-let make_ldi_tuple xs ty =
-  LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
+let make_ldi_vars (xs, ty) =
+  let make_one x =
+    S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None) |> add_dummy_pos
+  in
+  List.map make_one xs |> stmt_from_list |> desc
 
 let make_ty_decl_subtype (x, s) =
   let name, _fields = s.desc in
@@ -416,10 +419,14 @@ let lexpr_atom :=
    on declarations. They cannot have setter calls or set record fields, they
    have to declare new variables. *)
 
-let decl_item ==
-  | ~=IDENTIFIER               ; ~=ty_opt ; < LDI_Var    >
-  | MINUS                      ; ~=ty_opt ; < LDI_Discard >
-  | ~=pared(nclist(decl_item)) ; ~=ty_opt ; < LDI_Tuple  >
+let decl_item :=
+  | ~=untyped_decl_item ; ~=as_ty ; < LDI_Typed   >
+  | untyped_decl_item
+
+let untyped_decl_item ==
+  | ~=IDENTIFIER          ; < LDI_Var     >
+  | MINUS                 ; { LDI_Discard }
+  | ~=plist2(decl_item)   ; < LDI_Tuple   >
 
 (* ------------------------------------------------------------------------- *)
 (* Statement helpers *)
@@ -427,6 +434,9 @@ let decl_item ==
 let local_decl_keyword ==
   | LET       ; { LDK_Let       }
   | CONSTANT  ; { LDK_Constant  }
+  (* We can't have VAR here otherwise there is a conflict (grammar is not LR1).
+  | VAR       ; { LDK_Var       }
+  *)
 
 let storage_keyword ==
   | LET       ; { GDK_Let      }
@@ -463,17 +473,15 @@ let stmt ==
       | RETURN; ~=ioption(expr);                             < S_Return >
       | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
       | ASSERT; e=expr;                                      < S_Assert >
+      | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
+      | le=lexpr; EQ; e=expr;                                { S_Assign (le, e, V1)     }
+      | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
+      | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
       | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }
       | DEBUG; args=plist(expr);                             { S_Print { args; debug = true } }
-      | le=lexpr; EQ; e=expr;                                {  S_Assign (le,e,V1) }
-      | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
-      | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr;                  < S_Repeat >
       | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
       | THROW;                                               { S_Throw None             }
-
-      | VAR; xs=clist2(IDENTIFIER); colon_for_type; ~=ty;
-          { S_Decl (LDK_Var, make_ldi_tuple xs ty, None) }
 
       | loc=annotated(PRAGMA; IDENTIFIER; clist(expr); <>);
           { Error.fatal_from loc @@ Error.NotYetImplemented "Pragmas in statements" }

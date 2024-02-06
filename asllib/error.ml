@@ -53,6 +53,7 @@ type error_desc =
   | UnexpectedSideEffect of string
   | UncaughtException of string
   | OverlappingSlices of slice list
+  | BadLDI of AST.local_decl_item
 
 type error = error_desc annotated
 
@@ -192,6 +193,8 @@ let pp_error =
     | OverlappingSlices slices ->
         fprintf f "ASL Typing error:@ overlapping slices@ @[%a@]." pp_slice_list
           slices
+    | BadLDI ldi ->
+        fprintf f "Unsupported declaration:@ @[%a@]." pp_local_decl_item ldi
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

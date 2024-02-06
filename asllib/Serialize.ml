@@ -232,13 +232,11 @@ let pp_local_decl_keyboard f k =
     | LDK_Let -> "LDK_Let")
 
 let rec pp_local_decl_item f = function
-  | LDI_Discard ty_opt -> bprintf f "LDI_Discard (%a)" (pp_option pp_ty) ty_opt
-  | LDI_Var (s, ty_opt) ->
-      bprintf f "LDI_Var (%S, %a)" s (pp_option pp_ty) ty_opt
-  | LDI_Tuple (ldis, ty_opt) ->
-      bprintf f "LDI_Tuple (%a, %a)"
-        (pp_list pp_local_decl_item)
-        ldis (pp_option pp_ty) ty_opt
+  | LDI_Discard -> addb f "LDI_Discard"
+  | LDI_Var s -> bprintf f "LDI_Var %S" s
+  | LDI_Typed (ldi, t) ->
+      bprintf f "LDI_Typed (%a, %a)" pp_local_decl_item ldi pp_ty t
+  | LDI_Tuple ldis -> bprintf f "LDI_Tuple %a" (pp_list pp_local_decl_item) ldis
 
 let rec pp_stmt =
   let pp_desc f = function

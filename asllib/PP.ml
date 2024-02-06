@@ -226,23 +226,18 @@ let pp_for_direction = function Up -> "to" | Down -> "downto"
 
 let pp_local_decl_keyword f k =
   pp_print_string f
-    (match k with
-    | LDK_Var -> "var"
-    | LDK_Constant -> "constant"
-    | LDK_Let -> "let")
+  @@
+  match k with
+  | LDK_Var -> "var"
+  | LDK_Constant -> "constant"
+  | LDK_Let -> "let"
 
-let rec pp_local_decl_item f =
-  let pp_ty_opt f = function
-    | Some ty -> fprintf f ": @[%a@]" pp_ty ty
-    | None -> ()
-  in
-  function
-  | LDI_Discard ty_opt -> fprintf f "@[-%a@]" pp_ty_opt ty_opt
-  | LDI_Var (s, ty_opt) -> fprintf f "@[%s%a@]" s pp_ty_opt ty_opt
-  | LDI_Tuple (ldis, ty_opt) ->
-      fprintf f "@[(%a)%a@]"
-        (pp_comma_list pp_local_decl_item)
-        ldis pp_ty_opt ty_opt
+let rec pp_local_decl_item f = function
+  | LDI_Discard -> pp_print_string f "-"
+  | LDI_Var x -> pp_print_string f x
+  | LDI_Tuple ldis ->
+      fprintf f "@[(%a)@]" (pp_comma_list pp_local_decl_item) ldis
+  | LDI_Typed (ldi, t) -> fprintf f "@[%a: %a@]" pp_local_decl_item ldi pp_ty t
 
 let rec pp_stmt f s =
   match s.desc with

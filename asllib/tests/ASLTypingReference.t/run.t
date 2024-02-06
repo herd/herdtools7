@@ -16,3 +16,7 @@ ASL Typing Reference:
   Some text
 //  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
   $ aslref TypingRule.CheckBinOp.asl
+  $ aslref TypingRule.LDDiscard.asl
+  $ aslref TypingRule.LDVar.asl
+  $ aslref TypingRule.LDTyped.asl
+  $ aslref TypingRule.LDTuple.asl
