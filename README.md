@@ -54,6 +54,29 @@ When adding a new pre-commit check, please run Pre-Commit manually first:
 
     % pre-commit run --all-files
 
+### Pull Request Methodology
+We would like to, as much as possible, maintain a linear git history, have pull
+requests reviewed, and finally merged responsibly. Therefore, we ask all
+contributors to follow the following procedure:
+1. Create a git branch: 'git checkout -b feature_name'
+2. Implement new feature/change.
+3. Commit with meaningful messages:
+   'git commit -m "[feature] one line title followed by detailed description"'
+4. Test the feature and make sure all relevant tests pass, including
+   'make test'.
+5. Push 'git push'
+6. Rebase often, repeating 2--6 as much as needed:
+  - 'git checkout master'
+  - 'git pull'
+  - 'git checkout feature_name'
+  - 'git rebase'
+  - Resolve all conflicts.
+  - 'git rebase --continue'
+  - 'git push --force'
+7. Create a pull request and ask for reviews.
+8. Address reviewer comments and make sure all issues are resolved.
+9. Once the pull request is accepted, let **the repo admin** merge.
+
 License
 =======
 
