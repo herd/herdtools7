@@ -64,7 +64,7 @@ contributors to follow the following procedure:
    'git commit -m "[feature] one line title followed by detailed description"'
 4. Test the feature and make sure all relevant tests pass, including
    'make test'.
-5. Push 'git push'
+5. Push 'git push --set-upstream origin feature_name'
 6. Rebase often, repeating 2--6 as much as needed:
   - 'git checkout master'
   - 'git pull'
