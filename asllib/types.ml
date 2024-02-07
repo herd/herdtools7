@@ -351,6 +351,7 @@ module Domain = struct
         raise StaticEvaluationTop
 
   and of_type env ty =
+    let ty = make_anonymous env ty in
     match ty.desc with
     | T_Bool -> D_Bool
     | T_String -> D_String
@@ -370,8 +371,7 @@ module Domain = struct
           D_Bits (FromSyntax [ Constraint_Exact width ]))
     | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
         failwith "Unimplemented: domain of a non singular type."
-    | T_Named _ ->
-        failwith "Cannot construct a domain of a non-structural type."
+    | T_Named _ -> assert false (* make anonymous *)
 
   let mem v d =
     match (v, d) with

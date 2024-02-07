@@ -465,6 +465,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | _ -> conflict loc [ default_t_bits ] t
 
   let check_structure_integer loc env t () =
+    let () =
+      if false then
+        Format.eprintf "Checking that %a is an integer.@." PP.pp_ty t
+    in
     match (Types.get_structure env t).desc with
     | T_Int _ -> ()
     | _ -> conflict loc [ integer' ] t
@@ -723,7 +727,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          if it fails.
        TODO: check them
     *)
-    let rec tr_one = function
+    let rec tr_one s =
+      let () =
+        if false then
+          Format.eprintf "Annotating slice %a@." PP.pp_slice_list [ s ]
+      in
+      match s with
       (* Begin SliceSingle *)
       | Slice_Single i ->
           (* LRM R_GXKG:
