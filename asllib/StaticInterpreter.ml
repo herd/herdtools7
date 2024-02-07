@@ -508,6 +508,14 @@ module Normalize = struct
            ctnts_and (Conjunction (PMap.singleton p sign)) ctnts)
          li2)
 
+  let rec make_anonymous (env : env) (ty : ty) : ty =
+    match ty.desc with
+    | T_Named x -> (
+        match IMap.find_opt x env.global.declared_types with
+        | Some ty' -> make_anonymous env ty'
+        | None -> fatal_from ty (Error.UndefinedIdentifier x))
+    | _ -> ty
+
   let rec to_ir env (e : expr) : ir_expr =
     match e.desc with
     | E_Literal (L_Int i) -> poly_of_z i |> always
@@ -516,6 +524,7 @@ module Normalize = struct
         with Not_found -> (
           try
             let ty = StaticEnv.type_of env s in
+            let ty = make_anonymous env ty in
             match ty.desc with
             | T_Int (WellConstrained [ Constraint_Exact e ]) -> to_ir env e
             | T_Int _ -> poly_of_var s |> always

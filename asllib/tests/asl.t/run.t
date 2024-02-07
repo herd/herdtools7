@@ -184,3 +184,6 @@ UnderConstrained integers:
   ASL Typing error: a subtype of integer {0..N} was expected,
     provided integer {5}.
   [1]
+
+  $ aslref named-types-in-slices.asl
+  File named-types-in-slices.asl, line 13, characters 8 to 9: x -> '11111111'
