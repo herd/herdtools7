@@ -60,3 +60,9 @@ type lr_sc =
   | Ld of sz
   | St
   | No
+
+(* MTE granule *)
+
+val granule : sz
+val granule_nbytes : int
+val granule_align : int -> int

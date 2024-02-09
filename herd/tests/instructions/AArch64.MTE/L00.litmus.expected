@@ -1,0 +1,10 @@
+Test L00 Required
+States 1
+x={7,0,0,0,5,7};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={7,0,0,0,5,7})
+Observation L00 Always 1 0
+Hash=686ab9d457f82594fb739b04bbe5a40b
+

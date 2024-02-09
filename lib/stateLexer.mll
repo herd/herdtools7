@@ -45,6 +45,7 @@ rule token = parse
 | '&' { AMPER }
 | ';' { SEMI }
 | ':' { COLON }
+| '+' { PLUS }
 | '[' { LBRK }
 | ']' { RBRK }
 | '('  { LPAR }
@@ -69,7 +70,7 @@ rule token = parse
 | "locations" { LOCATIONS }
 | "filter" { FILTER }
 | "fault"|"Fault" { FAULT }
-| "tag" { TOK_TAG }
+| "tag"|"TAG" { TOK_TAG }
 (* Distinguished  PteVal fields *)
 | "attrs"|"Attrs" { ATTRS }
 | "oa" { TOK_OA }

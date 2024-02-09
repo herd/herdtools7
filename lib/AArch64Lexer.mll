@@ -329,6 +329,7 @@ match name with
 (* Memory Tagging *)
 | "stg"|"STG" -> STG
 | "stzg"|"STZG" -> STZG
+| "stz2g"|"STZ2G" -> STZ2G
 | "ldg"|"LDG" -> LDG
 (* Operations *)
 | "ubfm"|"UBFM" -> UBFM

@@ -309,7 +309,9 @@ module
   | Val (Symbolic (Virtual ({offset=i;_} as s))) ->
     Val (Symbolic (Virtual {s with offset=i+k}))
   | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
-  | Val (ConcreteVector _|ConcreteRecord _|Symbolic (System _)|Label _|Tag _|PteVal _|Instruction _|Frozen _ as c) ->
+  | Val (ConcreteVector _|ConcreteRecord _
+       | Symbolic ((TagAddr _|System _))|Label _
+       |Tag _|PteVal _|Instruction _|Frozen _ as c) ->
       Warn.user_error "Illegal addition on constants %s +%d" (Cst.pp_v c) k
   | Var _ -> raise Undetermined
 
@@ -459,7 +461,7 @@ module
 
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (Virtual ({offset=o;_} as a))) -> Val (op a o)
-  |  Val (Symbolic (Physical _|System _)
+  |  Val (Symbolic (Physical _|TagAddr _|System _)
           |Concrete _|Label _
           |Tag _|ConcreteRecord _|ConcreteVector _
           |PteVal _|Instruction _
@@ -473,22 +475,24 @@ module
   let capatagloc = op_tagged "capatagloc" (op_tagloc Misc.add_ctag)
 
   let tagloc v =  match v with
-  | Val (Symbolic (Virtual {name=a;_})) ->
-       Val (Symbolic (System (TAG,a)))
-  | Val (Symbolic (Physical _)) ->
-    Val (Symbolic (System (TAG,pp_v v)))
-  | Val
+    | Val (Symbolic (Virtual {name=a;offset=o;_}))
+      ->
+       Val (Symbolic (TagAddr (VIR,a,MachSize.granule_align o)))
+    | Val (Symbolic (Physical (a,o)))
+      ->
+       Val (Symbolic (TagAddr (PHY,a,MachSize.granule_align o)))
+    | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
-        |Symbolic (System _)|Label _
-        |Tag _|PteVal _
-        |Instruction _|Frozen _)
-    ->
-     Warn.user_error "Illegal tagloc on %s" (pp_v v)
+         |Symbolic ((TagAddr _|System _))
+         |Label _|Tag _|PteVal _
+         |Instruction _|Frozen _)
+      ->
+       Warn.user_error "Illegal tagloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
   let check_ctag = function
     | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_ctag s
-    | Val (Symbolic (Physical _|System _)) -> false
+    | Val (Symbolic (Physical _|System _|TagAddr _)) -> false
     | Var _
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
@@ -533,8 +537,10 @@ module
   | Var _ -> raise Undetermined
 
   let offset v = match v with
-  | Val (Symbolic (Virtual {offset=o;_}|Physical (_,o))) -> intToV o
-  | Val (Symbolic (System ((PTE|PTE2|TLB|TAG),_))) -> zero
+  | Val
+    (Symbolic
+       (Virtual {offset=o;_}|Physical (_,o)|TagAddr (_,_,o))) -> intToV o
+  | Val (Symbolic (System ((PTE|PTE2|TLB),_))) -> zero
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
       |Label _|Tag _

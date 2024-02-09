@@ -100,7 +100,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _| I_STLRBH _| I_STOP _
     | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _
     | I_STR_P_SIMD _| I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
-    | I_STXRBH _| I_STZG _| I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
+    | I_STXRBH _| I_STZG _| I_STZ2G _
+    | I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
     | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _ | I_MOPL _
       -> true
 
@@ -226,7 +227,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CAS (v,_,_,_,_) | I_CASP (v,_,_,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
-      | I_STZG _ -> Some (tr_variant V128)
+      | I_STZG _|I_STZ2G _ -> Some MachSize.granule
       | I_LDR_SIMD (v,_,_,_,_) | I_LDR_P_SIMD (v,_,_,_)
       | I_LDP_SIMD (_,v,_,_,_,_) | I_LDP_P_SIMD (_,v,_,_,_,_)
       | I_STR_SIMD (v,_,_,_,_) | I_STR_P_SIMD (v,_,_,_)
@@ -282,7 +283,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDP (_,_,r1,r2,ra,idx) |I_LDPSW (r1,r2,ra,idx)
         ->
          killed_idx ra idx [r1; r2;]
-      | I_STG (_,r,idx)|I_STZG (_,r,idx)
+      | I_STG (_,r,idx)|I_STZG (_,r,idx)|I_STZ2G (_,r,idx)
       | I_STP (_,_,_,_,r,idx) ->
           killed_idx r idx []
       | I_STR (_,_,r,MemExt.Imm (_,(PreIdx|PostIdx)))
@@ -391,7 +392,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV _|I_MOVZ _|I_MOVN _|I_MOVK _|I_SXTW _
       | I_OP3 _|I_ADR _|I_RBIT _|I_ABS _|I_REV _|I_FENCE _
       | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
-      | I_STG _|I_STZG _|I_LDG _|I_UDF _
+      | I_STG _|I_STZG _|I_STZ2G _|I_LDG _|I_UDF _
       | I_ADDSUBEXT _|I_MOPL _
         -> MachSize.No
 
@@ -427,5 +428,22 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     module ArchAction = ArchAction.No(NoConf)
 
     module Barrier = AllBarrier.No(struct type a = barrier end)
+
+    let check tst =
+      let open MiscParser in
+      if
+        List.exists
+          (fun (_,(t,_)) -> TestType.is_array t) tst.init
+        &&
+          List.exists
+            (fun (_,code) ->
+              exists_pseudo_code
+                (function | I_STZG _ -> true | _ -> false)
+                code)
+            tst.prog
+        && not is_mixed
+      then
+        Warn.user_error
+          "Array location and STZG instruction without -variant mixed"
 
   end

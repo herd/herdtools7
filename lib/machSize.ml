@@ -209,3 +209,11 @@ type lr_sc =
   | Ld of sz
   | St
   | No
+
+(* MTE granule *)
+
+let granule = S128
+
+let granule_nbytes = nbytes granule
+
+let granule_align x = (x / granule_nbytes) * granule_nbytes

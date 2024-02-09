@@ -1378,7 +1378,7 @@ Monad type:
       let is_tagloc a =
         let open Constant in
         match a with
-        | V.Val (Symbolic (System (TAG,_))) -> true
+        | V.Val (Symbolic (TagAddr _)) -> true
         | _ -> false
 
       let is_pteloc a =
@@ -1392,6 +1392,19 @@ Monad type:
         | V.Val (Constant.Label _) -> true
         | _ -> false
 
+(*
+ * Add init writes for tag addresses.
+ * A symbolic location has its own tag address, hence
+ * for a given x, tag(x) is initialised, except for arrays
+ * that may span over several granules.
+ * The task of initialising the appropriate tag addresses is
+ * facilitated by array init being implemented as the explicit
+ * initialisations of its elements.
+ * For instance for int t[5], we have int-sized initial writes for
+ * t+0, t+4, t+8, t+12, t+16, yielding the two tag addresses
+ * tag(t) and t(t+16). Namely, with a granule size of 4 int's
+ * the first four items have the same tag address tag(x).
+ *)
       let add_inittags env =
         let glob,tag =
           List.fold_left
@@ -1407,22 +1420,22 @@ Monad type:
             | A.Location_reg _ -> p)
             ([],[]) env in
         let tag_set = V.ValueSet.of_list tag in
+        let glob_set = V.ValueSet.of_list glob in
+        let glob_set =
+          V.ValueSet.filter
+            (fun a ->  not (is_pteloc a || is_instrloc a))
+            glob_set in
+        let s = V.ValueSet.map (fun a -> V.op1 Op.TagLoc a) glob_set in
         let env =
-          List.fold_left
-            (fun env a ->
-              if not (is_pteloc a) && not (is_instrloc a) then
-              begin
-                let atag =  V.op1 Op.TagLoc a in
-                if V.ValueSet.mem atag tag_set then env
-                else begin
-                  if dbg then
-                    eprintf "Tag %s for %s defaulting\n"
-                      (V.pp_v atag) (V.pp_v a) ;
-                  (A.Location_global atag,V.Val (Constant.default_tag))::env
-                end
-              end
-              else env)
-            env glob in
+          V.ValueSet.fold
+            (fun atag env ->
+              if V.ValueSet.mem atag tag_set then env
+              else begin
+                if dbg then
+                  eprintf "Tag %s defaulting\n" (V.pp_v atag) ;
+                (A.Location_global atag,V.Val (Constant.default_tag))::env
+             end)
+            s env in
         env
 
       let morello_init_tag s v eiid =
@@ -1482,10 +1495,10 @@ Monad type:
             | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
                 let v = expand_pteval loc v in
                 (loc,v)::env,(virt,StringSet.add s pte)
-            | A.Location_global (V.Val (Symbolic (System (TAG,s)))) ->
-              let s = V.pp_v (V.Val (Symbolic (Physical (s,0)))) in
-              let loc = A.Location_global (V.Val (Symbolic (System (TAG,s)))) in
-              (loc,v)::env,maps
+            | A.Location_global (V.Val (Symbolic (TagAddr (VIR,s,o)))) ->
+               let loc =
+                  A.Location_global (V.Val (Symbolic (TagAddr (PHY,s,o)))) in
+               (loc,v)::env,maps
             | A.Location_global (V.Val (Symbolic (Physical _|Virtual _))) ->
                 Warn.user_error "herd cannot handle initialisation of '%s'"
                   (A.pp_location loc)

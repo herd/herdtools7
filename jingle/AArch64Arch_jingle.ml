@@ -558,6 +558,11 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         conv_idx idx >! fun idx ->
         I_STZG (r1,r2,idx)
+    | I_STZ2G (r1,r2,idx) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_idx idx >! fun idx ->
+        I_STZ2G (r1,r2,idx)
     | I_LDG (r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

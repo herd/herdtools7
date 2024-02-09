@@ -1,0 +1,17 @@
+AArch64 L04
+(* Check that tag addresses are based upon physical addresses *)
+Variant=vmsa,memtag,sync
+{
+[PTE(x)]=(oa:PA(y),attrs:(TaggedNormal));
+(* Notice, x is virtual notation, but initialise tag(PA(x)) *)
+[tag(x)]=:red;
+(* Idem, x is virtual, but initialise PA(x) *)
+int x=1;
+int y=2;
+0:X1=x;
+}
+
+  P0         ;
+ LDR W0,[X1] ;
+(* Reading PA(y) with the color of PA(y) *)
+forall 0:X0=2;

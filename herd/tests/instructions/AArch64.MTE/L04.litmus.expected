@@ -1,0 +1,11 @@
+Test L04 Required
+States 1
+0:X0=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition forall (0:X0=2)
+Observation L04 Always 1 0
+Hash=a8c2d90712b54d8c6d4bec4489b05034
+

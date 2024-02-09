@@ -42,12 +42,24 @@ type syskind =
   | PTE  (* Page table entry *)
   | PTE2 (* Page table entry of page table entry (non-writable) *)
   | TLB  (* TLB key *)
-  | TAG  (* Tag for MTE *)
+
+(* 
+ * Tag location are based upon physical or virtual addresses.
+ * In effect the two kinds of tag locations cannot co-exists,
+ * as teh formet is for VMSA mode and the latter for
+ * ordinary model. However it is more convenient to carry
+ * the physsical or virtual status in the location itself.
+ *)
+
+type tagkind =
+  | PHY
+  | VIR
 
 type symbol =
   | Virtual of symbolic_data
   | Physical of string * int       (* symbol, index *)
-  | System of (syskind * string)   (* System memory *)
+  | TagAddr of tagkind * string * int
+  | System of syskind * string     (* System memory *)
 
 val get_index : symbol -> int option
 val pp_symbol_old : symbol -> string

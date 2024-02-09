@@ -49,8 +49,16 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
           end
           module AArch64S = MakeSem(AArch64SemConf)(V)
           module AArch64M = MemCat.Make(ModelConfig)(AArch64S)
-          module P =
+          module P0 =
             GenParser.Make (Conf) (AArch64) (AArch64LexParse)
+          module P =
+            struct
+              type pseudo = AArch64.pseudo
+              let parse chan splitted =
+                let tst = P0.parse chan splitted in
+                let () = AArch64.check tst in
+                tst
+            end
           module X = RunTest.Make (AArch64S) (P) (AArch64M) (Conf)
         end
 (*

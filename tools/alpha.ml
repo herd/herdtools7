@@ -202,7 +202,7 @@ struct
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
     | Instruction _ -> noinstr_value ()
-    | Symbolic (Physical _|System ((TLB|TAG),_))
+    | Symbolic (Physical _|TagAddr _|System (TLB,_))
     | Frozen _
       -> assert false
 
@@ -220,7 +220,7 @@ struct
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
     | Instruction _ -> noinstr_value ()
-    | Frozen _|Symbolic (Physical _|System ((TLB|TAG),_))
+    | Frozen _|Symbolic (Physical _|TagAddr _|System (TLB,_))
       -> assert false
 
 

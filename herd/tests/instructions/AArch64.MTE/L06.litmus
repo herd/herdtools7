@@ -1,0 +1,13 @@
+AArch64 L06
+Variant=mixed
+{
+int t[8] = {1,2,3,4,5,6,7,8};
+0:X1=t:green;
+0:X3=t:red;
+}
+  P0             ;
+ STZG X3,[X1]    ;
+ LDR W0,[X3,#12] ;
+ LDR W2,[X1,#16] ;
+locations [t;]
+forall 0:X0=0 /\ 0:X2=5
