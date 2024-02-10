@@ -40,17 +40,24 @@
 include "armv8-common.cat"
 include "sca.cat"
 
-let preorder-cb = IM0 | lob | scaob
+let preorder-cb = IM0 | local-hw-reqs | scaob
 let preorder-cb-lift = lift(MC,preorder-cb)
 
 with cb from linearisations(MC,preorder-cb-lift)
 ~empty cb
 
 let dcbl = delift(cb) & loc
-let rf-fwd = (W*R) & po-loc & dcbl^-1 \ intervening-write(po-loc)
-let rf-nfwd = (W*R) & dcbl \ intervening-write(dcbl | po-loc)
+let rf-fwd = (W*(Exp&R)) & po-loc & dcbl^-1 & ~intervening(W,po-loc)
+let rf-nfwd = (W*(Exp&R)) & dcbl & ~(intervening(W, (dcbl | po-loc)); [Exp & R]; po-loc?)
 let rf-cb = rf-fwd | rf-nfwd
 let co-cb = dcbl & (W*W)
 
 call equal(rf, rf-cb) as rfeq
 call equal(co, co-cb) as cbeq
+
+flag ~empty (if "vmsa" then _ else 0)
+  as external-completion-requirement-does-not-support-variant-vmsa
+flag ~empty (if "ifetch" then _ else 0)
+  as external-completion-requirement-does-not-support-variant-ifetch
+flag ~empty (if "memtag" then _ else 0)
+  as external-completion-requirement-does-not-support-variant-memtag

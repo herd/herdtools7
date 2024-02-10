@@ -40,16 +40,23 @@
 
 include "armv8-common.cat"
 
-let preorder-cb = IM0 | lob
+let preorder-cb = IM0 | local-hw-reqs
 
 with cb from linearisations(M,preorder-cb)
 ~empty cb
 
 let cbl = cb & loc
-let rf-fwd = (W*R) & po-loc & cbl^-1 \ intervening-write(po-loc)
-let rf-nfwd = (W*R) & cbl \ intervening-write(cbl | po-loc)
+let rf-fwd = (W*(Exp&R)) & po-loc & cbl^-1 & ~intervening(W,po-loc)
+let rf-nfwd = (W*(Exp&R)) & cbl & ~(intervening(W, (cbl | po-loc)); [Exp & R]; po-loc?)
 let rf-cb = rf-fwd | rf-nfwd
 let co-cb = cbl & (W*W)
 
 call equal(rf, rf-cb) as rfeq
 call equal(co, co-cb) as cbeq
+
+flag ~empty (if "vmsa" then _ else 0)
+  as external-completion-requirement-does-not-support-variant-vmsa
+flag ~empty (if "ifetch" then _ else 0)
+  as external-completion-requirement-does-not-support-variant-ifetch
+flag ~empty (if "memtag" then _ else 0)
+  as external-completion-requirement-does-not-support-variant-memtag

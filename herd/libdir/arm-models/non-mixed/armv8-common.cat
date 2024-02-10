@@ -39,67 +39,18 @@
 
 "ARMv8 AArch64"
 
-include "armv8-util.cat"
+include "aarch64util.cat"
+include "aarch64deps.cat"
+include "aarch64hwreqs.cat"
 
-(* Coherence-after *)
-let ca = fr | co
+(*** Internal visibility requirements ***)
+irreflexive [Exp & R]; (po-loc | rmw); [Exp & W]; rfi; [Exp & R] as coRW1-Exp
+irreflexive [Imp & Tag & R]; po-loc; [Exp & Tag & W]; rfi; [Imp & Tag & R] as coRW1-MTE
+irreflexive [Exp & W]; po-loc; [Exp & W]; (ca & int); [Exp & W] as coWW-Exp
+irreflexive [Exp & W]; po-loc; [Exp & R]; (ca & int); [Exp & W] as coWR-Exp
+irreflexive [Exp & Tag & W]; po-loc; [Imp & Tag & R]; (ca & int) as coWR-MTE
 
-(* Local read successor *)
-let lrs = [W]; (po-loc \ (po-loc;[W];po-loc)) ; [R]
+(*** Atomic: LDXR/STXR, AMO and HU constraint to forbid intervening writes. ***)
+empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
 
-(* Local write successor *)
-let lws = po-loc; [W]
-
-(* Observed-by *)
-let obs = rfe | fre | coe
-
-(* Read-modify-write *)
-let rmw = lxsx | amo
-
-(* Dependency-ordered-before *)
-let dob = addr | data
-	| ctrl; [W]
-	| (ctrl | (addr; po)); [ISB]; po; [M]
-	| addr; po; [W]
-	| (addr | data); lrs
-
-(* Pick-ordered-before *)
-let pob = pick-dep; [W]
-	| (pick-ctrl-dep | pick-addr-dep; po); [ISB]; po; [M]
-	| pick-addr-dep; [M]; po; [W]
-
-(* Atomic-ordered-before *)
-let aob = rmw
-	| rmw; lrs; [A | Q]
-
-(* Barrier-ordered-before *)
-let bob = po; [dmb.full]; po
-	| [range([A];amo;[L])]; po
-	| [L]; po; [A]
-	| [R\NoRet]; po; [dmb.ld]; po
-	| [A | Q]; po
-	| [W]; po; [dmb.st]; po; [W]
-	| po; [L]
-
-(* Tag-ordered-before *)
-let tob = [R & T]; iico_data; [PRED]; iico_ctrl; [M \ T]
-
-(* Locally-ordered-before *)
-let rec lob = lws
-	| dob
-	| pob
-	| aob
-	| bob
-	| tob
-	| lob; lob
-
-let pick-lob = pick-basic-dep; lob; [W]
-
-(* Internal visibility requirement *)
-let po-loc =
-	let Exp = M\domain(tob) in
-	(po-loc & Exp*Exp) | (po & tlo)
-acyclic po-loc | ca | rf as internal
-
-(* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
-empty rmw & (fre; coe) as atomic
+let IM0 = ((IW * (M\IW)) | loc & ((W\FW) * FW))
