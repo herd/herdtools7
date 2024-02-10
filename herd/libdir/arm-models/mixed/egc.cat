@@ -41,11 +41,7 @@ include "armv8-common.cat"
 include "sca.cat"
 
 let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; local-hw-reqs))
-let preorder-gcb = IM0
-    | local-hw-reqs & gc-req
-    (* | [M & Exp]; (po-loc \ (po-loc;po-loc)); [W & Exp]
-    | [W & Exp]; (po-loc \ (po-loc;po-loc)); [R & Exp] *)
-    | scaob
+let preorder-gcb = IM0 | local-hw-reqs & gc-req | scaob
 let preorder-gcb-lift = lift(MC,preorder-gcb)
 
 with gcb from linearisations(MC, preorder-gcb-lift)
@@ -56,7 +52,7 @@ let dgcb = delift(gcb)
 let dgcbl = dgcb & loc
 let rf-gcb = (W * (Exp & R)) & dgcbl
     & ~intervening(W,dgcbl)
-    & ~(intervening(W,dgcbl);[R & Exp]; po-loc)
+    & ~(intervening(W,dgcbl);[Exp & R]; po-loc)
 let co-gcb = (W * W) & dgcbl
 
 call equal(rf, rf-gcb)

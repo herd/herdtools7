@@ -41,10 +41,7 @@
 include "armv8-common.cat"
 
 let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; local-hw-reqs))
-let preorder-gcb = IM0
-    | local-hw-reqs & gc-req
-    (* | [M & Exp]; (po-loc \ (po-loc;po-loc)); [W & Exp]
-    | [W & Exp]; (po-loc \ (po-loc;po-loc)); [R & Exp] *)
+let preorder-gcb = IM0 | local-hw-reqs & gc-req
 let preorder-gcb-lift = lift(M,preorder-gcb)
 
 with gcb from linearisations(M, preorder-gcb)
@@ -53,7 +50,7 @@ with gcb from linearisations(M, preorder-gcb)
 let gcbl = gcb & loc
 let rf-gcb = (W * (Exp & R)) & gcbl
     & ~intervening(W,gcbl)
-    & ~(intervening(W,gcbl);[R & Exp]; po-loc)
+    & ~(intervening(W,gcbl);[Exp & R]; po-loc)
 let co-gcb = (W * W) & gcbl
 
 call equal(rf, rf-gcb)
