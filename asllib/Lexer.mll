@@ -89,7 +89,6 @@ let tr_name s = match s with
 | "while"         -> WHILE
 | "with"          -> WITH
 | x               -> IDENTIFIER x
-
 }
 
 let digit = ['0'-'9']
@@ -98,19 +97,47 @@ let hex_alpha = ['a'-'f' 'A'-'F']
 let hex_lit = '0' 'x' (digit | hex_alpha) ('_' | digit | hex_alpha)*
 let real_lit = digit ('_' | digit)* '.' digit ('_' | digit)*
 let alpha = ['a'-'z' 'A'-'Z']
-let string_chars = ([^ '"' '\\'] | ('\\' ['n' 't' '"' '\\']))*
 let bits = ['0' '1' 'z' ' ']*
 let mask = ['0' '1' 'x' ' ']*
 let identifier = (alpha | '_') (alpha|digit|'_')*
 
-rule token = parse
+(*
+   We are not using [Scanf.unescape] because:
+     - [Scanf.unescaped] basically follows the lexical conventions of OCaml,
+       while we follow the lexical conventions of ASL;
+     - if they were to diverge, we would have to re-implement it
+     - they do not support the same escape sequences:
+       - ASL supports only [\\], [\"], [\n], [\t]
+       - From OCaml Manual:
+            escape-sequence	::=	\ (\ ∣ " ∣ ' ∣ n ∣ t ∣ b ∣ r ∣ space)
+              ∣	 \ (0…9) (0…9) (0…9)
+              ∣	 \x (0…9 ∣ A…F ∣ a…f) (0…9 ∣ A…F ∣ a…f)
+              ∣	 \o (0…3) (0…7) (0…7)
+     - using [unescaped] is not very explicit
+     - We would still need lexing character by character because ocamllex
+       cannot match negatively on the two string character that escape the end
+       of a string literal.
+*)
+rule escaped_string_chars acc = parse
+  | 'n'  { Buffer.add_char acc '\n'; string_lit acc lexbuf }
+  | 't'  { Buffer.add_char acc '\t'; string_lit acc lexbuf }
+  | '"'  { Buffer.add_char acc '"'; string_lit acc lexbuf }
+  | '\\' { Buffer.add_char acc '\\'; string_lit acc lexbuf }
+  | [^ 'n' 't' '"' '\\'] { raise LexerError }
+
+and string_lit acc = parse
+  | '"'   { STRING_LIT (Buffer.contents acc) }
+  | '\\'  { escaped_string_chars acc lexbuf }
+  | [^ '"' '\\']+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
+
+and token = parse
     | '\n'                     { Lexing.new_line lexbuf; token lexbuf }
     | [' ''\t''\r']+           { token lexbuf                     }
     | "//" [^'\n']*            { token lexbuf                     }
     | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | real_lit as lxm          { REAL_LIT(Q.of_string lxm)        }
-    | '"' (string_chars as lxm) '"' { STRING_LIT(lxm)             }
+    | '"'                      { string_lit (Buffer.create 16) lexbuf }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
     | '\'' (mask as lxm) '\''  { mask_lit lxm                     }
     | '!'                      { BNOT                             }
