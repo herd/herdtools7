@@ -273,7 +273,9 @@ let rec pp_stmt =
     | S_Try (s, catchers, otherwise) ->
         bprintf f "S_Try (%a, %a, %a)" pp_stmt s (pp_list pp_catcher) catchers
           (pp_option pp_stmt) otherwise
-    | S_Debug _ -> ()
+    | S_Print { args; debug } ->
+        bprintf f "S_Print { args = %a; debug = %B }" (pp_list pp_expr) args
+          debug
   in
   fun f s -> pp_annotated pp_desc f s
 

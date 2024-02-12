@@ -243,7 +243,7 @@ let rec use_s acc s =
   | S_Try (s, catchers, None) -> use_catchers (use_s acc s) catchers
   | S_Try (s, catchers, Some s') ->
       use_catchers (use_s (use_s acc s') s) catchers
-  | S_Debug e -> use_e acc e
+  | S_Print { args; debug = _ } -> List.fold_left use_e acc args
 
 and use_case acc { desc = _p, stmt; _ } = use_s acc stmt
 and use_le acc _le = acc
@@ -697,7 +697,7 @@ let rename_locals map_name ast =
     | S_Throw (Some (e, t)) -> S_Throw (Some (map_e e, Option.map map_t t))
     | S_Throw None -> s.desc
     | S_Try (_, _, _) -> failwith "Not yet implemented: offscate try"
-    | S_Debug e -> S_Debug (map_e e)
+    | S_Print { args; debug } -> S_Print { args = List.map map_e args; debug }
   and map_le le =
     map_desc_st' le @@ function
     | LE_Discard -> le.desc

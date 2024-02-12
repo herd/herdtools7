@@ -71,7 +71,7 @@ let make_ty_decl_subtype (x, s) =
 %token DOT DOWNTO ELSE ELSIF END ENUMERATION EOF EOR EQ EQ_OP EXCEPTION FOR
 %token FUNC GEQ GETTER GT IF IMPL IN INTEGER LBRACE LBRACKET LEQ LET LPAR LT
 %token MINUS MOD MUL NEQ NOT OF OR OTHERWISE PASS PLUS PLUS_COLON POW PRAGMA
-%token RBRACE RBRACKET RDIV REAL RECORD REPEAT RETURN RPAR STAR_COLON
+%token PRINT RBRACE RBRACKET RDIV REAL RECORD REPEAT RETURN RPAR STAR_COLON
 %token SEMI_COLON SETTER SHL SHR SLICING STRING SUBTYPES THEN THROW TO TRY TYPE
 %token UNKNOWN UNTIL VAR WHEN WHERE WHILE WITH
 
@@ -463,9 +463,9 @@ let stmt ==
       | RETURN; ~=ioption(expr);                             < S_Return >
       | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
       | ASSERT; e=expr;                                      < S_Assert >
-      | DEBUG; e=expr;                                       < S_Debug >
-      | le=lexpr; EQ; e=expr;
-          {  S_Assign (le,e,V1) }
+      | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }
+      | DEBUG; args=plist(expr);                             { S_Print { args; debug = true } }
+      | le=lexpr; EQ; e=expr;                                {  S_Assign (le,e,V1) }
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr;                  < S_Repeat >
