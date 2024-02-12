@@ -47,8 +47,11 @@ with cb from linearisations(MC,preorder-cb-lift)
 ~empty cb
 
 let dcbl = delift(cb) & loc
-let rf-fwd = (W*(Exp&R)) & po-loc & dcbl^-1 & ~intervening(W,po-loc)
-let rf-nfwd = (W*(Exp&R)) & dcbl & ~(intervening(W, (dcbl | po-loc)); [Exp & R]; po-loc?)
+let rf-fwd = (W*(Exp&R)) & lrs & dcbl^-1
+let rf-nfwd = (W*(Exp&R)) & dcbl
+    & ~(dcbl; [W]; lrs) (* exclude Write Effects outdated by the local predecessor, see rf-fwd *)
+    & ~intervening(W,dcbl) (* exclude Write Effects that are not the most recent in Completed-before *)
+    & ~(intervening(W,dcbl); [Exp & R]; po-loc) (* exclude the cases of load hazards *)
 let rf-cb = rf-fwd | rf-nfwd
 let co-cb = dcbl & (W*W)
 
