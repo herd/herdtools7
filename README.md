@@ -55,27 +55,37 @@ When adding a new pre-commit check, please run Pre-Commit manually first:
     % pre-commit run --all-files
 
 ### Pull Request Methodology
-We would like to, as much as possible, maintain a linear git history, have pull
-requests reviewed, and finally merged responsibly. Therefore, we ask all
-contributors to follow the following procedure:
-1. Create a git branch: 'git checkout -b feature_name'
-2. Implement new feature/change.
-3. Commit with meaningful messages:
-   'git commit -m "[feature] one line title followed by detailed description"'
-4. Test the feature and make sure all relevant tests pass, including
-   'make test'.
-5. Push 'git push --set-upstream origin feature_name'
-6. Rebase often, repeating 2--6 as much as needed:
-  - 'git checkout master'
-  - 'git pull'
-  - 'git checkout feature_name'
-  - 'git rebase'
-  - Resolve all conflicts.
-  - 'git rebase --continue'
-  - 'git push --force'
-7. Create a pull request and ask for reviews.
-8. Address reviewer comments and make sure all issues are resolved.
-9. Once the pull request is accepted, let **the repo admin** merge.
+We would like, as much as possible, to maintain a linear git history,
+since it is simple, readable, and easier to bisect in case of bugs.
+We would also like to have pull requests reviewed, and finally merged
+responsibly.
+Therefore, our recommendation to all contributors is to follow the following
+procedure:
+1.  Create a [fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo)
+    of `herdtools7` named, for example, `upstream` and set `herdtools7` as your remote.
+2.  Create a git branch: `git checkout -b feature`
+3.  Implement new feature/change.
+4.  Commit with meaningful messages:
+    `git commit -m "[tag] one line descriptive title, followed by detailed description"`
+    The tag(s) should refer to the component that the feature relates to, e.g.,
+    `[herd]`, `[litmus]`, etc. Generally, the tags correlate to the sub-folders.
+    Also, `[all]` applies to changes that effect several components.
+5.  Test the feature and make sure all relevant tests pass, including
+    `make test`.
+6.  Assuming `origin` is your clone of `herdtools7`, push with
+    `git push --set-upstream origin feature`
+7.  Rebase often, repeating 2--6 as much as needed:
+   - `git fetch upstream`
+   - `git rebase -i upstream/master`
+   - If there are conflicts, resolve all of them and perform a `git rebase --continue`
+   - `git push --force`
+8.  Create a pull request and ask for reviews.
+9.  Address reviewer comments and make sure all issues are resolved.
+19. Once the pull request is accepted, let **a repo admin**, a.k.a the merger,
+    perform the merge.
+    The merger has to fill the merge message, and it is often convenient to copy
+    the initial message of the conversation, which usually describes the effect
+    and purpose of the PR.
 
 License
 =======
