@@ -38,6 +38,8 @@
  *)
 "Armv8 External global completion requirement, not mixed-size"
 
+catdep
+
 include "armv8-common.cat"
 
 let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; local-hw-reqs))
@@ -47,7 +49,7 @@ let preorder-gcb-lift = lift(M,preorder-gcb)
 with gcb from linearisations(M, preorder-gcb)
 ~empty gcb
 
-let gcbl = gcb & loc
+let gcbl = gcb & same-loc
 let rf-gcb = (W * (Exp & R)) & gcbl
     & ~intervening(W,gcbl)
     & ~(intervening(W,gcbl);[Exp & R]; po-loc)

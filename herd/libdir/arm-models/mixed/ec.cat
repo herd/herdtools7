@@ -37,6 +37,8 @@
  *)
 "Armv8 External completion requirement, with mixed-size"
 
+catdep
+
 include "armv8-common.cat"
 include "sca.cat"
 
@@ -46,7 +48,7 @@ let preorder-cb-lift = lift(MC,preorder-cb)
 with cb from linearisations(MC,preorder-cb-lift)
 ~empty cb
 
-let dcbl = delift(cb) & loc
+let dcbl = delift(cb) & same-loc
 let rf-fwd = (W*(Exp&R)) & lrs & dcbl^-1
 let rf-nfwd = (W*(Exp&R)) & dcbl
     & ~(dcbl; [W]; lrs) (* exclude Write Effects outdated by the local predecessor, see rf-fwd *)

@@ -37,6 +37,8 @@
  *)
 "Armv8 External global completion requirement, with mixed-size"
 
+catdep
+
 include "armv8-common.cat"
 include "sca.cat"
 
@@ -49,7 +51,7 @@ with gcb from linearisations(MC, preorder-gcb-lift)
 
 let dgcb = delift(gcb)
 
-let dgcbl = dgcb & loc
+let dgcbl = dgcb & same-loc
 let rf-gcb = (W * (Exp & R)) & dgcbl
     & ~intervening(W,dgcbl)
     & ~(intervening(W,dgcbl);[Exp & R]; po-loc)

@@ -37,10 +37,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-"ARMv8 AArch64"
-
-include "aarch64util.cat"
-include "aarch64deps.cat"
 include "aarch64hwreqs.cat"
 
 (*** Internal visibility requirements ***)
