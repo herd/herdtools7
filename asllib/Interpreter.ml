@@ -115,6 +115,7 @@ module Make (B : Backend.S) (C : Config) = struct
   let ( >>*= ) = B.bind_ctrl
 
   (* Choice *)
+
   let choice m v1 v2 = B.choice m (return v1) (return v2)
 
   (* Exceptions *)
@@ -924,7 +925,12 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin SCond *)
     | S_Cond (e, s1, s2) ->
         let*^ v, env' = eval_expr env e in
-        let*= s' = choice v s1 s2 in
+        let* s' = choice v s1 s2 in
+        let () =
+          if false then Format.eprintf "@[%a:@ %a@]@." PP.pp_pos e PP.pp_expr e
+        in
+        let pp_e = Format.asprintf "%a@?" PP.pp_expr e in
+        let*= () = B.commit (Some pp_e) in
         eval_block env' s' |: SemanticsRule.SCond
     (* Begin SCase *)
     | S_Case _ -> case_to_conds s |> eval_stmt env |: SemanticsRule.SCase

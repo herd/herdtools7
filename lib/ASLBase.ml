@@ -78,6 +78,7 @@ let pp_reg = function
   | ArchReg r -> A64B.pp_reg r
 
 let is_local = function ASLLocalId _ -> true | _ -> false
+let is_pc = function ArchReg A64B.PC -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
 let to_reg r = ArchReg r
 let main_scope = ("main", 0)

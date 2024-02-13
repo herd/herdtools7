@@ -901,7 +901,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             in
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
-      let tr_action ii =
+      let tr_action is_bcc e ii =
         let exp = AArch64.Exp in
         function
         | ASLS.Act.Access (dir, loc, v, sz, a) -> (
@@ -911,7 +911,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 let ac = Act.access_of_location_std loc in
                 Some (Act.Access (dir, loc, tr_v v, a, exp, sz, ac)))
         | ASLS.Act.Barrier b -> Some (Act.Barrier b)
-        | ASLS.Act.NoAction -> Some Act.NoAction
+        | ASLS.Act.Branching txt ->
+           let ct = if is_bcc e then Act.Bcc else Act.Pred in
+           Some (Act.Commit (ct,txt))
+        | ASLS.Act.NoAction ->
+           (* As long as aarch64.cat ignores "NoAction" effects *)
+           None
         | ASLS.Act.TooFar msg -> Some (Act.TooFar msg)
 
       let tr_expr acc = function
@@ -931,7 +936,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
       let tr_cnstrnts cs = List.fold_left tr_cnstrnt [] cs
 
-      let event_to_monad ii is_data event =
+      let event_to_monad ii is_bcc is_data event =
         let { ASLE.action; ASLE.iiid; _ } = event in
         let () =
           if _dbg then
@@ -939,7 +944,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               (ASLE.Act.pp_action action)
               (if is_data event then "(data)" else "")
         in
-        match (iiid, tr_action ii action) with
+        match (iiid, tr_action is_bcc event ii action) with
         | ASLE.IdInit, _ | _, None ->
             let () = if _dbg then Printf.eprintf ", " in
             None
@@ -991,10 +996,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let data_set =
             get_cat_show Misc.identity "AArch64_DATA" in
           fun e -> ESet.mem e data_set in
+        let is_bcc =
+          let bcc = get_cat_show Misc.identity "AArch64_BCC" in
+          fun e -> ASLE.EventSet.mem e bcc in
         let () = if _dbg then Printf.eprintf "\t- events: " in
         let event_list = List.of_seq events in
         let event_to_monad_map =
-          Seq.filter_map (event_to_monad ii is_data) events |> EMap.of_seq
+          Seq.filter_map (event_to_monad ii is_bcc is_data) events
+          |> EMap.of_seq
         in
         let events_m =
           let folder _e1 m1 acc = m1 ||| acc in
@@ -1093,7 +1102,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         in
         let () = if _dbg then Printf.eprintf "\n" in
         let* () =
-          events_m ||| iico_data ||| iico_ctrl ||| iico_order ||| constraints
+          events_m ||| iico_data ||| iico_ctrl
+          ||| iico_order ||| constraints
         in
         M.addT (A.next_po_index ii.A.program_order_index) (return branch)
     end

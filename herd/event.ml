@@ -790,6 +790,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             debug_event_in_rel e1 debug_event_in_rel e2)
         r
 
+    let debug_trans_rel chan tag r =
+      let open EventTransRel in
+      if not (EventTransRel.is_empty r) then
+        fprintf chan "%s\n\t\ti=%a\n\t\to=%a\n\t\tr=%a\n" tag
+          debug_events r.input
+          debug_events r.output
+          debug_rel  r.rel
+
     type event_structure = {
         procs : A.proc list ; (* will prove convenient *)
         events : EventSet.t ;        (* really a set *)
@@ -1038,7 +1046,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       fprintf chan "\toutput: %a\n" debug_opt (es.output,get_output,es) ;
       fprintf chan "\tiico_data: %a\n" debug_rel es.intra_causality_data ;
       fprintf chan "\tiico_ctrl: %a\n" debug_rel es.intra_causality_control ;
-      fprintf chan "\tpo: %a\n" debug_rel (let _,rel = es.po in rel) ;
+      let _,rel = es.po in
+      if not (EventRel.is_empty rel) then
+        fprintf chan "\tpo: %a\n" debug_rel rel;
+      debug_trans_rel chan "\tpartial_po: " es.partial_po;
       fprintf chan ")\n"
 
     let get_ctrl_output es = match es.ctrl_output with
@@ -1416,7 +1427,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       check_disjoint (data_comp minimals_data sequence_data_output)
 
     let data_po_seq es1 es2 =
-      let r = data_comp minimals_data sequence_data_output es1 es2 in
+      let r = data_comp minimals sequence_data_output es1 es2 in
       Some
         { r with
           partial_po = seq_partial_po es1 es2;
