@@ -107,6 +107,9 @@ module NativeBackend = struct
   let bind_seq = bind
   let bind_ctrl = bind
   let appl_data m f = bind_data m (fun v -> return (f v))
+  let debugT _s m = m
+  let noAction () = (() : unit m)
+  let commit _ = (() : unit m)
 
   let choice (c : value m) (m_true : 'b m) (m_false : 'b m) : 'b m =
     let open AST in

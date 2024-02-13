@@ -7,6 +7,7 @@ module type S = sig
   type t = { input : Set.t; rel : Rel.t; output : Set.t }
 
   val empty : t
+  val is_empty : t -> bool
   val from_nodes : Set.t -> t
   val map_nodes : (elt -> elt) -> t -> t
   val seq : t -> t -> t
@@ -32,6 +33,10 @@ module Make (O : MySet.OrderedType) :
   type t = { input : Set.t; rel : Rel.t; output : Set.t }
 
   let empty = { input = Set.empty; rel = Rel.empty; output = Set.empty }
+
+  let is_empty {input; rel; output; } =
+    Set.is_empty input && Rel.is_empty rel && Set.is_empty output
+
   let from_nodes events = { input = events; rel = Rel.empty; output = events }
 
   let map_nodes f { input; rel; output } =
