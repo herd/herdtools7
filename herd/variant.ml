@@ -93,6 +93,7 @@ type t =
   | Warn
 (* Telechat variant - implements unconditional branches as exit, and any other optional quirks*)
   | Telechat
+  | NV2
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -155,6 +156,7 @@ let parse s = match Misc.lowercase s with
 | "strict" -> Some Strict
 | "warn" -> Some Warn
 | "telechat" -> Some Telechat
+| "nv2" | "NV2" -> Some NV2
 | s ->
    begin
      match Precision.parse s with
@@ -223,6 +225,7 @@ let pp = function
   | ASLType `Silence -> "ASLType+Silence"
   | ASLType `TypeCheck -> "ASLType+Check"
   | Telechat -> "telechat"
+  | NV2 -> "NV2"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0

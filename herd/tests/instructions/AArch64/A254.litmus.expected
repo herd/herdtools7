@@ -1,0 +1,11 @@
+Test A254 Allowed
+States 2
+1:X0=0;
+1:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:X0=1)
+Observation A254 Sometimes 1 1
+Hash=297cf69b1db0a4bcf94195fb798aa3c4
+

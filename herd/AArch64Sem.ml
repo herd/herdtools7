@@ -2989,31 +2989,49 @@ module Make
  * PSTATE.<N,Z,C,V>, while SYS_NZCV is here only
  * as an argument to the MRS and MSR instructions.
  *)
-        | I_MSR (sreg,xt) ->
-           read_reg_ord_sz MachSize.Quad xt ii
-           >>=
-             begin
-               match sreg with
-               | SYS_NZCV ->
-                  fun v -> M.op1 (Op.LogicalRightShift 28) v
-                  >>= M.op1 (Op.AndK "0b1111")
-                  >>= fun v -> write_reg_dest NZCV v ii
-                  >>= nextSet NZCV
-               | _ ->
-                  fun v -> write_reg_dest (SysReg sreg) v ii
-                  >>= nextSet (SysReg sreg)
-             end
+        | I_MSR (sreg,xt) -> begin
+            let sz = MachSize.Quad in
+            match sreg with
+            | SYS_NZCV ->
+              read_reg_ord_sz sz xt ii
+              >>= fun v -> M.op1 (Op.LogicalRightShift 28) v
+              >>= M.op1 (Op.AndK "0b1111")
+              >>= fun v -> write_reg_dest NZCV v ii
+              >>= nextSet NZCV
+            | _ -> begin
+              let off = AArch64.sysreg_nv2off sreg in
+              match C.variant Variant.NV2, off with
+              | true, Some off ->
+                let rd = SysReg AArch64.VNCR_EL2 in
+                str_simple sz xt rd (get_ea_idx rd off ii) ii
+              | _, _ ->
+                read_reg_ord_sz sz xt ii
+                >>= fun v -> write_reg_dest (SysReg sreg) v ii
+                >>= nextSet (SysReg sreg)
+            end
+          end
         | I_MRS (xt,sreg) ->
           begin
             match sreg with
             | SYS_NZCV ->
                read_reg_ord NZCV ii
                >>= M.op1 (Op.LeftShift 28)
-            | _ ->
-               read_reg_ord_sz MachSize.Quad (SysReg sreg) ii
+               >>= fun v -> write_reg_dest xt v ii
+               >>= nextSet (SysReg sreg)
+            | _ -> begin
+              let sz = MachSize.Quad in
+              let off = AArch64.sysreg_nv2off sreg in
+              match C.variant Variant.NV2, off with
+              | true, Some off ->
+                let rs = SysReg AArch64.VNCR_EL2 in
+                let e = MemExt.Imm (off, Idx) in
+                ldr sz xt rs e ii
+              | _, _ ->
+                read_reg_ord_sz sz (SysReg sreg) ii
+                >>= fun v -> write_reg_dest xt v ii
+                >>= nextSet (SysReg sreg)
+            end
           end
-          >>= fun v -> write_reg_dest xt v ii
-          >>= nextSet (SysReg sreg)
         | I_UDF _ ->
            let (>>!) = M.(>>!) in
            let ft = Some FaultType.AArch64.UndefinedInstruction in

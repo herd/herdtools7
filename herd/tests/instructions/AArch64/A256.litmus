@@ -1,0 +1,12 @@
+AArch64 A256
+Variant=NV2
+{
+ uint64_t nvmem[23];
+ 0:VNCR_EL2=nvmem;
+ 0:X1=nvmem;
+}
+ P0               ;
+ MOV X0,#1        ;
+ MSR VNCR_EL2,X0  ;
+ LDR X0,[X1,#176] ;
+forall(0:X0=1)

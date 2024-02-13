@@ -66,7 +66,7 @@ type sysreg =
   MDCCSR_EL0 | DBGDTR_EL0 |
   DBGDTRRX_EL0 | DBGDTRTX_EL0 |
   ELR_EL1 | ESR_EL1 | SYS_NZCV |
-  TFSR_ELx
+  TFSR_ELx | VNCR_EL2
 
 let sysregs = [
     CTR_EL0, "CTR_EL0";
@@ -79,7 +79,16 @@ let sysregs = [
     ESR_EL1, "ESR_EL1";
     SYS_NZCV, "NZCV";
     TFSR_ELx, "TFSR_ELx";
+    VNCR_EL2, "VNCR_EL2";
   ]
+
+let sysregs_map = [
+    VNCR_EL2, 0xB0;
+    ESR_EL1, 0x138;
+    ELR_EL1, 0x230;
+  ]
+
+let sysreg_nv2off sreg = List.assoc_opt sreg sysregs_map
 
 type reg =
   | ZR
