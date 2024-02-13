@@ -48,8 +48,11 @@ let preorder-cb-lift = lift(MC,preorder-cb)
 with cb from linearisations(MC,preorder-cb-lift)
 ~empty cb
 
-let dcbl = delift(cb) & same-loc
+let dcb = delift(cb)
+
+let dcbl = dcb & same-loc
 let rf-fwd = (W*(Exp&R)) & lrs & dcbl^-1
+    & ~(intervening(W,dcbl); [Exp & R]; po-loc)  (* exclude the cases of load hazards *)
 let rf-nfwd = (W*(Exp&R)) & dcbl
     & ~(dcbl; [W]; lrs) (* exclude Write Effects outdated by the local predecessor, see rf-fwd *)
     & ~intervening(W,dcbl) (* exclude Write Effects that are not the most recent in Completed-before *)
