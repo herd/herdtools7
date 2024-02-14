@@ -1,0 +1,34 @@
+name: Build WWW
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - "5.1"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - run: |
+          opam install dune menhir zarith js_of_ocaml js_of_ocaml-ppx
+          opam exec -- make # Not ideal, but herd-www needs Version.ml and cat2html7
+          opam exec -- make -C herd-www
+      - name: www
+        uses: actions/upload-artifact@v4
+        with:
+          name: www
+          path: |
+            herd-www/www
