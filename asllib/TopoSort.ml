@@ -71,7 +71,7 @@ module Make (O : OrderedHashedType) = struct
         else (acc, v_data)
 
   and strong_connected succs s fold acc v =
-    (* Assumption that [acc.datas] does not contain [v]. *)
+    (* Assumption that [s.data] does not contain [v]. *)
     let () =
       if false then Format.eprintf "strong_connected %s@." (O.to_string v)
     in
@@ -141,4 +141,92 @@ module Make (O : OrderedHashedType) = struct
             (succs v))
         nodes
   end
+end
+
+module ASTFold = struct
+  module O = struct
+    include String
+
+    let to_string s = s
+  end
+
+  module OSet = ASTUtils.ISet
+  module TS = Make (O)
+  module Tbl = TS.OTbl
+
+  type t = {
+    nodes : string list;
+    succs : string -> string list;
+    decls : AST.decl list Tbl.t;
+  }
+
+  let tbl_add_set tbl key values =
+    match Tbl.find_opt tbl key with
+    | None -> Tbl.add tbl key values
+    | Some prev -> Tbl.replace tbl key (OSet.union values prev)
+
+  let tbl_add_list tbl key values =
+    match Tbl.find_opt tbl key with
+    | None -> Tbl.add tbl key values
+    | Some prev -> Tbl.replace tbl key (List.rev_append values prev)
+
+  let def d =
+    let open AST in
+    match d.desc with
+    | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
+      ->
+        name
+
+  let use d = ASTUtils.use_constant_decl OSet.empty d
+
+  let extra_def d =
+    let open AST in
+    match d.desc with
+    | D_TypeDecl (_, { desc = T_Enum names; _ }, _) -> names
+    | _ -> []
+
+  let build ast : t =
+    let add_one (succ_tbl, decl_tbl) d =
+      let v = def d and u = use d in
+      tbl_add_set succ_tbl v u;
+      tbl_add_list decl_tbl v [ d ];
+      List.iter
+        (fun v' ->
+          tbl_add_set succ_tbl v' (OSet.singleton v);
+          tbl_add_list decl_tbl v' [])
+        (extra_def d);
+      v
+    in
+    let succ_tbl, decls = (Tbl.create 16, Tbl.create 16) in
+    let nodes = List.map (add_one (succ_tbl, decls)) ast in
+    let () =
+      Tbl.filter_map_inplace
+        (fun _v d -> OSet.filter (Tbl.mem decls) d |> Option.some)
+        succ_tbl
+    in
+    let () =
+      if false then (
+        let open Format in
+        eprintf "@[<v 2>Dependencies:@ ";
+        Tbl.iter
+          (fun v -> eprintf "@[<h>%s <-- %a@]@ " v OSet.pp_print)
+          succ_tbl;
+        eprintf "@]@.")
+    in
+    let succs s = Tbl.find succ_tbl s |> OSet.to_list in
+    { nodes; succs; decls }
+
+  type step = Single of AST.decl | Recursive of AST.decl list
+
+  let fold fold ast =
+    let { nodes; succs; decls } = build ast in
+    let folder nodes acc =
+      let ds = List.concat_map (Tbl.find decls) nodes in
+      match ds with
+      | [] -> acc (* Can happen for fantom dependencies. *)
+      | [ d ] -> fold (Single d) acc
+      | _ -> fold (Recursive ds) acc
+    in
+    let size_hint = Tbl.length decls in
+    TS.fold_strong_connected ~size_hint folder nodes succs
 end

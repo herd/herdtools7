@@ -185,14 +185,6 @@ module Make (B : Backend.S) (C : Config) = struct
     let names =
       List.fold_left (fun k (name, _) -> ISet.add name k) ISet.empty env0
     in
-    let def d =
-      match d.desc with
-      | D_Func { name; _ }
-      | D_GlobalStorage { name; _ }
-      | D_TypeDecl (name, _, _) ->
-          name
-    in
-    let use d = use_constant_decl ISet.empty d in
     let process_one_decl d =
       match d.desc with
       | D_GlobalStorage { initial_value; name; ty; _ } ->
@@ -214,7 +206,12 @@ module Make (B : Backend.S) (C : Config) = struct
               IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
-    dag_fold def use process_one_decl
+    let fold = function
+      | TopoSort.ASTFold.Single d -> process_one_decl d
+      | TopoSort.ASTFold.Recursive ds ->
+          List.fold_right process_one_decl ds
+    in
+    fun ast -> TopoSort.ASTFold.fold fold ast
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
