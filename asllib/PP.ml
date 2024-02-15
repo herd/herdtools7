@@ -304,7 +304,10 @@ let rec pp_stmt f s =
       fprintf f "@[<2>try@ %a@ catch@ @[<v 2>%a@]@ end@]" pp_stmt s
         (pp_print_list ~pp_sep:pp_print_space pp_catcher)
         catchers
-  | S_Debug e -> fprintf f "@[<2>debug@ %a;@]" pp_expr e
+  | S_Print { args; debug = false } ->
+      fprintf f "@[<2>print(%a);@]" (pp_comma_list pp_expr) args
+  | S_Print { args; debug = true } ->
+      fprintf f "@[<2>DEBUG@ %a;@]" (pp_comma_list pp_expr) args
 
 and pp_catcher f (name, ty, s) =
   match name with

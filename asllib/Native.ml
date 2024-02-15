@@ -42,9 +42,18 @@ type native_value =
 
 let nv_literal l = NV_Literal l
 
+let pp_literal f =
+  let open Format in
+  function
+  | L_Int i -> Z.pp_print f i
+  | L_Bool true -> pp_print_string f "TRUE"
+  | L_Bool false -> pp_print_string f "FALSE"
+  | L_Real r -> Q.to_float r |> pp_print_float f
+  | L_BitVector bv -> Bitvector.pp_t f bv
+  | L_String s -> pp_print_string f s
+
 let rec pp_native_value f =
   let open Format in
-  let open PP in
   let pp_comma f () = fprintf f ",@ " in
   function
   | NV_Literal lit -> pp_literal f lit
@@ -243,16 +252,6 @@ module NativeBackend = struct
       | li ->
           Error.fatal_unknown_pos @@ Error.BadArity ("SInt", 1, List.length li)
 
-    let print =
-      let print_one = function
-        | NV_Literal (L_String s) -> print_string s
-        | v -> mismatch_type v [ T_String ]
-      in
-      fun li ->
-        List.iter print_one li;
-        Printf.printf "\n%!";
-        return []
-
     let dec_str = function
       | [ NV_Literal (L_Int i) ] ->
           L_String (Z.to_string i) |> nv_literal |> return_one
@@ -347,7 +346,6 @@ module NativeBackend = struct
         p
           ~args:[ ("x", real) ]
           ~returns:integer "RoundTowardsZero" round_towards_zero;
-        p ~args:[ ("x", string) ] "print" print;
       ]
   end
 

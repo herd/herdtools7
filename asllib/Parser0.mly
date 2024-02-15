@@ -504,7 +504,7 @@ let simple_stmt ==
     | ~=qualident; ~=pared(clist(expr)); ~=nargs; < AST.S_Call >
     | RETURN; ~=ioption(expr);                    < AST.S_Return >
     | ASSERT; ~=expr;                             < AST.S_Assert >
-    | DEBUG; ~=expr;                              < AST.S_Debug >
+    | DEBUG; e=expr;                              { AST.S_Print { args = [ e ]; debug = true } }
 
     | unimplemented_stmts (
       | UNPREDICTABLE; ioption(pared(<>)); <>

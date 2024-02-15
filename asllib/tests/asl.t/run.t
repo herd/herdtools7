@@ -186,4 +186,4 @@ UnderConstrained integers:
   [1]
 
   $ aslref named-types-in-slices.asl
-  File named-types-in-slices.asl, line 13, characters 8 to 9: x -> '11111111'
+  File named-types-in-slices.asl, line 13, characters 2 to 11: x -> '11111111'

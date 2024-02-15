@@ -1046,11 +1046,23 @@ module Make (B : Backend.S) (C : Config) = struct
         let**| env' = eval_local_decl s ldi env None in
         return_continue env' |: SemanticsRule.SDeclNone
     (* End *)
-    | S_Debug e ->
-        let* v = eval_expr_sef env e in
+    | S_Print { args; debug } ->
+        let* vs = List.map (eval_expr_sef env) args |> sync_list in
         let () =
-          Format.eprintf "@[@<2>%a:@ @[%a@]@ ->@ %s@]@." PP.pp_pos e
-            PP.pp_expr e (B.debug_value v)
+          if debug then
+            let open Format in
+            let pp_value fmt v =
+              B.debug_value v |> pp_print_string fmt
+            in
+            eprintf "@[@<2>%a:@ @[%a@]@ ->@ %a@]@." PP.pp_pos s
+              (pp_print_list ~pp_sep:pp_print_space PP.pp_expr)
+              args
+              (pp_print_list ~pp_sep:pp_print_space pp_value)
+              vs
+          else (
+            List.map B.debug_value vs
+            |> String.concat " " |> print_string;
+            print_newline ())
         in
         return_continue env |: SemanticsRule.SDebug
 
