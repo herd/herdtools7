@@ -491,6 +491,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            { A.program_order_index = poi;
              proc = proc; fetch_proc; inst = inst;
              labels = labels_of_instr addr;
+             lbl2addr = prog;
              addr = addr;
              addr2v=addr2v proc;
              env = env;

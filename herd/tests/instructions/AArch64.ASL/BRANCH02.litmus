@@ -1,0 +1,10 @@
+AArch64 BRANCH02
+{
+0:X0=1;
+0:X1=0;
+}
+
+ P0           ;
+CBZ W1,.+8    ;
+ADD W0,W0,#1  ;
+forall 0:X0=1

@@ -132,6 +132,10 @@ module
   | Val cst ->  Cst.eq cst Cst.one
   | Var _ -> raise  Undetermined
 
+  let as_int = function
+    | Val cst -> Cst.as_int cst
+    | Var _ -> None
+
   let protect_is p v =  try p v with Undetermined -> false
 
   let bit_at k = function

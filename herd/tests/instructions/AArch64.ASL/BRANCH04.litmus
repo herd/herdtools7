@@ -1,0 +1,12 @@
+AArch64 BRANCH04
+{
+int x=1;
+0:X0=1; 0:X2=x;
+1:X0=1; 1:X2=x;
+}
+
+ P0           | P1           ;
+LDR W1,[X2]   | LDR W1,[X2]  ;
+CBNZ W1,.+8   | CBZ W1,.+8   ;
+ADD W0,W0,#1  | ADD W0,W0,#1 ;
+forall 0:X0=1 /\ 1:X0=2

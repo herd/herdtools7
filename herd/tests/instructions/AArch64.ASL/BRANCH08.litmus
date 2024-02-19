@@ -1,0 +1,12 @@
+AArch64 BRANCH08
+{
+int x=0;
+0:X1=x;
+1:X1=x;
+}
+  P0         | P1           ;
+ MOV W0,#1   | LDR W0,[X1]  ;
+ STR W0,[X1] | CMP W0,#1    ;
+             | B.GE .+8     ;
+             | ADD W0,W0,#1 ;
+forall 1:X0=1;

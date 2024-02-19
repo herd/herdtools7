@@ -189,6 +189,7 @@ type concrete =
   type branch = B.t
 
   val tgt2tgt : A.inst_instance_id -> BranchTarget.t -> B.tgt
+  val tgt2offset : A.inst_instance_id -> BranchTarget.t -> int
 
   val gone_toofar : concrete -> bool
 
@@ -481,6 +482,14 @@ type concrete =
     let tgt2tgt ii = function
       | BranchTarget.Lbl lbl -> B.Lbl lbl
       | BranchTarget.Offset o -> B.Addr (ii.A.addr + o)
+
+    let tgt2offset ii = function
+      | BranchTarget.Offset o -> o
+      | BranchTarget.Lbl lbl ->
+         let b =
+           try Label.Map.find lbl ii.A.lbl2addr
+           with Not_found -> assert false in
+         b-ii.A.addr
 
     let gone_toofar { str; _ } =
       try E.EventSet.exists E.is_toofar str.E.events

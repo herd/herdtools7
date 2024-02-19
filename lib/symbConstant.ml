@@ -37,6 +37,14 @@ module Make
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
 
+  let as_int = function
+    | Concrete c ->
+       begin
+         try Some (Scalar.to_int c)
+         with Invalid_argument _ -> None
+       end
+    | _ -> None
+
   let pp_instr_cst i = Instr.pp i
 
   let pp hexa =

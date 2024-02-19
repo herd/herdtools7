@@ -473,6 +473,16 @@ module Make (C : Config) = struct
       let loc = virtual_to_loc_reg r ii in
       write_loc MachSize.Quad loc v aneutral (use_ii_with_poi ii poi) >>! []
 
+    let loc_pc ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.PC)
+
+    let read_pc (ii,poi) () =
+      read_loc MachSize.Quad (loc_pc ii) aneutral (use_ii_with_poi ii poi)
+
+    let write_pc (ii,poi) v_m =
+      let* v = v_m >>= to_int_unsigned in
+      write_loc MachSize.Quad (loc_pc ii)
+        v aneutral (use_ii_with_poi ii poi) >>! []
+
     let do_read_memory (ii, poi) addr_m datasize_m an =
       let* addr = addr_m and* datasize = datasize_m in
       let sz = datasize_to_machsize datasize in
@@ -629,11 +639,18 @@ module Make (C : Config) = struct
       let bv_64 = bv_lit 64 in
       let t_named x = T_Named x |> with_pos in
       [
+(* Fences *)
         p0 "primitive_isb" (primitive_isb ii_env);
         p2 "primitive_dmb" ("d", integer) ("t", integer) (primitive_dmb ii_env);
         p2 "primitive_dsb" ("d", integer) ("t", integer) (primitive_dsb ii_env);
+(* Registers *)
         p1r "read_register" ("reg", reg) ~returns:bv_64 (read_register ii_env);
         p2 "write_register" ("data", bv_64) ("reg", reg) (write_register ii_env);
+        p0r "read_pc" ~returns:bv_64 (read_pc ii_env);
+        p1 "write_pc" ("data", bv_64) (write_pc ii_env);
+        p0r "SP_EL0" ~returns:bv_64 (read_sp ii_env);
+        p1 "SP_EL0" ("data", bv_64) (write_sp ii_env);
+(* Memory *)
         p2r "read_memory" ("addr", bv_64) ("size", integer) ~returns:bv_64
           (read_memory ii_env);
         p3r "read_memory_gen" ("addr", bv_64) ("size", integer)
@@ -646,9 +663,8 @@ module Make (C : Config) = struct
           ("data", bv_var "size")
           ("accdesc", t_named "AccessDescriptor")
           (write_memory_gen ii_env);
-        p0r "SP_EL0" ~returns:bv_64 (read_sp ii_env);
-        p1 "SP_EL0" ("data", bv_64) (write_sp ii_env);
-        p1r "UInt"
+(* Translations *)
+         p1r "UInt"
           ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
           ~returns:integer uint;
@@ -656,6 +672,7 @@ module Make (C : Config) = struct
           ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
           ~returns:integer sint;
+(* Misc *)
         p0r "ProcessorID" ~returns:integer (processor_id ii_env);
         p2r "CanPredictFrom"
           ~parameters:[ ("N", None) ]

@@ -102,7 +102,7 @@ module type S = sig
       proc       : proc; (* Current thread *)
       program_order_index   : program_order_index;
       inst : instr;
-      labels : Label.Set.t;
+      labels : Label.Set.t; lbl2addr:program;
       addr : int;
       addr2v : string -> I.V.v;
       env : ii_env;
@@ -360,7 +360,7 @@ module Make(C:Config) (I:I) : S with module I = I
           proc       : proc;
           program_order_index   : program_order_index;
           inst : instr;
-          labels : Label.Set.t;
+          labels : Label.Set.t; lbl2addr : program;
           addr : int ;
           addr2v : string -> I.V.v;
           env : ii_env;

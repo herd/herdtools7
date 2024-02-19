@@ -118,14 +118,25 @@ let equal s1 s2 =
   | S_BitVector bv1, S_BitVector bv2 -> BV.equal bv1 bv2
   | _ -> false
 
-let add s1 s2 =
+let zop_expressive pp_op op s1 s2 =
   match (s1, s2) with
-  | S_Int i1, S_Int i2 -> S_Int (Z.add i1 i2)
+  | S_Int i1, S_Int i2 -> S_Int (op i1 i2)
   | S_BitVector bv1, S_Int i2 ->
       let sz = BV.length bv1 in
-      S_BitVector (bv1 |> BV.to_z_unsigned |> Z.add i2 |> BV.of_z sz)
+      S_BitVector (bv1 |> BV.to_z_unsigned |> op i2 |> BV.of_z sz)
+  | S_BitVector bv1, S_BitVector bv2
+       when BV.length bv1=BV.length bv2
+    ->
+     let z1 = BV.to_z_unsigned bv1
+     and z2 = BV.to_z_unsigned bv2 in
+     let z = op z1 z2 in
+     S_BitVector (BV.of_z (BV.length bv1) z)
   | _ ->
-      Warn.fatal "ASLScalar invalid op: %s add %s" (pp false s1) (pp false s2)
+     Warn.fatal "ASLScalar invalid op: %s %s %s"
+       (pp false s1) pp_op (pp false s2)
+
+let add = zop_expressive "add" Z.add
+and sub = zop_expressive "sub" Z.sub
 
 let zop pp_op op s1 s2 =
   match (s1, s2) with
@@ -137,8 +148,7 @@ let zop pp_op op s1 s2 =
         (pp false s2)
 
 let asl_rem z1 z2 = Z.sub z1 (Z.mul z2 (Z.fdiv z1 z2))
-let sub = zop "sub" Z.sub
-and mul = zop "mul" Z.mul
+let mul = zop "mul" Z.mul
 and div = zop "div" Z.divexact
 and rem = zop "rem" asl_rem
 
@@ -190,6 +200,12 @@ let shift_right_arithmetic = function
 
 let addk = function
   | S_Int i -> fun k -> S_Int (Z.add i (Z.of_int k))
+  | S_BitVector bv ->
+     fun k ->
+     S_BitVector
+       (BV.to_z_unsigned bv
+        |> Z.add (Z.of_int k)
+        |> BV.of_z (BV.length bv))
   | s1 -> Warn.fatal "ASLScalar invalid op: %s addk" (pp false s1)
 
 let bit_at i1 = function
