@@ -31,12 +31,7 @@
 (** {2 Utils} *)
 
 type position = Lexing.position
-
-type 'a annotated = {
-  desc : 'a;
-  pos_start : position;
-  pos_end : position;
-}
+type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
 
 type identifier = string
 (** Type of local identifiers in the AST. *)
@@ -243,10 +238,28 @@ and lexpr = lexpr_desc annotated
 
 type local_decl_keyword = LDK_Var | LDK_Constant | LDK_Let
 
+(** A left-hand side of a declaration statement. In the following example of a
+    declaration statement, [(2, 3, 4): (integer, integer, integer {0..32})] is
+    the local declaration item:
+    {v
+      let (x, -, z): (integer, integer, integer {0..32}) = (2, 3, 4);
+    v}
+*)
 type local_decl_item =
-  | LDI_Var of identifier * ty option
-  | LDI_Discard of ty option
-  | LDI_Tuple of local_decl_item list * ty option
+  | LDI_Discard
+      (** [LDI_Discard] is the ignored [local_decl_item], for example used in:
+          {v let - = 42; v}. *)
+  | LDI_Var of identifier
+      (** [LDI_Var x] is the variable declaration of the variable [x], used for
+          example in: {v let x = 42; v}. *)
+  | LDI_Tuple of local_decl_item list
+      (** [LDI_Tuple ldis] is the tuple declarations of the items in [ldis],
+          used for example in: {v let (x, y, -, z) = (1, 2, 3, 4); v}
+
+          Note that a the list here must be at least 2 items long.
+      *)
+  | LDI_Typed of local_decl_item * ty
+      (** [LDI_Typed (ldi, t)] declares the item [ldi] with type [t]. *)
 
 (** Statements. Parametric on the type of literals in expressions. *)
 type for_direction = Up | Down
@@ -291,12 +304,7 @@ and catcher = identifier option * ty * stmt
 
 (** {2 Top-level declarations} *)
 
-type subprogram_type =
-  | ST_Procedure
-  | ST_Function
-  | ST_Getter
-  | ST_Setter
-
+type subprogram_type = ST_Procedure | ST_Function | ST_Getter | ST_Setter
 type subprogram_body = SB_ASL of stmt | SB_Primitive
 
 type func = {
@@ -311,11 +319,7 @@ type func = {
     functions, procedures and primitives. *)
 
 (** Declaration keyword for global storage elements. *)
-type global_decl_keyword =
-  | GDK_Constant
-  | GDK_Config
-  | GDK_Let
-  | GDK_Var
+type global_decl_keyword = GDK_Constant | GDK_Config | GDK_Let | GDK_Var
 
 type global_decl = {
   keyword : global_decl_keyword;

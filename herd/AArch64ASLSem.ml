@@ -119,8 +119,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let unalias ii =
       let i0 = ii.A.inst in
       let i = AArch64Base.unalias i0 in
-      if i ==  i0 then ii
-      else { ii with A.inst = i; }
+      if i == i0 then ii else { ii with A.inst = i }
 
     let opext_decode_shift =
       let open AArch64Base.OpExt in
@@ -136,30 +135,25 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | UXTW -> "ExtendType_UXTW"
       | SXTW -> "ExtendType_SXTW"
       | SXTX -> "ExtendType_SXTX"
-      | LSL  -> "ExtendType_UXTX"
+      | LSL -> "ExtendType_UXTX"
 
     let opext_shift_amount =
       let open AArch64Base.OpExt in
-      function |LSL k|LSR k|ASR k| ROR k -> k
+      function LSL k | LSR k | ASR k | ROR k -> k
 
     let decode_acquire =
       let open AArch64 in
-      function
-      | RMW_P|RMW_L -> false
-      | RMW_A|RMW_AL -> true
+      function RMW_P | RMW_L -> false | RMW_A | RMW_AL -> true
 
     and decode_release =
       let open AArch64 in
-      function
-      | RMW_P|RMW_A -> false
-      | RMW_L|RMW_AL -> true
+      function RMW_P | RMW_A -> false | RMW_L | RMW_AL -> true
 
     let decode_inst ii =
       let ii = unalias ii in
       let open Asllib.AST in
       let with_pos desc = Asllib.ASTUtils.add_dummy_pos desc in
-      let ( ^= ) x e =
-        S_Decl (LDK_Let, LDI_Var (x, None), Some e) |> with_pos in
+      let ( ^= ) x e = S_Decl (LDK_Let, LDI_Var x, Some e) |> with_pos in
       let ( ^^= ) x e =
         let le_x = LE_Var x |> with_pos in
         S_Assign (le_x, e, V1) |> with_pos in
@@ -226,7 +220,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               ])
 
       | I_SWP (v, t, rs, rt, rn) ->
-         Some
+          Some
             ( "memory/atomicops/swp/SWP_32_memop.opn",
               stmt
                 [
@@ -238,26 +232,29 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "acquire" ^= litb (decode_acquire t);
                   "release" ^= litb (decode_release t);
                   "tagchecked" ^= litb (rn <> SP);
-                ])
+                ] )
       | I_CAS (v, t, rs, rt, rn) ->
-         Some
-           ( "memory/atomicops/cas/single/CAS_C32_comswap.opn",
-             stmt
-               ["s" ^= reg rs;
-                "t" ^= reg rt;
-                "n" ^= reg rn;
-                "datasize" ^= variant v;
-                "regsize" ^=  variant v;
-                "acquire" ^= litb (decode_acquire t);
-                "release" ^= litb (decode_release t);
-                "tagchecked" ^= litb (rn <> SP); ])
+          Some
+            ( "memory/atomicops/cas/single/CAS_C32_comswap.opn",
+              stmt
+                [
+                  "s" ^= reg rs;
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "datasize" ^= variant v;
+                  "regsize" ^= variant v;
+                  "acquire" ^= litb (decode_acquire t);
+                  "release" ^= litb (decode_release t);
+                  "tagchecked" ^= litb (rn <> SP);
+                ] )
       | I_CSEL (v, rd, rn, rm, c, opsel) ->
-         let fname =
-           match opsel with
-           | Cpy -> "CSEL_32_condsel.opn"
-           | Inc -> "CSINC_32_condsel.opn"
-           | Inv -> "CSINV_32_condsel.opn"
-           | Neg -> "CSNEG_32_condsel.opn" in
+          let fname =
+            match opsel with
+            | Cpy -> "CSEL_32_condsel.opn"
+            | Inc -> "CSINC_32_condsel.opn"
+            | Inv -> "CSINV_32_condsel.opn"
+            | Neg -> "CSNEG_32_condsel.opn"
+          in
           Some
             ( "integer/conditional/select/" ^ fname,
               stmt
@@ -268,21 +265,20 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "datasize" ^= variant v;
                   "cond" ^= cond c;
                 ] )
-      | I_MOVZ (v, rd, k, (S_NOEXT|S_LSL (0|16|32|48) as s))
-      | I_MOVN (v, rd, k, (S_NOEXT|S_LSL (0|16|32|48) as s)) as i
+      | ( I_MOVZ (v, rd, k, ((S_NOEXT | S_LSL (0 | 16 | 32 | 48)) as s))
+        | I_MOVN (v, rd, k, ((S_NOEXT | S_LSL (0 | 16 | 32 | 48)) as s)) ) as i
         ->
-         let datasize = variant_raw v in
-         let pos =
-           match s with
-           | S_NOEXT -> 0
-           | S_LSL s -> s
-           | _ -> assert false in
-         let fname =
-           match i with
-           | I_MOVZ _ -> "MOVZ_32_movewide.opn"
-           | I_MOVN _ -> "MOVN_32_movewide.opn"
-           | _ -> assert false in
-         Some
+          let datasize = variant_raw v in
+          let pos =
+            match s with S_NOEXT -> 0 | S_LSL s -> s | _ -> assert false
+          in
+          let fname =
+            match i with
+            | I_MOVZ _ -> "MOVZ_32_movewide.opn"
+            | I_MOVN _ -> "MOVN_32_movewide.opn"
+            | _ -> assert false
+          in
+          Some
             ( "integer/ins-ext/insert/movewide/" ^ fname,
               stmt
                 [
@@ -291,32 +287,24 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "datasize" ^= liti datasize;
                   "pos" ^= liti pos;
                 ] )
-      | I_ABS (v,rd,rn) ->
-         let datasize = variant_raw v in
-         Some
-           ("integer/arithmetic/unary/abs/ABS_32_dp_1src.opn",
-            stmt
-              [
-                "d" ^= reg rd;
-                "n" ^= reg rn;
-                "datasize" ^= liti datasize;
-              ])
-      | I_RBIT (v,rd,rn) ->
-         let datasize = variant_raw v in
-         Some
-           ("integer/arithmetic/rbit/RBIT_32_dp_1src.opn",
-            stmt
-              [
-                "d" ^= reg rd;
-                "n" ^= reg rn;
-                "datasize" ^= liti datasize;
-           ])
-    (*
-     * Does not work, because instruction code uses the Elem
-     * setter `Elem[..] = ...`. This setter relies on passing argument
-     * by reference.
-     *)
-(*
+      | I_ABS (v, rd, rn) ->
+          let datasize = variant_raw v in
+          Some
+            ( "integer/arithmetic/unary/abs/ABS_32_dp_1src.opn",
+              stmt [ "d" ^= reg rd; "n" ^= reg rn; "datasize" ^= liti datasize ]
+            )
+      | I_RBIT (v, rd, rn) ->
+          let datasize = variant_raw v in
+          Some
+            ( "integer/arithmetic/rbit/RBIT_32_dp_1src.opn",
+              stmt [ "d" ^= reg rd; "n" ^= reg rn; "datasize" ^= liti datasize ]
+            )
+      (*
+       * Does not work, because instruction code uses the Elem
+       * setter `Elem[..] = ...`. This setter relies on passing argument
+       * by reference.
+       *)
+      (*
       | I_REV (rv,rd,rn) ->
          let datasize = variant_of_rev rv |> variant_raw in
          let csz = container_size rv |> MachSize.nbits in
@@ -336,150 +324,157 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "container_size" ^= liti csz;
            ])
  *)
-      | I_UBFM (v,rd,rn,immr,imms)
-      | I_SBFM (v,rd,rn,immr,imms) ->
-         let datasize = variant_raw v in
-         let bitvariant =
-           let open AArch64Base in
-           match v with
-           | V64 -> 1
-           | V32 -> 0
-           | V128 -> assert false in
-         let extend =
-           match ii.A.inst with
-           | I_SBFM _ -> true
-           | I_UBFM _ -> false
-           | _ -> assert false in
-         let added =
-           ASLBase.stmts_from_string
+      | I_UBFM (v, rd, rn, immr, imms) | I_SBFM (v, rd, rn, immr, imms) ->
+          let datasize = variant_raw v in
+          let bitvariant =
+            let open AArch64Base in
+            match v with V64 -> 1 | V32 -> 0 | V128 -> assert false
+          in
+          let extend =
+            match ii.A.inst with
+            | I_SBFM _ -> true
+            | I_UBFM _ -> false
+            | _ -> assert false
+          in
+          let added =
+            ASLBase.stmts_from_string
               "let r = UInt(immr);\n\
                let s = UInt(imms);\n\
                var wmask : bits(datasize);\n\
                var tmask : bits(datasize) ;\n\
                (wmask,tmask) = DecodeBitMasks(N, imms, immr, FALSE, datasize);"
-         in
-         let fname =
-           if extend then
-             "integer/bitfield/SBFM_32M_bitfield.opn"
-           else
-             "integer/bitfield/UBFM_32M_bitfield.opn" in
-         Some
-           (fname,
-            stmt
-              ([ "d" ^= reg rd;
-                "n" ^= reg rn;
-                "immr" ^= litbv 6 immr;
-                "imms" ^= litbv 6 imms;
-                "N" ^= litbv 1 bitvariant;
-                "datasize" ^= liti datasize;
-                "inzero" ^= litb true;
-               ]@[added]))
-      | I_ADDSUBEXT (v,Ext.(ADD|ADDS|SUB|SUBS as op),rd,rn,(_vm,rm),(e,ko))
+          in
+          let fname =
+            if extend then "integer/bitfield/SBFM_32M_bitfield.opn"
+            else "integer/bitfield/UBFM_32M_bitfield.opn"
+          in
+          Some
+            ( fname,
+              stmt
+                ([
+                   "d" ^= reg rd;
+                   "n" ^= reg rn;
+                   "immr" ^= litbv 6 immr;
+                   "imms" ^= litbv 6 imms;
+                   "N" ^= litbv 1 bitvariant;
+                   "datasize" ^= liti datasize;
+                   "inzero" ^= litb true;
+                 ]
+                @ [ added ]) )
+      | I_ADDSUBEXT
+          (v, Ext.((ADD | ADDS | SUB | SUBS) as op), rd, rn, (_vm, rm), (e, ko))
         ->
-         let datasize = variant_raw v in
-         let fname =
-           let open Ext in
-           match op with
-           | ADD -> "ADD_32_addsub_ext.opn"
-           | ADDS -> "ADDS_32_addsub_ext.opn"
-           | SUB -> "SUB_32_addsub_ext.opn"
-           | SUBS -> "SUBS_32_addsub_ext.opn" in
-         let base = "integer/arithmetic/add-sub/extendedreg/" in
-         let extend_type =
-           let open Ext in
-           match e with
-           | UXTB -> "ExtendType_UXTB"
-           | UXTH -> "ExtendType_UXTH"
-           | UXTW -> "ExtendType_UXTW"
-           | UXTX -> "ExtendType_UXTX"
-           | SXTB -> "ExtendType_SXTB"
-           | SXTH -> "ExtendType_SXTH"
-           | SXTW -> "ExtendType_SXTW"
-           | SXTX -> "ExtendType_SXTX" in
-         let shift =  match ko with None -> 0 | Some k -> k in
-         Some
-           (base ^ fname,
-            stmt
-            ["d" ^= reg rd;
-             "n" ^= reg rn;
-             "m" ^= reg rm;
-             "datasize" ^= liti datasize;
-             "extend_type" ^= var extend_type;
-             "shift" ^= liti shift;])
-      | I_MOPL (sop,rd,rn,rm,ra) ->
-         let fname =
-           let open MOPLExt in
-           match sop with
-           | Signed,ADD -> "SMADDL_64WA_dp_3src.opn"
-           | Signed,SUB -> "SMSUBL_64WA_dp_3src.opn"
-           | Unsigned,ADD -> "UMADDL_64WA_dp_3src.opn"
-           | Unsigned,SUB -> "UMSUBL_64WA_dp_3src.opn" in
-         Some
-           ("integer/arithmetic/mul/widening/32-64/" ^ fname,
-            stmt
-              ["d" ^= reg rd;
-               "n" ^= reg rn;
-               "m" ^= reg rm;
-               "a" ^= reg ra;])
+          let datasize = variant_raw v in
+          let fname =
+            let open Ext in
+            match op with
+            | ADD -> "ADD_32_addsub_ext.opn"
+            | ADDS -> "ADDS_32_addsub_ext.opn"
+            | SUB -> "SUB_32_addsub_ext.opn"
+            | SUBS -> "SUBS_32_addsub_ext.opn"
+          in
+          let base = "integer/arithmetic/add-sub/extendedreg/" in
+          let extend_type =
+            let open Ext in
+            match e with
+            | UXTB -> "ExtendType_UXTB"
+            | UXTH -> "ExtendType_UXTH"
+            | UXTW -> "ExtendType_UXTW"
+            | UXTX -> "ExtendType_UXTX"
+            | SXTB -> "ExtendType_SXTB"
+            | SXTH -> "ExtendType_SXTH"
+            | SXTW -> "ExtendType_SXTW"
+            | SXTX -> "ExtendType_SXTX"
+          in
+          let shift = match ko with None -> 0 | Some k -> k in
+          Some
+            ( base ^ fname,
+              stmt
+                [
+                  "d" ^= reg rd;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "datasize" ^= liti datasize;
+                  "extend_type" ^= var extend_type;
+                  "shift" ^= liti shift;
+                ] )
+      | I_MOPL (sop, rd, rn, rm, ra) ->
+          let fname =
+            let open MOPLExt in
+            match sop with
+            | Signed, ADD -> "SMADDL_64WA_dp_3src.opn"
+            | Signed, SUB -> "SMSUBL_64WA_dp_3src.opn"
+            | Unsigned, ADD -> "UMADDL_64WA_dp_3src.opn"
+            | Unsigned, SUB -> "UMSUBL_64WA_dp_3src.opn"
+          in
+          Some
+            ( "integer/arithmetic/mul/widening/32-64/" ^ fname,
+              stmt
+                [ "d" ^= reg rd; "n" ^= reg rn; "m" ^= reg rm; "a" ^= reg ra ]
+            )
       | I_OP3
-         (v,
-          (ADD|ADDS|SUB|SUBS|AND|ANDS|BIC|BICS|EOR|EON|ORN|ORR as op),
-          rd, rn, OpExt.Reg(rm,s))
+          ( v,
+            (( ADD | ADDS | SUB | SUBS | AND | ANDS | BIC | BICS | EOR | EON
+             | ORN | ORR ) as op),
+            rd,
+            rn,
+            OpExt.Reg (rm, s) ) ->
+          let base =
+            match op with
+            | ADD | ADDS | SUB | SUBS ->
+                "integer/arithmetic/add-sub/shiftedreg/"
+            | AND | ANDS | BIC | BICS | EOR | EON | ORN | ORR ->
+                "integer/logical/shiftedreg/"
+            | _ -> assert false
+          and fname =
+            match op with
+            | ADD -> "ADD_32_addsub_shift.opn"
+            | ADDS -> "ADDS_32_addsub_shift.opn"
+            | SUB -> "SUB_32_addsub_shift.opn"
+            | SUBS -> "SUBS_32_addsub_shift.opn"
+            | AND -> "AND_32_log_shift.opn"
+            | ANDS -> "ANDS_32_log_shift.opn"
+            | BIC -> "BIC_32_log_shift.opn"
+            | BICS -> "BICS_32_log_shift.opn"
+            | EOR -> "EOR_32_log_shift.opn"
+            | EON -> "EON_32_log_shift.opn"
+            | ORR -> "ORR_32_log_shift.opn"
+            | ORN -> "ORN_32_log_shift.opn"
+            | _ -> assert false
+          in
+          Some
+            ( base ^ fname,
+              stmt
+                [
+                  "d" ^= reg rd;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "datasize" ^= variant v;
+                  "shift_type" ^= var (opext_decode_shift s);
+                  "shift_amount" ^= liti (opext_shift_amount s);
+                ] )
+      | I_OP3 (v, ((ADD | ADDS | SUB | SUBS) as op), rd, rn, OpExt.Imm (k, s))
         ->
-         let base =
-           match op with
-           | ADD|ADDS|SUB|SUBS ->
-              "integer/arithmetic/add-sub/shiftedreg/"
-           | AND|ANDS|BIC|BICS|EOR|EON|ORN|ORR
-             -> "integer/logical/shiftedreg/"
-           | _ -> assert false
-         and fname =
-           match op with
-           | ADD -> "ADD_32_addsub_shift.opn"
-           | ADDS -> "ADDS_32_addsub_shift.opn"
-           | SUB ->  "SUB_32_addsub_shift.opn"
-           | SUBS ->  "SUBS_32_addsub_shift.opn"
-           | AND ->  "AND_32_log_shift.opn"
-           | ANDS ->  "ANDS_32_log_shift.opn"
-           | BIC ->  "BIC_32_log_shift.opn"
-           | BICS ->  "BICS_32_log_shift.opn"
-           | EOR ->  "EOR_32_log_shift.opn"
-           | EON ->  "EON_32_log_shift.opn"
-           | ORR ->  "ORR_32_log_shift.opn"
-           | ORN ->  "ORN_32_log_shift.opn"
-           | _ -> assert false in
-         Some
-           (base ^ fname,
-            stmt
-              ["d" ^= reg rd;
-               "n" ^= reg rn;
-               "m" ^= reg rm;
-               "datasize" ^= variant v;
-               "shift_type" ^= var (opext_decode_shift s);
-               "shift_amount" ^= liti (opext_shift_amount s); ])
-    | I_OP3
-        (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn, OpExt.Imm (k,s))
-      ->
-         let datasize = variant_raw v in
-         let k = k lsl s in
-         let fname =
-           match op with
-           | ADD -> "ADD_32_addsub_imm.opn"
-           | ADDS -> "ADDS_32S_addsub_imm.opn"
-           | SUB -> "SUB_32_addsub_imm.opn"
-           | SUBS -> "SUBS_32S_addsub_imm.opn"
-           | _ -> assert false in
-         Some
-           ( "integer/arithmetic/add-sub/immediate/" ^ fname,
-             stmt
-               [
-                 "d" ^= reg rd;
-                 "n" ^= reg rn;
-                 "imm" ^= litbv datasize k;
-                 "datasize" ^= liti datasize;
-           ] )
-
-      | I_OP3 (v, (AND|ANDS|EOR|ORR as op), rd, rn, OpExt.Imm (k,0)) -> (
+          let datasize = variant_raw v in
+          let k = k lsl s in
+          let fname =
+            match op with
+            | ADD -> "ADD_32_addsub_imm.opn"
+            | ADDS -> "ADDS_32S_addsub_imm.opn"
+            | SUB -> "SUB_32_addsub_imm.opn"
+            | SUBS -> "SUBS_32S_addsub_imm.opn"
+            | _ -> assert false
+          in
+          Some
+            ( "integer/arithmetic/add-sub/immediate/" ^ fname,
+              stmt
+                [
+                  "d" ^= reg rd;
+                  "n" ^= reg rn;
+                  "imm" ^= litbv datasize k;
+                  "datasize" ^= liti datasize;
+                ] )
+      | I_OP3 (v, ((AND | ANDS | EOR | ORR) as op), rd, rn, OpExt.Imm (k, 0)) ->
           let datasize = variant_raw v in
           let fname =
             match op with
@@ -487,7 +482,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | ANDS -> "ANDS_32S_log_imm.opn"
             | EOR -> "EOR_32_log_imm.opn"
             | ORR -> "ORR_32_log_imm.opn"
-            | _ -> assert false in
+            | _ -> assert false
+          in
           Some
             ( "integer/logical/immediate/" ^ fname,
               stmt
@@ -495,15 +491,15 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "d" ^= reg rd;
                   "n" ^= reg rn;
                   "imm" ^= litbv datasize k;
-                  "datasize" ^= liti datasize; ]))
-      | I_STR (v, rt, rn, MemExt.Reg (_vm,rm,e,s))
-      | I_LDR (v, rt, rn, MemExt.Reg (_vm,rm,e,s)) as i
-        ->
-         let fname =
-           match i with
-           | I_STR _ -> "STR_32_ldst_regoff.opn"
-           | I_LDR _ -> "LDR_32_ldst_regoff.opn"
-           | _ -> assert false
+                  "datasize" ^= liti datasize;
+                ] )
+      | ( I_STR (v, rt, rn, MemExt.Reg (_vm, rm, e, s))
+        | I_LDR (v, rt, rn, MemExt.Reg (_vm, rm, e, s)) ) as i ->
+          let fname =
+            match i with
+            | I_STR _ -> "STR_32_ldst_regoff.opn"
+            | I_LDR _ -> "LDR_32_ldst_regoff.opn"
+            | _ -> assert false
           and extend_type = memext_decode_ext e in
           Some
             ( "memory/single/general/register/" ^ fname,
@@ -517,11 +513,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "datasize" ^= variant v;
                   "regsize" ^= variant v;
                 ] )
-      | I_LDRSW (rt,rn,MemExt.Reg (_vm,rm,e,s))
-        ->
+      | I_LDRSW (rt, rn, MemExt.Reg (_vm, rm, e, s)) ->
           let extend_type = memext_decode_ext e in
           Some
-            ("memory/single/general/register/LDRSW_64_ldst_regoff.opn",
+            ( "memory/single/general/register/LDRSW_64_ldst_regoff.opn",
               stmt
                 [
                   "t" ^= reg rt;
@@ -530,21 +525,22 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "extend_type" ^= var extend_type;
                   "shift" ^= liti s;
                 ] )
-      | I_STR (v, rt, rn, MemExt.Imm (k,idx))
-      | I_LDR (v, rt, rn, MemExt.Imm (k,idx))
-        ->
-          let memop,fname =
+      | I_STR (v, rt, rn, MemExt.Imm (k, idx))
+      | I_LDR (v, rt, rn, MemExt.Imm (k, idx)) ->
+          let memop, fname =
             match ii.A.inst with
-            | I_STR _ -> "MemOp_STORE","STR_32_ldst_immpost.opn"
-            | I_LDR _ -> "MemOp_LOAD","LDR_32_ldst_immpost.opn"
-            | _ -> assert false in
-          let wback,postindex =
+            | I_STR _ -> ("MemOp_STORE", "STR_32_ldst_immpost.opn")
+            | I_LDR _ -> ("MemOp_LOAD", "LDR_32_ldst_immpost.opn")
+            | _ -> assert false
+          in
+          let wback, postindex =
             match idx with
-            | Idx -> false,false
-            | PreIdx -> true,false
-            | PostIdx -> true,true in
+            | Idx -> (false, false)
+            | PreIdx -> (true, false)
+            | PostIdx -> (true, true)
+          in
           Some
-            ( "memory/single/general/immediate/signed/post-idx/"^fname,
+            ( "memory/single/general/immediate/signed/post-idx/" ^ fname,
               stmt
                 [
                   "t" ^= reg rt;
@@ -561,61 +557,72 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "rt_unknown" ^= litb false;
                   "wb_unknown" ^= litb false;
                 ] )
-      | I_LDRSW (rt, rn, MemExt.Imm (k,idx))
-        ->
-         let wback,postindex =
-           match idx with
-           | Idx -> false,false
-           | PreIdx -> true,false
-           | PostIdx -> true,true in
-         Some
-           ( "memory/single/general/immediate/signed/post-idx/LDRSW_64_ldst_immpost.opn",
-               stmt
-               [
-                 "t" ^= reg rt;
-                 "n" ^= reg rn;
-                 "offset" ^= litbv 64 k;
-                 "wback" ^= litb wback;
-                 "postindex" ^= litb postindex;
-                 "tagchecked" ^= litb (wback || rn <> SP);
-                 "wb_unknown" ^= litb false;
+      | I_LDRSW (rt, rn, MemExt.Imm (k, idx)) ->
+          let wback, postindex =
+            match idx with
+            | Idx -> (false, false)
+            | PreIdx -> (true, false)
+            | PostIdx -> (true, true)
+          in
+          Some
+            ( "memory/single/general/immediate/signed/post-idx/LDRSW_64_ldst_immpost.opn",
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "offset" ^= litbv 64 k;
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
+                  "tagchecked" ^= litb (wback || rn <> SP);
+                  "wb_unknown" ^= litb false;
                 ] )
-      | I_STLR (v,rt,rn) ->
-         Some
+      | I_STLR (v, rt, rn) ->
+          Some
             ( "memory/ordered/STLR_SL32_ldstord.opn",
               stmt
-                ["t" ^= reg rt;
-                 "n" ^= reg rn;
-                 "wback" ^= litb false;
-                 "rt_unknown" ^= litb false;
-                 "tagchecked" ^= litb (rn <> SP);
-                 "offset" ^= liti 0;
-                 "datasize" ^= variant v;])
-      | I_LDAR (v,AA,rt,rn) ->
-         Some ("memory/ordered/LDAR_LR32_ldstord.opn",
-               stmt
-                 ["t" ^= reg rt;
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "wback" ^= litb false;
+                  "rt_unknown" ^= litb false;
+                  "tagchecked" ^= litb (rn <> SP);
+                  "offset" ^= liti 0;
+                  "datasize" ^= variant v;
+                ] )
+      | I_LDAR (v, AA, rt, rn) ->
+          Some
+            ( "memory/ordered/LDAR_LR32_ldstord.opn",
+              stmt
+                [
+                  "t" ^= reg rt;
                   "n" ^= reg rn;
                   "tagchecked" ^= litb (rn <> SP);
                   "regsize" ^= variant v;
-                  "elsize" ^= variant v;])
-      | I_LDAR (v,(XX|AX as a),rt,rn) ->
-         let fname =
-           match a with
-           | XX -> "LDXR_LR32_ldstexclr.opn"
-           | AX -> "LDAXR_LR32_ldstexclr.opn"
-           | _ -> assert false in
-         Some ("memory/exclusive/single/" ^ fname,
-               stmt
-                 ["t" ^= reg rt;
+                  "elsize" ^= variant v;
+                ] )
+      | I_LDAR (v, ((XX | AX) as a), rt, rn) ->
+          let fname =
+            match a with
+            | XX -> "LDXR_LR32_ldstexclr.opn"
+            | AX -> "LDAXR_LR32_ldstexclr.opn"
+            | _ -> assert false
+          in
+          Some
+            ( "memory/exclusive/single/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
                   "n" ^= reg rn;
                   "tagchecked" ^= litb (rn <> SP);
                   "regsize" ^= variant v;
-                  "elsize" ^= variant v;])
-      | I_LDAR (v,AQ,rt,rn) ->
-         Some ("memory/ordered-rcpc/LDAPR_32L_memop.opn",
-               stmt
-                 ["t" ^= reg rt;
+                  "elsize" ^= variant v;
+                ] )
+      | I_LDAR (v, AQ, rt, rn) ->
+          Some
+            ( "memory/ordered-rcpc/LDAPR_32L_memop.opn",
+              stmt
+                [
+                  "t" ^= reg rt;
                   "n" ^= reg rn;
                   "wback" ^= litb false;
                   "offset" ^= liti 0;
@@ -623,38 +630,45 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "tagchecked" ^= litb (rn <> SP);
                   "regsize" ^= variant v;
                   "elsize" ^= variant v;
-                  "datasize" ^= variant v; ])
-      | I_STXR (v,t,rs,rt,rn) ->
-         let fname =
-           match t with
-           | YY -> "STXR_SR32_ldstexclr.opn"
-           | LY -> "STLXR_SR32_ldstexclr.opn" in
-         Some
-           ("memory/exclusive/single/" ^ fname,
-            stmt
-              ["n" ^= reg rn;
-               "t" ^= reg rt;
-               "s" ^= reg rs;
-               "elsize" ^= variant v;
-               "tagchecked" ^= litb (rn <>SP);
-               "rt_unknown" ^= litb false;
-               "rn_unknown" ^= litb false;])
-      | I_FENCE ISB ->
-         Some ("system/barriers/isb/ISB_BI_barriers.opn",stmt [])
-      | I_FENCE (DMB (dom,btyp)) ->
-         Some
-           ("system/barriers/dmb/DMB_BO_barriers.opn",
-            stmt
-              ["domain" ^= var (barrier_domain dom);
-               "types" ^= var (barrier_typ btyp); ])
-      | I_FENCE (DSB (dom,btyp)) ->
-         Some
-           ("system/barriers/dsb/DSB_BO_barriers.opn",
-            stmt
-              ["nXS" ^= litb false;
-               "alias" ^= var "DSBAlias_DSB";
-               "domain" ^= var (barrier_domain dom);
-               "types" ^= var (barrier_typ btyp); ])
+                  "datasize" ^= variant v;
+                ] )
+      | I_STXR (v, t, rs, rt, rn) ->
+          let fname =
+            match t with
+            | YY -> "STXR_SR32_ldstexclr.opn"
+            | LY -> "STLXR_SR32_ldstexclr.opn"
+          in
+          Some
+            ( "memory/exclusive/single/" ^ fname,
+              stmt
+                [
+                  "n" ^= reg rn;
+                  "t" ^= reg rt;
+                  "s" ^= reg rs;
+                  "elsize" ^= variant v;
+                  "tagchecked" ^= litb (rn <> SP);
+                  "rt_unknown" ^= litb false;
+                  "rn_unknown" ^= litb false;
+                ] )
+      | I_FENCE ISB -> Some ("system/barriers/isb/ISB_BI_barriers.opn", stmt [])
+      | I_FENCE (DMB (dom, btyp)) ->
+          Some
+            ( "system/barriers/dmb/DMB_BO_barriers.opn",
+              stmt
+                [
+                  "domain" ^= var (barrier_domain dom);
+                  "types" ^= var (barrier_typ btyp);
+                ] )
+      | I_FENCE (DSB (dom, btyp)) ->
+          Some
+            ( "system/barriers/dsb/DSB_BO_barriers.opn",
+              stmt
+                [
+                  "nXS" ^= litb false;
+                  "alias" ^= var "DSBAlias_DSB";
+                  "domain" ^= var (barrier_domain dom);
+                  "types" ^= var (barrier_typ btyp);
+                ] )
       | i ->
           let () =
             if _dbg then
@@ -671,19 +685,15 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
     let aarch64_to_asl_bv = function
       | V.Var v -> ASLS.A.V.Var v
-      | V.Val cst ->
-         ASLS.A.V.Val
-           (tr_cst ASLScalar.convert_to_bv cst)
+      | V.Val cst -> ASLS.A.V.Val (tr_cst ASLScalar.convert_to_bv cst)
 
     let aarch64_to_asl = function
       | V.Var v -> ASLS.A.V.Var v
-      | V.Val cst ->
-         ASLS.A.V.Val (tr_cst Misc.identity cst)
+      | V.Val cst -> ASLS.A.V.Val (tr_cst Misc.identity cst)
 
     let asl_to_aarch64 = function
       | ASLS.A.V.Var v -> V.Var v
-      | ASLS.A.V.Val cst ->
-         V.Val (tr_cst Misc.identity cst)
+      | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
     let fake_test ii fname decode =
       let init = [] in
@@ -737,38 +747,36 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let init =
         let global_loc name =
           ASLS.A.Location_reg
-            (ii.A.proc,
-             ASLBase.ASLLocalId (Asllib.AST.Scope_Global, name)) in
+            (ii.A.proc, ASLBase.ASLLocalId (Asllib.AST.Scope_Global, name))
+        in
         let st =
           List.fold_left
             (fun st reg ->
               match A.look_reg reg ii.A.env.A.regs with
               | Some v ->
-                 ASLS.A.state_add st
-                   (ASLS.A.Location_reg
-                      (ii.A.proc,ASLBase.ArchReg reg))
-                   (aarch64_to_asl v)
+                  ASLS.A.state_add st
+                    (ASLS.A.Location_reg (ii.A.proc, ASLBase.ArchReg reg))
+                    (aarch64_to_asl v)
               | _ -> st)
-            ASLS.A.state_empty
-            ASLBase.gregs in
-        let nzcv = AArch64Base.NZCV
-        and pstate = global_loc "PSTATE" in
+            ASLS.A.state_empty ASLBase.gregs
+        in
+        let nzcv = AArch64Base.NZCV and pstate = global_loc "PSTATE" in
         let st =
           match A.look_reg nzcv ii.A.env.A.regs with
           | Some v ->
-             let v = aarch64_to_asl_bv v in
-             ASLS.A.state_add st pstate v
-          | _ -> st in
-        let regq = AArch64Base.ResAddr
-        and resaddr = global_loc "RESADDR" in
+              let v = aarch64_to_asl_bv v in
+              ASLS.A.state_add st pstate v
+          | _ -> st
+        in
+        let regq = AArch64Base.ResAddr and resaddr = global_loc "RESADDR" in
         let v =
           match A.look_reg regq ii.A.env.A.regs with
           | Some v -> Some (aarch64_to_asl v)
-          | None -> None in
-        match v with
-        | Some v -> ASLS.A.state_add st resaddr v
-        | None -> st in
-      let test = { test with Test_herd.init_state=init; } in
+          | None -> None
+        in
+        match v with Some v -> ASLS.A.state_add st resaddr v | None -> st
+      in
+      let test = { test with Test_herd.init_state = init } in
       let () =
         if _dbg then
           Printf.eprintf "Building fake test with initial state:\n\t%s\n"
@@ -780,7 +788,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       val tr_execution :
         AArch64.inst_instance_id -> asl_exec -> (proc * branch) M.t
     end = struct
-
       module IMap = Map.Make (Int)
 
       let tr_v v = asl_to_aarch64 v
@@ -790,22 +797,22 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           match loc with
           | ASLS.A.Location_global x -> Some (A.Location_global (tr_v x))
           | ASLS.A.Location_reg (_proc, ASLBase.ArchReg reg) ->
-             Some (A.Location_reg (ii.A.proc, reg))
-          | ASLS.A.Location_reg (_proc, ASLBase.ASLLocalId _) -> None in
+              Some (A.Location_reg (ii.A.proc, reg))
+          | ASLS.A.Location_reg (_proc, ASLBase.ASLLocalId _) -> None
+        in
         let () =
           if _dbg then
-            Printf.eprintf
-              "tr_loc %s ->%s\n%!"
-              (ASLS.A.pp_location loc)
+            Printf.eprintf "tr_loc %s ->%s\n%!" (ASLS.A.pp_location loc)
               (match nloc with
-               | None -> ""
-               | Some loc -> " "^A.pp_location loc) in
+              | None -> ""
+              | Some loc -> " " ^ A.pp_location loc)
+        in
         nloc
 
-      let tr_op op acc v1 v2 = M.VC.Binop (op, tr_v v1, tr_v v2), acc
+      let tr_op op acc v1 v2 = (M.VC.Binop (op, tr_v v1, tr_v v2), acc)
 
       let tr_arch_op1 op acc v =
-        M.VC.Unop (Op.ArchOp1 (AArch64Op.Extra op), tr_v v), acc
+        (M.VC.Unop (Op.ArchOp1 (AArch64Op.Extra op), tr_v v), acc)
 
       let tr_op1 =
         let open Op in
@@ -828,7 +835,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               | Mask sz -> Mask sz
               | Sxt sz -> Sxt sz
               | Rbit sz -> Rbit sz
-              | RevBytes (csz,sz) -> RevBytes (csz,sz)
+              | RevBytes (csz, sz) -> RevBytes (csz, sz)
               | TagLoc -> TagLoc
               | CapaTagLoc -> CapaTagLoc
               | TagExtract -> TagExtract
@@ -939,8 +946,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let () = if _dbg then Printf.eprintf "\t- events: " in
         let event_list = List.of_seq events in
         let event_to_monad_map =
-          Seq.filter_map (event_to_monad ii is_data) events
-          |> EMap.of_seq
+          Seq.filter_map (event_to_monad ii is_data) events |> EMap.of_seq
         in
         let events_m =
           let folder _e1 m1 acc = m1 ||| acc in
@@ -963,8 +969,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let one_event bds event =
             match event.ASLE.action with
             | ASLS.Act.Access
-                (Dir.W,
-                 ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
+                (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
               ->
                let v = tr_v v in
                let () =
@@ -1020,14 +1025,15 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           if _dbg then
             match branch with
             | B.Next bds ->
-               let pp =
-                 List.map
-                   (fun (r,v) ->
-                     Printf.sprintf "(%s,%s)"
-                       (AArch64Base.pp_reg r) (AArch64.V.pp_v v))
-                   bds in
-               let pp = String.concat "; " pp in
-               Printf.eprintf "Next [%s]\n%!" pp
+                let pp =
+                  List.map
+                    (fun (r, v) ->
+                      Printf.sprintf "(%s,%s)" (AArch64Base.pp_reg r)
+                        (AArch64.V.pp_v v))
+                    bds
+                in
+                let pp = String.concat "; " pp in
+                Printf.eprintf "Next [%s]\n%!" pp
             | _ -> ()
         in
         let constraints =
@@ -1074,13 +1080,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let is_warn = C.variant Variant.Warn && not is_strict
 
     let check_strict test ii =
-      if is_strict
-      then
+      if is_strict then
         Warn.fatal "No ASL implemention for instruction %s"
-          (A.dump_instruction ii.A.inst) ;
+          (A.dump_instruction ii.A.inst);
       if is_warn then
         Warn.warn_always "No ASL implemention for instruction %s"
-          (A.dump_instruction ii.A.inst) ;
+          (A.dump_instruction ii.A.inst);
       AArch64Mixed.build_semantics test ii
 
     let build_semantics test ii =
@@ -1121,7 +1126,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                     ASLE.same_location e1 e2 && ASLE.EventRel.mem (e1, e2) po)
               in
               let partial_po =
-                ASLE.EventTransRel.to_implicitely_transitive_rel es.ASLE.partial_po in
+                ASLE.EventTransRel.to_implicitely_transitive_rel
+                  es.ASLE.partial_po
+              in
 
               let conc =
                 {

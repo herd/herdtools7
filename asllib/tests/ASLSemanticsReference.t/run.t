@@ -116,6 +116,11 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.LDTypedTuple.asl
   $ aslref SemanticsRule.LDTypedVar.asl
   $ aslref SemanticsRule.LDUninitialisedTuple.asl
+  File SemanticsRule.LDUninitialisedTuple.asl, line 4, characters 2 to 33:
+  Unsupported declaration: (x: integer, y: boolean).
+  [1]
+  $ aslref SemanticsRule.LDTyped.asl
+  $ aslref SemanticsRule.LDUninitialisedTyped.asl
   $ aslref SemanticsRule.SAssign.asl
   $ aslref SemanticsRule.SCall.asl
   $ aslref SemanticsRule.SDeclNone.asl

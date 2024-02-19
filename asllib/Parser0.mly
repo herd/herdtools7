@@ -22,27 +22,38 @@
 
 %{
 
-  let build_expr_conds =
-    let open AST in
-    let make_cond { desc = (c, e_then); _ } e_else =
-      AST.E_Cond (c, e_then, e_else)
-    in
-    fun (elseifs, e) -> List.fold_right (ASTUtils.map2_desc make_cond) elseifs e
+  module Prelude = struct
+    open AST
+    open ASTUtils
 
-  let build_stmt_conds (s_elsifs, s_else) =
-    let open AST in
-    let s_else = match s_else with
-    | Some s -> s
-    | None -> ASTUtils.s_pass
-    in
-    let folder { desc = (c, s_then); _ } s_else =
-      AST.S_Cond (c, s_then, s_else)
-    in
-    List.fold_right (ASTUtils.map2_desc folder) s_elsifs s_else
+    let build_expr_conds =
+      let make_cond { desc = (c, e_then); _ } e_else =
+        E_Cond (c, e_then, e_else)
+      in
+      fun (elseifs, e) -> List.fold_right (map2_desc make_cond) elseifs e
 
-  let t_bit =
-    let open AST in
-    T_Bits ( E_Literal (L_Int Z.one) |> ASTUtils.add_dummy_pos, [])
+    let build_stmt_conds (s_elsifs, s_else) =
+      let s_else = match s_else with
+      | Some s -> s
+      | None -> s_pass
+      in
+      let folder { desc = (c, s_then); _ } s_else =
+        S_Cond (c, s_then, s_else)
+      in
+      List.fold_right (map2_desc folder) s_elsifs s_else
+
+    let t_bit =
+      T_Bits ( E_Literal (L_Int Z.one) |> add_dummy_pos, [])
+
+    let make_ldi_vars (ty, xs) =
+      let make_one x =
+        S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None) |> add_dummy_pos
+      in
+      List.map make_one xs |> stmt_from_list |> desc
+  end
+
+  open Prelude
+
 %}
 
 %token <string> IDENTIFIER STRING_LIT
@@ -528,19 +539,18 @@ let assignment_stmt ==
       | CONSTANT; ldi=typed_le_ldi; EQ; ~=expr;
         { AST.(S_Decl (LDK_Let, ldi, Some expr)) }
       | CONSTANT; x=ident; EQ; ~=expr;
-        { AST.(S_Decl (LDK_Let, LDI_Var (x, None), Some expr)) }
-      | CONSTANT; ldi=ldi_tuple ; EQ; e=expr; { AST.S_Decl (LDK_Let,ldi,Some e) }
-      | t=annotated(ty_non_tuple); li=nclist(~=ident; ~=none; < AST.LDI_Var >);
-          { AST.(S_Decl (LDK_Var, LDI_Tuple (li, Some t), None)) }
+        { AST.(S_Decl (LDK_Let, LDI_Var x, Some expr)) }
+      | CONSTANT; ldi=ldi_tuple ; EQ; e=expr;
+        { AST.S_Decl (LDK_Let, ldi, Some e) }
+      | t=annotated(ty_non_tuple); li=nclist(ident); < make_ldi_vars >
       ))
 
-let none == { None }
 let le_var == ~=qualident; < AST.LE_Var >
 let lexpr_ignore == { AST.LE_Discard }
 let unimplemented_lexpr(x) == x; lexpr_ignore
 
 let typed_le_ldi ==
-  t=annotated(ty_non_tuple); x=ident_plus_record; { AST.LDI_Var (x, Some t) }
+  t=annotated(ty_non_tuple); x=ident_plus_record; { AST.(LDI_Typed (LDI_Var x, t)) }
 
 let lexpr :=
   annotated (
@@ -556,15 +566,13 @@ let lexpr :=
       | bracketed(nclist(lexpr)); <>
     )
   )
+
 let ldi :=
-   | MINUS; { AST.LDI_Discard None }
-   | x=ident_plus_record; { AST.LDI_Var (x,None) }
+   | MINUS; { AST.LDI_Discard }
+   | x=ident_plus_record; { AST.LDI_Var x }
    | ldi_tuple
 
-let ldi_tuple := ldis=pared(nnclist(ldi)); { AST.LDI_Tuple  (ldis,None) }
-
-
-
+let ldi_tuple == ldis=pared(nnclist(ldi)); { AST.LDI_Tuple ldis }
 
 let simple_if_stmt ==
     annotated (

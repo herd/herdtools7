@@ -54,6 +54,9 @@ val annotated : 'a -> position -> position -> 'a annotated
 (** [annotated v start end] is [v] with location specified as from [start] to
     [end]. *)
 
+val desc : 'a annotated -> 'a
+(** [desc v] is [v.desc] *)
+
 val add_dummy_pos : 'a -> 'a annotated
 (** Add a dummy location annotation to a value. *)
 

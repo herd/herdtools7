@@ -1663,11 +1663,11 @@ following applies:
 under an environment \texttt{env} is either \texttt{new\_env} or raises an
 error and one of the following applies:
 \begin{itemize}
-\item SemanticsRule.LDDiscard (see Section~\ref{sec:SemanticsRule.LDDiscard},
-\item SemanticsRule.LDVar (see Section~\ref{sec:SemanticsRule.LDVar},
-\item SemanticsRule.LDTypedVar (see Section~\ref{sec:SemanticsRule.LDTypedVar},
-\item SemanticsRule.LDTuple (see Section~\ref{sec:SemanticsRule.LDTuple},
-\item SemanticsRule.LDTypedTuple (see Section~\ref{sec:SemanticsRule.LDTypedTuple},
+  \item SemanticsRule.LDDiscard (see Section~\ref{sec:SemanticsRule.LDDiscard}),
+  \item SemanticsRule.LDVar (see Section~\ref{sec:SemanticsRule.LDVar}),
+  \item SemanticsRule.LDTyped (see Section~\ref{sec:SemanticsRule.LDTyped}),
+  \item SemanticsRule.LDTuple (see Section~\ref{sec:SemanticsRule.LDTuple}),
+  \item SemanticsRule.LDUninitialisedTyped (see Section~\ref{sec:SemanticsRule.LDUninitialisedTyped}),
 \end{itemize}
 
 \section{SemanticsRule.LDDiscard \label{sec:SemanticsRule.LDDiscard}}
@@ -1730,25 +1730,29 @@ local variable bound to value \texttt{m}.
 
 \isempty{\subsection{Comments}}
 
-\section{SemanticsRule.LDTypedVar \label{sec:SemanticsRule.LDTypedVar}}
+\section{SemanticsRule.LDTyped \label{sec:SemanticsRule.LDTyped}}
 
     \subsection{Prose}
 Evaluation of the local variables \texttt{ldi} under the environment
 \texttt{env} is \texttt{new\_env} and all of the following apply:
     \begin{itemize}
-    \item \texttt{ldi} is a variable \texttt{x} of type \texttt{ty};
-    \item \texttt{m\_init\_opt} is \texttt{None};
-    \item \texttt{new\_env} is \texttt{env} modified to declare \texttt{x} as a local variable bound to
-      the base value of \texttt{ty}.
+      \item \texttt{ldi} gives a local declaration item \texttt{ldi'} and a
+        type \texttt{t};
+        %
+      \item \texttt{m\_init\_opt} is a value \texttt{m};
+        %
+      \item \texttt{new\_env} is \texttt{env} modified after the evaluation of
+        \texttt{ldi'} with the initialisation value \texttt{m} in \texttt{env}.
+        %
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LDTypedVar.asl}
+    \subsection{Example: SemanticsRule.LDTyped.asl}
     In the program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTypedVar.asl}
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTyped.asl}
     \texttt{var x : integer;} binds \texttt{x} in \texttt{env} to the base value of \texttt{integer}.
 
   \subsection{Code}
-  \VerbatimInput[firstline=\LDTypedVarBegin, lastline=\LDTypedVarEnd]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LDTypedBegin, lastline=\LDTypedEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
   \subsection{Formally: sequential case}
@@ -1788,25 +1792,31 @@ evaluation of \texttt{3}) in \texttt{env}.
 
 \isempty{\subsection{Comments}}
 
-\section{SemanticsRule.LDTypedTuple \label{sec:SemanticsRule.LDTypedTuple}}
+\section{SemanticsRule.LDUninitialisedTyped\label{sec:SemanticsRule.LDUninitialisedTyped}}
 
     \subsection{Prose}
-Evaluation of the local variables \texttt{ldi} under the environment
-\texttt{env} is \texttt{new\_env} and all of the following apply:
+    Evaluation of the local declaration item \texttt{ldi} under the environment
+    \texttt{env} is \texttt{new\_env} and all of the following apply:
     \begin{itemize}
-    \item \texttt{ldi} gives a list of local variables \texttt{ldis} and a type \texttt{ty};
-    \item \texttt{m\_init\_opt} is \texttt{None};
-    \item \texttt{new\_env} is \texttt{env} modified to declare each element of \texttt{ldis} with type \texttt{ty}.
+      \item \texttt{ldi} gives a local declaration item \texttt{ldi'} and a
+        type \texttt{t};
+        %
+      \item \texttt{m\_init\_opt} is \texttt{None};
+        %
+      \item \texttt{m} is the base value of \texttt{t} in \texttt{env};
+        %
+      \item \texttt{new\_env} is \texttt{env} modified after the evaluation of
+        \texttt{ldi'} with the initialisation value \texttt{m} in \texttt{env}.
+        %
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LDTypedTuple.asl}
+    \subsection{Example: SemanticsRule.LDUninitialisedTyped.asl}
     In the program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTypedTuple.asl}
-    \texttt{var (x,y,z) : integer;} binds \texttt{x}, \texttt{y} and \texttt{z} in \texttt{env} to the base value
-    of \texttt{integer}.
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDUninitialisedTyped.asl}
+    \texttt{var x : integer;} binds \texttt{x} in \texttt{env} to the base value of \texttt{integer}.
 
   \subsection{Code}
-  \VerbatimInput[firstline=\LDTypedTupleBegin, lastline=\LDTypedTupleEnd]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LDUninitialisedTypedBegin, lastline=\LDUninitialisedTypedEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
   \subsection{Formally: sequential case}

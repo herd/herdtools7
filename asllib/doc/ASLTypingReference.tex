@@ -4225,15 +4225,15 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in an
 environment~\texttt{env} (\annotatelocaldeclitem{\ldk, \ldi, \tty}) results in \texttt{new\_env, new\_ldi} and one of the following applies:
 \begin{itemize}
-\item TypingRule.LDDiscardNone (see Section~\ref{sec:TypingRule.LDDiscardNone}),
-\item TypingRule.LDDiscardSome (see Section~\ref{sec:TypingRule.LDDiscardSome}),
+\item TypingRule.LDDiscard (see Section~\ref{sec:TypingRule.LDDiscard}),
 \item TypingRule.LDVar (see Section~\ref{sec:TypingRule.LDVar}),
+\item TypingRule.LDTyped (see Section~\ref{sec:TypingRule.LDTyped}),
 \item TypingRule.LDTuple (see Section~\ref{sec:TypingRule.LDTuple}).
 \end{itemize}
 
 This is related to \identr{YSPM}.
 
-\section{TypingRule.LDDiscardNone \label{sec:TypingRule.LDDiscardNone}}
+\section{TypingRule.LDDiscard \label{sec:TypingRule.LDDiscard}}
 
   \subsection{Prose}
     Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in
@@ -4241,15 +4241,15 @@ an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
 the following apply:
    \begin{itemize}
    \item \texttt{ldi} is a local declaration which can be discarded;
-   \item \texttt{ldi} does not specify a type;
-   \item \texttt{new\_e} is \texttt{env};
+   \item \texttt{new\_env} is \texttt{env};
    \item \texttt{new\_ldi} is \texttt{ldi}.
    \end{itemize}
 
   \subsection{Example}
+    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDDiscard.asl}
 
   \subsection{Code}
-    \VerbatimInput[firstline=\LDDiscardNoneBegin, lastline=\LDDiscardNoneEnd]{../Typing.ml}
+    \VerbatimInput[firstline=\LDDiscardBegin, lastline=\LDDiscardEnd]{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4263,49 +4263,6 @@ the following apply:
 
 \isempty{\subsection{Comments}}
 
-\section{TypingRule.LDDiscardSome \label{sec:TypingRule.LDDiscardSome}}
-
-  \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in
-an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
-the following apply:
-   \begin{itemize}
-   \item \texttt{ldi} is a local declaration which can be discarded;
-   \item \texttt{ldi} specifies a type \texttt{t};
-   \item One of the following applies:
-     \begin{itemize}
-     \item All of the following apply:
-       \begin{itemize}
-       \item \texttt{t} can be initialised with \texttt{ty} in \texttt{env};
-       \item \texttt{new\_env} is \texttt{env};
-       \item \texttt{new\_ldi} is \texttt{ldi}.
-       \end{itemize}
-     \item All of the following apply:
-       \begin{itemize}
-       \item \texttt{t} cannot be initialised with \texttt{ty} in \texttt{env};
-       \item an error ``\texttt{Conflicting Types}'' is raised.
-       \end{itemize}
-     \end{itemize}
-   \end{itemize}
-
-  \subsection{Example}
-
-  \subsection{Code}
-    \VerbatimInput[firstline=\LDDiscardSomeBegin, lastline=\LDDiscardSomeEnd]{../Typing.ml}
-
-\begin{emptyformal}
-    \subsection{Formally}
-\[
-  \inferrule{
-    \ldi = \texttt{LDI\_Discard}(\langle\vt\rangle)\\
-    \canbeinitializedwith(\tenv, \vt, \tty)
-  }
-  {\annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\tenv, \ldi)}
-\]
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
-
 \section{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
 
   \subsection{Prose}
@@ -4313,26 +4270,14 @@ the following apply:
 an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
 the following apply:
    \begin{itemize}
-   \item \texttt{ldi} denotes a variable \texttt{x} with an optional type \texttt{ty\_opt};
+   \item \texttt{ldi} denotes a variable \texttt{x};
    \item \texttt{x} is not declared in \texttt{env};
-   \item One of the following applies:
-     \begin{itemize}
-     \item All of the following apply:
-       \begin{itemize}
-       \item \texttt{ty\_opt} is \texttt{None};
-       \item \texttt{t} is \texttt{ty}
-       \end{itemize}
-     \item All of the following apply:
-       \begin{itemize}
-       \item \texttt{ty\_opt} is \texttt{Some t};
-       \item \texttt{t} can be initialized with \texttt{ty} in \texttt{env};
-       \end{itemize}
-     \end{itemize}
-   \item \texttt{new\_env} is \texttt{env} modified so that \texttt{x} is locally declared of type \texttt{t};
-   \item \texttt{new\_ldi} is the declaration of variable \texttt{x} with type \texttt{t}.
+   \item \texttt{new\_env} is \texttt{env} modified so that \texttt{x} is locally declared of type \texttt{ty};
+   \item \texttt{new\_ldi} is the declaration of variable \texttt{x} with type \texttt{ty}.
    \end{itemize}
 
   \subsection{Example}
+    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDVar.asl}
 
   \subsection{Code}
     \VerbatimInput[firstline=\LDVarBegin, lastline=\LDVarEnd]{../Typing.ml}
@@ -4341,33 +4286,59 @@ the following apply:
     \subsection{Formally}
 \begin{mathpar}
   \inferrule{
-    \ldi = \texttt{LDI\_Var}(\vx, \tyopt)\\
+    \ldi = \texttt{LDI\_Var}(\vx)\\
     L^\tenv.\storagetypes(\vx) = \bot\\
-    \tyopt = \langle\rangle\\
-    \vt = \tty\\
-    \newenv = (G^\tenv, L^\tenv.\storagetypes[\vx \mapsto (\vt, \ldk)])
+    \newenv = (G^\tenv, L^\tenv.\storagetypes[\vx \mapsto (\tty, \ldk)])
   }
   {
-    \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(\vx, \langle\vt\rangle))
+    \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(\vx))
   }
-\and
-\inferrule{
-  \ldi = \texttt{LDI\_Var}(\vx, \tyopt)\\
-  L^\tenv.\storagetypes(\vx) = \bot\\
-  \tyopt = \langle\vt\rangle\\
-  \canbeinitializedwith(\tenv, \vt, \tty)\\
-  \newenv = (G^\tenv, L^\tenv.\storagetypes[x \mapsto (\vt, \ldk)])
-}
-{
-  \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(\vx, \langle\vt\rangle))
-}
 \end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 This is related to \identr{YSPM}, \identd{FXST}.
 
-\section{TypingRule.LDTuple \label{sec:TypingRule.LDTuple}}
+\section{TypingRule.LDTyped\label{sec:TypingRule.LDTyped}}
+
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi} with a local declaration
+    keyword \texttt{ldk}, given a type~\texttt{ty}, in an
+    environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+    the following apply:
+    \begin{itemize}
+      \item \texttt{ldi} denotes a local declaration item \texttt{ldi'} and a type \texttt{t};
+      \item \texttt{t} can be initialized with \texttt{ty} in \texttt{env};
+      \item \texttt{new\_env}, \texttt{new\_ldi'} is the result of the annotation of
+        \texttt{ldi'} with the local declaration keyword \texttt{ldk}, given
+        the type~\texttt{t}, in the environment~\texttt{env};
+      \item \texttt{new\_ldi} is the local declaration denoting \texttt{new\_ldi'} and the type \texttt{t}.
+    \end{itemize}
+
+    \subsection{Example}
+      \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTyped.asl}
+
+    \subsection{Code}
+      \VerbatimInput[firstline=\LDTypedBegin, lastline=\LDTypedEnd]{../Typing.ml}
+
+\begin{emptyformal}
+    \subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \ldi = \texttt{LDI\_Typed}(\ldi', \vt)\\
+  \canbeinitializedwith(\tenv, \vt, \tty)\\
+  \annotatelocaldeclitem{\tenv, \ldi', \ldk, \vt} = (\newenv, \newldi')\\
+  \newldi = \texttt{LDI\_Typed}(\newldi', \vt)\\
+}
+{
+  \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \newldi)
+}
+\end{mathpar}
+\end{emptyformal}
+
+\isempty{\subsection{Comments}}
+
+\section{TypingRule.LDTuple\label{sec:TypingRule.LDTuple}}
 
   \subsection{Prose}
     Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in
@@ -4375,7 +4346,6 @@ an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
 the following apply:
   \begin{itemize}
   \item \texttt{ldi} denotes a list \texttt{ldis};
-  \item \texttt{ldi} does not specify a type;
   \item \texttt{ty} has the structure of a tuple type of the same length as~\texttt{ldis};
   \item \texttt{new\_env} is \texttt{env} modified so that each element in \texttt{ldis} is annotated with the corresponding type in \texttt{ty};
   \item \texttt{new\_ldi} is \texttt{ldis} where each element is declared with
@@ -4383,6 +4353,7 @@ the corresponding type in ~\texttt{ty}.
   \end{itemize}
 
   \subsection{Example}
+    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTuple.asl}
 
   \subsection{Code}
     \VerbatimInput[firstline=\LDTupleBegin, lastline=\LDTupleEnd]{../Typing.ml}
