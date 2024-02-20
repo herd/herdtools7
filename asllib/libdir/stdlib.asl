@@ -231,7 +231,8 @@ end
 // Arithmetic right shift, shifting sign bits into higher bits.
 func ASR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
 begin
-    return SignExtend(x[N-shift-1:shift], N);
+  let v = SignExtend(x, shift+N);
+  return v[(shift+N)-1:shift];
 end
 
 // Arithmetic right shift with carry out.
