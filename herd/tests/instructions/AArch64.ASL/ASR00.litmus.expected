@@ -1,0 +1,10 @@
+Test ASR00 Required
+States 1
+0:X9=18446742974197923840;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X9=-1099511627776)
+Observation ASR00 Always 1 0
+Hash=53510b8fe12f32a7ab06716773da0a35
+
