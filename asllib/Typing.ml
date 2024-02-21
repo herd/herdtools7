@@ -2012,12 +2012,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     add_subprogram name' func_sig env
 
-  let declare_const loc name t v env =
+  let add_global_storage loc name keyword env ty =
     if IMap.mem name env.global.storage_types then
       Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
     else if is_global_ignored name then env
-    else
-      add_global_storage name t GDK_Constant env |> add_global_constant name v
+    else add_global_storage name ty keyword env
+
+  let declare_const loc name t v env =
+    add_global_storage loc name GDK_Constant env t
+    |> add_global_constant name v
 
   let rec check_is_valid_bitfield loc env width bitfield () =
     let slices = bitfield_get_slices bitfield in
@@ -2138,45 +2141,49 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     res
   (* End *)
 
+  let try_add_global_constant name env e =
+    try
+      let v = reduce_constants env e in
+      add_global_constant name v env
+    with Error.ASLException _ -> env
+
   (* Begin DeclareGlobalStorage *)
   let declare_global_storage loc gsd env =
     let () = if false then Format.eprintf "Declaring %s@." gsd.name in
     best_effort env @@ fun _ ->
-    match gsd with
-    | { keyword = GDK_Constant; initial_value = Some e; ty = None; name } ->
-        let v = reduce_constants env e in
-        let t = annotate_literal v |> add_pos_from e in
-        declare_const loc name t v env
-    | { keyword = GDK_Constant; initial_value = Some e; ty = Some ty; name } ->
-        let v = reduce_constants env e in
-        let t = annotate_literal v |> add_pos_from e in
-        if Types.type_satisfies env t ty then declare_const loc name ty v env
-        else conflict e [ ty.desc ] t
-    | { keyword = GDK_Constant | GDK_Let; initial_value = None; _ } ->
+    let { keyword; initial_value; ty; name } = gsd in
+    match (keyword, initial_value, ty) with
+    | GDK_Constant, Some e, Some ty ->
+        let t, e = annotate_expr env e in
+        (* let+ () = check_statically_evaluable env e in *)
+        let+ () = check_type_satisfies loc env t ty in
+        let env = try_add_global_constant name env e in
+        add_global_storage loc name keyword env ty
+    | GDK_Constant, Some e, None ->
+        let t, e = annotate_expr env e in
+        (* let+ () = check_statically_evaluable env e in *)
+        let env = try_add_global_constant name env e in
+        add_global_storage loc name keyword env t
+    | (GDK_Constant | GDK_Let), None, _ ->
         (* Shouldn't happen because of parser construction. *)
         Error.fatal_from loc
           (Error.NotYetImplemented
              "Constants or let-bindings must be initialized.")
-    | { keyword; initial_value = None; ty = Some ty; name } ->
-        (* Here keyword = GDK_Var or GDK_Config. *)
-        if IMap.mem name env.global.storage_types then
-          Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
-        else if is_global_ignored name then env
-        else add_global_storage name ty keyword env
-    | { keyword; initial_value = Some e; ty = None; name } ->
+    | (GDK_Var | GDK_Config), None, Some ty ->
+        add_global_storage loc name keyword env ty
+    | _, Some e, Some ty ->
         let t, _e = annotate_expr env e in
-        if is_global_ignored name then env
-        else add_global_storage name t keyword env
-    | { keyword; initial_value = Some e; ty = Some ty; name } ->
-        let t, e' = annotate_expr env e in
-        if not (Types.type_satisfies env t ty) then conflict e' [ ty.desc ] t
-        else if is_global_ignored name then env
-        else add_global_storage name ty keyword env
-    | { initial_value = None; ty = None; _ } ->
+        let+ () = check_type_satisfies loc env t ty in
+        add_global_storage loc name keyword env ty
+    | _, Some e, None ->
+        let t, _e = annotate_expr env e in
+        add_global_storage loc name keyword env t
+    | _, None, None ->
         (* Shouldn't happen because of parser construction. *)
         Error.fatal_from loc
           (Error.NotYetImplemented
-             "Global storage declaration must have an initial value or a type.")
+             "Global storage declaration must have an initial value or \
+              a type.")
   (* End *)
 
   let rename_primitive loc env (f : AST.func) =
