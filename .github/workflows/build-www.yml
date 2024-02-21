@@ -24,7 +24,8 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - run: |
           opam install dune menhir zarith js_of_ocaml js_of_ocaml-ppx
-          opam exec -- make # Not ideal, but herd-www needs Version.ml and cat2html7
+          opam exec -- make Version.ml
+          opam exec -- dune build tools/cat2html.exe
           opam exec -- make -C herd-www
       - name: www
         uses: actions/upload-artifact@v4
