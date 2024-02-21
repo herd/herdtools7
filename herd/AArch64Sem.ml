@@ -925,7 +925,7 @@ module Make
         (* Operation specific computations
            For specific formulae, see Hacker's Delight, 2-13.*)
         match op with
-        |ADD|EOR|EON|ORR|ORN|SUB|AND|ASR|LSR|LSL|BIC -> None
+        |ADD|EOR|EON|ORR|ORN|SUB|AND|ASR|LSR|ROR|LSL|BIC -> None
         |ANDS|BICS -> Some compute_nz
         |ADDS ->
             let x = make_op Op.ToInteger x res
@@ -984,9 +984,17 @@ module Make
                 | ORN -> M.op1 Op.Inv v2 >>= M.op Op.Or v1
                 | SUB | SUBS -> M.op Op.Sub v1 v2
                 | AND | ANDS -> M.op Op.And v1 v2
-                | ASR -> M.op Op.ASR v1 v2
-                | LSR -> M.op Op.Lsr v1 v2
-                | LSL -> M.op Op.ShiftLeft v1 v2
+                | ASR -> M.op1 (Op.Mask (tr_variant v)) v2 >>= M.op Op.ASR v1
+                | LSR -> M.op1 (Op.Mask (tr_variant v)) v2 >>= M.op Op.Lsr v1
+                | LSL -> M.op1 (Op.Mask (tr_variant v)) v2 >>= M.op Op.ShiftLeft v1
+                | ROR ->
+                   let sz = tr_variant v in
+                   let nbits = MachSize.nbits sz in
+                   M.op1 (Op.Mask sz) v2 >>= fun v2 ->
+                   (M.op Op.Lsr v1 v2
+                   >>| (M.op Op.Sub (V.intToV nbits) v2
+                        >>= M.op Op.ShiftLeft v1))
+                   >>= fun (v1,v2) -> M.op Op.Or v1 v2
                 | BIC | BICS -> M.op Op.AndNot2 v1 v2 in
              match op_set_flags op v with
               | None -> write_reg_no_flags get_res
@@ -2881,6 +2889,19 @@ module Make
                   mn >>|  (read_reg_ord_sz sz r ii >>= opext_shift sz s)
              end in
            mop3 inst v op rd  margs ii
+        | I_EXTR (v,rd,rn,rm,lsb) ->
+           let sz = tr_variant v in
+           let nbits = MachSize.nbits sz in
+           begin
+             (read_reg_ord_sz sz rm ii
+              >>= M.op1 (Op.LogicalRightShift lsb))
+             >>|
+               (read_reg_ord_sz sz rn ii
+                >>= M.op1  (Op.LeftShift (nbits-lsb)))
+           end
+           >>= fun (v1,v2) -> M.op Op.Or v1 v2
+           >>= fun v -> write_reg_dest rd v ii
+           >>= nextSet rd
         | I_ADDSUBEXT (v,op,r1,r2,(v3,r3),(e,ko)) ->
            let op =
              match op with

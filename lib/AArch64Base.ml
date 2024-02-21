@@ -767,7 +767,7 @@ let inverse_cond = function
 
 type op =
   | ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | ORN
-  | EOR | EON | ASR | LSR | LSL | BICS | BIC
+  | EOR | EON | ASR | LSR | LSL | ROR | BICS | BIC
 
 type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
 type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
@@ -1194,6 +1194,7 @@ type 'k kinstruction =
   | I_RBIT of variant * reg * reg
   | I_ABS of variant * reg * reg
   | I_REV of rev_variant * reg * reg
+  | I_EXTR of variant * reg * reg * reg * 'k
 (* Barrier *)
   | I_FENCE of barrier
 (* Conditional select *)
@@ -1259,6 +1260,7 @@ let pp_op = function
   | ASR  -> "ASR"
   | LSR  -> "LSR"
   | LSL  -> "LSL"
+  | ROR  -> "ROR"
   | BICS -> "BICS"
   | BIC -> "BIC"
 
@@ -1739,6 +1741,10 @@ let do_pp_instruction m =
      let memo = memo_of_rev rv
      and v = variant_of_rev rv in
      sprintf "%s %s,%s" memo (pp_vreg v rd) (pp_vreg v rs)
+  | I_EXTR (v,rd,rn,rm,k) ->
+     sprintf "EXTR %s,%s,%s,%s"
+       (pp_vreg v rd)  (pp_vreg v rn) (pp_vreg v rm)
+       (m.pp_k k)
 (* Barrier *)
   | I_FENCE b ->
       pp_barrier b
@@ -1916,6 +1922,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDOP (_,_,_,r1,r2,r3)
   | I_LDOPBH (_,_,_,r1,r2,r3)
   | I_ADDSUBEXT (_,_,r1,r2,(_,r3),_)
+  | I_EXTR (_,r1,r2,r3,_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_STXP (_,_,r1,r2,r3,r4)
   | I_MOPL (_,r1,r2,r3,r4)
@@ -2181,7 +2188,9 @@ let map_regs f_reg f_symb =
   | I_ABS (v,r1,r2) ->
       I_ABS (v,map_reg r1,map_reg r2)
   | I_REV (rv,r1,r2) ->
-     I_REV (rv,r1,r2)
+     I_REV (rv,map_reg r1,map_reg r2)
+  | I_EXTR (v,r1,r2,r3,k) ->
+     I_EXTR (v,map_reg r1,map_reg r2,map_reg r3,k)
   (* Conditinal select *)
   | I_CSEL (v,r1,r2,r3,c,op) ->
       I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c,op)
@@ -2282,6 +2291,7 @@ let get_next =
   | I_RBIT _
   | I_ABS _
   | I_REV _
+  | I_EXTR _
   | I_IC _
   | I_DC _
   | I_TLBI _
@@ -2383,6 +2393,8 @@ let unalias i =
          let imms = sz in
          let immr = k in
          I_SBFM (v,rd,rn,immr,imms)
+  | I_OP3 (V64|V32 as v,ROR,rd,rn,OpExt.Imm (k,0)) ->
+     I_EXTR (v,rd,rn,rn,k)
   | I_OP3 (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn,OpExt.Imm (k,s))
        when k < 0 ->
      let k = -k
@@ -2431,6 +2443,8 @@ let is_valid i =
            is_6bits_unsigned s
   | I_OP3 (_,(AND|ANDS|EOR|ORR),_,_,OpExt.Imm (_,s))
     -> s=0 (* TODO: handle encoding of immediates here? *)
+  | I_OP3 (_,(ASR|LSL|LSR|ROR),_,_,OpExt.(Reg (_,s)))
+    -> OpExt.is_no_shift s
   | I_MOV (v,_,K k) ->
        Misc.is_some (tr_mov_imm v k)
   | I_MOVZ (_,_,k,S_NOEXT)|I_MOVN (_,_,k,S_NOEXT) ->
@@ -2566,6 +2580,7 @@ module PseudoI = struct
            let ko = Misc.app_opt k_tr ko in
            I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),(e,ko))
         | I_OP3 (v,op,r1,r2,e) -> I_OP3 (v,op,r1,r2,op_ext_tr e)
+        | I_EXTR (v,r1,r2,r3,k) -> I_EXTR (v,r1,r2,r3,k_tr k)
         | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,k_tr k)
         | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,k_tr k)
         | I_LD1 (r1,i,r2,kr) -> I_LD1 (r1,i,r2,kr_tr kr)
@@ -2684,6 +2699,7 @@ module PseudoI = struct
         | I_RBIT _
         | I_ABS _
         | I_REV _
+        | I_EXTR _
 (*        | I_TLBI (_,ZR) *)
         | I_MRS _ | I_MSR _
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _

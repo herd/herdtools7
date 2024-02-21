@@ -102,7 +102,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_STR_P_SIMD _| I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
     | I_STXRBH _| I_STZG _| I_STZ2G _
     | I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
-    | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _ | I_MOPL _
+    | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _ | I_EXTR _
+    | I_MOPL _
       -> true
 
     let is_cmodx_restricted_value =
@@ -254,7 +255,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOVN _
       | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _)
-      | I_ADR (_, _)|I_RBIT (_, _, _)|I_ABS _|I_REV _|I_FENCE _
+      | I_ADR (_, _)|I_RBIT (_, _, _)|I_ABS _|I_REV _|I_EXTR _|I_FENCE _
       | I_SBFM (_,_,_,_,_) | I_UBFM (_,_,_,_,_)
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)|I_MSR (_, _)
       | I_STG _ | I_LDG _
@@ -321,6 +322,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_RBIT (_,r,_)
       | I_ABS (_,r,_)
       | I_REV (_,r,_)
+      | I_EXTR (_,r,_,_,_)
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
       | I_UBFM (_,r,_,_,_) | I_SBFM (_,r,_,_,_)
@@ -390,7 +392,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_SWP _|I_SWPBH _|I_LDOP _
       | I_LDOPBH _|I_STOP _|I_STOPBH _
       | I_MOV _|I_MOVZ _|I_MOVN _|I_MOVK _|I_SXTW _
-      | I_OP3 _|I_ADR _|I_RBIT _|I_ABS _|I_REV _|I_FENCE _
+      | I_OP3 _|I_ADR _|I_RBIT _|I_ABS _|I_REV _|I_EXTR _|I_FENCE _
       | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
       | I_STG _|I_STZG _|I_STZ2G _|I_LDG _|I_UDF _
       | I_ADDSUBEXT _|I_MOPL _
