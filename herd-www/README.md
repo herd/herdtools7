@@ -13,11 +13,11 @@ Compilation and installation
 ============================
 
 Dependencies.
-- ocaml, dune, js_of_ocaml, js_of_ocaml-ppx.
+- ocaml, dune, menhir, js_of_ocaml, js_of_ocaml-ppx, zarith_stubs_js
 
 Install all those with opam!
 ```
-% opam install dune js_of_ocaml js_of_ocaml-ppx
+% opam install dune menhir js_of_ocaml js_of_ocaml-ppx  zarith_stubs_js
 ```
 
 Build

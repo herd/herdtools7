@@ -4,7 +4,7 @@
   (name jerd)
   (modes js)
   (optional)
-  (libraries herdtools js_of_ocaml)
+  (libraries herdtools js_of_ocaml zarith_stubs_js)
   (preprocess (per_module
      ((pps js_of_ocaml-ppx) jerd)
      ((action (system "awk -f herd-www/notwww.awk %{input-file}"))
