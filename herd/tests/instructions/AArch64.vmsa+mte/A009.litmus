@@ -1,0 +1,13 @@
+AArch64 A009
+Variant=vmsa,mte,fatal,sync
+{
+ [x]=1;
+ [PTE(x)]=(valid:0);
+ 0:X0=x; 0:X1=x:red;
+ 1:X1=(oa:PA(x),valid:1);
+ 1:X0=PTE(x);
+}
+ P0           | P1          ;
+L0:           | STR X1,[X0] ;
+ STZG X1,[X0] |             ;
+exists(fault(P0:L0,x,MMU:Translation) /\ [tag(x)]=:red)
