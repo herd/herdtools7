@@ -1,10 +1,5 @@
-PREFIX=$$HOME
-BINDIR=$(PREFIX)/bin
-LIBDIR=$(PREFIX)/lib/herd7
-J=-j 8
-JERD_OPT=-use-ocamlfind
+CAT2HTML7=$(if $(shell which cat2html7), cat2html7, ../_build/default/tools/cat2html.exe)
 BOOKS=aarch64  aarch64-ifetch aarch64-mixed aarch64-MTE aarch64-MTE-mixed aarch64-VMSA  aarch64-ETS2 aarch64-faults x86 linux
-#BOOKS=aarch64-ptw #Add some day.
 WWW_CATALOGUE=www/catalogue
 HERD_CATALOGUE=../catalogue
 PROG=jerd.js
@@ -34,12 +29,13 @@ tst:
 	ocaml generate_names.ml $(CATINCLUDES)
 weblib:
 	@echo '** INSTALL ' $(WWW_LIB) && mkdir -p $(WWW_LIB) && cp ./cat.css $(WWW_LIB)
-	@ocaml generate_names.ml -norec $(CATINCLUDES) | while read f; do cp $$f $(WWW_LIB) && cat2html7 $(WWW_LIB)/$$(basename $$f) ; done
+	@ocaml generate_names.ml -norec $(CATINCLUDES) | while read f; do cp $$f $(WWW_LIB) && $(CAT2HTML7) $(WWW_LIB)/$$(basename $$f) ; done
 
 web: $(JSON_SHELVES) $(PROG) weblib
 	@cp -v $(PROG) www/$(PROG)
 
 $(PROG): catIncludes.ml force
+	make -C .. Version.ml
 	( cd .. && dune build --release @jerd )
 	cp $(DUNETGT)/jerd.bc.js $(PROG) && chmod u+w $(PROG)
 
