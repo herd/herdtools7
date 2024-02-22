@@ -3080,14 +3080,14 @@ module Make
           let _do_stg =
             match d with
             | Once ->
-               fun a v -> __do_stg a v >>! B.nextT
+               fun a v -> __do_stg a v
             | Twice ->
                fun a v ->
                  begin
                    __do_stg a v >>|
                      (M.op1 (Op.AddK MachSize.granule_nbytes) a
                       >>= fun a ->  __do_stg a v)
-                 end >>! B.nextT in
+                 end >>! () in
           if Access.is_physical ac then
             M.bind_ctrldata_data ma mv _do_stg
           else
@@ -3130,22 +3130,22 @@ module Make
             (M.delay_kont "do_stg" do_stg
                (function
                  | B.Next _ ->
-                   fun mstg -> M.delay_kont "do_stz" do_stz
-                       (function
-                         | B.Next _ ->
-                           fun mstz -> mstz >>| do_stg >>= M.ignore >>= B.next1T
-                         | B.Fault _ ->
-                           fun mstz ->  mstz >>| mstg >>= M.ignore >>= B.next1T
-                         | _ ->
-                           Warn.fatal "Unexpected return value do_stg")
+                   fun mstg -> M.para_bind_output_right mstg (fun _ -> do_stz)
                  | B.Fault _ ->
                    fun mstg -> mstg
                  | _ -> Warn.fatal "Unexpected return value do_stz"))
             (M.delay_kont "do_stz" do_stz
                (function
                  | B.Next _ ->
-                   (* Force the solver to drop this, already handled above *)
-                   fun _ -> M.assertT V.zero B.nextT
+                   fun mstz -> M.delay_kont "do_stg" do_stg
+                       (function
+                         | B.Next _ ->
+                           (* Force the solver to drop this, already handled above *)
+                           fun _ -> M.assertT V.zero B.nextT
+                         | B.Fault _ ->
+                           fun mstg -> M.para_bind_output_right mstz (fun _ -> mstg)
+                         | _ ->
+                           Warn.fatal "Unexpected return value do_stg")
                  | B.Fault _ ->
                    fun mstz -> mstz
                  | _ -> Warn.fatal "Unexpected return value do_stz"))
