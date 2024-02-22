@@ -188,6 +188,9 @@ let oa2symbol oa =
 let virt_match_phy s1 s2 = match s1,s2 with
 | Virtual {name=s1; offset=i1;_},Physical (s2,i2) ->
     Misc.string_eq s1 s2 && Misc.int_eq i1 i2
+| TagAddr (VIR, s1, o1), TagAddr (PHY, s2, o2) ->
+    Misc.string_eq s1 s2 &&
+    Misc.int_eq (MachSize.granule_align o1) (MachSize.granule_align o2)
 | _,_ -> false
 
 module SC = struct

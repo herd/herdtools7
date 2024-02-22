@@ -1,0 +1,8 @@
+AArch64 A007
+{
+ 0:X0=x:red;
+ 0:X1=x;
+}
+ P0          ;
+ STG X0,[X1] ;
+forall([tag(x)]=:red)
