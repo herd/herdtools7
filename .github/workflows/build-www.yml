@@ -23,7 +23,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - run: |
-          opam install dune menhir zarith js_of_ocaml js_of_ocaml-ppx
+          opam install dune menhir zarith js_of_ocaml js_of_ocaml-ppx zarith_stubs_js
           opam exec -- make Version.ml
           opam exec -- dune build tools/cat2html.exe
           opam exec -- make -C herd-www
