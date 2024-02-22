@@ -1,0 +1,11 @@
+Test A007 Required
+States 1
+[tag(x)]=:red;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition forall ([tag(x)]=:red)
+Observation A007 Always 1 0
+Hash=c6ef897bedbc9dcae809229c4d98e62d
+
