@@ -1049,7 +1049,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           None
 
     let tr_cst tr =
-      Constant.map tr Misc.identity Misc.identity Misc.identity
+      Constant.map tr Misc.identity Misc.identity Misc.identity Misc.identity
 
     let aarch64_to_asl_bv_cst sz = function
       | V.Var _ as v ->

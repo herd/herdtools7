@@ -20,8 +20,10 @@ module Make :
 functor (Scalar:Scalar.S) ->
   functor (PteVal:PteVal.S) ->
     functor (AddrReg:AddrReg.S) ->
+      functor (IntidVal:IntidVal.S) ->
       functor (Instr:Instr.S) ->
       Constant.S
       with module Scalar = Scalar and module PteVal = PteVal
       and module AddrReg = AddrReg
+      and module IntidVal = IntidVal
       and module Instr = Instr

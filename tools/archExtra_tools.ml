@@ -18,7 +18,7 @@
 module
   Make
     (O:sig val hexa : bool end)
-    (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)
+    (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)(Intid:IntidVal.S)
   = struct
   include A
 
@@ -41,7 +41,8 @@ module
   let one = ParsedConstant.one
   let symbToV =  ParsedConstant.nameToV
   let maybevToV c = c
-  let pp_v = ParsedConstant.pp_norm O.hexa Pte.pp_norm AddrReg.pp_norm
+  let pp_v =
+    ParsedConstant.pp_norm O.hexa Pte.pp_norm AddrReg.pp_norm Intid.pp_norm
 
   type global = ParsedConstant.v
   let maybevToGlobal c = c

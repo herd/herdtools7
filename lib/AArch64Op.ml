@@ -49,6 +49,7 @@ module
     and type scalar = S.t
     and type pteval = AArch64PteVal.t
     and type addrreg = AArch64AddrReg.t
+    and type intidval = AArch64IntidVal.t
     and type instr = AArch64Base.instruction
   = struct
 
@@ -88,15 +89,16 @@ module
     type scalar = S.t
     type pteval = AArch64PteVal.t
     type addrreg = AArch64AddrReg.t
+    type intidval = AArch64IntidVal.t
     type instr = AArch64Base.instruction
-    type cst = (scalar,pteval,addrreg,instr) Constant.t
+    type cst = (scalar,pteval,addrreg,intidval,instr) Constant.t
 
     let pp_cst hexa v =
       let module InstrPP = AArch64Base.MakePP(struct
         let is_morello = true
       end) in
       Constant.pp (S.pp hexa) (AArch64PteVal.pp hexa) (AArch64AddrReg.pp hexa)
-      (InstrPP.dump_instruction) v
+        AArch64IntidVal.pp (InstrPP.dump_instruction) v
 
     open AArch64PteVal
 
@@ -169,11 +171,11 @@ module
 
     let trToExtra cst =
       Constant.map
-        Misc.identity Extra.toExtraPteVal Extra.toExtraAddrReg
+        Misc.identity Extra.toExtraPteVal Extra.toExtraAddrReg Extra.toExtraIntidVal
         Misc.identity cst
     and trFromExtra cst =
       Constant.map
-        Misc.identity Extra.fromExtraPteVal Extra.fromExtraAddrReg
+        Misc.identity Extra.fromExtraPteVal Extra.fromExtraAddrReg Extra.fromExtraIntidVal
         Misc.identity cst
 
     (* Add a PAC field to a virtual address, this function can only add a PAC

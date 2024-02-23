@@ -4,8 +4,8 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2017-present Institut National de Recherche en Informatique et *)
-(* en Automatique and the authors. All rights reserved.                     *)
+(* Copyright 2024-present Institut National de Recherche en Informatique et *)
+(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -14,7 +14,15 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(Instr:Instr.S) = struct
-  include
-    SymbConstant.Make(Int32Scalar)(PteVal.No)(AddrReg.No)(IntidVal.No)(Instr)
-end
+type t =
+  { target : int;
+    params : string StringMap.t }
+
+val empty : t
+val add_param : string -> string -> t -> t
+val add_target : int -> t -> t
+
+val compare : t -> t -> int
+val eq : t -> t -> bool
+
+val pp : t -> string

@@ -75,6 +75,7 @@ module Make(O:Config)(V:Constant.S) = struct
   | Symbolic _
   | PteVal _
   | AddrReg _
+  | IntidVal _
   | Frozen _
     -> assert false
 

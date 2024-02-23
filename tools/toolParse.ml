@@ -30,18 +30,19 @@ end
 module Top
     (Cfg:Config)
     (T:sig type t end) (* Return type, must be abstracted *)
-    (B: functor(A:ArchBase.S)-> functor (Pte:PteVal.S) -> functor (AddrReg:AddrReg.S) ->
+    (B: functor(A:ArchBase.S)-> functor (Pte:PteVal.S) ->
+      functor (AddrReg:AddrReg.S) -> functor (Intid:IntidVal.S) ->
       (sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end)) :
 sig
   val from_file : string -> T.t
 end = struct
 
   module Make
-      (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)
+      (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)(Intid:IntidVal.S)
       (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
     struct
       module P = GenParser.Make(Cfg)(A)(L)
-      module X = B(A)(Pte)(AddrReg)
+      module X = B(A)(Pte)(AddrReg)(Intid)
 
 
       let zyva chan splitted =
@@ -62,7 +63,7 @@ end = struct
 	  let lexer = L.token
 	  let parser = MiscParser.mach2generic PPCParser.main
         end in
-        let module X = Make (PPC) (PteVal.No) (AddrReg.No) (PPCLexParse) in
+        let module X = Make (PPC) (PteVal.No) (AddrReg.No) (IntidVal.No) (PPCLexParse) in
         X.zyva chan splitted
     | `X86 ->
         let module X86 = X86Base in
@@ -74,7 +75,7 @@ end = struct
 	  let lexer = L.token
 	  let parser = MiscParser.mach2generic X86Parser.main
         end in
-        let module X = Make (X86)  (PteVal.No) (AddrReg.No) (X86LexParse) in
+        let module X = Make (X86)  (PteVal.No) (AddrReg.No) (IntidVal.No) (X86LexParse) in
         X.zyva chan splitted
     | `X86_64 ->
         let module X86_64 = X86_64Base in
@@ -86,7 +87,7 @@ end = struct
 	  let lexer = L.token
 	  let parser = MiscParser.mach2generic X86_64Parser.main
         end in
-        let module X = Make (X86_64) (PteVal.No) (AddrReg.No) (X86_64LexParse) in
+        let module X = Make (X86_64) (PteVal.No) (AddrReg.No) (IntidVal.No) (X86_64LexParse) in
         X.zyva chan splitted
     | `ARM ->
         let module ARM = ARMBase in
@@ -98,7 +99,7 @@ end = struct
 	  let lexer = L.token
 	  let parser = MiscParser.mach2generic ARMParser.main
         end in
-        let module X = Make (ARM) (PteVal.No) (AddrReg.No) (ARMLexParse) in
+        let module X = Make (ARM) (PteVal.No) (AddrReg.No) (IntidVal.No) (ARMLexParse) in
         X.zyva chan splitted
     | `AArch64 ->
         let module AArch64 =
@@ -111,7 +112,8 @@ end = struct
 	  let lexer = L.token
 	  let parser = (*MiscParser.mach2generic*) AArch64Parser.main
         end in
-        let module X = Make (AArch64) (AArch64PteVal) (AArch64AddrReg) (AArch64LexParse) in
+        let module X = Make (AArch64) (AArch64PteVal) (AArch64AddrReg)
+            (AArch64IntidVal) (AArch64LexParse) in
         X.zyva chan splitted
     | `MIPS ->
         let module MIPS = MIPSBase in
@@ -123,7 +125,7 @@ end = struct
 	  let lexer = L.token
 	  let parser = MiscParser.mach2generic MIPSParser.main
         end in
-        let module X = Make (MIPS) (PteVal.No) (AddrReg.No) (MIPSLexParse) in
+        let module X = Make (MIPS) (PteVal.No) (AddrReg.No) (IntidVal.No) (MIPSLexParse) in
         X.zyva chan splitted
     | `RISCV ->
         let module RISCV = RISCVBase in
@@ -135,7 +137,7 @@ end = struct
 	  let lexer = L.token
 	  let parser = MiscParser.mach2generic RISCVParser.main
         end in
-        let module X = Make (RISCV) (PteVal.No) (AddrReg.No) (RISCVLexParse) in
+        let module X = Make (RISCV) (PteVal.No) (AddrReg.No) (IntidVal.No) (RISCVLexParse) in
         X.zyva chan splitted
     | `LISA ->
         let module Bell = BellBase in
@@ -147,7 +149,7 @@ end = struct
 	  let lexer = L.token
 	  let parser = LISAParser.main
         end in
-        let module X = Make (Bell) (PteVal.No) (AddrReg.No) (BellLexParse) in
+        let module X = Make (Bell) (PteVal.No) (AddrReg.No) (IntidVal.No) (BellLexParse) in
         X.zyva chan splitted
     | `BPF ->
         let module BPF = BPFBase in
@@ -159,7 +161,7 @@ end = struct
 	  let lexer = L.token
 	  let parser = MiscParser.mach2generic BPFParser.main
         end in
-        let module X = Make (BPF) (PteVal.No) (AddrReg.No) (BPFLexParse) in
+        let module X = Make (BPF) (PteVal.No) (AddrReg.No) (IntidVal.No) (BPFLexParse) in
         X.zyva chan splitted
 
     | `JAVA 
@@ -181,7 +183,7 @@ end = struct
           let macros_expand _ i = i
         end in
         let module P = CGenParser_lib.Make(CGenParser_lib.DefaultConfig)(C)(L) in
-        let module X = B(C)(PteVal.No)(AddrReg.No) in
+        let module X = B(C)(PteVal.No)(AddrReg.No)(IntidVal.No) in
         let name =  splitted.Splitter.name in
         let parsed = P.parse chan splitted in
         X.zyva name parsed
@@ -199,7 +201,8 @@ end
 
 module Tops
     (T:sig type t end) (* Return type, must be abstracted *)
-    (B: functor(A:ArchBase.S)-> functor(Pte:PteVal.S)-> functor(AddrReg:AddrReg.S) ->
+    (B: functor(A:ArchBase.S)-> functor(Pte:PteVal.S)->
+      functor(AddrReg:AddrReg.S)-> functor(Intid:IntidVal.S) ->
       (sig val zyva : (Name.t * A.pseudo MiscParser.t) list -> T.t end)) :
     sig
       val from_files : string list -> T.t
@@ -246,11 +249,11 @@ module Tops
 
 (* Code shared for machine arch's *)
       module Make
-          (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)
+          (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)(Intid:IntidVal.S)
           (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
         struct
           module P = GenParser.Make(GenParser.DefaultConfig)(A)(L)
-          module X = B(A)(Pte)(AddrReg)
+          module X = B(A)(Pte)(AddrReg)(Intid)
 
           include
             Util
@@ -274,7 +277,7 @@ module Tops
 	      let lexer = L.token
 	      let parser = MiscParser.mach2generic PPCParser.main
             end in
-            let module X = Make (PPC) (PteVal.No) (AddrReg.No) (PPCLexParse) in
+            let module X = Make (PPC) (PteVal.No) (AddrReg.No) (IntidVal.No) (PPCLexParse) in
             X.zyva
         | `X86 ->
             let module X86 = X86Base in
@@ -286,7 +289,7 @@ module Tops
 	      let lexer = L.token
 	      let parser = MiscParser.mach2generic X86Parser.main
             end in
-            let module X = Make (X86) (PteVal.No) (AddrReg.No) (X86LexParse) in
+            let module X = Make (X86) (PteVal.No) (AddrReg.No) (IntidVal.No) (X86LexParse) in
             X.zyva
         | `X86_64 ->
             let module X86_64 = X86_64Base in
@@ -298,7 +301,7 @@ module Tops
 	      let lexer = L.token
 	      let parser = MiscParser.mach2generic X86_64Parser.main
             end in
-            let module X = Make (X86_64)  (PteVal.No) (AddrReg.No) (X86_64LexParse) in
+            let module X = Make (X86_64)  (PteVal.No) (AddrReg.No) (IntidVal.No) (X86_64LexParse) in
             X.zyva
         | `ARM ->
             let module ARM = ARMBase in
@@ -310,7 +313,7 @@ module Tops
 	      let lexer = L.token
 	      let parser = MiscParser.mach2generic ARMParser.main
             end in
-            let module X = Make (ARM) (PteVal.No) (AddrReg.No) (ARMLexParse) in
+            let module X = Make (ARM) (PteVal.No) (AddrReg.No) (IntidVal.No) (ARMLexParse) in
             X.zyva
         | `AArch64 ->
             let module AArch64 =
@@ -323,7 +326,8 @@ module Tops
 	      let lexer = L.token
 	      let parser =  (*MiscParser.mach2generic*) AArch64Parser.main
             end in
-            let module X = Make (AArch64) (AArch64PteVal) (AArch64AddrReg) (AArch64LexParse) in
+            let module X = Make (AArch64) (AArch64PteVal) (AArch64AddrReg)
+                (AArch64IntidVal) (AArch64LexParse) in
             X.zyva
         | `MIPS ->
             let module MIPS = MIPSBase in
@@ -335,7 +339,7 @@ module Tops
 	      let lexer = L.token
 	      let parser = MiscParser.mach2generic MIPSParser.main
             end in
-            let module X = Make (MIPS) (PteVal.No) (AddrReg.No) (MIPSLexParse) in
+            let module X = Make (MIPS) (PteVal.No) (AddrReg.No) (IntidVal.No) (MIPSLexParse) in
             X.zyva
         | `LISA ->
             let module Bell = BellBase in
@@ -346,7 +350,7 @@ module Tops
 	      let lexer = L.token
 	      let parser = LISAParser.main
             end in
-            let module X = Make (Bell) (PteVal.No) (AddrReg.No) (BellLexParse) in
+            let module X = Make (Bell) (PteVal.No) (AddrReg.No) (IntidVal.No) (BellLexParse) in
             X.zyva
 
         | `JAVA 
@@ -369,7 +373,7 @@ module Tops
             end in
 
             let module P = CGenParser_lib.Make(CGenParser_lib.DefaultConfig)(C)(L) in
-            let module X = B(C) (PteVal.No) (AddrReg.No) in
+            let module X = B(C) (PteVal.No) (AddrReg.No) (IntidVal.No) in
 
             let module U =
               Util

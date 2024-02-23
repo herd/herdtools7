@@ -90,7 +90,10 @@ module type S = sig
 
 (* "Exposed" TTDs of code pages, i.e. TTDs whose addresses are in registers *)
   (* In initial state *)
-  val get_exposed_codepages : test -> (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t, A.instruction) Constant.t list
+  val get_exposed_codepages :
+    test ->
+      (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t,
+       A.V.Cst.IntidVal.t, A.instruction) Constant.t list
 
   type event = E.event
   type event_structure = E.event_structure
@@ -302,7 +305,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
        * (2) to ensure is_non_mixed_offset works with that *)
       | Physical (s,o) -> is_non_mixed_offset test s o
       | TagAddr _
-      | System ((PTE|PTE2|TLB),_)  -> true
+      | System ((PTE|PTE2|TLB|INTID),_)  -> true
 
 (* Exported labels:
  *  1. Labels from init environments

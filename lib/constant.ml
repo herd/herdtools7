@@ -154,7 +154,7 @@ let symbolic_data_collision s1 s2 =
 let symbolic_data_normalize s solver =
   {s with pac = PAC.normalize s.pac solver}
 
-type syskind = PTE|PTE2|TLB
+type syskind = PTE|PTE2|TLB|INTID
 type tagkind = PHY|VIR
 
 type symbol =
@@ -167,7 +167,7 @@ let get_index = function
   | Virtual s -> Some s.offset
   | Physical (_,o)|TagAddr (_,_,o) -> Some o
   | System ((PTE|PTE2), _) -> Some 0
-  | System (TLB, _) -> None
+  | System ((TLB|INTID), _) -> None
 
 let pp_physical s = sprintf "PA(%s)" s
 
@@ -185,6 +185,7 @@ let pp_symbol_old = function
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
   | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
+  | System (INTID,s) -> sprintf "INTID(%s)" s
 
 
 let pp_symbol = function
@@ -194,6 +195,7 @@ let pp_symbol = function
   | System (TLB,s) -> sprintf "TLB(%s)" s
   | System (PTE,s) -> sprintf "PTE(%s)" s
   | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
+  | System (INTID,s) -> sprintf "INTID(%s)" s
 
 let pp_symbol_init = function
   | Virtual s -> pp_symbolic_data ~pp_index:pp_index_init s s.offset
@@ -277,49 +279,53 @@ end
 module SymbolSet = MySet.Make(SC)
 module SymbolMap = MyMap.Make(SC)
 
-type ('scalar, 'pte, 'addrreg, 'instr) t =
+type ('scalar, 'pte, 'addrreg, 'intid, 'instr) t =
   | Concrete of 'scalar
-  | ConcreteVector of ('scalar, 'pte, 'addrreg, 'instr) t list
-  | ConcreteRecord of ('scalar, 'pte, 'addrreg, 'instr) t StringMap.t
+  | ConcreteVector of ('scalar, 'pte, 'addrreg, 'intid, 'instr) t list
+  | ConcreteRecord of ('scalar, 'pte, 'addrreg, 'intid, 'instr) t StringMap.t
   | Symbolic of symbol
   | Tag of string
   | PteVal of 'pte
   | AddrReg of 'addrreg
+  | IntidVal of 'intid
   | Instruction of 'instr
   | Frozen of int
 
 let as_scalar = function
   | Concrete c -> Some c
   | ConcreteVector _|ConcreteRecord _|Symbolic _
-  | Tag _|PteVal _ |AddrReg _|Instruction _|Frozen _
+  | Tag _|PteVal _ |AddrReg _|IntidVal _|Instruction _|Frozen _
       -> None
 
-let rec compare scalar_compare pteval_compare addrreg_compare instr_compare c1 c2 =
+let rec compare scalar_compare pteval_compare addrreg_compare intidval_compare instr_compare c1 c2 =
   match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_compare i1 i2
   | ConcreteVector v1, ConcreteVector v2 ->
     List.compare
-       (compare scalar_compare pteval_compare addrreg_compare instr_compare) v1 v2
+       (compare scalar_compare pteval_compare addrreg_compare intidval_compare instr_compare) v1 v2
   | ConcreteRecord li1, ConcreteRecord li2 ->
      StringMap.compare
-       (compare scalar_compare pteval_compare addrreg_compare instr_compare) li1 li2
+       (compare scalar_compare pteval_compare addrreg_compare intidval_compare instr_compare) li1 li2
   | Symbolic sym1,Symbolic sym2 -> compare_symbol sym1 sym2
   | Tag t1,Tag t2 -> String.compare t1 t2
   | PteVal p1,PteVal p2 -> pteval_compare p1 p2
   | AddrReg p1, AddrReg p2 -> addrreg_compare p1 p2
+  | IntidVal v1,IntidVal v2 -> intidval_compare v1 v2
   | Instruction i1,Instruction i2 -> instr_compare i1 i2
   | Frozen i1,Frozen i2 -> Int.compare i1 i2
-  | (Concrete _,(ConcreteRecord _|ConcreteVector _|Symbolic _|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (ConcreteRecord _,(Symbolic _|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (Symbolic _,(Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (Tag _,(PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (PteVal _,(AddrReg _|Instruction _|Frozen _))
-  | (AddrReg _, (Instruction _|Frozen _))
+  | (Concrete _,(ConcreteRecord _|ConcreteVector _|Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (ConcreteRecord _,(Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (Symbolic _,(Tag _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (Tag _,(PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (PteVal _,(AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (AddrReg _, (IntidVal _|Instruction _|Frozen _))
+  | (IntidVal _,(Instruction _|Frozen _))
   | (Instruction _,Frozen _)
     -> -1
-  | (Frozen _,(Instruction _|PteVal _|AddrReg _|Tag _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
-  | (Instruction _,(PteVal _|AddrReg _|Tag _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (Frozen _,(Instruction _|PteVal _|AddrReg _|IntidVal _|Tag _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (Instruction _,(PteVal _|AddrReg _|IntidVal _|Tag _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (IntidVal _,(PteVal _|AddrReg _|Tag _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (AddrReg _,(PteVal _|Tag _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (PteVal _,(Tag _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (Tag _,(Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
@@ -328,27 +334,29 @@ let rec compare scalar_compare pteval_compare addrreg_compare instr_compare c1 c
   | (ConcreteVector _,Concrete _)
     -> 1
 
-let rec eq scalar_eq pteval_eq addrreg_eq instr_eq c1 c2 = match c1,c2 with
+let rec eq scalar_eq pteval_eq addrreg_eq intidval_eq instr_eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_eq i1 i2
   | ConcreteVector v1, ConcreteVector v2 ->
-     List.equal (eq scalar_eq pteval_eq addrreg_eq instr_eq) v1 v2
+     List.equal (eq scalar_eq pteval_eq addrreg_eq intidval_eq instr_eq) v1 v2
   | ConcreteRecord li1, ConcreteRecord li2 ->
-    StringMap.equal (eq scalar_eq pteval_eq addrreg_eq instr_eq) li1 li2
+    StringMap.equal (eq scalar_eq pteval_eq addrreg_eq intidval_eq instr_eq) li1 li2
   | Symbolic s1, Symbolic s2 -> symbol_eq s1 s2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
   | PteVal p1,PteVal p2 -> pteval_eq p1 p2
   | AddrReg p1,AddrReg p2 -> addrreg_eq p1 p2
+  | IntidVal v1,IntidVal v2 -> intidval_eq v1 v2
   | Instruction i1,Instruction i2 -> instr_eq i1 i2
   | Frozen i1,Frozen i2 -> Misc.int_eq i1 i2
-  | (Frozen _,(Instruction _|Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|PteVal _|AddrReg _))
-  | (Instruction _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|PteVal _|AddrReg _|Frozen _))
-  | (AddrReg _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|PteVal _|Instruction _|Frozen _))
-  | (PteVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|AddrReg _|Instruction _|Frozen _))
-  | (ConcreteRecord _,(ConcreteVector _|Symbolic _|Tag _|Concrete _|PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Tag _|Concrete _|PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (Concrete _,(Symbolic _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (Symbolic _,(Concrete _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|Instruction _|Frozen _))
-  | (Tag _,(Concrete _|Symbolic _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (Frozen _,(Instruction _|Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|PteVal _|AddrReg _|IntidVal _))
+  | (Instruction _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|PteVal _|AddrReg _|IntidVal _|Frozen _))
+  | (IntidVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (AddrReg _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|PteVal _|IntidVal _|Instruction _|Frozen _))
+  | (PteVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Tag _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (ConcreteRecord _,(ConcreteVector _|Symbolic _|Tag _|Concrete _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Tag _|Concrete _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (Concrete _,(Symbolic _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (Symbolic _,(Concrete _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
+  | (Tag _,(Concrete _|Symbolic _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _))
     -> false
 
 (* Return if two constants are syntactically different and can be semantically
@@ -365,12 +373,12 @@ let normalize s solver =
       Symbolic (Virtual (symbolic_data_normalize v solver))
   | _ -> s
 
-  let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr = function
+  let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_intidval pp_instr = function
   | Concrete i -> pp_scalar i
   | ConcreteVector vs ->
       let s =
         String.concat ","
-          (List.map (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr) vs)
+          (List.map (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_intidval pp_instr) vs)
       in
       sprintf "{%s}" s
   | ConcreteRecord vs ->
@@ -379,7 +387,7 @@ let normalize s solver =
       StringMap.iter
         (fun name c ->
           Printf.bprintf b "%s:%s," name
-            (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr c))
+            (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_intidval pp_instr c))
         vs;
       Buffer.add_char b '}';
       Buffer.contents b
@@ -388,17 +396,18 @@ let normalize s solver =
   | Tag s -> sprintf ":%s" s
   | PteVal p -> pp_pteval p
   | AddrReg sr -> pp_addrreg sr
+  | IntidVal v -> pp_intidval v
   | Instruction i -> pp_instr i
   | Frozen i -> sprintf "S%i" i (* Same as for symbolic values? *)
 
-let pp pp_scalar pp_pteval pp_addrreg pp_instr c =
+let pp pp_scalar pp_pteval pp_addrreg pp_intidval pp_instr c =
   let pp_label = sprintf "label:\"P%i:%s\"" in
-  let pp = mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr c in
+  let pp = mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_intidval pp_instr c in
   if _dbg && String.length pp > 6 then "..." else pp
 
-and pp_old pp_scalar pp_pteval pp_addrreg pp_instr =
+and pp_old pp_scalar pp_pteval pp_addrreg pp_intidval pp_instr =
   let pp_label = sprintf "%i:%s" in
-  mk_pp pp_symbol_old pp_scalar pp_label pp_pteval pp_addrreg pp_instr
+  mk_pp pp_symbol_old pp_scalar pp_label pp_pteval pp_addrreg pp_intidval pp_instr
 
 let check_pp_init dump = function
   | Symbolic sym -> pp_symbol_init sym
@@ -413,6 +422,7 @@ let _debug = function
   | Tag s -> sprintf "Tag %s" s
   | PteVal _ -> "PteVal"
   | AddrReg _ -> "AddrReg"
+  | IntidVal _ -> "IntidVal"
   | Instruction i -> sprintf "Instruction %s" (InstrLit.pp i)
   | Frozen i -> sprintf "Frozen %i" i
 
@@ -420,7 +430,7 @@ let rec map_scalar f = function
   | Concrete s -> Concrete (f s)
   | ConcreteVector cs -> ConcreteVector (List.map (map_scalar f) cs)
   | ConcreteRecord cs -> ConcreteRecord (StringMap.map (map_scalar f) cs)
-  | (Symbolic _ | Tag _ | PteVal _ | AddrReg _ | Instruction _ | Frozen _) as c ->
+  | (Symbolic _ | Tag _ | PteVal _ | AddrReg _ | IntidVal _ | Instruction _ | Frozen _) as c ->
       c
 
 let rec map_label f = function
@@ -428,20 +438,21 @@ let rec map_label f = function
     Symbolic (Virtual ({symb with name=Symbol.Label (p,f lbl);}))
   | ConcreteVector cs -> ConcreteVector (List.map (map_label f) cs)
   | ConcreteRecord cs -> ConcreteRecord (StringMap.map (map_label f) cs)
-  | (Symbolic _ | Concrete _ | Tag _ | PteVal _ | AddrReg _ | Instruction _ | Frozen _) as m
+  | (Symbolic _ | Concrete _ | Tag _ | PteVal _ | AddrReg _ | IntidVal _ | Instruction _ | Frozen _) as m
     ->
       m
 
-let rec map f_scalar f_pteval f_addrreg f_instr = function
+let rec map f_scalar f_pteval f_addrreg f_intidval f_instr = function
   | (Symbolic _ | Tag _ | Frozen _) as m -> m
   | PteVal p -> PteVal (f_pteval p)
   | AddrReg sr -> AddrReg (f_addrreg sr)
+  | IntidVal v -> IntidVal (f_intidval v)
   | Instruction i -> Instruction (f_instr i)
   | Concrete s -> Concrete (f_scalar s)
   | ConcreteVector cs ->
-      ConcreteVector (List.map (map f_scalar f_pteval f_addrreg f_instr) cs)
+      ConcreteVector (List.map (map f_scalar f_pteval f_addrreg f_intidval f_instr) cs)
   | ConcreteRecord cs ->
-      ConcreteRecord (StringMap.map (map f_scalar f_pteval f_addrreg f_instr) cs)
+      ConcreteRecord (StringMap.map (map f_scalar f_pteval f_addrreg f_intidval f_instr) cs)
 
 let do_mk_virtual_label_with_offset p s o =
   Virtual { default_symbolic_data with name=Symbol.Label (p,s); offset=o }
@@ -451,11 +462,13 @@ let do_mk_virtual s =
 
 let do_mk_sym sym = match Misc.tr_pte sym with
 | Some s -> System (PTE,s)
-| None -> match Misc.tr_atag sym with
-  | Some s -> TagAddr (VIR,s,0)
-  | None -> match Misc.tr_physical sym with
-    | Some s -> Physical (s,0)
-    | None -> do_mk_virtual sym
+| None -> match Misc.tr_intid sym with
+  | Some s -> System (INTID,s)
+  | None -> match Misc.tr_atag sym with
+    | Some s -> TagAddr (VIR,s,0)
+    | None -> match Misc.tr_physical sym with
+      | Some s -> Physical (s,0)
+      | None -> do_mk_virtual sym
 
 let mk_sym_virtual_label p lbl = Symbolic (do_mk_virtual_label_with_offset p lbl 0)
 let mk_sym_virtual_label_with_offset p lbl o = Symbolic (do_mk_virtual_label_with_offset p lbl o)
@@ -492,6 +505,9 @@ let mk_sym_pa s =
   let s = as_virtual s in
   Symbolic (Physical (s,0))
 
+let mk_sym_intid s =
+  Symbolic (System (INTID,s))
+
 let old2new s =
  match Misc.tr_pte s with
 | Some s ->
@@ -514,26 +530,26 @@ let mk_replicate sz v = ConcreteVector (Misc.replicate sz v)
 let is_symbol = function
   | Symbolic _ -> true
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Tag _
-  | PteVal _ | AddrReg _ | Instruction _ | Frozen _ ->
+  | PteVal _ | AddrReg _ | IntidVal _ | Instruction _ | Frozen _ ->
       false
 
 let is_data = function
   | Symbolic (Virtual ({name=n; _})) ->
     Symbol.is_data n
   | Concrete _| ConcreteVector _| ConcreteRecord _| Symbolic _| Tag _|
-    PteVal _| AddrReg _| Instruction _| Frozen _ ->
+    PteVal _| AddrReg _| IntidVal _| Instruction _| Frozen _ ->
     false
 
 let is_label = function
   | Symbolic (Virtual ({name=n; _})) -> Symbol.is_label n
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Symbolic _ | Tag _
-  | PteVal _ | AddrReg _ | Instruction _ | Frozen _ ->
+  | PteVal _ | AddrReg _ | IntidVal _ | Instruction _ | Frozen _ ->
       false
 
 let as_label = function
   | Symbolic (Virtual ({name=Symbol.Label (p,lbl); offset=idx; _})) -> assert (idx==0); Some (p,lbl)
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Symbolic _ | Tag _
-  | PteVal _ | AddrReg _ | Instruction _ | Frozen _ ->
+  | PteVal _ | AddrReg _ | IntidVal _ | Instruction _ | Frozen _ ->
       None
 
 let is_non_mixed_symbol = function
@@ -553,7 +569,7 @@ let mk_sym_tag s t =
 let check_sym v =
   match v with
   | (Symbolic _ | Tag _) as sym -> sym
-  | Concrete _ | ConcreteVector _ | ConcreteRecord _ | PteVal _ | AddrReg _ | Instruction _
+  | Concrete _ | ConcreteVector _ | ConcreteRecord _ | PteVal _ | AddrReg _ | IntidVal _ | Instruction _
   | Frozen _ ->
       assert false
 
@@ -613,11 +629,12 @@ module type S =  sig
   module Scalar : Scalar.S
   module PteVal : PteVal.S
   module AddrReg : AddrReg.S
+  module IntidVal : IntidVal.S
   module Instr : Instr.S
 
-  type v = (Scalar.t,PteVal.t,AddrReg.t,Instr.t) t
+  type v = (Scalar.t,PteVal.t,AddrReg.t,IntidVal.t,Instr.t) t
 
-  val tr : (string,ParsedPteVal.t,ParsedAddrReg.t,InstrLit.t) t -> v
+  val tr : (string,ParsedPteVal.t,ParsedAddrReg.t,ParsedIntidVal.t,InstrLit.t) t -> v
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v

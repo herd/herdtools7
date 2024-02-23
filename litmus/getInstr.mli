@@ -26,11 +26,10 @@ module type S = sig
   val instr_name : t -> string
   val fun_name : t -> string
   val dump_instr :
-    (('a,'b,'c,t) Constant.t -> string) -> ('a,'b,'c,t) Constant.t -> string
+    (('a,'b,'c,'d,t) Constant.t -> string) -> ('a,'b,'c,'d,t) Constant.t -> string
 
   module Make : functor (O:Indent.S) -> sig val dump : t -> unit end
 end
 
 module No :
   functor (I : sig type instr end) -> S with type t = I.instr
-
