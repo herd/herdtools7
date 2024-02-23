@@ -56,6 +56,8 @@ module Make (Cfg:Config) (Tar:Tar.S) (CT:OneTest) : sig
   val from_files : string list -> unit
 end = struct
 
+  module Param = SkelUtil.Param(Cfg)
+
   let is_kvm =
     match Cfg.mode with
     | Mode.Kvm -> true
@@ -565,7 +567,8 @@ let dump_c xcode names =
 
 
 let dump_c_cont xcode arch sources utils nts =
-  let shared_topology = Cfg.alloc = Alloc.Dynamic in
+  let nts = IntSet.filter Param.mk_dsa nts in
+  let shared_topology =  not (xcode || IntSet.is_empty nts) in
   let sources = List.map Filename.basename  sources in
   let utils =
     if shared_topology then utils@[Tar.outname "topology.c"]
@@ -681,10 +684,11 @@ let dump_c_cont xcode arch sources utils nts =
                 let file_name = "topology.c"
                 let nthreads = k
                 let avail = match Cfg.avail with None -> 0 | Some a -> a
+                let do_affinity = Cfg.affinity <> Affinity.No
                 let smt = Cfg.smt
                 let nsockets = Cfg.nsockets
                 let smtmode = Cfg.smtmode
-                let mode = Mode.Kvm
+                let mode = Cfg.mode
                 let is_active = false
                 let inlined = false
               end in
@@ -708,8 +712,14 @@ let dump_c_cont xcode arch sources utils nts =
             (fun k sz ->
               let open Topology in
               O.o "" ;
-              O.f "extern const int *inst_%d;" k ;
-              O.f "extern const int *role_%d;" k ;
+              let open Mode in
+              begin match Cfg.mode with
+              | PreSi | Kvm ->
+                 O.f "extern const int *inst_%d;" k ;
+                 O.f "extern const int *role_%d;" k
+              | Std ->
+                 O.f "extern const int *cpu_scan_%d;" k
+              end ;
               O.f "extern const char **group_%d;" k ;
               O.f "#define scansz_%d %d" k sz.scansz ;
               O.f "#define scanline_%d %d" k sz.scanline)
