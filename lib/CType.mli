@@ -35,6 +35,7 @@ val int32x4_t : t
 val svbool_t : t
 val svint32_t : t
 val pteval_t : t
+val intidval_t : t
 val pte : t
 val ins_t : t
 

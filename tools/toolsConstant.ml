@@ -14,19 +14,20 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type v = (Int64Scalar.t,ParsedPteVal.t,InstrLit.t) Constant.t
+type v = (Int64Scalar.t,ParsedPteVal.t,ParsedIntidVal.t,InstrLit.t) Constant.t
 
-let pp hexa = Constant.pp (Int64Scalar.pp hexa) ParsedPteVal.pp InstrLit.pp
+let pp hexa = Constant.pp (Int64Scalar.pp hexa) ParsedPteVal.pp ParsedIntidVal.pp InstrLit.pp
 
 let pp_norm hexa =
   Constant.pp
     (Int64Scalar.pp hexa)
     (ParsedPteVal.pp_norm AArch64PteVal.norm)
+    (ParsedIntidVal.pp)
     (InstrLit.pp)
 
 let pp_v = pp false
 
 let compare =
-  Constant.compare Int64.compare ParsedPteVal.compare InstrLit.compare
+  Constant.compare Int64.compare ParsedPteVal.compare ParsedIntidVal.compare InstrLit.compare
 let eq =
-  Constant.eq Int64.equal ParsedPteVal.eq InstrLit.eq
+  Constant.eq Int64.equal ParsedPteVal.eq ParsedIntidVal.eq InstrLit.eq

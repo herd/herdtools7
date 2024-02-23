@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t = REG | VIR | PHY | PTE | TLB | TAG | PHY_PTE
+type t = REG | VIR | PHY | PTE | TLB | TAG | PHY_PTE | INTID
 
 let pp = function
   | REG -> "REG"
@@ -24,10 +24,11 @@ let pp = function
   | TLB -> "TLB"
   | TAG -> "TAG"
   | PHY_PTE -> "PHY_PTE"
+  | INTID -> "INTID"
 
 let is_physical = function
   | PHY|PHY_PTE -> true
-  | REG|VIR|PTE|TLB|TAG -> false
+  | REG|VIR|PTE|TLB|TAG|INTID -> false
 
 let compatible k1 k2 = match k1,k2 with
   | ((PTE|PHY_PTE),(PTE|PHY_PTE)) -> true

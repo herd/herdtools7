@@ -795,6 +795,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let tr_cst tr =
       Constant.map tr
         (fun _ -> Warn.fatal "Cannot translate PTE")
+        (fun _ -> Warn.fatal "Cannot translate INTID")
         (fun _ -> Warn.fatal "Cannot translate instruction")
 
     let aarch64_to_asl_bv_cst sz = function

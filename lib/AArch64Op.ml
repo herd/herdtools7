@@ -42,6 +42,7 @@ module
     and type 'a constr_op = 'a binop
     and type scalar = S.t
     and type pteval = AArch64PteVal.t
+    and type intidval = AArch64IntidVal.t
     and type instr = AArch64Base.instruction
   = struct
 
@@ -76,8 +77,9 @@ module
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
+    type intidval = AArch64IntidVal.t
     type instr = AArch64Base.instruction
-    type cst = (scalar,pteval,instr) Constant.t
+    type cst = (scalar,pteval,intidval,instr) Constant.t
 
     let pp_cst hexa v =
       let module InstrPP = AArch64Base.MakePP(struct
@@ -141,8 +143,8 @@ module
       | _ -> None
 
     let exit _ = raise Exit
-    let toExtra cst = Constant.map Misc.identity exit exit cst
-    and fromExtra cst = Constant.map Misc.identity exit exit cst
+    let toExtra cst = Constant.map Misc.identity exit exit exit cst
+    and fromExtra cst = Constant.map Misc.identity exit exit exit cst
 
     (* Add a PAC field to a virtual address, this function can only add a PAC
        field if the input pointer is canonical, otherwise it raise an error, it is

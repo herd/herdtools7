@@ -35,6 +35,7 @@ let int32x4_t = Base "int32x4_t"
 let svbool_t = Base "svbool_t"
 let svint32_t = Base "svint32_t"
 let pteval_t = Base "pteval_t"
+let intidval_t = Base "intidval_t"
 let pte = Pointer pteval_t
 let ins_t = Base "ins_t"
 
