@@ -4,8 +4,8 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2016-present Institut National de Recherche en Informatique et *)
-(* en Automatique and the authors. All rights reserved.                     *)
+(* Copyright 2024-present Institut National de Recherche en Informatique et *)
+(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -14,21 +14,15 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Extract information from test, at the moment name + fname + hash *)
+type t =
+  { target : int;
+    params : string StringMap.t }
 
-(* Type of information *)
-module T : sig
-  type t =
-      { tname : string ; fname : string ; hash : string ; }
-  val compare : t -> t -> int
-end
+val empty : t
+val add_param : string -> string -> t -> t
+val add_target : int -> t -> t
 
-(* Extract information out of parsed test *)
-module Make(A:ArchBase.S)(Pte:PteVal.S)(Intid:IntidVal.S) : sig
-  val zyva : Name.t -> A.pseudo MiscParser.t -> T.t
-end
+val compare : t -> t -> int
+val eq : t -> t -> bool
 
-(* Parser an extract *)
-module Z : sig
-  val from_file : string -> T.t
-end
+val pp : t -> string

@@ -100,11 +100,12 @@ end = struct
     | Symbolic (Physical _) -> Access.PHY
     | Symbolic (TagAddr _) -> Access.TAG
     | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
+    | Symbolic (System (INTID, _)) -> Access.INTID
     | Symbolic (System (TLB,_)) -> Access.TLB
     | Label _ -> Access.VIR
     | Tag _
     | ConcreteVector _|Concrete _|ConcreteRecord _
-    | PteVal _|Instruction _|Frozen _ as v
+    | PteVal _|IntidVal _|Instruction _|Frozen _ as v
       ->
        Warn.fatal "access_of_constant %s as an address"
          (V.pp_v (V.Val v)) (* assert false *)
@@ -637,7 +638,7 @@ end = struct
           | Some
               (A.V.Val
                  (ConcreteVector _|Concrete _|Symbolic _|ConcreteRecord _
-                  |Label (_, _)|Tag _|Instruction _
+                  |Label (_, _)|Tag _|IntidVal _|Instruction _
                   |Frozen _))
           | None
             -> None

@@ -74,8 +74,16 @@ rule token = parse
 (* Distinguished  PteVal fields *)
 | "attrs"|"Attrs" { ATTRS }
 | "oa" { TOK_OA }
+(* Distinguished  IntidVal fields *)
+| "pending" { PENDING "pending" }
+| "enabled" { ENABLED "enabled" }
+| "priority" { PRIORITY "priority" }
+| "affinity" { TARGET }
+| "routing_mode" { TARGET_MODE "target_mode" }
+| "handling_mode" { TRIGGER_MODE "trigger_mode" }
 (* PTW keywords *)
 | "PTE"|"TTD" { TOK_PTE }
+| "INTID" { TOK_INTID }
 | "PA"  { TOK_PA }
 (* Typing *)
 | "_Atomic" { ATOMIC }

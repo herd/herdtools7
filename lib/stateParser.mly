@@ -71,6 +71,11 @@ let mk_lab (p, l) = Label (p, l)
 %token <string> DOLLARNAME
 %token <string> NUM
 %token <string> VALUE
+%token <string> PENDING
+%token <string> ENABLED
+%token <string> PRIORITY
+%token <string> TARGET_MODE
+%token <string> TRIGGER_MODE
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
@@ -79,8 +84,8 @@ let mk_lab (p, l) = Label (p, l)
 %token LBRK RBRK LPAR RPAR LCURLY RCURLY SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
-%token ATTRS TOK_OA
-%token TOK_PTE TOK_PA
+%token ATTRS TOK_OA TARGET
+%token TOK_PTE TOK_INTID TOK_PA
 %token TOK_TAG
 %token TOK_NOP
 %token <string> INSTR
@@ -95,6 +100,8 @@ let mk_lab (p, l) = Label (p, l)
 
 %type <ParsedPteVal.t> pteval
 %start pteval
+%type <ParsedIntidVal.t> intidval
+%start intidval
 %type <MiscParser.state> init
 %start init
 %type <MiscParser.location> main_location
@@ -125,6 +132,7 @@ location_global:
 | TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
+| TOK_INTID LPAR NAME RPAR { Constant.mk_sym_intid $3 }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 | TOK_TAG LPAR id=NAME RPAR { mk_sym_tagloc_zero id }
 | TOK_TAG LPAR id=NAME PLUS o=NUM RPAR { mk_sym_tagloc id o }
@@ -158,6 +166,26 @@ prop_head:
 
 pteval:
 | LPAR pteval=prop_head RPAR { pteval }
+
+intid_prop_tail:
+| { ParsedIntidVal.empty }
+| COMMA intidval=intid_prop_head { intidval }
+
+intid_field:
+| PENDING { $1 }
+| ENABLED { $1 }
+| PRIORITY { $1 }
+| TARGET_MODE { $1 }
+| TRIGGER_MODE { $1 }
+
+intid_prop_head:
+| key=intid_field COLON v=name_or_num tail=intid_prop_tail
+  { ParsedIntidVal.add_param key v tail }
+| TARGET COLON v=PROC tail=intid_prop_tail
+  { ParsedIntidVal.add_target v tail }
+
+intidval:
+  LPAR intidval=intid_prop_head RPAR { intidval }
 
 maybev_notag:
 | NUM  { Concrete $1 }
@@ -256,6 +284,8 @@ atom_init:
   { (loc,(Ty typ, MiscParser.add_oa_if_none loc v)) }
 | loc=left_loc EQUAL v=pteval
   { (loc,(Ty "pteval_t", MiscParser.add_oa_if_none loc v)) }
+| loc=left_loc EQUAL v=intidval
+  { (loc,(Ty "intidval_t", IntidVal v)) }
 
 amperopt:
 | AMPER { () }
@@ -420,6 +450,10 @@ atom_prop:
   { Atom (LV (Loc loc, MiscParser.add_oa_if_none loc v )) }
 | loc=loc_brk equal v=pteval
   { Atom (LV (Loc loc, MiscParser.add_oa_if_none loc v)) }
+| loc=location equal v=intidval
+  { Atom (LV (Loc loc, IntidVal v)) }
+| loc=loc_brk equal v=intidval
+  { Atom (LV (Loc loc, IntidVal v)) }
 /* Array, array cell, equality of content no [x] = .. notation */
 | location equal LCURLY maybev_list RCURLY
     { let sz = List.length $4 in

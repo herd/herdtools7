@@ -30,6 +30,7 @@ module
     (ArchOp:ArchOp.S with
        type scalar = Cst.Scalar.t
        and type pteval = Cst.PteVal.t
+       and type intidval = Cst.IntidVal.t
        and type instr = Cst.Instr.t) = struct
 
   module Cst = Cst
@@ -160,7 +161,7 @@ module
     | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
     | Val
         (ConcreteVector _|ConcreteRecord _|Symbolic _|Label _|
-         Tag _|PteVal _|Instruction _|Frozen _ as x)
+         Tag _|PteVal _|IntidVal _|Instruction _|Frozen _ as x)
       ->
         Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
@@ -171,7 +172,7 @@ module
   match v1 with
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
-    | Val (ConcreteVector _|ConcreteRecord _|Symbolic _|Label _|Tag _|PteVal _|Frozen _ as x) ->
+    | Val (ConcreteVector _|ConcreteRecord _|Symbolic _|Label _|Tag _|PteVal _|IntidVal _|Frozen _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
           (pp_unop op_op) (Cst.pp_v x)
     | Val (Instruction _ as x) ->
@@ -331,8 +332,8 @@ module
     Val (Symbolic (Virtual {s with offset=i+k}))
   | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
   | Val (ConcreteVector _|ConcreteRecord _
-       | Symbolic ((TagAddr _|System _))|Label _
-       |Tag _|PteVal _|Instruction _|Frozen _ as c) ->
+  | Symbolic ((TagAddr _|System _))|Label _
+  |Tag _|PteVal _|IntidVal _|Instruction _|Frozen _ as c) ->
       Warn.user_error "Illegal addition on constants %s +%d" (Cst.pp_v c) k
   | Var _ -> raise Undetermined
 
@@ -495,7 +496,7 @@ module
   |  Val (Symbolic (Physical _|TagAddr _|System _)
           |Concrete _|Label _
           |Tag _|ConcreteRecord _|ConcreteVector _
-          |PteVal _|Instruction _
+          |PteVal _|IntidVal _|Instruction _
           |Frozen _)
      -> Warn.user_error "Illegal tagged operation %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
@@ -515,7 +516,7 @@ module
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
          |Symbolic ((TagAddr _|System _))
-         |Label _|Tag _|PteVal _
+         |Label _|Tag _|PteVal _|IntidVal _
          |Instruction _|Frozen _)
       ->
        Warn.user_error "Illegal tagloc on %s" (pp_v v)
@@ -528,7 +529,7 @@ module
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
         |Label _|Tag _
-        |PteVal _|Instruction _
+        |PteVal _|IntidVal _|Instruction _
         |Frozen _)
       ->
        Warn.fatal "Illegal check_ctag" (* NB: not an user error *)
@@ -549,7 +550,7 @@ module
   |  Val
        (Concrete _|ConcreteRecord _|ConcreteVector _
        |Label _|Tag _
-       |Symbolic _|PteVal _
+       |Symbolic _|PteVal _|IntidVal _
        |Instruction _|Frozen _)
      ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
@@ -561,7 +562,7 @@ module
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
       |Label _|Tag _
-      |Symbolic _|PteVal _
+      |Symbolic _|PteVal _|IntidVal _
       |Instruction _|Frozen _)
     ->
      Warn.user_error "Illegal pteloc on %s" (pp_v v)
@@ -575,8 +576,8 @@ module
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
       |Label _|Tag _
-      |PteVal _|Instruction _
-      |Frozen _) ->
+      |PteVal _|IntidVal _|Instruction _
+      |Frozen _| Symbolic (System (INTID, _))) ->
       Warn.user_error "Illegal offset on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
@@ -972,7 +973,7 @@ module
   | Val
       (ConcreteVector _|ConcreteRecord _|Symbolic _
       |Label _|Tag _
-      |PteVal _|Instruction _
+      |PteVal _|IntidVal _|Instruction _
       | Frozen _ as s) ->
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined

@@ -155,7 +155,7 @@ include Arch.MakeArch(struct
       | Const(Symbolic (Virtual {name=s;_})) -> find_cst s >! fun k -> Const k
       | Const
           (Concrete _|ConcreteVector _|Label _|ConcreteRecord _
-           |Tag _|Symbolic _|PteVal _
+           |Tag _|Symbolic _|PteVal _|IntidVal _
            |Instruction _|Frozen _)
         as e -> unitT e
       | LoadReg r -> conv_reg r >! fun r -> LoadReg r
