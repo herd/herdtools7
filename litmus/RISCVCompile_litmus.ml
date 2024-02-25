@@ -44,14 +44,24 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     let tr_2regs fmt1 fmt2 r1 r2 = match r1 with
     | A.Ireg X0 ->
         let fmt2,r2 = tr_reg fmt1 r2 in
-        "x0",fmt2,r2
+        "x0",fmt2,[],r2
     | r ->
         let fmt2,r2 = tr_reg fmt2 r2 in
-        fmt1,fmt2,r::r2
+        fmt1,fmt2,[r],r2
 
     let tr_1i = tr_reg "^i0"
     let tr_1o = tr_reg "^o0"
     let tr_2i = tr_2regs "^i0" "^i1"
+
+    open CType
+
+    let w2type = function
+      | A.Byte -> byte
+      | A.Half -> half
+      | A.Word -> word
+      | A.Double -> quad
+
+    let add_type t = List.map (fun x -> x,t)
 
     let op2regsI memo r1 r2 k =
       let fmt1,r1 = tr_1o r1
@@ -74,10 +84,10 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
 
     let op3regs memo r1 r2 r3 =
       let fmt1,r1 = tr_1o r1
-      and fmt2,fmt3,r2r3 = tr_2i r2 r3 in
+      and fmt2,fmt3,r2,r3 = tr_2i r2 r3 in
       { empty_ins with
         memo = sprintf "%s %s,%s,%s" memo fmt1 fmt2 fmt3;
-        inputs=r2r3; outputs=r1; }
+        inputs=r2@r3; outputs=r1; }
 
     let ext memo r1 r2 =
       let fmt1,r1 = tr_1o r1
@@ -89,6 +99,7 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     let emit_loop _ins = assert false
 
     include Handler.No(struct type ins = A.Out.ins end)
+
 
     let compile_ins tr_lab ins k = match ins with
     | A.INop -> { empty_ins with memo="nop"; }::k
@@ -112,41 +123,51 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
           memo = sprintf "j %s" (A.Out.dump_label (tr_lab lbl));
           branch=[Branch lbl;] }::k
   | Bcc (cond,r1,r2,lbl) ->
-      let fmt1,fmt2,r1r2 = tr_2i r1 r2 in
+      let fmt1,fmt2,r1,r2 = tr_2i r1 r2 in
       { empty_ins with
         memo = sprintf "%s %s,%s,%s" (A.pp_bcc cond) fmt1 fmt2
           (A.Out.dump_label (tr_lab lbl)) ;
-        inputs=r1r2; branch=[Next;Branch lbl;]; }::k
+        inputs=r1@r2; branch=[Next;Branch lbl;]; }::k
   | Load (w,s,mo,r1,o,r2) ->
       let fmt1,r1 = tr_1o r1
       and fmt2,r2 = tr_1i r2 in
+      let t = w2type w in
       { empty_ins with
         memo = sprintf "%s %s,%i(%s)" (A.pp_load w s mo) fmt1 o fmt2;
-        inputs=r2; outputs=r1; }::k
+        inputs=r2; outputs=r1;
+        reg_env=add_type t r1@add_type voidstar r2; }::k
   | Store (w,mo,r1,o,r2) ->
-      let fmt1,fmt2,r1r2 = tr_2i r1 r2 in
+      let fmt1,fmt2,r1,r2 = tr_2i r1 r2 in
+      let t = w2type w in
       { empty_ins with
         memo = sprintf "%s %s,%i(%s)" (A.pp_store w mo) fmt1 o fmt2;
-        inputs=r1r2; }::k
+        inputs=r1@r2;
+        reg_env=add_type t r1@add_type voidstar r2; }::k
   | LoadReserve (w,mo,r1,r2) ->
       let fmt1,r1 = tr_1o r1
       and fmt2,r2 = tr_1i r2 in
+      let t = w2type w in
       { empty_ins with
         memo = sprintf "%s %s,0(%s)" (A.pp_lr w mo) fmt1 fmt2;
-        inputs=r2; outputs=r1; }::k
+        inputs=r2; outputs=r1;
+        reg_env=add_type t r1@add_type voidstar r2}::k
   | StoreConditional (w,mo,r1,r2,r3) ->
       let fmt1,r1 = tr_1o r1
-      and fmt2,fmt3,r2r3 = tr_2i r2 r3 in
+      and fmt2,fmt3,r2,r3 = tr_2i r2 r3 in
       { empty_ins with
         memo =  sprintf "%s %s,%s,0(%s)" (A.pp_sc w mo) fmt1 fmt2 fmt3;
-        outputs=r1; inputs=r2r3; }::k
+        outputs=r1; inputs=r2@r3;
+        reg_env=add_type word r1@add_type (w2type w) r2@add_type voidstar r3;
+      }::k
   | AUIPC (_,_) -> Warn.fatal "auipc not Supported in litmus"
   | Amo (op,w,mo,r1,r2,r3) ->
       let fmt1,r1 = tr_1o r1
-      and fmt2,fmt3,r2r3 = tr_2i r2 r3 in
+      and fmt2,fmt3,r2,r3 = tr_2i r2 r3 in
+      let t = w2type w in
       { empty_ins with
         memo =  sprintf "%s %s,%s,(%s)" (A.pp_amo op w mo) fmt1 fmt2 fmt3;
-        outputs=r1; inputs=r2r3; }::k
+        outputs=r1; inputs=r2@r3;
+        reg_env = add_type t (r1@r2@r2);}::k
   | FenceIns f ->
       { empty_ins with memo = pp_barrier f;}::k
 
