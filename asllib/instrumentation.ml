@@ -318,7 +318,7 @@ module TypingRule = struct
     | LowestCommonAncestor
     | CheckUnop
     | CheckBinop
-    | Lit
+    | ELit
     | CTC
     | ELocalVarConstant
     | ELocalVar
@@ -451,7 +451,7 @@ module TypingRule = struct
     | CheckUnop -> "CheckUnop"
     | CheckBinop -> "CheckBinop"
     | LowestCommonAncestor -> "LowestCommonAncestor"
-    | Lit -> "Lit"
+    | ELit -> "ELit"
     | CTC -> "CTC"
     | ELocalVarConstant -> "ELocalVarConstant"
     | ELocalVar -> "ELocalVar"
@@ -587,7 +587,7 @@ module TypingRule = struct
       CheckUnop;
       CheckBinop;
       LowestCommonAncestor;
-      Lit;
+      ELit;
       CTC;
       ELocalVarConstant;
       ELocalVar;
