@@ -9,7 +9,19 @@ module Make (O : OrderedHashedType) = struct
   type succs = O.t -> O.t list
 
   module OSet = Set.Make (O)
-  module OMap = Map.Make (O)
+
+  (* Compatibility layer around Map *)
+  module OMap = struct
+    module M = Map.Make (O)
+
+    (* Straight out of the stdlib version 5.1, will be overriden by anything if
+       included in Map.Make *)
+    let of_list bs = List.fold_left (fun m (k, v) -> M.add k v m) M.empty bs
+    [@@warning "-32"]
+
+    include M
+  end
+
   module OTbl = Hashtbl.Make (O)
 
   module OStack = struct
@@ -144,7 +156,10 @@ module Make (O : OrderedHashedType) = struct
 end
 
 module ASTFold = struct
+  (* Compatibility layer around String. *)
   module O = struct
+    let hash : string -> int = Hashtbl.hash [@@warning "-32"]
+
     include String
 
     let to_string s = s
@@ -213,7 +228,7 @@ module ASTFold = struct
           succ_tbl;
         eprintf "@]@.")
     in
-    let succs s = Tbl.find succ_tbl s |> OSet.to_list in
+    let succs s = Tbl.find succ_tbl s |> OSet.elements in
     { nodes; succs; decls }
 
   type step = Single of AST.decl | Recursive of AST.decl list
@@ -221,7 +236,7 @@ module ASTFold = struct
   let fold fold ast =
     let { nodes; succs; decls } = build ast in
     let folder nodes acc =
-      let ds = List.concat_map (Tbl.find decls) nodes in
+      let ds = ASTUtils.list_concat_map (Tbl.find decls) nodes in
       match ds with
       | [] -> acc (* Can happen for fantom dependencies. *)
       | [ d ] -> fold (Single d) acc
