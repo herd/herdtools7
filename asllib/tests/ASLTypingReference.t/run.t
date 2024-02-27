@@ -20,3 +20,4 @@ ASL Typing Reference:
   $ aslref TypingRule.LDVar.asl
   $ aslref TypingRule.LDTyped.asl
   $ aslref TypingRule.LDTuple.asl
+  $ aslref TypingRule.Lit.asl
