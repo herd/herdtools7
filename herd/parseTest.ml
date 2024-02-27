@@ -41,14 +41,17 @@ module Top (TopConf:RunTest.Config) = struct
         TestVariant.Make
           (struct
             module Opt = Variant
-            let set_precision = Variant.set_precision
             let info = splitted.Splitter.info
-            let precision = TopConf.precision
             let variant = TopConf.variant
+            let mte_precision = TopConf.mte_precision
+            let set_mte_precision = Variant.set_mte_precision
+            let fault_handling = TopConf.fault_handling
+            let set_fault_handling = Variant.set_fault_handling
           end)
       (* Override *)
       include TopConf
-      let precision = TestConf.precision
+      let fault_handling = TestConf.fault_handling
+      let mte_precision = TestConf.mte_precision
       let variant = TestConf.variant
     end in
     if Conf.check_name tname then begin
@@ -69,7 +72,7 @@ module Top (TopConf:RunTest.Config) = struct
                   (fun _ -> false), (fun _ -> false)
                | Some cache_type ->
                   cache_type.dic, cache_type.idc in
-         Misc.(|||) Conf.variant (function 
+         Misc.(|||) Conf.variant (function
             | Variant.DIC -> dic_pred 0
             | Variant.IDC -> idc_pred 0
             | _ -> false) in

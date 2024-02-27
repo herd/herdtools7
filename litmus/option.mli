@@ -118,7 +118,7 @@ val cacheflush : bool ref
 val carch : Archs.System.t ref
 val mode : Mode.t ref
 val usearch : UseArch.t ref
-val precision : Precision.t ref
+val fault_handling : Fault.Handling.t ref
 val variant : (Variant_litmus.t -> bool) ref
 
 (* Arch dependent option *)

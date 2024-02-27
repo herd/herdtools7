@@ -169,3 +169,48 @@ module Make(A:I) =
             | r -> r
         end)
   end
+
+module Handling : sig
+  type t =
+    | Handled
+    | Fatal
+    | Skip
+
+  val default : t
+  val tags : string list
+  val parse : string -> t option
+  val pp : t -> string
+
+  val is_fatal : t -> bool
+  val is_skip : t -> bool
+end
+=
+struct
+  type t =
+    | Handled
+    | Fatal
+    | Skip
+
+  let default = Fatal
+
+  let tags =  ["handled"; "fatal"; "faultToNext"; ]
+
+  let parse = function
+    | "imprecise"|"handled" -> Some Handled
+    | "precise"|"fatal" -> Some Fatal
+    | "faulttonext"|"skip" -> Some Skip
+    | _ -> None
+
+  let pp = function
+    | Handled -> "handled"
+    | Fatal -> "fatal"
+    | Skip -> "faulToNext"
+
+  let is_fatal = function
+    | Fatal -> true
+    | Handled | Skip -> false
+
+  let is_skip = function
+    | Skip -> true
+    | Fatal | Handled -> false
+end

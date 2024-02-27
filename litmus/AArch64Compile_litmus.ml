@@ -22,7 +22,7 @@ module type Config = sig
   val asmcomment : string option
   val hexa : bool
   val mode : Mode.t
-  val precision : Precision.t
+  val precision : Fault.Handling.t
 end
 
 module Make(V:Constant.S)(C:Config) =
@@ -1267,12 +1267,12 @@ module Make(V:Constant.S)(C:Config) =
             (fun i -> i.memo = "eret")
             code
         then [] (* handler is complete *)
-        else if Precision.is_skip C.precision then
+        else if Fault.Handling.is_skip C.precision then
           [ "mrs %[tr0],elr_el1" ;
             "add %[tr0],%[tr0],#4" ;
             "msr elr_el1,%[tr0]" ;
             "eret" ]
-        else if Precision.is_fatal C.precision then
+        else if Fault.Handling.is_fatal C.precision then
           (if is_user then []
            else
              [ "adr %[tr0],0f";

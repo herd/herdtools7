@@ -24,17 +24,21 @@ module
         val compare : t -> t -> int
       end
       val info : MiscParser.info
-      val precision : Precision.t
       val variant : Opt.t -> bool
-      val set_precision : Precision.t ref -> Opt.t -> bool
+      val mte_precision : Precision.t
+      val set_mte_precision : Precision.t ref -> Opt.t -> bool
+      val fault_handling : Fault.Handling.t
+      val set_fault_handling : Fault.Handling.t ref -> Opt.t -> bool
     end) : sig
       type t = Var.Opt.t
-      val precision : Precision.t
+      val mte_precision : Precision.t
+      val fault_handling : Fault.Handling.t
       val variant : Var.Opt.t -> bool
     end= struct
       type t = Var.Opt.t
 
-      let pref = ref Var.precision
+      let mte_pref = ref Var.mte_precision
+      let fault_href = ref Var.fault_handling
       and vref = ref Var.variant
 
       let () =
@@ -47,13 +51,16 @@ module
             let tags = LexSplit.strings_spaces tags in
             let module Opt = struct
               include Var.Opt
-              let setnow = Var.set_precision pref
+              let setnow t =
+                Var.set_fault_handling fault_href t ||
+                Var.set_mte_precision mte_pref t
             end in
             let module P = ParseTag.MakeS(Opt) in
             try
               List.iter (P.parse_tag_set "variant" vref) tags
             with Arg.Bad msg ->  Warn.user_error "%s" msg
 
-      let precision = !pref
+      let mte_precision = !mte_pref
+      let fault_handling = !fault_href
       let variant = !vref
     end

@@ -19,7 +19,7 @@ module type Config = sig
   val timeloop : int
   val barrier : Barrier.t
   val mode : Mode.t
-  val precision : Precision.t
+  val precision : Fault.Handling.t
   val variant : Variant_litmus.t -> bool
   val driver : Driver.t
 end
@@ -29,7 +29,7 @@ module Default = struct
   let timeloop = 0
   let barrier = Barrier.UserFence
   let mode = Mode.Std
-  let precision = Precision.default
+  let precision = Fault.Handling.default
   let variant _ = false
   let driver = Driver.Shell
 end
@@ -303,7 +303,7 @@ module A.FaultType = A.FaultType)
     open Constant
 
     let do_self = O.variant Variant_litmus.Self
-    and do_precise = Precision.is_fatal O.precision
+    and do_precise = Fault.Handling.is_fatal O.precision
     let is_pte =
       let open Mode in
       match O.mode with

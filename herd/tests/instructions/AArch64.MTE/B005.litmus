@@ -1,0 +1,9 @@
+AArch64 B005
+Variant=mte,sync,faultToNext
+{
+ 0:X1=x:red;
+}
+ P0          ;
+ LDR W0,[X1] ;
+ MOV W2,#1   ;
+forall(0:X2=1)

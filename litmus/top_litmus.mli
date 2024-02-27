@@ -49,7 +49,8 @@ module type CommonConfig = sig
   val gcc : string
   val c11 : bool
   val ascall : bool
-  val precision : Precision.t
+  val fault_handling : Fault.Handling.t
+  val mte_precision : Precision.t
   val variant : Variant_litmus.t -> bool
   val nocatch : bool
   val stdio : bool

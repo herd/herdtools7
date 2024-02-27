@@ -40,7 +40,7 @@ module type S = sig
     (* Stop now *)
     | Exit
     (* Raise Fault *)
-    | Fault of Dir.dirn
+    | Fault
     (* Return from Fault Handler *)
     | FaultRet of tgt
 
@@ -82,7 +82,7 @@ module Make(M:Monad.S) = struct
     (* Stop now *)
     | Exit
     (* Raise Fault *)
-    | Fault of Dir.dirn
+    | Fault
     (* Return from Fault Handler *)
     | FaultRet of tgt
 

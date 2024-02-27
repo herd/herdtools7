@@ -23,12 +23,15 @@ module Make : functor
         val compare : t -> t -> int
       end
       val info : MiscParser.info
-      val precision : Precision.t
       val variant : Opt.t -> bool
-      val set_precision : Precision.t ref -> Opt.t -> bool
+      val mte_precision : Precision.t
+      val set_mte_precision : Precision.t ref -> Opt.t -> bool
+      val fault_handling : Fault.Handling.t
+      val set_fault_handling : Fault.Handling.t ref -> Opt.t -> bool
     end) ->
       sig
         type t = Var.Opt.t
-        val precision : Precision.t
+        val mte_precision : Precision.t
+        val fault_handling : Fault.Handling.t
         val variant : t -> bool
       end

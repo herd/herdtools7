@@ -16,7 +16,7 @@
 
 type t =
   | Self (* Self modifying code *)
-  | Precise of Precision.t
+  | FaultHandling of Fault.Handling.t
   | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
@@ -24,7 +24,7 @@ type t =
 
 let compare = compare
 
-let tags = "s128"::"self"::"mixed"::"vmsa"::"telechat"::Precision.tags
+let tags = "s128"::"self"::"mixed"::"vmsa"::"telechat"::Fault.Handling.tags
 
 let parse s = match Misc.lowercase s with
 | "s128" -> Some S128
@@ -33,7 +33,7 @@ let parse s = match Misc.lowercase s with
 | "vmsa"|"kvm" -> Some Vmsa
 | "telechat" -> Some Telechat
 | tag ->
-   Misc.app_opt (fun p -> Precise p) (Precision.parse tag)
+   Misc.app_opt (fun p -> FaultHandling p) (Fault.Handling.parse tag)
 
 let pp = function
   | Self -> "self"
@@ -42,12 +42,14 @@ let pp = function
   | Vmsa -> "vmsa"
   | Telechat -> "telechat"
 
-  | Precise p -> Precision.pp p
+  | FaultHandling p -> Fault.Handling.pp p
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true
 | _,_ -> false
 
-let set_precision r tag = match tag with
-| Precise p -> r := p ; true
+let set_fault_handling r = function
+| FaultHandling p -> r := p ; true
 | _ -> false
+
+let set_mte_precision _ _ = assert false
