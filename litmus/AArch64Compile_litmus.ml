@@ -1091,6 +1091,14 @@ module Make(V:Constant.S)(C:Config) =
       and v = variant_of_rev rv in
       do_movr memo v
 
+    let extr v rd rn rm k =
+      let rnm,fn,fm =  do_arg2i v rn rm 0
+      and rd,fd = do_arg1o v rd 0 in
+      { empty_ins with
+        memo = sprintf "extr %s,%s,%s,#%d" fd fn fm k;
+        inputs=rnm; outputs=rd;
+        reg_env =  add_v v (rd@rnm); }
+
     let sxtw r1 r2 =
       { empty_ins with
         memo = "sxtw ^o0,^wi0";
@@ -1392,6 +1400,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_ABS (v,rd,rs) -> abs v rd rs::k
     | I_REV (v,rd,rs) -> rev v rd rs::k
+    | I_EXTR (v,rd,rn,rm,lsb) -> extr v rd rn rm lsb::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
     | I_SBFM (v,r1,r2,k1,k2) -> xbfm "sbfm" v r1 r2 k1 k2::k
     | I_UBFM (v,r1,r2,k1,k2) -> xbfm "ubfm" v r1 r2 k1 k2::k

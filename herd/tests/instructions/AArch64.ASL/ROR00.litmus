@@ -1,0 +1,22 @@
+AArch64 ROR00
+{
+0:X1=0x01234567;
+0:X2=10;
+uint64_t 0:X4=0x0123456789ABCDEF;
+uint64_t 0:X3=40;
+uint64_t 0:X7;
+uint64_t 0:X8;
+
+}
+
+  P0          ;
+ROR W6,W1,#16 ;
+ROR W5,W1,W2  ;
+ROR X7,X4,#32 ;
+ROR X8,X4,X3  ;
+locations [0:X5;0:X8;]
+forall
+0:X5=0x59c048d1
+/\ 0:X6=0x45670123
+/\ 0:X7=0x89abcdef01234567
+/\ 0:X8=0x6789abcdef012345

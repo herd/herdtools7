@@ -219,7 +219,12 @@ include Arch.MakeArch(struct
       ->
         OpExt.match_ext ext ext' subs >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
-
+    | I_EXTR (_,r1,r2,r3,k),I_EXTR (_,r1',r2',r3',k') ->
+       match_k k k' subs >>>
+       add_subs
+         [Reg(sr_name r1,r1');
+          Reg(sr_name r2,r2');
+          Reg(sr_name r3,r3');]
     | _,_ -> None
 
   let expl_instr subs =
@@ -362,6 +367,12 @@ include Arch.MakeArch(struct
        conv_reg r1 >> fun r1 ->
        conv_reg r2 >! fun r2 ->
        I_REV (v,r1,r2)
+    | I_EXTR (v,r1,r2,r3,k) ->
+       conv_reg r1 >> fun r1 ->
+       conv_reg r2 >> fun r2 ->
+       conv_reg r3 >> fun r3 ->
+       find_cst k >!  fun k ->
+       I_EXTR (v,r1,r2,r3,k)
     | I_LDAR(a,b,r1,r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->

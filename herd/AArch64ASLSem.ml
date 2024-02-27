@@ -323,7 +323,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "datasize" ^= liti datasize;
                 "container_size" ^= liti csz;
            ])
- *)
+       *)
+      | I_EXTR (v,rd,rn,rm,imms) ->
+         Some
+           ("integer/ins-ext/extract/immediate/EXTR_32_extract.opn",
+            stmt
+              [
+                "d" ^= reg rd;
+                "n" ^= reg rn;
+                "m" ^= reg rm;
+                "datasize" ^= variant v;
+                "lsb" ^= liti imms;])
       | I_UBFM (v, rd, rn, immr, imms) | I_SBFM (v, rd, rn, immr, imms) ->
           let datasize = variant_raw v in
           let bitvariant =
@@ -493,7 +503,27 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "imm" ^= litbv datasize k;
                   "datasize" ^= liti datasize;
                 ] )
-      | ( I_STR (v, rt, rn, MemExt.Reg (_vm, rm, e, s))
+      | I_OP3
+          (v,(ASR|LSL|LSR|ROR as op),
+           rd,rn,OpExt.Reg (rm, s))
+           when OpExt.is_no_shift s
+        ->
+         let shift_type,fname =
+           match op with
+           | ASR ->  "ShiftType_ASR","ASRV_32_dp_2src.opn"
+           | LSL ->  "ShiftType_LSL","LSLV_32_dp_2src.opn"
+           | LSR ->  "ShiftType_LSR","LSRV_32_dp_2src.opn"
+           | ROR ->  "ShiftType_ROR","RORV_32_dp_2src.opn"
+           | _ -> assert false in
+         Some
+           ("integer/shift/variable/" ^ fname,
+             stmt [
+               "d" ^= reg rd;
+               "n" ^= reg rn;
+               "m" ^= reg rm;
+               "datasize" ^= variant v;
+               "shift_type" ^= var shift_type;])
+        | ( I_STR (v, rt, rn, MemExt.Reg (_vm, rm, e, s))
         | I_LDR (v, rt, rn, MemExt.Reg (_vm, rm, e, s)) ) as i ->
           let fname =
             match i with

@@ -343,6 +343,7 @@ match name with
 | "rev32"|"REV32" -> REV32
 | "rev64"|"REV64" -> REV64
 | "rev"|"REV" -> REV
+| "extr"|"EXTR" -> EXTR
 | "rbit"|"RBIT" -> RBIT
 | "abs"|"ABS" -> ABS
 | "cmp"|"CMP" -> CMP
@@ -363,6 +364,10 @@ match name with
 | "lsl" | "LSL" -> TOK_LSL
 | "lsr" | "LSR" -> TOK_LSR
 | "ror" | "ROR" -> TOK_ROR
+| "asrv" | "ASRV" -> TOK_ASRV
+| "lslv" | "LSLV" -> TOK_LSLV
+| "lsrv" | "LSRV" -> TOK_LSRV
+| "rorv" | "RORV" -> TOK_RORV
 (* extensions *)
 | "uxtb"|"UXTB" -> TOK_UXTB
 | "uxth"|"UXTH" -> TOK_UXTH

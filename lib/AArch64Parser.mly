@@ -56,6 +56,9 @@ let check_op3 op e =
 /* Inline Barrel Shift Operands */
 %token TOK_LSL TOK_LSR TOK_ASR TOK_MSL TOK_ROR
 
+/* Variable shift's */
+%token TOK_LSLV TOK_LSRV TOK_ASRV TOK_RORV
+
 /* Instructions */
 %token NOP HINT HLT
 %token TOK_B BR CBZ CBNZ TBZ TBNZ
@@ -123,6 +126,7 @@ let check_op3 op e =
 %token <AArch64Base.sysreg> SYSREG
 %token MRS MSR TST RBIT ABS
 %token REV16 REV32 REV REV64
+%token EXTR
 %token STG STZG STZ2G LDG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
@@ -498,6 +502,13 @@ cond:
 | TOK_ASR { ASR }
 | TOK_LSL { LSL }
 | TOK_LSR { LSR}
+| TOK_ROR { ROR }
+
+%inline tok_instr_shiftv:
+| TOK_ASRV { ASR }
+| TOK_LSLV { LSL }
+| TOK_LSRV { LSR }
+| TOK_RORV { ROR }
 
 %inline tok_add_sub:
 | TOK_ADD  { ADD }
@@ -1218,6 +1229,10 @@ instr:
 | MVN xreg COMMA xreg
   { I_OP3 (V64,ORN,$2,ZR,OpExt.Reg ($4,OpExt.LSL MetaConst.zero)) }
 /* Special handling for ASR/LSL/LSR operation */
+| tok_instr_shiftv xreg COMMA xreg COMMA op_ext_reg_x
+  { I_OP3 (V64, $1, $2, $4, $6) }
+| tok_instr_shiftv wreg COMMA wreg COMMA op_ext_reg_w
+  { I_OP3 (V32, $1, $2, $4, $6) }
 | tok_instr_shift xreg COMMA xreg COMMA op_ext_x
   { I_OP3 (V64, $1, $2, $4, $6) }
 | tok_instr_shift wreg COMMA wreg COMMA op_ext_w
@@ -1297,6 +1312,11 @@ instr:
   { I_REV (RV64 AArch64Base.V32,$2,$4) }
 | REV xreg COMMA xreg
   { I_REV (RV64 AArch64Base.V64,$2,$4) }
+
+| EXTR xreg COMMA xreg COMMA xreg COMMA  k
+   { I_EXTR (V64,$2,$4,$6,$8) }
+| EXTR wreg COMMA wreg COMMA wreg COMMA  k
+   { I_EXTR (V32,$2,$4,$6,$8) }
 
 | ABS wreg COMMA wreg
   { I_ABS (V32,$2,$4) }

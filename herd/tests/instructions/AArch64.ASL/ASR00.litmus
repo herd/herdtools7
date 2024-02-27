@@ -1,0 +1,13 @@
+AArch64 ASR00
+{
+uint64_t 0:X8=0xff000000000000ff;
+uint64_t 0:X9;
+}
+
+  P0                ;
+ORR X9,XZR,X8,ASR 8 ;
+ASRV X9,X9,XZR      ;
+ASR  X9,X9,#8       ;
+
+forall
+0:X9=0xffffff0000000000
