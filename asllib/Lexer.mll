@@ -105,6 +105,9 @@ let mask = ['0' '1' 'x' ' ']*
 let identifier = (alpha | '_') (alpha|digit|'_')*
 
 (*
+   Lexing of string literals
+   =========================
+
    We are not using [Scanf.unescape] because:
      - [Scanf.unescaped] basically follows the lexical conventions of OCaml,
        while we follow the lexical conventions of ASL;
@@ -133,10 +136,26 @@ and string_lit acc = parse
   | '\\'  { escaped_string_chars acc lexbuf }
   | [^ '"' '\\']+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
 
+(*
+   Lexing of c-style comments
+   ==========================
+*)
+
+and c_comments = parse
+  | "*/"     { token      lexbuf }
+  | '*'      { c_comments lexbuf }
+  | [^ '*']+ { c_comments lexbuf }
+
+(*
+   Lexing of ASL tokens
+   ====================
+*)
+
 and token = parse
     | '\n'                     { Lexing.new_line lexbuf; token lexbuf }
     | [' ''\t''\r']+           { token lexbuf                     }
     | "//" [^'\n']*            { token lexbuf                     }
+    | "/*"                     { c_comments lexbuf                }
     | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | real_lit as lxm          { REAL_LIT(Q.of_string lxm)        }

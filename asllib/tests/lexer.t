@@ -32,3 +32,18 @@
   File print.asl, line 1, characters 32 to 33:
   ASL Error: Unknown symbol.
   [1]
+
+C-Style comments
+  $ cat >comments.asl <<EOF
+  > func /* this is a /* test */ main () => integer
+  > begin /*
+  > let's try a multi-line comment /*
+  > which finishes here */ constant msg = "/* a comment inside a string? */"; /* another comment
+  > that finishes somewhere **/ print (msg); // but not here! */
+  > return 0; /* oh a new one */
+  > // /* when in a commented line, it doesn't count!
+  > end
+
+  $ aslref comments.asl
+  /* a comment inside a string? */
+
