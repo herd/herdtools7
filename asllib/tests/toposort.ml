@@ -1,3 +1,5 @@
+[@@@warning "-44-40"]
+
 let ( <-- ) a b = (a, b)
 
 module ISet = Set.Make (Int)
@@ -25,9 +27,16 @@ let from_edges =
         (fun v -> IMap.update v (function None -> Some ISet.empty | s -> s))
         nodes succ_map
     in
-    (ISet.to_list nodes, fun v -> IMap.find v succ_map |> ISet.to_list)
+    (ISet.elements nodes, fun v -> IMap.find v succ_map |> ISet.elements)
 
-module TS = Asllib.TopoSort.Make (Int)
+(* Compatibility layer around Int. *)
+module I = struct
+  let hash : int -> int = Hashtbl.hash [@@warning "-32"]
+
+  include Int
+end
+
+module TS = Asllib.TopoSort.Make (I)
 
 let print_fold os () =
   Format.(
