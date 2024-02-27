@@ -53,17 +53,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r2,x = next_reg x in
       r1,r2,x
 
-    let next_vreg x = A64.alloc_special x
-    let next_scalar_reg x =
-      let r,x = A64.alloc_special x in
-      let r = match r with
+    let to_scalar r = match r with
         | Vreg (r,(_,8)) -> A64.SIMDreg r
         | Vreg (r,(_,16)) -> A64.SIMDreg r
         | Vreg (r,(_,32)) -> A64.SIMDreg r
         | Vreg (r,(_,64)) -> A64.SIMDreg r
         | _ -> assert false (* ? *)
-      in
-      r,x
+
+    let next_vreg x = A64.alloc_special x
+    let next_scalar_reg x =
+      let r,x = next_vreg x in
+      to_scalar r,x
 
     let pseudo = List.map (fun i -> Instruction i)
 
@@ -80,11 +80,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       and get_reg_list n st =
         let open SIMD in
         match n with
-        | Ne1 ->
+        | Ne1 | NePa | NePaN | NeP | NeAcqPc | NeRel ->
            let r,st = next_vreg st in (r,[]),st
         | Ne2 | Ne2i -> call_rec Ne1 st
         | Ne3 | Ne3i -> call_rec Ne2 st
-        | Ne4 | Ne4i -> call_rec Ne3 st in
+        | Ne4 | Ne4i -> call_rec Ne3 st
+      in
       fun n st ->
         let (r,rs),st = get_reg_list n st in
         (r,rs),A.set_friends r rs st
@@ -235,6 +236,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Ne2i -> I_LD2M (rs,rt,K 0)
       | Ne3i -> I_LD3M (rs,rt,K 0)
       | Ne4i -> I_LD4M (rs,rt,K 0)
+      | _ -> assert false
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let idx = MemExt.v2idx_reg v idx in
@@ -274,6 +276,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Ne2i -> I_ST2M (rs,rt,K 0)
       | Ne3i -> I_ST3M (rs,rt,K 0)
       | Ne4i -> I_ST4M (rs,rt,K 0)
+      | _ -> assert false
 
     let stxr_sz t sz r1 r2 r3 =
       let open MachSize in
@@ -573,6 +576,68 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         r,init,pseudo csA@cs,st
     end
 
+
+    module LDP = struct
+
+      let emit_load_reg temporal st init rA =
+        let r1,st = next_vreg st in
+        let r2,st = next_vreg st in
+        let ldp = [I_LDP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,0)] in
+        let r3,st = next_vreg st in
+        let add = [I_ADD_SIMD (r3,r1,r2)] in
+        let rX,st = next_reg st in
+        let fmov = [I_FMOV_TG(A64.V32,rX,A64.VSIMD32,to_scalar r3)] in
+        rX,init,lift_code (ldp@add@fmov),st
+
+      let emit_load t st p init loc =
+        let rA,init,st = U.next_init st p init loc in
+        emit_load_reg t st init rA
+
+      let emit_load_idx t v st p init loc ridx =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr v st rA ridx in
+        let r,init,cs,st = emit_load_reg t st init rA in
+        r,init,pseudo csA@cs,st
+    end
+
+    module LDUR = struct
+      let emit_load_reg st init rA =
+        let r,st = next_scalar_reg st in
+        let ldur = [I_LDUR_SIMD(A64.VSIMD32,r,rA,None)] in
+        let rX,st = next_reg st in
+        let fmov = [I_FMOV_TG(A64.V32,rX,A64.VSIMD32,r)] in
+        rX,init,lift_code (ldur@fmov),st
+
+      let emit_load st p init loc =
+        let rA,init,st = U.next_init st p init loc in
+        emit_load_reg st init rA
+
+      let emit_load_idx v st p init loc ridx =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr v st rA ridx in
+        let r,init,cs,st = emit_load_reg st init rA in
+        r,init,pseudo csA@cs,st
+    end
+
+    module LDAPUR = struct
+      let emit_load_reg st init rA =
+        let r,st = next_scalar_reg st in
+        let ldur = [I_LDAPUR_SIMD(A64.VSIMD32,r,rA,None)] in
+        let rX,st = next_reg st in
+        let fmov = [I_FMOV_TG(A64.V32,rX,A64.VSIMD32,r)] in
+        rX,init,lift_code (ldur@fmov),st
+
+      let emit_load st p init loc =
+        let rA,init,st = U.next_init st p init loc in
+        emit_load_reg st init rA
+
+      let emit_load_idx v st p init loc ridx =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr v st rA ridx in
+        let r,init,cs,st = emit_load_reg st init rA in
+        r,init,pseudo csA@cs,st
+    end
+
     module LDG = struct
       let emit_load st p init x =
         let rA,st = next_reg st in
@@ -762,6 +827,89 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let adds = List.map (fun v -> add_simd v rB) (r::rs) in
         let stn = [stn n (r::rs) rA] in
         init,lift_code(dup@movi@adds@stn),st
+    end
+
+    module STP = struct
+      let emit_store_reg temporal st init rA v =
+        let r1,st = next_vreg st in
+        let r2,st = next_vreg st in
+        let movi = List.mapi (fun i r -> movi_reg r (v+i)) [r1;r2] in
+        let stp = [I_STP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,0)] in
+        init,pseudo movi@pseudo stp,st
+
+      let emit_store n st p init loc v =
+        let rA,init,st = U.next_init st p init loc in
+        emit_store_reg n st init rA v
+
+      let emit_store_idx n vdep st p init loc ridx v =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr vdep st rA ridx in
+        let init,cs,st = emit_store_reg n st init rA v in
+        init,pseudo csA@cs,st
+
+      let emit_store_dep temporal vdep st init rA v =
+        let rB,st = next_vreg st in
+        let dup = [I_DUP (rB,A64.V32,vdep)] in
+        let r1,st = next_vreg st in
+        let r2,st = next_vreg st in
+        let movi = List.mapi (fun i r -> movi_reg r (v+i)) [r1;r2] in
+        let adds = List.map (fun v -> add_simd v rB) [r1;r2] in
+        let stp = [I_STP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,0)] in
+        init,lift_code(dup@movi@adds@stp),st
+    end
+
+    module STUR = struct
+      let emit_store_reg st init rA v =
+        let r,st = next_vreg st in
+        let movi = [movi_reg r v] in
+        let stur = [I_STUR_SIMD(A64.VSIMD32,to_scalar r,rA,None)] in
+        init,lift_code(movi@stur),st
+
+      let emit_store st p init loc v =
+        let rA,init,st = U.next_init st p init loc in
+        emit_store_reg st init rA v
+
+      let emit_store_idx vdep st p init loc ridx v =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr vdep st rA ridx in
+        let init,cs,st = emit_store_reg st init rA v in
+        init,pseudo csA@cs,st
+
+      let emit_store_dep vdep st init rA v =
+        let rB,st = next_vreg st in
+        let dup = [I_DUP (rB,A64.V32,vdep)] in
+        let r1,st = next_vreg st in
+        let movi = [movi_reg r1 v] in
+        let adds = [add_simd r1 rB]in
+        let stur = [I_STUR_SIMD(A64.VSIMD32,to_scalar r1,rA,None)] in
+        init,lift_code(dup@movi@adds@stur),st
+    end
+
+    module STLUR = struct
+      let emit_store_reg st init rA v =
+        let r,st = next_vreg st in
+        let movi = [movi_reg r v] in
+        let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r,rA,None)] in
+        init,lift_code(movi@stlur),st
+
+      let emit_store st p init loc v =
+        let rA,init,st = U.next_init st p init loc in
+        emit_store_reg st init rA v
+
+      let emit_store_idx vdep st p init loc ridx v =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr vdep st rA ridx in
+        let init,cs,st = emit_store_reg st init rA v in
+        init,pseudo csA@cs,st
+
+      let emit_store_dep vdep st init rA v =
+        let rB,st = next_vreg st in
+        let dup = [I_DUP (rB,A64.V32,vdep)] in
+        let r1,st = next_vreg st in
+        let movi = [movi_reg r1 v] in
+        let adds = [add_simd r1 rB]in
+        let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r1,rA,None)] in
+        init,lift_code(dup@movi@adds@stlur),st
     end
 
     module STG = struct
@@ -1199,7 +1347,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init x in
       let cs2 = lift_code [gctype r r] in
       r,init,cs@cs2,st
-    | Code.VecReg n -> LDN.emit_load n
+    | Code.VecReg n ->
+       let emit_load = match n with
+         | SIMD.NeAcqPc -> LDAPUR.emit_load
+         | SIMD.NeP -> LDUR.emit_load
+         | SIMD.NePa  -> LDP.emit_load A64.TT
+         | SIMD.NePaN -> LDP.emit_load A64.NT
+         | _ -> LDN.emit_load n
+       in
+       emit_load
     | Code.Pair -> emit_ldp Pa Both
 
 
@@ -1311,7 +1467,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Some r,init,cs@lift_code [gctype r r],st
         | R,Some (CapaSeal,Some _) -> assert false
         | R,Some (Neon n, None) ->
-            let r,init,cs,st = LDN.emit_load n st p init loc in
+           let emit_load = match n with
+             | SIMD.NeRel -> Warn.fatal "No laod release"
+             | SIMD.NeAcqPc -> LDAPUR.emit_load
+             | SIMD.NeP -> LDUR.emit_load
+             | SIMD.NePa  -> LDP.emit_load A64.TT
+             | SIMD.NePaN -> LDP.emit_load A64.NT
+             | _ -> LDN.emit_load n
+           in
+           let r,init,cs,st = emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Neon _,Some _) -> assert false
         | R,Some (Pair (opt,idx),None) ->
@@ -1396,8 +1560,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
         | W,Some (CapaSeal,Some _) -> assert false
         | W,Some (Neon n, None) ->
-           let init,cs,st =
-             STN.emit_store n st p init loc e.C.v in
+           let emit_store = match n with
+             | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+             | SIMD.NeRel -> STLUR.emit_store
+             | SIMD.NeP -> STUR.emit_store
+             | SIMD.NePa  -> STP.emit_store A64.TT
+             | SIMD.NePaN -> STP.emit_store A64.NT
+             | _ -> STN.emit_store n
+           in
+           let init,cs,st = emit_store st p init loc e.C.v in
            None,init,cs,st
         | W,Some (Neon _,Some _) -> assert false
         end
@@ -1748,7 +1919,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st
           | R,Some (CapaSeal,Some _) -> assert false
           | R,Some (Neon n,None) ->
-              let rB,init,cs,st = LDN.emit_load_idx n vdep st p init loc r2 in
+              let emit_load_idx = match n with
+                | SIMD.NeRel -> Warn.fatal "No laod release"
+                | SIMD.NeAcqPc -> LDAPUR.emit_load_idx
+                | SIMD.NeP -> LDUR.emit_load_idx
+                | SIMD.NePa -> LDP.emit_load_idx A64.TT
+                | SIMD.NePaN -> LDP.emit_load_idx A64.NT
+                | _ -> LDN.emit_load_idx n
+              in
+              let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
               Some rB,init,pseudo cs0@cs,st
           | R,Some (Pair (opt,idx),None) ->
               let r,init,cs,st =
@@ -1879,7 +2058,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st
           | W,Some (CapaSeal,Some _) -> assert false
           | W,Some (Neon n,None) ->
-              let init,cs,st = STN.emit_store_idx n vdep st p init loc r2 e.C.v in
+             let emit_store_idx = match n with
+               | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+               | SIMD.NeRel -> STLUR.emit_store_idx
+               | SIMD.NeP -> STUR.emit_store_idx
+               | SIMD.NePa ->  STP.emit_store_idx A64.TT
+               | SIMD.NePaN -> STP.emit_store_idx A64.NT
+               | _ -> STN.emit_store_idx n
+             in
+             let init,cs,st = emit_store_idx vdep st p init loc r2 e.C.v in
               None,init,pseudo cs0@cs,st
           | W,Some (Neon _,Some _) -> assert false
           | J,_ -> emit_joker st init
@@ -2073,7 +2260,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (CapaSeal,Some _) -> assert false
           | Some (Neon n,None) ->
              let rA,init,st = U.next_init st p init loc in
-             let init,cs,st = STN.emit_store_dep n r2 st init rA e.C.v in
+             let emit_store_dep = match n with
+               | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+               | SIMD.NeRel -> STLUR.emit_store_dep
+               | SIMD.NeP -> STUR.emit_store_dep
+               | SIMD.NePa ->  STP.emit_store_dep A64.TT
+               | SIMD.NePaN -> STP.emit_store_dep A64.NT
+               | _ -> STN.emit_store_dep n
+             in
+             let init,cs,st = emit_store_dep r2 st init rA e.C.v in
              None,init,cs2@cs,st
           | Some (Neon _,Some _) -> assert false
           | Some (Pair (opt,idx),None) ->

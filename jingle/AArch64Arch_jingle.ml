@@ -651,11 +651,11 @@ include Arch.MakeArch(struct
         conv_reg r2 >! fun r2 ->
         I_STCT(r1,r2)
     (* Neon Extension *)
-    | I_LD1 _ | I_LD1M _ | I_LD1R _
+    | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LDAP1 _
     | I_LD2 _ | I_LD2M _ | I_LD2R _
     | I_LD3 _ | I_LD3M _ | I_LD3R _
     | I_LD4 _ | I_LD4M _ | I_LD4R _
-    | I_ST1 _ | I_ST1M _
+    | I_ST1 _ | I_ST1M _ | I_STL1 _
     | I_ST2 _ | I_ST2M _
     | I_ST3 _ | I_ST3M _
     | I_ST4 _ | I_ST4M _
@@ -663,7 +663,8 @@ include Arch.MakeArch(struct
     | I_STP_SIMD _ | I_STP_P_SIMD _
     | I_LDR_SIMD _ | I_LDR_P_SIMD _
     | I_STR_SIMD _ | I_STR_P_SIMD _
-    | I_LDUR_SIMD _ | I_STUR_SIMD _
+    | I_LDUR_SIMD _ | I_LDAPUR_SIMD _
+    | I_STUR_SIMD _ | I_STLUR_SIMD _
     | I_ADDV _ | I_DUP _ | I_FMOV_TG _
     | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _
     | I_MOV_FG _ | I_MOV_TG _

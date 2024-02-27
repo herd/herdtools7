@@ -1888,6 +1888,7 @@ module Make
         write_reg_neon_sz sz rd v ii
 
       let simd_ldr = do_simd_ldr  Annot.N
+      let simd_ldar = do_simd_ldr  Annot.Q
 
       let do_simd_str an sz rs rd kr s ii =
         get_ea rs kr s ii >>|
@@ -1898,6 +1899,7 @@ module Make
           do_write_mem sz an aexp Access.VIR addr v ii >>= B.next1T
 
       let simd_str = do_simd_str Annot.N
+      let simd_stlr = do_simd_str Annot.L
 
       let simd_str_p sz rs rd k ii =
         read_reg_ord rs ii >>|
@@ -2127,20 +2129,26 @@ module Make
         | Neg -> M.op Op.Sub V.zero v
         | Inv -> M.op1 Op.Inv v
 
-      let load_elem sz i r addr ii =
+      let do_load_elem an sz i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        do_read_mem_ret access_size Annot.N aexp Access.VIR addr ii >>= fun v ->
+        do_read_mem_ret access_size an aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_elem sz r i v ii
+
+      let load_elem = do_load_elem Annot.N
+      let load_elem_ldar = do_load_elem Annot.Q
 
       let load_elem_rep sz r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
         do_read_mem_ret access_size Annot.N aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_rep sz r v ii
 
-      let store_elem i r addr ii =
+      let do_store_elem an i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
         read_reg_neon_elem true r i ii >>= fun v ->
-        write_mem access_size aexp Access.VIR addr v ii
+        do_write_mem access_size an aexp Access.VIR addr v ii
+
+      let store_elem = do_store_elem Annot.N
+      let store_elem_stlr = do_store_elem Annot.L
 
      (* Single structure memory access *)
       let mem_ss memop addr rs ii =
@@ -2568,20 +2576,18 @@ module Make
             !(simd_op ADD MachSize.Quad r1 r2 r3 ii)
 
         (* Neon loads and stores *)
-        | I_LD1(r1,i,rA,kr) ->
-            !!(read_reg_ord rA ii >>= fun addr ->
-            (load_elem MachSize.S128 i r1 addr ii >>|
+        | I_LDAP1(rs,i,rA,kr) ->
+            !!!(read_reg_ord rA ii >>= fun addr ->
+            (mem_ss (load_elem_ldar MachSize.S128 i) addr rs ii >>|
             post_kr rA addr kr ii))
+        | I_LD1(rs,i,rA,kr)
         | I_LD2(rs,i,rA,kr)
         | I_LD3(rs,i,rA,kr)
         | I_LD4(rs,i,rA,kr) ->
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
             post_kr rA addr kr ii))
-        | I_LD1R(r1,rA,kr) ->
-            !!(read_reg_ord rA ii >>= fun addr ->
-            (load_elem_rep MachSize.S128 r1 addr ii >>|
-            post_kr rA addr kr ii))
+        | I_LD1R(rs,rA,kr)
         | I_LD2R(rs,rA,kr)
         | I_LD3R(rs,rA,kr)
         | I_LD4R(rs,rA,kr) ->
@@ -2598,10 +2604,11 @@ module Make
             !!(read_reg_ord rA ii >>= fun addr ->
             (load_m addr rs ii >>|
             post_kr rA addr kr ii))
-        | I_ST1(r1,i,rA,kr) ->
-            !!(read_reg_ord rA ii >>= fun addr ->
-            (store_elem i r1 addr ii >>|
+        | I_STL1(rs,i,rA,kr) ->
+            !!!(read_reg_ord rA ii >>= fun addr ->
+            (mem_ss (store_elem_stlr i) addr rs ii >>|
             post_kr rA addr kr ii))
+        | I_ST1(rs,i,rA,kr)
         | I_ST2(rs,i,rA,kr)
         | I_ST3(rs,i,rA,kr)
         | I_ST4(rs,i,rA,kr) ->
@@ -2633,6 +2640,11 @@ module Make
             k = K (match k with Some k -> k | None -> 0) in
             (get_ea rA k S_NOEXT ii >>= fun addr ->
             simd_ldr access_size addr r1 ii) >>= B.next1T
+        | I_LDAPUR_SIMD(var,r1,rA,k) ->
+            let access_size = tr_simd_variant var and
+            k = K (match k with Some k -> k | None -> 0) in
+            (get_ea rA k S_NOEXT ii >>= fun addr ->
+            simd_ldar access_size addr r1 ii) >>= B.next1T
         | I_STR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in
             simd_str access_size rA r1 kr s ii
@@ -2643,6 +2655,10 @@ module Make
             let access_size = tr_simd_variant var and
             k = K (match k with Some k -> k | None -> 0) in
             simd_str access_size rA r1 k S_NOEXT ii
+        | I_STLUR_SIMD(var,r1,rA,k) ->
+            let access_size = tr_simd_variant var and
+            k = K (match k with Some k -> k | None -> 0) in
+            simd_stlr access_size rA r1 k S_NOEXT ii
         | I_LDP_SIMD(tnt,var,r1,r2,r3,k) ->
             get_ea_idx r3 k ii >>= fun addr ->
             simd_ldp tnt var addr r1 r2 ii

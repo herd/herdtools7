@@ -1,0 +1,10 @@
+AArch64 V65
+(* Tests LDAP1/STL1 single structure with 64 bit lanes *)
+{
+uint64_t x=1; uint64_t y;
+0:X0=x; 0:X1=y;
+}
+ P0                   ;
+ LDAP1 {V0.D}[1],[X0] ;
+ STL1 {V0.D}[1],[X1]  ;
+forall(y=1)

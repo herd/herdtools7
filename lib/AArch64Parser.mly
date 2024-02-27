@@ -69,8 +69,8 @@ let check_op3 op e =
 %token LDR LDRSW LDP LDNP LDPSW LDIAPP STP STNP STILP
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
-%token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
-%token ADDV DUP FMOV
+%token LD1 LD1R LDAP1 LD2 LD2R LD3 LD3R LD4 LD4R STL1 ST1 ST2 ST3 ST4 STUR /* Neon load/store */
+%token ADDV DUP FMOV LDAPUR STLUR
 %token CMP MOV MOVZ MOVN MOVK MOVI ADR MVN
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
 %token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
@@ -212,13 +212,13 @@ vreg:
 | ARCH_VREG { $1 }
 
 vregs:
-| vregs1 { [$1] }
+| vregs1 { $1 }
 | vregs2 { $1 }
 | vregs3 { $1 }
 | vregs4 { $1 }
 
 vregs1:
-| LCRL vreg RCRL { $2 }
+| LCRL vreg RCRL { [$2] }
 
 vregs2:
 | LCRL vreg COMMA vreg RCRL { [$2;$4] }
@@ -658,6 +658,11 @@ instr:
    /* Neon extension Memory */
 | LD1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
   { I_LD1 ($2, $3, $6, $8) }
+| LDAP1 vregs1 INDEX COMMA LBRK xreg RBRK
+  { match List.hd $2 with
+    | Vreg(_,(0,64)) -> I_LDAP1 ($2, $3, $6, K (MetaConst.zero))
+    | _ -> assert false
+  }
 | LD1 vregs COMMA LBRK xreg RBRK kx0_no_shift
   { I_LD1M ($2, $5, $7) }
 | LD1R vregs1 COMMA LBRK xreg RBRK kx0_no_shift
@@ -682,6 +687,11 @@ instr:
    { I_LD4R ($2, $5, $7) }
 | ST1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
    { I_ST1 ($2, $3, $6, $8) }
+| STL1 vregs1 INDEX COMMA LBRK xreg RBRK
+  { match List.hd $2 with
+    | Vreg(_,(0,64)) -> I_STL1 ($2, $3, $6,  K (MetaConst.zero))
+    | _ -> assert false
+  }
 | ST1 vregs COMMA LBRK xreg RBRK kx0_no_shift
    { I_ST1M ($2, $5, $7) }
 | ST2 vregs2 INDEX COMMA LBRK xreg RBRK kx0_no_shift
@@ -719,6 +729,9 @@ instr:
 | LDUR scalar_regs COMMA LBRK xreg k0_opt RBRK
   { let v,r = $2 in
     I_LDUR_SIMD (v, r, $5, $6) }
+| LDAPUR scalar_regs COMMA LBRK xreg k0_opt RBRK
+  { let v,r = $2 in
+    I_LDAPUR_SIMD (v, r, $5, $6) }
 | STR scalar_regs COMMA LBRK xreg kr0 RBRK k0_opt
   { let v,r    = $2 in
     let kr, os = $6 in
@@ -730,6 +743,9 @@ instr:
 | STUR scalar_regs COMMA LBRK xreg k0_opt RBRK
   { let v,r = $2 in
     I_STUR_SIMD (v, r, $5, $6) }
+| STLUR scalar_regs COMMA LBRK xreg k0_opt RBRK
+  { let v,r = $2 in
+    I_STLUR_SIMD (v, r, $5, $6) }
 | ADDV breg COMMA vreg
   {  I_ADDV (VSIMD8, $2, $4) }
 | ADDV hreg COMMA vreg

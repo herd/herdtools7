@@ -60,21 +60,40 @@ module Mixed =
 let bellatom = false
 module SIMD = struct
 
-  type atom = Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i
+  type atom = NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
 
-  let fold_neon f r = f Ne1 (f Ne2 (f Ne3 (f Ne4 (f Ne2i (f Ne3i (f Ne4i r))))))
+  let fold_neon f r = r |>
+    f NeAcqPc |> f NeRel |>
+    f NeP |>
+    f NePa |> f NePaN |>
+    f Ne1 |> f Ne2 |> f Ne3 |> f Ne4 |>
+    f Ne2i |> f Ne3i |> f Ne4i
 
   let nregs = function
     | Ne1 -> 1
     | Ne2 | Ne2i -> 2
     | Ne3 | Ne3i -> 3
     | Ne4 | Ne4i -> 4
+    | _ -> 1
+
+  let nelements = function
+    | Ne1|Ne2|Ne2i|Ne3|Ne3i|Ne4|Ne4i -> 4
+    | NePa|NePaN -> 2
+    | NeP | NeAcqPc | NeRel -> 1
 
   let pp_opt = function
     | Ne2i | Ne3i | Ne4i -> "i"
     | _ -> ""
 
-  let pp n = Printf.sprintf "Ne%i%s" (nregs n) (pp_opt n)
+  let pp n =
+    match n with
+    | Ne1 | Ne2 | Ne3 | Ne4 | Ne2i | Ne3i | Ne4i ->
+       Printf.sprintf "Ne%i%s" (nregs n) (pp_opt n)
+    | NePa -> "NePa"
+    | NePaN -> "NePaN"
+    | NeP -> "NeP"
+    | NeAcqPc -> "NeQ"
+    | NeRel -> "NeL"
 
   let initial sz =
     let sz = if sz <= 0 then 1 else sz in
@@ -82,13 +101,15 @@ module SIMD = struct
 
   let step n start v =
     let start = start+1 in
+    let el = nelements n in
     let sz = nregs n in
     let v = Array.copy v in
     for k = 0 to sz-1 do
-      for i=0 to 3 do
+      for i=0 to el-1 do
         let j = match n with
           | Ne2i | Ne3i | Ne4i -> k+i*sz
-          | Ne1  | Ne2 | Ne3 | Ne4 -> i+k*4
+          | NeP | NeAcqPc | NeRel | NePa | NePaN
+          | Ne1 | Ne2 | Ne3 | Ne4 -> i+k*el
         in
        v.(j) <- start+k
       done
@@ -96,13 +117,15 @@ module SIMD = struct
     v
 
   let read n v =
+    let el = nelements n in
     let sz = nregs n in
     let access r k = match n with
       | Ne2i | Ne3i | Ne4i -> sz*k + r
-      | Ne1 | Ne2 | Ne3 | Ne4 -> 4*r + k
+      | NeP | NeAcqPc | NeRel | NePa | NePaN
+      | Ne1 | Ne2 | Ne3 | Ne4 -> el*r + k
     in
     let rec reg r k =
-      if k >= 4 then []
+      if k >= el then []
       else v.(access r k)::reg r (k+1) in
     let rec regs r =
       if r >= sz then []
@@ -152,13 +175,13 @@ type atom_pte =
   | Set of  WPTESet.t
   | SetRel of  WPTESet.t
 
-type neon_sizes = SIMD.atom
+type neon_opt = SIMD.atom
 
 type pair_idx = Both
 
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
-  | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_sizes
+  | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_opt
   | Pair of pair_opt * pair_idx | Instr
 
 let  plain = Plain None
@@ -169,6 +192,8 @@ let default_atom = Atomic PP,None
 let instr_atom = Some (Instr,None)
 
 let applies_atom (a,_) d = match a,d with
+| Neon SIMD.NeAcqPc,W
+| Neon SIMD.NeRel,R -> false
 | Acq _,R
 | AcqPc _,R
 | Rel _,W
@@ -429,6 +454,8 @@ let is_ifetch a = match a with
    let neon_as_integers =
      let open SIMD in
      function
+     | NeP | NeAcqPc | NeRel -> 1
+     | NePa | NePaN -> 2
      | Ne1 -> 4
      | Ne2 | Ne2i -> 8
      | Ne3 | Ne3i -> 12
@@ -524,7 +551,9 @@ let overwrite_value v ao w = match ao with
    let as_integers a =
      Misc.seq_opt
        (function
-        | Neon n,_ -> Some (neon_as_integers n)
+        | Neon n,_ -> (match neon_as_integers n with
+                       | 1 -> None
+                       | n -> Some n)
         | Pair _,_ -> Some 2
         | _ -> None)
        a
