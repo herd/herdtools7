@@ -1,0 +1,41 @@
+name: build & make test
+
+on:
+  pull_request:
+  # push:
+  workflow_dispatch:
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+permissions: read-all
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          # - macos-latest # Very slow
+          - ubuntu-latest
+          # - windows-latest # Unsupported?
+        ocaml-compiler:
+          - "4.08.1"
+          - "5.1"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - run: opam install . --deps-only --with-test
+
+      - run: opam exec -- make build
+
+      - run: opam exec -- make test
