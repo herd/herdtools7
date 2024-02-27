@@ -13,6 +13,13 @@
     (setenv ASL_LIBDIR %{project_root}/asllib/libdir/
       (run %{test} asl/required))))
 
+(test
+  (name toposort)
+  (modes native)
+  (enabled_if %{lib-available:qcheck})
+  (libraries asllib qcheck)
+  (modules toposort))
+
 (tests
   (names static bitvector types)
   (modules static bitvector types)

@@ -39,6 +39,18 @@ Build
 
     % make all
 
+Testing
+-------
+
+The optionnal dependency `qcheck` can be installed with `opam` as follows:
+
+    % opam install qcheck
+
+Whether or not optional dependencies are installed, the following command
+runs the tests, skipping the ones that necessitate non-available dependencies.
+
+    % make test
+
 Install
 -------
 

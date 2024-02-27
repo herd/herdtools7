@@ -253,16 +253,8 @@ val use_constant_decl : ISet.t -> decl -> ISet.t
 val used_identifiers : decl list -> ISet.t
 val used_identifiers_stmt : stmt -> ISet.t
 
-val dag_fold :
-  (decl -> identifier) ->
-  (decl -> ISet.t) ->
-  (decl -> 'a -> 'a) ->
-  t ->
-  'a ->
-  'a
-(** [dag_fold def use folder ast a] is [a |> f d_1 |> ... f d_n] where [d_i]
-    spawns all declarations in AST, but in an order such that [use]/[def]
-    relations are respected. *)
+val identifier_of_decl : decl -> identifier
+(** [identifier_of_decl d] is the name of the global element defined by [d]. *)
 
 (** {1 Standard functions} *)
 

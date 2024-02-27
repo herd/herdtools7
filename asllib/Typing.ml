@@ -2179,23 +2179,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              "Global storage declaration must have an initial value or a type.")
   (* End *)
 
-  let build_global ast =
-    let def d =
-      match d.desc with
-      | D_Func { name; _ }
-      | D_GlobalStorage { name; _ }
-      | D_TypeDecl (name, _, _) ->
-          name
-    in
-    let use d = ASTUtils.use_constant_decl ISet.empty d in
-    let process_one_decl d =
-      match d.desc with
-      | D_Func func_sig -> declare_one_func d func_sig
-      | D_GlobalStorage gsd -> declare_global_storage d gsd
-      | D_TypeDecl (x, ty, s) -> declare_type d x ty s
-    in
-    ASTUtils.dag_fold def use process_one_decl ast
-
   let rename_primitive loc env (f : AST.func) =
     let name =
       best_effort f.name @@ fun _ ->
@@ -2212,26 +2195,71 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
-  (* Begin Specification *)
-  let type_check_ast ast env =
-    let env = build_global ast env in
+  let type_check_decl d (acc, env) =
+    let here = ASTUtils.add_pos_from_st d in
     let () =
       if false then
         Format.eprintf "@[<v>Typing with %s in env:@ %a@]@." strictness_string
           StaticEnv.pp_env env
     in
-    let annotate d =
-      let here = ASTUtils.add_pos_from_st d in
-      match d.desc with
-      | D_Func ({ body = SB_ASL _; _ } as f) ->
-          D_Func (try_annotate_subprogram d env f) |> here
-      | D_Func ({ body = SB_Primitive; _ } as f) ->
-          D_Func (rename_primitive d env f) |> here
-      | D_GlobalStorage gsd ->
-          D_GlobalStorage (try_annotate_gsd env gsd) |> here
-      | _ -> d
+    match d.desc with
+    | D_Func ({ body = SB_ASL _; _ } as f) ->
+        let env = declare_one_func d f env in
+        let d = D_Func (try_annotate_subprogram d env f) |> here in
+        (d :: acc, env)
+    | D_Func ({ body = SB_Primitive; _ } as f) ->
+        let env = declare_one_func d f env in
+        let d = D_Func (rename_primitive d env f) |> here in
+        (d :: acc, env)
+    | D_GlobalStorage gsd ->
+        let d = D_GlobalStorage (try_annotate_gsd env gsd) |> here in
+        let env = declare_global_storage d gsd env in
+        (d :: acc, env)
+    | D_TypeDecl (x, ty, s) ->
+        let env = declare_type d x ty s env in
+        (d :: acc, env)
+
+  let type_check_mutually_rec ds (acc, env) =
+    let env =
+      List.fold_left
+        (fun env d ->
+          match d.desc with
+          | D_Func f -> declare_one_func d f env
+          | _ ->
+              fatal_from d
+                (Error.BadRecursiveDecls
+                   (List.map ASTUtils.identifier_of_decl ds)))
+        env ds
     in
-    (List.map annotate ast, env)
+    let ds =
+      List.map
+        (fun d ->
+          match d.desc with
+          | D_Func ({ body = SB_ASL _; name; _ } as f) ->
+              let () =
+                if false then
+                  Format.eprintf "@[Analysing decl %s.@]@." name
+              in
+              D_Func (try_annotate_subprogram d env f) |> add_pos_from d
+          | D_Func ({ body = SB_Primitive; _ } as f) ->
+              D_Func (rename_primitive d env f) |> add_pos_from d
+          | _ -> assert false)
+        ds
+    in
+    (List.rev_append ds acc, env)
+
+  (* Begin Specification *)
+  let type_check_ast =
+    let fold = function
+      | TopoSort.ASTFold.Single d -> type_check_decl d
+      | TopoSort.ASTFold.Recursive ds -> type_check_mutually_rec ds
+    in
+    let fold_topo ast acc =
+      TopoSort.ASTFold.fold fold ast acc
+    in
+    fun ast env ->
+      let ast_rev, env = fold_topo ast ([], env) in
+      (List.rev ast_rev, env)
 end
 (* End *)
 

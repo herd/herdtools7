@@ -54,6 +54,7 @@ type error_desc =
   | UncaughtException of string
   | OverlappingSlices of slice list
   | BadLDI of AST.local_decl_item
+  | BadRecursiveDecls of identifier list
 
 type error = error_desc annotated
 
@@ -195,6 +196,10 @@ let pp_error =
           slices
     | BadLDI ldi ->
         fprintf f "Unsupported declaration:@ @[%a@]." pp_local_decl_item ldi
+    | BadRecursiveDecls decls ->
+        fprintf f "ASL Typing error:@ multiple recursive declarations:@ @[%a@]"
+          (pp_comma_list (fun f -> fprintf f "%S"))
+          decls
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

@@ -179,10 +179,10 @@ let rec use_e acc e =
   | E_Cond (e1, e2, e3) -> use_e (use_e (use_e acc e1) e3) e2
   | E_GetField (e, _) -> use_e acc e
   | E_GetFields (e, _) -> use_e acc e
-  | E_Record (_ty, li) -> use_fields acc li
+  | E_Record (ty, li) -> use_fields (use_ty acc ty) li
   | E_Concat es -> use_es acc es
   | E_Tuple es -> use_es acc es
-  | E_Unknown _ -> acc
+  | E_Unknown t -> use_ty acc t
   | E_Pattern (e, _p) -> use_e acc e
 
 and use_es acc es = List.fold_left use_e acc es
@@ -237,8 +237,8 @@ let rec use_s acc s =
   | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
   | S_For (_, e1, _, e2, s) -> use_s (use_e (use_e acc e1) e2) s
   | S_While (e, s) | S_Repeat (s, e) -> use_s (use_e acc e) s
-  | S_Decl (_, _, Some e) -> use_e acc e
-  | S_Decl (_, _, None) -> acc
+  | S_Decl (_, ldi, Some e) -> use_e (use_ldi acc ldi) e
+  | S_Decl (_, ldi, None) -> use_ldi acc ldi
   | S_Throw (Some (e, _)) -> use_e acc e
   | S_Throw None -> acc
   | S_Try (s, catchers, None) -> use_catchers (use_s acc s) catchers
@@ -246,9 +246,24 @@ let rec use_s acc s =
       use_catchers (use_s (use_s acc s') s) catchers
   | S_Print { args; debug = _ } -> List.fold_left use_e acc args
 
+and use_ldi acc = function
+  | LDI_Discard -> acc
+  | LDI_Var _ -> acc
+  | LDI_Typed (ldi, t) -> use_ldi (use_ty acc t) ldi
+  | LDI_Tuple ldis -> List.fold_left use_ldi acc ldis
+
 and use_case acc { desc = _p, stmt; _ } = use_s acc stmt
-and use_le acc _le = acc
-and use_catcher acc (_name, _ty, s) = use_s acc s
+
+and use_le acc le =
+  match le.desc with
+  | LE_Var x -> ISet.add x acc
+  | LE_Destructuring les | LE_Concat (les, _) -> List.fold_left use_le acc les
+  | LE_Discard -> acc
+  | LE_SetArray (le, e) -> use_le (use_e acc e) le
+  | LE_SetField (le, _) | LE_SetFields (le, _) -> use_le acc le
+  | LE_Slice (le, slices) -> use_slices (use_le acc le) slices
+
+and use_catcher acc (_name, ty, s) = use_s (use_ty acc ty) s
 and use_catchers acc = List.fold_left use_catcher acc
 
 and use_decl acc d =
@@ -271,7 +286,12 @@ let use_constant_decl acc d =
       let acc = fold_named_list use_ty acc fields in
       acc
   | D_TypeDecl (_, ty, None) -> use_ty acc ty
-  | D_Func _ -> acc (* TODO: pure functions that can be used in constants? *)
+  | D_Func { body; args; return_type; _ } ->
+      let acc =
+        match body with SB_ASL s -> use_s acc s | SB_Primitive -> acc
+      in
+      let acc = match return_type with None -> acc | Some t -> use_ty acc t in
+      fold_named_list use_ty acc args
 
 let used_identifiers ast = List.fold_left use_decl ISet.empty ast
 let used_identifiers_stmt = use_s ISet.empty
@@ -487,16 +507,16 @@ let slice_as_single = function
 
 let default_t_bits = T_Bits (E_Var "-" |> add_dummy_pos, [])
 
+let identifier_of_decl d =
+  match d.desc with
+  | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
+    ->
+      name
+
 let patch ~src ~patches =
   (* Size considerations:
      - [src] is BIG.
      - [patches] is not that little. *)
-  let identifier_of_decl d =
-    match d.desc with
-    | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
-      ->
-        name
-  in
   let to_remove =
     patches |> List.to_seq |> Seq.map identifier_of_decl |> ISet.of_seq
   in
@@ -556,36 +576,6 @@ let rec subst_expr substs e =
   | E_CTC (e, t) -> E_CTC (tr e, t)
   | E_Unknown _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
-
-let dag_fold (def : AST.decl -> identifier) (use : AST.decl -> ISet.t)
-    (folder : AST.decl -> 'a -> 'a) (ast : AST.t) : 'a -> 'a =
-  let def_use_map =
-    List.fold_left
-      (fun def_use_map d ->
-        let x = def d and use_set = use d in
-        IMap.update x
-          (function
-            | None -> Some ([ d ], use_set)
-            | Some (li, use_set') -> Some (d :: li, ISet.union use_set use_set'))
-          def_use_map)
-      IMap.empty ast
-  in
-  let rec loop s (seen, acc) =
-    if (not (ISet.mem s seen)) && IMap.mem s def_use_map then
-      let li, use_set = IMap.find s def_use_map in
-      let seen, acc = ISet.fold loop use_set (seen, acc) in
-      let acc = List.fold_left (Fun.flip folder) acc li in
-      let seen = ISet.add s seen in
-      (seen, acc)
-    else (seen, acc)
-  in
-  fun acc ->
-    let _seen, acc =
-      List.fold_left
-        (fun (seen, acc) d -> loop (def d) (seen, acc))
-        (ISet.empty, acc) ast
-    in
-    acc
 
 let scope_equal s1 s2 =
   match (s1, s2) with
