@@ -1,0 +1,10 @@
+Test LDUMIN00 Required
+States 1
+0:X2=0; [x]=0;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition forall (0:X2=0 /\ [x]=-128)
+Observation LDUMIN00 Never 0 1
+Hash=3adec7fbf6ac5bf7d7cc1898364d85ec
+

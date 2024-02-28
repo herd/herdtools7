@@ -1,0 +1,10 @@
+Test LDSMIN01 Required
+States 1
+0:X2=4294967295; x[0]=-128; x[1]=0;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition forall (0:X2=-1 /\ x[0]=-128 /\ x[1]=0)
+Observation LDSMIN01 Never 0 1
+Hash=189905288c4e5353a9326adbb28afb6b
+
