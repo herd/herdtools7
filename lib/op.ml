@@ -30,6 +30,7 @@ type 'aop op =
   | Lt | Gt | Eq | Ne
   | Le | Ge
   | Max | Min
+  | UMax | UMin
   | SetTag
   | SquashMutable
   | CheckPerms of string
@@ -72,6 +73,8 @@ let pp_op o pp_aop =
   | Ne -> "!="
   | Max -> "max"
   | Min -> "min"
+  | UMax -> "umax"
+  | UMin -> "umin"
   | ASR -> "ASR"
   | SetTag -> "settag"
   | CapaSetTag -> "capasettag"
@@ -87,9 +90,8 @@ let is_infix = function
   | Nor|AndNot2|ASR|CapaAdd|Alignd|Alignu|Build
   | ClrPerm|CpyType|CSeal|Cthi|Seal|SetValue
   | CapaSub|CapaSubs|CapaSetTag|Unseal
-  | Max|Min|SetTag|SquashMutable|CheckPerms _
-  | ToInteger
-  | ArchOp _
+  | Max|Min|UMax|UMin|SetTag|SquashMutable
+  | CheckPerms _| ToInteger| ArchOp _
     -> false
 
 let pp_ptx_cmp_op = function

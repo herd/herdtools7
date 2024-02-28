@@ -35,7 +35,7 @@ type 'aop op =
   | Lt | Gt | Eq | Ne
   | Le | Ge
 (* on integers *)
-  | Max | Min
+  | Max | Min | UMax | UMin
 (* Build tagged location from location and tag *)
   | SetTag
   | SquashMutable

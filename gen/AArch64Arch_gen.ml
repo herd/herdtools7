@@ -634,7 +634,7 @@ let pp_fence f = match f with
   sprintf "%s%s"
     (match t with DC_CVAU -> "DC.CVAU" | IC_IVAU -> "IC.IVAU")
     (match loc with Prev -> "p"| Next -> "n")
-  
+
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
@@ -666,7 +666,7 @@ let fold_cachesync =
 
 
 let fold_cmo f k = fold_dirloc (fun d k -> f (CMO (DC_CVAU,d)) (f (CMO (IC_IVAU,d)) k)) k
-  
+
 
 let fold_all_fences f k =
   let k = fold_shootdown f k in
@@ -833,13 +833,18 @@ let get_ie e = match e with
 
 let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
 
-
 let compute_rmw r old co = match r with
     | LdOp op | StOp op ->
       begin match op with
         | A_ADD -> old + co
         | A_SMAX -> if old > co then old else co
+        | A_UMAX ->
+           let o = Int64.of_int old and c = Int64.of_int co in
+           if Int64.unsigned_compare o c >  0 then old else co
         | A_SMIN -> if old < co then old else co
+        | A_UMIN ->
+           let o = Int64.of_int old and c = Int64.of_int co in
+           if Int64.unsigned_compare o c <  0 then old else co
         | A_EOR -> old lxor co
         | A_SET -> old lor co
         | A_CLR -> old land (lnot co)

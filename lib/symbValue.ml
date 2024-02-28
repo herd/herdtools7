@@ -913,6 +913,12 @@ module
   | Min ->
       binop op
         (fun x y -> if Cst.Scalar.lt x y then x else y)
+  | UMax ->
+      binop op
+        (fun x y -> if Cst.Scalar.unsigned_compare x y < 0 then y else x)
+  | UMin ->
+      binop op
+        (fun x y -> if Cst.Scalar.unsigned_compare x y < 0 then x else y)
   | SetTag -> settag
   | CapaSetTag -> binop_cs_c op (fun c x -> Cst.Scalar.set_tag (scalar_to_bool x) c)
   | SquashMutable -> fun v1 v2 -> binop_cs_cs op cap_squash_post_load_cap v2 v1

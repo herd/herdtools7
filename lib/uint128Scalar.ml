@@ -17,6 +17,9 @@
 open Uint
 include Uint128
 
+(* Compare is unsigned *)
+let unsigned_compare = compare
+
 let printable c = c
 
 let shift_right_arithmetic = Uint128.shift_right

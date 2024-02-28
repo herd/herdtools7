@@ -74,6 +74,8 @@ let one = Int128.one
 let zero = Int128.zero
 
 type t = Int128.t
+let unsigned_compare = Int128.unsigned_compare
+
 
 let get_tag _ = assert false
 let set_tag _ = assert false

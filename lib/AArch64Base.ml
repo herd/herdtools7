@@ -448,7 +448,7 @@ type barrier =
   | DSB of mBReqDomain*mBReqTypes
   | ISB
 
-type syncType = 
+type syncType =
   | DC_CVAU
   | IC_IVAU
 type dirloc =
@@ -997,6 +997,11 @@ type rmw_type = RMW_P | RMW_A | RMW_L | RMW_AL
 
 type w_type = W_P | W_L
 
+let rmw_to_w = function
+  | RMW_P -> W_P
+  | RMW_L -> W_L
+  | RMW_A|RMW_AL -> assert false
+
 let w_to_rmw = function
   | W_P -> RMW_P
   | W_L -> RMW_L
@@ -1015,7 +1020,10 @@ let cas_memo rmw = sprintf "CAS%s" (rmw_memo rmw)
 let casp_memo rmw = sprintf "CASP%s" (rmw_memo rmw)
 and swp_memo rmw = sprintf "SWP%s" (rmw_memo rmw)
 
-type atomic_op = A_ADD | A_EOR | A_SET | A_CLR | A_SMAX | A_SMIN
+type atomic_op =
+  | A_ADD | A_EOR | A_SET | A_CLR
+  | A_SMAX | A_SMIN | A_UMAX | A_UMIN
+
 let pp_aop = function
   | A_ADD -> "ADD"
   | A_EOR -> "EOR"
@@ -1023,6 +1031,8 @@ let pp_aop = function
   | A_CLR -> "CLR"
   | A_SMAX -> "SMAX"
   | A_SMIN -> "SMIN"
+  | A_UMAX -> "UMAX"
+  | A_UMIN -> "UMIN"
 
 let ldop_memo op rmw = sprintf "LD%s%s" (pp_aop op) (rmw_memo rmw)
 and stop_memo op w = sprintf "ST%s%s" (pp_aop op) (w_memo w)
@@ -1676,9 +1686,23 @@ let do_pp_instruction m =
   | I_SWPBH (bh,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (swpbh_memo bh rmw) (pp_wreg r1) (pp_wreg r2) (pp_xreg r3)
 (* Fecth and Op *)
+  | I_LDOP (op,v,(RMW_P|RMW_L as rmw),r1,ZR,r2) ->
+     if m.compat then
+       sprintf "%s %s,%s,[%s]"
+        (ldop_memo op rmw) (pp_vreg v r1) (pp_vreg v ZR) (pp_xreg r2)
+     else
+       sprintf "%s %s,[%s]"
+         (stop_memo op (rmw_to_w rmw)) (pp_vreg v r1) (pp_xreg r2)
   | I_LDOP (op,v,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]"
         (ldop_memo op rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
+  | I_LDOPBH (op,v,(RMW_P|RMW_L as rmw),r1,ZR,r2) ->
+     if m.compat then
+       sprintf "%s %s,%s,[%s]"
+         (ldopbh_memo op v rmw) (pp_wreg r1) (pp_wreg ZR) (pp_xreg r2)
+     else
+      sprintf "%s %s,[%s]"
+        (stopbh_memo op v (rmw_to_w rmw)) (pp_wreg r1) (pp_xreg r2)
   | I_LDOPBH (op,v,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]"
         (ldopbh_memo op v rmw) (pp_wreg r1) (pp_wreg r2) (pp_xreg r3)
@@ -2440,6 +2464,8 @@ let unalias i =
        | Some (true,k,s) ->
           I_MOVN (v,rd,k,S_LSL s)
      end
+  | I_STOP (op,v,w,rs,rn) -> I_LDOP (op,v,w_to_rmw w,rs,ZR,rn)
+  | I_STOPBH (op,v,w,rs,rn) -> I_LDOPBH (op,v,w_to_rmw w,rs,ZR,rn)
   | _ -> i
 
 let is_valid i =

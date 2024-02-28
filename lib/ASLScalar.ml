@@ -111,6 +111,10 @@ let compare s1 s2 =
   | S_Int _, (S_Bool _ | S_BitVector _) | S_Bool _, S_BitVector _ -> -1
   | (S_Bool _ | S_BitVector _), S_Int _ | S_BitVector _, S_Bool _ -> 1
 
+let unsigned_compare s1 s2 =
+  let i1 = to_int64 s1 and i2 = to_int64 s2 in
+  Int64.unsigned_compare i1 i2
+
 let equal s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> Z.equal i1 i2
