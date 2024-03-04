@@ -1,0 +1,11 @@
+Test A014 Allowed
+States 1
+[x]=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition exists ([x]=1)
+Observation A014 Never 0 3
+Hash=7241fe036f5d711341ead6574ec6f446
+

@@ -1312,18 +1312,14 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
-      let lift_kvm dir updatedb is_tag mop ma an ii mphy =
+      let lift_kvm dir updatedb mop ma an ii mphy =
         let lbl_v = get_instr_label ii in
         let mfault ma a ft =
-          if is_tag then
-            insert_commit_to_fault ma (fun _ -> mzero) (Some "Tag") ii >>!
-            B.Fault [AArch64Base.elr_el1, lbl_v]
-          else
-            insert_commit_to_fault ma
-              (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-              None ii >>! B.Fault [AArch64Base.elr_el1, lbl_v] in
+          insert_commit_to_fault ma
+            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
+            None ii >>! B.Fault [AArch64Base.elr_el1, lbl_v] in
         let maccess a ma =
-          check_ptw ii.AArch64.proc dir updatedb is_tag a ma an ii
+          check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
               fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
             mphy
@@ -1340,38 +1336,46 @@ module Make
         )
 
       let lift_memtag_phy dir mop ma an ii mphy =
-        let lift_tag_op =
-          let check_tag ma a_virt =
-            (* We can't add the fault yet, but we need to identify
-               that tag check failed *)
-            M.delay_kont "check_tag" ma
-              (fun a_phy ma ->
-                 delayed_check_tags a_virt (Some a_phy) ma ii
-                   (fun ma -> ma >>= M.ignore >>= B.next1T)
-                   (fun ma -> ma >>! B.Fault [])) in
-          let cond_check_tag ma a_virt =
-            (* Only read and check the tag if the attrs of the PTE
-               allow it *)
-            M.delay_kont "check_tag_pte" ma
-              (fun (_,ipte) ma ->
-                 let moa = get_oa a_virt ma in
-                 M.choiceT (ipte.tagged_v)
-                   (check_tag moa a_virt)
-                   (moa >>= M.ignore >>= B.next1T)) in
-          lift_kvm Dir.R false true mop ma an ii cond_check_tag in
-        fun ma a_virt ->
-          M.delay_kont "lift_memtag" lift_tag_op
-            (fun tag_op mtag_op ->
-               let ma = M.para_bind_output_right mtag_op (fun _ -> ma) in
-               match tag_op with
-               | B.Next _ -> mphy ma a_virt
-               | B.Fault _ ->
-                 let ft = Some FaultType.AArch64.TagCheck in
-                 let mm = fun ma -> mphy ma a_virt in
-                 let fault = lift_fault_memtag
-                     (mk_fault (Some a_virt) dir an ii ft None) mm dir ii in
-                 fault ma
-               | _ -> Warn.fatal "Unexpected return value from lift_tag_op")
+        let checked_op mpte_d a_virt =
+          let mok mpte_t =
+            let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
+            mphy ma a_virt >>= M.ignore >>= B.next1T
+          and mno mpte_t =
+            let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
+            let ft = Some FaultType.AArch64.TagCheck in
+            let mm ma = ma >>= M.ignore >>= B.next1T in
+            let fault = lift_fault_memtag
+                (mk_fault (Some a_virt) dir an ii ft None) mm dir ii in
+            fault ma >>! B.Fault [] in
+          let check_tag moa a_virt =
+            let do_check_tag a_phy moa =
+              delayed_check_tags a_virt (Some a_phy) moa ii mok mno in
+            M.delay_kont "check_tag" moa do_check_tag in
+          let cond_check_tag mpte_t a_virt =
+            (* Only read and check the tag if the PTE of the tag op allows it *)
+            M.delay_kont "cond_check_tag" mpte_t @@
+              fun (_,ipte) mpte_t ->
+                 let moa = get_oa a_virt mpte_t in
+                 M.choiceT (ipte.tagged_v) (check_tag moa a_virt) (mok moa)
+          and mfault ma a ft =
+            let ma =
+              let commit _ = commit_pred_txt None ii in
+              ma >>= commit in
+            let ma = M.para_bind_output_right ma (fun _ -> mpte_d) in
+            let lbl_v = get_instr_label ii in
+            ma >>*= fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None >>!
+            B.Fault [AArch64Base.elr_el1, lbl_v] in
+          M.delay_kont "tag_ptw" ma @@ fun a ma ->
+          let mdirect =
+            let m = mop Access.PTE ma in
+            fire_spurious_af dir a m >>= M.ignore >>= B.next1T in
+          check_ptw ii.AArch64.proc Dir.R false true a ma an ii
+            mdirect
+            cond_check_tag
+            mfault in
+        fun mpte a_virt -> M.delay_kont "need_check_tag" mpte @@
+          fun (_,ipte) mpte -> M.choiceT (ipte.tagged_v)
+            (checked_op mpte a_virt) (mphy mpte a_virt)
 
       let lift_memtag_virt mop ma dir an ii =
         M.delay_kont "5" ma
@@ -1441,7 +1445,7 @@ module Make
               if checked then lift_memtag_phy dir mop ma an ii mphy
               else mphy
             in
-            let m = lift_kvm dir updatedb false mop ma an ii mphy in
+            let m = lift_kvm dir updatedb mop ma an ii mphy in
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
           else if checked then
