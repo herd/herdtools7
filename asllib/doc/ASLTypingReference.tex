@@ -2137,6 +2137,370 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
   \identr{TTGQ}, \identi{YHML}, \identi{YHRP}, \identi{VMZF}, \identi{YXSY},
   \identi{LGHJ}, \identi{RXLG}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Typing of types}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and one of the following applies:
+\begin{itemize}
+  \item TypingRule.TString (see Section~\ref{sec:TypingRule.TString});
+  \item TypingRule.TReal (see Section~\ref{sec:TypingRule.TReal});
+  \item TypingRule.TBool (see Section~\ref{sec:TypingRule.TBool});
+  \item TypingRule.TNamed (see Section~\ref{sec:TypingRule.TNamed});
+  \item TypingRule.TInt (see Section~\ref{sec:TypingRule.TInt});
+  \item TypingRule.TBits (see Section~\ref{sec:TypingRule.TBits});
+  \item TypingRule.TTuple (see Section~\ref{sec:TypingRule.TTuple});
+  \item TypingRule.TArray (see Section~\ref{sec:TypingRule.TArray});
+  \item TypingRule.TEnumDecl (see Section~\ref{sec:TypingRule.TEnumDecl});
+  \item TypingRule.TRecordExceptionDecl (see
+    Section~\ref{sec:TypingRule.TRecordExceptionDecl});
+  \item TypingRule.TNonDecl (see Section~\ref{sec:TypingRule.TNonDecl});
+  \item TypingRule.TBitField (see Section~\ref{sec:TypingRule.TBitField}).
+\end{itemize}
+
+
+\section{TypingRule.TString \label{sec:TypingRule.TString}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ty} is the string type \TString.
+  \item \texttt{new\_ty} is the string type \TString.
+\end{itemize}
+
+\subsection{Example}
+In the following example, all the uses of \texttt{string} are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TString.asl}
+
+\subsection{Code}
+\VerbatimInput[firstline=\TStringBegin, lastline=\TStringEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+\section{TypingRule.TReal \label{sec:TypingRule.TReal}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ty} is the real type \TReal.
+  \item \texttt{new\_ty} is the real type \TReal.
+\end{itemize}
+
+
+\subsection{Example}
+In the following example, all the uses of \texttt{real} are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TReal.asl}
+
+
+\subsection{Code}
+\VerbatimInput[firstline=\TRealBegin, lastline=\TRealEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TBool \label{sec:TypingRule.TBool}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ty} is the boolean type;
+  \item \texttt{new\_ty} is the boolean type.
+\end{itemize}
+
+\subsection{Example}
+In the following example, all the uses of \texttt{boolean} are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBool.asl}
+
+\subsection{Code}
+\VerbatimInput[firstline=\TBoolBegin, lastline=\TBoolEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TNamed \label{sec:TypingRule.TNamed}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ty} is the a named type \texttt{x};
+  \item One of the following applies:
+    \begin{itemize}
+      \item \texttt{x} is bound in \texttt{tenv} to a type;
+      \item an error ``\texttt{Undefined Identifier}'' is raised.
+    \end{itemize}
+  \item \texttt{new\_ty} is \texttt{ty}.
+\end{itemize}
+
+\subsection{Example}
+In the following example, all the uses of \texttt{MyType} are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TNamed.asl}
+
+\subsection{Code}
+\VerbatimInput[firstline=\TNamedBegin, lastline=\TNamedEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TInt \label{sec:TypingRule.TInt}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and one of the following applies:
+\begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+      \item \texttt{ty} is the unconstrained integer type;
+      \item \texttt{new\_ty} is the unconstrained integer type.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+      \item \texttt{ty} is a under-constrained integer type;
+      \item \texttt{new\_ty} is the under-constrained integer type \texttt{ty}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+      \item \texttt{ty} is the well-constrained integer type constrained by
+        \texttt{constraints};
+      \item \texttt{constraints'} is the result of annotating each of the
+        constraints in \texttt{constraints};
+      \item \texttt{new\_ty} is the well-constrained integer type constrained
+        by \texttt{constraints}.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Example}
+
+In the following examples, all the uses of integer types are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntUnConstrained.asl}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntWellConstrained.asl}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntUnderConstrained.asl}
+
+\subsection{Code}
+\VerbatimInput[firstline=\TIntBegin, lastline=\TIntEnd]{../Typing.ml}
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TBits \label{sec:TypingRule.TBits}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ty} is the bit-vector type with width given by the expression
+    \texttt{e\_width} and the bitfields given by \texttt{bitfields};
+  \item \texttt{e\_width'} is the result of annotating the statically-evaluable integer expression \texttt{e\_width};
+  \item \texttt{bitfields'} is the result of annotating the bitfields \texttt{bitfields}
+  \item \texttt{new\_ty} is the bit-vector type with width given by the expression
+    \texttt{e\_width'} and the bitfields given by \texttt{bitfields'};
+\end{itemize}
+
+\subsection{Example}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBits.asl}
+
+
+\subsection{Code}
+In the following example, all the uses of bitvector types are valid:
+\VerbatimInput[firstline=\TBitsBegin, lastline=\TBitsEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TTuple \label{sec:TypingRule.TTuple}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ty} is the tuple type with member types \texttt{tys};
+  \item \texttt{tys'} is the result of annotating all the types in
+    \texttt{tys};
+  \item \texttt{new\_ty} is the tuple type with member types \texttt{tys'}.
+\end{itemize}
+
+\subsection{Example}
+In the following example, all the uses of tuple types are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TTuple.asl}
+
+
+\subsection{Code}
+\VerbatimInput[firstline=\TTupleBegin, lastline=\TTupleEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TArray \label{sec:TypingRule.TArray}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item All of the following holds:
+    \begin{itemize}
+      \item \texttt{ty} is the array type indexed by integer bounded by the
+        expression \texttt{e} and of elements of type \texttt{t};
+      \item \texttt{t'} is the result of annotating the type \texttt{t} in
+        environment \texttt{env};
+      \item \texttt{e'} is the result of annotating the statically evaluable
+        integer expression \texttt{e};
+      \item \texttt{new\_ty} is the array type indexed by integer bounded by
+        the expression \texttt{e'} and of elements of type \texttt{t'};
+    \end{itemize}
+  \item All of the following holds:
+    \begin{itemize}
+      \item \texttt{ty} is the array type indexed by an enumeration type named
+        \texttt{s} and of elements of type \texttt{t};
+      \item \texttt{s} is bound in \texttt{env} to an enumeration type;
+      \item \texttt{t'} is the result of annotating the type \texttt{t} in
+        environment \texttt{env};
+      \item \texttt{new\_ty} is the array type indexed by an enumeration type
+        named \texttt{s} and of elements of type \texttt{t'};
+    \end{itemize}
+\end{itemize}
+
+\subsection{Example}
+In the following example, all the uses of array types are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TArray.asl}
+
+\subsection{Code}
+\VerbatimInput[firstline=\TArrayBegin, lastline=\TArrayEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TEnumDecl \label{sec:TypingRule.TEnumDecl}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item \texttt{ty} is the enumeration type with enumeration literals
+    \texttt{li};
+  \item This is the declaration of \texttt{ty};
+  \item One of the following applies:
+    \begin{itemize}
+      \item \texttt{li} does not contains any duplicate enumeration literal.
+      \item an error ``\texttt{Already declared identifier}'' is raised;
+    \end{itemize}
+  \item \texttt{new\_ty} is the enumeration type \texttt{ty}.
+\end{itemize}
+
+\subsection{Example}
+In the following example, all the uses of enumeration types are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TEnumDecl.asl}
+
+
+\subsection{Code}
+\VerbatimInput[firstline=\TEnumDeclBegin, lastline=\TEnumDeclEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TRecordExceptionDecl \label{sec:TypingRule.TRecordExceptionDecl}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and one of the following applies:
+\begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+      \item \texttt{ty} is the record type with fields \texttt{fields};
+      \item This is the declaration of \texttt{ty};
+      \item One of the following applies:
+        \begin{itemize}
+          \item \texttt{fields} does not contains any duplicate field.
+          \item an error ``\texttt{Already declared identifier}'' is raised;
+        \end{itemize}
+      \item \texttt{fields'} is the result of annotating each type in
+        \texttt{fields};
+      \item \texttt{new\_ty} is the record type with fields \texttt{fields'};
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+      \item \texttt{ty} is the exception type with fields \texttt{fields};
+      \item This is the declaration of \texttt{ty};
+      \item One of the following applies:
+        \begin{itemize}
+          \item \texttt{fields} does not contains any duplicate field.
+          \item an error ``\texttt{Already declared identifier}'' is raised;
+        \end{itemize}
+      \item \texttt{fields'} is the result of annotating each type in
+        \texttt{fields};
+      \item \texttt{new\_ty} is the exception type with fields \texttt{fields'};
+    \end{itemize}
+\end{itemize}
+
+
+\subsection{Example}
+In the following example, all the uses of record or exception types are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TRecordExceptionDecl.asl}
+
+
+\subsection{Code}
+\VerbatimInput[firstline=\TRecordExceptionDeclBegin, lastline=\TRecordExceptionDeclEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TNonDecl \label{sec:TypingRule.TNonDecl}}
+
+\subsection{Prose}
+Annotating a type~\texttt{ty} in an environment~\texttt{env} results in a
+rewritten type~\texttt{new\_ty} and all of the following apply:
+\begin{itemize}
+  \item One of the following applies:
+    \begin{itemize}
+      \item \texttt{ty} is a record type;
+      \item \texttt{ty} is an exception type;
+      \item \texttt{ty} is an enumeration type;
+    \end{itemize}
+  \item This is not the declaration of \texttt{ty};
+  \item An error ``Cannot use anonymous form of enumerations, record, or exceptions here.'' is raised.
+\end{itemize}
+
+\subsection{Example}
+
+In the following example, the use of a record type out of a declaration is invalid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TNonDecl.asl}
+
+\subsection{Code}
+\VerbatimInput[firstline=\TNonDeclBegin, lastline=\TNonDeclEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
+\section{TypingRule.TBitField \label{sec:TypingRule.TBitField}}
+
+\subsection{Prose}
+
+
+\subsection{Example}
+In the following example, all the uses of bitvector types with bitfields are valid:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBitField.asl}
+
+
+\subsection{Code}
+\VerbatimInput[firstline=\TBitFieldBegin, lastline=\TBitFieldEnd]{../Typing.ml}
+
+
+\isempty{\subsection{Comments}}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Expressions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
