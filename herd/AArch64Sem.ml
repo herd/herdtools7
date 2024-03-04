@@ -1108,18 +1108,22 @@ module Make
                    (moa >>= M.ignore >>= B.next1T)) in
           lift_kvm Dir.R false true mop ma an ii cond_check_tag in
         fun ma a_virt ->
-          M.delay_kont "lift_memtag" lift_tag_op
-            (fun tag_op mtag_op ->
-               let ma = M.para_bind_output_right mtag_op (fun _ -> ma) in
-               match tag_op with
-               | B.Next _ -> mphy ma a_virt
-               | B.Fault _ ->
-                 let ft = Some FaultType.AArch64.TagCheck in
-                 let mm = fun ma -> mphy ma a_virt in
-                 let fault = lift_fault_memtag
-                     (mk_fault (Some a_virt) dir an ii ft None) mm dir ii in
-                 fault ma
-               | _ -> Warn.fatal "Unexpected return value from lift_tag_op")
+          M.delay_kont "check_tag_pte" ma
+            (fun (_,ipte) ma ->
+               M.choiceT (ipte.tagged_v)
+                 (M.delay_kont "lift_memtag" lift_tag_op
+                    (fun tag_op mtag_op ->
+                       let ma = M.para_bind_output_right mtag_op (fun _ -> ma) in
+                       match tag_op with
+                       | B.Next _ -> mphy ma a_virt
+                       | B.Fault _ ->
+                         let ft = Some FaultType.AArch64.TagCheck in
+                         let mm = fun ma -> mphy ma a_virt in
+                         let fault = lift_fault_memtag
+                             (mk_fault (Some a_virt) dir an ii ft None) mm dir ii in
+                         fault ma
+                       | _ -> Warn.fatal "Unexpected return value from lift_tag_op"))
+                 (mphy ma a_virt))
 
       let lift_memtag_virt mop ma dir an ii =
         M.delay_kont "5" ma
