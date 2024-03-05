@@ -31,6 +31,8 @@ Type-checking errors:
   ASL Typing error: cannot declare already declared element "i".
   [1]
 
+  $ aslref constant-zeros.asl
+
 Bad types:
   $ aslref overlapping-slices.asl
   File overlapping-slices.asl, line 1, character 0 to line 4, character 2:
