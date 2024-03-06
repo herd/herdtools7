@@ -89,6 +89,7 @@ rule token = parse
 (* PTW keywords *)
 | "PTE"|"TTD" { TOK_PTE }
 | "INTID" { TOK_INTID }
+| "intid" { TOK_INTID_UPDATE }
 | "PA"  { TOK_PA }
 (* PAR_EL1 *)
 | "parel1_t"|"PAREL1_T" { TOK_PAR }

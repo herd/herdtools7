@@ -108,6 +108,7 @@ type ('scalar, 'pte, 'addrreg, 'intid, 'instr) t =
   | PteVal of 'pte  (** A page table entry. *)
   | AddrReg of 'addrreg (** A register with fields *)
   | IntidVal of 'intid (** An interrupt id. *)
+  | IntidUpdateVal of IntidUpdateVal.t (** An interrupt id update. *)
   | Instruction of 'instr  (** An instruction. *)
   | Frozen of int (** Frozen symbolic value. *)
 

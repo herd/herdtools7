@@ -118,7 +118,7 @@ module Make(O:Config)(I:I) : S with module I = I
     match c with
     | Symbolic sym when not (is_label c) -> Global_litmus.tr_symbol sym
     | Symbolic _| Tag _| Concrete _| ConcreteVector _| ConcreteRecord _
-    | PteVal _| AddrReg _| IntidVal _| Instruction _
+    | PteVal _| AddrReg _| IntidVal _| IntidUpdateVal _| Instruction _
     | Frozen _
       ->
        Warn.fatal "Constant %s cannot be translated to a litmus adress"

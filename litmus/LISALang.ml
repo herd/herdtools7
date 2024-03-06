@@ -97,6 +97,7 @@ module Make(V:Constant.S) = struct
     | PteVal _ -> Warn.user_error "No pteval in LISA"
     | AddrReg _ -> Warn.user_error "No parel1 in LISA"
     | IntidVal _ -> Warn.user_error "No intidval in LISA"
+    | IntidUpdateVal _ -> Warn.user_error "No intidupdateval in LISA"
     | Instruction _ -> Warn.user_error "No instruction value in LISA"
     | ConcreteRecord _ -> Warn.user_error "No record values in LISA"
     | Frozen _ -> assert false

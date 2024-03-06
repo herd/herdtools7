@@ -71,7 +71,7 @@ let mk_tag_mask t =
 %token ATOMICINIT
 %token ATTRS TOK_OA TARGET
 %token <string> PENDING ENABLED PRIORITY TARGET_MODE TRIGGER_MODE
-%token TOK_PTE TOK_INTID TOK_PA
+%token TOK_PTE TOK_INTID TOK_INTID_UPDATE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
 %token TOK_SS TOK_SSCAP TOK_SSVAL
@@ -220,6 +220,24 @@ intid_prop_head:
 
 intidval:
 | LPAR intidval=intid_prop_head RPAR { intidval }
+
+intid_update_prop_tail:
+| { IntidUpdateVal.empty }
+| COMMA key=intid_field COLON v=name_or_num tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field key v tail }
+| COMMA TARGET COLON v=PROC tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field "target" (string_of_int v) tail }
+
+intid_update_prop_head:
+| TOK_INTID_UPDATE COLON v=NAME tail=intid_update_prop_tail
+  { IntidUpdateVal.add_intid v tail }
+| key=intid_field COLON v=name_or_num tail=intid_update_prop_head
+  { IntidUpdateVal.add_field key v tail }
+| TARGET COLON v=PROC tail=intid_update_prop_head
+  { IntidUpdateVal.add_field "target" (string_of_int v) tail }
+
+intid_update_val:
+| LPAR updateval=intid_update_prop_head RPAR { updateval }
 
 addrregval_update_tail:
 | { ParsedAddrReg.empty }
@@ -377,6 +395,8 @@ atom_init:
   { (loc,(Ty "pteval_t", MiscParser.add_oa_if_none loc v)) }
 | loc=left_loc EQUAL v=intidval
   { (loc,(Ty "intidval_t", IntidVal v)) }
+| loc=left_loc EQUAL v=intid_update_val
+  { (loc,(Ty "intid_updateval_t", IntidUpdateVal v)) }
 
 init_semi_list:
 | {[]}

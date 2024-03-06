@@ -42,7 +42,7 @@ module Make
   and is_zero = function
     | Concrete sc -> Scalar.is_zero sc
     | ConcreteVector _|ConcreteRecord _|Symbolic _
-    | Tag _|PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _
+    | Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _
       -> false
   and one = Concrete Scalar.one
   and cst_true = Concrete Scalar.s_true
@@ -84,7 +84,7 @@ module Make
   let vToName = function
     | Symbolic s-> Constant.as_address s
     | Concrete _|ConcreteVector _|ConcreteRecord _|Tag _
-    | PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _
+    | PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _
         -> assert false
 
   let access_of_constant =
@@ -97,7 +97,7 @@ module Make
     | Symbolic (System (INTID,_)) -> Access.INTID
     | Tag _
     | ConcreteVector _|Concrete _|ConcreteRecord _
-    | PteVal _|AddrReg _|IntidVal _|Instruction _|Frozen _ as v
+    | PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _ as v
       ->
        Warn.fatal "access_of_constant %s as an address"
          (pp_v v) (* assert false *)

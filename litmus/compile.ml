@@ -59,7 +59,6 @@ module Generic
       let base_array sz = CType.Array ("int", sz)
       let pteval_t = CType.pteval_t
       let parel1_t = CType.parel1_t
-      let intidval_t = CType.intidval_t
       let ins_t = CType.ins_t
 
       let typeof =
@@ -73,9 +72,8 @@ module Generic
         | Tag _ -> tag
         | PteVal _ -> pteval_t
         | AddrReg _ -> parel1_t
-        | IntidVal _ -> intidval_t
         | Instruction _ -> ins_t
-        | Frozen _ | ConcreteRecord _ -> assert false
+        | Frozen _ | ConcreteRecord _ | IntidVal _ | IntidUpdateVal _ -> assert false
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
@@ -393,7 +391,7 @@ module A.FaultType = A.FaultType)
           | Symbolic (Virtual {Constant.name=Symbol.Label (_,lbl); _}) ->
               Label.Set.add lbl k
           |Concrete _|ConcreteVector _|ConcreteRecord _
-          |Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _
+          |Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _
           |Instruction _|Frozen _
            -> k)
         Label.Set.empty init

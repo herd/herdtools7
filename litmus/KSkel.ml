@@ -337,8 +337,8 @@ module Make
       | Symbolic _ as v when is_label v ->
           Warn.user_error "No label value for klitmus"
       | Symbolic (Virtual {name=s;tag=None;cap=0L;offset=0;_}) -> dump_a_addr (Constant.Symbol.pp s)
-      | Symbolic _|Tag _| PteVal _| AddrReg _| IntidVal _ ->
-          Warn.user_error "No tag, indexed access, pteval, addrreg nor intidval for klitmus"
+      | Symbolic _|Tag _| PteVal _| AddrReg _| IntidVal _| IntidUpdateVal _ ->
+          Warn.user_error "No tag, indexed access, pteval, addrreg, intidval nor intidupdateval for klitmus"
       | Instruction _ ->
           Warn.fatal "FIXME: dump_a_v functionality for -variant self"
       | Frozen _ -> assert false
