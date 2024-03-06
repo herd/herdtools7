@@ -259,7 +259,7 @@ include Pseudo.Make
           | Const(Concrete _|ConcreteVector _) as k -> k
           | Const
               (Symbolic _|Label _|Tag _|ConcreteRecord _
-              |PteVal _|IntidVal _|Instruction _|Frozen _ as v) ->
+              |PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _ as v) ->
              Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
           | LoadReg _ as l -> l
           | LoadMem (l,mo) ->

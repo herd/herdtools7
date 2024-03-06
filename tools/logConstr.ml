@@ -33,7 +33,7 @@ let rec tr_v v =
   | ConcreteVector vs -> ConcreteVector (List.map tr_v vs)
   | ConcreteRecord vs -> ConcreteRecord (StringMap.map tr_v vs)
   | Symbolic _|Label _|Tag _
-  | PteVal _|IntidVal _|Instruction _|Frozen _
+  | PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _
     as w -> w
 
 let tr_atom = function

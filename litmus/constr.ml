@@ -110,7 +110,7 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
                 List.fold_right f vs k
             | ConcreteRecord vs ->
                 StringMap.fold_values f vs k
-            | Symbolic _|Tag _|Frozen _|IntidVal _
+            | Symbolic _|Tag _|Frozen _|IntidVal _|IntidUpdateVal _
               -> assert false in
             f v k
       | LL _|FF _ -> k

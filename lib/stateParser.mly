@@ -85,7 +85,7 @@ let mk_lab (p, l) = Label (p, l)
 %token ATOMIC
 %token ATOMICINIT
 %token ATTRS TOK_OA TARGET
-%token TOK_PTE TOK_INTID TOK_PA
+%token TOK_PTE TOK_INTID TOK_INTID_UPDATE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
 %token <string> INSTR
@@ -185,7 +185,25 @@ intid_prop_head:
   { ParsedIntidVal.add_target v tail }
 
 intidval:
-  LPAR intidval=intid_prop_head RPAR { intidval }
+| LPAR intidval=intid_prop_head RPAR { intidval }
+
+intid_update_prop_tail:
+| { IntidUpdateVal.empty }
+| COMMA key=intid_field COLON v=name_or_num tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field key v tail }
+| COMMA TARGET COLON v=PROC tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field "target" (string_of_int v) tail }
+
+intid_update_prop_head:
+| TOK_INTID_UPDATE COLON v=NAME tail=intid_update_prop_tail
+  { IntidUpdateVal.add_intid v tail }
+| key=intid_field COLON v=name_or_num tail=intid_update_prop_head
+  { IntidUpdateVal.add_field key v tail }
+| TARGET COLON v=PROC tail=intid_update_prop_head
+  { IntidUpdateVal.add_field "target" (string_of_int v) tail }
+
+intid_update_val:
+| LPAR updateval=intid_update_prop_head RPAR { updateval }
 
 maybev_notag:
 | NUM  { Concrete $1 }
@@ -286,6 +304,8 @@ atom_init:
   { (loc,(Ty "pteval_t", MiscParser.add_oa_if_none loc v)) }
 | loc=left_loc EQUAL v=intidval
   { (loc,(Ty "intidval_t", IntidVal v)) }
+| loc=left_loc EQUAL v=intid_update_val
+  { (loc,(Ty "intid_updateval_t", IntidUpdateVal v)) }
 
 amperopt:
 | AMPER { () }

@@ -105,7 +105,7 @@ end = struct
     | Label _ -> Access.VIR
     | Tag _
     | ConcreteVector _|Concrete _|ConcreteRecord _
-    | PteVal _|IntidVal _|Instruction _|Frozen _ as v
+    | PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _ as v
       ->
        Warn.fatal "access_of_constant %s as an address"
          (V.pp_v (V.Val v)) (* assert false *)
@@ -638,7 +638,7 @@ end = struct
           | Some
               (A.V.Val
                  (ConcreteVector _|Concrete _|Symbolic _|ConcreteRecord _
-                  |Label (_, _)|Tag _|IntidVal _|Instruction _
+                  |Label (_, _)|Tag _|IntidVal _|IntidUpdateVal _|Instruction _
                   |Frozen _))
           | None
             -> None
