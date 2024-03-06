@@ -93,6 +93,7 @@ type ('scalar, 'pte, 'intid, 'instr) t =
   | Tag of string
   | PteVal of 'pte  (** A page table entry. *)
   | IntidVal of 'intid (** An interrupt id location. *)
+  | IntidUpdateVal of IntidUpdateVal.t
   | Instruction of 'instr  (** An instruction. *)
   | Frozen of int (** Frozen symbolic value. *)
 

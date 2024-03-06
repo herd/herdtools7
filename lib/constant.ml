@@ -231,6 +231,7 @@ type ('scalar, 'pte, 'intid, 'instr) t =
   | Tag of string
   | PteVal of 'pte
   | IntidVal of 'intid
+  | IntidUpdateVal of IntidUpdateVal.t
   | Instruction of 'instr
   | Frozen of int
 
@@ -255,20 +256,23 @@ let rec compare scalar_compare pteval_compare intidval_compare instr_compare c1 
   | Tag t1,Tag t2 -> String.compare t1 t2
   | PteVal p1,PteVal p2 -> pteval_compare p1 p2
   | IntidVal v1,IntidVal v2 -> intidval_compare v1 v2
+  | IntidUpdateVal v1,IntidUpdateVal v2 -> IntidUpdateVal.compare v1 v2
   | Instruction i1,Instruction i2 -> instr_compare i1 i2
   | Frozen i1,Frozen i2 -> Int.compare i1 i2
-  | (Concrete _,(ConcreteRecord _|ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Label _|Tag _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (ConcreteRecord _,(Symbolic _|Label _|Tag _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (Symbolic _,(Label _|Tag _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (Label _,(Tag _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (Tag _,(PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (PteVal _,(IntidVal _|Instruction _|Frozen _))
-  | (IntidVal _,(Instruction _|Frozen _))
+  | (Concrete _,(ConcreteRecord _|ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Label _|Tag _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (ConcreteRecord _,(Symbolic _|Label _|Tag _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (Symbolic _,(Label _|Tag _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (Label _,(Tag _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (Tag _,(PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (PteVal _,(IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (IntidVal _,(IntidUpdateVal _|Instruction _|Frozen _))
+  | (IntidUpdateVal _,(Instruction _|Frozen _))
   | (Instruction _,Frozen _)
     -> -1
-  | (Frozen _,(Instruction _|PteVal _|IntidVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
-  | (Instruction _,(PteVal _|IntidVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (Frozen _,(Instruction _|IntidUpdateVal _|IntidVal _|PteVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (Instruction _,(IntidUpdateVal _|IntidVal _|PteVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (IntidUpdateVal _,(IntidVal _|PteVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (IntidVal _,(PteVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (PteVal _,(Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (Tag _,(Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
@@ -290,18 +294,20 @@ let rec eq scalar_eq pteval_eq intidval_eq instr_eq c1 c2 = match c1,c2 with
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
   | PteVal p1,PteVal p2 -> pteval_eq p1 p2
   | IntidVal v1,IntidVal v2 -> intidval_eq v1 v2
+  | IntidUpdateVal v1,IntidUpdateVal v2 -> IntidUpdateVal.eq v1 v2
   | Instruction i1,Instruction i2 -> instr_eq i1 i2
   | Frozen i1,Frozen i2 -> Misc.int_eq i1 i2
-  | (Frozen _,(Instruction _|Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|IntidVal _))
-  | (Instruction _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|IntidVal _|Frozen _))
-  | (IntidVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|Instruction _|Frozen _))
-  | (PteVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|IntidVal _|Instruction _|Frozen _))
-  | (ConcreteRecord _,(ConcreteVector _|Symbolic _|Label _|Tag _|Concrete _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Label _|Tag _|Concrete _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|IntidVal _|Instruction _|Frozen _))
-  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteRecord _|ConcreteVector _|PteVal _|IntidVal _|Instruction _|Frozen _))
+  | (Frozen _,(Instruction _|Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|IntidVal _|IntidUpdateVal _))
+  | (Instruction _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|IntidVal _|IntidUpdateVal _|Frozen _))
+  | (IntidUpdateVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|IntidVal _|Instruction _|Frozen _))
+  | (IntidVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (PteVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (ConcreteRecord _,(ConcreteVector _|Symbolic _|Label _|Tag _|Concrete _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Label _|Tag _|Concrete _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
+  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteRecord _|ConcreteVector _|PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _))
     -> false
 
 (* Return if two constants are syntactically different and can be semantically
@@ -335,6 +341,7 @@ let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_intidval pp_instr = func
   | Tag s -> sprintf ":%s" s
   | PteVal p -> pp_pteval p
   | IntidVal v -> pp_intidval v
+  | IntidUpdateVal v -> IntidUpdateVal.pp v
   | Instruction i -> pp_instr i
   | Frozen i -> sprintf "S%i" i (* Same as for symbolic values? *)
 
@@ -355,6 +362,7 @@ let _debug = function
   | Tag s -> sprintf "Tag %s" s
   | PteVal _ -> "PteVal"
   | IntidVal _ -> "IntidVal"
+  | IntidUpdateVal _ -> "IntidUpdateVal"
   | Instruction i -> sprintf "Instruction %s" (InstrLit.pp i)
   | Frozen i -> sprintf "Frozen %i" i
 
@@ -362,19 +370,19 @@ let rec map_scalar f = function
   | Concrete s -> Concrete (f s)
   | ConcreteVector cs -> ConcreteVector (List.map (map_scalar f) cs)
   | ConcreteRecord cs -> ConcreteRecord (StringMap.map (map_scalar f) cs)
-  | (Symbolic _ | Label _ | Tag _ | PteVal _ | IntidVal _ | Instruction _ | Frozen _) as c ->
+  | (Symbolic _ | Label _ | Tag _ | PteVal _ | IntidVal _ |IntidUpdateVal _| Instruction _ | Frozen _) as c ->
       c
 
 let rec map_label f = function
   | Label (p, lbl) -> Label (p, f lbl)
   | ConcreteVector cs -> ConcreteVector (List.map (map_label f) cs)
   | ConcreteRecord cs -> ConcreteRecord (StringMap.map (map_label f) cs)
-  | (Symbolic _ | Concrete _ | Tag _ | PteVal _ | IntidVal _ | Instruction _ | Frozen _) as m
+  | (Symbolic _ | Concrete _ | Tag _ | PteVal _ | IntidVal _ | IntidUpdateVal _| Instruction _ | Frozen _) as m
     ->
       m
 
 let rec map f_scalar f_pteval f_intidval f_instr = function
-  | (Symbolic _ | Label _ | Tag _ | Frozen _) as m -> m
+  | (Symbolic _ | Label _ | Tag _ | IntidUpdateVal _| Frozen _) as m -> m
   | PteVal p -> PteVal (f_pteval p)
   | IntidVal v -> IntidVal (f_intidval v)
   | Instruction i -> Instruction (f_instr i)
@@ -446,19 +454,19 @@ let mk_replicate sz v = ConcreteVector (Misc.replicate sz v)
 let is_symbol = function
   | Symbolic _ -> true
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Label _ | Tag _
-  | PteVal _ |IntidVal _| Instruction _ | Frozen _ ->
+  | PteVal _ |IntidVal _| IntidUpdateVal _| Instruction _ | Frozen _ ->
       false
 
 let is_label = function
   | Label _ -> true
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Symbolic _ | Tag _
-  | PteVal _ | IntidVal _| Instruction _ | Frozen _ ->
+  | PteVal _ | IntidVal _| IntidUpdateVal _| Instruction _ | Frozen _ ->
       false
 
 let as_label = function
   | Label (p, lbl) -> Some (p, lbl)
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Symbolic _ | Tag _
-  | PteVal _ | IntidVal _| Instruction _ | Frozen _ ->
+  | PteVal _ | IntidVal _| IntidUpdateVal _| Instruction _ | Frozen _ ->
       None
 
 let is_non_mixed_symbol = function
@@ -473,7 +481,7 @@ let default_tag = Tag "green"
 let check_sym v =
   match v with
   | (Symbolic _ | Label _ | Tag _) as sym -> sym
-  | Concrete _ | ConcreteVector _ | ConcreteRecord _ | PteVal _ | IntidVal _ | Instruction _
+  | Concrete _ | ConcreteVector _ | ConcreteRecord _ | PteVal _ | IntidVal _ | IntidUpdateVal _ | Instruction _
   | Frozen _ ->
       assert false
 

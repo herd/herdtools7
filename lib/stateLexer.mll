@@ -84,6 +84,7 @@ rule token = parse
 (* PTW keywords *)
 | "PTE"|"TTD" { TOK_PTE }
 | "INTID" { TOK_INTID }
+| "intid" { TOK_INTID_UPDATE }
 | "PA"  { TOK_PA }
 (* Typing *)
 | "_Atomic" { ATOMIC }

@@ -72,13 +72,13 @@ module Make
   let vToName = function
     | Symbolic s-> Constant.as_address s
     | Concrete _|ConcreteVector _|ConcreteRecord _| Label _|Tag _
-    | PteVal _|IntidVal _|Instruction _|Frozen _
+    | PteVal _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _
         -> assert false
 
   let is_nop = function
     | Instruction i -> Instr.is_nop i
     | Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _ | Label _|Tag _|PteVal _
-    | IntidVal _ | Frozen _
+    | IntidVal _ | IntidUpdateVal _ | Frozen _
       -> false
 
 end
