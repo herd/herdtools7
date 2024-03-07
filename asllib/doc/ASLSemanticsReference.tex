@@ -38,6 +38,7 @@
 \newcommand\OrAbnormal[0]{\terminateas \ExprThrowsConfig, \ErrorConfig}
 
 \newcommand\evalexpr[1]{\texttt{eval\_expr}(#1)}
+\newcommand\evalexprsef[1]{\texttt{eval\_expr\_sef}(#1)}
 \newcommand\evallexpr[1]{\texttt{eval\_lexpr}(#1)}
 \newcommand\evalexprlist[1]{\texttt{eval\_expr\_list}(#1)}
 \newcommand\evalexprlistm[1]{\texttt{eval\_expr\_list\_m}(#1)}
@@ -191,8 +192,15 @@
 \newcommand\ety[0]{\texttt{e\_ty}}
 \newcommand\vvty[0]{\texttt{v\_ty}}
 \newcommand\nameopt[0]{\texttt{name\_opt}}
+\newcommand\vb[0]{\texttt{b}}
+\newcommand\vbone[0]{\texttt{b1}}
+\newcommand\vbtwo[0]{\texttt{b2}}
+\newcommand\vps[0]{\texttt{ps}}
+\newcommand\vbs[0]{\texttt{bs}}
 
 \input{ASLSemanticsLines}
+
+\setcounter{tocdepth}{1}
 
 \newcommand{\testdir}{../tests/ASLSemanticsReference.t}
 
@@ -468,10 +476,15 @@ should be ``semantically evaluated'' (to yield an output configuration $L'(v'_{1
 
 ASL semantics mainly utilizes the following types of output configurations:
 \begin{description}
-  \item[Normal Values.] Configurations in $\Normal((\vals \times \XGraphs), \envs)$,
-  $\Normal(((\vals \times \vals)^* \times \XGraphs), \envs)$, $\Normal(\XGraphs, \envs)$, and
-  $\Normal((\vals^* \times \XGraphs), \envs)$
-  represent intermediate results (values and/or mutated environments) generated while evaluating statements.
+  \item[Normal Values.] Configurations representing intermediate results
+  (values and/or mutated environments) generated while evaluating statements:
+  \begin{itemize}
+  \item $\Normal(\vals \times \XGraphs)$,
+  \item $\Normal((\vals \times \XGraphs), \envs)$,
+  \item $\Normal(((\vals \times \vals)^* \times \XGraphs), \envs)$,
+  \item $\Normal(\XGraphs, \envs)$, and
+  \item $\Normal((\vals^* \times \XGraphs), \envs)$.
+  \end{itemize}
 
   \item[Exceptions.] Configurations in $\Throwing((\langle\vals \times \ty\rangle \times \XGraphs, \envs)$
   represent thrown exceptions,
@@ -502,6 +515,7 @@ and the environment of the configuration, $\environof{C}$, as follows:
 \begin{array}{lcc}
   C & \graphof{C} & \environof{C}\\
   \hline
+  \Normal(\vv,\vg) & \vg & \text{undefined}\\
   \Normal((\vv,\vg), \env) & \vg & \env\\
   \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \vg & \env\\
   \Normal(\vg, \env) & \vg & \env\\
@@ -518,6 +532,7 @@ like $C$ where the graph component is substituted with $\vgp$:
 \begin{array}{ll}
   C & \withgraph{C}{\vgp}\\
   \hline
+  \Normal(\vv,\vg) & \Normal(\vv,\vgp)\\
   \Normal((\vv,\vg), \env) & \Normal((\vv,\vgp), \env)\\
   \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vgp), \env)\\
   \Normal(\vg, \env) & \Normal(\vgp, \env)\\
@@ -533,6 +548,7 @@ like $C$ where the environment component, if one exists, is substituted with $\e
 \begin{array}{ll}
   \textbf{Configuration} & \withenviron{C}{\envp}\\
   \hline
+  \Normal(\vv,\vg) & \text{undefined}\\
   \Normal((\vv,\vg), \env) & \Normal((\vv,\vg), \envp)\\
   \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \envp)\\
   \Normal(\vg, \env) & \Normal(\vg, \envp)\\
@@ -581,7 +597,8 @@ for the corresponding labels (input configurations reference AST elements~\cite{
 \expr, \lexpr, \stmt, \slice, \localdeclitem, \identifier, \fordirection, and \catcher):
 
 \begin{tabular}{ll}
-  \textbf{\texttt{label}} & \textbf{Input Configurations $\bigtimes$ Output Configurations} \\
+  \textbf{\texttt{label}} & \textbf{Input Configurations $\bigtimes$} \\
+                          & \textbf{Output Configurations} \\
   \hline
   \hline
   \texttt{expr}         & $\evalexpr{\envs \times \expr} \bigtimes$\\
@@ -593,7 +610,7 @@ for the corresponding labels (input configurations reference AST elements~\cite{
   \texttt{slices}       & $\evalslices{\envs \times \slice^*} \bigtimes$\\
                         & $\TNormal((\vals \times \vals)^*) \cup \Throwing \cup \TError$ \\
   \hline
-  \texttt{pattern}      & $\evalpattern{\envs \times \expr \times \vals} \bigtimes$\\
+  \texttt{pattern}      & $\evalpattern{\envs \times \vals \times \pattern} \bigtimes$\\
                         & $\TNormal(\vals)$ \\
   \hline
   \texttt{local\_decl}  & $\evallocaldecl{\envs \times \localdeclitem \times \langle\vals\times\XGraphs\rangle} \bigtimes$\\
@@ -894,6 +911,18 @@ and returning a list of values associated with graphs:
   }
 \end{mathpar}
 
+\section{Evaluating Side-effect-free Expressions}
+We define the helper relation $\texttt{eval\_expr\_sef} : (\envs \times \expr) \times (\TNormal(\vals) \cup \TError)$,
+which specializes the expression evaluation relation for side-effect-free expressions:
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vv,\vg), \env) \terminateas \ErrorConfig
+  }
+  {
+    \evalexprsef{\env, \ve} \evalarrow \Normal(\vv, \vg)
+  }
+\end{mathpar}
+
 \section{SemanticsRule.Lit \label{sec:SemanticsRule.Lit}}
 
   \subsection{Prose}
@@ -1114,6 +1143,7 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \texttt{TRU
 We first define the helper relation
 $\binop : (\op \times \vals \times \vals) \bigtimes (\vals \cup \Error(\texttt{<string>}))$,
 which evaluates an operator over a pair of native values:
+\newcommand\ErrorDivDenominatorNegative[0]{\texttt{"DivDenominatorNegative"}}
 \begin{mathpar}
   \inferrule{ n = a + b }{
     \binop(\texttt{"+"}, Z(a), Z(b)) \evalarrow Z(n)
@@ -1134,7 +1164,7 @@ which evaluates an operator over a pair of native values:
   }
   \and
   \inferrule{  b \leq 0 }{
-    \binop(\texttt{"/"}, Z(a), Z(b)) \evalarrow \Error(\texttt{"/ denominator error!"})
+    \binop(\texttt{"/"}, Z(a), Z(b)) \evalarrow \Error(\ErrorDivDenominatorNegative)
   }
   \and
   \inferrule{  b > 0 \\
@@ -1247,7 +1277,7 @@ Finally, we employ the definition of $\binop$ to define the rule for a binary op
   \begin{mathpar}
     \inferrule{
       \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envp) \OrAbnormal \\
-      \evalexpr{ \envp, \vetwo } \evalarrow \Normal((\vmtwo, \vgtwo), \newenv) \OrAbnormal \\
+      \evalexpr{ \envp, \vetwo } \evalarrow \Normal(\vmtwo, \newenv) \OrAbnormal \\
       \vmone = (\vvone, \vgone) \\
       \vmtwo = (\vvtwo, \vgtwo) \\
       \binop(\op, \vvone, \vvtwo) \evalarrow \vv \terminateas \ErrorConfig\\
@@ -1762,7 +1792,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \begin{mathpar}
   \inferrule{
     \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \envp)  \OrAbnormal\\
-    \evalpattern{\env, \ve, \vvone, \vp} \evalarrow \Normal(\vv, \vgtwo)\\
+    \evalpattern{\env, \vvone, \vp} \evalarrow \Normal(\vv, \vgtwo)\\
     \newenv = \envp\\
     \vg = \ordered{\vgone}{\asldata}{\vgtwo}
   }
@@ -2392,9 +2422,13 @@ following applies:
   \VerbatimInput[firstline=\PAllBegin, lastline=\PAllEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  {
+    \evalpattern{\env, \Ignore, \texttt{Pattern\_All}} \evalarrow \Normal(B(\True), \emptygraph)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2420,9 +2454,18 @@ following applies:
     \VerbatimInput[firstline=\PAnyBegin, lastline=\PAnyEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-    \subsection{Formally: sequential case}
-
-    \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vps = \vp_{i=1..k}\\
+    i=1..k : \evalpattern{\env, \vv, \vp_i} \evalarrow \Normal(B(\vb_i), \vg_i) \terminateas \ErrorConfig\\
+    \vv = B(\bigvee_{i=1..k} \vb_i)\\
+    \vg = \vg_1 \parallel \ldots \parallel \vg_k
+  }
+  {
+    \evalpattern{\env, \vv, \texttt{Pattern\_Any}(\vps)} \evalarrow \Normal(\vv, \vg)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2451,9 +2494,15 @@ following applies:
   \VerbatimInput[firstline=\PGeqBegin, lastline=\PGeqEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexprsef{\env, \ve} \evalarrow \Normal(\vv', \vg) \terminateas \ErrorConfig
+  }
+  {
+    \evalpattern{\env, \vv, \texttt{Pattern\_Geq}(\ve)} \evalarrow \Normal(\binop(\GEQ, \vv, \vv'), \vg)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2482,9 +2531,15 @@ following applies:
   \VerbatimInput[firstline=\PLeqBegin, lastline=\PLeqEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexprsef{\env, \ve} \evalarrow \Normal(\vv', \vg) \terminateas \ErrorConfig
+  }
+  {
+    \evalpattern{\env, \vv, \texttt{Pattern\_Geq}(\ve)} \evalarrow \Normal(\binop(\LEQ, \vv, \vv'), \vg)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2512,9 +2567,15 @@ following applies:
   \VerbatimInput[firstline=\PNotBegin, lastline=\PNotEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexprsef{\env, \ve} \evalarrow \Normal(\vb, \vg) \terminateas \ErrorConfig
+  }
+  {
+    \evalpattern{\env, \vv, \texttt{Pattern\_Not}(\vp')} \evalarrow \Normal(\unop(\BNOT, \vb), \vg)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2550,9 +2611,19 @@ following applies:
   \VerbatimInput[firstline=\PRangeBegin, lastline=\PRangeEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \vgone) \terminateas \ErrorConfig\\
+    \vbone = \unop(\GEQ, \vv, \vvone)\\
+    \evalexprsef{\env, \veone} \evalarrow \Normal(\vvtwo, \vgtwo) \terminateas \ErrorConfig\\
+    \vbtwo = \unop(\GEQ, \vv, \vvtwo)\\
+    \vg = \vgone \parallel \vgtwo
+  }
+  {
+    \evalpattern{\env, \vv, \texttt{Pattern\_Range}(\veone, \vetwo)} \evalarrow \Normal(\unop(\BAND, \vbone, \vbtwo), \vg)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2581,9 +2652,15 @@ following applies:
   \VerbatimInput[firstline=\PSingleBegin, lastline=\PSingleEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexprsef{\env, \veone} \evalarrow \Normal(\vvp, \vg) \terminateas \ErrorConfig\\
+  }
+  {
+    \evalpattern{\env, \vv, \texttt{Pattern\_Single}(\ve)} \evalarrow \Normal(\unop(\EQOP, \vv, \vvp), \vg)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2624,9 +2701,32 @@ following applies:
   \VerbatimInput[firstline=\PMaskBegin, lastline=\PMaskEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
+  \subsection{Formally}
+  The helper function $\text{mask\_match} : \{0, 1, x\} \times \{0,1\} \rightarrow \{\True,\False\}$,
+  which checks whether a bit value (second operand) matches a mask value (first operand),
+  is defined by the following table:
+\[
+  \begin{array}{|c|c|c|c|}
+    \hline
+    \textbf{mask\_match} & 0 & 1 & x\\
+    \hline
+    0 & \True & \False & \True\\
+    \hline
+    1 & \False & \True & \True\\
+    \hline
+  \end{array}
+\]
 
-  \subsection{Formally: concurrent case}
+\begin{mathpar}
+  \inferrule{
+    \vm = \vm_{1..k}\\
+    \vv = \vv_{1..k}\\
+    \vv = B(\bigwedge_{i=1..k} \text{mask\_match}(\vm_i, \vv_i))
+  }
+  {
+    \evalpattern{\env, \vv, \texttt{Pattern\_Mask}(\vm)} \evalarrow \Normal(\vv, \emptygraph)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2656,9 +2756,19 @@ following applies:
   \VerbatimInput[firstline=\PTupleBegin, lastline=\PTupleEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
+  \subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vps = \vp_{1..k}\\
+    i=1..k: \vvs_i = \tododefine{get\_index}(i, \vv)\\
+    i=1..k: \evalpattern{\env, \vvs_i, \vp_i} \evalarrow \Normal(B(\vbs_i), \vg_i) \terminateas \ErrorConfig\\
+    \vv = B(\bigwedge_{i=1..k} \vbs_i)\\
+    \vg = \vg_1 \parallel \ldots \parallel \vg_k
+  }
+  {
+    \evalpattern{\env, \vv, \texttt{Pattern\_Tuple}(\vps)} \evalarrow \Normal(\vv, \emptygraph)
+  }
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
