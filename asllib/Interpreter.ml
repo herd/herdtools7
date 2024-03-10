@@ -321,9 +321,9 @@ module Make (B : Backend.S) (C : Config) = struct
   let lexpr_is_var le =
     match le.desc with LE_Var _ | LE_Discard -> true | _ -> false
 
-  let declare_local_identifier env x v =
-    let* () = B.on_write_identifier x (IEnv.get_scope env) v in
-    IEnv.declare_local x v env |> return
+  let declare_local_identifier env name v =
+    let* () = B.on_write_identifier name (IEnv.get_scope env) v in
+    IEnv.declare_local name v env |> return
 
   let declare_local_identifier_m env x m = m >>= declare_local_identifier env x
 
@@ -709,8 +709,13 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Expression Lists *)
   (* ------------------------------ *)
-  and eval_expr_list_m env es = fold_parm_list eval_expr env es
-  and eval_expr_list env es = fold_par_list eval_expr env es
+  (* Begin EExprListM *)
+  and eval_expr_list_m env es =
+    fold_parm_list eval_expr env es |: SemanticsRule.EExprListM
+  (* End *)
+  (* Begin EExprList *)
+  and eval_expr_list env es = fold_par_list eval_expr env es |: SemanticsRule.EExprList
+  (* End *)
 
   (* Evaluation of Slices *)
   (* -------------------- *)
@@ -1169,23 +1174,25 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [eval_call pos name env args named_args] evaluate the call to function
       [name] with arguments [args] and parameters [named_args] *)
+  (* Begin Call *)
   and eval_call pos name env args named_args =
-    let names, nargs = List.split named_args in
+    let names, nargs1 = List.split named_args in
     let*^ vargs, env1 = eval_expr_list_m env args in
-    let*^ nargs, env2 = eval_expr_list_m env1 nargs in
-    let* vargs = vargs and* nargs = nargs in
-    let nargs = List.combine names nargs in
-    let**| ms, global = eval_func env2.global name pos vargs nargs in
-    let ms = List.map read_value_from ms and env' = { env2 with global } in
-    return_normal (ms, env')
+    let*^ nargs2 , env2 = eval_expr_list_m env1 nargs1 in
+    let* vargs = vargs and* nargs2 = nargs2 in
+    let nargs3 = List.combine names nargs2 in
+    let**| ms, global = eval_subprogram env2.global name pos vargs nargs3 in
+    let ms2 = List.map read_value_from ms and env' = { env2 with global } in
+    return_normal (ms2, env') |: SemanticsRule.Call
+  (* End *)
 
-  (* Evaluation of Functions *)
+  (* Evaluation of Subprograms *)
   (* ----------------------- *)
 
-  (** [eval_func genv name pos actual_args params] evaluate the function named [name]
+  (** [eval_subprogram genv name pos actual_args params] evaluate the function named [name]
       in the global environment [genv], with [actual_args] the actual arguments, and
       [params] the parameters deduced by type equality. *)
-  and eval_func (genv : IEnv.global) name pos (actual_args : B.value m list)
+  and eval_subprogram (genv : IEnv.global) name pos (actual_args : B.value m list)
       params : func_eval_type =
     match IMap.find_opt name genv.funcs with
     (* Begin FUndefIdent *)
@@ -1257,12 +1264,14 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [multi_assign env [le_1; ... ; le_n] [m_1; ... ; m_n]] is
       [env[le_1 --> m_1] ... [le_n --> m_n]]. *)
+  (* Begin LEMultiAssign *)
   and multi_assign ver env les monads : env maybe_exception m =
     let folder envm le vm =
       let**| env = envm in
       eval_lexpr ver le env vm
     in
-    List.fold_left2 folder (return_normal env) les monads
+    List.fold_left2 folder (return_normal env) les monads |: SemanticsRule.LEMultiAssign
+  (* End *)
 
   (** As [multi_assign], but checks that [les] and [monads] have the same
       length. *)
@@ -1333,7 +1342,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Begin TopLevel *)
   let run_typed_env env (ast : AST.t) (static_env : StaticEnv.env) : B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in
-    let*| res = eval_func env "main" dummy_annotated [] [] in
+    let*| res = eval_subprogram env "main" dummy_annotated [] [] in
     match res with
     | Normal ([ v ], _genv) -> read_value_from v
     | Normal _ -> Error.(fatal_unknown_pos (MismatchedReturnValue "main"))

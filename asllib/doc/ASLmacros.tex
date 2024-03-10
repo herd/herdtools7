@@ -102,12 +102,17 @@
 
 \newcommand\ty[0]{\textsf{ty}}
 \newcommand\pattern[0]{\textsf{pattern}}
-\newcommand\intconstraint[0]{\textsf{int\_constraint}}
 \newcommand\intconstraints[0]{\textsf{int\_constraints}}
+\newcommand\intconstraint[0]{\textsf{int\_constraint}}
+\newcommand\unconstrained[0]{\textsf{UnConstrained}}
+\newcommand\wellconstrained[0]{\textsf{WellConstrained}}
+\newcommand\constraintexact[0]{\textsf{Constraint\_Exact}}
+\newcommand\constraintrange[0]{\textsf{Constraint\_Range}}
 \newcommand\bitsconstraint[0]{\textsf{bits\_constraint}}
 \newcommand\bitfield[0]{\textsf{bitfield}}
 \newcommand\version[0]{\textsf{version}}
-\newcommand\program[0]{\textsf{program}}
+\newcommand\program[0]{\textsf{spec}} % Remove after fixing the syntax reference and typing reference.
+\newcommand\spec[0]{\textsf{spec}}
 \newcommand\typedidentifier[0]{\textsf{typed\_identifier}}
 \newcommand\localdeclkeyword[0]{\textsf{local\_decl\_keyword}}
 \newcommand\globaldeclkeyword[0]{\textsf{global\_decl\_keyword}}
@@ -150,12 +155,18 @@
 \newcommand\TNamed[0]{\texttt{T\_Named}}
 
 \newcommand\identifier[0]{\textsf{identifier}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Typing macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\tstruct[0]{\texttt{get\_structure}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand\emptyfunc[0]{{\emptyset}_\lambda}
 
 \newcommand\id[0]{\texttt{id}}
 \newcommand\op[0]{\texttt{op}}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand\Ignore[0]{\texttt{\_}}
 \newcommand\None[0]{\texttt{None}}
@@ -189,6 +200,9 @@
 \newcommand\aslpo[0]{\mathtt{asl\_po}}
 \DeclareMathOperator{\dom}{dom}
 \newcommand\partialto[0]{\rightharpoonup}
+\newcommand\rightarrowfin[0]{\rightarrow_{\text{fin}}}
+\newcommand\cupdot[0]{\cup}
+\newcommand\seq[1]{\textsf{sequence}(#1)}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Ident info

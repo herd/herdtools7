@@ -427,7 +427,7 @@ let write_slice (length_dst, data_dst) (length_src, data_src) positions =
   let min x y = if x <= y then x else y in
   let length_src = min (List.length positions) length_src in
   let result = Bytes.of_string data_dst in
-  (* Same effect than [List.rev positions], as we build those from the end. *)
+  (* Same effect as [List.rev positions], since we build those from the end. *)
   let copy_bit_here i pos = copy_bit result data_src (length_src - 1 - i) pos in
   let () = List.iteri copy_bit_here positions in
   remask (length_dst, Bytes.unsafe_to_string result)
