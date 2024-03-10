@@ -1,33 +1,76 @@
-\paragraph{Functions and Products.}
-The notation $A \partialto B$ denotes a partial function from a subset of $A$, denoted $\dom(A)$, to $B$.
-For a partial function $f$, we write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$.
-%
-The notation $f[x \mapsto v]$ is the function $f$ modified so that $x$ is bound
-to $v$: $f[x \mapsto v] \triangleq \lambda\ z.\ \begin{cases}
-  f(z) & \text{if } z \neq x\\
-  v & \text{if } z = x \enspace .
-\end{cases}$
-%
+\paragraph{Functions and Products \label{sec:FunctionsAndProducts}}
+
+\begin{definition}[Partial Function\label{def:PartialFunction}]
+  A \emph{partial function}, denoted $A \partialto B$, is a function from a \underline{subset} of $A$ to $B$.
+  The domain of a partial function, denoted $\dom(A)$, is the subset of $A$ for which it defined.
+  For a partial function $f$, we write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$.
+\end{definition}
+
+The function with an empty domain is denoted as $\emptyfunc$.
+The notation $\rightarrowfin$ stands for a function whose domain is finite.
+
+\begin{definition}[Function Update\label{def:FunctionUpdate}]
+  The notation $f[x \mapsto v]$ is the function $f$ modified so that $x$ is bound
+  to $v$: $f[x \mapsto v] \triangleq \lambda\ z.\ \begin{cases}
+    f(z) & \text{if } z \neq x\\
+    v & \text{if } z = x \enspace .
+  \end{cases}$
+
+  The notation $\{i=1..k: a_i\mapsto b_i\}$ stands for the function formed from the corresponding input-output pairs:
+  $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$.
+\end{definition}
+
 The notation $A \times B$ stands for the Cartesian product of sets $A$ and $B$: $A \times B \triangleq \{(a,b) \;|\; a \in A, b \in B\}$.
 
-\paragraph{Sequences and Lists.}
-We use the notation $a..b$ as a shorthand for the sequence $a,\ldots,b$ and $x_{a..b}$ as a shorthand for the sequence $x_a,\ldots,x_b$.
+\paragraph{Sequences and Lists}
+We use the notation $a..b$ as a shorthand for the sequence $a\ldots b$ and $x_{a..b}$ as a shorthand for the sequence $x_a \ldots x_b$.
 %
-In particular, we use the notation $p(x_{1..k})$ to denote that a predicate $p$ holds for the list of arguments $x_{1..k}$.
+We use the notation $p(x_{1..k})$ to denote that a predicate $p$ holds for the list of arguments $x_1,\ldots,x_k$.
 %
 We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterized by $i$,
 to denote the sequence of expressions $V(1) \ldots V(k)$.
-The expression $[i=1..k: V(i)]$, denotes the list $[V(1),\ldots,V(k)]$.
+The notation $[i=1..k: V(i)]$ stands the list $[V(1),\ldots,V(k)]$.
+The notation $\seq{v\in r: f(v)}$, where $r$ is a sequence, stands for $\epsilon$ when $r=\epsilon$ and
+$f(v_1) \ldots f(v_k)$ when $r=v_{1..k}$ and $f$ is a mathematical expression over $v$.
 %
 We use `+' to denote concatenation of lists, defined as follows: $\emptylist + L = L$, $L + \emptylist = L$, and $[i=1..k: l_i] + [j=1..n: m_j] = [l_{1..k}, m_{1..n}]$.
 
-We write $T^*$ for a sequence of zero or more values from $T$ and $T^+$ for a sequences of one or more values from $T$.
+We write $\epsilon$ for an empty sequence,
+$a_{1..k} \cdot b_{1..n} \triangleq a_1\ldots a_k b_1 \ldots b_n$ for the concatenation of two sequences,
+$T^*$ for a sequence of zero or more values from $T$, and $T^+$ for a sequences of one or more values from $T$.
 
-\paragraph{Rules.}
-The following notation states that when the \emph{premises} $P_{1..k}$ hold then the \emph{verdict} $C$ holds as well:
+\paragraph{Rules}
+The following notation states that when the \emph{premises} $P_{1..k}$ hold then the \emph{verdict} $V$ holds as well:
 \begin{mathpar}
-  \inferrule{P_1 \and \ldots \and P_k}{C}
+  \inferrule{P_1 \and \ldots \and P_k}{V}
 \end{mathpar}
+That is, the premises of a rule are interpreted as a conjunction.
+The variables appearing in the premises and verdict are interpreted universally.
 %
-We write `$\Ignore$' for a fresh universally quantified variable whose name is irrelevant for understanding the rule,
-and can thus be omitted.
+A set of rules is interpreted disjunctively. That is, each rule is used to determine whether its verdict
+holds independent of other rules.
+%
+Some rules are \emph{axioms}. That is, their set of premises is empty. Premises are denoted by simply
+stating the verdict.
+%
+Axioms can be used to conclude certain (simple) verdicts.
+However, concluding more complex verdicts requires
+starting from axioms to obtain verdicts, then using these verdicts as premises in non-axiom rules,
+which are potentially themselves used as premises to other rules and so on until the desired verdict
+is concluded.
+
+To keep rules succinct, we will write `$\Ignore$' for a fresh universally quantified variable whose name is
+irrelevant for understanding the rule, and can thus be omitted. That is, each \underline{occurrence}
+of `$\Ignore$' represents a distinct variable.
+
+\paragraph{Value Deconstruction}
+We will often want to deconstruct compound values to refer to their internal values.
+To achieve that, we will write $v \eqname \textit{deconstructed}(v)$ where the expression on the right
+exposes the internal structure of $v$, allowing us to alias its internal components.
+For example, suppose we know that $v$ is a pair of values.
+Then, $v \eqname (a, b)$ allows us to alias $a$ and $b$.
+Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
+head of the list $h$ and its tail $t$.
+%
+We also use $x \eqname y$ to have $x$ alias $y$, which helps match names appearing in rule premises to
+names expected in the verdict of a rule.

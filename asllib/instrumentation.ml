@@ -25,7 +25,11 @@
 module SemanticsRule = struct
   type t =
     | Lit
+    | Call
     | CTC
+    | EExprList
+    | EExprListM
+    | ESideEffectFreeExpr
     | ELocalVar
     | EGlobalVar
     | EUndefIdent
@@ -50,6 +54,7 @@ module SemanticsRule = struct
     | LEDiscard
     | LELocalVar
     | LEGlobalVar
+    | LEMultiAssign
     | LEUndefIdentV0
     | LEUndefIdentV1
     | LESlice
@@ -113,7 +118,11 @@ module SemanticsRule = struct
 
   let to_string : t -> string = function
     | Lit -> "Lit"
+    | Call -> "Call"
     | CTC -> "CTC"
+    | EExprList -> "EExprList"
+    | EExprListM -> "EExprListM"
+    | ESideEffectFreeExpr -> "ESideEffectFreeExpr"
     | ELocalVar -> "ELocalVar"
     | EGlobalVar -> "EGlobalVar"
     | Binop -> "Binop"
@@ -138,6 +147,7 @@ module SemanticsRule = struct
     | LEDiscard -> "LEDiscard"
     | LELocalVar -> "LELocalVar"
     | LEGlobalVar -> "LEGlobalVar"
+    | LEMultiAssign -> "LEMultiAssign"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
     | LESetField -> "LESetField"
@@ -204,7 +214,11 @@ module SemanticsRule = struct
   let all =
     [
       Lit;
+      Call;
       CTC;
+      EExprList;
+      EExprListM;
+      ESideEffectFreeExpr;
       ELocalVar;
       EGlobalVar;
       Binop;
@@ -229,6 +243,7 @@ module SemanticsRule = struct
       LEDiscard;
       LELocalVar;
       LEGlobalVar;
+      LEMultiAssign;
       LESlice;
       LESetArray;
       LESetField;
