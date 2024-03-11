@@ -134,6 +134,10 @@ Monad type:
       let eid', (evt, evt_spec) = m eid in
       (eid', (Evt.map f evt, Option.map (Evt.map f) evt_spec))
 
+    let map (m : 'a t) (f: 'a -> 'b): 'b t =
+      let f_elt (a, ctnts, event_graph) = (f a, ctnts, event_graph) in
+      map_elt f_elt m
+
  (* Code monad slight differs as regardes agument *)
  (* Threading by instruction instance identifier and event id proper *)
 

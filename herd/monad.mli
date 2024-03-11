@@ -55,6 +55,9 @@ module type S =
     val delay_kont : string -> 'a t -> ('a ->  'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t
 
+    (** [map t f] applies [f] on [t]'s values, without touching the graphs. *)
+    val map : 'a t -> ('a -> 'b) -> 'b t
+
     val set_standard_input_output : 'a t -> 'a t
 
     (* [restrict constraints] is an empty monad with the constraints [constraints] *)
