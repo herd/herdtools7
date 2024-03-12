@@ -1807,7 +1807,7 @@ module Make
         O.oi "sense_t *_b = &_ctx->b;" ;
         O.oi "log_t *_log = &_ctx->out;" ;
         if some_ptr then O.oi "log_ptr_t *_log_ptr = &_ctx->out_ptr;" ;
-        if some_test_vars test then begin
+        if some_test_vars test || do_self then begin
           O.oi "vars_t *_vars = &_ctx->v;"
         end ;
         begin match test.T.globals with
