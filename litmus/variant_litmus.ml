@@ -52,4 +52,4 @@ let set_fault_handling r = function
 | FaultHandling p -> r := p ; true
 | _ -> false
 
-let set_mte_precision _ _ = assert false
+let set_mte_precision _ _ = false
