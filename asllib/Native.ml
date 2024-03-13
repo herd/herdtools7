@@ -179,7 +179,6 @@ module NativeBackend = struct
 
   let as_bitvector = function
     | NV_Literal (L_BitVector bits) -> bits
-    | NV_Literal (L_Int i) -> Bitvector.of_z (Z.numbits i) i
     | v -> mismatch_type v [ default_t_bits ]
 
   let as_int = function
