@@ -521,7 +521,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             | Ld sz -> Some sz in
           let env =
             match branch with
-            | S.B.Next bds|S.B.Jump (_,bds)|S.B.IndirectJump (_,_,bds)  ->
+            | S.B.Next bds|S.B.Jump (_,bds)|S.B.IndirectJump (_,_,bds)
+            | B.Fault bds ->
                 List.fold_right
                   (fun (r,v) -> A.set_reg r v)
                   bds env
@@ -579,7 +580,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           add_code re_exec fetch_proc proc env seen nexts
       | S.B.Jump (tgt,_) ->
           add_tgt re_exec true proc env seen addr tgt
-      | S.B.Fault ->
+      | S.B.Fault _ ->
           add_fault re_exec inst fetch_proc proc env seen addr nexts
       | S.B.FaultRet tgt ->
           add_tgt false true proc env seen addr tgt

@@ -1,0 +1,11 @@
+Test A018 Required
+States 1
+0:X0=0;
+No
+Witnesses
+Positive: 0 Negative: 1
+Flag Assuming-common-inner-shareable-domain
+Condition forall (0:X0=1)
+Observation A018 Never 0 1
+Hash=9244036c5f54ae55e4161c56d50243a5
+
