@@ -1032,23 +1032,26 @@ module Make
  *)
 
 (*  memtag faults *)
-      let set_elr_el1 ii =
-        let lbl =
-          match Label.norm ii.A.labels with
-          | Some hd -> hd
-          | None -> "undef" in
-        let lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, lbl)) in
-        write_reg AArch64Base.elr_el1 lbl_v ii
+      let get_instr_label ii =
+        match Label.norm ii.A.labels with
+        | Some hd -> ii.A.addr2v hd
+        | None -> V.intToV ii.A.addr
+
+      let set_elr_el1 v ii =
+        write_reg AArch64Base.elr_el1 v ii
 
       let lift_fault_memtag mfault mm dir ii =
+        let lbl_v = get_instr_label ii in
         if has_handler ii then
           fun ma ->
-            M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Fault
+            M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
+            B.Fault [AArch64Base.elr_el1, lbl_v]
         else
           let open Precision in
           match C.mte_precision,dir with
           | (Synchronous,_)|(Asymmetric,(Dir.R)) ->
-             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Fault
+             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
+               B.Fault [AArch64Base.elr_el1, lbl_v]
           | (Asynchronous,_)|(Asymmetric,Dir.W) ->
              fun ma ->
              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
@@ -1070,13 +1073,15 @@ module Make
         else m
 
       let lift_kvm dir updatedb is_tag mop ma an ii mphy =
+        let lbl_v = get_instr_label ii in
         let mfault ma a ft =
           if is_tag then
-            insert_commit_to_fault ma (fun _ -> mzero) (Some "Tag") ii >>! B.Fault
+            insert_commit_to_fault ma (fun _ -> mzero) (Some "Tag") ii >>!
+            B.Fault [AArch64Base.elr_el1, lbl_v]
           else
             insert_commit_to_fault ma
-              (fun _ -> mk_fault (Some a) dir an ii ft None) None ii >>|
-            set_elr_el1 ii >>! B.Fault in
+              (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
+              None ii >>! B.Fault [AArch64Base.elr_el1, lbl_v] in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb is_tag a ma an ii
             ((let m = mop Access.PTE ma in
@@ -1103,7 +1108,7 @@ module Make
               (fun a_phy ma ->
                  delayed_check_tags a_virt (Some a_phy) ma ii
                    (fun ma -> ma >>= M.ignore >>= B.next1T)
-                   (fun ma -> ma >>! B.Fault)) in
+                   (fun ma -> ma >>! B.Fault [])) in
           let cond_check_tag ma a_virt =
             (* Only read and check the tag if the attrs of the PTE
                allow it *)
@@ -1120,7 +1125,7 @@ module Make
                let ma = M.para_bind_output_right mtag_op (fun _ -> ma) in
                match tag_op with
                | B.Next _ -> mphy ma a_virt
-               | B.Fault ->
+               | B.Fault _ ->
                  let ft = Some FaultType.AArch64.TagCheck in
                  let mm = fun ma -> mphy ma a_virt in
                  let fault = lift_fault_memtag
@@ -2341,11 +2346,11 @@ module Make
                        (function
                          | B.Next _ ->
                            fun mstz -> mstz >>| do_stg >>= M.ignore >>= B.next1T
-                         | B.Fault ->
+                         | B.Fault _ ->
                            fun mstz ->  mstz >>| mstg >>= M.ignore >>= B.next1T
                          | _ ->
                            Warn.fatal "Unexpected return value do_stg")
-                 | B.Fault ->
+                 | B.Fault _ ->
                    fun mstg -> mstg
                  | _ -> Warn.fatal "Unexpected return value do_stz"))
             (M.delay_kont "do_stz" do_stz
@@ -2353,7 +2358,7 @@ module Make
                  | B.Next _ ->
                    (* Force the solver to drop this, already handled above *)
                    fun _ -> M.assertT V.zero B.nextT
-                 | B.Fault ->
+                 | B.Fault _ ->
                    fun mstz -> mstz
                  | _ -> Warn.fatal "Unexpected return value do_stz"))
         else
@@ -3127,7 +3132,8 @@ module Make
            let (>>!) = M.(>>!) in
            let ft = Some FaultType.AArch64.UndefinedInstruction in
            let m_fault = mk_fault None Dir.R Annot.N ii ft None in
-           m_fault >>| set_elr_el1 ii >>! B.Fault
+           let lbl_v = get_instr_label ii in
+           m_fault >>| set_elr_el1 lbl_v ii >>! B.Fault [AArch64Base.elr_el1, lbl_v]
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _) as i ->
@@ -3190,9 +3196,10 @@ module Make
                           None Dir.R Annot.N ii
                           (Some FaultType.AArch64.UndefinedInstruction)
                           (Some "Invalid") in
+                      let lbl_v = get_instr_label ii in
                       commit_pred ii
-                        >>*= fun () -> m_fault >>| set_elr_el1 ii
-                          >>! B.Fault
+                        >>*= fun () -> m_fault >>| set_elr_el1 lbl_v ii
+                        >>! B.Fault [AArch64Base.elr_el1, lbl_v]
                     end
         else do_build_semantics test inst ii
 

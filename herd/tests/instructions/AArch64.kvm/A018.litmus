@@ -1,0 +1,12 @@
+AArch64 A018
+{
+ [PTE(x)]=(valid:0);
+ [x]=1;
+ 0:X1=x;
+ 0:X2=(valid:1, oa:PA(x)); 0:X3=PTE(x);
+}
+ P0          | P0.F        ;
+L0:          | STR X2,[X3] ;
+ LDR W0,[X1] | DSB ISHST   ;
+             | ERET        ;
+forall(0:X0=1)
