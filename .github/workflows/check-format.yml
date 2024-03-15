@@ -1,0 +1,28 @@
+name: Check format with `dune fmt`
+
+on:
+  pull_request:
+  # push:
+  workflow_dispatch:
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+permissions: read-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 5.1
+
+      - run: opam install dune ocamlformat
+
+      - run: opam exec -- dune fmt
