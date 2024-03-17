@@ -21,7 +21,7 @@ module Make (O:Set.OrderedType) : sig
 
 (* All creation steps must preceed union/find operations *)
   val create : unit -> t
-  val add : t -> O.t -> t
+  val add : O.t -> t -> t
 
 (* Union/Find *)
   val find : t -> O.t -> O.t
@@ -44,7 +44,7 @@ end = struct
 (* Creation *)
   let create () = M.empty
 
-  let add m x =
+  let add x m =
     let rec c = { value=x; rank=0; parent=c; } in
     M.add x c m
 

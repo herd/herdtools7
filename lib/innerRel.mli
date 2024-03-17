@@ -94,15 +94,26 @@ module type S =  sig
   val cycle_option_to_rel : elt0 list option -> t
 
 
-(* All toplogical orders, raises Cyclic in case of cycle
-   Enhancement: all_topos nodes edges still works
-    when edges relates elts not in nodes *)
+  (* All toplogical order computing functions
+     raise Cyclic in case of cycle *)
 
   exception Cyclic
+  (* One topoligical order *)
+  val topo_kont : (elt0 -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
   val topo : Elts.t -> t -> elt0 list
+
+(* By exception to the general rule,
+   The function [pseudo_topo_kont] does not
+   fail. Instead, it acts as if the backward edge
+   it discovers is non-existent *)
+  val pseudo_topo_kont : (elt0 -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
+
 (****************************************************)
 (* Continuation based all_topos (see next function) *)
 (****************************************************)
+
+(* Enhancement: all_topos nodes edges still works
+   when edges relates elts not in nodes *)
 
 (* Orders as a lists *)
   val all_topos_kont :  Elts.t -> t -> (elt0 list -> 'a -> 'a) -> 'a -> 'a
@@ -114,6 +125,9 @@ module type S =  sig
   Enhancement: all_topos nodes edges still works
   when edges relates elts not in nodes *)
   val all_topos : bool (* verbose *)-> Elts.t -> t -> elt0 list list
+
+(* Strongly connected components, processed in inverse dependency order. *)
+  val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
 
 (* Is the parent relation of a hierarchy *)
   val is_hierarchy : Elts.t -> t -> bool

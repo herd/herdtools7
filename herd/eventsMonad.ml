@@ -45,6 +45,7 @@ and type evt_struct = E.event_structure) =
           let hexa = C.hexa
           let debug = C.debug
           let keep_failed_as_undetermined = C.variant Variant.ASL_AArch64
+          let old_solver = C.variant Variant.OldSolver
         end)
         (A)
 
