@@ -205,50 +205,50 @@ end
 // The shift functions LSL_C, LSR_C, ASR_C and ROR_C accept a non-zero positive shift amount.
 
 // Logical left shift
-func LSL{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+func LSL{N}(x:: bits(N), shift:: integer) => bits(N)
 begin
     return [x[N-shift-1:0], Zeros(shift)];
 end
 
 // Logical left shift with carry out.
-func LSL_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+func LSL_C{N}(x:: bits(N), shift:: integer) => (bits(N), bit)
 begin
-    return (LSL(x, shift as integer {0..N-1}), x[N-shift]);
+    return (LSL(x, shift), x[N-shift]);
 end
 
 // Logical right shift, shifting zeroes into higher bits.
-func LSR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+func LSR{N}(x:: bits(N), shift:: integer) => bits(N)
 begin
     return ZeroExtend(x[N-shift-1:shift], N);
 end
 
 // Logical right shift with carry out.
-func LSR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+func LSR_C{N}(x:: bits(N), shift:: integer) => (bits(N), bit)
 begin
-    return (LSR(x, shift as integer {0..N-1}), x[shift-1]);
+    return (LSR(x, shift), x[shift-1]);
 end
 
 // Arithmetic right shift, shifting sign bits into higher bits.
-func ASR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+func ASR{N}(x:: bits(N), shift:: integer) => bits(N)
 begin
   let v = SignExtend(x, shift+N);
   return v[(shift+N)-1:shift];
 end
 
 // Arithmetic right shift with carry out.
-func ASR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+func ASR_C{N}(x:: bits(N), shift:: integer) => (bits(N), bit)
 begin
-    return (ASR(x, shift as integer {0..N-1}), x[shift-1]);
+    return (ASR(x, shift), x[shift-1]);
 end
 
 // Rotate right.
-func ROR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+func ROR{N}(x:: bits(N), shift:: integer) => bits(N)
 begin
     return [x[0+:shift], x[N-1:shift]];
 end
 
 // Rotate right with carry out.
-func ROR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+func ROR_C{N}(x:: bits(N), shift:: integer) => (bits(N), bit)
 begin
-    return (ROR(x, shift as integer {0..N-1}), x[shift-1]);
+    return (ROR(x, shift), x[shift-1]);
 end
