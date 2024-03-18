@@ -1096,7 +1096,7 @@ type 'k kinstruction =
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k MemExt.ext
   | I_LDRSW of reg * reg * 'k MemExt.ext
-  | I_LDUR of variant * reg * reg * 'k option
+  | I_LDUR of variant * reg * reg * 'k
 (* Neon Extension Load and Store*)
   | I_LD1 of reg list * int * reg * 'k kr
   | I_LDAP1 of reg list * int * reg * 'k kr
@@ -1482,10 +1482,8 @@ let do_pp_instruction m =
       pp_mem_ext "LDRSW" V64 r1 r2 idx
   | I_LDRS ((v,bh),r1,r2,idx) ->
      pp_mem_ext (ldrs_memo bh) v r1 r2 idx
-  | I_LDUR (_,r1,r2,None) ->
-      sprintf "LDUR %s, [%s]" (pp_reg r1) (pp_reg r2)
-  | I_LDUR (_,r1,r2,Some(k)) ->
-      sprintf "LDUR %s, [%s, %s]" (pp_reg r1) (pp_reg r2) (m.pp_k k)
+  | I_LDUR (_,r1,r2,k) ->
+      sprintf "LDUR %s, [%s%s]" (pp_reg r1) (pp_reg r2) (pp_kr false false (K k))
   | I_LDP (t,v,r1,r2,r3,idx) ->
       pp_memp (ldp_memo t) v r1 r2 r3 idx
   | I_LDPSW (r1,r2,r3,idx) ->
@@ -2555,9 +2553,7 @@ module PseudoI = struct
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
         | I_LDRS (v,r1,r2,idx) -> I_LDRS (v,r1,r2,ext_tr idx)
-
-        | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
-        | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
+        | I_LDUR (v,r1,r2,k) -> I_LDUR (v,r1,r2,k_tr k)
         | I_LDP (t,v,r1,r2,r3,idx) -> I_LDP (t,v,r1,r2,r3,idx_tr idx)
         | I_LDPSW (r1,r2,r3,idx) -> I_LDPSW (r1,r2,r3,idx_tr idx)
         | I_STP (t,v,r1,r2,r3,idx) -> I_STP (t,v,r1,r2,r3,idx_tr idx)

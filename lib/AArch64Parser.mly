@@ -247,10 +247,6 @@ k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
 
-k0_opt:
-| { None }
-| COMMA k { Some $2}
-
 k0:
 | { MetaConst.zero }
 | COMMA k=k { k }
@@ -519,7 +515,7 @@ instr:
   { let (v, s) = $2 and (ra,ext) = $4 in I_LDRS ((v,B),s,ra,ext) }
 | LDRSH reg COMMA mem_ea
   { let (v, s) = $2 and (ra,ext) = $4 in I_LDRS ((v,H),s,ra,ext) }
-| LDUR reg COMMA LBRK cxreg k0_opt RBRK
+| LDUR reg COMMA LBRK cxreg k0 RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
 
 | instr=ldp_instr r1=wreg COMMA r2=wreg COMMA ea=mem_idx

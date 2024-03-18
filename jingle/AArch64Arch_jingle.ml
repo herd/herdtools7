@@ -170,9 +170,7 @@ include Arch.MakeArch(struct
         | Some(x),Some(_) -> Some(x)
         | _ -> None end  >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
-    | I_LDUR(_,r1,r2,None),I_LDUR(_,r1',r2',None)
-      -> add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')] subs
-    | I_LDUR(_,r1,r2,Some(k)),I_LDUR(_,r1',r2',Some(k'))
+    | I_LDUR(_,r1,r2,k),I_LDUR(_,r1',r2',k')
       ->
         match_kr subs (K k) (K k') >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
@@ -431,15 +429,11 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         MemExt.expl e >! fun e ->
         I_LDRS(v,r1,r2,e)
-    | I_LDUR(a,r1,r2,Some(k)) ->
+    | I_LDUR(a,r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
         find_cst k >! fun k ->
-        I_LDUR(a,r1,r2,Some(k))
-    | I_LDUR(a,r1,r2,None) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
-        I_LDUR(a,r1,r2,None)
+        I_LDUR(a,r1,r2,k)
     | I_LDP(t,a,r1,r2,r3,idx) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

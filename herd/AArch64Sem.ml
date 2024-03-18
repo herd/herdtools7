@@ -2511,7 +2511,6 @@ module Make
             ldrs sz (tr_variant v) rd rs e ii
         | I_LDUR(var,rd,rs,k) ->
             let sz = tr_variant var in
-            let k = match k with Some k -> k | None -> 0 in
             ldr sz rd rs (MemExt.k2idx k) ii
         | I_LDAR(var,t,rd,rs) ->
             let sz = tr_variant var in

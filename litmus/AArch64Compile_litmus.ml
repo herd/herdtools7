@@ -1256,8 +1256,7 @@ module Make(V:Constant.S)(C:Config) =
 (* Load and Store *)
     | I_LDR (v,r1,r2,idx) -> load "ldr" v r1 r2 idx::k
     | I_LDRSW (r1,r2,idx) -> load "ldrsw" V64 r1 r2 idx::k
-    | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (MemExt.k2idx k')::k
-    | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (MemExt.k2idx 0)::k
+    | I_LDUR (v,r1,r2,k') -> load "ldur" v r1 r2 (MemExt.k2idx k')::k
     | I_LDP (t,v,r1,r2,r3,idx) ->
         load_pair (ldp_memo t) v r1 r2 r3 idx::k
     | I_LDPSW (r1,r2,r3,idx) ->
