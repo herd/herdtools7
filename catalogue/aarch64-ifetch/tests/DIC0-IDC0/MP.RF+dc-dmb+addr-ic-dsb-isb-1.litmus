@@ -1,0 +1,17 @@
+AArch64 MP.RF+dc-dmb+addr-ic-dsb-isb-1
+{ 0:X0=NOP;
+  0:X1=P1:m0; 0:X3=z; 
+  1:X1=P1:m0; 1:X3=z;
+}
+P0           | P1            ;
+STR W0,[X1]  |  LDR W2,[X3]  ;
+DC CVAU,X1   |  EOR W4,W2,W2 ;
+DMB ISH      |  ADD X1,X1,W4,SXTW ;
+MOV W2,#1    |  IC IVAU,X1   ;
+STR W2,[X3]  |  DSB ISH      ;
+             |  ISB          ;
+             | m0:           ;
+             |  B l0         ;
+             |  MOV W9,#1    ;
+             | l0:           ;
+exists 1:X2=1 /\ 1:X9=0
