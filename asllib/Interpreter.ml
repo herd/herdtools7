@@ -198,11 +198,7 @@ module Make (B : Backend.S) (C : Config) = struct
                 | None, None -> fail_initialise d name
                 | None, Some t -> base_value env t
               in
-              let* () =
-                match name with
-                | "PSTATE" | "RESADDR" -> return ()
-                | _ -> B.on_write_identifier name Scope_Global v
-              in
+              let* () = B.on_write_identifier name Scope_Global v in
               IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
