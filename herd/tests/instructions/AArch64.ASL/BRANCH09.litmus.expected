@@ -1,0 +1,11 @@
+Test BRANCH09 Forbidden
+States 2
+1:X1=0; 1:X3=0;
+1:X1=1; 1:X3=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists (1:X1=1 /\ 1:X3=0)
+Observation BRANCH09 Never 0 2
+Hash=815139f427ede35a0ecf953225593a5e
+
