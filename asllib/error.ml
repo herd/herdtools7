@@ -56,6 +56,8 @@ type error_desc =
   | BadLDI of AST.local_decl_item
   | BadRecursiveDecls of identifier list
   | UnrespectedParserInvariant
+  | ConstrainedIntegerExpected of ty
+  | ParameterWithoutDecl of identifier
 
 type error = error_desc annotated
 
@@ -202,6 +204,15 @@ let pp_error =
           (pp_comma_list (fun f -> fprintf f "%S"))
           decls
     | UnrespectedParserInvariant -> fprintf f "Parser invariant broke."
+    | ConstrainedIntegerExpected t ->
+        fprintf f
+          "ASL Typing error:@ constrained@ integer@ expected,@ provided@ %a"
+          pp_ty t
+    | ParameterWithoutDecl s ->
+        fprintf f
+          "ASL Typing error:@ explicit@ parameter@ %S@ does@ not@ have@ a@ \
+           corresponding@ defining@ argument"
+          s
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

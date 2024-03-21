@@ -138,7 +138,7 @@ Runtime checks:
   [1]
 
   $ cat >runtime-type-sat.asl <<EOF
-  > func test(size: integer) begin
+  > func test(size: integer {3, 4}) begin
   >   let - = Zeros(4) as bits(size);
   > end
   > func main () => integer begin
@@ -193,3 +193,17 @@ UnderConstrained integers:
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]
+
+Parameters bugs:
+  $ aslref bug1.asl
+  File bug1.asl, line 5, characters 21 to 29:
+  ASL Typing error: constrained integer expected, provided integer
+  [1]
+  $ aslref bug2.asl
+  ASL Typing error: constrained integer expected, provided integer
+  [1]
+  $ aslref bug3.asl
+  File bug3.asl, line 4, characters 10 to 18:
+  ASL Typing error: constrained integer expected, provided integer
+  [1]
+

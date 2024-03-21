@@ -8,7 +8,10 @@ let process_test path () =
   let ast, ver = build_ast_from_file path in
   (* First interprete it. *)
   let () = if _dbg then Format.eprintf "@[AST: %a@]@." PP.pp_t ast in
-  let i, _ = Native.interprete `TypeCheck ast in
+  let tc_strictness =
+    match ver with `ASLv0 -> `Silence | `ASLv1 -> `TypeCheck
+  in
+  let i, _ = Native.interprete tc_strictness ast in
   let () = assert (i = 0) in
   let () = if _dbg then Format.eprintf "Ran successfully.@.@." in
 
