@@ -149,8 +149,11 @@ let do_check_output litmus expected  expected_failure expected_warn t =
     end in
 
   match t with
+    | 0,[],[] -> true (* Can occur in case of controlled timeout *)
     | _,[],[] ->
-      Printf.printf "Failed %s : Herd finished but returned no output or errors\n" litmus ; false
+       Printf.printf
+         "Failed %s : Herd finished but returned no output or errors\n" litmus ;
+       false
     | 0,(_::_ as stdout), [] -> (* Herd finished without errors - normal *)
        begin
          match read_some_file litmus expected with
