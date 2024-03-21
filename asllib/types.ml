@@ -62,8 +62,7 @@ let rec make_anonymous (env : env) (ty : ty) : ty =
 (* Begin Structure *)
 let rec get_structure (env : env) (ty : ty) : ty =
   let () =
-    if false then
-      Format.eprintf "@[Getting structure of %a.@]@." PP.pp_ty ty
+    if false then Format.eprintf "@[Getting structure of %a.@]@." PP.pp_ty ty
   in
   let with_pos = add_pos_from ty in
   (match ty.desc with
@@ -75,14 +74,10 @@ let rec get_structure (env : env) (ty : ty) : ty =
   | T_Tuple tys -> T_Tuple (List.map (get_structure env) tys) |> with_pos
   | T_Array (e, t) -> T_Array (e, (get_structure env) t) |> with_pos
   | T_Record fields ->
-      let fields' =
-        assoc_map (get_structure env) fields |> canonical_fields
-      in
+      let fields' = assoc_map (get_structure env) fields |> canonical_fields in
       T_Record fields' |> with_pos
   | T_Exception fields ->
-      let fields' =
-        assoc_map (get_structure env) fields |> canonical_fields
-      in
+      let fields' = assoc_map (get_structure env) fields |> canonical_fields in
       T_Exception fields' |> with_pos)
   |: TypingRule.Structure
 (* End *)
@@ -113,8 +108,7 @@ let is_builtin ty =
 
 (* Begin Named *)
 let is_named ty =
-  (match ty.desc with T_Named _ -> true | _ -> false)
-  |: TypingRule.NamedType
+  (match ty.desc with T_Named _ -> true | _ -> false) |: TypingRule.NamedType
 (* End *)
 
 (* Begin Anonymous *)
@@ -152,8 +146,7 @@ let rec is_non_primitive ty =
 (* End *)
 
 (* Begin Primitive *)
-let is_primitive ty =
-  (not (is_non_primitive ty)) |: TypingRule.PrimitiveType
+let is_primitive ty = (not (is_non_primitive ty)) |: TypingRule.PrimitiveType
 (* End *)
 
 let under_constrained_constraints =
@@ -189,11 +182,9 @@ module Domain = struct
     | D_Bool
     | D_String
     | D_Real
-    | D_Symbols of ISet.t
-        (** The domain of an enum is a set of symbols *)
+    | D_Symbols of ISet.t  (** The domain of an enum is a set of symbols *)
     | D_Int of int_set
-    | D_Bits of int_set
-        (** The domain of a bitvector is given by its width. *)
+    | D_Bits of int_set  (** The domain of a bitvector is given by its width. *)
   (* |: TypingRule.Domain *)
   (* End *)
 
@@ -232,8 +223,7 @@ module Domain = struct
         with StaticInterpreter.NotYetImplemented -> e
       in
       try StaticInterpreter.static_eval env e
-      with
-      | Error.ASLException { desc = Error.UndefinedIdentifier _; _ } ->
+      with Error.ASLException { desc = Error.UndefinedIdentifier _; _ } ->
         raise_notrace StaticEvaluationTop
     in
     match v with
@@ -255,8 +245,7 @@ module Domain = struct
     match constraints with
     | [] ->
         failwith
-          "A well-constrained integer cannot have an empty list of \
-           constraints."
+          "A well-constrained integer cannot have an empty list of constraints."
     | _ -> (
         try
           Finite
@@ -267,8 +256,7 @@ module Domain = struct
 
   let int_set_to_int_constraints =
     let interval_to_constraint interval =
-      let x = IntSet.Interval.x interval
-      and y = IntSet.Interval.y interval in
+      let x = IntSet.Interval.x interval and y = IntSet.Interval.y interval in
       let expr_of_z z = L_Int z |> literal in
       Constraint_Range (expr_of_z x, expr_of_z y)
     in
@@ -283,8 +271,7 @@ module Domain = struct
     | Finite is1, Finite is2 ->
         Finite
           (IntSet.fold
-             (fun i1 ->
-               IntSet.fold (fun i2 -> IntSet.add (fop i1 i2)) is2)
+             (fun i1 -> IntSet.fold (fun i2 -> IntSet.add (fop i1 i2)) is2)
              is1 IntSet.empty)
     | Finite is1, FromSyntax _ ->
         let s1 = int_set_to_int_constraints is1 in
@@ -311,8 +298,7 @@ module Domain = struct
     | L_Real _ -> D_Real
     | L_String _ -> D_String
     | L_BitVector bv ->
-        D_Bits
-          (Finite (Bitvector.length bv |> Z.of_int |> IntSet.singleton))
+        D_Bits (Finite (Bitvector.length bv |> Z.of_int |> IntSet.singleton))
 
   let rec of_expr env e =
     match e.desc with
@@ -329,10 +315,8 @@ module Domain = struct
         of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
     | E_Unop _ -> assert false
     | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
-        let is1 =
-          match of_expr env e1 with D_Int is -> is | _ -> assert false
-        and is2 =
-          match of_expr env e2 with D_Int is -> is | _ -> assert false
+        let is1 = match of_expr env e1 with D_Int is -> is | _ -> assert false
+        and is2 = match of_expr env e2 with D_Int is -> is | _ -> assert false
         and fop =
           match op with
           | PLUS -> monotone_interval_op Z.add
@@ -344,9 +328,8 @@ module Domain = struct
     | _ ->
         let () =
           if false then
-            Format.eprintf
-              "@[<2>Cannot interpret as int set:@ @[%a@]@]@." PP.pp_expr
-              e
+            Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
+              PP.pp_expr e
         in
         raise StaticEvaluationTop
 
@@ -531,8 +514,7 @@ and structural_subtype_satisfies env t s =
       | [], _ -> true
       | _, [] -> false
       | bfs_s, bfs_t ->
-          bitwidth_equal env w_s w_t
-          && bitfields_included env bfs_s bfs_t)
+          bitwidth_equal env w_s w_t && bitfields_included env bfs_s bfs_t)
   | T_Bits _, _ -> false
   (* If S has the structure of an array type with elements of type E then
      T must have the structure of an array type with elements of type E,
@@ -564,8 +546,7 @@ and structural_subtype_satisfies env t s =
               String.equal name_s name_t && type_equal env ty_s ty_t)
             fields_t)
         fields_s
-  | T_Exception _, _ | T_Record _, _ ->
-      false (* A structure cannot be a name *)
+  | T_Exception _, _ | T_Record _, _ -> false (* A structure cannot be a name *)
   | T_Named _, _ -> assert false)
   |: TypingRule.StructuralSubtypeSatisfaction
 
@@ -582,9 +563,8 @@ and domain_subtype_satisfies env t s =
        and d_t = get_structure env t |> Domain.of_type env in
        let () =
          if false then
-           Format.eprintf
-             "domain_subtype_satisfies: %a included in %a?@." Domain.pp
-             d_t Domain.pp d_s
+           Format.eprintf "domain_subtype_satisfies: %a included in %a?@."
+             Domain.pp d_t Domain.pp d_s
        in
        Domain.is_subset env d_t d_s
    | T_Bits _ -> (
@@ -599,8 +579,8 @@ and domain_subtype_satisfies env t s =
        and s_domain = Domain.of_type env s_struct in
        let () =
          if false then
-           Format.eprintf "Is %a included in %a?@." Domain.pp t_domain
-             Domain.pp s_domain
+           Format.eprintf "Is %a included in %a?@." Domain.pp t_domain Domain.pp
+             s_domain
        in
        match
          ( Domain.get_width_singleton_opt s_domain,
@@ -620,11 +600,10 @@ and subtype_satisfies env t s =
     if false then
       let b1 = structural_subtype_satisfies env t s in
       let b2 = domain_subtype_satisfies env t s in
-      Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@."
-        PP.pp_ty t PP.pp_ty s b1 b2
+      Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@." PP.pp_ty t
+        PP.pp_ty s b1 b2
   in
-  (structural_subtype_satisfies env t s
-  && domain_subtype_satisfies env t s)
+  (structural_subtype_satisfies env t s && domain_subtype_satisfies env t s)
   |: TypingRule.SubtypeSatisfaction
 
 (* End *)
@@ -669,8 +648,7 @@ let rec type_clashes env t s =
   (* We will add a rule for boolean and boolean. *)
   ((subtypes env s t || subtypes env t s)
   ||
-  let s_struct = get_structure env s
-  and t_struct = get_structure env t in
+  let s_struct = get_structure env s and t_struct = get_structure env t in
   match (s_struct.desc, t_struct.desc) with
   | T_Int _, T_Int _
   | T_Real, T_Real
@@ -777,9 +755,7 @@ let rec lowest_common_ancestor env s t =
                  let maybe_ancestors =
                    List.map2 (lowest_common_ancestor env) li_s li_t
                  in
-                 let ancestors =
-                   List.filter_map Fun.id maybe_ancestors
-                 in
+                 let ancestors = List.filter_map Fun.id maybe_ancestors in
                  if List.compare_lengths ancestors li_s = 0 then
                    Some (add_dummy_pos (T_Tuple ancestors))
                  else None)
@@ -793,8 +769,7 @@ let rec lowest_common_ancestor env s t =
              (* If either S or T have the structure of an under-constrained
                 integer type: the under-constrained integer type. *)
              Some t
-         | T_Int (WellConstrained cs_s), T_Int (WellConstrained cs_t)
-           -> (
+         | T_Int (WellConstrained cs_s), T_Int (WellConstrained cs_t) -> (
              (* Implicit: cs_s and cs_t are non-empty, see patterns above. *)
              (* If S and T both have the structure of well-constrained integer
                 types:
@@ -810,9 +785,7 @@ let rec lowest_common_ancestor env s t =
              | _ ->
                  (* TODO: simplify domains ? If domains use a form of diets,
                     this could be more efficient. *)
-                 Some
-                   (add_dummy_pos
-                      (T_Int (WellConstrained (cs_s @ cs_t)))))
+                 Some (add_dummy_pos (T_Int (WellConstrained (cs_s @ cs_t)))))
          | T_Int UnConstrained, _ -> (
              (* Here S has the structure of an unconstrained integer type. *)
              (* TODO: revisit? *)
@@ -873,19 +846,16 @@ let rec base_value loc env t =
   | T_Bits (e, _) ->
       let e = normalize env e in
       E_Call ("Zeros", [ e ], []) |> add_pos_from t
-  | T_Enum li ->
-      IMap.find (List.hd li) env.global.constants_values |> lit
+  | T_Enum li -> IMap.find (List.hd li) env.global.constants_values |> lit
   | T_Int UnConstrained -> !$0
   | T_Int (UnderConstrained _) ->
       (* This case cannot happen:
          For example, if you have a variable declaration var foo: ty, ty cannot
          be an underconstrained integer type, as there is no syntax for it.
       *)
-      failwith
-        "Cannot get the base-value of an under-constrained integer."
+      failwith "Cannot get the base-value of an under-constrained integer."
   | T_Int (WellConstrained []) ->
-      failwith
-        "Well Constrained integers cannot have an empty constraint."
+      failwith "Well Constrained integers cannot have an empty constraint."
   | T_Int (WellConstrained (Constraint_Exact e :: _))
   | T_Int (WellConstrained (Constraint_Range (e, _) :: _)) ->
       normalize env e
