@@ -30,6 +30,7 @@ type env = SEnv.env
 let fatal = Error.fatal
 let fatal_from = Error.fatal_from
 
+exception StaticEvaluationUnknown
 exception NotYetImplemented
 
 let value_as_int pos = function
@@ -148,7 +149,9 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
               Format.eprintf "Failed to lookup %S in env: %a@." x
                 StaticEnv.pp_env env
           in
-          Error.fatal_from e (Error.UndefinedIdentifier x))
+          if SEnv.is_undefined x env then
+            Error.fatal_from e (Error.UndefinedIdentifier x)
+          else raise StaticEvaluationUnknown)
     | E_Binop (op, e1, e2) ->
         let v1 = expr_ e1 and v2 = expr_ e2 in
         binop_values e op v1 v2
@@ -596,7 +599,10 @@ module Normalize = struct
     | _ -> (
         let v =
           try static_eval env e
-          with Error.ASLException { desc = UnsupportedExpr _; _ } ->
+          with
+          | StaticEvaluationUnknown
+          | Error.ASLException { desc = UnsupportedExpr _; _ }
+          ->
             raise NotYetImplemented
         in
         match v with

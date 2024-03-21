@@ -29,6 +29,7 @@ module TypingRule = Instrumentation.TypingRule
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
+let unsupported_expr e = fatal_from e (Error.UnsupportedExpr e)
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
@@ -38,15 +39,16 @@ let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
 let reduce_expr env e =
-  try StaticInterpreter.Normalize.normalize env e
-  with StaticInterpreter.NotYetImplemented -> e
+  let open StaticInterpreter in
+  try Normalize.normalize env e with NotYetImplemented -> e
 
 let reduce_constants env e =
-  try StaticInterpreter.static_eval env e
-  with
-  | Error.ASLException
-      { desc = Error.UndefinedIdentifier x; pos_start; pos_end } as error
-  -> (
+  let open StaticInterpreter in
+  let eval_expr env e =
+    try static_eval env e with NotYetImplemented -> unsupported_expr e
+  in
+  try eval_expr env e
+  with StaticEvaluationUnknown -> (
     let () =
       if false then
         Format.eprintf
@@ -54,13 +56,8 @@ let reduce_constants env e =
            %a@]@."
           PP.pp_expr e PP.pp_pos e
     in
-    try
-      StaticInterpreter.Normalize.normalize env e
-      |> StaticInterpreter.static_eval env
-    with StaticInterpreter.NotYetImplemented ->
-      if pos_end == Lexing.dummy_pos || pos_start == Lexing.dummy_pos then
-        undefined_identifier e x
-      else raise error)
+    try reduce_expr env e |> eval_expr env
+    with StaticEvaluationUnknown -> unsupported_expr e)
 
 let reduce_constraint env = function
   | Constraint_Exact e -> Constraint_Exact (reduce_expr env e)
@@ -327,7 +324,8 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
               ( deduce_eqs env caller_arg_types callee_arg_types,
                 name,
                 callee_arg_types,
-                func_sig.return_type )
+                func_sig.return_type,
+                func_sig.parameters )
             else fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
         | None -> undefined_identifier loc name)
     | Some set -> (
@@ -338,14 +336,14 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
             ( deduce_eqs env caller_arg_types callee_arg_types,
               name',
               callee_arg_types,
-              func_sig.return_type )
+              func_sig.return_type,
+              func_sig.parameters )
             :: acc
           else acc
         in
         match ISet.fold finder set [] with
+        | [ res ] -> res
         | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
-        | [ (eqs, name', callee_arg_types, ret_type) ] ->
-            (eqs, name', callee_arg_types, ret_type)
         | _ :: _ ->
             fatal_from loc
               (Error.TooManyCallCandidates (name, caller_arg_types)))
@@ -356,11 +354,11 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
       try
         match IMap.find_opt name env.global.subprograms with
         | None -> undefined_identifier loc ("function " ^ name)
-        | Some { args = callee_arg_types; return_type; _ } ->
+        | Some { args = callee_arg_types; return_type; parameters; _ } ->
             if false then
               Format.eprintf "@[<2>%a:@ No extra arguments for %s@]@." PP.pp_pos
                 loc name;
-            ([], name, callee_arg_types, return_type)
+            ([], name, callee_arg_types, return_type, parameters)
       with Error.ASLException _ -> raise error)
 end
 
@@ -390,7 +388,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let eval env e =
       match reduce_constants env e with
       | L_Int z -> Z.to_int z
-      | _ -> fatal_from e @@ Error.UnsupportedExpr e
+      | _ -> unsupported_expr e
     in
     let module DI = Diet.Int in
     let one_slice loc env diet slice =
@@ -519,8 +517,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       if false then
         Format.eprintf "Checking that %a is an integer.@." PP.pp_ty t
     in
-    match (Types.get_structure env t).desc with
+    match (Types.make_anonymous env t).desc with
     | T_Int _ -> ()
+    | _ -> conflict loc [ integer' ] t
+
+  let check_constrained_integer ~loc env t () =
+    match (Types.make_anonymous env t).desc with
+    | T_Int UnConstrained -> fatal_from loc Error.(ConstrainedIntegerExpected t)
+    | T_Int (WellConstrained _ | UnderConstrained _) -> ()
     | _ -> conflict loc [ integer' ] t
 
   let check_structure_exception loc env t () =
@@ -566,7 +570,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match e.desc with
     | E_Literal (L_Int i) -> Z.sign i = 1
     | E_Var _n -> false
-    | _ -> fatal_from e (UnsupportedExpr e)
+    | _ -> unsupported_expr e
 
   let constraint_is_strict_positive = function
     | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_strict_positive e
@@ -578,7 +582,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match e.desc with
     | E_Literal (L_Int i) -> Z.sign i != -1
     | E_Var _n -> false
-    | _ -> fatal_from e (UnsupportedExpr e)
+    | _ -> unsupported_expr e
 
   let constraint_is_non_negative = function
     | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_non_negative e
@@ -586,7 +590,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let constraints_is_non_negative = List.for_all constraint_is_non_negative
 
   let constraint_binop env op cs1 cs2 =
-    constraint_binop op cs1 cs2 |> reduce_constraints env
+    let res = constraint_binop op cs1 cs2 |> reduce_constraints env in
+    let () =
+      if false then
+        Format.eprintf
+          "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
+          (PP.binop_to_string op) PP.pp_int_constraints cs1
+          PP.pp_int_constraints cs2 PP.pp_ty
+          (T_Int res |> add_dummy_pos)
+    in
+    res
 
   let type_of_array_length ~loc env = function
     | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from loc
@@ -757,13 +770,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         t1 |: TypingRule.CheckUnop
   (* End *)
 
+  let var_in_env ?(local = true) env x =
+    (local && IMap.mem x env.local.storage_types)
+    || IMap.mem x env.global.storage_types
+    || IMap.mem x env.global.subprograms
+    || IMap.mem x env.global.declared_types
+
   let check_var_not_in_env ?(local = true) loc env x () =
-    if
-      (local && IMap.mem x env.local.storage_types)
-      || IMap.mem x env.global.storage_types
-      || IMap.mem x env.global.subprograms
-      || IMap.mem x env.global.declared_types
-    then fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+    if var_in_env ~local env x then
+      fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
 
   let check_var_not_in_genv loc = check_var_not_in_env ~local:false loc
@@ -835,6 +850,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           StaticEnv.pp_env env
     in
     let here t = add_pos_from ty t in
+    best_effort ty @@ fun _ ->
     match ty.desc with
     (* Begin TString *)
     | T_String -> ty
@@ -860,7 +876,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | UnderConstrained _ | UnConstrained -> ty)
     (* Begin TBits *)
     | T_Bits (e_width, bitfields) ->
-        let e_width' = annotate_static_integer ~loc env e_width in
+        let e_width' = annotate_static_constrained_integer ~loc env e_width in
         let bitfields' =
           if bitfields = [] then bitfields
           else annotate_bitfields ~loc env e_width' bitfields
@@ -931,13 +947,19 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let+ () = check_statically_evaluable env e' in
     reduce_expr env e'
 
+  and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
+    let t, e' = annotate_expr env e in
+    let+ () = check_constrained_integer ~loc env t in
+    let+ () = check_statically_evaluable env e' in
+    reduce_expr env e'
+
   and annotate_constraint ~loc env = function
     | Constraint_Exact e ->
-        let e' = annotate_static_integer ~loc env e in
+        let e' = annotate_static_constrained_integer ~loc env e in
         Constraint_Exact e'
     | Constraint_Range (e1, e2) ->
-        let e1' = annotate_static_integer ~loc env e1
-        and e2' = annotate_static_integer ~loc env e2 in
+        let e1' = annotate_static_constrained_integer ~loc env e1
+        and e2' = annotate_static_constrained_integer ~loc env e2 in
         Constraint_Range (e1', e2')
 
   and annotate_slices env =
@@ -962,7 +984,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | Slice_Length (offset, length) ->
           let t_offset, offset' = annotate_expr env offset
           and length' =
-            annotate_static_integer ~loc:(to_pos length) env length
+            annotate_static_constrained_integer ~loc:(to_pos length) env length
           in
           let+ () = check_structure_integer offset' env t_offset in
           Slice_Length (offset', length') |: TypingRule.SliceLength
@@ -1100,7 +1122,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let caller_arg_typed = List.map (annotate_expr env) args in
     let caller_arg_types, args1 = List.split caller_arg_typed in
-    let extra_nargs, name1, callee_arg_types, ret_ty =
+    let extra_nargs, name1, callee_arg_types, ret_ty, callee_params =
       Fn.try_find_name loc env name caller_arg_types
     in
     let () =
@@ -1126,9 +1148,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       (* End *)
     in
     let eqs2 =
-      let folder acc (x, ty) (t_e, e) =
+      let folder acc (_x, ty) (t_e, _e) =
         match ty.desc with
-        | T_Int _ -> (x, e) :: acc
         | T_Bits ({ desc = E_Var x; _ }, _) -> (
             match (Types.get_structure env t_e).desc with
             | T_Bits (e, _) -> (x, e) :: acc
@@ -1143,7 +1164,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         eprintf "@[<hov 2>Eqs for this call are: %a@]@."
           (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
                fprintf f "%S<--%a" name PP.pp_expr e))
-          eqs
+          eqs2
     in
     let () =
       List.iter2
@@ -1163,11 +1184,31 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         Format.eprintf "Renaming call from %s to %s@ at %a.@." name name1
           PP.pp_pos loc
     in
+    let eqs3 =
+      List.map
+        (fun (param_name, e) ->
+          let e' = annotate_static_constrained_integer ~loc env e in
+          (param_name, e'))
+        eqs2
+    in
+    let eqs4 =
+      List.fold_left2
+        (fun eqs (callee_x, _) (caller_ty, caller_e) ->
+          if
+            List.exists
+              (fun (p_name, _ty) -> String.equal callee_x p_name)
+              callee_params
+          then
+            let+ () = check_constrained_integer ~loc env caller_ty in
+            (callee_x, caller_e) :: eqs
+          else eqs)
+        eqs3 callee_arg_types caller_arg_typed
+    in
     let ret_ty1 =
       match (call_type, ret_ty) with
       (* Begin FCallGetter *)
       | (ST_Function | ST_Getter), Some ty ->
-          Some (rename_ty_eqs eqs2 ty) |: TypingRule.FCallGetter
+          Some (rename_ty_eqs eqs4 ty) |: TypingRule.FCallGetter
       (* End *)
       (* Begin FCallSetter *)
       | (ST_Setter | ST_Procedure), None -> None |: TypingRule.FCallSetter
@@ -1179,7 +1220,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       (* End *)
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
-    (name1, args1, eqs2, ret_ty1)
+    (name1, args1, eqs4, ret_ty1)
 
   and annotate_expr env (e : expr) : ty * expr =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
@@ -1637,7 +1678,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 in
                 LE_SetArray (le2, e_index') |> here |: TypingRule.LESetArray
             (* End *)
-            | _ -> fatal_from le1 (Error.UnsupportedExpr (expr_of_lexpr le1)))
+            | _ -> unsupported_expr (expr_of_lexpr le1))
         | _ -> conflict le1 [ default_t_bits ] t_le1)
     | LE_SetField (le1, field) ->
         (let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
@@ -1981,19 +2022,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
               UnConstrained
           | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) -> (
+              let bot_cs, top_cs =
+                match dir with Up -> (cs1, cs2) | Down -> (cs2, cs1)
+              in
               try
-                let bot_cs, top_cs =
-                  match dir with Up -> (cs1, cs2) | Down -> (cs2, cs1)
-                in
                 let bot = min_constraints env bot_cs
                 and top = max_constraints env top_cs in
                 if bot <= top then
                   WellConstrained
                     [ Constraint_Range (expr_of_z bot, expr_of_z top) ]
                 else WellConstrained cs1
-              with ConstraintMinMaxTop ->
-                (* TODO: this case is not specified by the LRM. *)
-                UnConstrained)
+              with ConstraintMinMaxTop -> (
+                match (bot_cs, top_cs) with
+                | [ Constraint_Exact e_bot ], [ Constraint_Exact e_top ] ->
+                    WellConstrained [ Constraint_Range (e_bot, e_top) ]
+                | _ ->
+                    (* TODO: this case is not specified by the LRM. *)
+                    UnConstrained))
           | T_Int (UnderConstrained _), T_Int _
           | T_Int _, T_Int (UnderConstrained _) ->
               assert false
@@ -2093,7 +2138,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     if not (should_reduce_to_call env x) then None
     else
       let ( let* ) = Option.bind in
-      let _, _, _, ty_opt =
+      let _, _, _, ty_opt, _ =
         try Fn.try_find_name le env x []
         with Error.ASLException _ -> assert false
       in
@@ -2165,6 +2210,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_Concat (_les, _) -> None
     | LE_SetArray _ -> assert false
 
+  let fold_types_func_sig folder f init =
+    let from_args =
+      List.fold_left (fun acc (_x, t) -> folder acc t) init f.args
+    in
+    match f.return_type with None -> from_args | Some t -> folder from_args t
+
+  let get_undeclared_defining env =
+    let of_ty acc ty =
+      match ty.desc with
+      | T_Bits ({ desc = E_Var x; _ }, _) ->
+          if StaticEnv.is_undefined x env then ISet.add x acc else acc
+      | _ -> acc
+    in
+    fun f -> fold_types_func_sig of_ty f ISet.empty
+
+  let use_func_sig f = fold_types_func_sig ASTUtils.use_ty f ISet.empty
+
   let annotate_func_sig ~loc env (f : AST.func) : env * AST.func =
     let () =
       if false then
@@ -2173,40 +2235,74 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     (* Build typing local environment. *)
     let env1 = { env with local = empty_local } in
+    let potential_params = get_undeclared_defining env1 f in
     (* Add explicit parameters *)
-    let env2, parameters =
-      let one_param env1' (x, ty_opt) =
-        let ty =
-          match ty_opt with
-          | Some ty -> annotate_type ~loc env1 ty
-          | None -> Types.under_constrained_ty x
-        in
+    let env2, declared_params =
+      let () =
+        if false then
+          Format.eprintf "Defined potential parameters: %a@." ISet.pp_print
+            potential_params
+      in
+      let folder (env1', acc) (x, ty_opt) =
         let+ () = check_var_not_in_env loc env1' x in
-        (* Subtility here: the type should be valid in the env with nothing declared, i.e. [env1]. *)
-        (add_local x ty LDK_Let env1', (x, Some ty))
-      in
-      list_fold_left_map one_param env1 f.parameters
-    in
-    let () = if false then Format.eprintf "Parameters added.@." in
-    (* Add dependently typed identifiers, from arguments. *)
-    let env3 =
-      let add_dependently_typed_from_ty env2' (_, ty) =
-        let () =
-          if false then Format.eprintf "Seeing arg of type %a@." PP.pp_ty ty
+        let+ () =
+          check_true (ISet.mem x potential_params) @@ fun () ->
+          fatal_from loc (Error.ParameterWithoutDecl x)
         in
-        match ty.desc with
-        | T_Bits ({ desc = E_Var x; _ }, _) -> (
-            match StaticEnv.type_of_opt env2' x with
-            | Some t ->
-                let () =
-                  if false then
-                    Format.eprintf "%S Already typed: %a@." x PP.pp_ty t
-                in
-                env2'
-            | None -> add_local x (Types.under_constrained_ty x) LDK_Let env2')
-        | _ -> env2'
+        let t =
+          match ty_opt with
+          | None | Some { desc = T_Int UnConstrained; _ } ->
+              Types.under_constrained_ty x
+          | Some t -> annotate_type ~loc env1 t
+          (* Type should be valid in the env with no param declared. *)
+        in
+        let+ () = check_constrained_integer ~loc env1 t in
+        (add_local x t LDK_Let env1', IMap.add x t acc)
       in
-      List.fold_left add_dependently_typed_from_ty env2 f.args
+      List.fold_left folder (env1, IMap.empty) f.parameters
+    in
+    let () = if false then Format.eprintf "Explicit parameters added.@." in
+    (* Add arguments as parameters. *)
+    let env3, arg_params =
+      let used =
+        use_func_sig f
+        |> ISet.filter (fun s ->
+               StaticEnv.is_undefined s env1 && not (IMap.mem s declared_params))
+      in
+      let () =
+        if false then
+          Format.eprintf "Undefined used in func sig: %a@." ISet.pp_print used
+      in
+      let folder (env2', acc) (x, ty) =
+        if ISet.mem x used then
+          let+ () = check_var_not_in_env loc env2' x in
+          let t =
+            match ty.desc with
+            | T_Int UnConstrained -> Types.under_constrained_ty x
+            | _ -> annotate_type ~loc env2 ty
+            (* Type sould be valid in env with explicit parameters added, but no implicit parameter from args added. *)
+          in
+          let+ () = check_constrained_integer ~loc env2 t in
+          (add_local x t LDK_Let env2', IMap.add x t acc)
+        else (env2', acc)
+      in
+      List.fold_left folder (env2, IMap.empty) f.args
+    in
+    let parameters =
+      List.append (IMap.bindings declared_params) (IMap.bindings arg_params)
+      |> List.map (fun (x, t) -> (x, Some t))
+    in
+    let env3, parameters =
+      (* Do not transliterate, only for v0: promote potential params as params. *)
+      if C.check = `TypeCheck then (env3, parameters)
+      else
+        let folder x (env3', parameters) =
+          if var_in_env env3 x then (env3', parameters)
+          else
+            let t = Types.under_constrained_ty x in
+            (add_local x t LDK_Let env3', (x, Some t) :: parameters)
+        in
+        ISet.fold folder potential_params (env3, parameters)
     in
     let () =
       if false then
@@ -2216,32 +2312,36 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Add arguments. *)
     let env4, args =
       let one_arg env3' (x, ty) =
-        let () = if false then Format.eprintf "Adding argument %s.@." x in
-        let+ () = check_var_not_in_env loc env3' x in
-        (* Subtility here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
-        let ty' = annotate_type ~loc env3 ty in
-        let env3'' = add_local x ty' LDK_Let env3' in
-        (env3'', (x, ty'))
+        if IMap.mem x arg_params then
+          let ty' = annotate_type ~loc env2 ty in
+          (env3', (x, ty'))
+        else
+          let () = if false then Format.eprintf "Adding argument %s.@." x in
+          let+ () = check_var_not_in_env loc env3' x in
+          (* Subtility here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
+          let ty' = annotate_type ~loc env3 ty in
+          let env3'' = add_local x ty' LDK_Let env3' in
+          (env3'', (x, ty'))
       in
       list_fold_left_map one_arg env3 f.args
-    in
-    let () =
-      if false then
-        Format.eprintf "@[<hov>Annotating return-type in env:@ %a@]@."
-          StaticEnv.pp_env env4
     in
     (* Check return type. *)
     let env5, return_type =
       match f.return_type with
-      | None -> (env4, None)
+      | None -> (env4, f.return_type)
       | Some ty ->
-          (* Subtility here: the type should be valid in the env with arguments declared, i.e. [env4]. *)
-          let ty' = annotate_type ~loc env4 ty in
+          let () =
+            if false then
+              Format.eprintf "@[<hov>Annotating return-type in env:@ %a@]@."
+                StaticEnv.pp_env env3
+          in
+          (* Subtility here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
+          let ty' = annotate_type ~loc env3 ty in
           let return_type = Some ty' in
           let env4' =
             StaticEnv.{ env4 with local = { env4.local with return_type } }
           in
-          (env4', Some ty')
+          (env4', return_type)
     in
     (env5, { f with parameters; args; return_type })
 
@@ -2402,7 +2502,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let rename_primitive loc env (f : AST.func) =
     let name =
       best_effort f.name @@ fun _ ->
-      let _, name, _, _ = Fn.find_name loc env f.name (List.map snd f.args) in
+      let _, name, _, _, _ =
+        Fn.find_name loc env f.name (List.map snd f.args)
+      in
       name
     in
     { f with name }

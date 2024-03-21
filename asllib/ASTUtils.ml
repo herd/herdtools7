@@ -551,20 +551,45 @@ let list_cross f li1 li2 =
 
 exception FailedConstraintOp
 
+let is_left_increasing = function
+  | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> true
+  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | RDIV ->
+      raise FailedConstraintOp
+
+let is_right_increasing = function
+  | MUL | SHL | SHR | POW | PLUS -> true
+  | DIV | DIVRM | MOD | MINUS -> false
+  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | RDIV ->
+      raise FailedConstraintOp
+
+let is_right_decreasing = function
+  | MINUS -> true
+  | DIV | DIVRM | MUL | SHL | SHR | POW | PLUS | MOD -> false
+  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | RDIV ->
+      raise FailedConstraintOp
+
 let constraint_binop op =
+  let righ_inc = is_right_increasing op
+  and righ_dec = is_right_decreasing op
+  and left_inc = is_left_increasing op in
   let do_op c1 c2 =
-    match (c1, c2, op) with
-    | Constraint_Exact e1, Constraint_Exact e2, _ ->
+    match (c1, c2) with
+    | Constraint_Exact e1, Constraint_Exact e2 ->
         Constraint_Exact (binop op e1 e2)
-    | Constraint_Exact e1, Constraint_Range (e21, e22), PLUS ->
+    | Constraint_Exact e1, Constraint_Range (e21, e22) when righ_inc ->
         Constraint_Range (binop op e1 e21, binop op e1 e22)
-    | Constraint_Exact e1, Constraint_Range (e21, e22), MINUS ->
+    | Constraint_Exact e1, Constraint_Range (e21, e22) when righ_dec ->
         Constraint_Range (binop op e1 e22, binop op e1 e21)
-    | Constraint_Range (e11, e12), Constraint_Exact e2, (PLUS | MINUS) ->
+    | Constraint_Range (e11, e12), Constraint_Exact e2 when left_inc ->
         Constraint_Range (binop op e11 e2, binop op e12 e2)
-    | Constraint_Range (e11, e12), Constraint_Range (e21, e22), PLUS ->
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22)
+      when left_inc && righ_inc ->
         Constraint_Range (binop op e11 e21, binop op e12 e22)
-    | Constraint_Range (e11, e12), Constraint_Range (e21, e22), MINUS ->
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22)
+      when left_inc && righ_dec ->
         Constraint_Range (binop op e11 e22, binop op e12 e21)
     | _ -> raise_notrace FailedConstraintOp
   in
