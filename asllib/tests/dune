@@ -1,35 +1,44 @@
 (library
-  (name test_helpers)
-  (modules Helpers)
-  (libraries asllib))
+ (name test_helpers)
+ (modules Helpers)
+ (libraries asllib))
 
 (test
-  (name asltests)
-  (modes native)
-  (modules asltests)
-  (libraries asllib test_helpers)
-  (deps (glob_files asl/required/*.asl) asltests.ml ../libdir/stdlib.asl)
-  (action
-    (setenv ASL_LIBDIR %{project_root}/asllib/libdir/
-      (run %{test} asl/required))))
+ (name asltests)
+ (modes native)
+ (modules asltests)
+ (libraries asllib test_helpers)
+ (deps
+  (glob_files asl/required/*.asl)
+  asltests.ml
+  ../libdir/stdlib.asl)
+ (action
+  (setenv
+   ASL_LIBDIR
+   %{project_root}/asllib/libdir/
+   (run %{test} asl/required))))
 
 (test
-  (name toposort)
-  (modes native)
-  (enabled_if %{lib-available:qcheck})
-  (libraries asllib qcheck)
-  (modules toposort))
+ (name toposort)
+ (modes native)
+ (enabled_if %{lib-available:qcheck})
+ (libraries asllib qcheck)
+ (modules toposort))
 
 (tests
-  (names static bitvector types)
-  (modules static bitvector types)
-  (modes native)
-  (deps (:standard ../libdir/stdlib.asl))
-  (libraries asllib test_helpers zarith)
-  (flags (:standard -w -40-42))
-  (action 
-    (setenv ASL_LIBDIR %{project_root}/asllib/libdir/
-      (run %{test} -e))))
+ (names static bitvector types)
+ (modules static bitvector types)
+ (modes native)
+ (deps
+  (:standard ../libdir/stdlib.asl))
+ (libraries asllib test_helpers zarith)
+ (flags
+  (:standard -w -40-42))
+ (action
+  (setenv
+   ASL_LIBDIR
+   %{project_root}/asllib/libdir/
+   (run %{test} -e))))
 
 (cram
-  (deps %{bin:aslref}))
+ (deps %{bin:aslref}))

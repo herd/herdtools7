@@ -1,36 +1,67 @@
-(ocamllex AArch64Lexer ARMLexer BellLexer CLexer lexHint lexOutMapping lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer RISCVLexer scopeLexer splitter stateLexer X86Lexer X86_64Lexer echo dirtyBit cacheType lexScan JavaLexer)
+(ocamllex AArch64Lexer ARMLexer BellLexer CLexer lexHint lexOutMapping
+  lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer RISCVLexer
+  scopeLexer splitter stateLexer X86Lexer X86_64Lexer echo dirtyBit cacheType
+  lexScan JavaLexer)
 
+(menhir
+ (modules PPCParser)
+ (flags --fixed-exception))
 
+(menhir
+ (modules ARMParser)
+ (flags --fixed-exception))
 
-(menhir (modules PPCParser) (flags  --fixed-exception))
-(menhir (modules ARMParser) (flags  --fixed-exception))
-(menhir (modules MIPSParser) (flags  --fixed-exception))
-(menhir (modules X86Parser) (flags  --fixed-exception))
-(menhir (modules X86_64Parser) (flags  --fixed-exception))
-(menhir (modules modelParser) (flags  --fixed-exception))
-(menhir (modules RISCVParser) (flags  --fixed-exception))
-(menhir (modules JavaParser) (flags  --fixed-exception))
-(menhir (modules stateParser) (flags  --explain --fixed-exception))
+(menhir
+ (modules MIPSParser)
+ (flags --fixed-exception))
 
-(menhir (modules procRules scopeRules  BellExtraRules AArch64Parser)
-  (merge_into AArch64Parser)
-  (flags  --fixed-exception))
+(menhir
+ (modules X86Parser)
+ (flags --fixed-exception))
 
-(menhir (modules procRules scopeRules BellExtraRules LISAParser)
-  (merge_into LISAParser)
-  (flags  --fixed-exception))
+(menhir
+ (modules X86_64Parser)
+ (flags --fixed-exception))
 
-(menhir (modules scopeRules scopeParser)
-  (merge_into scopeParser)
-   (flags  --fixed-exception))
+(menhir
+ (modules modelParser)
+ (flags --fixed-exception))
 
-(menhir (modules scopeRules BellExtraRules CParser)
-  (merge_into CParser)
-  (flags  --fixed-exception))
+(menhir
+ (modules RISCVParser)
+ (flags --fixed-exception))
+
+(menhir
+ (modules JavaParser)
+ (flags --fixed-exception))
+
+(menhir
+ (modules stateParser)
+ (flags --explain --fixed-exception))
+
+(menhir
+ (modules procRules scopeRules BellExtraRules AArch64Parser)
+ (merge_into AArch64Parser)
+ (flags --fixed-exception))
+
+(menhir
+ (modules procRules scopeRules BellExtraRules LISAParser)
+ (merge_into LISAParser)
+ (flags --fixed-exception))
+
+(menhir
+ (modules scopeRules scopeParser)
+ (merge_into scopeParser)
+ (flags --fixed-exception))
+
+(menhir
+ (modules scopeRules BellExtraRules CParser)
+ (merge_into CParser)
+ (flags --fixed-exception))
 
 (library
  (name herdtools)
  (wrapped false)
  (libraries str asllib zarith)
- (modules_without_implementation sign outTests AST CAst Scalar archBase archDump
-   PPMode name value))
+ (modules_without_implementation sign outTests AST CAst Scalar archBase
+   archDump PPMode name value))
