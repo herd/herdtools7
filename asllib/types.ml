@@ -223,7 +223,7 @@ module Domain = struct
         with StaticInterpreter.NotYetImplemented -> e
       in
       try StaticInterpreter.static_eval env e
-      with Error.ASLException { desc = Error.UndefinedIdentifier _; _ } ->
+      with StaticInterpreter.StaticEvaluationUnknown ->
         raise_notrace StaticEvaluationTop
     in
     match v with
@@ -839,9 +839,7 @@ let rec base_value loc env t =
   let normalize env e =
     let open StaticInterpreter in
     try Normalize.normalize env e
-    with NotYetImplemented -> (
-      try static_eval env e |> lit
-      with Error.ASLException _ | NotYetImplemented -> e)
+    with NotYetImplemented -> ( try static_eval env e |> lit with _ -> e)
   in
   let t_struct = get_structure env t in
   match t_struct.desc with

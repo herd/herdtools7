@@ -90,7 +90,7 @@ end
 func Replicate{M}(x: bits(M), N: integer) => bits(M*N)
 begin
   if M == 1 then
-    return ReplicateBit(IsZero(x),N);
+    return ReplicateBit(IsZero(x),N) as bits (M*N);
   else
     var r: bits(M*N) = Zeros(M*N);
     for i=0 to N-1 do
@@ -162,12 +162,12 @@ begin
   return [Replicate(x[M-1], N - M), x];
 end
 
-func ZeroExtend(x :: bits(M), N::integer) => bits(N)
+func ZeroExtend {M} (x :: bits(M), N::integer) => bits(N)
 begin
   return [Zeros(N - M), x];
 end
 
-func Extend(x :: bits(M), N :: integer, unsigned::boolean) => bits(N)
+func Extend {M} (x :: bits(M), N :: integer, unsigned::boolean) => bits(N)
 begin
   return if unsigned then ZeroExtend(x, N) else SignExtend(x, N);
 end
