@@ -582,7 +582,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let emit_load_reg temporal st init rA =
         let r1,st = next_vreg st in
         let r2,st = next_vreg st in
-        let ldp = [I_LDP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,0)] in
+        let ldp = [I_LDP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,(0,A64.Idx))] in
         let r3,st = next_vreg st in
         let add = [I_ADD_SIMD (r3,r1,r2)] in
         let rX,st = next_reg st in
@@ -603,7 +603,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module LDUR = struct
       let emit_load_reg st init rA =
         let r,st = next_scalar_reg st in
-        let ldur = [I_LDUR_SIMD(A64.VSIMD32,r,rA,None)] in
+        let ldur = [I_LDUR_SIMD(A64.VSIMD32,r,rA,0)] in
         let rX,st = next_reg st in
         let fmov = [I_FMOV_TG(A64.V32,rX,A64.VSIMD32,r)] in
         rX,init,lift_code (ldur@fmov),st
@@ -622,7 +622,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module LDAPUR = struct
       let emit_load_reg st init rA =
         let r,st = next_scalar_reg st in
-        let ldur = [I_LDAPUR_SIMD(A64.VSIMD32,r,rA,None)] in
+        let ldur = [I_LDAPUR_SIMD(A64.VSIMD32,r,rA,0)] in
         let rX,st = next_reg st in
         let fmov = [I_FMOV_TG(A64.V32,rX,A64.VSIMD32,r)] in
         rX,init,lift_code (ldur@fmov),st
@@ -834,7 +834,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let r1,st = next_vreg st in
         let r2,st = next_vreg st in
         let movi = List.mapi (fun i r -> movi_reg r (v+i)) [r1;r2] in
-        let stp = [I_STP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,0)] in
+        let stp = [I_STP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,(0,A64.Idx))] in
         init,pseudo movi@pseudo stp,st
 
       let emit_store n st p init loc v =
@@ -854,7 +854,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let r2,st = next_vreg st in
         let movi = List.mapi (fun i r -> movi_reg r (v+i)) [r1;r2] in
         let adds = List.map (fun v -> add_simd v rB) [r1;r2] in
-        let stp = [I_STP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,0)] in
+        let stp = [I_STP_SIMD(temporal,A64.VSIMD32,to_scalar r1,to_scalar r2,rA,(0,A64.Idx))] in
         init,lift_code(dup@movi@adds@stp),st
     end
 
@@ -862,7 +862,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let emit_store_reg st init rA v =
         let r,st = next_vreg st in
         let movi = [movi_reg r v] in
-        let stur = [I_STUR_SIMD(A64.VSIMD32,to_scalar r,rA,None)] in
+        let stur = [I_STUR_SIMD(A64.VSIMD32,to_scalar r,rA,0)] in
         init,lift_code(movi@stur),st
 
       let emit_store st p init loc v =
@@ -881,7 +881,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let r1,st = next_vreg st in
         let movi = [movi_reg r1 v] in
         let adds = [add_simd r1 rB]in
-        let stur = [I_STUR_SIMD(A64.VSIMD32,to_scalar r1,rA,None)] in
+        let stur = [I_STUR_SIMD(A64.VSIMD32,to_scalar r1,rA,0)] in
         init,lift_code(dup@movi@adds@stur),st
     end
 
@@ -889,7 +889,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let emit_store_reg st init rA v =
         let r,st = next_vreg st in
         let movi = [movi_reg r v] in
-        let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r,rA,None)] in
+        let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r,rA,0)] in
         init,lift_code(movi@stlur),st
 
       let emit_store st p init loc v =
@@ -908,7 +908,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let r1,st = next_vreg st in
         let movi = [movi_reg r1 v] in
         let adds = [add_simd r1 rB]in
-        let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r1,rA,None)] in
+        let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r1,rA,0)] in
         init,lift_code(dup@movi@adds@stlur),st
     end
 
