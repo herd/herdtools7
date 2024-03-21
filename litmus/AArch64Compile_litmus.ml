@@ -1423,8 +1423,12 @@ module Make(V:Constant.S)(C:Config) =
 (* Fence *)
     | I_FENCE f -> fence f::k
 (* Fetch and Op *)
+    |I_LDOP (op,v,(RMW_P|RMW_L as rmw),rs,ZR,rn) ->
+        stop (stop_memo op (rmw_to_w rmw)) v rs rn::k
     |I_LDOP (op,v,rmw,rs,rt,rn) ->
         ldop (ldop_memo op rmw) v rs rt rn::k
+    |I_LDOPBH  (op,v,(RMW_P|RMW_L as rmw),rs,ZR,rn) ->
+        stop (stopbh_memo op v (rmw_to_w rmw)) V32 rs rn::k
     |I_LDOPBH  (op,v,rmw,rs,rt,rn) ->
         ldop (ldopbh_memo op v rmw) V32 rs rt rn::k
     | I_STOP (op,v,w,rs,rn) ->

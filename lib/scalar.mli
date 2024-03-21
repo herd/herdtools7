@@ -36,6 +36,7 @@ module type S = sig
 
   val printable : t -> t
   val compare : t -> t -> int
+  val unsigned_compare : t -> t -> int
   val equal : t -> t -> bool
 
 (* Operations *)

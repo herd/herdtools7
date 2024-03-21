@@ -1,0 +1,16 @@
+AArch64 LDSMIN01
+(* The smin result is zero-extended before being stored to
+   teh destination register 0:X2 *)
+{
+int x[2] = {-1,0};
+0:X1 = -128;
+0:X3 = x;
+int64_t 0:X2;
+}
+
+P0                 ;
+LDSMIN W1, W2, [X3] ;
+
+forall 0:X2=-1 /\ x[0]=-128 /\ x[1] = 0
+
+

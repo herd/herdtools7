@@ -1,0 +1,10 @@
+Test LDADD00 Required
+States 1
+0:X2=5; [x]=8;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=5 /\ [x]=8)
+Observation LDADD00 Always 1 0
+Hash=0edc7a1a68684e86cca2bdbd02535a66
+

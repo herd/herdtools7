@@ -1,0 +1,10 @@
+Test LDEOR00 Required
+States 1
+0:X2=-1; [x]=-129;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=-1 /\ [x]=-129)
+Observation LDEOR00 Always 1 0
+Hash=3a752cebbec41960f99e380742e13a58
+

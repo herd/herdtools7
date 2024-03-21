@@ -1,0 +1,15 @@
+AArch64 CAS04
+{
+int x=-1;
+int64_t 0:X0=-1;
+0:X3=x;
+int64_t 0:X4;
+
+int64_t 0:X5;
+}
+  P0               ;
+ MOV W2,#1         ;
+ CAS W0,W2,[X3]    ;
+ ADD W4,W4,W0      ;
+ ADD X5,X5,W0,SXTW ;
+forall [x]=1  /\ 0:X0=4294967295 /\ 0:X4=4294967295 /\ 0:X5=-1

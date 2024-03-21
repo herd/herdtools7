@@ -229,7 +229,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "n" ^= reg rn;
                   "datasize" ^= variant v;
                   "regsize" ^= liti 64;
-                  "acquire" ^= litb (decode_acquire t);
+                  "acquire" ^= litb (decode_acquire t && rt <> ZR);
                   "release" ^= litb (decode_release t);
                   "tagchecked" ^= litb (rn <> SP);
                 ] )
@@ -247,6 +247,24 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "release" ^= litb (decode_release t);
                   "tagchecked" ^= litb (rn <> SP);
                 ] )
+      | I_LDOP (op,v,rmw,rs,rt,rn) ->
+         let fname =
+           Printf.sprintf
+             "memory/atomicops/ld/LD%s_32_memop.opn"
+             (pp_aop op) in
+         Some
+           (fname,
+            stmt
+              [
+                "s" ^= reg rs;
+                "t" ^= reg rt;
+                "n" ^= reg rn;
+                "datasize" ^= variant v;
+                "regsize" ^= variant v;
+                "acquire" ^= litb (decode_acquire rmw && rt <> ZR);
+                "release" ^= litb (decode_release rmw);
+                "tagchecked" ^= litb (rn <> SP);
+           ])
       | I_CSEL (v, rd, rn, rm, c, opsel) ->
           let fname =
             match opsel with

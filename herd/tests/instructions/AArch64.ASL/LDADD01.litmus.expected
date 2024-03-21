@@ -1,0 +1,10 @@
+Test LDADD01 Required
+States 1
+0:X2=4294967295; [x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=4294967295 /\ [x]=1)
+Observation LDADD01 Always 1 0
+Hash=90c1a39225ffa51afc62411d474242a1
+

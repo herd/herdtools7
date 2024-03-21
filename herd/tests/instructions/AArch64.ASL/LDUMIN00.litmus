@@ -1,0 +1,13 @@
+AArch64 LDUMIN00
+{
+x = 0;
+0:X1 = -128;
+0:X3 = x;
+}
+
+P0                 ;
+LDUMIN W1, W2, [X3] ;
+
+forall 0:X2=0 /\ [x]=-128
+
+

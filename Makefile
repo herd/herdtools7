@@ -222,6 +222,30 @@ test-aarch64-asl: asl-pseudocode
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64+ASL instructions tests: OK"
 
+test:: test-aarch64-noasl
+test-aarch64-noasl:
+	@echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
+		-conf ./herd/tests/instructions/AArch64.ASL/noasl.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64+NOASL instructions tests: OK"
+
+test:: test-aarch64-noasl-mixed
+test-aarch64-noasl-mixed:
+	@echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
+		-conf ./herd/tests/instructions/AArch64.ASL/noasl-mixed.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64+NOASL+MIXED instructions tests: OK"
+
 test:: arm-test
 
 arm-test::

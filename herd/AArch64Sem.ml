@@ -93,7 +93,11 @@ module Make
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
-      let sxt_op sz =  M.op1 (Op.Sxt sz)
+      let sxt_op sz =
+        match sz with
+        | MachSize.Quad when not morello  -> M.unitT
+        | _ ->
+           M.op1 (Op.Sxt sz)
       and uxt_op sz =
         match sz with
         | MachSize.Quad when not morello  -> M.unitT
@@ -246,15 +250,15 @@ module Make
         neon_replicate v nelem esize v >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
-      let do_write_reg_sz op sz r v ii = match r with
+      let do_write_reg_sz mop sz r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ -> match sz with
         | MachSize.S128 -> write_reg_morello r v ii
         | MachSize.Quad when not morello -> write_reg r v ii
         | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
-            M.op1 (op sz) v >>= fun v -> write_reg r v ii
+            mop sz v >>= fun v -> write_reg r v ii
 
-      let write_reg_sz = do_write_reg_sz (fun sz -> Op.Mask sz)
+      let write_reg_sz = do_write_reg_sz uxt_op
 
       let write_reg_op op sz r v ii =
         match r with
@@ -1676,7 +1680,7 @@ module Make
           (fun ac ma mv ->
             let noret = match r2 with | AArch64.ZR -> true | _ -> false in
             let r2 = mv
-            and w2 v = write_reg_sz_non_mixed sz r2 v ii
+            and w2 v = write_reg_sz sz r2 v ii
             and r1 a =
               if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
               else rmw_amo_read sz rmw ac a ii
@@ -1694,7 +1698,7 @@ module Make
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data sz rs ii
-        and write_rs v = write_reg_sz_non_mixed sz rs v ii in
+        and write_rs v = write_reg_sz sz rs v ii in
         lift_memop rn Dir.W true memtag
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
@@ -1724,8 +1728,8 @@ module Make
         let (>>>) = M.data_input_next in
         let read_rs = read_reg_data sz rs1 ii
           >>| read_reg_data sz rs2 ii
-        and write_rs (v1,v2) = write_reg_sz_non_mixed sz rs1 v1 ii
-          >>| write_reg_sz_non_mixed sz rs2 v2 ii
+        and write_rs (v1,v2) = write_reg_sz sz rs1 v1 ii
+          >>| write_reg_sz sz rs2 v2 ii
           >>= fun _ -> M.unitT ()
         and branch a =
           let cond = Printf.sprintf "[%s]=={%d:%s,%d:%s}" (V.pp_v a)
@@ -1797,6 +1801,13 @@ module Make
 
       let ldop op sz rmw rs rt rn ii =
         let open AArch64 in
+
+        let tr_input = match op with
+          |A_SMIN|A_SMAX ->
+            (* For int64 signed comparison to work on int32, int16, int8 *)
+            sxt_op sz
+          |A_ADD|A_EOR|A_SET|A_CLR|A_UMAX|A_UMIN -> M.unitT in
+
         let an = rmw_to_read rmw in
         lift_memop rn Dir.W true memtag
           (fun ac ma mv ->
@@ -1807,7 +1818,9 @@ module Make
             | A_SET -> Op.Or
             | A_CLR -> Op.AndNot2
             | A_SMAX -> Op.Max
-            | A_SMIN -> Op.Min in
+            | A_SMIN -> Op.Min
+            | A_UMAX -> Op.UMax
+            | A_UMIN -> Op.UMin in
             let read_mem =
               if noret then
                 fun sz ->
@@ -1816,14 +1829,14 @@ module Make
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
             M.amo_strict (Access.is_physical ac) op
               ma
-              (fun a -> read_mem sz a ii) mv
+              (fun a -> read_mem sz a ii >>= tr_input) mv
               (fun a v -> write_mem sz a v ii)
               (fun w ->
                 if noret then M.unitT ()
-                else write_reg_sz_non_mixed sz rt w ii))
+                else  write_reg_sz sz rt w ii))
           (to_perms "rw" sz)
           (read_reg_ord rn ii)
-          (read_reg_data sz rs ii)
+          (read_reg_data sz rs ii >>= tr_input)
           an ii
 
       (* Utility that performes an `N`-bit load as two independent `N/2`-bit

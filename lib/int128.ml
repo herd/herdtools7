@@ -36,6 +36,11 @@ module Int128 = struct
     | true,false -> -1
     | false,true -> +1
 
+  let unsigned_compare a b =
+    match Int64.unsigned_compare (fst a) (fst b) with
+    | 0 -> Int64.unsigned_compare (snd a) (snd b)
+    | n -> n
+  
   let div_and_rem a b =
     if is_neg b then raise (Failure "division by negative number")
     else if is_neg a then

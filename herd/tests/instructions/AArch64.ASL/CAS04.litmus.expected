@@ -1,0 +1,10 @@
+Test CAS04 Required
+States 1
+0:X0=4294967295; 0:X4=4294967295; 0:X5=-1; [x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=1 /\ 0:X0=4294967295 /\ 0:X4=4294967295 /\ 0:X5=-1)
+Observation CAS04 Always 1 0
+Hash=2670239e8db7a47c0e8ed67db0a654d0
+

@@ -43,6 +43,8 @@ let compare (t1,x1) (t2,x2) =
   | 0 -> compare t1 t2
   | r -> r
 
+let unsigned_compare  = compare
+
 let equal  (t1,x1) (t2,x2) = Uint128.equal x1 x2 && t1=t2
 
 let add (_,x1) (_,x2) = false, Uint128.add x1 x2

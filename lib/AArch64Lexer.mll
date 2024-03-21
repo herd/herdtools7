@@ -176,159 +176,158 @@ match name with
 | "swplb"|"SWPLB" -> SWPLB
 | "swpalb"|"SWPALB" -> SWPALB
 (* Fetch and ADD *)
-| "ldadd"|"LDADD" -> LDADD
-| "ldadda"|"LDADDA" -> LDADDA
-| "ldaddl"|"LDADDL" -> LDADDL
-| "ldaddal"|"LDADDAL" -> LDADDAL
-| "ldaddh"|"LDADDH" -> LDADDH
-| "ldaddah"|"LDADDAH" -> LDADDAH
-| "ldaddlh"|"LDADDLH" -> LDADDLH
-| "ldaddalh"|"LDADDALH" -> LDADDALH
-| "ldaddb"|"LDADDB" -> LDADDB
-| "ldaddab"|"LDADDAB" -> LDADDAB
-| "ldaddlb"|"LDADDLB" -> LDADDLB
-| "ldaddalb"|"LDADDALB" -> LDADDALB
-| "stadd"|"STADD" -> STADD
-| "staddl"|"STADDL" -> STADDL
-| "staddh"|"STADDH" -> STADDH
-| "staddlh"|"STADDLH" -> STADDLH
-| "staddb"|"STADDB" -> STADDB
-| "staddlb"|"STADDLB" -> STADDLB
-(* Fetch and Xor *)
-| "ldeor"|"LDEOR" -> LDEOR
-| "ldeora"|"LDEORA" -> LDEORA
-| "ldeorl"|"LDEORL" -> LDEORL
-| "ldeoral"|"LDEORAL" -> LDEORAL
-| "ldeorh"|"LDEORH" -> LDEORH
-| "ldeorah"|"LDEORAH" -> LDEORAH
-| "ldeorlh"|"LDEORLH" -> LDEORLH
-| "ldeoralh"|"LDEORALH" -> LDEORALH
-| "ldeorb"|"LDEORB" -> LDEORB
-| "ldeorab"|"LDEORAB" -> LDEORAB
-| "ldeorlb"|"LDEORLB" -> LDEORLB
-| "ldeoralb"|"LDEORALB" -> LDEORALB
-| "steor"|"STEOR" -> STEOR
-| "steorl"|"STEORL" -> STEORL
-| "steorh"|"STEORH" -> STEORH
-| "steorlh"|"STEORLH" -> STEORLH
-| "steorb"|"STEORB" -> STEORB
-| "steorlb"|"STEORLB" -> STEORLB
-(* Fetch and Or *)
-| "ldset"|"LDSET" -> LDSET
-| "ldseta"|"LDSETA" -> LDSETA
-| "ldsetl"|"LDSETL" -> LDSETL
-| "ldsetal"|"LDSETAL" -> LDSETAL
-| "ldseth"|"LDSETH" -> LDSETH
-| "ldsetah"|"LDSETAH" -> LDSETA
-| "ldsetlh"|"LDSETLH" -> LDSETLH
-| "ldsetalh"|"LDSETALH" -> LDSETALH
-| "ldsetb"|"LDSETB" -> LDSETB
-| "ldsetab"|"LDSETAB" -> LDSETAB
-| "ldsetlb"|"LDSETLB" -> LDSETLB
-| "ldsetalb"|"LDSETALB" -> LDSETALB
-| "stset"|"STSET" -> STSET
-| "stsetl"|"STSETL" -> STSETL
-| "stseth"|"STSETH" -> STSETH
-| "stsetlh"|"STSETLH" -> STSETLH
-| "stsetb"|"STSETB" -> STSETB
-| "stsetlb"|"STSETLB" -> STSETLB
-(* Fetch and b1.b2. b1 & ~b2 *)
-| "ldclr"|"LDCLR" -> LDCLR
-| "ldclra"|"LDCLRA" -> LDCLRA
-| "ldclrl"|"LDCLRL" -> LDCLRL
-| "ldclral"|"LDCLRAL" -> LDCLRAL
-| "ldclrh"|"LDCLRH" -> LDCLRH
-| "ldclrah"|"LDCLRAH" -> LDCLRAH
-| "ldclrlh"|"LDCLRLH" -> LDCLRLH
-| "ldclralh"|"LDCLRALH" -> LDCLRALH
-| "ldclrb"|"LDCLRB" -> LDCLRB
-| "ldclrab"|"LDCLRAB" -> LDCLRAB
-| "ldclrlb"|"LDCLRLB" -> LDCLRLB
-| "ldclralb"|"LDCLRALB" -> LDCLRALB
-| "stclr"|"STCLR" -> STCLR
-| "stclrl"|"STCLRL" -> STCLRL
-| "stclrh"|"STCLRH" -> STCLRH
-| "stclrlh"|"STCLRLH" -> STCLRLH
-| "stclrb"|"STCLRB" -> STCLRB
-| "stclrlb"|"STCLRLB" -> STCLRLB
-(* Fetch and Max, Signed *)
-| "ldsmax"|"LDSMAX" -> LDSMAX
-| "ldsmaxa"|"LDSMAXA" -> LDSMAXA
-| "ldsmaxl"|"LDSMAXL" -> LDSMAXL
-| "ldsmaxal"|"LDSMAXAL" -> LDSMAXAL
-| "ldsmaxh"|"LDSMAXH" -> LDSMAXH
-| "ldsmaxah"|"LDSMAXAH" -> LDSMAXAH
-| "ldsmaxlh"|"LDSMAXLH" -> LDSMAXLH
-| "ldsmaxalh"|"LDSMAXALH" -> LDSMAXALH
-| "ldsmaxb"|"LDSMAXB" -> LDSMAXB
-| "ldsmaxab"|"LDSMAXAB" -> LDSMAXAB
-| "ldsmaxlb"|"LDSMAXLB" -> LDSMAXLB
-| "ldsmaxalb"|"LDSMAXALB" -> LDSMAXALB
-| "stsmax"|"STSMAX" -> STSMAX
-| "stsmaxl"|"STSMAXL" -> STSMAXL
-| "stsmaxh"|"STSMAXH" -> STSMAXH
-| "stsmaxlh"|"STSMAXLH" -> STSMAXLH
-| "stsmaxb"|"STSMAXB" -> STSMAXB
-| "stsmaxlb"|"STSMAXLB" -> STSMAXLB
-(* Fetch and Min, Signed *)
-| "ldsmin"|"LDSMIN" -> LDSMIN
-| "ldsmina"|"LDSMINA" -> LDSMINA
-| "ldsminl"|"LDSMINL" -> LDSMINL
-| "ldsminal"|"LDSMINAL" -> LDSMINAL
-| "ldsminh"|"LDSMINH" -> LDSMINH
-| "ldsminah"|"LDSMINAH" -> LDSMINAH
-| "ldsminlh"|"LDSMINLH" -> LDSMINLH
-| "ldsminalh"|"LDSMINALH" -> LDSMINALH
-| "ldsminb"|"LDSMINB" -> LDSMINB
-| "ldsminab"|"LDSMINAB" -> LDSMINAB
-| "ldsminlb"|"LDSMINLB" -> LDSMINLB
-| "ldsminalb"|"LDSMINALB" -> LDSMINALB
-| "stsmin"|"STSMIN" -> STSMIN
-| "stsminl"|"STSMINL" -> STSMINL
-| "stsminh"|"STSMINH" -> STSMINH
-| "stsminlh"|"STSMINLH" -> STSMINLH
-| "stsminb"|"STSMINB" -> STSMINB
-| "stsminlb"|"STSMINLB" -> STSMINLB
-(* Fetch and Max, Unsigned *)
-(*
-| "ldumax"|"LDUMAX" -> LDUMAX
-| "ldumaxa"|"LDUMAXA" -> LDUMAXA
-| "ldumaxl"|"LDUMAXL" -> LDUMAXL
-| "ldumaxal"|"LDUMAXAL" -> LDUMAXAL
-| "ldumaxh"|"LDUMAXH" -> LDUMAXH
-| "ldumaxah"|"LDUMAXAH" -> LDUMAXAH
-| "ldumaxlh"|"LDUMAXLH" -> LDUMAXLH
-| "ldumaxalh"|"LDUMAXALH" -> LDUMAXALH
-| "ldumaxb"|"LDUMAXB" -> LDUMAXB
-| "ldumaxab"|"LDUMAXAB" -> LDUMAXAB
-| "ldumaxlb"|"LDUMAXLB" -> LDUMAXLB
-| "ldumaxalb"|"LDUMAXALB" -> LDUMAXALB
-| "stumax"|"STUMAX" -> STUMAX
-| "stumaxl"|"STUMAXL" -> STUMAXL
-| "stumaxh"|"STUMAXH" -> STUMAXH
-| "stumaxlh"|"STUMAXLH" -> STUMAXLH
-| "stumaxb"|"STUMAXB" -> STUMAXB
-| "stumaxlb"|"STUMAXLB" -> STUMAXLB
-(* Fetch and Min, Unsigned *)
-| "ldumin"|"LDUMIN" -> LDUMIN
-| "ldumina"|"LDUMINA" -> LDUMINA
-| "lduminl"|"LDUMINL" -> LDUMINL
-| "lduminal"|"LDUMINAL" -> LDUMINAL
-| "lduminh"|"LDUMINH" -> LDUMINH
-| "lduminah"|"LDUMINAH" -> LDUMINAH
-| "lduminlh"|"LDUMINLH" -> LDUMINLH
-| "lduminalh"|"LDUMINALH" -> LDUMINALH
-| "lduminb"|"LDUMINB" -> LDUMINB
-| "lduminab"|"LDUMINAB" -> LDUMINAB
-| "lduminlb"|"LDUMINLB" -> LDUMINLB
-| "lduminalb"|"LDUMINALB" -> LDUMINALB
-| "stumin"|"STUMIN" -> STUMIN
-| "stuminl"|"STUMINL" -> STUMINL
-| "stuminh"|"STUMINH" -> STUMINH
-| "stuminlh"|"STUMINLH" -> STUMINLH
-| "stuminb"|"STUMINB" -> STUMINB
-| "stuminlb"|"STUMINLB" -> STUMINLB
-*)
+| "ldadd"|"LDADD" -> LDOP (A.A_ADD,A.RMW_P)
+| "ldadda"|"LDADDA" -> LDOP (A.A_ADD,A.RMW_A)
+| "ldaddl"|"LDADDL" -> LDOP (A.A_ADD,A.RMW_L)
+| "ldaddal"|"LDADDAL" -> LDOP (A.A_ADD,A.RMW_AL)
+| "ldaddh"|"LDADDH" -> LDOPBH (A.H,A.A_ADD,A.RMW_P)
+| "ldaddah"|"LDADDAH" -> LDOPBH (A.H,A.A_ADD,A.RMW_A)
+| "ldaddlh"|"LDADDLH" -> LDOPBH (A.H,A.A_ADD,A.RMW_L)
+| "ldaddalh"|"LDADDALH" -> LDOPBH (A.H,A.A_ADD,A.RMW_AL)
+| "ldaddb"|"LDADDB" ->  LDOPBH (A.B,A.A_ADD,A.RMW_P)
+| "ldaddab"|"LDADDAB" ->  LDOPBH (A.B,A.A_ADD,A.RMW_A)
+| "ldaddlb"|"LDADDLB" ->  LDOPBH (A.B,A.A_ADD,A.RMW_L)
+| "ldaddalb"|"LDADDALB" ->  LDOPBH (A.B,A.A_ADD,A.RMW_AL)
+| "stadd"|"STADD" -> STOP (A.A_ADD,A.W_P)
+| "staddl"|"STADDL" -> STOP (A.A_ADD,A.W_L)
+| "staddh"|"STADDH" -> STOPBH (A.H,A.A_ADD,A.W_P)
+| "staddlh"|"STADDLH" -> STOPBH (A.H,A.A_ADD,A.W_L)
+| "staddb"|"STADDB" -> STOPBH (A.B,A.A_ADD,A.W_P)
+| "staddlb"|"STADDLB" -> STOPBH (A.B,A.A_ADD,A.W_L)
+(* Fetch and exclusive or, EOR *)
+| "ldeor"|"LDEOR" -> LDOP (A.A_EOR,A.RMW_P)
+| "ldeora"|"LDEORA" -> LDOP (A.A_EOR,A.RMW_A)
+| "ldeorl"|"LDEORL" -> LDOP (A.A_EOR,A.RMW_L)
+| "ldeoral"|"LDEORAL" -> LDOP (A.A_EOR,A.RMW_AL)
+| "ldeorh"|"LDEORH" -> LDOPBH (A.H,A.A_EOR,A.RMW_P)
+| "ldeorah"|"LDEORAH" -> LDOPBH (A.H,A.A_EOR,A.RMW_A)
+| "ldeorlh"|"LDEORLH" -> LDOPBH (A.H,A.A_EOR,A.RMW_L)
+| "ldeoralh"|"LDEORALH" -> LDOPBH (A.H,A.A_EOR,A.RMW_AL)
+| "ldeorb"|"LDEORB" ->  LDOPBH (A.B,A.A_EOR,A.RMW_P)
+| "ldeorab"|"LDEORAB" ->  LDOPBH (A.B,A.A_EOR,A.RMW_A)
+| "ldeorlb"|"LDEORLB" ->  LDOPBH (A.B,A.A_EOR,A.RMW_L)
+| "ldeoralb"|"LDEORALB" ->  LDOPBH (A.B,A.A_EOR,A.RMW_AL)
+| "steor"|"STEOR" -> STOP (A.A_EOR,A.W_P)
+| "steorl"|"STEORL" -> STOP (A.A_EOR,A.W_L)
+| "steorh"|"STEORH" -> STOPBH (A.H,A.A_EOR,A.W_P)
+| "steorlh"|"STEORLH" -> STOPBH (A.H,A.A_EOR,A.W_L)
+| "steorb"|"STEORB" -> STOPBH (A.B,A.A_EOR,A.W_P)
+| "steorlb"|"STEORLB" -> STOPBH (A.B,A.A_EOR,A.W_L)
+(* Fetch and SET bit mask *)
+| "ldset"|"LDSET" -> LDOP (A.A_SET,A.RMW_P)
+| "ldseta"|"LDSETA" -> LDOP (A.A_SET,A.RMW_A)
+| "ldsetl"|"LDSETL" -> LDOP (A.A_SET,A.RMW_L)
+| "ldsetal"|"LDSETAL" -> LDOP (A.A_SET,A.RMW_AL)
+| "ldseth"|"LDSETH" -> LDOPBH (A.H,A.A_SET,A.RMW_P)
+| "ldsetah"|"LDSETAH" -> LDOPBH (A.H,A.A_SET,A.RMW_A)
+| "ldsetlh"|"LDSETLH" -> LDOPBH (A.H,A.A_SET,A.RMW_L)
+| "ldsetalh"|"LDSETALH" -> LDOPBH (A.H,A.A_SET,A.RMW_AL)
+| "ldsetb"|"LDSETB" ->  LDOPBH (A.B,A.A_SET,A.RMW_P)
+| "ldsetab"|"LDSETAB" ->  LDOPBH (A.B,A.A_SET,A.RMW_A)
+| "ldsetlb"|"LDSETLB" ->  LDOPBH (A.B,A.A_SET,A.RMW_L)
+| "ldsetalb"|"LDSETALB" ->  LDOPBH (A.B,A.A_SET,A.RMW_AL)
+| "stset"|"STSET" -> STOP (A.A_SET,A.W_P)
+| "stsetl"|"STSETL" -> STOP (A.A_SET,A.W_L)
+| "stseth"|"STSETH" -> STOPBH (A.H,A.A_SET,A.W_P)
+| "stsetlh"|"STSETLH" -> STOPBH (A.H,A.A_SET,A.W_L)
+| "stsetb"|"STSETB" -> STOPBH (A.B,A.A_SET,A.W_P)
+| "stsetlb"|"STSETLB" -> STOPBH (A.B,A.A_SET,A.W_L)
+(* Fetch and clear bit mask *)
+| "ldclr"|"LDCLR" -> LDOP (A.A_CLR,A.RMW_P)
+| "ldclra"|"LDCLRA" -> LDOP (A.A_CLR,A.RMW_A)
+| "ldclrl"|"LDCLRL" -> LDOP (A.A_CLR,A.RMW_L)
+| "ldclral"|"LDCLRAL" -> LDOP (A.A_CLR,A.RMW_AL)
+| "ldclrh"|"LDCLRH" -> LDOPBH (A.H,A.A_CLR,A.RMW_P)
+| "ldclrah"|"LDCLRAH" -> LDOPBH (A.H,A.A_CLR,A.RMW_A)
+| "ldclrlh"|"LDCLRLH" -> LDOPBH (A.H,A.A_CLR,A.RMW_L)
+| "ldclralh"|"LDCLRALH" -> LDOPBH (A.H,A.A_CLR,A.RMW_AL)
+| "ldclrb"|"LDCLRB" ->  LDOPBH (A.B,A.A_CLR,A.RMW_P)
+| "ldclrab"|"LDCLRAB" ->  LDOPBH (A.B,A.A_CLR,A.RMW_A)
+| "ldclrlb"|"LDCLRLB" ->  LDOPBH (A.B,A.A_CLR,A.RMW_L)
+| "ldclralb"|"LDCLRALB" ->  LDOPBH (A.B,A.A_CLR,A.RMW_AL)
+| "stclr"|"STCLR" -> STOP (A.A_CLR,A.W_P)
+| "stclrl"|"STCLRL" -> STOP (A.A_CLR,A.W_L)
+| "stclrh"|"STCLRH" -> STOPBH (A.H,A.A_CLR,A.W_P)
+| "stclrlh"|"STCLRLH" -> STOPBH (A.H,A.A_CLR,A.W_L)
+| "stclrb"|"STCLRB" -> STOPBH (A.B,A.A_CLR,A.W_P)
+| "stclrlb"|"STCLRLB" -> STOPBH (A.B,A.A_CLR,A.W_L)
+(* Fetch and signed max *)
+| "ldsmax"|"LDSMAX" -> LDOP (A.A_SMAX,A.RMW_P)
+| "ldsmaxa"|"LDSMAXA" -> LDOP (A.A_SMAX,A.RMW_A)
+| "ldsmaxl"|"LDSMAXL" -> LDOP (A.A_SMAX,A.RMW_L)
+| "ldsmaxal"|"LDSMAXAL" -> LDOP (A.A_SMAX,A.RMW_AL)
+| "ldsmaxh"|"LDSMAXH" -> LDOPBH (A.H,A.A_SMAX,A.RMW_P)
+| "ldsmaxah"|"LDSMAXAH" -> LDOPBH (A.H,A.A_SMAX,A.RMW_A)
+| "ldsmaxlh"|"LDSMAXLH" -> LDOPBH (A.H,A.A_SMAX,A.RMW_L)
+| "ldsmaxalh"|"LDSMAXALH" -> LDOPBH (A.H,A.A_SMAX,A.RMW_AL)
+| "ldsmaxb"|"LDSMAXB" ->  LDOPBH (A.B,A.A_SMAX,A.RMW_P)
+| "ldsmaxab"|"LDSMAXAB" ->  LDOPBH (A.B,A.A_SMAX,A.RMW_A)
+| "ldsmaxlb"|"LDSMAXLB" ->  LDOPBH (A.B,A.A_SMAX,A.RMW_L)
+| "ldsmaxalb"|"LDSMAXALB" ->  LDOPBH (A.B,A.A_SMAX,A.RMW_AL)
+| "stsmax"|"STSMAX" -> STOP (A.A_SMAX,A.W_P)
+| "stsmaxl"|"STSMAXL" -> STOP (A.A_SMAX,A.W_L)
+| "stsmaxh"|"STSMAXH" -> STOPBH (A.H,A.A_SMAX,A.W_P)
+| "stsmaxlh"|"STSMAXLH" -> STOPBH (A.H,A.A_SMAX,A.W_L)
+| "stsmaxb"|"STSMAXB" -> STOPBH (A.B,A.A_SMAX,A.W_P)
+| "stsmaxlb"|"STSMAXLB" -> STOPBH (A.B,A.A_SMAX,A.W_L)
+(* Fetch and signed min *)
+| "ldsmin"|"LDSMIN" -> LDOP (A.A_SMIN,A.RMW_P)
+| "ldsmina"|"LDSMINA" -> LDOP (A.A_SMIN,A.RMW_A)
+| "ldsminl"|"LDSMINL" -> LDOP (A.A_SMIN,A.RMW_L)
+| "ldsminal"|"LDSMINAL" -> LDOP (A.A_SMIN,A.RMW_AL)
+| "ldsminh"|"LDSMINH" -> LDOPBH (A.H,A.A_SMIN,A.RMW_P)
+| "ldsminah"|"LDSMINAH" -> LDOPBH (A.H,A.A_SMIN,A.RMW_A)
+| "ldsminlh"|"LDSMINLH" -> LDOPBH (A.H,A.A_SMIN,A.RMW_L)
+| "ldsminalh"|"LDSMINALH" -> LDOPBH (A.H,A.A_SMIN,A.RMW_AL)
+| "ldsminb"|"LDSMINB" ->  LDOPBH (A.B,A.A_SMIN,A.RMW_P)
+| "ldsminab"|"LDSMINAB" ->  LDOPBH (A.B,A.A_SMIN,A.RMW_A)
+| "ldsminlb"|"LDSMINLB" ->  LDOPBH (A.B,A.A_SMIN,A.RMW_L)
+| "ldsminalb"|"LDSMINALB" ->  LDOPBH (A.B,A.A_SMIN,A.RMW_AL)
+| "stsmin"|"STSMIN" -> STOP (A.A_SMIN,A.W_P)
+| "stsminl"|"STSMINL" -> STOP (A.A_SMIN,A.W_L)
+| "stsminh"|"STSMINH" -> STOPBH (A.H,A.A_SMIN,A.W_P)
+| "stsminlh"|"STSMINLH" -> STOPBH (A.H,A.A_SMIN,A.W_L)
+| "stsminb"|"STSMINB" -> STOPBH (A.B,A.A_SMIN,A.W_P)
+| "stsminlb"|"STSMINLB" -> STOPBH (A.B,A.A_SMIN,A.W_L)
+(* Fetch and unsigned max *)
+| "ldumax"|"LDUMAX" -> LDOP (A.A_UMAX,A.RMW_P)
+| "ldumaxa"|"LDUMAXA" -> LDOP (A.A_UMAX,A.RMW_A)
+| "ldumaxl"|"LDUMAXL" -> LDOP (A.A_UMAX,A.RMW_L)
+| "ldumaxal"|"LDUMAXAL" -> LDOP (A.A_UMAX,A.RMW_AL)
+| "ldumaxh"|"LDUMAXH" -> LDOPBH (A.H,A.A_UMAX,A.RMW_P)
+| "ldumaxah"|"LDUMAXAH" -> LDOPBH (A.H,A.A_UMAX,A.RMW_A)
+| "ldumaxlh"|"LDUMAXLH" -> LDOPBH (A.H,A.A_UMAX,A.RMW_L)
+| "ldumaxalh"|"LDUMAXALH" -> LDOPBH (A.H,A.A_UMAX,A.RMW_AL)
+| "ldumaxb"|"LDUMAXB" ->  LDOPBH (A.B,A.A_UMAX,A.RMW_P)
+| "ldumaxab"|"LDUMAXAB" ->  LDOPBH (A.B,A.A_UMAX,A.RMW_A)
+| "ldumaxlb"|"LDUMAXLB" ->  LDOPBH (A.B,A.A_UMAX,A.RMW_L)
+| "ldumaxalb"|"LDUMAXALB" ->  LDOPBH (A.B,A.A_UMAX,A.RMW_AL)
+| "stumax"|"STUMAX" -> STOP (A.A_UMAX,A.W_P)
+| "stumaxl"|"STUMAXL" -> STOP (A.A_UMAX,A.W_L)
+| "stumaxh"|"STUMAXH" -> STOPBH (A.H,A.A_UMAX,A.W_P)
+| "stumaxlh"|"STUMAXLH" -> STOPBH (A.H,A.A_UMAX,A.W_L)
+| "stumaxb"|"STUMAXB" -> STOPBH (A.B,A.A_UMAX,A.W_P)
+| "stumaxlb"|"STUMAXLB" -> STOPBH (A.B,A.A_UMAX,A.W_L)
+(* Fetch and unsigned min *)
+| "ldumin"|"LDUMIN" -> LDOP (A.A_UMIN,A.RMW_P)
+| "ldumina"|"LDUMINA" -> LDOP (A.A_UMIN,A.RMW_A)
+| "lduminl"|"LDUMINL" -> LDOP (A.A_UMIN,A.RMW_L)
+| "lduminal"|"LDUMINAL" -> LDOP (A.A_UMIN,A.RMW_AL)
+| "lduminh"|"LDUMINH" -> LDOPBH (A.H,A.A_UMIN,A.RMW_P)
+| "lduminah"|"LDUMINAH" -> LDOPBH (A.H,A.A_UMIN,A.RMW_A)
+| "lduminlh"|"LDUMINLH" -> LDOPBH (A.H,A.A_UMIN,A.RMW_L)
+| "lduminalh"|"LDUMINALH" -> LDOPBH (A.H,A.A_UMIN,A.RMW_AL)
+| "lduminb"|"LDUMINB" ->  LDOPBH (A.B,A.A_UMIN,A.RMW_P)
+| "lduminab"|"LDUMINAB" ->  LDOPBH (A.B,A.A_UMIN,A.RMW_A)
+| "lduminlb"|"LDUMINLB" ->  LDOPBH (A.B,A.A_UMIN,A.RMW_L)
+| "lduminalb"|"LDUMINALB" ->  LDOPBH (A.B,A.A_UMIN,A.RMW_AL)
+| "stumin"|"STUMIN" -> STOP (A.A_UMIN,A.W_P)
+| "stuminl"|"STUMINL" -> STOP (A.A_UMIN,A.W_L)
+| "stuminh"|"STUMINH" -> STOPBH (A.H,A.A_UMIN,A.W_P)
+| "stuminlh"|"STUMINLH" -> STOPBH (A.H,A.A_UMIN,A.W_L)
+| "stuminb"|"STUMINB" -> STOPBH (A.B,A.A_UMIN,A.W_P)
+| "stuminlb"|"STUMINLB" -> STOPBH (A.B,A.A_UMIN,A.W_L)
+(* Undefined *)
 | "udf"|"UDF" -> UDF
 (* Memory Tagging *)
 | "stg"|"STG" -> STG
