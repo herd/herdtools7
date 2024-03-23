@@ -62,6 +62,7 @@ module SemanticsRule = struct
     | LESetField
     | LESetFields
     | LEDestructuring
+    | Slices
     | SliceSingle
     | SliceLength
     | SliceRange
@@ -155,6 +156,7 @@ module SemanticsRule = struct
     | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
+    | Slices -> "Slices"
     | SliceSingle -> "SliceSingle"
     | SliceLength -> "SliceLength"
     | SliceRange -> "SliceRange"
@@ -283,6 +285,7 @@ module SemanticsRule = struct
       Block;
       Loop;
       For;
+      Slices;
     ]
 
   let all_nb = List.length all
