@@ -62,6 +62,7 @@ module SemanticsRule = struct
     | LESetField
     | LESetFields
     | LEDestructuring
+    | Slices
     | SliceSingle
     | SliceLength
     | SliceRange
@@ -115,6 +116,10 @@ module SemanticsRule = struct
     | CatchNone
     | CatchNoThrow
     | TopLevel
+    | FindCatcher
+    | RethrowImplicit
+    | ReadValueFrom
+    | BuildGlobalEnv
 
   let to_string : t -> string = function
     | Lit -> "Lit"
@@ -155,6 +160,7 @@ module SemanticsRule = struct
     | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
+    | Slices -> "Slices"
     | SliceSingle -> "SliceSingle"
     | SliceLength -> "SliceLength"
     | SliceRange -> "SliceRange"
@@ -208,6 +214,10 @@ module SemanticsRule = struct
     | CatchNone -> "CatchNone"
     | CatchNoThrow -> "CatchNoThrow"
     | TopLevel -> "TopLevel"
+    | FindCatcher -> "FindCatcher"
+    | RethrowImplicit -> "RethrowImplicit"
+    | ReadValueFrom -> "ReadValueFrom"
+    | BuildGlobalEnv -> "BuildGlobalEnv"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -221,34 +231,50 @@ module SemanticsRule = struct
       ESideEffectFreeExpr;
       ELocalVar;
       EGlobalVar;
+      EUndefIdent;
       Binop;
       BinopAnd;
       BinopOr;
       BinopImpl;
       Unop;
+      ECondSimple;
       ECond;
       ESlice;
       ECall;
+      EGetArray;
+      ESliceOrEGetArrayError;
       ERecord;
       EGetBitField;
       EGetBitFields;
-      EUnknown;
-      EPattern;
-      EGetArray;
-      ESliceOrEGetArrayError;
-      ECondSimple;
-      EUndefIdent;
       EConcat;
       ETuple;
+      EUnknown;
+      EPattern;
       LEDiscard;
       LELocalVar;
       LEGlobalVar;
       LEMultiAssign;
+      LEUndefIdentV0;
+      LEUndefIdentV1;
       LESlice;
       LESetArray;
       LESetField;
       LESetFields;
       LEDestructuring;
+      Slices;
+      SliceSingle;
+      SliceLength;
+      SliceRange;
+      SliceStar;
+      PAll;
+      PAny;
+      PGeq;
+      PLeq;
+      PNot;
+      PRange;
+      PSingle;
+      PMask;
+      PTuple;
       LDDiscard;
       LDVar;
       LDTyped;
@@ -283,6 +309,16 @@ module SemanticsRule = struct
       Block;
       Loop;
       For;
+      Catch;
+      CatchNamed;
+      CatchOtherwise;
+      CatchNone;
+      CatchNoThrow;
+      TopLevel;
+      FindCatcher;
+      RethrowImplicit;
+      ReadValueFrom;
+      BuildGlobalEnv;
     ]
 
   let all_nb = List.length all

@@ -10,11 +10,15 @@ The function with an empty domain is denoted as $\emptyfunc$.
 The notation $\rightarrowfin$ stands for a function whose domain is finite.
 
 \begin{definition}[Function Update\label{def:FunctionUpdate}]
-  The notation $f[x \mapsto v]$ is the function $f$ modified so that $x$ is bound
-  to $v$: $f[x \mapsto v] \triangleq \lambda\ z.\ \begin{cases}
+  The notation $f[x \mapsto v]$ is a function identical to $f$, except that $x$ is bound
+  to $v$. That is, if  $g = f[x \mapsto v]$ then
+  \[
+    g(z) =
+  \begin{cases}
     f(z) & \text{if } z \neq x\\
     v & \text{if } z = x \enspace .
-  \end{cases}$
+  \end{cases}
+  \]
 
   The notation $\{i=1..k: a_i\mapsto b_i\}$ stands for the function formed from the corresponding input-output pairs:
   $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$.
@@ -42,9 +46,12 @@ $T^*$ for a sequence of zero or more values from $T$, and $T^+$ for a sequences 
 \paragraph{Rules}
 The following notation states that when the \emph{premises} $P_{1..k}$ hold then the \emph{verdict} $V$ holds as well:
 \begin{mathpar}
-  \inferrule{P_1 \and \ldots \and P_k}{V}
+  \inferrule[Name]{P_1 \and \ldots \and P_k}{V}
 \end{mathpar}
 That is, the premises of a rule are interpreted as a conjunction.
+%
+Optionally, the name of the rule, which is useful for referencing it, appears above and to the left of it.
+%
 The variables appearing in the premises and verdict are interpreted universally.
 %
 A set of rules is interpreted disjunctively. That is, each rule is used to determine whether its verdict
@@ -63,14 +70,35 @@ To keep rules succinct, we will write `$\Ignore$' for a fresh universally quanti
 irrelevant for understanding the rule, and can thus be omitted. That is, each \underline{occurrence}
 of `$\Ignore$' represents a distinct variable.
 
-\paragraph{Value Deconstruction}
-We will often want to deconstruct compound values to refer to their internal values.
-To achieve that, we will write $v \eqname \textit{deconstructed}(v)$ where the expression on the right
-exposes the internal structure of $v$, allowing us to alias its internal components.
-For example, suppose we know that $v$ is a pair of values.
-Then, $v \eqname (a, b)$ allows us to alias $a$ and $b$.
-Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
-head of the list $h$ and its tail $t$.
-%
-We also use $x \eqname y$ to have $x$ alias $y$, which helps match names appearing in rule premises to
-names expected in the verdict of a rule.
+\paragraph{Flavors of Equality}
+We use the following types of equality notations in rules:
+\begin{description}
+  \item[Range] we write $i=1..k$ to allow listing premises parameterized by $i$ or constructing
+  lists from expressions parameterized by $i$.
+  For example, $i=1..k: 0$ is a sequence of $k$ zeros.
+  \item[Predicate] we write $a = b$ as a premise that states the equality of $a$ and $b$.
+  For example, the mathematical identity $1 + 2 = 4 - 1$.
+  \item[Deconstructions] some values, such as tuples, are compound. In order to refer to the structure
+  of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right
+  hand side exposes the internal structure of $v$ by introducing the variables
+  $u_{1..k}$, allowing us to alias internal components of $v$.
+  Intuitively, $v$ is re-interpreted as $\textit{f}(u_{1..k})$.
+  For example, suppose we know that $v$ is a pair of values.
+  Then, $v \eqname (a, b)$ allows us to alias $a$ and $b$.
+  Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
+  head of the list $h$ and its tail $t$.
+  \item[Definition] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name for the expression $\ve$.
+  Intuitively, $\vx$ constructs a variable from the expression $\ve$.
+  For example, $c := a + b$ provide a new name for the expression $a+b$, which is $c$.
+\end{description}
+
+\paragraph{Choice}
+\newcommand\choice[0]{\textsf{choice}}
+We denote $\choice(\vb, f, g)$, where $\vb \in \{\True, \False\}$ and $f$ and $g$
+are mathematical expressions of the same kind, to stand for:
+\[
+  \choice(\vb, f, g) \triangleq \begin{cases}
+    f & \vb \text{ is }\True\\
+    g & \vb \text{ is }\False\\
+  \end{cases}
+\]

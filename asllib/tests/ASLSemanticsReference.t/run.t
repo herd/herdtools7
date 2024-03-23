@@ -30,7 +30,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
-  File SemanticsRule.EGetArrayTooSmall.asl, line 8, characters 2 to 10:
+  File SemanticsRule.EGetArrayTooSmall.asl, line 7, characters 8 to 19:
   ASL Typing error: a subtype of integer {0..(3 - 1)} was expected,
     provided integer {3}.
   [1]
@@ -57,7 +57,15 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.SCase.asl
   $ aslref SemanticsRule.SWhile.asl
   $ aslref SemanticsRule.SRepeat.asl
+  0
+  1
+  2
+  3
   $ aslref SemanticsRule.SFor.asl
+  0
+  1
+  2
+  3
   $ aslref SemanticsRule.SThrowNone.asl
   $ aslref SemanticsRule.SThrowSomeTyped.asl
   $ aslref SemanticsRule.SThrowSTry.asl
@@ -142,4 +150,3 @@ ASL Semantics Reference:
   [1]
   $ aslref SemanticsRule.LEDiscard.asl
   $ aslref SemanticsRule.LDDiscard.asl
-

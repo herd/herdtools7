@@ -17,8 +17,6 @@
 
 \newcommand\dynamicdomain[0]{\textsf{dyn-dom}}
 
-\newcommand\astlabel[0]{\textsf{label}}
-
 \newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
 \newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
 \newcommand\isbuiltin[0]{\texttt{is\_builtin}}
@@ -97,17 +95,14 @@
 \newcommand\vl[0]{\texttt{l}}
 \newcommand\vp[0]{\texttt{p}}
 \newcommand\vo[0]{\texttt{o}}
-\newcommand\vx[0]{\texttt{x}}
 \newcommand\vv[0]{\texttt{v}}
 \newcommand\vt[0]{\texttt{t}}
 \newcommand\vte[0]{\texttt{t\_e}}
-\newcommand\ve[0]{\texttt{e}}
 \newcommand\veone[0]{\texttt{e1}}
 \newcommand\vetwo[0]{\texttt{e2}}
 \newcommand\vleone[0]{\texttt{le1}}
 \newcommand\vletwo[0]{\texttt{le2}}
 \newcommand\vtleone[0]{\texttt{t\_le1}}
-\newcommand\vle[0]{\texttt{le}}
 \newcommand\vre[0]{\texttt{re}}
 \newcommand\vs[0]{\texttt{s}}
 \newcommand\vlt[0]{\texttt{l\_t}}
@@ -136,8 +131,6 @@
 \newcommand\news[0]{\texttt{new\_s}}
 \newcommand\newsone[0]{\texttt{new\_s1}}
 \newcommand\newstwo[0]{\texttt{new\_s2}}
-\newcommand\torexpr[0]{\textsf{rexpr}}
-\newcommand\vargs[0]{\texttt{args}}
 \newcommand\newargs[0]{\texttt{new\_args}}
 \newcommand\eqs[0]{\texttt{eqs}}
 \newcommand\neweqs[0]{\texttt{new\_eqs}}
@@ -3223,23 +3216,9 @@ results in a rewritten expression \texttt{new\_le} and one of the following appl
 \item TypingRule.LEConcat (see Section~\ref{sec:TypingRule.LEConcat}).
 \end{itemize}
 
-Some of the rules for left-hand side expressions re-use the annotation rules for right-hand side expressions.
-This is achieved by treating left-hand side expressions as corresponding right-hand side expressions,
-as defined by the recursive function $\torexpr : \lexpr \rightarrow \expr$:
-\[
-\begin{array}{lcl}
-  \textbf{Left hand side expression} & & \textbf{Right hand side expression}\\
-  \hline
-  \torexpr(\texttt{LE\_Var}(\vx)) &=& \texttt{E\_Var}(\vx)\\
-  \torexpr(\leslice(\vle, \vargs)) &=& \texttt{E\_Slice}(\torexpr(\vle), \vargs)\\
-  \torexpr(\texttt{LE\_SetArray}(\vle, \ve)) &=& \texttt{E\_GetArray}(\torexpr(\vle), \ve)\\
-  \torexpr(\texttt{LE\_SetField}(\vle, \vx)) &=& \texttt{E\_GetField}(\torexpr(\vle), \vx)\\
-  \torexpr(\texttt{LE\_SetFields}(\vle, \vx)) &=& \texttt{E\_GetFields}(\torexpr(\vle), \vx)\\
-  \torexpr(\texttt{LE\_Discard}) &=& \texttt{E\_Var("-")}\\
-  \torexpr(\texttt{LE\_Destructuring}([\vle_{1..k}])) &=& \texttt{E\_Tuple}([i=1..k: \torexpr(\vle_i)])\\
-  \torexpr(\texttt{LE\_Concat}([\vle_{1..k}], \Ignore)) &=& \texttt{E\_Concat}([i=1..k: \torexpr(\vle_i)])\\
-\end{array}
-\]
+Some of the rules require viewing left-hand-side expressions as their corresponding right-hand side expressions.
+The correspondence is defined in the ASL Syntax Reference~\cite[Chapter 5]{ASLAbstractSyntaxReference}
+and given by the function $\torexpr : \lexpr \rightarrow \expr$.
 
 \section{TypingRule.LEDiscard \label{sec:TypingRule.LEDiscard}}
 
@@ -3461,7 +3440,8 @@ all of the following apply:
   \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
   \item \texttt{slices} is a single expression \texttt{e\_index};
    \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-   \item \texttt{wanted\_t\_index} type-satisfies \texttt{t\_index'};
+   \item \texttt{wanted\_t\_index} type-satisfies \texttt{t\_index'}, which guarantees that the index
+   is within the bounds of the array;
    \item \texttt{new\_le} is an access to array \texttt{le2} at index \texttt{e\_index'}.
    \end{itemize}
 

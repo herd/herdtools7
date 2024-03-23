@@ -293,7 +293,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\fordirection &::=& \texttt{Up} \;|\; \texttt{Down}\\
+\fordirection &::=& \UP \;|\; \DOWN\\
 \end{array}
 \]
 
@@ -414,6 +414,27 @@ The rules for slices is replaced by the following:
 \]
 This reflects the fact that all other slicing constructs are syntactic sugar
 for \slicelength.
+
+\chapter{Correpondence Betwen Left-hand-side Expressions and Right-hand-side Expressions
+\label{ch:LeftToRight}}
+
+The recursive function $\torexpr : \lexpr \rightarrow \expr$ transforms
+left-hand-side expressions to corresponding right-hand-side expressions,
+which is utilized both for the type system and semantics:
+\[
+\begin{array}{lcl}
+  \textbf{Left hand side expression} & & \textbf{Right hand side expression}\\
+  \hline
+  \torexpr(\texttt{LE\_Var}(\vx)) &=& \texttt{E\_Var}(\vx)\\
+  \torexpr(\leslice(\vle, \vargs)) &=& \texttt{E\_Slice}(\torexpr(\vle), \vargs)\\
+  \torexpr(\texttt{LE\_SetArray}(\vle, \ve)) &=& \texttt{E\_GetArray}(\torexpr(\vle), \ve)\\
+  \torexpr(\texttt{LE\_SetField}(\vle, \vx)) &=& \texttt{E\_GetField}(\torexpr(\vle), \vx)\\
+  \torexpr(\texttt{LE\_SetFields}(\vle, \vx)) &=& \texttt{E\_GetFields}(\torexpr(\vle), \vx)\\
+  \torexpr(\texttt{LE\_Discard}) &=& \texttt{E\_Var("-")}\\
+  \torexpr(\texttt{LE\_Destructuring}([\vle_{1..k}])) &=& \texttt{E\_Tuple}([i=1..k: \torexpr(\vle_i)])\\
+  \torexpr(\texttt{LE\_Concat}([\vle_{1..k}], \Ignore)) &=& \texttt{E\_Concat}([i=1..k: \torexpr(\vle_i)])\\
+\end{array}
+\]
 
 
 \end{document}
