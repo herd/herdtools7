@@ -1,0 +1,10 @@
+Test B009 Required
+States 1
+ Fault(P0,x:green+16,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0,x))
+Observation B009 Always 1 0
+Hash=a0049bcae76b7e6c49f320a8c62b6b8b
+
