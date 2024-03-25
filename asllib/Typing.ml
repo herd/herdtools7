@@ -102,7 +102,7 @@ let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
         T_Int (WellConstrained constraints) |> add_pos_from_st ty
     | _ -> ty
 
-(* Begin Lit *)    
+(* Begin Lit *)
 let annotate_literal = function
   | L_Int _ as v -> integer_exact' (literal v)
   | L_Bool _ -> T_Bool
@@ -349,6 +349,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   PP.pp_pos loc name;
               ([], name, callee_arg_types, return_type)
         with Error.ASLException _ -> raise error)
+
   end
 
   (* -------------------------------------------------------------------------
@@ -401,6 +402,59 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       else fatal_from loc Error.(OverlappingSlices slices)
     in
     List.fold_left (one_slice loc env) Diet.Int.empty slices
+
+  exception NoSingleField
+
+  let to_singles env =
+    let eval e =
+      match reduce_constants env e with
+      | L_Int z -> Z.to_int z
+      | _ -> raise NoSingleField in
+    let one slice k =
+      match slice with
+      | Slice_Single e -> e::k
+      | Slice_Length (e1,e2) ->
+         let i1 = eval e1 and i2 = eval e2 in
+         let rec do_rec n =
+           if n >= i2 then k
+           else
+             let e =
+               E_Literal (L_Int (Z.of_int (i1+n))) |> add_dummy_pos in
+             e::do_rec (n+1) in
+         do_rec 0
+      | Slice_Range (e1,e2) ->
+         let i1 = eval e1 and i2 = eval e2 in
+         let rec do_rec i =
+           if i > i1 then k
+         else
+           let e =  E_Literal (L_Int (Z.of_int i)) |> add_dummy_pos in
+           e::do_rec (i+1) in
+         do_rec i2
+      | Slice_Star _ ->
+         raise NoSingleField in
+    fun slices -> List.fold_right one slices []
+
+
+  let slices_of_bitfield = function
+    | BitField_Simple (_, slices)
+    | BitField_Nested (_, slices, _)
+    | BitField_Type (_, slices, _) ->
+        slices
+
+  let field_to_single env bf field =
+    match find_bitfield_opt field bf with
+    | Some bitfield -> to_singles env (slices_of_bitfield bitfield)
+    | None -> raise NoSingleField
+
+  let should_fields_reduce_to_call env name ty fields =
+    match ty.desc with
+    | T_Bits (_, bf) when should_reduce_to_call env name -> (
+        try Some (name, list_concat_map (field_to_single env bf) fields)
+        with NoSingleField -> None)
+    | _ -> None
+
+  let should_field_reduce_to_call env name ty field =
+    should_fields_reduce_to_call env name ty [field]
 
   (* -------------------------------------------------------------------------
 
@@ -1192,73 +1246,103 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 |: TypingRule.EGetArray))
     (* End *)
     | E_GetField (e1, field_name) -> (
-        let t_e1, e2 = annotate_expr env e1 in
-        let t_e2 = Types.make_anonymous env t_e1 in
-        match t_e2.desc with
-        | T_Exception fields | T_Record fields -> (
-            match List.assoc_opt field_name fields with
-            (* Begin EGetBadRecordField *)
-            | None ->
+      let t_e1, e2 = annotate_expr env e1 in
+      let t_e2 = Types.make_anonymous env t_e1 in
+      let reduced =
+        match e1.desc with
+        | E_Var x ->
+           should_field_reduce_to_call env x t_e2 field_name
+        | _ -> None in
+      match reduced with
+      | Some (name,args) ->
+         let name, args, eqs, ty =
+           annotate_call (to_pos e) env name args [] ST_Getter
+         in
+         let ty = match ty with Some ty -> ty | None -> assert false in
+         (ty, E_Call (name, args, eqs) |> here)
+      | None ->
+         begin
+           match t_e2.desc with
+           | T_Exception fields | T_Record fields -> (
+             match List.assoc_opt field_name fields with
+             (* Begin EGetBadRecordField *)
+             | None ->
                 fatal_from e (Error.BadField (field_name, t_e2))
                 |: TypingRule.EGetBadRecordField
-            (* End *)
-            (* Begin EGetRecordField *)
-            | Some t ->
+             (* End *)
+             (* Begin EGetRecordField *)
+             | Some t ->
                 (t, E_GetField (e2, field_name) |> here)
                 |: TypingRule.EGetRecordField
-                (* End *))
-        | T_Bits (_, bitfields) -> (
-            match find_bitfield_opt field_name bitfields with
-            (* Begin EGetBadBitField *)
-            | None ->
+           (* End *))
+           | T_Bits (_, bitfields) -> (
+             match find_bitfield_opt field_name bitfields with
+             (* Begin EGetBadBitField *)
+             | None ->
                 fatal_from e (Error.BadField (field_name, t_e2))
                 |: TypingRule.EGetBadBitField
-            (* End *)
-            (* Begin EGetBitField *)
-            | Some (BitField_Simple (_field, slices)) ->
+             (* End *)
+             (* Begin EGetBitField *)
+             | Some (BitField_Simple (_field, slices)) ->
                 let e3 = E_Slice (e1, slices) |> here in
                 annotate_expr env e3 |: TypingRule.EGetBitField
-            (* End *)
-            (* Begin EGetBitFieldNested *)
-            | Some (BitField_Nested (_field, slices, bitfields')) ->
+             (* End *)
+             (* Begin EGetBitFieldNested *)
+             | Some (BitField_Nested (_field, slices, bitfields')) ->
                 let t_e3, e3 =
                   E_Slice (e2, slices) |> here |> annotate_expr env
                 in
                 let t_e4 =
                   match t_e3.desc with
                   | T_Bits (width, _bitfields) ->
-                      T_Bits (width, bitfields') |> add_pos_from t_e2
+                     T_Bits (width, bitfields') |> add_pos_from t_e2
                   | _ -> assert false
                 in
                 (t_e4, e3) |: TypingRule.EGetBitFieldNested
-            (* End *)
-            (* Begin EGetBitFieldTyped *)
-            | Some (BitField_Type (_field, slices, t)) ->
+             (* End *)
+             (* Begin EGetBitFieldTyped *)
+             | Some (BitField_Type (_field, slices, t)) ->
                 let t_e3, e3 =
                   E_Slice (e2, slices) |> here |> annotate_expr env
                 in
                 let+ () = check_type_satisfies e3 env t_e3 t in
                 (t, e3) |: TypingRule.EGetBitFieldTyped)
-        (* Begin EGetBadField *)
-        | _ ->
-            conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e1
-            |: TypingRule.EGetBadField
-        (* End *))
-    | E_GetFields (e', fields) ->
-        let t_e', e' = annotate_expr env e' in
-        let t_e' = Types.make_anonymous env t_e' in
-        let bitfields =
-          match t_e'.desc with
-          | T_Bits (_, bitfields) -> bitfields
-          | _ -> conflict e [ default_t_bits ] t_e'
-        in
-        let one_field field =
-          match find_bitfields_slices_opt field bitfields with
-          | None -> fatal_from e (Error.BadField (field, t_e'))
-          | Some slices -> slices
-        in
-        E_Slice (e', list_concat_map one_field fields)
-        |> here |> annotate_expr env |: TypingRule.EGetBitFields
+           (* Begin EGetBadField *)
+           | _ ->
+              conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e1
+              |: TypingRule.EGetBadField
+         end
+    (* End *))
+    | E_GetFields (e_1, fields) ->
+       let t_e', e_2 = annotate_expr env e_1 in
+       let t_e' = Types.make_anonymous env t_e' in
+       let reduced =
+         match e_1.desc with
+         | E_Var x ->
+            should_fields_reduce_to_call env x t_e' fields
+         | _ -> None in
+       begin
+         match reduced with
+         | Some (name,args) ->
+            let name, args, eqs, ty =
+              annotate_call (to_pos e) env name args [] ST_Getter
+            in
+            let ty = match ty with Some ty -> ty | None -> assert false in
+            (ty, E_Call (name, args, eqs) |> here)
+         | None ->
+            let bitfields =
+              match t_e'.desc with
+              | T_Bits (_, bitfields) -> bitfields
+              | _ -> conflict e [ default_t_bits ] t_e'
+            in
+            let one_field field =
+              match find_bitfields_slices_opt field bitfields with
+              | None -> fatal_from e (Error.BadField (field, t_e'))
+              | Some slices -> slices
+            in
+            E_Slice (e_2, list_concat_map one_field fields)
+            |> here |> annotate_expr env |: TypingRule.EGetBitFields
+       end
     (* End *)
     (* Begin EPattern *)
     | E_Pattern (e', patterns) ->
@@ -1283,8 +1367,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
            |  { p0 , ... pN }         ->       e IN p0 || ... e IN pN
            | !{ p0 , ... pN }         ->       not (e IN p0) && ... e IN pN
 
-         We cannot reduce them here (as otherwise e might be evaluated a 
-         bad number of times), but we will apply the same typing rules as for 
+         We cannot reduce them here (as otherwise e might be evaluated a
+         bad number of times), but we will apply the same typing rules as for
          those desugared expressions.
          *)
         let t_e', e'' = annotate_expr env e' in
@@ -1830,11 +1914,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   and try_annotate_block env s =
     (*
         See rule JFRD:
-           A local identifier declared with var, let or constant 
-           is in scope from the point immediately after its declaration 
+           A local identifier declared with var, let or constant
+           is in scope from the point immediately after its declaration
            until the end of the immediately enclosing block.
 
-        From that follows that we can discard the environment at the end 
+        From that follows that we can discard the environment at the end
         of an enclosing block.
     *)
     best_effort s (fun _ -> annotate_stmt env s |> fst) |: TypingRule.Block
@@ -1842,6 +1926,26 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   and try_annotate_stmt env s =
     best_effort (s, env) (fun _ -> annotate_stmt env s)
+
+  and set_fields_should_reduce_to_call env le x fields e =
+    (*
+     * Field indices are extracted from the return type
+     * of "associated" getter.
+     *)
+    if not (should_reduce_to_call env x) then None
+    else
+      let ( let* ) = Option.bind in
+      let _, _, _, ty_opt =
+        try FunctionRenaming.try_find_name le env x []
+        with Error.ASLException _ -> assert false in
+      let* ty = ty_opt in
+      let ty = Types.make_anonymous env ty in
+      let* name, args = should_fields_reduce_to_call env x ty fields in
+      let name, args, eqs, ret_ty =
+        annotate_call (to_pos le) env name (e :: args) [] ST_Setter
+      in
+      let () = assert (ret_ty = None) in
+      Some (S_Call (name, args, eqs) |> add_pos_from le)
 
   and setter_should_reduce_to_call_s env le e : stmt option =
     let () =
@@ -1867,9 +1971,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     match le.desc with
     | LE_Discard -> None
+    | LE_SetField ( { desc=LE_Var x; _ }, field) ->
+       set_fields_should_reduce_to_call env le x [field] e
     | LE_SetField (sub_le, field) ->
         let old_le le' = LE_SetField (le', field) |> here in
         with_temp old_le sub_le
+    | LE_SetFields ({ desc = LE_Var x; _ }, fields) ->
+        set_fields_should_reduce_to_call env le x fields e
     | LE_SetFields (sub_le, fields) ->
         let old_le le' = LE_SetFields (le', fields) |> here in
         with_temp old_le sub_le
