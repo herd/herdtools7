@@ -537,13 +537,14 @@ module Make
 (******************)
 
 (* With choice operator *)
-      let do_check_cond m m_cond k1 k2 =
+      let do_check_cond m m_cond mok mfault =
         M.delay_kont "1"
           (m >>= fun (_,pte_v as p) ->
-           m_cond pte_v >>= fun c -> M.unitT (c,p))
-          (fun (c,p) m ->
-            let m = m >>= fun _ -> M.unitT p in
-            M.choiceT c (k1 m) (k2 m))
+           m_cond pte_v >>= fun fault -> M.unitT (fault,p))
+          (fun (fault, p) m ->
+             let m = m >>= fun _ -> M.unitT p in
+             let c = if Option.is_none fault then V.one else V.zero in
+             M.choiceT c (mok m) (mfault m fault))
 
         (* Summary of access flag and dirty bit management.
 
@@ -607,38 +608,52 @@ module Make
         | X|N -> N
         | NoRet|S|NTA -> N
 
-      let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
-
-        let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
-
-        let check_el0 m =
-          (* Handler runs at level more priviledged than EL0 *)
-          if not ii.A.in_handler && is_el0 then
-               fun pte_v -> m_op Op.Or (is_zero pte_v.el0_v) (m pte_v)
-             else m in
-
+      let mmu_fault_check ii dir pte_v =
+        let open FaultType.AArch64 in
         let open DirtyBit in
-        let tthm = dirty.tthm proc
+        let proc = ii.AArch64.proc in
+        let el0 = List.exists (Proc.equal proc) TopConf.procs_user in
+        let el0 = el0 && not ii.A.in_handler
         and ha = dirty.ha proc
         and hd = dirty.hd proc in
-        let ha = ha || hd in (* As far as we know hd => ha *)
-        let mfault (_,ipte) m =
-          let open FaultType.AArch64 in
-          (is_zero ipte.valid_v) >>=
-            (fun c ->
+        let cond_t pte_v = is_zero pte_v.valid_v in
+        let cond_a pte_v =
+          if ha then mzero
+          else is_zero pte_v.af_v in
+        let cond_p pte_v =
+          let cond_w pte_v =
+            if dir = Dir.W then begin
+              if hd then
+                m_op Op.And (is_zero pte_v.dbm_v) (is_zero pte_v.db_v)
+              else
+                is_zero pte_v.db_v end
+            else mzero in
+          let cond_el0 pte_v =
+            if el0 then is_zero pte_v.el0_v
+            else mzero in
+          m_op Op.Or (cond_w pte_v) (cond_el0 pte_v) in
+        let open FaultType.AArch64 in
+        cond_t pte_v >>= fun c ->
+        M.choiceT c
+          (M.unitT (Some (MMU Translation)))
+          (cond_a pte_v >>= fun c ->
+           M.choiceT c
+             (M.unitT (Some (MMU AccessFlag)))
+             (cond_p pte_v >>= fun c ->
               M.choiceT c
-                (M.unitT (Some (MMU Translation)))
-                (if ha then
-                   M.unitT (Some (MMU Permission))
-                 else begin
-                   (is_zero ipte.af_v) >>=
-                     (fun c ->
-                       M.choiceT c
-                         (M.unitT (Some (MMU AccessFlag)))
-                         (M.unitT (Some (MMU Permission))))
-                   end) >>=
-                fun t -> mfault (get_oa a_virt m) a_virt t)
-        and mok (pte_v,ipte) a_pte m a =
+                (M.unitT (Some (MMU Permission)))
+                (M.unitT None)))
+
+      let check_ptw dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
+        let proc = ii.AArch64.proc in
+        let is_el0 = List.exists (Proc.equal proc) TopConf.procs_user in
+        let is_el0 = is_el0 && not ii.A.in_handler in
+
+        let open DirtyBit in
+        let ha = dirty.ha proc
+        and hd = dirty.hd proc in
+        let ha = ha || hd in (* As far as we know hd => ha *)
+        let mok (pte_v,ipte) a_pte m a =
           let m =
             let msg =
               match dir with
@@ -710,38 +725,8 @@ module Make
                only pte value may have changed *)
             let mok ma = mok pair_pte a_pte ma a_virt
 (* a_virt was (if pte2 then a_virt else pte_v.oa_v), why? *)
-            and mno ma =  mfault pair_pte ma in
-            let check_cond cond =
-              do_check_cond ma (check_el0 cond) mno mok in
-
-            if (not tthm || (tthm && (not ha && not hd))) then
-            (* No HW management *)
-              let cond_R pte_v =
-                m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.af_v) in
-              let cond = match dir with (* No mercy, check all flags *)
-              | Dir.R -> cond_R
-              | Dir.W ->
-                  fun pte_v ->
-                    m_op Op.Or (cond_R pte_v) (is_zero pte_v.db_v) in
-              check_cond cond
-            else if (tthm && ha && not hd) then (* HW managment of AF *)
-              let cond = match dir with (* Do not check AF *)
-              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
-              | Dir.W ->
-                  fun pte_v ->
-                    m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
-              check_cond cond
-            else (* HW management of AF and DB *)
-              let cond = match dir with (* Do not check AF *)
-              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
-              | Dir.W ->
-(* Check DB when dirty bit management disabled for this page *)
-                  fun pte_v ->
-                    m_op Op.Or
-                      (is_zero pte_v.valid_v)
-                      (m_op Op.And
-                         (is_zero pte_v.db_v) (is_zero pte_v.dbm_v)) in
-              check_cond cond)
+            and mno ma ft =  mfault ma a_virt ft in
+            do_check_cond ma (mmu_fault_check ii dir) mok mno)
           end in
         if pte2 then  mvirt
         else
@@ -1075,6 +1060,7 @@ module Make
       let lift_kvm dir updatedb is_tag mop ma an ii mphy =
         let lbl_v = get_instr_label ii in
         let mfault ma a ft =
+          let ma = get_oa a ma in
           if is_tag then
             insert_commit_to_fault ma (fun _ -> mzero) (Some "Tag") ii >>!
             B.Fault [AArch64Base.elr_el1, lbl_v]
@@ -1083,7 +1069,7 @@ module Make
               (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
               None ii >>! B.Fault [AArch64Base.elr_el1, lbl_v] in
         let maccess a ma =
-          check_ptw ii.AArch64.proc dir updatedb is_tag a ma an ii
+          check_ptw dir updatedb is_tag a ma an ii
             ((let m = mop Access.PTE ma in
               fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
             mphy
@@ -1115,6 +1101,8 @@ module Make
             M.delay_kont "check_tag_pte" ma
               (fun (_,ipte) ma ->
                  let moa = get_oa a_virt ma in
+                 (* Tag op does not read the tag if the tagged bit of
+                    its PTE is not set *)
                  M.choiceT (ipte.tagged_v)
                    (check_tag moa a_virt)
                    (moa >>= M.ignore >>= B.next1T)) in
