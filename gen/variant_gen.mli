@@ -38,8 +38,8 @@ type t =
   | KVM | FullKVM
 (* Do not  observe faults, in KVM mode *)
   | NoFault
-(* Neon AArch64 extension *)
-  | Neon
+(* AArch64 vector extensions *)
+  | Vector
 (* Constrained Unpredictable, ie generate tests thar may exhibit
    such behaviours. Typically LDXR / STXR of different size or address. *)
   | ConstrainedUnpredictable

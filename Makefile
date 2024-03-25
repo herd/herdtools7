@@ -133,7 +133,7 @@ test.neon::
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64.neon \
-		-variant neon \
+		-variant vector \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 NEON instructions tests: OK"
 
@@ -144,7 +144,7 @@ test.sve::
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64.sve \
-		-variant neon \
+		-variant vector \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 SVE instructions tests: OK"
 

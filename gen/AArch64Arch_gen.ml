@@ -34,7 +34,7 @@ let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
 let do_fullkvm = C.variant Variant_gen.FullKVM
 let do_kvm = do_fullkvm || C.variant Variant_gen.KVM
-let do_neon = C.variant Variant_gen.Neon
+let do_vector = C.variant Variant_gen.Vector
 let do_mixed = Variant_gen.is_mixed  C.variant
 let do_cu = C.variant Variant_gen.ConstrainedUnpredictable
 
@@ -338,8 +338,8 @@ let is_ifetch a = match a with
      if do_morello then fun f r -> f CapaSeal (f CapaTag r)
      else fun _f r -> r
 
-   let fold_neon =
-     if do_neon then
+   let fold_vector =
+     if do_vector then
        fun f -> SIMD.fold (fun n -> f (Neon n))
      else
        fun _ r -> r
@@ -365,7 +365,7 @@ let is_ifetch a = match a with
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
      let r = fold_morello f r in
      let r = fold_tag f r in
-     let r = fold_neon f r in
+     let r = fold_vector f r in
      let r = fold_pair f r in
      let r = fold_acc_opt None f r in
      let r =

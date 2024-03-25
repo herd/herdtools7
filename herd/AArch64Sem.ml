@@ -33,7 +33,7 @@ module Make
     let endian = AArch64.endian
     let memtag = C.variant Variant.MemTag
     let morello = C.variant Variant.Morello
-    let neon = C.variant Variant.Neon
+    let vector = C.variant Variant.Vector
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
@@ -52,6 +52,12 @@ module Make
       if not morello then
         Warn.user_error
           "morello instruction %s require -variant morello"
+          (AArch64.dump_instruction inst)
+
+    let check_vector inst =
+      if not vector then
+        Warn.user_error
+          "vector instruction %s require -variant vector"
           (AArch64.dump_instruction inst)
 
 (* Barrier pretty print *)
@@ -154,7 +160,6 @@ module Make
               (A.Location_reg (ii.A.proc,r)) ii
 
       let read_reg_neon is_data r ii =
-        if not neon then Warn.user_error "Advanced SIMD instructions require -variant neon" ;
         let vr = match r with
         | AArch64Base.SIMDreg _ -> r
         | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr')
@@ -226,7 +231,6 @@ module Make
         neon_replicate old_val (nelem-1) esize v
 
       let write_reg_neon_sz sz r v ii =
-        if not neon then Warn.user_error "Advanced SIMD instructions require -variant neon" ;
         let vr = match r with
         | AArch64Base.SIMDreg _ -> r
         | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr')
@@ -263,7 +267,6 @@ module Make
       | _ -> assert false
 
       let read_reg_predicate is_data r ii =
-        if not neon then Warn.user_error "Scalable vector instructions require -variant neon" ;
         let vr = match r with
         | AArch64Base.Preg(_,_) | AArch64Base.PMreg(_,_) -> r
         | _ -> assert false in
@@ -284,7 +287,6 @@ module Make
         M.op1 (Op.LogicalRightShift (idx*psize)) masked_val
 
       let write_reg_predicate_sz sz r v ii =
-        if not neon then Warn.user_error "Scalable Vecttor instructions require -variant neon" ;
         let pr = match r with
         | AArch64Base.Preg(_,_) -> r
         | _ -> assert false in
@@ -316,7 +318,6 @@ module Make
       | _ -> assert false
 
       let read_reg_scalable is_data r ii =
-        if not neon then Warn.user_error "Scalable Vector instructions require -variant neon" ;
         let vr = match r with
         | AArch64Base.Zreg _ -> r
         | _ -> assert false in
@@ -343,7 +344,6 @@ module Make
         scalable_replicate old_val (nelem-1) esize v
 
       let write_reg_scalable_sz sz r v ii =
-        if not neon then Warn.user_error "Scalable Vecttor instructions require -variant neon" ;
         let pr = match r with
         | AArch64Base.Zreg(_,_) -> r
         | _ -> assert false in
@@ -2948,46 +2948,60 @@ module Make
 
         (* Neon operations *)
         | I_ADDV(var,r1,r2) ->
+            check_vector inst;
             !(addv var r1 r2 ii)
         | I_DUP(r1,var,r2) ->
+            check_vector inst;
             !(let sz = tr_variant var  in
               read_reg_ord_sz sz r2 ii >>=
               fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
         | I_FMOV_TG(_,r1,_,r2) ->
+            check_vector inst;
             !(read_reg_neon false r2 ii >>=
               fun v -> write_reg r1 v ii)
         | I_MOV_VE(r1,i1,r2,i2) ->
+            check_vector inst;
             !(read_reg_neon_elem false r2 i2 ii >>=
               fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)
         | I_MOV_FG(r1,i,var,r2) ->
+            check_vector inst;
             !(let sz = tr_variant var  in
               read_reg_ord_sz sz r2 ii >>=
               fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii)
         | I_MOV_TG(_,r1,r2,i) ->
+            check_vector inst;
             !(read_reg_neon_elem false r2 i ii >>=
               fun v -> write_reg r1 v ii)
         | I_MOV_V(r1,r2) ->
+            check_vector inst;
             !(read_reg_neon false r2 ii >>=
               fun v -> write_reg_neon r1 v ii)
         | I_MOV_S(var,r1,r2,i) ->
+            check_vector inst;
             !(let sz = tr_simd_variant var in
               read_reg_neon_elem false r2 i ii >>=
               fun v -> write_reg_neon_sz sz r1 v ii)
         | I_MOVI_V(r,k,shift) ->
+            check_vector inst;
             !(movi_v r k shift ii)
         | I_MOVI_S(var,r,k) ->
+            check_vector inst;
             !(movi_s var r k ii)
         | I_EOR_SIMD(r1,r2,r3) ->
+            check_vector inst;
             let size = neon_sz r1 in
             !(simd_op EOR size r1 r2 r3 ii)
         | I_ADD_SIMD(r1,r2,r3) ->
+            check_vector inst;
             let size = neon_sz r1 in
             !(simd_op ADD size r1 r2 r3 ii)
         | I_ADD_SIMD_S(r1,r2,r3) ->
+            check_vector inst;
             !(simd_op ADD MachSize.Quad r1 r2 r3 ii)
 
         (* Neon loads and stores *)
         | I_LDAP1(rs,i,rA,kr) ->
+            check_vector inst;
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem_ldar MachSize.S128 i) addr rs ii >>|
             post_kr rA addr kr ii))
@@ -2995,6 +3009,7 @@ module Make
         | I_LD2(rs,i,rA,kr)
         | I_LD3(rs,i,rA,kr)
         | I_LD4(rs,i,rA,kr) ->
+            check_vector inst;
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
             post_kr rA addr kr ii))
@@ -3002,20 +3017,24 @@ module Make
         | I_LD2R(rs,rA,kr)
         | I_LD3R(rs,rA,kr)
         | I_LD4R(rs,rA,kr) ->
+            check_vector inst;
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD1M(rs,rA,kr) ->
+            check_vector inst;
             !!(read_reg_ord rA ii >>= fun addr ->
             (load_m_contigous addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD2M(rs,rA,kr)
         | I_LD3M(rs,rA,kr)
         | I_LD4M(rs,rA,kr) ->
+            check_vector inst;
             !!(read_reg_ord rA ii >>= fun addr ->
             (load_m addr rs ii >>|
             post_kr rA addr kr ii))
         | I_STL1(rs,i,rA,kr) ->
+            check_vector inst;
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (store_elem_stlr i) addr rs ii >>|
             post_kr rA addr kr ii))
@@ -3023,69 +3042,85 @@ module Make
         | I_ST2(rs,i,rA,kr)
         | I_ST3(rs,i,rA,kr)
         | I_ST4(rs,i,rA,kr) ->
+            check_vector inst;
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (store_elem i) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_ST1M(rs,rA,kr) ->
+            check_vector inst;
             !!!!(read_reg_ord rA ii >>= fun addr ->
             (store_m_contigous addr rs ii >>|
             post_kr rA addr kr ii))
         | I_ST2M(rs,rA,kr)
         | I_ST3M(rs,rA,kr)
         | I_ST4M(rs,rA,kr) ->
+            check_vector inst;
             !!!!(read_reg_ord rA ii >>= fun addr ->
             (store_m addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LDR_SIMD(var,r1,rA,MemExt.Reg(v,kr,sext,s)) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             get_ea_reg rA v kr sext s ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,Idx)) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             get_ea_idx rA k ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,PreIdx)) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             get_ea_preindexed rA k ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,PostIdx)) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             read_reg_ord rA ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>|
             post_kr rA addr (K k) ii >>= B.next2T
         | I_LDUR_SIMD(var,r1,rA,k) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             get_ea rA (K k) S_NOEXT ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDAPUR_SIMD(var,r1,rA,k) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             get_ea rA (K k) S_NOEXT ii >>= fun addr ->
             simd_ldar access_size addr r1 ii >>= B.next1T
         | I_STR_SIMD(var,r1,rA,MemExt.Reg (v,kr,sext,s)) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             let ma = get_ea_reg rA v kr sext s ii in
             simd_str access_size ma r1 ii
         | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,Idx)) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             let ma = get_ea_idx rA k ii in
             simd_str access_size ma r1 ii
         | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,PreIdx)) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             let ma = get_ea_preindexed rA k ii in
             simd_str access_size ma r1 ii
         | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,PostIdx)) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             let ma = read_reg_ord rA ii in
             simd_str_p access_size ma r1 rA (K k) ii
         | I_STUR_SIMD(var,r1,rA,k) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             let ma = get_ea_idx rA k ii in
             simd_str access_size ma r1 ii
         | I_STLUR_SIMD(var,r1,rA,k) ->
+            check_vector inst;
             let access_size = tr_simd_variant var in
             let ma = get_ea_idx rA k ii in
             simd_stlr access_size ma r1 ii
         | I_LDP_SIMD(tnt,var,r1,r2,r3,idx) ->
+          check_vector inst;
           begin
             match idx with
             | k,Idx ->
@@ -3101,6 +3136,7 @@ module Make
                   fun (b,()) -> M.unitT b
           end
         | I_STP_SIMD(tnt,var,r1,r2,r3,idx) ->
+          check_vector inst;
           begin
             match idx with
             | k,Idx ->
@@ -3120,6 +3156,7 @@ module Make
         | I_LD2SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_LD3SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_LD4SP(var,rs,p,rA,MemExt.Imm (k,Idx)) ->
+          check_vector inst;
           !!!(let sz = tr_simd_variant var in
               let ma = get_ea_idx rA k ii in
               load_predicated_elem_or_zero_m sz p ma rs ii >>|
@@ -3128,11 +3165,13 @@ module Make
         | I_LD2SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s))
         | I_LD3SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s))
         | I_LD4SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
+          check_vector inst;
           !!!(let sz = tr_simd_variant var in
               let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
               load_predicated_elem_or_zero_m sz p ma rs ii >>|
               M.unitT ())
         | I_LD1SP (var,rs,p,rA,MemExt.ZReg (rM,sext,s)) ->
+          check_vector inst;
           !(let sz = tr_simd_variant var in
             let ma = read_reg_ord rA ii in
             let mo = read_reg_scalable false rM ii in
@@ -3141,6 +3180,7 @@ module Make
         | I_ST2SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_ST3SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_ST4SP(var,rs,p,rA,MemExt.Imm (k,Idx)) ->
+          check_vector inst;
           !!!!(let sz = tr_simd_variant var in
                let ma = get_ea_idx rA k ii in
                 store_predicated_elem_or_merge_m sz p ma rs ii >>|
@@ -3149,57 +3189,73 @@ module Make
         | I_ST2SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s))
         | I_ST3SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s))
         | I_ST4SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
+          check_vector inst;
           !!!!(let sz = tr_simd_variant var in
                let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
                 store_predicated_elem_or_merge_m sz p ma rs ii >>|
                 M.unitT ())
         | I_ST1SP (var,rs,p,rA,MemExt.ZReg (rM,sext,s)) ->
+          check_vector inst;
           !!!(let sz = tr_simd_variant var in
               let ma = read_reg_ord rA ii in
               let mo = read_reg_scalable false rM ii in
               store_scatter_predicated_elem_or_merge sz p ma mo rs sext s ii >>|
               M.unitT ())
         | I_WHILELT(p,var,r1,r2) ->
+          check_vector inst;
           !!(while_op (M.op Op.Lt) false p var r1 r2 ii)
         | I_WHILELO(p,var,r1,r2) ->
+          check_vector inst;
           !!(while_op (M.op Op.Lt) true p var r1 r2 ii)
         | I_WHILELE(p,var,r1,r2) ->
+          check_vector inst;
           !!(while_op (M.op Op.Le) false p var r1 r2 ii)
         | I_WHILELS(p,var,r1,r2) ->
+          check_vector inst;
           !!(while_op (M.op Op.Le) true p var r1 r2 ii)
         |  I_ADD_SV (r1,r2,r3) ->
+          check_vector inst;
           !(read_reg_scalable false r3 ii >>|
               read_reg_scalable false r2 ii >>= fun (v1,v2) ->
                 M.add v1 v2 >>= fun v ->
                   write_reg_scalable r1 v ii)
         | I_UADDV(var,v,p,z) ->
+          check_vector inst;
           !(uaddv var v p z ii)
         | I_MOVPRFX(r1,pg,r2) ->
+          check_vector inst;
           !(movprfx r1 pg r2 ii)
         | I_NEG_SV(r1,pg,r2) ->
+          check_vector inst;
           !(neg r1 pg r2 ii)
         | I_MOV_SV(r,k,shift) ->
+          check_vector inst;
           !(mov_sv r k shift ii)
         | I_DUP_SV(r1,var,r2) ->
+          check_vector inst;
           !(let sz = tr_variant var  in
             read_reg_ord_sz sz r2 ii >>= fun v ->
               write_reg_scalable_rep r1 v ii)
         | I_INDEX_SI (r1,var,r2,k) ->
+          check_vector inst;
           !(let sz = tr_variant var  in
             let v2 = V.intToV k in
             read_reg_ord_sz sz r2 ii >>= fun v1 ->
               index r1 v1 v2 ii)
         | I_INDEX_IS (r1,var,k,r2) ->
+          check_vector inst;
           !(let sz = tr_variant var  in
             let v1 = V.intToV k in
             read_reg_ord_sz sz r2 ii >>= fun v2 ->
               index r1 v1 v2 ii)
         | I_INDEX_SS (r1,var,r2,r3) ->
+          check_vector inst;
           !(let sz = tr_variant var  in
             read_reg_ord_sz sz r2 ii >>|
             read_reg_ord_sz sz r3 ii >>= fun (v1,v2) ->
               index r1 v1 v2 ii)
         | I_INDEX_II (r1,k1,k2) ->
+          check_vector inst;
           !(let v1 = V.intToV k1 in
             let v2 = V.intToV k2 in
             index r1 v1 v2 ii)

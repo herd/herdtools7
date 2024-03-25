@@ -43,7 +43,7 @@ type t =
   | FaultHandling of Fault.Handling.t (* Fault handling *)
   | TooFar         (* Do not discard candidates with TooFar events *)
   | Morello
-  | Neon
+  | Vector (* Vector instructions like Neon and SVE *)
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
