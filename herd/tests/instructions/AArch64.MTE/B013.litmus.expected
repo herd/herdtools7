@@ -1,0 +1,10 @@
+Test B013 Required
+States 1
+0:X2=x:green; 0:X3=x:red;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=x:green /\ 0:X3=x:red)
+Observation B013 Always 1 0
+Hash=61e3ccc9a6795411106ff0b5f9ca313a
+
