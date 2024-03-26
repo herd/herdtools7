@@ -246,6 +246,8 @@ module type S =
         every memory event in [s1] is iico_order before every memory
         event in [s2] *)
 
+    val seq_mem_list : 'a t -> 'a list t -> 'a list t
+
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
     val forceT : 'a -> 'b t -> 'a t
