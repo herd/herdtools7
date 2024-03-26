@@ -793,6 +793,9 @@ Monad type:
     let seq_mem : 'a t -> 'b t -> ('a * 'b) t
       = fun  s1 s2 -> combi Misc.pair E.seq_mem s1 s2
 
+    let seq_mem_list : 'a t -> 'a list t -> 'a list t
+      = fun  s1 s2 -> combi Misc.cons E.seq_mem s1 s2
+
 (* Force monad value *)
     let forceT (v : 'a) : 'b t -> 'a t =
       let f (_, vcl, es) = (v, vcl, es) in
