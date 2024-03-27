@@ -1,0 +1,10 @@
+Test B010 Required
+States 1
+  ~Fault(P0,x);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (not (fault(P0,x)))
+Observation B010 Always 1 0
+Hash=96b31e9a3d4696c3cc7ba14e1aa59685
+

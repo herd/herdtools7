@@ -45,6 +45,13 @@ let nbytes = function
   | Quad -> 8
   | S128 -> 16
 
+let log2bytes = function
+  | Byte -> 0
+  | Short -> 1
+  | Word -> 2
+  | Quad -> 3
+  | S128 -> 4
+
 let nbits sz = nbytes sz * 8
 
 (* check is 16 bit immediate *)
@@ -215,5 +222,7 @@ type lr_sc =
 let granule = S128
 
 let granule_nbytes = nbytes granule
+
+let granule_log2bytes = log2bytes granule
 
 let granule_align x = (x / granule_nbytes) * granule_nbytes
