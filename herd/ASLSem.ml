@@ -309,17 +309,17 @@ module Make (C : Config) = struct
             let* v1 = m1 () and* v2 = m2 () and* v = to_int_signed v in
             M.op3 Op.If v v1 v2
 
-    (* Any access to PSTATE emits an access to NZCV.
+    (* Any access to `_NZCV` emits an access to NZCV.
      * Notice that the value is casted into an integer.
      *)
-    let is_pstate x scope =
-      match (x, scope) with "PSTATE", AST.Scope_Global -> true | _ -> false
+    let is_nzcv x scope =
+      match (x, scope) with "_NZCV", AST.Scope_Global -> true | _ -> false
 
     let is_resaddr x scope =
       match (x, scope) with "RESADDR", AST.Scope_Global -> true | _ -> false
 
     let loc_of_scoped_id ii x scope =
-      if is_pstate x scope then
+      if is_nzcv x scope then
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV)
       else if is_resaddr x scope then
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr)
@@ -331,7 +331,7 @@ module Make (C : Config) = struct
         let action = Act.Access (dir, loc, v, MachSize.Quad, aneutral) in
         M.mk_singleton_es action (use_ii_with_poi ii poi)
       in
-      if is_pstate x scope then M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m else m v
+      if is_nzcv x scope then M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m else m v
 
     let on_write_identifier = on_access_identifier Dir.W
     and on_read_identifier = on_access_identifier Dir.R

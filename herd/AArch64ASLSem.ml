@@ -808,12 +808,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               | _ -> st)
             ASLS.A.state_empty ASLBase.gregs
         in
-        let nzcv = AArch64Base.NZCV and pstate = global_loc "PSTATE" in
+        let nzcv = AArch64Base.NZCV and _nzcv = global_loc "_NZCV" in
         let st =
           match A.look_reg nzcv ii.A.env.A.regs with
           | Some v ->
               let v = aarch64_to_asl_bv v in
-              ASLS.A.state_add st pstate v
+              ASLS.A.state_add st _nzcv v
           | _ -> st
         in
         let regq = AArch64Base.ResAddr and resaddr = global_loc "RESADDR" in

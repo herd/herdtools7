@@ -199,8 +199,13 @@ module Make (B : Backend.S) (C : Config) = struct
                 | None, Some t -> base_value env t
               in
               let* () =
+(*
+ * Those identifiers are initialised to their current value
+ * before executing each instruction. Hence, we discard
+ * the initial values from `.asl` files.
+ *)
                 match name with
-                | "PSTATE" | "RESADDR" -> return ()
+                | "RESADDR" | "_NZCV" -> return ()
                 | _ -> B.on_write_identifier name Scope_Global v
               in
               IEnv.declare_global name v env |> return
