@@ -369,9 +369,11 @@ module Make
                vs in
            sprintf "{%s}" (String.concat "" pps)
         | Symbolic _|Tag _|PteVal _|Frozen _|ConcreteRecord _ -> assert false
-        | Label _ ->
-            Warn.user_error
-              "Labels cannot be used as initial values of memory locations"
+        | Label (p,lab) ->
+          if do_self then
+            sprintf "&_a->code%i[_i*_a->code%i_sz+_a->prelude%i+%s]" p p p (OutUtils.fmt_lbl_offset p lab)
+          else
+            sprintf "_a->%s" (OutUtils.fmt_lbl_var p lab)
         | Instruction i -> A.GetInstr.instr_name i
 
 (* Dump left & right values when context is available *)
@@ -1648,6 +1650,13 @@ module Make
         | Direct -> ()
         end ;
         loop_test_prelude indent "_a->_p->" ;
+        if do_self then begin
+          List.iteri
+            (fun n _ ->
+              O.fii "ins_t *_dst%i = &_a->code%i[_i*_a->code%i_sz], *_src%i=(ins_t *)code%i;" n n n n n ;
+              O.fii "for (int _k = _a->code%i_sz-1 ; _k >= 0 ; _k--) _dst%i[_k] = _src%i[_k];" n n n)
+            test.T.code
+        end ;
         List.iter
           (fun (a,t) ->
             let v = A.find_in_state (A.location_of_addr a) test.T.init in
@@ -1708,13 +1717,6 @@ module Make
             O.oii "_a->barrier[_i] = 0;"
         | Pthread|NoBarrier|User2|TimeBase -> ()
         end ;
-        if do_self then begin
-          List.iteri
-            (fun n _ ->
-              O.fii "ins_t *_dst%i = &_a->code%i[_i*_a->code%i_sz], *_src%i=(ins_t *)code%i;" n n n n n ;
-              O.fii "for (int _k = _a->code%i_sz-1 ; _k >= 0 ; _k--) _dst%i[_k] = _src%i[_k];" n n n)
-            test.T.code
-        end ;
         O.oi "}" ;
         if Cfg.cautious then O.oi "mcautious();" ;
         begin match barrier with
@@ -1759,8 +1761,6 @@ module Make
         | [] -> ()
         | _::_ as cs -> O.f "%s\n\n" (String.concat "\n" cs)
         end ;
-        (* Note: does nothing when no label is here *)
-        UD.define_label_offsets test CfgLoc.label_init ;
         let aligned_env =
           List.filter
             (fun (a,_) -> U.is_aligned a env)
@@ -2947,6 +2947,8 @@ module Make
         dump_filter env test ;
         dump_cond_fun env test ;
         dump_defs_outs doc env test ;
+        (* Note: does nothing when no label is here *)
+        UD.define_label_offsets test (T.get_init_labels test) ;
         dump_check_globals env doc test ;
         dump_templates env doc.Name.name test ;
         dump_reinit env test cpys ;
