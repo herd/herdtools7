@@ -1,11 +1,13 @@
 (ocamllex lexUtil lexLog_gen lexConf_gen autoLex)
-(rule (copy ../Version.ml Version.ml))
+
+(rule
+ (copy ../Version.ml Version.ml))
+
 (executables
-  (names
-    readRelax atoms diycross mexpand atomize diyone nexts classify diy norm
-  )
-  (public_names
-     readRelax7 atoms7 diycross7 mexpand7 atomize7 diyone7 nexts7 classify7 diy7 norm7
-  )
-  (libraries herdtools unix)
-  (modules_without_implementation archLoc archRun arch_gen atom autoInterpret builder fence XXXCompile_gen rmw))
+ (names readRelax atoms diycross mexpand atomize diyone nexts classify diy
+   norm)
+ (public_names readRelax7 atoms7 diycross7 mexpand7 atomize7 diyone7 nexts7
+   classify7 diy7 norm7)
+ (libraries herdtools unix)
+ (modules_without_implementation archLoc archRun arch_gen atom autoInterpret
+   builder fence XXXCompile_gen rmw))

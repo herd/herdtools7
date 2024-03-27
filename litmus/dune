@@ -1,11 +1,12 @@
-(rule (copy ../Version.ml Version.ml))
-(ocamllex lexAffinity lexConf_litmus lexFmt lexHaveRcu prefetch showcode lexO infoAlign)
-(executables
-   (names
-      litmus klitmus
-    )
-   (public_names litmus7 klitmus7)
-   (libraries herdtools)
-   (modules_without_implementation answer arch_litmus compCondUtils emitPrintf fmt pseudoAbstract target LISATarget XXXCompile_litmus)
+(rule
+ (copy ../Version.ml Version.ml))
 
-)
+(ocamllex lexAffinity lexConf_litmus lexFmt lexHaveRcu prefetch showcode lexO
+  infoAlign)
+
+(executables
+ (names litmus klitmus)
+ (public_names litmus7 klitmus7)
+ (libraries herdtools)
+ (modules_without_implementation answer arch_litmus compCondUtils emitPrintf
+   fmt pseudoAbstract target LISATarget XXXCompile_litmus))

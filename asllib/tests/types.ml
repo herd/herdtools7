@@ -91,7 +91,7 @@ let structure_example () =
   ()
 
 let subtype_examples () =
-(*
+  (*
   let bits_4 = !!(T_Bits (!$4, [])) in
   let bits_2_4 =
     !!(T_Bits
@@ -170,8 +170,8 @@ let type_clashes () =
   ()
 
 let enum_example () =
-  let variants = [ "A"; "B"] in
-  let variants' = [ "A"; "B"] in
+  let variants = [ "A"; "B" ] in
+  let variants' = [ "A"; "B" ] in
   let t1 = !!(T_Enum variants) in
   let t2 = !!(T_Enum variants') in
 

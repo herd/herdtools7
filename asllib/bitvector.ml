@@ -90,8 +90,7 @@ let _pp_data f (length, data) =
   pp_print_char f 'x';
   String.iter (fun c -> fprintf f "%x" @@ Char.code c) data
 
-let create_data_bytes length =
-  Bytes.create ((length + 7)/8)
+let create_data_bytes length = Bytes.create ((length + 7) / 8)
 
 (** [String.for_all] taken directly out of stdlib version 4.13 . *)
 let string_for_all p s =
@@ -260,8 +259,7 @@ let z64 = Z.shift_left Z.one 64
 
 let printable bv =
   let z = to_z_signed bv in
-  if Z.geq z z63 then Z.sub z z64
-  else z
+  if Z.geq z z63 then Z.sub z z64 else z
 
 let of_string s =
   let result = Buffer.create ((String.length s / 8) + 1) in
@@ -434,47 +432,44 @@ let write_slice (length_dst, data_dst) (length_src, data_src) positions =
   let () = List.iteri copy_bit_here positions in
   remask (length_dst, Bytes.unsafe_to_string result)
 
-
 (* Retuns length of destination *)
-let pp (l,bs) =
-  Printf.sprintf "%s<%d>"
-    (to_string (l,Bytes.to_string bs)) l
+let pp (l, bs) = Printf.sprintf "%s<%d>" (to_string (l, Bytes.to_string bs)) l
 
 let pp_bytes n dst =
-  let sz = (n+1)*8 in
-  pp (sz,dst)
+  let sz = (n + 1) * 8 in
+  pp (sz, dst)
 
 (* [mix_chars_start off low_c high_c] return a char,
    whose off lower order bits are from low_c and
    the 8-off higher order bits are the  8-off lower
    order bits of high_c *)
 let mix_chars_start off low_c high_c =
-  let low_bits = (1 lsl off-1) land (Char.code low_c)
-  and high_bits = (Char.code high_c) lsl off in
-  low_bits lor high_bits |> (land) 0xff |> Char.chr
+  let low_bits = ((1 lsl off) - 1) land Char.code low_c
+  and high_bits = Char.code high_c lsl off in
+  low_bits lor high_bits |> ( land ) 0xff |> Char.chr
 
 (* [mix_chars_body off low_c high_c] return a char,
    whose off lower order bits are  the off higher
    order bits of low_c and the 8-off higher order bits are the
    8-off lower order bits of high_c *)
 let mix_chars_body off low_c high_c =
-  let low_bits =  (Char.code low_c) lsr (8-off)
-  and high_bits = (Char.code high_c) lsl off in
-  low_bits lor high_bits |>  (land) 0xff |> Char.chr
+  let low_bits = Char.code low_c lsr (8 - off)
+  and high_bits = Char.code high_c lsl off in
+  low_bits lor high_bits |> ( land ) 0xff |> Char.chr
 
 (* [mix_chars_final off c] return a char,
    whose sz lower order bits are the
    sz bits of c at possition off. *)
 let mix_char_final off sz c =
-  (Char.code c lsr off) land (1 lsl sz-1)  |> Char.chr
+  (Char.code c lsr off) land ((1 lsl sz) - 1) |> Char.chr
 
-let copy_into dst (length_src, data_src as b) offset =
+let copy_into dst ((length_src, data_src) as b) offset =
   let () =
     if false then
-      Printf.eprintf "copy_into %s + %s, offset=%d\n%!"
-        (to_string b)
-        (pp (offset,dst))
-        offset in
+      Printf.eprintf "copy_into %s + %s, offset=%d\n%!" (to_string b)
+        (pp (offset, dst))
+        offset
+  in
   let length_dst = offset + length_src in
   if length_src <= 0 then length_dst
   else
@@ -489,11 +484,10 @@ let copy_into dst (length_src, data_src as b) offset =
          *  copied into the 8-m_off high order_bits of
          *  dst.[n_off] *)
         let prec_c = Bytes.get dst n_off and next_c = String.get data_src 0 in
-        mix_chars_start m_off prec_c next_c |> Bytes.set dst n_off ;
+        mix_chars_start m_off prec_c next_c |> Bytes.set dst n_off;
         let () =
-          if false then
-            Printf.eprintf "Start: %s\n%!"
-              (pp_bytes n_off dst) in
+          if false then Printf.eprintf "Start: %s\n%!" (pp_bytes n_off dst)
+        in
         (*
          * Now, loop.
          * At each step, 8-off bits are taken from
@@ -502,43 +496,43 @@ let copy_into dst (length_src, data_src as b) offset =
          * lower order bits of the next_char
          *)
         (* Number of bits still to write *)
-        let rem_bits = length_src - (8-m_off) in
+        let rem_bits = length_src - (8 - m_off) in
         (* Useful string length *)
-        let src_str_len = (length_src+7) / 8 in
-        let rec do_rec  i_src i_dst rem_bits =
-          if i_src+1 >= src_str_len then
-            i_src,i_dst,rem_bits
-          else begin
+        let src_str_len = (length_src + 7) / 8 in
+        let rec do_rec i_src i_dst rem_bits =
+          if i_src + 1 >= src_str_len then (i_src, i_dst, rem_bits)
+          else
             let prec_c = String.get data_src i_src in
             let next_c = String.get data_src (i_src + 1) in
-            mix_chars_body (m_off) prec_c next_c |> Bytes.set dst i_dst;
+            mix_chars_body m_off prec_c next_c |> Bytes.set dst i_dst;
             let () =
               if false then
-                Printf.eprintf "Body  -> %s\n%!" (pp_bytes i_dst dst) in
-            do_rec (i_src+1) (i_dst+1) (rem_bits-8)
-          end in
-       let i_src,i_dst,rem_bits = do_rec 0 (n_off+1) rem_bits in
-       let () =
-         if false then
-           Printf.eprintf "i_src=%d, i_dst=%d, rem_bits=%d\n%!"
-             i_src i_dst rem_bits in
-       if rem_bits > 0 then begin
-         let c = String.get data_src i_src in
-         mix_char_final (8-m_off) rem_bits c |> Bytes.set dst i_dst
-       end in
+                Printf.eprintf "Body  -> %s\n%!" (pp_bytes i_dst dst)
+            in
+            do_rec (i_src + 1) (i_dst + 1) (rem_bits - 8)
+        in
+        let i_src, i_dst, rem_bits = do_rec 0 (n_off + 1) rem_bits in
+        let () =
+          if false then
+            Printf.eprintf "i_src=%d, i_dst=%d, rem_bits=%d\n%!" i_src i_dst
+              rem_bits
+        in
+        if rem_bits > 0 then
+          let c = String.get data_src i_src in
+          mix_char_final (8 - m_off) rem_bits c |> Bytes.set dst i_dst
+    in
     let () =
       if false then
-        Printf.eprintf "copy_into %s + %s ->%s\n%!"
-          (to_string b)
-          (pp (offset,dst))
-          (pp (length_dst, dst)) in
+        Printf.eprintf "copy_into %s + %s ->%s\n%!" (to_string b)
+          (pp (offset, dst))
+          (pp (length_dst, dst))
+    in
     length_dst
 
 let concat bvs =
-  if false then begin
-    let pp = List.map to_string bvs in
-    Printf.eprintf "Concat %s\n%!" (String.concat "," pp)
-  end ;
+  (if false then
+     let pp = List.map to_string bvs in
+     Printf.eprintf "Concat %s\n%!" (String.concat "," pp));
   let length = List.fold_left (fun acc bv -> acc + length bv) 0 bvs in
   let result = create_data_bytes length in
   let _ = List.fold_right (copy_into result) bvs 0 in

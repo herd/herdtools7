@@ -199,11 +199,11 @@ module Make (B : Backend.S) (C : Config) = struct
                 | None, Some t -> base_value env t
               in
               let* () =
-(*
- * Those identifiers are initialised to their current value
- * before executing each instruction. Hence, we discard
- * the initial values from `.asl` files.
- *)
+                (*
+                 * Those identifiers are initialised to their current value
+                 * before executing each instruction. Hence, we discard
+                 * the initial values from `.asl` files.
+                 *)
                 match name with
                 | "RESADDR" | "_NZCV" -> return ()
                 | _ -> B.on_write_identifier name Scope_Global v
@@ -213,8 +213,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     let fold = function
       | TopoSort.ASTFold.Single d -> process_one_decl d
-      | TopoSort.ASTFold.Recursive ds ->
-          List.fold_right process_one_decl ds
+      | TopoSort.ASTFold.Recursive ds -> List.fold_right process_one_decl ds
     in
     fun ast -> TopoSort.ASTFold.fold fold ast
 
@@ -846,8 +845,7 @@ module Make (B : Backend.S) (C : Config) = struct
         List.fold_left2 folder (return_normal env) ldis liv
         |: SemanticsRule.LDTuple
     (* End *)
-    | LDI_Var _, None
-    | LDI_Tuple _, None ->
+    | LDI_Var _, None | LDI_Tuple _, None ->
         (* Should not happen in V1 because of TypingRule.LDUninitialisedTuple *)
         fatal_from s Error.TypeInferenceNeeded
 
@@ -996,17 +994,14 @@ module Make (B : Backend.S) (C : Config) = struct
         let () =
           if debug then
             let open Format in
-            let pp_value fmt v =
-              B.debug_value v |> pp_print_string fmt
-            in
+            let pp_value fmt v = B.debug_value v |> pp_print_string fmt in
             eprintf "@[@<2>%a:@ @[%a@]@ ->@ %a@]@." PP.pp_pos s
               (pp_print_list ~pp_sep:pp_print_space PP.pp_expr)
               args
               (pp_print_list ~pp_sep:pp_print_space pp_value)
               vs
           else (
-            List.map B.debug_value vs
-            |> String.concat " " |> print_string;
+            List.map B.debug_value vs |> String.concat " " |> print_string;
             print_newline ())
         in
         return_continue env |: SemanticsRule.SDebug

@@ -44,6 +44,11 @@ repos:
             # Expected files should be left verbatim.
             \.expected(-failure)?$
           )
+- repo: https://github.com/arenadotio/pre-commit-ocamlformat
+  rev: 0439858f79b3bcb49e757278eb1312e212d7dd4f
+  hooks:
+  -     id: ocamlformat
+        types: [ocaml]
 
 -   repo: local
     hooks:

@@ -1,19 +1,28 @@
-(rule (copy ../Version.ml Version.ml))
+(rule
+ (copy ../Version.ml Version.ml))
 
 (ocamllex Lexer)
+
 (ocamllex SimpleLexer0)
+
 (ocamllex splitasl)
 
-(menhir (modules Parser))
-(menhir (modules Parser0) (flags --unused-tokens --table))
+(menhir
+ (modules Parser))
+
+(menhir
+ (modules Parser0)
+ (flags --unused-tokens --table))
 
 (library
  (name asllib)
- (modules (:standard \ aslref bundler))
+ (modules
+  (:standard \ aslref bundler))
  (public_name herdtools7.asllib)
  (private_modules Parser0 Gparser0 Lexer0 SimpleLexer0 RepeatableLexer)
  (modules_without_implementation Backend AST)
- (flags (:standard -w -40-42))
+ (flags
+  (:standard -w -40-42))
  (libraries menhirLib zarith))
 
 (documentation)
@@ -25,8 +34,7 @@
  (modules aslref))
 
 (executable
-  (public_name aslbundler)
-  (name bundler)
-  (libraries asllib)
-  (modules bundler))
-
+ (public_name aslbundler)
+ (name bundler)
+ (libraries asllib)
+ (modules bundler))

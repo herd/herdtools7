@@ -8,8 +8,8 @@
 (alias
  (name default)
  (deps
-   (alias install)
-   (alias internal/all)))
+  (alias install)
+  (alias internal/all)))
 
 (alias
  (name jerd)
