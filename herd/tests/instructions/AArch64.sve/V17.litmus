@@ -1,0 +1,18 @@
+AArch64 V17
+{
+ int x[4];
+ int y[4];
+ 0:X0=x;
+ 0:X1=y
+}
+P0                                ;
+MOV W2,#0                         ;
+MOV W3,#4                         ;
+WHILELT P0.S,W2,W3                ;
+MOV Z0.S,#4                       ;
+ST1W {Z0.S},P0,[X0]               ;
+INDEX Z1.S,W2,#1                  ;
+ST1W {Z1.S},P0,[X1,Z1.S,UXTW #2]  ;
+
+forall x={4,4,4,4} /\ y={0,1,2,3}
+

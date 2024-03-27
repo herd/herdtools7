@@ -4,6 +4,7 @@ x[0]=65535; x[1]=255;
 Ok
 Witnesses
 Positive: 1 Negative: 0
+Flag Vector-Extensions-are-work-in-progress
 Condition exists (x[0]=65535 /\ x[1]=255)
 Observation V44 Always 1 0
 Hash=defbf9207549dbd82105c6b6cc0dc38b

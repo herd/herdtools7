@@ -1,0 +1,15 @@
+AArch64 V16
+{
+ int x[4]={0,1,2,3};
+ int y[4]={5,6,7,8};
+ 0:X0=x;
+ 0:X1=y;
+}
+P0                                ;
+MOV W2,#0                         ;
+MOV W3,#4                         ;
+WHILELT P0.S,W2,W3                ;
+LD1W {Z1.S},P0/Z,[X0]             ;
+LD1W {Z2.S},P0/Z,[X1,Z1.S,UXTW #2];
+forall 0:V1.4S={0,1,2,3} /\ 0:V2.4S={5,6,7,8}
+

@@ -25,6 +25,7 @@ module type I = sig
 
   type special
   val specials : special list
+  val specials2 : special list
   val pp_i : int -> string
 end
 
@@ -74,6 +75,7 @@ module type S = sig
 
   type special
   val alloc_special : st -> special * st
+  val alloc_special2 : st -> special * st
 
   val set_friends : arch_reg -> arch_reg list -> st -> st
   val get_friends : st -> arch_reg -> arch_reg list
@@ -219,6 +221,7 @@ with type arch_reg = I.arch_reg and type special = I.special
       { regs : arch_reg list ;
         map  : arch_reg StringMap.t ;
         specials : I.special list ;
+        specials2 : I.special list ;
         noks : int ;
         env : TypBase.t LocMap.t ; (* Record types *)
         (* Group special registers together *)
@@ -235,6 +238,7 @@ with type arch_reg = I.arch_reg and type special = I.special
     { regs = I.free_registers;
       map = StringMap.empty;
       specials = I.specials;
+      specials2 = I.specials2;
       noks = 0;
       env = LocMap.empty;
       friends = RegMap.empty;
@@ -266,6 +270,10 @@ with type arch_reg = I.arch_reg and type special = I.special
   let alloc_special st = match st.specials with
   | [] -> Warn.fatal "No more special registers"
   | r::rs -> r,{ st with specials = rs; }
+
+  let alloc_special2 st = match st.specials2 with
+  | [] -> Warn.fatal "No more special registers"
+  | r::rs -> r,{ st with specials2 = rs; }
 
   let set_friends r rs st =
     let friends = RegMap.add r rs st.friends in

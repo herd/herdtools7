@@ -34,7 +34,7 @@ let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
 let do_fullkvm = C.variant Variant_gen.FullKVM
 let do_kvm = do_fullkvm || C.variant Variant_gen.KVM
-let do_neon = C.variant Variant_gen.Neon
+let do_vector = C.variant Variant_gen.Vector
 let do_mixed = Variant_gen.is_mixed  C.variant
 let do_cu = C.variant Variant_gen.ConstrainedUnpredictable
 
@@ -60,28 +60,32 @@ module Mixed =
 let bellatom = false
 module SIMD = struct
 
-  type atom = NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
+  type atom = SvV|Sv1|Sv2i|Sv3i|Sv4i|NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
 
-  let fold_neon f r = r |>
+  let fold f r = r |>
     f NeAcqPc |> f NeRel |>
     f NeP |>
     f NePa |> f NePaN |>
     f Ne1 |> f Ne2 |> f Ne3 |> f Ne4 |>
-    f Ne2i |> f Ne3i |> f Ne4i
+    f Ne2i |> f Ne3i |> f Ne4i |>
+    f SvV  |> f Sv1 |>
+    f Sv2i |> f Sv3i |> f Sv4i
 
   let nregs = function
-    | Ne1 -> 1
-    | Ne2 | Ne2i -> 2
-    | Ne3 | Ne3i -> 3
-    | Ne4 | Ne4i -> 4
+    | SvV | Sv1 | Ne1 -> 1
+    | Sv2i | Ne2 | Ne2i -> 2
+    | Sv3i | Ne3 | Ne3i -> 3
+    | Sv4i | Ne4 | Ne4i -> 4
     | _ -> 1
 
   let nelements = function
+    | SvV|Sv1|Sv2i|Sv3i|Sv4i
     | Ne1|Ne2|Ne2i|Ne3|Ne3i|Ne4|Ne4i -> 4
     | NePa|NePaN -> 2
     | NeP | NeAcqPc | NeRel -> 1
 
   let pp_opt = function
+    | Sv2i | Sv3i | Sv4i
     | Ne2i | Ne3i | Ne4i -> "i"
     | _ -> ""
 
@@ -89,6 +93,9 @@ module SIMD = struct
     match n with
     | Ne1 | Ne2 | Ne3 | Ne4 | Ne2i | Ne3i | Ne4i ->
        Printf.sprintf "Ne%i%s" (nregs n) (pp_opt n)
+    | Sv1 | Sv2i | Sv3i | Sv4i ->
+       Printf.sprintf "Sv%i%s" (nregs n) (pp_opt n)
+    | SvV -> "SvV"
     | NePa -> "NePa"
     | NePaN -> "NePaN"
     | NeP -> "NeP"
@@ -107,9 +114,10 @@ module SIMD = struct
     for k = 0 to sz-1 do
       for i=0 to el-1 do
         let j = match n with
-          | Ne2i | Ne3i | Ne4i -> k+i*sz
+          | Sv2i | Sv3i | Sv4i | Ne2i | Ne3i | Ne4i -> k+i*sz
           | NeP | NeAcqPc | NeRel | NePa | NePaN
-          | Ne1 | Ne2 | Ne3 | Ne4 -> i+k*el
+          | Ne1 | Ne2 | Ne3 | Ne4
+          | SvV | Sv1 -> i+k*el
         in
        v.(j) <- start+k
       done
@@ -120,9 +128,10 @@ module SIMD = struct
     let el = nelements n in
     let sz = nregs n in
     let access r k = match n with
-      | Ne2i | Ne3i | Ne4i -> sz*k + r
+      | Sv2i | Sv3i | Sv4i | Ne2i | Ne3i | Ne4i -> sz*k + r
       | NeP | NeAcqPc | NeRel | NePa | NePaN
-      | Ne1 | Ne2 | Ne3 | Ne4 -> el*r + k
+      | Ne1 | Ne2 | Ne3 | Ne4
+      | SvV | Sv1 -> el*r + k
     in
     let rec reg r k =
       if k >= el then []
@@ -329,9 +338,9 @@ let is_ifetch a = match a with
      if do_morello then fun f r -> f CapaSeal (f CapaTag r)
      else fun _f r -> r
 
-   let fold_neon =
-     if do_neon then
-       fun f -> SIMD.fold_neon (fun n -> f (Neon n))
+   let fold_vector =
+     if do_vector then
+       fun f -> SIMD.fold (fun n -> f (Neon n))
      else
        fun _ r -> r
 
@@ -356,7 +365,7 @@ let is_ifetch a = match a with
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
      let r = fold_morello f r in
      let r = fold_tag f r in
-     let r = fold_neon f r in
+     let r = fold_vector f r in
      let r = fold_pair f r in
      let r = fold_acc_opt None f r in
      let r =
@@ -456,10 +465,10 @@ let is_ifetch a = match a with
      function
      | NeP | NeAcqPc | NeRel -> 1
      | NePa | NePaN -> 2
-     | Ne1 -> 4
-     | Ne2 | Ne2i -> 8
-     | Ne3 | Ne3i -> 12
-     | Ne4 | Ne4i -> 16
+     | SvV | Sv1  | Ne1 -> 4
+     | Sv2i | Ne2 | Ne2i -> 8
+     | Sv3i | Ne3 | Ne3i -> 12
+     | Sv4i | Ne4 | Ne4i -> 16
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
@@ -866,6 +875,7 @@ include
 
       type special = reg
       let specials = vregs
+      let specials2 = pregs
     end)
 
 end

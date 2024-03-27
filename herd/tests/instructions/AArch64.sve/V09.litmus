@@ -1,0 +1,16 @@
+AArch64 V09
+(* Contiguous store words from vector (scalar index) *)
+{
+ uint8_t x[4];
+
+ 0:X0=x;
+}
+P0                               ;
+ MOV Z1.S,#1                     ;
+ MOV W1,#0                       ;
+ MOV W2,#4                       ;
+ SXTW X3,W1                      ;
+ WHILELT P0.H,W1,W2              ;
+ ST1B {Z1.H},P0,[X0,X3]          ;
+
+forall x={1,0,1,0}

@@ -45,7 +45,7 @@ type t =
   | FaultHandling of Fault.Handling.t (* Fault handling *)
   | TooFar
   | Morello
-  | Neon
+  | Vector
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
@@ -125,7 +125,7 @@ let parse s = match Misc.lowercase s with
 | "tagmem"|"memtag"|"mte" -> Some MemTag
 | "toofar" -> Some TooFar
 | "morello" -> Some Morello
-| "neon" -> Some Neon
+| "vector"|"neon" -> Some Vector
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
 | "kvm"
@@ -199,7 +199,7 @@ let pp = function
   | FaultHandling p -> Fault.Handling.pp p
   | TooFar -> "TooFar"
   | Morello -> "Morello"
-  | Neon -> "Neon"
+  | Vector -> "vector"
   | Deps -> "Deps"
   | Instances -> "Instances"
   | VMSA -> "vmsa"

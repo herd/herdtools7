@@ -4,6 +4,7 @@ States 1
 Ok
 Witnesses
 Positive: 1 Negative: 0
+Flag Vector-Extensions-are-work-in-progress
 Condition forall (x={65535,255} /\ [y]=255 /\ 0:X0=x)
 Observation V45 Always 1 0
 Hash=ac44a31cce026ff27e9edef537af099f

@@ -1,0 +1,11 @@
+Test V12 Required
+States 1
+x={1,2,3,4,1,2,3,4};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Vector-Extensions-are-work-in-progress
+Condition forall (x={1,2,3,4,1,2,3,4})
+Observation V12 Always 1 0
+Hash=1359dc6080d831911ed7023b6296bb95
+
