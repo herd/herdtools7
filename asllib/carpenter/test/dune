@@ -1,0 +1,5 @@
+(test
+ (name aslref)
+ (modules aslref)
+ (enabled_if %{lib-available:qcheck})
+ (libraries carpenter_lib feat qcheck asllib))

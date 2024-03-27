@@ -1269,8 +1269,9 @@ module Make (B : Backend.S) (C : Config) = struct
           | Some i -> i
         in
         L_BitVector (Bitvector.zeros length) |> lit
-    | T_Enum li ->
-        IMap.find (List.hd li) env.global.static.constants_values |> lit
+    | T_Enum li -> (
+        try IMap.find (List.hd li) env.global.static.constants_values |> lit
+        with Not_found -> fatal_from t Error.TypeInferenceNeeded)
     | T_Int UnConstrained -> L_Int Z.zero |> lit
     | T_Int (UnderConstrained _) ->
         failwith "Cannot request the base value of a under-constrained integer."
