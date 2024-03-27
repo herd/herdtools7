@@ -109,6 +109,9 @@ end = struct
 
 
 (* None of those below *)
+
+  let is_ifetch _ = false
+
   let is_tag _ = false
 
   let is_additional_mem _ = false

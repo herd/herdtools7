@@ -23,6 +23,7 @@ module type S = sig
   val nexp_annot : explicit
   val is_explicit_annot : explicit -> bool
   val is_not_explicit_annot : explicit -> bool
+  val is_ifetch_annot : explicit -> bool
   val pp_explicit : explicit -> string
   val explicit_sets : (string * (explicit -> bool)) list
 end
@@ -34,6 +35,7 @@ module No = struct
   let nexp_annot = ()
   let is_explicit_annot _ = true
   let is_not_explicit_annot _ = false
+  let is_ifetch_annot _ = false
   let pp_explicit _ = ""
   let explicit_sets = []
 end
