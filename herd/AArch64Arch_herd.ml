@@ -16,7 +16,7 @@
 
 module Types = struct
   type annot = AArch64Annot.t
-  type nexp =  AF|DB|AFDB|Other
+  type nexp =  AF|DB|AFDB|IFetch|Other
   type explicit = Exp | NExp of nexp
   type lannot = annot
 end
@@ -40,6 +40,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let empty_annot = AArch64Annot.N
     let exp_annot = Exp
     let nexp_annot = NExp Other
+    let nexp_ifetch = NExp IFetch
 
     let is_atomic = AArch64Annot.is_atomic
 
@@ -51,15 +52,19 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | NExp _ -> true
       | Exp -> false
 
+    and is_ifetch_annot = function
+      | NExp IFetch -> true
+      | NExp (AF|DB|AFDB|Other)|Exp -> false
+
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let is_af = function (* Setting of access flag *)
       | NExp (AF|AFDB)-> true
-      | NExp (DB|Other)|Exp -> false
+      | NExp (DB|IFetch|Other)|Exp -> false
 
     and is_db = function (* Setting of dirty bit flag *)
       | NExp (DB|AFDB) -> true
-      | NExp (AF|Other)|Exp -> false
+      | NExp (AF|IFetch|Other)|Exp -> false
 
     module CMO = struct
       type t = | DC of AArch64Base.DC.op | IC of AArch64Base.IC.op
@@ -180,6 +185,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let pp_explicit = function
       | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
       | NExp Other-> "NExp"
+      | NExp IFetch-> "IFetch"
       | NExp AF-> "NExpAF"
       | NExp DB-> "NExpDB"
       | NExp AFDB-> "NExpAFDB"

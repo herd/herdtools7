@@ -51,9 +51,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NoRet -> true
       | _ -> false
 
-    let is_explicit annot = annot
-    let is_not_explicit annot = annot
-
     let ifetch_value_sets = []
 
     let barrier_sets =
@@ -80,6 +77,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let pp_explicit = function
     | Exp -> "Exp"
     | NExp -> ""
+
     let is_explicit_annot = function
       | Exp -> true
       | NExp -> false
@@ -87,6 +85,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     and is_not_explicit_annot = function
       | NExp -> true
       | Exp -> false
+
+    and is_ifetch_annot _ = false
+
     let nexp_annot = NExp
     let exp_annot = Exp
 

@@ -281,6 +281,11 @@ end = struct
   | Arch a -> is_mem_arch_action a
   | _ -> false
 
+  let is_ifetch a = match a with
+  | Access (R,A.Location_global _,_,_,exp,_,_) ->
+     A.is_ifetch_annot exp
+  | _ -> false
+
   let is_pt a = match a with
   | Access (_,A.Location_global (A.V.Val c),_,_,_,_,_)
   | Amo (A.Location_global (A.V.Val c),_,_,_,_,_,_)
