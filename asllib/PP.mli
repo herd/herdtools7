@@ -55,6 +55,9 @@ val pp_typed_identifier : typed_identifier printer
 val pp_lexpr : lexpr printer
 (** Pretty-print the left-hand side of an assignment. *)
 
+val pp_for_direction : for_direction -> string
+(** Pretty-print keyword of for loop direction *)
+
 val pp_stmt : stmt printer
 (** Pretty-print a statement. *)
 
