@@ -186,7 +186,7 @@ module Make
 (* Fetch of an instruction, i.e., a read from a label *)
       let mk_fetch an loc v =
         let ac = Access.VIR in (* Instruction fetch seen as ordinary, non PTE, access *)
-        Act.Access (Dir.R, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
+        Act.Access (Dir.R, loc, v, an, AArch64.nexp_ifetch, MachSize.Word, ac)
 
 (* Basic write, to register  *)
       let mk_write sz an anexp ac v loc =
@@ -453,10 +453,12 @@ module Make
           (A.Location_global a_pte) iiid
 
 
-      let op_of_set = function
-        | AArch64.AF -> AArch64Op.SetAF
-        | AArch64.DB -> AArch64Op.SetDB
-        | AArch64.Other|AArch64.AFDB -> assert false
+      let op_of_set =
+        let open AArch64 in
+        function
+        | AF -> AArch64Op.SetAF
+        | DB -> AArch64Op.SetDB
+        | IFetch|Other|AFDB -> assert false
 
       let do_test_and_set_bit combine cond set a_pte iiid =
         let nexp = AArch64.NExp set in

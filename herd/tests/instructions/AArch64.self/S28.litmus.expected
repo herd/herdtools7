@@ -1,0 +1,11 @@
+Test S28 Allowed
+States 2
+1:X2=2;
+1:X2=3;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:X2=3)
+Observation S28 Sometimes 1 1
+Hash=67619acbffb4c487f2a597a5337e9e6c
+

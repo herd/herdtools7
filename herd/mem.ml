@@ -1126,19 +1126,18 @@ let match_reg_events es =
     let solve_mem_non_mixed test es rfm cns kont res =
       let compat_locs = compatible_locs_mem in
       if self then
-        let code_access e =
-          match
-            Misc.seq_opt A.global (E.location_of e)
-          with
-          | Some (V.Val (Constant.Label _)) -> true
-          | Some _|None -> false in
+        let code_store e =
+        E.is_store e &&
+        match
+          Misc.seq_opt A.global (E.location_of e)
+        with
+        | Some (V.Val (Constant.Label _)|V.Var _) -> true
+        | Some _|None -> false in
         (* Select code accesses *)
         let code_loads =
-          E.EventSet.filter
-            (Misc.(&&&) E.is_mem_load code_access) es.E.events
+          E.EventSet.filter E.is_ifetch es.E.events
         and code_stores =
-          E.EventSet.filter
-            (Misc.(&&&) E.is_mem_store code_access) es.E.events in
+          E.EventSet.filter code_store es.E.events in
         let kont es rfm cns res =
           (* We get here once code accesses are solved *)
           let loads =  E.EventSet.filter E.is_mem_load es.E.events
@@ -1159,7 +1158,7 @@ let match_reg_events es =
         solve_mem_or_res test es rfm cns kont res
           code_loads code_stores compat_locs add_mem_eqs
       else
-        let loads =  E.EventSet.filter E.is_mem_load es.E.events
+        let loads = E.EventSet.filter E.is_mem_load es.E.events
         and stores = E.EventSet.filter E.is_mem_store es.E.events in
         if dbg then begin
           eprintf "Loads : %a\n"E.debug_events loads ;
@@ -2011,9 +2010,9 @@ let match_reg_events es =
         E.EventSet.iter (fun e ->
           match E.location_of e with
           | Some (A.Location_global (V.Val(Constant.Label(p, lbl)))) ->
-            Warn.user_error
-              "Store to %s:%s requires ifetch functionality. Please use \
-               `-variant ifetch` as an argument to herd7 to enable it."
+             Warn.user_error
+               "Store to %s:%s requires instruction fetch functionality.\n\
+Please use `-variant self` as an argument to herd7 to enable it."
               (Proc.pp p) (Label.pp lbl)
           | _ -> ()
         ) non_init_stores

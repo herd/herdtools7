@@ -102,6 +102,7 @@ module Make (A : S) = struct
     | Access (_, A.Location_global _, _, _, _) -> true
     | _ -> false
 
+  let is_ifetch _ = false
   let is_tag _action = false
   let is_additional_mem _action = false
   let is_atomic _action = false
