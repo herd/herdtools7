@@ -195,6 +195,11 @@ UnderConstrained integers:
   ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-1.
   [1]
 
+  $ aslref unreachable.asl
+  File ASL Standard Library, line 259, characters 9 to 14:
+  ASL Execution error: Assertion failed: FALSE
+  [1]
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]
