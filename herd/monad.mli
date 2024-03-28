@@ -74,6 +74,7 @@ module type S =
 
 (* Control composition *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
+
 (* Input is union of both arg inputs *)
     val control_input_union :  'a t -> ('a -> 'b t) -> 'b t
 

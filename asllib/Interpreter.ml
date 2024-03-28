@@ -117,6 +117,15 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Choice *)
   let choice m v1 v2 = B.choice m (return v1) (return v2)
 
+  (* Choice with inserted branching (commit) effect *)
+  let choice_with_branch_effect_pp m_cond pp_cond v1 v2 kont =
+    choice m_cond v1 v2 >>= fun v ->
+    B.commit (Some pp_cond) >>*= fun () -> kont v
+
+  let choice_with_branch_effect m_cond e_cond v1 v2 kont =
+    let pp_cond = Format.asprintf "%a@?" PP.pp_expr e_cond in
+    choice_with_branch_effect_pp m_cond pp_cond v1 v2 kont
+
   (* Exceptions *)
   let bind_exception binder m f =
     binder m (function Normal v -> f v | Throwing _ as res -> return res)
@@ -419,7 +428,9 @@ module Make (B : Backend.S) (C : Config) = struct
               (fun () -> eval_expr_sef env1 e2)
           in
           return_normal (v, env) |: SemanticsRule.ECondSimple
-        else choice m_cond e1 e2 >>*= eval_expr env1 |: SemanticsRule.ECond
+        else
+          choice_with_branch_effect m_cond e_cond e1 e2 (eval_expr env1)
+          |: SemanticsRule.ECond
     (* End *)
     (* Begin ESlice *)
     | E_Slice (e_bv, slices) ->
@@ -924,8 +935,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin SCond *)
     | S_Cond (e, s1, s2) ->
         let*^ v, env' = eval_expr env e in
-        let*= s' = choice v s1 s2 in
-        eval_block env' s' |: SemanticsRule.SCond
+        choice_with_branch_effect v e s1 s2 (eval_block env')
+        |: SemanticsRule.SCond
     (* Begin SCase *)
     | S_Case _ -> case_to_conds s |> eval_stmt env |: SemanticsRule.SCase
     (* End *)
@@ -1036,8 +1047,8 @@ module Make (B : Backend.S) (C : Config) = struct
     let binder = bind_maybe_unroll loop_name (B.is_undetermined cond) in
     (* Real logic: if condition is validated, we loop,
        otherwise we continue to the next statement. *)
-    choice cond_m loop return_continue
-    >>*= binder (return_continue env)
+    choice_with_branch_effect cond_m e_cond loop return_continue
+      (binder (return_continue env))
     |: SemanticsRule.Loop
   (* End *)
 
@@ -1068,8 +1079,9 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Real logic: if condition is validated, we continue to the next
        statement, otherwise we loop. *)
-    choice cond_m return_continue loop >>*= fun kont ->
-    kont env |: SemanticsRule.For
+    choice_with_branch_effect_pp cond_m (Printf.sprintf "for %s" index_name)
+      return_continue loop (fun kont -> kont env)
+    |: SemanticsRule.For
   (* End *)
 
   (* Evaluation of Catchers *)
