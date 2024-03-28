@@ -38,7 +38,7 @@ Bad slices
 
   $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 4, character 2:
-  ASL Typing error: Cannot extract from bitvector of length 12 slices 12+:3.
+  ASL Static error: Cannot extract from bitvector of length 12 slices 12+:3.
   [1]
 
   $ cat >bad-types.asl <<EOF
@@ -50,7 +50,7 @@ Bad slices
 
   $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 4, character 2:
-  ASL Typing error: Cannot extract from bitvector of length 12 slices (- 2)+:1.
+  ASL Static error: Cannot extract from bitvector of length 12 slices (- 2)+:1.
   [1]
 
   $ cat >bad-types.asl <<EOF
@@ -65,7 +65,7 @@ Bad slices
 
   $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 7, character 2:
-  ASL Typing error: Cannot extract from bitvector of length 3 slices 8+:3.
+  ASL Static error: Cannot extract from bitvector of length 3 slices 8+:3.
   [1]
 
 

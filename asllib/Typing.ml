@@ -798,7 +798,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let x = Diet.Int.min_elt diet |> Diet.Int.Interval.x
     and y = Diet.Int.max_elt diet |> Diet.Int.Interval.y in
     if 0 <= x && y < width then ()
-    else fatal_from loc (BadSlices (slices, width))
+    else fatal_from loc (BadSlices (Error.Static, slices, width))
 
   let check_slices_in_width loc env width slices () =
     let diet = disjoint_slices_to_diet loc env slices in

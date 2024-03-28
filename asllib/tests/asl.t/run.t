@@ -190,6 +190,11 @@ UnderConstrained integers:
   $ aslref named-types-in-slices.asl
   File named-types-in-slices.asl, line 13, characters 2 to 11: x -> '11111111'
 
+  $ aslref empty-slice.asl
+  '000'
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-1.
+  [1]
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]

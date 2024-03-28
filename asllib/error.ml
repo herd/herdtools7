@@ -24,10 +24,12 @@ open AST
 
 (** Error handling for {!Asllib}. *)
 
+type error_handling_time = Static | Dynamic
+
 type error_desc =
   | BadField of string * ty
   | MissingField of string list * ty
-  | BadSlices of slice list * int
+  | BadSlices of error_handling_time * slice list * int
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
@@ -73,6 +75,10 @@ let fatal_here pos_start pos_end e =
 
 let fatal_unknown_pos e = fatal (ASTUtils.add_dummy_pos e)
 let intercept f () = try Ok (f ()) with ASLException e -> Error e
+
+let error_handling_time_to_string = function
+  | Static -> "Static"
+  | Dynamic -> "Dynamic"
 
 let pp_error =
   let open Format in
@@ -120,10 +126,10 @@ let pp_error =
           pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
-    | BadSlices (slices, length) ->
+    | BadSlices (t, slices, length) ->
         fprintf f
-          "ASL Typing error: Cannot extract from bitvector of length %d slices \
-           %a."
+          "ASL %s error: Cannot extract from bitvector of length %d slices %a."
+          (error_handling_time_to_string t)
           length pp_slice_list slices
     | TypeInferenceNeeded ->
         pp_print_text f
