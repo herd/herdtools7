@@ -25,7 +25,11 @@
 module SemanticsRule = struct
   type t =
     | Lit
+    | Call
     | CTC
+    | EExprList
+    | EExprListM
+    | ESideEffectFreeExpr
     | ELocalVar
     | EGlobalVar
     | EUndefIdent
@@ -50,6 +54,7 @@ module SemanticsRule = struct
     | LEDiscard
     | LELocalVar
     | LEGlobalVar
+    | LEMultiAssign
     | LEUndefIdentV0
     | LEUndefIdentV1
     | LESlice
@@ -57,6 +62,7 @@ module SemanticsRule = struct
     | LESetField
     | LESetFields
     | LEDestructuring
+    | Slices
     | SliceSingle
     | SliceLength
     | SliceRange
@@ -113,7 +119,11 @@ module SemanticsRule = struct
 
   let to_string : t -> string = function
     | Lit -> "Lit"
+    | Call -> "Call"
     | CTC -> "CTC"
+    | EExprList -> "EExprList"
+    | EExprListM -> "EExprListM"
+    | ESideEffectFreeExpr -> "ESideEffectFreeExpr"
     | ELocalVar -> "ELocalVar"
     | EGlobalVar -> "EGlobalVar"
     | Binop -> "Binop"
@@ -138,6 +148,7 @@ module SemanticsRule = struct
     | LEDiscard -> "LEDiscard"
     | LELocalVar -> "LELocalVar"
     | LEGlobalVar -> "LEGlobalVar"
+    | LEMultiAssign -> "LEMultiAssign"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
     | LESetField -> "LESetField"
@@ -145,6 +156,7 @@ module SemanticsRule = struct
     | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
+    | Slices -> "Slices"
     | SliceSingle -> "SliceSingle"
     | SliceLength -> "SliceLength"
     | SliceRange -> "SliceRange"
@@ -204,7 +216,11 @@ module SemanticsRule = struct
   let all =
     [
       Lit;
+      Call;
       CTC;
+      EExprList;
+      EExprListM;
+      ESideEffectFreeExpr;
       ELocalVar;
       EGlobalVar;
       Binop;
@@ -229,6 +245,7 @@ module SemanticsRule = struct
       LEDiscard;
       LELocalVar;
       LEGlobalVar;
+      LEMultiAssign;
       LESlice;
       LESetArray;
       LESetField;
@@ -268,6 +285,7 @@ module SemanticsRule = struct
       Block;
       Loop;
       For;
+      Slices;
     ]
 
   let all_nb = List.length all

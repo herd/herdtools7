@@ -5,6 +5,7 @@ Hello world should work:
 
 ASL Semantics Reference:
   $ aslref SemanticsRule.Lit.asl
+  [3]
   $ aslref SemanticsRule.ELocalVar.asl
   $ aslref SemanticsRule.EGlobalVar.asl
   $ aslref SemanticsRule.EGlobalVarError.asl
@@ -30,7 +31,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
-  File SemanticsRule.EGetArrayTooSmall.asl, line 8, characters 2 to 10:
+  File SemanticsRule.EGetArrayTooSmall.asl, line 7, characters 2 to 10:
   ASL Typing error: a subtype of integer {0..(3 - 1)} was expected,
     provided integer {3}.
   [1]
@@ -142,4 +143,3 @@ ASL Semantics Reference:
   [1]
   $ aslref SemanticsRule.LEDiscard.asl
   $ aslref SemanticsRule.LDDiscard.asl
-
