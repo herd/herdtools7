@@ -1338,9 +1338,7 @@ module Make (B : Backend.S) (C : Config) = struct
             return (name, v))
           fields
         |> sync_list >>= B.create_record
-    | T_String ->
-        Error.fatal_from t
-          (Error.NotYetImplemented "Base value of string types.")
+    | T_String -> L_String "" |> lit
     | T_Tuple li ->
         List.map (base_value env) li |> sync_list >>= B.create_vector
     | T_Array (length, ty) ->

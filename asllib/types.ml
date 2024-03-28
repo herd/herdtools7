@@ -871,9 +871,7 @@ let rec base_value loc env t =
   | T_Exception fields | T_Record fields ->
       let one_field (name, t) = (name, base_value loc env t) in
       E_Record (t, List.map one_field fields) |> add_pos_from t
-  | T_String ->
-      Error.fatal_from loc
-        (Error.NotYetImplemented "Base value of string types.")
+  | T_String -> L_String "" |> lit
   | T_Tuple li ->
       let one t = base_value loc env t in
       E_Tuple (List.map one li) |> add_pos_from t
