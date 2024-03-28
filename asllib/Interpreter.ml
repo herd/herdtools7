@@ -119,9 +119,8 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Choice with inserted branching (commit) effect *)
   let choice_with_branch_effect_pp m_cond pp_cond v1 v2 kont =
-    choice m_cond v1 v2
-    >>= fun v ->  B.commit (Some pp_cond)
-    >>*= fun () -> kont v
+    choice m_cond v1 v2 >>= fun v ->
+    B.commit (Some pp_cond) >>*= fun () -> kont v
 
   let choice_with_branch_effect m_cond e_cond v1 v2 kont =
     let pp_cond = Format.asprintf "%a@?" PP.pp_expr e_cond in
@@ -430,8 +429,7 @@ module Make (B : Backend.S) (C : Config) = struct
           in
           return_normal (v, env) |: SemanticsRule.ECondSimple
         else
-          choice_with_branch_effect
-            m_cond e_cond e1 e2 (eval_expr env1)
+          choice_with_branch_effect m_cond e_cond e1 e2 (eval_expr env1)
           |: SemanticsRule.ECond
     (* End *)
     (* Begin ESlice *)
@@ -937,9 +935,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin SCond *)
     | S_Cond (e, s1, s2) ->
         let*^ v, env' = eval_expr env e in
-        choice_with_branch_effect
-          v e s1 s2 (eval_block env') |: SemanticsRule.SCond
-     (* Begin SCase *)
+        choice_with_branch_effect v e s1 s2 (eval_block env')
+        |: SemanticsRule.SCond
+    (* Begin SCase *)
     | S_Case _ -> case_to_conds s |> eval_stmt env |: SemanticsRule.SCase
     (* End *)
     (* Begin SAssert *)
@@ -1049,8 +1047,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let binder = bind_maybe_unroll loop_name (B.is_undetermined cond) in
     (* Real logic: if condition is validated, we loop,
        otherwise we continue to the next statement. *)
-    choice_with_branch_effect
-      cond_m e_cond loop return_continue
+    choice_with_branch_effect cond_m e_cond loop return_continue
       (binder (return_continue env))
     |: SemanticsRule.Loop
   (* End *)
@@ -1082,8 +1079,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Real logic: if condition is validated, we continue to the next
        statement, otherwise we loop. *)
-    choice_with_branch_effect_pp
-      cond_m (Printf.sprintf "for %s" index_name)
+    choice_with_branch_effect_pp cond_m (Printf.sprintf "for %s" index_name)
       return_continue loop (fun kont -> kont env)
     |: SemanticsRule.For
   (* End *)
