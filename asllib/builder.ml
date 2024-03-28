@@ -61,6 +61,9 @@ let from_lexbuf ast_type version (lexbuf : lexbuf) =
       and lexer0 = Lexer0.token () in
       try parse lexer0 lexbuf with Parser0.Error -> cannot_parse lexbuf)
 
+let from_lexbuf' ast_type version lexbuf () =
+  from_lexbuf ast_type version lexbuf
+
 let close_after chan f =
   try
     let res = f () in
@@ -78,18 +81,21 @@ let open_file filename =
 
 let from_file ?ast_type version f =
   let lexbuf, chan = open_file f in
-  close_after chan @@ fun () -> from_lexbuf ast_type version lexbuf
+  close_after chan @@ from_lexbuf' ast_type version lexbuf
+
+let from_file_result_fname ?ast_type ~pos_fname version f =
+  let chan = open_in f in
+  let lexbuf = from_channel chan in
+  lexbuf.lex_start_p <- { lexbuf.lex_start_p with pos_fname };
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname };
+  close_after chan @@ Error.intercept @@ from_lexbuf' ast_type version lexbuf
 
 let from_file_result ?ast_type version f =
   let lexbuf, chan = open_file f in
-  let res =
-    Error.intercept (fun () -> from_lexbuf ast_type version lexbuf) ()
-  in
-  close_in chan;
-  res
+  close_after chan @@ Error.intercept @@ from_lexbuf' ast_type version lexbuf
 
 let from_lexer_lexbuf ?ast_type version _lexer lexbuf =
-  Error.intercept (fun () -> from_lexbuf ast_type version lexbuf) ()
+  Error.intercept (from_lexbuf' ast_type version lexbuf) ()
 
 let from_file_multi_version ?ast_type = function
   | `Any -> (
@@ -106,9 +112,11 @@ let from_file_multi_version ?ast_type = function
         | Ok ast -> Ok ast)
   | (`ASLv0 | `ASLv1) as version -> from_file_result ?ast_type version
 
-let rec list_first_opt f = function
+let rec list_first_opt_opt f = function
   | [] -> None
-  | h :: t -> ( match f h with Some x -> Some x | None -> list_first_opt f t)
+  | None :: t -> list_first_opt_opt f t
+  | Some h :: t -> (
+      match f h with Some _ as x -> x | None -> list_first_opt_opt f t)
 
 let offuscate = ASTUtils.rename_locals (( ^ ) "__stdlib_local_")
 let asl_libdir = Filename.concat Version.libdir "asllib"
@@ -130,28 +138,22 @@ let stdlib =
   (* Share code with: lib/myLib ? *)
   let ( / ) = Filename.concat in
   let to_try =
-    [ asl_libdir; "asllib" / "libdir"; "/jherd" (* For web interface *) ]
-  in
-  let to_try =
-    match Sys.getenv_opt "ASL_LIBDIR" with
-    | None ->
-        let () = if _debug then Printf.eprintf "Cannot find ASL_LIBDIR.\n" in
-        to_try
-    | Some p -> p :: to_try
-  in
-  let to_try =
-    match Sys.getenv_opt "DUNE_SOURCEROOT" with
-    | None ->
-        let () =
-          if _debug then Printf.eprintf "Cannot find DUNE_SOURCEROOT\n"
-        in
-        to_try
-    | Some p -> (p / "asllib" / "libdir") :: to_try
+    [
+      Sys.getenv_opt "ASL_LIBDIR";
+      Some asl_libdir;
+      Some ("asllib" / "libdir");
+      Some "/jherd" (* For web interface *);
+      Sys.getenv_opt "DUNE_SOURCEROOT"
+      |> Option.map (fun p -> p / "asllib" / "libdir");
+    ]
   in
   let try_one dir_path =
     let file_path = dir_path / "stdlib.asl" in
+    let pos_fname = if _debug then file_path else "ASL Standard Library" in
     if Sys.file_exists file_path then
-      match from_file_result ~ast_type:`Ast `ASLv1 file_path with
+      match
+        from_file_result_fname ~ast_type:`Ast `ASLv1 ~pos_fname file_path
+      with
       | Ok ast ->
           let () =
             if _debug then Printf.eprintf "Selecting stdlib from %s.\n" dir_path
@@ -165,7 +167,7 @@ let stdlib =
     else None
   in
   lazy
-    (match list_first_opt try_one to_try with
+    (match list_first_opt_opt try_one to_try with
     | Some ast -> offuscate ast
     | None ->
         let () = prerr_string stdlib_not_found_message in
