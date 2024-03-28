@@ -157,7 +157,8 @@ let slices_to_positions as_int =
   let one_slice (start, length) =
     let start = as_int start and length = as_int length in
     (* Reversed interval - recall that bitvectors are reversed. *)
-    List.init length (( - ) (start + length - 1))
+    if length >= 0 then List.init length (( - ) (start + length - 1))
+    else raise (Invalid_argument "slices_to_positions")
   in
   fun positions -> List.map one_slice positions |> List.flatten
 
