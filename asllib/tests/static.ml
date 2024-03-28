@@ -1,8 +1,8 @@
 open Asllib
 open AST
 open ASTUtils
-open Test_helpers.Helpers
-open Test_helpers.Helpers.Infix
+open Helpers
+open Infix
 
 let _dbg = false
 

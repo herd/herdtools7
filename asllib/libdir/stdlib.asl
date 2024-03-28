@@ -252,3 +252,9 @@ func ROR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
 begin
     return (ROR(x, shift as integer {0..N-1}), x[shift-1]);
 end
+
+// Unreachable
+func Unreachable()
+begin
+  assert FALSE;
+end

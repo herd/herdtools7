@@ -188,8 +188,26 @@ module NativeBackend = struct
   let bitvector_to_value bv = L_BitVector bv |> nv_literal |> return
   let int_max x y = if x >= y then x else y
 
+  let bad_slices positions =
+    let slices =
+      List.map
+        (fun (start, length) ->
+          Slice_Length (expr_of_int start, expr_of_int length))
+        positions
+    in
+    Error.(fatal_unknown_pos (BadSlices (slices, 0)))
+
+  let slices_to_positions positions =
+    List.map
+      (fun (start, length) ->
+        let start = as_int start and length = as_int length in
+        if start < 0 || length < 0 then bad_slices [ (start, length) ]
+        else (start, length))
+      positions
+    |> slices_to_positions Fun.id
+
   let read_from_bitvector positions bv =
-    let positions = slices_to_positions as_int positions in
+    let positions = slices_to_positions positions in
     let max_pos = List.fold_left int_max 0 positions in
     let () =
       List.iter
@@ -223,7 +241,7 @@ module NativeBackend = struct
   let write_to_bitvector positions bits bv =
     let bv = as_bitvector bv
     and bits = as_bitvector bits
-    and positions = slices_to_positions as_int positions in
+    and positions = slices_to_positions positions in
     Bitvector.write_slice bv bits positions |> bitvector_to_value
 
   let concat_bitvectors bvs =
