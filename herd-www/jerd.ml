@@ -187,7 +187,8 @@ let run_herd bell cat litmus cfg =
       | Some (Model.Generic _|Model.File _)|None -> OptAce.Iico
       | Some (Model.CAV12 _) -> OptAce.False
     let variant = !variant
-    let precision = !precision
+    let fault_handling = !fault_handling
+    let mte_precision = !mte_precision
     let dumpallfaults = !dumpallfaults
     let byte = !byte
     let endian = !endian
