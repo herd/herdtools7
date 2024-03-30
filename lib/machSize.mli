@@ -65,4 +65,5 @@ type lr_sc =
 
 val granule : sz
 val granule_nbytes : int
+val granule_log2bytes : int
 val granule_align : int -> int
