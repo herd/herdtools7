@@ -87,6 +87,8 @@ type t =
   | ASLVersion of [ `ASLv0 | `ASLv1 ]
 (* ASL Typing control *)
   | ASLType of [`Warn|`Silence|`TypeCheck]
+(* Activate ASL experimental mode *)
+  | ASLExperimental
 (* Signed Int128 types *)
   | S128
 (* Strict interpretation of variant, e.g. -variant asl,strict *)

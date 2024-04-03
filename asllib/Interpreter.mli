@@ -47,6 +47,9 @@ module type Config = sig
 
   val unroll : int
   (** Loop unrolling threshold *)
+
+  val experimental : bool
+  (** Advanced behaviour *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

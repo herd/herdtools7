@@ -103,6 +103,7 @@ module Make (C : Config) = struct
   module Act = ASLAction.Make (ASL64AH)
   include SemExtra.Make (C) (ASL64AH) (Act)
 
+  let is_experimental = C.variant Variant.ASLExperimental
   let barriers = []
   let isync = None
   let atomic_pair_allowed _ _ = true
@@ -315,11 +316,23 @@ module Make (C : Config) = struct
             let* v1 = m1 () and* v2 = m2 () and* v = to_int_signed v in
             M.op3 Op.If v v1 v2
 
-    (* Any access to `_NZCV` emits an access to NZCV.
+    (*
+     * Any access to `PSTATE` (experimental `_NZCV`)
+     * emits an access to NZCV.
      * Notice that the value is casted into an integer.
      *)
-    let is_nzcv x scope =
-      match (x, scope) with "_NZCV", AST.Scope_Global -> true | _ -> false
+
+    let is_nzcv =
+      if is_experimental then
+        fun x scope ->
+          match (x, scope) with
+          | "_NZCV", AST.Scope_Global -> true
+          | _ -> false
+      else
+        fun x scope ->
+          match (x, scope) with
+          | "PSTATE", AST.Scope_Global -> true
+          | _ -> false
 
     let is_resaddr x scope =
       match (x, scope) with "RESADDR", AST.Scope_Global -> true | _ -> false
@@ -744,6 +757,8 @@ module Make (C : Config) = struct
         let unroll =
           match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
 
+        let experimental = is_experimental
+
         module Instr = Asllib.Instrumentation.SemanticsNoInstr
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
@@ -756,7 +771,18 @@ module Make (C : Config) = struct
             |> C.libfind
             |> ASLBase.build_ast_from_file ?ast_type version
           in
-          let patches = build `ASLv1 "patches.asl"
+          let patches =
+            let patches = build `ASLv1 "patches.asl" in
+            if is_experimental then
+              (* Replace default "PSTATE" definition by experimental ones. *)
+              let pstate =  build `ASLv1 "pstate-exp.asl" in
+              List.fold_right
+                (fun d k ->
+                   match ASTUtils.identifier_of_decl d with
+                   | "PSTATE" -> pstate @ k
+                   | _ -> d::k)
+                patches []
+            else patches
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let is_primitive =
