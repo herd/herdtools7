@@ -23,7 +23,9 @@ depends: [
   "zarith"
 ]
 depopts: [
+  "js_of_ocaml"
   "js_of_ocaml-ppx"
+  "zarith_stubs_js"
 ]
 conflicts: ["ocaml-option-bytecode-only"]
 url {

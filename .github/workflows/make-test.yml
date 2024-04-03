@@ -39,3 +39,7 @@ jobs:
       - run: opam exec -- make build
 
       - run: opam exec -- make test
+
+      - run: opam install js_of_ocaml js_of_ocaml-ppx zarith_stubs_js
+
+      - run: opam exec -- make -C herd-www
