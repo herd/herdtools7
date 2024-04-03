@@ -326,16 +326,16 @@ module Make (C : Config) = struct
       if is_experimental then
         fun x scope ->
           match (x, scope) with
-          | "_NZCV", AST.Scope_Global -> true
+          | "_NZCV", AST.Scope_Global false -> true
           | _ -> false
       else
         fun x scope ->
           match (x, scope) with
-          | "PSTATE", AST.Scope_Global -> true
+          | "PSTATE", AST.Scope_Global false -> true
           | _ -> false
 
     let is_resaddr x scope =
-      match (x, scope) with "RESADDR", AST.Scope_Global -> true | _ -> false
+      match (x, scope) with "RESADDR", AST.Scope_Global false -> true | _ -> false
 
     let loc_of_scoped_id ii x scope =
       if is_nzcv x scope then
@@ -757,8 +757,6 @@ module Make (C : Config) = struct
         let unroll =
           match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
 
-        let experimental = is_experimental
-
         module Instr = Asllib.Instrumentation.SemanticsNoInstr
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
@@ -837,7 +835,7 @@ module Make (C : Config) = struct
           (fun loc v env ->
             let open ASLBase in
             match loc with
-            | A.Location_reg (_, ASLLocalId (AST.Scope_Global, name)) ->
+            | A.Location_reg (_, ASLLocalId (AST.Scope_Global _, name)) ->
                 (name, v) :: env
             | _ -> env)
           t.Test_herd.init_state []

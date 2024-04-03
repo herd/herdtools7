@@ -43,7 +43,7 @@ type scope = Asllib.AST.scope
 let pp_scope =
   let open Asllib.AST in
   function
-  | Scope_Global -> ""
+  | Scope_Global _ ->  ""
   | Scope_Local (enclosure, call_nb) ->
       Printf.sprintf "%s.%d." enclosure call_nb
 
@@ -82,7 +82,6 @@ let is_pc = function ArchReg A64B.PC -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
 let to_reg r = ArchReg r
 let main_scope = ("main", 0)
-let default_scope = Asllib.AST.Scope_Global
 
 let parse_local_id =
   let ( let* ) = Option.bind in
@@ -95,6 +94,7 @@ let parse_local_id =
   let regexp =
     Str.regexp {|\([A-Za-z0-9_-]+\)\.\([0-9]+\)\.\([A-Za-z0-9_-]+\)|}
   in
+  let default_scope = Asllib.AST.Scope_Global true in
   fun s ->
     if Str.string_match regexp s 0 then
       let* x1 = find_opt 1 s and* x2 = find_opt 2 s and* x3 = find_opt 3 s in
