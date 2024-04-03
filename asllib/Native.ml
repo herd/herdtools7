@@ -375,7 +375,6 @@ let interprete strictness ?instrumentation ?static_env ast =
   let module C : Interpreter.Config = struct
     let type_checking_strictness = strictness
     let unroll = 0
-    let experimental = false
 
     module Instr = Instrumentation.SemMake (B)
   end in

@@ -48,7 +48,6 @@ module type Config = sig
 
   val type_checking_strictness : Typing.strictness
   val unroll : int
-  val experimental : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -207,6 +206,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let process_one_decl d =
       match d.desc with
       | D_GlobalStorage { initial_value; name; ty; _ } ->
+          let scope = Scope_Global true in
           fun env_m ->
             if ISet.mem name names then env_m
             else
@@ -217,18 +217,7 @@ module Make (B : Backend.S) (C : Config) = struct
                 | None, None -> fail_initialise d name
                 | None, Some t -> base_value env t
               in
-              let* () =
-                (*
-                 * Those identifiers are initialised to their current value
-                 * before executing each instruction. Hence, we discard
-                 * the initial values from `.asl` files.
-                 *)
-                match name with
-                | "RESADDR" -> return ()
-                | "_NZCV" when C.experimental -> return ()
-                | "PSTATE" when not C.experimental -> return ()
-                | _ -> B.on_write_identifier name Scope_Global v
-              in
+              let* () = B.on_write_identifier name scope v in
               IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
@@ -253,7 +242,7 @@ module Make (B : Backend.S) (C : Config) = struct
       let global =
         { static = static_env.StaticEnv.global; storage = Storage.empty; funcs }
       in
-      { global; local = empty_scoped Scope_Global }
+      { global; local = empty_scoped (Scope_Global true) }
     in
     let env =
       List.fold_left
@@ -389,7 +378,7 @@ module Make (B : Backend.S) (C : Config) = struct
         (* End *)
         (* Begin EGlobalVar *)
         | Global v ->
-            let* () = B.on_read_identifier x Scope_Global v in
+            let* () = B.on_read_identifier x (Scope_Global false) v in
             return_normal (v, env) |: SemanticsRule.EGlobalVar
         (* End *)
         (* Begin EUndefIdent *)
@@ -643,7 +632,7 @@ module Make (B : Backend.S) (C : Config) = struct
         (* End *)
         (* Begin LEGlobalVar *)
         | Global env ->
-            let* () = B.on_write_identifier x Scope_Global v in
+            let* () = B.on_write_identifier x (Scope_Global false) v in
             return_normal env |: SemanticsRule.LEGlobalVar
         (* End *)
         | NotFound -> (
@@ -993,7 +982,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin SThrowSomeTyped *)
     | S_Throw (Some (e, Some t)) ->
         let** v, new_env = eval_expr env e in
-        let name = throw_identifier () and scope = Scope_Global in
+        let name = throw_identifier () and scope = Scope_Global false in
         let* () = B.on_write_identifier name scope v in
         return (Throwing (Some ((v, name, scope), t), new_env))
         |: SemanticsRule.SThrowSomeTyped

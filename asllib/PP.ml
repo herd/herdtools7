@@ -393,5 +393,5 @@ let pp_version f version =
   @@ match version with `ASLv0 -> "ASLv0" | `ASLv1 -> "ASLv1" | `Any -> "any"
 
 let pp_scope f = function
-  | Scope_Global -> pp_print_string f "global scope"
+  | Scope_Global _ -> pp_print_string f "global scope"
   | Scope_Local (name, i) -> fprintf f "%s(%d)" name i
