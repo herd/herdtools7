@@ -293,8 +293,6 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Utils *)
   (* ----- *)
-  let v_true = L_Bool true |> B.v_of_literal
-  let m_true = return v_true
   let v_false = L_Bool false |> B.v_of_literal
   let m_false = return v_false
   let v_zero = L_Int Z.zero |> B.v_of_literal
@@ -552,78 +550,36 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Begin ValOfType *)
   and is_val_of_type loc env v ty : bool B.m =
-    let and' prev here = prev >>= B.binop BAND here in
-    let or' prev here = prev >>= B.binop BOR here in
-    let rec in_values v ty =
-      match (Types.get_structure (IEnv.to_static env) ty).desc with
-      | T_Real | T_Bool | T_Enum _ | T_String | T_Int UnConstrained -> m_true
-      | T_Int (UnderConstrained _) ->
-          (* This cannot happen, because:
-             1. Forgetting now about named types, or any kind of compound type,
-                you cannot ask: [expr as ty] if ty is the unconstrained integer
-                because there is no syntax for it.
-             2. You cannot construct a type that is an alias for the
-                underconstrained integer type.
-             3. You cannot put the underconstrained integer type in a compound
-                type.
-          *)
-          failwith "Cannot perform a ATC on the under-constrained type."
-      | T_Bits (e, _) ->
-          let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
-          B.binop EQ_OP v_length v'
-      | T_Int (WellConstrained constraints) ->
-          let fold prev = function
-            | Constraint_Exact e ->
-                let* v' = eval_expr_sef env e in
-                let* here = B.binop EQ_OP v v' in
-                or' prev here
-            | Constraint_Range (e1, e2) ->
-                let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
-                let* here =
-                  let* c1 = B.binop LEQ v1 v and* c2 = B.binop LEQ v v2 in
-                  B.binop BAND c1 c2
-                in
-                or' prev here
-          in
-          List.fold_left fold m_false constraints
-      | T_Record fields | T_Exception fields ->
-          let fold prev (field_name, field_type) =
-            let* v' = B.get_field field_name v in
-            let* here = in_values v' field_type in
-            and' prev here
-          in
-          List.fold_left fold m_true fields
-      | T_Tuple tys ->
-          let fold (i, prev) ty' =
-            let m =
-              let* v' = B.get_index i v in
-              let* here = in_values v' ty' in
-              and' prev here
-            in
-            (i + 1, m)
-          in
-          List.fold_left fold (0, m_true) tys |> snd
-      | T_Array (index, ty') ->
-          let* length =
-            match index with
-            | ArrayLength_Enum (_, i) -> return i
-            | ArrayLength_Expr e -> (
-                let* v_length = eval_expr_sef env e in
-                match B.v_to_int v_length with
-                | Some i -> return i
-                | None -> fatal_from loc @@ Error.UnsupportedExpr e)
-          in
-          let rec loop i prev =
-            if i >= length then prev
-            else
-              let* v' = B.get_index i v in
-              let* here = in_values v' ty' in
-              loop (i + 1) (and' prev here)
-          in
-          loop 0 m_true
-      | T_Named _ -> assert false
-    in
-    choice (in_values v ty) true false
+    let value_m_to_bool_m m = choice m true false in
+    let big_or = big_op m_false (B.binop BOR) in
+    match ty.desc with
+    | T_Int UnConstrained -> return true
+    | T_Int (UnderConstrained _) ->
+        (* This cannot happen, because:
+           1. Forgetting now about named types, or any kind of compound types,
+              you cannot ask: [expr as ty] if ty is the unconstrained integer
+              because there is no syntax for it.
+           2. You cannot construct a type that is an alias for the
+              underconstrained integer type.
+           3. You cannot put the underconstrained integer type in a compound
+              type.
+        *)
+        fatal_from loc Error.UnrespectedParserInvariant
+    | T_Bits (e, _) ->
+        let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
+        B.binop EQ_OP v_length v' |> value_m_to_bool_m
+    | T_Int (WellConstrained constraints) ->
+        let map_constraint = function
+          | Constraint_Exact e ->
+              let* v' = eval_expr_sef env e in
+              B.binop EQ_OP v v'
+          | Constraint_Range (e1, e2) ->
+              let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
+              let* c1 = B.binop LEQ v1 v and* c2 = B.binop LEQ v v2 in
+              B.binop BAND c1 c2
+        in
+        List.map map_constraint constraints |> big_or |> value_m_to_bool_m
+    | _ -> fatal_from loc TypeInferenceNeeded
   (* End *)
 
   (* Evaluation of Left-Hand-Side Expressions *)
