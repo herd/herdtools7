@@ -85,6 +85,8 @@ val same_instance : event -> event -> bool
   val is_mem_load : event ->  bool
   val is_additional_mem_load : event ->  bool (* trylock... *)
   val is_mem : event -> bool
+(* Instruction fetch *)
+  val is_ifetch : event -> bool
 (* Page table access *)
   val is_pt : event -> bool
   val is_explicit : event -> bool
@@ -663,6 +665,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_mem_load e = Act.is_mem_load e.action
     let is_additional_mem_load e = Act.is_additional_mem_load e.action
     let is_mem e = Act.is_mem e.action
+    let is_ifetch e = Act.is_ifetch e.action
+
     let is_pt e = match Act.location_of e.action with
       | Some (A.Location_global (V.Val c)) -> Constant.is_pt c
       | _ -> false

@@ -1,0 +1,11 @@
+Test S29 Allowed
+States 2
+1:X2=2;
+1:X2=3;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:X2=3)
+Observation S29 Sometimes 1 1
+Hash=1aa81afc46710352152cc1b5fb403941
+

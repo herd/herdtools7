@@ -23,6 +23,7 @@ module type S = sig
   val nexp_annot : explicit
   val is_explicit_annot : explicit -> bool
   val is_not_explicit_annot : explicit -> bool
+  val is_ifetch_annot : explicit -> bool
   val pp_explicit : explicit -> string
   val explicit_sets : (string * (explicit -> bool)) list
 end

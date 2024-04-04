@@ -180,6 +180,7 @@ maybev_list:
 maybev_label:
 | maybev { $1 }
 | PROC COLON NAME { mk_lab $1 $3 }
+| NUM COLON NAME { mk_lab (Misc.string_as_int $1) $3 }
 
 %inline location_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}

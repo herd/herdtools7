@@ -169,6 +169,8 @@ end = struct
   | RMW (A.Location_global _,_,_,_,_) -> true
   | _ -> false
 
+  let is_ifetch _ = false
+
   let is_tag _ = false
 
   let is_additional_mem a = match a with
