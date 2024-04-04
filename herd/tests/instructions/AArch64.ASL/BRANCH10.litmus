@@ -1,0 +1,14 @@
+AArch64 BRANCH10
+{
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X2=x;
+}
+ P0           | P1           ;
+ MOV W0,#1    | LDR W1,[X0]  ;
+ STR W0,[X1]  | CBNZ W1,L01  ;
+ MOV W2,#1    | B L02        ;
+ STLR W2,[X3] |L01:          ;
+              | ISB          ;
+              | LDR W3,[X2]  ;
+              |L02:          ;
+~exists (1:X1=1 /\ 1:X3=0)

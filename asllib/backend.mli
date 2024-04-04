@@ -85,6 +85,12 @@ module type S = sig
       Creates a data dependency between the output events and
       the input events of the argument in the resulting monad. *)
 
+  val debugT : string -> 'a m -> 'a m
+  (** Print representation of monad on stderr *)
+
+  val commit : string option -> unit m
+  (** Branching event *)
+
   val choice : value m -> 'b m -> 'b m -> 'b m
   (** choice is a boolean if operator. *)
 

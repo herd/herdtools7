@@ -250,10 +250,16 @@ module Make (C : Config) = struct
     (* ASL-Backend implementation                                             *)
     (**************************************************************************)
 
+    let commit (ii,poi) msg =
+      M.mk_singleton_es (Act.Branching msg) (use_ii_with_poi ii poi)
+
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
-      M.asl_ctrl m1 (function
-        | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
-        | b -> M.asl_ctrl (to_int_signed b) (fun v -> M.choiceT v m2 m3))
+      M.asl_data
+        m1
+        (function
+         | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) ->
+            if b then m2 else m3
+         | b -> M.asl_data (to_int_signed b) (fun v -> M.choiceT v m2 m3))
 
     let binop =
       let open AST in
@@ -704,6 +710,8 @@ module Make (C : Config) = struct
         let bind_ctrl = M.asl_ctrl
         let prod_par = M.( >>| )
         let appl_data m f = m >>= fun v -> return (f v)
+        let debugT = M.debugT
+        let commit = commit ii_env
         let choice = choice
         let delay m k = M.delay_kont "ASL" m k
         let return = M.unitT

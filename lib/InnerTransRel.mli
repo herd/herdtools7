@@ -20,6 +20,9 @@ module type S = sig
   val empty : t
   (** The empty relation. *)
 
+  val is_empty : t -> bool
+  (** Check for emptiness *)
+
   val from_nodes : Set.t -> t
   (** Builds a transitive relation with those nodes and no edges. *)
 
