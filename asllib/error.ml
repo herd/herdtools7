@@ -56,6 +56,7 @@ type error_desc =
   | BadLDI of AST.local_decl_item
   | BadRecursiveDecls of identifier list
   | UnrespectedParserInvariant
+  | BadATC of ty * ty  (** asserting, asserted *)
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
 
@@ -213,6 +214,11 @@ let pp_error =
           "ASL Typing error:@ explicit@ parameter@ %S@ does@ not@ have@ a@ \
            corresponding@ defining@ argument"
           s
+    | BadATC (t1, t2) ->
+        fprintf f
+          "ASL Typing error:@ cannot@ perform@ Asserted@ Type@ Conversion@ on@ \
+           %a@ by@ %a."
+          pp_ty t1 pp_ty t2
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

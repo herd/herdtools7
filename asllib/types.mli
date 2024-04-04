@@ -147,3 +147,6 @@ val lowest_common_ancestor : env -> ty -> ty -> ty option
 
 val base_value : 'a annotated -> env -> ty -> expr
 (** [base_value env ty] is a base value of [ty]. *)
+
+val type_equal : env -> ty -> ty -> bool
+(** Equality in env for types. *)

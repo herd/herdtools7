@@ -29,11 +29,5 @@ begin
   b.c = b.c + 1;
   assert b.c == 5;
 
-  var c = b as rec1;
-
-  assert c.a == 1;
-  c.b = 3;
-  assert b.b == 2;
-
   return 0;
 end

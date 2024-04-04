@@ -1228,6 +1228,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Begin ATC *)
     | E_ATC (e', ty) ->
         let t, e'' = annotate_expr env e' in
+        let t_struct = Types.make_anonymous env t in
         (* - If type-checking determines that the expression
              type-satisfies the required type, then no further
              check is required.
@@ -1238,17 +1239,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              to a value in the domain of the required type is
              required. *)
         let ty' = annotate_type ~loc env ty in
-        best_effort
-          (ty', E_ATC (e'', ty') |> here)
-          (fun res ->
-            if Types.structural_subtype_satisfies env t ty' then
-              if Types.domain_subtype_satisfies env t ty' then
-                (* disabling the optimization here as long as the type
-                   system is not sound. *)
-                (* (t', e'') *)
-                res
-              else res
-            else conflict e [ ty'.desc ] t)
+        let ty_struct = Types.make_anonymous env ty' in
+        (if Types.type_equal env t_struct ty_struct then (ty', e'')
+         else
+           match (t_struct.desc, ty_struct.desc) with
+           | T_Bits _, T_Bits _ | T_Int _, T_Int _ ->
+               (ty', E_ATC (e'', ty_struct) |> here)
+           | _ -> fatal_from e (BadATC (t, ty')))
         |: TypingRule.ATC
     (* End *)
     | E_Var x -> (
