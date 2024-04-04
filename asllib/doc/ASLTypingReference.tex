@@ -2172,7 +2172,7 @@ an environment \tenv.  Formally, the result of annotating the expression
 \item TypingRule.ETuple (see Section~\ref{sec:TypingRule.ETuple})
 \item TypingRule.EUnknown (see Section~\ref{sec:TypingRule.EUnknown})
 \item TypingRule.EPattern (see Section~\ref{sec:TypingRule.EPattern})
-\item TypingRule.CTC (see Section~\ref{sec:TypingRule.CTC})
+\item TypingRule.ATC (see Section~\ref{sec:TypingRule.ATC})
 \end{itemize}
 
 The annotation rewrites the input expression in the following cases, making the annotation of statements simpler:
@@ -3134,7 +3134,7 @@ expression that is unresolvable to an integer. For example:
 
 \isempty{\subsection{Comments}}
 
-\section{TypingRule.CTC \label{sec:TypingRule.CTC}}
+\section{TypingRule.ATC \label{sec:TypingRule.ATC}}
 
   \subsection{Prose}
   The result of annotating the expression \texttt{e} in \texttt{env} is
@@ -3170,7 +3170,7 @@ expression that is unresolvable to an integer. For example:
   \subsection{Example}
 
   \subsection{Code}
-  \VerbatimInput[firstline=\CTCBegin, lastline=\CTCEnd]{../Typing.ml}
+  \VerbatimInput[firstline=\ATCBegin, lastline=\ATCEnd]{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -3181,7 +3181,7 @@ expression that is unresolvable to an integer. For example:
 \structsubtypesat(\tenv, \vt'', \vt)
 }
 {
-\annotateexpr{\tenv, \texttt{E\_CTC}(\ve', \vt')} = (\vt', \texttt{E\_CTC}(\ve'', \vt'))
+\annotateexpr{\tenv, \texttt{E\_ATC}(\ve', \vt')} = (\vt', \texttt{E\_ATC}(\ve'', \vt'))
 }
 \end{mathpar}
 \end{emptyformal}

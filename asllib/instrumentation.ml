@@ -25,7 +25,7 @@
 module SemanticsRule = struct
   type t =
     | Lit
-    | CTC
+    | ATC
     | ELocalVar
     | EGlobalVar
     | EUndefIdent
@@ -113,7 +113,7 @@ module SemanticsRule = struct
 
   let to_string : t -> string = function
     | Lit -> "Lit"
-    | CTC -> "CTC"
+    | ATC -> "ATC"
     | ELocalVar -> "ELocalVar"
     | EGlobalVar -> "EGlobalVar"
     | Binop -> "Binop"
@@ -204,7 +204,7 @@ module SemanticsRule = struct
   let all =
     [
       Lit;
-      CTC;
+      ATC;
       ELocalVar;
       EGlobalVar;
       Binop;
@@ -319,7 +319,7 @@ module TypingRule = struct
     | CheckUnop
     | CheckBinop
     | ELit
-    | CTC
+    | ATC
     | ELocalVarConstant
     | ELocalVar
     | EGlobalVarConstantVal
@@ -452,7 +452,7 @@ module TypingRule = struct
     | CheckBinop -> "CheckBinop"
     | LowestCommonAncestor -> "LowestCommonAncestor"
     | ELit -> "ELit"
-    | CTC -> "CTC"
+    | ATC -> "ATC"
     | ELocalVarConstant -> "ELocalVarConstant"
     | ELocalVar -> "ELocalVar"
     | EGlobalVarConstantVal -> "EGlobalVarConstantVal"
@@ -588,7 +588,7 @@ module TypingRule = struct
       CheckBinop;
       LowestCommonAncestor;
       ELit;
-      CTC;
+      ATC;
       ELocalVarConstant;
       ELocalVar;
       EGlobalVarConstantVal;

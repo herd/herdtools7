@@ -113,8 +113,8 @@ We sometimes provide extra details to individual derivations by adding comments 
 \begin{array}{rcl}
 \expr &::=& \texttt{E\_Literal}(\literal) \\
 	&|& \texttt{E\_Var}(\texttt{\identifier}) \\
-	&|& \texttt{E\_CTC}(\texttt{\expr}, \ty) \\
-  & & \ASTComment{A checked type constraint}\\
+	&|& \texttt{E\_ATC}(\texttt{\expr}, \ty) \\
+  & & \ASTComment{An Asserted Type Conversion}\\
 	&|& \texttt{E\_Binop}(\binop, \expr, \expr) \\
 	&|& \texttt{E\_Unop}(\unop, \expr) \\
 	&|& \texttt{E\_Call}(\identifier, \expr^{*}, (\identifier, \expr)^{*}) \\

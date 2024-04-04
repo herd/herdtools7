@@ -96,8 +96,8 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.PMaskFALSE.asl
   $ aslref SemanticsRule.PTupleTRUE.asl
   $ aslref SemanticsRule.PTupleFALSE.asl
-  $ aslref SemanticsRule.CTCValue.asl
-  $ aslref SemanticsRule.CTCError.asl
+  $ aslref SemanticsRule.ATCValue.asl
+  $ aslref SemanticsRule.ATCError.asl
   $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref SemanticsRule.LEUndefIdentV1.asl
   File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:

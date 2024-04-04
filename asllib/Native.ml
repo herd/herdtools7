@@ -206,7 +206,7 @@ module NativeBackend = struct
           mismatch_type bv
             [
               T_Bits
-                ( E_CTC
+                ( E_ATC
                     ( E_Var "-" |> add_dummy_pos,
                       T_Int
                         (WellConstrained

@@ -188,7 +188,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
 \item SemanticsRule.ETuple (see Section~\ref{sec:SemanticsRule.ETuple})
 \item SemanticsRule.EUnknown (see Section~\ref{sec:SemanticsRule.EUnknown})
 \item SemanticsRule.EPattern (see Section~\ref{sec:SemanticsRule.EPattern})
-\item SemanticsRule.CTC (see Section~\ref{sec:SemanticsRule.CTC})
+\item SemanticsRule.ATC (see Section~\ref{sec:SemanticsRule.ATC})
 \end{itemize}
 
 
@@ -868,7 +868,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 
 \isempty{\subsection{Comments}}
 
-\section{SemanticsRule.CTC \label{sec:SemanticsRule.CTC}}
+\section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
 
   \subsection{Prose}
   Evaluation of the expression \texttt{e} under environment \texttt{env} is
@@ -894,14 +894,14 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
         \end{itemize}
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.CTCValue.asl}
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CTCValue.asl}
+  \subsection{Example: SemanticsRule.ATCValue.asl}
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCValue.asl}
 
-  \subsection{Example: SemanticsRule.CTCError.asl}
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CTCError.asl}
+  \subsection{Example: SemanticsRule.ATCError.asl}
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCError.asl}
 
   \subsection{Code}
-  \VerbatimInput[firstline=\CTCBegin, lastline=\CTCEnd]
+  \VerbatimInput[firstline=\ATCBegin, lastline=\ATCEnd]
                 {../Interpreter.ml}
 
 \begin{emptyformal}
