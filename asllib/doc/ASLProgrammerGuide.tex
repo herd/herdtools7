@@ -1,0 +1,182 @@
+\documentclass{book}
+\input{ASLmacros}
+\usepackage{changebar}
+
+\newcommand\lrmexcerpt[2]{\cbstart #1 \cbend}
+
+\author{Arm Architecture Technology Group}
+\title{ASL Programmer's Guide \\
+       DDI ????}
+\begin{document}
+\maketitle
+
+\tableofcontents{}
+
+\include{notice.tex}
+
+\include{disclaimer.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Preface}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+List the reference documents (Syntax Reference, Typing Reference, Semantics Reference).
+
+Reference the LRM.
+
+\section{Conventions}
+
+\section{Language Versioning}
+Language versioning stuff?
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\lrmexcerpt{
+The \emph{Architecture Specification Language} (ASL) is designed and used to specify architectures. As a formal
+specification language it is designed to be accessible, understandable and unambiguous to programmers, hardware
+engineers and hardware verification engineers who collectively have quite a small intersection of languages they
+all understand. It can intentionally under specify behaviors in the architecture being described.
+
+ASL is:
+\begin{itemize}
+\item a first-order language with strong static type-checking.
+\item whitespace-insensitive.
+\item imperative.
+\end{itemize}
+
+ASL has support for:
+\begin{itemize}
+\item bitvectors:
+  \begin{itemize}
+    \item as a type.
+    \item as a literal constant.
+    \item bitvector concatenation.
+    \item bitvector constants with wildcards.
+    \item bitslices.
+    \item dependent types to support function overloading using bitvector lengths.
+    \item dependent types to reason about lengths of bitvectors.
+  \end{itemize}
+\item unbounded arithmetic types ``integer'' and ``real''.
+\item type inference.
+\item exceptions.
+\item enumerations.
+\item arrays.
+\item records.
+\end{itemize}
+
+ASL does not have support for:
+\begin{itemize}
+    \item references or pointers.
+\end{itemize}
+
+A \emph{specification} consists of a self-contained collection of ASL code.
+}{16--17}
+
+Example specifications...
+
+\section{Available Tools}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Data Types}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Integers}
+
+\section{Reals}
+
+\section{Booleans}
+
+\section{Strings}
+
+\section{Enumerations}
+
+\section{Bitvectors}
+
+\section{Arrays}
+
+\section{Tuples}
+
+\section{Records}
+
+\section{Exceptions}
+
+\section{Subtyping}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Variable Declarations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Variables can be:
+\begin{itemize}
+    \item Constant
+    \item Mutable
+    \item Immutable
+    \item Configuration
+    \item Local
+    \item Global
+    \item Initialized/uninitialized
+    \item Primitive
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Expressions}
+
+\section{Operators}
+
+\section{Record Expressions}
+
+\section{Slicing}
+
+\section{Tuples}
+
+\section{Conditionals}
+
+\section{Pattern Matching}
+
+\section{Checked Type Conversions}
+
+\section{UNKNOWN}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Statements}
+
+\section{Assignments}
+
+\section{Conditionals}
+
+\section{Cases}
+
+\section{Loopings}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Subprograms}
+
+Subprograms can be:
+\begin{itemize}
+    \item Functions
+    \item Procedures
+    \item Getters
+    \item Setters
+    \item Recursive with a recursion limit annotation
+    \item Primitive
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Exception Handling}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Standard Library}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Primitives}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Configurations}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Concurrency}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{plain}
+\bibliography{ASL}
+\end{document}
