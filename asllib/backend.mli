@@ -80,10 +80,13 @@ module type S = sig
   (** Monadic product operation, two monads are combined "in parallel".*)
 
   val appl_data : 'a m -> ('a -> 'b) -> 'b m
-  (** Applicative map. 
-  
+  (** Applicative map.
+
       Creates a data dependency between the output events and
       the input events of the argument in the resulting monad. *)
+
+  val noAction : unit -> unit m
+  (* Empty event *)
 
   val choice : value m -> 'b m -> 'b m -> 'b m
   (** choice is a boolean if operator. *)

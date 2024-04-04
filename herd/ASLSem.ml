@@ -250,6 +250,9 @@ module Make (C : Config) = struct
     (* ASL-Backend implementation                                             *)
     (**************************************************************************)
 
+    let noAction (ii,poi) () =
+      M.mk_singleton_es Act.NoAction (use_ii_with_poi ii poi)
+
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
       M.asl_ctrl m1 (function
         | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
@@ -704,6 +707,7 @@ module Make (C : Config) = struct
         let bind_ctrl = M.asl_ctrl
         let prod_par = M.( >>| )
         let appl_data m f = m >>= fun v -> return (f v)
+        let noAction = noAction ii_env
         let choice = choice
         let delay m k = M.delay_kont "ASL" m k
         let return = M.unitT
