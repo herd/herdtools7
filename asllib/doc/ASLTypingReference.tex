@@ -3148,7 +3148,7 @@ $\ve$ in \tenv\ is either the pair \texttt{t, new\_e}, where $\vt$ is a type and
 \item TypingRule.ETuple (see Section~\secref{TypingRule.ETuple})
 \item TypingRule.EUnknown (see Section~\secref{TypingRule.EUnknown})
 \item TypingRule.EPattern (see Section~\secref{TypingRule.EPattern})
-\item TypingRule.CTC (see Section~\secref{TypingRule.CTC})
+\item TypingRule.ATC (see Section~\secref{TypingRule.ATC})
 \end{itemize}
 
 The annotation rewrites the input expression in the following cases, making the annotation of statements simpler:
@@ -4112,7 +4112,7 @@ expression that is unresolvable to an integer. For example:
 
 \isempty{\subsection{Comments}}
 
-\section{TypingRule.CTC \label{sec:TypingRule.CTC}}
+\section{TypingRule.ATC \label{sec:TypingRule.ATC}}
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in \texttt{env} is
@@ -4134,7 +4134,7 @@ expression that is unresolvable to an integer. For example:
       \item \texttt{t''} is not a domain subtype of \texttt{t'} in \texttt{env};
       \item an execution-time check that the expression evaluates to a value in the
         runtime domain of the required type is required.
-      \item \texttt{new\_e} is the expression denoting a Checked Type
+      \item \texttt{new\_e} is the expression denoting a Asserted Type
         Conversion of \texttt{new\_e'} in the type \texttt{t'}.
      \end{itemize}
    \item All of the following apply:
@@ -4147,8 +4147,7 @@ expression that is unresolvable to an integer. For example:
 
   \subsection{Example}
 
-
-  \CodeSubsection{\CTCBegin}{\CTCEnd}{../Typing.ml}
+  \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -4159,7 +4158,7 @@ expression that is unresolvable to an integer. For example:
 \structsubtypesat(\tenv, \vt'', \vt)
 }
 {
-\annotateexpr{\tenv, \texttt{E\_CTC}(\ve', \vt')} = (\vt', \texttt{E\_CTC}(\ve'', \vt'))
+\annotateexpr{\tenv, \texttt{E\_ATC}(\ve', \vt')} = (\vt', \texttt{E\_ATC}(\ve'', \vt'))
 }
 \end{mathpar}
 \end{emptyformal}
@@ -7389,8 +7388,8 @@ Recall that a conjunction over an empty set equals $\True$.
 
 \begin{mathpar}
   \inferrule[e\_ctc]{
-    \veone \eqname \ECTC(\veoneone, \vtone)\\
-    \vetwo \eqname \ECTC(\vetwoone, \vttwo)\\
+    \veone \eqname \EATC(\veoneone, \vtone)\\
+    \vetwo \eqname \EATC(\vetwoone, \vttwo)\\
     \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
     \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo\\
     \vb \eqdef \vbone \land \vbtwo
@@ -8260,7 +8259,7 @@ is obtained by accessing the \emph{global dynamic environment}, which is denoted
 %     \substparams(\tenv, \denv, \vt) \typearrow \vt'
 %   }
 %   {
-%     \substparams(\tenv, \denv, \ECTC(\ve, \vt)) \typearrow \ECTC(\ve', \vt')
+%     \substparams(\tenv, \denv, \EATC(\ve, \vt)) \typearrow \EATC(\ve', \vt')
 %   }
 % \end{mathpar}
 

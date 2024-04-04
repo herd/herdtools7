@@ -145,7 +145,7 @@ module Make (C : Config.S) = struct
       let make_unop (op, expr) = E_Unop (op, expr) in
       unops ** exprs |> map make_unop
     and e_ctc =
-      let make_e_ctc (e, s) = E_CTC (e, t_named s) in
+      let make_e_ctc (e, s) = E_ATC (e, t_named s) in
       exprs ** names |> map make_e_ctc
     and e_binops =
       let make_binop (op, (e1, e2)) = E_Binop (op, e1, e2) in

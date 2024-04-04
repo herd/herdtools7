@@ -135,7 +135,7 @@ The constraints of an integer type should be \emph{constrained},
 expressions describing an integer constraint should be immutable and of a
 constrained type, and those expressions should be side-effect-free.
 
-Furthermore, those constraints should not include Checked Type Conversions.
+Furthermore, those constraints should not include Asserted Type Conversions.
 
 This also applies to bitvector widths.
 
@@ -189,7 +189,7 @@ This is related to \identr{ZCVD}.
 \subsubsection{As expression with a constrained type}
 
 Restriction on the use of under-constrained parameters as left-hand-side of a
-Checked Typed Conversion is not implemented in ASLRef.
+Asserted Typed Conversion is not implemented in ASLRef.
 %
 For example, the following will not raise a type-error:
 \VerbatimInput[firstline=3,lastline=8]{../tests/asl.t/under-constrained-used.asl}

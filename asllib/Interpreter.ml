@@ -373,13 +373,13 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin Lit *)
     | E_Literal v -> return_normal (B.v_of_literal v, env) |: SemanticsRule.Lit
     (* End *)
-    (* Begin CTC *)
-    | E_CTC (e1, t) ->
+    (* Begin ATC *)
+    | E_ATC (e1, t) ->
         let** v, new_env = eval_expr env e1 in
         let* b = is_val_of_type e1 env v t in
         (if b then return_normal (v, new_env)
          else fatal_from e1 (Error.MismatchType (B.debug_value v, [ t.desc ])))
-        |: SemanticsRule.CTC
+        |: SemanticsRule.ATC
     (* End *)
     | E_Var x -> (
         match IEnv.find x env with
@@ -567,7 +567,7 @@ module Make (B : Backend.S) (C : Config) = struct
              3. You cannot put the underconstrained integer type in a compound
                 type.
           *)
-          failwith "Cannot perform a CTC on the under-constrained type."
+          failwith "Cannot perform a ATC on the under-constrained type."
       | T_Bits (e, _) ->
           let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
           B.binop EQ_OP v_length v'

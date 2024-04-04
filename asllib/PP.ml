@@ -110,7 +110,7 @@ let rec pp_expr f e =
   match e.desc with
   | E_Literal v -> pp_literal f v
   | E_Var x -> pp_print_string f x
-  | E_CTC (e, ty) -> fprintf f "@[%a@ as %a@]" pp_expr e pp_ty ty
+  | E_ATC (e, ty) -> fprintf f "@[%a@ as %a@]" pp_expr e pp_ty ty
   | E_Binop (b, e1, e2) ->
       fprintf f "(@[<hov 2>%a@ %s %a@])" pp_expr e1 (binop_to_string b) pp_expr
         e2

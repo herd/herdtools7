@@ -1232,8 +1232,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Begin ELit *)
     | E_Literal v -> (annotate_literal v |> here, e) |: TypingRule.ELit
     (* End *)
-    (* Begin CTC *)
-    | E_CTC (e', ty) ->
+    (* Begin ATC *)
+    | E_ATC (e', ty) ->
         let t, e'' = annotate_expr env e' in
         (* - If type-checking determines that the expression
              type-satisfies the required type, then no further
@@ -1246,7 +1246,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              required. *)
         let ty' = annotate_type ~loc env ty in
         best_effort
-          (ty', E_CTC (e'', ty') |> here)
+          (ty', E_ATC (e'', ty') |> here)
           (fun res ->
             if Types.structural_subtype_satisfies env t ty' then
               if Types.domain_subtype_satisfies env t ty' then
@@ -1256,7 +1256,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 res
               else res
             else conflict e [ ty'.desc ] t)
-        |: TypingRule.CTC
+        |: TypingRule.ATC
     (* End *)
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
