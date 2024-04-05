@@ -743,6 +743,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | ASLS.A.V.Var v -> V.Var v
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
+    let is_experimental = TopConf.C.variant Variant.ASLExperimental
+
     let fake_test ii fname decode =
       let init = [] in
       let prog =
@@ -808,7 +810,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               | _ -> st)
             ASLS.A.state_empty ASLBase.gregs
         in
-        let nzcv = AArch64Base.NZCV and _nzcv = global_loc "_NZCV" in
+        let nzcv = AArch64Base.NZCV
+        and _nzcv =
+          global_loc (if is_experimental then "_NZCV" else "PSTATE") in
         let st =
           match A.look_reg nzcv ii.A.env.A.regs with
           | Some v ->

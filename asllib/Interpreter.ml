@@ -48,6 +48,7 @@ module type Config = sig
 
   val type_checking_strictness : Typing.strictness
   val unroll : int
+  val experimental : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -223,7 +224,9 @@ module Make (B : Backend.S) (C : Config) = struct
                  * the initial values from `.asl` files.
                  *)
                 match name with
-                | "RESADDR" | "_NZCV" -> return ()
+                | "RESADDR" -> return ()
+                | "_NZCV" when C.experimental -> return ()
+                | "PSTATE" when not C.experimental -> return ()
                 | _ -> B.on_write_identifier name Scope_Global v
               in
               IEnv.declare_global name v env |> return
