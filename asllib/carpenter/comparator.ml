@@ -33,6 +33,7 @@ let get_ref_result_instr =
   let module C : Interpreter.Config = struct
     let type_checking_strictness = `TypeCheck
     let unroll = 0
+    let experimental = false
 
     module Instr = Instrumentation.SemMake (B)
   end in
