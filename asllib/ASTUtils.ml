@@ -323,6 +323,7 @@ let rec expr_equal eq e1 e2 =
       o1 = o2 && expr_equal eq e11 e12 && expr_equal eq e21 e22
   | E_Binop _, _ | _, E_Binop _ -> false
   | E_Call (x1, args1, _), E_Call (x2, args2, _) ->
+      (* We can ignore parameters as they are deduced from arguments. *)
       String.equal x1 x2 && list_equal (expr_equal eq) args1 args2
   | E_Call _, _ | _, E_Call _ -> false
   | E_Concat li1, E_Concat li2 -> list_equal (expr_equal eq) li1 li2
@@ -423,7 +424,17 @@ and bitfield_equal eq bf1 bf2 =
       String.equal name1 name2
       && slices_equal eq slices1 slices2
       && bitfields_equal eq bf1' bf2'
-  | _ -> false
+  | BitField_Type (name1, slices1, t1), BitField_Type (name2, slices2, t2) ->
+      String.equal name1 name2
+      && slices_equal eq slices1 slices2
+      && type_equal eq t1 t2
+  | BitField_Simple _, BitField_Nested _
+  | BitField_Simple _, BitField_Type _
+  | BitField_Nested _, BitField_Simple _
+  | BitField_Nested _, BitField_Type _
+  | BitField_Type _, BitField_Nested _
+  | BitField_Type _, BitField_Simple _ ->
+      false
 
 let var_ x = E_Var x |> add_dummy_pos
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
