@@ -208,7 +208,7 @@ and slices_to_positions env =
 
 module Normalize = struct
   type atom = identifier
-  type 'a disjunction = Disjunction of 'a list
+  (** Our basic variables. *)
 
   module AtomOrdered = struct
     type t = atom
@@ -217,7 +217,15 @@ module Normalize = struct
   end
 
   module AMap = Map.Make (AtomOrdered)
+  (** A map from atoms. *)
 
+  (** A unitary monomial.
+
+      They are unitary in the sense that they do not have any factors:
+      {m 3 \times X^2 } is not unitary, while {m x^2 } is.
+
+      For example: {m X^2 + Y^4 } represented by {m X \to 2, Y \to 4 },
+      and {m 1 } is represented by the empty map. *)
   type monomial =
     | Prod of int AMap.t  (** Maps each variable to its exponent. *)
 
@@ -227,6 +235,7 @@ module Normalize = struct
     let compare (Prod ms1) (Prod ms2) = AMap.compare Int.compare ms1 ms2
   end
 
+  (** A map from a monomial. *)
   module MMap = struct
     include Map.Make (MonomialOrdered)
 
@@ -237,16 +246,12 @@ module Normalize = struct
         m empty
   end
 
+  (** A polynomial.
+
+      For example, {m X^2 - X + 4 } is represented by
+      {m X^2 \to 1, X \to -1, 1 \to 4 } *)
   type polynomial =
     | Sum of Z.t MMap.t  (** Maps each monomial to its factor. *)
-
-  type sign =
-    | Null
-    | StrictPositive
-    | Positive
-    | Negative
-    | StrictNegative
-    | NotNull
 
   module PolynomialOrdered = struct
     type t = polynomial
@@ -255,9 +260,31 @@ module Normalize = struct
   end
 
   module PMap = Map.Make (PolynomialOrdered)
+  (** Map from polynomials. *)
 
+  (** A constraint on a numerical value. *)
+  type sign =
+    | Null
+    | StrictPositive
+    | Positive
+    | Negative
+    | StrictNegative
+    | NotNull
+
+  (** A conjunctive logical formulae with polynomials.
+
+      For example, {m X^2 \leq 0 } is represented with {m X^2 \to \leq 0 }.
+  *)
   type ctnts = Conjunction of sign PMap.t | Bottom
+
+  (** Case disjunctions. *)
+  type 'a disjunction = Disjunction of 'a list
+
   type ir_expr = (ctnts * polynomial) disjunction
+  (** Constrained polynomials.
+
+      This is a branched tree of polynomials.
+  *)
   (* Wanted invariants for (e : ir_expr) :
      ⋁ {c | (c, d) ∈ e } <=> true                           (I₂)
      ∀ (cᵢ, eᵢ), (cⱼ, eⱼ) ∈ e, i != j => cⱼ ∩ cⱼ = ∅        (I₃)
@@ -542,8 +569,9 @@ module Normalize = struct
     | E_Binop (MUL, e1, e2) ->
         let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
         cross_num ir1 ir2 mult_polys
-    | E_Binop (SHL, e1, { desc = E_Literal (L_Int i2); _ }) ->
-        let ir1 = to_ir env e1 and f2 = Z.pow Z.one (Z.to_int i2) in
+    | E_Binop (SHL, e1, { desc = E_Literal (L_Int i2); _ }) when Z.leq Z.zero i2
+      ->
+        let ir1 = to_ir env e1 and f2 = Z.shift_left Z.one (Z.to_int i2) in
         map_num
           (fun (Sum monos) -> Sum (MMap.map (fun c -> Z.mul c f2) monos))
           ir1
