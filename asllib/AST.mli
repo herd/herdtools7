@@ -88,7 +88,7 @@ type binop =
 
 (** {2 Literals}
 
-    Literals are the values written straight into ASL programs.
+    Literals are the values written straight into ASL specifications.
     There is only literal constructors for a few concepts that could be
     encapsulated into an ASL value.
 *)

@@ -22,7 +22,7 @@
 
 (*
   Goals:
-    - Every valid ASLv1 program is accepted by this parser.
+    - Every valid ASLv1 specification is accepted by this parser.
     - No warnings should be emitted by menhir.
     - Being somewhat readable
 
@@ -569,7 +569,7 @@ let decl ==
 
     | terminated_by(SEMI_COLON,
       | TYPE; x=IDENTIFIER; OF; t=ty; ~=subtype_opt;  < D_TypeDecl           >
-      | TYPE; x=IDENTIFIER; s=annotated(subtype);     < make_ty_decl_subtype > 
+      | TYPE; x=IDENTIFIER; s=annotated(subtype);     < make_ty_decl_subtype >
 
       | keyword=storage_keyword; name=ignored_or_identifier;
         ty=ioption(as_ty); EQ; initial_value=some(expr);

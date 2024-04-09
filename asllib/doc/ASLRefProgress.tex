@@ -17,13 +17,54 @@
 \chapter{Not implemented in ASLRef}
 % ------------------------------------------------------------------------------
 
-This chapter describes what is not yet present in the executable version of ASLRef.
+This chapter describes what is not yet present in the executable version of ASLRef
+versus the LRM (Build \#215 from Feb 22, 2024).
 
 % ------------------------------------------------------------------------------
 \section{Syntax}
 
-\subsection{Constrained bitvectors}
+\subsection{Annotations}
+ASLRef does not yet support annotations.
+Specifically loop limit and recursion limit annotations are not yet supported.
 
+\subsection{Recursion Limits}
+ASLRef does not yet parse and support \texttt{@recurselimit(<LIMIT>)} annotations.
+
+\subsection{Concatenation Declarations}
+Declarations of multiple bitvectors via concatenation as in the program
+\begin{Verbatim}
+func main() => integer
+begin
+    var [ a[7:0], b, c[3:0] ] = Zeros(13);
+    return 0;
+end
+\end{Verbatim}
+do not currently parse.
+
+This is related to \identr{KKDF}.
+
+\subsection{Accessing Tuple Components}
+Accessing individual elements of a tuple via the \texttt{.item<k>} is not yet implemented in ASLRef.
+For example
+\begin{Verbatim}
+  func main() => integer
+  begin
+    return (0,2).item0;
+  end
+\end{Verbatim}
+Does not parse.
+
+\subsection{Base Value of Strings}
+Initializing string variables with their base value is not yet implemented in ASLRef.
+For example,
+\begin{Verbatim}
+  func main() => integer
+  begin
+    var x : string;
+    return 0;
+  end
+\end{Verbatim}
+Fails during interpretation.\subsection{Constrained bitvectors}
 Constrained bitvectors are not yet implemented in ASLRef.
 
 For example, the following function is not understood by ASLRef:
@@ -62,10 +103,30 @@ This relates to \identr{WGSY}.
 \section{Typing}
 
 Note that as it stands, the type system of ASL is not sound.
-Our proposal can be found at: 
+Our proposal can be found at:
 \url{https://github.com/herd/herdtools7/pull/747}
 
 This is related to \identi{JSKW}.
+
+\subsection{String Equality/Inequality}
+Equating strings is not yet implemented in ASLRef.
+For example,
+\begin{Verbatim}
+  func main() => integer
+  begin
+    if "hello"=="hello" then
+      return 0;
+    end
+  end
+\end{Verbatim}
+Fails during type-checking.
+
+\subsection{Side-effect-free Subprograms}
+ASLRef does yet infer whether a subprorgam is side-effect-free.
+Therefore, there are no checks that expressions are side-effect-free when those are expected,
+for example, in \texttt{for} loop ranges.
+
+This is related to \identr{WQRN}, \identr{SNQJ}, \identr{DJMC}, \identr{KLDR}.
 
 \subsection{Immutability of expressions in constraint ranges}
 
@@ -137,6 +198,39 @@ This is related to \identi{TBHH}, \identr{ZDKC}.
 
 % ------------------------------------------------------------------------------
 \section{Semantics}
+
+\subsection{Non-\texttt{main} Entry Point}
+Currently ASLRef only supports \texttt{main} as an entry point.
+
+\subsection{Base Value of Strings}
+Initializing string variables with their base value is not yet implemented in ASLRef.
+For example,
+\begin{Verbatim}
+  func main() => integer
+  begin
+    var x : string;
+    return 0;
+  end
+\end{Verbatim}
+Fails during interpretation.
+
+\subsection{Base Value of Well-constrained Integers}
+The base value of well-constrained integers is inconsistent with the LRM.
+The LRM (\identr{RCFTD}) says:
+\begin{quote}
+The base value of a well-constrained integer is the closest value to zero in its domain.
+If the closest positive and negative value are equally close, the positive value is used.
+\end{quote}
+ASLRef takes the leftmost syntactically appearing expression.
+
+\begin{Verbatim}
+func main() => integer
+begin
+  var x : integer {8, 5};
+  return x;
+end
+\end{Verbatim}
+returns $8$, not $5$.
 
 \subsection{Real exponentiation}
 

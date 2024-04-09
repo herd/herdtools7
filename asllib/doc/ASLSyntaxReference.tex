@@ -20,6 +20,16 @@ The reason for this is that abstract syntax trees abstract away details that are
 
 A major benefit of employing an abstract syntax for ASL is that it allows us to abstract both the grammar of ASLv0 and the grammar of ASLv1 into a single abstract syntax. This in turn, allows us to define a single type system and a single semantics for both language versions, with very few exceptions\footnote{Note the single appearance of $\version$ in the assignment derivation rule.}.
 
+Technically, there are two abstract syntaxes:
+a \emph{parsed abstract syntax} and a \emph{typed abstract syntax}.
+The first syntax results from parsing the text of an ASL specification.
+The type checker checks whether the parsed AST is valid and if so produces
+a typed AST where some nodes in the parsed AST have been transformed to
+more explicit representation. For example, the parsed AST may contain
+what looks like a slicing expression, which turns out to be a call to a getter.
+The typed AST represents that call directly, making it easier for an interpreter
+to evaluate that expression.
+
 \chapter{ASL Abstract Syntax}
 
 \section{ASL Abstract Syntax Trees}
@@ -61,7 +71,7 @@ An abstract syntax consists of a set of derivation rules and a start non-termina
 
 \newcommand\ASTComment[1]{//\quad\textit{#1}\ }
 
-\section{ASL Derivation Rules}
+\section{ASL Parsed Abstract Syntax}
 
 The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\program$.
 %
@@ -86,8 +96,7 @@ We sometimes provide extra details to individual derivations by adding comments 
  & & \ASTComment{\texttt{binop\_pow}}\\
 
 \literal &=& \texttt{<int\_lit>}  \\
- &|&\texttt{<hex\_lit>} \\
- & & \ASTComment{merged into \texttt{<int\_lit>}?}\\
+ &|&\ASTComment{Includes \texttt{hex\_int}} \\
  &|&\texttt{<boolean\_lit>}  \\
  &|& \texttt{<real\_lit>}  \\
  &|& \texttt{<bitmask\_lit>}   \\
@@ -120,7 +129,6 @@ We sometimes provide extra details to individual derivations by adding comments 
 	&|& \texttt{E\_Call}(\identifier, \expr^{*}, (\identifier, \expr)^{*}) \\
 	&|& \texttt{E\_Slice}(\expr, \slice^{*}) \\
 	&|& \texttt{E\_Cond}(\expr, \expr, \expr) \\
-	&|& \texttt{E\_GetArray}(\expr, \expr) \\
 	&|& \texttt{E\_GetField}(\expr, \identifier) \\
 	&|& \texttt{E\_GetFields}(\expr, \identifier^{*}) \\
 	&|& \texttt{E\_Record}(\ty, (\identifier, \expr)^{*})\\
@@ -172,7 +180,7 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \TReal \\
   &|& \TString \\
   &|& \TBool \\
-  &|& \TBits(\expr, bitfield^{*}) \\
+  &|& \TBits(\expr, \bitfield^{*}) \\
   & & \ASTComment{\expr\ is a statically evaluable expression denoting the length of the bit-vector.}\\
   &|& \TEnum(\identifier^{*}) \\
   &|& \TTuple(\ty^{*}) \\
@@ -210,19 +218,6 @@ We sometimes provide extra details to individual derivations by adding comments 
   & & \ASTComment{A single value, given by a statically evaluable expression.}\\
   &|& \texttt{Constraint\_Range}(\expr, \expr) \\
   & & \ASTComment{An interval between two statically evaluable expression.}\\
-\end{array}
-\]
-
-\[
-\begin{array}{rcl}
-& & \ASTComment{Constraints on bitvector lengths.}\\
-\hline
-\bitsconstraint &::=& \texttt{BitWidth\_SingleExpr}(\expr) \\
-  & & \ASTComment{Statically evaluable expression.}\\
-  &|& \texttt{BitWidth\_ConstrainedFormType}(\ty) \\
-  & & \ASTComment{Constrained by the domain of another type.}\\
-  &|& \texttt{BitWidth\_Constraints}(\intconstraint^{*}) \\
-  & & \ASTComment{Constrained directly by a constraint on its width.}\\
 \end{array}
 \]
 
@@ -298,7 +293,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\fordirection &::=& \texttt{Up} \;|\; \texttt{Down}\\
+\fordirection &::=& \UP \;|\; \DOWN\\
 \end{array}
 \]
 
@@ -322,11 +317,9 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \texttt{S\_For}(\identifier, \expr, \fordirection, \expr, \stmt)\\
   &|& \texttt{S\_While}(\expr, \stmt)\\
   &|& \texttt{S\_Repeat}(\stmt, \expr)\\
-  &|& \texttt{S\_Throw}((\expr, \ty?)?)\\
-  & & \ASTComment{The $\ty?$ is a type annotation added by the type-checker}\\
-  & & \ASTComment{to be matched later with the catch guards.}\\
+  &|& \texttt{S\_Throw}((\expr, \langle\rangle)?)\\
   & & \ASTComment{The outer option is to represent the implicit throw,}\\
-  & & \ASTComment{such as [throw;].}\\
+  & & \ASTComment{such as \texttt{throw;}.}\\
   &|& \texttt{S\_Try}(\stmt, \catcher^*, \stmt?)\\
   & & \ASTComment{The optional stmt is for the otherwise guard.}\\
   &|& \texttt{S\_Debug}(\expr)
@@ -391,5 +384,57 @@ We sometimes provide extra details to individual derivations by adding comments 
 \program &::=& \decl^*\\
 \end{array}
 \]
+
+\section{ASL Typed Abstract Syntax}
+
+The derivation rules for the typed abstract syntax are the same as the rules for the parsed abstract syntax,
+except for the following differences.
+
+The rules for expressions have the extra derivation rule:
+\[
+\begin{array}{rcl}
+\expr &::=& \texttt{E\_GetArray}(\expr, \expr) \\
+\end{array}
+\]
+
+The rules for statements refine the throw statement by annotating it with
+the type of throw exception.
+\[
+\begin{array}{rcl}
+\stmt &::=& \texttt{S\_Throw}((\expr, \langle\ty\rangle)?)\\
+      & & \ASTComment{The type $\ty$ is inferred by the type-checker.}
+\end{array}
+\]
+
+The rules for slices is replaced by the following:
+\[
+\begin{array}{rcl}
+\slice &::=& \slicelength(\expr, \expr) \\
+\end{array}
+\]
+This reflects the fact that all other slicing constructs are syntactic sugar
+for \slicelength.
+
+\chapter{Correpondence Betwen Left-hand-side Expressions and Right-hand-side Expressions
+\label{ch:LeftToRight}}
+
+The recursive function $\torexpr : \lexpr \rightarrow \expr$ transforms
+left-hand-side expressions to corresponding right-hand-side expressions,
+which is utilized both for the type system and semantics:
+\[
+\begin{array}{lcl}
+  \textbf{Left hand side expression} & & \textbf{Right hand side expression}\\
+  \hline
+  \torexpr(\texttt{LE\_Var}(\vx)) &=& \texttt{E\_Var}(\vx)\\
+  \torexpr(\leslice(\vle, \vargs)) &=& \texttt{E\_Slice}(\torexpr(\vle), \vargs)\\
+  \torexpr(\texttt{LE\_SetArray}(\vle, \ve)) &=& \texttt{E\_GetArray}(\torexpr(\vle), \ve)\\
+  \torexpr(\texttt{LE\_SetField}(\vle, \vx)) &=& \texttt{E\_GetField}(\torexpr(\vle), \vx)\\
+  \torexpr(\texttt{LE\_SetFields}(\vle, \vx)) &=& \texttt{E\_GetFields}(\torexpr(\vle), \vx)\\
+  \torexpr(\texttt{LE\_Discard}) &=& \texttt{E\_Var("-")}\\
+  \torexpr(\texttt{LE\_Destructuring}([\vle_{1..k}])) &=& \texttt{E\_Tuple}([i=1..k: \torexpr(\vle_i)])\\
+  \torexpr(\texttt{LE\_Concat}([\vle_{1..k}], \Ignore)) &=& \texttt{E\_Concat}([i=1..k: \torexpr(\vle_i)])\\
+\end{array}
+\]
+
 
 \end{document}

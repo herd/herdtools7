@@ -1,13 +1,13 @@
 \usepackage{amsmath}  % Classic math package
-\usepackage{amssymb}  % Classic math package 
-\usepackage{mathtools}  % Additional math package 
+\usepackage{amssymb}  % Classic math package
+\usepackage{mathtools}  % Additional math package
 \usepackage{graphicx}  % For figures
 \usepackage{caption}  % For figure captions
 \usepackage{subcaption}  % For subfigure captions
 \usepackage{url}  % Automatically escapes urls
 \usepackage{hyperref}  % Insert links inside pdfs
 \usepackage[inline]{enumitem}  % For inline lists
-\usepackage[export]{adjustbox}  % For centering too wide figures 
+\usepackage[export]{adjustbox}  % For centering too wide figures
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
 \usepackage{fancyvrb}
@@ -26,12 +26,14 @@
 \input{ifformal}
 \input{iftodo}
 \input{control}
+
+\newcommand\herd[0]{\texttt{herd7}}
 \fvset{fontsize=\small}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
 \setlist[itemize,1]{label=\textbullet}
-\setlist[itemize,2]{label=\textasteriskcentered} 
+\setlist[itemize,2]{label=\textasteriskcentered}
 \setlist[itemize,3]{label=\textendash}
 \setlist[itemize,4]{label=$\triangleright$}
 \setlist[itemize,5]{label=+}
@@ -52,9 +54,42 @@
 \setlist[itemize,20]{label=\textendash}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Abstract Syntax macros
+% Abstract Syntax macros
+% These are used by the AST reference, typing rerence, and semantics reference.
 
 \newcommand\emptylist[0]{[\ ]}
+
+\newcommand\BNOT[0]{\texttt{BNOT}} % Boolean inversion
+\newcommand\NEG[0]{\texttt{NEG}} % Integer or real negation
+\newcommand\NOT[0]{\texttt{NOT}} % Bitvector bitwise inversion
+
+\newcommand\AND[0]{\texttt{AND}} % Bitvector bitwise and
+\newcommand\BAND[0]{\texttt{BAND}} % Boolean and
+\newcommand\BEQ[0]{\texttt{BEQ}} % Boolean equivalence
+\newcommand\BOR[0]{\texttt{BOR}} % Boolean or
+\newcommand\DIV[0]{\texttt{DIV}} % Integer division
+\newcommand\DIVRM[0]{\texttt{DIVRM}} % Inexact integer division, with rounding towards negative infinity.
+\newcommand\EOR[0]{\texttt{EOR}} % Bitvector bitwise exclusive or
+\newcommand\EQOP[0]{\texttt{EQ\_OP}} % Equality on two base values of same type
+\newcommand\GT[0]{\texttt{GT}} % Greater than for int or reals
+\newcommand\GEQ[0]{\texttt{GEQ}} % Greater or equal for int or reals
+\newcommand\IMPL[0]{\texttt{IMPL}} % Boolean implication
+\newcommand\LT[0]{\texttt{LT}} % Less than for int or reals
+\newcommand\LEQ[0]{\texttt{LEQ}} % Less or equal for int or reals
+\newcommand\MOD[0]{\texttt{MOD}} % Remainder of integer division
+\newcommand\MINUS[0]{\texttt{MINUS}} % Substraction for int or reals or bitvectors
+\newcommand\MUL[0]{\texttt{MUL}} % Multiplication for int or reals or bitvectors
+\newcommand\NEQ[0]{\texttt{NEQ}} % Non equality on two base values of same type
+\newcommand\OR[0]{\texttt{OR}} % Bitvector bitwise or
+\newcommand\PLUS[0]{\texttt{PLUS}} % Addition for int or reals or bitvectors
+\newcommand\POW[0]{\texttt{POW}} % Exponentiation for ints
+\newcommand\RDIV[0]{\texttt{RDIV}} % Division for reals
+\newcommand\SHL[0]{\texttt{SHL}} % Shift left for ints
+\newcommand\SHR[0]{\texttt{SHR}} % Shift right for ints
+
+% For loop direction
+\newcommand\UP[0]{\texttt{Up}}
+\newcommand\DOWN[0]{\texttt{Down}}
 
 % Non-terminal names
 \newcommand\unop[0]{\textsf{unop}}
@@ -71,12 +106,17 @@
 
 \newcommand\ty[0]{\textsf{ty}}
 \newcommand\pattern[0]{\textsf{pattern}}
-\newcommand\intconstraint[0]{\textsf{int\_constraint}}
 \newcommand\intconstraints[0]{\textsf{int\_constraints}}
+\newcommand\intconstraint[0]{\textsf{int\_constraint}}
+\newcommand\unconstrained[0]{\textsf{UnConstrained}}
+\newcommand\wellconstrained[0]{\textsf{WellConstrained}}
+\newcommand\constraintexact[0]{\textsf{Constraint\_Exact}}
+\newcommand\constraintrange[0]{\textsf{Constraint\_Range}}
 \newcommand\bitsconstraint[0]{\textsf{bits\_constraint}}
 \newcommand\bitfield[0]{\textsf{bitfield}}
 \newcommand\version[0]{\textsf{version}}
-\newcommand\program[0]{\textsf{program}}
+\newcommand\program[0]{\textsf{spec}} % Remove after fixing the syntax reference and typing reference.
+\newcommand\spec[0]{\textsf{spec}}
 \newcommand\typedidentifier[0]{\textsf{typed\_identifier}}
 \newcommand\localdeclkeyword[0]{\textsf{local\_decl\_keyword}}
 \newcommand\globaldeclkeyword[0]{\textsf{global\_decl\_keyword}}
@@ -120,26 +160,31 @@
 
 \newcommand\identifier[0]{\textsf{identifier}}
 
+\newcommand\vx[0]{\texttt{x}}
+\newcommand\ve[0]{\texttt{e}}
+\newcommand\vle[0]{\texttt{le}}
+\newcommand\vargs[0]{\texttt{args}}
+\newcommand\torexpr[0]{\textsf{rexpr}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Typing macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\tstruct[0]{\texttt{get\_structure}}
+\newcommand\astlabel[0]{\textsf{ast\_label}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand\emptyfunc[0]{{\emptyset}_\lambda}
+
 \newcommand\id[0]{\texttt{id}}
 \newcommand\op[0]{\texttt{op}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Typing macros
-\newcommand\staticloc[1]{#1.\textsf{local}}
-\newcommand\constantsvalues[0]{\textsf{constants\_values}}
-\newcommand\storagetypes[0]{\textsf{storage\_types}}
-\newcommand\returntype[0]{\textsf{return\_type}}
-\newcommand\declaredtypes[0]{\textsf{declared\_types}}
-\newcommand\subtypes[0]{\textsf{subtypes}}
-\newcommand\subprograms[0]{\textsf{subprograms}}
-\newcommand\subprogramrenamings[0]{\textsf{subprogram\_renamings}}
-\newcommand\staticglob[1]{#1.\textsf{global}}
+\newcommand\Ignore[0]{\texttt{\_}}
+\newcommand\None[0]{\texttt{None}}
 
-\newcommand\entails[0]{\vdash}
-\newcommand\tstruct[0]{\texttt{get\_structure}}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\envs[0]{\mathbb{E}}
+\newcommand\staticenvs[0]{\mathbb{SE}}
+\newcommand\dynamicenvs[0]{\mathbb{DE}}
 
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
@@ -148,7 +193,6 @@
 \newcommand\syntt[1]{\mathtt{#1}}
 \newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
 \newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
-\newcommand\env[1]{\left\langle #1 \right\rangle}
 \newcommand\reducesto{\ \to\ }
 \newcommand\llbracket{[|}
 \newcommand\rrbracket{|]}
@@ -161,13 +205,15 @@
 \newcommand\N[0]{\mathbb{N}}
 \newcommand\Q[0]{\mathbb{Q}}
 \newcommand\Z[0]{\mathbb{Z}}
+\newcommand\pow[1]{\mathcal{P}(#1)}
 \newcommand\asldata[0]{\mathtt{asl\_data}}
 \newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
 \newcommand\aslpo[0]{\mathtt{asl\_po}}
 \DeclareMathOperator{\dom}{dom}
 \newcommand\partialto[0]{\rightharpoonup}
-\newcommand\evalexpr[0]{\texttt{eval\_expr}}
-\newcommand\evalconstraint[0]{\texttt{eval\_constraint}}
+\newcommand\rightarrowfin[0]{\rightarrow_{\text{fin}}}
+\newcommand\cupdot[0]{\cup}
+\newcommand\seq[1]{\textsf{sequence}(#1)}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Ident info

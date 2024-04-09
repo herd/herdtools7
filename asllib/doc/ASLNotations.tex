@@ -1,0 +1,104 @@
+\paragraph{Functions and Products \label{sec:FunctionsAndProducts}}
+
+\begin{definition}[Partial Function\label{def:PartialFunction}]
+  A \emph{partial function}, denoted $A \partialto B$, is a function from a \underline{subset} of $A$ to $B$.
+  The domain of a partial function, denoted $\dom(A)$, is the subset of $A$ for which it defined.
+  For a partial function $f$, we write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$.
+\end{definition}
+
+The function with an empty domain is denoted as $\emptyfunc$.
+The notation $\rightarrowfin$ stands for a function whose domain is finite.
+
+\begin{definition}[Function Update\label{def:FunctionUpdate}]
+  The notation $f[x \mapsto v]$ is a function identical to $f$, except that $x$ is bound
+  to $v$. That is, if  $g = f[x \mapsto v]$ then
+  \[
+    g(z) =
+  \begin{cases}
+    f(z) & \text{if } z \neq x\\
+    v & \text{if } z = x \enspace .
+  \end{cases}
+  \]
+
+  The notation $\{i=1..k: a_i\mapsto b_i\}$ stands for the function formed from the corresponding input-output pairs:
+  $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$.
+\end{definition}
+
+The notation $A \times B$ stands for the Cartesian product of sets $A$ and $B$: $A \times B \triangleq \{(a,b) \;|\; a \in A, b \in B\}$.
+
+\paragraph{Sequences and Lists}
+We use the notation $a..b$ as a shorthand for the sequence $a\ldots b$ and $x_{a..b}$ as a shorthand for the sequence $x_a \ldots x_b$.
+%
+We use the notation $p(x_{1..k})$ to denote that a predicate $p$ holds for the list of arguments $x_1,\ldots,x_k$.
+%
+We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterized by $i$,
+to denote the sequence of expressions $V(1) \ldots V(k)$.
+The notation $[i=1..k: V(i)]$ stands the list $[V(1),\ldots,V(k)]$.
+The notation $\seq{v\in r: f(v)}$, where $r$ is a sequence, stands for $\epsilon$ when $r=\epsilon$ and
+$f(v_1) \ldots f(v_k)$ when $r=v_{1..k}$ and $f$ is a mathematical expression over $v$.
+%
+We use `+' to denote concatenation of lists, defined as follows: $\emptylist + L = L$, $L + \emptylist = L$, and $[i=1..k: l_i] + [j=1..n: m_j] = [l_{1..k}, m_{1..n}]$.
+
+We write $\epsilon$ for an empty sequence,
+$a_{1..k} \cdot b_{1..n} \triangleq a_1\ldots a_k b_1 \ldots b_n$ for the concatenation of two sequences,
+$T^*$ for a sequence of zero or more values from $T$, and $T^+$ for a sequences of one or more values from $T$.
+
+\paragraph{Rules}
+The following notation states that when the \emph{premises} $P_{1..k}$ hold then the \emph{verdict} $V$ holds as well:
+\begin{mathpar}
+  \inferrule[Name]{P_1 \and \ldots \and P_k}{V}
+\end{mathpar}
+That is, the premises of a rule are interpreted as a conjunction.
+%
+Optionally, the name of the rule, which is useful for referencing it, appears above and to the left of it.
+%
+The variables appearing in the premises and verdict are interpreted universally.
+%
+A set of rules is interpreted disjunctively. That is, each rule is used to determine whether its verdict
+holds independent of other rules.
+%
+Some rules are \emph{axioms}. That is, their set of premises is empty. Premises are denoted by simply
+stating the verdict.
+%
+Axioms can be used to conclude certain (simple) verdicts.
+However, concluding more complex verdicts requires
+starting from axioms to obtain verdicts, then using these verdicts as premises in non-axiom rules,
+which are potentially themselves used as premises to other rules and so on until the desired verdict
+is concluded.
+
+To keep rules succinct, we will write `$\Ignore$' for a fresh universally quantified variable whose name is
+irrelevant for understanding the rule, and can thus be omitted. That is, each \underline{occurrence}
+of `$\Ignore$' represents a distinct variable.
+
+\paragraph{Flavors of Equality}
+We use the following types of equality notations in rules:
+\begin{description}
+  \item[Range] we write $i=1..k$ to allow listing premises parameterized by $i$ or constructing
+  lists from expressions parameterized by $i$.
+  For example, $i=1..k: 0$ is a sequence of $k$ zeros.
+  \item[Predicate] we write $a = b$ as a premise that states the equality of $a$ and $b$.
+  For example, the mathematical identity $1 + 2 = 4 - 1$.
+  \item[Deconstructions] some values, such as tuples, are compound. In order to refer to the structure
+  of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right
+  hand side exposes the internal structure of $v$ by introducing the variables
+  $u_{1..k}$, allowing us to alias internal components of $v$.
+  Intuitively, $v$ is re-interpreted as $\textit{f}(u_{1..k})$.
+  For example, suppose we know that $v$ is a pair of values.
+  Then, $v \eqname (a, b)$ allows us to alias $a$ and $b$.
+  Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
+  head of the list $h$ and its tail $t$.
+  \item[Definition] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name for the expression $\ve$.
+  Intuitively, $\vx$ constructs a variable from the expression $\ve$.
+  For example, $c := a + b$ provide a new name for the expression $a+b$, which is $c$.
+\end{description}
+
+\paragraph{Choice}
+\newcommand\choice[0]{\textsf{choice}}
+We denote $\choice(\vb, f, g)$, where $\vb \in \{\True, \False\}$ and $f$ and $g$
+are mathematical expressions of the same kind, to stand for:
+\[
+  \choice(\vb, f, g) \triangleq \begin{cases}
+    f & \vb \text{ is }\True\\
+    g & \vb \text{ is }\False\\
+  \end{cases}
+\]
