@@ -37,19 +37,32 @@
  *)
 "Armv8 External global completion requirement, with mixed-size"
 
+catdep
+
 include "armv8-common.cat"
 include "sca.cat"
 
-let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; lob))
-let preorder-gcb = IM0 | lob & gc-req | scaob
+let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; local-hw-reqs))
+let preorder-gcb = IM0 | local-hw-reqs & gc-req | scaob
 let preorder-gcb-lift = lift(MC,preorder-gcb)
 
 with gcb from linearisations(MC, preorder-gcb-lift)
 ~empty gcb
 
-let dgcbl = delift(gcb) & loc
-let rf-gcb = (W * R) & dgcbl \ intervening-write(dgcbl)
+let dgcb = delift(gcb)
+
+let dgcbl = dgcb & same-loc
+let rf-gcb = (W * (Exp & R)) & dgcbl
+    & ~intervening(W,dgcbl)
+    & ~(intervening(W,dgcbl);[Exp & R]; po-loc)
 let co-gcb = (W * W) & dgcbl
 
 call equal(rf, rf-gcb)
 call equal(co, co-gcb)
+
+flag ~empty (if "vmsa" then _ else 0)
+  as external-global-completion-requirement-does-not-support-variant-vmsa
+flag ~empty (if "ifetch" then _ else 0)
+  as external-global-completion-requirement-does-not-support-variant-ifetch
+flag ~empty (if "memtag" then _ else 0)
+  as external-global-completion-requirement-does-not-support-variant-memtag

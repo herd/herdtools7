@@ -37,58 +37,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-"ARMv8 AArch64"
+include "aarch64hwreqs.cat"
 
-include "armv8-util.cat"
+(*** Internal visibility requirements ***)
+irreflexive [Exp & R]; (po-loc | rmw); [Exp & W]; rfi; [Exp & R] as coRW1-Exp
+irreflexive [Imp & Tag & R]; po-loc; [Exp & Tag & W]; rfi; [Imp & Tag & R] as coRW1-MTE
+irreflexive [Exp & W]; po-loc; [Exp & W]; (ca & int); [Exp & W] as coWW-Exp
+irreflexive [Exp & W]; po-loc; [Exp & R]; (ca & int); [Exp & W] as coWR-Exp
+irreflexive [Exp & Tag & W]; po-loc; [Imp & Tag & R]; (ca & int) as coWR-MTE
 
-(* Coherence-after *)
-let ca = fr | co
+(*** Atomic: LDXR/STXR, AMO and HU constraint to forbid intervening writes. ***)
+empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
 
-(* Local read successor *)
-let lrs = [W]; po-loc \ intervening-write(po-loc); [R]
-
-(* Local write successor *)
-let lws = po-loc; [W]
-
-(* Observed-by *)
-let obs = rfe | fre | coe
-
-(* Read-modify-write *)
-let rmw = lxsx | amo
-
-(* Dependency-ordered-before *)
-let dob = addr | data
-	| ctrl; [W]
-	| (ctrl | (addr; po)); [ISB]; po; [R]
-	| addr; po; [W]
-	| (addr | data); lrs
-
-(* Atomic-ordered-before *)
-let aob = rmw
-	| [W & range(rmw)]; lrs; [A | Q]
-
-(* Barrier-ordered-before *)
-let bob = po; [dmb.full]; po
-        | po; ([A];amo;[L]); po
-	| [L]; po; [A]
-	| [R]; po; [dmb.ld]; po
-	| [A | Q]; po
-	| [W]; po; [dmb.st]; po; [W]
-	| po; [L]
-
-(* Tag-ordered-before *)
-let tob = [R & T]; intrinsic; [M \ T]
-
-(* Locally-ordered-before *)
-let rec lob = lws; si
-        | dob
-	| aob
-	| bob
-        | tob
-	| lob; lob
-
-(* Internal visibility requirement *)
-acyclic po-loc | ca | rf as internal
-
-(* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
-empty rmw & (fre; coe) as atomic
+let IM0 = ((IW * (M\IW)) | loc & ((W\FW) * FW))
