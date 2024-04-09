@@ -1,0 +1,10 @@
+Test A257 Required
+States 1
+0:X30=0:L0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation A257 Always 1 0
+Hash=acdb36c81923f38d3d34a02996cbc81c
+
