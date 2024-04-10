@@ -849,6 +849,8 @@ instr:
    { let v,op,rmw = $1 in I_LDOPBH (op,v,rmw,$2,$4,$7) }
 | STOP wreg COMMA LBRK cxreg zeroopt RBRK
    { let op,w = $1 in I_STOP (op,V32,w,$2,$5) }
+| STOP xreg COMMA LBRK cxreg zeroopt RBRK
+   { let op,w = $1 in I_STOP (op,V64,w,$2,$5) }
 | STOPBH wreg COMMA LBRK cxreg zeroopt RBRK
    { let v,op,w = $1 in I_STOPBH (op,v,w,$2,$5) }
 /* Operations */

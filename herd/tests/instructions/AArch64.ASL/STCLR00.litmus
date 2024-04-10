@@ -1,0 +1,10 @@
+AArch64 STCLR00
+{
+uint64_t x=15;
+uint64_t 0:X0=5;
+0:X1=x;
+}
+   P0          ;
+ STCLR X0,[X1] ;
+
+forall [x]=10

@@ -1,0 +1,10 @@
+Test STCLR00 Required
+States 1
+[x]=10;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=10)
+Observation STCLR00 Always 1 0
+Hash=6dce510cf1ec8087064858128b894317
+
