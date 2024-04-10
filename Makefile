@@ -65,6 +65,7 @@ check-deps::
 # Tests.
 TIMEOUT=16.0
 
+test-all:: test
 test:: | build
 
 test:: dune-test
@@ -378,6 +379,7 @@ mte-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-MTE tests: OK"
 
+test-all:: vmsa-test
 vmsa-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
@@ -390,6 +392,7 @@ vmsa-test:
 		$(REGRESSION_TEST_MODE)
 		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
 
+test-all:: ets2-test
 ets2-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
