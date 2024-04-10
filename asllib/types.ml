@@ -346,7 +346,10 @@ module Domain = struct
     | T_Bits (width, _) -> (
         try
           match of_expr env width with
-          | D_Int is -> D_Bits is
+          | D_Int (Finite int_set as d) ->
+              if Z.equal (IntSet.cardinal int_set) Z.one then D_Bits d
+              else raise StaticEvaluationTop
+          | D_Int (FromSyntax [ Constraint_Exact _ ] as d) -> D_Bits d
           | _ -> raise StaticEvaluationTop
         with StaticEvaluationTop ->
           D_Bits (FromSyntax [ Constraint_Exact width ]))
@@ -408,7 +411,6 @@ module Domain = struct
         if Z.equal (IntSet.cardinal int_set) Z.one then
           Some (IntSet.min_elt int_set |> IntSet.Interval.x)
         else None
-    | D_Bits _ -> None
     | _ -> None
 end
 

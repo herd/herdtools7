@@ -206,4 +206,9 @@ Parameters bugs:
   File bug3.asl, line 4, characters 10 to 18:
   ASL Typing error: constrained integer expected, provided integer
   [1]
+  $ aslref bug4.asl
+  File bug4.asl, line 5, characters 11 to 31:
+  ASL Typing error: Illegal application of operator OR on types bits(a)
+    and bits(b)
+  [1]
 
