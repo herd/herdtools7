@@ -2412,7 +2412,6 @@ module Make
 
       let get_link_addr test ii =
         let lbl =
-          let open BranchTarget in
           let a = ii.A.addr + 4 in
           let lbls = test.Test_herd.entry_points a in
           Label.norm lbls in
