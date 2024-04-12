@@ -12,4 +12,4 @@ Variant=fatal
  ISB         ;
 L0:          ;
  UDF #0      ;
- exists(fault(P0:L0,IllegalInstruction))
+ exists(fault(P0:L0,UndefinedInstruction))
