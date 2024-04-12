@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "herdtools7"
-version: "7.56+04~dev"
+version: "7.57"
 synopsis: "The herdtools suite for simulating and studying weak memory models"
 maintainer: "Luc Maranget <Luc.Maranget@inria.fr>"
 authors: [
@@ -22,10 +22,7 @@ depends: [
   "menhir" {>= "20200123"}
   "zarith"
 ]
-depopts: [
-  "js_of_ocaml-ppx"
-]
 conflicts: ["ocaml-option-bytecode-only"]
 url {
-  src: "https://github.com/herd/herdtools7/"
+  src: "https://github.com/herd/herdtools7/archive/refs/tags/7.57.tar.gz"
 }
