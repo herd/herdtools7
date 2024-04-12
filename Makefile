@@ -31,8 +31,10 @@ all: build
 Version.ml:
 	sh ./version-gen.sh $(PREFIX)
 
-build: Version.ml | check-deps
+just-build: Version.ml
 	dune build -j $(J) --profile $(DUNE_PROFILE)
+
+build: check-deps | just-build
 
 $(BENTO): Version.ml | check-deps
 	dune build -j $(J) --profile $(DUNE_PROFILE) $@
