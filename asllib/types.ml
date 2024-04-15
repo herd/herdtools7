@@ -848,7 +848,7 @@ let rec base_value loc env t =
   | T_Array _ ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of array types.")
-  | T_Bool -> L_Bool true |> lit
+  | T_Bool -> L_Bool false |> lit
   | T_Bits (e, _) ->
       let e = normalize env e in
       E_Call ("Zeros", [ e ], []) |> add_pos_from t

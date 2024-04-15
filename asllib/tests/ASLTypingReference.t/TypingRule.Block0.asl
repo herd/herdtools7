@@ -1,6 +1,6 @@
     func main () => integer
     begin
-      if UNKNOWN: boolean then
+      if TRUE then
          let i = 3;
          print (DecStr (i));
       end

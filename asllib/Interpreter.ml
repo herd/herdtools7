@@ -1308,7 +1308,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let t_struct = Types.get_structure (IEnv.to_static env) t in
     let lit v = B.v_of_literal v |> return in
     match t_struct.desc with
-    | T_Bool -> L_Bool true |> lit
+    | T_Bool -> L_Bool false |> lit
     | T_Bits (e, _) ->
         let* v = eval_expr_sef env e in
         let length =

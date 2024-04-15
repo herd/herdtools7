@@ -26,6 +26,9 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.EUnopAssert.asl
   $ aslref SemanticsRule.ECondFALSE.asl
   $ aslref SemanticsRule.ECondUNKNOWN3or42.asl
+  File SemanticsRule.ECondUNKNOWN3or42.asl, line 10, characters 9 to 13:
+  ASL Execution error: Assertion failed: (x == 3)
+  [1]
   $ aslref SemanticsRule.ESlice.asl
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
