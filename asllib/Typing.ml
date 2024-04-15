@@ -1628,10 +1628,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             | None -> (
                 (* Begin LEGlobalVar *)
                 match IMap.find_opt x env.global.storage_types with
-                | Some (ty, _) ->
-                    (* TODO: check that the keyword is a variable. *)
-                    ty |: TypingRule.LEGlobalVar
+                | Some (ty, GDK_Var) -> ty |: TypingRule.LEGlobalVar
                 (* End *)
+                | Some _ -> fatal_from le @@ Error.AssignToImmutable x
                 | None -> undefined_identifier le x)
           in
           check_type_satisfies le env t_e ty ()

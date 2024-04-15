@@ -200,6 +200,11 @@ UnderConstrained integers:
   ASL Execution error: Assertion failed: FALSE
   [1]
 
+  $ aslref assign-to-global-immutable.asl
+  File assign-to-global-immutable.asl, line 5, characters 2 to 21:
+  ASL Typing error: cannot assign to immutable storage "my_immutable_global".
+  [1]
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]
