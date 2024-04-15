@@ -177,10 +177,6 @@
 \newcommand\lexpr[0]{\textsf{lexpr}}
 \newcommand\slice[0]{\textsf{slice}}
 \newcommand\leslice[0]{\texttt{LE\_Slice}}
-\newcommand\slicesingle[0]{\texttt{Slice\_Single}}
-\newcommand\slicelength[0]{\texttt{Slice\_Length}}
-\newcommand\slicerange[0]{\texttt{Slice\_Range}}
-\newcommand\slicestar[0]{\texttt{Slice\_Star}}
 
 \newcommand\ty[0]{\textsf{ty}}
 \newcommand\pattern[0]{\textsf{pattern}}
@@ -228,6 +224,32 @@
 \newcommand\EUnknown[0]{\textsf{E\_Unknown}}
 \newcommand\EPattern[0]{\textsf{E\_Pattern}}
 
+% Left-hand-side expression labels
+\newcommand\LEConcat[0]{\textsf{LE\_Concat}}
+\newcommand\LEDiscard[0]{\textsf{LE\_Discard}}
+\newcommand\LEVar[0]{\textsf{LE\_Var}}
+\newcommand\LESlice{\textsf{LE\_Slice}}
+\newcommand\LESetArray[0]{\textsf{LE\_SetArray}}
+\newcommand\LESetField[0]{\textsf{LE\_SetField}}
+\newcommand\LESetFields[0]{\textsf{LE\_SetFields}}
+\newcommand\LEDestructuring[0]{\textsf{LE\_Destructuring}}
+
+% Statement labels
+\newcommand\SPass[0]{\textsf{S\_Pass}}
+\newcommand\SAssign[0]{\textsf{S\_Assign}}
+\newcommand\SReturn[0]{\textsf{S\_Return}}
+\newcommand\SSeq[0]{\textsf{S\_Seq}}
+\newcommand\SCall[0]{\textsf{S\_Call}}
+\newcommand\SCond[0]{\textsf{S\_Cond}}
+\newcommand\SCase[0]{\textsf{S\_Case}}
+\newcommand\SDecl[0]{\textsf{S\_Decl}}
+\newcommand\SAssert[0]{\textsf{S\_Assert}}
+\newcommand\SWhile[0]{\textsf{S\_While}}
+\newcommand\SRepeat[0]{\textsf{S\_Repeat}}
+\newcommand\SFor[0]{\textsf{S\_For}}
+\newcommand\SThrow[0]{\textsf{S\_Throw}}
+\newcommand\STry[0]{\textsf{S\_Try}}
+
 % Literal labels
 \newcommand\lint[0]{\textsf{L\_Int}}
 \newcommand\lbool[0]{\textsf{L\_Bool}}
@@ -239,28 +261,52 @@
 \newcommand\False[0]{\hyperlink{def-false}{\texttt{FALSE}}}
 
 % Type labels
-\newcommand\TInt[0]{\texttt{T\_Int}}
-\newcommand\TReal[0]{\texttt{T\_Real}}
-\newcommand\TString[0]{\texttt{T\_String}}
-\newcommand\TBool[0]{\texttt{T\_Bool}}
-\newcommand\TBits[0]{\texttt{T\_Bits}}
-\newcommand\TEnum[0]{\texttt{T\_Enum}}
-\newcommand\TTuple[0]{\texttt{T\_Tuple}}
-\newcommand\TArray[0]{\texttt{T\_Array}}
-\newcommand\TRecord[0]{\texttt{T\_Record}}
-\newcommand\TException[0]{\texttt{T\_Exception}}
-\newcommand\TNamed[0]{\texttt{T\_Named}}
+\newcommand\TInt[0]{\textsf{T\_Int}}
+\newcommand\TReal[0]{\textsf{T\_Real}}
+\newcommand\TString[0]{\textsf{T\_String}}
+\newcommand\TBool[0]{\textsf{T\_Bool}}
+\newcommand\TBits[0]{\textsf{T\_Bits}}
+\newcommand\TEnum[0]{\textsf{T\_Enum}}
+\newcommand\TTuple[0]{\textsf{T\_Tuple}}
+\newcommand\TArray[0]{\textsf{T\_Array}}
+\newcommand\TRecord[0]{\textsf{T\_Record}}
+\newcommand\TException[0]{\textsf{T\_Exception}}
+\newcommand\TNamed[0]{\textsf{T\_Named}}
 
-\newcommand\BitFieldSimple[0]{\texttt{BitField\_Simple}}
-\newcommand\BitFieldNested[0]{\texttt{BitField\_Nested}}
-\newcommand\BitFieldType[0]{\texttt{BitField\_Type}}
+\newcommand\BitFieldSimple[0]{\textsf{BitField\_Simple}}
+\newcommand\BitFieldNested[0]{\textsf{BitField\_Nested}}
+\newcommand\BitFieldType[0]{\textsf{BitField\_Type}}
 
-\newcommand\ConstraintExact[0]{\texttt{Constraint\_Exact}}
-\newcommand\ConstraintRange[0]{\texttt{Constraint\_Range}}
+\newcommand\ConstraintExact[0]{\textsf{Constraint\_Exact}}
+\newcommand\ConstraintRange[0]{\textsf{Constraint\_Range}}
 
-\newcommand\SliceSingle[0]{\texttt{Slice\_Single}}
-\newcommand\SliceRange[0]{\texttt{Slice\_Range}}
-\newcommand\SliceLength[0]{\texttt{Slice\_Length}}
+% Slice labels
+\newcommand\SliceSingle[0]{\textsf{Slice\_Single}}
+\newcommand\SliceRange[0]{\textsf{Slice\_Range}}
+\newcommand\SliceLength[0]{\textsf{Slice\_Length}}
+\newcommand\SliceStar[0]{\textsf{Slice\_Star}}
+
+% Pattern labels
+\newcommand\PatternAll[0]{\textsf{Pattern\_All}}
+\newcommand\PatternAny[0]{\textsf{Pattern\_Any}}
+\newcommand\PatternGeq[0]{\textsf{Pattern\_Geq}}
+\newcommand\PatternLeq[0]{\textsf{Pattern\_Leq}}
+\newcommand\PatternNot[0]{\textsf{Pattern\_Not}}
+\newcommand\PatternRange[0]{\textsf{Pattern\_Range}}
+\newcommand\PatternSingle[0]{\textsf{Pattern\_Single}}
+\newcommand\PatternMask[0]{\textsf{Pattern\_Mask}}
+\newcommand\PatternTuple[0]{\textsf{Pattern\_Tuple}}
+
+% Local declarations
+\newcommand\LDIDiscard[0]{\textsf{LDI\_Discard}}
+\newcommand\LDIVar[0]{\textsf{LDI\_Var}}
+\newcommand\LDITyped[0]{\textsf{LDI\_Typed}}
+\newcommand\LDITuple[0]{\textsf{LDI\_Tuple}}
+
+\newcommand\LDKLet[0]{\textsf{LDK\_Let}}
+
+\newcommand\SBASL[0]{\textsf{SB\_ASL}}
+\newcommand\SBPrimitive[0]{\textsf{SB\_Primitive}}
 
 \newcommand\identifier[0]{\textsf{identifier}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

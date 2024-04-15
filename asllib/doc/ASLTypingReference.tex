@@ -3132,7 +3132,7 @@ And now define the rule to annotate the array access expression:
   \annotateexpr{\tenv, \eindex} = (\texttt{t\_{index}}', \texttt{e\_{index}}')\\
   \typesatisfies(\tenv, \texttt{t\_{index}}', \texttt{wanted\_t\_index})\\
   }
-{\annotateexpr{\tenv, \texttt{E\_Slice}(\texttt{e}', [\slicesingle(\eindex)])} =\\\\
+{\annotateexpr{\tenv, \texttt{E\_Slice}(\texttt{e}', [\SliceSingle(\eindex)])} =\\\\
  (\texttt{ty'}, \texttt{E\_GetArray}(\texttt{e''}, \texttt{e\_{index}}'))
  }
 \end{mathpar}
@@ -3940,7 +3940,7 @@ all of the following apply:
   \typesatisfies(\tenv, \vte, \vt)\\
   \annotatelexpr{\tenv, \vleone} = \vletwo\\
   \annotatearrayindex(\tenv, \size) = \wantedtindex\\
-  \slices = [\slicesingle(\eindex)]\\
+  \slices = [\SliceSingle(\eindex)]\\
   \annotateexpr{\tenv, \eindex} = (\tindex', \eindex')\\
   \typesatisfies(\tenv, \tindex', \wantedtindex)\\
   \newle = \texttt{LS\_SetArray}(\vletwo, \eindex')

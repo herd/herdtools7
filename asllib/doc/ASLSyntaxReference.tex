@@ -173,14 +173,14 @@ We sometimes provide extra details to individual derivations by adding comments 
 &&\ASTComment{Indexes an array or a bitvector.}\\
 &&\ASTComment{All positions mentioned below are inclusive}\\
 \hline
-\slice &::=& \slicesingle(\expr) \\
-  & & \ASTComment{\slicesingle(\texttt{i}) is the slice of length \texttt{1} at position \texttt{i}.}\\
-  &|& \slicerange(\expr, \expr) \\
-  & & \ASTComment{\slicerange(\texttt{j, i}) denotes the slice from \texttt{i} to \texttt{j - 1}.}\\
-  &|& \slicelength(\expr, \expr) \\
-  & & \ASTComment{\slicelength(\texttt{i, n}) denotes the slice starting at \texttt{i} of length \texttt{n}.}\\
-  &|& \texttt{Slice\_Star}(\expr, \expr) \\
-  & & \ASTComment{\slicestar(\texttt{factor, length}) denotes the slice starting at }\\
+\slice &::=& \SliceSingle(\expr) \\
+  & & \ASTComment{\SliceSingle(\texttt{i}) is the slice of length \texttt{1} at position \texttt{i}.}\\
+  &|& \SliceRange(\expr, \expr) \\
+  & & \ASTComment{\SliceRange(\texttt{j, i}) denotes the slice from \texttt{i} to \texttt{j - 1}.}\\
+  &|& \SliceLength(\expr, \expr) \\
+  & & \ASTComment{\SliceLength(\texttt{i, n}) denotes the slice starting at \texttt{i} of length \texttt{n}.}\\
+  &|& \SliceStar(\expr, \expr) \\
+  & & \ASTComment{\SliceStar(\texttt{factor, length}) denotes the slice starting at }\\
   & & \ASTComment{\texttt{factor * length} of length n.}\\
 \end{array}
 \]
@@ -262,14 +262,14 @@ We sometimes provide extra details to individual derivations by adding comments 
 \hline
 \lexpr &::=& \texttt{LE\_Discard}\\
   & & \ASTComment{\texttt{"-"}}\\
-  &|& \texttt{LE\_Var}(\identifier)\\
-  &|& \texttt{LE\_Slice}(\lexpr, \slice^*)\\
-  &|& \texttt{LE\_SetArray}(\lexpr, \expr)\\
-  &|& \texttt{LE\_SetField}(\lexpr, \identifier)\\
-  &|& \texttt{LE\_SetFields}(\lexpr, \identifier^*)\\
-  &|& \texttt{LE\_Destructuring}(\lexpr^*)\\
-  &|& \texttt{LE\_Concat}(\lexpr^*, \texttt{<int\_lit>}^*?)\\
-  & & \ASTComment{\texttt{LE\_Concat}$(\texttt{les}, \_)$ unpacks the various lexpr.}\\
+  &|& \LEVar(\identifier)\\
+  &|& \LESlice(\lexpr, \slice^*)\\
+  &|& \LESetArray(\lexpr, \expr)\\
+  &|& \LESetField(\lexpr, \identifier)\\
+  &|& \LESetFields(\lexpr, \identifier^*)\\
+  &|& \LEDestructuring(\lexpr^*)\\
+  &|& \LEConcat(\lexpr^*, \texttt{<int\_lit>}^*?)\\
+  & & \ASTComment{$\LEConcat(\texttt{les}, \_)$ unpacks the various lexpr.}\\
   & & \ASTComment{The second argument is a type annotation.}\\
 \end{array}
 \]
@@ -424,11 +424,11 @@ the type of throw exception.
 The rules for slices is replaced by the following:
 \[
 \begin{array}{rcl}
-\slice &::=& \slicelength(\expr, \expr) \\
+\slice &::=& \SliceLength(\expr, \expr) \\
 \end{array}
 \]
 This reflects the fact that all other slicing constructs are syntactic sugar
-for \slicelength.
+for \SliceLength.
 
 \chapter{Correpondence Betwen Left-hand-side Expressions and Right-hand-side Expressions
 \label{ch:LeftToRight}}
