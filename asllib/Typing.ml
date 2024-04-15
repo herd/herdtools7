@@ -658,14 +658,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                      bitvectors then they must have the same determined
                      width. *)
                   check_bits_equal_width' env t1_anon t2_anon;
-                  (* The rest are redundancies from the first equal types
-                     cases, but provided for completeness. *)
                   both
                     (check_type_satisfies' env t1_anon boolean)
                     (check_type_satisfies' env t2_anon boolean);
                   both
                     (check_type_satisfies' env t1_anon real)
                     (check_type_satisfies' env t2_anon real);
+                  both
+                    (check_type_satisfies' env t1_anon string)
+                    (check_type_satisfies' env t2_anon string);
                   (fun () ->
                     match (t1_anon.desc, t2_anon.desc) with
                     | T_Enum li1, T_Enum li2 ->

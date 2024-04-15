@@ -205,6 +205,8 @@ UnderConstrained integers:
   ASL Typing error: cannot assign to immutable storage "my_immutable_global".
   [1]
 
+  $ aslref equality.asl
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]

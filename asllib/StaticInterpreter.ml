@@ -124,6 +124,9 @@ let binop_values pos op v1 v2 =
       L_BitVector Bitvector.(of_z (length b1) (Z.add (to_z_unsigned b1) z2))
   | MINUS, L_BitVector b1, L_Int z2 ->
       L_BitVector Bitvector.(of_z (length b1) (Z.sub (to_z_unsigned b1) z2))
+  (* string -> string -> bool *)
+  | EQ_OP, L_String s1, L_String s2 -> L_Bool (String.equal s1 s2)
+  | NEQ, L_String s1, L_String s2 -> L_Bool (not (String.equal s1 s2))
   (* Failure *)
   | _ -> fatal_from pos (Error.UnsupportedBinop (op, v1, v2))
 
