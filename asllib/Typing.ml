@@ -643,6 +643,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             T_Bits (w, []) |> with_loc
         | EQ_OP | NEQ ->
             (* Wrong! *)
+            let t1_anon = Types.make_anonymous env t1
+            and t2_anon = Types.make_anonymous env t2 in
             let+ () =
               any
                 [
@@ -650,22 +652,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                      constrained integer then it is treated as an
                      unconstrained integer. *)
                   both
-                    (check_type_satisfies' env t1 integer)
-                    (check_type_satisfies' env t2 integer);
+                    (check_type_satisfies' env t1_anon integer)
+                    (check_type_satisfies' env t2_anon integer);
                   (* If the arguments of a comparison operation are
                      bitvectors then they must have the same determined
                      width. *)
-                  check_bits_equal_width' env t1 t2;
+                  check_bits_equal_width' env t1_anon t2_anon;
                   (* The rest are redundancies from the first equal types
                      cases, but provided for completeness. *)
                   both
-                    (check_type_satisfies' env t1 boolean)
-                    (check_type_satisfies' env t2 boolean);
+                    (check_type_satisfies' env t1_anon boolean)
+                    (check_type_satisfies' env t2_anon boolean);
                   both
-                    (check_type_satisfies' env t1 real)
-                    (check_type_satisfies' env t2 real);
+                    (check_type_satisfies' env t1_anon real)
+                    (check_type_satisfies' env t2_anon real);
                   (fun () ->
-                    match (t1.desc, t2.desc) with
+                    match (t1_anon.desc, t2_anon.desc) with
                     | T_Enum li1, T_Enum li2 ->
                         check_true' (list_equal String.equal li1 li2) ()
                     | _ -> assumption_failed ());
