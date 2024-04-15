@@ -1,0 +1,442 @@
+\chapter{Formal System}
+\label{chap:formal}
+
+In this chapter, we define the mathematical concepts and notations used throughout this document.
+We start by defining general mathematical concepts
+and then describe how sets of rules formally define functions and relations.
+
+\section{Mathematical Definitions and Notations}
+
+We use $\triangleq$ to define mathematical concepts.
+
+we define the following sets:
+\begin{itemize}
+\item \hypertarget{def-N}{
+    $\N$ is the set of natural numbers, including $0$.
+}
+
+\item
+\hypertarget{def-Z}{
+    $\Z$ is the set of integers.
+}
+
+\item
+\hypertarget{def-Q}{
+    $\Q$ is the set of rationals.
+}
+
+\hypertarget{def-bool}{}
+\hypertarget{def-false}{}
+\hypertarget{def-true}{}
+\item $\Bool$ is the set of ASL Boolean literals, which consists of $\True$ and $\False$.
+We conflate these literals with the corresponding mathematical values, which are used to denote whether logical assertions hold or not.
+We also employ the standard mathematical meaning of logical conjunction $\wedge$, logical disjunction $\vee$,
+and logical negation $\neg$.
+
+\item
+\hypertarget{def-identifier}{
+    $\Identifiers$ is the set of all ASL identifiers.
+}
+\end{itemize}
+
+\hypertarget{def-pow}{
+We denote the \emph{powerset} of a set $A$ as $\pow{A}$.
+}
+
+\begin{definition}[Cartesian Product]
+    The \emph{Cartesian product} of sets $A$ and $B$, denoted $A \times B$
+    is $A \times B \triangleq \{(a,b) \;|\; a \in A, b \in B\}$.
+\end{definition}
+
+\hypertarget{def-partialfunc}{}
+\begin{definition}[Partial Function\label{def:PartialFunction}]
+  A \emph{partial function}, denoted $f : A \partialto B$, is a function from a \underline{subset} of $A$ to $B$.
+  The \hypertarget{def-dom}{\emph{domain}} of a partial function $f$, denoted $\dom(f)$, is the subset of $A$ for which it is defined.
+  We write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$, that is, $x \not\in \dom(f)$.
+\end{definition}
+
+\hypertarget{def-emptyfunc}{}
+\begin{definition}[Empty Function\label{def:EmptyFunction}]
+The function with an empty domain is denoted as $\emptyfunc$.
+\end{definition}
+
+\hypertarget{def-finfunction}{
+The notation $\rightarrowfin$ stands for a function whose domain is finite.
+}
+
+\begin{definition}[Function Update\label{def:FunctionUpdate}]
+  The function denoted as $f[x \mapsto v]$ is a function identical to $f$, except that $x$ is bound
+  to $v$. That is, if  $g = f[x \mapsto v]$ then
+  \[
+    g(z) =
+  \begin{cases}
+    v     & \text{if } z = x\\
+    f(z)  & \text{else } \enspace.
+  \end{cases}
+  \]
+
+  The notation $\{i=1..k: a_i\mapsto b_i\}$ stands for the function formed from the corresponding input-output pairs:
+  $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$.
+\end{definition}
+
+Throughout this document, we will annotate arguments of relations and functions, wherever it is useful,
+by writing a name or an expression above the corresponding argument type.
+This makes convenient to refer to arguments by referring to the corresponding names and helps identify
+the expressions corresponding to the arguments.
+For example,
+\[
+    \textsf{choice} : \overname{\Bool}{b} \times \overname{T}{x} \times \overname{T}{y} \rightarrow \overname{T}{z}
+\]
+defines a function type and lets us refer to the first argument as $b$, the second argument as $x$,
+the third argument as $y$, and to the result as $z$.
+
+A \emph{meta function} is a function whose domain is not a priori fixed but rather
+parameterized by the type of its arguments. An example is the $\textsf{choice}$ function where the type $T$ of
+$x$, $y$, and $z$ is unspecified and inferred from the context where the function is used.
+
+\hypertarget{def-choice}{}
+\begin{definition}[Choice]
+The meta function $\textsf{choice} : \overname{\Bool}{b} \times \overname{T}{x} \times \overname{T}{y} \rightarrow \overname{T}{z}$,
+is defined as follows:
+\[
+  \choice{\vb}{f}{g} \triangleq
+  \begin{cases}
+    f & \text{ if }\vb \text{ is }\True\\
+    g & \text{ else}\\
+  \end{cases}
+\]
+\end{definition}
+
+\subsection{Lists}
+In the sequel, we use the term \emph{list} and \emph{sequence} interchangably.
+
+A list of elements \hypertarget{def-emptylist}{can be empty, denoted by $\emptylist$}, or non-empty.
+A non-empty list is either denoted by listing the elements in sequence, $v_1 \ldots\ v_k$,
+or in bracketed form, $[v_1,\ldots,v_k]$, which is used to aesthetically seperate it from surrounding mathematical expressions.
+The commas are entirely aesthetic and are not part of the list.
+
+We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\N$.
+
+The \emph{length} of a list is the number of elements in that list:
+$|\emptylist| \triangleq 0$ and $|v_1,\ldots,v_k|=k$.
+
+We use the notation $a..b$, where $a,b\in\Z$ and $a\leq b$, as a shorthand for the interval $a\ldots b$.
+We write $x_{a..b}$ as a shorthand for the sequence $x_a \ldots x_b$.
+%
+We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterized by $i$,
+to denote the sequence of expressions $V(1) \ldots V(k)$.
+The notation $a \in A: V(a)$, where $A$ is a set and $V$ is an expression parameterized by the free variable $a$,
+stands for $V(a_1) \ldots V(a_k)$ where $a_{1..k}$ is an arbitrary ordering of the elements of $A$.
+
+We write $T^*$ to denote a the type of a possibly-empty list of elements of type $T$,
+and $T^+$ for a non-empty list of elements of type $T$.
+
+\hypertarget{def-concat}{}
+\begin{definition}[List Concatenation]
+The meta function $\concat : T^* \times T^* \rightarrow T^*$ concatenates two lists:
+\[
+    \begin{array}{rcl}
+    \emptylist \concat L &\triangleq& L\\
+    L \concat \emptylist &\triangleq& L\\
+    l_{1..k} \concat m_{1..n} &\triangleq& [l_{1..k}, m_{1..n}]
+    \end{array}
+\]
+\end{definition}
+%Prepending an element $v$ to a list $L$ is defined as $v \prepend L \triangleq [v] \concat L$.
+
+\hypertarget{def-equallength}{}
+\begin{definition}[Equating List Lengths]
+The meta function $\equallength : \overname{L}{a} \times \overname{L}{b} \rightarrow \Bool$
+compares the length of two lists:
+\[
+\equallength(a, b) \triangleq |a|=|b| \enspace.
+\]
+\end{definition}
+
+\hypertarget{def-listrange}{}
+\begin{definition}[Indices of a List]
+The meta function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-based) list of indices for a given list:
+\[
+    \begin{array}{rcl}
+        \listrange(\emptylist) &\triangleq& \emptylist\\
+        \listrange(v_{1..k}) &\triangleq& [1..k] \enspace.
+    \end{array}
+\]
+\end{definition}
+
+\subsection{OCaml-style Notations}
+We use the notation $L(v_{1..k})$, where $L$ is a label and $v_{1..k}$ is a (possibly singleton) list of mathematical values,
+to denote the tuple $(L,v_{1..k})$.
+We also write $L(T_{1..k})$, where $T_{1..k}$ denotes mathematical types of values, to stand for the type
+$\{L\} \times T_1 \times \ldots \times T_k$.
+
+\hypertarget{def-none}{}
+The notation $\langle \cdot \rangle$ stands for either an empty set or a singleton set,
+where $\None\triangleq\langle\rangle$ denotes an empty set
+and $\langle v \rangle$ denotes a set containing the single element $v$.
+%
+The notation $\langle T \rangle$, where $T$ denotes a mathematical type, stands for
+$\{ \langle\rangle \} \cup \{\langle v \rangle \;|\; v \in T\}$.
+
+\subsection{AST-related Notations}
+
+When matching AST record nodes such as $\{f_1:t_2,\ldots,f_k:t_k\}$ in rules,
+we sometimes only care about a subset of the fields $\{f_{i_1},\ldots,f_{i_m}\} \subset \{f_{1..k}\}$.
+In such cases, we write $\{f_{i_1}:t_{i_m},\ldots,f_{i_m}:t_{i_m},\ldots\}$,
+where `$\ldots$' stands for fields that are irrelevant for the rule.
+
+\hypertarget{def-astlabel}{}
+Recall that a subset of AST nodes are either labels or labelled tuples.
+The partial function $\astlabel$ returns the corresponding label, when it exists.
+For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\texttt{x})) = \TNamed$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{How we use Rules}
+An \emph{inference rule} (rule, for short) is an implication between a set of logical assertions,
+called the \emph{premises} of the rule,
+and a \emph{verdict} assertion. The verdict holds when the \underline{conjunction} of its premises holds.
+
+We use the following notation, where $P_{1..k}$ are the rule premises and $V$ is the verdict:
+\begin{mathpar}
+  \inferrule[Name]{P_1 \and \ldots \and P_k}{V}
+\end{mathpar}
+Optionally, the name of the rule, which is useful for referencing it, appears above and to the left of it.
+
+The free variables appearing in the premises and verdict are interpreted universally.
+
+A set of rules is interpreted \underline{disjunctively}. That is, each rule is used to determine whether its verdict
+holds independent of other rules.
+
+\emph{Axioms} are rules with an empty set of premises. Axioms are denoted by simply
+stating the verdict.
+
+\begin{definition}[Derivation]
+In order to \emph{derive} a certain verdict, we start from axioms to conclude their (simple) verdicts.
+We then use those verdict as premises in non-axiom rules to derive more verdicts and so on,
+until the desired verdict is concluded.
+\end{definition}
+
+\subsection{Transitions}
+
+We use rules as a structured way for defining relations (and therefore functions, as a special case).
+
+\newcommand\termx[0]{\mathit{tx}}
+\newcommand\termy[0]{\mathit{ty}}
+\newcommand\rulearrow[0]{\xrightarrow{R}}
+
+To define a relation $R \subseteq X \times Y$, we use assertions of the form $\termx \rulearrow \termy$
+where $\termx$ and $\termy$ are logical terms denoting sets of elements from $X$ and $Y$, respectively.
+%
+We call such assertions \emph{transitions}.
+A set of rules $M$ with transition assertions defines the relation
+\[
+    R = \{ (x,y) \;|\; x \rulearrow y \text{ can be derived from rules in } M\} \enspace.
+\]
+
+\paragraph{Mutual Exclusion Rule Principle:}
+Our rules follow (with very few deviations, which we point out in context) a mutual exclusion principle,
+where each rules defines a relation disjoint from the ones defined by the other rules.
+This makes it easy to determine the rule responsible for a given transition.
+
+\subsection{Configurations}
+
+\hypertarget{def-configdomain}{}
+Our relations range over compound values. That is, values that often nest tuples and lists inside other tuples and lists.
+We refer to such values as \emph{configurations}. To make it easier to distinguish between different configurations,
+we will sometimes attach labels to tuples using the OCaml-style notation discussed earlier.
+We refer to those labels as \emph{configuration domains}.
+The domain of a configuration $C=L(\ldots)$, denoted $\configdomain{C}$, is the label $L$.
+
+We refer to configurations at the origin of a transition as \emph{input configurations} and to the
+configurations at the destination of a transition as \emph{output transitions}.
+
+Our rules will always make use of labelled input configurations. This makes it easier to ensure
+the mutual exclusion rule principle.
+
+Our rules will always define relations whose sets of input configurations and output configurations are disjoint.
+
+\hypertarget{def-ignore}{}
+\begin{definition}[Ignore Variable]
+To keep rules succinct, we will write `$\Ignore$' for a fresh universally quantified variable whose name is
+irrelevant for understanding the rule, and can thus be omitted. That is, each \underline{occurrence}
+of `$\Ignore$' represents a distinct variable.
+\end{definition}
+
+\subsection{Flavors of Equality In Rules}
+We use the following types of equality notations in rules:
+\begin{description}
+  \item[Range:] we write $i=1..k$ to allow listing premises parameterized by $i$ or constructing
+  lists from expressions parameterized by $i$.
+  For example, given two lists $a$ and $b$,
+  \[
+    i=1..k: a[i] > b[i]
+  \]
+  is the list of premises
+  \[
+    \begin{array}{l}
+    a[0] > b[0]\\
+    \ldots\\
+    a[k] > b[k] \enspace.
+    \end{array}
+  \]
+
+  \item[Predicate:] we write $a = b$ as an assertion of the equality of $a$ and $b$.
+  For example, the mathematical identity $x \times (y + z) = x \times y + x \times z$.
+
+  \hypertarget{def-deconstruction}{}
+  \item[Deconstruction:] some values, such as tuples, are compound. In order to refer to the structure
+  of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right
+  hand side exposes the internal structure of $v$ by introducing the variables
+  $u_{1..k}$, allowing us to alias internal components of $v$.
+  Intuitively, $v$ is re-interpreted as $\textit{f}(u_{1..k})$.
+  For example, suppose we know that $v$ is a pair of values.
+  Then, $v \eqname (a, b)$ allows us to alias $a$ and $b$.
+  Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
+  head of the list $h$ and its tail $t$.
+
+  \hypertarget{def-eqdef}{}
+  \item[Definition:] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name serving as an alias for the expression $\ve$.
+  For example, in the rule below, $c$ is an alias for $a \times (a + b)$ and $d$ is an alias for $b \times c$.
+  \begin{mathpar}
+    \inferrule{
+        c \eqdef a \times (a + b)\\
+        d \eqdef b \times c
+    }
+    {
+        \texttt{add\_mult}(a, b) \rulearrow d
+    }
+  \end{mathpar}
+  Aliases make it possible to write succinct premises, but they can always be rewritten without them,
+  by inlining their right-hand sides:
+  \begin{mathpar}
+    \inferrule{}
+    {
+        \texttt{add\_mult}(a, b) \rulearrow b \times (a \times (a + b))
+    }
+  \end{mathpar}
+\end{description}
+
+\subsection{How to Parse Rules Efficiently}
+\newcommand\adddiv[0]{\texttt{add\_div}}
+\newcommand\divrule[0]{\texttt{div}}
+Consider the following, totally contrived, rule:
+\begin{mathpar}
+\inferrule{
+    c \eqdef a + b\\
+    b \neq 0\\
+    \divrule(a, b) \rulearrow d
+}
+{
+    \adddiv(a, b) \rulearrow (c,d)
+}
+\end{mathpar}
+which defines a relation
+\[
+    \adddiv(\overname{\Z}{a}, \overname{\Z}{b}) \times (\overname{\Z}{d}\times\overname{\Z}{d}) \enspace.
+\]
+
+To parse a rule, start by examining the verdict and the variables appearing in it.
+In this case, it describes a transition from an input configuration $\adddiv(a, b)$,
+whose configuration domain is \texttt{add\_div}, to an output configuration $(c,d)$,
+which is an unlabelled tuple and therefore has no configuration domain.
+%
+A rule uses the variables of the verdict input configuration ($a$ and $b$, in our example),
+and its premises assign values
+to the variables of its verdict output configuration ($c$ and $d$, in our example).
+
+Now, scan the premises in order to see where $a$ and $b$ are used and how
+premises assign values to $c$ and $d$.
+In this case, $c$ is assigned a value from an expression, while $d$ is assigned as a result of a transition.
+
+\subsection{Short-Circuit Rule Macros}
+
+\emph{Short-circuit rule macros}, or \emph{rule macros}, for short, allow us to succinctly define sets of rules.
+Specifically, they allow us to capture situations where
+transitions have two alternative output configurations.
+If the transition results in the first of the alternative output configurations, the following premises are considered.
+However, if the result is the second, ``short-circuit output configuration'', then the following premises are ignored
+and the verdict transitions into the ``short-circuit output configuration''.
+These ``short-circuit output configurations'' are typically, but not always, due to (type or dynamic) errors.
+
+\newcommand\XP[0]{\mathit{XP}}
+\newcommand\XQ[0]{\mathit{XQ}}
+
+\hypertarget{def-terminateas}{}
+In the following, $\XP$ and $\XQ$ stand for, possibly empty, sequences of premises.
+%
+A rule macro includes the special premise form $C \rulearrow C' \terminateas E$,
+which introduces alternative output configurations $C'$ and ``short-circuit'' $E$:
+\begin{mathpar}
+  \inferrule{
+    \XP\\\\
+    C \rulearrow C' \terminateas E\\\\
+    \XQ\\
+  }
+  {
+    V \rulearrow V'
+  }
+\end{mathpar}
+Such a rule macro expands to the following pair of rules:
+\begin{mathpar}
+  \inferrule[(Option 1)]{
+    \XP\\\\
+    C \rulearrow C' \\\\
+    \XQ\\
+  }
+  {
+    V \rulearrow V'
+  }
+  \and
+  \inferrule[(Option 2:Short-circuited)]{
+    \XP\\\\
+    C \rulearrow E
+  }
+  {
+    V \rulearrow E
+  }
+\end{mathpar}
+Intuitively, if $C$ transitions to $C'$ then `$\sslash E$' can be ignored
+and the rule is interpreted as usual (Option 1).
+However, if $C$ transitions into $E$ (Option 2) then the premises $\XQ$ are ignored,
+thereby ``short-circuiting'' the rule, and the input configuration
+in the verdict also transitions into $E$.
+
+We allow more than one premise to include short-circuiting alternatives and also
+a single premise to include several alternatives.
+That is, a rule macro of the form
+\begin{mathpar}
+  \inferrule{
+    \XP\\\\
+    C \rulearrow C' \terminateas E_{1...m}\\\\
+    \XQ\\
+  }
+  {
+    V \rulearrow V'
+  }
+\end{mathpar}
+Stands for the set of rule macros
+\begin{mathpar}
+  \inferrule{
+    \XP\\\\
+    C \rulearrow C' \terminateas E_1\\\\
+    \XQ\\
+  }
+  {
+    V \rulearrow V'
+  }
+\and
+\inferrule{\ldots}{}
+\and
+\inferrule{
+  \XP\\\\
+  C \rulearrow C' \terminateas E_m\\\\
+  \XQ\\
+}
+{
+  V \rulearrow V'
+}
+\end{mathpar}
+
+Notice that after all rule macros are expanded into normal rules,
+they behave like normal rules where the order of premises does
+not matter.

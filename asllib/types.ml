@@ -579,7 +579,7 @@ and domain_subtype_satisfies env t s =
    | T_Bits _ -> (
        (*
         • If either S or T have the structure of a bitvector type with
-          undetermined width then the domain of T must be a subset of the 
+          undetermined width then the domain of T must be a subset of the
           domain of S.
          *)
        (* Implicitly, T must have the structure of a bitvector. *)
@@ -649,7 +649,7 @@ let rec type_clashes env t s =
       • they both have the structure of enumeration types with the same
         enumeration literals
       • they both have the structure of bit vectors
-      • they both have the structure of arrays whose element types 
+      • they both have the structure of arrays whose element types
         type-clash
       • they both have the structure of tuples of the same length whose
         corresponding element types type-clash
@@ -853,7 +853,7 @@ let rec base_value loc env t =
       let e = normalize env e in
       E_Call ("Zeros", [ e ], []) |> add_pos_from t
   | T_Enum [] -> failwith "Enumerations shouldn't be empty."
-  | T_Enum (x :: _) -> IMap.find x env.global.constants_values |> lit
+  | T_Enum (x :: _) -> IMap.find x env.global.constant_values |> lit
   | T_Int UnConstrained -> !$0
   | T_Int (UnderConstrained _) ->
       (* This case cannot happen:

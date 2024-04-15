@@ -5,17 +5,12 @@
 \input{ASLASTLines}
 \newcommand{\tests}{../tests/ASLTypingReference.t/}
 
+\newcommand\todocomment[1]{}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Static environment macros
-\newcommand\constantsvalues[0]{\textsf{constants\_values}}
-\newcommand\storagetypes[0]{\textsf{storage\_types}}
-\newcommand\returntype[0]{\textsf{return\_type}}
-\newcommand\declaredtypes[0]{\textsf{declared\_types}}
-\newcommand\subtypes[0]{\textsf{subtypes}}
-\newcommand\subprograms[0]{\textsf{subprograms}}
-\newcommand\subprogramrenamings[0]{\textsf{subprogram\_renamings}}
 
 \newcommand\dynamicdomain[0]{\textsf{dyn-dom}}
+\newcommand\literals[0]{\mathcal{L}}
 
 \newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
 \newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
@@ -33,7 +28,7 @@
 \newcommand\iswellconstrainedinteger[0]{\textsf{well\_constrained\_integer}}
 \newcommand\unconstrainedinteger[0]{\textsf{unconstrained\_integer}}
 
-\newcommand\staticeval[0]{\texttt{static-eval}}
+\newcommand\staticeval[0]{\texttt{static\_eval}}
 \newcommand\isstaticallyevaluable[0]{\texttt{check\_statically\_evaluable}}
 
 \newcommand\sortbyid[0]{\texttt{sort-by-id}}
@@ -42,23 +37,38 @@
 \newcommand\structsubtypesat[0]{\texttt{structural\_subtype\_satisfies}}
 \newcommand\domsubtypesat[0]{\texttt{domain\_subtype\_satisfies}}
 \newcommand\subtypesat[0]{\texttt{subtype\_satisfies}}
-\newcommand\typesat[0]{\texttt{type\_satisfies}}
 \newcommand\typeclashes[0]{\;\texttt{type\_clashes}\;}
 \newcommand\lca[0]{\texttt{lowest\_common\_ancestor}}
 \newcommand\lcasat[0]{\models}
 \newcommand\Supers{\textsf{Supers}}
-\newcommand\typeequal[0]{\texttt{type\_equal}}
-\newcommand\exprequal[0]{\texttt{expr\_equal}}
-\newcommand\bitwidthequal[0]{\texttt{bitwidth\_equal}}
 \newcommand\bitfieldsincluded[0]{\texttt{bitfields\_included}}
 \newcommand\instantiate[0]{\textsf{instantiate}}
 \newcommand\canbeinitializedwith[0]{\texttt{can\_be\_initialized\_with}}
 \newcommand\getbitvectorwidth[0]{\texttt{get\_bitvector\_width}}
 
+\newcommand\typeequal[0]{\texttt{type\_equal}}
+\newcommand\exprequal[0]{\texttt{expr\_equal}}
+\newcommand\bitwidthequal[0]{\texttt{bitwidth\_equal}}
+\newcommand\bitfieldequal[0]{\texttt{bitfield\_equal}}
+\newcommand\bitfieldsequal[0]{\texttt{bitfields\_equal}}
+
+\newcommand\toir[0]{\texttt{to\_ir}}
+\newcommand\toircase[0]{\texttt{to\_ir\_case}}
+\newcommand\exprir[0]{\textsf{expr\_ir}}
+\newcommand\Prod[0]{\textsf{Prod}}
+\newcommand\Sum[0]{\textsf{Sum}}
+\newcommand\monomials[0]{\textsf{Monomials}}
+\newcommand\polynomials[0]{\textsf{Polynomials}}
+\newcommand\addpolynomials[0]{\texttt{add\_polynomials}}
+\newcommand\mulpolynomials[0]{\texttt{mul\_polynomials}}
+\newcommand\mulmonomials[0]{\texttt{mul\_mononimials}}
+
 \newcommand\eliteral[1]{\textsf{E\_Literal}(#1)}
 \newcommand\name[0]{\texttt{name}}
 \newcommand\newname[0]{\texttt{new\_name}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Type functions
 \newcommand\CheckUnop[0]{\texttt{check\_unop}}
 \newcommand\CheckBinop[0]{\texttt{check\_binop}}
 \newcommand\constraintbinop[0]{\texttt{constraint\_binop}}
@@ -80,22 +90,42 @@
 \newcommand\annotatesubprogram[1]{\texttt{annotate\_subprogram}(#1)}
 \newcommand\declaredecl[1]{\texttt{annotate\_decl}(#1)}
 \newcommand\annotatespec[1]{\texttt{annotate\_spec}(#1)}
-\newcommand\evalconstraint[1]{\texttt{eval\_constraint}(#1)}
 \newcommand\evalexpr[1]{\texttt{eval\_expr}(#1)}
+\newcommand\evalconstraint[1]{\texttt{eval\_constraint}(#1)}
 \newcommand\annotateliteral[1]{\texttt{annotate\_literal}(#1)}
+\newcommand\exprequalcase[0]{\texttt{expr\_equal\_case}}
+\newcommand\exprequalnorm[0]{\texttt{expr\_equal\_norm}}
+\newcommand\slicesequal[0]{\texttt{slices\_equal}}
+\newcommand\sliceequal[0]{\texttt{slice\_equal}}
+\newcommand\constraintsequal[0]{\texttt{constraints\_equal}}
+\newcommand\constraintequal[0]{\texttt{constraint\_equal}}
+\newcommand\literalequal[0]{\texttt{literal\_equal}}
 
-\newcommand\tenv[0]{\texttt{env}}
-\newcommand\newenv[0]{\texttt{new\_env}}
-\newcommand\envone[0]{\texttt{env1}}
-\newcommand\envtwo[0]{\texttt{env2}}
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Typeset variable names
+\newcommand\newtenv[0]{\texttt{new\_tenv}}
+\newcommand\tenvone[0]{\texttt{tenv1}}
+\newcommand\tenvtwo[0]{\texttt{tenv2}}
 \newcommand\va[0]{\texttt{a}}
 \newcommand\vc[0]{\texttt{c}}
+\newcommand\vcone[0]{\texttt{c1}}
+\newcommand\vctwo[0]{\texttt{c2}}
+\newcommand\vi[0]{\texttt{i}}
+\newcommand\vione[0]{\texttt{i1}}
+\newcommand\vitwo[0]{\texttt{i2}}
 \newcommand\vf[0]{\texttt{f}}
+\newcommand\vfone[0]{\texttt{f1}}
+\newcommand\vftwo[0]{\texttt{f2}}
 \newcommand\vl[0]{\texttt{l}}
+\newcommand\vm[0]{\texttt{m}}
+\newcommand\vmone[0]{\texttt{m1}}
+\newcommand\vmtwo[0]{\texttt{m2}}
+\newcommand\vy[0]{\texttt{y}}
 \newcommand\vp[0]{\texttt{p}}
 \newcommand\vo[0]{\texttt{o}}
 \newcommand\vv[0]{\texttt{v}}
+\newcommand\vvone[0]{\texttt{v1}}
+\newcommand\vvtwo[0]{\texttt{v2}}
 \newcommand\vt[0]{\texttt{t}}
 \newcommand\vte[0]{\texttt{t\_e}}
 \newcommand\veone[0]{\texttt{e1}}
@@ -105,6 +135,8 @@
 \newcommand\vtleone[0]{\texttt{t\_le1}}
 \newcommand\vre[0]{\texttt{re}}
 \newcommand\vs[0]{\texttt{s}}
+\newcommand\vtsone[0]{\texttt{ts1}}
+\newcommand\vtstwo[0]{\texttt{ts2}}
 \newcommand\vlt[0]{\texttt{l\_t}}
 \newcommand\vls[0]{\texttt{l\_s}}
 \newcommand\vtt[0]{\texttt{t\_t}}
@@ -115,10 +147,20 @@
 \newcommand\vttwo[0]{\texttt{t2}}
 \newcommand\vz[0]{\texttt{z}}
 \newcommand\vw[0]{\texttt{w}}
+\newcommand\vwone[0]{\texttt{w1}}
+\newcommand\vwtwo[0]{\texttt{w2}}
 \newcommand\vwidth[0]{\texttt{width}}
 \newcommand\size[0]{\texttt{size}}
 \newcommand\vfield[0]{\texttt{field}}
+\newcommand\vfieldone[0]{\texttt{field1}}
+\newcommand\vfieldtwo[0]{\texttt{field2}}
+\newcommand\vfieldsone[0]{\texttt{fields1}}
+\newcommand\vfieldstwo[0]{\texttt{fields2}}
 \newcommand\bitfields[0]{\texttt{bitfields}}
+\newcommand\bfone[0]{\texttt{bf1}}
+\newcommand\bftwo[0]{\texttt{bf2}}
+\newcommand\bfoneone[0]{\texttt{bf1\_1}}
+\newcommand\bftwoone[0]{\texttt{bf2\_1}}
 \newcommand\vslices[0]{\texttt{slices}}
 \newcommand\newle[0]{\texttt{new\_le}}
 \newcommand\ldi[0]{\texttt{ldi}}
@@ -137,6 +179,7 @@
 \newcommand\reduced[0]{\texttt{reduced}}
 \newcommand\tcond[0]{\texttt{t\_cond}}
 \newcommand\econd[0]{\texttt{e\_cond}}
+\newcommand\vcond[0]{\texttt{v\_cond}}
 \newcommand\etrue[0]{\texttt{e\_true}}
 \newcommand\efalse[0]{\texttt{e\_false}}
 \newcommand\ttrue[0]{\texttt{t\_true}}
@@ -147,6 +190,8 @@
 \newcommand\tindex[0]{\texttt{t\_index}}
 \newcommand\fieldname[0]{\texttt{field\_name}}
 \newcommand\fields[0]{\texttt{fields}}
+\newcommand\fieldsone[0]{\texttt{fields1}}
+\newcommand\fieldstwo[0]{\texttt{fields2}}
 \newcommand\slices[0]{\texttt{slices}}
 \newcommand\newe[0]{\texttt{new\_e}}
 \newcommand\ta[0]{\texttt{ta}}
@@ -154,6 +199,48 @@
 \newcommand\subtys[0]{\texttt{sub\_tys}}
 \newcommand\catchers[0]{\texttt{catchers}}
 \newcommand\otherwise[0]{\texttt{otherwise}}
+\newcommand\csone[0]{\texttt{cs1}}
+\newcommand\cstwo[0]{\texttt{cs2}}
+\newcommand\irone[0]{\texttt{ir1}}
+\newcommand\irtwo[0]{\texttt{ir2}}
+\newcommand\vpone[0]{\texttt{p1}}
+\newcommand\vptwo[0]{\texttt{p2}}
+\newcommand\vps[0]{\texttt{ps}}
+\newcommand\opone[0]{\texttt{op1}}
+\newcommand\optwo[0]{\texttt{op2}}
+\newcommand\vep[0]{\texttt{e'}}
+\newcommand\veoneone[0]{\texttt{e1\_1}}
+\newcommand\veonetwo[0]{\texttt{e1\_2}}
+\newcommand\veonethree[0]{\texttt{e1\_3}}
+\newcommand\vetwoone[0]{\texttt{e2\_1}}
+\newcommand\vetwotwo[0]{\texttt{e2\_2}}
+\newcommand\vetwothree[0]{\texttt{e2\_3}}
+\newcommand\vbone[0]{\texttt{b1}}
+\newcommand\vbtwo[0]{\texttt{b2}}
+\newcommand\vbthree[0]{\texttt{b3}}
+\newcommand\nameone[0]{\texttt{name1}}
+\newcommand\nametwo[0]{\texttt{name2}}
+\newcommand\vargsone[0]{\texttt{args1}}
+\newcommand\vargstwo[0]{\texttt{args2}}
+\newcommand\vargone[0]{\texttt{arg1}}
+\newcommand\vargtwo[0]{\texttt{arg2}}
+\newcommand\vlone[0]{\texttt{l1}}
+\newcommand\vltwo[0]{\texttt{l2}}
+\newcommand\sliceone[0]{\texttt{slice1}}
+\newcommand\slicetwo[0]{\texttt{slice2}}
+\newcommand\slicesone[0]{\texttt{slices1}}
+\newcommand\slicestwo[0]{\texttt{slices2}}
+\newcommand\positions[0]{\texttt{positions}}
+\newcommand\posmax[0]{\texttt{pos\_max}}
+\newcommand\bv[0]{\texttt{bv}}
+\newcommand\bvone[0]{\texttt{bv1}}
+
+% Increase indentation of sections in the table of contents
+% to allow a space between the section numbers and their titles.
+\makeatletter
+\renewcommand{\l@section}{\@dottedtocline{1}{1.5em}{2.6em}}
+\makeatother
+\setcounter{tocdepth}{1}
 
 \author{Arm Architecture Technology Group}
 \title{ASL Typing Reference \\
@@ -168,48 +255,52 @@
 \include{disclaimer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Preamble}
+\chapter{Introduction}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The purpose of this document is to describe, in a definitive way, which ASL programs are considered \emph{valid}. Validity is defined in terms of a \emph{type system}~\cite{TypeSystemsLucaCardelli}. That is, a set of \emph{type rules}.
+The purpose of this document is to describe, in a definitive way, which ASL programs are considered \emph{valid}.
+Validity is defined in terms of a \emph{type system}~\cite{TypeSystemsLucaCardelli}. That is, a set of \emph{type rules}.
 
 \section{Abstract Syntax}
-An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled structured tree.
+An \emph{abstract syntax tree} (AST, for short) represents an ASL specification as a labelled structured tree.
 %
 The ASL type system is defined over the ASL abstract syntax, which is given in~\cite{ASLAbstractSyntaxReference}.
 
 \section{Environments}
 
-A \emph{static environment} is what the type rules operate over: a structure, which amongst
-other things, associates types to variables.
+A \emph{static environment} (also called a \emph{type environment}) is what the type rules operate over:
+a structure, which amongst other things, associates types to variables.
 Throughout this document, we will use the term environment for static environment, unless otherwise stated.
 Intuitively, the typing of a
-program makes an initial environment evolve, with new types as given by the
-variable declarations of the program.
+specification makes an initial environment evolve, with new types as given by the
+variable declarations of the specification.
 %
 Technically, an environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
 distinct components: the global environment $G^\tenv$---pertaining to AST nodes
 appearing outside of a given subprogram, and the local environment
 $L^\tenv$---pertaining to AST nodes appearing inside a given subprogram.
 
+\hypertarget{def-staticenvs}{
 Environments $\tenv \in \staticenvs$ are formally defined below (referring to symbols defined in the abstract syntax):
+}
 \[
 \begin{array}{rcl}
 \staticenvs 	          &=& \mathbb{G} \times \mathbb{L}\\
-\mathbb{G} 	            &=& \declaredtypes \times \constantsvalues \times \storagetypes\\
+\mathbb{G} 	            &=& \declaredtypes \times \constantvalues \times \storagetypes\\
   			                & & \times\ \subtypes \times \subprograms \times \subprogramrenamings\\
-\mathbb{L} 	            &=& \constantsvalues \times \storagetypes \times \returntype\\
+\mathbb{L} 	            &=& \constantvalues \times \storagetypes \times \returntype\\
 \hline
-\declaredtypes	        &=& \identifier \partialto \ty\\
-\constantsvalues        &=& \identifier \partialto \literal\\
-\storagetypes           &=& \identifier \partialto \ty \times \localdeclkeyword\\
-\subtypes		            &=& \identifier \partialto \identifier\\
-\subprograms	          &=& \identifier \partialto \func\\
-\subprogramrenamings	  &=& \identifier \rightarrow 2^\func\\
-\returntype             &=& \langle \ty \rangle
+\hypertarget{def-declaredtypes}{\declaredtypes}	        &=& \identifier \partialto \ty\\
+\hypertarget{def-constantvalues}{\constantvalues}         &=& \identifier \partialto \literal\\
+\hypertarget{def-storagetypes}{\storagetypes}           &=& \identifier \partialto \ty \times \localdeclkeyword\\
+\hypertarget{def-subtypes}{\subtypes}		            &=& \identifier \partialto \identifier\\
+\hypertarget{def-subprograms}{\subprograms}	          &=& \identifier \partialto \func\\
+\hypertarget{def-subprogramrenamings}{\subprogramrenamings}	  &=& \identifier \rightarrow 2^\func\\
+\hypertarget{def0returntype}{\returntype}             &=& \langle \ty \rangle
 \end{array}
 \]
 
+The global environment and local environment consist of various components.
 The global environment and local environment consist of various components.
 We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a given environment.
 
@@ -217,6 +308,7 @@ To update a function component $f$ (e.g., $\declaredtypes$) of an environment $\
 with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to stand for $\tenv[f \mapsto E.f[x \mapsto v]]$.
 
 \section{Type System}
+A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$.
 A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$.
 We refer to $P_1,\ldots,P_k$ as the \emph{premises} of the rule and to the verdict $S$ as its \emph{conclusion}.
 When the set of premises is empty, we may omit them entirely.
@@ -233,22 +325,22 @@ This is related to \identd{JRXM}, \identi{ZTMQ}, \identd{HBCP}, \identi{SMMH},
 The following rule is used to type a sequence of two statements:
 \[
 \inferrule{
-  \annotatestmt{\tenv, \vs1} = (\newsone, \envone)\\
-  \annotatestmt{\envone, \vs2} = (\newstwo, \envtwo)\\
+  \annotatestmt{\tenv, \vs1} = (\newsone, \tenvone)\\
+  \annotatestmt{\tenvone, \vs2} = (\newstwo, \tenvtwo)\\
 }
 {
-  \annotatestmt{\tenv, \texttt{S\_Seq}(\vsone, \vstwo)} = (\texttt{S\_Seq}(\newsone, \newstwo), \envtwo)
+  \annotatestmt{\tenv, \texttt{S\_Seq}(\vsone, \vstwo)} = (\texttt{S\_Seq}(\newsone, \newstwo), \tenvtwo)
 }
 \]
 The rule uses the annotation function $\annotatestmt{\cdot}$, which
 accepts an environment $\tenv$ and two statements and returns a new statement and a new environment.
 The function returns a new statement in order to implement certain code transformations, such as
-inlining setter functions. The rule holds for all environments $\tenv, \envone, \envtwo$ and all
+inlining setter functions. The rule holds for all environments $\tenv, \tenvone, \tenvtwo$ and all
 statements $\vs1, \vs2, \newsone, \newstwo$ for which the premises hold.
 
 \section{Annotation}
 
-Typing a program consists of annotating the root of its AST. This is typically
+Typing a specification consists of annotating the root of its AST. This is typically
 done by traversing the AST bottom-up.  To annotate a node, the typing algorithm
 finds a rule that matches the node---that is a rule whose conditions are
 satisfied. If one such rule is found, the node is annotated by the result type
@@ -276,20 +368,7 @@ function describes how to annotate an AST node, given its label, as follows:\beg
 
 This is related to \identr{VDPC}.
 
-\section{Mathematical Notations and Conventions}
-
-We use the notation $a..b$ as a shorthand for $a,\ldots,b$ and $x_{a..b}$ as a shorthand for $x_a,\ldots,x_b$.
-
-We define the list comprehension $[f(a) \;|\; a \in A]$ where $A$ is a possibly-empty list as $\emptylist$ if $A$ is empty and $[f(a_1) \ldots f(a_n)]$ if $A=a_1 \ldots a_n$.
-Similarly, we define option comprehension $\langle f(a) \;|\; a \in A\rangle$ where $A$ is a comprehension as $\langle\rangle$ if $A=\langle\rangle$
-and $\langle f(a)\rangle$ if $A=\langle a \rangle$.
-
-We write $\Ignore$ for a fresh universally quantified variable which is not used in the rule. That is, a variable whose name is irrelevant for understanding the rule and can thus be omitted.
-
-When matching abstract syntax records nodes such as $\{f_1:t_2,\ldots,f_k:t_k\}$ in rules, we sometimes only care about a subset of the fields $f_{1..k}$.
-In such cases, we would write $\{f_{i_1}:t_{i_m},\ldots,f_{i_m}:t_{i_m},\ldots\}$ to indicate that $\ldots$ represents other fields that are irrelevant for the rule.
-
-For a partial function $f$, we write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$.
+\include{ASLFormal}
 
 \newcommand\Elit[1]{\texttt{E}(#1)}
 We use the shorthand $\Elit{n}$ for the expression denoting the literal integer value $n$. That is, $\texttt{E\_Literal}(\texttt{L\_Int}(n))$.
@@ -297,16 +376,7 @@ We use the shorthand $\Elit{n}$ for the expression denoting the literal integer 
 We use the shorthand notation $\underconstrainedinteger$ to denote the underconstraint integer type: $\TInt(\texttt{UnConstrained})$
 and $\unconstrainedinteger$ to denote the unconstrained integer type: $\TInt(\langle\rangle)$.
 
-Reacall that a subset of AST nodes are either labels or labelled tuples.
-For those nodes, we define the $\astlabel$ to return the corresponding label.
-For example $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\texttt{x})) = \TNamed$.
-
 Note that throughout this document we use $\tty$ do denote a type variable, which should not be confused with the abstract syntax variable $\ty$.
-
-We use the notation $p(x_{1..k})$ to denote that a predicate $p$ holds for the list of arguments $x_{1..k}$.
-
-We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterized by $i$, to denote $V(1) \ldots V(k)$.
-The expression $[i=1..k: V(i)]$, denotes the list $[V(1),\ldots,V(k)]$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Reading guide}
@@ -316,14 +386,17 @@ The definition of each \texttt{annotation\_<label>} function is given by a numbe
 rules, which follow the possible shapes the \texttt{label} can have. For
 example, an expression can be a literal, or a binary operator, amongst other
 things. Each of those has its own evaluation rule: TypingRule.ELit in
-Section~\ref{sec:TypingRule.ELit}, Typing.Binop in
-Section~\ref{sec:TypingRule.Binop} respectively.
+Section~\ref{sec:TypingRule.ELit} and
+Typing.Binop in Section~\ref{sec:TypingRule.Binop}, respectively.
 
 Each rule is presented using the following template:
 \begin{itemize}
-\item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at \url{~/herdtools7/asllib};
-\item one or several Example, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLTypingReference.t}
-\item a Code paragraph which gives a verbatim of the corresponding implementation in the type-checker of ASLRef \url{~/herdtools7/asllib/Typing.ml};
+\item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at
+\href{https://github.com/herd/herdtools7//tree/master/asllib}{/herdtools7/asllib};
+\item one or several Example paragraphs, which as much as possible are also given as regression tests in
+\href{https://github.com/herd/herdtools7//tree/master/asllib/tests/ASLTypingReference.t}{/herdtools7/asllib/tests/ASLTypingReference.t};
+\item a Code paragraph which gives a verbatim of the corresponding implementation in the type-checker of ASLRef
+\href{https://github.com/herd/herdtools7//tree/master/asllib/Typing.ml}{/herdtools7/asllib/Typing.ml};
 \item Formal paragraphs which give formal definitions of the rule.
 \end{itemize}
 
@@ -363,7 +436,11 @@ The builtin singular type \texttt{color} consists in two constants
 \begin{formal}
    \subsection{Formally}
 \begin{mathpar}
-\inferrule{\astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\} }{\isbuiltinsingular(\tty)} \\
+\inferrule{
+  \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
+}{
+  \isbuiltinsingular(\tty)
+}
 \end{mathpar}
 
 \end{formal}
@@ -486,7 +563,7 @@ In ``\texttt{type ticks of integer;}'', the type \texttt{integer} is a builtin t
 
 \section{TypingRule.SingularType}
 
-The partial function $\tstruct : \ty \partialto \ty$ \emph{structure}, which assigns a \emph{structure} to a type, is defined in Section~\ref{sec:structure}.
+The partial function $\tstruct : \ty \partialto \ty$, which assigns a \emph{structure} to a type, is defined in Section~\ref{sec:structure}.
 
     \subsection{Prose}
     A type $\tty$ is singular if one of the following applies:
@@ -534,6 +611,7 @@ type C of B;
       \begin{itemize}
       \item $\tty$ is a named type;
       \item the structure of $\tty$ is a builtin aggregate.
+      \item the structure of $\tty$ is a builtin aggregate.
       \end{itemize}
     \end{itemize}
 
@@ -551,6 +629,7 @@ type C of B;
 \begin{formal}
       \subsection{Formally}
 
+
 \begin{mathpar}
 \inferrule{\isbuiltinaggregate(\tty)}{\isaggregate(\tenv, \tty)}\\
 \and
@@ -566,6 +645,7 @@ type C of B;
 \section{TypingRule.NonPrimitiveType}
 
     \subsection{Prose}
+    \subsection{Prose}
     A type $\tty$ is non-primitive if one of the following applies:
     \begin{itemize}
     \item $\tty$ is a named type;
@@ -577,6 +657,7 @@ type C of B;
     \item All of the following apply:
       \begin{itemize}
       \item $\tty$ is an array of type $\tty'$
+      \item $\tty'$ is non-primitive;
       \item $\tty'$ is non-primitive;
       \end{itemize}
     \item All of the following apply:
@@ -592,6 +673,7 @@ type C of B;
     \end{itemize}
 
     \subsection{Example}
+
 
 The following types are non-primitive:
 
@@ -657,7 +739,7 @@ The following types are primitive:
 \section{TypingRule.Structure \label{sec:structure}}
 
     \subsection{Prose}
-    \texttt{ty} is a type and its structure is \tstruct\ and one of the following
+    \texttt{ty} is a type and its \hypertarget{def-tstruct}{\emph{structure}} is $\tstruct(\ty)$ and one of the following
     applies:
     \begin{itemize}
     \item All of the following apply:
@@ -735,7 +817,6 @@ whose structure is \texttt{integer}.
 
 \begin{emptyformal}
       \subsection{Formally}
-
 Let $\sortbyid([i=1..k: (\id_i,\tty_i)]) = [i=1..k: (\id_i',\tty_i')]$ be the input list sorted according to the identifier component (lexicographically).
 
 \begin{mathpar}
@@ -750,9 +831,11 @@ Let $\sortbyid([i=1..k: (\id_i,\tty_i)]) = [i=1..k: (\id_i',\tty_i')]$ be the in
 \inferrule{L \in \{\TRecord, \TException\}}{\tstruct(\tenv, L(\fields)) = \\
  L(\sortbyid([\tstruct(\tenv, \vt) \;|\; (\id,\vt) \in \fields]))}
 \end{mathpar}
-
 \end{emptyformal}
-    \subsection{Comments}
+
+\subsection{Comments}
+    The structure of a type is the equivalent primitive type that can hold the same values.
+
     The structure of a type is the equivalent primitive type that can hold the same values.
 
     This is related to \identd{FXQV}.
@@ -769,10 +852,12 @@ applies:
         \item All of the following apply:
         \begin{itemize}
         \item \texttt{ty'} is the type declared for \texttt{x};
+        \item \texttt{ty'} is the type declared for \texttt{x};
         \item \texttt{ta} is the underlying type of \texttt{ty'};
         \end{itemize}
         \item All of the following apply:
         \begin{itemize}
+        \item \texttt{x} is not declared in the global environment;
         \item \texttt{x} is not declared in the global environment;
         \item an error ``\texttt{Undefined Identifier}'' is raised;
         \end{itemize}
@@ -783,6 +868,7 @@ applies:
       \end{itemize}
     \end{itemize}
 \end{itemize}
+
 
 \subsection{Example}
 Consider the following example:
@@ -824,12 +910,15 @@ may appear internally.
 
   \subsection{Prose}
   The \emph{dynamic domain} of a type is the set of values which storage elements of that type may hold
+  The \emph{dynamic domain} of a type is the set of values which storage elements of that type may hold
   \underline{in a given runtime environment}.
   %
   The \emph{static domain} of a type is the set of values which storage elements of that type may hold
   \underline{across all possible runtime environments}.
   %
   The reason that for this distinction is that the sets of values
+  considered for bitevector types, array types, constrained integers, and constrained bitvectors,
+  can be parameterized by configuration variables and subprogram parameters whose values are only determined during runtime.
   considered for bitevector types, array types, constrained integers, and constrained bitvectors,
   can be parameterized by configuration variables and subprogram parameters whose values are only determined during runtime.
 
@@ -858,6 +947,7 @@ may appear internally.
 
   THe domain of \texttt{enumeration \{GREEN, ORANGE, RED\}} is the set containing the values
   \texttt{GREEN}, \texttt{ORANGE}, and \texttt{RED} and so is the runtime domain
+  \texttt{GREEN}, \texttt{ORANGE}, and \texttt{RED} and so is the runtime domain
   of \texttt{type TrafficLights of enumeration \{GREEN, ORANGE, RED\}}.
 
   The static domain of \texttt{bits({2,16})} is the set containing all 2-bit and all 16-bit binary sequences.
@@ -875,8 +965,6 @@ may appear internally.
 
 \begin{emptyformal}
       \subsection{Formally}
-      \newcommand\denv[0]{\texttt{denv}}
-
       \newcommand\subsumes[0]{\texttt{subsumes}}
       \newcommand\reasoner[0]{\texttt{reasoner}}
 
@@ -911,15 +999,15 @@ We denote by $\denv[N]$ the integer value given to the underconstrained paramete
 \and
 \inferrule[Domain of a Well-constrained integer]{}{ \denv(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint{\tenv, \denv, c_i}}
 \and
-\inferrule[Domain of Underconstrained integer]{}{\dynamicdomain(\tenv, \denv, \TInt(\langle \emptylist_N \rangle) = \{ \llbracket\denv\rrbracket N \} }
+\inferrule[Domain of Underconstrained integer]{}{\dynamicdomain(\tenv, \denv, \TInt(\langle \emptylist_N \rangle)) = \{ \llbracket\denv\rrbracket N \} }
 \and
 \inferrule{}{ \dynamicdomain(\tenv, \denv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \denv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint{\tenv, E, c} \} }
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TBits(c, \textit{bfl})) = \\ \{ b_{1..k} \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint{\tenv, E, c} \} }
 \and
 \inferrule{}{ \dynamicdomain(\tenv, \denv, \TTuple([\tty_{1..k}])) = \bigtimes_{i=1}^k \dynamicdomain(\tenv, \denv,\tty_i) }
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \denv, \TArray(\ve, \tty)) = \\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr{E, \ve}, \; v_{1..k} \in \dynamicdomain(\tenv, \denv, \tty)  \} }
+\inferrule{}{ \dynamicdomain(\tenv, \denv, \TArray(\ve, \tty)) = \\ \{ v_{1..k}\;|\; k = \evalexpr{E, \ve}, \; v_{1..k} \in \dynamicdomain(\tenv, \denv, \tty)  \} }
 \and
 \inferrule{L \in \{\TRecord, \TException\}}{ \dynamicdomain(\tenv, \denv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dynamicdomain(\tenv, \denv, [f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k](f))}
 \and
@@ -993,6 +1081,7 @@ type superInt of integer;
 type subInt of integer subtypes superInt;
 \end{verbatim}
 
+
   \subsection{Code}
     \VerbatimInput[firstline=\SubtypeBegin, lastline=\SubtypeEnd]{../types.ml}
 
@@ -1013,7 +1102,7 @@ We define the subtyping relation between two named types in a given environment 
 \and
 \inferrule{\subtypes(\tenv, \tty_1, \tty_2) \\ \subtypes(\tenv, \tty_2, \tty_3)}{\subtypes(\tenv, \tty_1, \tty_3)}
 \and
-\inferrule{\tty \neq \tty' \\ \subtypes(\tenv, \tty, \tty') \\ \subtypes(\tenv, \tty', \tty)}{\error(\texttt{"subtyping cycle exists!"})}
+\inferrule{\tty \neq \tty' \\ \subtypes(\tenv, \tty, \tty') \\ \subtypes(\tenv, \tty', \tty)}{\TypeError(\texttt{"subtyping cycle exists!"})}
 \end{mathpar}
 
   \subsection{Comments}
@@ -1040,6 +1129,7 @@ We define the subtyping relation between two named types in a given environment 
 
   \subsection{Prose}
   \texttt{t} is a supertype of \texttt{s} if and only if \texttt{s} is a subtype of \texttt{t}.
+
 
 \todocomment{
 ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just applies to the same arguments in reverse order. I recommend removing this section.
@@ -1165,7 +1255,9 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 \begin{emptyformal}
     \subsection{Formally}
 
+
 We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ structurally-subtype-satisfies type $\vt$ in the environment $\tenv$.
+
 
 \begin{mathpar}
 \inferrule{\makeanonymous(\tenv, \vs)=\TInt(\Ignore) \\ \makeanonymous(\tenv, \vt)=\TInt(\Ignore) }{\structsubtypesat(\tenv, \vs, \vt)}
@@ -1182,17 +1274,25 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ struc
   \makeanonymous(\tenv, \vs)=\TArray(\vls,e_s) \\
   \makeanonymous(\tenv, \vs)=\TArray(\vlt,e_t) \\
   \exprequal(\tenv, \vls, \vlt) \\
+  \makeanonymous(\tenv, \vs)=\TArray(\vls,e_s) \\
+  \makeanonymous(\tenv, \vs)=\TArray(\vlt,e_t) \\
+  \exprequal(\tenv, \vls, \vlt) \\
   \typeequal(\tenv, e_s, e_t)}
   {\structsubtypesat(\tenv, \vs, \vt)}
 \and
-\inferrule[($\typesat(\tenv, \vs \vt)$ is defined in Section~\ref{sec:TypingRule.TypeSatisfaction})]
+\inferrule[($\typesatisfies(\tenv, \vs \vt)$ is defined in Section~\ref{sec:TypingRule.TypeSatisfaction})]
 { \makeanonymous(\tenv, \vs)=\TTuple(\vs_{1..k}) \\
   \makeanonymous(\tenv, \vt)=\TTuple(\vt_{1..k}) \\
-  \typesat(\tenv, \vs_1, \vt_1) \ldots \typesat(\tenv, \vs_k, \vt_k)}
+  \makeanonymous(\tenv, \vt)=\TTuple(\vt_{1..k}) \\
+  \typesatisfies(\tenv, \vs_1, \vt_1) \ldots \typesatisfies(\tenv, \vs_k, \vt_k)}
   {\structsubtypesat(\tenv, \vs, \vt)}
 \and
 \inferrule{
   L \in \{\TRecord, \TException\}\\
+  \makeanonymous(\tenv, \vs)=L((i_1,\vs_1),\ldots,(i_k,\vs_k)) \\
+  \makeanonymous(\tenv, \vt)=L((j_1,\vt_1),\ldots,(j_n,\vt_n)) \\
+  f : 1..k \rightarrow_{\textsf{one-to-one}} 1..n \\
+  i_1 = j_{f(1)},\ldots,i_k = j_{f(k)} \\
   \makeanonymous(\tenv, \vs)=L((i_1,\vs_1),\ldots,(i_k,\vs_k)) \\
   \makeanonymous(\tenv, \vt)=L((j_1,\vt_1),\ldots,(j_n,\vt_n)) \\
   f : 1..k \rightarrow_{\textsf{one-to-one}} 1..n \\
@@ -1250,10 +1350,13 @@ We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
 \inferrule{\astlabel(\vt) = \astlabel(\vs) = \TBits \\
 \texttt{undetermined\_width}(\tenv, \vs)\\
 \subsumes(\reasoner, \tenv, \vs, \vt)
+\subsumes(\reasoner, \tenv, \vs, \vt)
 }
 {\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vt) = \TBits \\
+\texttt{undetermined\_width}(\tenv, \vt)\\
+\subsumes(\reasoner, \tenv, \vs, \vt)
 \texttt{undetermined\_width}(\tenv, \vt)\\
 \subsumes(\reasoner, \tenv, \vs, \vt)
 }
@@ -1294,7 +1397,8 @@ We denote that type $\vt$ subtype-satisfies type $\vs$ in an environment $\tenv$
 
 \subsection{Prose}
 
-\texttt{t} type-satisfies \texttt{s} if one of the following applies:
+\texttt{t} \hypertarget{def-typesatisfies}{type-satisfies} \texttt{s} if one of the following applies:
+
 
  \begin{itemize}
  \item \texttt{t} is a subtype of \texttt{s};
@@ -1316,19 +1420,19 @@ We denote that type $\vt$ subtype-satisfies type $\vs$ in an environment $\tenv$
   \end{itemize}
 
 \subsection{Example: TypingRule.TypeSatisfaction1.asl}
-    In the program:
+    In the specification:
     \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction1.asl}
     \texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
     anonymous, non-primitive type \texttt{(integer, T1)}.
 
 \subsection{Example: TypingRule.TypeSatisfaction2.asl}
-    In the program:
+    In the specification:
     \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction2.asl}
     \texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
     primitive type \texttt{(integer, integer)}.
 
 \subsection{Example: TypingRule.TypeSatisfaction3.asl}
-    In the program:
+    In the specification:
     \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction3.asl}
     \texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
     non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
@@ -1339,21 +1443,20 @@ We denote that type $\vt$ subtype-satisfies type $\vs$ in an environment $\tenv$
 
 \begin{emptyformal}
     \subsection{Formally}
-We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by \\ $\typesat(\tenv, \vt, \vs)$.
+We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by \\ $\typesatisfies(\tenv, \vt, \vs)$.
 \begin{mathpar}
-\inferrule{\subtypes(\tenv, \vt, \vs)}{\typesat(\tenv, \vt, \vs)}
+\inferrule{\subtypes(\tenv, \vt, \vs)}{\typesatisfies(\tenv, \vt, \vs)}
 \and
-\inferrule{\isanonymous(\tenv, \vt) \\ \subtypesat(\tenv, \vt, \vs)}{\typesat(\tenv, \vt, \vs)}
+\inferrule{\isanonymous(\tenv, \vt) \\ \subtypesat(\tenv, \vt, \vs)}{\typesatisfies(\tenv, \vt, \vs)}
 \and
-\inferrule{\isanonymous(\tenv, \vs) \\ \subtypesat(\tenv, \vt, \vs)}{\typesat(\tenv, \vt, \vs)}
+\inferrule{\isanonymous(\tenv, \vs) \\ \subtypesat(\tenv, \vt, \vs)}{\typesatisfies(\tenv, \vt, \vs)}
 \and
 \inferrule{w_t,w_s \in \bitsconstraint \\
   \tstruct(\tenv, \vt)=\TBits(w_t, \emptylist) \\
   \tstruct(\tenv, \vs)=\TBits(w_s, \Ignore) \\
   \bitwidthequal(\tenv, w_s, w_t)}
-{\typesat(\tenv, \vt, \vs)}
+{\typesatisfies(\tenv, \vt, \vs)}
 \end{mathpar}
-
 \end{emptyformal}
 
 \subsection{Comments}
@@ -1361,7 +1464,10 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
   every type \texttt{t} is a subtype of itself, and as a consequence, every type \texttt{t}
   type-satisfies itself.
 
+  type-satisfies itself.
+
   This is related to \identr{FMXK} and \identi{NLFD}.
+
 
 \section{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
 
@@ -1391,17 +1497,20 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \vt) = \vt' \\
+  \tstruct(\tenv, \vt) = \vt' \\
   \tstruct(\tenv, \vs) = \vs' \\
   \astlabel(\vt')=\astlabel(\vs') \in \{\TInt, \TReal, \TString, \TBits, \TEnum\}
 }{\typeclashes(\tenv, \vt, \vs)}
 \and
 \inferrule{
   \tstruct(\tenv, \vt) = \TArray(\Ignore, \vt') \\
+  \tstruct(\tenv, \vt) = \TArray(\Ignore, \vt') \\
   \tstruct(\tenv, \vs) = \TArray(\Ignore, \vs') \\
   \typeclashes(\tenv, \vt', \vs')
 }{\typeclashes(\tenv, \vt, \vs)}
 \and
 \inferrule{
+  \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
   i=1..k: \typeclashes(\tenv, \vt_i, \vs_i)
@@ -1617,8 +1726,8 @@ Rules for tuples:
 \inferrule{
   \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
-  i=1..k:\typesat(\tenv, \vs_i, \vt_i) \\
-  i=1..k:\typesat(\tenv, \vt_i, \vs_i) \\
+  i=1..k:\typesatisfies(\tenv, \vs_i, \vt_i) \\
+  i=1..k:\typesatisfies(\tenv, \vt_i, \vs_i) \\
   \astlabel(\vt) = \TNamed \\
   \isanonymous(\vs)
 }
@@ -1627,8 +1736,8 @@ Rules for tuples:
 \inferrule{
   \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
-  i=1..k:\typesat(\tenv, \vs_i, \vt_i) \\
-  i=1..k:\typesat(\tenv, \vt_i, \vs_i) \\
+  i=1..k:\typesatisfies(\tenv, \vs_i, \vt_i) \\
+  i=1..k:\typesatisfies(\tenv, \vt_i, \vs_i) \\
   \astlabel(\vs) = \TNamed \\
   \isanonymous(\vt)
 }
@@ -1637,8 +1746,8 @@ Rules for tuples:
 \inferrule{
   \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
-  i=1..k:\typesat(\tenv, \vs_i, \vt_i) \\
-  i=1..k:\typesat(\tenv, \vt_i, \vs_i) \\
+  i=1..k:\typesatisfies(\tenv, \vs_i, \vt_i) \\
+  i=1..k:\typesatisfies(\tenv, \vt_i, \vs_i) \\
   \isanonymous(\vt)\\
   \isanonymous(\vs)\\
   i=1..k: \lca(\tenv, \vt_i, \vs_i)=\vz_i
@@ -1702,6 +1811,7 @@ Rules for unconstrained integers:
 \inferrule{
   \isanonymous(\tenv, \vs) \\
   \isanonymous(\tenv, \vt) \\
+  \tstruct(\tenv, \vt) = \TInt(\Ignore) \\
   \tstruct(\tenv, \vt) = \TInt(\Ignore) \\
   \tstruct(\tenv, \vs) = \isunconstrainedinteger \\
 }
@@ -1821,12 +1931,13 @@ Rules for underconstrained integers:
 \begin{emptyformal}
     \subsection{Formally}
 
+
 \begin{mathpar}
-\inferrule{\typesat(\tenv, \vt, \TBool)}{\CheckUnop(\tenv, \texttt{"!"}, \vt) = \TBool}
+\inferrule{\typesatisfies(\tenv, \vt, \TBool)}{\CheckUnop(\tenv, \texttt{"!"}, \vt) = \TBool}
 \and
-\inferrule{\typesat(\tenv, \vt, \TReal)}{\CheckUnop(\tenv, \texttt{"-"}, \vt) = \TReal}
+\inferrule{\typesatisfies(\tenv, \vt, \TReal)}{\CheckUnop(\tenv, \texttt{"-"}, \vt) = \TReal}
 \and
-\inferrule{\typesat(\tenv, \vt, \unconstrainedinteger)}{\CheckUnop(\tenv, \texttt{"-"}, \vt) = \unconstrainedinteger}
+\inferrule{\typesatisfies(\tenv, \vt, \unconstrainedinteger)}{\CheckUnop(\tenv, \texttt{"-"}, \vt) = \unconstrainedinteger}
 \end{mathpar}
 
 We define the following helper relations for negating integer constraints:
@@ -1839,7 +1950,7 @@ We define the following helper relations for negating integer constraints:
 
 We now apply these relations to handle well-constrained integers:
 \begin{mathpar}
-  \inferrule{\typesat(\tenv, \vt, \TInt(\langle [c_{1..k}] \rangle)) \\
+  \inferrule{\typesatisfies(\tenv, \vt, \TInt(\langle [c_{1..k}] \rangle)) \\
 i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt) : \TInt(\langle [d_{1..k}] \rangle)}
 \end{mathpar}
 
@@ -1854,6 +1965,7 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 
 \subsection{Goal}
   Determine the result type of a binary operator, give the types of its operands.
+
 
 \subsection{Prose}
   \texttt{t} is the result of checking compatibility of a binary operator \texttt{op} with
@@ -1965,6 +2077,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
         \end{itemize}
       \item One of the following applies:
        \begin{itemize}
+      \item One of the following applies:
+       \begin{itemize}
        \item All of the following apply:
           \begin{itemize}
           \item \texttt{t1} has the structure of an under-constrained integer;
@@ -2021,8 +2135,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \begin{mathpar}
 \inferrule{
   \texttt{op} \in  \{\texttt{"\&\&"}, \texttt{"||"}, \texttt{"-->"}, \texttt{"<->"}\}\\
-  \typesat(\tenv, \vt1, \TBool) \\
-  \typesat(\tenv, \vttwo, \TBool)
+  \typesatisfies(\tenv, \vt1, \TBool) \\
+  \typesatisfies(\tenv, \vttwo, \TBool)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TBool}
 \and
@@ -2045,7 +2159,7 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \inferrule{
   \texttt{op} \in  \{\texttt{"+"}, \texttt{"-"}\}\\
   \tstruct(\tenv, \vtone) = \TBits(\vw, \Ignore) \\
-  \typesat(\tenv, \vttwo, \unconstrainedinteger)
+  \typesatisfies(\tenv, \vttwo, \unconstrainedinteger)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TBits(\vw, \emptylist)}
 \end{mathpar}
@@ -2057,8 +2171,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \and
 \inferrule{
   \texttt{op} \in  \{\texttt{"="}, \texttt{"!="}\}\\
-  \typesat(\tenv, \vtone, \unconstrainedinteger)\\
-  \typesat(\tenv, \vttwo, \unconstrainedinteger)
+  \typesatisfies(\tenv, \vtone, \unconstrainedinteger)\\
+  \typesatisfies(\tenv, \vttwo, \unconstrainedinteger)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TBool}
 \and
@@ -2074,15 +2188,15 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \begin{mathpar}
 \inferrule{
   \texttt{op} \in  \{\texttt{"<"}, \texttt{"<="}, \texttt{">"}, \texttt{">="}\}\\
-  \typesat(\tenv, \vtone, \unconstrainedinteger)\\
-  \typesat(\tenv, \vttwo, \unconstrainedinteger)
+  \typesatisfies(\tenv, \vtone, \unconstrainedinteger)\\
+  \typesatisfies(\tenv, \vttwo, \unconstrainedinteger)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \unconstrainedinteger}
 \and
 \inferrule{
   \texttt{op} \in  \{\texttt{"<"}, \texttt{"<="}, \texttt{">"}, \texttt{">="}\}\\
-  \typesat(\tenv, \vtone, \TReal)\\
-  \typesat(\tenv, \vttwo, \TReal)
+  \typesatisfies(\tenv, \vtone, \TReal)\\
+  \typesatisfies(\tenv, \vttwo, \TReal)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TReal}
 \end{mathpar}
@@ -2123,8 +2237,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 {\CheckBinop(\tenv, \texttt{"\^{}"}, \vtone, \vttwo) = \TReal}
 \and
 \inferrule{
-  \typesat(\tenv, \vtone, \TReal)\\
-  \typesat(\tenv, \vttwo, \TReal)\\
+  \typesatisfies(\tenv, \vtone, \TReal)\\
+  \typesatisfies(\tenv, \vttwo, \TReal)\\
 }
 {\CheckBinop(\tenv, \texttt{"RDIV"}, \vtone, \vttwo) = \TReal}
 \end{mathpar}
@@ -2560,6 +2674,7 @@ its set to the single value \texttt{n};
 \item \texttt{l} is a Boolean literal and \texttt{t} is the Boolean type;
 \item \texttt{l} is a real literal and \texttt{t} is the real type;
 \item \texttt{l} is a string literal and \texttt{t} is the string type;
+\item \texttt{l} is a string literal and \texttt{t} is the string type;
 \item \texttt{l} is a bitvector literal of length \texttt{n} and \texttt{t} is the bitvector type of fixed width \texttt{n}.
 \end{itemize}
 
@@ -2628,10 +2743,10 @@ In the following example, we show several literals and their corresponding types
   \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  L^\tenv.\constantsvalues(\vx) = \vv\\
+  L^\tenv.\constantvalues(\vx) = \vv\\
   L^\tenv.\storagetypes(\vx) = (\tty, \texttt{LDK\_Constant})
   }
-{\annotateexpr{\tenv, \evar(\vx)} = (\tty, \eliteral{\vv})}
+{\annotateexpr{\tenv, \EVar(\vx)} = (\tty, \eliteral{\vv})}
 \end{mathpar}
 \end{emptyformal}
 
@@ -2659,11 +2774,11 @@ In the following example, we show several literals and their corresponding types
   \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  L^\tenv.\constantsvalues(\vx) = \bot\\
+  L^\tenv.\constantvalues(\vx) = \bot\\
   L^\tenv.\storagetypes(\vx) =  (\tty, k) \\
   k \in \{\texttt{LDK\_Var}, \texttt{LDK\_Let}\}
   }
-{\annotateexpr{\tenv, \evar(\vx)} = (\tty, \evar(\vx))}
+{\annotateexpr{\tenv, \EVar(\vx)} = (\tty, \EVar(\vx))}
 \end{mathpar}
 \end{emptyformal}
 
@@ -2691,9 +2806,9 @@ In the following example, we show several literals and their corresponding types
 \begin{mathpar}
 \inferrule{
   G^\tenv.\storagetypes(\vx) = (\tty, \texttt{GDK\_Constant})\\
-  G^\tenv.\constantsvalues(\vx) = \vv
+  G^\tenv.\constantvalues(\vx) = \vv
   }
-{\annotateexpr{\tenv, \evar(\vx)} = (\tty, \eliteral{\vv})}
+{\annotateexpr{\tenv, \EVar(\vx)} = (\tty, \eliteral{\vv})}
 \end{mathpar}
 \end{emptyformal}
 
@@ -2721,9 +2836,9 @@ In the following example, we show several literals and their corresponding types
 \begin{mathpar}
 \inferrule{
   G^\tenv.\storagetypes(\vx) = (\tty, \texttt{GDK\_Constant})\\
-  G^\tenv.\constantsvalues(\vx) = \bot
+  G^\tenv.\constantvalues(\vx) = \bot
   }
-{\annotateexpr{\tenv, \evar(\vx)} = (\tty, \evar(\vx))}
+{\annotateexpr{\tenv, \EVar(\vx)} = (\tty, \EVar(\vx))}
 \end{mathpar}
 \end{emptyformal}
 
@@ -2749,14 +2864,13 @@ In the following example, we show several literals and their corresponding types
 
 \begin{emptyformal}
   \subsection{Formally}
-
 \begin{mathpar}
 \inferrule{
-  G^\tenv.\constantsvalues(\vx) = \bot\\
+  G^\tenv.\constantvalues(\vx) = \bot\\
   G^\tenv.\storagetypes(\vx) = (\tty, k)\\
   k \neq \texttt{GDK\_Constant}
   }
-{\annotateexpr{\tenv, \evar(\vx)} = (\tty, \evar(\vx))}
+{\annotateexpr{\tenv, \EVar(\vx)} = (\tty, \EVar(\vx))}
 \end{mathpar}
 
 \end{emptyformal}
@@ -2925,7 +3039,7 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
   \annotateslices(\tenv, \texttt{slices}) = \texttt{slices}'
   }
 {\annotateexpr{\tenv, \texttt{E\_Slice}(\ve, \texttt{slices})} = \\\
- (\TBits(\texttt{BitWidth\_SingleExpr}(\vw), \emptylist), \texttt{E\_Slice}(\ve', \texttt{slices}']))}
+ (\TBits(\texttt{BitWidth\_SingleExpr}(\vw), \emptylist), \texttt{E\_Slice}(\ve', \texttt{slices}'])}
 \end{mathpar}
 \end{emptyformal}
 
@@ -2994,13 +3108,13 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
 We first define helper rules to annotate the index of an array expression:
 \begin{mathpar}
 \inferrule{G^\tenv.\declaredtypes(n) = \vt}
-{\annotatearrayindex(\tenv, \evar(n)) = \vt}
+{\annotatearrayindex(\tenv, \EVar(n)) = \vt}
 \and
 \inferrule{G^\tenv.\declaredtypes(n) = \bot\\
 l_f = \Elit{0} \\
-\vlt = \texttt{E\_Binop}(\texttt{"-"}, \evar(n), \Elit{1})
+\vlt = \texttt{E\_Binop}(\texttt{"-"}, \EVar(n), \Elit{1})
 }
-{\annotatearrayindex(\tenv, \evar(n)) = \TInt(\langle[\texttt{Constraint\_Range}(l_f, \vlt)]\rangle)}
+{\annotatearrayindex(\tenv, \EVar(n)) = \TInt(\langle[\texttt{Constraint\_Range}(l_f, \vlt)]\rangle)}
 \and
 \inferrule{\astlabel(\ve) \neq \texttt{E\_Var} \\
 l_f = \Elit{0} \\
@@ -3016,10 +3130,11 @@ And now define the rule to annotate the array access expression:
   \tstruct(\tenv, \texttt{t\_e}') = \TArray(\texttt{size}, \texttt{ty}')\\
   \annotatearrayindex(\tenv, \texttt{size}) = \texttt{wanted\_t\_index}\\
   \annotateexpr{\tenv, \eindex} = (\texttt{t\_{index}}', \texttt{e\_{index}}')\\
-  \typesat(\tenv, \texttt{t\_{index}}', \texttt{wanted\_t\_index})\\
+  \typesatisfies(\tenv, \texttt{t\_{index}}', \texttt{wanted\_t\_index})\\
   }
-{\annotateexpr{\tenv, \texttt{E\_Slice}(\texttt{e}', [\slicesingle(\eindex)])} =\\\
- (\texttt{ty}', \texttt{E\_GetArray}(\texttt{e}'', \texttt{e\_{index}}')}
+{\annotateexpr{\tenv, \texttt{E\_Slice}(\texttt{e}', [\slicesingle(\eindex)])} =\\\\
+ (\texttt{ty'}, \texttt{E\_GetArray}(\texttt{e''}, \texttt{e\_{index}}'))
+ }
 \end{mathpar}
 \end{emptyformal}
 
@@ -3105,7 +3220,7 @@ And now define the rule to annotate the array access expression:
 \inferrule{
 L \in \{\TRecord, \TException\}\\
 i=1..k: \annotateexpr{\vt_i, \ve_i} = (\vt_i',\ve_i')\\
-i=1..k: \typesat(\tenv, \vt_i', \vt_i)
+i=1..k: \typesatisfies(\tenv, \vt_i', \vt_i)
 }
 {\annotateexpr{\tenv, L(\tty, [i=1..k: (f_i,\ve_i)])} = (\tty, L(\tty, [i=1..k: (f_i,\ve_i')]))}
 \end{mathpar}
@@ -3326,9 +3441,9 @@ L \in \{\TRecord, \TException\}\\
   \makeanonymous(\tenv, \texttt{t\_e1}) = \TBits(\Ignore, \bitfields)\\
   \fieldname = \texttt{BitField\_Type}(\Ignore, \slices, \vt) \in \bitfields\\
   \annotateexpr{\texttt{E\_Slice}(\vetwo, \slices)} = (\texttt{t\_e3}, \texttt{e3})\\
-  \typesat(\tenv, \texttt{t\_e3}, \vt)
+  \typesatisfies(\tenv, \texttt{t\_e3}, \vt)
 }
-{\annotateexpr{\tenv, \texttt{E\_GetField}(\veone, \fieldname)} = (\vt, \texttt{e3}))}
+{\annotateexpr{\tenv, \texttt{E\_GetField}(\veone, \fieldname)} = (\vt, \texttt{e3})}
 \end{mathpar}
 \end{emptyformal}
 
@@ -3355,7 +3470,7 @@ L \in \{\TRecord, \TException\}\\
 \begin{mathpar}
 \inferrule{\ve = \texttt{E\_Concat}(\emptylist)}
 {
-\annotateexpr{\tenv, \ve} = (\TBits(\texttt{BitWidth\_SingleExpr(\Elit{0}}, \emptylist)), \ve)
+\annotateexpr{\tenv, \ve} = (\TBits(\texttt{BitWidth\_SingleExpr}(\Elit{0}, \emptylist)), \ve)
 }
 \end{mathpar}
 \end{emptyformal}
@@ -3394,7 +3509,8 @@ i=1..k: \astlabel(\tstruct(\tenv, \vt_i)) = \TBits\\
 }
 {
 \annotateexpr{\tenv, \texttt{E\_Concat}(\texttt{li})} = (\TBits(w, \emptylist)),
-\texttt{E\_Concat}(\texttt{es}, \langle\rangle))
+\annotateexpr{\tenv, \texttt{E\_Concat}(\texttt{li})} = (\TBits(w, \emptylist)),
+\texttt{E\_Concat}(\texttt{es}, \langle\rangle)
 }
 \]
 \end{emptyformal}
@@ -3606,10 +3722,10 @@ all of the following apply:
 \begin{mathpar}
 \inferrule{
   \vle = \texttt{LE\_Discard}\\
-  \newle = \vle
+  \newle \eqdef \vle
 }
 {
-  \annotatelexpr{\tenv, \vte} = \newle
+  \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle
 }
 \end{mathpar}
 \end{emptyformal}
@@ -3639,12 +3755,12 @@ all of the following apply:
     \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vle = \texttt{LE\_Var}(\id)\\
+  \vle \eqname \texttt{LE\_Var}(\id)\\
   L^\tenv.\storagetypes(\id) = (\tty, \texttt{LDK\_Var})\\
-  \typesat(\tenv, \vte, \tty)\\
-  \newle = \vle
+  \typesatisfies(\tenv, \vte, \tty)\\
+  \newle \eqdef \vle
 }
-{ \annotatelexpr{\tenv, \vle, \vte} = \newle }
+{ \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle }
 \end{mathpar}
 
 \end{emptyformal}
@@ -3678,7 +3794,7 @@ all of the following apply:
 \inferrule{
   \vle = \texttt{LE\_Var}(\id)\\
   G^\tenv.\storagetypes(\id) = (\vt', \Ignore)\\
-  \typesat(\tenv, \vt', \vte)\\
+  \typesatisfies(\tenv, \vt', \vte)\\
   \newle = \vle
 }
 { \annotatelexpr{\tenv, \vle, \vte} = \newle }
@@ -3763,7 +3879,7 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
-\[
+\begin{mathpar}
 \inferrule{
   \vle = \leslice(\vleone, \slices)\\
   \annotateexpr{\tenv, \torexpr(\vleone)} = (\vtleone, \Ignore)\\
@@ -3771,13 +3887,13 @@ all of the following apply:
   \annotatelexpr{\tenv, \vleone, \vtleone} = \vletwo\\
   \sliceswidth(\tenv, \slices) = \vwidth\\
   \vt = \TBits(\texttt{BitWidth\_SingleExpr}(\vwidth, \emptylist))\\
-  \typesat(\tenv, \vt, \vte)\\
+  \typesatisfies(\tenv, \vt, \vte)\\
   \texttt{slices2} = [\annotateslices(\tenv, \vs) \;|\; \vs \in \slices]\\
   \newle = \leslice(\vletwo, \texttt{slices2})
 }
 { \annotatelexpr{\tenv, \vle, \vte} = \newle
 }
-\]
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3821,12 +3937,12 @@ all of the following apply:
   \vle = \leslice(\vleone, \slices)\\
   \annotateexpr{\tenv, \torexpr(\vleone)} = (\vtleone, \Ignore)\\
   \tstruct(\tenv, \vtleone) = \TArray(\size, \vt)\\
-  \typesat(\tenv, \vte, \vt)\\
+  \typesatisfies(\tenv, \vte, \vt)\\
   \annotatelexpr{\tenv, \vleone} = \vletwo\\
   \annotatearrayindex(\tenv, \size) = \wantedtindex\\
   \slices = [\slicesingle(\eindex)]\\
   \annotateexpr{\tenv, \eindex} = (\tindex', \eindex')\\
-  \typesat(\tenv, \tindex', \wantedtindex)\\
+  \typesatisfies(\tenv, \tindex', \wantedtindex)\\
   \newle = \texttt{LS\_SetArray}(\vletwo, \eindex')
 }
 {\annotatelexpr{\tenv, \vle, \vte} = \newle}
@@ -3893,7 +4009,7 @@ all of the following apply:
   \annotatelexpr{\tenv, \vleone} = \vletwo\\
   L \in \{\TRecord, \TException\}\\
   \tstruct(\tenv, \vtleone) = L(\{\vfield:t, \ldots\})\\
-  \typesat(\tenv, \vte, \vt)\\
+  \typesatisfies(\tenv, \vte, \vt)\\
   \newle = \texttt{LE\_SetField}(\vletwo, \vfield)
 }
 {
@@ -3969,7 +4085,7 @@ all of the following apply:
     \texttt{BitField\_Simpled}(\vfield, \vslices) \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt = \TBits(\texttt{BitWidth\_SingleExpr(\vw), \bitfields})\\
-    \typesat(\tenv, \vte, \vt)\\
+    \typesatisfies(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }
@@ -4019,7 +4135,7 @@ all of the following apply:
     \texttt{BitField\_Nested}(\vfield, \vslices, \bitfields') \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt = \TBits(\texttt{BitWidth\_SingleExpr(w), \bitfields'})\\
-    \typesat(\tenv, \vte, \vt)\\
+    \typesatisfies(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }
@@ -4071,8 +4187,8 @@ all of the following apply:
     \texttt{BitField\_Type}(\vfield, \vslices, \vt) \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt' = \TBits(\texttt{BitWidth\_SingleExpr(w), \emptylist})\\
-    \typesat(\tenv, \vt', \vt)\\
-    \typesat(\tenv, \vte, \vt)\\
+    \typesatisfies(\tenv, \vt', \vt)\\
+    \typesatisfies(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }
@@ -4147,8 +4263,7 @@ Annotating a slice~\texttt{slice} in an environment~\texttt{env}
 
   \subsection{Prose}
    Annotating a slice~\texttt{slice} in an environment~\texttt{env}
-(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
-length)} and all of the following apply:
+(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset, length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slice} gives an index \texttt{i};
    \item \texttt{(offset, length)} is the result of applying TypingRule.SliceLength to \texttt{i, i+:1}.
@@ -4170,8 +4285,7 @@ length)} and all of the following apply:
 
   \subsection{Prose}
    Annotating a slice~\texttt{slice} in an environment~\texttt{env}
-(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
-length)} and all of the following apply:
+(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slice} gives \texttt{offset} and \texttt{length};
    \item \texttt{t\_offset, offset'} is the result of annotating \texttt{offset} in \texttt{env};
@@ -4666,10 +4780,10 @@ the following apply:
   \inferrule{
     \ldi = \texttt{LDI\_Var}(\vx)\\
     L^\tenv.\storagetypes(\vx) = \bot\\
-    \newenv = (G^\tenv, L^\tenv.\storagetypes[\vx \mapsto (\tty, \ldk)])
+    \newtenv = (G^\tenv, L^\tenv.\storagetypes[\vx \mapsto (\tty, \ldk)])
   }
   {
-    \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(\vx))
+    \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newtenv, \texttt{LDI\_Var}(\vx))
   }
 \end{mathpar}
 \end{emptyformal}
@@ -4705,11 +4819,11 @@ This is related to \identr{YSPM}, \identd{FXST}.
 \inferrule{
   \ldi = \texttt{LDI\_Typed}(\ldi', \vt)\\
   \canbeinitializedwith(\tenv, \vt, \tty)\\
-  \annotatelocaldeclitem{\tenv, \ldi', \ldk, \vt} = (\newenv, \newldi')\\
+  \annotatelocaldeclitem{\tenv, \ldi', \ldk, \vt} = (\newtenv, \newldi')\\
   \newldi = \texttt{LDI\_Typed}(\newldi', \vt)\\
 }
 {
-  \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \newldi)
+  \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newtenv, \newldi)
 }
 \end{mathpar}
 \end{emptyformal}
@@ -4743,15 +4857,15 @@ the corresponding type in ~\texttt{ty}.
   \ldi = \texttt{LDI\_Tuple}(\ldis, \langle\rangle)\\
   \ldis = [\ldi_{1..k}]\\
   \tstruct(\tenv, \tty) = \TTuple([\vt_{1..k}])\\
-  \newenv_0 = \tenv\\
-  \annotatelocaldeclitem{\newenv_0, \ldi_1, \ldk, \vt_1} = (\newenv_1, \ldi_1)\\
+  \newtenv_0 = \tenv\\
+  \annotatelocaldeclitem{\newtenv_0, \ldi_1, \ldk, \vt_1} = (\newtenv_1, \ldi_1)\\
   \ldots\\
-  \annotatelocaldeclitem{\newenv_{k-1}, \ldi_{k-1}, \ldk, \vt_{k-1}} = (\newenv_k, \ldi_k)\\
-  \newenv = \newenv_k\\
+  \annotatelocaldeclitem{\newtenv_{k-1}, \ldi_{k-1}, \ldk, \vt_{k-1}} = (\newtenv_k, \ldi_k)\\
+  \newtenv = \newtenv_k\\
   \newldi = [\ldi_{1..k}]
 }
 {
-  \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Tuple}(\newldi, \langle\rangle))
+  \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newtenv, \texttt{LDI\_Tuple}(\newldi, \langle\rangle))
 }
 \end{mathpar}
 \end{emptyformal}
@@ -4869,10 +4983,10 @@ environment \texttt{new\_env} and all of the following apply:
     \annotateexpr{\tenv, \vre} = (\vte, \veone)\\
     \inlinesetter{\tenv, \vle, \veone} = \reduced = \langle \vs \rangle\\
     \news = \vs\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news,\newenv)
+    \annotatestmt{\tenv, \vs} = (\news,\newtenv)
   }
 \and
 \inferrule{
@@ -4880,13 +4994,13 @@ environment \texttt{new\_env} and all of the following apply:
   \annotateexpr{\tenv, \vre} = (\vte, \veone)\\
   \inlinesetter{\tenv, \vle, \veone} = \reduced = \langle \rangle\\
   \version = \texttt{ASLv1}\\
-  \envone = \tenv\\
+  \tenvone = \tenv\\
   \annotatelexpr{\tenv, \vle, \vte} = \vleone\\
   \news = \texttt{S\_Assign}(\vleone, \veone)
-  \newenv = \envone
+  \newtenv = \tenvone
 }
 {
-  \annotatestmt{\tenv, \vs} = (\news,\newenv)
+  \annotatestmt{\tenv, \vs} = (\news,\newtenv)
 }
 \and
 \inferrule{
@@ -4894,13 +5008,13 @@ environment \texttt{new\_env} and all of the following apply:
   \annotateexpr{\tenv, \vre} = (\vte, \veone)\\
   \inlinesetter{\tenv, \vle, \veone} = \reduced = \langle \rangle\\
   \version = \texttt{ASLv0}\\
-  \envone = \tenv'\\
+  \tenvone = \tenv'\\
   \annotatelexpr{\tenv, \vle, \vte} = \vleone\\
   \news = \texttt{S\_Assign}(\vleone, \veone)
-  \newenv = \envone
+  \newtenv = \tenvone
 }
 {
-  \annotatestmt{\tenv, \vs} = (\news,\newenv)
+  \annotatestmt{\tenv, \vs} = (\news,\newtenv)
 }
 \end{mathpar}
 \end{emptyformal}
@@ -4932,9 +5046,9 @@ environment \texttt{new\_env} and all of the following apply:
 \inferrule{
   \vs = \texttt{S\_Return}(\langle\rangle)\\
   L^\tenv.\returntype = \langle\rangle\\
-  \newenv = \tenv
+  \newtenv = \tenv
 }
-{\annotatestmt{\tenv, \vs} = (\texttt{S\_Return}(\langle\rangle), \newenv)}
+{\annotatestmt{\tenv, \vs} = (\texttt{S\_Return}(\langle\rangle), \newtenv)}
 \end{mathpar}
 \end{emptyformal}
 
@@ -5011,11 +5125,11 @@ environment \texttt{new\_env} and all of the following apply:
     \vs = \texttt{S\_Return}(\langle \ve \rangle)\\
     L^\tenv.\returntype = \langle \vt \rangle\\
     \annotateexpr{\tenv, \ve} = (\vte', \ve')\\
-    \typesat(\tenv, \vte', \vt)\\
+    \typesatisfies(\tenv, \vte', \vt)\\
     \news = \texttt{S\_Return}(\langle \ve' \rangle)\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
-  {\annotatestmt{\tenv, \vs} = (\news, \newenv)}
+  {\annotatestmt{\tenv, \vs} = (\news, \newtenv)}
 \end{mathpar}
 \end{emptyformal}
 
@@ -5046,13 +5160,13 @@ environment \texttt{new\_env} and all of the following apply:
 \begin{mathpar}
 \inferrule{
   \vs = \texttt{S\_Seq}(\vsone, \vstwo)\\
-  \annotatestmt{\tenv, \vs1} = (\newsone, \envone)\\
-  \annotatestmt{\envone, \vs2} = (\newstwo, \envtwo)\\
+  \annotatestmt{\tenv, \vs1} = (\newsone, \tenvone)\\
+  \annotatestmt{\tenvone, \vs2} = (\newstwo, \tenvtwo)\\
   \news = \texttt{S\_Seq}(\newsone, \newstwo)\\
-  \newenv = \envtwo
+  \newtenv = \tenvtwo
 }
 {
-  \annotatestmt{\tenv, \vs} = (\news, \newenv)
+  \annotatestmt{\tenv, \vs} = (\news, \newtenv)
 }
 \end{mathpar}
 \end{emptyformal}
@@ -5131,14 +5245,14 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_Cond}(\ve, \vsone, \vstwo)\\
     \annotateexpr{\tenv, \ve} = (\tcond, \econd)\\
-    \typesat(\tenv, \tcond, \TBool)\\
+    \typesatisfies(\tenv, \tcond, \TBool)\\
     \annotatestmt{\tenv, \vsone} = (\vsone', \Ignore)\\
     \annotatestmt{\tenv, \vstwo} = (\vstwo', \Ignore)\\
     \news = \texttt{S\_Cond}(\econd, \vsone', \vstwo')\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5202,12 +5316,12 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_Assert}(\ve)\\
     \annotateexpr{\tenv, \ve} = (\vte', \ve')\\
-    \typesat(\tenv, \vte', \TBool)\\
+    \typesatisfies(\tenv, \vte', \TBool)\\
     \news = \texttt{S\_Assert}(\ve')\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5247,13 +5361,13 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_While}(\veone, \vsone)\\
     \annotateexpr{\tenv, \veone} = (\vt, \vetwo)\\
-    \typesat(\tenv, \vte, \TBool)\\
+    \typesatisfies(\tenv, \vte, \TBool)\\
     \annotateblock{\tenv, \vsone} = \vstwo\\
     \news = \texttt{S\_While}(\vetwo, \vstwo)\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5294,13 +5408,13 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_Repeat}(\veone, \vsone)\\
     \annotateexpr{\tenv, \veone} = (\vt, \vetwo)\\
-    \typesat(\tenv, \vte, \TBool)\\
+    \typesatisfies(\tenv, \vte, \TBool)\\
     \annotateblock{\tenv, \vsone} = \vstwo\\
     \news = \texttt{S\_Repeat}(\vetwo, \vstwo)\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5396,7 +5510,6 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
-    aa
 % \[
 %   \inferrule{
 %     \annotateexpr{\tenv, \veone} = (\vtone, \veone')\\
@@ -5404,10 +5517,10 @@ environment \texttt{new\_env} and all of the following apply:
 %     \tstruct(\tenv, \vtone) = \TInt(\Ignore)\\
 %     \tstruct(\tenv, \vttwo) = \TInt(\Ignore)\\
 %     \news = \texttt{S\_For}(..., ...)\\
-%     \newenv = \tenv
+%     \newtenv = \tenv
 %   }
 %   {
-%     \annotatestmt{\tenv, \texttt{S\_For}(\id, \dir, \veone, \vetwo, \vs')} = (\news, \newenv)
+%     \annotatestmt{\tenv, \texttt{S\_For}(\id, \dir, \veone, \vetwo, \vs')} = (\news, \newtenv)
 %   }
 % \]
 \end{emptyformal}
@@ -5439,10 +5552,10 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_Throw}(\langle\rangle)\\
     \news = \vs\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5477,10 +5590,10 @@ environment \texttt{new\_env} and all of the following apply:
     \annotateexpr{\tenv, \ve} = (\vte, \ve')\\
     \astlabel(\tstruct(\tenv, \vte)) = \TException\\
     \news = \texttt{S\_Throw}(\langle (\ve', \langle\vte\rangle) \rangle)\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5518,10 +5631,10 @@ environment \texttt{new\_env} and all of the following apply:
     \catchers = [\annotatecatcher{\tenv, \vc} \;|\; \vc \in \catchers]\\
     \otherwise = \langle \annotateblock{\tenv, \vo} \;|\; \vo \in \otherwise\rangle\\
     \news = \texttt{S\_Try}(\vs'', \catchers', \otherwise')\\
-    \newenv = \tenv
+    \newtenv = \tenv
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5557,10 +5670,10 @@ environment \texttt{new\_env} and all of the following apply:
     \vv = \reduceconstants{\tenv, \ve}\\
     \declarelocalconstant{\tenv, \ldi} = (\tenv', \vte, \vv, \ldi')\\
     \news = \texttt{S\_Decl}(\texttt{LDK\_Constant}, \ldi', \langle\ve'\rangle)\\
-    \newenv = \tenv'
+    \newtenv = \tenv'
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5593,10 +5706,10 @@ environment \texttt{new\_env} and all of the following apply:
     \vs = \texttt{S\_Decl}(\texttt{LDK\_Constant}, \ldi, \langle\rangle)\\
     \annotatelocaldeclitemuninit{\tenv, \ldi} = (\tenv', \vs')\\
     \news = \vs'\\
-    \newenv = \tenv'
+    \newtenv = \tenv'
   }
   {
-    \annotatestmt{\tenv, \vs} = (\news, \newenv)
+    \annotatestmt{\tenv, \vs} = (\news, \newtenv)
   }
 \end{mathpar}
 \end{emptyformal}
@@ -5696,9 +5809,7 @@ new\_stmt)} and all of the following apply:
 
   \subsection{Prose}
    Annotating catcher \texttt{(name\_opt, ty, stmt)} in an environment
-\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env
-return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
-new\_stmt)} and all of the following apply:
+\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env return\_type (name\_opt, ty, stmt)})results in \texttt{(name\_opt, ty, new\_stmt)} and all of the following apply:
    \begin{itemize}
    \item \texttt{ty} has the structure of an exception type;
    \item \texttt{name\_opt} gives a name \texttt{name};
@@ -5907,6 +6018,7 @@ the following apply:
      \texttt{env5}.
    \item \texttt{f'} is the function \texttt{f} with \texttt{new\_body} substituted for \texttt{body}.
  \end{itemize}
+ \end{itemize}
 
   \subsection{Example}
 
@@ -5921,7 +6033,7 @@ the following apply:
   \inferrule{}{ \texttt{param\_type}(\langle\tty\rangle) = \tty }
   \and
   \inferrule{
-    \texttt{env1} = (G^\tenv, [\constantsvalues \mapsto \lambda \id.\ \bot, \storagetypes \mapsto \lambda \id.\ \bot, \returntype = \vf.\returntype])\\
+    \texttt{env1} = (G^\tenv, [\constantvalues \mapsto \lambda \id.\ \bot, \storagetypes \mapsto \lambda \id.\ \bot, \returntype = \vf.\returntype])\\
     \vf.\text{args} = [i=1..k: (\va_i, \tty_i)]\\
     i=1..k: \checkvarnotinenv{\texttt{env1}, \va_i}\\
     \texttt{env2} = (G^\texttt{env1}, \texttt{env1}[\storagetypes \mapsto [i=1..k: \va_i \mapsto (\texttt{LDK\_Let}, \tty_i)] )]\\
@@ -5964,6 +6076,7 @@ in \texttt{new\_env} and all of the following applies:
 \begin{itemize}
   \item \texttt{name} is the identifier associated with the subprogram declaration;
   \item \texttt{env} does not contain another subprogram declaration for \texttt{name} that clashes with \texttt{func\_sig};
+  \item \texttt{new\_env} is \texttt{env} where
   \item \texttt{new\_env} is \texttt{env} where
   \texttt{func\_sig} has been added to the set of subprograms declared with \texttt{name} (\subprogramrenamings)
   and \texttt{name} is associated with \texttt{func\_sig}.
@@ -6101,43 +6214,43 @@ in \texttt{new\_env} and one of the following applies:
     \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\rangle, \textsf{name}:\name \}\\
     \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
     \vt = \annotateliteral{\vv}\\
-    \newenv = \texttt{declare\_const}(\tenv, \name, \vt, \vv)
+    \newtenv = \texttt{declare\_const}(\tenv, \name, \vt, \vv)
   }
-  { \declaredecl{\tenv, \gsd} = \newenv }
+  { \declaredecl{\tenv, \gsd} = \newtenv }
   \and
   \inferrule[Case 2]{
     \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
     \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
     \vt = \annotateliteral{\vv}\\
-    \typesat(\tenv, \vt, \tty)\\
-    \newenv = \texttt{declare\_const}(\tenv, \name, \tty, \vv)
+    \typesatisfies(\tenv, \vt, \tty)\\
+    \newtenv = \texttt{declare\_const}(\tenv, \name, \tty, \vv)
   }
-  { \declaredecl{\tenv, \gsd} = \newenv }
+  { \declaredecl{\tenv, \gsd} = \newtenv }
   \and
   \inferrule[Case 4]{
     \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle \tty \rangle, \textsf{name}:\name \}\\
     \texttt{k} \in \{\texttt{GDK\_Config}, \texttt{GDK\_Var}\}\\
     G^\tenv.\storagetypes(\name) = \bot\\
-    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
+    \newtenv = (G^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
   }
-  { \declaredecl{\tenv, \gsd} = \newenv }
+  { \declaredecl{\tenv, \gsd} = \newtenv }
   \and
   \inferrule[Case 5]{
     \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\rangle, \textsf{name}:\name \}\\
     G^\tenv.\storagetypes(\name) = \bot\\
     \annotateexpr{\tenv, \ve} = (\vt, \Ignore)\\
-    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\vt, \texttt{k})], L^\tenv)
+    \newtenv = (G^\tenv.\storagetypes[\name \mapsto (\vt, \texttt{k})], L^\tenv)
   }
-  { \declaredecl{\tenv, \gsd} = \newenv }
+  { \declaredecl{\tenv, \gsd} = \newtenv }
   \and
   \inferrule[Case 6]{
     \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
     G^\tenv.\storagetypes(\name) = \bot\\
     \annotateexpr{\tenv, \ve} = (\vt, \ve')\\
-    \typesat(\tenv, \vt, \tty)\\
-    \newenv = (G^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
+    \typesatisfies(\tenv, \vt, \tty)\\
+    \newtenv = (G^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
   }
-  { \declaredecl{\tenv, \gsd} = \newenv }
+  { \declaredecl{\tenv, \gsd} = \newtenv }
 \end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
@@ -6158,11 +6271,12 @@ in \texttt{env'} and one of the following applies:
   \begin{itemize}
     \item \name\ is not declared in \tenv.
     \item  \tenv',\tty' are the result of attempting to add \texttt{name} as a subtype of \texttt{sup} and
+    \item  \tenv',\tty' are the result of attempting to add \texttt{name} as a subtype of \texttt{sup} and
     constructing the type \tty' as \tty\ with the added fields \texttt{fields} in \tenv.
     \item \tty' is a valid type.
     \item \tenv'' is \tenv' extended with \tty'.
-    \item If \tty' has the structure of an enumeration than \newenv\ is \tenv'' extended with the declarations of constants for each identifier,
-    and otherwise \newenv\ is \tenv''.
+    \item If \tty' has the structure of an enumeration than \newtenv\ is \tenv'' extended with the declarations of constants for each identifier,
+    and otherwise \newtenv\ is \tenv''.
   \end{itemize}
 \end{enumerate}
 
@@ -6184,9 +6298,9 @@ in \texttt{env'} and one of the following applies:
     \attemptaddsubtype(\tenv, \tty, \vs) = (\tenv', \tty')\\
     \checkisvalidtype(\tenv, \tty')\\
     \tenv'' = (G^{\tenv'}.\storagetypes[\name\mapsto \tty'], L^{\tenv'})\\
-    \attemptaddenum(\tenv'', \tty') = \newenv
+    \attemptaddenum(\tenv'', \tty') = \newtenv
   }
-  { \declaredecl{\name, \tty, \vs} = \newenv }
+  { \declaredecl{\name, \tty, \vs} = \newtenv }
 \end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
@@ -6208,8 +6322,8 @@ and a new environment \texttt{new\_env} and all of the following apply:
 \begin{itemize}
   \item \texttt{ordered\_decls} is the result of topologically ordering \texttt{decls} according to their
   mutual dependencies.
-  \item \newenv\ is the result of declaring all global declarations in \texttt{ordered\_decls} in \tenv.
-  \item \texttt{decls'} is the result of annotating every declaration in \texttt{decls} in the environment \newenv.
+  \item \newtenv\ is the result of declaring all global declarations in \texttt{ordered\_decls} in \tenv.
+  \item \texttt{decls'} is the result of annotating every declaration in \texttt{decls} in the environment \newtenv.
 \end{itemize}
 
 \subsection{Example}
@@ -6223,14 +6337,1110 @@ and a new environment \texttt{new\_env} and all of the following apply:
     \texttt{ordered\_decls} = [i=1..k: \texttt{d}_i]\\
     \tenv_0 = \tenv\\
     i=1..k: \tenv_{i} = \declaredecl{\tenv_{i-1}, \texttt{d}_{i-1}}\\
-    \newenv = \tenv_{k}\\
-    \decls' = [i=1..k: \texttt{annotate\_decl}(\newenv, \texttt{d}_i) ]
+    \newtenv = \tenv_{k}\\
+    \decls' = [i=1..k: \texttt{annotate\_decl}(\newtenv, \texttt{d}_i) ]
   }
-  { \annotatespec{\tenv, \decls} = (\decls', \newenv) }
+  { \annotatespec{\tenv, \decls} = (\decls', \newtenv) }
 \end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
 This relates to \identi{LWQQ}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Static Evaluation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand\Val[0]{\textsf{Val}}
+\newcommand\TTypeError[0]{\textsf{TTypeError}}
+\newcommand\TypeErrorConfig[0]{\texttt{\#TE}}
+\newcommand\aslto[0]{\longrightarrow}
+
+\section{TypingRule.StaticEval}
+The partial function
+\[
+  \staticeval(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \;\aslto\;
+  \overname{\literals}{\vv} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+evaluates an expression $\ve$, from a subset of the set of all expressions, in environment $\tenv$, returning a literal $\vv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule[e\_literal]{}
+  {
+    \staticeval(\tenv, \ELiteral(\vv)) \typearrow \vv
+  }
+  \and
+  \inferrule[e\_var]{
+    \tododefine{lookup\_constant}(\tenv, \vx) = \vv
+  }
+  {
+    \staticeval(\tenv, \EVar(\vx)) \typearrow \vv
+  }
+  \and
+  \inferrule[e\_binop]{
+    \staticeval(\tenv, \veone) \typearrow \vvone\\
+    \staticeval(\tenv, \vetwo) \typearrow \vvtwo\\
+    \binop(\op, \vvone, \vvtwo) \typearrow \vv
+  }
+  {
+    \staticeval(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow \vv
+  }
+  \and
+  \inferrule[e\_unop]{
+    \staticeval(\tenv, \veone) \typearrow \vvone\\
+    \unop(\op, \vvone) \typearrow \vv
+  }
+  {
+    \staticeval(\tenv, \EUnop(\op, \veone)) \typearrow \vv
+  }
+  \and
+  \inferrule[e\_slice\_int]{
+    \tododefine{slices\_to\_positions}(\tenv, \slices) \typearrow \positions\\
+    \staticeval(\tenv, \veone) \typearrow \vvone\\
+    \posmax \eqdef \max(\positions)\\
+    \bv \eqdef \tododefine{bitvector\_of\_z}(\posmax + 1, \vi)\\
+    \vv \eqdef \lbitvector(\tododefine{extract\_slice}(\bv, \positions))
+  }
+  {
+    \staticeval(\tenv, \ESlice(\lint(\vi), \slices)) \typearrow \vv
+  }
+  \and
+  \inferrule[e\_slice\_bitvector]{
+    \tododefine{slices\_to\_positions}(\tenv, \slices) \typearrow \positions\\
+    \staticeval(\tenv, \veone) \typearrow \vvone\\
+    \tododefine{bitvector\_length}(\bv) > \posmax\\
+    \vv \eqdef \lbitvector(\tododefine{extract\_slice}(\bv, \positions))
+  }
+  {
+    \staticeval(\tenv, \ESlice(\lbitvector(\bv), \slices)) \typearrow \vv
+  }
+  \and
+  \inferrule[e\_slice\_type\_error]{
+    \astlabel(\veone) \not\in \{\lint, \lbitvector\}
+  }
+  {
+    \staticeval(\tenv, \ESlice(\veone, \slices)) \typearrow \TypeError(\texttt{TypeMismatch}(\veone, [\TInt, \TBits]))
+  }
+  \and
+  \inferrule[e\_cond]{
+    \staticeval(\tenv, \econd) \typearrow \vcond\\
+    \vcond \eqname \lbool(\vb)\\
+    \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\
+    \staticeval(\tenv, \vep) \typearrow \vv
+  }
+  {
+    \staticeval(\tenv, \ECond(\econd, \veone, \vetwo)) \typearrow \vv
+  }
+\end{mathpar}
+\end{emptyformal}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Equivalence Testing}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this chapter, we define \emph{conservative} equivalence tests for expressions and types.
+By conservative, we mean that if a test returns $\True$ then the expressions or types being
+compared are indeed equivalent, but if the test returns $\False$ then
+there are two possibilities:
+\begin{itemize}
+  \item the expressions or types are not equivalent;
+  \item the expressions or types are equivalent, but the reasoning power of our rules
+  is not enough to prove it, and so we ``pessimistically'' answer negatively.
+\end{itemize}
+In proof-theoretic terms, we say that such tests are \emph{sound} but \emph{incomplete}.
+
+Notice that for a conservative test, it is always correct to return $\False$.
+
+\begin{definition}[\hypertarget{def-equal}{Equal Rule}]
+  The meta function $\equate$ equates to values of the same mathematical type and returns
+  the respective Boolean value:
+  \begin{mathpar}
+      \inferrule[equate-true]{a = b}
+      {
+          \equate(a, b) \rightarrow \True
+      }
+      \and
+      \inferrule[equate-false]{a \neq b}
+      {
+          \equate(a, b) \rightarrow \False
+      }
+  \end{mathpar}
+  \end{definition}
+  The reason we define such a function for equality is to allow using it as a short-circuiting premise.
+
+\section{TypingRule.ExprEqual}
+The function
+\[
+  \exprequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False \terminateas \True\\\\
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+  {
+    \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.ExprEqualCase}
+
+The function
+\[
+  \exprequalcase(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
+  \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+specializes the expression equivalence test for the different types of expressions.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule[different\_labels]{
+    \astlabel(\veone) \neq \astlabel(\vetwo)
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_binop]{
+    \veone \eqname \EBinop(\opone, \veoneone, \veonetwo)\\
+    \vetwo \eqname \EBinop(\optwo, \vetwoone, \vetwotwo)\\\\
+    \exprequal(\veoneone, \vetwoone) \typearrow \vbone\\
+    \exprequal(\veonetwo, \vetwotwo) \typearrow \vbtwo\\\\
+    \vb \eqdef (\opone = \optwo) \land \vbone \land \vbtwo
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+\end{mathpar}
+
+Recall that a conjunction over an empty set equals $\True$.
+\begin{mathpar}
+  \inferrule[e\_call]{
+    \veone \eqname \ECall(\nameone, \vargsone, \Ignore)\\
+    \vetwo \eqname \ECall(\nametwo, \vargstwo, \Ignore)\\\\
+    \equate(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
+    \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
+    i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i\\
+    \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+    \inferrule[e\_concat]{
+    \veone \eqname \EConcat(\vlone)\\
+    \vetwo \eqname \EConcat(\vltwo)\\\\
+    \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
+    i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i\\
+    \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+    \inferrule[e\_cond]{
+    \veone \eqname \ECond(\veoneone, \veonetwo, \veonethree)\\
+    \vetwo \eqname \ECond(\vetwoone, \vetwotwo, \vetwothree)\\\\
+    \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+    \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo\\
+    \exprequal(\tenv, \veonethree, \vetwothree) \typearrow \vbthree\\
+    \vb \eqdef \vbone \land \vbtwo \land \vbthree
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \True
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_slice]{
+  \veone \eqname \ESlice(\veoneone, \slicesone)\\
+  \vetwo \eqname \ESlice(\vetwoone, \slicestwo)\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
+  \vb \eqdef \vbone \land \vbtwo
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_getarray]{
+  \veone \eqname \EGetArray(\veoneone, \veonetwo)\\
+  \vetwo \eqname \EGetArray(\vetwoone, \vetwotwo)\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo\\
+  \vb \eqdef \vbone \land \vbtwo
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_getfield]{
+  \veone \eqname \EGetField(\veoneone, \vfieldone)\\
+  \vetwo \eqname \EGetField(\vetwoone, \vfieldtwo)\\\\
+  \vbone \eqdef \vfieldone = \vfieldtwo\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo\\
+  \vb \eqdef \vbone \land \vbtwo
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_getfields]{
+  \veone \eqname \EGetFields(\veoneone, \vfieldsone)\\
+  \vetwo \eqname \EGetFields(\vetwoone, \vfieldstwo)\\\\
+  \vbone \eqdef \vfieldsone = \vfieldstwo\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo\\
+  \vb \eqdef \vbone \land \vbtwo
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_literal]{
+  \veone \eqname \ELiteral(\vvone)\\
+  \vetwo \eqname \ELiteral(\vvtwo)\\\\
+  \literalequal(\vvone, \vvtwo) \typearrow \vb
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_pattern1]{
+  \astlabel(\veone) = \EPattern
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
+\and
+\inferrule[e\_pattern2]{
+  \astlabel(\vetwo) = \EPattern
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_record1]{
+  \astlabel(\veone) = \ERecord
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
+\and
+\inferrule[e\_record2]{
+  \astlabel(\vetwo) = \ERecord
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_tuple]{
+  \veone \eqname \ETuple(\vlone)\\
+  \vetwo \eqname \ETuple(\vltwo)\\
+  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
+  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
+}
+{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_unop]{
+    \veone \eqname \EUnop(\opone, \veoneone)\\
+    \vetwo \eqname \EUnop(\optwo, \vetwoone)\\\\
+    \exprequal(\veoneone, \vetwoone) \typearrow \vbone\\
+    \vb \eqdef (\opone = \optwo) \land \vbone
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_unknown1]{
+    \astlabel(\veone) = \EUnknown
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+  }
+  \and
+  \inferrule[e\_unknown2]{
+    \astlabel(\vetwo) = \EUnknown
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_ctc]{
+    \veone \eqname \ECTC(\veoneone, \vtone)\\
+    \vetwo \eqname \ECTC(\vetwoone, \vttwo)\\
+    \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+    \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo\\
+    \vb \eqdef \vbone \land \vbtwo
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_var]{
+    \veone \eqname \EVar(\nameone)\\
+    \vetwo \eqname \EVar(\nametwo)\\\\
+    \vb \eqdef \nameone = \nametwo
+  }
+  {
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+\end{mathpar}
+
+\end{emptyformal}
+%   | E_Pattern _, _ | E_Record _, _ -> assert false
+
+\section{TypingRule.ExprEqualNorm}
+
+The function
+\[
+  \exprequalnorm(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
+  \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$
+by attempting to transform both expressions to their \emph{normal form} representation
+and, if successful, comparing the resulting normal forms for equality.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following applies (\textsc{all\_supported}):
+  \begin{itemize}
+    \item $\veone$ can be transformed into the intermediate representation $\irone$;
+    \item $\vetwo$ can be transformed into the intermediate representation $\irtwo$;
+    \item $\vb$ is the result of equating $\irone$ and $\irtwo$.
+  \end{itemize}
+
+  \item All of the following applies (\textsc{unsopported1}):
+  \begin{itemize}
+    \item $\veone$ can not be transformed into an intremediate representation.
+    \item $\vb$ is $\False$;
+  \end{itemize}
+
+  \item All of the following applies (\textsc{unsupported2}):
+  \begin{itemize}
+    \item $\vetwo$ can not be transformed into an intremediate representation.
+    \item $\vb$ is $\False$;
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule[all\_supported]{
+    \toir(\veone) \typearrow \irone\\
+    \toir(\vetwo) \typearrow \irtwo\\
+    \vb \eqdef \irone = \irtwo
+  }
+  {
+    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+  \and
+  \inferrule[unsupported1]{
+    \toir(\veone) \not\typearrow \irone
+  }
+  {
+    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False
+  }
+  \and
+  \inferrule[unsupported2]{
+    \toir(\vetwo) \not\typearrow \irtwo
+  }
+  {
+    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False
+  }
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.ToIR}
+The function
+\[
+  \toir(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \partialto \overname{\exprir}{\vp}
+\]
+transforms a subset of ASL expressions into
+an intermediate representation $\exprir$, which is essentially polynomials in reduced form.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following applies (\textsc{case\_success}):
+  \begin{itemize}
+    \item the expression $\ve$ can be transformed into the intermediate representation form as $\vp$;
+    \item the result is $\vp$;
+  \end{itemize}
+
+  \item All of the following applies (\textsc{static\_eval\_success}):
+  \begin{itemize}
+    \item the expression $\ve$ cannot be transformed into the intermediate representation form as $\vp$;
+    \item the expression $\ve$ can be static evaluated to yield an integer value $\vv$;
+    \item $\vp$ is the reduced polynomial representing the value $\vv$.
+  \end{itemize}
+
+  \item Neither case above holds, and $\vp$ is $\bot$
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+The meaning of each element of $\exprir$ can be interpreted as a mathematical formula,
+which we define via the interpretation function $\alpha$.
+
+\begin{definition}[Monomial]
+  \emph{Monomials} are partial functions from variables to positive integers:
+  $\monomials : \Prod(\identifier \partialto \{0, 1, \ldots\})$.
+  %
+  A monomial $\Prod(\vm)\in\monomials$ can be interpreted as follows:
+  \[
+    \alpha(\Prod(\vm)) \triangleq \prod_{\vx \in \dom(\vm)} \vx^{\vm(\vx)}
+  \]
+\end{definition}
+For example, the monomial $\Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\})$ can be interpreted as the term $x^3 \cdot y \cdot z^2$.
+
+The function
+\[
+  \mulmonomials(\overname{\monomials}{\vmone} \aslsep \overname{\monomials}{\vmtwo}) \rightarrow \overname{\monomials}{\vm}
+\]
+multiplies two monomials and returns a monomial
+\begin{mathpar}
+  \inferrule{
+    \vmone \eqname \Prod(\vfone)\\
+    \vmtwo \eqname \Prod(\vftwo)\\
+    {
+      \vf \eqdef \lambda \vx\in\identifier.\
+      \left\{
+      \begin{array}{ll}
+        \vfone(\vx) & \text{if } \vx \in \dom(\vfone) \setminus \dom(\vftwo)\\
+        \vfone(\vx) & \text{if } \vx \in \dom(\vftwo) \setminus \dom(\vfone)\\
+        \vfone(\vx)+\vftwo(\vx) & \text{else } \vx \in \dom(\vfone) \cap \dom(\vftwo)\\
+      \end{array}
+      \right.
+    }\\
+    \vm \eqdef \Prod(\vf)
+  }
+  {
+    \mulmonomials(\vmone, \vmtwo) \typearrow \vm
+  }
+\end{mathpar}
+For example,
+\[
+  \begin{array}{ll}
+  \mulmonomials( & \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}),\\
+                 & \Prod(\{\vx\mapsto 1, \vw\mapsto 2\}) ) =\\
+                 & \Prod(\{\vx\mapsto 4, \vy\mapsto 1, \vz\mapsto2, \vw\mapsto2\})
+  \end{array}
+\]
+
+\begin{definition}[Polynomial]
+  \emph{Polynomials} are partial functions from monomials to integers:
+  $\polynomials: \Sum(\monomials \partialto \Z)$.
+  Intuitively, each monomial is mapped to its factor.
+  A polynomial $\Sum(\vp)$ can be interpreted as follows:
+  %
+\[
+  \alpha(\Sum(\vp)) \triangleq \sum_{\vm \in \dom(\vp)} \vp(\vm)\cdot\alpha(\vm)
+\]
+\end{definition}
+For example, the polynomial
+\[
+    \begin{array}{rlcl}
+      \Sum(\{ & \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}) &\mapsto& -1,\\
+              & \Prod(\{\vx\mapsto 2, \vy\mapsto 1\}) &\mapsto& 3\\
+          \}) & & &
+    \end{array}
+\]
+can be interpreted as
+$-1\cdot x^3 \cdot y \cdot z^2 + 3 \cdot \vx^2\cdot \vy$.
+
+We define the intermediate representation to be polynomials. That is, $\exprir \triangleq \polynomials$.
+
+The function
+\[
+  \addpolynomials : \polynomials \times \polynomials \rightarrow \polynomials
+\]
+adds to two polynomials.
+\begin{mathpar}
+  \inferrule{
+    \vpone \eqname \Sum(\vfone)\\
+    \vptwo \eqname \Sum(\vftwo)\\
+    {
+      \vf \eqdef \lambda \vm\in\monomials.\
+      \left\{
+      \begin{array}{ll}
+        \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
+        \vfone(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
+        \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo)\\
+      \end{array}
+      \right.
+    }\\
+    \vp \eqdef \Sum(\vf)
+  }
+  {
+    \addpolynomials(\vpone, \vptwo) \typearrow \vp
+  }
+\end{mathpar}
+
+The function
+\[
+  \mulpolynomials : \polynomials \times \polynomials \rightarrow \polynomials
+\]
+multiplies two polynomials.
+\begin{mathpar}
+  \inferrule{
+    \vpone \eqname \Sum(\vfone)\\
+    \vptwo \eqname \Sum(\vftwo)\\
+    {
+      \vps \eqdef \{ \Sum(\{\mulmonomials(\vmone, \vmtwo) \mapsto \vcone\times\vctwo\})
+        \;|\; \vfone(\vmone)=\vcone, \vftwo(\vmtwo)=\vctwo\}
+    }\\
+    \vps \eqname \{ i=1..k: \vp[i] \}\\
+    \vp \eqdef \addpolynomials(\addpolynomials(\vp[1], \vp[2]), \ldots, \vp[k]\ldots)\\
+  }
+  {
+    \mulpolynomials(\vpone, \vptwo) \typearrow \vp
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[case\_success]{
+    \toircase(\tenv, \ve) \typearrow \vp
+  }
+  {
+    \toir(\tenv, \ve) \typearrow \vp
+  }
+  \and
+  \inferrule[static\_eval\_success]{
+    \toircase(\tenv, \ve) \not\typearrow \Ignore\\
+    \staticeval(\tenv, \ve) \typearrow \vv\\
+    \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto \vv \} )
+  }
+  {
+    \toir(\tenv, \ve) \typearrow \vp
+  }
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.ToIRCase}
+
+\begin{mathpar}
+  \inferrule[literal\_int]{}
+  {
+    \toircase(\tenv, \ELiteral(\lint(\vi))) \typearrow \Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )
+  }
+  \and
+  \inferrule[int\_constant]{
+    \tododefine{lookup\_constant}(\tenv, \vs) = \ELiteral(\lint(\vi))
+  }
+  {
+    \toircase(\tenv, \EVar(\vs)) \typearrow \Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )
+  }
+  \and
+  \inferrule[int\_exact\_constraint]{
+    \tododefine{type\_of}(\vs) = \vt\\
+    \makeanonymous(\vt) = \TInt(\wellconstrained([\ConstraintExact(\ve)]))\\
+    \toir(\ve) \typearrow \vp
+  }
+  {
+    \toircase(\tenv, \EVar(\vs)) \typearrow \vp
+  }
+  \and
+  \inferrule[int\_var]{
+    \tododefine{type\_of}(\vs) = \vt\\
+    \makeanonymous(\vt) = \TInt(\vc)\\
+    \neg(\exists \ve \in \expr.\ \vc = \wellconstrained([\ConstraintExact(\ve)]))
+  }
+  {
+    \toircase(\tenv, \EVar(\vs)) \typearrow \Sum( \{ \Prod(\{\vs\mapsto 1\})\mapsto 1 \} )
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[ebinop\_plus]{
+    \toir(\tenv, \veone) \typearrow \irone\\
+    \toir(\tenv, \vetwo) \typearrow \irtwo\\
+    \vp \eqdef \addpolynomials(\irone, \irtwo)
+  }
+  {
+    \toircase(\tenv, \EBinop(\PLUS, \veone, \vetwo)) \typearrow \vp
+  }
+  \and
+  \inferrule[ebinop\_minus]{
+    \toir(\tenv, \EBinop(\PLUS, \veone, \EBinop(\MINUS, \vetwo))) \typearrow \vp
+  }
+  {
+    \toircase(\tenv, \EBinop(\MINUS, \veone, \vetwo)) \typearrow \vp
+  }
+  \and
+  \inferrule[ebinop\_mul]{
+    \toir(\tenv, \veone) \typearrow \irone\\
+    \toir(\tenv, \vetwo) \typearrow \irtwo\\
+    \vp \eqdef \mulpolynomials(\irone, \irtwo)
+  }
+  {
+    \toircase(\tenv, \EBinop(\MUL, \veone, \vetwo)) \typearrow \vp
+  }
+  \and
+  \inferrule[ebinop\_shl]{
+    k \eqdef 2^{\vitwo}\\
+    \toir(\tenv, \EBinop(\MUL, \veone, \ELiteral(\lint(k)))) \typearrow \vp
+  }
+  {
+    \toircase(\tenv, \EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))) \typearrow \vp
+  }
+  \and
+  \inferrule[ebinop\_literals]{
+    \binop(\op, \vlone, \vltwo) \typearrow k\\
+    \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto k \} )
+  }
+  {
+    \toircase(\tenv, \EBinop(\op, \ELiteral(\lint(\vione)), \ELiteral(\lint(\vitwo)))) \typearrow \vp
+  }
+  \and
+  \inferrule[eunop\_neg]{
+    \toir(\tenv, \EBinop(\MUL, \ELiteral(\lint(-1)),\veone )) \typearrow \vp
+  }
+  {
+    \toircase(\tenv, \EUnop(\NEG, \veone)) \typearrow \vp
+  }
+\end{mathpar}
+
+% let rec to_ir env (e : expr) : ir_expr =
+%     | E_Binop (SHL, e1, { desc = E_Literal (L_Int i2); _ }) ->
+%         let ir1 = to_ir env e1 and f2 = Z.pow Z.one (Z.to_int i2) in
+%         map_num
+%           (fun (Sum monos) -> Sum (MMap.map (fun c -> Z.mul c f2) monos))
+%           ir1
+%     | E_Binop (op, { desc = E_Literal l1; _ }, { desc = E_Literal l2; _ }) ->
+%         binop_values e op l1 l2 |> poly_of_val |> always
+%     | E_Unop (NEG, e0) -> e0 |> to_ir env |> map_num poly_neg
+%     | E_Cond (cond, e1, e2) ->
+%         let Disjunction ctnts, Disjunction nctnts = to_cond env cond
+%         and (Disjunction ir1) = to_ir env e1
+%         and (Disjunction ir2) = to_ir env e2 in
+%         let restrict ctnts (ctnts', p) = (ctnts_and ctnts ctnts', p) in
+%         let ir1' = ASTUtils.list_cross restrict ctnts ir1
+%         and ir2' = ASTUtils.list_cross restrict nctnts ir2 in
+%         Disjunction (ir1' @ ir2')
+%     | _ -> (
+%         let v =
+%           try static_eval env e
+%           with Error.ASLException { desc = UnsupportedExpr _; _ } ->
+%             raise NotYetImplemented
+%         in
+%         match v with
+%         | L_Int i -> poly_of_z i |> always
+%         | _ -> raise NotYetImplemented)
+
+\section{TypingRule.TypeEqual}
+The function
+\[
+  \typeequal(\overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo$ in environment $\tenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule[different\_labels]{
+    \astlabel(\vtone) \neq \astlabel(\vttwo)
+  }
+  {
+    \typeequal(\tenv, \vtone, \vttwo) \typearrow \False
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[TBool]{}
+  {
+    \typeequal(\tenv, \TBool, \TBool) \typearrow \True
+  }
+  \and
+  \inferrule[TReal]{}
+  {
+    \typeequal(\tenv, \TReal, \TReal) \typearrow \True
+  }
+  \and
+  \inferrule[TString]{}
+  {
+    \typeequal(\tenv, \TString, \TString) \typearrow \True
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[tint\_unconstrained]{}
+  {
+    \typeequal(\tenv, \TInt(\unconstrained), \TInt(\unconstrained)) \typearrow \True
+  }
+  \and
+  \inferrule[tint\_underconstrained]{
+    \vb \eqdef \vione = \vitwo
+  }
+  {
+    \typeequal(\tenv, \TInt(\underconstrained(\vione, \Ignore)), \TInt(\unconstrained(\vitwo, \Ignore))) \typearrow \vb
+  }
+  \and
+  \inferrule[tint\_wellonstrained]{
+    \constraintsequal(\tenv, \vcone, \vctwo) \typearrow \vb
+  }
+  {
+    \typeequal(\tenv, \TInt(\wellconstrained(\vcone)), \TInt(\wellconstrained(\vctwo))) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[tbits]{
+    \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vbone\\
+    \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vbtwo\\
+    \vb \eqdef \vbone \land \vbtwo
+  }
+  {
+    \typeequal(\tenv, \TBits(\vwone, \bfone), \TBits(\vwtwo, \bftwo)) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[tarray]{
+    \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone\\
+    \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo\\
+    \vb \eqdef \vbone \land \vbtwo
+  }
+  {
+    \typeequal(\tenv, \TArray(\vlone, \vtone), \TArray(\vltwo, \vttwo)) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[tnamed]{
+    \vb \eqdef \vsone = \vstwo
+  }
+  {
+    \typeequal(\tenv, \TNamed(\vsone), \TArray(\vstwo)) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[tenum]{
+    \vb \eqdef \vlone = \vltwo
+  }
+  {
+    \typeequal(\tenv, \TEnum(\vlone), \TEnum(\vltwo)) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[trecord]{
+    \equate(\dom(\vfone), \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
+    \vf \in \dom(\vfone): \typeequal(\tenv, \vfone(\vf), \vftwo(\vf)) \typearrow \vb_\vf\\
+    \vb \eqdef \bigwedge_{\vf \in \dom(\vfone)} \vb_\vf
+  }
+  {
+    \typeequal(\tenv, \TRecord(\vfone), \TRecord(\vftwo)) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[texception]{
+    \equate(\dom(\vfone), \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
+    \vf \in \dom(\vfone): \typeequal(\tenv, \vfone(\vf), \vftwo(\vf)) \typearrow \vb_\vf\\
+    \vb \eqdef \bigwedge_{\vf \in \dom(\vfone)} \vb_\vf
+  }
+  {
+    \typeequal(\tenv, \TException(\vfone), \TException(\vftwo)) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[ttuple]{
+    \equallength(\vtsone, \vtstwo) \typearrow \True \terminateas \False\\
+    i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[i], \vtstwo[i]) \typearrow \vb_i\\
+    \vb \eqdef \bigwedge_{i \in \listrange(\vtsone)} \vb_i
+  }
+  {
+    \typeequal(\tenv, \TTuple(\vtsone), \TTuple(\vtstwo)) \typearrow \vb
+  }
+\end{mathpar}
+% | T_Int (UnderConstrained (i1, _)), T_Int (UnderConstrained (i2, _)) ->
+%     i1 == i2
+\end{emptyformal}
+
+\section{TypingRule.BitwidthEqual}
+
+The function
+\[
+  \bitwidthequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\vwone} \aslsep \overname{\expr}{\vwtwo})
+  \rightarrow\overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the bitwidth expression $\vwone$ is equivalent to the bitwidth expression $\vwtwo$
+in environment $\tenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \exprequal(\tenv, \vwone, \vwtwo) \typearrow \vb
+  }
+  {
+    \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb
+  }
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.BitFieldsEqual}
+
+The function
+\[
+  \bitfieldsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^*}{\bfone} \aslsep \overname{\bitfield^*}{\bftwo})
+  \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
+in environment $\tenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+  \begin{mathpar}
+    \inferrule{
+      \equallength(\bfone, \bftwo) \typearrow \True \terminateas \False\\\\
+      i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[i], \bftwo[i]) \typearrow \vb_i\\\\
+      \vb \eqdef \bigwedge_{i\in\listrange(\bfone)} \vb_i
+    }
+    {
+      \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vb
+    }
+  \end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.BitFieldEqual}
+
+The function
+\[
+  \bitfieldequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield}{\bfone} \aslsep \overname{\bitfield}{\bftwo})
+  \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield $\bftwo$ in environment $\tenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+  \begin{mathpar}
+    \inferrule[different\_labels]{
+      \astlabel(\bfone) \neq \astlabel(\bftwo)
+    }
+    {
+      \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \False
+    }
+    \and
+    \inferrule[bitfield\_simple]{
+      \bfone \eqname \BitFieldSimple(\nameone, \slicesone)\\
+      \bftwo \eqname \BitFieldSimple(\nametwo, \slicestwo)\\\\
+      \equate(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
+      \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
+    }
+    {
+      \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+    }
+    \and
+    \inferrule[bitfield\_nested]{
+      \bfone \eqname \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
+      \bftwo \eqname \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
+      \equate(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
+      \slicesequal(\tenv, \slicesone, \slicestwo) \True \terminateas \False\\\\
+      \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vb
+    }
+    {
+      \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+    }
+  \end{mathpar}
+\end{emptyformal}
+% What about BitField_Type?
+
+\section{TypingRule.ConstraintsEqual}
+
+The function
+\[
+  \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraints}{\csone} \aslsep \overname{\intconstraints}{\cstwo})
+  \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in envieonment $\tenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \equallength(\csone, \cstwo) \typearrow \True \terminateas \False\\
+    i\in\listrange(\csone): \constraintequal(\tenv, \csone[i], \cstwo[i]) \typearrow \vb_i\\
+    \vb \eqdef \bigwedge_{i\in\listrange(\csone)} \vb_i
+  }
+  {
+    \constraintsequal(\tenv, \csone, \cstwo) \typearrow \vb
+  }
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.ConstraintEqual}
+
+The function
+\[
+  \constraintequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vstwo})
+  \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environemnt $\tenv$.
+
+\begin{emptyformal}
+  \subsection{Formally}
+  \begin{mathpar}
+    \inferrule[different\_labels]{
+      \astlabel(\vcone) \neq \astlabel(\vctwo)
+    }
+    {
+      \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False
+    }
+    \and
+    \inferrule[constraint\_exact]{
+      \vcone \eqname \ConstraintExact(\veone)\\
+      \vctwo \eqname \ConstraintExact(\vetwo)\\\\
+      \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
+    }
+    {
+      \constraintequal(\tenv, \vcone, \vctwo) \typearrow \vb
+    }
+    \and
+    \inferrule[constraint\_range]{
+      \bfone \eqname \ConstraintRange(\veoneone, \veonetwo)\\
+      \bftwo \eqname \ConstraintRange(\vetwoone, \vetwotwo)\\
+      \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+      \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo\\
+      \vb \eqdef \vbone \land \vbtwo
+    }
+    {
+      \constraintequal(\tenv, \bfone, \bftwo) \typearrow \vb
+    }
+  \end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.SlicesEqual}
+
+The function
+\[
+  \slicesequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slicesone} \aslsep \overname{\slice^*}{\slicestwo})
+  \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
+in environment $\tenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+  \begin{mathpar}
+    \inferrule{
+      \equallength(\slicesone, \slicestwo) \typearrow \True \terminateas \False\\
+      i\in\listrange(\slicesone): \sliceequal(\tenv, \slicesone[i], \slicestwo[i]) \typearrow \vb_i\\
+      \vb \eqdef \bigwedge_{i\in\listrange(\slicesone)} \vb_i
+    }
+    {
+      \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
+    }
+  \end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.SliceEqual}
+
+The function
+\[
+  \sliceequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\sliceone} \aslsep \overname{\slice}{\slicetwo})
+  \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+conservatively tests whether the slice $\sliceone$ is equivalent to the slice $\slicetwo$
+in environment $\tenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+    \inferrule[different\_label]{
+      \astlabel(\sliceone) \neq \astlabel(\slicetwo)
+    }
+    {
+      \slicesequal(\tenv, \sliceone, \slicetwo) \typearrow \False
+    }
+    \and
+    \inferrule[slice\_single]{
+      \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
+    }
+    {
+      \slicesequal(\tenv, \SliceSingle(\veone), \SliceSingle(\vetwo)) \typearrow \vb
+    }
+    \and
+    \inferrule[slice\_range]{
+      \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+      \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo\\
+      \vb \eqdef \vbone \land \vbtwo
+    }
+    {
+      \slicesequal(\tenv, \SliceRange(\veoneone, \veonetwo), \SliceRange(\vetwoone, \vetwotwo)) \typearrow \vb
+    }
+    \and
+    \inferrule[slice\_length]{
+      \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+      \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo\\
+      \vb \eqdef \vbone \land \vbtwo
+    }
+    {
+      \slicesequal(\tenv, \SliceLength(\veoneone, \veonetwo), \SliceLength(\vetwoone, \vetwotwo)) \typearrow \vb
+    }
+  \end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.LiteralEqual}
+
+The function
+\[
+  \literalequal(\overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+tests whether literal $\vvone$ is $\vvtwo$ by equating them.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vb \eqdef \vvone= \vvtwo
+  }
+  {
+    \literalequal(\vvone, \vvtwo) \typearrow \vb
+  }
+\end{mathpar}
+\end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}

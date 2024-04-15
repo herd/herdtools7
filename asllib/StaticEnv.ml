@@ -25,7 +25,7 @@ open ASTUtils
 
 type global = {
   declared_types : ty IMap.t;
-  constants_values : literal IMap.t;
+  constant_values : literal IMap.t;
   storage_types : (ty * global_decl_keyword) IMap.t;
   subtypes : identifier IMap.t;
   subprograms : AST.func IMap.t;
@@ -33,7 +33,7 @@ type global = {
 }
 
 type local = {
-  constants_values : literal IMap.t;
+  constant_values : literal IMap.t;
   storage_types : (ty * local_decl_keyword) IMap.t;
   return_type : ty option;
 }
@@ -58,11 +58,11 @@ module PPEnv = struct
       (PP.pp_print_seq ~pp_sep pp_print_string)
       (ISet.to_seq s)
 
-  let pp_local f { constants_values; storage_types; return_type } =
+  let pp_local f { constant_values; storage_types; return_type } =
     fprintf f
       "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
        @[return type:@ %a@]@]"
-      (pp_map PP.pp_literal) constants_values
+      (pp_map PP.pp_literal) constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
       (pp_print_option ~none:(fun f () -> fprintf f "none") PP.pp_ty)
@@ -75,7 +75,7 @@ module PPEnv = struct
 
   let pp_global f
       {
-        constants_values;
+        constant_values;
         storage_types;
         declared_types;
         subtypes;
@@ -86,7 +86,7 @@ module PPEnv = struct
       "@[<v 2>Global with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
        @[types:@ %a@]@ - @[subtypes:@ %a@]@ - @[subprograms:@ %a@]@ - \
        @[subprogram_renamings:@ %a@]@]"
-      (pp_map PP.pp_literal) constants_values
+      (pp_map PP.pp_literal) constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types (pp_map PP.pp_ty) declared_types (pp_map pp_print_string)
       subtypes (pp_map pp_subprogram) subprograms (pp_map pp_iset)
@@ -103,7 +103,7 @@ let pp_global = PPEnv.pp_global
 let empty_global =
   {
     declared_types = IMap.empty;
-    constants_values = IMap.empty;
+    constant_values = IMap.empty;
     storage_types = IMap.empty;
     subtypes = IMap.empty;
     subprograms = IMap.empty;
@@ -113,7 +113,7 @@ let empty_global =
 (** An empty local static env. *)
 let empty_local =
   {
-    constants_values = IMap.empty;
+    constant_values = IMap.empty;
     storage_types = IMap.empty;
     return_type = None;
   }
@@ -127,8 +127,8 @@ let empty = { local = empty_local; global = empty_global }
 
       @raise Not_found if it is not defined inside. *)
 let lookup_constants env x =
-  try IMap.find x env.local.constants_values
-  with Not_found -> IMap.find x env.global.constants_values
+  try IMap.find x env.local.constant_values
+  with Not_found -> IMap.find x env.global.constant_values
 
 (** [type_of env "x"] is the type of ["x"] in the environment [env]. *)
 let type_of env x =
@@ -140,8 +140,7 @@ let type_of_opt env x =
   with Not_found -> IMap.find_opt x env.global.storage_types |> Option.map fst
 
 let mem_constants env x =
-  IMap.mem x env.global.constants_values
-  || IMap.mem x env.local.constants_values
+  IMap.mem x env.global.constant_values || IMap.mem x env.local.constant_values
 
 let add_subprogram name func_sig env =
   {
@@ -192,7 +191,7 @@ let add_local_constant name v env =
     local =
       {
         env.local with
-        constants_values = IMap.add name v env.local.constants_values;
+        constant_values = IMap.add name v env.local.constant_values;
       };
   }
 
@@ -202,7 +201,7 @@ let add_global_constant name v env =
     global =
       {
         env.global with
-        constants_values = IMap.add name v env.global.constants_values;
+        constant_values = IMap.add name v env.global.constant_values;
       };
   }
 

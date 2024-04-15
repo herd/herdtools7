@@ -1318,7 +1318,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum li -> (
-        try IMap.find (List.hd li) env.global.static.constants_values |> lit
+        try IMap.find (List.hd li) env.global.static.constant_values |> lit
         with Not_found -> fatal_from t Error.TypeInferenceNeeded)
     | T_Int UnConstrained -> L_Int Z.zero |> lit
     | T_Int (UnderConstrained _) ->

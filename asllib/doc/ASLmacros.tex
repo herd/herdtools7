@@ -1,12 +1,28 @@
 \usepackage{amsmath}  % Classic math package
 \usepackage{amssymb}  % Classic math package
 \usepackage{mathtools}  % Additional math package
+\usepackage{amssymb}  % Classic math package
+\usepackage{mathtools}  % Additional math package
 \usepackage{graphicx}  % For figures
 \usepackage{caption}  % For figure captions
 \usepackage{subcaption}  % For subfigure captions
 \usepackage{url}  % Automatically escapes urls
 \usepackage{hyperref}  % Insert links inside pdfs
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+}
+\makeatletter
+\makeatletter
+  \newcommand{\linkdest}[1]{\Hy@raisedlink{\hypertarget{#1}{}}}
+% \newcommand{\linkdest}[1]{\Hy@raisedlink{\hypertarget{#1}{}}}
+% \newcommand{\pac}[2]{\hyperlink{{#1}1}{\Hy@raisedlink{\hypertarget{{#1}0}{}}{#2}}}
+% \newcommand{\jac}[1]{\Hy@raisedlink{\hypertarget{{#1}1}{}}{\hyperlink{{#1}0}{\ac{#1}}}}
+\makeatother
 \usepackage[inline]{enumitem}  % For inline lists
+\usepackage[export]{adjustbox}  % For centering too wide figures
 \usepackage[export]{adjustbox}  % For centering too wide figures
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
@@ -24,11 +40,14 @@
 %\usepackage{stmaryrd} % for \llbracket and \rrbracket
 \input{ifempty}
 \input{ifformal}
-\input{iftodo}
+\input{ifcode}
 \input{control}
 
 \newcommand\herd[0]{\texttt{herd7}}
+
 \fvset{fontsize=\small}
+
+\newcommand\tododefine[1]{\texttt{#1}}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -53,11 +72,70 @@
 \setlist[itemize,19]{label=\textendash}
 \setlist[itemize,20]{label=\textendash}
 
+\ifcode
+% First argument is \<rule>Begin, second is \<rule>End, third is the file name.
+% Example: for SemanticsRule.Lit, use the following:
+% \CodeSubsection{\LitBegin}{\LitEnd}{../Interpreter.ml}
+\newcommand\CodeSubsection[3]{\subsection{Code} \VerbatimInput[firstline=#1, lastline=#2]{#3}}
+\else
+\newcommand\CodeSubsection[3]{}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Typesetting macros
+\newtheorem{definition}{Definition}
+\newcommand\defref[1]{Def.~\ref{def:#1}}
+\newcommand\secref[1]{Section~\ref{sec:#1}}
+\newcommand\chapref[1]{Chapter~\ref{chap:#1}}
+\newcommand\ie{i.\,e.}
+\newcommand\eg{e.\,g.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%
+%% Mathematical notations and Inference Rule macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%%
+\usepackage{relsize}
+\newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
+\newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
+\newcommand\overname[2]{\overbracket{#1}^{#2}}
+\newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
+
+\newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
+\newcommand\equate[0]{\hyperlink{def-equate}{\texttt{equal}}}
+\newcommand\equalarrow[0]{\rightarrow}
+\newcommand\equallength[0]{\hyperlink{def-equallength}{\texttt{equal\_length}}}
+\newcommand\listrange[0]{\hyperlink{def-listrange}{\texttt{indices}}}
+\newcommand\concat[0]{\hyperlink{def-concat}{+}}
+\newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
+
+\newcommand\id[0]{\texttt{id}}
+\newcommand\op[0]{\texttt{op}}
+
+\newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
+\newcommand\None[0]{\hyperlink{def-none}{\texttt{None}}}
+
+\newcommand\llbracket{[|}
+\newcommand\rrbracket{|]}
+\newcommand\N[0]{\hyperlink{def-N}{\mathbb{N}}}
+\newcommand\Q[0]{\hyperlink{def-Q}{\mathbb{Q}}}
+\newcommand\Z[0]{\hyperlink{def-Z}{\mathbb{Z}}}
+\newcommand\Bool[0]{\hyperlink{def-bool}{\mathbb{B}}}
+\newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
+\newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
+\newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
+\newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
+\DeclareMathOperator{\dom}{\hyperlink{def-dom}{dom}}
+
+\newcommand\configdomain[1]{\hyperlink{def-configdomain}{\texttt{config\_domain}}({#1})}
+
+\newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
+\newcommand\terminateas[0]{\;\hyperlink{def-terminateas}{\sslash}\;}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Abstract Syntax macros
 % These are used by the AST reference, typing rerence, and semantics reference.
+\newcommand\specification[0]{\textsf{specification}}
 
-\newcommand\emptylist[0]{[\ ]}
+\newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
 
 \newcommand\BNOT[0]{\texttt{BNOT}} % Boolean inversion
 \newcommand\NEG[0]{\texttt{NEG}} % Integer or real negation
@@ -108,14 +186,14 @@
 \newcommand\pattern[0]{\textsf{pattern}}
 \newcommand\intconstraints[0]{\textsf{int\_constraints}}
 \newcommand\intconstraint[0]{\textsf{int\_constraint}}
-\newcommand\unconstrained[0]{\textsf{UnConstrained}}
+\newcommand\unconstrained[0]{\textsf{Unconstrained}}
 \newcommand\wellconstrained[0]{\textsf{WellConstrained}}
+\newcommand\underconstrained[0]{\textsf{Underconstrained}}
 \newcommand\constraintexact[0]{\textsf{Constraint\_Exact}}
 \newcommand\constraintrange[0]{\textsf{Constraint\_Range}}
 \newcommand\bitsconstraint[0]{\textsf{bits\_constraint}}
 \newcommand\bitfield[0]{\textsf{bitfield}}
 \newcommand\version[0]{\textsf{version}}
-\newcommand\program[0]{\textsf{spec}} % Remove after fixing the syntax reference and typing reference.
 \newcommand\spec[0]{\textsf{spec}}
 \newcommand\typedidentifier[0]{\textsf{typed\_identifier}}
 \newcommand\localdeclkeyword[0]{\textsf{local\_decl\_keyword}}
@@ -133,7 +211,22 @@
 \newcommand\Field[0]{\textsf{field}}
 
 % Expression labels
-\newcommand\evar[0]{\textsf{E\_Var}}
+\newcommand\ELiteral[0]{\textsf{E\_Literal}}
+\newcommand\EVar[0]{\textsf{E\_Var}}
+\newcommand\ECTC[0]{\textsf{E\_CTC}}
+\newcommand\EBinop[0]{\textsf{E\_Binop}}
+\newcommand\EUnop[0]{\textsf{E\_Unop}}
+\newcommand\ECall[0]{\textsf{E\_Call}}
+\newcommand\ESlice[0]{\textsf{E\_Slice}}
+\newcommand\ECond[0]{\textsf{E\_Cond}}
+\newcommand\EGetArray[0]{\textsf{E\_GetArray}}
+\newcommand\EGetField[0]{\textsf{E\_GetField}}
+\newcommand\EGetFields[0]{\textsf{E\_GetFields}}
+\newcommand\ERecord[0]{\textsf{E\_Record}}
+\newcommand\EConcat[0]{\textsf{E\_Concat}}
+\newcommand\ETuple[0]{\textsf{E\_Tuple}}
+\newcommand\EUnknown[0]{\textsf{E\_Unknown}}
+\newcommand\EPattern[0]{\textsf{E\_Pattern}}
 
 % Literal labels
 \newcommand\lint[0]{\textsf{L\_Int}}
@@ -142,8 +235,8 @@
 \newcommand\lbitvector[0]{\textsf{L\_Bitvector}}
 \newcommand\lstring[0]{\textsf{L\_String}}
 
-\newcommand\True[0]{\textsf{True}}
-\newcommand\False[0]{\textsf{False}}
+\newcommand\True[0]{\hyperlink{def-true}{\texttt{TRUE}}}
+\newcommand\False[0]{\hyperlink{def-false}{\texttt{FALSE}}}
 
 % Type labels
 \newcommand\TInt[0]{\texttt{T\_Int}}
@@ -158,68 +251,72 @@
 \newcommand\TException[0]{\texttt{T\_Exception}}
 \newcommand\TNamed[0]{\texttt{T\_Named}}
 
+\newcommand\BitFieldSimple[0]{\texttt{BitField\_Simple}}
+\newcommand\BitFieldNested[0]{\texttt{BitField\_Nested}}
+\newcommand\BitFieldType[0]{\texttt{BitField\_Type}}
+
+\newcommand\ConstraintExact[0]{\texttt{Constraint\_Exact}}
+\newcommand\ConstraintRange[0]{\texttt{Constraint\_Range}}
+
+\newcommand\SliceSingle[0]{\texttt{Slice\_Single}}
+\newcommand\SliceRange[0]{\texttt{Slice\_Range}}
+\newcommand\SliceLength[0]{\texttt{Slice\_Length}}
+
 \newcommand\identifier[0]{\textsf{identifier}}
-
-\newcommand\vx[0]{\texttt{x}}
-\newcommand\ve[0]{\texttt{e}}
-\newcommand\vle[0]{\texttt{le}}
-\newcommand\vargs[0]{\texttt{args}}
-\newcommand\torexpr[0]{\textsf{rexpr}}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Typing macros
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newcommand\tstruct[0]{\texttt{get\_structure}}
-\newcommand\astlabel[0]{\textsf{ast\_label}}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newcommand\emptyfunc[0]{{\emptyset}_\lambda}
+\newcommand\torexpr[0]{\hyperlink{def-rexpr}{\textsf{rexpr}}}
 
-\newcommand\id[0]{\texttt{id}}
-\newcommand\op[0]{\texttt{op}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Type System macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\typearrow[0]{\xrightarrow{\mathsf{type}}}
 
-\newcommand\Ignore[0]{\texttt{\_}}
-\newcommand\None[0]{\texttt{None}}
+\newcommand\staticenvs[0]{\hyperlink{def-staticenvs}{\mathbb{SE}}}
+\newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\tenv}}}
+\newcommand\tstruct[0]{\hyperlink{def-tstruct}{\texttt{get\_structure}}}
+\newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textsf{ast\_label}}}
+\newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{\texttt{type\_satisfies}}}
 
-\newcommand\envs[0]{\mathbb{E}}
-\newcommand\staticenvs[0]{\mathbb{SE}}
-\newcommand\dynamicenvs[0]{\mathbb{DE}}
+\newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
+\newcommand\storagetypes[0]{\hyperlink{def-storagetypes}{\textsf{storage\_types}}}
+\newcommand\returntype[0]{\hyperlink{def-returntype}{\textsf{return\_type}}}
+\newcommand\declaredtypes[0]{\hyperlink{def-declaredtypes}{\textsf{declared\_types}}}
+\newcommand\subtypes[0]{\hyperlink{def-subtypes}{\textsf{subtypes}}}
+\newcommand\subprograms[0]{\hyperlink{def-subprograms}{\textsf{subprograms}}}
+\newcommand\subprogramrenamings[0]{\hyperlink{def-subprogramrenamings}{\textsf{subprogram\_renamings}}}
 
-\newcommand\ie{i.\,e.}
-\newcommand\eg{e.\,g.}
-\newcommand\error[0]{\textsf{error}}
-\newcommand\synor{\ |\ }
-\newcommand\syntt[1]{\mathtt{#1}}
-\newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
-\newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
-\newcommand\reducesto{\ \to\ }
-\newcommand\llbracket{[|}
-\newcommand\rrbracket{|]}
-\newcommand\interp[1]{\left\llbracket #1 \right\rrbracket}
-\newcommand\st[0]{\ \middle|\ }
-\newcommand\field[1]{.\text{#1}}
-\newcommand\globals[0]{\field{globals}}
-\newcommand\locals[0]{\field{locals}}
-\newcommand\X[0]{\mathcal{X}}
-\newcommand\N[0]{\mathbb{N}}
-\newcommand\Q[0]{\mathbb{Q}}
-\newcommand\Z[0]{\mathbb{Z}}
-\newcommand\pow[1]{\mathcal{P}(#1)}
-\newcommand\asldata[0]{\mathtt{asl\_data}}
-\newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
-\newcommand\aslpo[0]{\mathtt{asl\_po}}
-\DeclareMathOperator{\dom}{dom}
-\newcommand\partialto[0]{\rightharpoonup}
-\newcommand\rightarrowfin[0]{\rightarrow_{\text{fin}}}
-\newcommand\cupdot[0]{\cup}
-\newcommand\seq[1]{\textsf{sequence}(#1)}
+\newcommand\TypeError[0]{\textsf{TypeError}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Semantics macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\evalrel[0]{\hyperlink{def-evalrel}{\textsf{eval}}}
+\newcommand\evalarrow[0]{\xrightarrow{\evalrel}}
+\newcommand\envs[0]{\hyperlink{def-envs}{\mathbb{E}}}
+\newcommand\dynamicenvs[0]{\hyperlink{def-dynamicenvs}{\mathbb{DE}}}
+\newcommand\asldata[0]{\hyperlink{def-asldata}{\mathtt{asl\_data}}}
+\newcommand\aslctrl[0]{\hyperlink{def-aslctrl}{\mathtt{asl\_ctrl}}}
+\newcommand\aslpo[0]{\hyperlink{def-aslpo}{\mathtt{asl\_po}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Semantics/Typing Shared Entities
+\newcommand\tenv[0]{\textsf{tenv}}
+\newcommand\denv[0]{\textsf{denv}}
+\newcommand\aslsep[0]{\mathbf{,}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Ident info
-
 \newcommand\ident[2]{\texttt{#1}\textsubscript{\texttt{\MakeUppercase{#2}}}}
 \newcommand\identi[1]{\ident{I}{#1}}
 \newcommand\identr[1]{\ident{R}{#1}}
 \newcommand\identd[1]{\ident{D}{#1}}
 \newcommand\identg[1]{\ident{G}{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Variable Names
+\newcommand\vx[0]{\texttt{x}}
+\newcommand\vb[0]{\texttt{b}}
+\newcommand\ve[0]{\texttt{e}}
+\newcommand\vle[0]{\texttt{le}}
+\newcommand\vargs[0]{\texttt{args}}
