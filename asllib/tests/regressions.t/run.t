@@ -271,3 +271,14 @@ Required tests:
   $ aslref subtypes-with.asl
   $ aslref tuples.asl
   $ aslref -0 typing-assign-v0.asl
+
+Base values
+  $ aslref base_values.asl
+  base value of {2, -2} is 2
+  base value of {-2, 2} is -2
+
+  $ aslref base_values_empty.asl
+  File base_values_empty.asl, line 3, characters 9 to 23:
+  ASL Execution error: base value of empty type integer {N..M}
+  [1]
+

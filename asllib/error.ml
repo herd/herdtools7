@@ -60,6 +60,7 @@ type error_desc =
   | UnrespectedParserInvariant
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
+  | BaseValueEmptyType of ty
 
 type error = error_desc annotated
 
@@ -219,6 +220,8 @@ let pp_error =
           "ASL Typing error:@ explicit@ parameter@ %S@ does@ not@ have@ a@ \
            corresponding@ defining@ argument"
           s
+    | BaseValueEmptyType t ->
+        fprintf f "ASL Execution error: base value of empty type %a" pp_ty t
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
