@@ -1,8 +1,6 @@
 \documentclass{book}
 \input{ASLmacros}
 
-\newcommand\xgraph[0]{\textsf{g}}
-\newcommand\emptygraph[0]{{\hyperlink{def-emptygraph}{\emptyset_\xgraph}}}
 \newcommand\Nodes[0]{\hyperlink{def-nodes}{\mathcal{N}}}
 \newcommand\Read[0]{\hyperlink{def-read}{\text{Read}}}
 \newcommand\Write[0]{\hyperlink{def-write}{\text{Write}}}
@@ -103,6 +101,7 @@
 \newcommand\basevalue[0]{\hyperlink{def-basevalue}{\texttt{base\_value}}}
 \newcommand\isvaloftype[0]{\hyperlink{def-isvaloftype}{\texttt{is\_val\_of\_type}}}
 \newcommand\positioninrange[0]{\hyperlink{def-positioninrange}{\texttt{position\_in\_range}}}
+\newcommand\integerconstraintsatisfied[0]{\hyperlink{def-integerconstraintsatisfied}{\texttt{int\_constraint\_sat}}}
 
 \newcommand\unoprel[0]{\hyperlink{def-unoprel}{\texttt{unop}}}
 \newcommand\binoprel[0]{\hyperlink{def-binoprel}{\texttt{binop}}}
@@ -155,7 +154,6 @@
 \newcommand\vy[0]{\texttt{y}}
 \newcommand\vs[0]{\texttt{s}}
 \newcommand\vt[0]{\texttt{t}}
-\newcommand\vtone[0]{\texttt{t1}}
 \newcommand\vu[0]{\texttt{u}}
 \newcommand\vw[0]{\texttt{w}}
 \newcommand\vvsg[0]{\texttt{vsg}}
@@ -353,7 +351,7 @@
 
 \chapter{Introduction}
 
-The semantics of ASL defines all valid behaviors of a given ASL specification.
+The semantics of ASL define all valid behaviors of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
 or AST, for short. Second, a type checker analyzes the \emph{parsed AST} for correctness and,
 if successful, returns a \emph{static environment} and a \emph{typed AST}. Otherwise, it returns a type error.
@@ -363,7 +361,10 @@ of the semantics in this document, to test and analyze a given specification.
 
 \paragraph{Related documents:}
 \begin{itemize}
-  \item The ASL Language Reference Manual~\cite{LRM} introduces the concrete syntax and intention of all ASL language constructs.
+  \item The ASL Language Reference Manual~\cite{LRM} (LRM, for short) introduces the concrete syntax and intent
+  of all ASL language constructs.
+  Please note that the LRM will be retired in due course. For ease of reviewing, we currently indicate which statement
+  of the LRM the present rules correspond to.
   \item The Abstract Syntax Reference~\cite{ASLAbstractSyntaxReference} defines the abstract syntax, parsed AST, and typed AST.
   \item The ASL Typing Reference~\cite{ASLTypingReference} defines the set of parsed ASTs that are considered statically valid
   and how to produce the corresponding typed ASTs and static environments.
@@ -378,21 +379,26 @@ The mathematical background needed to understand the mathematical formalization
 of the ASL semantics appears in \chapref{formal} and \chapref{semanticsbuildingblocks}.
 
 \section{When Do ASL Specifications Have Meaning \label{sec:MeaningfulASLSpecifications}}
-The ASL semantics defined here assigns meaning only to \emph{well-typed specifications}.
+The ASL semantics defined here assign meaning only to \emph{well-typed specifications}.
 That is, specifications for which the type-checker produces a static environment rather than
 a type error.
 Specifications that are not well-typed have no defined semantics.
 In the rest of this document, we assume well-typed specifications.
 
-ASL admits non-determinism, for example via the \texttt{UNKOWN} expression.
-This means that the same ASL specification might terminate in one instance
-(for certain choices of values for \texttt{UNKNOWN}) but not in others,
-due to infinite loops and/or infinite recursion.
-The ASL semantics assigns meaning only to terminating executions.
+ASL admits non-determinism, for example via the \texttt{UNKNOWN} expression.
+This means that a given specification might have (potentially infinitely) many
+\hyperlink{def-derivationtree}{derivation trees}.
+
+An ASL specification is \emph{terminating} when \underline{all} of its derivation trees are finite.
+
+Although ASL does not require specifications to terminate, the semantics defined in this
+document assign meaning only to terminating specifications.
+A future version of this document, will assign meaning to potentially non-terminating specifications.
 
 \section{Basic Semantic Concepts}
-The ASL semantics is given by \emph{semantic relations} between \emph{semantic configurations},
-or \emph{configurations}~\cite{SemanticsWithApplicationsBook}, for short.
+The ASL semantics are given by relations between \emph{semantic configurations},
+or \hyperlink{def-configuration}{\emph{configurations}}~\cite{SemanticsWithApplicationsBook}, for short.
+We refer to relations between semantic configurations as \emph{semantic relations}.
 Configurations encapsulate information needed to transition into other configurations, such as:
 \begin{itemize}
   \item a \emph{dynamic environment}, which binds variables to values;
@@ -409,24 +415,24 @@ which consists of the given specification and the standard library specification
 consisting of an output value and a concurrent execution graph.
 
 \paragraph{Primitive Subprograms:}
-The semantics of ASL is parameterized by a set of primitive subprograms ---
+The semantics of ASL are parameterized by a set of primitive subprograms ---
 subprograms whose implementation is not defined by ASL statements and whose effect on the dynamic environment
 is defined externally. Critically, access to memory is given by primitive subprograms.
 
-We define two types of semantics --- a \emph{sequential semantics} and a \emph{concurrent semantics}.
+We define two types of semantics --- \emph{sequential semantics} and \emph{concurrent semantics}.
 
 \paragraph{Concurrent Semantics:}
-The concurrent semantics operates over concurrent execution graphs.
+The concurrent semantics operate over concurrent execution graphs.
 Intuitively, these graphs define Read Effects and Write Effects to variables and constraints over those effects.
 Together with the constraints that define a given memory model (such as the ARM memory model~\cite{AlglaveDGHM21}),
 these graphs axiomatically define
 the valid interactions of shared variables of a given specification.
 
 \paragraph{Sequential Semantics:}
-The sequential semantics corresponds to executing an ASL specification in the context of a single thread
+The sequential semantics correspond to executing an ASL specification in the context of a single thread
 of execution; notice that ASL does not contain any concurrency constructs.
 %
-Technically, the sequential semantics is defined by omitting the concurrent execution graph components
+Technically, the sequential semantics are defined by omitting the concurrent execution graph components
 from all configurations.
 
 \input{ASLFormal.tex}
@@ -435,7 +441,7 @@ from all configurations.
 \chapter{Semantics Building Blocks}
 \label{chap:semanticsbuildingblocks}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-This chapter defines the mathematical types over which our semantics is defined.
+This chapter defines the mathematical types over which our semantics are defined.
 An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
 
 \section{Native Values \label{sec:nativevalues}}
@@ -478,7 +484,7 @@ We define the following shorthands for different types of native values:
   \tbool      &\triangleq& \{ \nvbool(\True), \nvbool(\False) \}                                \hypertarget{def-treal}{}\\
   \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
   \tstring    &\triangleq& \{ \nvstring(s) \;|\; \texttt{"}s\texttt{"} \in \texttt{<string>}\}  \hypertarget{def-tbitvector}{}\\
-  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^+\}   \hypertarget{def-tvector}{}\\
+  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^*\}   \hypertarget{def-tvector}{}\\
   \tvector    &\triangleq& \{ \nvvector{\textit{vals}} \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
   \trecord  &\triangleq& \{ \nvrecord{\fieldmap} \;|\; \fieldmap \in \Identifiers\rightarrow\vals\}\\
 \end{array}
@@ -504,9 +510,9 @@ ones where an exception was raised, ones when a dynamic error occurred, etc.
 
 We now explain the components over which configurations are defined:
 \begin{itemize}
-  \item Dynamic Environments (\defref{dynamicenvironments}) associate native values to variables.
   \item Static Environments (\defref{staticenvironments}) consist of the information inferred
   by the type-checker for the specification.
+  \item Dynamic Environments (\defref{dynamicenvironments}) associate native values to variables.
   \item Concurrent Execution Graphs (\secref{concurrentexecutiongraphs}) track Read and Write Effects over variables.
 \end{itemize}
 
@@ -561,11 +567,12 @@ $\envs = \staticenvs \times \dynamicenvs$.
 \hypertarget{def-env}{}
 We write $\env \in \envs$ to range over environments.
 %
-We note that this semantics always maintains the same static environment.
+From the perspective of the semantics, the static environment is immutable.
+That is, all environments share the same static environment.
 
 \subsection{Concurrent Execution Graphs \label{sec:concurrentexecutiongraphs}}
 
-The concurrent semantics of an ASL specification utilizes \emph{concurrent execution graphs}
+The concurrent semantics of an ASL specification utilize \emph{concurrent execution graphs}
 (\emph{execution graphs}, for short),
 which track the Read and Write Effects over variables, yielded by the sequential semantics,
 and the \emph{ordering constraints} between those effects.
@@ -602,7 +609,9 @@ That is, when a Read Effect to a variable determines the flow of control (e.g., 
 which then leads to another Read/Write Effect.
 \hypertarget{def-aslpo}{}
 \item[$\aslpo$] Represents a \emph{program order}.
-That is, when two effects are defined to be ordered according to the sequential semantics.
+That is, when two Effects are generated by ASL constructs, which are separated by a semicolon in the text of the specification,
+or appear in successive loop unrollings.
+% That is, when two effects are defined to be ordered according to the sequential semantics.
 \end{description}
 
 An execution graph is \emph{well-formed} if all nodes have unique instance counters, edges connect graph nodes,
@@ -691,7 +700,7 @@ ASL semantics mainly utilizes the following types of output configurations:
   \hypertarget{def-valuereadfrom}{}
   There are two flavors of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
-  an identifier to which the read effect is attributed, and an associated type.
+  an identifier to which the Read Effect is attributed, and an associated type.
   The type $\valuereadfrom(\vals,\Identifiers)$ is a configuration nested inside
   The ASL semantics propagates these \emph{exceptional configurations} to the nearest catch clause that matches
   them, and otherwise they are ``caught'' at the top-level and reported as errors (see dynamic errors below).
@@ -739,8 +748,7 @@ We will say that a semantic transition \emph{terminates normally} when the outpu
 and \emph{terminates abnormally} when it either terminates exceptionally or erroneously.
 
 We introduce the following shorthands for configurations where all variables
-appearing are fresh (that is, different from all other variables appearing
-in a rule):
+appearing are \hyperlink{def-freshvariables}{fresh}:
 \begin{itemize}
 \hypertarget{def-throwingconfig}{}
 \item $\ThrowingConfig \triangleq \Throwing((\vv, \vg), \newenv)$.
@@ -817,7 +825,7 @@ like $C$ where the environment component, if one exists, is substituted with $\e
 \hypertarget{def-primitiverel}{}
 The semantics of ASL is given by the relations\footnote{The reason that relations, rather than functions, are used is due to the
 potential non-determinism in the primitive subprograms
-and the non-determinism inherent in the \texttt{UNKOWN} expression.}
+and the non-determinism inherent in the \texttt{UNKNOWN} expression.}
 \evalrel\ and \primitiverel.
 The relation \evalrel\ is defined as the disjoint union of the relations defined in this document.
 The relation \primitiverel\ provides the semantics of primitive subprograms and is not otherwise defined
@@ -830,11 +838,6 @@ Natural operational semantics evaluates the AST inductively.
 That is, it concludes transitions for configurations starting from
 non-leaf AST nodes by concluding transitions from configurations starting from their children nodes.
 
-One implication of utilizing this style of semantics is that non-terminating loops and non-terminating
-recursive subprograms calls are not assigned any meaning, as there are no semantic transitions that they can take.
-(Technically, in a non-terminating specification, a subset of the premises yield transitions into configurations
-with more premises and so on.)
-
 \subsubsection{No Undefined Behaviors}
 When an input configuration does not satisfy any semantic rule,
 there is no output configuration for it to transition to. We say that
@@ -842,8 +845,8 @@ the configuration is \emph{stuck} and the ASL semantics is undefined for that
 input configuration.
 
 The ASL semantics is defined for well-typed ASL specifications
-and gets stuck only in cases of non-terminating executions
-(for example, non-terminating loops, or infinite recursion).
+and gets stuck only in cases of non-terminating specifications
+(due to non-terminating loops, or infinite recursion).
 Otherwise, for every input configuration there is at least one rule that can be used to take a semantic transition.
 
 \hypertarget{eval-example}{}
@@ -873,7 +876,7 @@ in this case are all empty).
 The example shows (using references to the relevant rules on the right), how the expression for $1+2$ is evaluated
 using the rule for literal expressions, the rule for binary operator (for addition), and the rules for binary expressions.
 Similarly, the expression for $4+5$ is evaluated.
-Finally, the the transitions for both of the sub-expressions are used as premises for the binary expression
+Finally, the transitions for both of the sub-expressions are used as premises for the binary expression
 rule, along with the rule for binary operator (for multiplication), to evaluate the entire expression.
 
 \begin{mathpar}
@@ -1831,7 +1834,6 @@ If the evaluation of any expression terminates abnormally then the abnormal conf
 
 \begin{emptyformal}
 \subsection{Formally}
-Recall that $\concat$ stands for list concatenation.
 \begin{mathpar}
   \inferrule[empty]{}
   {
@@ -1865,7 +1867,6 @@ If the evaluation of any expression terminates abnormally then the abnormal conf
 
 \begin{emptyformal}
 \subsection{Formally}
-Recall that $\concat$ stands for list concatenation.
 \begin{mathpar}
   \inferrule[empty]{}
   {
@@ -1893,7 +1894,8 @@ The relation
   \Normal(\overname{\vals}{\vv}\aslsep\overname{\XGraphs}{\vg}) \cup
   \overname{\TError}{\ErrorConfig}
 \]
-specializes the expression evaluation relation for side-effect-free expressions.
+specializes the expression evaluation relation for side-effect-free expressions
+by omitting throwing configurations as possible output configurations.
 
 \begin{emptyformal}
 \subsection{Formally}
@@ -1922,7 +1924,7 @@ The relation
 \]
 evaluates the assignment of a value $\vv$
 to the left-hand-side expression $\vle$ in an environment $\env$,
-resulting in either in a configuration $\Normal(\newg, \env)$ or an abnormal configuration.
+resulting in either a configuration $\Normal(\newg, \env)$ or an abnormal configuration.
 
 One of the following applies:
 \begin{itemize}
@@ -1941,6 +1943,11 @@ We also define the helper rule SemanticsRule.LEMultiAssign (\ref{sec:SemanticsRu
 Some of the rules require viewing left-hand-side expressions as their corresponding right-hand side expressions.
 The correspondence is defined in the ASL Syntax Reference~\cite[Chapter 5]{ASLAbstractSyntaxReference}
 and given by the function $\torexpr : \lexpr \rightarrow \expr$.
+%
+For example, \hyperlink{SemanticsRule.LESetField}{SemanticsRule.LESetField}
+needs to evaluate the record sub-expression $\rerecord$, which is a left-hand-side expression.
+To achieve this, $\torexpr(\record)$ is used to obtain a right-hand-side expression, which then allows
+using $\texttt{eval\_expr}$ to evaluate it.
 
 \paragraph{Naming Convention:}
 In this chapter, variables containing $\vm$ range over $\vals\times\XGraphs$
@@ -1994,7 +2001,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   \subsection{Example: SemanticsRule.LELocalVar.asl}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LELocalVar.asl}
-  SemanticsRule.LELocalVar is (only) used to assign the value $42$ to the the left-hand-side expression
+  SemanticsRule.LELocalVar is (only) used to assign the value $42$ to the left-hand-side expression
   \texttt{x} within \texttt{x = 42;}.
 
 
@@ -2030,7 +2037,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   \subsection{Example: SemanticsRule.LEGlobalVar.asl}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl}
-  SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the the left-hand-side expression
+  SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the left-hand-side expression
   \texttt{x} within \texttt{x = 42;}.
 
 
@@ -2066,7 +2073,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     \item $\mpositions$ consists of the execution graph $\vgone$ and the list of indices $\positions$;
     \item $\mbv$ consists of the native bitvector $\vbv$ and the execution graph $\vgtwo$;
     \item writing to the bitvector $\vbv$ at indices $\positions$ using the values from $\vv$
-    is either the updated native bitvector $\vvone$ \ProseOrError;
+    results in the updated native bitvector $\vvone$ \ProseOrError;
     \item $\vgthree$ is the parallel composition of $\vg$, $\vgone$, and $\vgtwo$;
     \item $\newmbv$ is a pair consisting of $\vvone$ and the execution graph $\vgthree$;
     \item the steps so far computed the updated bitvector, but have not assigned it to the
@@ -2157,6 +2164,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   We note that the index is guaranteed by the type-checker to be within the array bounds
   via TypingRule.LESetArray.
 
+\hypertarget{SemanticsRule.LESetField}{}
 \section{SemanticsRule.LESetField \label{sec:SemanticsRule.LESetField}}
 
   \subsection{Prose}
@@ -2278,8 +2286,12 @@ The result is either the execution graph $\vg$ and new environment $\newenv$ or 
   \evalmultiassignment{\env, \vlelist, \vmlist} \evalarrow \Normal(\newg, \newenv)
 }
 \end{mathpar}
-Notice that this rule is only defined when the lists $\vlelist$ and $\vmlist$ have the same length,
-which is guaranteed by the rules employing this rule.
+Notice that this rule is only defined when the lists $\vlelist$ and $\vmlist$ have the same length.
+To see this, notice that
+to form a derivation tree, we must employ the \textsc{nonempty} case, which ensures both lists
+have at least one element and shortens the lengths of both lists by one,
+until both lists become empty
+which is when the \textsc{empty} axiom case is used.
 \end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2322,7 +2334,7 @@ The relation
   \end{array}
 \]
 
-evalutes a list of slices $\slices$ in an environment $\env$, resulting in either \\
+evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
 $\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration,
 and one of the following applies:
 \begin{itemize}
@@ -2341,13 +2353,13 @@ and one of the following applies:
     $\Normal((\range, \vgone), \envone)$     \ProseOrAbnormal;
     \item evaluating the tail list $\slicesone$ in $\envone$ either results in \\
     $\Normal((\rangesone, \vgtwo), \newenv)$ \ProseOrAbnormal;
-    \item $\ranges$ is the the concatenation of $\range$ to $\rangesone$;
+    \item $\ranges$ is the concatenation of $\range$ to $\rangesone$;
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 \end{itemize}
 
-\texttt{eval\_slices env slices} is the list of pair \texttt{(start\_n, length\_n)} that
-corresponds to the start (included) and the length of each slice in
+\texttt{eval\_slices env slices} is the list of pairs \texttt{(start\_n, length\_n)} that
+correspond to the start (included) and the length of each slice in
 $\slices$.
 
 
@@ -2569,12 +2581,12 @@ and one of the following applies:
 
 \section{SemanticsRule.PAll \label{sec:SemanticsRule.PAll}}
   \subsection{Prose}
-  evaluation of the pattern $\vp$ in an environment $\env$ with
-  respect to value $\vv$ is \\ $\Normal(\vb, \newg)$ and all of the following apply:
+  Evaluation of the pattern $\vp$ in an environment $\env$ with
+  respect to value $\vv$ is \\ $\Normal(\vb, \newg)$, and all of the following apply:
   \begin{itemize}
     \item $\vp$ is the pattern which matches everything, $\PatternAll$, and therefore
       matches $\vv$;
-    \item $\vb$ is the native boolean value \True;
+    \item $\vb$ is the native Boolean value \True;
     \item $\newg$ is the empty graph.
   \end{itemize}
 
@@ -2598,14 +2610,14 @@ and one of the following applies:
 
 \section{SemanticsRule.PAny \label{sec:SemanticsRule.PAny}}
     \subsection{Prose}
-    evaluation of the pattern $\vp$ in an environment $\env$ with
+    Evaluation of the pattern $\vp$ in an environment $\env$ with
     respect to value $\vv$ is either $\Normal(\vb, \newg)$ or an abnormal configuration,
     and all of the following apply:
     \begin{itemize}
       \item $\vp$ is a list of patterns, $\PatternAny(\vps)$;
       \item $\vps$ is $\vp_{1..k}$;
       \item evaluating each pattern $\vp_i$ in $\env$ either results in $\Normal(\nvbool(\vb_i), \vg_i)$ \ProseOrAbnormal;
-      \item $\vb$ is the native Boolean that is, the disjunction of $\vb_i$, for $i=1..k$;
+      \item $\vb$ is the native Boolean which is the disjunction of $\vb_i$, for $i=1..k$;
       \item $\newg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$.
     \end{itemize}
 
@@ -2637,7 +2649,7 @@ and one of the following applies:
 
 \section{SemanticsRule.PGeq \label{sec:SemanticsRule.PGeq}}
     \subsection{Prose}
-    evaluation of the pattern $\vp$ in an environment $\env$ with
+    Evaluation of the pattern $\vp$ in an environment $\env$ with
     respect to value $\vv$ is either $\Normal(\vb, \newg)$ or an error configuration,
     and all of the following apply:
     \begin{itemize}
@@ -2675,12 +2687,12 @@ and one of the following applies:
 
 \section{SemanticsRule.PLeq \label{sec:SemanticsRule.PLeq}}
   \subsection{Prose}
-  evaluation of the pattern $\vp$ in an environment $\env$ with
+  Evaluation of the pattern $\vp$ in an environment $\env$ with
   respect to value $\vv$ is either $\Normal(\vb, \newg)$ or an error configuration,
   and all of the following apply:
   \begin{itemize}
     \item $\vp$ is the condition corresponding to being less than or equal
-      than the side-effect-free expression $\ve$, $\PatternLeq(\ve)$;
+      to the side-effect-free expression $\ve$, $\PatternLeq(\ve)$;
     \item the side-effect-free evaluation of $\ve$ is either
     $\Normal(\vvone, \newg)$ \ProseOrError;
     \item $\vb$ is the Boolean value corresponding to whether $\vv$
@@ -2713,12 +2725,12 @@ and one of the following applies:
 
 \section{SemanticsRule.PNot \label{sec:SemanticsRule.PNot}}
     \subsection{Prose}
-    evaluation of the pattern $\vp$ in an environment $\env$ with
+    Evaluation of the pattern $\vp$ in an environment $\env$ with
     respect to value $\vv$ is either $\Normal(\vb, \newg)$ or an error configuration,
     and all of the following apply:
       \begin{itemize}
       \item $\vp$ is a negation pattern, $\PatternNot(\vpone)$;
-      \item evaluating tha pattern $\vpone$ in an environment $\env$ is either \\
+      \item evaluating that pattern $\vpone$ in an environment $\env$ is either \\
       $\Normal(\vbone, \newg)$ \ProseOrError;
       \item $\vb$ is the Boolean negation of $\vbone$.
     \end{itemize}
@@ -2749,7 +2761,7 @@ and one of the following applies:
 
 \section{SemanticsRule.PRange \label{sec:SemanticsRule.PRange}}
     \subsection{Prose}
-    evaluation of the pattern $\vp$ in an environment $\env$ with
+    Evaluation of the pattern $\vp$ in an environment $\env$ with
     respect to value $\vv$ is either $\Normal(\vb, \newg)$ or an error configuration,
     and all of the following apply:
     \begin{itemize}
@@ -2797,7 +2809,7 @@ and one of the following applies:
 
 \section{SemanticsRule.PSingle \label{sec:SemanticsRule.PSingle}}
     \subsection{Prose}
-    evaluation of the pattern $\vp$ in an environment $\env$ with
+    Evaluation of the pattern $\vp$ in an environment $\env$ with
     respect to value $\vv$ is either $\Normal(\vb, \newg)$ or an error configuration,
     and all of the following apply:
     \begin{itemize}
@@ -2805,7 +2817,7 @@ and one of the following applies:
         side-effect-free expression $\ve$, $\PatternSingle(\ve)$;
       \item the side-effect-free evaluation of $\ve$ in
         environment $\env$ is either \\ $\Normal(\vvone, \newg)$ \ProseOrError;
-      \item $\vb$ is the boolean value corresponding to whether $\vv$
+      \item $\vb$ is the Boolean value corresponding to whether $\vv$
         is equal to $\vvone$.
     \end{itemize}
 
@@ -2835,7 +2847,7 @@ and one of the following applies:
 
 \section{SemanticsRule.PMask \label{sec:SemanticsRule.PMask}}
     \subsection{Prose}
-    evaluation of the pattern $\vp$ in an environment $\env$ with
+    Evaluation of the pattern $\vp$ in an environment $\env$ with
     respect to value $\vv$ is either $\Normal(\vb, \newg)$ or an error configuration,
     and all of the following apply:
     \begin{itemize}
@@ -2900,7 +2912,7 @@ and one of the following applies:
         of $\vp_i$ with respect to the value $\vv_i$ in
         environment $\env$;
       \item $\vbs$ is the list of all $\vb_i$ for $1 \leq i \leq k$;
-      \item $\vb$ is the conjunction of the boolean values of $\vbs$.
+      \item $\vb$ is the conjunction of the Boolean values of $\vbs$.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PTupleTRUE.asl}
@@ -3355,9 +3367,9 @@ We now define the evaluation of assigning from a subprogram call:
   $\SAssign(\LEDestructuring(\vles), \ETuple(\exprs))$;
   \item $\les$ is a list of left-hand-side expressions, each of which is either a variable \\ ($\LEVar(\Ignore)$)
   or a discarded variable (\LEDiscard);
-  \item evaluating $\exprs$ is either $\Normal(\vms, \envone)$ (where $\vms$ is a list of value-execution graph pairs)
+  \item evaluating $\exprs$ is either $\Normal(\vms, \envone)$ (where $\vms$ is a list of pairs consisting of values and execution graphs)
   \ProseOrAbnormal;
-  \item assigning each of the value-execution graph pairs to the respective expression in $\les$ in $\envone$ results in
+  \item assigning each of the pairs of values and execution graphs to the respective expression in $\les$ in $\envone$ results in
   either $\Normal(\newg, \newenv)$ \ProseOrAbnormal.
   \end{itemize}
 
@@ -3426,7 +3438,7 @@ statement \texttt{(b,x)} assigns the value \True to the mutable variable \texttt
     \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\langle\ve\rangle)$;
     \item evaluating $\ve$ in $\env$ is either $\Normal((\vv, \vgone), \newenv)$ \ProseOrAbnormal;
     \item $\vvs$ is $[\vv]$;
-    \item $\vgtwo$ is the result of adding a write effect for a fresh identifier and the value $\vv$;
+    \item $\vgtwo$ is the result of adding a Write Effect for a fresh identifier and the value $\vv$;
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
     \end{itemize}
 
@@ -3460,7 +3472,7 @@ statement \texttt{(b,x)} assigns the value \True to the mutable variable \texttt
     Evaluation of the statement $\vs$ in an environment $\env$ is \\
     $\Returning((\vvs, \newg), \newenv)$ and all of the following apply:
     \begin{itemize}
-    \item $\vs$ is a \texttt{return} statemenet for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
+    \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
     \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
     is either \\ $\Normal(\ms, \newenv)$ \ProseOrAbnormal;
     \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
@@ -3483,7 +3495,7 @@ We first define the helper relation
   \writefolder{\overname{(\vals\times\XGraphs)^*}{\vms}} \aslrel (\overname{\vals^*}{\vvs}, \overname{\XGraphs}{\newg}) \enspace,
 \]
 which concatenates the input values in $\vms$ and generates an execution graph
-by composing the graphs in $\vms$ with write effects for the respective values.
+by composing the graphs in $\vms$ with Write Effects for the respective values.
 
 \begin{mathpar}
   \inferrule[empty]{}{
@@ -3504,7 +3516,7 @@ by composing the graphs in $\vms$ with write effects for the respective values.
   }
 \end{mathpar}
 
-We now use the helper relation to define the rule for returning a tuple of values:
+We now use the helper relation \texttt{write\_folder} to define the rule for returning a tuple of values:
 \begin{mathpar}
   \inferrule{
     \evalexprlistm{\env, \es} \evalarrow \Normal(\ms, \newenv) \OrAbnormal\\
@@ -3667,6 +3679,10 @@ We now use the helper relation to define the rule for returning a tuple of value
   \hypertarget{def-casetoconds}{}
 A case statement is syntactic sugar for a ``condition ladder'' where each
 of the alternatives is a pattern.
+That is, a statement of the form
+\texttt{if e1 then s1; else if e2 then s2; else if e3 then s3; ... else pass;}
+
+
 We define the relation
 \[
   \casetoconds(\expr, (\pattern \times \stmt)^*) \;\bigtimes\; \stmt
@@ -3896,7 +3912,8 @@ We now define the semantics of a case statement in terms of the desugared statem
 
 \begin{emptyformal}
   \subsection{Formally}
-Recall that the expression for the \texttt{for} loop range are side-effect-free, which means they do not throw.
+Recall that the expressions for the \texttt{for} loop range are side-effect-free,
+which is why they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
   \inferrule{
     \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \vgone) \terminateas \Error\\
@@ -3957,7 +3974,7 @@ Recall that the expression for the \texttt{for} loop range are side-effect-free,
     $\SThrow(\langle\ve, \langle\vt\rangle\rangle)$;
     \item evaluating $\ve$ in $\env$ is either $\Normal((\vv, \vgone), \newenv)$ \ProseOrAbnormal;
     \item $\name$ is a fresh identifier (which conceptually holds the exception value);
-    \item $\vgtwo$ is a write effect to $\name$;
+    \item $\vgtwo$ is a Write Effect to $\name$;
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
     \item $\vex$ consists of the exception value $\vv$, the name of the variable holding it ---
     $\name$, and the type annotation for the exception --- $\vt$;
@@ -3993,7 +4010,7 @@ Recall that the expression for the \texttt{for} loop range are side-effect-free,
 
 \section{SemanticsRule.STry \label{sec:SemanticsRule.STry}}
     \subsection{Prose}
-    Evaluation of the statement $\vs$ is either a non-abnoraml configuration $C$
+    Evaluation of the statement $\vs$ is either a non-abnormal configuration $C$
     or an abnormal configuration,
     and all of the following apply:
     \begin{itemize}
@@ -4030,7 +4047,7 @@ Recall that the expression for the \texttt{for} loop range are side-effect-free,
 \section{SemanticsRule.SDeclSome \label{sec:SemanticsRule.SDeclSome}}
     \subsection{Prose}
     Evaluation of the statement $\vs$ in an environment $\env$ is
-    either $\Continuing(\newg, \newenv)$ or an abnoraml configuration,
+    either $\Continuing(\newg, \newenv)$ or an abnormal configuration,
     and all of the following apply:
     \begin{itemize}
     \item $\vs$ is a declaration with an initial value,
@@ -4067,7 +4084,7 @@ Recall that the expression for the \texttt{for} loop range are side-effect-free,
 \section{SemanticsRule.SDeclNone \label{sec:SemanticsRule.SDeclNone}}
     \subsection{Prose}
     Evaluation of the statement $\vs$ in an environment $\env$ is
-    either $\Continuing(\newg, \newenv)$ or an abnoraml configuration,
+    either $\Continuing(\newg, \newenv)$ or an abnormal configuration,
     and all of the following apply:
     \begin{itemize}
     \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \None)$;
@@ -4118,7 +4135,7 @@ which drops back to the original local environment of $\env$ when the evaluation
     \subsection{Prose}
     Evaluation of a statement $\stm$ in an environment $\env$ is either
     a continuing configuration $\Continuing(\newg, \newenv)$,
-    a returning configuration, or an abnoraml configuration,
+    a returning configuration, or an abnormal configuration,
     and all of the following apply:
     \begin{itemize}
       \item $\blockenv$ is the environment $\env$ modified by replacing the local component
@@ -4225,10 +4242,10 @@ One of the following applies:
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
     \item evaluating $\vbody$ in $\envone$ as per \chapref{eval_block} is either
-    $\Continuing(\vgtwo, \envtwo)$ or one of a returning configuration or an abnoraml
+    $\Continuing(\vgtwo, \envtwo)$ or one of a returning configuration or an abnormal
     configuration, which short-circuits the entire evaluation;
     \item evaluating $(\iswhile, \econd, \vbody)$ in $\envtwo$ as a loop is either \\
-    $\Continuing(\vgthree, \newenv)$ or one of a returning configuration or an abnoraml
+    $\Continuing(\vgthree, \newenv)$ or one of a returning configuration or an abnormal
     configuration, which short-circuits the entire evaluation;
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label
     and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
@@ -4373,25 +4390,27 @@ Evaluating $(\vindexname, \vstart, \dir, \vend, \vbody)$ in $\env$ is either
 a continuing configuration $\Continuing(\newg, \newenv)$ or a returning configuration
 (in case the body of the loop results in an early return)
 or an abnormal configuration,
-and all of the following applies:
+and All of the following apply:
 \begin{itemize}
   \item $\compfordir$ is either $\LT$ when $\dir$ is $\UP$ or $\GT$ when $\dir$ is $\DOWN$;
   \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
   \item One of the following applies:
-  \item All of the following applies (\textsc{return}):
-  \begin{itemize}
-    \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\True$;
-    \item $\newg$ is $\vgone$;
-    \item $\newenv$ is $\env$;
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-  \end{itemize}
-  \item All of the following applies (\textsc{continue}):
-  \begin{itemize}
-    \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
-    \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vstart, \dir, \vend, \vbody)$
-    in $\env$ is either \\ $\Continuing(\vgtwo, \newenv)$ or an early return configuration
-    of an abnormal configuration, which short-circuits the entire evaluation;
-    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
+    \begin{itemize}
+    \item All of the following apply (\textsc{return}):
+    \begin{itemize}
+      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\True$;
+      \item $\newg$ is $\vgone$;
+      \item $\newenv$ is $\env$;
+      \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+    \end{itemize}
+    \item All of the following apply (\textsc{continue}):
+    \begin{itemize}
+      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
+      \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vstart, \dir, \vend, \vbody)$
+      in $\env$ is either \\ $\Continuing(\vgtwo, \newenv)$ or an early return configuration
+      of an abnormal configuration, which short-circuits the entire evaluation;
+      \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
+    \end{itemize}
   \end{itemize}
 \end{itemize}
 
@@ -4406,7 +4425,7 @@ does not result in any assertion error, and the specification terminates with ex
 \begin{emptyformal}
 \subsection{Formally}
 
-Advances the loop counter one step towards the end of its range is achieved via the following rule:
+Advancing the loop counter one step towards the end of its range is achieved via the following rule:
 \begin{mathpar}
   \inferrule{
     \opfordir \eqdef \choice{\dir = \UP}{\PLUS}{\MINUS}\\
@@ -4511,7 +4530,7 @@ and $\evalforloop$ (the latter in a mutually recursive manner):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The semantic relation for evaluating catchers employs input configurations
-that consists of output configuration as an argument.
+consisting of output configuration as an argument.
 This argument corresponds to the output configuration resulting from raising
 an exception.
 The type of this argument is defined as follows:
@@ -4535,8 +4554,8 @@ The relation
   \right)
 \]
 evaluates a list of \texttt{catch} clauses $\catchers$, an \texttt{otherwise} clause,
-and a configuration $\sm$ resulting from the evaluatioon of the throwing expression,
-in the environment $\env$. The result is either a contintuation configuration,
+and a configuration $\sm$ resulting from the evaluation of the throwing expression,
+in the environment $\env$. The result is either a continuation configuration,
 an early return configuration, or an abnormal configuration.
 
 One of the following applies:
@@ -4565,7 +4584,7 @@ We also define two helper relations:
   environment from $\denvthrow$ and the local component of the dynamic environment from $\denv$;
   \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
   and the list of catchers $\catchers$ gives a catcher that does not declare a name ($\None$) and gives a statement $\vs$;
-  \item evaluating $\vs$ in $\envone$ asa block (\chapref{eval_block}) is either a non-error
+  \item evaluating $\vs$ in $\envone$ as a block (\chapref{eval_block}) is either a non-error
   configuration $C$ \ProseOrError;
   \item editing potential implicit throwing configurations via $\rethrowimplicit(\vv, \vvty, C)$
   gives the configuration $D$;
@@ -4881,13 +4900,13 @@ pair with $\vv$ and $\vvty$, respectively.
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following applies (\textsc{implicit\_throwing}):
+  \item All of the following apply (\textsc{implicit\_throwing}):
   \begin{itemize}
     \item $\vres$ is $\Throwing((\None, \vg), \envthrowone)$, which is an implicit throwing configuration;
     \item the result is $\Throwing((\langle(\vv, \vvty)\rangle, \vg), \envthrowone)$.
   \end{itemize}
 
-  \item All of the following applies (\textsc{explicit\_throwing}):
+  \item All of the following apply (\textsc{explicit\_throwing}):
   \begin{itemize}
     \item $\vres$ is $\Throwing(\langle(\vv', \vvty')\rangle, \vg)$, which is an ``explicit throwing configuration''
     (due to $(\vv', \vvty')$);
@@ -4895,7 +4914,7 @@ One of the following applies:
     That is, the same throwing configuration is returned.
   \end{itemize}
 
-  \item All of the following applies (\textsc{non\_throwing}):
+  \item All of the following apply (\textsc{non\_throwing}):
   \begin{itemize}
     \item the configuration, $C$, domain is non-throwing;
     \item the result is $C$.
@@ -5093,7 +5112,7 @@ The helper relation
   \writeretvals(\overname{(\overname{\overname{\vals}{\vv}\times\overname{\XGraphs}{\vgone}}{\vm})^*}{\vvsm}) \;\aslrel\;
   (\overname{\vals^*}{\vvs}\times\overname{\XGraphs}{\newg}) \enspace.
 \]
-generates write events for the values
+generates Write Effects for the values
 returned by the evaluation of a primitive subprogram:
 
 \subsection{Prose}
@@ -5272,13 +5291,13 @@ to the parameters of a given subprogram.
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following applies (\textsc{empty}):
+  \item All of the following apply (\textsc{empty}):
   \begin{itemize}
     \item $\params$ is an empty list;
     \item the result is $\env, \vgone$;
   \end{itemize}
 
-  \item All of the following applies (\textsc{declared}):
+  \item All of the following apply (\textsc{declared}):
   \begin{itemize}
     \item $\params$ has $(\vx,\vm)$ as its head and $\paramsone$ as its tail;
     \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -5289,7 +5308,7 @@ One of the following applies:
     \item the result is $(\newenv, \newg)$.
   \end{itemize}
 
-  \item All of the following applies (\textsc{not\_declared}):
+  \item All of the following apply (\textsc{not\_declared}):
   \begin{itemize}
     \item $\params$ has $(\vx,\vm)$ as its head and $\paramsone$ as its tail;
     \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -5361,14 +5380,14 @@ into corresponding normal configurations that can be returned by a subprogram ev
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following applies (\textsc{continuing}):
+  \item All of the following apply (\textsc{continuing}):
   \begin{itemize}
     \item the given configuration is $\Continuing(\vg, \env)$. This happens when,
     for example, the subprogram called is either a setter or a procedure;
     \item the result is $\Normal((\emptylist, \vg), \env)$.
   \end{itemize}
 
-  \item All of the following applies (\textsc{returning}):
+  \item All of the following apply (\textsc{returning}):
   \begin{itemize}
     \item the given configuration is $\Returning(\xs, \retenv)$, which is the case of a function;
     \item $\xs$ is the list $\vv_i$, for $i=1..k$;
@@ -5436,7 +5455,7 @@ One of the following applies:
   \begin{mathpar}
     \inferrule{
       \env \eqname (\tenv, \denv)\\
-      \findfunc(\tenv, \name) \eqname \{ \body = \SBASL(\vbody), \args = \argdecls, \ldots \}\\
+      \findfunc(\tenv, \name) \eqname \{ \body: \SBASL(\vbody), \args: \argdecls, \ldots \}\\
         \envone \eqdef (\tenv, (G^\denv, \emptyfunc))\\
         \assignargs((\envone, \emptygraph), \argdecls, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
         \assignnamedargs((\envtwo, \vgtwo), \params) \evalarrow (\envthree, \vgthree)\\
@@ -5595,11 +5614,6 @@ One of the following applies:
 
 \begin{emptyformal}
 \subsection{Formally}
-\hypertarget{def-topologicaldecls}{}
-The helper relation $\topologicaldecls(\overname{\decl^*}{\parsedspec}, \overname{\decl^*}{\parsedstd})$
-accepts a specification and returns the subset of global storage declarations ordered by
-dependency order.
-
 \begin{mathpar}
   \inferrule[empty]{
     \vdecls \eqname \emptylist
@@ -5610,7 +5624,7 @@ dependency order.
   \and
   \inferrule[with\_initial\_value]{
     \vdecls \eqname [\vd] \concat \vdecls'\\
-    \vd \eqname \texttt{D\_GlobalStorage}(\{ \text{initial\_value}=\langle\ve\rangle, \text{name=}\name, \text{ty}=\vt, \ldots \})\\
+    \vd \eqname \texttt{D\_GlobalStorage}(\{ \text{initial\_value}=\langle\ve\rangle, \text{name}:\name, \text{ty}:\vt, \ldots \})\\
     \envm \eqname (\env, \vgone)\\
     \evalexprsef{\env, \ve} \evalarrow (\vv, \vgtwo) \terminateas \ErrorConfig\\\\
     \declareglobal(\name, \vv, \env) \evalarrow \envtwo\\
@@ -5622,7 +5636,7 @@ dependency order.
   \and
   \inferrule[no\_initial\_value]{
     \vdecls \eqname [\vd] \concat \vdecls'\\
-    \vd \eqname \texttt{D\_GlobalStorage}(\{ \text{initial\_value}=\None, \text{name=}\name, \text{ty}=\vt, \ldots \})\\
+    \vd \eqname \texttt{D\_GlobalStorage}(\{ \text{initial\_value}:\None, \text{name}:\name, \text{ty}:\vt, \ldots \})\\
     \envm \eqname (\env, \vgone)\\
     \basevalue(\env, \vt) \evalarrow (\vv, \vgtwo) \terminateas \ErrorConfig\\\\
     \declareglobal(\name, \vv, \env) \evalarrow \envtwo\\
@@ -5652,7 +5666,7 @@ before $b$.
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item sorting the declarations of the global storage elemnts in topological order with respect to the dependency order
+  \item sorting the declarations of the global storage elements in topological order with respect to the dependency order
   gives $\vdecls$;
   \item evaluating the global storage declarations in $\vdecls$ in $\env$ with the empty execution graph
   is either $(\newenv, \newg)$ \ProseOrError.
@@ -5665,6 +5679,11 @@ All of the following apply:
 
 \begin{emptyformal}
 \subsection{Formally}
+\hypertarget{def-topologicaldecls}{}
+The helper relation $\topologicaldecls(\overname{\decl^*}{\parsedspec}, \overname{\decl^*}{\parsedstd})$
+accepts a specification and returns the subset of global storage declarations ordered by
+dependency order.
+
 \begin{mathpar}
   \inferrule{
     \topologicaldecls(\typedspec) \evalarrow \vdecls\\
@@ -5715,7 +5734,7 @@ The relation
 \]
 removes the binding of the identifier $\name$ from the local storage of the environment $\env$.
 
-Removal of the the identifier $\name$ from the local storage of the environment $\env$
+Removal of the identifier $\name$ from the local storage of the environment $\env$
 is the environment $\newenv$ and all of the following apply:
 \begin{itemize}
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -5804,7 +5823,7 @@ The relation
 \[
   \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \tbitvector
 \]
-transforms a, possibly empty, list of bitvector native values $\vvs$ into a single bitvector.
+transforms a (possibly empty) list of bitvector native values $\vvs$ into a single bitvector.
 
 \begin{emptyformal}
 \subsection{Formally}
@@ -5918,7 +5937,7 @@ Notice that the bits of a bitvector go from the least significant bit being on t
 which is reflected by how the rules list the bits.
 The effect of placing the bits in sequence is that of concatenating the results
 from all of the given slices.
-Also notice that bitvector bits are numbered from 1 and on, which is why we add 1 to the indices specified
+Also notice that bitvector bits are numbered from 1 and onwards, which is why we add 1 to the indices specified
 by the slices when accessing a bit.
 \end{emptyformal}
 
@@ -5934,7 +5953,7 @@ and one of the following apply:
 \begin{itemize}
   \item all positions specified by $\slices$ are within range for $\dst$ and the modified version
   of $\dst$ with the bits of $\src$ at the specified positions is returned;
-  \item there exists a position in $\slices$ that is, not in range for $\dst$ and an error is returned.
+  \item there exists a position in $\slices$ that is not in range for $\dst$ and an error is returned.
 \end{itemize}
 
 \begin{emptyformal}
@@ -5951,7 +5970,7 @@ and one of the following apply:
     \slicestopositions(n, \slices) \evalarrow \positions \terminateas \ErrorConfig\\
     {\mathit{bit} = \lambda i \in 1..n.\left\{ \begin{array}{ll}
      \vs_i & i \in \positions\\
-     \vd_i & \text{else}
+     \vd_i & \text{otherwise}
     \end{array} \right.}\\
     \vv\eqdef\nvbitvector(\mathit{bit}(n-1)\ldots \mathit{bit}(0))\\
   }
@@ -6073,7 +6092,7 @@ The relation
   (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\vg})
 \]
 associates $\vv$ to $\name$ as a local storage element in the environment $\env$ and
-returns the updated environment $\newenv$ with the execution graph that consists of a Write Effect to $\name$.
+returns the updated environment $\newenv$ with the execution graph consisting of a Write Effect to $\name$.
 
 \begin{emptyformal}
 \subsection{Formally}
@@ -6193,7 +6212,8 @@ This is essentially done by recursively replacing type names by their definition
 For more information refer to TypingRule.Structure in
 ASL Typing Reference~\cite{ASLTypingReference}.
 %
-Since we assume the specification is well-typed (\secref{MeaningfulASLSpecifications}), $\tstruct$ always returns a valid type.
+Since we assume the specification is well-typed (\secref{MeaningfulASLSpecifications}),
+$\tstruct$ returns a valid type.
 
 The base value of the type $\vt$ in the environment $\env$ is $\vv$,
 as well as the execution graph $\vg$ that results
@@ -6258,7 +6278,7 @@ or an error, and one of the following apply:
     \item the base value of each field is obtained, and if any of the base values results in an error
     then the entire rule short-circuits with that error;
     \item $\vv$ is the native value record where each identifier in the record is mapped to its
-    respecive base value;
+    respective base value;
     \item $\vg$ is the parallel composition of the graphs resulting from the base value evaluation
     of all the fields.
   \end{itemize}
@@ -6268,7 +6288,7 @@ or an error, and one of the following apply:
     \item the structure of $\vt$ is that of a tuple of types;
     \item the base value of each type in the tuple is obtained, and if any of the base values results in an error
     then the entire rule short-circuits with that error;
-    \item $\vv$ is the native value vector consists of the base values in the order of the corresponding types
+    \item $\vv$ is the native value vector consisting of the base values in the order of the corresponding types
     of the tuple;
     \item $\vg$ is the parallel composition of the graphs resulting from the base value evaluation
     of all the tuple types.
@@ -6308,21 +6328,21 @@ If evaluating an inner expression results in an error, there is no base value an
 
 \begin{mathpar}
   \inferrule[bool]{
-    \tstruct(\vt) \eqname \TBool
+    \tstruct(\vt) = \TBool
   }
   {
     \basevalue(\env, \vt) \evalarrow (\nvbool(\True), \emptygraph)
   }
   \and
   \inferrule[real]{
-    \tstruct(\vt) \eqname \TReal
+    \tstruct(\vt) = \TReal
   }
   {
     \basevalue(\env, \vt) \evalarrow (\nvreal(0), \emptygraph)
   }
   \and
   \inferrule[string]{
-    \tstruct(\vt) \eqname \TString
+    \tstruct(\vt) = \TString
   }
   {
     \basevalue(\env, \vt) \evalarrow (\nvliteral{\lstring(\emptylist)}, \emptygraph)
@@ -6473,21 +6493,21 @@ only returns \False\ in cases where dynamic information is required.
 
 One of the following applies:
 \begin{itemize}
-  \item All of the following applies (\textsc{basic}):
+  \item All of the following apply (\textsc{basic}):
   \begin{itemize}
     \item $\vt$ has the structure of a Boolean, a real, a string, or an enumeration;
     \item $\vb$ is \True;
     \item $\vg$ is the empty graph.
   \end{itemize}
 
-  \item All of the following applies (\textsc{int\_unconstrained}):
+  \item All of the following apply (\textsc{int\_unconstrained}):
   \begin{itemize}
     \item $\vt$ has the structure of the unconstrained integer;
     \item $\vb$ is \True;
     \item $\vg$ is the empty graph.
   \end{itemize}
 
-  \item All of the following applies (\textsc{int\_wellconstrained}):
+  \item All of the following apply (\textsc{int\_wellconstrained}):
   \begin{itemize}
     \item $\vt$ has the structure of a well-constrained integer with constraints $\vc_{1..k}$;
     \item $\vv$ is the native value integer for $n$;
@@ -6499,7 +6519,7 @@ One of the following applies:
     \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
   \end{itemize}
 
-  \item All of the following applies (\textsc{record}):
+  \item All of the following apply (\textsc{record}):
   \begin{itemize}
     \item $\vt$ has the structure of a record or an exception, with a list of field names
     $\id_i$, for $i=1..k$, associated with types $\vt_i$, for $i=1..k$;
@@ -6514,7 +6534,7 @@ One of the following applies:
     of the constraints.
   \end{itemize}
 
-  \item All of the following applies (\textsc{tuple}):
+  \item All of the following apply (\textsc{tuple}):
   \begin{itemize}
     \item $\vt$ has the structure of a tuple with types $\vt_i$, for $i=1..k$;
     \item the value at every index $i=1..k$ of $\vv$ is $\vu_i$, for $i=1..k$,
@@ -6528,7 +6548,7 @@ One of the following applies:
     of the constraints.
   \end{itemize}
 
-  \item All of the following applies (\textsc{array}):
+  \item All of the following apply (\textsc{array}):
   \begin{itemize}
     \item $\vt$ has the structure of an array with length expression $\vt$
     and element type $\vtone$;
@@ -6551,8 +6571,6 @@ One of the following applies:
 \begin{emptyformal}
 \hypertarget{def-astlabel}{}
 \subsection{Formally}
-$\astlabel(n)$ is the label of the AST node $n$.
-
 \begin{mathpar}
   \inferrule[Basic (bool, real, string, enum)]{
     \astlabel(\tstruct(\env, \vt)) \in \{\TBool, \TReal, \TString, \TEnum\}\\
@@ -6571,7 +6589,7 @@ $\astlabel(n)$ is the label of the AST node $n$.
   }
 \end{mathpar}
 
-\newcommand\integerconstraintsatisfied[0]{\texttt{int\_constraint\_sat}}
+\hypertarget{def-integerconstraintsatisfied}{}
 To handle \emph{well-constrained integers} (integers with a non-empty list of constraints),
 we introduce the helper relation
 \[
@@ -6892,7 +6910,7 @@ into a natural number:
       \textit{xor\_bits} = \lambda a,b\in\{0,1\}.\ \left\{
         \begin{array}{ll}
           0 & \text{ if } a = b\\
-          1 & \text{ else}
+          1 & \text{ otherwise}
         \end{array}
       \right.
     }\\

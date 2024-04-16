@@ -100,7 +100,7 @@
 \newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
 
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
-\newcommand\equate[0]{\hyperlink{def-equate}{\texttt{equal}}}
+\newcommand\equal[0]{\hyperlink{def-equal}{\texttt{equal}}}
 \newcommand\equalarrow[0]{\rightarrow}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\texttt{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\texttt{indices}}}
@@ -317,6 +317,10 @@
 %% Type System macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\typearrow[0]{\xrightarrow{\mathsf{type}}}
+\newcommand\Val[0]{\textsf{Val}}
+\newcommand\TTypeError[0]{\textsf{TTypeError}}
+\newcommand\TypeErrorConfig[0]{\texttt{\#TE}}
+\newcommand\aslto[0]{\longrightarrow}
 
 \newcommand\staticenvs[0]{\hyperlink{def-staticenvs}{\mathbb{SE}}}
 \newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\tenv}}}
@@ -341,6 +345,8 @@
 \newcommand\evalarrow[0]{\xrightarrow{\evalrel}}
 \newcommand\envs[0]{\hyperlink{def-envs}{\mathbb{E}}}
 \newcommand\dynamicenvs[0]{\hyperlink{def-dynamicenvs}{\mathbb{DE}}}
+\newcommand\xgraph[0]{\textsf{g}}
+\newcommand\emptygraph[0]{{\hyperlink{def-emptygraph}{\emptyset_\xgraph}}}
 \newcommand\asldata[0]{\hyperlink{def-asldata}{\mathtt{asl\_data}}}
 \newcommand\aslctrl[0]{\hyperlink{def-aslctrl}{\mathtt{asl\_ctrl}}}
 \newcommand\aslpo[0]{\hyperlink{def-aslpo}{\mathtt{asl\_po}}}
@@ -364,5 +370,7 @@
 \newcommand\vx[0]{\texttt{x}}
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\ve[0]{\texttt{e}}
+\newcommand\vtone[0]{\texttt{t1}}
+\newcommand\vttwo[0]{\texttt{t2}}
 \newcommand\vle[0]{\texttt{le}}
 \newcommand\vargs[0]{\texttt{args}}

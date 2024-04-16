@@ -143,8 +143,6 @@
 \newcommand\vts[0]{\texttt{t\_s}}
 \newcommand\vsone[0]{\texttt{s1}}
 \newcommand\vstwo[0]{\texttt{s2}}
-\newcommand\vtone[0]{\texttt{t1}}
-\newcommand\vttwo[0]{\texttt{t2}}
 \newcommand\vz[0]{\texttt{z}}
 \newcommand\vw[0]{\texttt{w}}
 \newcommand\vwone[0]{\texttt{w1}}
@@ -258,8 +256,8 @@
 \chapter{Introduction}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The purpose of this document is to describe, in a definitive way, which ASL programs are considered \emph{valid}.
-Validity is defined in terms of a \emph{type system}~\cite{TypeSystemsLucaCardelli}. That is, a set of \emph{type rules}.
+The purpose of this document is to describe, in a formal and authoritative way, which ASL programs are considered \emph{valid}.
+Validity is defined in terms of a \emph{type system}~\cite{TypeSystemsLucaCardelli}. That is, a set of \emph{typing rules}.
 
 \section{Abstract Syntax}
 An \emph{abstract syntax tree} (AST, for short) represents an ASL specification as a labelled structured tree.
@@ -268,7 +266,7 @@ The ASL type system is defined over the ASL abstract syntax, which is given in~\
 
 \section{Environments}
 
-A \emph{static environment} (also called a \emph{type environment}) is what the type rules operate over:
+A \emph{static environment} (also called a \emph{type environment}) is what the typing rules operate over:
 a structure, which amongst other things, associates types to variables.
 Throughout this document, we will use the term environment for static environment, unless otherwise stated.
 Intuitively, the typing of a
@@ -300,7 +298,29 @@ Environments $\tenv \in \staticenvs$ are formally defined below (referring to sy
 \end{array}
 \]
 
-The global environment and local environment consist of various components.
+\hypertarget{def-emptytenv}{}
+\begin{definition}[Empty Static Environment]
+  The \emph{empty static environment}, denoted as $\emptytenv$ is defined as
+  \[
+    \emptytenv \triangleq \left(
+      \begin{array}{l}
+      (\overname{\emptyfunc}{\declaredtypes},
+      \overname{\emptyfunc}{\constantvalues},
+      \overname{\emptyfunc}{\storagetypes},
+      \overname{\emptyfunc}{\subtypes},
+      \overname{\emptyfunc}{\subprograms},
+      \overname{\emptyfunc}{\subprogramrenamings}),\\
+      (
+        \overname{\emptyfunc}{\constantvalues},
+        \overname{\emptyfunc}{\storagetypes},
+        \overname{\None}{\returntype}
+      )
+      \enspace.
+    \end{array}
+    \right)
+  \]
+\end{definition}
+
 The global environment and local environment consist of various components.
 We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a given environment.
 
@@ -308,7 +328,6 @@ To update a function component $f$ (e.g., $\declaredtypes$) of an environment $\
 with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to stand for $\tenv[f \mapsto E.f[x \mapsto v]]$.
 
 \section{Type System}
-A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$.
 A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$.
 We refer to $P_1,\ldots,P_k$ as the \emph{premises} of the rule and to the verdict $S$ as its \emph{conclusion}.
 When the set of premises is empty, we may omit them entirely.
@@ -329,7 +348,7 @@ The following rule is used to type a sequence of two statements:
   \annotatestmt{\tenvone, \vs2} = (\newstwo, \tenvtwo)\\
 }
 {
-  \annotatestmt{\tenv, \texttt{S\_Seq}(\vsone, \vstwo)} = (\texttt{S\_Seq}(\newsone, \newstwo), \tenvtwo)
+  \annotatestmt{\tenv, \SSeq(\vsone, \vstwo)} = (\SSeq(\newsone, \newstwo), \tenvtwo)
 }
 \]
 The rule uses the annotation function $\annotatestmt{\cdot}$, which
@@ -917,9 +936,9 @@ may appear internally.
   \underline{across all possible runtime environments}.
   %
   The reason that for this distinction is that the sets of values
-  considered for bitevector types, array types, constrained integers, and constrained bitvectors,
+  considered for bitvector types, array types, constrained integers, and constrained bitvectors,
   can be parameterized by configuration variables and subprogram parameters whose values are only determined during runtime.
-  considered for bitevector types, array types, constrained integers, and constrained bitvectors,
+  considered for bitvector types, array types, constrained integers, and constrained bitvectors,
   can be parameterized by configuration variables and subprogram parameters whose values are only determined during runtime.
 
   When the dynamic domain of a type equals the static domain of a type, we will simply refer to both
@@ -2716,8 +2735,8 @@ In the following example, we show several literals and their corresponding types
 \begin{emptyformal}
   \subsection{Formally}
 \begin{mathpar}
-\inferrule{\ve \in \literal \\ \vt = \annotateliteral{\ve} \\ \newe = \tenv}
-{\annotateexpr{\tenv, \ve} = (\vt, \newe)}
+\inferrule{\annotateliteral{\vv} \typearrow \vt}
+{\annotateexpr{\tenv, \ELiteral(\vv)} \typearrow (\vt, \ELiteral(\vv))}
 \end{mathpar}
 \end{emptyformal}
 
@@ -2921,11 +2940,11 @@ In the following example, we show several literals and their corresponding types
     \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} = (\vtone, \veone')\\
-  \annotateexpr{\tenv, \vetwo} = (\vttwo, \vetwo') \\
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) = \vt
+  \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veone') \terminateas \TypeErrorConfig\\\\
+  \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwo') \terminateas \TypeErrorConfig\\\\
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \vt
   }
-{\annotateexpr{\tenv, \texttt{E\_Binop}(\op, \veone, \vetwo)} = (\vt, \texttt{E\_Binop}(\op, \veone', \vetwo'))}
+{\annotateexpr{\tenv, \EBinop(\op, \veone, \vetwo)} \typearrow (\vt, \EBinop(\op, \veone', \vetwo'))}
 \end{mathpar}
 \end{emptyformal}
 
@@ -4920,7 +4939,7 @@ environment \texttt{new\_env} and all of the following apply:
 \begin{emptyformal}
     \subsection{Formally}
 \begin{mathpar}
-  \inferrule{}{\annotatestmt{\tenv, \texttt{S\_Pass}} = (\texttt{S\_Pass},\tenv)}
+  \inferrule{}{\annotatestmt{\tenv, \SPass} \typearrow (\SPass,\tenv)}
 \end{mathpar}
 \end{emptyformal}
 
@@ -5159,14 +5178,14 @@ environment \texttt{new\_env} and all of the following apply:
     \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vs = \texttt{S\_Seq}(\vsone, \vstwo)\\
-  \annotatestmt{\tenv, \vs1} = (\newsone, \tenvone)\\
-  \annotatestmt{\tenvone, \vs2} = (\newstwo, \tenvtwo)\\
-  \news = \texttt{S\_Seq}(\newsone, \newstwo)\\
+  \vs = \SSeq(\vsone, \vstwo)\\
+  \annotatestmt{\tenv, \vs1} \typearrow (\newsone, \tenvone)\\
+  \annotatestmt{\tenvone, \vs2} \typearrow (\newstwo, \tenvtwo)\\
+  \news = \SSeq(\newsone, \newstwo)\\
   \newtenv = \tenvtwo
 }
 {
-  \annotatestmt{\tenv, \vs} = (\news, \newtenv)
+  \annotatestmt{\tenv, \vs} \typearrow (\news, \newtenv)
 }
 \end{mathpar}
 \end{emptyformal}
@@ -5437,29 +5456,29 @@ environment \texttt{new\_env} and all of the following apply:
    \item an error is raised: ``\texttt{ASL Typing Error : A subtype of integer was expected, t2 was provided}'' or \texttt{t2} has the structure of an integer type and all of the following apply:
    \item One of the following applies:
      \begin{itemize}
-       \item All of the following applies:
+       \item All of the following apply:
          \begin{itemize}
            \item \texttt{t1} has the structure of an unconstrained integer type;
            \item \texttt{ty} is the unconstrained integer type;
          \end{itemize}
-       \item All of the following applies:
+       \item All of the following apply:
          \begin{itemize}
            \item \texttt{t2} has the structure of an unconstrained integer type;
            \item \texttt{ty} is the unconstrained integer type;
          \end{itemize}
-       \item All of the following applies:
+       \item All of the following apply:
          \begin{itemize}
            \item \texttt{t1} has the structure of a constrained integer type with constraint \texttt{cs1};
            \item \texttt{t2} has the structure of a constrained integer type with constraint \texttt{cs2};
            \item One of the following applies:
              \begin{itemize}
-               \item All of the following applies:
+               \item All of the following apply:
                  \begin{itemize}
                    \item \texttt{dir} is \texttt{to};
                    \item \texttt{bot\_cs} is \texttt{cs1};
                    \item \texttt{top\_cs} is \texttt{cs2};
                  \end{itemize}
-               \item All of the following applies:
+               \item All of the following apply:
                  \begin{itemize}
                    \item \texttt{dir} is \texttt{down to};
                    \item \texttt{bot\_cs} is \texttt{cs2};
@@ -5468,7 +5487,7 @@ environment \texttt{new\_env} and all of the following apply:
              \end{itemize}
            \item One of the following applies:
              \begin{itemize}
-               \item All of the following applies:
+               \item All of the following apply:
                  \begin{itemize}
                    \item \texttt{bot\_cs} contains a an expression that is not evaluable at compile-time;
                    \item \texttt{cs} is the empty constraint;
@@ -5809,7 +5828,8 @@ new\_stmt)} and all of the following apply:
 
   \subsection{Prose}
    Annotating catcher \texttt{(name\_opt, ty, stmt)} in an environment
-\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env return\_type (name\_opt, ty, stmt)})results in \texttt{(name\_opt, ty, new\_stmt)} and all of the following apply:
+\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env return\_type (name\_opt, ty, stmt)})
+results in \texttt{(name\_opt, ty, new\_stmt)} and all of the following apply:
    \begin{itemize}
    \item \texttt{ty} has the structure of an exception type;
    \item \texttt{name\_opt} gives a name \texttt{name};
@@ -6072,7 +6092,7 @@ results in a new environment \texttt{env'}, which contains the declared element,
 \section{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
 \subsection{Prose}
 Declaring a subprogram declaration \texttt{func\_sig} in a given environment \texttt{env} results
-in \texttt{new\_env} and all of the following applies:
+in \texttt{new\_env} and All of the following apply:
 \begin{itemize}
   \item \texttt{name} is the identifier associated with the subprogram declaration;
   \item \texttt{env} does not contain another subprogram declaration for \texttt{name} that clashes with \texttt{func\_sig};
@@ -6350,11 +6370,6 @@ This relates to \identi{LWQQ}.
 \chapter{Static Evaluation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newcommand\Val[0]{\textsf{Val}}
-\newcommand\TTypeError[0]{\textsf{TTypeError}}
-\newcommand\TypeErrorConfig[0]{\texttt{\#TE}}
-\newcommand\aslto[0]{\longrightarrow}
-
 \section{TypingRule.StaticEval}
 The partial function
 \[
@@ -6446,28 +6461,28 @@ there are two possibilities:
 \begin{itemize}
   \item the expressions or types are not equivalent;
   \item the expressions or types are equivalent, but the reasoning power of our rules
-  is not enough to prove it, and so we ``pessimistically'' answer negatively.
+  is not enough to prove it, and so we ``conservatively'' answer negatively.
 \end{itemize}
-In proof-theoretic terms, we say that such tests are \emph{sound} but \emph{incomplete}.
+In proof-theoretic terms, we can say that our equivalence tests are \emph{sound} but \emph{incomplete}.
 
 Notice that for a conservative test, it is always correct to return $\False$.
 
-\begin{definition}[\hypertarget{def-equal}{Equal Rule}]
-  The meta function $\equate$ equates to values of the same mathematical type and returns
-  the respective Boolean value:
-  \begin{mathpar}
-      \inferrule[equate-true]{a = b}
-      {
-          \equate(a, b) \rightarrow \True
-      }
-      \and
-      \inferrule[equate-false]{a \neq b}
-      {
-          \equate(a, b) \rightarrow \False
-      }
-  \end{mathpar}
-  \end{definition}
-  The reason we define such a function for equality is to allow using it as a short-circuiting premise.
+\section{TypingRule.Equal}
+\hypertarget{def-equal}{}
+The meta function $\equal$ equates two values of the same mathematical type and returns
+the respective Boolean value:
+\begin{mathpar}
+    \inferrule[equal-true]{a = b}
+    {
+        \equal(a, b) \rightarrow \True
+    }
+    \and
+    \inferrule[equal-false]{a \neq b}
+    {
+        \equal(a, b) \rightarrow \False
+    }
+\end{mathpar}
+The reason we define equality via rules is to allow using it as a short-circuiting premise.
 
 \section{TypingRule.ExprEqual}
 The function
@@ -6527,7 +6542,7 @@ Recall that a conjunction over an empty set equals $\True$.
   \inferrule[e\_call]{
     \veone \eqname \ECall(\nameone, \vargsone, \Ignore)\\
     \vetwo \eqname \ECall(\nametwo, \vargstwo, \Ignore)\\\\
-    \equate(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
+    \equal(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
     \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
     i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i\\
     \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
@@ -6741,22 +6756,22 @@ and, if successful, comparing the resulting normal forms for equality.
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following applies (\textsc{all\_supported}):
+  \item All of the following apply (\textsc{all\_supported}):
   \begin{itemize}
     \item $\veone$ can be transformed into the intermediate representation $\irone$;
     \item $\vetwo$ can be transformed into the intermediate representation $\irtwo$;
     \item $\vb$ is the result of equating $\irone$ and $\irtwo$.
   \end{itemize}
 
-  \item All of the following applies (\textsc{unsopported1}):
+  \item All of the following apply (\textsc{unsopported1}):
   \begin{itemize}
-    \item $\veone$ can not be transformed into an intremediate representation.
+    \item $\veone$ can not be transformed into an intermediate representation.
     \item $\vb$ is $\False$;
   \end{itemize}
 
-  \item All of the following applies (\textsc{unsupported2}):
+  \item All of the following apply (\textsc{unsupported2}):
   \begin{itemize}
-    \item $\vetwo$ can not be transformed into an intremediate representation.
+    \item $\vetwo$ can not be transformed into an intermediate representation.
     \item $\vb$ is $\False$;
   \end{itemize}
 \end{itemize}
@@ -6800,16 +6815,16 @@ an intermediate representation $\exprir$, which is essentially polynomials in re
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following applies (\textsc{case\_success}):
+  \item All of the following apply (\textsc{case\_success}):
   \begin{itemize}
     \item the expression $\ve$ can be transformed into the intermediate representation form as $\vp$;
     \item the result is $\vp$;
   \end{itemize}
 
-  \item All of the following applies (\textsc{static\_eval\_success}):
+  \item All of the following apply (\textsc{static\_eval\_success}):
   \begin{itemize}
     \item the expression $\ve$ cannot be transformed into the intermediate representation form as $\vp$;
-    \item the expression $\ve$ can be static evaluated to yield an integer value $\vv$;
+    \item the expression $\ve$ can be statically evaluated to yield an integer value $\vv$;
     \item $\vp$ is the reduced polynomial representing the value $\vv$.
   \end{itemize}
 
@@ -6893,7 +6908,7 @@ The function
 \[
   \addpolynomials : \polynomials \times \polynomials \rightarrow \polynomials
 \]
-adds to two polynomials.
+adds two polynomials.
 \begin{mathpar}
   \inferrule{
     \vpone \eqname \Sum(\vfone)\\
@@ -7164,7 +7179,7 @@ conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo
 
 \begin{mathpar}
   \inferrule[trecord]{
-    \equate(\dom(\vfone), \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
+    \equal(\dom(\vfone), \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
     \vf \in \dom(\vfone): \typeequal(\tenv, \vfone(\vf), \vftwo(\vf)) \typearrow \vb_\vf\\
     \vb \eqdef \bigwedge_{\vf \in \dom(\vfone)} \vb_\vf
   }
@@ -7175,7 +7190,7 @@ conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo
 
 \begin{mathpar}
   \inferrule[texception]{
-    \equate(\dom(\vfone), \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
+    \equal(\dom(\vfone), \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
     \vf \in \dom(\vfone): \typeequal(\tenv, \vfone(\vf), \vftwo(\vf)) \typearrow \vb_\vf\\
     \vb \eqdef \bigwedge_{\vf \in \dom(\vfone)} \vb_\vf
   }
@@ -7266,7 +7281,7 @@ conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield
     \inferrule[bitfield\_simple]{
       \bfone \eqname \BitFieldSimple(\nameone, \slicesone)\\
       \bftwo \eqname \BitFieldSimple(\nametwo, \slicestwo)\\\\
-      \equate(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
+      \equal(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
       \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
     }
     {
@@ -7276,7 +7291,7 @@ conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield
     \inferrule[bitfield\_nested]{
       \bfone \eqname \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
       \bftwo \eqname \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
-      \equate(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
+      \equal(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
       \slicesequal(\tenv, \slicesone, \slicestwo) \True \terminateas \False\\\\
       \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vb
     }
@@ -7294,7 +7309,7 @@ The function
   \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraints}{\csone} \aslsep \overname{\intconstraints}{\cstwo})
   \rightarrow \overname{\{\True, \False\}}{\vb}
 \]
-conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in envieonment $\tenv$.
+conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$.
 
 \begin{emptyformal}
 \subsection{Formally}
@@ -7317,7 +7332,7 @@ The function
   \constraintequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vstwo})
   \rightarrow \overname{\{\True, \False\}}{\vb}
 \]
-conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environemnt $\tenv$.
+conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environment $\tenv$.
 
 \begin{emptyformal}
   \subsection{Formally}
