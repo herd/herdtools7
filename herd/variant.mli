@@ -95,8 +95,14 @@ type t =
   | Strict
 (* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
   | Warn
+(* Telechat variant - implements unconditional branches as exit, and any other optional quirks*)
   | Telechat
   | NV2
+(* Old solver, new solver proceeds by substitution following toplogical sort *)
+  | OldSolver
+(* Accept cyclic equation sets as being solvable *)
+  | OOTA
+
 
 val compare : t -> t -> int
 val equal : t -> t -> bool

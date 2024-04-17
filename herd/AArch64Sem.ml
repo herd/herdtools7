@@ -771,7 +771,7 @@ module Make
         >>= fun v -> write_reg_op op sz rd v ii
         >>= fun () -> B.nextT
 
-      let do_read_mem sz  = do_read_mem_op (M.op1 (Op.Mask sz)) sz
+      let do_read_mem sz  = do_read_mem_op (uxt_op sz) sz
 
       let read_mem_acquire sz = do_read_mem sz Annot.A
       let read_mem_acquire_pc sz = do_read_mem sz Annot.Q

@@ -47,6 +47,7 @@ let polymorphic_compare = compare
 let int_compare = Int.compare
 let int_eq = Int.equal
 let max_int (x:int) (y:int) = if x >= y then x else y
+let min_int (x:int) (y:int) = if x <= y then x else y
 let string_eq = String.equal
 let bool_eq = Bool.equal
 let identity = Fun.id

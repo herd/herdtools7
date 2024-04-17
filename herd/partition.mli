@@ -21,7 +21,7 @@ module Make (O:Set.OrderedType) : sig
 
 (* All creation steps must precede union/find operations *)
   val create : unit -> t
-  val add : t -> O.t -> t
+  val add : O.t -> t -> t
 
 (* Union/Find *)
   val find : t -> O.t -> O.t

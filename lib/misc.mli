@@ -48,6 +48,7 @@ val polymorphic_compare : 'a -> 'a -> int
 val int_compare : int -> int -> int
 val int_eq : int -> int -> bool
 val max_int : int -> int -> int
+val min_int : int -> int -> int
 val string_eq : string -> string -> bool
 val bool_eq : bool -> bool -> bool
 
