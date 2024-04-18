@@ -479,6 +479,18 @@ module TypingRule = struct
     | DeclareGlobalStorage
     | DeclareTypeDecl
     | Specification
+    | TString
+    | TReal
+    | TBool
+    | TNamed
+    | TInt
+    | TBits
+    | TTuple
+    | TArray
+    | TEnumDecl
+    | TRecordExceptionDecl
+    | TNonDecl
+    | TBitField
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -612,6 +624,18 @@ module TypingRule = struct
     | DeclareGlobalStorage -> "DeclareGlobalStorage"
     | DeclareTypeDecl -> "DeclareTypeDecl"
     | Specification -> "Specification"
+    | TString -> "TString"
+    | TReal -> "TReal"
+    | TBool -> "TBool"
+    | TNamed -> "TNamed"
+    | TInt -> "TInt"
+    | TBits -> "TBits"
+    | TTuple -> "TTuple"
+    | TArray -> "TArray"
+    | TEnumDecl -> "TEnumDecl"
+    | TRecordExceptionDecl -> "TRecordExceptionDecl"
+    | TNonDecl -> "TNonDecl"
+    | TBitField -> "TBitField"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -725,6 +749,18 @@ module TypingRule = struct
       CatcherNone;
       CatcherSome;
       Subprogram;
+      TString;
+      TReal;
+      TBool;
+      TNamed;
+      TInt;
+      TBits;
+      TTuple;
+      TArray;
+      TEnumDecl;
+      TRecordExceptionDecl;
+      TNonDecl;
+      TBitField;
     ]
 
   let all_nb = List.length all

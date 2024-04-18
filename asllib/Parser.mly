@@ -376,12 +376,16 @@ let ty :=
     | STRING;                                           { T_String    }
     | BIT;                                              { t_bit       }
     | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits      >
-    | ENUMERATION; l=braced(tclist(IDENTIFIER));        < T_Enum      >
     | l=plist(ty);                                      < T_Tuple     >
-    | ARRAY; e=bracketed(expr); OF; t=ty;               < T_Array     >
+    | name=IDENTIFIER;                                  < T_Named     >
+    | ARRAY; e=bracketed(expr); OF; t=ty;               { T_Array (ArrayLength_Expr e, t) }
+  )
+
+let ty_decl := ty |
+  annotated (
+    | ENUMERATION; l=braced(tclist(IDENTIFIER));        < T_Enum      >
     | RECORD; l=fields_opt;                             < T_Record    >
     | EXCEPTION; l=fields_opt;                          < T_Exception >
-    | name=IDENTIFIER;                                  < T_Named     >
   )
 
 (* Constructs on ty *)
@@ -568,8 +572,8 @@ let decl ==
         }
 
     | terminated_by(SEMI_COLON,
-      | TYPE; x=IDENTIFIER; OF; t=ty; ~=subtype_opt;  < D_TypeDecl           >
-      | TYPE; x=IDENTIFIER; s=annotated(subtype);     < make_ty_decl_subtype >
+      | TYPE; x=IDENTIFIER; OF; t=ty_decl; ~=subtype_opt; < D_TypeDecl           >
+      | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype > 
 
       | keyword=storage_keyword; name=ignored_or_identifier;
         ty=ioption(as_ty); EQ; initial_value=some(expr);

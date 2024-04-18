@@ -203,7 +203,8 @@ and use_ty acc t =
   | T_Int (WellConstrained cs) -> use_constraints acc cs
   | T_Tuple li -> List.fold_left use_ty acc li
   | T_Record fields | T_Exception fields -> fold_named_list use_ty acc fields
-  | T_Array (e, t') -> use_ty (use_e acc e) t'
+  | T_Array (ArrayLength_Expr e, t') -> use_ty (use_e acc e) t'
+  | T_Array (ArrayLength_Enum (s, _), t') -> use_ty (ISet.add s acc) t'
   | T_Bits (e, bit_fields) -> use_bitfields (use_e acc e) bit_fields
 
 and use_bitfields acc bitfields = List.fold_left use_bitfield acc bitfields
@@ -381,6 +382,14 @@ and constraint_equal eq c1 c2 =
 and constraints_equal eq cs1 cs2 =
   cs1 == cs2 || list_equal (constraint_equal eq) cs1 cs2
 
+and array_length_equal eq l1 l2 =
+  match (l1, l2) with
+  | ArrayLength_Expr e1, ArrayLength_Expr e2 -> expr_equal eq e1 e2
+  | ArrayLength_Enum (s1, _), ArrayLength_Enum (s2, _) -> String.equal s1 s2
+  | ArrayLength_Enum (_, _), ArrayLength_Expr _
+  | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
+      false
+
 and type_equal eq t1 t2 =
   t1.desc == t2.desc
   ||
@@ -397,7 +406,7 @@ and type_equal eq t1 t2 =
   | T_Bits (w1, bf1), T_Bits (w2, bf2) ->
       bitwidth_equal eq w1 w2 && bitfields_equal eq bf1 bf2
   | T_Array (l1, t1), T_Array (l2, t2) ->
-      expr_equal eq l1 l2 && type_equal eq t1 t2
+      array_length_equal eq l1 l2 && type_equal eq t1 t2
   | T_Named s1, T_Named s2 -> String.equal s1 s2
   | T_Enum li1, T_Enum li2 ->
       (* TODO: order of fields? *) list_equal String.equal li1 li2
@@ -542,20 +551,45 @@ let list_cross f li1 li2 =
 
 exception FailedConstraintOp
 
+let is_left_increasing = function
+  | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> true
+  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | RDIV ->
+      raise FailedConstraintOp
+
+let is_right_increasing = function
+  | MUL | SHL | SHR | POW | PLUS -> true
+  | DIV | DIVRM | MOD | MINUS -> false
+  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | RDIV ->
+      raise FailedConstraintOp
+
+let is_right_decreasing = function
+  | MINUS -> true
+  | DIV | DIVRM | MUL | SHL | SHR | POW | PLUS | MOD -> false
+  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | RDIV ->
+      raise FailedConstraintOp
+
 let constraint_binop op =
+  let righ_inc = is_right_increasing op
+  and righ_dec = is_right_decreasing op
+  and left_inc = is_left_increasing op in
   let do_op c1 c2 =
-    match (c1, c2, op) with
-    | Constraint_Exact e1, Constraint_Exact e2, _ ->
+    match (c1, c2) with
+    | Constraint_Exact e1, Constraint_Exact e2 ->
         Constraint_Exact (binop op e1 e2)
-    | Constraint_Exact e1, Constraint_Range (e21, e22), PLUS ->
+    | Constraint_Exact e1, Constraint_Range (e21, e22) when righ_inc ->
         Constraint_Range (binop op e1 e21, binop op e1 e22)
-    | Constraint_Exact e1, Constraint_Range (e21, e22), MINUS ->
+    | Constraint_Exact e1, Constraint_Range (e21, e22) when righ_dec ->
         Constraint_Range (binop op e1 e22, binop op e1 e21)
-    | Constraint_Range (e11, e12), Constraint_Exact e2, (PLUS | MINUS) ->
+    | Constraint_Range (e11, e12), Constraint_Exact e2 when left_inc ->
         Constraint_Range (binop op e11 e2, binop op e12 e2)
-    | Constraint_Range (e11, e12), Constraint_Range (e21, e22), PLUS ->
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22)
+      when left_inc && righ_inc ->
         Constraint_Range (binop op e11 e21, binop op e12 e22)
-    | Constraint_Range (e11, e12), Constraint_Range (e21, e22), MINUS ->
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22)
+      when left_inc && righ_dec ->
         Constraint_Range (binop op e11 e22, binop op e12 e21)
     | _ -> raise_notrace FailedConstraintOp
   in

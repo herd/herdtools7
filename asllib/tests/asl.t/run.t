@@ -36,7 +36,7 @@ Type-checking errors:
 Bad types:
   $ aslref overlapping-slices.asl
   File overlapping-slices.asl, line 1, character 0 to line 4, character 2:
-  ASL Typing error: overlapping slices 10:0, 3+:2.
+  ASL Typing error: overlapping slices 0+:11, 3+:2.
   [1]
 
 Global ignored:
@@ -110,7 +110,7 @@ Constrained-type satisfaction:
   [1]
 
   $ cat >type-sat.asl <<EOF
-  > func invokeMe_2(N: integer, b: bits(N))
+  > func invokeMe_2 {N} (b: bits(N))
   > begin
   >   // N is under-constrained integer
   >   var x: integer { 2, 4} = N;
@@ -138,7 +138,7 @@ Runtime checks:
   [1]
 
   $ cat >runtime-type-sat.asl <<EOF
-  > func test(size: integer) begin
+  > func test(size: integer {3, 4}) begin
   >   let - = Zeros(4) as bits(size);
   > end
   > func main () => integer begin
@@ -189,3 +189,26 @@ UnderConstrained integers:
 
   $ aslref named-types-in-slices.asl
   File named-types-in-slices.asl, line 13, characters 2 to 11: x -> '11111111'
+
+Arrays indexed by enumerations
+  $ aslref enum-array.asl
+  [0, 0, 0]
+
+Parameters bugs:
+  $ aslref bug1.asl
+  File bug1.asl, line 5, characters 21 to 29:
+  ASL Typing error: constrained integer expected, provided integer
+  [1]
+  $ aslref bug2.asl
+  ASL Typing error: constrained integer expected, provided integer
+  [1]
+  $ aslref bug3.asl
+  File bug3.asl, line 4, characters 10 to 18:
+  ASL Typing error: constrained integer expected, provided integer
+  [1]
+  $ aslref bug4.asl
+  File bug4.asl, line 5, characters 11 to 31:
+  ASL Typing error: Illegal application of operator OR on types bits(a)
+    and bits(b)
+  [1]
+

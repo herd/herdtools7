@@ -648,6 +648,9 @@ module Make (C : Config) = struct
       let open AST in
       let with_pos = Asllib.ASTUtils.add_dummy_pos in
       let integer = Asllib.ASTUtils.integer in
+      let int_ctnt e1 e2 =
+        T_Int (WellConstrained [ Constraint_Range (e1, e2) ]) |> with_pos
+      in
       let boolean = Asllib.ASTUtils.boolean in
       let reg = integer in
       let var x = E_Var x |> with_pos in
@@ -656,7 +659,16 @@ module Make (C : Config) = struct
       let bv_var x = bv @@ var x in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
+      let binop = Asllib.ASTUtils.binop in
+      let minus_one e = binop MINUS e (lit 1) in
+      let pow_2 = binop POW (lit 2) in
       let t_named x = T_Named x |> with_pos in
+      let uint_returns =
+        int_ctnt (lit 0) (minus_one (pow_2 (var "N")))
+      and sint_returns =
+        let big_pow = pow_2 (minus_one (var "N")) in
+        int_ctnt (E_Unop(NEG, big_pow) |> with_pos) (minus_one big_pow)
+      in
       [
 (* Fences *)
         p0 "primitive_isb" (primitive_isb ii_env);
@@ -686,11 +698,11 @@ module Make (C : Config) = struct
          p1r "UInt"
           ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
-          ~returns:integer uint;
+          ~returns:uint_returns uint;
         p1r "SInt"
           ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
-          ~returns:integer sint;
+          ~returns:sint_returns sint;
 (* Misc *)
         p0r "ProcessorID" ~returns:integer (processor_id ii_env);
         p2r "CanPredictFrom"

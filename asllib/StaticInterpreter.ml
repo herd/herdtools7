@@ -30,6 +30,7 @@ type env = SEnv.env
 let fatal = Error.fatal
 let fatal_from = Error.fatal_from
 
+exception StaticEvaluationUnknown
 exception NotYetImplemented
 
 let value_as_int pos = function
@@ -148,7 +149,9 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
               Format.eprintf "Failed to lookup %S in env: %a@." x
                 StaticEnv.pp_env env
           in
-          Error.fatal_from e (Error.UndefinedIdentifier x))
+          if SEnv.is_undefined x env then
+            Error.fatal_from e (Error.UndefinedIdentifier x)
+          else raise StaticEvaluationUnknown)
     | E_Binop (op, e1, e2) ->
         let v1 = expr_ e1 and v2 = expr_ e2 in
         binop_values e op v1 v2
@@ -390,6 +393,13 @@ module Normalize = struct
     | StrictPositive -> Negative
     | StrictNegative -> Positive
 
+  let sign_minus = function
+    | (NotNull | Null) as s -> s
+    | Positive -> Negative
+    | Negative -> Positive
+    | StrictPositive -> StrictNegative
+    | StrictNegative -> StrictPositive
+
   exception ConjunctionBottomInterrupt
 
   let sign_and _p s1 s2 =
@@ -589,7 +599,10 @@ module Normalize = struct
     | _ -> (
         let v =
           try static_eval env e
-          with Error.ASLException { desc = UnsupportedExpr _; _ } ->
+          with
+          | StaticEvaluationUnknown
+          | Error.ASLException { desc = UnsupportedExpr _; _ }
+          ->
             raise NotYetImplemented
         in
         match v with
@@ -644,24 +657,51 @@ module Normalize = struct
     if e1 == e_true then e2 else if e2 == e_true then e1 else binop BAND e1 e2
 
   let e_cond e1 e2 e3 = E_Cond (e1, e2, e3) |> add_pos_from loc
+  let unop op e = E_Unop (op, e) |> add_pos_from loc
 
   let monomial_to_expr (Prod map) =
     let ( ** ) e1 e2 =
-      if e1 = one then e2 else if e2 = one then e1 else binop MUL e1 e2
+      if e1 == one then e2 else if e2 == one then e1 else binop MUL e1 e2
     in
     let ( ^^ ) e = function
       | 0 -> one
       | 1 -> e
       | 2 -> e ** e
-      | p -> if e = one then one else binop POW e (expr_of_int p)
+      | p -> binop POW e (expr_of_int p)
     in
     AMap.fold (fun s p e -> (e_var s ^^ p) ** e) map
 
+  let sign_of_z c =
+    match Z.sign c with
+    | 1 -> StrictPositive
+    | 0 -> Null
+    | -1 -> StrictNegative
+    | _ -> assert false
+
   let polynomial_to_expr (Sum map) =
-    let ( ++ ) e1 e2 =
-      if e1 == zero then e2 else if e2 == zero then e1 else binop PLUS e1 e2
+    let add s1 e1 s2 e2 =
+      match (s1, s2) with
+      | _, Null -> e1
+      | Null, _ -> e2
+      | StrictPositive, StrictPositive | StrictNegative, StrictNegative ->
+          binop PLUS e1 e2
+      | StrictPositive, StrictNegative | StrictNegative, StrictPositive ->
+          binop MINUS e1 e2
+      | _ -> assert false
     in
-    MMap.fold (fun m c e -> monomial_to_expr m (expr_of_z c) ++ e) map zero
+    let res, sign =
+      MMap.fold
+        (fun m c (e, sign) ->
+          let c' = Z.abs c and sign' = sign_of_z c in
+          let m' = monomial_to_expr m (expr_of_z c') in
+          (add sign' m' sign e, sign'))
+        map (zero, Null)
+    in
+    match sign with
+    | Null -> zero
+    | StrictPositive -> res
+    | StrictNegative -> unop NEG res
+    | _ -> assert false
 
   let sign_to_binop = function
     | Null -> EQ_OP

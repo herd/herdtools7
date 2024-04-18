@@ -316,8 +316,18 @@ module NativeBackend = struct
     let round_towards_zero = wrap_real_to_int "RoundTowardsZero" truncate
 
     let primitives =
+      let e_var x = E_Var x |> add_dummy_pos in
+      let eoi i = expr_of_int i in
+      let binop = ASTUtils.binop in
+      let minus_one e = binop MINUS e (eoi 1) in
+      let pow_2 = binop POW (eoi 2) in
+      let neg e = E_Unop (NEG, e) |> add_pos_from e in
       (* [t_bits "N"] is the bitvector type of length [N]. *)
-      let t_bits x = T_Bits (E_Var x |> add_dummy_pos, []) |> add_dummy_pos in
+      let t_bits x = T_Bits (e_var x, []) |> add_dummy_pos in
+      (* [t_int_ctnt e1 e2] is [integer {e1..e2}] *)
+      let t_int_ctnt e1 e2 =
+        T_Int (WellConstrained [ Constraint_Range (e1, e2) ]) |> add_dummy_pos
+      in
       (* [p ~parameters ~args ~returns name f] declares a primtive named [name]
          with body [f], and signature specified by [parameters] [args] and
          [returns]. *)
@@ -329,14 +339,22 @@ module NativeBackend = struct
         ({ name; parameters; args; body; return_type; subprogram_type }, f)
       in
       [
-        p
-          ~parameters:[ ("N", None) ]
-          ~args:[ ("x", t_bits "N") ]
-          ~returns:integer "UInt" uint;
-        p
-          ~parameters:[ ("N", None) ]
-          ~args:[ ("x", t_bits "N") ]
-          ~returns:integer "SInt" sint;
+        (let two_pow_n_minus_one = minus_one (pow_2 (e_var "N")) in
+         let returns = t_int_ctnt (eoi 0) two_pow_n_minus_one in
+         p
+           ~parameters:[ ("N", None) ]
+           ~args:[ ("x", t_bits "N") ]
+           ~returns "UInt" uint);
+        (let two_pow_n_minus_one = pow_2 (minus_one (e_var "N")) in
+         let minus_two_pow_n_minus_one = neg two_pow_n_minus_one
+         and two_pow_n_minus_one_minus_one = minus_one two_pow_n_minus_one in
+         let returns =
+           t_int_ctnt minus_two_pow_n_minus_one two_pow_n_minus_one_minus_one
+         in
+         p
+           ~parameters:[ ("N", None) ]
+           ~args:[ ("x", t_bits "N") ]
+           ~returns "SInt" sint);
         p ~args:[ ("x", integer) ] ~returns:string "DecStr" dec_str;
         p ~args:[ ("x", integer) ] ~returns:string "HexStr" hex_str;
         p ~args:[ ("x", integer) ] ~returns:string "AsciiStr" ascii_str;
