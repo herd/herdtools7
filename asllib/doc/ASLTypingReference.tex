@@ -460,8 +460,8 @@ Variables of builtin singular types \texttt{integer}, \texttt{real},
 The builtin singular type \texttt{color} consists in two constants
 \texttt{RED}, and~\texttt{BLACK}.
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\BuiltinSingularBegin, lastline=\BuiltinSingularEnd]{../types.ml}
+
+      \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
 
 \begin{formal}
    \subsection{Formally}
@@ -508,8 +508,8 @@ values, while exceptions \texttt{Error}  carry a message. Notice the
 similarity with record types and that the empty field list \texttt{\{\}} can be
 omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\BuiltinAggregateBegin, lastline=\BuiltinAggregateEnd]{../types.ml}
+
+      \CodeSubsection{\BuiltinAggregateBegin}{\BuiltinAggregateEnd}{../types.ml}
 
 \begin{formal}
     \subsection{Formally}
@@ -534,8 +534,8 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 In ``\texttt{type ticks of integer;}'', the type \texttt{integer} is a builtin type but the named type \texttt{ticks} is not.
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\BuiltinSingularOrAggregateBegin, lastline=\BuiltinSingularOrAggregateEnd]{../types.ml}
+
+      \CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
@@ -557,8 +557,8 @@ In ``\texttt{type ticks of integer;}'', the type \texttt{integer} is a builtin t
     \subsection{Example}
     The type \texttt{ticks} in ``\texttt{type ticks of integer;}'' is a named type.
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\NamedBegin, lastline=\NamedEnd]{../types.ml}
+
+      \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
@@ -578,8 +578,8 @@ In ``\texttt{type ticks of integer;}'', the type \texttt{integer} is a builtin t
     \subsection{Example}
     The tuple type \texttt{(integer, integer)} is an anonymous type.
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\AnonymousBegin, lastline=\AnonymousEnd]{../types.ml}
+
+      \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
@@ -614,8 +614,8 @@ type B of A;
 type C of B;
 \end{verbatim}
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\SingularBegin, lastline=\SingularEnd]{../types.ml}
+
+      \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
@@ -653,8 +653,8 @@ type B of A;
 type C of B;
 \end{verbatim}
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\AggregateBegin, lastline=\AggregateEnd]{../types.ml}
+
+      \CodeSubsection{\AggregateBegin}{\AggregateEnd}{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
@@ -716,8 +716,8 @@ The following types are non-primitive:
 \texttt{record \{ a : A \}} & The field \texttt{a} has a non-primitive type
 \end{tabular}
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\NonPrimitiveBegin, lastline=\NonPrimitiveEnd]{../types.ml}
+
+      \CodeSubsection{\NonPrimitiveBegin}{\NonPrimitiveEnd}{../types.ml}
 
 \begin{formal}
     \subsection{Formally}
@@ -753,8 +753,8 @@ The following types are primitive:
 \texttt{record \{ticks : integer\}} & The single field \texttt{ticks} has a primitive type
 \end{tabular}
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\PrimitiveBegin, lastline=\PrimitiveEnd]{../types.ml}
+
+      \CodeSubsection{\PrimitiveBegin}{\PrimitiveEnd}{../types.ml}
 
 \begin{formal}
   \subsection{Formally}
@@ -842,8 +842,8 @@ whose structure is \texttt{integer}.
     the type of \texttt{z} is the anonymous non-primitive type
 \texttt{(integer, T1)} whose structure is \texttt{(integer, integer)}.
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\StructureBegin, lastline=\StructureEnd]{../types.ml}
+
+      \CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
 
 \begin{emptyformal}
       \subsection{Formally}
@@ -915,8 +915,8 @@ The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
 \texttt{T2} with its own underlying type, in contrast to the structure of
 \texttt{T2}, which is \texttt{(integer, integer)}.
 
-\subsection{Code}
-  \VerbatimInput[firstline=\AnonymizeBegin, lastline=\AnonymizeEnd]{../types.ml}
+
+  \CodeSubsection{\AnonymizeBegin}{\AnonymizeEnd}{../types.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -990,8 +990,8 @@ may appear internally.
   which is assigned to \texttt{N} by a given runtime environment. The static domain of that parameter
   is the infinite set of all integers.
 
-  \subsection{Code}
-      \VerbatimInput[firstline=\DomainBegin, lastline=\DomainEnd]{../types.ml}
+
+      \CodeSubsection{\DomainBegin}{\DomainEnd}{../types.ml}
 
 \begin{emptyformal}
       \subsection{Formally}
@@ -1064,8 +1064,8 @@ We denote by $\denv[N]$ the integer value given to the underconstrained paramete
   \subsection{Example}
     Bitvector storage element’s widths are constrained integers.
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\ConstrainedBegin, lastline=\ConstrainedEnd]{../AST.mli}
+
+    \CodeSubsection{\ConstrainedBegin}{\ConstrainedEnd}{../AST.mli}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -1112,8 +1112,8 @@ type subInt of integer subtypes superInt;
 \end{verbatim}
 
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SubtypeBegin, lastline=\SubtypeEnd]{../types.ml}
+
+    \CodeSubsection{\SubtypeBegin}{\SubtypeEnd}{../types.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -1167,7 +1167,7 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 
   \subsection{Example}
 
-  \subsection{Code}
+
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -1279,8 +1279,8 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\StructuralSubtypeSatisfactionBegin, lastline=\StructuralSubtypeSatisfactionEnd]{../types.ml}
+
+    \CodeSubsection{\StructuralSubtypeSatisfactionBegin}{\StructuralSubtypeSatisfactionEnd}{../types.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -1360,8 +1360,8 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ struc
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\DomainSubtypeSatisfactionBegin, lastline=\DomainSubtypeSatisfactionEnd]{../types.ml}
+
+    \CodeSubsection{\DomainSubtypeSatisfactionBegin}{\DomainSubtypeSatisfactionEnd}{../types.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -1408,8 +1408,8 @@ We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SubtypeSatisfactionBegin, lastline=\SubtypeSatisfactionEnd]{../types.ml}
+
+    \CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -1468,8 +1468,8 @@ We denote that type $\vt$ subtype-satisfies type $\vs$ in an environment $\tenv$
     non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
     type \texttt{pairT}.
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\TypeSatisfactionBegin, lastline=\TypeSatisfactionEnd]{../types.ml}
+
+    \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -1519,8 +1519,8 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\TypeClashBegin, lastline=\TypeClashEnd]{../types.ml}
+
+    \CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -1705,8 +1705,8 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LowestCommonAncestorBegin, lastline=\LowestCommonAncestorEnd]{../types.ml}
+
+    \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -1955,8 +1955,8 @@ Rules for underconstrained integers:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\CheckUnopBegin, lastline=\CheckUnopEnd]{../Typing.ml}
+
+    \CodeSubsection{\CheckUnopBegin}{\CheckUnopEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -2157,8 +2157,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\CheckBinopBegin, lastline=\CheckBinopEnd]{../Typing.ml}
+
+    \CodeSubsection{\CheckBinopBegin}{\CheckBinopEnd}{../Typing.ml}
 
 \begin{formal}
     \subsection{Formally}
@@ -2318,8 +2318,8 @@ rewritten type~\texttt{new\_ty} and all of the following apply:
 In the following example, all the uses of \texttt{string} are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TString.asl}
 
-\subsection{Code}
-\VerbatimInput[firstline=\TStringBegin, lastline=\TStringEnd]{../Typing.ml}
+
+\CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2340,8 +2340,8 @@ In the following example, all the uses of \texttt{real} are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TReal.asl}
 
 
-\subsection{Code}
-\VerbatimInput[firstline=\TRealBegin, lastline=\TRealEnd]{../Typing.ml}
+
+\CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2361,8 +2361,8 @@ rewritten type~\texttt{new\_ty} and all of the following apply:
 In the following example, all the uses of \texttt{boolean} are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBool.asl}
 
-\subsection{Code}
-\VerbatimInput[firstline=\TBoolBegin, lastline=\TBoolEnd]{../Typing.ml}
+
+\CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2387,8 +2387,8 @@ rewritten type~\texttt{new\_ty} and all of the following apply:
 In the following example, all the uses of \texttt{MyType} are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TNamed.asl}
 
-\subsection{Code}
-\VerbatimInput[firstline=\TNamedBegin, lastline=\TNamedEnd]{../Typing.ml}
+
+\CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2428,8 +2428,8 @@ In the following examples, all the uses of integer types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntWellConstrained.asl}
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntUnderConstrained.asl}
 
-\subsection{Code}
-\VerbatimInput[firstline=\TIntBegin, lastline=\TIntEnd]{../Typing.ml}
+
+\CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
 
 \isempty{\subsection{Comments}}
 
@@ -2452,9 +2452,9 @@ rewritten type~\texttt{new\_ty} and all of the following apply:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBits.asl}
 
 
-\subsection{Code}
+
 In the following example, all the uses of bitvector types are valid:
-\VerbatimInput[firstline=\TBitsBegin, lastline=\TBitsEnd]{../Typing.ml}
+\CodeSubsection{\TBitsBegin}{\TBitsEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2477,8 +2477,8 @@ In the following example, all the uses of tuple types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TTuple.asl}
 
 
-\subsection{Code}
-\VerbatimInput[firstline=\TTupleBegin, lastline=\TTupleEnd]{../Typing.ml}
+
+\CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2517,8 +2517,8 @@ rewritten type~\texttt{new\_ty} and all of the following apply:
 In the following example, all the uses of array types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TArray.asl}
 
-\subsection{Code}
-\VerbatimInput[firstline=\TArrayBegin, lastline=\TArrayEnd]{../Typing.ml}
+
+\CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2546,8 +2546,8 @@ In the following example, all the uses of enumeration types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TEnumDecl.asl}
 
 
-\subsection{Code}
-\VerbatimInput[firstline=\TEnumDeclBegin, lastline=\TEnumDeclEnd]{../Typing.ml}
+
+\CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2593,8 +2593,8 @@ In the following example, all the uses of record or exception types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TRecordExceptionDecl.asl}
 
 
-\subsection{Code}
-\VerbatimInput[firstline=\TRecordExceptionDeclBegin, lastline=\TRecordExceptionDeclEnd]{../Typing.ml}
+
+\CodeSubsection{\TRecordExceptionDeclBegin}{\TRecordExceptionDeclEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2621,8 +2621,8 @@ rewritten type~\texttt{new\_ty} and all of the following apply:
 In the following example, the use of a record type out of a declaration is invalid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TNonDecl.asl}
 
-\subsection{Code}
-\VerbatimInput[firstline=\TNonDeclBegin, lastline=\TNonDeclEnd]{../Typing.ml}
+
+\CodeSubsection{\TNonDeclBegin}{\TNonDeclEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2638,8 +2638,8 @@ In the following example, all the uses of bitvector types with bitfields are val
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBitField.asl}
 
 
-\subsection{Code}
-\VerbatimInput[firstline=\TBitFieldBegin, lastline=\TBitFieldEnd]{../Typing.ml}
+
+\CodeSubsection{\TBitFieldBegin}{\TBitFieldEnd}{../Typing.ml}
 
 
 \isempty{\subsection{Comments}}
@@ -2712,8 +2712,8 @@ its set to the single value \texttt{n};
 In the following example, we show several literals and their corresponding types in comments:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Lit.asl}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\LitBegin, lastline=\LitEnd]{../Typing.ml}
+
+  \CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -2741,8 +2741,8 @@ In the following example, we show several literals and their corresponding types
   \item \texttt{new\_e} is \texttt{e}.
   \end{itemize}
   \subsection{Example}
-  \subsection{Code}
-  \VerbatimInput[firstline=\ELitBegin, lastline=\ELitEnd]{../Typing.ml}
+
+  \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
 \begin{mathpar}
@@ -2765,8 +2765,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\ELocalVarConstantBegin, lastline=\ELocalVarConstantEnd]{../Typing.ml}
+
+  \CodeSubsection{\ELocalVarConstantBegin}{\ELocalVarConstantEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -2797,8 +2797,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\ELocalVarBegin, lastline=\ELocalVarEnd]{../Typing.ml}
+
+  \CodeSubsection{\ELocalVarBegin}{\ELocalVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -2828,8 +2828,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\EGlobalVarConstantBegin, lastline=\EGlobalVarConstantEnd]{../Typing.ml}
+
+  \CodeSubsection{\EGlobalVarConstantBegin}{\EGlobalVarConstantEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -2858,8 +2858,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\EGlobalVarConstantNoValBegin, lastline=\EGlobalVarConstantNoValEnd]{../Typing.ml}
+
+  \CodeSubsection{\EGlobalVarConstantNoValBegin}{\EGlobalVarConstantNoValEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -2889,8 +2889,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\EGlobalVarBegin, lastline=\EGlobalVarEnd]{../Typing.ml}
+
+  \CodeSubsection{\EGlobalVarBegin}{\EGlobalVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -2920,8 +2920,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\EUndefIdentBegin, lastline=\EUndefIdentEnd]{../Typing.ml}
+
+  \CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -2944,8 +2944,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\BinopBegin, lastline=\BinopEnd]{../Typing.ml}
+
+    \CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -2975,8 +2975,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\UnopBegin, lastline=\UnopEnd]{../Typing.ml}
+
+    \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3018,8 +3018,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\ECondBegin, lastline=\ECondEnd]{../Typing.ml}
+
+    \CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3055,8 +3055,8 @@ In the following example, we show several literals and their corresponding types
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\ESliceBegin, lastline=\ESliceEnd]{../Typing.ml}
+
+    \CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3097,8 +3097,8 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\ECallBegin, lastline=\ECallEnd]{../Typing.ml}
+
+    \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3130,8 +3130,8 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EGetArrayBegin, lastline=\EGetArrayEnd]{../Typing.ml}
+
+    \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3183,8 +3183,8 @@ And now define the rule to annotate the array access expression:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EStructuredNotStructuredBegin, lastline=\EStructuredNotStructuredEnd]{../Typing.ml}
+
+    \CodeSubsection{\EStructuredNotStructuredBegin}{\EStructuredNotStructuredEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3208,8 +3208,8 @@ And now define the rule to annotate the array access expression:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EStructuredMissingFieldBegin, lastline=\EStructuredMissingFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\EStructuredMissingFieldBegin}{\EStructuredMissingFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3241,8 +3241,8 @@ And now define the rule to annotate the array access expression:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\ERecordBegin, lastline=\ERecordEnd]{../Typing.ml}
+
+    \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3276,8 +3276,8 @@ i=1..k: \typesatisfies(\tenv, \vt_i', \vt_i)
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EGetRecordFieldBegin, lastline=\EGetRecordFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3312,8 +3312,8 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EGetBadRecordFieldBegin, lastline=\EGetBadRecordFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\EGetBadRecordFieldBegin}{\EGetBadRecordFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3337,8 +3337,8 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EGetBadBitFieldBegin, lastline=\EGetBadBitFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\EGetBadBitFieldBegin}{\EGetBadBitFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3361,8 +3361,8 @@ L \in \{\TRecord, \TException\}\\
 
  \subsection{Example}
 
- \subsection{Code}
-    \VerbatimInput[firstline=\EGetBadFieldBegin, lastline=\EGetBadFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3389,8 +3389,8 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EGetBitFieldBegin, lastline=\EGetBitFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3430,8 +3430,8 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EGetBitFieldNestedBegin, lastline=\EGetBitFieldNestedEnd]{../Typing.ml}
+
+    \CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3460,8 +3460,8 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EGetBitFieldTypedBegin, lastline=\EGetBitFieldTypedEnd]{../Typing.ml}
+
+    \CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3492,8 +3492,8 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EConcatEmptyBegin, lastline=\EConcatEmptyEnd]{../Typing.ml}
+
+    \CodeSubsection{\EConcatEmptyBegin}{\EConcatEmptyEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3523,8 +3523,8 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EConcatBegin, lastline=\EConcatEnd]{../Typing.ml}
+
+    \CodeSubsection{\EConcatBegin}{\EConcatEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3567,8 +3567,8 @@ expression that is unresolvable to an integer. For example:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\ETupleBegin, lastline=\ETupleEnd]{../Typing.ml}
+
+    \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3606,8 +3606,8 @@ expression that is unresolvable to an integer. For example:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EUnknownBegin, lastline=\EUnknownEnd]{../Typing.ml}
+
+    \CodeSubsection{\EUnknownBegin}{\EUnknownEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3636,8 +3636,8 @@ expression that is unresolvable to an integer. For example:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\EPatternBegin, lastline=\EPatternEnd]{../Typing.ml}
+
+    \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3680,8 +3680,8 @@ expression that is unresolvable to an integer. For example:
 
   \subsection{Example}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\CTCBegin, lastline=\CTCEnd]{../Typing.ml}
+
+  \CodeSubsection{\CTCBegin}{\CTCEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -3744,8 +3744,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LEDiscardBegin, lastline=\LEDiscardEnd]{../Typing.ml}
+
+    \CodeSubsection{\LEDiscardBegin}{\LEDiscardEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3778,8 +3778,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LELocalVarBegin, lastline=\LELocalVarEnd]{../Typing.ml}
+
+    \CodeSubsection{\LELocalVarBegin}{\LELocalVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3815,8 +3815,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LEGlobalVarBegin, lastline=\LEGlobalVarEnd]{../Typing.ml}
+
+    \CodeSubsection{\LEGlobalVarBegin}{\LEGlobalVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3862,8 +3862,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LEDestructuringBegin, lastline=\LEDestructuringEnd]{../Typing.ml}
+
+    \CodeSubsection{\LEDestructuringBegin}{\LEDestructuringEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3904,8 +3904,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESliceBegin, lastline=\LESliceEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3957,8 +3957,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESetArrayBegin, lastline=\LESetArrayEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -3999,8 +3999,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESetBadStructuredFieldBegin, lastline=\LESetBadStructuredFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESetBadStructuredFieldBegin}{\LESetBadStructuredFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4027,8 +4027,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESetStructuredFieldBegin, lastline=\LESetStructuredFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4068,8 +4068,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESetBadBitFieldBegin, lastline=\LESetBadBitFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESetBadBitFieldBegin}{\LESetBadBitFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4101,8 +4101,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESetBitFieldBegin, lastline=\LESetBitFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESetBitFieldBegin}{\LESetBitFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4151,8 +4151,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESetBitFieldNestedBegin, lastline=\LESetBitFieldNestedEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESetBitFieldNestedBegin}{\LESetBitFieldNestedEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4203,8 +4203,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESetBitFieldTypedBegin, lastline=\LESetBitFieldTypedEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESetBitFieldTypedBegin}{\LESetBitFieldTypedEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4247,8 +4247,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LESetBadFieldBegin, lastline=\LESetBadFieldEnd]{../Typing.ml}
+
+    \CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4266,8 +4266,8 @@ all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LEConcatBegin, lastline=\LEConcatEnd]{../Typing.ml}
+
+    \CodeSubsection{\LEConcatBegin}{\LEConcatEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4301,8 +4301,8 @@ Annotating a slice~\texttt{slice} in an environment~\texttt{env}
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SliceSingleBegin, lastline=\SliceSingleEnd]{../Typing.ml}
+
+    \CodeSubsection{\SliceSingleBegin}{\SliceSingleEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4327,8 +4327,8 @@ Annotating a slice~\texttt{slice} in an environment~\texttt{env}
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SliceLengthBegin, lastline=\SliceLengthEnd]{../Typing.ml}
+
+    \CodeSubsection{\SliceLengthBegin}{\SliceLengthEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4366,8 +4366,8 @@ length)} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SliceRangeBegin, lastline=\SliceRangeEnd]{../Typing.ml}
+
+    \CodeSubsection{\SliceRangeBegin}{\SliceRangeEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4390,8 +4390,8 @@ length)} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SliceStarBegin, lastline=\SliceStarEnd]{../Typing.ml}
+
+    \CodeSubsection{\SliceStarBegin}{\SliceStarEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4430,8 +4430,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PAllBegin, lastline=\PAllEnd]{../Typing.ml}
+
+    \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4451,8 +4451,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PAnyBegin, lastline=\PAnyEnd]{../Typing.ml}
+
+    \CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4486,8 +4486,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PGeqBegin, lastline=\PGeqEnd]{../Typing.ml}
+
+    \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4521,8 +4521,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PLeqBegin, lastline=\PLeqEnd]{../Typing.ml}
+
+    \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4542,8 +4542,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PNotBegin, lastline=\PNotEnd]{../Typing.ml}
+
+    \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4581,8 +4581,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PRangeBegin, lastline=\PRangeEnd]{../Typing.ml}
+
+    \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4632,8 +4632,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PSingleBegin, lastline=\PSingleEnd]{../Typing.ml}
+
+    \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4661,8 +4661,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PMaskBegin, lastline=\PMaskEnd]{../Typing.ml}
+
+    \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4684,8 +4684,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PTupleBadArityBegin, lastline=\PTupleBadArityEnd]{../Typing.ml}
+
+    \CodeSubsection{\PTupleBadArityBegin}{\PTupleBadArityEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4708,8 +4708,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PTupleBegin, lastline=\PTupleEnd]{../Typing.ml}
+
+    \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4731,8 +4731,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\PTupleConflictBegin, lastline=\PTupleConflictEnd]{../Typing.ml}
+
+    \CodeSubsection{\PTupleConflictBegin}{\PTupleConflictEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4770,8 +4770,8 @@ the following apply:
   \subsection{Example}
     \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDDiscard.asl}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LDDiscardBegin, lastline=\LDDiscardEnd]{../Typing.ml}
+
+    \CodeSubsection{\LDDiscardBegin}{\LDDiscardEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4801,8 +4801,8 @@ the following apply:
   \subsection{Example}
     \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDVar.asl}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LDVarBegin, lastline=\LDVarEnd]{../Typing.ml}
+
+    \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4840,8 +4840,8 @@ This is related to \identr{YSPM}, \identd{FXST}.
     \subsection{Example}
       \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTyped.asl}
 
-    \subsection{Code}
-      \VerbatimInput[firstline=\LDTypedBegin, lastline=\LDTypedEnd]{../Typing.ml}
+
+      \CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4877,8 +4877,8 @@ the corresponding type in ~\texttt{ty}.
   \subsection{Example}
     \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTuple.asl}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\LDTupleBegin, lastline=\LDTupleEnd]{../Typing.ml}
+
+    \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -4944,8 +4944,8 @@ environment \texttt{new\_env} and all of the following apply:
 
     \subsection{Example}
 
-    \subsection{Code}
-    \VerbatimInput[firstline=\SPassBegin, lastline=\SPassEnd]{../Typing.ml}
+
+    \CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5002,8 +5002,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=\SAssignBegin, lastline=\SAssignEnd]{../Typing.ml}
+
+  \CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -5067,8 +5067,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SReturnNoneBegin, lastline=\SReturnNoneEnd]{../Typing.ml}
+
+    \CodeSubsection{\SReturnNoneBegin}{\SReturnNoneEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5111,8 +5111,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SReturnOneBegin, lastline=\SReturnOneEnd]{../Typing.ml}
+
+    \CodeSubsection{\SReturnOneBegin}{\SReturnOneEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5145,8 +5145,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SReturnSomeBegin, lastline=\SReturnSomeEnd]{../Typing.ml}
+
+    \CodeSubsection{\SReturnSomeBegin}{\SReturnSomeEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5182,8 +5182,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SSeqBegin, lastline=\SSeqEnd]{../Typing.ml}
+
+    \CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5221,8 +5221,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SCallBegin, lastline=\SCallEnd]{../Typing.ml}
+
+    \CodeSubsection{\SCallBegin}{\SCallEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5266,8 +5266,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SCondBegin, lastline=\SCondEnd]{../Typing.ml}
+
+    \CodeSubsection{\SCondBegin}{\SCondEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5306,8 +5306,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SCaseBegin, lastline=\SCaseEnd]{../Typing.ml}
+
+    \CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5337,8 +5337,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SAssertBegin, lastline=\SAssertEnd]{../Typing.ml}
+
+    \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5382,8 +5382,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SWhileBegin, lastline=\SWhileEnd]{../Typing.ml}
+
+    \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5429,8 +5429,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SRepeatBegin, lastline=\SRepeatEnd]{../Typing.ml}
+
+    \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5535,8 +5535,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SForBegin, lastline=\SForEnd]{../Typing.ml}
+
+    \CodeSubsection{\SForBegin}{\SForEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5573,8 +5573,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SThrowNoneBegin, lastline=\SThrowNoneEnd]{../Typing.ml}
+
+    \CodeSubsection{\SThrowNoneBegin}{\SThrowNoneEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5609,8 +5609,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SThrowSomeBegin, lastline=\SThrowSomeEnd]{../Typing.ml}
+
+    \CodeSubsection{\SThrowSomeBegin}{\SThrowSomeEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5649,8 +5649,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\STryBegin, lastline=\STryEnd]{../Typing.ml}
+
+    \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5688,8 +5688,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SDeclSomeBegin, lastline=\SDeclSomeEnd]{../Typing.ml}
+
+    \CodeSubsection{\SDeclSomeBegin}{\SDeclSomeEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5726,8 +5726,8 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SDeclNoneBegin, lastline=\SDeclNoneEnd]{../Typing.ml}
+
+    \CodeSubsection{\SDeclNoneBegin}{\SDeclNoneEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5760,8 +5760,8 @@ result of annotating the statement \texttt{s} in \texttt{env}.
   \subsection{Example: TypingRule.Block0.asl}
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\BlockBegin, lastline=\BlockEnd]{../Typing.ml}
+
+    \CodeSubsection{\BlockBegin}{\BlockEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5814,8 +5814,8 @@ new\_stmt)} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\CatcherNoneBegin, lastline=\CatcherNoneEnd]{../Typing.ml}
+
+    \CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5852,8 +5852,8 @@ results in \texttt{(name\_opt, ty, new\_stmt)} and all of the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\CatcherSomeBegin, lastline=\CatcherSomeEnd]{../Typing.ml}
+
+    \CodeSubsection{\CatcherSomeBegin}{\CatcherSomeEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5910,8 +5910,8 @@ following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\FCallBadArityBegin, lastline=\FCallBadArityEnd]{../Typing.ml}
+
+    \CodeSubsection{\FCallBadArityBegin}{\FCallBadArityEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5939,8 +5939,8 @@ following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\FCallGetterBegin, lastline=\FCallGetterEnd]{../Typing.ml}
+
+    \CodeSubsection{\FCallGetterBegin}{\FCallGetterEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -5979,8 +5979,8 @@ following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\FCallSetterBegin, lastline=\FCallSetterEnd]{../Typing.ml}
+
+    \CodeSubsection{\FCallSetterBegin}{\FCallSetterEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -6013,8 +6013,8 @@ following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\FCallMismatchBegin, lastline=\FCallMismatchEnd]{../Typing.ml}
+
+    \CodeSubsection{\FCallMismatchBegin}{\FCallMismatchEnd}{../Typing.ml}
 
   \subsection{Formally}
 
@@ -6053,8 +6053,8 @@ the following apply:
 
   \subsection{Example}
 
-  \subsection{Code}
-    \VerbatimInput[firstline=\SubprogramBegin, lastline=\SubprogramEnd]{../Typing.ml}
+
+    \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
@@ -6114,8 +6114,8 @@ in \texttt{new\_env} and All of the following apply:
 \end{itemize}
 
 \subsection{Example}
-\subsection{Code}
-\VerbatimInput[firstline=\DeclareOneFuncBegin, lastline=\DeclareOneFuncEnd]{../Typing.ml}
+
+\CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
 
@@ -6235,8 +6235,8 @@ in \texttt{new\_env} and one of the following applies:
 \end{itemize}
 
 \subsection{Example}
-\subsection{Code}
-\VerbatimInput[firstline=\DeclareGlobalStorageBegin, lastline=\DeclareGlobalStorageEnd]{../Typing.ml}
+
+\CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
 \newcommand\gsd[0]{\texttt{gsd}}
@@ -6312,8 +6312,8 @@ in \texttt{env'} and one of the following applies:
 \end{enumerate}
 
 \subsection{Example}
-\subsection{Code}
-\VerbatimInput[firstline=\DeclareTypeBegin, lastline=\DeclareTypeEnd]{../Typing.ml}
+
+\CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
 \newcommand\attemptaddsubtype[0]{\texttt{attempt\_add\_subtype}}
@@ -6358,8 +6358,8 @@ and a new environment \texttt{new\_env} and all of the following apply:
 \end{itemize}
 
 \subsection{Example}
-\subsection{Code}
-\VerbatimInput[firstline=\SpecificationBegin, lastline=\SpecificationEnd]{../Typing.ml}
+
+\CodeSubsection{\SpecificationBegin}{\SpecificationEnd}{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
 \begin{mathpar}
