@@ -566,6 +566,7 @@ let keyword_list = [
   "dsb", TOK_DSB;
   "isb", TOK_ISB;
   "gcsb", TOK_GCSB;
+  "gsb", TOK_GSB;
   (* Fence Operands *)
   "sy", TOK_SY;
   "st", TOK_ST;
@@ -580,6 +581,8 @@ let keyword_list = [
   "nshst", TOK_NSHST;
   "nshld", TOK_NSHLD;
   "dsync", TOK_DSYNC;
+  "sys", TOK_SYS;
+  "ack", TOK_ACK;
   (* inline barrel shift operands *)
   "msl", TOK_MSL;
   (* Cache maintenance *)
