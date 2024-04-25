@@ -34,7 +34,7 @@ Version.ml:
 build: Version.ml | check-deps
 	dune build -j $(J) --profile $(DUNE_PROFILE)
 
-$(BENTO): | check-deps
+$(BENTO): Version.ml | check-deps
 	dune build -j $(J) --profile $(DUNE_PROFILE) $@
 
 install:
