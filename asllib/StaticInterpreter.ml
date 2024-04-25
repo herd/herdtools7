@@ -561,13 +561,13 @@ module Normalize = struct
         with Not_found -> (
           try
             let ty = StaticEnv.type_of env s in
-            let ty = make_anonymous env ty in
-            match ty.desc with
+            let ty1 = make_anonymous env ty in
+            match ty1.desc with
             | T_Int (WellConstrained [ Constraint_Exact e ]) -> to_ir env e
             | T_Int _ -> poly_of_var s |> always
             | _ ->
                 Error.fatal_unknown_pos
-                  (Error.ConflictingTypes ([ integer' ], ty))
+                  (Error.ConflictingTypes ([ integer' ], ty1))
           with Not_found ->
             Error.fatal_unknown_pos (Error.UndefinedIdentifier s)))
     | E_Binop (PLUS, e1, e2) ->

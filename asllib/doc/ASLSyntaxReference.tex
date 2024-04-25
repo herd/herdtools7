@@ -30,6 +30,16 @@ what looks like a slicing expression, which turns out to be a call to a getter.
 The typed AST represents that call directly, making it easier for an interpreter
 to evaluate that expression.
 
+Technically, there are two abstract syntaxes:
+a \emph{parsed abstract syntax} and a \emph{typed abstract syntax}.
+The first syntax results from parsing the text of an ASL specification.
+The type checker checks whether the parsed AST is valid and if so produces
+a typed AST where some nodes in the parsed AST have been transformed to
+more explicit representation. For example, the parsed AST may contain
+what looks like a slicing expression, which turns out to be a call to a getter.
+The typed AST represents that call directly, making it easier for an interpreter
+to evaluate that expression.
+
 \chapter{ASL Abstract Syntax}
 
 \section{ASL Abstract Syntax Trees}
@@ -72,8 +82,9 @@ An abstract syntax consists of a set of derivation rules and a start non-termina
 \newcommand\ASTComment[1]{//\quad\textit{#1}\ }
 
 \section{ASL Parsed Abstract Syntax}
+\section{ASL Parsed Abstract Syntax}
 
-The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\program$.
+The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\specification$.
 %
 We sometimes provide extra details to individual derivations by adding comments below them, in the form \ASTComment{this is a comment}.
 
@@ -96,6 +107,7 @@ We sometimes provide extra details to individual derivations by adding comments 
  & & \ASTComment{\texttt{binop\_pow}}\\
 
 \literal &=& \texttt{<int\_lit>}  \\
+ &|&\ASTComment{Includes \texttt{hex\_int}} \\
  &|&\ASTComment{Includes \texttt{hex\_int}} \\
  &|&\texttt{<boolean\_lit>}  \\
  &|& \texttt{<real\_lit>}  \\
@@ -161,14 +173,14 @@ We sometimes provide extra details to individual derivations by adding comments 
 &&\ASTComment{Indexes an array or a bitvector.}\\
 &&\ASTComment{All positions mentioned below are inclusive}\\
 \hline
-\slice &::=& \slicesingle(\expr) \\
-  & & \ASTComment{\slicesingle(\texttt{i}) is the slice of length \texttt{1} at position \texttt{i}.}\\
-  &|& \slicerange(\expr, \expr) \\
-  & & \ASTComment{\slicerange(\texttt{j, i}) denotes the slice from \texttt{i} to \texttt{j - 1}.}\\
-  &|& \slicelength(\expr, \expr) \\
-  & & \ASTComment{\slicelength(\texttt{i, n}) denotes the slice starting at \texttt{i} of length \texttt{n}.}\\
-  &|& \texttt{Slice\_Star}(\expr, \expr) \\
-  & & \ASTComment{\slicestar(\texttt{factor, length}) denotes the slice starting at }\\
+\slice &::=& \SliceSingle(\expr) \\
+  & & \ASTComment{\SliceSingle(\texttt{i}) is the slice of length \texttt{1} at position \texttt{i}.}\\
+  &|& \SliceRange(\expr, \expr) \\
+  & & \ASTComment{\SliceRange(\texttt{j, i}) denotes the slice from \texttt{i} to \texttt{j - 1}.}\\
+  &|& \SliceLength(\expr, \expr) \\
+  & & \ASTComment{\SliceLength(\texttt{i, n}) denotes the slice starting at \texttt{i} of length \texttt{n}.}\\
+  &|& \SliceStar(\expr, \expr) \\
+  & & \ASTComment{\SliceStar(\texttt{factor, length}) denotes the slice starting at }\\
   & & \ASTComment{\texttt{factor * length} of length n.}\\
 \end{array}
 \]
@@ -180,6 +192,7 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \TReal \\
   &|& \TString \\
   &|& \TBool \\
+  &|& \TBits(\expr, \bitfield^{*}) \\
   &|& \TBits(\expr, \bitfield^{*}) \\
   & & \ASTComment{\expr\ is a statically evaluable expression denoting the length of the bit-vector.}\\
   &|& \TEnum(\identifier^{*}) \\
@@ -214,9 +227,9 @@ We sometimes provide extra details to individual derivations by adding comments 
 \begin{array}{rcl}
 & & \ASTComment{A constraint on an integer part.}\\
 \hline
-\intconstraint &::=& \texttt{Constraint\_Exact}(\expr) \\
+\intconstraint &::=& \ConstraintExact(\expr) \\
   & & \ASTComment{A single value, given by a statically evaluable expression.}\\
-  &|& \texttt{Constraint\_Range}(\expr, \expr) \\
+  &|& \ConstraintRange(\expr, \expr) \\
   & & \ASTComment{An interval between two statically evaluable expression.}\\
 \end{array}
 \]
@@ -225,11 +238,11 @@ We sometimes provide extra details to individual derivations by adding comments 
 \begin{array}{rcl}
 & & \ASTComment{Represent static slices on a given bitvector type.}\\
 \hline
-\bitfield &::=& \texttt{BitField\_Simple}(\identifier, \slice^{*}) \\
+\bitfield &::=& \BitFieldSimple(\identifier, \slice^{*}) \\
   & & \ASTComment{A name and its corresponding slice.}\\
-  &|& \texttt{BitField\_Nested}(\identifier, \slice^{*}, \bitfield^{*}) \\
+  &|& \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*}) \\
   & & \ASTComment{A name, its corresponding slice and some nested bitfields.}\\
-  &|& \texttt{BitField\_Type}(\identifier, \slice^{*}, \ty) \\
+  &|& \BitFieldType(\identifier, \slice^{*}, \ty) \\
   & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
 \end{array}
 \]
@@ -249,14 +262,14 @@ We sometimes provide extra details to individual derivations by adding comments 
 \hline
 \lexpr &::=& \texttt{LE\_Discard}\\
   & & \ASTComment{\texttt{"-"}}\\
-  &|& \texttt{LE\_Var}(\identifier)\\
-  &|& \texttt{LE\_Slice}(\lexpr, \slice^*)\\
-  &|& \texttt{LE\_SetArray}(\lexpr, \expr)\\
-  &|& \texttt{LE\_SetField}(\lexpr, \identifier)\\
-  &|& \texttt{LE\_SetFields}(\lexpr, \identifier^*)\\
-  &|& \texttt{LE\_Destructuring}(\lexpr^*)\\
-  &|& \texttt{LE\_Concat}(\lexpr^*, \texttt{<int\_lit>}^*?)\\
-  & & \ASTComment{\texttt{LE\_Concat}$(\texttt{les}, \_)$ unpacks the various lexpr.}\\
+  &|& \LEVar(\identifier)\\
+  &|& \LESlice(\lexpr, \slice^*)\\
+  &|& \LESetArray(\lexpr, \expr)\\
+  &|& \LESetField(\lexpr, \identifier)\\
+  &|& \LESetFields(\lexpr, \identifier^*)\\
+  &|& \LEDestructuring(\lexpr^*)\\
+  &|& \LEConcat(\lexpr^*, \texttt{<int\_lit>}^*?)\\
+  & & \ASTComment{$\LEConcat(\texttt{les}, \_)$ unpacks the various lexpr.}\\
   & & \ASTComment{The second argument is a type annotation.}\\
 \end{array}
 \]
@@ -318,7 +331,9 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \texttt{S\_While}(\expr, \stmt)\\
   &|& \texttt{S\_Repeat}(\stmt, \expr)\\
   &|& \texttt{S\_Throw}((\expr, \langle\rangle)?)\\
+  &|& \texttt{S\_Throw}((\expr, \langle\rangle)?)\\
   & & \ASTComment{The outer option is to represent the implicit throw,}\\
+  & & \ASTComment{such as \texttt{throw;}.}\\
   & & \ASTComment{such as \texttt{throw;}.}\\
   &|& \texttt{S\_Try}(\stmt, \catcher^*, \stmt?)\\
   & & \ASTComment{The optional stmt is for the otherwise guard.}\\
@@ -381,7 +396,7 @@ We sometimes provide extra details to individual derivations by adding comments 
   & & \texttt{D\_GlobalStorage}(\globaldecl)\\
   & & \texttt{D\_TypeDecl}(\identifier, \ty, (\identifier, \Field^*)?)\\
   & & \ASTComment{The last component is for \texttt{with} fields.}\\
-\program &::=& \decl^*\\
+\specification &::=& \decl^*\\
 \end{array}
 \]
 
@@ -409,11 +424,11 @@ the type of throw exception.
 The rules for slices is replaced by the following:
 \[
 \begin{array}{rcl}
-\slice &::=& \slicelength(\expr, \expr) \\
+\slice &::=& \SliceLength(\expr, \expr) \\
 \end{array}
 \]
 This reflects the fact that all other slicing constructs are syntactic sugar
-for \slicelength.
+for \SliceLength.
 
 \chapter{Correpondence Betwen Left-hand-side Expressions and Right-hand-side Expressions
 \label{ch:LeftToRight}}

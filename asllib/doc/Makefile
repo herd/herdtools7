@@ -12,13 +12,16 @@ short:
 no-formal:
 	$(MAKE) $(MFLAGS) NOFORMAL=1 all
 
+no-code:
+	$(MAKE) $(MFLAGS) NOCODE=1 all
+
 no-empty:
 	$(MAKE) $(MFLAGS) NOEMPTY=1 all
 
 todo:
 	$(MAKE) $(MFLAGS) TODO=1 all
 
-CONTROLS=ifempty.tex ifformal.tex iftodo.tex
+CONTROLS=ifempty.tex ifformal.tex ifcode.tex
 
 .PHONY: control
 control: control.tex $(CONTROLS)
@@ -61,6 +64,14 @@ ASLASTLines.tex: ../AST.mli
 
 .PHONY: force
 
+ifdef NOCODE
+ifcode.tex: force
+	@echo "\\\\newif\\ifcode\\\\codefalse" >$@
+else
+ifcode.tex: force
+	@echo "\\\\newif\\ifcode\\\\codetrue" >$@
+endif
+
 ifdef NOFORMAL
 ifformal.tex: force
 	@echo "\\\\newif\\ifformal\\\\formalfalse" >$@
@@ -75,14 +86,6 @@ ifempty.tex: force
 else
 ifempty.tex: force
 	@echo "\\\\newif\\ifempty\\\\emptytrue" >$@
-endif
-
-ifdef TODO
-iftodo.tex: force
-	@echo "\\\\newif\\iftodo\\\\todotrue" >$@
-else
-iftodo.tex: force
-	@echo "\\\\newif\\iftodo\\\\todofalse" >$@
 endif
 
 clean:

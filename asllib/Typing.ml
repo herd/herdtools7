@@ -1277,7 +1277,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             match IMap.find x env.local.storage_types with
             (* Begin ELocalVarConstant *)
             | ty, LDK_Constant ->
-                let v = IMap.find x env.local.constants_values in
+                let v = IMap.find x env.local.constant_values in
                 let e = E_Literal v |> here in
                 (ty, e) |: TypingRule.ELocalVarConstant
             (* End *)
@@ -1289,7 +1289,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               match IMap.find x env.global.storage_types with
               (* Begin EGlobalVarConstant *)
               | ty, GDK_Constant -> (
-                  match IMap.find_opt x env.global.constants_values with
+                  match IMap.find_opt x env.global.constant_values with
                   | Some v ->
                       (ty, E_Literal v |> here)
                       |: TypingRule.EGlobalVarConstantVal

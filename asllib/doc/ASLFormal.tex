@@ -1,0 +1,727 @@
+\chapter{Formal System}
+\label{chap:formal}
+
+In this chapter, we define the mathematical concepts and notations used throughout.
+This chapter appears in all of the ASL references as its content it used in all of them.
+We start by defining general mathematical concepts
+and then describe how sets of rules formally define functions and relations.
+
+\section{Mathematical Definitions and Notations}
+
+We use $\triangleq$ to define mathematical concepts.
+
+We define the following sets:
+\begin{itemize}
+\item \hypertarget{def-N}{
+    $\N$ is the set of natural numbers, including $0$.
+}
+
+\item
+\hypertarget{def-Z}{
+    $\Z$ is the set of integers.
+}
+
+\item
+\hypertarget{def-Q}{
+    $\Q$ is the set of rationals.
+}
+
+\hypertarget{def-bool}{}
+\hypertarget{def-false}{}
+\hypertarget{def-true}{}
+\item $\Bool$ is the set of ASL Boolean literals, which consists of $\True$ and $\False$.
+We also use the these literals to represent the corresponding mathematical truth values,
+which are used to denote whether logical assertions hold or not.
+We also employ the mathematical meaning of logical conjunction $\land$, logical disjunction $\vee$,
+and logical negation $\neg$, given next.
+For a set of Boolean values $A$:
+\[
+  \begin{array}{rcl}
+  \land A &\triangleq&
+  \begin{cases}
+    \True & \text{if all values in A are }\True\\
+    \False & \text{otherwise}
+  \end{cases}\\
+  \vee A &\triangleq&
+  \begin{cases}
+    \False & \text{if all values in A are }\False\\
+    \True & \text{otherwise}
+  \end{cases}\\
+\end{array}
+\]
+For a pair of Boolean values $a,b\in\Bool$, we define $a \land b \triangleq \land\{a, b\}$
+and $a \vee b \triangleq \vee\{a, b\}$.
+Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
+
+\item
+\hypertarget{def-identifier}{}
+    $\Identifiers$ is the set of all ASL identifiers.
+\end{itemize}
+
+\begin{definition}[Empty Set]
+  The \emph{empty set} --- the set that does not contain any element --- is denoted as $\emptyset$.
+\end{definition}
+
+\hypertarget{def-pow}{}
+\begin{definition}[Powerset]
+  The \emph{powerset} of a set $A$, denoted as $\pow{A}$, is the set of all subsets (including the empty set) of $A$:
+  \[
+     \pow{A} \triangleq \{ B \;|\; B \subseteq A\} \enspace.
+  \]
+\end{definition}
+
+\begin{definition}[Cartesian Product]
+    The \emph{Cartesian product} of sets $A$ and $B$, denoted $A \times B$
+    is $A \times B \triangleq \{(a,b) \;|\; a \in A, b \in B\}$.
+\end{definition}
+
+\hypertarget{def-partialfunc}{}
+\hypertarget{def-dom}{}
+\begin{definition}[Partial Function\label{def:PartialFunction}]
+  A \emph{partial function}, denoted $f : A \partialto B$, is a function from a \underline{subset} of $A$ to $B$.
+  The \emph{domain} of a partial function $f$, denoted $\dom(f)$, is the subset of $A$ for which it is defined.
+  We write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$, that is, $x \not\in \dom(f)$.
+\end{definition}
+
+\hypertarget{def-emptyfunc}{}
+\begin{definition}[Empty Function\label{def:EmptyFunction}]
+The function with an empty domain is denoted as $\emptyfunc$.
+\end{definition}
+
+\hypertarget{def-finfunction}{
+The notation $\rightarrowfin$ stands for a function whose domain is finite.
+}
+
+\begin{definition}[Function Update\label{def:FunctionUpdate}]
+  The function denoted as $f[x \mapsto v]$ is a function identical to $f$, except that $x$ is bound
+  to $v$. That is, if  $g = f[x \mapsto v]$ then
+  \[
+    g(z) =
+  \begin{cases}
+    v     & \text{if } z = x\\
+    f(z)  & \text{otherwise } \enspace.
+  \end{cases}
+  \]
+
+  The notation $\{i=1..k: a_i\mapsto b_i\}$ stands for the function formed from the corresponding input-output pairs:
+  $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$.
+\end{definition}
+
+Throughout this document, we will annotate arguments of relations and functions, wherever it is useful,
+by writing a name or an expression above the corresponding argument type.
+This makes convenient to refer to arguments by referring to the corresponding names and helps identify
+the expressions corresponding to the arguments.
+For example,
+\[
+    \textsf{choice} : \overname{\Bool}{b} \times \overname{T}{x} \times \overname{T}{y} \rightarrow \overname{T}{z}
+\]
+defines a function type and lets us refer to the first argument as $b$, the second argument as $x$,
+the third argument as $y$, and to the result as $z$.
+
+A \emph{meta function} is a function whose domain is not a priori fixed but rather
+parameterized by the type of its arguments. An example is the $\textsf{choice}$ function where the type $T$ of
+$x$, $y$, and $z$ is unspecified and inferred from the context where the function is used.
+
+\hypertarget{def-choice}{}
+\begin{definition}[Choice]
+The meta function $\textsf{choice} : \overname{\Bool}{b} \times \overname{T}{x} \times \overname{T}{y} \rightarrow \overname{T}{z}$,
+is defined as follows:
+\[
+  \choice{\vb}{f}{g} \triangleq
+  \begin{cases}
+    f & \text{ if }\vb \text{ is }\True\\
+    g & \text{ otherwise}\\
+  \end{cases}
+\]
+\end{definition}
+
+\subsection{Lists}
+In the sequel, we use the term \emph{list} and \emph{sequence} interchangably.
+
+A list of elements \hypertarget{def-emptylist}{can be empty, denoted by $\emptylist$}, or non-empty.
+A non-empty list is either denoted by listing the elements in sequence, $v_1 \ldots\ v_k$,
+or in bracketed form, $[v_1,\ldots,v_k]$, which is used to aesthetically seperate it from surrounding mathematical expressions.
+The commas are entirely aesthetic and are not part of the list.
+
+We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\N$.
+
+The \emph{length} of a list is the number of elements in that list:
+$|\emptylist| \triangleq 0$ and $|v_1,\ldots,v_k|=k$.
+
+We use the notation $a..b$, where $a,b\in\Z$ and $a\leq b$, as a shorthand for the interval $a\ldots b$.
+We write $x_{a..b}$ as a shorthand for the sequence $x_a \ldots x_b$.
+%
+We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterized by $i$,
+to denote the sequence of expressions $V(1) \ldots V(k)$.
+The notation $a \in A: V(a)$, where $A$ is a set and $V$ is an expression parameterized by the free variable $a$,
+stands for $V(a_1) \ldots V(a_k)$ where $a_{1..k}$ is an arbitrary ordering of the elements of $A$.
+
+We write $T^*$ to denote a the type of a possibly-empty list of elements of type $T$,
+and $T^+$ for a non-empty list of elements of type $T$.
+
+\hypertarget{def-concat}{}
+\begin{definition}[List Concatenation]
+The meta function $\concat : T^* \times T^* \rightarrow T^*$ concatenates two lists:
+\[
+    \begin{array}{rcl}
+    \emptylist \concat L &\triangleq& L\\
+    L \concat \emptylist &\triangleq& L\\
+    l_{1..k} \concat m_{1..n} &\triangleq& [l_{1..k}, m_{1..n}]
+    \end{array}
+\]
+\end{definition}
+%Prepending an element $v$ to a list $L$ is defined as $v \prepend L \triangleq [v] \concat L$.
+
+\hypertarget{def-equallength}{}
+\begin{definition}[Equating List Lengths]
+The meta function $\equallength : \overname{L}{a} \times \overname{L}{b} \rightarrow \Bool$
+compares the length of two lists:
+\[
+\equallength(a, b) \triangleq |a|=|b| \enspace.
+\]
+\end{definition}
+
+\hypertarget{def-listrange}{}
+\begin{definition}[Indices of a List]
+The meta function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-based) list of indices for a given list:
+\[
+    \begin{array}{rcl}
+        \listrange(\emptylist) &\triangleq& \emptylist\\
+        \listrange(v_{1..k}) &\triangleq& [1..k] \enspace.
+    \end{array}
+\]
+\end{definition}
+
+\subsection{OCaml-style Notations}
+We use the following notations, which are in the style of the OCaml programming language,
+to facilitate correspondence with our
+\href{https://github.com/herd/herdtools7/tree/master/asllib}{reference implementation}.
+
+The notation $L(v_{1..k})$, where $L$ is a label and $v_{1..k}$ is a (possibly singleton) list of mathematical values,
+denotes the tuple $(L,v_{1..k})$.
+We also write $L(T_{1..k})$, where $T_{1..k}$ denotes mathematical types of values, to stand for the type
+$\{L\} \times T_1 \times \ldots \times T_k$.
+
+\hypertarget{def-none}{}
+The notation $\langle \cdot \rangle$ stands for either an empty set or a singleton set,
+where $\None\triangleq\langle\rangle$ denotes an empty set
+and $\langle v \rangle$ denotes a set containing the single element $v$.
+%
+The notation $\langle T \rangle$, where $T$ denotes a mathematical type, stands for
+$\{ \langle\rangle \} \cup \{\langle v \rangle \;|\; v \in T\}$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{How we use Rules}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+An \emph{inference rule} (rule, for short) is an implication between a set of logical assertions,
+called the \emph{premises} of the rule,
+and a \emph{conclusion} assertion.
+The conclusion holds when the \underline{conjunction} of its premises holds.
+
+We use the following rule notation, where $P_{1..k}$ are the rule premises and $C$ is the conclusion:
+\begin{mathpar}
+  \inferrule{P_1 \and \ldots \and P_k}{C}
+\end{mathpar}
+
+For example, the rule TypingRule.ELit has one premise:
+\begin{mathpar}
+  \inferrule{ \textsf{annotate\_literal}(\vv) \typearrow \vt }
+  { \texttt{annotate\_expr}(\tenv, \ELiteral(\vv)) \typearrow (\vt, \ELiteral(\vv)) }
+\end{mathpar}
+
+and the rule TypingRule.Binop (somewhat simplified here) has three premises:
+\begin{mathpar}
+  \inferrule{
+    \texttt{annotate\_expr}(\tenv, \veone) \typearrow (\vtone, \veone') \\\\
+    \texttt{annotate\_expr}(\tenv, \vetwo) \typearrow (\vttwo, \vetwo') \\\\
+    \texttt{check\_binop}(\tenv, \op, \vtone, \vttwo) \typearrow \vt
+    }
+  {\texttt{annotate\_expr}(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow (\vt, \EBinop(\op, \veone', \vetwo'))}
+\end{mathpar}
+
+The free variables appearing in the premises and conclusion are interpreted \underline{universally}.
+That is, the rules apply to any values (of the appropriate types) assigned to their free variables.
+%
+For example, the rule TypingRule.Binop applies to any choice of values for the free variables
+$\tenv$ (a static environment),
+$\veone$, $\vetwo$, $\veone'$, $\vetwo'$ (expressions),
+$\vt$, $\vtone$, and $\vttwo$ (types).
+
+\begin{definition}[Grounding]
+Assertions can be \emph{grounded} by substituting their free variables with values.
+A \emph{gound rule} is a rule with all its assertions (premises and conclusion) grounded.
+\end{definition}
+For example,
+the following is a grounding of TypingRule.Binop
+\begin{mathpar}
+  \inferrule{
+    \texttt{annotate\_expr}(\emptytenv, \ELiteral(\lint(2))) \typearrow (\TInt, \ELiteral(\lint(2))) \\\\
+    \texttt{annotate\_expr}(\emptytenv, \ELiteral(\lint(3))) \typearrow (\TInt, \ELiteral(\lint(3))) \\\\
+    \texttt{check\_binop}(\emptytenv, \MUL, \TInt, \TInt) \typearrow \TInt
+    }
+  {\texttt{annotate\_expr}(\emptytenv, \EBinop(\MUL, \ELiteral(\lint(2)), \ELiteral(\lint(3)))) \typearrow \\ (\TInt, \EBinop(\MUL, \ELiteral(\lint(2)), \ELiteral(\lint(3))))}
+\end{mathpar}
+obtained by the following substitutions:
+\begin{tabular}{ll}
+  \textbf{free variable} & \textbf{value}\\
+  \hline
+  $\tenv$   & $\emptytenv$\\
+  $\veone$  & $\ELiteral(\lint(2))$\\
+  $\veone'$  & $\ELiteral(\lint(2))$\\
+  $\vetwo$  & $\ELiteral(\lint(3))$\\
+  $\vetwo'$  & $\ELiteral(\lint(3))$\\
+  $\vt$    & $\TInt$\\
+  $\vtone$    & $\TInt$\\
+  $\vttwo$    & $\TInt$\\
+  $\op$       & $\MUL$
+\end{tabular}
+
+A set of rules is interpreted \underline{disjunctively}. That is, each rule is used to determine whether its conclusion
+holds independently of other rules.
+
+\begin{definition}[Axiom]
+  An \emph{axiom} is a rule with an empty set of premises.
+  An axiom ia denoted by simply stating its conclusion.
+\end{definition}
+
+An example of an axiom in the ASL type system is TypingRule.SPass:
+\begin{mathpar}
+  \inferrule{}{\texttt{annotate\_stmt}(\tenv, \SPass) \typearrow (\SPass,\tenv)}
+\end{mathpar}
+\hypertarget{SemanticsRule.PAll-example}{}
+An example of an axiom in the ASL semantics is SemanticsRule.PAll:
+\begin{mathpar}
+  \inferrule{}
+  {
+    \texttt{eval\_pattern}(\texttt{env}, \Ignore, \PatternAll) \evalarrow \textsf{Normal}(\texttt{Bool}(\True), \emptyset_{\textsf{g}})
+  }
+\end{mathpar}
+
+To show that a specification is correct, with respect to the set of type rules,
+or to show that a specification evaluates to a certain value, with respect to
+the set of semantic rules, we must apply rules to form a \emph{derivation tree}.
+
+\hypertarget{def-derivationtree}{}
+\begin{definition}[Derivation Tree]
+  A \emph{derivation tree} is a tree whose vertices correspond to ground assertions.
+  More specifically, the leaves of a derivation tree correspond to ground axioms,
+  and an internal vertex corresponds to a ground conclusion of a rule with its children
+  corresponding to the ground premises of the same rule.
+\end{definition}
+
+% TODO: point to the example in the semantics reference
+% when all references are joined into a single document.
+
+\subsection{Transitions\label{sec:transitions}}
+
+We use rules as a structured way for defining relations (and therefore functions, as a special case).
+
+\newcommand\termx[0]{\mathit{tx}}
+\newcommand\termy[0]{\mathit{ty}}
+\newcommand\rulearrow[0]{\xrightarrow{R}}
+
+To define a relation $R \subseteq X \times Y$, we use assertions of the form $\termx \rulearrow \termy$
+where $\termx$ and $\termy$ are logical terms denoting sets of elements from $X$ and $Y$, respectively.
+%
+We call such assertions \emph{transitions}.
+A set of rules $M$ with transition assertions defines the relation
+\[
+    R = \{ (x,y) \;|\; x \rulearrow y \text{ can be derived from rules in } M\} \enspace.
+\]
+
+For example, the rule TypingRule.ELit defines a relation between
+the infinite set of elements of the form `$\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$'
+(for the infinite choice of values for the free variables $\tenv$ and $\vv$) to the infinite
+set of pairs of the form `$(\vt, \ELiteral(\vv))$', such that the premise holds.
+
+
+\paragraph{Mutual Exclusion Rule Principle:}
+Our rules follow (with very few deviations, which we point out in context) a mutual exclusion principle,
+where each rule defines a relation disjoint from the ones defined by the other rules.
+This makes it easy to determine the rule responsible for a given transition.
+
+\hypertarget{def-configuration}{}
+\subsection{Configurations}
+
+\hypertarget{def-configdomain}{}
+Our relations range over compound values. That is, values that often nest tuples and lists inside other tuples and lists.
+We refer to such values as \emph{configurations}. To make it easier to distinguish between different configurations,
+we will sometimes attach labels to tuples using the OCaml-style notation discussed earlier.
+We refer to those labels as \emph{configuration domains}.
+The domain of a configuration $C=L(\ldots)$, denoted $\configdomain{C}$, is the label $L$.
+
+We refer to configurations at the origin of a transition as \emph{input configurations} and to the
+configurations at the destination of a transition as \emph{output transitions}.
+
+For example, the conclusion of the rule TypingRule.ELit has \\
+`$\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$' as its input configuration
+and `$(\vt, \ELiteral(\vv))$' as its output configuration.
+Further,
+$\configdomain{\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))} = \texttt{annotate\_expr}$,
+while the output configuration does not have a configuration domain, since it is an unlabelled pair.
+
+Our rules always make use of labelled input configurations. This makes it easier to ensure
+the mutual exclusion rule principle.
+
+Our rules always define relations whose sets of input configurations and output configurations are disjoint.
+
+\hypertarget{def-freshvariables}{}
+\begin{definition}[Fresh Element]
+  Premises of the form `\texttt{$x\in T$ is fresh}' mean that in any
+  instantiation in a derivation tree, the value of $x$ is unique.
+  That is, different from all other values instantiated for any other variable of type $T$.
+\end{definition}
+
+\hypertarget{def-ignore}{}
+\begin{definition}[Ignore Variable]
+To keep rules succinct, we write `$\Ignore$' for a mathematical variable whose name is
+irrelevant for understanding the rule, and can thus be omitted.
+Each \underline{occurrence} of `$\Ignore$' represents a variable whose name is
+different from any other free variable in the rule.
+\end{definition}
+
+For example, the rule SemanticsRule.PAll, shown \hyperlink{SemanticsRule.PAll-example}{above},
+uses an ignore variable to stand for the value being matched by a `\texttt{-}' pattern.
+Since the rule does not need to refer to the value, we do not name it and use an ignore variable
+instead.
+
+\subsection{Flavors of Equality In Rules}
+We now explain equality notations in rules, two of which are used in SemanticsRule.Lit,
+shown here:
+\begin{mathpar}
+  \inferrule{
+    \env \eqname (\Ignore, \denv)\\
+    \vx \in \dom(L^\denv)\\
+    \vv \eqdef L^\denv(\vx) \\
+    \vg \eqdef \ReadEffect(\vx)
+  }
+  {\evalexpr{\env, \EVar(\vx)} \evalarrow \Normal((\vv, \vg), \env)}
+\end{mathpar}
+
+\begin{description}
+  \item[Range:] we write $i=1..k$ to allow listing premises parameterized by $i$ or constructing
+  lists from expressions parameterized by $i$.
+  For example, given two lists $a$ and $b$,
+  \[
+    i=1..k: a[i] > b[i]
+  \]
+  is the list of premises
+  \[
+    \begin{array}{l}
+    a[0] > b[0]\\
+    \ldots\\
+    a[k] > b[k] \enspace.
+    \end{array}
+  \]
+
+  \item[Predicate:] we write $a = b$ as an assertion of the equality of $a$ and $b$.
+  For example, the mathematical identity $x \times (y + z) = x \times y + x \times z$.
+
+  \hypertarget{def-deconstruction}{}
+  \item[Deconstruction:] some values, such as tuples, are compound. In order to refer to the structure
+  of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right
+  hand side exposes the internal structure of $v$ by introducing the variables
+  $u_{1..k}$, allowing us to alias internal components of $v$.
+  Intuitively, $v$ is re-interpreted as $\textit{f}(u_{1..k})$.
+  For example, suppose we know that $v$ is a pair of values.
+  Then, $v \eqname (a, b)$ allows us to alias $a$ and $b$.
+  In SemanticsRule.Lit, we know that the environment $\env$ is a pair where the first
+  component is a static environment and the second component is a dynamic environment.
+  Therefore, writing $\env \eqname (\Ignore, \denv)$ allows us to name the dynamic environment component and
+  then refer to it, while \hyperlink{def-ignore}{ignoring} the static environment component.
+  Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
+  head of the list $h$ and its tail $t$.
+
+  \hypertarget{def-eqdef}{}
+  \item[Definition:] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name serving as an alias for the expression $\ve$.
+  For example, in the rule SemanticsRule.Lit, we use $\vg$ to name $\ReadEffect(\vx)$.
+  Aliases allow us to break down complex expressions, but rules can always be rewritten without them,
+  by inlining their right-hand sides:
+  \begin{mathpar}
+    \inferrule{
+      \env \eqname (\Ignore, \denv)\\
+      \vx \in \dom(L^\denv)
+    }
+    {\evalexpr{\env, \EVar(\vx)} \evalarrow \Normal((L^\denv(\vx), \ReadEffect(\vx)), \env)}
+  \end{mathpar}
+\end{description}
+
+\subsection{AST-related Notations}
+
+When deconstructing AST record nodes such as $\{f_1:t_2,\ldots,f_k:t_k\}$,
+we sometimes only care about a subset of the fields $\{f_{i_1},\ldots,f_{i_m}\} \subset \{f_{1..k}\}$.
+In such cases, we write $\{f_{i_1}:t_{i_m},\ldots,f_{i_m}:t_{i_m},\ldots\}$,
+where `$\ldots$' stands for fields that are irrelevant for the rule.
+
+For example\footnote{This example is from SemanticsRule.FCall.}, the \func\ non-terminal is of a record type and has the following fields:
+$\textsf{name}$, $\textsf{parameters}$, $\textsf{args}$, $\textsf{body}$, $\textsf{return\_type}$, and $\textsf{subprogram\_type}$.
+The notation $\{ \textsf{body}:\SBASL(\texttt{body}),\ \textsf{args}:\texttt{arg\_decls}, \ldots \}$
+allows us to deconstruct a given \func\ node by matching only the \textsf{body} and \textsf{args} fields.
+
+\hypertarget{def-astlabel}{}
+Recall that a subset of AST nodes are either labels or labelled tuples.
+The partial function $\astlabel$ returns the corresponding label, when it exists.
+For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\texttt{x})) = \TNamed$.
+
+\subsection{How to Parse Rules Efficiently}
+Consider the following examples, which is a simplified version of SemanticsRule.Binop"
+\begin{mathpar}
+  \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+    \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \\\\
+    \evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv) \\\\
+    \vmone \eqname (\vvone, \vgone) \\
+    \vmtwo \eqname (\vvtwo, \vgtwo) \\
+    \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \\\\
+    \vg \eqdef \vgone \parallelcomp \vgtwo
+  }
+  {
+    \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
+    \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
+
+To parse a rule, start by examining the conclusion and the variables appearing in the rule.
+In this case, the rule describes a transition from an input configuration \\
+$\evalexpr{ \env, \EBinop(\op, \veone, \vetwo) }$,
+whose configuration domain is \texttt{eval\_expr}, to an output configuration $\Normal((\vv, \vg), \newenv)$,
+whose configuration domain is $\Normal$.
+%
+A rule uses the free variables appering in the input configuration of the conclusion
+($\env$, $\op$, $\veone$, and $\vetwo$ in our example),
+with the goal of assigning values to the free variables in the output configuration
+of the conclusion ($\vv$, $\vg$, and $\newenv$, in our example).
+
+Now, scan the premises in order to see where $\env$, $\op$, $\veone$, and $\vetwo$ are used and how
+premises assign values to $\vv$, $\vg$, and $\newenv$.
+%
+In this case, $\vv$ is assigned as the result of the transition assertion
+$\binoprel(\op, \vvone, \vvtwo) \evalarrow \vv$,
+$\vg$ is assigned the expression $\vgone \parallelcomp \vgtwo$,
+and $\newenv$ is assigned as the result of the transition assertion
+$\evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv)$.
+%
+Notice that to assign values to the variables $\vv$, $\vg$, and $\newenv$,
+intremediate values have to be assigned first.
+For example, $\evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone)$
+assigned values to $\envone$, which is then used by the transition \\
+$\evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv)$.
+Similarly, $\vg$ is requires first assigning values to $\vgone$ and $\vgtwo$,
+which are components of the previously assigned variables $\vmone$ and $\vmtwo$.
+
+\subsection{Short-Circuit Rule Macros}
+
+\emph{Short-circuit rule macros}, or \emph{rule macros}, for short, allow us to succinctly define sets of rules.
+Specifically, they allow us to capture situations where
+transitions have two alternative output configurations.
+If the transition results in the first of the alternative output configurations, the following premises are considered.
+However, if the result is the second, ``short-circuit output configuration'', then the following premises are ignored
+and the conclusion transitions into the ``short-circuit output configuration''.
+These ``short-circuit output configurations'' are typically, but not always, due to (type or dynamic) errors.
+
+\newcommand\XP[0]{\mathit{XP}}
+\newcommand\XQ[0]{\mathit{XQ}}
+
+\hypertarget{def-terminateas}{}
+In the following, $\XP$ and $\XQ$ stand for, possibly empty, sequences of premises.
+%
+A rule macro includes the special premise form $C \rulearrow C' \terminateas E$,
+which introduces alternative output configurations $C'$ and ``short-circuit'' $E$:
+\begin{mathpar}
+  \inferrule{
+    \XP\\\\
+    C \rulearrow C' \terminateas E\\\\
+    \XQ\\
+  }
+  {
+    V \rulearrow V'
+  }
+\end{mathpar}
+Such a rule macro expands to the following pair of rules:
+\begin{mathpar}
+  \inferrule[(Option 1)]{
+    \XP\\\\
+    C \rulearrow C' \\\\
+    \XQ\\
+  }
+  {
+    V \rulearrow V'
+  }
+  \and
+  \inferrule[(Option 2:Short-circuited)]{
+    \XP\\\\
+    C \rulearrow E
+  }
+  {
+    V \rulearrow E
+  }
+\end{mathpar}
+Intuitively, if $C$ transitions to $C'$ then `$\sslash E$' can be ignored
+and the rule is interpreted as usual (Option 1).
+However, if $C$ transitions into $E$ (Option 2) then the premises $\XQ$ are ignored,
+thereby ``short-circuiting'' the rule, and the input configuration
+in the conclusion also transitions into $E$.
+
+We allow more than one premise to include short-circuiting alternatives and also
+a single premise to include several alternatives.
+That is, a rule macro of the form
+\begin{mathpar}
+  \inferrule{
+    \XP\\\\
+    C \rulearrow C' \terminateas E_{1...m}\\\\
+    \XQ\\
+  }
+  {
+    V \rulearrow V'
+  }
+\end{mathpar}
+Stands for the set of rule macros
+\begin{mathpar}
+  \inferrule{
+    \XP\\\\
+    C \rulearrow C' \terminateas E_1\\\\
+    \XQ\\
+  }
+  {
+    V \rulearrow V'
+  }
+\and
+\inferrule{\ldots}{}
+\and
+\inferrule{
+  \XP\\\\
+  C \rulearrow C' \terminateas E_m\\\\
+  \XQ\\
+}
+{
+  V \rulearrow V'
+}
+\end{mathpar}
+
+Notice that after all rule macros are expanded into normal rules,
+they behave like normal rules where the order of premises does
+not matter.
+
+As an example, consider the rule SemanticsRule.Binop.
+This time, unsimplified:
+\begin{mathpar}
+  \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+    \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \OrAbnormal \\\\
+    \evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv) \OrAbnormal \\\\
+    \vmone \eqname (\vvone, \vgone) \\
+    \vmtwo \eqname (\vvtwo, \vgtwo) \\
+    \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \terminateas \ErrorConfig\\\\
+    \vg \eqdef \vgone \parallelcomp \vgtwo
+  }
+  {
+    \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
+    \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
+
+In this rule, $\ThrowingConfig$ and $\ErrorConfig$ are just shorthand notations for
+actual configurations, which are properly defined in the semantics reference.
+Intuitively, the alternative configurations $\ThrowingConfig$ and $\ErrorConfig$
+represent situations where a transition may result in a raised exception and a dynamic error,
+respectively.
+
+One may first read the rule ignoring these alternative configurations, to see how the
+goal of transitioning into the output configuration appearing in the conclusion ---
+$\Normal((\vv, \vg), \newenv)$ --- is achieved.
+Then, re-reading the rule would indicate where exceptions and dynamic errors may result
+in other output configurations.
+%
+For example, if the first transition assertion results in a throwing configuration $\ThrowingConfig$
+then the output configuration of the conclusion is also $\ThrowingConfig$.
+This corresponds to the following rule in the exapnded macro:
+
+\begin{mathpar}
+  \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+    \evalexpr{ \env, \veone} \evalarrow \ThrowingConfig
+  }
+  {
+    \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
+    \ThrowingConfig
+  }
+\end{mathpar}
+
+Similarly, if the first transition assertion results in a dynamic error, the output configuration of
+the conclusion is that dynamic error, which corresponds to the following rule in the expansion:
+\begin{mathpar}
+  \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+    \evalexpr{ \env, \veone} \evalarrow \ErrorConfig
+  }
+  {
+    \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
+    \ErrorConfig
+  }
+\end{mathpar}
+
+The following rules correspond to the cases where the first transition results in \\
+$\Normal(\vmone, \envone)$, but the second transition assertion results in either
+$\ThrowingConfig$ or $\ErrorConfig$, respectively:
+\begin{mathpar}
+  \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+    \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \\\\
+    \evalexpr{ \envone, \vetwo } \evalarrow \ThrowingConfig
+  }
+  {
+    \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
+    \ThrowingConfig
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+    \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \\\\
+    \evalexpr{ \envone, \vetwo } \evalarrow \ErrorConfig
+  }
+  {
+    \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
+    \ErrorConfig
+  }
+\end{mathpar}
+
+Expanding the last transition assertion, gives us the case:
+\begin{mathpar}
+  \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+    \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \\\\
+    \evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv) \\\\
+    \vmone \eqname (\vvone, \vgone) \\
+    \vmtwo \eqname (\vvtwo, \vgtwo) \\
+    \binoprel(\op, \vvone, \vvtwo) \evalarrow \ErrorConfig
+  }
+  {
+    \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
+    \ErrorConfig
+  }
+\end{mathpar}
+
+All these cases are succinctly encoded in a single rule with the alternative output configurations.
+
+\subsection{Rule Naming}
+To name a rule, we place it in a section with its name.
+However, some relations are defined by a group of rules.
+In such cases, we refer to the individual rules in a group as \emph{case rules},
+or simply \emph{cases}. We annotate case rules by names
+appearing above and to the left of the rule. The name of these case rules
+is the name of the group, given by its section, followed by the name of the case.
+
+For example, the ASL Semantics Reference defines the rule SemanticsRule.BaseValue using 11
+cases of which two are the following:
+\begin{mathpar}
+  \inferrule[bool]{
+    \tstruct(\vt) = \TBool
+  }
+  {
+    \texttt{base\_value}(\textsf{env}, \vt) \evalarrow (\texttt{Bool}(\True), \emptyset_\textsf{g})
+  }
+  \and
+  \inferrule[real]{
+    \tstruct(\vt) = \TReal
+  }
+  {
+    \texttt{base\_value}(\textsf{env}, \vt) \evalarrow (\texttt{Real}(0), \emptyset_\textsf{g})
+  }
+\end{mathpar}
+The full name of the first case is then SemanticsRule.BaseValue.BOOL
+and the full name of the second case is SemanticsRule.BaseValue.REAL.

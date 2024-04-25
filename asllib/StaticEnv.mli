@@ -27,7 +27,7 @@ open ASTUtils
 
 type global = {
   declared_types : ty IMap.t;  (** Maps a type name t to its declaration. *)
-  constants_values : literal IMap.t;
+  constant_values : literal IMap.t;
       (** Maps a global constant name to its value. *)
   storage_types : (ty * global_decl_keyword) IMap.t;
       (** Maps global declared storage elements to their types. *)
@@ -42,7 +42,7 @@ type global = {
 (** Store all the global environment information at compile-time. *)
 
 type local = {
-  constants_values : literal IMap.t;  (** Maps a local constant to its value. *)
+  constant_values : literal IMap.t;  (** Maps a local constant to its value. *)
   storage_types : (ty * local_decl_keyword) IMap.t;
       (** Maps an locally declared names to their type. *)
   return_type : ty option;
