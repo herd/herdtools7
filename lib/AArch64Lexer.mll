@@ -551,6 +551,7 @@ match name with
 | "dmb"|"DMB" -> TOK_DMB
 | "dsb"|"DSB" -> TOK_DSB
 | "isb"|"ISB" -> TOK_ISB
+| "gsb"|"GSB" -> TOK_GSB
 (* Fence Operands *)
 | "sy"|"SY" -> TOK_SY
 | "st"|"ST" -> TOK_ST
@@ -564,6 +565,8 @@ match name with
 | "nsh"|"NSH" -> TOK_NSH
 | "nshst"|"NSHST" -> TOK_NSHST
 | "nshld"|"NSHLD" -> TOK_NSHLD
+| "sys"|"SYS" -> TOK_SYS
+| "ack"|"ACK" -> TOK_ACK
 (* inline barrel shift operands *)
 | "msl" | "MSL" -> TOK_MSL
 (* Cache maintenance *)

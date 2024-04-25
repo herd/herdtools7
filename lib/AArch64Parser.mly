@@ -118,6 +118,7 @@ let check_op3 op e =
 %token TOK_OSH TOK_OSHST TOK_OSHLD
 %token TOK_ISH TOK_ISHST TOK_ISHLD
 %token TOK_NSH TOK_NSHST TOK_NSHLD
+%token TOK_GSB TOK_SYS TOK_ACK
 %token CAS CASA CASL CASAL CASB CASAB CASLB CASALB CASH CASAH CASLH CASALH
 %token CASP CASPA CASPL CASPAL
 %token SWP SWPA SWPL SWPAL SWPB SWPAB SWPLB SWPALB SWPH SWPAH SWPLH SWPALH
@@ -1541,6 +1542,8 @@ instr:
   { let d,t = $2 in I_FENCE (DSB (d,t)) }
 | TOK_ISB
   { I_FENCE ISB }
+| TOK_GSB b=gicbarrier
+  { I_FENCE (GSB b) }
 /* Cache Maintenance */
 | IC IC_OP
   { I_IC ($2,ZR) }
@@ -1624,3 +1627,7 @@ fenceopt:
   { NSH,ST }
 | TOK_NSHLD
   { NSH,LD}
+
+gicbarrier:
+| TOK_SYS { SYS }
+| TOK_ACK { ACK }

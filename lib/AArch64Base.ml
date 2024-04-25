@@ -639,11 +639,17 @@ let pp_type = function
   | ST -> "ST"
   | FULL -> ""
 
+type gicBarrier = SYS | ACK
+
+let pp_gic_barrier = function
+  | SYS -> "SYS"
+  | ACK -> "ACK"
 
 type barrier =
   | DMB of mBReqDomain*mBReqTypes
   | DSB of mBReqDomain*mBReqTypes
   | ISB
+  | GSB of gicBarrier
 
 type syncType =
   | DC_CVAU
@@ -682,6 +688,7 @@ let do_pp_barrier tag b = match b with
   | DMB (d,t) -> "DMB" ^ tag ^ pp_option d t
   | DSB (d,t) -> "DSB" ^ tag ^ pp_option d t
   | ISB -> "ISB"
+  | GSB b -> sprintf " GSB %s" (pp_gic_barrier b)
 
 let pp_barrier b = do_pp_barrier " " b
 let pp_barrier_dot b = do_pp_barrier "." b
