@@ -23,6 +23,7 @@
 \newcommand\dynamicdomain[0]{\textsf{dyn-dom}}
 \newcommand\literals[0]{\mathcal{L}}
 
+\newcommand\annotaterel[0]{\hyperlink{def-annotaterel}{\textsf{annotate}}}
 \newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
 \newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
 \newcommand\isbuiltin[0]{\texttt{is\_builtin}}
@@ -33,7 +34,6 @@
 \newcommand\isnonprimitive[0]{\texttt{is\_non\_primitive}}
 \newcommand\isprimitive[0]{\texttt{is\_primitive}}
 
-\newcommand\underconstrainedinteger[0]{\textsf{underconstrained\_integer}}
 \newcommand\isunconstrainedinteger[0]{\textsf{unconstrained\_integer}}
 \newcommand\isunderconstrainedinteger[0]{\textsf{under\_constrained\_integer}}
 \newcommand\iswellconstrainedinteger[0]{\textsf{well\_constrained\_integer}}
@@ -267,8 +267,8 @@
 \chapter{Introduction}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The purpose of this document is to describe, in a formal and authoritative way, which ASL programs are considered \emph{valid}.
-Validity is defined in terms of a \emph{type system}~\cite{TypeSystemsLucaCardelli}. That is, a set of \emph{typing rules}.
+The purpose of this document is to describe, in a formal and authoritative way, which ASL programs are considered \emph{well-typed}.
+Well-typedness is defined in terms of a \emph{type system}~\cite{TypeSystemsLucaCardelli}. That is, a set of \emph{typing rules}.
 
 \section{Abstract Syntax}
 An \emph{abstract syntax tree} (AST, for short) represents an ASL specification as a labelled structured tree.
@@ -289,9 +289,11 @@ distinct components: the global environment $G^\tenv$---pertaining to AST nodes
 appearing outside of a given subprogram, and the local environment
 $L^\tenv$---pertaining to AST nodes appearing inside a given subprogram.
 
+\begin{definition}
 \hypertarget{def-staticenvs}{
-Environments $\tenv \in \staticenvs$ are formally defined below (referring to symbols defined in the abstract syntax):
+Environments $\tenv \in \staticenvs$ are defined as follows (referring to symbols defined in the abstract syntax):
 }
+
 \[
 \begin{array}{rcl}
 \staticenvs 	          &=& \mathbb{G} \times \mathbb{L}\\
@@ -308,6 +310,7 @@ Environments $\tenv \in \staticenvs$ are formally defined below (referring to sy
 \hypertarget{def0returntype}{\returntype}             &=& \langle \ty \rangle
 \end{array}
 \]
+\end{definition}
 
 \hypertarget{def-emptytenv}{}
 \begin{definition}[Empty Static Environment]
@@ -338,18 +341,13 @@ We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a
 To update a function component $f$ (e.g., $\declaredtypes$) of an environment $\tenv$ (either local or global)
 with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to stand for $\tenv[f \mapsto E.f[x \mapsto v]]$.
 
+This is related to \identd{JRXM} and \identi{ZTMQ}.
+
 \section{Type System}
-A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$.
-We refer to $P_1,\ldots,P_k$ as the \emph{premises} of the rule and to the verdict $S$ as its \emph{conclusion}.
-When the set of premises is empty, we may omit them entirely.
-
-When all the premises of a rule hold (with all free variables occurring in the rule implicitly interpreted as universally quantified),
-we can conclude that the verdict $S$ holds.
-%
-The premises typically inspect the label of an AST node and the information associated with the children of the node in a given environment.
-
-This is related to \identd{JRXM}, \identi{ZTMQ}, \identd{HBCP}, \identi{SMMH},
-\identi{DFML}, \identr{WMFV}.
+\hypertarget{def-annotaterel}{}
+The type system of ASL is given by the relation $\annotaterel$, which is defined as the disjoint union
+of the partial functions and relations defined in this document.
+The partial functions and relations in this document are defined, in turn, via type system rules.
 
 \subsection*{Rule Example}
 The following rule is used to type a sequence of two statements:
@@ -401,10 +399,9 @@ This is related to \identr{VDPC}.
 \include{ASLFormal}
 
 \newcommand\Elit[1]{\texttt{E}(#1)}
-We use the shorthand $\Elit{n}$ for the expression denoting the literal integer value $n$. That is, $\texttt{E\_Literal}(\texttt{L\_Int}(n))$.
+We use the shorthand $\Elit{n}$ for the expression denoting the literal integer value $n$. That is, $\ELiteral(\lint(n))$.
 
-We use the shorthand notation $\underconstrainedinteger$ to denote the underconstraint integer type: $\TInt(\texttt{UnConstrained})$
-and $\unconstrainedinteger$ to denote the unconstrained integer type: $\TInt(\langle\rangle)$.
+We use the shorthand notation $\unconstrainedinteger$ to denote the unconstrained integer type: $\TInt(\langle\rangle)$.
 
 Note that throughout this document we use $\tty$ do denote a type variable, which should not be confused with the abstract syntax variable $\ty$.
 
@@ -425,8 +422,10 @@ Each rule is presented using the following template:
 \href{https://github.com/herd/herdtools7//tree/master/asllib}{/herdtools7/asllib};
 \item one or several Example paragraphs, which as much as possible are also given as regression tests in
 \href{https://github.com/herd/herdtools7//tree/master/asllib/tests/ASLTypingReference.t}{/herdtools7/asllib/tests/ASLTypingReference.t};
+\ifcode
 \item a Code paragraph which gives a verbatim of the corresponding implementation in the type-checker of ASLRef
 \href{https://github.com/herd/herdtools7//tree/master/asllib/Typing.ml}{/herdtools7/asllib/Typing.ml};
+\fi
 \item Formal paragraphs which give formal definitions of the rule.
 \end{itemize}
 
@@ -435,6 +434,11 @@ Each rule is presented using the following template:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
+The predicate
+\[
+  \isbuiltinsingular(\overname{\ty}{\tty}) \;\aslto\; \Bool
+\]
+tests whether the type $\tty$ is a \emph{builtin singular type}.
 
     \subsection{Prose}
     The \emph{builtin singular types} are:
@@ -466,10 +470,16 @@ The builtin singular type \texttt{color} consists in two constants
 \begin{formal}
    \subsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[true]{
   \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
 }{
-  \isbuiltinsingular(\tty)
+  \isbuiltinsingular(\tty) \typearrow \True
+}
+\and
+\inferrule[false]{
+  \astlabel(\tty) \not\in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
+}{
+  \isbuiltinsingular(\tty) \typearrow \False
 }
 \end{mathpar}
 
@@ -479,6 +489,11 @@ The builtin singular type \texttt{color} consists in two constants
     This is related to \identd{PQCK} and \identd{NZWT}.
 
 \section{TypingRule.BuiltinAggregateType \label{sec:TypingRule.BuiltinAggregateType}}
+The predicate
+\[
+  \isbuiltinaggregate(\overname{\ty}{\tty}) \;\aslto\; \Bool
+\]
+tests whether the type $\tty$ is a \emph{builtin aggregate type}.
 
     \subsection{Prose}
     The builtin aggregate types are:
@@ -514,7 +529,10 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 \begin{formal}
     \subsection{Formally}
 \begin{mathpar}
-\inferrule{\astlabel(\tty) \in \{\TTuple, \TArray, \TRecord, \TException\}}
+\inferrule[true]{\astlabel(\tty) \in \{\TTuple, \TArray, \TRecord, \TException\}}
+{\isbuiltinaggregate(\tty)}
+\and
+\inferrule[false]{\astlabel(\tty) \not\in \{\TTuple, \TArray, \TRecord, \TException\}}
 {\isbuiltinaggregate(\tty)}
 \end{mathpar}
 \end{formal}
@@ -523,6 +541,11 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     This is related to \identd{PQCK} and \identd{KNBD}.
 
 \section{TypingRule.BuiltinSingularOrAggregate \label{sec:TypingRule.BuiltinSingularOrAggregate}}
+The predicate
+\[
+  \isbuiltin(\overname{\ty}{\tty}) \;\aslto\; \Bool
+\]
+tests whether the type $\tty$ is a \emph{builtin type}.
 
     \subsection{Prose}
     $\tty$ is a builtin type and one of the following applies:
