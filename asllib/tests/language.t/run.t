@@ -2683,3 +2683,328 @@ For reference, the test writter intention was that this output matched:
 Test Rdgbm.asl:
   $ aslref Rdgbm.asl
 
+Test Dbmgm-new.asl:
+  $ aslref Dbmgm-new.asl
+
+Test Iglwm-new.asl:
+  $ aslref Iglwm-new.asl
+
+Test Ilghj-new.asl:
+  $ aslref Ilghj-new.asl
+
+Test Irxlg-new.asl:
+  $ aslref Irxlg-new.asl
+  FALSE
+  TRUE
+  '101'
+  '100'
+  '010'
+  '001'
+  '001'
+  '001'
+
+Test Iypxd-new.asl:
+  $ aslref Iypxd-new.asl
+  File Iypxd-new.asl, line 3, characters 4 to 5:
+  ASL Error: Cannot parse.
+  [1]
+
+Test Rfhyz-new.asl:
+  $ aslref Rfhyz-new.asl
+
+Test Rmwbn-new.asl:
+  $ aslref Rmwbn-new.asl
+
+Test Rqxgw-new.asl:
+  $ aslref Rqxgw-new.asl
+  TRUE
+
+Test Rwzvx-new.asl:
+  $ aslref Rwzvx-new.asl
+  File Rwzvx-new.asl, line 6, characters 12 to 13:
+  ASL Execution error: Mismatch type:
+    value 4 does not belong to type integer {0..3}.
+  [1]
+
+
+Test Dbvgk-new.asl:
+  $ aslref Dbvgk-new.asl
+
+Test Igqyg-new.asl:
+  $ aslref Igqyg-new.asl
+  File Igqyg-new.asl, line 32, characters 4 to 31:
+  ASL Typing error: constrained integer expected, provided integer
+  [1]
+
+Test Imkpr-new.asl:
+  $ aslref Imkpr-new.asl
+  File Imkpr-new.asl, line 32, characters 12 to 30:
+  ASL Typing error: a subtype of integer {8, 16, 32} was expected,
+    provided integer {M}.
+  [1]
+
+Test Isbwr-new.asl:
+  $ aslref Isbwr-new.asl
+
+Test Izddj-new.asl:
+  $ aslref Izddj-new.asl
+
+Test Rfrwd-new.asl:
+  $ aslref Rfrwd-new.asl
+
+Test Rncnq-new.asl:
+  $ aslref Rncnq-new.asl
+
+Test Rsnqj-new.asl:
+  $ aslref Rsnqj-new.asl
+
+Test Rxylp-new.asl:
+  $ aslref Rxylp-new.asl
+
+
+Test Djljd-new.asl:
+  $ aslref Djljd-new.asl
+
+Test Ihjcd-new.asl:
+  $ aslref Ihjcd-new.asl
+  1000000
+  
+  
+  1000000
+
+Test Ipdkt-new.asl:
+  $ aslref Ipdkt-new.asl
+
+Test Iszvf-new.asl:
+  $ aslref Iszvf-new.asl
+
+Test Rbncy-new.asl:
+  $ aslref Rbncy-new.asl
+
+Test Rghxr_a-new.asl:
+  $ aslref Rghxr_a-new.asl
+  File Rghxr_a-new.asl, line 6, characters 11 to 26:
+  ASL Execution error: Assertion failed: ((- (5 MOD 3)) == 1)
+  [1]
+
+Test Rncwm-new.asl:
+  $ aslref Rncwm-new.asl
+
+Test Rsvmm-new.asl:
+  $ aslref Rsvmm-new.asl
+
+Test Rydfq-new.asl:
+  $ aslref Rydfq-new.asl
+  4
+
+
+Test Dnmfp-new.asl:
+  $ aslref Dnmfp-new.asl
+
+Test Ihmrk-new.asl:
+  $ aslref Ihmrk-new.asl
+  0
+  FALSE
+
+Test Iqjtn_a-new.asl:
+  $ aslref Iqjtn_a-new.asl
+
+Test Itsxl-new.asl:
+  $ aslref Itsxl-new.asl
+  10
+  20
+
+Test Rbzkw-new.asl:
+  $ aslref Rbzkw-new.asl
+
+Test Rgvks-new.asl:
+  $ aslref Rgvks-new.asl
+  a
+
+Test Rnzgh-new.asl:
+  $ aslref Rnzgh-new.asl
+
+Test Rtphr-new.asl:
+  $ aslref Rtphr-new.asl
+
+Test Rytnr-new.asl:
+  $ aslref Rytnr-new.asl
+
+
+Test Ibhln-new.asl:
+  $ aslref Ibhln-new.asl
+
+Test Ihvlx-new.asl:
+  $ aslref Ihvlx-new.asl
+
+Test Iqjtn_b-new.asl:
+  $ aslref Iqjtn_b-new.asl
+
+Test Ivgsp-new.asl:
+  $ aslref Ivgsp-new.asl
+  File Ivgsp-new.asl, line 3, character 0 to line 6, character 3:
+  ASL Typing error: cannot declare already declared element "a".
+  [1]
+
+Test Rccvd-new.asl:
+  $ aslref Rccvd-new.asl
+
+Test Rhhcd-new.asl:
+  $ aslref Rhhcd-new.asl
+
+Test Rphnz-new.asl:
+  $ aslref Rphnz-new.asl
+
+Test Rtznr-new.asl:
+  $ aslref Rtznr-new.asl
+
+Test Ryyfr-new.asl:
+  $ aslref Ryyfr-new.asl
+  File Ryyfr-new.asl, line 11, characters 4 to 14:
+  ASL Typing error: overlapping slices 0+:1, 0+:1.
+  [1]
+
+
+Test Ibyvl-new.asl:
+  $ aslref Ibyvl-new.asl
+
+Test Ijdcc-new.asl:
+  $ aslref Ijdcc-new.asl
+  File Ijdcc-new.asl, line 3, character 0 to line 5, character 2:
+  ASL Static error: Cannot extract from bitvector of length 5 slices 7+:4.
+  [1]
+
+Test Iqjtn_c-new.asl:
+  $ aslref Iqjtn_c-new.asl
+  Uncaught exception: exc {err_code: 0}
+  [1]
+
+Test Ivylk-new.asl:
+  $ aslref Ivylk-new.asl
+
+Test Rcnhb-new.asl:
+  $ aslref Rcnhb-new.asl
+  File Rcnhb-new.asl, line 3, character 0 to line 5, character 2:
+  ASL Typing error: overlapping slices 0+:4, 1+:3.
+  [1]
+
+Test Rhqzy-new.asl:
+  $ aslref Rhqzy-new.asl
+
+Test Rprzn-new.asl:
+  $ aslref Rprzn-new.asl
+  Hello
+
+Test Rvczx-new.asl:
+  $ aslref Rvczx-new.asl
+
+Test Rzcvd-new.asl:
+  $ aslref Rzcvd-new.asl
+
+
+Test Icdvy-new.asl:
+  $ aslref Icdvy-new.asl
+
+Test Ikfcr-new.asl:
+  $ aslref Ikfcr-new.asl
+
+Test Iqjtn_d-new.asl:
+  $ aslref Iqjtn_d-new.asl
+  Uncaught exception: exc {err_code: 0}
+  [1]
+
+Test Iwlnm-new.asl:
+  $ aslref Iwlnm-new.asl
+  File Iwlnm-new.asl, line 3, characters 8 to 14:
+  ASL Error: Cannot parse.
+  [1]
+
+Test Rcrqj-new.asl:
+  $ aslref Rcrqj-new.asl
+
+Test Rirnq-new.asl:
+  $ aslref Rirnq-new.asl
+  File Rirnq-new.asl, line 6, characters 11 to 16:
+  ASL Execution error: Assertion failed: FALSE
+  [1]
+
+Test Rqdqd-new.asl:
+  $ aslref Rqdqd-new.asl
+  File Rqdqd-new.asl, line 5, characters 13 to 14:
+  ASL Error: Cannot parse.
+  [1]
+
+Test Rvgzf-new.asl:
+  $ aslref Rvgzf-new.asl
+
+Test Rzndl-new.asl:
+  $ aslref Rzndl-new.asl
+
+
+Test Ifpvz-new.asl:
+  $ aslref Ifpvz-new.asl
+
+Test Iknxj-new.asl:
+  $ aslref Iknxj-new.asl
+
+Test Iqnsd-new.asl:
+  $ aslref Iqnsd-new.asl
+
+Test Ixfpv-new.asl:
+  $ aslref Ixfpv-new.asl
+  File Ixfpv-new.asl, line 9, characters 12 to 19:
+  ASL Error: There are no field 'item2' on type (integer {10}, integer {20}).
+  [1]
+
+Test Rdfwz-new.asl:
+  $ aslref Rdfwz-new.asl
+
+Test Rjpvl-new.asl:
+  $ aslref Rjpvl-new.asl
+  File Rjpvl-new.asl, line 13, characters 4 to 5:
+  ASL Error: Cannot parse.
+  [1]
+
+Test Rqqbb-new.asl:
+  $ aslref Rqqbb-new.asl
+
+Test Rvnkt-new.asl:
+  $ aslref Rvnkt-new.asl
+
+Test Rzsnd-new.asl:
+  $ aslref Rzsnd-new.asl
+
+
+Test Ighgk-new.asl:
+  $ aslref Ighgk-new.asl
+
+Test Iktjn-new.asl:
+  $ aslref Iktjn-new.asl
+  File Iktjn-new.asl, line 21, characters 4 to 6:
+  ASL Typing error: a subtype of bits(N) was expected, provided bits(wid).
+  [1]
+
+Test Irkbv-new.asl:
+  $ aslref Irkbv-new.asl
+
+Test Iyklf-new.asl:
+  $ aslref Iyklf-new.asl
+  a
+
+Test Rdjmc-new.asl:
+  $ aslref Rdjmc-new.asl
+
+Test Rkldr-new.asl:
+  $ aslref Rkldr-new.asl
+
+Test Rqwsq-new.asl:
+  $ aslref Rqwsq-new.asl
+  0
+  0
+
+Test Rwqrn-new.asl:
+  $ aslref Rwqrn-new.asl
+
+Test Rztjn_a-new.asl:
+  $ aslref Rztjn_a-new.asl
+
