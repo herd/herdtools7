@@ -144,7 +144,8 @@ module Make (C : Config) = struct
       | V.Var _ as v ->
           Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
 
-    let v_unknown_of_type _t = V.fresh_var ()
+    let v_unknown_of_type ~eval_expr_sef:(_: Asllib.AST.expr -> V.v M.t) _t =
+      return (V.fresh_var ())
 
     let v_of_literal =
       let open AST in

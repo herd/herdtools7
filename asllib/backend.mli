@@ -41,9 +41,6 @@ module type S = sig
       Note that the prefered method to create records or any complex values
       is [create_vector], and should be used for constructing complex values. *)
 
-  val v_unknown_of_type : AST.ty -> value
-  (** [v_unknown_of_type t] constructs a value from a type. *)
-
   val v_of_int : int -> value
   (** [v_of_int] is used to convert raw integers arising from the interpretation,
       and not parsed values. *)
@@ -125,6 +122,11 @@ module type S = sig
 
   (** Other operations *)
   (*  -----------------*)
+
+  val v_unknown_of_type :
+    eval_expr_sef:(AST.expr -> value m) -> AST.ty -> value m
+  (** [v_unknown_of_type ~eval_expr_sef t] constructs an arbitrary value from a
+      type. *)
 
   val binop : AST.binop -> value -> value -> value m
   (** Evaluates the binary operation on those two values. *)

@@ -510,7 +510,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EUnknown *)
     | E_Unknown t ->
-        let v = B.v_unknown_of_type t in
+        let* v = B.v_unknown_of_type ~eval_expr_sef:(eval_expr_sef env) t in
         return_normal (v, env) |: SemanticsRule.EUnknown
     (* End *)
     (* Begin EPattern *)
