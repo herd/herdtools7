@@ -62,6 +62,7 @@ type error_desc =
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
   | BaseValueEmptyType of ty
+  | SettingIntersectingSlices of bitfield list
 
 type error = error_desc annotated
 
@@ -228,6 +229,9 @@ let pp_error =
           "ASL Typing error:@ cannot@ perform@ Asserted@ Type@ Conversion@ on@ \
            %a@ by@ %a."
           pp_ty t1 pp_ty t2
+    | SettingIntersectingSlices bitfields ->
+        fprintf f "ASL Typing error:@ setting@ intersecting@ bitfields@ [%a]"
+          pp_bitfields bitfields
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

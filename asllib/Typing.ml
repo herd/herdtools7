@@ -417,6 +417,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     List.fold_left (one_slice loc env) Diet.Int.empty slices
 
+  let check_disjoint_slices loc env slices =
+    if List.length slices <= 1 then ok
+    else fun () ->
+      let _ = disjoint_slices_to_diet loc env slices in
+      ()
+
   exception NoSingleField
 
   let to_singles env =
@@ -1653,6 +1659,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               check_type_satisfies le env t_e t ()
             in
             let slices2 = best_effort slices (annotate_slices env) in
+            let+ () = check_disjoint_slices le env slices2 in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
         (* End *)
         (* Begin LESetArray *)

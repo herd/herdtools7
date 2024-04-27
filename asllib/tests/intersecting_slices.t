@@ -1,0 +1,61 @@
+One slice cannot intersect itself:
+  $ cat >intersecting_slices.asl <<EOF
+  > func main () => integer
+  > begin
+  >   var x = Zeros(4);
+  >   var i: integer;
+  >   x[i] = '1';
+  >   print (x);
+  >   return 0;
+  > end
+  $ aslref intersecting_slices.asl
+  '0001'
+
+Two intersecting slices...
+  $ cat >intersecting_slices.asl <<EOF
+  > func main () => integer
+  > begin
+  >   var x = Zeros(4);
+  >   let i = 0; let j = 0;
+  >   x[i, j] = '10';
+  >   print (x);
+  >   return 0;
+  > end
+
+  $ aslref intersecting_slices.asl
+  File intersecting_slices.asl, line 5, characters 2 to 9:
+  ASL Typing error: overlapping slices i+:1, j+:1.
+  [1]
+
+Two maybe intersecting slices...
+  $ cat >intersecting_slices.asl <<EOF
+  > func main () => integer
+  > begin
+  >   var x = Zeros(4);
+  >   let i = 0;
+  >   var j: integer;
+  >   x[i, j] = '10';
+  >   print (x);
+  >   return 0;
+  > end
+
+  $ aslref intersecting_slices.asl
+  File intersecting_slices.asl, line 6, characters 7 to 8:
+  ASL Error: Unsupported expression j.
+  [1]
+
+Two intersecting bitfields
+  $ cat >intersecting_slices.asl <<EOF
+  > type myty of bits (4) { [0] f1, [0] f2 };
+  > func main () => integer
+  > begin
+  >   var x = Zeros(4) as myty;
+  >   x.[f1, f2] = '10';
+  >   print (x);
+  >   return 0;
+  > end
+
+  $ aslref intersecting_slices.asl
+  File intersecting_slices.asl, line 5, characters 2 to 12:
+  ASL Typing error: overlapping slices 0+:1, 0+:1.
+  [1]
