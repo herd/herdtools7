@@ -293,6 +293,13 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Utils *)
   (* ----- *)
+  let v_true = L_Bool true |> B.v_of_literal
+  let m_true = return v_true
+  let v_false = L_Bool false |> B.v_of_literal
+  let m_false = return v_false
+  let v_zero = L_Int Z.zero |> B.v_of_literal
+  let m_zero = return v_zero
+
   let sync_list ms =
     let folder m vsm =
       let* v = m and* vs = vsm in
@@ -503,7 +510,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EUnknown *)
     | E_Unknown t ->
-        let v = B.v_unknown_of_type t in
+        let* v = B.v_unknown_of_type ~eval_expr_sef:(eval_expr_sef env) t in
         return_normal (v, env) |: SemanticsRule.EUnknown
     (* End *)
     (* Begin EPattern *)
@@ -545,8 +552,6 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Begin ValOfType *)
   and is_val_of_type loc env v ty : bool B.m =
-    let m_true = L_Bool true |> B.v_of_literal |> return in
-    let m_false = L_Bool false |> B.v_of_literal |> return in
     let and' prev here = prev >>= B.binop BAND here in
     let or' prev here = prev >>= B.binop BOR here in
     let rec in_values v ty =
@@ -1308,7 +1313,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let t_struct = Types.get_structure (IEnv.to_static env) t in
     let lit v = B.v_of_literal v |> return in
     match t_struct.desc with
-    | T_Bool -> L_Bool true |> lit
+    | T_Bool -> L_Bool false |> lit
     | T_Bits (e, _) ->
         let* v = eval_expr_sef env e in
         let length =
@@ -1320,15 +1325,50 @@ module Make (B : Backend.S) (C : Config) = struct
     | T_Enum li -> (
         try IMap.find (List.hd li) env.global.static.constant_values |> lit
         with Not_found -> fatal_from t Error.TypeInferenceNeeded)
-    | T_Int UnConstrained -> L_Int Z.zero |> lit
+    | T_Int UnConstrained -> m_zero
     | T_Int (UnderConstrained _) ->
         failwith "Cannot request the base value of a under-constrained integer."
     | T_Int (WellConstrained []) ->
         failwith
           "A well constrained integer cannot have an empty list of constraints."
-    | T_Int (WellConstrained (Constraint_Exact e :: _))
-    | T_Int (WellConstrained (Constraint_Range (e, _) :: _)) ->
-        eval_expr_sef env e
+    | T_Int (WellConstrained cs) -> (
+        let leq x y = choice (B.binop LEQ x y) true false in
+        let is_neg v = leq v v_zero in
+        let abs v =
+          let* b = is_neg v in
+          if b then B.unop NEG v else return v
+        in
+        let m_none = return None in
+        let abs_min v1 v2 =
+          match (v1, v2) with
+          | None, v | v, None -> return v
+          | Some v1, Some v2 ->
+              let* abs_v1 = abs v1 and* abs_v2 = abs v2 in
+              let* v = choice (B.binop LEQ abs_v1 abs_v2) v1 v2 in
+              return (Some v)
+        in
+        let big_abs_min = big_op m_none abs_min in
+        let one_c = function
+          | Constraint_Exact e ->
+              let* v = eval_expr_sef env e in
+              return (Some v)
+          | Constraint_Range (e1, e2) -> (
+              let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
+              let* b = leq v1 v2 in
+              if not b then m_none
+              else
+                let* b1 = is_neg v1 and* b2 = is_neg v2 in
+                match (b1, b2) with
+                | true, false -> return (Some v_zero)
+                | false, true ->
+                    assert false (* caught by the [if not b] earlier *)
+                | true, true -> return (Some v2)
+                | false, false -> return (Some v1))
+        in
+        let* v = List.map one_c cs |> big_abs_min in
+        match v with
+        | None -> fatal_from t (Error.BaseValueEmptyType t)
+        | Some v -> return v)
     | T_Named _ -> assert false
     | T_Real -> L_Real Q.zero |> lit
     | T_Exception fields | T_Record fields ->
@@ -1338,9 +1378,7 @@ module Make (B : Backend.S) (C : Config) = struct
             return (name, v))
           fields
         |> sync_list >>= B.create_record
-    | T_String ->
-        Error.fatal_from t
-          (Error.NotYetImplemented "Base value of string types.")
+    | T_String -> L_String "" |> lit
     | T_Tuple li ->
         List.map (base_value env) li |> sync_list >>= B.create_vector
     | T_Array (length, ty) ->

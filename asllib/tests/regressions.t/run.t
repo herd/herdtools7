@@ -190,6 +190,23 @@ UnderConstrained integers:
   $ aslref named-types-in-slices.asl
   File named-types-in-slices.asl, line 13, characters 2 to 11: x -> '11111111'
 
+  $ aslref empty-slice.asl
+  '000'
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-1.
+  [1]
+
+  $ aslref unreachable.asl
+  File ASL Standard Library, line 259, characters 9 to 14:
+  ASL Execution error: Assertion failed: FALSE
+  [1]
+
+  $ aslref assign-to-global-immutable.asl
+  File assign-to-global-immutable.asl, line 5, characters 2 to 21:
+  ASL Typing error: cannot assign to immutable storage "my_immutable_global".
+  [1]
+
+  $ aslref equality.asl
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]
@@ -210,5 +227,58 @@ Parameters bugs:
   File bug4.asl, line 5, characters 11 to 31:
   ASL Typing error: Illegal application of operator OR on types bits(a)
     and bits(b)
+  [1]
+
+Required tests:
+  $ aslref anonymous-types-example-success.asl
+  $ aslref array-with-enums.asl
+  $ aslref array.asl
+  $ aslref -0 assign-v0.asl
+  $ aslref assign1.asl
+  $ aslref big-ints.asl
+  $ aslref bitfields.asl
+  $ aslref bitvectors.asl
+  $ aslref case.asl
+  $ aslref concat01.asl
+  $ aslref concat02.asl
+  $ aslref concat03.asl
+  $ aslref constrained-integer-types-example.asl
+  $ aslref constrained-types-example.asl
+  $ aslref division.asl
+  $ aslref exceptions.asl
+  $ aslref func1.asl
+  $ aslref func2.asl
+  $ aslref func3.asl
+  $ aslref func4.asl
+  $ aslref func5.asl
+  $ aslref func6.asl
+  $ aslref func7.asl
+  $ aslref global_vars.asl
+  $ aslref lexpr-concat.asl
+  $ aslref masks.asl
+  $ aslref more-assignments-examples.asl
+  $ aslref more-invocation-examples.asl
+  $ aslref named-types-example.asl
+  $ aslref nested-bitfields.asl
+  $ aslref operator_precedence.asl
+  $ aslref pass.asl
+  $ aslref patterns.asl
+  $ aslref records-2.asl
+  $ aslref records.asl
+  $ aslref static.asl
+  $ aslref stdlib.asl
+  $ aslref subtypes-example.asl
+  $ aslref subtypes-with.asl
+  $ aslref tuples.asl
+  $ aslref -0 typing-assign-v0.asl
+
+Base values
+  $ aslref base_values.asl
+  base value of {2, -2} is 2
+  base value of {-2, 2} is -2
+
+  $ aslref base_values_empty.asl
+  File base_values_empty.asl, line 3, characters 9 to 23:
+  ASL Execution error: base value of empty type integer {N..M}
   [1]
 

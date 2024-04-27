@@ -93,11 +93,6 @@ module NativeBackend = struct
   let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
 
-  let v_unknown_of_type ty =
-    Types.base_value dummy_annotated StaticEnv.empty ty
-    |> StaticInterpreter.static_eval StaticEnv.empty
-    |> nv_literal
-
   let warnT msg v =
     (* Should not be called... *)
     Printf.eprintf "Warning: message %s found its way, something is wrong\n" msg;
@@ -190,8 +185,26 @@ module NativeBackend = struct
   let bitvector_to_value bv = L_BitVector bv |> nv_literal |> return
   let int_max x y = if x >= y then x else y
 
+  let bad_slices positions =
+    let slices =
+      List.map
+        (fun (start, length) ->
+          Slice_Length (expr_of_int start, expr_of_int length))
+        positions
+    in
+    Error.(fatal_unknown_pos (BadSlices (Dynamic, slices, 0)))
+
+  let slices_to_positions positions =
+    List.map
+      (fun (start, length) ->
+        let start = as_int start and length = as_int length in
+        if start < 0 || length < 0 then bad_slices [ (start, length) ]
+        else (start, length))
+      positions
+    |> slices_to_positions Fun.id
+
   let read_from_bitvector slices bv =
-    let positions = slices_to_positions as_int slices in
+    let positions = slices_to_positions slices in
     let max_pos = List.fold_left int_max 0 positions in
     let () =
       List.iter
@@ -225,7 +238,7 @@ module NativeBackend = struct
   let write_to_bitvector slices src dst =
     let dst = as_bitvector dst
     and src = as_bitvector src
-    and positions = slices_to_positions as_int slices in
+    and positions = slices_to_positions slices in
     Bitvector.write_slice dst src positions |> bitvector_to_value
 
   let concat_bitvectors bvs =
@@ -235,6 +248,65 @@ module NativeBackend = struct
   let bitvector_length bv =
     let bv = as_bitvector bv in
     Bitvector.length bv |> v_of_int
+
+  let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
+    let unknown_of_type =
+      unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef
+    in
+    match ty.desc with
+    | T_Real | T_String | T_Bool | T_Bits _ | T_Int _ ->
+        unknown_of_singular_type ~eval_expr_sef ty
+    | T_Array (length, t) ->
+        let n =
+          match length with
+          | ArrayLength_Enum (_, i) -> i
+          | ArrayLength_Expr e -> (
+              match eval_expr_sef e with
+              | NV_Literal (L_Int n) -> Z.to_int n
+              | _ -> (* Bad types *) assert false)
+        in
+        NV_Vector (List.init n (fun _ -> unknown_of_type t))
+    | T_Record fields | T_Exception fields ->
+        fields
+        |> List.map (fun (field_name, t) -> (field_name, unknown_of_type t))
+        |> IMap.of_list
+        |> fun record -> NV_Record record
+    | T_Enum li ->
+        let n = List.length li |> expr_of_int in
+        let range = Constraint_Range (expr_of_int 0, n) in
+        let t = T_Int (WellConstrained [ range ]) |> add_pos_from ty in
+        unknown_of_singular_type ~eval_expr_sef t
+    | T_Tuple types -> NV_Vector (List.map (fun t -> unknown_of_type t) types)
+    | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
+
+  let deterministic_unknown_of_singular_type ~eval_expr_sef ty =
+    match ty.desc with
+    | T_Bool -> NV_Literal (L_Bool false)
+    | T_String -> NV_Literal (L_String "")
+    | T_Real -> NV_Literal (L_Real Q.zero)
+    | T_Int UnConstrained -> NV_Literal (L_Int Z.zero)
+    | T_Int
+        (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
+      ->
+        eval_expr_sef e
+    | T_Int (UnderConstrained (_, x)) ->
+        eval_expr_sef (E_Var x |> add_pos_from ty)
+    | T_Int (WellConstrained []) -> assert false
+    | T_Bits (e, _) -> (
+        match eval_expr_sef e with
+        | NV_Literal (L_Int n) ->
+            NV_Literal (L_BitVector (Bitvector.zeros (Z.to_int n)))
+        | _ -> (* Bad types *) assert false)
+    | T_Enum _ | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ | T_Named _
+      ->
+        assert false
+
+  let deterministic_unknown_of_type ~eval_expr_sef =
+    unknown_of_aggregate_type deterministic_unknown_of_singular_type
+      ~eval_expr_sef
+
+  let v_unknown_of_type ~eval_expr_sef ty =
+    deterministic_unknown_of_type ~eval_expr_sef ty
 
   module Primitives = struct
     let return_one v = return [ return v ]

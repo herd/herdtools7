@@ -643,6 +643,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             T_Bits (w, []) |> with_loc
         | EQ_OP | NEQ ->
             (* Wrong! *)
+            let t1_anon = Types.make_anonymous env t1
+            and t2_anon = Types.make_anonymous env t2 in
             let+ () =
               any
                 [
@@ -650,22 +652,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                      constrained integer then it is treated as an
                      unconstrained integer. *)
                   both
-                    (check_type_satisfies' env t1 integer)
-                    (check_type_satisfies' env t2 integer);
+                    (check_type_satisfies' env t1_anon integer)
+                    (check_type_satisfies' env t2_anon integer);
                   (* If the arguments of a comparison operation are
                      bitvectors then they must have the same determined
                      width. *)
-                  check_bits_equal_width' env t1 t2;
-                  (* The rest are redundancies from the first equal types
-                     cases, but provided for completeness. *)
+                  check_bits_equal_width' env t1_anon t2_anon;
                   both
-                    (check_type_satisfies' env t1 boolean)
-                    (check_type_satisfies' env t2 boolean);
+                    (check_type_satisfies' env t1_anon boolean)
+                    (check_type_satisfies' env t2_anon boolean);
                   both
-                    (check_type_satisfies' env t1 real)
-                    (check_type_satisfies' env t2 real);
+                    (check_type_satisfies' env t1_anon real)
+                    (check_type_satisfies' env t2_anon real);
+                  both
+                    (check_type_satisfies' env t1_anon string)
+                    (check_type_satisfies' env t2_anon string);
                   (fun () ->
-                    match (t1.desc, t2.desc) with
+                    match (t1_anon.desc, t2_anon.desc) with
                     | T_Enum li1, T_Enum li2 ->
                         check_true' (list_equal String.equal li1 li2) ()
                     | _ -> assumption_failed ());
@@ -798,7 +801,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let x = Diet.Int.min_elt diet |> Diet.Int.Interval.x
     and y = Diet.Int.max_elt diet |> Diet.Int.Interval.y in
     if 0 <= x && y < width then ()
-    else fatal_from loc (BadSlices (slices, width))
+    else fatal_from loc (BadSlices (Error.Static, slices, width))
 
   let check_slices_in_width loc env width slices () =
     let diet = disjoint_slices_to_diet loc env slices in
@@ -1626,10 +1629,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             | None -> (
                 (* Begin LEGlobalVar *)
                 match IMap.find_opt x env.global.storage_types with
-                | Some (ty, _) ->
-                    (* TODO: check that the keyword is a variable. *)
-                    ty |: TypingRule.LEGlobalVar
+                | Some (ty, GDK_Var) -> ty |: TypingRule.LEGlobalVar
                 (* End *)
+                | Some _ -> fatal_from le @@ Error.AssignToImmutable x
                 | None -> undefined_identifier le x)
           in
           check_type_satisfies le env t_e ty ()
