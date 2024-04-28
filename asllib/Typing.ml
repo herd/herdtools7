@@ -330,16 +330,18 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
         | None -> undefined_identifier loc name)
     | Some set -> (
         let finder name' acc =
-          let func_sig = IMap.find name' env.global.subprograms in
-          let callee_arg_types = func_sig.args in
-          if has_arg_clash env caller_arg_types callee_arg_types then
-            ( deduce_eqs env caller_arg_types callee_arg_types,
-              name',
-              callee_arg_types,
-              func_sig.return_type,
-              func_sig.parameters )
-            :: acc
-          else acc
+          match IMap.find_opt name' env.global.subprograms with
+          | None -> acc (* Declaration in progress. *)
+          | Some func_sig ->
+              let callee_arg_types = func_sig.args in
+              if has_arg_clash env caller_arg_types callee_arg_types then
+                ( deduce_eqs env caller_arg_types callee_arg_types,
+                  name',
+                  callee_arg_types,
+                  func_sig.return_type,
+                  func_sig.parameters )
+                :: acc
+              else acc
         in
         match ISet.fold finder set [] with
         | [ res ] -> res
@@ -2365,6 +2367,54 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
+  let check_setter_have_getter ~loc env (func_sig : AST.func) =
+    let fail () =
+      fatal_from loc (Error.SetterWithoutCorrespondingGetter func_sig)
+    in
+    let check_true thing = check_true thing fail in
+    match func_sig.subprogram_type with
+    | ST_Getter | ST_Function | ST_Procedure -> ok
+    | ST_Setter ->
+        let ret_type, args =
+          match func_sig.args with
+          | [] -> fatal_from loc Error.UnrespectedParserInvariant
+          | (_, ret_type) :: args -> (ret_type, List.map snd args)
+        in
+        let _, name', _, _, _ =
+          try Fn.find_name loc env func_sig.name args
+          with
+          | Error.(
+              ASLException
+                { desc = NoCallCandidate _ | TooManyCallCandidates _; _ })
+          ->
+            fail ()
+        in
+        let func_sig' =
+          try IMap.find name' env.global.subprograms
+          with Not_found -> assert false (* By type-checking invariant! *)
+        in
+        let+ () =
+          (* Check that func_sig' is a getter *)
+          check_true (func_sig'.subprogram_type = ST_Getter)
+        in
+        let+ () =
+          (* Check that args match *)
+          let () = assert (List.compare_lengths func_sig'.args args = 0) in
+          check_true
+          @@ List.for_all2
+               (fun (_, t1) t2 -> Types.type_equal env t1 t2)
+               func_sig'.args args
+        in
+        let+ () =
+          (* Check that return types match. *)
+          match func_sig'.return_type with
+          | None ->
+              assert
+                false (* By type-checking invariant: func_sig' is a getter. *)
+          | Some t -> check_true @@ Types.type_equal env ret_type t
+        in
+        ok
+
   (* Begin DeclareOneFunc *)
   let declare_one_func loc (func_sig : func) env =
     let env, name' =
@@ -2383,6 +2433,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           func_sig.args
     in
     let+ () = check_var_not_in_genv loc env name' in
+    let+ () = check_setter_have_getter ~loc env func_sig in
     let func_sig = { func_sig with name = name' } in
     (add_subprogram name' func_sig env, func_sig)
 
@@ -2538,6 +2589,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (d :: acc, env)
 
   let type_check_mutually_rec ds (acc, env) =
+    let () =
+      if false then
+        let open Format in
+        eprintf "@[Type-checking@ mutually@ recursive@ declarations:@ %a@]@."
+          (pp_print_list ~pp_sep:pp_print_space pp_print_string)
+          (List.map identifier_of_decl ds)
+    in
     let env_and_fs =
       List.map
         (fun d ->
@@ -2551,6 +2609,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (Error.BadRecursiveDecls
                    (List.map ASTUtils.identifier_of_decl ds)))
         ds
+    in
+    let env_and_fs =
+      (* Setters last as they need getters declared. *)
+      let others, setters =
+        List.partition
+          (fun (_, f, _) -> f.subprogram_type = ST_Setter)
+          env_and_fs
+      in
+      List.rev_append setters others
     in
     let genv, fs =
       list_fold_left_map

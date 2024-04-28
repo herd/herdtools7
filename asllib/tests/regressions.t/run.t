@@ -207,6 +207,12 @@ UnderConstrained integers:
 
   $ aslref equality.asl
 
+  $ aslref setter_without_getter.asl
+  File setter_without_getter.asl, line 1, character 0 to line 4, character 3:
+  ASL Typing error: setter "f" does not have a corresponding getter of
+    signature integer -> integer
+  [1]
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]

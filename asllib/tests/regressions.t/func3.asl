@@ -18,6 +18,11 @@ begin
   f1 = 3 * (v - x);
 end
 
+getter f3[x:integer] => integer
+begin
+  return 0;
+end
+
 setter f3[x:integer] = v : integer
 begin
   assert x == 12;
