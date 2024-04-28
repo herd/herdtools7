@@ -56,6 +56,10 @@ Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 \item
 \hypertarget{def-identifier}{}
     $\Identifiers$ is the set of all ASL identifiers.
+
+% \item
+% \hypertarget{def-strings}{}
+%     $\Strings$ is the set of all ASL string literals.
 \end{itemize}
 
 \begin{definition}[Empty Set]
@@ -431,6 +435,8 @@ shown here:
   then refer to it, while \hyperlink{def-ignore}{ignoring} the static environment component.
   Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
   head of the list $h$ and its tail $t$.
+  Given that a variable $v$ represents a list, we write $v \eqname v_{1..k}$ to list its elements and allow
+  referring to them by index.
 
   \hypertarget{def-eqdef}{}
   \item[Definition:] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name serving as an alias for the expression $\ve$.
