@@ -122,6 +122,7 @@ type expr_desc =
   | E_GetArray of expr * expr
   | E_GetField of expr * identifier
   | E_GetFields of expr * identifier list
+  | E_GetItem of expr * int
   | E_Record of ty * (identifier * expr) list
       (** Represents a record or an exception construction expression. *)
   | E_Concat of expr list

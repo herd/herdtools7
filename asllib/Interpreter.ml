@@ -477,6 +477,10 @@ module Make (B : Backend.S) (C : Config) = struct
             let* v = B.get_index i v_array in
             return_normal (v, new_env) |: SemanticsRule.EGetArray)
     (* End *)
+    | E_GetItem (e_tuple, index) ->
+        let** v_tuple, new_env = eval_expr env e_tuple in
+        let* v = B.get_index index v_tuple in
+        return_normal (v, new_env)
     (* Begin ERecord *)
     | E_Record (_, e_fields) ->
         let names, fields = List.split e_fields in

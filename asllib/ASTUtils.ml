@@ -178,6 +178,7 @@ let rec use_e acc e =
       use_es acc args
   | E_Slice (e, slices) -> use_slices (use_e acc e) slices
   | E_Cond (e1, e2, e3) -> use_e (use_e (use_e acc e1) e3) e2
+  | E_GetItem (e, _) -> use_e acc e
   | E_GetField (e, _) -> use_e acc e
   | E_GetFields (e, _) -> use_e acc e
   | E_Record (ty, li) -> use_fields (use_ty acc ty) li
@@ -345,6 +346,9 @@ let rec expr_equal eq e1 e2 =
   | E_GetFields (e1', f1s), E_GetFields (e2', f2s) ->
       list_equal String.equal f1s f2s && expr_equal eq e1' e2'
   | E_GetFields _, _ | _, E_GetFields _ -> false
+  | E_GetItem (e1', i1), E_GetItem (e2', i2) ->
+      Int.equal i1 i2 && expr_equal eq e1' e2'
+  | E_GetItem _, _ | _, E_GetItem _ -> false
   | E_Pattern _, _ | E_Record _, _ -> assert false
   | E_Literal v1, E_Literal v2 -> literal_equal v1 v2
   | E_Literal _, _ | _, E_Literal _ -> false
@@ -613,6 +617,7 @@ let rec subst_expr substs e =
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
+  | E_GetItem (e, i) -> E_GetItem (tr e, i)
   | E_Literal _ -> e.desc
   | E_Pattern (e, ps) -> E_Pattern (tr e, ps)
   | E_Record (t, fields) ->
@@ -646,6 +651,7 @@ let rec is_simple_expr e =
   | E_ATC (e, _)
   | E_GetFields (e, _)
   | E_GetField (e, _)
+  | E_GetItem (e, _)
   | E_Unop (_, e)
   | E_Pattern (e, _) (* because pattern must be side-effect free. *) ->
       is_simple_expr e
@@ -690,6 +696,7 @@ let rename_locals map_name ast =
     | E_GetArray (e1, e2) -> E_GetArray (map_e e1, map_e e2)
     | E_GetField (e', f) -> E_GetField (map_e e', f)
     | E_GetFields (e', li) -> E_GetFields (map_e e', li)
+    | E_GetItem (e', i) -> E_GetItem (map_e e', i)
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
     | E_Concat li -> E_Concat (map_es li)
     | E_Tuple li -> E_Tuple (map_es li)

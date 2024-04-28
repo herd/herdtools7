@@ -114,6 +114,7 @@ let rec pp_expr =
     | E_GetField (e, x) -> bprintf f "E_GetField (%a, %S)" pp_expr e x
     | E_GetFields (e, x) ->
         bprintf f "E_GetFields (%a, %a)" pp_expr e (pp_list pp_string) x
+    | E_GetItem (e, i) -> bprintf f "E_GetItem (%a, %d)" pp_expr e i
     | E_Record (ty, li) ->
         bprintf f "E_Record (%a, %a)" pp_ty ty (pp_id_assoc pp_expr) li
     | E_Concat es ->

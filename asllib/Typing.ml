@@ -1532,10 +1532,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       E_Slice (e2, slices) |> here |> annotate_expr env
                     in
                     let+ () = check_type_satisfies e3 env t_e3 t in
-                    (t, e3) |: TypingRule.EGetBitFieldTyped)
+                    (t, e3) |: TypingRule.EGetBitFieldTyped
+                    (* End *))
+            | T_Tuple tys ->
+                let index =
+                  try Scanf.sscanf field_name "item%u" Fun.id
+                  with Scanf.Scan_failure _ | Failure _ | End_of_file ->
+                    fatal_from e (Error.BadField (field_name, t_e2))
+                in
+                if 0 <= index && index < List.length tys then
+                  (List.nth tys index, E_GetItem (e2, index) |> add_pos_from e)
+                else fatal_from e (Error.BadField (field_name, t_e2))
             (* Begin EGetBadField *)
             | _ ->
-                conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e1
+                fatal_from e (Error.BadField (field_name, t_e2))
                 |: TypingRule.EGetBadField)
         (* End *))
     | E_GetFields (e_1, fields) -> (
@@ -1599,6 +1609,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (T_Bool |> here, E_Pattern (e'', patterns') |> here)
         |: TypingRule.EPattern
     (* End *)
+    | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
 
   let rec annotate_lexpr env le t_e =

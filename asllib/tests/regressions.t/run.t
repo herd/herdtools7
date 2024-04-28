@@ -213,6 +213,8 @@ UnderConstrained integers:
     signature integer -> integer
   [1]
 
+  $ aslref tuple_items.asl
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]

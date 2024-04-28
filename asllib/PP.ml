@@ -126,6 +126,7 @@ let rec pp_expr f e =
   | E_GetField (e, x) -> fprintf f "@[%a@,.%s@]" pp_expr e x
   | E_GetFields (e, xs) ->
       fprintf f "@[%a@,.[@[%a@]]@]" pp_expr e (pp_comma_list pp_print_string) xs
+  | E_GetItem (e, i) -> fprintf f "@[%a@,.item%d]" pp_expr e i
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
