@@ -298,7 +298,8 @@ type stmt_desc =
           type-checking. *)
 
 and stmt = stmt_desc annotated
-and case_alt = (pattern * stmt) annotated
+and case_alt_desc = { pattern : pattern; where : expr option; stmt : stmt }
+and case_alt = case_alt_desc annotated
 
 and catcher = identifier option * ty * stmt
 (** The optional name of the matched exception, the guard type and the

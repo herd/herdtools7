@@ -454,8 +454,9 @@ let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
 let alt_delim == ARROW | COLON
 let alt == annotated (
-  | WHEN; ~=pattern_list; ioption(WHERE; expr); alt_delim; ~=stmt_list; <>
-  | OTHERWISE; alt_delim; s=stmt_list; { (Pattern_All, s) }
+  | WHEN; pattern=pattern_list; where=ioption(WHERE; expr); alt_delim; stmt=stmt_list;
+      { {pattern; where; stmt } }
+  | OTHERWISE; alt_delim; stmt=stmt_list; { { pattern=Pattern_All; where= None; stmt } }
 )
 
 let otherwise == OTHERWISE; ARROW; stmt_list

@@ -557,7 +557,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let check_statically_evaluable (env : env) e () =
     let e = reduce_expr env e in
-    let use_set = use_e ISet.empty e in
+    let use_set = use_e e ISet.empty in
     if ISet.for_all (storage_is_pure e env) use_set then ()
     else fatal_from e (Error.UnpureExpression e)
 
@@ -1993,14 +1993,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Begin SCase *)
     | S_Case (e, cases) ->
         let t_e, e1 = annotate_expr env e in
-        let annotate_case (acc, env) case =
-          let p, s = case.desc in
-          let p1 = annotate_pattern e1 env t_e p in
-          let s1 = try_annotate_block env s in
-          (add_pos_from_st case (p1, s1) :: acc, env)
+        let annotate_case case =
+          let { pattern = p0; where = w0; stmt = s0 } = case.desc in
+          let p1 = annotate_pattern e1 env t_e p0
+          and s1 = try_annotate_block env s0
+          and w1 =
+            match w0 with
+            | None -> None
+            | Some e_w0 ->
+                let twe, e_w1 = (annotate_expr env) e_w0 in
+                let+ () = check_structure_boolean e_w0 env twe in
+                Some e_w1
+          in
+          add_pos_from_st case { pattern = p1; where = w1; stmt = s1 }
         in
-        let cases1, env1 = List.fold_left annotate_case ([], env) cases in
-        (S_Case (e1, List.rev cases1) |> here, env1) |: TypingRule.SCase
+        let cases1 = List.map annotate_case cases in
+        (S_Case (e1, cases1) |> here, env) |: TypingRule.SCase
     (* End *)
     (* Begin SAssert *)
     | S_Assert e ->
@@ -2235,7 +2243,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     fun f -> fold_types_func_sig of_ty f ISet.empty
 
-  let use_func_sig f = fold_types_func_sig ASTUtils.use_ty f ISet.empty
+  let use_func_sig f =
+    fold_types_func_sig (Fun.flip ASTUtils.use_ty) f ISet.empty
 
   let annotate_func_sig ~loc env (f : AST.func) : env * AST.func =
     let () =

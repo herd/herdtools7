@@ -243,10 +243,10 @@ val is_simple_expr : expr -> bool
 
 (** {1 Def/use analysis} *)
 
-val use_e : ISet.t -> expr -> ISet.t
-val use_ty : ISet.t -> ty -> ISet.t
+val use_e : expr -> ISet.t -> ISet.t
+val use_ty : ty -> ISet.t -> ISet.t
 
-val use_constant_decl : ISet.t -> decl -> ISet.t
+val use_constant_decl : decl -> ISet.t -> ISet.t
 (** [use_constant_decl d] is the set of other declared names required to have
     in the environment to be able to type-check d. *)
 

@@ -603,17 +603,19 @@ let s_else == ~=list(s_elsif); ~=ioption(ELSE; possibly_empty_block); < build_st
 
 let alt ==
   annotated (
-    | WHEN; ~=pattern_list; opt_altcond; ~=possibly_empty_block; <>
-    | WHEN; ~=pattern_list; opt_altcond; ~=simple_if_stmt; <>
-    | OTHERWISE; s=possibly_empty_block; { (AST.Pattern_All, s) }
+    | WHEN; pattern=pattern_list; where=opt_where; stmt=possibly_empty_block;
+        { AST.{ pattern; where; stmt } }
+    | WHEN; pattern=pattern_list; where=opt_where; stmt=simple_if_stmt;
+        { AST.{ pattern; where; stmt } }
+    | OTHERWISE; stmt=possibly_empty_block;
+        { AST.{ pattern = Pattern_All; where = None; stmt } }
   )
 
-let otherwise == annotated (OTHERWISE; possibly_empty_block)
+let opt_where ==
+  | { None }
+  | ~=ioption(AND; expr); EQ_GT; <>
 
-let opt_altcond ==
-  | <>
-  | EQ_GT; <>
-  | AND; expr; EQ_GT; <>
+let otherwise == annotated (OTHERWISE; possibly_empty_block)
 
 let pattern_list == ~=nclist(pattern); < AST.Pattern_Any >
 let pattern ==
