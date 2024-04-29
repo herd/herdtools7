@@ -1,3 +1,12 @@
+Bad enumeration
+  $ cat >bad-types.asl <<EOF
+  > type t of enumeration {};
+  > EOF
+
+  $ aslref bad-types.asl
+  File bad-types.asl, line 1, characters 23 to 24:
+  ASL Error: Cannot parse.
+  [1]
 
 Invalid bitfields
 ==================
