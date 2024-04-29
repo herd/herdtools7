@@ -242,6 +242,7 @@ Parameters bugs:
   ASL Typing error: Illegal application of operator OR on types bits(a)
     and bits(b)
   [1]
+  $ aslref --no-exec defining_param.asl
 
 Required tests:
   $ aslref anonymous-types-example-success.asl

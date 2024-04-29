@@ -2235,10 +2235,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match f.return_type with None -> from_args | Some t -> folder from_args t
 
   let get_undeclared_defining env =
-    let of_ty acc ty =
+    let rec of_ty acc ty =
       match ty.desc with
       | T_Bits ({ desc = E_Var x; _ }, _) ->
           if StaticEnv.is_undefined x env then ISet.add x acc else acc
+      | T_Tuple tys -> List.fold_left of_ty acc tys
       | _ -> acc
     in
     fun f -> fold_types_func_sig of_ty f ISet.empty
