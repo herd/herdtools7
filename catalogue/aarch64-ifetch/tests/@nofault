@@ -1,0 +1,12 @@
+DIC0-IDC0/@nofault
+DIC0-IDC1/@nofault
+DIC1-IDC1/@nofault
+@jit
+DIC1.MP.RF+dmb.st+addr-rfiINSTRISB.litmus
+DIC1.MP.RF+dmb.st+addr-rfiINSTRNOP.litmus
+MP.FF+dc.cvau-dmb.ish+dsb.ish-ic.ivau-dsb.ish-rfiINSTNOP.litmus
+MP.FF+dc.cvau-dsb.ish-ic.ivau-dsb.ish+dmb.ish+rfiINST.litmus
+MP.FF+dc.cvau-dsb.ish-ic.ivau-dsb.ish+po.litmus
+MP.FF+dc.cvau-dsb.ish-ic.vau-dsb.ish+dmb.ish+rfiINST.litmus
+MP.RF+dc.cvau-dmb.ish+dsb.ish.ic.ivau.dsb-rfiINSTRISB.litmus
+MP+rel+blr.litmus
