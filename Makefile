@@ -289,7 +289,11 @@ diy-test-aarch64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
-test:: cata-test more-test
+
+### CATALOGUE testing, catalogue must be here
+CATATEST := $(shell if test -d catalogue; then echo cata-test; fi)
+
+test:: $(CATATEST)
 
 cata-test:: cata-aarch64-test
 cata-aarch64-test:
@@ -304,7 +308,7 @@ cata-aarch64-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64 tests: OK"
 
-more-test:: aarch64-test-mixed
+cata-test:: aarch64-test-mixed
 aarch64-test-mixed:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
@@ -354,7 +358,7 @@ faults-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-faults tests: OK"
 
-more-test:: pick-test-mixed
+cata-test:: pick-test-mixed
 pick-test-mixed:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
@@ -368,7 +372,7 @@ pick-test-mixed:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-pick tests (mixed mode): OK"
 
-more-test:: mte-test
+cata-test:: mte-test
 mte-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
