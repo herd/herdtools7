@@ -206,6 +206,11 @@ UnderConstrained integers:
   [1]
 
   $ aslref equality.asl
+  $ aslref bad-equality.asl
+  File bad-equality.asl, line 3, characters 8 to 23:
+  ASL Typing error: Illegal application of operator == on types
+    (integer {1}, integer {2}) and (integer {1}, integer {2})
+  [1]
 
   $ aslref setter_without_getter.asl
   File setter_without_getter.asl, line 1, character 0 to line 4, character 3:
