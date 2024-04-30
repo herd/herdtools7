@@ -64,11 +64,11 @@
 \newcommand\canbeinitializedwith[0]{\texttt{can\_be\_initialized\_with}}
 \newcommand\getbitvectorwidth[0]{\texttt{get\_bitvector\_width}}
 
-\newcommand\typeequal[0]{\texttt{type\_equal}}
-\newcommand\exprequal[0]{\texttt{expr\_equal}}
-\newcommand\bitwidthequal[0]{\texttt{bitwidth\_equal}}
-\newcommand\bitfieldequal[0]{\texttt{bitfield\_equal}}
-\newcommand\bitfieldsequal[0]{\texttt{bitfields\_equal}}
+\newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
+\newcommand\exprequal[0]{\hyperlink{def-exprequal}{\texttt{expr\_equal}}}
+\newcommand\bitwidthequal[0]{\hyperlink{def-bitwidthequal}{\texttt{bitwidth\_equal}}}
+\newcommand\bitfieldequal[0]{\hyperlink{def-bitfieldequal}{\texttt{bitfield\_equal}}}
+\newcommand\bitfieldsequal[0]{\hyperlink{def-bitfildsequal}{\texttt{bitfields\_equal}}}
 
 \newcommand\subsumes[0]{\hyperlink{def-subsumes}{\texttt{subsumes}}}
 \newcommand\symsubsumes[0]{\hyperlink{def-symsubsumes}{\texttt{sym\_subsumes}}}
@@ -854,8 +854,8 @@ The definition of each \texttt{annotation\_<label>} function is given by a numbe
 rules, which follow the possible shapes the \texttt{label} can have. For
 example, an expression can be a literal, or a binary operator, amongst other
 things. Each of those has its own evaluation rule: TypingRule.ELit in
-Section~\ref{sec:TypingRule.ELit} and
-Typing.Binop in Section~\ref{sec:TypingRule.Binop}, respectively.
+Section~\secref{TypingRule.ELit} and
+Typing.Binop in Section~\secref{TypingRule.Binop}, respectively.
 
 Each rule is presented using the following template:
 \begin{itemize}
@@ -879,17 +879,17 @@ Each rule is presented using the following template:
 This chapter defines some basic predicates for classifying types as well as
 functions that inspect the structure of types:
 \begin{itemize}
-  \item Builtin singular types (\ref{sec:TypingRule.BuiltinSingularType})
-  \item Builtin aggregate types (\ref{sec:TypingRule.BuiltinAggregateType})
-  \item Buitin types (\ref{sec:TypingRule.BuiltinSingularOrAggregate})
-  \item Named types (\ref{sec:TypingRule.NamedType})
-  \item Anonymous types (\ref{sec:TypingRule.AnonymousType})
-  \item Singular types (\ref{sec:TypingRule.SingularType})
-  \item Aggregate types (\ref{sec:TypingRule.AggregateType})
-  \item Non-primitive types (\ref{sec:TypingRule.NonPrimitiveType})
-  \item Primitive types (\ref{sec:TypingRule.PrimitiveType})
-  \item The structure of a type (\ref{sec:structure})
-  \item The underlying type of a type (\ref{sec:anonymize})
+  \item Builtin singular types (\secref{TypingRule.BuiltinSingularType})
+  \item Builtin aggregate types (\secref{TypingRule.BuiltinAggregateType})
+  \item Buitin types (\secref{TypingRule.BuiltinSingularOrAggregate})
+  \item Named types (\secref{TypingRule.NamedType})
+  \item Anonymous types (\secref{TypingRule.AnonymousType})
+  \item Singular types (\secref{TypingRule.SingularType})
+  \item Aggregate types (\secref{TypingRule.AggregateType})
+  \item Non-primitive types (\secref{TypingRule.NonPrimitiveType})
+  \item Primitive types (\secref{TypingRule.PrimitiveType})
+  \item The structure of a type (\secref{structure})
+  \item The underlying type of a type (\secref{anonymize})
 \end{itemize}
 
 \section{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
@@ -1490,15 +1490,15 @@ The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
 
 We define the following relations over types and operators:
 \begin{itemize}
-  \item Subtype~\ref{sec:TypingRule.Subtype}
-  \item Structural Subtype Satisfaction~\ref{sec:TypingRule.StructuralSubtypeSatisfaction}
-  \item Domain Subtype Satisfaction~\ref{sec:TypingRule.DomainSubtypeSatisfaction}
-  \item Subtype Satisfaction~\ref{sec:TypingRule.SubtypeSatisfaction}
-  \item Type Satisfaction~\ref{sec:TypingRule.TypeSatisfaction}
-  \item Type Clash~\ref{sec:TypingRule.TypeClash}
-  \item Lowest Common Ancestor~\ref{sec:TypingRule.LowestCommonAncestor}
-  \item Checking adequacy of a unary operator for a type~\ref{sec:TypingRule.CheckUnop}
-  \item Checking adequacy of a binary operator for a pair of types~\ref{sec:TypingRule.CheckBinop}
+  \item Subtype (\secref{TypingRule.Subtype})
+  \item Structural Subtype Satisfaction (\secref{TypingRule.StructuralSubtypeSatisfaction})
+  \item Domain Subtype Satisfaction (\secref{TypingRule.DomainSubtypeSatisfaction})
+  \item Subtype Satisfaction (\secref{TypingRule.SubtypeSatisfaction})
+  \item Type Satisfaction (\secref{TypingRule.TypeSatisfaction})
+  \item Type Clash (\secref{TypingRule.TypeClash})
+  \item Lowest Common Ancestor (\secref{TypingRule.LowestCommonAncestor})
+  \item Checking adequacy of a unary operator for a type (\secref{TypingRule.CheckUnop})
+  \item Checking adequacy of a binary operator for a pair of types (\secref{TypingRule.CheckBinop})
 \end{itemize}
 
 \section{TypingRule.Subtype\label{sec:TypingRule.Subtype}}
@@ -1948,10 +1948,10 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 \and
 \inferrule{\isanonymous(\tenv, \vs) \\ \subtypesat(\tenv, \vt, \vs)}{\typesatisfies(\tenv, \vt, \vs)}
 \and
-\inferrule{w_t,w_s \in \bitsconstraint \\
-  \tstruct(\tenv, \vt)=\TBits(w_t, \emptylist) \\
-  \tstruct(\tenv, \vs)=\TBits(w_s, \Ignore) \\
-  \bitwidthequal(\tenv, w_s, w_t)}
+\inferrule{
+  \tstruct(\tenv, \vt) \typearrow \TBits(\widtht, \Ignore) \\
+  \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \\
+  \bitwidthequal(\tenv, \widtht, \widths)}
 {\typesatisfies(\tenv, \vt, \vs)}
 \end{mathpar}
 \end{emptyformal}
@@ -2031,7 +2031,7 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 \section{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
 
 \subsection{Prose}
-  Annotating a given conditional expression (see Section~\ref{sec:TypingRule.ECond}),
+  Annotating a given conditional expression (see Section~\secref{TypingRule.ECond}),
   requires finding a single type such that can be used to annotate the results of both sub-expressions.
   This leads to the notion of a \emph{lowest common ancestor} of two types.
 
@@ -2755,19 +2755,19 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 Annotating a type~$\tty$ in an environment~\texttt{env} results in a
 rewritten type~\texttt{new\_ty} and one of the following applies:
 \begin{itemize}
-  \item TypingRule.TString (see Section~\ref{sec:TypingRule.TString});
-  \item TypingRule.TReal (see Section~\ref{sec:TypingRule.TReal});
-  \item TypingRule.TBool (see Section~\ref{sec:TypingRule.TBool});
-  \item TypingRule.TNamed (see Section~\ref{sec:TypingRule.TNamed});
-  \item TypingRule.TInt (see Section~\ref{sec:TypingRule.TInt});
-  \item TypingRule.TBits (see Section~\ref{sec:TypingRule.TBits});
-  \item TypingRule.TTuple (see Section~\ref{sec:TypingRule.TTuple});
-  \item TypingRule.TArray (see Section~\ref{sec:TypingRule.TArray});
-  \item TypingRule.TEnumDecl (see Section~\ref{sec:TypingRule.TEnumDecl});
+  \item TypingRule.TString (see Section~\secref{TypingRule.TString});
+  \item TypingRule.TReal (see Section~\secref{TypingRule.TReal});
+  \item TypingRule.TBool (see Section~\secref{TypingRule.TBool});
+  \item TypingRule.TNamed (see Section~\secref{TypingRule.TNamed});
+  \item TypingRule.TInt (see Section~\secref{TypingRule.TInt});
+  \item TypingRule.TBits (see Section~\secref{TypingRule.TBits});
+  \item TypingRule.TTuple (see Section~\secref{TypingRule.TTuple});
+  \item TypingRule.TArray (see Section~\secref{TypingRule.TArray});
+  \item TypingRule.TEnumDecl (see Section~\secref{TypingRule.TEnumDecl});
   \item TypingRule.TRecordExceptionDecl (see
-    Section~\ref{sec:TypingRule.TRecordExceptionDecl});
-  \item TypingRule.TNonDecl (see Section~\ref{sec:TypingRule.TNonDecl});
-  \item TypingRule.TBitField (see Section~\ref{sec:TypingRule.TBitField}).
+    Section~\secref{TypingRule.TRecordExceptionDecl});
+  \item TypingRule.TNonDecl (see Section~\secref{TypingRule.TNonDecl});
+  \item TypingRule.TBitField (see Section~\secref{TypingRule.TBitField}).
 \end{itemize}
 
 
@@ -3121,34 +3121,34 @@ an environment \tenv.  Formally, the result of annotating the expression
 $\ve$ in \tenv\ is either the pair \texttt{t, new\_e}, where $\vt$ is a type and
 \texttt{new\_e} is a rewritten expression, or an error, and one of the following applies:
 \begin{itemize}
-\item TypingRule.ELit (see Section~\ref{sec:TypingRule.ELit});
-\item TypingRule.ELocalVarConstant (see Section~\ref{sec:TypingRule.ELocalVarConstant})
-\item TypingRule.ELocalVar (see Section~\ref{sec:TypingRule.ELocalVar})
-\item TypingRule.EGlobalVarConstant (see Section~\ref{sec:TypingRule.EGlobalVarConstant})
-\item TypingRule.EGlobalVar (see Section~\ref{sec:TypingRule.EGlobalVar})
-\item TypingRule.EUndefIdent (see Section~\ref{sec:TypingRule.EUndefIdent})
-\item TypingRule.Binop (see Section~\ref{sec:TypingRule.Binop})
-\item TypingRule.Unop (see Section~\ref{sec:TypingRule.Unop})
-\item TypingRule.ECond (see Section~\ref{sec:TypingRule.ECond})
-\item TypingRule.ESlice (see Section~\ref{sec:TypingRule.ESlice})
-\item TypingRule.ECall (see Section~\ref{sec:TypingRule.ECall})
-\item TypingRule.EGetArray (see Section~\ref{sec:TypingRule.EGetArray})
-\item TypingRule.EStructuredNotStructured (see Section~\ref{sec:TypingRule.EStructuredNotStructured})
-\item TypingRule.EStructuredMissingField (see Section~\ref{sec:TypingRule.EStructuredMissingField})
-\item TypingRule.ERecord (see Section~\ref{sec:TypingRule.ERecord})
-\item TypingRule.EGetRecordField (see Section~\ref{sec:TypingRule.EGetRecordField})
-\item TypingRule.EGetBadRecordField (see Section~\ref{sec:TypingRule.EGetBadRecordField})
-\item TypingRule.EGetBadBitField (see Section~\ref{sec:TypingRule.EGetBadBitField})
-\item TypingRule.EGetBadField (see Section~\ref{sec:TypingRule.EGetBadField})
-\item TypingRule.EGetBitField (see Section~\ref{sec:TypingRule.EGetBitField})
-\item TypingRule.EGetBitFieldNested (see Section~\ref{sec:TypingRule.EGetBitFieldNested})
-\item TypingRule.EGetBitFieldTyped (see Section~\ref{sec:TypingRule.EGetBitFieldTyped})
-\item TypingRule.EConcatEmpty (see Section~\ref{sec:TypingRule.EConcatEmpty})
-\item TypingRule.EConcat (see Section~\ref{sec:TypingRule.EConcat})
-\item TypingRule.ETuple (see Section~\ref{sec:TypingRule.ETuple})
-\item TypingRule.EUnknown (see Section~\ref{sec:TypingRule.EUnknown})
-\item TypingRule.EPattern (see Section~\ref{sec:TypingRule.EPattern})
-\item TypingRule.CTC (see Section~\ref{sec:TypingRule.CTC})
+\item TypingRule.ELit (see Section~\secref{TypingRule.ELit});
+\item TypingRule.ELocalVarConstant (see Section~\secref{TypingRule.ELocalVarConstant})
+\item TypingRule.ELocalVar (see Section~\secref{TypingRule.ELocalVar})
+\item TypingRule.EGlobalVarConstant (see Section~\secref{TypingRule.EGlobalVarConstant})
+\item TypingRule.EGlobalVar (see Section~\secref{TypingRule.EGlobalVar})
+\item TypingRule.EUndefIdent (see Section~\secref{TypingRule.EUndefIdent})
+\item TypingRule.Binop (see Section~\secref{TypingRule.Binop})
+\item TypingRule.Unop (see Section~\secref{TypingRule.Unop})
+\item TypingRule.ECond (see Section~\secref{TypingRule.ECond})
+\item TypingRule.ESlice (see Section~\secref{TypingRule.ESlice})
+\item TypingRule.ECall (see Section~\secref{TypingRule.ECall})
+\item TypingRule.EGetArray (see Section~\secref{TypingRule.EGetArray})
+\item TypingRule.EStructuredNotStructured (see Section~\secref{TypingRule.EStructuredNotStructured})
+\item TypingRule.EStructuredMissingField (see Section~\secref{TypingRule.EStructuredMissingField})
+\item TypingRule.ERecord (see Section~\secref{TypingRule.ERecord})
+\item TypingRule.EGetRecordField (see Section~\secref{TypingRule.EGetRecordField})
+\item TypingRule.EGetBadRecordField (see Section~\secref{TypingRule.EGetBadRecordField})
+\item TypingRule.EGetBadBitField (see Section~\secref{TypingRule.EGetBadBitField})
+\item TypingRule.EGetBadField (see Section~\secref{TypingRule.EGetBadField})
+\item TypingRule.EGetBitField (see Section~\secref{TypingRule.EGetBitField})
+\item TypingRule.EGetBitFieldNested (see Section~\secref{TypingRule.EGetBitFieldNested})
+\item TypingRule.EGetBitFieldTyped (see Section~\secref{TypingRule.EGetBitFieldTyped})
+\item TypingRule.EConcatEmpty (see Section~\secref{TypingRule.EConcatEmpty})
+\item TypingRule.EConcat (see Section~\secref{TypingRule.EConcat})
+\item TypingRule.ETuple (see Section~\secref{TypingRule.ETuple})
+\item TypingRule.EUnknown (see Section~\secref{TypingRule.EUnknown})
+\item TypingRule.EPattern (see Section~\secref{TypingRule.EPattern})
+\item TypingRule.CTC (see Section~\secref{TypingRule.CTC})
 \end{itemize}
 
 The annotation rewrites the input expression in the following cases, making the annotation of statements simpler:
@@ -3405,7 +3405,7 @@ In the following example, we show several literals and their corresponding types
   \item $\ve$ denotes a binary operation \texttt{op} over two expressions \texttt{e1} and \texttt{e2};
   \item \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
   \item \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
-  \item $\vt$ is the result of checking compatibility of \texttt{op} with \texttt{t1} and \texttt{t2} as per Section~\ref{sec:TypingRule.CheckBinop};
+  \item $\vt$ is the result of checking compatibility of \texttt{op} with \texttt{t1} and \texttt{t2} as per Section~\secref{TypingRule.CheckBinop};
   \item \texttt{new\_env} denotes \texttt{op} over \texttt{e1'} and \texttt{e2'}.
   \end{itemize}
 
@@ -3436,7 +3436,7 @@ In the following example, we show several literals and their corresponding types
   \begin{itemize}
   \item $\ve$ denotes a unary operation \texttt{op} over an expression $\vep$;
   \item \texttt{t'',e''} is the result of annotating $\vep$ in \texttt{env};
-  \item $\vt$ is the result of checking compatibility of \texttt{op} with \texttt{t''} as per Section~\ref{sec:TypingRule.CheckUnop};
+  \item $\vt$ is the result of checking compatibility of \texttt{op} with \texttt{t''} as per Section~\secref{TypingRule.CheckUnop};
   \item \texttt{new\_e} denotes \texttt{op} over \texttt{e''}.
   \end{itemize}
 
@@ -3591,7 +3591,7 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
   \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
   \item an error ``Conflicting Types'' is raised or \texttt{slices} is a single expression \texttt{e\_index} and all of the following apply:
   \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-  \item an error ``\texttt{Conflicting Types}'' or \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\ref{sec:TypingRule.TypeSatisfaction} and all of the following apply:
+  \item an error ``\texttt{Conflicting Types}'' or \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\secref{TypingRule.TypeSatisfaction} and all of the following apply:
   \item \texttt{new\_e} is an access to array \texttt{e''} at index \texttt{e\_index'}.
   \end{itemize}
 
@@ -3699,7 +3699,7 @@ And now define the rule to annotate the array access expression:
     \begin{itemize}
     \item \texttt{t',e''} is the result of annotating $\vep$ in \texttt{env};
     \item \texttt{t\_spec'} is the type associated to \texttt{name} in \texttt{field\_types};
-    \item \texttt{t'} type-satisfies \texttt{t\_spec'} as per Section~\ref{sec:TypingRule.TypeSatisfaction};
+    \item \texttt{t'} type-satisfies \texttt{t\_spec'} as per Section~\secref{TypingRule.TypeSatisfaction};
     \item \texttt{fields'} associates \texttt{name} to \texttt{e''};
     \end{itemize}
   \item $\vt$ is $\tty$;
@@ -4177,20 +4177,20 @@ Annotating a left-hand side expression~\texttt{le} in an environment~\texttt{env
 to be the type of the corresponding right-hand-side (\texttt{annotate\_lexpr env le t\_e}),
 results in a rewritten expression \texttt{new\_le} and one of the following applies:
 \begin{itemize}
-\item TypingRule.LEDiscard (see Section~\ref{sec:TypingRule.LEDiscard}),
-\item TypingRule.LELocalVar (see Section~\ref{sec:TypingRule.LELocalVar}),
-\item TypingRule.LEGlobalVar (see Section~\ref{sec:TypingRule.LEGlobalVar}),
-\item TypingRule.LEDestructuring (see Section~\ref{sec:TypingRule.LEDestructuring}),
-\item TypingRule.LESlice (see Section~\ref{sec:TypingRule.LESlice}),
-\item TypingRule.LESetArray (see Section~\ref{sec:TypingRule.LESetArray}),
-\item TypingRule.LESetBadStructuredField (see Section~\ref{sec:TypingRule.LESetBadStructuredField}),
-\item TypingRule.LESetStructuredField (see Section~\ref{sec:TypingRule.LESetStructuredField}),
-\item TypingRule.LESetBadBitField (see Section~\ref{sec:TypingRule.LESetBadBitField}),
-\item TypingRule.LESetBitField (see Section~\ref{sec:TypingRule.LESetBitField}),
-\item TypingRule.LESetBitFieldNested (see Section~\ref{sec:TypingRule.LESetBitFieldNested}),
-\item TypingRule.LESetBitFieldTyped (see Section~\ref{sec:TypingRule.LESetBitFieldTyped}),
-\item TypingRule.LESetBadField (see Section~\ref{sec:TypingRule.LESetBadField}),
-\item TypingRule.LEConcat (see Section~\ref{sec:TypingRule.LEConcat}).
+\item TypingRule.LEDiscard (see Section~\secref{TypingRule.LEDiscard}),
+\item TypingRule.LELocalVar (see Section~\secref{TypingRule.LELocalVar}),
+\item TypingRule.LEGlobalVar (see Section~\secref{TypingRule.LEGlobalVar}),
+\item TypingRule.LEDestructuring (see Section~\secref{TypingRule.LEDestructuring}),
+\item TypingRule.LESlice (see Section~\secref{TypingRule.LESlice}),
+\item TypingRule.LESetArray (see Section~\secref{TypingRule.LESetArray}),
+\item TypingRule.LESetBadStructuredField (see Section~\secref{TypingRule.LESetBadStructuredField}),
+\item TypingRule.LESetStructuredField (see Section~\secref{TypingRule.LESetStructuredField}),
+\item TypingRule.LESetBadBitField (see Section~\secref{TypingRule.LESetBadBitField}),
+\item TypingRule.LESetBitField (see Section~\secref{TypingRule.LESetBitField}),
+\item TypingRule.LESetBitFieldNested (see Section~\secref{TypingRule.LESetBitFieldNested}),
+\item TypingRule.LESetBitFieldTyped (see Section~\secref{TypingRule.LESetBitFieldTyped}),
+\item TypingRule.LESetBadField (see Section~\secref{TypingRule.LESetBadField}),
+\item TypingRule.LEConcat (see Section~\secref{TypingRule.LEConcat}).
 \end{itemize}
 
 Some of the rules require viewing left-hand-side expressions as their corresponding right-hand side expressions.
@@ -4750,10 +4750,10 @@ all of the following apply:
 Annotating a slice~\texttt{slice} in an environment~\texttt{env}
 (\texttt{annotate\_slice env slice}) results in the slicing of the pair \texttt{(offset,length)} and one of the following applies:
 \begin{itemize}
-\item TypingRule.SliceSingle (see Section~\ref{sec:TypingRule.SliceSingle}),
-\item TypingRule.SliceLength (see Section~\ref{sec:TypingRule.SliceLength}),
-\item TypingRule.SliceRange (see Section~\ref{sec:TypingRule.SliceRange}),
-\item TypingRule.SliceStar (see Section~\ref{sec:TypingRule.SliceStar}).
+\item TypingRule.SliceSingle (see Section~\secref{TypingRule.SliceSingle}),
+\item TypingRule.SliceLength (see Section~\secref{TypingRule.SliceLength}),
+\item TypingRule.SliceRange (see Section~\secref{TypingRule.SliceRange}),
+\item TypingRule.SliceStar (see Section~\secref{TypingRule.SliceStar}).
 \end{itemize}
 
 \section{TypingRule.SliceSingle \label{sec:TypingRule.SliceSingle}}
@@ -4873,17 +4873,17 @@ length)} and all of the following apply:
 
 Annotating a pattern $\vt$ in an environment~\texttt{env} given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and one of the following applies:
 \begin{itemize}
-\item TypingRule.PAll (see Section~\ref{sec:TypingRule.PAll}),
-\item TypingRule.PAny (see Section~\ref{sec:TypingRule.PAny}),
-\item TypingRule.PGeq (see Section~\ref{sec:TypingRule.PGeq}),
-\item TypingRule.PLeq (see Section~\ref{sec:TypingRule.PLeq}),
-\item TypingRule.PNot (see Section~\ref{sec:TypingRule.PNot}),
-\item TypingRule.PRange (see Section~\ref{sec:TypingRule.PRange}),
-\item TypingRule.PSingle (see Section~\ref{sec:TypingRule.PSingle}),
-\item TypingRule.PMask (see Section~\ref{sec:TypingRule.PMask}),
-\item TypingRule.PTupleBadArity (see Section~\ref{sec:TypingRule.PTupleBadArity}),
-\item TypingRule.PTuple (see Section~\ref{sec:TypingRule.PTuple}),
-\item TypingRule.PTupleConflict (see Section~\ref{sec:TypingRule.PTupleConflict}),
+\item TypingRule.PAll (see Section~\secref{TypingRule.PAll}),
+\item TypingRule.PAny (see Section~\secref{TypingRule.PAny}),
+\item TypingRule.PGeq (see Section~\secref{TypingRule.PGeq}),
+\item TypingRule.PLeq (see Section~\secref{TypingRule.PLeq}),
+\item TypingRule.PNot (see Section~\secref{TypingRule.PNot}),
+\item TypingRule.PRange (see Section~\secref{TypingRule.PRange}),
+\item TypingRule.PSingle (see Section~\secref{TypingRule.PSingle}),
+\item TypingRule.PMask (see Section~\secref{TypingRule.PMask}),
+\item TypingRule.PTupleBadArity (see Section~\secref{TypingRule.PTupleBadArity}),
+\item TypingRule.PTuple (see Section~\secref{TypingRule.PTuple}),
+\item TypingRule.PTupleConflict (see Section~\secref{TypingRule.PTupleConflict}),
 \end{itemize}
 
 \section{TypingRule.PAll \label{sec:TypingRule.PAll}}
@@ -5214,10 +5214,10 @@ Annotating a pattern $\vt$ in an environment~\texttt{env} given a type $\vt$ (\t
 Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~$\tty$, in an
 environment~\texttt{env} (\annotatelocaldeclitem{\ldk, \ldi, \tty}) results in \texttt{new\_env, new\_ldi} and one of the following applies:
 \begin{itemize}
-\item TypingRule.LDDiscard (see Section~\ref{sec:TypingRule.LDDiscard}),
-\item TypingRule.LDVar (see Section~\ref{sec:TypingRule.LDVar}),
-\item TypingRule.LDTyped (see Section~\ref{sec:TypingRule.LDTyped}),
-\item TypingRule.LDTuple (see Section~\ref{sec:TypingRule.LDTuple}).
+\item TypingRule.LDDiscard (see Section~\secref{TypingRule.LDDiscard}),
+\item TypingRule.LDVar (see Section~\secref{TypingRule.LDVar}),
+\item TypingRule.LDTyped (see Section~\secref{TypingRule.LDTyped}),
+\item TypingRule.LDTuple (see Section~\secref{TypingRule.LDTuple}).
 \end{itemize}
 
 This is related to \identr{YSPM}.
@@ -5377,24 +5377,24 @@ Annotating a statement~$\vs$ in an environment~\texttt{env}
 (\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
 environment \texttt{new\_env} and one of the following applies:
 \begin{itemize}
-\item TypingRule.SPass (see Section~\ref{sec:TypingRule.SPass}),
-\item TypingRule.SAssign (see Section~\ref{sec:TypingRule.SAssign}),
-\item TypingRule.SReturnNone (see Section~\ref{sec:TypingRule.SReturnNone}),
-\item TypingRule.SReturnOne (see Section~\ref{sec:TypingRule.SReturnOne}),
-\item TypingRule.SReturnSome (see Section~\ref{sec:TypingRule.SReturnSome}),
-\item TypingRule.SSeq (see Section~\ref{sec:TypingRule.SSeq}),
-\item TypingRule.SCall (see Section~\ref{sec:TypingRule.SCall}),
-\item TypingRule.SCond (see Section~\ref{sec:TypingRule.SCond}),
-\item TypingRule.SCase (see Section~\ref{sec:TypingRule.SCase}),
-\item TypingRule.SAssert (see Section~\ref{sec:TypingRule.SAssert}),
-\item TypingRule.SWhile (see Section~\ref{sec:TypingRule.SWhile}),
-\item TypingRule.SRepeat (see Section~\ref{sec:TypingRule.SRepeat}),
-\item TypingRule.SFor (see Section~\ref{sec:TypingRule.SFor}),
-\item TypingRule.SThrowNone (see Section~\ref{sec:TypingRule.SThrowNone}),
-\item TypingRule.SThrowSome (see Section~\ref{sec:TypingRule.SThrowSome}),
-\item TypingRule.STry (see Section~\ref{sec:TypingRule.STry}).
-\item TypingRule.SDeclSome (see Section~\ref{sec:TypingRule.SDeclSome}),
-\item TypingRule.SDeclNone (see Section~\ref{sec:TypingRule.SDeclNone}),
+\item TypingRule.SPass (see Section~\secref{TypingRule.SPass}),
+\item TypingRule.SAssign (see Section~\secref{TypingRule.SAssign}),
+\item TypingRule.SReturnNone (see Section~\secref{TypingRule.SReturnNone}),
+\item TypingRule.SReturnOne (see Section~\secref{TypingRule.SReturnOne}),
+\item TypingRule.SReturnSome (see Section~\secref{TypingRule.SReturnSome}),
+\item TypingRule.SSeq (see Section~\secref{TypingRule.SSeq}),
+\item TypingRule.SCall (see Section~\secref{TypingRule.SCall}),
+\item TypingRule.SCond (see Section~\secref{TypingRule.SCond}),
+\item TypingRule.SCase (see Section~\secref{TypingRule.SCase}),
+\item TypingRule.SAssert (see Section~\secref{TypingRule.SAssert}),
+\item TypingRule.SWhile (see Section~\secref{TypingRule.SWhile}),
+\item TypingRule.SRepeat (see Section~\secref{TypingRule.SRepeat}),
+\item TypingRule.SFor (see Section~\secref{TypingRule.SFor}),
+\item TypingRule.SThrowNone (see Section~\secref{TypingRule.SThrowNone}),
+\item TypingRule.SThrowSome (see Section~\secref{TypingRule.SThrowSome}),
+\item TypingRule.STry (see Section~\secref{TypingRule.STry}).
+\item TypingRule.SDeclSome (see Section~\secref{TypingRule.SDeclSome}),
+\item TypingRule.SDeclNone (see Section~\secref{TypingRule.SDeclNone}),
 \end{itemize}
 
 \section{TypingRule.SPass \label{sec:TypingRule.SPass}}
@@ -6261,8 +6261,8 @@ Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
 return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
 new\_stmt)} and one of the following applies:
 \begin{itemize}
-\item TypingRule.CatcherNone (see Section~\ref{sec:TypingRule.CatcherNone}),
-\item TypingRule.CatcherSome (see Section~\ref{sec:TypingRule.CatcherSome}).
+\item TypingRule.CatcherNone (see Section~\secref{TypingRule.CatcherNone}),
+\item TypingRule.CatcherSome (see Section~\secref{TypingRule.CatcherSome}).
 \end{itemize}
 
 \section{TypingRule.CatcherNone \label{sec:TypingRule.CatcherNone}}
@@ -6356,10 +6356,10 @@ Annotating the call to subprogram \texttt{name} with arguments \texttt{args},
 parameters \texttt{eqs}, and call type \texttt{call\_type} (\texttt{annotate\_call}) results in \texttt{(name1,
 args, eqs2, ret\_ty1)} or an error is raised and one of the following applies:
 \begin{itemize}
-\item TypingRule.FCallBadArity (see Section~\ref{sec:TypingRule.FCallBadArity}),
-\item TypingRule.FCallGetter (see Section~\ref{sec:TypingRule.FCallGetter}),
-\item TypingRule.FCallSetter (see Section~\ref{sec:TypingRule.FCallSetter}),
-\item TypingRule.FCallMismatch (see Section~\ref{sec:TypingRule.FCallMismatch}).
+\item TypingRule.FCallBadArity (see Section~\secref{TypingRule.FCallBadArity}),
+\item TypingRule.FCallGetter (see Section~\secref{TypingRule.FCallGetter}),
+\item TypingRule.FCallSetter (see Section~\secref{TypingRule.FCallSetter}),
+\item TypingRule.FCallMismatch (see Section~\secref{TypingRule.FCallMismatch}).
 \end{itemize}
 
 \section{TypingRule.FCallBadArity \label{sec:TypingRule.FCallBadArity}}
@@ -6562,9 +6562,9 @@ This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 Declaring a global declaration \texttt{d} in an environment \texttt{env} ($\declaredecl{\tenv, \texttt{d}}$)
 results in a new environment \texttt{env'}, which contains the declared element, and one of the following applies:
 \begin{itemize}
-  \item TypingRule.DeclareOneFunc (see Section~\ref{sec:TypingRule.DeclareOneFunc}).
-  \item TypingRule.DeclareGlobalStorage (see Section~\ref{sec:TypingRule.DeclareGlobalStorage}).
-  \item TypingRule.DeclareType (see Section~\ref{sec:TypingRule.DeclareType}).
+  \item TypingRule.DeclareOneFunc (see Section~\secref{TypingRule.DeclareOneFunc}).
+  \item TypingRule.DeclareGlobalStorage (see Section~\secref{TypingRule.DeclareGlobalStorage}).
+  \item TypingRule.DeclareType (see Section~\secref{TypingRule.DeclareType}).
 \end{itemize}
 
 \section{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
@@ -7435,7 +7435,7 @@ One of the following applies:
     \item $\vb$ is the result of equating $\irone$ and $\irtwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{unsopported1}):
+  \item All of the following apply (\textsc{unsupported1}):
   \begin{itemize}
     \item $\veone$ can not be transformed into an intermediate representation.
     \item $\vb$ is $\False$;
@@ -7754,6 +7754,7 @@ multiplies two polynomials.
 %         | _ -> raise NotYetImplemented)
 
 \section{TypingRule.TypeEqual}
+\hypertarget{def-typeequal}{}
 The function
 \[
   \typeequal(\overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \rightarrow \overname{\{\True, \False\}}{\vb}
@@ -7886,7 +7887,7 @@ conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo
 \end{emptyformal}
 
 \section{TypingRule.BitwidthEqual}
-
+\hypertarget{def-bitwidthequal}{}
 The function
 \[
   \bitwidthequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\vwone} \aslsep \overname{\expr}{\vwtwo})
@@ -7908,7 +7909,7 @@ in environment $\tenv$.
 \end{emptyformal}
 
 \section{TypingRule.BitFieldsEqual}
-
+\hypertarget{def-bitfieldequal}{}
 The function
 \[
   \bitfieldsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^*}{\bfone} \aslsep \overname{\bitfield^*}{\bftwo})
@@ -7975,7 +7976,7 @@ conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield
 % What about BitField_Type?
 
 \section{TypingRule.ConstraintsEqual}
-
+\hypertarget{def-constraintsequal}{}
 The function
 \[
   \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraints}{\csone} \aslsep \overname{\intconstraints}{\cstwo})
@@ -7998,7 +7999,7 @@ conservatively tests whether the constraint list $\csone$ is equivalent to the c
 \end{emptyformal}
 
 \section{TypingRule.ConstraintEqual}
-
+\hypertarget{def-constraintequal}{}
 The function
 \[
   \constraintequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vstwo})
@@ -8039,7 +8040,7 @@ conservatively tests whether the constraint $\vcone$ is equivalent to the constr
 \end{emptyformal}
 
 \section{TypingRule.SlicesEqual}
-
+\hypertarget{def-slicesequal}{}
 The function
 \[
   \slicesequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slicesone} \aslsep \overname{\slice^*}{\slicestwo})
@@ -8063,7 +8064,7 @@ in environment $\tenv$.
 \end{emptyformal}
 
 \section{TypingRule.SliceEqual}
-
+\hypertarget{def-sliceequal}{}
 The function
 \[
   \sliceequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\sliceone} \aslsep \overname{\slice}{\slicetwo})
@@ -8110,7 +8111,7 @@ in environment $\tenv$.
 \end{emptyformal}
 
 \section{TypingRule.LiteralEqual}
-
+\hypertarget{def-literalequal}{}
 The function
 \[
   \literalequal(\overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \rightarrow \overname{\{\True, \False\}}{\vb}

@@ -183,11 +183,9 @@ We sometimes provide extra details to individual derivations by adding comments 
 \[
 \begin{array}{rcl}
 \ty &::=& \TInt(\intconstraints) \\
-  &|& \TBits(\bitsconstraint, \bitfield^{*}) \\
   &|& \TReal \\
   &|& \TString \\
   &|& \TBool \\
-  &|& \TBits(\expr, \bitfield^{*}) \\
   &|& \TBits(\expr, \bitfield^{*}) \\
   & & \ASTComment{\expr\ is a statically evaluable expression denoting the length of the bit-vector.}\\
   &|& \TEnum(\identifier^{*}) \\
