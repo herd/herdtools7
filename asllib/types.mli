@@ -89,7 +89,7 @@ val get_well_constrained_structure : env -> ty -> ty
 
 (** {2 Domains} *)
 
-(** The domain of a type is the set of values which storagbe element of that type may hold. *)
+(** The domain of a type is the symbolic representation of the set of values which storage element of that type may hold. *)
 module Domain : sig
   type t
   (** Abstract value set. *)

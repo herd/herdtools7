@@ -52,7 +52,7 @@ let rec make_anonymous (env : env) (ty : ty) : ty =
   match ty.desc with
   | T_Named x -> (
       match IMap.find_opt x env.global.declared_types with
-      | Some ty' -> make_anonymous env ty'
+      | Some t1 -> make_anonymous env t1
       | None -> undefined_identifier ty x)
   | _ -> ty
 (* End *)
@@ -69,7 +69,7 @@ let rec get_structure (env : env) (ty : ty) : ty =
   | T_Named x -> (
       match IMap.find_opt x env.global.declared_types with
       | None -> undefined_identifier ty x
-      | Some ty' -> get_structure env ty')
+      | Some t1 -> get_structure env t1)
   | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ -> ty
   | T_Tuple tys -> T_Tuple (List.map (get_structure env) tys) |> with_pos
   | T_Array (e, t) -> T_Array (e, (get_structure env) t) |> with_pos

@@ -97,6 +97,7 @@
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbracket{#1}^{#2}}
+\newcommand\overtext[2]{\overbracket{#1}^{\text{#2}}}
 \newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
 
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
@@ -108,6 +109,9 @@
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
 
 \newcommand\id[0]{\texttt{id}}
+\newcommand\idone[0]{\texttt{id1}}
+\newcommand\idtwo[0]{\texttt{id2}}
+\newcommand\idthree[0]{\texttt{id3}}
 \newcommand\op[0]{\texttt{op}}
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
@@ -120,6 +124,7 @@
 \newcommand\Z[0]{\hyperlink{def-Z}{\mathbb{Z}}}
 \newcommand\Bool[0]{\hyperlink{def-bool}{\mathbb{B}}}
 \newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
+\newcommand\Strings[0]{\hyperlink{def-strings}{\mathbb{S}}}
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
 \newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
@@ -165,6 +170,8 @@
 \newcommand\SHL[0]{\texttt{SHL}} % Shift left for ints
 \newcommand\SHR[0]{\texttt{SHR}} % Shift right for ints
 
+\newcommand\UNKNOWN[0]{\texttt{UNKNOWN}}
+
 % For loop direction
 \newcommand\UP[0]{\texttt{Up}}
 \newcommand\DOWN[0]{\texttt{Down}}
@@ -187,7 +194,6 @@
 \newcommand\underconstrained[0]{\textsf{Underconstrained}}
 \newcommand\constraintexact[0]{\textsf{Constraint\_Exact}}
 \newcommand\constraintrange[0]{\textsf{Constraint\_Range}}
-\newcommand\bitsconstraint[0]{\textsf{bits\_constraint}}
 \newcommand\bitfield[0]{\textsf{bitfield}}
 \newcommand\version[0]{\textsf{version}}
 \newcommand\spec[0]{\textsf{spec}}
@@ -209,7 +215,7 @@
 % Expression labels
 \newcommand\ELiteral[0]{\textsf{E\_Literal}}
 \newcommand\EVar[0]{\textsf{E\_Var}}
-\newcommand\ECTC[0]{\textsf{E\_CTC}}
+\newcommand\ECTC[0]{\textsf{E\_ATC}}
 \newcommand\EBinop[0]{\textsf{E\_Binop}}
 \newcommand\EUnop[0]{\textsf{E\_Unop}}
 \newcommand\ECall[0]{\textsf{E\_Call}}
@@ -303,7 +309,14 @@
 \newcommand\LDITyped[0]{\textsf{LDI\_Typed}}
 \newcommand\LDITuple[0]{\textsf{LDI\_Tuple}}
 
+\newcommand\LDKVar[0]{\textsf{LDK\_Var}}
+\newcommand\LDKConstant[0]{\textsf{LDK\_Constant}}
 \newcommand\LDKLet[0]{\textsf{LDK\_Let}}
+
+\newcommand\GDKConstant[0]{\textsf{GDK\_Constant}}
+\newcommand\GDKConfig[0]{\textsf{GDK\_Config}}
+\newcommand\GDKLet[0]{\textsf{GDK\_Let}}
+\newcommand\GDKVar[0]{\textsf{GDK\_Var}}
 
 \newcommand\SBASL[0]{\textsf{SB\_ASL}}
 \newcommand\SBPrimitive[0]{\textsf{SB\_Primitive}}
@@ -316,10 +329,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type System macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newcommand\typearrow[0]{\xrightarrow{\mathsf{type}}}
 \newcommand\Val[0]{\textsf{Val}}
-\newcommand\TTypeError[0]{\textsf{TTypeError}}
-\newcommand\TypeErrorConfig[0]{\texttt{\#TE}}
 \newcommand\aslto[0]{\longrightarrow}
 
 \newcommand\staticenvs[0]{\hyperlink{def-staticenvs}{\mathbb{SE}}}
@@ -329,18 +339,35 @@
 \newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{\texttt{type\_satisfies}}}
 
 \newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
-\newcommand\storagetypes[0]{\hyperlink{def-storagetypes}{\textsf{storage\_types}}}
+\newcommand\globalstoragetypes[0]{\hyperlink{def-globalstoragetypes}{\textsf{global\_storage\_types}}}
+\newcommand\localstoragetypes[0]{\hyperlink{def-localstoragetypes}{\textsf{local\_storage\_types}}}
 \newcommand\returntype[0]{\hyperlink{def-returntype}{\textsf{return\_type}}}
 \newcommand\declaredtypes[0]{\hyperlink{def-declaredtypes}{\textsf{declared\_types}}}
 \newcommand\subtypes[0]{\hyperlink{def-subtypes}{\textsf{subtypes}}}
 \newcommand\subprograms[0]{\hyperlink{def-subprograms}{\textsf{subprograms}}}
 \newcommand\subprogramrenamings[0]{\hyperlink{def-subprogramrenamings}{\textsf{subprogram\_renamings}}}
-
-\newcommand\TypeError[0]{\textsf{TypeError}}
+\newcommand\parameters[0]{\hyperlink{def-parameters}{\textsf{parameters}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Semantics macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\vals[0]{\hyperlink{def-vals}{\mathbb{V}}}
+\newcommand\nvliteral[1]{\hyperlink{def-nvliteral}{\texttt{NV\_Literal}}(#1)}
+\newcommand\nvvector[1]{\hyperlink{def-nvvector}{\texttt{NV\_Vector}}(#1)}
+\newcommand\nvrecord[1]{\hyperlink{def-nvrecord}{\texttt{NV\_Record}}(#1)}
+\newcommand\nvint[0]{\hyperlink{def-nvint}{\texttt{Int}}}
+\newcommand\nvbool[0]{\hyperlink{def-nvbool}{\texttt{Bool}}}
+\newcommand\nvreal[0]{\hyperlink{nv-real}{\texttt{Real}}}
+\newcommand\nvstring[0]{\hyperlink{def-nvstring}{\texttt{String}}}
+\newcommand\nvbitvector[0]{\hyperlink{def-nvbitvector}{\texttt{Bitvector}}}
+\newcommand\tint[0]{\hyperlink{def-tint}{\mathcal{Z}}}
+\newcommand\tbool[0]{\hyperlink{def-tbool}{\mathcal{B}}}
+\newcommand\treal[0]{\hyperlink{def-treal}{\mathcal{R}}}
+\newcommand\tstring[0]{\hyperlink{def-tstring}{\mathcal{S}\mathcal{T}\mathcal{R}}}
+\newcommand\tbitvector[0]{\hyperlink{def-tbitvector}{\mathcal{B}\mathcal{V}}}
+\newcommand\tvector[0]{\hyperlink{def-tvector}{\mathcal{V}\mathcal{E}\mathcal{C}}}
+\newcommand\trecord[0]{\hyperlink{def-trecord}{\mathcal{R}\mathcal{E}\mathcal{C}}}
+
 \newcommand\evalrel[0]{\hyperlink{def-evalrel}{\textsf{eval}}}
 \newcommand\evalarrow[0]{\xrightarrow{\evalrel}}
 \newcommand\envs[0]{\hyperlink{def-envs}{\mathbb{E}}}
@@ -358,7 +385,7 @@
 \newcommand\aslsep[0]{\mathbf{,}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Ident info
+% LRM Ident info
 \newcommand\ident[2]{\texttt{#1}\textsubscript{\texttt{\MakeUppercase{#2}}}}
 \newcommand\identi[1]{\ident{I}{#1}}
 \newcommand\identr[1]{\ident{R}{#1}}
@@ -370,8 +397,12 @@
 \newcommand\vx[0]{\texttt{x}}
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\ve[0]{\texttt{e}}
+\newcommand\vi[0]{\texttt{i}}
+\newcommand\vj[0]{\texttt{j}}
+\newcommand\vn[0]{\texttt{n}}
 \newcommand\vtone[0]{\texttt{t1}}
 \newcommand\vttwo[0]{\texttt{t2}}
+\newcommand\vtthree[0]{\texttt{t3}}
 \newcommand\vle[0]{\texttt{le}}
 \newcommand\vargs[0]{\texttt{args}}
 \newcommand\vgone[0]{\texttt{g1}}
@@ -379,3 +410,19 @@
 \newcommand\envone[0]{\texttt{env1}}
 \newcommand\envtwo[0]{\texttt{env2}}
 \newcommand\newenv[0]{\texttt{new\_env}}
+\newcommand\vv[0]{\texttt{v}}
+\newcommand\vvl[0]{\texttt{vl}}
+\newcommand\vr[0]{\texttt{r}}
+\newcommand\fieldmap[0]{\textit{field\_map}}
+\newcommand\length[0]{\texttt{length}}
+\newcommand\factor[0]{\texttt{factor}}
+\newcommand\width[0]{\texttt{width}}
+\newcommand\vcs[0]{\texttt{vcs}}
+\newcommand\vis[0]{\texttt{vis}}
+\newcommand\vd[0]{\texttt{d}}
+\newcommand\isone[0]{\texttt{is1}}
+\newcommand\istwo[0]{\texttt{is2}}
+\newcommand\dt[0]{\texttt{dt}}
+\newcommand\ds[0]{\texttt{ds}}
+\newcommand\widtht[0]{\texttt{width\_t}}
+\newcommand\widths[0]{\texttt{width\_s}}

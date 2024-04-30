@@ -1,6 +1,8 @@
 \documentclass{book}
 \input{ASLmacros}
 
+\newcommand\typearrow[0]{\xrightarrow{\mathsf{type}}}
+
 \newcommand\Nodes[0]{\hyperlink{def-nodes}{\mathcal{N}}}
 \newcommand\Read[0]{\hyperlink{def-read}{\text{Read}}}
 \newcommand\Write[0]{\hyperlink{def-write}{\text{Write}}}
@@ -10,24 +12,8 @@
 \newcommand\ReadEffect[0]{\hyperlink{def-writeeffect}{\textsf{ReadEffect}}}
 
 \newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\emptyset_{\env}}}
-\newcommand\vals[0]{\hyperlink{def-vals}{\mathcal{V}}}
 \newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\parallel}}
-\newcommand\nvliteral[1]{\hyperlink{def-nvliteral}{\texttt{NV\_Literal}}(#1)}
-\newcommand\nvvector[1]{\hyperlink{def-nvvector}{\texttt{NV\_Vector}}(#1)}
-\newcommand\nvrecord[1]{\hyperlink{def-nvrecord}{\texttt{NV\_Record}}(#1)}
-\newcommand\nvint[0]{\hyperlink{def-nvint}{\texttt{Int}}}
-\newcommand\nvbool[0]{\hyperlink{def-nvbool}{\texttt{Bool}}}
-\newcommand\nvreal[0]{\hyperlink{nv-real}{\texttt{Real}}}
-\newcommand\nvstring[0]{\hyperlink{def-nvstring}{\texttt{String}}}
-\newcommand\nvbitvector[0]{\hyperlink{def-nvbitvector}{\texttt{Bitvector}}}
-\newcommand\tint[0]{\hyperlink{def-tint}{\mathcal{Z}}}
-\newcommand\tbool[0]{\hyperlink{def-tbool}{\mathcal{B}}}
-\newcommand\treal[0]{\hyperlink{def-treal}{\mathcal{R}}}
-\newcommand\tstring[0]{\hyperlink{def-tstring}{\mathcal{S}\mathcal{T}\mathcal{R}}}
-\newcommand\tbitvector[0]{\hyperlink{def-tbitvector}{\mathcal{B}\mathcal{V}}}
-\newcommand\tvector[0]{\hyperlink{def-tvector}{\mathcal{V}\mathcal{E}\mathcal{C}}}
-\newcommand\trecord[0]{\hyperlink{def-trecord}{\mathcal{R}\mathcal{E}\mathcal{C}}}
 
 \newcommand\graphof[1]{\hyperlink{def-graphof}{\texttt{graph}}({#1})}
 \newcommand\withgraph[2]{{#1}(\hyperlink{def-withgraph}{\texttt{graph}}\mapsto{#2})}
@@ -136,7 +122,6 @@
 \newcommand\envp[0]{\texttt{env'}}
 \newcommand\vex[0]{\texttt{ex}}
 \newcommand\vc[0]{\texttt{c}}
-\newcommand\vi[0]{\texttt{i}}
 \newcommand\vg[0]{\texttt{g}}
 \newcommand\newg[0]{\texttt{new\_g}}
 \newcommand\vgp[0]{\texttt{g'}}
@@ -144,10 +129,8 @@
 \newcommand\vep[0]{\texttt{e'}}
 \newcommand\vl[0]{\texttt{l}}
 \newcommand\vm[0]{\texttt{m}}
-\newcommand\vn[0]{\texttt{n}}
 \newcommand\vp[0]{\texttt{p}}
 \newcommand\vpone[0]{\texttt{p1}}
-\newcommand\vv[0]{\texttt{v}}
 \newcommand\vy[0]{\texttt{y}}
 \newcommand\vs[0]{\texttt{s}}
 \newcommand\vt[0]{\texttt{t}}
@@ -239,7 +222,6 @@
 \newcommand\vend[0]{\texttt{v\_end}}
 \newcommand\estart[0]{\texttt{e\_start}}
 \newcommand\elength[0]{\texttt{e\_length}}
-\newcommand\length[0]{\texttt{length}}
 \newcommand\mlength[0]{\texttt{m\_length}}
 \newcommand\vlength[0]{\texttt{v\_length}}
 \newcommand\vdiff[0]{\texttt{v\_diff}}
@@ -295,20 +277,15 @@
 \newcommand\vacc[0]{\texttt{acc}}
 \newcommand\vvsm[0]{\texttt{vsm}}
 \newcommand\vvsmone[0]{\texttt{vsm1}}
-\newcommand\vd[0]{\texttt{d}}
 \newcommand\vdecls[0]{\texttt{decls}}
 \newcommand\bv[0]{\texttt{bv}}
 \newcommand\src[0]{\texttt{src}}
 \newcommand\dst[0]{\texttt{dst}}
 \newcommand\vvec[0]{\texttt{vec}}
-\newcommand\fieldmap[0]{\textit{field\_map}}
 \newcommand\velem[0]{\texttt{v\_elem}}
-\newcommand\vcs[0]{\texttt{cs}}
 \newcommand\bits[0]{\texttt{bits}}
 \newcommand\eid[0]{\texttt{e\_id}}
 \newcommand\newmbv[0]{\texttt{new\_m\_bv}}
-\newcommand\vvl[0]{\texttt{vl}}
-\newcommand\vr[0]{\texttt{r}}
 \newcommand\truep[0]{\texttt{true'}}
 \newcommand\falsep[0]{\texttt{false'}}
 \newcommand\vardecl[0]{\texttt{vardecl}}
@@ -348,7 +325,7 @@
 
 The semantics of ASL define all valid behaviors of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
-or AST, for short. Second, a type checker analyzes the \emph{parsed AST} for correctness and,
+or AST, for short. Second, a type checker analyzes the \emph{parsed AST} for well-typedness and,
 if successful, returns a \emph{static environment} and a \emph{typed AST}. Otherwise, it returns a type error.
 
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the typed AST, based on the definition
@@ -439,6 +416,7 @@ from all configurations.
 This chapter defines the mathematical types over which our semantics are defined.
 An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
 
+%% This section is repeated, with small changes, in the typing reference.
 \section{Native Values \label{sec:nativevalues}}
 \hypertarget{def-vals}{}
 The semantics of an ASL specification associates \emph{native values} to variables.
@@ -471,7 +449,7 @@ We define the following shorthands for native value literals:
 \end{array}
 \]
 
-We define the following shorthands for different types of native values:
+We define the following types of native values:
 \hypertarget{def-tint}{}
 \[
 \begin{array}{rcl}
@@ -931,7 +909,7 @@ Each rule is presented using the following template:
 \href{https://github.com/herd/herdtools7//tree/master/asllib/tests/ASLSemanticsReference.t}{/herdtools7/asllib/tests/ASLSemanticsReference.t};
 
 \ifcode
-\item a Code paragraph which gives a verbatim of the corresponding implementation in the interpreter of ASLRef
+\item a Code paragraph which gives a verbatim of the corresponding OCaml implementation in the interpreter of ASLRef
 \href{https://github.com/herd/herdtools7//tree/master/asllib/Interpreter.ml}{/herdtools7/asllib/Interpreter.ml};
 \fi
 
@@ -941,6 +919,9 @@ the sequential semantics and the concurrent semantics, in the form of concurrent
 The latter enables defining, for each AArch64 instruction,
 the Intrinsic dependencies used by the AArch64 memory model from the ASL code of the instruction~\cite[B2.3.2]{ArmARM}.
 \fi
+
+\item Comments paragraphs which may refer to one or more rules from the Language Reference Manual~\cite{LRM}
+      and may add more information.
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

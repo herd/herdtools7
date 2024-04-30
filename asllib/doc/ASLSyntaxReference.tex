@@ -82,7 +82,6 @@ An abstract syntax consists of a set of derivation rules and a start non-termina
 \newcommand\ASTComment[1]{//\quad\textit{#1}\ }
 
 \section{ASL Parsed Abstract Syntax}
-\section{ASL Parsed Abstract Syntax}
 
 The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\specification$.
 %
@@ -106,16 +105,15 @@ We sometimes provide extra details to individual derivations by adding comments 
  &|& \texttt{"\^{}"}   \\
  & & \ASTComment{\texttt{binop\_pow}}\\
 
-\literal &=& \texttt{<int\_lit>}  \\
- &|&\ASTComment{Includes \texttt{hex\_int}} \\
- &|&\ASTComment{Includes \texttt{hex\_int}} \\
- &|&\texttt{<boolean\_lit>}  \\
- &|& \texttt{<real\_lit>}  \\
- &|& \texttt{<bitmask\_lit>}   \\
- & & \ASTComment{also represents \texttt{<bitvector\_lit>}}\\
- &|&\texttt{<string\_lit>} \\
- &|& \texttt{"IN"}   \\
- & & \ASTComment{\texttt{binop\_in}}\\
+% \literal &=& \texttt{<int\_lit>}  \\
+%  &|&\ASTComment{Includes \texttt{hex\_int}} \\
+%  &|&\texttt{<boolean\_lit>}  \\
+%  &|& \texttt{<real\_lit>}  \\
+%  &|& \texttt{<bitmask\_lit>}   \\
+%  & & \ASTComment{also represents \texttt{<bitvector\_lit>}}\\
+%  &|&\texttt{<string\_lit>} \\
+%  &|& \texttt{"IN"}   \\
+%  & & \ASTComment{\texttt{binop\_in}}\\
 
 \literal &=& \lint($n$) \\
  & & \ASTComment{$n \in \Z$}\\
@@ -132,37 +130,35 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\expr &::=& \texttt{E\_Literal}(\literal) \\
-	&|& \texttt{E\_Var}(\texttt{\identifier}) \\
-	&|& \texttt{E\_CTC}(\texttt{\expr}, \ty) \\
+\expr &::=& \ELiteral(\literal) \\
+	&|& \EVar(\overtext{\identifier}{variable name}) \\
+	&|& \ECTC(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type}) \\
   & & \ASTComment{A checked type constraint}\\
-	&|& \texttt{E\_Binop}(\binop, \expr, \expr) \\
-	&|& \texttt{E\_Unop}(\unop, \expr) \\
-	&|& \texttt{E\_Call}(\identifier, \expr^{*}, (\identifier, \expr)^{*}) \\
-	&|& \texttt{E\_Slice}(\expr, \slice^{*}) \\
-	&|& \texttt{E\_Cond}(\expr, \expr, \expr) \\
-	&|& \texttt{E\_GetField}(\expr, \identifier) \\
-	&|& \texttt{E\_GetFields}(\expr, \identifier^{*}) \\
-	&|& \texttt{E\_Record}(\ty, (\identifier, \expr)^{*})\\
+	&|& \EBinop(\binop, \expr, \expr) \\
+	&|& \EUnop(\unop, \expr) \\
+	&|& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) \\
+	&|& \ESlice(\expr, \slice^{*}) \\
+	&|& \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else}) \\
+	&|& \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name}) \\
+	&|& \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names}) \\
+	&|& \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})\\
     & & \ASTComment{Both record construction and exception construction}\\
-	&|& \texttt{E\_Concat}(\expr^{*}) \\
-	&|& \texttt{E\_Tuple}(\expr^{*}) \\
-	&|& \texttt{E\_Unknown}(\ty) \\
-	&|& \texttt{E\_Pattern}(\expr, \pattern)
+	&|& \EConcat(\expr^{*}) \\
+	&|& \ETuple(\expr^{*}) \\
+	&|& \EUnknown(\ty) \\
+	&|& \EPattern(\expr, \pattern)
 \end{array}
 \]
 
 \[
 \begin{array}{rcl}
 \pattern &::=& \texttt{Pattern\_All} \\
-	&|& \texttt{E\_Var}(\texttt{\identifier}) \\
   &|& \texttt{Pattern\_Any}(\pattern^{*}) \\
   &|& \texttt{Pattern\_Geq}(\expr) \\
   &|& \texttt{Pattern\_Leq}(\expr) \\
   &|& \texttt{Pattern\_Mask}(\texttt{bitmask\_lit}) \\
   &|& \texttt{Pattern\_Not}(\pattern) \\
-  &|& \texttt{Pattern\_Range}(\expr, \expr)\\
-  & & \ASTComment{Lower to upper, included.}\\
+  &|& \texttt{Pattern\_Range}(\overtext{\expr}{lower}, \overtext{\expr}{upper included})\\
   &|& \texttt{Pattern\_Single}(\expr) \\
   &|& \texttt{Pattern\_Tuple}(\pattern^{*}) \\
 \end{array}
@@ -173,26 +169,23 @@ We sometimes provide extra details to individual derivations by adding comments 
 &&\ASTComment{Indexes an array or a bitvector.}\\
 &&\ASTComment{All positions mentioned below are inclusive}\\
 \hline
-\slice &::=& \SliceSingle(\expr) \\
-  & & \ASTComment{\SliceSingle(\texttt{i}) is the slice of length \texttt{1} at position \texttt{i}.}\\
-  &|& \SliceRange(\expr, \expr) \\
-  & & \ASTComment{\SliceRange(\texttt{j, i}) denotes the slice from \texttt{i} to \texttt{j - 1}.}\\
-  &|& \SliceLength(\expr, \expr) \\
-  & & \ASTComment{\SliceLength(\texttt{i, n}) denotes the slice starting at \texttt{i} of length \texttt{n}.}\\
-  &|& \SliceStar(\expr, \expr) \\
-  & & \ASTComment{\SliceStar(\texttt{factor, length}) denotes the slice starting at }\\
-  & & \ASTComment{\texttt{factor * length} of length n.}\\
+\slice &::=& \SliceSingle(\overname{\expr}{\vi}) \\
+  & & \ASTComment{the slice of length \texttt{1} at position \vi.}\\
+  &|& \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi}) \\
+  & & \ASTComment{the slice from \vi\ to \texttt{j - 1}.}\\
+  &|& \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn}) \\
+  & & \ASTComment{the slice starting at \vi\ of length \vn.}\\
+  &|& \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) \\
+  & & \ASTComment{the slice starting at \texttt{i*n} of length \vn}
 \end{array}
 \]
 
 \[
 \begin{array}{rcl}
 \ty &::=& \TInt(\intconstraints) \\
-  &|& \TBits(\bitsconstraint, \bitfield^{*}) \\
   &|& \TReal \\
   &|& \TString \\
   &|& \TBool \\
-  &|& \TBits(\expr, \bitfield^{*}) \\
   &|& \TBits(\expr, \bitfield^{*}) \\
   & & \ASTComment{\expr\ is a statically evaluable expression denoting the length of the bit-vector.}\\
   &|& \TEnum(\identifier^{*}) \\
@@ -219,7 +212,7 @@ We sometimes provide extra details to individual derivations by adding comments 
     & & \ASTComment{Implicitely constrained integer from function declaration.} \\
     & & \ASTComment{Attributes are:} \\
     & & \ASTComment{- a unique integer identifier and the variable} \\
-    & & \ASTComment{- the type was implicitely constructed from.} \\
+    & & \ASTComment{- the type was implicitly constructed from.} \\
   \end{array}
 \]
 
