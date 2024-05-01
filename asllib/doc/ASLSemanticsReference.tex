@@ -521,7 +521,7 @@ We assume that the static environment supports the following functions:
 \[
   \begin{array}{rcl}
     \findfunc       &:& \staticenvs \times \Identifiers \partialto \func\\
-    \typesatisfies  &:& \staticenvs \times (\ty \times \ty) \rightarrow \{\True, \False\}
+    \typesat  &:& \staticenvs \times (\ty \times \ty) \rightarrow \{\True, \False\}
   \end{array}
 \]
 The partial function $\findfunc$ returns the typed AST of the subprogram for a given identifier.
@@ -530,8 +530,8 @@ a specific subprogram.
 However, the type-checker renames each function uniquely so that it can be accessed based
 on its name alone.)
 %
-The function $\typesatisfies(\texttt{t}, \texttt{s})$ returns true
-if the type \texttt{t} \emph{type-satisfies} the type \texttt{s}
+The function $\typesat(\vt, \vs)$ returns true
+if the type $\vt$ \emph{type-satisfies} the type $\vs$
 (see TypingRule.TypeSatisfaction~\cite{ASLTypingReference}).
 This is used in matching a raised exception to a corresponding catch clause.
 \end{definition}
@@ -1744,7 +1744,7 @@ Notice that this rule introduces non-determinism.
   Evaluation of the expression $\ve$ in an environment $\env$ is \\
   $\Normal((\vv, \vg), \newenv)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes an asserted type conversion expression, $\ECTC(\veone, \vt)$;
+  \item $\ve$ denotes an asserted type conversion expression, $\EATC(\veone, \vt)$;
   \item evaluating $\veone$ in $\env$ either results in \Normal((\vv, \vgone), \newenv),
   \ProseOrAbnormal;
   \item evaluating whether $\vv$ has type $\vt$ in $\env$ either results in (\vb, \vgtwo)
@@ -4801,7 +4801,7 @@ The (recursively-defined) helper relation
   \;\aslrel\; \langle \catcher \rangle \enspace,
 \]
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
-by invoking $\typesatisfies$ with the static environment $\tenv$.
+by invoking $\typesat$ with the static environment $\tenv$.
 
 \subsection{Prose}
 One of the following applies:
@@ -4842,7 +4842,7 @@ One of the following applies:
 \inferrule[match]{
   \catchers \eqname [\vc] \concat \catchersone\\
   \vc \eqname (\nameopt, \ety, \vs) \\
-  \typesatisfies(\tenv, \vvty, \ety)
+  \typesat(\tenv, \vvty, \ety)
 }
 {
   \findcatcher(\tenv, \vvty, \catchers) \evalarrow \langle\vc\rangle
@@ -4851,7 +4851,7 @@ One of the following applies:
 \inferrule[no\_match]{
   \catchers \eqname [\vc] \concat \catchersone\\
   \vc \eqname (\nameopt, \ety, \vs) \\
-  \neg\typesatisfies(\tenv, \vvty, \ety)\\
+  \neg\typesat(\tenv, \vvty, \ety)\\
   d \eqdef \findcatcher(\tenv, \vvty, \catchersone)
 }
 {

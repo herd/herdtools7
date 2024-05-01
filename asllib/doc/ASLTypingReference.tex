@@ -57,8 +57,8 @@
 \newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\texttt{subtypes}}}
 \newcommand\structsubtypesat[0]{\hyperlink{def-structsubtypesat}{\texttt{structural\_subtype\_satisfies}}}
 \newcommand\domsubtypesat[0]{\hyperlink{def-domsubtypesat}{\texttt{domain\_subtype\_satisfies}}}
-\newcommand\subtypesat[0]{\texttt{subtype\_satisfies}}
-\newcommand\typeclashes[0]{\;\texttt{type\_clashes}\;}
+\newcommand\subtypesat[0]{\hyperlink{def-subtypesat}{\texttt{subtype\_satisfies}}}
+\newcommand\typeclashes[0]{\hyperlink{def-typeclashes}{\texttt{type\_clashes}}}
 \newcommand\lca[0]{\texttt{lowest\_common\_ancestor}}
 \newcommand\lcasat[0]{\models}
 \newcommand\Supers{\textsf{Supers}}
@@ -98,6 +98,10 @@
 \newcommand\structure[0]{\hyperlink{def-structure}{structure}}
 \newcommand\underlyingtype[0]{\hyperlink{def-underlyingtype}{underlying type}}
 \newcommand\symbolicdomain[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
+\newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
+\newcommand\typesatisft[0]{\hyperlink{def-typesatisfies}{type-satisft}}
+\newcommand\subtypesatisfies[0]{\hyperlink{def-subtypesatisfies}{subtype-satisfies}}
+\newcommand\subtypesatisfy[0]{\hyperlink{def-subtypesatisfies}{subtype-satisfisfy}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -767,6 +771,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
     \item evaluating $\vetwo$ in $\env$, results in a configuration with the native integer for $b$;
+    \item $a$ is less than or equal to $b$;
     \item $\vd$ is the set containing all native integer values for integers from $a$ to $b$, inclusive.
   \end{itemize}
 
@@ -865,6 +870,7 @@ handled by the rules below, which leaves the dynamic domain undefined for the re
 \inferrule[constraint\_range]{
   \evalexprsef{\env, \veone} \evalarrow \Normal(\nvint(a), \Ignore)\\
   \evalexprsef{\env, \vetwo} \evalarrow \Normal(\nvint(b), \Ignore)\\
+  a \leq b
 }{
   \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \{ \nvint(n) \;|\;  a \leq n \leq b\}
 }
@@ -1745,12 +1751,6 @@ type subInt of integer subtypes superInt;
   }{
     \subtypesrel(\tenv, \vtone, \vttwo) \typearrow \False
   }
-  % \and
-  % \inferrule{
-  %   \tty \neq \tty' \\ \subtypes(\tenv, \tty, \tty') \\ \subtypes(\tenv, \tty', \tty)
-  % }{
-  %   \TypeError(\texttt{"subtyping cycle exists!"})
-  % }
 \end{mathpar}
 \end{emptyformal}
 
@@ -1860,7 +1860,7 @@ One of the following applies:
   \item $\vt$ has the \underlyingtype\ of a tuple with type list $\vlit$, that is $\TTuple(\vlit)$;
   \item equating the lengths of $\vlis$ and $\vlit$ is either $\True$ or $\False$, which short-circuits
   the entire rule with $\vb=\False$;
-  \item checking at each index $\vi$ of the list $\vlis$ whether the type $\vlit[\vi]$ type-satisfies the type $\vlis[\vi]$
+  \item checking at each index $\vi$ of the list $\vlis$ whether the type $\vlit[\vi]$ \typesatisfies\  the type $\vlis[\vi]$
   is either $\vb_\vi$ \ProseOrTypeError;
   \item $\vb$ is $\True$ if and only if all $\vb_\vi$ are $\True$;
   \end{itemize}
@@ -1975,7 +1975,7 @@ One of the following applies:
 { \makeanonymous(\tenv, \vs) \typearrow\TTuple(\vlis)\\
   \makeanonymous(\tenv, \vt) \typearrow\TTuple(\vlit)\\
   \equallength(\vlis, \vlit) \typearrow\True \terminateas \False\\
-  \vi\in\listrange(\vlis): \typesatisfies(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vb_i \terminateas \TTypeError\\
+  \vi\in\listrange(\vlis): \typesat(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vb_i \terminateas \TTypeError\\
   \vb \eqdef \bigwedge_{\vi=1}^k \vb_\vi
 }{
   \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
@@ -2107,6 +2107,7 @@ One of the following applies:
     This is related to \identd{TRVR}.
 
 \section{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
+\hypertarget{def-subtypesatisfies}{}
 The predicate
 \[
   \subtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
@@ -2147,82 +2148,101 @@ All of the following apply:
 \hypertarget{def-typesatisfies}{}
 The predicate
 \[
-  \typesatisfies(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \typesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{type-satisfies} a type $\vs$ is environment $\tenv$,
+tests whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ is environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
 
 \subsection{Prose}
 One of the following applies:
  \begin{itemize}
- \item $\vt$ is a subtype of $\vs$;
- \item All of the following apply:
+  \item All of the following apply (\textsc{subtypes}):
     \begin{itemize}
-    \item $\vt$ subtype-satisfies $\vs$;
-    \item One of the following applies:
-      \begin{itemize}
-      \item $\vs$ is an anonymous type;
-      \item $\vt$ is an anonymous type;
-      \end{itemize}
-    \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-    \item $\vt$ is an anonymous bitvector type with no bitfields;
-    \item $\vs$ has the structure of a bitvector (with or without bitfields);
-    \item $\vs$ has the same width as $\vt$.
-    \end{itemize}
+    \item $\vt$ subtypes $\vs$ in $\tenv$ ;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{anonymous1}, \textsc{anonymous2}):
+  \begin{itemize}
+    \item $\vt$ does not subtype $\vs$ in $\tenv$;
+    \item at least one of $\vt$ and $\vs$ is an anonymous type in $\tenv$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_bits}):
+  \begin{itemize}
+    \item $\vt$ does not subtype $\vs$ in $\tenv$;
+    \item neither one of $\vt$ and $\vs$ is an anonymous type in $\tenv$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\False$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a bitvector type of length $\widtht$ \ProseOrTypeError;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a bitvector type of length $\widths$ \ProseOrTypeError;
+    \item symbolically determining whether $\widtht$ and $\widths$ are equivalent yields $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{otherwise}):
+  \begin{itemize}
+    \item $\vt$ does not subtype $\vs$ in $\tenv$;
+    \item neither one of $\vt$ and $\vs$ is an anonymous type in $\tenv$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\False$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a type $\vtone$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a type $\vsone$;
+    \item at least one of $\vtone$ and $\vsone$ is not a bitvector type;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a bitvector type of length $\widths$ \ProseOrTypeError;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
   \end{itemize}
 
 \subsection{Example: TypingRule.TypeSatisfaction1.asl}
-    In the specification:
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction1.asl}
-    \texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
-    anonymous, non-primitive type \texttt{(integer, T1)}.
+In the specification:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction1.asl}
+\texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
+anonymous, non-primitive type \texttt{(integer, T1)}.
 
 \subsection{Example: TypingRule.TypeSatisfaction2.asl}
-    In the specification:
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction2.asl}
-    \texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
-    primitive type \texttt{(integer, integer)}.
+In the specification:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction2.asl}
+\texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
+primitive type \texttt{(integer, integer)}.
 
 \subsection{Example: TypingRule.TypeSatisfaction3.asl}
-    In the specification:
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction3.asl}
-    \texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
-    non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
-    type \texttt{pairT}.
+In the specification:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction3.asl}
+\texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
+non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
+type \texttt{pairT}.
 
-
-    \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
+\CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[subtypes]{
-  \subtypes(\tenv, \vt, \vs) \typearrow \True
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \True
 }{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
+  \typesat(\tenv, \vt, \vs) \typearrow \True
 }
 \and
 \inferrule[anonymous1]{
-  \subtypes(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vt) \typearrow \True\\
-  \subtypesat(\tenv, \vt, \vs) \typearrow \True
+  \subtypesat(\tenv, \vt, \vs) \typearrow \True \OrTypeError
 }{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
+  \typesat(\tenv, \vt, \vs) \typearrow \True
 }
 \and
 \inferrule[anonymous2]{
-  \subtypes(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vs) \typearrow \True\\
   \subtypesat(\tenv, \vt, \vs) \typearrow \True
 }{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
+  \typesat(\tenv, \vt, \vs) \typearrow \True
 }
 \and
 \inferrule[t\_bits]{
-  \subtypes(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vt) \typearrow \False\\
   \isanonymous(\tenv, \vs) \typearrow \False\\
   \subtypesat(\tenv, \vt, \vs) \typearrow \False\\
@@ -2230,11 +2250,11 @@ One of the following applies:
   \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\
   \bitwidthequal(\tenv, \widtht, \widths) \typearrow \vb
 }{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \vb
+  \typesat(\tenv, \vt, \vs) \typearrow \vb
 }
 \and
 \inferrule[otherwise]{
-  \subtypes(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vt) \typearrow \False\\
   \isanonymous(\tenv, \vs) \typearrow \False\\
   \subtypesat(\tenv, \vt, \vs) \typearrow \False\\
@@ -2242,91 +2262,188 @@ One of the following applies:
   \tstruct(\tenv, \vs) \typearrow \vsone\\
   \astlabel(\vtone) \neq \TBits \lor \astlabel(\vsone) \neq \TBits
 }{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \False
+  \typesat(\tenv, \vt, \vs) \typearrow \False
 }
 \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-  Since the subtype relation is a partial order, it is reflexive. Therefore
-  every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
-  type-satisfies itself.
+Since the subtype relation is a partial order, it is reflexive. Therefore
+every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
+\typesatisfies\  itself.
 
-  type-satisfies itself.
-
-  This is related to \identr{FMXK} and \identi{NLFD}.
-
+This is related to \identr{FMXK} and \identi{NLFD}.
 
 \section{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
+\hypertarget{def-typeclashes}{}
+The predicate
+\[
+  \typeclashes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+tests whether a type $\vt$ \emph{type-clashes} with a type $\vs$ is environment $\tenv$,
+returning the result $\vb$ or a type error, if one is detected.
 
-  \subsection{Prose}
-  $\vt$ type-clashes with $\vs$ if one of the following applies:
+\subsection{Prose}
+ One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{subtype1}, \textsc{subtype2}):
   \begin{itemize}
-  \item $\vs$ and $\vt$ both have the structure of integers;
-  \item $\vs$ and $\vt$ both have the structure of reals;
-  \item $\vs$ and $\vt$ both have the structure of strings;
-  \item $\vs$ and $\vt$ both have the structure of enumeration types with the same enumeration literals;
-  \item $\vs$ and $\vt$ both have the structure of bitvectors;
-  \item $\vs$ and $\vt$ both have the structure of booleans;
-  \item $\vs$ and $\vt$ both have the structure of arrays whose element types type-clash;
-  \item $\vs$ and $\vt$ both have the structure of tuples of the same length whose
-    corresponding element types type-clash;
-  \item $\vs$ is a subtype of $\vt$;
-  \item $\vs$ is a supertype of $\vt$.
+    \item either $\vs$ subtypes $\vt$ or $\vt$ subtypes $\vs$;
+    \item $\vb$ is $\True$.
   \end{itemize}
 
-  \subsection{Example}
+  \item All of the following apply (\textsc{simple}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$ \ProseOrTypeError;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$ \ProseOrTypeError;
+    \item both $\vtstruct$ and $\vsstruct$ are of the following types: \texttt{integer}, \texttt{real}, \texttt{string}'
+    \item $\vb$ is $\True$.
+  \end{itemize}
 
+  \item All of the following apply (\textsc{t\_enum}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an enumeration type with labels $\vlit$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an enumeration type with labels $\vlis$;
+    \item $\vb$ is $\True$ if and only if $\vlis$ and $\vlit$ are equal.
+  \end{itemize}
 
-    \CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
+  \item All of the following apply (\textsc{t\_array}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an array type with element type $\vtyt$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an array type with element type $\vtys$;
+    \item $\vb$ is $\True$ if and only if $\vtyt$ and $\vtys$ type-clash.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_tuple}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a tuple type with element types $\vt_{1..k}$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a tuple type with element types $\vs_{1..n}$;
+    \item if $n \neq k$ the rule short-circuits with $\vb=\False$;
+    \item $\vb$ is $\True$ if and only if $\vt_i$ type-clashes with $\vs_i$, for all $i=1..k$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{otherwise}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a tuple type with element types $\vt_{1..k}$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a tuple type with element types $\vs_{1..n}$;
+    \item either $\vsstruct$ and $\vtstruct$ have different AST labels or one of their labels
+    is $\TRecord$ or $\TException$;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Example}
+
+\CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-\inferrule{
-  \tstruct(\tenv, \vt) = \vt' \\
-  \tstruct(\tenv, \vt) = \vt' \\
-  \tstruct(\tenv, \vs) = \vs' \\
-  \astlabel(\vt')=\astlabel(\vs') \in \{\TInt, \TReal, \TString, \TBits, \TEnum\}
-}{\typeclashes(\tenv, \vt, \vs)}
+\inferrule[subtype1]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \True
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \True
+}
 \and
-\inferrule{
-  \tstruct(\tenv, \vt) = \TArray(\Ignore, \vt') \\
-  \tstruct(\tenv, \vt) = \TArray(\Ignore, \vt') \\
-  \tstruct(\tenv, \vs) = \TArray(\Ignore, \vs') \\
-  \typeclashes(\tenv, \vt', \vs')
-}{\typeclashes(\tenv, \vt, \vs)}
-\and
-\inferrule{
-  \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
-  \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
-  \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
-  i=1..k: \typeclashes(\tenv, \vt_i, \vs_i)
-}{\typeclashes(\tenv, \vt, \vs)}
-\and
-\inferrule{\subtypes(\tenv, \vs, \vt)}{\typeclashes(\tenv, \vt, \vs)}
-\and
-\inferrule{\subtypes(\tenv, \vt, \vs)}{\typeclashes(\tenv, \vt, \vs)}
+\inferrule[subtype2]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \True
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[simple]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \\
+  \astlabel(\vtstruct)=\astlabel(\vsstruct) \in \{\TInt, \TReal, \TString, \TBits\}
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_enum]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \tstruct(\tenv, \vt) \typearrow \TEnum(\Ignore, \vlis) \\
+  \tstruct(\tenv, \vs) \typearrow \TEnum(\Ignore, \vlit) \\
+  \vb \eqdef \vlis = \vlit
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \tstruct(\tenv, \vt) \typearrow \TArray(\Ignore, \vtyt) \\
+  \tstruct(\tenv, \vs) \typearrow \TArray(\Ignore, \vtys) \\
+  \typeclashes(\tenv, \vtyt, \vtys) \typearrow \vb
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \tstruct(\tenv, \vt) \typearrow \TTuple(\vt_{1..k}) \\
+  \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \\
+  \booltrans(n = k) \booltransarrow \True \terminateas \False\\
+  i=1..k: \typeclashes(\tenv, \vt_i, \vs_i) \typearrow \vb_i\\
+  \vb \eqdef \bigwedge_{\vi=1}^k \vb_i
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \\
+  \booltrans(\astlabel(\vtstruct) \neq \astlabel(\vsstruct)) \booltransarrow \True \terminateas \False\\
+  \vb \eqdef \astlabel(\vtstruct) \not\in \{\TRecord, \TException\}\\
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \False
+}
 \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-  Note that if $\vt$ subtype-satisfies $\vs$ then $\vt$ and $\vs$ type-clash, but not the other
-  way around.
+Note that if $\vt$ subtype-satisfies $\vs$ then $\vt$ and $\vs$ type-clash, but not the other
+way around.
 
-  Note that type-clashing is an equivalence relation. Therefore if $\vt$
-  type-clashes with \texttt{A} and \texttt{B} then it is also the case that \texttt{A} and \texttt{B} type-clash.
+Note that type-clashing is an equivalence relation. Therefore if $\vt$
+type-clashes with \texttt{A} and \texttt{B} then it is also the case that \texttt{A} and \texttt{B} type-clash.
 
-  This is related to \identd{VPZZ}, \identi{PQCT} and \identi{WZKM}.
+This is related to \identd{VPZZ}, \identi{PQCT} and \identi{WZKM}.
 
 \section{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
+Annotating a conditional expression (see \secref{TypingRule.ECond}),
+requires finding a single type that can be used to annotate the results of both sub-expressions.
+The function
+\[
+  \lca(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\ty}{\tty}
+\]
+returns the \emph{lowest common ancestor} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
 
 \subsection{Prose}
-  Annotating a given conditional expression (see Section~\secref{TypingRule.ECond}),
-  requires finding a single type such that can be used to annotate the results of both sub-expressions.
-  This leads to the notion of a \emph{lowest common ancestor} of two types.
-
-  The lowest common ancestor of types $\vs$ and $\vt$ is $\tty$ and one of the following applies:
+The lowest common ancestor of types $\vs$ and $\vt$ is $\tty$ and one of the following applies:
   \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
@@ -2461,17 +2578,15 @@ One of the following applies:
   \item $\tty$ is undefined.
   \end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
+\CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-
+\subsection{Formally}
 Since we do not impose a canonical representation on types (e.g., \texttt{Integer {1, 2}} is equivalence to \texttt{integer {1..2}}),
 the lowest common ancestor is not unique.
-We define $\lca(\tenv, \vt, \vs)$ to be a type that is type-equivalent to the lowest common ancestor of $\vt$ and $\vs$, $\vt'$:
+We define $\lca(\tenv, \vt, \vs)$ to be any type $\vt'$ that is type-equivalent to the lowest common ancestor of $\vt$ and $\vs$:
 \[
   \typeequal(\tenv, \vt', \lca(\tenv, \vt, \vs)) \enspace.
 \]
@@ -2481,8 +2596,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be a type that is type-equivalent to the lo
 \and
 \inferrule[(The least common subtype, if one exists.)]{
   \astlabel(\vt)=\astlabel(\vs)=\TNamed \\\\
-  \Supers(\vs) = \{\vs' \;|\; \subtypes(\tenv, \vs, \vs')\}\\
-  \Supers(\vt) = \{\vt' \;|\; \subtypes(\tenv, \vt, \vt')\}\\\\
+  \Supers(\vs) = \{\vs' \;|\; \subtypesrel(\tenv, \vs, \vs')\}\\
+  \Supers(\vt) = \{\vt' \;|\; \subtypesrel(\tenv, \vt, \vt')\}\\\\
   \Supers(\vs) \cap \Supers(\vt) \neq \emptyset
 }
 {\lca(\tenv, \vt, \vs) = \min_{\subtypes} (\Supers(\vs) \cap \Supers(\vt))}
@@ -2514,8 +2629,8 @@ Rules for tuples:
 \inferrule{
   \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
-  i=1..k:\typesatisfies(\tenv, \vs_i, \vt_i) \\
-  i=1..k:\typesatisfies(\tenv, \vt_i, \vs_i) \\
+  i=1..k:\typesat(\tenv, \vs_i, \vt_i) \\
+  i=1..k:\typesat(\tenv, \vt_i, \vs_i) \\
   \astlabel(\vt) = \TNamed \\
   \isanonymous(\vs)
 }
@@ -2524,8 +2639,8 @@ Rules for tuples:
 \inferrule{
   \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
-  i=1..k:\typesatisfies(\tenv, \vs_i, \vt_i) \\
-  i=1..k:\typesatisfies(\tenv, \vt_i, \vs_i) \\
+  i=1..k:\typesat(\tenv, \vs_i, \vt_i) \\
+  i=1..k:\typesat(\tenv, \vt_i, \vs_i) \\
   \astlabel(\vs) = \TNamed \\
   \isanonymous(\vt)
 }
@@ -2534,8 +2649,8 @@ Rules for tuples:
 \inferrule{
   \tstruct(\tenv, \vt) = \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) = \TTuple(\vs_{1..k}) \\
-  i=1..k:\typesatisfies(\tenv, \vs_i, \vt_i) \\
-  i=1..k:\typesatisfies(\tenv, \vt_i, \vs_i) \\
+  i=1..k:\typesat(\tenv, \vs_i, \vt_i) \\
+  i=1..k:\typesat(\tenv, \vt_i, \vs_i) \\
   \isanonymous(\vt)\\
   \isanonymous(\vs)\\
   i=1..k: \lca(\tenv, \vt_i, \vs_i)=\vz_i
@@ -2634,10 +2749,13 @@ Rules for underconstrained integers:
     This is related to \identr{YZHM}.
 
 \section{TypingRule.CheckUnop \label{sec:TypingRule.CheckUnop}}
-
-\subsection{Goal}
-  Determining the result type of applying a unary operator when the type of its operand is known.
-  Similarly, we determine the negation of integer constraints.
+The function
+\[
+  \CheckUnop(\overname{\staticenvs}{\tenv} \aslsep \overname{\unop}{\op} \aslsep \overname{\ty}{\vt})
+  \aslto \overname{\ty}{\vs}
+\]
+determines the result type of applying a unary operator when the type of its operand is known.
+Similarly, we determine the negation of integer constraints.
 
 \subsection{Prose}
   $\vt$ is the result of checking compatibility of a unary operator \texttt{op} with
@@ -2646,14 +2764,14 @@ Rules for underconstrained integers:
   \item All of the following apply:
     \begin{itemize}
       \item \texttt{op} is \texttt{BNOT};
-      \item \texttt{t1} type-satisfies \texttt{boolean};
+      \item \texttt{t1} \typesatisfies\  \texttt{boolean};
       \item $\vt$ is \texttt{boolean};
     \end{itemize}
 
   \item All of the following apply:
   \begin{itemize}
     \item \texttt{op} is \texttt{NEG};
-    \item \texttt{t1} type-satisfies \texttt{real};
+    \item \texttt{t1} \typesatisfies\  \texttt{real};
     \item $\vt$ is \texttt{real};
   \end{itemize}
 
@@ -2662,8 +2780,8 @@ Rules for underconstrained integers:
     \item \texttt{op} is \texttt{NEG};
     \item One of the following applies:
       \begin{itemize}
-      \item \texttt{t1} type-satisfies \texttt{integer};
-      \item \texttt{t1} type-satisfies \texttt{real};
+      \item \texttt{t1} \typesatisfies\  \texttt{integer};
+      \item \texttt{t1} \typesatisfies\  \texttt{real};
       \end{itemize}
      \item One of the following applies:
        \begin{itemize}
@@ -2685,8 +2803,8 @@ Rules for underconstrained integers:
     \item \texttt{op} is \texttt{NEG};
     \item One of the following applies:
       \begin{itemize}
-      \item \texttt{t1} type-satisfies \texttt{integer};
-      \item \texttt{t1} type-satisfies \texttt{real};
+      \item \texttt{t1} \typesatisfies\  \texttt{integer};
+      \item \texttt{t1} \typesatisfies\  \texttt{real};
       \end{itemize}
      \item One of the following applies:
        \begin{itemize}
@@ -2711,21 +2829,19 @@ Rules for underconstrained integers:
     \end{itemize}
   \end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\CheckUnopBegin}{\CheckUnopEnd}{../Typing.ml}
+\CodeSubsection{\CheckUnopBegin}{\CheckUnopEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-
+\subsection{Formally}
 
 \begin{mathpar}
-\inferrule{\typesatisfies(\tenv, \vt, \TBool)}{\CheckUnop(\tenv, \texttt{"!"}, \vt) = \TBool}
+\inferrule{\typesat(\tenv, \vt, \TBool)}{\CheckUnop(\tenv, \texttt{"!"}, \vt) = \TBool}
 \and
-\inferrule{\typesatisfies(\tenv, \vt, \TReal)}{\CheckUnop(\tenv, \texttt{"-"}, \vt) = \TReal}
+\inferrule{\typesat(\tenv, \vt, \TReal)}{\CheckUnop(\tenv, \texttt{"-"}, \vt) = \TReal}
 \and
-\inferrule{\typesatisfies(\tenv, \vt, \unconstrainedinteger)}{\CheckUnop(\tenv, \texttt{"-"}, \vt) = \unconstrainedinteger}
+\inferrule{\typesat(\tenv, \vt, \unconstrainedinteger)}{\CheckUnop(\tenv, \texttt{"-"}, \vt) = \unconstrainedinteger}
 \end{mathpar}
 
 We define the following helper relations for negating integer constraints:
@@ -2738,7 +2854,7 @@ We define the following helper relations for negating integer constraints:
 
 We now apply these relations to handle well-constrained integers:
 \begin{mathpar}
-  \inferrule{\typesatisfies(\tenv, \vt, \TInt(\langle [c_{1..k}] \rangle)) \\
+  \inferrule{\typesat(\tenv, \vt, \TInt(\langle [c_{1..k}] \rangle)) \\
 i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt) : \TInt(\langle [d_{1..k}] \rangle)}
 \end{mathpar}
 
@@ -2752,8 +2868,7 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \section{TypingRule.CheckBinop \label{sec:TypingRule.CheckBinop}}
 
 \subsection{Goal}
-  Determine the result type of a binary operator, give the types of its operands.
-
+Determine the result type of a binary operator, give the types of its operands.
 
 \subsection{Prose}
   $\vt$ is the result of checking compatibility of a binary operator \texttt{op} with
@@ -2762,8 +2877,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
   \item All of the following apply:
     \begin{itemize}
     \item \texttt{op} is \texttt{AND}, \texttt{OR}, \texttt{EQ} or \texttt{IMPL};
-    \item \texttt{t1} type-satisfies \texttt{boolean};
-    \item \texttt{t2} type-satisfies \texttt{boolean};
+    \item \texttt{t1} \typesatisfies\  \texttt{boolean};
+    \item \texttt{t2} \typesatisfies\  \texttt{boolean};
     \item $\vt$ is \texttt{boolean}.
     \end{itemize}
 
@@ -2788,7 +2903,7 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
     		\item \texttt{t1} and \texttt{t2} have the same bitvector width $\vw$;
     		\item $\vt$ is the bitvector type of width $\vw$.
           \end{itemize}
-    	\item \texttt{t2} type-satisfies \texttt{integer};
+    	\item \texttt{t2} \typesatisfies\  \texttt{integer};
       \end{itemize}
     \item $\vt$ is the bitvector type of width $\vw$.
     \end{itemize}
@@ -2801,8 +2916,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
       \item \texttt{t1} is equal to \texttt{t2};
       \item All of the following apply:
         \begin{itemize}
-        \item \texttt{t1} type-satisfies \texttt{integer};
-        \item \texttt{t2} type-satisfies \texttt{integer};
+        \item \texttt{t1} \typesatisfies\  \texttt{integer};
+        \item \texttt{t2} \typesatisfies\  \texttt{integer};
         \end{itemize}
       \item All of the following apply:
         \begin{itemize}
@@ -2812,8 +2927,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
         \end{itemize}
       \item All of the following apply:
         \begin{itemize}
-        \item \texttt{t1} type-satisfies \texttt{boolean};
-        \item \texttt{t2} type-satisfies \texttt{boolean};
+        \item \texttt{t1} \typesatisfies\  \texttt{boolean};
+        \item \texttt{t2} \typesatisfies\  \texttt{boolean};
         \end{itemize}
       \item All of the following apply:
         \begin{itemize}
@@ -2832,13 +2947,13 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
       \begin{itemize}
       \item All of the following apply:
         \begin{itemize}
-        \item \texttt{t1} type-satisfies \texttt{integer};
-        \item \texttt{t2} type-satisfies \texttt{integer};
+        \item \texttt{t1} \typesatisfies\  \texttt{integer};
+        \item \texttt{t2} \typesatisfies\  \texttt{integer};
         \end{itemize}
       \item All of the following apply:
         \begin{itemize}
-        \item \texttt{t1} type-satisfies \texttt{real};
-        \item \texttt{t2} type-satisfies \texttt{real};
+        \item \texttt{t1} \typesatisfies\  \texttt{real};
+        \item \texttt{t2} \typesatisfies\  \texttt{real};
         \end{itemize}
       \end{itemize}
     \item $\vt$ is boolean.
@@ -2907,24 +3022,23 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
   \item All of the following apply:
     \begin{itemize}
     \item \texttt{op} is \texttt{RDIV};
-    \item \texttt{t1} type-satisfies \texttt{real};
-    \item \texttt{t2} type-satisfies \texttt{real};
+    \item \texttt{t1} \typesatisfies\  \texttt{real};
+    \item \texttt{t2} \typesatisfies\  \texttt{real};
     \item $\vt$ is \texttt{real}.
     \end{itemize}
 \end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\CheckBinopBegin}{\CheckBinopEnd}{../Typing.ml}
+\CodeSubsection{\CheckBinopBegin}{\CheckBinopEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \texttt{op} \in  \{\texttt{"\&\&"}, \texttt{"||"}, \texttt{"-->"}, \texttt{"<->"}\}\\
-  \typesatisfies(\tenv, \vt1, \TBool) \\
-  \typesatisfies(\tenv, \vttwo, \TBool)
+  \typesat(\tenv, \vt1, \TBool) \\
+  \typesat(\tenv, \vttwo, \TBool)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TBool}
 \and
@@ -2947,7 +3061,7 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \inferrule{
   \texttt{op} \in  \{\texttt{"+"}, \texttt{"-"}\}\\
   \tstruct(\tenv, \vtone) = \TBits(\vw, \Ignore) \\
-  \typesatisfies(\tenv, \vttwo, \unconstrainedinteger)
+  \typesat(\tenv, \vttwo, \unconstrainedinteger)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TBits(\vw, \emptylist)}
 \end{mathpar}
@@ -2959,15 +3073,15 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \and
 \inferrule{
   \texttt{op} \in  \{\texttt{"="}, \texttt{"!="}\}\\
-  \typesatisfies(\tenv, \vtone, \unconstrainedinteger)\\
-  \typesatisfies(\tenv, \vttwo, \unconstrainedinteger)
+  \typesat(\tenv, \vtone, \unconstrainedinteger)\\
+  \typesat(\tenv, \vttwo, \unconstrainedinteger)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TBool}
 \and
 \inferrule{
   \texttt{op} \in  \{\texttt{"="}, \texttt{"!="}\}\\
   \tstruct(\tenv, \vtone)=\TBits(\vw, \Ignore)\\
-  \tstruct(\tenv, \vttwo)=\TBits(\vw', \Ignore))\\
+  \tstruct(\tenv, \vttwo)=\TBits(\vw', \Ignore)\\
   \bitwidthequal(\tenv, \vw, \vw')
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TBool}
@@ -2976,15 +3090,15 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 \begin{mathpar}
 \inferrule{
   \texttt{op} \in  \{\texttt{"<"}, \texttt{"<="}, \texttt{">"}, \texttt{">="}\}\\
-  \typesatisfies(\tenv, \vtone, \unconstrainedinteger)\\
-  \typesatisfies(\tenv, \vttwo, \unconstrainedinteger)
+  \typesat(\tenv, \vtone, \unconstrainedinteger)\\
+  \typesat(\tenv, \vttwo, \unconstrainedinteger)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \unconstrainedinteger}
 \and
 \inferrule{
   \texttt{op} \in  \{\texttt{"<"}, \texttt{"<="}, \texttt{">"}, \texttt{">="}\}\\
-  \typesatisfies(\tenv, \vtone, \TReal)\\
-  \typesatisfies(\tenv, \vttwo, \TReal)
+  \typesat(\tenv, \vtone, \TReal)\\
+  \typesat(\tenv, \vttwo, \TReal)
 }
 {\CheckBinop(\tenv, \texttt{op}, \vtone, \vttwo) = \TReal}
 \end{mathpar}
@@ -3025,8 +3139,8 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 {\CheckBinop(\tenv, \texttt{"\^{}"}, \vtone, \vttwo) = \TReal}
 \and
 \inferrule{
-  \typesatisfies(\tenv, \vtone, \TReal)\\
-  \typesatisfies(\tenv, \vttwo, \TReal)\\
+  \typesat(\tenv, \vtone, \TReal)\\
+  \typesat(\tenv, \vttwo, \TReal)\\
 }
 {\CheckBinop(\tenv, \texttt{"RDIV"}, \vtone, \vttwo) = \TReal}
 \end{mathpar}
@@ -3889,7 +4003,7 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
   \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
   \item an error ``Conflicting Types'' is raised or \texttt{slices} is a single expression \texttt{e\_index} and all of the following apply:
   \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-  \item an error ``\texttt{Conflicting Types}'' or \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\secref{TypingRule.TypeSatisfaction} and all of the following apply:
+  \item an error ``\texttt{Conflicting Types}'' or \texttt{t\_index'} \typesatisfies\  \texttt{wanted\_t\_index} as per Section~\secref{TypingRule.TypeSatisfaction} and all of the following apply:
   \item \texttt{new\_e} is an access to array \texttt{e''} at index \texttt{e\_index'}.
   \end{itemize}
 
@@ -3925,7 +4039,7 @@ And now define the rule to annotate the array access expression:
   \tstruct(\tenv, \texttt{t\_e}') = \TArray(\texttt{size}, \tty')\\
   \annotatearrayindex(\tenv, \texttt{size}) = \texttt{wanted\_t\_index}\\
   \annotateexpr{\tenv, \eindex} = (\texttt{t\_{index}}', \texttt{e\_{index}}')\\
-  \typesatisfies(\tenv, \texttt{t\_{index}}', \texttt{wanted\_t\_index})\\
+  \typesat(\tenv, \texttt{t\_{index}}', \texttt{wanted\_t\_index})\\
   }
 {\annotateexpr{\tenv, \ESlice(\texttt{e}', [\SliceSingle(\eindex)])} =\\\\
  (\texttt{ty'}, \EGetArray(\texttt{e''}, \texttt{e\_{index}}'))
@@ -3996,7 +4110,7 @@ And now define the rule to annotate the array access expression:
     \begin{itemize}
     \item \texttt{t',e''} is the result of annotating $\vep$ in \texttt{env};
     \item \texttt{t\_spec'} is the type associated to \texttt{name} in \texttt{field\_types};
-    \item \texttt{t'} type-satisfies \texttt{t\_spec'} as per Section~\secref{TypingRule.TypeSatisfaction};
+    \item \texttt{t'} \typesatisfies\  \texttt{t\_spec'} as per Section~\secref{TypingRule.TypeSatisfaction};
     \item \texttt{fields'} associates \texttt{name} to \texttt{e''};
     \end{itemize}
   \item $\vt$ is $\tty$;
@@ -4014,7 +4128,7 @@ And now define the rule to annotate the array access expression:
 \inferrule{
 L \in \{\TRecord, \TException\}\\
 i=1..k: \annotateexpr{\vt_i, \ve_i} = (\vt_i',\ve_i')\\
-i=1..k: \typesatisfies(\tenv, \vt_i', \vt_i)
+i=1..k: \typesat(\tenv, \vt_i', \vt_i)
 }
 {\annotateexpr{\tenv, L(\tty, [i=1..k: (f_i,\ve_i)])} = (\tty, L(\tty, [i=1..k: (f_i,\ve_i')]))}
 \end{mathpar}
@@ -4218,7 +4332,7 @@ L \in \{\TRecord, \TException\}\\
   \item $\vt$ is the type associated with \texttt{field\_name} in \texttt{bitfields};
   \item \texttt{t\_e3,e3} is the result of annotating \texttt{e2,slices} in \texttt{env};
   \item $\vt$ is the type corresponding to the bitfield \texttt{field\_name} in \texttt{bitfields};
-  \item \texttt{t\_e3} type-satisfies $\vt$ in \texttt{env};
+  \item \texttt{t\_e3} \typesatisfies\  $\vt$ in \texttt{env};
   \item \texttt{new\_e} is \texttt{e3}.
   \end{itemize}
 
@@ -4235,7 +4349,7 @@ L \in \{\TRecord, \TException\}\\
   \makeanonymous(\tenv, \texttt{t\_e1}) = \TBits(\Ignore, \bitfields)\\
   \fieldname = \texttt{BitField\_Type}(\Ignore, \slices, \vt) \in \bitfields\\
   \annotateexpr{\ESlice(\vetwo, \slices)} = (\texttt{t\_e3}, \texttt{e3})\\
-  \typesatisfies(\tenv, \texttt{t\_e3}, \vt)
+  \typesat(\tenv, \texttt{t\_e3}, \vt)
 }
 {\annotateexpr{\tenv, \EGetField(\veone, \fieldname)} = (\vt, \texttt{e3})}
 \end{mathpar}
@@ -4454,7 +4568,7 @@ expression that is unresolvable to an integer. For example:
 \structsubtypesat(\tenv, \vt'', \vt)
 }
 {
-\annotateexpr{\tenv, \ECTC(\ve', \vt')} = (\vt', \ECTC(\ve'', \vt'))
+\annotateexpr{\tenv, \EATC(\ve', \vt')} = (\vt', \EATC(\ve'', \vt'))
 }
 \end{mathpar}
 \end{emptyformal}
@@ -4534,7 +4648,7 @@ all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a local variable $\vx$;
    \item $\vx$ is locally declared as a mutable variable of type $\tty$ in \texttt{env};
-   \item $\tty$ type-satisfies \texttt{t\_e};
+   \item $\tty$ \typesatisfies\  \texttt{t\_e};
    \item \texttt{new\_le} is \texttt{le}.
    \end{itemize}
 
@@ -4549,7 +4663,7 @@ all of the following apply:
 \inferrule{
   \vle \eqname \texttt{LE\_Var}(\id)\\
   L^\tenv.\localstoragetypes(\id) = (\tty, \texttt{LDK\_Var})\\
-  \typesatisfies(\tenv, \vte, \tty)\\
+  \typesat(\tenv, \vte, \tty)\\
   \newle \eqdef \vle
 }
 { \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle }
@@ -4571,7 +4685,7 @@ all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a global variable $\vx$;
    \item $\vx$ is globally declared as a variable of type $\tty$ in \texttt{env};
-   \item \texttt{t\_e} type-satisfies $\tty$;
+   \item \texttt{t\_e} \typesatisfies\  $\tty$;
    \item \texttt{new\_le} is \texttt{le}.
    \end{itemize}
 
@@ -4586,7 +4700,7 @@ all of the following apply:
 \inferrule{
   \vle = \texttt{LE\_Var}(\id)\\
   G^\tenv.\globalstoragetypes(\id) = (\vt', \Ignore)\\
-  \typesatisfies(\tenv, \vt', \vte)\\
+  \typesat(\tenv, \vt', \vte)\\
   \newle = \vle
 }
 { \annotatelexpr{\tenv, \vle, \vte} = \newle }
@@ -4606,7 +4720,7 @@ all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a tuple \texttt{les};
    \item \texttt{t\_e} has the structure of a tuple type \texttt{sub\_tys};
-   \item the elements of \texttt{sub\_tys} type-satisfies the type of the elements of \texttt{les};
+   \item the elements of \texttt{sub\_tys} \typesatisfies\  the type of the elements of \texttt{les};
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
@@ -4659,7 +4773,7 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{width} is the width of the slices \texttt{slices} in \texttt{env};
    \item $\vt$ is the bitvector type of width \texttt{width};
-   \item \texttt{te} type-satisfies $\vt$;
+   \item \texttt{te} \typesatisfies\  $\vt$;
    \item \texttt{slices2} is the result of annotating \texttt{slices} in \texttt{env};
    \item \texttt{new\_le} is the slicing of \texttt{le2} by \texttt{slices2}.
    \end{itemize}
@@ -4679,7 +4793,7 @@ all of the following apply:
   \annotatelexpr{\tenv, \vleone, \vtleone} = \vletwo\\
   \sliceswidth(\tenv, \slices) = \vwidth\\
   \vt = \TBits(\texttt{BitWidth\_SingleExpr}(\vwidth, \emptylist))\\
-  \typesatisfies(\tenv, \vt, \vte)\\
+  \typesat(\tenv, \vt, \vte)\\
   \texttt{slices2} = [\annotateslices(\tenv, \vs) \;|\; \vs \in \slices]\\
   \newle = \leslice(\vletwo, \texttt{slices2})
 }
@@ -4701,7 +4815,7 @@ all of the following apply:
    \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an array type of size \texttt{size} and item type $\vt$;
-   \item \texttt{te} type-satisfies $\vt$;
+   \item \texttt{te} \typesatisfies\  $\vt$;
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
   % ROMAN: The following is not what the code does so I replaced it with subsequent item.
   %  \item One of the following applies:
@@ -4712,7 +4826,7 @@ all of the following apply:
   \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
   \item \texttt{slices} is a single expression \texttt{e\_index};
    \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-   \item \texttt{wanted\_t\_index} type-satisfies \texttt{t\_index'}, which guarantees that the index
+   \item \texttt{wanted\_t\_index} \typesatisfies\  \texttt{t\_index'}, which guarantees that the index
    is within the bounds of the array;
    \item \texttt{new\_le} is an access to array \texttt{le2} at index \texttt{e\_index'}.
    \end{itemize}
@@ -4729,12 +4843,12 @@ all of the following apply:
   \vle = \leslice(\vleone, \slices)\\
   \annotateexpr{\tenv, \torexpr(\vleone)} = (\vtleone, \Ignore)\\
   \tstruct(\tenv, \vtleone) = \TArray(\size, \vt)\\
-  \typesatisfies(\tenv, \vte, \vt)\\
+  \typesat(\tenv, \vte, \vt)\\
   \annotatelexpr{\tenv, \vleone} = \vletwo\\
   \annotatearrayindex(\tenv, \size) = \wantedtindex\\
   \slices = [\SliceSingle(\eindex)]\\
   \annotateexpr{\tenv, \eindex} = (\tindex', \eindex')\\
-  \typesatisfies(\tenv, \tindex', \wantedtindex)\\
+  \typesat(\tenv, \tindex', \wantedtindex)\\
   \newle = \texttt{LS\_SetArray}(\vletwo, \eindex')
 }
 {\annotatelexpr{\tenv, \vle, \vte} = \newle}
@@ -4783,7 +4897,7 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields $\fields$;
    \item \texttt{field} is bound to type $\vt$ in $\fields$;
-   \item $\vt$ type-satisfies \texttt{t\_e};
+   \item $\vt$ \typesatisfies\  \texttt{t\_e};
    \item \texttt{new\_le} is the access to the field \texttt{field} in \texttt{le2}.
    \end{itemize}
 
@@ -4801,7 +4915,7 @@ all of the following apply:
   \annotatelexpr{\tenv, \vleone} = \vletwo\\
   L \in \{\TRecord, \TException\}\\
   \tstruct(\tenv, \vtleone) = L(\{\vfield:t, \ldots\})\\
-  \typesatisfies(\tenv, \vte, \vt)\\
+  \typesat(\tenv, \vte, \vt)\\
   \newle = \texttt{LE\_SetField}(\vletwo, \vfield)
 }
 {
@@ -4856,7 +4970,7 @@ all of the following apply:
       \texttt{bitfields};
    \item $\vw$ is the width of \texttt{slices};
    \item $\vt$ is the bitvector type of width $\vw$;
-   \item $\vt$ type-satisfies \texttt{t\_e};
+   \item $\vt$ \typesatisfies\  \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
@@ -4877,7 +4991,7 @@ all of the following apply:
     \texttt{BitField\_Simpled}(\vfield, \vslices) \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt = \TBits(\texttt{BitWidth\_SingleExpr(\vw), \bitfields})\\
-    \typesatisfies(\tenv, \vte, \vt)\\
+    \typesat(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }
@@ -4906,7 +5020,7 @@ all of the following apply:
    \item $\vw$ is the width of \texttt{slices};
    \item \texttt{bitfields'} gives the bitfields corresponding to \texttt{field} in \texttt{bitfields};
    \item $\vt$ is the bitvector type of width $\vw$ and bitfields \texttt{bitfields'};
-   \item $\vt$ type-satisfies \texttt{t\_e};
+   \item $\vt$ \typesatisfies\  \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
@@ -4927,7 +5041,7 @@ all of the following apply:
     \texttt{BitField\_Nested}(\vfield, \vslices, \bitfields') \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt = \TBits(\texttt{BitWidth\_SingleExpr(w), \bitfields'})\\
-    \typesatisfies(\tenv, \vte, \vt)\\
+    \typesat(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }
@@ -4957,8 +5071,8 @@ all of the following apply:
    \item \texttt{t'} is the bitvector type of width $\vw$;
    \item $\vt$ gives the type corresponding to the bitfield \texttt{field} in
       \texttt{bitfields};
-   \item $\vt$ type-satisfies \texttt{t'};
-   \item $\vt$ type-satisfies \texttt{t\_e};
+   \item $\vt$ \typesatisfies\  \texttt{t'};
+   \item $\vt$ \typesatisfies\  \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
@@ -4979,8 +5093,8 @@ all of the following apply:
     \texttt{BitField\_Type}(\vfield, \vslices, \vt) \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt' = \TBits(\texttt{BitWidth\_SingleExpr(w), \emptylist})\\
-    \typesatisfies(\tenv, \vt', \vt)\\
-    \typesatisfies(\tenv, \vte, \vt)\\
+    \typesat(\tenv, \vt', \vt)\\
+    \typesat(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }
@@ -5415,7 +5529,7 @@ Annotating a pattern $\vt$ in an environment~\texttt{env} given a type $\vt$ (\t
    \item One of the following applies:
      \item All of the following apply:
        \begin{itemize}
-       \item $\vt$ type-satisfies \texttt{t\_m};
+       \item $\vt$ \typesatisfies\  \texttt{t\_m};
        \item \texttt{new\_p} is \texttt{p}.
        \end{itemize}
      \item an error ``\texttt{Conflicting Types}'' is raised.
@@ -5897,7 +6011,7 @@ environment \texttt{new\_env} and all of the following apply:
      \begin{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{t\_e'} type-satisfies $\vt$;
+       \item \texttt{t\_e'} \typesatisfies\  $\vt$;
        \item \texttt{new\_s} is a \texttt{return} statement with value $\vep$;
        \item \texttt{new\_env} is \texttt{env}.
        \end{itemize}
@@ -5917,7 +6031,7 @@ environment \texttt{new\_env} and all of the following apply:
     \vs = \texttt{S\_Return}(\langle \ve \rangle)\\
     L^\tenv.\returntype = \langle \vt \rangle\\
     \annotateexpr{\tenv, \ve} = (\vte', \ve')\\
-    \typesatisfies(\tenv, \vte', \vt)\\
+    \typesat(\tenv, \vte', \vt)\\
     \news = \texttt{S\_Return}(\langle \ve' \rangle)\\
     \newtenv = \tenv
   }
@@ -6016,7 +6130,7 @@ environment \texttt{new\_env} and all of the following apply:
      \begin{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{t\_cond} type-satisfies \texttt{t\_bool};
+       \item \texttt{t\_cond} \typesatisfies\  \texttt{t\_bool};
        \item \texttt{s1'} is the result of annotating \texttt{s1} in \texttt{env};
        \item \texttt{s2'} is the result of annotating \texttt{s2} in \texttt{env};
        \item \texttt{new\_s} is the condition \texttt{e\_cond} with two statements \texttt{s1'} and \texttt{s2'};
@@ -6037,7 +6151,7 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_Cond}(\ve, \vsone, \vstwo)\\
     \annotateexpr{\tenv, \ve} = (\tcond, \econd)\\
-    \typesatisfies(\tenv, \tcond, \TBool)\\
+    \typesat(\tenv, \tcond, \TBool)\\
     \annotatestmt{\tenv, \vsone} = (\vsone', \Ignore)\\
     \annotatestmt{\tenv, \vstwo} = (\vstwo', \Ignore)\\
     \news = \texttt{S\_Cond}(\econd, \vsone', \vstwo')\\
@@ -6090,7 +6204,7 @@ environment \texttt{new\_env} and all of the following apply:
    \item One of the following applies:
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{t\_e'} type-satisfies \texttt{t\_bool};
+       \item \texttt{t\_e'} \typesatisfies\  \texttt{t\_bool};
        \item \texttt{new\_s} is an assert statement with expression $\vep$;
        \item \texttt{new\_env} is \texttt{env}.
        \end{itemize}
@@ -6108,7 +6222,7 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_Assert}(\ve)\\
     \annotateexpr{\tenv, \ve} = (\vte', \ve')\\
-    \typesatisfies(\tenv, \vte', \TBool)\\
+    \typesat(\tenv, \vte', \TBool)\\
     \news = \texttt{S\_Assert}(\ve')\\
     \newtenv = \tenv
   }
@@ -6134,7 +6248,7 @@ environment \texttt{new\_env} and all of the following apply:
    \item One of the following applies:
      \item All of the following apply:
        \begin{itemize}
-       \item $\vt$ type-satisfies \texttt{t\_bool};
+       \item $\vt$ \typesatisfies\  \texttt{t\_bool};
        \item \texttt{s2} is the result of annotating \texttt{s1} in \texttt{env};
        \item \texttt{new\_s} is a \texttt{while} statement with expression \texttt{e2} and statement block \texttt{s2};
        \item \texttt{new\_env} is \texttt{env}.
@@ -6153,7 +6267,7 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_While}(\veone, \vsone)\\
     \annotateexpr{\tenv, \veone} = (\vt, \vetwo)\\
-    \typesatisfies(\tenv, \vte, \TBool)\\
+    \typesat(\tenv, \vte, \TBool)\\
     \annotateblock{\tenv, \vsone} = \vstwo\\
     \news = \texttt{S\_While}(\vetwo, \vstwo)\\
     \newtenv = \tenv
@@ -6181,7 +6295,7 @@ environment \texttt{new\_env} and all of the following apply:
      \begin{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item $\vt$ type-satisfies \texttt{t\_bool};
+       \item $\vt$ \typesatisfies\  \texttt{t\_bool};
        \item \texttt{new\_s} is a \texttt{repeat} statement with expression \texttt{e2} and statement block \texttt{s2};
        \item \texttt{new\_env} is \texttt{env}.
        \end{itemize}
@@ -6200,7 +6314,7 @@ environment \texttt{new\_env} and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_Repeat}(\veone, \vsone)\\
     \annotateexpr{\tenv, \veone} = (\vt, \vetwo)\\
-    \typesatisfies(\tenv, \vte, \TBool)\\
+    \typesat(\tenv, \vte, \TBool)\\
     \annotateblock{\tenv, \vsone} = \vstwo\\
     \news = \texttt{S\_Repeat}(\vetwo, \vstwo)\\
     \newtenv = \tenv
@@ -6953,7 +7067,7 @@ in \texttt{new\_env} and one of the following applies:
     \item \texttt{d} declares a global constant named \name, with initial value expression $\ve$, and type annotation $\tty$.
     \item \texttt{v} is the literal computed in \tenv\ by evaluating $\ve$.
     \item $\vt$ is the type inferred for \texttt{v}.
-    \item $\vt$ type-satisfies $\tty$ in \tenv.
+    \item $\vt$ \typesatisfies\  $\tty$ in \tenv.
     \item \texttt{new\_env} is \tenv\ extended with a declaration of the constant \name, with initial value \texttt{v} and type $\tty$.
   \end{itemize}
 
@@ -7015,7 +7129,7 @@ in \texttt{new\_env} and one of the following applies:
     \gsd = \{\textsf{keyword} : \texttt{GDK\_Constant}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
     \vv = \texttt{reduce\_constants}(\tenv, \ve)\\
     \vt = \annotateliteral{\vv}\\
-    \typesatisfies(\tenv, \vt, \tty)\\
+    \typesat(\tenv, \vt, \tty)\\
     \newtenv = \texttt{declare\_const}(\tenv, \name, \tty, \vv)
   }
   { \declaredecl{\tenv, \gsd} = \newtenv }
@@ -7040,7 +7154,7 @@ in \texttt{new\_env} and one of the following applies:
     \gsd = \{\textsf{keyword} : \texttt{k}, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
     G^\tenv.\globalstoragetypes(\name) = \bot\\
     \annotateexpr{\tenv, \ve} = (\vt, \ve')\\
-    \typesatisfies(\tenv, \vt, \tty)\\
+    \typesat(\tenv, \vt, \tty)\\
     \newtenv = (G^\tenv.\globalstoragetypes[\name \mapsto (\tty, \texttt{k})], L^\tenv)
   }
   { \declaredecl{\tenv, \gsd} = \newtenv }
