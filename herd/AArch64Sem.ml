@@ -2309,7 +2309,7 @@ module Make
               M.op Op.Or v1 v2 >>| c >>= fun (v1,v2) ->
                 M.op Op.Or v1 v2 in
             flags >>= fun flags -> write_reg AArch64Base.NZCV flags ii
-          )
+          ) >>! new_val
 
       let ptrue p pattern ii =
         let psize = predicate_psize p in
@@ -2323,7 +2323,7 @@ module Make
           else M.unitT old_val
         in
         repeat V.zero 0 >>= fun (new_val) ->
-        write_reg_predicate p new_val ii
+        write_reg_predicate p new_val ii >>! new_val
 
       let mov_sv r k shift ii =
         let open AArch64Base in
@@ -3264,19 +3264,20 @@ module Make
               M.unitT ())
         | I_PTRUE(p,pattern) ->
           check_sve inst;
-          !(ptrue p pattern ii)
+          ptrue p pattern ii
+          >>= nextSet p
         | I_WHILELT(p,var,r1,r2) ->
           check_sve inst;
-          !!(while_op (M.op Op.Lt) false p var r1 r2 ii)
+          while_op (M.op Op.Lt) false p var r1 r2 ii >>= nextSet p
         | I_WHILELO(p,var,r1,r2) ->
           check_sve inst;
-          !!(while_op (M.op Op.Lt) true p var r1 r2 ii)
+          while_op (M.op Op.Lt) true p var r1 r2 ii >>= nextSet p
         | I_WHILELE(p,var,r1,r2) ->
           check_sve inst;
-          !!(while_op (M.op Op.Le) false p var r1 r2 ii)
+          while_op (M.op Op.Le) false p var r1 r2 ii >>= nextSet p
         | I_WHILELS(p,var,r1,r2) ->
           check_sve inst;
-          !!(while_op (M.op Op.Le) true p var r1 r2 ii)
+          while_op (M.op Op.Le) true p var r1 r2 ii >>= nextSet p
         |  I_ADD_SV (r1,r2,r3) ->
           check_sve inst;
           !(read_reg_scalable false r3 ii >>|
