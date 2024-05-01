@@ -523,8 +523,8 @@ and structural_subtype_satisfies env t s =
       type_equal env ty_s ty_t
       &&
       match (length_s, length_t) with
-      | ArrayLength_Expr length_s, ArrayLength_Expr length_t ->
-          expr_equal env length_s length_t
+      | ArrayLength_Expr length_expr_s, ArrayLength_Expr length_expr_t ->
+          expr_equal env length_expr_s length_expr_t
       | ArrayLength_Enum (name_s, _), ArrayLength_Enum (name_t, _) ->
           String.equal name_s name_t
       | ArrayLength_Enum (_, _), ArrayLength_Expr _

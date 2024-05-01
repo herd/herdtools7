@@ -108,23 +108,17 @@
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
 
-\newcommand\id[0]{\texttt{id}}
-\newcommand\idone[0]{\texttt{id1}}
-\newcommand\idtwo[0]{\texttt{id2}}
-\newcommand\idthree[0]{\texttt{id3}}
-\newcommand\op[0]{\texttt{op}}
-
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
 \newcommand\None[0]{\hyperlink{def-none}{\texttt{None}}}
 
-\newcommand\llbracket{[|}
-\newcommand\rrbracket{|]}
+% Set types
 \newcommand\N[0]{\hyperlink{def-N}{\mathbb{N}}}
 \newcommand\Q[0]{\hyperlink{def-Q}{\mathbb{Q}}}
 \newcommand\Z[0]{\hyperlink{def-Z}{\mathbb{Z}}}
 \newcommand\Bool[0]{\hyperlink{def-bool}{\mathbb{B}}}
 \newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{def-strings}{\mathbb{S}}}
+
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
 \newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
@@ -134,6 +128,8 @@
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
 \newcommand\terminateas[0]{\;\hyperlink{def-terminateas}{\sslash}\;}
+\newcommand\booltrans[0]{\texttt{bool\_transition}}
+\newcommand\booltransarrow[0]{\rightarrow}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Abstract Syntax macros
@@ -183,6 +179,7 @@
 \newcommand\expr[0]{\textsf{expr}}
 \newcommand\lexpr[0]{\textsf{lexpr}}
 \newcommand\slice[0]{\textsf{slice}}
+\newcommand\arrayindex[0]{\textsf{array\_index}}
 \newcommand\leslice[0]{\texttt{LE\_Slice}}
 
 \newcommand\ty[0]{\textsf{ty}}
@@ -285,6 +282,10 @@
 
 \newcommand\ConstraintExact[0]{\textsf{Constraint\_Exact}}
 \newcommand\ConstraintRange[0]{\textsf{Constraint\_Range}}
+
+% Array index labels
+\newcommand\ArrayLengthExpr[0]{\textsf{ArrayLength\_Expr}}
+\newcommand\ArrayLengthEnum[0]{\textsf{ArrayLength\_Enum}}
 
 % Slice labels
 \newcommand\SliceSingle[0]{\textsf{Slice\_Single}}
@@ -394,6 +395,11 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Variable Names
+\newcommand\id[0]{\texttt{id}}
+\newcommand\idone[0]{\texttt{id1}}
+\newcommand\idtwo[0]{\texttt{id2}}
+\newcommand\idthree[0]{\texttt{id3}}
+\newcommand\op[0]{\texttt{op}}
 \newcommand\vx[0]{\texttt{x}}
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\ve[0]{\texttt{e}}
@@ -426,3 +432,25 @@
 \newcommand\ds[0]{\texttt{ds}}
 \newcommand\widtht[0]{\texttt{width\_t}}
 \newcommand\widths[0]{\texttt{width\_s}}
+\newcommand\ws[0]{\texttt{w\_s}}
+\newcommand\wt[0]{\texttt{w\_t}}
+\newcommand\bfss[0]{\texttt{bfs\_s}}
+\newcommand\bfst[0]{\texttt{bfs\_t}}
+\newcommand\bfsone[0]{\texttt{bfs1}}
+\newcommand\bfstwo[0]{\texttt{bfs2}}
+\newcommand\vlengtht[0]{\texttt{length\_t}}
+\newcommand\vlengths[0]{\texttt{length\_s}}
+\newcommand\vlengthexprt[0]{\texttt{length\_expr\_t}}
+\newcommand\vlengthexprs[0]{\texttt{length\_expr\_s}}
+\newcommand\vtyt[0]{\texttt{ty\_t}}
+\newcommand\vtys[0]{\texttt{ty\_s}}
+\newcommand\vnamet[0]{\texttt{name\_t}}
+\newcommand\vnames[0]{\texttt{name\_s}}
+\newcommand\vlis[0]{\texttt{lis\_s}}
+\newcommand\vlit[0]{\texttt{lis\_t}}
+\newcommand\vfieldss[0]{\texttt{fields\_s}}
+\newcommand\vfieldst[0]{\texttt{fields\_t}}
+\newcommand\vnamest[0]{\texttt{names\_t}}
+\newcommand\vnamess[0]{\texttt{names\_s}}
+\newcommand\vsstruct[0]{\texttt{s\_struct}}
+\newcommand\vtstruct[0]{\texttt{t\_struct}}

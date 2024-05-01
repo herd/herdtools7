@@ -122,13 +122,13 @@ For example,
 defines a function type and lets us refer to the first argument as $b$, the second argument as $x$,
 the third argument as $y$, and to the result as $z$.
 
-A \emph{meta function} is a function whose domain is not a priori fixed but rather
+A \emph{parametric function} is a function whose domain is not a priori fixed but rather
 parameterized by the type of its arguments. An example is the $\textsf{choice}$ function where the type $T$ of
 $x$, $y$, and $z$ is unspecified and inferred from the context where the function is used.
 
 \hypertarget{def-choice}{}
 \begin{definition}[Choice]
-The meta function $\textsf{choice} : \overname{\Bool}{b} \times \overname{T}{x} \times \overname{T}{y} \rightarrow \overname{T}{z}$,
+The parametric function $\textsf{choice} : \overname{\Bool}{b} \times \overname{T}{x} \times \overname{T}{y} \rightarrow \overname{T}{z}$,
 is defined as follows:
 \[
   \choice{\vb}{x}{y} \triangleq
@@ -165,7 +165,7 @@ and $T^+$ for a non-empty list of elements of type $T$.
 
 \hypertarget{def-concat}{}
 \begin{definition}[List Concatenation]
-The meta function $\concat : T^* \times T^* \rightarrow T^*$ concatenates two lists:
+The parametric function $\concat : T^* \times T^* \rightarrow T^*$ concatenates two lists:
 \[
     \begin{array}{rcl}
     \emptylist \concat L &\triangleq& L\\
@@ -178,7 +178,10 @@ The meta function $\concat : T^* \times T^* \rightarrow T^*$ concatenates two li
 
 \hypertarget{def-equallength}{}
 \begin{definition}[Equating List Lengths]
-The meta function $\equallength : \overname{L}{a} \times \overname{L}{b} \rightarrow \Bool$
+The parametric function
+\[
+  \equallength : \overname{L}{a} \times \overname{L}{b} \rightarrow \Bool
+\]
 compares the length of two lists:
 \[
 \equallength(a, b) \triangleq |a|=|b| \enspace.
@@ -187,7 +190,7 @@ compares the length of two lists:
 
 \hypertarget{def-listrange}{}
 \begin{definition}[Indices of a List]
-The meta function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-based) list of indices for a given list:
+The parametric function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-based) list of indices for a given list:
 \[
     \begin{array}{rcl}
         \listrange(\emptylist) &\triangleq& \emptylist\\
@@ -703,6 +706,26 @@ Expanding the last transition assertion, gives us the case:
 \end{mathpar}
 
 All these cases are succinctly encoded in a single rule with the alternative output configurations.
+
+\subsection{Boolean Transition Assertions}
+\hypertarget{def-booltrans}{}
+We define the following rules to allow us treating assertions as transition assertions:
+\begin{mathpar}
+  \inferrule[bool\_trans\_true]{}{ \booltrans(\True) \booltransarrow\True }
+  \and
+  \inferrule[bool\_trans\_false]{}{ \booltrans(\False) \booltransarrow\False }
+\end{mathpar}
+This is useful in that it allows us to use assertions in rule macros.
+
+\begin{mathpar}
+  \inferrule{
+    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False \terminateas \True\\\\
+    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+  {
+    \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
+  }
+\end{mathpar}
 
 \subsection{Rule Naming}
 To name a rule, we place it in a section with its name.

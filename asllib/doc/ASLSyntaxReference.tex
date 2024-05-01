@@ -190,7 +190,7 @@ We sometimes provide extra details to individual derivations by adding comments 
   & & \ASTComment{\expr\ is a statically evaluable expression denoting the length of the bit-vector.}\\
   &|& \TEnum(\identifier^{*}) \\
   &|& \TTuple(\ty^{*}) \\
-  &|& \TArray(\expr, \ty) \\
+  &|& \TArray(\arrayindex, \ty) \\
   &|& \TRecord(\Field^{*}) \\
   &|& \TException(\Field^{*}) \\
   &|& \TNamed(\identifier)\\
@@ -238,6 +238,16 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \BitFieldType(\identifier, \slice^{*}, \ty) \\
   & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
 \end{array}
+\]
+
+\[
+  \begin{array}{rcl}
+    & & \ASTComment{The type of indexes for an array.}  \\
+    \hline
+    \arrayindex & ::=
+      & \ArrayLengthExpr(\overtext{\expr}{array length}) \\
+    &|& \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) \\
+  \end{array}
 \]
 
 \[
