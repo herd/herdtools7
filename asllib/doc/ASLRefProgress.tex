@@ -54,17 +54,7 @@ For example
 \end{Verbatim}
 Does not parse.
 
-\subsection{Base Value of Strings}
-Initializing string variables with their base value is not yet implemented in ASLRef.
-For example,
-\begin{Verbatim}
-  func main() => integer
-  begin
-    var x : string;
-    return 0;
-  end
-\end{Verbatim}
-Fails during interpretation.\subsection{Constrained bitvectors}
+\subsection{Constrained bitvectors}
 Constrained bitvectors are not yet implemented in ASLRef.
 
 For example, the following function is not understood by ASLRef:
@@ -102,55 +92,12 @@ This relates to \identr{WGSY}.
 % ------------------------------------------------------------------------------
 \section{Typing}
 
-Note that as it stands, the type system of ASL is not sound.
-Our proposal can be found at:
-\url{https://github.com/herd/herdtools7/pull/747}
-
-This is related to \identi{JSKW}.
-
-\subsection{String Equality/Inequality}
-Equating strings is not yet implemented in ASLRef.
-For example,
-\begin{Verbatim}
-  func main() => integer
-  begin
-    if "hello"=="hello" then
-      return 0;
-    end
-  end
-\end{Verbatim}
-Fails during type-checking.
-
 \subsection{Side-effect-free Subprograms}
 ASLRef does yet infer whether a subprorgam is side-effect-free.
 Therefore, there are no checks that expressions are side-effect-free when those are expected,
 for example, in \texttt{for} loop ranges.
 
 This is related to \identr{WQRN}, \identr{SNQJ}, \identr{DJMC}, \identr{KLDR}.
-
-\subsection{Immutability of expressions in constraint ranges}
-
-The constraints of an integer type should be \emph{constrained},
-\emph{statically evaluable expressions}, i.\,e.\ the variables used by
-expressions describing an integer constraint should be immutable and of a
-constrained type, and those expressions should be side-effect-free.
-
-Furthermore, those constraints should not include Asserted Type Conversions.
-
-This also applies to bitvector widths.
-
-This is related to \identr{BSMK}, \identr{LSNP}, \identr{GHRP}, \identr{LVTH},
-\identi{ZLZC}, \identr{RHTN}, \identr{XNBN}, \identi{GQYG}.
-
-\subsection{Sound domains for under-constrained integers}
-
-Under-constrained integers have for the moment the same domain.
-%
-This makes the type-system unsound, as one can assign one under-constrained
-integer to another.
-%
-
-This is related to \identi{JSKW}.
 
 \subsection{Statically evaluable programs}%
 \label{sec:nyi:statically-evaluable-subprograms}
@@ -192,7 +139,7 @@ Restriction on the use of under-constrained parameters as left-hand-side of a
 Asserted Typed Conversion is not implemented in ASLRef.
 %
 For example, the following will not raise a type-error:
-\VerbatimInput[firstline=3,lastline=8]{../tests/asl.t/under-constrained-used.asl}
+\VerbatimInput[firstline=3,lastline=8]{../tests/regressions.t/under-constrained-used.asl}
 
 This is related to \identi{TBHH}, \identr{ZDKC}.
 
@@ -202,36 +149,6 @@ This is related to \identi{TBHH}, \identr{ZDKC}.
 \subsection{Non-\texttt{main} Entry Point}
 Currently ASLRef only supports \texttt{main} as an entry point.
 
-\subsection{Base Value of Strings}
-Initializing string variables with their base value is not yet implemented in ASLRef.
-For example,
-\begin{Verbatim}
-  func main() => integer
-  begin
-    var x : string;
-    return 0;
-  end
-\end{Verbatim}
-Fails during interpretation.
-
-\subsection{Base Value of Well-constrained Integers}
-The base value of well-constrained integers is inconsistent with the LRM.
-The LRM (\identr{RCFTD}) says:
-\begin{quote}
-The base value of a well-constrained integer is the closest value to zero in its domain.
-If the closest positive and negative value are equally close, the positive value is used.
-\end{quote}
-ASLRef takes the leftmost syntactically appearing expression.
-
-\begin{Verbatim}
-func main() => integer
-begin
-  var x : integer {8, 5};
-  return x;
-end
-\end{Verbatim}
-returns $8$, not $5$.
-
 \subsection{Real exponentiation}
 
 The exponentiation operation \texttt{exp\_real} has not been implemented.
@@ -240,7 +157,6 @@ Note: this would construct non-rational numbers which are not supported by
 ASLRef, e.\,g.\ $2^\frac{1}{2} = \sqrt{2}$.
 
 This is related to \identr{BNCY}.
-
 
 % ------------------------------------------------------------------------------
 \chapter{Not transliterated in ASL reference documents}
