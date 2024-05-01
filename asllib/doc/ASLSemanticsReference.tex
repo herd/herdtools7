@@ -25,18 +25,17 @@
 \newcommand\environof[1]{\hyperlink{def-environof}{\texttt{environ}}({#1})}
 \newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\texttt{environ}}\mapsto{#2})}
 
-\newcommand\aslrel[0]{\bigtimes}
 \newcommand\primitiverel[0]{\hyperlink{def-primitiverel}{\textsf{primitive}}}
 \newcommand\evalprimitivearrow[0]{\hyperlink{def-evalprimitivearrow}{\stackrel{\primitiverel}{\rightsquigarrow}}}
 \newcommand\ContinuingConfig[0]{\hyperlink{def-continuingconfig}{\texttt{\#C}}}
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
-\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#E}}}
+\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
 \newcommand\OrAbnormal[0]{\terminateas \ThrowingConfig, \ErrorConfig}
 \newcommand\ProseOrAbnormal[0]{or an abnormal configuration, which short-circuits the entire evaluation}
 \newcommand\ProseOrError[0]{or an error configuration, which short-circuits the entire evaluation}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
-\newcommand\TError[0]{\hyperlink{def-terror}{\textsf{TError}}}
+\newcommand\TError[0]{\hyperlink{def-terror}{\textsf{TDynError}}}
 \newcommand\TThrowing[0]{\hyperlink{def-tthrowing}{\textsf{TThrowing}}}
 \newcommand\TContinuing[0]{\hyperlink{def-tcontinuing}{\textsf{TContinuing}}}
 \newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
@@ -105,7 +104,7 @@
 \newcommand\Throwing[0]{\hyperlink{def-throwing}{\textsf{Throwing}}}
 \newcommand\Continuing[0]{\hyperlink{def-continuing}{\textsf{Continuing}}}
 \newcommand\Returning[0]{\hyperlink{def-returning}{\textsf{Returning}}}
-\newcommand\Error[0]{\hyperlink{def-error}{\textsf{Error}}}
+\newcommand\Error[0]{\hyperlink{def-error}{\textsf{DynError}}}
 
 \newcommand\ErrorVal[1]{\Error(\texttt{"ERROR[#1]"})}
 
@@ -969,6 +968,7 @@ and one of the following applies:
 \item SemanticsRule.EUnknown (see Section~\ref{sec:SemanticsRule.EUnknown})
 \item SemanticsRule.EPattern (see Section~\ref{sec:SemanticsRule.EPattern})
 \item SemanticsRule.ATC (see Section~\ref{sec:SemanticsRule.ATC})
+\item SemanticsRule.ATC (see Section~\ref{sec:SemanticsRule.ATC})
 \end{itemize}
 
 We also define the following helper relations:
@@ -1739,11 +1739,12 @@ Notice that this rule introduces non-determinism.
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
+\section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
   \subsection{Prose}
   Evaluation of the expression $\ve$ in an environment $\env$ is \\
   $\Normal((\vv, \vg), \newenv)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes a type conversion expression, $\EATC(\veone, \vt)$;
+  \item $\ve$ denotes an asserted type conversion expression, $\ECTC(\veone, \vt)$;
   \item evaluating $\veone$ in $\env$ either results in \Normal((\vv, \vgone), \newenv),
   \ProseOrAbnormal;
   \item evaluating whether $\vv$ has type $\vt$ in $\env$ either results in (\vb, \vgtwo)
@@ -1758,7 +1759,7 @@ Notice that this rule introduces non-determinism.
         \item all of the following apply (\textsc{error}):
               \begin{itemize}
               \item $\vb$ is the native Boolean for \True;
-              \item a type conversion error is returned.
+              \item an asserted type conversion error is returned.
               \end{itemize}
         \end{itemize}
   \end{itemize}

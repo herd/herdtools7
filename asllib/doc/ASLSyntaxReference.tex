@@ -132,8 +132,8 @@ We sometimes provide extra details to individual derivations by adding comments 
 \begin{array}{rcl}
 \expr &::=& \ELiteral(\literal) \\
 	&|& \EVar(\overtext{\identifier}{variable name}) \\
-	&|& \EATC(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type}) \\
-  & & \ASTComment{A checked type constraint}\\
+	&|& \ECTC(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type}) \\
+  & & \ASTComment{Asserting type conversion}\\
 	&|& \EBinop(\binop, \expr, \expr) \\
 	&|& \EUnop(\unop, \expr) \\
 	&|& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) \\

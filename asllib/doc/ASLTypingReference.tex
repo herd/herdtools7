@@ -13,12 +13,15 @@
 \newcommand\ReadEffect[0]{\textsf{ReadEffect}}
 \newcommand\Normal[0]{\textsf{Normal}}
 \newcommand\ThrowingConfig[0]{\texttt{\#T}}
-\newcommand\ErrorConfig[0]{\texttt{\#E}}
 \newcommand\OrAbnormal[0]{\terminateas \ThrowingConfig, \ErrorConfig}
 \newcommand\vg[0]{\texttt{g}}
 \newcommand\env[0]{\texttt{env}}
 \newcommand\parallelcomp[0]{\parallel}
 \newcommand\binoprel[0]{\texttt{binop}}
+\newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\texttt{eval\_expr\_sef}}(#1)}
+\newcommand\XGraphs[0]{\mathcal{G}}
+\newcommand\TError[0]{\textsf{TDynError}}
+\newcommand\ErrorConfig[0]{\texttt{\#DE}}
 
 \newcommand\dynamicdomain[0]{\hyperlink{def-dyndomain}{\textsf{dyn-dom}}}
 \newcommand\literals[0]{\mathcal{L}}
@@ -85,7 +88,6 @@
 \newcommand\mulmonomials[0]{\texttt{mul\_mononimials}}
 
 \newcommand\declaredtype[0]{\hyperlink{def-declaredtype}{\texttt{declared\_type}}}
-\newcommand\substparams[0]{\hyperlink{def-substparams}{\texttt{subst\_params}}}
 
 \newcommand\fieldnames[0]{\hyperlink{def-fieldnames}{\texttt{field\_names}}}
 \newcommand\fieldtype[0]{\hyperlink{def-fieldtype}{\texttt{field\_type}}}
@@ -103,6 +105,7 @@
 \newcommand\CheckBinop[0]{\texttt{check\_binop}}
 \newcommand\constraintbinop[0]{\texttt{constraint\_binop}}
 \newcommand\sliceswidth[0]{\texttt{slices\_width}}
+\newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
 \newcommand\annotateexpr[1]{\textsf{annotate\_expr}(#1)}
 \newcommand\annotatelexpr[1]{\textsf{annotate\_lexpr}(#1)}
 \newcommand\annotatearrayindex[0]{\textsf{annotate\_array\_index}}
@@ -375,7 +378,7 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 \staticenvs 	          &\triangleq& \mathbb{G} \times \mathbb{L}\\
 \mathbb{G} 	            &\triangleq& \declaredtypes \times \constantvalues \times \globalstoragetypes\\
   			                & & \times\ \subtypes \times \subprograms \times \subprogramrenamings\\
-\mathbb{L} 	            &\triangleq& \constantvalues \times \localstoragetypes \times \parameters \times \returntype\\
+\mathbb{L} 	            &\triangleq& \constantvalues \times \localstoragetypes \times \returntype\\
 \hline
 \declaredtypes	        &\triangleq& \identifier \partialto \ty\\
 \constantvalues         &\triangleq& \identifier \partialto \literal\\
@@ -384,7 +387,6 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 \subtypes		            &\triangleq& \identifier \partialto \identifier\\
 \subprograms	          &\triangleq& \identifier \partialto \func\\
 \subprogramrenamings	  &\triangleq& \identifier \rightarrow \pow{\func}\\
-\parameters             &\triangleq& \pow{\identifier}\\
 \returntype             &\triangleq& \langle \ty \rangle
 \end{array}
 \]
@@ -419,8 +421,6 @@ The intuitive meaning of each component is as follows:
   \hypertarget{def-subprogramrenamings}{}
   \item $\subprogramrenamings$ associates names of subprograms to the set of overloading
   subprograms ---  $\func$ AST nodes that share the same name;
-  \hypertarget{def-parameters}{}
-  \item $\parameters$ is the subset of local variables that are parameters of a given subprogram;
   \hypertarget{def-returntype}{}
   \item $\returntype$ contains the name of the type that a subprogram declares, if it is
   a function.
@@ -443,7 +443,6 @@ The intuitive meaning of each component is as follows:
       (
         \overname{\emptyfunc}{\constantvalues},
         \overname{\emptyfunc}{\localstoragetypes},
-        \overname{\emptyset}{\parameters},
         \overname{\None}{\returntype}
       )}{L}
       \enspace.
@@ -459,314 +458,6 @@ To update a function component $f$ (e.g., $\declaredtypes$) of an environment $\
 with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to stand for $\tenv[f \mapsto E.f[x \mapsto v]]$.
 
 This is related to \identd{JRXM} and \identi{ZTMQ}.
-
-\hypertarget{def-vals}{}
-\section{Native Values \label{sec:nativevalues}}
-
-Types define sets of values that variables can take when a specification is executed.
-To formalize this, we define the set of \emph{native values}, denoted $\vals$,
-as the minimal set defined by the following recursive rules (\texttt{NV} stands for Native Value):
-\hypertarget{def-nvliteral}{}
-\hypertarget{def-nvvector}{}
-\hypertarget{def-nvrecord}{}
-\begin{mathpar}
-  \inferrule[(Basis Set: Integers, Reals, Booleans, Strings, and Bitvectors)]
-  {\vv \in \literal}
-  { \nvliteral{\vv} \in \vals }
-  \and
-  \inferrule[(Tuple Values and Array Values)]{\vvl \in \vals^*}
-  { \nvvector{\vvl} \in \vals }
-  \and
-  \inferrule[(Record Values)]
-  {\vr : \Identifiers \rightarrowfin \vals}
-  { \nvrecord{\vr} \in \vals }
-\end{mathpar}
-
-We define the following shorthands for native value literals:
-\hypertarget{def-nvint}{}
-\[
-\begin{array}{rcl}
-\nvint(z)       &\triangleq& \nvliteral{\lint(z)}           \hypertarget{def-nvbool}{}\\
-\nvbool(b)      &\triangleq& \nvliteral{\lbool(b)}          \hypertarget{def-nvreal}{}\\
-\nvreal(r)      &\triangleq& \nvliteral{\lreal(r)}          \hypertarget{def-nvstring}{}\\
-\nvstring(s)    &\triangleq& \nvliteral{\lstring(s)}        \hypertarget{def-nvbitvector}{}\\
-\nvbitvector(v) &\triangleq& \nvliteral{\lbitvector(v)}\\
-\end{array}
-\]
-
-We define the following types of native values:
-\hypertarget{def-tint}{}
-\[
-\begin{array}{rcl}
-  \tint       &\triangleq& \{ \nvint(z) \;|\; z \in \Z\}                                        \hypertarget{def-tbool}{}\\
-  \tbool      &\triangleq& \{ \nvbool(\True), \nvbool(\False) \}                                \hypertarget{def-treal}{}\\
-  \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
-  \tstring    &\triangleq& \{ \nvstring(s) \;|\; \texttt{"}s\texttt{"} \in \texttt{<string>}\}  \hypertarget{def-tbitvector}{}\\
-  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^*\}   \hypertarget{def-tvector}{}\\
-  \tvector    &\triangleq& \{ \nvvector{\textit{vals}} \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
-  \trecord  &\triangleq& \{ \nvrecord{\fieldmap} \;|\; \fieldmap \in \Identifiers\rightarrow\vals\}\\
-\end{array}
-\]
-
-\section{Domain of a Type}
-\hypertarget{def-dyndomain}{}
-
-We now define the concept of a \emph{dynamic domain} of a type
-and the \emph{static domain} of a type.
-Intuitively, domains assign potentially infinite sets of native values to types.
-Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{UNKNOWN: t}
-by choosing a single value from the dynamic domain of $\vt$.
-Static domains are used to define (domain) subtype satisfaction in \secref{TypingRule.DomainSubtypeSatisfaction}.
-
-\hypertarget{def-dynamicenvs}{}
-The definition of a dynamic domain refers to \emph{dynamic environments}, denoted $\dynamicenvs$,
-which assigns native values to identifiers~\cite{ASLSemanticsReference}.
-
-Formally, the partial function
-\[
-  \dynamicdomain : \overname{\staticenvs}{\tenv} \times \overname{\dynamicenvs}{\denv} \times \overname{\ty}{\vt}
-  \partialto \pow{\vals}
-\]
-assigns the set of values that a type $\vt$ can hold, given the static environment $\tenv$ and dynamic environment $\denv$.
-%
-We say that $\dynamicdomain(\tenv, \denv, \vt)$ is the \emph{dynamic domain} of $\vt$
-(in the given static environment $\tenv$ and dynamic environment $\denv$).
-%
-The \emph{static domain} of a type is the set of values which storage elements of that type may hold
-\underline{across all possible dynamic environments}.
-%
-The reason that for this distinction is that the sets of values
-considered for bitvector types, array types, constrained integers, and constrained bitvectors,
-can be parameterized by configuration variables and subprogram parameters whose values are determined dynamically.
-
-Types that do not refer to subprogram parameters have a static domain that is equal to their dynamic domain.
-In those cases, we simply refer to their \emph{domain}.
-
-Associating a set of values to a type is done by first substituting its configuration variables
-and subprogram parameters by their values in the dynamic environment. This is done via the
-partial function $\substparams$ (see \secref{TypingRule.SubstituteParameterValues}).
-%
-Then, statically evaluating expressions that appear inside types is done via the
-function $\staticeval$ (see \chapref{staticevaluation}).
-
-The rules below define $\dynamicdomain$. Notice that if a specification is not well-typed then
-the static evaluation of expressions may return an error configuration. Such cases are not
-handled by the rules below, which leaves the dynamic domain undefined for the respective types.
-
-%\CodeSubsection{\DomainBegin}{\DomainEnd}{../types.ml}
-
-\begin{mathpar}
-\inferrule[bool]{}{ \dynamicdomain(\tenv, \denv, \TBool) = \tbool }
-\and
-\inferrule[string]{}{ \dynamicdomain(\tenv, \denv, \TString) = \tstring }
-\and
-\inferrule[real]{}{ \dynamicdomain(\tenv, \denv, \TReal) = \treal }
-\and
-\inferrule[enumeration]{}{
-  \dynamicdomain(\tenv, \denv, \TEnum(\id_{1..k})) = \{\nvint(1),\ldots,\nvint(k)\}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[integer\_unconstrained]{}{
-  \dynamicdomain(\tenv, \denv, \TInt(\unconstrained)) = \tint
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[integer\_well\_constrained]{}{
-  \dynamicdomain(\tenv, \denv, \TInt(\wellconstrained(\vc_{1..k}))) = \bigcup_{i=1}^k \dynamicdomain(\tenv, \denv, \vc_i)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[constraint\_exact]{
-  \substparams(\tenv, \denv, \ve) \typearrow \ve'\\
-  \staticeval(\tenv, \ve') \typearrow \lint(a)
-}{
-  \dynamicdomain(\tenv, \ConstraintExact(\ve)) = \{ \nvint(n) \}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[constraint\_range]{
-  \substparams(\tenv, \denv, \veone) \typearrow \veone'\\
-  \substparams(\tenv, \denv, \vetwo) \typearrow \vetwo'\\
-  \staticeval(\tenv, \veone') \typearrow \lint(a)\\
-  \staticeval(\tenv, \vetwo') \typearrow \lint(b)\\
-}{
-  \dynamicdomain(\tenv, \denv, \ConstraintRange(\veone, \vetwo)) = \{ \nvint(n) \;|\;  a \leq n \leq b\}
-}
-\end{mathpar}
-
-The notation $L^\denv(\id)$ denotes the native value associated with the identifier $\id$
-in the \emph{local dynamic environment} of $\denv$.
-\begin{mathpar}
-  \inferrule[integer\_parameter]{
-  L^\denv(\id) = n
-}{
-  \dynamicdomain(\tenv, \denv, \TInt(\underconstrained(\id))) = \{ n \}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bitvector\_empty]{
-  \substparams(\tenv, \denv, \ve) \typearrow \ve'\\
-  \staticeval(\tenv, \ve') \typearrow \lint(k)\\
-  k = 0
-}{
-  \dynamicdomain(\tenv, \denv, \TBits(\ve, \Ignore)) = \{ \emptylist \}
-}
-\and
-\inferrule[bitvector\_non\_empty]{
-  \substparams(\tenv, \denv, \ve) \typearrow \ve'\\
-  \staticeval(\tenv, \ve') \typearrow \lint(k)\\
-  k > 0
-}{
-  \dynamicdomain(\tenv, \denv, \TBits(\ve, \Ignore)) = \{ \vb_{1..k} \;|\; \vb_1,\ldots,\vb_k \in \{0,1\} \}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  i=1..k: \substparams(\tenv, \denv, \vt_i) \typearrow \vt'_i\\
-  i=1..k: \dynamicdomain(\tenv, \denv, \vt'_i) = D_i
-}{
-  \dynamicdomain(\tenv, \denv, \TTuple([\vt_{1..k}])) =
-  \{ \nvvector{\vv_{1..k}} \;|\; \vv_i \in D_i \}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[array]{
-  \substparams(\tenv, \denv, \ve) \typearrow \ve'\\
-  \substparams(\tenv, \denv, \vt) \typearrow \vt'\\
-  \dynamicdomain(\tenv, \denv, \vt') = D_{\vt'}\\
-  \staticeval(\tenv, \ve) \typearrow \lint(k)\\
-}{
-  \dynamicdomain(\tenv, \denv, \TArray(\ve, \vt)) =
-  \{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\vt'} \}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[structured]{
-  L \in \{\TRecord, \TException\}\\
-  i=1..k: \substparams(\tenv, \denv, \vt_i) = \vt'_i\\
-  i=1..k: \dynamicdomain(\tenv, \denv, \vt'_i) = D_i
-}{
-  \dynamicdomain(\tenv, \denv, L([i=1..k: (\id_i,\vt_i))]) = \\
-  \{ \nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}} \;|\; \vv_i \in D_i \}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[named]{
-  G^\tenv.\declaredtypes(\id)=\tty
-}{
-  \dynamicdomain(\tenv, \denv, \TNamed(\id)) = \dynamicdomain(\tenv, \denv, \tty)
-}
-\end{mathpar}
-
-\subsection{Example}
-The domain of \texttt{integer} is the infinite set of all integers.
-
-The domain of \texttt{bits(1)} is the set $\{\nvint(1), \nvint(2)\}$.
-
-The domain of \verb|integer {2,16}| is the set $\{\nvint(2), \nvint(16)\}$.
-
-The domain of \verb|enumeration {GREEN, ORANGE, RED}| is the set \\
-$\{\nvint(1), \nvint(2), \nvint(3)\}$ and so is the domain
-of \\
-\verb|type TrafficLights of enumeration {GREEN, ORANGE, RED}|.
-
-The domain of \texttt{bits({2,16})} is the set containing native bitvectors of all 2-bit and all 16-bit binary sequences.
-
-The domain of \texttt{(integer, integer)} is the set containing all pairs of native integer values.
-
-The domain of \verb|record {a: integer;  b: boolean}| contains all native records
-that map \texttt{a} to a native integer value and \texttt{b} to a native Boolean value.
-
-The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singleton) set containing
-the native integer value $c$,
-which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
-is the infinite set of all native integer values.
-
-This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
-\identr{RLQP}, \identr{LYDS}, \identr{SVDJ}, \identi{WLPJ}, \identr{FWMM},
-\identi{WPWL}, \identi{CDVY}, \identi{KFCR}, \identi{BBQR}, \identr{ZWGH},
-\identr{DKGQ}, \identr{DHZT}, \identi{HSWR}, \identd{YZBQ}.
-
-\subsection{Subsumption Testing}
-Whether an assignment statement is well-typed depends on whether the dynamic domain of the
-right hand side type is contained in the dynamic domain of the left hand side type,
-for any given dynamic environment
-(see \secref{TypingRule.DomainSubtypeSatisfaction} where this is checked).
-
-\begin{definition}[Subsumption]
-For any given types $\vt$ and $\vs$ and static environment $\tenv$,
-we say that $\vt$ \emph{subsumes} $\vs$ in $\tenv$,
-if the following condition holds:
-\hypertarget{def-subsumes}{}
-\begin{equation}
-  \subsumes(\tenv, \vt, \vs) \triangleq \forall \denv\in\dynamicenvs.\ \dynamicdomain(\tenv, \denv, \vt) \supseteq \dynamicdomain(\tenv, \denv, \vs) \enspace.
-\end{equation}
-\end{definition}
-
-For example, consider the assignment
-\begin{center}
-\verb|var x : integer{1,2,3} = UNKNOWN : integer{1,2};|
-\end{center}
-
-It is legal, since (in any static environment), the domain of \verb|integer{1,2,3}|
-is \\
-$\{\nvint(1), \nvint(2), \nvint(3)\}$, which subsumes
-the domain of \verb|integer{1,2}|, which is \\ $\{\nvint(1), \nvint(2)\}$.
-
-Since dynamic domains are potentially infinite, this requires \emph{symbolic reasoning}.
-Furthermore, since any (statically evaluable) expressions may appear inside integer and bitvector
-types, testing subsumption is undecidable.
-We therefore approximate subsumption testing \emph{conservatively} via the predicate $\symsubsumes(\tenv, \vt, \vs)$.
-
-\begin{definition}[Sound Subsumption Test]
-A predicate
-\[
-  \symsubsumes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs}) \aslto \Bool
-\]
-is \emph{sound} if the following condition holds:
-\begin{equation}
-  \begin{array}{l}
-  \forall \vt,\vs\in\ty.\ \tenv\in\staticenvs. \\
-  \;\;\;\; \symsubsumes(\tenv, \vt, \vs) \typearrow \True \;\Longrightarrow\; \subsumes(\tenv, \denv, \vt)  \enspace.
-  \end{array}
-\end{equation}
-\end{definition}
-
-That is, if a sound subsumption test returns a positive answer, it means that
-$\vt$ definitely \emph{subsumes} $\vs$ in the static environment $\tenv$.
-This is referred to as a \emph{true positive}.
-However, a negative answer means one of two things:
-\begin{description}
-  \item[True Negative:] indeed, $\vt$ does not subsume $\vs$ in the static environment $\tenv$; or
-  \item[False Negative:] the symbolic reasoning is unable to decide.
-\end{description}
-
-In other words, $\symsubsumes(\tenv, \vt, \vs)$ errs on the \emph{safe side} ---
-it never answers $\True$ when the real answer is $\False$, which would (undesirably)
-determine the following statement as well-typed:
-\begin{center}
-  \verb|var x : integer{1,2} = integer;|
-\end{center}
-
-A sound but trivial subsumption test is one that always returns $\False$.
-However, that would make many useful examples, such as the one above,
-be considered as not well-typed. Indeed, it has the maximal set of false negatives.
-Reducing the set of false negatives requires stronger symbolic reasoning algorithms,
-which inevitably leads to higher computational complexity.
-%
-The symbolic subsumption test in \chapref{symbolicsubsumptiontesting}
-attempts to accept a large enough set of true positives, based on empirical trial and error,
-while maintaining the computational complexity of the symbolic reasoning acceptable.
 
 \section{Constrained Types}
 \begin{itemize}
@@ -898,6 +589,448 @@ Each rule is presented using the following template:
 \item Comments paragraphs which may refer to one or more rules from the Language Reference Manual~\cite{LRM}
       and may add more information.
 \end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Domain of Values for Types}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This chapter formalises the concept of the set of values for a given type.
+The formalism is given in the form of rules.
+%
+The chapter also defines the concept of checking whether the set of values
+for one type is included in the set of values for another type.
+
+\hypertarget{def-vals}{}
+\section{Native Values \label{sec:nativevalues}}
+
+Types define sets of values that variables can take when a specification is executed.
+To formalize this, we define the set of \emph{native values}, denoted $\vals$,
+as the minimal set defined by the following recursive rules (\texttt{NV} stands for Native Value):
+\hypertarget{def-nvliteral}{}
+\hypertarget{def-nvvector}{}
+\hypertarget{def-nvrecord}{}
+\begin{mathpar}
+  \inferrule[(Basis Set: Integers, Reals, Booleans, Strings, and Bitvectors)]
+  {\vv \in \literal}
+  { \nvliteral{\vv} \in \vals }
+  \and
+  \inferrule[(Tuple Values and Array Values)]{\vvl \in \vals^*}
+  { \nvvector{\vvl} \in \vals }
+  \and
+  \inferrule[(Record Values)]
+  {\vr : \Identifiers \rightarrowfin \vals}
+  { \nvrecord{\vr} \in \vals }
+\end{mathpar}
+
+We define the following shorthands for native value literals:
+\hypertarget{def-nvint}{}
+\[
+\begin{array}{rcl}
+\nvint(z)       &\triangleq& \nvliteral{\lint(z)}           \hypertarget{def-nvbool}{}\\
+\nvbool(b)      &\triangleq& \nvliteral{\lbool(b)}          \hypertarget{def-nvreal}{}\\
+\nvreal(r)      &\triangleq& \nvliteral{\lreal(r)}          \hypertarget{def-nvstring}{}\\
+\nvstring(s)    &\triangleq& \nvliteral{\lstring(s)}        \hypertarget{def-nvbitvector}{}\\
+\nvbitvector(v) &\triangleq& \nvliteral{\lbitvector(v)}\\
+\end{array}
+\]
+
+We define the following types of native values:
+\hypertarget{def-tint}{}
+\[
+\begin{array}{rcl}
+  \tint       &\triangleq& \{ \nvint(z) \;|\; z \in \Z\}                                        \hypertarget{def-tbool}{}\\
+  \tbool      &\triangleq& \{ \nvbool(\True), \nvbool(\False) \}                                \hypertarget{def-treal}{}\\
+  \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
+  \tstring    &\triangleq& \{ \nvstring(s) \;|\; \texttt{"}s\texttt{"} \in \texttt{<string>}\}  \hypertarget{def-tbitvector}{}\\
+  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^*\}   \hypertarget{def-tvector}{}\\
+  \tvector    &\triangleq& \{ \nvvector{\textit{vals}} \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
+  \trecord  &\triangleq& \{ \nvrecord{\fieldmap} \;|\; \fieldmap \in \Identifiers\rightarrow\vals\}\\
+\end{array}
+\]
+
+\section{Dynamic Domain of a Type}
+\hypertarget{def-dyndomain}{}
+
+We now define the concept of a \emph{dynamic domain} of a type
+and the \emph{static domain} of a type.
+Intuitively, domains assign potentially infinite sets of native values to types.
+Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{UNKNOWN: t}
+by choosing a single value from the dynamic domain of $\vt$.
+Static domains are used to define (domain) subtype satisfaction in \secref{TypingRule.DomainSubtypeSatisfaction}.
+
+\hypertarget{def-dynamicenvs}{}
+The definition of a dynamic domain refers to \emph{dynamic environments}, denoted $\dynamicenvs$,
+which assigns native values to identifiers~\cite{ASLSemanticsReference}.
+
+\hypertarget{def-envs}{}
+We define \emph{environments} as pairs of static environments and dynamic environments:
+$\envs = \staticenvs \times \dynamicenvs$.
+
+Formally, the partial function
+\[
+  \dynamicdomain : \overname{\envs}{\env} \times \overname{\ty}{\vt}
+  \partialto \overname{\pow{\vals}}{\vd}
+\]
+assigns the set of values that a type $\vt$ can hold in a given environment $\env$.
+%
+We say that $\dynamicdomain(\env, \vt)$ is the \emph{dynamic domain} of $\vt$
+in the environment $\env$.
+%
+The \emph{static domain} of a type is the set of values which storage elements of that type may hold
+\underline{across all possible dynamic environments}.
+%
+The reason that for this distinction is that the sets of values
+considered for bitvector types, array types, constrained integers, and constrained bitvectors,
+can depend on the dynamic values of variables.
+
+Types that do not refer to variables whose values are only known dynamically have
+a static domain that is equal to any of their dynamic domains.
+In those cases, we simply refer to their \emph{domain}.
+
+Associating a set of values to a type is done by evaluating any expressions appearing
+in the type definitions via the ASL semantics~\cite{ASLSemanticsReference},
+specifically via the relation
+\[
+  \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
+  \Normal(\overname{\vals}{\vv}\aslsep\overname{\XGraphs}{\vg}) \cup
+  \overname{\TError}{\ErrorConfig}
+\]
+which evaluates side-effect-free expressions and either returns
+a configuration of the form $\Normal(\vv,\vg)$ or a dynamic error.
+In the first case, $\vv$ is a native value and $\vg$
+is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
+and can be ignored in the context of defining dynamic domains.
+In the latter case (which can occur if, for example, an expression attempts to divide
+\texttt{8} by \texttt{3}), a dynamic error configuration for which we use the notation
+$\ErrorConfig$ is returned.
+%
+The dynamic domain is undefined in cases where evaluating side-effect-free expressions
+results in a dynamic error.
+%
+The dynamic domain is also undefined if the given type $\vt$ is not well-typed in $\tenv$.
+That is, if $\annotatetype{\tenv, \vt} \typearrow \TypeErrorConfig$.
+
+As part of the definition, we also associate dynamic domains to integer constraints
+by overloading $\dynamicdomain$:
+\[
+  \dynamicdomain : \overname{\envs}{\env} \times \overname{\intconstraint}{\vc}
+  \partialto \overname{\pow{\vals}}{\vd}
+\]
+
+\subsection{Prose}
+For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and one of the following holds:
+\begin{itemize}
+  \item All of the following holds (\textsc{t\_bool}):
+  \begin{itemize}
+    \item $\vt$ is the Boolean type, $\TBool$;
+    \item $\vd$ is the set of native Boolean values, $\tbool$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_string}):
+  \begin{itemize}
+    \item $\vt$ is the string type, $\TString$;
+    \item $\vd$ is the set of all native string values, $\tstring$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_real}):
+  \begin{itemize}
+    \item $\vt$ is the real type, $\TReal$;
+    \item $\vd$ is the set of all native real values, $\treal$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_enumeration}):
+  \begin{itemize}
+    \item $\vt$ is the enumeration type with labels $\id_{1..k}$, that is $\TEnum(\id_{1..k})$;
+    \item $\vd$ is the set of all native integer values for $1..k$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_int\_unconstrained}):
+  \begin{itemize}
+    \item $\vt$ is the unconstrained integer type, $\TInt(\unconstrained)$;
+    \item $\vd$ is the set of all native integer values, $\tint$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_int\_well\_constrained}):
+  \begin{itemize}
+    \item $\vt$ is the well-constrained integer type $\TInt(\wellconstrained(\vc_{1..k}))$;
+    \item $\vd$ is the union of the dynamic domains of each of the constraints $vc_{1..k}$ in $\env$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{constraint\_exact}):
+  \begin{itemize}
+    \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $n$;
+    \item $\vd$ is the set containing the single native integer value for $n$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{constraint\_range}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$, results in a configuration with the native integer for $b$;
+    \item $\vd$ is the set containing all native integer values for integers from $a$ to $b$, inclusive.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_int\_underconstrained}):
+  \begin{itemize}
+    \item $\vt$ is an under constrained integer for parameter $\id$, \\ $\TInt(\underconstrained(\id))$;
+    \item the native value associated with $\id$ in the local dynamic environment is the native integer value for $n$;
+    \item $\vd$ is the set containing the single integer value for $n$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_bits\_empty}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $0$;
+    \item $\vd$ is the set containing the single native value for an empty bitvector.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_bits\_non\_empty}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $k$ is greater than $0$;
+    \item $\vd$ is the set containing all native values for bitvectors of size exactly $k$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_tuple}):
+  \begin{itemize}
+    \item $\vt$ is a tuple type over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
+    \item the domain of each element $\vt_i$ is $D_i$, for $i=1..k$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $\vd$ is the set containing all native vectors of $k$ values, where the value at position $i$
+    is from $D_i$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_array}):
+  \begin{itemize}
+    \item $\vt$ is an type over type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
+    \item the domain of $\vtone$ is $D_\vtone$;
+    \item $\vd$ is the set containing all native vectors of $k$ values taken from $D_\vtone$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_structured}):
+  \begin{itemize}
+    \item $\vt$ is either a record type or an exception type with typed fields $(\id_i, \vt_i$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
+    where $L\in\{\TRecord, \TException\}$;
+    \item the domain of each type $\vt_i$ is $D_i$, for $i=1..k$;
+    \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$.
+  \end{itemize}
+
+  \item All of the following holds (\textsc{t\_named}):
+  \begin{itemize}
+    \item $\vt$ is a named type with name $\id$, $\TNamed(\id)$;
+    \item the type associated with $\id$ in $\tenv$ is $\tty$;
+    \item $\vd$ is the domain of $\tty$ in $\env$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+The rules below define $\dynamicdomain$. Notice that if a specification is not well-typed then
+the static evaluation of expressions may return an error configuration. Such cases are not
+handled by the rules below, which leaves the dynamic domain undefined for the respective types.
+
+\begin{mathpar}
+\inferrule[t\_bool]{}{ \dynamicdomain(\env, \TBool) = \tbool }
+\and
+\inferrule[t\_string]{}{ \dynamicdomain(\env, \TString) = \tstring }
+\and
+\inferrule[t\_real]{}{ \dynamicdomain(\env, \TReal) = \treal }
+\and
+\inferrule[t\_enumeration]{}{
+  \dynamicdomain(\env, \TEnum(\id_{1..k})) = \{\nvint(1),\ldots,\nvint(k)\}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[t\_int\_unconstrained]{}{
+  \dynamicdomain(\env, \TInt(\unconstrained)) = \tint
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int\_well\_constrained]{}{
+  \dynamicdomain(\env, \TInt(\wellconstrained(\vc_{1..k}))) = \bigcup_{i=1}^k \dynamicdomain(\env, \vc_i)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constraint\_exact]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(n), \Ignore)
+}{
+  \dynamicdomain(\env, \ConstraintExact(\ve)) = \{ \nvint(n) \}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constraint\_range]{
+  \evalexprsef{\env, \veone} \evalarrow \Normal(\nvint(a), \Ignore)\\
+  \evalexprsef{\env, \vetwo} \evalarrow \Normal(\nvint(b), \Ignore)\\
+}{
+  \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \{ \nvint(n) \;|\;  a \leq n \leq b\}
+}
+\end{mathpar}
+
+The notation $L^\denv(\id)$ denotes the native value associated with the identifier $\id$
+in the \emph{local dynamic environment} of $\denv$.
+\begin{mathpar}
+  \inferrule[t\_int\_underconstrained]{
+  L^\denv(\id) = \nvint(n)
+}{
+  \dynamicdomain(\env, \TInt(\underconstrained(\id))) = \{ \nvint(n) \}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits\_empty]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(0), \Ignore)
+}{
+  \dynamicdomain(\env, \TBits(\ve, \Ignore)) = \{ \nvbitvector(\emptylist) \}
+}
+\and
+\inferrule[t\_bits\_non\_empty]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  k > 0
+}{
+  \dynamicdomain(\env, \TBits(\ve, \Ignore)) = \{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \{0,1\} \}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]{
+  i=1..k: \dynamicdomain(\env, \vt_i) = D_i
+}{
+  \dynamicdomain(\env, \TTuple(\vt_{1..k})) =
+  \{ \nvvector{\vv_{1..k}} \;|\; \vv_i \in D_i \}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array]{
+  \dynamicdomain(\env, \vtone) = D_\vtone\\
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+}{
+  \dynamicdomain(\env, \TArray(\ve, \vtone)) =
+  \{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\vtone} \}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[structured]{
+  L \in \{\TRecord, \TException\}\\
+  i=1..k: \dynamicdomain(\env, \vt_i) = D_i
+}{
+  \dynamicdomain(\env, L([i=1..k: (\id_i,\vt_i))]) = \\
+  \{ \nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}} \;|\; \vv_i \in D_i \}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_named]{
+  G^\tenv.\declaredtypes(\id)=\tty
+}{
+  \dynamicdomain(\env, \TNamed(\id)) = \dynamicdomain(\env, \tty)
+}
+\end{mathpar}
+
+\subsection{Example}
+The domain of \texttt{integer} is the infinite set of all integers.
+
+The domain of \texttt{bits(1)} is the set $\{\nvint(1), \nvint(2)\}$.
+
+The domain of \verb|integer {2,16}| is the set $\{\nvint(2), \nvint(16)\}$.
+
+The domain of \verb|enumeration {GREEN, ORANGE, RED}| is the set \\
+$\{\nvint(1), \nvint(2), \nvint(3)\}$ and so is the domain
+of \\
+\verb|type TrafficLights of enumeration {GREEN, ORANGE, RED}|.
+
+The domain of \texttt{bits({2,16})} is the set containing native bitvectors of all 2-bit and all 16-bit binary sequences.
+
+The domain of \texttt{(integer, integer)} is the set containing all pairs of native integer values.
+
+The domain of \verb|record {a: integer;  b: boolean}| contains all native records
+that map \texttt{a} to a native integer value and \texttt{b} to a native Boolean value.
+
+The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singleton) set containing
+the native integer value $c$,
+which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
+is the infinite set of all native integer values.
+
+This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
+\identr{RLQP}, \identr{LYDS}, \identr{SVDJ}, \identi{WLPJ}, \identr{FWMM},
+\identi{WPWL}, \identi{CDVY}, \identi{KFCR}, \identi{BBQR}, \identr{ZWGH},
+\identr{DKGQ}, \identr{DHZT}, \identi{HSWR}, \identd{YZBQ}.
+
+\section{Subsumption Testing}
+Whether an assignment statement is well-typed depends on whether the dynamic domain of the
+right hand side type is contained in the dynamic domain of the left hand side type,
+for any given dynamic environment
+(see \secref{TypingRule.DomainSubtypeSatisfaction} where this is checked).
+
+\begin{definition}[Subsumption]
+For any given types $\vt$ and $\vs$ and static environment $\tenv$,
+we say that $\vt$ \emph{subsumes} $\vs$ in $\tenv$,
+if the following condition holds:
+\hypertarget{def-subsumes}{}
+\begin{equation}
+  \subsumes(\tenv, \vt, \vs) \triangleq \forall \denv\in\dynamicenvs.\ \dynamicdomain((\tenv, \denv), \vt) \supseteq \dynamicdomain((\tenv, \denv), \vs) \enspace.
+\end{equation}
+\end{definition}
+
+For example, consider the assignment
+\begin{center}
+\verb|var x : integer{1,2,3} = UNKNOWN : integer{1,2};|
+\end{center}
+
+It is legal, since (in any static environment), the domain of \verb|integer{1,2,3}|
+is \\
+$\{\nvint(1), \nvint(2), \nvint(3)\}$, which subsumes
+the domain of \verb|integer{1,2}|, which is \\ $\{\nvint(1), \nvint(2)\}$.
+
+Since dynamic domains are potentially infinite, this requires \emph{symbolic reasoning}.
+Furthermore, since any (statically evaluable) expressions may appear inside integer and bitvector
+types, testing subsumption is undecidable.
+We therefore approximate subsumption testing \emph{conservatively} via the predicate $\symsubsumes(\tenv, \vt, \vs)$.
+
+\begin{definition}[Sound Subsumption Test]
+A predicate
+\[
+  \symsubsumes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs}) \aslto \Bool
+\]
+is \emph{sound} if the following condition holds:
+\begin{equation}
+  \begin{array}{l}
+  \forall \vt,\vs\in\ty.\ \tenv\in\staticenvs. \\
+  \;\;\;\; \symsubsumes(\tenv, \vt, \vs) \typearrow \True \;\Longrightarrow\; \subsumes(\tenv, \vt, \vs)  \enspace.
+  \end{array}
+\end{equation}
+\end{definition}
+
+That is, if a sound subsumption test returns a positive answer, it means that
+$\vt$ definitely \emph{subsumes} $\vs$ in the static environment $\tenv$.
+This is referred to as a \emph{true positive}.
+However, a negative answer means one of two things:
+\begin{description}
+  \item[True Negative:] indeed, $\vt$ does not subsume $\vs$ in the static environment $\tenv$; or
+  \item[False Negative:] the symbolic reasoning is unable to decide.
+\end{description}
+
+In other words, $\symsubsumes(\tenv, \vt, \vs)$ errs on the \emph{safe side} ---
+it never answers $\True$ when the real answer is $\False$, which would (undesirably)
+determine the following statement as well-typed:
+\begin{center}
+  \verb|var x : integer{1,2} = integer;|
+\end{center}
+
+A sound but trivial subsumption test is one that always returns $\False$.
+However, that would make many useful examples, such as the one above,
+be considered as not well-typed. Indeed, it has the maximal set of false negatives.
+Reducing the set of false negatives requires stronger symbolic reasoning algorithms,
+which inevitably leads to higher computational complexity.
+%
+The symbolic subsumption test in \chapref{symbolicsubsumptiontesting}
+attempts to accept a large enough set of true positives, based on empirical trial and error,
+while maintaining the computational complexity of the symbolic reasoning acceptable.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Basic Type Attributes}
@@ -1336,10 +1469,13 @@ The function
 \[
   \tstruct(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-assigns a type to its \hypertarget{def-tstruct}{\emph{\structure}}, which is a primitive type that can hold the same values.
-This is done by traversing the AST of the type and recursively replacing named types by their declared types
-in the static environment $\tenv$.
-If a named type is not associated with a declared type in the static environment $\tenv$, a type error is returned.
+assigns a type to its \hypertarget{def-tstruct}{\emph{\structure}}, which is the type formed by
+recursively replacing named types their declared types in the static environment $\tenv$.
+If a named type is not associated with a declared type in $\tenv$, a type error is returned.
+
+TypingRule.Specification ensures the absence of circular type definitions,
+which ensures that TypingRule.Structure terminates\footnote{In mathematical terms,
+this ensures that TypingRule.Structure is a proper \emph{structural induction.}}.
 
 \subsection{Prose}
 One of the following applies:
@@ -2008,12 +2144,17 @@ All of the following apply:
     This is related to \identd{TRVR}, \identi{KNXJ}.
 
 \section{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
+\hypertarget{def-typesatisfies}{}
+The predicate
+\[
+  \typesatisfies(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+tests whether a type $\vt$ \emph{type-satisfies} a type $\vs$ is environment $\tenv$,
+returning the result $\vb$ or a type error, if one is detected.
 
 \subsection{Prose}
-
-$\vt$ \hypertarget{def-typesatisfies}{type-satisfies} $\vs$ if one of the following applies:
-
-
+One of the following applies:
  \begin{itemize}
  \item $\vt$ is a subtype of $\vs$;
  \item All of the following apply:
@@ -2027,7 +2168,7 @@ $\vt$ \hypertarget{def-typesatisfies}{type-satisfies} $\vs$ if one of the follow
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item $\vt$ is an anonymous bitvector with no bitfields;
+    \item $\vt$ is an anonymous bitvector type with no bitfields;
     \item $\vs$ has the structure of a bitvector (with or without bitfields);
     \item $\vs$ has the same width as $\vt$.
     \end{itemize}
@@ -2056,20 +2197,53 @@ $\vt$ \hypertarget{def-typesatisfies}{type-satisfies} $\vs$ if one of the follow
     \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by \\ $\typesatisfies(\tenv, \vt, \vs)$.
+\subsection{Formally}
 \begin{mathpar}
-\inferrule{\subtypes(\tenv, \vt, \vs)}{\typesatisfies(\tenv, \vt, \vs)}
+\inferrule[subtypes]{
+  \subtypes(\tenv, \vt, \vs) \typearrow \True
+}{
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
+}
 \and
-\inferrule{\isanonymous(\tenv, \vt) \\ \subtypesat(\tenv, \vt, \vs)}{\typesatisfies(\tenv, \vt, \vs)}
+\inferrule[anonymous1]{
+  \subtypes(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vt) \typearrow \True\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \True
+}{
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
+}
 \and
-\inferrule{\isanonymous(\tenv, \vs) \\ \subtypesat(\tenv, \vt, \vs)}{\typesatisfies(\tenv, \vt, \vs)}
+\inferrule[anonymous2]{
+  \subtypes(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vs) \typearrow \True\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \True
+}{
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
+}
 \and
-\inferrule{
-  \tstruct(\tenv, \vt) \typearrow \TBits(\widtht, \Ignore) \\
-  \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \\
-  \bitwidthequal(\tenv, \widtht, \widths)}
-{\typesatisfies(\tenv, \vt, \vs)}
+\inferrule[t\_bits]{
+  \subtypes(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vt) \typearrow \False\\
+  \isanonymous(\tenv, \vs) \typearrow \False\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \False\\
+  \tstruct(\tenv, \vt) \typearrow \TBits(\widtht, \Ignore) \OrTypeError\\
+  \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\
+  \bitwidthequal(\tenv, \widtht, \widths) \typearrow \vb
+}{
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \vb
+}
+\and
+\inferrule[otherwise]{
+  \subtypes(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vt) \typearrow \False\\
+  \isanonymous(\tenv, \vs) \typearrow \False\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \False\\
+  \tstruct(\tenv, \vt) \typearrow \vtone\\
+  \tstruct(\tenv, \vs) \typearrow \vsone\\
+  \astlabel(\vtone) \neq \TBits \lor \astlabel(\vsone) \neq \TBits
+}{
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \False
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -2868,6 +3042,12 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of types}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hypertarget{def-annotatetype}{}
+The function
+\[
+  \annotatetype{\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
+  \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
 
 Annotating a type~$\tty$ in an environment~\texttt{env} results in a
 rewritten type~\texttt{new\_ty} and one of the following applies:
@@ -3265,6 +3445,7 @@ $\ve$ in \tenv\ is either the pair \texttt{t, new\_e}, where $\vt$ is a type and
 \item TypingRule.ETuple (see Section~\secref{TypingRule.ETuple})
 \item TypingRule.EUnknown (see Section~\secref{TypingRule.EUnknown})
 \item TypingRule.EPattern (see Section~\secref{TypingRule.EPattern})
+\item TypingRule.ATC (see Section~\secref{TypingRule.ATC})
 \item TypingRule.ATC (see Section~\secref{TypingRule.ATC})
 \end{itemize}
 
@@ -4249,7 +4430,7 @@ expression that is unresolvable to an integer. For example:
       \item \texttt{t''} is not a domain subtype of \texttt{t'} in \texttt{env};
       \item an execution-time check that the expression evaluates to a value in the
         runtime domain of the required type is required.
-      \item \texttt{new\_e} is the expression denoting a Asserted Type
+      \item \texttt{new\_e} is the expression denoting an Asserted Type
         Conversion of \texttt{new\_e'} in the type \texttt{t'}.
      \end{itemize}
    \item All of the following apply:
@@ -8256,79 +8437,6 @@ If the identifier is not associated with a declared type, a type error is return
   }
 \end{mathpar}
 
-\subsection{TypingRule.SubstituteParameterValues}
-\label{sec:TypingRule.SubstituteParameterValues}
-\hypertarget{def-substparams}{}
-The partial function
-\[
-  \substparams(\overname{\staticenvs}{\tenv} \aslsep \overname{\dynamicenvs}{\denv} \aslsep \expr) \aslto
-  \expr
-\]
-substitutes variable expressions that correspond to subprogram parameters by a literal expression where the literal
-is taken from the dynamic environment.
-
-The partial function is overloaded by similar partial functions operating over slices:
-\[
-  \substparams(\overname{\staticenvs}{\tenv} \aslsep \overname{\dynamicenvs}{\denv} \aslsep \slice) \aslto
-  \slice
-\]
-patterns:
-\[
-  \substparams(\overname{\staticenvs}{\tenv} \aslsep \overname{\dynamicenvs}{\denv} \aslsep \pattern) \aslto
-  \pattern
-\]
-and types:
-\[
-  \substparams(\overname{\staticenvs}{\tenv} \aslsep \overname{\dynamicenvs}{\denv} \aslsep \ty) \aslto
-  \ty
-\]
-
-\subsection{Prose}
-For any expression, pattern, slice, and pattern, return the AST node with substitution applied to its children,
-unless one of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{parameter}):
-  \begin{itemize}
-    \item a variable expression $\EVar(\id)$;
-    \item $\id$ is included in the set of subprogram parameters in the local static environment;
-    \item the native value of $\id$ in the local dynamic environment is the native integer for $n$;
-    \item return the literal expression for the integer $n$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{config}):
-  \begin{itemize}
-    \item a variable expression $\EVar(\id)$;
-    \item $\id$ is declared as a configuration variable;
-    \item the native value of $\id$ in the global dynamic environment is the native integer for $n$;
-    \item return the literal expression for the integer $n$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-The native value associated with a subprogram parameter $\id$ in a dynamic environment $\denv$
-is obtained by accessing the \emph{local dynamic environment}, which is denoted by $L^\denv(\id)$.
-\begin{mathpar}
-  \inferrule[parameter]{
-    \id \in L^\tenv.\parameters\\
-    L^\denv(\id) = \nvint(n)
-  }
-  {
-    \substparams(\tenv, \denv, \EVar(\id)) \typearrow \ELiteral(\lint(n))
-  }
-\end{mathpar}
-
-The native value associated with a configuration $\id$ in a dynamic environment $\denv$
-is obtained by accessing the \emph{global dynamic environment}, which is denoted by $G^\denv(\id)$.
-\begin{mathpar}
-  \inferrule[config]{
-    G^\tenv.\globalstoragetypes(\id) = (\Ignore, \GDKConfig)\\
-    G^\denv(\id) = \nvint(n)
-  }
-  {
-    \substparams(\tenv, \denv, \EVar(\id)) \typearrow \ELiteral(\lint(n))
-  }
-\end{mathpar}
-
 \section{TypingRule.BitFieldsIncluded}
 \hypertarget{def-bitfieldsincluded}{}
 
@@ -8339,272 +8447,6 @@ The predicate
 \]
 tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,
 returning a type error, if one is detected.
-
-% The case \textsc{e\_var} holds when the identifier does not correspond to a subprogram parameter
-% and therefore no substitution occurs:
-% \begin{mathpar}
-%   \inferrule[e\_var]{
-%     \id \not\in L^\tenv.\parameters
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EVar(\id)) \typearrow \EVar(\id)
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_literal]{}
-%   {
-%     \substparams(\tenv, \denv, \ELiteral(\vl)) \typearrow \ELiteral(\vl)
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_atc]{
-%     \substparams(\tenv, \denv, \ve') \typearrow \ve'\\
-%     \substparams(\tenv, \denv, \vt) \typearrow \vt'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EATC(\ve, \vt)) \typearrow \EATC(\ve', \vt')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_binop]{
-%     \substparams(\tenv, \denv, \veone) \typearrow \veone'\\
-%     \substparams(\tenv, \denv, \vetwo) \typearrow \vetwo'\\
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EBinop(\binop, \veone, \vetwo)) \typearrow \EBinop(\binop, \veone', \vetwo')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_unop]{
-%     \substparams(\tenv, \denv, \ve) \typearrow \ve'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EUnop(\unop, \ve)) \typearrow \EUnop(\unop, \ve')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_call]{
-%     i=1..k: \substparams(\tenv, \denv, \ve_i) \typearrow \vep_i\\
-%     j=1..n: \substparams(\tenv, \denv, \va_j) \typearrow \vb_j\\
-%   }
-%   {
-%     \substparams(\tenv, \denv, \ECall(\id, \ve_{1..k}, [j=1..n: (\id_j,\va_j)])) \typearrow \\
-%     \ECall(\id, \vep_{1..k}, [j=1..n: (\id_j,\vb_j)])
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[eslice]{
-%     \substparams(\tenv, \denv, \ve) \typearrow \ve'\\
-%     i=1..k: \substparams(\tenv, \denv, \vs_i) \typearrow \vs'_i
-%   }
-%   {
-%     \substparams(\tenv, \denv, \ESlice(\ve, \vs_{1..k})) \typearrow \ESlice(\ve', \vs'_{1..k})
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_cond]{
-%     \substparams(\tenv, \denv, \veone) \typearrow \veone'\\
-%     \substparams(\tenv, \denv, \vetwo) \typearrow \vetwo'\\
-%     \substparams(\tenv, \denv, \vethree) \typearrow \vethree'\\
-%   }
-%   {
-%     \substparams(\tenv, \denv, \econd(\veone, \vetwo, \vethree)) \typearrow \econd(\veone', \vetwo', \vethree')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_getfield]{
-%     \substparams(\tenv, \denv, \ve) \typearrow \ve'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EGetField(\ve, \id)) \typearrow \EGetField(\ve', \id)
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_getfields]{
-%     \substparams(\tenv, \denv, \ve) \typearrow \ve'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EGetFields(\ve, \id_{1..k})) \typearrow \EGetField(\ve', \id_{1..k})
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_record]{
-%     \substparams(\tenv, \denv, \vt) \typearrow \vt'\\
-%     i=1..k: \substparams(\tenv, \denv, \ve_i) \typearrow \ve'_i
-%   }
-%   {
-%     \substparams(\tenv, \denv, \ERecord(\vt, [i=1..k: (\id_i, \ve_i)])) \typearrow \\
-%     \ERecord(\vt', [i=1..k: (\id_i, \ve'_i)])
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_concat]{
-%     i=1..k: \substparams(\tenv, \denv, \ve_i) \typearrow \ve'_i
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EConcat(\ve_{1..k})) \typearrow \EConcat(\ve'_{1..k})
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_tuple]{
-%     i=1..k: \substparams(\tenv, \denv, \ve_i) \typearrow \ve'_i
-%   }
-%   {
-%     \substparams(\tenv, \denv, \ETuple(\ve_{1..k})) \typearrow \ETuple(\ve'_{1..k})
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_unknown]{
-%     \substparams(\tenv, \denv, \vt) \typearrow \vt'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EUnknown(\vt)) \typearrow \EUnknown(\vt')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[e\_pattern]{
-%     \substparams(\tenv, \denv, \ve) \typearrow \ve'\\
-%     \substparams(\tenv, \denv, \vp) \typearrow \vp'\\
-%   }
-%   {
-%     \substparams(\tenv, \denv, \EPattern(\ve, \vp)) \typearrow \EPattern(\ve', \vp')
-%   }
-% \end{mathpar}
-
-% \paragraph{Slice Cases}
-% \begin{mathpar}
-%   \inferrule[slice\_single]{
-%     \substparams(\tenv, \denv, \ve) \typearrow \ve'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \SliceSingle(\ve)) \typearrow \SliceSingle(\ve')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[slice\_range]{
-%     \substparams(\tenv, \denv, \veone) \typearrow \veone'\\
-%     \substparams(\tenv, \denv, \vetwo) \typearrow \vetwo'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \SliceRange(\veone, \vetwo)) \typearrow \SliceRange(\veone', \vetwo')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[slice\_length]{
-%     \substparams(\tenv, \denv, \veone) \typearrow \veone'\\
-%     \substparams(\tenv, \denv, \vetwo) \typearrow \vetwo'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \SliceLength(\veone, \vetwo)) \typearrow \SliceLength(\veone', \vetwo')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[slice\_star]{
-%     \substparams(\tenv, \denv, \veone) \typearrow \veone'\\
-%     \substparams(\tenv, \denv, \vetwo) \typearrow \vetwo'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \SliceStar(\veone, \vetwo)) \typearrow \SliceStar(\veone', \vetwo')
-%   }
-% \end{mathpar}
-
-% \paragraph{Pattern Cases}
-% \begin{mathpar}
-%   \inferrule[pattern\_all]{}
-%   {
-%     \substparams(\tenv, \denv, \PatternAll) \typearrow \PatternAll
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[pattern\_any]{
-%     i=1..k: \substparams(\tenv, \denv, \vp_i) \typearrow \vp'_i
-%   }
-%   {
-%     \substparams(\tenv, \denv, \PatternAny(\vp_{1..k})) \typearrow \PatternAny(\vp'_{1..k})
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[pattern\_geq]{
-%     i=1..k: \substparams(\tenv, \denv, \ve) \typearrow \ve'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \PatternGeq(\ve)) \typearrow \PatternGeq(\ve')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[pattern\_leq]{
-%     i=1..k: \substparams(\tenv, \denv, \ve) \typearrow \ve'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \PatternLeq(\ve)) \typearrow \PatternLeq(\ve')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[pattern\_mask]{}
-%   {
-%     \substparams(\tenv, \denv, \PatternMask(\vm)) \typearrow \PatternMask(\vm)
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[pattern\_not]{
-%     i=1..k: \substparams(\tenv, \denv, \ve) \typearrow \ve'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \PatternNot(\ve)) \typearrow \PatternNot(\ve')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[pattern\_not]{
-%     \substparams(\tenv, \denv, \veone) \typearrow \veone'\\
-%     \substparams(\tenv, \denv, \vetwo) \typearrow \vetwo'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \PatternRange(\veone, \vetwo)) \typearrow \PatternRange(\veone', \vetwo')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[pattern\_single]{
-%     i=1..k: \substparams(\tenv, \denv, \ve) \typearrow \ve'
-%   }
-%   {
-%     \substparams(\tenv, \denv, \PatternSingle(\ve)) \typearrow \PatternSingle(\ve')
-%   }
-% \end{mathpar}
-
-% \begin{mathpar}
-%   \inferrule[pattern\_tuple]{
-%     i=1..k: \substparams(\tenv, \denv, \vp_i) \typearrow \vp'_i
-%   }
-%   {
-%     \substparams(\tenv, \denv, \PatternTuple(\vp_{1..k})) \typearrow \PatternTuple(\vp'_{1..k})
-%   }
-% \end{mathpar}
-
-% \paragraph{Type Cases}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}
