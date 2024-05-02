@@ -241,7 +241,7 @@ clean::
 
 #version
 version.tex: ../herdtools7.opam
-	/bin/echo '\def\version{'`grep "^version:" ../herdtools7.opam | cut -d ":" -f 2 | cut -d '"' -f 2`'}' > $@
+	/bin/echo '\def\version{'$$(cat ../VERSION.txt)'}' > $@
 
 clean::
 	/bin/rm -f version.tex
@@ -327,7 +327,7 @@ clean::
 LATEX ?= $(if $(shell which rubber),\
 		rubber -f,\
 		$(if $(shell which latexmk),\
-			latexmk -dvi,\
+			latexmk -dvi -ps- -pdf-,\
 			$(error "Could not find either rubber or latexmk in PATH")))
 DVIPS=dvips
 PS2PDF=ps2pdf
