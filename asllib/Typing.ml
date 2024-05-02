@@ -83,20 +83,25 @@ let slices_width env =
 
 let width_plus env acc w = plus acc w |> reduce_expr env
 
-let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
-  let subst_constraint eqs = function
-    | Constraint_Exact e -> Constraint_Exact (subst_expr eqs e)
+let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
+    =
+  let subst_expr env eqs e = subst_expr eqs e |> reduce_expr env in
+  let subst_constraint env eqs = function
+    | Constraint_Exact e -> Constraint_Exact (subst_expr env eqs e)
     | Constraint_Range (e1, e2) ->
-        Constraint_Range (subst_expr eqs e1, subst_expr eqs e2)
+        Constraint_Range (subst_expr env eqs e1, subst_expr env eqs e2)
   in
-  let subst_constraints eqs = List.map (subst_constraint eqs) in
-  fun eqs ty ->
+  let subst_constraints env eqs = List.map (subst_constraint env eqs) in
+  fun env eqs ty ->
     match ty.desc with
     | T_Bits (e, fields) ->
-        T_Bits (subst_expr eqs e, fields) |> add_pos_from_st ty
+        T_Bits (subst_expr env eqs e, fields) |> add_pos_from_st ty
     | T_Int (WellConstrained constraints) ->
-        let constraints = subst_constraints eqs constraints in
+        let constraints = subst_constraints env eqs constraints in
         T_Int (WellConstrained constraints) |> add_pos_from_st ty
+    | T_Int (UnderConstrained (_uid, name)) ->
+        let e = E_Var name |> add_pos_from ty |> subst_expr env eqs in
+        T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from ty
     | _ -> ty
 
 (* Begin Lit *)
@@ -1138,6 +1143,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let () =
       if false then
+        let open Format in
+        eprintf "Parameters for this call: %a@."
+          (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
+               fprintf f "%S<--%a" name (pp_print_option PP.pp_ty) e))
+          callee_params
+    in
+    let () =
+      if false then
         match extra_nargs with
         | [] -> ()
         | _ ->
@@ -1163,37 +1176,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         match ty.desc with
         | T_Bits ({ desc = E_Var x; _ }, _) -> (
             match (Types.get_structure env t_e).desc with
-            | T_Bits (e, _) -> (x, e) :: acc
+            | T_Bits (e, _) -> (
+                match List.assoc_opt x acc with
+                | None -> (x, e) :: acc
+                | Some e' ->
+                    assert (StaticInterpreter.equal_in_env env e e');
+                    acc)
             | _ -> acc)
         | _ -> acc
       in
       List.fold_left2 folder eqs1 callee_arg_types caller_arg_typed
-    in
-    let () =
-      if false then
-        let open Format in
-        eprintf "@[<hov 2>Eqs for this call are: %a@]@."
-          (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
-               fprintf f "%S<--%a" name PP.pp_expr e))
-          eqs2
-    in
-    let () =
-      List.iter2
-        (fun (_, callee_arg) caller_arg ->
-          let callee_arg = rename_ty_eqs eqs2 callee_arg in
-          let () =
-            if false then
-              Format.eprintf "Checking calling arg from %a to %a@." PP.pp_ty
-                caller_arg PP.pp_ty callee_arg
-          in
-          let+ () = check_type_satisfies loc env caller_arg callee_arg in
-          ())
-        callee_arg_types caller_arg_types
-    in
-    let () =
-      if false && not (String.equal name name1) then
-        Format.eprintf "Renaming call from %s to %s@ at %a.@." name name1
-          PP.pp_pos loc
     in
     let eqs3 =
       List.map
@@ -1215,11 +1207,70 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           else eqs)
         eqs3 callee_arg_types caller_arg_typed
     in
+    let () =
+      if false then
+        let open Format in
+        eprintf "@[<hov 2>Eqs for this call are: %a@]@."
+          (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
+               fprintf f "%S<--%a" name PP.pp_expr e))
+          eqs4
+    in
+    let () =
+      List.iter2
+        (fun (callee_arg_name, callee_arg) caller_arg ->
+          let callee_arg = rename_ty_eqs env eqs4 callee_arg in
+          let () =
+            if false then
+              Format.eprintf "Checking calling arg %s from %a to %a@."
+                callee_arg_name PP.pp_ty caller_arg PP.pp_ty callee_arg
+          in
+          let+ () = check_type_satisfies loc env caller_arg callee_arg in
+          ())
+        callee_arg_types caller_arg_types
+    in
+    let () =
+      if false && not (String.equal name name1) then
+        Format.eprintf "Renaming call from %s to %s@ at %a.@." name name1
+          PP.pp_pos loc
+    in
+    let () =
+      List.iter
+        (function
+          | _, None -> ()
+          | s, Some { desc = T_Int (UnderConstrained (_, s')); _ }
+            when String.equal s' s ->
+              ()
+          | callee_param_name, Some callee_param_t ->
+              let callee_param_t_renamed =
+                rename_ty_eqs env eqs4 callee_param_t
+              in
+              let caller_param_e =
+                match List.assoc_opt callee_param_name eqs4 with
+                | None ->
+                    assert false
+                    (* Bad behaviour, there should be a defining expression *)
+                | Some e -> e
+              in
+              let caller_param_t, _ = annotate_expr env caller_param_e in
+              let () =
+                if false then
+                  Format.eprintf
+                    "Checking calling param %s from %a to %a (i.e. %a)@."
+                    callee_param_name PP.pp_ty caller_param_t PP.pp_ty
+                    callee_param_t PP.pp_ty callee_param_t_renamed
+              in
+              let+ () =
+                check_type_satisfies loc env caller_param_t
+                  callee_param_t_renamed
+              in
+              ())
+        callee_params
+    in
     let ret_ty1 =
       match (call_type, ret_ty) with
       (* Begin FCallGetter *)
       | (ST_Function | ST_Getter), Some ty ->
-          Some (rename_ty_eqs eqs4 ty) |: TypingRule.FCallGetter
+          Some (rename_ty_eqs env eqs4 ty) |: TypingRule.FCallGetter
       (* End *)
       (* Begin FCallSetter *)
       | (ST_Setter | ST_Procedure), None -> None |: TypingRule.FCallSetter
@@ -2234,6 +2285,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     match f.return_type with None -> from_args | Some t -> folder from_args t
 
+  (** Returns the set of variables that are parameter defining, without the
+      ones previously declared in the environment. *)
   let get_undeclared_defining env =
     let rec of_ty acc ty =
       match ty.desc with
@@ -2329,6 +2382,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         Format.eprintf "@[<hov>Annotating arguments in env:@ %a@]@."
           StaticEnv.pp_env env3
     in
+    let () =
+      if false then
+        let open Format in
+        eprintf "@[Parameters identified for func %s:@ @[%a@]@]@." f.name
+          (pp_print_list ~pp_sep:pp_print_space (fun f (s, ty_opt) ->
+               fprintf f "%s:%a" s (pp_print_option PP.pp_ty) ty_opt))
+          parameters
+    in
     (* Add arguments. *)
     let env4, args =
       let one_arg env3' (x, ty) =
@@ -2388,7 +2449,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
-  let check_setter_have_getter ~loc env (func_sig : AST.func) =
+  let check_setter_has_getter ~loc env (func_sig : AST.func) =
     let fail () =
       fatal_from loc (Error.SetterWithoutCorrespondingGetter func_sig)
     in
@@ -2454,7 +2515,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           func_sig.args
     in
     let+ () = check_var_not_in_genv loc env name' in
-    let+ () = check_setter_have_getter ~loc env func_sig in
+    let+ () = check_setter_has_getter ~loc env func_sig in
     let func_sig = { func_sig with name = name' } in
     (add_subprogram name' func_sig env, func_sig)
 

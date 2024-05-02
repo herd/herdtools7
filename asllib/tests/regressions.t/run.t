@@ -242,6 +242,20 @@ Parameters bugs:
   ASL Typing error: Illegal application of operator OR on types bits(a)
     and bits(b)
   [1]
+  $ aslref arg-as-param-call.asl
+  File arg-as-param-call.asl, line 8, characters 4 to 21:
+  ASL Typing error: a subtype of bits(10) was expected, provided bits(4).
+  [1]
+  $ aslref typed-param-call.asl
+  File typed-param-call.asl, line 8, characters 4 to 15:
+  ASL Typing error: a subtype of integer {5..10} was expected,
+    provided integer {2}.
+  [1]
+  $ aslref typed-arg-as-param-call.asl
+  File typed-arg-as-param-call.asl, line 8, characters 4 to 18:
+  ASL Typing error: a subtype of integer {5..10} was expected,
+    provided integer {2}.
+  [1]
   $ aslref --no-exec defining_param.asl
 
 Required tests:
