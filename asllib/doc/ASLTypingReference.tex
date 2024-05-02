@@ -110,7 +110,7 @@
 \newcommand\constraintbinop[0]{\texttt{constraint\_binop}}
 \newcommand\sliceswidth[0]{\texttt{slices\_width}}
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
-\newcommand\annotateexpr[1]{\textsf{annotate\_expr}(#1)}
+\newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\texttt{annotate\_expr}(#1)}}
 \newcommand\annotatelexpr[1]{\textsf{annotate\_lexpr}(#1)}
 \newcommand\annotatearrayindex[0]{\textsf{annotate\_array\_index}}
 \newcommand\annotateslices[0]{\textsf{annotate\_slices}}
@@ -3526,8 +3526,14 @@ In the following example, all the uses of bitvector types with bitfields are val
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Expressions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\textsf{annotate\_expr} specifies how to annotate an expression $\ve$ in
+\hypertarget{def-annotateexpr}{}
+The function
+\[
+  \annotateexpr{\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}}
+  \aslto (\overname{\vt}{\vtp} \times \overname{\expr}{\newe})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+specifies how to annotate an expression $\ve$ in
 an environment \tenv.  Formally, the result of annotating the expression
 $\ve$ in \tenv\ is either the pair \texttt{t, new\_e}, where $\vt$ is a type and
 \texttt{new\_e} is a rewritten expression, or an error, and one of the following applies:
@@ -3559,7 +3565,6 @@ $\ve$ in \tenv\ is either the pair \texttt{t, new\_e}, where $\vt$ is a type and
 \item TypingRule.ETuple (see Section~\secref{TypingRule.ETuple})
 \item TypingRule.EUnknown (see Section~\secref{TypingRule.EUnknown})
 \item TypingRule.EPattern (see Section~\secref{TypingRule.EPattern})
-\item TypingRule.ATC (see Section~\secref{TypingRule.ATC})
 \item TypingRule.ATC (see Section~\secref{TypingRule.ATC})
 \end{itemize}
 
@@ -4524,33 +4529,36 @@ expression that is unresolvable to an integer. For example:
 
 \section{TypingRule.ATC \label{sec:TypingRule.ATC}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in \texttt{env} is
-\texttt{t,new\_e} and all of the following apply:
+\subsection{Prose}
+The result of annotating the expression $\ve$ in $\tenv$ is
+$(\vt, \newe)$ or a type error, and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes an expression $\vep$ and a type \texttt{t'};
-  \item \texttt{t'',new\_e} is the result of annotating $\vep$ in \texttt{env};
+  \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\ve', \tty)$;
+  \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \ve'')$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$ \ProseOrTypeError;
+  \item annotating the type $\tty$ in $\tenv$ yields $\tty'$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$ \ProseOrTypeError;
   \item One of the following applies:
     \begin{itemize}
-    \item All of the following apply:
+    \item All of the following apply (\textsc{type\_equal}):
+    \begin{itemize}
+      \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\True$;
+      \item $\vt$ is $\tty'$ and $\newe$ is $\ve''$.
+    \end{itemize}
+    \item All of the following apply (\textsc{dynamic}):
       \begin{itemize}
-      \item \texttt{t''} is a structural subtype of $\vt$ in \texttt{env};
-      \item \texttt{t''} is a domain subtype of $\vt$ in \texttt{env};
-      \item $\vt$ is \texttt{t'}
-      \end{itemize}
-    \item All of the following apply:
-      \begin{itemize}
-      \item \texttt{t''} is a structural subtype of \texttt{t'} in \texttt{env};
-      \item \texttt{t''} is not a domain subtype of \texttt{t'} in \texttt{env};
-      \item an execution-time check that the expression evaluates to a value in the
-        runtime domain of the required type is required.
-      \item \texttt{new\_e} is the expression denoting an Asserted Type
-        Conversion of \texttt{new\_e'} in the type \texttt{t'}.
+        \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$,
+        meaning that an execution-time check that the expression $\ve'$ evaluates to a value in the
+        dynamic domain of $\tty$ is required;
+        \item both $\vtstruct$ and $\vtystruct$ are bitevector types or integer types.
+        \item $\vt$ is $\vt'$ and $\newe$ is the asserting type conversion expression over $\ve''$ \\ and
+        $\vtystruct$, that is, $\EATC(\ve'', \vtystruct)$.
      \end{itemize}
    \item All of the following apply:
      \begin{itemize}
-     \item \texttt{t''} is not a structural subtype of \texttt{t'} in \texttt{env};
-     \item a ``\texttt{ConflictingTypes}'' error is raised.
+      \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$;
+      \item $\vtstruct$ and $\vtystruct$ are not both bitevector types or integer types.
+      \item a type error indicating the conflicting types is returned.
      \end{itemize}
    \end{itemize}
   \end{itemize}
@@ -4560,15 +4568,45 @@ expression that is unresolvable to an integer. For example:
   \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
 
 \begin{emptyformal}
-  \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-\inferrule{
-\annotateexpr{\tenv, \ve'} = (\vt'', \newe)\\
-\domsubtypesat(\tenv, \vt'', \vt)\\
-\structsubtypesat(\tenv, \vt'', \vt)
+\inferrule[type\_equal]{
+  \annotateexpr{\tenv, \ve'} \typearrow (\vt, \ve'') \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
+  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
+  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \True
 }
 {
-\annotateexpr{\tenv, \EATC(\ve', \vt')} = (\vt', \EATC(\ve'', \vt'))
+  \annotateexpr{\tenv, \EATC(\ve', \tty)} \typearrow (\tty', \ve'')
+}
+\and
+\inferrule[dynamic]{
+  \annotateexpr{\tenv, \ve'} \typearrow (\vt, \ve'') \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
+  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
+  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
+  \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
+  \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
+  \vb = \True
+}
+{
+  \annotateexpr{\tenv, \EATC(\ve', \tty)} \typearrow (\vt', \EATC(\ve'', \vtystruct))
+}
+\and
+\inferrule[error]{
+  \annotateexpr{\tenv, \ve'} \typearrow (\vt, \ve'') \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
+  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
+  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
+  \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
+  \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
+  \vb = \False
+}
+{
+  \annotateexpr{\tenv, \EATC(\ve', \tty)} \typearrow \TypeErrorVal{ATC}
 }
 \end{mathpar}
 \end{emptyformal}
