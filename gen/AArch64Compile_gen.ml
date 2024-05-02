@@ -60,10 +60,36 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Vreg (r,(_,64)) -> A64.SIMDreg r
         | _ -> assert false (* ? *)
 
+    let to_scalable_vec r = match r with
+        | Vreg (r,(_,s)) -> A64.Zreg (r,s)
+        | _ -> assert false (* ? *)
+
     let next_vreg x = A64.alloc_special x
     let next_scalar_reg x =
       let r,x = next_vreg x in
       to_scalar r,x
+
+    let next_zreg x =
+        let r,x = next_vreg x in
+        to_scalable_vec r,x
+
+    let next_preg x = A64.alloc_special2 x
+
+    let with_mode m r = match r with
+    | Preg (r,_) -> PMreg(r,m)
+    | PMreg (r,_) -> PMreg(r,m)
+    | _ -> assert false
+
+    let pattern = function
+    | 1 -> VL1
+    | 2 -> VL2
+    | 3 -> VL3
+    | 4 -> VL4
+    | 5 -> VL5
+    | 6 -> VL6
+    | 7 -> VL7
+    | 8 -> VL8
+    | _ -> assert false
 
     let pseudo = List.map (fun i -> Instruction i)
 
@@ -85,6 +111,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Ne2 | Ne2i -> call_rec Ne1 st
         | Ne3 | Ne3i -> call_rec Ne2 st
         | Ne4 | Ne4i -> call_rec Ne3 st
+        | _ -> assert false
+      in
+      fun n st ->
+        let (r,rs),st = get_reg_list n st in
+        (r,rs),A.set_friends r rs st
+
+    let emit_zregs =
+      let rec call_rec n st =
+        let r1,st = next_zreg st in
+        let (r2,rs),st = get_reg_list n st in
+        (r1,(r2::rs)),st
+      and get_reg_list n st =
+        let open SIMD in
+        match n with
+        | Sv1 -> let r,st = next_zreg st in (r,[]),st
+        | Sv2i -> call_rec Sv1 st
+        | Sv3i -> call_rec Sv2i st
+        | Sv4i -> call_rec Sv3i st
+        | _ -> assert false
       in
       fun n st ->
         let (r,rs),st = get_reg_list n st in
@@ -238,6 +283,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Ne4i -> I_LD4M (rs,rt,K 0)
       | _ -> assert false
 
+    let ldnsv n rs pg rn idx=
+      let open SIMD in
+      match n with
+      | Sv1 -> I_LD1SP (VSIMD32,rs,with_mode Zero pg,rn,idx)
+      | Sv2i -> I_LD2SP (VSIMD32,rs,with_mode Zero pg,rn,idx)
+      | Sv3i -> I_LD3SP (VSIMD32,rs,with_mode Zero pg,rn,idx)
+      | Sv4i -> I_LD4SP (VSIMD32,rs,with_mode Zero pg,rn,idx)
+      | _ -> assert false
+
     let ldr_mixed_idx v r1 r2 idx sz  =
       let idx = MemExt.v2idx_reg v idx in
       let open MachSize in
@@ -276,6 +330,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Ne2i -> I_ST2M (rs,rt,K 0)
       | Ne3i -> I_ST3M (rs,rt,K 0)
       | Ne4i -> I_ST4M (rs,rt,K 0)
+      | _ -> assert false
+
+    let stnsv n rs pg rn idx =
+      let open SIMD in
+      match n with
+      | Sv1 -> I_ST1SP (VSIMD32,rs,pg,rn,idx)
+      | Sv2i -> I_ST2SP (VSIMD32,rs,pg,rn,idx)
+      | Sv3i -> I_ST3SP (VSIMD32,rs,pg,rn,idx)
+      | Sv4i -> I_ST4SP (VSIMD32,rs,pg,rn,idx)
       | _ -> assert false
 
     let stxr_sz t sz r1 r2 r3 =
@@ -638,6 +701,73 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         r,init,pseudo csA@cs,st
     end
 
+    module LDNW = struct
+
+      let emit_load_reg n st init rA idx =
+        let pred,st = next_preg st in
+        let acc,st = next_vreg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let (r,rs),st = emit_zregs n st in
+        let load = [ldnsv n (r::rs) pred rA idx] in
+        let reduce = (List.map (fun v -> I_ADD_SV (r,r,v)) rs)@[I_UADDV (VSIMD64,to_scalar acc,pred,r)] in
+        let rX,st = next_reg st in
+        let fmov = [I_FMOV_TG(V32,rX,VSIMD32,to_scalar acc)] in
+        rX,init,lift_code (ptrue@load@reduce@fmov),st
+
+      let emit_load n st p init loc =
+        let open MemExt in
+        let idx = Imm(0,Idx) in
+        let rA,init,st = U.next_init st p init loc in
+        emit_load_reg n st init rA idx
+
+      let emit_load_idx n v st p init loc ridx =
+        let open MemExt in
+        let rA,init,st = U.next_init st p init loc in
+        let rI,csI,st = match v with
+        | V32 ->
+          let r,st = next_reg st in
+          r,[sxtw r ridx],st
+        | _ -> ridx,[],st
+        in
+        let idx = Reg(V64,rI,LSL,2) in
+        let r,init,cs,st = emit_load_reg n st init rA idx in
+        r,init,pseudo csI@cs,st
+    end
+
+    module LD1G = struct
+
+      let emit_load_reg n st init rA idx =
+        let pred,st = next_preg st in
+        let acc,st = next_vreg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let r,st = next_zreg st in
+        let load = [I_LD1SP (VSIMD32,[r],with_mode Zero pred,rA,idx)] in
+        let reduce = [I_UADDV (VSIMD64,to_scalar acc,pred,r)] in
+        let rX,st = next_reg st in
+        let fmov = [I_FMOV_TG(V32,rX,VSIMD32,to_scalar acc)] in
+        rX,init,lift_code (ptrue@load@reduce@fmov),st
+
+      let emit_load n st p init loc =
+        let open MemExt in
+        let rA,init,st = U.next_init st p init loc in
+        let rI,st = next_zreg st in
+        let csI = [I_INDEX_II (rI,0,1)] in
+        let idx = ZReg(rI,UXTW,2) in
+        let r,init,cs,st = emit_load_reg n st init rA idx in
+        r,init,pseudo csI@cs,st
+
+      let emit_load_idx n v st p init loc ridx =
+        let open MemExt in
+        let rA,init,st = U.next_init st p init loc in
+        let rI,st = next_zreg st in
+        let csI = [I_INDEX_SI (rI,v,ridx,1)] in
+        let idx = ZReg(rI,UXTW,2) in
+        let r,init,cs,st = emit_load_reg n st init rA idx in
+        r,init,pseudo csI@cs,st
+    end
+
     module LDG = struct
       let emit_load st p init x =
         let rA,st = next_reg st in
@@ -910,6 +1040,98 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let adds = [add_simd r1 rB]in
         let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r1,rA,0)] in
         init,lift_code(dup@movi@adds@stlur),st
+    end
+
+    module STNW = struct
+      let emit_store_reg n st init rA v idx =
+        let pred,st = next_preg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let (r,rs),st = emit_zregs n st in
+        let mov_sv = List.mapi (fun i r -> I_MOV_SV (r,(v+i),S_NOEXT)) (r::rs) in
+        let setup = mov_sv@ptrue in
+        let store = [stnsv n (r::rs) pred rA idx] in
+        init,lift_code (setup@store),st
+
+      let emit_store n st p init loc v =
+        let open MemExt in
+        let idx = Imm(0,Idx) in
+        let rA,init,st = U.next_init st p init loc in
+        emit_store_reg n st init rA v idx
+
+      let emit_store_idx n vdep st p init loc ridx v =
+        let open MemExt in
+        let rA,init,st = U.next_init st p init loc in
+        let rI,csI,st = match vdep with
+        | V32 ->
+          let r,st = next_reg st in
+          r,[sxtw r ridx],st
+        | _ -> ridx,[],st
+        in
+        let idx = Reg(V64,rI,LSL,2) in
+        let init,cs,st = emit_store_reg n st init rA v idx in
+        init,pseudo csI@cs,st
+
+      let emit_store_dep n vdep st init rA v =
+        let open MemExt in
+        let idx = Imm(0,Idx) in
+        let rB,st = next_zreg st in
+        let dup_sv = [I_DUP_SV (rB,V32,vdep)] in
+        let (r,rs),st = emit_zregs n st in
+        let mov_sv = List.mapi (fun i r -> I_MOV_SV (r,(v+i),S_NOEXT)) (r::rs) in
+        let add_sv = List.map (fun v -> I_ADD_SV(v,v,rB)) (r::rs) in
+        let pred,st = next_preg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let setup = dup_sv@mov_sv@add_sv@ptrue in
+        let store = [stnsv n (r::rs) pred rA idx] in
+        init,lift_code (setup@store),st
+    end
+
+    module ST1S = struct
+      let emit_store_reg n st init rA v idx=
+        let pred,st = next_preg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let r,st = next_zreg st in
+        let mov_sv = [I_MOV_SV (r,v,S_NOEXT)] in
+        let setup = mov_sv@ptrue in
+        let store = [I_ST1SP (VSIMD32,[r],pred,rA,idx)] in
+        init,lift_code (setup@store),st
+
+      let emit_store n st p init loc v =
+        let open MemExt in
+        let rA,init,st = U.next_init st p init loc in
+        let rI,st = next_zreg st in
+        let csI = [I_INDEX_II (rI,0,1)] in
+        let idx = ZReg(rI,UXTW,2) in
+        let init,cs,st = emit_store_reg n st init rA v idx in
+        init,pseudo csI@cs,st
+
+      let emit_store_idx n vdep st p init loc ridx v =
+        let open MemExt in
+        let rA,init,st = U.next_init st p init loc in
+        let rI,st = next_zreg st in
+        let csI = [I_INDEX_SI (rI,vdep,ridx,1)] in
+        let idx = ZReg(rI,UXTW,2) in
+        let init,cs,st = emit_store_reg n st init rA v idx in
+        init,pseudo csI@cs,st
+
+      let emit_store_dep n vdep st init rA v =
+        let open MemExt in
+        let rB,st = next_zreg st in
+        let dup_sv = [I_DUP_SV (rB,V32,vdep)] in
+        let r,st = next_zreg st in
+        let mov_sv = [I_MOV_SV (r,v,S_NOEXT)] in
+        let add_sv = [I_ADD_SV (r,r,rB)] in
+        let pred,st = next_preg st in
+        let rI,st = next_zreg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let index = [I_INDEX_II (rI,0,1)] in
+        let setup = dup_sv@mov_sv@add_sv@ptrue in
+        let store = [I_ST1SP (VSIMD32,[r],pred,rA,ZReg(rI,UXTW,2))] in
+        init,lift_code (index@setup@store),st
     end
 
     module STG = struct
@@ -1353,6 +1575,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          | SIMD.NeP -> LDUR.emit_load
          | SIMD.NePa  -> LDP.emit_load A64.TT
          | SIMD.NePaN -> LDP.emit_load A64.NT
+         | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i-> LDNW.emit_load n
+         | SIMD.SvV -> LD1G.emit_load n
          | _ -> LDN.emit_load n
        in
        emit_load
@@ -1473,6 +1697,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              | SIMD.NeP -> LDUR.emit_load
              | SIMD.NePa  -> LDP.emit_load A64.TT
              | SIMD.NePaN -> LDP.emit_load A64.NT
+             | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> LDNW.emit_load n
+             | SIMD.SvV -> LD1G.emit_load n
              | _ -> LDN.emit_load n
            in
            let r,init,cs,st = emit_load st p init loc in
@@ -1566,6 +1792,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              | SIMD.NeP -> STUR.emit_store
              | SIMD.NePa  -> STP.emit_store A64.TT
              | SIMD.NePaN -> STP.emit_store A64.NT
+             | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i-> STNW.emit_store n
+             | SIMD.SvV -> ST1S.emit_store n
              | _ -> STN.emit_store n
            in
            let init,cs,st = emit_store st p init loc e.C.v in
@@ -1925,6 +2153,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 | SIMD.NeP -> LDUR.emit_load_idx
                 | SIMD.NePa -> LDP.emit_load_idx A64.TT
                 | SIMD.NePaN -> LDP.emit_load_idx A64.NT
+                | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> LDNW.emit_load_idx n
+                | SIMD.SvV -> LD1G.emit_load_idx n
                 | _ -> LDN.emit_load_idx n
               in
               let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
@@ -2064,6 +2294,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                | SIMD.NeP -> STUR.emit_store_idx
                | SIMD.NePa ->  STP.emit_store_idx A64.TT
                | SIMD.NePaN -> STP.emit_store_idx A64.NT
+               | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> STNW.emit_store_idx n
+               | SIMD.SvV -> ST1S.emit_store_idx n
                | _ -> STN.emit_store_idx n
              in
              let init,cs,st = emit_store_idx vdep st p init loc r2 e.C.v in
@@ -2266,6 +2498,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                | SIMD.NeP -> STUR.emit_store_dep
                | SIMD.NePa ->  STP.emit_store_dep A64.TT
                | SIMD.NePaN -> STP.emit_store_dep A64.NT
+               | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> STNW.emit_store_dep n
+               | SIMD.SvV -> ST1S.emit_store_dep n
                | _ -> STN.emit_store_dep n
              in
              let init,cs,st = emit_store_dep r2 st init rA e.C.v in

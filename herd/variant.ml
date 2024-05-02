@@ -46,6 +46,7 @@ type t =
   | TooFar
   | Morello
   | Neon
+  | SVE
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
@@ -133,6 +134,7 @@ let parse s = match Misc.lowercase s with
 | "toofar" -> Some TooFar
 | "morello" -> Some Morello
 | "neon" -> Some Neon
+| "sve" -> Some SVE
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
 | "kvm"
@@ -210,6 +212,7 @@ let pp = function
   | TooFar -> "TooFar"
   | Morello -> "Morello"
   | Neon -> "Neon"
+  | SVE -> "sve"
   | Deps -> "Deps"
   | Instances -> "Instances"
   | VMSA -> "vmsa"

@@ -1,0 +1,11 @@
+Test V17 Required
+States 1
+x={4,4,4,4}; y={0,1,2,3};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (x={4,4,4,4} /\ y={0,1,2,3})
+Observation V17 Always 1 0
+Hash=f50938e525aa0cec3773dbec42193ada
+

@@ -60,20 +60,20 @@ match name with
 | "hi"  | "HI"  -> TOK_HI
 | "ls"  | "LS"  -> TOK_LS
 | "al"  | "AL"  -> TOK_AL
-| "b.eq" | "B.EQ" -> BEQ
-| "b.ne" | "B.NE" -> BNE
-| "b.ge" | "B.GE" -> BGE
+| "b.eq" | "B.EQ" | "b.none" | "B.NONE" -> BEQ
+| "b.ne" | "B.NE" | "b.any" | "B.ANY" -> BNE
+| "b.ge" | "B.GE" | "b.tcont" | "B.TCONT" -> BGE
 | "b.gt" | "B.GT" -> BGT
 | "b.le" | "B.LE" -> BLE
-| "b.lt" | "B.LT" -> BLT
-| "b.cs" | "B.CS" -> BCS
-| "b.cc" | "B.CC" -> BCC
-| "b.mi" | "B.MI" -> BMI
-| "b.pl" | "B.PL" -> BPL
+| "b.lt" | "B.LT" | "b.tstop" | "B.TSTOP" -> BLT
+| "b.cs" | "B.CS" | "b.nlast" | "B.NLAST" -> BCS
+| "b.cc" | "B.CC" | "b.last" | "B.LAST" -> BCC
+| "b.mi" | "B.MI" | "b.first" | "B.FIRST" -> BMI
+| "b.pl" | "B.PL" | "b.nfirst" | "B.NFIRST" -> BPL
 | "b.vs" | "B.VS" -> BVS
 | "b.vc" | "B.VC" -> BVC
 | "b.hi" | "B.HI" -> BHI
-| "b.ls" | "B.LS" -> BLS
+| "b.ls" | "B.LS" | "b.plast" | "B.PLAST" -> BLS
 | "b.al" | "B.AL" -> BAL
 | "cbz"  | "CBZ" -> CBZ
 | "cbnz"  | "CBNZ" -> CBNZ
@@ -145,6 +145,66 @@ match name with
 | "movi" | "MOVI" -> MOVI
 | "mvn" | "MVN" -> MVN
 | "fmov" | "FMOV" -> FMOV
+(* Scalabel Vector Extension *)
+| "whilelt" | "WHILELT" -> WHILELT
+| "whilele" | "WHILELE" -> WHILELE
+| "whilelo" | "WHILELO" -> WHILELO
+| "whilels" | "WHILELS" -> WHILELS
+| "uaddv" | "UADDV" -> UADDV
+| "ld1b" | "LD1B" -> LD1B
+| "ld1h" | "LD1H" -> LD1H
+| "ld1w" | "LD1W" -> LD1W
+| "ld1d" | "LD1D" -> LD1D
+| "ld2b" | "LD2B" -> LD2B
+| "ld2h" | "LD2H" -> LD2H
+| "ld2w" | "LD2W" -> LD2W
+| "ld2d" | "LD2D" -> LD2D
+| "ld3b" | "LD3B" -> LD3B
+| "ld3h" | "LD3H" -> LD3H
+| "ld3w" | "LD3W" -> LD3W
+| "ld3d" | "LD3D" -> LD3D
+| "ld4b" | "LD4B" -> LD4B
+| "ld4h" | "LD4H" -> LD4H
+| "ld4w" | "LD4W" -> LD4W
+| "ld4d" | "LD4D" -> LD4D
+| "st1b" | "ST1B" -> ST1B
+| "st1h" | "ST1H" -> ST1H
+| "st1w" | "ST1W" -> ST1W
+| "st1d" | "ST1D" -> ST1D
+| "st2b" | "ST2B" -> ST2B
+| "st2h" | "ST2H" -> ST2H
+| "st2w" | "ST2W" -> ST2W
+| "st2d" | "ST2D" -> ST2D
+| "st3b" | "ST3B" -> ST3B
+| "st3h" | "ST3H" -> ST3H
+| "st3w" | "ST3W" -> ST3W
+| "st3d" | "ST3D" -> ST3D
+| "st4b" | "ST4B" -> ST4B
+| "st4h" | "ST4H" -> ST4H
+| "st4w" | "ST4W" -> ST4W
+| "st4d" | "ST4D" -> ST4D
+| "index" | "INDEX" -> TOK_INDEX
+| "mul" | "MUL" -> TOK_MUL
+| "vl" | "VL" -> TOK_VL
+| "ptrue" | "PTRUE" -> PTRUE
+| "pow2" | "POW2" -> TOK_POW2
+| "vl1" | "VL1" -> TOK_VL1
+| "vl2" | "VL2" -> TOK_VL2
+| "vl3" | "VL3" -> TOK_VL3
+| "vl4" | "VL4" -> TOK_VL4
+| "vl5" | "VL5" -> TOK_VL5
+| "vl6" | "VL6" -> TOK_VL6
+| "vl7" | "VL7" -> TOK_VL7
+| "vl8" | "VL8" -> TOK_VL8
+| "vl16" | "VL16" -> TOK_VL16
+| "vl32" | "VL32" -> TOK_VL32
+| "vl64" | "VL64" -> TOK_VL64
+| "vl128" | "VL128" -> TOK_VL128
+| "vl256" | "VL256" -> TOK_VL256
+| "mul4" | "MUL4" -> TOK_MUL4
+| "mul3" | "MUL3" -> TOK_MUL3
+| "all" | "ALL" -> TOK_ALL
+| "movprfx" | "MOVPRFX" -> MOVPRFX
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -577,9 +637,26 @@ match name with
                         | _ -> assert false
                         end
                     | None ->
-                        begin match A.parse_sysreg name with
-                        | Some r -> SYSREG r
-                        | None -> NAME name
+                        begin match A.parse_zreg name with
+                        | Some r -> ARCH_ZREG r
+                        | None ->
+                            begin match A.parse_pmreg name with
+                            | Some r ->
+                                begin match r with
+                                | A.PMreg (_,A.Zero) -> ARCH_PMREG_Z r
+                                | A.PMreg (_,A.Merge) -> ARCH_PMREG_M r
+				| _ -> assert false
+                                end
+                            | None ->
+                                begin match A.parse_preg name with
+                                | Some r -> ARCH_PREG r
+                                | None ->
+                                    begin match A.parse_sysreg name with
+                                    | Some r -> SYSREG r
+                                    | None -> NAME name
+                                    end
+                                end
+                            end
                         end
                     end
                 end

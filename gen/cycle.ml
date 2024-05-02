@@ -136,6 +136,7 @@ module Make (O:Config) (E:Edge.S) :
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = Variant_gen.is_kvm O.variant
   let do_neon = O.variant Variant_gen.Neon
+  let do_sve = O.variant Variant_gen.SVE
 
   type fence = E.fence
   type edge = E.edge
@@ -207,8 +208,8 @@ module Make (O:Config) (E:Edge.S) :
       sprintf " (ord=%i) (ctag=%i) (cseal=%i) (dep=%i)" e.ord e.ctag e.cseal e.dep
     else fun _ -> ""
 
-  let debug_neon =
-    if do_neon then
+  let debug_vector =
+    if do_neon || do_sve then
       let pp_one = Code.add_vector O.hexa in
       fun e ->
       sprintf " (vecreg={%s})"
@@ -231,7 +232,7 @@ module Make (O:Config) (E:Edge.S) :
       (Code.pp_loc e.loc)
       (match debug_vec e.cell with
        | "" -> "" | s -> "cell=[" ^ s ^"] ")
-      pp_v (debug_tag e) (debug_morello e) (debug_neon e)
+      pp_v (debug_tag e) (debug_morello e) (debug_vector e)
 
   let debug_edge = E.pp_edge
 

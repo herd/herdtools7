@@ -339,7 +339,7 @@ module RegMap = A.RegMap)
               with Not_found -> Compile.base in
             match ty with
             | CType.Array _ when A.arch = `AArch64 ->
-              fprintf chan "%s%s out_%s = %s;\n" indent
+              fprintf chan "%s%s out_%s = cast(%s);\n" indent
                 (CType.dump CType.int32x4_t) (dump_stable_reg reg) (dump_stable_reg reg);
               fprintf chan "%smemcpy(%s, &out_%s, sizeof(%s));\n" indent
                 (compile_out_reg proc reg) (dump_stable_reg reg) (CType.dump ty)

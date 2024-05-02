@@ -46,6 +46,16 @@ type vec_reg =
   | V24 | V25 | V26 | V27
   | V28 | V29 | V30 | V31
 
+type pred_reg =
+  | P0  | P1  | P2  | P3
+  | P4  | P5  | P6  | P7
+  | P8  | P9  | P10 | P11
+  | P12 | P13 | P14 | P15
+
+
+type pred_mode =
+  | Zero | Merge
+
 let arrange_specifier =
 [
   (1,64),".1D"  ; (1,128),".1Q" ;
@@ -54,6 +64,16 @@ let arrange_specifier =
   (8,8),".8B"   ; (8,16),".8H" ;
   (16, 8),".16B";
   (0,8),".B"    ; (0,16),".H"  ; (0,32),".S" ; (0,64),".D";
+]
+
+let sve_arrange_specifier =
+[
+  0,"";8,".B"; 16,".H"; 32,".S"; 64,".D"; 128,".Q";
+]
+
+let sve_pred_modifier =
+[
+  Zero,"/Z"; Merge,"/M";
 ]
 
 (********************)
@@ -96,6 +116,9 @@ type reg =
   | Tag of gpr
   | Vreg of (vec_reg * (int * int))
   | SIMDreg of vec_reg
+  | Zreg of (vec_reg * int)
+  | Preg of (pred_reg * int)
+  | PMreg of (pred_reg * pred_mode)
   | Symbolic_reg of string
   | Internal of int
   | NZCV
@@ -172,6 +195,18 @@ let vec_regs =
 ]
 
 let vregs = List.map (fun v -> Vreg (v,(4,32))) vec_regs
+
+let zregs = List.map (fun z -> Zreg (z,32)) vec_regs
+
+let pred_regs =
+[
+  P0 ;  P1; P2 ;  P3;
+  P4 ;  P5; P6 ;  P7;
+  P8 ;  P9; P10; P11;
+  P12; P13; P14; P15;
+]
+
+let pregs = List.map (fun p -> Preg (p,32)) pred_regs
 
 let linkreg = Ireg R30
 let elr_el1 = SysReg ELR_EL1
@@ -294,6 +329,26 @@ let qvrs =
  V28,"Q28" ; V29,"Q29" ; V30,"Q30" ; V31, "Q31";
 ]
 
+let zvrs =
+[
+  V0 ,"Z0";  V1 ,"Z1";  V2 ,"Z2";  V3 ,"Z3";
+  V4 ,"Z4";  V5 ,"Z5";  V6 ,"Z6";  V7 ,"Z7";
+  V8 ,"Z8";  V9 ,"Z9";  V10,"Z10"; V11,"Z11";
+  V12,"Z12"; V13,"Z13"; V14,"Z14"; V15,"Z15";
+  V16,"Z16"; V17,"Z17"; V18,"Z18"; V19,"Z19";
+  V20,"Z20"; V21,"Z21"; V22,"Z22"; V23,"Z23";
+  V24,"Z24"; V25,"Z25"; V26,"Z26"; V27,"Z27";
+  V28,"Z28"; V29,"Z29"; V30,"Z30"; V31,"Z31";
+]
+
+let pvrs =
+[
+  P0 ,"P0";  P1 ,"P1";  P2 ,"P2";  P3 ,"P3";
+  P4 ,"P4";  P5 ,"P5";  P6 ,"P6";  P7 ,"P7";
+  P8 ,"P8";  P9 ,"P9";  P10,"P10"; P11,"P11";
+  P12,"P12"; P13,"P13"; P14,"P14"; P15,"P15";
+]
+
 let simd_regs =
   let rs = bvrs @ hvrs @ svrs @ dvrs @ qvrs in
   List.map (fun (r,s) -> s,SIMDreg r) rs
@@ -333,6 +388,37 @@ let parse_vreg =
 
 let parse_simd_reg = parse_some simd_regs
 
+let parse_zreg =
+  let zplist = parse_list zvrs
+  and arplist = parse_list sve_arrange_specifier in
+  fun s ->
+    try let (g1, g2) =
+        ignore (Str.search_forward (Str.regexp "\\(Z[0-9]+\\)\\(\\.[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
+        (Str.matched_group 1 s, Str.matched_group 2 s);
+      in Some (Zreg (List.assoc g1 zplist, List.assoc g2 arplist))
+    with Not_found -> None
+
+let parse_preg =
+  let pplist = parse_list pvrs
+  and splist = parse_list sve_arrange_specifier in
+  fun s ->
+    try let (g1, g2) =
+          ignore (Str.search_forward (Str.regexp "\\(P[0-9]+\\)\\(\\.[B,D,Q,H,S]\\)?") (Misc.uppercase s) 0);
+          let suffix = try Str.matched_group 2 s with Not_found -> "" in
+          (Str.matched_group 1 s, suffix);
+        in Some (Preg (List.assoc g1 pplist, List.assoc g2 splist))
+      with Not_found -> None
+
+let parse_pmreg =
+  let pplist = parse_list pvrs
+  and mplist = parse_list sve_pred_modifier in
+  fun s ->
+  try let (g1, g2) =
+          ignore (Str.search_forward (Str.regexp "\\(P[0-9]+\\)\\(\\/[Z,M]\\)") (Misc.uppercase s) 0);
+          (Str.matched_group 1 s, Str.matched_group 2 s);
+        in Some (PMreg (List.assoc g1 pplist, List.assoc g2 mplist))
+      with Not_found -> None
+
 let parse_reg s = match parse_vreg s with
 | Some v -> Some v
 | None ->
@@ -369,9 +455,38 @@ let pp_simd_scalar_reg rl r = match r with
 | SIMDreg r -> (try List.assoc r rl with Not_found -> assert false)
 | _ -> assert false
 
+let pp_sve_arrange_specifier s =
+  try List.assoc s sve_arrange_specifier with Not_found -> assert false
+
+let pp_zreg r = match r with
+| Zreg (r',s) ->
+  (try List.assoc r' zvrs with Not_found -> assert false) ^
+  pp_sve_arrange_specifier s
+| _ -> assert false
+
+let pp_preg_simple r = match r with
+| Preg (r',_)
+| PMreg (r',_) ->
+  (try List.assoc r' pvrs with Not_found -> assert false)
+| _ -> assert false
+
+let pp_sve_pred_modifier m =
+  try List.assoc m sve_pred_modifier with Not_found -> assert false
+
+let pp_preg r = match r with
+| Preg (r',s) ->
+  (try List.assoc r' pvrs with Not_found -> assert false) ^
+  pp_sve_arrange_specifier s
+| PMreg (r',m) ->
+  (try List.assoc r' pvrs with Not_found -> assert false) ^
+  pp_sve_pred_modifier m
+| _ -> assert false
+
 let pp_reg r = match r with
 | Vreg _ -> pp_simd_vector_reg r
 | SIMDreg _ -> pp_simd_scalar_reg vvrs r
+| Zreg _ -> pp_zreg r
+| Preg _ | PMreg _ -> pp_preg r
 | _ -> pp_xreg r
 let pp_i n = match n with
   | 1 -> "instr:\"NOP\""
@@ -393,6 +508,9 @@ let pp_vreg v r = match v with
 let reg_compare r1 r2 =
   let strip_reg r = match r with
   | Vreg (v,_) -> SIMDreg v
+  | Zreg (v,_) -> SIMDreg v
+  | Preg (v,_) -> Preg (v,0)
+  | PMreg (v,_) -> Preg (v,0)
   | _ -> r in
   compare (strip_reg r1) (strip_reg r2)
 
@@ -407,7 +525,6 @@ let type_reg r =
   match r with
   | Vreg  (_,(n_elt,sz)) -> Array (TestType.tr_nbits sz,n_elt)
   | _ -> Base "int"
-
 
 (************)
 (* Barriers *)
@@ -765,6 +882,26 @@ let inverse_cond = function
   | LS -> HI
   | AL -> AL
 
+(* Pattern specifier for scalable vector instructions *)
+type pattern =
+  | POW2
+  | VL1
+  | VL2
+  | VL3
+  | VL4
+  | VL5
+  | VL6
+  | VL7
+  | VL8
+  | VL16
+  | VL32
+  | VL64
+  | VL128
+  | VL256
+  | MUL4
+  | MUL3
+  | ALL
+
 type op =
   | ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | ORN
   | EOR | EON | ASR | LSR | LSL | ROR | BICS | BIC
@@ -847,6 +984,7 @@ module MemExt = struct (* Extensions for memory accesses *)
   type 'k ext =
     | Imm of 'k idx
     | Reg of variant * reg * rext * 'k
+    | ZReg of reg * rext * 'k
 
   let v2idx_reg v r =
     match v with
@@ -1152,6 +1290,205 @@ type 'k kinstruction =
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
   | I_STXP of variant * st_type * reg * reg * reg * reg
+(* Scalable Vector Extension*)
+  (* PTRUE <Pd>.<T>{, <pattern>} *)
+  | I_PTRUE of reg * pattern
+  (* WHILEL{LT,LE,LO,LS} <Pd>.<T>, <R><n>, <R><m> *)
+  | I_WHILELT of reg * variant * reg * reg
+  | I_WHILELE of reg * variant * reg * reg
+  | I_WHILELO of reg * variant * reg * reg
+  | I_WHILELS of reg * variant * reg * reg
+  (* UADDV <Dd>, <Pg>, <Zn>.<T> *)
+  | I_UADDV of simd_variant * reg * reg * reg
+  (*
+   * LD1{B,H,W,D} (scalar plus scalar, single register)
+   *
+   * LD1B { <Zt>.<T> }, <Pg>/Z, [<Xn|SP>, <Xm>] for T in  D,S,H,B
+   * LD1H { <Zt>.<T> }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1] for T in D,S,H
+   * LD1W { <Zt>.<T> }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2] for T in D,S
+   * LD1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
+   *
+   * LD1{B,H,W,D} (scalar plus immediate, single register)
+   *
+   * LD1B { <Zt>.<T> }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}] for T in  D,S,H,B
+   * LD1H { <Zt>.<T> }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}] for T in D,S,H
+   * LD1W { <Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}] for T in D,S
+   * LD1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   *
+   * LD1{B,H,W,D} (scalar plus vector)
+   *
+   * LD1B { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+   * LD1B { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]
+   * LD1B { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
+   * LD1H { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #1]
+   * LD1H { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #1]
+   * LD1H { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+   * LD1H { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]
+   * LD1H { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #1]
+   * LD1H { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
+   * LD1W { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #2]
+   * LD1W { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]
+   * LD1W { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+   * LD1W { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]
+   * LD1W { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #2]
+   * LD1W { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
+   * LD1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #3]
+   * LD1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+   * LD1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #3]
+   * LD1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
+   *)
+   | I_LD1SP of simd_variant * reg list * reg * reg * 'k MemExt.ext
+  (*
+   * LD2{B,H,W,D} (scalar plus scalar)
+   *
+   * LD2B { <Zt1>.B, <Zt2>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]
+   * LD2H { <Zt1>.H, <Zt2>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]
+   * LD2W { <Zt1>.S, <Zt2>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
+   * LD2D { <Zt1>.D, <Zt2>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
+   *
+   * LD2{B,H,W,D} (scalar plus immediate)
+   *
+   * LD2B { <Zt1>.B, <Zt2>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   * LD2H { <Zt1>.H, <Zt2>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   * LD2W { <Zt1>.S, <Zt2>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   * LD2D { <Zt1>.D, <Zt2>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   *)
+  | I_LD2SP of simd_variant * reg list * reg * reg * 'k MemExt.ext
+  (*
+   * LD3{B,H,W,D} (scalar plus scalar)
+   *
+   * LD3B { <Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]
+   * LD3H { <Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]
+   * LD3W { <Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
+   * LD3D { <Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
+   *
+   * LD3{B,H,W,D} (scalar plus immediate)
+   *
+   * LD3B { <Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   * LD3H { <Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   * LD3W { <Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   * LD3D { <Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   *)
+  | I_LD3SP of simd_variant *  reg list * reg * reg * 'k MemExt.ext
+  (*
+   * LD4{B,H,W,D} (scalar plus scalar)
+   *
+   * LD4B { <Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]
+   * LD4H { <Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]
+   * LD4W { <Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
+   * LD4D { <Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
+   *
+   * LD4{B,H,W,D} (scalar plus immediate)
+   *
+   * LD4B { <Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   * LD4H { <Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   * LD4W { <Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+   *)
+  | I_LD4SP of simd_variant * reg list * reg * reg * 'k MemExt.ext
+  (*
+   * ST1{B,H,W,D} (scalar plus scalar)
+   *
+   * ST1B { <Zt>.<T> }, <Pg>, [<Xn|SP>, <Xm>] for T in  D,S,H,B
+   * ST1H { <Zt>.<T> }, <Pg>, [<Xn|SP>, <Xm>, LSL #1] for T in D,S,H
+   * ST1W { <Zt>.<T> }, <Pg>, [<Xn|SP>, <Xm>, LSL #2] for T in D,S
+   * ST1D { <Zt>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
+   *
+   * ST1{B,H,W,D} (scalar plus immediate)
+   *
+   * ST1B { <Zt>.<T> }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}] for T in  D,S,H,B
+   * ST1H { <Zt>.<T> }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}] for T in D,S,H
+   * ST1W { <Zt>.<T> }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}] for T in D,S
+   * ST1D { <Zt>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   *
+   * ST1{B,H,W,D} (scalar plus vector)
+   *
+   * ST1B { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
+   * ST1B { <Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
+   * ST1B { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
+   * ST1H { <Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #1]
+   * ST1H { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #1]
+   * ST1H { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
+   * ST1H { <Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
+   * ST1H { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, LSL #1]
+   * ST1H { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
+   * ST1W { <Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2]
+   * ST1W { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #2]
+   * ST1W { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
+   * ST1W { <Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
+   * ST1W { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, LSL #2]
+   * ST1W { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
+   * ST1D { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #3]
+   * ST1D { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
+   * ST1D { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, LSL #3]
+   * ST1D { <Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
+   *)
+  | I_ST1SP of simd_variant * reg list * reg * reg * 'k MemExt.ext
+  (*
+   * ST2{B,H,W,D} (scalar plus scalar)
+   *
+   * ST2B { <Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>, <Xm>]
+   * ST2H { <Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+   * ST2W { <Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+   * ST2D { <Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
+   *
+   * ST2{B,H,W,D} (scalar plus immediate)
+   *
+   * ST2B { <Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST2H { <Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST2W { <Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST2D { <Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   *)
+  | I_ST2SP of simd_variant * reg list * reg * reg * 'k MemExt.ext
+  (*
+   * ST3{B,H,W,D} (scalar plus scalar)
+   *
+   * ST3B { <Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>, [<Xn|SP>, <Xm>]
+   * ST3H { <Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+   * ST3W { <Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+   * ST3D { <Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
+   *
+   * ST3{B,H,W,D} (scalar plus immediate)
+   *
+   * ST3B { <Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST3H { <Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST3W { <Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST3D { <Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   *)
+  | I_ST3SP of simd_variant * reg list * reg * reg * 'k MemExt.ext
+  (*
+   * ST4{B,H,W,D} (scalar plus scalar)
+   *
+   * ST4B { <Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>, [<Xn|SP>, <Xm>]
+   * ST4H { <Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+   * ST4W { <Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+   * ST4D { <Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
+   *
+   * ST4{B,H,W,D} (scalar plus immediate)
+   *
+   * ST4B { <Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST4H { <Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST4W { <Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   * ST4D { <Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+   *)
+  | I_ST4SP of simd_variant * reg list * reg * reg * 'k MemExt.ext
+  (* MOV <Zd>.<T>, #<imm>{, <shift>} *)
+  | I_MOV_SV of reg * 'k * 'k s
+  (* DUP <Zd>.<T>, <R><n|SP> *)
+  | I_DUP_SV of reg * variant * reg
+  (* ADD <Zd>.<T>, <Zn>.<T>, <Zm>.<T> *)
+  | I_ADD_SV of reg * reg * reg
+  (* NEG <Zd>.<T>, <Pg>/M, <Zn>.<T> *)
+  | I_NEG_SV of reg * reg * reg
+  (* MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T> *)
+  | I_MOVPRFX of reg * reg * reg
+  (* INDEX <Zd>.<T>, <R><n>, #<imm> *)
+  | I_INDEX_SI of reg * variant * reg * 'k
+  (* INDEX <Zd>.<T>, #<imm>, <R><m> *)
+  | I_INDEX_IS of reg * variant * 'k * reg
+  (* INDEX <Zd>.<T>, <R><n>, <R><m> *)
+  | I_INDEX_SS of reg * variant * reg * reg
+  (* INDEX <Zd>.<T>, #<imm1>, #<imm2> *)
+  | I_INDEX_II of reg * 'k * 'k
 (* Morello *)
   | I_ALIGND of reg * reg * 'k
   | I_ALIGNU of reg * reg * 'k
@@ -1248,6 +1585,25 @@ let pp_cond = function
   | LE -> "LE"
   | AL -> "AL"
 
+let pp_pattern = function
+  | POW2 -> "POW2"
+  | VL1 -> "VL1"
+  | VL2 -> "VL2"
+  | VL3 -> "VL3"
+  | VL4 -> "VL4"
+  | VL5 -> "VL5"
+  | VL6 -> "VL6"
+  | VL7 -> "VL7"
+  | VL8 -> "VL8"
+  | VL16 -> "VL16"
+  | VL32 -> "VL32"
+  | VL64 -> "VL64"
+  | VL128 -> "VL128"
+  | VL256 -> "VL256"
+  | MUL4 -> "MUL4"
+  | MUL3 -> "MUL3"
+  | ALL -> "ALL"
+
 let pp_vsimdreg v r = match v with
 | VSIMD8 -> pp_simd_scalar_reg bvrs r
 | VSIMD16 -> pp_simd_scalar_reg hvrs r
@@ -1255,6 +1611,12 @@ let pp_vsimdreg v r = match v with
 | VSIMD64 -> pp_simd_scalar_reg dvrs r
 | VSIMD128 -> pp_simd_scalar_reg qvrs r
 
+let pp_simd_variant v = match v with
+| VSIMD8 -> "B"
+| VSIMD16 -> "H"
+| VSIMD32 -> "W"
+| VSIMD64 -> "D"
+| VSIMD128 -> "Q"
 
 let pp_op = function
   | ADD  -> "ADD"
@@ -1375,7 +1737,13 @@ let do_pp_instruction m =
     | Reg (v,r,(UXTW|SXTW|SXTX as ext),k) when m.zerop k->
        sprintf "[%s,%s,%s]" (pp_xreg ra) (pp_vreg v r) (pp_sext ext)
     | Reg (v,r,ext,k) ->
-       sprintf "[%s,%s,%s %s]" (pp_xreg ra) (pp_vreg v r) (pp_sext ext) (m.pp_k k) in
+       sprintf "[%s,%s,%s %s]" (pp_xreg ra) (pp_vreg v r) (pp_sext ext) (m.pp_k k)
+    | ZReg (r,LSL,k) when m.zerop k ->
+       sprintf "[%s,%s]" (pp_xreg ra) (pp_zreg r)
+    | ZReg (r,(UXTW|SXTW|SXTX as ext),k) when m.zerop k->
+       sprintf "[%s,%s,%s]" (pp_xreg ra) (pp_zreg r) (pp_sext ext)
+    | ZReg (r,ext,k) ->
+       sprintf "[%s,%s,%s %s]" (pp_xreg ra) (pp_zreg r) (pp_sext ext) (m.pp_k k) in
 
   let pp_mem_ext memo v rt ra idx =
     Printf.sprintf "%s %s,%s" memo (pp_vreg v rt) (pp_addr ra idx) in
@@ -1601,7 +1969,53 @@ let do_pp_instruction m =
       pp_simd_rrr "ADD" r1 r2 r3
   | I_ADD_SIMD_S (r1,r2,r3) ->
       pp_simd_srrr "ADD" r1 r2 r3
-
+(* Scalable Vector Extention *)
+  | I_PTRUE (predicate,pattern) ->
+      sprintf "PTRUE %s,%s" (pp_preg predicate) (pp_pattern pattern)
+  | I_WHILELT (p1,v,r2,r3) ->
+      sprintf "WHILELT %s,%s,%s" (pp_preg p1) (pp_vreg v r2) (pp_vreg v r3)
+  | I_WHILELE (p1,v,r2,r3) ->
+      sprintf "WHILELE %s,%s,%s" (pp_preg p1) (pp_vreg v r2) (pp_vreg v r3)
+  | I_WHILELO (p1,v,r2,r3) ->
+      sprintf "WHILELO %s,%s,%s" (pp_preg p1) (pp_vreg v r2) (pp_vreg v r3)
+  | I_WHILELS (p1,v,r2,r3) ->
+      sprintf "WHILELS %s,%s,%s" (pp_preg p1) (pp_vreg v r2) (pp_vreg v r3)
+  | I_UADDV (v,r1,r2,r3) ->
+      sprintf "UADDV %s,%s,%s" (pp_vsimdreg v r1) (pp_preg_simple r2) (pp_zreg r3)
+  | I_LD1SP (v,rs,r2,r3,idx) ->
+      sprintf "LD1%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg r2) (pp_addr r3 idx)
+  | I_LD2SP (v,rs,r2,r3,idx) ->
+      sprintf "LD2%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg r2) (pp_addr r3 idx)
+  | I_LD3SP (v,rs,r2,r3,idx) ->
+      sprintf "LD3%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg r2) (pp_addr r3 idx)
+  | I_LD4SP (v,rs,r2,r3,idx) ->
+      sprintf "LD4%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg r2) (pp_addr r3 idx)
+  | I_ST1SP (v,rs,r2,r3,idx) ->
+      sprintf "ST1%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg_simple r2) (pp_addr r3 idx)
+  | I_ST2SP (v,rs,r2,r3,idx) ->
+      sprintf "ST2%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg_simple r2) (pp_addr r3 idx)
+  | I_ST3SP (v,rs,r2,r3,idx) ->
+      sprintf "ST3%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg_simple r2) (pp_addr r3 idx)
+  | I_ST4SP (v,rs,r2,r3,idx) ->
+      sprintf "ST4%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg_simple r2) (pp_addr r3 idx)
+  | I_MOV_SV (r,k,s) ->
+      sprintf "MOV %s,%s%s" (pp_zreg r) (m.pp_k k) (pp_barrel_shift "," s (m.pp_k))
+  | I_DUP_SV (r1,v,r2) ->
+      sprintf "DUP %s,%s" (pp_zreg r1) (pp_vreg v r2)
+  | I_ADD_SV (r1,r2,r3) ->
+      sprintf "ADD %s,%s,%s" (pp_zreg r1) (pp_zreg r2) (pp_zreg r3)
+  | I_NEG_SV (r1,r2,r3) ->
+    sprintf "NEG %s,%s,%s" (pp_zreg r1) (pp_preg r2) (pp_zreg r3)
+  | I_MOVPRFX (r1,r2,r3) ->
+    sprintf "MOVPRFX %s,%s,%s" (pp_zreg r1) (pp_preg r2) (pp_zreg r3)
+  | I_INDEX_SI (r1,v,r2,k) ->
+      sprintf "INDEX %s,%s,%s" (pp_zreg r1) (pp_vreg v r2) (m.pp_k k)
+  | I_INDEX_IS (r1,v,k,r2) ->
+      sprintf "INDEX %s,%s,%s" (pp_zreg r1) (m.pp_k k) (pp_vreg v r2)
+  | I_INDEX_SS (r1,v,r2,r3) ->
+      sprintf "INDEX %s,%s,%s" (pp_zreg r1) (pp_vreg v r2) (pp_vreg v r3)
+  | I_INDEX_II (r1,k1,k2) ->
+      sprintf "INDEX %s,%s,%s" (pp_zreg r1) (m.pp_k k1) (m.pp_k k2)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (m.pp_k k)
@@ -1828,6 +2242,9 @@ let fold_regs (f_regs,f_sregs) =
   | Ireg _ -> f_regs reg y_reg,y_sreg
   | Vreg _ -> f_regs reg y_reg,y_sreg
   | SIMDreg _ -> f_regs reg y_reg,y_sreg
+  | Zreg _ -> f_regs reg y_reg,y_sreg
+  | Preg _ -> f_regs reg y_reg,y_sreg
+  | PMreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
   | Internal _ | NZCV | ZR | SP | PC
   | ResAddr | Tag _ | SysReg _
@@ -1841,7 +2258,8 @@ let fold_regs (f_regs,f_sregs) =
     let open MemExt in
     match idx with
     | Imm _ -> c
-    | Reg (_,r,_,_) -> fold_reg r c in
+    | Reg (_,r,_,_) -> fold_reg r c
+    | ZReg (r,_,_) -> fold_reg r c in
 
   let fold_op_ext e c =
     let open OpExt in
@@ -1859,6 +2277,9 @@ let fold_regs (f_regs,f_sregs) =
   | I_CHKSLD r | I_CHKTGD r
   | I_MOVI_V (r,_,_) | I_MOVI_S (_,r,_)
   | I_TLBI (_,r)
+  | I_MOV_SV (r,_,_)
+  | I_INDEX_II (r,_,_)
+  | I_PTRUE (r,_)
     -> fold_reg r c
   | I_MOV (_,r1,kr)
     -> fold_reg r1 (fold_kr kr c)
@@ -1873,8 +2294,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOV_VE (r1,_,r2,_) | I_MOV_V (r1,r2) | I_MOV_TG (_,r1,r2,_) | I_MOV_FG (r1,_,_,r2)
   | I_MOV_S (_,r1,r2,_)
   | I_FMOV_TG (_,r1,_,r2)
-  | I_DUP (r1,_,r2)
-  | I_ADDV (_,r1,r2)
+  | I_DUP (r1,_,r2) | I_DUP_SV (r1,_,r2)
+  | I_ADDV (_,r1,r2) | I_INDEX_SI (r1,_,r2,_) | I_INDEX_IS (r1,_,_,r2)
   | I_LDUR_SIMD (_,r1,r2,_) | I_LDAPUR_SIMD (_,r1,r2,_)
   | I_STUR_SIMD (_,r1,r2,_) | I_STLUR_SIMD (_,r1,r2,_)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_)
@@ -1899,6 +2320,15 @@ let fold_regs (f_regs,f_sregs) =
   | I_ST3 (rs,_,r2,kr) | I_ST3M (rs,r2,kr)
   | I_ST4 (rs,_,r2,kr) | I_ST4M (rs,r2,kr)
     -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD1SP (_,rs,r2,r3,idx)
+  | I_LD2SP (_,rs,r2,r3,idx)
+  | I_LD3SP (_,rs,r2,r3,idx)
+  | I_LD4SP (_,rs,r2,r3,idx)
+  | I_ST1SP (_,rs,r2,r3,idx)
+  | I_ST2SP (_,rs,r2,r3,idx)
+  | I_ST3SP (_,rs,r2,r3,idx)
+  | I_ST4SP (_,rs,r2,r3,idx)
+    -> List.fold_right fold_reg rs (fold_reg r2 ( fold_reg r3 (fold_idx idx c)))
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
   | I_BUILD (r1,r2,r3) | I_CPYTYPE (r1,r2,r3) | I_CPYVALUE (r1,r2,r3)
@@ -1908,6 +2338,9 @@ let fold_regs (f_regs,f_sregs) =
   | I_STP_SIMD (_,_,r1,r2,r3,_)
   | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
   | I_LDXP (_,_,r1,r2,r3)
+  | I_WHILELT (r1,_,r2,r3) | I_WHILELE (r1,_,r2,r3) | I_WHILELO (r1,_,r2,r3) | I_WHILELS (r1,_,r2,r3)
+  | I_INDEX_SS(r1,_,r2,r3)
+  | I_UADDV (_,r1,r2,r3) | I_ADD_SV (r1,r2,r3) | I_NEG_SV (r1,r2,r3) | I_MOVPRFX (r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,_)
   | I_LDPSW (r1,r2,r3,_)
@@ -1934,6 +2367,9 @@ let map_regs f_reg f_symb =
   | Ireg _ -> f_reg reg
   | Vreg _ -> f_reg reg
   | SIMDreg _ -> f_reg reg
+  | Zreg _ -> f_reg reg
+  | Preg _ -> f_reg reg
+  | PMreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
   | Internal _ | ZR | SP| PC
   | NZCV | ResAddr | Tag _ | SysReg _
@@ -1947,7 +2383,8 @@ let map_regs f_reg f_symb =
     let open MemExt in
     match idx with
     | Imm _ -> idx
-    | Reg (v,r,ext,k) -> Reg (v,map_reg r,ext,k) in
+    | Reg (v,r,ext,k) -> Reg (v,map_reg r,ext,k)
+    | ZReg (r,ext,k) -> ZReg (map_reg r,ext,k) in
 
   let map_op_ext e =
     let open OpExt in
@@ -2103,7 +2540,54 @@ let map_regs f_reg f_symb =
   | I_ADD_SIMD (r1,r2,r3) ->
       I_ADD_SIMD (map_reg r1,map_reg r2,map_reg r3)
   | I_ADD_SIMD_S (r1,r2,r3) ->
-      I_ADD_SIMD_S (map_reg r1,map_reg r2,map_reg r3)
+     I_ADD_SIMD_S (map_reg r1,map_reg r2,map_reg r3)
+(* Scalable Vector Extension *)
+  | I_PTRUE (predicate,pattern) ->
+     I_PTRUE (map_reg predicate,pattern)
+  | I_WHILELT (r1,v,r2,r3) ->
+     I_WHILELT (map_reg r1,v,map_reg r2,map_reg r3)
+  | I_WHILELE (r1,v,r2,r3) ->
+     I_WHILELE (map_reg r1,v,map_reg r2,map_reg r3)
+  | I_WHILELO (r1,v,r2,r3) ->
+     I_WHILELO (map_reg r1,v,map_reg r2,map_reg r3)
+  | I_WHILELS (r1,v,r2,r3) ->
+     I_WHILELS (map_reg r1,v,map_reg r2,map_reg r3)
+  | I_UADDV (v,r1,r2,r3) ->
+     I_UADDV (v,map_reg r1,map_reg r2,map_reg r3)
+  | I_LD1SP (v,rs,r2,r3,idx) ->
+     I_LD1SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
+  | I_LD2SP (v,rs,r2,r3,idx) ->
+     I_LD2SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
+  | I_LD3SP (v,rs,r2,r3,idx) ->
+     I_LD3SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
+  | I_LD4SP (v,rs,r2,r3,idx) ->
+     I_LD4SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
+  | I_ST1SP (v,rs,r2,r3,idx) ->
+     I_ST1SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
+  | I_ST2SP (v,rs,r2,r3,idx) ->
+     I_ST2SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
+  | I_ST3SP (v,rs,r2,r3,idx) ->
+     I_ST3SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
+  | I_ST4SP (v,rs,r2,r3,idx) ->
+     I_ST4SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
+  | I_MOV_SV (r,k,os) ->
+      I_MOV_SV (map_reg r,k,os)
+  | I_DUP_SV (r1,v,r2) ->
+      I_DUP_SV (map_reg r1,v,map_reg r2)
+  | I_ADD_SV (r1,r2,r3) ->
+      I_ADD_SV (map_reg r1,map_reg r2,map_reg r3)
+  | I_NEG_SV (r1,r2,r3) ->
+      I_NEG_SV (map_reg r1,map_reg r2,map_reg r3)
+  | I_MOVPRFX (r1,r2,r3) ->
+      I_MOVPRFX (map_reg r1,map_reg r2,map_reg r3)
+  | I_INDEX_SI (r1,v,r2,k) ->
+      I_INDEX_SI (map_reg r1,v,map_reg r2,k)
+  | I_INDEX_IS (r1,v,k,r2) ->
+      I_INDEX_IS (map_reg r1,v,k,map_reg r2)
+  | I_INDEX_SS (r1,v,r2,r3) ->
+      I_INDEX_SS (map_reg r1,v,map_reg r2,map_reg r3)
+  | I_INDEX_II (r1,k1,k2) ->
+      I_INDEX_II (map_reg r1,k1,k2)
 (* Morello *)
   | I_ALIGNU (r1,r2,k) ->
       I_ALIGNU(map_reg r1,map_reg r2,k)
@@ -2317,6 +2801,12 @@ let get_next =
   | I_MOVI_V _ | I_MOVI_S _
   | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
   | I_LDXP _|I_STXP _|I_UDF _
+  | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
+  | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
+  | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
+  | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
+  | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
+  | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
     -> [Label.Next;]
 
 (* Check instruction validity, beyond parsing *)
@@ -2490,6 +2980,7 @@ module PseudoI = struct
         match idx with
         | Imm k -> Imm (idx_tr k)
         | Reg (v,r,ext,k) -> Reg (v,r,ext,k_tr k)
+        | ZReg (r,ext,k) -> ZReg (r,ext,k_tr k)
 
       let op_ext_tr e =
         let open OpExt in
@@ -2549,6 +3040,10 @@ module PseudoI = struct
         | I_MOV_S _
         | I_LDXP _| I_STXP _
         | I_MOPL _
+        | I_WHILELT _ | I_WHILELE _ | I_WHILELO _| I_WHILELS _
+        | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
+        | I_ADD_SV _ | I_INDEX_SS _
+        | I_NEG_SV _ | I_MOVPRFX _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -2617,6 +3112,18 @@ module PseudoI = struct
         | I_ADD_SIMD (r1,r2,r3) -> I_ADD_SIMD (r1,r2,r3)
         | I_ADD_SIMD_S (r1,r2,r3) -> I_ADD_SIMD_S (r1,r2,r3)
         | I_UDF k -> I_UDF (k_tr k)
+        | I_MOV_SV (r,k,s) -> I_MOV_SV (r,k_tr k,ap_shift k_tr s)
+        | I_LD1SP (v,r1,r2,r3,idx) -> I_LD1SP (v,r1,r2,r3,ext_tr idx)
+        | I_LD2SP (v,r1,r2,r3,idx) -> I_LD2SP (v,r1,r2,r3,ext_tr idx)
+        | I_LD3SP (v,r1,r2,r3,idx) -> I_LD3SP (v,r1,r2,r3,ext_tr idx)
+        | I_LD4SP (v,r1,r2,r3,idx) -> I_LD4SP (v,r1,r2,r3,ext_tr idx)
+        | I_ST1SP (v,r1,r2,r3,idx) -> I_ST1SP (v,r1,r2,r3,ext_tr idx)
+        | I_ST2SP (v,r1,r2,r3,idx) -> I_ST2SP (v,r1,r2,r3,ext_tr idx)
+        | I_ST3SP (v,r1,r2,r3,idx) -> I_ST3SP (v,r1,r2,r3,ext_tr idx)
+        | I_ST4SP (v,r1,r2,r3,idx) -> I_ST4SP (v,r1,r2,r3,ext_tr idx)
+        | I_INDEX_SI (r1,v,r2,k) -> I_INDEX_SI (r1,v,r2,k_tr k)
+        | I_INDEX_IS (r1,v,k,r2) -> I_INDEX_IS (r1,v,k_tr k,r2)
+        | I_INDEX_II (r1,k1,k2) -> I_INDEX_II (r1,k_tr k1,k_tr k2)
 
       let get_simd_rpt_selem ins rs = match ins with
       | I_LD1M _
@@ -2705,6 +3212,12 @@ module PseudoI = struct
         | I_MOVI_V _ | I_MOVI_S _
         | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
         | I_UDF _
+        | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
+        | I_PTRUE _
+        | I_ADD_SV _ | I_UADDV _ | I_DUP_SV _
+        | I_NEG_SV _ | I_MOVPRFX _
+        | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
+        | I_MOV_SV _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)
@@ -2717,6 +3230,9 @@ module PseudoI = struct
           -> let (rpt, selem) = (get_simd_rpt_selem ins rs) in
              let n = get_simd_elements rs in
              rpt * selem * n
+        | I_LD1SP (_,rs,_,_,_) | I_LD2SP (_,rs,_,_,_) | I_LD3SP (_,rs,_,_,_) | I_LD4SP (_,rs,_,_,_)
+        | I_ST1SP (_,rs,_,_,_) | I_ST2SP (_,rs,_,_,_) | I_ST3SP (_,rs,_,_,_) | I_ST4SP (_,rs,_,_,_)
+          -> 16 * List.length rs (* upper bound *)
 
       let size_of_ins _ = 4
 

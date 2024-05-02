@@ -36,6 +36,10 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   | Internal i -> sprintf "i%i" i
   | Vreg (vr, _) | SIMDreg vr ->
       (try Misc.lowercase (List.assoc vr vvrs) with Not_found -> assert false)
+  | Preg (pr, _) | PMreg (pr, _) ->
+      (try Misc.lowercase (List.assoc pr pvrs) with Not_found -> assert false)
+  | Zreg (zr, _) ->
+      (try Misc.lowercase (List.assoc zr vvrs) with Not_found -> assert false) (*Intentionally 'vvrs' instead of 'zvrs'*)
   | _ ->
       try Misc.lowercase (Hashtbl.find tab r) with Not_found -> assert false
 
@@ -62,18 +66,23 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
             in
             match r with
             | (Vreg _ | SIMDreg _ ) -> Some (sprintf "vdupq_n_s32(%s)" v, "int32x4_t")
+            | Zreg _ -> Some (sprintf "svdup_s32(%s)" v, "svint32_t")
+            | Preg _ | PMreg _ -> Some (sprintf "svdup_b32(%s)" v, "svbool_t")
             | _ ->  None
 
         let reg_class reg = match reg with
-          | Vreg _ | SIMDreg _ -> "=&w"
+          | Vreg _ | SIMDreg _ | Zreg _ -> "=&w"
+          | Preg _ | PMreg _ -> "=&Upa"
           | _ -> "=&r"
         let reg_class_stable reg = match reg with
           (* Certain Neon instructions do not affect the whole register, so we need to
              guarantee that unaffected parts are initialized to zero which basically means
              that we need to initialize whole register to zero. Several options have been
              evaluated and it seems the only robust way to achieve that is using the
-             constraint "+" and the explicit initialization of the 'stable_*' variables *)
-          | Vreg _ | SIMDreg _ -> "+w"
+             constraint "+" and the explicit initialization of the 'stable_*' variables.
+             The same applies to SVE instruction with P/M (merging predicate) *)
+          | Vreg _ | SIMDreg _  | Zreg _ -> "+w"
+          | Preg _ | PMreg _ -> "=Upa"
           | _ -> "=r"
         let comment = comment
 

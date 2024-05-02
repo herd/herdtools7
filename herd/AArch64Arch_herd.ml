@@ -109,6 +109,14 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
     | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _ | I_EXTR _
     | I_MOPL _
+    | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
+    | I_UADDV _
+    | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
+    | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
+    | I_MOV_SV _
+    | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
+    | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
+    | I_NEG_SV _ | I_MOVPRFX _
       -> true
 
     let is_cmodx_restricted_value =
@@ -218,6 +226,17 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       let vs = get_rec 0 in
       V.Val (Constant.ConcreteVector vs)
 
+    let predicate_mask psize =
+      let mask = match psize with
+      | 1 -> "0x1"
+      | 2 -> "0x3"
+      | 4 -> "0x7"
+      | 8 -> "0xff"
+      | _ ->  assert false in
+      V.stringToV mask
+
+    let scalable_mask = neon_mask
+
     let simd_mem_access_size rs = match List.hd rs with
     | Vreg (_,(_,8)) -> MachSize.Byte
     | Vreg (_,(_,16)) -> MachSize.Short
@@ -252,6 +271,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD4 (rs,_,_,_) | I_LD4R (rs,_,_) | I_ST4 (rs,_,_,_)
       | I_LD4M (rs,_,_) | I_ST4M (rs,_,_) ->
           Some (simd_mem_access_size rs)
+      | I_LD1SP (v,_,_,_,_) | I_ST1SP (v,_,_,_,_)
+      | I_LD2SP (v,_,_,_,_) | I_ST2SP (v,_,_,_,_)
+      | I_LD3SP (v,_,_,_,_) | I_ST3SP (v,_,_,_,_)
+      | I_LD4SP (v,_,_,_,_) | I_ST4SP (v,_,_,_,_) ->
+          Some (tr_simd_variant v)
       | I_LDRBH (v,_,_,_) | I_LDARBH (v,_,_,_) | I_LDRS ((_,v),_,_,_)
       | I_STRBH (v,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
@@ -275,6 +299,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOVI_S _ | I_MOVI_V _ | I_ADDV _ | I_DUP _ |  I_FMOV_TG _
       | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
       | I_UDF _ | I_ADDSUBEXT _ | I_MOPL _
+      | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
+      | I_UADDV _
+      | I_MOV_SV _ | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
+      | I_NEG_SV _ | I_MOVPRFX _
+      | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
           -> None
 
     let all_regs =
@@ -306,6 +335,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_IC _|I_DC _|I_TLBI _
       | I_NOP|I_TBZ _|I_TBNZ _
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_UDF _
+      | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
         -> [] (* For -variant self only ? *)
       | I_LDR (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRBH (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
@@ -338,11 +368,22 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_ADDV (_,r,_)
       | I_DUP (r,_,_)
       | I_FMOV_TG (_,r,_,_)
+      | I_WHILELT (r,_,_,_) | I_WHILELE (r,_,_,_) | I_WHILELO (r,_,_,_) | I_WHILELS (r,_,_,_)
+      | I_UADDV (_,r,_,_)
+      | I_MOV_SV (r,_,_)
+      | I_DUP_SV (r,_,_) | I_ADD_SV (r,_,_) | I_PTRUE (r,_)
+      | I_NEG_SV (r,_,_) | I_MOVPRFX (r,_,_)
+      | I_INDEX_SI (r,_,_,_) | I_INDEX_IS (r,_,_,_) | I_INDEX_SS (r,_,_,_) | I_INDEX_II (r,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
       | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
+      | I_LD1SP (_,rs,_,_,_)
+      | I_LD2SP (_,rs,_,_,_)
+      | I_LD3SP (_,rs,_,_,_)
+      | I_LD4SP (_,rs,_,_,_)
+        -> rs
       | I_LDAP1 _
       | I_STL1 _
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
@@ -403,6 +444,14 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
       | I_STG _|I_STZG _|I_STZ2G _|I_LDG _|I_UDF _
       | I_ADDSUBEXT _|I_MOPL _
+      | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
+      | I_UADDV _
+      | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
+      | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
+      | I_ADD_SV _ | I_PTRUE _
+      | I_NEG_SV _ | I_MOVPRFX _
+      | I_MOV_SV _ | I_DUP_SV _
+      | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
         -> MachSize.No
 
     include ArchExtra_herd.Make(C)

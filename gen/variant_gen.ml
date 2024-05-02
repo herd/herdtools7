@@ -38,6 +38,8 @@ type t =
   | KVM | FullKVM | NoFault
 (* Neon AArch64 extension *)
   | Neon
+(* Scalable Vector extension (AArch64) *)
+  | SVE
 (* Constrained Unpredictable *)
   | ConstrainedUnpredictable
 
@@ -63,6 +65,7 @@ let parse tag = match Misc.lowercase tag with
 | "fullkvm" -> Some FullKVM
 | "nofault" -> Some NoFault
 | "neon" -> Some Neon
+| "sve" -> Some SVE
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | _ -> None
 
@@ -81,6 +84,7 @@ let pp = function
   | FullKVM -> "FullKvm"
   | NoFault -> "NoFault"
   | Neon -> "Neon"
+  | SVE -> "sve"
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
 
 let is_mixed v = v Mixed || v FullMixed

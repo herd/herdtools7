@@ -40,6 +40,8 @@ type t =
   | NoFault
 (* Neon AArch64 extension *)
   | Neon
+(* SVE AArch64 extension *)
+  | SVE
 (* Constrained Unpredictable, ie generate tests thar may exhibit
    such behaviours. Typically LDXR / STXR of different size or address. *)
   | ConstrainedUnpredictable

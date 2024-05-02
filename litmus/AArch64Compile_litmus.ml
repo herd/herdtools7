@@ -49,6 +49,14 @@ module Make(V:Constant.S)(C:Config) =
 
     let stable_regs _ins = match _ins with
     | I_LDAP1 (rs,_,_,_)
+    | I_LD1SP (_,rs,_,_,_)
+    | I_LD2SP (_,rs,_,_,_)
+    | I_LD3SP (_,rs,_,_,_)
+    | I_LD4SP (_,rs,_,_,_)
+    | I_ST1SP (_,rs,_,_,_)
+    | I_ST2SP (_,rs,_,_,_)
+    | I_ST3SP (_,rs,_,_,_)
+    | I_ST4SP (_,rs,_,_,_)
     | I_LD1 (rs,_,_,_) | I_LD1M (rs,_,_)
     | I_LD2 (rs,_,_,_) | I_LD2M (rs,_,_) | I_LD2R (rs,_,_)
     | I_LD3 (rs,_,_,_) | I_LD3M (rs,_,_) | I_LD3R (rs,_,_)
@@ -60,6 +68,15 @@ module Make(V:Constant.S)(C:Config) =
         A.RegSet.of_list rs
     | I_MOV_FG (r,_,_,_) -> A.RegSet.of_list [r]
     | I_MOV_VE (r,_,_,_) -> A.RegSet.of_list [r]
+    (* To allow view of Scalable register via Neon one *)
+    | I_ADD_SV (r,_,_)
+    | I_DUP_SV (r,_,_)
+    | I_MOV_SV (r,_,_)
+    | I_INDEX_SI (r,_,_,_) | I_INDEX_IS (r,_,_,_) | I_INDEX_SS (r,_,_,_) | I_INDEX_II (r,_,_)
+    (* Accept P/M register so assume partial update of register *)
+    | I_NEG_SV (r,_,_)
+    | I_MOVPRFX (r,_,_)
+    -> A.RegSet.of_list [r]
     | _ ->  A.RegSet.empty
 
 (* Generic funs for zr *)
@@ -135,6 +152,8 @@ module Make(V:Constant.S)(C:Config) =
     let add_p = add_type voidstar (* pointer *)
     let add_128 = add_type int32x4_t
     let add_v v = v2type v |> add_type
+    let add_svbool_t = add_type svbool_t
+    let add_svint32_t = add_type svint32_t
 
     (* pretty prints barrel shifters *)
     let pp_shifter = function
@@ -305,6 +324,7 @@ module Make(V:Constant.S)(C:Config) =
            inputs=[rA]@i;
            outputs=[rD];
            reg_env=add_v v i@[(rA,voidstar); (rD,td);]; }
+      | _ -> assert false
 
     let load memo v =
       match v with
@@ -514,6 +534,7 @@ module Make(V:Constant.S)(C:Config) =
                memo fA fB fC (pp_mem_sext se) k;
            inputs=rA@[rB]@rC;
            reg_env=[(rB,voidstar)]@add_v v rA@add_v vC rC; }
+      | _ -> assert false
 
     let stxr memo v r1 r2 r3 = match v with
     | V32 ->
@@ -917,6 +938,319 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [r2;r3;];
         outputs = [r1];
         reg_env = (add_128 [r1;r2;r3;])}
+
+(* Scalable vector Extension *)
+    let pp_pattern p = A.pp_pattern p |> Misc.lowercase
+
+    let print_preg io offset i r = match r with
+    | Preg (_,s) -> "^" ^ io ^ string_of_int (i+offset) ^
+       (pp_sve_arrange_specifier s |> Misc.lowercase)
+    | PMreg (_,m) -> "^" ^ io ^ string_of_int (i+offset) ^
+       (pp_sve_pred_modifier m |> Misc.lowercase)
+    | _ -> assert false
+
+    let print_zreg io offset i r = match r with
+    | Zreg (_,s) -> "^" ^ io ^ string_of_int (i+offset) ^
+      (pp_sve_arrange_specifier s |> Misc.lowercase)
+    | _ -> assert false
+
+    let while_op memo r1 v r2 r3 =
+      { empty_ins with
+        memo = sprintf "%s %s,%s"
+        memo
+        (print_preg "o" 0 0 r1)
+        (match v with | V32 -> "^wi0, ^wi1" | V64 -> "^i0, ^i1" | V128 -> assert false);
+        inputs = [r2;r3;];
+        outputs = [r1];
+        reg_env = (add_svbool_t [r1;])@(add_w [r2;r3])}
+
+    let uaddv v r1 r2 r3 =
+         { empty_ins with
+           memo = sprintf "uaddv %s,%s,%s"
+                    (print_vecreg v "o" 0)
+                    (print_preg "i" 0 0 r2)
+                    (print_zreg "i" 0 1 r3);
+        inputs = [r2;r3;];
+        outputs = [r1];
+        reg_env = (add_128 [r1;])@(add_svbool_t [r2;])@(add_svint32_t [r3;])}
+
+    let ldnsp memo v rs pg rA idx =
+      let open MemExt in
+      match idx with
+      | Imm (0,Idx) ->
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "o" 0) rs))
+                 (print_preg "i" 0 0 pg);
+        inputs = [pg;rA];
+        outputs = rs;
+        reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | Imm (k,Idx) ->
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,#%i,mul vl]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "o" 0) rs))
+                 (print_preg "i" 0 0 pg)
+                 k;
+        inputs = [pg;rA];
+        outputs = rs;
+        reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | Reg (V64,rM,LSL,0) ->
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,^i2]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "o" 0) rs))
+                 (print_preg "i" 0 0 pg);
+        inputs = [pg;rA;rM];
+        outputs = rs;
+        reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]@(add_q [rM;])}
+      | Reg (V64,rM,LSL,k) ->
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,^i2,LSL #%d]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "o" 0) rs))
+                 (print_preg "i" 0 0 pg)
+                 k;
+          inputs = [pg;rA;rM];
+          outputs = rs;
+          reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]@(add_q [rM;])}
+      | ZReg(rM,LSL,0) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,%s]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "o" 0 0 r)
+                 (print_preg "i" 0 0 pg)
+                 (print_zreg "i" 0 2 rM);
+          inputs = [pg;rA;rM];
+          outputs = [r];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | ZReg(rM,se,0) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,%s,%s]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "o" 0 0 r)
+                 (print_preg "i" 0 0 pg)
+                 (print_zreg "i" 0 2 rM)
+                 (pp_mem_sext se);
+          inputs = [pg;rA;rM];
+          outputs = [r];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | ZReg(rM,se,k) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,%s,%s #%d]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "o" 0 0 r)
+                 (print_preg "i" 0 0 pg)
+                 (print_zreg "i" 0 2 rM)
+                 (pp_mem_sext se)
+                 k;
+          inputs = [pg;rA;rM];
+          outputs = [r];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | _ -> assert false
+
+    let stnsp memo v rs pg rA idx =
+      let open MemExt in
+      match idx with
+      | Imm (0,Idx) ->
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "i" 2) rs))
+                 (print_preg "i" 0 0 pg);
+          inputs = [pg;rA]@rs;
+          outputs = [];
+          reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | Imm (k,Idx) ->
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,#%i,mul vl]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "i" 2) rs))
+                 (print_preg "i" 0 0 pg)
+                 k;
+          inputs = [pg;rA]@rs;
+          outputs = [];
+          reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | Reg (V64,rM,LSL,0) ->
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,^i2]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "i" 3) rs))
+                 (print_preg "i" 0 0 pg);
+          inputs = [pg;rA;rM]@rs;
+          outputs = [];
+          reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]@(add_q [rM;])}
+      | Reg (V64,rM,LSL,k) ->
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i1,^i2,LSL #%d]"
+                 memo
+                 (Misc.lowercase  (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "i" 3) rs))
+                 (print_preg "i" 0 0 pg)
+                 k;
+          inputs = [pg;rA;rM]@rs;
+          outputs = [];
+          reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]@(add_q [rM;])}
+      | ZReg(rM,LSL,0) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i2,%s]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "i" 0 0 r)
+                 (print_preg "i" 0 1 pg)
+                 (print_zreg "i" 0 3 rM);
+          inputs = [r;pg;rA;rM];
+          outputs = [];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | ZReg(rM,se,0) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i2,%s,%s]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "i" 0 0 r)
+                 (print_preg "i" 0 1 pg)
+                 (print_zreg "i" 0 3 rM)
+                 (pp_mem_sext se);
+          inputs = [r;pg;rA;rM];
+          outputs = [];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | ZReg(rM,se,k) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "%s%s {%s},%s,[^i2,%s,%s #%d]"
+                 memo
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "i" 0 0 r)
+                 (print_preg "i" 0 1 pg)
+                 (print_zreg "i" 0 3 rM)
+                 (pp_mem_sext se)
+                 k;
+          inputs = [r;pg;rA;rM];
+          outputs = [];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | _ -> assert false
+
+    let mov_sv r k s = match s with
+      | S_NOEXT ->
+        { empty_ins with
+          memo = sprintf "mov %s,#%i" (print_zreg "o" 0 0 r) k;
+          inputs = [];
+          outputs = [r;];
+          reg_env = (add_svint32_t [r])}
+      | S_LSL(ks) ->
+        { empty_ins with
+          memo = sprintf "mov %s,#%i,%s" (print_zreg "o" 0 0 r) k (pp_shifter (S_LSL ks));
+          inputs = [];
+          outputs = [r;];
+         reg_env = (add_svint32_t [r])}
+        | _ -> assert false
+
+    let dup_sv_v r1 v r2 =
+      { empty_ins with
+        memo = sprintf "dup %s,%s"
+          (print_zreg "o" 0 0 r1)
+          (match v with | V32 -> "^wi0" | V64 -> "^i0" | V128 -> assert false);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;]) @ ((
+          match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false) [r2;])}
+
+    let add_sv r1 r2 r3 =
+      { empty_ins with
+        memo = sprintf "add %s,%s,%s" (print_zreg "o" 0 0 r1) (print_zreg "i" 0 0 r2) (print_zreg "i" 0 1 r3);
+        inputs = [r2;r3];
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;r2;r3;])}
+
+    let index_si r1 v r2 k =
+      { empty_ins with
+        memo = sprintf "index %s,%s,#%i"
+          (print_zreg "o" 0 0 r1)
+          (match v with | V32 -> "^wi0" | V64 -> "^i0" | V128 -> assert false)
+          k;
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;]) @ ((
+          match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false) [r2;])}
+
+    let index_is r1 v k r2 =
+      { empty_ins with
+        memo = sprintf "index %s,#%i,%s"
+          (print_zreg "o" 0 0 r1)
+          k
+          (match v with | V32 -> "^wi0" | V64 -> "^i0" | V128 -> assert false);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;]) @ ((
+          match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false) [r2;])}
+
+    let index_ss r1 v r2 r3 =
+      { empty_ins with
+        memo = sprintf "index %s,%s"
+          (print_zreg "o" 0 0 r1)
+          (match v with | V32 -> "^wi0,^wi1" | V64 -> "^i0,^i1" | V128 -> assert false);
+        inputs = [r2;r3];
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;]) @ ((
+          match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false) [r2;r3])}
+
+
+    let index_ii r1 k1 k2 =
+      { empty_ins with
+        memo = sprintf "index %s,#%i,#%i"
+          (print_zreg "o" 0 0 r1) k1 k2;
+        inputs = [];
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;])}
+
+    let ptrue pred pattern =
+      { empty_ins with
+        memo = sprintf "ptrue %s,%s" (print_preg "o" 0 0 pred) (pp_pattern pattern);
+        inputs = [];
+        outputs = [pred];
+        reg_env = (add_svbool_t [pred;])}
+
+    let neg_sv r1 pg r3 =
+      { empty_ins with
+        memo = sprintf "neg %s,%s,%s" (print_zreg "o" 0 0 r1) (print_preg "i" 0 1 pg) (print_zreg "i" 0 2 r3);
+        inputs = [r1;pg;r3]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;r3;])@(add_svbool_t [pg;])}
+
+    let movprfx r1 pg r3 =
+      { empty_ins with
+        memo = sprintf "movprfx %s,%s,%s" (print_zreg "o" 0 0 r1) (print_preg "i" 0 1 pg) (print_zreg "i" 0 2 r3);
+        inputs = [r1;pg;r3]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;r3;])@(add_svbool_t [pg;])}
 
 (* Compare and swap *)
 
@@ -1332,6 +1666,30 @@ module Make(V:Constant.S)(C:Config) =
     | I_EOR_SIMD (r1,r2,r3) -> eor_simd r1 r2 r3::k
     | I_ADD_SIMD (r1,r2,r3) -> add_simd r1 r2 r3::k
     | I_ADD_SIMD_S (r1,r2,r3) -> add_simd_s r1 r2 r3::k
+(* Scalable Vector Extension Load and Store *)
+    | I_WHILELT (z,v,r1,r2) -> while_op "whilelt" z v r1 r2::k
+    | I_WHILELE (z,v,r1,r2) -> while_op "whilele" z v r1 r2::k
+    | I_WHILELO (z,v,r1,r2) -> while_op "whilelo" z v r1 r2::k
+    | I_WHILELS (z,v,r1,r2) -> while_op "whilels" z v r1 r2::k
+    | I_UADDV (v,r1,r2,r3) -> uaddv v r1 r2 r3::k
+    | I_LD1SP (v,rs,r2,r3,idx) -> ldnsp "ld1" v rs r2 r3 idx::k
+    | I_LD2SP (v,rs,r2,r3,idx) -> ldnsp "ld2" v rs r2 r3 idx::k
+    | I_LD3SP (v,rs,r2,r3,idx) -> ldnsp "ld3" v rs r2 r3 idx::k
+    | I_LD4SP (v,rs,r2,r3,idx) -> ldnsp "ld4" v rs r2 r3 idx::k
+    | I_ST1SP (v,rs,r2,r3,idx) -> stnsp "st1" v rs r2 r3 idx::k
+    | I_ST2SP (v,rs,r2,r3,idx) -> stnsp "st2" v rs r2 r3 idx::k
+    | I_ST3SP (v,rs,r2,r3,idx) -> stnsp "st3" v rs r2 r3 idx::k
+    | I_ST4SP (v,rs,r2,r3,idx) -> stnsp "st4" v rs r2 r3 idx::k
+    | I_MOV_SV (r,kr,s) -> mov_sv r kr s::k
+    | I_DUP_SV (r1,v,r2) -> dup_sv_v r1 v r2::k
+    | I_ADD_SV (r1,r2,r3) -> add_sv r1 r2 r3::k
+    | I_INDEX_SI (r1,v,r2,kr) -> index_si r1 v r2 kr::k
+    | I_INDEX_IS (r1,v,kr,r2) -> index_is r1 v kr r2::k
+    | I_INDEX_SS (r1,v,r2,r3) -> index_ss r1 v r2 r3::k
+    | I_INDEX_II (r1,k1,k2) -> index_ii r1 k1 k2::k
+    | I_PTRUE (pred,pat) -> ptrue pred pat::k
+    | I_NEG_SV (r1,r2,r3) -> neg_sv r1 r2 r3::k
+    | I_MOVPRFX (r1,r2,r3) -> movprfx r1 r2 r3::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  mov_const v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k

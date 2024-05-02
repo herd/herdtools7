@@ -18,3 +18,4 @@
 
 type special
 val specials : special list
+val specials2 : special list

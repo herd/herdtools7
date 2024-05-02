@@ -1,0 +1,16 @@
+AArch64 V11
+(* Contiguous store three-word structures from three vectors (scalar index) *)
+{
+ int x[12];
+
+ 0:X0=x;
+}
+P0                                       ;
+ MOV Z1.S,#1                             ;
+ MOV Z2.S,#2                             ;
+ MOV Z3.S,#3                             ;
+ MOV X1,#0                               ;
+ PTRUE P0.S,VL4                          ;
+ ST3W {Z1.S,Z2.S,Z3.S},P0,[X0,X1, LSL #2];
+
+forall x={1,2,3,1,2,3,1,2,3,1,2,3}

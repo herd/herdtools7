@@ -44,6 +44,7 @@ type t =
   | TooFar         (* Do not discard candidates with TooFar events *)
   | Morello
   | Neon
+  | SVE
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
