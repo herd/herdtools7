@@ -144,3 +144,6 @@ val lowest_common_ancestor : env -> ty -> ty -> ty option
 
     As per Rule YZHM.
 *)
+
+val type_equal : env -> ty -> ty -> bool
+(** Equality in env for types. *)

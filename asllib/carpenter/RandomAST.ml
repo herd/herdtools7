@@ -464,7 +464,7 @@ module Typed (C : Config.S) = struct
       | T_Int _ ->
           Some
             (let+ e' = expr (env, T_Int UnConstrained |> annot, n) in
-             E_CTC (e', ty) |> annot)
+             E_ATC (e', ty) |> annot)
       | T_Named _ when Types.is_singular env ty_anon ->
           Some (expr (env, ty_anon, n - 1))
       | _ -> None

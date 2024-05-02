@@ -58,6 +58,7 @@ type error_desc =
   | BadLDI of AST.local_decl_item
   | BadRecursiveDecls of identifier list
   | UnrespectedParserInvariant
+  | BadATC of ty * ty  (** asserting, asserted *)
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
   | BaseValueEmptyType of ty
@@ -222,6 +223,11 @@ let pp_error =
           s
     | BaseValueEmptyType t ->
         fprintf f "ASL Execution error: base value of empty type %a" pp_ty t
+    | BadATC (t1, t2) ->
+        fprintf f
+          "ASL Typing error:@ cannot@ perform@ Asserted@ Type@ Conversion@ on@ \
+           %a@ by@ %a."
+          pp_ty t1 pp_ty t2
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

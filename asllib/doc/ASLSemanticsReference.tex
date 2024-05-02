@@ -963,7 +963,7 @@ and one of the following applies:
 \item SemanticsRule.ETuple (see Section~\ref{sec:SemanticsRule.ETuple})
 \item SemanticsRule.EUnknown (see Section~\ref{sec:SemanticsRule.EUnknown})
 \item SemanticsRule.EPattern (see Section~\ref{sec:SemanticsRule.EPattern})
-\item SemanticsRule.CTC (see Section~\ref{sec:SemanticsRule.CTC})
+\item SemanticsRule.ATC (see Section~\ref{sec:SemanticsRule.ATC})
 \end{itemize}
 
 We also define the following helper relations:
@@ -1733,12 +1733,12 @@ Notice that this rule introduces non-determinism.
 
 \isempty{\subsection{Comments}}
 
-\section{SemanticsRule.CTC \label{sec:SemanticsRule.CTC}}
+\section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
   \subsection{Prose}
   Evaluation of the expression $\ve$ in an environment $\env$ is \\
   $\Normal((\vv, \vg), \newenv)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes a type conversion expression, $\ECTC(\veone, \vt)$;
+  \item $\ve$ denotes a type conversion expression, $\EATC(\veone, \vt)$;
   \item evaluating $\veone$ in $\env$ either results in \Normal((\vv, \vgone), \newenv),
   \ProseOrAbnormal;
   \item evaluating whether $\vv$ has type $\vt$ in $\env$ either results in (\vb, \vgtwo)
@@ -1758,14 +1758,14 @@ Notice that this rule introduces non-determinism.
         \end{itemize}
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.CTCValue.asl}
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CTCValue.asl}
+  \subsection{Example: SemanticsRule.ATCValue.asl}
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCValue.asl}
 
-  \subsection{Example: SemanticsRule.CTCError.asl}
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CTCError.asl}
+  \subsection{Example: SemanticsRule.ATCError.asl}
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCError.asl}
 
 
-  \CodeSubsection{\CTCBegin}{\CTCEnd}{../Interpreter.ml}
+  \CodeSubsection{\ATCBegin}{\ATCEnd}{../Interpreter.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -1777,7 +1777,7 @@ Notice that this rule introduces non-determinism.
     \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
   }
   {
-    \evalexpr{\env, \ECTC(\veone, \vt)} \evalarrow \Normal((\vv, \vg), \newenv)
+    \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \Normal((\vv, \vg), \newenv)
   }
 \and
 \inferrule[error]{
@@ -1786,7 +1786,7 @@ Notice that this rule introduces non-determinism.
   \vb \eqname \nvbool(\False)
 }
 {
-  \evalexpr{\env, \ECTC(\veone, \vt)} \evalarrow \ErrorVal{CTC\_TypeMismatch}
+  \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \ErrorVal{ATC\_TypeMismatch}
 }
 \end{mathpar}
 \end{emptyformal}
@@ -6461,8 +6461,8 @@ The relation
 checks whether the value $\vv$ can be stored in a variable of type $\vt$ in the environment $\env$,
 resulting in a Boolean value $\vb$ and execution graph $\vg$, \ProseOrError.
 
-This relation is used in the context of a checked type conversion,
-which means the type-checker rule TypingRule.CTC was already applied,
+This relation is used in the context of a asserted type conversion,
+which means the type-checker rule TypingRule.ATC was already applied,
 thus filtering cases where the type inferred for the converted expression
 does not type-satisfy $\vt$. The semantics takes this into account and
 only returns \False\ in cases where dynamic information is required.
