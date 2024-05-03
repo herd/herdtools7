@@ -355,18 +355,22 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
             fatal_from loc
               (Error.TooManyCallCandidates (name, caller_arg_types)))
 
-  let try_find_name loc env name caller_arg_types =
-    try find_name loc env name caller_arg_types
-    with Error.ASLException _ as error -> (
-      try
-        match IMap.find_opt name env.global.subprograms with
-        | None -> undefined_identifier loc ("function " ^ name)
-        | Some { args = callee_arg_types; return_type; parameters; _ } ->
-            if false then
-              Format.eprintf "@[<2>%a:@ No extra arguments for %s@]@." PP.pp_pos
-                loc name;
-            ([], name, callee_arg_types, return_type, parameters)
-      with Error.ASLException _ -> raise error)
+  let try_find_name =
+    match C.check with
+    | `TypeCheck -> find_name
+    | `Warn | `Silence -> (
+        fun loc env name caller_arg_types ->
+          try find_name loc env name caller_arg_types
+          with Error.ASLException _ as error -> (
+            try
+              match IMap.find_opt name env.global.subprograms with
+              | None -> undefined_identifier loc ("function " ^ name)
+              | Some { args = callee_arg_types; return_type; parameters; _ } ->
+                  if false then
+                    Format.eprintf "@[<2>%a:@ No extra arguments for %s@]@."
+                      PP.pp_pos loc name;
+                  ([], name, callee_arg_types, return_type, parameters)
+            with Error.ASLException _ -> raise error))
 end
 
 (* ---------------------------------------------------------------------------
@@ -1180,12 +1184,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 match List.assoc_opt x acc with
                 | None -> (x, e) :: acc
                 | Some e' ->
-                    assert (StaticInterpreter.equal_in_env env e e');
-                    acc)
+                    if StaticInterpreter.equal_in_env env e e' then acc
+                    else (x, e) :: acc)
             | _ -> acc)
         | _ -> acc
       in
-      List.fold_left2 folder eqs1 callee_arg_types caller_arg_typed
+      match C.check with
+      | `TypeCheck -> eqs1
+      | `Warn | `Silence ->
+          List.fold_left2 folder eqs1 callee_arg_types caller_arg_typed
     in
     let eqs3 =
       List.map
