@@ -711,21 +711,21 @@ All these cases are succinctly encoded in a single rule with the alternative out
 \hypertarget{def-booltrans}{}
 We define the following rules to allow us treating assertions as transition assertions:
 \begin{mathpar}
-  \inferrule[bool\_trans\_true]{}{ \booltrans(\True) \booltransarrow\True }
+  \inferrule[bool\_trans\_true]{}{ \booltrans{\True} \booltransarrow\True }
   \and
-  \inferrule[bool\_trans\_false]{}{ \booltrans(\False) \booltransarrow\False }
+  \inferrule[bool\_trans\_false]{}{ \booltrans{\False} \booltransarrow\False }
 \end{mathpar}
 This is useful in that it allows us to use assertions in rule macros.
 
-\begin{mathpar}
-  \inferrule{
-    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False \terminateas \True\\\\
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-  }
-  {
-    \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
-  }
-\end{mathpar}
+% \begin{mathpar}
+%   \inferrule{
+%     \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False \terminateas \True\\\\
+%     \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+%   }
+%   {
+%     \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
+%   }
+% \end{mathpar}
 
 \subsection{Rule Naming}
 To name a rule, we place it in a section with its name.
