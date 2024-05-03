@@ -126,6 +126,7 @@ let rec pp_expr f e =
   | E_GetField (e, x) -> fprintf f "@[%a@,.%s@]" pp_expr e x
   | E_GetFields (e, xs) ->
       fprintf f "@[%a@,.[@[%a@]]@]" pp_expr e (pp_comma_list pp_print_string) xs
+  | E_GetItem (e, i) -> fprintf f "@[%a@,.item%d]" pp_expr e i
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
@@ -259,15 +260,20 @@ let rec pp_stmt f s =
          <1 2>@[<hv>%a@]@ else@;\
          <1 2>@[<hv>%a@]@ end@]" pp_expr e pp_stmt s1 pp_stmt s2
   | S_Case (e, case_li) ->
-      let pp_case_alt f { desc = p, s; _ } =
-        match p with
-        | Pattern_All ->
-            fprintf f "@[<hv 2>otherwise@ => @[<hv>%a@]@]" pp_stmt s
-        | Pattern_Any li ->
-            fprintf f "@[<hv 2>when @[<h>%a@]@ => @[<hv>%a@]@]"
-              (pp_comma_list pp_pattern) li pp_stmt s
+      let pp_where f = function
+        | None -> ()
+        | Some e -> fprintf f "where %a@ " pp_expr e
+      in
+      let pp_case_alt f { desc = { pattern; where; stmt }; _ } =
+        match (pattern, where) with
+        | Pattern_All, None ->
+            fprintf f "@[<hv 2>otherwise@ => @[<hv>%a@]@]" pp_stmt stmt
+        | Pattern_Any li, _ ->
+            fprintf f "@[<hv 2>when @[<h>%a@]@ %a=> @[<hv>%a@]@]"
+              (pp_comma_list pp_pattern) li pp_where where pp_stmt stmt
         | _ ->
-            fprintf f "@[<hv 2>when %a@ => @[<hv>%a@]@]" pp_pattern p pp_stmt s
+            fprintf f "@[<hv 2>when %a@ %a=> @[<hv>%a@]@]" pp_pattern pattern
+              pp_where where pp_stmt stmt
       in
       fprintf f "@[<v 2>case %a of@ %a@;<1 -2>end@]" pp_expr e
         (pp_print_list ~pp_sep:pp_print_space pp_case_alt)

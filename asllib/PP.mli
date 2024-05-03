@@ -52,6 +52,9 @@ val pp_ty : ty printer
 val pp_typed_identifier : typed_identifier printer
 (** Pretty-print a variable and its type. *)
 
+val pp_bitfields : bitfield list printer
+(** Pretty-print a list of bitfields. *)
+
 val pp_lexpr : lexpr printer
 (** Pretty-print the left-hand side of an assignment. *)
 

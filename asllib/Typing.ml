@@ -83,20 +83,25 @@ let slices_width env =
 
 let width_plus env acc w = plus acc w |> reduce_expr env
 
-let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
-  let subst_constraint eqs = function
-    | Constraint_Exact e -> Constraint_Exact (subst_expr eqs e)
+let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
+    =
+  let subst_expr env eqs e = subst_expr eqs e |> reduce_expr env in
+  let subst_constraint env eqs = function
+    | Constraint_Exact e -> Constraint_Exact (subst_expr env eqs e)
     | Constraint_Range (e1, e2) ->
-        Constraint_Range (subst_expr eqs e1, subst_expr eqs e2)
+        Constraint_Range (subst_expr env eqs e1, subst_expr env eqs e2)
   in
-  let subst_constraints eqs = List.map (subst_constraint eqs) in
-  fun eqs ty ->
+  let subst_constraints env eqs = List.map (subst_constraint env eqs) in
+  fun env eqs ty ->
     match ty.desc with
     | T_Bits (e, fields) ->
-        T_Bits (subst_expr eqs e, fields) |> add_pos_from_st ty
+        T_Bits (subst_expr env eqs e, fields) |> add_pos_from_st ty
     | T_Int (WellConstrained constraints) ->
-        let constraints = subst_constraints eqs constraints in
+        let constraints = subst_constraints env eqs constraints in
         T_Int (WellConstrained constraints) |> add_pos_from_st ty
+    | T_Int (UnderConstrained (_uid, name)) ->
+        let e = E_Var name |> add_pos_from ty |> subst_expr env eqs in
+        T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from ty
     | _ -> ty
 
 (* Begin Lit *)
@@ -330,16 +335,18 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
         | None -> undefined_identifier loc name)
     | Some set -> (
         let finder name' acc =
-          let func_sig = IMap.find name' env.global.subprograms in
-          let callee_arg_types = func_sig.args in
-          if has_arg_clash env caller_arg_types callee_arg_types then
-            ( deduce_eqs env caller_arg_types callee_arg_types,
-              name',
-              callee_arg_types,
-              func_sig.return_type,
-              func_sig.parameters )
-            :: acc
-          else acc
+          match IMap.find_opt name' env.global.subprograms with
+          | None -> acc (* Declaration in progress. *)
+          | Some func_sig ->
+              let callee_arg_types = func_sig.args in
+              if has_arg_clash env caller_arg_types callee_arg_types then
+                ( deduce_eqs env caller_arg_types callee_arg_types,
+                  name',
+                  callee_arg_types,
+                  func_sig.return_type,
+                  func_sig.parameters )
+                :: acc
+              else acc
         in
         match ISet.fold finder set [] with
         | [ res ] -> res
@@ -416,6 +423,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       else fatal_from loc Error.(OverlappingSlices slices)
     in
     List.fold_left (one_slice loc env) Diet.Int.empty slices
+
+  let check_disjoint_slices loc env slices =
+    if List.length slices <= 1 then ok
+    else fun () ->
+      let _ = disjoint_slices_to_diet loc env slices in
+      ()
 
   exception NoSingleField
 
@@ -549,7 +562,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let check_statically_evaluable (env : env) e () =
     let e = reduce_expr env e in
-    let use_set = use_e ISet.empty e in
+    let use_set = use_e e ISet.empty in
     if ISet.for_all (storage_is_pure e env) use_set then ()
     else fatal_from e (Error.UnpureExpression e)
 
@@ -1130,6 +1143,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let () =
       if false then
+        let open Format in
+        eprintf "Parameters for this call: %a@."
+          (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
+               fprintf f "%S<--%a" name (pp_print_option PP.pp_ty) e))
+          callee_params
+    in
+    let () =
+      if false then
         match extra_nargs with
         | [] -> ()
         | _ ->
@@ -1155,37 +1176,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         match ty.desc with
         | T_Bits ({ desc = E_Var x; _ }, _) -> (
             match (Types.get_structure env t_e).desc with
-            | T_Bits (e, _) -> (x, e) :: acc
+            | T_Bits (e, _) -> (
+                match List.assoc_opt x acc with
+                | None -> (x, e) :: acc
+                | Some e' ->
+                    assert (StaticInterpreter.equal_in_env env e e');
+                    acc)
             | _ -> acc)
         | _ -> acc
       in
       List.fold_left2 folder eqs1 callee_arg_types caller_arg_typed
-    in
-    let () =
-      if false then
-        let open Format in
-        eprintf "@[<hov 2>Eqs for this call are: %a@]@."
-          (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
-               fprintf f "%S<--%a" name PP.pp_expr e))
-          eqs2
-    in
-    let () =
-      List.iter2
-        (fun (_, callee_arg) caller_arg ->
-          let callee_arg = rename_ty_eqs eqs2 callee_arg in
-          let () =
-            if false then
-              Format.eprintf "Checking calling arg from %a to %a@." PP.pp_ty
-                caller_arg PP.pp_ty callee_arg
-          in
-          let+ () = check_type_satisfies loc env caller_arg callee_arg in
-          ())
-        callee_arg_types caller_arg_types
-    in
-    let () =
-      if false && not (String.equal name name1) then
-        Format.eprintf "Renaming call from %s to %s@ at %a.@." name name1
-          PP.pp_pos loc
     in
     let eqs3 =
       List.map
@@ -1207,11 +1207,70 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           else eqs)
         eqs3 callee_arg_types caller_arg_typed
     in
+    let () =
+      if false then
+        let open Format in
+        eprintf "@[<hov 2>Eqs for this call are: %a@]@."
+          (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
+               fprintf f "%S<--%a" name PP.pp_expr e))
+          eqs4
+    in
+    let () =
+      List.iter2
+        (fun (callee_arg_name, callee_arg) caller_arg ->
+          let callee_arg = rename_ty_eqs env eqs4 callee_arg in
+          let () =
+            if false then
+              Format.eprintf "Checking calling arg %s from %a to %a@."
+                callee_arg_name PP.pp_ty caller_arg PP.pp_ty callee_arg
+          in
+          let+ () = check_type_satisfies loc env caller_arg callee_arg in
+          ())
+        callee_arg_types caller_arg_types
+    in
+    let () =
+      if false && not (String.equal name name1) then
+        Format.eprintf "Renaming call from %s to %s@ at %a.@." name name1
+          PP.pp_pos loc
+    in
+    let () =
+      List.iter
+        (function
+          | _, None -> ()
+          | s, Some { desc = T_Int (UnderConstrained (_, s')); _ }
+            when String.equal s' s ->
+              ()
+          | callee_param_name, Some callee_param_t ->
+              let callee_param_t_renamed =
+                rename_ty_eqs env eqs4 callee_param_t
+              in
+              let caller_param_e =
+                match List.assoc_opt callee_param_name eqs4 with
+                | None ->
+                    assert false
+                    (* Bad behaviour, there should be a defining expression *)
+                | Some e -> e
+              in
+              let caller_param_t, _ = annotate_expr env caller_param_e in
+              let () =
+                if false then
+                  Format.eprintf
+                    "Checking calling param %s from %a to %a (i.e. %a)@."
+                    callee_param_name PP.pp_ty caller_param_t PP.pp_ty
+                    callee_param_t PP.pp_ty callee_param_t_renamed
+              in
+              let+ () =
+                check_type_satisfies loc env caller_param_t
+                  callee_param_t_renamed
+              in
+              ())
+        callee_params
+    in
     let ret_ty1 =
       match (call_type, ret_ty) with
       (* Begin FCallGetter *)
       | (ST_Function | ST_Getter), Some ty ->
-          Some (rename_ty_eqs eqs4 ty) |: TypingRule.FCallGetter
+          Some (rename_ty_eqs env eqs4 ty) |: TypingRule.FCallGetter
       (* End *)
       (* Begin FCallSetter *)
       | (ST_Setter | ST_Procedure), None -> None |: TypingRule.FCallSetter
@@ -1524,10 +1583,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       E_Slice (e2, slices) |> here |> annotate_expr env
                     in
                     let+ () = check_type_satisfies e3 env t_e3 t in
-                    (t, e3) |: TypingRule.EGetBitFieldTyped)
+                    (t, e3) |: TypingRule.EGetBitFieldTyped
+                    (* End *))
+            | T_Tuple tys ->
+                let index =
+                  try Scanf.sscanf field_name "item%u" Fun.id
+                  with Scanf.Scan_failure _ | Failure _ | End_of_file ->
+                    fatal_from e (Error.BadField (field_name, t_e2))
+                in
+                if 0 <= index && index < List.length tys then
+                  (List.nth tys index, E_GetItem (e2, index) |> add_pos_from e)
+                else fatal_from e (Error.BadField (field_name, t_e2))
             (* Begin EGetBadField *)
             | _ ->
-                conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e1
+                fatal_from e (Error.BadField (field_name, t_e2))
                 |: TypingRule.EGetBadField)
         (* End *))
     | E_GetFields (e_1, fields) -> (
@@ -1591,6 +1660,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (T_Bool |> here, E_Pattern (e'', patterns') |> here)
         |: TypingRule.EPattern
     (* End *)
+    | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
 
   let rec annotate_lexpr env le t_e =
@@ -1653,6 +1723,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               check_type_satisfies le env t_e t ()
             in
             let slices2 = best_effort slices (annotate_slices env) in
+            let+ () = check_disjoint_slices le env slices2 in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
         (* End *)
         (* Begin LESetArray *)
@@ -1973,14 +2044,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Begin SCase *)
     | S_Case (e, cases) ->
         let t_e, e1 = annotate_expr env e in
-        let annotate_case (acc, env) case =
-          let p, s = case.desc in
-          let p1 = annotate_pattern e1 env t_e p in
-          let s1 = try_annotate_block env s in
-          (add_pos_from_st case (p1, s1) :: acc, env)
+        let annotate_case case =
+          let { pattern = p0; where = w0; stmt = s0 } = case.desc in
+          let p1 = annotate_pattern e1 env t_e p0
+          and s1 = try_annotate_block env s0
+          and w1 =
+            match w0 with
+            | None -> None
+            | Some e_w0 ->
+                let twe, e_w1 = (annotate_expr env) e_w0 in
+                let+ () = check_structure_boolean e_w0 env twe in
+                Some e_w1
+          in
+          add_pos_from_st case { pattern = p1; where = w1; stmt = s1 }
         in
-        let cases1, env1 = List.fold_left annotate_case ([], env) cases in
-        (S_Case (e1, List.rev cases1) |> here, env1) |: TypingRule.SCase
+        let cases1 = List.map annotate_case cases in
+        (S_Case (e1, cases1) |> here, env) |: TypingRule.SCase
     (* End *)
     (* Begin SAssert *)
     | S_Assert e ->
@@ -2206,16 +2285,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     match f.return_type with None -> from_args | Some t -> folder from_args t
 
+  (** Returns the set of variables that are parameter defining, without the
+      ones previously declared in the environment. *)
   let get_undeclared_defining env =
-    let of_ty acc ty =
+    let rec of_ty acc ty =
       match ty.desc with
       | T_Bits ({ desc = E_Var x; _ }, _) ->
           if StaticEnv.is_undefined x env then ISet.add x acc else acc
+      | T_Tuple tys -> List.fold_left of_ty acc tys
       | _ -> acc
     in
     fun f -> fold_types_func_sig of_ty f ISet.empty
 
-  let use_func_sig f = fold_types_func_sig ASTUtils.use_ty f ISet.empty
+  let use_func_sig f =
+    fold_types_func_sig (Fun.flip ASTUtils.use_ty) f ISet.empty
 
   let annotate_func_sig ~loc env (f : AST.func) : env * AST.func =
     let () =
@@ -2299,6 +2382,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         Format.eprintf "@[<hov>Annotating arguments in env:@ %a@]@."
           StaticEnv.pp_env env3
     in
+    let () =
+      if false then
+        let open Format in
+        eprintf "@[Parameters identified for func %s:@ @[%a@]@]@." f.name
+          (pp_print_list ~pp_sep:pp_print_space (fun f (s, ty_opt) ->
+               fprintf f "%s:%a" s (pp_print_option PP.pp_ty) ty_opt))
+          parameters
+    in
     (* Add arguments. *)
     let env4, args =
       let one_arg env3' (x, ty) =
@@ -2358,6 +2449,54 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
+  let check_setter_has_getter ~loc env (func_sig : AST.func) =
+    let fail () =
+      fatal_from loc (Error.SetterWithoutCorrespondingGetter func_sig)
+    in
+    let check_true thing = check_true thing fail in
+    match func_sig.subprogram_type with
+    | ST_Getter | ST_Function | ST_Procedure -> ok
+    | ST_Setter ->
+        let ret_type, args =
+          match func_sig.args with
+          | [] -> fatal_from loc Error.UnrespectedParserInvariant
+          | (_, ret_type) :: args -> (ret_type, List.map snd args)
+        in
+        let _, name', _, _, _ =
+          try Fn.find_name loc env func_sig.name args
+          with
+          | Error.(
+              ASLException
+                { desc = NoCallCandidate _ | TooManyCallCandidates _; _ })
+          ->
+            fail ()
+        in
+        let func_sig' =
+          try IMap.find name' env.global.subprograms
+          with Not_found -> assert false (* By type-checking invariant! *)
+        in
+        let+ () =
+          (* Check that func_sig' is a getter *)
+          check_true (func_sig'.subprogram_type = ST_Getter)
+        in
+        let+ () =
+          (* Check that args match *)
+          let () = assert (List.compare_lengths func_sig'.args args = 0) in
+          check_true
+          @@ List.for_all2
+               (fun (_, t1) t2 -> Types.type_equal env t1 t2)
+               func_sig'.args args
+        in
+        let+ () =
+          (* Check that return types match. *)
+          match func_sig'.return_type with
+          | None ->
+              assert
+                false (* By type-checking invariant: func_sig' is a getter. *)
+          | Some t -> check_true @@ Types.type_equal env ret_type t
+        in
+        ok
+
   (* Begin DeclareOneFunc *)
   let declare_one_func loc (func_sig : func) env =
     let env, name' =
@@ -2376,6 +2515,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           func_sig.args
     in
     let+ () = check_var_not_in_genv loc env name' in
+    let+ () = check_setter_has_getter ~loc env func_sig in
     let func_sig = { func_sig with name = name' } in
     (add_subprogram name' func_sig env, func_sig)
 
@@ -2531,6 +2671,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (d :: acc, env)
 
   let type_check_mutually_rec ds (acc, env) =
+    let () =
+      if false then
+        let open Format in
+        eprintf "@[Type-checking@ mutually@ recursive@ declarations:@ %a@]@."
+          (pp_print_list ~pp_sep:pp_print_space pp_print_string)
+          (List.map identifier_of_decl ds)
+    in
     let env_and_fs =
       List.map
         (fun d ->
@@ -2544,6 +2691,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (Error.BadRecursiveDecls
                    (List.map ASTUtils.identifier_of_decl ds)))
         ds
+    in
+    let env_and_fs =
+      (* Setters last as they need getters declared. *)
+      let others, setters =
+        List.partition
+          (fun (_, f, _) -> f.subprogram_type = ST_Setter)
+          env_and_fs
+      in
+      List.rev_append setters others
     in
     let genv, fs =
       list_fold_left_map

@@ -27,9 +27,19 @@ end
 var f3_storage: integer = -1;
 var f4_storage: integer = -1;
 
+getter f3[x::integer] => integer
+begin
+  return f3_storage;
+end
+
 setter f3[x::integer] = v :: integer
 begin
   f3_storage = x;
+end
+
+getter f4[x::integer] => integer
+begin
+  return f4_storage;
 end
 
 setter f4[x::integer] = v :: integer

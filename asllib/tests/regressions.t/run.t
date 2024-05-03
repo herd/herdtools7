@@ -206,6 +206,20 @@ UnderConstrained integers:
   [1]
 
   $ aslref equality.asl
+  $ aslref bad-equality.asl
+  File bad-equality.asl, line 3, characters 8 to 23:
+  ASL Typing error: Illegal application of operator == on types
+    (integer {1}, integer {2}) and (integer {1}, integer {2})
+  [1]
+
+  $ aslref setter_without_getter.asl
+  File setter_without_getter.asl, line 1, character 0 to line 4, character 3:
+  ASL Typing error: setter "f" does not have a corresponding getter of
+    signature integer -> integer
+  [1]
+
+  $ aslref tuple_items.asl
+  $ aslref cases_where.asl
 
 Arrays indexed by enumerations
   $ aslref enum-array.asl
@@ -228,6 +242,21 @@ Parameters bugs:
   ASL Typing error: Illegal application of operator OR on types bits(a)
     and bits(b)
   [1]
+  $ aslref arg-as-param-call.asl
+  File arg-as-param-call.asl, line 8, characters 4 to 21:
+  ASL Typing error: a subtype of bits(10) was expected, provided bits(4).
+  [1]
+  $ aslref typed-param-call.asl
+  File typed-param-call.asl, line 8, characters 4 to 15:
+  ASL Typing error: a subtype of integer {5..10} was expected,
+    provided integer {2}.
+  [1]
+  $ aslref typed-arg-as-param-call.asl
+  File typed-arg-as-param-call.asl, line 8, characters 4 to 18:
+  ASL Typing error: a subtype of integer {5..10} was expected,
+    provided integer {2}.
+  [1]
+  $ aslref --no-exec defining_param.asl
 
 Required tests:
   $ aslref anonymous-types-example-success.asl

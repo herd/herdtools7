@@ -3,12 +3,12 @@ ASL func02
 
 {}
 
-getter X_get[i::integer] => integer
+getter X[i::integer] => integer
 begin
     return i;
 end
 
-setter X_set[i::integer] = v::integer
+setter X[i::integer] = v::integer
 begin
     let internal_i = i;
     let internal_v = v;
@@ -16,15 +16,15 @@ end
 
 func main() => integer
 begin
-    X_set[2] = 3;
-    let x = X_get[4];
+    X[2] = 3;
+    let x = X[4];
 
     return 0;
 end
 
 forall (
      0: main.0.x = 4
-  /\ 0: X_set.0.internal_i = 2
-  /\ 0: X_set.0.internal_v = 3
+  /\ 0: X-1.0.internal_i = 2
+  /\ 0: X-1.0.internal_v = 3
 )
 

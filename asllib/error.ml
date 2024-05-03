@@ -62,6 +62,8 @@ type error_desc =
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
   | BaseValueEmptyType of ty
+  | SettingIntersectingSlices of bitfield list
+  | SetterWithoutCorrespondingGetter of func
 
 type error = error_desc annotated
 
@@ -228,6 +230,19 @@ let pp_error =
           "ASL Typing error:@ cannot@ perform@ Asserted@ Type@ Conversion@ on@ \
            %a@ by@ %a."
           pp_ty t1 pp_ty t2
+    | SettingIntersectingSlices bitfields ->
+        fprintf f "ASL Typing error:@ setting@ intersecting@ bitfields@ [%a]"
+          pp_bitfields bitfields
+    | SetterWithoutCorrespondingGetter func ->
+        let ret, args =
+          match func.args with
+          | (_, ret) :: args -> (ret, List.map snd args)
+          | _ -> assert false
+        in
+        fprintf f
+          "ASL Typing error:@ setter@ \"%s\"@ does@ not@ have@ a@ \
+           corresponding@ getter@ of@ signature@ @[@[%a@]@ ->@ %a@]"
+          func.name (pp_comma_list pp_ty) args pp_ty ret
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

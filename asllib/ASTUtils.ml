@@ -165,138 +165,133 @@ let slices_to_positions as_int =
 let fold_named_list folder acc list =
   List.fold_left (fun acc (_, v) -> folder acc v) acc list
 
-let rec use_e acc e =
+let ( $ ) f1 f2 acc = f1 acc |> f2
+let use_option use_elt = function None -> Fun.id | Some elt -> use_elt elt
+let use_list use_elt elts acc = List.fold_left (Fun.flip use_elt) acc elts
+
+let use_named_list use_elt named_elts acc =
+  fold_named_list (Fun.flip use_elt) acc named_elts
+
+let rec use_e e =
   match e.desc with
-  | E_Literal _ -> acc
-  | E_ATC (e, ty) -> use_e (use_ty acc ty) e
-  | E_Var x -> ISet.add x acc
-  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e (use_e acc e2) e1
-  | E_Unop (_op, e) -> use_e acc e
+  | E_Literal _ -> Fun.id
+  | E_ATC (e, ty) -> use_ty ty $ use_e e
+  | E_Var x -> ISet.add x
+  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e e1 $ use_e e2
+  | E_Unop (_op, e) -> use_e e
   | E_Call (x, args, named_args) ->
-      let acc = ISet.add x acc in
-      let acc = use_fields acc named_args in
-      use_es acc args
-  | E_Slice (e, slices) -> use_slices (use_e acc e) slices
-  | E_Cond (e1, e2, e3) -> use_e (use_e (use_e acc e1) e3) e2
-  | E_GetField (e, _) -> use_e acc e
-  | E_GetFields (e, _) -> use_e acc e
-  | E_Record (ty, li) -> use_fields (use_ty acc ty) li
-  | E_Concat es -> use_es acc es
-  | E_Tuple es -> use_es acc es
-  | E_Unknown t -> use_ty acc t
-  | E_Pattern (e, _p) -> use_e acc e
+      ISet.add x $ use_fields named_args $ use_es args
+  | E_Slice (e, slices) -> use_e e $ use_slices slices
+  | E_Cond (e1, e2, e3) -> use_e e1 $ use_e e2 $ use_e e3
+  | E_GetItem (e, _) -> use_e e
+  | E_GetField (e, _) -> use_e e
+  | E_GetFields (e, _) -> use_e e
+  | E_Record (ty, li) -> use_ty ty $ use_fields li
+  | E_Concat es -> use_es es
+  | E_Tuple es -> use_es es
+  | E_Unknown t -> use_ty t
+  | E_Pattern (e, p) -> use_e e $ use_pattern p
 
-and use_es acc es = List.fold_left use_e acc es
-and use_fields acc fields = fold_named_list use_e acc fields
-and use_slices acc slices = List.fold_left use_slice acc slices
+and use_es es acc = use_list use_e es acc
+and use_fields fields acc = use_named_list use_e fields acc
+and use_pattern _p acc = acc
 
-and use_slice acc = function
-  | Slice_Single e -> use_e acc e
+and use_slice = function
+  | Slice_Single e -> use_e e
   | Slice_Star (e1, e2) | Slice_Length (e1, e2) | Slice_Range (e1, e2) ->
-      use_e (use_e acc e1) e2
+      use_e e1 $ use_e e2
 
-and use_ty acc t =
+and use_slices slices = use_list use_slice slices
+
+and use_ty t =
   match t.desc with
-  | T_Named s -> ISet.add s acc
+  | T_Named s -> ISet.add s
   | T_Int (UnConstrained | UnderConstrained _)
   | T_Enum _ | T_Bool | T_Real | T_String ->
-      acc
-  | T_Int (WellConstrained cs) -> use_constraints acc cs
-  | T_Tuple li -> List.fold_left use_ty acc li
-  | T_Record fields | T_Exception fields -> fold_named_list use_ty acc fields
-  | T_Array (ArrayLength_Expr e, t') -> use_ty (use_e acc e) t'
-  | T_Array (ArrayLength_Enum (s, _), t') -> use_ty (ISet.add s acc) t'
-  | T_Bits (e, bit_fields) -> use_bitfields (use_e acc e) bit_fields
+      Fun.id
+  | T_Int (WellConstrained cs) -> use_constraints cs
+  | T_Tuple li -> use_list use_ty li
+  | T_Record fields | T_Exception fields -> use_named_list use_ty fields
+  | T_Array (ArrayLength_Expr e, t') -> use_e e $ use_ty t'
+  | T_Array (ArrayLength_Enum (s, _), t') -> ISet.add s $ use_ty t'
+  | T_Bits (e, bit_fields) -> use_e e $ use_bitfields bit_fields
 
-and use_bitfields acc bitfields = List.fold_left use_bitfield acc bitfields
+and use_bitfields bitfields = use_list use_bitfield bitfields
 
-and use_bitfield acc = function
-  | BitField_Simple (_name, slices) -> use_slices acc slices
+and use_bitfield = function
+  | BitField_Simple (_name, slices) -> use_slices slices
   | BitField_Nested (_name, slices, bitfields) ->
-      let acc = use_bitfields acc bitfields in
-      use_slices acc slices
-  | BitField_Type (_name, slices, ty) ->
-      let acc = use_ty acc ty in
-      use_slices acc slices
+      use_bitfields bitfields $ use_slices slices
+  | BitField_Type (_name, slices, ty) -> use_ty ty $ use_slices slices
 
-and use_constraints acc cs = List.fold_left use_constraint acc cs
+and use_constraint = function
+  | Constraint_Exact e -> use_e e
+  | Constraint_Range (e1, e2) -> use_e e1 $ use_e e2
 
-and use_constraint acc = function
-  | Constraint_Exact e -> use_e acc e
-  | Constraint_Range (e1, e2) -> use_e (use_e acc e1) e2
+and use_constraints cs = use_list use_constraint cs
 
-let rec use_s acc s =
+let rec use_s s =
   match s.desc with
-  | S_Pass | S_Return None -> acc
-  | S_Seq (s1, s2) -> use_s (use_s acc s1) s2
-  | S_Assert e | S_Return (Some e) -> use_e acc e
-  | S_Assign (le, e, _) -> use_le (use_e acc e) le
+  | S_Pass | S_Return None -> Fun.id
+  | S_Seq (s1, s2) -> use_s s1 $ use_s s2
+  | S_Assert e | S_Return (Some e) -> use_e e
+  | S_Assign (le, e, _) -> use_e e $ use_le le
   | S_Call (x, args, named_args) ->
-      let acc = ISet.add x acc in
-      let acc = use_fields acc named_args in
-      use_es acc args
-  | S_Cond (e, s1, s2) -> use_s (use_s (use_e acc e) s2) s1
-  | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
-  | S_For (_, e1, _, e2, s) -> use_s (use_e (use_e acc e1) e2) s
-  | S_While (e, s) | S_Repeat (s, e) -> use_s (use_e acc e) s
-  | S_Decl (_, ldi, Some e) -> use_e (use_ldi acc ldi) e
-  | S_Decl (_, ldi, None) -> use_ldi acc ldi
-  | S_Throw (Some (e, _)) -> use_e acc e
-  | S_Throw None -> acc
-  | S_Try (s, catchers, None) -> use_catchers (use_s acc s) catchers
-  | S_Try (s, catchers, Some s') ->
-      use_catchers (use_s (use_s acc s') s) catchers
-  | S_Print { args; debug = _ } -> List.fold_left use_e acc args
+      ISet.add x $ use_fields named_args $ use_es args
+  | S_Cond (e, s1, s2) -> use_s s1 $ use_s s2 $ use_e e
+  | S_Case (e, cases) -> use_e e $ use_cases cases
+  | S_For (_, e1, _, e2, s) -> use_e e1 $ use_e e2 $ use_s s
+  | S_While (e, s) | S_Repeat (s, e) -> use_s s $ use_e e
+  | S_Decl (_, ldi, e) -> use_option use_e e $ use_ldi ldi
+  | S_Throw (Some (e, _)) -> use_e e
+  | S_Throw None -> Fun.id
+  | S_Try (s, catchers, s') ->
+      use_s s $ use_option use_s s' $ use_catchers catchers
+  | S_Print { args; debug = _ } -> use_es args
 
-and use_ldi acc = function
-  | LDI_Discard -> acc
-  | LDI_Var _ -> acc
-  | LDI_Typed (ldi, t) -> use_ldi (use_ty acc t) ldi
-  | LDI_Tuple ldis -> List.fold_left use_ldi acc ldis
+and use_ldi = function
+  | LDI_Discard | LDI_Var _ -> Fun.id
+  | LDI_Typed (ldi, t) -> use_ty t $ use_ldi ldi
+  | LDI_Tuple ldis -> List.fold_right use_ldi ldis
 
-and use_case acc { desc = _p, stmt; _ } = use_s acc stmt
+and use_case { desc = { pattern; where; stmt }; _ } =
+  use_option use_e where $ use_pattern pattern $ use_s stmt
 
-and use_le acc le =
+and use_cases cases = use_list use_case cases
+
+and use_le le =
   match le.desc with
-  | LE_Var x -> ISet.add x acc
-  | LE_Destructuring les | LE_Concat (les, _) -> List.fold_left use_le acc les
-  | LE_Discard -> acc
-  | LE_SetArray (le, e) -> use_le (use_e acc e) le
-  | LE_SetField (le, _) | LE_SetFields (le, _) -> use_le acc le
-  | LE_Slice (le, slices) -> use_slices (use_le acc le) slices
+  | LE_Var x -> ISet.add x
+  | LE_Destructuring les | LE_Concat (les, _) -> List.fold_right use_le les
+  | LE_Discard -> Fun.id
+  | LE_SetArray (le, e) -> use_le le $ use_e e
+  | LE_SetField (le, _) | LE_SetFields (le, _) -> use_le le
+  | LE_Slice (le, slices) -> use_slices slices $ use_le le
 
-and use_catcher acc (_name, ty, s) = use_s (use_ty acc ty) s
-and use_catchers acc = List.fold_left use_catcher acc
+and use_catcher (_name, ty, s) = use_s s $ use_ty ty
+and use_catchers catchers = use_list use_catcher catchers
 
-and use_decl acc d =
+and use_decl d =
   match d.desc with
-  | D_Func { body = SB_ASL s; _ } -> use_s acc s
-  | D_GlobalStorage { initial_value = Some e; _ } -> use_e acc e
-  | _ -> acc
+  | D_Func { body = SB_ASL s; _ } -> use_s s
+  | D_GlobalStorage { initial_value = Some e; _ } -> use_e e
+  | _ -> Fun.id
 
-let use_constant_decl acc d =
+let use_constant_decl d =
   match d.desc with
-  | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
-      let acc = use_e acc e in
-      use_ty acc ty
-  | D_GlobalStorage { initial_value = None; ty = Some ty; _ } -> use_ty acc ty
-  | D_GlobalStorage { initial_value = Some e; ty = None; _ } -> use_e acc e
-  | D_GlobalStorage { initial_value = None; ty = None; _ } -> assert false
+  | D_GlobalStorage { initial_value; ty; _ } ->
+      use_option use_e initial_value $ use_option use_ty ty
   | D_TypeDecl (_, ty, Some (s, fields)) ->
-      let acc = ISet.add s acc in
-      let acc = use_ty acc ty in
-      let acc = fold_named_list use_ty acc fields in
-      acc
-  | D_TypeDecl (_, ty, None) -> use_ty acc ty
+      use_ty ty $ ISet.add s $ use_named_list use_ty fields
+  | D_TypeDecl (_, ty, None) -> use_ty ty
   | D_Func { body; args; return_type; _ } ->
-      let acc =
-        match body with SB_ASL s -> use_s acc s | SB_Primitive -> acc
+      let use_body =
+        match body with SB_ASL s -> use_s s | SB_Primitive -> Fun.id
       in
-      let acc = match return_type with None -> acc | Some t -> use_ty acc t in
-      fold_named_list use_ty acc args
+      use_body $ use_option use_ty return_type $ use_named_list use_ty args
 
-let used_identifiers ast = List.fold_left use_decl ISet.empty ast
-let used_identifiers_stmt = use_s ISet.empty
+let used_identifiers ast = use_list use_decl ast ISet.empty
+let used_identifiers_stmt s = use_s s ISet.empty
 
 let canonical_fields li =
   let compare (x, _) (y, _) = String.compare x y in
@@ -345,6 +340,9 @@ let rec expr_equal eq e1 e2 =
   | E_GetFields (e1', f1s), E_GetFields (e2', f2s) ->
       list_equal String.equal f1s f2s && expr_equal eq e1' e2'
   | E_GetFields _, _ | _, E_GetFields _ -> false
+  | E_GetItem (e1', i1), E_GetItem (e2', i2) ->
+      Int.equal i1 i2 && expr_equal eq e1' e2'
+  | E_GetItem _, _ | _, E_GetItem _ -> false
   | E_Pattern _, _ | E_Record _, _ -> assert false
   | E_Literal v1, E_Literal v2 -> literal_equal v1 v2
   | E_Literal _, _ | _, E_Literal _ -> false
@@ -506,8 +504,14 @@ let case_to_conds : stmt -> stmt =
     | [] -> s_pass
     | case :: t -> map_desc (one_case x t) case
   and one_case x t case =
-    let p, s = case.desc in
-    S_Cond (E_Pattern (var_ x, p) |> add_pos_from case, s, cases_to_cond x t)
+    let { pattern; where; stmt } = case.desc in
+    let e_pattern = E_Pattern (var_ x, pattern) |> add_pos_from case in
+    let cond =
+      match where with
+      | None -> e_pattern
+      | Some e_where -> binop BAND e_pattern e_where
+    in
+    S_Cond (cond, stmt, cases_to_cond x t)
   in
   map_desc @@ fun s ->
   match s.desc with
@@ -613,6 +617,7 @@ let rec subst_expr substs e =
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
+  | E_GetItem (e, i) -> E_GetItem (tr e, i)
   | E_Literal _ -> e.desc
   | E_Pattern (e, ps) -> E_Pattern (tr e, ps)
   | E_Record (t, fields) ->
@@ -646,6 +651,7 @@ let rec is_simple_expr e =
   | E_ATC (e, _)
   | E_GetFields (e, _)
   | E_GetField (e, _)
+  | E_GetItem (e, _)
   | E_Unop (_, e)
   | E_Pattern (e, _) (* because pattern must be side-effect free. *) ->
       is_simple_expr e
@@ -690,6 +696,7 @@ let rename_locals map_name ast =
     | E_GetArray (e1, e2) -> E_GetArray (map_e e1, map_e e2)
     | E_GetField (e', f) -> E_GetField (map_e e', f)
     | E_GetFields (e', li) -> E_GetFields (map_e e', li)
+    | E_GetItem (e', i) -> E_GetItem (map_e e', i)
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
     | E_Concat li -> E_Concat (map_es li)
     | E_Tuple li -> E_Tuple (map_es li)

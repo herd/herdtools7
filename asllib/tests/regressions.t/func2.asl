@@ -1,9 +1,9 @@
-getter X_get[i:integer] => integer
+getter X[i:integer] => integer
 begin
     return i;
 end
 
-setter X_set[i:integer] = v:integer
+setter X[i:integer] = v:integer
 begin
     let internal_i = i;
     let internal_v = v;
@@ -11,8 +11,8 @@ end
 
 func main() => integer
 begin
-    X_set[2] = 3;
-    let x = X_get[4];
+    X[2] = 3;
+    let x = X[4];
 
     assert x == 4;
 

@@ -195,10 +195,12 @@ let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endp
    This recognise a possibly-empty, separated, with potentially a trailing
    separator list.
  *)
-let trailing_list(sep, x) :=
-  | { [] }
-  | x=x; { [ x ] }
-  | h=x; sep; t=trailing_list(sep, x); { h :: t }
+let trailing_list(sep, x) == loption(non_empty_trailing_list(sep, x))
+
+(* Same but in non-empty. *)
+let non_empty_trailing_list(sep, x) :=
+  | x=x; ioption(sep); { [ x ] }
+  | h=x; sep; t=non_empty_trailing_list(sep, x); { h :: t }
 
 (* A non-empty comma-separated list. *)
 let nclist(x) == separated_nonempty_list(COMMA, x)
@@ -211,6 +213,9 @@ let clist2(x) == ~=x; COMMA; li=nclist(x); { x :: li }
 
 (* A comma-separated trailing list. *)
 let tclist(x) == trailing_list(COMMA, x)
+
+(* A comma-separated non-empty trailing list. *)
+let ntclist(x) == non_empty_trailing_list(COMMA, x)
 
 (* A parenthesised comma-separated list *)
 let plist(x) == pared(clist(x))
@@ -383,7 +388,7 @@ let ty :=
 
 let ty_decl := ty |
   annotated (
-    | ENUMERATION; l=braced(tclist(IDENTIFIER));        < T_Enum      >
+    | ENUMERATION; l=braced(ntclist(IDENTIFIER));       < T_Enum      >
     | RECORD; l=fields_opt;                             < T_Record    >
     | EXCEPTION; l=fields_opt;                          < T_Exception >
   )
@@ -454,8 +459,9 @@ let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
 let alt_delim == ARROW | COLON
 let alt == annotated (
-  | WHEN; ~=pattern_list; ioption(WHERE; expr); alt_delim; ~=stmt_list; <>
-  | OTHERWISE; alt_delim; s=stmt_list; { (Pattern_All, s) }
+  | WHEN; pattern=pattern_list; where=ioption(WHERE; expr); alt_delim; stmt=stmt_list;
+      { {pattern; where; stmt } }
+  | OTHERWISE; alt_delim; stmt=stmt_list; { { pattern=Pattern_All; where= None; stmt } }
 )
 
 let otherwise == OTHERWISE; ARROW; stmt_list
