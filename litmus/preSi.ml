@@ -98,7 +98,7 @@ module Make
       Cfg.ascall || Cfg.is_kvm || do_label_init || CfgLoc.need_prelude
       || Cfg.variant Variant_litmus.Self
 
-    let do_precise = Fault.Handling.is_fatal Cfg.precision
+    let do_precise = Cfg.is_kvm && Fault.Handling.is_fatal Cfg.precision
 
     let do_dynalloc =
         let open Alloc in
@@ -2019,30 +2019,32 @@ module Make
           end;
         O.oi "global_t *g = a->g;" ;
         if Cfg.is_kvm then begin
-          match db with
-          | None -> ()
-          | Some db ->
-             let feat_same p = match forall_procs test p with
-               | None -> None
-               | Some b -> Some (if b then '1' else '0') in
-             match feat_same db.DirtyBit.ha,feat_same db.DirtyBit.hd with
-             | Some ha,Some hd ->
+          begin
+            match db with
+            | None -> ()
+            | Some db ->
+              let feat_same p = match forall_procs test p with
+                | None -> None
+                | Some b -> Some (if b then '1' else '0') in
+              match feat_same db.DirtyBit.ha,feat_same db.DirtyBit.hd with
+              | Some ha,Some hd ->
                 O.fi "set_hahd_bits(0b%c%c);" hd ha
-             | _,_ -> ()
-        end ;
-        if Misc.consp procs_user then begin
-            O.oi "set_user_stack(id);"
-        end ;
-        if have_fault_handler && T.has_defaulthandler test then begin
+              | _,_ -> ()
+          end ;
           if Misc.consp procs_user then begin
+            O.oi "set_user_stack(id);"
+          end ;
+          if have_fault_handler && T.has_defaulthandler test then begin
+            if Misc.consp procs_user then begin
               O.o "/* Fault handlers installation depends on user stacks */"
-          end ;
-          O.oi "install_fault_handler(id);" ;
-          if not (T.has_asmhandler test) then begin
-            (* Set vector table once for all, as it does not depend on role *)
-             O.oi "extern ins_t vector_table;" ;
-             O.oi "exceptions_init_test(&vector_table);"
-          end ;
+            end ;
+            O.oi "install_fault_handler(id);" ;
+            if not (T.has_asmhandler test) then begin
+              (* Set vector table once for all, as it does not depend on role *)
+              O.oi "extern ins_t vector_table;" ;
+              O.oi "exceptions_init_test(&vector_table);"
+            end
+          end
         end ;
         if do_affinity then begin
           let id =
