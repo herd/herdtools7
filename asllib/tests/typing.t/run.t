@@ -326,3 +326,11 @@ C Tests
   File CNegative12.asl, line 2, characters 56 to 57:
   ASL Error: Cannot parse.
   [1]
+
+Extra tests by ASLRef team
+  $ aslref NegParam.asl
+  File NegParam.asl, line 3, characters 2 to 28:
+  ASL Typing error: a subtype of integer {0..N} was expected,
+    provided integer {0}.
+  [1]
+
