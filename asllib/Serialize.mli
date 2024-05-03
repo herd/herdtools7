@@ -25,6 +25,8 @@
 
 open AST
 
+val subprogram_type_to_string : subprogram_type -> string
+
 type 'a printer = Buffer.t -> 'a -> unit
 (** Type of printers used here. *)
 

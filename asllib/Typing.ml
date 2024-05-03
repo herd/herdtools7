@@ -254,10 +254,12 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
   (* Return true if two subprogram are forbidden with the same argument types. *)
   let has_subprogram_type_clash s1 s2 =
     match (s1, s2) with
-    | ST_Function, _ | _, ST_Function | ST_Procedure, _ | _, ST_Procedure ->
-        true
-    | ST_Getter, ST_Getter | ST_Setter, ST_Setter -> true
-    | ST_Getter, ST_Setter | ST_Setter, ST_Getter -> false
+    | ST_Getter, ST_Setter
+    | ST_Setter, ST_Getter
+    | ST_EmptyGetter, ST_EmptySetter
+    | ST_EmptySetter, ST_EmptyGetter ->
+        false
+    | _ -> true
 
   (* Deduce renamings from match between calling and callee types. *)
   let deduce_eqs env =
@@ -326,11 +328,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
                 if false then
                   Format.eprintf "Found already translated name: %S.@." name
               in
-              ( deduce_eqs env caller_arg_types callee_arg_types,
-                name,
-                callee_arg_types,
-                func_sig.return_type,
-                func_sig.parameters )
+              (deduce_eqs env caller_arg_types callee_arg_types, name, func_sig)
             else fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
         | None -> undefined_identifier loc name)
     | Some set -> (
@@ -342,9 +340,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
               if has_arg_clash env caller_arg_types callee_arg_types then
                 ( deduce_eqs env caller_arg_types callee_arg_types,
                   name',
-                  callee_arg_types,
-                  func_sig.return_type,
-                  func_sig.parameters )
+                  func_sig )
                 :: acc
               else acc
         in
@@ -365,11 +361,11 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
             try
               match IMap.find_opt name env.global.subprograms with
               | None -> undefined_identifier loc ("function " ^ name)
-              | Some { args = callee_arg_types; return_type; parameters; _ } ->
+              | Some func_sig ->
                   if false then
                     Format.eprintf "@[<2>%a:@ No extra arguments for %s@]@."
                       PP.pp_pos loc name;
-                  ([], name, callee_arg_types, return_type, parameters)
+                  ([], name, func_sig)
             with Error.ASLException _ -> raise error))
 end
 
@@ -1138,12 +1134,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   and annotate_call loc env name args eqs call_type =
     let () =
       if false then
-        Format.eprintf "Annotating call to %S at %a.@." name PP.pp_pos loc
+        Format.eprintf "Annotating call to %S (%s) at %a.@." name
+          (Serialize.subprogram_type_to_string call_type)
+          PP.pp_pos loc
     in
     let caller_arg_typed = List.map (annotate_expr env) args in
     let caller_arg_types, args1 = List.split caller_arg_typed in
-    let extra_nargs, name1, callee_arg_types, ret_ty, callee_params =
+    let extra_nargs, name1, callee =
       Fn.try_find_name loc env name caller_arg_types
+    in
+    let () =
+      if false then
+        Format.eprintf "@[Found candidate decl:@ @[%a@]@]@." PP.pp_t
+          [ D_Func callee |> add_dummy_pos ]
+    in
+    let+ () =
+      check_true (callee.subprogram_type = call_type) @@ fun () ->
+      fatal_from loc (MismatchedReturnValue name)
     in
     let () =
       if false then
@@ -1151,7 +1158,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         eprintf "Parameters for this call: %a@."
           (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
                fprintf f "%S<--%a" name (pp_print_option PP.pp_ty) e))
-          callee_params
+          callee.parameters
     in
     let () =
       if false then
@@ -1169,9 +1176,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let eqs1 = List.rev_append eqs extra_nargs in
     let () =
       (* Begin FCallBadArity *)
-      if List.compare_lengths callee_arg_types args1 != 0 then
+      if List.compare_lengths callee.args args1 != 0 then
         fatal_from loc
-        @@ Error.BadArity (name, List.length callee_arg_types, List.length args1)
+        @@ Error.BadArity (name, List.length callee.args, List.length args1)
         |: TypingRule.FCallBadArity
       (* End *)
     in
@@ -1192,7 +1199,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       match C.check with
       | `TypeCheck -> eqs1
       | `Warn | `Silence ->
-          List.fold_left2 folder eqs1 callee_arg_types caller_arg_typed
+          List.fold_left2 folder eqs1 callee.args caller_arg_typed
     in
     let eqs3 =
       List.map
@@ -1207,12 +1214,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           if
             List.exists
               (fun (p_name, _ty) -> String.equal callee_x p_name)
-              callee_params
+              callee.parameters
           then
             let+ () = check_constrained_integer ~loc env caller_ty in
             (callee_x, caller_e) :: eqs
           else eqs)
-        eqs3 callee_arg_types caller_arg_typed
+        eqs3 callee.args caller_arg_typed
     in
     let () =
       if false then
@@ -1233,7 +1240,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           in
           let+ () = check_type_satisfies loc env caller_arg callee_arg in
           ())
-        callee_arg_types caller_arg_types
+        callee.args caller_arg_types
     in
     let () =
       if false && not (String.equal name name1) then
@@ -1271,16 +1278,17 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   callee_param_t_renamed
               in
               ())
-        callee_params
+        callee.parameters
     in
     let ret_ty1 =
-      match (call_type, ret_ty) with
+      match (call_type, callee.return_type) with
       (* Begin FCallGetter *)
-      | (ST_Function | ST_Getter), Some ty ->
+      | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
           Some (rename_ty_eqs env eqs4 ty) |: TypingRule.FCallGetter
       (* End *)
       (* Begin FCallSetter *)
-      | (ST_Setter | ST_Procedure), None -> None |: TypingRule.FCallSetter
+      | (ST_Setter | ST_EmptySetter | ST_Procedure), None ->
+          None |: TypingRule.FCallSetter
       (* End *)
       (* Begin FCallMismatch *)
       | _ ->
@@ -1320,7 +1328,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
           in
           let name, args, eqs, ty =
-            annotate_call (to_pos e) env x [] [] ST_Getter
+            annotate_call (to_pos e) env x [] [] ST_EmptyGetter
           in
           let ty = match ty with Some ty -> ty | None -> assert false in
           (ty, E_Call (name, args, eqs) |> here)
@@ -1958,14 +1966,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              Format.eprintf "@[<3>Annotating assignment@ @[%a@]@]@." PP.pp_stmt
                s
          in
-         let t_e, e1 = annotate_expr env re in
-         let () =
-           if false then Format.eprintf "@[Type: @[%a@]@]@." PP.pp_ty t_e
-         in
-         let reduced = setter_should_reduce_to_call_s env le e1 in
+         let reduced = setter_should_reduce_to_call_s env le re in
          match reduced with
          | Some s -> (s, env)
          | None ->
+             let t_e, e1 = annotate_expr env re in
              let env1 =
                match ver with
                | V1 -> env
@@ -2214,11 +2219,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     if not (should_reduce_to_call env x) then None
     else
       let ( let* ) = Option.bind in
-      let _, _, _, ty_opt, _ =
+      let _, _, callee =
         try Fn.try_find_name le env x []
         with Error.ASLException _ -> assert false
       in
-      let* ty = ty_opt in
+      let* ty = callee.return_type in
       let ty = Types.make_anonymous env ty in
       let* name, args = should_fields_reduce_to_call env x ty fields in
       let name, args, eqs, ret_ty =
@@ -2242,11 +2247,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       match setter_should_reduce_to_call_s env sub_le (E_Var x |> here) with
       | None -> None
       | Some s ->
-          let s1, _env1 =
-            S_Assign (le_x, to_expr sub_le, V1) |> here |> annotate_stmt env
-          and s2, _env2 =
-            S_Assign (old_le le_x, e, V1) |> here |> annotate_stmt env
-          in
+          let s1 = S_Assign (le_x, to_expr sub_le, V1) |> here
+          and s2 = S_Assign (old_le le_x, e, V1) |> here in
           Some (s_then (s_then s1 s2) s)
     in
     match le.desc with
@@ -2278,7 +2280,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_Var x ->
         if should_reduce_to_call env x then
           let name, args, eqs, ret_ty =
-            annotate_call (to_pos le) env x [ e ] [] ST_Setter
+            annotate_call (to_pos le) env x [ e ] [] ST_EmptySetter
           in
           let () = assert (ret_ty = None) in
           Some (S_Call (name, args, eqs) |> here)
@@ -2462,14 +2464,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let check_true thing = check_true thing fail in
     match func_sig.subprogram_type with
-    | ST_Getter | ST_Function | ST_Procedure -> ok
-    | ST_Setter ->
+    | ST_Getter | ST_EmptyGetter | ST_Function | ST_Procedure -> ok
+    | ST_EmptySetter | ST_Setter ->
         let ret_type, args =
           match func_sig.args with
           | [] -> fatal_from loc Error.UnrespectedParserInvariant
           | (_, ret_type) :: args -> (ret_type, List.map snd args)
         in
-        let _, name', _, _, _ =
+        let _, _, func_sig' =
           try Fn.find_name loc env func_sig.name args
           with
           | Error.(
@@ -2478,14 +2480,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           ->
             fail ()
         in
-        let func_sig' =
-          try IMap.find name' env.global.subprograms
-          with Not_found -> assert false (* By type-checking invariant! *)
+        (* Check that func_sig' is a getter *)
+        let wanted_st =
+          match func_sig.subprogram_type with
+          | ST_Setter -> ST_Getter
+          | ST_EmptySetter -> ST_EmptyGetter
+          | _ -> assert false
         in
-        let+ () =
-          (* Check that func_sig' is a getter *)
-          check_true (func_sig'.subprogram_type = ST_Getter)
-        in
+        let+ () = check_true (func_sig'.subprogram_type = wanted_st) in
         let+ () =
           (* Check that args match *)
           let () = assert (List.compare_lengths func_sig'.args args = 0) in
@@ -2639,9 +2641,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let rename_primitive loc env (f : AST.func) =
     let name =
       best_effort f.name @@ fun _ ->
-      let _, name, _, _, _ =
-        Fn.find_name loc env f.name (List.map snd f.args)
-      in
+      let _, name, _ = Fn.find_name loc env f.name (List.map snd f.args) in
       name
     in
     { f with name }
@@ -2703,7 +2703,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       (* Setters last as they need getters declared. *)
       let others, setters =
         List.partition
-          (fun (_, f, _) -> f.subprogram_type = ST_Setter)
+          (fun (_, f, _) ->
+            match f.subprogram_type with
+            | ST_Setter | ST_EmptySetter -> true
+            | _ -> false)
           env_and_fs
       in
       List.rev_append setters others

@@ -311,3 +311,33 @@ Base values
   ASL Execution error: base value of empty type integer {N..M}
   [1]
 
+Empty getters/setters
+  $ aslref empty-getter-called-with-slices.asl
+  File empty-getter-called-with-slices.asl, line 8, characters 10 to 14:
+  ASL Error: Mismatched use of return value from call to 'f1'
+  [1]
+  $ aslref nonempty-getter-called-without-slices.asl
+  File nonempty-getter-called-without-slices.asl, line 8, characters 10 to 12:
+  ASL Error: Mismatched use of return value from call to 'f1'
+  [1]
+  $ aslref empty-setter-nonempty-getter.asl
+  File empty-setter-nonempty-getter.asl, line 6, character 0 to line 9,
+    character 3:
+  ASL Typing error: setter "f1" does not have a corresponding getter of
+    signature  -> integer
+  [1]
+  $ aslref nonempty-setter-empty-getter.asl
+  File nonempty-setter-empty-getter.asl, line 6, character 0 to line 9,
+    character 3:
+  ASL Typing error: setter "f1" does not have a corresponding getter of
+    signature  -> integer
+  [1]
+  $ aslref empty-setter-called-with-slices.asl
+  File empty-setter-called-with-slices.asl, line 13, characters 2 to 6:
+  ASL Error: Mismatched use of return value from call to 'f1'
+  [1]
+  $ aslref nonempty-setter-called-without-slices.asl
+  File nonempty-setter-called-without-slices.asl, line 13, characters 2 to 4:
+  ASL Error: Mismatched use of return value from call to 'f1'
+  [1]
+
