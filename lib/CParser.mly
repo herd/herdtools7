@@ -160,6 +160,9 @@ expr_only:
 atomic_op:
 | ADD { Op.Add }
 | SUB { Op.Sub }
+| LAND { Op.And }
+| XOR { Op.Xor }
+| PIPE { Op.Or }
 
 annot:
 | annot_base  { $1 }
