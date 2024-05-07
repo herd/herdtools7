@@ -1,0 +1,11 @@
+Test V22 Required
+States 1
+u={1,0,3,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (u={1,0,3,0})
+Observation V22 Always 1 0
+Hash=127c963482a7f302ee802ab4edf0d57f
+
