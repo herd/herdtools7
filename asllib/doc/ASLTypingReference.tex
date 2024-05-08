@@ -144,6 +144,7 @@
 \newcommand\literalequal[0]{\texttt{literal\_equal}}
 \newcommand\findcheckdeduce[0]{\hyperlink{def-findcheckdeduce}{\texttt{find\_check\_deduce}}}
 %\newcommand\renametyeqs[0]{\texttt{rename\_ty\_eqs}}
+\newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\texttt{annotate\_bitfield}}}
 
 % Symbolic domain subsumption
 \newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
@@ -3227,11 +3228,11 @@ Determine the result type of a binary operator, give the types of its operands.
 \hypertarget{def-annotatetype}{}
 The function
 \[
-  \annotatetype{\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
+  \annotatetype{\overname{\Bool}{\decl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
   \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-
-Annotating a type $\tty$ in an environment $\tenv$ results in a
+annotates a type $\tty$, in the context of a declaration indicated by $\decl$,
+in an environment $\tenv$, resulting in a
 rewritten type $\newty$ and one of the following applies:
 \begin{itemize}
   \item TypingRule.TString (see \secref{TypingRule.TString});
@@ -3246,15 +3247,13 @@ rewritten type $\newty$ and one of the following applies:
   \item TypingRule.TRecordExceptionDecl (see
     \secref{TypingRule.TRecordExceptionDecl});
   \item TypingRule.TNonDecl (see \secref{TypingRule.TNonDecl});
-  \item TypingRule.TBitField (see \secref{TypingRule.TBitField}).
 \end{itemize}
-
+A type error is returned, if one is detected.
 
 \section{TypingRule.TString \label{sec:TypingRule.TString}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
   \item $\tty$ is the string type \TString.
   \item $\newty$ is the string type \TString.
@@ -3264,68 +3263,81 @@ rewritten type $\newty$ and all of the following apply:
 In the following example, all the uses of \texttt{string} are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TString.asl}
 
-
 \CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}
+{
+  \annotatetype{\Ignore, \tenv, \TString} \typearrow \TString
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.TReal \label{sec:TypingRule.TReal}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
   \item $\tty$ is the real type \TReal.
   \item $\newty$ is the real type \TReal.
 \end{itemize}
 
-
 \subsection{Example}
 In the following example, all the uses of \texttt{real} are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TReal.asl}
 
-
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}
+{
+  \annotatetype{\Ignore, \tenv, \TReal} \typearrow \TReal
+}
+\end{mathpar}
+\end{emptyformal}
 
 \CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
 
-
 \isempty{\subsection{Comments}}
-
 
 \section{TypingRule.TBool \label{sec:TypingRule.TBool}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
-  \item $\tty$ is the boolean type;
-  \item $\newty$ is the boolean type.
+  \item $\tty$ is the boolean type, \TBool;
+  \item $\newty$ is the boolean type, \TBool.
 \end{itemize}
 
 \subsection{Example}
 In the following example, all the uses of \texttt{boolean} are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBool.asl}
 
-
 \CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}
+{
+  \annotatetype{\Ignore, \tenv, \TBool} \typearrow \TBool
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
-
 
 \section{TypingRule.TNamed \label{sec:TypingRule.TNamed}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
-  \item $\tty$ is the a named type $\vx$;
-  \item One of the following applies:
-    \begin{itemize}
-      \item $\vx$ is bound in \texttt{tenv} to a type;
-      \item an error ``\texttt{Undefined Identifier}'' is raised.
-    \end{itemize}
+  \item $\tty$ is the a named type $\vx$, that is $\TNamed(\vx)$;
+  \item retrieving the type associated with $\vx$ yields $\vt$ \ProseOrTypeError;
   \item $\newty$ is $\tty$.
 \end{itemize}
 
@@ -3333,18 +3345,25 @@ rewritten type $\newty$ and all of the following apply:
 In the following example, all the uses of \texttt{MyType} are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TNamed.asl}
 
-
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \declaredtype(\tenv, \vx) \typearrow \vt \OrTypeError
+}{
+  \annotatetype{\Ignore, \tenv, \TNamed(\vx)} \typearrow \TNamed(\vx)
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
-
 
 \section{TypingRule.TInt \label{sec:TypingRule.TInt}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and one of the following applies:
+One of the following applies:
 \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
@@ -3359,11 +3378,13 @@ rewritten type $\newty$ and one of the following applies:
   \item All of the following apply:
     \begin{itemize}
       \item $\tty$ is the well-constrained integer type constrained by
-        $\constraints$;
-      \item $\constraintsp$ is the result of annotating each of the
-        constraints in $\constraints$;
+        constraints $\vc_i$, for $u=1..k$;
+      \item annotating each constraint $\vc_i$, for $i=1..k$,
+      yields $\newc_i$ \ProseOrTypeError;
+      \item $\newconstraints$ is the list of annotated constraints $\newc_i$,
+      for $i=1..k$;
       \item $\newty$ is the well-constrained integer type constrained
-        by $\constraints$.
+        by $\newconstraints$.
     \end{itemize}
 \end{itemize}
 
@@ -3374,116 +3395,197 @@ In the following examples, all the uses of integer types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntWellConstrained.asl}
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntUnderConstrained.asl}
 
-
 \CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
 
-\isempty{\subsection{Comments}}
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[unconstrained]{
+  \tty \eqname \TInt(\unconstrained)\\
+}{
+  \annotatetype{\Ignore, \tenv, \tty} \typearrow \tty
+}
+\and
+\inferrule[underconstrained]{
+  \tty \eqname \TInt(\underconstrained(\Ignore))\\
+}{
+  \annotatetype{\Ignore, \tenv, \tty} \typearrow \tty
+}
+\and
+\inferrule[well\_constrained]{
+  \constraints \eqname \vc_{1..k}\\
+  i=1..k: \tododefine{annotate\_constraint}(\vc_i) \newc_i \OrTypeError\\\\
+  \newconstraints \eqdef \newc_{1..k}
+}{
+  \annotatetype{\Ignore, \tenv, \TInt(\wellconstrained(\constraints))} \typearrow \\ \TInt(\wellconstrained(\newconstraints))
+}
+\end{mathpar}
+\end{emptyformal}
 
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.TBits \label{sec:TypingRule.TBits}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
   \item $\tty$ is the bit-vector type with width given by the expression
-    $\ewidth$ and the bitfields given by $\bitfields$;
-  \item $\ewidthp$ is the result of annotating the statically-evaluable integer expression $\ewidth$;
-  \item $\bitfieldsp$ is the result of annotating the bitfields $\bitfields$
+    $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
+  \item annotating the statically-evaluable integer expression $\ewidth$ yields $\ewidthp$ \ProseOrTypeError;
+  \item annotating the bitfields $\bitfields$ yields $\bitfieldsp$ \ProseOrTypeError;
   \item $\newty$ is the bit-vector type with width given by the expression
-    $\ewidthp$ and the bitfields given by $\bitfieldsp$;
+    $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, $\TBits(\ewidthp, \bitfieldsp)$
 \end{itemize}
 
 \subsection{Example}
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBits.asl}
 
-
-
 In the following example, all the uses of bitvector types are valid:
 \CodeSubsection{\TBitsBegin}{\TBitsEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \tododefine{annotate\_static\_constrained\_integer}(\tenv, \ewidth) \typearrow \ewidthp \OrTypeError\\
+  \annotatebitfield(\tenv, \ewidthp) \typearrow \bitfieldsp \OrTypeError
+}{
+  \annotatetype{\Ignore, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \TBits(\ewidthp, \bitfieldsp)
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
-
 
 \section{TypingRule.TTuple \label{sec:TypingRule.TTuple}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
-  \item $\tty$ is the tuple type with member types $\tys$;
-  \item \texttt{tys'} is the result of annotating all the types in
-    $\tys$;
-  \item $\newty$ is the tuple type with member types \texttt{tys'}.
+  \item $\tty$ is the tuple type with member types $\tys$, that is, $\TTuple(\tys)$;
+  \item $\tys$ is the list $\tty_i$, for $i=1..k$;
+  \item annotating each type $\tty_i$ in $\tenv$, for $i=1..k$,
+  yields $\ttyp_i$ \ProseOrTypeError;
+  \item $\newty$ is the tuple type with member types $\ttyp$, for $i=1..k$.
 \end{itemize}
 
 \subsection{Example}
 In the following example, all the uses of tuple types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TTuple.asl}
 
-
-
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \tys \eqname \tty_{1..k}\\
+  i=1..k: \annotatetype{\False, \tenv, \tty_i} \typearrow \ttyp_i \OrTypeError
+}{
+  \annotatetype{\Ignore, \tenv, \TTuple(\tys)} \typearrow \TTuple(\tysp)
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
-
 
 \section{TypingRule.TArray \label{sec:TypingRule.TArray}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
-  \item All of the following holds:
+  \item $\tty$ is the array type indexed by integer bounded by the
+    expression $\ve$ and of elements of type $\vt$;
+  \item Annotating the type $\vt$ in $\tenv$ yields $\vtp$ \ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{expr\_is\_enum}):
     \begin{itemize}
-      \item $\tty$ is the array type indexed by integer bounded by the
-        expression $\ve$ and of elements of type $\vt$;
-      \item \texttt{t'} is the result of annotating the type $\vt$ in
-        environment $\tenv$;
-      \item $\vep$ is the result of annotating the statically evaluable
-        integer expression $\ve$;
-      \item $\newty$ is the array type indexed by integer bounded by
-        the expression $\vep$ and of elements of type \texttt{t'};
-    \end{itemize}
-  \item All of the following holds:
-    \begin{itemize}
-      \item $\tty$ is the array type indexed by an enumeration type named
-        $\vs$ and of elements of type $\vt$;
-      \item $\vs$ is bound in $\tenv$ to an enumeration type;
-      \item \texttt{t'} is the result of annotating the type $\vt$ in
-        environment $\tenv$;
+      \item determining whether $\ve$ corresponds to an enumeration in $\tenv$
+      via \\ $\tododefine{get\_variable\_enum}$ yields the enumeration variable
+      name $\vs$ of size $\vi$, that is, $\langle \vs, \vi \rangle$;
       \item $\newty$ is the array type indexed by an enumeration type
-        named $\vs$ and of elements of type \texttt{t'};
+      named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$.
     \end{itemize}
+
+    \item All of the following apply (\textsc{expr\_not\_enum}):
+    \begin{itemize}
+      \item determining whether $\ve$ corresponds to an enumeration in $\tenv$
+      via \\ $\tododefine{get\_variable\_enum}$ yields $\None$ (meaning it does not
+      correspond to an enumeration);
+      \item annotating the statically evaluable integer expression $\ve$ yields
+      $\vep$ \ProseOrTypeError;
+      \item $\newty$ the array type indexed by integer bounded by
+      the expression $\vep$ and of elements of type $\vtp$, that is,
+      $\TArray(\ArrayLengthExpr(\vep), \vtp)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{index\_enum}):
+    \begin{itemize}
+      \item $\ve$ is an enumeration type index with variable $\vs$ and size $\vi$,
+      that is, \\ $\ArrayLengthEnum(\vs, \vi)$;
+      \item let $\tty$ be the named type defined for $\vs$, that is, $\TNamed(\vs)$;
+      \item determining the \underlyingtype\ of $\tty$ yields $\vt$ \ProseOrTypeError;
+      \item checking whether $\vt$ is an enumeration type yields $\True$ \ProseOrTypeError;
+      \item $\vt$ is an enumeration with labels $\vli$;
+      \item checking whether $\vli$ has the same length as $\vi$ yields $\True$ \ProseOrTypeError;
+      \item $\newty$ is the array type indexed by an enumeration type
+      named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$.
+    \end{itemize}
+  \end{itemize}
 \end{itemize}
 
 \subsection{Example}
 In the following example, all the uses of array types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TArray.asl}
 
-
 \CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[expr\_is\_enum]{
+  \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \tododefine{get\_variable\_enum}(\tenv, \ve) \typearrow \langle \vs, \vi \rangle
+}{
+  \annotatetype{\Ignore, \tenv, \TArray(\ArrayLengthExpr(\ve), \vt)} \typearrow \TArray(\ArrayLengthEnum(\vs, \vi), \vtp)
+}
+\and
+\inferrule[expr\_not\_enum]{
+  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \tododefine{get\_variable\_enum}(\tenv, \ve) \typearrow \None\\
+  \tododefine{annotate\_static\_integer}(\tenv, \ve) \typearrow \vep \OrTypeError
+}{
+  \annotatetype{\Ignore, \tenv, \TArray(\ArrayLengthExpr(\ve), \vt)} \typearrow \TArray(\ArrayLengthExpr(\vep), \vtp)
+}
+\and
+\inferrule[index\_enum]{
+  \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \tty \eqdef \TNamed(\vs)\\
+  \makeanonymous(\tenv, \tty) \typearrow \vt \OrTypeError\\\\
+  \checktrans{\astlabel(\vt) = \TEnum} \typearrow \True \OrTypeError\\\\
+  \vt \eqname \TEnum((\vli))\\
+  \checktrans{\equallength(\vli, \vi)} \typearrow \True \OrTypeError
+}{
+  \annotatetype{\Ignore, , \tenv, \TArray(\ArrayLengthEnum(\vs, \vi), \vt)} \typearrow \\
+  \TArray(\ArrayLengthEnum(\vs, \vi), \vtp)
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
-
 
 \section{TypingRule.TEnumDecl \label{sec:TypingRule.TEnumDecl}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
   \item $\tty$ is the enumeration type with enumeration literals
-    $\vli$;
+    $\vli$, that is, $\TEnum(\vli)$;
   \item This is the declaration of $\tty$;
-  \item One of the following applies:
-    \begin{itemize}
-      \item $\vli$ does not contains any duplicate enumeration literal.
-      \item an error ``\texttt{Already declared identifier}'' is raised;
-    \end{itemize}
+  \item determining that $\vli$ does not contain duplicates yields $\True$ \ProseOrTypeError;
+  \item determining that none of the labels in $\vli$ is declared in the global environment
+  yields $\True$ \ProseOrTypeError;
   \item $\newty$ is the enumeration type $\tty$.
 \end{itemize}
 
@@ -3491,57 +3593,59 @@ rewritten type $\newty$ and all of the following apply:
 In the following example, all the uses of enumeration types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TEnumDecl.asl}
 
-
-
 \CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \tododefine{check\_no\_duplicates}(\vli) \typearrow \True \OrTypeError\\
+  \vl \in \vli: \tododefine{check\_var\_not\_in\_genv}(\tenv, \vl) \typearrow \True \OrTypeError
+}{
+  \annotatetype{\True, \tenv, \TEnum(\vli)} \typearrow \TEnum(\vli)
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
-
 
 \section{TypingRule.TRecordExceptionDecl \label{sec:TypingRule.TRecordExceptionDecl}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and one of the following applies:
+All of the following apply:
 \begin{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-      \item $\tty$ is the record type with fields $\fields$;
-      \item This is the declaration of $\tty$;
-      \item One of the following applies:
-        \begin{itemize}
-          \item $\fields$ does not contains any duplicate field.
-          \item an error ``\texttt{Already declared identifier}'' is raised;
-        \end{itemize}
-      \item $\fieldsp$ is the result of annotating each type in
-        $\fields$;
-      \item $\newty$ is the record type with fields $\fieldsp$;
-    \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-      \item $\tty$ is the exception type with fields $\fields$;
-      \item This is the declaration of $\tty$;
-      \item One of the following applies:
-        \begin{itemize}
-          \item $\fields$ does not contains any duplicate field.
-          \item an error ``\texttt{Already declared identifier}'' is raised;
-        \end{itemize}
-      \item $\fieldsp$ is the result of annotating each type in
-        $\fields$;
-      \item $\newty$ is the exception type with fields $\fieldsp$;
-    \end{itemize}
+  \item $\tty$ is either a record type or an exception type, corresponding to its AST label $L$;
+  \item the list of fields of $\tty$ is $\fields$;
+  \item this is the declaration of $\tty$;
+  \item $\fields$ is a list of identifier-type pairs $(\vx_i, \vt_i)$, for $i=1..k$;
+  \item checking that the list of field identifiers $\vx_{1..k}$ does not contain duplicates
+  yields $\True$ \ProseOrTypeError;
+  \item annotating each field type $\vt_i$, for $i=1..k$, yields a rewritten type $\vtp_i$
+  \ProseOrTypeError;
+  \item $\fieldsp$ is the list with $(\vx_i, \vtp_i)$, for $i=1..k$;
+  \item $\newty$ is the AST node with AST label $L$ (either record type or exception type,
+  corresponding to the type $\tty$) and fields $\fieldsp$.
 \end{itemize}
-
 
 \subsection{Example}
 In the following example, all the uses of record or exception types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TRecordExceptionDecl.asl}
 
-
-
 \CodeSubsection{\TRecordExceptionDeclBegin}{\TRecordExceptionDeclEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
+  \tododefine{check\_no\_duplicates}(\vx_{1..k}) \typearrow \True \OrTypeError\\
+  i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow \vtp_i \OrTypeError\\
+  \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]
+}{
+  \annotatetype{\True, \tenv, L(\fields)} \typearrow L(\fieldsp)
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3549,47 +3653,95 @@ In the following example, all the uses of record or exception types are valid:
 \section{TypingRule.TNonDecl \label{sec:TypingRule.TNonDecl}}
 
 \subsection{Prose}
-Annotating a type $\tty$ in an environment $\tenv$ results in a
-rewritten type $\newty$ and all of the following apply:
+All of the following apply:
 \begin{itemize}
-  \item One of the following applies:
-    \begin{itemize}
-      \item $\tty$ is a record type;
-      \item $\tty$ is an exception type;
-      \item $\tty$ is an enumeration type;
-    \end{itemize}
-  \item This is not the declaration of $\tty$;
-  \item An error ``Cannot use anonymous form of enumerations, record, or exceptions here.'' is raised.
+  \item $\tty$ is either a record type, an exception type, or an enumeration type;
+  \item this is not the declaration of $\tty$;
+  \item a type error is returned, indicating that the use of anonymous form of enumerations, record,
+  and exceptions types is not allowed here.
 \end{itemize}
 
 \subsection{Example}
 
-In the following example, the use of a record type out of a declaration is invalid:
+In the following example, the use of a record type outside of a declaration is erroneous:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TNonDecl.asl}
-
 
 \CodeSubsection{\TNonDeclBegin}{\TNonDeclEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \astlabel(\tty) \in \{\TEnum, \TRecord, \TException\}
+}{
+  \annotatetype{\False, \tenv, \tty} \typearrow \TypeErrorVal{AnnonymousFormNotAllowedHere}
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Typing of Bitfields}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{TypingRule.TBitField \label{sec:TypingRule.TBitField}}
+\hypertarget{def-annotatebitfield}{}
+The function
+\[
+  \annotatebitfield(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\width} \aslsep \overname{\bitfield}{\field})
+  \aslto \overname{\bitfield}{\newfield} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a bitfield $\field$ with an integer $\width$ indicating the number of bits in $\field$,
+in an environment $\tenv$, resulting in a
+rewritten bitfield $\newfield$ or a type error, if one is detected.
 
 \subsection{Prose}
-
 
 \subsection{Example}
 In the following example, all the uses of bitvector types with bitfields are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TBitField.asl}
 
-
-
 \CodeSubsection{\TBitFieldBegin}{\TBitFieldEnd}{../Typing.ml}
 
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[simple]{
+  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\
+  \tododefine{check\_slices\_in\_width}(\tenv, \width, \slicesone) \typearrow \True \OrTypeError
+}{
+  \annotatebitfield(\tenv, \width, \BitFieldSimple(\name, \slices)) \typearrow \\
+  \BitFieldSimple(\name, \sliceone)
+}
+\and
+\inferrule[nested]{
+  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\
+  \tododefine{disjoint\_slices\_to\_positions}(\tenv, \width, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \tododefine{check\_positions\_in\_width}(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\
+  \widthp \eqdef \listrange(\positions)\\
+  \tododefine{annotate\_bit\_fields}(\tenv, \widthp, \bitfieldsp) \typearrow \bitfieldspp \OrTypeError\\
+}{
+  \annotatebitfield(\tenv, \width, \BitFieldNested(\slices, \bitfieldsp)) \typearrow \\
+  \BitFieldNested(\slicesone, \bitfieldspp)
+}
+\and
+\inferrule[type]{
+  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\
+  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\
+  \tododefine{check\_slices\_in\_width}(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\
+  \annotatebitfield(\tenv, \width, \BitFieldType(\name, \slices, \vt)) \typearrow \\
+  \tododefine{disjoint\_slices\_to\_positions}(\tenv, \width, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \tododefine{check\_positions\_in\_width}(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\
+  \widthp \eqdef \listrange(\positions)\\
+  \tododefine{check\_bits\_equal\_width}(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError
+}{
+  \BitFieldType(\name, \slices, \vt) \typearrow \BitFieldType(\name, \sliceone, \vtp)
+}
+\end{mathpar}
+\end{emptyformal}
 
 \isempty{\subsection{Comments}}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Expressions}
@@ -8808,12 +8960,22 @@ tests whether literal $\vvone$ is $\vvtwo$ by equating them.
 \chapter{Utility Relations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Checked Transitions}
+\hypertarget{def-checktrans}{}
+We define the following rules to allow us asserting that a condition holds,
+returning a type error otherwise:
+\begin{mathpar}
+  \inferrule[check\_trans\_true]{}{ \checktrans{\True} \typearrow\True }
+  \and
+  \inferrule[check\_trans\_false]{}{ \checktrans{\False} \typearrow\TypeErrorVal{CheckFailed} }
+\end{mathpar}
+
 \hypertarget{def-declaredtype}{}
 \section{TypingRule.DeclaredType}
 
 The function
 \[
-  \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\id}) \aslto \overname{\ty}{\vt} \cup \TTypeError
+  \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \TTypeError
 \]
 retrieves the type associated with the identifier $\id$ in the static environment $\tenv$.
 If the identifier is not associated with a declared type, a type error is returned.

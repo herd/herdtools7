@@ -824,27 +824,27 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let rec annotate_bitfield ~loc env width bitfield : bitfield =
     match bitfield with
     | BitField_Simple (name, slices) ->
-        let slices = annotate_slices env slices in
-        let+ () = check_slices_in_width loc env width slices in
-        BitField_Simple (name, slices)
+        let slices1 = annotate_slices env slices in
+        let+ () = check_slices_in_width loc env width slices1 in
+        BitField_Simple (name, slices1)
     | BitField_Nested (name, slices, bitfields') ->
-        let slices = annotate_slices env slices in
-        let diet = disjoint_slices_to_diet loc env slices in
-        let+ () = check_diet_in_width loc slices width diet in
+        let slices1 = annotate_slices env slices in
+        let diet = disjoint_slices_to_diet loc env slices1 in
+        let+ () = check_diet_in_width loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let bitfields'' = annotate_bitfields ~loc env width' bitfields' in
-        BitField_Nested (name, slices, bitfields'')
+        BitField_Nested (name, slices1, bitfields'')
     | BitField_Type (name, slices, ty) ->
         let ty' = annotate_type ~loc env ty in
-        let slices = annotate_slices env slices in
-        let diet = disjoint_slices_to_diet loc env slices in
-        let+ () = check_diet_in_width loc slices width diet in
+        let slices1 = annotate_slices env slices in
+        let diet = disjoint_slices_to_diet loc env slices1 in
+        let+ () = check_diet_in_width loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let+ () =
           t_bits_bitwidth width' |> add_dummy_pos
           |> check_bits_equal_width loc env ty
         in
-        BitField_Type (name, slices, ty')
+        BitField_Type (name, slices1, ty')
   (* End *)
 
   and annotate_bitfields ~loc env e_width bitfields =
@@ -869,27 +869,28 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     best_effort ty @@ fun _ ->
     match ty.desc with
     (* Begin TString *)
-    | T_String -> ty
+    | T_String -> ty |: TypingRule.TString
     (* Begin TReal *)
-    | T_Real -> ty
+    | T_Real -> ty |: TypingRule.TReal
     (* Begin TBool *)
-    | T_Bool -> ty
+    | T_Bool -> ty |: TypingRule.TBool
     (* Begin TNamed *)
     | T_Named x ->
         let+ () =
           if IMap.mem x env.global.declared_types then ok
           else fun () -> undefined_identifier loc x
         in
-        ty
+        ty |: TypingRule.TNamed
     (* Begin TInt *)
-    | T_Int constraints -> (
-        match constraints with
+    | T_Int constraints ->
+        (match constraints with
         | WellConstrained constraints ->
-            let constraints =
+            let new_constraints =
               List.map (annotate_constraint ~loc env) constraints
             in
-            T_Int (WellConstrained constraints) |> here
+            T_Int (WellConstrained new_constraints) |> here
         | UnderConstrained _ | UnConstrained -> ty)
+        |: TypingRule.TInt
     (* Begin TBits *)
     | T_Bits (e_width, bitfields) ->
         let e_width' = annotate_static_constrained_integer ~loc env e_width in
@@ -897,11 +898,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           if bitfields = [] then bitfields
           else annotate_bitfields ~loc env e_width' bitfields
         in
-        T_Bits (e_width', bitfields') |> here
+        T_Bits (e_width', bitfields') |> here |: TypingRule.TBits
     (* Begin TTuple *)
     | T_Tuple tys ->
         let tys' = List.map (annotate_type ~loc env) tys in
-        T_Tuple tys' |> here
+        T_Tuple tys' |> here |: TypingRule.TTuple
     (* Begin TArray *)
     | T_Array (index, t) ->
         let t' = annotate_type ~loc env t
@@ -919,7 +920,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               | T_Enum li when List.length li = i -> index
               | _ -> conflict loc [ T_Enum [] ] ty)
         in
-        T_Array (index', t') |> here
+        T_Array (index', t') |> here |: TypingRule.TArray
     (* Begin TRecordExceptionDecl *)
     | (T_Record fields | T_Exception fields) when decl -> (
         let+ () =
@@ -932,8 +933,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           List.map (fun (x, ty) -> (x, annotate_type ~loc env ty)) fields
         in
         match ty.desc with
-        | T_Record _ -> T_Record fields' |> here
-        | T_Exception _ -> T_Exception fields' |> here
+        | T_Record _ ->
+            T_Record fields' |> here |: TypingRule.TRecordExceptionDecl
+        | T_Exception _ ->
+            T_Exception fields' |> here |: TypingRule.TRecordExceptionDecl
         | _ -> assert false
         (* Begin TEnumDecl *))
     | T_Enum li when decl ->
@@ -946,7 +949,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let+ () =
          fun () -> List.iter (fun s -> check_var_not_in_genv ty env s ()) li
         in
-        ty
+        ty |: TypingRule.TEnumDecl
         (* Begin TNonDecl *)
     | T_Enum _ | T_Record _ | T_Exception _ ->
         if decl then assert false
@@ -955,6 +958,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (Error.NotYetImplemented
                " Cannot use non anonymous form of enumerations, record, or \
                 exception here.")
+          |: TypingRule.TNonDecl
   (* End *)
 
   and annotate_static_integer ~(loc : 'a annotated) env e =
