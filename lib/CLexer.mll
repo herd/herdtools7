@@ -121,6 +121,7 @@ rule token deep = parse
 | '-' { SUB }
 | '^' { XOR }
 | '&' { LAND }
+| "~" { NOT }
 | '(' { LPAR }
 | ')' { RPAR }
 | '{' { if deep then LBRACE else begin
