@@ -465,10 +465,8 @@ module TypingRule = struct
     | FUndefIdent
     | FPrimitive
     | FBadArity
-    | FCallBadArity
-    | FCallSetter
-    | FCallGetter
-    | FCallMismatch
+    | FindCheckDeduce
+    | FCall
     | Block
     | Loop
     | For
@@ -610,10 +608,8 @@ module TypingRule = struct
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
-    | FCallBadArity -> "FCallBadArity"
-    | FCallSetter -> "FCallSetter"
-    | FCallGetter -> "FCallGetter"
-    | FCallMismatch -> "FCallMismatch"
+    | FindCheckDeduce -> "FindCheckDeduce"
+    | FCall -> "FCall"
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
@@ -739,10 +735,8 @@ module TypingRule = struct
       FUndefIdent;
       FPrimitive;
       FBadArity;
-      FCallBadArity;
-      FCallSetter;
-      FCallGetter;
-      FCallMismatch;
+      FindCheckDeduce;
+      FCall;
       Block;
       Loop;
       For;

@@ -94,6 +94,7 @@
 %% Mathematical notations and Inference Rule macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%%
 \usepackage{relsize}
+\newcommand\defpoint[1]{\underline{#1}}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbracket{#1}^{#2}}
@@ -105,6 +106,7 @@
 \newcommand\equalarrow[0]{\rightarrow}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\texttt{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\texttt{indices}}}
+\newcommand\splitlist[0]{\hyperlink{def-splitlist}{\texttt{split}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
 
@@ -322,6 +324,11 @@
 \newcommand\SBASL[0]{\textsf{SB\_ASL}}
 \newcommand\SBPrimitive[0]{\textsf{SB\_Primitive}}
 
+\newcommand\STFunction[0]{\texttt{ST\_Function}}
+\newcommand\STGetter[0]{\texttt{ST\_Getter}}
+\newcommand\STSetter[0]{\texttt{ST\_Setter}}
+\newcommand\STProcedure[0]{\texttt{ST\_Procedure}}
+
 \newcommand\identifier[0]{\textsf{identifier}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -458,8 +465,13 @@
 \newcommand\vtstruct[0]{\texttt{t\_struct}}
 \newcommand\vtystruct[0]{\texttt{ty\_struct}}
 \newcommand\calltype[0]{\texttt{call\_type}}
+\newcommand\eqsone[0]{\texttt{eqs1}}
 \newcommand\eqstwo[0]{\texttt{eqs2}}
+\newcommand\eqsthree[0]{\texttt{eqs3}}
+\newcommand\eqsfour[0]{\texttt{eqs4}}
+\newcommand\retty[0]{\texttt{ret\_ty}}
 \newcommand\rettyone[0]{\texttt{ret\_ty1}}
+\newcommand\rettyopt[0]{\texttt{ret\_ty\_opt}}
 \newcommand\exprs[0]{\texttt{exprs}}
 \newcommand\exprsone[0]{\texttt{exprs1}}
 \newcommand\typedexpr[0]{\texttt{typed\_exprs}}
@@ -488,3 +500,9 @@
 \newcommand\newstmt[0]{\texttt{new\_stmt}}
 \newcommand\newstmtp[0]{\texttt{new\_stmt'}}
 \newcommand\newopt[0]{\texttt{new\_opt}}
+\newcommand\callerargtyped[0]{\texttt{caller\_arg\_typed}}
+\newcommand\callerargtypes[0]{\texttt{caller\_arg\_types}}
+\newcommand\calleeargtypes[0]{\texttt{callee\_arg\_types}}
+\newcommand\calleeparams[0]{\texttt{callee\_params}}
+\newcommand\extranargs[0]{\texttt{extra\_nargs}}
+\newcommand\veq[0]{\texttt{eq}}

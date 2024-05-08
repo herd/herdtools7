@@ -140,7 +140,7 @@ is defined as follows:
 \end{definition}
 
 \subsection{Lists}
-In the sequel, we use the term \emph{list} and \emph{sequence} interchangably.
+In the sequel of this document, we use the term \emph{list} and \emph{sequence} interchangably.
 
 A list of elements \hypertarget{def-emptylist}{can be empty, denoted by $\emptylist$}, or non-empty.
 A non-empty list is either denoted by listing the elements in sequence, $v_1 \ldots\ v_k$,
@@ -195,6 +195,18 @@ The parametric function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-bas
     \begin{array}{rcl}
         \listrange(\emptylist) &\triangleq& \emptylist\\
         \listrange(v_{1..k}) &\triangleq& [1..k] \enspace.
+    \end{array}
+\]
+\end{definition}
+
+\hypertarget{def-splitlist}{}
+\begin{definition}[Splitting a List of Pairs]
+The parametric function $\splitlist : T^* \rightarrow (T_1^* \times T_2^*)$
+splits a list of pairs into the corresponding pair of lists:
+\[
+    \begin{array}{rcl}
+        \splitlist(\emptylist) &\triangleq& (\emptylist, \emptylist)\\
+        \listrange([i=1..k: (u_i,v_i)]) &\triangleq& (u_{1..k}, v_{1..k}) \enspace.
     \end{array}
 \]
 \end{definition}

@@ -68,6 +68,7 @@
 \newcommand\instantiate[0]{\textsf{instantiate}}
 \newcommand\canbeinitializedwith[0]{\texttt{can\_be\_initialized\_with}}
 \newcommand\getbitvectorwidth[0]{\texttt{get\_bitvector\_width}}
+\newcommand\findsubprogram[0]{\hyperlink{def-findsubprogram}{\texttt{find\_subprogram}}}
 
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
 \newcommand\exprequal[0]{\hyperlink{def-exprequal}{\texttt{expr\_equal}}}
@@ -141,6 +142,8 @@
 \newcommand\constraintsequal[0]{\texttt{constraints\_equal}}
 \newcommand\constraintequal[0]{\texttt{constraint\_equal}}
 \newcommand\literalequal[0]{\texttt{literal\_equal}}
+\newcommand\findcheckdeduce[0]{\hyperlink{def-findcheckdeduce}{\texttt{find\_check\_deduce}}}
+%\newcommand\renametyeqs[0]{\texttt{rename\_ty\_eqs}}
 
 % Symbolic domain subsumption
 \newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
@@ -2939,157 +2942,158 @@ Determine the result type of a binary operator, give the types of its operands.
   types $\vtone$ and $\vttwo$ and one of the following applies:
 \begin{itemize}
   \item All of the following apply:
-    \begin{itemize}
+  \begin{itemize}
     \item $\op$ is $\AND$, $\OR$, $\EQOP$ or $\IMPL$;
     \item $\vtone$ \typesatisfies\  $\TBool$;
     \item $\vttwo$ \typesatisfies\  $\TBool$;
     \item $\vt$ is $\TBool$.
-    \end{itemize}
+  \end{itemize}
 
   \item All of the following apply:
-    \begin{itemize}
+  \begin{itemize}
     \item $\op$ is $\AND$, $\OR$, or $\EOR$;
     \item $\vtone$ has the structure of a bitvector;
     \item $\vttwo$ has the structure of a bitvector;
     \item $\vtone$ and $\vttwo$ have the same bitvector width $\vw$;
     \item $\vt$ is the bitvector type of width $\vw$.
-    \end{itemize}
+  \end{itemize}
 
   \item All of the following apply:
-    \begin{itemize}
+  \begin{itemize}
     \item $\op$ is $\PLUS$ or $\MINUS$;
     \item $\vtone$ has the structure of a bitvector of width $\vw$;
     \item One of the following applies:
+    \begin{itemize}
+      \item All of the following apply:
       \begin{itemize}
-	    \item All of the following apply:
-          \begin{itemize}
-		    \item $\vttwo$ has the structure of a bitvector;
-    		\item $\vtone$ and $\vttwo$ have the same bitvector width $\vw$;
-    		\item $\vt$ is the bitvector type of width $\vw$.
-          \end{itemize}
-    	\item $\vttwo$ \typesatisfies\  $\TInt$;
+        \item $\vttwo$ has the structure of a bitvector;
+        \item $\vtone$ and $\vttwo$ have the same bitvector width $\vw$;
+        \item $\vt$ is the bitvector type of width $\vw$.
       \end{itemize}
-    \item $\vt$ is the bitvector type of width $\vw$.
+      \item $\vttwo$ \typesatisfies\  $\TInt$;
     \end{itemize}
+    \item $\vt$ is the bitvector type of width $\vw$.
+  \end{itemize}
 
   \item All of the following apply:
-    \begin{itemize}
+  \begin{itemize}
     \item $\op$ is \EQOP\ or \NEQ;
     \item One of the following applies:
-      \begin{itemize}
+    \begin{itemize}
       \item $\vtone$ is equal to $\vttwo$;
       \item All of the following apply:
-        \begin{itemize}
+      \begin{itemize}
         \item $\vtone$ \typesatisfies\  $\TInt$;
         \item $\vttwo$ \typesatisfies\  $\TInt$;
-        \end{itemize}
+      \end{itemize}
       \item All of the following apply:
-        \begin{itemize}
+      \begin{itemize}
         \item $\vtone$ has the structure of a bitvector;
         \item $\vttwo$ has the structure of a bitvector;
         \item $\vtone$ and $\vttwo$ have the same bitvector width;
-        \end{itemize}
+      \end{itemize}
       \item All of the following apply:
-        \begin{itemize}
+      \begin{itemize}
         \item $\vtone$ \typesatisfies\  $\TBool$;
         \item $\vttwo$ \typesatisfies\  $\TBool$;
-        \end{itemize}
+      \end{itemize}
       \item All of the following apply:
-        \begin{itemize}
+      \begin{itemize}
         \item $\vtone$ enumerates local declarations $\vlione$;
         \item $\vttwo$ enumerates local declarations $\vlitwo$;
         \item $\vlione$ equals $\vlitwo$;
-        \end{itemize}
       \end{itemize}
-    \item $\vt$ is $\TBool$.
     \end{itemize}
+    \item $\vt$ is $\TBool$.
+  \end{itemize}
 
   \item All of the following apply:
-    \begin{itemize}
+  \begin{itemize}
     \item $\op$ is \LEQ, \GEQ, \GT\ or \LT;
     \item One of the following applies:
-      \begin{itemize}
+    \begin{itemize}
       \item All of the following apply:
-        \begin{itemize}
+      \begin{itemize}
         \item $\vtone$ \typesatisfies\  $\TInt$;
         \item $\vttwo$ \typesatisfies\  $\TInt$;
-        \end{itemize}
+      \end{itemize}
       \item All of the following apply:
-        \begin{itemize}
+      \begin{itemize}
         \item $\vtone$ \typesatisfies\  $\TReal$;
         \item $\vttwo$ \typesatisfies\  $\TReal$;
-        \end{itemize}
       \end{itemize}
-    \item $\vt$ is boolean.
     \end{itemize}
+    \item $\vt$ is boolean.
+  \end{itemize}
 
   \item All of the following apply:
-    \begin{itemize}
+  \begin{itemize}
     \item $\op$ is $\MUL$, $\DIV$, $\DIVRM$, $\MOD$, $\SHL$, $\SHR$, $\POW$, $\PLUS$ or $\MINUS$;
     \item $\structone$ is the structure of $\vtone$;
     \item $\structtwo$ is the structure of $\vttwo$;
     \item One of the following applies:
-      \begin{itemize}
+    \begin{itemize}
       \item All of the following apply:
-        \begin{itemize}
+      \begin{itemize}
         \item $\vtone$ has the structure of an unconstrained integer;
         \item $\vttwo$ has the structure of an integer;
         \item $\vt$ is an unconstrained integer;
-        \end{itemize}
+      \end{itemize}
       \item All of the following apply:
-        \begin{itemize}
+      \begin{itemize}
         \item $\vtone$ has the structure of an integer;
         \item $\vttwo$ has the structure of an unconstrained integer;
         \item $\vt$ is an unconstrained integer;
-        \end{itemize}
+      \end{itemize}
       \item One of the following applies:
-       \begin{itemize}
-      \item One of the following applies:
-       \begin{itemize}
-       \item All of the following apply:
-          \begin{itemize}
-          \item $\vtone$ has the structure of an under-constrained integer;
-          \item $\vttwo$ has the structure of a constrained integer;
-          \item $\vt$ is an under-constrained integer;
-          \end{itemize}
-        \item All of the following apply:
-          \begin{itemize}
-          \item $\vtone$ has the structure of a constrained integer;
-          \item $\vttwo$ has the structure of an under-constrained integer;
-          \item $\vt$ is an under-constrained integer;
-          \end{itemize}
-       \end{itemize}
-         \item All of the following apply:
-           \begin{itemize}
-           \item $\vtone$ has the structure of a well-constrained integer;
-           \item $\vttwo$ has the structure of a well-constrained integer;
-	       \item $\vt$ is a constrained integer whose constraint is calculated by
-	       applying the operation to all possible value pairs;
-           \end{itemize}
-      \item All of the following apply:
+      \begin{itemize}
+        \item One of the following applies:
         \begin{itemize}
-        \item $\vtone$ has the structure of $\TReal$;
-        \item $\vttwo$ has the structure of $\TReal$;
-        \item $\op$ is $\PLUS$, $\MINUS$ or $\MUL$;
-        \item $\vt$ is $\TReal$;
+          \item All of the following apply:
+          \begin{itemize}
+            \item $\vtone$ has the structure of an under-constrained integer;
+            \item $\vttwo$ has the structure of a constrained integer;
+            \item $\vt$ is an under-constrained integer;
+          \end{itemize}
+          \item All of the following apply:
+          \begin{itemize}
+            \item $\vtone$ has the structure of a constrained integer;
+            \item $\vttwo$ has the structure of an under-constrained integer;
+            \item $\vt$ is an under-constrained integer;
+          \end{itemize}
         \end{itemize}
-     \item All of the following apply:
-       \begin{itemize}
-       \item $\vtone$ has the structure of $\TReal$;
-       \item $\vttwo$ has the structure of $\TInt$;
-       \item $\op$ is $\POW$;
-       \item $\vt$ is $\TReal$;
-       \end{itemize}
-     \end{itemize}
-   \end{itemize}
-
-  \item All of the following apply:
-    \begin{itemize}
-    \item $\op$ is $\RDIV$;
-    \item $\vtone$ \typesatisfies\  $\TReal$;
-    \item $\vttwo$ \typesatisfies\  $\TReal$;
-    \item $\vt$ is $\TReal$.
+        \item All of the following apply:
+        \begin{itemize}
+          \item $\vtone$ has the structure of a well-constrained integer;
+          \item $\vttwo$ has the structure of a well-constrained integer;
+	        \item $\vt$ is a constrained integer whose constraint is calculated by
+	        applying the operation to all possible value pairs;
+        \end{itemize}
+        \item All of the following apply:
+        \begin{itemize}
+          \item $\vtone$ has the structure of $\TReal$;
+          \item $\vttwo$ has the structure of $\TReal$;
+          \item $\op$ is $\PLUS$, $\MINUS$ or $\MUL$;
+          \item $\vt$ is $\TReal$;
+        \end{itemize}
+        \item All of the following apply:
+        \begin{itemize}
+          \item $\vtone$ has the structure of $\TReal$;
+          \item $\vttwo$ has the structure of $\TInt$;
+          \item $\op$ is $\POW$;
+          \item $\vt$ is $\TReal$;
+        \end{itemize}
+      \end{itemize}
     \end{itemize}
+
+    \item All of the following apply:
+    \begin{itemize}
+      \item $\op$ is $\RDIV$;
+      \item $\vtone$ \typesatisfies\  $\TReal$;
+      \item $\vttwo$ \typesatisfies\  $\TReal$;
+      \item $\vt$ is $\TReal$.
+    \end{itemize}
+  \end{itemize}
 \end{itemize}
 
 \subsection{Example}
@@ -4054,7 +4058,7 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
 \begin{emptyformal}
     \subsection{Formally}
 \begin{mathpar}
-\inferrule{ \annotatecall{\tenv, \name, \vargs, \eqs, \texttt{ST\_Function}} \typearrow (\name, \vargs', \eqs', \langle \vt \rangle)  }
+\inferrule{ \annotatecall{\tenv, \name, \vargs, \eqs, \STFunction} \typearrow (\name, \vargs', \eqs', \langle \vt \rangle)  }
 {\annotateexpr{\tenv, \ECall(\name, \vargs, \eqs)} \typearrow
 (\vt, \ECall(\name, \vargs', \eqs'))}
 \end{mathpar}
@@ -6927,10 +6931,10 @@ The function
     \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
     \overname{\subprogramtype}{\calltype}
   } \aslto \\ &
-  \overname{\identifier}{\nameone} \aslsep
+  (\overname{\identifier}{\nameone} \aslsep
   \overname{\expr^*}{\vargsone} \aslsep
-  \overname{(\identifier\times\expr)^*}{\eqstwo} \aslsep
-  \overname{\subprogramtype}{\rettyone}
+  \overname{(\identifier\times\expr)^*}{\eqsone} \aslsep
+  \overname{\langle \ty \rangle}{\rettyone})
 \end{array}
 \]
 
@@ -6938,69 +6942,86 @@ Annotates the call to subprogram $\name$ with arguments $\vargs$,
 parameters $\eqs$, and call type $\calltype$, resulting in values for a rewritten call ---
 $\nameone$, $\vargsone$, $\eqstwo$, $\rettyone$ --- or a type error if one is detected.
 
-One of the following applies:
-\begin{itemize}
-\item TypingRule.FCallBadArity (see \secref{TypingRule.FCallBadArity}),
-\item TypingRule.FCallGetter (see \secref{TypingRule.FCallGetter}),
-\item TypingRule.FCallSetter (see \secref{TypingRule.FCallSetter}),
-\item TypingRule.FCallMismatch (see \secref{TypingRule.FCallMismatch}).
-\end{itemize}
+The rule TypingRule.FCall (see \secref{TypingRule.FCall}) applies.
 
 We also define helper functions via respective rules:
 \begin{itemize}
   \item TypingRule.FindCheckDeduce (see \secref{TypingRule.FindCheckDeduce}),
-  \item TypingRule.FindSubprogram1 (see \secref{TypingRule.FindSubprogram1}),
-  \item TypingRule.FindSubprogram2 (see \secref{TypingRule.FindSubprogram2}),
+  \item TypingRule.FindSubprogram (see \secref{TypingRule.FindSubprogram}),
   \item TypingRule.SubprogramFinder (see \secref{TypingRule.SubprogramFinder}),
   \item TypingRule.HasArgClash (see \secref{TypingRule.HasArgClash}),
   \item TypingRule.DeduceEquations (see \secref{TypingRule.DeduceEquations}),
   \item TypingRule.RenameTypeEquations (see \secref{TypingRule.RenameTypeEquations}),
 \end{itemize}
 
-\section{TypingRule.FCallBadArity \label{sec:TypingRule.FCallBadArity}}
-
+\section{TypingRule.FCall \label{sec:TypingRule.FCall}}
 \subsection{Prose}
-All of the following apply:
+One of the following applies:
 \begin{itemize}
-\item $\name$ is bound in $\tenv$ to a function with argument types \texttt{callee\_arg\_types};
-\item the lists \texttt{callee\_arg\_types} and \texttt{args} do not have the same length;
-\item an error ``\texttt{Bad Arity}'' is raised.
+  \item All of the following apply (\textsc{function\_or\_getter}):
+  \begin{itemize}
+    \item Applying $\findcheckdeduce$ to $\tenv$, $\name$, $\exprs$, $\eqs$, and $\calltype$
+    yields $(\nameone, \vargsone, \eqsone, \langle \tty \rangle)$ \ProseOrTypeError;
+    \item $\calltype$ is either a function $\STFunction$ or a getter $\STGetter$;
+    \item substituting the variables appearing in $\tty$ by the corresponding expressions,
+    according to $\eqsone$ yields $\retty$;
+    \item $\rettyone$ is $\langle\retty\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{procedure\_or\_setter}):
+  \begin{itemize}
+    \item Applying $\findcheckdeduce$ to $\tenv$, $\name$, $\exprs$, $\eqs$, and $\calltype$
+    yields $(\nameone, \vargsone, \eqsone, \None)$;
+    \item $\calltype$ is either a procedure $\STProcedure$ or a setter $\STSetter$;
+    \item $\rettyone$ is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{mismatch}):
+  \begin{itemize}
+    \item Applying $\findcheckdeduce$ to $\tenv$, $\name$, $\exprs$, $\eqs$, and $\calltype$
+    yields $(\nameone, \vargsone, \eqsone, \retty)$;
+    \item the following condition does not hold:
+    $\retty$ is $\None$ if and only if $\calltype$ is one of $\STProcedure$ or $\STSetter$;
+    \item a type error is returned indicating that the existence of a return value does not match
+    the kind of subprogram.
+  \end{itemize}
 \end{itemize}
 
 \subsection{Example}
 
-\CodeSubsection{\FCallBadArityBegin}{\FCallBadArityEnd}{../Typing.ml}
+\CodeSubsection{\FCallBegin}{\FCallEnd}{../Typing.ml}
 
 \begin{emptyformal}
 \subsection{Formally}
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
-
-\section{TypingRule.FCallGetter \label{sec:TypingRule.FCallGetter}}
-
-  \subsection{Prose}
-  Annotating the call to subprogram $\name$ with arguments \texttt{args},
-  parameters \texttt{eqs}, and call-type \texttt{call\_type}
-  (\texttt{annotate\_call}) results in \texttt{(name1, args, eqs2, ret\_ty1)}
-  or an error is raised and all of the following apply:
-   \begin{itemize}
-   \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in $\tenv$;
-   \item $\name$ is bound in $\tenv$ to a subprogram with argument types
-      \\ \texttt{callee\_arg\_types};
-   \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
-     using the types of the actual arguments \texttt{caller\_arg\_types} to
-     defined parameters in \\ \texttt{callee\_arg\_types};
-   \item \texttt{call\_type} is either a function or a getter type;
-   \item \texttt{ret\_ty1} is the result of renaming $\tty$ in \texttt{eqs2}.
-   \end{itemize}
-
-\subsection{Example}
-
-\CodeSubsection{\FCallGetterBegin}{\FCallGetterEnd}{../Typing.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
+\begin{mathpar}
+\inferrule[function\_or\_getter]{
+  \findcheckdeduce(\tenv, \name, \exprs, \eqs, \calltype) \typearrow \\
+  (\nameone, \vargsone, \eqsone, \langle \tty \rangle) \OrTypeError\\\\
+  \calltype \in \{\STFunction, \STGetter\}\\
+  \tododefine{rename\_ty\_eqs}(\tenv, \eqsone, \tty) \typearrow \retty
+}
+{
+  \annotatecall{\tenv, \name, \exprs, \eqs, \calltype} \typearrow (\nameone, \vargsone, \eqsone, \langle\retty\rangle)
+}
+\and
+\inferrule[procedure\_or\_setter]{
+  \findcheckdeduce(\tenv, \name, \exprs, \eqs, \calltype) \typearrow \\
+  (\nameone, \vargsone, \eqsone, \None) \\\\
+  \calltype \in \{\STProcedure, \STSetter\}
+}
+{
+  \annotatecall{\tenv, \name, \exprs, \eqs, \calltype} \typearrow (\nameone, \vargsone, \eqsone, \None)
+}
+\and
+\inferrule[mismatch]{
+  \findcheckdeduce(\tenv, \name, \exprs, \eqs, \calltype) \typearrow \\
+  (\nameone, \vargsone, \eqsone, \retty) \\\\
+  \neg(\calltype \in \{\STProcedure, \STSetter\} \leftrightarrow \retty=\None)
+}
+{
+  \annotatecall{\tenv, \name, \exprs, \eqs, \calltype} \typearrow \TypeErrorVal{CallMismatch}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -7009,71 +7030,162 @@ All of the following apply:
   \identi{FLKF}, \identd{PMBL}, \identr{MWBN}, \identr{TZSP}, \identr{SBWR},
   \identi{CMLP}, \identr{BQJG}, \identr{RTCF}.
 
+\section{TypingRule.FindCheckDeduce \label{sec:TypingRule.FindCheckDeduce}}
+\hypertarget{def-findcheckdeduce}{}
+The function
+\[
+  \begin{array}{rl}
+    \findcheckdeduce( &
+      \overname{\staticenvs}{\tenv} \aslsep
+      \overname{\identifier}{\name} \aslsep
+      \overname{\expr^*}{\vargs} \aslsep
+      \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+      \overname{\subprogramtype}{\calltype}
+     ) \aslto \\ &
+    \overname{\identifier}{\nameone} \aslsep
+    \overname{\expr^*}{\vargsone} \aslsep
+    \overname{(\identifier\times\expr)^*}{\eqsone} \aslsep
+    \overname{\subprogramtype}{\retty}
+  \end{array}
+\]
+performs three tasks:
+\begin{itemize}
+  \item Resolving the correct subprogram from the rule arguments;
+  \item Deducing from the actual arguments and formal parameters ``equations'' ---
+  the expressions associated with parameter names;
+  \item Checking that the call expression matches the subprogram declaration.
+\end{itemize}
+The function takes a static environment $\tenv$, a subprogram $\name$,
+a list of actual arguments $\vargs$,
+parameters $\eqs$ arguments, and call type $\calltype$.
+It returns a unique name $\nameone$, rewritten actual arguments $\vargsone$,
+parameter arguments $\eqsfour$, and an optional return type $\retty$.
+A type error is returned, if one is detected.
 
-\section{TypingRule.FCallSetter \label{sec:TypingRule.FCallSetter}}
-
-  \subsection{Prose}
-  Annotating the call to subprogram $\name$ with arguments \texttt{args},
-  parameters \texttt{eqs}, and call-type \texttt{call\_type}
-  (\texttt{annotate\_call}) results in \texttt{(name1, args, eqs2, ret\_ty1)}
-  or an error is raised and all of the following apply:
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item Annotating the list of actual argument expressions $\vargs$ in $\tenv$ yields $\callerargtyped$ \ProseOrTypeError;
+  \item $\callerargtyped$ is a list of pairs where the first element is a type and the second is an expression;
+  \item splitting $\callerargtyped$ yields a list of types --- $\callerargtypes$ --- and a list of expressions ---
+  $\vargsone$, respectively;
+  \item finding the subprogram matching the name $\name$ and argument types $\callerargtypes$ in $\tenv$
+  yields a tuple $(\extranargs, \nameone, \calleeargtypes, \retty, \calleeparams)$ \ProseOrTypeError;
+  \item One of the following applies:
   \begin{itemize}
-    \item \texttt{caller\_arg\_types, arg1} is the result of annotating
-      \texttt{args} in $\tenv$;
-    \item $\name$ is bound in $\tenv$ to a subprogram with a unique
-      name \texttt{name1} whose argument types \texttt{callee\_arg\_types}
-      type-clash \texttt{caller\_arg\_types} and whose return type is
-      \texttt{ret\_ty};
-    \item \texttt{eqs1} is the list made of both \texttt{eqs} and
-      \texttt{extra\_nargs};
-    \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
-      using the types of the actual arguments \texttt{caller\_arg\_types} to
-      defined parameters in \\ \texttt{callee\_arg\_types};
-    \item \texttt{call\_type} is a setter or procedure type;
-    \item \texttt{ret\_ty} is None;
-    \item \texttt{ret\_ty1} is None.
+    \item All of the following apply (\textsc{bad\_arity}):
+    \begin{itemize}
+      \item the length of the actual list of arguments is not the same as the list of arguments of the matched
+      subprogram;
+      \item a type error is returned.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{okay}):
+    \begin{itemize}
+      \item The list of parameter arguments $\eqs$ is reversed and pre-pended to the list of parameter arguments
+      i$\extranargs$, yielding $\eqstwo$;
+      \item annotating static constrained integers in $\eqstwo$ in $\tenv$ yields $\eqsthree$ \ProseOrTypeError;
+      \item annotating the callee parameters using $\calleeargtypes$ and $\callerargtypes$ in $\tenv$
+      yields $\eqsfour'$;
+      \item $\eqsfour$ is $\eqsfour'$ concatenated with $\eqsthree$;
+      \item checking that $\callerargtypes$ \typesatisfies\ $\calleeargtypes$ in $\tenv$ yields
+      $\True$ \ProseOrTypeError;
+      \item checking that each callee parameter in $\calleeparams$ is defined by the call
+      parameters $\eqsfour$ yields $\True$ \ProseOrTypeError.
+    \end{itemize}
   \end{itemize}
+\end{itemize}
 
-\subsection{Example}
-
-\CodeSubsection{\FCallSetterBegin}{\FCallSetterEnd}{../Typing.ml}
+\CodeSubsection{\FindCheckDeduceBegin}{\FindCheckDeduceEnd}{../Typing.ml}
 
 \begin{emptyformal}
 \subsection{Formally}
+\begin{mathpar}
+\inferrule[bad\_arity]{
+  \annotateexprlist{\tenv, \vargs} \typearrow \callerargtyped \OrTypeError\\
+  \splitlist(\callerargtyped) = (\callerargtypes, \vargsone)\\
+  \findsubprogram(\tenv, \name, \callerargtypes) \typearrow \\
+  (\Ignore, \Ignore, \calleeargtypes, \Ignore, \Ignore) \OrTypeError\\\\
+  \equallength(\calleeargtypes, \vargsone) \typearrow \False
+}
+{
+  \findcheckdeduce(\tenv, \name, \vargs, \eqs, \calltype) \typearrow \\
+  \TypeErrorVal{CallBadArity}
+}
+\and
+\inferrule[okay]{
+  \annotateexprlist{\tenv, \vargs} \typearrow \callerargtyped \OrTypeError\\
+  \splitlist(\callerargtyped) = (\callerargtypes, \defpoint{\vargsone})\\
+  \findsubprogram(\tenv, \name, \callerargtypes) \typearrow \\
+  (\extranargs, \defpoint{\nameone}, \calleeargtypes, \defpoint{\retty}, \calleeparams) \OrTypeError\\\\
+  \equallength(\calleeargtypes, \vargsone) \typearrow \True\\
+  \eqs \eqname \veq_{1..k}\\
+  \eqstwo \eqdef [i=k..1: \veq_i] + \extranargs\\
+  % \tododefine{apply\_eqs}(\tenv, \calleeargtypes, \callerargtyped) \typearrow \eqstwo' \OrTypeError\\
+  % \eqstwo \eqdef \eqstwo' + \eqsone\\
+  \tododefine{annotate\_static\_constrained\_integers}(\tenv, \eqstwo) \typearrow \eqsthree \OrTypeError\\
+  \tododefine{annotate\_callee\_params}(\tenv, \calleeargtypes, \callerargtypes) \typearrow \eqsfour' \OrTypeError\\
+  \defpoint{\eqsfour} \eqdef \eqsfour' + \eqsthree\\
+  \tododefine{check\_args\_typesat}(\tenv, \calleeargtypes, \callerargtypes) \typearrow \True \OrTypeError\\
+  \tododefine{check\_callee\_params}(\tenv, \calleeparams, \eqsfour) \typearrow \True \OrTypeError\\
+}
+{
+  \findcheckdeduce(\tenv, \name, \vargs, \eqs, \calltype) \typearrow
+  (\nameone, \vargsone, \eqsfour, \retty)
+}
+\end{mathpar}
 \end{emptyformal}
 
-\subsection{Comments}
-  This is related to \identi{VFDP}, \identd{TRFW}, \identr{KMDB},
-  \identi{YMHX}, \identr{CCVD}, \identr{QYBH}, \identr{PFWQ}, \identr{ZLWD},
-  \identi{FLKF}, \identd{PMBL}, \identr{MWBN}, \identr{TZSP}, \identr{SBWR},
-  \identi{CMLP}, \identr{RTCF}.
+\isempty{\subsection{Comments}}
 
-\section{TypingRule.FCallMismatch \label{sec:TypingRule.FCallMismatch}}
+\section{TypingRule.FindSubprogram \label{sec:TypingRule.FindSubprogram}}
+\hypertarget{def-findsubprogram}{}
+The function
+\[
+  \begin{array}{rl}
+    \findsubprogram( &
+      \overname{\staticenvs}{\tenv} \aslsep
+      \overname{\identifier}{\name} \aslsep
+      \overname{\ty^*}{\callerargtypes}
+     ) \aslto \\ &
+    (
+      \overname{(\identifier\times\expr)^*}{\extranargs} \aslsep
+      \overname{\identifier}{\nameone} \aslsep
+      \overname{(\identifier\times\ty)^*}{\calleeargtypes} \aslsep
+      \overname{\langle\ty\rangle}{\retty} \aslsep
+      \overname{(\identifier \times \langle\ty\rangle)}{\calleeparams}
+    )
+  \end{array}
+\]
+takes the name of a subprogram --- $\name$ --- and a list argument types --- $\calleeargtypes$,
+and determines whether:
+\begin{itemize}
+  \item there is no declared subprogram that matches $\name$ and $\calleeargtypes$;
+  \item there is exactly one subprogram that matches $\name$ and $\calleeargtypes$;
+  \item there is more than one subprogram that matches ($\name$ and $\calleeargtypes$);
+\end{itemize}
+The first and last cases indicate a type error.
+If the second case holds, the function returns:
+\begin{itemize}
+\item $\extranargs$ --- a list matching parameters to their caller expressions based on bitvector parameters;
+\item $\identifier$ --- an identifier that uniquely matches this subprogram;
+\item $\calleeargtypes$ --- the list of formal argument types of the matched subprogram;
+\item $\retty$ --- the type of the returned value, in case of a function or a getter;
+\item $\calleeparams$ --- parameters declared in the matched subprogram.
+\end{itemize}
+A type error is returned, if one is detected.
 
-\subsection{Prose}
-  Annotating the call to subprogram $\name$ with call type \texttt{call\_type} \\ (\texttt{annotate\_call}) results in an error and
-  one of the following applies:
-  \begin{itemize}
-    \item All of the following apply: \begin{itemize} \item \texttt{call\_type}
-          is a function or a getter;
-        \item $\name$ is bound in $\tenv$ a subprogram without a return-type;
-        \item A ``Mismatched return value'' error is raised.
-      \end{itemize}
-    \item All of the following apply:
-      \begin{itemize}
-        \item \texttt{call\_type} is a procedure or a setter;
-        \item $\name$ is bound in $\tenv$ a subprogram with a return type;
-        \item A ``Mismatched return value'' error is raised.
-      \end{itemize}
-  \end{itemize}
-
-\subsection{Example}
-
-\CodeSubsection{\FCallMismatchBegin}{\FCallMismatchEnd}{../Typing.ml}
-
+\begin{emptyformal}
 \subsection{Formally}
-
-\subsection{Comments}
+% \begin{mathpar}
+% \inferrule{
+% }
+% {
+%   \findsubprogram(\tenv, \name, \callerargtypes) \typearrow \\
+%   (\extranargs, \nameone, \calleeargtypes, \retty, \calleeparams)
+% }
+% \end{mathpar}
+\end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Subprograms}
@@ -7103,7 +7215,6 @@ the following apply:
    \item \texttt{new\_body} is the result of annotating \texttt{body} in
      \texttt{env5}.
    \item \texttt{f'} is the function $\vf$ with \texttt{new\_body} substituted for \texttt{body}.
- \end{itemize}
  \end{itemize}
 
   \subsection{Example}
@@ -7184,17 +7295,17 @@ two subprogram clash in terms of their subprogram types and their lists of argum
 and then use them to annotate a subprogram declaration.
 
 \begin{mathpar}
-\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Function}, \Ignore)}
+\inferrule{}{\hassubprogramtypeclash(\tenv, \STFunction, \Ignore)}
 \and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \texttt{ST\_Function})}
+\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \STFunction)}
 \and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Procedure}, \Ignore)}
+\inferrule{}{\hassubprogramtypeclash(\tenv, \STProcedure, \Ignore)}
 \and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \texttt{ST\_Procedure})}
+\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \STProcedure)}
 \and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Getter}, \texttt{ST\_Getter})}
+\inferrule{}{\hassubprogramtypeclash(\tenv, \STGetter, \STGetter)}
 \and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Setter}, \texttt{ST\_Setter})}
+\inferrule{}{\hassubprogramtypeclash(\tenv, \STSetter, \STSetter)}
 \and
 \inferrule{
   \texttt{t\_args1} = [i=1..k: (\Ignore, \vt_i)]\\

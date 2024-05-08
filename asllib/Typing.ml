@@ -1132,6 +1132,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* End *))
 
   and annotate_call loc env name args eqs call_type =
+    (* Begin FindCheckDeduce *)
     let () =
       if false then
         Format.eprintf "Annotating call to %S (%s) at %a.@." name
@@ -1280,6 +1281,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               ())
         callee.parameters
     in
+    (* End *)
+    (* Begin FCall *)
     let ret_ty1 =
       match (call_type, callee.return_type) with
       (* Begin FCallGetter *)
@@ -1297,7 +1300,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       (* End *)
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
-    (name1, args1, eqs4, ret_ty1)
+    (name1, args1, eqs4, ret_ty1) |: TypingRule.FCall
+  (* End *)
 
   and annotate_expr env (e : expr) : ty * expr =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
