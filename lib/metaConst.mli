@@ -19,6 +19,7 @@
 type k = Int of int | Meta of string
 
 val zero : k
+val one : k
 val fatal_meta : k -> 'a
 val as_int : k -> int
 

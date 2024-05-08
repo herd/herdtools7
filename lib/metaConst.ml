@@ -21,6 +21,7 @@ open Printf
 type k = Int of int | Meta of string
 
 let zero = Int 0
+and one = Int 1
 
 let pp = function
   | Int i -> sprintf "%i" i
