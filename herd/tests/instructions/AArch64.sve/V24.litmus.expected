@@ -1,0 +1,11 @@
+Test V24 Required
+States 1
+0:X0=8; 0:X1=8; 0:X2=64; 0:X3=6; 0:X4=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (0:X0=8 /\ 0:X1=8 /\ 0:X2=64 /\ 0:X3=6 /\ 0:X4=0)
+Observation V24 Always 1 0
+Hash=b8d825a2a1e147c6c00a1289b0020343
+

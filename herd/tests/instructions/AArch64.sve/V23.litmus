@@ -1,0 +1,11 @@
+AArch64 V23
+{
+ uint64_t 0:X0;
+ uint64_t 0:X1;
+}
+  P0       ;
+RDVL X0,#0 ;
+RDVL X1,#1 ;
+
+forall 0:X0=0 /\ 0:X1=16
+(* Notice: 0:X1 value depends on the target test runs on *)
