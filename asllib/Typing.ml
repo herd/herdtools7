@@ -826,14 +826,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | BitField_Simple (name, slices) ->
         let slices1 = annotate_slices env slices in
         let+ () = check_slices_in_width loc env width slices1 in
-        BitField_Simple (name, slices1)
+        BitField_Simple (name, slices1) |: TypingRule.TBitField
     | BitField_Nested (name, slices, bitfields') ->
         let slices1 = annotate_slices env slices in
         let diet = disjoint_slices_to_diet loc env slices1 in
         let+ () = check_diet_in_width loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let bitfields'' = annotate_bitfields ~loc env width' bitfields' in
-        BitField_Nested (name, slices1, bitfields'')
+        BitField_Nested (name, slices1, bitfields'') |: TypingRule.TBitField
     | BitField_Type (name, slices, ty) ->
         let ty' = annotate_type ~loc env ty in
         let slices1 = annotate_slices env slices in
@@ -844,9 +844,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           t_bits_bitwidth width' |> add_dummy_pos
           |> check_bits_equal_width loc env ty
         in
-        BitField_Type (name, slices1, ty')
+        BitField_Type (name, slices1, ty') |: TypingRule.TBitField
   (* End *)
 
+  (* Begin TBitFields *)
   and annotate_bitfields ~loc env e_width bitfields =
     let+ () =
       match get_first_duplicate bitfield_get_name bitfields with
@@ -858,6 +859,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       match v with L_Int i -> Z.to_int i | _ -> assert false
     in
     List.map (annotate_bitfield ~loc env width) bitfields
+    |: TypingRule.TBitFields
+  (* End *)
 
   and annotate_type ?(decl = false) ~(loc : 'a annotated) env ty : ty =
     let () =

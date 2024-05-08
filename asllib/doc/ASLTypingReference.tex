@@ -145,6 +145,8 @@
 \newcommand\findcheckdeduce[0]{\hyperlink{def-findcheckdeduce}{\texttt{find\_check\_deduce}}}
 %\newcommand\renametyeqs[0]{\texttt{rename\_ty\_eqs}}
 \newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\texttt{annotate\_bitfield}}}
+\newcommand\annotatebitfields[0]{\hyperlink{def-annotatebitfields}{\texttt{annotate\_bitfields}}}
+\newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\texttt{check\_no\_duplicates}}}
 
 % Symbolic domain subsumption
 \newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
@@ -3599,7 +3601,7 @@ In the following example, all the uses of enumeration types are valid:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \tododefine{check\_no\_duplicates}(\vli) \typearrow \True \OrTypeError\\
+  \checknoduplicates(\vli) \typearrow \True \OrTypeError\\
   \vl \in \vli: \tododefine{check\_var\_not\_in\_genv}(\tenv, \vl) \typearrow \True \OrTypeError
 }{
   \annotatetype{\True, \tenv, \TEnum(\vli)} \typearrow \TEnum(\vli)
@@ -3638,7 +3640,7 @@ In the following example, all the uses of record or exception types are valid:
 \begin{mathpar}
 \inferrule{
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
-  \tododefine{check\_no\_duplicates}(\vx_{1..k}) \typearrow \True \OrTypeError\\
+  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\
   i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow \vtp_i \OrTypeError\\
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]
 }{
@@ -3685,6 +3687,12 @@ In the following example, the use of a record type outside of a declaration is e
 \chapter{Typing of Bitfields}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+We define rules for annotating a single bitfield and a list of bitfields:
+\begin{itemize}
+  \item TypingRule.TBitField (see \secref{TypingRule.TBitField});
+  \item TypingRule.TBitFields (see \secref{TypingRule.TBitFields});
+\end{itemize}
+
 \section{TypingRule.TBitField \label{sec:TypingRule.TBitField}}
 \hypertarget{def-annotatebitfield}{}
 The function
@@ -3692,11 +3700,43 @@ The function
   \annotatebitfield(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\width} \aslsep \overname{\bitfield}{\field})
   \aslto \overname{\bitfield}{\newfield} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a bitfield $\field$ with an integer $\width$ indicating the number of bits in $\field$,
+annotates a bitfield --- $\field$ --- with an integer --- $\width$ --- indicating the number of bits in $\field$,
 in an environment $\tenv$, resulting in a
-rewritten bitfield $\newfield$ or a type error, if one is detected.
+rewritten bitfield --- $\newfield$ --- or a type error, if one is detected.
 
 \subsection{Prose}
+\begin{itemize}
+  \item Annotating the slices $\slices$ yields $\slicesone$ \ProseOrTypeError;
+  One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{simple}):
+    \begin{itemize}
+      \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$ \ProseOrTypeError;
+      \item $\newfield$ is a bitfield named $\name$ with list of slices $\slicesone$, that is, $\BitFieldSimple(\name, \sliceone)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{nested}):
+    \begin{itemize}
+      \item converting the $\slicesone$ into a list of positions with $\width$ and static environment $\tenv$
+      yields $\positions$ \ProseOrTypeError;
+      \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$ \ProseOrTypeError;
+      \item let $\widthp$ be the length of the list $\positions$;
+      \item annotating the bitfields $\bitfieldsp$ with $\widthp$ in static environment $\tenv$ yields $\bitfieldspp$ \ProseOrTypeError;
+      \item $\newfields$ is the nested bitfield with $\slicesone$ and bitfields $\bitfieldspp$, that is, $\BitFieldNested(\slicesone, \bitfieldspp)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{type}):
+    \begin{itemize}
+      \item Annotating the type $\vt$ yields $\vtp$ \ProseOrTypeError;
+      \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$ \ProseOrTypeError;
+      \item converting the list of slices $\slicesone$ into a list of positions in $\tenv$ yields $\positions$ \ProseOrTypeError;
+      \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$ \ProseOrTypeError;
+      \item let $\widthp$ be the length of the list $\positions$;
+      \item checking whether the $\vt$ and the bitvector with $\widthp$ bits have the same width yields $\True$ \ProseOrTypeError
+      \item $\newfield$ is the typed-bitfield with name $\name$, list of slices $\slicesone$ and type $\vtp$, that is, \BitFieldType(\name, \slicesone, \vtp).
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
 
 \subsection{Example}
 In the following example, all the uses of bitvector types with bitfields are valid:
@@ -3714,29 +3754,94 @@ In the following example, all the uses of bitvector types with bitfields are val
   \annotatebitfield(\tenv, \width, \BitFieldSimple(\name, \slices)) \typearrow \\
   \BitFieldSimple(\name, \sliceone)
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[nested]{
   \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\
   \tododefine{disjoint\_slices\_to\_positions}(\tenv, \width, \slicesone) \typearrow \positions \OrTypeError\\\\
-  \tododefine{check\_positions\_in\_width}(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\
-  \widthp \eqdef \listrange(\positions)\\
-  \tododefine{annotate\_bit\_fields}(\tenv, \widthp, \bitfieldsp) \typearrow \bitfieldspp \OrTypeError\\
+  \tododefine{check\_positions\_in\_width}(\tenv, \width, \positions) \typearrow \True \OrTypeError\\
+  \widthp \eqdef |\positions|\\
+  \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow \bitfieldspp \OrTypeError\\
 }{
-  \annotatebitfield(\tenv, \width, \BitFieldNested(\slices, \bitfieldsp)) \typearrow \\
+  \annotatebitfield(\tenv, \width, \BitFieldNested(\name, \slices, \bitfieldsp)) \typearrow \\
   \BitFieldNested(\slicesone, \bitfieldspp)
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[type]{
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\
   \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\
+  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\
   \tododefine{check\_slices\_in\_width}(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\
-  \annotatebitfield(\tenv, \width, \BitFieldType(\name, \slices, \vt)) \typearrow \\
-  \tododefine{disjoint\_slices\_to\_positions}(\tenv, \width, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \tododefine{disjoint\_slices\_to\_positions}(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
   \tododefine{check\_positions\_in\_width}(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\
-  \widthp \eqdef \listrange(\positions)\\
+  \widthp \eqdef |\positions|\\
   \tododefine{check\_bits\_equal\_width}(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError
 }{
-  \BitFieldType(\name, \slices, \vt) \typearrow \BitFieldType(\name, \sliceone, \vtp)
+  \annotatebitfield(\tenv, \width, \BitFieldType(\name, \slices, \vt)) \typearrow \\
+  \BitFieldType(\name, \slicesone, \vtp)
+}
+\end{mathpar}
+\end{emptyformal}
+
+\isempty{\subsection{Comments}}
+
+\section{TypingRule.TBitFields \label{sec:TypingRule.TBitFields}}
+\hypertarget{def-annotatebitfields}{}
+The function
+\[
+  \annotatebitfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ewidth} \aslsep \overname{\bitfields}{\fields})
+  \aslto \overname{\bitfields}{\newfields} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a list of bitfields --- $\fields$ --- with an expression denoting the overall number of bits --- $\ewidth$,
+in an environment $\tenv$, resulting in a
+rewritten list of bitfields --- $\newfields$ or a type error, if one is detected.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$ \ProseOrTypeError;
+  \item symbolically reducing $\ewidth$ in $\tenv$ yields the literal integer for $\vi$ \ProseOrTypeError;
+  \item annotating each bitfield $\field$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding rewritten
+  bitfield $\newfield$ \ProseOrTypeError;
+  \item $\newfields$ is the list of rewritten bitfields.
+\end{itemize}
+
+\isempty{\subsection{Example}}
+
+\CodeSubsection{\TBitFieldsBegin}{\TBitFieldsEnd}{../Typing.ml}
+
+\begin{emptyformal}
+\subsection{Formally}
+\newcommand\getbitfieldname[0]{\texttt{get\_bitfield\_name}}
+We first define the helper function $\getbitfieldname : \bitfield \aslto \identifier$,
+which extracts the name of a bitfield:
+\begin{mathpar}
+  \inferrule[simple]{}{
+    \getbitfieldname(\BitFieldSimple(\name, \Ignore)) \typearrow \name
+  }
+  \and
+  \inferrule[nested]{}{
+    \getbitfieldname(\BitFieldNested(\name, \Ignore, \Ignore)) \typearrow \name
+  }
+  \and
+  \inferrule[type]{}{
+    \getbitfieldname(\BitFieldType(\name, \Ignore, \Ignore)) \typearrow \name
+  }
+\end{mathpar}
+
+Now the rule for annotating a list of bitfields is
+\begin{mathpar}
+\inferrule{
+  \names \eqdef [\field\in\fields: \getbitfieldname(\field)]\\
+  \checknoduplicates(\names) \typearrow \True \OrTypeError\\
+  \reduceconstants{\tenv, \ewidth} \typearrow \lint(\vi) \OrTypeError\\
+  \field\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow \newfield \OrTypeError\\
+  \newfields \eqdef [\field\in\fields: \newfield]
+}
+{
+  \annotatebitfields(\tenv, \ewidth, \fields) \typearrow \newfields
 }
 \end{mathpar}
 \end{emptyformal}
@@ -3790,13 +3895,15 @@ $\newe$ is a rewritten expression, or an error, and one of the following applies
 
 The annotation rewrites the input expression in the following cases, making the annotation of statements simpler:
 \begin{itemize}
-  \item Variables with constant values are substituted for their constant values.
+  \item Variables with constant values are substituted by their constant values.
   \item Slicing expressions that correspond to calling a getter are replaced with respective call expressions.
   \item Slicing expressions that correspond to array accesses are replaced with array access expressions.
 \end{itemize}
 
-We also define the helper rule for annotating lists of expressions:
-Typing.ExpressionList (\secref{TypingRule.ExpressionList}).
+We also define a helper rule for annotating lists of expressions:
+\begin{itemize}
+  \item Typing.ExpressionList (\secref{TypingRule.ExpressionList}).
+\end{itemize}
 
 \section{TypingRule.Lit \label{sec:TypingRule.Lit}}
 
@@ -8970,8 +9077,53 @@ returning a type error otherwise:
   \inferrule[check\_trans\_false]{}{ \checktrans{\False} \typearrow\TypeErrorVal{CheckFailed} }
 \end{mathpar}
 
+\hypertarget{def-checknoduplicates}{}
+\section{TypingRule.CheckNoDuplicates \label{sec:TypingRule.CheckNoDuplicates}}
+The function
+\[
+  \checknoduplicates(\overname{\identifier^*}{\id_{1..k}}) \aslto \True \cup \TTypeError
+\]
+checks whether a non-empty list of identifiers contains a duplicate identifier. If it does not, the result
+is $\True$ and otherwise the result is a type error.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item the set containing all identifiers in the list has the same cardinality as the length of the list;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item there exist two different positions in the list where the identifier is the same;
+    \item the result is a type error indicating the existence of a duplicate identifier.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\begin{mathpar}
+  \inferrule[okay]{
+    |\{\id_{1..k}\}| = k
+  }
+  {
+    \checknoduplicates(\id_{1..k}) \typearrow \True
+  }
+\and
+\inferrule[error]{
+  i,j \in 1..k\\
+  i \neq j\\
+  \id_i = \id_j
+}
+{
+  \checknoduplicates(\id_{1..k}) \typearrow \TypeErrorVal{DuplicateIdentifier}
+}
+\end{mathpar}
+\end{emptyformal}
+
 \hypertarget{def-declaredtype}{}
-\section{TypingRule.DeclaredType}
+\section{TypingRule.DeclaredType \label{sec:TypingRule.DeclaredType}}
 
 The function
 \[

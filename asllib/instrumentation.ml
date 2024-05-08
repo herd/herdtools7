@@ -489,6 +489,7 @@ module TypingRule = struct
     | TRecordExceptionDecl
     | TNonDecl
     | TBitField
+    | TBitFields
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -632,6 +633,7 @@ module TypingRule = struct
     | TRecordExceptionDecl -> "TRecordExceptionDecl"
     | TNonDecl -> "TNonDecl"
     | TBitField -> "TBitField"
+    | TBitFields -> "TBitFields"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -755,6 +757,7 @@ module TypingRule = struct
       TRecordExceptionDecl;
       TNonDecl;
       TBitField;
+      TBitFields;
     ]
 
   let all_nb = List.length all
