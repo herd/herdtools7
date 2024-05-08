@@ -298,13 +298,15 @@ let pp_gdk f gdk =
   | GDK_Let -> "GDK_Let"
   | GDK_Var -> "GDK_Var"
 
-let pp_subprogram_type f st =
-  addb f
-    (match st with
-    | ST_Function -> "ST_Function"
-    | ST_Procedure -> "ST_Procedure"
-    | ST_Setter -> "ST_Setter"
-    | ST_Getter -> "ST_Getter")
+let subprogram_type_to_string = function
+  | ST_Function -> "ST_Function"
+  | ST_Procedure -> "ST_Procedure"
+  | ST_Setter -> "ST_Setter"
+  | ST_Getter -> "ST_Getter"
+  | ST_EmptyGetter -> "ST_EmptyGetter"
+  | ST_EmptySetter -> "ST_EmptySetter"
+
+let pp_subprogram_type f st = addb f (subprogram_type_to_string st)
 
 let pp_body f = function
   | SB_ASL s -> bprintf f "SB_ASL (%a)" pp_stmt s

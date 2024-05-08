@@ -313,7 +313,26 @@ and catcher = identifier option * ty * stmt
 
 (** {2 Top-level declarations} *)
 
-type subprogram_type = ST_Procedure | ST_Function | ST_Getter | ST_Setter
+type subprogram_type =
+  | ST_Procedure
+      (** A procedure is a subprogram without return type, called from a
+          statement. *)
+  | ST_Function
+      (** A function is a subprogram with a return type, called from an
+          expression. *)
+  | ST_Getter
+      (** A getter is a special function called with a syntax similar to
+          slices. *)
+  | ST_EmptyGetter
+      (** An empty getter is a special function called with a syntax similar to
+          a variable. *)
+  | ST_Setter
+      (** A setter is a special procedure called with a syntax similar to slice
+          assignment. *)
+  | ST_EmptySetter
+      (** An empty setter is a special procedure called with a syntax similar
+          to an assignment to a variable. *)
+
 type subprogram_body = SB_ASL of stmt | SB_Primitive
 
 type func = {

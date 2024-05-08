@@ -360,12 +360,17 @@ let pp_decl f =
     | ST_Getter ->
         fprintf f "@[<hv 4>getter %s%a [@,%a]%a@]" name pp_parameters parameters
           pp_args args pp_return_type_opt return_type
+    | ST_EmptyGetter ->
+        fprintf f "@[<hv 4>getter %s%a@]" name pp_return_type_opt return_type
     | ST_Setter ->
         let new_v, args =
           match args with [] -> assert false | h :: t -> (h, t)
         in
         fprintf f "@[<hv 4>setter %s%a [@,%a]@ = %a@]" name pp_parameters
           parameters pp_args args pp_typed_identifier new_v
+    | ST_EmptySetter ->
+        let new_v = match args with [ h ] -> h | _ -> assert false in
+        fprintf f "@[<hv 4>setter %s@ = %a]" name pp_typed_identifier new_v
   in
   let pp_body f = function
     | SB_ASL s -> pp_stmt f s

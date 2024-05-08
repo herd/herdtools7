@@ -519,7 +519,7 @@ let subtype_opt == option(subtype)
 let opt_type_identifier == pair(IDENTIFIER, ty_opt)
 let return_type == ARROW; ty
 let params_opt == { [] } | braced(clist(opt_type_identifier))
-let access_args_opt == { [] } | bracketed(clist(typed_identifier))
+let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
 let func_body == delimited(ioption(BEGIN), stmt_list, END)
 let ignored_or_identifier ==
@@ -550,30 +550,54 @@ let decl ==
             subprogram_type = ST_Procedure;
           }
         }
-    | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; ret=return_type;
+    | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; ret=return_type;
         ~=func_body;
         {
           D_Func
             {
               name;
               parameters = params_opt;
-              args = access_args_opt;
+              args = access_args;
               return_type = Some ret;
               body = SB_ASL func_body;
               subprogram_type = ST_Getter;
             }
         }
-    | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; EQ; v=typed_identifier;
+    | GETTER; name=IDENTIFIER; ret=return_type; ~=func_body;
+        {
+          D_Func
+            {
+              name;
+              parameters = [];
+              args = [];
+              return_type = Some ret;
+              body = SB_ASL func_body;
+              subprogram_type = ST_EmptyGetter;
+            }
+        }
+    | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; EQ; v=typed_identifier;
         ~=func_body;
         {
           D_Func
             {
               name;
               parameters = params_opt;
-              args = v :: access_args_opt;
+              args = v :: access_args;
               return_type = None;
               body = SB_ASL func_body;
               subprogram_type = ST_Setter;
+            }
+        }
+    | SETTER; name=IDENTIFIER; EQ; v=typed_identifier; ~=func_body;
+        {
+          D_Func
+            {
+              name;
+              parameters = [];
+              args = [ v ];
+              return_type = None;
+              body = SB_ASL func_body;
+              subprogram_type = ST_EmptySetter;
             }
         }
 
