@@ -69,6 +69,10 @@
 \newcommand\canbeinitializedwith[0]{\texttt{can\_be\_initialized\_with}}
 \newcommand\getbitvectorwidth[0]{\texttt{get\_bitvector\_width}}
 \newcommand\findsubprogram[0]{\hyperlink{def-findsubprogram}{\texttt{find\_subprogram}}}
+\newcommand\subprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
+\newcommand\hassubprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
+\newcommand\subprogramclash[0]{\texttt{subprogram\_clash}}
+\newcommand\argsclash[0]{\texttt{args\_clash}}
 
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
 \newcommand\exprequal[0]{\hyperlink{def-exprequal}{\texttt{expr\_equal}}}
@@ -106,6 +110,9 @@
 \newcommand\typesatisft[0]{\hyperlink{def-typesatisfies}{type-satisft}}
 \newcommand\subtypesatisfies[0]{\hyperlink{def-subtypesatisfies}{subtype-satisfies}}
 \newcommand\subtypesatisfy[0]{\hyperlink{def-subtypesatisfies}{subtype-satisfisfy}}
+\newcommand\typeequivalent[0]{\hyperlink{def-typeequal}{type-equivalent}}
+\newcommand\bitwidthequivalent[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
+\newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -503,7 +510,7 @@ We define the following shorthands for classifying integers:
 \hypertarget{def-annotaterel}{}
 The type system of ASL is given by the relation $\annotaterel$, which is defined as the disjoint union
 of the partial functions and relations defined in this document.
-The partial functions and relations in this document are defined, in turn, via type system rules.
+The \hyperlink{def-partialfunc}{partial functions} and relations in this document are defined, in turn, via type system rules.
 
 The output configurations of type assertions have two flavors:
 \begin{description}
@@ -514,15 +521,18 @@ The output configurations of type assertions have two flavors:
   \hypertarget{def-typeerror}{}
   \item[Type Errors.] Configurations in $\TypeError(\texttt{<string>})$
   represent type errors, for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|.
-  The ASL type system is set up such that when these \emph{type error configurations} appear,
+  The ASL type system is designed such that when these \emph{type error configurations} appear,
   the typing of the entire specification terminates by outputting them.
 \end{description}
 
-We define the mathematical type of type error configurations as follows:
+We define the mathematical type of type error configurations
+(which is needed to define the types of functions in the ASL type system)
+as follows:
 \hypertarget{def-ttypeerror}{}
 \[
   \TTypeError \triangleq \TypeError(\texttt{<string>})
 \]
+
 \hypertarget{def-typeerrorconfig}{}
 and the shorthand $\TypeErrorConfig \triangleq \TypeError(\vs)$ for type error configurations.
 
@@ -531,8 +541,8 @@ and the shorthand $\TypeErrorConfig \triangleq \TypeError(\vs)$ for type error c
 making it transition into the type error configuration $\TypeErrorConfig$.''\\
 We use this when explaining rules in English prose.
 %
-When several case rule use the same transition assertion, which may lead to a short-circuiting
-type assertion, we do not repeat the \ProseOrTypeError, but rather include it only in the first case.
+When several \hyperlink{def-caserules}{case rules} for the same function use the same short-circuiting transition assertion,
+we do not repeat the \ProseOrTypeError, but rather include it only in the first rule.
 
 % \subsection*{Rule Example}
 % The following rule is used to type a sequence of two statements:
@@ -559,8 +569,8 @@ satisfied. If one such rule is found, the node is annotated by the result type
 specified by the rule.  If no such rule is found, it is considered a \emph{typing error}
 and the algorithm exits.
 
-Sometimes it is to necessary to define \emph{error rules}---rules that result
-in an error and provide extra information to help understand the reason for the
+Sometimes it is necessary to define \emph{error rules} --- rules that result
+in a type error and may provide extra information to help understand the reason for the
 error.
 
 We implement the process described above via a set of
@@ -608,7 +618,7 @@ Each rule is presented using the following template:
 \href{https://github.com/herd/herdtools7//tree/master/asllib/Typing.ml}{/herdtools7/asllib/Typing.ml};
 \fi
 \item Formal paragraphs which give formal definitions of the rule.
-\item Comments paragraphs which may refer to one or more rules from the Language Reference Manual~\cite{LRM}
+\item Comments paragraphs which may refer to one or more statements from the Language Reference Manual~\cite{LRM}
       and may add more information.
 \end{itemize}
 
@@ -708,9 +718,9 @@ Types that do not refer to variables whose values are only known dynamically hav
 a static domain that is equal to any of their dynamic domains.
 In those cases, we simply refer to their \emph{domain}.
 
-Associating a set of values to a type is done by evaluating any expressions appearing
-in the type definitions via the ASL semantics~\cite{ASLSemanticsReference},
-specifically via the relation
+Associating a set of values to a type is done by evaluating any expression appearing
+in the type definitions. Evaluation is done using the ASL semantics~\cite{ASLSemanticsReference},
+more specifically via the relation
 \[
   \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
   \Normal(\overname{\vals}{\vv}\aslsep\overname{\XGraphs}{\vg}) \cup
@@ -739,52 +749,52 @@ by overloading $\dynamicdomain$:
 \]
 
 \subsection{Prose}
-For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and one of the following holds:
+For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and one of the following applies:
 \begin{itemize}
-  \item All of the following holds (\textsc{t\_bool}):
+  \item All of the following apply (\textsc{t\_bool}):
   \begin{itemize}
     \item $\vt$ is the Boolean type, $\TBool$;
     \item $\vd$ is the set of native Boolean values, $\tbool$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_string}):
+  \item All of the following apply (\textsc{t\_string}):
   \begin{itemize}
     \item $\vt$ is the string type, $\TString$;
     \item $\vd$ is the set of all native string values, $\tstring$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_real}):
+  \item All of the following apply (\textsc{t\_real}):
   \begin{itemize}
     \item $\vt$ is the real type, $\TReal$;
     \item $\vd$ is the set of all native real values, $\treal$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_enumeration}):
+  \item All of the following apply (\textsc{t\_enumeration}):
   \begin{itemize}
     \item $\vt$ is the enumeration type with labels $\id_{1..k}$, that is $\TEnum(\id_{1..k})$;
     \item $\vd$ is the set of all native integer values for $1..k$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_int\_unconstrained}):
+  \item All of the following apply (\textsc{t\_int\_unconstrained}):
   \begin{itemize}
     \item $\vt$ is the unconstrained integer type, $\TInt(\unconstrained)$;
     \item $\vd$ is the set of all native integer values, $\tint$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_int\_well\_constrained}):
+  \item All of the following apply (\textsc{t\_int\_well\_constrained}):
   \begin{itemize}
     \item $\vt$ is the well-constrained integer type $\TInt(\wellconstrained(\vc_{1..k}))$;
     \item $\vd$ is the union of the dynamic domains of each of the constraints $vc_{1..k}$ in $\env$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{constraint\_exact}):
+  \item All of the following apply (\textsc{constraint\_exact}):
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $n$;
     \item $\vd$ is the set containing the single native integer value for $n$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{constraint\_range}):
+  \item All of the following apply (\textsc{constraint\_range}):
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
@@ -793,21 +803,21 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the set containing all native integer values for integers from $a$ to $b$, inclusive.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_int\_underconstrained}):
+  \item All of the following apply (\textsc{t\_int\_underconstrained}):
   \begin{itemize}
     \item $\vt$ is an under constrained integer for parameter $\id$, \\ $\TInt(\underconstrained(\id))$;
     \item the native value associated with $\id$ in the local dynamic environment is the native integer value for $n$;
     \item $\vd$ is the set containing the single integer value for $n$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_bits\_empty}):
+  \item All of the following apply (\textsc{t\_bits\_empty}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $0$;
     \item $\vd$ is the set containing the single native value for an empty bitvector.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_bits\_non\_empty}):
+  \item All of the following apply (\textsc{t\_bits\_non\_empty}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
@@ -815,7 +825,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the set containing all native values for bitvectors of size exactly $k$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_tuple}):
+  \item All of the following apply (\textsc{t\_tuple}):
   \begin{itemize}
     \item $\vt$ is a tuple type over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
     \item the domain of each element $\vt_i$ is $D_i$, for $i=1..k$;
@@ -824,14 +834,14 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     is from $D_i$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_array}):
+  \item All of the following apply (\textsc{t\_array}):
   \begin{itemize}
-    \item $\vt$ is an type over type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
+    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
     \item the domain of $\vtone$ is $D_\vtone$;
     \item $\vd$ is the set containing all native vectors of $k$ values taken from $D_\vtone$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_structured}):
+  \item All of the following apply (\textsc{t\_structured}):
   \begin{itemize}
     \item $\vt$ is either a record type or an exception type with typed fields $(\id_i, \vt_i$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
     where $L\in\{\TRecord, \TException\}$;
@@ -839,7 +849,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$.
   \end{itemize}
 
-  \item All of the following holds (\textsc{t\_named}):
+  \item All of the following apply (\textsc{t\_named}):
   \begin{itemize}
     \item $\vt$ is a named type with name $\id$, $\TNamed(\id)$;
     \item the type associated with $\id$ in $\tenv$ is $\tty$;
@@ -1054,7 +1064,7 @@ which inevitably leads to higher computational complexity.
 %
 The symbolic subsumption test in \chapref{symbolicsubsumptiontesting}
 attempts to accept a large enough set of true positives, based on empirical trial and error,
-while maintaining the computational complexity of the symbolic reasoning acceptable.
+while maintaining the computational complexity of the symbolic reasoning relatively low.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Basic Type Attributes}
@@ -1494,7 +1504,7 @@ The function
   \tstruct(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 assigns a type to its \hypertarget{def-tstruct}{\emph{\structure}}, which is the type formed by
-recursively replacing named types their declared types in the static environment $\tenv$.
+recursively replacing named types by their type definition in the static environment $\tenv$.
 If a named type is not associated with a declared type in $\tenv$, a type error is returned.
 
 TypingRule.Specification ensures the absence of circular type definitions,
@@ -1819,9 +1829,8 @@ One of the following applies:
 
 \item All of the following apply (\textsc{different\_labels}):
   \begin{itemize}
-  \item the underlying types of $\vt$ and $\vs$ have different labels,
-  which means that they both have totally different kinds of types (for example, \texttt{integer} and \texttt{real}),
-  which is determined by comparing their AST labels;
+  \item the underlying types of $\vt$ and $\vs$ have different AST labels
+  (for example, \texttt{integer} and \texttt{real});
   \item $\vb$ is $\False$.
   \end{itemize}
 
@@ -1890,7 +1899,7 @@ One of the following applies:
   \item since both underlying types have the same AST label they are either both record types or both exception types;
   \item $\vb$ is $\True$ if and only if for each field in $\vfieldss$ with type $\vtys$
   there exists a field in $\vfieldst$ with type $\vtyt$ such that both $\vtys$ and $\vtyt$
-  are determined to be equivalent in $\tenv$.
+  are determined to be \typeequivalent\ in $\tenv$.
   \end{itemize}
 \end{itemize}
 
@@ -2204,7 +2213,7 @@ One of the following applies:
     \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\False$;
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a bitvector type of length $\widtht$ \ProseOrTypeError;
     \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a bitvector type of length $\widths$ \ProseOrTypeError;
-    \item symbolically determining whether $\widtht$ and $\widths$ are equivalent yields $\vb$.
+    \item determining whether $\widtht$ and $\widths$ are \bitwidthequivalent\ yields $\vb$.
   \end{itemize}
 
   \item All of the following apply (\textsc{otherwise}):
@@ -2934,11 +2943,11 @@ The function
   \aslto \overname{\ty}{\vt}
 \]
 determines the result type $\vt$ of applying the binary operator $\op$
-to opernads of type $\vtone$ and $\vttwo$ in the static environment $\tenv$,
+to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$,
 returning a type error, if one is detected.
 
 \subsection{Goal}
-Determine the result type of a binary operator, give the types of its operands.
+Determine the result type of a binary operator, given the types of its operands.
 
 \subsection{Prose}
   $\vt$ is the result of checking compatibility of a binary operator $\op$ with
@@ -3070,7 +3079,7 @@ Determine the result type of a binary operator, give the types of its operands.
           \item $\vtone$ has the structure of a well-constrained integer;
           \item $\vttwo$ has the structure of a well-constrained integer;
 	        \item $\vt$ is a constrained integer whose constraint is calculated by
-	        applying the operation to all possible value pairs;
+	        applying the operation $\op$ to all possible value pairs;
         \end{itemize}
         \item All of the following apply:
         \begin{itemize}
@@ -3235,7 +3244,7 @@ The function
 \]
 annotates a type $\tty$, in the context of a declaration indicated by $\decl$,
 in an environment $\tenv$, resulting in a
-rewritten type $\newty$ and one of the following applies:
+annotated type $\newty$ and one of the following applies:
 \begin{itemize}
   \item TypingRule.TString (see \secref{TypingRule.TString});
   \item TypingRule.TReal (see \secref{TypingRule.TReal});
@@ -3338,8 +3347,8 @@ In the following example, all the uses of \texttt{boolean} are valid:
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\tty$ is the a named type $\vx$, that is $\TNamed(\vx)$;
-  \item retrieving the type associated with $\vx$ yields $\vt$ \ProseOrTypeError;
+  \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
+  \item retrieving the type associated with $\vx$ from the static environment $\tenv$ (via $\declaredtype$) yields $\vt$ \ProseOrTypeError;
   \item $\newty$ is $\tty$.
 \end{itemize}
 
@@ -3584,7 +3593,7 @@ All of the following apply:
 \begin{itemize}
   \item $\tty$ is the enumeration type with enumeration literals
     $\vli$, that is, $\TEnum(\vli)$;
-  \item This is the declaration of $\tty$;
+  \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
   \item determining that $\vli$ does not contain duplicates yields $\True$ \ProseOrTypeError;
   \item determining that none of the labels in $\vli$ is declared in the global environment
   yields $\True$ \ProseOrTypeError;
@@ -3618,11 +3627,11 @@ All of the following apply:
 \begin{itemize}
   \item $\tty$ is either a record type or an exception type, corresponding to its AST label $L$;
   \item the list of fields of $\tty$ is $\fields$;
-  \item this is the declaration of $\tty$;
-  \item $\fields$ is a list of identifier-type pairs $(\vx_i, \vt_i)$, for $i=1..k$;
+  \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
+  \item $\fields$ is a list of pairs where the first element is an identifier and the second is a type --- $(\vx_i, \vt_i)$, for $i=1..k$;
   \item checking that the list of field identifiers $\vx_{1..k}$ does not contain duplicates
   yields $\True$ \ProseOrTypeError;
-  \item annotating each field type $\vt_i$, for $i=1..k$, yields a rewritten type $\vtp_i$
+  \item annotating each field type $\vt_i$, for $i=1..k$, yields an annotated type $\vtp_i$
   \ProseOrTypeError;
   \item $\fieldsp$ is the list with $(\vx_i, \vtp_i)$, for $i=1..k$;
   \item $\newty$ is the AST node with AST label $L$ (either record type or exception type,
@@ -3658,7 +3667,8 @@ In the following example, all the uses of record or exception types are valid:
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is either a record type, an exception type, or an enumeration type;
-  \item this is not the declaration of $\tty$;
+  \item $\decl$ is $\False$, indicating that $\tty$ should be considered to be outside the context of a declaration
+  of $\tty$;
   \item a type error is returned, indicating that the use of anonymous form of enumerations, record,
   and exceptions types is not allowed here.
 \end{itemize}
@@ -3701,8 +3711,8 @@ The function
   \aslto \overname{\bitfield}{\newfield} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a bitfield --- $\field$ --- with an integer --- $\width$ --- indicating the number of bits in $\field$,
-in an environment $\tenv$, resulting in a
-rewritten bitfield --- $\newfield$ --- or a type error, if one is detected.
+in an environment $\tenv$, resulting in an
+annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 
 \subsection{Prose}
 \begin{itemize}
@@ -3795,17 +3805,17 @@ The function
   \aslto \overname{\bitfields}{\newfields} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a list of bitfields --- $\fields$ --- with an expression denoting the overall number of bits --- $\ewidth$,
-in an environment $\tenv$, resulting in a
-rewritten list of bitfields --- $\newfields$ or a type error, if one is detected.
+in an environment $\tenv$, resulting in an
+annotated list of bitfields --- $\newfields$ or a type error, if one is detected.
 
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$ \ProseOrTypeError;
   \item symbolically reducing $\ewidth$ in $\tenv$ yields the literal integer for $\vi$ \ProseOrTypeError;
-  \item annotating each bitfield $\field$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding rewritten
+  \item annotating each bitfield $\field$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding annotated
   bitfield $\newfield$ \ProseOrTypeError;
-  \item $\newfields$ is the list of rewritten bitfields.
+  \item $\newfields$ is the list of annotated bitfields.
 \end{itemize}
 
 \isempty{\subsection{Example}}
@@ -3861,7 +3871,7 @@ The function
 specifies how to annotate an expression $\ve$ in
 an environment \tenv.  Formally, the result of annotating the expression
 $\ve$ in \tenv\ is either the pair \texttt{t, new\_e}, where $\vt$ is a type and
-$\newe$ is a rewritten expression, or an error, and one of the following applies:
+$\newe$ is an annotated expression, or an error, and one of the following applies:
 \begin{itemize}
 \item TypingRule.ELit (see \secref{TypingRule.ELit});
 \item TypingRule.ELocalVarConstant (see \secref{TypingRule.ELocalVarConstant})
@@ -4954,7 +4964,7 @@ The function
   \aslto \overname{(\ty \times \expr)^*}{\typedexprs}
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a list of expressions in left-to-right order.
+annotates a list of expressions in from left to right.
 
 \subsection{Prose}
 One of the following applies:
@@ -4968,11 +4978,11 @@ One of the following applies:
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
     \item $\exprs$ has $\ve$ as its head expression and $\exprsone$ as its tail;
-    \item annotating $\ve$ in $\tenv$ yields the type-expression pair
-    $\typedexpr$ \ProseOrTypeError;
+    \item annotating $\ve$ in $\tenv$ yields the pair $\typedexpr$ consisting of a type and an expression
+     \ProseOrTypeError;
     \item annotating the expression list $\exprsone$ in $\tenv$ yields
     $\typedexprs$ \ProseOrTypeError;
-    \item $\typedexprs$ is the list starting having \\ $\typedexpr$ as its head
+    \item $\typedexprs$ is the list with $\typedexpr$ as its head
     and $\typedexprs$ as its tail.
   \end{itemize}
 \end{itemize}
@@ -5003,7 +5013,7 @@ One of the following applies:
 
 Annotating a left-hand side expression~\texttt{le} in an environment $\tenv$, assuming \texttt{t\_e}
 to be the type of the corresponding right-hand-side (\texttt{annotate\_lexpr env le t\_e}),
-results in a rewritten expression \texttt{new\_le} and one of the following applies:
+results in an annotated expression \texttt{new\_le} and one of the following applies:
 \begin{itemize}
 \item TypingRule.LEDiscard (see \secref{TypingRule.LEDiscard}),
 \item TypingRule.LELocalVar (see \secref{TypingRule.LELocalVar}),
@@ -7198,7 +7208,7 @@ The function
 \]
 
 Annotates the call to subprogram $\name$ with arguments $\vargs$,
-parameters $\eqs$, and call type $\calltype$, resulting in values for a rewritten call ---
+parameters $\eqs$, and call type $\calltype$, resulting in values for an annotated call ---
 $\nameone$, $\vargsone$, $\eqstwo$, $\rettyone$ --- or a type error if one is detected.
 
 The rule TypingRule.FCall (see \secref{TypingRule.FCall}) applies.
@@ -7206,11 +7216,14 @@ The rule TypingRule.FCall (see \secref{TypingRule.FCall}) applies.
 We also define helper functions via respective rules:
 \begin{itemize}
   \item TypingRule.FindCheckDeduce (see \secref{TypingRule.FindCheckDeduce}),
-  \item TypingRule.FindSubprogram (see \secref{TypingRule.FindSubprogram}),
-  \item TypingRule.SubprogramFinder (see \secref{TypingRule.SubprogramFinder}),
-  \item TypingRule.HasArgClash (see \secref{TypingRule.HasArgClash}),
-  \item TypingRule.DeduceEquations (see \secref{TypingRule.DeduceEquations}),
-  \item TypingRule.RenameTypeEquations (see \secref{TypingRule.RenameTypeEquations}),
+  which finds a subprogram that matches the call, checks for type errors, and infers expressions
+  for parameters.
+  % \item TypingRule.FindSubprogram (see \secref{TypingRule.FindSubprogram}),
+  % which finds a subprogram that clashes with the subprogram
+  % \item TypingRule.SubprogramFinder (see \secref{TypingRule.SubprogramFinder}),
+  % \item TypingRule.HasArgClash (see \secref{TypingRule.HasArgClash}),
+  % \item TypingRule.DeduceEquations (see \secref{TypingRule.DeduceEquations}),
+  % \item TypingRule.RenameTypeEquations (see \secref{TypingRule.RenameTypeEquations}),
 \end{itemize}
 
 \section{TypingRule.FCall \label{sec:TypingRule.FCall}}
@@ -7309,7 +7322,8 @@ The function
 \]
 performs three tasks:
 \begin{itemize}
-  \item Resolving the correct subprogram from the rule arguments;
+  \item Resolving the correct subprogram from the rule arguments. That is, finding a subprogram
+  that with the same name and argument types that \typeclash\ with the actual argument types;
   \item Deducing from the actual arguments and formal parameters ``equations'' ---
   the expressions associated with parameter names;
   \item Checking that the call expression matches the subprogram declaration.
@@ -7317,7 +7331,7 @@ performs three tasks:
 The function takes a static environment $\tenv$, a subprogram $\name$,
 a list of actual arguments $\vargs$,
 parameters $\eqs$ arguments, and call type $\calltype$.
-It returns a unique name $\nameone$, rewritten actual arguments $\vargsone$,
+It returns a unique name $\nameone$, annotated actual arguments $\vargsone$,
 parameter arguments $\eqsfour$, and an optional return type $\retty$.
 A type error is returned, if one is detected.
 
@@ -7527,12 +7541,11 @@ results in a new environment $\tenvp$, which contains the declared element, and 
 
 \section{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
 \subsection{Prose}
-Declaring a subprogram declaration $\funcsig$ in a given environment $\tenv$ results
-in $\newenv$ and All of the following apply:
+Declaring a subprogram $\funcsig$ in a given environment $\tenv$ results
+in $\newenv$ and all of the following apply:
 \begin{itemize}
   \item $\name$ is the identifier associated with the subprogram declaration;
   \item $\tenv$ does not contain another subprogram declaration for $\name$ that clashes with $\funcsig$;
-  \item $\newenv$ is $\tenv$ where
   \item $\newenv$ is $\tenv$ where
   $\funcsig$ has been added to the set of subprograms declared with $\name$ (\subprogramrenamings)
   and $\name$ is associated with $\funcsig$.
@@ -7543,11 +7556,6 @@ in $\newenv$ and All of the following apply:
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
 \begin{emptyformal}
   \subsection{Formally}
-
-\newcommand\subprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
-\newcommand\hassubprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
-\newcommand\subprogramclash[0]{\texttt{subprogram\_clash}}
-\newcommand\argsclash[0]{\texttt{args\_clash}}
 
 We define the helper rules \hassubprogramtypeclash, \argsclash, and subprogramclash\ to determined whether
 two subprogram clash in terms of their subprogram types and their lists of argument types,
@@ -7725,7 +7733,6 @@ in $\tenvp$ and one of the following applies:
   \begin{itemize}
     \item \name\ is not declared in \tenv.
     \item  \tenv',\tty' are the result of attempting to add $\name$ as a subtype of $\sup$ and
-    \item  \tenv',\tty' are the result of attempting to add $\name$ as a subtype of $\sup$ and
     constructing the type \tty' as \tty\ with the added fields $\fields$ in \tenv.
     \item \tty' is a valid type.
     \item \tenv'' is \tenv' extended with \tty'.
@@ -7769,7 +7776,7 @@ Type checking the specification is considered successful if all declarations can
 
 \section{TypingRule.Specification \label{sec:TypingRule.Specification}}
 \subsection{Prose}
-Annotating an ASL specification $\decls$ in an environment $\tenv$ results in a rewritten specification $\declsp$
+Annotating an ASL specification $\decls$ in an environment $\tenv$ results in an annotated specification $\declsp$
 and a new environment $\newenv$ and all of the following apply:
 \begin{itemize}
   \item $\ordereddecls$ is the result of topologically ordering $\decls$ according to their
@@ -7889,7 +7896,7 @@ evaluates an expression $\ve$, from a subset of the set of all expressions, in e
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \hypertarget{def-symbolicdomain}{}
 The symbolic reasoning operates by first transforming types into expressions in a \emph{symbolic domain} AST
-(reusing $\intconstraint$ from the parsed AST) over which it then operates:
+(defined next, reusing $\intconstraint$ from the parsed AST) over which it then operates:
 \hypertarget{def-symdom}{}
 \hypertarget{def-dbool}{}
 \[
