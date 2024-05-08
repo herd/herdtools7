@@ -1183,12 +1183,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let eqs1 = List.rev_append eqs extra_nargs in
     let () =
-      (* Begin FCallBadArity *)
       if List.compare_lengths callee.args args1 != 0 then
         fatal_from loc
         @@ Error.BadArity (name, List.length callee.args, List.length args1)
-        |: TypingRule.FCallBadArity
-      (* End *)
     in
     let eqs2 =
       let folder acc (_x, ty) (t_e, _e) =
@@ -1287,24 +1284,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               in
               ())
         callee.parameters
+      |: TypingRule.FindCheckDeduce
     in
     (* End *)
     (* Begin FCall *)
     let ret_ty1 =
       match (call_type, callee.return_type) with
-      (* Begin FCallGetter *)
       | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
-          Some (rename_ty_eqs env eqs4 ty) |: TypingRule.FCallGetter
-      (* End *)
-      (* Begin FCallSetter *)
-      | (ST_Setter | ST_EmptySetter | ST_Procedure), None ->
-          None |: TypingRule.FCallSetter
-      (* End *)
-      (* Begin FCallMismatch *)
-      | _ ->
-          fatal_from loc @@ Error.MismatchedReturnValue name
-          |: TypingRule.FCallMismatch
-      (* End *)
+          Some (rename_ty_eqs env eqs4 ty)
+      | (ST_Setter | ST_EmptySetter | ST_Procedure), None -> None
+      | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
     (name1, args1, eqs4, ret_ty1) |: TypingRule.FCall

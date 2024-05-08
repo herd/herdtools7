@@ -356,9 +356,11 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\subprogramtype &::=& \texttt{ST\_Procedure} \;|\; \texttt{ST\_Function} \;|\; \texttt{ST\_Getter} \;|\; \texttt{ST\_Setter}\\
-\subprogrambody &::=& \texttt{SB\_ASL}(\stmt)\\
-  &|& \texttt{SB\_Primitive}\\
+\subprogramtype &::=& \STProcedure \;|\; \STFunction\\
+                &|  & \STGetter \;|\; \STEmptyGetter\\
+                &|  & \STSetter \;|\; \STEmptySetter\\
+\subprogrambody &::=& \SBASL(\stmt)\\
+  &|& \SBPrimitive\\
 \end{array}
 \]
 

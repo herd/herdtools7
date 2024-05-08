@@ -7256,7 +7256,7 @@ One of the following applies:
 \inferrule[function\_or\_getter]{
   \findcheckdeduce(\tenv, \name, \exprs, \eqs, \calltype) \typearrow \\
   (\nameone, \vargsone, \eqsone, \langle \tty \rangle) \OrTypeError\\\\
-  \calltype \in \{\STFunction, \STGetter\}\\
+  \calltype \in \{\STFunction, \STGetter, \STEmptyGetter\}\\
   \tododefine{rename\_ty\_eqs}(\tenv, \eqsone, \tty) \typearrow \retty
 }
 {
@@ -7266,7 +7266,7 @@ One of the following applies:
 \inferrule[procedure\_or\_setter]{
   \findcheckdeduce(\tenv, \name, \exprs, \eqs, \calltype) \typearrow \\
   (\nameone, \vargsone, \eqsone, \None) \\\\
-  \calltype \in \{\STProcedure, \STSetter\}
+  \calltype \in \{\STProcedure, \STSetter, \STEmptySetter\}
 }
 {
   \annotatecall{\tenv, \name, \exprs, \eqs, \calltype} \typearrow (\nameone, \vargsone, \eqsone, \None)
