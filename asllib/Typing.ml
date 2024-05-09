@@ -614,12 +614,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     res
 
+  (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc env = function
     | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from loc
     | ArrayLength_Expr e ->
         let m = binop MINUS e !$1 |> reduce_expr env in
         let c = Constraint_Range (!$0, m) in
         T_Int (WellConstrained [ c ]) |> add_pos_from loc
+        |: TypingRule.TypeOfArrayLength
+  (* End *)
 
   (* Begin CheckBinop *)
   let check_binop loc env op t1 t2 : ty =
@@ -1396,10 +1399,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin ECond *)
     | E_Cond (e_cond, e_true, e_false) ->
-        let t_cond, e'_cond = annotate_expr env e_cond in
+        let t_cond, e_cond' = annotate_expr env e_cond in
         let+ () = check_structure_boolean e env t_cond in
-        let t_true, e'_true = annotate_expr env e_true
-        and t_false, e'_false = annotate_expr env e_false in
+        let t_true, e_true' = annotate_expr env e_true
+        and t_false, e_false' = annotate_expr env e_false in
         let t =
           best_effort t_true (fun _ ->
               match Types.lowest_common_ancestor env t_true t_false with
@@ -1407,7 +1410,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   fatal_from e (Error.UnreconciliableTypes (t_true, t_false))
               | Some t -> t)
         in
-        (t, E_Cond (e'_cond, e'_true, e'_false) |> here) |: TypingRule.ECond
+        (t, E_Cond (e_cond', e_true', e_false') |> here) |: TypingRule.ECond
     (* End *)
     (* Begin ETuple *)
     | E_Tuple li ->
@@ -1494,19 +1497,25 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (ty1, E_Unknown ty2 |> here) |: TypingRule.EUnknown
     (* End *)
     | E_Slice (e', slices) -> (
+        (* Begin ReduceSlicesToCall *)
         let reduced =
           match e'.desc with
           | E_Var x ->
-              should_slices_reduce_to_call env x slices |> Option.map (pair x)
+              should_slices_reduce_to_call env x slices
+              |> Option.map (pair x)
+              |: TypingRule.ReduceSlicesToCall
           | _ -> None
+          (* End *)
         in
         match reduced with
+        (* Begin ESetter *)
         | Some (name, args) ->
-            let name, args, eqs, ty =
+            let name1, args1, eqs, ty =
               annotate_call (to_pos e) env name args [] ST_Getter
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
-            (ty, E_Call (name, args, eqs) |> here)
+            (ty, E_Call (name1, args1, eqs) |> here) |: TypingRule.ESetter
+        (* End *)
         | None -> (
             let t_e', e'' = annotate_expr env e' in
             let struct_t_e' = Types.get_structure env t_e' in
@@ -1533,11 +1542,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       check_type_satisfies e env t_index' wanted_t_index
                     in
                     (ty', E_GetArray (e'', e_index') |> here)
+                    |: TypingRule.EGetArray
                 | _ -> conflict e [ integer'; default_t_bits ] t_e')
+            (* End *)
+            (* Begin ESliceOrEGetArrayError *)
             | _ ->
                 conflict e [ integer'; default_t_bits ] t_e'
-                |: TypingRule.EGetArray))
-    (* End *)
+                |: TypingRule.ESliceOrEGetArrayError
+            (* End *)))
     | E_GetField (e1, field_name) -> (
         let t_e1, e2 = annotate_expr env e1 in
         let t_e2 = Types.make_anonymous env t_e1 in

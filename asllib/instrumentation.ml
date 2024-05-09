@@ -383,6 +383,7 @@ module TypingRule = struct
     | ECond
     | ESlice
     | ECall
+    | ESetter
     | EGetArray
     | ESliceOrEGetArrayError
     | ERecord
@@ -490,6 +491,8 @@ module TypingRule = struct
     | TNonDecl
     | TBitField
     | TBitFields
+    | ReduceSlicesToCall
+    | TypeOfArrayLength
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -525,6 +528,7 @@ module TypingRule = struct
     | ECond -> "ECond"
     | ESlice -> "ESlice"
     | ECall -> "ECall"
+    | ESetter -> "ESetter"
     | ERecord -> "ERecord"
     | EStructuredMissingField -> "EStructuredMissingField"
     | EStructuredNotStructured -> "EStructuredNotStructured"
@@ -634,6 +638,8 @@ module TypingRule = struct
     | TNonDecl -> "TNonDecl"
     | TBitField -> "TBitField"
     | TBitFields -> "TBitFields"
+    | ReduceSlicesToCall -> "ReduceSlicesToCall"
+    | TypeOfArrayLength -> "TypeOfArrayLength"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -672,6 +678,7 @@ module TypingRule = struct
       ECond;
       ESlice;
       ECall;
+      ESetter;
       EStructuredMissingField;
       EStructuredNotStructured;
       ERecord;
@@ -758,6 +765,8 @@ module TypingRule = struct
       TNonDecl;
       TBitField;
       TBitFields;
+      ReduceSlicesToCall;
+      TypeOfArrayLength;
     ]
 
   let all_nb = List.length all

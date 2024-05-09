@@ -121,7 +121,7 @@
 \newcommand\constraintbinop[0]{\texttt{constraint\_binop}}
 \newcommand\sliceswidth[0]{\texttt{slices\_width}}
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
-\newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\texttt{annotate\_expr}(#1)}}
+\newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\texttt{annotate\_expr}}(#1)}
 \newcommand\annotateexprlist[1]{\hyperlink{def-annotateexprs}{\texttt{annotate\_exprs}}(#1)}
 \newcommand\annotatelexpr[1]{\textsf{annotate\_lexpr}(#1)}
 \newcommand\annotatearrayindex[0]{\textsf{annotate\_array\_index}}
@@ -141,7 +141,7 @@
 \newcommand\annotatespec[1]{\texttt{annotate\_spec}(#1)}
 \newcommand\evalexpr[1]{\texttt{eval\_expr}(#1)}
 \newcommand\evalconstraint[1]{\texttt{eval\_constraint}(#1)}
-\newcommand\annotateliteral[1]{\texttt{annotate\_literal}(#1)}
+\newcommand\annotateliteral[1]{\hyperlink{def-annotateliteral}{\texttt{annotate\_literal}}(#1)}
 \newcommand\exprequalcase[0]{\texttt{expr\_equal\_case}}
 \newcommand\exprequalnorm[0]{\texttt{expr\_equal\_norm}}
 \newcommand\slicesequal[0]{\texttt{slices\_equal}}
@@ -154,6 +154,8 @@
 \newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\texttt{annotate\_bitfield}}}
 \newcommand\annotatebitfields[0]{\hyperlink{def-annotatebitfields}{\texttt{annotate\_bitfields}}}
 \newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\texttt{check\_no\_duplicates}}}
+\newcommand\reduceslicestocall[0]{\hyperlink{def-reduceslicestocall}{\texttt{reduce\_slices\_to\_call}}}
+\newcommand\typeofarraylength[0]{\hyperlink{def-typeofarraylength}{\texttt{type\_of\_array\_length}}}
 
 % Symbolic domain subsumption
 \newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
@@ -2635,9 +2637,9 @@ The lowest common ancestor of types $\vs$ and $\vt$ is $\tty$ and one of the fol
 \subsection{Formally}
 Since we do not impose a canonical representation on types (e.g., \texttt{Integer {1, 2}} is equivalence to \texttt{integer {1..2}}),
 the lowest common ancestor is not unique.
-We define $\lca(\tenv, \vt, \vs)$ to be any type $\vt'$ that is type-equivalent to the lowest common ancestor of $\vt$ and $\vs$:
+We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is type-equivalent to the lowest common ancestor of $\vt$ and $\vs$:
 \[
-  \typeequal(\tenv, \vt', \lca(\tenv, \vt, \vs)) \enspace.
+  \typeequal(\tenv, \vtp, \lca(\tenv, \vt, \vs)) \enspace.
 \]
 
 \begin{mathpar}
@@ -2645,8 +2647,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vt'$ that is type-equivalent 
 \and
 \inferrule[(The least common subtype, if one exists.)]{
   \astlabel(\vt)=\astlabel(\vs)=\TNamed \\\\
-  \Supers(\vs) = \{\vs' \;|\; \subtypesrel(\tenv, \vs, \vs')\}\\
-  \Supers(\vt) = \{\vt' \;|\; \subtypesrel(\tenv, \vt, \vt')\}\\\\
+  \Supers(\vs) = \{\vsp \;|\; \subtypesrel(\tenv, \vs, \vsp)\}\\
+  \Supers(\vt) = \{\vtp \;|\; \subtypesrel(\tenv, \vt, \vtp)\}\\\\
   \Supers(\vs) \cap \Supers(\vt) \neq \emptyset
 }
 {\lca(\tenv, \vt, \vs) = \min_{\subtypes} (\Supers(\vs) \cap \Supers(\vt))}
@@ -3865,13 +3867,13 @@ Now the rule for annotating a list of bitfields is
 The function
 \[
   \annotateexpr{\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}}
-  \aslto (\overname{\vt}{\vtp} \times \overname{\expr}{\newe})
+  \aslto (\overname{\ty}{\vt} \times \overname{\expr}{\newe})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 specifies how to annotate an expression $\ve$ in
 an environment \tenv.  Formally, the result of annotating the expression
-$\ve$ in \tenv\ is either the pair \texttt{t, new\_e}, where $\vt$ is a type and
-$\newe$ is an annotated expression, or an error, and one of the following applies:
+$\ve$ in \tenv\ is either the pair $(\vt, \newe)$, where $\vt$ is a type and
+$\newe$ is an annotated expression, or a type error, and one of the following applies:
 \begin{itemize}
 \item TypingRule.ELit (see \secref{TypingRule.ELit});
 \item TypingRule.ELocalVarConstant (see \secref{TypingRule.ELocalVarConstant})
@@ -3883,8 +3885,10 @@ $\newe$ is an annotated expression, or an error, and one of the following applie
 \item TypingRule.Unop (see \secref{TypingRule.Unop})
 \item TypingRule.ECond (see \secref{TypingRule.ECond})
 \item TypingRule.ESlice (see \secref{TypingRule.ESlice})
+\item TypingRule.ESetter (see \secref{TypingRule.ESetter})
 \item TypingRule.ECall (see \secref{TypingRule.ECall})
 \item TypingRule.EGetArray (see \secref{TypingRule.EGetArray})
+\item TypingRule.ESliceOrEGetArrayError (see \secref{TypingRule.ESliceOrEGetArrayError})
 \item TypingRule.EStructuredNotStructured (see \secref{TypingRule.EStructuredNotStructured})
 \item TypingRule.EStructuredMissingField (see \secref{TypingRule.EStructuredMissingField})
 \item TypingRule.ERecord (see \secref{TypingRule.ERecord})
@@ -3910,65 +3914,27 @@ The annotation rewrites the input expression in the following cases, making the 
   \item Slicing expressions that correspond to array accesses are replaced with array access expressions.
 \end{itemize}
 
-We also define a helper rule for annotating lists of expressions:
+We also define the following helper rules:
 \begin{itemize}
-  \item Typing.ExpressionList (\secref{TypingRule.ExpressionList}).
+  \item TypingRule.Lit (\secref{TypingRule.Lit})
+  \item TypingRule.ExpressionList (\secref{TypingRule.ExpressionList})
+  \item TypingRule.TypingRule.ReduceSlicesToCall (\secref{TypingRule.ReduceSlicesToCall})
 \end{itemize}
-
-\section{TypingRule.Lit \label{sec:TypingRule.Lit}}
-
-Annotating literals is done via the function $\annotateliteral{\cdot}$,
-which we use in this chapter as well as in subsequent chapters.
-This is a helper rule for TypingRule.ELit.
-\subsection{Prose}
-The result of annotating a literal $\vl$ is $\vt$ and one of the following applies:
-\begin{itemize}
-\item $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
-its set to the single value $\vn$;
-\item $\vl$ is a Boolean literal and $\vt$ is the Boolean type;
-\item $\vl$ is a real literal and $\vt$ is the real type;
-\item $\vl$ is a string literal and $\vt$ is the string type;
-\item $\vl$ is a string literal and $\vt$ is the string type;
-\item $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
-\end{itemize}
-
-\subsection{Example: TypingRule.Lit.asl}
-In the following example, we show several literals and their corresponding types in comments:
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Lit.asl}
-
-
-  \CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
-
-\begin{emptyformal}
-  \subsection{Formally}
-  \begin{mathpar}
-    \inferrule{}{\annotateliteral{\Elit{n}}\typearrow \TInt(\langle[\ConstraintExact(\Elit{n})]\rangle)}
-    \and
-    \inferrule{}{\annotateliteral{\eliteral{\lbool(\Ignore)}}\typearrow \TBool}
-    \and
-    \inferrule{}{\annotateliteral{\eliteral{\lreal(\Ignore)}}\typearrow \TReal}
-    \and
-    \inferrule{}{\annotateliteral{\eliteral{\lstring(\Ignore)}}\typearrow \TString}
-    \and
-    \inferrule{\vl = \eliteral{\lbitvector(b_{1..n})}}
-    {\annotateliteral{\vl}\typearrow \TBits(\texttt{Bitwidth\_SingleExpr}(\Elit{n}), \emptylist)}
-  \end{mathpar}
-\end{emptyformal}
 
 \section{TypingRule.ELit \label{sec:TypingRule.ELit}}
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ is a literal expression $\vv$;
-  \item $\vt$ is the type of the literal $\vv$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
-  \subsection{Example}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ is a literal expression $\vv$;
+\item $\vt$ is the type of the literal $\vv$;
+\item $\newe$ is $\ve$.
+\end{itemize}
 
-  \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
+\subsection{Example}
+
+\CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
 \begin{emptyformal}
-  \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{\annotateliteral{\vv} \typearrow \vt}
 {\annotateexpr{\tenv, \ELiteral(\vv)} \typearrow (\vt, \ELiteral(\vv))}
@@ -3977,24 +3943,21 @@ In the following example, we show several literals and their corresponding types
 
 \section{TypingRule.ELocalVarConstant \label{sec:TypingRule.ELocalVarConstant}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a local variable $\vx$;
-  \item $\vx$ is bound to a local constant $\vv$ of type $\tty$ in the local environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is the Literal $\vv$.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a local variable $\vx$;
+\item $\vx$ is bound to a local constant $\vv$ of type $\tty$ in the local environment given by $\tenv$;
+\item $\vt$ is $\tty$;
+\item $\newe$ is the Literal $\vv$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-  \CodeSubsection{\ELocalVarConstantBegin}{\ELocalVarConstantEnd}{../Typing.ml}
+\CodeSubsection{\ELocalVarConstantBegin}{\ELocalVarConstantEnd}{../Typing.ml}
 
 \begin{emptyformal}
-  \subsection{Formally}
-  \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   L^\tenv.\constantvalues(\vx) = \vv\\
@@ -4008,24 +3971,22 @@ In the following example, we show several literals and their corresponding types
 
 \section{TypingRule.ELocalVar \label{sec:TypingRule.ELocalVar}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a local variable $\vx$;
-  \item $\vx$ is not bound to a local constant;
-  \item $\vx$ has type $\tty$ in the local environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a local variable $\vx$;
+\item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
+\item $\vx$ has type $\tty$ in the local environment given by $\tenv$;
+\item $\vt$ is $\tty$;
+\item $\newe$ is $\ve$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-  \CodeSubsection{\ELocalVarBegin}{\ELocalVarEnd}{../Typing.ml}
+\CodeSubsection{\ELocalVarBegin}{\ELocalVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
-  \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   L^\tenv.\constantvalues(\vx) = \bot\\
@@ -4040,20 +4001,18 @@ In the following example, we show several literals and their corresponding types
 
 \section{TypingRule.EGlobalVarConstantVal \label{sec:TypingRule.EGlobalVarConstant}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is bound to a global constant $\vv$ of type $\tty$ in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is the Literal $\vv$.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a global variable $\vx$;
+\item $\vx$ is bound to a constant $\vv$ of type $\tty$ in the global environment given by $\tenv$;
+\item $\vt$ is $\tty$;
+\item $\newe$ is the Literal $\vv$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-  \CodeSubsection{\EGlobalVarConstantBegin}{\EGlobalVarConstantEnd}{../Typing.ml}
+\CodeSubsection{\EGlobalVarConstantBegin}{\EGlobalVarConstantEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -4070,20 +4029,18 @@ In the following example, we show several literals and their corresponding types
 
 \section{TypingRule.EGlobalVarConstantNoVal \label{sec:TypingRule.EGlobalVarConstantNoVal}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is not bound to constant in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a global variable $\vx$;
+\item $\vx$ is not bound to constant in the global environment given by $\tenv$;
+\item $\vt$ is $\tty$;
+\item $\newe$ is $\ve$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-  \CodeSubsection{\EGlobalVarConstantNoValBegin}{\EGlobalVarConstantNoValEnd}{../Typing.ml}
+\CodeSubsection{\EGlobalVarConstantNoValBegin}{\EGlobalVarConstantNoValEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -4100,21 +4057,19 @@ In the following example, we show several literals and their corresponding types
 
 \section{TypingRule.EGlobalVar \label{sec:TypingRule.EGlobalVar}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is not bound to a global constant;
-  \item $\vx$ has type $\tty$ in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a global variable $\vx$;
+\item $\vx$ is not bound to a global constant;
+\item $\vx$ has type $\tty$ in the global environment given by $\tenv$;
+\item $\vt$ is $\tty$;
+\item $\newe$ is $\ve$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-  \CodeSubsection{\EGlobalVarBegin}{\EGlobalVarEnd}{../Typing.ml}
+\CodeSubsection{\EGlobalVarBegin}{\EGlobalVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
   \subsection{Formally}
@@ -4126,58 +4081,62 @@ In the following example, we show several literals and their corresponding types
   }
 {\annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))}
 \end{mathpar}
-
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.EUndefIdent \label{sec:TypingRule.EUndefIdent}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ is a variable $\vx$;
-  \item $\vx$ is not bound in $\tenv$;
-  \item an error ``\texttt{Undefined Identifier}'' is raised.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ is a variable $\vx$;
+\item $\vx$ is not bound in $\tenv$;
+\item the result is a type error indicating that $\vx$ is an undefined identifier.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-  \CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
+\CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
 
 \begin{emptyformal}
-  \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  G^\tenv.\globalstoragetypes(\vx) = \bot\\
+  L^\tenv.\globalstoragetypes(\vx) = \bot\\
+}{
+  \annotateexpr{\tenv, \EVar(\vx)} \typearrow \TypeErrorVal{UndefinedIdentifier}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.Binop \label{sec:TypingRule.Binop}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a binary operation $\op$ over two expressions $\veone$ and \vetwo;
-  \item \texttt{t1,e1'} is the result of annotating $\veone$ in $\tenv$;
-  \item \texttt{t2,e2'} is the result of annotating \vetwo in $\tenv$;
-  \item $\vt$ is the result of checking compatibility of $\op$ with $\vtone$ and $\vttwo$ as per \secref{TypingRule.CheckBinop};
-  \item $\newenv$ denotes $\op$ over \texttt{e1'} and \texttt{e2'}.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a binary operation $\op$ over two expressions $\veone$ and $\vetwo$, that is, $\EBinop(\op, \veone, \vetwo)$;
+  \item the result of annotating $\veone$ in $\tenv$ is $(\vtone, \veonep)$ \ProseOrTypeError;
+  \item the result of annotating $\vetwo$ in $\tenv$ is $(\vttwo, \vetwop)$ \ProseOrTypeError;
+  \item the result of checking compatibility of $\op$ with $\vtone$ and $\vttwo$ as per \secref{TypingRule.CheckBinop}
+  is $\vt$ \ProseOrTypeError;
+  \item $\newenv$ denotes $\op$ over $\veonep$ and $\vetwop$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
+\CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veone') \terminateas \TypeErrorConfig\\\\
-  \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwo') \terminateas \TypeErrorConfig\\\\
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \vt
+  \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veone') \OrTypeError\\\\
+  \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwo') \OrTypeError\\\\
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError
   }
 {\annotateexpr{\tenv, \EBinop(\op, \veone, \vetwo)} \typearrow (\vt, \EBinop(\op, \veone', \vetwo'))}
 \end{mathpar}
@@ -4187,29 +4146,28 @@ In the following example, we show several literals and their corresponding types
 
 \section{TypingRule.Unop \label{sec:TypingRule.Unop}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a unary operation $\op$ over an expression $\vep$;
-  \item \texttt{t'',e''} is the result of annotating $\vep$ in $\tenv$;
-  \item $\vt$ is the result of checking compatibility of $\op$ with \texttt{t''} as per \secref{TypingRule.CheckUnop};
-  \item $\newe$ denotes $\op$ over \texttt{e''}.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a unary operation $\op$ over an expression $\vep$, that is $\EUnop(\op, \vep)$;
+  \item annotating $\vep$ in $\tenv$ yields $(\vtpp, \vepp)$ \ProseOrTypeError;
+  \item checking compatibility of $\op$ with $\vtpp$ as per \secref{TypingRule.CheckUnop} yields $\vt$ \ProseOrTypeError;
+  \item $\newe$ denotes $\op$ over $\vepp$, that is, $\EUnop(\op, \vepp)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
+\CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve'} \typearrow (\vt'', \ve'')\\
-  \CheckUnop(\tenv, \op, \vt'') \typearrow \vt
-  }
-{\annotateexpr{\tenv, \EUnop(\op, \ve')} \typearrow (\vt, \EUnop(\op, \ve''))}
+  \annotateexpr{\tenv, \vep} \typearrow (\vtpp, \vepp) \OrTypeError\\
+  \CheckUnop(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
+}{
+  \annotateexpr{\tenv, \EUnop(\op, \vep)} \typearrow (\vt, \EUnop(\op, \vepp))
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -4217,44 +4175,32 @@ In the following example, we show several literals and their corresponding types
 
 \section{TypingRule.ECond \label{sec:TypingRule.ECond}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a conditional expression with condition \texttt{e\_cond} with two options \texttt{e\_true} and \texttt{e\_false};
-  \item \texttt{t\_cond, e'\_cond} is the result of annotating \texttt{e\_cond} in $\tenv$;
-  \item \texttt{t\_true, e'\_true} is the result of annotating \texttt{e\_true} in $\tenv$;
-  \item \texttt{t\_false, e'\_false} is the result of annotating \texttt{e\_false} in $\tenv$;
-  \item One of the following applies:
-    \begin{itemize}
-    \item All of the following apply:
-      \begin{itemize}
-      \item $\vt$ is the lowest common ancestor of \texttt{t\_true} and \texttt{t\_false};
-      \item $\newe$ is the condition \texttt{e'\_cond} with two options \texttt{e'\_true} and \texttt{e'\_false}.
-      \end{itemize}
-    \item All of the following apply:
-      \begin{itemize}
-      \item there is no lowest common ancestor of \texttt{t\_true} and \texttt{t\_false};
-      \item an error ``\texttt{Unreconcilable Types}'' is raised.
-      \end{itemize}
-    \end{itemize}
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a conditional expression with condition $\econd$ with two options $\etrue$ and $\efalse$;
+  \item annotating $\econd$ in $\tenv$ results in $(\tcond, \econdp)$ \ProseOrTypeError;
+  \item annotating $\etrue$ in $\tenv$ results in $(\ttrue, \etruep)$ \ProseOrTypeError;
+  \item annotating $\efalse$ in $\tenv$ results in $(\tfalse, \efalsep)$;
+  \item obtaining the lowest common ancestor of $\ttrue$ and $\tfalse$ results in $\vt$ \ProseOrTypeError;
+  \item $\newe$ is the condition $\econdp$ with two options $\etruep$ and $\efalsep$, that is, $\ECond(\econdp, \etruep, \efalsep)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
+\CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \econd} \typearrow (\tcond, \econd')\\
-  \annotateexpr{\tenv, \etrue} \typearrow (\ttrue, \etrue')\\
-  \annotateexpr{\tenv, \efalse} \typearrow (\tfalse, \efalse')\\
-  \lca(\ttrue, \tfalse) \typearrow \vt
-  }
-{\annotateexpr{\ECond(\econd, \etrue, \efalse)} \typearrow (\vt, \ECond(\econd', \etrue', \efalse'))}
+  \annotateexpr{\tenv, \econd} \typearrow (\tcond, \econd') \OrTypeError\\
+  \annotateexpr{\tenv, \etrue} \typearrow (\ttrue, \etrue') \OrTypeError\\
+  \annotateexpr{\tenv, \efalse} \typearrow (\tfalse, \efalse') \OrTypeError\\
+  \lca(\ttrue, \tfalse) \typearrow \vt \OrTypeError
+}{
+  \annotateexpr{\ECond(\econd, \etrue, \efalse)} \typearrow (\vt, \ECond(\econdp, \etruep, \efalsep))
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -4263,73 +4209,108 @@ In the following example, we show several literals and their corresponding types
 
 \section{TypingRule.ESlice \label{sec:TypingRule.ESlice}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t, new\_env} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes the slicing of expression $\vep$ by the slices \texttt{slices};
-  \item \texttt{t\_e',e'} is the result of annotating the expression $\vep$ in $\tenv$;
-  \item the structure of \texttt{t\_e'} is that of a bitvector or an integer;
-  \item an error ``\texttt{Conflicting Types}'' is raised or \texttt{t\_e'} has the structure of an integer or a bitvector and all of the following apply:
-  \item $\vw$ is the width of \texttt{slices};
-  \item \texttt{slices'} is the result of annotating \texttt{slices} in $\tenv$;
-  \item $\vt$ is the bitvector type of width $\vw$;
-  \item $\newe$ is the slicing of expression $\vep$ by the slices \texttt{slices'}.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
+  $\ESlice(\vep, \slices)$;
+  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
+  in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$ \ProseOrTypeError;
+  \item annotating the expression $\vep$ in $\tenv$ yields $(\tep,\vepp)$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\structtep$ \ProseOrTypeError;
+  \item $\structtep$ is either a bitvector or an integer;
+  \item obtaining the width of $\slices$ in $\tenv$ via $\sliceswidth$ yields $\vw$ \ProseOrTypeError;
+  \item $\slicesp$ is the result of annotating $\slices$ in $\tenv$;
+  \item $\vt$ is the bitvector type of width $\vw$, that is, $\TBits(\vw, \emptylist)$;
+  \item $\newe$ is the slicing of expression $\vepp$ by the slices $\slicesp$, that is, \\
+  $\ESlice(\vepp, \slicesp)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
+\CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-The rule below makes use of slice annotation (\annotateslices), which is defined in Chapter~\ref{chap:typingslices}.
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vt, \ve')\\
-  \astlabel(\tstruct(\tenv, \vt)) \in \{\TInt, \TBits\}\\
-  \sliceswidth(\tenv, \texttt{slices}) \typearrow \vw\\
-  \annotateslices(\tenv, \texttt{slices}) \typearrow \texttt{slices}'
-  }
-{\annotateexpr{\tenv, \ESlice(\ve, \texttt{slices})} \typearrow \\\
- (\TBits(\texttt{BitWidth\_SingleExpr}(\vw), \emptylist), \ESlice(\ve', \texttt{slices}'])}
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
+  \astlabel(\structtep) \in \{\TInt, \TBits\}\\
+  \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
+  \annotateslices(\tenv, \slices) \typearrow \slicesp \OrTypeError
+}{
+  \annotateexpr{\tenv, \ESlice(\vep, \slices)} \typearrow (\TBits(\vw, \emptylist), \ESlice(\vepp, \slicesp))
+}
 \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-  The width of \texttt{slices} might be a symbolic expression if one of the
+  The width of \slices\ might be a symbolic expression if one of the
   widths references a \texttt{let} identifier with a non-compile-time-constant
   initialiser expression.
 
   This is related to \identi{MJWM}.
 
-\section{TypingRule.ECall \label{sec:TypingRule.ECall}}
+\section{TypingRule.ESetter \label{sec:TypingRule.ESetter}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes a call to a subprogram named $\name$ with arguments \texttt{args} and
-    parameters \texttt{eqs};
-  \item \texttt{name', args', eqs', ty} is the result of annotating the call of
-    that subprogram in $\tenv$ (annotating calls is defined in Chapter~\ref{chap:TypingSubprogramCalls});
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is the call to the subprogram named \texttt{name'} with arguments \texttt{args'}
-    and parameters \texttt{eqs'}.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
+  $\ESlice(\vep, \slices)$;
+  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
+  in $\tenv$ via $\reduceslicestocall$ yields a positive answer --- $\langle (\name, \vargs)\rangle$ \ProseOrTypeError;
+  \item annotating a call with $(\tenv, \name, \vargs, \emptylist, \STSetter)$
+  (that is, an empty list of parameters) yields $(\nameone, \vargsone, \eqs, \langle\tty\rangle)$ \ProseOrTypeError;
+  \item $vt$ is $\tty$;
+  \item $\newe$ is the call expression $\ECall(\nameone, \vargsone, \eqs)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
+\CodeSubsection{\ESetterBegin}{\ESetterEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-\inferrule{ \annotatecall{\tenv, \name, \vargs, \eqs, \STFunction} \typearrow (\name, \vargs', \eqs', \langle \vt \rangle)  }
-{\annotateexpr{\tenv, \ECall(\name, \vargs, \eqs)} \typearrow
-(\vt, \ECall(\name, \vargs', \eqs'))}
+\inferrule{
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotatecall{\tenv, \name, \vargs, \emptylist, \STSetter} \typearrow (\nameone, \vargsone, \eqs, \langle\tty\rangle) \OrTypeError\\
+}{
+  \annotateexpr{\tenv, \ESlice(\vep, \slices)} \typearrow (\tty, \ECall(\nameone, \vargsone, \eqs))
+}
+\end{mathpar}
+\end{emptyformal}
+
+\subsection{Comments}
+
+\section{TypingRule.ECall \label{sec:TypingRule.ECall}}
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a call to a subprogram named $\name$ with arguments $\vargs$ and
+    parameters $\eqs$, that is, $\ECall(\name, \vargs, \eqs)$;
+  \item annotating the call of that subprogram in $\tenv$ (annotating calls is defined in Chapter~\ref{chap:TypingSubprogramCalls})
+  yields $(\namep, \vargsp, \eqsp, \langle \vt \rangle)$ \ProseOrTypeError;
+  \item $\newe$ is the call to the subprogram named $\namep$ with arguments $\vargsp$
+    and parameters $\eqsp$, that is, $\ECall(\name, \vargsp, \eqsp)$.
+\end{itemize}
+
+\subsection{Example}
+
+\CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotatecall{\tenv, \name, \vargs, \eqs, \STFunction} \typearrow (\namep, \vargsp, \eqsp, \langle \vt \rangle) \OrTypeError
+}{
+  \annotateexpr{\tenv, \ECall(\name, \vargs, \eqs)} \typearrow (\vt, \ECall(\name, \vargsp, \eqsp))
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -4338,57 +4319,97 @@ The rule below makes use of slice annotation (\annotateslices), which is defined
 
 \section{TypingRule.EGetArray \label{sec:TypingRule.EGetArray}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} or an error and all of the following apply:
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
+  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
+  in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$ \ProseOrTypeError;
+  \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
+  \item $\tep$ has the structure of an array with index $\size$ and element type $\tty$';
+  \item One of the following applies:
   \begin{itemize}
-  \item $\ve$ denotes the slicing of expression $\vep$ by the slices \texttt{slices};
-  \item \texttt{t\_e',e''} is the result of annotating the expression $\vep$ in $\tenv$;
-  \item \texttt{t\_e'} has the structure of an array with index \texttt{size} and element type $\tty$';
-  \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
-  \item an error ``Conflicting Types'' is raised or \texttt{slices} is a single expression \texttt{e\_index} and all of the following apply:
-  \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in $\tenv$;
-  \item an error ``\texttt{Conflicting Types}'' or \texttt{t\_index'} \typesatisfies\  \texttt{wanted\_t\_index} as per \secref{TypingRule.TypeSatisfaction} and all of the following apply:
-  \item $\newe$ is an access to array \texttt{e''} at index \texttt{e\_index'}.
+    \item All of the following apply (\textsc{okay}):
+    \begin{itemize}
+      \item $\slices$ consists of a single slice $\SliceSingle(\eindex)$;
+      \item annotating the expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$ \ProseOrTypeError;
+      \item determing the type of the array index for $\size$ in $\tenv$ via \\ $\typeofarraylength$
+      yields $\wantedtindex$;
+      \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ yields $\True$ \ProseOrTypeError;
+      \item $\vt$ is $\ttyp$;
+      \item $\newe$ is the array access expression for $\vepp$ and index $\eindexp$, that is, $\EGetArray(\vepp, \eindexp)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item $\slices$ consists of a single slice $\SliceSingle(\eindex)$;
+      \item the result is a type error indicating that an array must be accessed with a slice corresponding to a single index
+      expression.
+    \end{itemize}
   \end{itemize}
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
+\CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-We first define helper rules to annotate the index of an array expression:
+\subsection{Formally}
 \begin{mathpar}
-\inferrule{G^\tenv.\declaredtypes(n) = \vt}
-{\annotatearrayindex(\tenv, \EVar(n)) \typearrow \vt}
-\and
-\inferrule{G^\tenv.\declaredtypes(n) = \bot\\
-l_f = \Elit{0} \\
-\vlt = \EBinop(\MINUS, \EVar(n), \Elit{1})
+\inferrule[okay]{
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
+  \slices = [ \SliceSingle(\eindex) ]\\
+  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\
+  \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
+  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\
+}{
+  \annotateexpr{\tenv, \ESlice(\vep, \slices)} \typearrow (\ttyp, \EGetArray(\vepp, \eindexp))
 }
-{\annotatearrayindex(\tenv, \EVar(n)) \typearrow \TInt(\langle[\ConstraintRange(l_f, \vlt)]\rangle)}
 \and
-\inferrule{\astlabel(\ve) \neq \EVar \\
-l_f = \Elit{0} \\
-\vlt = \EBinop(\MINUS, \ve, \Elit{1})
+\inferrule[error]{
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
+  \slices \neq [ \SliceSingle(\Ignore) ]\\
+}{
+  \annotateexpr{\tenv, \ESlice(\vep, \slices)} \typearrow \TypeErrorVal{IllegalArraySlice}
 }
-{\annotatearrayindex(\tenv, \ve) \typearrow \TInt(\langle[\ConstraintRange(l_f, \vlt)]\rangle)}
 \end{mathpar}
+\end{emptyformal}
 
-And now define the rule to annotate the array access expression:
+\isempty{\subsection{Comments}}
+
+\section{TypingRule.ESliceOrEGetArrayError \label{sec:TypingRule.ESliceOrEGetArrayError}}
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
+  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
+  in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$ \ProseOrTypeError;
+  \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
+  \item $\tep$ has the structure $\vtp$;
+  \item $\vtp$ is neither an integer type, a bitvector type, or an array type;
+  \item the result is an error indicating that the type of $\vep$ is inappropriate for slicing.
+\end{itemize}
+
+\subsection{Example}
+
+\CodeSubsection{\ESliceOrEGetArrayErrorBegin}{\ESliceOrEGetArrayErrorEnd}{../Typing.ml}
+
+\begin{emptyformal}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \texttt{e}} \typearrow (\texttt{t\_e}', \texttt{e}'')\\
-  \tstruct(\tenv, \texttt{t\_e}') \typearrow \TArray(\texttt{size}, \tty')\\
-  \annotatearrayindex(\tenv, \texttt{size}) \typearrow \texttt{wanted\_t\_index}\\
-  \annotateexpr{\tenv, \eindex} \typearrow (\texttt{t\_{index}}', \texttt{e\_{index}}')\\
-  \typesat(\tenv, \texttt{t\_{index}}', \texttt{wanted\_t\_index})\\
-  }
-{\annotateexpr{\tenv, \ESlice(\texttt{e}', [\SliceSingle(\eindex)])} \typearrow\\\\
- (\texttt{ty'}, \EGetArray(\texttt{e''}, \texttt{e\_{index}}'))
- }
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \tep) \typearrow \vtp\\
+  \astlabel(\vtp) \not\in \{\TInt, \TBits, \TArray\}
+}{
+  \annotateexpr{\tenv, \ESlice(\vep, \slices)} \typearrow \TypeErrorVal{IllegalSliceType}
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -4396,22 +4417,32 @@ And now define the rule to annotate the array access expression:
 
 \section{TypingRule.EStructuredNotStructured \label{sec:TypingRule.EStructuredNotStructured}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
-  \item $\tty$ is neither a record nor an exception type;
-  \item an error ``\texttt{Conflicting Types}'' is raised.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
+\item determining whether $\tty$ is a named type yields $\True$ \ProseOrTypeError;
+\item determining the \structure\ of $\tty$ yields $\vtp$ \ProseOrTypeError;
+\item $\vtp$ is neither a record nor an exception type;
+\item the result is an error indicating that $\tty$ is not appropriate for constructing a record.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\EStructuredNotStructuredBegin}{\EStructuredNotStructuredEnd}{../Typing.ml}
+\CodeSubsection{\EStructuredNotStructuredBegin}{\EStructuredNotStructuredEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \checktrans{\astlabel(\tty) = \TNamed} \typearrow \True \OrTypeError\\
+  \tstruct{\tenv, \tty} \typearrow\vtp \OrTypeError\\
+  \astlabel(\vtp) \not\in \{\TRecord, \TException\}
+}
+{
+  \annotateexpr{\tenv, \ERecord(\tty, \fields)} \typearrow \TypeErrorVal{NonStructuredType}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4420,23 +4451,34 @@ And now define the rule to annotate the array access expression:
 
 \section{TypingRule.EStructuredMissingField \label{sec:TypingRule.EStructuredMissingField}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
+\subsection{Prose}
+A§ll of the following apply:
+\begin{itemize}
   \item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
-  \item $\tty$ is the name of a record or exception type with fields \texttt{field\_types};
-  \item one field in \texttt{field\_types} is not initialised by $\fields$;
-  \item an error ``\texttt{Missing Field}'' is raised.
-  \end{itemize}
+  \item $\tty$ is the name of a record or exception type with fields $\fieldtypes$;
+  \item there exists a field in $\fieldtypes$ that is not initialised by $\fields$;
+  \item the result is an error indicating that a field is missing initialization.
+\end{itemize}
 
 \subsection{Example}
 
 \CodeSubsection{\EStructuredMissingFieldBegin}{\EStructuredMissingFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \checktrans{\astlabel(\tty) = \TNamed} \typearrow \True \OrTypeError\\
+  \tstruct{\tenv, \tty} \typearrow L(\fieldtypes) \OrTypeError\\
+  L \in \{\TRecord, \TException\}\\
+  (\name, \vtp)\in\fieldtypes: \vb_\name \eqdef (\name, \vtp) \in \fields\\
+  \vb = \bigwedge{(\name, \vtp)\in\fieldtypes} \vb_\name\\
+  \vb = \False
+}
+{
+  \annotateexpr{\tenv, \ERecord(\tty, \fields)} \typearrow \TypeErrorVal{MissingField}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -4444,50 +4486,59 @@ And now define the rule to annotate the array access expression:
 
 \section{TypingRule.ERecord \label{sec:TypingRule.ERecord}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes the record expression of type $\tty$ with fields $\fields$;
-  \item $\tty$ is the name of a record type with fields \texttt{field\_types};
-  \item For each field named $\name$ associated with the expression $\vep$ in
-    \texttt{field\_types}, all of the following apply:
-    \begin{itemize}
-    \item \texttt{t',e''} is the result of annotating $\vep$ in $\tenv$;
-    \item \texttt{t\_spec'} is the type associated to $\name$ in \texttt{field\_types};
-    \item \texttt{t'} \typesatisfies\  \texttt{t\_spec'} as per \secref{TypingRule.TypeSatisfaction};
-    \item $\fieldsp$ associates $\name$ to \texttt{e''};
-    \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
+  \item $\tty$ is the name of a record or exception type with fields $\fieldtypes$;
+  \item every field in $\fieldtypes$ is initialised by $\fields$;
+  \item annotating the field initializations via $\tododefine{annotate\_field\_init}$
+  yields $\fieldsp$ \ProseOrTypeError;
   \item $\vt$ is $\tty$;
-  \item $\newe$ is the record expression of type $\tty$ with fields $\fieldsp$.
-  \end{itemize}
+  \item $\newe$ is the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
 
-  \subsection{Example}
+  % \item For each field named $\name$ associated with the expression $\vep$ in
+  %   $\fieldtypes$, all of the following apply:
+  %   \begin{itemize}
+  %   \item $(\vtp,\vepp)$ is the result of annotating $\vep$ in $\tenv$;
+  %   \item $\tspecp$ is the type associated to $\name$ in $\fieldtypes$;
+  %   \item $\vtp$ \typesatisfies\  $\tspecp$ as per \secref{TypingRule.TypeSatisfaction};
+  %   \item $\fieldsp$ associates $\name$ to $\vepp$;
+  %   \end{itemize}
+  % \item $\vt$ is $\tty$;
+  % \item $\newe$ is the record expression of type $\tty$ with fields $\fieldsp$.
+\end{itemize}
 
+\subsection{Example}
 
-    \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
+\CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-L \in \{\TRecord, \TException\}\\
-i=1..k: \annotateexpr{\vt_i, \ve_i} \typearrow (\vt_i',\ve_i')\\
-i=1..k: \typesat(\tenv, \vt_i', \vt_i)
+  \checktrans{\astlabel(\tty) = \TNamed} \typearrow \True \OrTypeError\\
+  \tstruct{\tenv, \tty} \typearrow L(\fieldtypes) \OrTypeError\\
+  L \in \{\TRecord, \TException\}\\
+  (\name, \vtp)\in\fieldtypes: \vb_\name \eqdef (\name, \vtp) \in \fields\\
+  \vb = \bigwedge{(\name, \vtp)\in\fieldtypes} \vb_\name\\
+  \vb = \True\\
+  \tododefine{annotate\_field\_init}(\tenv, \fields, \fieldtypes) \typearrow \fieldsp
 }
-{\annotateexpr{\tenv, L(\tty, [i=1..k: (f_i,\ve_i)])} \typearrow (\tty, L(\tty, [i=1..k: (f_i,\ve_i')]))}
+{
+  \annotateexpr{\tenv, \ERecord(\tty, \fields)} \typearrow (\tty, \ERecord(\tty, \fieldsp))
+}
 \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
   This is related to \identr{WBCQ}.
 
-
 \section{TypingRule.EGetRecordField \label{sec:TypingRule.EGetRecordField}}
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
   \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
@@ -4522,7 +4573,7 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
   \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
@@ -4549,7 +4600,7 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
   \item \texttt{t\_e1} has the structure a bitvector type with bitfields $\bitfields$;
@@ -4574,7 +4625,7 @@ L \in \{\TRecord, \TException\}\\
 
  \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
    \begin{itemize}
    \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
    \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
@@ -4598,16 +4649,16 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
   \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
   \item the \underlyingtype\ of \texttt{t\_e1} is a bitvector type with bitfields $\bitfields$;
   \item \texttt{field\_name} is declared in $\bitfields$;
-  \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field\_name}
+  \item $\slices$ gives the slices corresponding to the bitfield \texttt{field\_name}
     in \\ $\bitfields$;
-  \item \texttt{e3} denotes the slicing of the expression \vetwo by the slices \texttt{slices};
-  \item \texttt{t,new\_e} is the result of annotating \texttt{e3}.
+  \item \texttt{e3} denotes the slicing of the expression \vetwo by the slices $\slices$;
+  \item $(\vt, \newe)$ is the result of annotating \texttt{e3}.
   \end{itemize}
 
   \subsection{Example}
@@ -4635,15 +4686,15 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
   \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
   \item \texttt{t\_e1} has the structure of a bitvector type with bitfields $\bitfields$;
   \item \texttt{field\_name} is declared in $\bitfields$;
-  \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field\_name} in \\
+  \item $\slices$ gives the slices corresponding to the bitfield \texttt{field\_name} in \\
     $\bitfields$;
-  \item \texttt{e3} denotes the slicing of the expression \vetwo by the slices \texttt{slices};
+  \item \texttt{e3} denotes the slicing of the expression \vetwo by the slices $\slices$;
   \item \texttt{t4, e4} is the result of annotating \texttt{e3} in $\tenv$;
   \item $\bitfieldsp$ gives the bitfields corresponding to the bitfield \texttt{field\_name}
     in $\bitfields$;
@@ -4666,13 +4717,13 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes \texttt{e1, field\_name};
   \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
   \item \texttt{t\_e1} has the \underlyingtype\ of a bitvector with bitfields $\bitfields$;
   \item \texttt{field\_name} is declared in $\bitfields$;
-  \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field\_name} in \\
+  \item $\slices$ gives the slices corresponding to the bitfield \texttt{field\_name} in \\
     $\bitfields$;
   \item $\vt$ is the type associated with \texttt{field\_name} in $\bitfields$;
   \item \texttt{t\_e3,e3} is the result of annotating \texttt{e2,slices} in $\tenv$;
@@ -4706,7 +4757,7 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes the empty concatenation;
   \item $\vt$ is \texttt{bits(0)};
@@ -4734,7 +4785,7 @@ L \in \{\TRecord, \TException\}\\
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes the concatenation of a non-empty list of expressions $\vli$;
   \item \texttt{ts, es} is the list of types and the list of corresponding expressions resulting from annotating each element of $\vli$ in $\tenv$;
@@ -4779,7 +4830,7 @@ expression that is unresolvable to an integer. For example:
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes a tuple $\vli$;
   \item \texttt{ts, es} is the result of annotating in $\tenv$ each expression in $\vli$;
@@ -4818,12 +4869,12 @@ expression that is unresolvable to an integer. For example:
 
   \subsection{Prose}
   The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
+$(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes an expression \UNKNOWN\  of type $\tty$;
-  \item \texttt{ty'} is the structure of $\tty$ in $\tenv$;
+  \item $\ttyp$ is the structure of $\tty$ in $\tenv$;
   \item $\vt$ is $\tty$;
-  \item $\newe$ is an expression \UNKNOWN\  of type \texttt{ty'}.
+  \item $\newe$ is an expression \UNKNOWN\  of type $\ttyp$.
   \end{itemize}
 
   \subsection{Example}
@@ -4845,24 +4896,23 @@ expression that is unresolvable to an integer. For example:
 
 \section{TypingRule.EPattern \label{sec:TypingRule.EPattern}}
 
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-\texttt{t,new\_e} and all of the following apply:
-  \begin{itemize}
+\subsection{Prose}
+The result of annotating the expression $\ve$ in $\tenv$ is
+$(\vt, \newe)$ and all of the following apply:
+\begin{itemize}
   \item $\ve$ denotes whether the expression $\vep$ matches \texttt{patterns};
-  \item \texttt{t\_e', e''} is the result of annotating $\vep$ in $\tenv$;
-  \item \texttt{patterns'} is the result of annotating \texttt{patterns, t\_e'} in $\tenv$;
+  \item $(\tep, \vepp)$ is the result of annotating $\vep$ in $\tenv$;
+  \item \texttt{patterns'} is the result of annotating $()\texttt{patterns}, \tep)$ in $\tenv$;
   \item $\vt$ is $\TBool$;
-  \item $\newe$ denotes whether the expression \texttt{e''} matches \texttt{patterns'}.
-  \end{itemize}
+  \item $\newe$ denotes whether the expression $\vepp$ matches \texttt{patterns'}.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
+\CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4873,8 +4923,8 @@ expression that is unresolvable to an integer. For example:
 The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ or a type error, and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\ve', \tty)$;
-  \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \ve'')$ \ProseOrTypeError;
+  \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\vep, \tty)$;
+  \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \vepp)$ \ProseOrTypeError;
   \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$ \ProseOrTypeError;
   \item annotating the type $\tty$ in $\tenv$ yields $\tty'$ \ProseOrTypeError;
   \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$ \ProseOrTypeError;
@@ -4883,16 +4933,16 @@ $(\vt, \newe)$ or a type error, and all of the following apply:
     \item All of the following apply (\textsc{type\_equal}):
     \begin{itemize}
       \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\True$;
-      \item $\vt$ is $\tty'$ and $\newe$ is $\ve''$.
+      \item $\vt$ is $\tty'$ and $\newe$ is $\vepp$.
     \end{itemize}
     \item All of the following apply (\textsc{dynamic}):
       \begin{itemize}
         \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$,
-        meaning that an execution-time check that the expression $\ve'$ evaluates to a value in the
+        meaning that an execution-time check that the expression $\vep$ evaluates to a value in the
         dynamic domain of $\tty$ is required;
         \item both $\vtstruct$ and $\vtystruct$ are bitevector types or integer types.
-        \item $\vt$ is $\vt'$ and $\newe$ is the asserting type conversion expression over $\ve''$ \\ and
-        $\vtystruct$, that is, $\EATC(\ve'', \vtystruct)$.
+        \item $\vt$ is $\vtp$ and $\newe$ is the asserting type conversion expression over $\vepp$ \\ and
+        $\vtystruct$, that is, $\EATC(\vepp, \vtystruct)$.
      \end{itemize}
    \item All of the following apply:
      \begin{itemize}
@@ -4911,18 +4961,20 @@ $(\vt, \newe)$ or a type error, and all of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[type\_equal]{
-  \annotateexpr{\tenv, \ve'} \typearrow (\vt, \ve'') \OrTypeError\\
+  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
   \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
   \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
   \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \True
 }
 {
-  \annotateexpr{\tenv, \EATC(\ve', \tty)} \typearrow (\tty', \ve'')
+  \annotateexpr{\tenv, \EATC(\vep, \tty)} \typearrow (\tty', \vepp)
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[dynamic]{
-  \annotateexpr{\tenv, \ve'} \typearrow (\vt, \ve'') \OrTypeError\\
+  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
   \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
   \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
@@ -4932,11 +4984,13 @@ $(\vt, \newe)$ or a type error, and all of the following apply:
   \vb = \True
 }
 {
-  \annotateexpr{\tenv, \EATC(\ve', \tty)} \typearrow (\vt', \EATC(\ve'', \vtystruct))
+  \annotateexpr{\tenv, \EATC(\vep, \tty)} \typearrow (\vtp, \EATC(\vepp, \vtystruct))
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[error]{
-  \annotateexpr{\tenv, \ve'} \typearrow (\vt, \ve'') \OrTypeError\\
+  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
   \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
   \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
@@ -4946,7 +5000,7 @@ $(\vt, \newe)$ or a type error, and all of the following apply:
   \vb = \False
 }
 {
-  \annotateexpr{\tenv, \EATC(\ve', \tty)} \typearrow \TypeErrorVal{ATC}
+  \annotateexpr{\tenv, \EATC(\vep, \tty)} \typearrow \TypeErrorVal{ATC}
 }
 \end{mathpar}
 \end{emptyformal}
@@ -4955,6 +5009,52 @@ $(\vt, \newe)$ or a type error, and all of the following apply:
   This is related to \identr{VBLL}, \identi{KRLL}, \identg{PFRQ}, \identi{XVBG},
   \identr{GYJZ}, \identi{SZVF}, \identr{PZZJ}, \identr{YCPX}, \identi{ZLBW},
   \identi{TCST}, \identi{CGRH}, \identi{YJBB}.
+
+\hypertarget{def-annotateliteral}{}
+\section{TypingRule.Lit \label{sec:TypingRule.Lit}}
+
+Annotating literals is done via the helper function
+\[
+  \annotateliteral{\overname{\literal}{\vl}} \aslto \overname{\ty}{\vt}
+\]
+which we use in this chapter for TypingRule.ELit as well as in subsequent chapters.
+\subsection{Prose}
+The result of annotating a literal $\vl$ is $\vt$ and one of the following applies:
+\begin{itemize}
+\item $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
+its set to the single value $\vn$;
+\item $\vl$ is a Boolean literal and $\vt$ is the Boolean type;
+\item $\vl$ is a real literal and $\vt$ is the real type;
+\item $\vl$ is a string literal and $\vt$ is the string type;
+\item $\vl$ is a string literal and $\vt$ is the string type;
+\item $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
+\end{itemize}
+
+\subsection{Example: TypingRule.Lit.asl}
+In the following example, we show several literals and their corresponding types in comments:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Lit.asl}
+
+\CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
+
+\begin{emptyformal}
+  \subsection{Formally}
+  \begin{mathpar}
+    \inferrule{}{\annotateliteral{\Elit{n}}\typearrow \TInt(\langle[\ConstraintExact(\Elit{n})]\rangle)}
+    \and
+    \inferrule{}{\annotateliteral{\eliteral{\lbool(\Ignore)}}\typearrow \TBool}
+    \and
+    \inferrule{}{\annotateliteral{\eliteral{\lreal(\Ignore)}}\typearrow \TReal}
+    \and
+    \inferrule{}{\annotateliteral{\eliteral{\lstring(\Ignore)}}\typearrow \TString}
+    \and
+    \inferrule{
+      \vl = \eliteral{\lbitvector(\bits)}\\
+      n \eqdef |\bits|
+    }{
+      \annotateliteral{\vl}\typearrow \TBits(\Elit{n}, \emptylist)
+    }
+  \end{mathpar}
+\end{emptyformal}
 
 \section{TypingRule.ExpressionList \label{sec:TypingRule.ExpressionList}}
 \hypertarget{def-annotateexprs}{}
@@ -5006,6 +5106,78 @@ One of the following applies:
 \end{mathpar}
 \end{emptyformal}
 
+\section{TypingRule.ReduceSlicesToCall \label{sec:TypingRule.ReduceSlicesToCall}}
+\hypertarget{def-reduceslicestocall}{}
+The function
+\[
+  \reduceslicestocall(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve} \aslsep \overname{\slice^*}{\slices})
+  \aslto
+  \langle (\overname{\identifier}{\name} \times \overname{\expr^*}{\vargs})\rangle
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the expression $\ve$ together with the list of slices $\slices$ constitute
+a call to a subprogram in $\tenv$.
+If so, it returns a pair consisting of the name of the called subprogram --- $\name$ ---
+and the list of actual arguments --- $\vargs$. Otherwise, it returns $\None$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{yes}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item determining whether $\vx$ is a subprogram name with $\slices$ as its actual arguments
+    via $\tododefine{should\_slices\_reduce\_to\_call}$
+    yields a list of actual argument expressions $\vargs$ \ProseOrTypeError;
+    \item $\name$ is $\vx$;
+    \item the result is $\langle (\name, \vle)\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{no}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item determining whether $\vx$ is a subprogram name with $\slices$ as its actual arguments
+    via $\tododefine{should\_slices\_reduce\_to\_call}$
+    yields $\None$;
+    \item the result is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_var}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item the result is $\None$.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\ReduceSlicesToCallBegin}{\ReduceSlicesToCallEnd}{../Typing.ml}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[yes]{
+  \tododefine{should\_slices\_reduce\_to\_call}(\tenv, \vx, \slices) \typearrow \langle \vargs \rangle\\
+  \name \eqdef \vx
+}
+{
+  \reduceslicestocall(\tenv, \EVar(\vx), \slices) \typearrow \langle (\name, \vargs)\rangle
+}
+\and
+\inferrule[no]{
+  \tododefine{should\_slices\_reduce\_to\_call}(\tenv, \vx, \slices) \typearrow \None
+}
+{
+  \reduceslicestocall(\tenv, \EVar(\vx), \slices) \typearrow \None
+}
+\and
+\inferrule[non\_var]{
+  \astlabel(\ve) \neq \EVar
+}
+{
+  \reduceslicestocall(\tenv, \ve, \slices) \typearrow \None
+}
+\end{mathpar}
+\end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Left-Hand-Side Expressions}
@@ -5128,8 +5300,8 @@ all of the following apply:
 \begin{mathpar}
 \inferrule{
   \vle = \texttt{LE\_Var}(\id)\\
-  G^\tenv.\globalstoragetypes(\id) = (\vt', \Ignore)\\
-  \typesat(\tenv, \vt', \vte)\\
+  G^\tenv.\globalstoragetypes(\id) = (\vtp, \Ignore)\\
+  \typesat(\tenv, \vtp, \vte)\\
   \newle = \vle
 }
 { \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle }
@@ -5178,8 +5350,8 @@ all of the following apply:
   \vte = \TTuple(\subtys)\\
   \les = [\ve_{1..k}]\\
   \subtys = [\vt_{1..k}]\\
-  i=1..k: \annotateexpr{\tenv, \ve_i,\vt_i} \typearrow \ve'_i\\
-  \les' = [i=1..k: \ve'_i]\\
+  i=1..k: \annotateexpr{\tenv, \ve_i,\vt_i} \typearrow \vep_i\\
+  \les' = [i=1..k: \vep_i]\\
   \newle = \texttt{LE\_Destructuring}(\les')
 }
 { \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle }
@@ -5196,14 +5368,14 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
+   \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices $\slices$;
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector type;
    \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
-   \item \texttt{width} is the width of the slices \texttt{slices} in $\tenv$;
+   \item \texttt{width} is the width of the slices $\slices$ in $\tenv$;
    \item $\vt$ is the bitvector type of width \texttt{width};
    \item \texttt{te} \typesatisfies\  $\vt$;
-   \item \texttt{slices2} is the result of annotating \texttt{slices} in $\tenv$;
+   \item \texttt{slices2} is the result of annotating $\slices$ in $\tenv$;
    \item \texttt{new\_le} is the slicing of \texttt{le2} by \texttt{slices2}.
    \end{itemize}
 
@@ -5241,23 +5413,23 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
+   \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices $\slices$;
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
-   \item \texttt{t\_le1} has the structure of an array type of size \texttt{size} and item type $\vt$;
+   \item \texttt{t\_le1} has the structure of an array type of size $\size$ and item type $\vt$;
    \item \texttt{te} \typesatisfies\  $\vt$;
    \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
   % ROMAN: The following is not what the code does so I replaced it with subsequent item.
   %  \item One of the following applies:
   %    \begin{itemize}
-  %    \item \texttt{wanted\_t\_index} is an enumeration type of name \texttt{size};
-  %    \item \texttt{wanted\_t\_index} is the type \texttt{integer {0..size-1}};
+  %    \item $\wantedtindex$ is an enumeration type of name $\size$;
+  %    \item $\wantedtindex$ is the type \texttt{integer {0..size-1}};
   %    \end{itemize}
-  \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
-  \item \texttt{slices} is a single expression \texttt{e\_index};
-   \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in $\tenv$;
-   \item \texttt{wanted\_t\_index} \typesatisfies\  \texttt{t\_index'}, which guarantees that the index
+  \item the expression $\size$ can be annotated with the type $\wantedtindex$;
+  \item $\slices$ is a single expression $\eindex$;
+   \item $(\tindexp, \eindexp)$ is the result of annotating $\eindex$ in $\tenv$;
+   \item $\wantedtindex$ \typesatisfies\  $\tindexp$, which guarantees that the index
    is within the bounds of the array;
-   \item \texttt{new\_le} is an access to array \texttt{le2} at index \texttt{e\_index'}.
+   \item \texttt{new\_le} is an access to array \texttt{le2} at index $\eindexp$.
    \end{itemize}
 
   \subsection{Example}
@@ -5395,12 +5567,12 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
    \item \texttt{field} is declared in $\bitfields$;
-   \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field} in
+   \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
       $\bitfields$;
-   \item $\vw$ is the width of \texttt{slices};
+   \item $\vw$ is the width of $\slices$;
    \item $\vt$ is the bitvector type of width $\vw$;
    \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
+   \item \texttt{le2} is the slicing of \texttt{le1} by $\slices$;
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in $\tenv$.
    \end{itemize}
 
@@ -5444,13 +5616,13 @@ all of the following apply:
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
    \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
-   \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field} in
+   \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
       $\bitfields$;
-   \item $\vw$ is the width of \texttt{slices};
+   \item $\vw$ is the width of $\slices$;
    \item $\bitfieldsp$ gives the bitfields corresponding to \texttt{field} in $\bitfields$;
    \item $\vt$ is the bitvector type of width $\vw$ and bitfields $\bitfieldsp$;
    \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
+   \item \texttt{le2} is the slicing of \texttt{le1} by $\slices$;
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in $\tenv$.
    \end{itemize}
 
@@ -5494,15 +5666,15 @@ all of the following apply:
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
    \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
-   \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field} in
+   \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
       $\bitfields$;
-   \item $\vw$ is the width of \texttt{slices};
+   \item $\vw$ is the width of $\slices$;
    \item \texttt{t'} is the bitvector type of width $\vw$;
    \item $\vt$ gives the type corresponding to the bitfield \texttt{field} in
       $\bitfields$;
    \item $\vt$ \typesatisfies\  \texttt{t'};
    \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
+   \item \texttt{le2} is the slicing of \texttt{le1} by $\slices$;
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in $\tenv$.
    \end{itemize}
 
@@ -5521,8 +5693,8 @@ all of the following apply:
     \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields)\\
     \texttt{BitField\_Type}(\vfield, \vslices, \vt) \in \bitfields\\
     \sliceswidth(\tenv, \vslices) \typearrow \vw\\
-    \vt' = \TBits(\texttt{BitWidth\_SingleExpr(w), \emptylist})\\
-    \typesat(\tenv, \vt', \vt)\\
+    \vtp = \TBits(\texttt{BitWidth\_SingleExpr(w), \emptylist})\\
+    \typesat(\tenv, \vtp, \vt)\\
     \typesat(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \annotatelexpr{\vletwo, \vslices} \typearrow \newle
@@ -5771,7 +5943,7 @@ Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt
    Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything greater than or equal to an expression $\ve$;
-   \item \texttt{t\_e, e'} is the result of annotating $\ve$ in $\tenv$;
+   \item \texttt{t\_e, \vep} is the result of annotating $\ve$ in $\tenv$;
    \item $\vep$ is a compile-time constant expression;
    \item One of the following applies:
      \begin{itemize}
@@ -5806,7 +5978,7 @@ Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt
    Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything lesser than or equal to an expression $\ve$;
-   \item \texttt{t\_e, e'} is the result of annotating $\ve$ in $\tenv$;
+   \item \texttt{t\_e, \vep} is the result of annotating $\ve$ in $\tenv$;
    \item $\vep$ is a compile-time constant expression;
    \item One of the following applies:
      \begin{itemize}
@@ -5872,13 +6044,13 @@ Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt
            \begin{itemize}
            \item both \texttt{t\_e1} and \texttt{t\_e2} have the structure of an integer;
            \item \texttt{new\_p} is the pattern which matches anything within the range given by
-      expressions \texttt{e1'} and \texttt{e2'}.
+      expressions $\veonep$ and $\vetwop$.
            \end{itemize}
      \item All of the following apply:
            \begin{itemize}
            \item both \texttt{t\_e1} and \texttt{t\_e2} have the structure of a real;
            \item \texttt{new\_p} is the pattern which matches anything within the range given by
-      expressions \texttt{e1'} and \texttt{e2'}.
+      expressions $\veonep$ and $\vetwop$.
            \end{itemize}
      \item an error ``\texttt{Conflicting Types}'' is raised.
      \end{itemize}
@@ -5901,7 +6073,7 @@ Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt
       Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
       \begin{itemize}
         \item \texttt{p} is the pattern that matches the expression $\ve$;
-        \item \texttt{t\_e, e'} is the result of annotating the expression $\ve$ in $\tenv$;
+        \item \texttt{t\_e, \vep} is the result of annotating the expression $\ve$ in $\tenv$;
         \item One of the following applies:
           \begin{itemize}
             \item All of the following apply:
@@ -6212,7 +6384,7 @@ the corresponding type in  $\tty$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Annotating a statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and one of the following applies:
 \begin{itemize}
 \item TypingRule.SPass (see \secref{TypingRule.SPass}),
@@ -6239,11 +6411,11 @@ environment $\newenv$ and one of the following applies:
 
     \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
     \begin{itemize}
     \item $\vs$ is a pass statement;
-    \item \texttt{new\_s} is $\vs$;
+    \item $\news$ is $\vs$;
     \item $\newenv$ is $\tenv$.
     \end{itemize}
 
@@ -6265,7 +6437,7 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is an assignment \texttt{le = re} under language version \texttt{ver};
@@ -6276,7 +6448,7 @@ environment $\newenv$ and all of the following apply:
      \item All of the following apply:
        \begin{itemize}
        \item \texttt{reduced} gives a statement $\vs$;
-       \item \texttt{new\_s} is $\vs$;
+       \item $\news$ is $\vs$;
        \item $\newenv$ is $\tenv$.
        \end{itemize}
 
@@ -6299,7 +6471,7 @@ environment $\newenv$ and all of the following apply:
          \end{itemize}
 
        \item \texttt{le1} is the result of annotating \texttt{le} with \texttt{t\_e} in \texttt{env1};
-       \item \texttt{new\_s} is the assignment \texttt{le1 = e1};
+       \item $\news$ is the assignment \texttt{le1 = e1};
        \item $\newenv$ is \texttt{env1}.
        \end{itemize}
     \end{itemize}
@@ -6360,11 +6532,11 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a \texttt{return} statement with no value and no return type;
-   \item \texttt{new\_s} is a \texttt{return} statement with no value;
+   \item $\news$ is a \texttt{return} statement with no value;
    \item the enclosing subprogram does not have a \texttt{return} type (it is either a setter
       or a procedure);
    \item $\newenv$ is $\tenv$.
@@ -6395,7 +6567,7 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item One of the following applies:
@@ -6430,18 +6602,18 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a \texttt{return} statement with some value $\ve$;
    \item the enclosing subprogram has a return type $\vt$;
-   \item \texttt{t\_e',e'} is the result of annotating $\ve$ in $\tenv$;
+   \item $(\tep,\vep)$ is the result of annotating $\ve$ in $\tenv$;
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{t\_e'} \typesatisfies\  $\vt$;
-       \item \texttt{new\_s} is a \texttt{return} statement with value $\vep$;
+       \item $\tep$ \typesatisfies\  $\vt$;
+       \item $\news$ is a \texttt{return} statement with value $\vep$;
        \item $\newenv$ is $\tenv$.
        \end{itemize}
      \item an error ``\texttt{Conflicting Types}'' is raised.
@@ -6459,9 +6631,9 @@ environment $\newenv$ and all of the following apply:
   \inferrule{
     \vs = \texttt{S\_Return}(\langle \ve \rangle)\\
     L^\tenv.\returntype = \langle \vt \rangle\\
-    \annotateexpr{\tenv, \ve} \typearrow (\vte', \ve')\\
+    \annotateexpr{\tenv, \ve} \typearrow (\vte', \vep)\\
     \typesat(\tenv, \vte', \vt)\\
-    \news = \texttt{S\_Return}(\langle \ve' \rangle)\\
+    \news = \texttt{S\_Return}(\langle \vep \rangle)\\
     \newtenv = \tenv
   }
   {\annotatestmt{\tenv, \vs} \typearrow (\news, \newtenv)}
@@ -6475,13 +6647,13 @@ This is related to \identr{FTPK}.
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a statement \texttt{s1; s2};
    \item \texttt{new\_s1, env1} is the result of annotating \texttt{s1} in $\tenv$;
    \item \texttt{new\_s2, env2} is the result of annotating \texttt{s2} in \texttt{env1};
-   \item \texttt{new\_s} is a then statement over two statements \texttt{new\_s1} and \texttt{new\_s2};
+   \item $\news$ is a then statement over two statements \texttt{new\_s1} and \texttt{new\_s2};
    \item $\newenv$ is \texttt{env2}.
    \end{itemize}
 
@@ -6512,14 +6684,14 @@ environment $\newenv$ and all of the following apply:
 
     \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
-   \item $\vs$ is a call to a subprogram named $\name$ with arguments \texttt{args} and parameters \texttt{eqs};
+   \item $\vs$ is a call to a subprogram named $\name$ with arguments $\vargs$ and parameters $\eqs$;
    \item \texttt{new\_name, new\_args, new\_eqs} is the result of annotating the call
-      to the procedure $\name$ with arguments \texttt{args} and parameters
-\texttt{eqs};
-   \item \texttt{new\_s} is the call to a subprogram named \texttt{new\_name} with arguments
+      to the procedure $\name$ with arguments $\vargs$ and parameters
+$\eqs$;
+   \item $\news$ is the call to a subprogram named \texttt{new\_name} with arguments
       \texttt{new\_args} and parameters \texttt{new\_eqs};
    \item $\newenv$ is $\tenv$.
    \end{itemize}
@@ -6550,19 +6722,19 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a condition $\ve$ with two statements \texttt{s1} and \texttt{s2};
-   \item \texttt{t\_cond, e\_cond} is the result of annotating $\ve$ in $\tenv$;
+   \item $(\tcond, e\_cond)$ is the result of annotating $\ve$ in $\tenv$;
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{t\_cond} \typesatisfies\  \texttt{t\_bool};
-       \item \texttt{s1'} is the result of annotating \texttt{s1} in $\tenv$;
-       \item \texttt{s2'} is the result of annotating \texttt{s2} in $\tenv$;
-       \item \texttt{new\_s} is the condition \texttt{e\_cond} with two statements \texttt{s1'} and \texttt{s2'};
+       \item $\texttt{\tcond}$ \typesatisfies\  $\texttt{t\_bool}$;
+       \item $\texttt{s1'}$ is the result of annotating \texttt{s1} in $\tenv$;
+       \item $\texttt{s2'}$ is the result of annotating \texttt{s2} in $\tenv$;
+       \item $\news$ is the condition $\econd$ with two statements $\texttt{s1'}$ and $\texttt{s2'}$;
        \item $\newenv$ is $\tenv$.
        \end{itemize}
      \item an error ``\texttt{Conflicting Types}'' is raised.
@@ -6599,13 +6771,13 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a case statement with expression $\ve$ and cases \texttt{cases};
    \item \texttt{t\_e, e1} is the result of annotating $\ve$ in $\tenv$;
    \item \texttt{cases1, env1} is the result of annotating each case in \texttt{cases} given \texttt{t\_e};
-   \item \texttt{new\_s} is a case statement with expression $\veone$ and cases \texttt{cases1};
+   \item $\news$ is a case statement with expression $\veone$ and cases \texttt{cases1};
    \item $\newenv$ is \texttt{env1}.
    \end{itemize}
 
@@ -6625,16 +6797,16 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is an assert statement with expression $\ve$;
-   \item \texttt{t\_e',e'} is the result of annotating $\ve$ in $\tenv$;
+   \item $(\tep,\vep)$ is the result of annotating $\ve$ in $\tenv$;
    \item One of the following applies:
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{t\_e'} \typesatisfies\  \texttt{t\_bool};
-       \item \texttt{new\_s} is an assert statement with expression $\vep$;
+       \item $\tep$ \typesatisfies\  \texttt{t\_bool};
+       \item $\news$ is an assert statement with expression $\vep$;
        \item $\newenv$ is $\tenv$.
        \end{itemize}
      \item an error ``\texttt{Conflicting Types}'' is raised.
@@ -6650,9 +6822,9 @@ environment $\newenv$ and all of the following apply:
 \begin{mathpar}
   \inferrule{
     \vs = \texttt{S\_Assert}(\ve)\\
-    \annotateexpr{\tenv, \ve} \typearrow (\vte', \ve')\\
+    \annotateexpr{\tenv, \ve} \typearrow (\vte', \vep)\\
     \typesat(\tenv, \vte', \TBool)\\
-    \news = \texttt{S\_Assert}(\ve')\\
+    \news = \texttt{S\_Assert}(\vep)\\
     \newtenv = \tenv
   }
   {
@@ -6669,7 +6841,7 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a \texttt{while} statement with expression $\veone$ and statement block \texttt{s1};
@@ -6679,7 +6851,7 @@ environment $\newenv$ and all of the following apply:
        \begin{itemize}
        \item $\vt$ \typesatisfies\  \texttt{t\_bool};
        \item \texttt{s2} is the result of annotating \texttt{s1} in $\tenv$;
-       \item \texttt{new\_s} is a \texttt{while} statement with expression \vetwo and statement block \texttt{s2};
+       \item $\news$ is a \texttt{while} statement with expression \vetwo and statement block \texttt{s2};
        \item $\newenv$ is $\tenv$.
        \end{itemize}
      \item an error ``\texttt{Conflicting Types}'' is raised.
@@ -6714,7 +6886,7 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a \texttt{repeat} statement with expression $\veone$ and statement block \texttt{s1};
@@ -6725,7 +6897,7 @@ environment $\newenv$ and all of the following apply:
      \item All of the following apply:
        \begin{itemize}
        \item $\vt$ \typesatisfies\  \texttt{t\_bool};
-       \item \texttt{new\_s} is a \texttt{repeat} statement with expression \vetwo and statement block \texttt{s2};
+       \item $\news$ is a \texttt{repeat} statement with expression \vetwo and statement block \texttt{s2};
        \item $\newenv$ is $\tenv$.
        \end{itemize}
      \item an error ``\texttt{Conflicting Types}'' is raised.
@@ -6761,7 +6933,7 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a \texttt{for} statement with index \texttt{id}, direction \texttt{dir}, two expressions
@@ -6834,7 +7006,7 @@ environment $\newenv$ and all of the following apply:
    \item an error is raised ``\texttt{ASL Typing Error: cannot declare already \\ declared element "id".}'' or \texttt{id} is not bound in $\tenv$ and all of the following apply:
    \item $\tenvp$ is $\tenv$ modified so that \texttt{id} is locally declared of type $\tty$;
    \item \texttt{s''} is the result of annotating \texttt{s'} in $\tenvp$;
-   \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
+   \item $\news$ is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions $\veonep$ and $\vetwop$ and statement \texttt{s''};
    \item $\newenv$ is $\tenv$.
    \end{itemize}
 
@@ -6855,7 +7027,7 @@ environment $\newenv$ and all of the following apply:
 %     \newtenv = \tenv
 %   }
 %   {
-%     \annotatestmt{\tenv, \texttt{S\_For}(\id, \dir, \veone, \vetwo, \vs')} \typearrow (\news, \newtenv)
+%     \annotatestmt{\tenv, \texttt{S\_For}(\id, \dir, \veone, \vetwo, \vsp)} \typearrow (\news, \newtenv)
 %   }
 % \]
 \end{emptyformal}
@@ -6868,11 +7040,11 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a throw statement with no expression;
-   \item \texttt{new\_s} is $\vs$;
+   \item $\news$ is $\vs$;
    \item $\newenv$ is $\tenv$.
    \end{itemize}
 
@@ -6902,13 +7074,13 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a throw statement with expression $\ve$;
-   \item \texttt{t\_e,e'} is the result of annotating $\ve$ in $\tenv$;
+   \item \texttt{t\_e,\vep} is the result of annotating $\ve$ in $\tenv$;
    \item \texttt{t\_e} has the structure of an exception type;
-   \item \texttt{new\_s} is a throw statement with expression $\vep$ and type \texttt{t\_e};
+   \item $\news$ is a throw statement with expression $\vep$ and type \texttt{t\_e};
    \item $\newenv$ is $\tenv$.
    \end{itemize}
 
@@ -6922,9 +7094,9 @@ environment $\newenv$ and all of the following apply:
 \begin{mathpar}
   \inferrule{
     \vs = \texttt{S\_Throw}(\langle (\ve, \Ignore) \rangle)\\
-    \annotateexpr{\tenv, \ve} \typearrow (\vte, \ve')\\
+    \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep)\\
     \astlabel(\tstruct(\tenv, \vte)) = \TException\\
-    \news = \texttt{S\_Throw}(\langle (\ve', \langle\vte\rangle) \rangle)\\
+    \news = \texttt{S\_Throw}(\langle (\vep, \langle\vte\rangle) \rangle)\\
     \newtenv = \tenv
   }
   {
@@ -6941,31 +7113,30 @@ environment $\newenv$ and all of the following apply:
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a try statement with statement \texttt{s'}, catchers \texttt{catchers} and block \texttt{otherwise};
    \item \texttt{s''} is the result of annotating \texttt{s'} in $\tenv$;
    \item \texttt{otherwise'} is the result of annotating \texttt{otherwise} in $\tenv$;
    \item \texttt{catchers'} is the result of annotating \texttt{catchers} in $\tenv$;
-   \item \texttt{new\_s} is a try statement with statement \texttt{s''}, catchers \texttt{catchers'} and block \texttt{otherwise'};
+   \item $\news$ is a try statement with statement \texttt{s''}, catchers \texttt{catchers'} and block \texttt{otherwise'};
    \item $\newenv$ is $\tenv$.
    \end{itemize}
 
   \subsection{Example}
 
-
-    \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
+\CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
   \inferrule{
-    \vs = \texttt{S\_Try}(\vs', \catchers, \otherwise)\\
-    \annotatestmt{\tenv, \vs'} \typearrow \vs''\\
+    \vs = \STry(\vsp, \catchers, \otherwise)\\
+    \annotatestmt{\tenv, \vsp} \typearrow \vspp\\
     \catchers = [\annotatecatcher{\tenv, \vc} \;|\; \vc \in \catchers]\\
     \otherwise = \langle \annotateblock{\tenv, \vo} \;|\; \vo \in \otherwise\rangle\\
-    \news = \texttt{S\_Try}(\vs'', \catchers', \otherwise')\\
+    \news = \STry(\vspp, \catchers', \otherwise')\\
     \newtenv = \tenv
   }
   {
@@ -6979,32 +7150,31 @@ environment $\newenv$ and all of the following apply:
 
 \section{TypingRule.SDeclSome \label{sec:TypingRule.SDeclSome}}
 
-  \subsection{Prose}
+\subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a declaration with local identifiers \texttt{ldi} and an expression $\ve$;
-   \item \texttt{t\_e,e'} is the result of annotating $\ve$ in $\tenv$;
+   \item \texttt{t\_e,\vep} is the result of annotating $\ve$ in $\tenv$;
    \item \texttt{env', ldi'} is the result of declaring the local identifiers of \texttt{ldi} in $\tenv$;
-   \item \texttt{new\_s} is a declaration with \texttt{ldk}, \texttt{ldi'} and an expression $\vep$;
+   \item $\news$ is a declaration with \texttt{ldk}, \texttt{ldi'} and an expression $\vep$;
    \item $\newenv$ is $\tenvp$.
    \end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\SDeclSomeBegin}{\SDeclSomeEnd}{../Typing.ml}
+\CodeSubsection{\SDeclSomeBegin}{\SDeclSomeEnd}{../Typing.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
 \begin{mathpar}
   \inferrule{
-    \vs = \texttt{S\_Decl}(\LDKConstant, \ldi, \langle\ve\rangle)\\
-    \annotateexpr{\tenv, \ve} \typearrow (\vte, \ve')\\
+    \vs = \SDecl(\LDKConstant, \ldi, \langle\ve\rangle)\\
+    \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep)\\
     \reduceconstants{\tenv, \ve} \typearrow \vv\\
     \declarelocalconstant{\tenv, \ldi} \typearrow (\tenv', \vte, \vv, \ldi')\\
-    \news = \texttt{S\_Decl}(\LDKConstant, \ldi', \langle\ve'\rangle)\\
+    \news = \SDecl(\LDKConstant, \ldi', \langle\vep\rangle)\\
     \newtenv = \tenv'
   }
   {
@@ -7020,12 +7190,12 @@ This is related to \identr{YSPM}.
 
   \subsection{Prose}
 Annotating statement $\vs$ in an environment $\tenv$
-(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+(\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a declaration statement with local identifiers \texttt{ldi} and no initial expression;
    \item \texttt{env', s'} is the result of annotating uninitialised local declarations \texttt{ldi} in $\tenv$;
-   \item \texttt{new\_s} is \texttt{s'};
+   \item $\news$ is \texttt{s'};
    \item $\newenv$ is $\tenvp$.
    \end{itemize}
 
@@ -7038,9 +7208,9 @@ environment $\newenv$ and all of the following apply:
     \subsection{Formally}
 \begin{mathpar}
   \inferrule{
-    \vs = \texttt{S\_Decl}(\LDKConstant, \ldi, \None)\\
-    \annotatelocaldeclitemuninit{\tenv, \ldi} \typearrow (\tenv', \vs')\\
-    \news = \vs'\\
+    \vs = \SDecl(\LDKConstant, \ldi, \None)\\
+    \annotatelocaldeclitemuninit{\tenv, \ldi} \typearrow (\tenv', \vsp)\\
+    \news = \vsp\\
     \newtenv = \tenv'
   }
   {
@@ -7072,10 +7242,10 @@ result of annotating the statement $\vs$ in $\tenv$.
     \subsection{Formally}
 \begin{mathpar}
   \inferrule{
-    \annotatestmt{\tenv, \vs} \typearrow (\vs', \Ignore)
+    \annotatestmt{\tenv, \vs} \typearrow (\vsp, \Ignore)
   }
   {
-    \annotateblock{\tenv, \vs, \texttt{return\_type}} \typearrow \vs'
+    \annotateblock{\tenv, \vs, \texttt{return\_type}} \typearrow \vsp
   }
 \end{mathpar}
 \end{emptyformal}
@@ -7656,7 +7826,7 @@ in $\newenv$ and one of the following applies:
   \item All of the following apply:
   \begin{itemize}
     \item $\vd$ declares a global storage element with named \name, with initial value expression $\ve$, and type annotation $\tty$.
-    \item \texttt{t, e'} is the result of annotating the expression $\ve$ in \tenv.
+    \item \texttt{t, \vep} is the result of annotating the expression $\ve$ in \tenv.
     \item One of the following applies:
     \begin{itemize}
       \item $\vt$ does not type-satisfy $\tty$ in \tenv.
@@ -7708,7 +7878,7 @@ in $\newenv$ and one of the following applies:
   \inferrule[Case 6]{
     \gsd = \{\textsf{keyword} : \vk, \textsf{initial\_value} : \langle \ve \rangle, \textsf{ty} : \langle\tty\rangle, \textsf{name}:\name \}\\
     G^\tenv.\globalstoragetypes(\name) = \bot\\
-    \annotateexpr{\tenv, \ve} \typearrow (\vt, \ve')\\
+    \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep)\\
     \typesat(\tenv, \vt, \tty)\\
     \newtenv = (G^\tenv.\globalstoragetypes[\name \mapsto (\tty, \vk)], L^\tenv)
   }
@@ -9168,6 +9338,51 @@ The predicate
 \]
 tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,
 returning a type error, if one is detected.
+
+\hypertarget{def-typeofarraylength}{}
+\section{TypingRule.TypeOfArrayLength \label{sec:TypingRule.TypeOfArrayLength}}
+The function
+\[
+  \typeofarraylength(\overname{\staticenvs}{\tenv} \aslsep \overname{\arrayindex}{\size}) \aslto
+  \overname{\ty}{\vt}
+\]
+returns the type for the array index $\size$ in the static environment $\tenv$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{enum}):
+  \begin{itemize}
+    \item $\size$ is an enumeration index over the enumeration $\vs$, that is, $\ArrayLengthEnum(\vs, \Ignore)$;
+    \item $\vt$ is the named type for $\vs$, that is, $\TNamed(\vs)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{expr}):
+  \begin{itemize}
+    \item $\size$ is an expression index for $\ve$, that is, $\ArrayLengthExpr(\ve)$;
+    \item symbolically reducing the expression corresponding to $\ve - 1$ via \tododefine{reduce\_expr} in $\tenv$
+    yields the expression $\vm$;
+    \item $\vc$ is the range constraint for $0..\vm$, that is, $\ConstraintRange(\eliteral{0}, \vm)$;
+    \item $\vt$ is the well-constrained integer with the single constraint $\vc$.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\TypeOfArrayLengthBegin}{\TypeOfArrayLengthEnd}{../types.ml}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[enum]{}
+{
+  \typeofarraylength(\tenv, \ArrayLengthEnum(\vs, \Ignore)) \typearrow \TNamed(\vs)
+}
+\and
+\inferrule[expr]{
+  \tododefine{reduce\_expr}(\EBinop(\MINUS, \ve, \eliteral{1})) \typearrow \vm\\
+  \vc \eqdef \ConstraintRange(\eliteral{0}, \vm)
+}
+{
+  \typeofarraylength(\tenv, \ArrayLengthExpr(\ve)) \typearrow \TInt(\wellconstrained([\vc]))
+}
+\end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}
