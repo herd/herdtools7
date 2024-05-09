@@ -1613,6 +1613,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                     let+ () = check_type_satisfies e3 env t_e3 t in
                     (t, e3) |: TypingRule.EGetBitFieldTyped
                     (* End *))
+            (* Begin EGetTupleItem *)
             | T_Tuple tys ->
                 let index =
                   try Scanf.sscanf field_name "item%u" Fun.id
@@ -1621,7 +1622,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 in
                 if 0 <= index && index < List.length tys then
                   (List.nth tys index, E_GetItem (e2, index) |> add_pos_from e)
-                else fatal_from e (Error.BadField (field_name, t_e2))
+                else
+                  fatal_from e (Error.BadField (field_name, t_e2))
+                  |: TypingRule.EGetTupleItem
+            (* End *)
             (* Begin EGetBadField *)
             | _ ->
                 fatal_from e (Error.BadField (field_name, t_e2))

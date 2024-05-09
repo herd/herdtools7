@@ -73,6 +73,9 @@
 \newcommand\hassubprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
 \newcommand\subprogramclash[0]{\texttt{subprogram\_clash}}
 \newcommand\argsclash[0]{\texttt{args\_clash}}
+\newcommand\bitfieldgetname[0]{\hyperlink{def-bitfieldgetname}{\texttt{bitfield\_get\_name}}}
+\newcommand\pairstomap[0]{\hyperlink{def-pairstomap}{\texttt{pairs\_to\_map}}}
+\newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\texttt{annotate\_field\_init}}}
 
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
 \newcommand\exprequal[0]{\hyperlink{def-exprequal}{\texttt{expr\_equal}}}
@@ -1812,6 +1815,7 @@ The predicate
 \]
 tests whether a type $\vt$ \emph{structurally-subtype-satisfies} a type $\vs$ is environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
+The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{typingoftypes}.
 
 \subsection{Prose}
 One of the following applies:
@@ -2018,11 +2022,11 @@ For a list of typed fields $\fields$, we define the set of its field identifiers
 \]
 \hypertarget{def-fieldtype}{}
 We define the type associated with the field name $\id$ in a list of typed fields $\fields$,
-if there is one, as follows:
+if there is a unique one, as follows:
 \[
   \fieldtype(\fields, \id) \triangleq
   \begin{cases}
-  \vt  & \text{ if }(\id,\vt) \in \fields\\
+  \vt  & \text{ if }\{ \vtp \;|\; (\id,\vtp) \in \fields\} = \{\vt\}\\
   \bot & \text{ otherwise}
   \end{cases}
 \]
@@ -3236,7 +3240,7 @@ Determine the result type of a binary operator, given the types of its operands.
   \identi{LGHJ}, \identi{RXLG}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Typing of types}
+\chapter{Typing of types \label{chap:typingoftypes}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \hypertarget{def-annotatetype}{}
 The function
@@ -3826,27 +3830,9 @@ All of the following apply:
 
 \begin{emptyformal}
 \subsection{Formally}
-\newcommand\getbitfieldname[0]{\texttt{get\_bitfield\_name}}
-We first define the helper function $\getbitfieldname : \bitfield \aslto \identifier$,
-which extracts the name of a bitfield:
-\begin{mathpar}
-  \inferrule[simple]{}{
-    \getbitfieldname(\BitFieldSimple(\name, \Ignore)) \typearrow \name
-  }
-  \and
-  \inferrule[nested]{}{
-    \getbitfieldname(\BitFieldNested(\name, \Ignore, \Ignore)) \typearrow \name
-  }
-  \and
-  \inferrule[type]{}{
-    \getbitfieldname(\BitFieldType(\name, \Ignore, \Ignore)) \typearrow \name
-  }
-\end{mathpar}
-
-Now the rule for annotating a list of bitfields is
 \begin{mathpar}
 \inferrule{
-  \names \eqdef [\field\in\fields: \getbitfieldname(\field)]\\
+  \names \eqdef [\field\in\fields: \bitfieldgetname(\field)]\\
   \checknoduplicates(\names) \typearrow \True \OrTypeError\\
   \reduceconstants{\tenv, \ewidth} \typearrow \lint(\vi) \OrTypeError\\
   \field\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow \newfield \OrTypeError\\
@@ -3899,6 +3885,7 @@ $\newe$ is an annotated expression, or a type error, and one of the following ap
 \item TypingRule.EGetBitField (see \secref{TypingRule.EGetBitField})
 \item TypingRule.EGetBitFieldNested (see \secref{TypingRule.EGetBitFieldNested})
 \item TypingRule.EGetBitFieldTyped (see \secref{TypingRule.EGetBitFieldTyped})
+\item TypingRule.EGetTupleItem (see \secref{TypingRule.EGetTupleItem})
 \item TypingRule.EConcatEmpty (see \secref{TypingRule.EConcatEmpty})
 \item TypingRule.EConcat (see \secref{TypingRule.EConcat})
 \item TypingRule.ETuple (see \secref{TypingRule.ETuple})
@@ -4446,7 +4433,6 @@ All of the following apply:
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-
   This is related to \identr{WBCQ}.
 
 \section{TypingRule.EStructuredMissingField \label{sec:TypingRule.EStructuredMissingField}}
@@ -4469,10 +4455,11 @@ A§ll of the following apply:
 \begin{mathpar}
 \inferrule{
   \checktrans{\astlabel(\tty) = \TNamed} \typearrow \True \OrTypeError\\
-  \tstruct{\tenv, \tty} \typearrow L(\fieldtypes) \OrTypeError\\
+  \tstruct(\tenv, \tty) \typearrow L(\fieldtypes) \OrTypeError\\\\
   L \in \{\TRecord, \TException\}\\
-  (\name, \vtp)\in\fieldtypes: \vb_\name \eqdef (\name, \vtp) \in \fields\\
-  \vb = \bigwedge{(\name, \vtp)\in\fieldtypes} \vb_\name\\
+  \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\fields\}\\
+  \names \eqdef \fieldnames(\fieldtypes)\\
+  \vb \eqdef \initializedfields = \names\\
   \vb = \False
 }
 {
@@ -4492,10 +4479,15 @@ All of the following apply:
   \item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
   \item $\tty$ is the name of a record or exception type with fields $\fieldtypes$;
   \item every field in $\fieldtypes$ is initialised by $\fields$;
-  \item annotating the field initializations via $\tododefine{annotate\_field\_init}$
-  yields $\fieldsp$ \ProseOrTypeError;
+  \item annotating the expressions in each field initializations in $\fields$ via \\
+  $\annotatefieldinit$ yields $\fieldsp$ \ProseOrTypeError;
   \item $\vt$ is $\tty$;
   \item $\newe$ is the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
+\end{itemize}
+
+\subsection{Example}
+
+\CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 
   % \item For each field named $\name$ associated with the expression $\vep$ in
   %   $\fieldtypes$, all of the following apply:
@@ -4507,23 +4499,20 @@ All of the following apply:
   %   \end{itemize}
   % \item $\vt$ is $\tty$;
   % \item $\newe$ is the record expression of type $\tty$ with fields $\fieldsp$.
-\end{itemize}
-
-\subsection{Example}
-
-\CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \checktrans{\astlabel(\tty) = \TNamed} \typearrow \True \OrTypeError\\
-  \tstruct{\tenv, \tty} \typearrow L(\fieldtypes) \OrTypeError\\
+  \tstruct(\tenv, \tty) \typearrow L(\fieldtypes) \OrTypeError\\\\
   L \in \{\TRecord, \TException\}\\
-  (\name, \vtp)\in\fieldtypes: \vb_\name \eqdef (\name, \vtp) \in \fields\\
-  \vb = \bigwedge{(\name, \vtp)\in\fieldtypes} \vb_\name\\
+  \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\fields\}\\
+  \names \eqdef \fieldnames(\fieldtypes)\\
+  \vb \eqdef \initializedfields = \names\\
   \vb = \True\\
-  \tododefine{annotate\_field\_init}(\tenv, \fields, \fieldtypes) \typearrow \fieldsp
+  (\name, \vep) \in \fields: \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow (\name, \vepp) \OrTypeError\\
+  \fieldsp \eqdef [(\name, \vep) \in \fields : (\name, \vepp)]
 }
 {
   \annotateexpr{\tenv, \ERecord(\tty, \fields)} \typearrow (\tty, \ERecord(\tty, \fieldsp))
@@ -4548,14 +4537,12 @@ $(\vt, \newe)$ and all of the following apply:
   \item $\newe$ is the access of field \texttt{field\_name} on expression \vetwo.
   \end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
+\CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
 \annotateexpr{\tenv, \veone} \typearrow (\texttt{t\_e1}, \vetwo)\\
@@ -4734,11 +4721,10 @@ $(\vt, \newe)$ and all of the following apply:
 
   \subsection{Example}
 
-
-    \CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
+\CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\texttt{t\_e1}, \vetwo)\\
@@ -4748,6 +4734,30 @@ $(\vt, \newe)$ and all of the following apply:
   \typesat(\tenv, \texttt{t\_e3}, \vt)
 }
 {\annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \texttt{e3})}
+\end{mathpar}
+\end{emptyformal}
+
+\isempty{\subsection{Comments}}
+
+\section{TypingRule.EGetTupleItem \label{sec:TypingRule.EGetTupleItem}}
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes \texttt{e1, field\_name};
+\end{itemize}
+
+\subsection{Example}
+
+\CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}
+{
+  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \texttt{e3})
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -9254,6 +9264,66 @@ returning a type error otherwise:
   \inferrule[check\_trans\_false]{}{ \checktrans{\False} \typearrow\TypeErrorVal{CheckFailed} }
 \end{mathpar}
 
+\hypertarget{def-pairstomap}{}
+\section{Converting a List of Pairs to a Map \label{sec:PairsToMap}}
+The parameteric function
+\[
+  \pairstomap(\overname{(\identifier\times T)^*}{\pairs}) \aslto \overname{(\identifier\partialto T)}{f} \cup \TTypeError
+\]
+converts a list of pairs --- $\pairs$ --- where each pair consists of an identifier and a value
+of type $T$ into a function mapping each identifier to its respective value in the list.
+If a duplicate identifier exists in $\pairs$ then a type error is returned.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\pairs$ is empty;
+    \item $f$ is the empty function.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item there exist two different positions in the list where the identifier is the same;
+    \item the result is a type error indicating the existence of a duplicate identifier.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item all identifiers occurring in the list are unique;
+    \item $f$ is a function that associates to each identifier the value appearing with it in $\pairs$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\begin{mathpar}
+\inferrule[empty]{}{ \pairstomap(\emptylist) \typearrow \emptyfunc }
+\and
+\inferrule[error]{
+  i,j \in 1..k\\
+  i \neq j\\
+  \id_i = \id_j
+}
+{
+  \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow \TypeErrorVal{DuplicateIdentifier}
+}
+\and
+\inferrule[okay]{
+  \forall i,j \in 1..k. \id_i \neq \id_j\\
+  {
+  f \eqdef \lambda \id.\ \begin{cases}
+    t_i & \text{ if }i\in1..k \land \id = \id_i\\
+    \bot & \text{ otherwise}
+  \end{cases}
+  }
+}
+{
+  \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow f
+}
+\end{mathpar}
+\end{emptyformal}
+
 \hypertarget{def-checknoduplicates}{}
 \section{TypingRule.CheckNoDuplicates \label{sec:TypingRule.CheckNoDuplicates}}
 The function
@@ -9296,6 +9366,88 @@ One of the following applies:
 {
   \checknoduplicates(\id_{1..k}) \typearrow \TypeErrorVal{DuplicateIdentifier}
 }
+\end{mathpar}
+\end{emptyformal}
+
+\hypertarget{def-annotatefieldinit}{}
+\section{Annotating Field Initializers}
+The function
+\[
+  \annotatefieldinit(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{(\identifier\times\expr)}{(\name, \vep)} \aslsep
+    \overname{\field^*}{\fieldtypes}
+  ) \aslto
+  \overname{(\identifier\times\expr)}{(\name, \vepp)}
+\]
+annotates a field initializers $(\name, \vep)$ in a record expression
+with list of fields $\fieldtypes$ and returns the annotated field initializer
+$(\name, \vepp)$. A type error is returned, if one is detected.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the expression $\vep$ in $\tenv$ yields $(\vtp, \vepp)$ \ProseOrTypeError\\
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{okay}):
+    \begin{itemize}
+      \item the unique type associated with $\name$ in $\fieldtypes$ is $\tspecp$;
+      \item determining whether $\vtp$ \typesatisfies\ $\tspecp$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item there is no type associated with $\name$ in $\fieldtypes$;
+      \item the result is a type error indicating that the field $\name$ does not exist.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \annotateexpr{\tenv, \vep} \typearrow (\vtp, \vepp) \OrTypeError\\\\
+  \fieldtype(\fieldtypes, \name) = \tspecp\\
+  \checktypesat(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
+}{
+  \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow (\name, \vepp)
+}
+\and
+\inferrule[error]{
+  \annotateexpr{\tenv, \vep} \typearrow (\vtp, \vepp) \OrTypeError\\\\
+  \fieldtype(\fieldtypes, \name) = \bot
+}{
+  \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow \\
+  \TypeErrorVal{FieldDoesNotExist}
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.BitFieldGetName \label{sec:TypingRule.BitFieldGetName}}
+
+\hypertarget{def-bitfieldgetname}{}
+The function
+\[
+  \bitfieldgetname : \bitfield \aslto \identifier
+\]
+returns the name of a bitfield.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule[simple]{}{
+    \bitfieldgetname(\BitFieldSimple(\name, \Ignore)) \typearrow \name
+  }
+  \and
+  \inferrule[nested]{}{
+    \bitfieldgetname(\BitFieldNested(\name, \Ignore, \Ignore)) \typearrow \name
+  }
+  \and
+  \inferrule[type]{}{
+    \bitfieldgetname(\BitFieldType(\name, \Ignore, \Ignore)) \typearrow \name
+  }
 \end{mathpar}
 \end{emptyformal}
 
