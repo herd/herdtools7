@@ -133,7 +133,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 \expr &::=& \ELiteral(\literal) \\
 	&|& \EVar(\overtext{\identifier}{variable name}) \\
 	&|& \EATC(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type}) \\
-  & & \ASTComment{A checked type constraint}\\
+  & & \ASTComment{Asserting type conversion}\\
 	&|& \EBinop(\binop, \expr, \expr) \\
 	&|& \EUnop(\unop, \expr) \\
 	&|& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) \\
@@ -190,7 +190,7 @@ We sometimes provide extra details to individual derivations by adding comments 
   & & \ASTComment{\expr\ is a statically evaluable expression denoting the length of the bit-vector.}\\
   &|& \TEnum(\identifier^{*}) \\
   &|& \TTuple(\ty^{*}) \\
-  &|& \TArray(\expr, \ty) \\
+  &|& \TArray(\arrayindex, \ty) \\
   &|& \TRecord(\Field^{*}) \\
   &|& \TException(\Field^{*}) \\
   &|& \TNamed(\identifier)\\
@@ -238,6 +238,16 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \BitFieldType(\identifier, \slice^{*}, \ty) \\
   & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
 \end{array}
+\]
+
+\[
+  \begin{array}{rcl}
+    & & \ASTComment{The type of indexes for an array.}  \\
+    \hline
+    \arrayindex & ::=
+      & \ArrayLengthExpr(\overtext{\expr}{array length}) \\
+    &|& \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) \\
+  \end{array}
 \]
 
 \[
@@ -346,9 +356,11 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\subprogramtype &::=& \texttt{ST\_Procedure} \;|\; \texttt{ST\_Function} \;|\; \texttt{ST\_Getter} \;|\; \texttt{ST\_Setter}\\
-\subprogrambody &::=& \texttt{SB\_ASL}(\stmt)\\
-  &|& \texttt{SB\_Primitive}\\
+\subprogramtype &::=& \STProcedure \;|\; \STFunction\\
+                &|  & \STGetter \;|\; \STEmptyGetter\\
+                &|  & \STSetter \;|\; \STEmptySetter\\
+\subprogrambody &::=& \SBASL(\stmt)\\
+  &|& \SBPrimitive\\
 \end{array}
 \]
 

@@ -1,6 +1,11 @@
 \documentclass{book}
 \input{ASLmacros}
 
+% The following macros will be moved to ASLmacros.tex when we unify all reference documents.
+\newcommand\exprequalcase[0]{\texttt{expr\_equal\_case}}
+\newcommand\exprequalnorm[0]{\texttt{expr\_equal\_norm}}
+\newcommand\exprequal[0]{\texttt{expr\_equal}}
+
 \newcommand\typearrow[0]{\xrightarrow{\mathsf{type}}}
 
 \newcommand\Nodes[0]{\hyperlink{def-nodes}{\mathcal{N}}}
@@ -20,18 +25,17 @@
 \newcommand\environof[1]{\hyperlink{def-environof}{\texttt{environ}}({#1})}
 \newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\texttt{environ}}\mapsto{#2})}
 
-\newcommand\aslrel[0]{\bigtimes}
 \newcommand\primitiverel[0]{\hyperlink{def-primitiverel}{\textsf{primitive}}}
 \newcommand\evalprimitivearrow[0]{\hyperlink{def-evalprimitivearrow}{\stackrel{\primitiverel}{\rightsquigarrow}}}
 \newcommand\ContinuingConfig[0]{\hyperlink{def-continuingconfig}{\texttt{\#C}}}
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
-\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#E}}}
+\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
 \newcommand\OrAbnormal[0]{\terminateas \ThrowingConfig, \ErrorConfig}
 \newcommand\ProseOrAbnormal[0]{or an abnormal configuration, which short-circuits the entire evaluation}
 \newcommand\ProseOrError[0]{or an error configuration, which short-circuits the entire evaluation}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
-\newcommand\TError[0]{\hyperlink{def-terror}{\textsf{TError}}}
+\newcommand\TError[0]{\hyperlink{def-terror}{\textsf{TDynError}}}
 \newcommand\TThrowing[0]{\hyperlink{def-tthrowing}{\textsf{TThrowing}}}
 \newcommand\TContinuing[0]{\hyperlink{def-tcontinuing}{\textsf{TContinuing}}}
 \newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
@@ -100,7 +104,7 @@
 \newcommand\Throwing[0]{\hyperlink{def-throwing}{\textsf{Throwing}}}
 \newcommand\Continuing[0]{\hyperlink{def-continuing}{\textsf{Continuing}}}
 \newcommand\Returning[0]{\hyperlink{def-returning}{\textsf{Returning}}}
-\newcommand\Error[0]{\hyperlink{def-error}{\textsf{Error}}}
+\newcommand\Error[0]{\hyperlink{def-error}{\textsf{DynError}}}
 
 \newcommand\ErrorVal[1]{\Error(\texttt{"ERROR[#1]"})}
 
@@ -147,7 +151,6 @@
 \newcommand\vres[0]{\texttt{res}}
 \newcommand\vvone[0]{\texttt{v1}}
 \newcommand\vvtwo[0]{\texttt{v2}}
-\newcommand\vsp[0]{\texttt{s'}}
 \newcommand\vsone[0]{\texttt{s1}}
 \newcommand\vstwo[0]{\texttt{s2}}
 \newcommand\vmone[0]{\texttt{m1}}
@@ -193,7 +196,6 @@
 \newcommand\varray[0]{\texttt{v\_array}}
 \newcommand\vindex[0]{\texttt{v\_index}}
 \newcommand\efields[0]{\texttt{e\_fields}}
-\newcommand\names[0]{\texttt{names}}
 \newcommand\fields[0]{\texttt{fields}}
 \newcommand\vvfields[0]{\texttt{v\_fields}}
 \newcommand\erecord[0]{\ERecord}
@@ -240,7 +242,6 @@
 \newcommand\liv[0]{\texttt{liv}}
 \newcommand\minitopt[0]{\texttt{m\_init\_opt}}
 \newcommand\les[0]{\texttt{les}}
-\newcommand\exprs[0]{\texttt{exprs}}
 \newcommand\wid[0]{\texttt{wid}}
 \newcommand\es[0]{\texttt{es}}
 \newcommand\ms[0]{\texttt{ms}}
@@ -283,7 +284,6 @@
 \newcommand\dst[0]{\texttt{dst}}
 \newcommand\vvec[0]{\texttt{vec}}
 \newcommand\velem[0]{\texttt{v\_elem}}
-\newcommand\bits[0]{\texttt{bits}}
 \newcommand\eid[0]{\texttt{e\_id}}
 \newcommand\newmbv[0]{\texttt{new\_m\_bv}}
 \newcommand\truep[0]{\texttt{true'}}
@@ -517,7 +517,7 @@ We assume that the static environment supports the following functions:
 \[
   \begin{array}{rcl}
     \findfunc       &:& \staticenvs \times \Identifiers \partialto \func\\
-    \typesatisfies  &:& \staticenvs \times (\ty \times \ty) \rightarrow \{\True, \False\}
+    \typesat  &:& \staticenvs \times (\ty \times \ty) \rightarrow \{\True, \False\}
   \end{array}
 \]
 The partial function $\findfunc$ returns the typed AST of the subprogram for a given identifier.
@@ -526,8 +526,8 @@ a specific subprogram.
 However, the type-checker renames each function uniquely so that it can be accessed based
 on its name alone.)
 %
-The function $\typesatisfies(\texttt{t}, \texttt{s})$ returns true
-if the type \texttt{t} \emph{type-satisfies} the type \texttt{s}
+The function $\typesat(\vt, \vs)$ returns true
+if the type $\vt$ \emph{type-satisfies} the type $\vs$
 (see TypingRule.TypeSatisfaction~\cite{ASLTypingReference}).
 This is used in matching a raised exception to a corresponding catch clause.
 \end{definition}
@@ -963,6 +963,7 @@ and one of the following applies:
 \item SemanticsRule.ETuple (see Section~\ref{sec:SemanticsRule.ETuple})
 \item SemanticsRule.EUnknown (see Section~\ref{sec:SemanticsRule.EUnknown})
 \item SemanticsRule.EPattern (see Section~\ref{sec:SemanticsRule.EPattern})
+\item SemanticsRule.ATC (see Section~\ref{sec:SemanticsRule.ATC})
 \item SemanticsRule.ATC (see Section~\ref{sec:SemanticsRule.ATC})
 \end{itemize}
 
@@ -1734,11 +1735,12 @@ Notice that this rule introduces non-determinism.
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
+\section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
   \subsection{Prose}
   Evaluation of the expression $\ve$ in an environment $\env$ is \\
   $\Normal((\vv, \vg), \newenv)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes a type conversion expression, $\EATC(\veone, \vt)$;
+  \item $\ve$ denotes an asserted type conversion expression, $\EATC(\veone, \vt)$;
   \item evaluating $\veone$ in $\env$ either results in \Normal((\vv, \vgone), \newenv),
   \ProseOrAbnormal;
   \item evaluating whether $\vv$ has type $\vt$ in $\env$ either results in (\vb, \vgtwo)
@@ -1753,7 +1755,7 @@ Notice that this rule introduces non-determinism.
         \item all of the following apply (\textsc{error}):
               \begin{itemize}
               \item $\vb$ is the native Boolean for \True;
-              \item a type conversion error is returned.
+              \item an asserted type conversion error is returned.
               \end{itemize}
         \end{itemize}
   \end{itemize}
@@ -4795,7 +4797,7 @@ The (recursively-defined) helper relation
   \;\aslrel\; \langle \catcher \rangle \enspace,
 \]
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
-by invoking $\typesatisfies$ with the static environment $\tenv$.
+by invoking $\typesat$ with the static environment $\tenv$.
 
 \subsection{Prose}
 One of the following applies:
@@ -4836,7 +4838,7 @@ One of the following applies:
 \inferrule[match]{
   \catchers \eqname [\vc] \concat \catchersone\\
   \vc \eqname (\nameopt, \ety, \vs) \\
-  \typesatisfies(\tenv, \vvty, \ety)
+  \typesat(\tenv, \vvty, \ety)
 }
 {
   \findcatcher(\tenv, \vvty, \catchers) \evalarrow \langle\vc\rangle
@@ -4845,7 +4847,7 @@ One of the following applies:
 \inferrule[no\_match]{
   \catchers \eqname [\vc] \concat \catchersone\\
   \vc \eqname (\nameopt, \ety, \vs) \\
-  \neg\typesatisfies(\tenv, \vvty, \ety)\\
+  \neg\typesat(\tenv, \vvty, \ety)\\
   d \eqdef \findcatcher(\tenv, \vvty, \catchersone)
 }
 {

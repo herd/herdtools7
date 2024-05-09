@@ -94,6 +94,7 @@
 %% Mathematical notations and Inference Rule macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%%
 \usepackage{relsize}
+\newcommand\defpoint[1]{\underline{#1}}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbracket{#1}^{#2}}
@@ -105,26 +106,21 @@
 \newcommand\equalarrow[0]{\rightarrow}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\texttt{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\texttt{indices}}}
+\newcommand\splitlist[0]{\hyperlink{def-splitlist}{\texttt{split}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
-
-\newcommand\id[0]{\texttt{id}}
-\newcommand\idone[0]{\texttt{id1}}
-\newcommand\idtwo[0]{\texttt{id2}}
-\newcommand\idthree[0]{\texttt{id3}}
-\newcommand\op[0]{\texttt{op}}
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
 \newcommand\None[0]{\hyperlink{def-none}{\texttt{None}}}
 
-\newcommand\llbracket{[|}
-\newcommand\rrbracket{|]}
+% Set types
 \newcommand\N[0]{\hyperlink{def-N}{\mathbb{N}}}
 \newcommand\Q[0]{\hyperlink{def-Q}{\mathbb{Q}}}
 \newcommand\Z[0]{\hyperlink{def-Z}{\mathbb{Z}}}
 \newcommand\Bool[0]{\hyperlink{def-bool}{\mathbb{B}}}
 \newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{def-strings}{\mathbb{S}}}
+
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
 \newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
@@ -134,6 +130,10 @@
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
 \newcommand\terminateas[0]{\;\hyperlink{def-terminateas}{\sslash}\;}
+\newcommand\booltrans[1]{\hyperlink{def-booltrans}{\texttt{bool\_transition}(#1)}}
+\newcommand\booltransarrow[0]{\rightarrow}
+\newcommand\checktrans[1]{\hyperlink{def-checktrans}{\texttt{check\_transition}(#1)}}
+\newcommand\checktransarrow[0]{\rightarrow}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Abstract Syntax macros
@@ -183,6 +183,7 @@
 \newcommand\expr[0]{\textsf{expr}}
 \newcommand\lexpr[0]{\textsf{lexpr}}
 \newcommand\slice[0]{\textsf{slice}}
+\newcommand\arrayindex[0]{\textsf{array\_index}}
 \newcommand\leslice[0]{\texttt{LE\_Slice}}
 
 \newcommand\ty[0]{\textsf{ty}}
@@ -286,6 +287,10 @@
 \newcommand\ConstraintExact[0]{\textsf{Constraint\_Exact}}
 \newcommand\ConstraintRange[0]{\textsf{Constraint\_Range}}
 
+% Array index labels
+\newcommand\ArrayLengthExpr[0]{\textsf{ArrayLength\_Expr}}
+\newcommand\ArrayLengthEnum[0]{\textsf{ArrayLength\_Enum}}
+
 % Slice labels
 \newcommand\SliceSingle[0]{\textsf{Slice\_Single}}
 \newcommand\SliceRange[0]{\textsf{Slice\_Range}}
@@ -321,6 +326,13 @@
 \newcommand\SBASL[0]{\textsf{SB\_ASL}}
 \newcommand\SBPrimitive[0]{\textsf{SB\_Primitive}}
 
+\newcommand\STFunction[0]{\texttt{ST\_Function}}
+\newcommand\STGetter[0]{\texttt{ST\_Getter}}
+\newcommand\STEmptyGetter[0]{\texttt{ST\_EmptyGetter}}
+\newcommand\STSetter[0]{\texttt{ST\_Setter}}
+\newcommand\STEmptySetter[0]{\texttt{ST\_EmptySetter}}
+\newcommand\STProcedure[0]{\texttt{ST\_Procedure}}
+
 \newcommand\identifier[0]{\textsf{identifier}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -336,7 +348,7 @@
 \newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\tenv}}}
 \newcommand\tstruct[0]{\hyperlink{def-tstruct}{\texttt{get\_structure}}}
 \newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textsf{ast\_label}}}
-\newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{\texttt{type\_satisfies}}}
+\newcommand\typesat[0]{\hyperlink{def-typesatisfies}{\texttt{type\_satisfies}}}
 
 \newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
 \newcommand\globalstoragetypes[0]{\hyperlink{def-globalstoragetypes}{\textsf{global\_storage\_types}}}
@@ -351,6 +363,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Semantics macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\aslrel[0]{\bigtimes}
 \newcommand\vals[0]{\hyperlink{def-vals}{\mathbb{V}}}
 \newcommand\nvliteral[1]{\hyperlink{def-nvliteral}{\texttt{NV\_Literal}}(#1)}
 \newcommand\nvvector[1]{\hyperlink{def-nvvector}{\texttt{NV\_Vector}}(#1)}
@@ -394,6 +407,11 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Variable Names
+\newcommand\id[0]{\texttt{id}}
+\newcommand\idone[0]{\texttt{id1}}
+\newcommand\idtwo[0]{\texttt{id2}}
+\newcommand\idthree[0]{\texttt{id3}}
+\newcommand\op[0]{\texttt{op}}
 \newcommand\vx[0]{\texttt{x}}
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\ve[0]{\texttt{e}}
@@ -411,12 +429,14 @@
 \newcommand\envtwo[0]{\texttt{env2}}
 \newcommand\newenv[0]{\texttt{new\_env}}
 \newcommand\vv[0]{\texttt{v}}
+\newcommand\vk[0]{\texttt{k}}
 \newcommand\vvl[0]{\texttt{vl}}
 \newcommand\vr[0]{\texttt{r}}
 \newcommand\fieldmap[0]{\textit{field\_map}}
 \newcommand\length[0]{\texttt{length}}
 \newcommand\factor[0]{\texttt{factor}}
 \newcommand\width[0]{\texttt{width}}
+\newcommand\widthp[0]{\texttt{width'}}
 \newcommand\vcs[0]{\texttt{vcs}}
 \newcommand\vis[0]{\texttt{vis}}
 \newcommand\vd[0]{\texttt{d}}
@@ -426,3 +446,97 @@
 \newcommand\ds[0]{\texttt{ds}}
 \newcommand\widtht[0]{\texttt{width\_t}}
 \newcommand\widths[0]{\texttt{width\_s}}
+\newcommand\ws[0]{\texttt{w\_s}}
+\newcommand\wt[0]{\texttt{w\_t}}
+\newcommand\bfss[0]{\texttt{bfs\_s}}
+\newcommand\bfst[0]{\texttt{bfs\_t}}
+\newcommand\bfsone[0]{\texttt{bfs1}}
+\newcommand\bfstwo[0]{\texttt{bfs2}}
+\newcommand\vlengtht[0]{\texttt{length\_t}}
+\newcommand\vlengths[0]{\texttt{length\_s}}
+\newcommand\vlengthexprt[0]{\texttt{length\_expr\_t}}
+\newcommand\vlengthexprs[0]{\texttt{length\_expr\_s}}
+\newcommand\vtyt[0]{\texttt{ty\_t}}
+\newcommand\vtys[0]{\texttt{ty\_s}}
+\newcommand\vnamet[0]{\texttt{name\_t}}
+\newcommand\vnames[0]{\texttt{name\_s}}
+\newcommand\vlis[0]{\texttt{lis\_s}}
+\newcommand\vlit[0]{\texttt{lis\_t}}
+\newcommand\vfieldss[0]{\texttt{fields\_s}}
+\newcommand\vfieldst[0]{\texttt{fields\_t}}
+\newcommand\vnamest[0]{\texttt{names\_t}}
+\newcommand\vnamess[0]{\texttt{names\_s}}
+\newcommand\vsstruct[0]{\texttt{s\_struct}}
+\newcommand\vtstruct[0]{\texttt{t\_struct}}
+\newcommand\vtystruct[0]{\texttt{ty\_struct}}
+\newcommand\calltype[0]{\texttt{call\_type}}
+\newcommand\eqsone[0]{\texttt{eqs1}}
+\newcommand\eqstwo[0]{\texttt{eqs2}}
+\newcommand\eqsthree[0]{\texttt{eqs3}}
+\newcommand\eqsfour[0]{\texttt{eqs4}}
+\newcommand\retty[0]{\texttt{ret\_ty}}
+\newcommand\rettyone[0]{\texttt{ret\_ty1}}
+\newcommand\rettyopt[0]{\texttt{ret\_ty\_opt}}
+\newcommand\exprs[0]{\texttt{exprs}}
+\newcommand\exprsone[0]{\texttt{exprs1}}
+\newcommand\typedexpr[0]{\texttt{typed\_exprs}}
+\newcommand\typedexprs[0]{\texttt{typed\_exprs}}
+\newcommand\typedexprsone[0]{\texttt{typed\_exprs1}}
+\newcommand\cst[0]{\texttt{cs\_t}}
+\newcommand\css[0]{\texttt{cs\_s}}
+\newcommand\vlione[0]{\texttt{li1}}
+\newcommand\vlitwo[0]{\texttt{li2}}
+\newcommand\structone[0]{\texttt{struct1}}
+\newcommand\structtwo[0]{\texttt{struct2}}
+\newcommand\newty[0]{\texttt{new\_ty}}
+\newcommand\tenvp[0]{\texttt{tenv'}}
+\newcommand\funcsig[0]{\texttt{func\_sig}}
+\newcommand\gsd[0]{\texttt{gsd}}
+\newcommand\decls[0]{\texttt{decls}}
+\newcommand\declsp[0]{\texttt{decls'}}
+\newcommand\ordereddecls[0]{\texttt{ordered\_decls}}
+\newcommand\constraints[0]{\texttt{constraints}}
+\newcommand\constraintsp[0]{\texttt{constraints'}}
+\newcommand\ewidth[0]{\texttt{e\_width}}
+\newcommand\ewidthp[0]{\texttt{e\_width'}}
+\newcommand\bitfieldsp[0]{\texttt{bitfields'}}
+\newcommand\bitfieldspp[0]{\texttt{bitfields''}}
+\newcommand\fieldsp[0]{\texttt{fields'}}
+\newcommand\vstmt[0]{\texttt{stmt}}
+\newcommand\newstmt[0]{\texttt{new\_stmt}}
+\newcommand\newstmtp[0]{\texttt{new\_stmt'}}
+\newcommand\newopt[0]{\texttt{new\_opt}}
+\newcommand\callerargtyped[0]{\texttt{caller\_arg\_typed}}
+\newcommand\callerargtypes[0]{\texttt{caller\_arg\_types}}
+\newcommand\calleeargtypes[0]{\texttt{callee\_arg\_types}}
+\newcommand\calleeparams[0]{\texttt{callee\_params}}
+\newcommand\extranargs[0]{\texttt{extra\_nargs}}
+\newcommand\veq[0]{\texttt{eq}}
+\newcommand\newconstraints[0]{\texttt{new\_constraints}}
+\newcommand\newc[0]{\texttt{new\_c}}
+\newcommand\tysp[0]{\texttt{tys'}}
+\newcommand\ttyp[0]{\texttt{ty'}}
+\newcommand\field[0]{\texttt{field}}
+\newcommand\newfield[0]{\texttt{new\_field}}
+\newcommand\newfields[0]{\texttt{new\_fields}}
+\newcommand\names[0]{\texttt{names}}
+\newcommand\bits[0]{\texttt{bits}}
+\newcommand\veonep[0]{\texttt{e1'}}
+\newcommand\vetwop[0]{\texttt{e2'}}
+\newcommand\vepp[0]{\texttt{e''}}
+\newcommand\vtpp[0]{\texttt{t''}}
+\newcommand\vsp[0]{\texttt{s'}}
+\newcommand\vspp[0]{\texttt{s''}}
+\newcommand\econdp[0]{\texttt{e\_cond'}}
+\newcommand\etruep[0]{\texttt{e\_true'}}
+\newcommand\efalsep[0]{\texttt{e\_false'}}
+\newcommand\slicesp[0]{\texttt{slices'}}
+\newcommand\tep[0]{\texttt{t\_e'}}
+\newcommand\structtep[0]{\texttt{struct\_t\_e'}}
+\newcommand\vargsp[0]{\texttt{args'}}
+\newcommand\eqsp[0]{\texttt{eqs'}}
+\newcommand\namep[0]{\texttt{name'}}
+\newcommand\eindexp[0]{\texttt{e\_index'}}
+\newcommand\tindexp[0]{\texttt{t\_index'}}
+\newcommand\fieldtypes[0]{\texttt{field\_types}}
+\newcommand\tspecp[0]{\texttt{t\_spec'}}

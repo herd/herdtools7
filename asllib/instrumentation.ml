@@ -383,6 +383,7 @@ module TypingRule = struct
     | ECond
     | ESlice
     | ECall
+    | ESetter
     | EGetArray
     | ESliceOrEGetArrayError
     | ERecord
@@ -465,10 +466,8 @@ module TypingRule = struct
     | FUndefIdent
     | FPrimitive
     | FBadArity
-    | FCallBadArity
-    | FCallSetter
-    | FCallGetter
-    | FCallMismatch
+    | FindCheckDeduce
+    | FCall
     | Block
     | Loop
     | For
@@ -491,6 +490,9 @@ module TypingRule = struct
     | TRecordExceptionDecl
     | TNonDecl
     | TBitField
+    | TBitFields
+    | ReduceSlicesToCall
+    | TypeOfArrayLength
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -526,6 +528,7 @@ module TypingRule = struct
     | ECond -> "ECond"
     | ESlice -> "ESlice"
     | ECall -> "ECall"
+    | ESetter -> "ESetter"
     | ERecord -> "ERecord"
     | EStructuredMissingField -> "EStructuredMissingField"
     | EStructuredNotStructured -> "EStructuredNotStructured"
@@ -610,10 +613,8 @@ module TypingRule = struct
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
-    | FCallBadArity -> "FCallBadArity"
-    | FCallSetter -> "FCallSetter"
-    | FCallGetter -> "FCallGetter"
-    | FCallMismatch -> "FCallMismatch"
+    | FindCheckDeduce -> "FindCheckDeduce"
+    | FCall -> "FCall"
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
@@ -636,6 +637,9 @@ module TypingRule = struct
     | TRecordExceptionDecl -> "TRecordExceptionDecl"
     | TNonDecl -> "TNonDecl"
     | TBitField -> "TBitField"
+    | TBitFields -> "TBitFields"
+    | ReduceSlicesToCall -> "ReduceSlicesToCall"
+    | TypeOfArrayLength -> "TypeOfArrayLength"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -674,6 +678,7 @@ module TypingRule = struct
       ECond;
       ESlice;
       ECall;
+      ESetter;
       EStructuredMissingField;
       EStructuredNotStructured;
       ERecord;
@@ -739,10 +744,8 @@ module TypingRule = struct
       FUndefIdent;
       FPrimitive;
       FBadArity;
-      FCallBadArity;
-      FCallSetter;
-      FCallGetter;
-      FCallMismatch;
+      FindCheckDeduce;
+      FCall;
       Block;
       Loop;
       For;
@@ -761,6 +764,9 @@ module TypingRule = struct
       TRecordExceptionDecl;
       TNonDecl;
       TBitField;
+      TBitFields;
+      ReduceSlicesToCall;
+      TypeOfArrayLength;
     ]
 
   let all_nb = List.length all
