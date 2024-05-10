@@ -1,0 +1,13 @@
+AArch64 V22
+{
+uint32_t t[4] = {1,2,3,4};
+uint32_t u[4];
+0:X0=t; 0:X2=u;
+}
+
+  P0                  ;
+PTRUE P0.D,VL2        ;
+LD1W {Z0.S},P0/Z,[X0] ;
+PTRUE P1.S,VL4        ;
+ST1W {Z0.S},P1,[X2]   ;
+forall u={1,0,3,0}
