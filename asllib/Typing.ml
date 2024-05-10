@@ -516,6 +516,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | T_Bits _ -> ()
     | _ -> conflict loc [ default_t_bits ] t
 
+  (* Begin CheckStructureInteger *)
   let check_structure_integer loc env t () =
     let () =
       if false then
@@ -524,12 +525,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match (Types.make_anonymous env t).desc with
     | T_Int _ -> ()
     | _ -> conflict loc [ integer' ] t
+  (* End *)
 
+  (* Begin CheckConstrainedInteger *)
   let check_constrained_integer ~loc env t () =
     match (Types.make_anonymous env t).desc with
     | T_Int UnConstrained -> fatal_from loc Error.(ConstrainedIntegerExpected t)
     | T_Int (WellConstrained _ | UnderConstrained _) -> ()
     | _ -> conflict loc [ integer' ] t
+  (* End *)
 
   let check_structure_exception loc env t () =
     let t_struct = Types.get_structure env t in
@@ -551,21 +555,25 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | Some (_, GDK_Var) -> false
         | None -> undefined_identifier loc s)
 
+  (* Begin CheckStaticallyEvaluable *)
   let check_statically_evaluable (env : env) e () =
     let e = reduce_expr env e in
     let use_set = use_e e ISet.empty in
     if ISet.for_all (storage_is_pure e env) use_set then ()
     else fatal_from e (Error.UnpureExpression e)
+  (* End *)
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
     if bitwidth_equal (StaticInterpreter.equal_in_env env) n m then ()
     else assumption_failed ()
 
+  (* Begin CheckBitsEqualWidth *)
   let check_bits_equal_width loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
     with TypingAssumptionFailed ->
       fatal_from loc (Error.UnreconciliableTypes (t1, t2))
+  (* End *)
 
   let has_bitvector_structure env t =
     match (Types.get_structure env t).desc with T_Bits _ -> true | _ -> false
@@ -968,11 +976,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let+ () = check_statically_evaluable env e' in
     reduce_expr env e'
 
+  (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
     let t, e' = annotate_expr env e in
     let+ () = check_constrained_integer ~loc env t in
     let+ () = check_statically_evaluable env e' in
     reduce_expr env e'
+  (* End *)
 
   and annotate_constraint ~loc env = function
     | Constraint_Exact e ->

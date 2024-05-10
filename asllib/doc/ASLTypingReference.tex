@@ -34,6 +34,8 @@
 %\newcommand\ProseOrTypeError[0]{or a type error that short-circuits the entire rule}
 \newcommand\ProseOrTypeError[0]{\hyperlink{def-proseortypeerror}{$^{\TypeErrorConfig}$}}
 
+\newcommand\staticbinop[0]{\texttt{binop}}
+
 \newcommand\annotaterel[0]{\hyperlink{def-annotaterel}{\textsf{type}}}
 \newcommand\typearrow[0]{\xrightarrow{\annotaterel}}
 \newcommand\isbuiltinsingular[0]{\hyperlink{def-isbuiltinsingular}{\texttt{is\_builtin\_singular}}}
@@ -50,6 +52,8 @@
 \newcommand\isunderconstrainedinteger[0]{\textsf{under\_constrained\_integer}}
 \newcommand\iswellconstrainedinteger[0]{\textsf{well\_constrained\_integer}}
 \newcommand\unconstrainedinteger[0]{\textsf{unconstrained\_integer}}
+
+\newcommand\checkconstrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{\texttt{check\_constrained\_integer}}}
 
 \newcommand\staticeval[0]{\hyperlink{def-staticeval}{\texttt{static\_eval}}}
 \newcommand\isstaticallyevaluable[0]{\texttt{check\_statically\_evaluable}}
@@ -76,7 +80,10 @@
 \newcommand\bitfieldgetname[0]{\hyperlink{def-bitfieldgetname}{\texttt{bitfield\_get\_name}}}
 \newcommand\pairstomap[0]{\hyperlink{def-pairstomap}{\texttt{pairs\_to\_map}}}
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\texttt{annotate\_field\_init}}}
+\newcommand\annotatestaticconstrainedinteger[0]{\hyperlink{def-annotatestaticconstrainedinteger}{\texttt{annotate\_static\_constrained\_integer}}}
+\newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\texttt{check\_structure\_integer}}}
 
+% Symbolic equivalence testing macros
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
 \newcommand\exprequal[0]{\hyperlink{def-exprequal}{\texttt{expr\_equal}}}
 \newcommand\bitwidthequal[0]{\hyperlink{def-bitwidthequal}{\texttt{bitwidth\_equal}}}
@@ -116,6 +123,8 @@
 \newcommand\typeequivalent[0]{\hyperlink{def-typeequal}{type-equivalent}}
 \newcommand\bitwidthequivalent[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
 \newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
+\newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
+\newcommand\structureofinteger[0]{\hyperlink{def-checkstructureinteger}{structure of an integer}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -128,7 +137,8 @@
 \newcommand\annotateexprlist[1]{\hyperlink{def-annotateexprs}{\texttt{annotate\_exprs}}(#1)}
 \newcommand\annotatelexpr[1]{\textsf{annotate\_lexpr}(#1)}
 \newcommand\annotatearrayindex[0]{\textsf{annotate\_array\_index}}
-\newcommand\annotateslices[0]{\textsf{annotate\_slices}}
+\newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\textsf{annotate\_slice}}}
+\newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\textsf{annotate\_slices}}}
 \newcommand\annotatelocaldeclitem[1]{\hyperlink{def-annotatelocaldeclitem}{\texttt{annotate\_local\_decl\_item}}(#1)}
 \newcommand\annotatestmt[1]{\texttt{annotate\_stmt}(#1)}
 \newcommand\annotateblock[1]{\texttt{annotate\_block}(#1)}
@@ -1688,6 +1698,75 @@ The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
 \end{emptyformal}
 \subsection{Comments}
 
+\section{TypingRule.CheckConstrainedInteger \label{sec:TypingRule.CheckConstrainedInteger}}
+\hypertarget{def-checkconstrainedinteger}{}
+The function
+\[
+  \checkconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \True \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the type $\vt$ is a \constrainedinteger. If so, the result is $\True$, otherwise a type error is returned.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{well-constrained}):
+  \begin{itemize}
+    \item $\vt$ is a well-constrained integer;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{underconstrained}):
+  \begin{itemize}
+    \item $\vt$ is an underconstrained integer;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{unconstrained}):
+  \begin{itemize}
+    \item $\vt$ is an unconstrained integer;
+    \item the result is a type error indicating that a constrained integer type is expected.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{conflicting\_type}):
+  \begin{itemize}
+    \item $\vt$ is not an integer type;
+    \item the result is a type error indicating that the type conflict.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Example}
+
+\CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[well-constrained]{}
+{
+  \checkconstrainedinteger(\tenv, \TInt(\wellconstrained(\Ignore))) \typearrow \True
+}
+\and
+\inferrule[underconstrained]{}
+{
+  \checkconstrainedinteger(\tenv, \TInt(\underconstrained(\Ignore))) \typearrow \True
+}
+\and
+\inferrule[unconstrained]{}
+{
+  \checkconstrainedinteger(\tenv, \TInt(\unconstrained(\Ignore))) \typearrow \\
+  \TypeErrorVal{ConstrainedIntegerExpected}
+}
+\and
+\inferrule[conflicting\_type]{
+  \astlabel(\vt) \neq \TInt
+}
+{
+  \checkconstrainedinteger(\tenv, \vt) \typearrow \TypeErrorVal{TypeConflict}
+}
+\end{mathpar}
+\end{emptyformal}
+\subsection{Comments}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Relations Over Types \label{chap:relationsovertypes}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2850,8 +2929,8 @@ Similarly, we determine the negation of integer constraints.
          \end{itemize}
        \item All of the following apply:
          \begin{itemize}
-         \item $\vtone$ has the structure of a constrained integer;
-         \item $\vt$ is a constrained integer whose constraint is ;
+         \item $\vtone$ has the structure of a \constrainedinteger;
+         \item $\vt$ is a \constrainedinteger\  whose constraint is ;
          \end{itemize}
        \end{itemize}
     \end{itemize}
@@ -2873,8 +2952,8 @@ Similarly, we determine the negation of integer constraints.
          \end{itemize}
        \item All of the following apply:
          \begin{itemize}
-         \item $\vtone$ has the structure of a constrained integer;
-         \item $\vt$ is a constrained integer whose constraint is ;
+         \item $\vtone$ has the structure of a \constrainedinteger;
+         \item $\vt$ is a \constrainedinteger\  whose constraint is ;
          \end{itemize}
        \end{itemize}
     \end{itemize}
@@ -3466,7 +3545,7 @@ In the following example, all the uses of bitvector types are valid:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \tododefine{annotate\_static\_constrained\_integer}(\tenv, \ewidth) \typearrow \ewidthp \OrTypeError\\
+  \annotatestaticconstrainedinteger(\tenv, \ewidth) \typearrow \ewidthp \OrTypeError\\
   \annotatebitfield(\tenv, \ewidthp) \typearrow \bitfieldsp \OrTypeError
 }{
   \annotatetype{\Ignore, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \TBits(\ewidthp, \bitfieldsp)
@@ -3908,6 +3987,7 @@ We also define the following helper rules:
   \item TypingRule.Lit (\secref{TypingRule.Lit})
   \item TypingRule.ExpressionList (\secref{TypingRule.ExpressionList})
   \item TypingRule.TypingRule.ReduceSlicesToCall (\secref{TypingRule.ReduceSlicesToCall})
+  \item TypingRule.StaticConstrainedInteger (\secref{TypingRule.StaticConstrainedInteger})
 \end{itemize}
 
 \section{TypingRule.ELit \label{sec:TypingRule.ELit}}
@@ -5179,6 +5259,41 @@ One of the following applies:
 \end{mathpar}
 \end{emptyformal}
 
+\hypertarget{def-annotatestaticconstrainedinteger}{}
+\section{TypingRule.StaticConstrainedInteger \label{sec:TypingRule.StaticConstrainedInteger}}
+
+The function
+\[
+  \annotatestaticconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \overname{\expr}{\vepp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a statically-evaluable integer expression $\ve$ in the static environment $\tenv$
+and returns the annotated expression $\vepp$.
+A type error is returned, if one is detected.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the expression $\ve$ in $\tenv$ yields $ (\vt, \vep)$ \ProseOrTypeError;
+  \item determining whether $\vt$ is a statically \constrainedinteger\ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item determining whether $\vep$ is statically-evaluable in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item symbolically reducing the expression $\vep$ yields $\vepp$.
+\end{itemize}
+
+\CodeSubsection{\StaticConstrainedIntegerBegin}{\StaticConstrainedIntegerEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep) \OrTypeError\\
+  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\
+  \tododefine{check\_statically\_evaluable}(\tenv, \vep) \typearrow \True \OrTypeError\\
+  \tododefine{reduce\_expr}(\tenv, \vep) \typearrow \vepp
+}{
+  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow \vepp
+}
+\end{mathpar}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Left-Hand-Side Expressions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -5756,9 +5871,18 @@ all of the following apply:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Slices \label{chap:typingslices}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hypertarget{def-annotateslice}{}
+The function
+\[
+  \annotateslice(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs})
+  \aslto
+  \overname{\slice}{\vsp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a slices $\vs$ in the static environment $\tenv$,
+resulting in an annotated slice $\vsp$.
+A type error is returned, if one is detected.
 
-Annotating a slice~\texttt{slice} in an environment $\tenv$
-(\texttt{annotate\_slice env slice}) results in the slicing of the pair \texttt{(offset,length)} and one of the following applies:
+One of the following applies:
 \begin{itemize}
 \item TypingRule.SliceSingle (see \secref{TypingRule.SliceSingle}),
 \item TypingRule.SliceLength (see \secref{TypingRule.SliceLength}),
@@ -5766,63 +5890,75 @@ Annotating a slice~\texttt{slice} in an environment $\tenv$
 \item TypingRule.SliceStar (see \secref{TypingRule.SliceStar}).
 \end{itemize}
 
+\hypertarget{def-annotateslices}{}
+The function
+\[
+  \annotateslices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slices})
+  \aslto
+  \overname{\slice^*}{\slicesp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a list of slices $\slices$ in the static environment $\tenv$,
+resulting in an annotated list of slices $\slicesp$.
+A type error is returned, if one is detected.
+
+The relevant rule is given by:
+\begin{itemize}
+  \item TypingRule.Slices (see \secref{TypingRule.Slices})
+\end{itemize}
+
 \section{TypingRule.SliceSingle \label{sec:TypingRule.SliceSingle}}
 
-  \subsection{Prose}
-   Annotating a slice~\texttt{slice} in an environment $\tenv$
-(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset, length)} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{slice} gives an index \texttt{i};
-   \item \texttt{(offset, length)} is the result of applying TypingRule.SliceLength to \texttt{i, i+:1}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a slice at index \vi, that is $\SliceSingle(\vi)$;
+  \item annotating the slice at offset $\vi$ of length $1$ yields $\vsp$ \ProseOrTypeError.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\SliceSingleBegin}{\SliceSingleEnd}{../Typing.ml}
+\CodeSubsection{\SliceSingleBegin}{\SliceSingleEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateslice(\SliceLength(\vi, \eliteral{1})) \typearrow \vsp \OrTypeError
+}{
+  \annotateslice(\tenv, \SliceSingle(\vi)) \typearrow \vsp
+}
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-    \identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.
+  \identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.
 
 \section{TypingRule.SliceLength \label{sec:TypingRule.SliceLength}}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a slice of length $\elength$ and offset $\eoffset$, that is, $\SliceLength(\eoffset, \elength)$;
+  \item annotating the expression $\eoffset$ in $\tenv$ yields $(\toffset, \eoffsetp)$ \ProseOrTypeError;
+  \item annotating the statically-evaluable \constrainedinteger\ expression $\elength$ in $\tenv$ yields
+  $\elength$ \ProseOrTypeError;
+  \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$ \ProseOrTypeError;
+  \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
+   $\SliceLength(\eoffsetp, \elength')$.
+\end{itemize}
 
-  \subsection{Prose}
-   Annotating a slice~\texttt{slice} in an environment $\tenv$
-(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,length)} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{slice} gives \texttt{offset} and \texttt{length};
-   \item \texttt{t\_offset, offset'} is the result of annotating \texttt{offset} in $\tenv$;
-   \item \texttt{t\_length, length'} is the result of annotating \texttt{length} in $\tenv$;
-   \item \texttt{t\_offset} has the structure of an integer type;
-   \item \texttt{t\_length} has the structure of an integer type;
-   \item \texttt{length} is statically evaluable.
-   \end{itemize}
+\subsection{Example}
 
-  \subsection{Example}
-
-
-    \CodeSubsection{\SliceLengthBegin}{\SliceLengthEnd}{../Typing.ml}
+\CodeSubsection{\SliceLengthBegin}{\SliceLengthEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-\newcommand\eoffset[0]{\texttt{offset}}
-\newcommand\elength[0]{\texttt{length}}
-\newcommand\toffset[0]{\texttt{t\_offset}}
-\newcommand\tlength[0]{\texttt{t\_length}}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-\annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffset')\\
-\annotateexpr{\tenv, \elength} \typearrow (\tlength, \elength')\\
-\tstruct(\tenv, \toffset) \typearrow \TInt(\Ignore)\\
-\tstruct(\tenv, \tlength) \typearrow \TInt(\Ignore)\\
-\isstaticallyevaluable(\tenv, \elength)
-}
-{
-\annotateslices(\tenv, \texttt{Slice\_Length}(\eoffset, \elength)) \typearrow \texttt{Slice\_Length}(\eoffset, \elength')
+  \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp) \OrTypeError\\
+  \annotatestaticconstrainedinteger(\tenv, \elength) \typearrow \elengthp \OrTypeError\\
+  \checkstructureinteger(\tenv, \eoffsetp, \toffset) \typearrow \True \OrTypeError
+}{
+  \annotateslice(\tenv, \SliceLength(\eoffset, \elength)) \typearrow \SliceLength(\eoffsetp, \elength')
 }
 \end{mathpar}
 \end{emptyformal}
@@ -5831,51 +5967,85 @@ Annotating a slice~\texttt{slice} in an environment $\tenv$
 
 \section{TypingRule.SliceRange \label{sec:TypingRule.SliceRange}}
 
-  \subsection{Prose}
-      Annotating a slice~\texttt{slice} in an environment $\tenv$
-(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
-length)} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{slice} gives a range \texttt{(j, i)};
-   \item \texttt{pre\_length} is \texttt{i +: j-i+1};
-   \item \texttt{offset, length} is the result of applying the rule TypingRule.SliceLength to \texttt{i,pre\_length}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a slice for the range \texttt{(j, i)}, that is $\SliceRange(\vj, \vi)$;
+  \item $\prelength$ is \texttt{i+:(j-i+1)};
+  \item annotating the slice at offset $\vi$ of length $\prelength$ yields $\vsp$ \ProseOrTypeError.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\SliceRangeBegin}{\SliceRangeEnd}{../Typing.ml}
+\CodeSubsection{\SliceRangeBegin}{\SliceRangeEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \staticbinop(\MINUS, \vi, \vi) \typearrow \prelengthp\\
+  \staticbinop(\PLUS, \prelengthp, \eliteral{1}) \typearrow \prelength\\
+  \annotateslice(\SliceLength(\vi, \prelength)) \typearrow \vsp \OrTypeError
+}{
+  \annotateslice(\tenv, \SliceRange(\vj, \vi)) \typearrow \vsp
+}
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-    \identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i +: j-i+1]}.
+    \identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i+:(j-i+1)]}.
 
 \section{TypingRule.SliceStar \label{sec:TypingRule.SliceStar}}
 
-  \subsection{Prose}
-      Annotating a slice~\texttt{slice} in an environment $\tenv$
-(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
-length)} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{slice} gives \texttt{(factor, pre\_length)};
-   \item \texttt{pre\_offset} is \texttt{factor * pre\_length};
-   \item \texttt{offset, length} is the result of applying the rule TypingRule.SliceLength to \texttt{(pre\_offset, pre\_length)}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a slice \texttt{[factor *: pre\_length]}, that is, $\SliceStar(\factor, \prelength)$;
+  \item $\preoffset$ is $\factor * \prelength$;
+  \item annotating the slice at offset $\preoffset$ of length $\prelength$ yields $\vsp$ \ProseOrTypeError.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\SliceStarBegin}{\SliceStarEnd}{../Typing.ml}
+\CodeSubsection{\SliceStarBegin}{\SliceStarEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \staticbinop(\MUL, \factor, \prelength) \typearrow \preoffset\\
+  \annotateslice(\SliceLength(\preoffset, \prelength)) \typearrow \vsp \OrTypeError
+}{
+  \annotateslice(\tenv, \SliceStar(\factor, \prelength)) \typearrow \vsp
+}
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
     \identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}
+
+\section{TypingRule.Slices \label{sec:TypingRule.Slices}}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the slices in $\slices$ from left to right yields the list of annotated slices $\slicesp$ \ProseOrTypeError.
+\end{itemize}
+
+\subsection{Example}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vs\in\slices: \annotateslice(\tenv, \vs) \typearrow \vsp \OrTypeError\\\\
+  \slicesp = [\vs\in\slices: \vsp]
+}{
+  \annotateslices(\tenv, \slices) \typearrow \slicesp
+}
+\end{mathpar}
+\end{emptyformal}
+
+\subsection{Comments}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Patterns}
@@ -8012,7 +8182,7 @@ evaluates an expression $\ve$, from a subset of the set of all expressions, in e
   \inferrule[e\_binop]{
     \staticeval(\tenv, \veone) \typearrow \vvone\\
     \staticeval(\tenv, \vetwo) \typearrow \vvtwo\\
-    \binop(\op, \vvone, \vvtwo) \typearrow \vv
+    \staticbinop(\op, \vvone, \vvtwo) \typearrow \vv
   }
   {
     \staticeval(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow \vv
@@ -8826,7 +8996,7 @@ multiplies two polynomials.
   }
   \and
   \inferrule[ebinop\_literals]{
-    \binop(\op, \vlone, \vltwo) \typearrow k\\
+    \staticbinop(\op, \vlone, \vltwo) \typearrow k\\
     \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto k \} )
   }
   {
@@ -9608,6 +9778,54 @@ One of the following applies:
 }
 {
   \typeofarraylength(\tenv, \ArrayLengthExpr(\ve)) \typearrow \TInt(\wellconstrained([\vc]))
+}
+\end{mathpar}
+
+\hypertarget{def-checkstructureinteger}{}
+\section{TypingRule.CheckStructureInteger \label{sec:TypingRule.CheckStructureInteger}}
+The function
+\[
+  \checkstructureinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
+  \True \cup \TTypeError
+\]
+returns $\True$ is $\vt$ is has the \structure\ an integer type and a type error otherwise.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item determining the \structure\ of $\vt$ yields $\vtp$ \ProseOrTypeError;
+    \item $\vtp$ is an integer type;
+    \item the result is $\True$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item determining the \structure\ of $\vt$ yields $\vtp$ \ProseOrTypeError;
+    \item $\vtp$ is not an integer type;
+    \item the result is a type error indicating that $\vt$ was expected to have the \structure\ of an integer.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\CheckStructureIntegerBegin}{\CheckStructureIntegerEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \tstruct(\vt) \typearrow \vtp \OrTypeError\\
+  \astlabel(\vtp) = \TInt
+}
+{
+  \checkstructureinteger(\tenv, \vt) \typearrow \True
+}
+\and
+\inferrule[error]{
+  \tstruct(\vt) \typearrow \vtp\\
+  \astlabel(\vtp) \neq \TInt
+}
+{
+  \checkstructureinteger(\tenv, \vt) \typearrow \TypeErrorVal{ExpectedIntegerStructure}
 }
 \end{mathpar}
 
