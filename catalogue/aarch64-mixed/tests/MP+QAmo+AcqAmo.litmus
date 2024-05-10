@@ -1,8 +1,9 @@
 AArch64 MP+QAmo+AcqAmo
+Hash=d29be02eee3b8843aec5acac62c17d53
 {
-uint64_t x; uint64_t 1:X2; uint64_t 1:X0;
+uint64_t x;
 
-0:X0=0x101010101010101; 0:X1=x;
+uint64_t 0:X0=0x101010101010101; 0:X1=x;
 1:X1=x; 1:X4=0x02020202
 }
  P0             | P1              ;

@@ -4,10 +4,11 @@ Generator=diyone7 (version 7.54+02(dev))
 Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
 Com=Rf Fr
 Orig=PodWWPL.w0 PosWWL.w0q0 Rfeq0A.w4 PodRRA.w4P Fre
+Hash=6b21a7d904eb132d698172f5f3184853
 {
-uint64_t y; uint64_t x; uint64_t 1:X3; uint64_t 1:X0;
+uint64_t y; uint64_t x; uint64_t 1:X3;
 
-0:X1=x; 0:X2=0x1010101; 0:X3=y; 0:X4=0x202020202020202;
+0:X1=x; 0:X2=0x1010101; 0:X3=y; uint64_t 0:X4=0x202020202020202;
 1:X1=y; 1:X4=x;
 }
  P0           | P1           ;
