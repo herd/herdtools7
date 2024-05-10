@@ -129,7 +129,7 @@
 \newcommand\annotatelexpr[1]{\textsf{annotate\_lexpr}(#1)}
 \newcommand\annotatearrayindex[0]{\textsf{annotate\_array\_index}}
 \newcommand\annotateslices[0]{\textsf{annotate\_slices}}
-\newcommand\annotatelocaldeclitem[1]{\texttt{annotate\_local\_decl\_item}(#1)}
+\newcommand\annotatelocaldeclitem[1]{\hyperlink{def-annotatelocaldeclitem}{\texttt{annotate\_local\_decl\_item}}(#1)}
 \newcommand\annotatestmt[1]{\texttt{annotate\_stmt}(#1)}
 \newcommand\annotateblock[1]{\texttt{annotate\_block}(#1)}
 \newcommand\inlinesetter[1]{\texttt{setter\_should\_reduce\_to\_call\_s}(#1)}
@@ -138,7 +138,8 @@
 \newcommand\reduceconstants[1]{\texttt{reduce\_constants}(#1)}
 \newcommand\declarelocalconstant[1]{\texttt{declare\_local\_constant}(#1)}
 \newcommand\annotatelocaldeclitemuninit[1]{\texttt{annotate\_local\_decl\_item\_uninit}(#1)}
-\newcommand\checkvarnotinenv[1]{\texttt{check\_var\_not\_in\_env}(#1)}
+\newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\texttt{check\_var\_not\_in\_env}}(#1)}
+\newcommand\varinenv[1]{\hyperlink{def-varinenv}{\texttt{var\_in\_env}}(#1)}
 \newcommand\annotatesubprogram[1]{\texttt{annotate\_subprogram}(#1)}
 \newcommand\declaredecl[1]{\texttt{annotate\_decl}(#1)}
 \newcommand\annotatespec[1]{\texttt{annotate\_spec}(#1)}
@@ -159,6 +160,7 @@
 \newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\texttt{check\_no\_duplicates}}}
 \newcommand\reduceslicestocall[0]{\hyperlink{def-reduceslicestocall}{\texttt{reduce\_slices\_to\_call}}}
 \newcommand\typeofarraylength[0]{\hyperlink{def-typeofarraylength}{\texttt{type\_of\_array\_length}}}
+\newcommand\addlocal[0]{\hyperlink{def-addlocal}{\texttt{add\_local}}}
 
 % Symbolic domain subsumption
 \newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
@@ -403,7 +405,7 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 \begin{array}{rcl}
 \staticenvs 	          &\triangleq& \mathbb{G} \times \mathbb{L}\\
 \mathbb{G} 	            &\triangleq& \declaredtypes \times \constantvalues \times \globalstoragetypes\\
-  			                & & \times\ \subtypes \times \subprograms \times \subprogramrenamings\\
+  			                &          & \times\ \subtypes \times \subprograms \times \subprogramrenamings\\
 \mathbb{L} 	            &\triangleq& \constantvalues \times \localstoragetypes \times \returntype\\
 \hline
 \declaredtypes	        &\triangleq& \identifier \partialto \ty\\
@@ -4489,17 +4491,6 @@ All of the following apply:
 
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 
-  % \item For each field named $\name$ associated with the expression $\vep$ in
-  %   $\fieldtypes$, all of the following apply:
-  %   \begin{itemize}
-  %   \item $(\vtp,\vepp)$ is the result of annotating $\vep$ in $\tenv$;
-  %   \item $\tspecp$ is the type associated to $\name$ in $\fieldtypes$;
-  %   \item $\vtp$ \typesatisfies\  $\tspecp$ as per \secref{TypingRule.TypeSatisfaction};
-  %   \item $\fieldsp$ associates $\name$ to $\vepp$;
-  %   \end{itemize}
-  % \item $\vt$ is $\tty$;
-  % \item $\newe$ is the record expression of type $\tty$ with fields $\fieldsp$.
-
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
@@ -4524,18 +4515,16 @@ All of the following apply:
   This is related to \identr{WBCQ}.
 
 \section{TypingRule.EGetRecordField \label{sec:TypingRule.EGetRecordField}}
-
-  \subsection{Prose}
-  The result of annotating the expression $\ve$ in $\tenv$ is
-$(\vt, \newe)$ and all of the following apply:
-  \begin{itemize}
-  \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
-  \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
-  \item \texttt{t\_e1} has an \underlyingtype\ of an exception or record type with fields $\fields$;
-  \item \texttt{field\_name} is declared in $\fields$;
-  \item $\vt$ is the type corresponding to \texttt{field\_name} in $\fields$;
-  \item $\newe$ is the access of field \texttt{field\_name} on expression \vetwo.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item $(\vteone, \vetwo)$ is the result of annotating $\veone$ in $\tenv$;
+  \item $\vteone$ has an \underlyingtype\ of an exception or record type with fields $\fields$;
+  \item $\fieldname$ is declared in $\fields$;
+  \item $\vt$ is the type corresponding to $\fieldname$ in $\fields$;
+  \item $\newe$ is the access of field $\fieldname$ on expression $\vetwo$.
+\end{itemize}
 
 \subsection{Example}
 
@@ -4545,12 +4534,13 @@ $(\vt, \newe)$ and all of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-\annotateexpr{\tenv, \veone} \typearrow (\texttt{t\_e1}, \vetwo)\\
-\makeanonymous(\tenv, \texttt{t\_e1}) \typearrow L(\fields)\\
-L \in \{\TRecord, \TException\}\\
-(\fieldname,\vt) \in \fields
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\
+  \makeanonymous(\tenv, \vteone) \typearrow L(\fields) \OrTypeError\\
+  L \in \{\TRecord, \TException\}\\
+  (\fieldname,\vt) \in \fields
+}{
+  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \EGetField(\fieldname, \vetwo))
 }
-{\annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \EGetField(\fieldname, \vetwo))}
 \end{mathpar}
 \end{emptyformal}
 
@@ -4562,12 +4552,12 @@ L \in \{\TRecord, \TException\}\\
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
-  \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
-  \item \texttt{t\_e1} has the structure of an exception or record type with fields $\fields$;
-  \item \texttt{t\_e2} has the structure of an exception or record type with fields $\fields$;
-  \item \texttt{t\_e2} is an Exception or a Record type with fields $\fields$;
-  \item \texttt{field\_name} is not declared in $\fields$;
+  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item \texttt{\vteone, $\vetwo$} is the result of annotating $\veone$ in $\tenv$;
+  \item $\vteone$ has the structure of an exception or record type with fields $\fields$;
+  \item $\vtetwo$ has the structure of an exception or record type with fields $\fields$;
+  \item $\vtetwo$ is an Exception or a Record type with fields $\fields$;
+  \item $\fieldname$ is not declared in $\fields$;
   \item an error ``\texttt{Bad Field}'' is raised.
   \end{itemize}
 
@@ -4589,10 +4579,10 @@ $(\vt, \newe)$ and all of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
-  \item \texttt{t\_e1} has the structure a bitvector type with bitfields $\bitfields$;
-  \item \texttt{t\_e2} has the structure a bitvector type with bitfields $\bitfields$;
-  \item \texttt{field\_name} is not declared in $\bitfields$;
+  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item $\vteone$ has the structure a bitvector type with bitfields $\bitfields$;
+  \item $\vtetwo$ has the structure a bitvector type with bitfields $\bitfields$;
+  \item $\fieldname$ is not declared in $\bitfields$;
   \item an error ``\texttt{Bad Field}'' is raised.
   \end{itemize}
 
@@ -4614,9 +4604,9 @@ $(\vt, \newe)$ and all of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
    \begin{itemize}
-   \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
-   \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
-   \item \texttt{t\_e1} does not have the structure of a record or an exception or a bitvector type;
+   \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+   \item \texttt{\vteone, e2} is the result of annotating $\veone$ in $\tenv$;
+   \item $\vteone$ does not have the structure of a record or an exception or a bitvector type;
    \item an error ``\texttt{Conflicting Types}'' is raised.
    \end{itemize}
 
@@ -4638,11 +4628,11 @@ $(\vt, \newe)$ and all of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
-  \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
-  \item the \underlyingtype\ of \texttt{t\_e1} is a bitvector type with bitfields $\bitfields$;
-  \item \texttt{field\_name} is declared in $\bitfields$;
-  \item $\slices$ gives the slices corresponding to the bitfield \texttt{field\_name}
+  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item \texttt{\vteone, e2} is the result of annotating $\veone$ in $\tenv$;
+  \item the \underlyingtype\ of $\vteone$ is a bitvector type with bitfields $\bitfields$;
+  \item $\fieldname$ is declared in $\bitfields$;
+  \item $\slices$ gives the slices corresponding to the bitfield $\fieldname$
     in \\ $\bitfields$;
   \item \texttt{e3} denotes the slicing of the expression \vetwo by the slices $\slices$;
   \item $(\vt, \newe)$ is the result of annotating \texttt{e3}.
@@ -4657,8 +4647,8 @@ $(\vt, \newe)$ and all of the following apply:
     \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-\annotateexpr{\tenv, \veone} \typearrow (\texttt{t\_e1}, \vetwo)\\
-\makeanonymous(\tenv, \texttt{t\_e1}) \typearrow \TBits(\Ignore, \bitfields)\\
+\annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo)\\
+\makeanonymous(\tenv, \vteone) \typearrow \TBits(\Ignore, \bitfields)\\
 \fieldname = \texttt{BitField\_Simple}(\Ignore, \slices) \in \bitfields\\
 \texttt{e3} = \ESlice(\vetwo, \slices)\\
 \annotateexpr{\tenv, \texttt{e3}} \typearrow (\vt, \newe)
@@ -4675,15 +4665,15 @@ $(\vt, \newe)$ and all of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes the access of field \texttt{field\_name} on expression $\veone$;
-  \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
-  \item \texttt{t\_e1} has the structure of a bitvector type with bitfields $\bitfields$;
-  \item \texttt{field\_name} is declared in $\bitfields$;
-  \item $\slices$ gives the slices corresponding to the bitfield \texttt{field\_name} in \\
+  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item \texttt{\vteone, e2} is the result of annotating $\veone$ in $\tenv$;
+  \item $\vteone$ has the structure of a bitvector type with bitfields $\bitfields$;
+  \item $\fieldname$ is declared in $\bitfields$;
+  \item $\slices$ gives the slices corresponding to the bitfield $\fieldname$ in \\
     $\bitfields$;
   \item \texttt{e3} denotes the slicing of the expression \vetwo by the slices $\slices$;
   \item \texttt{t4, e4} is the result of annotating \texttt{e3} in $\tenv$;
-  \item $\bitfieldsp$ gives the bitfields corresponding to the bitfield \texttt{field\_name}
+  \item $\bitfieldsp$ gives the bitfields corresponding to the bitfield $\fieldname$
     in $\bitfields$;
   \item $\vt$ is the bitvector type with the width of \texttt{t4} and the bitfields $\bitfieldsp$
   \item $\newe$ is \texttt{e4}.
@@ -4707,14 +4697,14 @@ $(\vt, \newe)$ and all of the following apply:
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
   \item $\ve$ denotes \texttt{e1, field\_name};
-  \item \texttt{t\_e1, e2} is the result of annotating $\veone$ in $\tenv$;
-  \item \texttt{t\_e1} has the \underlyingtype\ of a bitvector with bitfields $\bitfields$;
-  \item \texttt{field\_name} is declared in $\bitfields$;
-  \item $\slices$ gives the slices corresponding to the bitfield \texttt{field\_name} in \\
+  \item $(\vteone, \vetwo)$ is the result of annotating $\veone$ in $\tenv$;
+  \item $\vteone$ has the \underlyingtype\ of a bitvector with bitfields $\bitfields$;
+  \item $\fieldname$ is declared in $\bitfields$;
+  \item $\slices$ gives the slices corresponding to the bitfield $\fieldname$ in \\
     $\bitfields$;
-  \item $\vt$ is the type associated with \texttt{field\_name} in $\bitfields$;
-  \item \texttt{t\_e3,e3} is the result of annotating \texttt{e2,slices} in $\tenv$;
-  \item $\vt$ is the type corresponding to the bitfield \texttt{field\_name} in $\bitfields$;
+  \item $\vt$ is the type associated with $\fieldname$ in $\bitfields$;
+  \item \texttt{t\_e3,e3} is the result of annotating \texttt{\vetwo,slices} in $\tenv$;
+  \item $\vt$ is the type corresponding to the bitfield $\fieldname$ in $\bitfields$;
   \item \texttt{t\_e3} \typesatisfies\  $\vt$ in $\tenv$;
   \item $\newe$ is \texttt{e3}.
   \end{itemize}
@@ -4727,8 +4717,8 @@ $(\vt, \newe)$ and all of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\texttt{t\_e1}, \vetwo)\\
-  \makeanonymous(\tenv, \texttt{t\_e1}) \typearrow \TBits(\Ignore, \bitfields)\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo)\\
+  \makeanonymous(\tenv, \vteone) \typearrow \TBits(\Ignore, \bitfields)\\
   \fieldname = \texttt{BitField\_Type}(\Ignore, \slices, \vt) \in \bitfields\\
   \annotateexpr{\ESlice(\vetwo, \slices)} \typearrow (\texttt{t\_e3}, \texttt{e3})\\
   \typesat(\tenv, \texttt{t\_e3}, \vt)
@@ -5378,15 +5368,15 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices $\slices$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector type;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
    \item \texttt{width} is the width of the slices $\slices$ in $\tenv$;
    \item $\vt$ is the bitvector type of width \texttt{width};
    \item \texttt{te} \typesatisfies\  $\vt$;
    \item \texttt{slices2} is the result of annotating $\slices$ in $\tenv$;
-   \item \texttt{new\_le} is the slicing of \texttt{le2} by \texttt{slices2}.
+   \item \texttt{new\_le} is the slicing of $\vletwo$ by \texttt{slices2}.
    \end{itemize}
 
   \subsection{Example}
@@ -5423,11 +5413,11 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices $\slices$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} has the structure of an array type of size $\size$ and item type $\vt$;
    \item \texttt{te} \typesatisfies\  $\vt$;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
   % ROMAN: The following is not what the code does so I replaced it with subsequent item.
   %  \item One of the following applies:
   %    \begin{itemize}
@@ -5439,7 +5429,7 @@ all of the following apply:
    \item $(\tindexp, \eindexp)$ is the result of annotating $\eindex$ in $\tenv$;
    \item $\wantedtindex$ \typesatisfies\  $\tindexp$, which guarantees that the index
    is within the bounds of the array;
-   \item \texttt{new\_le} is an access to array \texttt{le2} at index $\eindexp$.
+   \item \texttt{new\_le} is an access to array $\vletwo$ at index $\eindexp$.
    \end{itemize}
 
   \subsection{Example}
@@ -5476,9 +5466,9 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields $\fields$;
    \item \texttt{field} is not declared in $\fields$;
    \item an error ``\texttt{Bad Field}'' is raised.
@@ -5503,13 +5493,13 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields $\fields$;
    \item \texttt{field} is bound to type $\vt$ in $\fields$;
    \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{new\_le} is the access to the field \texttt{field} in \texttt{le2}.
+   \item \texttt{new\_le} is the access to the field \texttt{field} in $\vletwo$.
    \end{itemize}
 
   \subsection{Example}
@@ -5545,9 +5535,9 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
    \item \texttt{field} is not declared in $\bitfields$;
    \item an error ``\texttt{Bad Field}'' is raised.
@@ -5572,9 +5562,9 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
    \item \texttt{field} is declared in $\bitfields$;
    \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
@@ -5582,8 +5572,8 @@ all of the following apply:
    \item $\vw$ is the width of $\slices$;
    \item $\vt$ is the bitvector type of width $\vw$;
    \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{le2} is the slicing of \texttt{le1} by $\slices$;
-   \item \texttt{new\_le} is the result of annotating \texttt{le2} in $\tenv$.
+   \item $\vletwo$ is the slicing of $\vleone$ by $\slices$;
+   \item \texttt{new\_le} is the result of annotating $\vletwo$ in $\tenv$.
    \end{itemize}
 
   \subsection{Example}
@@ -5622,9 +5612,9 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
    \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
       $\bitfields$;
@@ -5632,8 +5622,8 @@ all of the following apply:
    \item $\bitfieldsp$ gives the bitfields corresponding to \texttt{field} in $\bitfields$;
    \item $\vt$ is the bitvector type of width $\vw$ and bitfields $\bitfieldsp$;
    \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{le2} is the slicing of \texttt{le1} by $\slices$;
-   \item \texttt{new\_le} is the result of annotating \texttt{le2} in $\tenv$.
+   \item $\vletwo$ is the slicing of $\vleone$ by $\slices$;
+   \item \texttt{new\_le} is the result of annotating $\vletwo$ in $\tenv$.
    \end{itemize}
 
   \subsection{Example}
@@ -5672,9 +5662,9 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
    \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
       $\bitfields$;
@@ -5684,8 +5674,8 @@ all of the following apply:
       $\bitfields$;
    \item $\vt$ \typesatisfies\  \texttt{t'};
    \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{le2} is the slicing of \texttt{le1} by $\slices$;
-   \item \texttt{new\_le} is the result of annotating \texttt{le2} in $\tenv$.
+   \item $\vletwo$ is the slicing of $\vleone$ by $\slices$;
+   \item \texttt{new\_le} is the result of annotating $\vletwo$ in $\tenv$.
    \end{itemize}
 
   \subsection{Example}
@@ -5725,9 +5715,9 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in $\tenv$;
-   \item \texttt{le2} is the result of annotating \texttt{le1} in $\tenv$;
+   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
+   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
+   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
    \item \texttt{t\_le1} does not have the structure of a record, or an exception or a bitvector type;
    \item an error ``\texttt{Conflicting Types}'' is raised.
    \end{itemize}
@@ -6045,20 +6035,20 @@ Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything within the range given by
       expressions $\veone$ and \vetwo;
-   \item \texttt{t\_e1, e1'} is the result of annotating $\veone$ in $\tenv$;
-   \item \texttt{t\_e2, e2'} is the result of annotating \vetwo in $\tenv$;
+   \item \texttt{\vteone, e1'} is the result of annotating $\veone$ in $\tenv$;
+   \item \texttt{\vtetwo, e2'} is the result of annotating $\vetwo$ in $\tenv$;
    \item e1' and e2' are compile-time constant expressions;
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
            \begin{itemize}
-           \item both \texttt{t\_e1} and \texttt{t\_e2} have the structure of an integer;
+           \item both $\vteone$ and $\vtetwo$ have the structure of an integer;
            \item \texttt{new\_p} is the pattern which matches anything within the range given by
       expressions $\veonep$ and $\vetwop$.
            \end{itemize}
      \item All of the following apply:
            \begin{itemize}
-           \item both \texttt{t\_e1} and \texttt{t\_e2} have the structure of a real;
+           \item both $\vteone$ and $\vtetwo$ have the structure of a real;
            \item \texttt{new\_p} is the pattern which matches anything within the range given by
       expressions $\veonep$ and $\vetwop$.
            \end{itemize}
@@ -6230,9 +6220,26 @@ Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Local Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hypertarget{def-annotatelocaldeclitem}{}
+The function
+\[
+  \begin{array}{c}
+  \annotatelocaldeclitem{
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\localdeclkeyword}{\ldk} \aslsep
+    \overname{\localdeclitem}{\ldi} \aslsep
+    \overname{\ty}{\tty}
+   } \aslto\\
+  (\overname{\staticenvs}{\newtenv} \aslsep \overname{\localdeclitem}{\newldi})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \end{array}
+\]
+annotates a local declaration item $\ldi$ with a local declaration keyword $\ldk$, given a type $\tty$,
+in a static environment $\tenv$ results in $(\newenv, \newldi)$ where $\newenv$ is the modified
+static environment and $\newldi$ is the annotated local declaration item.
+A type error is returned, if one is detected.
 
-Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type $\tty$, in an
-environment $\tenv$ (\annotatelocaldeclitem{\ldk, \ldi, \tty}) results in \texttt{new\_env, new\_ldi} and one of the following applies:
+One of the following applies:
 \begin{itemize}
 \item TypingRule.LDDiscard (see \secref{TypingRule.LDDiscard}),
 \item TypingRule.LDVar (see \secref{TypingRule.LDVar}),
@@ -6244,29 +6251,25 @@ This is related to \identr{YSPM}.
 
 \section{TypingRule.LDDiscard \label{sec:TypingRule.LDDiscard}}
 
-  \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type $\tty$, in
-an environment $\tenv$ results in \texttt{new\_env, new\_ldi} and all of
-the following apply:
-   \begin{itemize}
-   \item \texttt{ldi} is a local declaration which can be discarded;
-   \item $\newenv$ is $\tenv$;
-   \item \texttt{new\_ldi} is \texttt{ldi}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ldi$ is a local declaration which can be discarded, that is, $\LDIDiscard(\None)$;
+  \item $\newenv$ is $\tenv$;
+  \item $\newldi$ is $\ldi$.
+\end{itemize}
 
-  \subsection{Example}
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDDiscard.asl}
+\subsection{Example}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDDiscard.asl}
 
-
-    \CodeSubsection{\LDDiscardBegin}{\LDDiscardEnd}{../Typing.ml}
+\CodeSubsection{\LDDiscardBegin}{\LDDiscardEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \ldi = \texttt{LDI\_Discard}(\None)\\
-  }
-  {\annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} \typearrow (\tenv, \ldi)}
+\inferrule{}{
+  \annotatelocaldeclitem{\tenv, \LDIDiscard(\None), \ldk, \tty} \typearrow (\tenv, \ldi)
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -6274,34 +6277,29 @@ the following apply:
 
 \section{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
 
-  \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type $\tty$, in
-an environment $\tenv$ results in \texttt{new\_env, new\_ldi} and all of
-the following apply:
-   \begin{itemize}
-   \item \texttt{ldi} denotes a variable $\vx$;
-   \item $\vx$ is not declared in $\tenv$;
-   \item $\newenv$ is $\tenv$ modified so that $\vx$ is locally declared of type $\tty$;
-   \item \texttt{new\_ldi} is the declaration of variable $\vx$ with type $\tty$.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
+  \item determing whether $\vx$ is not declared in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item $\newenv$ is $\tenv$ modified so that $\vx$ is locally declared of type $\tty$;
+  \item $\newldi$ is the declaration of variable $\vx$.
+\end{itemize}
 
-  \subsection{Example}
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDVar.asl}
+\subsection{Example}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDVar.asl}
 
-
-    \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
+\CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \ldi = \texttt{LDI\_Var}(\vx)\\
-    L^\tenv.\localstoragetypes(\vx) = \bot\\
-    \newtenv = (G^\tenv, L^\tenv.\localstoragetypes[\vx \mapsto (\tty, \ldk)])
-  }
-  {
-    \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} \typearrow (\newtenv, \texttt{LDI\_Var}(\vx))
-  }
+\inferrule{
+  \checkvarnotinenv{\tenv, \vx} \typearrow \True \OrTypeError\\
+  \addlocal(\tenv, \vx, \ldk) \typearrow \newtenv
+}{
+  \annotatelocaldeclitem{\tenv, \LDIVar(\vx), \ldk, \tty} \typearrow (\newtenv, \LDIVar(\vx))
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -6310,37 +6308,34 @@ This is related to \identr{YSPM}, \identd{FXST}.
 
 \section{TypingRule.LDTyped\label{sec:TypingRule.LDTyped}}
 
-  \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi} with a local declaration
-    keyword \texttt{ldk}, given a type $\tty$, in an
-    environment $\tenv$ results in \texttt{new\_env, new\_ldi} and all of
-    the following apply:
-    \begin{itemize}
-      \item \texttt{ldi} denotes a local declaration item \texttt{ldi'} and a type $\vt$;
-      \item $\vt$ can be initialized with $\tty$ in $\tenv$;
-      \item $\newenv$, \texttt{new\_ldi'} is the result of the annotation of
-        \texttt{ldi'} with the local declaration keyword \texttt{ldk}, given
-        the type $\vt$, in the environment $\tenv$;
-      \item \texttt{new\_ldi} is the local declaration denoting \texttt{new\_ldi'} and the type $\vt$.
-    \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ldi$ denotes a local declaration item $\ldip$ with local declaration keyword $\ldk$
+  and a type $\vt$, that is $\LDITyped(\ldip, \vt)$;
+  \item annotating the type $\vt$ in $\tenv$ yields $\vtp$ \ProseOrTypeError;
+  \item determining whether $\vtp$ can be initialized with $\tty$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item anotating the local declaration item $\ldip$ with the local declaration keyword $\ldk$, given
+  the type $\vt$, in the environment $\tenv$, yields $(\newtenv,\newldip)$;
+  \item $\newldi$ is the local declaration denoting $\newldip$ and the type $\vtp$, that is, $\LDITyped(\newldip, \vtp)$.
+\end{itemize}
 
-    \subsection{Example}
-      \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTyped.asl}
+\subsection{Example}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTyped.asl}
 
-
-      \CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Typing.ml}
+\CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \ldi = \texttt{LDI\_Typed}(\ldi', \vt)\\
-  \canbeinitializedwith(\tenv, \vt, \tty)\\
-  \annotatelocaldeclitem{\tenv, \ldi', \ldk, \vt} \typearrow (\newtenv, \newldi')\\
-  \newldi = \texttt{LDI\_Typed}(\newldi', \vt)\\
+  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\
+  \canbeinitializedwith(\tenv, \vtp, \tty) \typearrow \True \OrTypeError\\
+  \annotatelocaldeclitem{\tenv, \ldip, \ldk, \vtp} \typearrow (\newtenv, \newldip) \OrTypeError
 }
 {
-  \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} \typearrow (\newtenv, \newldi)
+  \annotatelocaldeclitem{\tenv, \LDITyped(\ldip, \vt), \ldk, \tty} \typearrow \\
+  (\newtenv, \LDITyped(\newldip, \vtp))
 }
 \end{mathpar}
 \end{emptyformal}
@@ -6349,40 +6344,40 @@ This is related to \identr{YSPM}, \identd{FXST}.
 
 \section{TypingRule.LDTuple\label{sec:TypingRule.LDTuple}}
 
-  \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type $\tty$, in
-an environment $\tenv$ results in \texttt{new\_env, new\_ldi} and all of
-the following apply:
-  \begin{itemize}
-  \item \texttt{ldi} denotes a list \texttt{ldis};
-  \item $\tty$ has the structure of a tuple type of the same length as~\texttt{ldis};
-  \item $\newenv$ is $\tenv$ modified so that each element in \texttt{ldis} is annotated with the corresponding type in $\tty$;
-  \item \texttt{new\_ldi} is \texttt{ldis} where each element is declared with
-the corresponding type in  $\tty$.
-  \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ldi$ denotes a tuple of local declaration items $\ldi_{1..k}$, that is, $\LDITuple(\ldi_{1..k})$;
+  \item determining the \structure\ of $\tty$ in $\tenv$ yields $\vtp$ \ProseOrTypeError;
+  \item determining whether $\vtp$ is a tuple type with $k$ elements yields $\True$ \ProseOrTypeError;
+  \item annotating the local declaration items in $\ldis$ from right to left with their corresponding
+  (that is, with the same index) types $t_{1..k}$ in $\tenv$,
+  propagating static environments from one annotation to the next,
+  yields the local delcaration items $\ldip_{1..k}$ \ProseOrTypeError;
+  \item $\newtenv$ is the static environment yielded by annotating $\ldi_1$;
+  \item $\newldi$ is a tuple of local declaration items with $\ldip_{1..k}$, that is, $\LDITuple(\ldip_{1..k})$.
+\end{itemize}
 
-  \subsection{Example}
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTuple.asl}
+\subsection{Example}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTuple.asl}
 
-
-    \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
+\CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \ldi = \texttt{LDI\_Tuple}(\ldis, \None)\\
-  \ldis = [\ldi_{1..k}]\\
-  \tstruct(\tenv, \tty) \typearrow \TTuple([\vt_{1..k}])\\
-  \newtenv_0 = \tenv\\
-  \annotatelocaldeclitem{\newtenv_0, \ldi_1, \ldk, \vt_1} \typearrow (\newtenv_1, \ldi_1)\\
-  \ldots\\
-  \annotatelocaldeclitem{\newtenv_{k-1}, \ldi_{k-1}, \ldk, \vt_{k-1}} \typearrow (\newtenv_k, \ldi_k)\\
-  \newtenv = \newtenv_k\\
-  \newldi = [\ldi_{1..k}]
-}
-{
-  \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} \typearrow (\newtenv, \texttt{LDI\_Tuple}(\newldi, \None))
+  \tstruct(\tenv, \tty) \typearrow \vtp \OrTypeError\\\\
+  \checktrans{\astlabel(\vtp) = \TTuple} \typearrow \True \OrTypeError\\\\
+  \vtp \eqname \TTuple([\vt_{1..n}])\\\\
+  \checktrans{k = n} \typearrow \True \OrTypeError\\\\
+  \newtenv_k = \tenv\\
+  i=k..1:
+  \annotatelocaldeclitem{\newtenv_{i}, \ldi_{i}, \ldk, \vt_{i}} \typearrow (\newtenv_{i-1}, \ldip_i) \OrTypeError\\\\
+  \newtenv = \newtenv_0
+}{
+  \annotatelocaldeclitem{\tenv, \LDITuple(\ldi_{1..k}), \ldk, \tty} \typearrow \\
+  (\newtenv, \LDITuple(\ldip_{1..k}))
 }
 \end{mathpar}
 \end{emptyformal}
@@ -6480,7 +6475,7 @@ environment $\newenv$ and all of the following apply:
            \end{itemize}
          \end{itemize}
 
-       \item \texttt{le1} is the result of annotating \texttt{le} with \texttt{t\_e} in \texttt{env1};
+       \item $\vleone$ is the result of annotating \texttt{le} with \texttt{t\_e} in \texttt{env1};
        \item $\news$ is the assignment \texttt{le1 = e1};
        \item $\newenv$ is \texttt{env1}.
        \end{itemize}
@@ -7165,10 +7160,10 @@ Annotating statement $\vs$ in an environment $\tenv$
 (\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
-   \item $\vs$ is a declaration with local identifiers \texttt{ldi} and an expression $\ve$;
-   \item \texttt{t\_e,\vep} is the result of annotating $\ve$ in $\tenv$;
-   \item \texttt{env', ldi'} is the result of declaring the local identifiers of \texttt{ldi} in $\tenv$;
-   \item $\news$ is a declaration with \texttt{ldk}, \texttt{ldi'} and an expression $\vep$;
+   \item $\vs$ is a declaration with local identifiers $\ldi$ and an expression $\ve$;
+   \item $(\vte,\vep)$ is the result of annotating $\ve$ in $\tenv$;
+   \item $(\tenvp, \ldip)$ is the result of declaring the local identifiers of $\ldi$ in $\tenv$;
+   \item $\news$ is a declaration with $\ldk$, $\ldip$ and an expression $\vep$;
    \item $\newenv$ is $\tenvp$.
    \end{itemize}
 
@@ -7183,8 +7178,8 @@ environment $\newenv$ and all of the following apply:
     \vs = \SDecl(\LDKConstant, \ldi, \langle\ve\rangle)\\
     \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep)\\
     \reduceconstants{\tenv, \ve} \typearrow \vv\\
-    \declarelocalconstant{\tenv, \ldi} \typearrow (\tenv', \vte, \vv, \ldi')\\
-    \news = \SDecl(\LDKConstant, \ldi', \langle\vep\rangle)\\
+    \declarelocalconstant{\tenv, \ldi} \typearrow (\tenv', \vte, \vv, \ldip)\\
+    \news = \SDecl(\LDKConstant, \ldip, \langle\vep\rangle)\\
     \newtenv = \tenv'
   }
   {
@@ -7203,8 +7198,8 @@ Annotating statement $\vs$ in an environment $\tenv$
 (\texttt{annotate\_stmt env s}) results in a statement $\news$ and an
 environment $\newenv$ and all of the following apply:
    \begin{itemize}
-   \item $\vs$ is a declaration statement with local identifiers \texttt{ldi} and no initial expression;
-   \item \texttt{env', s'} is the result of annotating uninitialised local declarations \texttt{ldi} in $\tenv$;
+   \item $\vs$ is a declaration statement with local identifiers $\ldi$ and no initial expression;
+   \item \texttt{env', s'} is the result of annotating uninitialised local declarations $\ldi$ in $\tenv$;
    \item $\news$ is \texttt{s'};
    \item $\newenv$ is $\tenvp$.
    \end{itemize}
@@ -9448,6 +9443,86 @@ returns the name of a bitfield.
   \inferrule[type]{}{
     \bitfieldgetname(\BitFieldType(\name, \Ignore, \Ignore)) \typearrow \name
   }
+\end{mathpar}
+\end{emptyformal}
+
+\hypertarget{def-checkvarnotinenv}{}
+\hypertarget{def-varinenv}{}
+\section{TypingRule.CheckVarNotInEnv}
+The function
+\[
+  \varinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}}
+  \aslto \Bool
+\]
+determines whether an identifier $\id$ is declared in the static environment $\tenv$.
+
+The function
+\[
+  \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}}
+  \aslto \True \cup \TTypeError
+\]
+is checks whether $\id$ is declared in $\tenv$. If it is, the result is a type error,
+and otherwise the result is $\True$.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+    \begin{array}{rl}
+  \vb \eqdef & L^\tenv.\localstoragetypes(\id) \neq \bot\ \lor\\
+             & G^\tenv.\globalstoragetypes(\id) \neq \bot \lor\\
+             & G^\tenv.\subprograms(\id) \neq \bot\ \lor\\
+             & G^\tenv.\declaredtypes(\id) \neq \bot
+  \end{array}
+}
+}
+{
+  \varinenv{\tenv, \id} \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[okay]{
+  \varinenv{\tenv, \id} \typearrow \False
+}
+{
+  \checkvarnotinenv{\tenv, \id} \typearrow \True
+}
+\and
+  \inferrule[error]{
+  \varinenv{\tenv, \id} \typearrow \True
+}
+{
+  \checkvarnotinenv{\tenv, \id} \typearrow \TypeErrorVal{AlreadyDeclared}
+}
+\end{mathpar}
+\end{emptyformal}
+
+\hypertarget{def-addlocal}{}
+\section{TypingRule.AddLocal \label{sec:TypingRule.AddLocal}}
+The function
+\[
+  \addlocal(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\identifier}{\id} \aslsep
+    \overname{\localdeclkeyword}{\ldk})
+  \aslto
+  \overname{\staticenvs}{\newtenv}
+\]
+adds the identifier $\id$ as a local storage element with the local declaration keyword $\ldk$
+to the local environment of $\tenv$, resulting in the static environment $\newtenv$.
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \newlocalstoragetypes \eqdef L^\tenv.\localstoragetypes[\id \mapsto (\tty, \ldk)]\\
+  \newtenv \eqdef (G^\tenv, L^\tenv[\localstoragetypes \mapsto \newlocalstoragetypes])
+}
+{
+  \addlocal(\tenv, \id, \ldk) \typearrow \newtenv
+}
 \end{mathpar}
 \end{emptyformal}
 
