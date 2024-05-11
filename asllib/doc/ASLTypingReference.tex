@@ -147,7 +147,7 @@
 \newcommand\annotatepattern[0]{\hyperlink{def-annotatepattern}{\texttt{annotate\_pattern}}}
 \newcommand\annotatelocaldeclitem[1]{\hyperlink{def-annotatelocaldeclitem}{\texttt{annotate\_local\_decl\_item}}(#1)}
 \newcommand\annotatestmt[1]{\texttt{annotate\_stmt}(#1)}
-\newcommand\annotateblock[1]{\texttt{annotate\_block}(#1)}
+\newcommand\annotateblock[1]{\hyperlink{def-annotateblock}{\texttt{annotate\_block}}(#1)}
 \newcommand\inlinesetter[1]{\texttt{setter\_should\_reduce\_to\_call\_s}(#1)}
 \newcommand\annotatecall[1]{\hyperlink{def-annotatecall}{\texttt{annotate\_call}}(#1)}
 \newcommand\annotatecatcher[1]{\texttt{annotate\_catcher}(#1)}
@@ -7479,6 +7479,7 @@ environment $\newenv$ and all of the following apply:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Blocks}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hypertarget{def-annotateblock}{}
 The function
 \[
   \annotateblock{\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}} \aslto
@@ -7525,11 +7526,21 @@ an enclosing block.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Catchers}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The function
+\[
+  \annotatecatcher{
+    \overname{\staticenvs}{\tenv} \aslsep
+    (\overname{\langle\identifier\rangle}{\newopt} \times \overname{\ty}{\tty} \times \overname{\stmt}{\vstmt})
+  } \aslto
+  (\overname{\langle\identifier\rangle}{\newopt} \times \overname{\ty}{\ttyp} \times \overname{\stmt}{\newstmt})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a catcher given by the optional name of the matched exception --- $\newopt$ ---
+the exception type --- $\tty$ --- and the statement to execute upon catching the exception --- $\vstmt$.
+The result is the catcher with the same optional name --- $\newopt$, an annotated type $\ttyp$, and annotated statement $\newstmt$.
+The result is a type error, if one is detected.
 
-Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
-$\tenv$ given a type \texttt{return\_type} (\texttt{annotate\_catchers env
-return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
-new\_stmt)} and one of the following applies:
+One of the following applies:
 \begin{itemize}
 \item TypingRule.CatcherNone (see \secref{TypingRule.CatcherNone}),
 \item TypingRule.CatcherSome (see \secref{TypingRule.CatcherSome}).
@@ -7537,81 +7548,67 @@ new\_stmt)} and one of the following applies:
 
 \section{TypingRule.CatcherNone \label{sec:TypingRule.CatcherNone}}
 
-  \subsection{Prose}
-   Annotating catcher \texttt{(name\_opt, ty, stmt)} in an environment
-$\tenv$ given a type \texttt{return\_type} (\texttt{annotate\_catchers env
-return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
-new\_stmt)} and all of the following apply:
-   \begin{itemize}
-   \item $\tty$ has the structure of an exception type;
-   \item $\newopt$ gives no name;
-   \item $\tenvp$ is $\tenv$;
-   \item $\newstmt$ is the result of annotating $\vstmt$ in $\tenvp$ with \texttt{return\_type}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item the catcher has no named identifier, that is, $(\None, \tty, \vstmt)$;
+  \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$ \ProseOrTypeError;
+  \item determining whether $\ttyp$ has the \structure\ of an exception type yields $\True$ \ProseOrTypeError;
+  \item annotating the block $\vstmt$ in $\tenv$ yields $\newstmt$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
+\CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \astlabel(\tstruct(\tty)) = \TException\\
-    \newopt = \None\\
-    \tenv' = \tenv\\
-    \annotateblock{\tenv', \vstmt} \typearrow \newstmtp
-  }
-  {
-    \annotatecatcher{\tenv, \newopt, \tty, \vstmt} \typearrow (\newopt, \tty, \newstmtp)
-  }
+\inferrule{
+  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\
+  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\
+  \annotateblock{\tenv, \vstmt} \typearrow \newstmt \OrTypeError
+}
+{
+  \annotatecatcher{\tenv, (\None, \tty, \vstmt)} \typearrow (\None, \ttyp, \newstmt)
+}
 \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-    This is related to \identr{SDJK}.
+  This is related to \identr{SDJK}.
 
 \section{TypingRule.CatcherSome \label{sec:TypingRule.CatcherSome}}
 
-  \subsection{Prose}
-   Annotating catcher \texttt{(name\_opt, ty, stmt)} in an environment
-$\tenv$ given a type \texttt{return\_type} (\texttt{annotate\_catchers env return\_type (name\_opt, ty, stmt)})
-results in \texttt{(name\_opt, ty, new\_stmt)} and all of the following apply:
-   \begin{itemize}
-   \item $\tty$ has the structure of an exception type;
-   \item $\newopt$ gives a name $\name$;
-   \item $\name$ is not already declared in $\tenv$;
-   \item $\name$ has type $\tty$ in $\tenv$; \todocomment{ROMAN: doesn't appear in the code}
-   \item $\tenvp$ is $\tenv$ modified to have $\name$ locally declared as immutable of type $\tty$;
-   \item $\newstmt$ is the result of annotating $\vstmt$ in $\tenvp$ with \texttt{return\_type}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item the catcher has a named identifier, that is, $(\langle\name\rangle, \tty, \vstmt)$;
+  \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$ \ProseOrTypeError;
+  \item determining whether $\ttyp$ has the \structure\ of an exception type yields $\True$ \ProseOrTypeError;
+  \item the identifier $\name$ is not bound in $\tenv$;
+  \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
+        (that is, with the local declararion keyword $\LDKLet$), yields the static environment $\tenvp$;
+  \item annotating the block $\vstmt$ in $\tenvp$ yields $\newstmt$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\CatcherSomeBegin}{\CatcherSomeEnd}{../Typing.ml}
+\CodeSubsection{\CatcherSomeBegin}{\CatcherSomeEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    L^\tenv.\localstoragetypes(\id) = G^\tenv.\globalstoragetypes(\id) = G^\tenv.\subprograms(\id) = \bot
-  }
-  {
-    \checkvarnotinenv{\tenv, \id}
-  }
-  \and
-  \inferrule{
-    \astlabel(\tstruct(\tty)) = \TException\\
-    \newopt = \langle\name\rangle\\
-    \checkvarnotinenv{\tenv, \name}\\
-    \tenv' = (G^\tenv, L^\tenv.\localstoragetypes[\name \mapsto (\tty, \LDKLet)])\\
-    \annotateblock{\tenv', \vstmt} \typearrow \newstmtp
-  }
-  {
-    \annotatecatcher{\tenv, \newopt, \tty, \vstmt} \typearrow (\newopt, \tty, \newstmtp)
-  }
+\inferrule{
+  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\
+  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
+  \addlocal(\tenv, \name, \ttyp, \LDKLet) \typearrow \tenvp\\
+  \annotateblock{\tenvp, \vstmt} \typearrow \newstmt \OrTypeError
+}
+{
+  \annotatecatcher{\tenv, (\langle\name\rangle, \tty, \vstmt)} \typearrow (\langle\name\rangle, \ttyp, \newstmt)
+}
 \end{mathpar}
 \end{emptyformal}
 
