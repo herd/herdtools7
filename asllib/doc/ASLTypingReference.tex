@@ -7479,38 +7479,45 @@ environment $\newenv$ and all of the following apply:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Blocks}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The function
+\[
+  \annotateblock{\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}} \aslto
+  \overname{\stmt}{\newstmt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a block statement $\vs$ in static environment $\tenv$ and returns the annotated
+statement $\newstmt$ or a type error, if one is detected.
 
 \section{TypingRule.Block \label{sec:TypingRule.Block}}
 
-  \subsection{Prose}
-    Annotating a block $\vs$ in an environment $\tenv$, given a type
-\texttt{return\_type} \\ (\texttt{annotate\_block env return\_type s}), is the
-result of annotating the statement $\vs$ in $\tenv$.
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the statement $\vs$ in $\tenv$ yields $(\newstmt, \newtenv)$ \ProseOrTypeError;
+  \item the modified environment $\newtenv$ is dropped.
+\end{itemize}
 
-  \subsection{Example: TypingRule.Block0.asl}
+\subsection{Example: TypingRule.Block0.asl}
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
 
-
-    \CodeSubsection{\BlockBegin}{\BlockEnd}{../Typing.ml}
+\CodeSubsection{\BlockBegin}{\BlockEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \annotatestmt{\tenv, \vs} \typearrow (\vsp, \Ignore)
-  }
-  {
-    \annotateblock{\tenv, \vs, \texttt{return\_type}} \typearrow \vsp
-  }
+\inferrule{
+  \annotatestmt{\tenv, \vs} \typearrow (\newstmt, \Ignore) \OrTypeError
+}{
+  \annotateblock{\tenv, \vs} \typearrow \newstmt
+}
 \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-    A local identifier declared with var, let or constant is in scope
+A local identifier declared with var, let or constant is in scope
 from the point immediately after its declaration until the end of the
 immediately enclosing block.
 
-    From that follows that we can discard the environment at the end of
+From that follows that we can discard the environment at the end of
 an enclosing block.
 
     This is related to \identr{JBXQ}.
