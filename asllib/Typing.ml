@@ -505,16 +505,21 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     if Types.type_satisfies env t1 t2 then () else conflict loc [ t2.desc ] t1
 
+  (* CheckStructureBoolean *)
+
   (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
   let check_structure_boolean loc env t1 () =
     match (Types.get_structure env t1).desc with
     | T_Bool -> ()
     | _ -> conflict loc [ T_Bool ] t1
+  (* End *)
 
+  (* CheckStructureBits *)
   let check_structure_bits loc env t () =
     match (Types.get_structure env t).desc with
     | T_Bits _ -> ()
     | _ -> conflict loc [ default_t_bits ] t
+  (* End *)
 
   (* Begin CheckStructureInteger *)
   let check_structure_integer loc env t () =
@@ -535,12 +540,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | _ -> conflict loc [ integer' ] t
   (* End *)
 
+  (* Begin CheckStructureException *)
   let check_structure_exception loc env t () =
     let t_struct = Types.get_structure env t in
     match t_struct.desc with
     | T_Exception _ -> ()
     | _ -> conflict loc [ T_Exception [] ] t_struct
+  (* End *)
 
+  (* Begin StorageIsPure *)
   let storage_is_pure loc (env : env) s =
     (* Definition DDYW:
        Any expression consisting solely of an immutable storage element or a
@@ -554,13 +562,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | Some (_, (GDK_Constant | GDK_Config | GDK_Let)) -> true
         | Some (_, GDK_Var) -> false
         | None -> undefined_identifier loc s)
+  (* End *)
 
   (* Begin CheckStaticallyEvaluable *)
   let check_statically_evaluable (env : env) e () =
-    let e = reduce_expr env e in
-    let use_set = use_e e ISet.empty in
-    if ISet.for_all (storage_is_pure e env) use_set then ()
-    else fatal_from e (Error.UnpureExpression e)
+    let e1 = reduce_expr env e in
+    let use_set = use_e e1 ISet.empty in
+    if ISet.for_all (storage_is_pure e1 env) use_set then ()
+    else fatal_from e1 (Error.UnpureExpression e1)
   (* End *)
 
   let check_bits_equal_width' env t1 t2 () =
@@ -1055,7 +1064,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin PSingle *)
     | Pattern_Single e ->
-        let t_e, e = annotate_expr env e in
+        let t_e, e' = annotate_expr env e in
         let+ () =
          fun () ->
           let t_struct = Types.get_structure env t
@@ -1073,7 +1082,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
           | _ -> fatal_from loc (Error.BadTypesForBinop (EQ_OP, t, t_e))
         in
-        Pattern_Single e |: TypingRule.PSingle
+        Pattern_Single e' |: TypingRule.PSingle
     (* End *)
     (* Begin PGeq *)
     | Pattern_Geq e ->
@@ -1127,23 +1136,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         p |: TypingRule.PMask
     (* End *)
+    (* Begin PTuple *)
     | Pattern_Tuple li -> (
         let t_struct = Types.get_structure env t in
         match t_struct.desc with
-        (* Begin PTupleBadArity *)
         | T_Tuple ts when List.compare_lengths li ts != 0 ->
             Error.fatal_from loc
               (Error.BadArity
                  ("pattern matching on tuples", List.length li, List.length ts))
-            |: TypingRule.PTupleBadArity
-        (* End *)
-        (* Begin PTuple *)
         | T_Tuple ts ->
             let new_li = List.map2 (annotate_pattern loc env) ts li in
             Pattern_Tuple new_li |: TypingRule.PTuple
-        (* End *)
-        (* Begin PTupleConflict *)
-        | _ -> conflict loc [ T_Tuple [] ] t |: TypingRule.PTupleConflict
+        | _ -> conflict loc [ T_Tuple [] ] t
         (* End *))
 
   and annotate_call loc env name args eqs call_type =

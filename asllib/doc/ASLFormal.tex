@@ -57,6 +57,10 @@ Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 \hypertarget{def-identifier}{}
     $\Identifiers$ is the set of all ASL identifiers.
 
+\item
+\hypertarget{def-astlabels}{}
+    $\astlabels$ is the set of all ASL labels.
+
 % \item
 % \hypertarget{def-strings}{}
 %     $\Strings$ is the set of all ASL string literals.
@@ -481,7 +485,7 @@ allows us to deconstruct a given \func\ node by matching only the \textsf{body} 
 
 \hypertarget{def-astlabel}{}
 Recall that a subset of AST nodes are either labels or labelled tuples.
-The partial function $\astlabel$ returns the corresponding label, when it exists.
+The partial function $\astlabel$ returns the corresponding label $\vl\in\astlabels$, when it exists.
 For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\texttt{x})) = \TNamed$.
 
 \subsection{How to Parse Rules Efficiently}

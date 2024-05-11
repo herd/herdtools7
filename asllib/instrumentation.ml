@@ -432,9 +432,7 @@ module TypingRule = struct
     | PRange
     | PSingle
     | PMask
-    | PTupleBadArity
     | PTuple
-    | PTupleConflict
     | LDDiscard
     | LDVar
     | LDTyped
@@ -580,9 +578,7 @@ module TypingRule = struct
     | PRange -> "PRange"
     | PSingle -> "PSingle"
     | PMask -> "PMask"
-    | PTupleBadArity -> "PTupleBadArity"
     | PTuple -> "PTuple"
-    | PTupleConflict -> "PTupleConflict"
     | LDDiscard -> "LDDiscardNone"
     | LDTyped -> "LDTyped"
     | LDVar -> "LDVar"

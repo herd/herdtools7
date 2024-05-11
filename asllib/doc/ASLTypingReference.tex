@@ -69,7 +69,7 @@
 \newcommand\lcasat[0]{\models}
 \newcommand\Supers{\textsf{Supers}}
 \newcommand\bitfieldsincluded[0]{\hyperlink{def-bitfieldsincluded}{\texttt{bitfields\_included}}}
-\newcommand\instantiate[0]{\textsf{instantiate}}
+\newcommand\instantiate[0]{\texttt{instantiate}}
 \newcommand\canbeinitializedwith[0]{\texttt{can\_be\_initialized\_with}}
 \newcommand\getbitvectorwidth[0]{\texttt{get\_bitvector\_width}}
 \newcommand\findsubprogram[0]{\hyperlink{def-findsubprogram}{\texttt{find\_subprogram}}}
@@ -81,7 +81,10 @@
 \newcommand\pairstomap[0]{\hyperlink{def-pairstomap}{\texttt{pairs\_to\_map}}}
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\texttt{annotate\_field\_init}}}
 \newcommand\annotatestaticconstrainedinteger[0]{\hyperlink{def-annotatestaticconstrainedinteger}{\texttt{annotate\_static\_constrained\_integer}}}
+\newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\texttt{check\_structure}}}
 \newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\texttt{check\_structure\_integer}}}
+\newcommand\checkstaticallyevaluable[0]{\hyperlink{def-checkstaticallyevaluable}{\texttt{check\_statically\_evaluable}}}
+\newcommand\storageispure[0]{\hyperlink{def-storageispure}{\texttt{storage\_is\_pure}}}
 
 % Symbolic equivalence testing macros
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
@@ -125,6 +128,8 @@
 \newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
 \newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
 \newcommand\structureofinteger[0]{\hyperlink{def-checkstructureinteger}{structure of an integer}}
+\newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
+\newcommand\pure[0]{hyperlink{def-storageispure}{pure}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -135,10 +140,11 @@
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\texttt{annotate\_expr}}(#1)}
 \newcommand\annotateexprlist[1]{\hyperlink{def-annotateexprs}{\texttt{annotate\_exprs}}(#1)}
-\newcommand\annotatelexpr[1]{\textsf{annotate\_lexpr}(#1)}
-\newcommand\annotatearrayindex[0]{\textsf{annotate\_array\_index}}
-\newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\textsf{annotate\_slice}}}
-\newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\textsf{annotate\_slices}}}
+\newcommand\annotatelexpr[1]{\texttt{annotate\_lexpr}(#1)}
+\newcommand\annotatearrayindex[0]{\texttt{annotate\_array\_index}}
+\newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\texttt{annotate\_slice}}}
+\newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\texttt{annotate\_slices}}}
+\newcommand\annotatepattern[0]{\hyperlink{def-annotatepattern}{\texttt{annotate\_pattern}}}
 \newcommand\annotatelocaldeclitem[1]{\hyperlink{def-annotatelocaldeclitem}{\texttt{annotate\_local\_decl\_item}}(#1)}
 \newcommand\annotatestmt[1]{\texttt{annotate\_stmt}(#1)}
 \newcommand\annotateblock[1]{\texttt{annotate\_block}(#1)}
@@ -1730,7 +1736,7 @@ One of the following applies:
   \item All of the following apply (\textsc{conflicting\_type}):
   \begin{itemize}
     \item $\vt$ is not an integer type;
-    \item the result is a type error indicating that the type conflict.
+    \item the result is a type error indicating the type conflict.
   \end{itemize}
 \end{itemize}
 
@@ -3529,7 +3535,7 @@ All of the following apply:
 \begin{itemize}
   \item $\tty$ is the bit-vector type with width given by the expression
     $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
-  \item annotating the statically-evaluable integer expression $\ewidth$ yields $\ewidthp$ \ProseOrTypeError;
+  \item annotating the \staticallyevaluable\  integer expression $\ewidth$ yields $\ewidthp$ \ProseOrTypeError;
   \item annotating the bitfields $\bitfields$ yields $\bitfieldsp$ \ProseOrTypeError;
   \item $\newty$ is the bit-vector type with width given by the expression
     $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, $\TBits(\ewidthp, \bitfieldsp)$
@@ -3646,7 +3652,7 @@ In the following example, all the uses of array types are valid:
   \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
   \tododefine{get\_variable\_enum}(\tenv, \ve) \typearrow \langle \vs, \vi \rangle
 }{
-  \annotatetype{\Ignore, \tenv, \TArray(\ArrayLengthExpr(\ve), \vt)} \typearrow \TArray(\ArrayLengthEnum(\vs, \vi), \vtp)
+  \annotatetype{\tenv, \TArray(\ArrayLengthExpr(\ve), \vt)} \typearrow \TArray(\ArrayLengthEnum(\vs, \vi), \vtp)
 }
 \and
 \inferrule[expr\_not\_enum]{
@@ -3654,18 +3660,18 @@ In the following example, all the uses of array types are valid:
   \tododefine{get\_variable\_enum}(\tenv, \ve) \typearrow \None\\
   \tododefine{annotate\_static\_integer}(\tenv, \ve) \typearrow \vep \OrTypeError
 }{
-  \annotatetype{\Ignore, \tenv, \TArray(\ArrayLengthExpr(\ve), \vt)} \typearrow \TArray(\ArrayLengthExpr(\vep), \vtp)
+  \annotatetype{\tenv, \TArray(\ArrayLengthExpr(\ve), \vt)} \typearrow \TArray(\ArrayLengthExpr(\vep), \vtp)
 }
 \and
 \inferrule[index\_enum]{
   \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
   \tty \eqdef \TNamed(\vs)\\
   \makeanonymous(\tenv, \tty) \typearrow \vt \OrTypeError\\\\
-  \checktrans{\astlabel(\vt) = \TEnum} \typearrow \True \OrTypeError\\\\
+  \checktrans{\astlabel(\vt) = \TEnum, \texttt{"ExpectedEnumeration"}} \typearrow \True \OrTypeError\\\\
   \vt \eqname \TEnum((\vli))\\
-  \checktrans{\equallength(\vli, \vi)} \typearrow \True \OrTypeError
+  \checktrans{\equallength(\vli, \vi), \texttt{"TypeConflict"}} \typearrow \True \OrTypeError
 }{
-  \annotatetype{\Ignore, , \tenv, \TArray(\ArrayLengthEnum(\vs, \vi), \vt)} \typearrow \\
+  \annotatetype{\tenv, \TArray(\ArrayLengthEnum(\vs, \vi), \vt)} \typearrow \\
   \TArray(\ArrayLengthEnum(\vs, \vi), \vtp)
 }
 \end{mathpar}
@@ -4402,7 +4408,7 @@ All of the following apply:
     \begin{itemize}
       \item $\slices$ consists of a single slice $\SliceSingle(\eindex)$;
       \item annotating the expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$ \ProseOrTypeError;
-      \item determing the type of the array index for $\size$ in $\tenv$ via \\ $\typeofarraylength$
+      \item determining the type of the array index for $\size$ in $\tenv$ via \\ $\typeofarraylength$
       yields $\wantedtindex$;
       \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ yields $\True$ \ProseOrTypeError;
       \item $\vt$ is $\ttyp$;
@@ -4504,7 +4510,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed} \typearrow \True \OrTypeError\\
+  \checktrans{\astlabel(\tty) = \TNamed, \texttt{"expected named type"}} \typearrow \True \OrTypeError\\
   \tstruct{\tenv, \tty} \typearrow\vtp \OrTypeError\\
   \astlabel(\vtp) \not\in \{\TRecord, \TException\}
 }
@@ -4536,7 +4542,7 @@ A§ll of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed} \typearrow \True \OrTypeError\\
+  \checktrans{\astlabel(\tty) = \TNamed, \texttt{"expected named type"}} \typearrow \True \OrTypeError\\
   \tstruct(\tenv, \tty) \typearrow L(\fieldtypes) \OrTypeError\\\\
   L \in \{\TRecord, \TException\}\\
   \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\fields\}\\
@@ -4575,7 +4581,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed} \typearrow \True \OrTypeError\\
+  \checktrans{\astlabel(\tty) = \TNamed, \texttt{"expected named type"}} \typearrow \True \OrTypeError\\
   \tstruct(\tenv, \tty) \typearrow L(\fieldtypes) \OrTypeError\\\\
   L \in \{\TRecord, \TException\}\\
   \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\fields\}\\
@@ -4598,7 +4604,7 @@ All of the following apply:
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$;
   \item $(\vteone, \vetwo)$ is the result of annotating $\veone$ in $\tenv$;
   \item $\vteone$ has an \underlyingtype\ of an exception or record type with fields $\fields$;
   \item $\fieldname$ is declared in $\fields$;
@@ -4632,7 +4638,7 @@ All of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$;
   \item \texttt{\vteone, $\vetwo$} is the result of annotating $\veone$ in $\tenv$;
   \item $\vteone$ has the structure of an exception or record type with fields $\fields$;
   \item $\vtetwo$ has the structure of an exception or record type with fields $\fields$;
@@ -4659,7 +4665,7 @@ $(\vt, \newe)$ and all of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$;
   \item $\vteone$ has the structure a bitvector type with bitfields $\bitfields$;
   \item $\vtetwo$ has the structure a bitvector type with bitfields $\bitfields$;
   \item $\fieldname$ is not declared in $\bitfields$;
@@ -4684,7 +4690,7 @@ $(\vt, \newe)$ and all of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
    \begin{itemize}
-   \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$;
    \item \texttt{\vteone, e2} is the result of annotating $\veone$ in $\tenv$;
    \item $\vteone$ does not have the structure of a record or an exception or a bitvector type;
    \item an error ``\texttt{Conflicting Types}'' is raised.
@@ -4708,14 +4714,14 @@ $(\vt, \newe)$ and all of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$;
   \item \texttt{\vteone, e2} is the result of annotating $\veone$ in $\tenv$;
   \item the \underlyingtype\ of $\vteone$ is a bitvector type with bitfields $\bitfields$;
   \item $\fieldname$ is declared in $\bitfields$;
   \item $\slices$ gives the slices corresponding to the bitfield $\fieldname$
     in \\ $\bitfields$;
-  \item \texttt{e3} denotes the slicing of the expression \vetwo by the slices $\slices$;
-  \item $(\vt, \newe)$ is the result of annotating \texttt{e3}.
+  \item $\vethree$ denotes the slicing of the expression \vetwo by the slices $\slices$;
+  \item $(\vt, \newe)$ is the result of annotating $\vethree$.
   \end{itemize}
 
   \subsection{Example}
@@ -4730,8 +4736,8 @@ $(\vt, \newe)$ and all of the following apply:
 \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo)\\
 \makeanonymous(\tenv, \vteone) \typearrow \TBits(\Ignore, \bitfields)\\
 \fieldname = \texttt{BitField\_Simple}(\Ignore, \slices) \in \bitfields\\
-\texttt{e3} = \ESlice(\vetwo, \slices)\\
-\annotateexpr{\tenv, \texttt{e3}} \typearrow (\vt, \newe)
+\vethree = \ESlice(\vetwo, \slices)\\
+\annotateexpr{\tenv, \vethree} \typearrow (\vt, \newe)
 }
 {\annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \newe)}
 \end{mathpar}
@@ -4745,14 +4751,14 @@ $(\vt, \newe)$ and all of the following apply:
   The result of annotating the expression $\ve$ in $\tenv$ is
 $(\vt, \newe)$ and all of the following apply:
   \begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ on expression $\veone$;
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$;
   \item \texttt{\vteone, e2} is the result of annotating $\veone$ in $\tenv$;
   \item $\vteone$ has the structure of a bitvector type with bitfields $\bitfields$;
   \item $\fieldname$ is declared in $\bitfields$;
   \item $\slices$ gives the slices corresponding to the bitfield $\fieldname$ in \\
     $\bitfields$;
-  \item \texttt{e3} denotes the slicing of the expression \vetwo by the slices $\slices$;
-  \item \texttt{t4, e4} is the result of annotating \texttt{e3} in $\tenv$;
+  \item $\vethree$ denotes the slicing of the expression \vetwo by the slices $\slices$;
+  \item \texttt{t4, e4} is the result of annotating $\vethree$ in $\tenv$;
   \item $\bitfieldsp$ gives the bitfields corresponding to the bitfield $\fieldname$
     in $\bitfields$;
   \item $\vt$ is the bitvector type with the width of \texttt{t4} and the bitfields $\bitfieldsp$
@@ -4786,7 +4792,7 @@ $(\vt, \newe)$ and all of the following apply:
   \item \texttt{t\_e3,e3} is the result of annotating \texttt{\vetwo,slices} in $\tenv$;
   \item $\vt$ is the type corresponding to the bitfield $\fieldname$ in $\bitfields$;
   \item \texttt{t\_e3} \typesatisfies\  $\vt$ in $\tenv$;
-  \item $\newe$ is \texttt{e3}.
+  \item $\newe$ is $\vethree$.
   \end{itemize}
 
   \subsection{Example}
@@ -4800,10 +4806,10 @@ $(\vt, \newe)$ and all of the following apply:
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo)\\
   \makeanonymous(\tenv, \vteone) \typearrow \TBits(\Ignore, \bitfields)\\
   \fieldname = \texttt{BitField\_Type}(\Ignore, \slices, \vt) \in \bitfields\\
-  \annotateexpr{\ESlice(\vetwo, \slices)} \typearrow (\texttt{t\_e3}, \texttt{e3})\\
+  \annotateexpr{\ESlice(\vetwo, \slices)} \typearrow (\texttt{t\_e3}, \vethree)\\
   \typesat(\tenv, \texttt{t\_e3}, \vt)
 }
-{\annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \texttt{e3})}
+{\annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \vethree)}
 \end{mathpar}
 \end{emptyformal}
 
@@ -4826,7 +4832,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{}
 {
-  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \texttt{e3})
+  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \vethree)
 }
 \end{mathpar}
 \end{emptyformal}
@@ -5267,7 +5273,7 @@ The function
   \annotatestaticconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
   \overname{\expr}{\vepp} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a statically-evaluable integer expression $\ve$ in the static environment $\tenv$
+annotates a \staticallyevaluable\  integer expression $\ve$ in the static environment $\tenv$
 and returns the annotated expression $\vepp$.
 A type error is returned, if one is detected.
 
@@ -5276,7 +5282,7 @@ All of the following apply:
 \begin{itemize}
   \item annotating the expression $\ve$ in $\tenv$ yields $ (\vt, \vep)$ \ProseOrTypeError;
   \item determining whether $\vt$ is a statically \constrainedinteger\ in $\tenv$ yields $\True$ \ProseOrTypeError;
-  \item determining whether $\vep$ is statically-evaluable in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item determining whether $\vep$ is \staticallyevaluable\  in $\tenv$ yields $\True$ \ProseOrTypeError;
   \item symbolically reducing the expression $\vep$ yields $\vepp$.
 \end{itemize}
 
@@ -5939,7 +5945,7 @@ All of the following apply:
 \begin{itemize}
   \item $\vs$ is a slice of length $\elength$ and offset $\eoffset$, that is, $\SliceLength(\eoffset, \elength)$;
   \item annotating the expression $\eoffset$ in $\tenv$ yields $(\toffset, \eoffsetp)$ \ProseOrTypeError;
-  \item annotating the statically-evaluable \constrainedinteger\ expression $\elength$ in $\tenv$ yields
+  \item annotating the \staticallyevaluable\ \constrainedinteger\ expression $\elength$ in $\tenv$ yields
   $\elength$ \ProseOrTypeError;
   \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$ \ProseOrTypeError;
   \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
@@ -6050,8 +6056,16 @@ All of the following apply:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Patterns}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and one of the following applies:
+\hypertarget{def-annotatepattern}{}
+The function
+\[
+  \annotatepattern(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\ty}{\vt} \aslsep
+    \overname{\pattern}{\vp}) \aslto \overname{\pattern}{\newp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a pattern $\vp$ in a static environment $\tenv$ given a type $\vt$,
+resulting in a pattern $\newp$ or a type error, if one is detected, and one of the following applies:
 \begin{itemize}
 \item TypingRule.PAll (see \secref{TypingRule.PAll}),
 \item TypingRule.PAny (see \secref{TypingRule.PAny}),
@@ -6061,328 +6075,392 @@ Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt
 \item TypingRule.PRange (see \secref{TypingRule.PRange}),
 \item TypingRule.PSingle (see \secref{TypingRule.PSingle}),
 \item TypingRule.PMask (see \secref{TypingRule.PMask}),
-\item TypingRule.PTupleBadArity (see \secref{TypingRule.PTupleBadArity}),
-\item TypingRule.PTuple (see \secref{TypingRule.PTuple}),
-\item TypingRule.PTupleConflict (see \secref{TypingRule.PTupleConflict}),
+\item TypingRule.PTuple (see \secref{TypingRule.PTuple}).
 \end{itemize}
 
 \section{TypingRule.PAll \label{sec:TypingRule.PAll}}
 
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern matching everything;
-   \item \texttt{new\_p} is \texttt{p}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern matching everything, that is, $\PatternAll$;
+  \item $\newp$ is $\vp$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
+\CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}
+{
+  \annotatepattern(\tenv, \vt, \PatternAll) \typearrow \PatternAll
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.PAny\label{sec:TypingRule.PAny}}
 
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches anything in a list $\vli$;
-   \item \texttt{new\_li} is the result of mapping the result of annotating \texttt{p} in $\tenv$ onto $\vli$;
-   \item \texttt{new\_p} is the pattern which matches anything in \texttt{new\_li}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vp$ is the pattern which matches anything in a list $\vli$, that is, $\PatternAny(\vli)$;
+\item annotating each pattern in $\vli$ yields the list of annotated pattern $\newli$ \ProseOrTypeError;
+\item $\newp$ is the pattern which matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
+\CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow \vlp \OrTypeError\\\\
+  \newli \eqdef [\vl\in\vli: \vlp]
+}
+{
+  \annotatepattern(\tenv, \vt, \PatternAny(\vli)) \typearrow \PatternAny(\newli)
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.PGeq \label{sec:TypingRule.PGeq}}
 
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches anything greater than or equal to an expression $\ve$;
-   \item \texttt{t\_e, \vep} is the result of annotating $\ve$ in $\tenv$;
-   \item $\vep$ is a compile-time constant expression;
-   \item One of the following applies:
-     \begin{itemize}
-     \item All of the following apply:
-           \begin{itemize}
-           \item both $\vt$ and \texttt{t\_e} have the structure of an integer;
-           \item \texttt{new\_p} is the pattern which matches anything greater than or equal to $\vep$.
-           \end{itemize}
-     \item All of the following apply:
-           \begin{itemize}
-           \item both $\vt$ and \texttt{t\_e} have the structure of a real;
-           \item \texttt{new\_p} is the pattern which matches anything greater than or equal to $\vep$.
-           \end{itemize}
-     \item an error ``\texttt{Conflicting Types}'' is raised.
-     \end{itemize}
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vp$ is the pattern which matches anything greater than or equal to an expression $\ve$,
+that is, $\PatternGeq(\ve)$;
+\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$ \ProseOrTypeError;
+\item determining whether $\vep$ is a \staticallyevaluable\ expression yields $\True$ \ProseOrTypeError;
+\item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$ \ProseOrTypeError;
+\item obtaining the \structure\ of $\vte$ in $\tenv$ yields $\testruct$ \ProseOrTypeError;
+\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
+\item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
+      are inappropriate for the $\GEQ$ operator),
+which short-circuits the entire evaluation;
+\item $\newp$ is the pattern which matches anything greater than or equal to $\vep$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
+\CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  {
+    \begin{array}{rl}
+      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\testruct)\ \land\\
+                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
+    \end{array}
+  }\\
+  \checktrans{\vb, \texttt{"BadTypesForBinop"}} \typearrow \True \OrTypeError
+}
+{
+  \annotatepattern(\tenv, \vt, \PatternGeq(\ve)) \typearrow \PatternGeq(\vep)
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
- \section{TypingRule.PLeq \label{sec:TypingRule.PLeq}}
+\section{TypingRule.PLeq \label{sec:TypingRule.PLeq}}
 
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches anything lesser than or equal to an expression $\ve$;
-   \item \texttt{t\_e, \vep} is the result of annotating $\ve$ in $\tenv$;
-   \item $\vep$ is a compile-time constant expression;
-   \item One of the following applies:
-     \begin{itemize}
-     \item All of the following apply:
-           \begin{itemize}
-           \item both $\vt$ and \texttt{t\_e} have the structure of an integer;
-           \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to $\vep$.
-           \end{itemize}
-     \item All of the following apply:
-           \begin{itemize}
-           \item both $\vt$ and \texttt{t\_e} have the structure of a real;
-           \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to $\vep$.
-           \end{itemize}
-     \item an error ``\texttt{Conflicting Types}'' is raised.
-     \end{itemize}
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vp$ is the pattern which matches anything less than or equal to an expression $\ve$,
+that is, $\PatternLeq(\ve)$;
+\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$ \ProseOrTypeError;
+\item determining whether $\vep$ is a \staticallyevaluable\ expression yields $\True$ \ProseOrTypeError;
+\item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$ \ProseOrTypeError;
+\item obtaining the \structure\ of $\vte$ in $\tenv$ yields $\testruct$ \ProseOrTypeError;
+\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
+\item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
+      are inappropriate for the $\LEQ$ operator),
+which short-circuits the entire evaluation;
+\item $\newp$ is the pattern which matches anything less than or equal to $\vep$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
+\CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  {
+    \begin{array}{rl}
+      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\testruct)\ \land\\
+                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
+    \end{array}
+  }\\
+  \checktrans{\vb, \texttt{"BadTypesForBinop"}} \typearrow \True \OrTypeError
+}
+{
+  \annotatepattern(\tenv, \vt, \PatternLeq(\ve)) \typearrow \PatternLeq(\vep)
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.PNot \label{sec:TypingRule.PNot}}
 
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches the negation of a pattern \texttt{q};
-   \item \texttt{new\_q} is the result of annotating \texttt{q} in $\tenv$;
-   \item \texttt{new\_p} is pattern which matches the negation of \texttt{new\_q}.
-   \end{itemize}
+\subsection{Prose}
+Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern $\newp$ and all of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern which matches the negation of a pattern $\vq$, that is, $\PatternNot(\vq)$;
+  \item annotating $\vq$ in $\tenv$ yields $\newq$ \ProseOrTypeError;
+  \item $\newp$ is pattern which matches the negation of $\newq$, that is, $\PatternLeq(\newq)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
+\CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotatepattern(\tenv, \vq) \typearrow \newq \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \PatternNot(\vq)) \PatternNot \PatternLeq(\newq)
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.PRange \label{sec:TypingRule.PRange}}
 
-    \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches anything within the range given by
-      expressions $\veone$ and \vetwo;
-   \item \texttt{\vteone, e1'} is the result of annotating $\veone$ in $\tenv$;
-   \item \texttt{\vtetwo, e2'} is the result of annotating $\vetwo$ in $\tenv$;
-   \item e1' and e2' are compile-time constant expressions;
-   \item One of the following applies:
-     \begin{itemize}
-     \item All of the following apply:
-           \begin{itemize}
-           \item both $\vteone$ and $\vtetwo$ have the structure of an integer;
-           \item \texttt{new\_p} is the pattern which matches anything within the range given by
-      expressions $\veonep$ and $\vetwop$.
-           \end{itemize}
-     \item All of the following apply:
-           \begin{itemize}
-           \item both $\vteone$ and $\vtetwo$ have the structure of a real;
-           \item \texttt{new\_p} is the pattern which matches anything within the range given by
-      expressions $\veonep$ and $\vetwop$.
-           \end{itemize}
-     \item an error ``\texttt{Conflicting Types}'' is raised.
-     \end{itemize}
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern which matches anything within the range given by
+  expressions $\veone$ and $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \veonep)$ \ProseOrTypeError;
+  \item annotating the expression $\vetwo$ in $\tenv$ yields $(\vtetwo, \vetwop)$ \ProseOrTypeError;
+  \item determining whether both $\veonep$ and $\vetwop$ are compile-time constant expressions yields $\True$ \ProseOrTypeError;
+  \item obtaining the \structure\ for $\vt$, $\vteone$, and $\vtetwo$ yields
+        $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively \ProseOrTypeError;
+  \item a check the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
+        $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a type error indicating that the types of
+        $\veone$, $\vetwo$ and the type $\vt$ are inappropriate for a range pattern, which short-circuits the entire evaluation.
+  \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$, that is, $\PatternRange(\veonep, \vetwop)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
+\CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \veonep) \OrTypeError\\
+  \annotateexpr{\tenv, \vetwo} \typearrow (\vtetwo, \vetwop) \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\
+  \tstruct(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\
+  {
+    \begin{array}{rl}
+      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vteonestruct) = \astlabel(\vtetwostruct)\ \land\\
+                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
+    \end{array}
+  }\\
+  \checktrans{\vb, \texttt{"BadTypesForBinop"}} \typearrow \True \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \PatternRange(\veone, \vetwo)) \typearrow \PatternRange(\veonep, \vetwop)
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.PSingle \label{sec:TypingRule.PSingle}}
 
-    \subsection{Prose}
-      Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-      \begin{itemize}
-        \item \texttt{p} is the pattern that matches the expression $\ve$;
-        \item \texttt{t\_e, \vep} is the result of annotating the expression $\ve$ in $\tenv$;
-        \item One of the following applies:
-          \begin{itemize}
-            \item All of the following apply:
-              \begin{itemize}
-                \item \texttt{t\_e} has the structure of the real type;
-                \item $\vt$ has the structure of the real type;
-              \end{itemize}
-            \item All of the following apply:
-              \begin{itemize}
-                \item \texttt{t\_e} has the structure of the boolean type;
-                \item $\vt$ has the structure of the boolean type;
-              \end{itemize}
-            \item All of the following apply:
-              \begin{itemize}
-                \item \texttt{t\_e} has the structure of an integer type;
-                \item $\vt$ has the structure of an integer type;
-              \end{itemize}
-            \item All of the following apply:
-              \begin{itemize}
-                \item \texttt{t\_e} has the structure of a bitvector type;
-                \item $\vt$ has the structure of a bitvector type;
-                \item the bitvector types \texttt{t\_e} and $\vt$ have the same length;
-              \end{itemize}
-            \item All of the following apply:
-              \begin{itemize}
-                \item \texttt{t\_e} has the structure of an enumeration type;
-                \item $\vt$ has the structure of an enumeration type;
-                \item the enumeration types \texttt{t\_e} and $\vt$ have the same literals;
-              \end{itemize}
-          \end{itemize}
-        \item \texttt{new\_p} is \texttt{p};
-      \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern that matches the expression $\ve$, that is, $\PatternSingle(\ve)$;
+  \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vt$ yields $\vtstruct$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vte$ yields $\testruct$ \ProseOrTypeError;
+  \item One of the following holds:
+  \begin{itemize}
+    \item All of the following apply (\textsc{t\_bool, t\_real, t\_int}):
+    \begin{itemize}
+      \item the labels of $\vtstruct$ and $\testruct$ are both either $\TBool$, $\TReal$, or $\TInt$ \ProseOrTypeError;
+    \end{itemize}
 
-  \subsection{Example}
+    \item All of the following apply (\textsc{t\_bits}):
+    \begin{itemize}
+      \item the labels of $\vtstruct$ and $\testruct$ are both $\TBits$ \ProseOrTypeError;
+      \item determining whether the bitwidths of $\vtstruct$ and $\testruct$ are equal yields $\True$ \ProseOrTypeError;
+    \end{itemize}
 
+    \item All of the following apply (\textsc{t\_enum}):
+    \begin{itemize}
+      \item the labels of $\vtstruct$ and $\testruct$ are both $\TEnum$ \ProseOrTypeError;
+      \item determining whether the lists of enumeration literals of $\vtstruct$ and $\testruct$ are equal yields $\True$ \ProseOrTypeError;
+    \end{itemize}
 
-    \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item determining whether the labels of $\vtstruct$ and $\testruct$ are the same yields $\True$ \ProseOrTypeError;
+      \item the label of $\vtstruct$ is not one of $\TBool$, $\TReal$, $\TInt$, $\TBits$, or $\TEnum$;
+      \item the result is a type error indicating that the types $\vt$ and $\vte$ are inappropriate for this pattern.
+    \end{itemize}
+  \end{itemize}
+  \item $\newp$ is the the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
+\end{itemize}
+
+\subsection{Example}
+
+\CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[t\_bool, t\_real, t\_int]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct), \texttt{"BadTypesForBinop"}} \typearrow \True \OrTypeError\\\\
+  \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt\}
+}{
+  \annotatepattern(\tenv, \vt, \PatternSingle(\ve)) \typearrow \PatternSingle(\vep)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\
+  \astlabel(\vtstruct) = \astlabel(\testruct) = \TBits\\
+  \bitwidthequal(\tenv, \vtstruct, \testruct) \typearrow \vb\\
+  \checktrans{\vb, \texttt{"BitvectorsDifferentWidths"}} \typearrow \True \OrTypeError\\
+}{
+  \annotatepattern(\tenv, \vt, \PatternSingle(\ve)) \typearrow \PatternSingle(\vep)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_enum]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\
+  \vtstruct \eqname \TEnum(\vlione)\\
+  \vtestruct \eqname \TEnum(\vlitwo)\\
+  \checktrans{\vlione = \vlitwo, \texttt{"EnumDifferentLabels"}} \typearrow \True \OrTypeError\\
+}{
+  \annotatepattern(\tenv, \vt, \PatternSingle(\ve)) \typearrow \PatternSingle(\vep)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct), \texttt{"BadTypesForBinop"}} \typearrow \True \OrTypeError\\\\
+  \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt, \TBits, \TEnum\}
+}{
+  \annotatepattern(\tenv, \vt, \PatternSingle(\ve)) \typearrow \TypeErrorVal{TypeConflict}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.PMask \label{sec:TypingRule.PMask}}
 
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches a mask \texttt{m};
-   \item $\vt$ has the structure of a bitvector type;
-   \item $\vn$ is the length of mask \texttt{m};
-   \item \texttt{t\_m} is the bitvector type of width $\vn$;
-   \item One of the following applies:
-     \item All of the following apply:
-       \begin{itemize}
-       \item $\vt$ \typesatisfies\  \texttt{t\_m};
-       \item \texttt{new\_p} is \texttt{p}.
-       \end{itemize}
-     \item an error ``\texttt{Conflicting Types}'' is raised.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+  \begin{itemize}
+  \item $\vp$ is the pattern which matches a mask $\vm$, that is, $\PatternMask(\vm)$;
+  \item determining whether $\vt$ has the structure of a bitvector type yields $\True$ \ProseOrTypeError;
+  \item $\vn$ is the length of mask $\vm$;
+  \item determining whether $\vt$ \typesatisfies\ the bitvector type of length $\vn$ \\
+        (that is, $\TBits(\vn, \emptylist)$), yields $\True$ \ProseOrTypeError;
+  \item $\newp$ is $\vp$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
+\CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\\
+  \vn \eqdef |\vm|\\
+  \checktypesat(\tenv, \vt, \TBits(\vn, \emptylist)) \typearrow \True \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \PatternMask(\vm)) \typearrow \PatternMask(\vm)
+}
+\end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
   This is related to \identi{VMKF}.
 
-\section{TypingRule.PTupleBadArity \label{sec:TypingRule.PTupleBadArity}}
-
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches a tuple $\vli$;
-   \item $\vt$ has the type structure of a tuple type \texttt{ts};
-   \item \texttt{ts} is a list of different size to the size of $\vli$;
-   \item an error ``\texttt{Bad Arity}'' is raised.
-   \end{itemize}
-
-  \subsection{Example}
-
-
-    \CodeSubsection{\PTupleBadArityBegin}{\PTupleBadArityEnd}{../Typing.ml}
-
-\begin{emptyformal}
-    \subsection{Formally}
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
-
-
 \section{TypingRule.PTuple \label{sec:TypingRule.PTuple}}
 
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches a tuple $\vli$;
-   \item $\vt$ has the type structure of a tuple type \texttt{ts};
-   \item \texttt{ts} is a list of the same size as $\vli$;
-   \item \texttt{new\_li} is the result of annotating $\vli$ with \texttt{ts};
-   \item \texttt{new\_p} is the pattern which matches the tuple \texttt{new\_li}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+  \begin{itemize}
+  \item $\vp$ is the pattern which matches a tuple $\vli$, that is, $\PatternTuple(\vli)$;
+  \item obtaining the \structure\ of $\vt$ yields $\vtstruct$ \ProseOrTypeError;
+  \item determining whether $\vtstruct$ is a tuple type yields $\True$ \ProseOrTypeError;
+  \item $\vtstruct$ is a tuple type with list of tuple $\vts$;
+  \item determining whether $\vts$ is a list of the same size as $\vli$ yields $\True$ \ProseOrTypeError;
+  \item annotating each pattern in $\vli$ with the corresponding type in $\vts$ at each position $\vi$
+        yields a pattern $\vlip[\vi]$ \ProseOrTypeError;
+  \item $\newli$ is the list of annotated patterns $\vlip[\vi]$ at the same positions those of $\vli$;
+  \item $\newp$ is the pattern which matches the tuple $\newli$, that is, $\PatternTuple(\newli)$.
+  \end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
-
-\begin{emptyformal}
-    \subsection{Formally}
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
-
-
-\section{TypingRule.PTupleConflict \label{sec:TypingRule.PTupleConflict}}
-
-  \subsection{Prose}
-   Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
-   \begin{itemize}
-   \item \texttt{p} is the pattern which matches a tuple $\vli$;
-   \item $\vt$ has the type structure of a tuple type \texttt{ts};
-   \item \texttt{t\_struct} is not a tuple type;
-   \item an error ``\texttt{Conflicting Types}'' is raised.
-   \end{itemize}
-
-  \subsection{Example}
-
-
-    \CodeSubsection{\PTupleConflictBegin}{\PTupleConflictEnd}{../Typing.ml}
+\CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
+  \checktrans{\astlabel(\vtstruct) = \TTuple, \texttt{"TypeConflict"}} \typearrow \True \OrTypeError\\
+  \vtstruct \eqname \TTuple(\vts)\\
+  \checktrans{\equallength(\vli, \vts), \texttt{"BadArity"}} \typearrow \True \OrTypeError\\
+  \vi\in\listrange(\vli): \annotatepattern(\tenv, \vts[\vi], \vli[\vi]) \typearrow \vlip[i] \OrTypeError\\
+  \newli \eqdef \vi\in\listrange(\vli): \vlip[\vi]
+}{
+  \annotatepattern(\tenv, \vt, \PatternTuple(\vli)) \typearrow \PatternTuple(\newli)
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -6451,7 +6529,7 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
-  \item determing whether $\vx$ is not declared in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item determining whether $\vx$ is not declared in $\tenv$ yields $\True$ \ProseOrTypeError;
   \item $\newenv$ is $\tenv$ modified so that $\vx$ is locally declared of type $\tty$;
   \item $\newldi$ is the declaration of variable $\vx$.
 \end{itemize}
@@ -6485,9 +6563,10 @@ All of the following apply:
   and a type $\vt$, that is $\LDITyped(\ldip, \vt)$;
   \item annotating the type $\vt$ in $\tenv$ yields $\vtp$ \ProseOrTypeError;
   \item determining whether $\vtp$ can be initialized with $\tty$ in $\tenv$ yields $\True$ \ProseOrTypeError;
-  \item anotating the local declaration item $\ldip$ with the local declaration keyword $\ldk$, given
+  \item annotating the local declaration item $\ldip$ with the local declaration keyword $\ldk$, given
   the type $\vt$, in the environment $\tenv$, yields $(\newtenv,\newldip)$;
-  \item $\newldi$ is the local declaration denoting $\newldip$ and the type $\vtp$, that is, $\LDITyped(\newldip, \vtp)$.
+  \item $\newldi$ is the local declaration denoting $\newldip$ and the type $\vtp$, that is, \\
+  $\LDITyped(\newldip, \vtp)$.
 \end{itemize}
 
 \subsection{Example}
@@ -6523,9 +6602,10 @@ All of the following apply:
   \item annotating the local declaration items in $\ldis$ from right to left with their corresponding
   (that is, with the same index) types $t_{1..k}$ in $\tenv$,
   propagating static environments from one annotation to the next,
-  yields the local delcaration items $\ldip_{1..k}$ \ProseOrTypeError;
+  yields the local declaration items $\ldip_{1..k}$ \ProseOrTypeError;
   \item $\newtenv$ is the static environment yielded by annotating $\ldi_1$;
-  \item $\newldi$ is a tuple of local declaration items with $\ldip_{1..k}$, that is, $\LDITuple(\ldip_{1..k})$.
+  \item $\newldi$ is a tuple of local declaration items with $\ldip_{1..k}$, that is, \\
+  $\LDITuple(\ldip_{1..k})$.
 \end{itemize}
 
 \subsection{Example}
@@ -6538,9 +6618,9 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \tty) \typearrow \vtp \OrTypeError\\\\
-  \checktrans{\astlabel(\vtp) = \TTuple} \typearrow \True \OrTypeError\\\\
+  \checktrans{\astlabel(\vtp) = \TTuple, \texttt{"ExpectedTupleType"}} \typearrow \True \OrTypeError\\\\
   \vtp \eqname \TTuple([\vt_{1..n}])\\\\
-  \checktrans{k = n} \typearrow \True \OrTypeError\\\\
+  \checktrans{k = n, \texttt{"BadArity"}} \typearrow \True \OrTypeError\\\\
   \newtenv_k = \tenv\\
   i=k..1:
   \annotatelocaldeclitem{\newtenv_{i}, \ldi_{i}, \ldk, \vt_{i}} \typearrow (\newtenv_{i-1}, \ldip_i) \OrTypeError\\\\
@@ -9424,9 +9504,9 @@ tests whether literal $\vvone$ is $\vvtwo$ by equating them.
 We define the following rules to allow us asserting that a condition holds,
 returning a type error otherwise:
 \begin{mathpar}
-  \inferrule[check\_trans\_true]{}{ \checktrans{\True} \typearrow\True }
+  \inferrule[check\_trans\_true]{}{ \checktrans{\True, \texttt{<message>}} \typearrow\True }
   \and
-  \inferrule[check\_trans\_false]{}{ \checktrans{\False} \typearrow\TypeErrorVal{CheckFailed} }
+  \inferrule[check\_trans\_false]{}{ \checktrans{\False, \texttt{<message>}} \typearrow\TypeErrorVal{\texttt{<message>}} }
 \end{mathpar}
 
 \hypertarget{def-pairstomap}{}
@@ -9813,7 +9893,7 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[okay]{
-  \tstruct(\vt) \typearrow \vtp \OrTypeError\\
+  \tstruct(\vt) \typearrow \vtp \OrTypeError\\\\
   \astlabel(\vtp) = \TInt
 }
 {
@@ -9826,6 +9906,149 @@ One of the following applies:
 }
 {
   \checkstructureinteger(\tenv, \vt) \typearrow \TypeErrorVal{ExpectedIntegerStructure}
+}
+\end{mathpar}
+
+\hypertarget{def-checkstructurelabel}{}
+\section{TypingRule.CheckStructure \label{sec:TypingRule.CheckStructure}}
+The function
+\[
+  \checkstructurelabel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\astlabels}{\vl}) \aslto
+  \True \cup \TTypeError
+\]
+returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a type error otherwise.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item determining the \structure\ of $\vt$ yields $\vtp$ \ProseOrTypeError;
+    \item $\vtp$ has the label $\vl$;
+    \item the result is $\True$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item determining the \structure\ of $\vt$ yields $\vtp$ \ProseOrTypeError;
+    \item $\vtp$ does not have the label $\vl$;
+    \item the result is a type error indicating that $\vt$ was expected to have the \structure\ of a type with the AST label $\vl$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \tstruct(\vt) \typearrow \vtp \OrTypeError\\\\
+  \astlabel(\vtp) = \vl
+}
+{
+  \checkstructurelabel(\tenv, \vt, \vl) \typearrow \True
+}
+\and
+\inferrule[error]{
+  \tstruct(\vt) \typearrow \vtp\\
+  \astlabel(\vtp) \neq \vl
+}
+{
+  \checkstructurelabel(\tenv, \vt, \vl) \typearrow \TypeErrorVal{UnexpectedTypeStructure}
+}
+\end{mathpar}
+
+\hypertarget{def-storageispure}{}
+\section{TypingRule.StorageIsPure \label{sec:TypingRule.StorageIsPure}}
+The function
+\[
+  \storageispure(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs}) \aslto
+  \overname{\Bool}{\vb} \cup \TTypeError
+\]
+$\vb$ is true if and only if the identifier $\vs$ corresponds to a \pure\ storage element
+in the static environment $\tenv$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local}):
+  \begin{itemize}
+    \item $\vs$ is a locally declared storage element;
+    \item $\vb$ is true if and only if $\vs$ is declared as a constant or as an immutable variable (\texttt{let}).
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item $\vs$ is a globally declared storage element;
+    \item $\vb$ is true if and only if $\vs$ is declared as a constat, a configuration variable, or an immutable variable.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item $\vs$ is not defined in the environment as a storage element;
+    \item the result is a type error indicating that $\vs$ is not defined as a storage element.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\StorageIsPureBegin}{\StorageIsPureEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\localstoragetypes(\vs) = (\Ignore, \ldk)\\
+  \vb \eqdef \ldk \in \{\LDKConstant, \LDKLet\}
+}
+{
+  \storageispure(\tenv, \vs) \typearrow \vb
+}
+\and
+\inferrule[global]{
+  L^\tenv.\localstoragetypes(\vs) = \bot\\
+  G^\tenv.\globalstoragetypes(\vs) = (\Ignore, \gdk)\\
+  \vb \eqdef \gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}
+}
+{
+  \storageispure(\tenv, \vs) \typearrow \vb
+}
+\and
+\inferrule[error]{
+  L^\tenv.\localstoragetypes(\vs) = \bot\\
+  G^\tenv.\globalstoragetypes(\vs) = \bot
+}
+{
+  \storageispure(\tenv, \vs) \typearrow \TypeErrorVal{UndefinedIdentifier}
+}
+\end{mathpar}
+
+\hypertarget{def-checkstaticallyevaluable}{}
+\section{TypingRule.CheckStaticallyEvaluable \label{sec:TypingRule.CheckStaticallyEvaluable}}
+The function
+\[
+  \checkstaticallyevaluable(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \True \cup \TTypeError
+\]
+returns $\True$ if $\ve$ is a \staticallyevaluable\ expression in the static environment $\tenv$ and a type error otherwise.
+
+\subsection{Prose}
+All of the following applies:
+\begin{itemize}
+  \item symbolically reducing $\ve$ in $\tenv$ yields $\veone$;
+  \item determining the set of used identifiers in $\veone$ yields $\useset$;
+  \item $\vb$ is true if and only if every identifier in $\useset$ is pure;
+  \item the result is $\True$ is $\vb$ is $\True$, otherwise it is a type error indicating that the expression
+  is not statically evaluable.
+\end{itemize}
+
+\CodeSubsection{\CheckStaticallyEvaluableBegin}{\CheckStaticallyEvaluableEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \tododefine{reduce\_expr}(\tenv, \ve) \typearrow \veone\\
+  \tododefine{use\_e}(\veone) \typearrow \useset\\
+  \id\in\useset: \storageispure(\tenv, \id) \typearrow \vb_\id\\
+  \vb \eqdef \bigwedge_{\id\in\useset} \vb_\id\\
+  \checktrans{\vb, \texttt{"NotStaticallyEvaluable"}} \typearrow \True \OrTypeError
+}
+{
+  \checkstaticallyevaluable(\tenv, \ve) \typearrow \True
 }
 \end{mathpar}
 
