@@ -397,9 +397,9 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\decl &::=& \texttt{D\_Func}(\func)\\
-  & & \texttt{D\_GlobalStorage}(\globaldecl)\\
-  & & \texttt{D\_TypeDecl}(\identifier, \ty, (\identifier, \Field^*)?)\\
+\decl &::=& \DFunc(\func)\\
+  & & \DGlobalStorage(\globaldecl)\\
+  & & \DTypeDecl(\identifier, \ty, (\identifier, \Field^*)?)\\
   & & \ASTComment{The last component is for \texttt{with} fields.}\\
 \specification &::=& \decl^*\\
 \end{array}
@@ -455,6 +455,5 @@ which is utilized both for the type system and semantics:
   \torexpr(\texttt{LE\_Concat}([\vle_{1..k}], \Ignore)) &=& \texttt{E\_Concat}([i=1..k: \torexpr(\vle_i)])\\
 \end{array}
 \]
-
 
 \end{document}

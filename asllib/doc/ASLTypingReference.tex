@@ -156,8 +156,9 @@
 \newcommand\annotatelocaldeclitemuninit[1]{\texttt{annotate\_local\_decl\_item\_uninit}(#1)}
 \newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\texttt{check\_var\_not\_in\_env}}(#1)}
 \newcommand\varinenv[1]{\hyperlink{def-varinenv}{\texttt{var\_in\_env}}(#1)}
-\newcommand\annotatesubprogram[1]{\texttt{annotate\_subprogram}(#1)}
-\newcommand\declaredecl[1]{\texttt{annotate\_decl}(#1)}
+\newcommand\annotatesubprogram[1]{\hyperlink{def-annotatesubprogram}{\texttt{annotate\_subprogram}}(#1)}
+\newcommand\annotatedecl[1]{\hyperlink{def-annotatedecl}{\texttt{annotate\_decl}}(#1)}
+\newcommand\declaredecl[1]{\hyperlink{def-declaredecl}{\texttt{declare\_decl}}(#1)}
 \newcommand\annotatespec[1]{\texttt{annotate\_spec}(#1)}
 \newcommand\evalexpr[1]{\texttt{eval\_expr}(#1)}
 \newcommand\evalconstraint[1]{\texttt{eval\_constraint}(#1)}
@@ -6715,19 +6716,19 @@ environment $\newenv$ and all of the following apply:
          \item All of the following apply:
            \begin{itemize}
            \item \texttt{ver} is ASLv1;
-           \item \texttt{env1} is $\tenv$;
+           \item $\tenvone$ is $\tenv$;
            \end{itemize}
          \item All of the following apply:
            \begin{itemize}
            \item \texttt{ver} is ASLv0;
-	   \item \texttt{env1} is the result of annotating undeclared variables by using
+	   \item $\tenvone$ is the result of annotating undeclared variables by using
 	      the first assignments to such variables as declarations;
            \end{itemize}
          \end{itemize}
 
-       \item $\vleone$ is the result of annotating \texttt{le} with \texttt{t\_e} in \texttt{env1};
+       \item $\vleone$ is the result of annotating \texttt{le} with \texttt{t\_e} in $\tenvone$;
        \item $\news$ is the assignment \texttt{le1 = e1};
-       \item $\newenv$ is \texttt{env1}.
+       \item $\newenv$ is $\tenvone$.
        \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -6907,9 +6908,9 @@ environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a statement \texttt{s1; s2};
    \item \texttt{new\_s1, env1} is the result of annotating \texttt{s1} in $\tenv$;
-   \item \texttt{new\_s2, env2} is the result of annotating \texttt{s2} in \texttt{env1};
+   \item \texttt{new\_s2, env2} is the result of annotating \texttt{s2} in $\tenvone$;
    \item $\news$ is a then statement over two statements \texttt{new\_s1} and \texttt{new\_s2};
-   \item $\newenv$ is \texttt{env2}.
+   \item $\newenv$ is $\tenvtwo$.
    \end{itemize}
 
   \subsection{Example}
@@ -7033,7 +7034,7 @@ environment $\newenv$ and all of the following apply:
    \item \texttt{t\_e, e1} is the result of annotating $\ve$ in $\tenv$;
    \item \texttt{cases1, env1} is the result of annotating each case in \texttt{cases} given \texttt{t\_e};
    \item $\news$ is a case statement with expression $\veone$ and cases \texttt{cases1};
-   \item $\newenv$ is \texttt{env1}.
+   \item $\newenv$ is $\tenvone$.
    \end{itemize}
 
   \subsection{Example}
@@ -7635,8 +7636,7 @@ The function
   \overname{\langle \ty \rangle}{\rettyone})
 \end{array}
 \]
-
-Annotates the call to subprogram $\name$ with arguments $\vargs$,
+annotates the call to subprogram $\name$ with arguments $\vargs$,
 parameters $\eqs$, and call type $\calltype$, resulting in values for an annotated call ---
 $\nameone$, $\vargsone$, $\eqstwo$, $\rettyone$ --- or a type error if one is detected.
 
@@ -7892,63 +7892,58 @@ A type error is returned, if one is detected.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Subprograms}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Annotating a subprogram $\vf$ in an environment $\tenv$
-(\texttt{annotate\_subprogram}) results in \texttt{f'}.
+\hypertarget{def-annotatesubprogram}{}
+The function
+\[
+  \annotatesubprogram{\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf}} \aslto \overname{\func}{\vfp}
+\]
+annotates a subprogram $\vf$ in an environment $\tenv$, resulting in an annotated subprogram $\vfp$,
+or a type error, if one is detected.
 
 \section{TypingRule.Subprogram \label{sec:TypingRule.Subprogram}}
 
-  \subsection{Prose}
-Annotating a subprogram $\vf$ in an environment $\tenv$
-(\texttt{annotate\_subprogram}) results in $\vf$, \texttt{new\_body} and all of
-the following apply:
- \begin{itemize}
-   \item \texttt{env1} is $\tenv$ modified to have an empty local
-     environment and a return type given by $\vf$;
-   \item \texttt{env2} is \texttt{env1} with every formal argument given by
-     $\vf$ declared as immutable with its type;
-   \item \texttt{env3} is \texttt{env2} modified to add explicit parameters
-     given by $\vf$;
-   \item \texttt{env4} is \texttt{env3} modified to resolve dependently typed
-     identifiers in the arguments given by $\vf$;
-   \item \texttt{env5} is \texttt{env4} modified to resolve dependently typed
-     identifiers in the result type given by $\vf$;
-   \item \texttt{body} is the body given by $\vf$;
-   \item \texttt{new\_body} is the result of annotating \texttt{body} in
-     \texttt{env5}.
-   \item \texttt{f'} is the function $\vf$ with \texttt{new\_body} substituted for \texttt{body}.
- \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vf$ is a $\func$ AST node subprogram body $\body$;
+  \item annotating the block $\body$ in $\tenv$ as per \secref{TypingRule.Block} yields $\newbody$ \ProseOrTypeError;
+  \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
+\CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{}{ \texttt{param\_type}(\None) = \isunconstrainedinteger }
-  \and
-  \inferrule{}{ \texttt{param\_type}(\langle\tty\rangle) = \tty }
-  \and
-  \inferrule{
-    \texttt{env1} = (G^\tenv, [\constantvalues \mapsto \lambda \id.\ \bot, \localstoragetypes \mapsto \lambda \id.\ \bot, \returntype = \vf.\returntype])\\
-    \vf.\text{args} = [i=1..k: (\va_i, \tty_i)]\\
-    i=1..k: \checkvarnotinenv{\texttt{env1}, \va_i}\\
-    \texttt{env2} = (G^\texttt{env1}, \texttt{env1}[\localstoragetypes \mapsto [i=1..k: \va_i \mapsto (\LDKLet, \tty_i)] )]\\
-    \vf.\text{parameters} = [j=1..n: (\vp_j, \tyopt_j)]\\
-    j=1..k: \checkvarnotinenv{\texttt{env2}, \vp_j}\\
-    \texttt{env3} = (G^\texttt{env2}, \texttt{env2}[\localstoragetypes \mapsto [j=1..n: \vp_i \mapsto (\LDKLet, \texttt{param\_type}(\tyopt_j))] )]\\
-    \texttt{env4} = \texttt{add\_dependently\_typed}(\texttt{env3}, \vf.\text{args})\\
-    \texttt{env5} = \texttt{resolve\_dependently\_typed\_in\_res}(\texttt{env4}, \vf.\text{return\_type})\\
-    \vf.\text{return\_type} = \texttt{SB\_ASL} \vs\\
-    \annotateblock{\texttt{env4}, \vs} \typearrow \texttt{new\_body}\\
-    (\Ignore, \name, \Ignore, \Ignore) \in G^\texttt{env5}.\subprogramrenamings(\vf.\name, [i=1..k: \tty_i])\\
-    \vf' = \vf[\text{body}\mapsto \texttt{new\_body}]
-  }
+\inferrule{
   {
-    \annotatesubprogram{\tenv, \vf} \typearrow \vf'
-  }
+    \begin{array}{rrcl}
+  \vf \eqname \{ & \funcname            &:& \id,\\
+                 & \funcparameters      &:& \vp,\\
+                 & \funcargs            &:& \vargs,\\
+                 & \funcbody            &:& \SBASL(\body),\\
+                 & \funcreturntype      &:& \vt,\\
+                 & \funcsubprogramtype  &:& \subprogramtype \\
+              \} &&&
+    \end{array}
+  }\\
+  \annotateblock{\tenv, \body} \typearrow \newbody \OrTypeError\\
+  {
+    \begin{array}{rrcl}
+  \vfp \eqdef \{ & \funcname            &:& \id,\\
+                 & \funcparameters      &:& \vp,\\
+                 & \funcargs            &:& \vargs,\\
+                 & \funcbody            &:& \SBASL(\newbody),\\
+                 & \funcreturntype      &:& \vt,\\
+                 & \funcsubprogramtype  &:& \subprogramtype \\
+              \} &&&
+    \end{array}
+  }\\
+}{
+  \annotatesubprogram{\tenv, \vf} \typearrow \vfp
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -7959,9 +7954,28 @@ This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Global Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hypertarget{def-declaredecl}{}
+\hypertarget{def-annotatedecl}{}
+The function
+\[
+  \annotatedecl{\overname{\staticenvs}{\tenv} \aslsep \overname{\decl}{\vd}}
+  \aslto \overname{\staticenvs}{\newtenv}
+\]
+annotates a global declaration $\vd$ in a static environment $\tenv$,
+resulting in an annotated declaration $\newd$ and a new environment $\newtenv$,
+which contains the declared element.
+A type error is returned, if one is detected.
 
-Declaring a global declaration $\vd$ in an environment $\tenv$ ($\declaredecl{\tenv, \vd}$)
-results in a new environment $\tenvp$, which contains the declared element, and one of the following applies:
+The function
+\[
+  \declaredecl{\overname{\staticenvs}{\tenv} \aslsep \overname{\decl}{\vd}}
+  \aslto \overname{\staticenvs}{\newtenv}
+\]
+adds a global declaration $\vd$ in a static environment $\tenv$,
+resulting in a new environment $\newtenv$, which contains the declared element.
+A type error is returned, if one is detected.
+
+One of the following applies:
 \begin{itemize}
   \item TypingRule.DeclareOneFunc (see \secref{TypingRule.DeclareOneFunc}).
   \item TypingRule.DeclareGlobalStorage (see \secref{TypingRule.DeclareGlobalStorage}).
@@ -7984,51 +7998,97 @@ in $\newenv$ and all of the following apply:
 
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
 \begin{emptyformal}
-  \subsection{Formally}
-
-We define the helper rules \hassubprogramtypeclash, \argsclash, and subprogramclash\ to determined whether
-two subprogram clash in terms of their subprogram types and their lists of argument types,
-and then use them to annotate a subprogram declaration.
-
+\subsection{Formally}
 \begin{mathpar}
-\inferrule{}{\hassubprogramtypeclash(\tenv, \STFunction, \Ignore)}
-\and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \STFunction)}
-\and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \STProcedure, \Ignore)}
-\and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \STProcedure)}
-\and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \STGetter, \STGetter)}
-\and
-\inferrule{}{\hassubprogramtypeclash(\tenv, \STSetter, \STSetter)}
-\and
 \inferrule{
-  \texttt{t\_args1} = [i=1..k: (\Ignore, \vt_i)]\\
-  \texttt{s\_args1} = [i=1..k: (\Ignore, \vs_i)]\\
-  j \in 1..k\\
-  \typeclashes(\tenv, \vt_j, \vs_j)
-}
-{\argsclash(\tenv, \texttt{t\_args}, \texttt{s\_args})}
-\and
-\inferrule{
-  \argsclash(\vf.\subprogramtype, \texttt{g}.\subprogramtype)\\
-  \argsclash(\vf.\vargs, \texttt{g}.\vargs)\\
-}
-{ \subprogramclash(\vf, \texttt{g}) }
-\and
-\inferrule{
-  \name = \funcsig.\name\\
-  \texttt{same\_named} = G^\tenv.\subprogramrenamings(\name)\\
-  \texttt{fo} \in \texttt{same\_named}: \neg\subprogramclash(\tenv, \funcsig, \texttt{fo})\\
-  G' = G^\tenv.\subprogramrenamings[\name \mapsto \texttt{same\_named} \cup \{\funcsig\}]\\
-  G'' = G'.\subprograms[\name \mapsto \funcsig]\\
-  \newenv = (G'', L^\tenv)
+  {
+  \begin{array}{rrcl}
+    \funcsig \eqdef \{ & \funcname            &:& \name,\\
+                   & \funcparameters      &:& \vp,\\
+                   & \funcargs            &:& \vargs,\\
+                   & \funcbody            &:& \SBASL(\newbody),\\
+                   & \funcreturntype      &:& \vt,\\
+                   & \funcsubprogramtype  &:& \subprogramtype \\
+                \} &&&
+      \end{array}
+    }\\
+  \tododefine{add\_new\_func}(\tenv, \name, \vargs, \vp) \typearrow
+  (\tenvone, \namep) \OrTypeError\\
+  \checkvarnotinenv{\tenvone, \namep} \typearrow \True \OrTypeError\\\\
+  \tododefine{check\_setter\_has\_getter}(\tenvone, \funcsig) \typearrow \True \OrTypeError\\\\
+  {
+  \begin{array}{rrcl}
+    \funcsig \eqdef \{ & \funcname            &:& \namep,\\
+                   & \funcparameters      &:& \vp,\\
+                   & \funcargs            &:& \vargs,\\
+                   & \funcbody            &:& \SBASL(\newbody),\\
+                   & \funcreturntype      &:& \vt,\\
+                   & \funcsubprogramtype  &:& \subprogramtype \\
+                \} &&&
+      \end{array}
+    }\\
+    \tododefine{add\_subprogram}(\namep, \funcsigone, \tenvone) \typearrow \newtenv \OrTypeError
 }
 {
-  \declaredecl{\tenv, \funcsig} \typearrow G''
+  \declaredecl{\tenv, \funcsig} \typearrow (\newtenv, \funcsigone)
 }
 \end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \vf \eqname \{\funcbody: \SBASL(\Ignore)\}\\
+  \tododefine{annotate\_and\_declare\_func}(\tenv, \vf) \typearrow (\newtenv, \vfone) \OrTypeError\\\\
+  \annotatesubprogram{\tenv, \vfone} \typearrow \vftwo \OrTypeError\\\\
+  \newd \eqdef \DFunc(\vftwo)
+}
+{
+  \annotatedecl{\tenv, \DFunc(\vf)} \typearrow (\newd, \newenv)
+}
+\end{mathpar}
+
+% We define the helper rules \hassubprogramtypeclash, \argsclash, and subprogramclash\ to determined whether
+% two subprogram clash in terms of their subprogram types and their lists of argument types,
+% and then use them to annotate a subprogram declaration.
+
+% \begin{mathpar}
+% \inferrule{}{\hassubprogramtypeclash(\tenv, \STFunction, \Ignore)}
+% \and
+% \inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \STFunction)}
+% \and
+% \inferrule{}{\hassubprogramtypeclash(\tenv, \STProcedure, \Ignore)}
+% \and
+% \inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \STProcedure)}
+% \and
+% \inferrule{}{\hassubprogramtypeclash(\tenv, \STGetter, \STGetter)}
+% \and
+% \inferrule{}{\hassubprogramtypeclash(\tenv, \STSetter, \STSetter)}
+% \and
+% \inferrule{
+%   \texttt{t\_args1} = [i=1..k: (\Ignore, \vt_i)]\\
+%   \texttt{s\_args1} = [i=1..k: (\Ignore, \vs_i)]\\
+%   j \in 1..k\\
+%   \typeclashes(\tenv, \vt_j, \vs_j)
+% }
+% {\argsclash(\tenv, \texttt{t\_args}, \texttt{s\_args})}
+% \and
+% \inferrule{
+%   \argsclash(\vf.\subprogramtype, \texttt{g}.\subprogramtype)\\
+%   \argsclash(\vf.\vargs, \texttt{g}.\vargs)\\
+% }
+% { \subprogramclash(\vf, \texttt{g}) }
+% \and
+% \inferrule{
+%   \name = \funcsig.\name\\
+%   \texttt{same\_named} = G^\tenv.\subprogramrenamings(\name)\\
+%   \texttt{fo} \in \texttt{same\_named}: \neg\subprogramclash(\tenv, \funcsig, \texttt{fo})\\
+%   G' = G^\tenv.\subprogramrenamings[\name \mapsto \texttt{same\_named} \cup \{\funcsig\}]\\
+%   G'' = G'.\subprograms[\name \mapsto \funcsig]\\
+%   \newenv = (G'', L^\tenv)
+% }
+% {
+%   \declaredecl{\tenv, \funcsig} \typearrow G''
+% }
+% \end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
 
