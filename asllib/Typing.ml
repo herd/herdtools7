@@ -169,6 +169,12 @@ let get_first_duplicate extractor li =
     None
   with Duplicate x -> Some x
 
+(** [set_filter_map f set] is the list of [y] such that [f x = Some y] for all
+    elements [x] of [set]. *)
+let set_filter_map f set =
+  let folder e acc = match f e with None -> acc | Some x -> x :: acc in
+  ISet.fold folder set []
+
 (* ---------------------------------------------------------------------------
 
                               Properties handling
@@ -318,38 +324,23 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     let () =
       if false then Format.eprintf "Trying to rename call to %S@." name
     in
-    match IMap.find_opt name env.global.subprogram_renamings with
-    | None -> (
-        match IMap.find_opt name env.global.subprograms with
-        | Some func_sig ->
-            let callee_arg_types = func_sig.args in
-            if has_arg_clash env caller_arg_types callee_arg_types then
-              let () =
-                if false then
-                  Format.eprintf "Found already translated name: %S.@." name
-              in
-              (deduce_eqs env caller_arg_types callee_arg_types, name, func_sig)
-            else fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
-        | None -> undefined_identifier loc name)
-    | Some set -> (
-        let finder name' acc =
-          match IMap.find_opt name' env.global.subprograms with
-          | None -> acc (* Declaration in progress. *)
-          | Some func_sig ->
-              let callee_arg_types = func_sig.args in
-              if has_arg_clash env caller_arg_types callee_arg_types then
-                ( deduce_eqs env caller_arg_types callee_arg_types,
-                  name',
-                  func_sig )
-                :: acc
-              else acc
-        in
-        match ISet.fold finder set [] with
-        | [ res ] -> res
-        | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
-        | _ :: _ ->
-            fatal_from loc
-              (Error.TooManyCallCandidates (name, caller_arg_types)))
+    let renaming_set =
+      try IMap.find name env.global.subprogram_renamings
+      with Not_found -> undefined_identifier loc name
+    in
+    let get_func_sig name' =
+      match IMap.find_opt name' env.global.subprograms with
+      | Some func_sig when has_arg_clash env caller_arg_types func_sig.args ->
+          Some (name', func_sig)
+      | _ -> None
+    in
+    let matching_renamings = set_filter_map get_func_sig renaming_set in
+    match matching_renamings with
+    | [ (name', func_sig) ] ->
+        (deduce_eqs env caller_arg_types func_sig.args, name', func_sig)
+    | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
+    | _ :: _ ->
+        fatal_from loc (Error.TooManyCallCandidates (name, caller_arg_types))
 
   let try_find_name =
     match C.check with
