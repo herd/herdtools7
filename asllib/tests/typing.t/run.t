@@ -73,8 +73,9 @@ Use of global vars in constraints
     provided integer {0..LET_ALLOWED_NUMS_C}.
   [1]
   $ aslref --no-exec TPositive4-4.asl
-  File TPositive4-4.asl, line 25, characters 25 to 44:
-  ASL Error: Undefined identifier: 'CONFIG_ALLOWED_NUMS'
+  File TPositive4-4.asl, line 25, characters 4 to 54:
+  ASL Typing error: a subtype of integer {CONFIG_ALLOWED_NUMS} was expected,
+    provided integer {16}.
   [1]
   $ aslref --no-exec TReconsider4-0.asl
   File TReconsider4-0.asl, line 13, characters 4 to 54:

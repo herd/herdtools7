@@ -5,7 +5,7 @@ let      LET_ALLOWED_NUMS_A                   = 8;
 let      LET_ALLOWED_NUMS_B  : integer {8,16} = 8;
 let      LET_ALLOWED_NUMS_C  : integer {8,16} = foo();
 constant CONST_ALLOWED_NUMS  : integer {8,16} = 8;
-// config   CONFIG_ALLOWED_NUMS : integer {8,16} = foo();
+config   CONFIG_ALLOWED_NUMS : integer {8,16} = foo();
 var      VAR_ALLOWED_NUMS    : integer {8}    = 8;
 
 func positive4()
