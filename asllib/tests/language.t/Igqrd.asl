@@ -1,3 +1,8 @@
+//I_GQRD: The following example shows the declaration of a function
+//getDefault whose return type is a bitvector of undetermined width which is
+//not dependent on a parameter. Since it is dependent on a config value, the
+//declaration is legal - there is no overloading of the result type.
+
 // RUN: interp %s | FileCheck %s
 
 config systemWid: integer {8,16} = 8;

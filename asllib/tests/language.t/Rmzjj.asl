@@ -1,3 +1,5 @@
+//R_MZJJ: The getter keyword introduces a getter declaration.
+
 // RUN: interp %s | FileCheck %s
 
 getter a[] => integer

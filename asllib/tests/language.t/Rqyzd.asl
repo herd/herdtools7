@@ -1,3 +1,6 @@
+//R_QYZD: If ty has the structure of the unconstrained integer then bits(-:
+//ty) is illegal.
+
 // RUN: not interp %s | FileCheck %s
 
 func main() => integer

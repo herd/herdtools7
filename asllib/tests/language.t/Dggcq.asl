@@ -1,3 +1,7 @@
+//D_GGCQ: The catcher syntax includes an optional identifier immediately
+//following the when keyword. That identifier is called the catcher’s
+//exception.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 10
 

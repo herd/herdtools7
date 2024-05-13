@@ -1,3 +1,7 @@
+//R_ZWCH: The identifier in an exception expression must be a named type
+//with the structure of an exception type, and whose fields have the values
+//given in the field_assignment_list.
+
 // RUN: interp %s | FileCheck %s
 
 type a of exception {

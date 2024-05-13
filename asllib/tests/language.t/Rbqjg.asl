@@ -1,3 +1,6 @@
+//R_BQJG: The type of a function of getter invocation is the invocation type
+//of its return type.
+
 // RUN: interp %s | FileCheck %s
 
 getter a => integer

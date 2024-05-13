@@ -1,6 +1,7 @@
+//R_NXRX: The subtype relation is a partial order.
 // RUN: interp %s | FileCheck %s
 
-// ! Nothing to test here
+// ! TODO
 
 func main() => integer
 begin

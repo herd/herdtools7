@@ -1,3 +1,5 @@
+//R_GQNL: The operator --> represents the boolean implies operator.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: TRUE
 // CHECK-NEXT: TRUE

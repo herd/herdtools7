@@ -1,3 +1,6 @@
+//D_GWWP: A side-effect-free subprogram is one that does not mutate
+//global storage elements.
+
 // RUN: interp %s | FileCheck %s
 
 func a() => integer

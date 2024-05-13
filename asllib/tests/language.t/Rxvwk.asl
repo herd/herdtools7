@@ -1,3 +1,15 @@
+//R_XVWK: If no arguments of a bitvector concatenation with n arguments are
+//under-constrained width bitvectors and at least one argument is a
+//constrained width bitvector then the result of the concatenation is a
+//constrained width bitvector whose constraint is C which is calculated as
+//follows:
+//- if the i’th argument is a constrained width bitvector, then the set Ci
+//is the constraint of the argument’s width 
+//- if the i’th argument is a fixed width bitvector, then Ci is the set
+//containing only the argument’s width
+//- thesetCis{x|y1 ∈C1 ∧···∧yn ∈Cn ∧x=Pni=1yi}
+
+
 // RUN: interp %s | FileCheck %s
 
 func f(P: integer {2,4,8})

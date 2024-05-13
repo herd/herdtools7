@@ -1,3 +1,6 @@
+//D_BMGM: The domain of a type is the set of values which
+//storage elements of that type may hold.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

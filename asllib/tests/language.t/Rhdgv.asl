@@ -1,3 +1,6 @@
+//R_HDGV: It is an error to declare a subprogram formal argument or
+//parameter with the same name as a global variable.
+
 // RUN: not interp %s | FileCheck %s
 
 var a: integer;

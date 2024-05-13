@@ -1,3 +1,7 @@
+//R_CKGP: A global let or var identifier is initialized after any
+//non-execution-time initializer expressions are evaluated and before any
+//execution-time subprograms are evaluated.
+
 // RUN: interp %s | FileCheck %s
 
 constant a = 10 + 10;

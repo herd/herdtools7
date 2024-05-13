@@ -1,3 +1,7 @@
+//R_PHNZ: A return statement appearing in a getter or function requires a
+//return value expression that type-satisfies the return type of the
+//subprogram.
+
 // RUN: not interp %s | FileCheck %s
 
 func a() => integer

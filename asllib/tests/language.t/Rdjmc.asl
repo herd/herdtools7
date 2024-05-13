@@ -1,3 +1,6 @@
+//R_DJMC: Initialization expressions in global declarations must not be
+//side-effecting.
+
 // RUN: not interp %s | FileCheck %s
 
 var a : integer = 10;

@@ -1,3 +1,10 @@
+//I_HYBT: Subprogram invocations are also [like subprogram declarations, see
+//I_NXJR] either execution-time or non-execution-time invocations.
+
+//I_NXJR: Subprogram declarations in ASL are either execution-time
+//subprogram declarations or non-execution-time subprogram declarations.
+
+
 // RUN: interp %s | FileCheck %s
 
 var counter: integer = 0;

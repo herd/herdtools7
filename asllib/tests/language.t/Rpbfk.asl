@@ -1,3 +1,9 @@
+//R_PBFK: Constant bit-vectors are written using 1, 0 and spaces surrounded
+//by single-quotes.
+//Definition of a bitvector
+//<bitvector_lit> ::= '\'' ["01 "]* '\''
+
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 0x0
 // CHECK-NEXT: 0xF

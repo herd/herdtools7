@@ -1,3 +1,12 @@
+//I_GQYG: This means that constant and let identifiers can be used to
+//demonstrate that a bitvector’s width is acceptable.
+//Comparing bitvector widths involves maintaining a mapping from immutable
+//identifiers to their values. Where the value of an immutable identifier is
+//not given as a statically evaluable expression, the mapping should simply
+//map the identifier to itself.  Comparisons of bitvector width requires the
+//ability to use these mappings to reduce immutable terms in an expression
+//using arithmetic rewrites and normalization.
+
 // RUN: interp %s | FileCheck %s
 
 var gInt: integer {1,2,3}; // a constrained mutable global

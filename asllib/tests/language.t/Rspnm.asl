@@ -1,3 +1,7 @@
+//R_SPNM: When the catch of a try statement is executed, then the thrown
+//exception is caught by the first catcher in that catch which it
+//type-satisfies or the otherwise_opt in that catch if it exists.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: b
 // CHECK-NEXT: a

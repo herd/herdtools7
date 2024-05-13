@@ -1,3 +1,4 @@
+//R_MBZP: The setter keyword introduces a setter declaration.
 // RUN: interp %s | FileCheck %s
 
 var b: integer;

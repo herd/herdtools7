@@ -1,3 +1,8 @@
+//R_SFPM: A side-effect-free subprogram must not contain an assignment
+//statement whose left hand side refers to a mutable global storage element,
+//or a call to a subprogram that is not side-effect-free, or a throw
+//statement.
+
 // RUN: interp %s | FileCheck %s
 
 var globe: integer = 10;

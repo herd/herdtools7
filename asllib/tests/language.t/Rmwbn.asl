@@ -1,3 +1,7 @@
+//R_MWBN: The invocation type of a formal argument or return type is its
+//declared type after the values and constraints of parameters have been
+//applied.
+
 // RUN: interp %s | FileCheck %s
 
 config c: integer{} = 10;

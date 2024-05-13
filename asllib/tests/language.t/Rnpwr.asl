@@ -1,3 +1,6 @@
+//R_NPWR: Repeat statements repeatedly execute a block of statements and
+//then test a condition expression.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 0
 // CHECK-NEXT: 1

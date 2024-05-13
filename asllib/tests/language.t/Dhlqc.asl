@@ -1,3 +1,6 @@
+//D_HLQC: Any expression consisting of a primitive operation on
+//statically evaluable operands is a statically evaluable expression
+
 // RUN: interp %s | FileCheck %s
 
 let x: integer = 10;

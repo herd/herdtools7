@@ -1,3 +1,6 @@
+//R_KZTJ: If no TRUE condition is found and there is no else block, no block
+//is executed.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 0
 // CHECK-NEXT: 3

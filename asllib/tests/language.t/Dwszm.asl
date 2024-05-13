@@ -1,3 +1,6 @@
+//D_WSZM: Bitvectors are either of undetermined width or have a
+//determined width.
+
 // RUN: interp %s | FileCheck %s
 
 func undetermined(N: integer{1..10}) => bits(N)

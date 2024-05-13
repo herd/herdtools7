@@ -1,3 +1,5 @@
+//R_JGVX: Functions must only be used in function invocation expressions. 
+
 // RUN: interp %s | FileCheck %s
 
 func test(a: integer) => integer

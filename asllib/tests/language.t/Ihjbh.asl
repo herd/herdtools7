@@ -1,3 +1,6 @@
+//I_HJBH: There is no bound on the minimum and maximum integer value that
+//can be represented.
+
 // RUN: interp %s | FileCheck %s
 
 // CHECK: 99999999999999999999999999999999999999999999999

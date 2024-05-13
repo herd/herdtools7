@@ -1,3 +1,6 @@
+//R_WMFV: The type of a storage element is the same as the type of the
+//identifier which denotes the storage element.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

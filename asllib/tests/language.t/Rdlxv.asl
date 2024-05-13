@@ -1,3 +1,6 @@
+//R_DLXV: Fields of a record can be read or written independently using the
+//syntax r.f to refer to field f of a record r.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 10
 

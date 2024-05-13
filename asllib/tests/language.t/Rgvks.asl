@@ -1,3 +1,6 @@
+//R_GVKS: An expressionless throw statement causes the exception which the
+//currently executing catcher caught to be thrown.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: a
 

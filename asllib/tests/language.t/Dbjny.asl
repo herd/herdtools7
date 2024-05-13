@@ -1,3 +1,7 @@
+//D_BJNY: An assignment statement stores the value of the
+//right-hand side expression in one or more storage elements,
+//as denoted by the left hand side.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

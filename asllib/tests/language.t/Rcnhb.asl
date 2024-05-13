@@ -1,3 +1,5 @@
+//R_CNHB: The bit-slices of a single bitfield must not overlap.
+
 // RUN: not interp %s | FileCheck %s
 
 type a of bits(5) {

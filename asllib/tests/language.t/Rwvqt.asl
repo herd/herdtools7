@@ -1,3 +1,5 @@
+//R_WVQT: The repeat loop terminates once the condition is TRUE.
+
 // RUN: interp %s | FileCheck %s
 // CHECK-NOT: 1
 

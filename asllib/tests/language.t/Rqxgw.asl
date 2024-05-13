@@ -1,3 +1,5 @@
+//R_QXGW: The type bit is identical to the type bits(1)
+
 // RUN: interp %s | FileCheck %s
 // CHECK: TRUE
 

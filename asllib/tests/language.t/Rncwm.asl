@@ -1,3 +1,10 @@
+//R_NCWM: The exponentiation operation exp_int(x,y) raises x to the power of
+//y.
+//Note:
+//Since the integer type represents the mathematical integers, operators
+//such as add_int, mul_int, etc. obey mathematical laws such as
+//associativity, distributivity, commutativity, etc.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 1000
 // CHECK-NEXT: 32

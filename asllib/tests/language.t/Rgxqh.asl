@@ -1,3 +1,6 @@
+//R_GXQH: If a getter function does not contain an argument list in the
+//declaration, the getter must not be invoked with square brackets.
+
 // RUN: not interp %s | FileCheck %s
 
 getter a => integer

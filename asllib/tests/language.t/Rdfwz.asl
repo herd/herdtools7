@@ -1,3 +1,6 @@
+//R_DFWZ: It is not an error for execution of a procedure or setter to end
+//without a return statement.
+
 // RUN: interp %s | FileCheck %s
 
 var t: integer;

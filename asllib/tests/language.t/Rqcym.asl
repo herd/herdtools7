@@ -1,3 +1,6 @@
+//R_QCYM: The type of a bitfield with a type annotation must subtype-satisfy
+//the bitvector type with size of the width of the bitfield.
+
 // RUN: interp %s | FileCheck %s
 
 type b of bits(5);

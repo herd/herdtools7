@@ -1,3 +1,10 @@
+//D_QNHM: A subprogram invocation is a compile-time-constant invocation
+//if all the following hold:
+//- the invoked subprogram is a compile-time-constant subprogram
+//- all of the actual arguments are compile-time-constant expressions
+//- all actual arguments which are bitvectors were declared with a
+//constant expression width
+
 // RUN: interp %s | FileCheck %s
 
 func compiletime(a: integer, b: integer)

@@ -1,3 +1,6 @@
+//R_MPMG: Bitfield names must be unique with respect to other fields in the
+//same type.
+
 // RUN: not interp %s | FileCheck %s
 
 type a of bits(5) {

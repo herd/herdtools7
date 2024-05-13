@@ -1,3 +1,8 @@
+//R_QKXV: The optional parameter_list declares the parameters of the getter
+//or setter. ASL permits the declaration of subprograms with formals which
+//are parameterized such that where a formal or return type is a bitvector,
+//its width may depend on the value of the subprogram parameters. 
+
 // RUN: interp %s | FileCheck %s
 
 var _a: integer;

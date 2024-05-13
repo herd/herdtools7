@@ -1,3 +1,7 @@
+//I_BCWW: A side-effect-free subprogram may read mutable global storage
+//elements, and may call other side-effect-free subprograms. It may declare
+//local variables and assign to them.
+
 // RUN: interp %s | FileCheck %s
 
 var globe: integer = 10;

@@ -1,3 +1,6 @@
+//R_DWSP: No enumeration literal may explicitly appear in multiple
+//enumeration type declarations.
+
 // RUN: not interp %s | FileCheck %s
 
 type enum of enumeration{A, B};

@@ -1,3 +1,4 @@
+//R_CHBW: The bit-slices of different bitfields may overlap.
 // RUN: interp %s | FileCheck %s
 
 type a of bits(5) {

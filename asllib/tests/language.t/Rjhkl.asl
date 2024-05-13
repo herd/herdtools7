@@ -1,3 +1,4 @@
+//R_JHKL: The value and type of tuple elements cannot be modified.
 // RUN: not interp %s | FileCheck %s
 
 func main() => integer

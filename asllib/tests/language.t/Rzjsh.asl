@@ -1,3 +1,6 @@
+//R_ZJSH: The type of a bitfield which does not have a type annotation is a
+//bitvector type of the width of the bitfield.
+
 // RUN: interp %s | FileCheck %s
 
 type a of bits(6) {

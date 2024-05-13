@@ -1,3 +1,5 @@
+//R_RQNG: For-loop counters are immutable, execution-time storage elements.
+
 // RUN: not interp %s | FileCheck %s
 
 func main() => integer

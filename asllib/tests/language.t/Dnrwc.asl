@@ -1,3 +1,6 @@
+//D_NRWC: Bitvectors are either constrained width bitvectors or fixed
+//width bitvectors.
+
 // RUN: interp %s | FileCheck %s
 
 func constrained(N: integer{1..10}) => bits(N)

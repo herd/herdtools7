@@ -1,3 +1,6 @@
+//D_JTDG: The caught type of a catcher’s exception is the type it is
+//annotated with in the catcher.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 10
 

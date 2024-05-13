@@ -1,3 +1,5 @@
+//R_WKCY: The base value of the string type is the empty string.
+
 // RUN: interp %s | FileCheck %s
 // CHECK:
 

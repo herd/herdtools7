@@ -1,3 +1,11 @@
+//R_YCDB: A conditional expression evaluates to its then expression if the
+//condition expression evaluates to TRUE. If the condition expression
+//evaluates to FALSE each elsif condition expression is evaluated
+//sequentially until an elsif condition expression evaluates to TRUE; the
+//conditional expression evaluates to the corresponding elsif expression. If
+//no elsif expression evaluates to TRUE the conditional expression evaluates
+//to the else expression.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 10
 // CHECK-NEXT: 5

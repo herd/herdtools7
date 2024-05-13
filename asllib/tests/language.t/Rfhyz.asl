@@ -1,3 +1,7 @@
+//R_FHYZ: If at least one argument is an under-constrained width bitvector
+//then the result of the bitvector concatenation is an under-constrained
+//width bitvector.
+
 // RUN: interp %s | FileCheck %s
 
 func test{N: integer{}}(a: bits(N))

@@ -1,3 +1,5 @@
+//R_KCDS: An exception expression shall assign every field of the exception.
+
 // RUN: not interp %s | FileCheck %s
 
 type a of exception {

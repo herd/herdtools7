@@ -1,3 +1,6 @@
+//R_CRQJ: There are division operations div_int and fdiv_int and a remainder
+//operation frem_int.
+
 // RUN: interp %s | FileCheck %s
 
 

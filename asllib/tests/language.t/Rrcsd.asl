@@ -1,3 +1,5 @@
+//R_RCSD: It is an error if any field used is not of type bitvector.
+
 // RUN: not interp %s | FileCheck %s
 
 type a of record {

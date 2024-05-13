@@ -1,3 +1,7 @@
+//R_DVVQ: If a getter function does not define any arguments but contains an
+//empty argument list in the declaration, the getter must be invoked with an
+//empty set of square brackets.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 30
 // CHECK-NEXT: 10

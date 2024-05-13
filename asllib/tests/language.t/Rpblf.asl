@@ -1,3 +1,8 @@
+//R_PBLF: The syntax
+//cexpr as ty 
+//is an asserted type conversion indicating that expr_atom shall be treated
+//as the required type ty.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

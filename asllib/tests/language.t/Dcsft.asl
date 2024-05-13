@@ -1,3 +1,9 @@
+//D_CSFT: A subprogram declaration is an execution-time
+//declaration if it makes use of any of the following:
+// - an execution-time storage element
+// - an execution-time expression
+// - an execution-time subprogram invocation
+
 // RUN: interp %s | FileCheck %s
 
 var counter: integer = 10;

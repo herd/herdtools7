@@ -1,6 +1,10 @@
+//R_HYQK: There is a single global namespace for all globally declared
+//identifiers apart from setters. This namespace associates each identifier
+//with the kind of global object to which it may refer.
+
 // RUN : interp %s | FileCheck %s
 
-// ! How do I show this?
+// ! TODO 
 
 func main() => integer
 begin

@@ -1,3 +1,9 @@
+//D_KNBD: The builtin aggregate types are:
+// - tuple
+// - array
+// - record
+// - exception
+
 // RUN: interp %s | FileCheck %s
 
 type a of (integer, integer);

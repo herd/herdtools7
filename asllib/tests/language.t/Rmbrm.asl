@@ -1,3 +1,6 @@
+//R_MBRM: The base value of a record type is a record whose elements have
+//the base values of their types.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 0
 

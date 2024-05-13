@@ -1,6 +1,9 @@
+//I_DVSM: In this section we provide rules for all four kinds of subprogram,
+//with more specific rules in subsequent sections.
+ 
 // RUN: interp %s | FileCheck %s
 
-// ! Nothing to test here
+// ! TODO 
 
 func main() => integer
 begin

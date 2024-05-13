@@ -1,3 +1,6 @@
+//D_MRYB: The RHS argument of a setter declaration is an argument whose
+//name and type are given in a setter_declaration following the = symbol.
+
 // RUN: interp %s | FileCheck %s
 
 getter a[] => integer

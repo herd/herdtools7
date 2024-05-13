@@ -1,3 +1,6 @@
+//R_BWDX: Fields of an exception can be read or written independently using
+//the syntax r.f to refer to field f of an exception r.
+
 // RUN: interp %s | FileCheck %s
 
 type a of exception{

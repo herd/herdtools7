@@ -1,3 +1,7 @@
+//R_YSPM: Local declarations of variable, let or constant identifiers
+//introduce a new identifier into the current type environment which maps to
+//the type of the identifier.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

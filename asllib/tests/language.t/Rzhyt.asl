@@ -1,3 +1,6 @@
+//R_ZHYT: It is an error if any field in a multiple field assignment is not
+//of type bitvector.
+
 // RUN: interp %s | FileCheck %s
 
 type a of record {

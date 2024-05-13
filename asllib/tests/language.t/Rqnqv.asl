@@ -1,3 +1,5 @@
+//R_QNQV: String literals have type string.
+
 // RUN: interp %s | FileCheck %s
 
 var a: string = "test";

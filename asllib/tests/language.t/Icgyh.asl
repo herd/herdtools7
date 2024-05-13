@@ -1,3 +1,5 @@
+//I_CGYH: The following shows some declarations of bitvectors.
+
 // RUN: interp %s | FileCheck %s
 
 var gWid: integer {8,16,32};

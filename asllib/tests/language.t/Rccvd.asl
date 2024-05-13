@@ -1,3 +1,7 @@
+//R_CCVD: Where a parameter is not a formal argument, the subprogram must
+//have at least one formal argument which is parameter-defining for that
+//parameter.
+
 // RUN: interp %s | FileCheck %s
 
 var global: integer {4,8};

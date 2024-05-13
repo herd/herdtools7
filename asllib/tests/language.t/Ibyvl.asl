@@ -1,3 +1,6 @@
+//I_BYVL: Types describe the allowed values of variables, constants, 
+//function arguments, etc.
+
 // RUN: interp %s | FileCheck %s
 
 var x: integer;

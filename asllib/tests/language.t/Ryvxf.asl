@@ -1,3 +1,7 @@
+//R_YVXF: When an exception is caught by a catcher or an otherwise_opt, the
+//stmt_list corresponding to that catcher or the otherwise_opt is executed
+//respectively.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: a
 

@@ -1,3 +1,5 @@
+//R_JJCJ: Array elements can be modified.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

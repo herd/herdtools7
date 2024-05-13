@@ -1,4 +1,5 @@
-// RUN: interp %s | FileCheck %s
+// I_WVGG: Types in ASL are either execution-time types or non-execution-time
+// types. 
 
 config a = 10;
 

@@ -1,3 +1,6 @@
+//R_ZVPT: The base value of bits(N) is the N-bit bitvector containing only
+//zeros.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 0x0
 

@@ -1,3 +1,7 @@
+//R_ZTLB: If a thrown exception is not caught in a catch then the exception
+//is passed to the catch of the closest enclosing try statement in the
+//current execution.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: a
 

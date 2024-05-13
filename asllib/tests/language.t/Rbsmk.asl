@@ -1,3 +1,6 @@
+//R_BSMK: The values in a constrained integer’s constraint must all be
+//statically evaluable, constrained integer expressions.
+
 // RUN: not interp %s | FileCheck %s
 
 func length(a: integer)

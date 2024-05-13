@@ -1,3 +1,6 @@
+//D_GVBK: A specification is the set of declarations written in ASL code
+//which describe an architecture.
+
 // RUN: interp %s | FileCheck %s
 
 var a: integer = 10;

@@ -1,3 +1,6 @@
+//R_XNBN: When determining the widths of bitvectors, the type checker shall
+//make use of statically evaluable expressions.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

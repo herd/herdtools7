@@ -16,13 +16,13 @@ Test Iwxgp.asl:
 
 Test Rdpzk.asl:
   $ aslref Rdpzk.asl
-  File Rdpzk.asl, line 5, characters 11 to 16:
+  File Rdpzk.asl, line 8, characters 11 to 16:
   ASL Execution error: Assertion failed: FALSE
   [1]
 
 Test Rirnq.asl:
   $ aslref Rirnq.asl
-  File Rirnq.asl, line 6, characters 11 to 16:
+  File Rirnq.asl, line 9, characters 11 to 16:
   ASL Execution error: Assertion failed: FALSE
   [1]
 For reference, the test writter intention was that this output matched:
@@ -31,7 +31,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Rmhfw.asl:
   $ aslref Rmhfw.asl
-  File Rmhfw.asl, line 5, characters 11 to 16:
+  File Rmhfw.asl, line 8, characters 11 to 16:
   ASL Execution error: Assertion failed: FALSE
   [1]
 
@@ -53,7 +53,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Rbsqr.asl
   $ aslref Rbsqr.asl
-  File Rbsqr.asl, line 7, characters 4 to 5:
+  File Rbsqr.asl, line 10, characters 4 to 5:
   ASL Typing error: cannot assign to immutable storage "a".
   [1]
 
@@ -70,7 +70,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Rxnsk.asl:
   $ aslref Rxnsk.asl
-  File Rxnsk.asl, line 8, characters 10 to 11:
+  File Rxnsk.asl, line 12, characters 10 to 11:
   ASL Error: Undefined identifier: 'a'
   [1]
 
@@ -208,7 +208,7 @@ Test Rqmdm.asl:
 
 Test Rgfsh.asl:
   $ aslref Rgfsh.asl
-  File Rgfsh.asl, line 5, characters 4 to 25:
+  File Rgfsh.asl, line 8, characters 4 to 25:
   ASL Error: Undefined identifier: 'String'
   [1]
 
@@ -263,7 +263,7 @@ Test Rcgwr.asl:
 
 Test Rjhkl.asl:
   $ aslref Rjhkl.asl
-  File Rjhkl.asl, line 6, characters 4 to 5:
+  File Rjhkl.asl, line 7, characters 4 to 5:
   ASL Typing error: integer {10} does not subtype any of: bits(-), record {  },
     exception {  }.
   [1]
@@ -303,9 +303,14 @@ For reference, the test writter intention was that this output matched:
   $ grep '^// CHECK' Rmbrm.asl
   // CHECK: 0
 
+Test Rmbrm-2.asl:
+  $ aslref Rmbrm-2.asl
+  ASL Error: Undefined identifier: 'main'
+  [1]
+
 Test Rmdzd.asl:
   $ aslref Rmdzd.asl
-  File Rmdzd.asl, line 3, character 0 to line 6, character 2:
+  File Rmdzd.asl, line 6, character 0 to line 9, character 2:
   ASL Typing error: cannot declare already declared element "b".
   [1]
 
@@ -324,7 +329,7 @@ Test Rbwdx.asl:
 
 Test Rchkr.asl:
   $ aslref Rchkr.asl
-  File Rchkr.asl, line 3, character 0 to line 6, character 2:
+  File Rchkr.asl, line 6, character 0 to line 9, character 2:
   ASL Typing error: cannot declare already declared element "b".
   [1]
 
@@ -355,7 +360,7 @@ Test Rgvzk.asl:
 
 Test Rgrvj.asl:
   $ aslref Rgrvj.asl
-  File Rgrvj.asl, line 5, characters 11 to 22:
+  File Rgrvj.asl, line 8, characters 11 to 22:
   ASL Error: Cannot parse.
   [1]
 
@@ -370,19 +375,19 @@ Test Dzxss.asl:
 
 Test Ighgk.asl:
   $ aslref Ighgk.asl
-  File Ighgk.asl, line 3, characters 34 to 35:
+  File Ighgk.asl, line 11, characters 34 to 35:
   ASL Error: Cannot parse.
   [1]
 
 Test Izddj.asl:
   $ aslref Izddj.asl
-  File Izddj.asl, line 3, characters 34 to 35:
+  File Izddj.asl, line 6, characters 34 to 35:
   ASL Error: Cannot parse.
   [1]
 
 Test Rbsmk.asl:
   $ aslref Rbsmk.asl
-  File Rbsmk.asl, line 5, characters 4 to 25:
+  File Rbsmk.asl, line 8, characters 4 to 25:
   ASL Typing error: constrained integer expected, provided integer
   [1]
 
@@ -400,7 +405,7 @@ Test Rlsnp.asl:
 
 Test Rtphr.asl:
   $ aslref Rtphr.asl
-  File Rtphr.asl, line 3, characters 34 to 35:
+  File Rtphr.asl, line 6, characters 34 to 35:
   ASL Error: Cannot parse.
   [1]
 
@@ -551,7 +556,7 @@ Test Iqmwt.asl:
 
 Test Rdwsp.asl:
   $ aslref Rdwsp.asl
-  File Rdwsp.asl, line 3, characters 13 to 30:
+  File Rdwsp.asl, line 6, characters 13 to 30:
   ASL Typing error: cannot declare already declared element "A".
   [1]
 
@@ -574,7 +579,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Dbvgk.asl:
   $ aslref Dbvgk.asl
-  File Dbvgk.asl, line 3, characters 33 to 34:
+  File Dbvgk.asl, line 9, characters 33 to 34:
   ASL Error: Cannot parse.
   [1]
 
@@ -595,25 +600,25 @@ Test Iybhf.asl:
 
 Test Rfzsd.asl:
   $ aslref Rfzsd.asl
-  File Rfzsd.asl, line 3, characters 15 to 16:
+  File Rfzsd.asl, line 8, characters 15 to 16:
   ASL Error: Cannot parse.
   [1]
 
 Test Rljbg.asl:
   $ aslref Rljbg.asl
-  File Rljbg.asl, line 3, characters 16 to 17:
+  File Rljbg.asl, line 7, characters 16 to 17:
   ASL Error: Cannot parse.
   [1]
 
 Test Rnfbn.asl:
   $ aslref Rnfbn.asl
-  File Rnfbn.asl, line 5, characters 17 to 18:
+  File Rnfbn.asl, line 9, characters 17 to 18:
   ASL Error: Cannot parse.
   [1]
 
 Test Rqyzd.asl:
   $ aslref Rqyzd.asl
-  File Rqyzd.asl, line 5, characters 17 to 18:
+  File Rqyzd.asl, line 8, characters 17 to 18:
   ASL Error: Cannot parse.
   [1]
 
@@ -625,13 +630,13 @@ Test Ijskw.asl:
 
 Test Rghrp.asl:
   $ aslref Rghrp.asl
-  File Rghrp.asl, line 5, characters 0 to 18:
+  File Rghrp.asl, line 8, characters 0 to 18:
   ASL Typing error: constrained integer expected, provided integer
   [1]
 
 Test Rncnq.asl:
   $ aslref Rncnq.asl
-  File Rncnq.asl, line 3, characters 18 to 19:
+  File Rncnq.asl, line 7, characters 18 to 19:
   ASL Error: Cannot parse.
   [1]
 
@@ -695,7 +700,7 @@ Test Rpmqb.asl:
 
 Test Rqxgw.asl:
   $ aslref Rqxgw.asl
-  File Rqxgw.asl, line 7, characters 14 to 15:
+  File Rqxgw.asl, line 9, characters 14 to 15:
   ASL Error: Cannot parse.
   [1]
 For reference, the test writter intention was that this output matched:
@@ -717,7 +722,7 @@ Test Rzwgh.asl:
 
 Test Iglwm.asl:
   $ aslref Iglwm.asl
-  File Iglwm.asl, line 5, characters 16 to 17:
+  File Iglwm.asl, line 10, characters 16 to 17:
   ASL Error: Cannot parse.
   [1]
 
@@ -735,7 +740,7 @@ Test Itzvj_b.asl:
 
 Test Rvczx.asl:
   $ aslref Rvczx.asl
-  File Rvczx.asl, line 3, characters 15 to 16:
+  File Rvczx.asl, line 10, characters 15 to 16:
   ASL Error: Cannot parse.
   [1]
 
@@ -750,13 +755,13 @@ Test Icgyh.asl:
 
 Test Ifpvz.asl:
   $ aslref Ifpvz.asl
-  File Ifpvz.asl, line 3, characters 16 to 17:
+  File Ifpvz.asl, line 7, characters 16 to 17:
   ASL Error: Cannot parse.
   [1]
 
 Test Iqnsd.asl:
   $ aslref Iqnsd.asl
-  File Iqnsd.asl, line 16, characters 20 to 21:
+  File Iqnsd.asl, line 18, characters 20 to 21:
   ASL Error: Cannot parse.
   [1]
 
@@ -768,7 +773,7 @@ Test Ifzms.asl:
 
 Test Ijdcc.asl:
   $ aslref Ijdcc.asl
-  File Ijdcc.asl, line 3, character 0 to line 5, character 2:
+  File Ijdcc.asl, line 6, character 0 to line 8, character 2:
   ASL Static error: Cannot extract from bitvector of length 5 slices 7+:4.
   [1]
 
@@ -783,7 +788,7 @@ Test Iqdhp.asl:
 
 Test Rbdjk.asl:
   $ aslref Rbdjk.asl
-  File Rbdjk.asl, line 3, character 0 to line 5, character 2:
+  File Rbdjk.asl, line 6, character 0 to line 8, character 2:
   ASL Typing error: overlapping slices 3+:(- 1).
   [1]
 
@@ -795,7 +800,7 @@ Test Rchbw.asl:
 
 Test Rcnhb.asl:
   $ aslref Rcnhb.asl
-  File Rcnhb.asl, line 3, character 0 to line 5, character 2:
+  File Rcnhb.asl, line 5, character 0 to line 7, character 2:
   ASL Typing error: overlapping slices 0+:4, 1+:3.
   [1]
 
@@ -810,13 +815,13 @@ For reference, the test writter intention was that this output matched:
 
 Test Rlghs.asl:
   $ aslref Rlghs.asl
-  File Rlghs.asl, line 4, characters 4 to 5:
+  File Rlghs.asl, line 9, characters 4 to 5:
   ASL Error: Cannot parse.
   [1]
 
 Test Rmpmg.asl:
   $ aslref Rmpmg.asl
-  File Rmpmg.asl, line 3, character 0 to line 6, character 2:
+  File Rmpmg.asl, line 6, character 0 to line 9, character 2:
   ASL Typing error: cannot declare already declared element "aa".
   [1]
 
@@ -831,7 +836,7 @@ Test Rrmtq.asl:
 
 Test Ryypn.asl:
   $ aslref Ryypn.asl
-  File Ryypn.asl, line 5, characters 27 to 28:
+  File Ryypn.asl, line 9, characters 27 to 28:
   ASL Error: Cannot parse.
   [1]
 
@@ -861,7 +866,7 @@ Test Iwykz.asl:
 
 Test Ihjrd.asl:
   $ aslref Ihjrd.asl
-  File Ihjrd.asl, line 16, characters 0 to 14:
+  File Ihjrd.asl, line 20, characters 0 to 14:
   ASL Typing error: multiple recursive declarations: "a", "a", "a"
   [1]
 
@@ -904,7 +909,7 @@ Test Rhqzy.asl:
 
 Test Rlpdl.asl:
   $ aslref Rlpdl.asl
-  File Rlpdl.asl, line 3, characters 0 to 29:
+  File Rlpdl.asl, line 6, characters 0 to 29:
   ASL Error: Undefined identifier: 'a'
   [1]
 
@@ -913,7 +918,7 @@ Test Rnxrx.asl:
 
 Test Rsrhn.asl:
   $ aslref Rsrhn.asl
-  File Rsrhn.asl, line 4, characters 0 to 28:
+  File Rsrhn.asl, line 7, characters 0 to 28:
   ASL Typing error: a subtype of a was expected, provided string.
   [1]
 
@@ -926,10 +931,28 @@ Test Rzwhp.asl:
 Test Rkdks.asl:
   $ aslref Rkdks.asl
 
+Test Rybwy.asl:
 # Output is non-deterministic
   $ aslref Rybwy.asl
-  File Rybwy.asl, line 7, characters 0 to 19:
+  File Rybwy.asl, line 9, characters 0 to 19:
   ASL Typing error: multiple recursive declarations: "other", "base"
+  [1]
+
+Test Rybwy-2.asl:  
+  $ aslref Rybwy-2.asl
+  File Rybwy-2.asl, line 32, characters 2 to 11:
+  ASL Typing error: a subtype of TypeA was expected, provided TypeB.
+  [1]
+
+Test Rybwy-3.asl:  
+  $ aslref Rybwy-3.asl
+  File Rybwy-3.asl, line 9, characters 0 to 19:
+  ASL Typing error: multiple recursive declarations: "other", "base"
+  [1]
+
+Test Rybwy-4.asl:  
+  $ aslref Rybwy-4.asl
+  ASL Error: Undefined identifier: 'main'
   [1]
 
 Test Iglhk.asl:
@@ -937,7 +960,7 @@ Test Iglhk.asl:
 
 Test Ivylk.asl:
   $ aslref Ivylk.asl
-  File Ivylk.asl, line 3, characters 16 to 17:
+  File Ivylk.asl, line 16, characters 16 to 17:
   ASL Error: Cannot parse.
   [1]
 
@@ -983,7 +1006,7 @@ Test Ivqhq.asl:
 
 Test Iypxd.asl:
   $ aslref Iypxd.asl
-  File Iypxd.asl, line 3, characters 4 to 5:
+  File Iypxd.asl, line 14, characters 4 to 5:
   ASL Error: Cannot parse.
   [1]
 
@@ -995,19 +1018,19 @@ Test Rdbzz.asl:
 
 Test Rksqp_a.asl:
   $ aslref Rksqp_a.asl
-  File Rksqp_a.asl, line 3, characters 14 to 15:
+  File Rksqp_a.asl, line 6, characters 14 to 15:
   ASL Error: Cannot parse.
   [1]
 
 Test Rksqp_b.asl:
   $ aslref Rksqp_b.asl
-  File Rksqp_b.asl, line 3, characters 19 to 20:
+  File Rksqp_b.asl, line 6, characters 19 to 20:
   ASL Error: Cannot parse.
   [1]
 
 Test Rksqp_c.asl:
   $ aslref Rksqp_c.asl
-  File Rksqp_c.asl, line 3, characters 17 to 18:
+  File Rksqp_c.asl, line 6, characters 17 to 18:
   ASL Error: Cannot parse.
   [1]
 
@@ -1064,7 +1087,7 @@ Test Iwhlv.asl:
 
 Test Rlcsz.asl:
   $ aslref Rlcsz.asl
-  File Rlcsz.asl, line 5, character 0 to line 8, character 3:
+  File Rlcsz.asl, line 9, character 0 to line 12, character 3:
   ASL Typing error: setter "a" does not have a corresponding getter of
     signature  -> integer
   [1]
@@ -1105,6 +1128,9 @@ Test Idvsm.asl:
 Test Igklw.asl:
   $ aslref Igklw.asl
 
+Test Igklw-2.asl:
+  $ aslref Igklw.asl
+
 Test Ipfng.asl:
   $ aslref Ipfng.asl
 
@@ -1121,14 +1147,14 @@ For reference, the test writter intention was that this output matched:
 
 Test Rdfwz.asl:
   $ aslref Rdfwz.asl
-  File Rdfwz.asl, line 10, character 0 to line 13, character 3:
+  File Rdfwz.asl, line 13, character 0 to line 16, character 3:
   ASL Typing error: setter "c" does not have a corresponding getter of
     signature  -> integer
   [1]
 
 Test Rhdgv.asl:
   $ aslref Rhdgv.asl
-  File Rhdgv.asl, line 3, characters 0 to 15:
+  File Rhdgv.asl, line 6, characters 0 to 15:
   ASL Typing error: multiple recursive declarations: "a", "a"
   [1]
 
@@ -1137,7 +1163,7 @@ Test Rjbxs.asl:
 
 Test Rkcmk.asl:
   $ aslref Rkcmk.asl
-  File Rkcmk.asl, line 3, character 0 to line 6, character 3:
+  File Rkcmk.asl, line 7, character 0 to line 10, character 3:
   ASL Typing error: cannot declare already declared element "a".
   [1]
 
@@ -1155,13 +1181,13 @@ Test Rwkhc_a.asl:
 
 Test Rwkhc_b.asl:
   $ aslref Rwkhc_b.asl
-  File Rwkhc_b.asl, line 6, characters 0 to 3:
+  File Rwkhc_b.asl, line 9, characters 0 to 3:
   ASL Error: Cannot parse.
   [1]
 
 Test Dnmfp.asl:
   $ aslref Dnmfp.asl
-  File Dnmfp.asl, line 20, character 0 to line 24, character 3:
+  File Dnmfp.asl, line 26, character 0 to line 30, character 3:
   ASL Typing error: setter "h" does not have a corresponding getter of
     signature  -> integer
   [1]
@@ -1177,7 +1203,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Ixfpv.asl:
   $ aslref Ixfpv.asl
-  File Ixfpv.asl, line 9, characters 12 to 19:
+  File Ixfpv.asl, line 13, characters 12 to 19:
   ASL Error: There are no field 'item2' on type (integer {10}, integer {20}).
   [1]
 For reference, the test writter intention was that this output matched:
@@ -1187,13 +1213,13 @@ For reference, the test writter intention was that this output matched:
 
 Test Rjpvl.asl:
   $ aslref Rjpvl.asl
-  File Rjpvl.asl, line 13, characters 4 to 5:
+  File Rjpvl.asl, line 16, characters 4 to 5:
   ASL Error: Cannot parse.
   [1]
 
 Test Rkvnx.asl:
   $ aslref Rkvnx.asl
-  File Rkvnx.asl, line 7, characters 4 to 5:
+  File Rkvnx.asl, line 10, characters 4 to 5:
   ASL Typing error: integer {4} does not subtype any of: bits(-), record {  },
     exception {  }.
   [1]
@@ -1229,7 +1255,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Iwlnm.asl:
   $ aslref Iwlnm.asl
-  File Iwlnm.asl, line 3, characters 8 to 14:
+  File Iwlnm.asl, line 6, characters 8 to 14:
   ASL Error: Cannot parse.
   [1]
 
@@ -1260,13 +1286,13 @@ For reference, the test writter intention was that this output matched:
 
 Test Rrcsd.asl:
   $ aslref Rrcsd.asl
-  File Rrcsd.asl, line 12, characters 17 to 18:
+  File Rrcsd.asl, line 14, characters 17 to 18:
   ASL Error: Cannot parse.
   [1]
 
 Test Rdyqz.asl:
   $ aslref Rdyqz.asl
-  File Rdyqz.asl, line 10, characters 12 to 24:
+  File Rdyqz.asl, line 12, characters 12 to 24:
   ASL Error: Fields mismatch for creating a value of type a
     -- Passed fields are: x
   [1]
@@ -1276,7 +1302,7 @@ Test Rwbcq.asl:
 
 Test Rkcds.asl:
   $ aslref Rkcds.asl
-  File Rkcds.asl, line 10, characters 12 to 24:
+  File Rkcds.asl, line 12, characters 12 to 24:
   ASL Error: Fields mismatch for creating a value of type a
     -- Passed fields are: x
   [1]
@@ -1289,7 +1315,7 @@ Test Iqslr.asl:
 
 Test Ivgsp.asl:
   $ aslref Ivgsp.asl
-  File Ivgsp.asl, line 3, character 0 to line 6, character 3:
+  File Ivgsp.asl, line 6, character 0 to line 9, character 3:
   ASL Typing error: cannot declare already declared element "a".
   [1]
 
@@ -1344,10 +1370,13 @@ For reference, the test writter intention was that this output matched:
 
 Test Rgxqh.asl:
   $ aslref Rgxqh.asl
+  File Rgxqh.asl, line 13, characters 12 to 15:
+  ASL Error: Mismatched use of return value from call to 'a'
+  [1]
 
 Test Rztrr.asl:
   $ aslref Rztrr.asl
-  File Rztrr.asl, line 6, characters 12 to 18:
+  File Rztrr.asl, line 8, characters 12 to 18:
   ASL Typing error: a subtype of integer {0..9} was expected,
     provided integer {100}.
   [1]
@@ -1360,7 +1389,7 @@ Test Ihsql.asl:
 
 Test Rdgrv.asl:
   $ aslref Rdgrv.asl
-  File Rdgrv.asl, line 9, characters 13 to 20:
+  File Rdgrv.asl, line 14, characters 13 to 20:
   ASL Typing error: a subtype of exception {  } was expected, provided integer.
   [1]
 For reference, the test writter intention was that this output matched:
@@ -1405,7 +1434,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Rdhkh.asl:
   $ aslref Rdhkh.asl
-  File Rdhkh.asl, line 14, characters 23 to 25:
+  File Rdhkh.asl, line 19, characters 23 to 25:
   ASL Typing error: cannot assign to immutable storage "aa".
   [1]
 
@@ -1420,7 +1449,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Rmkgb.asl:
   $ aslref Rmkgb.asl
-  File Rmkgb.asl, line 17, characters 10 to 12:
+  File Rmkgb.asl, line 20, characters 10 to 12:
   ASL Error: Undefined identifier: 'aa'
   [1]
 
@@ -1479,13 +1508,13 @@ Test Ikbxm.asl:
 
 Test Rjfrd.asl:
   $ aslref Rjfrd.asl
-  File Rjfrd.asl, line 9, characters 12 to 13:
+  File Rjfrd.asl, line 13, characters 12 to 13:
   ASL Error: Undefined identifier: 'a'
   [1]
 
 Test Rlcfd.asl:
   $ aslref Rlcfd.asl
-  File Rlcfd.asl, line 7, characters 4 to 14:
+  File Rlcfd.asl, line 10, characters 4 to 14:
   ASL Typing error: cannot declare already declared element "a".
   [1]
 
@@ -1494,7 +1523,7 @@ Test Ifkjc.asl:
 
 Test Rjnmr.asl:
   $ aslref Rjnmr.asl
-  File Rjnmr.asl, line 11, characters 17 to 20:
+  File Rjnmr.asl, line 12, characters 17 to 20:
   ASL Error: Unsupported expression a().
   [1]
 
@@ -1510,7 +1539,7 @@ Test Rtzrv.asl:
 
 Test Rxylp.asl:
   $ aslref Rxylp.asl
-  File Rxylp.asl, line 5, characters 16 to 17:
+  File Rxylp.asl, line 11, characters 16 to 17:
   ASL Error: Cannot parse.
   [1]
 
@@ -1539,7 +1568,7 @@ Test Rnxsf.asl:
 
 Test Rqdqd.asl:
   $ aslref Rqdqd.asl
-  File Rqdqd.asl, line 5, characters 13 to 14:
+  File Rqdqd.asl, line 9, characters 13 to 14:
   ASL Error: Cannot parse.
   [1]
 
@@ -1557,7 +1586,7 @@ Test Rxsdc.asl:
 
 Test Dkcyt.asl:
   $ aslref Dkcyt.asl
-  File Dkcyt.asl, line 10, characters 4 to 8:
+  File Dkcyt.asl, line 14, characters 4 to 8:
   ASL Error: Mismatched use of return value from call to 'a'
   [1]
 
@@ -1566,7 +1595,7 @@ Test Dhtpl.asl:
 
 Test Rnywh.asl:
   $ aslref Rnywh.asl
-  File Rnywh.asl, line 5, characters 4 to 14:
+  File Rnywh.asl, line 8, characters 4 to 14:
   ASL Typing error: cannot return something from a procedure.
   [1]
 
@@ -1575,13 +1604,13 @@ Test Rphnz.asl:
 
 Test Ryyfr.asl:
   $ aslref Ryyfr.asl
-  File Ryyfr.asl, line 11, characters 4 to 14:
+  File Ryyfr.asl, line 13, characters 4 to 14:
   ASL Typing error: overlapping slices 0+:1, 0+:1.
   [1]
 
 Test Rzhyt.asl:
   $ aslref Rzhyt.asl
-  File Rzhyt.asl, line 12, characters 4 to 14:
+  File Rzhyt.asl, line 15, characters 4 to 14:
   ASL Typing error: a subtype of bits(-) was expected, provided a.
   [1]
 
@@ -1602,7 +1631,7 @@ Test Issxj.asl:
 
 Test Rzhvh.asl:
   $ aslref Rzhvh.asl
-  File Rzhvh.asl, line 5, characters 4 to 27:
+  File Rzhvh.asl, line 9, characters 4 to 27:
   ASL Error: Arity error while calling 'tuple initialization':
     3 arguments expected and 2 provided
   [1]
@@ -1625,7 +1654,7 @@ Test Rwqrn.asl:
 
 Test Rwzsl.asl:
   $ aslref Rwzsl.asl
-  File Rwzsl.asl, line 5, characters 11 to 16:
+  File Rwzsl.asl, line 10, characters 11 to 16:
   ASL Execution error: Assertion failed: FALSE
   [1]
 
@@ -1771,7 +1800,7 @@ Test Rnzgh.asl:
 
 Test Rrqng.asl:
   $ aslref Rrqng.asl
-  File Rrqng.asl, line 6, characters 8 to 9:
+  File Rrqng.asl, line 8, characters 8 to 9:
   ASL Typing error: cannot assign to immutable storage "x".
   [1]
 
@@ -1789,12 +1818,18 @@ For reference, the test writter intention was that this output matched:
   $ grep '^// CHECK' Rwvqt.asl
   // CHECK-NOT: 1
 
+Test Rwvqt-2.asl:
+  $ aslref Rwvqt-2.asl
+  File Rwvqt-2.asl, line 3, character 0:
+  ASL Error: Unknown symbol.
+  [1]
+
 Test Rytnr.asl:
   $ aslref Rytnr.asl
 
 Test Rzsnd.asl:
   $ aslref Rzsnd.asl
-  File Rzsnd.asl, line 10, characters 22 to 23:
+  File Rzsnd.asl, line 26, characters 22 to 23:
   ASL Error: Cannot parse.
   [1]
 
@@ -1816,9 +1851,15 @@ Test Rpzzj.asl:
 Test Rycpx.asl:
   $ aslref Rycpx.asl
 
+Test Rycpx-2.asl:
+  $ aslref Rycpx-2.asl
+  File Rycpx-2.asl, line 9, characters 6 to 10:
+  ASL Error: Undefined identifier: 'f1'
+  [1]
+
 Test Ibhln.asl:
   $ aslref Ibhln.asl
-  File Ibhln.asl, line 8, characters 17 to 18:
+  File Ibhln.asl, line 19, characters 17 to 18:
   ASL Error: Cannot parse.
   [1]
 
@@ -1830,13 +1871,13 @@ Test Igqrd.asl:
 
 Test Imkpr.asl:
   $ aslref Imkpr.asl
-  File Imkpr.asl, line 27, characters 38 to 39:
+  File Imkpr.asl, line 31, characters 38 to 39:
   ASL Error: Cannot parse.
   [1]
 
 Test Iszvf.asl:
   $ aslref Iszvf.asl
-  File Iszvf.asl, line 7, characters 22 to 23:
+  File Iszvf.asl, line 9, characters 22 to 23:
   ASL Error: Cannot parse.
   [1]
 
@@ -1845,13 +1886,13 @@ Test Ixvbg.asl:
 
 Test Rgyjz.asl:
   $ aslref Rgyjz.asl
-  File Rgyjz.asl, line 6, characters 22 to 23:
+  File Rgyjz.asl, line 9, characters 22 to 23:
   ASL Error: Cannot parse.
   [1]
 
 Test Igqyg.asl:
   $ aslref Igqyg.asl
-  File Igqyg.asl, line 5, characters 27 to 28:
+  File Igqyg.asl, line 14, characters 27 to 28:
   ASL Error: Cannot parse.
   [1]
 
@@ -1885,7 +1926,7 @@ Test Dfxqv.asl:
 
 Test Dbmgm.asl:
   $ aslref Dbmgm.asl
-  File Dbmgm.asl, line 8, characters 17 to 18:
+  File Dbmgm.asl, line 11, characters 17 to 18:
   ASL Error: Cannot parse.
   [1]
 
@@ -1897,26 +1938,26 @@ Test Rvbll.asl:
 
 Test Rwzvx.asl:
   $ aslref Rwzvx.asl
-  File Rwzvx.asl, line 6, characters 12 to 13:
+  File Rwzvx.asl, line 10, characters 12 to 13:
   ASL Execution error: Mismatch type:
     value 4 does not belong to type integer {0..3}.
   [1]
 
 Test Igysk.asl:
   $ aslref Igysk.asl
-  File Igysk.asl, line 3, characters 18 to 19:
+  File Igysk.asl, line 13, characters 18 to 19:
   ASL Error: Cannot parse.
   [1]
 
 Test Ihswr.asl:
   $ aslref Ihswr.asl
-  File Ihswr.asl, line 11, characters 4 to 15:
+  File Ihswr.asl, line 14, characters 4 to 15:
   ASL Typing error: a subtype of bits(4) was expected, provided bits(2).
   [1]
 
 Test Iknxj.asl:
   $ aslref Iknxj.asl
-  File Iknxj.asl, line 3, characters 21 to 22:
+  File Iknxj.asl, line 15, characters 21 to 22:
   ASL Error: Cannot parse.
   [1]
 
@@ -1955,13 +1996,13 @@ Test Iwzkm.asl:
 
 Test Dbtbr.asl:
   $ aslref Dbtbr.asl
-  File Dbtbr.asl, line 6, character 0 to line 9, character 3:
+  File Dbtbr.asl, line 13, character 0 to line 16, character 3:
   ASL Typing error: cannot declare already declared element "testa".
   [1]
 
 Test Ifsfq.asl:
   $ aslref Ifsfq.asl
-  File Ifsfq.asl, line 6, character 0 to line 9, character 3:
+  File Ifsfq.asl, line 9, character 0 to line 12, character 3:
   ASL Typing error: cannot declare already declared element "testa".
   [1]
 
@@ -1979,7 +2020,7 @@ Test Isctb.asl:
 
 Test Rpgfc.asl:
   $ aslref Rpgfc.asl
-  File Rpgfc.asl, line 3, character 0 to line 6, character 3:
+  File Rpgfc.asl, line 6, character 0 to line 9, character 3:
   ASL Typing error: cannot declare already declared element "a".
   [1]
 
@@ -1988,7 +2029,7 @@ Test Dhbcp.asl:
 
 Output is non-deterministic
   $ aslref Idfml.asl
-  File Idfml.asl, line 3, characters 0 to 18:
+  File Idfml.asl, line 7, characters 0 to 18:
   ASL Error: Undefined identifier: 'a'
   [1]
 
@@ -1997,7 +2038,7 @@ Test Ismmh.asl:
 
 Test Rfwqm.asl:
   $ aslref Rfwqm.asl
-  File Rfwqm.asl, line 3, characters 18 to 19:
+  File Rfwqm.asl, line 6, characters 18 to 19:
   ASL Error: Undefined identifier: 'b'
   [1]
 
@@ -2006,13 +2047,13 @@ Test Rhwtv.asl:
 
 Test Rjbxq.asl:
   $ aslref Rjbxq.asl
-  File Rjbxq.asl, line 13, characters 16 to 17:
+  File Rjbxq.asl, line 20, characters 16 to 17:
   ASL Error: Undefined identifier: 'b'
   [1]
 
 Test Rschv.asl:
   $ aslref Rschv.asl
-  File Rschv.asl, line 7, characters 4 to 16:
+  File Rschv.asl, line 10, characters 4 to 16:
   ASL Error: Undefined identifier: 'ty'
   [1]
 
@@ -2027,32 +2068,32 @@ Test Rftpk.asl:
 
 Test Rftvn.asl:
   $ aslref Rftvn.asl
-  File Rftvn.asl, line 7, characters 10 to 12:
+  File Rftvn.asl, line 10, characters 10 to 12:
   ASL Typing error: a subtype of boolean was expected, provided integer {10}.
   [1]
 
 Test Rjqyf.asl:
   $ aslref Rjqyf.asl
-  File Rjqyf.asl, line 5, characters 4 to 15:
+  File Rjqyf.asl, line 8, characters 4 to 15:
   ASL Typing error: a subtype of boolean was expected, provided integer {10}.
   [1]
 
 Test Rnbdj.asl:
   $ aslref Rnbdj.asl
-  File Rnbdj.asl, line 5, characters 7 to 9:
+  File Rnbdj.asl, line 8, characters 7 to 9:
   ASL Typing error: a subtype of boolean was expected, provided integer {10}.
   [1]
 
 Test Rnxrc.asl:
   $ aslref Rnxrc.asl
-  File Rnxrc.asl, line 5, characters 4 to 13:
+  File Rnxrc.asl, line 8, characters 4 to 13:
   ASL Typing error: a subtype of exception {  } was expected,
     provided integer {10}.
   [1]
 
 Test Rsdjk.asl:
   $ aslref Rsdjk.asl
-  File Rsdjk.asl, line 8, characters 13 to 15:
+  File Rsdjk.asl, line 11, characters 13 to 15:
   ASL Error: Cannot parse.
   [1]
 
@@ -2064,7 +2105,7 @@ Test Rvtjw.asl:
 
 Test Rwgsy.asl:
   $ aslref Rwgsy.asl
-  File Rwgsy.asl, line 6, characters 23 to 24:
+  File Rwgsy.asl, line 9, characters 23 to 24:
   ASL Typing error: a subtype of boolean was expected, provided integer {1}.
   [1]
 
@@ -2073,7 +2114,7 @@ Test Rwvxs.asl:
 
 Test Idgwj.asl:
   $ aslref Idgwj.asl
-  File Idgwj.asl, line 9, characters 4 to 19:
+  File Idgwj.asl, line 24, characters 4 to 19:
   ASL Typing error: a subtype of b was expected, provided a.
   [1]
 
@@ -2092,13 +2133,13 @@ Test Iyyqx.asl:
 
 Test Rgnts.asl:
   $ aslref Rgnts.asl
-  File Rgnts.asl, line 3, characters 18 to 19:
+  File Rgnts.asl, line 7, characters 18 to 19:
   ASL Error: Cannot parse.
   [1]
 
 Test Rlxqz.asl:
   $ aslref Rlxqz.asl
-  File Rlxqz.asl, line 5, characters 4 to 25:
+  File Rlxqz.asl, line 9, characters 4 to 25:
   ASL Typing error: a subtype of integer was expected, provided real.
   [1]
 
@@ -2107,7 +2148,7 @@ Test Rwmfv.asl:
 
 Test Rzcvd.asl:
   $ aslref Rzcvd.asl
-  File Rzcvd.asl, line 3, characters 18 to 19:
+  File Rzcvd.asl, line 11, characters 18 to 19:
   ASL Error: Cannot parse.
   [1]
 
@@ -2125,7 +2166,7 @@ Test Iztmq.asl:
 
 Test Iblvp.asl:
   $ aslref Iblvp.asl
-  File Iblvp.asl, line 3, character 0 to line 6, character 3:
+  File Iblvp.asl, line 13, character 0 to line 16, character 3:
   ASL Typing error: explicit parameter "N" does not have a corresponding
     defining argument
   [1]
@@ -2138,13 +2179,13 @@ Test Ilfjz.asl:
 
 Test Ipdkt.asl:
   $ aslref Ipdkt.asl
-  File Ipdkt.asl, line 3, characters 21 to 22:
+  File Ipdkt.asl, line 7, characters 21 to 22:
   ASL Error: Cannot parse.
   [1]
 
 Test Irkbv.asl:
   $ aslref Irkbv.asl
-  File Irkbv.asl, line 3, characters 21 to 22:
+  File Irkbv.asl, line 6, characters 21 to 22:
   ASL Error: Cannot parse.
   [1]
 
@@ -2163,19 +2204,19 @@ Test Izlzc.asl:
 
 Test Rlvth.asl:
   $ aslref Rlvth.asl
-  File Rlvth.asl, line 3, characters 18 to 19:
+  File Rlvth.asl, line 6, characters 18 to 19:
   ASL Error: Cannot parse.
   [1]
 
 Test Rrhtn.asl:
   $ aslref Rrhtn.asl
-  File Rrhtn.asl, line 5, character 0 to line 8, character 3:
+  File Rrhtn.asl, line 8, character 0 to line 11, character 3:
   ASL Typing error: constrained integer expected, provided integer
   [1]
 
 Test Rtjkq.asl:
   $ aslref Rtjkq.asl
-  File Rtjkq.asl, line 5, characters 4 to 39:
+  File Rtjkq.asl, line 9, characters 4 to 39:
   ASL Typing error: a subtype of integer {32, 64} was expected,
     provided integer.
   [1]
@@ -2200,20 +2241,21 @@ Test Dvxkm.asl:
 
 Test Ibtmt.asl:
   $ aslref Ibtmt.asl
-  File Ibtmt.asl, line 3, character 0 to line 6, character 3:
+  File Ibtmt.asl, line 7, character 0 to line 10, character 3:
   ASL Typing error: cannot declare already declared element "test".
   [1]
 
 Test Icmlp.asl:
   $ aslref Icmlp.asl
-  File Icmlp.asl, line 11, characters 4 to 20:
+  File Icmlp.asl, line 15, characters 4 to 20:
   ASL Typing error: constrained integer expected, provided integer
   [1]
 
 Test Iflkf.asl:
   $ aslref Iflkf.asl
-  Fatal error: exception File "asllib/Typing.ml", line 1183, characters 20-26: Assertion failed
-  [2]
+  File Iflkf.asl, line 15, characters 4 to 20:
+  ASL Typing error: a subtype of bits(2) was expected, provided bits(1).
+  [1]
 
 Test Iktjn.asl:
   $ aslref Iktjn.asl
@@ -2223,7 +2265,7 @@ Test Iktjn.asl:
 
 Test Isbwr.asl:
   $ aslref Isbwr.asl
-  File Isbwr.asl, line 3, characters 18 to 19:
+  File Isbwr.asl, line 10, characters 18 to 19:
   ASL Error: Cannot parse.
   [1]
 
@@ -2253,13 +2295,13 @@ Test Rkmbd.asl:
 
 Test Rmwbn.asl:
   $ aslref Rmwbn.asl
-  File Rmwbn.asl, line 3, characters 18 to 19:
+  File Rmwbn.asl, line 7, characters 18 to 19:
   ASL Error: Cannot parse.
   [1]
 
 Test Rpfwq.asl:
   $ aslref Rpfwq.asl
-  File Rpfwq.asl, line 10, characters 4 to 21:
+  File Rpfwq.asl, line 13, characters 4 to 21:
   ASL Typing error: a subtype of bits(10) was expected, provided bits(4).
   [1]
 
@@ -2268,9 +2310,9 @@ Test Rqybh.asl:
 
 Test Rrtcf.asl:
   $ aslref Rrtcf.asl
-  File Rrtcf.asl, line 10, characters 4 to 13:
-  ASL Error: Arity error while calling 'test':
-    0 arguments expected and 1 provided
+  File Rrtcf.asl, line 13, characters 4 to 13:
+  ASL Typing error: No subprogram declaration matches the invocation:
+    test(integer {10})
   [1]
 
 Test Rtcdl.asl:
@@ -2278,13 +2320,13 @@ Test Rtcdl.asl:
 
 Test Rtzsp.asl:
   $ aslref Rtzsp.asl
-  File Rtzsp.asl, line 10, characters 4 to 12:
+  File Rtzsp.asl, line 21, characters 4 to 12:
   ASL Error: Undefined identifier: 'test2'
   [1]
 
 Test Rzlwd.asl:
   $ aslref Rzlwd.asl
-  File Rzlwd.asl, line 10, characters 4 to 15:
+  File Rzlwd.asl, line 14, characters 4 to 15:
   ASL Typing error: a subtype of integer {5..10} was expected,
     provided integer {2}.
   [1]
@@ -2297,7 +2339,7 @@ Test Rjgwf.asl:
 
 Test Rttgq.asl:
   $ aslref Rttgq.asl
-  File Rttgq.asl, line 10, characters 12 to 21:
+  File Rttgq.asl, line 13, characters 12 to 21:
   ASL Typing error: Illegal application of operator || on types a and integer
   [1]
 
@@ -2309,7 +2351,7 @@ Test Iyhml.asl:
 
 Test Iyhrp.asl:
   $ aslref Iyhrp.asl
-  File Iyhrp.asl, line 5, characters 12 to 19:
+  File Iyhrp.asl, line 8, characters 12 to 19:
   ASL Typing error: Illegal application of operator DIV on types integer {2, 4}
     and integer {(- 1)..1}
   [1]
@@ -2319,7 +2361,7 @@ Test Iyxsy.asl:
 
 Test Rbzkw.asl:
   $ aslref Rbzkw.asl
-  File Rbzkw.asl, line 3, characters 21 to 22:
+  File Rbzkw.asl, line 7, characters 21 to 22:
   ASL Error: Cannot parse.
   [1]
 
@@ -2334,7 +2376,7 @@ Test Ilghj.asl:
 
 Test Rkxmr.asl:
   $ aslref Rkxmr.asl
-  File Rkxmr.asl, line 6, characters 15 to 21:
+  File Rkxmr.asl, line 10, characters 15 to 21:
   ASL Typing error: Illegal application of operator == on types bits(M)
     and bits(8)
   [1]
@@ -2342,11 +2384,33 @@ Test Rkxmr.asl:
 Test Rxzvt.asl:
   $ aslref Rxzvt.asl
 
+Test Rxzvt-2.asl:
+  $ aslref Rxzvt-2.asl
+  ASL Error: Undefined identifier: 'main'
+  [1]
+
+Test Rxzvt-3.asl:
+  $ aslref Rxzvt-3.asl
+  ASL Error: Undefined identifier: 'main'
+  [1]
+
+Test Rxzvt-4.asl:
+  $ aslref Rxzvt-4.asl
+  ASL Error: Undefined identifier: 'main'
+  [1]
+
 Test Rmrht.asl:
   $ aslref Rmrht.asl
-  File Rmrht.asl, line 7, characters 12 to 18:
+  File Rmrht.asl, line 10, characters 12 to 18:
   ASL Typing error: Illegal application of operator == on types bits(1)
     and bits(11)
+  [1]
+
+Test Rmrht-2.asl:
+  $ aslref Rmrht-2.asl
+  File Rmrht-2.asl, line 17, characters 9 to 21:
+  ASL Typing error: Illegal application of operator == on types bits(int1)
+    and bits(int2)
   [1]
 
 Test Rsqxn.asl:
@@ -2360,7 +2424,7 @@ Test Rnynk.asl:
 
 Test Rfhyz.asl:
   $ aslref Rfhyz.asl
-  File Rfhyz.asl, line 3, characters 21 to 22:
+  File Rfhyz.asl, line 7, characters 21 to 22:
   ASL Error: Cannot parse.
   [1]
 
@@ -2410,13 +2474,13 @@ Test Dfxst.asl:
 
 Test Rwdgq.asl:
   $ aslref Rwdgq.asl
-  File Rwdgq.asl, line 6, characters 4 to 5:
+  File Rwdgq.asl, line 9, characters 4 to 5:
   ASL Typing error: cannot assign to immutable storage "x".
   [1]
 
 Test Rzdkc.asl:
   $ aslref Rzdkc.asl
-  File Rzdkc.asl, line 3, characters 15 to 16:
+  File Rzdkc.asl, line 12, characters 15 to 16:
   ASL Error: Cannot parse.
   [1]
 
@@ -2464,7 +2528,7 @@ Test Ixsfy.asl:
 
 Test Djljd.asl:
   $ aslref Djljd.asl
-  File Djljd.asl, line 3, characters 27 to 28:
+  File Djljd.asl, line 8, characters 27 to 28:
   ASL Error: Cannot parse.
   [1]
 
@@ -2565,7 +2629,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Rbncy.asl:
   $ aslref Rbncy.asl
-  File Rbncy.asl, line 7, characters 10 to 25:
+  File Rbncy.asl, line 14, characters 10 to 25:
   ASL Error: Undefined identifier: 'exp_real'
   [1]
 For reference, the test writter intention was that this output matched:
@@ -2578,13 +2642,13 @@ Test Inbct.asl:
 
 Test Rcrqj.asl:
   $ aslref Rcrqj.asl
-  File Rcrqj.asl, line 6, characters 21 to 35:
+  File Rcrqj.asl, line 9, characters 21 to 35:
   ASL Error: Undefined identifier: 'div_int'
   [1]
 
 Test Rghxr_a.asl:
   $ aslref Rghxr_a.asl
-  File Rghxr_a.asl, line 7, characters 10 to 24:
+  File Rghxr_a.asl, line 11, characters 10 to 24:
   ASL Error: Undefined identifier: 'frem_int'
   [1]
 For reference, the test writter intention was that this output matched:
@@ -2594,13 +2658,13 @@ For reference, the test writter intention was that this output matched:
 
 Test Rghxr_b.asl:
   $ aslref Rghxr_b.asl
-  File Rghxr_b.asl, line 5, characters 10 to 25:
+  File Rghxr_b.asl, line 9, characters 10 to 25:
   ASL Error: Undefined identifier: 'frem_int'
   [1]
 
 Test Rncwm.asl:
   $ aslref Rncwm.asl
-  File Rncwm.asl, line 7, characters 10 to 24:
+  File Rncwm.asl, line 14, characters 10 to 24:
   ASL Error: Undefined identifier: 'exp_int'
   [1]
 For reference, the test writter intention was that this output matched:
@@ -2620,13 +2684,13 @@ For reference, the test writter intention was that this output matched:
 
 Test Rthsv.asl:
   $ aslref Rthsv.asl
-  File Rthsv.asl, line 6, characters 10 to 32:
+  File Rthsv.asl, line 8, characters 10 to 32:
   ASL Error: Undefined identifier: 'shiftleft_int'
   [1]
 
 Test Rvgzf.asl:
   $ aslref Rvgzf.asl
-  File Rvgzf.asl, line 9, characters 10 to 30:
+  File Rvgzf.asl, line 14, characters 10 to 30:
   ASL Error: Undefined identifier: 'shiftleft_int'
   [1]
 For reference, the test writter intention was that this output matched:
@@ -2638,19 +2702,19 @@ For reference, the test writter intention was that this output matched:
 
 Test Rwwtv_a.asl:
   $ aslref Rwwtv_a.asl
-  File Rwwtv_a.asl, line 5, characters 10 to 24:
+  File Rwwtv_a.asl, line 7, characters 10 to 24:
   ASL Error: Undefined identifier: 'div_int'
   [1]
 
 Test Rwwtv_b.asl:
   $ aslref Rwwtv_b.asl
-  File Rwwtv_b.asl, line 5, characters 10 to 24:
+  File Rwwtv_b.asl, line 7, characters 10 to 24:
   ASL Error: Undefined identifier: 'fdiv_int'
   [1]
 
 Test Rztjn_a.asl:
   $ aslref Rztjn_a.asl
-  File Rztjn_a.asl, line 7, characters 10 to 23:
+  File Rztjn_a.asl, line 11, characters 10 to 23:
   ASL Error: Undefined identifier: 'div_int'
   [1]
 For reference, the test writter intention was that this output matched:
@@ -2660,7 +2724,7 @@ For reference, the test writter intention was that this output matched:
 
 Test Rztjn_b.asl:
   $ aslref Rztjn_b.asl
-  File Rztjn_b.asl, line 5, characters 10 to 23:
+  File Rztjn_b.asl, line 9, characters 10 to 23:
   ASL Error: Undefined identifier: 'div_int'
   [1]
 
@@ -2683,17 +2747,17 @@ For reference, the test writter intention was that this output matched:
 Test Rdgbm.asl:
   $ aslref Rdgbm.asl
 
-Test Dbmgm-new.asl:
-  $ aslref Dbmgm-new.asl
+Test Dbmgm-2.asl:
+  $ aslref Dbmgm-2.asl
 
-Test Iglwm-new.asl:
-  $ aslref Iglwm-new.asl
+Test Iglwm-2.asl:
+  $ aslref Iglwm-2.asl
 
-Test Ilghj-new.asl:
-  $ aslref Ilghj-new.asl
+Test Ilghj-2.asl:
+  $ aslref Ilghj-2.asl
 
-Test Irxlg-new.asl:
-  $ aslref Irxlg-new.asl
+Test Irxlg-2.asl:
+  $ aslref Irxlg-2.asl
   FALSE
   TRUE
   '101'
@@ -2703,308 +2767,331 @@ Test Irxlg-new.asl:
   '001'
   '001'
 
-Test Iypxd-new.asl:
-  $ aslref Iypxd-new.asl
-  File Iypxd-new.asl, line 3, characters 4 to 5:
+Test Iypxd-2.asl:
+  $ aslref Iypxd-2.asl
+  File Iypxd-2.asl, line 12, characters 4 to 5:
   ASL Error: Cannot parse.
   [1]
 
-Test Rfhyz-new.asl:
-  $ aslref Rfhyz-new.asl
+Test Rfhyz-2.asl:
+  $ aslref Rfhyz-2.asl
 
-Test Rmwbn-new.asl:
-  $ aslref Rmwbn-new.asl
+Test Rmwbn-2.asl:
+  $ aslref Rmwbn-2.asl
 
-Test Rqxgw-new.asl:
-  $ aslref Rqxgw-new.asl
+Test Rqxgw-2.asl:
+  $ aslref Rqxgw-2.asl
   TRUE
 
-Test Rwzvx-new.asl:
-  $ aslref Rwzvx-new.asl
-  File Rwzvx-new.asl, line 6, characters 12 to 13:
+Test Rwzvx-2.asl:
+  $ aslref Rwzvx-2.asl
+  File Rwzvx-2.asl, line 10, characters 12 to 13:
   ASL Execution error: Mismatch type:
     value 4 does not belong to type integer {0..3}.
   [1]
 
 
-Test Dbvgk-new.asl:
-  $ aslref Dbvgk-new.asl
+Test Dbvgk-2.asl:
+  $ aslref Dbvgk-2.asl
 
-Test Igqyg-new.asl:
-  $ aslref Igqyg-new.asl
-  File Igqyg-new.asl, line 32, characters 4 to 31:
+Test Igqyg-2.asl:
+  $ aslref Igqyg-2.asl
+  File Igqyg-2.asl, line 41, characters 4 to 31:
   ASL Typing error: constrained integer expected, provided integer
   [1]
 
-Test Imkpr-new.asl:
-  $ aslref Imkpr-new.asl
-  File Imkpr-new.asl, line 32, characters 12 to 30:
+Test Igqyg-3.asl:
+  $ aslref Igqyg-3.asl
+  File Igqyg-3.asl, line 28, characters 11 to 19:
+  ASL Typing error: constrained integer expected, provided integer
+  [1]
+
+Test Imkpr-2.asl:
+  $ aslref Imkpr-2.asl
+  File Imkpr-2.asl, line 36, characters 12 to 30:
   ASL Typing error: a subtype of integer {8, 16, 32} was expected,
     provided integer {M}.
   [1]
 
-Test Isbwr-new.asl:
-  $ aslref Isbwr-new.asl
+Test Isbwr-2.asl:
+  $ aslref Isbwr-2.asl
 
-Test Izddj-new.asl:
-  $ aslref Izddj-new.asl
+Test Izddj-2.asl:
+  $ aslref Izddj-2.asl
 
-Test Rfrwd-new.asl:
-  $ aslref Rfrwd-new.asl
+Test Rfrwd-2.asl:
+  $ aslref Rfrwd-2.asl
 
-Test Rncnq-new.asl:
-  $ aslref Rncnq-new.asl
+Test Rncnq-2.asl:
+  $ aslref Rncnq-2.asl
 
-Test Rsnqj-new.asl:
-  $ aslref Rsnqj-new.asl
+Test Rsnqj-2.asl:
+  $ aslref Rsnqj-2.asl
 
-Test Rxylp-new.asl:
-  $ aslref Rxylp-new.asl
+Test Rsnqj-3.asl:
+  $ aslref Rsnqj-3.asl
+  File Rsnqj-3.asl, line 8, characters 24 to 27:
+  ASL Error: Undefined identifier: 'f'
+  [1]
+
+Test Rxylp-2.asl:
+  $ aslref Rxylp-2.asl
 
 
-Test Djljd-new.asl:
-  $ aslref Djljd-new.asl
+Test Djljd-2.asl:
+  $ aslref Djljd-2.asl
 
-Test Ihjcd-new.asl:
-  $ aslref Ihjcd-new.asl
+Test Ihjcd-2.asl:
+  $ aslref Ihjcd-2.asl
   1000000
   
   
   1000000
 
-Test Ipdkt-new.asl:
-  $ aslref Ipdkt-new.asl
+Test Ipdkt-2.asl:
+  $ aslref Ipdkt-2.asl
 
-Test Iszvf-new.asl:
-  $ aslref Iszvf-new.asl
+Test Iszvf-2.asl:
+  $ aslref Iszvf-2.asl
 
-Test Rbncy-new.asl:
-  $ aslref Rbncy-new.asl
+Test Rbncy-2.asl:
+  $ aslref Rbncy-2.asl
 
-Test Rghxr_a-new.asl:
-  $ aslref Rghxr_a-new.asl
-  File Rghxr_a-new.asl, line 6, characters 11 to 26:
+Test Rghxr_a-2.asl:
+  $ aslref Rghxr_a-2.asl
+  File Rghxr_a-2.asl, line 10, characters 11 to 26:
   ASL Execution error: Assertion failed: ((- (5 MOD 3)) == 1)
   [1]
 
-Test Rncwm-new.asl:
-  $ aslref Rncwm-new.asl
+Test Rncwm-2.asl:
+  $ aslref Rncwm-2.asl
 
-Test Rsvmm-new.asl:
-  $ aslref Rsvmm-new.asl
+Test Rsvmm-2.asl:
+  $ aslref Rsvmm-2.asl
 
-Test Rydfq-new.asl:
-  $ aslref Rydfq-new.asl
+Test Rydfq-2.asl:
+  $ aslref Rydfq-2.asl
   4
 
+Test Rydfq-3.asl:
+  $ aslref Rydfq-3.asl
+  File Rydfq-3.asl, line 8, characters 0 to 3:
+  ASL Error: Cannot parse.
+  [1]
+ 
+Test Rydfq-4.asl:
+  $ aslref Rydfq-4.asl
+  File Rydfq-4.asl, line 9, characters 4 to 9:
+  ASL Error: Cannot parse.
+  [1]
+ 
+Test Dnmfp-2.asl:
+  $ aslref Dnmfp-2.asl
 
-Test Dnmfp-new.asl:
-  $ aslref Dnmfp-new.asl
-
-Test Ihmrk-new.asl:
-  $ aslref Ihmrk-new.asl
+Test Ihmrk-2.asl:
+  $ aslref Ihmrk-2.asl
   0
   FALSE
 
-Test Iqjtn_a-new.asl:
-  $ aslref Iqjtn_a-new.asl
+Test Iqjtn_a-2.asl:
+  $ aslref Iqjtn_a-2.asl
 
-Test Itsxl-new.asl:
-  $ aslref Itsxl-new.asl
+Test Itsxl-2.asl:
+  $ aslref Itsxl-2.asl
   10
   20
 
-Test Rbzkw-new.asl:
-  $ aslref Rbzkw-new.asl
+Test Rbzkw-2.asl:
+  $ aslref Rbzkw-2.asl
 
-Test Rgvks-new.asl:
-  $ aslref Rgvks-new.asl
+Test Rgvks-2.asl:
+  $ aslref Rgvks-2.asl
   a
 
-Test Rnzgh-new.asl:
-  $ aslref Rnzgh-new.asl
+Test Rnzgh-2.asl:
+  $ aslref Rnzgh-2.asl
 
-Test Rtphr-new.asl:
-  $ aslref Rtphr-new.asl
+Test Rtphr-2.asl:
+  $ aslref Rtphr-2.asl
 
-Test Rytnr-new.asl:
-  $ aslref Rytnr-new.asl
+Test Rytnr-2.asl:
+  $ aslref Rytnr-2.asl
 
 
-Test Ibhln-new.asl:
-  $ aslref Ibhln-new.asl
+Test Ibhln-2.asl:
+  $ aslref Ibhln-2.asl
 
-Test Ihvlx-new.asl:
-  $ aslref Ihvlx-new.asl
+Test Ihvlx-2.asl:
+  $ aslref Ihvlx-2.asl
 
-Test Iqjtn_b-new.asl:
-  $ aslref Iqjtn_b-new.asl
+Test Iqjtn_b-2.asl:
+  $ aslref Iqjtn_b-2.asl
 
-Test Ivgsp-new.asl:
-  $ aslref Ivgsp-new.asl
-  File Ivgsp-new.asl, line 3, character 0 to line 6, character 3:
+Test Ivgsp-2.asl:
+  $ aslref Ivgsp-2.asl
+  File Ivgsp-2.asl, line 6, character 0 to line 9, character 3:
   ASL Typing error: cannot declare already declared element "a".
   [1]
 
-Test Rccvd-new.asl:
-  $ aslref Rccvd-new.asl
+Test Rccvd-2.asl:
+  $ aslref Rccvd-2.asl
 
-Test Rhhcd-new.asl:
-  $ aslref Rhhcd-new.asl
+Test Rhhcd-2.asl:
+  $ aslref Rhhcd-2.asl
 
-Test Rphnz-new.asl:
-  $ aslref Rphnz-new.asl
+Test Rphnz-2.asl:
+  $ aslref Rphnz-2.asl
 
-Test Rtznr-new.asl:
-  $ aslref Rtznr-new.asl
+Test Rtznr-2.asl:
+  $ aslref Rtznr-2.asl
 
-Test Ryyfr-new.asl:
-  $ aslref Ryyfr-new.asl
-  File Ryyfr-new.asl, line 11, characters 4 to 14:
+Test Ryyfr-2.asl:
+  $ aslref Ryyfr-2.asl
+  File Ryyfr-2.asl, line 13, characters 4 to 14:
   ASL Typing error: overlapping slices 0+:1, 0+:1.
   [1]
 
 
-Test Ibyvl-new.asl:
-  $ aslref Ibyvl-new.asl
+Test Ibyvl-2.asl:
+  $ aslref Ibyvl-2.asl
 
-Test Ijdcc-new.asl:
-  $ aslref Ijdcc-new.asl
-  File Ijdcc-new.asl, line 3, character 0 to line 5, character 2:
+Test Ijdcc-2.asl:
+  $ aslref Ijdcc-2.asl
+  File Ijdcc-2.asl, line 6, character 0 to line 8, character 2:
   ASL Static error: Cannot extract from bitvector of length 5 slices 7+:4.
   [1]
 
-Test Iqjtn_c-new.asl:
-  $ aslref Iqjtn_c-new.asl
+Test Iqjtn_c-2.asl:
+  $ aslref Iqjtn_c-2.asl
   Uncaught exception: exc {err_code: 0}
   [1]
 
-Test Ivylk-new.asl:
-  $ aslref Ivylk-new.asl
+Test Ivylk-2.asl:
+  $ aslref Ivylk-2.asl
 
-Test Rcnhb-new.asl:
-  $ aslref Rcnhb-new.asl
-  File Rcnhb-new.asl, line 3, character 0 to line 5, character 2:
+Test Rcnhb-2.asl:
+  $ aslref Rcnhb-2.asl
+  File Rcnhb-2.asl, line 5, character 0 to line 7, character 2:
   ASL Typing error: overlapping slices 0+:4, 1+:3.
   [1]
 
-Test Rhqzy-new.asl:
-  $ aslref Rhqzy-new.asl
+Test Rhqzy-2.asl:
+  $ aslref Rhqzy-2.asl
 
-Test Rprzn-new.asl:
-  $ aslref Rprzn-new.asl
+Test Rprzn-2.asl:
+  $ aslref Rprzn-2.asl
   Hello
 
-Test Rvczx-new.asl:
-  $ aslref Rvczx-new.asl
+Test Rvczx-2.asl:
+  $ aslref Rvczx-2.asl
 
-Test Rzcvd-new.asl:
-  $ aslref Rzcvd-new.asl
+Test Rzcvd-2.asl:
+  $ aslref Rzcvd-2.asl
 
 
-Test Icdvy-new.asl:
-  $ aslref Icdvy-new.asl
+Test Icdvy-2.asl:
+  $ aslref Icdvy-2.asl
 
-Test Ikfcr-new.asl:
-  $ aslref Ikfcr-new.asl
+Test Ikfcr-2.asl:
+  $ aslref Ikfcr-2.asl
 
-Test Iqjtn_d-new.asl:
-  $ aslref Iqjtn_d-new.asl
+Test Iqjtn_d-2.asl:
+  $ aslref Iqjtn_d-2.asl
   Uncaught exception: exc {err_code: 0}
   [1]
 
-Test Iwlnm-new.asl:
-  $ aslref Iwlnm-new.asl
-  File Iwlnm-new.asl, line 3, characters 8 to 14:
+Test Iwlnm-2.asl:
+  $ aslref Iwlnm-2.asl
+  File Iwlnm-2.asl, line 6, characters 8 to 14:
   ASL Error: Cannot parse.
   [1]
 
-Test Rcrqj-new.asl:
-  $ aslref Rcrqj-new.asl
+Test Rcrqj-2.asl:
+  $ aslref Rcrqj-2.asl
 
-Test Rirnq-new.asl:
-  $ aslref Rirnq-new.asl
-  File Rirnq-new.asl, line 6, characters 11 to 16:
+Test Rirnq-2.asl:
+  $ aslref Rirnq-2.asl
+  File Rirnq-2.asl, line 6, characters 11 to 16:
   ASL Execution error: Assertion failed: FALSE
   [1]
 
-Test Rqdqd-new.asl:
-  $ aslref Rqdqd-new.asl
-  File Rqdqd-new.asl, line 5, characters 13 to 14:
+Test Rqdqd-2.asl:
+  $ aslref Rqdqd-2.asl
+  File Rqdqd-2.asl, line 5, characters 13 to 14:
   ASL Error: Cannot parse.
   [1]
 
-Test Rvgzf-new.asl:
-  $ aslref Rvgzf-new.asl
+Test Rvgzf-2.asl:
+  $ aslref Rvgzf-2.asl
 
-Test Rzndl-new.asl:
-  $ aslref Rzndl-new.asl
+Test Rzndl-2.asl:
+  $ aslref Rzndl-2.asl
 
 
-Test Ifpvz-new.asl:
-  $ aslref Ifpvz-new.asl
+Test Ifpvz-2.asl:
+  $ aslref Ifpvz-2.asl
 
-Test Iknxj-new.asl:
-  $ aslref Iknxj-new.asl
+Test Iknxj-2.asl:
+  $ aslref Iknxj-2.asl
 
-Test Iqnsd-new.asl:
-  $ aslref Iqnsd-new.asl
+Test Iqnsd-2.asl:
+  $ aslref Iqnsd-2.asl
 
-Test Ixfpv-new.asl:
-  $ aslref Ixfpv-new.asl
-  File Ixfpv-new.asl, line 9, characters 12 to 19:
+Test Ixfpv-2.asl:
+  $ aslref Ixfpv-2.asl
+  File Ixfpv-2.asl, line 13, characters 12 to 19:
   ASL Error: There are no field 'item2' on type (integer {10}, integer {20}).
   [1]
 
-Test Rdfwz-new.asl:
-  $ aslref Rdfwz-new.asl
+Test Rdfwz-2.asl:
+  $ aslref Rdfwz-2.asl
 
-Test Rjpvl-new.asl:
-  $ aslref Rjpvl-new.asl
-  File Rjpvl-new.asl, line 13, characters 4 to 5:
+Test Rjpvl-2.asl:
+  $ aslref Rjpvl-2.asl
+  File Rjpvl-2.asl, line 16, characters 4 to 5:
   ASL Error: Cannot parse.
   [1]
 
-Test Rqqbb-new.asl:
-  $ aslref Rqqbb-new.asl
+Test Rqqbb-2.asl:
+  $ aslref Rqqbb-2.asl
 
-Test Rvnkt-new.asl:
-  $ aslref Rvnkt-new.asl
+Test Rvnkt-2.asl:
+  $ aslref Rvnkt-2.asl
 
-Test Rzsnd-new.asl:
-  $ aslref Rzsnd-new.asl
+Test Rzsnd-2.asl:
+  $ aslref Rzsnd-2.asl
 
 
-Test Ighgk-new.asl:
-  $ aslref Ighgk-new.asl
+Test Ighgk-2.asl:
+  $ aslref Ighgk-2.asl
 
-Test Iktjn-new.asl:
-  $ aslref Iktjn-new.asl
-  File Iktjn-new.asl, line 21, characters 4 to 6:
+Test Iktjn-2.asl:
+  $ aslref Iktjn-2.asl
+  File Iktjn-2.asl, line 21, characters 4 to 6:
   ASL Typing error: a subtype of bits(N) was expected, provided bits(wid).
   [1]
 
-Test Irkbv-new.asl:
-  $ aslref Irkbv-new.asl
+Test Irkbv-2.asl:
+  $ aslref Irkbv-2.asl
 
-Test Iyklf-new.asl:
-  $ aslref Iyklf-new.asl
+Test Iyklf-2.asl:
+  $ aslref Iyklf-2.asl
   a
 
-Test Rdjmc-new.asl:
-  $ aslref Rdjmc-new.asl
+Test Rdjmc-2.asl:
+  $ aslref Rdjmc-2.asl
 
-Test Rkldr-new.asl:
-  $ aslref Rkldr-new.asl
+Test Rkldr-2.asl:
+  $ aslref Rkldr-2.asl
 
-Test Rqwsq-new.asl:
-  $ aslref Rqwsq-new.asl
+Test Rqwsq-2.asl:
+  $ aslref Rqwsq-2.asl
   0
   0
 
-Test Rwqrn-new.asl:
-  $ aslref Rwqrn-new.asl
+Test Rwqrn-2.asl:
+  $ aslref Rwqrn-2.asl
 
-Test Rztjn_a-new.asl:
-  $ aslref Rztjn_a-new.asl
+Test Rztjn_a-2.asl:
+  $ aslref Rztjn_a-2.asl
 

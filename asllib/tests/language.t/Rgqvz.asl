@@ -1,3 +1,6 @@
+//R_GQVZ: Fields of a bitvector type variable myBits can be read or written
+//independently using the syntax myBits.f to refer to field f of myBits.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: TRUE
 // CHECK-NEXT: TRUE

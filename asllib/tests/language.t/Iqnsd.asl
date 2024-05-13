@@ -1,3 +1,5 @@
+//I_QNSD: The following shows the use of some constrained width bitvectors
+
 // RUN: interp %s | FileCheck %s
 
 type widTy of integer {4,8};

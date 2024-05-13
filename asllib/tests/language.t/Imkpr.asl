@@ -1,3 +1,7 @@
+//I_MKPR: The following example shows that even literals may require an
+//asserted type conversion to ensure they meet type-satisfaction
+//requirements.
+
 // RUN: interp %s | FileCheck %s
 
 func invokedN {N: integer {8,16,32}} (x: bits(N)) => bits(N)

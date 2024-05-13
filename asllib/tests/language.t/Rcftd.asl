@@ -1,3 +1,7 @@
+//R_CFTD: The base value of a well-constrained integer is the closest value
+//to zero in its domain. If the closest positive and negative value are
+//equally close, the positive value is used.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 4
 // CHECK-NEXT: -4

@@ -1,3 +1,6 @@
+//D_WXQV: The bits(N) type represents a bitvector of length N, where N
+//may specify a fixed width or a constrained width.
+
 // RUN: interp %s | FileCheck %s
 
 config a: integer{0..10} = 4;

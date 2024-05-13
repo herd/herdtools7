@@ -1,3 +1,7 @@
+//R_ZYWY: If both operands of an integer binary primitive operator are
+//integers and at least one of them is an unconstrained integer then the
+//result shall be an unconstrained integer.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

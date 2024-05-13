@@ -1,3 +1,6 @@
+//R_YCPX: An execution-time check for an asserted type conversion should not
+//be failed before the expression is evaluated.
+ 
 // RUN: interp %s | FileCheck %s
 
 config a = 10;

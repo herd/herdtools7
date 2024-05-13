@@ -1,3 +1,5 @@
+//R_DHRC: Global identifiers are in scope everywhere.
+
 // RUN: interp %s | FileCheck %s
 
 var a: integer;

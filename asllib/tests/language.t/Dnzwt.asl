@@ -1,3 +1,12 @@
+//D_NZWT: The builtin singular types are:
+// - integer 
+// - real
+// - string 
+// - boolean 
+// - bits
+// - bit
+// - enumeration
+
 // RUN: interp %s | FileCheck %s
 
 type a of integer;

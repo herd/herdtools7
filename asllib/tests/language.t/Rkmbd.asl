@@ -1,3 +1,6 @@
+//R_KMBD: A bitvector type in a formal argument is parameter-defining for a
+//parameter if its bitwidth is the value of that parameter.
+
 // RUN: interp %s | FileCheck %s
 
 func test{N: integer}(a: bits(N)) => bits(N)

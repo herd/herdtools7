@@ -1,6 +1,8 @@
+//R_XBMN: The type of the expression UNKNOWN: ty is ty. 
+
 // RUN: interp %s | FileCheck %s
 
-// ! I believe this is internal only
+// ! TODO 
 
 func main() => integer
 begin

@@ -1,3 +1,6 @@
+//R_PFWQ: An invocation is illegal if it provides different values or
+//constraints for a particular parameter’s parameter-defining formals.
+
 // RUN: not interp %s | FileCheck %s
 
 func test(N: integer, a: bits(N))

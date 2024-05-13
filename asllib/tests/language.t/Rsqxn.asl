@@ -1,3 +1,6 @@
+//R_SQXN: If an argument of a comparison operation is a constrained integer
+//then it is treated as an unconstrained integer.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

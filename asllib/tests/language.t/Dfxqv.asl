@@ -1,3 +1,6 @@
+//D_FXQV: The structure of a type is the primitive type it is equivalent
+//to such that it can hold the same values.
+
 // RUN: interp %s | FileCheck %s
 
 type T1 of integer; // the named type `T1` whose structure is integer

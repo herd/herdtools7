@@ -1,3 +1,9 @@
+//D_NMFP: A declaration introduces a new global object into the
+//specification:
+//- named types,
+//- variables, let identifiers, constants and configs, 
+//- functions, procedures, getters and setters.
+
 // RUN: interp %s | FileCheck %s
 
 type a of integer;

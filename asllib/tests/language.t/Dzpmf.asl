@@ -1,3 +1,7 @@
+//D_ZPMF: An expression is an execution-time expression if either:
+//- it contains an execution-time storage element identifier
+//- it contains an execution-time function or getter invocation
+
 // RUN: interp %s | FileCheck %s
 
 var a : integer = 10;

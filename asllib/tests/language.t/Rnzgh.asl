@@ -1,3 +1,7 @@
+//R_NZGH: The end expression shall evaluate to a value that remains
+//unchanged if the end expression were to be re-evaluated at the beginning
+//of each for-loop iteration.
+
 // RUN: not interp %s | FileCheck %s
 
 func main() => integer

@@ -1,3 +1,7 @@
+//R_ZXHP: The initialization expression in a let or var declaration is
+//evaluated during execution-time at the point of declaration, hence any
+//side effects occur at the point of declaration.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 1
 // CHECK-NEXT: 2

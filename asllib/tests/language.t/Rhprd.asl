@@ -1,3 +1,6 @@
+//R_HPRD: Identifiers start with a letter or underscore and continue with
+//zero or more letters, underscores or digits.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

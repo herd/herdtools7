@@ -1,3 +1,6 @@
+//D_HTPL: A return statement returns the control flow to the caller of a
+//subprogram.
+
 // RUN: interp %s | FileCheck %s
 
 func a()

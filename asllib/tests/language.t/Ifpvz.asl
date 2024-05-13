@@ -1,3 +1,7 @@
+//I_FPVZ: Note that the rules on using bitvectors of undetermined width mean
+//that there is a potentially confusing asymmetry in the use of 
+//bits(-: ty) as illustrated by the following example.
+
 // RUN: interp %s | FileCheck %s
 
 var none: bits(-: integer {1});

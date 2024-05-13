@@ -1,3 +1,8 @@
+//I_RXLG: As well as supporting bitwise logical operators and equality
+//tests, bitvectors also support addition and subtraction, but are treated
+//as not having a sign and therefore do not support ordering comparisons
+//such as <=.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: FALSE
 // CHECK-NEXT: TRUE

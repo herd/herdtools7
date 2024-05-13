@@ -1,3 +1,5 @@
+//R_WQRN: The expression in an assertion statement must be side-effect-free.
+
 // RUN: not interp %s | FileCheck %s
 
 var a: integer;

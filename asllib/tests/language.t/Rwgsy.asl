@@ -1,3 +1,6 @@
+//R_WGSY: The case guard of a case statement’s when clause must have the
+//structure of boolean.
+
 // RUN: not interp %s | FileCheck %s
 
 func main() => integer

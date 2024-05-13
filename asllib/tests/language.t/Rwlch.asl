@@ -1,6 +1,9 @@
+//R_WLCH: The expression UNKNOWN: ty evaluates to an arbitrary value in the
+//domain of ty.
+
 // RUN: interp %s | FileCheck %s
 
-// ! I believe this is internal only
+// ! TODO 
 
 func main() => integer
 begin

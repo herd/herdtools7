@@ -1,3 +1,8 @@
+//I_YKLF: The exception thrown by an expressionless throw statement has the 
+//same thrown type of the original exception which the current catcher 
+//caught and may not be the same as the caught type of the catcher’s 
+//exception.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: a
 

@@ -1,3 +1,6 @@
+//R_JPVL: Tuple expressions are supported to allow multiple assignment and
+//functions that return multiple values.
+
 // RUN: interp %s | FileCheck %s
 
 

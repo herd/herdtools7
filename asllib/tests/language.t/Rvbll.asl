@@ -1,3 +1,6 @@
+//R_VBLL: Wherever an execution-time check is required, a tool may elide the
+//check if it can be proven at compile time to always be true.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

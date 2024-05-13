@@ -1,3 +1,4 @@
+//R_JNMR: 
 // RUN: not interp %s | FileCheck %s
 
 func a() => integer

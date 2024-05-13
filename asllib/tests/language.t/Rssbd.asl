@@ -1,3 +1,6 @@
+//R_SSBD: For statements introduce a for-loop counter which is in scope for
+//the body of the for statement.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 10
 

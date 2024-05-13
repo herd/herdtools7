@@ -1,3 +1,5 @@
+//R_YYFR: The fields in a multiple field assignment must not overlap.
+
 // RUN: not interp %s | FileCheck %s
 
 type a of bits(4) {

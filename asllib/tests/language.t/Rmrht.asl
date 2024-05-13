@@ -1,3 +1,6 @@
+//R_MRHT: If the arguments of a comparison operation are bitvectors then
+//they must have the same determined width.
+
 // RUN: not interp %s | FileCheck %s
 
 func main() => integer

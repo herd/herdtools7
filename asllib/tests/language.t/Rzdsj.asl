@@ -1,3 +1,7 @@
+//R_ZDSJ: Integer literals (both decimal and hexadecimal) have constrained
+//integer type. The type of an integer literal is the constrained integer
+//type whose constraint holds only the value of the literal.
+
 // RUN: interp %s | FileCheck %s
 
 var a : integer{10} = 10;

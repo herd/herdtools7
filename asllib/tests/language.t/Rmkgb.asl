@@ -1,3 +1,6 @@
+//R_MKGB: A catcher’s exception is only in scope within the stmt_list of the
+//catcher.
+
 // RUN: not interp %s | FileCheck %s
 
 type a of exception{

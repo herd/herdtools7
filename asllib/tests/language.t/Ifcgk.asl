@@ -1,6 +1,9 @@
+//I_FCGK: Note that the identifier given in the when clause does not map to
+//the type of the matched exception.
+
 // RUN : interp %s | FileCheck %s
 
-// ! Not sure what this is saying
+// ! TODO 
 
 func main() => integer
 begin

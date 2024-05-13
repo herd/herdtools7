@@ -1,3 +1,5 @@
+//R_YBWY: Named type declarations must not be recursive.
+
 // RUN: not interp %s | FileCheck %s
 
 type base of record {

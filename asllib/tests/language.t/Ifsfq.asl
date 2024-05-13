@@ -1,3 +1,6 @@
+//I_FSFQ: Whether or not the return types of the subprograms type clash is
+//ignored when determining clashing.
+
 // RUN: not interp %s | FileCheck %s
 
 type a of integer;

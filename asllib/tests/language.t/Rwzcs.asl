@@ -1,3 +1,6 @@
+//R_WZCS: The width of a bitslice must be any non-negative, statically
+//evaluable integer expression (including zero).
+
 // RUN: not interp %s | FileCheck %s
 
 var a = '1111 1111';

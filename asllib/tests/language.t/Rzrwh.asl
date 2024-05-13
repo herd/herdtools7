@@ -1,3 +1,4 @@
+//R_ZRWH: Each bit within a bitvector has value ‘0’ or ‘1’.
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

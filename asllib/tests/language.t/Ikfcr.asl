@@ -1,3 +1,9 @@
+//I_KFCR: It follows from the domain rules that under-constrained integers
+//type-satisfy unconstrained integers but not vice versa so an unconstrained
+//integer may not be used where a constrained integer is required by uses of
+//the type-satisfaction rule, even if the constrained integer is
+//under-constrained.
+
 // RUN: interp %s | FileCheck %s
 
 func test{N}(a: bits(N))

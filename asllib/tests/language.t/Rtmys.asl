@@ -1,3 +1,6 @@
+//R_TMYS: Conditional statements select which block to execute by testing
+//condition expressions sequentially until a TRUE condition is found.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 3
 

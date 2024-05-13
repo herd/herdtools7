@@ -1,3 +1,6 @@
+//R_KSQP: A global let, constant or config storage element must be
+//initialized with an initializer expression.
+
 // RUN: not interp %s | FileCheck %s
 
 let a: integer;

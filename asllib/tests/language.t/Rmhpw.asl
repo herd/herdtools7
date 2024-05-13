@@ -1,3 +1,6 @@
+//R_MHPW: While statements repeatedly test a condition expression and then
+//execute a block of statements.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 1
 // CHECK_NEXT: 2

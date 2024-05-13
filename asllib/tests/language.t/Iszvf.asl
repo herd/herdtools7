@@ -1,3 +1,5 @@
+//I_SZVF: TODO
+ 
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

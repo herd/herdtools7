@@ -1,3 +1,6 @@
+//D_PMBL: The formal arguments and return type of a subprogram have an
+//invocation type for each invocation.
+
 // RUN: interp %s | FileCheck %s
 
 func test(N: integer) => bits(N)

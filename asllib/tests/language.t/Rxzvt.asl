@@ -1,3 +1,6 @@
+//R_XZVT: The type of a conditional expression is the lowest common ancestor
+//of the types of the then and else expressions.
+
 // RUN: interp %s | FileCheck %s
 
 config test = TRUE;

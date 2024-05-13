@@ -1,6 +1,8 @@
+//I_GJHS: There is no UNKNOWN value which can be held in a storage element.
+
 // RUN: interp %s | FileCheck %s
 
-// ! I believe this is internal only
+// ! TODO 
 
 func main() => integer
 begin

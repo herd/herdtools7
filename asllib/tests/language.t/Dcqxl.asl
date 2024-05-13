@@ -1,3 +1,5 @@
+//D_CQXL: The real type represents a rational number.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 3.141590e+0
 

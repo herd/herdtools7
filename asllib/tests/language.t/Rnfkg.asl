@@ -1,6 +1,9 @@
+//R_NFKG: A local storage element declared with constant is initialized with
+//the value of its initialization expression during compilation.
+
 // RUN : interp %s | FileCheck %s
 
-// ! How would I test this?
+// ! TODO 
 
 func main() => integer
 begin

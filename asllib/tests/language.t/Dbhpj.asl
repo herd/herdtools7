@@ -1,3 +1,7 @@
+//D_BHPJ: The formal arguments of a setter are any items in the
+//formal_list of the setter’s declaration followed by the RHS
+//argument.
+
 // RUN: interp %s | FileCheck %s
 
 var _a: integer;

@@ -1,6 +1,9 @@
+//I_CHMP: All subtype relations (other than the transitive relationship)
+//must be explicitly declared.
+
 // RUN : interp %s | FileCheck %s
 
-// ! What does this mean and how would I test it?
+// ! TODO 
 
 func main() => integer
 begin

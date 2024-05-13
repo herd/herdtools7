@@ -1,3 +1,6 @@
+//I_GZVM: The catcher’s exception may have a caught type which is not the
+//same as the thrown type of the original exception which was caught.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 10
 

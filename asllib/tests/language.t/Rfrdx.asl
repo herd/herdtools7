@@ -1,3 +1,5 @@
+//R_FRDX: Procedures must only be used in procedure call statements.
+
 // RUN: interp %s | FileCheck %s
 
 // Function 'Add'

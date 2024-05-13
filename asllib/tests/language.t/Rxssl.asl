@@ -1,3 +1,6 @@
+//R_XSSL: If no TRUE condition is found and there is an else block, the else
+//block is executed.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 2
 

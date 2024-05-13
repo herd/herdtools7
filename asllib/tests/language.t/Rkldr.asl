@@ -1,3 +1,6 @@
+//R_KLDR: The start expression and the end expression must not be 
+//side-effecting.
+
 // RUN: not interp %s | FileCheck %s
 
 var a : integer = 0;

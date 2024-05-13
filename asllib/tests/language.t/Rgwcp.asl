@@ -1,3 +1,8 @@
+//R_GWCP: The syntax
+//  integer <constraint>
+//denotes a constrained integer whose constraint is the set of values in the
+//constraint.
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

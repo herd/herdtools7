@@ -1,3 +1,8 @@
+//D_MTQJ: A type is a compile-time-constant type if its structure depends
+//only on:
+//- compile-time-constant types
+//- compile-time-constant expressions
+
 // RUN: interp %s | FileCheck %s
 
 // All of the following are compile-time types

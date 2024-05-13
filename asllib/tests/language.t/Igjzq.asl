@@ -1,3 +1,6 @@
+//I_GJZQ: The following example illustrates a simple use of constrained
+//types with configs.
+
 // RUN: interp %s | FileCheck %s
 
 // a global which may only hold the values 8, 16 or 32

@@ -1,3 +1,10 @@
+//D_CCTY: A subprogram invocation is an execution-time
+//invocation if the invoked subprogram has an execution-time
+//declaration or if the invocation contains any of the following:
+// - an execution-time storage element
+// - an execution-time expression
+// - a bitvector whose width is an execution-time expression
+
 // RUN: interp %s | FileCheck %s
 
 var counter: integer = 0;

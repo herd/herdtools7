@@ -1,3 +1,10 @@
+//D_XRBT: An expression is a compile-time-constant expression if each one of its atomic expressions is one of:
+//- a literal constant
+//- a compile-time-constant storage element identifier
+//- an immutable storage element identifier with a compile-time-constant
+//initializer expression. 
+//- compile-time-constant function or getter invocations
+
 // RUN: interp %s | FileCheck %s
 
 constant a : integer = 10;

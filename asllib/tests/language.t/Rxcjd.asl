@@ -1,3 +1,6 @@
+//R_XCJD: There is no bound on the minimum and maximum absolute real value
+//that can be represented.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 1.000000e+69
 // CHECK-NEXT: -1.000000e+69

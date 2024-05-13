@@ -1,3 +1,9 @@
+//R_HDDS: The syntax
+//  cexpr as <constraint>
+//is syntactic sugar for
+//  cexpr as integer <constraint>
+
+
 // RUN: interp %s | FileCheck %s
 
 func main() => integer

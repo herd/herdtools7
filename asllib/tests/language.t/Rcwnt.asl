@@ -1,3 +1,9 @@
+//R_CWNT: A case alternative in a case statement may be optionally guarded
+//with a condition expression, indicated by the inclusion of the where
+//keyword. Only if the pattern match is successful is the guard expression
+//evaluated. The guard expression must evaluate to TRUE for the case
+//alternative to be selected.
+
 // RUN: interp %s | FileCheck %s
 // CHECK: 3
 

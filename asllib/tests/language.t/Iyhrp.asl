@@ -1,3 +1,6 @@
+//I_YHRP: IYHRP The calculation of constraints shall cause an error if
+//necessary, for example where a division by zero occurs, etc.
+
 // RUN: not interp %s | FileCheck %s
 
 func f(x: integer {2, 4}, y: integer {-1..1})

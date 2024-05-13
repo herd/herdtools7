@@ -1,3 +1,6 @@
+//I_VGSP: Overload resolution is based only on the name and argument types,
+//and takes no account of how the result is used.
+
 // RUN: interp %s | FileCheck %s
 
 func a() => integer

@@ -1,3 +1,6 @@
+//R_RHTN: The width of any part of a formal argument or return type which is
+//a bitvector type must be a constrained integer.
+
 // RUN: not interp %s | FileCheck %s
 
 config a: integer = 10;
