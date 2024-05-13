@@ -220,6 +220,10 @@ UnderConstrained integers:
 
   $ aslref tuple_items.asl
   $ aslref cases_where.asl
+  $ aslref duplicate_expr_record.asl
+  File duplicate_expr_record.asl, line 5, characters 12 to 27:
+  ASL Typing error: cannot declare already declared element "h".
+  [1]
 
 Arrays indexed by enumerations
   $ aslref enum-array.asl

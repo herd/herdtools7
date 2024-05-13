@@ -1460,6 +1460,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* End *)
                 (* and whose fields have the values given in the field_assignment_list. *)
               in
+              let+ () =
+                match get_first_duplicate fst fields with
+                | None -> ok
+                | Some x ->
+                    fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+              in
               (* Begin ERecord *)
               List.map
                 (fun (name, e') ->
