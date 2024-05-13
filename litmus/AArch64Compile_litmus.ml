@@ -955,14 +955,16 @@ module Make(V:Constant.S)(C:Config) =
     | _ -> assert false
 
     let while_op memo r1 v r2 r3 =
+      let r2,f2,r3,f3 = args2i v r2 r3 in
+      let r2r3 = r2@r3 in
       { empty_ins with
-        memo = sprintf "%s %s,%s"
+        memo = sprintf "%s %s,%s,%s"
         memo
         (print_preg "o" 0 0 r1)
-        (match v with | V32 -> "^wi0, ^wi1" | V64 -> "^i0, ^i1" | V128 -> assert false);
-        inputs = [r2;r3;];
+        f2 f3;
+        inputs = r2r3;
         outputs = [r1];
-        reg_env = (add_svbool_t [r1;])@(add_w [r2;r3])}
+        reg_env = add_svbool_t [r1;]@add_v v (r2r3); }
 
     let uaddv v r1 r2 r3 =
          { empty_ins with
