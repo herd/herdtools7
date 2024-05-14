@@ -44,6 +44,9 @@ type t = {
   attrs: Attrs.t;
   }
 
+let fromExtra t = t
+and toExtra t = t
+
 let eq_props p1 p2 =
   Misc.int_eq p1.af p2.af &&
   Misc.int_eq p1.db p2.db &&
