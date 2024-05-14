@@ -135,6 +135,7 @@ module type S = sig
   val map_loc : (v -> v) -> location -> location
 
   val same_base_virt : location -> location -> bool
+  val access_of_location_init : location -> Access.t
 
 (**********)
 (* Faults *)
@@ -510,6 +511,10 @@ module Make(C:Config) (I:I) : S with module I = I
         | Location_global v1,Location_global v2
           -> FaultArg.same_id_fault v1 v2
         |  _,_ -> false
+
+      let access_of_location_init = function
+        | Location_reg _ -> Access.REG
+        | Location_global v -> I.V.access_of_value v
 
 (************************)
 (* Mixed size utilities *)
