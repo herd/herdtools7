@@ -277,7 +277,7 @@ and type state = A.state =
       let t = add_vars_cns cns in
       let m = uf_cns t cns in
       let cns = subst_cns m cns in
-      if debug_solver then begin
+      if false && debug_solver then begin
        eprintf "* Normalizes to *\n%s\n%!" (pp_cnstrnts cns)
       end ;
       m,cns
@@ -644,8 +644,10 @@ let get_failed cns =
                 (pp_cnstrnt c1) (pp_cnstrnt c2))
             r
         end ;
+(*
         eprintf "** Equations **\n%!" ;
         eprintf "%s\n" (pp_cnstrnts cs) ; flush stderr ;
+*)
         eprintf "** Equations ordered**\n%!" ;
         debug_topo stderr ns r
       end ;
