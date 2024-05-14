@@ -742,7 +742,7 @@ let rec lowest_common_ancestor env s t =
              | T_Named _, T_Named _ -> assert false
              | T_Named _, _ -> Some s
              | _, T_Named _ -> Some t
-             | _ -> assert false)
+             | _ -> (* Both anonymous with equal structure *) Some struct_s)
          | T_Tuple li_s, T_Tuple li_t
            when List.compare_lengths li_s li_t = 0
                 && List.for_all2 (type_satisfies env) li_s li_t

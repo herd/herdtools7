@@ -229,6 +229,8 @@ Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]
 
+  $ aslref array-lca.asl
+
 Parameters bugs:
   $ aslref bug1.asl
   File bug1.asl, line 5, characters 21 to 29:
