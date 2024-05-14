@@ -44,7 +44,7 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
         let arch = B.arch
 
         module V = V
-        module FaultType = FaultType.No
+        module FaultType = FaultType.AArch64
 
         type arch_reg = reg
 
