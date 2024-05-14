@@ -597,6 +597,13 @@ module Make (B : Backend.S) (C : Config) = struct
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
     (* End *)
     (* Begin EvalBinop *)
+    | E_Binop (`AND, e1, { desc = E_Unop (NOT, e2) }) ->
+        let op = `BIC in
+        let*^ m1, env1 = eval_expr env e1 in
+        let*^ m2, new_env = eval_expr env1 e2 in
+        let* v1 = m1 and* v2 = m2 in
+        let* v = B.binop op v1 v2 in
+        return_normal (v, new_env) |: SemanticsRule.Binop
     | E_Binop (op, e1, e2) ->
         let*^ m1, env1 = eval_expr env e1 in
         let*^ m2, new_env = eval_expr env1 e2 in
@@ -1167,6 +1174,19 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let*| _i, vs = List.fold_left folder (return (0, [])) ms in
         return_return new_env (List.rev vs) |: SemanticsRule.SReturn
+    | S_Return (Some ({ desc = E_Call { name; params; args; _ }; _ } as e)) ->
+        let**| returned, new_env =
+          eval_call (to_pos e) name env ~params ~args
+        in
+        let scope = IEnv.get_scope new_env in
+        let folder acc m =
+          let*| i, vs = acc in
+          let* v = m in
+          let* () = B.on_write_identifier (return_identifier i) scope v in
+          return (i + 1, v :: vs)
+        in
+        let*| _i, vs = List.fold_left folder (return (0, [])) returned in
+        return_return new_env (List.rev vs) |: SemanticsRule.SReturn
     | S_Return (Some e) ->
         let** v, env1 = eval_expr env e in
         let* () =
@@ -1212,7 +1232,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let* limit_opt1 = eval_limit env e_limit_opt in
         let* limit_opt2 = tick_loop_limit s env limit_opt1 in
         let*> env1 = eval_block env body in
-        let env2 = IEnv.tick_push_bis env1 in
+        let env2 = IEnv.tick_push_bis env1 1 in
         eval_loop s false env2 limit_opt2 e body |: SemanticsRule.SRepeat
     (* End *)
     (* Begin EvalSFor *)
@@ -1225,7 +1245,7 @@ module Make (B : Backend.S) (C : Config) = struct
         (* By typing *)
         let undet = B.is_undetermined start_v || B.is_undetermined end_v in
         let*| env1 = declare_local_identifier env index_name start_v in
-        let env2 = if undet then IEnv.tick_push_bis env1 else env1 in
+        let env2 = if undet then IEnv.tick_push_bis env1 1 else env1 in
         let loop_msg =
           if C.empty_branching_effects_optimization then None
           else if undet then Some (Printf.sprintf "for %s" index_name)
