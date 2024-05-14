@@ -51,7 +51,7 @@ open MemOrderOrAnnot
 %token <string> CONSTANT
 %token SEMI EQ EQ_OP NEQ_OP LT LE GT GE
 %token XOR PIPE
-%token LAND
+%token LAND NOT
 %token ADD SUB
 %token DIV
 %token IF ELSE WHILE
@@ -163,6 +163,7 @@ atomic_op:
 | LAND { Op.And }
 | XOR { Op.Xor }
 | PIPE { Op.Or }
+| LAND NOT { Op.AndNot2 }
 
 annot:
 | annot_base  { $1 }
