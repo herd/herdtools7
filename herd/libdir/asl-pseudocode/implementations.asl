@@ -63,19 +63,19 @@ type Feature of enumeration {
     FEAT_CRC32,
     FEAT_CSSC,
     FEAT_D128,
-    FEAT_DGH,
-    FEAT_DIT,
-    FEAT_DPB,
-    FEAT_DPB2,
     FEAT_Debugv8p2,
     FEAT_Debugv8p4,
     FEAT_Debugv8p8,
     FEAT_Debugv8p9,
+    FEAT_DGH,
+    FEAT_DIT,
     FEAT_DoPD,
     FEAT_DotProd,
     FEAT_DoubleFault,
     FEAT_DoubleFault2,
     FEAT_DoubleLock,
+    FEAT_DPB,
+    FEAT_DPB2,
     FEAT_E0PD,
     FEAT_E2H0,
     FEAT_EBEP,
@@ -91,6 +91,8 @@ type Feature of enumeration {
     FEAT_FGT,
     FEAT_FGT2,
     FEAT_FHM,
+    FEAT_FlagM,
+    FEAT_FlagM2,
     FEAT_FP16,
     FEAT_FP8,
     FEAT_FP8DOT2,
@@ -100,8 +102,6 @@ type Feature of enumeration {
     FEAT_FPACCOMBINE,
     FEAT_FPMR,
     FEAT_FRINTTS,
-    FEAT_FlagM,
-    FEAT_FlagM2,
     FEAT_GCS,
     FEAT_GTG,
     FEAT_HAFDBS,
@@ -163,14 +163,14 @@ type Feature of enumeration {
     FEAT_PMUv3,
     FEAT_PMUv3_EDGE,
     FEAT_PMUv3_ICNTR,
-    FEAT_PMUv3_SME,
-    FEAT_PMUv3_SS,
-    FEAT_PMUv3_TH,
-    FEAT_PMUv3_TH2,
     FEAT_PMUv3p1,
     FEAT_PMUv3p5,
     FEAT_PMUv3p7,
     FEAT_PMUv3p9,
+    FEAT_PMUv3_SME,
+    FEAT_PMUv3_SS,
+    FEAT_PMUv3_TH,
+    FEAT_PMUv3_TH2,
     FEAT_PRFMSLC,
     FEAT_RAS,
     FEAT_RASv2,
@@ -257,50 +257,82 @@ type Feature of enumeration {
      rg '.*SCTLR2?_EL[x012](\[\])?\.(\w+).*' --replace '$2' -I -N | sort | uniq | nl | sed 's/\([[:digit:]]*\)\t\([[:alnum:]]*\)/[\1] \2,/'
  */
 
+// New version from manual
+
+
+// Inferred from manual...
+
 type SCTLRType of bits(64) {
-     [1] A,
-     [2] ATA,
-     [3] C,
-     [4] CMOW,
-     [5] CPTA,
-     [6] CPTM,
-     [7] EASE,
-     [8] EE,
-     [9] EMEC,
-    [10] EPAN,
-    [11] EnALS,
-    [12] EnAS0,
-    [13] EnASR,
-    [14] EnDA,
-    [15] EnDB,
-    [16] EnFPM,
-    [17] EnIA,
-    [18] EnIB,
-    [19] EnPACM,
-    [20] EnPACM0,
-    [21] I,
-    [22] IESB,
-    [23] ITD,
-    [24] M,
-    [25] MSCEn,
-    [26] NMEA,
-    [27] SED,
-    [28] SPAN,
-    [29] TCF,
-    [30] TCSO,
-    [31] TCSO0,
-    [32] TIDCP,
-    [33] TME,
-    [34] TME0,
-    [35] TMT,
-    [36] TMT0,
-    [37] TWEDEL,
-    [38] TWEDEn,
-    [39] UMA,
-    [40] WXN,
-    [41] nTLSMD,
-    [42] read,
+  [0] M,
+  [1] A,
+  [2] C,
+  [3] SA,
+  [4] SA0,
+  [5] CP15BEN,
+  [6] nAA,
+  [7] ITD,
+  [8] SED,
+  [9] UMA,
+  [10] EnRCTX,
+  [11] EOS,
+  [12] I,
+  [13] EnDB,
+  [14] DEZ,
+  [15] UCT,
+  [16] nTWI,
+  [18] nTWE,
+  [19] WXN,
+  [20] TSCXT,
+  [21] IESB,
+  [22] EIS,
+  [23] SPAN,
+  [24] E0E,
+  [25] EE,
+  [26] UCI,
+  [27] EnDA,
+  [28] nTLSMD,
+  [29] LSMAOE,
+  [30] EnIB,
+  [31] EnIA,
+  [32] CMOW,
+  [33] MSCEn,
+  [34] EnFPM,
+  [35] BT0,
+  [36] BT1,
+  [37] ITFSB,
+  [39:38] TCF0,
+  [41:40] TCF,
+  [42] ATA0,
+  [43] ATA,
+  [44] DSSBS,
+  [45] TWEDEn,
+  [49:46] TWEDL,
+  [50] TMT0,
+  [51] TMT,
+  [52] TME0,
+  [53] TME,
+  [54] EnASR,
+  [55] EnAS0,
+  [56] EnALS,
+  [57] EPAN,
+  [58] TCSO0,
+  [59] TCSO,
+  [60] EnTP2,
+  [61] NMI,
+  [62] SPINTMASK,
+  [63] TIDCP,
 };
+
+var SCTLR_EL1 : SCTLRType;
+
+// Infered from manual
+
+type HPFARType of bits(64) {
+  [47:4] FIPA,
+  [63] NS,
+};
+
+var HPFAR_EL2 : HPFARType;
 
 // =============================================================================
 
@@ -439,41 +471,7 @@ end;
 
 func IsFeatureImplemented(f : Feature) => boolean
 begin
-    return FALSE;
-end;
-
-// =============================================================================
-
-func PhysMemWrite{N}(
-  desc:AddressDescriptor,
-  accdesc:AccessDescriptor,
-  value:bits(8*N)
-) => PhysMemRetStatus
-begin
-  write_memory_gen {N*8}(desc.vaddress, value,accdesc);
-  return PhysMemRetStatus {
-    statuscode = Fault_None,
-    extflag = '0',
-    merrorstate = ErrorState_CE,  // ??
-    store64bstatus = Zeros{64}
-  };
-end;
-
-// =============================================================================
-
-func PhysMemRead{N}(
-  desc:AddressDescriptor,
-  accdesc:AccessDescriptor
-) => (PhysMemRetStatus, bits(8*N))
-begin
-  let value = read_memory_gen {N*8}(desc.vaddress,accdesc);
-  let ret_status = PhysMemRetStatus {
-    statuscode = Fault_None,
-    extflag = '0',
-    merrorstate = ErrorState_CE,  // ??
-    store64bstatus = Zeros{64}
-  };
-  return (ret_status, value);
+  return FALSE;
 end;
 
 // =============================================================================
@@ -529,13 +527,6 @@ end;
 setter _R (n : integer) = value : bits(64)
 begin
   write_register(n, value);
-end;
-
-// =============================================================================
-
-getter SCTLR_EL1() => SCTLRType
-begin
-  return Zeros{64};
 end;
 
 // =============================================================================
@@ -598,6 +589,12 @@ end;
 // the next instruction.
 
 func Hint_Branch(hint : BranchType)
+begin
+  return;
+end;
+
+// Dubious...
+func EndOfInstruction()
 begin
   return;
 end;

@@ -73,20 +73,6 @@ end;
 
 // =============================================================================
 
-// IsFault()
-// =========
-// Return TRUE if a fault is associated with an address descriptor
-
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-aborts?lang=en#impl-shared.IsFault.1
-// No fault is ever constructed with the associated address descriptors.
-
-func IsFault(addrdesc: AddressDescriptor) => boolean
-begin
-  return FALSE;
-end;
-
-// =============================================================================
-
 // AArch64.TranslateAddress()
 // ==========================
 // Main entry point for translating an address
@@ -233,4 +219,3 @@ func UsingAArch32() => boolean
 begin
   return FALSE;
 end;
-

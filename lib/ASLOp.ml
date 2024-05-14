@@ -51,10 +51,11 @@ type 'a constr_op1 =
   | ToBV of int
   | BoolNot
   | BVLength
+  | OA
 
 type op1 = extra_op1 constr_op1
 type scalar = ASLScalar.t
-type pteval = PteVal.ASL.t
+type pteval = AArch64PteVal.t
 type instr = ASLBase.Instr.t
 type cst = (scalar, pteval, instr) Constant.t
 
@@ -80,9 +81,11 @@ let pp_op1 _hexa = function
   | ToBV sz -> Printf.sprintf "ToBV%d" sz
   | BoolNot -> "BoolNot"
   | BVLength -> "BVLength"
+  | OA -> "GetOA"
 
 let ( let* ) = Option.bind
-let return_concrete s = Some (Constant.Concrete s)
+let return c = Some c
+let return_concrete s = Constant.Concrete s |> return
 let as_concrete = function Constant.Concrete v -> Some v | _ -> None
 
 let as_concrete_vector = function
@@ -93,7 +96,35 @@ let as_concrete_record = function
   | Constant.ConcreteRecord v -> Some v
   | _ -> None
 
-let all_64_bits_positions = List.init 64 (( - ) 63)
+(*******************)
+(* Check intervals *)
+(*******************)
+
+let do_is_interval_from_to hi lo =
+  let rec check prev = function
+    | [] -> prev=lo
+    | x::xs -> prev-1=x && check x xs in
+  check hi
+
+let is_interval_from_to hi lo = function
+  | x::xs when x=hi -> do_is_interval_from_to x lo xs
+  | _ -> false
+
+let do_is_interval_from hi =  do_is_interval_from_to hi 0
+
+let is_interval_from hi = function
+  | x::xs when x=hi -> do_is_interval_from hi xs
+  | _ -> false
+
+(* Lower bits of address *)
+let is_address_mask = function
+  | [] -> false
+  | x::xs -> x >= 41 && do_is_interval_from x xs
+
+(* Complete mask *)
+let is_mask_64 = function
+  | 63::xs -> do_is_interval_from 63 xs
+  | _ -> false
 
 let list_set n =
   let rec list_set acc n elt = function
@@ -102,6 +133,12 @@ let list_set n =
     | h :: t -> list_set (h :: acc) (n - 1) elt t
   in
   list_set [] n
+
+let set_slice positions c1 c2 =
+  let* s1 = as_concrete c1 in
+  let* s2 = as_concrete c2 in
+  let* s = ASLScalar.try_write_slice positions s1 s2 in
+  return_concrete s
 
 let do_op op c1 c2 =
   match op with
@@ -132,10 +169,16 @@ let do_op op c1 c2 =
         return_concrete s
       | _ -> None)
   | BVSliceSet positions ->
-      let* s1 = as_concrete c1 in
-      let* s2 = as_concrete c2 in
-      let* s = ASLScalar.try_write_slice positions s1 s2 in
-      return_concrete s
+      if is_mask_64 positions then
+        match c2 with
+        | Constant.PteVal _ -> return c2
+        | _ ->  set_slice positions c1 c2
+      else if is_interval_from_to 127 64 positions then begin
+        match c1 with
+        | Constant.PteVal _ -> return c1
+        | _ ->  set_slice positions c1 c2
+      end else
+        set_slice positions c1 c2
 
 let do_op1 op cst =
   match op with
@@ -160,7 +203,7 @@ let do_op1 op cst =
   | ToBV sz -> (
       match cst with
       | Constant.Concrete s -> ASLScalar.convert_to_bv sz s |> return_concrete
-      | Constant.Symbolic _ -> Some cst
+      | Constant.(Symbolic _|PteVal _) -> Some cst
       | _ -> None)
   | ToBool ->
       let* s = as_concrete cst in
@@ -170,8 +213,36 @@ let do_op1 op cst =
       | Constant.Concrete s ->
           let* s' = ASLScalar.try_extract_slice s positions in
           return_concrete s'
+      | Constant.PteVal pte ->
+          begin
+            match positions with
+            | [(54|53|50);] -> (* XPN/UXPN/GP, all disabled *)
+                Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [11;] -> (* Res0 ? *)
+                 Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [10;] -> (* AF *)
+                let af = pte.AArch64PteVal.af in
+                Some (Constant.Concrete (ASLScalar.bv_of_bit af))
+            | [9;8;] ->
+              (* Sharability domain -> inner sharable *)
+              Some (Constant.Concrete (ASLScalar.bv_of_string "10"))
+            | [7;6;] -> (* AP *)
+                let db =  1-pte.AArch64PteVal.db in
+                Some (Constant.Concrete (ASLScalar.bv_of_bits [db;0;]))
+            | [5;] ->
+              (* EL0 *)
+                Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [4;3;2;] ->
+              (* memattr *)
+                Some (Constant.Concrete (ASLScalar.zeros 3))
+            | [0;]  ->
+              (* Valid *)
+                let valid = pte.AArch64PteVal.valid in
+                Some (Constant.Concrete (ASLScalar.bv_of_bit valid))
+            | _ -> None
+          end
       | Constant.Symbolic x ->
-          if Misc.list_eq ( = ) positions all_64_bits_positions then
+          if is_address_mask positions then
             Some (Constant.Symbolic x)
           else begin
           (* MSB of virtual address is assumed null.
@@ -179,6 +250,10 @@ let do_op1 op cst =
            * less so for kernel code. *)
             match positions with
             | [63] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [55] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [63; 62; 61; 60; 59; 58; 57; 56;
+               55; 54; 53; 52; 51; 50; 49; 48;]
+              -> Some (Constant.Concrete (ASLScalar.zeros 16))
             | _ -> None
           end
       | _ -> None)
@@ -195,9 +270,13 @@ let do_op1 op cst =
       | Concrete (S_BitVector bv) ->
           return_concrete (ASLScalar.of_int (BV.length bv))
       | _ -> None)
+  | OA -> None (* Delay always *)
 
 let shift_address_right _ _ = None
 let orop _ _ = None
 let andnot2 _ _ = None
 let andop _ _ = None
 let mask _ _ = None
+
+let fromExtra pteval = pteval
+and toExtra pteval = pteval

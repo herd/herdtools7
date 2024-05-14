@@ -95,7 +95,7 @@ module Make (C : Config) = struct
   end
 
   module ASL64AH = struct
-    include GenericArch_herd.Make (ASLBase) (ConfLoc) (V)
+    include ASLExtra.Make (ASLBase) (ConfLoc) (V)
     include ASLBase
 
     let opt_env = true
@@ -127,10 +127,18 @@ module Make (C : Config) = struct
     module Instr = Asllib.Instrumentation.SemanticsNoInstr
   end
 
+  let is_kvm = C.variant Variant.VMSA
   let barriers = []
   let isync = None
   let atomic_pair_allowed _ _ = true
   let aneutral = AArch64Annot.N
+  and aexp = AArch64Explicit.Exp
+  and aifetch = AArch64Explicit.(NExp IFetch)
+  and areg = Access.REG
+  and avir = Access.VIR
+  and apte = Access.PTE
+  and aphy = Access.PHY
+  let areg_std = (aneutral,aexp,Access.REG)
 
   module Mixed (SZ : ByteSize.S) : sig
     val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
@@ -174,6 +182,10 @@ module Make (C : Config) = struct
       | V.Val c -> c
       | V.Var id -> Constant.Frozen id
 
+    let freeze_constant = function
+      | V.Val c -> c
+      | V.Var id ->  Constant.Frozen id
+
     let v_unknown_of_type ~eval_expr_sef:(_: Asllib.AST.expr -> V.v M.t) _t =
       return (V.fresh_var ())
 
@@ -199,7 +211,7 @@ module Make (C : Config) = struct
 
     let v_as_int = function
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
-      | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
+      | v -> Warn.fatal "Cannot concretise symbolic value %s as an int" (V.pp_v v)
 
     let v_as_record = function
       | V.Val (Constant.ConcreteRecord map) -> map
@@ -273,13 +285,15 @@ module Make (C : Config) = struct
           | V.Val (Constant.Symbolic _) as v -> return v
           | v -> M.op1 (Op.Mask sz) v)
 
-    let write_loc sz loc v a ii =
+    let write_loc sz loc v a e acc ii =
       let* resized_v = resize_from_quad sz v in
-      let mk_action loc' = Act.Access (Dir.W, loc', resized_v, sz, a) in
+      let mk_action loc' =
+        Act.Access (Dir.W, loc', resized_v, sz, (a, e, acc)) in
       M.write_loc mk_action loc ii
 
-    let read_loc sz loc a ii =
-      let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, a) in
+    let read_loc sz loc a e acc ii =
+      let mk_action loc' v' =
+        Act.Access (Dir.R, loc', v', sz, (a, e, acc)) in
       let* v = M.read_loc false mk_action loc ii in
       resize_from_quad sz v >>= to_bv sz
 
@@ -383,7 +397,7 @@ module Make (C : Config) = struct
     let on_access_identifier dir (ii, poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
       let m v =
-        let action = Act.Access (dir, loc, v, MachSize.Quad, aneutral) in
+        let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
         M.mk_singleton_es action (use_ii_with_poi ii poi)
       in
       if is_nzcv x scope then M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m else m v
@@ -392,7 +406,7 @@ module Make (C : Config) = struct
     and on_read_identifier = on_access_identifier Dir.R
 
     let create_vector li =
-      let li = List.map as_constant li in
+      let li = List.map freeze_constant li in
       return (V.Val (Constant.ConcreteVector li))
 
     let create_record li =
@@ -518,7 +532,7 @@ module Make (C : Config) = struct
     and primitive_dsb = primitive_db (fun (d, t) -> AArch64Base.DSB (d, t))
 
     (*
-     * Prinitives for read and write events.
+     * Primitives for read and write events.
      *)
 
     let virtual_to_loc_reg =
@@ -534,58 +548,69 @@ module Make (C : Config) = struct
     let read_register (ii, poi) r_m =
       let* rval = r_m in
       let loc = virtual_to_loc_reg rval ii in
-      read_loc MachSize.Quad loc aneutral (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad loc aneutral aexp areg (use_ii_with_poi ii poi)
 
     let write_register (ii, poi) r_m v_m =
       let* v = v_m >>= to_int_signed and* r = r_m in
       let loc = virtual_to_loc_reg r ii in
-      write_loc MachSize.Quad loc v aneutral (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
 
     let loc_pc ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.PC)
 
     let read_pc (ii,poi) () =
-      read_loc MachSize.Quad (loc_pc ii) aneutral (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad (loc_pc ii) aneutral aexp areg
+        (use_ii_with_poi ii poi)
 
     let write_pc (ii,poi) v_m =
       let* v = v_m >>= to_int_unsigned in
       write_loc MachSize.Quad (loc_pc ii)
-        v aneutral (use_ii_with_poi ii poi) >>! []
+        v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
 
-    let do_read_memory (ii, poi) addr_m datasize_m an =
+    let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = addr_m and* datasize = datasize_m in
       let sz = datasize_to_machsize datasize in
-      read_loc sz (A.Location_global addr) an (use_ii_with_poi ii poi)
+      read_loc sz (A.Location_global addr) an aexp acc (use_ii_with_poi ii poi)
 
     let read_memory ii datasize_m addr_m =
-      do_read_memory ii addr_m datasize_m aneutral
+      do_read_memory ii addr_m datasize_m aneutral aexp avir
+
+    let read_pte ii addr_m =
+      let* addr = addr_m in
+      do_read_memory ii (M.unitT addr)  (M.unitT (V.intToV 64))
+        aneutral (AArch64Explicit.(NExp Other)) apte
+
+    let vir_or_phy = if is_kvm then Access.PHY else Access.VIR
 
     let read_memory_gen ii datasize_m addr_m accdesc_m =
       let* accdesc = accdesc_m in
-      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc)
+      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc) aexp vir_or_phy
 
-    let do_write_memory (ii, poi) addr_m datasize_m value_m an =
+    let do_write_memory (ii, poi) addr_m datasize_m value_m an aexp acc =
       let value_m = M.as_data_port value_m in
       let* addr = addr_m and* datasize = datasize_m and* value = value_m in
       let sz = datasize_to_machsize datasize in
-      write_loc sz (A.Location_global addr) value an (use_ii_with_poi ii poi)
+      write_loc sz (A.Location_global addr) value an aexp acc
+        (use_ii_with_poi ii poi)
       >>! []
 
     let write_memory ii datasize_m addr_m value_m =
-      do_write_memory ii addr_m datasize_m value_m AArch64Annot.N
+      do_write_memory ii addr_m datasize_m value_m aneutral aexp avir
 
     let write_memory_gen ii datasize_m addr_m value_m accdesc_m =
       let* accdesc = accdesc_m in
       do_write_memory ii addr_m datasize_m value_m
-        (accdesc_to_annot false accdesc)
+        (accdesc_to_annot false accdesc)  aexp vir_or_phy
 
     let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
 
     let read_sp (ii, poi) () =
-      read_loc MachSize.Quad (loc_sp ii) aneutral (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad (loc_sp ii) aneutral aexp areg
+        (use_ii_with_poi ii poi)
 
     let write_sp (ii, poi) v_m =
       let* v = v_m >>= to_int_signed in
-      write_loc MachSize.Quad (loc_sp ii) v aneutral (use_ii_with_poi ii poi)
+      write_loc MachSize.Quad (loc_sp ii) v aneutral aexp areg
+        (use_ii_with_poi ii poi)
       >>! []
 
     let uint _ bv_m = bv_m >>= to_int_unsigned
@@ -598,6 +623,31 @@ module Make (C : Config) = struct
       let*| v = v_m and* w = w_m in
       let*| c = M.op Op.Eq v w in
       M.choiceT c eq_case diff_case
+
+    let compute_pte _ addr = addr >>= M.op1 Op.PTELoc
+    and get_oa _ pte = pte >>= M.op1 (Op.ArchOp1 ASLOp.OA)
+    and get_offset _ ma = ma >>= M.op1 Op.Offset
+
+    let data_abort_fault (ii,_) addr write statuscode =
+      let* loc = addr
+      and* write = write
+      and* statuscode = statuscode  in
+      let d =
+        match Option.bind (V.as_scalar write) ASLScalar.as_bool with
+        | Some true -> Dir.W
+        | Some false -> Dir.R
+        | None ->
+            Warn.fatal "data_abort boolean expected, found %s"
+              (V.pp true write)
+      and ft =
+        let open FaultType.AArch64 in
+        match  Option.bind (V.as_scalar statuscode) ASLScalar.as_int with
+        | Some 1 -> MMU AccessFlag
+        | Some 6 -> MMU Translation
+        | Some 5 -> MMU Permission
+        | _ -> assert false
+      and loc = A.Location_global loc in
+      M.mk_singleton_es (Act.Fault (ii,loc,d,ft)) ii >>! []
 
     (**************************************************************************)
     (* ASL environment                                                        *)
@@ -691,6 +741,15 @@ module Make (C : Config) = struct
       build_primitive ?returns:(Some returns) ~args:[ arg1; arg2 ]
         ~side_effecting ?parameters name f
 
+    (** Build a primitive with arity 3 and no return value. *)
+    let p3 name arg1 arg2 arg3 ?(side_effecting = false) ?parameters f =
+      let f ii_env _ = function
+        | [ v1; v2; v3; ] -> f ii_env v1 v2 v3
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ~args:[ arg1; arg2; arg3; ] ?parameters
+        ~side_effecting name f
+
     (** Build various primitives with 1 parameter. *)
     let p1a1r name param1 arg1 ?(side_effecting = false) ~returns f =
       let f ii_env params args =
@@ -744,6 +803,7 @@ module Make (C : Config) = struct
       let bv_var x = bv @@ var x in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
+      let ia_msb = 8 in
       let binop = Asllib.ASTUtils.binop in
       let minus_one e = binop MINUS e (lit 1) in
       let pow_2 = binop POW (lit 2) in
@@ -783,8 +843,20 @@ module Make (C : Config) = struct
           ("data", bv_var "size")
           ("accdesc", t_named "AccessDescriptor")
           write_memory_gen;
-        (* Translations *)
-        p1r "UInt"
+(* VMSA *)
+        p1r ~side_effecting "ComputePtePrimitive"
+          ("addr", bv_64) ~returns:bv_64 compute_pte;
+        p1r ~side_effecting "ReadPtePrimitive"
+          ("addr", bv_64) ~returns:bv_64 read_pte;
+        p1r ~side_effecting "GetOAPrimitive"
+          ("addr", bv_64) ~returns:(bv_lit (64-ia_msb)) get_oa;
+        p1r ~side_effecting "OffsetPrimitive"
+          ("addr", bv_64) ~returns:(bv_lit ia_msb) get_offset;
+        p3 ~side_effecting "DataAbortPrimitive"
+          ("addr",bv_64) ("write",boolean) ("statuscode",integer)
+          data_abort_fault;
+(* Translations *)
+         p1r "UInt"
           ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
           ~returns:uint_returns uint;
@@ -827,19 +899,44 @@ module Make (C : Config) = struct
       in
       let patches =
         let patches = build `ASLv1 "patches.asl" in
-        if is_experimental then
-          (* Replace default "PSTATE" definition by experimental ones. *)
-          let pstate = build `ASLv1 "pstate-exp.asl" in
+        let patches =
+          if is_experimental then
+            (* Replace default "PSTATE" definition by experimental ones. *)
+            let pstate = build `ASLv1 "pstate-exp.asl" in
+            List.fold_right
+              (fun d k ->
+                 match identifier_of_decl d with
+                 | "PSTATE" -> pstate @ k
+                 | _ -> d :: k)
+            patches []
+          else patches in
+        if is_kvm then
+          (* Adapt for VMSA:
+           * 1. Use default address translation.
+           * 2. Override some functions (see file patches-kvm.asl)
+          *)
+          let patches_kvm = build `ASLv1 "patches-vmsa.asl" in
           List.fold_right
             (fun d k ->
-              match identifier_of_decl d with
-              | "PSTATE" -> pstate @ k
-              | _ -> d :: k)
-            patches []
+               match ASTUtils.identifier_of_decl d  with
+               | "AArch64_TranslateAddress" -> k
+               | _ -> d::k)
+            patches patches_kvm
         else patches
       and custom_implems =
-        List.append (build `ASLv1 "implementations.asl")
-                    (build `ASLv0 "implementations0.asl")
+        let physmem = (* Final memory read and write *)
+          let name =
+            if is_kvm then "physmem-vmsa.asl"
+            else "physmem-std.asl" in
+          build `ASLv1 name in
+        let impls =
+          build `ASLv1 "implementations.asl"
+          @ build `ASLv0 "implementations0.asl" in
+        let impls =  impls @ physmem in
+        if is_kvm then
+          let impls_kvm =  build `ASLv1 "implementations-vmsa.asl" in
+          impls @ impls_kvm
+        else impls
       and shared = build `ASLv0 "shared_pseudocode.asl" in
       let shared =
         (*
@@ -910,7 +1007,20 @@ module Make (C : Config) = struct
         let debugT = M.debugT
         let commit = commit ii_env
         let choice = choice
+        let choice_debug (pp: unit -> unit)
+              (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
+          M.asl_data
+            m1
+            (function
+             | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) ->
+                if b then m2 else m3
+             | b ->
+                let () = pp () in
+                M.asl_data
+                  (to_int_signed b)
+                  (fun v -> M.choiceT v m2 m3))
         let delay m k = M.delay_kont "ASL" m k
+        let failT e v = M.failT e v
         let return = M.unitT
         let warnT = M.warnT
         let on_write_identifier = on_write_identifier ii_env

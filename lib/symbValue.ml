@@ -59,10 +59,18 @@ module
   type v =
     | Var of csym
     | Val of cst
+
 (* A symbolic constant, computations much reduced on them... *)
   let fresh_var () = Var (gensym ())
 
   let from_var v = Var v
+
+(* Basic utilities *)
+  let as_constant = function
+    | Var _ -> None
+    | Val c -> Some c
+
+  let as_scalar v = Option.bind (as_constant v) Constant.as_scalar
 
   let do_pp pp_val = function
   | Var s -> pp_csym s
@@ -75,14 +83,6 @@ module
 
   let pp_v =  do_pp Cst.pp_v
   let pp_v_old =  do_pp Cst.pp_v_old
-
-(* Basic utilities *)
-
-  let as_constant = function
-    | Var _ -> None
-    | Val c -> Some c
-
-  let as_scalar v = Option.bind (as_constant v) Constant.as_scalar
 
   let printable = function
     | Val (c) ->
@@ -554,17 +554,22 @@ module
      Warn.user_error "Illegal pteloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
+  let illegal_offset v =
+    Warn.user_error "Illegal offset on %s" @@ pp_v v
+
   let offset v = match v with
-  | Val
-    (Symbolic
-       (Virtual {offset=o;_}|Physical (_,o)|TagAddr (_,_,o))) -> intToV o
-  | Val (Symbolic (System ((PTE|PTE2|TLB),_))) -> zero
+    | Val (Symbolic x) ->
+      begin
+        match Constant.get_index x with
+        | Some o -> intToV o
+        | None ->  illegal_offset v
+      end
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
       |Label _|Tag _
       |PteVal _|Instruction _
       |Frozen _) ->
-      Warn.user_error "Illegal offset on %s" (pp_v v)
+      illegal_offset v
   | Var _ -> raise Undetermined
 
   let op_tlbloc {name=a;_} = Symbolic (System (TLB,a))
@@ -880,7 +885,7 @@ module
              begin
                match ArchOp.do_op1 op c with
                | None ->
-                   Warn.user_error "Illegal operation %s on %s"
+                   Warn.user_error "Illegal arch operation %s on %s"
                      (ArchOp.pp_op1 true op) (pp_v v)
                | Some c -> Val c
              end)
@@ -1007,6 +1012,12 @@ module
     | Val c -> Val (f c)
 
   let map_scalar f = map_const (Constant.map_scalar f)
+
+
+(* Lift constant location classification *)
+  let access_of_value = function
+  | Var _ -> assert false
+  | Val cst -> Cst.access_of_constant cst
 
 
 end
