@@ -1134,7 +1134,7 @@ Monad type:
       do_make_one_event_structure a (E.IdSome ii)
 
 
-    (* Add some fields to struture *)
+    (* Add some fields to structure *)
 
     let add_data_ports st = { st with E.data_ports = st.E.events; }
     let add_success_ports st = { st with E.success_ports = st.E.events; }
