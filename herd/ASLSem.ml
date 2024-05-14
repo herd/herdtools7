@@ -104,7 +104,6 @@ module Make (C : Config) = struct
   include SemExtra.Make (C) (ASL64AH) (Act)
 
   let is_experimental = C.variant Variant.ASLExperimental
-  and is_kvm = C.variant Variant.VMSA
   let barriers = []
   let isync = None
   let atomic_pair_allowed _ _ = true
@@ -785,36 +784,17 @@ module Make (C : Config) = struct
           in
           let patches =
             let patches = build `ASLv1 "patches.asl" in
-            let patches =
-              if is_experimental then
-                (* Replace default "PSTATE" definition by experimental ones. *)
-                let pstate =  build `ASLv1 "pstate-exp.asl" in
-                List.fold_right
-                  (fun d k ->
-                     match ASTUtils.identifier_of_decl d with
-                     | "PSTATE" -> pstate @ k
-                     | _ -> d::k)
-                  patches []
-              else patches in
-            if is_kvm then
-              (* Adapt for VMSA:
-               * 1. Use default address translation.
-               * 2. Override some functions (see file patches-kvm.asl)
-              *)
-              let patches_kvm = build `ASLv1 "patches-vmsa.asl" in
+            if is_experimental then
+              (* Replace default "PSTATE" definition by experimental ones. *)
+              let pstate =  build `ASLv1 "pstate-exp.asl" in
               List.fold_right
                 (fun d k ->
-                   match ASTUtils.identifier_of_decl d  with
-                   | "AArch64_TranslateAddress" -> k
+                   match ASTUtils.identifier_of_decl d with
+                   | "PSTATE" -> pstate @ k
                    | _ -> d::k)
-                patches patches_kvm
+                patches []
             else patches
-          and custom_implems =
-            let impls = build `ASLv1 "implementations.asl" in
-            if is_kvm then
-              let impls_kvm =  build `ASLv1 "implementations-vmsa.asl" in
-              impls @ impls_kvm
-            else impls
+          and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let is_primitive =
             let open AST in
