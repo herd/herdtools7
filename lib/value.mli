@@ -48,6 +48,9 @@ module type S =
       val pp : bool (* hexa *) -> v -> string
       val pp_unsigned : bool (* hexa *) -> v -> string
 
+      val as_constant : v -> Cst.v option
+      val as_scalar : v -> Cst.Scalar.t option
+
 (* Some architecture may somehow normalize values before
    printing them. *)
       val printable : v -> v
@@ -119,6 +122,9 @@ module type S =
       val map_const : (Cst.v -> Cst.v) -> v -> v
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
       val map_csym : (csym -> v) -> v -> v
+
+(* Classify location values, will fail on non-address values *)
+      val access_of_value : v -> Access.t
     end
 
 module type AArch64 =
