@@ -81,4 +81,5 @@ module No = struct
     let attrs_as_kvm_symbols _ = assert false
 end
 
-module ASL = No
+module ASLTr = AArch64PteVal
+module ASL = AArch64PteVal
