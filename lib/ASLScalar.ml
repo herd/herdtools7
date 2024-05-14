@@ -31,6 +31,8 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
+let _dbg = false
+
 module BV = Asllib.Bitvector
 module AST = Asllib.AST
 
@@ -44,6 +46,8 @@ let unique_zero = false
 
 let one = S_Int Z.one
 let zeros sz = S_BitVector (BV.zeros sz)
+let bv_of_string s = S_BitVector (BV.of_string s)
+
 (*
  * Integer dump is made assuming a 64bits basis.
  * For instance '-1' in hexadecimal will be printed as
@@ -59,13 +63,22 @@ let norm_signed z =
   if Z.geq z z63 then Z.sub z z64
   else z
 
+let pp_bv bv =
+  let pp =  BV.to_string bv in
+  if _dbg then
+    if String.length pp > 6 then
+      "'..."
+      ^ String.sub pp (String.length pp - 4) 3 ^ "'"
+    else pp
+  else pp
+
 let pp hexa = function
   | S_Int i ->
      if hexa then norm_unsigned i |> Z.format "%x"
      else Z.format "%d" i
   | S_Bool true -> "TRUE"
   | S_Bool false -> "FALSE"
-  | S_BitVector bv -> BV.to_string bv
+  | S_BitVector bv -> pp_bv bv
 
 let pp_unsigned hexa = function
   | S_Int i ->
@@ -73,7 +86,7 @@ let pp_unsigned hexa = function
      if hexa then "0x" ^ Z.format "%x" i else Z.format "%d" i
   | S_Bool true -> "TRUE"
   | S_Bool false -> "FALSE"
-  | S_BitVector bv -> BV.to_string bv
+  | S_BitVector bv -> pp_bv bv
 
 
 let of_string s =
@@ -256,6 +269,12 @@ let sxt sz = function S_Int i -> S_Int (do_sxt sz i) | s -> s
 let get_tag _t = assert false
 let set_tag _b _t = assert false
 
+let as_int = function
+  | S_Int z -> Z.to_int z |> Misc.some
+  | S_Bool false -> Some 0
+  | S_Bool true -> Some 1
+  | S_BitVector _ -> None
+
 let convert_to_int_signed = function
   | S_Int _ as s -> s
   | S_Bool false -> S_Int Z.zero
@@ -268,11 +287,16 @@ let convert_to_int_unsigned = function
   | S_Bool true -> S_Int Z.one
   | S_BitVector bv -> S_Int (BV.to_z_unsigned bv)
 
-let convert_to_bool = function
-  | S_Int i -> S_Bool (not (Z.equal i Z.zero))
-  | S_Bool b -> S_Bool b
-  | S_BitVector _ as s ->
-      Warn.fatal "ASLScalar invalid op: to_bool %s" (pp false s)
+let as_bool = function
+  | S_Int i -> Some (not (Z.equal i Z.zero))
+  | S_Bool b -> Some b
+  | S_BitVector _ -> None
+
+let convert_to_bool c =
+  match as_bool c with
+  | Some b -> S_Bool b
+  | None ->
+      Warn.fatal "ASLScalar invalid op: to_bool %s" (pp false c)
 
 let convert_to_bv = function
   | S_BitVector _ as bv -> bv
@@ -314,6 +338,21 @@ let try_write_slice positions dst src =
 
 let empty = S_BitVector BV.empty
 let zeros_size_one = S_BitVector (BV.zeros 1)
+
+let bv_of_bool b =  S_BitVector (if b then BV.one else BV.zero)
+
+let bv_of_int x = S_BitVector (BV.of_int x)
+
+let do_bv_of_bit = function
+  | 0 -> BV.zero
+  | 1 -> BV.one
+  | _ -> assert false
+
+let bv_of_bit b =  S_BitVector (do_bv_of_bit b)
+
+let bv_of_bits bs =
+  let bv = List.map do_bv_of_bit bs |> BV.concat in
+  S_BitVector bv
 
 let printable_z z = norm_signed z
 
