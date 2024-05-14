@@ -35,7 +35,7 @@ type 'op binop =
 module
    Make
      (S:Scalar.S)
-     (Extra:ArchOp.S with type scalar = S.t) : ArchOp.S
+     (Extra:ArchOp.WithTr with type scalar = S.t) : ArchOp.S
    with type extra_op1 = Extra.op1
     and type 'a constr_op1 = 'a unop
     and type extra_op = Extra.op
@@ -141,8 +141,9 @@ module
       | _ -> None
 
     let exit _ = raise Exit
-    let toExtra cst = Constant.map Misc.identity exit exit cst
-    and fromExtra cst = Constant.map Misc.identity exit exit cst
+
+    let trToExtra cst = Constant.map Misc.identity Extra.toExtra exit cst
+    and trFromExtra cst = Constant.map Misc.identity Extra.fromExtra exit cst
 
     (* Add a PAC field to a virtual address, this function can only add a PAC
        field if the input pointer is canonical, otherwise it raise an error, it is
@@ -176,11 +177,11 @@ module
       | AddPAC (true, key) -> addOnePAC key
       | AddPAC (false, key) -> addPAC key
       | Extra op -> fun c1 c2 ->
-          try
-            match Extra.do_op op (toExtra c1) (toExtra c2) with
-            | None -> None
-            | Some cst -> Some (fromExtra cst)
-          with Exit -> None
+        try
+          match Extra.do_op op (trToExtra c1) (trToExtra c2) with
+          | None -> None
+          | Some cst -> Some (trFromExtra cst)
+        with Exit -> None
 
 
     let do_op1 = function
@@ -198,9 +199,9 @@ module
       | Extra1 op1 ->
          fun cst ->
            try
-             match Extra.do_op1 op1 (toExtra cst) with
+             match Extra.do_op1 op1 (trToExtra cst) with
              | None -> None
-             | Some cst -> Some (fromExtra cst)
+             | Some cst -> Some (trFromExtra cst)
            with Exit -> None
 
 
