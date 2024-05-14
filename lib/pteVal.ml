@@ -79,4 +79,5 @@ module No = struct
     let as_flags _ = None
 end
 
-module ASL = No
+module ASLTr = AArch64PteVal
+module ASL = AArch64PteVal

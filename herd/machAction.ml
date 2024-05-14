@@ -93,33 +93,6 @@ end = struct
   let kvm = C.variant Variant.VMSA
   let self = C.variant Variant.Ifetch
 
-  let access_of_constant cst =
-    let open Constant in
-    match cst with
-    | Symbolic (Virtual _) -> Access.VIR
-    | Symbolic (Physical _) -> Access.PHY
-    | Symbolic (TagAddr _) -> Access.TAG
-    | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
-    | Symbolic (System (TLB,_)) -> Access.TLB
-    | Label _ -> Access.VIR
-    | Tag _
-    | ConcreteVector _|Concrete _|ConcreteRecord _
-    | PteVal _|Instruction _|Frozen _ as v
-      ->
-       Warn.fatal "access_of_constant %s as an address"
-         (V.pp_v (V.Val v)) (* assert false *)
-
-
-(* precondition: v is a constant symbol *)
-  let access_of_value v = match v with
-  | V.Var _ -> assert false
-  | V.Val cst -> access_of_constant cst
-
-  let access_of_location_init = function
-    | A.Location_reg _ -> REG
-    | A.Location_global v
-      -> access_of_value v
-
   let access_of_location_std =
     let open Constant in
     function
@@ -168,7 +141,8 @@ end = struct
     | _,A.V.Val (Constant.Tag _) ->
         tag_access sz W l v
     | _ ->
-        Access(W,l,v,A.empty_annot,A.exp_annot,sz,access_of_location_init l)
+       let acc = A.access_of_location_init l in
+       Access(W,l,v,A.empty_annot,A.exp_annot,sz,acc)
 
   let pp_action a = match a with
   | Access (d,l,v,an,exp_an,sz,_) ->
