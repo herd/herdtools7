@@ -504,7 +504,7 @@ module Make
                  "DATA", is_data_port;
                  "NDATA", (fun e -> not (is_data_port e));])) in
       let m =
-        if kvm then begin
+        if kvm && not asl then begin
             let attrs_of_evt e =
               let pteval_v =
                 match E.read_of e with
@@ -545,7 +545,7 @@ module Make
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
              E.Act.arch_sets) in
     let m = (* To be deprecated *)
-      if kvm then
+      if kvm && not asl then
           let mevt = match I.get_set m "PTEV" with
             | Some mevt -> mevt
             | None -> (* Must exists *) assert false in
