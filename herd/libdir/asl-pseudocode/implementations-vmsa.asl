@@ -35,8 +35,8 @@ type TranslationControl of bits(64) {
  [48] HWU160,
  [49] HWU161,
  [50] HWU162,
- [51] TBID0, 
- [52] TBID1, 
+ [51] TBID0,
+ [52] TBID1,
  [53] NFD0,
  [54] NFD1,
  [55] E0PD0,
@@ -45,7 +45,64 @@ type TranslationControl of bits(64) {
  [58] TCMA1,
  [59] DS,
  [60] MTX0,
- [61] MTX1, 
+ [61] MTX1,
 };
 
 var TCR_EL1 : TranslationControl;
+
+// Inferred from manual...
+type ExtendedTranslationControl of bits(64) {
+ [0] PnCH,
+ [1] PIE,
+ [2] P0POE,
+ [3] POE,
+ [4] AIE,
+ [5] D128,
+ [10] PTTWI,
+ [11] HAFT,
+ [14] DisCH0,
+ [15] DisCH1,
+ [16] A2,
+ [17] FNG0,
+ [18] FNG1,
+};
+
+var TCR2_EL1 : ExtendedTranslationControl;
+
+// Inferred from manual
+
+type ExtendedSystemControl of bits(64) {
+  [1] EMEC,
+  [2] NMEA,
+  [3] EnADERR,
+  [4] EnANERR,
+  [5] EASE,
+  [6] EnIDCP128,
+  [7] EnPACM,
+  [8] EnPACM0,
+  [9] CPTA,
+  [10] CPTA0,
+  [11] CPTM,
+  [12] CPTM0,
+};
+
+var SCTLR2_EL2 : ExtendedSystemControl;
+
+// From manual
+
+type LockStatus of bits(64) {
+  [1] OSLK,
+  [2] nTT,
+  [4:3] OSLM, // Normaly, OSLM is made of bits 0 and 3..
+};
+
+var OSLSR_EL1 : LockStatus;
+
+// Have a try
+
+type ExternalDebugStatus of bits(32) {
+ [5:0] STATUS,
+};
+
+var EDSCR : ExternalDebugStatus;
+
