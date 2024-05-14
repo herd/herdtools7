@@ -16,8 +16,8 @@
 
 module Types = struct
   type annot = AArch64Annot.t
-  type nexp =  AF|DB|AFDB|IFetch|Other
-  type explicit = Exp | NExp of nexp
+  type nexp =  AArch64Explicit.nexp
+  type explicit = AArch64Explicit.explicit
   type lannot = annot
 end
 
@@ -36,24 +36,17 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
+    include AArch64Explicit
     include Types
 
     let empty_annot = AArch64Annot.N
-    let exp_annot = Exp
-    let nexp_annot = NExp Other
-    let nexp_ifetch = NExp IFetch
+    let exp_annot = AArch64Explicit.Exp
+    let nexp_annot = AArch64Explicit.NExp AArch64Explicit.Other
+    let nexp_ifetch = AArch64Explicit.NExp AArch64Explicit.IFetch
 
     let is_atomic = AArch64Annot.is_atomic
 
-    let is_explicit_annot = function
-      | Exp -> true
-      | NExp _ -> false
-
-    and is_not_explicit_annot = function
-      | NExp _ -> true
-      | Exp -> false
-
-    and is_ifetch_annot = function
+    let is_ifetch_annot = function
       | NExp IFetch -> true
       | NExp (AF|DB|AFDB|Other)|Exp -> false
 
@@ -194,13 +187,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let pp_annot = AArch64Annot.pp
 
-    let pp_explicit = function
-      | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
-      | NExp Other-> "NExp"
-      | NExp IFetch-> "IFetch"
-      | NExp AF-> "NExpAF"
-      | NExp DB-> "NExpDB"
-      | NExp AFDB-> "NExpAFDB"
+    let pp_explicit e =
+      match e with
+      | AArch64Explicit.Exp
+           when  not is_kvm || C.verbose <= 2
+        -> ""
+      | _ -> AArch64Explicit.pp e
 
     let promote_int64 x =
       let sc =

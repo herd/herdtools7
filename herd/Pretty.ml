@@ -1594,6 +1594,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   module SHOW = Show.Make(PC)
 
   let show_es_rfm test es rfm =
+    prerr_endline "Bingo" ;
     SHOW.show (fun chan -> dump_es_rfm chan test es rfm)
 
   let show_legend test legend conc ?(sets = StringMap.empty) vbs  =
