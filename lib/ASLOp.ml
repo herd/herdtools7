@@ -173,6 +173,7 @@ let do_op1 op cst =
            * less so for kernel code. *)
             match positions with
             | [63] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [55] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
             | _ -> None
           end
       | _ -> None)

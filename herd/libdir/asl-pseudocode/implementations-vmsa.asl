@@ -7,7 +7,7 @@ var MAIR_EL1 : MAIRType ;
 // Inferred from manual...
 type TranslationControl of bits(64) {
  [5:0] T0SZ,
- [7] EDP0,
+ [7] EPD0,
  [9:8] IRGN0,
  [11:10] ORGN0,
  [13:12] SH0,
@@ -48,7 +48,15 @@ type TranslationControl of bits(64) {
  [61] MTX1,
 };
 
-var TCR_EL1 : TranslationControl;
+// Value found on Rasberry 4B, ArmBian
+// uname -a:
+// Linux cheilly 5.4.0-1089-raspi #100-Ubuntu SMP PREEMPT Thu Jun 22 09:59:38 UTC 2023 aarch64 aarch64 aarch64 GNU/Linux
+
+let TCR_EL1 : TranslationControl =
+  '0000000000000000000000000000010011110101100100000111010100010000';
+
+// Not used normaly, here for typing
+var TCR_EL2 : TranslationControl;
 
 // Inferred from manual...
 type ExtendedTranslationControl of bits(64) {

@@ -1151,6 +1151,9 @@ module Make (B : Backend.S) (C : Config) = struct
       [name] with arguments [args] and parameters [named_args] *)
   (* Begin Call *)
   and eval_call pos name env args named_args =
+    let () = 
+      if false then (* DEBUG *)
+        Format.eprintf "@[%a Call %s@]@." PP.pp_pos pos name in
     let names, nargs1 = List.split named_args in
     let*^ vargs, env1 = eval_expr_list_m env args in
     let*^ nargs2, env2 = eval_expr_list_m env1 nargs1 in
