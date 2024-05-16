@@ -114,3 +114,18 @@ type ExternalDebugStatus of bits(32) {
 
 var EDSCR : ExternalDebugStatus;
 
+// Translation table registers
+type TTType of bits(64);
+
+// Probably temporary...
+let TTBR1_EL1 = Zeros(64);
+let TTBR0_EL1 = Zeros(64);
+
+//From manual, limited to what is used
+
+type HypervisorConfiguration of bits(64) {
+  [0] VM,
+  [12] DC,
+};
+
+let HCR_EL2 : HypervisorConfiguration = Zeros(64);
