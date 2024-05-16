@@ -225,6 +225,11 @@ UnderConstrained integers:
   ASL Typing error: cannot declare already declared element "h".
   [1]
 
+  $ aslref rdiv_checks.asl
+  File rdiv_checks.asl, line 3, characters 12 to 25:
+  ASL Typing error: Illegal application of operator / on types real and string
+  [1]
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]

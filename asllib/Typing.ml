@@ -741,7 +741,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 | _ -> assumption_failed ())
             | _ -> assumption_failed ())
         | RDIV ->
-            let+ () = check_type_satisfies' env t1 real in
+            let+ () =
+              both
+                (check_type_satisfies' env t1 real)
+                (check_type_satisfies' env t2 real)
+            in
             T_Real |> with_loc)
       (fun () -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
       ()
