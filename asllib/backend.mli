@@ -96,6 +96,11 @@ module type S = sig
      hidden structure. This permits deciding on
      the monad value, while using hidden structure later *)
 
+  val failT : exn -> 'a -> 'a m
+  (** Register a raised exception. Depending on the monad, this exception
+      may be delayed, so as to be discarded if the monad is discarded, or
+      raised instantaneously. *)
+
   (** Special operations with vectors *)
   (*  --------------------------------*)
 

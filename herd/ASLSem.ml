@@ -748,6 +748,7 @@ module Make (C : Config) = struct
         let commit = commit ii_env
         let choice = choice
         let delay m k = M.delay_kont "ASL" m k
+        let failT e v = M.failT e v
         let return = M.unitT
         let warnT = M.warnT
         let on_write_identifier = on_write_identifier ii_env

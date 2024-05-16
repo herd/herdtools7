@@ -114,6 +114,8 @@ module NativeBackend = struct
 
   let delay m k = k m m
 
+  let failT e _ = raise e
+
   let binop op v1 v2 =
     match (v1, v2) with
     | NV_Literal v1, NV_Literal v2 ->

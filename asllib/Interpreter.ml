@@ -55,6 +55,10 @@ module Make (B : Backend.S) (C : Config) = struct
   module B = B
   module SemanticsRule = Instrumentation.SemanticsRule
 
+  let delay_fatal_from e desc v =
+    let exc = try fatal_from e desc with exc -> exc in
+    B.failT exc v
+
   type 'a m = 'a B.m
 
   module EnvConf = struct
@@ -922,7 +926,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ v, env1 = eval_expr env e in
         let*= b = choice v true false in
         if b then return_continue env1
-        else fatal_from e @@ Error.AssertionFailed e |: SemanticsRule.SAssert
+        else delay_fatal_from e (Error.AssertionFailed e) (Normal (Continuing env1)) |: SemanticsRule.SAssert
     (* End *)
     (* Begin SWhile *)
     | S_While (e, body) ->
