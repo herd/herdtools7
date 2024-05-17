@@ -106,16 +106,8 @@ module Make
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
-      let sxt_op sz =
-        match sz with
-        | MachSize.Quad when not morello  -> M.unitT
-        | _ ->
-           M.op1 (Op.Sxt sz)
-      and uxt_op sz =
-        match sz with
-        | MachSize.Quad when not morello  -> M.unitT
-        | _ ->
-           M.op1 (Op.Mask sz)
+      let sxt_op sz = M.op1 (Op.Sxt sz)
+      and uxt_op sz = M.op1 (Op.Mask sz)
       let sxtw_op = sxt_op MachSize.Word
       and uxtw_op = uxt_op MachSize.Word
 

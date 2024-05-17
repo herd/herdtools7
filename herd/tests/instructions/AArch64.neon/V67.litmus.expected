@@ -1,0 +1,10 @@
+Test V67 Required
+States 1
+x={3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0})
+Observation V67 Always 1 0
+Hash=24bfe8345767d32cf5f5aca4f56af385
+
