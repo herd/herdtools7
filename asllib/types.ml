@@ -39,6 +39,7 @@ let thing_equal astutil_equal env =
 
 let expr_equal = thing_equal expr_equal
 let type_equal = thing_equal type_equal
+let array_length_equal = thing_equal array_length_equal
 let bitwidth_equal = thing_equal bitwidth_equal
 let slices_equal = thing_equal slices_equal
 let bitfield_equal = thing_equal bitfield_equal
@@ -716,120 +717,66 @@ let find_named_lowest_common_supertype env x1 x2 =
   in
   aux x2
 
+(* [unpack_options li] is [Some [x1; ... x_n]] if [li] is [[Some x1; ... Some x_n]], [None] otherwise *)
+let unpack_options li =
+  let exception NoneFound in
+  let unpack_one = function Some elt -> elt | None -> raise NoneFound in
+  try Some (List.map unpack_one li) with NoneFound -> None
+
 (* Begin LowestCommonAncestor *)
 let rec lowest_common_ancestor env s t =
+  let ( let+ ) o f = Option.map f o in
   (* The lowest common ancestor of types S and T is: *)
-  (* • If S and T are the same type: S (or T). *)
-  (if type_equal env s t then Some s
-   else
-     match (s.desc, t.desc) with
-     | T_Named name_s, T_Named name_t -> (
-         (* If S and T are both named types: the (unique) common supertype of S
-            and T that is a subtype of all other common supertypes of S and T. *)
-         match find_named_lowest_common_supertype env name_s name_t with
-         | None -> None
-         | Some name -> Some (T_Named name |> add_dummy_pos))
-     | _ -> (
-         let struct_s = get_structure env s
-         and struct_t = get_structure env t in
-         match (struct_s.desc, struct_t.desc) with
-         | T_Array _, T_Array _ when type_equal env struct_s struct_t -> (
-             (* If S and T both have the structure of array types with the same
-                index type and the same element types:
-                 – If S is a named type and T is an anonymous type: S
-                 – If S is an anonymous type and T is a named type: T *)
-             match (s.desc, t.desc) with
-             | T_Named _, T_Named _ -> assert false
-             | T_Named _, _ -> Some s
-             | _, T_Named _ -> Some t
-             | _ -> assert false)
-         | T_Tuple li_s, T_Tuple li_t
-           when List.compare_lengths li_s li_t = 0
-                && List.for_all2 (type_satisfies env) li_s li_t
-                && List.for_all2 (type_satisfies env) li_t li_s -> (
-             (* If S and T both have the structure of tuple types with the same
-                number of elements and the types of elements of S type-satisfy the
-                types of the elements of T and vice-versa:
-                 – If S is a named type and T is an anonymous type: S
-                 – If S is an anonymous type and T is a named type: T
-                 – If S and T are both anonymous types: the tuple type with the
-                   type of each element the lowest common ancestor of the types of
-                   the corresponding elements of S and T. *)
-             match (s.desc, t.desc) with
-             | T_Named _, T_Named _ -> assert false
-             | T_Named _, _ -> Some s
-             | _, T_Named _ -> Some t
-             | _ ->
-                 let maybe_ancestors =
-                   List.map2 (lowest_common_ancestor env) li_s li_t
-                 in
-                 let ancestors = List.filter_map Fun.id maybe_ancestors in
-                 if List.compare_lengths ancestors li_s = 0 then
-                   Some (add_dummy_pos (T_Tuple ancestors))
-                 else None)
-         | T_Int (UnderConstrained _), T_Int _ ->
-             (* TODO: revisit? *)
-             (* If either S or T have the structure of an under-constrained
-                integer type: the under-constrained integer type. *)
-             Some s
-         | T_Int _, T_Int (UnderConstrained _) ->
-             (* TODO: revisit? *)
-             (* If either S or T have the structure of an under-constrained
-                integer type: the under-constrained integer type. *)
-             Some t
-         | T_Int (WellConstrained cs_s), T_Int (WellConstrained cs_t) -> (
-             (* Implicit: cs_s and cs_t are non-empty, see patterns above. *)
-             (* If S and T both have the structure of well-constrained integer
-                types:
-                – If S is a named type and T is an anonymous type: S
-                – If T is an anonymous type and S is a named type: T
-                – If S and T are both anonymous types: the well-constrained
-                  integer type with domain the union of the domains of S and T.
-             *)
-             match (s.desc, t.desc) with
-             | T_Named _, T_Named _ -> assert false
-             | T_Named _, _ -> Some s
-             | _, T_Named _ -> Some t
-             | _ ->
-                 (* TODO: simplify domains ? If domains use a form of diets,
-                    this could be more efficient. *)
-                 Some (add_dummy_pos (T_Int (WellConstrained (cs_s @ cs_t)))))
-         | T_Int UnConstrained, T_Int _ -> (
-             (* Here S has the structure of an unconstrained integer type. *)
-             (* TODO: revisit? *)
-             (* TODO: typo corrected here, on point 2 S and T have
-                been swapped. *)
-             (* If either S or T have the structure of an unconstrained integer
-                type:
-                – If S is a named type with the structure of an unconstrained
-                  integer type and T is an anonymous type: S
-                – If T is an anonymous type and S is a named type with the
-                  structure of an unconstrained integer type: T
-                – If S and T are both anonymous types: the unconstrained integer
-                  type. *)
-             match (s.desc, t.desc) with
-             | T_Named _, T_Named _ -> assert false
-             | T_Named _, _ -> Some s
-             | _, T_Named _ -> assert false
-             | _, _ -> Some (add_dummy_pos (T_Int UnConstrained)))
-         | T_Int _, T_Int UnConstrained -> (
-             (* Here T has the structure of an unconstrained integer type. *)
-             (* TODO: revisit? *)
-             (* TODO: typo corrected here, on point 2 S and T have
-                been swapped. *)
-             (* If either S or T have the structure of an unconstrained integer
-                type:
-                – If S is a named type with the structure of an unconstrained
-                  integer type and T is an anonymous type: S
-                – If T is an anonymous type and S is a named type with the
-                  structure of an unconstrained integer type: T
-                – If S and T are both anonymous types: the unconstrained integer
-                  type. *)
-             match (s.desc, t.desc) with
-             | T_Named _, T_Named _ -> assert false
-             | T_Named _, _ -> assert false
-             | _, T_Named _ -> Some t
-             | _, _ -> Some (add_dummy_pos (T_Int UnConstrained)))
-         | _ -> None))
+  (match (s.desc, t.desc) with
+  | _, _ when type_equal env s t ->
+      (* • If S and T are the same type: S (or T). *)
+      Some s
+  | T_Named name_s, T_Named name_t -> (
+      (* If S and T are both named types: the (unique) common supertype of S
+         and T that is a subtype of all other common supertypes of S and T. *)
+      match find_named_lowest_common_supertype env name_s name_t with
+      | Some name -> Some (T_Named name |> add_dummy_pos)
+      | None ->
+          let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
+          lowest_common_ancestor env anon_s anon_t)
+  | _, T_Named _ | T_Named _, _ ->
+      let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
+      if type_equal env anon_s anon_t then
+        Some (match s.desc with T_Named _ -> s | _ -> t)
+      else lowest_common_ancestor env anon_s anon_t
+  | T_Int _, T_Int UnConstrained | T_Int UnConstrained, T_Int _ ->
+      (* If either S or T is an unconstrained integer type: the unconstrained
+         integer type. *)
+      Some integer
+  | T_Int _, T_Int (UnderConstrained _) | T_Int (UnderConstrained _), T_Int _ ->
+      lowest_common_ancestor env (to_well_constrained s) (to_well_constrained t)
+  | T_Int (WellConstrained cs_s), T_Int (WellConstrained cs_t) ->
+      (* If S and T both are well-constrained integer types: the
+         well-constrained integer type with domain the union of the
+         domains of S and T. *)
+      (* TODO: simplify domains ? If domains use a form of diets,
+         this could be more efficient. *)
+      Some (add_dummy_pos (T_Int (WellConstrained (cs_s @ cs_t))))
+  | T_Bits (e_s, _), T_Bits (e_t, _) when expr_equal env e_s e_t ->
+      (* We forget the bitfields if they are not equal. *)
+      Some (T_Bits (e_s, []) |> add_dummy_pos)
+  | T_Array (width_s, ty_s), T_Array (width_t, ty_t)
+    when array_length_equal env width_s width_t ->
+      let+ t = lowest_common_ancestor env ty_s ty_t in
+      T_Array (width_s, t) |> add_dummy_pos
+  | T_Tuple li_s, T_Tuple li_t
+    when List.compare_lengths li_s li_t = 0
+         && List.for_all2 (type_satisfies env) li_s li_t
+         && List.for_all2 (type_satisfies env) li_t li_s ->
+      (* If S and T both are tuple types with the same number of elements and
+         the types of elements of S type-satisfy the types of the elements of T
+         and vice-versa: the tuple type with the type of each element the
+         lowest common ancestor of the types of the corresponding elements of S
+         and T. *)
+      let+ li =
+        List.map2 (lowest_common_ancestor env) li_s li_t |> unpack_options
+      in
+      add_dummy_pos (T_Tuple li)
+  | _ -> None)
   |: TypingRule.LowestCommonAncestor
 (* End *)
