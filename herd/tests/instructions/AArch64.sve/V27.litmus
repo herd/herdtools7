@@ -1,0 +1,14 @@
+AArch64 V27
+{
+uint64_t t[2] = {0xffffffffffffffff,0x0};
+uint64_t u[2] = {0x1,0x0};
+0:X0=t; 0:X1=u;
+}
+  P0                   ;
+ PTRUE P0.D,VL2        ;
+ LD1D {Z0.D},P0/Z,[X0] ;
+ LD1D {Z1.D},P0/Z,[X1] ;
+ ADD Z0.D,Z0.D,Z1.D    ;
+ ST1D {Z0.D},P0,[X0]   ;
+
+forall t={0,0}

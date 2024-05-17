@@ -1,0 +1,11 @@
+Test V27 Required
+States 1
+t={0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (t={0,0})
+Observation V27 Always 1 0
+Hash=0f6e065f907c5a7fe1ad1218b44ea0e1
+

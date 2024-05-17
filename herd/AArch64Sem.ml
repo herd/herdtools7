@@ -2152,16 +2152,24 @@ module Make
         end
           >>= (fun v -> write_reg_neon_sz (tr_simd_variant var) r v ii)
 
-
-      let simd_op op sz r1 r2 r3 ii =
+      let simd_add r1 r2 r3 ii =
+        let nelem = neon_nelem r1 in
+        let esize = neon_esize r1 in
         read_reg_neon false r3 ii >>|
-        read_reg_neon false r2 ii >>=
-        begin match op with
-        | AArch64.ADD -> fun (v1,v2) -> M.add v1 v2
-        | AArch64.EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
-        | _ -> Warn.fatal "unsupported Neon operations"
-        end >>=
-        fun v -> write_reg_neon_sz sz r1 v ii
+        read_reg_neon false r2 ii >>= fun (v1,v2) ->
+          let aux cur_val idx =
+            neon_getlane v1 idx esize >>|
+            neon_getlane v2 idx esize >>= fun (e1,e2) ->
+              M.add e1 e2 >>= fun v ->
+                neon_setlane cur_val idx esize v
+          in
+          let rec reduce idx op =
+            match idx with
+            | 0 -> op >>= fun old_val -> aux old_val idx
+            | _ -> reduce (idx-1) (op >>= fun old_val -> aux old_val idx)
+          in
+          reduce (nelem-1) mzero >>= fun v ->
+            write_reg_neon r1 v ii
 
       let addv var r1 r2 ii =
         let open AArch64Base in
@@ -2201,6 +2209,25 @@ module Make
             mzero >>= fun v ->
               let sz = AArch64Base.tr_simd_variant var in
               write_reg_neon_sz sz r1 v ii
+
+      let add_sv r1 r2 r3 ii =
+        let nelem = scalable_nelem r1 in
+        let esize = scalable_esize r1 in
+        read_reg_scalable false r3 ii >>|
+        read_reg_scalable false r2 ii >>= fun (v1,v2) ->
+          let add cur_val idx =
+            scalable_getlane v1 idx esize >>|
+            scalable_getlane v2 idx esize >>= fun (e1,e2) ->
+              M.add e1 e2 >>= fun v ->
+                scalable_setlane cur_val idx esize v
+          in
+          let rec reduce idx op =
+            match idx with
+            | 0 -> op >>= fun old_val -> add old_val idx
+            | _ -> reduce (idx-1) (op >>= fun old_val -> add old_val idx)
+          in
+          reduce (nelem-1) mzero >>= fun v ->
+            write_reg_scalable r1 v ii
 
       let movprfx dst pg src ii =
         let nelem = predicate_nelem src in
@@ -3060,16 +3087,21 @@ module Make
             !(movi_s var r k ii)
         | I_EOR_SIMD(r1,r2,r3) ->
             check_neon inst;
-            let size = neon_sz r1 in
-            !(simd_op EOR size r1 r2 r3 ii)
+            let sz = neon_sz r1 in
+            !(read_reg_neon false r3 ii >>|
+              read_reg_neon false r2 ii >>= fun (v1,v2) ->
+                M.op Op.Xor v1 v2 >>= fun v ->
+                  write_reg_neon_sz sz r1 v ii)
         | I_ADD_SIMD(r1,r2,r3) ->
             check_neon inst;
-            let size = neon_sz r1 in
-            !(simd_op ADD size r1 r2 r3 ii)
+            !(simd_add r1 r2 r3 ii)
         | I_ADD_SIMD_S(r1,r2,r3) ->
             check_neon inst;
-            !(simd_op ADD MachSize.Quad r1 r2 r3 ii)
-
+            let sz = MachSize.Quad in
+            !(read_reg_neon false r3 ii >>|
+              read_reg_neon false r2 ii >>= fun (v1,v2) ->
+                M.add v1 v2 >>= fun v ->
+                  write_reg_neon_sz sz r1 v ii)
         (* Neon loads and stores *)
         | I_LDAP1(rs,i,rA,kr) ->
             check_neon inst;
@@ -3290,10 +3322,7 @@ module Make
           while_op (M.op Op.Le) true p var r1 r2 ii >>= nextSet p
         |  I_ADD_SV (r1,r2,r3) ->
           check_sve inst;
-          !(read_reg_scalable false r3 ii >>|
-              read_reg_scalable false r2 ii >>= fun (v1,v2) ->
-                M.add v1 v2 >>= fun v ->
-                  write_reg_scalable r1 v ii)
+          !(add_sv r1 r2 r3 ii)
         | I_UADDV(var,v,p,z) ->
           check_sve inst;
           !(uaddv var v p z ii)
