@@ -1608,24 +1608,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* End *)
                 (* Begin EGetBitFieldNested *)
                 | Some (BitField_Nested (_field, slices, bitfields')) ->
-                    let t_e3, e3 =
-                      E_Slice (e2, slices) |> here |> annotate_expr env
-                    in
-                    let t_e4 =
-                      match t_e3.desc with
+                    let e3 = E_Slice (e2, slices) |> here in
+                    let t_e4, new_e = annotate_expr env e3 in
+                    let t_e5 =
+                      match t_e4.desc with
                       | T_Bits (width, _bitfields) ->
                           T_Bits (width, bitfields') |> add_pos_from t_e2
                       | _ -> assert false
                     in
-                    (t_e4, e3) |: TypingRule.EGetBitFieldNested
+                    (t_e5, new_e) |: TypingRule.EGetBitFieldNested
                 (* End *)
                 (* Begin EGetBitFieldTyped *)
                 | Some (BitField_Type (_field, slices, t)) ->
-                    let t_e3, e3 =
-                      E_Slice (e2, slices) |> here |> annotate_expr env
-                    in
-                    let+ () = check_type_satisfies e3 env t_e3 t in
-                    (t, e3) |: TypingRule.EGetBitFieldTyped
+                    let e3 = E_Slice (e2, slices) |> here in
+                    let t_e4, new_e = annotate_expr env e3 in
+                    let+ () = check_type_satisfies new_e env t_e4 t in
+                    (t, new_e) |: TypingRule.EGetBitFieldTyped
                     (* End *))
             (* Begin EGetTupleItem *)
             | T_Tuple tys ->
@@ -1675,7 +1673,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             |> here |> annotate_expr env |: TypingRule.EGetBitFields)
     (* End *)
     (* Begin EPattern *)
-    | E_Pattern (e', patterns) ->
+    | E_Pattern (e1, pat) ->
         (*
          Rule ZNDL states that
 
@@ -1701,10 +1699,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          bad number of times), but we will apply the same typing rules as for
          those desugared expressions.
          *)
-        let t_e', e'' = annotate_expr env e' in
-        let patterns' = best_effort patterns (annotate_pattern e env t_e') in
-        (T_Bool |> here, E_Pattern (e'', patterns') |> here)
-        |: TypingRule.EPattern
+        let t_e2, e2 = annotate_expr env e1 in
+        let pat' = best_effort pat (annotate_pattern e env t_e2) in
+        (T_Bool |> here, E_Pattern (e2, pat') |> here) |: TypingRule.EPattern
     (* End *)
     | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
