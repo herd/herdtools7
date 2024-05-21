@@ -30,6 +30,7 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let unsupported_expr e = fatal_from e (Error.UnsupportedExpr e)
+let invalid_expr e = fatal_from e (Error.InvalidExpr e)
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
@@ -1782,7 +1783,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 in
                 LE_SetArray (le2, e_index') |> here |: TypingRule.LESetArray
             (* End *)
-            | _ -> unsupported_expr (expr_of_lexpr le1))
+            | _ -> invalid_expr (expr_of_lexpr le1))
         | _ -> conflict le1 [ default_t_bits ] t_le1)
     | LE_SetField (le1, field) ->
         (let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
@@ -1867,18 +1868,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         let annotate_one (les, widths, sum) le =
           let e = expr_of_lexpr le in
-          let t_e, _e = annotate_expr env e in
-          let width = bv_length t_e in
-          let t_e' = T_Bits (expr_of_int width, []) |> add_pos_from le in
-          let le = annotate_lexpr env le t_e' in
-          (le :: les, width :: widths, sum + width)
+          let t_e1, _e = annotate_expr env e in
+          let width = bv_length t_e1 in
+          let t_e2 = T_Bits (expr_of_int width, []) |> add_pos_from le in
+          let le1 = annotate_lexpr env le t_e2 in
+          (le1 :: les, width :: widths, sum + width)
         in
         let rev_les, rev_widths, _real_width =
           List.fold_left annotate_one ([], [], 0) les
         in
         (* as the first check, we have _real_width == bv_length t_e *)
-        let les = List.rev rev_les and widths = List.rev rev_widths in
-        LE_Concat (les, Some widths) |> add_pos_from le |: TypingRule.LEConcat
+        let les1 = List.rev rev_les and widths = List.rev rev_widths in
+        LE_Concat (les1, Some widths) |> add_pos_from le |: TypingRule.LEConcat
   (* End *)
 
   let can_be_initialized_with env s t =

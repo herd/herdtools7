@@ -90,6 +90,7 @@
 \newcommand\negateconstraint[0]{\hyperlink{def-negateconstraint}{\texttt{negate\_constraint}}}
 \newcommand\getwellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{\texttt{get\_well\_constrained\_structure}}}
 \newcommand\towellconstrained[0]{\hyperlink{def-towellconstrained}{\texttt{to\_well\_constrained}}}
+\newcommand\annotatelebits[0]{\hyperlink{def-annotatelebits}{\texttt{annotate\_lebits}}}
 
 % Symbolic equivalence testing macros
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
@@ -148,7 +149,7 @@
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\texttt{annotate\_expr}}(#1)}
 \newcommand\annotateexprlist[1]{\hyperlink{def-annotateexprs}{\texttt{annotate\_exprs}}(#1)}
-\newcommand\annotatelexpr[1]{\texttt{annotate\_lexpr}(#1)}
+\newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\texttt{annotate\_lexpr}}(#1)}
 \newcommand\annotatearrayindex[0]{\texttt{annotate\_array\_index}}
 \newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\texttt{annotate\_slice}}}
 \newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\texttt{annotate\_slices}}}
@@ -5683,10 +5684,20 @@ All of the following apply:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Left-Hand-Side Expressions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Annotating a left-hand side expression~\texttt{le} in an environment $\tenv$, assuming \texttt{t\_e}
-to be the type of the corresponding right-hand-side (\texttt{annotate\_lexpr env le t\_e}),
-results in an annotated expression \texttt{new\_le} and one of the following applies:
+\hypertarget{def-annotatelexpr}{}
+The function
+\[
+  \annotatelexpr{
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\lexpr}{\vle} \aslsep
+    \overname{\ty}{\vte}} \aslto
+    \overname{\lexpr}{\newle} \cup \TTypeError
+\]
+annotates a left-hand side expression $\vle$ in an environment $\tenv$, assuming $\vle$
+to be the type of the corresponding right-hand-side expression,
+resulting in an annotated expression $\newle$.
+The result is a type error, if one is detected.
+One of the following applies:
 \begin{itemize}
 \item TypingRule.LEDiscard (see \secref{TypingRule.LEDiscard}),
 \item TypingRule.LELocalVar (see \secref{TypingRule.LELocalVar}),
@@ -5704,36 +5715,32 @@ results in an annotated expression \texttt{new\_le} and one of the following app
 \item TypingRule.LEConcat (see \secref{TypingRule.LEConcat}).
 \end{itemize}
 
+We also make use of the helper tule
+TypingRule.LEBits (see \secref{TypingRule.LEBits}).
+
+\hypertarget{def-rexpr}{}
 Some of the rules require viewing left-hand-side expressions as their corresponding right-hand side expressions.
 The correspondence is defined in the ASL Syntax Reference~\cite[Chapter 5]{ASLAbstractSyntaxReference}
 and given by the function $\torexpr : \lexpr \rightarrow \expr$.
 
 \section{TypingRule.LEDiscard \label{sec:TypingRule.LEDiscard}}
 
-  \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes an expression which can be discarded;
-   \item \texttt{new\_le} is \texttt{le}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vle$ denotes an expression that can be discarded, that is, $\LEDiscard$;
+\item $\newle$ is $\vle$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LEDiscardBegin}{\LEDiscardEnd}{../Typing.ml}
+\CodeSubsection{\LEDiscardBegin}{\LEDiscardEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-\inferrule{
-  \vle = \texttt{LE\_Discard}\\
-  \newle \eqdef \vle
-}
-{
-  \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle
+\inferrule{}{
+  \annotatelexpr{\tenv, \LEDiscard, \vte} \typearrow \vle
 }
 \end{mathpar}
 \end{emptyformal}
@@ -5742,33 +5749,29 @@ all of the following apply:
 
 \section{TypingRule.LELocalVar \label{sec:TypingRule.LELocalVar}}
 
-   \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes a local variable $\vx$;
-   \item $\vx$ is locally declared as a mutable variable of type $\tty$ in $\tenv$;
-   \item $\tty$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{new\_le} is \texttt{le}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes a local variable $\vx$, that is, $\LEVar(\vx)$;
+  \item $\vx$ is locally declared as a mutable variable of type $\tty$ in $\tenv$;
+  \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item $\newle$ is $\vle$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LELocalVarBegin}{\LELocalVarEnd}{../Typing.ml}
+\CodeSubsection{\LELocalVarBegin}{\LELocalVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vle \eqname \texttt{LE\_Var}(\id)\\
+  \vle \eqname \LEVar(\vx)\\
   L^\tenv.\localstoragetypes(\id) = (\tty, \LDKVar)\\
-  \typesat(\tenv, \vte, \tty)\\
-  \newle \eqdef \vle
+  \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
+}{
+  \annotatelexpr{\tenv, \vle, \vte} \typearrow \vle
 }
-{ \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle }
 \end{mathpar}
 
 \end{emptyformal}
@@ -5779,33 +5782,29 @@ all of the following apply:
 
 \section{TypingRule.LEGlobalVar \label{sec:TypingRule.LEGlobalVar}}
 
-  \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes a global variable $\vx$;
-   \item $\vx$ is globally declared as a variable of type $\tty$ in $\tenv$;
-   \item \texttt{t\_e} \typesatisfies\  $\tty$;
-   \item \texttt{new\_le} is \texttt{le}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes a local variable $\vx$, that is, $\LEVar(\vx)$;
+  \item $\vx$ is globally declared as a mutable variable of type $\tty$ in $\tenv$;
+  \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item $\newle$ is $\vle$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LEGlobalVarBegin}{\LEGlobalVarEnd}{../Typing.ml}
+\CodeSubsection{\LEGlobalVarBegin}{\LEGlobalVarEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vle = \texttt{LE\_Var}(\id)\\
-  G^\tenv.\globalstoragetypes(\id) = (\vtp, \Ignore)\\
-  \typesat(\tenv, \vtp, \vte)\\
-  \newle = \vle
+  \vle \eqname \LEVar(\vx)\\
+  G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKVar)\\
+  \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
+ }{
+  \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle
 }
-{ \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle }
 \end{mathpar}
 \end{emptyformal}
 
@@ -5814,48 +5813,39 @@ all of the following apply:
 
 \section{TypingRule.LEDestructuring \label{sec:TypingRule.LEDestructuring}}
 
-  \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes a tuple \texttt{les};
-   \item \texttt{t\_e} has the structure of a tuple type \texttt{sub\_tys};
-   \item the elements of \texttt{sub\_tys} \typesatisfies\  the type of the elements of \texttt{les};
-   \item One of the following applies:
-     \begin{itemize}
-     \item All of the following apply:
-       \begin{itemize}
-       \item \texttt{les} and \texttt{sub\_tys} have the same length;
-       \item \texttt{new\_le} is the result of annotating \texttt{les} with \texttt{sub\_tys} in $\tenv$
-       \end{itemize}
-     \item All of the following apply:
-       \begin{itemize}
-       \item \texttt{les} and \texttt{sub\_tys} do not have the same length;
-       \item an error ``\texttt{Bad Arity LEDestructuring}'' is raised.
-       \end{itemize}
-     \end{itemize}
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes a tuple of left-hand-side expressions $\les$, that is, $\LEDestructuring(\les)$;
+  \item $\les$ is a list $\ve_{1..k}$;
+  \item $\vte$ is a tuple type $\subtys$;
+  \item determining whether $\les$ and $\subtys$ have the same length yields $\True$ \ProseOrTypeError;
+  \item $\subtys$ is the list of types $\vt_{1..k}$;
+  \item annotating the left-hand-side expression $\ve_i$ with the type $\vt_i$, for $i=1..k$, yields $\vep_i$ \ProseOrTypeError;
+  \item the list of expressions $\lesp$ is $\vep_i$, for $i=1..k$;
+  \item $\newle$  is the list of left-hand-side expressions $\lesp$, that is, $\LEDestructuring(\lesp)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LEDestructuringBegin}{\LEDestructuringEnd}{../Typing.ml}
+\CodeSubsection{\LEDestructuringBegin}{\LEDestructuringEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vle = \texttt{LE\_Destructuring}(\les)\\
-  \vte = \TTuple(\subtys)\\
-  \les = [\ve_{1..k}]\\
-  \subtys = [\vt_{1..k}]\\
-  i=1..k: \annotateexpr{\tenv, \ve_i,\vt_i} \typearrow \vep_i\\
-  \les' = [i=1..k: \vep_i]\\
-  \newle = \texttt{LE\_Destructuring}(\les')
+  \vle \eqname \LEDestructuring(\les)\\
+  \les \eqname [\ve_{1..k}]\\
+  \checktrans{\astlabel(\vle) = \TTuple, \texttt{"TupleExpected"}} \typearrow \True \OrTypeError\\\\
+  \vte \eqname \TTuple(\subtys)\\
+  \equallength(\les, \subtys) \typearrow \vb\\
+  \checktrans{\vb, \texttt{"DifferentLengths"}} \typearrow \True \OrTypeError\\\\
+  \subtys \eqname [\vt_{1..k}]\\
+  i=1..k: \annotatelexpr{\tenv, \ve_i,\vt_i} \typearrow \vep_i \OrTypeError\\
+  \lesp \eqname [i=1..k: \vep_i]
+}{
+  \annotatelexpr{\tenv, \vle, \vte} \typearrow \LEDestructuring(\lesp)
 }
-{ \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle }
 \end{mathpar}
 \end{emptyformal}
 
@@ -5863,43 +5853,43 @@ all of the following apply:
 
 \section{TypingRule.LESlice \label{sec:TypingRule.LESlice}}
 
-  \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} has the structure of a bitvector type;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-   \item \texttt{width} is the width of the slices $\slices$ in $\tenv$;
-   \item $\vt$ is the bitvector type of width \texttt{width};
-   \item \texttt{te} \typesatisfies\  $\vt$;
-   \item \texttt{slices2} is the result of annotating $\slices$ in $\tenv$;
-   \item \texttt{new\_le} is the slicing of $\vletwo$ by \texttt{slices2}.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$, that is, $\LESlice(\vleone, \slices)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\
+        $(\vtleone, \Ignore)$ \ProseOrTypeError;
+  \item $\vtleone$ is a bitvector type;
+  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+  \item obtaining the width of the slices $\slices$ in $\tenv$ and simplifying them yields $\vwidth$;
+  \item $\vt$ is the bitvector type of width $\width$ and empty list of bitfields;
+  \item checking whether $\vte$ \typesatisfies\ $\vt$ yields $\True$ \ProseOrTypeError;
+  \item annotating $\slices$ in $\tenv$ yields $\slicestwo$ \ProseOrTypeError;
+  \item checking that the slices $\slicestwo$ are all disjoint yields $\True$ \ProseOrTypeError;
+  \item $\newle$ is the slicing of $\vletwo$ by $\slicestwo$, that is, $\LESlice(\vletwo, \slicestwo)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Typing.ml}
+\CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vle = \leslice(\vleone, \slices)\\
   \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore)\\
-  \astlabel(\tstruct(\tenv, \vtleone)) \typearrow \TBits\\
+  \tstruct(\tenv, \vtleone) \typearrow \structtleone \OrTypeError\\
+  \astlabel(\structtleone) = \TBits\\
   \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo\\
-  \sliceswidth(\tenv, \slices) \typearrow \vwidth\\
-  \vt = \TBits(\texttt{BitWidth\_SingleExpr}(\vwidth, \emptylist))\\
-  \typesat(\tenv, \vt, \vte)\\
-  \texttt{slices2} = [\annotateslices(\tenv, \vs) \;|\; \vs \in \slices]\\
-  \newle = \leslice(\vletwo, \texttt{slices2})
-}
-{ \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle
+  \sliceswidth(\tenv, \slices) \typearrow \widthp\\
+  \tododefine{reduce\_expr}(\widthp) \typearrow \vwidth\\
+  \vt \eqdef \TBits(\vwidth, \emptylist)\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \annotateslices(\tenv, \slices) \typearrow \slicestwo \OrTypeError\\
+  \tododefine{check\_disjoint\_slices}(\tenv, \slicestwo) \typearrow \True \OrTypeError\\
+  \newle \eqdef \LESlice(\vletwo, \slicestwo)
+}{
+  \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
 }
 \end{mathpar}
 \end{emptyformal}
@@ -5908,52 +5898,44 @@ all of the following apply:
 
 \section{TypingRule.LESetArray \label{sec:TypingRule.LESetArray}}
 
-  \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} has the structure of an array type of size $\size$ and item type $\vt$;
-   \item \texttt{te} \typesatisfies\  $\vt$;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-  % ROMAN: The following is not what the code does so I replaced it with subsequent item.
-  %  \item One of the following applies:
-  %    \begin{itemize}
-  %    \item $\wantedtindex$ is an enumeration type of name $\size$;
-  %    \item $\wantedtindex$ is the type \texttt{integer {0..size-1}};
-  %    \end{itemize}
-  \item the expression $\size$ can be annotated with the type $\wantedtindex$;
-  \item $\slices$ is a single expression $\eindex$;
-   \item $(\tindexp, \eindexp)$ is the result of annotating $\eindex$ in $\tenv$;
-   \item $\wantedtindex$ \typesatisfies\  $\tindexp$, which guarantees that the index
-   is within the bounds of the array;
-   \item \texttt{new\_le} is an access to array $\vletwo$ at index $\eindexp$.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$, that is, $\LESlice(\vleone, \slices)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields an array type of size $\size$ and element type $\vt$, that is, $\TArray(\size, \vt)$ \ProseOrTypeError;
+  \item annotating the left-hand-side expression $\vleone$ with type $\vtleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+  \item determining that $\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item determining whether $\slices$ is a single slice with index expression $\eindex$ yields $\True$ \ProseOrTypeError;
+  \item annotating the index pression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$ \ProseOrTypeError;
+  \item determining the array length type of $\size$ in $\tenv$ (via $\typeofarraylength$) yields $\wantedtindex$;
+  \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item $\newle$ is an access to array $\vletwo$ at index $\eindexp$, that is, \\ $\LESetArray(\vletwo, \eindexp)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Typing.ml}
+\CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vle = \leslice(\vleone, \slices)\\
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore)\\
-  \tstruct(\tenv, \vtleone) \typearrow \TArray(\size, \vt)\\
-  \typesat(\tenv, \vte, \vt)\\
-  \annotatelexpr{\tenv, \vleone} \typearrow \vletwo\\
-  \annotatearrayindex(\tenv, \size) \typearrow \wantedtindex\\
-  \slices = [\SliceSingle(\eindex)]\\
-  \annotateexpr{\tenv, \eindex} \typearrow (\tindex', \eindex')\\
-  \typesat(\tenv, \tindex', \wantedtindex)\\
-  \newle = \texttt{LS\_SetArray}(\vletwo, \eindex')
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow \TArray(\size, \vt) \OrTypeError\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \checktrans{|\slices| = 1, \texttt{"ArraySliceShouldBeSingleIndex"}} \typearrow \True \OrTypeError\\\\
+  \slices \eqname [\vs]\\
+  \checktrans{\astlabel(\vs) = \SliceSingle, \texttt{"ArraySliceShouldBeSingleIndex"}} \typearrow \True \OrTypeError\\\\
+  \vs \eqname \SliceSingle(\eindex)\\
+  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\
+  \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
+  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\
+  \newle \eqdef \LESetArray(\vletwo, \eindexp)
+}{
+  \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
 }
-{\annotatelexpr{\tenv, \vle, \vte} \typearrow \newle}
 \end{mathpar}
 \end{emptyformal}
 
@@ -5961,67 +5943,68 @@ all of the following apply:
 
 \section{TypingRule.LESetBadStructuredField \label{sec:TypingRule.LESetBadStructuredField}}
 
-  \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} has the structure of an exception or a record type with fields $\fields$;
-   \item \texttt{field} is not declared in $\fields$;
-   \item an error ``\texttt{Bad Field}'' is raised.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+  \item the \structure\ of $\vtleone$ in $\tenv$ is either a record type or an exception type with list of fields $\fields$ \ProseOrTypeError;
+  \item $\field$ is not associated with any type in $\fields$;
+  \item the result is an error indicating that the field $\field$ is missing from the type of $\vleone$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LESetBadStructuredFieldBegin}{\LESetBadStructuredFieldEnd}{../Typing.ml}
+\CodeSubsection{\LESetBadStructuredFieldBegin}{\LESetBadStructuredFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\
+  L \in \{\TException, \TRecord\}\\
+  \assocopt(\fields, \field) \typearrow \None
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{MissingField}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.LESetStructuredField \label{sec:TypingRule.LESetStructuredField}}
 
-    \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} has the structure of an exception or a record type with fields $\fields$;
-   \item \texttt{field} is bound to type $\vt$ in $\fields$;
-   \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item \texttt{new\_le} is the access to the field \texttt{field} in $\vletwo$.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named \texttt{field} in $\vleone$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$ \ProseOrTypeError;
+  \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields either a record type or an exception type with fields $\fields$ \ProseOrTypeError;
+  \item the type associated with the field $\field$ in $\fields$ is $\vt$;
+  \item determining whether $\vte$ \typesatisfies\ $\vt$ yields $\True$ \ProseOrTypeError;
+  \item $\newle$ is the access to the field $\field$ in $\vletwo$, that is, $\LESetField(\vletwo, \field)$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
+\CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vle = \texttt{LE\_SetField}(\vleone, \vfield)\\
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore)\\
-  \annotatelexpr{\tenv, \vleone} \typearrow \vletwo\\
-  L \in \{\TRecord, \TException\}\\
-  \tstruct(\tenv, \vtleone) \typearrow L(\{\vfield:t, \ldots\})\\
-  \typesat(\tenv, \vte, \vt)\\
-  \newle = \texttt{LE\_SetField}(\vletwo, \vfield)
-}
-{
-  \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\
+  L \in \{\TException, \TRecord\}\\
+  \assocopt(\fields, \field) \typearrow \langle\vt\rangle\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \newle \eqdef \LESetField(\vletwo, \field)
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
 }
 \end{mathpar}
 \end{emptyformal}
@@ -6030,76 +6013,76 @@ all of the following apply:
 
 \section{TypingRule.LESetBadBitField \label{sec:TypingRule.LESetBadBitField}}
 
-    \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
-   \item \texttt{field} is not declared in $\bitfields$;
-   \item an error ``\texttt{Bad Field}'' is raised.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields $\vtleone$ \ProseOrTypeError;
+  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields \\ $\bitfields$, that is,
+        $\TBits(\Ignore, \bitfields)$ \ProseOrTypeError;
+  \item find whether a bitfield $\field$ exists in $\bitfields$ yields $\None$;
+  \item the result is a type error indicating that the field $\field$ is missing from the type of $\vleone$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
 
-    \CodeSubsection{\LESetBadBitFieldBegin}{\LESetBadBitFieldEnd}{../Typing.ml}
+\CodeSubsection{\LESetBadBitFieldBegin}{\LESetBadBitFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\
+  \tododefine{find\_bitfield\_opt}(\bitfields, \field) \typearrow \None
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{MissingField}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.LESetBitField \label{sec:TypingRule.LESetBitField}}
 
-    \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
-   \item \texttt{field} is declared in $\bitfields$;
-   \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
-      $\bitfields$;
-   \item $\vw$ is the width of $\slices$;
-   \item $\vt$ is the bitvector type of width $\vw$;
-   \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item $\vletwo$ is the slicing of $\vleone$ by $\slices$;
-   \item \texttt{new\_le} is the result of annotating $\vletwo$ in $\tenv$.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
+\item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$ \ProseOrTypeError;
+\item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+\item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a bitvector type with with bitfields $\bitfields$ \ProseOrTypeError;
+\item looking for $\field$ in $\bitfields$ yields a bitfield with corresponding slices $\slices$, that is, $\BitFieldSimple(\Ignore, \slices)$;
+\item $\vw$ is the width of $\slices$;
+\item $\vt$ is defined as the bitvector type of width $\vw$ and empty list of bitfields, that is, $\TBits(\vw, \emptylist)$;
+\item checking whether $\vt$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+\item $\vletwo$ is defined as the slicing of $\vleone$ by $\slices$, that is, $\LESlice(\vleone, \slices)$;
+\item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields $\newle$ \ProseOrTypeError.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LESetBitFieldBegin}{\LESetBitFieldEnd}{../Typing.ml}
+\CodeSubsection{\LESetBitFieldBegin}{\LESetBitFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \vle \typearrow \texttt{LE\_SetField}(\vleone, \vfield)\\
-    \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore)\\
-    \annotatelexpr{\tenv, \vleone} \typearrow \vletwo\\
-    \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields)\\
-    \texttt{BitField\_Simpled}(\vfield, \vslices) \in \bitfields\\
-    \sliceswidth(\tenv, \vslices) \typearrow \vw\\
-    \vt = \TBits(\texttt{BitWidth\_SingleExpr(\vw), \bitfields})\\
-    \typesat(\tenv, \vte, \vt)\\
-    \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
-    \annotatelexpr{\vletwo, \vslices} \typearrow \newle
-  }
-  {
-    \annotatelexpr{\tenv, \vle, \vte} = \newle
-  }
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\
+  \tododefine{find\_bitfield\_opt}(\bitfields, \field) \typearrow \langle \BitFieldSimple(\Ignore, \slices) \rangle\\
+  \sliceswidth(\tenv, \vslices) \typearrow \vw\\
+  \vt \eqdef \TBits(\vw, \emptylist)\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \vletwo \eqdef \LESlice(\vleone, \slices)\\
+  \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -6107,49 +6090,42 @@ all of the following apply:
 
 \section{TypingRule.LESetBitFieldNested \label{sec:TypingRule.LESetBitFieldNested}}
 
-    \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
-   \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
-      $\bitfields$;
-   \item $\vw$ is the width of $\slices$;
-   \item $\bitfieldsp$ gives the bitfields corresponding to \texttt{field} in $\bitfields$;
-   \item $\vt$ is the bitvector type of width $\vw$ and bitfields $\bitfieldsp$;
-   \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item $\vletwo$ is the slicing of $\vleone$ by $\slices$;
-   \item \texttt{new\_le} is the result of annotating $\vletwo$ in $\tenv$.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
+\item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$ \ProseOrTypeError;
+\item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+\item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a bitvector type with with bitfields $\bitfields$ \ProseOrTypeError;
+\item looking for $\field$ in $\bitfields$ yields a nested bitfield with corresponding slices $\slices$ and list of bitfields
+      $\bitfieldsp$, that is, \\ $\BitFieldNested(\Ignore, \slices, \bitfieldsp)$;
+\item $\vw$ is the width of $\slices$;
+\item $\vt$ is defined as the bitvector type of width $\vw$ and list of bitfields $\bitfieldsp$, that is, $\TBits(\vw, \bitfieldsp)$;
+\item checking whether $\vt$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+\item $\vletwo$ is defined as the slicing of $\vleone$ by $\slices$, that is, $\LESlice(\vleone, \slices)$;
+\item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields $\newle$ \ProseOrTypeError.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LESetBitFieldNestedBegin}{\LESetBitFieldNestedEnd}{../Typing.ml}
+\CodeSubsection{\LESetBitFieldNestedBegin}{\LESetBitFieldNestedEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \vle = \texttt{LE\_SetField}(\vleone, \vfield)\\
-    \annotateexpr{\tenv, \torexpr(\vleone)} = (\vtleone, \Ignore)\\
-    \annotatelexpr{\tenv, \vleone} = \vletwo\\
-    \tstruct(\tenv, \vtleone) = \TBits(\Ignore, \bitfields)\\
-    \texttt{BitField\_Nested}(\vfield, \vslices, \bitfields') \in \bitfields\\
-    \sliceswidth(\tenv, \vslices) = \vw\\
-    \vt = \TBits(\texttt{BitWidth\_SingleExpr(w), \bitfields'})\\
-    \typesat(\tenv, \vte, \vt)\\
-    \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
-    \annotatelexpr{\vletwo, \vslices} \typearrow \newle
-  }
-  {
-    \annotatelexpr{\tenv, \vle, \vte} = \newle
-  }
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\
+  \tododefine{find\_bitfield\_opt}(\bitfields, \field) \typearrow \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp) \rangle\\
+  \sliceswidth(\tenv, \vslices) \typearrow \vw\\
+  \vt \eqdef \TBits(\vw, \bitfieldsp)\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \vletwo \eqdef \LESlice(\vleone, \slices)\\
+  \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -6157,52 +6133,44 @@ all of the following apply:
 
 \section{TypingRule.LESetBitFieldTyped \label{sec:TypingRule.LESetBitFieldTyped}}
 
-    \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} has the structure of a bitvector with bitfields $\bitfields$;
-   \item $\slices$ gives the slices corresponding to the bitfield \texttt{field} in
-      $\bitfields$;
-   \item $\vw$ is the width of $\slices$;
-   \item \texttt{t'} is the bitvector type of width $\vw$;
-   \item $\vt$ gives the type corresponding to the bitfield \texttt{field} in
-      $\bitfields$;
-   \item $\vt$ \typesatisfies\  \texttt{t'};
-   \item $\vt$ \typesatisfies\  \texttt{t\_e};
-   \item $\vletwo$ is the slicing of $\vleone$ by $\slices$;
-   \item \texttt{new\_le} is the result of annotating $\vletwo$ in $\tenv$.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$ \ProseOrTypeError;
+  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a bitvector type with with bitfields $\bitfields$ \ProseOrTypeError;
+  \item looking for $\field$ in $\bitfields$ yields a typed bitfield with corresponding slices $\slices$ and a type $\vt$,
+        that is, \\ $\BitFieldType(\Ignore, \vslices, \vt))$;
+  \item $\vw$ is the width of $\slices$;
+  \item $\vtp$ is defined as the bitvector type of width $\vw$ and an empty list of bitfields, that is, $\TBits(\vw , \emptylist)$;
+  \item checking whether $\vtp$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item checking whether $\vt$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item $\vletwo$ is defined as the slicing of $\vleone$ by $\slices$, that is, $\LESlice(\vleone, \slices)$;
+  \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields $\newle$ \ProseOrTypeError.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LESetBitFieldTypedBegin}{\LESetBitFieldTypedEnd}{../Typing.ml}
+\CodeSubsection{\LESetBitFieldTypedBegin}{\LESetBitFieldTypedEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \vle = \texttt{LE\_SetField}(\vleone, \vfield)\\
-    \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore)\\
-    \annotatelexpr{\tenv, \vleone} \typearrow \vletwo\\
-    \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields)\\
-    \texttt{BitField\_Type}(\vfield, \vslices, \vt) \in \bitfields\\
-    \sliceswidth(\tenv, \vslices) \typearrow \vw\\
-    \vtp = \TBits(\texttt{BitWidth\_SingleExpr(w), \emptylist})\\
-    \typesat(\tenv, \vtp, \vt)\\
-    \typesat(\tenv, \vte, \vt)\\
-    \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
-    \annotatelexpr{\vletwo, \vslices} \typearrow \newle
-  }
-  {
-    \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle
-  }
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\
+  \tododefine{find\_bitfield\_opt}(\bitfields, \field) \typearrow \langle \BitFieldType(\Ignore, \vslices, \vt) \rangle\\
+  \sliceswidth(\tenv, \vslices) \typearrow \vw\\
+  \vtp \eqdef \TBits(\vw , \emptylist)
+  \checktypesat(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \vletwo \eqdef \LESlice(\vleone, \slices)\\
+  \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -6210,49 +6178,119 @@ all of the following apply:
 
 \section{TypingRule.LESetBadField \label{sec:TypingRule.LESetBadField}}
 
-    \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
-   \begin{itemize}
-   \item \texttt{le} denotes the access to the field named \texttt{field} in $\vleone$;
-   \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$;
-   \item $\vletwo$ is the result of annotating $\vleone$ in $\tenv$;
-   \item \texttt{t\_le1} does not have the structure of a record, or an exception or a bitvector type;
-   \item an error ``\texttt{Conflicting Types}'' is raised.
-   \end{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$ \ProseOrTypeError;
+  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a type $\vt$ \ProseOrTypeError;
+  \item $\vt$ is neither a record type, an exception type, or a bitvector type;
+  \item the result is an error indicating that the type of $\vle$ conflicts with the requirements of a field access expression.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
+\CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow \vt \OrTypeError\\
+  \astlabel(\vt) \not\in \{\TException, \TRecord, \TBits\}
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{TypeConflict}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.LEConcat \label{sec:TypingRule.LEConcat}}
 
-    \subsection{Prose}
-   Annotating~\texttt{le} in an environment $\tenv$, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the concatenation of left-hand-side expressions $\les$, that is, \\ $\LEConcat(\les, \Ignore)$;
+  \item annotating the right-hand-side expression corresponding to $\vle$ in $\tenv$ yields \\ $(\vteeq, \Ignore)$ \ProseOrTypeError;
+  \item checking whether the bitwidth of $\vteeq$ equals the bitwidth of $\vte$ in $\tenv$ yields $\True$ \ProseOrTypeError;
+  \item $\les$ is the list of left-hand-side expressions $\vle_i$, for $i=1..k$;
+  \item annotating each left-hand-side expression $\vle_i$ as a bitvector-typed expression (via $\annotatelebits$)
+        yields the annotated left-hand-side expression $\vleone_i$ and corresponding bitwidth $\width_i$, for $i=1..k$;
+  \item $\lesone$ is defined as the list $\vleone_{1..k}$;
+  \item $\widths$ is defined as the list $\width_{1..k}$;
+  \item $\newle$ is the concatenation of left-hand-side expressions $\lesone$ with corresponding list of widths $\widths$.
+\end{itemize}
 
-  \subsection{Example}
+\subsection{Example}
 
-
-    \CodeSubsection{\LEConcatBegin}{\LEConcatEnd}{../Typing.ml}
+\CodeSubsection{\LEConcatBegin}{\LEConcatEnd}{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vle \eqname \LEConcat(\les, \Ignore)\\
+  \annotateexpr{\tenv, \torexpr(\vle)} \typearrow (\vteeq, \Ignore) \OrTypeError\\
+  \checkbitsequalwidth(\tenv, \vteeq, \vte) \typearrow \True \OrTypeError\\
+  \les \eqname \vle_{1..k}\\
+  i=1..k: \annotatelebits(\tenv, \vle_i) \typearrow (\vleone_i, \width_i) \OrTypeError\\
+  \lesone \eqdef \vleone_{1..k}\\
+  \widths \eqdef \width_{1..k}
+}{
+  \annotatelexpr{\tenv, \vle, \vte} \typearrow \overname{\LEConcat(\lesone, \widths)}{\newle}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
+
+\section{TypingRule.LEBits \label{sec:TypingRule.LEBits}}
+\hypertarget{def-annotatelebits}{}
+The helper function
+\[
+  \annotatelebits(\overname{\staticenvs}{\tenv} \aslsep \overname{\lexpr}{\vle})
+  \aslto \overname{\lexpr}{\vleone} \times \overname{\N}{\width}
+\]
+annotates a left-hand-side expression $\vle$, which is checked to be of bitvector type
+with width $\width$,
+resulting in the annotated expression and $\width$, or a type error, if one is detected.
+
+All of the following apply:
+\begin{itemize}
+  \item annotating the right-hand-side expression corresponding to $\vle$ in $\tenv$ yields \\ $(\vteone, \Ignore)$ \ProseOrTypeError;
+  \item obtaining the \structure\ of $\vteone$ in $\tenv$ yields $\vteonestruct$ \ProseOrTypeError;
+  \item checking whether $\vteonestruct$ is a bitvector type yields $\True$ \ProseOrTypeError;
+  \item $\vteonestruct$ is a bitvector type with width $\ewidth$;
+  \item symbolically reducing $\ewidth$ to a literal yields $\vl$ \ProseOrTypeError;
+  \item checking whether $\vl$ is an integer literal yields $\True$ \ProseOrTypeError;
+  \item $\vl$ is the integer literal for the integer $\width$;
+  \item $\vtetwo$ is defined as the bitvector type of width given by $\width$ and an empty list of bitfields, that is,
+        $\TBits(\ELInt{\width}, \emptylist)$;
+  \item annotating the left-hand-side expression $\vtetwo$ in $\tenv$ yields $\vleone$ \ProseOrTypeError.
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vteone, \Ignore) \OrTypeError\\
+  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\
+  \checktrans{\astlabel(\vteonestruct) = \TBits, \texttt{"Expected Bitvector type"}} \typearrow \True \OrTypeError\\
+  \vteonestruct \eqname \TBits(\ewidth, \Ignore)\\
+  \reduceconstants{\tenv, \ewidth} \typearrow \vl\\
+  \checktrans{\astlabel(\vl) = \lint, \texttt{"Expected integer literal"}} \typearrow \True \OrTypeError\\
+  \vl \eqname \lint(\width)\\
+  \vtetwo \eqdef \TBits(\ELInt{\width}, \emptylist)\\
+  \annotatelexpr{\tenv, \vtetwo} \typearrow \vleone \OrTypeError
+}{
+  \annotatelebits(\tenv, \vle) \typearrow (\vleone, \width)
+}
+\end{mathpar}
+\end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Slices \label{chap:typingslices}}
@@ -7077,7 +7115,7 @@ environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is an assignment \texttt{le = re} under language version \texttt{ver};
    \item \texttt{t\_e, e1} is the result of annotating \texttt{re} in $\tenv$;
-   \item \texttt{reduced} is the result of inlining a setter call in \texttt{le};
+   \item \texttt{reduced} is the result of inlining a setter call in $\vle$;
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
@@ -7105,7 +7143,7 @@ environment $\newenv$ and all of the following apply:
            \end{itemize}
          \end{itemize}
 
-       \item $\vleone$ is the result of annotating \texttt{le} with \texttt{t\_e} in $\tenvone$;
+       \item $\vleone$ is the result of annotating $\vle$ with $\vte$ in $\tenvone$;
        \item $\news$ is the assignment \texttt{le1 = e1};
        \item $\newenv$ is $\tenvone$.
        \end{itemize}
@@ -7411,7 +7449,7 @@ environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a case statement with expression $\ve$ and cases \texttt{cases};
    \item \texttt{t\_e, e1} is the result of annotating $\ve$ in $\tenv$;
-   \item \texttt{cases1, env1} is the result of annotating each case in \texttt{cases} given \texttt{t\_e};
+   \item \texttt{cases1, env1} is the result of annotating each case in \texttt{cases} given $\vte$;
    \item $\news$ is a case statement with expression $\veone$ and cases \texttt{cases1};
    \item $\newenv$ is $\tenvone$.
    \end{itemize}
@@ -7714,8 +7752,8 @@ environment $\newenv$ and all of the following apply:
    \begin{itemize}
    \item $\vs$ is a throw statement with expression $\ve$;
    \item \texttt{t\_e,\vep} is the result of annotating $\ve$ in $\tenv$;
-   \item \texttt{t\_e} has the structure of an exception type;
-   \item $\news$ is a throw statement with expression $\vep$ and type \texttt{t\_e};
+   \item $\vte$ has the structure of an exception type;
+   \item $\news$ is a throw statement with expression $\vep$ and type $\vte$;
    \item $\newenv$ is $\tenv$.
    \end{itemize}
 
@@ -10637,6 +10675,28 @@ If the answer is positive, the result is $\True$. Otheriwe, the result is a type
 }
 \end{mathpar}
 \end{emptyformal}
+
+\section{AssocOpt}
+\hypertarget{def-assocopt}{}
+The function
+\[
+  \assocopt(\overname{(\identifier\times T)^*}{\vli} \aslsep \overname{\identifier}{\id}) \typearrow \langle \overname{T}{\vv} \rangle
+\]
+returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
+
+\begin{mathpar}
+\inferrule[not\_member]{
+  (\vx, \vv) \in \vli: vx \neq \id
+}{
+  \assocopt(\vli, \id) \typearrow \None
+}
+\and
+\inferrule[member]{
+  (\id, \vv) \in \vli
+}{
+  \assocopt(\vli, \id) \typearrow \langle \vv \rangle
+}
+\end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}
