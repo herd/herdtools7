@@ -26,6 +26,7 @@ exception LexerError
 
 open Parser
 
+let new_line lexbuf = Lexing.new_line lexbuf; lexbuf
 let bitvector_lit lxm = BITVECTOR_LIT (Bitvector.of_string lxm)
 let mask_lit lxm = MASK_LIT (Bitvector.mask_of_string lxm)
 
@@ -134,7 +135,8 @@ rule escaped_string_chars acc = parse
 and string_lit acc = parse
   | '"'   { STRING_LIT (Buffer.contents acc) }
   | '\\'  { escaped_string_chars acc lexbuf }
-  | [^ '"' '\\']+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
+  | '\n'  { Buffer.add_char acc '\n'; new_line lexbuf |> string_lit acc }
+  | [^ '"' '\\' '\n']+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
 
 (*
    Lexing of c-style comments
@@ -142,9 +144,10 @@ and string_lit acc = parse
 *)
 
 and c_comments = parse
-  | "*/"     { token      lexbuf }
-  | '*'      { c_comments lexbuf }
-  | [^ '*']+ { c_comments lexbuf }
+  | "*/"          { token      lexbuf }
+  | '*'           { c_comments lexbuf }
+  | '\n'          { new_line lexbuf |> c_comments }
+  | [^ '*' '\n']+ { c_comments lexbuf }
 
 (*
    Lexing of ASL tokens
@@ -152,7 +155,7 @@ and c_comments = parse
 *)
 
 and token = parse
-    | '\n'                     { Lexing.new_line lexbuf; token lexbuf }
+    | '\n'                     { new_line lexbuf |> token         }
     | [' ''\t''\r']+           { token lexbuf                     }
     | "//" [^'\n']*            { token lexbuf                     }
     | "/*"                     { c_comments lexbuf                }
