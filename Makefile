@@ -226,6 +226,8 @@ test-pseudo-asl:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 ASL instructions tests on pseudo-architecture: OK"
 
+test:: test-aarch64-asl
+
 test-aarch64-asl: asl-pseudocode
 	@echo
 	$(HERD_REGRESSION_TEST) \
