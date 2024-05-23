@@ -346,7 +346,7 @@ module
 
   and maskop op sz v = match v,sz with
   | Val (Tag _),_ -> v (* tags are small enough for any mask be idempotent *)
-  | Val (PteVal _|Instruction _ as c),_ ->
+  | Val (PteVal _|Instruction _|Symbolic _|Label _ as c),_ ->
      begin
        match ArchOp.mask c sz with
        | Some c -> Val c

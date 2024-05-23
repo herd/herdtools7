@@ -198,7 +198,9 @@ module
       let open MachSize in
       let open Constant in
       match c,sz with
-      | (PteVal _,Quad)
+(* The following are 64bits quantities, the last two being virtual addresses *)
+      | ((PteVal _|Symbolic _|Label _),Quad)
+(* Non-signed 32bit quantity *)
       | (Instruction _,(Word|Quad))
         -> Some c
       | _,_ -> None
