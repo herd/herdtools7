@@ -1,0 +1,26 @@
+BPF SB+rfionceonce-poonceonces
+
+(*
+ * Result: Sometimes
+ *
+ * This litmus test demonstrates that LKMM is not fully multicopy atomic.
+ *
+ * Full multicopy atomicity: writes are visible to all processors at the
+ * same time, including the processor that does the write.
+ *)
+
+{
+0:r0=x;
+0:r1=y;
+
+1:r0=x;
+1:r1=y;
+}
+
+P0                       | P1                      ;
+*(u32 *)(r0 + 0) = 1     | *(u32 *)(r1 + 0) = 1    ;
+r2 = *(u32 *)(r0 + 0)    | r2 = *(u32 *)(r1 + 0)   ;
+r3 = *(u32 *)(r1 + 0)    | r3 = *(u32 *)(r0 + 0)   ;
+
+locations [0:r2; 1:r2; x; y] (* Debug aid: Print things not in "exists". *)
+exists (0:r3=0 /\ 1:r3=0)

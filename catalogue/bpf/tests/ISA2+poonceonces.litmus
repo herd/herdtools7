@@ -1,0 +1,31 @@
+BPF ISA2+poonceonces
+
+(*
+ * Result: Sometimes
+ *
+ * Given a release-acquire chain ordering the first process's store
+ * against the last process's load, is ordering preserved if all of the
+ * store release invocations are replaced by normal writes and all
+ * of the load acquire invocations are replaced by normal reads?
+ *
+ * BPF doesn't implement intrinsics for release consistency. This test
+ * shows that to have release-acquire chain ordering, the fence  would be
+ * needed in BPF.
+ *)
+
+{
+0:r0=x;
+0:r1=y;
+
+1:r1=y;
+1:r2=z;
+
+2:r0=x;
+2:r2=z;
+}
+
+P0                    | P1                   | P2                    ;
+*(u8 *)(r0 + 0) = 1   | r3= *(u8 *)(r1 + 0)  | r4 = *(u8 *)(r2 + 0)  ;
+*(u8 *)(r1 + 0) = 1   | *(u8 *)(r2 + 0) = 1  | r5 = *(u8 *)(r0 + 0)  ;
+
+exists(1:r3=1 /\ 2:r4=1 /\ 2:r5=0)

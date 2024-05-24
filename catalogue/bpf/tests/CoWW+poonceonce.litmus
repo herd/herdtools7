@@ -1,0 +1,18 @@
+BPF CoWW+poonceonce
+
+(*
+ * Result: Never
+ *
+ * Test of write-write coherence, that is, whether or not two successive
+ * writes to the same variable are ordered.
+ *)
+
+{
+0:r0=x;
+}
+
+P0                      ;
+*(u64 *)(r0 + 0) = 1    ;
+*(u64 *)(r0 + 0) = 2    ;
+
+exists(x=1)

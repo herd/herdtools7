@@ -1,0 +1,23 @@
+BPF R+poonceonces
+
+(*
+ * Result: Sometimes
+ *
+ * This is the unordered (thus lacking smp_mb()) version of one of the
+ * classic counterintuitive litmus tests that illustrates the effects of
+ * store propagation delays.
+ *)
+
+{
+0:r0 = x;
+0:r1 = y;
+
+1:r0 = x;
+1:r1 = y;
+}
+
+P0                      | P1                      ;
+*(u32 *)(r0 + 0) = 1    | *(u32 *)(r1 + 0) = 2    ;
+*(u32 *)(r1 + 0) = 1    | r2 = *(u32 *)(r0 + 0)   ;
+
+exists (y=2 /\ 1:r2=0)

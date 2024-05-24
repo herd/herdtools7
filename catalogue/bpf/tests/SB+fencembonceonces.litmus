@@ -1,0 +1,32 @@
+BPF SB+fencembonceonces
+
+(*
+ * Result: Never
+ *
+ * This litmus test demonstrates that full memory barriers suffice to
+ * order the store-buffering pattern, where each process writes to the
+ * variable that the preceding process reads.  (Locking and RCU can also
+ * suffice, but not much else.)
+ *
+ * atomic ops with a return are fully ordered and can be used in place of a
+ * full barrier.
+ *)
+
+{
+0:r0=x;
+0:r1=y;
+0:r5=tmp;
+0:r6=0;
+
+1:r0=x;
+1:r1=y;
+1:r5=tmp2;
+1:r6=0;
+}
+
+P0                                         | P1                                         ;
+*(u32 *)(r0 + 0) = 1                       | *(u32 *)(r1 + 0) = 1                       ;
+r6 = atomic_fetch_add((u64*)(r5 + 0), r6)  | r6 = atomic_fetch_add((u64*)(r5 + 0), r6)  ;
+r2 = *(u32 *)(r1 + 0)                      | r2 = *(u32 *)(r0 + 0)                      ;
+
+exists (0:r2=0 /\ 1:r2=0)

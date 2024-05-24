@@ -1,0 +1,43 @@
+record = "BPF"
+
+cats = [
+    "cats/bpf.cat",
+    ]
+
+illustrative_tests = [
+	"tests/CoRR+poonceonce+Once.litmus",
+	"tests/CoRW+poonceonce+Once.litmus",
+	"tests/CoWR+poonceonce+Once.litmus",
+	"tests/CoWW+poonceonce.litmus",
+	"tests/depencency_ordered_before.litmus",
+	"tests/IRIW+fencembonceonces+OnceOnce.litmus",
+	"tests/IRIW+poonceonces+OnceOnce.litmus",
+	"tests/ISA2+poonceonces.litmus",
+    "tests/LockTwice.litmus",
+	"tests/LB+fcas-addr-once+once-scas.litmus",
+	"tests/LB+fcas-ctrlcvg-once+once-scas.litmus",
+	"tests/LB+fcas-ctrl-once+once-scas.litmus",
+	"tests/LB+fcas-data-once+once-scas.litmus",
+	"tests/LB+poonceonces.litmus",
+	"tests/MP+fcas-addr-fcas+scas-scas.litmus",
+    "tests/MP+fcas-ctrl-fcas+scas-scas.litmus",
+    "tests/MP+fcas-data-fcas+scas-scas.litmus",
+    "tests/MP+poonceonces.litmus",
+	"tests/R+fencembonceonces.litmus",
+	"tests/R+poonceonces.litmus",
+	"tests/S+atomiconce+data.litmus",
+	"tests/SB+fence+fail_cmpxchg.litmus",
+	"tests/SB+fencembonceonces.litmus",
+	"tests/SB+fence+success_cmpxchg.litmus",
+	"tests/SB+poonceonces.litmus",
+	"tests/SB+rfionceonce-poonceonces.litmus",
+	"tests/S+fence+addr.litmus",
+	"tests/S+fence+ctrl-read.litmus",
+	"tests/S+fence+ctrl-write.litmus",
+	"tests/S+fence+data.litmus",
+	"tests/S+onceatomic+data.litmus",
+	"tests/S+poonceonces.litmus",
+	"tests/WRC+poonceonces+Once.litmus",
+	"tests/X+addr-reads+corr-writes+data-rw.litmus",
+	"tests/X-test-r2.litmus",
+]

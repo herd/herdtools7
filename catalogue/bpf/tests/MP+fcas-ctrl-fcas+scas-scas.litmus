@@ -1,0 +1,30 @@
+BPF MP+fcas-ctrl-fcas+scas-scas
+
+(*
+ * Result: Sometimes
+ *
+ * A failing cmpxchg can still head a control dependency, and a second
+ * failing cmpxchg can act as a read, which a control dependency will
+ * not order.  Successful cmpxchg operations provide full ordering.
+ *
+ * Note that replacing the "r0 = 42" with "r0 += 42" causes this to
+ * be forbidden due to the resulting data dependency.
+ *
+ * As of May 23, 2024, the BPF memory model agrees.
+ *)
+
+{
+	0:r0=42; 0:r1=x; 0:r2=y; 0:r5=43;
+	1:r0=0;  1:r1=x; 1:r2=y; 1:r6=1;
+}
+
+P0                              | P1                               ;
+r0 = cmpxchg_64(r1 + 0, r0, r5) | r0 = cmpxchg_64 (r2 + 0, r0, r6) ;
+r6 = r0                         | r7 = r0                          ;
+if r0 == 42 goto EXIT0          | r0 -= r0                         ;
+r0 = 42                         | r0 = cmpxchg_64 (r1 + 0, r0, r6) ;
+r0 = cmpxchg_64(r2 + 0, r0, r5) |                                  ;
+EXIT0:                          |                                  ;
+
+locations [0:r0;0:r2;0:r5;0:r6;1:r6;1:r0;x;y]
+exists (0:r6=1 /\ 0:r0=0)

@@ -1,0 +1,19 @@
+BPF CoRR+poonceonce+Once
+
+(*
+ * Result: Never
+ *
+ * Test of read-read coherence, that is, whether or not two successive
+ * reads from the same variable are ordered.
+ *)
+
+{
+0:r0=x;
+1:r0=x;
+}
+
+P0                      | P1                     ;
+*(u32 *)(r0 + 0) = 1    | r1 = *(u32 *)(r0 + 0)  ;
+                        | r2 = *(u32 *)(r0 + 0)  ;
+
+exists (1:r1=1 /\ 1:r2=0)

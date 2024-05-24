@@ -1,0 +1,19 @@
+BPF CoWR+poonceonce
+
+(*
+ * Result: Never
+ *
+ * Test of write-read coherence, that is, whether or not a write to a
+ * given variable and a later read from that same variable are ordered.
+ *)
+
+{
+0:r0=x;
+1:r0=x;
+}
+
+P0                        | P1                   ;
+*(u32 *)(r0 + 0) = 1      | *(u32 *)(r0 + 0) = 2 ;
+r2 = *(u32 *)(r0 + 0)     |                      ;
+
+exists (x=1 /\0:r2=2)

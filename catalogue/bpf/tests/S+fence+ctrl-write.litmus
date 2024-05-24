@@ -1,0 +1,30 @@
+BPF S+fence+ctrl+Write
+
+(*
+ * Result: Never
+ *
+ * A program-order-later write w2 should be ordered after a read r1 if the
+ * value read by r1 is used to compute the outcome of a branch which
+ * enloses the subsequent write w2
+ *)
+
+{
+int x = 0;
+int y = 0;
+
+0:r0=x;
+0:r1=y;
+0:r5=tmp; (* only used for the atomic op in P0 to enforce ordering *)
+0:r6=0;
+
+1:r0=x;
+1:r1=y;
+}
+
+P0                                         | P1                         ;
+*(u32 *)(r0 + 0) = 2                       | r2 = *(u32 *)(r1 + 0)      ;
+r6 = atomic_fetch_add((u64*)(r5 + 0), r6)  | if r2 >= 10 goto EXIT0     ;
+*(u32 *)(r1 + 0) = 1	                   | *(u32 *)(r0 + 0) = 1       ;
+					   | EXIT0:                     ;
+
+exists (x=2 /\ 1:r2=1)

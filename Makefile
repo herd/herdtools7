@@ -311,6 +311,19 @@ CATATEST := $(shell if test -d catalogue; then echo cata-test; fi)
 
 test:: $(CATATEST)
 
+cata-test:: cata-bpf-test
+cata-bpf-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-timeout $(TIMEOUT) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/bpf/tests/kinds.txt \
+		-shelf-path catalogue/bpf/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue bpf tests: OK"
+
 cata-test:: cata-aarch64-test
 cata-aarch64-test:
 	@ echo
