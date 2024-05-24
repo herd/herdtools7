@@ -1,0 +1,86 @@
+BPF "BPF Memory model based on LKMM"
+
+(*************)
+(* Utilities *)
+(*************)
+
+(* Single event atomic ops are marked with both R and W.
+ * These events are marked with SC if the op returns a value.
+ *)
+let RMW = [R & W] & [SC]
+
+(* Atomic ops with separate R and W events are related by the amo relation.
+ * both of these R and W events are  marked with SC if the op returns a value.
+ *)
+let SRMW = (SC * SC) & amo
+
+(* Both single and double event atomics when marked with SC act as full
+ * barriers:
+ * 1. Single event RMW with SC:
+ *    [M] -> RMWsc-> [M]
+ *
+ * 2. Double event RMW with SC:
+ *    [M] -> Rsc -> Wsc -> [M]
+ *)
+let po_amo_fetch = ([M];po;RMW) | (RMW;po;[M]) | ([M];po;[domain(SRMW)]) | ([range(SRMW)];po;[M])
+
+show po_amo_fetch as atomicfetch
+
+(****************)
+(* Dependencies *)
+(****************)
+
+let addr_dep = [R];addr;[M]
+let data_dep = [R];data;[W]
+let ctrl_dep = [R];ctrl;[W]
+
+show addr_dep as addr
+show data_dep as data
+show ctrl_dep as ctrl
+
+(*************)
+(* ppo rules *)
+(*************)
+
+let ppo =
+(* Explicit synchronization *)
+ po_amo_fetch
+(* Syntactic Dependencies *)
+| addr_dep
+| data_dep
+| ctrl_dep
+(* Pipeline Dependencies *)
+| [M];(addr|data);[W];rfi;[R]
+| [M];addr;[M];po;[W]
+(* Successful cmpxchg R -(M)> W *)
+| rmw
+
+(* Compute coherence relation *)
+include "cos-opt.cat"
+
+let com = co | rf | fr
+
+(**********)
+(* Axioms *)
+(**********)
+
+(* Sc per location *)
+acyclic com | po-loc as Coherence
+
+(* No thin air *)
+let hb = (ppo | rfe)+
+acyclic hb
+
+(* Propagation *)
+let A-cumul = rfe;po_amo_fetch
+let prop = (po_amo_fetch | A-cumul);hb*
+acyclic prop | co
+
+(* Observation *)
+irreflexive fre;prop
+
+(* Atomicity *)
+empty rmw & (fre;coe) as Atomic
+
+(* Atomic fetch as a fence *)
+acyclic po_amo_fetch | com

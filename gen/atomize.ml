@@ -133,6 +133,7 @@ let () =
       let module M = Make(CArch_gen) in
       M.zyva
   | `ASL -> Warn.fatal "ASL arch in atoms"
+  | `BPF -> Warn.fatal "BPF arch in atomize"
   | `CPP -> Warn.fatal "CCP arch in atomize"
   | `JAVA -> Warn.fatal "JAVA arch in atomize")
      pp_es

@@ -22,6 +22,7 @@ module System : sig
     type arch = [
     | `AArch64
     | `ARM
+    | `BPF
     | `MIPS
     | `PPC
     | `X86
@@ -60,6 +61,7 @@ val compare : t -> t -> int
 
 val  aarch64 : t
 val  arm : t
+val  bpf : t
 val  mips : t
 val  ppc : t
 val  x86 : t

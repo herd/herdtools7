@@ -328,7 +328,7 @@ let () =
       end in
       let module M = Make(CCompile_gen.Make(CoC))(Co) in
       M.go 
-  | `JAVA | `ASL -> assert false 
+  | `JAVA | `ASL | `BPF -> assert false
   in
   try
     go !Config.size reject_list relax_list safe_list ;

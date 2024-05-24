@@ -24,6 +24,7 @@ module System = struct
   type arch = [
     | `AArch64
     | `ARM
+    | `BPF
     | `MIPS
     | `PPC
     | `X86
@@ -36,6 +37,7 @@ module System = struct
   let tags = [
     "AArch64";
     "ARM";
+    "BPF";
     "MIPS";
     "PPC";
     "X86";
@@ -46,6 +48,7 @@ module System = struct
   let parse = function
     | "AArch64" -> Some `AArch64
     | "ARM" -> Some `ARM
+    | "BPF" -> Some `BPF
     | "MIPS" -> Some `MIPS
     | "PPC" -> Some `PPC
     | "X86" -> Some `X86
@@ -56,6 +59,7 @@ module System = struct
   let pp (a:t) = match a with
     | `AArch64 -> "AArch64"
     | `ARM -> "ARM"
+    | `BPF -> "BPF"
     | `MIPS -> "MIPS"
     | `PPC -> "PPC"
     | `X86 -> "X86"
@@ -106,6 +110,7 @@ let pp = function
 
 let aarch64 = `AArch64
 let arm = `ARM
+let bpf = `BPF
 let mips = `MIPS
 let ppc = `PPC
 let x86 = `X86

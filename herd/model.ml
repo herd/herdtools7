@@ -97,6 +97,7 @@ match a with
 | `MIPS -> File "mips.cat"
 | `PPC ->  File "ppc.cat"
 | `ARM -> File "arm.cat"
+| `BPF -> File "bpf.cat"
 | `AArch64 ->
     File
       (if variant Variant.Deps then "aarch64deps.cat"

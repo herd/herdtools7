@@ -108,6 +108,9 @@ module Top (TopConf:RunTest.Config) = struct
       | `ARM ->
          let module X = ARMParseTest.Make(Conf)(ModelConfig) in
          X.run dirty start_time name chan env splitted
+      | `BPF ->
+         let module X = BPFParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `AArch64 ->
          if Conf.variant Variant.ASL then
            let module X = AArch64ASLParseTest.Make(Conf)(ModelConfig) in

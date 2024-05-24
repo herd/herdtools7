@@ -203,6 +203,7 @@ let get_default arch = match arch with
 | `ARM -> armopt
 | `MIPS|`RISCV -> mipsopt
 | `C -> copt
+| `BPF
 | `CPP
 | `LISA
 | `GPU_PTX

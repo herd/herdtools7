@@ -562,6 +562,7 @@ module Make
             | `X86
             | `X86_64
             | `AArch64
+            | `BPF
             | `MIPS
             | `RISCV
               -> sprintf "barrier%s.c" lab_ext
