@@ -1,0 +1,10 @@
+BPF LockTwice
+
+{
+0:r0=x; 0:r1=1;
+1:r0=x; 1:r1=2;
+}
+
+  P0                       |  P1                       ;
+ lock *(u32 *)(r0+0) += r1 | lock *(u32 *)(r0+0) += r1 ;
+forall x=3

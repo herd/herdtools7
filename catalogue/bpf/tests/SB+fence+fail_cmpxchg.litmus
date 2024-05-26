@@ -1,0 +1,35 @@
+BPF SB+fence+fail_cmpxchg
+
+(*
+ * Result: Sometimes
+ *
+ * This litmus test demonstrates that a failing cmpxchg operation doesn't
+ * provide any ordering.
+ *
+ * Atomic ops with a return are fully ordered and can be used in place of a
+ * full barrier. This test uses such an atomic op in P0 to act as a barrier
+ * but P1 uses a cmpxchg that fails, therefore it doesn't provide any
+ * ordering in P1.
+ *)
+
+{
+0:r3=x;
+0:r1=y;
+0:r5=tmp;
+0:r6=0;
+
+int xchg=3;
+
+1:r3=x;
+1:r1=y;
+1:r5=xchg;
+1:r6=1;
+}
+
+P0                                         | P1                                         ;
+*(u32 *)(r3 + 0) = 1                       | *(u32 *)(r1 + 0) = 1                       ;
+r6 = atomic_fetch_add((u64*)(r5 + 0), r6)  | r0 = cmpxchg_64 (r5 + 0, r0, r6)           ;
+r2 = *(u32 *)(r1 + 0)                      | r2 = *(u32 *)(r3 + 0)                      ;
+
+locations [1:r0;xchg]
+exists (0:r2=0 /\ 1:r2=0)

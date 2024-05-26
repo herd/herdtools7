@@ -1,0 +1,25 @@
+BPF LB+fcas-addr-once+once-scas
+
+(*
+ * Result: Never
+ *
+ * A failing cmpxchg can still head an address dependency, and a trailing
+ * successful cmpxchg provides full ordering.
+ *
+ * As of May 23, 2024, the BPF memory model agrees.
+ *)
+
+{
+	0:r0=42; 0:r1=x; 0:r2=y; 0:r5=43;
+	1:r0=0;  1:r1=x; 1:r2=y; 1:r6=1;
+}
+
+P0                              | P1                               ;
+r0 = cmpxchg_64(r1 + 0, r0, r5) | r5 = *(u32 *)(r2 + 0)            ;
+r6 = r0                         | r0 = cmpxchg_64 (r1 + 0, r0, r6) ;
+r6 -= r6                        |                                  ;
+r2 += r6                        |                                  ;
+*(u32 *)(r2 + 0) = r0           |                                  ;
+
+locations [0:r0;0:r5;0:r6;1:r6;1:r0;x;y]
+exists (0:r0=1 /\ 1:r5=1)

@@ -1,0 +1,33 @@
+BPF LB+fcas-ctrlcvg-once+once-scas
+
+(*
+ * Result: Never
+ *
+ * A failing cmpxchg can still head a control dependency, and a trailing
+ * successful cmpxchg provides full ordering.  Unlike language-level
+ * models such as LKMM, this control dependency survives past any later
+ * convergence of control flow.  Which is the way it should be.
+ *
+ * This serves as a caution when automatically converting LKMM litmus
+ * tests to BPF litmus tests.  It is normally a bad thing when the
+ * resulting BPF litmus test is forbidden and the original LKMM litmus test
+ * is allowed.  Litmus tests such as this one, which depend on control
+ * dependencies surviving control-flow convergence, are expected to be
+ * forbidden in BPF and allowed in LKMM.
+ *
+ * As of May 23, 2024, the BPF memory model agrees.
+ *)
+
+{
+	0:r0=42; 0:r1=x; 0:r2=y; 0:r5=43;
+	1:r0=0;  1:r1=x; 1:r2=y; 1:r6=1;
+}
+
+P0                              | P1                               ;
+r0 = cmpxchg_64(r1 + 0, r0, r5) | r5 = *(u32 *)(r2 + 0)            ;
+if r0 == 1 goto EXIT0           | r0 = cmpxchg_64 (r1 + 0, r0, r6) ;
+EXIT0:                          |                                  ;
+*(u32 *)(r2 + 0) = 1            |                                  ;
+
+locations [0:r0;0:r5;1:r6;1:r0;x;y]
+exists (0:r0=1 /\ 1:r5=1)

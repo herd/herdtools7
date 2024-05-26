@@ -593,12 +593,13 @@ end = struct
                       | `AArch64 -> AArch64Arch_litmus.comment
                       | `MIPS -> MIPSArch_litmus.comment
                       | `RISCV -> RISCVArch_litmus.comment
+                      | `BPF
                       | `Unknown -> "#"
                       end
                end in
              let module X = Make'(Cfg)(Arch') in
              X.compile
-          | `CPP | `LISA | `JAVA | `ASL -> assert false
+          | `CPP | `LISA | `JAVA | `ASL | `BPF -> assert false
         in
         aux arch cycles hash_env name in_chan out_chan splitted
       end else begin (* Excluded explicitely, (check_tname), do not warn *)

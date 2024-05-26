@@ -74,6 +74,7 @@ module Insert (O:InsertConfig) :
       | `X86_64 -> "_x86_64"
       | `PPC -> "_ppc"
       | `ARM -> "_arm"
+      | `BPF -> "_bpf"
       | `MIPS -> "_mips"
       | `AArch64 -> "_aarch64"
       | `RISCV -> "_riscv"
@@ -196,7 +197,7 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy' fnames "showLabel" "show" ".awk"
             else
               cpy fnames "show" ".awk"
-        | `CPP|`LISA | `JAVA | `ASL -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
+        |`BPF | `CPP|`LISA | `JAVA | `ASL -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
       in
       let fnames =
         let fnames = cpy fnames "litmus_rand" ".c" in

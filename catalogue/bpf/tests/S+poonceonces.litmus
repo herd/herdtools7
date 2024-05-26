@@ -1,0 +1,28 @@
+BPF S+poonceonces
+
+(*
+ * Result: Sometimes
+ *
+ * Starting with a two-process release-acquire chain ordering P0()'s
+ * first store against P1()'s final load, if the store_release
+ * is replaced by normal store and the load_acquire replaced by
+ * normal load, is ordering preserved?
+ *
+ * BPF doesn't implement intrinsics for release consistency. So to force
+ * this ordering a full fence could be used after the first write in P0 and
+ * after the read in P1
+ *)
+
+{
+0:r0=x;
+0:r1=y;
+
+1:r0=x;
+1:r1=y;
+}
+
+P0                      | P1                     ;
+*(u32 *)(r0 + 0) = 2    | r2 = *(u32 *)(r1 + 0)  ;
+*(u32 *)(r1 + 0) = 1    | *(u32 *)(r0 + 0) = 1   ;
+
+exists (x=2 /\ 1:r2=1)

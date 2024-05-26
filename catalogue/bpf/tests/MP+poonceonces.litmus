@@ -1,0 +1,26 @@
+BPF MP+poonceonces
+
+(*
+ * Result: Sometimes
+ *
+ * Can the counter-intuitive message-passing outcome be prevented with
+ * no ordering at all?
+ *)
+
+{
+int buf;
+int flag;
+
+0:r0=buf;
+0:r1=flag;
+
+1:r0=buf;
+1:r1=flag;
+}
+
+(* Producer *)            (* Consumer *)
+P0                      | P1                         ;
+*(u32 *)(r0 + 0) = 1    | r3 = *(u32 *)(r1 + 0)      ;
+*(u32 *)(r1 + 0) = 1    | r4 = *(u32 *)(r0 + 0)      ;
+
+exists (1:r3=1 /\ 1:r4=0)

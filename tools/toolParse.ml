@@ -144,6 +144,18 @@ end = struct
         end in
         let module X = Make (Bell) (PteVal.No) (BellLexParse) in
         X.zyva chan splitted
+    | `BPF ->
+        let module BPF = BPFBase in
+        let module BPFLexParse = struct
+	  type instruction = BPF.parsedPseudo
+	  type token = BPFParser.token
+
+          module L = BPFLexer.Make(LexConf)
+	  let lexer = L.token
+	  let parser = MiscParser.mach2generic BPFParser.main
+        end in
+        let module X = Make (BPF) (PteVal.No) (BPFLexParse) in
+        X.zyva chan splitted
 
     | `JAVA 
     | `ASL
