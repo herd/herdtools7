@@ -30,6 +30,7 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let unsupported_expr e = fatal_from e (Error.UnsupportedExpr e)
+let invalid_expr e = fatal_from e (Error.InvalidExpr e)
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
@@ -505,17 +506,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     if Types.type_satisfies env t1 t2 then () else conflict loc [ t2.desc ] t1
 
+  (* CheckStructureBoolean *)
+
   (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
   let check_structure_boolean loc env t1 () =
     match (Types.get_structure env t1).desc with
     | T_Bool -> ()
     | _ -> conflict loc [ T_Bool ] t1
+  (* End *)
 
+  (* CheckStructureBits *)
   let check_structure_bits loc env t () =
     match (Types.get_structure env t).desc with
     | T_Bits _ -> ()
     | _ -> conflict loc [ default_t_bits ] t
+  (* End *)
 
+  (* Begin CheckStructureInteger *)
   let check_structure_integer loc env t () =
     let () =
       if false then
@@ -524,19 +531,25 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match (Types.make_anonymous env t).desc with
     | T_Int _ -> ()
     | _ -> conflict loc [ integer' ] t
+  (* End *)
 
+  (* Begin CheckConstrainedInteger *)
   let check_constrained_integer ~loc env t () =
     match (Types.make_anonymous env t).desc with
     | T_Int UnConstrained -> fatal_from loc Error.(ConstrainedIntegerExpected t)
     | T_Int (WellConstrained _ | UnderConstrained _) -> ()
     | _ -> conflict loc [ integer' ] t
+  (* End *)
 
+  (* Begin CheckStructureException *)
   let check_structure_exception loc env t () =
     let t_struct = Types.get_structure env t in
     match t_struct.desc with
     | T_Exception _ -> ()
     | _ -> conflict loc [ T_Exception [] ] t_struct
+  (* End *)
 
+  (* Begin StorageIsPure *)
   let storage_is_pure loc (env : env) s =
     (* Definition DDYW:
        Any expression consisting solely of an immutable storage element or a
@@ -550,22 +563,27 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | Some (_, (GDK_Constant | GDK_Config | GDK_Let)) -> true
         | Some (_, GDK_Var) -> false
         | None -> undefined_identifier loc s)
+  (* End *)
 
+  (* Begin CheckStaticallyEvaluable *)
   let check_statically_evaluable (env : env) e () =
-    let e = reduce_expr env e in
-    let use_set = use_e e ISet.empty in
-    if ISet.for_all (storage_is_pure e env) use_set then ()
-    else fatal_from e (Error.UnpureExpression e)
+    let e1 = reduce_expr env e in
+    let use_set = use_e e1 ISet.empty in
+    if ISet.for_all (storage_is_pure e1 env) use_set then ()
+    else fatal_from e1 (Error.UnpureExpression e1)
+  (* End *)
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
     if bitwidth_equal (StaticInterpreter.equal_in_env env) n m then ()
     else assumption_failed ()
 
+  (* Begin CheckBitsEqualWidth *)
   let check_bits_equal_width loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
     with TypingAssumptionFailed ->
       fatal_from loc (Error.UnreconciliableTypes (t1, t2))
+  (* End *)
 
   let has_bitvector_structure env t =
     match (Types.get_structure env t).desc with T_Bits _ -> true | _ -> false
@@ -968,11 +986,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let+ () = check_statically_evaluable env e' in
     reduce_expr env e'
 
+  (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
     let t, e' = annotate_expr env e in
     let+ () = check_constrained_integer ~loc env t in
     let+ () = check_statically_evaluable env e' in
     reduce_expr env e'
+  (* End *)
 
   and annotate_constraint ~loc env = function
     | Constraint_Exact e ->
@@ -1045,7 +1065,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin PSingle *)
     | Pattern_Single e ->
-        let t_e, e = annotate_expr env e in
+        let t_e, e' = annotate_expr env e in
         let+ () =
          fun () ->
           let t_struct = Types.get_structure env t
@@ -1063,7 +1083,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
           | _ -> fatal_from loc (Error.BadTypesForBinop (EQ_OP, t, t_e))
         in
-        Pattern_Single e |: TypingRule.PSingle
+        Pattern_Single e' |: TypingRule.PSingle
     (* End *)
     (* Begin PGeq *)
     | Pattern_Geq e ->
@@ -1117,23 +1137,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         p |: TypingRule.PMask
     (* End *)
+    (* Begin PTuple *)
     | Pattern_Tuple li -> (
         let t_struct = Types.get_structure env t in
         match t_struct.desc with
-        (* Begin PTupleBadArity *)
         | T_Tuple ts when List.compare_lengths li ts != 0 ->
             Error.fatal_from loc
               (Error.BadArity
                  ("pattern matching on tuples", List.length li, List.length ts))
-            |: TypingRule.PTupleBadArity
-        (* End *)
-        (* Begin PTuple *)
         | T_Tuple ts ->
             let new_li = List.map2 (annotate_pattern loc env) ts li in
             Pattern_Tuple new_li |: TypingRule.PTuple
-        (* End *)
-        (* Begin PTupleConflict *)
-        | _ -> conflict loc [ T_Tuple [] ] t |: TypingRule.PTupleConflict
+        | _ -> conflict loc [ T_Tuple [] ] t
         (* End *))
 
   and annotate_call loc env name args eqs call_type =
@@ -1594,25 +1609,24 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* End *)
                 (* Begin EGetBitFieldNested *)
                 | Some (BitField_Nested (_field, slices, bitfields')) ->
-                    let t_e3, e3 =
-                      E_Slice (e2, slices) |> here |> annotate_expr env
-                    in
-                    let t_e4 =
-                      match t_e3.desc with
+                    let e3 = E_Slice (e2, slices) |> here in
+                    let t_e4, new_e = annotate_expr env e3 in
+                    let t_e5 =
+                      match t_e4.desc with
                       | T_Bits (width, _bitfields) ->
                           T_Bits (width, bitfields') |> add_pos_from t_e2
                       | _ -> assert false
                     in
-                    (t_e4, e3) |: TypingRule.EGetBitFieldNested
+                    (t_e5, new_e) |: TypingRule.EGetBitFieldNested
                 (* End *)
                 (* Begin EGetBitFieldTyped *)
                 | Some (BitField_Type (_field, slices, t)) ->
-                    let t_e3, e3 =
-                      E_Slice (e2, slices) |> here |> annotate_expr env
-                    in
-                    let+ () = check_type_satisfies e3 env t_e3 t in
-                    (t, e3) |: TypingRule.EGetBitFieldTyped
+                    let e3 = E_Slice (e2, slices) |> here in
+                    let t_e4, new_e = annotate_expr env e3 in
+                    let+ () = check_type_satisfies new_e env t_e4 t in
+                    (t, new_e) |: TypingRule.EGetBitFieldTyped
                     (* End *))
+            (* Begin EGetTupleItem *)
             | T_Tuple tys ->
                 let index =
                   try Scanf.sscanf field_name "item%u" Fun.id
@@ -1621,7 +1635,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 in
                 if 0 <= index && index < List.length tys then
                   (List.nth tys index, E_GetItem (e2, index) |> add_pos_from e)
-                else fatal_from e (Error.BadField (field_name, t_e2))
+                else
+                  fatal_from e (Error.BadField (field_name, t_e2))
+                  |: TypingRule.EGetTupleItem
+            (* End *)
             (* Begin EGetBadField *)
             | _ ->
                 fatal_from e (Error.BadField (field_name, t_e2))
@@ -1657,7 +1674,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             |> here |> annotate_expr env |: TypingRule.EGetBitFields)
     (* End *)
     (* Begin EPattern *)
-    | E_Pattern (e', patterns) ->
+    | E_Pattern (e1, pat) ->
         (*
          Rule ZNDL states that
 
@@ -1683,10 +1700,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          bad number of times), but we will apply the same typing rules as for
          those desugared expressions.
          *)
-        let t_e', e'' = annotate_expr env e' in
-        let patterns' = best_effort patterns (annotate_pattern e env t_e') in
-        (T_Bool |> here, E_Pattern (e'', patterns') |> here)
-        |: TypingRule.EPattern
+        let t_e2, e2 = annotate_expr env e1 in
+        let pat' = best_effort pat (annotate_pattern e env t_e2) in
+        (T_Bool |> here, E_Pattern (e2, pat') |> here) |: TypingRule.EPattern
     (* End *)
     | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
@@ -1767,7 +1783,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 in
                 LE_SetArray (le2, e_index') |> here |: TypingRule.LESetArray
             (* End *)
-            | _ -> unsupported_expr (expr_of_lexpr le1))
+            | _ -> invalid_expr (expr_of_lexpr le1))
         | _ -> conflict le1 [ default_t_bits ] t_le1)
     | LE_SetField (le1, field) ->
         (let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
@@ -1852,18 +1868,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         let annotate_one (les, widths, sum) le =
           let e = expr_of_lexpr le in
-          let t_e, _e = annotate_expr env e in
-          let width = bv_length t_e in
-          let t_e' = T_Bits (expr_of_int width, []) |> add_pos_from le in
-          let le = annotate_lexpr env le t_e' in
-          (le :: les, width :: widths, sum + width)
+          let t_e1, _e = annotate_expr env e in
+          let width = bv_length t_e1 in
+          let t_e2 = T_Bits (expr_of_int width, []) |> add_pos_from le in
+          let le1 = annotate_lexpr env le t_e2 in
+          (le1 :: les, width :: widths, sum + width)
         in
         let rev_les, rev_widths, _real_width =
           List.fold_left annotate_one ([], [], 0) les
         in
         (* as the first check, we have _real_width == bv_length t_e *)
-        let les = List.rev rev_les and widths = List.rev rev_widths in
-        LE_Concat (les, Some widths) |> add_pos_from le |: TypingRule.LEConcat
+        let les1 = List.rev rev_les and widths = List.rev rev_widths in
+        LE_Concat (les1, Some widths) |> add_pos_from le |: TypingRule.LEConcat
   (* End *)
 
   let can_be_initialized_with env s t =

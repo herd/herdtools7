@@ -120,6 +120,7 @@
 \newcommand\Bool[0]{\hyperlink{def-bool}{\mathbb{B}}}
 \newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{def-strings}{\mathbb{S}}}
+\newcommand\astlabels[0]{\hyperlink{def-astlabels}{\mathbb{L}}}
 
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
@@ -132,7 +133,7 @@
 \newcommand\terminateas[0]{\;\hyperlink{def-terminateas}{\sslash}\;}
 \newcommand\booltrans[1]{\hyperlink{def-booltrans}{\texttt{bool\_transition}(#1)}}
 \newcommand\booltransarrow[0]{\rightarrow}
-\newcommand\checktrans[1]{\hyperlink{def-checktrans}{\texttt{check\_transition}(#1)}}
+\newcommand\checktrans[1]{\hyperlink{def-checktrans}{\texttt{check}}(#1)}
 \newcommand\checktransarrow[0]{\rightarrow}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -152,7 +153,7 @@
 \newcommand\BOR[0]{\texttt{BOR}} % Boolean or
 \newcommand\DIV[0]{\texttt{DIV}} % Integer division
 \newcommand\DIVRM[0]{\texttt{DIVRM}} % Inexact integer division, with rounding towards negative infinity.
-\newcommand\EOR[0]{\texttt{EOR}} % Bitvector bitwise exclusive or
+\newcommand\EOR[0]{\texttt{XOR}} % Bitvector bitwise exclusive or
 \newcommand\EQOP[0]{\texttt{EQ\_OP}} % Equality on two base values of same type
 \newcommand\GT[0]{\texttt{GT}} % Greater than for int or reals
 \newcommand\GEQ[0]{\texttt{GEQ}} % Greater or equal for int or reals
@@ -224,6 +225,7 @@
 \newcommand\ECond[0]{\textsf{E\_Cond}}
 \newcommand\EGetArray[0]{\textsf{E\_GetArray}}
 \newcommand\EGetField[0]{\textsf{E\_GetField}}
+\newcommand\EGetItem[0]{\textsf{E\_GetItem}}
 \newcommand\EGetFields[0]{\textsf{E\_GetFields}}
 \newcommand\ERecord[0]{\textsf{E\_Record}}
 \newcommand\EConcat[0]{\textsf{E\_Concat}}
@@ -333,6 +335,17 @@
 \newcommand\STEmptySetter[0]{\texttt{ST\_EmptySetter}}
 \newcommand\STProcedure[0]{\texttt{ST\_Procedure}}
 
+\newcommand\funcname[0]{\text{name}}
+\newcommand\funcparameters[0]{\text{parameters}}
+\newcommand\funcargs[0]{\text{args}}
+\newcommand\funcbody[0]{\text{body}}
+\newcommand\funcreturntype[0]{\text{return\_type}}
+\newcommand\funcsubprogramtype[0]{\text{subprogram\_type}}
+
+\newcommand\DFunc[0]{\text{D\_Func}}
+\newcommand\DGlobalStorage[0]{\text{D\_GlobalStorage}}
+\newcommand\DTypeDecl[0]{\text{D\_TypeDecl}}
+
 \newcommand\identifier[0]{\textsf{identifier}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -414,6 +427,7 @@
 \newcommand\op[0]{\texttt{op}}
 \newcommand\vx[0]{\texttt{x}}
 \newcommand\vb[0]{\texttt{b}}
+\newcommand\vbfour[0]{\texttt{b4}}
 \newcommand\ve[0]{\texttt{e}}
 \newcommand\vi[0]{\texttt{i}}
 \newcommand\vj[0]{\texttt{j}}
@@ -490,6 +504,9 @@
 \newcommand\structtwo[0]{\texttt{struct2}}
 \newcommand\newty[0]{\texttt{new\_ty}}
 \newcommand\tenvp[0]{\texttt{tenv'}}
+\newcommand\tenvthree[0]{\texttt{tenv3}}
+\newcommand\tenvfour[0]{\texttt{tenv4}}
+\newcommand\tenvfive[0]{\texttt{tenv5}}
 \newcommand\funcsig[0]{\texttt{func\_sig}}
 \newcommand\gsd[0]{\texttt{gsd}}
 \newcommand\decls[0]{\texttt{decls}}
@@ -533,6 +550,7 @@
 \newcommand\slicesp[0]{\texttt{slices'}}
 \newcommand\tep[0]{\texttt{t\_e'}}
 \newcommand\structtep[0]{\texttt{struct\_t\_e'}}
+\newcommand\structtleone[0]{\texttt{struct\_t\_le1}}
 \newcommand\vargsp[0]{\texttt{args'}}
 \newcommand\eqsp[0]{\texttt{eqs'}}
 \newcommand\namep[0]{\texttt{name'}}
@@ -540,3 +558,69 @@
 \newcommand\tindexp[0]{\texttt{t\_index'}}
 \newcommand\fieldtypes[0]{\texttt{field\_types}}
 \newcommand\tspecp[0]{\texttt{t\_spec'}}
+\newcommand\pairs[0]{\texttt{pairs}}
+\newcommand\initializedfields[0]{\texttt{initialized\_fields}}
+\newcommand\vteone[0]{\texttt{t\_e1}}
+\newcommand\vtetwo[0]{\texttt{t\_e2}}
+\newcommand\vtethree[0]{\texttt{t\_e3}}
+\newcommand\vtefour[0]{\texttt{t\_e4}}
+\newcommand\vtefive[0]{\texttt{t\_e5}}
+\newcommand\ldip[0]{\texttt{ldi'}}
+\newcommand\newldip[0]{\texttt{new\_ldi'}}
+\newcommand\newldis[0]{\texttt{new\_ldis'}}
+\newcommand\newlocalstoragetypes[0]{\texttt{new\_local\_storagetypes}}
+\newcommand\eoffset[0]{\texttt{offset}}
+\newcommand\eoffsetp[0]{\texttt{offset'}}
+\newcommand\elength[0]{\texttt{length}}
+\newcommand\elengthp[0]{\texttt{length'}}
+\newcommand\toffset[0]{\texttt{t\_offset}}
+\newcommand\tlength[0]{\texttt{t\_length}}
+\newcommand\prelength[0]{\texttt{pre\_length}}
+\newcommand\prelengthp[0]{\texttt{pre\_length'}}
+\newcommand\preoffset[0]{\texttt{pre\_offset}}
+\newcommand\newp[0]{\texttt{new\_p}}
+\newcommand\newq[0]{\texttt{new\_q}}
+\newcommand\newli[0]{\texttt{new\_li}}
+\newcommand\vlp[0]{\texttt{l'}}
+\newcommand\useset[0]{\texttt{use\_set}}
+\newcommand\gdk[0]{\texttt{gdk}}
+\newcommand\testruct[0]{\texttt{t\_e\_struct}}
+\newcommand\vtestruct[0]{\texttt{t\_e\_struct}}
+\newcommand\vq[0]{\texttt{q}}
+\newcommand\vteonestruct[0]{\texttt{t\_e1\_struct}}
+\newcommand\vtetwostruct[0]{\texttt{t\_e2\_struct}}
+\newcommand\vlip[0]{\texttt{li'}}
+\newcommand\vfp[0]{\texttt{f'}}
+\newcommand\body[0]{\texttt{body}}
+\newcommand\newbody[0]{\texttt{new\_body}}
+\newcommand\newd[0]{\texttt{new\_d}}
+\newcommand\funcsigone[0]{\texttt{func\_sig1}}
+\newcommand\namesubs[0]{\texttt{name\_s}}
+\newcommand\namesubt[0]{\texttt{name\_t}}
+\newcommand\vstructt[0]{\texttt{struct\_t}}
+\newcommand\vstructs[0]{\texttt{struct\_s}}
+\newcommand\vcsnew[0]{\texttt{cs\_new}}
+\newcommand\vbot[0]{\texttt{bot}}
+\newcommand\vvtop[0]{\texttt{top}}
+\newcommand\vneg[0]{\texttt{neg}}
+\newcommand\vtonestruct[0]{\texttt{t1\_struct}}
+\newcommand\vttwostruct[0]{\texttt{t2\_struct}}
+\newcommand\vtoneanon[0]{\texttt{t1\_anon}}
+\newcommand\vttwoanon[0]{\texttt{t2\_anon}}
+\newcommand\vcsone[0]{\texttt{cs1}}
+\newcommand\vcstwo[0]{\texttt{cs2}}
+\newcommand\vanons[0]{\texttt{anon\_s}}
+\newcommand\vanont[0]{\texttt{anon\_t}}
+\newcommand\vet[0]{\texttt{e\_t}}
+\newcommand\ves[0]{\texttt{e\_s}}
+\newcommand\vtsupers[0]{\texttt{t\_supers}}
+\newcommand\vindex[0]{\texttt{index}}
+\newcommand\widthsum[0]{\texttt{width\_sum}}
+\newcommand\ttyone[0]{\texttt{ty1}}
+\newcommand\ttytwo[0]{\texttt{ty2}}
+\newcommand\vpat[0]{\texttt{pat}}
+\newcommand\vpatp[0]{\texttt{pat'}}
+\newcommand\lesp[0]{\texttt{les'}}
+\newcommand\lesone[0]{\texttt{les1}}
+\newcommand\vteeq[0]{\texttt{t\_e\_eq}}
+\newcommand\vtleonestruct[0]{\texttt{t\_le1\_struct}}

@@ -37,6 +37,7 @@ type error_desc =
   | UnsupportedBinop of binop * literal * literal
   | UnsupportedUnop of unop * literal
   | UnsupportedExpr of expr
+  | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | NotYetImplemented of string
   | ConflictingTypes of type_desc list * ty
@@ -109,6 +110,7 @@ let pp_error =
           (unop_to_string op) pp_literal v
     | UnsupportedExpr e ->
         fprintf f "ASL Error: Unsupported expression %a." pp_expr e
+    | InvalidExpr e -> fprintf f "ASL Error: invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         fprintf f
           "ASL Execution error: Mismatch type:@ value %s does not belong to \

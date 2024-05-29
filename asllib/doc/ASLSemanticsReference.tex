@@ -194,7 +194,6 @@
 \newcommand\marray[0]{\texttt{m\_array}}
 \newcommand\mindex[0]{\texttt{m\_index}}
 \newcommand\varray[0]{\texttt{v\_array}}
-\newcommand\vindex[0]{\texttt{v\_index}}
 \newcommand\efields[0]{\texttt{e\_fields}}
 \newcommand\fields[0]{\texttt{fields}}
 \newcommand\vvfields[0]{\texttt{v\_fields}}
@@ -223,12 +222,11 @@
 \newcommand\vstart[0]{\texttt{v\_start}}
 \newcommand\vend[0]{\texttt{v\_end}}
 \newcommand\estart[0]{\texttt{e\_start}}
-\newcommand\elength[0]{\texttt{e\_length}}
 \newcommand\mlength[0]{\texttt{m\_length}}
 \newcommand\vlength[0]{\texttt{v\_length}}
 \newcommand\vdiff[0]{\texttt{v\_diff}}
 \newcommand\etop[0]{\texttt{e\_top}}
-\newcommand\vvtop[0]{\texttt{v\_top}}
+\newcommand\vvsubtop[0]{\texttt{v\_top}}
 \newcommand\mtop[0]{\texttt{m\_top}}
 \newcommand\efactor[0]{\texttt{e\_factor}}
 \newcommand\mfactor[0]{\texttt{m\_factor}}
@@ -245,7 +243,6 @@
 \newcommand\wid[0]{\texttt{wid}}
 \newcommand\es[0]{\texttt{es}}
 \newcommand\ms[0]{\texttt{ms}}
-\newcommand\body[0]{\text{body}}
 \newcommand\vbody[0]{\texttt{body}}
 \newcommand\dir[0]{\texttt{dir}}
 \newcommand\catchers[0]{\texttt{catchers}}
@@ -2452,7 +2449,7 @@ $\slices$.
     \item $\vs$ is the slice range between the
       expressions $\estart$ and $\etop$, that is, \\ $\SliceRange(\etop, \estart)$;
     \item evaluating $\etop$ in $\env$ is either $\Normal(\mtop, \envone)$ \ProseOrAbnormal;
-    \item $\mtop$ is a pair consisting of the native integer $\vvtop$ and execution graph $\vgone$;
+    \item $\mtop$ is a pair consisting of the native integer $\vvsubtop$ and execution graph $\vgone$;
     \item evaluating $\estart$ in $\envone$ is either $\Normal(\mstart, \newenv)$ \ProseOrAbnormal;
     \item $\mstart$ is a pair consisting of the native integer $\vstart$ and execution graph $\vgtwo$;
     \item $\vlength$ is the integer value \texttt{(v\_top - v\_start) + 1};
@@ -2472,10 +2469,10 @@ $\slices$.
 \begin{mathpar}
   \inferrule{
     \evalexpr{\env, \etop} \evalarrow \Normal(\mtop, \envone) \OrAbnormal\\\\
-    \mtop \eqname (\vvtop, \vgone)\\
+    \mtop \eqname (\vvsubtop, \vgone)\\
     \evalexpr{\envone, \estart} \evalarrow \Normal(\mstart, \newenv) \OrAbnormal\\\\
     \mstart \eqname (\vstart, \vgtwo)\\
-    \binoprel(\MINUS, \vvtop, \vstart) \evalarrow \vdiff\\
+    \binoprel(\MINUS, \vvsubtop, \vstart) \evalarrow \vdiff\\
     \binoprel(\PLUS, \nvint(1), \vdiff) \evalarrow \vlength\\
     \newg \eqdef \vgone \parallelcomp \vgtwo
   }

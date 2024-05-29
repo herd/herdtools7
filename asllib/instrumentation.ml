@@ -396,6 +396,7 @@ module TypingRule = struct
     | EGetBadRecordField
     | EGetBitFieldNested
     | EGetBitFieldTyped
+    | EGetTupleItem
     | EGetBitFields
     | EConcatEmpty
     | EConcat
@@ -431,9 +432,7 @@ module TypingRule = struct
     | PRange
     | PSingle
     | PMask
-    | PTupleBadArity
     | PTuple
-    | PTupleConflict
     | LDDiscard
     | LDVar
     | LDTyped
@@ -539,6 +538,7 @@ module TypingRule = struct
     | EGetBadRecordField -> "EGetBadRecordField"
     | EGetBitFieldNested -> "EGetBitFieldNested"
     | EGetBitFieldTyped -> "EGetBitFieldTyped"
+    | EGetTupleItem -> "EGetTupleItem"
     | EGetBitFields -> "EGetBitFields"
     | EConcatEmpty -> "EConcatEmpty"
     | EConcat -> "EConcat"
@@ -578,9 +578,7 @@ module TypingRule = struct
     | PRange -> "PRange"
     | PSingle -> "PSingle"
     | PMask -> "PMask"
-    | PTupleBadArity -> "PTupleBadArity"
     | PTuple -> "PTuple"
-    | PTupleConflict -> "PTupleConflict"
     | LDDiscard -> "LDDiscardNone"
     | LDTyped -> "LDTyped"
     | LDVar -> "LDVar"
@@ -689,6 +687,7 @@ module TypingRule = struct
       EGetBitField;
       EGetBitFieldNested;
       EGetBitFieldTyped;
+      EGetTupleItem;
       EGetBitFields;
       EUnknown;
       EPattern;
