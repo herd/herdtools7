@@ -114,22 +114,17 @@ let is_named ty =
 let is_anonymous ty = (not (is_named ty)) |: TypingRule.AnonymousType
 (* End *)
 
-(* A named type is singular if it has the structure of a singular type,
+(* A named type is singular if its underlying (a.k.a. anonimized) type is a builtin-singular type,
    otherwise it is aggregate. *)
 (* Begin Singular *)
 let is_singular env ty =
-  (is_builtin_singular ty
-  || (is_named ty && get_structure env ty |> is_builtin_singular))
-  |: TypingRule.SingularType
+  make_anonymous env ty |> is_builtin_singular |: TypingRule.SingularType
 (* End *)
 
-(* A named type is singular if it has the structure of a singular type,
-   otherwise it is aggregate. *)
+(* A named type is singular if its underlying (a.k.a. anonimized) type is a builtin-aggregate type. *)
 (* Begin Aggregate *)
 let is_aggregate env ty =
-  (is_builtin_aggregate ty
-  || (is_named ty && get_structure env ty |> is_builtin_aggregate))
-  |: TypingRule.AggregateType
+  make_anonymous env ty |> is_builtin_aggregate |: TypingRule.AggregateType
 (* End *)
 
 (* Begin NonPrimitive *)

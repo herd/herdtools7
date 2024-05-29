@@ -1,12 +1,12 @@
 type Not_found of exception;
-type Error of exception { message:string };
+type SyntaxException of exception { message:string };
 
 func main () => integer
 begin
   if UNKNOWN : boolean then
     throw Not_found {};
   else
-    throw Error { message="syntax" };
+    throw SyntaxException { message="syntax" };
   end
 
   return 0;

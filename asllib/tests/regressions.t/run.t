@@ -279,6 +279,10 @@ Required tests:
   $ aslref bitfields.asl
   $ aslref bitvectors.asl
   $ aslref case.asl
+  $ aslref concat-empty.asl
+  File concat-empty.asl, line 3, characters 46 to 47:
+  ASL Error: Cannot parse.
+  [1]
   $ aslref concat01.asl
   $ aslref concat02.asl
   $ aslref concat03.asl
@@ -351,4 +355,3 @@ Empty getters/setters
   File nonempty-setter-called-without-slices.asl, line 13, characters 2 to 4:
   ASL Error: Mismatched use of return value from call to 'f1'
   [1]
-
