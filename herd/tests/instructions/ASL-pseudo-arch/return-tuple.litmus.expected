@@ -1,0 +1,10 @@
+Test return-tuple Required
+States 1
+0:main.0.c=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:main.0.c=3)
+Observation return-tuple Always 1 0
+Hash=d66f7dbadc7ed730e48c0d87e6750350
+
