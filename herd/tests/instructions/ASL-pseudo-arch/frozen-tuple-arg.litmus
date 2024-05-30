@@ -1,0 +1,24 @@
+ASL frozen-tuple-arg
+
+(*
+ * This tests was leading to a runtime error
+ * because the pair construction failed.
+ *    This is no longer the case, as non-resolved
+ *  values such as the ones created by reading from
+ *  memory are now "frozen" when used as tuple arguments.
+ *)
+
+{
+x=15;
+0:X0=x;
+}
+
+func main() => integer
+begin
+  let x = read_register(0);  
+  let (a,b) = (1,UInt(read_memory(x,32)));
+  let c = a+b;
+  return 0;
+end
+
+forall 0:main.0.c=16
