@@ -21,19 +21,7 @@ Running with litmus7
     % make
     % sh ./run.sh
 
-> **_NOTE:_** litmus7 and the C compiler might emit warnings for the tests:
-> - CoRW2+posq0q0+q0.litmus,
-> - CoRW2+posq0q0+q0.litmus,
-> - CoRW2+posw0w0+w0.litmus,
-> - LB+dmb.sy+data-wsi-wsi+MIXED.litmus,
-> - LB+dmb.sy+data-wsi-wsi+MIXED.litmus,
-> - MP+QAmo+AcqAmo.litmus,
-> - MP+QAmo+AcqAmo.litmus,
-> - MP+QAmo+AcqAmo.litmus,
-> - MP+dmb.syw0w4+dataw4w4-rfiw4q0.litmus,
-> - MP+dmb.syw0w4+dataw4w4-rfiw4q0.litmus,
-> - MP+dmb.syw0w4+dataw4w4-rfiw4q0.litmus,
-> - MP+popl.w0-posl.w0q0+poa.w4p.litmus, and
-> - MP+popl.w0-posl.w0q0+poa.w4p.litmus.
+> **_NOTE:_** litmus7 might emit warnings for the following test:
+> - LB+dmb.sy+data-wsi-wsi+MIXED.limus.
 >
-> These are known and do not affect the correctness of these tests.
+> These are known and do not affect the correctness of the tests.

@@ -6,8 +6,9 @@ Safe=Rfew0P Wsew0P PosRWw0P
 Prefetch=
 Com=Rf Ws
 Orig=Rfew0w0 PosRWw0w0 Wsew0w0
+Hash=d711bd8003386b79a274ae374c0d60bb
 {
-uint64_t x; uint64_t 1:X3; uint64_t 1:X0;
+uint64_t x; uint64_t 1:X3;
 
 0:X0=0x1010101; 0:X1=x;
 1:X1=x; 1:X2=0x2020202;

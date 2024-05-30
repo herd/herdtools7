@@ -6,11 +6,12 @@ Safe=Rfeq0P Wseq0P PosRWq0P
 Prefetch=
 Com=Rf Ws
 Orig=Rfeq0q0 PosRWq0q0 Wseq0q0
+Hash=aa59de9fd2278715ec88dec45fc08a95
 {
 uint64_t x; uint64_t 1:X3; uint64_t 1:X0;
 
-0:X0=0x101010101010101; 0:X1=x;
-1:X1=x; 1:X2=0x202020202020202;
+uint64_t 0:X0=0x101010101010101; 0:X1=x;
+1:X1=x; uint64_t 1:X2=0x202020202020202;
 }
  P0          | P1          ;
  STR X0,[X1] | LDR X0,[X1] ;
