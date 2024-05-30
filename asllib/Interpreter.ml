@@ -811,7 +811,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* -------------------------------- *)
   and eval_local_decl s ldi env m_init_opt : env maybe_exception m =
     let () =
-      if false then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
+      if true then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
     in
     match (ldi, m_init_opt) with
     (* Begin LDDiscard *)
@@ -855,10 +855,10 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [eval_stmt env s] evaluates [s] in [env]. This is either an interruption
       [Returning vs] or a continuation [env], see [eval_res]. *)
   and eval_stmt (env : env) s : stmt_eval_type =
-    (if false then
+    (if true then
        match s.desc with
        | S_Seq _ -> ()
-       | _ -> Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_stmt s);
+       | _ -> Format.eprintf "@[<3>Stmt@ @[%a@]@]@." PP.pp_stmt s);
     match s.desc with
     (* Begin SPass *)
     | S_Pass -> return_continue env |: SemanticsRule.SPass
@@ -868,7 +868,7 @@ module Make (B : Backend.S) (C : Config) = struct
         ( { desc = LE_Destructuring les; _ },
           { desc = E_Call (name, args, named_args); _ },
           ver )
-      when List.for_all lexpr_is_var les ->
+         when List.for_all lexpr_is_var les ->
         let**| vs, env1 = eval_call (to_pos s) name env args named_args in
         let**| new_env = protected_multi_assign ver env1 s les vs in
         return_continue new_env |: SemanticsRule.SAssignCall

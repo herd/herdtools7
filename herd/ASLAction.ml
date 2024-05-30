@@ -45,22 +45,30 @@ module Make (A : S) = struct
   module V = A.V
 
   type action =
-    | Access of dirn * A.location * A.V.v * MachSize.sz * AArch64Annot.t
+    | Access of
+        dirn * A.location * A.V.v * MachSize.sz
+        * ( AArch64Annot.t * AArch64Explicit.explicit * Access.t)
     | Barrier of A.barrier
     | Branching of string option
     | TooFar of string
     | NoAction
 
-  let mk_init_write loc sz v = Access (W, loc, v, sz, AArch64Annot.N)
+  let mk_init_write loc sz v =
+    let acc = A.access_of_location_init loc in
+    Access (W, loc, v, sz, (AArch64Annot.N, AArch64Explicit.Exp,acc))
 
   let pp_action = function
-    | Access (d, l, v, _sz,a) ->
-        Printf.sprintf "%s%s=%s%s"
+    | Access (d, l, v, _sz,(a,e,_)) ->
+        Printf.sprintf "%s%s=%s%s%s"
           (pp_dirn d) (A.pp_location l) (V.pp false v)
           (let open AArch64Annot in
            match a with
            | N -> ""
            | _ -> AArch64Annot.pp a)
+          (let open AArch64Explicit in
+           match e with
+           | Exp -> ""
+           | _ -> AArch64Explicit.pp e)
     | Barrier b -> A.pp_barrier_short b
     | Branching txt ->
        Printf.sprintf "Branching(%s)"

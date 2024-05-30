@@ -908,14 +908,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
       let tr_action is_bcc e ii =
-        let exp = AArch64.Exp in
         function
-        | ASLS.Act.Access (dir, loc, v, sz, a) -> (
+        | ASLS.Act.Access (dir, loc, v, sz, (a, exp, acc)) -> (
             match tr_loc ii loc with
             | None -> None
             | Some loc ->
-                let ac = Act.access_of_location_std loc in
-                Some (Act.Access (dir, loc, tr_v v, a, exp, sz, ac)))
+               Some (Act.Access (dir, loc, tr_v v, a, exp, sz, acc)))
         | ASLS.Act.Barrier b -> Some (Act.Barrier b)
         | ASLS.Act.Branching txt ->
            let ct = if is_bcc e then Act.Bcc else Act.Pred in
@@ -1032,7 +1030,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let one_event bds event =
             match event.ASLE.action with
             | ASLS.Act.Access
-                (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
+              (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
               ->
                let v = tr_v v in
                let () =

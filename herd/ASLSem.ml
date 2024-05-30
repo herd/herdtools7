@@ -109,7 +109,14 @@ module Make (C : Config) = struct
   let isync = None
   let atomic_pair_allowed _ _ = true
   let aneutral = AArch64Annot.N
-
+  and aexp = AArch64Explicit.Exp
+  and aifetch = AArch64Explicit.(NExp IFetch)
+  and areg = Access.REG
+  and avir = Access.VIR
+  and apte = Access.PTE
+  and aphy = Access.PHY
+  let areg_std = (aneutral,aexp,Access.REG)
+  
   module Mixed (SZ : ByteSize.S) : sig
     val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
     val spurious_setaf : A.V.v -> unit M.t
@@ -152,6 +159,10 @@ module Make (C : Config) = struct
       | V.Val c -> c
       | V.Var id -> Constant.Frozen id
 
+    let freeze_constant = function
+      | V.Val c -> c
+      | V.Var id ->  Constant.Frozen id
+
     let v_unknown_of_type ~eval_expr_sef:(_: Asllib.AST.expr -> V.v M.t) _t =
       return (V.fresh_var ())
 
@@ -176,7 +187,7 @@ module Make (C : Config) = struct
 
     let v_as_int = function
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
-      | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
+      | v -> Warn.fatal "Cannot concretise symbolic value %s as an int" (V.pp_v v)
 
     let v_as_record = function
       | V.Val (Constant.ConcreteRecord map) -> map
@@ -246,13 +257,15 @@ module Make (C : Config) = struct
           | V.Val (Constant.Symbolic _) as v -> return v
           | v -> M.op1 (Op.Mask sz) v)
 
-    let write_loc sz loc v a ii =
+    let write_loc sz loc v a e acc ii =
       let* resized_v = resize_from_quad sz v in
-      let mk_action loc' = Act.Access (Dir.W, loc', resized_v, sz, a) in
+      let mk_action loc' =
+        Act.Access (Dir.W, loc', resized_v, sz, (a, e, acc)) in
       M.write_loc mk_action loc ii
 
-    let read_loc sz loc a ii =
-      let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, a) in
+    let read_loc sz loc a e acc ii =
+      let mk_action loc' v' =
+        Act.Access (Dir.R, loc', v', sz, (a, e, acc)) in
       let* v = M.read_loc false mk_action loc ii in
       resize_from_quad sz v >>= to_bv
 
@@ -356,7 +369,7 @@ module Make (C : Config) = struct
     let on_access_identifier dir (ii, poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
       let m v =
-        let action = Act.Access (dir, loc, v, MachSize.Quad, aneutral) in
+        let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
         M.mk_singleton_es action (use_ii_with_poi ii poi)
       in
       if is_nzcv x scope then M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m else m v
@@ -365,7 +378,7 @@ module Make (C : Config) = struct
     and on_read_identifier = on_access_identifier Dir.R
 
     let create_vector li =
-      let li = List.map as_constant li in
+      let li = List.map freeze_constant li in
       return (V.Val (Constant.ConcreteVector li))
 
     let create_record li =
@@ -494,58 +507,65 @@ module Make (C : Config) = struct
     let read_register (ii, poi) r_m =
       let* rval = r_m in
       let loc = virtual_to_loc_reg rval ii in
-      read_loc MachSize.Quad loc aneutral (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad loc aneutral aexp areg (use_ii_with_poi ii poi)
 
     let write_register (ii, poi) r_m v_m =
       let* v = v_m >>= to_int_signed and* r = r_m in
       let loc = virtual_to_loc_reg r ii in
-      write_loc MachSize.Quad loc v aneutral (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
 
     let loc_pc ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.PC)
 
     let read_pc (ii,poi) () =
-      read_loc MachSize.Quad (loc_pc ii) aneutral (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad (loc_pc ii) aneutral aexp areg
+        (use_ii_with_poi ii poi)
 
     let write_pc (ii,poi) v_m =
       let* v = v_m >>= to_int_unsigned in
       write_loc MachSize.Quad (loc_pc ii)
-        v aneutral (use_ii_with_poi ii poi) >>! []
+        v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
 
-    let do_read_memory (ii, poi) addr_m datasize_m an =
+    let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = addr_m and* datasize = datasize_m in
       let sz = datasize_to_machsize datasize in
-      read_loc sz (A.Location_global addr) an (use_ii_with_poi ii poi)
+      read_loc sz (A.Location_global addr) an aexp acc (use_ii_with_poi ii poi)
 
     let read_memory ii addr_m datasize_m =
-      do_read_memory ii addr_m datasize_m aneutral
+      do_read_memory ii addr_m datasize_m aneutral aexp avir
 
+    let read_pte ii addr_m =
+      do_read_memory ii addr_m (M.unitT (V.intToV 64))  aneutral (AArch64Explicit.(NExp Other))  apte
+    
     let read_memory_gen ii addr_m datasize_m accdesc_m =
       let* accdesc = accdesc_m in
-      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc)
+      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc) aexp avir
 
-    let do_write_memory (ii, poi) addr_m datasize_m value_m an =
+    let do_write_memory (ii, poi) addr_m datasize_m value_m an aexp acc =
       let value_m = M.as_data_port value_m in
       let* addr = addr_m and* datasize = datasize_m and* value = value_m in
       let sz = datasize_to_machsize datasize in
-      write_loc sz (A.Location_global addr) value an (use_ii_with_poi ii poi)
+      write_loc sz (A.Location_global addr) value an aexp acc
+        (use_ii_with_poi ii poi)
       >>! []
 
     let write_memory ii addr_m datasize_m value_m =
-      do_write_memory ii addr_m datasize_m value_m AArch64Annot.N
+      do_write_memory ii addr_m datasize_m value_m aneutral aexp avir
 
     let write_memory_gen ii addr_m datasize_m value_m accdesc_m =
       let* accdesc = accdesc_m in
       do_write_memory ii addr_m datasize_m value_m
-        (accdesc_to_annot false accdesc)
+        (accdesc_to_annot false accdesc)  aexp avir
 
     let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
 
     let read_sp (ii, poi) () =
-      read_loc MachSize.Quad (loc_sp ii) aneutral (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad (loc_sp ii) aneutral aexp areg
+        (use_ii_with_poi ii poi)
 
     let write_sp (ii, poi) v_m =
       let* v = v_m >>= to_int_signed in
-      write_loc MachSize.Quad (loc_sp ii) v aneutral (use_ii_with_poi ii poi)
+      write_loc MachSize.Quad (loc_sp ii) v aneutral aexp areg
+        (use_ii_with_poi ii poi)
       >>! []
 
     let uint bv_m = bv_m >>= to_int_unsigned
@@ -558,6 +578,8 @@ module Make (C : Config) = struct
       let*| v = v_m and* w = w_m in
       let*| c = M.op Op.Eq v w in
       M.choiceT c eq_case diff_case
+
+    let compute_pte addr = addr >>= M.op1 Op.PTELoc
 
     (**************************************************************************)
     (* ASL environment                                                        *)
@@ -703,6 +725,11 @@ module Make (C : Config) = struct
           ("data", bv_var "size")
           ("accdesc", t_named "AccessDescriptor")
           (write_memory_gen ii_env);
+(* VMSA *)
+        p1r "ComputePtePrimitive"
+          ("addr", bv_64) ~returns:bv_64 compute_pte;
+        p1r "ReadPtePrimitive"
+          ("addr", bv_64) ~returns:bv_64 (read_pte ii_env);
 (* Translations *)
          p1r "UInt"
           ~parameters:[ ("N", None) ]

@@ -996,4 +996,10 @@ module
   let map_scalar f = map_const (Constant.map_scalar f)
 
 
+(* Lift constant location classification *)
+  let access_of_value = function
+  | Var _ -> assert false
+  | Val cst -> Cst.access_of_constant cst
+
+
 end
