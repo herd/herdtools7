@@ -814,12 +814,24 @@ module A.FaultType = A.FaultType)
         Warn.user_error "litmus7 cannot handle -variant self -mode kvm when there are processes in userspace" ;
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
-      let ty_env1 = Generic.build_type_env init final filter locs
-      and ty_env2 =
+      let ty_env1 = Generic.build_type_env init final filter locs in
+      let ty_env2 =
         try
           let ps = List.assoc MiscParser.align_key info in
           List.fold_left
             (fun m (x,i) ->
+              let loc = A.Location_global (Global_litmus.Addr x) in
+              let t = A.LocMap.find loc ty_env1 in
+              let () =
+                match CType.sizeof t with
+                | Some n ->
+                   if i < n then
+                     Warn.fatal
+                       "Location %s cannot be aligned to less than its size" x
+                | None ->
+                   Warn.warn_always
+                     "Beware, cannot compute size of aligned location %s"
+                     x in
               StringMap.add x (CType.type_for_align i) m)
             StringMap.empty (InfoAlign.parse ps)
         with Not_found -> StringMap.empty in

@@ -73,3 +73,6 @@ val signed : t -> bool
    Return None when type is not an integer type or
    when size is unclear. *)
 val base_size : t -> MachSize.sz option
+
+(* Best effort to find size of types in bytes (C sizeof) *)
+val sizeof : t -> int option

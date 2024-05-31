@@ -312,6 +312,11 @@ end
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
 
+      let is_not_ins_ptr a env =
+        let loc = A.Location_global (Global_litmus.Addr a) in
+        let t = find_type loc env in
+        not (CType.is_ins_ptr_t t)
+
       let nbytes t =
         let sz =
           match CType.base_size t with
@@ -495,8 +500,14 @@ end
           (fun a k ->
             let open ConstrGen in
             match a with
-            | Loc a when not (is_aligned a env) ->
-                StringSet.add a k
+            | Loc a when not (is_aligned a env) && is_not_ins_ptr a env ->
+               (* Stabilisaton is not checked for
+                  - Non aligned items
+                  - Code label
+                  Mosty because it would be too complex and that
+                  stabilisation check is not that useful.
+                *)
+               StringSet.add a k
             | Loc _|Deref _ -> k)
           rlocs StringSet.empty
 
@@ -728,7 +739,7 @@ end
           O.f "static const char *instr_symb_name[] = {" ;
           O.oi "\"UNKNOWN\"," ;
           (* Define names for inst symbols *)
-          List.iter (fun (_,lbl) -> O.fi "\"%s\"," lbl) lbls ;
+          List.iter (fun (p,lbl) -> O.fi "\"%d:%s\","p lbl) lbls ;
           O.o "};" ;
           O.o ""
 

@@ -1095,6 +1095,8 @@ module Make
                            (CType.dump (register_type rloc (CType.Base t)))
                            sloc k::pp_rec (k+1) in
                      String.concat "," (pp_rec 0)
+                 | t when CType.is_ins_t t ->
+                    sprintf "pretty_opcode(o[%s_f])" sloc
                  | t ->
                     sprintf "(%s)o[%s_f]"
                        (CType.dump (register_type rloc t)) sloc)

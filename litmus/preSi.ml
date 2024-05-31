@@ -1537,8 +1537,8 @@ module Make
                   Warn.fatal "Record used as scalar"
               | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
                   sprintf "(%s)_vars->%s" (CType.dump at) s
-              | Label _ ->
-                  Warn.fatal "PreSi mode cannot handle code labels (yet)"
+              | Label (p,lbl) ->
+                  sprintf "_vars->labels.%s" (OutUtils.fmt_lbl_var p lbl)
               | Tag _|Symbolic _ ->
                   Warn.user_error "Litmus cannot handle this initial value %s"
                     (A.V.pp_v v)

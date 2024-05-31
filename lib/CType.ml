@@ -205,3 +205,14 @@ let rec base_size t = match t with
 | Atomic t|Volatile t| Const t -> base_size t
 | Pointer _|Array _ -> None
 | Base b -> do_base_size b
+
+let (>>=) = Option.bind
+let apply f x = Some (f x)
+
+let rec sizeof = function
+  | Array (b,sz) ->
+     do_base_size b >>= apply MachSize.nbytes >>= apply (( * ) sz)
+  | Atomic t|Volatile t| Const t ->  sizeof t
+  | Base b ->
+     do_base_size b >>= apply MachSize.nbytes
+  | Pointer _ -> None
