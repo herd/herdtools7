@@ -871,14 +871,6 @@ module Make (B : Backend.S) (C : Config) = struct
         let**| new_env = protected_multi_assign ver env1 s les vs in
         return_continue new_env |: SemanticsRule.SAssignCall
     (* End *)
-    (* Begin SAssignTuple *)
-    | S_Assign
-        ({ desc = LE_Destructuring les; _ }, { desc = E_Tuple exprs; _ }, ver)
-      when List.for_all lexpr_is_var les ->
-        let**| ms, env1 = eval_expr_list_m env exprs in
-        let**| new_env = protected_multi_assign ver env1 s les ms in
-        return_continue new_env |: SemanticsRule.SAssignTuple
-    (* End *)
     (* Begin SAssign *)
     | S_Assign (le, re, ver) ->
         let*^ m, env1 = eval_expr env re in
