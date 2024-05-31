@@ -3192,7 +3192,6 @@ In evaluating a statement $\vs$, one of the following apply:
 \item SemanticsRule.SPass (see \secref{SemanticsRule.SPass}),
 \item SemanticsRule.SAssign (see \secref{SemanticsRule.SAssign}),
 \item SemanticsRule.SAssignCall (see \secref{SemanticsRule.SAssignCall}),
-\item SemanticsRule.SAssignTuple (see \secref{SemanticsRule.SAssignTuple}),
 \item SemanticsRule.SReturnNone (see \secref{SemanticsRule.SReturnNone}),
 \item SemanticsRule.SReturnOne (see \secref{SemanticsRule.SReturnOne}),
 \item SemanticsRule.SReturnSome (see \secref{SemanticsRule.SReturnSome}),
@@ -3326,46 +3325,6 @@ We now define the evaluation of assigning from a subprogram call:
   }
   {
     \evalstmt{\env, \SAssign(\LEDestructuring(\les),\ECall(\name, \args, \namedargs))} \\
-    \evalarrow \Continuing(\newg, \newenv)
-  }
-\end{mathpar}
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
-
-\section{SemanticsRule.SAssignTuple \label{sec:SemanticsRule.SAssignTuple}}
-  \subsection{Prose}
-  Evaluation of the statement $\vs$ in an environment $\env$ is \\
-  $\Continuing(\newg, \newenv)$ and all of the following apply:
-  \begin{itemize}
-  \item $\vs$ is an assignment to a list of left-hand-side expressions, \\
-  $\SAssign(\LEDestructuring(\vles), \ETuple(\exprs))$;
-  \item $\les$ is a list of left-hand-side expressions, each of which is either a variable \\ ($\LEVar(\Ignore)$)
-  or a discarded variable (\LEDiscard);
-  \item evaluating $\exprs$ is either $\Normal(\vms, \envone)$ (where $\vms$ is a list of pairs consisting of values and execution graphs)
-  \ProseOrAbnormal;
-  \item assigning each of the pairs of values and execution graphs to the respective expression in $\les$ in $\envone$ results in
-  either $\Normal(\newg, \newenv)$ \ProseOrAbnormal.
-  \end{itemize}
-
-    \subsection{Example: SemanticsRule.SAssignTuple.asl}
-\VerbatimInput{\testdir/SemanticsRule.SAssignTuple.asl}
-statement \texttt{(b,x)} assigns the value \True to the mutable variable \texttt{b} and the value~\texttt{42} to the mutable variable~\vx.
-
-
-  \CodeSubsection{\SAssignTupleBegin}{\SAssignTupleEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-  \subsection{Formally}
-\begin{mathpar}
-  \inferrule{
-    \vles \eqdef [\vle_{1..k}]\\
-    i=1..k: \lexprisvar(\vle_i) \evalarrow \True\\
-    \evalexprlistm{\env, \exprs} \evalarrow \Normal(\vms, \envone) \OrAbnormal\\
-    \evalmultiassignment{\envone, \les, \vms} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
-  }
-  {
-    \evalstmt{\env, \SAssign(\LEDestructuring(\vles), \ETuple(\exprs))} \\
     \evalarrow \Continuing(\newg, \newenv)
   }
 \end{mathpar}

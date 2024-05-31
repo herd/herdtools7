@@ -83,7 +83,6 @@ module SemanticsRule = struct
     | LDUninitialisedTyped
     | SPass
     | SAssignCall
-    | SAssignTuple
     | SAssign
     | SReturnOne
     | SReturnSome
@@ -181,7 +180,6 @@ module SemanticsRule = struct
     | LDUninitialisedTyped -> "LDUninitialisedTyped"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
-    | SAssignTuple -> "SAssignTuple"
     | SAssign -> "SAssign"
     | SReturnOne -> "SReturnOne"
     | SReturnNone -> "SReturnNone"
@@ -282,7 +280,6 @@ module SemanticsRule = struct
       LDUninitialisedTyped;
       SPass;
       SAssignCall;
-      SAssignTuple;
       SAssign;
       SReturnOne;
       SReturnSome;
@@ -442,7 +439,6 @@ module TypingRule = struct
     | LDUninitialisedTuple
     | SPass
     | SAssignCall
-    | SAssignTuple
     | SAssign
     | SReturnOne
     | SReturnSome
@@ -588,7 +584,6 @@ module TypingRule = struct
     | LDUninitialisedTuple -> "LDUninitialisedTuple"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
-    | SAssignTuple -> "SAssignTuple"
     | SAssign -> "SAssign"
     | SReturnOne -> "SReturnOne"
     | SReturnNone -> "SReturnNone"
@@ -720,7 +715,6 @@ module TypingRule = struct
       SliceStar;
       SPass;
       SAssignCall;
-      SAssignTuple;
       SAssign;
       SReturnOne;
       SReturnSome;
