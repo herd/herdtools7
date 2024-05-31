@@ -257,12 +257,12 @@ module Normalize = struct
       For example, {m X^2 - X + 4 } is represented by
       {m X^2 \to 1, X \to -1, 1 \to 4 } *)
   type polynomial =
-    | Sum of Z.t MMap.t  (** Maps each monomial to its factor. *)
+    | Sum of Q.t MMap.t  (** Maps each monomial to its factor. *)
 
   module PolynomialOrdered = struct
     type t = polynomial
 
-    let compare (Sum p1) (Sum p2) = MMap.compare Z.compare p1 p2
+    let compare (Sum p1) (Sum p2) = MMap.compare Q.compare p1 p2
   end
 
   module PMap = Map.Make (PolynomialOrdered)
@@ -302,13 +302,13 @@ module Normalize = struct
   let pp_mono f (Prod mono, factor) =
     let open Format in
     let mono = AMap.filter (fun _ p -> p != 0) mono in
-    if AMap.is_empty mono then Z.pp_print f factor
+    if AMap.is_empty mono then Q.pp_print f factor
     else (
       pp_open_hbox f ();
       let pp_sep f () = fprintf f "@ \u{d7} " in
-      if Z.equal factor Z.one then ()
+      if Q.equal factor Q.one then ()
       else (
-        Z.pp_print f factor;
+        Q.pp_print f factor;
         pp_sep f ());
       PP.pp_print_seq ~pp_sep
         (fun f (x, p) ->
@@ -322,7 +322,7 @@ module Normalize = struct
 
   let pp_poly f (Sum poly) =
     let open Format in
-    let poly = MMap.filter (fun _ f -> not (Z.equal Z.zero f)) poly in
+    let poly = MMap.filter (fun _ f -> not (Q.equal Q.zero f)) poly in
     if MMap.is_empty poly then pp_print_string f "0"
     else (
       pp_open_hvbox f 2;
@@ -377,10 +377,11 @@ module Normalize = struct
   let mono_one = Prod AMap.empty
   let mono_of_var s = Prod (AMap.singleton s 1)
   let poly_zero = Sum MMap.empty
-  let poly_of_var s = Sum (MMap.singleton (mono_of_var s) Z.one)
-  let poly_of_z i = Sum (MMap.singleton mono_one i)
-  let poly_of_int i = Z.of_int i |> poly_of_z
-  let poly_neg (Sum monos) = Sum (MMap.map Z.neg monos)
+  let poly_of_var s = Sum (MMap.singleton (mono_of_var s) Q.one)
+  let poly_of_q i = Sum (MMap.singleton mono_one i)
+  let poly_of_z i = Q.of_bigint i |> poly_of_q
+  let poly_of_int i = Q.of_int i |> poly_of_q
+  let poly_neg (Sum monos) = Sum (MMap.map Q.neg monos)
 
   let poly_of_val = function
     | L_Int i -> poly_of_z i
@@ -449,7 +450,7 @@ module Normalize = struct
         raise_notrace ConjunctionBottomInterrupt
 
   let constant_satisfies c s =
-    let open Z in
+    let open Q in
     match s with
     | Null -> equal c zero
     | NotNull -> not (equal c zero)
@@ -468,7 +469,7 @@ module Normalize = struct
 
   let sign_compare = Stdlib.compare
   let mono_compare = MonomialOrdered.compare
-  let poly_compare (Sum p1) (Sum p2) = MMap.compare Z.compare p1 p2
+  let poly_compare (Sum p1) (Sum p2) = MMap.compare Q.compare p1 p2
 
   let ctnts_compare cs1 cs2 =
     match (cs1, cs2) with
@@ -489,14 +490,14 @@ module Normalize = struct
     let updater factor = function
       | None -> Some factor
       | Some f ->
-          let f' = Z.add f factor in
-          if Z.equal f' Z.zero then None else Some f'
+          let f' = Q.add f factor in
+          if Q.equal f' Q.zero then None else Some f'
     in
     fun mono factor -> MMap.update mono (updater factor)
 
   let add_polys : polynomial -> polynomial -> polynomial =
    fun (Sum monos1) (Sum monos2) ->
-    Sum (MMap.union (fun _mono c1 c2 -> Some (Z.add c1 c2)) monos1 monos2)
+    Sum (MMap.union (fun _mono c1 c2 -> Some (Q.add c1 c2)) monos1 monos2)
 
   let mult_monos : monomial -> monomial -> monomial =
    fun (Prod map1) (Prod map2) ->
@@ -508,9 +509,12 @@ module Normalize = struct
       (MMap.fold
          (fun m1 f1 ->
            MMap.fold
-             (fun m2 f2 -> add_mono_to_poly (mult_monos m1 m2) (Z.mul f1 f2))
+             (fun m2 f2 -> add_mono_to_poly (mult_monos m1 m2) (Q.mul f1 f2))
              monos2)
          monos1 MMap.empty)
+
+  let mult_poly_const : Q.t -> polynomial -> polynomial =
+   fun f2 (Sum monos) -> Sum (MMap.map (fun f1 -> Q.mul f1 f2) monos)
 
   let ctnts_and : ctnts -> ctnts -> ctnts =
    fun c1 c2 ->
@@ -582,12 +586,14 @@ module Normalize = struct
     | E_Binop (MUL, e1, e2) ->
         let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
         cross_num ir1 ir2 mult_polys
+    | E_Binop (DIV, e1, { desc = E_Literal (L_Int i2); _ }) ->
+        let ir1 = to_ir env e1 and f2 = Q.(Z.one /// i2) in
+        map_num (mult_poly_const f2) ir1
     | E_Binop (SHL, e1, { desc = E_Literal (L_Int i2); _ }) when Z.leq Z.zero i2
       ->
-        let ir1 = to_ir env e1 and f2 = Z.shift_left Z.one (Z.to_int i2) in
-        map_num
-          (fun (Sum monos) -> Sum (MMap.map (fun c -> Z.mul c f2) monos))
-          ir1
+        let ir1 = to_ir env e1
+        and f2 = Z.to_int i2 |> Z.shift_left Z.one |> Q.of_bigint in
+        map_num (mult_poly_const f2) ir1
     | E_Binop (op, { desc = E_Literal l1; _ }, { desc = E_Literal l2; _ }) ->
         binop_values e op l1 l2 |> poly_of_val |> always
     | E_Unop (NEG, e0) -> e0 |> to_ir env |> map_num poly_neg
@@ -652,6 +658,12 @@ module Normalize = struct
     else if Z.equal z Z.zero then zero
     else literal (L_Int z)
 
+  let expr_of_q q =
+    if Q.equal q Q.one then one
+    else if Q.equal q Q.zero then zero
+    else if Z.equal (Q.den q) Z.one then expr_of_z (Q.num q)
+    else binop DIV (expr_of_z (Q.num q)) (expr_of_z (Q.den q))
+
   let e_true = L_Bool true |> literal
   let e_false = L_Bool true |> literal
   let e_var s = var_ s
@@ -674,8 +686,8 @@ module Normalize = struct
     in
     AMap.fold (fun s p e -> (e_var s ^^ p) ** e) map
 
-  let sign_of_z c =
-    match Z.sign c with
+  let sign_of_q c =
+    match Q.sign c with
     | 1 -> StrictPositive
     | 0 -> Null
     | -1 -> StrictNegative
@@ -695,8 +707,8 @@ module Normalize = struct
     let res, sign =
       MMap.fold
         (fun m c (e, sign) ->
-          let c' = Z.abs c and sign' = sign_of_z c in
-          let m' = monomial_to_expr m (expr_of_z c') in
+          let c' = Q.abs c and sign' = sign_of_q c in
+          let m' = monomial_to_expr m (expr_of_q c') in
           (add sign' m' sign e, sign'))
         map (zero, Null)
     in
@@ -717,9 +729,9 @@ module Normalize = struct
   let sign_to_expr sign e = binop (sign_to_binop sign) zero e
 
   let ctnt_to_expr (Sum p) sign =
-    let c = try MMap.find mono_one p with Not_found -> Z.zero
+    let c = try MMap.find mono_one p with Not_found -> Q.zero
     and p = Sum (MMap.remove mono_one p) in
-    binop (sign_to_binop sign) (expr_of_z (Z.neg c)) (polynomial_to_expr p)
+    binop (sign_to_binop sign) (expr_of_q (Q.neg c)) (polynomial_to_expr p)
 
   let ctnts_to_expr : ctnts -> expr option = function
     | Bottom -> None
@@ -744,7 +756,7 @@ module Normalize = struct
           cannot_happen_expr map
 
   let reduce_mono (Prod _) factor =
-    if Z.equal factor Z.zero then None else Some factor
+    if Q.equal factor Q.zero then None else Some factor
 
   let rec int_exp x = function
     | 0 -> 1
@@ -765,7 +777,8 @@ module Normalize = struct
         (fun (m, f) (a, v, _) ->
           match AMap.find_opt a m with
           | None -> (m, f)
-          | Some power -> (AMap.remove a m, Z.mul f (Z.pow v power)))
+          | Some power ->
+              (AMap.remove a m, Q.mul f (Z.pow v power |> Q.of_bigint)))
         (m, factor) affectations
     in
     (Prod m, factor)
@@ -780,7 +793,7 @@ module Normalize = struct
                affectations
            in
            let mono, factor = subst_mono affectations mono factor in
-           if Z.equal Z.zero factor then Fun.id
+           if Q.equal Q.zero factor then Fun.id
            else add_mono_to_poly mono factor)
          map MMap.empty)
 
@@ -789,7 +802,7 @@ module Normalize = struct
     Sum (ms |> MMap.filter_map reduce_mono) |> subst_poly affectations
 
   let poly_get_constant_opt (Sum p) =
-    if MMap.is_empty p then Some Z.zero
+    if MMap.is_empty p then Some Q.zero
     else if MMap.cardinal p = 1 then MMap.find_opt mono_one p
     else None
 
@@ -817,7 +830,7 @@ module Normalize = struct
         with ConjunctionBottomInterrupt -> Bottom)
 
   let poly_get_linear (Sum ms) =
-    let ms = MMap.filter (fun _ f -> not (Z.equal f Z.zero)) ms in
+    let ms = MMap.filter (fun _ f -> not (Q.equal f Q.zero)) ms in
     let n = MMap.cardinal ms in
     if false && n > 2 then None
     else
@@ -835,20 +848,20 @@ module Normalize = struct
           MMap.fold
             (fun mono factor o ->
               match (o, mono_get_linear mono) with
-              | (o, c), None -> (o, Z.sub c factor)
+              | (o, c), None -> (o, Q.sub c factor)
               | (None, c), Some x -> (Some x, c)
               | (Some x, _), Some x' ->
                   assert (not (String.equal x x'));
                   raise_notrace NotLinear)
-            ms (None, Z.zero)
-        with NotLinear -> (None, Z.zero)
+            ms (None, Q.zero)
+        with NotLinear -> (None, Q.zero)
       in
       match o with
       | None ->
-          if not (Z.equal Z.zero c) then
+          if not (Q.equal Q.zero c) then
             raise_notrace ConjunctionBottomInterrupt
           else None
-      | Some x -> Some (x, c)
+      | Some x -> if Z.equal Z.one (Q.den c) then Some (x, Q.num c) else None
 
   let deduce_equations : ctnts -> ctnts * affectations = function
     | Bottom -> (Bottom, [])
