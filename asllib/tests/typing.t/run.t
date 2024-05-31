@@ -140,10 +140,6 @@ Loops
 
 Bit vector widths defined by constrained integers
   $ aslref --no-exec TPositive9.asl
-  File TPositive9.asl, line 8, characters 4 to 61:
-  ASL Typing error: a subtype of bits(N) was expected,
-    provided bits(((N DIV 2) + (N DIV 2))).
-  [1]
   $ aslref --no-exec TPositive9-1.asl
   $ aslref --no-exec TNegative9-0.asl
   File TNegative9-0.asl, line 3, characters 4 to 36:
@@ -152,7 +148,7 @@ Bit vector widths defined by constrained integers
   $ aslref --no-exec TNegative9-1.asl
   File TNegative9-1.asl, line 3, characters 4 to 59:
   ASL Typing error: a subtype of bits(N) was expected,
-    provided bits(((N DIV 4) + (N DIV 2))).
+    provided bits((N * (3 DIV 4))).
   [1]
   $ aslref --no-exec TNegative9-2.asl
   File TNegative9-2.asl, line 3, characters 4 to 35:

@@ -97,9 +97,7 @@ The following error is a runtime error because we don't know how to catch those 
   > EOF
 
   $ aslref div.asl
-  File div.asl, line 3, characters 19 to 26:
-  ASL Typing error: Illegal application of operator DIV on types integer {5}
-    and integer {3}
+  ASL Execution error: Illegal application of operator DIV for values 5 and 3.
   [1]
 
 For completeness, those operations are runtime errors:
