@@ -1,0 +1,13 @@
+AArch64 V68
+{
+uint64_t t[2] = {0xffffffffffffffff,0x0};
+uint64_t u[2] = {0x1,0x0};
+0:X0=t; 0:X1=u;
+}
+  P0                   ;
+ LD1 {V0.2D},[X0]      ;
+ LD1 {V1.2D},[X1]      ;
+ ADD V0.2D,V0.2D,V1.2D ;
+ ST1 {V0.2D},[X0]      ;
+
+forall t={0,0}

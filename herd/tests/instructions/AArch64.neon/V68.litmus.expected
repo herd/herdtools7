@@ -1,0 +1,10 @@
+Test V68 Required
+States 1
+t={0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (t={0,0})
+Observation V68 Always 1 0
+Hash=770eeca30938fabdcbbe69ff224d56f3
+
