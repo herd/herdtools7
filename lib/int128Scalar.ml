@@ -40,7 +40,7 @@ let mask sz =
   | Byte -> fun v -> Int128.logand v (Int128.of_int 0xff)
   | Short -> fun v -> Int128.logand v (Int128.of_int 0xffff)
   | Word -> fun v ->  Int128.logand v (Int128.of_int64 0xffffffffL)
-  | Quad -> fun v -> Int128.logand v (Int128.of_int64 BaseUint64.max_int)
+  | Quad -> fun (_,b) -> Int64.zero,b
   | S128 -> fun v -> v
 
 let sxt sz v = match sz with

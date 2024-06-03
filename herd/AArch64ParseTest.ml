@@ -73,7 +73,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
             let module X = AArch64Make(AArch64Value) in
             X.X.run
           else if Conf.variant Variant.Neon || Conf.variant Variant.SVE then
-            let module AArch64Value = Uint128Value.Make(ConfMorello) in
+            let module AArch64Value = NeonValue.Make(ConfMorello) in
             let module X = AArch64Make(AArch64Value) in
             X.X.run
           else
