@@ -834,7 +834,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin LDTuple *)
     | LDI_Tuple ldis, Some m ->
         let n = List.length ldis in
-        let liv = List.init n (fun i -> m >>= B.get_index i) in
+        let* vm = m in
+        let liv = List.init n (fun i -> B.return vm >>= B.get_index i) in
         let folder envm ldi1 vm =
           let**| env = envm in
           eval_local_decl s ldi1 env (Some vm)

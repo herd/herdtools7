@@ -139,10 +139,17 @@ module Make (C : Config) = struct
     (* Values handling                                                        *)
     (**************************************************************************)
 
+    (*
+     * Non-resolved values are "frozen" into constants.
+     * Useful for storing them into vector of constants.
+     * Notice: such "constants" are usable only when
+     * extracted from vectors.
+     * See `unfreeze` below.
+     *)
+
     let as_constant = function
       | V.Val c -> c
-      | V.Var _ as v ->
-          Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
+      | V.Var id -> Constant.Frozen id
 
     let v_unknown_of_type ~eval_expr_sef:(_: Asllib.AST.expr -> V.v M.t) _t =
       return (V.fresh_var ())

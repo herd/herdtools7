@@ -1,0 +1,10 @@
+Test frozen-tuple-arg Required
+States 1
+0:main.0.c=16;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:main.0.c=16)
+Observation frozen-tuple-arg Always 1 0
+Hash=1d585fd238fa54d4a8ea46e941ea74ca
+
