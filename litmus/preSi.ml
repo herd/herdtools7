@@ -1893,7 +1893,7 @@ module Make
               true
           end in
         O.o "" ;
-        O.oi "for (int _s=0 ; _s < g->size ; _s++) {" ;
+        O.oi "for (int _s=0 ; _s < g->size && !g->stop_now; _s++) {" ;
         let n = T.get_nprocs test in
         let ps = get_tag_max_delays test in
         let pss = Misc.nsplit n ps in
@@ -1968,7 +1968,11 @@ module Make
             O.oiii "break;")
           (List.combine vss (List.combine pss css)) ;
         O.oii "}" ;
-        O.oii "(void)do_run(c,&ctx->p,g);" ;
+        O.oii "int ok = do_run(c,&ctx->p,g);" ;
+        O.oii "if (g->speedcheck) {" ;
+        O.oiii "g->stop_now |= ok;" ;
+        O.oiii "barrier_wait(&ctx->b);" ;
+        O.oii "}" ;
         O.oi "}" ;
         O.o "}" ;
         O.o ""

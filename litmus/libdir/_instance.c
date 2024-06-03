@@ -103,6 +103,10 @@ typedef struct global_t {
   /* statistics */
   stats_t stats ;
 #endif
+  /* Support for early exit when postcondition is observed */
+  int speedcheck ;
+  /* Flag to exit when postcondition is observed - only when speedcheck is enabled */
+  int stop_now ;
 } global_t ;
 
 
