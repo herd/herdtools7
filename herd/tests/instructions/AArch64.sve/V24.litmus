@@ -1,0 +1,25 @@
+AArch64 V24
+{
+uint64_t 0:X0;
+uint64_t 0:X1;
+uint64_t 0:X2;
+uint64_t 0:X3;
+uint64_t 0:X4;
+}
+  P0        ;
+CNTB X0,VL4 ;
+INCB X0,VL4 ;
+CNTW X1     ;
+INCW X1     ;
+CNTD X2,ALL,MUL 16 ;
+INCD X2,ALL,MUL 16 ;
+CNTW X3,MUL3 ;
+INCW X3,MUL3 ;
+CNTD X4,MUL4 ;
+INCD X4,MUL4 ;
+CNTW XZR     ;
+forall
+  0:X0=8
+  /\ 0:X1=8 /\ 0:X2=64
+  /\ 0:X3=6 /\ 0:X4=0
+(* Notice: contents of registers 0:X1 to 0:X4 depend on where test runs *)

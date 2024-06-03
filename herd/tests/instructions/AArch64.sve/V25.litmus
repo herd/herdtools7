@@ -1,0 +1,32 @@
+AArch64 V25
+{
+uint32_t t[8] = {1,2,3,4,5,6,7,8};
+0:X1=t;
+}
+
+(* This test does not depends on scalable vector length *)
+
+  P0                  ;
+CNTW X0               ;
+CMP X0,#8             ;
+B.GT L3               ;
+MOV X2,#0             ;
+PTRUE P0.S            ;
+L1:                   ;
+LD1W {Z0.S},P0/Z,[X1] ;
+ADD Z0.S,Z0.S,Z0.S    ;
+ST1W {Z0.S},P0,[X1]   ;
+ADD W9,W9,#1          ;
+ADD X1,X1,X0,LSL #2   ;
+INCW X2               ;
+L2:                   ;
+CMP X2,#8             ;
+B.LT L1               ;
+B L0                  ;
+L3:                   ;
+PTRUE P0.S,VL8        ;
+LD1W {Z0.S},P0/Z,[X1] ;
+ADD Z0.S,Z0.S,Z0.S    ;
+ST1W {Z0.S},P0,[X1]   ;
+L0:                   ;
+forall t={2,4,6,8,10,12,14,16}

@@ -115,6 +115,8 @@ let check_op3 op e =
 %token MOVPRFX
 %token LD1B LD1H LD1W LD1D LD2B LD2H LD2W LD2D LD3B LD3H LD3W LD3D LD4B LD4H LD4W LD4D
 %token ST1B ST1H ST1W ST1D ST2B ST2H ST2W ST2D ST3B ST3H ST3W ST3D ST4B ST4H ST4W ST4D
+%token RDVL ADDVL
+%token <AArch64Base.cnt_inc_op_variant> CNT_INC_SVE
 /*
 /*
 %token LDUMAX LDUMAXA LDUMAXL LDUMAXAL LDUMAXH LDUMAXAH LDUMAXLH LDUMAXALH
@@ -295,26 +297,28 @@ zregs3:
 zregs4:
 | LCRL zreg COMMA zreg COMMA zreg COMMA zreg RCRL { [$2;$4;$6;$8] }
 
+pattern_not_empty:
+| TOK_ALL { ALL }
+| TOK_POW2 { POW2 }
+| TOK_VL1 { VL1 }
+| TOK_VL2 { VL2 }
+| TOK_VL3 { VL3 }
+| TOK_VL4 { VL4 }
+| TOK_VL5 { VL5 }
+| TOK_VL6 { VL6 }
+| TOK_VL7 { VL7 }
+| TOK_VL8 { VL8 }
+| TOK_VL16 { VL16 }
+| TOK_VL32 { VL32 }
+| TOK_VL64 { VL64 }
+| TOK_VL128 { VL128 }
+| TOK_VL256 { VL256 }
+| TOK_MUL3 { MUL3 }
+| TOK_MUL4 { MUL4 }
+
 pattern:
 | { ALL }
-| COMMA TOK_ALL { ALL }
-| COMMA TOK_POW2 { POW2 }
-| COMMA TOK_VL1 { VL1 }
-| COMMA TOK_VL2 { VL2 }
-| COMMA TOK_VL3 { VL3 }
-| COMMA TOK_VL4 { VL4 }
-| COMMA TOK_VL5 { VL5 }
-| COMMA TOK_VL6 { VL6 }
-| COMMA TOK_VL7 { VL7 }
-| COMMA TOK_VL8 { VL8 }
-| COMMA TOK_VL16 { VL16 }
-| COMMA TOK_VL32 { VL32 }
-| COMMA TOK_VL64 { VL64 }
-| COMMA TOK_VL128 { VL128 }
-| COMMA TOK_VL256 { VL256 }
-| COMMA TOK_MUL3 { MUL3 }
-| COMMA TOK_MUL4 { MUL4 }
-
+| COMMA pattern_not_empty { $2 }
 k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
@@ -1196,6 +1200,14 @@ instr:
     | Zreg(_,16)
     | Zreg(_,32) -> I_INDEX_SS ($2,V32,$4,$6)
     | _ -> assert false }
+| RDVL xreg COMMA k
+   { I_RDVL ($2,$4) }
+| ADDVL xreg COMMA xreg COMMA k
+   { I_ADDVL ($2,$4,$6) }
+| CNT_INC_SVE xreg pattern
+   { I_CNT_INC_SVE ($1,$2,$3,MetaConst.one) }
+| CNT_INC_SVE xreg COMMA pattern_not_empty COMMA TOK_MUL k
+   { I_CNT_INC_SVE ($1,$2,$4,$7) }
 | TOK_INDEX zreg COMMA k COMMA k
   { I_INDEX_II ($2,$4,$6) }
 | PTRUE preg_sz pattern

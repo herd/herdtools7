@@ -1,0 +1,18 @@
+AArch64 V26
+(* This test is independant of vector length *)
+{
+ uint32_t x[8] = {1,2,3,4,5,6,7,8};
+ 0:X0=x;
+}
+P0 ;
+MOV X1,#0                      ;
+MOV X2,#8                      ;
+WHILELT P0.S,X1,X2             ;
+L0:                            ;
+LD1W {Z0.S},P0/Z,[X0,X1,LSL #2];
+ADD Z0.S,Z0.S,Z0.S             ;
+ST1W {Z0.S},P0,[X0,X1,LSL #2]  ;
+INCW X1                        ;
+WHILELT P0.S,X1,X2             ;
+B.FIRST L0                     ;
+forall x={2,4,6,8,10,12,14,16}

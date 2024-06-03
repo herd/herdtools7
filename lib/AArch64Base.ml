@@ -168,7 +168,9 @@ let pp_k m v = pp_hash m ^ string_of_int v
  * Backward compatibility is important for preserving hashes.
  *)
 type 'k basic_pp =
-  { compat : bool; pp_k : 'k -> string; zerop : 'k -> bool; k0 : 'k kr }
+  { compat : bool; pp_k : 'k -> string;
+    zerop : 'k -> bool; onep : 'k -> bool;
+    k0 : 'k kr }
 
 let gprs =
 [
@@ -902,6 +904,8 @@ type pattern =
   | MUL3
   | ALL
 
+type cnt_inc_op = CNT | INC
+
 type op =
   | ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | ORN
   | EOR | EON | ASR | LSR | LSL | ROR | BICS | BIC
@@ -909,6 +913,7 @@ type op =
 type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
 type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
 type simd_variant = VSIMD8 | VSIMD16 | VSIMD32 | VSIMD64 | VSIMD128
+type cnt_inc_op_variant = cnt_inc_op * simd_variant
 
 module Ext = struct (* Arguments of extended ADD and SUB operations *)
 
@@ -1093,6 +1098,8 @@ let tr_simd_variant = function
   | VSIMD32 -> MachSize.Word
   | VSIMD64 -> MachSize.Quad
   | VSIMD128 -> MachSize.S128
+
+let simd_variant_nbytes v = tr_simd_variant v |> MachSize.nbytes
 
 type temporal = TT | NT
 type pair_opt = Pa | PaN | PaI
@@ -1489,6 +1496,12 @@ type 'k kinstruction =
   | I_INDEX_SS of reg * variant * reg * reg
   (* INDEX <Zd>.<T>, #<imm1>, #<imm2> *)
   | I_INDEX_II of reg * 'k * 'k
+  (* RDVL <Xd>, #<imm> *)
+  | I_RDVL of reg * 'k
+  (* ADDVL <Xd>, <Xn>, #<imm> *)
+  | I_ADDVL of reg * reg * 'k
+(* {CNT,INC}<B|H|W|D> <Xd>{, pattern{, MULL #imm}} *)
+  | I_CNT_INC_SVE of ( cnt_inc_op * simd_variant ) * reg * pattern * 'k
 (* Morello *)
   | I_ALIGND of reg * reg * 'k
   | I_ALIGNU of reg * reg * 'k
@@ -1604,6 +1617,17 @@ let pp_pattern = function
   | MUL3 -> "MUL3"
   | ALL -> "ALL"
 
+let pp_pattern_no_all = function
+| ALL -> ""
+| pat -> "," ^ pp_pattern pat
+
+let pp_pattern_scaled m pat k =
+  if m.onep k then pp_pattern_no_all pat
+  else
+    sprintf ",%s,MUL %s"
+      (pp_pattern pat)
+      (m.pp_k k)
+
 let pp_vsimdreg v r = match v with
 | VSIMD8 -> pp_simd_scalar_reg bvrs r
 | VSIMD16 -> pp_simd_scalar_reg hvrs r
@@ -1617,6 +1641,13 @@ let pp_simd_variant v = match v with
 | VSIMD32 -> "W"
 | VSIMD64 -> "D"
 | VSIMD128 -> "Q"
+
+let pp_cnt_inc_op_base = function
+| CNT -> "CNT"
+| INC -> "INC"
+
+let pp_cnt_inc_op (op,v) =
+  pp_cnt_inc_op_base op ^ pp_simd_variant v
 
 let pp_op = function
   | ADD  -> "ADD"
@@ -1814,6 +1845,12 @@ let do_pp_instruction m =
     ^ pp_vreg v r2 ^ ","
     ^ pp_vreg v r3 ^ ",["
     ^ pp_xreg r4 ^ "]" in
+
+  let pp_cnt_inc op r pat k =
+    sprintf "%s %s%s"
+      (pp_cnt_inc_op op)
+      (pp_xreg r)
+      (pp_pattern_scaled m pat k) in
 
   fun i -> match i with
   | I_NOP -> "NOP"
@@ -2016,6 +2053,12 @@ let do_pp_instruction m =
       sprintf "INDEX %s,%s,%s" (pp_zreg r1) (pp_vreg v r2) (pp_vreg v r3)
   | I_INDEX_II (r1,k1,k2) ->
       sprintf "INDEX %s,%s,%s" (pp_zreg r1) (m.pp_k k1) (m.pp_k k2)
+  | I_RDVL (r1,k1) ->
+      sprintf "RDVL %s,%s" (pp_xreg r1) (m.pp_k k1)
+  | I_ADDVL (r1,r2,k1) ->
+      sprintf "ADDVL %s,%s,%s" (pp_xreg r1) (pp_xreg r2) (m.pp_k k1)
+  | I_CNT_INC_SVE (op,r,pat,k) ->
+      pp_cnt_inc op r pat k
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (m.pp_k k)
@@ -2203,12 +2246,15 @@ let do_pp_instruction m =
 
 let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
+              onep = (function 1 -> true | _ -> false);
               k0 = k0; }
 
 let m_hash = { m_int with pp_k = sprintf "#%i"; }
 
 let pp_instruction m =
   do_pp_instruction {m_int with pp_k = pp_k m; }
+
+let dump_pattern_scaled = pp_pattern_scaled m_hash
 
 let dump_instruction = do_pp_instruction m_hash
 
@@ -2220,6 +2266,7 @@ let dump_parsedInstruction =
   do_pp_instruction
     {  compat = false; pp_k = MetaConst.pp_prefix "#";
        zerop = (fun k -> MetaConst.compare MetaConst.zero k = 0);
+       onep = (fun k -> MetaConst.compare MetaConst.one k = 0);
        k0 = K MetaConst.zero; }
 
 
@@ -2279,6 +2326,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_TLBI (_,r)
   | I_MOV_SV (r,_,_)
   | I_INDEX_II (r,_,_)
+  | I_RDVL (r,_)
+  | I_CNT_INC_SVE (_,r,_,_)
   | I_PTRUE (r,_)
     -> fold_reg r c
   | I_MOV (_,r1,kr)
@@ -2301,6 +2350,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_)
   | I_STZ2G (r1,r2,_) | I_STG (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
+  | I_ADDVL (r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r)
     -> fold_reg (SysReg sr) (fold_reg r c)
@@ -2588,6 +2638,12 @@ let map_regs f_reg f_symb =
       I_INDEX_SS (map_reg r1,v,map_reg r2,map_reg r3)
   | I_INDEX_II (r1,k1,k2) ->
       I_INDEX_II (map_reg r1,k1,k2)
+  | I_RDVL (r1,k1) ->
+     I_RDVL (map_reg r1,k1)
+  | I_ADDVL (r1,r2,k1) ->
+     I_ADDVL (map_reg r1,map_reg r2,k1)
+  | I_CNT_INC_SVE (op,r1,pat,k1) ->
+     I_CNT_INC_SVE (op,map_reg r1,pat,k1)
 (* Morello *)
   | I_ALIGNU (r1,r2,k) ->
       I_ALIGNU(map_reg r1,map_reg r2,k)
@@ -2804,6 +2860,7 @@ let get_next =
   | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
   | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
   | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
+  | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
   | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
   | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
   | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
@@ -2815,9 +2872,16 @@ let is_nbits_unsigned n =
   let mask = (1 lsl n) - 1 in
   fun k -> k land mask = k
 
-let is_6bits_unsigned = is_nbits_unsigned 6
-let is_12bits_unsigned = is_nbits_unsigned 12
+let is_4bits_unsigned = is_nbits_unsigned 4
+and is_6bits_unsigned = is_nbits_unsigned 6
+and is_12bits_unsigned = is_nbits_unsigned 12
 and is_16bits_unsigned = is_nbits_unsigned 16
+
+let is_nbits_signed n =
+  let max = 1 lsl (n-1) in
+  fun k -> -max <= k && n < max
+
+let is_6bits_signed = is_nbits_signed 6
 
 let variant_raw = function
   | V128 -> 128
@@ -2958,6 +3022,12 @@ let is_valid i =
   | I_LDRBH (_,_,_,MemExt.(Reg(V32,_,LSL,_)))
   | I_STRBH (_,_,_,MemExt.(Reg(V32,_,LSL,_)))
     -> false
+  | I_RDVL (ZR,_)|I_ADDVL(ZR,_,_)
+    -> false
+  | I_RDVL (_,k)|I_ADDVL(_,_,k)
+    -> is_6bits_signed k
+  | I_CNT_INC_SVE (_,_,_,k)
+    -> is_4bits_unsigned (k-1)
   | _ -> true
 
 
@@ -3124,7 +3194,9 @@ module PseudoI = struct
         | I_INDEX_SI (r1,v,r2,k) -> I_INDEX_SI (r1,v,r2,k_tr k)
         | I_INDEX_IS (r1,v,k,r2) -> I_INDEX_IS (r1,v,k_tr k,r2)
         | I_INDEX_II (r1,k1,k2) -> I_INDEX_II (r1,k_tr k1,k_tr k2)
-
+        | I_RDVL (r1,k1) -> I_RDVL (r1,k_tr k1)
+        | I_ADDVL (r1,r2,k1) -> I_ADDVL (r1,r2,k_tr k1)
+        | I_CNT_INC_SVE (op,r1,pat,k1) -> I_CNT_INC_SVE (op,r1,pat,k_tr k1)
       let get_simd_rpt_selem ins rs = match ins with
       | I_LD1M _
       | I_ST1M _
@@ -3217,6 +3289,7 @@ module PseudoI = struct
         | I_ADD_SV _ | I_UADDV _ | I_DUP_SV _
         | I_NEG_SV _ | I_MOVPRFX _
         | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
+        | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
         | I_MOV_SV _
           -> 0
         | I_LD1M (rs, _, _)

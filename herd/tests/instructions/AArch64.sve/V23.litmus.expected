@@ -1,0 +1,11 @@
+Test V23 Required
+States 1
+0:X0=0; 0:X1=16;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (0:X0=0 /\ 0:X1=16)
+Observation V23 Always 1 0
+Hash=2e5dfca61b0bd045b16659236f6c3297
+

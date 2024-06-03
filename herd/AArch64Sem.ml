@@ -261,6 +261,10 @@ module Make
         neon_replicate v nelem esize v >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
+      let scalable_nbits = 128
+
+      let scalable_nbytes = scalable_nbits / 8
+
       let predicate_psize r = match r with
       | AArch64Base.Preg (_,esize)
       (* Infer predicate bitsize from Z register *)
@@ -270,7 +274,7 @@ module Make
       let predicate_nelem r = match r with
       | AArch64Base.Preg (_,esize)
       (* Infer predicate elements from Z register *)
-      | AArch64Base.Zreg (_,esize) -> 128 / esize
+      | AArch64Base.Zreg (_,esize) -> scalable_nbits / esize
       | _ -> assert false
 
       let predicate_count predicate nelem =
@@ -346,7 +350,7 @@ module Make
       | _ -> assert false
 
       let scalable_nelem r = match r with
-      | AArch64Base.Zreg (_,esize) -> 128 / esize
+      | AArch64Base.Zreg (_,esize) -> scalable_nbits / esize
       | _ -> assert false
 
       let read_reg_scalable is_data r ii =
@@ -401,6 +405,9 @@ module Make
             mop sz v >>= fun v -> write_reg r v ii
 
       let write_reg_sz = do_write_reg_sz uxt_op
+
+      let write_reg_sz_dest sz r v ii =
+        write_reg_sz sz r v ii >>= fun () -> M.unitT v
 
       let write_reg_op op sz r v ii =
         match r with
@@ -2358,6 +2365,17 @@ module Make
         reduce (nelem-1) mzero >>= fun v ->
           write_reg_scalable r v ii
 
+      let cnt_inc (op,v) r pat k ii =
+        let open AArch64 in
+        let nelem = scalable_nbytes / simd_variant_nbytes v in
+        let off = predicate_count pat nelem * k in
+        let sz = MachSize.Quad in
+        (match op with
+         | CNT -> mzero
+         | INC -> read_reg_ord_sz sz r ii)
+        >>= M.op1 (Op.AddK off)
+        >>= fun v -> write_reg_sz_dest sz r v ii
+
 (******************************)
 (* Move constant instructions *)
 (******************************)
@@ -3324,6 +3342,22 @@ module Make
           !(let v1 = V.intToV k1 in
             let v2 = V.intToV k2 in
             index r1 v1 v2 ii)
+        | I_RDVL (rd,k) ->
+           check_sve inst;
+           let v = scalable_nbytes * k |> V.intToV in
+           write_reg_sz_dest MachSize.Quad rd v ii
+           >>= nextSet rd
+        |I_ADDVL (rd,rn,k) ->
+           check_sve inst;
+           let sz = MachSize.Quad in
+           let off = scalable_nbytes * k in
+           read_reg_ord_sz sz rn ii
+           >>= M.op1 (Op.AddK off)
+           >>= fun v -> write_reg_sz_dest sz rd v ii
+           >>= nextSet rd
+        | I_CNT_INC_SVE (op,r,pat,k) ->
+           check_sve inst;
+           cnt_inc op r pat k ii >>= nextSet r
         (* Morello instructions *)
         | I_ALIGND(rd,rn,k) ->
             check_morello inst ;

@@ -76,7 +76,7 @@ module Make(V:Constant.S)(C:Config) =
     (* Accept P/M register so assume partial update of register *)
     | I_NEG_SV (r,_,_)
     | I_MOVPRFX (r,_,_)
-    -> A.RegSet.of_list [r]
+      -> A.RegSet.of_list [r]
     | _ ->  A.RegSet.empty
 
 (* Generic funs for zr *)
@@ -955,14 +955,16 @@ module Make(V:Constant.S)(C:Config) =
     | _ -> assert false
 
     let while_op memo r1 v r2 r3 =
+      let r2,f2,r3,f3 = args2i v r2 r3 in
+      let r2r3 = r2@r3 in
       { empty_ins with
-        memo = sprintf "%s %s,%s"
+        memo = sprintf "%s %s,%s,%s"
         memo
         (print_preg "o" 0 0 r1)
-        (match v with | V32 -> "^wi0, ^wi1" | V64 -> "^i0, ^i1" | V128 -> assert false);
-        inputs = [r2;r3;];
+        f2 f3;
+        inputs = r2r3;
         outputs = [r1];
-        reg_env = (add_svbool_t [r1;])@(add_w [r2;r3])}
+        reg_env = add_svbool_t [r1;]@add_v v (r2r3); }
 
     let uaddv v r1 r2 r3 =
          { empty_ins with
@@ -1251,6 +1253,36 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [r1;pg;r3]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
         outputs = [r1];
         reg_env = (add_svint32_t [r1;r3;])@(add_svbool_t [pg;])}
+
+    let rdvl rd k =
+      { empty_ins with
+        memo = sprintf "rdvl ^o0,#%i" k;
+        outputs = [rd;];
+        reg_env = add_q [rd;]; }
+
+    let addvl rd rn k =
+      { empty_ins with
+        memo = sprintf "addvl ^o0,^i0,#%i" k;
+        outputs = [rd;]; inputs=[rn;];
+        reg_env = add_q [rd;rn;]; }
+
+    let pp_cnt_inc_op op = pp_cnt_inc_op op |> Misc.lowercase
+    and pp_pattern_scaled pat k =
+      dump_pattern_scaled pat k |> Misc.lowercase
+
+    let cnt_inc_sve (cnt_inc,_ as op) rd pat k =
+      let rd,fd = arg1o V64 rd in
+      { empty_ins with
+        memo =
+          sprintf "%s %s%s"
+            (pp_cnt_inc_op op) fd
+            (pp_pattern_scaled pat k);
+        outputs = rd;
+        inputs =
+          (match cnt_inc with
+           | CNT -> []
+           | INC -> rd);
+        reg_env = add_q rd; }
 
 (* Compare and swap *)
 
@@ -1690,6 +1722,9 @@ module Make(V:Constant.S)(C:Config) =
     | I_PTRUE (pred,pat) -> ptrue pred pat::k
     | I_NEG_SV (r1,r2,r3) -> neg_sv r1 r2 r3::k
     | I_MOVPRFX (r1,r2,r3) -> movprfx r1 r2 r3::k
+    | I_RDVL (r1,k1) -> rdvl r1 k1::k
+    | I_ADDVL (r1,r2,k1) -> addvl r1 r2 k1::k
+    | I_CNT_INC_SVE  (op,rd,pat,k1) -> cnt_inc_sve op rd pat k1::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  mov_const v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k

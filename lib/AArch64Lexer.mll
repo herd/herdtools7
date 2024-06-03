@@ -184,6 +184,16 @@ match name with
 | "st4w" | "ST4W" -> ST4W
 | "st4d" | "ST4D" -> ST4D
 | "index" | "INDEX" -> TOK_INDEX
+| "rdvl" | "RDVL" -> RDVL
+| "addvl" | "ADDVL" -> ADDVL
+| "cntb" | "CNTB" -> let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD8)
+| "cnth" | "CNTH" -> let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD16)
+| "cntw" | "CNTW" -> let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD32)
+| "cntd" | "CNTD" -> let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD64)
+| "incb" | "INCB" -> let open AArch64Base in  CNT_INC_SVE (INC,VSIMD8)
+| "inch" | "INCH" -> let open AArch64Base in  CNT_INC_SVE (INC,VSIMD16)
+| "incw" | "INCW" -> let open AArch64Base in  CNT_INC_SVE (INC,VSIMD32)
+| "incd" | "INCD" -> let open AArch64Base in  CNT_INC_SVE (INC,VSIMD64)
 | "mul" | "MUL" -> TOK_MUL
 | "vl" | "VL" -> TOK_VL
 | "ptrue" | "PTRUE" -> PTRUE
