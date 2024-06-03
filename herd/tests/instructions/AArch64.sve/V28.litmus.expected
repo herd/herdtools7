@@ -1,0 +1,11 @@
+Test V28 Required
+States 1
+t={0,3,6,9,12,15};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (t={0,3,6,9,12,15})
+Observation V28 Always 1 0
+Hash=bc74fed293e5506ea70cae45c5fb0911
+
