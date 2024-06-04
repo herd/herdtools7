@@ -2918,29 +2918,39 @@ module Make
             mzero >>= fun v ->
               write_reg_scalable r v ii
 
-      let  store_scatter_predicated_elem_or_merge sz p ma mo rs e k ii =
+      let store_scatter_predicated_elem_or_merge sz p ma mo rs e k ii =
         let r = List.hd rs in
         let psize = predicate_psize r in
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
-        read_reg_predicate false p ii >>= fun pred ->
-          get_predicate_any pred psize nelem >>= fun any ->
-            M.choiceT
-            any
-            (ma >>| mo >>| read_reg_scalable true r ii >>= fun ((base,offsets),v) ->
-              let op idx =
-                let store =
-                  (scalable_getlane offsets idx esize
-                   (* Warning: no sign extension on wide scalars *)
-                   >>= demote >>= memext_sext e k >>= fun o ->
-                    M.add o base) >>|
-                    (scalable_getlane v idx esize >>= demote)
-                  >>= fun (addr,v) -> write_mem sz aexp Access.VIR addr v ii in
-                get_predicate_last pred psize idx >>= fun last ->
-                M.choiceT last store (M.unitT ()) in
-              let ops = List.map op (Misc.interval 0 nelem) in
-              List.fold_right (>>::) ops (M.unitT [()]))
-            (M.unitT [()])
+        let (let>=) = M.(>>=) in
+        let (let<>=) = M.bind_data_to_output in
+        let (let>*) = M.bind_control_set_data_input_first in
+        let>= pred = read_reg_predicate false p ii in
+        let<>= ((base,offsets),v) =
+          let>= any = get_predicate_any pred psize nelem in
+          let>* () =
+            let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
+            commit_pred_txt (Some cond) ii in
+          M.choiceT any
+            (ma >>| mo >>| read_reg_scalable true r ii)
+            (M.unitT ((M.A.V.zero, M.A.V.zero), M.A.V.zero)) in
+        let op idx =
+          let store =
+            let>= lane = scalable_getlane offsets idx esize in
+            let>= lane = demote lane in
+            let>= o = memext_sext e k lane in
+            let>= addr = M.add base o in
+            let>= v = scalable_getlane v idx esize in
+            let>= v = demote v in
+            write_mem sz aexp Access.VIR addr v ii in
+          let>= last = get_predicate_last pred psize idx in
+          let>* () =
+            let cond = Printf.sprintf "ActiveElem(%s, %d)" (A.pp_reg p) idx in
+            commit_pred_txt (Some cond) ii in
+          M.choiceT last store (M.mk_singleton_es (Act.NoAction) ii) in
+        let ops = List.map op (Misc.interval 0 nelem) in
+        List.fold_right (M.seq_mem_list) ops (M.unitT [()])
 
       let load_predicated_slice sz r ri k p ma ii =
         let dst,tile,dir,esize = match r with
