@@ -88,7 +88,11 @@ Use of global vars in constraints
     provided integer {10}.
   [1]
   $ aslref --no-exec TNegative4.asl
+  File TNegative4.asl, line 5, characters 25 to 41:
+  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS
+  [1]
   $ aslref --no-exec TNegative4-bis.asl
+  File TNegative4-bis.asl, line 5, characters 25 to 41:
   ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS
   [1]
 

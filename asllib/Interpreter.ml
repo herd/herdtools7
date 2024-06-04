@@ -1199,7 +1199,7 @@ module Make (B : Backend.S) (C : Config) = struct
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin FPrimitive *)
-    | Some (r, { body = SB_Primitive; _ }) ->
+    | Some (r, { body = SB_Primitive _; _ }) ->
         let scope = Scope_Local (name, !r) in
         let () = incr r in
         let body = Hashtbl.find primitive_runtimes name in

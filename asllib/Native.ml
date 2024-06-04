@@ -418,11 +418,11 @@ module NativeBackend = struct
       (* [p ~parameters ~args ~returns name f] declares a primtive named [name]
          with body [f], and signature specified by [parameters] [args] and
          [returns]. *)
-      let p ?(parameters = []) ~args ?returns name f =
+      let p ?(parameters = []) ?(ses = []) ~args ?returns name f =
         let subprogram_type =
           match returns with None -> ST_Procedure | _ -> ST_Function
         in
-        let body = SB_Primitive and return_type = returns in
+        let body = SB_Primitive ses and return_type = returns in
         ({ name; parameters; args; body; return_type; subprogram_type }, f)
       in
       [

@@ -109,6 +109,13 @@ let list_concat_map f l =
   aux f [] l
 
 let list_is_empty = function [] -> true | _ -> false
+
+let rec list_split3 = function
+  | [] -> ([], [], [])
+  | (x, y, z) :: xyzs ->
+      let xs, ys, zs = list_split3 xyzs in
+      (x :: xs, y :: ys, z :: zs)
+
 let pair x y = (x, y)
 let pair' y x = (x, y)
 let pair_equal f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
@@ -293,7 +300,7 @@ let use_constant_decl d =
   | D_TypeDecl (_, ty, None) -> use_ty ty
   | D_Func { body; args; return_type; _ } ->
       let use_body =
-        match body with SB_ASL s -> use_s s | SB_Primitive -> Fun.id
+        match body with SB_ASL s -> use_s s | SB_Primitive _ -> Fun.id
       in
       use_body $ use_option use_ty return_type $ use_named_list use_ty args
 
@@ -765,7 +772,7 @@ let rename_locals map_name ast =
     | LDI_Typed (ldi, t) -> LDI_Typed (map_ldi ldi, map_t t)
     | LDI_Tuple ldis -> LDI_Tuple (List.map map_ldi ldis)
   and map_body = function
-    | SB_Primitive as b -> b
+    | SB_Primitive _ as b -> b
     | SB_ASL s -> SB_ASL (map_s s)
   and map_func f =
     let map_args li = List.map (fun (name, t) -> (map_name name, map_t t)) li in
