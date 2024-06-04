@@ -272,6 +272,7 @@ Monad type:
       = fun s f -> data_comp (=**=) s f
 
     let control_input_union s f = data_comp E.control_input_union s f
+    let control_input_next s f = data_comp E.control_input_next s f
 
     let (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=*$$=) s f
@@ -290,6 +291,8 @@ Monad type:
     let asl_ctrl s f = data_comp E.bind_ctrl_sequence_data_po s f
 
     let bind_data_to_minimals s f =  data_comp E.data_to_minimals s f
+
+    let bind_data_to_output s f = data_comp E.data_to_output s f
 
 (* Triple composition *)
     let comp_comp comp_str m1 m2 m3 eiid =
