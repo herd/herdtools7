@@ -74,19 +74,21 @@ module type S =
     (* Input to both args *)
 
     val data_output_union : 'a t -> ('a -> 'b t) -> 'b t
-    (** [data_output_union s f] returns a composition of the event
-        structures of [s] and the result of [f] where the
-        iico_causality_data includes pairs (e1, e2) where e1 is an
-        output event of e1 and e2 an input event of the result of
-        [f]. The output of the resulting event structure is the union
-        of the output events of [s] and the result of [f] *)
+    (** [data_output_union s f] returns a composition of the event structures of
+        [s] and the result of [f] where the [iico_causality_data] includes pairs
+        (e1, e2) where e1 is an output event of e1 and e2 an input event of the
+        result of [f]. The output of the resulting event structure is the union
+        of the output events of [s] and the output events of the result of [f].
+        *)
 
 (* Control composition *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
 
-(* Input is union of both arg inputs *)
     val control_input_union :  'a t -> ('a -> 'b t) -> 'b t
+    (** Input is union of both arg inputs *)
+
     val control_input_next :  'a t -> ('a -> 'b t) -> 'b t
+    (** Input is second arg's input *)
 
     val (>>*==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first argument *)
     val bind_control_set_data_input_first :
@@ -99,10 +101,12 @@ module type S =
     val bind_data_to_minimals : 'a t -> ('a -> 'b t) -> ('b) t
 
     val bind_data_to_output : 'a t -> ('a -> 'b t) -> 'b t
-    (** [bind_data_to_output p1 p2] returns a composition of the event
-        structures of [s1] and [s2] where there is iico_causality_data
-        relation from the output events of [s1] to the output events
-        of [s2] *)
+    (** [bind_data_to_output s f] returns a composition of the event structures
+        of [s] and the result of [f] where the [iico_causality_data] includes
+        pairs (e1, e2) where e1 is an output event of e1 and e2 an onput event
+        of the result of [f]. The output of the resulting event structure is the
+        union of the output events of [s] and the output events of the result of
+        [f]. *)
 
     (* Control compoisition, but output events might be in first event if
        second is empty. *)
@@ -256,6 +260,8 @@ module type S =
         event in [s2] *)
 
     val seq_mem_list : 'a t -> 'a list t -> 'a list t
+    (** [seq_mem_list] is similar to [seq_mem], but cons the results instead of
+        pairing them *)
 
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
