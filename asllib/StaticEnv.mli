@@ -33,7 +33,7 @@ type global = {
       (** Maps global declared storage elements to their types. *)
   subtypes : identifier IMap.t;
       (** Maps an identifier s to its parent in the subtype relation. *)
-  subprograms : AST.func IMap.t;
+  subprograms : (AST.func * SideEffectSet.t) IMap.t;
       (** Maps each subprogram runtime name to its signature. *)
   subprogram_renamings : ISet.t IMap.t;
       (** Maps each subprogram declared name to the equivalence class of all
@@ -63,7 +63,7 @@ val lookup_constants : env -> identifier -> literal
 val type_of : env -> identifier -> ty
 val type_of_opt : env -> identifier -> ty option
 val mem_constants : env -> identifier -> bool
-val add_subprogram : identifier -> AST.func -> env -> env
+val add_subprogram : identifier -> AST.func -> SideEffectSet.t -> env -> env
 val set_renamings : identifier -> ISet.t -> env -> env
 val add_global_storage : identifier -> ty -> global_decl_keyword -> env -> env
 val add_type : identifier -> ty -> env -> env

@@ -28,7 +28,7 @@ type global = {
   constant_values : literal IMap.t;
   storage_types : (ty * global_decl_keyword) IMap.t;
   subtypes : identifier IMap.t;
-  subprograms : AST.func IMap.t;
+  subprograms : (AST.func * SideEffectSet.t) IMap.t;
   subprogram_renamings : ISet.t IMap.t;
 }
 
@@ -68,7 +68,7 @@ module PPEnv = struct
       (pp_print_option ~none:(fun f () -> fprintf f "none") PP.pp_ty)
       return_type
 
-  let pp_subprogram f func_sig =
+  let pp_subprogram f (func_sig, _side_effects) =
     fprintf f "@[<hov 2>%a@ -> %a@]"
       (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
       func_sig.args (pp_print_option PP.pp_ty) func_sig.return_type
@@ -142,13 +142,13 @@ let type_of_opt env x =
 let mem_constants env x =
   IMap.mem x env.global.constant_values || IMap.mem x env.local.constant_values
 
-let add_subprogram name func_sig env =
+let add_subprogram name func_sig ses env =
   {
     env with
     global =
       {
         env.global with
-        subprograms = IMap.add name func_sig env.global.subprograms;
+        subprograms = IMap.add name (func_sig, ses) env.global.subprograms;
       };
   }
 

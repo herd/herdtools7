@@ -289,3 +289,6 @@ val list_fold_left_map :
   ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
 (** [fold_left_map] is a combination of [fold_left] and [map] that threads an
     accumulator through calls to [f]. Taken from stdlib 4.11. *)
+
+val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
+(** [split3] is List.split but for 3-uples. *)
