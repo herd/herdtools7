@@ -352,6 +352,9 @@ val same_instance : event -> event -> bool
   val data_input_union : (* input to both structures *)
     event_structure -> event_structure -> event_structure option
 
+  val data_to_output : (* inut to second es output *)
+    event_structure -> event_structure -> event_structure option
+
   val data_to_minimals : (* second es entries are minimal evts all iico *)
       event_structure -> event_structure -> event_structure option
 
@@ -1469,6 +1472,18 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let data_to_minimals =
       check_disjoint (data_comp minimals sequence_data_output)
+
+    let data_to_output es1 es2 =
+      let r =
+        data_comp
+          get_output
+          sequence_data_output es1 es2 in
+      let r =
+        { r with
+          input = union_input_seq es1 es2 ;
+          data_input = union_data_input_seq es1 es2 ;
+        } in
+      Some r
 
     let (=$$=) =
       let out es1 es2 =
