@@ -40,11 +40,12 @@ let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
 let reduce_expr env e =
-  let open StaticInterpreter in
-  try Normalize.normalize env e with NotYetImplemented -> e
+  let open StaticModel in
+  try normalize env e with NotYetImplemented -> e
 
 let reduce_constants env e =
   let open StaticInterpreter in
+  let open StaticModel in
   let eval_expr env e =
     try static_eval env e with NotYetImplemented -> unsupported_expr e
   in
@@ -575,7 +576,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
-    if bitwidth_equal (StaticInterpreter.equal_in_env env) n m then ()
+    if bitwidth_equal (StaticModel.equal_in_env env) n m then ()
     else assumption_failed ()
 
   (* Begin CheckBitsEqualWidth *)
@@ -1209,7 +1210,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 match List.assoc_opt x acc with
                 | None -> (x, e) :: acc
                 | Some e' ->
-                    if StaticInterpreter.equal_in_env env e e' then acc
+                    if StaticModel.equal_in_env env e e' then acc
                     else (x, e) :: acc)
             | _ -> acc)
         | _ -> acc
