@@ -616,6 +616,14 @@ let make_canonical = function
   | Symbolic (Virtual v) -> Symbolic (Virtual {v with pac=PAC.canonical})
   | cst -> cst
 
+let is_intid = function
+| Symbolic (System (INTID, _)) -> true
+| _ -> false
+
+let as_intid v = match v with
+| Symbolic (System (INTID, _)) -> Some v
+| _ -> None
+
 let mk_sym_morello p s t =
   let p_int = Misc.string_as_int64 p in
   if

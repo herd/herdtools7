@@ -29,6 +29,19 @@ type 'op1 unop =
   | Tagged (* get Tag attribute from PTE entry *)
   | MakeCanonical (* Make a virtual address canonical *)
   | AddErrorCode of PAC.key (* Add a PAC error code in a virtual address *)
+  | GICGetIntid (* Get the INTID location from an IntidUpdateVal *)
+  | GICGetField of string (* Get the the update fields from an IntidUpdateVal *)
+  | GICSetIntid
+  | IntidSetAct of bool
+  | IntidGetAct
+  | IntidSetPend of bool
+  | IntidGetPend
+  | IntidSetEnabled of bool
+  | IntidGetEnabled
+  | IntidSetPri of int
+  | IntidGetPri
+  | IntidSetAff of int
+  | IntidGetAff
   | Extra1 of 'op1
 
 type 'op binop =
@@ -83,8 +96,21 @@ module
       | SetF -> "SetF"
       | Tagged -> "Tagged"
       | MakeCanonical -> "MakeCanonical"
-      | Extra1 op1 -> Extra.pp_op1 hexa op1 |> Printf.sprintf "Extra:%s"
       | AddErrorCode k -> Printf.sprintf "ErrorCode:%s" (PAC.pp_upper_key k)
+      | GICGetIntid -> "GICGetIntid"
+      | GICGetField s -> "GICGetField:" ^ s
+      | GICSetIntid -> "GICSetIntid"
+      | IntidSetAct v -> "IntidSetAct:" ^ (string_of_bool v)
+      | IntidGetAct -> "IntidGetAct"
+      | IntidSetPend v -> "IntidSetPend:" ^ (string_of_bool v)
+      | IntidGetPend -> "IntidGetPend"
+      | IntidSetEnabled v -> "IntidSetEnabled:" ^ (string_of_bool v)
+      | IntidGetEnabled -> "IntidGetEnabled"
+      | IntidSetPri v -> "IntidSetPri:" ^ (string_of_int v)
+      | IntidGetPri -> "IntidGetPri"
+      | IntidSetAff v -> "IntidSetAff:" ^ (string_of_int v)
+      | IntidGetAff -> "IntidGetAff"
+      | Extra1 op1 -> Extra.pp_op1 hexa op1 |> Printf.sprintf "Extra:%s"
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
@@ -178,6 +204,76 @@ module
         Misc.identity Extra.fromExtraPteVal Extra.fromExtraAddrReg Extra.fromExtraIntidVal
         Misc.identity cst
 
+    let op_get_intid_update_val op = function
+      | Constant.IntidUpdateVal v -> Some (op v)
+      | _ -> None
+
+    let get_gicintid = op_get_intid_update_val
+        (fun v -> (Constant.mk_sym_intid (Option.get v.IntidUpdateVal.intid)))
+
+    let get_gicfield field =
+      op_get_intid_update_val
+        (fun v ->
+           match v.IntidUpdateVal.field with
+           | Some (f, v) when String.equal f field ->
+             Constant.Concrete (S.of_string v)
+           | _ ->
+             Warn.user_error
+               "No field named %s in %s" field (IntidUpdateVal.pp v)
+        )
+
+    let gic_setintid v =
+      let open Constant in
+      let open IntidUpdateVal in
+      match v with
+      | Symbolic (System (INTID, s)) ->
+        Some (IntidUpdateVal({intid=Some s; field=Some ("valid", "1")}))
+      | _ -> None
+
+    let op_get_intid_field op v =
+      let open Constant in
+      match v with
+      | IntidVal i -> Some (Concrete (op i))
+      | _ -> None
+
+    let op_set_intid op v =
+      let open Constant in
+      match v with
+      | IntidVal i -> Some (IntidVal (op i))
+      | _ -> None
+
+    let intid_set_act v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.active=v})
+
+    let intid_get_act () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.active then S.one else S.zero)
+
+    let intid_set_pend v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.pending=v})
+
+    let intid_get_pend () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.pending then S.one else S.zero)
+
+    let intid_set_enabled v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.enabled=v})
+
+    let intid_get_enabled () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.enabled then S.one else S.zero)
+
+    let intid_set_pri v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.priority=v})
+
+    let intid_get_pri () =
+      let open Constant in
+      op_get_intid_field (fun i -> S.of_int (i.AArch64IntidVal.priority))
+
+    let intid_set_aff v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.target=v})
+
+    let intid_get_aff () =
+      let open Constant in
+      op_get_intid_field (fun i -> S.of_int i.AArch64IntidVal.target)
+
     (* Add a PAC field to a virtual address, this function can only add a PAC
        field if the input pointer is canonical, otherwise it raise an error, it is
        used to model the `pac*` instruction without the variant const-pac-field *)
@@ -247,6 +343,19 @@ module
       | Tagged -> gettagged
       | MakeCanonical -> makeCanonical
       | AddErrorCode k -> addErrorCode k
+      | GICGetIntid -> get_gicintid
+      | GICSetIntid -> gic_setintid
+      | GICGetField f -> get_gicfield f
+      | IntidSetAct v -> intid_set_act v
+      | IntidGetAct -> intid_get_act ()
+      | IntidSetPend v -> intid_set_pend v
+      | IntidGetPend -> intid_get_pend ()
+      | IntidSetEnabled v -> intid_set_enabled v
+      | IntidGetEnabled -> intid_get_enabled ()
+      | IntidSetPri v -> intid_set_pri v
+      | IntidGetPri -> intid_get_pri ()
+      | IntidSetAff v -> intid_set_aff v
+      | IntidGetAff -> intid_get_aff ()
       | Extra1 op1 ->
           fun cst ->
            try

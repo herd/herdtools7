@@ -61,6 +61,13 @@ let mk_tag_mask t =
 %token <string> DOLLARNAME
 %token <string> NUM
 %token <string> VALUE
+%token <string> PENDING
+%token <string> ACTIVE
+%token <string> ENABLED
+%token <string> PRIORITY
+%token <string> TARGET_MODE
+%token <string> TRIGGER_MODE
+%token <string> VALID
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
@@ -70,7 +77,6 @@ let mk_tag_mask t =
 %token ATOMIC
 %token ATOMICINIT
 %token ATTRS TOK_OA TARGET
-%token <string> PENDING ENABLED PRIORITY TARGET_MODE TRIGGER_MODE
 %token TOK_PTE TOK_INTID TOK_INTID_UPDATE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
@@ -207,10 +213,12 @@ intid_prop_tail:
 
 intid_field:
 | PENDING { $1 }
+| ACTIVE { $1 }
 | ENABLED { $1 }
 | PRIORITY { $1 }
 | TARGET_MODE { $1 }
 | TRIGGER_MODE { $1 }
+| VALID { $1 }
 
 intid_prop_head:
 | key=intid_field COLON v=name_or_num tail=intid_prop_tail
@@ -231,10 +239,6 @@ intid_update_prop_tail:
 intid_update_prop_head:
 | TOK_INTID_UPDATE COLON v=NAME tail=intid_update_prop_tail
   { IntidUpdateVal.add_intid v tail }
-| key=intid_field COLON v=name_or_num tail=intid_update_prop_head
-  { IntidUpdateVal.add_field key v tail }
-| TARGET COLON v=PROC tail=intid_update_prop_head
-  { IntidUpdateVal.add_field "target" (string_of_int v) tail }
 
 intid_update_val:
 | LPAR updateval=intid_update_prop_head RPAR { updateval }

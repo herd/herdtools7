@@ -457,6 +457,19 @@ let keyword_list = [
   "stz2g", STZ2G;
   "ldg", LDG;
   "irg", IRG;
+  (* GICv5 *)
+  "gic", GIC;
+  "gicr", GICR;
+  "cdpri", A.GIC.(GIC_OP { domain=CD; cmd=PRI; });
+  "cdaff", A.GIC.(GIC_OP { domain=CD; cmd=AFF; });
+  "cddi", A.GIC.(GIC_OP { domain=CD; cmd=DI; });
+  "cddis", A.GIC.(GIC_OP { domain=CD; cmd=DIS; });
+  "cden", A.GIC.(GIC_OP { domain=CD; cmd=EN; });
+  "cdpend", A.GIC.(GIC_OP { domain=CD; cmd=PEND; });
+  "cdrcfg", A.GIC.(GIC_OP { domain=CD; cmd=RCFG; });
+  "cdeoi", A.GIC.(GIC_OP { domain=CD; cmd=EOI; });
+  "cdia", A.GICR.(GICR_OP { domain=CD; cmd=IA; });
+  "cdnmia", A.GICR.(GICR_OP { domain=CD; cmd=NMIA; });
   (* Operations *)
   "ubfm", UBFM;
   "sbfm", SBFM;

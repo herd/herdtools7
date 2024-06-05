@@ -207,6 +207,11 @@ val is_pt : ('scalar,'pte,'addrreg,'intid,'instr)  t -> bool
 (* Remove the Pac field of a virtual address *)
 val make_canonical : ('scalar,'pte,'addrreg,'intid,'instr) t -> ('scalar,'pte,'addrreg,'intid,'instr) t
 
+val is_intid : ('scalar, 'pte, 'addrreg, 'intid, 'instr) t -> bool
+val as_intid :
+  ('scalar, 'pte, 'addrreg, 'intid, 'instr) t ->
+    ('scalar, 'pte, 'addrreg, 'intid, 'instr) t option
+
 val mk_sym_morello : string -> string -> string -> ('scalar,'pte,'addrreg,'intid,'instr) t
 module type S =  sig
 

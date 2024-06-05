@@ -308,6 +308,7 @@ module
     | (Val (AddrReg _),Val (AddrReg _))
     | (Val (Instruction _),Val (Instruction _))
     | (Val (IntidVal _),Val (IntidVal _))
+    | (Val (IntidUpdateVal _),Val (IntidUpdateVal _))
       ->
         Val (Concrete (Cst.Scalar.of_int (compare  v1 v2)))
     (* 0 is sometime used as invalid PTE, no orpat because warning 57

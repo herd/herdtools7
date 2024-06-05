@@ -120,6 +120,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
     | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
     | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
+    | I_GIC _ | I_GICR _
       -> true
 
     let is_cmodx_restricted_value =
@@ -324,6 +325,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
       | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
           -> None
+      | I_GIC _ | I_GICR _ -> Some MachSize.Quad
 
     let all_regs =
       nzcv_regs@all_gprs@vregs (* Should be enough, only those are tracked *)
@@ -463,6 +465,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_PAC (_, r, _) | I_AUT (_, r, _) | I_XPACI r | I_XPACD r
         ->
           [r]
+      | I_GIC _ -> []
+      | I_GICR (r,_) -> [r]
 
     let get_lx_sz = function
       | I_LDAR (var,(XX|AX),_,_)|I_LDXP (var,_,_,_,_) -> MachSize.Ld (tr_variant var)
@@ -515,6 +519,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOVA_TV _| I_MOVA_VT _ | I_ADDA _
       | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
       | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
+      | I_GIC _ | I_GICR _
         -> MachSize.No
 
     let reg_defaults =

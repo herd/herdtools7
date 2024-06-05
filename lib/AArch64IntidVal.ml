@@ -50,6 +50,7 @@ end
 
 type t = {
   pending : bool;
+  active : bool;
   enabled : bool;
   priority : int;
   target : Proc.t;
@@ -59,6 +60,7 @@ type t = {
 
 let default = {
   pending = false;
+  active = false;
   enabled = true;
   priority = 0;
   target = 0; (* corresponds to process P0 *)
@@ -93,6 +95,7 @@ let pp_or_skip v get_field format name =
     Fun.id
 
 let pp_pending v = pp_or_skip v (fun v -> v.pending) my_string_of_bool "pending"
+let pp_active v = pp_or_skip v (fun v -> v.active) my_string_of_bool "active"
 let pp_enabled v = pp_or_skip v (fun v -> v.enabled) my_string_of_bool "enabled"
 let pp_priority v = pp_or_skip v (fun v -> v.priority) my_string_of_int "priority"
 let pp_target v = pp_field (Proc.pp v.target) "affinity"
@@ -106,12 +109,14 @@ let pp v =
     |> pp_target v
     |> pp_priority v
     |> pp_enabled v
+    |> pp_active v
     |> pp_pending v in
   let fs = String.concat ", " l in
   sprintf "(%s)" fs
 
 let compare =
   (fun v1 v2 -> Bool.compare v1.pending v2.pending)
+    |> Misc.lex_compare (fun v1 v2 -> Bool.compare v1.active v2.active)
     |> Misc.lex_compare (fun v1 v2 -> Bool.compare v1.enabled v2.enabled)
     |> Misc.lex_compare (fun v1 v2 -> Int.compare v1.priority v2.priority)
     |> Misc.lex_compare (fun v1 v2 -> Proc.compare v1.target v2.target)
@@ -120,6 +125,7 @@ let compare =
 
 let eq v1 v2 =
   Bool.equal v1.pending v2.pending &&
+  Bool.equal v1.active v2.active &&
   Bool.equal v1.enabled v2.enabled &&
   Int.equal v1.priority v2.priority &&
   Proc.equal v1.target v2.target &&
@@ -129,6 +135,7 @@ let eq v1 v2 =
 let add_field k v p =
   match k with
   | "pending" -> { p with pending = my_bool_of_string k v }
+  | "active" -> { p with active = my_bool_of_string k v }
   | "enabled" -> { p with enabled = my_bool_of_string k v }
   | "priority" -> { p with priority = my_int_of_string k v }
   | "target_mode" -> { p with target_mode = Target_Mode.target_mode_of_string v }
@@ -145,5 +152,9 @@ let tr p =
 let pp_norm v = pp (tr v)
 
 let get_prio = function
-  | { enabled=true; pending=true; priority; _ } -> Some priority
+  | { enabled=true; pending=true; active=false; priority; _ } -> Some priority
+  | _ -> None
+
+let get_target = function
+  | { enabled=true; pending=true; active=false; target; _ } -> Some target
   | _ -> None
