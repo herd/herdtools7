@@ -69,6 +69,7 @@
 \newcommand\namedlca[0]{\hyperlink{def-namedlowestcommonancestor}{\texttt{named\_lowest\_common\_ancestor}}}
 \newcommand\Supers{\textsf{Supers}}
 \newcommand\bitfieldsincluded[0]{\hyperlink{def-bitfieldsincluded}{\texttt{bitfields\_included}}}
+\newcommand\membfs[0]{\hyperlink{def-membfs}{\texttt{mem\_bfs}}}
 \newcommand\instantiate[0]{\texttt{instantiate}}
 \newcommand\canbeinitializedwith[0]{\texttt{can\_be\_initialized\_with}}
 \newcommand\getbitvectorwidth[0]{\hyperlink{def-getbitvectorwidth}{\texttt{get\_bitvector\_width}}}
@@ -97,13 +98,14 @@
 \newcommand\maxconstraints[0]{\hyperlink{def-maxconstraints}{\texttt{max\_constraints}}}
 \newcommand\minconstraint[0]{\hyperlink{def-minconstraint}{\texttt{min\_constraint}}}
 \newcommand\maxconstraint[0]{\hyperlink{def-maxconstraint}{\texttt{max\_constraint}}}
+\newcommand\findbitfieldopt[0]{\hyperlink{def-findbitfieldopt}{\texttt{find\_bitfield\_opt}}}
 
 % Symbolic equivalence testing macros
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
 \newcommand\exprequal[0]{\hyperlink{def-exprequal}{\texttt{expr\_equal}}}
 \newcommand\bitwidthequal[0]{\hyperlink{def-bitwidthequal}{\texttt{bitwidth\_equal}}}
 \newcommand\bitfieldequal[0]{\hyperlink{def-bitfieldequal}{\texttt{bitfield\_equal}}}
-\newcommand\bitfieldsequal[0]{\hyperlink{def-bitfildsequal}{\texttt{bitfields\_equal}}}
+\newcommand\bitfieldsequal[0]{\hyperlink{def-bitfieldsequal}{\texttt{bitfields\_equal}}}
 \newcommand\reduceexpr[0]{\texttt{reduce\_expr}}
 
 \newcommand\subsumes[0]{\hyperlink{def-subsumes}{\texttt{subsumes}}}
@@ -10136,7 +10138,7 @@ in environment $\tenv$.
 \end{emptyformal}
 
 \section{TypingRule.BitFieldsEqual}
-\hypertarget{def-bitfieldequal}{}
+\hypertarget{def-bitfieldsequal}{}
 The function
 \[
   \bitfieldsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^*}{\bfone} \aslsep \overname{\bitfield^*}{\bftwo})
@@ -10564,13 +10566,20 @@ All of the following apply:
 \end{emptyformal}
 
 \section{TypingRule.BitFieldGetName \label{sec:TypingRule.BitFieldGetName}}
-
 \hypertarget{def-bitfieldgetname}{}
 The function
 \[
-  \bitfieldgetname : \bitfield \aslto \identifier
+  \bitfieldgetname : \overname{\bitfield}{\vbf} \aslto \overname{\identifier}{\name}
 \]
-returns the name of a bitfield.
+returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item $\vb$ is a simple bitfield with name $\name$, that is, $\BitFieldSimple(\name, \Ignore)$;
+  \item $\vb$ is a nested bitfield with name $\name$, that is, $\BitFieldNested(\name, \Ignore, \Ignore)$;
+  \item $\vb$ is a typed bitfield with name $\name$, that is, $\BitFieldType(\name, \Ignore, \Ignore)$.
+\end{itemize}
 
 \begin{emptyformal}
 \subsection{Formally}
@@ -10595,7 +10604,7 @@ returns the name of a bitfield.
 The function
 \[
   \varinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}}
-  \aslto \Bool
+  \aslto \overname{\Bool}{\vb}
 \]
 determines whether an identifier $\id$ is declared in the static environment $\tenv$.
 
@@ -10604,8 +10613,17 @@ The function
   \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}}
   \aslto \True \cup \TTypeError
 \]
-is checks whether $\id$ is declared in $\tenv$. If it is, the result is a type error,
+checks whether $\id$ is declared in $\tenv$. If it is, the result is a type error,
 and otherwise the result is $\True$.
+
+\subsection{Prose}
+$\varinenv{\tenv, \id}$ is true if and only if one of the following applies:
+\begin{itemize}
+  \item $\id$ is declared as a local identifier in $\tenv$;
+  \item $\id$ is declared as a global identifier in $\tenv$;
+  \item $\id$ is declared as a subprogram in $\tenv$;
+  \item $\id$ is declared as a type in $\tenv$.
+\end{itemize}
 
 \begin{emptyformal}
 \subsection{Formally}
@@ -10619,8 +10637,7 @@ and otherwise the result is $\True$.
              & G^\tenv.\declaredtypes(\id) \neq \bot
   \end{array}
 }
-}
-{
+}{
   \varinenv{\tenv, \id} \typearrow \vb
 }
 \end{mathpar}
@@ -10628,15 +10645,13 @@ and otherwise the result is $\True$.
 \begin{mathpar}
 \inferrule[okay]{
   \varinenv{\tenv, \id} \typearrow \False
-}
-{
+}{
   \checkvarnotinenv{\tenv, \id} \typearrow \True
 }
 \and
   \inferrule[error]{
   \varinenv{\tenv, \id} \typearrow \True
-}
-{
+}{
   \checkvarnotinenv{\tenv, \id} \typearrow \TypeErrorVal{AlreadyDeclared}
 }
 \end{mathpar}
@@ -10656,6 +10671,16 @@ The function
 \]
 adds the identifier $\id$ as a local storage element with type $\tty$ and local declaration keyword $\ldk$
 to the local environment of $\tenv$, resulting in the static environment $\newtenv$.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item the map $\newlocalstoragetypes$ is defined by updating the map \\
+        $\localstoragetypes$ of $\tenv$
+        with the binding $\id$ to the type $\tty$ and local declaration keyword $\ldk$, that is, $(\tty,\ldk)$;
+  \item $\newtenv$ is defined by updating the local environment with the binding of \\
+        $\localstoragetypes$ to $\newlocalstoragetypes$.
+\end{itemize}
 
 \begin{emptyformal}
 \subsection{Formally}
@@ -10712,9 +10737,240 @@ One of the following applies:
 }
 \end{mathpar}
 
+\section{TypingRule.FindBitfieldOpt}
+\hypertarget{def-findbitfieldopt}{}
+The function
+\[
+  \findbitfieldopt(\overname{\identifier}{\name} \aslsep \overname{\bitfield^*}{\bitfields})
+  \aslto \overname{\langle\bitfield\rangle}{\vr}
+\]
+returns the bitfield associated with the name $\name$ in the list of bitfields $\bitfields$,
+if there is one. Otherwise, the result is $\None$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{match}):
+  \begin{itemize}
+    \item $\bitfields$ starts with a bitfield $\vbf$;
+    \item obtaining the name associated with $\vbf$ yields $\name$;
+    \item the result if $\vbf$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tail}):
+  \begin{itemize}
+    \item $\bitfields$ starts with a bitfield $\vbf$ and continues with the tail list $\bitfieldsp$;
+    \item obtaining the name associated with $\vbf$ yields $\namep$, which is different than $\name$;
+    \item finding the bitfield associated with $\name$ in $\bitfieldsp$ yields the result $\vr$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\bitfields$ is an empty list;
+    \item the result is $\None$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\begin{mathpar}
+\inferrule[match]{
+  \bitfieldgetname(\vbf) \typearrow \name
+}{
+  \findbitfieldopt(\name, \overname{\vbf + \bitfieldsp}{\bitfields}) \typearrow \overname{\langle\vbf\rangle}{\vr}
+}
+\and
+\inferrule[tail]{
+  \bitfieldgetname(\vbf) \typearrow \namep\\
+  \name \neq \namep\\
+  \findbitfieldopt(\name, \bitfieldsp) \typearrow \vr
+}{
+  \findbitfieldopt(\name, \overname{\vbf + \bitfieldsp}{\bitfields}) \typearrow \vr
+}
+\and
+\inferrule[empty]{}{
+  \findbitfieldopt(\name, \overname{\emptylist}{\bitfields}) \typearrow \None
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.MemBfs}
+\hypertarget{def-membfs}{}
+The function
+\[
+  \membfs(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^+}{\bfstwo} \aslsep \overname{\bitfield}{\vbfone})
+  \aslto \overname{\Bool}{\vb}
+\]
+checks whether the bitfield $\vbf$ exists in $\bfstwo$ in the context of $\tenv$, returning the result in $\vb$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\None$;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{simple\_any}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a simple bitfield;
+    \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{nested\_simple}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a nested bitfield with name $\nametwo$, slices $\slicestwo$, and bitfields $\bfstwop$;
+    \item $\vbfone$ is a simple bitfield;
+    \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{nested\_nested}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a nested bitfield with name $\nametwo$, slices $\slicestwo$, and bitfields $\bfstwop$;
+    \item $\vbfone$ is a nested bitfield with name $\nameone$, slices $\sliceone$, and $\bfsone$;
+    \item $\vbone$ is true if and only if $\nameone$ is equal to $\nametwo$;
+    \item symbolically equating the slices $\slicesone$ and $\slicestwo$ in $\tenv$ yields $\vbtwo$;
+    \item checking $\bfsone$ is included in $\bfstwop$ in the context of $\tenv$ yields $\vbthree$;
+    \item $\vb$ is defined as the conjunction of $\vbone$, $\vbtwo$, and $\vbthree$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{nested\_typed}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a nested bitfield with name $\nametwo$, slices $\slicestwo$, and bitfields $\bfstwop$;
+    \item $\vbfone$ is a typed bitfield;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{typed\_simple}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a typed bitfield with name $\nametwo$, slices $\slicestwo$, and type $\ttytwo$;
+    \item $\vbfone$ is a simple bitfield;
+    \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{typed\_nested}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a typed bitfield with name $\nametwo$, slices $\slicestwo$, and type $\ttytwo$;
+    \item $\vbfone$ is a nested bitfield;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{typed\_typed}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a typed bitfield with name $\nametwo$, slices $\slicestwo$, and type $\ttytwo$;
+    \item $\vbfone$ is a typed bitfield with name $\nameone$, slices $\slicesone$, and type $\ttyone$;
+    \item $\vbone$ is true if and only if $\nameone$ is equal to $\nametwo$;
+    \item symbolically equating the slices $\slicesone$ and $\slicestwo$ in $\tenv$ yields $\vbtwo$;
+    \item checking whether $\ttyone$ structurally subtypes $\ttytwo$ in $\tenv$ yields $\vbthree$;
+    \item $\vb$ is defined as the conjunction of $\vbone$, $\vbtwo$, and $\vbthree$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\begin{mathpar}
+\inferrule[none]{
+  \bitfieldgetname(\vbfone) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \None
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \False
+}
+\and
+\inferrule[simple\_any]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \astlabel(\vbftwo) = \BitFieldSimple\\
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[nested\_simple]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
+  \vbfone = \BitFieldSimple(\Ignore)\\
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \overname{\False}{\vb}
+}
+\and
+\inferrule[nested\_nested]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
+  \vbfone = \BitFieldNested(\nameone, \slicesone, \bfsone)\\
+  \vbone \eqdef \nameone = \nametwo\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
+  \bitfieldsincluded(\tenv, \bfsone, \bfstwop) \typearrow \vbthree\\
+  \vb \eqdef \vbone \land \vbtwo \land \vbthree
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
+}
+\and
+\inferrule[nested\_typed]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
+  \astlabel(\vbfone) = \BitFieldType
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[typed\_simple]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
+  \vbfone = \BitFieldSimple(\Ignore)\\
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
+}
+\and
+\inferrule[typed\_nested]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
+  \astlabel(\vbfone) = \BitFieldNested
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \overname{\False}{\vb}
+}
+\and
+\inferrule[typed\_typed]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
+  \vbfone = \BitFieldType(\nameone, \slicesone, \ttyone)\\
+  \vbone \eqdef \nameone = \nametwo\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
+  \structsubtypesat(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo \land \vbthree
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
+}
+\end{mathpar}
+\end{emptyformal}
+
 \section{TypingRule.BitFieldsIncluded}
 \hypertarget{def-bitfieldsincluded}{}
-
 The predicate
 \[
   \bitfieldsincluded(\overname{\staticenvs}{\tenv}, \overname{\bitfield^*}{\bfsone} \aslsep \overname{\bitfield^*}{\bfstwo})
@@ -10722,6 +10978,24 @@ The predicate
 \]
 tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,
 returning a type error, if one is detected.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item checking whether each field $\vbf$ in $\bfsone$ exists in $\bfstwo$ via $\membfs$ yields $\vb_\vbf$ \ProseOrTypeError;
+  \item the result --- $\vb$ --- is the conjunction of $\vb_\vbf$ for all bitfields $\vbf$ in $\bfsone$.
+\end{itemize}
+
+\begin{emptyformal}
+\begin{mathpar}
+\inferrule{
+  \vbf \in \bfsone: \membfs(\bfstwo, \vbf) \typearrow \vb_\vbf \OrTypeError\\\\
+  \vbf \eqdef \bigwedge_{\bf \in \bfsone} \vb_\vbf
+}{
+  \bitfieldsincluded(\tenv, \bfsone, \bfstwo) \typearrow \vb
+}
+\end{mathpar}
+\end{emptyformal}
 
 \hypertarget{def-typeofarraylength}{}
 \section{TypingRule.TypeOfArrayLength \label{sec:TypingRule.TypeOfArrayLength}}
@@ -10737,7 +11011,7 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{enum}):
   \begin{itemize}
-    \item $\size$ is an enumeration index over the enumeration $\vs$, that is, $\ArrayLengthEnum(\vs, \Ignore)$;
+    \item $\size$ is an enumeration index over the enumeration $\vs$, that is, \\ $\ArrayLengthEnum(\vs, \Ignore)$;
     \item $\vt$ is the named type for $\vs$, that is, $\TNamed(\vs)$.
   \end{itemize}
 
@@ -11016,6 +11290,7 @@ The function
 \]
 returns the \wellconstrainedstructure\ of a type $\vt$ in a static environment $\tenv$ --- $\vtp$, which is defined as follows.
 
+\subsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item the \structure\ of $\vt$ in $\tenv$ is $\vtone$ \ProseOrTypeError;
@@ -11044,6 +11319,23 @@ The function
 \]
 returns the expression $\ve$, which represents the width of the bitvector type $\vt$,
 or a type error if $\vt$ is not a bitvector type or another type error is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a bitvector type with width expression $\ve$,
+          that is, $\TBits(\ve, \Ignore)$ \ProseOrTypeError;
+    \item the result is $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a type that is not a bitvector type;
+    \item the result is a type error indicating that a bitvector type was expected.
+  \end{itemize}
+\end{itemize}
 
 \begin{emptyformal}
 \subsection{Formally}
@@ -11076,6 +11368,27 @@ The function
 tests whether the types $\vtone$ and $\vttwo$ are bitvector types of the same width.
 If the answer is positive, the result is $\True$. Otheriwe, the result is a type error.
 
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item obtaining the width of $\vtone$ in $\tenv$ (via $\getbitvectorwidth$) yields the expression $\vn$ \ProseOrTypeError;
+  \item obtaining the width of $\vttwo$ in $\tenv$ (via $\getbitvectorwidth$) yields the expression $\vm$ \ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the followin apply (\textsc{true}):
+    \begin{itemize}
+      \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\True$;
+      \item the result is $\True$.
+    \end{itemize}
+
+    \item All of the followin apply (\textsc{error}):
+    \begin{itemize}
+      \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\False$;
+      \item the result is a type error indicating that the bitwidths are different.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
@@ -11105,9 +11418,27 @@ The function
 \]
 returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
 
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{member}):
+  \begin{itemize}
+    \item a pair $(\id,\vv)$ exists in the list $\vli$;
+    \item the result is $\langle\vv\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_member}):
+  \begin{itemize}
+    \item every pair $(\vx,\Ignore)$ in the list $\vli$ has $\vx\neq\id$;
+    \item the result is $\None$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
 \begin{mathpar}
 \inferrule[not\_member]{
-  (\vx, \vv) \in \vli: vx \neq \id
+  (\vx, \vv) \in \vli: \vx \neq \id
 }{
   \assocopt(\vli, \id) \typearrow \None
 }
@@ -11118,6 +11449,7 @@ returns the value $\vv$ associated with the identifier $\id$ in the list of pair
   \assocopt(\vli, \id) \typearrow \langle \vv \rangle
 }
 \end{mathpar}
+\end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}
