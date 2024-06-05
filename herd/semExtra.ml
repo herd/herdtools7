@@ -88,6 +88,8 @@ module type S = sig
   (* Both of them *)
   val get_exported_labels : test -> Label.Full.Set.t
 
+  val get_exported_intids : test -> A.V.ValueSet.t
+
   type event = E.event
   type event_structure = E.event_structure
   type event_set = E.EventSet.t
@@ -328,6 +330,28 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       Label.Full.Set.union
         (get_exported_labels_init test)
         (get_exported_labels_code test)
+
+    let get_exported_intids test =
+      let { Test_herd.init_state=st; _ } = test in
+      let add_intid v k =
+        match v with
+        | V.Val cst ->
+          begin
+            match Constant.as_intid cst with
+            | Some sym ->
+              let v = A.V.Val sym in
+              A.V.ValueSet.add v k
+            | None -> k
+          end
+        | V.Var _ -> k in
+      let add_loc_intid l k =
+        match l with
+        | A.Location_global v -> add_intid v k
+        | A.Location_reg _ -> k
+      in
+      A.state_fold
+        (fun l v k -> add_loc_intid l k |> add_intid v)
+        st A.V.ValueSet.empty
 
 
 (**********)

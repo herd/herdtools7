@@ -15,8 +15,8 @@
 (****************************************************************************)
 
 type t =
-  { intid : string;
-    field : (string * string) }
+  { intid : string option;
+    field : (string * string) option }
 
 val empty : t
 val add_intid : string -> t -> t

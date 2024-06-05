@@ -115,8 +115,8 @@ val eq :
 (* Return if the collision of two PAC fields can imply equality of the two
    syntactically different constants *)
 val collision :
-  ('scalar, 'pte, 'instr) t ->
-    ('scalar, 'pte, 'instr) t ->
+  ('scalar, 'pte, 'intid, 'instr) t ->
+    ('scalar, 'pte, 'intid, 'instr) t ->
       (PAC.t * PAC.t) option
 
 (* New style: PTE(s), PHY(s), etc. *)
@@ -170,7 +170,10 @@ val as_pte : ('scalar, 'pte, 'intid, 'instr) t -> ('scalar, 'pte, 'intid, 'instr
 val is_pt : ('scalar, 'pte, 'intid, 'instr)  t -> bool
 
 (* Remove the Pac field of a virtual address *)
-val make_canonical : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
+val make_canonical : ('scalar,'pte, 'intid, 'instr) t -> ('scalar,'pte,'intid,'instr) t
+
+val is_intid : ('scalar, 'pte, 'intid, 'instr)  t -> bool
+val as_intid : ('scalar, 'pte, 'intid, 'instr)  t -> ('scalar, 'pte, 'intid, 'instr) t option
 
 module type S =  sig
 

@@ -76,11 +76,13 @@ rule token = parse
 | "oa" { TOK_OA }
 (* Distinguished  IntidVal fields *)
 | "pending" { PENDING "pending" }
+| "active" { ACTIVE "active" }
 | "enabled" { ENABLED "enabled" }
 | "priority" { PRIORITY "priority" }
 | "affinity" { TARGET }
 | "routing_mode" { TARGET_MODE "target_mode" }
 | "handling_mode" { TRIGGER_MODE "trigger_mode" }
+| "valid" { VALID "valid" }
 (* PTW keywords *)
 | "PTE"|"TTD" { TOK_PTE }
 | "INTID" { TOK_INTID }

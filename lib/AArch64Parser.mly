@@ -163,6 +163,10 @@ let check_op3 op e =
 %token LDCT SEAL STCT UNSEAL
 %type <MiscParser.proc list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
 
+%token GIC GICR
+%token <AArch64Base.GIC.op> GIC_OP
+%token <AArch64Base.GICR.op> GICR_OP
+
 %start  main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
 
@@ -1601,6 +1605,11 @@ instr:
   { I_SVC (MetaConst.Int $2) }
 | UDF NUM
   { I_UDF (MetaConst.Int $2) }
+
+| GIC GIC_OP COMMA xreg
+  { I_GIC ($2,$4)}
+| GICR xreg COMMA GICR_OP
+  { I_GICR ($2,$4)}
 
 fenceopt:
 | TOK_SY

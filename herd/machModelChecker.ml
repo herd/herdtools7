@@ -474,12 +474,13 @@ module Make
                 | None -> false in
               (tag,p)::k) in
         I.add_sets m
-          (("M",mem_evts)::
+          (
            List.fold_right
              (fun (k,p) ps ->
                (k,lazy (E.EventSet.filter p (Lazy.force mem_evts)))::ps)
              (are_memtypes
-                ["R", E.is_mem_load;
+                ["M", (fun e -> not (E.is_gic e));
+                 "R", E.is_mem_load;
                  "W", E.is_mem_store;
                  "Exp", E.is_explicit;
                  "NExp", E.is_not_explicit;

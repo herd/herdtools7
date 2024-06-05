@@ -449,6 +449,19 @@ match name with
 | "stzg"|"STZG" -> STZG
 | "stz2g"|"STZ2G" -> STZ2G
 | "ldg"|"LDG" -> LDG
+(* GICv5 *)
+| "gic"|"GIC" -> GIC
+| "gicr"|"GICR" -> GICR
+| "cdpri"|"CDPRI" -> A.GIC.(GIC_OP { domain=CD; cmd=PRI; })
+| "cdaff"|"CDAFF" -> A.GIC.(GIC_OP { domain=CD; cmd=AFF; })
+| "cddi"|"CDDI" -> A.GIC.(GIC_OP { domain=CD; cmd=DI; })
+| "cddis"|"CDDIS" -> A.GIC.(GIC_OP { domain=CD; cmd=DIS; })
+| "cden"|"CDEN" -> A.GIC.(GIC_OP { domain=CD; cmd=EN; })
+| "cdpend"|"CDPEND" -> A.GIC.(GIC_OP { domain=CD; cmd=PEND; })
+| "cdrfcg"|"CDRCFG" -> A.GIC.(GIC_OP { domain=CD; cmd=RCFG; })
+| "cdeoi"|"CDEOI" -> A.GIC.(GIC_OP { domain=CD; cmd=EOI; })
+| "cdia"|"CDIA" -> A.GICR.(GICR_OP { domain=CD; cmd=IA; })
+| "cdnmia"|"CDNMIA" -> A.GICR.(GICR_OP { domain=CD; cmd=NMIA; })
 (* Operations *)
 | "ubfm"|"UBFM" -> UBFM
 | "sbfm"|"SBFM" -> SBFM

@@ -1515,6 +1515,11 @@ module Make
 
       let apply_mv mop mv = fun ac ma -> mop ac ma mv
 
+      let is_this_loc loc e =
+        match E.global_loc_of e with
+        | None -> false
+        | Some l -> A.V.equal loc l
+
       let is_this_reg rA e =
         match E.location_reg_of e with
         | None -> false
@@ -2601,7 +2606,7 @@ module Make
           write_reg_predicate p new_val ii >>|
           ( let last idx = get_predicate_last new_val psize idx in
             (* Fisrt active *)
-            let>= n = last 0 
+            let>= n = last 0
             and* z =
               let rec reduce idx op = match idx with
               | 0 ->  op >>| last idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
@@ -3360,6 +3365,163 @@ module Make
 
       let stzg = do_stzg Once
       and stz2g = do_stzg Twice
+
+      module GICSem = struct
+        let (let*) = (>>=)
+        let (and*) = (>>|)
+        let aimp = AArch64.NExp AArch64.Other
+
+        let read_intid a ?(ae=aexp) ii =
+          M.read_loc Port.No
+            (fun loc v -> Act.Access (Dir.R, loc, v, Annot.N, ae, quad, Access.INTID))
+            (A.Location_global a) ii
+        and write_intid a ?(ae=aexp) v ii =
+          M.write_loc
+            (mk_write quad Annot.N ae Access.INTID v) (A.Location_global a) ii
+
+        let extract_intid v = arch_op1 AArch64Op.GICGetIntid v
+        let extract_update_val v f = arch_op1 (AArch64Op.GICGetField f) v
+        let gic_setintid v = arch_op1 AArch64Op.GICSetIntid v
+        let set_active act v = arch_op1 (AArch64Op.IntidSetAct act) v
+        let get_active v = arch_op1 AArch64Op.IntidGetAct v
+        let set_pending p v = arch_op1 (AArch64Op.IntidSetPend p) v
+        let get_pending v = arch_op1 AArch64Op.IntidGetPend v
+        let set_enabled e v = arch_op1 (AArch64Op.IntidSetEnabled e) v
+        let get_enabled v = arch_op1 AArch64Op.IntidGetEnabled v
+        let set_priority p v = arch_op1 (AArch64Op.IntidSetPri p) v
+        let get_priority v = arch_op1 AArch64Op.IntidGetPri v
+        let set_affinity p v = arch_op1 (AArch64Op.IntidSetAff p) v
+        let get_affinity v = arch_op1 AArch64Op.IntidGetAff v
+
+        let is_cHPPI proc v =
+          let* act = get_active v in
+          let* pend = get_pending v in
+          let* enabled = get_enabled v in
+          let* affinity = get_affinity v in
+          m_op Op.And (is_zero act) (is_not_zero pend) |>
+          m_op Op.And (is_not_zero enabled) |>
+          m_op Op.And (M.op Op.Eq affinity proc)
+
+        let gic_instr _domain cmd r ii =
+          let open AArch64Base.GIC in
+            match cmd with
+            | DI ->
+              let* v = read_reg Port.AddrData r ii in
+              let* intid = extract_intid v in
+              let* old_v = read_intid intid ii in
+              let* new_v = set_active false old_v in
+              let* () = write_intid intid new_v ii in
+              B.nextT
+            | PEND ->
+              let* v = read_reg Port.AddrData r ii in
+              let* intid = extract_intid v in
+              let* old_v = read_intid intid ii in
+              let* pend_v = extract_update_val v "pending" in
+              let* new_v = set_pending (V.is_one pend_v) old_v in
+              (* FIXME: Set handling mode too *)
+              let* () = write_intid intid new_v ii in
+              B.nextT
+            | DIS ->
+              let* v = read_reg Port.AddrData r ii in
+              let* intid = extract_intid v in
+              let* old_v = read_intid intid ii in
+              let* new_v = set_enabled false old_v in
+              let* () = write_intid intid new_v ii in
+              B.nextT
+            | EN ->
+              let* v = read_reg Port.AddrData r ii in
+              let* intid = extract_intid v in
+              let* old_v = read_intid intid ii in
+              let* new_v = set_enabled true old_v in
+              let* () = write_intid intid new_v ii in
+              B.nextT
+            | PRI ->
+              let* v = read_reg Port.AddrData r ii in
+              let* intid = extract_intid v in
+              let* intid_val = read_intid intid ii in
+              let* pri_v = extract_update_val v "priority" in
+              let pri = Option.get (V.as_int pri_v) in
+              let* intid_val = set_priority pri intid_val in
+              let* () = write_intid intid intid_val ii in
+              B.nextT
+            | AFF ->
+              let* v = read_reg Port.AddrData r ii in
+              let* intid = extract_intid v in
+              let* old_v = read_intid intid ii in
+              let* aff_v = extract_update_val v "target" in
+              let aff = Option.get (V.as_int aff_v) in
+              let* new_v = set_affinity aff old_v in
+              let* () = write_intid intid new_v ii in
+              B.nextT
+            | RCFG ->
+              let open AArch64Base in
+              let* v = read_reg Port.AddrData r ii in
+              let* intid = extract_intid v in
+              let* intid_val = read_intid intid ii in
+              let* () = write_reg (SysReg ICC_ICSR_EL1) intid_val ii in
+              B.nextSetT (SysReg ICC_ICSR_EL1) intid_val
+            | EOI -> begin
+                match r with
+                | AArch64.ZR ->
+                  B.nextT
+                | _ ->
+                  Warn.user_error "Instruction GIC CDEOI,%s not supported" (A.pp_reg r)
+              end
+
+        let gicr_instr _domain cmd r ii test =
+          let open AArch64Base.GICR in
+          let open IntidUpdateVal in
+          let (let*=) = (M.bind_control_set_data_input_first) in
+          let nack =
+            let branch =
+              let t = "noHPPI" in
+              commit_pred_txt (Some t) ii in
+            let*= () = branch in
+            let ret = { intid = None; field = Some ("valid", "0") } in
+            let v = A.V.cstToV (Constant.IntidUpdateVal ret) in
+            let* () = write_reg r v ii in
+            B.nextT
+          and ack a v =
+            let*= () = commit_pred_txt (Some "HPPI") ii in
+            let* () =
+              let* v = set_pending false v in
+              let* v = set_active true v in
+              write_intid a v ~ae:aimp ii
+            and* () =
+              let* v = gic_setintid a in
+              write_reg r v ii in
+            B.nextT in
+          let intids = A.V.ValueSet.elements (get_exported_intids test) in
+          let m =
+            let* vs = List.fold_right (>>::)
+                (List.map (fun a -> read_intid a ~ae:aimp ii) intids)
+                (M.unitT []) in
+            let rec choose vl al =
+              match (vl, al) with
+              | v::vl, a::al ->
+                let proc = A.V.intToV ii.A.proc in
+                let is_hppi = is_cHPPI proc v in
+                let* cond = match cmd with
+                  | IA -> is_hppi
+                  | NMIA ->
+                    let* prio = get_priority v in
+                    let is_nmi = is_zero prio in
+                    m_op Op.And is_hppi is_nmi
+                in
+                M.altT
+                  (M.assertT cond (ack a v))
+                  (choose vl al)
+              | [], [] ->
+                nack
+              | _, _ ->
+                assert false in
+            choose vs intids in
+          List.fold_right
+            (fun a -> M.short
+                (fun e -> is_this_loc a e && E.is_mem_load e)
+                (fun e -> is_this_loc a e && E.is_mem_store e))
+            intids m
+      end
 
 (*********************)
 (* Instruction fetch *)
@@ -4518,7 +4680,9 @@ module Make
                read_nzcv ii
                >>= M.op1 (Op.LeftShift 28)
                >>= fun v -> write_reg_dest xt v ii
-               >>= nextSet xt
+               >>= nextSet (SysReg sreg)
+            | ICC_HPPIR_EL1 ->
+              nextSet (SysReg sreg) A.V.zero
             | _ -> begin
               let sz = MachSize.Quad in
               let off = AArch64.sysreg_nv2off sreg in
@@ -4547,7 +4711,12 @@ module Make
             do_aut key rd rn ii
         | I_XPACI r | I_XPACD r ->
             do_xpac r ii
-(*  Cannot handle *)
+        (* GICv5 *)
+        | I_GIC (AArch64Base.GIC.({domain; cmd;}), r) ->
+            GICSem.gic_instr domain cmd r ii
+        | I_GICR (r, AArch64Base.GICR.({domain; cmd})) ->
+            GICSem.gicr_instr domain cmd r ii test
+        (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _
         | I_OP3_SIMD _ | I_OP3_SV _

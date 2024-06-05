@@ -72,10 +72,12 @@ let mk_lab (p, l) = Label (p, l)
 %token <string> NUM
 %token <string> VALUE
 %token <string> PENDING
+%token <string> ACTIVE
 %token <string> ENABLED
 %token <string> PRIORITY
 %token <string> TARGET_MODE
 %token <string> TRIGGER_MODE
+%token <string> VALID
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
@@ -173,10 +175,12 @@ intid_prop_tail:
 
 intid_field:
 | PENDING { $1 }
+| ACTIVE { $1 }
 | ENABLED { $1 }
 | PRIORITY { $1 }
 | TARGET_MODE { $1 }
 | TRIGGER_MODE { $1 }
+| VALID { $1 }
 
 intid_prop_head:
 | key=intid_field COLON v=name_or_num tail=intid_prop_tail
@@ -189,17 +193,14 @@ intidval:
 
 intid_update_prop_tail:
 | { IntidUpdateVal.empty }
-| COMMA key=intid_field COLON v=name_or_num tail=intid_update_prop_tail
-  { IntidUpdateVal.add_field key v tail }
-| COMMA TARGET COLON v=PROC tail=intid_update_prop_tail
-  { IntidUpdateVal.add_field "target" (string_of_int v) tail }
+| COMMA intid_update_prop_head { $2 }
 
 intid_update_prop_head:
 | TOK_INTID_UPDATE COLON v=NAME tail=intid_update_prop_tail
   { IntidUpdateVal.add_intid v tail }
-| key=intid_field COLON v=name_or_num tail=intid_update_prop_head
+| key=intid_field COLON v=name_or_num tail=intid_update_prop_tail
   { IntidUpdateVal.add_field key v tail }
-| TARGET COLON v=PROC tail=intid_update_prop_head
+| TARGET COLON v=PROC tail=intid_update_prop_tail
   { IntidUpdateVal.add_field "target" (string_of_int v) tail }
 
 intid_update_val:
@@ -470,6 +471,8 @@ atom_prop:
   { Atom (LV (Loc loc, MiscParser.add_oa_if_none loc v )) }
 | loc=loc_brk equal v=pteval
   { Atom (LV (Loc loc, MiscParser.add_oa_if_none loc v)) }
+| loc=location_reg equal v=intid_update_val
+   { Atom (LV (Loc loc, IntidUpdateVal v)) }
 | loc=location equal v=intidval
   { Atom (LV (Loc loc, IntidVal v)) }
 | loc=loc_brk equal v=intidval

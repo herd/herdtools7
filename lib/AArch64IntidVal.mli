@@ -24,6 +24,7 @@ end
 
 type t = {
   pending : bool;
+  active : bool;
   enabled : bool;
   priority : int;
   target : Proc.t;
@@ -38,6 +39,7 @@ val compare : t -> t -> int
 
 val pp : t -> string
 val get_prio : t -> int option
+val get_target : t -> int option
 
 val tr : ParsedIntidVal.t -> t
 val pp_norm : ParsedIntidVal.t -> string

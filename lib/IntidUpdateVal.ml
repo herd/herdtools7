@@ -17,32 +17,42 @@
 open Printf
 
 type t =
-  { intid : string;
-    field : (string * string) }
+  { intid : string option;
+    field : (string * string) option }
 
-let empty = { intid = ""; field = ("", "") }
+let empty = { intid= None; field= None }
 
-let add_intid v p = { p with intid = v }
+let add_intid v p = { p with intid = Some v }
 
 let add_field f v p =
-  if p.field != empty.field then
-    let (f, _) = p.field in
+  match p.field with
+  | Some (f, _) ->
     Warn.user_error "Cannot update more than one field. Field %s already defined" f
-  else
-    { p with field = (f, v) }
+  | None ->
+    { p with field = Some (f, v) }
 
 let eq p1 p2 =
-  let (f1, v1) = p1.field in
-  let (f2, v2) = p2.field in
-  String.equal p1.intid p2.intid &&
-  String.equal f1 f2 &&
-  String.equal v1 v2
+  let eq_intid =
+    match p1.intid, p2.intid with
+    | Some i1, Some i2 -> String.equal i1 i2
+    | Some _, None| None, Some _
+    | None, None -> true
+  in
+  match p1.field, p2.field with
+  | Some (f1, v1), Some (f2, v2) ->
+    eq_intid && String.equal f1 f2 && String.equal v1 v2
+  | Some _, None
+  | None, Some _
+  | None, None -> eq_intid
 
 let compare =
-  (fun p1 p2 -> String.compare p1.intid p2.intid)
+  (fun p1 p2 -> Option.compare String.compare p1.intid p2.intid)
     |> Misc.lex_compare (fun p1 p2 -> compare p1.field p2.field)
 
 let pp p =
-  match p.field with
-  | "valid", "0" -> "(valid:0)"
-  | f,v -> sprintf "(intid:%s, %s:%s)" p.intid f v
+  match p.field, p.intid with
+  | Some ("valid", "0"), _ -> "(valid:0)"
+  | None, Some i1 -> sprintf "(intid:%s)" i1
+  | Some (f, v), Some i1 -> sprintf "(intid:%s, %s:%s)" i1 f v
+  | Some (f, v), None -> sprintf "(%s:%s)" f v
+  | None, None -> assert false
