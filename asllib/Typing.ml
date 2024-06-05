@@ -2631,38 +2631,29 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let ty' =
       match ty with Some ty -> Some (annotate_type ~loc env ty) | None -> ty
     in
-    let typed_initial_value =
+    let initial_value', initial_value_type =
       match initial_value with
-      | Some e -> Some (annotate_expr env e)
-      | None -> None
+      | Some e ->
+          let t, e' = annotate_expr env e in
+          (Some e', Some t)
+      | None -> (None, None)
     in
     let declared_t =
-      match (typed_initial_value, ty') with
-      | Some (t, _), Some ty ->
+      match (initial_value_type, ty') with
+      | Some t, Some ty ->
           let+ () = check_type_satisfies loc env t ty in
           ty
       | None, Some ty -> ty
-      | Some (t, _), None -> t
-      | None, None ->
-          (* Shouldn't happen because of parser construction. *)
-          Error.fatal_from loc
-            (Error.NotYetImplemented
-               "Global storage declaration must have an initial value or a \
-                type.")
+      | Some t, None -> t
+      | None, None -> Error.fatal_from loc UnrespectedParserInvariant
     in
     let env1 = add_global_storage loc name keyword env declared_t in
     let env2 =
-      match (keyword, typed_initial_value) with
-      | GDK_Constant, Some (_t, e) -> try_add_global_constant name env1 e
+      match (keyword, initial_value') with
+      | GDK_Constant, Some e -> try_add_global_constant name env1 e
       | (GDK_Constant | GDK_Let), None ->
-          (* Shouldn't happen because of parser construction. *)
-          Error.fatal_from loc
-            (Error.NotYetImplemented
-               "Constants or let-bindings must be initialized.")
+          Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
-    in
-    let initial_value' =
-      match typed_initial_value with None -> None | Some (_t, e) -> Some e
     in
     ({ gsd with ty = ty'; initial_value = initial_value' }, env2)
   (* End *)
