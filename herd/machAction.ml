@@ -299,6 +299,11 @@ end = struct
      end
   | _ -> false
 
+  let is_intid a =
+    match location_of a with
+    | Some (A.Location_global (V.Val v)) -> Constant.is_intid v
+    | _ -> false
+
   let is_additional_mem _ = false
 
   let is_atomic a = match a with
@@ -575,6 +580,7 @@ end = struct
     ("T",is_tag)::
     ("TLBI",is_inv)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
+    ("INTID", is_intid)::
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::

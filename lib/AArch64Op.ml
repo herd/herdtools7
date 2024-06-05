@@ -26,6 +26,19 @@ type 'op1 unop =
   | Tagged (* get Tag attribute from PTE entry *)
   | CheckCanonical (* Check is a virtual address is canonical *)
   | MakeCanonical (* Make a virtual address canonical *)
+  | GICGetIntid (* Get the INTID location from an IntidUpdateVal *)
+  | GICGetField of string (* Get the the update fields from an IntidUpdateVal *)
+  | GICSetIntid
+  | IntidSetAct of bool
+  | IntidGetAct
+  | IntidSetPend of bool
+  | IntidGetPend
+  | IntidSetEnabled of bool
+  | IntidGetEnabled
+  | IntidSetPri of int
+  | IntidGetPri
+  | IntidSetAff of int
+  | IntidGetAff
   | Extra1 of 'op1
 
 type 'op binop =
@@ -73,6 +86,19 @@ module
       | Tagged -> "Tagged"
       | CheckCanonical -> "CheckCanonical"
       | MakeCanonical -> "MakeCanonical"
+      | GICGetIntid -> "GICGetIntid"
+      | GICGetField s -> "GICGetField:" ^ s
+      | GICSetIntid -> "GICSetIntid"
+      | IntidSetAct v -> "IntidSetAct:" ^ (string_of_bool v)
+      | IntidGetAct -> "IntidGetAct"
+      | IntidSetPend v -> "IntidSetPend:" ^ (string_of_bool v)
+      | IntidGetPend -> "IntidGetPend"
+      | IntidSetEnabled v -> "IntidSetEnabled:" ^ (string_of_bool v)
+      | IntidGetEnabled -> "IntidGetEnabled"
+      | IntidSetPri v -> "IntidSetPri:" ^ (string_of_int v)
+      | IntidGetPri -> "IntidGetPri"
+      | IntidSetAff v -> "IntidSetAff:" ^ (string_of_int v)
+      | IntidGetAff -> "IntidGetAff"
       | Extra1 op1 -> Extra.pp_op1 hexa op1
 
     type scalar = S.t
@@ -86,7 +112,7 @@ module
         let is_morello = true
       end) in
       Constant.pp (S.pp hexa) (AArch64PteVal.pp hexa)
-      (InstrPP.dump_instruction) v
+        (AArch64IntidVal.pp) (InstrPP.dump_instruction) v
 
     open AArch64PteVal
 
@@ -141,6 +167,76 @@ module
       match v with
       | PteVal {oa;_} -> Some (Symbolic (oa2symbol oa))
       | _ -> None
+
+    let op_get_intid_update_val op = function
+      | Constant.IntidUpdateVal v -> Some (op v)
+      | _ -> None
+
+    let get_gicintid = op_get_intid_update_val
+        (fun v -> (Constant.mk_sym_intid (Option.get v.IntidUpdateVal.intid)))
+
+    let get_gicfield field =
+      op_get_intid_update_val
+        (fun v ->
+           match v.IntidUpdateVal.field with
+           | Some (f, v) when String.equal f field ->
+             Constant.Concrete (S.of_string v)
+           | _ ->
+             Warn.user_error
+               "No field named %s in %s" field (IntidUpdateVal.pp v)
+        )
+
+    let gic_setintid v =
+      let open Constant in
+      let open IntidUpdateVal in
+      match v with
+      | Symbolic (System (INTID, s)) ->
+        Some (IntidUpdateVal({intid=Some s; field=Some ("valid", "1")}))
+      | _ -> None
+
+    let op_get_intid_field op v =
+      let open Constant in
+      match v with
+      | IntidVal i -> Some (Concrete (op i))
+      | _ -> None
+
+    let op_set_intid op v =
+      let open Constant in
+      match v with
+      | IntidVal i -> Some (IntidVal (op i))
+      | _ -> None
+
+    let intid_set_act v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.active=v})
+
+    let intid_get_act () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.active then S.one else S.zero)
+
+    let intid_set_pend v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.pending=v})
+
+    let intid_get_pend () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.pending then S.one else S.zero)
+
+    let intid_set_enabled v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.enabled=v})
+
+    let intid_get_enabled () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.enabled then S.one else S.zero)
+
+    let intid_set_pri v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.priority=v})
+
+    let intid_get_pri () =
+      let open Constant in
+      op_get_intid_field (fun i -> S.of_int (i.AArch64IntidVal.priority))
+
+    let intid_set_aff v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.target=v})
+
+    let intid_get_aff () =
+      let open Constant in
+      op_get_intid_field (fun i -> S.of_int i.AArch64IntidVal.target)
 
     let exit _ = raise Exit
     let toExtra cst = Constant.map Misc.identity exit exit exit cst
@@ -197,6 +293,19 @@ module
       | Tagged -> gettagged
       | CheckCanonical -> checkCanonical
       | MakeCanonical -> makeCanonical
+      | GICGetIntid -> get_gicintid
+      | GICSetIntid -> gic_setintid
+      | GICGetField f -> get_gicfield f
+      | IntidSetAct v -> intid_set_act v
+      | IntidGetAct -> intid_get_act ()
+      | IntidSetPend v -> intid_set_pend v
+      | IntidGetPend -> intid_get_pend ()
+      | IntidSetEnabled v -> intid_set_enabled v
+      | IntidGetEnabled -> intid_get_enabled ()
+      | IntidSetPri v -> intid_set_pri v
+      | IntidGetPri -> intid_get_pri ()
+      | IntidSetAff v -> intid_set_aff v
+      | IntidGetAff -> intid_get_aff ()
       | Extra1 op1 ->
          fun cst ->
            try

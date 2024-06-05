@@ -89,6 +89,7 @@ val same_instance : event -> event -> bool
   val is_ifetch : event -> bool
 (* Page table access *)
   val is_pt : event -> bool
+  val is_gic : event -> bool
   val is_explicit : event -> bool
   val is_not_explicit : event -> bool
 (* Tag memory access *)
@@ -674,6 +675,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_pt e = match Act.location_of e.action with
       | Some (A.Location_global (V.Val c)) -> Constant.is_pt c
       | _ -> false
+
+    let is_gic e =
+      let open Constant in
+      match Act.location_of e.action with
+      | Some (A.Location_global (V.Val cst)) -> Constant.is_intid cst
+      | _ -> false
+
     let is_explicit e = Act.is_explicit e.action
     let is_not_explicit e = Act.is_not_explicit e.action
     let is_tag e = Act.is_tag e.action
