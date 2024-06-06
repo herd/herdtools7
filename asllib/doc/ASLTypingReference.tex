@@ -99,6 +99,8 @@
 \newcommand\minconstraint[0]{\hyperlink{def-minconstraint}{\texttt{min\_constraint}}}
 \newcommand\maxconstraint[0]{\hyperlink{def-maxconstraint}{\texttt{max\_constraint}}}
 \newcommand\findbitfieldopt[0]{\hyperlink{def-findbitfieldopt}{\texttt{find\_bitfield\_opt}}}
+\newcommand\lookupconstant[0]{\hyperlink{def-lookupconstant}{\texttt{lookup\_constant}}}
+\newcommand\typeof[0]{\hyperlink{def-typeof}{\texttt{type\_of}}}
 
 % Symbolic equivalence testing macros
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
@@ -111,16 +113,15 @@
 \newcommand\subsumes[0]{\hyperlink{def-subsumes}{\texttt{subsumes}}}
 \newcommand\symsubsumes[0]{\hyperlink{def-symsubsumes}{\texttt{sym\_subsumes}}}
 
-\newcommand\toir[0]{\texttt{to\_ir}}
+\newcommand\toir[0]{\hyperlink{def-toir}{\texttt{to\_ir}}}
 \newcommand\toircase[0]{\texttt{to\_ir\_case}}
-\newcommand\exprir[0]{\textsf{expr\_ir}}
-\newcommand\Prod[0]{\textsf{Prod}}
-\newcommand\Sum[0]{\textsf{Sum}}
-\newcommand\monomials[0]{\textsf{Monomials}}
-\newcommand\polynomials[0]{\textsf{Polynomials}}
-\newcommand\addpolynomials[0]{\texttt{add\_polynomials}}
-\newcommand\mulpolynomials[0]{\texttt{mul\_polynomials}}
-\newcommand\mulmonomials[0]{\texttt{mul\_mononimials}}
+\newcommand\Prod[0]{\hyperlink{def-prod}{\textsf{Prod}}}
+\newcommand\Sum[0]{\hyperlink{def-sum}{\textsf{Sum}}}
+\newcommand\monomial[0]{\hyperlink{def-monomial}{\textsf{monomial}}}
+\newcommand\polynomial[0]{\hyperlink{def-polynomial}{\textsf{polynomial}}}
+\newcommand\addpolynomials[0]{\hyperlink{def-addpolynomials}{\texttt{add\_polynomials}}}
+\newcommand\mulpolynomials[0]{\hyperlink{def-mulpolynomials}{\texttt{mul\_polynomials}}}
+\newcommand\mulmonomials[0]{\hyperlink{def-mulmonomials}{\texttt{mul\_mononimials}}}
 
 \newcommand\declaredtype[0]{\hyperlink{def-declaredtype}{\texttt{declared\_type}}}
 
@@ -583,7 +584,7 @@ We define the mathematical type of type error configurations
 as follows:
 \hypertarget{def-ttypeerror}{}
 \[
-  \TTypeError \triangleq \TypeError(\texttt{<string>})
+  \TTypeError \triangleq \{\TypeErrorVal{\vs} \;|\; \vs \in \texttt{<string>} \} \enspace.
 \]
 
 \hypertarget{def-typeerrorconfig}{}
@@ -9137,72 +9138,77 @@ evaluates an expression $\ve$, from a subset of the set of all expressions, in e
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule[e\_literal]{}
-  {
-    \staticeval(\tenv, \ELiteral(\vv)) \typearrow \vv
-  }
-  \and
-  \inferrule[e\_var]{
-    \tododefine{lookup\_constant}(\tenv, \vx) \typearrow \vv
-  }
-  {
-    \staticeval(\tenv, \EVar(\vx)) \typearrow \vv
-  }
-  \and
-  \inferrule[e\_binop]{
-    \staticeval(\tenv, \veone) \typearrow \vvone\\
-    \staticeval(\tenv, \vetwo) \typearrow \vvtwo\\
-    \staticbinop(\op, \vvone, \vvtwo) \typearrow \vv
-  }
-  {
-    \staticeval(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow \vv
-  }
-  \and
-  \inferrule[e\_unop]{
-    \staticeval(\tenv, \veone) \typearrow \vvone\\
-    \unop(\op, \vvone) \typearrow \vv
-  }
-  {
-    \staticeval(\tenv, \EUnop(\op, \veone)) \typearrow \vv
-  }
-  \and
-  \inferrule[e\_slice\_int]{
-    \tododefine{slices\_to\_positions}(\tenv, \slices) \typearrow \positions\\
-    \staticeval(\tenv, \veone) \typearrow \vvone\\
-    \posmax \eqdef \max(\positions)\\
-    \bv \eqdef \tododefine{bitvector\_of\_z}(\posmax + 1, \vi)\\
-    \vv \eqdef \lbitvector(\tododefine{extract\_slice}(\bv, \positions))
-  }
-  {
-    \staticeval(\tenv, \ESlice(\lint(\vi), \slices)) \typearrow \vv
-  }
-  \and
-  \inferrule[e\_slice\_bitvector]{
-    \tododefine{slices\_to\_positions}(\tenv, \slices) \typearrow \positions\\
-    \staticeval(\tenv, \veone) \typearrow \vvone\\
-    \tododefine{bitvector\_length}(\bv) > \posmax\\
-    \vv \eqdef \lbitvector(\tododefine{extract\_slice}(\bv, \positions))
-  }
-  {
-    \staticeval(\tenv, \ESlice(\lbitvector(\bv), \slices)) \typearrow \vv
-  }
-  \and
-  \inferrule[e\_slice\_type\_error]{
-    \astlabel(\veone) \not\in \{\lint, \lbitvector\}
-  }
-  {
-    \staticeval(\tenv, \ESlice(\veone, \slices)) \typearrow \TypeError(\texttt{TypeMismatch}(\veone, [\TInt, \TBits]))
-  }
-  \and
-  \inferrule[e\_cond]{
-    \staticeval(\tenv, \econd) \typearrow \vcond\\
-    \vcond \eqname \lbool(\vb)\\
-    \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\
-    \staticeval(\tenv, \vep) \typearrow \vv
-  }
-  {
-    \staticeval(\tenv, \ECond(\econd, \veone, \vetwo)) \typearrow \vv
-  }
+\inferrule[e\_literal]{}
+{
+  \staticeval(\tenv, \ELiteral(\vv)) \typearrow \vv
+}
+\and
+\inferrule[e\_var]{
+  \lookupconstant(\tenv, \vx) \typearrow \vv
+}{
+  \staticeval(\tenv, \EVar(\vx)) \typearrow \vv
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_binop]{
+  \staticeval(\tenv, \veone) \typearrow \vvone\\
+  \staticeval(\tenv, \vetwo) \typearrow \vvtwo\\
+  \staticbinop(\op, \vvone, \vvtwo) \typearrow \vv
+}{
+  \staticeval(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow \vv
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_unop]{
+  \staticeval(\tenv, \veone) \typearrow \vvone\\
+  \unop(\op, \vvone) \typearrow \vv
+}{
+  \staticeval(\tenv, \EUnop(\op, \veone)) \typearrow \vv
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_slice\_int]{
+  \tododefine{slices\_to\_positions}(\tenv, \slices) \typearrow \positions\\
+  \staticeval(\tenv, \veone) \typearrow \vvone\\
+  \posmax \eqdef \max(\positions)\\
+  \bv \eqdef \tododefine{bitvector\_of\_z}(\posmax + 1, \vi)\\
+  \vv \eqdef \lbitvector(\tododefine{extract\_slice}(\bv, \positions))
+}{
+  \staticeval(\tenv, \ESlice(\lint(\vi), \slices)) \typearrow \vv
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_slice\_bitvector]{
+  \tododefine{slices\_to\_positions}(\tenv, \slices) \typearrow \positions\\
+  \staticeval(\tenv, \veone) \typearrow \vvone\\
+  \tododefine{bitvector\_length}(\bv) > \posmax\\
+  \vv \eqdef \lbitvector(\tododefine{extract\_slice}(\bv, \positions))
+}{
+  \staticeval(\tenv, \ESlice(\lbitvector(\bv), \slices)) \typearrow \vv
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_slice\_type\_error]{
+  \astlabel(\veone) \not\in \{\lint, \lbitvector\}
+}{
+  \staticeval(\tenv, \ESlice(\veone, \slices)) \typearrow \TypeError(\texttt{TypeMismatch}(\veone, [\TInt, \TBits]))
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_cond]{
+  \staticeval(\tenv, \econd) \typearrow \vcond\\
+  \vcond \eqname \lbool(\vb)\\
+  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\
+  \staticeval(\tenv, \vep) \typearrow \vv
+}{
+  \staticeval(\tenv, \ECond(\econd, \veone, \vetwo)) \typearrow \vv
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -9378,38 +9384,329 @@ transforms a type $\vt$ in a static environment $\tenv$ into a symbolic domain $
 \hypertarget{def-symsyntaxsubset}{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Symbolic Equivalence Testing \label{chap:symbolicequivalencetesting}}
+\chapter{Symbolic Reudction and Equivalence Testing \label{chap:symbolicequivalencetesting}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In this chapter, we define \emph{conservative} equivalence tests for expressions and types.
-By conservative, we mean that if a test returns $\True$ then the expressions or types being
-compared are indeed equivalent, but if the test returns $\False$ then
+In this chapter, we define two forms of symbolic reasoning ---
+\emph{symbolic reduction} and \emph{symbolic equivalence testing}.
+Symbolic reduction simplifies expressions into \emph{equivalent} expressions
+that are simpler to reason about.
+In out context, equivalence means that we can substitute one expression for another without
+affecting the semantics of the overall specification.
+%
+Symbolic equivalence is a \emph{conservative} test.
+By conservative, we mean that if a test for equivalence returns $\True$ then the expressions
+being compared are indeed equivalent, but if the test returns $\False$ then
 there are two possibilities:
 \begin{itemize}
-  \item the expressions or types are not equivalent;
-  \item the expressions or types are equivalent, but the reasoning power of our rules
+  \item the expressions are not equivalent;
+  \item the expressions are equivalent, but the reasoning power of our rules
   is not enough to prove it, and so we ``conservatively'' answer negatively.
 \end{itemize}
 In proof-theoretic terms, we can say that our equivalence tests are \emph{sound} but \emph{incomplete}.
 
 Notice that for a conservative test, it is always correct to return $\False$.
 
-\section{TypingRule.Equal}
-\hypertarget{def-equal}{}
-The parametric function $\equal$ equates two values of the same mathematical type and returns
-the respective Boolean value:
+\section{Symbolic Expression AST}
+Our symbolic reduction and equivalence testing rules use a \emph{symbolic expression AST}.
+We now define the symbolic expression AST and the operations associated with it.
+\newcommand\symexpr[0]{\hyperlink{def-symexpr}{\texttt{sym\_expr}}}
+\hypertarget{def-symexpr}{}
+\[
+  \begin{array}{rcl}
+    \symexpr    &::=& \polynomial                                     \hypertarget{def-polynomial}{}\hypertarget{def-sum}{}\\
+    \polynomial &::=& \Sum(\monomial \partialto \Z)                  \hypertarget{def-monomial}{}\hypertarget{def-prod}{}\\
+    \monomial   &::=& \Prod(\Identifiers \partialto \Npos)\\
+  \end{array}
+\]
+
+The meaning of each node in the symbolic expression AST can be interpreted as a mathematical formula,
+which we define via the interpretation function $\alpha$.
+
+\begin{definition}[Monomial]
+\emph{Monomials} are partial functions from variables to positive integers.
+%
+A non-empty monomial, $\Prod(\vm)\in\monomial$ where $\vm \neq \emptyfunc$, can be interpreted as follows:
+\[
+  \alpha(\Prod(\vm)) \triangleq \prod_{\vx \in \dom(\vm)} \vx^{\vm(\vx)} \enspace.
+\]
+
+An empty monomial is interpreted as the constant $1$:
+\[
+  \alpha(\Prod(\emptyfunc)) \triangleq 1 \enspace.
+\]
+\end{definition}
+For example,
+\[
+  \alpha(\ \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\})\ ) = x^3 \cdot y \cdot z^2 \enspace.
+\]
+
+\hypertarget{def-mulmonomials}{}
+The function
+\[
+  \mulmonomials(\overname{\monomial}{\vmone} \aslsep \overname{\monomial}{\vmtwo}) \rightarrow \overname{\monomial}{\vm}
+\]
+multiplies two monomials and returns a monomial
 \begin{mathpar}
-    \inferrule[equal-true]{a = b}
+  \inferrule{
     {
-        \equal(a, b) \rightarrow \True
+      \vf \eqdef \lambda \vx\in\identifier.\
+      \left\{
+      \begin{array}{ll}
+        \vfone(\vx) & \text{if } \vx \in \dom(\vfone) \setminus \dom(\vftwo)\\
+        \vfone(\vx) & \text{if } \vx \in \dom(\vftwo) \setminus \dom(\vfone)\\
+        \vfone(\vx)+\vftwo(\vx) & \text{else } \vx \in \dom(\vfone) \cap \dom(\vftwo)\\
+      \end{array}
+      \right.
     }
-    \and
-    \inferrule[equal-false]{a \neq b}
-    {
-        \equal(a, b) \rightarrow \False
-    }
+  }
+  {
+    \mulmonomials(\overname{\Prod(\vfone)}{\vmone}, \overname{\Prod(\vftwo)}{\vmtwo}) \typearrow \overname{\Prod(\vf)}{\vm}
+  }
 \end{mathpar}
-The reason we define equality via rules is to allow using it as a short-circuiting premise.
+For example,
+\[
+  \begin{array}{ll}
+  \mulmonomials( & \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}), \Prod(\{\vx\mapsto 1, \vw\mapsto 2\})\ ) =\\
+                 & \Prod(\{\vx\mapsto 4, \vy\mapsto 1, \vz\mapsto2, \vw\mapsto2\})
+  \end{array}
+\]
+
+\begin{definition}[Polynomial]
+  \emph{Polynomials} are partial functions from monomials to integers.
+  Intuitively, each monomial is mapped to its factor.
+  A polynomial $\Sum(\vp)$ can be interpreted as follows:
+  %
+\[
+  \alpha(\Sum(\vp)) \triangleq \sum_{\vm \in \dom(\vp)} \vp(\vm)\cdot\alpha(\vm)
+\]
+\end{definition}
+For example,
+\[
+  \Sum\left(\left\{
+    \begin{array}{lcl}
+      \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}) &\mapsto& -1,\\
+      \Prod(\{\vx\mapsto 2, \vy\mapsto 1\}) &\mapsto& 3
+    \end{array} \right\}\right) =
+    -1\cdot x^3 \cdot y \cdot z^2 + 3 \cdot \vx^2\cdot \vy \enspace.
+\]
+
+The function
+\[
+  \addpolynomials : \polynomial \times \polynomial \rightarrow \polynomial
+\]
+adds two polynomials:
+\begin{mathpar}
+\inferrule{
+  {
+    \vf \eqdef \lambda \vm\in\monomial.\
+    \left\{
+    \begin{array}{ll}
+      \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
+      \vfone(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
+      \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo)\\
+    \end{array}
+    \right.
+  }
+}{
+  \addpolynomials(\overname{\Sum(\vfone)}{\vpone}, \overname{\Sum(\vftwo)}{\vptwo}) \typearrow \overname{\Sum(\vf)}{\vp}
+}
+\end{mathpar}
+
+The overloaded function
+\[
+  \addpolynomials : \polynomial^* \rightarrow \polynomial
+\]
+adds a list of polynomials:
+\begin{mathpar}
+\inferrule[empty]{}{ \addpolynomials(\emptylist) \typearrow \Prod(\emptyfunc) }
+\and
+\inferrule[one]{}{ \addpolynomials([ \vp ]) \typearrow \vp }
+\and
+\inferrule[two\_or\_more]{
+  \addpolynomials(\vp_{2..k}) \typearrow \vpp\\
+  \addpolynomials(\vp_1, \vpp) \typearrow \vp
+}{
+  \addpolynomials(\vp_{1..k}) \typearrow \vp
+}
+\end{mathpar}
+
+The function
+\[
+  \mulpolynomials : \overname{\polynomial}{\vpone} \times \overname{\polynomial}{\vptwo} \rightarrow \overname{\polynomial}{\vp}
+\]
+multiplies two polynomials.
+\begin{mathpar}
+\inferrule{
+  {
+    \vps \eqdef \{ \Sum(\{\mulmonomials(\vmone, \vmtwo) \mapsto \vcone\times\vctwo\})
+      \;|\; \vfone(\vmone)=\vcone, \vftwo(\vmtwo)=\vctwo\}
+  }\\
+  \vps \eqname \{ i=1..k: \vp[i] \}\\
+  \addpolynomials(i=1..k: \vp[i]) \typearrow \vp\\
+}{
+  \mulpolynomials(\overname{\Sum(\vfone)}{\vpone}, \overname{\Sum(\vftwo)}{\vptwo}) \typearrow \vp
+}
+\end{mathpar}
+
+\section{TypingRule.ToIR}
+\hypertarget{def-toir}{}
+The function
+\[
+  \toir(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \overname{\symexpr}{\vp}\ \cup\ \{\bot\}\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+transforms a subset of ASL expressions into symbolic expressions. If an expression cannot be represented
+by a symbolic expression, the special value $\bot$ is returned.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{case\_success}):
+  \begin{itemize}
+    \item the expression $\ve$ can be transformed into a symbolic expression $\vp$,
+          that is, $\vp \neq \bot$;
+    \item the result is $\vp$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{static\_eval\_literal}):
+  \begin{itemize}
+    \item the expression $\ve$ cannot be transformed into a symbolic expression;
+    \item the expression $\ve$ can be statically evaluated to yield an integer value $\vv$;
+    \item $\vp$ is the polynomial representing the value $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{static\_eval\_non\_literal}):
+  \begin{itemize}
+    \item the expression $\ve$ cannot be transformed into a symbolic expression;
+    \item the expression $\ve$ evaluates to a result that is not an integer value;
+    \item $\vp$ is $\bot$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[case\_success]{
+  \toircase(\tenv, \ve) \typearrow \vp\\
+  \vp \neq \bot
+}{
+  \toir(\tenv, \ve) \typearrow \vp
+}
+\and
+\inferrule[static\_eval\_literal]{
+  \toircase(\tenv, \ve) \typearrow \vpp\\
+  \vpp \neq \bot\\
+  \staticeval(\tenv, \ve) \typearrow \lint{\vv}\\
+  \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto \vv \} )
+}{
+  \toir(\tenv, \ve) \typearrow \vp
+}
+\and
+\inferrule[static\_eval\_non\_literal]{
+  \toircase(\tenv, \ve) \typearrow \vpp\\
+  \vpp \neq \bot\\
+  \staticeval(\tenv, \ve) \typearrow \vv\\
+  \astlabel(\vv) \neq \lint
+}{
+  \toir(\tenv, \ve) \typearrow \bot
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.ToIRCase}
+The function
+\[
+  \toircase(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \overname{\symexpr}{\vp} \cup \{\bot\}
+\]
+transforms a subset of ASL expressions into symbolic expressions. If an expression cannot be represented
+by a symbolic expression, the special value $\bot$ is returned.
+
+\begin{mathpar}
+\inferrule[literal\_int]{}
+{
+  \toircase(\tenv, \ELiteral(\lint(\vi))) \typearrow \Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )
+}
+\and
+\inferrule[literal\_other]{
+  \astlabel(\vv) \neq \lint
+}{
+  \toircase(\tenv, \ELiteral(\vv)) \typearrow \bot
+}
+\and
+\inferrule[int\_constant]{
+  \lookupconstant(\tenv, \vs) \typearrow \ELiteral(\vv)\\
+  \checktrans{\astlabel(\vv) = \lint}{ExpectedIntegerLiteral} \typearrow \True \OrTypeError\\
+  \vv \eqname \lint(\vi)
+}{
+  \toircase(\tenv, \EVar(\vs)) \typearrow \Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )
+}
+\and
+\inferrule[int\_exact\_constraint]{
+  \lookupconstant(\tenv, \vs) \typearrow \bot\\
+  \typeof(\vs) \typearrow \vt \OrTypeError\\\\
+  \makeanonymous(\vt) \typearrow \ttyone \OrTypeError\\\\
+  \checktrans{\astlabel(\ttyone) = \TInt}{ExpectedIntegerType} \typearrow \True \OrTypeError\\\\
+  \ttyone = \TInt(\wellconstrained([\ConstraintExact(\ve)]))\\
+  \toir(\ve) \typearrow \vp
+}{
+  \toircase(\tenv, \EVar(\vs)) \typearrow \vp
+}
+\and
+\inferrule[int\_var]{
+  \lookupconstant(\tenv, \vs) \typearrow \bot\\
+  \typeof(\vs) \typearrow \vt\\
+  \makeanonymous(\vt) \typearrow \ttyone\\
+  \checktrans{\astlabel(\ttyone) = \TInt}{ExpectedIntegerType} \typearrow \True\\
+  \ttyone \neq \TInt(\wellconstrained([\ConstraintExact(\Ignore)]))
+}{
+  \toircase(\tenv, \EVar(\vs)) \typearrow \Sum( \{ \Prod(\{\vs\mapsto 1\})\mapsto 1 \} )
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_plus]{
+  \toir(\tenv, \veone) \typearrow \irone\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo\\
+  \vp \eqdef \addpolynomials(\irone, \irtwo)
+}{
+  \toircase(\tenv, \EBinop(\PLUS, \veone, \vetwo)) \typearrow \vp
+}
+\and
+\inferrule[ebinop\_minus]{
+  \toir(\tenv, \EBinop(\PLUS, \veone, \EBinop(\MINUS, \vetwo))) \typearrow \vp
+}{
+  \toircase(\tenv, \EBinop(\MINUS, \veone, \vetwo)) \typearrow \vp
+}
+\and
+\inferrule[ebinop\_mul]{
+  \toir(\tenv, \veone) \typearrow \irone\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo\\
+  \vp \eqdef \mulpolynomials(\irone, \irtwo)
+}{
+  \toircase(\tenv, \EBinop(\MUL, \veone, \vetwo)) \typearrow \vp
+}
+\and
+  \inferrule[ebinop\_shl]{
+  k \eqdef 2^{\vitwo}\\
+  \toir(\tenv, \EBinop(\MUL, \veone, \ELiteral(\lint(k)))) \typearrow \vp
+}{
+  \toircase(\tenv, \EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))) \typearrow \vp
+}
+\and
+\inferrule[ebinop\_literals]{
+  \staticbinop(\op, \vlone, \vltwo) \typearrow k\\
+  \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto k \} )
+}{
+  \toircase(\tenv, \EBinop(\op, \ELiteral(\lint(\vione)), \ELiteral(\lint(\vitwo)))) \typearrow \vp
+}
+\and
+\inferrule[eunop\_neg]{
+  \toir(\tenv, \EBinop(\MUL, \ELiteral(\lint(-1)),\veone )) \typearrow \vp
+}{
+  \toircase(\tenv, \EUnop(\NEG, \veone)) \typearrow \vp
+}
+\end{mathpar}
 
 \section{TypingRule.ExprEqual}
 \hypertarget{def-exprequal}{}
@@ -9422,13 +9719,12 @@ conservatively checks whether the expression $\veone$ is equivalent to the expre
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False \terminateas \True\\\\
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-  }
-  {
-    \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
-  }
+\inferrule{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False \terminateas \True\\\\
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}{
+  \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -9444,67 +9740,62 @@ specializes the expression equivalence test for the different types of expressio
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule[different\_labels]{
-    \astlabel(\veone) \neq \astlabel(\vetwo)
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
-  }
+\inferrule[different\_labels]{
+  \astlabel(\veone) \neq \astlabel(\vetwo)
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[e\_binop]{
-    \veone \eqname \EBinop(\opone, \veoneone, \veonetwo)\\
-    \vetwo \eqname \EBinop(\optwo, \vetwoone, \vetwotwo)\\\\
-    \exprequal(\veoneone, \vetwoone) \typearrow \vbone\\
-    \exprequal(\veonetwo, \vetwotwo) \typearrow \vbtwo\\\\
-    \vb \eqdef (\opone = \optwo) \land \vbone \land \vbtwo
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-  }
+\inferrule[e\_binop]{
+  \veone \eqname \EBinop(\opone, \veoneone, \veonetwo)\\
+  \vetwo \eqname \EBinop(\optwo, \vetwoone, \vetwotwo)\\\\
+  \exprequal(\veoneone, \vetwoone) \typearrow \vbone\\
+  \exprequal(\veonetwo, \vetwotwo) \typearrow \vbtwo\\\\
+  \vb \eqdef (\opone = \optwo) \land \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
 \end{mathpar}
 
 Recall that a conjunction over an empty set equals $\True$.
 \begin{mathpar}
-  \inferrule[e\_call]{
-    \veone \eqname \ECall(\nameone, \vargsone, \Ignore)\\
-    \vetwo \eqname \ECall(\nametwo, \vargstwo, \Ignore)\\\\
-    \equal(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
-    \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
-    i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i\\
-    \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-  }
+\inferrule[e\_call]{
+  \veone \eqname \ECall(\nameone, \vargsone, \Ignore)\\
+  \vetwo \eqname \ECall(\nametwo, \vargstwo, \Ignore)\\\\
+  \booltrans(\nameone = \nametwo) \equalarrow \True \terminateas \False\\\\
+  \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
+  i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-    \inferrule[e\_concat]{
-    \veone \eqname \EConcat(\vlone)\\
-    \vetwo \eqname \EConcat(\vltwo)\\\\
-    \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
-    i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i\\
-    \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-  }
+  \inferrule[e\_concat]{
+  \veone \eqname \EConcat(\vlone)\\
+  \vetwo \eqname \EConcat(\vltwo)\\\\
+  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
+  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-    \inferrule[e\_cond]{
-    \veone \eqname \ECond(\veoneone, \veonetwo, \veonethree)\\
-    \vetwo \eqname \ECond(\vetwoone, \vetwotwo, \vetwothree)\\\\
-    \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
-    \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo\\
-    \exprequal(\tenv, \veonethree, \vetwothree) \typearrow \vbthree\\
-    \vb \eqdef \vbone \land \vbtwo \land \vbthree
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \True
-  }
+\inferrule[e\_cond]{
+  \veone \eqname \ECond(\veoneone, \veonetwo, \veonethree)\\
+  \vetwo \eqname \ECond(\vetwoone, \vetwotwo, \vetwothree)\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo\\
+  \exprequal(\tenv, \veonethree, \vetwothree) \typearrow \vbthree\\
+  \vb \eqdef \vbone \land \vbtwo \land \vbthree
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \True
+}
 \end{mathpar}
 
 \begin{mathpar}
@@ -9514,8 +9805,7 @@ Recall that a conjunction over an empty set equals $\True$.
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
   \vb \eqdef \vbone \land \vbtwo
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
@@ -9527,8 +9817,7 @@ Recall that a conjunction over an empty set equals $\True$.
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
   \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo\\
   \vb \eqdef \vbone \land \vbtwo
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
@@ -9540,8 +9829,7 @@ Recall that a conjunction over an empty set equals $\True$.
   \vbone \eqdef \vfieldone = \vfieldtwo\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo\\
   \vb \eqdef \vbone \land \vbtwo
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
@@ -9553,8 +9841,7 @@ Recall that a conjunction over an empty set equals $\True$.
   \vbone \eqdef \vfieldsone = \vfieldstwo\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo\\
   \vb \eqdef \vbone \land \vbtwo
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
@@ -9564,8 +9851,7 @@ Recall that a conjunction over an empty set equals $\True$.
   \veone \eqname \ELiteral(\vvone)\\
   \vetwo \eqname \ELiteral(\vvtwo)\\\\
   \literalequal(\vvone, \vvtwo) \typearrow \vb
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
@@ -9573,15 +9859,13 @@ Recall that a conjunction over an empty set equals $\True$.
 \begin{mathpar}
 \inferrule[e\_pattern1]{
   \astlabel(\veone) = \EPattern
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
 }
 \and
 \inferrule[e\_pattern2]{
   \astlabel(\vetwo) = \EPattern
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
 }
 \end{mathpar}
@@ -9589,82 +9873,68 @@ Recall that a conjunction over an empty set equals $\True$.
 \begin{mathpar}
 \inferrule[e\_record1]{
   \astlabel(\veone) = \ERecord
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
 }
 \and
 \inferrule[e\_record2]{
   \astlabel(\vetwo) = \ERecord
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
 }
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[e\_tuple]{
+\inferrule[e\_tuple]{
   \veone \eqname \ETuple(\vlone)\\
   \vetwo \eqname \ETuple(\vltwo)\\
   \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
   i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
-}
-{
+}{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[e\_unop]{
-    \veone \eqname \EUnop(\opone, \veoneone)\\
-    \vetwo \eqname \EUnop(\optwo, \vetwoone)\\\\
-    \exprequal(\veoneone, \vetwoone) \typearrow \vbone\\
-    \vb \eqdef (\opone = \optwo) \land \vbone
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-  }
+\inferrule[e\_unop]{
+  \veone \eqname \EUnop(\opone, \veoneone)\\
+  \vetwo \eqname \EUnop(\optwo, \vetwoone)\\\\
+  \exprequal(\veoneone, \vetwoone) \typearrow \vbone\\
+  \vb \eqdef (\opone = \optwo) \land \vbone
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[e\_unknown1]{
-    \astlabel(\veone) = \EUnknown
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
-  }
-  \and
-  \inferrule[e\_unknown2]{
-    \astlabel(\vetwo) = \EUnknown
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
-  }
+\inferrule[e\_unknown]{
+  (\astlabel(\veone) = \EUnknown \lor \astlabel(\vetwo) = \EUnknown)
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[e\_ctc]{
-    \veone \eqname \EATC(\veoneone, \vtone)\\
-    \vetwo \eqname \EATC(\vetwoone, \vttwo)\\
-    \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
-    \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo\\
-    \vb \eqdef \vbone \land \vbtwo
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-  }
+\inferrule[e\_ctc]{
+  \veone \eqname \EATC(\veoneone, \vtone)\\
+  \vetwo \eqname \EATC(\vetwoone, \vttwo)\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[e\_var]{
-    \veone \eqname \EVar(\nameone)\\
-    \vetwo \eqname \EVar(\nametwo)\\\\
-    \vb \eqdef \nameone = \nametwo
-  }
-  {
-    \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-  }
+\inferrule[e\_var]{
+  \veone \eqname \EVar(\nameone)\\
+  \vetwo \eqname \EVar(\nametwo)\\\\
+  \vb \eqdef \nameone = \nametwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
 \end{mathpar}
 
 \end{emptyformal}
@@ -9707,280 +9977,27 @@ One of the following applies:
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule[all\_supported]{
-    \toir(\veone) \typearrow \irone\\
-    \toir(\vetwo) \typearrow \irtwo\\
-    \vb \eqdef \irone = \irtwo
-  }
-  {
-    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \vb
-  }
-  \and
-  \inferrule[unsupported1]{
-    \toir(\veone) \not\typearrow \irone
-  }
-  {
-    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False
-  }
-  \and
-  \inferrule[unsupported2]{
-    \toir(\vetwo) \not\typearrow \irtwo
-  }
-  {
-    \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False
-  }
+\inferrule[all\_supported]{
+  \toir(\veone) \typearrow \irone\\
+  \toir(\vetwo) \typearrow \irtwo\\
+  \vb \eqdef \irone = \irtwo
+}{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\and
+\inferrule[unsupported1]{
+  \toir(\veone) \typearrow \bot
+}{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False
+}
+\and
+\inferrule[unsupported2]{
+  \toir(\vetwo) \typearrow \bot
+}{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False
+}
 \end{mathpar}
 \end{emptyformal}
-
-\section{TypingRule.ToIR}
-The function
-\[
-  \toir(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \partialto \overname{\exprir}{\vp}
-\]
-transforms a subset of ASL expressions into
-an intermediate representation $\exprir$, which is essentially polynomials in reduced form.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{case\_success}):
-  \begin{itemize}
-    \item the expression $\ve$ can be transformed into the intermediate representation form as $\vp$;
-    \item the result is $\vp$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{static\_eval\_success}):
-  \begin{itemize}
-    \item the expression $\ve$ cannot be transformed into the intermediate representation form as $\vp$;
-    \item the expression $\ve$ can be statically evaluated to yield an integer value $\vv$;
-    \item $\vp$ is the reduced polynomial representing the value $\vv$.
-  \end{itemize}
-
-  \item Neither case above holds, and $\vp$ is $\bot$
-\end{itemize}
-
-\begin{emptyformal}
-\subsection{Formally}
-The meaning of each element of $\exprir$ can be interpreted as a mathematical formula,
-which we define via the interpretation function $\alpha$.
-
-\begin{definition}[Monomial]
-  \emph{Monomials} are partial functions from variables to positive integers:
-  $\monomials : \Prod(\identifier \partialto \{0, 1, \ldots\})$.
-  %
-  A monomial $\Prod(\vm)\in\monomials$ can be interpreted as follows:
-  \[
-    \alpha(\Prod(\vm)) \triangleq \prod_{\vx \in \dom(\vm)} \vx^{\vm(\vx)}
-  \]
-\end{definition}
-For example, the monomial $\Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\})$ can be interpreted as the term $x^3 \cdot y \cdot z^2$.
-
-The function
-\[
-  \mulmonomials(\overname{\monomials}{\vmone} \aslsep \overname{\monomials}{\vmtwo}) \rightarrow \overname{\monomials}{\vm}
-\]
-multiplies two monomials and returns a monomial
-\begin{mathpar}
-  \inferrule{
-    \vmone \eqname \Prod(\vfone)\\
-    \vmtwo \eqname \Prod(\vftwo)\\
-    {
-      \vf \eqdef \lambda \vx\in\identifier.\
-      \left\{
-      \begin{array}{ll}
-        \vfone(\vx) & \text{if } \vx \in \dom(\vfone) \setminus \dom(\vftwo)\\
-        \vfone(\vx) & \text{if } \vx \in \dom(\vftwo) \setminus \dom(\vfone)\\
-        \vfone(\vx)+\vftwo(\vx) & \text{else } \vx \in \dom(\vfone) \cap \dom(\vftwo)\\
-      \end{array}
-      \right.
-    }\\\\
-    \vm \eqdef \Prod(\vf)
-  }
-  {
-    \mulmonomials(\vmone, \vmtwo) \typearrow \vm
-  }
-\end{mathpar}
-For example,
-\[
-  \begin{array}{ll}
-  \mulmonomials( & \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}),\\
-                 & \Prod(\{\vx\mapsto 1, \vw\mapsto 2\}) ) =\\
-                 & \Prod(\{\vx\mapsto 4, \vy\mapsto 1, \vz\mapsto2, \vw\mapsto2\})
-  \end{array}
-\]
-
-\begin{definition}[Polynomial]
-  \emph{Polynomials} are partial functions from monomials to integers:
-  $\polynomials: \Sum(\monomials \partialto \Z)$.
-  Intuitively, each monomial is mapped to its factor.
-  A polynomial $\Sum(\vp)$ can be interpreted as follows:
-  %
-\[
-  \alpha(\Sum(\vp)) \triangleq \sum_{\vm \in \dom(\vp)} \vp(\vm)\cdot\alpha(\vm)
-\]
-\end{definition}
-For example, the polynomial
-\[
-    \begin{array}{rlcl}
-      \Sum(\{ & \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}) &\mapsto& -1,\\
-              & \Prod(\{\vx\mapsto 2, \vy\mapsto 1\}) &\mapsto& 3\\
-          \}) & & &
-    \end{array}
-\]
-can be interpreted as
-$-1\cdot x^3 \cdot y \cdot z^2 + 3 \cdot \vx^2\cdot \vy$.
-
-We define the intermediate representation to be polynomials. That is, $\exprir \triangleq \polynomials$.
-
-The function
-\[
-  \addpolynomials : \polynomials \times \polynomials \rightarrow \polynomials
-\]
-adds two polynomials.
-\begin{mathpar}
-  \inferrule{
-    \vpone \eqname \Sum(\vfone)\\
-    \vptwo \eqname \Sum(\vftwo)\\
-    {
-      \vf \eqdef \lambda \vm\in\monomials.\
-      \left\{
-      \begin{array}{ll}
-        \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
-        \vfone(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
-        \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo)\\
-      \end{array}
-      \right.
-    }\\
-    \vp \eqdef \Sum(\vf)
-  }
-  {
-    \addpolynomials(\vpone, \vptwo) \typearrow \vp
-  }
-\end{mathpar}
-
-The function
-\[
-  \mulpolynomials : \polynomials \times \polynomials \rightarrow \polynomials
-\]
-multiplies two polynomials.
-\begin{mathpar}
-  \inferrule{
-    \vpone \eqname \Sum(\vfone)\\
-    \vptwo \eqname \Sum(\vftwo)\\
-    {
-      \vps \eqdef \{ \Sum(\{\mulmonomials(\vmone, \vmtwo) \mapsto \vcone\times\vctwo\})
-        \;|\; \vfone(\vmone)=\vcone, \vftwo(\vmtwo)=\vctwo\}
-    }\\
-    \vps \eqname \{ i=1..k: \vp[i] \}\\
-    \vp \eqdef \addpolynomials(\addpolynomials(\vp[1], \vp[2]), \ldots, \vp[k]\ldots)\\
-  }
-  {
-    \mulpolynomials(\vpone, \vptwo) \typearrow \vp
-  }
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[case\_success]{
-    \toircase(\tenv, \ve) \typearrow \vp
-  }
-  {
-    \toir(\tenv, \ve) \typearrow \vp
-  }
-  \and
-  \inferrule[static\_eval\_success]{
-    \toircase(\tenv, \ve) \not\typearrow \Ignore\\
-    \staticeval(\tenv, \ve) \typearrow \vv\\
-    \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto \vv \} )
-  }
-  {
-    \toir(\tenv, \ve) \typearrow \vp
-  }
-\end{mathpar}
-\end{emptyformal}
-
-\section{TypingRule.ToIRCase}
-
-\begin{mathpar}
-  \inferrule[literal\_int]{}
-  {
-    \toircase(\tenv, \ELiteral(\lint(\vi))) \typearrow \Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )
-  }
-  \and
-  \inferrule[int\_constant]{
-    \tododefine{lookup\_constant}(\tenv, \vs) = \ELiteral(\lint(\vi))
-  }
-  {
-    \toircase(\tenv, \EVar(\vs)) \typearrow \Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )
-  }
-  \and
-  \inferrule[int\_exact\_constraint]{
-    \tododefine{type\_of}(\vs) = \vt\\
-    \makeanonymous(\vt) = \TInt(\wellconstrained([\ConstraintExact(\ve)]))\\
-    \toir(\ve) \typearrow \vp
-  }
-  {
-    \toircase(\tenv, \EVar(\vs)) \typearrow \vp
-  }
-  \and
-  \inferrule[int\_var]{
-    \tododefine{type\_of}(\vs) = \vt\\
-    \makeanonymous(\vt) = \TInt(\vc)\\
-    \neg(\exists \ve \in \expr.\ \vc = \wellconstrained([\ConstraintExact(\ve)]))
-  }
-  {
-    \toircase(\tenv, \EVar(\vs)) \typearrow \Sum( \{ \Prod(\{\vs\mapsto 1\})\mapsto 1 \} )
-  }
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[ebinop\_plus]{
-    \toir(\tenv, \veone) \typearrow \irone\\
-    \toir(\tenv, \vetwo) \typearrow \irtwo\\
-    \vp \eqdef \addpolynomials(\irone, \irtwo)
-  }
-  {
-    \toircase(\tenv, \EBinop(\PLUS, \veone, \vetwo)) \typearrow \vp
-  }
-  \and
-  \inferrule[ebinop\_minus]{
-    \toir(\tenv, \EBinop(\PLUS, \veone, \EBinop(\MINUS, \vetwo))) \typearrow \vp
-  }
-  {
-    \toircase(\tenv, \EBinop(\MINUS, \veone, \vetwo)) \typearrow \vp
-  }
-  \and
-  \inferrule[ebinop\_mul]{
-    \toir(\tenv, \veone) \typearrow \irone\\
-    \toir(\tenv, \vetwo) \typearrow \irtwo\\
-    \vp \eqdef \mulpolynomials(\irone, \irtwo)
-  }
-  {
-    \toircase(\tenv, \EBinop(\MUL, \veone, \vetwo)) \typearrow \vp
-  }
-  \and
-  \inferrule[ebinop\_shl]{
-    k \eqdef 2^{\vitwo}\\
-    \toir(\tenv, \EBinop(\MUL, \veone, \ELiteral(\lint(k)))) \typearrow \vp
-  }
-  {
-    \toircase(\tenv, \EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))) \typearrow \vp
-  }
-  \and
-  \inferrule[ebinop\_literals]{
-    \staticbinop(\op, \vlone, \vltwo) \typearrow k\\
-    \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto k \} )
-  }
-  {
-    \toircase(\tenv, \EBinop(\op, \ELiteral(\lint(\vione)), \ELiteral(\lint(\vitwo)))) \typearrow \vp
-  }
-  \and
-  \inferrule[eunop\_neg]{
-    \toir(\tenv, \EBinop(\MUL, \ELiteral(\lint(-1)),\veone )) \typearrow \vp
-  }
-  {
-    \toircase(\tenv, \EUnop(\NEG, \veone)) \typearrow \vp
-  }
-\end{mathpar}
 
 \section{TypingRule.TypeEqual}
 \hypertarget{def-typeequal}{}
@@ -9993,123 +10010,113 @@ conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule[different\_labels]{
-    \astlabel(\vtone) \neq \astlabel(\vttwo)
-  }
-  {
-    \typeequal(\tenv, \vtone, \vttwo) \typearrow \False
-  }
+\inferrule[different\_labels]{
+  \astlabel(\vtone) \neq \astlabel(\vttwo)
+}{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[TBool]{}
-  {
-    \typeequal(\tenv, \TBool, \TBool) \typearrow \True
-  }
-  \and
-  \inferrule[TReal]{}
-  {
-    \typeequal(\tenv, \TReal, \TReal) \typearrow \True
-  }
-  \and
-  \inferrule[TString]{}
-  {
-    \typeequal(\tenv, \TString, \TString) \typearrow \True
-  }
+\inferrule[TBool]{}
+{
+  \typeequal(\tenv, \TBool, \TBool) \typearrow \True
+}
+\and
+\inferrule[TReal]{}
+{
+  \typeequal(\tenv, \TReal, \TReal) \typearrow \True
+}
+\and
+\inferrule[TString]{}
+{
+  \typeequal(\tenv, \TString, \TString) \typearrow \True
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[tint\_unconstrained]{}
-  {
-    \typeequal(\tenv, \TInt(\unconstrained), \TInt(\unconstrained)) \typearrow \True
-  }
-  \and
-  \inferrule[tint\_underconstrained]{
-    \vb \eqdef \vione = \vitwo
-  }
-  {
-    \typeequal(\tenv, \TInt(\underconstrained(\vione, \Ignore)), \TInt(\underconstrained(\vitwo, \Ignore))) \typearrow \vb
-  }
-  \and
-  \inferrule[tint\_wellonstrained]{
-    \constraintsequal(\tenv, \vcone, \vctwo) \typearrow \vb
-  }
-  {
-    \typeequal(\tenv, \TInt(\wellconstrained(\vcone)), \TInt(\wellconstrained(\vctwo))) \typearrow \vb
-  }
+\inferrule[tint\_unconstrained]{}
+{
+  \typeequal(\tenv, \TInt(\unconstrained), \TInt(\unconstrained)) \typearrow \True
+}
+\and
+\inferrule[tint\_underconstrained]{
+  \vb \eqdef \vione = \vitwo
+}{
+  \typeequal(\tenv, \TInt(\underconstrained(\vione, \Ignore)), \TInt(\underconstrained(\vitwo, \Ignore))) \typearrow \vb
+}
+\and
+\inferrule[tint\_wellonstrained]{
+  \constraintsequal(\tenv, \vcone, \vctwo) \typearrow \vb
+}{
+  \typeequal(\tenv, \TInt(\wellconstrained(\vcone)), \TInt(\wellconstrained(\vctwo))) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[tbits]{
-    \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vbone\\
-    \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vbtwo\\
-    \vb \eqdef \vbone \land \vbtwo
-  }
-  {
-    \typeequal(\tenv, \TBits(\vwone, \bfone), \TBits(\vwtwo, \bftwo)) \typearrow \vb
-  }
+\inferrule[tbits]{
+  \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vbone\\
+  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vbtwo\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \typeequal(\tenv, \TBits(\vwone, \bfone), \TBits(\vwtwo, \bftwo)) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[tarray]{
-    \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone\\
-    \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo\\
-    \vb \eqdef \vbone \land \vbtwo
-  }
-  {
-    \typeequal(\tenv, \TArray(\vlone, \vtone), \TArray(\vltwo, \vttwo)) \typearrow \vb
-  }
+\inferrule[tarray]{
+  \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \typeequal(\tenv, \TArray(\vlone, \vtone), \TArray(\vltwo, \vttwo)) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[tnamed]{
-    \vb \eqdef \vsone = \vstwo
-  }
-  {
-    \typeequal(\tenv, \TNamed(\vsone), \TArray(\vstwo)) \typearrow \vb
-  }
+\inferrule[tnamed]{
+  \vb \eqdef \vsone = \vstwo
+}{
+  \typeequal(\tenv, \TNamed(\vsone), \TArray(\vstwo)) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[tenum]{
-    \vb \eqdef \vlone = \vltwo
-  }
-  {
-    \typeequal(\tenv, \TEnum(\vlone), \TEnum(\vltwo)) \typearrow \vb
-  }
+\inferrule[tenum]{
+  \vb \eqdef \vlone = \vltwo
+}{
+  \typeequal(\tenv, \TEnum(\vlone), \TEnum(\vltwo)) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[trecord]{
-    \equal(\dom(\vfone), \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
-    \vf \in \dom(\vfone): \typeequal(\tenv, \vfone(\vf), \vftwo(\vf)) \typearrow \vb_\vf\\
-    \vb \eqdef \bigwedge_{\vf \in \dom(\vfone)} \vb_\vf
-  }
-  {
-    \typeequal(\tenv, \TRecord(\vfone), \TRecord(\vftwo)) \typearrow \vb
-  }
+\inferrule[trecord]{
+  \booltrans(\dom(\vfone) = \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
+  \vf \in \dom(\vfone): \typeequal(\tenv, \vfone(\vf), \vftwo(\vf)) \typearrow \vb_\vf\\
+  \vb \eqdef \bigwedge_{\vf \in \dom(\vfone)} \vb_\vf
+}{
+  \typeequal(\tenv, \TRecord(\vfone), \TRecord(\vftwo)) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[texception]{
-    \equal(\dom(\vfone), \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
-    \vf \in \dom(\vfone): \typeequal(\tenv, \vfone(\vf), \vftwo(\vf)) \typearrow \vb_\vf\\
-    \vb \eqdef \bigwedge_{\vf \in \dom(\vfone)} \vb_\vf
-  }
-  {
-    \typeequal(\tenv, \TException(\vfone), \TException(\vftwo)) \typearrow \vb
-  }
+\inferrule[texception]{
+  \booltrans(\dom(\vfone) = \dom(\vftwo)) \equalarrow \True \terminateas \False\\\\
+  \vf \in \dom(\vfone): \typeequal(\tenv, \vfone(\vf), \vftwo(\vf)) \typearrow \vb_\vf\\
+  \vb \eqdef \bigwedge_{\vf \in \dom(\vfone)} \vb_\vf
+}{
+  \typeequal(\tenv, \TException(\vfone), \TException(\vftwo)) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[ttuple]{
-    \equallength(\vtsone, \vtstwo) \typearrow \True \terminateas \False\\
-    i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[i], \vtstwo[i]) \typearrow \vb_i\\
-    \vb \eqdef \bigwedge_{i \in \listrange(\vtsone)} \vb_i
-  }
-  {
-    \typeequal(\tenv, \TTuple(\vtsone), \TTuple(\vtstwo)) \typearrow \vb
-  }
+\inferrule[ttuple]{
+  \equallength(\vtsone, \vtstwo) \typearrow \True \terminateas \False\\
+  i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[i], \vtstwo[i]) \typearrow \vb_i\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vtsone)} \vb_i
+}{
+  \typeequal(\tenv, \TTuple(\vtsone), \TTuple(\vtstwo)) \typearrow \vb
+}
 \end{mathpar}
 % | T_Int (UnderConstrained (i1, _)), T_Int (UnderConstrained (i2, _)) ->
 %     i1 == i2
@@ -10128,12 +10135,11 @@ in environment $\tenv$.
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \exprequal(\tenv, \vwone, \vwtwo) \typearrow \vb
-  }
-  {
-    \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb
-  }
+\inferrule{
+  \exprequal(\tenv, \vwone, \vwtwo) \typearrow \vb
+}{
+  \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb
+}
 \end{mathpar}
 \end{emptyformal}
 
@@ -10149,16 +10155,15 @@ in environment $\tenv$.
 
 \begin{emptyformal}
 \subsection{Formally}
-  \begin{mathpar}
-    \inferrule{
-      \equallength(\bfone, \bftwo) \typearrow \True \terminateas \False\\\\
-      i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[i], \bftwo[i]) \typearrow \vb_i\\\\
-      \vb \eqdef \bigwedge_{i\in\listrange(\bfone)} \vb_i
-    }
-    {
-      \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vb
-    }
-  \end{mathpar}
+\begin{mathpar}
+\inferrule{
+  \equallength(\bfone, \bftwo) \typearrow \True \terminateas \False\\\\
+  i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[i], \bftwo[i]) \typearrow \vb_i\\\\
+  \vb \eqdef \bigwedge_{i\in\listrange(\bfone)} \vb_i
+}{
+  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vb
+}
+\end{mathpar}
 \end{emptyformal}
 
 \section{TypingRule.BitFieldEqual}
@@ -10172,35 +10177,32 @@ conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield
 
 \begin{emptyformal}
 \subsection{Formally}
-  \begin{mathpar}
-    \inferrule[different\_labels]{
-      \astlabel(\bfone) \neq \astlabel(\bftwo)
-    }
-    {
-      \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \False
-    }
-    \and
-    \inferrule[bitfield\_simple]{
-      \bfone \eqname \BitFieldSimple(\nameone, \slicesone)\\
-      \bftwo \eqname \BitFieldSimple(\nametwo, \slicestwo)\\\\
-      \equal(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
-      \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
-    }
-    {
-      \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
-    }
-    \and
-    \inferrule[bitfield\_nested]{
-      \bfone \eqname \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
-      \bftwo \eqname \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
-      \equal(\nameone, \nametwo) \equalarrow \True \terminateas \False\\\\
-      \slicesequal(\tenv, \slicesone, \slicestwo) \True \terminateas \False\\\\
-      \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vb
-    }
-    {
-      \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
-    }
-  \end{mathpar}
+\begin{mathpar}
+\inferrule[different\_labels]{
+  \astlabel(\bfone) \neq \astlabel(\bftwo)
+}{
+  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \False
+}
+\and
+\inferrule[bitfield\_simple]{
+  \bfone \eqname \BitFieldSimple(\nameone, \slicesone)\\
+  \bftwo \eqname \BitFieldSimple(\nametwo, \slicestwo)\\\\
+  \booltrans(\nameone = \nametwo) \equalarrow \True \terminateas \False\\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
+}{
+  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+}
+\and
+\inferrule[bitfield\_nested]{
+  \bfone \eqname \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
+  \bftwo \eqname \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
+  \booltrans(\nameone = \nametwo) \equalarrow \True \terminateas \False\\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \True \terminateas \False\\\\
+  \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vb
+}{
+  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+}
+\end{mathpar}
 \end{emptyformal}
 % What about BitField_Type?
 
@@ -10391,7 +10393,7 @@ tests whether literal $\vvone$ is $\vvtwo$ by equating them.
 \end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Utility Relations}
+\chapter{Utility Rules}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Checked Transitions}
@@ -11451,6 +11453,120 @@ One of the following applies:
 \end{mathpar}
 \end{emptyformal}
 
+\section{LookupConstant}
+\hypertarget{def-lookupconstant}{}
+The function
+\[
+  \lookupconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs})
+  \;\aslto\; \overname{\literal}{\vv}\ \cup\ \{\bot\}
+\]
+looks up the environment $\tenv$ for a constant $\vv$ associated with an identifier
+$\vs$. The result is $\bot$ if $\vs$ is not associated with any constant.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local}):
+  \begin{itemize}
+    \item $\vs$ is associated with a constant $\vv$ in the local environment of $\tenv$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
+    \item $\vs$ is associated with a constant $\vv$ in the global environment of $\tenv$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
+    \item $\vs$ is not associated with a constant in the global environment of $\tenv$;
+    \item the result is $\bot$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\constantvalues(\vs) = \vv
+}{
+  \lookupconstant(\tenv, \vs) \typearrow \vv
+}
+\and
+\inferrule[global]{
+  L^\tenv.\constantvalues(\vs) = \bot\\
+  G^\tenv.\constantvalues(\vs) = \vv
+}{
+  \lookupconstant(\tenv, \vs) \typearrow \vv
+}
+\and
+\inferrule[none]{
+  L^\tenv.\constantvalues(\vs) = \bot\\
+  G^\tenv.\constantvalues(\vs) = \bot
+}{
+  \lookupconstant(\tenv, \vs) \typearrow \bot
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypeOf}
+\hypertarget{def-typeof}{}
+The function
+\[
+  \typeof(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs})
+  \;\aslto\; \overname{\ty}{\tty}\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+looks up the environment $\tenv$ for a type $\tty$ associated with an identifier
+$\vs$. The result is type error if $\vs$ is not associated with any type.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local}):
+  \begin{itemize}
+    \item $\vs$ is associated with a type $\tty$ in the local environment of $\tenv$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item $\vs$ is not associated with a type in the local environment of $\tenv$;
+    \item $\vs$ is associated with a type $\tty$ in the global environment of $\tenv$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item $\vs$ is not associated with a type in the local environment of $\tenv$;
+    \item $\vs$ is not associated with a type in the global environment of $\tenv$;
+    \item the result is a type error indicating that $\vs$ was expected to be associated
+          with a type.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\localstoragetypes(\vs) = \tty
+}{
+  \typeof(\tenv, \vs) \typearrow \tty
+}
+\and
+\inferrule[global]{
+  L^\tenv.\localstoragetypes(\vs) = \bot\\
+  G^\tenv.\globalstoragetypes(\vs) = \tty
+}{
+  \typeof(\tenv, \vs) \typearrow \tty
+}
+\and
+\inferrule[none]{
+  L^\tenv.\localstoragetypes(\vs) = \bot\\
+  G^\tenv.\globalstoragetypes(\vs) = \bot
+}{
+  \typeof(\tenv, \vs) \typearrow \TypeErrorVal{UndefinedIdentifier}
+}
+\end{mathpar}
+\end{emptyformal}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}
 \bibliography{ASL}
