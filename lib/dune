@@ -68,4 +68,4 @@
  (wrapped false)
  (libraries str asllib zarith)
  (modules_without_implementation sign outTests AST CAst Scalar archBase
-   archDump PPMode name value))
+   archDump PPMode name value wideScalar))

@@ -422,7 +422,7 @@ module
   | _,_ ->
       binop
         Op.Eq
-        (fun s1 s2 -> bool_to_scalar (Cst.Scalar.compare s1 s2 = 0))
+        (fun s1 s2 -> bool_to_scalar (Cst.Scalar.equal s1 s2))
         v1 v2
 
   let ne v1 v2 = if is_zero (eq v1 v2) then one else zero
@@ -858,6 +858,8 @@ module
     | Offset -> offset
     | IsVirtual -> is_virtual_v
     | IsInstr -> is_instr_v
+    | Promote -> unop op Cst.Scalar.promote
+    | Demote -> unop op Cst.Scalar.demote
     | ArchOp1 op ->
         (function
          | Var _ -> raise Undetermined

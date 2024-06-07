@@ -92,9 +92,6 @@ let mask sz =
   | S128 ->
      fun (t,v) -> t, v
 
-let get_tag (t,_) = t
-let set_tag t (_,x) = t, x
-
 let sxt sz v = match sz with
   | MachSize.S128 -> v
   | _ ->
@@ -103,8 +100,7 @@ let sxt sz v = match sz with
      let m = Uint128.shift_left Uint128.one (nb-1) in
      t,Uint128.sub (Uint128.logxor v m) m
 
-type mask = Int64.t
-let to_mask = to_int64
+let get_tag (t,_) = t
+and set_tag t (_,x) = t, x
 
-let rbit _ _ = Warn.fatal "Capatibility.rbit not implemented"
-
+include NoPromote

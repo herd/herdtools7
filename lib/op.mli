@@ -85,6 +85,8 @@ type 'aop op1 =
   | PTELoc (* get PTE entry from location *)
   | Offset (* get offset from base (symbolic) location *)
   | IsInstr (* Check nature of constant *)
+  | Promote (* Promote to higher precision *)
+  | Demote  (* Demote to lower precision *)
   | ArchOp1 of 'aop
 
 val pp_op1 : bool -> (bool -> 'aop -> string) -> 'aop op1 -> string

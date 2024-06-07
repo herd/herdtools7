@@ -17,6 +17,8 @@
 open Uint
 include Uint128
 
+let promote_int64 x = Uint64.of_int64 x |> Uint128.of_uint64
+
 (* Compare is unsigned *)
 let unsigned_compare = compare
 
@@ -58,7 +60,4 @@ let sxt sz v = match sz with
 let get_tag _ = assert false
 let set_tag _ = assert false
 
-type mask = Int64.t
-let to_mask = to_int64
-
-let rbit _ _ =  Warn.fatal "Uint128.rbit not implemented"
+include NoPromote
