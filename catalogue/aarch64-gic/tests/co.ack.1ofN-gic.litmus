@@ -1,0 +1,9 @@
+AArch64 co.ack.1ofN-gic
+{
+ [INTID(A)]=(enabled:1,affinity:1ofN,pending:1,active:0);
+}
+ P0                | P1                   ;
+ GICR X2, CDIA     | GICR  X2, CDIA       ;
+
+exists(0:X2=gicval_t:(valid:1,intid:A) /\ 1:X2=gicval_t:(valid:1,intid:A))
+

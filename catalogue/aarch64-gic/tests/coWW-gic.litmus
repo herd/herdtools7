@@ -1,0 +1,12 @@
+AArch64 coWW-gic
+{
+ [INTID(A)]=(priority:0);
+ 0:X1=gicval_t:(intid:A, priority:1);
+ 0:X2=gicval_t:(intid:A, priority:2);
+}
+ P0                    ;
+ GIC CDPRI, X1         ;
+ GIC CDPRI, X2         ;
+
+exists(INTID(A)=(priority:0) \/ INTID(A)=(priority:1))
+

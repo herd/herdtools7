@@ -1,0 +1,11 @@
+AArch64 coWR-gic.dis.ack+gsb.sys
+{
+ [INTID(A)]=(enabled:1, pending:1);
+ 0:X1=gicval_t:(intid:A);
+}
+ P0                    ;
+ GIC  CDDIS, X1        ;
+ GSB  SYS              ;
+ GICR X0, CDIA         ;
+
+exists(0:X0=gicval_t:(valid:1, intid:A))
