@@ -18,7 +18,7 @@ depends: [
   "ocaml" {>= "4.08.0"}
   "dune"  {>= "2.7" }
   "menhir" {>= "20200123"}
-  "zarith" {>= "1.10"}
+  "zarith" {>= "1.13"}
   "conf-which"
 ]
 conflicts: ["ocaml-option-bytecode-only"]
