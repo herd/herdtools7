@@ -1,0 +1,18 @@
+AArch64 edge-merging.ipi.MP
+{
+ [INTID(A)]=(enabled:1, pending:1, affinity:P1);
+ 0:X0=gicval_t:(intid:A, pending:1);
+ 0:X1=x;
+ 1:X1=x;
+ 1:X3=gicval_t:(intid:A);
+}
+ P0                     | P1                     ;
+ GIC     CDPEND, X0     | LDR  W0, [X1]          ;
+ GSB     SYS            | DSB  LD                ;
+ MOV     X2, #1         | GICR X2, CDIA          ;
+ STR     W2, [X1]       | GIC  CDRCFG, X3        ;
+                        | ISB                    ;
+                        | MRS  X4, ICC_ICSR_EL1  ;
+
+exists(1:X0=1 /\ 1:X2=gicval_t:(valid:1, intid:A) /\ 1:X4=intval_t:(pending:1, active:1, affinity:P1))
+

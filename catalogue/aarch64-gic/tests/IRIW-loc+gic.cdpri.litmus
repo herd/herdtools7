@@ -1,0 +1,21 @@
+AArch64 IRIW-loc+gic.cdpri
+{
+ [INTID(A)]=(priority:0);
+ 0:X1=gicval_t:(intid:A, priority:1);
+ 1:X1=gicval_t:(intid:A, priority:2);
+ 2:X0=gicval_t:(intid:A);
+ 3:X0=gicval_t:(intid:A);
+}
+ P0            | P1            | P2                   | P3                   ;
+ GIC CDPRI, X1 | GIC CDPRI, X1 | GIC CDRCFG, X0       | GIC CDRCFG, X0       ;
+               |               | ISB                  | ISB                  ;
+               |               | MRS X1, ICC_ICSR_EL1 | MRS X1, ICC_ICSR_EL1 ;
+               |               | GIC CDRCFG, X0       | GIC CDRCFG, X0       ;
+               |               | ISB                  | ISB                  ;
+               |               | MRS X2, ICC_ICSR_EL1 | MRS X2, ICC_ICSR_EL1 ;
+
+exists((2:X1=intval_t:(priority:1) /\ 2:X2=intval_t:(priority:2) /\
+        3:X1=intval_t:(priority:2) /\ 3:X2=intval_t:(priority:1)) \/
+       (2:X1=intval_t:(priority:2) /\ 2:X2=intval_t:(priority:1) /\
+        3:X1=intval_t:(priority:1) /\ 3:X2=intval_t:(priority:2)))
+

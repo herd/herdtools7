@@ -1,0 +1,16 @@
+AArch64 MP-pri+gsb.sys+ack
+{
+ [INTID(A)]=(enabled:1,affinity:P1,priority:0,pending:0);
+ [PTE(x)]=(oa:PA(x),attrs:(device-nGRE)); // PERIP
+ 0:X1=x;
+ 0:X2=gicval_t:(intid:A, priority:5);
+ 1:X1=gicval_t:(intid:A);
+}
+ P0              | P1                    ;
+ GIC CDPRI, X2   | GICR X0, CDIA         ;
+ GSB SYS         | GIC  CDRCFG, X1       ;
+ STR X0, [X1]    | ISB                   ;
+                 | MRS  X1, ICC_ICSR_EL1 ;
+
+exists(1:X0=gicval_t:(valid:1, intid:A) /\
+       1:X1=(enabled:1,affinity:P1,priority:0,active:1))

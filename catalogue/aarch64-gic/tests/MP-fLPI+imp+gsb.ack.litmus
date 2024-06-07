@@ -1,0 +1,14 @@
+AArch64  MP-fLPI+imp+gsb.ack
+{
+ [INTID(A)]=(enabled:1,affinity:P1,priority:0,pending:0);
+ [PTE(x)]=(oa:PA(x),attrs:(device-nGRE)); // PERIP
+ 0:X3=x;
+ 1:X1=x;
+}
+ P0              | P1              ;
+ MOV  W2, #1     | GICR X0, CDIA   ;
+ STR W2, [X3]    | GSB  ACK        ;
+                 | LDR  W2, [X1]   ;
+
+exists(1:X0=gicval_t:(valid:1, intid:A) /\ 1:X2=0);
+

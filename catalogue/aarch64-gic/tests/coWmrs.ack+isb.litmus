@@ -1,0 +1,11 @@
+AArch64 coWmrs.ack+isb
+{
+ 0:[ppi(0)]=(enabled:1,pending:1,active:0);
+}
+P0
+GICR  X0, CDIA                  ;
+ISB                             ;
+MRS   X1, ICC_PPI_SACTIVER0_EL1 ;
+
+exists(0:X0=gicval_t:(valid:1, intid:ppi0) /\ X1=(ppi0.active:0))
+
