@@ -1,0 +1,15 @@
+AArch64 MP-fDI+W-dsb-W+R-addrpt-R
+{
+ [INTID(A)]=(active:1);
+ 0:X0=x; 0:X1=gicval_t:(intid:A);
+ 1:X0=x; 1:X1=gicval_t:(intid:A);
+}
+ P0                   | P1                    ;
+ MOV     X3, #1       | GIC CDRCFG, X1        ;
+ STR     X3, [X0]     | ISB                   ;
+ DSB     ST           | MRS X2, ICC_ICSR_EL1  ;
+ GIC     CDDI, X1     | EOR X5, X2, X2        ;
+                      | LDR X3, [X0, X5]      ;
+
+exists(1:X2=intval_t:(active:0) /\ 1:X3=0)
+

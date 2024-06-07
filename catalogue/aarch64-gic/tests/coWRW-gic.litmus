@@ -1,0 +1,17 @@
+AArch64 coWRW-gic
+{
+ [INTID(A)]=(priority:0);
+ 0:X0=gicval_t:(intid:A);
+ 0:X1=gicval_t:(intid:A, priority:1);
+ 0:X2=gicval_t:(intid:A, priority:2);
+}
+ P0                    ;
+ GIC CDPRI, X1         ;
+ GIC CDRCFG, X0        ;
+ GIC CDPRI, X2         ;
+ ISB                   ;
+ MRS X3, ICC_ICSR_EL1  ;
+
+exists(0:X3=intval_t:(priority:2) \/
+       0:X3=intval_t:(priority:0))
+

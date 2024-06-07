@@ -1,0 +1,13 @@
+AArch64 coWex+gic.cddis-gsb.sys-isb-clr.i
+{
+ [INTID(A)]=(enabled:1, pending:1);
+ 0:X1=gicval_t:(intid:A);
+}
+ P0                    ;
+ GIC  CDDIS, X1        ;
+ GSB  SYS              ;
+ ISB                   ;
+ DAIFClr  PSTATE.I     ;
+
+exists(async(P0, IRQ))
+

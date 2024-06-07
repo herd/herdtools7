@@ -1,0 +1,53 @@
+IRIW-2loc+gic.cdpri			Forbid
+IRIW-loc+gic.cdpri			Forbid
+MP-fDI+W-dsb-W+R-gsb-R			Forbid
+MP-fDI+W-dsb-W+R-addrpt-R		Forbid
+MP-fDI+W-dsb-W+R-ctrlisb-R		Forbid
+MP-fDI+RR				Allow
+MP-fDI+W-dsb-W+RR			Allow
+MP-fDI+WW+R-gsb-R			Allow
+# MP-fDI+ack-DI+gic.dis-R-gsb.sys-mR	Allow
+# MP-fDI+ack-DSB-DI+gic.dis-R-gsb.sys-mR Forbid
+MP-fIPI+dsb.st+gsb.ack			Forbid
+# MP-fSPI+dsb.st+gsb.ack		Forbid
+# MP-fLPI+imp+gsb.ack			Forbid
+# MP-fLPI+imp+addrpt			Forbid
+MP+gsb.sys+dsb.ld			Forbid
+# MP-pri+gsb.sys+ack			Forbid
+# Wvm-gic+R				Forbid
+ack-deactivate				Forbid
+atomic-gic.ack				Forbid
+atomic.ack.dis.gic+W+R			Forbid
+atomic.ack.gic-ib+W-R-si-R		Forbid
+co.ack-gic+WP+ack+ack			Forbid
+# co.ack.1ofN-gic			Forbid
+# coRR+gic.cddis+gic.cdrcfg-isb-clr.i	Forbid
+# coRR+gic.cddis+gic.cdrcfg-clr.i-isb	Allow
+coRR-gic+cdpri+cfg-isb-cfg-isb		Forbid
+coRR.ack				Forbid
+coRR.ack+dis+Rack			Forbid
+# coRex-gic+dis+RisbR			Forbid
+# coRex-gic+dis+RR			Allow
+# coWR+gic.cden-gsb.sys-isb-isr		Allow
+# coWR+gic.cden-gsb.sys-isb-isr+wait	Forbid
+coWR-gic.dis.ack+gsb.sys		Forbid
+coWR-gic.dis.ack			Allow
+coWR-gic.ipi.ack+gsb.sys		Forbid
+coWR-gic.ipi.ack			Allow
+coWR-gic				Forbid
+coWRW-gic				Forbid
+coWW-gic+R				Forbid
+coWW-gic				Forbid
+coWW.ack-gic+WP+ack			Forbid
+# coWWW-gic.dis-en+ack+ack		Forbid
+# coWex+gic.cddis-gsb.sys-isb-clr.i	Forbid
+# coWex+gic.cddis-gsb.sys-clr.i		Allow
+# coWmrs.ack+isb			Forbid
+# coWmrs.ack				Allow
+# coWmrs.ack+gsb			Allow
+# comsrR.ack+isb			Forbid
+edge-merging.ipi.MP			Forbid
+# edge-merging.ipi			Forbid
+# edge-merging.LPI+gsb.ack		Forbid
+# edge-merging.ppi			Forbid
+# vmW-gic+R				Forbid

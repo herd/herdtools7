@@ -1,0 +1,14 @@
+AArch64 coRR.ack
+{
+ [INTID(A)]=(enabled:1,affinity:P0,pending:1);
+ 0:X1=gicval_t:(intid:A);
+}
+ P0                    ;
+ GIC  CDDIS, X1        ;
+ GIC  CDRCFG, X1       ;
+ ISB                   ;
+ MRS  X2, ICC_ICSR_EL1 ;
+ GICR X0, CDIA         ;
+
+exists(0:X0=gicval_t:(valid:1, intid:A))
+
