@@ -1546,6 +1546,7 @@ In mix mode, lower bound on the number of different candidate
 relaxations tested together.
 Default is~$1$. Bounds are included: `-minrelax 3 -maxrelax 3` produces tests from cycles with exactly three different candidate relaxations. Notice that each of the different candidate relaxations can be repeated.
 \item[{\tt -safe <relax-list>}] Add candidates to the safe set. This option can ne repeated, with cumulative effect.
+\item[{\tt -relaxlist <relax-list>}] Alias for \texttt{-safe <relax-list>}.
 \item[{\tt -mode (default|sc|thin|uni|critical|free|ppo|total|mixed)}]
 Control generation  of cycles, default is~\opt{default}.
 Those tags command the activation of some constraints over cycle
