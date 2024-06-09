@@ -308,8 +308,8 @@ let speclist () =
     sprintf "<n> test relaxations considering <n> or more different relaxations (default %i). Implies -mix true." !min_relax)::
    ("-safe", Arg.String (fun s -> safes := !safes @ [s]),
     "<relax-list> specify a safe list")::
-   ("-relaxlist", Arg.String (fun s -> relaxs := !relaxs @[s]),
-    "<relax-list> specify a list of relaxations of interest")::
+   ("-relaxlist", Arg.String (fun s -> safes := !safes @[s]),
+    "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
    ("-rejectlist", Arg.String (fun s -> rejects := Some s),
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
    []
