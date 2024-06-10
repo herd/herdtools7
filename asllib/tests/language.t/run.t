@@ -261,6 +261,9 @@ Test Imqwb.asl:
 Test Rcgwr.asl:
   $ aslref Rcgwr.asl
 
+Test Rcgwr-2.asl:
+  $ aslref Rcgwr-2.asl
+
 Test Rjhkl.asl:
   $ aslref Rjhkl.asl
   File Rjhkl.asl, line 7, characters 4 to 5:
@@ -1037,6 +1040,12 @@ Test Rksqp_c.asl:
 Test Rpnqj.asl:
   $ aslref Rpnqj.asl
 
+Test Rpnqj-2.asl:
+  $ aslref Rpnqj-2.asl
+  File Rpnqj-2.asl, line 10, characters 8 to 24:
+  ASL Error: Undefined identifier: 'println'
+  [1]
+
 Test Rsblx.asl:
   $ aslref Rsblx.asl
 
@@ -1315,7 +1324,7 @@ Test Iqslr.asl:
 
 Test Ivgsp.asl:
   $ aslref Ivgsp.asl
-  File Ivgsp.asl, line 6, character 0 to line 9, character 3:
+  File Ivgsp.asl, line 9, character 0 to line 12, character 3:
   ASL Typing error: cannot declare already declared element "a".
   [1]
 
@@ -1396,6 +1405,12 @@ For reference, the test writter intention was that this output matched:
   $ grep '^// CHECK' Rdgrv.asl
   // CHECK: Hello
   // CHECK-NEXT: World
+
+Test Rdgrv-2.asl:
+  $ aslref Rdgrv-2.asl
+  File Rdgrv-2.asl, line 47, characters 8 to 17:
+  ASL Error: Cannot parse.
+  [1]
 
 Test Rgvcc.asl:
   $ aslref Rgvcc.asl
@@ -2933,6 +2948,12 @@ Test Ivgsp-2.asl:
   ASL Typing error: cannot declare already declared element "a".
   [1]
 
+Test Ivgsp-3.asl:
+  $ aslref Ivgsp-3.asl
+  File Ivgsp-3.asl, line 9, characters 3 to 23:
+  ASL Typing error: a subtype of string was expected, provided integer.
+  [1]
+
 Test Rccvd-2.asl:
   $ aslref Rccvd-2.asl
 
@@ -3018,6 +3039,12 @@ Test Rirnq-2.asl:
 Test Rqdqd-2.asl:
   $ aslref Rqdqd-2.asl
   File Rqdqd-2.asl, line 5, characters 13 to 14:
+  ASL Error: Cannot parse.
+  [1]
+
+Test Rqdqd-3.asl:
+  $ aslref Rqdqd-3.asl
+  File Rqdqd-3.asl, line 8, characters 13 to 14:
   ASL Error: Cannot parse.
   [1]
 
