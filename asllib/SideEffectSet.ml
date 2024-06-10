@@ -89,6 +89,14 @@ module ByCategories = struct
     && ISet.is_empty bc.recursive_call
 end
 
+let pp_print =
+  let open Format in
+  let pp_sep f () = fprintf f ",@ " in
+  fun f ses ->
+    fprintf f "{%a}"
+      (pp_print_seq ~pp_sep SideEffect.pp_print)
+      (SESet.to_seq ses)
+
 let pure = SESet.empty
 let write_global s = SESet.singleton (WriteGlobal s)
 let write_local s = SESet.singleton (WriteLocal s)
@@ -211,3 +219,17 @@ let remove_throwings =
   | ReadLocal _ | RecursiveCall _ ->
       true
   | Throwing _ -> false
+
+let of_string_list li = List.map SideEffect.string_specified li |> SESet.of_list
+
+let get_call_recursive t =
+  SESet.fold
+    (fun se acc -> match se with RecursiveCall s -> s :: acc | _ -> acc)
+    t []
+
+let remove_local =
+  SESet.filter @@ function
+  | StringSpecified _ | WriteGlobal _ | ReadGlobal _ | Throwing _
+  | RecursiveCall _ ->
+      true
+  | ReadLocal _ | WriteLocal _ -> false

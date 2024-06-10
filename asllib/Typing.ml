@@ -2630,8 +2630,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let body =
       match f.body with SB_ASL body -> body | SB_Primitive _ -> assert false
     in
-    let new_body, ses = try_annotate_block env body in
-    ({ f with body = SB_ASL new_body }, ses |: TypingRule.Subprogram)
+    let new_body, ses1 = try_annotate_block env body in
+    let ses2 = SE.remove_local ses1 in
+    ({ f with body = SB_ASL new_body }, ses2 |: TypingRule.Subprogram)
   (* End *)
 
   let try_annotate_subprogram env f =
@@ -2645,9 +2646,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let initial_side_effect_func f =
     match f.body with
-    | SB_ASL _ -> SE.pure
-    | SB_Primitive li ->
-        List.map SideEffect.string_specified li |> SE.SESet.of_list
+    | SB_ASL _ -> SE.(SESet.singleton (SideEffect.RecursiveCall f.name))
+    | SB_Primitive li -> SE.of_string_list li
 
   let check_setter_has_getter ~loc env (func_sig : AST.func) =
     let fail () =
@@ -2864,6 +2864,33 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let env = declare_type loc x ty s env in
         (d :: acc, env)
 
+  let propagate_mutually_recursive_ses =
+    let fold_rec_ses map acc name =
+      try
+        let ses', _extra_data = IMap.find name map in
+        ses' :: acc
+      with Not_found -> assert false
+    in
+    let fold_ses_map name (ses, extra_data) (map, touched) =
+      let ses' =
+        List.fold_left (fold_rec_ses map) [ ses ] (SE.get_call_recursive ses)
+        |> SE.unions
+      in
+      let () =
+        if false then
+          Format.eprintf "Extending %s ses from %a to %a@." name SE.pp_print ses
+            SE.pp_print ses'
+      in
+      let touched' = touched || SE.SESet.cardinal ses < SE.SESet.cardinal ses'
+      and map' = IMap.add name (ses', extra_data) map in
+      (map', touched')
+    in
+    let rec loop map =
+      let map, touched = IMap.fold fold_ses_map map (map, false) in
+      if touched then loop map else map
+    in
+    loop
+
   let type_check_mutually_rec ds (acc, env) =
     let () =
       if false then
@@ -2898,7 +2925,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       in
       List.rev_append setters others
     in
-    let genv1, fs =
+    let genv1, fs1 =
       list_fold_left_map
         (fun genv (lenv, f, loc) ->
           let env = { global = genv; local = lenv } in
@@ -2906,22 +2933,36 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (env'.global, (env'.local, f, loc)))
         env.global env_and_fs
     in
-    let genv2, ds =
-      list_fold_left_map
-        (fun genv (lenv, f, loc) ->
-          let here = add_pos_from loc in
-          let env' = { local = lenv; global = genv } in
-          match f.body with
-          | SB_ASL _ ->
-              let () =
-                if false then Format.eprintf "@[Analysing decl %s.@]@." f.name
-              in
-              let f, ses = try_annotate_subprogram env' f in
-              let env' = add_subprogram f.name f ses env' in
-              (env'.global, D_Func f |> here)
-          | SB_Primitive _ ->
-              (env'.global, D_Func (rename_primitive loc env' f) |> here))
-        genv1 fs
+    let fs2 =
+      List.map
+        (fun (lenv, f, loc) ->
+          let env = { local = lenv; global = genv1 } in
+          let f, ses =
+            match f.body with
+            | SB_ASL _ -> try_annotate_subprogram env f
+            | SB_Primitive ses ->
+                (rename_primitive loc env f, SE.of_string_list ses)
+          in
+          (lenv, f, ses, loc))
+        fs1
+    in
+    let fs3 =
+      List.map
+        (fun (lenv, (f : func), ses, loc) -> (f.name, (ses, (lenv, f, loc))))
+        fs2
+      |> IMap.of_list |> propagate_mutually_recursive_ses |> IMap.to_list
+      |> List.map (fun (_name, (ses, (lenv, f, loc))) -> (lenv, f, ses, loc))
+    in
+    let genv2 =
+      List.fold_left
+        (fun genv (lenv, (f : func), ses, _loc) ->
+          let env = { local = lenv; global = genv } in
+          let env = add_subprogram f.name f ses env in
+          env.global)
+        genv1 fs3
+    in
+    let ds =
+      List.map (fun (_lenv, f, _ses, loc) -> D_Func f |> add_pos_from loc) fs2
     in
     (List.rev_append ds acc, { env with global = genv2 })
 
