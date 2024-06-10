@@ -4,6 +4,9 @@
 //instead the type for each local storage element will be the type of the
 //positionally paired element (or nested tuple) of the initializer tuple
 //expression.
+// Note: this test is valid syntax, but does not check rule pnqj, instead it is
+// creating a single identifier with a tupe type.
+// This is more of a test for RXHPB
 
 // RUN: interp %s | FileCheck %s
 
