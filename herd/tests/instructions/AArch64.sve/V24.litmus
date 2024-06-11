@@ -1,4 +1,5 @@
 AArch64 V24
+Variant=sve:512
 {
 uint64_t 0:X0;
 uint64_t 0:X1;
@@ -20,6 +21,6 @@ INCD X4,MUL4 ;
 CNTW XZR     ;
 forall
   0:X0=8
-  /\ 0:X1=8 /\ 0:X2=64
-  /\ 0:X3=6 /\ 0:X4=0
+  /\ 0:X1=32 /\ 0:X2=256
+  /\ 0:X3=30 /\ 0:X4=16
 (* Notice: contents of registers 0:X1 to 0:X4 depend on where test runs *)

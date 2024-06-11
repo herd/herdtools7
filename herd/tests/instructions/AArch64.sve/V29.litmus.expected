@@ -1,11 +1,11 @@
 Test V29 Required
 States 1
-0:X0=16;
+0:X0=64;
 Ok
 Witnesses
 Positive: 1 Negative: 0
 Flag Scalable-Vector-Extensions-is-work-in-progress
-Condition forall (0:X0=16)
+Condition forall (0:X0=64)
 Observation V29 Always 1 0
 Hash=c0179047f87d6ae87f6e7c40bee8fd71
 
