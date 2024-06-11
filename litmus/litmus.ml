@@ -69,6 +69,7 @@ let opts =
      let module Opt = struct
        include Variant_litmus
        let setnow tag = set_fault_handling fault_handling tag
+       let reducetag tag = tag
      end in
      let module P = ParseTag.MakeS(Opt) in
    P.parse "-variant" Option.variant "select a variation" end ;

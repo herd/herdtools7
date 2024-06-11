@@ -19,27 +19,24 @@
 module
   Make
     (Var:sig
-      module Opt:sig
-        include ParseTag.Opt
-        val compare : t -> t -> int
-      end
+      module Opt:ParseTag.SArg
       val info : MiscParser.info
       val variant : Opt.t -> bool
       val mte_precision : Precision.t
-      val set_mte_precision : Precision.t ref -> Opt.t -> bool
       val fault_handling : Fault.Handling.t
-      val set_fault_handling : Fault.Handling.t ref -> Opt.t -> bool
-    end) : sig
-      type t = Var.Opt.t
-      val mte_precision : Precision.t
-      val fault_handling : Fault.Handling.t
-      val variant : Var.Opt.t -> bool
-    end= struct
+      val sve_vector_length : int
+    end) =
+    struct
       type t = Var.Opt.t
 
-      let mte_pref = ref Var.mte_precision
-      let fault_href = ref Var.fault_handling
-      and vref = ref Var.variant
+      module Refs = struct
+
+        let mte_precision = ref Var.mte_precision
+        and fault_handling = ref Var.fault_handling
+        and sve_vector_length = ref Var.sve_vector_length
+
+        let variant = ref Var.variant
+    end
 
       let () =
         match
@@ -49,18 +46,15 @@ module
         | None -> ()
         | Some tags ->
             let tags = LexSplit.strings_spaces tags in
-            let module Opt = struct
-              include Var.Opt
-              let setnow t =
-                Var.set_fault_handling fault_href t ||
-                Var.set_mte_precision mte_pref t
-            end in
+            let module Opt = ParseTag.MakeOptS(Var.Opt)(Refs) in
             let module P = ParseTag.MakeS(Opt) in
             try
-              List.iter (P.parse_tag_set "variant" vref) tags
+              List.iter (P.parse_tag_set "variant" Refs.variant) tags
             with Arg.Bad msg ->  Warn.user_error "%s" msg
 
-      let mte_precision = !mte_pref
-      let fault_handling = !fault_href
-      let variant = !vref
+       let mte_precision = !Refs.mte_precision
+       and fault_handling = !Refs.fault_handling
+       and sve_vector_length = !Refs.sve_vector_length
+       and variant = !Refs.variant
+
     end

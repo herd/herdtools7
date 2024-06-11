@@ -261,7 +261,7 @@ module Make
          >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
-      let scalable_nbits = 128
+      let scalable_nbits = TopConf.sve_vector_length
 
       let scalable_nbytes = scalable_nbits / 8
 

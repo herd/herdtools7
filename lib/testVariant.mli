@@ -18,20 +18,17 @@
 
 module Make : functor
   (Var:sig
-      module Opt:sig
-        include ParseTag.Opt
-        val compare : t -> t -> int
-      end
+      module Opt:ParseTag.SArg
       val info : MiscParser.info
       val variant : Opt.t -> bool
       val mte_precision : Precision.t
-      val set_mte_precision : Precision.t ref -> Opt.t -> bool
       val fault_handling : Fault.Handling.t
-      val set_fault_handling : Fault.Handling.t ref -> Opt.t -> bool
+      val sve_vector_length : int
     end) ->
       sig
         type t = Var.Opt.t
         val mte_precision : Precision.t
         val fault_handling : Fault.Handling.t
+        val sve_vector_length : int
         val variant : t -> bool
       end

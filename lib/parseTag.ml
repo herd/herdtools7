@@ -65,7 +65,12 @@ module Make (O:Opt) =
 module type OptS = sig
   include Opt
   val compare : t -> t -> int
+
   val setnow : t -> bool
+  (** If true, tag performs a hidden action and is forgotten *)
+
+  val reducetag : t -> t
+  (** Tag may perform a hidden action and may be changed *)
 end
 
 module MakeS (O:OptS)
@@ -90,6 +95,7 @@ module MakeS (O:OptS)
 
       let add_tag add tag =
         if not (O.setnow tag) then begin
+          let tag = O.reducetag tag in
           let old = !add in
           add := (fun t -> O.compare t tag = 0 || old t)
         end
@@ -101,3 +107,32 @@ module MakeS (O:OptS)
         opt,Arg.String spec,
         Printf.sprintf "<tags> where tags in {%s}, %s" taglist msg
     end
+
+module type SArg = sig
+  include Opt
+
+  val compare : t -> t -> int
+
+  val set_fault_handling :  Fault.Handling.t ref -> t -> bool
+  val set_mte_precision : Precision.t ref -> t -> bool
+  val set_sve_length : int ref -> t -> t
+end
+
+module type RefsArg = sig
+  val fault_handling : Fault.Handling.t ref
+  val mte_precision : Precision.t ref
+  val sve_vector_length : int ref
+end
+
+module MakeOptS =
+  functor (Opt:SArg) -> functor (Refs:RefsArg) ->
+  struct
+    include Opt
+
+    let setnow t =
+      set_fault_handling Refs.fault_handling t ||
+      set_mte_precision Refs.mte_precision t
+
+    let reducetag = set_sve_length Refs.sve_vector_length
+
+  end

@@ -42,8 +42,13 @@ val speedcheck : Speed.t ref
 val optace : OptAce.t option ref
 val archcheck : bool ref
 val variant : (Variant.t -> bool) ref
-val fault_handling : Fault.Handling.t ref
-val mte_precision : Precision.t ref
+
+module Refs : sig
+  val fault_handling : Fault.Handling.t ref
+  val mte_precision : Precision.t ref
+  val sve_vector_length : int ref
+end
+
 module OptS : ParseTag.OptS with type t = Variant.t
 val byte : MachSize.Tag.t ref
 val endian : Endian.t option ref

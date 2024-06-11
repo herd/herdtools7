@@ -44,14 +44,14 @@ module Top (TopConf:RunTest.Config) = struct
             let info = splitted.Splitter.info
             let variant = TopConf.variant
             let mte_precision = TopConf.mte_precision
-            let set_mte_precision = Variant.set_mte_precision
             let fault_handling = TopConf.fault_handling
-            let set_fault_handling = Variant.set_fault_handling
+            let sve_vector_length = TopConf.sve_vector_length
           end)
       (* Override *)
       include TopConf
       let fault_handling = TestConf.fault_handling
       let mte_precision = TestConf.mte_precision
+      let sve_vector_length = TestConf.sve_vector_length
       let variant = TestConf.variant
     end in
     if Conf.check_name tname then begin
@@ -113,7 +113,8 @@ module Top (TopConf:RunTest.Config) = struct
          X.run dirty start_time name chan env splitted
       | `AArch64 ->
          if Conf.variant Variant.ASL then
-           let module X = AArch64ASLParseTest.Make(Conf)(ModelConfig) in
+           let module X =
+             AArch64ASLParseTest.Make(Conf)(ModelConfig) in
            X.run dirty start_time name chan env splitted
          else
            let module X = AArch64ParseTest.Make(Conf)(ModelConfig) in

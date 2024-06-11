@@ -32,6 +32,7 @@ module type Config = sig
   val statelessrc11 : bool
   val dumpallfaults : bool
   val byte : MachSize.Tag.t
+  val sve_vector_length : int
 end
 
 type runfun =

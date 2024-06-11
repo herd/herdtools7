@@ -21,6 +21,7 @@ type t =
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
   | Telechat (* Telechat idiosyncrasies *)
+  | SVE (* Do nothing *)
 
 let compare = compare
 
@@ -32,8 +33,18 @@ let parse s = match Misc.lowercase s with
 | "mixed" -> Some Mixed
 | "vmsa"|"kvm" -> Some Vmsa
 | "telechat" -> Some Telechat
+| "sve" -> Some SVE
 | tag ->
+  match
    Misc.app_opt (fun p -> FaultHandling p) (Fault.Handling.parse tag)
+  with
+  | Some _ as r ->  r
+  | None ->
+    let len = String.length tag in
+    if len > 4 && String.sub tag 0 4 = "sve:" then begin
+      Warn.warn_always "Ignoring vector length setting %s" tag ;
+      Some SVE
+    end else None
 
 let pp = function
   | Self -> "self"
@@ -41,8 +52,8 @@ let pp = function
   | S128 -> "s128"
   | Vmsa -> "vmsa"
   | Telechat -> "telechat"
-
   | FaultHandling p -> Fault.Handling.pp p
+  | SVE -> "sve"
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true
@@ -53,3 +64,5 @@ let set_fault_handling r = function
 | _ -> false
 
 let set_mte_precision _ _ = false
+
+let set_sve_length _ = Misc.identity
