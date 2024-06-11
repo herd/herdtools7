@@ -21,7 +21,7 @@ ASL Semantics Reference:
     and integer {0}
   [1]
   $ aslref --no-type-check SemanticsRule.EBinopDIVBackendDefinedError.asl
-  ASL Execution error: Illegal application of operator DIV for values 3 and 0.
+  ASL Dynamic error: Illegal application of operator DIV for values 3 and 0.
   [1]
   $ aslref SemanticsRule.EUnopAssert.asl
   $ aslref SemanticsRule.ECondFALSE.asl

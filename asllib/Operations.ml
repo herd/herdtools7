@@ -23,7 +23,7 @@ let exp_real q z =
     let res_num = Z.pow num i and res_den = Z.pow den i in
     Q.(res_num /// res_den)
 
-let binop_values pos op v1 v2 =
+let binop_values pos t op v1 v2 =
   match (op, v1, v2) with
   (* int -> int -> int *)
   | PLUS, L_Int v1, L_Int v2 -> L_Int (Z.add v1 v2)
@@ -97,12 +97,12 @@ let binop_values pos op v1 v2 =
   | EQ_OP, L_String s1, L_String s2 -> L_Bool (String.equal s1 s2)
   | NEQ, L_String s1, L_String s2 -> L_Bool (not (String.equal s1 s2))
   (* Failure *)
-  | _ -> fatal_from pos (Error.UnsupportedBinop (op, v1, v2))
+  | _ -> fatal_from pos (Error.UnsupportedBinop (t, op, v1, v2))
 
-let unop_values pos op v =
+let unop_values pos t op v =
   match (op, v) with
   | NEG, L_Int i -> L_Int (Z.neg i)
   | NEG, L_Real r -> L_Real (Q.neg r)
   | BNOT, L_Bool b -> L_Bool (not b)
   | NOT, L_BitVector bv -> L_BitVector (Bitvector.lognot bv)
-  | _ -> fatal_from pos (Error.UnsupportedUnop (op, v))
+  | _ -> fatal_from pos (Error.UnsupportedUnop (t, op, v))

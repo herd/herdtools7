@@ -12,6 +12,8 @@ H Examples
   $ aslref --no-exec HExample7.asl
   $ aslref --no-exec HExample8.asl
   $ aslref --no-exec HExample9.asl
+  ASL Typing error: a pure expression was expected, found length
+  [1]
   $ aslref --no-exec HExample10.asl
   $ aslref --no-exec HExample11.asl
   $ aslref --no-exec HExample12.asl
@@ -173,8 +175,7 @@ Symbolic execution of bit vector widths expressions
   ASL Typing error: a subtype of bits(N) was expected, provided bits(widthN).
   [1]
   $ aslref --no-exec TNegative10.asl
-  File TNegative10.asl, line 8, characters 4 to 40:
-  ASL Typing error: a subtype of bits(N) was expected, provided bits(widthN).
+  ASL Typing error: a pure expression was expected, found widthN
   [1]
   $ aslref --no-exec TNegative10-0.asl
   File TNegative10-0.asl, line 16, characters 4 to 53:

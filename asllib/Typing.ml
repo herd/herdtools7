@@ -29,7 +29,6 @@ module TypingRule = Instrumentation.TypingRule
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
-let unsupported_expr e = fatal_from e (Error.UnsupportedExpr e)
 let invalid_expr e = fatal_from e (Error.InvalidExpr e)
 
 let conflict pos expected provided =
@@ -388,7 +387,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let eval env e =
       match reduce_constants env e with
       | L_Int z -> Z.to_int z
-      | _ -> unsupported_expr e
+      | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
     in
     let module DI = Diet.Int in
     let one_slice loc env diet slice =
@@ -593,7 +592,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match e.desc with
     | E_Literal (L_Int i) -> Z.sign i = 1
     | E_Var _n -> false
-    | _ -> unsupported_expr e
+    | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
 
   let constraint_is_strict_positive = function
     | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_strict_positive e
@@ -605,7 +604,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match e.desc with
     | E_Literal (L_Int i) -> Z.sign i != -1
     | E_Var _n -> false
-    | _ -> unsupported_expr e
+    | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
 
   let constraint_is_non_negative = function
     | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_non_negative e
@@ -1305,7 +1304,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let ret_ty1 =
       match (call_type, callee.return_type) with
       | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
-          Some (rename_ty_eqs env eqs4 ty)
+          Some (rename_ty_eqs env eqs4 ty |> annotate_type env ~loc)
       | (ST_Setter | ST_EmptySetter | ST_Procedure), None -> None
       | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
     in
@@ -2621,7 +2620,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     try
       let v = reduce_constants env e in
       add_global_constant name v env
-    with Error.ASLException _ -> env
+    with Error.(ASLException { desc = UnsupportedExpr _; _ }) -> env
 
   (* Begin DeclareGlobalStorage *)
   let declare_global_storage loc gsd env =

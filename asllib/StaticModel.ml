@@ -380,7 +380,7 @@ let rec to_ir env (e : expr) : ir_expr =
       and f2 = Z.to_int i2 |> Z.shift_left Z.one |> Q.of_bigint in
       map_num (mult_poly_const f2) ir1
   | E_Binop (op, { desc = E_Literal l1; _ }, { desc = E_Literal l2; _ }) ->
-      Operations.binop_values e op l1 l2 |> poly_of_val |> always
+      Operations.binop_values e Error.Static op l1 l2 |> poly_of_val |> always
   | E_Unop (NEG, e0) -> e0 |> to_ir env |> map_num poly_neg
   | E_Cond (cond, e1, e2) ->
       let Disjunction ctnts, Disjunction nctnts = to_cond env cond

@@ -28,6 +28,7 @@ type env = SEnv.env
 
 let fatal = Error.fatal
 let fatal_from = Error.fatal_from
+let unsupported_expr e = fatal_from e Error.(UnsupportedExpr (Static, e))
 
 exception StaticEvaluationUnknown
 
@@ -50,10 +51,10 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
           else raise StaticEvaluationUnknown)
     | E_Binop (op, e1, e2) ->
         let v1 = expr_ e1 and v2 = expr_ e2 in
-        Operations.binop_values e op v1 v2
+        Operations.binop_values e Error.Static op v1 v2
     | E_Unop (op, e) ->
         let v = expr_ e in
-        Operations.unop_values e op v
+        Operations.unop_values e Error.Static op v
     | E_Slice (e', slices) ->
         let positions = slices_to_positions env slices in
         let pos_max = List.fold_left int_max 0 positions in
@@ -77,7 +78,7 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
               @@ Error.MismatchType (PP.literal_to_string v_cond, [ T_Bool ])
         in
         if b then expr_ e1 else expr_ e2
-    | _ -> fatal_from e (Error.UnsupportedExpr e)
+    | _ -> unsupported_expr e
   in
   expr_
 
