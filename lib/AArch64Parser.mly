@@ -113,6 +113,8 @@ let check_op3 op e =
 %token TOK_VL1 TOK_VL2 TOK_VL3 TOK_VL4 TOK_VL5 TOK_VL6 TOK_VL7 TOK_VL8
 %token TOK_VL16 TOK_VL32 TOK_VL64 TOK_VL128 TOK_VL256
 %token MOVPRFX
+%token SETFFR RDFFR
+%token LDNF1B LDNF1H LDNF1W LDNF1D LDFF1B LDFF1H LDFF1W LDFF1D
 %token LD1B LD1H LD1W LD1D LD2B LD2H LD2W LD2D LD3B LD3H LD3W LD3D LD4B LD4H LD4W LD4D
 %token ST1B ST1H ST1W ST1D ST2B ST2H ST2W ST2D ST3B ST3H ST3W ST3D ST4B ST4H ST4W ST4D
 %token RDVL ADDVL
@@ -832,6 +834,87 @@ instr:
   { I_WHILELS ($2,V32,$4,$6)}
 | UADDV dreg COMMA preg COMMA zreg
   { I_UADDV (VSIMD64,$2,$4,$6)}
+| LDNF1B zregs1 COMMA pmreg_z COMMA mem_idx
+  {
+    let (ra,idx) = $6 in
+    match idx with
+    | _, Idx -> I_LDNF1 (VSIMD8,List.hd $2,$4,ra,idx)
+    | _ -> assert false
+  }
+| LDNF1H zregs1 COMMA pmreg_z COMMA mem_idx
+  {
+    let (ra,idx) = $6 in
+    match idx with
+    | _, Idx -> I_LDNF1 (VSIMD16,List.hd $2,$4,ra,idx)
+    | _ -> assert false
+  }
+| LDNF1W zregs1 COMMA pmreg_z COMMA mem_idx
+  {
+    let (ra,idx) = $6 in
+    match idx with
+    | _, Idx -> I_LDNF1 (VSIMD32,List.hd $2,$4,ra,idx)
+    | _ -> assert false
+  }
+| LDNF1D zregs1 COMMA pmreg_z COMMA mem_idx
+  {
+    let (ra,idx) = $6 in
+    match idx with
+    | _, Idx -> I_LDNF1 (VSIMD64,List.hd $2,$4,ra,idx)
+    | _ -> assert false
+  }
+| LDFF1B zregs1 COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (ra,ext) = $6 in
+    match ext with
+    | Reg (V64,_,LSL,MetaConst.Int 0)
+    | ZReg (_,LSL,MetaConst.Int 0)
+    | ZReg (_,UXTW,MetaConst.Int 0)
+    | ZReg (_,SXTW,MetaConst.Int 0)
+      -> I_LDFF1SP (VSIMD8,$2,$4,ra,ext)
+    | _ -> assert false
+  }
+| LDFF1H zregs1 COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (ra,ext) = $6 in
+    match ext with
+    | Reg (V64,_,LSL,MetaConst.Int 1)
+    | ZReg (_,LSL,MetaConst.Int 0)
+    | ZReg (_,UXTW,MetaConst.Int 0)
+    | ZReg (_,SXTW,MetaConst.Int 0)
+    | ZReg (_,LSL,MetaConst.Int 1)
+    | ZReg (_,UXTW,MetaConst.Int 1)
+    | ZReg (_,SXTW,MetaConst.Int 1)
+      -> I_LDFF1SP (VSIMD16,$2,$4,ra,ext)
+    | _ -> assert false
+  }
+| LDFF1W zregs1 COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (ra,ext) = $6 in
+    match ext with
+    | Reg (V64,_,LSL,MetaConst.Int 2)
+    | ZReg (_,LSL,MetaConst.Int 0)
+    | ZReg (_,UXTW,MetaConst.Int 0)
+    | ZReg (_,SXTW,MetaConst.Int 0)
+    | ZReg (_,LSL,MetaConst.Int 2)
+    | ZReg (_,UXTW,MetaConst.Int 2)
+    | ZReg (_,SXTW,MetaConst.Int 2)
+      -> I_LDFF1SP (VSIMD32,$2,$4,ra,ext)
+    | _ -> assert false
+  }
+| LDFF1D zregs1 COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (ra,ext) = $6 in
+    match ext with
+    | Reg (V64,_,LSL,MetaConst.Int 3)
+    | ZReg (_,LSL,MetaConst.Int 0)
+    | ZReg (_,UXTW,MetaConst.Int 0)
+    | ZReg (_,SXTW,MetaConst.Int 0)
+    | ZReg (_,LSL,MetaConst.Int 3)
+    | ZReg (_,UXTW,MetaConst.Int 3)
+    | ZReg (_,SXTW,MetaConst.Int 3)
+      -> I_LDFF1SP (VSIMD64,$2,$4,ra,ext)
+    | _ -> assert false
+  }
 | LD1B zregs1 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
@@ -1216,6 +1299,12 @@ instr:
   { I_NEG_SV ($2,$4,$6) }
 | MOVPRFX zreg COMMA pmreg COMMA zreg
   { I_MOVPRFX ($2,$4,$6) }
+| RDFFR preg_sz COMMA pmreg_z
+  { match $2 with
+    | Preg(_,8) -> I_RDFFR ($2,$4)
+    | _ -> assert false }
+| SETFFR
+  { I_SETFFR }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_CAS (V32,RMW_P,$2,$4,$7) }

@@ -151,6 +151,16 @@ match name with
 | "whilelo" | "WHILELO" -> WHILELO
 | "whilels" | "WHILELS" -> WHILELS
 | "uaddv" | "UADDV" -> UADDV
+| "rdffr" | "RDFFR" -> RDFFR
+| "setffr" | "SETFFR" -> SETFFR
+| "ldnf1b" | "LDNF1B" -> LDFF1B
+| "ldnf1h" | "LDNF1H" -> LDFF1H
+| "ldnf1w" | "LDNF1W" -> LDFF1W
+| "ldnf1d" | "LDNF1D" -> LDFF1D
+| "ldff1b" | "LDFF1B" -> LDFF1B
+| "ldff1h" | "LDFF1H" -> LDFF1H
+| "ldff1w" | "LDFF1W" -> LDFF1W
+| "ldff1d" | "LDFF1D" -> LDFF1D
 | "ld1b" | "LD1B" -> LD1B
 | "ld1h" | "LD1H" -> LD1H
 | "ld1w" | "LD1W" -> LD1W

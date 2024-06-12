@@ -49,6 +49,7 @@ module Make(V:Constant.S)(C:Config) =
 
     let stable_regs _ins = match _ins with
     | I_LDAP1 (rs,_,_,_)
+    | I_LDFF1SP (_,rs,_,_,_)
     | I_LD1SP (_,rs,_,_,_)
     | I_LD2SP (_,rs,_,_,_)
     | I_LD3SP (_,rs,_,_,_)
@@ -69,6 +70,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_MOV_FG (r,_,_,_) -> A.RegSet.of_list [r]
     | I_MOV_VE (r,_,_,_) -> A.RegSet.of_list [r]
     (* To allow view of Scalable register via Neon one *)
+    | I_LDNF1 (_,r,_,_,_)
     | I_ADD_SV (r,_,_)
     | I_DUP_SV (r,_,_)
     | I_MOV_SV (r,_,_)
@@ -976,6 +978,88 @@ module Make(V:Constant.S)(C:Config) =
         outputs = [r1];
         reg_env = (add_128 [r1;])@(add_svbool_t [r2;])@(add_svint32_t [r3;])}
 
+    let ldnf1 v r pg rA idx = match idx with
+      | 0,Idx ->
+        { empty_ins with
+          memo = sprintf "ldnf1%s {%s},%s,[^i1]"
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "o" 0 0 r)
+                 (print_preg "i" 0 0 pg);
+        inputs = [pg;rA];
+        outputs = [r];
+        reg_env = (add_svint32_t [r;])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | k,Idx ->
+        { empty_ins with
+          memo = sprintf "ldnf1%s {%s},%s,[^i1,#%i]"
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "o" 0 0 r)
+                 (print_preg "i" 0 0 pg)
+                 k;
+        inputs = [pg;rA];
+        outputs = [r];
+        reg_env = (add_svint32_t [r;])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | _ -> assert false
+
+    let ldff1sp v rs pg rA idx =
+      let open MemExt in
+      match idx with
+      | Reg (V64,rM,LSL,0) ->
+        { empty_ins with
+          memo = sprintf "ldff1%s {%s},%s,[^i1,^i2]"
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "o" 0) rs))
+                 (print_preg "i" 0 0 pg);
+        inputs = [pg;rA;rM];
+        outputs = rs;
+        reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]@(add_q [rM;])}
+      | Reg (V64,rM,LSL,k) ->
+        { empty_ins with
+          memo = sprintf "ldff1%s {%s},%s,[^i1,^i2,LSL #%d]"
+                 (Misc.lowercase (pp_simd_variant v))
+                 (String.concat "," (List.mapi (print_zreg "o" 0) rs))
+                 (print_preg "i" 0 0 pg)
+                 k;
+          inputs = [pg;rA;rM];
+          outputs = rs;
+          reg_env = (add_svint32_t rs)@(add_svbool_t [pg;])@[(rA,voidstar)]@(add_q [rM;])}
+      | ZReg(rM,LSL,0) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "ldff1%s {%s},%s,[^i1,%s]"
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "o" 0 0 r)
+                 (print_preg "i" 0 0 pg)
+                 (print_zreg "i" 0 2 rM);
+          inputs = [pg;rA;rM];
+          outputs = [r];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | ZReg(rM,se,0) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "ldff1%s {%s},%s,[^i1,%s,%s]"
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "o" 0 0 r)
+                 (print_preg "i" 0 0 pg)
+                 (print_zreg "i" 0 2 rM)
+                 (pp_mem_sext se);
+          inputs = [pg;rA;rM];
+          outputs = [r];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | ZReg(rM,se,k) ->
+        let r = List.hd rs in
+        { empty_ins with
+          memo = sprintf "ldff1%s {%s},%s,[^i1,%s,%s #%d]"
+                 (Misc.lowercase (pp_simd_variant v))
+                 (print_zreg "o" 0 0 r)
+                 (print_preg "i" 0 0 pg)
+                 (print_zreg "i" 0 2 rM)
+                 (pp_mem_sext se)
+                 k;
+          inputs = [pg;rA;rM];
+          outputs = [r];
+          reg_env = (add_svint32_t [r;rM])@(add_svbool_t [pg;])@[(rA,voidstar)]}
+      | _ -> assert false
+
     let ldnsp memo v rs pg rA idx =
       let open MemExt in
       match idx with
@@ -1239,6 +1323,13 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [];
         outputs = [pred];
         reg_env = (add_svbool_t [pred;])}
+
+    let rdffr r1 r2 =
+      { empty_ins with
+        memo = sprintf "rdffr %s,%s" (print_preg "o" 0 0 r1) (print_preg "i" 0 0 r2);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_svbool_t [r1;r2])}
 
     let neg_sv r1 pg r3 =
       { empty_ins with
@@ -1704,6 +1795,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_WHILELO (z,v,r1,r2) -> while_op "whilelo" z v r1 r2::k
     | I_WHILELS (z,v,r1,r2) -> while_op "whilels" z v r1 r2::k
     | I_UADDV (v,r1,r2,r3) -> uaddv v r1 r2 r3::k
+    | I_LDNF1 (v,r1,r2,r3,idx) -> ldnf1 v r1 r2 r3 idx::k
+    | I_LDFF1SP (v,rs,r2,r3,idx) -> ldff1sp v rs r2 r3 idx::k
     | I_LD1SP (v,rs,r2,r3,idx) -> ldnsp "ld1" v rs r2 r3 idx::k
     | I_LD2SP (v,rs,r2,r3,idx) -> ldnsp "ld2" v rs r2 r3 idx::k
     | I_LD3SP (v,rs,r2,r3,idx) -> ldnsp "ld3" v rs r2 r3 idx::k
@@ -1725,6 +1818,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_RDVL (r1,k1) -> rdvl r1 k1::k
     | I_ADDVL (r1,r2,k1) -> addvl r1 r2 k1::k
     | I_CNT_INC_SVE  (op,rd,pat,k1) -> cnt_inc_sve op rd pat k1::k
+    | I_RDFFR (r1,r2) -> rdffr r1 r2::k
+    | I_SETFFR -> { empty_ins with memo = "setffr" }::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  mov_const v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k

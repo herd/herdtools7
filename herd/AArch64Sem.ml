@@ -301,6 +301,10 @@ module Make
         let location = A.Location_reg (ii.A.proc,vr) in
         M.read_loc is_data (mk_read MachSize.Short Annot.N aexp) location ii
 
+      let read_reg_ff is_data ii =
+        let location = A.Location_reg (ii.A.proc,AArch64Base.FFR) in
+        M.read_loc is_data (mk_read MachSize.Short Annot.N aexp) location ii
+
       let predicate_setlane old_val idx psize v =
         let mask = V.op1 (Op.LeftShift (idx*psize)) (AArch64.predicate_mask psize) in
         let invert = V.op1 Op.Inv mask in
@@ -314,6 +318,12 @@ module Make
         M.op Op.And mask cur_val >>= fun masked_val ->
         M.op1 (Op.LogicalRightShift (idx*psize)) masked_val
 
+      let rec predicate_replicate old_val nelem esize v = match nelem with
+      | 0 -> M.unitT old_val
+      | _ ->
+        predicate_setlane old_val (nelem-1) esize v >>= fun old_val ->
+          predicate_replicate old_val (nelem-1) esize v
+
       let write_reg_predicate_sz sz r v ii =
         let pr = match r with
         | AArch64Base.Preg(_,_) -> r
@@ -324,6 +334,14 @@ module Make
           M.write_loc (mk_write MachSize.Short Annot.N aexp Access.REG v) location ii
 
       let write_reg_predicate = write_reg_predicate_sz MachSize.Short
+
+      let write_reg_ff_sz sz v ii =
+        (* Clear unused register bits (zero extend) *)
+          M.op1 (Op.Mask sz) v >>= fun v ->
+          let location = A.Location_reg (ii.A.proc,AArch64Base.FFR) in
+          M.write_loc (mk_write MachSize.Short Annot.N aexp Access.REG v) location ii
+
+      let write_reg_ff = write_reg_ff_sz MachSize.Short
 
       let get_predicate_last pred psize idx =
         predicate_getlane pred idx psize  >>= fun v ->
@@ -3379,6 +3397,20 @@ module Make
         | I_CNT_INC_SVE (op,r,pat,k) ->
            check_sve inst;
            cnt_inc op r pat k ii >>= nextSet r
+        | I_SETFFR ->
+           check_sve inst;
+           !(let nelem = scalable_nbytes in
+             let psize = MachSize.nbytes MachSize.Byte in
+             predicate_replicate V.zero nelem psize V.one >>= fun v ->
+               write_reg_ff v ii)
+        | I_RDFFR (r1,r2) ->
+           check_sve inst;
+           read_reg_ff false ii
+           >>| read_reg_predicate false r2 ii
+           >>= fun (v,mask) -> M.op Op.And mask v
+           >>= fun v -> write_reg_predicate r1 v ii
+           >>= fun () -> M.unitT v
+           >>= nextSet r1
         (* Morello instructions *)
         | I_ALIGND(rd,rn,k) ->
             check_morello inst ;
@@ -3784,6 +3816,7 @@ module Make
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _
         | I_LDR_SIMD _| I_STR_SIMD _
+        | I_LDNF1 _| I_LDFF1SP _
         | I_LD1SP _| I_LD2SP _| I_LD3SP _| I_LD4SP _
         | I_ST1SP _|I_ST2SP _|I_ST3SP _|I_ST4SP _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
