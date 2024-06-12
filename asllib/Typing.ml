@@ -2560,6 +2560,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let annotate_and_declare_func ~loc func env =
     let env, func = annotate_func_sig ~loc env func in
     declare_one_func loc func env
+  (* End DeclareOneFunc*)
 
   let add_global_storage loc name keyword env ty =
     if is_global_ignored name then env

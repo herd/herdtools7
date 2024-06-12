@@ -59,7 +59,7 @@
 \newcommand\isstaticallyevaluable[0]{\texttt{check\_statically\_evaluable}}
 
 \newcommand\makeanonymous[0]{\hyperlink{def-makeanonymous}{\texttt{make\_anonymous}}}
-\newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\texttt{subtypes}}}
+\newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\texttt{is\_subtype}}}
 \newcommand\structsubtypesat[0]{\hyperlink{def-structsubtypesat}{\texttt{structural\_subtype\_satisfies}}}
 \newcommand\domsubtypesat[0]{\hyperlink{def-domsubtypesat}{\texttt{domain\_subtype\_satisfies}}}
 \newcommand\subtypesat[0]{\hyperlink{def-subtypesat}{\texttt{subtype\_satisfies}}}
@@ -146,7 +146,7 @@
 \newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
 \newcommand\structureofinteger[0]{\hyperlink{def-checkstructureinteger}{structure of an integer}}
 \newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
-\newcommand\pure[0]{hyperlink{def-storageispure}{pure}}
+\newcommand\pure[0]{\hyperlink{def-storageispure}{pure}}
 \newcommand\wellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
 \newcommand\wellconstrainedversion[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
 \newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
@@ -479,7 +479,7 @@ The intuitive meaning of each component is as follows:
   and how they were declared --- as constants, configuration variables, \texttt{let} variables,
   or mutable variables;
   \hypertarget{def-localstoragetypes}{}
-  \item $\globalstoragetypes$ associates names of local storage elements to their inferred type
+  \item $\localstoragetypes$ associates names of local storage elements to their inferred type
   and how they were declared --- as variables, constants, or as \texttt{let} variables;
   \hypertarget{def-subtypes}{}
   \item $\subtypes$ associates type names to the names that their type subtypes;
@@ -529,7 +529,7 @@ This is related to \identd{JRXM} and \identi{ZTMQ}.
 
 \section{Constrained Types}
 \begin{itemize}
-  \item A \emph{constrained type} is a type whose definition depends on an expression, for example, certain integers and bitvectors.
+  \item A \emph{constrained type} is a type whose definition relies on an expression, for example, certain integers and bitvectors.
   \item A type which is not constrained is \emph{unconstrained}.
   \item A constrained type with a non-empty constraint is \emph{well-constrained}.
   \item An \emph{under-constrained integer type} is an implicit type of a subprogram parameter.
@@ -552,7 +552,7 @@ We define the following shorthands for classifying integers:
 \[
   \begin{array}{rcl}
   \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(\unconstrained)\\
-  \isunderconstrainedinteger(\vt) &\triangleq& \vt = \TInt(\underconstrained)\\
+  \isunderconstrainedinteger(\vt) &\triangleq& \vt = \TInt(\Ignore)\\
   \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\wellconstrained\\
 \end{array}
 \]
@@ -617,7 +617,7 @@ we do not repeat the \ProseOrTypeError, but rather include it only in the first 
 \section{Annotation}
 
 Typing a specification consists of annotating the root of its AST with the rules defined
-in the sequel of this document.
+in the remainder of this document.
 
 % The rules are organized into groups that define functions to annotate different types of nodes:
 % \begin{itemize}
@@ -757,9 +757,8 @@ in the environment $\env$.
 The \emph{static domain} of a type is the set of values which storage elements of that type may hold
 \underline{across all possible dynamic environments}.
 %
-The reason that for this distinction is that the sets of values
-considered for bitvector types, array types, constrained integers, and constrained bitvectors,
-can depend on the dynamic values of variables.
+The reason for this distinction is that the sets of values
+of integer types, bitector types, array types can depend on the dynamic values of variables.
 
 Types that do not refer to variables whose values are only known dynamically have
 a static domain that is equal to any of their dynamic domains.
@@ -1154,7 +1153,7 @@ The \emph{builtin singular types} are:
 \item \texttt{enumeration}.
 \end{itemize}
 
-\subsection{Example: TypingRule.BuiltinSingularTypes.asl}
+\subsection{Example}
 
 In this example:
 \VerbatimInput[firstline=3,lastline=8]{\tests/TypingRule.BuiltinSingularTypes.asl}
@@ -1162,7 +1161,7 @@ In this example:
 Variables of builtin singular types \texttt{integer}, \texttt{real},
 \texttt{boolean}, \texttt{bits(4)}, \\ and~\texttt{bits(2)} are defined.
 
-\subsection{Example: TypingRule.EnumerationType.asl}
+\subsection{Example}
 \VerbatimInput{\tests/TypingRule.EnumerationType.asl}
 The builtin singular type \texttt{Color} consists in two constants
 \texttt{RED}, and~\texttt{BLACK}.
@@ -1200,14 +1199,16 @@ The builtin aggregate types are:
 \item \texttt{exception}.
 \end{itemize}
 
-\subsection{Example: TypingRule.BuiltinAggregateTypes.asl}
+\subsection{Example}
 \VerbatimInput{\tests/TypingRule.BuiltinAggregateTypes.asl}
 Type \texttt{Pair} is the type of integer and boolean pairs.
 
-Arrays are declared with indices that are either integer-typed of enumeration-typed.
-In the example above, \texttt{T} is declared as an array with an integer-typed index (as indicated by the
-used of the integer-typed constant \texttt{3}) whereas \texttt{PointArray} is declared with the
-index of \texttt{Coord}, which is an enumeration type.
+Arrays are declared with indices that are either integer-typed
+or enumeration-typed.  In the example above, \texttt{T} is
+declared as an array with an integer-typed index (as indicated
+by the used of the integer-typed constant \texttt{3}) whereas
+\texttt{PointArray} is declared with the index of
+\texttt{Coord}, which is an enumeration type.
 
 Arrays declared with integer-typed indices can be accessed only by integers ranging from $0$ to
 the size of the array minus $1$. In the example above, $\texttt{T}$ can be accessed with
@@ -1220,7 +1221,7 @@ enumeration. In the example above, \texttt{PointArray} can only be accessed with
 The (builtin aggregate) type \verb|{ x : real, y : real, z : real }| is a record type with three fields
 \texttt{x}, \texttt{y} and \texttt{z}.
 
-\subsection{Example: TypingRule.BuiltinExceptionType.asl}
+\subsection{Example}
 \VerbatimInput{\tests/TypingRule.BuiltinExceptionType.asl}
 Two (builtin aggregate) exception types are defined:
 \begin{itemize}
@@ -1522,7 +1523,7 @@ A type $\tty$ is primitive if it is not non-primitive.
 The following types are primitive:
 
 \begin{tabular}{ll}
-\textbf{Type definition} & \textbf{Reason for being non-primitive}\\
+\textbf{Type definition} & \textbf{Reason for being primitive}\\
 \hline
 \texttt{integer} & Integers are primitive\\
 \texttt{(integer, integer)} & All tuple elements are primitive\\
@@ -1828,8 +1829,6 @@ The predicate
   \subtypesrel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo})
   \aslto \overname{\Bool}{\vb}
 \]
-(not to be confused with the static environment field $\subtypes$ --- notice the use of different font)
-tests whether a type $\vtone$ is a \emph{subtype} of a type $\vttwo$.
 
 \subsection{Prose}
 One of the following applies:
@@ -1928,7 +1927,7 @@ The predicate
   \structsubtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{structurally-subtype-satisfies} a type $\vs$ is environment $\tenv$,
+tests whether a type $\vt$ \emph{structurally-subtype-satisfies} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{typingoftypes}.
 
@@ -1982,7 +1981,7 @@ One of the following applies:
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
   \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
-  \item determining whether $\vtys$ and $\vtyt$ are equaivalent in $\tenv$ is either $\True$
+  \item determining whether $\vtys$ and $\vtyt$ are equivalent in $\tenv$ is either $\True$
   or $\False$, which short-circuits the entire rule with $\vb=\False$;
   \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
   \item $\vlengths$ is an array length expression with $\vlengthexprs$, that is \\ $\ArrayLengthExpr(\vlengthexprs)$;
@@ -1994,7 +1993,7 @@ One of the following applies:
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
   \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
-  \item determining whether $\vtys$ and $\vtyt$ are equaivalent in $\tenv$ is either $\True$
+  \item determining whether $\vtys$ and $\vtyt$ are equivalent in $\tenv$ is either $\True$
   or $\False$, which short-circuits the entire rule with $\vb=\False$;
   \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
   \item $\vlengths$ is an array with indices taken from the enumeration $\vnames$, that is $\ArrayLengthEnum(\vnames, \Ignore)$;
@@ -2171,7 +2170,7 @@ The predicate
   \domsubtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{domain-subtype-satisfies} a type $\vs$ is environment $\tenv$,\\
+tests whether a type $\vt$ \emph{domain-subtype-satisfies} a type $\vs$ in environment $\tenv$,\\
 \underline{assuming that $\vt$ structurally-subtype-satisfies $\vs$},
 returning the result $\vb$ or a type error, if one is detected.
 
@@ -2255,7 +2254,7 @@ The predicate
   \subtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ is environment $\tenv$,
+tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
 
 \subsection{Prose}
@@ -2293,7 +2292,7 @@ The predicate
   \typesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ is environment $\tenv$,
+tests whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
 
 \hypertarget{def-checktypesat}{}
@@ -2347,19 +2346,19 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example: TypingRule.TypeSatisfaction1.asl}
+\subsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction1.asl}
 \texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
 anonymous, non-primitive type \texttt{(integer, T1)}.
 
-\subsection{Example: TypingRule.TypeSatisfaction2.asl}
+\subsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction2.asl}
 \texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
 primitive type \texttt{(integer, integer)}.
 
-\subsection{Example: TypingRule.TypeSatisfaction3.asl}
+\subsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction3.asl}
 \texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
@@ -2450,7 +2449,7 @@ The predicate
   \typeclashes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{type-clashes} with a type $\vs$ is environment $\tenv$,
+tests whether a type $\vt$ \emph{type-clashes} with a type $\vs$ in environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
 
 \subsection{Prose}
@@ -2688,14 +2687,14 @@ One of the following applies:
       \item $\vt$ is a bitvector type with with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
       \item $\vs$ is a bitvector type with with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
       \item $\vet$ is equivalent to $\ves$ in $\tenv$;
-      \item $\tty$ is a bitvector type with legnth expression $\vet$ and an empty bitfield list, that is, $\TBits(\vet, \emptylist)$.
+      \item $\tty$ is a bitvector type with length expression $\vet$ and an empty bitfield list, that is, $\TBits(\vet, \emptylist)$.
     \end{itemize}
 
     \item All of the following apply (\textsc{t\_bits\_not\_equal}):
     \begin{itemize}
       \item $\vt$ is a bitvector type with length expression $\vet$;
       \item $\vs$ is a bitvector type with length expression $\ves$;
-      \item $\vet$ is equivalent to $\ves$ in $\tenv$;
+      \item $\vet$ is not equivalent to $\ves$ in $\tenv$;
       \item the result is a type error indicating the lack of a lowest common ancestor.
     \end{itemize}
 
@@ -2949,29 +2948,29 @@ One of the following applies:
 \item All of the following apply (\textsc{bnot\_t\_bool}):
   \begin{itemize}
     \item $\op$ is $\BNOT$;
-    \item determining whether $\vtone$ \typesatisfies\ $\TBool$ yields $\True$ \ProseOrTypeError;
+    \item determining whether $\vt$ \typesatisfies\ $\TBool$ yields $\True$ \ProseOrTypeError;
     \item $\vs$ is $\TBool$;
   \end{itemize}
 
 \item All of the following apply (\textsc{neg\_error}):
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vtone$ \typesatisfies\ $\TReal$ yields $\False$ \ProseOrTypeError;
-  \item determining whether $\vtone$ \typesatisfies\ $\TInt(\unconstrained)$ yields $\False$ \ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\False$ \ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\TInt(\unconstrained)$ yields $\False$ \ProseOrTypeError;
   \item the result is a type error indicating the $\NEG$ is appropriate only for \texttt{real} and \texttt{integer} types;
 \end{itemize}
 
 \item All of the following apply (\textsc{neg\_t\_rel}):
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vtone$ \typesatisfies\ $\TReal$ yields $\True$ \ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\True$ \ProseOrTypeError;
   \item $\vs$ is $\TReal$;
 \end{itemize}
 
 \item All of the following apply (\textsc{neg\_t\_int\_unconstrained}):
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vtone$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$ \ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$ \ProseOrTypeError;
   \item obtaining the \structure\ of $\vt$ yields $\unconstrainedinteger$ \ProseOrTypeError;
   \item $\vs$ is $\unconstrainedinteger$;
 \end{itemize}
@@ -2979,7 +2978,7 @@ One of the following applies:
 \item All of the following apply (\textsc{neg\_t\_int\_well\_constrained}):
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vtone$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$ \ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$ \ProseOrTypeError;
   \item obtaining the \structure\ of $\vt$ yields the well-constrained integer type with constraints $\vcs$ \ProseOrTypeError;
   \item negating the constraints in $\vcs$ (see $\negateconstraint$) yields $\vcsnew$;
   \item $\vs$ is the well-constrained integer type with constraints $\vcsnew$, that is, \\
@@ -2989,19 +2988,19 @@ One of the following applies:
 \item All of the following apply (\textsc{neg\_t\_int\_underconstrained}):
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vtone$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$ \ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$ \ProseOrTypeError;
   \item obtaining the \structure\ of $\vt$ yields the underconstrained integer type with parameter $\vv$, that is,
   $\TInt(\wellconstrained(\vv))$ \ProseOrTypeError;
   \item converting $\TInt(\wellconstrained(\vv))$ to a well-constrained integer with an exact constraint expression for $\vv$
   (see $\getwellconstrainedstructure$) yields $\vtone$;
-  \item obtaining the appropriate type for the unary operator $\NEG$ in $\tenv$ for $\vtone$ yields $\vs$.
+  \item obtaining the appropriate type for the unary operator $\NEG$ in $\tenv$ for $\vt$ yields $\vs$.
 \end{itemize}
 
 \item All of the following apply (\textsc{not\_t\_bits}):
   \begin{itemize}
   \item $\op$ is $\NOT$;
-  \item $\vtone$ has the structure of a bitvector;
-  \item $\vt$ is $\vtone$.
+  \item $\vt$ has the structure of a bitvector;
+  \item $\vs$ is $\vt$.
   \end{itemize}
 \end{itemize}
 
@@ -3156,7 +3155,7 @@ One of the following applies:
     \item $\vttwo$ does not \typesatisfy\ the unconstrained integer type in $\tenv$
     \item obtaining the \structure\ of $\vttwo$ in $\tenv$ is $\vttwostruct$ \ProseOrTypeError;
     \item determining whether $\vttwostruct$ has a bitvector type yields $\True$ \ProseOrTypeError;
-    \item $\vttwostruct$ is a bitevector of width $\vwtwo$, that is, $\TBits(\vwtwo, \Ignore)$;
+    \item $\vttwostruct$ is a bitvector of width $\vwtwo$, that is, $\TBits(\vwtwo, \Ignore)$;
     \item determining whether $\vwone$ and $\vwtwo$ are equal bitwidths yields $\vb$;
     \item $\vb$ is $\True$ \ProseOrTypeError;
     \item $\vt$ is the bitvector type of width $\vwone$ and empty list of bitfields, that is, \\ $\TBits(\vwone, \emptylist)$.
@@ -3575,7 +3574,7 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \identr{TTGQ}, \identi{YHML}, \identi{YHRP}, \identi{VMZF}, \identi{YXSY},
   \identi{LGHJ}, \identi{RXLG}.
 
-\section{Typing.FindNamedLCA \label{sec:Typing.FindNamedLCA}}
+\section{TypingRule.FindNamedLCA \label{sec:Typing.FindNamedLCA}}
 \hypertarget{def-namedlowestcommonancestor}{}
 The function
 \[
@@ -3848,7 +3847,7 @@ In the following examples, all the uses of integer types are valid:
 \and
 \inferrule[well\_constrained]{
   \constraints \eqname \vc_{1..k}\\
-  i=1..k: \tododefine{annotate\_constraint}(\vc_i) \newc_i \OrTypeError\\\\
+  i=1..k: \tododefine{annotate\_constraint}(\vc_i) \typearrow\newc_i \OrTypeError\\\\
   \newconstraints \eqdef \newc_{1..k}
 }{
   \annotatetype{\Ignore, \tenv, \TInt(\wellconstrained(\constraints))} \typearrow \\ \TInt(\wellconstrained(\newconstraints))
@@ -3913,6 +3912,7 @@ In the following example, all the uses of tuple types are valid:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
+  k \geq 2\\
   \tys \eqname \tty_{1..k}\\
   i=1..k: \annotatetype{\False, \tenv, \tty_i} \typearrow \ttyp_i \OrTypeError
 }{
@@ -5394,14 +5394,14 @@ All of the following apply:
       \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$,
       meaning that an execution-time check that the expression $\vep$ evaluates to a value in the
       dynamic domain of $\tty$ is required;
-      \item both $\vtstruct$ and $\vtystruct$ are bitevector types or integer types.
+      \item both $\vtstruct$ and $\vtystruct$ are bitvector types or integer types.
       \item $\vt$ is $\vtp$ and $\newe$ is the asserting type conversion expression over $\vepp$ \\ and
       $\vtystruct$, that is, $\EATC(\vepp, \vtystruct)$.
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
     \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$;
-    \item $\vtstruct$ and $\vtystruct$ are not both bitevector types or integer types.
+    \item $\vtstruct$ and $\vtystruct$ are not both bitvector types or integer types.
     \item a type error indicating the conflicting types is returned.
     \end{itemize}
   \end{itemize}
@@ -5481,7 +5481,7 @@ its set to the single value $\vn$;
 \item $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
 \end{itemize}
 
-\subsection{Example: TypingRule.Lit.asl}
+\subsection{Example}
 In the following example, we show several literals and their corresponding types in comments:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Lit.asl}
 
@@ -5698,7 +5698,7 @@ One of the following applies:
 \item TypingRule.LEConcat (see \secref{TypingRule.LEConcat}).
 \end{itemize}
 
-We also make use of the helper tule
+We also make use of the helper tuple
 TypingRule.LEBits (see \secref{TypingRule.LEBits}).
 
 \hypertarget{def-rexpr}{}
@@ -5890,7 +5890,7 @@ All of the following apply:
   \item annotating the left-hand-side expression $\vleone$ with type $\vtleone$ in $\tenv$ yields $\vletwo$ \ProseOrTypeError;
   \item determining that $\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$ \ProseOrTypeError;
   \item determining whether $\slices$ is a single slice with index expression $\eindex$ yields $\True$ \ProseOrTypeError;
-  \item annotating the index pression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$ \ProseOrTypeError;
+  \item annotating the index expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$ \ProseOrTypeError;
   \item determining the array length type of $\size$ in $\tenv$ (via $\typeofarraylength$) yields $\wantedtindex$;
   \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields $\True$ \ProseOrTypeError;
   \item $\newle$ is an access to array $\vletwo$ at index $\eindexp$, that is, \\ $\LESetArray(\vletwo, \eindexp)$.
@@ -7278,7 +7278,7 @@ All of the following apply:
   \item $\vs$ is the AST node for the sequence of statements $\vsone$ and $\vstwo$, that is, $\SSeq(\vsone, \vstwo)$;
   \item annotating $\vsone$ in $\tenv$ yields $(\newsone, \tenvone)$ \ProseOrTypeError;
   \item annotating $\vstwo$ in $\tenvone$ yields $(\newstwo, \newtenv)$ \ProseOrTypeError;
-  \item $\news$ is the AST node for the seuqnece of statements $\newsone$ and $\newstwo$, that is, $\SSeq(\newsone, \newstwo)$.
+  \item $\news$ is the AST node for the sequence of statements $\newsone$ and $\newstwo$, that is, $\SSeq(\newsone, \newstwo)$.
 \end{itemize}
 
 \subsection{Example}
@@ -7519,7 +7519,7 @@ All of the following apply:
         end expression $\vetwop$, and the body statement (block) $\vspp$, that is, \\
         $\SFor(\id, \veonep, \dir, \vetwop, \vspp)$;
   \item $\newtenv$ is $\tenv$ (notice that this means $\id$ is only declared for annotating $\vsp$ but then goes
-        out of scop).
+        out of scope).
 \end{itemize}
 
 % \begin{itemize}
@@ -8328,7 +8328,7 @@ All of the following apply:
   \item the modified environment $\newtenv$ is dropped.
 \end{itemize}
 
-\subsection{Example: TypingRule.Block0.asl}
+\subsection{Example}
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
 
 \CodeSubsection{\BlockBegin}{\BlockEnd}{../Typing.ml}
@@ -8417,7 +8417,7 @@ All of the following apply:
   \item determining whether $\ttyp$ has the \structure\ of an exception type yields $\True$ \ProseOrTypeError;
   \item the identifier $\name$ is not bound in $\tenv$;
   \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
-        (that is, with the local declararion keyword $\LDKLet$), yields the static environment $\tenvp$;
+        (that is, with the local declaration keyword $\LDKLet$), yields the static environment $\tenvp$;
   \item annotating the block $\vstmt$ in $\tenvp$ yields $\newstmt$.
 \end{itemize}
 
@@ -8580,7 +8580,7 @@ performs three tasks:
 \begin{itemize}
   \item Resolving the correct subprogram from the rule arguments. That is, finding a subprogram
   that with the same name and argument types that \typeclash\ with the actual argument types;
-  \item Deducing from the actual arguments and formal parameters ``equations'' ---
+  \item Deducing from the actual arguments and formal parameters equations ---
   the expressions associated with parameter names;
   \item Checking that the call expression matches the subprogram declaration.
 \end{itemize}
@@ -8611,7 +8611,7 @@ All of the following apply:
 
     \item All of the following apply (\textsc{okay}):
     \begin{itemize}
-      \item The list of parameter arguments $\eqs$ is reversed and pre-pended to the list of parameter arguments
+      \item The list of parameter arguments $\eqs$ is reversed and prepended to the list of parameter arguments
       i$\extranargs$, yielding $\eqstwo$;
       \item annotating static constrained integers in $\eqstwo$ in $\tenv$ yields $\eqsthree$ \ProseOrTypeError;
       \item annotating the callee parameters using $\calleeargtypes$ and $\callerargtypes$ in $\tenv$
@@ -9384,7 +9384,7 @@ transforms a type $\vt$ in a static environment $\tenv$ into a symbolic domain $
 \hypertarget{def-symsyntaxsubset}{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Symbolic Reudction and Equivalence Testing \label{chap:symbolicequivalencetesting}}
+\chapter{Symbolic Reduction and Equivalence Testing \label{chap:symbolicequivalencetesting}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 In this chapter, we define two forms of symbolic reasoning ---
@@ -9401,7 +9401,7 @@ there are two possibilities:
 \begin{itemize}
   \item the expressions are not equivalent;
   \item the expressions are equivalent, but the reasoning power of our rules
-  is not enough to prove it, and so we ``conservatively'' answer negatively.
+  is not enough to prove it, and so we conservatively answer negatively.
 \end{itemize}
 In proof-theoretic terms, we can say that our equivalence tests are \emph{sound} but \emph{incomplete}.
 
@@ -10046,7 +10046,7 @@ conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo
   \typeequal(\tenv, \TInt(\underconstrained(\vione, \Ignore)), \TInt(\underconstrained(\vitwo, \Ignore))) \typearrow \vb
 }
 \and
-\inferrule[tint\_wellonstrained]{
+\inferrule[tint\_wellconstrained]{
   \constraintsequal(\tenv, \vcone, \vctwo) \typearrow \vb
 }{
   \typeequal(\tenv, \TInt(\wellconstrained(\vcone)), \TInt(\wellconstrained(\vctwo))) \typearrow \vb
@@ -10408,7 +10408,7 @@ returning a type error otherwise:
 
 \hypertarget{def-pairstomap}{}
 \section{Converting a List of Pairs to a Map \label{sec:PairsToMap}}
-The parameteric function
+The parametric function
 \[
   \pairstomap(\overname{(\identifier\times T)^*}{\pairs}) \aslto \overname{(\identifier\partialto T)}{f} \cup \TTypeError
 \]
@@ -11160,7 +11160,7 @@ One of the following applies:
   \item All of the following apply (\textsc{global}):
   \begin{itemize}
     \item $\vs$ is a globally declared storage element;
-    \item $\vb$ is true if and only if $\vs$ is declared as a constat, a configuration variable, or an immutable variable.
+    \item $\vb$ is true if and only if $\vs$ is declared as a constant, a configuration variable, or an immutable variable.
   \end{itemize}
 
   \item All of the following apply (\textsc{error}):
@@ -11368,7 +11368,7 @@ The function
   \True \cup \TTypeError
 \]
 tests whether the types $\vtone$ and $\vttwo$ are bitvector types of the same width.
-If the answer is positive, the result is $\True$. Otheriwe, the result is a type error.
+If the answer is positive, the result is $\True$. Otherwise, the result is a type error.
 
 \subsection{Prose}
 All of the following apply:
@@ -11377,13 +11377,13 @@ All of the following apply:
   \item obtaining the width of $\vttwo$ in $\tenv$ (via $\getbitvectorwidth$) yields the expression $\vm$ \ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the followin apply (\textsc{true}):
+    \item All of the following apply (\textsc{true}):
     \begin{itemize}
       \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\True$;
       \item the result is $\True$.
     \end{itemize}
 
-    \item All of the followin apply (\textsc{error}):
+    \item All of the following apply (\textsc{error}):
     \begin{itemize}
       \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\False$;
       \item the result is a type error indicating that the bitwidths are different.
