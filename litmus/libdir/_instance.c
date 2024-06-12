@@ -35,16 +35,18 @@ typedef struct {
   sense_t b;
   param_t p;
   int ind[N]; /* Indirection for role shuffle */
+  int stop_now;
 } ctx_t ;
 
 
 static void instance_init(ctx_t *p, int id, intmax_t *mem) {
-  p->id = id ;
-  p->mem = mem ;
-  hash_init(&p->t) ;
-  log_init(&p->out) ;
-  barrier_init(&p->b,N) ;
-  interval_init((int *)&p->ind,N) ;
+  p->id = id;
+  p->mem = mem;
+  hash_init(&p->t);
+  log_init(&p->out);
+  barrier_init(&p->b,N);
+  interval_init((int *)&p->ind,N);
+  p->stop_now = 0;
 #ifdef SOME_VARS
   vars_init(&p->v,mem);
   labels_init(&p->v);
