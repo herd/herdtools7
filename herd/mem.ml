@@ -817,7 +817,7 @@ let match_reg_events es =
       PP.show_es_rfm test es rfm ;
       ()
 
-    let solve_regs test es csn =
+    let do_solve_regs test es csn =
       let rfm = match_reg_events es in
       let csn =
         S.RFMap.fold
@@ -848,6 +848,20 @@ let match_reg_events es =
             (E.simplify_vars_in_event_structure sol es,
              S.simplify_vars_in_rfmap sol rfm,
              csn)
+
+    let solve_regs test es csn =
+      match do_solve_regs test es csn with
+      | Some (es,rfm,_) as r ->
+        Printf.eprintf "Found\n%!" ;
+        if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+          let module PP = Pretty.Make(S) in
+          prerr_endline "Reg solved" ;
+          PP.show_es_rfm test es rfm ;
+        end ;
+        r
+      | None ->
+        Printf.eprintf "Not found\n%!" ;
+        None
 
 (**************************************)
 (* Step 2. Generate rfmap for memory  *)
@@ -2058,7 +2072,7 @@ Please use `-variant self` as an argument to herd7 to enable it."
       ) stores
 
     let calculate_rf_with_cnstrnts test owls es cs kont res =
-      match solve_regs test es cs with
+      match do_solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
           if C.debug.Debug_herd.solver && C.verbose > 0 then begin

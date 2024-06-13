@@ -174,6 +174,9 @@ let do_op1 op cst =
             match positions with
             | [63] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
             | [55] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [63; 62; 61; 60; 59; 58; 57; 56;
+               55; 54; 53; 52; 51; 50; 49; 48;]
+              -> Some (Constant.Concrete (ASLScalar.zeros 16))
             | _ -> None
           end
       | _ -> None)

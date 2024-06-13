@@ -811,7 +811,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* -------------------------------- *)
   and eval_local_decl s ldi env m_init_opt : env maybe_exception m =
     let () =
-      if true then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
+      if false then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
     in
     match (ldi, m_init_opt) with
     (* Begin LDDiscard *)
@@ -855,7 +855,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [eval_stmt env s] evaluates [s] in [env]. This is either an interruption
       [Returning vs] or a continuation [env], see [eval_res]. *)
   and eval_stmt (env : env) s : stmt_eval_type =
-    (if true then
+    (if false then
        match s.desc with
        | S_Seq _ -> ()
        | _ -> Format.eprintf "@[<3>Stmt@ @[%a@]@]@." PP.pp_stmt s);
