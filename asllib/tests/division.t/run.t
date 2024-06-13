@@ -18,7 +18,7 @@ Division by zero:
     and integer {0}
   [1]
 
-Unsupported divisions (caught at time-checking time):
+Unsupported divisions (caught at type-checking time):
 
   $ aslref static-div-neg.asl
   File static-div-neg.asl, line 3, characters 19 to 27:
@@ -42,7 +42,7 @@ Unsupported divisions (caught at time-checking time):
   ASL Static error: Illegal application of operator DIV for values 5 and 3.
   [1]
 
-For completeness, those operations are runtime errors:
+For completeness, those operations are dynamic errors:
 
   $ aslref dynamic-div-neg.asl
   ASL Dynamic error: Illegal application of operator DIV for values 6 and -3.
