@@ -42,8 +42,30 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let reg_class _ = "=&r"
         let reg_class_stable _ = "=&r"
         let comment = comment
-        let error _t1 _t2 = false
-        and warn _t1 _t2 = false
+
+        let error t1 t2 =
+          let open CType in
+(*          Printf.eprintf "Error %s and %s\n" (debug t1) (debug t2) ; *)
+          match t1,t2 with
+          | (Base
+               ("int"|"ins_t"|"int16_t"|"uint16_t"|"int8_t"|"uint8_t"),
+             Pointer _)
+          | (Pointer _,
+             Base ("int"|"ins_t"|"int16_t"|"uint16_t"|"int8_t"|"uint8_t"))  ->
+              true
+
+          | _ -> false
+
+        let warn t1 t2 =
+          let open CType in
+          match t1,t2 with
+          | Base ("ins_t"|"int"|"int32_t"|"uint32_t"
+                  |"int16_t"|"uint16_t"
+                  |"int8_t"|"uint8_t"),
+            Base ("ins_t"|"int"|"int32_t"|"uint32_t") -> false
+          | (Base "int",_)|(_,Base "int") -> true
+          | _ -> false
+
       end)
   let features = []
   let nop = INop

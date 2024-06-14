@@ -29,6 +29,8 @@ type t =
 
 let void = Base "void"
 let voidstar = Pointer void
+let byte = Base "int8_t"
+let half = Base "int16_t"
 let word = Base "int"
 let quad = Base "int64_t"
 let int32x4_t = Base "int32x4_t"
