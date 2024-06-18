@@ -78,6 +78,7 @@ dune-test:
 	dune runtest --profile=$(DUNE_PROFILE)
 
 test:: test.aarch64
+test-local:: test.aarch64
 test.aarch64:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -89,6 +90,7 @@ test.aarch64:
 	@ echo "herd7 AArch64 instructions tests: OK"
 
 test:: test.riscv
+test-local:: test.riscv
 test.riscv:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -99,6 +101,7 @@ test.riscv:
 	@ echo "herd7 RISCV instructions tests: OK"
 
 test:: test.x86_64
+test-local:: test.x86_64
 test.x86_64:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -109,6 +112,7 @@ test.x86_64:
 	@ echo "herd7 X86_64 instructions tests: OK"
 
 test:: test.mixed
+test-local:: test.mixed
 test.mixed:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -120,6 +124,7 @@ test.mixed:
 	@ echo "herd7 AArch64 mixed instructions tests: OK"
 
 test:: test.mips
+test-local:: test.mips
 test.mips:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -130,6 +135,7 @@ test.mips:
 	@ echo "herd7 RISCV instructions tests: OK"
 
 test:: test.neon
+test-local:: test.neon
 test.neon::
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -141,6 +147,7 @@ test.neon::
 	@ echo "herd7 AArch64 NEON instructions tests: OK"
 
 test:: test.sve
+test-local:: test.sve
 test.sve::
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -153,6 +160,7 @@ test.sve::
 	@ echo "herd7 AArch64 SVE instructions tests: OK"
 
 test:: test.mte
+test-local:: test.mte
 test.mte::
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -164,6 +172,7 @@ test.mte::
 	@ echo "herd7 AArch64 MTE instructions tests: OK"
 
 test:: test.self
+test-local:: test.self
 test.self:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -175,6 +184,7 @@ test.self:
 	@ echo "herd7 AArch64 variant -self instructions tests: OK"
 
 test:: test.kvm
+test-local:: test.kvm
 test.kvm:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -185,7 +195,9 @@ test.kvm:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 KVM instructions tests: OK"
 
-test::
+test:: test-c
+test-local:: test-c
+test-c:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-herd-path $(HERD) \
@@ -196,6 +208,7 @@ test::
 	@ echo "herd7 AArch64 C instructions tests: OK"
 
 test:: test-ppc
+test-local:: test-ppc
 test-ppc:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -206,6 +219,7 @@ test-ppc:
 	@ echo "herd7 PPC instructions tests: OK"
 
 test:: test-asl
+test-local:: test-asl
 test-asl:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -216,6 +230,7 @@ test-asl:
 	@ echo "herd7 ASL instructions tests: OK"
 
 test:: test-pseudo-asl
+test-local:: test-pseudo-asl
 test-pseudo-asl:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -240,6 +255,7 @@ test-aarch64-asl: asl-pseudocode
 	@ echo "herd7 AArch64+ASL instructions tests: OK"
 
 test:: test-aarch64-noasl
+test-local:: test-aarch64-noasl
 test-aarch64-noasl:
 	@echo
 	$(HERD_REGRESSION_TEST) \
@@ -252,6 +268,7 @@ test-aarch64-noasl:
 	@ echo "herd7 AArch64+NOASL instructions tests: OK"
 
 test:: test-aarch64-noasl-mixed
+test-local:: test-aarch64-noasl-mixed
 test-aarch64-noasl-mixed:
 	@echo
 	$(HERD_REGRESSION_TEST) \
@@ -264,6 +281,7 @@ test-aarch64-noasl-mixed:
 	@ echo "herd7 AArch64+NOASL+MIXED instructions tests: OK"
 
 test:: arm-test
+test-local:: arm-test
 
 arm-test::
 	@ echo
@@ -285,8 +303,7 @@ aarch32-test::
 	@ echo "herd7 ARM instructions tests: OK"
 
 test::aarch32-test
-
-test::
+test-local::aarch32-test
 
 diy-test:: diy-test-aarch64
 diy-test-aarch64:
@@ -310,6 +327,7 @@ diy-test-aarch64:
 CATATEST := $(shell if test -d catalogue; then echo cata-test; fi)
 
 test:: $(CATATEST)
+test-local:: $(CATATEST)
 
 cata-test:: cata-bpf-test
 cata-bpf-test:
@@ -449,6 +467,7 @@ test.vmsa+mte:
 	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
 
 test:: diy-test
+test-local:: diy-test
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
 LDSPLUS:="LxSx",$(LDS)
