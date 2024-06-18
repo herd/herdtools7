@@ -2375,30 +2375,42 @@ module Make
         let nelem = predicate_nelem src in
         let psize = predicate_psize src in
         let esize = scalable_esize dst in
-        read_reg_scalable false dst ii >>|
-        read_reg_predicate false pg ii >>= fun (orig,pred) ->
-          get_predicate_any pred psize nelem >>= fun any ->
-            M.choiceT
-            any
-            (read_reg_scalable false src ii >>= fun src ->
-              let negate orig cur_val idx =
-                get_predicate_last pred psize idx >>= fun last ->
-                M.choiceT
-                  last
-                  (scalable_getlane cur_val idx esize
-                   >>= M.op Op.Sub V.zero)
-                  (scalable_getlane orig idx esize)
-                >>= fun v ->
-                  scalable_setlane cur_val idx esize v
-              in
-              let rec reduce orig n op =
-              match n with
-              | 0 -> op >>= fun old_val -> negate orig old_val n
-              | _ -> reduce orig (n-1) (op >>= fun old_val -> negate orig old_val n)
-              in
-              reduce orig (nelem-1) (M.unitT src))
-            (M.unitT orig) >>= fun v ->
-              write_reg_scalable dst v ii
+        let (let>*) = M.bind_control_set_data_input_first in
+        let (let>=) = M.(>>=) in
+        let (and*) = (>>|) in
+        let>= result =
+          let neg_elem idx pred orig cur_val =
+            let>= last = get_predicate_last pred psize idx in
+            let>= () =
+              let cond = Printf.sprintf "ActiveElem(%s, %d)" (A.pp_reg pg) idx in
+              commit_pred_txt (Some cond) ii in
+            M.choiceT last
+              (let>= v = scalable_getlane cur_val idx esize in
+               M.op Op.Sub V.zero v)
+              (scalable_getlane orig idx esize)
+          in
+          let rec reduce n pred orig op =
+            match n with
+            | 0 -> neg_elem n pred orig op
+            | _ ->
+              let>= v = neg_elem n pred orig op
+              and* cur_val = reduce (n-1) pred orig op in
+              scalable_setlane cur_val n esize v
+          in
+          let>= orig, (src, pred) =
+            read_reg_scalable false dst ii >>|
+            M.data_output_union
+              (read_reg_predicate false pg ii)
+              (fun pred ->
+                 let>= any = get_predicate_any pred psize nelem in
+                 let>* () =
+                   let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg pg) in
+                   commit_pred_txt (Some cond) ii in
+                 let>= src = M.choiceT any (read_reg_scalable false src ii) (mzero) in
+                 M.unitT (src, pred)) in
+          reduce (nelem-1) pred orig src
+        in
+        write_reg_scalable dst result ii
 
       let while_op compare unsigned p var r1 r2 ii =
         let psize = predicate_psize p in
