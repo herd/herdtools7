@@ -82,6 +82,7 @@ Test Inxkd.asl:
 
 Test Rfrwd.asl:
   $ aslref Rfrwd.asl
+  [1]
 
 Test Rswqd.asl:
   $ aslref Rswqd.asl
@@ -2833,9 +2834,6 @@ Test Isbwr-2.asl:
 
 Test Izddj-2.asl:
   $ aslref Izddj-2.asl
-
-Test Rfrwd-2.asl:
-  $ aslref Rfrwd-2.asl
 
 Test Rncnq-2.asl:
   $ aslref Rncnq-2.asl
