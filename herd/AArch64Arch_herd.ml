@@ -111,12 +111,13 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_MOPL _
     | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
     | I_UADDV _
+    | I_LDNF1 _ | I_LDFF1SP _
     | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
     | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
     | I_MOV_SV _
     | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
     | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
-    | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
+    | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _ | I_SETFFR | I_RDFFR _
     | I_NEG_SV _ | I_MOVPRFX _
       -> true
 
@@ -272,6 +273,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD4 (rs,_,_,_) | I_LD4R (rs,_,_) | I_ST4 (rs,_,_,_)
       | I_LD4M (rs,_,_) | I_ST4M (rs,_,_) ->
           Some (simd_mem_access_size rs)
+      | I_LDNF1 (v,_,_,_,_) | I_LDFF1SP (v,_,_,_,_)
       | I_LD1SP (v,_,_,_,_) | I_ST1SP (v,_,_,_,_)
       | I_LD2SP (v,_,_,_,_) | I_ST2SP (v,_,_,_,_)
       | I_LD3SP (v,_,_,_,_) | I_ST3SP (v,_,_,_,_)
@@ -303,7 +305,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
       | I_UADDV _
       | I_MOV_SV _ | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
-      | I_NEG_SV _ | I_MOVPRFX _
+      | I_NEG_SV _ | I_MOVPRFX _ | I_SETFFR | I_RDFFR _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
           -> None
@@ -338,6 +340,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_TBZ _|I_TBNZ _
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_UDF _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
+      | I_SETFFR
         -> [] (* For -variant self only ? *)
       | I_LDR (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRBH (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
@@ -372,16 +375,18 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_FMOV_TG (_,r,_,_)
       | I_WHILELT (r,_,_,_) | I_WHILELE (r,_,_,_) | I_WHILELO (r,_,_,_) | I_WHILELS (r,_,_,_)
       | I_UADDV (_,r,_,_)
-      | I_MOV_SV (r,_,_)
+      | I_MOV_SV (r,_,_) | I_RDFFR (r,_)
       | I_DUP_SV (r,_,_) | I_ADD_SV (r,_,_) | I_PTRUE (r,_)
       | I_NEG_SV (r,_,_) | I_MOVPRFX (r,_,_)
       | I_INDEX_SI (r,_,_,_) | I_INDEX_IS (r,_,_,_) | I_INDEX_SS (r,_,_,_) | I_INDEX_II (r,_,_)
       | I_RDVL (r,_) | I_ADDVL (r,_,_) | I_CNT_INC_SVE (_,r,_,_)
+      | I_LDNF1 (_,r,_,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
       | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
+      | I_LDFF1SP (_,rs,_,_,_)
       | I_LD1SP (_,rs,_,_,_)
       | I_LD2SP (_,rs,_,_,_)
       | I_LD3SP (_,rs,_,_,_)
@@ -449,9 +454,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_ADDSUBEXT _|I_MOPL _
       | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
       | I_UADDV _
+      | I_LDNF1 _ | I_LDFF1SP _
       | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
-      | I_ADD_SV _ | I_PTRUE _
+      | I_ADD_SV _ | I_PTRUE _ | I_SETFFR | I_RDFFR _
       | I_NEG_SV _ | I_MOVPRFX _
       | I_MOV_SV _ | I_DUP_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _

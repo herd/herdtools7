@@ -668,9 +668,10 @@ include Arch.MakeArch(struct
     (* Scalable Vector Extension *)
     | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
     | I_UADDV _ | I_DUP_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
+    | I_LDNF1 _ | I_LDFF1SP _
     | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
     | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
-    | I_MOV_SV _ | I_PTRUE _
+    | I_MOV_SV _ | I_PTRUE _ | I_SETFFR | I_RDFFR _
     | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
     | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
         -> Warn.fatal "SVE instructions are not implemented yet"

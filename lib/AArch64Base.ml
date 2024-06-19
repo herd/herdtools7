@@ -122,6 +122,7 @@ type reg =
   | Symbolic_reg of string
   | Internal of int
   | NZCV
+  | FFR (* SVE's fist-fault register *)
   | SP
   | PC
   | ResAddr
@@ -442,6 +443,7 @@ let pp_xreg r = match r with
 | Symbolic_reg r -> "X%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
 | NZCV -> "NZCV"
+| FFR -> "FFR"
 | ResAddr -> "Res"
 | PC -> "PC"
 | SysReg sreg -> pp_sysreg sreg
@@ -1307,6 +1309,50 @@ type 'k kinstruction =
   | I_WHILELS of reg * variant * reg * reg
   (* UADDV <Dd>, <Pg>, <Zn>.<T> *)
   | I_UADDV of simd_variant * reg * reg * reg
+  (* SETFFR *)
+  | I_SETFFR
+  (* RDFFR <Pd>.B, <Pg>/Z *)
+  | I_RDFFR of reg * reg
+  (*
+   * LDNF1{B,H,W,D} (immediate index)
+   *
+   * LDNF1B { <Zt>.T }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}] for T in  D,S,H,B
+   * LDNF1H { <Zt>.T }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}] for T in D,S,H
+   * LDNF1W { <Zt>.T }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}] for T in D,S
+   * LDNF1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+  *)
+  | I_LDNF1 of simd_variant * reg * reg * reg * 'k idx
+  (*
+   * LDFF1{B,H,W,D} (scalar plus scalar)
+   *
+   * LDFF1B { <Zt>.T }, <Pg>/Z, [<Xn|SP>{, <Xm>}] for T in  D,S,H,B
+   * LDFF1H { <Zt>.T }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #1}] for T in D,S,H
+   * LDFF1W { <Zt>.T }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #2}] for T in D,S
+   * LDFF1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #3}]
+   *
+   * LDFF1B{B,H,W,D} (scalar plus vector)
+   *
+   * LDFF1B { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+   * LDFF1B { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]
+   * LDFF1B { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
+   * LDFF1H { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #1]
+   * LDFF1H { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #1]
+   * LDFF1H { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+   * LDFF1H { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]
+   * LDFF1H { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #1]
+   * LDFF1H { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
+   * LDFF1W { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #2]
+   * LDFF1W { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]
+   * LDFF1W { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+   * LDFF1W { <Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]
+   * LDFF1W { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #2]
+   * LDFF1W { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
+   * LDFF1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #3]
+   * LDFF1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+   * LDFF1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #3]
+   * LDFF1D { <Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
+   *)
+   | I_LDFF1SP of simd_variant * reg list * reg * reg * 'k MemExt.ext
   (*
    * LD1{B,H,W,D} (scalar plus scalar, single register)
    *
@@ -2019,6 +2065,14 @@ let do_pp_instruction m =
       sprintf "WHILELS %s,%s,%s" (pp_preg p1) (pp_vreg v r2) (pp_vreg v r3)
   | I_UADDV (v,r1,r2,r3) ->
       sprintf "UADDV %s,%s,%s" (pp_vsimdreg v r1) (pp_preg_simple r2) (pp_zreg r3)
+  | I_SETFFR ->
+      "SETFFR"
+  | I_RDFFR (r1,r2) ->
+      sprintf "RDFFR %s,%s" (pp_preg r1) (pp_preg r2)
+  | I_LDNF1 (v,r1,r2,r3,idx)->
+      sprintf "LDNF1%s {%s},%s,%s" (pp_simd_variant v) (pp_zreg r1) (pp_preg r2) (pp_idx r3 idx)
+  | I_LDFF1SP (v,rs,r2,r3,idx) ->
+      sprintf "LD1FF%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg r2) (pp_addr r3 idx)
   | I_LD1SP (v,rs,r2,r3,idx) ->
       sprintf "LD1%s {%s},%s,%s" (pp_simd_variant v) (String.concat "," (List.map pp_zreg rs)) (pp_preg r2) (pp_addr r3 idx)
   | I_LD2SP (v,rs,r2,r3,idx) ->
@@ -2293,7 +2347,7 @@ let fold_regs (f_regs,f_sregs) =
   | Preg _ -> f_regs reg y_reg,y_sreg
   | PMreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZCV | ZR | SP | PC
+  | Internal _ | NZCV | ZR | SP | PC | FFR
   | ResAddr | Tag _ | SysReg _
     -> y_reg,y_sreg in
 
@@ -2316,6 +2370,7 @@ let fold_regs (f_regs,f_sregs) =
 
   fun c ins -> match ins with
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_UDF _
+  | I_SETFFR
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOVZ (_,r,_,_) | I_MOVN (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -2351,6 +2406,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_STZ2G (r1,r2,_) | I_STG (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
   | I_ADDVL (r1,r2,_)
+  | I_RDFFR (r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r)
     -> fold_reg (SysReg sr) (fold_reg r c)
@@ -2370,6 +2426,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_ST3 (rs,_,r2,kr) | I_ST3M (rs,r2,kr)
   | I_ST4 (rs,_,r2,kr) | I_ST4M (rs,r2,kr)
     -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LDFF1SP (_,rs,r2,r3,idx)
   | I_LD1SP (_,rs,r2,r3,idx)
   | I_LD2SP (_,rs,r2,r3,idx)
   | I_LD3SP (_,rs,r2,r3,idx)
@@ -2391,6 +2448,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_WHILELT (r1,_,r2,r3) | I_WHILELE (r1,_,r2,r3) | I_WHILELO (r1,_,r2,r3) | I_WHILELS (r1,_,r2,r3)
   | I_INDEX_SS(r1,_,r2,r3)
   | I_UADDV (_,r1,r2,r3) | I_ADD_SV (r1,r2,r3) | I_NEG_SV (r1,r2,r3) | I_MOVPRFX (r1,r2,r3)
+  | I_LDNF1 (_,r1,r2,r3,_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,_)
   | I_LDPSW (r1,r2,r3,_)
@@ -2421,7 +2479,7 @@ let map_regs f_reg f_symb =
   | Preg _ -> f_reg reg
   | PMreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | SP| PC
+  | Internal _ | ZR | SP| PC | FFR
   | NZCV | ResAddr | Tag _ | SysReg _
     -> reg in
 
@@ -2604,6 +2662,14 @@ let map_regs f_reg f_symb =
      I_WHILELS (map_reg r1,v,map_reg r2,map_reg r3)
   | I_UADDV (v,r1,r2,r3) ->
      I_UADDV (v,map_reg r1,map_reg r2,map_reg r3)
+  | I_SETFFR ->
+     ins
+  | I_RDFFR (r1,r2) ->
+     I_RDFFR (map_reg r1,map_reg r2)
+  | I_LDNF1 (v,r1,r2,r3,idx) ->
+     I_LDNF1 (v,map_reg r1,map_reg r2,map_reg r3,idx)
+  | I_LDFF1SP (v,rs,r2,r3,idx) ->
+     I_LDFF1SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
   | I_LD1SP (v,rs,r2,r3,idx) ->
      I_LD1SP (v,List.map map_reg rs,map_reg r2,map_reg r3,map_idx idx)
   | I_LD2SP (v,rs,r2,r3,idx) ->
@@ -2861,6 +2927,7 @@ let get_next =
   | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
   | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
   | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
+  | I_SETFFR | I_RDFFR _ | I_LDFF1SP _ | I_LDNF1 _
   | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
   | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
   | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
@@ -3114,6 +3181,7 @@ module PseudoI = struct
         | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
         | I_ADD_SV _ | I_INDEX_SS _
         | I_NEG_SV _ | I_MOVPRFX _
+        | I_SETFFR | I_RDFFR _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -3183,6 +3251,8 @@ module PseudoI = struct
         | I_ADD_SIMD_S (r1,r2,r3) -> I_ADD_SIMD_S (r1,r2,r3)
         | I_UDF k -> I_UDF (k_tr k)
         | I_MOV_SV (r,k,s) -> I_MOV_SV (r,k_tr k,ap_shift k_tr s)
+        | I_LDNF1 (v,r1,r2,r3,idx) -> I_LDNF1 (v,r1,r2,r3,idx_tr idx)
+        | I_LDFF1SP (v,r1,r2,r3,idx) -> I_LDFF1SP (v,r1,r2,r3,ext_tr idx)
         | I_LD1SP (v,r1,r2,r3,idx) -> I_LD1SP (v,r1,r2,r3,ext_tr idx)
         | I_LD2SP (v,r1,r2,r3,idx) -> I_LD2SP (v,r1,r2,r3,ext_tr idx)
         | I_LD3SP (v,r1,r2,r3,idx) -> I_LD3SP (v,r1,r2,r3,ext_tr idx)
@@ -3290,7 +3360,7 @@ module PseudoI = struct
         | I_NEG_SV _ | I_MOVPRFX _
         | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
         | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
-        | I_MOV_SV _
+        | I_MOV_SV _ | I_SETFFR | I_RDFFR _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)
@@ -3303,6 +3373,9 @@ module PseudoI = struct
           -> let (rpt, selem) = (get_simd_rpt_selem ins rs) in
              let n = get_simd_elements rs in
              rpt * selem * n
+        | I_LDNF1 _
+          -> 16
+        | I_LDFF1SP (_,rs,_,_,_)
         | I_LD1SP (_,rs,_,_,_) | I_LD2SP (_,rs,_,_,_) | I_LD3SP (_,rs,_,_,_) | I_LD4SP (_,rs,_,_,_)
         | I_ST1SP (_,rs,_,_,_) | I_ST2SP (_,rs,_,_,_) | I_ST3SP (_,rs,_,_,_) | I_ST4SP (_,rs,_,_,_)
           -> 16 * List.length rs (* upper bound *)

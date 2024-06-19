@@ -1,0 +1,11 @@
+AArch64 V28
+{}
+P0               ;
+MOV Z0.S,#1      ;
+PTRUE P0.S,VL2   ;
+SETFFR           ;
+RDFFR P1.B,P0/Z  ;
+UADDV D2,P1,Z0.S ;
+
+forall 0:V2.4S={2,0,0,0}
+
