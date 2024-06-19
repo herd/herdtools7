@@ -820,7 +820,12 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \item All of the following apply (\textsc{t\_enumeration}):
   \begin{itemize}
     \item $\vt$ is the enumeration type with labels $\id_{1..k}$, that is $\TEnum(\id_{1..k})$;
-    \item $\vd$ is the set of all native integer values for $1..k$.
+    \item $\vd$ is the set of all native integer values for $1..k$.\\
+    \textbf{Why represent enumeration domains via integers:}
+    Conceptually, enumeration labels carry two pieces of information --- the identifiers themselves
+    and their position in the list of identifiers, which are used for accessing arrays.
+    For the purpose of type-checking, we use the identifiers, but for the purpose of the semantics
+    and the domain of values, only the positions are relevant.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_int\_unconstrained}):
