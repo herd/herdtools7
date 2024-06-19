@@ -21,7 +21,7 @@
 \newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\texttt{eval\_expr\_sef}}(#1)}
 \newcommand\XGraphs[0]{\mathcal{G}}
 \newcommand\TError[0]{\textsf{TDynError}}
-\newcommand\ErrorConfig[0]{\texttt{\#DE}}
+\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
 
 \newcommand\dynamicdomain[0]{\hyperlink{def-dyndomain}{\textsf{dyn\_dom}}}
 \newcommand\literals[0]{\mathcal{L}}
@@ -742,7 +742,7 @@ which assigns native values to identifiers~\cite{ASLSemanticsReference}.
 
 \hypertarget{def-envs}{}
 We define \emph{environments} as pairs of static environments and dynamic environments:
-$\envs = \staticenvs \times \dynamicenvs$.
+$\envs \triangleq \staticenvs \times \dynamicenvs$.
 
 Formally, the partial function
 \[
@@ -765,27 +765,28 @@ a static domain that is equal to any of their dynamic domains.
 In those cases, we simply refer to their \emph{domain}.
 
 Associating a set of values to a type is done by evaluating any expression appearing
-in the type definitions. Evaluation is done using the ASL semantics~\cite{ASLSemanticsReference},
-more specifically via the relation
+in the type definitions. Evaluation is defined by the ASL semantics~\cite{ASLSemanticsReference}
+via the relation
 \hypertarget{def-evalexprsef}{}
 \[
   \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
   \Normal(\overname{\vals}{\vv}\aslsep\overname{\XGraphs}{\vg}) \cup
   \overname{\TError}{\ErrorConfig}
 \]
+\hypertarget{def-errorconfig}{}
 which evaluates side-effect-free expressions and either returns
-a configuration of the form $\Normal(\vv,\vg)$ or a dynamic error.
+a configuration of the form $\Normal(\vv,\vg)$ or a dynamic error configuration $\ErrorConfig$.
 In the first case, $\vv$ is a native value and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
 and can be ignored in the context of defining dynamic domains.
 In the latter case (which can occur if, for example, an expression attempts to divide
-\texttt{8} by \texttt{3}), a dynamic error configuration for which we use the notation
-$\ErrorConfig$ is returned.
+\texttt{8} by \texttt{0}), a dynamic error configuration, for which we use the notation
+$\ErrorConfig$, is returned.
 %
-The dynamic domain is undefined in cases where evaluating side-effect-free expressions
+The dynamic domain is empty in cases where evaluating side-effect-free expressions
 results in a dynamic error.
 %
-The dynamic domain is also undefined if the given type $\vt$ is not well-typed in $\tenv$.
+The dynamic domain is undefined if the type $\vt$ is not well-typed in $\tenv$.
 That is, if $\annotatetype{\tenv, \vt} \typearrow \TypeErrorConfig$.
 
 As part of the definition, we also associate dynamic domains to integer constraints
@@ -834,14 +835,21 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the union of the dynamic domains of each of the constraints $vc_{1..k}$ in $\env$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_exact}):
+  \item All of the following apply (\textsc{constraint\_exact\_okay}):
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $n$;
     \item $\vd$ is the set containing the single native integer value for $n$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_range}):
+  \item All of the following apply (\textsc{constraint\_exact\_dynamic\_error}):
+  \begin{itemize}
+    \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_range\_okay}):
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
@@ -850,11 +858,50 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the set containing all native integer values for integers from $a$ to $b$, inclusive.
   \end{itemize}
 
+  \item All of the following apply (\textsc{constraint\_range\_dynamic\_error1}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item evaluating $\veone$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_range\_dynamic\_error2}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_non\_range\_error}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$, results in a configuration with the native integer for $b$;
+    \item $a$ is greater than $b$;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
   \item All of the following apply (\textsc{t\_int\_underconstrained}):
   \begin{itemize}
     \item $\vt$ is an under constrained integer for parameter $\id$, \\ $\TInt(\underconstrained(\id))$;
     \item the native value associated with $\id$ in the local dynamic environment is the native integer value for $n$;
     \item $\vd$ is the set containing the single integer value for $n$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_bits\_dynamic\_error}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
+    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_bits\_negative\_width\_error}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $k$ is negative;
+    \item $\vd$ is the empty set.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_bits\_empty}):
@@ -881,9 +928,26 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     is from $D_i$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_array}):
+  \item All of the following apply (\textsc{t\_array\_dynamic\_error}):
   \begin{itemize}
     \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
+    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_array\_negative\_length\_error}):
+  \begin{itemize}
+    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $k$ is negative;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_array\_okay}):
+  \begin{itemize}
+    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $k$ is greater than or equal to $0$;
     \item the domain of $\vtone$ is $D_\vtone$;
     \item $\vd$ is the set containing all native vectors of $k$ values taken from $D_\vtone$.
   \end{itemize}
@@ -905,9 +969,6 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 \end{itemize}
 
 \subsection{Formally}
-The rules below define $\dynamicdomain$. Notice that if a specification is not well-typed then
-the static evaluation of expressions may return an error configuration. Such cases are not
-handled by the rules below, which leaves the dynamic domain undefined for the respective types.
 
 \begin{mathpar}
 \inferrule[t\_bool]{}{ \dynamicdomain(\env, \TBool) = \tbool }
@@ -934,20 +995,47 @@ handled by the rules below, which leaves the dynamic domain undefined for the re
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[constraint\_exact]{
+\inferrule[constraint\_exact\_okay]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(n), \Ignore)
 }{
   \dynamicdomain(\env, \ConstraintExact(\ve)) = \{ \nvint(n) \}
 }
+\and
+\inferrule[constraint\_exact\_dynamic\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \ConstraintExact(\ve)) = \emptyset
+}
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[constraint\_range]{
+\inferrule[constraint\_range\_okay]{
   \evalexprsef{\env, \veone} \evalarrow \Normal(\nvint(a), \Ignore)\\
   \evalexprsef{\env, \vetwo} \evalarrow \Normal(\nvint(b), \Ignore)\\
   a \leq b
 }{
   \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \{ \nvint(n) \;|\;  a \leq n \leq b\}
+}
+\and
+\inferrule[constraint\_range\_dynamic\_error1]{
+  \evalexprsef{\env, \veone} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \emptyset
+}
+\and
+\inferrule[constraint\_range\_dynamic\_error2]{
+  \evalexprsef{\env, \veone} \evalarrow \Normal(\Ignore, \Ignore)\\
+  \evalexprsef{\env, \vetwo} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \emptyset
+}
+\and
+\inferrule[constraint\_range\_non\_range\_error]{
+  \evalexprsef{\env, \veone} \evalarrow \Normal(\nvint(a), \Ignore)\\
+  \evalexprsef{\env, \vetwo} \evalarrow \Normal(\nvint(b), \Ignore)\\
+  a > b
+}{
+  \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \emptyset
 }
 \end{mathpar}
 
@@ -962,6 +1050,19 @@ in the \emph{local dynamic environment} of $\denv$.
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[t\_bits\_dynamic\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \TBits(\ve, \Ignore)) = \emptyset
+}
+\and
+\inferrule[t\_bits\_negative\_width\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  k < 0
+}{
+  \dynamicdomain(\env, \TBits(\ve, \Ignore)) = \emptyset
+}
+\and
 \inferrule[t\_bits\_empty]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(0), \Ignore)
 }{
@@ -986,9 +1087,22 @@ in the \emph{local dynamic environment} of $\denv$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[t\_array]{
-  \dynamicdomain(\env, \vtone) = D_\vtone\\
+\inferrule[t\_array\_dynamic\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \TArray(\ve, \vtone)) = \emptyset
+}
+\and
+\inferrule[t\_array\_negative\_length\_error]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  k < 0
+}{
+  \dynamicdomain(\env, \TArray(\ve, \vtone)) = \emptyset
+}
+\and
+\inferrule[t\_array\_okay]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  \dynamicdomain(\env, \vtone) = D_\vtone
 }{
   \dynamicdomain(\env, \TArray(\ve, \vtone)) =
   \{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\vtone} \}
