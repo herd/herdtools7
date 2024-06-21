@@ -133,6 +133,8 @@ type 'aop op1 =
   | PTELoc (* get PTE entry from location *)
   | Offset (* get offset from base (symbolic) location *)
   | IsInstr (* Check nature of constant *)
+  | Promote (* Promote to higher precision *)
+  | Demote  (* Demote to lower precision *)
   | ArchOp1 of 'aop
 
 
@@ -167,6 +169,8 @@ let pp_op1 hexa pp_aop o = match o with
 | Offset -> "offset"
 | IsVirtual -> "IsVirtual"
 | IsInstr -> "IsInstruction"
+| Promote -> "promote"
+| Demote -> "demote"
 | ArchOp1 aop -> pp_aop hexa aop
 
 (***********)

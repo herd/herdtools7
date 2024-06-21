@@ -1,5 +1,5 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -34,10 +34,36 @@ end
 module type OptS = sig
   include Opt
   val compare : t -> t -> int
-  val setnow : t -> bool (* examine tag for immediate action *)
+
+  val setnow : t -> bool
+  (** Examine tag for immediate action, returns true if action performed *)
+
+  val reducetag : t -> t
+  (** Examine tag for immediate action, returns a tag wihch may
+      or may noy be the tag argument. *)
 end
 
 module MakeS : functor (O:OptS) -> sig
     val parse_tag_set : string -> (O.t -> bool) ref -> string -> unit
     val parse : string -> (O.t -> bool) ref -> string -> string * Arg.spec * string
   end
+
+module type SArg = sig
+  include Opt
+
+  val compare : t -> t -> int
+
+  val set_fault_handling :  Fault.Handling.t ref -> t -> bool
+  val set_mte_precision : Precision.t ref -> t -> bool
+  val set_sve_length : int ref -> t -> t
+end
+
+module type RefsArg = sig
+  val fault_handling : Fault.Handling.t ref
+  val mte_precision : Precision.t ref
+  val sve_vector_length : int ref
+end
+
+module MakeOptS :
+  functor (O:SArg) -> functor (Refs:RefsArg) -> OptS with type t = O.t
+

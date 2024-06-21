@@ -119,6 +119,11 @@ module Make
         | V64 -> fun v -> uxt_op MachSize.Quad v >>= m
         | V128 -> m
 
+(*  Promotion/Demotion *)
+      let promote = M.op1 Op.Promote
+      and demote = M.op1 Op.Demote
+
+
       let is_zero v = M.op Op.Eq v V.zero
       and is_not_zero v = M.op Op.Ne v V.zero
       and add_if ok k = if ok then fun a -> M.add a (V.intToV k) else M.unitT
@@ -216,18 +221,20 @@ module Make
           (A.Location_reg (ii.A.proc,r)) ii
 
       let neon_setlane old_val idx esize v =
-        let mask = V.op1 (Op.LeftShift (idx*esize)) (AArch64.neon_mask esize) in
+        let mask =
+          V.op1 (Op.LeftShift (idx*esize)) (AArch64.neon_mask esize) in
         let invert = V.op1 Op.Inv mask in
         M.op1 (Op.LeftShift (idx*esize)) v >>= fun new_val ->
         M.op Op.And invert old_val >>|
         M.op Op.And mask new_val >>= fun (v1,v2) ->
         M.op Op.Or v1 v2
 
-      let rec neon_replicate old_val nelem esize v = match nelem with
-      | 0 -> M.unitT old_val
-      | _ ->
-        neon_setlane old_val (nelem-1) esize v >>= fun old_val ->
-        neon_replicate old_val (nelem-1) esize v
+      let rec neon_replicate old_val nelem esize v =
+          if nelem <= 0 then
+            M.unitT old_val
+          else
+            neon_setlane old_val (nelem-1) esize v >>= fun old_val ->
+            neon_replicate old_val (nelem-1) esize v
 
       let write_reg_neon_sz sz r v ii =
         let vr = match r with
@@ -235,7 +242,7 @@ module Make
         | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr')
         | _ -> assert false in
           (* Clear unused register bits (zero extend) *)
-          uxt_op sz v >>= fun v ->
+          promote v >>= uxt_op sz >>= fun v ->
           let location = A.Location_reg (ii.A.proc,vr) in
           M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
 
@@ -243,17 +250,18 @@ module Make
 
       let write_reg_neon_elem sz r idx v ii = match r with
       | AArch64Base.Vreg (_,(_,esize)) ->
-          read_reg_neon false r ii >>=
-          fun old_val -> neon_setlane old_val idx esize v >>= fun new_val ->
-          write_reg_neon_sz sz r new_val ii
+         read_reg_neon false r ii >>=
+         fun old_val -> neon_setlane old_val idx esize v >>= fun new_val ->
+         write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
       let write_reg_neon_rep sz r v ii = match r with
       | AArch64Base.Vreg (_,(nelem,esize)) ->
-        neon_replicate v nelem esize v >>= fun new_val -> write_reg_neon_sz sz r new_val ii
+         neon_replicate v nelem esize v
+         >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
-      let scalable_nbits = 128
+      let scalable_nbits = TopConf.sve_vector_length
 
       let scalable_nbytes = scalable_nbits / 8
 
@@ -299,10 +307,12 @@ module Make
         | AArch64Base.Preg(_,_) | AArch64Base.PMreg(_,_) -> r
         | _ -> assert false in
         let location = A.Location_reg (ii.A.proc,vr) in
-        M.read_loc is_data (mk_read MachSize.Short Annot.N aexp) location ii
+        M.read_loc is_data (mk_read MachSize.S128 Annot.N aexp) location ii
 
       let predicate_setlane old_val idx psize v =
-        let mask = V.op1 (Op.LeftShift (idx*psize)) (AArch64.predicate_mask psize) in
+        let mask =
+          V.op1 (Op.LeftShift (idx*psize))
+            (AArch64.predicate_mask psize) in
         let invert = V.op1 Op.Inv mask in
         M.op1 (Op.LeftShift (idx*psize)) v  >>= fun new_val ->
         M.op Op.And invert old_val >>|
@@ -314,28 +324,26 @@ module Make
         M.op Op.And mask cur_val >>= fun masked_val ->
         M.op1 (Op.LogicalRightShift (idx*psize)) masked_val
 
-      let write_reg_predicate_sz sz r v ii =
+      let write_reg_predicate r v ii =
         let pr = match r with
         | AArch64Base.Preg(_,_) -> r
         | _ -> assert false in
-        (* Clear unused register bits (zero extend) *)
-          M.op1 (Op.Mask sz) v >>= fun v ->
           let location = A.Location_reg (ii.A.proc,pr) in
-          M.write_loc (mk_write MachSize.Short Annot.N aexp Access.REG v) location ii
-
-      let write_reg_predicate = write_reg_predicate_sz MachSize.Short
+          M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
 
       let get_predicate_last pred psize idx =
-        predicate_getlane pred idx psize  >>= fun v ->
-          M.op Op.And v V.one >>= fun last ->
-            M.op Op.Ne last V.zero
+        predicate_getlane pred idx psize
+        >>= M.op Op.And AArch64.one_promoted
+        >>= M.op Op.Ne AArch64.zero_promoted
 
       let get_predicate_any pred psize nelem =
-        let mask idx = V.op1 (Op.LeftShift (idx*psize)) (AArch64.predicate_mask psize) in
+        let mask idx =
+          V.op1 (Op.LeftShift (idx*psize)) (AArch64.predicate_mask psize) in
         let ops = List.map mask (Misc.interval 0 nelem) in
-        let allmask = List.fold_right (V.op Op.Or) ops V.zero in
+        let allmask =
+          List.fold_right (V.op Op.Or) ops AArch64.zero_promoted in
         M.op Op.And pred allmask >>= fun all ->
-          M.op Op.Ne all V.zero
+        M.op Op.Ne all AArch64.zero_promoted
 
       let scalable_esize r = match r with
       | AArch64Base.Zreg (_,esize) -> esize
@@ -353,7 +361,8 @@ module Make
           M.read_loc is_data (mk_read MachSize.S128 Annot.N aexp) location ii
 
       let scalable_setlane old_val idx esize v =
-        let mask = V.op1 (Op.LeftShift (idx*esize)) (AArch64.scalable_mask esize) in
+        let mask =
+          V.op1 (Op.LeftShift (idx*esize)) (AArch64.scalable_mask esize) in
         let invert = V.op1 Op.Inv mask in
         M.op1 (Op.LeftShift (idx*esize)) v >>= fun new_val ->
         M.op Op.And invert old_val >>|
@@ -525,6 +534,7 @@ module Make
         ma >>== fun a -> commit_pred_txt txt ii >>= fun () -> M.unitT a
 
       let mzero = M.unitT M.A.V.zero
+      let mzero_promoted = mzero >>= promote
 
       let check_morello_tag a ma mv mok mfault =
         M.op1 Op.CapaGetTag a >>= fun x ->
@@ -2000,10 +2010,10 @@ module Make
         let open MachSize in
         assert (sz != MachSize.Byte);
         let sz_half = MachSize.pred sz in
-        do_read_mem_ret sz_half an anexp ac addr1 ii >>|
+        (do_read_mem_ret sz_half an anexp ac addr1 ii >>= promote) >>|
         begin
           M.add addr1 (V.intToV (nbytes sz_half)) >>= fun addr2 ->
-          do_read_mem_ret sz_half an anexp ac addr2 ii
+          do_read_mem_ret sz_half an anexp ac addr2 ii >>= promote
         end >>= fun (v1, v2) ->
         let v_lo, v_hi = match endian with
           (* Because an 128-bit Neon STR is allowed to be broken up into
@@ -2029,12 +2039,12 @@ module Make
           | Endian.Little -> comp_lo, comp_hi
           | Endian.Big -> comp_hi, comp_lo in
         begin
-          comp_v1 >>= fun v1 ->
+          comp_v1 >>= demote >>= fun v1 ->
           do_write_mem sz_half an anexp ac addr1 v1 ii
         end >>|
         begin
           M.add addr1 (V.intToV (nbytes sz_half)) >>|
-          comp_v2 >>= fun (addr2, v2) ->
+          (comp_v2 >>= demote) >>= fun (addr2, v2) ->
           do_write_mem sz_half an anexp ac addr2 v2 ii
         end
 
@@ -2059,6 +2069,7 @@ module Make
         if sz == MachSize.S128 then
           do_write_mem_2_ops sz an aexp Access.VIR addr v ii >>= B.next2T
         else
+          demote v >>= fun v ->
           do_write_mem sz an aexp Access.VIR addr v ii >>= B.next1T
 
       let simd_str = do_simd_str Annot.N
@@ -2073,6 +2084,7 @@ module Make
           write_mem_2_ops sz aexp Access.VIR addr v ii >>|
           post_kr rs addr k ii >>= B.next3T
         else
+          demote v >>= fun v ->
           write_mem sz aexp Access.VIR addr v ii >>|
           post_kr rs addr k ii >>= B.next2T
 
@@ -2115,18 +2127,20 @@ module Make
             write_mem sz aexp Access.VIR addr2 v2 ii
           end >>= B.next2T
 
+      let m128 k = promote (V.intToV k)
+
       let movi_v r k shift ii =
         let open AArch64Base in
         let sz = neon_sz r and
         esize = neon_esize r in
         begin match esize, shift with
         | 8, S_NOEXT | 16, S_NOEXT | 32, S_NOEXT | 64, S_NOEXT | 128, S_NOEXT ->
-          M.unitT (V.intToV k)
+           m128 k
         | 8, S_LSL(0 as amount)
         | 16, S_LSL(0|8 as amount)
         | 32, S_LSL(0|8|16|24 as amount)
         | 32, S_MSL(8|16 as amount) ->
-          M.op1 (Op.LeftShift amount) (V.intToV k)
+           m128 k >>= M.op1 (Op.LeftShift amount)
         | _, S_LSL(n) ->
           Warn.fatal
             "illegal shift immediate %d in %d-bit instruction movi"
@@ -2138,19 +2152,20 @@ module Make
             (pp_barrel_shift "," s pp_imm)
             esize
         end
-          >>= (fun v ->  write_reg_neon_rep sz r v ii)
+          >>= fun v ->  write_reg_neon_rep sz r v ii
 
 
       let movi_s var r k ii =
         let open AArch64Base in
         begin match var with
-        | VSIMD64 ->
-          M.unitT (V.intToV k)
+        | VSIMD64 -> m128 k
         | _ ->
           Warn.fatal
           "illegal scalar register size in instruction movi"
         end
           >>= (fun v -> write_reg_neon_sz (tr_simd_variant var) r v ii)
+
+      let sum_elems (v1,v2) = M.add v1 v2
 
       let simd_add r1 r2 r3 ii =
         let nelem = neon_nelem r1 in
@@ -2159,9 +2174,8 @@ module Make
         read_reg_neon false r2 ii >>= fun (v1,v2) ->
           let aux cur_val idx =
             neon_getlane v1 idx esize >>|
-            neon_getlane v2 idx esize >>= fun (e1,e2) ->
-              M.add e1 e2 >>= fun v ->
-                neon_setlane cur_val idx esize v
+            neon_getlane v2 idx esize >>= sum_elems
+            >>= fun v -> neon_setlane cur_val idx esize v
           in
           let rec reduce idx op =
             match idx with
@@ -2177,11 +2191,12 @@ module Make
         let sz = tr_simd_variant var in
         let rec reduce n op =
           match n with
-          | 0 -> op >>| read_reg_neon_elem false r2 0 ii >>= fun (v1,v2) -> M.add v1 v2
+          | 0 -> op >>| read_reg_neon_elem false r2 0 ii >>= sum_elems
           | _ ->
-             reduce (n-1) (op >>| read_reg_neon_elem false r2 n ii >>= fun (v1,v2) -> M.add v1 v2)
+             reduce (n-1)
+               (op >>| read_reg_neon_elem false r2 n ii >>= sum_elems)
         in
-        reduce (nelem-1) (M.add (V.intToV 0) (V.intToV 0)) >>=
+        reduce (nelem-1) mzero >>=
           fun v -> write_reg_neon_sz sz r1 v ii
 
       let uaddv var r1 p src ii =
@@ -2196,19 +2211,19 @@ module Make
               let read_active_elem_or_zero idx cur_val =
                 get_predicate_last pred psize idx >>= fun last ->
                   M.choiceT
-                  last
-                  (scalable_getlane cur_val idx esize)
-                  mzero
+                    last
+                    (scalable_getlane cur_val idx esize)
+                    mzero
                 in
                 let rec reduce cur_val n op =
-                match n with
-                | 0 -> op >>| read_active_elem_or_zero n cur_val >>= fun (v1,v2) -> M.add v1 v2
-                | _ -> reduce cur_val (n-1) (op >>| read_active_elem_or_zero n cur_val  >>= fun (v1,v2) -> M.add v1 v2)
+                  match n with
+                  | 0 -> op >>| read_active_elem_or_zero n cur_val >>= sum_elems
+                  | _ -> reduce cur_val (n-1) (op >>| read_active_elem_or_zero n cur_val  >>= sum_elems)
                 in
                 reduce src (nelem-1) mzero)
             mzero >>= fun v ->
-              let sz = AArch64Base.tr_simd_variant var in
-              write_reg_neon_sz sz r1 v ii
+            let sz = AArch64Base.tr_simd_variant var in
+            write_reg_neon_sz sz r1 v ii
 
       let add_sv r1 r2 r3 ii =
         let nelem = scalable_nelem r1 in
@@ -2217,9 +2232,8 @@ module Make
         read_reg_scalable false r2 ii >>= fun (v1,v2) ->
           let add cur_val idx =
             scalable_getlane v1 idx esize >>|
-            scalable_getlane v2 idx esize >>= fun (e1,e2) ->
-              M.add e1 e2 >>= fun v ->
-                scalable_setlane cur_val idx esize v
+            scalable_getlane v2 idx esize >>=
+            sum_elems >>= scalable_setlane cur_val idx esize
           in
           let rec reduce idx op =
             match idx with
@@ -2277,10 +2291,10 @@ module Make
               let negate orig cur_val idx =
                 get_predicate_last pred psize idx >>= fun last ->
                 M.choiceT
-                last
-                (scalable_getlane cur_val idx esize >>= fun v ->
-                  M.op Op.Sub V.zero v)
-                (scalable_getlane orig idx esize)
+                  last
+                  (scalable_getlane cur_val idx esize
+                   >>= M.op Op.Sub V.zero)
+                  (scalable_getlane orig idx esize)
                 >>= fun v ->
                   scalable_setlane cur_val idx esize v
               in
@@ -2343,12 +2357,14 @@ module Make
         let count = predicate_count pattern nelem in
         let rec repeat old_val idx =
           if idx < nelem then
-            let v = if idx < count then V.one else V.zero in
+            let v =
+              if idx < count then AArch64.one_promoted
+              else AArch64.zero_promoted in
             predicate_setlane old_val idx psize v >>= fun old_val ->
               repeat old_val (idx+1)
           else M.unitT old_val
         in
-        repeat V.zero 0 >>= fun (new_val) ->
+        repeat AArch64.zero_promoted 0 >>= fun new_val ->
         write_reg_predicate p new_val ii >>! new_val
 
       let mov_sv r k shift ii =
@@ -2356,9 +2372,9 @@ module Make
         begin match shift with
         | S_NOEXT
         | S_LSL(0)  ->
-          M.unitT (V.intToV k)
+          M.unitT (AArch64.promote_int k)
         | S_LSL(8 as amount) ->
-          M.op1 (Op.LeftShift amount) (V.intToV k)
+          M.op1 (Op.LeftShift amount) (AArch64.promote_int k)
         | S_LSL(n) ->
           Warn.fatal
             "illegal shift immediate %d in instruction mov"
@@ -2374,15 +2390,14 @@ module Make
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
         let increment cur_val idx o =
-          M.add v1 o >>= fun v -> scalable_setlane cur_val idx esize v in
+          M.add v1 o >>=  promote >>= scalable_setlane cur_val idx esize in
         let rec reduce n op =
           let i = V.op Op.Mul (V.intToV n) v2 in
           match n with
           | 0 -> op >>= fun old_val -> increment old_val n i
           | _ -> reduce (n-1) (op >>= fun old_val -> increment old_val n i)
         in
-        reduce (nelem-1) mzero >>= fun v ->
-          write_reg_scalable r v ii
+        reduce (nelem-1) mzero >>= fun v -> write_reg_scalable r v ii
 
       let cnt_inc (op,v) r pat k ii =
         let open AArch64 in
@@ -2513,7 +2528,8 @@ module Make
 
       let do_load_elem an sz i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        do_read_mem_ret access_size an aexp Access.VIR addr ii >>= fun v ->
+        do_read_mem_ret access_size an aexp Access.VIR addr ii
+        >>= promote >>= fun v ->
         write_reg_neon_elem sz r i v ii
 
       let load_elem = do_load_elem Annot.N
@@ -2526,7 +2542,7 @@ module Make
 
       let do_store_elem an i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        read_reg_neon_elem true r i ii >>= fun v ->
+        read_reg_neon_elem true r i ii >>= demote >>= fun v ->
         do_write_mem access_size an aexp Access.VIR addr v ii
 
       let store_elem = do_store_elem Annot.N
@@ -2535,7 +2551,9 @@ module Make
      (* Single structure memory access *)
       let mem_ss memop addr rs ii =
         let op r o = M.add o addr >>= fun addr -> memop r addr ii in
-        let os = List.mapi (fun i r -> V.intToV (i * neon_esize r / 8)) rs in
+        let os =
+          List.mapi
+            (fun i r -> V.intToV (i * neon_esize r / 8)) rs in
         List.fold_right (>>::) (List.map2 op rs os) (M.unitT [()])
 
       let rec reduce_ord l =
@@ -2597,27 +2615,27 @@ module Make
             any
             (ma >>= fun addr ->
               let op i r =
-                let calc_offset idx = (V.intToV ((idx*nregs+i) * MachSize.nbytes sz)) in
+                let calc_offset idx = (idx*nregs+i) * MachSize.nbytes sz in
                 let load idx =
                   let offset = calc_offset idx in
                   get_predicate_last pred psize idx >>= fun last ->
                     M.choiceT
-                    last
-                    (M.add addr offset >>= fun addr ->
-                    do_read_mem_ret sz Annot.N aexp Access.VIR addr ii)
-                    mzero >>= fun v ->
-                      M.op1 (Op.LeftShift (idx*esize)) v in
+                      last
+                      (M.op1 (Op.AddK offset) addr >>= fun addr ->
+                       do_read_mem_ret sz Annot.N aexp Access.VIR addr ii)
+                      mzero
+                    >>= promote >>= M.op1 (Op.LeftShift (idx*esize)) in
                 let rec reduce idx op =
                   match idx with
                   | 0 -> op >>| load idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
                   | _ -> reduce (idx-1) (op >>| load idx >>= fun (v1,v2) -> M.op Op.Or v1 v2)
                 in
-                reduce (nelem-1) mzero >>= fun v ->
-                  write_reg_scalable r v ii
+                reduce (nelem-1) mzero_promoted >>= fun v ->
+                write_reg_scalable r v ii
                 in
                 let ops = List.mapi op rlist in
                 List.fold_right (>>::) ops (M.unitT [()]))
-              (let ops = List.map (fun r -> write_reg_scalable r V.zero ii) rlist in
+              (let ops = List.map (fun r -> write_reg_scalable r AArch64.zero_promoted ii) rlist in
                 List.fold_right (>>::) ops (M.unitT [()]))
 
       let store_predicated_elem_or_merge_m sz p ma rlist ii =
@@ -2627,31 +2645,32 @@ module Make
         let esize = scalable_esize r in
         let nregs = List.length rlist in
         read_reg_predicate false p ii >>= fun pred ->
-          get_predicate_any pred psize nelem >>= fun any ->
-            M.choiceT
-            any
-            (ma >>= fun addr ->
-              let op i r =
-                read_reg_scalable true r ii >>= fun v ->
-                  let calc_offset idx = (V.intToV ((idx*nregs+i) * MachSize.nbytes sz)) in
-                  let store idx =
-                    let offset = calc_offset idx in
-                    get_predicate_last pred psize idx >>= fun last ->
-                    M.choiceT
-                    last
-                    (M.add addr offset >>| scalable_getlane v idx esize >>= fun (addr,v) ->
-                      write_mem sz aexp Access.VIR addr v ii)
-                    (M.unitT ())
-                  in
-                  let rec reduce idx op =
-                    match idx with
-                    | 0 -> store idx >>:: op
-                    | _ -> reduce (idx-1) (store idx >>:: op)
-                  in
-                  reduce (nelem-1) (M.unitT [()]) in
-                let ops = List.mapi op rlist in
-                List.fold_right (>>::) ops (M.unitT [[()]]))
-            (M.unitT [[()]])
+        get_predicate_any pred psize nelem >>= fun any ->
+        M.choiceT
+          any
+          (ma >>= fun addr ->
+           let op i r =
+             read_reg_scalable true r ii >>= fun v ->
+             let calc_offset idx =  (idx*nregs+i) * MachSize.nbytes sz in
+             let store idx =
+               let offset = calc_offset idx in
+               get_predicate_last pred psize idx >>= fun last ->
+               M.choiceT
+                 last
+                 (M.op1 (Op.AddK offset) addr
+                  >>| (scalable_getlane v idx esize >>= demote)
+                  >>= fun (addr,v) -> write_mem sz aexp Access.VIR addr v ii)
+                 (M.unitT ())
+             in
+             let rec reduce idx op =
+               match idx with
+               | 0 -> store idx >>:: op
+               | _ -> reduce (idx-1) (store idx >>:: op)
+             in
+             reduce (nelem-1) (M.unitT [()]) in
+           let ops = List.mapi op rlist in
+           List.fold_right (>>::) ops (M.unitT [[()]]))
+          (M.unitT [[()]])
 
       let  load_gather_predicated_elem_or_zero sz p ma mo rs e k ii =
         let r = List.hd rs in
@@ -2666,12 +2685,12 @@ module Make
               let load idx =
                 get_predicate_last pred psize idx >>= fun last ->
                 M.choiceT
-                last
-                (scalable_getlane offsets idx esize >>= memext_sext e k >>= fun o ->
-                  M.add o base >>= fun addr ->
-                    do_read_mem_ret sz Annot.N aexp Access.VIR addr ii)
-                mzero
-                >>=  fun v -> M.op1 (Op.LeftShift (idx*esize)) v
+                  last
+                  (scalable_getlane offsets idx esize >>= memext_sext e k >>= fun o ->
+                   M.add o base >>= fun addr ->
+                   do_read_mem_ret sz Annot.N aexp Access.VIR addr ii)
+                  mzero
+                >>= promote >>= fun v -> M.op1 (Op.LeftShift (idx*esize)) v
               in
               let rec reduce idx op =
               match idx with
@@ -2696,10 +2715,10 @@ module Make
                 let store =
                   (scalable_getlane offsets idx esize >>= memext_sext e k >>= fun o ->
                     M.add o base) >>|
-                    scalable_getlane v idx esize >>= fun (addr,v) ->
-                      write_mem sz aexp Access.VIR addr v ii in
+                    (scalable_getlane v idx esize >>= demote)
+                  >>= fun (addr,v) -> write_mem sz aexp Access.VIR addr v ii in
                 get_predicate_last pred psize idx >>= fun last ->
-                  M.choiceT last store (M.unitT ()) in
+                M.choiceT last store (M.unitT ()) in
               let ops = List.map op (Misc.interval 0 nelem) in
               List.fold_right (>>::) ops (M.unitT [()]))
             (M.unitT [()])
@@ -3051,7 +3070,7 @@ module Make
         | I_DUP(r1,var,r2) ->
             check_neon inst;
             !(let sz = tr_variant var  in
-              read_reg_ord_sz sz r2 ii >>=
+              read_reg_ord_sz sz r2 ii >>= promote >>=
               fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
         | I_FMOV_TG(_,r1,_,r2) ->
             check_neon inst;
@@ -3063,12 +3082,12 @@ module Make
               fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)
         | I_MOV_FG(r1,i,var,r2) ->
             check_neon inst;
-            !(let sz = tr_variant var  in
-              read_reg_ord_sz sz r2 ii >>=
+            !(let sz = tr_variant var in
+              read_reg_ord_sz sz r2 ii >>= promote >>=
               fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii)
         | I_MOV_TG(_,r1,r2,i) ->
             check_neon inst;
-            !(read_reg_neon_elem false r2 i ii >>=
+            !(read_reg_neon_elem false r2 i ii >>= demote >>=
               fun v -> write_reg r1 v ii)
         | I_MOV_V(r1,r2) ->
             check_neon inst;
@@ -3099,9 +3118,8 @@ module Make
             check_neon inst;
             let sz = MachSize.Quad in
             !(read_reg_neon false r3 ii >>|
-              read_reg_neon false r2 ii >>= fun (v1,v2) ->
-                M.add v1 v2 >>= fun v ->
-                  write_reg_neon_sz sz r1 v ii)
+              read_reg_neon false r2 ii >>= sum_elems
+              >>= fun v -> write_reg_neon_sz sz r1 v ii)
         (* Neon loads and stores *)
         | I_LDAP1(rs,i,rA,kr) ->
             check_neon inst;
@@ -3338,8 +3356,8 @@ module Make
         | I_DUP_SV(r1,var,r2) ->
           check_sve inst;
           !(let sz = tr_variant var  in
-            read_reg_ord_sz sz r2 ii >>= fun v ->
-              write_reg_scalable_rep r1 v ii)
+            read_reg_ord_sz sz r2 ii >>= promote >>= fun v ->
+            write_reg_scalable_rep r1 v ii)
         | I_INDEX_SI (r1,var,r2,k) ->
           check_sve inst;
           !(let sz = tr_variant var  in

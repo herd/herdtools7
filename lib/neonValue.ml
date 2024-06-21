@@ -4,8 +4,8 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2020-present Institut National de Recherche en Informatique et *)
-(* en Automatique and the authors. All rights reserved.                     *)
+(* Copyright 2024-present Institut National de Recherche en Informatique et *)
+(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -14,21 +14,15 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Parse in-test variant info *)
-
-module Make : functor
-  (Var:sig
-      module Opt:ParseTag.SArg
-      val info : MiscParser.info
-      val variant : Opt.t -> bool
-      val mte_precision : Precision.t
-      val fault_handling : Fault.Handling.t
-      val sve_vector_length : int
-    end) ->
-      sig
-        type t = Var.Opt.t
-        val mte_precision : Precision.t
-        val fault_handling : Fault.Handling.t
-        val sve_vector_length : int
-        val variant : t -> bool
-      end
+module Make (C : sig
+  val is_morello : bool
+end) : Value.AArch64 = struct
+  module AArch64Instr = AArch64Instr.Make (C)
+  module AArch64Cst =
+    SymbConstant.Make (NeonScalar) (AArch64PteVal) (AArch64Instr)
+  module NoCst =
+    SymbConstant.Make (NeonScalar) (PteVal.No)(AArch64Instr)
+  module NoArchOp = ArchOp.No(NoCst)
+  module AArch64Op = AArch64Op.Make (NeonScalar)(NoArchOp)
+  include SymbValue.Make (AArch64Cst) (AArch64Op)
+end

@@ -1,0 +1,13 @@
+AArch64 V28
+{
+uint8_t t[6] = {255,255,255,255,255,255};
+0:X0=t;
+}
+  P0                    ;
+  INDEX Z1.B,#1,#3      ;
+  PTRUE P0.B,VL6        ;
+  LD1B {Z0.B},P0/Z,[X0] ;
+  ADD Z0.B,Z0.B,Z1.B    ;
+  ST1B {Z0.B},P0,[X0] ;
+
+forall t={0,3,6,9,12,15}

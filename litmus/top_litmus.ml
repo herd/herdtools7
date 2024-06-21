@@ -406,11 +406,10 @@ end = struct
             (struct
               module Opt = Variant_litmus
               let info = splitted.Splitter.info
-              let mte_precision = OT.mte_precision
-              let set_mte_precision = Variant_litmus.set_mte_precision
-              let fault_handling = OT.fault_handling
-              let set_fault_handling = Variant_litmus.set_fault_handling
               let variant = OT.variant
+              let mte_precision = OT.mte_precision
+              let fault_handling = OT.fault_handling
+              let sve_vector_length = 0
             end) in
         (* Then call appropriate compiler, depending upon arch *)
         let opt = OT.mkopt (Option.get_default arch) in

@@ -4,8 +4,8 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2020-present Institut National de Recherche en Informatique et *)
-(* en Automatique and the authors. All rights reserved.                     *)
+(* Copyright 2024-present Institut National de Recherche en Informatique et *)
+(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -14,21 +14,16 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Parse in-test variant info *)
+module Translate = struct
 
-module Make : functor
-  (Var:sig
-      module Opt:ParseTag.SArg
-      val info : MiscParser.info
-      val variant : Opt.t -> bool
-      val mte_precision : Precision.t
-      val fault_handling : Fault.Handling.t
-      val sve_vector_length : int
-    end) ->
-      sig
-        type t = Var.Opt.t
-        val mte_precision : Precision.t
-        val fault_handling : Fault.Handling.t
-        val sve_vector_length : int
-        val variant : t -> bool
-      end
+  let promote = Uint128Scalar.promote_int64
+  and demote = Uint128Scalar.to_int64
+
+end
+
+module Wide = struct
+  include Uint128Scalar
+  let pp = pp true
+end
+
+include ExtendScalar.Make(Int64Scalar)(Wide)(Translate)

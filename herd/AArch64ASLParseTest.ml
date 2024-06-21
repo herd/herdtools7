@@ -47,6 +47,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
         module C = Conf
         let dirty = ModelConfig.dirty
         let procs_user = ProcsUser.get splitted.Splitter.info
+        let sve_vector_length = Conf.sve_vector_length
       end in
     let module AArch64ASLS =
       AArch64ASLSem.Make(SemConf)(AArch64ASLValue) in

@@ -46,7 +46,8 @@ type t =
   | TooFar
   | Morello
   | Neon
-  | SVE
+  | SVE (* Specify SVE *)
+  | SVELength of int (* vector size in bits, must be multiple of 128 *)
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
@@ -171,24 +172,33 @@ let parse s = match Misc.lowercase s with
 | "oldsolver" -> Some OldSolver
 | "oota" -> Some OOTA
 | s ->
-   begin
-     match Fault.Handling.parse s with
-     | Some p -> Some (FaultHandling p)
-     | None -> begin
-         match Precision.parse s with
-         | Some p -> Some (MTEPrecision p)
-         | None ->
-           if String.length s = 3 then
-             match s.[0],s.[1],s.[2] with
-             | 't', ('0'..'9' as c1),('0'..'9' as c2) ->
-               let n =
-                 (Char.code c1 - Char.code '0')*10 +
-                 (Char.code c2 - Char.code '0') in
-               Some (T n)
-             | _ -> None
-           else None
-       end
-   end
+  let (>>=) o f = match o with
+    | Some _ -> o
+    | None -> f s in
+  let (|>) f g = fun s ->
+    match f s with
+    | Some x ->  Some (g x)
+    | None -> None in
+  ((Fault.Handling.parse |> (fun p -> FaultHandling p)) s)
+  >>=  (Precision.parse |> (fun p -> MTEPrecision p))
+  >>= (fun s ->
+  if String.length s = 3 then
+    match s.[0],s.[1],s.[2] with
+    | 't', ('0'..'9' as c1),('0'..'9' as c2) ->
+      let n =
+        (Char.code c1 - Char.code '0')*10 +
+        (Char.code c2 - Char.code '0') in
+      Some (T n)
+    | _ -> None
+  else None)
+  >>= fun s ->
+  if String.length s > 4  && String.sub s 0 4 = "sve:" then
+    try
+      Some
+        (SVELength
+           (int_of_string @@ String.sub s 4 (String.length s-4)))
+    with _ -> None
+  else None
 
 let pp = function
   | Success -> "success"
@@ -213,6 +223,7 @@ let pp = function
   | Morello -> "Morello"
   | Neon -> "Neon"
   | SVE -> "sve"
+  | SVELength k -> Printf.sprintf "sve:%d" k
   | Deps -> "Deps"
   | Instances -> "Instances"
   | VMSA -> "vmsa"
@@ -265,7 +276,7 @@ let get_default a v =
       | _ -> true
       end
   | _ -> raise Exit
-  with Exit -> Warn.fatal "No default for variant %s" (pp v)
+   with Exit -> Warn.fatal "No default for variant %s" (pp v)
 
 let get_switch a v f =
   let d = get_default a v in
@@ -278,3 +289,14 @@ let set_fault_handling r = function
 let set_mte_precision r = function
   | MTEPrecision p -> r := p; true
   | _ -> false
+
+let set_sve_length r = function
+  | SVELength n ->
+    let n =
+      let () =
+        if n < 128 || n > 2048 || n mod 128 <> 0 then
+          Warn.fatal
+            "Constant %d is not a valid SVE vector length (multiple of 128 between 128 and 2048)" n in
+      n in
+    r := n ; SVE
+  | tag -> tag

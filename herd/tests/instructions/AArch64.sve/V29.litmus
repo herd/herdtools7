@@ -1,0 +1,9 @@
+AArch64 V29
+(* Output vector lenght, in bytes *)
+Variant=sve:512
+{
+uint64_t 0:X0;
+}
+    P0         ;
+  CNTB X0      ;
+forall 0:X0=64 ;

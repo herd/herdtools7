@@ -44,13 +44,13 @@ let mask sz =
   | Byte -> fun v -> logand v 0xffl
   | Short -> fun v -> logand v 0xffffl
   | Word -> fun v -> v
-  | Quad -> Warn.fatal "make 32 value with quad mask"
-  | S128 -> Warn.fatal "make 32 value with s128 mask"
+  | Quad -> fun v -> Warn.fatal "mask 32 bit value %s with quad mask" (pp_unsigned true v)
+  | S128 -> fun v -> Warn.fatal "mask 32 bit value %s value with s128 mask" (pp_unsigned true v)
 
 let sxt sz v =
   let open MachSize in
   match sz with
-  | S128|Quad|Word -> v
+  | Word -> v
   | _ ->
      let v = mask sz v in
      let nb = nbits sz in
@@ -63,5 +63,4 @@ let to_int64 _ = assert false
 let get_tag _ = assert false
 let set_tag _ = assert false
 
-type mask = Int32.t
-let to_mask x = x
+include NoPromote

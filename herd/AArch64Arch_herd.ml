@@ -201,14 +201,27 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     module V = V
 
+    let promote_int64 x =
+      let sc =
+        V.Cst.Scalar.of_int64 x |> V.Cst.Scalar.promote in
+      V.Val (Constant.Concrete sc)
+
+    and promote_int x =
+      let sc =
+        V.Cst.Scalar.of_int x |> V.Cst.Scalar.promote in
+      V.Val (Constant.Concrete sc)
+
+    let zero_promoted = promote_int 0
+    and one_promoted = promote_int 1
+
     let neon_mask esize =
       let mask = match esize with
-      | 8 -> "0xff"
-      | 16 -> "0xffff"
-      | 32 -> "0xffffffff"
-      | 64 -> "0xffffffffffffffff"
+      | 8 -> 0xffL
+      | 16 -> 0xffffL
+      | 32 -> 0xffffffffL
+      | 64 -> 0xffffffffffffffffL
       | _ -> assert false in
-      V.stringToV mask
+      promote_int64 mask
 
     let neon_getlane cur_val esize idx =
       let mask = V.op1 (Op.LeftShift (idx*esize)) (neon_mask esize) in
@@ -229,12 +242,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let predicate_mask psize =
       let mask = match psize with
-      | 1 -> "0x1"
-      | 2 -> "0x3"
-      | 4 -> "0x7"
-      | 8 -> "0xff"
+      | 1 -> 0x1
+      | 2 -> 0x3
+      | 4 -> 0x7
+      | 8 -> 0xff
       | _ ->  assert false in
-      V.stringToV mask
+      promote_int mask
 
     let scalable_mask = neon_mask
 

@@ -209,6 +209,7 @@ module type S = sig
   type rstate
   val rstate_to_list : rstate -> (rlocation * v) list
   val rstate_filter : (rlocation -> bool) -> rstate -> rstate
+  val debug_rstate : rstate -> string
 
   type final_state = rstate * FaultSet.t
   val do_dump_final_state :
@@ -812,14 +813,18 @@ module Make(C:Config) (I:I) : S with module I = I
           let t = look_type tenv loc in
           [scale_array_reference t loc o]
 
+    let demote = function
+      | I.V.Var _ as v -> v
+      | I.V.Val c -> I.V.Val (Constant.map_scalar I.V.Cst.Scalar.demote c)
+
     let val_of_rloc look tenv rloc =
       match locs_of_rloc tenv rloc with
-      | [loc] -> look loc
+      | [loc] -> look loc |> demote
       | locs ->
          let cs =
            List.map
              (fun loc ->
-               match look loc with
+               match look loc|> demote  with
                | I.V.Val c -> c
                | I.V.Var v -> I.V.freeze v)
              locs in
@@ -835,6 +840,17 @@ module Make(C:Config) (I:I) : S with module I = I
         List.rev (RState.fold (fun l v k -> (l,v)::k) st [])
 
       let rstate_filter = RState.filter
+
+      let debug_rstate rs =
+        let bds = rstate_to_list rs in
+        List.map
+          (fun (loc,v) ->
+            Printf.sprintf "%s -> %s"
+              (pp_rlocation loc)
+              (I.V.pp true v))
+             bds |> String.concat "; "
+
+
 
       type final_state = rstate * FaultSet.t
 

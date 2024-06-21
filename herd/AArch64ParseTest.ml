@@ -46,6 +46,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
             module C = Conf
             let dirty = ModelConfig.dirty
             let procs_user = ProcsUser.get splitted.Splitter.info
+            let sve_vector_length = Conf.sve_vector_length
           end
           module AArch64S = MakeSem(AArch64SemConf)(V)
           module AArch64M = MemCat.Make(ModelConfig)(AArch64S)
@@ -72,8 +73,12 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
             let module  AArch64Value = CapabilityValue.Make(ConfMorello) in
             let module X = AArch64Make(AArch64Value) in
             X.X.run
-          else if Conf.variant Variant.Neon || Conf.variant Variant.SVE then
-            let module AArch64Value = Uint128Value.Make(ConfMorello) in
+          else if Conf.variant Variant.Neon then
+            let module AArch64Value = NeonValue.Make(ConfMorello) in
+            let module X = AArch64Make(AArch64Value) in
+            X.X.run
+          else if Conf.variant Variant.SVE then
+            let module AArch64Value = SVEValue.Make(ConfMorello) in
             let module X = AArch64Make(AArch64Value) in
             X.X.run
           else

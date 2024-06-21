@@ -87,7 +87,7 @@ let to_int = function
   | S_Int i ->  Z.to_int (norm_signed i)
   | S_Bool true -> 1
   | S_Bool false -> 0
-  | S_BitVector bv -> 
+  | S_BitVector bv ->
      BV.to_int_signed bv
 
 let of_int64 i = S_Int (Z.of_int64 i)
@@ -314,4 +314,4 @@ let zeros_size_one = S_BitVector (BV.zeros 1)
 
 let printable_z z = norm_signed z
 
-let rbit _ _ =  Warn.fatal "ASLScalar.rbit non-existent"
+include NoPromote

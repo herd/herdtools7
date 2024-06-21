@@ -44,12 +44,12 @@ let mask sz =
   | Short -> fun v -> logand v 0xffffL
   | Word -> fun v ->  logand v 0xffffffffL
   | Quad -> fun v -> v
-  | S128 -> Warn.fatal "make 64 value with s128 mask"
+  | S128 -> fun v -> Warn.fatal "mask 64 bit value %s with s128 mask" (pp_unsigned true v)
 
 let sxt sz v =
   let open MachSize in
   match sz with
-  | S128|Quad -> v
+  | Quad -> v
   | _ ->
      let v = mask sz v in
      let nb = nbits sz in
@@ -62,5 +62,4 @@ let to_int64 = Misc.identity
 let get_tag _ = assert false
 let set_tag _ = assert false
 
-type mask = Int64.t
-let to_mask x = x
+include NoPromote
