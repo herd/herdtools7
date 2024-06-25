@@ -13,3 +13,5 @@ S15
 S16
 S17
 S23
+#This test faults on non-existing instruction
+S20
