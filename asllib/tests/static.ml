@@ -40,15 +40,15 @@ let build_consts () =
 
 let normalize () =
   let do_one (e1, e2, env) =
-    let e1' = StaticInterpreter.Normalize.normalize env e1 in
-    let e2' = StaticInterpreter.Normalize.normalize env e2 in
+    let e1' = StaticModel.normalize env e1 in
+    let e2' = StaticModel.normalize env e2 in
     let () =
       if _dbg then Format.eprintf "%a ---> %a@." PP.pp_expr e1 PP.pp_expr e1'
     in
     let () =
       if _dbg then Format.eprintf "%a ---> %a@." PP.pp_expr e2 PP.pp_expr e2'
     in
-    assert (StaticInterpreter.equal_in_env env e1 e2)
+    assert (StaticModel.equal_in_env env e1 e2)
   in
 
   List.iter do_one
@@ -71,42 +71,42 @@ let fpzero_example () =
 
   let () =
     if _dbg then
-      let e' = StaticInterpreter.Normalize.normalize env e in
+      let e' = StaticModel.normalize env e in
       Format.eprintf "%a ---> %a@." PP.pp_expr e PP.pp_expr e'
   in
   let () =
     if _dbg then
-      let f' = StaticInterpreter.Normalize.normalize env f in
+      let f' = StaticModel.normalize env f in
       Format.eprintf "%a ---> %a@." PP.pp_expr f PP.pp_expr f'
   in
   let () =
     if _dbg then
-      let res' = StaticInterpreter.Normalize.normalize env res in
+      let res' = StaticModel.normalize env res in
       Format.eprintf "%a ---> %a@." PP.pp_expr res PP.pp_expr res'
   in
 
-  assert (StaticInterpreter.equal_in_env env !%"N" res)
+  assert (StaticModel.equal_in_env env !%"N" res)
 
 let[@warning "-44"] normalize_affectations () =
-  let open StaticInterpreter.Normalize in
+  let open StaticModel in
   let affectations = [ ("x", Z.of_int 3, None); ("y", Z.of_int 7, None) ] in
   let m_1 = Prod AMap.empty in
-  let m_1', f_1' = subst_mono affectations m_1 (Z.of_int 1) in
-  assert (mono_compare m_1' m_1 = 0 && f_1' = Z.of_int 1);
+  let m_1', f_1' = subst_mono affectations m_1 (Q.of_int 1) in
+  assert (mono_compare m_1' m_1 = 0 && f_1' = Q.of_int 1);
 
   let m_x = Prod (AMap.singleton "x" 1) in
-  let m_x', f_x' = subst_mono affectations m_x (Z.of_int 1) in
-  assert (mono_compare m_x' m_1 = 0 && f_x' = Z.of_int 3);
+  let m_x', f_x' = subst_mono affectations m_x (Q.of_int 1) in
+  assert (mono_compare m_x' m_1 = 0 && f_x' = Q.of_int 3);
 
   let m_xy = Prod (AMap.singleton "x" 1 |> AMap.add "y" 1) in
-  let m_xy', f_xy' = subst_mono affectations m_xy (Z.of_int 1) in
-  assert (mono_compare m_xy' m_1 = 0 && f_xy' = Z.of_int 21);
+  let m_xy', f_xy' = subst_mono affectations m_xy (Q.of_int 1) in
+  assert (mono_compare m_xy' m_1 = 0 && f_xy' = Q.of_int 21);
 
-  let p_1 = Sum (MMap.singleton m_1 (Z.of_int 1)) in
-  let p_x = Sum (MMap.singleton m_x (Z.of_int 1)) in
+  let p_1 = Sum (MMap.singleton m_1 (Q.of_int 1)) in
+  let p_x = Sum (MMap.singleton m_x (Q.of_int 1)) in
   let p_x_1 = add_polys p_1 p_x in
   let p_xy_1 =
-    Sum (MMap.singleton m_xy (Z.of_int 1) |> MMap.add m_1 (Z.of_int 1))
+    Sum (MMap.singleton m_xy (Q.of_int 1) |> MMap.add m_1 (Q.of_int 1))
   in
 
   let p_1' = subst_poly affectations p_1 in

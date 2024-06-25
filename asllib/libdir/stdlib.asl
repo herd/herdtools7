@@ -90,12 +90,11 @@ end
 func Replicate{M}(x: bits(M), N: integer) => bits(M*N)
 begin
   if M == 1 then
-    return ReplicateBit(IsZero(x),N) as bits (M*N);
+    return ReplicateBit(IsZero(x),M*N);
   else
     var r: bits(M*N) = Zeros(M*N);
     for i=0 to N-1 do
-      var t: bits(M*N) = [Zeros(((N-1)-i)*M), x, Zeros(i*M)];
-      r = r OR t;
+      r[i*:M] = x;
     end
     return r;
   end

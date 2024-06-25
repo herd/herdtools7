@@ -117,7 +117,8 @@ module NativeBackend = struct
   let binop op v1 v2 =
     match (v1, v2) with
     | NV_Literal v1, NV_Literal v2 ->
-        StaticInterpreter.binop_values dummy_annotated op v1 v2 |> nv_literal
+        Operations.binop_values dummy_annotated Error.Dynamic op v1 v2
+        |> nv_literal
     | NV_Literal _, v | v, _ ->
         mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
 
@@ -129,7 +130,7 @@ module NativeBackend = struct
   let unop op v =
     match v with
     | NV_Literal v ->
-        StaticInterpreter.unop_values dummy_annotated op v |> nv_literal
+        Operations.unop_values dummy_annotated Error.Dynamic op v |> nv_literal
     | _ -> mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
 
   let on_write_identifier x scope value =

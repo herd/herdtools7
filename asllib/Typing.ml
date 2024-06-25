@@ -29,7 +29,6 @@ module TypingRule = Instrumentation.TypingRule
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
-let unsupported_expr e = fatal_from e (Error.UnsupportedExpr e)
 let invalid_expr e = fatal_from e (Error.InvalidExpr e)
 
 let conflict pos expected provided =
@@ -40,11 +39,12 @@ let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
 let reduce_expr env e =
-  let open StaticInterpreter in
-  try Normalize.normalize env e with NotYetImplemented -> e
+  let open StaticModel in
+  try normalize env e with NotYetImplemented -> e
 
 let reduce_constants env e =
   let open StaticInterpreter in
+  let open StaticModel in
   let eval_expr env e =
     try static_eval env e with NotYetImplemented -> unsupported_expr e
   in
@@ -387,7 +387,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let eval env e =
       match reduce_constants env e with
       | L_Int z -> Z.to_int z
-      | _ -> unsupported_expr e
+      | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
     in
     let module DI = Diet.Int in
     let one_slice loc env diet slice =
@@ -575,7 +575,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
-    if bitwidth_equal (StaticInterpreter.equal_in_env env) n m then ()
+    if bitwidth_equal (StaticModel.equal_in_env env) n m then ()
     else assumption_failed ()
 
   (* Begin CheckBitsEqualWidth *)
@@ -592,7 +592,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match e.desc with
     | E_Literal (L_Int i) -> Z.sign i = 1
     | E_Var _n -> false
-    | _ -> unsupported_expr e
+    | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
 
   let constraint_is_strict_positive = function
     | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_strict_positive e
@@ -604,7 +604,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match e.desc with
     | E_Literal (L_Int i) -> Z.sign i != -1
     | E_Var _n -> false
-    | _ -> unsupported_expr e
+    | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
 
   let constraint_is_non_negative = function
     | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_non_negative e
@@ -1209,7 +1209,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 match List.assoc_opt x acc with
                 | None -> (x, e) :: acc
                 | Some e' ->
-                    if StaticInterpreter.equal_in_env env e e' then acc
+                    if StaticModel.equal_in_env env e e' then acc
                     else (x, e) :: acc)
             | _ -> acc)
         | _ -> acc
@@ -1304,7 +1304,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let ret_ty1 =
       match (call_type, callee.return_type) with
       | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
-          Some (rename_ty_eqs env eqs4 ty)
+          Some (rename_ty_eqs env eqs4 ty |> annotate_type env ~loc)
       | (ST_Setter | ST_EmptySetter | ST_Procedure), None -> None
       | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
     in
@@ -2620,7 +2620,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     try
       let v = reduce_constants env e in
       add_global_constant name v env
-    with Error.ASLException _ -> env
+    with Error.(ASLException { desc = UnsupportedExpr _; _ }) -> env
 
   (* Begin DeclareGlobalStorage *)
   let declare_global_storage loc gsd env =
@@ -2631,38 +2631,29 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let ty' =
       match ty with Some ty -> Some (annotate_type ~loc env ty) | None -> ty
     in
-    let typed_initial_value =
+    let initial_value', initial_value_type =
       match initial_value with
-      | Some e -> Some (annotate_expr env e)
-      | None -> None
+      | Some e ->
+          let t, e' = annotate_expr env e in
+          (Some e', Some t)
+      | None -> (None, None)
     in
     let declared_t =
-      match (typed_initial_value, ty') with
-      | Some (t, _), Some ty ->
+      match (initial_value_type, ty') with
+      | Some t, Some ty ->
           let+ () = check_type_satisfies loc env t ty in
           ty
       | None, Some ty -> ty
-      | Some (t, _), None -> t
-      | None, None ->
-          (* Shouldn't happen because of parser construction. *)
-          Error.fatal_from loc
-            (Error.NotYetImplemented
-               "Global storage declaration must have an initial value or a \
-                type.")
+      | Some t, None -> t
+      | None, None -> Error.fatal_from loc UnrespectedParserInvariant
     in
     let env1 = add_global_storage loc name keyword env declared_t in
     let env2 =
-      match (keyword, typed_initial_value) with
-      | GDK_Constant, Some (_t, e) -> try_add_global_constant name env1 e
+      match (keyword, initial_value') with
+      | GDK_Constant, Some e -> try_add_global_constant name env1 e
       | (GDK_Constant | GDK_Let), None ->
-          (* Shouldn't happen because of parser construction. *)
-          Error.fatal_from loc
-            (Error.NotYetImplemented
-               "Constants or let-bindings must be initialized.")
+          Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
-    in
-    let initial_value' =
-      match typed_initial_value with None -> None | Some (_t, e) -> Some e
     in
     ({ gsd with ty = ty'; initial_value = initial_value' }, env2)
   (* End *)

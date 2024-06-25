@@ -47,3 +47,22 @@ C-Style comments
   $ aslref comments.asl
   /* a comment inside a string? */
 
+  $ cat >comments.asl <<EOF
+  > /*
+  >  
+  >  
+  >  
+  > */
+  > 
+  > let foo = "sigjrshgrsas
+  > kgjrgsoirjggsr
+  > fsoirjgrsig";
+  > 
+  > let a = b;
+  > EOF
+
+  $ aslref comments.asl
+  File comments.asl, line 11, characters 8 to 9:
+  ASL Error: Undefined identifier: 'b'
+  [1]
+

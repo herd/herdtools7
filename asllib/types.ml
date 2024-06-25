@@ -34,9 +34,7 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let undefined_identifier pos x =
   Error.fatal_from pos (Error.UndefinedIdentifier x)
 
-let thing_equal astutil_equal env =
-  astutil_equal (StaticInterpreter.equal_in_env env)
-
+let thing_equal astutil_equal env = astutil_equal (StaticModel.equal_in_env env)
 let expr_equal = thing_equal expr_equal
 let type_equal = thing_equal type_equal
 let array_length_equal = thing_equal array_length_equal
@@ -219,13 +217,11 @@ module Domain = struct
 
   let eval (env : env) (e : expr) =
     let v =
-      let e =
-        try StaticInterpreter.Normalize.normalize env e
-        with StaticInterpreter.NotYetImplemented -> e
-      in
-      try StaticInterpreter.static_eval env e
-      with StaticInterpreter.StaticEvaluationUnknown ->
-        raise_notrace StaticEvaluationTop
+      let open StaticInterpreter in
+      let open StaticModel in
+      let e = try normalize env e with NotYetImplemented -> e in
+      try static_eval env e
+      with StaticEvaluationUnknown -> raise_notrace StaticEvaluationTop
     in
     match v with
     | L_Int i -> i

@@ -41,7 +41,7 @@ Two maybe intersecting slices...
 
   $ aslref intersecting_slices.asl
   File intersecting_slices.asl, line 6, characters 7 to 8:
-  ASL Error: Unsupported expression j.
+  ASL Static Error: Unsupported expression j.
   [1]
 
 Two intersecting bitfields

@@ -196,7 +196,7 @@ UnderConstrained integers:
   [1]
 
   $ aslref unreachable.asl
-  File ASL Standard Library, line 259, characters 9 to 14:
+  File ASL Standard Library, line 258, characters 9 to 14:
   ASL Execution error: Assertion failed: FALSE
   [1]
 

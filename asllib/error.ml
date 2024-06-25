@@ -34,9 +34,9 @@ type error_desc =
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
   | BadArity of identifier * int * int
-  | UnsupportedBinop of binop * literal * literal
-  | UnsupportedUnop of unop * literal
-  | UnsupportedExpr of expr
+  | UnsupportedBinop of error_handling_time * binop * literal * literal
+  | UnsupportedUnop of error_handling_time * unop * literal
+  | UnsupportedExpr of error_handling_time * expr
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | NotYetImplemented of string
@@ -98,18 +98,21 @@ let pp_error =
       fprintf f "@[<h>%a:@]@ " pp_pos e;
     pp_open_hovbox f 2;
     (match e.desc with
-    | UnsupportedBinop (op, v1, v2) ->
+    | UnsupportedBinop (t, op, v1, v2) ->
         fprintf f
-          "ASL Execution error: Illegal application of operator %s for values@ \
-           %a@ and %a."
+          "ASL %s error: Illegal application of operator %s for values@ %a@ \
+           and %a."
+          (error_handling_time_to_string t)
           (binop_to_string op) pp_literal v1 pp_literal v2
-    | UnsupportedUnop (op, v) ->
+    | UnsupportedUnop (t, op, v) ->
         fprintf f
-          "ASL Execution error: Illegal application of operator %s for value@ \
-           %a."
+          "ASL %s error: Illegal application of operator %s for value@ %a."
+          (error_handling_time_to_string t)
           (unop_to_string op) pp_literal v
-    | UnsupportedExpr e ->
-        fprintf f "ASL Error: Unsupported expression %a." pp_expr e
+    | UnsupportedExpr (t, e) ->
+        fprintf f "ASL %s Error: Unsupported expression %a."
+          (error_handling_time_to_string t)
+          pp_expr e
     | InvalidExpr e -> fprintf f "ASL Error: invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         fprintf f

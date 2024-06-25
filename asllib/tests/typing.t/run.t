@@ -12,6 +12,8 @@ H Examples
   $ aslref --no-exec HExample7.asl
   $ aslref --no-exec HExample8.asl
   $ aslref --no-exec HExample9.asl
+  ASL Typing error: a pure expression was expected, found length
+  [1]
   $ aslref --no-exec HExample10.asl
   $ aslref --no-exec HExample11.asl
   $ aslref --no-exec HExample12.asl
@@ -140,10 +142,6 @@ Loops
 
 Bit vector widths defined by constrained integers
   $ aslref --no-exec TPositive9.asl
-  File TPositive9.asl, line 8, characters 4 to 61:
-  ASL Typing error: a subtype of bits(N) was expected,
-    provided bits(((N DIV 2) + (N DIV 2))).
-  [1]
   $ aslref --no-exec TPositive9-1.asl
   $ aslref --no-exec TNegative9-0.asl
   File TNegative9-0.asl, line 3, characters 4 to 36:
@@ -152,7 +150,7 @@ Bit vector widths defined by constrained integers
   $ aslref --no-exec TNegative9-1.asl
   File TNegative9-1.asl, line 3, characters 4 to 59:
   ASL Typing error: a subtype of bits(N) was expected,
-    provided bits(((N DIV 4) + (N DIV 2))).
+    provided bits((N * (3 DIV 4))).
   [1]
   $ aslref --no-exec TNegative9-2.asl
   File TNegative9-2.asl, line 3, characters 4 to 35:
@@ -177,8 +175,7 @@ Symbolic execution of bit vector widths expressions
   ASL Typing error: a subtype of bits(N) was expected, provided bits(widthN).
   [1]
   $ aslref --no-exec TNegative10.asl
-  File TNegative10.asl, line 8, characters 4 to 40:
-  ASL Typing error: a subtype of bits(N) was expected, provided bits(widthN).
+  ASL Typing error: a pure expression was expected, found widthN
   [1]
   $ aslref --no-exec TNegative10-0.asl
   File TNegative10-0.asl, line 16, characters 4 to 53:

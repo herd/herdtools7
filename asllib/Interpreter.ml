@@ -23,6 +23,7 @@
 open AST
 open ASTUtils
 
+let unsupported_expr e = Error.(fatal_from e (UnsupportedExpr (Dynamic, e)))
 let fatal_from pos = Error.fatal_from pos
 
 (* A bit more informative than assert false *)
@@ -469,10 +470,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_index, new_env = eval_expr env1 e_index in
         let* v_array = m_array and* v_index = m_index in
         match B.v_to_int v_index with
-        | None ->
-            (* TODO: create a proper runtime error for this.
-               It should be caught at type-checking, but still. *)
-            fatal_from e (Error.UnsupportedExpr e_index)
+        | None -> unsupported_expr e
         | Some i ->
             let* v = B.get_index i v_array in
             return_normal (v, new_env) |: SemanticsRule.EGetArray)
@@ -638,7 +636,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let m1 =
           let* v = m and* v_index = m_index and* rv_array = rm_array in
           match B.v_to_int v_index with
-          | None -> fatal_from le (Error.UnsupportedExpr e_index)
+          | None -> unsupported_expr e_index
           | Some i -> B.set_index i v rv_array
         in
         eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetArray
@@ -870,14 +868,6 @@ module Make (B : Backend.S) (C : Config) = struct
         let**| vs, env1 = eval_call (to_pos s) name env args named_args in
         let**| new_env = protected_multi_assign ver env1 s les vs in
         return_continue new_env |: SemanticsRule.SAssignCall
-    (* End *)
-    (* Begin SAssignTuple *)
-    | S_Assign
-        ({ desc = LE_Destructuring les; _ }, { desc = E_Tuple exprs; _ }, ver)
-      when List.for_all lexpr_is_var les ->
-        let**| ms, env1 = eval_expr_list_m env exprs in
-        let**| new_env = protected_multi_assign ver env1 s les ms in
-        return_continue new_env |: SemanticsRule.SAssignTuple
     (* End *)
     (* Begin SAssign *)
     | S_Assign (le, re, ver) ->
@@ -1278,9 +1268,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | T_Bits (e, _) ->
         let* v = eval_expr_sef env e in
         let length =
-          match B.v_to_int v with
-          | None -> fatal_from t (Error.UnsupportedExpr e)
-          | Some i -> i
+          match B.v_to_int v with None -> unsupported_expr e | Some i -> i
         in
         L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum li -> (
@@ -1350,7 +1338,7 @@ module Make (B : Backend.S) (C : Config) = struct
           | ArrayLength_Expr e -> (
               let* length = eval_expr_sef env e in
               match B.v_to_int length with
-              | None -> Error.fatal_from t (Error.UnsupportedExpr e)
+              | None -> unsupported_expr e
               | Some i -> return i)
         in
         List.init i_length (Fun.const v) |> B.create_vector
