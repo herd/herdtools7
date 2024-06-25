@@ -1,0 +1,29 @@
+C C-atomic-01
+
+(* Forbid as atomic_add_return returns a value *)
+{
+  atomic_t x = ATOMIC_INIT(0);
+  atomic_t y = ATOMIC_INIT(0);
+}
+
+
+P0(atomic_t *x,atomic_t *y) {
+  int r0; int r1;
+  r0 = atomic_add_return(1,x) ;
+  r1 = atomic_read(y);
+}
+
+P1(atomic_t *x,atomic_t *y) {
+  int r0; int r1;
+  r0 = atomic_add_return(1,y) ;
+  r1 = atomic_read(x);
+}
+
+P2(atomic_t *x,atomic_t *y) {
+  atomic_add(2,x) ;
+  atomic_add(2,y) ;
+}
+
+locations [x;y;0:r0;1:r0;]
+
+exists (0:r1 = 0 /\ 1:r1 = 0)

@@ -34,6 +34,12 @@ let R4rmb = R \ Noreturn	(* Reads for which rmb works *)
 let rmb = [R4rmb] ; fencerel(Rmb) ; [R4rmb]
 let wmb = [W] ; fencerel(Wmb) ; [W]
 let mb = ([M] ; fencerel(Mb) ; [M]) |
+	(* everything across a full barrier RMW is ordered. This includes up to one event inside the RMW. *)
+	([M] ; po ; [RMW & Mb] ; po ; [M]) |
+	(* full barrier RMW writes are ordered with everything behind the RMW *)
+	([W & RMW & Mb] ; po ; [M]) |
+	(* full barrier RMW reads are ordered with everything before the RMW *)
+	([M] ; po ; [R & RMW & Mb]) |
 	([M] ; fencerel(Before-atomic) ; [RMW] ; po? ; [M]) |
 	([M] ; po? ; [RMW] ; fencerel(After-atomic) ; [M]) |
 	([M] ; po? ; [LKW] ; fencerel(After-spinlock) ; [M]) |

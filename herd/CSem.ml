@@ -106,22 +106,17 @@ module
       let mk_rb_dep ii =   mk_fence_a a_rb_dep ii
 
       let xchg is_data rloc re a ii =
-        let add_mb = match a with
-        | ["mb"] -> true | _ -> false in
         let aw = match a with
         | ["release"] -> MOorAN.AN a
+        | ["mb"] -> MOorAN.AN a
         | _ -> an_once
         and ar = match a with
         | ["acquire"] -> MOorAN.AN a
+        | ["mb"] -> MOorAN.AN a
         | _ -> an_once in
         let rmem = fun loc -> read_mem_atomic is_data ar loc ii
         and wmem = fun loc v -> write_mem_atomic aw loc v ii >>! () in
-        let exch = M.linux_exch rloc re rmem wmem in
-        if add_mb then
-          mk_fence_a a ii >>*=
-          fun () -> exch >>*=
-            fun v -> mk_fence_a a ii >>! v
-        else exch
+        M.linux_exch rloc re rmem wmem
 
       let cxchg is_data rloc re mo v_loc ii =
         let m = match mo with
@@ -207,25 +202,19 @@ module
                 read_exchange is_data v mo (A.Location_global l) ii)
 
       | C.CmpExchange (eloc,eold,enew,a) ->
-          let add_mb r = match a with
-          | ["mb"] ->
-              mk_mb ii >>*= fun () -> r >>*= fun v -> mk_mb ii >>! v
-          | _ -> r in
           let mloc =  build_semantics_expr false eloc ii
           and mold =  build_semantics_expr true eold ii in
           M.altT
-            (let r =
-              let mnew = build_semantics_expr true enew ii
-              and rmem vloc =
-                read_mem_atomic true
-                  (match a with ["acquire"] -> MOorAN.AN a | _ -> an_once)
-                  vloc ii
-              and wmem vloc w =
-                write_mem_atomic
-                  (match a with ["release"] ->  MOorAN.AN a | _ -> an_once)
-                  vloc w ii >>! () in
-              M.linux_cmpexch_ok mloc mold mnew rmem wmem M.assign in
-            add_mb r)
+            (let mnew = build_semantics_expr true enew ii
+             and rmem vloc =
+               read_mem_atomic true
+                 (match a with ["acquire"] -> MOorAN.AN a | ["mb"] -> MOorAN.AN a | _ -> an_once)
+                 vloc ii
+             and wmem vloc w =
+               write_mem_atomic
+                 (match a with ["release"] ->  MOorAN.AN a | ["mb"] -> MOorAN.AN a | _ -> an_once)
+                 vloc w ii >>! () in
+             M.linux_cmpexch_ok mloc mold mnew rmem wmem M.assign)
             (M.linux_cmpexch_no mloc mold
                (fun vloc -> read_mem_atomic true an_once vloc ii)
                M.neqT)
@@ -270,14 +259,10 @@ module
 
       | C.AtomicOpReturn (eloc,op,e,ret,a) ->
           begin match a with
-          | ["mb"] ->
-              mk_mb ii >>*=
-              fun () -> build_atomic_op ret a_once a_once eloc op e ii >>*=
-                fun v -> mk_mb ii >>! v
           | _ ->
               build_atomic_op ret
-                (match a with ["acquire"] -> a | _ -> a_once)
-                (match a with ["release"] -> a | _ -> a_once)
+                (match a with ["acquire"] -> a | ["mb"] -> a | _ -> a_once)
+                (match a with ["release"] -> a | ["mb"] -> a | _ -> a_once)
                 eloc op e ii
           end
       | C.AtomicAddUnless (eloc,ea,eu,retbool) ->
@@ -287,13 +272,10 @@ module
           and mrmem loc =
             read_mem_atomic true an_once loc ii in
           M.altT
-            (let r =
-              M.linux_add_unless_ok mloc (build_semantics_expr true ea ii)
-                mu mrmem
-                (fun loc v -> write_mem_atomic an_once loc v ii >>! ())
-                M.neqT M.add (if retbool then Some V.one else None) in
-            mk_mb ii >>*= fun () -> r >>*= fun v ->
-              mk_mb ii >>! v)
+            (M.linux_add_unless_ok mloc (build_semantics_expr true ea ii)
+               mu mrmem
+               (fun loc v -> write_mem_atomic an_once loc v ii >>! ())
+               M.neqT M.add (if retbool then Some V.one else None))
             (M.linux_add_unless_no mloc mu mrmem M.assign (if retbool then Some V.zero else None))
       | C.ExpSRCU(eloc,a) ->
           let r = match a with
