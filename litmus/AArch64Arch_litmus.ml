@@ -151,6 +151,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
         let dump_instr dump = function
           | Constant.Instruction i -> instr_name i
+          | Constant.Label (p, l) -> SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p l)
           | v -> dump v
 
         module Make(O:Indent.S) = struct

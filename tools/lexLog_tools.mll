@@ -119,7 +119,7 @@ let set = '{' (' '|','|('-'?(num|hexanum)))* '}'
 let alpha = [ 'a'-'z' 'A'-'Z']
 let pteval = '(' ([' ''_'','':''('')']|alpha|digit)+ ')'
 let name = (alpha|'_'|'.'|'$') (alpha|digit|'_'| '.')*
-let label = 'L' (alpha|digit)+
+let label = ('P'? num) ':' 'L' (alpha|digit)+
 let fault = (['f''F'] "ault")
 let reg = name
 let loc = name | ('$' (alpha+|digit+))
@@ -236,7 +236,7 @@ and skip_empty_lines = parse
 and pline bds fs abs = parse
 | blank*
  ((num ':' reg as loc)|(('['?) ((loc|new_loc) as loc) ( ']'?))|(loc '[' num ']' as loc))
-    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|name_off|set|pteval|(('P'? num)':'label)|(':'alpha+)|instr as v)
+    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|name_off|set|pteval|("label:" '"' label '"')|(':'alpha+)|instr as v)
     blank* ';'
     {
      let v = norm_value v in  (* Translate to decimal *)
@@ -279,7 +279,7 @@ and skip_pline = parse
  ((num ':' reg)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
     blank* '=' blank* (('-' ? (num|hexanum))|name|name_off|set|instr)
     blank* ';'
-| blank* ('~'?) fault blank* '(' blank* ('P'? num) ':' label blank* ','
+| blank* ('~'?) fault blank* '(' blank* label blank* ','
     loc blank* ')' blank* ';'
     { skip_pline lexbuf }
 | blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf }

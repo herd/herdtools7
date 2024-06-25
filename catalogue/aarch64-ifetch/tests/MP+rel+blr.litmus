@@ -1,0 +1,15 @@
+AArch64 MP+rel+blr
+Stable=X30
+{
+  0:X0=instr:"B .+4"; 0:X1=P1:L0;
+  0:X2=P1:tgt; 0:X3=y;
+  1:X3=y; [y]=P1:L0;
+}
+  P0           | P1                ;
+  STR W0,[X1]  | LDR X2,[X3]       ;
+  STLR X2,[X3] | BLR X2            ;
+               |L0:                ;
+               | NOP               ;
+               |tgt:               ;
+               | LDR W6,[X30]      ;
+exists(1:X2=label:"P1:tgt" /\ 1:X6=instr:"NOP")

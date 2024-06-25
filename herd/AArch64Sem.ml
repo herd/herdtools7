@@ -2956,18 +2956,19 @@ module Make
            >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt  ii l))
         | I_BL l ->
            let v_ret = get_link_addr test ii in
-           write_reg AArch64Base.linkreg v_ret ii
-           >>= fun () -> M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret]))
+           let write_linkreg = write_reg AArch64Base.linkreg v_ret ii in
+           let branch () = M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret])) in
+           M.bind_order write_linkreg branch
 
         | I_BR r as i ->
             read_reg_ord r ii >>= do_indirect_jump test [] i ii
 
         | I_BLR r as i ->
            let v_ret = get_link_addr test ii in
-           write_reg AArch64Base.linkreg v_ret ii
-           >>= fun () -> read_reg_ord r ii
-           >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i ii
-
+           let read_rn = read_reg_ord r ii in
+           let branch = read_rn >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i ii in
+           let write_linkreg = write_reg AArch64Base.linkreg v_ret ii in
+           write_linkreg >>| branch >>= fun (_, b) -> M.unitT b
         | I_RET None when C.variant Variant.Telechat ->
            M.unitT B.Exit
         | I_RET ro as i ->

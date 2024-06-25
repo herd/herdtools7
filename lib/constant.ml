@@ -268,12 +268,12 @@ let rec eq scalar_eq pteval_eq instr_eq c1 c2 = match c1,c2 with
   | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteRecord _|ConcreteVector _|PteVal _|Instruction _|Frozen _))
     -> false
 
-let rec mk_pp pp_symbol pp_scalar pp_pteval pp_instr = function
+let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr = function
   | Concrete i -> pp_scalar i
   | ConcreteVector vs ->
       let s =
         String.concat ","
-          (List.map (mk_pp pp_symbol pp_scalar pp_pteval pp_instr) vs)
+          (List.map (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr) vs)
       in
       sprintf "{%s}" s
   | ConcreteRecord vs ->
@@ -282,21 +282,23 @@ let rec mk_pp pp_symbol pp_scalar pp_pteval pp_instr = function
       StringMap.iter
         (fun name c ->
           Printf.bprintf b "%s:%s," name
-            (mk_pp pp_symbol pp_scalar pp_pteval pp_instr c))
+            (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr c))
         vs;
       Buffer.add_char b '}';
       Buffer.contents b
   | Symbolic sym -> pp_symbol sym
-  | Label (p, lbl) -> sprintf "%i:%s" p lbl
+  | Label (p, lbl) -> pp_label p lbl
   | Tag s -> sprintf ":%s" s
   | PteVal p -> pp_pteval p
   | Instruction i -> pp_instr i
   | Frozen i -> sprintf "S%i" i (* Same as for symbolic values? *)
 
 let pp pp_scalar pp_pteval pp_instr =
-  mk_pp pp_symbol pp_scalar pp_pteval pp_instr
+  let pp_label = sprintf "label:\"P%i:%s\"" in
+  mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr
 and pp_old pp_scalar pp_pteval pp_instr =
-  mk_pp pp_symbol_old  pp_scalar pp_pteval pp_instr
+  let pp_label = sprintf "%i:%s" in
+  mk_pp pp_symbol_old pp_scalar pp_label pp_pteval pp_instr
 
 let _debug = function
   | Concrete _ -> "Concrete _"

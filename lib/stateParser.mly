@@ -61,7 +61,7 @@ let mk_sym_with_index s i =
        {default_symbolic_data
        with name=s; offset=Misc.string_as_int i})
 
-let mk_lab p s = Label (p,s)
+let mk_lab (p, l) = Label (p, l)
 %}
 
 %token EOF
@@ -84,6 +84,7 @@ let mk_lab p s = Label (p,s)
 %token TOK_TAG
 %token TOK_NOP
 %token <string> INSTR
+%token <int * string> LABEL
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 
@@ -179,8 +180,9 @@ maybev_list:
 
 maybev_label:
 | maybev { $1 }
-| PROC COLON NAME { mk_lab $1 $3 }
-| NUM COLON NAME { mk_lab (Misc.string_as_int $1) $3 }
+| PROC COLON NAME { mk_lab ($1, $3) }
+| NUM COLON NAME { mk_lab (Misc.string_as_int $1, $3) }
+| l=LABEL { mk_lab l }
 
 %inline location_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
@@ -406,6 +408,8 @@ arrayspec:
 atom_prop:
 | loc=location EQUAL i=instr
   {Atom (LV (Loc loc,(mk_instr_val i)))}
+| loc=location EQUAL l=LABEL
+    {Atom (LV (Loc loc,(mk_lab l)))}
 | location equal maybev {Atom (LV (Loc $1,$3))}
 | loc=loc_brk equal v=maybev
    {Atom (LV (Loc loc,v))}

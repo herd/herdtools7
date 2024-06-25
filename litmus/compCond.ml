@@ -61,7 +61,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
             O.fprintf"%s == %s" (dump_loc loc1) (dump_loc loc2)
         | Atom (FF ((proc,lbl),loc,ft)) ->
            let lbl = match lbl with
-           | Some lbl -> sprintf "P%d_%s" proc lbl
+           | Some lbl -> OutUtils.fmt_lbl_var proc lbl
            | None -> "UNKNOWN"
            and loc = match loc with
            | Some loc -> V.pp O.hexa loc
@@ -128,8 +128,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
         let plocs =
           I.C.RLocSet.map_list
             (fun rloc ->
-              let t,is_ptr = find_type rloc in
-              sprintf "%s %s" t (I.Loc.dump rloc),is_ptr)
+               let t,is_ptr = find_type rloc in
+               if t = CType.dump (CType.Pointer (CType.ins_t))  then
+                 sprintf "size_t %s" (I.Loc.dump rloc),is_ptr
+               else
+                 sprintf "%s %s" t (I.Loc.dump rloc),is_ptr)
             rlocs in
         let plocs,is_ptr = List.split plocs in
         let is_ptr = List.exists (fun b -> b) is_ptr in

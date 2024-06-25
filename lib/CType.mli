@@ -50,6 +50,7 @@ val is_pte : t -> bool
 val is_array : t -> bool
 val is_atomic : t -> bool
 val is_ins_t : t -> bool
+val is_ins_ptr_t : t -> bool
 
 val strip_atomic : t -> t
 val strip_volatile : t -> t
@@ -72,3 +73,6 @@ val signed : t -> bool
    Return None when type is not an integer type or
    when size is unclear. *)
 val base_size : t -> MachSize.sz option
+
+(* Best effort to find size of types in bytes (C sizeof) *)
+val sizeof : t -> int option

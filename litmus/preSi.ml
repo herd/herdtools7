@@ -179,6 +179,8 @@ module Make
       let some_labels test =
         do_precise || do_label_init || see_faults test
 
+      let need_symbols test = see_faults test || U.label_in_outs test
+
 (***************)
 (* File header *)
 (***************)
@@ -690,35 +692,14 @@ module Make
           O.o "} labels_t;" ;
           O.o ""
         end ;
-        if see_faults test then begin
-            O.f "#define %-25s 0" (SkelUtil.instr_symb_id "UNKNOWN") ;
-            (* Define indices for labels *)
-            List.iteri
-              (fun i (p,lbl) ->
-                let flbl = sprintf "P%d_%s" p lbl in
-                O.f "#define %-25s  %d" (SkelUtil.instr_symb_id flbl) (i + 1))
-              CfgLoc.all_labels ;
-            O.o "" ;
-            O.f "static const char *instr_symb_name[] = {" ;
-            O.oi "\"UNKNOWN\"," ;
-            (* Define names for inst symbols *)
-            List.iter (fun (_,lbl) -> O.fi "\"%s\"," lbl ) CfgLoc.all_labels ;
-            O.o "};" ;
-            O.o "" ;
-            O.o "static int get_instr_symb_id(labels_t *lbls, const unsigned long pc) {" ;
-            List.iter
-              (fun (p,lbl) ->
-                let flbl = (OutUtils.fmt_lbl_var p lbl) in
-                O.fi "if (pc == (unsigned long)lbls->%s)" flbl ;
-                O.fii "return %s;" (SkelUtil.instr_symb_id flbl))
-              CfgLoc.all_labels ;
-            O.fi "return %s;" (SkelUtil.instr_symb_id "UNKNOWN") ;
-            O.o "};" ;
-            O.o "" ;
-            dump_data_indices test ;
-            Insert.insert O.o  "kvm_fault_type.c" ;
-          end else if U.ptr_in_outs env test then
-            dump_data_indices test
+        if need_symbols test then begin
+          UD.dump_label_defs CfgLoc.all_labels ;
+          UD.dump_label_funcs do_self CfgLoc.all_labels (T.get_nprocs test)
+        end ;
+        if see_faults test || U.ptr_in_outs env test then
+          dump_data_indices test ;
+        if see_faults test then
+          Insert.insert O.o  "kvm_fault_type.c"
 
 (* Collected locations *)
 
@@ -727,7 +708,7 @@ module Make
           (fun t -> match Compile.get_fmt Cfg.hexa t with
           | CType.Direct fmt|CType.Macro fmt ->
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
-          locs env
+          {|label:"P%s"|} locs env
 
       let some_test_vars test = Misc.consp test.T.globals
       let some_vars test = some_test_vars test || some_labels test
@@ -894,6 +875,9 @@ module Make
         and args =
           A.RLocSet.map_list
             (fun rloc -> match U.find_rloc_type rloc env with
+            | Pointer _ when U.is_rloc_label rloc env ->
+                None,
+                [sprintf "instr_symb_name[p->%s]" (dump_rloc_tag_coded rloc)]
             | Pointer _ ->
                 None,
                 [sprintf "pretty_addr[p->%s]" (dump_rloc_tag_coded rloc)]
@@ -1553,8 +1537,8 @@ module Make
                   Warn.fatal "Record used as scalar"
               | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
                   sprintf "(%s)_vars->%s" (CType.dump at) s
-              | Label _ ->
-                  Warn.fatal "PreSi mode cannot handle code labels (yet)"
+              | Label (p,lbl) ->
+                  sprintf "_vars->labels.%s" (OutUtils.fmt_lbl_var p lbl)
               | Tag _|Symbolic _ ->
                   Warn.user_error "Litmus cannot handle this initial value %s"
                     (A.V.pp_v v)
@@ -1740,8 +1724,12 @@ module Make
           (* addresse -> code *)
           A.RLocSet.iter
             (fun rloc ->
-              if U.is_rloc_ptr rloc env then
-                O.fii "%s = idx_addr((intmax_t *)%s,_vars);"
+               if U.is_rloc_label rloc env then
+                 O.fii "%s = get_instr_symb_id(&_vars->labels, %s);"
+                   (OutUtils.fmt_presi_index (dump_rloc_tag_coded rloc))
+                   (OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc))
+               else if U.is_rloc_ptr rloc env then
+                 O.fii "%s = idx_addr((intmax_t *)%s,_vars);"
                   (OutUtils.fmt_presi_index (dump_rloc_tag_coded rloc))
                   (OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc))
               else if U.is_rloc_pte rloc env then
@@ -1807,7 +1795,7 @@ module Make
         O.oi "sense_t *_b = &_ctx->b;" ;
         O.oi "log_t *_log = &_ctx->out;" ;
         if some_ptr then O.oi "log_ptr_t *_log_ptr = &_ctx->out_ptr;" ;
-        if some_test_vars test || do_self then begin
+        if some_test_vars test || do_self || U.label_in_outs test then begin
           O.oi "vars_t *_vars = &_ctx->v;"
         end ;
         begin match test.T.globals with

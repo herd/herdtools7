@@ -159,7 +159,7 @@ module Make
 (* Some dumping stuff *)
       val register_type : 'loc ->  CType.t -> CType.t
       val fmt_outcome_as_list :
-        T.t -> (CType.base -> string) -> A.RLocSet.t -> env
+        T.t -> (CType.base -> string) -> string -> A.RLocSet.t -> env
         -> (string * string list) list
       val fmt_outcome : T.t -> (CType.base -> string) -> A.RLocSet.t -> env -> string
       val fmt_faults : (A.V.v, A.FaultType.t) Fault.atom list -> string
@@ -177,12 +177,14 @@ module Make
       val get_stabilized : T.t -> StringSet.t
       val is_ptr : A.location -> env -> bool
       val is_rloc_ptr : A.rlocation -> env -> bool
+      val is_rloc_label : A.rlocation -> env -> bool
       val ptr_in_outs : env -> T.t -> bool
       val is_pte : A.location -> env -> bool
       val is_rloc_pte : A.rlocation -> env -> bool
       val pte_in_outs : env -> T.t -> bool
       val ptr_pte_in_outs : env -> T.t -> bool
       val instr_in_outs : env -> T.t -> bool
+      val label_in_outs : T.t -> bool
       val get_faults : T.t -> (A.V.v, A.FaultType.t) Fault.atom list
       val find_label_offset : Proc.t -> string -> T.t -> int
 
@@ -215,6 +217,12 @@ module Make
 
         (* Dump definition of label offsets, _i.e_ offset from code start *)
         val define_label_offsets : T.t -> Label.Full.Set.t -> unit
+
+        (* Dump definitions relating to labels in the post-condition *)
+        val dump_label_defs : Label.Full.full list -> unit
+
+        (* Dump functions relating to labels in the post-condition *)
+        val dump_label_funcs : bool -> Label.Full.full list -> int -> unit
 
         (* Same output as shell script in (normal) shell driver mode *)
         val prelude : Name.t -> T.t -> unit
@@ -303,6 +311,11 @@ end
 
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
+
+      let is_not_ins_ptr a env =
+        let loc = A.Location_global (Global_litmus.Addr a) in
+        let t = find_type loc env in
+        not (CType.is_ins_ptr_t t)
 
       let nbytes t =
         let sz =
@@ -400,9 +413,10 @@ end
 
       let register_type _loc t = t (* Systematically follow given type *)
 
-      let fmt_outcome_as_list test pp_fmt_base rlocs env =
+      let fmt_outcome_as_list test pp_fmt_base fmt_label rlocs env =
         let tr_out = tr_out test in
         let rec pp_fmt t = match t with
+        | CType.Pointer t when CType.is_ins_t t -> [fmt_label]
         | CType.Pointer _ -> ["%s"]
         | CType.Base "pteval_t" ->
             ["("; "oa:%s";  ", af:%d"; ", db:%d";
@@ -423,7 +437,7 @@ end
          rlocs
 
       let fmt_outcome test pp_fmt_base locs env =
-        let pps = fmt_outcome_as_list test pp_fmt_base locs env in
+        let pps = fmt_outcome_as_list test pp_fmt_base {|label:\"P%s\"|} locs env in
         String.concat " "
           (List.map
              (fun (p1,p2) -> sprintf "%s=%s;" p1 (String.concat "" p2))
@@ -486,14 +500,24 @@ end
           (fun a k ->
             let open ConstrGen in
             match a with
-            | Loc a when not (is_aligned a env) ->
-                StringSet.add a k
+            | Loc a when not (is_aligned a env) && is_not_ins_ptr a env ->
+               (* Stabilisaton is not checked for
+                  - Non aligned items
+                  - Code label
+                  Mosty because it would be too complex and that
+                  stabilisation check is not that useful.
+                *)
+               StringSet.add a k
             | Loc _|Deref _ -> k)
           rlocs StringSet.empty
 
       let is_ptr loc env  =
         let t = find_type loc env in
         CType.is_ptr t
+
+      let is_rloc_label loc env  =
+        let t = find_rloc_type loc env in
+        CType.is_ins_ptr_t t
 
       let is_rloc_ptr loc env  =
         let t = find_rloc_type loc env in
@@ -503,7 +527,7 @@ end
         let locs = get_displayed_locs test in
         if dbg then Printf.eprintf "locs={%s}\n" (A.RLocSet.pp_str "," A.pp_rlocation locs) ;
         A.RLocSet.exists
-          (fun loc -> is_rloc_ptr loc env) locs
+          (fun loc -> (is_rloc_ptr loc env) && not (is_rloc_label loc env)) locs
 
       let is_pte loc env =
         let t = find_type loc env in
@@ -534,6 +558,9 @@ end
       let instr_in_outs env test =
         let locs = get_displayed_locs test in
         A.RLocSet.exists (fun loc ->is_instr loc env) locs
+
+      let label_in_outs t =
+        not (Label.Full.Set.is_empty (T.C.get_labels t.T.condition))
 
       let get_faults test =
         let inc = T.C.get_faults test.T.condition
@@ -699,6 +726,71 @@ end
               lbls ;
             O.o ""
           end
+
+        let dump_label_defs lbls =
+          O.f "#define %-25s 0" (instr_symb_id "UNKNOWN") ;
+          (* Define indices for labels *)
+          List.iteri
+            (fun i (p,lbl) ->
+               let flbl = OutUtils.fmt_lbl_var p lbl in
+               O.f "#define %-25s  %d" (instr_symb_id flbl) (i + 1))
+            lbls ;
+          O.o "" ;
+          O.f "static const char *instr_symb_name[] = {" ;
+          O.oi "\"UNKNOWN\"," ;
+          (* Define names for inst symbols *)
+          List.iter (fun (p,lbl) -> O.fi "\"%d:%s\","p lbl) lbls ;
+          O.o "};" ;
+          O.o ""
+
+        let dump_label_funcs_skel do_self lbls nprocs =
+          if do_self then
+            O.o "static int get_instr_symb_id(ctx_t *ctx, ins_t* ins, int i) {"
+          else
+            O.o "static int get_instr_symb_id(ctx_t *ctx, ins_t* ins) {" ;
+          for p=0 to nprocs - 1 do
+            if List.exists (fun (p1,_) -> p = p1) lbls then begin
+              let code = OutUtils.fmt_code p in
+              let prelude = OutUtils.fmt_prelude p in
+              O.fi "size_t %s = prelude_size((ins_t *)%s);" prelude code ;
+              if do_self then
+                let sz = OutUtils.fmt_code_size p in
+                O.fi "ins_t *_%s = &ctx->%s[ctx->%s * i];" code code sz
+              else
+                O.fi "ins_t *_%s = (ins_t *)%s;" code code
+            end
+          done ;
+          List.iter
+            (fun (p,lbl) ->
+               let lbl_off = OutUtils.fmt_lbl_offset p lbl in
+               let code = OutUtils.fmt_code p in
+               let prelude = OutUtils.fmt_prelude p in
+               O.fi "if (ins == _%s + %s + %s)" code prelude lbl_off ;
+               let flbl = (OutUtils.fmt_lbl_var p lbl) in
+               O.fii "return %s;" (instr_symb_id flbl))
+            lbls ;
+          O.fi "return %s;" (instr_symb_id "UNKNOWN") ;
+          O.o "};" ;
+          O.o ""
+
+        let dump_label_funcs_presi _do_self lbls _nprocs =
+          O.o "static int get_instr_symb_id(labels_t *lbls, ins_t* pc) {" ;
+          List.iter
+            (fun (p,lbl) ->
+               let flbl = (OutUtils.fmt_lbl_var p lbl) in
+               O.fi "if (pc == lbls->%s)" flbl ;
+               O.fii "return %s;" (instr_symb_id flbl))
+            lbls ;
+          O.fi "return %s;" (instr_symb_id "UNKNOWN") ;
+          O.o "};" ;
+          O.o ""
+
+        let dump_label_funcs =
+          match Cfg.mode with
+          | Mode.Std ->
+            dump_label_funcs_skel
+          | Mode.PreSi|Mode.Kvm ->
+            dump_label_funcs_presi
 
         open Preload
 
