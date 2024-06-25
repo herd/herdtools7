@@ -364,6 +364,9 @@ val same_instance : event -> event -> bool
   val (=$$=) :
       event_structure -> event_structure -> event_structure option
 
+  val data_output_union :
+    event_structure -> event_structure -> event_structure option
+
 (* sequential composition, add control dependency *)
   val (=**=) :
      event_structure -> event_structure -> event_structure option
@@ -1493,6 +1496,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         Some out in
       check_disjoint (data_comp minimals_data out)
 
+    let data_output_union es1 es2 =
+      let r = data_comp minimals sequence_data_output es1 es2 in
+      Some
+        { r with
+          output = union_output es1 es2 ;
+        }
 
 (* Composition with intra_causality_control from first to second *)
 

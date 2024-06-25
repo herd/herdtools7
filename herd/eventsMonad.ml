@@ -266,6 +266,9 @@ Monad type:
     let (>>==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=$$=) s f
 
+    let data_output_union : 'a t -> ('a -> 'b t) -> ('b) t
+        = fun s f -> data_comp (E.data_output_union) s f
+
     let asl_data s f = data_comp E.data_po_seq s f
 
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
