@@ -10,6 +10,6 @@ end
 func main() => integer
 begin
   let x = f(8);
-  DEBUG(x);
+  __debug__(x);
   return 0;
 end
