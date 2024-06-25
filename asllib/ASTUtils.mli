@@ -289,3 +289,6 @@ val list_fold_left_map :
   ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
 (** [fold_left_map] is a combination of [fold_left] and [map] that threads an
     accumulator through calls to [f]. Taken from stdlib 4.11. *)
+
+val list_is_empty : 'a list -> bool
+(** [list_is_empty li] is [true] iff [li] is empty, [false] otherwise. *)

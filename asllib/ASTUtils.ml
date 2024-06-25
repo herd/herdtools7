@@ -108,6 +108,7 @@ let list_concat_map f l =
   in
   aux f [] l
 
+let list_is_empty = function [] -> true | _ -> false
 let pair x y = (x, y)
 let pair' y x = (x, y)
 let pair_equal f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
@@ -271,7 +272,7 @@ and use_le le =
   | LE_Destructuring les | LE_Concat (les, _) -> List.fold_right use_le les
   | LE_Discard -> Fun.id
   | LE_SetArray (le, e) -> use_le le $ use_e e
-  | LE_SetField (le, _) | LE_SetFields (le, _) -> use_le le
+  | LE_SetField (le, _) | LE_SetFields (le, _, _) -> use_le le
   | LE_Slice (le, slices) -> use_slices slices $ use_le le
 
 and use_catcher (_name, ty, s) = use_s s $ use_ty ty
@@ -477,7 +478,7 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_Slice (le, args) -> E_Slice (map_desc aux le, args)
     | LE_SetArray (le, e) -> E_GetArray (map_desc aux le, e)
     | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
-    | LE_SetFields (le, x) -> E_GetFields (map_desc aux le, x)
+    | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_Discard -> E_Var "-"
     | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
     | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
@@ -756,7 +757,7 @@ let rename_locals map_name ast =
     | LE_Slice (le, slices) -> LE_Slice (map_le le, map_slices slices)
     | LE_SetArray (le, i) -> LE_SetArray (map_le le, map_e i)
     | LE_SetField (le, f) -> LE_SetField (map_le le, f)
-    | LE_SetFields (le, f) -> LE_SetFields (map_le le, f)
+    | LE_SetFields (le, f, annot) -> LE_SetFields (map_le le, f, annot)
     | LE_Destructuring les -> LE_Destructuring (List.map map_le les)
   and map_ldi = function
     | LDI_Discard as ldi -> ldi

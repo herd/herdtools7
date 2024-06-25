@@ -230,6 +230,8 @@ UnderConstrained integers:
   ASL Typing error: Illegal application of operator / on types real and string
   [1]
 
+  $ aslref record-getfields.asl
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]

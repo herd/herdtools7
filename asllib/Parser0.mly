@@ -569,7 +569,7 @@ let lexpr :=
     | ~=lexpr; LT; ~=clist(slice); GT;         < AST.LE_Slice       >
     | ~=pared(nclist(lexpr));                  < AST.LE_Destructuring >
     | ~=lexpr; DOT; ~=ident;                   < AST.LE_SetField    >
-    | ~=lexpr; DOT; ~=bracketed(clist(ident)); < AST.LE_SetFields   >
+    | l=lexpr; DOT; f=bracketed(clist(ident)); { AST.LE_SetFields (l, f, []) }
 
     | unimplemented_lexpr (
       | bracketed(nclist(lexpr)); <>
