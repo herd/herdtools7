@@ -71,6 +71,15 @@ module type S =
     val asl_data : 'a t -> ('a -> 'b t) -> 'b t
 
     val (>>==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first arg *)
+    (* Input to both args *)
+
+    val data_output_union : 'a t -> ('a -> 'b t) -> 'b t
+    (** [data_output_union s f] returns a composition of the event
+        structures of [s] and the result of [f] where the
+        iico_causality_data includes pairs (e1, e2) where e1 is an
+        output event of e1 and e2 an input event of the result of
+        [f]. The output of the resulting event structure is the union
+        of the output events of [s] and the result of [f] *)
 
 (* Control composition *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
