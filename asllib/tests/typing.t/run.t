@@ -215,6 +215,7 @@ ATC's on bit vectors
 
 Large constraint sets
   $ aslref TPositive13.asl
+  $ aslref --no-exec TDegraded13.asl
   $ if [ $(ocaml -vnum | cut -b 1) = "5" ]; then aslref TDegraded13.asl; fi
 
 Named types for bit vector widths

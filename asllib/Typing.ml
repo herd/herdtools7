@@ -93,7 +93,7 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
         Constraint_Range (subst_expr env eqs e1, subst_expr env eqs e2)
   in
   let subst_constraints env eqs = List.map (subst_constraint env eqs) in
-  fun env eqs ty ->
+  let rec rename env eqs ty =
     match ty.desc with
     | T_Bits (e, fields) ->
         T_Bits (subst_expr env eqs e, fields) |> add_pos_from_st ty
@@ -103,7 +103,10 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     | T_Int (UnderConstrained (_uid, name)) ->
         let e = E_Var name |> add_pos_from ty |> subst_expr env eqs in
         T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from ty
+    | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> add_pos_from ty
     | _ -> ty
+  in
+  rename
 
 (* Begin Lit *)
 let annotate_literal = function

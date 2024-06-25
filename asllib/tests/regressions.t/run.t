@@ -268,6 +268,7 @@ Parameters bugs:
     provided integer {2}.
   [1]
   $ aslref --no-exec defining_param.asl
+  $ aslref rename-returned-tuples.asl
 
 Required tests:
   $ aslref anonymous-types-example-success.asl
