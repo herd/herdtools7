@@ -72,7 +72,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
         let reg_class reg = match reg with
           | Vreg _ | SIMDreg _ | Zreg _ -> "=&w"
-          | Preg _ | PMreg _ -> "=&Upa"
+          | Preg _ | PMreg _ -> "=&Upl"
           | _ -> "=&r"
         let reg_class_stable reg = match reg with
           (* Certain Neon instructions do not affect the whole register, so we need to
@@ -82,7 +82,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
              constraint "+" and the explicit initialization of the 'stable_*' variables.
              The same applies to SVE instruction with P/M (merging predicate) *)
           | Vreg _ | SIMDreg _  | Zreg _ -> "+w"
-          | Preg _ | PMreg _ -> "=&Upa"
+          | Preg _ | PMreg _ -> "=&Upl"
           | _ -> "=&r"
         let comment = comment
 
