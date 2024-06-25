@@ -1071,8 +1071,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e, e' = annotate_expr env e in
         let+ () =
          fun () ->
-          let t_struct = Types.get_structure env t
-          and t_e_struct = Types.get_structure env t_e in
+          let t_struct = Types.make_anonymous env t
+          and t_e_struct = Types.make_anonymous env t_e in
           match (t_struct.desc, t_e_struct.desc) with
           | T_Bool, T_Bool | T_Real, T_Real | T_Int _, T_Int _ -> ()
           | T_Bits _, T_Bits _ ->
@@ -1457,7 +1457,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         let field_types =
           (* Begin EStructuredNotStructured *)
-          match (Types.get_structure env ty).desc with
+          match (Types.make_anonymous env ty).desc with
           | T_Exception fields | T_Record fields -> fields
           | _ ->
               conflict e [ T_Record [] ] ty
@@ -1536,7 +1536,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* End *)
         | None -> (
             let t_e', e'' = annotate_expr env e' in
-            let struct_t_e' = Types.get_structure env t_e' in
+            let struct_t_e' = Types.make_anonymous env t_e' in
             match struct_t_e'.desc with
             (* Begin ESlice *)
             | T_Int _ | T_Bits _ ->
@@ -1757,7 +1757,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     | LE_Slice (le1, slices) -> (
         let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
-        let struct_t_le1 = Types.get_structure env t_le1 in
+        let struct_t_le1 = Types.make_anonymous env t_le1 in
         (* Begin LESlice *)
         match struct_t_le1.desc with
         | T_Bits _ ->
@@ -1790,7 +1790,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetField (le1, field) ->
         (let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
          let le2 = annotate_lexpr env le1 t_le1 in
-         let t_le1_struct = Types.get_structure env t_le1 in
+         let t_le1_struct = Types.make_anonymous env t_le1 in
          match t_le1_struct.desc with
          | T_Exception fields | T_Record fields ->
              let t =
@@ -1930,7 +1930,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Begin LDTuple *)
     | LDI_Tuple ldis ->
         let tys =
-          match (Types.get_structure env ty).desc with
+          match (Types.make_anonymous env ty).desc with
           | T_Tuple tys when List.compare_lengths tys ldis = 0 -> tys
           | T_Tuple tys ->
               fatal_from loc
