@@ -2713,7 +2713,9 @@ module Make
             (ma >>| mo >>| read_reg_scalable true r ii >>= fun ((base,offsets),v) ->
               let op idx =
                 let store =
-                  (scalable_getlane offsets idx esize >>= memext_sext e k >>= fun o ->
+                  (scalable_getlane offsets idx esize
+                   (* Warning: no sign extension on wide scalars *)
+                   >>= demote >>= memext_sext e k >>= fun o ->
                     M.add o base) >>|
                     (scalable_getlane v idx esize >>= demote)
                   >>= fun (addr,v) -> write_mem sz aexp Access.VIR addr v ii in

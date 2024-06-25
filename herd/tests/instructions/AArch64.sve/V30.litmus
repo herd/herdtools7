@@ -1,0 +1,26 @@
+AArch64 V30
+(* Write scatter. In particular, test sign extension *)
+Variant=sve:512
+{
+int t[4];
+uint8_t u[8];
+int v[4];
+0:X0=t;
+0:X1=u;
+0:X2=v;
+}
+  P0              ;
+ INDEX Z0.S,#0,#1 ;
+ INDEX Z1.S,#2,#2 ;
+ PTRUE P0.S,VL4   ;
+ ST1W {Z1.S},P0,[X0,Z0.S,SXTW #2] ;
+ INDEX Z1.D,#0,#2 ;
+ PTRUE P0.D,VL4  ;
+ ST1B {Z1.D},P0,[X1,Z1.D] ;
+ ADD X2,X2,#16;
+ INDEX Z0.S,#1,#1   ;
+ INDEX Z1.S,#-1,#-1 ;
+ PTRUE P0.S,VL4   ;
+ ST1W {Z0.S},P0,[X2,Z1.S,SXTW #2] ;
+
+forall t={2,4,6,8} /\ u={0,0,2,0,4,0,6,0} /\ v={4,3,2,1}
