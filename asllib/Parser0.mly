@@ -27,29 +27,29 @@
     open ASTUtils
 
     let build_expr_conds =
-      let make_cond { desc = (c, e_then); _ } e_else =
+      let make_cond { desc = c, e_then; _ } e_else =
         E_Cond (c, e_then, e_else)
       in
       fun (elseifs, e) -> List.fold_right (map2_desc make_cond) elseifs e
 
     let build_stmt_conds (s_elsifs, s_else) =
-      let s_else = match s_else with
-      | Some s -> s
-      | None -> s_pass
-      in
-      let folder { desc = (c, s_then); _ } s_else =
-        S_Cond (c, s_then, s_else)
-      in
+      let s_else = match s_else with Some s -> s | None -> s_pass in
+      let folder { desc = c, s_then; _ } s_else = S_Cond (c, s_then, s_else) in
       List.fold_right (map2_desc folder) s_elsifs s_else
 
-    let t_bit =
-      T_Bits ( E_Literal (L_Int Z.one) |> add_dummy_pos, [])
+    let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
 
     let make_ldi_vars (ty, xs) =
       let make_one x =
         S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None) |> add_dummy_pos
       in
       List.map make_one xs |> stmt_from_list |> desc
+
+    let make_func name args return_type body =
+      let subprogram_type =
+        match return_type with | Some _ -> ST_Function | None -> ST_Procedure
+      and parameters = [] in
+      D_Func { name; args; return_type; body; parameters; subprogram_type }
   end
 
   open Prelude
@@ -110,6 +110,7 @@
 %token INDENT
 %token INTEGER
 %token IS
+%token LET
 %token LBRACE
 %token LBRACE_LBRACE
 %token LBRACK
@@ -277,11 +278,15 @@ let ntclist(x) :=
     | ~=x; ioption(COMMA);      { [ x ]  }
     | ~=x; COMMA; t=ntclist(x); { x :: t }
 
+let tclist(x) == loption(ntclist(x))
 let ty :=
   annotated (
     | ty_non_tuple
     | ~=pared(nnclist(ty)); < AST.T_Tuple >
   )
+
+let bitfields == braced(tclist(bitfield))
+let bitfield == s=nclist(slice); x=ident; { AST.BitField_Simple(x, s) }
 
 let ty_non_tuple ==
   | INTEGER;              { AST.(T_Int UnConstrained) }
@@ -290,6 +295,7 @@ let ty_non_tuple ==
   | ~=tident;             < AST.T_Named               >
   | BIT;                  { t_bit                     }
   | BITS; e=pared(expr);  { AST.(T_Bits (e, []))      }
+  | BITS; e=pared(expr); b=bitfields; { AST.(T_Bits (e, b)) }
   (* | tident; pared(clist(expr)); <> *)
 
   | unimplemented_ty (
@@ -366,6 +372,10 @@ let literal_expression ==
   | ~=BITS_LIT;      < AST.L_BitVector  >
   | ~=STRING_LIT;    < AST.L_String     >
 
+let array_length ==
+  | expr
+  | expr; DOT_DOT; expr
+
 let variable_decl ==
   terminated_by (SEMICOLON; EOL,
     | some (annotated (
@@ -383,24 +393,23 @@ let variable_decl ==
             ty = Some ty;
             initial_value = None;
           }}
-      ))
-
-    | unimplemented_decl (
-      | ARRAY; ty; qualident; bracketed(ixtype); <>
-    )
-  )
+      | ARRAY; ty=ty; x=qualident; e=bracketed(array_length);
+          { AST.(D_GlobalStorage {
+            keyword = GDK_Var;
+            name = x;
+            ty = Some (T_Array (ArrayLength_Expr e, ty) |> ASTUtils.add_dummy_pos);
+            initial_value = None;
+          })}
+      )))
 
 let function_decl ==
   | some (annotated (
-      ~=ty; name=qualident; args=pared(clist(formal)); body=indented_block;
-        {
-          let open AST in
-          let return_type = Some ty
-          and subprogram_type = ST_Function
-          and body = SB_ASL body
-          and parameters = [] in
-          D_Func { name; args; return_type; body; parameters; subprogram_type }
-        }
+      ty=ty; name=qualident; args=pared(clist(formal)); body=indented_block;
+        { make_func name args (Some ty) (SB_ASL body) }
+    ))
+  | some (annotated (
+      LPAREN; RPAREN; name=qualident; args=pared(clist(formal)); body=indented_block;
+        { make_func name args None (SB_ASL body) }
     ))
   | unimplemented_decl (
       some(ty); qualident; pared(clist(formal)); ioption(SEMICOLON); EOL

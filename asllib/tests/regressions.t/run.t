@@ -315,7 +315,7 @@ Required tests:
   $ aslref subtypes-example.asl
   $ aslref subtypes-with.asl
   $ aslref tuples.asl
-  $ aslref -0 typing-assign-v0.asl
+  $ aslref --no-type-check -0 typing-assign-v0.asl
 
 Base values
   $ aslref base_values.asl
