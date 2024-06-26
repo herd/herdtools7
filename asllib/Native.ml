@@ -112,6 +112,8 @@ module NativeBackend = struct
       | NV_Literal (L_Bool false) -> m_false
       | v -> mismatch_type v [ T_Bool ])
 
+  let choice_debug _pp c m1 m2 = choice c m1 m2
+
   let delay m k = k m m
 
   let failT e _ = raise e

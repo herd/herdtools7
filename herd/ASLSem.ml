@@ -534,8 +534,9 @@ module Make (C : Config) = struct
       do_read_memory ii addr_m datasize_m aneutral aexp avir
 
     let read_pte ii addr_m =
-      do_read_memory ii addr_m (M.unitT (V.intToV 64))  aneutral (AArch64Explicit.(NExp Other))  apte
-    
+      do_read_memory ii addr_m (M.unitT (V.intToV 64))
+        aneutral (AArch64Explicit.(NExp Other))  apte
+
     let read_memory_gen ii addr_m datasize_m accdesc_m =
       let* accdesc = accdesc_m in
       do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc) aexp avir
@@ -774,6 +775,19 @@ module Make (C : Config) = struct
         let debugT = M.debugT
         let commit = commit ii_env
         let choice = choice
+        let choice_debug (pp: unit -> unit)
+              (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
+          M.asl_data
+            m1
+            (function
+             | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) ->
+                if b then m2 else m3
+             | b ->
+                let () = pp () in
+                M.asl_data (to_int_signed b) (fun v -> M.choiceT v m2 m3))
+
+
+
         let delay m k = M.delay_kont "ASL" m k
         let failT e v = M.failT e v
         let return = M.unitT

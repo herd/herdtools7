@@ -852,16 +852,13 @@ let match_reg_events es =
     let solve_regs test es csn =
       match do_solve_regs test es csn with
       | Some (es,rfm,_) as r ->
-        Printf.eprintf "Found\n%!" ;
         if C.debug.Debug_herd.solver && C.verbose > 0 then begin
           let module PP = Pretty.Make(S) in
           prerr_endline "Reg solved" ;
           PP.show_es_rfm test es rfm ;
         end ;
         r
-      | None ->
-        Printf.eprintf "Not found\n%!" ;
-        None
+      | None ->  None
 
 (**************************************)
 (* Step 2. Generate rfmap for memory  *)

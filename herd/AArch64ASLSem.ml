@@ -1167,7 +1167,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             MC.glommed_event_structures test
           in
           let () =
-            if _dbg then
+            if true || _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
           in
           let rfms_with_regs =

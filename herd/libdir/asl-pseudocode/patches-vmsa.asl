@@ -44,9 +44,9 @@ func FetchDescriptor(ee:bit, walkaddress:AddressDescriptor,
     // 64-bit descriptors for AArch64 or AArch32 Long-descriptor format
     // 128-bit descriptors for AArch64 when FEAT_D128 is set and {V}TCR_ELx.d128 is set
 begin
-   DEBUG(walkaddress.paddress.address);
+//   DEBUG(walkaddress.paddress.address);
    let desc = ReadPtePrimitive(walkaddress.paddress.address);
-   DEBUG(desc);
+//   DEBUG(desc);
    return (fault_in,desc);
 end
 
@@ -107,4 +107,48 @@ func AArch64_OAOutOfRange(address:bits(56), d128:bit, ps:bits(3), tgx:TGx)
 => boolean
 begin
   return FALSE;
+end
+
+// AArch64.GetVARange()
+// ====================
+// Determines if the VA that is to be translated lies in LOWER or UPPER address range.
+// No hesitation, return LOWER
+
+func AArch64_GetVARange(va:bits(64)) => VARange
+begin
+  return VARange_LOWER;
+end
+
+// AArch64.VAIsOutOfRange()
+// ========================
+// Check bits not resolved by translation are identical and of accepted value
+
+func AArch64_VAIsOutOfRange(va_in:bits(64),acctype:AccessType,
+                               regime:Regime, walkparams:S1TTWParams)
+=>
+boolean
+begin
+  return FALSE;
+end
+
+
+// AArch64.S1DirectBasePermissions()
+// =================================
+// Computes the stage 1 direct base permissions
+// A choice of reasonable permissions
+
+func
+  AArch64_S1DirectBasePermissions
+    (regime:Regime,walkstate:TTWState,
+     waltparams:S1TTWParams,accdesc:AccessDescriptor)
+=> S1AccessControls
+begin
+  var s1perms : S1AccessControls;
+  s1perms.r   = '1';
+  s1perms.w   = '1';
+  s1perms.x   = '0';
+  s1perms.gcs = '0';
+  s1perms.wxn = '0';
+  s1perms.overlay = TRUE;
+  return s1perms;
 end

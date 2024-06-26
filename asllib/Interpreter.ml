@@ -121,6 +121,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Choice *)
   let choice m v1 v2 = B.choice m (return v1) (return v2)
+  let choice_debug pp m v1 v2 = B.choice_debug pp  m (return v1) (return v2)
 
   (*
    * Choice with inserted branching (commit) effect/
@@ -132,13 +133,13 @@ module Make (B : Backend.S) (C : Config) = struct
    *         input .
    *)
 
-  let choice_with_branch_effect_msg m_cond msg v1 v2 kont =
-    choice m_cond v1 v2 >>= fun v ->
+  let choice_with_branch_effect_msg pp m_cond msg v1 v2 kont =
+    choice_debug pp m_cond v1 v2 >>= fun v ->
     B.commit (Some msg) >>*= fun () -> kont v
 
-  let choice_with_branch_effect m_cond e_cond v1 v2 kont =
+  let choice_with_branch_effect pp m_cond e_cond v1 v2 kont =
     let pp_cond = Format.asprintf "%a@?" PP.pp_expr e_cond in
-    choice_with_branch_effect_msg m_cond pp_cond v1 v2 kont
+    choice_with_branch_effect_msg pp m_cond pp_cond v1 v2 kont
 
   (* Exceptions *)
   let bind_exception binder m f =
@@ -445,7 +446,8 @@ module Make (B : Backend.S) (C : Config) = struct
           in
           return_normal (v, env) |: SemanticsRule.ECondSimple
         else
-          choice_with_branch_effect m_cond e_cond e1 e2 (eval_expr env1)
+          choice_with_branch_effect (fun () -> ())
+            m_cond e_cond e1 e2 (eval_expr env1)
           |: SemanticsRule.ECond
     (* End *)
     (* Begin ESlice *)
@@ -915,8 +917,11 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin SCond *)
     | S_Cond (e, s1, s2) ->
+        let pp () =
+          if true then
+            Format.eprintf "@[<3>%a@ @[%a@]@]@." PP.pp_pos s PP.pp_stmt s in
         let*^ v, env' = eval_expr env e in
-        choice_with_branch_effect v e s1 s2 (eval_block env')
+        choice_with_branch_effect pp v e s1 s2 (eval_block env')
         |: SemanticsRule.SCond
     (* Begin SCase *)
     | S_Case _ -> case_to_conds s |> eval_stmt env |: SemanticsRule.SCase
@@ -1034,7 +1039,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let binder = bind_maybe_unroll loop_name (B.is_undetermined cond) in
     (* Real logic: if condition is validated, we loop,
        otherwise we continue to the next statement. *)
-    choice_with_branch_effect cond_m e_cond loop return_continue
+    choice_with_branch_effect (fun () -> ()) cond_m e_cond loop return_continue
       (binder (return_continue env))
     |: SemanticsRule.Loop
   (* End *)
@@ -1066,7 +1071,8 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Real logic: if condition is validated, we continue to the next
        statement, otherwise we loop. *)
-    choice_with_branch_effect_msg cond_m loop_msg return_continue loop
+    choice_with_branch_effect_msg (fun () -> ())
+      cond_m loop_msg return_continue loop
       (fun kont -> kont env)
     |: SemanticsRule.For
   (* End *)

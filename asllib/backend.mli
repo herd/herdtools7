@@ -89,6 +89,7 @@ module type S = sig
   (** Branching event *)
 
   val choice : value m -> 'b m -> 'b m -> 'b m
+  val choice_debug : (unit -> unit) -> value m -> 'b m -> 'b m -> 'b m
   (** choice is a boolean if operator. *)
 
   val delay : 'a m -> ('a -> 'a m -> 'b m) -> 'b m
