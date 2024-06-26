@@ -395,7 +395,6 @@ module TypingRule = struct
     | EGetBitFieldTyped
     | EGetTupleItem
     | EGetBitFields
-    | EConcatEmpty
     | EConcat
     | ETuple
     | EUnknown
@@ -536,7 +535,6 @@ module TypingRule = struct
     | EGetBitFieldTyped -> "EGetBitFieldTyped"
     | EGetTupleItem -> "EGetTupleItem"
     | EGetBitFields -> "EGetBitFields"
-    | EConcatEmpty -> "EConcatEmpty"
     | EConcat -> "EConcat"
     | ETuple -> "ETuple"
     | EUndefIdent -> "EUndefIdent"
@@ -690,7 +688,6 @@ module TypingRule = struct
       ESliceOrEGetArrayError;
       ECondSimple;
       EUndefIdent;
-      EConcatEmpty;
       EConcat;
       ETuple;
       LEDiscard;

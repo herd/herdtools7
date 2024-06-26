@@ -934,10 +934,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   let e' = annotate_static_integer ~loc env e in
                   ArrayLength_Expr e')
           | ArrayLength_Enum (s, i) -> (
-              let ty = T_Named s |> here in
-              match (Types.make_anonymous env ty).desc with
+              let t_s = T_Named s |> here in
+              match (Types.make_anonymous env t_s).desc with
               | T_Enum li when List.length li = i -> index
-              | _ -> conflict loc [ T_Enum [] ] ty)
+              | _ -> conflict loc [ T_Enum [] ] t_s)
         in
         T_Array (index', t') |> here |: TypingRule.TArray
     (* Begin TRecordExceptionDecl *)
@@ -1152,6 +1152,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* End *))
 
   and annotate_call loc env name args eqs call_type =
+    let () = assert (List.length eqs == 0) in
     (* Begin FindCheckDeduce *)
     let () =
       if false then
@@ -1401,8 +1402,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin ECall *)
     | E_Call (name, args, eqs) ->
+        let () = assert (List.length eqs == 0) in
         let name', args', eqs', ty_opt =
-          annotate_call (to_pos e) env name args eqs ST_Function
+          annotate_call (to_pos e) env name args [] ST_Function
         in
         let t = match ty_opt with Some ty -> ty | None -> assert false in
         (t, E_Call (name', args', eqs') |> here) |: TypingRule.ECall
@@ -1427,10 +1429,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let ts, es = List.map (annotate_expr env) li |> List.split in
         (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
     (* End *)
-    (* Begin EConcatEmpty *)
-    | E_Concat [] ->
-        (T_Bits (expr_of_int 0, []) |> here, e) |: TypingRule.EConcatEmpty
-    (* End *)
+    | E_Concat [] -> fatal_from loc UnrespectedParserInvariant
     (* Begin EConcat *)
     | E_Concat (_ :: _ as li) ->
         let ts, es = List.map (annotate_expr env) li |> List.split in
@@ -1997,9 +1996,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          in
          let reduced = setter_should_reduce_to_call_s env le re in
          match reduced with
-         | Some s -> (s, env)
+         | Some new_s -> (new_s, env)
          | None ->
-             let t_e, e1 = annotate_expr env re in
+             let t_re, re1 = annotate_expr env re in
              let env1 =
                match ver with
                | V1 -> env
@@ -2029,17 +2028,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                          in
                          let ldk = LDK_Var in
                          let env2, _ldi =
-                           annotate_local_decl_item loc env t_e ldk ldi
+                           annotate_local_decl_item loc env t_re ldk ldi
                          in
                          env2
                        else env)
              in
-             let le1 = annotate_lexpr env1 le t_e in
-             (S_Assign (le1, e1, ver) |> here, env1))
+             let le1 = annotate_lexpr env1 le t_re in
+             (S_Assign (le1, re1, ver) |> here, env1))
         |: TypingRule.SAssign
     (* End *)
     (* Begin SCall *)
     | S_Call (name, args, eqs) ->
+        let () = assert (List.length eqs == 0) in
         let new_name, new_args, new_eqs, ty =
           annotate_call loc env name args eqs ST_Procedure
         in
@@ -2560,6 +2560,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let annotate_and_declare_func ~loc func env =
     let env, func = annotate_func_sig ~loc env func in
     declare_one_func loc func env
+  (* End DeclareOneFunc*)
 
   let add_global_storage loc name keyword env ty =
     if is_global_ignored name then env

@@ -1,4 +1,4 @@
-type color of enumeration { RED, BLACK } ;
+type Color of enumeration { RED, BLACK } ;
 
 func main () => integer
 begin

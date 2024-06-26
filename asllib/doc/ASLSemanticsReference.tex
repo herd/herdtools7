@@ -225,7 +225,7 @@
 \newcommand\mlength[0]{\texttt{m\_length}}
 \newcommand\vlength[0]{\texttt{v\_length}}
 \newcommand\vdiff[0]{\texttt{v\_diff}}
-\newcommand\etop[0]{\texttt{e\_top}}
+%\newcommand\etop[0]{\texttt{e\_top}}
 \newcommand\vvsubtop[0]{\texttt{v\_top}}
 \newcommand\mtop[0]{\texttt{m\_top}}
 \newcommand\efactor[0]{\texttt{e\_factor}}
@@ -261,7 +261,7 @@
 \newcommand\sg[0]{\texttt{s\_g}}
 \newcommand\ety[0]{\texttt{e\_ty}}
 \newcommand\vvty[0]{\texttt{v\_ty}}
-\newcommand\nameopt[0]{\texttt{name\_opt}}
+%\newcommand\nameopt[0]{\texttt{name\_opt}}
 \newcommand\vbone[0]{\texttt{b1}}
 \newcommand\vbtwo[0]{\texttt{b2}}
 \newcommand\vps[0]{\texttt{ps}}
@@ -462,7 +462,7 @@ We define the following types of native values:
 
 \section{Semantic Configurations \label{sec:configurations}}
 
-In the sequel, we use the term configurations to refer to semantic configurations.
+In the remainder of this document, we use the term configurations to refer to semantic configurations.
 
 Configurations express intermediate states related by \emph{semantic relations}.
 %
@@ -644,7 +644,7 @@ For example, the semantic relation that employs input configurations with the do
 is named $\texttt{eval\_expr}$.
 %
 We will often use the prefix \texttt{eval} for semantic relations with the intuition being that their input configurations
-should be ``semantically evaluated'', yielding an output configuration.
+should be semantically evaluated, yielding an output configuration.
 
 ASL semantics mainly utilizes the following types of output configurations:
 \begin{description}
@@ -673,7 +673,7 @@ ASL semantics mainly utilizes the following types of output configurations:
   an identifier to which the Read Effect is attributed, and an associated type.
   The type $\valuereadfrom(\vals,\Identifiers)$ is a configuration nested inside
   The ASL semantics propagates these \emph{exceptional configurations} to the nearest catch clause that matches
-  them, and otherwise they are ``caught'' at the top-level and reported as errors (see dynamic errors below).
+  them, and otherwise they are caught at the top-level and reported as errors (see dynamic errors below).
 
   \hypertarget{def-returning}{}
   \item[Returned Values.] Configurations in $\Returning((\vals^* \times \XGraphs), \envs)$
@@ -726,7 +726,7 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 \item $\ErrorConfig \triangleq \Error(\vs)$.
 \hypertarget{def-returningconfig}{}
 \item $\ReturningConfig \triangleq \Returning((\vvs,\newg), \newenv)$
-is an ``early return'' configuration.
+is an early return configuration.
 \hypertarget{def-continuingconfig}{}
 \item $\ContinuingConfig \triangleq \Continuing(\newg, \newenv)$.
 \end{itemize}
@@ -889,7 +889,7 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 \chapter{Reading guide}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The set of rules for each type of AST node is further split according to the ``shape'' of the AST node.
+The set of rules for each type of AST node is further split according to the shape of the AST node.
 For example, expressions are split into literal expressions, binary operation expressions, etc.
 Each such subset of rules is named accordingly and appears in a section with the same name.
 For example, the rule for literal expressions is named SemanticsRule.Lit\footnote{Sometimes rules are split into cases.
@@ -1015,7 +1015,7 @@ We also define the following helper relations:
     \item $\vg$ is the graph containing a single Read Effect for $\vx$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRuleELocalVar.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ELocalVar.asl}
     the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.ELocalVar.
@@ -1052,7 +1052,7 @@ We also define the following helper relations:
     \item $\vg$ is the graph containing a single Read Effect for $\vx$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRuleEGlobalVar.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGlobalVar.asl}
     the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
@@ -1086,7 +1086,7 @@ We also define the following helper relations:
   \item $C$ is the result of the evaluation of the expression
   \texttt{if e1 then e2 else false} (see \secref{SemanticsRule.ECond}).
   \end{itemize}
-  \subsection{Example: SemanticsRule.EBinopAndFalse.asl}
+  \subsection{Example}
 
  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopAndFalse.asl}
     the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
@@ -1123,7 +1123,7 @@ We also define the following helper relations:
   \texttt{if e1 then true else e2} (see \secref{SemanticsRule.ECond}).
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.EBinopOrTrue.asl}
+  \subsection{Example}
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopOrTrue.asl}
   The expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 
@@ -1156,7 +1156,7 @@ We also define the following helper relations:
   \item $\ve$ is evaluated as \texttt{if e1 then e2 else true}.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.EBinopImplExFalso.asl}
+  \subsection{Example}
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopImplExFalso.asl}
 the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
 
@@ -1199,12 +1199,12 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, acco
     \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.EBinopPlusAssert.asl}
+  \subsection{Example}
     In this specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopPlusAssert.asl}
     the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 
-  \subsection{Example: \\ SemanticsRule.EDIVBackendDefinedError.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopDIVBackendDefinedError.asl}
     the expression \texttt{3 DIV 0} results in a type error.
@@ -1254,7 +1254,7 @@ yields the same result.
   \item applying the Unary Operator $\op$ to $\vvone$ is $\vv$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.EUnopAssert.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnopAssert.asl}
     the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
@@ -1294,12 +1294,12 @@ yields the same result.
     \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.ECondFalse.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondFalse.asl}
     the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \texttt{3}.
 
-  \subsection{Example: \\ SemanticsRule.ECondUNKNOWN3or42.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondUNKNOWN3or42.asl}
 the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will
@@ -1348,7 +1348,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
     \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.ESlice.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ESlice.asl}
     the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
@@ -1402,7 +1402,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
     \end{itemize}
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.ECall.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECall.asl}
     the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
@@ -1454,13 +1454,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.EGetArray.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGetArray.asl}
     the expression \texttt{my\_array[2]} appearing in the assertion evaluates to the value \texttt{42} since the element
     indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
 
-  \subsection{Example: SemanticsRule.EGetArrayTooSmall.asl}
+  \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGetArrayTooSmall.asl}
     results in a typing error since we are trying to access index \texttt{3} of an array
@@ -1505,7 +1505,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \item $\vv$ is the native record that maps $\id_i$ to $\vv_i$, for $i=1..k$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.ERecord.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl}
     the expression \texttt{MyRecordType \{ a=3, b=42 \}} evaluates to the value
@@ -1544,7 +1544,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \item $\vv$ is the value mapped by $\fieldname$ in the native record $\vrecord$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.ERecord.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl}
     the expression \texttt{my\_record.a} evaluates to the value \texttt{3}.
@@ -1578,7 +1578,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \item $\vv$ is the bitvector constructed from the concatenation of $\vlist$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.EConcat}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EConcat.asl}
     the expression \texttt{['10', '11']} evaluates to the value \texttt{'1011'}.
@@ -1613,7 +1613,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \item $\vv$ is the native vector constructed from the values in $\vlist$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.ETuple.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ETuple.asl}
     the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
@@ -1656,12 +1656,12 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \item $\vg$ is the empty execution graph.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.EUnknownInteger3.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownInteger3.asl}
     the expression \texttt{[UNKNOWN : integer]} evaluates to an integer value.
 
-  \subsection{Example: \\ SemanticsRule.EUnknownIntegerRange3-42-3.asl}
+  \subsection{Example}
 
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownIntegerRange3-42-3.asl}
@@ -1702,12 +1702,12 @@ Notice that this rule introduces non-determinism.
   \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.EPatternFALSE.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EPatternFALSE.asl}
     the expression \texttt{42 IN \{0..3, -4\}} evaluates to the value \texttt{FALSE}.
 
-  \subsection{Example: SemanticsRule.EPatternTRUE.asl}
+  \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EPatternTRUE.asl}
     the expression \texttt{42 IN \{0..3, 42\}} evaluates to \True.
@@ -1757,10 +1757,10 @@ Notice that this rule introduces non-determinism.
         \end{itemize}
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.ATCValue.asl}
+  \subsection{Example}
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCValue.asl}
 
-  \subsection{Example: SemanticsRule.ATCError.asl}
+  \subsection{Example}
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCError.asl}
 
 
@@ -1940,7 +1940,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     \item $\newenv$ is $\env$.
     \end{itemize}
 
-  \subsection{Example: SemanticsRule.LEDiscard.asl}
+  \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDiscard.asl}
   \texttt{- = 42;} does not affect the environment.
@@ -1973,7 +1973,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the local component of the environment.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.LELocalVar.asl}
+  \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LELocalVar.asl}
   SemanticsRule.LELocalVar is (only) used to assign the value $42$ to the left-hand-side expression
@@ -2009,7 +2009,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the global component of the environment.
     \end{itemize}
 
-  \subsection{Example: SemanticsRule.LEGlobalVar.asl}
+  \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl}
   SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the left-hand-side expression
@@ -2057,7 +2057,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     $\newmbv$ in an environment $\envtwo$ is the output configuration $C$,
   \end{itemize}
 
-   \subsection{Example: SemanticsRule.LESlice.asl}
+   \subsection{Example}
    In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESlice.asl}
    \texttt{x[3:0] = '0000'} binds \texttt{x} to \texttt{'11110000'}
@@ -2108,7 +2108,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   is the output configuration $C$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.LESetArray.asl}
+  \subsection{Example}
   The specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetArray.asl}
   binds the third element of \texttt{my\_array} to the value \texttt{53}.
@@ -2162,7 +2162,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     is the output configuration $C$.
   \end{itemize}
 
-    \subsection{Example: SemanticsRule.LESetField.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetField.asl}
     \texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}} in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\}}.
@@ -2206,7 +2206,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     subexpressions, resulting in the output configuration $C$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LEDestructuring.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDestructuring.asl}
     \texttt{(x, y) = (3, 42)} binds \texttt{x} to \texttt{3} and \texttt{y} to \texttt{42} in the environment where \texttt{x} is bound to \texttt{42} and \texttt{y} is bound to \texttt{3}.
@@ -2375,7 +2375,7 @@ $\slices$.
     \item $\vlength$ is the integer value 1.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.SliceSingle.asl}
+  \subsection{Example}
   In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceSingle.asl}
   the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, i.\,e.\ the slice of
@@ -2414,7 +2414,7 @@ $\slices$.
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.SliceLength.asl}
+  \subsection{Example}
   In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceLength.asl}
   \texttt{2+:3} evaluates to \texttt{(2, 3)}.
@@ -2456,7 +2456,7 @@ $\slices$.
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.SliceRange.asl}
+  \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceRange.asl}
   \texttt{4:2} evaluates to \texttt{(2, 3)}.
@@ -2502,7 +2502,7 @@ $\slices$.
    \end{itemize}
 
 
-  \subsection{Example: SemanticsRule.SliceStar.asl}
+  \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceStar.asl}
   \texttt{x[3*:2]} evaluates to \texttt{'11'}.
@@ -2565,7 +2565,7 @@ and one of the following applies:
     \item $\newg$ is the empty graph.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.PAll.asl}
+  \subsection{Example}
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAll.asl}
 
 
@@ -2596,10 +2596,10 @@ and one of the following applies:
       \item $\newg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.PAnyTRUE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAnyTRUE.asl}
 
-    \subsection{Example: SemanticsRule.PAnyFALSE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAnyFALSE.asl}
 
 
@@ -2636,10 +2636,10 @@ and one of the following applies:
         is greater than or equal to $\vvone$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.PGeqTRUE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PGeqTRUE.asl}
 
-    \subsection{Example: SemanticsRule.PGeqFALSE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PGeqFALSE.asl}
 
 
@@ -2674,10 +2674,10 @@ and one of the following applies:
       is less than or equal to $\vvone$.
   \end{itemize}
 
-    \subsection{Example: SemanticsRule.PLeqTRUE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PLeqTRUE.asl}
 
-    \subsection{Example: SemanticsRule.PLeqFALSE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PLeqFALSE.asl}
 
 
@@ -2710,10 +2710,10 @@ and one of the following applies:
       \item $\vb$ is the Boolean negation of $\vbone$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.PNotTRUE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotTRUE.asl}
 
-    \subsection{Example: SemanticsRule.PNotFALSE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotFALSE.asl}
 
 
@@ -2754,10 +2754,10 @@ and one of the following applies:
       \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.PRangeTRUE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PRangeTRUE.asl}
 
-    \subsection{Example: SemanticsRule.PRangeFALSE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PRangeFALSE.asl}
 
 
@@ -2796,10 +2796,10 @@ and one of the following applies:
         is equal to $\vvone$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.PSingleTRUE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PSingleTRUE.asl}
 
-    \subsection{Example: SemanticsRule.PSingleFALSE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PSingleFALSE.asl}
 
 
@@ -2834,10 +2834,10 @@ and one of the following applies:
       \item $\newg$ is the empty graph.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.PMaskTRUE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PMaskTRUE.asl}
 
-    \subsection{Example: SemanticsRule.PMaskFALSE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PMaskFALSE.asl}
 
 
@@ -2890,10 +2890,10 @@ and one of the following applies:
       \item $\vb$ is the conjunction of the Boolean values of $\vbs$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.PTupleTRUE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleTRUE.asl}
 
-    \subsection{Example: SemanticsRule.PTupleFALSE.asl}
+    \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleFALSE.asl}
 
 
@@ -2956,7 +2956,7 @@ in \chapref{eval_stmt}), they are all treated the same way.
     \item $\newenv$ is $\env$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LDDiscard.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDDiscard.asl}
     \texttt{var - : integer;} does not modify the environment.
@@ -2988,12 +2988,12 @@ in \chapref{eval_stmt}), they are all treated the same way.
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LDVar0.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDVar0.asl}
     \texttt{var x = 3;} binds \texttt{x} to the evaluation of \texttt{3} in $\env$.
 
-    \subsection{Example: SemanticsRule.LDVar1.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDVar1.asl}
     \texttt{var x : integer = 3;} binds \texttt{x} to the evaluation of
@@ -3031,7 +3031,7 @@ in \chapref{eval_stmt}), they are all treated the same way.
       that is, \\ $\evallocaldecl{\env, \ldi1, \langle \vm\rangle}$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LDTyped.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTyped.asl}
     \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
@@ -3069,7 +3069,7 @@ in \chapref{eval_stmt}), they are all treated the same way.
     with the corresponding value ($\minitopt$ component) $(\vv_i, \vg)$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LDTuple.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTuple.asl}
     \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} to the evaluation of
@@ -3138,7 +3138,7 @@ We now use the helper rules to define the rule for local declaration item tuples
       as the $\minitopt$ component yields the output configuration.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LDUninitialisedTyped.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDUninitialisedTyped.asl}
     \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
@@ -3220,7 +3220,7 @@ In evaluating a statement $\vs$, one of the following apply:
   \item $\newenv$ is $\env$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.SPass.asl}
+  \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SPass.asl}
   \texttt{pass;} does nothing.
@@ -3250,7 +3250,7 @@ In evaluating a statement $\vs$, one of the following apply:
   $\Normal(\newg, \newenv)$ \ProseOrAbnormal.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.SAssign.asl}
+  \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssign.asl}
   \texttt{x = 3;} binds \texttt{x} to \texttt{3} in the environment where \texttt{x} is bound to \texttt{42}, and $\newenv$ is such that \texttt{x} is bound to \texttt{3}.
@@ -3292,7 +3292,7 @@ which in turn handles variables, tuples, bitvectors, etc.
   \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge.
   \end{itemize}
 
-    \subsection{Example: SemanticsRule.SAssignCall.asl}
+    \subsection{Example}
 
 \VerbatimInput{\testdir/SemanticsRule.SAssignCall.asl}
   given that the function call \texttt{f(1)} returns the pair of values \texttt{(1,2)}, statement \texttt{(a,b) = f(1)} assigns the value \texttt{1} to the mutable variable \texttt{a} and the value \texttt{2} to the mutable variable~\texttt{b}.
@@ -3343,7 +3343,7 @@ We now define the evaluation of assigning from a subprogram call:
     \item $\newenv$ is $\env$.
     \end{itemize}
 
-    \subsection{Example: SReturnNoneReturn.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
     exits the current procedure.
@@ -3376,7 +3376,7 @@ We now define the evaluation of assigning from a subprogram call:
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SReturnOne.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
     \texttt{return 3;} exits the current subprogram with value \texttt{3}.
@@ -3412,7 +3412,7 @@ We now define the evaluation of assigning from a subprogram call:
     \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SReturnSome.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
     \texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
@@ -3484,7 +3484,7 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.SSeq.asl}
+  \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
   \texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
@@ -3522,7 +3522,7 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SCall.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
     \texttt{Zeros(3)} evaluates to \texttt{'000'}.
@@ -3561,7 +3561,7 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SCond.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
     does not result in any Assertion Error.
@@ -3600,7 +3600,7 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \item evaluating $\vsone$ in $\env$ results in the output configuration $C$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SCase.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl}
     uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
@@ -3611,7 +3611,7 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
 \begin{emptyformal}
   \subsection{Formally}
   \hypertarget{def-casetoconds}{}
-A case statement is syntactic sugar for a ``condition ladder'' where each
+A case statement is syntactic sugar for a condition ladder where each
 of the alternatives is a pattern.
 That is, a statement of the form
 \texttt{if e1 then s1; else if e2 then s2; else if e3 then s3; ... else pass;}
@@ -3685,20 +3685,20 @@ We now define the semantics of a case statement in terms of the desugared statem
         \begin{itemize}
           \item evaluating $\ve$ in $\env$ is either $\Normal((\vv, \newg), \newenv)$;
           \item $\vv$ is a native Boolean value for $\False$;
-          \item an ``AssertionFailed'' error is returned.
+          \item an AssertionFailed error is returned.
         \end{itemize}
       \end{itemize}
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SAssertOk.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertOk.asl}
     \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
 
-    \subsection{Example: SemanticsRule.SAssertNo.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertNo.asl}
-    \texttt{assert (42 == 3);} results in an ``\texttt{AssertionFailed}'' error.
+    \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
 
 
   \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Interpreter.ml}
@@ -3737,10 +3737,10 @@ We now define the semantics of a case statement in terms of the desugared statem
     results in $C$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SWhile.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SWhile.asl}
-    prints ``\texttt{0123}''.
+    prints \texttt{0123}.
 
 
   \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Interpreter.ml}
@@ -3777,7 +3777,7 @@ We now define the semantics of a case statement in terms of the desugared statem
     substituted with $\vgtwo$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SRepeat.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SRepeat.asl}
     prints
@@ -3830,7 +3830,7 @@ We now define the semantics of a case statement in terms of the desugared statem
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SFor.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
     prints
@@ -3878,10 +3878,10 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \item an exception is thrown with $\newenv$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SThrowNone.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl}
-    throws a ``\texttt{MyException}'' exception.
+    throws a \texttt{MyException} exception.
 
 
   \CodeSubsection{\SThrowNoneBegin}{\SThrowNoneEnd}{../Interpreter.ml}
@@ -3915,10 +3915,10 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \item the result of the entire evaluation is $\Throwing((\vex, \newg), \env)$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SThrowSomeTyped.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowSomeTyped.asl}
-    throws a ``\texttt{MyException \{a: 3, b: 42\}}'' exception.
+    throws a \texttt{MyException \{a: 3, b: 42\}} exception.
 
 
   \CodeSubsection{\SThrowSomeTypedBegin}{\SThrowSomeTypedEnd}{../Interpreter.ml}
@@ -3955,7 +3955,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     is $C$, which is the result of the entire evaluation.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.STry.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
     does not result in any Assertion error, and the specification terminates with the exit code $0$.
@@ -3992,7 +3992,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SDeclSome.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclSome.asl}
     \texttt{let x = 3;} binds \texttt{x} to \texttt{3} in the empty environment.
@@ -4027,7 +4027,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.SDeclNone.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclNone.asl}
     \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
@@ -4084,7 +4084,7 @@ which drops back to the original local environment of $\env$ when the evaluation
       \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.Block.asl}
+    \subsection{Example}
     In the specification:
     \VerbatimInput{\testdir/SemanticsRule.Block.asl}
     the conditional statement \texttt{if TRUE then\ldots{} end;} defines a
@@ -4187,7 +4187,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-    \subsection{Example: SemanticsRule.Loop.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Loop.asl}
     does not result in any Assertion Error and the specification terminates with exit
@@ -4348,7 +4348,7 @@ and All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example: SemanticsRule.For.asl}
+\subsection{Example}
 The specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
 does not result in any assertion error, and the specification terminates with exit-code $0$.
@@ -4526,10 +4526,10 @@ We also define two helper relations:
   \item the result of the entire evaluation is $D$ with its graph substituted with $\newg$.
   \end{itemize}
 
-    \subsection{Example: SemanticsRule.Catch.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Catch.asl}
-    prints ``\texttt{MyException}''.
+    prints \texttt{MyException}.
 
 
   \CodeSubsection{\CatchBegin}{\CatchEnd}{../Interpreter.ml}
@@ -4581,10 +4581,10 @@ We also define two helper relations:
     \item the result of the entire evaluation is $E$ with its graph substituted with $\newg$.
   \end{itemize}
 
-    \subsection{Example: SemanticsRule.CatchNamed.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNamed.asl}
-    prints ``\texttt{My exception with my message}''.
+    prints \texttt{My exception with my message}.
 
 
   \CodeSubsection{\CatchNamedBegin}{\CatchNamedEnd}{../Interpreter.ml}
@@ -4636,10 +4636,10 @@ We also define two helper relations:
     \item the result of the entire evaluation is $D$ with its graph substituted with $\newg$.
   \end{itemize}
 
-    \subsection{Example: SemanticsRule.CatchOtherwise.asl}
+    \subsection{Example}
      The specification:
      \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
-     prints ``\texttt{Another exception}''.
+     prints \texttt{Another exception}.
 
 
   \CodeSubsection{\CatchOtherwiseBegin}{\CatchOtherwiseEnd}{../Interpreter.ml}
@@ -4678,7 +4678,7 @@ We also define two helper relations:
     \item since there no \texttt{otherwise} clause, the result is $\sm$.
   \end{itemize}
 
-    \subsection{Example: SemanticsRule.CatchNone.asl}
+    \subsection{Example}
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNone.asl}
     does not print anything.
@@ -4714,10 +4714,10 @@ We also define two helper relations:
     \item the result is $\sm$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.CatchNoThrow.asl}
+  \subsection{Example}
   The specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNoThrow.asl}
-  prints ``\texttt{No exception raised}''.
+  prints \texttt{No exception raised}.
 
 
 \CodeSubsection{\CatchNoThrowBegin}{\CatchNoThrowEnd}{../Interpreter.ml}
@@ -4842,7 +4842,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{explicit\_throwing}):
   \begin{itemize}
-    \item $\vres$ is $\Throwing(\langle(\vv', \vvty')\rangle, \vg)$, which is an ``explicit throwing configuration''
+    \item $\vres$ is $\Throwing(\langle(\vv', \vvty')\rangle, \vg)$, which is an explicit throwing configuration
     (due to $(\vv', \vvty')$);
     \item the result is $\Throwing((\langle(\vv', \vvty')\rangle, \vg), \envthrowone)$. \\
     That is, the same throwing configuration is returned.
@@ -5377,7 +5377,7 @@ One of the following applies:
     \item the result is $C$ with its graph substituted for $\newg$.
   \end{itemize}
 
-  \subsection{Example: SemanticsRule.FCall.asl}
+  \subsection{Example}
   The specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.FCall.asl}
   calls the function \texttt{foo} and the procedure \texttt{bar}.
@@ -5590,7 +5590,7 @@ The helper relation
   \buildgenv(\overname{\envs}{\env}, \overname{\spec}{\typedspec}) \;\aslrel\;
   (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\newg}) \cup \overname{\TError}{\ErrorConfig}
 \]
-``populates'' the environment and output execution graph with the global
+populates the environment and output execution graph with the global
 storage declarations.
 This works by traversing the global storage declarations in \emph{dependency order}
 and updating the environment accordingly. By dependency order, we mean that if

@@ -18,8 +18,6 @@ An abstract syntax is a form of context-free grammar over structured trees. Comp
 %
 The reason for this is that abstract syntax trees abstract away details that are irrelevant to the semantics of the program, such as punctuation and scoping syntax, which are mostly there to facilitate parsing.
 
-A major benefit of employing an abstract syntax for ASL is that it allows us to abstract both the grammar of ASLv0 and the grammar of ASLv1 into a single abstract syntax. This in turn, allows us to define a single type system and a single semantics for both language versions, with very few exceptions\footnote{Note the single appearance of $\version$ in the assignment derivation rule.}.
-
 Technically, there are two abstract syntaxes:
 a \emph{parsed abstract syntax} and a \emph{typed abstract syntax}.
 The first syntax results from parsing the text of an ASL specification.
@@ -89,21 +87,16 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\unop &::=& \texttt{"!"} \;|\; \texttt{"-"} \;|\; \texttt{"NOT"} \\
-\binop &::=& \texttt{"\&\&"} \;|\; \texttt{"||"} \;|\; \texttt{"-->"} \;|\;  \texttt{"<->"}  \\
- & & \ASTComment{\texttt{binop\_boolean}}\\
-
- &|& \texttt{"=="} \;|\; \texttt{"!="}  \;|\; \texttt{">"}  \;|\; \texttt{">="} \;|\; \texttt{"<"} \;|\; \texttt{"<="}   \\
- & & \ASTComment{\texttt{binop\_comparison}}\\
-
- &|& \texttt{"+"} \;|\; \texttt{"-"}  \;|\; \texttt{"OR"}  \;|\; \texttt{"XOR"} \;|\; \texttt{"EOR"} \;|\; \texttt{"AND"}   \\
- & & \ASTComment{\texttt{binop\_add\_sub\_logic}}\\
-
- &|& \texttt{"*"} \;|\; \texttt{"/"}  \;|\; \texttt{"DIV"}  \;|\; \texttt{"DIVRM"} \;|\; \texttt{"MOD"}  \;|\; \texttt{"<<"}  \;|\; \texttt{">>"}    \\
- & & \ASTComment{\texttt{binop\_mul\_div\_shift}}\\
-
- &|& \texttt{"\^{}"}   \\
- & & \ASTComment{\texttt{binop\_pow}}\\
+\unop &::=& \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}} \\
+\binop  &::=& \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
+              \;|\; \overname{\BEQ}{\texttt{"<->"}}  \\
+        &|& \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
+        \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}} \\
+        &|& \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
+        \;|\; \overname{\EOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}} \\
+        &|& \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
+        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}} \\
+        &|& \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \\
 
 % \literal &=& \texttt{<int\_lit>}  \\
 %  &|&\ASTComment{Includes \texttt{hex\_int}} \\
@@ -115,16 +108,11 @@ We sometimes provide extra details to individual derivations by adding comments 
 %  &|& \texttt{"IN"}   \\
 %  & & \ASTComment{\texttt{binop\_in}}\\
 
-\literal &=& \lint($n$) \\
- & & \ASTComment{$n \in \Z$}\\
- &|& \lbool(b) \\
- & & \ASTComment{$b \in \{\True, \False\}$}\\
- &|& \lreal(q)  \\
- & & \ASTComment{$q \in \Q$}\\
- &|& \lbitvector($B$)   \\
- & & \ASTComment{$B \in \{0, 1\}^*$}\\
- &|& \lstring(S)\\
- & & \ASTComment{$S \in \{C \;|\; \texttt{"$C$"} \in \texttt{<string\_lit>}\} $}\\
+\literal &=& \lint(\overname{n}{n \in \Z}) \\
+ &|& \lbool(\overname{b}{b \in \{\True, \False\}}) \\
+ &|& \lreal(\overname{q}{q \in \Q}) \\
+ &|& \lbitvector(\overname{B}{B \in \{0, 1\}^*}) \\
+ &|& \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"} \in \texttt{<string\_lit>}\}})\\
 \end{array}
 \]
 
@@ -132,19 +120,18 @@ We sometimes provide extra details to individual derivations by adding comments 
 \begin{array}{rcl}
 \expr &::=& \ELiteral(\literal) \\
 	&|& \EVar(\overtext{\identifier}{variable name}) \\
-	&|& \EATC(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type}) \\
-  & & \ASTComment{Asserting type conversion}\\
+	&|& \overtext{\EATC}{Asserting type conversion}(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type}) \\
 	&|& \EBinop(\binop, \expr, \expr) \\
 	&|& \EUnop(\unop, \expr) \\
-	&|& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) \\
+	&|& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}) \\
 	&|& \ESlice(\expr, \slice^{*}) \\
 	&|& \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else}) \\
 	&|& \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name}) \\
 	&|& \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names}) \\
 	&|& \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})\\
     & & \ASTComment{Both record construction and exception construction}\\
-	&|& \EConcat(\expr^{*}) \\
-	&|& \ETuple(\expr^{*}) \\
+	&|& \EConcat(\expr^{+}) \\
+	&|& \ETuple(\expr^{+}) \\
 	&|& \EUnknown(\ty) \\
 	&|& \EPattern(\expr, \pattern)
 \end{array}
@@ -204,12 +191,12 @@ We sometimes provide extra details to individual derivations by adding comments 
     & & \ASTComment{Constraints that can be put on integer types.}  \\
     \hline
     \intconstraints & ::=
-      & \texttt{UnConstrained}                                      \\
+      & \unconstrained                                      \\
     & & \ASTComment{This integer type is unconstrained.}            \\
-    &|& \texttt{WellConstrained}(\intconstraint^{*})                \\
+    &|& \wellconstrained(\intconstraint^{+})                \\
     & & \ASTComment{Has some explicit constraints}                  \\
-    &|& \texttt{UnderConstrained}(\texttt{uid}, \identifier)        \\
-    & & \ASTComment{Implicitely constrained integer from function declaration.} \\
+    &|& \underconstrained(\texttt{uid}, \identifier)        \\
+    & & \ASTComment{Implicitly constrained integer from function declaration.} \\
     & & \ASTComment{Attributes are:} \\
     & & \ASTComment{- a unique integer identifier and the variable} \\
     & & \ASTComment{- the type was implicitly constructed from.} \\
@@ -263,7 +250,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 \begin{array}{rcl}
 & & \ASTComment{Type of left-hand side of assignments.}\\
 \hline
-\lexpr &::=& \texttt{LE\_Discard}\\
+\lexpr &::=& \LEDiscard\\
   & & \ASTComment{\texttt{"-"}}\\
   &|& \LEVar(\identifier)\\
   &|& \LESlice(\lexpr, \slice^*)\\
@@ -271,7 +258,7 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \LESetField(\lexpr, \identifier)\\
   &|& \LESetFields(\lexpr, \identifier^*)\\
   &|& \LEDestructuring(\lexpr^*)\\
-  &|& \LEConcat(\lexpr^*, \texttt{<int\_lit>}^*?)\\
+  &|& \LEConcat(\lexpr^+, \texttt{<int\_lit>}^+?)\\
   & & \ASTComment{$\LEConcat(\texttt{les}, \_)$ unpacks the various lexpr.}\\
   & & \ASTComment{The second argument is a type annotation.}\\
 \end{array}
@@ -292,16 +279,16 @@ We sometimes provide extra details to individual derivations by adding comments 
   & & \ASTComment{local declaration item:}\\
   \hline
 \localdeclitem &::=
-    & \texttt{LDI\_Discard}\\
+    & \LDIDiscard\\
   & & \ASTComment{The ignored local declaration item, for example used in: \Verb!let - = 42;!.}\\
-  &|& \texttt{LDI\_Var}(\identifier)\\
+  &|& \LDIVar(\identifier)\\
   & & \ASTComment{\texttt{LDI\_Var x} is the variable declaration of the variable \texttt{x}, used for example in:}\\
   & & \ASTComment{\texttt{let x = 42;}.}\\
-  &|& \texttt{LDI\_Tuple}(\localdeclitem^*)\\
+  &|& \LDITuple(\localdeclitem^*)\\
   & & \ASTComment{\texttt{LDI\_Tuple ldis} is the tuple declarations of the items in \texttt{ldis},}\\
   & & \ASTComment{used for example in: \texttt{let (x, y, -, z) = (1, 2, 3, 4);}}\\
   & & \ASTComment{Note that a the list here must be at least 2 items long.}\\
-  &|& \texttt{LDI\_Typed}(\localdeclitem, \ty)\\
+  &|& \LDITyped(\localdeclitem, \ty)\\
   & & \ASTComment{\texttt{LDI\_Typed (ldi, t)} declares the item \texttt{ldi} with type \texttt{t}, used for example in:} \\
   & & \ASTComment{\texttt{let x: integer = 4;}}
 \end{array}
@@ -315,38 +302,28 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\version &::=& \texttt{V0} \;|\; \texttt{V1}\\
+\stmt &::=& \SPass\\
+  &|& \SSeq(\stmt, \stmt)\\
+  &|& \SDecl(\localdeclkeyword, \localdeclitem, \expr?)\\
+  &|& \SAssign(\lexpr, \expr)\\
+  &|& \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})\\
+  &|& \SReturn(\expr?)\\
+  &|& \SCond(\expr, \stmt, \stmt)\\
+  &|& \SCase(\expr, \casealt^*)\\
+  &|& \SAssert(\expr)\\
+  &|& \SFor(\identifier, \expr, \fordirection, \expr, \stmt)\\
+  &|& \SWhile(\expr, \stmt)\\
+  &|& \SRepeat(\stmt, \expr)\\
+  &|& \SThrow((\expr, \langle\rangle)?)\\
+  & & \ASTComment{The option represents an implicit throw: \texttt{throw;}.}\\
+  &|& \STry(\stmt, \catcher^*, \overname{\stmt?}{otherwise})\\
+  &|& \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
 \end{array}
 \]
 
 \[
 \begin{array}{rcl}
-\stmt &::=& \texttt{S\_Pass}\\
-  &|& \texttt{S\_Seq}(\stmt, \stmt)\\
-  &|& \texttt{S\_Decl}(\localdeclkeyword, \localdeclitem, \expr?)\\
-  &|& \texttt{S\_Assign}(\lexpr, \expr, \version)\\
-  &|& \texttt{S\_Call}(\identifier, \expr^*, (\identifier, \expr)^*)\\
-  &|& \texttt{S\_Return}(\expr?)\\
-  &|& \texttt{S\_Cond}(\expr, \stmt, \stmt)\\
-  &|& \texttt{S\_Case}(\expr, \casealt^*)\\
-  &|& \texttt{S\_Assert}(\expr)\\
-  &|& \texttt{S\_For}(\identifier, \expr, \fordirection, \expr, \stmt)\\
-  &|& \texttt{S\_While}(\expr, \stmt)\\
-  &|& \texttt{S\_Repeat}(\stmt, \expr)\\
-  &|& \texttt{S\_Throw}((\expr, \langle\rangle)?)\\
-  &|& \texttt{S\_Throw}((\expr, \langle\rangle)?)\\
-  & & \ASTComment{The outer option is to represent the implicit throw,}\\
-  & & \ASTComment{such as \texttt{throw;}.}\\
-  & & \ASTComment{such as \texttt{throw;}.}\\
-  &|& \texttt{S\_Try}(\stmt, \catcher^*, \stmt?)\\
-  & & \ASTComment{The optional stmt is for the otherwise guard.}\\
-  &|& \texttt{S\_Debug}(\expr)
-\end{array}
-\]
-
-\[
-\begin{array}{rcl}
-\casealt &::=& (\pattern, \stmt)\\
+\casealt &::=& \{ \text{pattern} : \pattern, \text{where} : \expr?, \text{stmt} : \stmt \}\\
 \catcher &::=& (\identifier?, \ty, \stmt)\\
   & & \ASTComment{The optional name of the matched exception,}\\
   & & \ASTComment{the guard type and the statement}\\
@@ -379,7 +356,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\globaldeclkeyword &::=& \texttt{GDK\_Constant} \;|\; \texttt{GDK\_Config} \;|\; \texttt{GDK\_Let} \;|\; \texttt{GDK\_Var}\\
+\globaldeclkeyword &::=& \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar\\
   & & \ASTComment{Declaration keyword for global storage elements.}\\
 \end{array}
 \]
@@ -399,8 +376,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 \begin{array}{rcl}
 \decl &::=& \DFunc(\func)\\
   & & \DGlobalStorage(\globaldecl)\\
-  & & \DTypeDecl(\identifier, \ty, (\identifier, \Field^*)?)\\
-  & & \ASTComment{The last component is for \texttt{with} fields.}\\
+  & & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?)\\
 \specification &::=& \decl^*\\
 \end{array}
 \]
@@ -413,18 +389,34 @@ except for the following differences.
 The rules for expressions have the extra derivation rule:
 \[
 \begin{array}{rcl}
-\expr &::=& \texttt{E\_GetArray}(\expr, \expr) \\
+\expr &::=& \EGetArray(\expr, \expr) \\
+\end{array}
+\]
+
+The AST node for call expressions includes an extra component that explicitly associates expressions
+with parameters:
+\[
+\begin{array}{rcl}
+\ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers})
 \end{array}
 \]
 
 The rules for statements refine the throw statement by annotating it with
-the type of throw exception.
+the type of the throw exception.
 \[
 \begin{array}{rcl}
-\stmt &::=& \texttt{S\_Throw}((\expr, \langle\ty\rangle)?)\\
-      & & \ASTComment{The type $\ty$ is inferred by the type-checker.}
+\stmt &::=& \SThrow((\expr, \overtext{\langle\ty\rangle}{exception type})?)
 \end{array}
 \]
+
+Similar to expressions, the AST node for call statements includes an extra component that explicitly associates expressions
+with parameters:
+\[
+\begin{array}{rcl}
+  \stmt &::=&  \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers})
+\end{array}
+\]
+
 
 The rules for slices is replaced by the following:
 \[
@@ -445,14 +437,14 @@ which is utilized both for the type system and semantics:
 \begin{array}{lcl}
   \textbf{Left hand side expression} & & \textbf{Right hand side expression}\\
   \hline
-  \torexpr(\texttt{LE\_Var}(\vx)) &=& \texttt{E\_Var}(\vx)\\
-  \torexpr(\leslice(\vle, \vargs)) &=& \texttt{E\_Slice}(\torexpr(\vle), \vargs)\\
-  \torexpr(\texttt{LE\_SetArray}(\vle, \ve)) &=& \texttt{E\_GetArray}(\torexpr(\vle), \ve)\\
-  \torexpr(\texttt{LE\_SetField}(\vle, \vx)) &=& \texttt{E\_GetField}(\torexpr(\vle), \vx)\\
-  \torexpr(\texttt{LE\_SetFields}(\vle, \vx)) &=& \texttt{E\_GetFields}(\torexpr(\vle), \vx)\\
-  \torexpr(\texttt{LE\_Discard}) &=& \texttt{E\_Var("-")}\\
-  \torexpr(\texttt{LE\_Destructuring}([\vle_{1..k}])) &=& \texttt{E\_Tuple}([i=1..k: \torexpr(\vle_i)])\\
-  \torexpr(\texttt{LE\_Concat}([\vle_{1..k}], \Ignore)) &=& \texttt{E\_Concat}([i=1..k: \torexpr(\vle_i)])\\
+  \torexpr(\LEVar(\vx)) &=& \EVar(\vx)\\
+  \torexpr(\LESlice(\vle, \vargs)) &=& \ESlice(\torexpr(\vle), \vargs)\\
+  \torexpr(\LESetArray(\vle, \ve)) &=& \EGetArray(\torexpr(\vle), \ve)\\
+  \torexpr(\LESetField(\vle, \vx)) &=& \EGetField(\torexpr(\vle), \vx)\\
+  \torexpr(\LESetFields(\vle, \vx)) &=& \EGetFields(\torexpr(\vle), \vx)\\
+  \torexpr(\LEDiscard) &=& \EVar(\texttt{-})\\
+  \torexpr(\LEDestructuring([\vle_{1..k}])) &=& \ETuple([i=1..k: \torexpr(\vle_i)])\\
+  \torexpr(\LEConcat([\vle_{1..k}], \Ignore)) &=& \EConcat([i=1..k: \torexpr(\vle_i)])\\
 \end{array}
 \]
 

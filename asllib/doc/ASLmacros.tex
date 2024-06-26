@@ -115,6 +115,7 @@
 
 % Set types
 \newcommand\N[0]{\hyperlink{def-N}{\mathbb{N}}}
+\newcommand\Npos[0]{\hyperlink{def-Npos}{\mathbb{N}^{+}}}
 \newcommand\Q[0]{\hyperlink{def-Q}{\mathbb{Q}}}
 \newcommand\Z[0]{\hyperlink{def-Z}{\mathbb{Z}}}
 \newcommand\Bool[0]{\hyperlink{def-bool}{\mathbb{B}}}
@@ -131,9 +132,9 @@
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
 \newcommand\terminateas[0]{\;\hyperlink{def-terminateas}{\sslash}\;}
-\newcommand\booltrans[1]{\hyperlink{def-booltrans}{\texttt{bool\_transition}(#1)}}
-\newcommand\booltransarrow[0]{\rightarrow}
-\newcommand\checktrans[1]{\hyperlink{def-checktrans}{\texttt{check}}(#1)}
+\newcommand\booltrans[1]{\hyperlink{def-booltrans}{\texttt{bool\_transition}}(#1)}
+\newcommand\booltransarrow[0]{\longrightarrow}
+\newcommand\checktrans[2]{\hyperlink{def-checktrans}{\texttt{check}}(#1, \texttt{#2})}
 \newcommand\checktransarrow[0]{\rightarrow}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -258,6 +259,7 @@
 \newcommand\SFor[0]{\textsf{S\_For}}
 \newcommand\SThrow[0]{\textsf{S\_Throw}}
 \newcommand\STry[0]{\textsf{S\_Try}}
+\newcommand\SPrint[0]{\textsf{S\_Print}}
 
 % Literal labels
 \newcommand\lint[0]{\textsf{L\_Int}}
@@ -624,3 +626,33 @@
 \newcommand\lesone[0]{\texttt{les1}}
 \newcommand\vteeq[0]{\texttt{t\_e\_eq}}
 \newcommand\vtleonestruct[0]{\texttt{t\_le1\_struct}}
+\newcommand\tsubs[0]{\texttt{t\_s}}
+\newcommand\vdebug[0]{\texttt{debug}}
+\newcommand\vreone[0]{\texttt{re1}}
+\newcommand\vtre[0]{\texttt{t\_re}}
+\newcommand\vtep[0]{\texttt{t\_e'}}
+\newcommand\vsonep[0]{\texttt{s1'}}
+\newcommand\vstwop[0]{\texttt{s2'}}
+\newcommand\vcases[0]{\texttt{cases}}
+\newcommand\vcasesone[0]{\texttt{cases1}}
+\newcommand\vcase[0]{\texttt{case}}
+\newcommand\vcaseone[0]{\texttt{case1}}
+\newcommand\vpzero[0]{\texttt{p0}}
+\newcommand\vwzero[0]{\texttt{w0}}
+\newcommand\vszero[0]{\texttt{s0}}
+\newcommand\vewzero[0]{\texttt{e\_w0}}
+\newcommand\vewone[0]{\texttt{e\_w1}}
+\newcommand\vtwe[0]{\texttt{twe}}
+\newcommand\otherwisep[0]{\texttt{otherwise'}}
+\newcommand\vcp[0]{\texttt{c'}}
+\newcommand\catchersp[0]{\texttt{catchers'}}
+\newcommand\nameopt[0]{\texttt{name\_opt}}
+\newcommand\botcs[0]{\texttt{bot\_cs}}
+\newcommand\topcs[0]{\texttt{top\_cs}}
+\newcommand\ebot[0]{\texttt{e\_bot}}
+\newcommand\etop[0]{\texttt{e\_top}}
+\newcommand\vbf[0]{\texttt{bf}}
+\newcommand\vbfone[0]{\texttt{bf1}}
+\newcommand\vbftwo[0]{\texttt{bf2}}
+\newcommand\bfstwop[0]{\texttt{bfs2'}}
+\newcommand\vpp[0]{\texttt{p'}}

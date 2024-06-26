@@ -16,6 +16,10 @@ We define the following sets:
     $\N$ is the set of natural numbers, including $0$.
 }
 
+\item \hypertarget{def-Npos}{
+    $\Npos$ is the set of natural numbers, excluding $0$.
+}
+
 \item
 \hypertarget{def-Z}{
     $\Z$ is the set of integers.
@@ -144,7 +148,7 @@ is defined as follows:
 \end{definition}
 
 \subsection{Lists}
-In the sequel of this document, we use the term \emph{list} and \emph{sequence} interchangably.
+In the remainder of this document, we use the term \emph{list} and \emph{sequence} interchangeably.
 
 A list of elements \hypertarget{def-emptylist}{can be empty, denoted by $\emptylist$}, or non-empty.
 A non-empty list is either denoted by listing the elements in sequence, $v_1 \ldots\ v_k$,
@@ -352,16 +356,19 @@ A set of rules $M$ with transition assertions defines the relation
     R = \{ (x,y) \;|\; x \rulearrow y \text{ can be derived from rules in } M\} \enspace.
 \]
 
-For example, the rule TypingRule.ELit defines a relation between
-the infinite set of elements of the form `$\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$'
-(for the infinite choice of values for the free variables $\tenv$ and $\vv$) to the infinite
-set of pairs of the form `$(\vt, \ELiteral(\vv))$', such that the premise holds.
+For example, the rule TypingRule.ELit defines a relation
+between the infinite set of elements of the form
+$\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$ (for the
+infinite choice of values for the free variables $\tenv$ and
+$\vv$ to the infinite set of pairs of the form $(\vt,
+\ELiteral(\vv))$, such that the premise holds.
 
-
-\paragraph{Mutual Exclusion Rule Principle:}
-Our rules follow (with very few deviations, which we point out in context) a mutual exclusion principle,
-where each rule defines a relation disjoint from the ones defined by the other rules.
-This makes it easy to determine the rule responsible for a given transition.
+\paragraph{Mutual Exclusion Principle:}
+Our rules follow (with very few deviations, which we point out
+in context) a mutual exclusion principle, where each rule
+defines a relation disjoint from the ones defined by the other
+rules.  This makes it easy to determine the rule responsible
+for a given transition.
 
 \hypertarget{def-configuration}{}
 \subsection{Configurations}
@@ -377,7 +384,7 @@ We refer to configurations at the origin of a transition as \emph{input configur
 configurations at the destination of a transition as \emph{output transitions}.
 
 For example, the conclusion of the rule TypingRule.ELit has \\
-`$\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$' as its input configuration
+$\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$ as its input configuration
 and `$(\vt, \ELiteral(\vv))$' as its output configuration.
 Further,
 $\configdomain{\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))} = \texttt{annotate\_expr}$,
@@ -390,21 +397,21 @@ Our rules always define relations whose sets of input configurations and output 
 
 \hypertarget{def-freshvariables}{}
 \begin{definition}[Fresh Element]
-  Premises of the form `\texttt{$x\in T$ is fresh}' mean that in any
+  Premises of the form \texttt{$x\in T$ is fresh} mean that in any
   instantiation in a derivation tree, the value of $x$ is unique.
   That is, different from all other values instantiated for any other variable of type $T$.
 \end{definition}
 
 \hypertarget{def-ignore}{}
 \begin{definition}[Ignore Variable]
-To keep rules succinct, we write `$\Ignore$' for a mathematical variable whose name is
+To keep rules succinct, we write $\Ignore$ for a mathematical variable whose name is
 irrelevant for understanding the rule, and can thus be omitted.
-Each \underline{occurrence} of `$\Ignore$' represents a variable whose name is
+Each \underline{occurrence} of $\Ignore$ represents a variable whose name is
 different from any other free variable in the rule.
 \end{definition}
 
 For example, the rule SemanticsRule.PAll, shown \hyperlink{SemanticsRule.PAll-example}{above},
-uses an ignore variable to stand for the value being matched by a `\texttt{-}' pattern.
+uses an ignore variable to stand for the value being matched by a \texttt{-} pattern.
 Since the rule does not need to refer to the value, we do not name it and use an ignore variable
 instead.
 
@@ -476,7 +483,7 @@ shown here:
 When deconstructing AST record nodes such as $\{f_1:t_2,\ldots,f_k:t_k\}$,
 we sometimes only care about a subset of the fields $\{f_{i_1},\ldots,f_{i_m}\} \subset \{f_{1..k}\}$.
 In such cases, we write $\{f_{i_1}:t_{i_m},\ldots,f_{i_m}:t_{i_m},\ldots\}$,
-where `$\ldots$' stands for fields that are irrelevant for the rule.
+where $\ldots$ stands for fields that are irrelevant for the rule.
 
 For example\footnote{This example is from SemanticsRule.FCall.}, the \func\ non-terminal is of a record type and has the following fields:
 $\textsf{name}$, $\textsf{parameters}$, $\textsf{args}$, $\textsf{body}$, $\textsf{return\_type}$, and $\textsf{subprogram\_type}$.
@@ -489,7 +496,7 @@ The partial function $\astlabel$ returns the corresponding label $\vl\in\astlabe
 For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\texttt{x})) = \TNamed$.
 
 \subsection{How to Parse Rules Efficiently}
-Consider the following examples, which is a simplified version of SemanticsRule.Binop"
+Consider the following examples, which is a simplified version of SemanticsRule.Binop
 \begin{mathpar}
   \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
     \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \\\\
@@ -508,10 +515,10 @@ Consider the following examples, which is a simplified version of SemanticsRule.
 To parse a rule, start by examining the conclusion and the variables appearing in the rule.
 In this case, the rule describes a transition from an input configuration \\
 $\evalexpr{ \env, \EBinop(\op, \veone, \vetwo) }$,
-whose configuration domain is \texttt{eval\_expr}, to an output configuration $\Normal((\vv, \vg), \newenv)$,
+whose configuration domain is \texttt{eval\_expr}, to an output configuration $\Normal((\vv, \vg), \newenv)$
 whose configuration domain is $\Normal$.
 %
-A rule uses the free variables appering in the input configuration of the conclusion
+A rule uses the free variables appearing in the input configuration of the conclusion
 ($\env$, $\op$, $\veone$, and $\vetwo$ in our example),
 with the goal of assigning values to the free variables in the output configuration
 of the conclusion ($\vv$, $\vg$, and $\newenv$, in our example).
@@ -539,9 +546,9 @@ which are components of the previously assigned variables $\vmone$ and $\vmtwo$.
 Specifically, they allow us to capture situations where
 transitions have two alternative output configurations.
 If the transition results in the first of the alternative output configurations, the following premises are considered.
-However, if the result is the second, ``short-circuit output configuration'', then the following premises are ignored
-and the conclusion transitions into the ``short-circuit output configuration''.
-These ``short-circuit output configurations'' are typically, but not always, due to (type or dynamic) errors.
+However, if the result is the second, short-circuit output configuration, then the following premises are ignored
+and the conclusion transitions into the short-circuit output configuration.
+These short-circuit output configurations are typically, but not always, due to (type or dynamic) errors.
 
 \newcommand\XP[0]{\mathit{XP}}
 \newcommand\XQ[0]{\mathit{XQ}}
@@ -550,7 +557,7 @@ These ``short-circuit output configurations'' are typically, but not always, due
 In the following, $\XP$ and $\XQ$ stand for, possibly empty, sequences of premises.
 %
 A rule macro includes the special premise form $C \rulearrow C' \terminateas E$,
-which introduces alternative output configurations $C'$ and ``short-circuit'' $E$:
+which introduces alternative output configurations $C'$ and short-circuit $E$:
 \begin{mathpar}
   \inferrule{
     \XP\\\\
@@ -580,10 +587,10 @@ Such a rule macro expands to the following pair of rules:
     V \rulearrow E
   }
 \end{mathpar}
-Intuitively, if $C$ transitions to $C'$ then `$\sslash E$' can be ignored
+Intuitively, if $C$ transitions to $C'$ then $\sslash E$ can be ignored
 and the rule is interpreted as usual (Option 1).
 However, if $C$ transitions into $E$ (Option 2) then the premises $\XQ$ are ignored,
-thereby ``short-circuiting'' the rule, and the input configuration
+thereby short-circuiting the rule, and the input configuration
 in the conclusion also transitions into $E$.
 
 We allow more than one premise to include short-circuiting alternatives and also
