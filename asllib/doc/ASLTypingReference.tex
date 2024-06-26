@@ -9521,7 +9521,7 @@ Our symbolic reduction and equivalence testing rules use \emph{symbolic expressi
   \hypertarget{def-polynomial}{}\hypertarget{def-sum}{}
   \begin{array}{rcl}
     % \symexpr    &::=& \polynomial                                     \hypertarget{def-polynomial}{}\hypertarget{def-sum}{}\\
-    \polynomial &\triangleq& \Sum(\monomial \partialto \Z)                  \hypertarget{def-monomial}{}\hypertarget{def-prod}{}\\
+    \polynomial &\triangleq& \Sum(\monomial \partialto \Q)                  \hypertarget{def-monomial}{}\hypertarget{def-prod}{}\\
     \monomial   &\triangleq& \Prod(\Identifiers \partialto \Npos)\\
   \end{array}
 \]
@@ -9531,7 +9531,7 @@ via the interpretation function $\alpha$.
 We also define operations over symbolic expressions.
 
 \begin{definition}[Monomial]
-\emph{Monomials} are partial functions from variables to positive integers.
+\emph{Monomials} are partial functions from variables to positive integer.
 %
 A non-empty monomial, $\Prod(\vm)\in\monomial$ where $\vm \neq \emptyfunc$, can be interpreted as follows:
 \[
@@ -9580,7 +9580,7 @@ For example,
 \]
 
 \begin{definition}[Polynomial]
-  \emph{Polynomials} are partial functions from monomials to integers.
+  \emph{Polynomials} are partial functions from monomials to rationals.
   Intuitively, each monomial is mapped to its factor.
   A polynomial $\Sum(\vp)$ can be interpreted as follows:
   %
@@ -9593,9 +9593,9 @@ For example,
   \Sum\left(\left\{
     \begin{array}{lcl}
       \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}) &\mapsto& -1,\\
-      \Prod(\{\vx\mapsto 2, \vy\mapsto 1\}) &\mapsto& 3
+      \Prod(\{\vx\mapsto 2, \vy\mapsto 1\}) &\mapsto& \frac{3}{4}
     \end{array} \right\}\right) =
-    -1\cdot x^3 \cdot y \cdot z^2 + 3 \cdot \vx^2\cdot \vy \enspace.
+    -1\cdot x^3 \cdot y \cdot z^2 + \frac{3}{4} \cdot \vx^2\cdot \vy \enspace.
 \]
 
 The function
@@ -9806,6 +9806,22 @@ One of the following applies:
     \item $\vp$ is the symbolic expression multiplying $\irone$ and $\irtwo$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{ebinop\_div\_non\_int\_denominator}):
+  \begin{itemize}
+    \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
+    \item $\vetwo$ is not an integer literal expression;
+    \item $\vp$ is $\bot$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_div\_int\_denominator}):
+  \begin{itemize}
+    \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
+    \item $\vetwo$ is an integer literal expression for $\vitwo$;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$ \ProseOrTypeErrorOrBot;
+    \item $\vftwo$ is $\frac{1}{\vitwo}$;
+    \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $\vftwo$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{ebinop\_shl\_non\_lint\_exponent}):
   \begin{itemize}
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
@@ -9825,9 +9841,10 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
     \item $\vetwo$ is an integer literal expression for $\vitwo$;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$ \ProseOrTypeErrorOrBot;
     \item $\vitwo$ is non-negative;
-    \item $k$ is $2^{\vitwo}$;
-    \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $k$.
+    \item $\vftwo$ is $2^{\vitwo}$;
+    \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $\vftwo$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_other\_non\_literals}):
@@ -9840,7 +9857,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{ebinop\_other\_literals\_non\_int\_result}):
   \begin{itemize}
-    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
+    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, $\DIV$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
     \item $\veone$ is a literal expression for literal $\vlone$;
     \item $\vetwo$ is a literal expression for literal $\vltwo$;
@@ -9952,6 +9969,23 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[ebinop\_div\_non\_int\_denominator]{
+  \vetwo \neq \ELiteral(\lint(\Ignore))
+}{
+  \toircase(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \bot
+}
+\and
+\inferrule[ebinop\_div\_int\_denominator]{
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \bot\\\\
+  \vftwo \eqdef \frac{1}{\vitwo}\\
+  \irone \eqname \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
+  \vp \eqdef \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
+}{
+  \toircase(\tenv, \overname{\EBinop(\DIV, \veone, \overname{\ELiteral(\lint(\vitwo))}{\vetwo})}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[ebinop\_shl\_non\_lint\_exponent]{
     \vetwo \neq \ELiteral(\lint(\Ignore))
 }{
@@ -9969,9 +10003,9 @@ One of the following applies:
   \inferrule[ebinop\_shl\_okay]{
     \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \bot\\\\
     \vitwo \geq 0\\
-    k \eqdef 2^{\vitwo}\\
+    \vftwo \eqdef 2^{\vitwo}\\
     \irone \eqname \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
-    \vp \eqdef \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi \times k]\\
+    \vp \eqdef \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
 }{
   \toircase(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \vp
 }
@@ -9979,7 +10013,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[ebinop\_other\_non\_literals]{
-  \op \not\in \{\PLUS, \MINUS, \MUL, \SHL\}\\
+  \op \not\in \{\PLUS, \MINUS, \MUL, \DIV, \SHL\}\\
   (\veone \neq \ELiteral(\Ignore) \lor \vetwo \neq \ELiteral(\Ignore))
 }{
   \toircase(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \bot
@@ -10169,7 +10203,7 @@ One of the following applies:
     \item $\vetwo$ is a call expression with subprogram name $\nametwo$ and list of arguments $vargstwo$,
           that is, $\ECall(\nametwo, \vargstwo, \Ignore)$;
     \item checking whether $\nameone$ is equal to $\nametwo$ either yields $\True$ or $\False$, which short-circuits the entire evaluation;
-    \item checking whether the lists of arguments $vargsone$ and $vargstwo$ have the same lengths yields
+    \item checking whether the lists of arguments $\vargsone$ and $\vargstwo$ have the same lengths yields
           $\True$ or $\False$, which short-circuits the entire evaluation;
     \item for each index $i$ in the list of indices for $\vargsone$, testing whether $\vargsone[i]$ is equivalent to $\vargstwo[i]$
           in $\tenv$ yields $\vb_i$ \ProseOrTypeError;
@@ -10180,7 +10214,7 @@ One of the following applies:
   \begin{itemize}
     \item $\veone$ is a concatenation expression with $\vlone$, that is, $\EConcat(\vlone)$;
     \item $\vetwo$ is a concatenation expression with $\vltwo$, that is, $\EConcat(\vltwo)$;
-    \item checking whether the lists of expressions $vlone$ and $vltwo$ have the same lengths yields
+    \item checking whether the lists of expressions $\vlone$ and $\vltwo$ have the same lengths yields
           $\True$ or $\False$, which short-circuits the entire evaluation;
     \item for each index $i$ in the list of indices for $\vlone$, testing whether $\vlone[i]$ is equivalent to $\vltwo[i]$
           in $\tenv$ yields $\vb_i$ \ProseOrTypeError;
