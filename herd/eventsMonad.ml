@@ -1664,15 +1664,22 @@ Monad type:
     (* Operations, no events generated, only equations *)
     (***************************************************)
 
+    let delay_op mk_c =
+      let v = V.fresh_var () in
+      make_one_monad v [VC.Assign (v, mk_c ())] E.empty_event_structure
+
     let any_op mk_v mk_c =
       try
         let v = mk_v () in
         make_one_monad v [] E.empty_event_structure
       with
-      | V.Undetermined
-        ->
-         let v = V.fresh_var () in
-         make_one_monad v [VC.Assign (v, mk_c ())] E.empty_event_structure
+      | V.Undetermined ->
+         (* Not ready yet add equation *)
+         delay_op mk_c
+      | exn ->
+         if C.debug.Debug_herd.exc then raise exn
+         (* Delay failure *)
+         else delay_op mk_c
 
     let op1 op v1 =
       any_op
