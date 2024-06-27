@@ -607,7 +607,9 @@ let get_failed cns =
              | _,_ -> sol,Assign (v,e)::eqs
            with
            | Contradiction|Misc.Timeout as exn -> raise exn
-           | exn -> (sol,Failed exn::eqs)
+           | exn ->
+              if C.debug.Debug_herd.exc then raise exn ;
+              (sol,Failed exn::eqs)
          end
 
     let topo_step cs (sol,eqs) =
