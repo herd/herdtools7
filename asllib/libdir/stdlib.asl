@@ -204,52 +204,83 @@ end
 // The shift functions LSL_C, LSR_C, ASR_C and ROR_C accept a non-zero positive shift amount.
 
 // Logical left shift
-func LSL{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+func LSL{N}(x: bits(N), shift: integer) => bits(N)
 begin
-    return [x[N-shift-1:0], Zeros(shift)];
+  assert shift >= 0;
+  if shift < N then
+    let bshift = shift as integer{0..N-1};
+    return [x[(N-bshift)-1:0], Zeros(bshift)];
+  else
+    return Zeros(N);
+  end
 end
 
 // Logical left shift with carry out.
-func LSL_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+func LSL_C{N}(x:: bits(N), shift:: integer) => (bits(N), bit)
 begin
-    return (LSL(x, shift as integer {0..N-1}), x[N-shift]);
+  assert shift > 0;
+  if shift <= N then
+    return (LSL(x, shift), x[N-shift]);
+  else
+    return (Zeros(N), '0');
+  end
 end
 
 // Logical right shift, shifting zeroes into higher bits.
-func LSR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+func LSR{N}(x: bits(N), shift: integer) => bits(N)
 begin
-    return ZeroExtend(x[N-shift-1:shift], N);
+  assert shift >= 0;
+  if shift < N then
+    let bshift = shift as integer{0..N-1};
+    return ZeroExtend(x[N-1:bshift], N);
+  else
+    return Zeros(N);
+  end
 end
 
 // Logical right shift with carry out.
-func LSR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+func LSR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
-    return (LSR(x, shift as integer {0..N-1}), x[shift-1]);
+  assert shift > 0;
+  if shift <= N then
+    return (LSR(x, shift), x[shift-1]);
+  else
+    return (Zeros(N), '0');
+  end
 end
 
 // Arithmetic right shift, shifting sign bits into higher bits.
-func ASR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+func ASR{N}(x: bits(N), shift: integer) => bits(N)
 begin
-  let v = SignExtend(x, shift+N);
-  return v[(shift+N)-1:shift];
+  assert shift >= 0;
+  let bshift = Min(shift, N-1) as integer{0..N-1};
+  return SignExtend(x[N-1:bshift], N);
 end
 
 // Arithmetic right shift with carry out.
-func ASR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+func ASR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
-    return (ASR(x, shift as integer {0..N-1}), x[shift-1]);
+  assert shift > 0;
+  return (ASR(x, shift), x[Min(shift-1, N-1)]);
 end
 
 // Rotate right.
-func ROR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+// This function shifts by [shift] bits to the right, the bits deleted are
+// reinserted on the left. This makes it operate effectively modulo N.
+func ROR{N}(x: bits(N), shift: integer) => bits(N)
 begin
-    return [x[0+:shift], x[N-1:shift]];
+  assert shift >= 0;
+  let cshift = (shift MOD N) as integer{0..N-1};
+  return [x[0+:cshift], x[N-1:cshift]];
 end
 
 // Rotate right with carry out.
-func ROR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+// As ROR, the function effectively operates modulo N.
+func ROR_C{N}(x:: bits(N), shift:: integer) => (bits(N), bit)
 begin
-    return (ROR(x, shift as integer {0..N-1}), x[shift-1]);
+  assert shift > 0;
+  let cpos = (shift-1) MOD N;
+  return (ROR(x, shift), x[cpos]);
 end
 
 // Unreachable

@@ -195,8 +195,15 @@ UnderConstrained integers:
   ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-1.
   [1]
 
+  $ aslref bad-slices.asl
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-23.
+  [1]
+
+  $ aslref bad-shift.asl
+  '00000'
+
   $ aslref unreachable.asl
-  File ASL Standard Library, line 258, characters 9 to 14:
+  File ASL Standard Library, line 289, characters 9 to 14:
   ASL Execution error: Assertion failed: FALSE
   [1]
 

@@ -148,17 +148,26 @@ module NativeBackend = struct
   let v_exception li = v_record li
   let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
 
+  let bad_index i n =
+    let range = Constraint_Range (expr_of_int 0, expr_of_int (n - 1)) in
+    mismatch_type (v_of_int i) [ T_Int (WellConstrained [ range ]) ]
+
   let doesnt_have_fields_exception v =
     mismatch_type v [ T_Record []; T_Exception [] ]
 
   let get_index i vec =
     match vec with
-    | NV_Vector li -> List.nth li i |> return
+    | NV_Vector li ->
+        let n = List.length li in
+        if i >= n then bad_index i n else List.nth li i |> return
     | v -> non_tuple_exception v
 
   let set_index i v vec =
     match vec with
-    | NV_Vector li -> list_update i (Fun.const v) li |> v_tuple
+    | NV_Vector li ->
+        let n = List.length li in
+        if i >= n then bad_index i n
+        else list_update i (Fun.const v) li |> v_tuple
     | v -> non_tuple_exception v
 
   let get_field name record =
@@ -260,10 +269,15 @@ module NativeBackend = struct
     | T_Array (length, t) ->
         let n =
           match length with
-          | ArrayLength_Enum (_, i) -> i
+          | ArrayLength_Enum (_, i) ->
+              assert (i >= 0);
+              i
           | ArrayLength_Expr e -> (
               match eval_expr_sef e with
-              | NV_Literal (L_Int n) -> Z.to_int n
+              | NV_Literal (L_Int n) ->
+                  let n = Z.to_int n in
+                  if n >= 0 then n
+                  else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e)))
               | _ -> (* Bad types *) assert false)
         in
         NV_Vector (List.init n (fun _ -> unknown_of_type t))
