@@ -239,6 +239,11 @@ UnderConstrained integers:
 
   $ aslref record-getfields.asl
 
+  $ aslref integer-accessed-bitvector.asl
+  File integer-accessed-bitvector.asl, line 4, characters 2 to 3:
+  ASL Typing error: a subtype of bits(-) was expected, provided integer.
+  [1]
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]
@@ -325,6 +330,11 @@ Required tests:
   $ aslref subtypes-with.asl
   $ aslref tuples.asl
   $ aslref --no-type-check -0 typing-assign-v0.asl
+
+  $ aslref undeclared-variable.asl
+  File undeclared-variable.asl, line 3, characters 2 to 5:
+  ASL Error: Undefined identifier: 'bar'
+  [1]
 
 Base values
   $ aslref base_values.asl
