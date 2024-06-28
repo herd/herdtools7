@@ -12,8 +12,6 @@ H Examples
   $ aslref --no-exec HExample7.asl
   $ aslref --no-exec HExample8.asl
   $ aslref --no-exec HExample9.asl
-  ASL Typing error: a pure expression was expected, found length
-  [1]
   $ aslref --no-exec HExample10.asl
   $ aslref --no-exec HExample11.asl
   $ aslref --no-exec HExample12.asl
@@ -253,6 +251,10 @@ Bit slice expressions
 
 C Tests
   $ aslref --no-exec CPositive1.asl
+  $ aslref --no-exec CPositive1-1.asl
+  File CPositive1-1.asl, line 5, characters 4 to 30:
+  ASL Typing error: a subtype of integer {0..N} was expected, provided integer.
+  [1]
   $ aslref --no-exec CPositive2.asl
   $ aslref --no-exec CPositive3.asl
   File CPositive3.asl, line 5, characters 4 to 31:
