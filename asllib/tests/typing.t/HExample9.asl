@@ -30,7 +30,7 @@ end
 
 func rolling1{N}(x : bits(N), shift : integer) => bits(N)
 begin
-    var length = shift as integer{0..N};
+    let length = shift as integer{0..N};
     return Ones(length)[N-1:0];
 end
 
