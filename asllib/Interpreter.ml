@@ -1357,12 +1357,14 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = base_value env ty in
         let* i_length =
           match length with
-          | ArrayLength_Enum (_, i) -> return i
+          | ArrayLength_Enum (_, i) ->
+              assert (i >= 0);
+              return i
           | ArrayLength_Expr e -> (
               let* length = eval_expr_sef env e in
               match B.v_to_int length with
-              | None -> unsupported_expr e
-              | Some i -> return i)
+              | Some i when i >= 0 -> return i
+              | Some _ | None -> unsupported_expr e)
         in
         List.init i_length (Fun.const v) |> B.create_vector
 
