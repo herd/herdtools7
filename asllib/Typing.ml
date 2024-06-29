@@ -635,11 +635,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc env = function
     | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from loc
-    | ArrayLength_Expr e ->
-        let m = binop MINUS e !$1 |> reduce_expr env in
-        let c = Constraint_Range (!$0, m) in
-        T_Int (WellConstrained [ c ]) |> add_pos_from loc
-        |: TypingRule.TypeOfArrayLength
+    | ArrayLength_Expr e -> integer |: TypingRule.TypeOfArrayLength
   (* End *)
 
   (* Begin CheckBinop *)
