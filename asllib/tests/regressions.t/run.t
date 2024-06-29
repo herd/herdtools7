@@ -249,6 +249,10 @@ Arrays indexed by enumerations
   [0, 0, 0]
 
   $ aslref array-lca.asl
+  $ aslref array-index-error.asl
+  ASL Execution error: Mismatch type:
+    value 14 does not belong to type integer {0..4}.
+  [1]
 
 Parameters bugs:
   $ aslref bug1.asl

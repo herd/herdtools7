@@ -633,13 +633,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     res
 
   (* Begin TypeOfArrayLength *)
-  let type_of_array_length ~loc env = function
+  let type_of_array_length ~loc = function
     | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from loc
-    | ArrayLength_Expr e ->
-        let m = binop MINUS e !$1 |> reduce_expr env in
-        let c = Constraint_Range (!$0, m) in
-        T_Int (WellConstrained [ c ]) |> add_pos_from loc
-        |: TypingRule.TypeOfArrayLength
+    | ArrayLength_Expr _ -> integer |: TypingRule.TypeOfArrayLength
   (* End *)
 
   (* Begin CheckBinop *)
@@ -1561,7 +1557,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 match slices with
                 | [ Slice_Single e_index ] ->
                     let t_index', e_index' = annotate_expr env e_index in
-                    let wanted_t_index = type_of_array_length ~loc:e env size in
+                    let wanted_t_index = type_of_array_length ~loc:e size in
                     let+ () =
                       check_type_satisfies e env t_index' wanted_t_index
                     in
@@ -1795,7 +1791,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             match slices with
             | [ Slice_Single e_index ] ->
                 let t_index', e_index' = annotate_expr env e_index in
-                let wanted_t_index = type_of_array_length ~loc:le env size in
+                let wanted_t_index = type_of_array_length ~loc:le size in
                 let+ () =
                   check_type_satisfies le2 env t_index' wanted_t_index
                 in

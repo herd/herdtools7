@@ -33,9 +33,8 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
-  File SemanticsRule.EGetArrayTooSmall.asl, line 7, characters 8 to 19:
-  ASL Typing error: a subtype of integer {0..2} was expected,
-    provided integer {3}.
+  ASL Execution error: Mismatch type:
+    value 3 does not belong to type integer {0..2}.
   [1]
   $ aslref SemanticsRule.ERecord.asl
   $ aslref SemanticsRule.EConcat.asl
