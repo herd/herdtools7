@@ -82,8 +82,8 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
              constraint "+" and the explicit initialization of the 'stable_*' variables.
              The same applies to SVE instruction with P/M (merging predicate) *)
           | Vreg _ | SIMDreg _  | Zreg _ -> "+w"
-          | Preg _ | PMreg _ -> "=Upa"
-          | _ -> "=r"
+          | Preg _ | PMreg _ -> "=&Upa"
+          | _ -> "=&r"
         let comment = comment
 
 (* t1 is declared (or inferred) type, t2 is type from instruction *)
