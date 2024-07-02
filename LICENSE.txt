@@ -3,7 +3,7 @@ NOTE
 This license applies to all files in the distribution, except as stated
 below:
 
-* Files in directory asllib/ are copryright Arm Ltd and
+* Files in directory asllib/ are copyright Arm Ltd and
   are distributed under the terms of the BSD-3-Clause license.
 
 * Some OCaml source files have a joint copyright
