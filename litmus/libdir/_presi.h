@@ -99,6 +99,7 @@ typedef struct {
   int avail ;
   int n_exe ;
   int delay ;
+  int speedcheck ;
   int fix ;
 } opt_t ;
 

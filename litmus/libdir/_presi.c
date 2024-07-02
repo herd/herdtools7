@@ -174,6 +174,10 @@ static void usage_opt(char *prog,opt_t *d) {
   if (d->delay > 0) {
     fprintf(stderr,"  -tb <n> time base delay  (default %d)\n",d->delay) ;
   }
+  if (d->speedcheck >= 0) {
+      fprintf(stderr,"  +sc    stop as soon as possible%s\n", d->speedcheck ? " (default)" : "") ;
+      fprintf(stderr,"  -sc    run test completely%s\n", !d->speedcheck ? " (default)" : "") ;
+  }
   fprintf(stderr,"  +fix    do not shuffle threads\n");
   exit(2) ;
 }
@@ -221,6 +225,10 @@ char **parse_opt(int argc,char **argv,opt_t *d, opt_t *p) {
       if (p->delay < 1) p->delay = 1 ;
     } else if (strcmp(*argv,"+fix") == 0) {
       p->fix = 1 ;
+    } else if (strcmp(*argv,"+sc") == 0) {
+      p->speedcheck = 1;
+    } else if (strcmp(*argv,"-sc") == 0) {
+      p->speedcheck = 0;
     } else usage_opt(prog,d);
   }
 }

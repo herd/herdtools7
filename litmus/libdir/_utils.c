@@ -476,7 +476,7 @@ static void usage(char *prog, cmd_t *d) {
   }
   if (d->speedcheck >= 0) {
     log_error("  +sc     stop as soon as possible%s\n",d->speedcheck ? " (default)" : "") ;
-    log_error("  -sc     run test completly%s\n",!d->speedcheck ? " (default)" : "") ;
+    log_error("  -sc     run test completely%s\n",!d->speedcheck ? " (default)" : "") ;
   }
   if (!d->fix) {
     log_error("  +fix    fix thread launch order\n") ;
