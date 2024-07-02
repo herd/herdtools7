@@ -131,6 +131,16 @@ let do_op op c1 c2 =
       let* s = ASLScalar.try_write_slice positions s1 s2 in
       return_concrete s
 
+
+(* Lower bits of addres, identity *)
+let is_address_mask =
+  let rec check prev = function
+    | [] -> prev=0
+    | x::xs ->  prev-1=x && check x xs in
+  function
+  | [] -> false
+  | x::xs -> x >= 41 && check x xs
+
 let do_op1 op cst =
   match op with
   | GetIndex i ->
@@ -165,7 +175,7 @@ let do_op1 op cst =
           let* s' = ASLScalar.try_extract_slice s positions in
           return_concrete s'
       | Constant.Symbolic x ->
-          if Misc.list_eq ( = ) positions all_64_bits_positions then
+          if is_address_mask positions then
             Some (Constant.Symbolic x)
           else begin
           (* MSB of virtual address is assumed null.
