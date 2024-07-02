@@ -165,13 +165,7 @@ Bit vector widths defined by constrained integers
 
 Symbolic execution of bit vector widths expressions
   $ aslref --no-exec TPositive10.asl
-  File TPositive10.asl, line 10, characters 4 to 40:
-  ASL Typing error: a subtype of bits(N) was expected, provided bits(widthN).
-  [1]
   $ aslref --no-exec TPositive10-0.asl
-  File TPositive10-0.asl, line 10, characters 4 to 40:
-  ASL Typing error: a subtype of bits(N) was expected, provided bits(widthN).
-  [1]
   $ aslref --no-exec TNegative10.asl
   ASL Typing error: a pure expression was expected, found widthN
   [1]
@@ -182,7 +176,7 @@ Symbolic execution of bit vector widths expressions
   [1]
   $ aslref --no-exec TNegative10-1.asl
   File TNegative10-1.asl, line 28, characters 4 to 49:
-  ASL Typing error: a subtype of bits(tempC3A) was expected,
+  ASL Typing error: a subtype of bits(tempC1) was expected,
     provided bits(tempC3B).
   [1]
 
@@ -198,10 +192,6 @@ Complex symbolic execution of bit vector widths expressions
     provided integer {1..8}.
   [1]
   $ aslref --no-exec TPositive11-1.asl
-  File TPositive11-1.asl, line 20, characters 4 to 74:
-  ASL Typing error: a subtype of bits(tempE) was expected,
-    provided bits((width + sizeInt)).
-  [1]
 
 ATC's on bit vectors
   $ aslref --no-exec TPositive12.asl
@@ -220,9 +210,6 @@ Large constraint sets
 
 Named types for bit vector widths
   $ aslref --no-exec TPositive14.asl
-  File TPositive14.asl, line 7, characters 4 to 46:
-  ASL Typing error: a subtype of bits(w1) was expected, provided bits(tempA).
-  [1]
   $ aslref --no-exec TNegative14-0.asl
   File TNegative14-0.asl, line 6, characters 4 to 32:
   ASL Typing error: a subtype of NamedTypeB was expected, provided NamedTypeA.

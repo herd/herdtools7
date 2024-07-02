@@ -351,17 +351,19 @@ let rec to_ir env (e : expr) : ir_expr =
   | E_Var s -> (
       try StaticEnv.lookup_constants env s |> poly_of_val |> always
       with Not_found -> (
-        try
-          let ty = StaticEnv.type_of env s in
-          let ty1 = make_anonymous env ty in
+        try StaticEnv.lookup_immutable_expr env s |> to_ir env
+        with Not_found | NotYetImplemented -> (
+          let t =
+            try StaticEnv.type_of env s
+            with Not_found -> Error.fatal_from e (UndefinedIdentifier s)
+          in
+          let ty1 = make_anonymous env t in
           match ty1.desc with
           | T_Int (WellConstrained [ Constraint_Exact e ]) -> to_ir env e
           | T_Int _ -> poly_of_var s |> always
           | _ ->
               Error.fatal_unknown_pos
-                (Error.ConflictingTypes ([ integer' ], ty1))
-        with Not_found ->
-          Error.fatal_unknown_pos (Error.UndefinedIdentifier s)))
+                (Error.ConflictingTypes ([ integer' ], ty1)))))
   | E_Binop (PLUS, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       cross_num ir1 ir2 add_polys
@@ -760,3 +762,6 @@ let statically_free_variables env e =
 
 let bitwidth_statically_equal_in_env env =
   ASTUtils.bitwidth_equal (equal_in_env env)
+
+let try_normalize env e =
+  try normalize env e with Error.ASLException _ | NotYetImplemented -> e

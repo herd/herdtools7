@@ -35,6 +35,7 @@ type global = {
 type local = {
   constant_values : literal IMap.t;
   storage_types : (ty * local_decl_keyword) IMap.t;
+  expr_equiv : expr IMap.t;
   return_type : ty option;
 }
 
@@ -58,15 +59,15 @@ module PPEnv = struct
       (PP.pp_print_seq ~pp_sep pp_print_string)
       (ISet.to_seq s)
 
-  let pp_local f { constant_values; storage_types; return_type } =
+  let pp_local f { constant_values; storage_types; return_type; expr_equiv } =
     fprintf f
       "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
-       @[return type:@ %a@]@]"
+       @[return type:@ %a@]@ - @[expr equiv:@ %a@]@]"
       (pp_map PP.pp_literal) constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
       (pp_print_option ~none:(fun f () -> fprintf f "none") PP.pp_ty)
-      return_type
+      return_type (pp_map PP.pp_expr) expr_equiv
 
   let pp_subprogram f func_sig =
     fprintf f "@[<hov 2>%a@ -> %a@]"
@@ -116,6 +117,7 @@ let empty_local =
     constant_values = IMap.empty;
     storage_types = IMap.empty;
     return_type = None;
+    expr_equiv = IMap.empty;
   }
 
 let empty_local_return_type return_type = { empty_local with return_type }
@@ -130,14 +132,19 @@ let lookup_constants env x =
   try IMap.find x env.local.constant_values
   with Not_found -> IMap.find x env.global.constant_values
 
+let lookup_constants_opt env x =
+  try Some (lookup_constants env x) with Not_found -> None
+
 (** [type_of env "x"] is the type of ["x"] in the environment [env]. *)
 let type_of env x =
   try IMap.find x env.local.storage_types |> fst
   with Not_found -> IMap.find x env.global.storage_types |> fst
 
-let type_of_opt env x =
-  try IMap.find x env.local.storage_types |> fst |> Option.some
-  with Not_found -> IMap.find_opt x env.global.storage_types |> Option.map fst
+let type_of_opt env x = try Some (type_of env x) with Not_found -> None
+let lookup_immutable_expr env x = IMap.find x env.local.expr_equiv
+
+let lookup_immutable_expr_opt env x =
+  try Some (lookup_immutable_expr env x) with Not_found -> None
 
 let mem_constants env x =
   IMap.mem x env.global.constant_values || IMap.mem x env.local.constant_values
@@ -216,6 +223,15 @@ let add_local x ty ldk env =
         env.local with
         storage_types = IMap.add x (ty, ldk) env.local.storage_types;
       };
+  }
+
+let add_local_immutable_expr x e env =
+  let () =
+    if false then Format.eprintf "Adding to env %S <- %a@." x PP.pp_expr e
+  in
+  {
+    env with
+    local = { env.local with expr_equiv = IMap.add x e env.local.expr_equiv };
   }
 
 let add_subtype s t env =

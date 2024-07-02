@@ -45,6 +45,8 @@ type local = {
   constant_values : literal IMap.t;  (** Maps a local constant to its value. *)
   storage_types : (ty * local_decl_keyword) IMap.t;
       (** Maps an locally declared names to their type. *)
+  expr_equiv : expr IMap.t;
+      (** Maps immutable storage to their oldest equivalent expression. *)
   return_type : ty option;
       (** Local return type, [None] for procedures, global constants, or setters. *)
 }
@@ -60,8 +62,11 @@ val empty_local : local
 val empty_local_return_type : ty option -> local
 val empty : env
 val lookup_constants : env -> identifier -> literal
+val lookup_constants_opt : env -> identifier -> literal option
 val type_of : env -> identifier -> ty
 val type_of_opt : env -> identifier -> ty option
+val lookup_immutable_expr : env -> identifier -> expr
+val lookup_immutable_expr_opt : env -> identifier -> expr option
 val mem_constants : env -> identifier -> bool
 val add_subprogram : identifier -> AST.func -> env -> env
 val set_renamings : identifier -> ISet.t -> env -> env
@@ -69,6 +74,11 @@ val add_global_storage : identifier -> ty -> global_decl_keyword -> env -> env
 val add_type : identifier -> ty -> env -> env
 val add_global_constant : identifier -> literal -> env -> env
 val add_local_constant : identifier -> literal -> env -> env
+
+val add_local_immutable_expr : identifier -> expr -> env -> env
+(** [add_local_immutable_expr x e env] binds [x] to [e] in [env], [e] is
+    supposed to be the oldest expression corresponding to [x].*)
+
 val add_local : identifier -> ty -> local_decl_keyword -> env -> env
 val add_subtype : identifier -> identifier -> env -> env
 val is_undefined : identifier -> env -> bool

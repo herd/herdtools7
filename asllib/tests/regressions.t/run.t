@@ -268,8 +268,8 @@ Parameters bugs:
   [1]
   $ aslref bug4.asl
   File bug4.asl, line 5, characters 11 to 31:
-  ASL Typing error: Illegal application of operator OR on types bits(a)
-    and bits(b)
+  ASL Typing error: Illegal application of operator OR on types bits(3)
+    and bits(4)
   [1]
   $ aslref arg-as-param-call.asl
   File arg-as-param-call.asl, line 8, characters 4 to 21:

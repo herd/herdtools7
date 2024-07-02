@@ -38,10 +38,6 @@ let expr_of_z z = literal (L_Int z)
 let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
-let reduce_expr env e =
-  let open StaticModel in
-  try normalize env e with NotYetImplemented -> e
-
 let reduce_constants env e =
   let open StaticInterpreter in
   let open StaticModel in
@@ -57,13 +53,14 @@ let reduce_constants env e =
            %a@]@."
           PP.pp_expr e PP.pp_pos e
     in
-    try reduce_expr env e |> eval_expr env
+    try StaticModel.try_normalize env e |> eval_expr env
     with StaticEvaluationUnknown -> unsupported_expr e)
 
 let reduce_constraint env = function
-  | Constraint_Exact e -> Constraint_Exact (reduce_expr env e)
+  | Constraint_Exact e -> Constraint_Exact (StaticModel.try_normalize env e)
   | Constraint_Range (e1, e2) ->
-      Constraint_Range (reduce_expr env e1, reduce_expr env e2)
+      Constraint_Range
+        (StaticModel.try_normalize env e1, StaticModel.try_normalize env e2)
 
 let reduce_constraints env = function
   | (UnConstrained | UnderConstrained _) as c -> c
@@ -80,13 +77,15 @@ let slices_width env =
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
     | Slice_Range (e1, e2) -> plus one (minus e1 e2)
   in
-  fun li -> List.map slice_length li |> sum |> reduce_expr env
+  fun li -> List.map slice_length li |> sum |> StaticModel.try_normalize env
 
-let width_plus env acc w = plus acc w |> reduce_expr env
+let width_plus env acc w = plus acc w |> StaticModel.try_normalize env
 
 let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     =
-  let subst_expr env eqs e = subst_expr eqs e |> reduce_expr env in
+  let subst_expr env eqs e =
+    subst_expr eqs e |> StaticModel.try_normalize env
+  in
   let subst_constraint env eqs = function
     | Constraint_Exact e -> Constraint_Exact (subst_expr env eqs e)
     | Constraint_Range (e1, e2) ->
@@ -121,7 +120,7 @@ exception ConstraintMinMaxTop
 
 let min_constraint env = function
   | Constraint_Exact e | Constraint_Range (e, _) -> (
-      let e = reduce_expr env e in
+      let e = StaticModel.try_normalize env e in
       match e.desc with
       | E_Literal (L_Int i) -> i
       | _ ->
@@ -134,7 +133,7 @@ let min_constraint env = function
 
 let max_constraint env = function
   | Constraint_Exact e | Constraint_Range (_, e) -> (
-      let e = reduce_expr env e in
+      let e = StaticModel.try_normalize env e in
       match e.desc with
       | E_Literal (L_Int i) -> i
       | _ ->
@@ -559,7 +558,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (* End *)
 
   (* Begin StorageIsPure *)
-  let storage_is_pure loc (env : env) s =
+  let storage_is_pure ~loc (env : env) s =
     (* Definition DDYW:
        Any expression consisting solely of an immutable storage element or a
        literal value is a statically evaluable expression.
@@ -571,14 +570,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         match IMap.find_opt s env.global.storage_types with
         | Some (_, (GDK_Constant | GDK_Config | GDK_Let)) -> true
         | Some (_, GDK_Var) -> false
-        | None -> undefined_identifier loc s)
+        | None ->
+            if
+              IMap.mem s env.global.subprograms
+              || IMap.mem s env.global.declared_types
+            then false
+            else undefined_identifier loc s)
   (* End *)
 
   (* Begin CheckStaticallyEvaluable *)
+  let is_statically_evaluable ~loc env e =
+    let use_set = use_e e ISet.empty in
+    ISet.for_all (storage_is_pure ~loc env) use_set
+
   let check_statically_evaluable (env : env) e () =
-    let e1 = reduce_expr env e in
-    let use_set = use_e e1 ISet.empty in
-    if ISet.for_all (storage_is_pure e1 env) use_set then ()
+    let e1 = StaticModel.try_normalize env e in
+    if is_statically_evaluable ~loc:e env e1 then ()
     else fatal_from e1 (Error.UnpureExpression e1)
   (* End *)
 
@@ -989,14 +996,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let t, e' = annotate_expr env e in
     let+ () = check_structure_integer loc env t in
     let+ () = check_statically_evaluable env e' in
-    reduce_expr env e'
+    StaticModel.try_normalize env e'
 
   (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
     let t, e' = annotate_expr env e in
     let+ () = check_constrained_integer ~loc env t in
     let+ () = check_statically_evaluable env e' in
-    reduce_expr env e'
+    StaticModel.try_normalize env e'
   (* End *)
 
   and annotate_constraint ~loc env = function
@@ -1776,7 +1783,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let le2 = annotate_lexpr env le1 t_le1 in
             let+ () =
              fun () ->
-              let width = slices_width env slices |> reduce_expr env in
+              let width =
+                slices_width env slices |> StaticModel.try_normalize env
+              in
               let t = T_Bits (width, []) |> here in
               check_type_satisfies le env t_e t ()
             in
@@ -1927,7 +1936,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let check_can_be_initialized_with loc env s t () =
     if can_be_initialized_with env s t then () else conflict loc [ s.desc ] t
 
-  let rec annotate_local_decl_item loc (env : env) ty ldk ldi =
+  let add_immutable_expressions ~loc env ldk e_opt x =
+    match (ldk, e_opt) with
+    | (LDK_Constant | LDK_Let), Some e when is_statically_evaluable ~loc env e
+      ->
+        let e' = StaticModel.try_normalize env e in
+        add_local_immutable_expr x e' env
+    | _ -> env
+
+  let rec annotate_local_decl_item loc (env : env) ty ldk ?e ldi =
+    let () =
+      if false then Format.eprintf "Annotating %a.@." PP.pp_local_decl_item ldi
+    in
     match ldi with
     (* Begin LDDiscard *)
     | LDI_Discard -> (env, ldi) |: TypingRule.LDDiscard
@@ -1936,7 +1956,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LDI_Typed (ldi', t) ->
         let t' = annotate_type ~loc env t in
         let+ () = check_can_be_initialized_with loc env t' ty in
-        let new_env, new_ldi' = annotate_local_decl_item loc env t' ldk ldi' in
+        let new_env, new_ldi' =
+          annotate_local_decl_item loc env t' ldk ?e ldi'
+        in
         (new_env, LDI_Typed (new_ldi', t')) |: TypingRule.LDTyped
     (* End *)
     (* Begin LDVar *)
@@ -1944,7 +1966,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Rule LCFD: A local declaration shall not declare an identifier
            which is already in scope at the point of declaration. *)
         let+ () = check_var_not_in_env loc env x in
-        let new_env = add_local x ty ldk env in
+        let env2 = add_local x ty ldk env in
+        let new_env = add_immutable_expressions ~loc env2 ldk e x in
         (new_env, LDI_Var x) |: TypingRule.LDVar
     (* End *)
     (* Begin LDTuple *)
@@ -1983,7 +2006,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         (new_env, LDI_Typed (new_ldi', t')) |: TypingRule.LDUninitialisedTyped
 
-  let declare_local_constant loc env t_e v ldi =
+  let declare_local_constant env v ldi =
     let rec add_constants env ldi =
       match ldi with
       | LDI_Discard -> env
@@ -1991,8 +2014,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | LDI_Tuple ldis -> List.fold_left add_constants env ldis
       | LDI_Typed (ldi, _ty) -> add_constants env ldi
     in
-    let env, ldi = annotate_local_decl_item loc env t_e LDK_Constant ldi in
-    (add_constants env ldi, ldi)
+    add_constants env ldi
 
   let rec annotate_stmt env s =
     let () =
@@ -2192,13 +2214,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Begin SDeclSome *)
         | _, Some e ->
             let t_e, e' = annotate_expr env e in
-            let env', ldi' =
-              if ldk = LDK_Constant then
-                let v = reduce_constants env e in
-                declare_local_constant loc env t_e v ldi
-              else annotate_local_decl_item loc env t_e ldk ldi
+            let env1, ldi1 =
+              annotate_local_decl_item loc env t_e ldk ~e:e' ldi
             in
-            (S_Decl (ldk, ldi', Some e') |> here, env') |: TypingRule.SDeclSome
+            let env2 =
+              if ldk = LDK_Constant then
+                try
+                  let v = reduce_constants env e in
+                  declare_local_constant env1 v ldi
+                with Error.(ASLException { desc = _; _ }) -> env1
+              else env1
+            in
+            (S_Decl (ldk, ldi1, Some e') |> here, env2) |: TypingRule.SDeclSome
         (* End *)
         (* Begin SDeclNone *)
         | LDK_Var, None ->
