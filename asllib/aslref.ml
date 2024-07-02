@@ -22,17 +22,20 @@
 
 open Asllib
 
+type file_type = NormalV1 | NormalV0 | PatchV1 | PatchV0
+
 type args = {
   exec : bool;
-  files : string list;
+  files : (file_type * string) list;
   opn : string option;
   print_ast : bool;
   print_serialized : bool;
   print_typed : bool;
   show_rules : bool;
-  version : [ `ASLv0 | `ASLv1 ];
   strictness : Typing.strictness;
 }
+
+let push thing ref = ref := thing :: !ref
 
 let parse_args () =
   let show_rules = ref false in
@@ -41,13 +44,11 @@ let parse_args () =
   let print_ast = ref false in
   let print_serialized = ref false in
   let print_typed = ref false in
-  let asl_version = ref `ASLv1 in
-  let set_v0 () = asl_version := `ASLv0 in
-  let set_v1 () = asl_version := `ASLv1 in
   let opn = ref "" in
-  let strictness = ref None in
-  let set_strictness s () = strictness := Some s in
+  let strictness : Typing.strictness ref = ref `TypeCheck in
+  let set_strictness s () = strictness := s in
   let show_version = ref false in
+  let push_file file_type s = target_files := (file_type, s) :: !target_files in
 
   let speclist =
     [
@@ -62,8 +63,6 @@ let parse_args () =
       ( "--print-typed",
         Arg.Set print_typed,
         " Print the parsed AST after typing and before executing it." );
-      ("-0", Arg.Unit set_v0, " Use ASLv0 parser.");
-      ("-1", Arg.Unit set_v1, " Use ASLv1 parser. (default)");
       ( "--opn",
         Arg.Set_string opn,
         "OPN_FILE Parse the following opn file as main." );
@@ -82,12 +81,22 @@ let parse_args () =
       ( "--show-rules",
         Arg.Set show_rules,
         " Instrument the interpreter and log to std rules used." );
+      ( "--patch",
+        Arg.String (push_file PatchV1),
+        "Pass patches to the built AST." );
+      ( "--patch0",
+        Arg.String (push_file PatchV0),
+        "Pass patches to the built AST." );
+      ("-0", Arg.String (push_file NormalV0), "Use ASLv0 parser for this file.");
+      ( "-1",
+        Arg.String (push_file NormalV1),
+        "Use ASLv1 parser for this file. (default)" );
       ("--version", Arg.Set show_version, " Print version and exit.");
     ]
     |> Arg.align ?limit:None
   in
 
-  let anon_fun s = target_files := s :: !target_files in
+  let anon_fun = push_file NormalV1 in
   let prog =
     if Array.length Sys.argv > 0 then Filename.basename Sys.argv.(0)
     else "aslref"
@@ -99,13 +108,6 @@ let parse_args () =
   in
   let () = Arg.parse speclist anon_fun usage_msg in
 
-  let strictness =
-    match !strictness with
-    | Some s -> s
-    | None -> (
-        match !asl_version with `ASLv0 -> `Silence | `ASLv1 -> `TypeCheck)
-  in
-
   let args =
     {
       exec = !exec;
@@ -114,8 +116,7 @@ let parse_args () =
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
-      version = !asl_version;
-      strictness;
+      strictness = !strictness;
       show_rules = !show_rules;
     }
   in
@@ -128,7 +129,7 @@ let parse_args () =
         (* Arg.usage speclist usage_msg; *)
         exit 1
     in
-    List.iter ensure_exists args.files;
+    List.iter (fun (_, s) -> ensure_exists s) args.files;
     Option.iter ensure_exists args.opn
   in
 
@@ -140,13 +141,6 @@ let parse_args () =
       exit 0
   in
   args
-
-let unordered_flat_map f =
-  let rec aux acc = function
-    | [] -> acc
-    | x :: xs -> aux (List.rev_append (f x) acc) xs
-  in
-  aux []
 
 let or_exit f =
   match Error.intercept f () with
@@ -162,12 +156,22 @@ let () =
     match args.opn with
     | None -> []
     | Some fname ->
-        or_exit @@ fun () -> Builder.from_file ~ast_type:`Opn args.version fname
+        or_exit @@ fun () -> Builder.from_file ~ast_type:`Opn `ASLv1 fname
   in
 
   let ast =
-    or_exit @@ fun () ->
-    unordered_flat_map (Builder.from_file args.version) args.files
+    let folder (ft, fname) ast =
+      let version =
+        match ft with
+        | NormalV0 | PatchV0 -> `ASLv0
+        | NormalV1 | PatchV1 -> `ASLv1
+      in
+      let this_ast = Builder.from_file version fname in
+      match ft with
+      | NormalV0 | NormalV1 -> List.rev_append this_ast ast
+      | PatchV1 | PatchV0 -> ASTUtils.patch ~src:ast ~patches:this_ast
+    in
+    or_exit @@ fun () -> List.fold_right folder args.files []
   in
 
   let ast = List.rev_append extra_main ast in

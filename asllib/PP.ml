@@ -217,7 +217,7 @@ let rec pp_lexpr f le =
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
   | LE_SetArray (le, e) -> fprintf f "%a[%a]" pp_lexpr le pp_expr e
   | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
-  | LE_SetFields (le, li) ->
+  | LE_SetFields (le, li, _) ->
       fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le
         (pp_comma_list pp_print_string)
         li

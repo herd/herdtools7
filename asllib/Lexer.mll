@@ -43,7 +43,7 @@ let tr_name s = match s with
 | "catch"         -> CATCH
 | "config"        -> CONFIG
 | "constant"      -> CONSTANT
-| "debug"|"DEBUG" -> DEBUG
+| "__debug__"|"__DEBUG__" -> DEBUG
 | "DIV"           -> DIV
 | "DIVRM"         -> DIVRM
 | "do"            -> DO

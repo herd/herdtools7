@@ -218,7 +218,7 @@ let rec pp_lexpr =
     | LE_SetArray (le, e) ->
         bprintf f "LE_SetArray (%a, %a)" pp_lexpr le pp_expr e
     | LE_SetField (le, x) -> bprintf f "LE_SetField (%a, %S)" pp_lexpr le x
-    | LE_SetFields (le, x) ->
+    | LE_SetFields (le, x, _) ->
         bprintf f "LE_SetFields (%a, %a)" pp_lexpr le (pp_list pp_string) x
     | LE_Discard -> addb f "LE_Discard"
     | LE_Destructuring les ->

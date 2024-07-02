@@ -188,15 +188,22 @@ UnderConstrained integers:
   [1]
 
   $ aslref named-types-in-slices.asl
-  File named-types-in-slices.asl, line 13, characters 2 to 11: x -> '11111111'
+  File named-types-in-slices.asl, line 13, characters 2 to 15: x -> '11111111'
 
   $ aslref empty-slice.asl
   '000'
   ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-1.
   [1]
 
+  $ aslref bad-slices.asl
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-23.
+  [1]
+
+  $ aslref bad-shift.asl
+  '00000'
+
   $ aslref unreachable.asl
-  File ASL Standard Library, line 258, characters 9 to 14:
+  File ASL Standard Library, line 286, characters 9 to 14:
   ASL Execution error: Assertion failed: FALSE
   [1]
 
@@ -228,6 +235,13 @@ UnderConstrained integers:
   $ aslref rdiv_checks.asl
   File rdiv_checks.asl, line 3, characters 12 to 25:
   ASL Typing error: Illegal application of operator / on types real and string
+  [1]
+
+  $ aslref record-getfields.asl
+
+  $ aslref integer-accessed-bitvector.asl
+  File integer-accessed-bitvector.asl, line 4, characters 2 to 3:
+  ASL Typing error: a subtype of bits(-) was expected, provided integer.
   [1]
 
 Arrays indexed by enumerations
@@ -268,6 +282,7 @@ Parameters bugs:
     provided integer {2}.
   [1]
   $ aslref --no-exec defining_param.asl
+  $ aslref rename-returned-tuples.asl
 
 Required tests:
   $ aslref anonymous-types-example-success.asl
@@ -314,7 +329,12 @@ Required tests:
   $ aslref subtypes-example.asl
   $ aslref subtypes-with.asl
   $ aslref tuples.asl
-  $ aslref -0 typing-assign-v0.asl
+  $ aslref --no-type-check -0 typing-assign-v0.asl
+
+  $ aslref undeclared-variable.asl
+  File undeclared-variable.asl, line 3, characters 2 to 5:
+  ASL Error: Undefined identifier: 'bar'
+  [1]
 
 Base values
   $ aslref base_values.asl

@@ -95,6 +95,7 @@ let names_to_tokens = [
   ( "integer", INTEGER);
   ( "if", IF );
   ( "is", IS );
+  ( "let", LET );
   ( "of", OF );
   ( "otherwise", OTHERWISE );
   ( "real", REAL);
@@ -248,6 +249,7 @@ let string_of_token = function
   | DEDENT -> "DEDENT"
   | EOF -> "EOF"
   | EOL -> "EOL"
+  | LET -> "LET"
   | IDENTIFIER s -> s
 
 }
