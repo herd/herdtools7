@@ -1138,7 +1138,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
         let libfind = ASLConf.libfind
       end) in
-      Model.Generic (P.parse fname)
+      let fname,m = P.find_parse fname in
+      Model.Generic (fname,m)
 
     let is_strict = C.variant Variant.Strict
     let is_warn = C.variant Variant.Warn && not is_strict

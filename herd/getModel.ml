@@ -16,7 +16,7 @@
 
 let check_arch_model a m =
   match m with
-  | Model.Generic (o,_,_) ->
+  | Model.Generic (_,(o,_,_)) ->
       begin match o.ModelOption.arch with
       | None -> m
       | Some b ->
@@ -40,7 +40,8 @@ let parse archcheck arch libfind variant model =
             include LexUtils.Default
             let libfind = libfind
           end) in
-      Model.Generic (P.parse fname)
+      let fname,ast = P.find_parse fname in
+      Model.Generic (fname,ast)
   | _ -> m in
   if archcheck then check_arch_model arch m
   else m

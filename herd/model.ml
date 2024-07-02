@@ -24,7 +24,7 @@ type jade_opt = { jstrongst : bool;}
 type t =
   | File of string (* To convey model filename *)
   | CAV12 of cav12_opt
-  | Generic of AST.t
+  | Generic of string * AST.t (* filename X ast *)
 
 let tags =
   [
@@ -49,7 +49,7 @@ let pp = function
   | CAV12 {cord=true; strongst=false;} ->"cav12_lightst"
   | CAV12 {cord=false; strongst=false;} ->"cav12_nocord_lightst"
   | File fname -> fname
-  | Generic (opts,name,_) ->
+  | Generic (_,(opts,name,_)) ->
       sprintf "Generic%s(%s)"
         (ModelOption.pp opts) name
 

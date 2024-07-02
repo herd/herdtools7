@@ -17,6 +17,7 @@
 (** Check an event structure against a machine model *)
 
 module type Config = sig
+  val fname : string
   val m : AST.t
   val bell_model_info : (string * BellModel.info) option
 (* Include events from the same instance in po, essential for the LKMM *)
@@ -229,6 +230,11 @@ module Make
       let all_evts =  conc.S.str.E.events in
       let evts =
         choose_spec Misc.identity (E.EventSet.filter relevant) all_evts in
+      let () =
+        if O.debug then
+          Printf.eprintf
+            "Cat run, fname=%s, nevts=%d\n%!"
+            O.fname (E.EventSet.cardinal evts) in
       let mem_evts = lazy (E.EventSet.filter E.is_mem evts) in
       let po =
         choose_spec

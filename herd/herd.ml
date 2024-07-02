@@ -394,8 +394,8 @@ let model,model_opts = match !model with
 | Some (Model.File fname) ->
     let module P = ParseModel.Make(ParserConfig) in
     begin try
-      let (b,_,_) as r = P.parse fname in
-      Some (Model.Generic r),b
+      let (fname,((b,_,_) as r)) = P.find_parse fname in
+      Some (Model.Generic (fname,r)),b
     with
     | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
     | Misc.Exit ->
