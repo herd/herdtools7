@@ -14,6 +14,17 @@
  (modules Parser0)
  (flags --unused-tokens --table))
 
+(rule
+ (deps libdir/stdlib.asl)
+ (target asl_stdlib.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (echo "let stdlib = {|")
+    (cat %{deps})
+    (echo "|}")))))
+
 (library
  (name asllib)
  (modules
