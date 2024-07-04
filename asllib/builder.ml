@@ -36,6 +36,10 @@ let select_type ~opn ~ast = function
 
 let _ast_type_to_string = select_type ~opn:"Opn" ~ast:"Ast"
 
+let lexbuf_set_filename lexbuf pos_fname =
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname };
+  lexbuf.lex_start_p <- { lexbuf.lex_start_p with pos_fname }
+
 let from_lexbuf ast_type version (lexbuf : lexbuf) =
   let open Error in
   let () =
@@ -76,19 +80,12 @@ let close_after chan f =
 let open_file filename =
   let chan = open_in filename in
   let lexbuf = from_channel chan in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
+  lexbuf_set_filename lexbuf filename;
   (lexbuf, chan)
 
 let from_file ?ast_type version f =
   let lexbuf, chan = open_file f in
   close_after chan @@ from_lexbuf' ast_type version lexbuf
-
-let from_file_result_fname ?ast_type ~pos_fname version f =
-  let chan = open_in f in
-  let lexbuf = from_channel chan in
-  lexbuf.lex_start_p <- { lexbuf.lex_start_p with pos_fname };
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname };
-  close_after chan @@ Error.intercept @@ from_lexbuf' ast_type version lexbuf
 
 let from_file_result ?ast_type version f =
   let lexbuf, chan = open_file f in
@@ -112,66 +109,16 @@ let from_file_multi_version ?ast_type = function
         | Ok ast -> Ok ast)
   | (`ASLv0 | `ASLv1) as version -> from_file_result ?ast_type version
 
-let rec list_first_opt_opt f = function
-  | [] -> None
-  | None :: t -> list_first_opt_opt f t
-  | Some h :: t -> (
-      match f h with Some _ as x -> x | None -> list_first_opt_opt f t)
+let from_string ~filename ~ast_string version ast_type =
+  let lexbuf = Lexing.from_string ~with_positions:true ast_string in
+  lexbuf_set_filename lexbuf filename;
+  from_lexbuf ast_type version lexbuf
 
 let obfuscate = ASTUtils.rename_locals (( ^ ) "__stdlib_local_")
-let asl_libdir = Filename.concat Version.libdir "asllib"
-
-let stdlib_not_found_message =
-  {|Asllib cannot find stdlib.asl. If you have installed herdtools7, it should
-be at: |}
-  ^ asl_libdir
-  ^ {|
-herdtools7 builds are dependent on the installation path, please rebuild the
-whole herdtools7 toolsuite if you want to move the executables or their
-libraries. For example, if you want to move the installed files from
-$OLD_PREFIX to $NEW_PREFIX, you should run:
-  make uninstall PREFIX=$OLD_PREFIX
-  make build install PREFIX=$NEW_PREFIX
-|}
 
 let stdlib =
-  (* Share code with: lib/myLib ? *)
-  let ( / ) = Filename.concat in
-  let to_try =
-    [
-      Sys.getenv_opt "ASL_LIBDIR";
-      Some asl_libdir;
-      Some ("asllib" / "libdir");
-      Some "/jherd" (* For web interface *);
-      Sys.getenv_opt "DUNE_SOURCEROOT"
-      |> Option.map (fun p -> p / "asllib" / "libdir");
-    ]
-  in
-  let try_one dir_path =
-    let file_path = dir_path / "stdlib.asl" in
-    let pos_fname = if _debug then file_path else "ASL Standard Library" in
-    if Sys.file_exists file_path then
-      match
-        from_file_result_fname ~ast_type:`Ast `ASLv1 ~pos_fname file_path
-      with
-      | Ok ast ->
-          let () =
-            if _debug then Printf.eprintf "Selecting stdlib from %s.\n" dir_path
-          in
-          Some ast
-      | Error _ ->
-          let () =
-            if _debug then Printf.eprintf "Cannot parse %s.\n" file_path
-          in
-          None
-    else None
-  in
-  lazy
-    (match list_first_opt_opt try_one to_try with
-    | Some ast -> if false then ast else obfuscate ast
-    | None ->
-        let () = prerr_string stdlib_not_found_message in
-        exit 1)
+  let filename = "ASL Standard Library" and ast_string = Asl_stdlib.stdlib in
+  lazy (from_string ~filename ~ast_string `ASLv1 (Some `Ast) |> obfuscate)
 
 let with_stdlib ast = List.rev_append (Lazy.force stdlib) ast
 
