@@ -536,8 +536,7 @@ and structural_subtype_satisfies env t s =
      (each with the same type) as S.
      If S has the structure of a record type then T must have the
      structure of a record type with at least the same fields
-     (each with the same type) as S.
-     TODO: order of fields? *)
+     (each with the same type) as S. *)
   | T_Exception fields_s, T_Exception fields_t
   | T_Record fields_s, T_Record fields_t ->
       List.for_all

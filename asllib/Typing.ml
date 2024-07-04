@@ -791,8 +791,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             T_Bool |> with_loc
         | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> (
-            (* TODO: ensure that we mean "has the structure of" instead of
-               "is" *)
             let struct1 = Types.get_well_constrained_structure env t1
             and struct2 = Types.get_well_constrained_structure env t2 in
             match (struct1.desc, struct2.desc) with
@@ -801,7 +799,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    operator are integers and at least one of them is an
                    unconstrained integer then the result shall be an
                    unconstrained integer. *)
-                (* TODO: check that no other checks are necessary. *)
                 T_Int UnConstrained |> with_loc
             | T_Int (UnderConstrained _), _ | _, T_Int (UnderConstrained _) ->
                 assert false (* We used to_well_constrained before *)
@@ -1153,12 +1150,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | T_Bool, T_Bool | T_Real, T_Real | T_Int _, T_Int _ -> ()
           | T_Bits _, T_Bits _ ->
               check_bits_equal_width loc env t_struct t_e_struct ()
-          (* TODO: Multiple discriminants can be matched at once by
-             forming a tuple of discriminants and a tuple used in the
-             pattern_set.
-             Both tuples must have the same number of elements. A
-             successful pattern match occurs when each discriminant
-             term matches the respective term of the pattern tuple. *)
           | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
           | _ -> fatal_from loc (Error.BadTypesForBinop (EQ_OP, t, t_e))
         in
@@ -1183,9 +1174,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
-          both (* TODO: case where they are both real *)
-            (check_structure_integer loc env t)
-            (check_structure_integer loc env t_e)
+         fun () ->
+          let t_anon = Types.make_anonymous env t
+          and t_e_anon = Types.make_anonymous env t_e in
+          match (t_anon.desc, t_e_anon.desc) with
+          | T_Real, T_Real | T_Int _, T_Int _ -> ()
+          | _ -> fatal_from loc (Error.BadTypesForBinop (LEQ, t, t_e))
         in
         Pattern_Leq e' |: TypingRule.PLeq
     (* End *)
@@ -1195,10 +1189,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         and t_e2, e2' = annotate_expr env e2 in
         let+ () =
          fun () ->
-          let t_struct = Types.get_structure env t
-          and t_e1_struct = Types.get_structure env t_e1
-          and t_e2_struct = Types.get_structure env t_e2 in
-          match (t_struct.desc, t_e1_struct.desc, t_e2_struct.desc) with
+          let t_anon = Types.make_anonymous env t
+          and t_e1_anon = Types.make_anonymous env t_e1
+          and t_e2_anon = Types.make_anonymous env t_e2 in
+          match (t_anon.desc, t_e1_anon.desc, t_e2_anon.desc) with
           | T_Real, T_Real, T_Real | T_Int _, T_Int _, T_Int _ -> ()
           | _, T_Int _, T_Int _ | _, T_Real, T_Real ->
               fatal_from loc (Error.BadTypesForBinop (GEQ, t, t_e1))
@@ -1555,7 +1549,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let fields' =
           best_effort fields (fun _ ->
               (* Rule DYQZ: A record expression shall assign every field of the record. *)
-              (* TODO: Check that no field is assigned twice. *)
               let () =
                 if
                   List.for_all
@@ -1584,12 +1577,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                     | None -> fatal_from e (Error.BadField (name, ty))
                     | Some t_spec' -> t_spec'
                   in
-                  (* TODO:
-                     Rule LXQZ: A storage element of type S, where S is any
-                     type that does not have the structure of the
-                     under-constrained integer type, may only be assigned
-                     or initialized with a value of type T if T
-                     type-satisfies S. *)
                   let+ () = check_type_satisfies e env t' t_spec' in
                   (name, e''))
                 fields)
@@ -1819,7 +1806,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_Discard -> le |: TypingRule.LEDiscard
     (* End *)
     | LE_Var x ->
-        (* TODO: Handle setting global var *)
         let+ () =
          fun () ->
           let ty =
@@ -2009,7 +1995,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     *)
     let s_struct = Types.get_structure env s in
     match s_struct.desc with
-    | T_Int (UnderConstrained _) -> (* TODO *) assert false
+    | T_Int (UnderConstrained _) -> assert false
     | _ -> Types.type_satisfies env t s
 
   let check_can_be_initialized_with loc env s t () =
