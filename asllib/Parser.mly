@@ -407,22 +407,21 @@ let implicit_t_int == annotated ( ~=int_constraints ; <T_Int> )
   ------------------------------------------------------------------------- *)
 
 (* Left-hand-side expressions and helpers *)
-let le_var == ~=IDENTIFIER ; <LE_Var>
-let lexpr_ignore == { LE_Discard }
-
 let lexpr ==
-  annotated(
-    | MINUS; lexpr_ignore
-    | lexpr_atom
-    | ~=pared(nclist(lexpr)); <LE_Destructuring>
-  )
+  | lexpr_atom
+  | annotated (MINUS; { LE_Discard })
+  | annotated (
+      ~=pared(nclist(lexpr)); <LE_Destructuring>
+    )
 
-let lexpr_atom :=
-  | le_var
-  | le=annotated(lexpr_atom); ~=slices; <LE_Slice>
-  | le=annotated(lexpr_atom); DOT; field=IDENTIFIER; <LE_SetField>
-  | le=annotated(lexpr_atom); DOT; li=bracketed(clist(IDENTIFIER)); <LE_SetFields>
-  | les=bracketed(nclist(annotated(lexpr_atom))); { LE_Concat (les, None) }
+let lexpr_atom_desc :=
+  | ~=IDENTIFIER ; <LE_Var>
+  | le=lexpr_atom; ~=slices; <LE_Slice>
+  | le=lexpr_atom; DOT; field=IDENTIFIER; <LE_SetField>
+  | le=lexpr_atom; DOT; li=bracketed(clist(IDENTIFIER)); { LE_SetFields (le, li, []) }
+  | les=bracketed(nclist(lexpr_atom)); { LE_Concat (les, None) }
+
+let lexpr_atom == annotated(lexpr_atom_desc)
 
 (* Decl items are another kind of left-hand-side expressions, that appear only
    on declarations. They cannot have setter calls or set record fields, they

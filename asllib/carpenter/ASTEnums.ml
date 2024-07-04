@@ -264,7 +264,7 @@ module Make (C : Config.S) = struct
       let make_le_concat les = LE_Concat (les, None) in
       list1 lexprs |> map make_le_concat
     and le_fields =
-      let make_le_field (le, s) = LE_SetFields (le, s) in
+      let make_le_field (le, s) = LE_SetFields (le, s, []) in
       lexprs ** list2 names |> map make_le_field
     and le_field =
       let make_le_field (le, s) = LE_SetField (le, s) in

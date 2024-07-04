@@ -271,7 +271,7 @@ module Untyped (C : Config.S) = struct
     and le_set_fields lexpr n =
       let* n1, n2 = Nat.split2 n in
       let+ le = lexpr n1 and+ names = list_repeat n2 names in
-      LE_SetFields (le, names) |> annot
+      LE_SetFields (le, names, []) |> annot
     and le_destructuring lexpr n =
       let+ les = Nat.list_sized lexpr n in
       LE_Destructuring les |> annot

@@ -493,8 +493,16 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, new_env) |: SemanticsRule.EGetBitField
     (* End *)
     (* Begin EGetFields *)
-    | E_GetFields _ ->
-        fatal_from e Error.TypeInferenceNeeded |: SemanticsRule.EGetBitFields
+    | E_GetFields (e_record, field_names) ->
+        let** v_record, new_env = eval_expr env e_record in
+        let* v_list =
+          List.map
+            (fun field_name -> B.get_field field_name v_record)
+            field_names
+          |> sync_list
+        in
+        let* v = B.concat_bitvectors v_list in
+        return_normal (v, new_env)
     (* End *)
     (* Begin EConcat *)
     | E_Concat e_list ->
@@ -669,7 +677,22 @@ module Make (B : Backend.S) (C : Config) = struct
         let ms, _ = List.fold_right extract_one widths ([], 0) in
         multi_assign V1 env les ms
     (* End *)
-    | LE_Concat (_, None) | LE_SetFields _ ->
+    | LE_SetFields (le_record, fields, slices) ->
+        let () =
+          if List.compare_lengths fields slices != 0 then
+            fatal_from le Error.TypeInferenceNeeded
+        in
+        let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
+        let m2 =
+          List.fold_left2
+            (fun m1 field_name (i1, i2) ->
+              let slice = [ (B.v_of_int i1, B.v_of_int i2) ] in
+              let* v = m >>= B.read_from_bitvector slice and* rv_record = m1 in
+              B.set_field field_name v rv_record)
+            rm_record fields slices
+        in
+        eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetField
+    | LE_Concat (_, None) ->
         let* () =
           let* v = m in
           Format.eprintf "@[<2>Failing on @[%a@]@ <-@ %s@]@." PP.pp_lexpr le
@@ -1334,12 +1357,14 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = base_value env ty in
         let* i_length =
           match length with
-          | ArrayLength_Enum (_, i) -> return i
+          | ArrayLength_Enum (_, i) ->
+              assert (i >= 0);
+              return i
           | ArrayLength_Expr e -> (
               let* length = eval_expr_sef env e in
               match B.v_to_int length with
-              | None -> unsupported_expr e
-              | Some i -> return i)
+              | Some i when i >= 0 -> return i
+              | Some _ | None -> unsupported_expr e)
         in
         List.init i_length (Fun.const v) |> B.create_vector
 

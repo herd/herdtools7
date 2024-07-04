@@ -93,7 +93,7 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
         Constraint_Range (subst_expr env eqs e1, subst_expr env eqs e2)
   in
   let subst_constraints env eqs = List.map (subst_constraint env eqs) in
-  fun env eqs ty ->
+  let rec rename env eqs ty =
     match ty.desc with
     | T_Bits (e, fields) ->
         T_Bits (subst_expr env eqs e, fields) |> add_pos_from_st ty
@@ -103,7 +103,10 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     | T_Int (UnderConstrained (_uid, name)) ->
         let e = E_Var name |> add_pos_from ty |> subst_expr env eqs in
         T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from ty
+    | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> add_pos_from ty
     | _ -> ty
+  in
+  rename
 
 (* Begin Lit *)
 let annotate_literal = function
@@ -498,6 +501,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     try get_bitvector_width' env t
     with TypingAssumptionFailed -> conflict loc [ default_t_bits ] t
 
+  let get_bitvector_const_width loc env t =
+    let e_width = get_bitvector_width loc env t in
+    match reduce_constants env e_width with
+    | L_Int z -> Z.to_int z
+    | _ -> assert false
+
   (** [check_type_satisfies t1 t2] if [t1 <: t2]. *)
   let check_type_satisfies loc env t1 t2 () =
     let () =
@@ -624,13 +633,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     res
 
   (* Begin TypeOfArrayLength *)
-  let type_of_array_length ~loc env = function
+  let type_of_array_length ~loc = function
     | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from loc
-    | ArrayLength_Expr e ->
-        let m = binop MINUS e !$1 |> reduce_expr env in
-        let c = Constraint_Range (!$0, m) in
-        T_Int (WellConstrained [ c ]) |> add_pos_from loc
-        |: TypingRule.TypeOfArrayLength
+    | ArrayLength_Expr _ -> integer |: TypingRule.TypeOfArrayLength
   (* End *)
 
   (* Begin CheckBinop *)
@@ -1068,8 +1073,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e, e' = annotate_expr env e in
         let+ () =
          fun () ->
-          let t_struct = Types.get_structure env t
-          and t_e_struct = Types.get_structure env t_e in
+          let t_struct = Types.make_anonymous env t
+          and t_e_struct = Types.make_anonymous env t_e in
           match (t_struct.desc, t_e_struct.desc) with
           | T_Bool, T_Bool | T_Real, T_Real | T_Int _, T_Int _ -> ()
           | T_Bits _, T_Bits _ ->
@@ -1454,7 +1459,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         let field_types =
           (* Begin EStructuredNotStructured *)
-          match (Types.get_structure env ty).desc with
+          match (Types.make_anonymous env ty).desc with
           | T_Exception fields | T_Record fields -> fields
           | _ ->
               conflict e [ T_Record [] ] ty
@@ -1533,7 +1538,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* End *)
         | None -> (
             let t_e', e'' = annotate_expr env e' in
-            let struct_t_e' = Types.get_structure env t_e' in
+            let struct_t_e' = Types.make_anonymous env t_e' in
             match struct_t_e'.desc with
             (* Begin ESlice *)
             | T_Int _ | T_Bits _ ->
@@ -1552,7 +1557,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 match slices with
                 | [ Slice_Single e_index ] ->
                     let t_index', e_index' = annotate_expr env e_index in
-                    let wanted_t_index = type_of_array_length ~loc:e env size in
+                    let wanted_t_index = type_of_array_length ~loc:e size in
                     let+ () =
                       check_type_satisfies e env t_index' wanted_t_index
                     in
@@ -1658,19 +1663,29 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
-        | None ->
-            let bitfields =
-              match t_e'.desc with
-              | T_Bits (_, bitfields) -> bitfields
-              | _ -> conflict e [ default_t_bits ] t_e'
-            in
-            let one_field field =
-              match find_bitfields_slices_opt field bitfields with
-              | None -> fatal_from e (Error.BadField (field, t_e'))
-              | Some slices -> slices
-            in
-            E_Slice (e_2, list_concat_map one_field fields)
-            |> here |> annotate_expr env |: TypingRule.EGetBitFields)
+        | None -> (
+            match t_e'.desc with
+            | T_Bits (_, bitfields) ->
+                let one_field field =
+                  match find_bitfields_slices_opt field bitfields with
+                  | None -> fatal_from e (Error.BadField (field, t_e'))
+                  | Some slices -> slices
+                in
+                E_Slice (e_2, list_concat_map one_field fields)
+                |> here |> annotate_expr env |: TypingRule.EGetBitFields
+            | T_Record tfields ->
+                let one_field field =
+                  match List.assoc_opt field tfields with
+                  | None -> fatal_from e (Error.BadField (field, t_e'))
+                  | Some t -> get_bitvector_width loc env t
+                in
+                let widths = List.map one_field fields in
+                let w =
+                  let wh = List.hd widths and wts = List.tl widths in
+                  List.fold_left (width_plus env) wh wts
+                in
+                (T_Bits (w, []) |> here, E_GetFields (e_2, fields) |> here)
+            | _ -> conflict e [ default_t_bits ] t_e'))
     (* End *)
     (* Begin EPattern *)
     | E_Pattern (e1, pat) ->
@@ -1754,7 +1769,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     | LE_Slice (le1, slices) -> (
         let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
-        let struct_t_le1 = Types.get_structure env t_le1 in
+        let struct_t_le1 = Types.make_anonymous env t_le1 in
         (* Begin LESlice *)
         match struct_t_le1.desc with
         | T_Bits _ ->
@@ -1776,7 +1791,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             match slices with
             | [ Slice_Single e_index ] ->
                 let t_index', e_index' = annotate_expr env e_index in
-                let wanted_t_index = type_of_array_length ~loc:le env size in
+                let wanted_t_index = type_of_array_length ~loc:le size in
                 let+ () =
                   check_type_satisfies le2 env t_index' wanted_t_index
                 in
@@ -1787,7 +1802,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetField (le1, field) ->
         (let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
          let le2 = annotate_lexpr env le1 t_le1 in
-         let t_le1_struct = Types.get_structure env t_le1 in
+         let t_le1_struct = Types.make_anonymous env t_le1 in
          match t_le1_struct.desc with
          | T_Exception fields | T_Record fields ->
              let t =
@@ -1837,34 +1852,42 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          | _ -> conflict le1 [ default_t_bits; T_Record []; T_Exception [] ] t_e)
         |: TypingRule.LESetBadField
         (* End *)
-    | LE_SetFields (le', fields) ->
+    | LE_SetFields (le', fields, []) -> (
         let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
         let le' = annotate_lexpr env le' t_le' in
-        let t_le'_struct = Types.get_structure env t_le' in
-        let bitfields =
-          match t_le'_struct.desc with
-          | T_Bits (_, bitfields) -> bitfields
-          | _ -> conflict le [ default_t_bits ] t_le'
-        in
-        let one_field field =
-          match find_bitfields_slices_opt field bitfields with
-          | None -> fatal_from le (Error.BadField (field, t_le'_struct))
-          | Some slices -> slices
-        in
-        let new_le = LE_Slice (le', list_concat_map one_field fields) |> here in
-        annotate_lexpr env new_le t_e |: TypingRule.LESetFields
+        let t_le'_struct = Types.make_anonymous env t_le' in
+        match t_le'_struct.desc with
+        | T_Bits (_, bitfields) ->
+            let one_field field =
+              match find_bitfields_slices_opt field bitfields with
+              | None -> fatal_from le (Error.BadField (field, t_le'_struct))
+              | Some slices -> slices
+            in
+            let new_le =
+              LE_Slice (le', list_concat_map one_field fields) |> here
+            in
+            annotate_lexpr env new_le t_e |: TypingRule.LESetFields
+        | T_Record tfields ->
+            let one_field field (start, slices) =
+              match List.assoc_opt field tfields with
+              | None -> fatal_from le (Error.BadField (field, t_le'_struct))
+              | Some t ->
+                  let w = get_bitvector_const_width le env t in
+                  (start + w, (start, w) :: slices)
+            in
+            let length, slices = List.fold_right one_field fields (0, []) in
+            let t = T_Bits (expr_of_int length, []) |> here in
+            let+ () = check_type_satisfies le env t_e t in
+            LE_SetFields (le', fields, slices) |> here
+        | _ -> conflict le [ default_t_bits ] t_le')
     | LE_SetArray _ -> assert false
+    | LE_SetFields (_, _, _ :: _) -> assert false
     (* Begin LEConcat *)
     | LE_Concat (les, _) ->
         let e_eq = expr_of_lexpr le in
         let t_e_eq, _e_eq = annotate_expr env e_eq in
         let+ () = check_bits_equal_width' env t_e_eq t_e in
-        let bv_length t =
-          let e_width = get_bitvector_width le env t in
-          match reduce_constants env e_width with
-          | L_Int z -> Z.to_int z
-          | _ -> fatal_from le @@ MismatchType ("bitvector width", [ integer' ])
-        in
+        let bv_length t = get_bitvector_const_width le env t in
         let annotate_one (les, widths, sum) le =
           let e = expr_of_lexpr le in
           let t_e1, _e = annotate_expr env e in
@@ -1927,7 +1950,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Begin LDTuple *)
     | LDI_Tuple ldis ->
         let tys =
-          match (Types.get_structure env ty).desc with
+          match (Types.make_anonymous env ty).desc with
           | T_Tuple tys when List.compare_lengths tys ldis = 0 -> tys
           | T_Tuple tys ->
               fatal_from loc
@@ -2287,10 +2310,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetField (sub_le, field) ->
         let old_le le' = LE_SetField (le', field) |> here in
         with_temp old_le sub_le
-    | LE_SetFields ({ desc = LE_Var x; _ }, fields) ->
+    | LE_SetFields ({ desc = LE_Var x; _ }, fields, _) ->
         set_fields_should_reduce_to_call env le x fields e
-    | LE_SetFields (sub_le, fields) ->
-        let old_le le' = LE_SetFields (le', fields) |> here in
+    | LE_SetFields (sub_le, fields, slices) ->
+        let old_le le' = LE_SetFields (le', fields, slices) |> here in
         with_temp old_le sub_le
     | LE_Slice ({ desc = LE_Var x; _ }, slices) -> (
         let slices = Slice_Single e :: slices in
