@@ -23,7 +23,7 @@ type jade_opt = { jstrongst : bool;}
 type t =
   | File of string (* To convey model filename *)
   | CAV12 of cav12_opt
-  | Generic of AST.t
+  | Generic of string * AST.t (* Filename X ast *)
 
 val tags : string list
 val parse : string -> t option

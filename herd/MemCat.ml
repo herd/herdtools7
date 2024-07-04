@@ -38,10 +38,11 @@ module S = S
     let model = O.model
 
     let check_event_structure test = match O.model with
-      | Generic m ->
+      | Generic (fname,m) ->
          let module X =
            MachModelChecker.Make
              (struct
+               let fname = fname
                let m = m
                let wide_po = false
                include O

@@ -46,10 +46,11 @@ module Make
             end)
             (S) in
         X.check_event_structure test
-    | Generic m ->
+    | Generic (fname,m) ->
         let module X =
           MachModelChecker.Make
             (struct
+              let fname = fname
               let m = m
               let bell_model_info = None
               let wide_po = false
