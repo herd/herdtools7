@@ -23,6 +23,24 @@ versus the LRM (Build \#215 from Feb 22, 2024).
 % ------------------------------------------------------------------------------
 \section{Syntax}
 
+\subsection{Pragmas}
+ASLRef does not currently parse pragmas:
+\begin{verbatim}
+pragma asl_pragma1;
+\end{verbatim}
+
+This is related to \identi{ZGJQ}, \identr{GBNH}, \identr{GFSD}.
+
+\subsection{Declaring Multiple Identifiers with No Initialization}
+The following simultaneous declaration of three global variables does not currently parse with ASLRef.
+\begin{verbatim}
+ var x, y, z : integer;
+\end{verbatim}
+
+The same line does parse and correctly handled inside a subprogram.
+
+This is related to \identr{QDQD}.
+
 \subsection{Annotations}
 ASLRef does not yet support annotations.
 Specifically loop limit and recursion limit annotations are not yet supported.
@@ -43,43 +61,6 @@ do not currently parse.
 
 This is related to \identr{KKDF}.
 
-\subsection{Accessing Tuple Components}
-Accessing individual elements of a tuple via the \texttt{.item<k>} is not yet implemented in ASLRef.
-For example
-\begin{Verbatim}
-  func main() => integer
-  begin
-    return (0,2).item0;
-  end
-\end{Verbatim}
-Does not parse.
-
-\subsection{Constrained bitvectors}
-Constrained bitvectors are not yet implemented in ASLRef.
-
-For example, the following function is not understood by ASLRef:
-\begin{Verbatim}
-func foo(x: bits({3, 5})) => integer
-begin
-  return Len(x) * 2;
-end
-\end{Verbatim}
-%
-Here the length of the formal argument \Verb|x| needs to be declared as a
-parameter, for example as follows:
-\begin{Verbatim}
-func foo {N: integer {3, 5}} (x: bits(N)) => integer
-begin
-  return Len(x) * 2;
-end
-\end{Verbatim}
-%
-This also applies to bitvectors constrained by a type.
-
-This is related to \identr{FHYZ}, \identr{VBMX}, \identr{XVWK}, \identr{PMQB},
-\identr{VCZX}, \identi{TZVJ}, \identi{GLWM}, \identi{MTWL}, \identr{QYZD},
-\identi{NFBN}, \identr{LJBG}, \identi{YBHF}, \identr{FZSD}.
-
 \subsection{Guards}
 
 Guards are used on \texttt{case} and \texttt{catch} statements, to restrict
@@ -91,6 +72,32 @@ This relates to \identr{WGSY}.
 
 % ------------------------------------------------------------------------------
 \section{Typing}
+
+\subsection{Checking that All Paths in a Function Return a Value}
+The following function currently passes type-checking even though
+it does not return a value when \texttt{a <= 7}.
+\begin{verbatim}
+func foo(a : integer) => integer
+begin
+  if (a > 7) then
+    return 0;
+  end
+end
+\end{verbatim}
+This requires a control-flow analysis.
+
+A call to \texttt{Unreachable} needs to indicate to the control-flow
+analysis that it is okay for the \texttt{else} path to not return a value.
+\begin{verbatim}
+func foo(a : integer) => integer
+begin
+  if (a > 7) then
+    return 0;
+  else
+    Unreachable();
+  end
+end
+\end{verbatim}
 
 \subsection{Side-effect-free Subprograms}
 ASLRef does yet infer whether a subprorgam is side-effect-free.
@@ -114,16 +121,6 @@ This is related to \identi{LZCX}, \identi{NXJR}, \identr{CSFT}, \identi{HYBT},
 \identi{MSZT}, \identd{QNHM}, \identi{XYKC}, \identd{ZPMF}, \identi{XSDY},
 \identd{XRBT}, \identi{WVGG}, \identd{JLJD}, \identi{KKDY}, \identd{MTQJ},
 \identi{YBGL}, \identi{YMRT}, \identi{QJTN}, \identi{GFZT}.
-
-\subsection{Precise implementation of parameters type-checking}
-
-The code handling parameter type-checking at a function declaration is not
-safe: some checks are missing.
-
-Furthermore, the handling of formal arguments that should be considered as
-parameters is also not finished.
-
-This is related to \identi{BLVP}, \identr{RKBV}, \identi{TQGH}.
 
 \subsection{Restriction on use of under-constrained types}
 
@@ -164,13 +161,6 @@ This is related to \identr{BNCY}.
 
 % ------------------------------------------------------------------------------
 \section{Typing}
-
-\subsection{Domains}
-
-The formalization of type domains is complete for all types.
-In particular, it addresses the weakness with under-constrained integers.
-The definition is still weak when it comes to bitvectors of undetermined width (\url{text}).
-This will be addressed by a future proposal.
 
 \subsection{Global storage declarations}
 
