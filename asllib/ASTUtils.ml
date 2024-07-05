@@ -281,22 +281,18 @@ and use_catchers catchers = use_list use_catcher catchers
 
 and use_decl d =
   match d.desc with
-  | D_Func { body = SB_ASL s; _ } -> use_s s
-  | D_GlobalStorage { initial_value = Some e; _ } -> use_e e
-  | _ -> Fun.id
-
-let use_constant_decl d =
-  match d.desc with
-  | D_GlobalStorage { initial_value; ty; _ } ->
+  | D_TypeDecl (_name, ty, fields) -> use_ty ty $ use_option use_subtypes fields
+  | D_GlobalStorage { initial_value; ty; name = _; keyword = _ } ->
       use_option use_e initial_value $ use_option use_ty ty
-  | D_TypeDecl (_, ty, Some (s, fields)) ->
-      use_ty ty $ ISet.add s $ use_named_list use_ty fields
-  | D_TypeDecl (_, ty, None) -> use_ty ty
-  | D_Func { body; args; return_type; _ } ->
-      let use_body =
-        match body with SB_ASL s -> use_s s | SB_Primitive -> Fun.id
-      in
-      use_body $ use_option use_ty return_type $ use_named_list use_ty args
+  | D_Func
+      { body; name = _; args; return_type; parameters; subprogram_type = _ }
+    -> (
+      use_named_list use_ty args
+      $ use_option use_ty return_type
+      $ use_named_list (use_option use_ty) parameters
+      $ match body with SB_ASL s -> use_s s | SB_Primitive -> Fun.id)
+
+and use_subtypes (x, subfields) = ISet.add x $ use_named_list use_ty subfields
 
 let used_identifiers ast = use_list use_decl ast ISet.empty
 let used_identifiers_stmt s = use_s s ISet.empty
