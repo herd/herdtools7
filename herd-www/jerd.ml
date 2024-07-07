@@ -71,7 +71,7 @@ let run_herd bell cat litmus cfg =
   and cat_fname  = WebInput.set_cat_str cat
   and cfg_fname = WebInput.set_cfg_str cfg
   and litmus_fname = WebInput.set_litmus_str litmus in
-  WebInput.register_autoloader ();  
+  WebInput.register_autoloader ();
   (* web options *)
   outputdir := PrettyConf.StdoutOutput;
   dumpes := false;
@@ -110,8 +110,8 @@ let run_herd bell cat litmus cfg =
     | Some (Model.File fname) ->
        let module P = ParseModel.Make(ParserConfig) in
        begin try
-           let (b,_,_) as r = P.parse fname in
-           Some (Model.Generic r),b
+           let fname,((b,_,_) as ast) = P.find_parse fname in
+           Some (Model.Generic (fname,ast)),b
          with
          | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
          | Misc.Exit ->
