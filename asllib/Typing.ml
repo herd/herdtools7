@@ -608,9 +608,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     ISet.for_all (storage_is_pure ~loc env) use_set
 
   let check_statically_evaluable (env : env) e () =
-    let e1 = StaticModel.try_normalize env e in
-    if is_statically_evaluable ~loc:e env e1 then ()
-    else fatal_from e1 (Error.UnpureExpression e1)
+    if is_statically_evaluable ~loc:e env e then ()
+    else fatal_from e (Error.UnpureExpression e)
   (* End *)
 
   let check_bits_equal_width' env t1 t2 () =
@@ -1059,14 +1058,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   and annotate_static_integer ~(loc : 'a annotated) env e =
     let t, e' = annotate_expr env e in
     let+ () = check_structure_integer loc env t in
-    let+ () = check_statically_evaluable env e' in
+    let+ () = check_statically_evaluable env e in
     StaticModel.try_normalize env e'
 
   (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
     let t, e' = annotate_expr env e in
     let+ () = check_constrained_integer ~loc env t in
-    let+ () = check_statically_evaluable env e' in
+    let+ () = check_statically_evaluable env e in
     StaticModel.try_normalize env e'
   (* End *)
 
