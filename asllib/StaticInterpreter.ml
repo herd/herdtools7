@@ -26,6 +26,8 @@ module SEnv = StaticEnv
 module TypingRule = Instrumentation.TypingRule
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
+
+let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let unsupported_expr e = fatal_from e Error.(UnsupportedExpr (Static, e))
 
@@ -79,6 +81,7 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
         if b then expr_ e1 else expr_ e2
     | _ -> unsupported_expr e
   in
+  expr_ |: TypingRule.StaticEval
   expr_ |: TypingRule.StaticEval
 
 and slices_to_positions env =

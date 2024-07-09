@@ -344,12 +344,12 @@ We sometimes provide extra details to individual derivations by adding comments 
 \[
 \begin{array}{rrl}
 \func &::= \{& \\
- & & \text{name} : \identifier, \\
- & & \text{parameters} : (\identifier, \ty?)^*,\\
- & & \text{args} : \typedidentifier^*,\\
- & & \text{body} : \subprogrambody,\\
- & & \text{return\_type} : \ty?,\\
- & & \text{subprogram\_type} : \subprogramtype\\
+ & & \funcname : \Strings, \\
+ & & \funcparameters : (\identifier, \ty?)^*,\\
+ & & \funcargs : \typedidentifier^*,\\
+ & & \funcbody : \subprogrambody,\\
+ & & \funcreturntype : \ty?,\\
+ & & \funcsubprogramtype : \subprogramtype\\
  & \} &
 \end{array}
 \]

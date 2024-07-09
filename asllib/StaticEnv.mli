@@ -57,6 +57,7 @@ type env = { global : global; local : local }
 
 val pp_env : Format.formatter -> env -> unit
 val pp_global : Format.formatter -> global -> unit
+val pp_local : Format.formatter -> local -> unit
 val empty_global : global
 val empty_local : local
 val empty_local_return_type : ty option -> local

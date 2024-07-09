@@ -94,7 +94,8 @@
 %% Mathematical notations and Inference Rule macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%%
 \usepackage{relsize}
-\newcommand\defpoint[1]{\underline{#1}}
+%\newcommand\defpoint[1]{\underline{#1}}
+\newcommand\defpoint[1]{#1}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbracket{#1}^{#2}}
@@ -109,6 +110,8 @@
 \newcommand\splitlist[0]{\hyperlink{def-splitlist}{\texttt{split}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
+\newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
+\newcommand\setcomprehension[2]{\{#1 : #2\}} % #1 is a set element predicate, #2 is the output set element.
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
 \newcommand\None[0]{\hyperlink{def-none}{\texttt{None}}}
@@ -122,6 +125,7 @@
 \newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{def-strings}{\mathbb{S}}}
 \newcommand\astlabels[0]{\hyperlink{def-astlabels}{\mathbb{L}}}
+\newcommand\literals[0]{\mathcal{L}}
 
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
@@ -135,7 +139,7 @@
 \newcommand\booltrans[1]{\hyperlink{def-booltrans}{\texttt{bool\_transition}}(#1)}
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\checktrans[2]{\hyperlink{def-checktrans}{\texttt{check}}(#1, \texttt{#2})}
-\newcommand\checktransarrow[0]{\rightarrow}
+\newcommand\checktransarrow[0]{\longrightarrow}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Abstract Syntax macros
@@ -337,16 +341,21 @@
 \newcommand\STEmptySetter[0]{\texttt{ST\_EmptySetter}}
 \newcommand\STProcedure[0]{\texttt{ST\_Procedure}}
 
+% Fields
 \newcommand\funcname[0]{\text{name}}
 \newcommand\funcparameters[0]{\text{parameters}}
 \newcommand\funcargs[0]{\text{args}}
 \newcommand\funcbody[0]{\text{body}}
 \newcommand\funcreturntype[0]{\text{return\_type}}
 \newcommand\funcsubprogramtype[0]{\text{subprogram\_type}}
+\newcommand\GDkeyword[0]{\text{keyword}}
+\newcommand\GDname[0]{\text{name}}
+\newcommand\GDty[0]{\text{ty}}
+\newcommand\GDinitialvalue[0]{\text{initial\_value}}
 
-\newcommand\DFunc[0]{\text{D\_Func}}
-\newcommand\DGlobalStorage[0]{\text{D\_GlobalStorage}}
-\newcommand\DTypeDecl[0]{\text{D\_TypeDecl}}
+\newcommand\DFunc[0]{\texttt{D\_Func}}
+\newcommand\DGlobalStorage[0]{\texttt{D\_GlobalStorage}}
+\newcommand\DTypeDecl[0]{\texttt{D\_TypeDecl}}
 
 \newcommand\identifier[0]{\textsf{identifier}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -356,6 +365,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type System macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\TTypeError[0]{\hyperlink{def-ttypeerror}{\textsf{TTypeError}}}
+\newcommand\TypeError[0]{\hyperlink{def-typeerror}{\textsf{TypeError}}}
+\newcommand\TypeErrorVal[1]{\TypeError(\texttt{#1})}
+
 \newcommand\Val[0]{\textsf{Val}}
 \newcommand\aslto[0]{\longrightarrow}
 
@@ -374,6 +387,9 @@
 \newcommand\subprograms[0]{\hyperlink{def-subprograms}{\textsf{subprograms}}}
 \newcommand\subprogramrenamings[0]{\hyperlink{def-subprogramrenamings}{\textsf{subprogram\_renamings}}}
 \newcommand\parameters[0]{\hyperlink{def-parameters}{\textsf{parameters}}}
+
+\newcommand\unopliterals[0]{\hyperlink{def-unopliterals}{\texttt{unop\_literals}}}
+\newcommand\binopliterals[0]{\hyperlink{def-binopliterals}{\texttt{binop\_literals}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Semantics macros
@@ -439,6 +455,7 @@
 \newcommand\vtthree[0]{\texttt{t3}}
 \newcommand\vle[0]{\texttt{le}}
 \newcommand\vargs[0]{\texttt{args}}
+\newcommand\vnewargs[0]{\texttt{new\_args}}
 \newcommand\vgone[0]{\texttt{g1}}
 \newcommand\vgtwo[0]{\texttt{g2}}
 \newcommand\envone[0]{\texttt{env1}}
@@ -507,10 +524,14 @@
 \newcommand\newty[0]{\texttt{new\_ty}}
 \newcommand\tenvp[0]{\texttt{tenv'}}
 \newcommand\tenvthree[0]{\texttt{tenv3}}
+\newcommand\tenvthreep[0]{\texttt{tenv3'}}
 \newcommand\tenvfour[0]{\texttt{tenv4}}
 \newcommand\tenvfive[0]{\texttt{tenv5}}
 \newcommand\funcsig[0]{\texttt{func\_sig}}
+\newcommand\funcsigp[0]{\texttt{func\_sig'}}
 \newcommand\gsd[0]{\texttt{gsd}}
+\newcommand\gsdp[0]{\texttt{gsd'}}
+\newcommand\newgsd[0]{\texttt{new\_gsd}}
 \newcommand\decls[0]{\texttt{decls}}
 \newcommand\declsp[0]{\texttt{decls'}}
 \newcommand\ordereddecls[0]{\texttt{ordered\_decls}}
@@ -527,6 +548,7 @@
 \newcommand\newopt[0]{\texttt{new\_opt}}
 \newcommand\callerargtyped[0]{\texttt{caller\_arg\_typed}}
 \newcommand\callerargtypes[0]{\texttt{caller\_arg\_types}}
+\newcommand\callee[0]{\texttt{callee}}
 \newcommand\calleeargtypes[0]{\texttt{callee\_arg\_types}}
 \newcommand\calleeparams[0]{\texttt{callee\_params}}
 \newcommand\extranargs[0]{\texttt{extra\_nargs}}
@@ -553,9 +575,12 @@
 \newcommand\tep[0]{\texttt{t\_e'}}
 \newcommand\structtep[0]{\texttt{struct\_t\_e'}}
 \newcommand\structtleone[0]{\texttt{struct\_t\_le1}}
+\newcommand\varg[0]{\texttt{arg}}
+\newcommand\vnewarg[0]{\texttt{new\_arg}}
 \newcommand\vargsp[0]{\texttt{args'}}
 \newcommand\eqsp[0]{\texttt{eqs'}}
 \newcommand\namep[0]{\texttt{name'}}
+\newcommand\namepp[0]{\texttt{name''}}
 \newcommand\eindexp[0]{\texttt{e\_index'}}
 \newcommand\tindexp[0]{\texttt{t\_index'}}
 \newcommand\fieldtypes[0]{\texttt{field\_types}}
@@ -656,3 +681,63 @@
 \newcommand\vbftwo[0]{\texttt{bf2}}
 \newcommand\bfstwop[0]{\texttt{bfs2'}}
 \newcommand\vpp[0]{\texttt{p'}}
+\newcommand\acc[0]{\texttt{acc}}
+\newcommand\accp[0]{\texttt{acc'}}
+\newcommand\annotateddecls[0]{\texttt{annotated\_decls}}
+\newcommand\funcdef[0]{\texttt{func\_def}}
+\newcommand\funcdefone[0]{\texttt{func\_def1}}
+\newcommand\newfuncdef[0]{\texttt{new\_func\_def}}
+\newcommand\newfuncsig[0]{\texttt{new\_func\_sig}}
+\newcommand\bd[0]{\texttt{bd}}
+\newcommand\initialvalue[0]{\texttt{initial\_value}}
+\newcommand\keyword[0]{\texttt{keyword}}
+\newcommand\subpgmtype[0]{\texttt{subpgm\_type}}
+\newcommand\subpgmtypeone[0]{\texttt{subpgm\_type1}}
+\newcommand\subpgmtypetwo[0]{\texttt{subpgm\_type2}}
+\newcommand\formals[0]{\texttt{formals}}
+\newcommand\formaltypes[0]{\texttt{formal\_types}}
+\newcommand\nameformaltypes[0]{\texttt{name\_formal\_types}}
+\newcommand\nameargs[0]{\texttt{name\_args}}
+\newcommand\nameformals[0]{\texttt{name\_formals}}
+\newcommand\namesubpgmtype[0]{\texttt{name\_subpgmtype}}
+\newcommand\othernames[0]{\texttt{other\_names}}
+\newcommand\newrenamings[0]{\texttt{new\_renamings}}
+\newcommand\issetter[0]{\texttt{is\_setter}}
+\newcommand\rettype[0]{\texttt{ret\_type}}
+\newcommand\argtypes[0]{\texttt{arg\_types}}
+\newcommand\argtypesp[0]{\texttt{arg\_types'}}
+\newcommand\watendsettertype[0]{\texttt{wanted\_setter\_type}}
+\newcommand\ret[0]{\texttt{ret}}
+\newcommand\renamingset[0]{\texttt{renaming\_set}}
+\newcommand\formaltys[0]{\texttt{f\_tys}}
+\newcommand\argtys[0]{\texttt{a\_tys}}
+\newcommand\candidates[0]{\texttt{candidates}}
+\newcommand\candidatesone[0]{\texttt{candidates1}}
+\newcommand\matches[0]{\texttt{matches}}
+\newcommand\matchesone[0]{\texttt{matches1}}
+\newcommand\matchingrenamings[0]{\texttt{matching\_renamings}}
+\newcommand\vres[0]{\texttt{res}}
+\newcommand\matchedname[0]{\texttt{matched\_name}}
+\newcommand\potentialparams[0]{\texttt{potential\_params}}
+\newcommand\declaredparams[0]{\texttt{declared\_params}}
+\newcommand\argparams[0]{\texttt{arg\_params}}
+\newcommand\vreturntype[0]{\texttt{return\_type}}
+\newcommand\vparameters[0]{\texttt{parameters}}
+\newcommand\vparametersone[0]{\texttt{parameters1}}
+\newcommand\vparams[0]{\texttt{params}}
+\newcommand\vparam[0]{\texttt{param}}
+\newcommand\vused[0]{\texttt{used}}
+\newcommand\vusedone[0]{\texttt{used1}}
+\newcommand\tyoptp[0]{\texttt{ty\_opt'}}
+\newcommand\expropt[0]{\texttt{expr\_opt}}
+\newcommand\exproptp[0]{\texttt{expr\_opt'}}
+\newcommand\initialvaluetype[0]{\texttt{initial\_value\_type}}
+\newcommand\initialvaluep[0]{\texttt{initial\_value'}}
+\newcommand\typeannotation[0]{\texttt{type\_annotation}}
+\newcommand\declaredt[0]{\texttt{declared\_t}}
+\newcommand\ids[0]{\texttt{ids}}
+\newcommand\extrafields[0]{\texttt{extra\_fields}}
+\newcommand\vsuper[0]{\texttt{super}}
+\newcommand\idsone[0]{\texttt{ids1}}
+\newcommand\newreturntype[0]{\texttt{new\_return\_type}}
+\newcommand\bvtwo[0]{\texttt{bv2}}

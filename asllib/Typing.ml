@@ -258,6 +258,7 @@ end
 module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
   open Property (C)
 
+  (* Begin HasArgClash *)
   (* Returns true iff type lists type-clash element-wise. *)
   let has_arg_clash env caller callee =
     List.compare_lengths caller callee == 0
@@ -265,6 +266,8 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
          (fun t_caller (_, t_callee) ->
            Types.type_clashes env t_caller t_callee)
          caller callee
+       |: TypingRule.HasArgClash
+  (* End *)
 
   (* Return true if two subprogram are forbidden with the same argument types. *)
   let has_subprogram_type_clash s1 s2 =
@@ -293,23 +296,24 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     in
     List.fold_left2 folder []
 
-  let add_new_func loc env name arg_types subpgm_type =
+  (* Begin AddNewFunc *)
+  let add_new_func loc env name formals subpgm_type =
     match IMap.find_opt name env.global.subprogram_renamings with
     | None ->
-        let env = set_renamings name (ISet.singleton name) env in
-        (env, name)
-    | Some set ->
-        let name' = name ^ "-" ^ string_of_int (ISet.cardinal set) in
+        let new_env = set_renamings name (ISet.singleton name) env in
+        (new_env, name)
+    | Some other_names ->
+        let new_name = name ^ "-" ^ string_of_int (ISet.cardinal other_names) in
         let clash =
-          let arg_types = List.map snd arg_types in
-          (not (ISet.is_empty set))
+          let formal_types = List.map snd formals in
+          (not (ISet.is_empty other_names))
           && ISet.exists
-               (fun name'' ->
-                 let other_func_sig = IMap.find name'' env.global.subprograms in
+               (fun name' ->
+                 let other_func_sig = IMap.find name' env.global.subprograms in
                  has_subprogram_type_clash subpgm_type
                    other_func_sig.subprogram_type
-                 && has_arg_clash env arg_types other_func_sig.args)
-               set
+                 && has_arg_clash env formal_types other_func_sig.args)
+               other_names
         in
         let+ () =
          fun () ->
@@ -322,14 +326,16 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
                     pp_print_list
                       ~pp_sep:(fun f () -> fprintf f ",@ ")
                       PP.pp_typed_identifier)
-                  arg_types
+                  formals
             in
             Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
         in
-        let env = set_renamings name (ISet.add name' set) env in
-        (env, name')
+        let new_env = set_renamings name (ISet.add new_name other_names) env in
+        (new_env, new_name) |: TypingRule.AddNewFunc
+  (* End *)
 
-  let find_name loc env name caller_arg_types =
+  (* Begin SubprogramForName *)
+  let subprogram_for_name loc env name caller_arg_types =
     let () =
       if false then Format.eprintf "Trying to rename call to %S@." name
     in
@@ -347,16 +353,18 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     match matching_renamings with
     | [ (name', func_sig) ] ->
         (deduce_eqs env caller_arg_types func_sig.args, name', func_sig)
+        |: TypingRule.SubprogramForName
     | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
     | _ :: _ ->
         fatal_from loc (Error.TooManyCallCandidates (name, caller_arg_types))
+  (* End *)
 
-  let try_find_name =
+  let try_subprogram_for_name =
     match C.check with
-    | `TypeCheck -> find_name
+    | `TypeCheck -> subprogram_for_name
     | `Warn | `Silence -> (
         fun loc env name caller_arg_types ->
-          try find_name loc env name caller_arg_types
+          try subprogram_for_name loc env name caller_arg_types
           with Error.ASLException _ as error -> (
             try
               match IMap.find_opt name env.global.subprograms with
@@ -1224,7 +1232,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let caller_arg_typed = List.map (annotate_expr env) args in
     let caller_arg_types, args1 = List.split caller_arg_typed in
     let extra_nargs, name1, callee =
-      Fn.try_find_name loc env name caller_arg_types
+      Fn.try_subprogram_for_name loc env name caller_arg_types
     in
     let () =
       if false then
@@ -2348,7 +2356,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     else
       let ( let* ) = Option.bind in
       let _, _, callee =
-        try Fn.try_find_name le env x []
+        try Fn.try_subprogram_for_name le env x []
         with Error.ASLException _ -> assert false
       in
       let* ty = callee.return_type in
@@ -2422,6 +2430,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     match f.return_type with None -> from_args | Some t -> folder from_args t
 
+  (* Begin GetUndeclaredDefining *)
+
   (** Returns the set of variables that are parameter defining, without the
       ones previously declared in the environment. *)
   let get_undeclared_defining env =
@@ -2432,20 +2442,26 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | T_Tuple tys -> List.fold_left of_ty acc tys
       | _ -> acc
     in
-    fun f -> fold_types_func_sig of_ty f ISet.empty
+    fun f ->
+      fold_types_func_sig of_ty f ISet.empty |: TypingRule.GetUndeclaredDefining
+  (* End *)
 
+  (** [use_func_sig f] returns the set of identifiers appearing in the
+      types of arguments of [f] and in the return type of [f], if there is one.
+  *)
   let use_func_sig f =
     fold_types_func_sig (Fun.flip ASTUtils.use_ty) f ISet.empty
 
-  let annotate_func_sig ~loc env (f : AST.func) : env * AST.func =
+  (* Begin AnnotateFuncSig *)
+  let annotate_func_sig ~loc env1 (func_sig : AST.func) : env * AST.func =
+    (* Build typing local environment. *)
+    let env1 = { env1 with local = empty_local } in
     let () =
       if false then
-        Format.eprintf "Annotating %s in env:@ %a.@." f.name StaticEnv.pp_env
-          env
+        Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name
+          StaticEnv.pp_env env1
     in
-    (* Build typing local environment. *)
-    let env1 = { env with local = empty_local } in
-    let potential_params = get_undeclared_defining env1 f in
+    let potential_params = get_undeclared_defining env1 func_sig in
     (* Add explicit parameters *)
     let env2, declared_params =
       let () =
@@ -2463,19 +2479,25 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           match ty_opt with
           | None | Some { desc = T_Int UnConstrained; _ } ->
               Types.under_constrained_ty x
-          | Some t -> annotate_type ~loc env1 t
+          | Some t1 -> annotate_type ~loc env1 t1
           (* Type should be valid in the env with no param declared. *)
         in
         let+ () = check_constrained_integer ~loc env1 t in
         (add_local x t LDK_Let env1', IMap.add x t acc)
+        |: TypingRule.AnnotateOneParam
       in
-      List.fold_left folder (env1, IMap.empty) f.parameters
+      List.fold_left folder (env1, IMap.empty) func_sig.parameters
+      |: TypingRule.AnnotateParams
     in
-    let () = if false then Format.eprintf "Explicit parameters added.@." in
+    let () =
+      if false then
+        Format.eprintf "Explicit parameters added to env %a.@."
+          StaticEnv.pp_local env2.local
+    in
     (* Add arguments as parameters. *)
     let env3, arg_params =
       let used =
-        use_func_sig f
+        use_func_sig func_sig
         |> ISet.filter (fun s ->
                StaticEnv.is_undefined s env1 && not (IMap.mem s declared_params))
       in
@@ -2496,7 +2518,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (add_local x t LDK_Let env2', IMap.add x t acc)
         else (env2', acc)
       in
-      List.fold_left folder (env2, IMap.empty) f.args
+      List.fold_left folder (env2, IMap.empty) func_sig.args
+      |: TypingRule.ArgsAsParams
     in
     let parameters =
       List.append (IMap.bindings declared_params) (IMap.bindings arg_params)
@@ -2516,16 +2539,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let () =
       if false then
-        Format.eprintf "@[<hov>Annotating arguments in env:@ %a@]@."
-          StaticEnv.pp_env env3
-    in
-    let () =
-      if false then
         let open Format in
-        eprintf "@[Parameters identified for func %s:@ @[%a@]@]@." f.name
+        eprintf "@[Parameters identified for func %s:@ @[%a@]@]@." func_sig.name
           (pp_print_list ~pp_sep:pp_print_space (fun f (s, ty_opt) ->
                fprintf f "%s:%a" s (pp_print_option PP.pp_ty) ty_opt))
           parameters
+    in
+    let () =
+      if false then
+        Format.eprintf "@[<hov>Annotating arguments in env:@ %a@]@."
+          StaticEnv.pp_local env3.local
     in
     (* Add arguments. *)
     let env4, args =
@@ -2536,32 +2559,39 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         else
           let () = if false then Format.eprintf "Adding argument %s.@." x in
           let+ () = check_var_not_in_env loc env3' x in
-          (* Subtility here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
+          (* Subtlety here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
           let ty' = annotate_type ~loc env3 ty in
           let env3'' = add_local x ty' LDK_Let env3' in
           (env3'', (x, ty'))
       in
-      list_fold_left_map one_arg env3 f.args
+      list_fold_left_map one_arg env3 func_sig.args |: TypingRule.AnnotateArgs
     in
     (* Check return type. *)
     let env5, return_type =
-      match f.return_type with
-      | None -> (env4, f.return_type)
+      match func_sig.return_type with
+      | None -> (env4, func_sig.return_type)
       | Some ty ->
           let () =
             if false then
               Format.eprintf "@[<hov>Annotating return-type in env:@ %a@]@."
-                StaticEnv.pp_env env3
+                StaticEnv.pp_local env4.local
           in
-          (* Subtility here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
+          (* Subtlety here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
           let ty' = annotate_type ~loc env3 ty in
           let return_type = Some ty' in
           let env4' =
             StaticEnv.{ env4 with local = { env4.local with return_type } }
           in
+          let () =
+            if false then
+              Format.eprintf "@[<hov>Env after annotating return-type:@ %a@]@."
+                StaticEnv.pp_local env4'.local
+          in
           (env4', return_type)
     in
-    (env5, { f with parameters; args; return_type })
+    (env5, { func_sig with parameters; args; return_type })
+    |: TypingRule.AnnotateFuncSig
+  (* End *)
 
   (* Begin Subprogram *)
   let annotate_subprogram (env : env) (f : AST.func) : AST.func =
@@ -2586,6 +2616,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
+  (* Begin CheckSetterHasGetter *)
   let check_setter_has_getter ~loc env (func_sig : AST.func) =
     let fail () =
       fatal_from loc (Error.SetterWithoutCorrespondingGetter func_sig)
@@ -2594,13 +2625,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match func_sig.subprogram_type with
     | ST_Getter | ST_EmptyGetter | ST_Function | ST_Procedure -> ok
     | ST_EmptySetter | ST_Setter ->
-        let ret_type, args =
+        let ret_type, arg_types =
           match func_sig.args with
           | [] -> fatal_from loc Error.UnrespectedParserInvariant
           | (_, ret_type) :: args -> (ret_type, List.map snd args)
         in
         let _, _, func_sig' =
-          try Fn.find_name loc env func_sig.name args
+          try Fn.subprogram_for_name loc env func_sig.name arg_types
           with
           | Error.(
               ASLException
@@ -2618,11 +2649,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let+ () = check_true (func_sig'.subprogram_type = wanted_st) in
         let+ () =
           (* Check that args match *)
-          let () = assert (List.compare_lengths func_sig'.args args = 0) in
+          let () = assert (List.compare_lengths func_sig'.args arg_types = 0) in
           check_true
           @@ List.for_all2
                (fun (_, t1) t2 -> Types.type_equal env t1 t2)
-               func_sig'.args args
+               func_sig'.args arg_types
         in
         let+ () =
           (* Check that return types match. *)
@@ -2632,11 +2663,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 false (* By type-checking invariant: func_sig' is a getter. *)
           | Some t -> check_true @@ Types.type_equal env ret_type t
         in
-        ok
+        ok |: TypingRule.CheckSetterHasGetter
+  (* End *)
 
   (* Begin DeclareOneFunc *)
   let declare_one_func loc (func_sig : func) env =
-    let env, name' =
+    let env1, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
       Fn.add_new_func loc env func_sig.name func_sig.args
         func_sig.subprogram_type
@@ -2651,15 +2683,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    let+ () = check_var_not_in_genv loc env name' in
-    let+ () = check_setter_has_getter ~loc env func_sig in
-    let func_sig = { func_sig with name = name' } in
-    (add_subprogram name' func_sig env, func_sig)
+    let+ () = check_var_not_in_genv loc env1 name' in
+    let+ () = check_setter_has_getter ~loc env1 func_sig in
+    let new_func_sig = { func_sig with name = name' } in
+    (add_subprogram name' new_func_sig env1, new_func_sig)
+    |: TypingRule.DeclareOneFunc
+  (* End *)
 
-  let annotate_and_declare_func ~loc func env =
-    let env, func = annotate_func_sig ~loc env func in
-    declare_one_func loc func env
-  (* End DeclareOneFunc*)
+  (* Begin AnnotateAndDeclareFunc *)
+  let annotate_and_declare_func ~loc func_sig env =
+    let env1, func_sig1 = annotate_func_sig ~loc env func_sig in
+    declare_one_func loc func_sig1 env1 |: TypingRule.AnnotateAndDeclareFunc
+  (* End *)
 
   let add_global_storage loc name keyword env ty =
     if is_global_ignored name then env
@@ -2676,44 +2711,44 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
     in
     let+ () = check_var_not_in_genv loc env name in
-    let env, ty =
+    let env1, t1 =
       match s with
       | None -> (env, ty)
-      | Some (s, extra_fields) ->
+      | Some (super, extra_fields) ->
           let+ () =
            fun () ->
-            if Types.subtype_satisfies env ty (T_Named s |> add_pos_from loc)
+            if Types.subtype_satisfies env ty (T_Named super |> add_pos_from loc)
             then ()
-            else conflict loc [ T_Named s ] ty
+            else conflict loc [ T_Named super ] ty
           in
-          let ty =
+          let new_ty =
             if extra_fields = [] then ty
             else
-              match IMap.find_opt s env.global.declared_types with
+              match IMap.find_opt super env.global.declared_types with
               | Some { desc = T_Record fields; _ } ->
                   T_Record (fields @ extra_fields) |> add_pos_from_st ty
               | Some { desc = T_Exception fields; _ } ->
                   T_Exception (fields @ extra_fields) |> add_pos_from_st ty
               | Some _ -> conflict loc [ T_Record []; T_Exception [] ] ty
-              | None -> undefined_identifier loc s
-          and env = add_subtype name s env in
-          (env, ty)
+              | None -> undefined_identifier loc super
+          and env = add_subtype name super env in
+          (env, new_ty)
     in
-    let ty' = annotate_type ~decl:true ~loc env ty in
-    let env = add_type name ty' env in
-    let res =
-      match ty'.desc with
+    let t2 = annotate_type ~decl:true ~loc env1 t1 in
+    let env2 = add_type name t2 env1 in
+    let new_tenv =
+      match t2.desc with
       | T_Enum ids ->
           let t = T_Named name |> add_pos_from ty in
-          let declare_one (env, i) x =
-            (declare_const loc x t (L_Int (Z.of_int i)) env, succ i)
+          let declare_one (env2, i) x =
+            (declare_const loc x t (L_Int (Z.of_int i)) env2, succ i)
           in
-          let env, _ = List.fold_left declare_one (env, 0) ids in
-          env
-      | _ -> env
+          let env3, _ = List.fold_left declare_one (env2, 0) ids in
+          env3
+      | _ -> env2
     in
     let () = if false then Format.eprintf "Declared %s.@." name in
-    res
+    new_tenv
   (* End *)
 
   let try_add_global_constant name env e =
@@ -2726,25 +2761,27 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let declare_global_storage loc gsd env =
     let () = if false then Format.eprintf "Declaring %s@." gsd.name in
     best_effort (gsd, env) @@ fun _ ->
-    let { keyword; initial_value; ty; name } = gsd in
+    let { keyword; initial_value; ty = ty_opt; name } = gsd in
     let+ () = check_var_not_in_genv loc env name in
-    let ty' =
-      match ty with Some ty -> Some (annotate_type ~loc env ty) | None -> ty
+    let ty_opt' =
+      match ty_opt with
+      | Some t -> Some (annotate_type ~loc env t)
+      | None -> ty_opt
     in
-    let initial_value', initial_value_type =
+    let initial_value_type, initial_value' =
       match initial_value with
       | Some e ->
           let t, e' = annotate_expr env e in
-          (Some e', Some t)
+          (Some t, Some e')
       | None -> (None, None)
     in
     let declared_t =
-      match (initial_value_type, ty') with
-      | Some t, Some ty ->
-          let+ () = check_type_satisfies loc env t ty in
-          ty
-      | None, Some ty -> ty
-      | Some t, None -> t
+      match (initial_value_type, ty_opt') with
+      | Some t1, Some t2 ->
+          let+ () = check_type_satisfies loc env t1 t2 in
+          t2
+      | None, Some t2 -> t2
+      | Some t1, None -> t1
       | None, None -> Error.fatal_from loc UnrespectedParserInvariant
     in
     let env1 = add_global_storage loc name keyword env declared_t in
@@ -2755,13 +2792,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
     in
-    ({ gsd with ty = ty'; initial_value = initial_value' }, env2)
+    ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2)
   (* End *)
 
   let rename_primitive loc env (f : AST.func) =
     let name =
       best_effort f.name @@ fun _ ->
-      let _, name, _ = Fn.find_name loc env f.name (List.map snd f.args) in
+      let _, name, _ =
+        Fn.subprogram_for_name loc env f.name (List.map snd f.args)
+      in
       name
     in
     { f with name }
@@ -2781,21 +2820,27 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       else if false then Format.eprintf "@[Typing %a.@]@." PP.pp_t [ d ]
     in
     match d.desc with
+    (* Begin TypecheckFunc *)
     | D_Func ({ body = SB_ASL _; _ } as f) ->
-        let env, f = annotate_and_declare_func ~loc f env in
-        let d = D_Func (try_annotate_subprogram env f) |> here in
-        (d :: acc, env)
+        let new_env, f1 = annotate_and_declare_func ~loc f env in
+        let new_d = D_Func (try_annotate_subprogram new_env f1) |> here in
+        (new_d :: acc, new_env) |: TypingRule.TypecheckFunc
+    (* End *)
     | D_Func ({ body = SB_Primitive; _ } as f) ->
-        let env, f = annotate_and_declare_func ~loc f env in
-        let d = D_Func f |> here in
-        (d :: acc, env)
+        let new_env, f1 = annotate_and_declare_func ~loc f env in
+        let new_d = D_Func f1 |> here in
+        (new_d :: acc, new_env)
+    (* Begin TypecheckGlobalStorage *)
     | D_GlobalStorage gsd ->
-        let gsd', env' = declare_global_storage loc gsd env in
-        let d' = D_GlobalStorage gsd' |> here in
-        (d' :: acc, env')
+        let gsd', new_env = declare_global_storage loc gsd env in
+        let new_d = D_GlobalStorage gsd' |> here in
+        (new_d :: acc, new_env) |: TypingRule.TypecheckGlobalStorage
+    (* End *)
+    (* Begin TypecheckTypeDecl *)
     | D_TypeDecl (x, ty, s) ->
-        let env = declare_type loc x ty s env in
-        (d :: acc, env)
+        let new_env = declare_type loc x ty s env in
+        (d :: acc, new_env) |: TypingRule.TypecheckTypeDecl
+  (* End *)
 
   let type_check_mutually_rec ds (acc, env) =
     let () =
@@ -2865,8 +2910,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     fun ast env ->
       let ast_rev, env = fold_topo ast ([], env) in
       (List.rev ast_rev, env)
+  (* End *)
 end
-(* End *)
 
 module TypeCheck = Annotate (struct
   let check = `TypeCheck

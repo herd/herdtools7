@@ -487,6 +487,20 @@ module TypingRule = struct
     | TBitFields
     | ReduceSlicesToCall
     | TypeOfArrayLength
+    | TypecheckFunc
+    | TypecheckGlobalStorage
+    | TypecheckTypeDecl
+    | AnnotateAndDeclareFunc
+    | AnnotateFuncSig
+    | CheckSetterHasGetter
+    | AddNewFunc
+    | SubprogramForName
+    | HasArgClash
+    | GetUndeclaredDefining
+    | AnnotateOneParam
+    | AnnotateParams
+    | ArgsAsParams
+    | AnnotateArgs
     | StaticEval
 
   let to_string : t -> string = function
@@ -632,6 +646,20 @@ module TypingRule = struct
     | TBitFields -> "TBitFields"
     | ReduceSlicesToCall -> "ReduceSlicesToCall"
     | TypeOfArrayLength -> "TypeOfArrayLength"
+    | TypecheckFunc -> "TypecheckFunc"
+    | TypecheckGlobalStorage -> "TypecheckFunc"
+    | TypecheckTypeDecl -> "TypecheckTypeDecl"
+    | AnnotateAndDeclareFunc -> "AnnotateAndDeclareFunc"
+    | AnnotateFuncSig -> "AnnotateFuncSig"
+    | CheckSetterHasGetter -> "CheckSetterHasGetter"
+    | AddNewFunc -> "AddNewFunc"
+    | SubprogramForName -> "SubprogramForName"
+    | HasArgClash -> "HasArgClash"
+    | GetUndeclaredDefining -> "GetUndeclaredDefining"
+    | AnnotateOneParam -> "AnnotateOneParam"
+    | AnnotateParams -> "AnnotateParams"
+    | ArgsAsParams -> "ArgsAsParams"
+    | AnnotateArgs -> "AnnotateArgs"
     | StaticEval -> "StaticEval"
 
   let pp f r = to_string r |> Format.pp_print_string f
@@ -759,6 +787,20 @@ module TypingRule = struct
       TBitFields;
       ReduceSlicesToCall;
       TypeOfArrayLength;
+      TypecheckFunc;
+      TypecheckGlobalStorage;
+      TypecheckTypeDecl;
+      AnnotateAndDeclareFunc;
+      AnnotateFuncSig;
+      CheckSetterHasGetter;
+      AddNewFunc;
+      SubprogramForName;
+      HasArgClash;
+      GetUndeclaredDefining;
+      AnnotateOneParam;
+      AnnotateParams;
+      ArgsAsParams;
+      AnnotateArgs;
       StaticEval;
     ]
 

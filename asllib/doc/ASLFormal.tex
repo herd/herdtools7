@@ -65,9 +65,9 @@ Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 \hypertarget{def-astlabels}{}
     $\astlabels$ is the set of all ASL labels.
 
-% \item
-% \hypertarget{def-strings}{}
-%     $\Strings$ is the set of all ASL string literals.
+\item
+\hypertarget{def-strings}{}
+    $\Strings$ is the set of all ASCII strings.
 \end{itemize}
 
 \begin{definition}[Empty Set]
@@ -385,8 +385,8 @@ configurations at the destination of a transition as \emph{output transitions}.
 
 For example, the conclusion of the rule TypingRule.ELit has \\
 $\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$ as its input configuration
-and `$(\vt, \ELiteral(\vv))$' as its output configuration.
-Further,
+and $(\vt, \ELiteral(\vv))$ as its output configuration.
+Further, \\
 $\configdomain{\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))} = \texttt{annotate\_expr}$,
 while the output configuration does not have a configuration domain, since it is an unlabelled pair.
 
