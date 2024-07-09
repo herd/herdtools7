@@ -28,6 +28,6 @@ jobs:
         with:
           ocaml-compiler: 5.1
 
-      - run: opam install dune ocamlformat.0.26.1
+      - run: opam install dune ocamlformat.0.26.2
 
       - run: opam exec -- dune fmt
