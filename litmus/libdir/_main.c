@@ -59,7 +59,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #else
   const int delta_tb = 0;
 #endif
-  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, delta_tb, 0, };
+  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, delta_tb, 0, 0 };
   opt_t d = def;
   char *prog = argv[0];
   char **p = parse_opt(argc,argv,&def,&d);
@@ -94,6 +94,8 @@ int RUN(int argc,char **argv,FILE *out) {
     fprintf(stderr,"%s: n=%d, r=%d, s=%d\n",prog,glo_ptr->nexe,glo_ptr->nruns,glo_ptr->size);
 #endif
   }
+  glo_ptr->speedcheck = d.speedcheck;
+  glo_ptr->stop_now = 0;
   parse_param(prog,glo_ptr->parse,PARSESZ,p);
 #ifdef PRELUDE
   prelude(out);

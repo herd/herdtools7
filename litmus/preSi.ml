@@ -1881,7 +1881,7 @@ module Make
               true
           end in
         O.o "" ;
-        O.oi "for (int _s=0 ; _s < g->size ; _s++) {" ;
+        O.oi "for (int _s=0 ; _s < g->size; _s++) {" ;
         let n = T.get_nprocs test in
         let ps = get_tag_max_delays test in
         let pss = Misc.nsplit n ps in
@@ -1956,7 +1956,16 @@ module Make
             O.oiii "break;")
           (List.combine vss (List.combine pss css)) ;
         O.oii "}" ;
-        O.oii "(void)do_run(c,&ctx->p,g);" ;
+        O.oii "int ok = do_run(c,&ctx->p,g);" ;
+        O.oii "if (g->speedcheck) {" ;
+        O.oii "/* Global stop */" ;
+        O.oiii "if (ok) g->stop_now = 1;" ;
+        O.oiii "/* Copy global stop */" ;
+        O.oiii "if (_role == 0) ctx->stop_now = g->stop_now;" ;
+        O.oiii "/* Synchronise, expecting ctx->stop_now update */" ;
+        O.oiii "barrier_wait(&ctx->b);" ;
+        O.oiii "if (ctx->stop_now) return;" ;
+        O.oii "}" ;
         O.oi "}" ;
         O.o "}" ;
         O.o ""
@@ -1979,6 +1988,11 @@ module Make
         O.oii "int part = q->part >= 0 ? q->part : rand_k(&seed,SCANSZ);" ;
         O.oii "set_role(g,&c,part);";
         O.oii "choose_params(g,&c,part);" ;
+        O.oii "if (g->speedcheck) {" ;
+        O.oiii "/* Synchronise, expecting g->stop_now update */" ;
+        O.oiii "barrier_wait(&g->gb);" ;
+        O.oiii "if (g->stop_now) return;" ;
+        O.oii "}" ;
         O.oi "}" ;
         O.o "}" ;
         O.o ""
