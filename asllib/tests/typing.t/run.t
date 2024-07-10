@@ -39,15 +39,7 @@ Assignments of constrained integers
 
 Propagation of constrained integers
   $ aslref --no-exec TPositive3.asl
-  File TPositive3.asl, line 4, characters 4 to 49:
-  ASL Typing error: a subtype of integer {8, 16, 32, 64} was expected,
-    provided integer {8..64}.
-  [1]
   $ aslref --no-exec TPositive3-0.asl
-  File TPositive3-0.asl, line 6, characters 4 to 48:
-  ASL Typing error: a subtype of integer {0, 2, 4, 6} was expected,
-    provided integer {0..6}.
-  [1]
   $ aslref --no-exec TPositive3-1.asl
   $ aslref --no-exec TNegative3.asl
 
@@ -182,15 +174,11 @@ Symbolic execution of bit vector widths expressions
 
 Complex symbolic execution of bit vector widths expressions
   $ aslref --no-exec TPositive11.asl
-  File TPositive11.asl, line 11, characters 43 to 63:
-  ASL Typing error: a subtype of integer {1, 2, 4, 8} was expected,
-    provided integer {1..8}.
+  File TPositive11.asl, line 11, characters 4 to 64:
+  ASL Typing error: a subtype of bits(numBits) was expected,
+    provided bits((numBytes * 8)).
   [1]
   $ aslref --no-exec TPositive11-0.asl
-  File TPositive11-0.asl, line 14, characters 43 to 66:
-  ASL Typing error: a subtype of integer {1, 2, 4, 8} was expected,
-    provided integer {1..8}.
-  [1]
   $ aslref --no-exec TPositive11-1.asl
 
 ATC's on bit vectors
@@ -203,10 +191,19 @@ ATC's on bit vectors
 
 Large constraint sets
   $ aslref TPositive13.asl
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   $ aslref --no-exec TDegraded13.asl
-  $ if [ $(ocaml -vnum | cut -b 1) = "5" ]; then aslref TDegraded13.asl; fi
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  $ if [ $(ocaml -vnum | cut -b 1) = "5" ]; then aslref TDegraded13.asl 2>/dev/null; fi
   $ aslref --no-exec TDegraded13-sets1.asl
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   $ aslref --no-exec TDegraded13-sets2.asl
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
 
 Named types for bit vector widths
   $ aslref --no-exec TPositive14.asl

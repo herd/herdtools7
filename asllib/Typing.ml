@@ -56,6 +56,11 @@ let reduce_constants env e =
     try StaticModel.try_normalize env e |> eval_expr env
     with StaticEvaluationUnknown -> unsupported_expr e)
 
+let reduce_to_z_opt env e =
+  match (StaticModel.try_normalize env e).desc with
+  | E_Literal (L_Int z) -> Some z
+  | _ -> None
+
 let reduce_constraint env = function
   | Constraint_Exact e -> Constraint_Exact (StaticModel.try_normalize env e)
   | Constraint_Range (e1, e2) ->
@@ -627,7 +632,50 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let constraints_is_non_negative = List.for_all constraint_is_non_negative
 
+  let binop_is_exploding = function
+    | MUL | SHL | POW -> true
+    | PLUS | DIV | MINUS | MOD | SHR | DIVRM -> false
+    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
+    | OR | RDIV ->
+        assert false
+
+  let explode_intervals =
+    let rec make_interval ~loc acc a b =
+      if Z.leq a b then
+        let eb = E_Literal (L_Int b) |> add_pos_from loc in
+        let acc' = Constraint_Exact eb :: acc in
+        make_interval ~loc acc' a (Z.pred b)
+      else acc
+    in
+    let[@warning "-44"] interval_is_too_big a b =
+      let open Z in
+      let max_interval_size = ~$1 lsl 31 in
+      Compare.(abs (a - b) > max_interval_size)
+    in
+    let explode_constraint env = function
+      | Constraint_Exact _ as c -> [ c ]
+      | Constraint_Range (a, b) as c -> (
+          match (reduce_to_z_opt env a, reduce_to_z_opt env b) with
+          | Some za, Some zb ->
+              if interval_is_too_big za zb then
+                let () =
+                  Format.eprintf
+                    "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as \
+                     an interval.@]@."
+                    Z.pp_print za Z.pp_print zb
+                in
+                [ c ]
+              else make_interval [] ~loc:b za zb
+          | _ -> [ c ])
+    in
+    fun env -> list_concat_map (explode_constraint env)
+
   let constraint_binop env op cs1 cs2 =
+    let cs1, cs2 =
+      if binop_is_exploding op then
+        (explode_intervals env cs1, explode_intervals env cs2)
+      else (cs1, cs2)
+    in
     let res = constraint_binop op cs1 cs2 |> reduce_constraints env in
     let () =
       if false then
