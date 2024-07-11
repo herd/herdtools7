@@ -431,7 +431,7 @@ module Make (C : Config) = struct
 
     (*
      * Add equation, the effect will be silent
-     * discard of executon candidate if a
+     * discard of execution candidate if a
      * contradiction appears.
      *)
 
@@ -447,7 +447,20 @@ module Make (C : Config) = struct
 
     let somebool _ =
       let v = V.fresh_var () in
-      let mbool b = M.unitT (vbool b) in
+      let mbool b =
+        (* The underlying choice operator operates
+         * by adding equations ToInt(v) := 1
+         * and ToInt(v) := 0, which our naive solver
+         * does not resolve as v=TRUE and v=FALSE,
+         * Thereby leaving the equation unsolved.
+         * To correct this, we add
+         * the direct equations on "v":
+         * v := TRUE and v := FALSE in the
+         * positive and negative branches of choice.
+         *)
+        let* () = M.assign v (vbool b) in
+        M.unitT (vbool b) in
+      (* Using "choice" and not returning "v" directly performs the split *)
       choice (M.unitT v) (mbool true) (mbool false)
 
     (*
