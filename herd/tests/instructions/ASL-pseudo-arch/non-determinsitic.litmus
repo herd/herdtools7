@@ -1,0 +1,21 @@
+ASL non-deterministic
+
+{ }
+
+// Non deterministically returns 1 or 2
+func g() => integer
+begin
+  let b = SomeBoolean();
+  if b then
+    return 1;
+  end
+  return 2;
+end
+
+func main() => integer
+begin
+  let z = g();
+  return 0;
+end
+
+locations [0:main.0.z;]
