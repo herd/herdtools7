@@ -2768,7 +2768,7 @@ One of the following applies:
       \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$ \ProseOrTypeError;
       \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$ \ProseOrTypeError;
       \item $\vanont$ is \typeequal\ to $\vanons$;
-      \item $\tty$ is
+      \item $\tty$ is $\vt$ if it is a named type (that is, $\astlabel(\vt)=\TNamed$), and $\vs$ otherwise.
     \end{itemize}
 
     \item All of the following apply (\textsc{one\_named2}):
@@ -2834,29 +2834,13 @@ One of the following applies:
       \item the result is a type error indicating the lack of a lowest common ancestor.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_tuple\_different\_length}):
-    \begin{itemize}
-      \item $\vt$ is a tuple type with type list $\vlit$;
-      \item $\vs$ is a tuple type with type list $\vlis$;
-      \item $\vlit$ and $vlis$ differ in their number of elements;
-      \item the result is a type error indicating the lack of a lowest common ancestor.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{t\_tuple\_error}):
-    \begin{itemize}
-      \item $\vt$ is a tuple type with type list $\vlit$;
-      \item $\vs$ is a tuple type with type list $\vlis$;
-      \item $\vlit$ and $\vlis$ have the same number of elements;
-      \item there exists an index $\vi$ such that either $\vlit[\vi]$ does not \typesatisfy\ $\vlis[\vi]$ or vice versa;
-      \item the result is a type error indicating the lack of a lowest common ancestor.
-    \end{itemize}
-
     \item All of the following apply (\textsc{t\_tuple}):
     \begin{itemize}
       \item $\vt$ is a tuple type with type list $\vlit$;
       \item $\vs$ is a tuple type with type list $\vlis$;
-      \item $\vlit$ and $\vlis$ have the same number of elements;
-      \item for every index $\vi$, $\vlit[\vi]$ \typesatisfies\ $\vlis[\vi]$ and vice versa;
+      \item checking whether $\vlit$ and $\vlis$ have the same number of elements yields $\True$
+            or a type error, which short-circuits the entire rule (indicating that the number of elements in both tuples is expected
+            to be the same and thus there is no lowest common ancestor);
       \item $\vli[\vi]$ is the of types lowest common ancestor of $\vlit[\vi]$ and $\vlis[\vi]$, for every position of $\vlit$;
       \item $\tty$ is the tuple type with list of types $\vli$, that is, $\TTuple(\vli)$.
     \end{itemize}
@@ -2931,6 +2915,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 \begin{mathpar}
 \inferrule[t\_int\_unconstrained]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \astlabel(\vt) = \astlabel(\vs) = \TInt\\
   \isunconstrainedinteger(\vt) \lor \isunconstrainedinteger(\vs)
 }{
   \lca(\tenv, \vt, \vs) \typearrow \unconstrainedinteger
@@ -2938,6 +2923,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 \and
 \inferrule[t\_int\_underconstrained]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \astlabel(\vt) = \astlabel(\vs) = \TInt\\
   \neg\isunconstrainedinteger(\vt)\\
   \neg\isunconstrainedinteger(\vs)\\
   \isunderconstrainedinteger(\vt) \lor \isunderconstrainedinteger(\vs)\\
@@ -2951,6 +2937,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 \inferrule[t\_int\_wellconstrained]
 {
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \astlabel(\vt) = \astlabel(\vs) = \TInt\\
   \vt \eqname \TInt(\wellconstrained(\cst))\\
   \vs \eqname \TInt(\wellconstrained(\css))
 }{
@@ -3000,35 +2987,12 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[t\_tuple\_different\_length]{
-  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
-  \vt \eqname \TTuple(\vlit)\\
-  \vs \eqname \TTuple(\vlis)\\
-  \equallength(\vlit, \vlis) \typearrow \False
-}{
-  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{NoLCA}
-}
-\and
-\inferrule[t\_tuple\_error]{
-  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
-  \vt \eqname \TTuple(\vlit)\\
-  \vs \eqname \TTuple(\vlis)\\
-  \equallength(\vlit, \vlis) \typearrow \True\\
-  \vi\in\listrange(\vlit)\\
-  \typesat(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vbone\\
-  \typesat(\tenv, \vlis[\vi], \vlit[\vi]) \typearrow \vbtwo\\
-  \vbone = \False \lor \vbtwo = \False
-}{
-  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{NoLCA}
-}
-\and
 \inferrule[t\_tuple]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \vt \eqname \TTuple(\vlit)\\
   \vs \eqname \TTuple(\vlis)\\
-  \equallength(\vlit, \vlis) \typearrow \True\\
-  \vi\in\listrange(\vlit): \typesat(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \True\\
-  \vi\in\listrange(\vlit): \typesat(\tenv, \vlis[\vi], \vlit[\vi]) \typearrow \True\\
+  \equallength(\vlit, \vlis) \typearrow \vb\\
+  \checktrans{\vb}{NoLCA/TuplesHaveDifferentLengths} \typearrow \True \OrTypeError\\\\
   \vi\in\listrange(\vlit): \lca(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vli[\vi] \OrTypeError\\
   \vli \eqdef [\vi\in\listrange(\vlit): \vli[\vi]]
 }{
