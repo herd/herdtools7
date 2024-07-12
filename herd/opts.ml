@@ -41,6 +41,7 @@ let unroll_default = function
 |`ASL -> 4
 | _ -> 2
 let unroll = ref None
+let lkmm_legacy = ref true
 let speedcheck = ref Speed.False
 let archcheck = ref true
 let optace = ref None

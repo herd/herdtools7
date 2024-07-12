@@ -38,6 +38,7 @@ val bell : string option ref
 val macros : string option ref
 val unroll_default : [> `ASL ] -> int
 val unroll : int option ref
+val lkmm_legacy : bool ref
 val speedcheck : Speed.t ref
 val optace : OptAce.t option ref
 val archcheck : bool ref
