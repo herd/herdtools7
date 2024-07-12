@@ -84,6 +84,9 @@ module Make
 (* Handle instruction as data *)
     let has_instruction_ptr = Insert.exists "instruction.h"
 
+(* Precise fault handling, impact on label tables *)
+    let do_precise = Cfg.is_kvm && Fault.Handling.is_fatal Cfg.precision
+
     module
       LocMake
         (CfgLoc:
@@ -97,8 +100,6 @@ module Make
     let do_ascall =
       Cfg.ascall || Cfg.is_kvm || do_label_init || CfgLoc.need_prelude
       || Cfg.variant Variant_litmus.Self
-
-    let do_precise = Cfg.is_kvm && Fault.Handling.is_fatal Cfg.precision
 
     let do_dynalloc =
         let open Alloc in
@@ -179,7 +180,7 @@ module Make
       let some_labels test =
         do_precise || do_label_init || see_faults test
 
-      let need_symbols test = see_faults test || U.label_in_outs test
+      let need_symbols env test = see_faults test || U.label_in_outs env test
 
 (***************)
 (* File header *)
@@ -692,7 +693,7 @@ module Make
           O.o "} labels_t;" ;
           O.o ""
         end ;
-        if need_symbols test then begin
+        if need_symbols env test then begin
           UD.dump_label_defs CfgLoc.all_labels ;
           UD.dump_label_funcs do_self CfgLoc.all_labels (T.get_nprocs test)
         end ;
@@ -1403,7 +1404,7 @@ module Make
                 else
                   LangUtils.code_fun p in
               let rhs =
-                sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
+                sprintf "((ins_t *)%s)+prelude_size((ins_t *)%s)+%d"
                   proc (LangUtils.code_fun p) off in
               O.fi "%s = %s;" lhs rhs)
             CfgLoc.all_labels ;
@@ -1795,7 +1796,7 @@ module Make
         O.oi "sense_t *_b = &_ctx->b;" ;
         O.oi "log_t *_log = &_ctx->out;" ;
         if some_ptr then O.oi "log_ptr_t *_log_ptr = &_ctx->out_ptr;" ;
-        if some_test_vars test || do_self || U.label_in_outs test then begin
+        if some_test_vars test || do_self || U.label_in_outs env test then begin
           O.oi "vars_t *_vars = &_ctx->v;"
         end ;
         begin match test.T.globals with
@@ -2134,7 +2135,8 @@ module Make
               let need_prelude =
                 has_instruction_ptr &&
                   begin
-                    not (Label.Full.Set.is_empty label_init)
+                    Misc.consp all_labels
+                    || not (Label.Full.Set.is_empty label_init)
                     || Misc.consp (T.from_labels test)
                     || Cfg.variant Variant_litmus.Self
                   end

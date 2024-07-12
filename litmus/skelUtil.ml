@@ -184,7 +184,7 @@ module Make
       val pte_in_outs : env -> T.t -> bool
       val ptr_pte_in_outs : env -> T.t -> bool
       val instr_in_outs : env -> T.t -> bool
-      val label_in_outs : T.t -> bool
+      val label_in_outs : env -> T.t -> bool
       val get_faults : T.t -> (A.V.v, A.FaultType.t) Fault.atom list
       val find_label_offset : Proc.t -> string -> T.t -> int
 
@@ -216,7 +216,7 @@ module Make
         val initialise_labels : string -> Label.Full.Set.t -> unit
 
         (* Dump definition of label offsets, _i.e_ offset from code start *)
-        val define_label_offsets : T.t -> Label.Full.Set.t -> unit
+        val define_label_offsets : env -> T.t -> unit
 
         (* Dump definitions relating to labels in the post-condition *)
         val dump_label_defs : Label.Full.full list -> unit
@@ -542,8 +542,7 @@ end
         A.RLocSet.exists (fun loc -> is_rloc_pte loc env) locs
 
       let is_ptr_pte loc env =
-        let loc = ConstrGen.loc_of_rloc loc in
-        let t = find_type loc env in
+        let t = find_rloc_type loc env in
         CType.is_ptr t || CType.is_pte t
 
       let ptr_pte_in_outs env test =
@@ -551,16 +550,17 @@ end
         A.RLocSet.exists (fun loc ->is_ptr_pte loc env) locs
 
       let is_instr loc env =
-        let loc = ConstrGen.loc_of_rloc loc in
-        let t = find_type loc env in
+        let t = find_rloc_type loc env in
         CType.is_ins_t t
 
       let instr_in_outs env test =
         let locs = get_displayed_locs test in
-        A.RLocSet.exists (fun loc ->is_instr loc env) locs
+        A.RLocSet.exists (fun loc -> is_instr loc env) locs
 
-      let label_in_outs t =
-        not (Label.Full.Set.is_empty (T.C.get_labels t.T.condition))
+      let label_in_outs env t =
+        let locs = get_displayed_locs t in
+        A.RLocSet.exists (fun loc -> is_rloc_label loc env)
+          locs
 
       let get_faults test =
         let inc = T.C.get_faults test.T.condition
@@ -715,10 +715,17 @@ end
           ()
 
 (* Output offset of labels *)
-        let define_label_offsets test lbls =
-          if not (Label.Full.Set.is_empty lbls) then begin
+        let define_label_offsets env test  =
+          let lbls =
+            (* If printing labels, we need all offsets *)
+            if label_in_outs env test then
+              T.all_labels test
+            else
+            (* Otherwise, initial values are enough *)
+              T.get_init_labels test |> Label.Full.Set.elements in
+          if Misc.consp lbls then begin
             let find p lbl = find_label_offset p lbl test in
-            Label.Full.Set.iter
+            List.iter
               (fun (p,lbl) ->
                 let off = find p lbl in
                 O.f "static const size_t %s = %i;"

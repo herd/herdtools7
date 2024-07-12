@@ -1409,7 +1409,7 @@ module Make
             O.fx indent "_a->%s = _a->%s;" (tag_malloc a) a ;
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
-        if do_self || CfgLoc.need_prelude || U.label_in_outs test then begin
+        if do_self || CfgLoc.need_prelude || U.label_in_outs env test then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o "" ;
           if do_self then begin
@@ -2953,7 +2953,7 @@ module Make
         let open MLoc in
         let env = U.build_env test in
         dump_header test ;
-        if U.label_in_outs test then
+        if U.label_in_outs env test then
           UD.dump_label_defs (T.all_labels test) ;
         UD.dump_getinstrs test ;
         dump_read_timebase () ;
@@ -2963,15 +2963,12 @@ module Make
         dump_filter env test ;
         dump_cond_fun env test ;
         dump_defs_outs doc env test ;
-        (* Note: does nothing when no label is here *)
-        let lbls_in_outs = T.C.get_labels test.T.condition in
-        let lbls = Label.Full.Set.union lbls_in_outs (T.get_init_labels test) in
-        UD.define_label_offsets test lbls ;
+        UD.define_label_offsets env test ;
         dump_check_globals env doc test ;
         dump_templates env doc.Name.name test ;
         dump_reinit env test cpys ;
         let nprocs = T.get_nprocs test in
-        if U.label_in_outs test then
+        if U.label_in_outs env test then
           UD.dump_label_funcs do_self (T.all_labels test) nprocs ;
         dump_zyva doc cpys env test ;
         if do_vp then UD.prelude doc test ;
