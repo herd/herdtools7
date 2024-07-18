@@ -159,14 +159,11 @@
   $ cat >lca.asl <<EOF
   > func main () => integer
   > begin
-  >   let - = if UNKNOWN: boolean then (3, 2) else (1, 4);
+  >   let v : (integer{3,1}, integer{2,4}) = if UNKNOWN: boolean then (3, 2) else (1, 4);
+  >   return 0;
   > end
 
   $ aslref lca.asl
-  File lca.asl, line 3, characters 10 to 53:
-  ASL Typing error: cannot find a common ancestor to those two types
-    (integer {3}, integer {2}) and (integer {1}, integer {4}).
-  [1]
 
   $ cat >lca.asl <<EOF
   > type T1 of integer;
@@ -182,6 +179,3 @@
   File lca.asl, line 7, characters 2 to 18:
   ASL Typing error: a subtype of real was expected, provided array [4] of T1.
   [1]
-
-
-

@@ -755,15 +755,10 @@ let rec lowest_common_ancestor env s t =
     when array_length_equal env width_s width_t ->
       let+ t = lowest_common_ancestor env ty_s ty_t in
       T_Array (width_s, t) |> add_dummy_pos
-  | T_Tuple li_s, T_Tuple li_t
-    when List.compare_lengths li_s li_t = 0
-         && List.for_all2 (type_satisfies env) li_s li_t
-         && List.for_all2 (type_satisfies env) li_t li_s ->
-      (* If S and T both are tuple types with the same number of elements and
-         the types of elements of S type-satisfy the types of the elements of T
-         and vice-versa: the tuple type with the type of each element the
-         lowest common ancestor of the types of the corresponding elements of S
-         and T. *)
+  | T_Tuple li_s, T_Tuple li_t when List.compare_lengths li_s li_t = 0 ->
+      (* If S and T both are tuple types with the same number of elements:
+         the tuple type with the type of each element the lowest common ancestor
+         of the types of the corresponding elements of S and T. *)
       let+ li =
         List.map2 (lowest_common_ancestor env) li_s li_t |> unpack_options
       in
