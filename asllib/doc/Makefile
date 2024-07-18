@@ -12,8 +12,8 @@ short:
 no-formal:
 	$(MAKE) $(MFLAGS) NOFORMAL=1 all
 
-no-code:
-	$(MAKE) $(MFLAGS) NOCODE=1 all
+code:
+	$(MAKE) $(MFLAGS) CODE=1 all
 
 no-empty:
 	$(MAKE) $(MFLAGS) NOEMPTY=1 all
@@ -64,12 +64,12 @@ ASLASTLines.tex: ../AST.mli
 
 .PHONY: force
 
-ifdef NOCODE
-ifcode.tex: force
-	@echo "\\\\newif\\ifcode\\\\codefalse" >$@
-else
+ifdef CODE
 ifcode.tex: force
 	@echo "\\\\newif\\ifcode\\\\codetrue" >$@
+else
+ifcode.tex: force
+	@echo "\\\\newif\\ifcode\\\\codefalse" >$@
 endif
 
 ifdef NOFORMAL

@@ -143,9 +143,6 @@
 \newcommand\vvsg[0]{\texttt{vsg}}
 \newcommand\vvs[0]{\texttt{vs}}
 \newcommand\vvsone[0]{\texttt{vs1}}
-\newcommand\vms[0]{\texttt{ms}}
-\newcommand\vmsone[0]{\texttt{ms1}}
-\newcommand\vmstwo[0]{\texttt{ms2}}
 \newcommand\vles[0]{\texttt{les}}
 \newcommand\vre[0]{\texttt{re}}
 \newcommand\vvone[0]{\texttt{v1}}
@@ -227,7 +224,6 @@
 %\newcommand\etop[0]{\texttt{e\_top}}
 \newcommand\vvsubtop[0]{\texttt{v\_top}}
 \newcommand\mtop[0]{\texttt{m\_top}}
-\newcommand\efactor[0]{\texttt{e\_factor}}
 \newcommand\mfactor[0]{\texttt{m\_factor}}
 \newcommand\vfactor[0]{\texttt{v\_factor}}
 \newcommand\range[0]{\texttt{range}}
@@ -4092,29 +4088,20 @@ once the block is exited. As a consequence, the subsequent declaration
 variable~\texttt{x} persists after block end. However, observe that \texttt{x}
 is defined before the block and hence still exists after the block.
 
-    \CodeSubsection{\BlockBegin}{\BlockEnd}{../Interpreter.ml}
+\CodeSubsection{\BlockBegin}{\BlockEnd}{../Interpreter.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-\begin{definition}[Function Restriction]
-The \emph{restriction} of a function $f : X \rightarrow Y$ to a subset of its domain
-$A \subseteq \dom(f)$, denoted as $f|_A$, is defined as follows (the set of input-output pairs):
-\[
-  f|_A \triangleq \{ (x, f(x)) \;|\; x \in A \} \enspace.
-\]
-\end{definition}
-
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \env \eqname (\tenv,\denv)\\
-    \blockenv \eqdef (\tenv, (G^\denv, \emptylist))\\
-    \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\
-    \blockenvone\eqdef(\tenv, \denvone)\\
-    \newenv \eqdef(\tenv, (G^{\denvone}, L^{\denvone}|_{\dom(L^\denv)}))
-  }
-  {
-    \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)
-  }
+\inferrule{
+  \env \eqname (\tenv,\denv)\\
+  \blockenv \eqdef (\tenv, (G^\denv, \emptylist))\\
+  \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\
+  \blockenvone\eqdef(\tenv, \denvone)\\
+  \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
+}{
+  \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)
+}
 \end{mathpar}
 
 That is, evaluating a block discards the bindings for variables declared inside $\stm$.

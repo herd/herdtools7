@@ -119,6 +119,16 @@ The notation $\rightarrowfin$ stands for a function whose domain is finite.
   $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$.
 \end{definition}
 
+\begin{definition}[Function Restriction]
+\hypertarget{def-restrictfunc}{}
+The \emph{restriction} of a function $f : X \rightarrow Y$ to a subset of its domain
+$A \subseteq \dom(f)$, denoted as $\restrictfunc{f}{A}$, is defined
+in terms of the set of input-output pairs:
+\[
+  \restrictfunc{f}{A} \triangleq \{ (x, f(x)) \;|\; x \in A \} \enspace.
+\]
+\end{definition}
+
 Throughout this document, we will annotate arguments of relations and functions, wherever it is useful,
 by writing a name or an expression above the corresponding argument type.
 This makes convenient to refer to arguments by referring to the corresponding names and helps identify

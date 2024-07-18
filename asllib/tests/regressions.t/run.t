@@ -192,11 +192,11 @@ UnderConstrained integers:
 
   $ aslref empty-slice.asl
   '000'
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-1.
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 4+:-1.
   [1]
 
   $ aslref bad-slices.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slices 4+:-23.
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 4+:-23.
   [1]
 
   $ aslref bad-shift.asl

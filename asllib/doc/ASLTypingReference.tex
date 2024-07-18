@@ -123,6 +123,10 @@
 \newcommand\annotateargs[0]{\hyperlink{def-annotateargs}{\texttt{annotate\_args}}}
 \newcommand\annotateonearg[0]{\hyperlink{def-annotateonearg}{\texttt{annotate\_one\_arg}}}
 \newcommand\annotatereturntype[0]{\hyperlink{def-annotatereturntype}{\texttt{annotate\_return\_type}}}
+\newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\texttt{slices\_to\_positions}}}
+\newcommand\extractslice[0]{\hyperlink{def-extractslice}{\texttt{extract\_slice}}}
+\newcommand\slicetopositions[0]{\hyperlink{def-slicetopositions}{\texttt{slice\_to\_positions}}}
+\newcommand\evaltoint[0]{\hyperlink{def-evaltoint}{\texttt{eval\_to\_int}}}
 
 % Symbolic equivalence testing macros
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\texttt{type\_equal}}}
@@ -131,6 +135,13 @@
 \newcommand\bitfieldequal[0]{\hyperlink{def-bitfieldequal}{\texttt{bitfield\_equal}}}
 \newcommand\bitfieldsequal[0]{\hyperlink{def-bitfieldsequal}{\texttt{bitfields\_equal}}}
 \newcommand\reduceexpr[0]{\texttt{reduce\_expr}}
+\newcommand\reduceir[0]{\hyperlink{def-reduceir}{\texttt{reduce\_ir}}}
+\newcommand\polynomialtoexpr[0]{\hyperlink{def-polynomialtoexpr}{\texttt{polynomial\_to\_expr}}}
+\newcommand\monomialtoexpr[0]{\hyperlink{def-monomialtoexpr}{\texttt{monomial\_to\_expr}}}
+\newcommand\symmulexpr[0]{\hyperlink{def-symmulexpr}{\texttt{sym\_mul\_expr}}}
+\newcommand\symaddexpr[0]{\hyperlink{def-symaddexpr}{\texttt{sym\_add\_expr}}}
+\newcommand\monomialstoexpr[0]{\hyperlink{def-monomialstoexpr}{\texttt{monomials\_to\_expr}}}
+\newcommand\unitarymonomialstoexpr[0]{\hyperlink{def-unitarymonomialstoexpr}{\texttt{unitary\_monomials\_to\_expr}}}
 
 \newcommand\subsumes[0]{\hyperlink{def-subsumes}{\texttt{subsumes}}}
 \newcommand\symsubsumes[0]{\hyperlink{def-symsubsumes}{\texttt{sym\_subsumes}}}
@@ -139,6 +150,7 @@
 \newcommand\toircase[0]{\hyperlink{def-toircase}{\texttt{to\_ir\_case}}}
 \newcommand\Prod[0]{\hyperlink{def-prod}{\textsf{Prod}}}
 \newcommand\Sum[0]{\hyperlink{def-sum}{\textsf{Sum}}}
+\newcommand\unitarymonomial[0]{\hyperlink{def-unitarymonomial}{\textsf{unitary\_monomial}}}
 \newcommand\monomial[0]{\hyperlink{def-monomial}{\textsf{monomial}}}
 \newcommand\polynomial[0]{\hyperlink{def-polynomial}{\textsf{polynomial}}}
 \newcommand\addpolynomials[0]{\hyperlink{def-addpolynomials}{\texttt{add\_polynomials}}}
@@ -11076,6 +11088,13 @@ and how to apply basic operators to literals via the following rules:
   \item TypingRule.UnopLiterals (see \secref{TypingRule.UnopLiterals})
   \item TypingRule.BinopLiterals (see \secref{TypingRule.BinopLiterals})
 \end{itemize}
+We also define the following helper rules:
+\begin{itemize}
+  \item TypingRule.SlicesToPositions (see \secref{TypingRule.SlicesToPositions})
+  \item TypingRule.SliceToPositions (see \secref{TypingRule.SliceToPositions})
+  \item TypingRule.EvalToInt (see \secref{TypingRule.EvalToInt})
+  \item TypingRule.ExtractSlice (see \secref{TypingRule.ExtractSlice})
+\end{itemize}
 
 \hypertarget{def-staticeval}{}
 \section{TypingRule.StaticEval \label{sec:TypingRule.StaticEval}}
@@ -11139,11 +11158,11 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a slicing expression of the integer literal for $\vi$ and slice list $\vslices$, that is,
           $\ESlice(\lint(\vi), \vslices)$;
-    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\tododefine{slices\_to\_positions}$
-          yields $\positions$;
+    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\slicestopositions$
+          yields $\positions$ \ProseOrTypeError;
     \item $\posmax$ is the maximum index in $\positions$;
     \item converting the first $\posmax+1$ digits of the binary representation of $\vi$ into a bitvector
-          via \tododefine{bitvector\_of\_z} yields $\bvone$;
+          via $\inttobits$ yields $\bvone$;
     \item extracting the slice of $\bvone$ given by $\positions$ yields $\bvtwo$ \ProseOrTypeError;
     \item $\vv$ is the bitvector literal for $\bvtwo$.
   \end{itemize}
@@ -11152,8 +11171,8 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a slicing expression of the bitvector literal for $\bv$ and slice list $\vslices$, that is,
           $\ESlice(\lbitvector(\bv), \vslices)$;
-    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\tododefine{slices\_to\_positions}$
-          yields $\positions$;
+    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\slicestopositions$
+          yields $\positions$ \ProseOrTypeError;
     \item $\posmax$ is the maximum index in $\positions$;
     \item checking that the length of $\bv$ is greater than $\posmax$ (which is $0$-based) yields $\True$ \ProseOrTypeError;
     \item extracting the slice of $\bv$ given by $\positions$ yields $\bvtwo$ \ProseOrTypeError;
@@ -11231,10 +11250,10 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_slice\_int]{
-  \tododefine{slices\_to\_positions}(\tenv, \slices) \typearrow \positions\\
+  \slicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
   \posmax \eqdef \max(\positions)\\
-  \bvone \eqdef \tododefine{bitvector\_of\_z}(\posmax + 1, \vi)\\
-  \tododefine{extract\_slice}(\bvone, \positions) \typearrow \bvtwo \OrTypeError
+  \bvone \eqdef \inttobits(\vi, \posmax + 1)\\
+  \extractslice(\bvone, \positions) \typearrow \bvtwo \OrTypeError
 }{
   \staticeval(\tenv, \overname{\ESlice(\lint(\vi), \slices)}{\ve}) \typearrow \overname{\lbitvector(\bvtwo)}{\vv}
 }
@@ -11242,10 +11261,10 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_slice\_bitvector]{
-  \tododefine{slices\_to\_positions}(\tenv, \slices) \typearrow \positions\\
+  \slicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
   \posmax \eqdef \max(\positions)\\
   \checktrans{|\bv| > \posmax}{SliceOutOfRange} \checktransarrow \True \OrTypeError\\\\
-  \tododefine{extract\_slice}(\bv, \positions) \typearrow \bvtwo \OrTypeError
+  \extractslice(\bv, \positions) \typearrow \bvtwo \OrTypeError
 }{
   \staticeval(\tenv, \overname{\ESlice(\lbitvector(\bv), \slices)}{\ve}) \typearrow \overname{\lbitvector(\bvtwo)}{\vv}
 }
@@ -12114,6 +12133,203 @@ of \texttt{width} bits.
 \end{mathpar}
 \end{emptyformal}
 
+\section{TypingRule.SlicesToPositions \label{sec:TypingRule.SlicesToPositions}}
+\hypertarget{def-slicestopositions}{}
+The function
+\[
+  \slicestopositions(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slices}) \aslto
+  \overname{\Z^*}{\positions} \cup\ \TTypeError
+\]
+transforms the list of slices $\slices$ in $\tenv$ to a list of indices $\positions$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\slices$ is the empty list;
+    \item $\positions$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\slices$ is the list with $\vs$ as its head and $\slicesone$ as its tail;
+    \item transforming $\vs$ to a list of positions in $\tenv$ via $\slicetopositions$ yields $\positionsone$ \ProseOrTypeError;
+    \item transforming $\slicesone$ to a list of positions in $\tenv$ via $\slicestopositions$ yields $\positionstwo$ \ProseOrTypeError;
+    \item $\positions$ is the concatenation of $\positionsone$ and $\positionstwo$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \slicestopositions(\tenv, \overname{\emptylist}{\slices}) \typearrow \overname{\emptylist}{\positions}
+}
+\and
+\inferrule[non\_empty]{
+  \slicetopositions(\tenv, \vs) \typearrow \positionsone \OrTypeError\\\\
+  \slicestopositions(\tenv, \slicesone) \typearrow \positionstwo \OrTypeError
+}{
+  \slicestopositions(\tenv, \overname{[\vs] + \slicesone}{\slices}) \typearrow \overname{\positionsone \concat \positionstwo}{\positions}
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.SliceToPositions \label{sec:TypingRule.SliceToPositions}}
+\hypertarget{def-slicetopositions}{}
+The function
+\[
+  \slicetopositions(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto
+  \overname{\Z^+}{\positions} \cup\ \TTypeError
+\]
+transforms a slice $\vs$ in $\tenv$ to a list of indices $\positions$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{single}):
+  \begin{itemize}
+    \item $\vs$ is a slices for a single position given by the expression $\ve$, that is, \\ $\SliceSingle(\ve)$;
+    \item statically evaluating $\ve$ in $\tenv$ to an integer via $\evaltoint$ yields the integer $n$ \ProseOrTypeError;
+    \item checking that $n$ is non-negative yields $\True$ \ProseOrTypeError;
+    \item $\positions$ is the list containing the single element $n$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vs$ is a slices for a range given by the expression $\etop$
+          for the top position and $\ebot$ for the bottom position, that is, \\ $\SliceRange(\etop, \ebot)$;
+    \item statically evaluating $\ebot$ in $\tenv$ to an integer via $\evaltoint$ yields the integer $b$ \ProseOrTypeError;
+    \item statically evaluating $\etop$ in $\tenv$ to an integer via $\evaltoint$ yields the integer $t$ \ProseOrTypeError;
+    \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$ \ProseOrTypeError;
+    \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{length}):
+  \begin{itemize}
+    \item $\vs$ is a slices for a length slice given by the expression $\ebot$
+          for the bottom position and $\elength$ for the length of the slice, that is, \\ $\SliceLength(\ebot, \elength)$;
+    \item statically evaluating $\ebot$ in $\tenv$ to an integer via $\evaltoint$ yields the integer $b$ \ProseOrTypeError;
+    \item statically evaluating $\elength$ in $\tenv$ to an integer via $\evaltoint$ yields the integer $l$ \ProseOrTypeError;
+    \item $t$ is $b + l - 1$;
+    \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$ \ProseOrTypeError;
+    \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{star}):
+  \begin{itemize}
+    \item $\vs$ is a slices for a scaled slice given by the expression $\efactor$
+          for the factor and $\elength$ for the length of the slice, that is, \\ $\SliceStar(\efactor, \elength)$;
+    \item statically evaluating $\efactor$ in $\tenv$ to an integer via $\evaltoint$ yields the integer $f$ \ProseOrTypeError;
+    \item statically evaluating $\elength$ in $\tenv$ to an integer via $\evaltoint$ yields the integer $l$ \ProseOrTypeError;
+    \item $t$ is $(f \times l) + l - 1$;
+    \item $b$ is $t - l + 1$;
+    \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$ \ProseOrTypeError;
+    \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+
+\begin{mathpar}
+\inferrule[single]{
+  \evaltoint(\tenv, \ve) \typearrow n \OrTypeError\\\\
+  \checktrans{n \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
+}{
+  \slicetopositions(\tenv, \overname{\SliceSingle(\ve)}{\vs}) \typearrow [ n ]
+}
+\and
+\inferrule[range]{
+  \evaltoint(\tenv, \ebot) \typearrow b \OrTypeError\\\\
+  \evaltoint(\tenv, \etop) \typearrow t \OrTypeError\\\\
+  \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
+}{
+  \slicetopositions(\tenv, \overname{\SliceRange(\etop, \ebot)}{\vs}) \typearrow [ t..b ]
+}
+\and
+\inferrule[length]{
+  \evaltoint(\tenv, \ebot) \typearrow b \OrTypeError\\\\
+  \evaltoint(\tenv, \elength) \typearrow l \OrTypeError\\\\
+  t \eqdef b + l - 1
+  \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
+}{
+  \slicetopositions(\tenv, \overname{\SliceLength(\ebot, \elength)}{\vs}) \typearrow [ t..b ]
+}
+\and
+\inferrule[star]{
+  \evaltoint(\tenv, \efactor) \typearrow f \OrTypeError\\\\
+  \evaltoint(\tenv, \elength) \typearrow l \OrTypeError\\\\
+  t \eqdef (f \times l) + l - 1\\
+  b \eqdef t - l\\
+  \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
+}{
+  \slicetopositions(\tenv, \overname{\SliceStar(\efactor, \elength)}{\vs}) \typearrow [ t..b ]
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.EvalToInt \label{sec:TypingRule.EvalToInt}}
+\hypertarget{def-evaltoint}{}
+The function
+\[
+\evaltoint(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
+\aslto \overname{\Z}{n} \cup \TTypeError
+\]
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item statically evaluating $\ve$ in $\tenv$ yields a literal $\vl$ \ProseOrTypeError;
+  \item checking that $\vl$ is an integer literal yields $\True$ \ProseOrTypeError;
+  \item $\vl$ is a literal integer for $n$.
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \staticeval(\tenv, \ve) \typearrow \vl \OrTypeError\\\\
+  \checktrans{\astlabel(\vl) = \lint}{ExpectedIntegerType} \checktransarrow \True \OrTypeError\\\\
+  \vl \eqname \lint(n)
+}{
+  \evaltoint(\tenv, \ve) \typearrow n
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.ExtractSlice \label{sec:TypingRule.ExtractSlice}}
+\hypertarget{def-extractslice}{}
+The function
+\[
+  \extractslice(\overname{\{0,1\}^*}{\bits} \aslsep \overname{\Z^*}{\positions}) \aslto
+  \overname{\{0,1\}^*}{\vr} \cup\ \TTypeError
+\]
+extracts from the list of bits $\bits$ the list of bits $\vr$ containing the values of $\bits$
+at the positions given by $\positions$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vr$ is the list of bits given by taking $\bits[\vi]$ for every value given in $\positions$ (in the order they appear).
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vr \eqdef [ \vi\in\positions: \bits[\vi] ]
+}{
+  \extractslice(\tenv, \bits, \positions) \typearrow \vr
+}
+\end{mathpar}
+\end{emptyformal}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Symbolic Subsumption Testing \label{chap:symbolicsubsumptiontesting}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -12334,11 +12550,10 @@ Our symbolic reduction and equivalence testing rules use \emph{symbolic expressi
 % \newcommand\symexpr[0]{\hyperlink{def-symexpr}{\texttt{sym\_expr}}}
 % \hypertarget{def-symexpr}{}
 \[
-  \hypertarget{def-polynomial}{}\hypertarget{def-sum}{}
   \begin{array}{rcl}
     % \symexpr    &::=& \polynomial                                     \hypertarget{def-polynomial}{}\hypertarget{def-sum}{}\\
-    \polynomial &\triangleq& \Sum(\monomial \partialto \Q)                  \hypertarget{def-monomial}{}\hypertarget{def-prod}{}\\
-    \monomial   &\triangleq& \Prod(\Identifiers \partialto \Npos)\\
+    \polynomial &\triangleq& \Sum(\unitarymonomial \partialto \Q)                  \hypertarget{def-monomial}{}\hypertarget{def-prod}{}\\
+    \unitarymonomial   &\triangleq& \Prod(\Identifiers \partialto \N)\\
   \end{array}
 \]
 
@@ -12346,15 +12561,17 @@ We now explain each component of a symbolic expression and how it can be interpr
 via the interpretation function $\alpha$.
 We also define operations over symbolic expressions.
 
-\begin{definition}[Monomial]
-\emph{Monomials} are partial functions from variables to positive integer.
-%
-A non-empty monomial, $\Prod(\vm)\in\monomial$ where $\vm \neq \emptyfunc$, can be interpreted as follows:
+\hypertarget{def-unitarymonomial}{}
+\begin{definition}[Unitary Monomial]
+A \emph{Unitary Monomial} is a partial function from identifiers to non-negative integers\footnote{A unitary monomial has a unit factor,
+for example $x^3$, whereas a non-unitary monomial has a non-unit factor, for example, $2 x^3$.}.
+
+A non-empty unitary monomial, $\Prod(\vm)\in\unitarymonomial$ where $\vm \neq \emptyfunc$, can be interpreted as follows:
 \[
   \alpha(\Prod(\vm)) \triangleq \prod_{\vx \in \dom(\vm)} \vx^{\vm(\vx)} \enspace.
 \]
 
-An empty monomial is interpreted as the constant $1$:
+An empty unitary monomial is interpreted as the constant $1$:
 \[
   \alpha(\Prod(\emptyfunc)) \triangleq 1 \enspace.
 \]
@@ -12367,9 +12584,10 @@ For example,
 \hypertarget{def-mulmonomials}{}
 The function
 \[
-  \mulmonomials(\overname{\monomial}{\vmone} \aslsep \overname{\monomial}{\vmtwo}) \rightarrow \overname{\monomial}{\vm}
+  \mulmonomials(\overname{\unitarymonomial}{\vmone} \aslsep \overname{\unitarymonomial}{\vmtwo}) \rightarrow
+  \overname{\unitarymonomial}{\vm}
 \]
-multiplies two monomials and returns a monomial
+multiplies two unitary monomials and returns a unitary monomial
 \begin{mathpar}
   \inferrule{
     {
@@ -12395,9 +12613,10 @@ For example,
   \end{array}
 \]
 
+\hypertarget{def-polynomial}{}
 \begin{definition}[Polynomial]
   \emph{Polynomials} are partial functions from monomials to rationals.
-  Intuitively, each monomial is mapped to its factor.
+  Intuitively, each unitary monomial is mapped to its factor in the polynomial.
   A polynomial $\Sum(\vp)$ can be interpreted as follows:
   %
 \[
@@ -12422,7 +12641,7 @@ adds two polynomials:
 \begin{mathpar}
 \inferrule{
   {
-    \vf \eqdef \lambda \vm\in\monomial.\
+    \vf \eqdef \lambda \vm\in\unitarymonomial.\
     \left\{
     \begin{array}{ll}
       \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
@@ -12916,23 +13135,22 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[all\_supported]{
   \toir(\veone) \typearrow \irone \OrTypeError\\\\
-  \toir(\vetwo) \typearrow \irtwo \OrTypeError\\\\
-  \vb \eqdef \irone = \irtwo
+  \toir(\vetwo) \typearrow \irtwo \OrTypeError
 }{
-  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \vb
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\irone = \irtwo}{\vb}
 }
 \and
 \inferrule[unsupported1]{
   \toir(\veone) \typearrow \bot
 }{
-  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
 }
 \and
 \inferrule[unsupported2]{
   \toir(\veone) \typearrow \irone\\
   \toir(\vetwo) \typearrow \bot
 }{
-  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
 \end{emptyformal}
@@ -14048,12 +14266,285 @@ $\vb$ is $\True$ if and only if $\vvone$ is equal to $\vvtwo$.
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \vb \eqdef \vvone = \vvtwo
-  }
-  {
-    \literalequal(\vvone, \vvtwo) \typearrow \vb
-  }
+\inferrule{
+  \vb \eqdef \vvone = \vvtwo
+}{
+  \literalequal(\vvone, \vvtwo) \typearrow \vb
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.ReduceIR \label{sec:TypingRule.ReduceIR}}
+\hypertarget{def-reduceir}{}
+The function
+\[
+\reduceir(\overname{\polynomial}{\vp}) \aslto \overname{\polynomial}{\newp}
+\]
+simplifies the polynomial $\vp$, yielding the simplified polynomial $\newp$.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is $\Sum(f)$ where $f$ binds monomials to their integer coefficients;
+  \item $g$ is the restriction of $f$ to the bindings where the coefficients are non-zero;
+  \item $\newp$ is $\Sum(g)$.
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  { g \eqdef \restrictfunc{f}{\{\vm \in \dom(f)\;|\; f(\vm) \neq 0\}} }
+}{
+  \reduceir(\overname{\Sum(f)}{\vp}) \typearrow \overname{\Sum(g)}{\newp}
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.PolynomialToExpr \label{sec:TypingRule.PolynomialToExpr}}
+\hypertarget{def-polynomialtoexpr}{}
+
+\newcommand\funcgraph[0]{\hyperlink{def-funcgraph}{\texttt{func\_graph}}}
+\newcommand\sort[0]{\hyperlink{def-sort}{\texttt{sort}}}
+\newcommand\comparemonomialbindings[0]{\hyperlink{def-comparemonomialbindings}{\texttt{compare\_monomial\_bindings}}}
+\newcommand\comparemonomebindings[0]{\hyperlink{def-comparemonomebindings}{\texttt{compare\_monome\_bindings}}}
+
+% \begin{mathpar}
+% \inferrule{}
+% {
+%   \polynomialtoexpr(\overname{\Sum(\emptyfunc)}{\vp}) \typearrow \overname{\ELiteral(\lint(0))}{\ve}
+% }
+% \and
+% \inferrule{
+%   \sort(\funcgraph(f), \comparemonomialbindings) = [(\vm,c)] \concat \monoms\\
+%   \monomialtoexpr(\sort(\funcgraph(\vm), \comparemonomebindings)) \typearrow \veone\\
+%   \polynomialtoexpr(\monoms) \typearrow \vetwo\\
+%   \symaddexpr(\veone, \vetwo) \typearrow \ve
+% }{
+%   \polynomialtoexpr(\overname{\Sum(f)}{\vp}) \typearrow \ve
+% }
+% \end{mathpar}
+
+\section{TypingRule.MonomialsToExpr \label{sec:TypingRule.MonomialsToExpr}}
+\hypertarget{def-monomialstoexpr}{}
+The function
+\[
+\monomialstoexpr(\overname{(\unitarymonomial\times\Q)^*}{\monoms}) \aslto (\overname{\expr}{\ve},\overname{\Q}{\vc})
+\]
+transforms a list of pairs $\monoms$, each consisting of a unitary monomial and a rational factor, to an expression $\ve$
+and a factor $\vc$.
+Intuitively, the input is a sum of monomials.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\monoms$ is an empty list;
+    \item $\ve$ is the literal expression for the integer $0$ and $\vc$ is $0$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\monoms$ is a list with $(\vm,\vcone)$ as its head and $\monomsone$ as its tail;
+    \item transforming the unitary monomial $\vm$ to an expression via \\ $\unitarymonomialstoexpr$ yields $\veone$;
+    \item transforming $\monoms$ to an expression via $\monomialstoexpr$ yields $(\vetwo, \vctwo)$;
+    \item symbolically adding $\veone, \vcone, \vetwo, \vctwo$ via $\symaddexpr$ yields $(\ve, \vc)$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \monomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow (\overname{\ELiteral(\lint(0))}{\ve}, \overname{0}{\vc})
+}
+\and
+\inferrule[non\_empty]{
+  \unitarymonomialstoexpr(\vm) \typearrow \veone\\
+  \monomialstoexpr(\monoms) \typearrow (\vetwo, \vctwo)\\
+  \symaddexpr(\veone, \vcone, \vetwo, \vctwo) \typearrow (\ve, \vc)
+}{
+  \monomialstoexpr(\overname{[(\vm,\vcone)] \concat \monomsone}{\monoms}) \typearrow (\ve, \vc)
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.SymAddExpr \label{sec:TypingRule.SymAddExpr}}
+\hypertarget{def-symaddexpr}{}
+The function
+\[
+\symaddexpr(\overname{\expr}{\veone} \aslsep \overname{\Q}{\vcone} \aslsep \overname{\expr}{\vetwo})
+  \typearrow \overname{\expr}{\ve}
+\]
+produces an expression representing the addtion of expressions $\veone$ and $\vetwo$,
+making some simplifications to yield $\ve$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{zero}):
+  \begin{itemize}
+    \item either $\veone$ or $\vetwo$ are the literal expression for $0$;
+    \item $\ve$ is $\veone$ if $\vetwo$ is the literal expression for $0$ and $\veone$, otherwise.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[zero]{
+  (\veone = \ELiteral(\lint(0)) \lor \vetwo = \ELiteral(\lint(0)))\\
+  \ve \eqdef \choice{\veone = \ELiteral(\lint(0))}{\vetwo}{\veone}
+}{
+  \symaddexpr(\veone, \vetwo) \typearrow \ve
+}
+\and
+\inferrule[non\_zero]{
+  \ve \eqdef \EBinop(\PLUS, \veone, \vetwo)
+}{
+  \symaddexpr(\veone, \vetwo) \typearrow \ve
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.UnitaryMonomialsToExpr \label{sec:TypingRule.UnitaryMonomialsToExpr}}
+\hypertarget{def-unitarymonomialstoexpr}{}
+The function
+\[
+\unitarymonomialstoexpr(\overname{(\identifier\times\N)^*}{\monoms}) \aslto \overname{\expr}{\ve}
+\]
+transforms a list of single-variable unitary monomials $\monoms$ to an expression $\ve$.
+Intuitively, $\monoms$ represented a multiplication of the single-variable unitary monomials.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\monoms$ is the empty list;
+    \item $\ve$ is the literal expression for $1$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_zero}):
+  \begin{itemize}
+    \item $\monoms$ is a list where the first element is $(\vv, 0)$ and its tail is $\monoms$;
+    \item transforming $\monomsone$ to an expression yields $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_one}):
+  \begin{itemize}
+    \item $\monoms$ is a list where the first element is $(\vv, 1)$ and its tail is $\monoms$;
+    \item $\veone$ is the variable expression for $\vv$;
+    \item transforming $\monomsone$ to an expression yields $\vetwo$;
+    \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_two}):
+  \begin{itemize}
+    \item $\monoms$ is a list where the first element is $(\vv, 2)$ and its tail is $\monoms$;
+    \item $\veone$ is the binary expression with operator $\MUL$ and operands $\EVar(x)$ and $\EVar(x)$;
+    \item transforming $\monomsone$ to an expression yields $\vetwo$;
+    \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_gt\_two}):
+  \begin{itemize}
+    \item $\monoms$ is a list where the first element is $(\vv, n)$ and its tail is $\monoms$;
+    \item $n$ is greater than $1$;
+    \item $\veone$ is the binary expression with operator $\POW$ and base operand being the variable expression for $\vv$
+          and the exponent operand being the variable expression for $n$;
+    \item transforming $\monomsone$ to an expression yields $\vetwo$;
+    \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \unitarymonomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow \overname{\ELiteral(\lint(1))}{\ve}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_zero]{
+  \unitarymonomialstoexpr(\monomsone) \typearrow \ve
+}{
+  \unitarymonomialstoexpr(\overname{[(\vv, 0)] \concat \monomsone}{\monoms}) \typearrow \ve
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_one]{
+  \veone \eqdef \EVar(\vv)\\
+  \unitarymonomialstoexpr(\monomsone) \typearrow \vetwo\\
+  \symmulexpr(\veone, \vetwo) \typearrow \ve
+}{
+  \unitarymonomialstoexpr(\overname{[(\vv, 1)] \concat \monomsone}{\monoms}) \typearrow \ve
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_two]{
+  \veone \eqdef \EBinop(\MUL, \EVar(\vv), \EVar(n))\\
+  \unitarymonomialstoexpr(\monomsone) \typearrow \vetwo\\
+  \symmulexpr(\veone, \vetwo) \typearrow \ve
+}{
+  \unitarymonomialstoexpr(\overname{[(\vv, 2)] \concat \monomsone}{\monoms}) \typearrow \ve
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_gt\_two]{
+  n \geq 2\\
+  \veone \eqdef \EBinop(\POW, \EVar(\vv), \ELiteral(n))\\
+  \unitarymonomialstoexpr(\monomsone) \typearrow \vetwo\\
+  \symmulexpr(\veone, \vetwo) \typearrow \ve
+}{
+  \unitarymonomialstoexpr(\overname{[(\vv, n)] \concat \monomsone}{\monoms}) \typearrow \ve
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.SymMulExpr \label{sec:TypingRule.SymMulExpr}}
+\hypertarget{def-symmulexpr}{}
+The function
+$
+\symmulexpr(\overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \typearrow \overname{\expr}{\ve}
+$
+produces an expression representing the multiplication of expressions $\veone$ and $\vetwo$,
+simplifying-away the case where one of the operands is the literal one.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{one\_operand}):
+  \begin{itemize}
+    \item either $\veone$ or $\vetwo$ is the literal expression for $1$;
+    \item $\ve$ is $\vetwo$ if $\veone$ is the literal expression for $1$ and $\veone$, otherwise.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[one\_operand]{
+  (\veone = \ELiteral(\lint(1)) \lor \vetwo = \ELiteral(\lint(1)))\\
+  \ve \eqdef \choice{\veone = \ELiteral(\lint(1))}{\vetwo}{\veone}
+}{
+  \symmulexpr(\EBinop(\MUL, \veone, \vetwo)) \typearrow \ve
+}
+\and
+\inferrule[no\_one\_operand]{
+  (\veone \neq \ELiteral(\lint(1)) \land \vetwo \neq \ELiteral(\lint(1)))\\
+  \ve \eqdef \EBinop(\MUL, \veone, \vetwo)
+}{
+  \symmulexpr(\EBinop(\MUL, \veone, \vetwo)) \typearrow \ve
+}
 \end{mathpar}
 \end{emptyformal}
 

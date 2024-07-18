@@ -119,6 +119,5 @@ Other polynomial equations:
   [1]
 
   $ aslref rat-poly-01.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slices 0+:-2.
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 0+:-2.
   [1]
-
