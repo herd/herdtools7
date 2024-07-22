@@ -161,22 +161,23 @@ module Make(O:Config) : Builder.S
               A.AtomicLoad (mo,eloc)
             else Warn.fatal "wrong memory order for load"
 
-      let excl_from omo loc v = match omo with
-      | None -> Warn.fatal "Non atomic RMW"
-      | Some mo ->
-          if A.applies_atom_rmw () omo omo then
-            A.AtomicExcl (mo,A.Load loc,v)
-          else
-            Warn.fatal "wrong memory order for atomic exchange"
+      let excl_from omo omo_w loc v = match omo,omo_w with
+      | (None,_)|(_, None) -> Warn.fatal "Non atomic RMW"
+      | Some _,Some _ ->
+          match A.tr_atom_rmw omo omo_w with
+          | Some mo ->
+              A.AtomicExcl (mo,A.Load loc,v)
+          | None ->
+              Warn.fatal "wrong memory order for atomic exchange"
 
       let compile_load st p mo loc =
         let r,st = alloc_reg p st in
         let i =  A.Decl (A.Plain A.deftype,r,Some (load_from No mo loc)) in
         r,i,st
 
-      let compile_excl st p mo loc v =
+      let compile_excl st p mo mo_w loc v =
         let r,st = alloc_reg p st in
-        let i =  A.Decl (A.Plain A.deftype,r,Some (excl_from mo loc v)) in
+        let i =  A.Decl (A.Plain A.deftype,r,Some (excl_from mo mo_w loc v)) in
         r,i,st
 
       let assertval pdp mo loc v =
@@ -184,10 +185,10 @@ module Make(O:Config) : Builder.S
           A.AssertVal(load_from pdp mo loc,v)
         else load_from pdp mo loc
 
-      let assert_excl v1 mo loc v2 =
+      let assert_excl v1 mo mo_w loc v2 =
         if O.cpp then
-          A.AssertVal(excl_from mo loc v2 ,v1)
-        else excl_from mo loc v2
+          A.AssertVal(excl_from mo mo_w loc v2 ,v1)
+        else excl_from mo mo_w loc v2
 
 
       let compile_load_assertvalue pdp v st p mo loc =
@@ -198,12 +199,12 @@ module Make(O:Config) : Builder.S
              Some (assertval pdp mo loc v)) in
         r,i,st
 
-      let compile_excl_assertvalue v1 st p mo loc v2 =
+      let compile_excl_assertvalue v1 st p mo mo_w loc v2 =
         let r,st = alloc_reg p st in
         let i =
           A.Decl
             (A.Plain A.deftype,r,
-             Some (assert_excl v1 mo loc v2)) in
+             Some (assert_excl v1 mo mo_w loc v2)) in
         r,i,st
 
 
@@ -268,8 +269,9 @@ module Make(O:Config) : Builder.S
             let v = n.C.next.C.evt.C.v in
             let loc = A.Loc loc in
             let mo = e.C.atom in
+            let mo_w = n.C.next.C.evt.C.atom in
             let r,i,st =
-              compile_excl_assertvalue e.C.v st p mo loc v in
+              compile_excl_assertvalue e.C.v st p mo mo_w loc v in
             Some r,i,st
         | (Some W|None),_ -> None,A.Nop,st
         | (Some J,_)|(_,Code _) -> assert false
@@ -694,15 +696,16 @@ module Make(O:Config) : Builder.S
             | Some R,Data x ->
                 let vw = n.C.next.C.evt.C.v
                 and mo = e.C.atom
+                and mo_w = n.C.next.C.evt.C.atom
                 and loc = A.Loc x
                 and v = e.C.v in
                 if O.cpp then
-                  let ce = A.Const v,A.Eq,assert_excl vw mo loc v in
+                  let ce = A.Const v,A.Eq,assert_excl vw mo mo_w loc v in
                   None,
                   (fun ins -> A.If (ce,add_fence n ins,load_checked_not)),
                   st
                 else
-                  let r,i,st = compile_excl st p mo loc vw in
+                  let r,i,st = compile_excl st p mo mo_w loc vw in
                   let ce = A.Const v,A.Eq,A.Load (A.Reg (p,r)) in
                   Some r,
                   (fun ins ->

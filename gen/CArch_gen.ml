@@ -228,6 +228,40 @@ let pp_dp = function
   | DATA -> "Data"
   | CTRL -> "Ctrl"
 
-include Exch.Exch(struct type arch_atom = MemOrder.t end)
+type rmw = unit
+
+type rmw_atom = atom
+
+let pp_rmw compat () = if compat then "Rmw" else "Exch"
+
+let is_one_instruction () = true
+
+let fold_rmw f r = f () r
+let fold_rmw_compat = fold_rmw
+
+let tr_atom_rmw omo_r omo_w = match omo_r,omo_w with
+| (None,_)|(_, None) -> None
+| (Some mo_r,Some mo_w) ->
+    try
+      Some
+        (match mo_r,mo_w with
+         | SC,SC -> SC
+         | Rlx,Rlx -> Rlx
+         | Acq,Rel -> Acq_Rel
+         | Acq,Rlx -> Acq
+         | Rlx,Rel -> Rel
+         | _,_ -> raise Exit)
+    with Exit -> None
+
+let applies_atom_rmw () ar aw = match ar,aw with
+| None,None -> true (* to allow edge lexemes `Rmw`  *)
+| _,_ ->
+    match tr_atom_rmw ar aw with
+    | Some _ -> true
+    | None -> false
+
+let show_rmw_reg () = false
+
+let compute_rmw () _old co_cell  = co_cell
 
 include NoEdge
