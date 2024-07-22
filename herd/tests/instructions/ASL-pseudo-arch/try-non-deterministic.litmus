@@ -1,0 +1,27 @@
+ASL try-non-deterministic
+
+{ }
+
+type  Coucou of exception {};
+
+func g(a:integer) => integer
+begin
+  try
+    let b = SomeBoolean();
+    if b then
+      throw Coucou {};
+    end
+    return a+1;
+  catch
+    when Coucou =>
+      return a+3;
+  end
+
+end
+func main() => integer
+begin
+  let  x = g(0);
+  return 0;
+end
+
+locations [0:main.0.x;]

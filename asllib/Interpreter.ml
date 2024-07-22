@@ -1126,7 +1126,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* If an explicit throw has been made in the [try] block: *)
     B.bind_seq s_m @@ function
     (*  Begin CatchNoThrow *)
-    | Normal _ | Throwing (None, _) -> s_m |: SemanticsRule.CatchNoThrow
+    | (Normal _ | Throwing (None, _)) as res ->
+        return res |: SemanticsRule.CatchNoThrow
     (* End *)
     | Throwing (Some (v, v_ty), env_throw) -> (
         (* We compute the environment in which to compute the catch statements. *)

@@ -1,0 +1,11 @@
+Test try-non-deterministic Required
+States 2
+0:main.0.x=1;
+0:main.0.x=3;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (true)
+Observation try-non-deterministic Always 2 0
+Hash=a97dae58bf85004502694018b3aa6640
+
