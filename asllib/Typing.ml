@@ -39,6 +39,7 @@ let expr_of_z z = literal (L_Int z)
 let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
+(* Begin ReduceConstants *)
 let reduce_constants env e =
   let open StaticInterpreter in
   let open StaticModel in
@@ -46,16 +47,18 @@ let reduce_constants env e =
     try static_eval env e with NotYetImplemented -> unsupported_expr e
   in
   try eval_expr env e
-  with StaticEvaluationUnknown -> (
-    let () =
-      if false then
-        Format.eprintf
-          "@[<hov>Static evaluation failed. Trying to reduce.@ For %a@ at \
-           %a@]@."
-          PP.pp_expr e PP.pp_pos e
-    in
-    try StaticModel.try_normalize env e |> eval_expr env
-    with StaticEvaluationUnknown -> unsupported_expr e)
+  with StaticEvaluationUnknown ->
+    (let () =
+       if false then
+         Format.eprintf
+           "@[<hov>Static evaluation failed. Trying to reduce.@ For %a@ at \
+            %a@]@."
+           PP.pp_expr e PP.pp_pos e
+     in
+     try StaticModel.try_normalize env e |> eval_expr env
+     with StaticEvaluationUnknown -> unsupported_expr e)
+    |: TypingRule.ReduceConstants
+(* End *)
 
 let reduce_to_z_opt env e =
   match (StaticModel.try_normalize env e).desc with
@@ -2640,13 +2643,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             fail ()
         in
         (* Check that func_sig' is a getter *)
-        let wanted_st =
+        let wanted_getter_type =
           match func_sig.subprogram_type with
           | ST_Setter -> ST_Getter
           | ST_EmptySetter -> ST_EmptyGetter
           | _ -> assert false
         in
-        let+ () = check_true (func_sig'.subprogram_type = wanted_st) in
+        let+ () = check_true (func_sig'.subprogram_type = wanted_getter_type) in
         let+ () =
           (* Check that args match *)
           let () = assert (List.compare_lengths func_sig'.args arg_types = 0) in

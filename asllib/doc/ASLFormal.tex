@@ -70,8 +70,25 @@ Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
     $\Strings$ is the set of all ASCII strings.
 \end{itemize}
 
+\hypertarget{def-sign}{}
+\begin{definition}[Sign of a Rational Number]
+  The function $\sign : \overname{\Q}{q} \rightarrow \{-1,0,1\}$ returns the sign of $\vq$:
+\[
+\sign(q) \triangleq \begin{cases}
+  1 & \text{if }q > 0\\
+  0 & \text{if }q = 0\\
+  -1 & \text{if }q < 0
+\end{cases}
+\]
+\end{definition}
+
 \begin{definition}[Empty Set]
   The \emph{empty set} --- the set that does not contain any element --- is denoted as $\emptyset$.
+\end{definition}
+
+\hypertarget{def-cardinality}{}
+\begin{definition}[Set Cardinality]
+  For a set $S$, the notation $\cardinality{S}$ stands for the number of elements in $S$.
 \end{definition}
 
 \hypertarget{def-pow}{}
@@ -129,6 +146,15 @@ in terms of the set of input-output pairs:
 \]
 \end{definition}
 
+\begin{definition}[Function Graph]
+\hypertarget{def-funcgraph}{}
+The \emph{graph} of a finite-domain function $f : X \rightarrowfin Y$
+is the list of input-output pairs for $f$, given in any order:
+\[
+\funcgraph(f) \triangleq \{ (x, f(x)) \;|\; x \in \dom(f) \} \enspace.
+\]
+\end{definition}
+
 Throughout this document, we will annotate arguments of relations and functions, wherever it is useful,
 by writing a name or an expression above the corresponding argument type.
 This makes convenient to refer to arguments by referring to the corresponding names and helps identify
@@ -162,13 +188,16 @@ In the remainder of this document, we use the term \emph{list} and \emph{sequenc
 
 A list of elements \hypertarget{def-emptylist}{can be empty, denoted by $\emptylist$}, or non-empty.
 A non-empty list is either denoted by listing the elements in sequence, $v_1 \ldots\ v_k$,
-or in bracketed form, $[v_1,\ldots,v_k]$, which is used to aesthetically seperate it from surrounding mathematical expressions.
+or in bracketed form, $[v_1,\ldots,v_k]$, which is used to aesthetically separate it from surrounding mathematical expressions.
 The commas are entirely aesthetic and are not part of the list.
 
 We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\N$.
 
+\hypertarget{def-listlen}{}
+\begin{definition}[List Length]
 The \emph{length} of a list is the number of elements in that list:
-$|\emptylist| \triangleq 0$ and $|v_1,\ldots,v_k|=k$.
+$\listlen{\emptylist} \triangleq 0$ and $\listlen{v_1,\ldots,v_k}=k$.
+\end{definition}
 
 We use the notation $a..b$, where $a,b\in\Z$ and $a\leq b$, as a shorthand for the interval $a\ldots b$.
 We write $x_{a..b}$ as a shorthand for the sequence $x_a \ldots x_b$.
@@ -202,7 +231,7 @@ The parametric function
 \]
 compares the length of two lists:
 \[
-\equallength(a, b) \triangleq |a|=|b| \enspace.
+\equallength(a, b) \triangleq \listlen{a}=\listlen{b} \enspace.
 \]
 \end{definition}
 
@@ -286,7 +315,7 @@ $\vt$, $\vtone$, and $\vttwo$ (types).
 
 \begin{definition}[Grounding]
 Assertions can be \emph{grounded} by substituting their free variables with values.
-A \emph{gound rule} is a rule with all its assertions (premises and conclusion) grounded.
+A \emph{ground rule} is a rule with all its assertions (premises and conclusion) grounded.
 \end{definition}
 For example,
 the following is a grounding of TypingRule.Binop
@@ -369,7 +398,7 @@ A set of rules $M$ with transition assertions defines the relation
 For example, the rule TypingRule.ELit defines a relation
 between the infinite set of elements of the form
 $\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$ (for the
-infinite choice of values for the free variables $\tenv$ and
+infinite choice of values for the free variables $\tenv$) and
 $\vv$ to the infinite set of pairs of the form $(\vt,
 \ELiteral(\vv))$, such that the premise holds.
 
@@ -458,7 +487,7 @@ shown here:
   For example, the mathematical identity $x \times (y + z) = x \times y + x \times z$.
 
   \hypertarget{def-deconstruction}{}
-  \item[Deconstruction:] some values, such as tuples, are compound. In order to refer to the structure
+  \item[Deconstruction / ``View as'':] some values, such as tuples, are compound. In order to refer to the structure
   of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right
   hand side exposes the internal structure of $v$ by introducing the variables
   $u_{1..k}$, allowing us to alias internal components of $v$.
@@ -475,7 +504,7 @@ shown here:
   referring to them by index.
 
   \hypertarget{def-eqdef}{}
-  \item[Definition:] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name serving as an alias for the expression $\ve$.
+  \item[Definition / ``Define as'':] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name serving as an alias for the expression $\ve$.
   For example, in the rule SemanticsRule.Lit, we use $\vg$ to name $\ReadEffect(\vx)$.
   Aliases allow us to break down complex expressions, but rules can always be rewritten without them,
   by inlining their right-hand sides:
@@ -543,7 +572,7 @@ and $\newenv$ is assigned as the result of the transition assertion
 $\evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv)$.
 %
 Notice that to assign values to the variables $\vv$, $\vg$, and $\newenv$,
-intremediate values have to be assigned first.
+intermediate values have to be assigned first.
 For example, $\evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone)$
 assigned values to $\envone$, which is then used by the transition \\
 $\evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv)$.
@@ -644,7 +673,7 @@ they behave like normal rules where the order of premises does
 not matter.
 
 As an example, consider the rule SemanticsRule.Binop.
-This time, unsimplified:
+This time, not simplified:
 \begin{mathpar}
   \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
     \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \OrAbnormal \\\\
@@ -674,7 +703,7 @@ in other output configurations.
 %
 For example, if the first transition assertion results in a throwing configuration $\ThrowingConfig$
 then the output configuration of the conclusion is also $\ThrowingConfig$.
-This corresponds to the following rule in the exapnded macro:
+This corresponds to the following rule in the expanded macro:
 
 \begin{mathpar}
   \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\

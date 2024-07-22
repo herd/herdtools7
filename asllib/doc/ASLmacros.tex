@@ -47,7 +47,7 @@
 
 \fvset{fontsize=\small}
 
-\newcommand\tododefine[1]{\texttt{#1}}
+\newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -94,6 +94,7 @@
 %% Mathematical notations and Inference Rule macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%%
 \usepackage{relsize}
+\newcommand\view[0]{\hyperlink{def-deconstruction}{view}}
 %\newcommand\defpoint[1]{\underline{#1}}
 \newcommand\defpoint[1]{#1}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
@@ -108,6 +109,8 @@
 \newcommand\equalarrow[0]{\rightarrow}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\texttt{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\texttt{indices}}}
+\newcommand\listlen[1]{\hyperlink{def-listlen}{|}#1\hyperlink{def-listlen}{|}}
+\newcommand\cardinality[1]{\hyperlink{def-cardinality}{|}#1\hyperlink{def-cardinality}{|}}
 \newcommand\splitlist[0]{\hyperlink{def-splitlist}{\texttt{split}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
@@ -131,12 +134,14 @@
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
 \newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
+\newcommand\funcgraph[0]{\hyperlink{def-funcgraph}{\texttt{func\_graph}}}
 \DeclareMathOperator{\dom}{\hyperlink{def-dom}{dom}}
+\newcommand\sign[0]{\hyperlink{def-sign}{\texttt{sign}}}
 
 \newcommand\configdomain[1]{\hyperlink{def-configdomain}{\texttt{config\_domain}}({#1})}
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
-\newcommand\terminateas[0]{\;\hyperlink{def-terminateas}{\sslash}\;}
+\newcommand\terminateas[0]{\hyperlink{def-terminateas}{\sslash}\;}
 \newcommand\booltrans[1]{\hyperlink{def-booltrans}{\texttt{bool\_transition}}(#1)}
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\checktrans[2]{\hyperlink{def-checktrans}{\texttt{check}}(#1, \texttt{#2})}
@@ -708,7 +713,7 @@
 \newcommand\rettype[0]{\texttt{ret\_type}}
 \newcommand\argtypes[0]{\texttt{arg\_types}}
 \newcommand\argtypesp[0]{\texttt{arg\_types'}}
-\newcommand\watendsettertype[0]{\texttt{wanted\_setter\_type}}
+\newcommand\watendgettertype[0]{\texttt{wanted\_getter\_type}}
 \newcommand\ret[0]{\texttt{ret}}
 \newcommand\renamingset[0]{\texttt{renaming\_set}}
 \newcommand\formaltys[0]{\texttt{f\_tys}}
@@ -741,6 +746,7 @@
 \newcommand\extrafields[0]{\texttt{extra\_fields}}
 \newcommand\vsuper[0]{\texttt{super}}
 \newcommand\idsone[0]{\texttt{ids1}}
+\newcommand\idstwo[0]{\texttt{ids2}}
 \newcommand\newreturntype[0]{\texttt{new\_return\_type}}
 \newcommand\bvtwo[0]{\texttt{bv2}}
 \newcommand\positionsone[0]{\texttt{positions1}}
@@ -751,3 +757,6 @@
 \newcommand\monoms[0]{\texttt{monoms}}
 \newcommand\monome[0]{\texttt{monome}}
 \newcommand\monomsone[0]{\texttt{monoms1}}
+\newcommand\compare[0]{\texttt{compare}}
+\newcommand\vqone[0]{\texttt{q1}}
+\newcommand\vqtwo[0]{\texttt{q2}}

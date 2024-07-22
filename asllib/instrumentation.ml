@@ -502,6 +502,8 @@ module TypingRule = struct
     | ArgsAsParams
     | AnnotateArgs
     | StaticEval
+    | ReduceConstants
+    | Normalize
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -661,6 +663,8 @@ module TypingRule = struct
     | ArgsAsParams -> "ArgsAsParams"
     | AnnotateArgs -> "AnnotateArgs"
     | StaticEval -> "StaticEval"
+    | ReduceConstants -> "ReduceConstants"
+    | Normalize -> "Normalize"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -802,6 +806,8 @@ module TypingRule = struct
       ArgsAsParams;
       AnnotateArgs;
       StaticEval;
+      ReduceConstants;
+      Normalize;
     ]
 
   let all_nb = List.length all
@@ -922,3 +928,5 @@ module SemanticsSingleInstr = SemMake (SemanticsSingleBuffer)
 module TypingSingleInstr = TypMake (TypingSingleBuffer)
 module SemanticsSingleSetInstr = SemMake (SemanticsSingleSetBuffer)
 module TypingSingleSetInstr = TypMake (TypingSingleSetBuffer)
+
+let ( |: ) = TypingNoInstr.use_with

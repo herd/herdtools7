@@ -23,9 +23,6 @@
 open AST
 open ASTUtils
 module SEnv = StaticEnv
-module TypingRule = Instrumentation.TypingRule
-
-let ( |: ) = Instrumentation.TypingNoInstr.use_with
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
@@ -85,8 +82,7 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
         if b then expr_ e1 else expr_ e2
     | _ -> unsupported_expr e
   in
-  expr_ |: TypingRule.StaticEval
-  expr_ |: TypingRule.StaticEval
+  expr_ |: Instrumentation.TypingRule.StaticEval
 
 and slices_to_positions env slices =
   let eval_to_int e = static_eval env e |> Operations.value_as_int e in
