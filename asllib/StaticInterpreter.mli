@@ -20,17 +20,19 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-(** The Typing module is yet a single-entry-point module. It only exports the
-    function [annotate_ast] which fills type-annotations holes in the AST.
-    It should provide enough information to disambiguate any type-dependent
-    behaviour. *)
+(** Static Interpretation of Expressions. *)
 
-type strictness = [ `Silence | `Warn | `TypeCheck ]
-(** Possible strictness of type-checking. *)
+exception StaticEvaluationUnknown
 
-val type_check_ast :
-  strictness -> AST.t -> StaticEnv.env -> AST.t * StaticEnv.env
-(** Typechecks the AST, and returns an AST with type inference holes filled.
+val static_eval : StaticEnv.env -> AST.expr -> AST.literal
+(** [static_eval env e] statically evaluates [e] in [env] into a literal.
+    @raise ASLException if the a type error is detected or the expression is
+        not one of the following: [E_Literal], [E_Var], [E_Binop], [E_Unop],
+        [E_Slice], or [E_Cond].
+    @raise UnsupportedExpr if the given expression cannot evaluate to a literal.
+*)
 
-    @raise Error.ASLException if the AST does not type-check.
+val slices_to_positions : StaticEnv.env -> AST.slice list -> int list
+(** [slices_to_positions slices] statically evaluates [slices] and, unless a type error
+    is detected, returns a list of indices represented by them.
 *)

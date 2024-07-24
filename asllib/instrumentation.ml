@@ -487,6 +487,7 @@ module TypingRule = struct
     | TBitFields
     | ReduceSlicesToCall
     | TypeOfArrayLength
+    | StaticEval
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -631,6 +632,7 @@ module TypingRule = struct
     | TBitFields -> "TBitFields"
     | ReduceSlicesToCall -> "ReduceSlicesToCall"
     | TypeOfArrayLength -> "TypeOfArrayLength"
+    | StaticEval -> "StaticEval"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -757,6 +759,7 @@ module TypingRule = struct
       TBitFields;
       ReduceSlicesToCall;
       TypeOfArrayLength;
+      StaticEval;
     ]
 
   let all_nb = List.length all
