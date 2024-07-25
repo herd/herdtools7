@@ -30,6 +30,7 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let invalid_expr e = fatal_from e (Error.InvalidExpr e)
+let unsupported_expr e = Error.fatal_from e Error.(UnsupportedExpr (Static, e))
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
