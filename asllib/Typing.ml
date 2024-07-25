@@ -1435,8 +1435,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             match IMap.find x env.local.storage_types with
             (* Begin ELocalVarConstant *)
             | ty, LDK_Constant ->
-                let v = IMap.find x env.local.constant_values in
-                let e = E_Literal v |> here in
+                let e =
+                  try
+                    let v = lookup_constants env x in
+                    E_Literal v |> here
+                  with Not_found -> e
+                in
                 (ty, e) |: TypingRule.ELocalVarConstant
             (* End *)
             (* Begin ELocalVar *)
@@ -1959,7 +1963,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_Concat (les, _) ->
         let e_eq = expr_of_lexpr le in
         let t_e_eq, _e_eq = annotate_expr env e_eq in
-        let+ () = check_bits_equal_width' env t_e_eq t_e in
+        let+ () = check_bits_equal_width le env t_e_eq t_e in
         let bv_length t = get_bitvector_const_width le env t in
         let annotate_one (les, widths, sum) le =
           let e = expr_of_lexpr le in
@@ -2070,15 +2074,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         (new_env, LDI_Typed (new_ldi', t')) |: TypingRule.LDUninitialisedTyped
 
-  let declare_local_constant env v ldi =
-    let rec add_constants env ldi =
+  let declare_local_constant =
+    let rec add_constants v env ldi =
       match ldi with
       | LDI_Discard -> env
       | LDI_Var x -> add_local_constant x v env
-      | LDI_Tuple ldis -> List.fold_left add_constants env ldis
-      | LDI_Typed (ldi, _ty) -> add_constants env ldi
+      | LDI_Tuple _ -> (* Not yet implemented *) env
+      | LDI_Typed (ldi, _ty) -> add_constants v env ldi
     in
-    add_constants env ldi
+    fun env v ldi -> add_constants v env ldi
 
   let rec annotate_stmt env s =
     let () =
@@ -2282,12 +2286,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               annotate_local_decl_item loc env t_e ldk ~e:e' ldi
             in
             let env2 =
-              if ldk = LDK_Constant then
-                try
-                  let v = reduce_constants env e in
-                  declare_local_constant env1 v ldi
-                with Error.(ASLException { desc = _; _ }) -> env1
-              else env1
+              match ldk with
+              | LDK_Let | LDK_Var -> env1
+              | LDK_Constant -> (
+                  try
+                    let v = reduce_constants env1 e in
+                    declare_local_constant env1 v ldi1
+                  with Error.(ASLException _) -> env1)
             in
             (S_Decl (ldk, ldi1, Some e') |> here, env2) |: TypingRule.SDeclSome
         (* End *)
@@ -2965,6 +2970,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let fold = function
       | TopoSort.ASTFold.Single d -> type_check_decl d
       | TopoSort.ASTFold.Recursive ds -> type_check_mutually_rec ds
+    in
+    let fold =
+      if false then (fun d e ->
+        let res = fold d e in
+        Format.eprintf "Ended type-checking of this declaration.@.";
+        res)
+      else fold
     in
     let fold_topo ast acc = TopoSort.ASTFold.fold fold ast acc in
     fun ast env ->

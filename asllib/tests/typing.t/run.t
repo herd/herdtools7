@@ -160,6 +160,7 @@ Symbolic execution of bit vector widths expressions
   $ aslref --no-exec TPositive10-0.asl
   $ aslref --no-exec TPositive10-1.asl
   $ aslref --no-exec TNegative10.asl
+  File TNegative10.asl, line 8, characters 32 to 38:
   ASL Typing error: a pure expression was expected, found widthN
   [1]
   $ aslref --no-exec TNegative10-0.asl
