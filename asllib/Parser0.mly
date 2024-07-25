@@ -80,6 +80,7 @@
 %token CATCH
 %token COLON
 %token COMMA
+%token CONFIG
 %token CONSTANT
 %token CONSTRAINED_UNPRED
 %token DEBUG
@@ -376,12 +377,17 @@ let array_length ==
   | expr
   | expr; DOT_DOT; expr
 
+let gdk ==
+  | CONSTANT;   { AST.GDK_Constant  }
+  | CONFIG;     { AST.GDK_Config    }
+  |             { AST.GDK_Var       }
+
 let variable_decl ==
   terminated_by (SEMICOLON; EOL,
     | some (annotated (
-      | ioption(CONSTANT); t=ty; x=qualident; EQ; e=expr;
+      | gdk=gdk; t=ty; x=qualident; EQ; e=expr;
           { AST.D_GlobalStorage {
-            keyword = GDK_Constant;
+            keyword = gdk;
             name = x;
             initial_value = Some e;
             ty = Some t;
