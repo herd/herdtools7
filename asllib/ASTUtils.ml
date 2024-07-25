@@ -534,6 +534,8 @@ let case_to_conds : stmt -> stmt =
       S_Seq (assign, cases_to_cond x cases)
   | _ -> raise (Invalid_argument "case_to_conds")
 
+let slice_is_single = function Slice_Single _ -> true | _ -> false
+
 let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"

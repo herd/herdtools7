@@ -39,6 +39,14 @@ let expr_of_z z = literal (L_Int z)
 let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
+let rec list_mapi2 f i l1 l2 =
+  match (l1, l2) with
+  | [], [] -> []
+  | a1 :: l1, a2 :: l2 ->
+      let r = f i a1 a2 in
+      r :: list_mapi2 f (i + 1) l1 l2
+  | _, _ -> invalid_arg "List.map2"
+
 (* Begin ReduceConstants *)
 let reduce_constants env e =
   let open StaticInterpreter in
@@ -246,7 +254,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
     | [ f ] -> f
     | p :: li -> either p (any li)
 
-  let assumption_failed () = raise_notrace TypingAssumptionFailed [@@inline]
+  let assumption_failed () = raise TypingAssumptionFailed [@@inline]
   let ok () = () [@@inline]
   let check_true b fail () = if b then () else fail () [@@inline]
   let check_true' b = check_true b assumption_failed [@@inline]
@@ -390,17 +398,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   open Property (C)
   module Fn = FunctionRenaming (C)
 
-  let should_reduce_to_call env name =
-    IMap.mem name env.global.subprogram_renamings
-
-  let should_slices_reduce_to_call env name slices =
-    let args =
-      try Some (List.map slice_as_single slices)
-      with Invalid_argument _ -> None
-    in
-    match args with
-    | None -> None
-    | Some args -> if should_reduce_to_call env name then Some args else None
+  let should_reduce_to_call env name st =
+    match IMap.find_opt name env.global.subprogram_renamings with
+    | None -> false
+    | Some set ->
+        ISet.exists
+          (fun name' ->
+            match IMap.find_opt name' env.global.subprograms with
+            | None -> assert false
+            | Some func_sig -> func_sig.subprogram_type = st)
+          set
 
   let disjoint_slices_to_diet loc env slices =
     let eval env e =
@@ -486,8 +493,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | None -> raise NoSingleField
 
   let should_fields_reduce_to_call env name ty fields =
-    match ty.desc with
-    | T_Bits (_, bf) when should_reduce_to_call env name -> (
+    match (Types.make_anonymous env ty).desc with
+    | T_Bits (_, bf) -> (
         try Some (name, list_concat_map (field_to_single env bf) fields)
         with NoSingleField -> None)
     | _ -> None
@@ -1233,6 +1240,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           PP.pp_pos loc
     in
     let caller_arg_typed = List.map (annotate_expr env) args in
+    annotate_call_arg_typed loc env name caller_arg_typed eqs call_type
+
+  and annotate_call_arg_typed loc env name caller_arg_typed eqs call_type =
     let caller_arg_types, args1 = List.split caller_arg_typed in
     let extra_nargs, name1, callee =
       Fn.try_subprogram_for_name loc env name caller_arg_types
@@ -1408,7 +1418,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
-        if should_reduce_to_call env x then
+        if should_reduce_to_call env x ST_EmptyGetter then
           let () =
             if false then
               Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
@@ -1474,7 +1484,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin ECall *)
     | E_Call (name, args, eqs) ->
-        let () = assert (List.length eqs == 0) in
+        let () =
+          if List.length eqs == 0 then ()
+          else (
+            Format.eprintf "Re-annotating expression %a@." PP.pp_expr e;
+            assert false)
+        in
         let name', args', eqs', ty_opt =
           annotate_call (to_pos e) env name args [] ST_Function
         in
@@ -1585,25 +1600,21 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     | E_Slice (e', slices) -> (
         (* Begin ReduceSlicesToCall *)
-        let reduced =
-          match e'.desc with
-          | E_Var x ->
-              should_slices_reduce_to_call env x slices
-              |> Option.map (pair x)
-              |: TypingRule.ReduceSlicesToCall
-          | _ -> None
-          (* End *)
-        in
-        match reduced with
-        (* Begin ESetter *)
-        | Some (name, args) ->
+        match e'.desc with
+        | E_Var name
+          when should_reduce_to_call env name ST_Getter
+               && List.for_all slice_is_single slices ->
+            let args =
+              try List.map slice_as_single slices
+              with Invalid_argument _ -> assert false
+            in
             let name1, args1, eqs, ty =
               annotate_call (to_pos e) env name args [] ST_Getter
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name1, args1, eqs) |> here) |: TypingRule.ESetter
-        (* End *)
-        | None -> (
+            (* End ReduceSlicesToCall *)
+        | _ -> (
             let t_e', e'' = annotate_expr env e' in
             let struct_t_e' = Types.make_anonymous env t_e' in
             match struct_t_e'.desc with
@@ -1638,11 +1649,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 |: TypingRule.ESliceOrEGetArrayError
             (* End *)))
     | E_GetField (e1, field_name) -> (
-        let t_e1, e2 = annotate_expr env e1 in
-        let t_e2 = Types.make_anonymous env t_e1 in
         let reduced =
           match e1.desc with
-          | E_Var x -> should_field_reduce_to_call env x t_e2 field_name
+          | E_Var name when should_reduce_to_call env name ST_Getter ->
+              let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
+              let ty, _ = annotate_expr env empty_getter in
+              should_field_reduce_to_call env name ty field_name
           | _ -> None
         in
         match reduced with
@@ -1653,7 +1665,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
         | None -> (
-            match t_e2.desc with
+            let t_e2, e2 = annotate_expr env e1 in
+            match (Types.make_anonymous env t_e2).desc with
             | T_Exception fields | T_Record fields -> (
                 match List.assoc_opt field_name fields with
                 (* Begin EGetBadRecordField *)
@@ -1680,7 +1693,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* End *)
                 (* Begin EGetBitFieldNested *)
                 | Some (BitField_Nested (_field, slices, bitfields')) ->
-                    let e3 = E_Slice (e2, slices) |> here in
+                    let e3 = E_Slice (e1, slices) |> here in
                     let t_e4, new_e = annotate_expr env e3 in
                     let t_e5 =
                       match t_e4.desc with
@@ -1692,7 +1705,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* End *)
                 (* Begin EGetBitFieldTyped *)
                 | Some (BitField_Type (_field, slices, t)) ->
-                    let e3 = E_Slice (e2, slices) |> here in
+                    let e3 = E_Slice (e1, slices) |> here in
                     let t_e4, new_e = annotate_expr env e3 in
                     let+ () = check_type_satisfies new_e env t_e4 t in
                     (t, new_e) |: TypingRule.EGetBitFieldTyped
@@ -1715,12 +1728,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 fatal_from e (Error.BadField (field_name, t_e2))
                 |: TypingRule.EGetBadField)
         (* End *))
-    | E_GetFields (e_1, fields) -> (
-        let t_e', e_2 = annotate_expr env e_1 in
-        let t_e' = Types.make_anonymous env t_e' in
+    | E_GetFields (e1, fields) -> (
         let reduced =
-          match e_1.desc with
-          | E_Var x -> should_fields_reduce_to_call env x t_e' fields
+          match e1.desc with
+          | E_Var name when should_reduce_to_call env name ST_Getter ->
+              let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
+              let ty, _ = annotate_expr env empty_getter in
+              should_fields_reduce_to_call env name ty fields
           | _ -> None
         in
         match reduced with
@@ -1731,19 +1745,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
         | None -> (
-            match t_e'.desc with
+            let t_e2, e2 = annotate_expr env e1 in
+            match (Types.make_anonymous env t_e2).desc with
             | T_Bits (_, bitfields) ->
                 let one_field field =
                   match find_bitfields_slices_opt field bitfields with
-                  | None -> fatal_from e (Error.BadField (field, t_e'))
+                  | None -> fatal_from e (Error.BadField (field, t_e2))
                   | Some slices -> slices
                 in
-                E_Slice (e_2, list_concat_map one_field fields)
+                E_Slice (e1, list_concat_map one_field fields)
                 |> here |> annotate_expr env |: TypingRule.EGetBitFields
             | T_Record tfields ->
                 let one_field field =
                   match List.assoc_opt field tfields with
-                  | None -> fatal_from e (Error.BadField (field, t_e'))
+                  | None -> fatal_from e (Error.BadField (field, t_e2))
                   | Some t -> get_bitvector_width loc env t
                 in
                 let widths = List.map one_field fields in
@@ -1751,8 +1766,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   let wh = List.hd widths and wts = List.tl widths in
                   List.fold_left (width_plus env) wh wts
                 in
-                (T_Bits (w, []) |> here, E_GetFields (e_2, fields) |> here)
-            | _ -> conflict e [ default_t_bits ] t_e'))
+                (T_Bits (w, []) |> here, E_GetFields (e2, fields) |> here)
+            | _ -> conflict e [ default_t_bits ] t_e2))
     (* End *)
     (* Begin EPattern *)
     | E_Pattern (e1, pat) ->
@@ -2099,11 +2114,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              Format.eprintf "@[<3>Annotating assignment@ @[%a@]@]@." PP.pp_stmt
                s
          in
-         let reduced = setter_should_reduce_to_call_s env le re in
+         let t_re, re1 = annotate_expr env re in
+         let reduced = setter_should_reduce_to_call_s env le (t_re, re1) in
          match reduced with
          | Some new_s -> (new_s, env)
          | None ->
-             let t_re, re1 = annotate_expr env re in
              let env1 =
                match ver with
                | V1 -> env
@@ -2350,76 +2365,126 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   and try_annotate_stmt env s =
     best_effort (s, env) (fun _ -> annotate_stmt env s)
 
-  and set_fields_should_reduce_to_call env le x fields e =
+  and set_fields_should_reduce_to_call env le x fields (t_e, e) =
     (*
      * Field indices are extracted from the return type
      * of "associated" getter.
      *)
-    if not (should_reduce_to_call env x) then None
-    else
-      let ( let* ) = Option.bind in
-      let _, _, callee =
-        try Fn.try_subprogram_for_name le env x []
-        with Error.ASLException _ -> assert false
-      in
-      let* ty = callee.return_type in
-      let ty = Types.make_anonymous env ty in
-      let* name, args = should_fields_reduce_to_call env x ty fields in
-      let name, args, eqs, ret_ty =
-        annotate_call (to_pos le) env name (e :: args) [] ST_Setter
-      in
-      let () = assert (ret_ty = None) in
-      Some (S_Call (name, args, eqs) |> add_pos_from le)
+    let ( let* ) = Option.bind in
+    let _, _, callee =
+      try Fn.try_subprogram_for_name le env x []
+      with Error.ASLException _ -> assert false
+    in
+    let* ty = callee.return_type in
+    let ty = Types.make_anonymous env ty in
+    let* name, args = should_fields_reduce_to_call env x ty fields in
+    let args = (t_e, e) :: List.map (annotate_expr env) args in
+    let name, args, eqs, ret_ty =
+      annotate_call_arg_typed (to_pos le) env name args [] ST_Setter
+    in
+    let () = assert (ret_ty = None) in
+    Some (S_Call (name, args, eqs) |> add_pos_from le)
 
-  and setter_should_reduce_to_call_s env le e : stmt option =
+  and setter_should_reduce_to_call_recurse ~loc env (t_e, e) make_old_le sub_le
+      =
+    let x = fresh_var "__setter_setfield" in
+    let here le = add_pos_from loc le in
+    let t_sub_re, sub_re = expr_of_lexpr sub_le |> annotate_expr env in
+    let env1, ldi_x =
+      annotate_local_decl_item loc env t_sub_re LDK_Var (LDI_Var x)
+    in
+    let s1 = S_Decl (LDK_Var, ldi_x, Some sub_re) |> here in
+    let s2 =
+      let old_le = make_old_le (LE_Var x |> here) in
+      let old_le' = annotate_lexpr env1 old_le t_e in
+      S_Assign (old_le', e, V1) |> here
+    in
+    let typed_e_x = annotate_expr env1 (E_Var x |> here) in
+    match setter_should_reduce_to_call_s env1 sub_le typed_e_x with
+    | None -> None
+    | Some s -> Some (s_then (s_then s1 s2) s)
+
+  and setter_should_reduce_to_call_s env le (t_e, e) : stmt option =
     let () =
       if false then
         Format.eprintf "@[<2>setter_..._s@ @[%a@]@ @[%a@]@]@." PP.pp_lexpr le
           PP.pp_expr e
     in
-    let here d = add_pos_from le d in
-    let s_then = s_then in
-    let to_expr = expr_of_lexpr in
-    let with_temp old_le sub_le =
-      let x = fresh_var "setter_setfield" in
-      let le_x = LE_Var x |> here in
-      match setter_should_reduce_to_call_s env sub_le (E_Var x |> here) with
-      | None -> None
-      | Some s ->
-          let s1 = S_Assign (le_x, to_expr sub_le, V1) |> here
-          and s2 = S_Assign (old_le le_x, e, V1) |> here in
-          Some (s_then (s_then s1 s2) s)
-    in
+    let loc = to_pos le in
+    let here d = add_pos_from loc d in
+    (if false then (fun o ->
+       Format.eprintf "@[Setter@ @[%a@ = %a@]@ gave %a@.@]" PP.pp_lexpr le
+         PP.pp_expr e
+         (Format.pp_print_option PP.pp_stmt)
+         o;
+       o)
+     else Fun.id)
+    @@
     match le.desc with
     | LE_Discard -> None
-    | LE_SetField ({ desc = LE_Var x; _ }, field) ->
-        set_fields_should_reduce_to_call env le x [ field ] e
-    | LE_SetField (sub_le, field) ->
-        let old_le le' = LE_SetField (le', field) |> here in
-        with_temp old_le sub_le
-    | LE_SetFields ({ desc = LE_Var x; _ }, fields, _) ->
-        set_fields_should_reduce_to_call env le x fields e
-    | LE_SetFields (sub_le, fields, slices) ->
-        let old_le le' = LE_SetFields (le', fields, slices) |> here in
-        with_temp old_le sub_le
-    | LE_Slice ({ desc = LE_Var x; _ }, slices) -> (
-        let slices = Slice_Single e :: slices in
-        match should_slices_reduce_to_call env x slices with
-        | None -> None
-        | Some args ->
+    | LE_SetField (sub_le, field) -> (
+        match sub_le.desc with
+        | LE_Var x when should_reduce_to_call env x ST_Setter ->
+            set_fields_should_reduce_to_call env le x [ field ] (t_e, e)
+        | _ ->
+            let old_le le' = LE_SetField (le', field) |> here in
+            setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
+        )
+    | LE_SetFields (sub_le, fields, slices) -> (
+        match sub_le.desc with
+        | LE_Var x when should_reduce_to_call env x ST_Setter ->
+            set_fields_should_reduce_to_call env le x fields (t_e, e)
+        | _ ->
+            let old_le le' = LE_SetFields (le', fields, slices) |> here in
+            setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
+        )
+    | LE_Slice (sub_le, slices) -> (
+        match sub_le.desc with
+        | LE_Var x
+          when should_reduce_to_call env x ST_Setter
+               && List.for_all slice_is_single slices ->
+            let args =
+              try List.map slice_as_single slices
+              with Invalid_argument _ -> assert false
+            in
+            let typed_args = (t_e, e) :: List.map (annotate_expr env) args in
             let name, args, eqs, ret_ty =
-              annotate_call (to_pos le) env x args [] ST_Setter
+              annotate_call_arg_typed loc env x typed_args [] ST_Setter
             in
             let () = assert (ret_ty = None) in
-            Some (S_Call (name, args, eqs) |> here))
-    | LE_Slice (sub_le, slices) ->
-        let old_le le' = LE_Slice (le', slices) |> here in
-        with_temp old_le sub_le
-    | LE_Destructuring _ -> None
+            Some (S_Call (name, args, eqs) |> here)
+        | _ ->
+            let old_le le' = LE_Slice (le', slices) |> here in
+            setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
+        )
+    | LE_Destructuring les -> (
+        match (Types.make_anonymous env t_e).desc with
+        | T_Tuple t_es when List.compare_lengths les t_es = 0 ->
+            let x = fresh_var "__setter_destructuring" in
+            let env1, ldi_x =
+              annotate_local_decl_item loc env t_e LDK_Let ~e (LDI_Var x)
+            in
+            let sub_e i = E_GetItem (E_Var x |> here, i) |> here in
+            let recurse_one i sub_le t_sub_e =
+              setter_should_reduce_to_call_s env1 sub_le (t_sub_e, sub_e i)
+            in
+            let subs = list_mapi2 recurse_one 0 les t_es in
+            if List.for_all Option.is_none subs then None
+            else
+              let s0 = S_Decl (LDK_Let, ldi_x, Some e) |> here in
+              let produce_one i sub_le = function
+                | None -> S_Assign (sub_le, sub_e i, V1) |> here
+                | Some s -> s
+              in
+              list_mapi2 produce_one 0 les subs
+              |> List.cons s0 |> stmt_from_list |> Option.some
+        | _ -> None)
     | LE_Var x ->
-        if should_reduce_to_call env x then
+        let st = ST_EmptySetter in
+        if should_reduce_to_call env x st then
+          let args = [ (t_e, e) ] in
           let name, args, eqs, ret_ty =
-            annotate_call (to_pos le) env x [ e ] [] ST_EmptySetter
+            annotate_call_arg_typed loc env x args [] st
           in
           let () = assert (ret_ty = None) in
           Some (S_Call (name, args, eqs) |> here)
