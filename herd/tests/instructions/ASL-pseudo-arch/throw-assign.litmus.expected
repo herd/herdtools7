@@ -1,0 +1,10 @@
+Test throw-assign Required
+States 1
+0:z=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:z=2)
+Observation throw-assign Always 1 0
+Hash=6eb71cec069704438643f4863954e32d
+
