@@ -266,11 +266,12 @@ module Make (B : Backend.S) (C : Config) = struct
     | Throwing _ -> assert false
 
   let bind_env m f =
-    B.delay m (function
-      | Normal (_v, env) -> fun m -> f (discard_exception m >=> fst, env)
-      | Throwing _ as res ->
-          (* Do not discard [m], otherwise events are lost *)
-          fun m -> m >>= fun _ -> return res)
+    B.delay m @@ fun res m ->
+    match res with
+    | Normal (_v, env) -> f (discard_exception m >=> fst, env)
+    | Throwing _ as res ->
+        (* Do not discard [m], otherwise events are lost *)
+        m >>= fun _ -> return res
 
   let ( let*^ ) = bind_env
 
