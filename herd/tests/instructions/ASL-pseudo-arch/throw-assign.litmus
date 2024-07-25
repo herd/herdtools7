@@ -1,0 +1,30 @@
+ASL throw-assign
+
+(*
+ * Catches bug, monad additional info was discarded
+ * when exception is raised in assignment right hand side.
+ * See PR #909.
+ *)
+
+{}
+
+var z = 0;
+
+type Coucou of exception;
+
+func f() => integer
+begin
+  z = 2;
+  throw Coucou {};
+end
+
+func main() => integer
+begin
+  try
+    z = f();
+  catch
+    when Coucou => return 0;
+  end
+end
+
+forall 0:z=2
