@@ -423,7 +423,7 @@ let getter_decl ==
         let return_type = Some ty
         and args = []
         and body = SB_ASL body
-        and subprogram_type = ST_Getter
+        and subprogram_type = ST_EmptyGetter
         and parameters = [] in
         D_Func { name; args; return_type; body; parameters; subprogram_type }
       }
@@ -433,7 +433,7 @@ let getter_decl ==
         let return_type = Some ty
         and args = []
         and body = SB_ASL body
-        and subprogram_type = ST_Getter
+        and subprogram_type = ST_EmptyGetter
         and parameters = [] in
         D_Func { name; args; return_type; body; parameters; subprogram_type }
       }
@@ -451,10 +451,20 @@ let getter_decl ==
       ty; qualident; bracketed(clist(formal)); ioption(SEMICOLON); EOL
   )
 
-let setter_args == loption(bracketed(clist(sformal)))
+let setter_args == bracketed(clist(sformal))
 let setter_decl ==
   some (annotated (
-    name=qualident; args=setter_args; EQ; ~=ty; ~=ident; body=indented_block;
+    | name=qualident; EQ; ~=ty; ~=ident; body=indented_block;
+      {
+        let open AST in
+        let return_type = None
+        and parameters = []
+        and body = SB_ASL body
+        and subprogram_type = ST_EmptySetter
+        and args = [ (ident, ty) ] in
+        D_Func { name; args; return_type; body; parameters; subprogram_type }
+      }
+    | name=qualident; args=setter_args; EQ; ~=ty; ~=ident; body=indented_block;
       {
         let open AST in
         let return_type = None
@@ -466,7 +476,7 @@ let setter_decl ==
       }
   ))
   | unimplemented_decl (
-      qualident; setter_args; EQ; ty; ident; ioption(SEMICOLON); EOL
+      qualident; ioption(setter_args); EQ; ty; ident; ioption(SEMICOLON); EOL
     )
 
 let procedure_decl ==
