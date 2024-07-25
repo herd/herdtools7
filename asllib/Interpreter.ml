@@ -1109,11 +1109,12 @@ module Make (B : Backend.S) (C : Config) = struct
          - [m] if [m] is [Throwing (Some _, _)]
          - [Throwing (Some to_throw, g)] if  [m] is [Throwing (None, g)] *)
     (* Begin RethrowImplicit *)
-    let rethrow_implicit (v, v_ty) res =
-      B.bind_seq res @@ function
+    let rethrow_implicit (v, v_ty) s_m =
+      B.bind_seq s_m @@ function
       | Throwing (None, env_throw1) ->
           Throwing (Some (v, v_ty), env_throw1) |> return
-      | _ -> res |: SemanticsRule.RethrowImplicit
+      | (Normal _ | Throwing (Some _, _)) as res ->
+          return res |: SemanticsRule.RethrowImplicit
       (* End *)
     in
     (* [catcher_matches t c] returns true if the catcher [c] match the raised
