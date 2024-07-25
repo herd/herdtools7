@@ -48,6 +48,7 @@
 \fvset{fontsize=\small}
 
 \newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
+\newcommand\lrmcomment[1]{}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -371,6 +372,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type System macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\TypeErrorConfig[0]{\hyperlink{def-typeerrorconfig}{\texttt{\#TE}}}
 \newcommand\TTypeError[0]{\hyperlink{def-ttypeerror}{\textsf{TTypeError}}}
 \newcommand\TypeError[0]{\hyperlink{def-typeerror}{\textsf{TypeError}}}
 \newcommand\TypeErrorVal[1]{\TypeError(\texttt{#1})}
@@ -429,7 +431,8 @@
 \newcommand\aslpo[0]{\hyperlink{def-aslpo}{\mathtt{asl\_po}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Semantics/Typing Shared Entities
+% Semantics/Typing Shared macros
+\newcommand\ProseTerminateAs[1]{\hyperlink{def-proseterminateas}{${}^{\sslash #1 }$}}
 \newcommand\tenv[0]{\textsf{tenv}}
 \newcommand\denv[0]{\textsf{denv}}
 \newcommand\aslsep[0]{\mathbf{,}}
@@ -450,6 +453,7 @@
 \newcommand\idthree[0]{\texttt{id3}}
 \newcommand\op[0]{\texttt{op}}
 \newcommand\vx[0]{\texttt{x}}
+\newcommand\va[0]{\texttt{a}}
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\vbfour[0]{\texttt{b4}}
 \newcommand\ve[0]{\texttt{e}}
@@ -760,3 +764,4 @@
 \newcommand\compare[0]{\texttt{compare}}
 \newcommand\vqone[0]{\texttt{q1}}
 \newcommand\vqtwo[0]{\texttt{q2}}
+\newcommand\tty[0]{\texttt{ty}}
