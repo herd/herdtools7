@@ -667,7 +667,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let[@warning "-44"] interval_is_too_big a b =
       let open Z in
-      let max_interval_size = ~$1 lsl 31 in
+      let max_interval_size = ~$1 lsl 14 in
       Compare.(abs (a - b) > max_interval_size)
     in
     let explode_constraint env = function
