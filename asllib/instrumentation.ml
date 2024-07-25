@@ -487,7 +487,23 @@ module TypingRule = struct
     | TBitFields
     | ReduceSlicesToCall
     | TypeOfArrayLength
+    | TypecheckFunc
+    | TypecheckGlobalStorage
+    | TypecheckTypeDecl
+    | AnnotateAndDeclareFunc
+    | AnnotateFuncSig
+    | CheckSetterHasGetter
+    | AddNewFunc
+    | SubprogramForName
+    | HasArgClash
+    | GetUndeclaredDefining
+    | AnnotateOneParam
+    | AnnotateParams
+    | ArgsAsParams
+    | AnnotateArgs
     | StaticEval
+    | ReduceConstants
+    | Normalize
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -632,7 +648,23 @@ module TypingRule = struct
     | TBitFields -> "TBitFields"
     | ReduceSlicesToCall -> "ReduceSlicesToCall"
     | TypeOfArrayLength -> "TypeOfArrayLength"
+    | TypecheckFunc -> "TypecheckFunc"
+    | TypecheckGlobalStorage -> "TypecheckFunc"
+    | TypecheckTypeDecl -> "TypecheckTypeDecl"
+    | AnnotateAndDeclareFunc -> "AnnotateAndDeclareFunc"
+    | AnnotateFuncSig -> "AnnotateFuncSig"
+    | CheckSetterHasGetter -> "CheckSetterHasGetter"
+    | AddNewFunc -> "AddNewFunc"
+    | SubprogramForName -> "SubprogramForName"
+    | HasArgClash -> "HasArgClash"
+    | GetUndeclaredDefining -> "GetUndeclaredDefining"
+    | AnnotateOneParam -> "AnnotateOneParam"
+    | AnnotateParams -> "AnnotateParams"
+    | ArgsAsParams -> "ArgsAsParams"
+    | AnnotateArgs -> "AnnotateArgs"
     | StaticEval -> "StaticEval"
+    | ReduceConstants -> "ReduceConstants"
+    | Normalize -> "Normalize"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -759,7 +791,23 @@ module TypingRule = struct
       TBitFields;
       ReduceSlicesToCall;
       TypeOfArrayLength;
+      TypecheckFunc;
+      TypecheckGlobalStorage;
+      TypecheckTypeDecl;
+      AnnotateAndDeclareFunc;
+      AnnotateFuncSig;
+      CheckSetterHasGetter;
+      AddNewFunc;
+      SubprogramForName;
+      HasArgClash;
+      GetUndeclaredDefining;
+      AnnotateOneParam;
+      AnnotateParams;
+      ArgsAsParams;
+      AnnotateArgs;
       StaticEval;
+      ReduceConstants;
+      Normalize;
     ]
 
   let all_nb = List.length all
@@ -880,3 +928,5 @@ module SemanticsSingleInstr = SemMake (SemanticsSingleBuffer)
 module TypingSingleInstr = TypMake (TypingSingleBuffer)
 module SemanticsSingleSetInstr = SemMake (SemanticsSingleSetBuffer)
 module TypingSingleSetInstr = TypMake (TypingSingleSetBuffer)
+
+let ( |: ) = TypingNoInstr.use_with

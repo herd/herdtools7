@@ -31,7 +31,7 @@
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
 \newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
-\newcommand\OrAbnormal[0]{\terminateas \ThrowingConfig, \ErrorConfig}
+\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \ErrorConfig}
 \newcommand\ProseOrAbnormal[0]{or an abnormal configuration, which short-circuits the entire evaluation}
 \newcommand\ProseOrError[0]{or an error configuration, which short-circuits the entire evaluation}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
@@ -143,12 +143,8 @@
 \newcommand\vvsg[0]{\texttt{vsg}}
 \newcommand\vvs[0]{\texttt{vs}}
 \newcommand\vvsone[0]{\texttt{vs1}}
-\newcommand\vms[0]{\texttt{ms}}
-\newcommand\vmsone[0]{\texttt{ms1}}
-\newcommand\vmstwo[0]{\texttt{ms2}}
 \newcommand\vles[0]{\texttt{les}}
 \newcommand\vre[0]{\texttt{re}}
-\newcommand\vres[0]{\texttt{res}}
 \newcommand\vvone[0]{\texttt{v1}}
 \newcommand\vvtwo[0]{\texttt{v2}}
 \newcommand\vsone[0]{\texttt{s1}}
@@ -228,7 +224,6 @@
 %\newcommand\etop[0]{\texttt{e\_top}}
 \newcommand\vvsubtop[0]{\texttt{v\_top}}
 \newcommand\mtop[0]{\texttt{m\_top}}
-\newcommand\efactor[0]{\texttt{e\_factor}}
 \newcommand\mfactor[0]{\texttt{m\_factor}}
 \newcommand\vfactor[0]{\texttt{v\_factor}}
 \newcommand\range[0]{\texttt{range}}
@@ -960,7 +955,6 @@ and one of the following applies:
 \item SemanticsRule.ETuple (see Section~\ref{sec:SemanticsRule.ETuple})
 \item SemanticsRule.EUnknown (see Section~\ref{sec:SemanticsRule.EUnknown})
 \item SemanticsRule.EPattern (see Section~\ref{sec:SemanticsRule.EPattern})
-\item SemanticsRule.ATC (see Section~\ref{sec:SemanticsRule.ATC})
 \item SemanticsRule.ATC (see Section~\ref{sec:SemanticsRule.ATC})
 \end{itemize}
 
@@ -1731,7 +1725,6 @@ Notice that this rule introduces non-determinism.
 
 \isempty{\subsection{Comments}}
 
-\section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
 \section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
   \subsection{Prose}
   Evaluation of the expression $\ve$ in an environment $\env$ is \\
@@ -4095,29 +4088,20 @@ once the block is exited. As a consequence, the subsequent declaration
 variable~\texttt{x} persists after block end. However, observe that \texttt{x}
 is defined before the block and hence still exists after the block.
 
-    \CodeSubsection{\BlockBegin}{\BlockEnd}{../Interpreter.ml}
+\CodeSubsection{\BlockBegin}{\BlockEnd}{../Interpreter.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
-\begin{definition}[Function Restriction]
-The \emph{restriction} of a function $f : X \rightarrow Y$ to a subset of its domain
-$A \subseteq \dom(f)$, denoted as $f|_A$, is defined as follows (the set of input-output pairs):
-\[
-  f|_A \triangleq \{ (x, f(x)) \;|\; x \in A \} \enspace.
-\]
-\end{definition}
-
+\subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \env \eqname (\tenv,\denv)\\
-    \blockenv \eqdef (\tenv, (G^\denv, \emptylist))\\
-    \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\
-    \blockenvone\eqdef(\tenv, \denvone)\\
-    \newenv \eqdef(\tenv, (G^{\denvone}, L^{\denvone}|_{\dom(L^\denv)}))
-  }
-  {
-    \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)
-  }
+\inferrule{
+  \env \eqname (\tenv,\denv)\\
+  \blockenv \eqdef (\tenv, (G^\denv, \emptylist))\\
+  \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\
+  \blockenvone\eqdef(\tenv, \denvone)\\
+  \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
+}{
+  \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)
+}
 \end{mathpar}
 
 That is, evaluating a block discards the bindings for variables declared inside $\stm$.
@@ -6622,271 +6606,291 @@ cannot appear as a type, since ASL syntax does not allow the following:
 \end{emptyformal}
 
 \section{Applying a Unary Operator \label{sec:UnaryOperator}}
-\subsection{Prose}
 \hypertarget{def-unoprel}{}
-The relation
+The function
 \[
-  \unoprel(\unop \aslsep \vals) \;\aslrel\; \vals
+  \unoprel(\overname{\unop}{\op} \aslsep \overname{\vals}{\vv}) \aslto \overname{\vals}{\vw}
 \]
-evaluates an operator over a native value and returns the resulting
-native value (the \unop\ appearing as an argument of the \unoprel\ relation
-is the AST non-terminal for deriving unary operators).
+evaluates a unary operator $\op$ over a native value $\vv$ and returns the native value $\vw$.
+
+The evaluation is defined in terms of the static evaluation function
+\hypertarget{def-unopliterals}{}
+\[
+  \unopliterals(\overname{\unop}{\op} \aslsep \overname{\literals}{\vl}) \aslto
+  \overname{\literals}{\vr} \cup \TTypeError
+\]
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{negate\_int}):
+  \begin{itemize}
+    \item $\op$ is $\NEG$ and $\vv$ is a literal integer for $n$;
+    \item statically evaluating $\NEG$ on the literal integer for $n$ yields the
+          literal integer for $m$;
+    \item $\vw$ is the native integer value for $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{negate\_real}):
+  \begin{itemize}
+    \item $\op$ is $\NEG$ and $\vv$ is a literal real for $p$;
+    \item statically evaluating $\NEG$ on the literal real for $n$ yields the
+          literal real for $q$;
+    \item $\vw$ is the native real value for $q$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\BNOT$ and $\vv$ is a literal Boolean for $b$;
+    \item statically evaluating $\BNOT$ on the literal Boolean for $b$ yields the
+          literal real for $c$;
+    \item $\vw$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_bits}):
+  \begin{itemize}
+    \item $\op$ is $\NOT$ and $\vv$ is a literal bitvector for $\bits$;
+    \item statically evaluating $\NOT$ on the literal bitvector for $\bits$ yields the
+          literal bitvector for $c$;
+    \item $\vw$ is the native bitvector value for $c$.
+  \end{itemize}
+\end{itemize}
 
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule[negate\_int]{}{
-    \unoprel(\NEG, \nvint(n)) \evalarrow \nvint(- n)
-  }
-  \and
-  \inferrule[negate\_real]{}{
-    \unoprel(\NEG, \nvreal(z)) \evalarrow \nvint(- z)
-  }
-  \and
-  \inferrule[not\_bool]{}{
-    \unoprel(\BNOT, \nvbool(b)) \evalarrow \nvint(\neg b)
-  }
-  \and
-  \inferrule[not\_bits]{
-    I \eqdef \listrange(\bits)\\
-    c \eqdef [\ i\in I: 1-\bits[i]\ ]
-  }{
-    \unoprel(\NOT, \nvbitvector(\bits)) \evalarrow \nvbitvector(c)
-  }
+\inferrule[negate\_int]{
+  \unopliterals(\NEG, \lint(n)) \typearrow \lint(m)
+}{
+  \unoprel(\overname{\NEG}{\op}, \overname{\nvint(n)}{\vv}) \evalarrow \overname{\nvint(m)}{\vw}
+}
+\and
+\inferrule[negate\_real]{
+  \unopliterals(\NEG, \lreal(p)) \typearrow \lreal(q)
+}{
+  \unoprel(\overname{\NEG}{\op}, \overname{\nvreal(p)}{\vv}) \evalarrow \overname{\nvreal(q)}{\vw}
+}
+\and
+\inferrule[not\_bool]{
+  \unopliterals(\BNOT, \lbool(b)) \typearrow \lreal(c)
+}{
+  \unoprel(\overname{\BNOT}{\op}, \overname{\nvbool(b)}{\vv}) \evalarrow \overname{\nvbool(c)}{\vw}
+}
+\and
+\inferrule[not\_bits]{
+  \unopliterals(\NOT, \lbitvector(\bits)) \typearrow \lbitvector(c)
+}{
+  \unoprel(\overname{\NOT}{\op}, \overname{\nvbitvector(\bits)}{\vv}) \evalarrow \overname{\nvbitvector(c)}{\vw}
+}
 \end{mathpar}
 \end{emptyformal}
 
 \section{SemanticsRule.BinopOperator \label{sec:SemanticsRule.BinopOperator}}
-\subsection{Prose}
 \hypertarget{def-binoprel}{}
-The relation
+The function
 \[
-  \binoprel(\binop \aslsep \vals \aslsep \vals) \;\aslrel\; (\vals \cup \TError)
+  \binoprel(\overname{\binop}{\op} \aslsep \overname{\vals}{\vvone} \aslsep \overname{\vals}{\vvtwo})
+  \aslto \overname{\vals}{\vr} \cup \TError
 \]
-evaluates an operator over a pair of native values and returns the resulting
-native value or an error, if it is considered illegal to apply the operator
-to the given values (the \binop\ appearing as an argument of the \binoprel\ relation
-is the AST non-terminal for deriving binary operators).
+evaluates a binary operator $\op$ over a pair of native values --- $\vvone$ and $\vvtwo$ --- and returns the
+native value $\vw$ or an error.
+
+The evaluation is defined in terms of the static evaluation function
+\hypertarget{def-binopliterals}{}
+\[
+  \binopliterals(\overname{\binop}{\op} \aslsep \overname{\literals}{\vvone} \aslsep \overname{\literals}{\vvtwo}) \aslto
+  \overname{\literals}{\vr} \cup \TTypeError
+\]
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{int\_arith}):
+  \begin{itemize}
+    \item $\vvone$ is a literal integer for $a$;
+    \item $\vvtwo$ is a literal integer for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal integer for $c$;
+    \item $\vr$ is the native integer value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_rel}):
+  \begin{itemize}
+    \item $\vvone$ is a literal integer for $a$;
+    \item $\vvtwo$ is a literal integer for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal integer for $a$;
+    \item $\vvtwo$ is a literal integer for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bool\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal Boolean for $a$;
+    \item $\vvtwo$ is a literal Boolean for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bool\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal Boolean for $a$;
+    \item $\vvtwo$ is a literal Boolean for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{real\_arith\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal real for $a$;
+    \item $\vvtwo$ is a literal real for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal real for $c$;
+    \item $\vr$ is the native real value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{real\_rel\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal real for $a$;
+    \item $\vvtwo$ is a literal real for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{real\_rel\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal real for $a$;
+    \item $\vvtwo$ is a literal real for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitvector\_rel\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal bitvector for $a$;
+    \item $\vvtwo$ is a literal bitvector for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitvector\_rel\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal bitvector for $a$;
+    \item $\vvtwo$ is a literal bitvector for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitvector\_bits\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal bitvector for $a$;
+    \item $\vvtwo$ is a literal bitvector for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal bitvector for $c$;
+    \item $\vr$ is the native bitvector value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitvector\_bits\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal bitvector for $a$;
+    \item $\vvtwo$ is a literal bitvector for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+\end{itemize}
 
 \begin{emptyformal}
 \subsection{Formally}
 
-\subsubsection{Arithmetic Operators Over Integer Values \label{sec:AthimeticOverInt}}
 \begin{mathpar}
-  \inferrule[add\_int]{ n \eqdef a + b }{
-    \binoprel(\PLUS, \nvint(a), \nvint(b)) \evalarrow \nvint(n)
-  }
-  \and
-  \inferrule[sub\_int]{ n \eqdef a - b }{
-    \binoprel(\MINUS, \nvint(a), \nvint(b)) \evalarrow \nvint(\texttt{n})
-  }
-  \and
-  \inferrule[mul\_int]{ n \eqdef a \times b }{
-    \binoprel(\MUL, \nvint(a), \nvint(b)) \evalarrow \nvint(\texttt{n})
-  }
-  \and
-  \inferrule[div\_int]{  b > 0 \\
-    n \eqdef a \div b \\
-    n \in \Z}{
-    \binoprel(\DIV, \nvint(a), \nvint(b)) \evalarrow \nvint(n)
-  }
-  \and
-  \inferrule[div\_int\_error\_denominator\_negative]{  b \leq 0 }{
-    \binoprel(\DIV, \nvint(a), \nvint(b)) \evalarrow \ErrorVal{DIVInt\_DenominatorNegative}
-  }
-  \and
-  \inferrule[div\_int\_error\_indivisible]{  b > 0 \\
-  n \eqdef a \div b \\
-  n \not\in \Z
-  }{
-    \binoprel(\DIV, \nvint(a), \nvint(b)) \evalarrow \ErrorVal{DIVInt\_Indivisibile}
-  }
-  \and
-  \inferrule[fdiv\_int\_pos]{  b > 0 \\
-  a \geq 0 \\
-  n \eqdef \lfloor a \div b \rfloor
-  }{ \binoprel(\DIVRM, \nvint(a), \nvint(b)) \evalarrow \nvint(n) }
-  \and
-  \inferrule[fdiv\_int\_neg]{  b > 0 \\
-  a < 0 \\
-  n \eqdef -(\lceil (-a) \div b \rceil)
-  }{ \binoprel(\DIVRM, \nvint(a), \nvint(b)) \evalarrow \nvint(n) }
-  \and
-  \inferrule[fdiv\_int\_denominator\_negative]{  b \leq 0 }{ \binoprel(\DIVRM, \nvint(a), \nvint(b)) \evalarrow \ErrorVal{DIVRM\_DenominatorNegative} }
-  \and
-  \inferrule[frem\_int\_pos]{  b > 0 \\
-    \binoprel(\DIVRM, \nvint(a), \nvint(b)) \evalarrow c \\
-    n \eqdef a - (b \times c)
-  }{ \binoprel(\MOD, \nvint(a), \nvint(b)) \evalarrow \nvint(n) }
-  \and
-  \inferrule[frem\_int\_error\_denominator\_not\_positive]{  b \leq 0
-  }{ \binoprel(\MOD, \nvint(a), \nvint(b)) \evalarrow \ErrorVal{MOD\_DenominatorNotPositive} }
+\inferrule[int\_arith]{
+  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \lint(c)
+}{
+  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \overname{\nvint(c)}{\vr}
+}
+\and
+\inferrule[int\_rel]{
+  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
+\and
+\inferrule[int\_error]{
+  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \Error(m)
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[exp\_int]{  b \geq 0 \\ n \eqdef a^b
-  }{ \binoprel(\POW, \nvint(a), \nvint(b)) \evalarrow \nvint(n)}
-  \and
-  \inferrule[exp\_int\_error]{  b < 0 \\ n \eqdef a^b
-  }{ \binoprel(\POW, \nvint(a), \nvint(b)) \evalarrow \ErrorVal{POW\_ExponentNegative} }
-  \and
-  \inferrule[shiftleft\_int]{  \binoprel(\MUL, \nvint(a), \binoprel(\POW, \nvint(2), \nvint(b))) \evalarrow C
-  }{ \binoprel(\SHL, \nvint(a), \nvint(b)) \evalarrow C}
-  \and
-  \inferrule[shift\_right]{  \binoprel(\DIVRM, \nvint(a), \binoprel(\POW, \nvint(2), \nvint(b))) \evalarrow C
-  }{ \binoprel(\SHR, \nvint(a), \nvint(b)) \evalarrow C}
+\inferrule[bool\_okay]{
+  \binopliterals(\op, \lbool(a), \lbool(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\nvbool(a)}{\vvone}, \overname{\nvbool(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
+\and
+\inferrule[bool\_error]{
+  \binopliterals(\op, \lbool(a), \lbool(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\nvbool(a)}{\vvone}, \overname{\nvbool(b)}{\vvtwo}) \evalarrow \Error(m)
+}
 \end{mathpar}
 
-\subsubsection{Relational Operators Over Integer Values \label{sec:RelationalOverInt}}
 \begin{mathpar}
-  \inferrule[eq\_real]{  c\eqdef a = b }{ \binoprel(\EQOP, \nvint(a), \nvint(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[ne\_real]{  c\eqdef a = b }{ \binoprel(\NEQ, \nvint(a), \nvint(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[le\_real]{  c\eqdef a \leq b }{ \binoprel(\LEQ, \nvint(a), \nvint(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[lt\_real]{  c\eqdef a < b }{ \binoprel(\LT, \nvint(a), \nvint(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[ge\_real]{  c\eqdef a \geq b }{ \binoprel(\GEQ, \nvint(a), \nvint(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[gt\_real]{  c\eqdef a > b }{ \binoprel(\GT, \nvint(a), \nvint(b)) \evalarrow \nvbool(c)}
+\inferrule[real\_arith\_okay]{
+  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \lreal(c)
+}{
+  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \overname{\nvreal(c)}{\vr}
+}
+\and
+\inferrule[real\_arith\_error]{
+  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \Error(m)
+}
 \end{mathpar}
 
-\subsubsection{Boolean Operators Over Boolean Values \label{sec:BooleanOverBoolean}}
 \begin{mathpar}
-\inferrule[and\_bool]{}{ \binoprel(\BAND, \nvbool(a), \nvbool(b)) \evalarrow \nvbool(a \wedge b)}
+\inferrule[real\_rel\_okay]{
+  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
 \and
-\inferrule[or\_bool]{}{ \binoprel(\BOR, \nvbool(a), \nvbool(b)) \evalarrow \nvbool(a \vee b)}
-\and
-\inferrule[implies\_bool]{}{ \binoprel(\IMPL, \nvbool(a), \nvbool(b)) \evalarrow \nvbool(\neg a \vee b)}
-\and
-\inferrule[eq\_bool]{
-  c \eqdef a = b
-}{ \binoprel(\EQOP, \nvbool(a), \nvbool(b)) \evalarrow \nvbool(c)}
-\and
-\inferrule[ne\_bool]{
-  c \eqdef a \neq b
-}{ \binoprel(\NEQ, \nvbool(a), \nvbool(b)) \evalarrow \nvbool(c)}
+\inferrule[real\_rel\_error]{
+  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \Error(m)
+}
 \end{mathpar}
 
-\subsubsection{Arithmetic Operators Over Real Values \label{sec:AthimeticOverReal}}
 \begin{mathpar}
-  \inferrule[add\_real]{}{\binoprel(\PLUS, \nvreal(a), \nvreal(b)) \evalarrow \nvreal(a+b)}
+\inferrule[bitvector\_rel\_okay]{
+  \binopliterals(\op, \nvbitvector(a), \nvbitvector(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
 \and
-\inferrule[sub\_real]{}{\binoprel(\MINUS, \nvreal(a), \nvreal(b)) \evalarrow \nvreal(a-b)}
+\inferrule[bitvector\_rel\_error]{
+  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \Error(m)
+}
 \and
-\inferrule[mul\_real]{}{\binoprel(\MUL, \nvreal(a), \nvreal(b)) \evalarrow \nvreal(a\times b)}
+\inferrule[bitvector\_bits\_okay]{
+  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \lbitvector(c)
+}{
+  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \overname{\nvbitvector(c)}{\vr}
+}
 \and
-\inferrule[div\_real]{b \neq 0}{\binoprel(\RDIV, \nvreal(a), \nvreal(b)) \evalarrow \nvreal(a\div b)}
-\and
-\inferrule[div\_real\_error]{b = 0}{\binoprel(\RDIV, \nvreal(a), \nvreal(b)) \evalarrow \ErrorVal{RDIV\_DenominatorZero}}
-\and
-\inferrule[exp\_real]{b \geq 0}{\binoprel(\POW, \nvreal(a), \nvreal(b)) \evalarrow \nvreal(a^b)}
-\end{mathpar}
-
-\subsubsection{Relational Operators Over Real Values \label{sec:RealtionalOverReal}}
-\begin{mathpar}
-  \inferrule[eq\_real]{  c\eqdef a = b }{ \binoprel(\EQOP, \nvreal(a), \nvreal(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[ne\_real]{  c\eqdef a = b }{ \binoprel(\NEQ, \nvreal(a), \nvreal(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[le\_real]{  c\eqdef a \leq b }{ \binoprel(\LEQ, \nvreal(a), \nvreal(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[lt\_real]{  c\eqdef a < b }{ \binoprel(\LT, \nvreal(a), \nvreal(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[ge\_real]{  c\eqdef a \geq b }{ \binoprel(\GEQ, \nvreal(a), \nvreal(b)) \evalarrow \nvbool(c)}
-  \and
-  \inferrule[gt\_real]{  c\eqdef a > b }{ \binoprel(\GT, \nvreal(a), \nvreal(b)) \evalarrow \nvbool(c)}
-\end{mathpar}
-
-\subsection{Operators Over Bitvectors \label{sec:BitvectorOperations}}
-
-\newcommand\bintounsigned[0]{\hyperlink{def-bintounsigned}{\textsf{binary\_to\_unsigned}}}
-\hypertarget{def-bintounsigned}{}
-The function $\bintounsigned : \{0,1\}^+ \rightarrow \N$ converts a sequence of bits
-into a natural number:
-\[
-  \bintounsigned(a_{n..1}) \triangleq \sum_{i=1}^n 2^{a_i}
-\]
-
-\begin{mathpar}
-  \inferrule[eq\_bits]{
-    \vb \eqdef \bigvee_{i=1}^k a_i = b_i
-  }
-  {
-    \binoprel(\EQOP, \nvbitvector(a_{1..k}), \nvbitvector(b_{1..k})) \evalarrow \nvbool(\vb)
-  }
-  \and
-  \inferrule[ne\_bits]{
-    \binoprel(\EQOP, \nvbitvector(a_{1..k}), \nvbitvector(b_{1..k})) \evalarrow \nvbool(\vb')\\
-    \vb \eqdef \neg \vb'
-  }
-  {
-    \binoprel(\NEQ, \nvbitvector(a_{1..k}), \nvbitvector(b_{1..k})) \evalarrow \nvbool(\vb)
-  }
-  \and
-  \inferrule[or\_bits]{
-    i=1..k: c_i = \max(a_i, b_i)
-  }
-  {
-    \binoprel(\OR, \nvbitvector(a_{1..k}), \nvbitvector(b_{1..k})) \evalarrow \nvbitvector(c_{1..k})
-  }
-  \and
-  \inferrule[and\_bits]{
-    i=1..k: c_i = \min(a_i, b_i)
-  }
-  {
-    \binoprel(\AND, \nvbitvector(a_{1..k}), \nvbitvector(b_{1..k})) \evalarrow \nvbitvector(c_{1..k})
-  }
-  \and
-  \inferrule[xor\_bits]{
-    {
-      \textit{xor\_bits} = \lambda a,b\in\{0,1\}.\ \left\{
-        \begin{array}{ll}
-          0 & \text{ if } a = b\\
-          1 & \text{ otherwise}
-        \end{array}
-      \right.
-    }\\
-    i=1..k: c_i=\textit{xor\_bits}(a_i, b_i)
-  }
-  {
-    \binoprel(\EOR, \nvbitvector(a_{1..k}), \nvbitvector(b_{1..k})) \evalarrow \nvbitvector(c_{1..k})
-  }
-  \and
-  \inferrule[add\_bits]{
-    a \eqname \bintounsigned(a_{1..k})\\
-    b \eqname \bintounsigned(b_{1..k})\\
-    c \eqdef \text{two's complement little endian representation of } a + b
-  }
-  {
-    \binoprel(\PLUS, \nvbitvector(a_{1..k}), \nvbitvector(b_{1..k})) \evalarrow \nvbitvector(c)
-  }
-  \and
-  \inferrule[sub\_bits]{
-    a \eqname \bintounsigned(a_{1..k})\\
-    b \eqname \bintounsigned(b_{1..k})\\
-    c \eqdef \text{two's complement little endian representation of } a - b
-  }
-  {
-    \binoprel(\MINUS, \nvbitvector(a_{1..k}), \nvbitvector(b_{1..k})) \evalarrow \nvbitvector(c)
-  }
-  \and
-  \inferrule[add\_bits\_int]{
-    a \eqname \bintounsigned(a_{1..k})\\
-    c \eqdef \text{two's complement little endian representation of } a + b
-  }
-  {
-    \binoprel(\PLUS, \nvbitvector(a_{1..k}), \nvint(b)) \evalarrow \nvbitvector(c)
-  }
-  \and
-  \inferrule[sub\_bits\_int]{
-    a \eqname \bintounsigned(a_{1..k})\\
-    c \eqdef \text{two's complement little endian representation of } a - b
-  }
-  {
-    \binoprel(\MINUS, \nvbitvector(a_{1..k}), \nvint(b)) \evalarrow \nvbitvector(c)
-  }
+\inferrule[bitvector\_bits\_error]{
+  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \Error(m)
+}
 \end{mathpar}
 \end{emptyformal}
 

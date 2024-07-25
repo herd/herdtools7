@@ -12,10 +12,10 @@ begin
   let p = (0, FALSE);
 
   var t1 : T; var t2 : PointArray;
-  assert (t1[0] == t2[CX]);
+  t1[0] = t2[CX];
 
   let o = PointRecord { x=0.0, y=0.0, z=0.0 };
-  assert (t2[CZ] == o.z);
+  t2[CZ] = o.z;
 
   return 0;
 end

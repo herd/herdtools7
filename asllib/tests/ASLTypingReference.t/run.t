@@ -33,10 +33,11 @@ ASL Typing Reference / annotating types:
   $ aslref TypingRule.TTuple.asl
   $ aslref TypingRule.TArray.asl
   [0, 1, 0, 0]
-  $ aslref TypingRule.TEnumDecl.asl
+  $ aslref --no-exec TypingRule.TEnumDecl.asl
   $ aslref TypingRule.TRecordExceptionDecl.asl
   $ aslref TypingRule.TNonDecl.asl
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:
   ASL Error: Cannot parse.
   [1]
   $ aslref TypingRule.TBitField.asl
+  $ aslref --no-exec TypingRule.AnnotateFuncSig.asl

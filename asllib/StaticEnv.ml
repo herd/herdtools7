@@ -99,6 +99,7 @@ end
 
 let pp_env = PPEnv.pp_env
 let pp_global = PPEnv.pp_global
+let pp_local = PPEnv.pp_local
 
 (** An empty global static environment. *)
 let empty_global =
@@ -149,13 +150,13 @@ let lookup_immutable_expr_opt env x =
 let mem_constants env x =
   IMap.mem x env.global.constant_values || IMap.mem x env.local.constant_values
 
-let add_subprogram name func_sig env =
+let add_subprogram name func_def env =
   {
     env with
     global =
       {
         env.global with
-        subprograms = IMap.add name func_sig env.global.subprograms;
+        subprograms = IMap.add name func_def env.global.subprograms;
       };
   }
 

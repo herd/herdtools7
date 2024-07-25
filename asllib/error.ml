@@ -30,6 +30,7 @@ type error_desc =
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
+  | BadSlice of slice
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
@@ -137,9 +138,10 @@ let pp_error =
           fields
     | BadSlices (t, slices, length) ->
         fprintf f
-          "ASL %s error: Cannot extract from bitvector of length %d slices %a."
+          "ASL %s error: Cannot extract from bitvector of length %d slice %a."
           (error_handling_time_to_string t)
           length pp_slice_list slices
+    | BadSlice slice -> fprintf f "ASL error: invalid slice %a." pp_slice slice
     | TypeInferenceNeeded ->
         pp_print_text f
           "ASL Internal error: Interpreter blocked. Type inference needed."

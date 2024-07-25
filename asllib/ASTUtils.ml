@@ -210,6 +210,7 @@ and use_slice = function
 
 and use_slices slices = use_list use_slice slices
 
+(** [use_ty t s] adds the identifiers that appear in [t] to the set of identifiers [s] *)
 and use_ty t =
   match t.desc with
   | T_Named s -> ISet.add s

@@ -64,6 +64,9 @@ val pp_for_direction : for_direction -> string
 val pp_stmt : stmt printer
 (** Pretty-print a statement. *)
 
+val pp_slice : slice printer
+(** Pretty-print a slice. *)
+
 val pp_slice_list : slice list printer
 (** Pretty-print a list of slices. *)
 

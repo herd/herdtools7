@@ -344,12 +344,12 @@ We sometimes provide extra details to individual derivations by adding comments 
 \[
 \begin{array}{rrl}
 \func &::= \{& \\
- & & \text{name} : \identifier, \\
- & & \text{parameters} : (\identifier, \ty?)^*,\\
- & & \text{args} : \typedidentifier^*,\\
- & & \text{body} : \subprogrambody,\\
- & & \text{return\_type} : \ty?,\\
- & & \text{subprogram\_type} : \subprogramtype\\
+ & & \funcname : \Strings, \\
+ & & \funcparameters : (\identifier, \ty?)^*,\\
+ & & \funcargs : \typedidentifier^*,\\
+ & & \funcbody : \subprogrambody,\\
+ & & \funcreturntype : \ty?,\\
+ & & \funcsubprogramtype : \subprogramtype\\
  & \} &
 \end{array}
 \]
@@ -427,7 +427,7 @@ The rules for slices is replaced by the following:
 This reflects the fact that all other slicing constructs are syntactic sugar
 for \SliceLength.
 
-\chapter{Correpondence Betwen Left-hand-side Expressions and Right-hand-side Expressions
+\chapter{Correspondence Between Left-hand-side Expressions and Right-hand-side Expressions
 \label{ch:LeftToRight}}
 
 The recursive function $\torexpr : \lexpr \rightarrow \expr$ transforms

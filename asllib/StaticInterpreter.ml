@@ -23,7 +23,6 @@
 open AST
 open ASTUtils
 module SEnv = StaticEnv
-module TypingRule = Instrumentation.TypingRule
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
@@ -60,7 +59,11 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
         let bv =
           match expr_ e' with
           | L_Int i -> Bitvector.of_z (pos_max + 1) i
-          | L_BitVector bv when Bitvector.length bv > pos_max -> bv
+          | L_BitVector bv ->
+              if Bitvector.length bv > pos_max then bv
+              else
+                fatal_from e
+                @@ Error.BadSlices (Static, slices, Bitvector.length bv)
           | v ->
               fatal_from e
               @@ Error.MismatchType
@@ -79,30 +82,32 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
         if b then expr_ e1 else expr_ e2
     | _ -> unsupported_expr e
   in
-  expr_ |: TypingRule.StaticEval
+  expr_ |: Instrumentation.TypingRule.StaticEval
 
-and slices_to_positions env =
-  let check_positive e x =
-    if x >= 0 then x
-    else fatal_from e @@ Error.MismatchType (string_of_int x, [ integer' ])
-  in
-  let eval_to_int e =
-    static_eval env e |> Operations.value_as_int e |> check_positive e
-  in
-  let slice_to_positions =
+and slices_to_positions env slices =
+  let eval_to_int e = static_eval env e |> Operations.value_as_int e in
+  let slice_to_positions slice =
     let interval top len = List.init len (( - ) top) in
-    function
-    | Slice_Single e -> [ eval_to_int e ]
-    | Slice_Range (etop, ebot) ->
-        let pbot = eval_to_int ebot and ptop = eval_to_int etop in
-        interval ptop (ptop - pbot + 1)
-    | Slice_Length (ebot, elength) ->
-        let pbot = eval_to_int ebot and plength = eval_to_int elength in
-        let ptop = pbot + plength - 1 in
-        interval ptop plength
-    | Slice_Star (efactor, elength) ->
-        let pfactor = eval_to_int efactor and plength = eval_to_int elength in
-        let ptop = (pfactor * plength) + plength - 1 in
-        interval ptop plength
+    let top, len, pos =
+      match slice with
+      | Slice_Single e ->
+          let pos = eval_to_int e in
+          (pos, 1, e)
+      | Slice_Range (etop, ebot) ->
+          let pbot = eval_to_int ebot and ptop = eval_to_int etop in
+          let len = ptop - pbot + 1 in
+          (ptop, len, etop)
+      | Slice_Length (ebot, elength) ->
+          let pbot = eval_to_int ebot and plength = eval_to_int elength in
+          let ptop = pbot + plength - 1 in
+          (ptop, plength, ebot)
+      | Slice_Star (efactor, elength) ->
+          let pfactor = eval_to_int efactor and plength = eval_to_int elength in
+          let ptop = (pfactor * plength) + plength - 1 in
+          (ptop, plength, efactor)
+    in
+    let bot = top - len + 1 in
+    if top >= bot && bot >= 0 then interval top len
+    else fatal_from pos @@ Error.BadSlice slice
   in
-  fun slices -> slices |> List.map slice_to_positions |> List.concat
+  List.map slice_to_positions slices |> List.concat
