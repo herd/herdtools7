@@ -284,6 +284,7 @@
 \newcommand\NoCallCandidates[0]{\hyperlink{def-nocallcandidates}{\TypeErrorCode{NCC}}}
 \newcommand\TooManyCandidates[0]{\hyperlink{def-toomanycandidates}{\TypeErrorCode{TMC}}}
 \newcommand\ParameterWithoutDecl[0]{\hyperlink{def-parameterwithoutdecl}{\TypeErrorCode{PWD}}}
+\newcommand\NoLCA[0]{\hyperlink{def-nolca}{\TypeErrorCode{LCA}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Typeset variable names
@@ -3000,7 +3001,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
   \vs \eqname \TBits(\ves, \Ignore)\\
   \exprequal(\tenv, \vet, \ves) \typearrow \False
 }{
-  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{NoLCA}
+  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\NoLCA}
 }
 \end{mathpar}
 
@@ -3021,7 +3022,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
   \vs \eqname \TArray(\widths, \vtys)\\
   \arraylengthequal(\tenv, \widtht, \widths) \typearrow \False
 }{
-  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{NoLCA}
+  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\NoLCA}
 }
 \end{mathpar}
 
@@ -3046,7 +3047,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
   \astlabel(\vt) \in \{\TEnum, \TRecord, \TException\}
 }
 {
-  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{NoLCA}
+  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\NoLCA}
 }
 \end{mathpar}
 \end{emptyformal}
@@ -16216,6 +16217,12 @@ which does not allow the type-checker to decide which subprogram the call refers
 \item[$\ParameterWithoutDecl$]
 A subprogram includes a parameter that is not associated with any variable appearing in one of the arguments
 (see \secref{TypingRule.AnnotateParams}).
+
+\hypertarget{def-nolca}{}
+\item[$\NoLCA$]
+A conditional expressions results in two types that have no common ancestor type that can represent both
+(see \secref{sec:TypingRule.LowestCommonAncestor}).
+
 \end{description}
 
 \noindent\makebox[\linewidth]{\rule{\linewidth}{0.4pt}}
