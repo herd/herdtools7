@@ -28,9 +28,6 @@ open ASTUtils
 module type RunTimeConf = sig
   type v
   (** Stored elements of the environment. *)
-
-  val unroll : int
-  (** [unroll] is the number of time a loop can be unrolled. *)
 end
 
 module RunTime (C : RunTimeConf) : sig

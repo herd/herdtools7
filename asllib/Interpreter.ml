@@ -44,14 +44,7 @@ module type S = sig
   val run_typed : AST.t -> StaticEnv.env -> B.value B.m
 end
 
-module type Config = sig
-  module Instr : Instrumentation.SEMINSTR
-
-  val type_checking_strictness : Typing.strictness
-  val unroll : int
-end
-
-module Make (B : Backend.S) (C : Config) = struct
+module Make (B : Backend.S) (I : Instrumentation.SEMINSTR) = struct
   module B = B
   module SemanticsRule = Instrumentation.SemanticsRule
 
@@ -59,8 +52,6 @@ module Make (B : Backend.S) (C : Config) = struct
 
   module EnvConf = struct
     type v = B.value
-
-    let unroll = C.unroll
   end
 
   module IEnv = Env.RunTime (EnvConf)
@@ -168,7 +159,7 @@ module Make (B : Backend.S) (C : Config) = struct
     if undet then bind_unroll loop_name else bind_continue
 
   (* To give name to rules *)
-  let ( |: ) = C.Instr.use_with
+  let ( |: ) = I.use_with
 
   (* Product parallel *)
   (* ---------------- *)
@@ -1395,9 +1386,7 @@ module Make (B : Backend.S) (C : Config) = struct
       =
     let ast = List.rev_append primitive_decls ast in
     let ast = Builder.with_stdlib ast in
-    let ast, static_env =
-      Typing.type_check_ast C.type_checking_strictness ast StaticEnv.empty
-    in
+    let ast, static_env = Typing.type_check_ast ast StaticEnv.empty in
     let () =
       if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
     in

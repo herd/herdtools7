@@ -35,7 +35,7 @@ let build_consts () =
     |> __POS_OF__ |> add_pos_from_pos_of
   in
   let ast = main :: consts in
-  let _ = Native.interprete `TypeCheck ast in
+  let _ = Native.interprete ast in
   ()
 
 let normalize () =

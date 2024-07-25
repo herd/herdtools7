@@ -33,11 +33,10 @@ module NativeBackend :
 val primitive_decls : AST.decl list
 (** List of primitives declared by the Native Backend. *)
 
-module NativeInterpreter (C : Interpreter.Config) :
+module NativeInterpreter (I : Instrumentation.SEMINSTR) :
   Interpreter.S with module B = NativeBackend
 
 val interprete :
-  Typing.strictness ->
   ?instrumentation:bool ->
   ?static_env:StaticEnv.env ->
   AST.t ->

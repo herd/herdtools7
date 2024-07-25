@@ -331,7 +331,13 @@ let make_expr(sub_expr) ==
 
   ------------------------------------------------------------------------- *)
 
-let colon_for_type == COLON | COLON_COLON
+let colon_for_type ==
+  | COLON
+  | pos=annotated(COLON_COLON);
+    {
+      if !Config.allow_double_colon then ()
+      else Error.(fatal_from pos CannotParse)
+    }
 
 (* Constrained types helpers *)
 
@@ -525,10 +531,20 @@ let return_type == ARROW; ty
 let params_opt == { [] } | braced(clist(opt_type_identifier))
 let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
-let func_body == delimited(ioption(BEGIN), stmt_list, END)
+let stmt_list_opt == stmt_list | annotated({ S_Pass })
 let ignored_or_identifier ==
   | MINUS; { global_ignored () }
   | IDENTIFIER
+
+let begin_opt ==
+  | BEGIN
+  | pos=annotated(<>);
+    { 
+      if !Config.allow_no_begin then ()
+      else Error.(fatal_from pos CannotParse)
+    }
+
+let func_body == delimited(begin_opt, stmt_list_opt, END)
 
 let decl ==
   annotated (

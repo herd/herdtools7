@@ -32,7 +32,6 @@ type args = {
   print_serialized : bool;
   print_typed : bool;
   show_rules : bool;
-  strictness : Typing.strictness;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -45,8 +44,6 @@ let parse_args () =
   let print_serialized = ref false in
   let print_typed = ref false in
   let opn = ref "" in
-  let strictness : Typing.strictness ref = ref `TypeCheck in
-  let set_strictness s () = strictness := s in
   let show_version = ref false in
   let push_file file_type s = target_files := (file_type, s) :: !target_files in
 
@@ -66,18 +63,6 @@ let parse_args () =
       ( "--opn",
         Arg.Set_string opn,
         "OPN_FILE Parse the following opn file as main." );
-      ( "--no-type-check",
-        Arg.Unit (set_strictness `Silence),
-        " Do not type-check, only perform minimal type-inference. Default for \
-         v0." );
-      ( "--type-check-warn",
-        Arg.Unit (set_strictness `Warn),
-        " Do not type-check, only perform minimal type-inference. Log typing \
-         errors on stderr." );
-      ( "--type-check-strict",
-        Arg.Unit (set_strictness `TypeCheck),
-        " Perform type-checking, Fatal on any type-checking error. Default for \
-         v1." );
       ( "--show-rules",
         Arg.Set show_rules,
         " Instrument the interpreter and log to std rules used." );
@@ -93,6 +78,7 @@ let parse_args () =
         "Use ASLv1 parser for this file. (default)" );
       ("--version", Arg.Set show_version, " Print version and exit.");
     ]
+    |> List.rev_append Config.command_line_args
     |> Arg.align ?limit:None
   in
 
@@ -116,7 +102,6 @@ let parse_args () =
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
-      strictness = !strictness;
       show_rules = !show_rules;
     }
   in
@@ -143,11 +128,13 @@ let parse_args () =
   args
 
 let or_exit f =
-  match Error.intercept f () with
-  | Ok res -> res
-  | Error e ->
-      Format.eprintf "%a@." Error.pp_error e;
-      exit 1
+  if Printexc.backtrace_status () then f ()
+  else
+    match Error.intercept f () with
+    | Ok res -> res
+    | Error e ->
+        Format.eprintf "%a@." Error.pp_error e;
+        exit 1
 
 let () =
   let args = parse_args () in
@@ -188,8 +175,7 @@ let () =
   let () = if false then Format.eprintf "%a@." PP.pp_t ast in
 
   let typed_ast, static_env =
-    or_exit @@ fun () ->
-    Typing.type_check_ast args.strictness ast StaticEnv.empty
+    or_exit @@ fun () -> Typing.type_check_ast ast StaticEnv.empty
   in
 
   let () =
@@ -201,7 +187,7 @@ let () =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
-      Native.interprete ~instrumentation ~static_env args.strictness typed_ast
+      Native.interprete ~instrumentation ~static_env typed_ast
     else (0, [])
   in
 

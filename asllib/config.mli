@@ -20,23 +20,18 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-(** Reference interpreter for ASL. *)
+val max_exploding_interval_exp : int ref
+(** [max_exploding_interval_exp] denote the 2-exponent of the maximum size of
+    intervals that will be exploded before any multiplication. *)
 
-module type S = sig
-  module B : Backend.S
+val allow_double_colon : bool ref
+(** Allow [x :: ty] syntax to declare types of identifiers. *)
 
-  val run_env : (AST.identifier * B.value) list -> AST.t -> B.value B.m
-  (** [run env0 ast] runs the function main of the ast,
-      in an environment build from the ast. However, the (global)
-      identifiers listed in the A-list [env0] will take their
-      initial values from [env0]  and _not_ from [ast]. *)
+val allow_no_begin : bool ref
+(** Allow removing the [begin] keyword at the begining of a function. *)
 
-  val run : AST.t -> B.value B.m
-  (** Shorthand for [run [] ast] *)
+type typing_strictness = Silence | Warn | TypeCheck
 
-  val run_typed : AST.t -> StaticEnv.env -> B.value B.m
-  (** [run_typed ast env] runs the function main of the typed-checked [ast], in
-      typed-checking environment [env]. *)
-end
-
-module Make (B : Backend.S) (I : Instrumentation.SEMINSTR) : S with module B = B
+val typing_strictness : typing_strictness ref
+val default_loop_unrolling : int ref
+val command_line_args : (string * Arg.spec * string) list

@@ -156,43 +156,36 @@ let set_filter_map f set =
 
    ---------------------------------------------------------------------------*)
 
-type strictness = [ `Silence | `Warn | `TypeCheck ]
-
-module type ANNOTATE_CONFIG = sig
-  val check : strictness
-end
-
-module Property (C : ANNOTATE_CONFIG) = struct
+module Property = struct
   exception TypingAssumptionFailed
 
   type ('a, 'b) property = 'a -> 'b
   type prop = (unit, unit) property
 
   let strictness_string =
-    match C.check with
-    | `TypeCheck -> "type-checking-strict"
-    | `Warn -> "type-checking-warn"
-    | `Silence -> "type-inference"
+    match !Config.typing_strictness with
+    | TypeCheck -> "type-checking-strict"
+    | Warn -> "type-checking-warn"
+    | Silence -> "type-inference"
 
   let check : prop -> prop =
-    match C.check with
-    | `TypeCheck -> fun f () -> f ()
-    | `Warn -> (
+    match !Config.typing_strictness with
+    | TypeCheck -> fun f () -> f ()
+    | Warn -> (
         fun f () -> try f () with Error.ASLException e -> Error.eprintln e)
-    | `Silence -> fun _f () -> ()
+    | Silence -> fun _f () -> ()
 
-  let best_effort' : ('a, 'a) property -> ('a, 'a) property =
-    match C.check with
-    | `TypeCheck -> fun f x -> f x
-    | `Warn -> (
-        fun f x ->
-          try f x
-          with Error.ASLException e ->
-            Error.eprintln e;
-            x)
-    | `Silence -> ( fun f x -> try f x with Error.ASLException _ -> x)
+  let best_effort' f x =
+    match !Config.typing_strictness with
+    | TypeCheck -> f x
+    | Warn -> (
+        try f x
+        with Error.ASLException e ->
+          Error.eprintln e;
+          x)
+    | Silence -> ( try f x with Error.ASLException _ -> x)
 
-  let best_effort : 'a -> ('a, 'a) property -> 'a = fun x f -> best_effort' f x
+  let best_effort x f = best_effort' f x
   let[@inline] ( let+ ) m f = check m () |> f
 
   let[@inline] both (p1 : prop) (p2 : prop) () =
@@ -221,8 +214,8 @@ end
 
    ------------------------------------------------------------------------- *)
 
-module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
-  open Property (C)
+module FunctionRenaming = struct
+  open Property
 
   (* Begin HasArgClash *)
   (* Returns true iff type lists type-clash element-wise. *)
@@ -326,9 +319,9 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
   (* End *)
 
   let try_subprogram_for_name =
-    match C.check with
-    | `TypeCheck -> subprogram_for_name
-    | `Warn | `Silence -> (
+    match !Config.typing_strictness with
+    | TypeCheck -> subprogram_for_name
+    | Warn | Silence -> (
         fun loc env name caller_arg_types ->
           try subprogram_for_name loc env name caller_arg_types
           with Error.ASLException _ as error -> (
@@ -349,9 +342,9 @@ end
 
    ---------------------------------------------------------------------------*)
 
-module Annotate (C : ANNOTATE_CONFIG) = struct
-  open Property (C)
-  module Fn = FunctionRenaming (C)
+module Annotate = struct
+  open Property
+  module Fn = FunctionRenaming
 
   let should_reduce_to_call env name st =
     match IMap.find_opt name env.global.subprogram_renamings with
@@ -622,7 +615,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let[@warning "-44"] interval_is_too_big a b =
       let open Z in
-      let max_interval_size = ~$1 lsl 14 in
+      let max_interval_size = ~$1 lsl !Config.max_exploding_interval_exp in
       Compare.(abs (a - b) > max_interval_size)
     in
     let explode_constraint env = function
@@ -1253,9 +1246,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             | _ -> acc)
         | _ -> acc
       in
-      match C.check with
-      | `TypeCheck -> eqs1
-      | `Warn | `Silence ->
+      match !Config.typing_strictness with
+      | TypeCheck -> eqs1
+      | Warn | Silence ->
           List.fold_left2 folder eqs1 callee.args caller_arg_typed
     in
     let eqs3 =
@@ -2530,7 +2523,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let env3, parameters =
       (* Do not transliterate, only for v0: promote potential params as params. *)
-      if C.check = `TypeCheck then (env3, parameters)
+      if !Config.typing_strictness = Config.TypeCheck then (env3, parameters)
       else
         let folder x (env3', parameters) =
           if var_in_env env3 x then (env3', parameters)
@@ -2926,19 +2919,4 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (* End *)
 end
 
-module TypeCheck = Annotate (struct
-  let check = `TypeCheck
-end)
-
-module TypeInferWarn = Annotate (struct
-  let check = `Warn
-end)
-
-module TypeInferSilence = Annotate (struct
-  let check = `Silence
-end)
-
-let type_check_ast = function
-  | `TypeCheck -> TypeCheck.type_check_ast
-  | `Warn -> TypeInferWarn.type_check_ast
-  | `Silence -> TypeInferSilence.type_check_ast
+let type_check_ast = Annotate.type_check_ast

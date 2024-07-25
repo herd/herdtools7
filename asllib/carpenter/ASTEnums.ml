@@ -5,7 +5,7 @@
 
 let filter_none li = List.filter_map Fun.id li
 
-module Make (C : Config.S) = struct
+module Make (C : CConfig.S) = struct
   open Asllib
   open AST
   open Feat

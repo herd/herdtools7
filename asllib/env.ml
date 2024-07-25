@@ -25,8 +25,6 @@ open ASTUtils
 
 module type RunTimeConf = sig
   type v
-
-  val unroll : int
 end
 
 module RunTime (C : RunTimeConf) = struct
@@ -71,11 +69,13 @@ module RunTime (C : RunTimeConf) = struct
   let set_unroll env unroll = { env with local = { env.local with unroll } }
 
   (** [tick_push env] is [env] with [C.unroll] pushed on its unrolling stack. *)
-  let tick_push env = set_unroll env (C.unroll :: env.local.unroll)
+  let tick_push env =
+    set_unroll env (!Config.default_loop_unrolling :: env.local.unroll)
 
   (** [tick_push_bis env] is [env] with [C.unroll -1] pushed on its unrolling
       stack. *)
-  let tick_push_bis env = set_unroll env ((C.unroll - 1) :: env.local.unroll)
+  let tick_push_bis env =
+    set_unroll env ((!Config.default_loop_unrolling - 1) :: env.local.unroll)
 
   (** [tick_pop env] is [env] with removed the unrolling stack first element. *)
   let tick_pop env =

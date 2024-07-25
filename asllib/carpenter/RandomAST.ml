@@ -34,7 +34,7 @@ let mapo f t = Option.map (map f) t
 let ( >|== ) t f = mapo f t
 let ( let** ) t f = Option.map (bind f) t
 
-module Untyped (C : Config.S) = struct
+module Untyped (C : CConfig.S) = struct
   let unop : unop gen option =
     [
       (if C.Syntax.neg then Some NEG else None);
@@ -368,7 +368,7 @@ module Untyped (C : Config.S) = struct
   let ast : AST.t sgen = Nat.list_sized decl
 end
 
-module Typed (C : Config.S) = struct
+module Typed (C : CConfig.S) = struct
   module Untyped = Untyped (C)
 
   let can_construct_literal env ty = Types.is_singular env ty

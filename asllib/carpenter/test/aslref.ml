@@ -6,7 +6,7 @@
 let check_no_strange_error ast =
   let open Asllib in
   try
-    let _ = Native.interprete `TypeCheck ~instrumentation:false ast in
+    let _ = Native.interprete ~instrumentation:false ast in
     true
   with
   | Error.ASLException _ -> true
@@ -15,7 +15,7 @@ let check_no_strange_error ast =
 let no_strange_error ast =
   let open Asllib in
   try
-    let _ = Native.interprete `TypeCheck ~instrumentation:false ast in
+    let _ = Native.interprete ~instrumentation:false ast in
     ()
   with
   | Error.ASLException _ -> ()
@@ -25,7 +25,7 @@ let no_strange_error ast =
 
 module C = struct
   module Syntax = struct
-    include Carpenter_lib.Config.Stable
+    include Carpenter_lib.CConfig.Stable
 
     let s_while = false
     let s_repeat = false

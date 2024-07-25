@@ -461,8 +461,8 @@ end
 let primitive_decls =
   List.map (fun (f, _) -> D_Func f |> add_dummy_pos) NativeBackend.primitives
 
-module NativeInterpreter (C : Interpreter.Config) =
-  Interpreter.Make (NativeBackend) (C)
+module NativeInterpreter (I : Instrumentation.SEMINSTR) =
+  Interpreter.Make (NativeBackend) (I)
 
 let exit_value = function
   | NV_Literal (L_Int i) -> i |> Z.to_int
@@ -475,15 +475,9 @@ let instrumentation_buffer = function
   | Some false | None ->
       (module Instrumentation.SemanticsNoBuffer : Instrumentation.SEMBUFFER)
 
-let interprete strictness ?instrumentation ?static_env ast =
+let interprete ?instrumentation ?static_env ast =
   let module B = (val instrumentation_buffer instrumentation) in
-  let module C : Interpreter.Config = struct
-    let type_checking_strictness = strictness
-    let unroll = 0
-
-    module Instr = Instrumentation.SemMake (B)
-  end in
-  let module I = NativeInterpreter (C) in
+  let module I = NativeInterpreter (Instrumentation.SemMake (B)) in
   B.reset ();
   let res =
     match static_env with

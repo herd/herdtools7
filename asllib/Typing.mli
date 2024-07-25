@@ -25,11 +25,7 @@
     It should provide enough information to disambiguate any type-dependent
     behaviour. *)
 
-type strictness = [ `Silence | `Warn | `TypeCheck ]
-(** Possible strictness of type-checking. *)
-
-val type_check_ast :
-  strictness -> AST.t -> StaticEnv.env -> AST.t * StaticEnv.env
+val type_check_ast : AST.t -> StaticEnv.env -> AST.t * StaticEnv.env
 (** Typechecks the AST, and returns an AST with type inference holes filled.
 
     @raise Error.ASLException if the AST does not type-check.

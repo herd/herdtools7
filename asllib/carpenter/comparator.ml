@@ -14,7 +14,7 @@ let debug f = Logs.debug ~src:_log_src f
 let get_ref_result ast =
   let open Asllib in
   try
-    match Native.interprete `TypeCheck ~instrumentation:false ast with
+    match Native.interprete ~instrumentation:false ast with
     | 0, _ -> Ok ()
     | i, _ -> Error ("Bad return code: " ^ string_of_int i)
   with
@@ -30,13 +30,7 @@ let get_ref_result_instr =
   let open Asllib in
   let open Native in
   let module B = Instrumentation.SemanticsSingleSetBuffer in
-  let module C : Interpreter.Config = struct
-    let type_checking_strictness = `TypeCheck
-    let unroll = 0
-
-    module Instr = Instrumentation.SemMake (B)
-  end in
-  let module I = NativeInterpreter (C) in
+  let module I = NativeInterpreter (Instrumentation.SemMake (B)) in
   fun ast ->
     let ast = List.rev_append Native.primitive_decls ast in
     B.reset ();
