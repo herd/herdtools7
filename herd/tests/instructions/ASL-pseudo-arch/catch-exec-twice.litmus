@@ -1,0 +1,27 @@
+ASL catch-exec-twice
+
+(*
+ * Ilustrate a bug: the catcher statement was executed twice.
+ * As a consequence, the debug message was repeated.
+ *)
+
+{}
+
+type Bonga of exception;
+
+func g() => integer
+begin
+  try
+    throw Bonga {};
+  catch
+    when Bonga =>
+      let coucou = 11 ;
+      print(coucou);
+  end
+  return 0;
+end
+
+func main() => integer
+begin  
+  return g();
+end
