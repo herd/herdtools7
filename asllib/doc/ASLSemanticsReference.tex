@@ -1077,7 +1077,10 @@ the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.E
 \subsection{Comments}
 When there exists a global variable $\vx$, the type system
 forbids having $\vx$ as a local variable.
-This is enforced by TypingRule.LDVar and TypingRule.DeclareOneFunc.
+This is enforced by TypingRule.LDVar in the Chapter ``Typing of Local Declarations'',
+and
+TypingRule.DeclareGlobalStorage and TypingRule.DeclareOneFunc,
+both in the Chapter ``Typing of Global Declarations''.
 
 \section{SemanticsRule.EGlobalVar \label{sec:SemanticsRule.EGlobalVar}}
 \subsection{Prose}
