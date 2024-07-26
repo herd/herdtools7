@@ -1,0 +1,11 @@
+11
+Test catch-exec-twice Required
+States 1
+
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation catch-exec-twice Always 1 0
+Hash=e2ccef50c20e18585263b6038016a1a4
+

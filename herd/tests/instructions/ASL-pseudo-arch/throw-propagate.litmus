@@ -1,0 +1,57 @@
+ASL throw-propagate
+
+(*
+ * Test various control paths involving exceptions.
+ *)
+
+{}
+
+var z = 0;
+var t = 2;
+var aa=1;
+
+type Coucou of exception;
+type Bonga of exception;
+
+func f() => integer
+begin
+  z = 2;
+  if SomeBoolean() then
+    throw Coucou {};
+  else
+    return 1;
+  end
+end
+
+func g() => integer
+begin
+  var a = 0;
+  let b = SomeBoolean();
+  try
+    a = f();
+    if b then throw Coucou {}; end
+    t = 2;
+    if SomeBoolean() then throw Bonga {}; end
+    return a;
+  catch
+    when Coucou => if SomeBoolean() then a = 0; throw Coucou {}; end
+    when Bonga => if SomeBoolean() then a=0; throw Coucou {}; end
+  end
+  return a;
+end
+
+func main() => integer
+begin
+  var y = 0;
+  try
+    y = g();
+    return 0;
+  catch
+    when Coucou => return 0;
+  end
+end
+
+locations [0:main.0.y;]
+forall 0:z=2 /\ 0:t=2 /\
+  ((0:g.0.a = 0 /\ 0:main.0.y = 0)
+  \/ (0:g.0.a = 1 /\ 0:main.0.y = 1))
