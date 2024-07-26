@@ -38,9 +38,9 @@ module type OptS = sig
   val setnow : t -> bool
   (** Examine tag for immediate action, returns true if action performed *)
 
-  val reducetag : t -> t
-  (** Examine tag for immediate action, returns a tag wihch may
-      or may noy be the tag argument. *)
+  val reducetag : t -> t list
+  (** Examine tag for immediate action, returns a tag list 
+      which may or may not include the tag argument. *)
 end
 
 module MakeS : functor (O:OptS) -> sig
@@ -55,7 +55,8 @@ module type SArg = sig
 
   val set_fault_handling :  Fault.Handling.t ref -> t -> bool
   val set_mte_precision : Precision.t ref -> t -> bool
-  val set_sve_length : int ref -> t -> t
+  val set_sve_length : int ref -> t -> t option
+  val check_tag : t -> t list
 end
 
 module type RefsArg = sig

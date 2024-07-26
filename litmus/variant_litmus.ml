@@ -65,4 +65,6 @@ let set_fault_handling r = function
 
 let set_mte_precision _ _ = false
 
-let set_sve_length _ = Misc.identity
+let set_sve_length _ _ = None
+
+let check_tag tag = [tag]

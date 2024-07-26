@@ -69,7 +69,7 @@ module type OptS = sig
   val setnow : t -> bool
   (** If true, tag performs a hidden action and is forgotten *)
 
-  val reducetag : t -> t
+  val reducetag : t -> t list
   (** Tag may perform a hidden action and may be changed *)
 end
 
@@ -95,9 +95,12 @@ module MakeS (O:OptS)
 
       let add_tag add tag =
         if not (O.setnow tag) then begin
-          let tag = O.reducetag tag in
-          let old = !add in
-          add := (fun t -> O.compare t tag = 0 || old t)
+          let tags = O.reducetag tag in
+          List.iter
+            (fun tag ->
+              let old = !add in
+              add := (fun t -> O.compare t tag = 0 || old t))
+            tags
         end
 
       let parse_tag_set opt add =  do_parse_tag_set opt (add_tag add)
@@ -115,7 +118,8 @@ module type SArg = sig
 
   val set_fault_handling :  Fault.Handling.t ref -> t -> bool
   val set_mte_precision : Precision.t ref -> t -> bool
-  val set_sve_length : int ref -> t -> t
+  val set_sve_length : int ref -> t -> t option
+  val check_tag : t -> t list
 end
 
 module type RefsArg = sig
@@ -133,6 +137,9 @@ module MakeOptS =
       set_fault_handling Refs.fault_handling t ||
       set_mte_precision Refs.mte_precision t
 
-    let reducetag = set_sve_length Refs.sve_vector_length
+    let reducetag tag =
+      match set_sve_length Refs.sve_vector_length tag with
+      | Some tag -> [tag]
+      | None -> check_tag tag
 
   end

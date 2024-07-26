@@ -298,5 +298,10 @@ let set_sve_length r = function
           Warn.fatal
             "Constant %d is not a valid SVE vector length (multiple of 128 between 128 and 2048)" n in
       n in
-    r := n ; SVE
-  | tag -> tag
+    r := n ; Some SVE
+  | _ -> None
+
+
+let check_tag = function
+| ASLExperimental -> [ASL;ASLExperimental;]
+| tag -> [tag]
