@@ -934,6 +934,43 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 \chapter{Evaluation of Expressions \label{chap:eval_expr}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Informal Preamble}
+
+\lrmcomment{This is related to Section 8.3:}
+
+\subsection{Execution-time expressions}
+
+\lrmcomment{This is related to \identi{XYKC}:}
+
+Expressions in ASL are either execution-time expressions or non-execution-time
+expressions.
+
+\lrmcomment{This is related to \identd{ZPMF}:}
+
+An expression is an execution-time expression if either:
+\begin{itemize}
+\item it contains an execution-time storage element identifier
+\item it contains an execution-time function or getter invocation
+\end{itemize}
+
+\subsection{Compile-time-constant expressions}
+
+\lrmcomment{This is related to \identi{XSFY}:}
+
+Expressions in ASL are either compile-time-constant expressions or
+non-compile-time-constant expressions.
+
+\lrmcomment{This is related to \identd{XRBT}:}
+
+An expression is a compile-time-constant expression if each one of its atomic expressions is one of:
+\begin{itemize}
+\item a literal constant
+\item a compile-time-constant storage element identifier
+\item an immutable storage element identifier with a compile-time-constant initializer expression. 
+\item compile-time-constant function or getter invocations
+\end{itemize}
+\section{Formal Preamble}
+
 The relation
 \hypertarget{def-evalexpr}{}
 \[
@@ -1106,10 +1143,41 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 \end{emptyformal}
 
 \subsection{Comments}
-The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
-it evaluates to $\True$ is $\vetwo$ evaluated.
+The evaluation via the rule above ensures that $\veone$ is evaluated first and
+only if it evaluates to $\True$ is $\vetwo$ evaluated.
 
-\lrmcomment{This is related to \identr{BKNT}, \identr{XKGC} and \identi{QRXP}.}
+\lrmcomment{This is related to \identr{BKNT}: add table}
+
+\lrmcomment{This is related to \identr{XKGC}:}
+
+It is an error for an expression’s meaning to rely on evaluation order except
+that conditional expressions, and uses of the boolean operators \texttt{\&\&},
+\texttt{||},\texttt{-->}, are guaranteed to evaluate from left to right.
+
+\lrmcomment{This is related to \identi{YMRT}:}
+
+An implementation could enforce this rule by performing a global analysis of
+all functions to determine whether a function can throw an exception and the
+set of global variables read and written by a function.
+
+\lrmcomment{This is related to \identi{QRXP}:}
+Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
+\texttt{-->} provide a short-circuit evaluation mechanism:
+
+\lrmcomment{This is related to the note under \identr{LRHD}:}
+\begin{itemize}
+\item the first operand of \texttt{if} is always evaluated but only one of the
+remaining operands is evaluated; 
+\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated; 
+\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and, 
+\item if the first operand of \texttt{implies\_bool} is $\False$, then the
+second operand is not evaluated. 
+\end{itemize}
+
+However, note that relying on this short-circuit evaluation can be confusing
+for readers of ASL specifications and as a consequence it is recommended that
+an if-statement is used to achieve the same effect.
+
 
 \section{SemanticsRule.BinopOr \label{sec:SemanticsRule.BinopOr}}
 \subsection{Prose}
@@ -1140,7 +1208,38 @@ it evaluates to $\False$, is $\vetwo$ evaluated.
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{BKNT}, \identr{XKGC} and \identi{QRXP}.}
+\lrmcomment{This is related to \identr{BKNT}: add table} 
+
+\lrmcomment{This is related to \identr{XKGC}:}
+
+It is an error for an expression’s meaning to rely on
+evaluation order except that conditional expressions, and uses of the boolean
+operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
+from left to right.
+
+\lrmcomment{This is related to \identi{YMRT}:}
+
+An implementation could enforce this rule by performing a global analysis of
+all functions to determine whether a function can throw an exception and the
+set of global variables read and written by a function.
+
+\lrmcomment{This is related to \identi{QRXP}:}
+Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
+\texttt{-->} provide a short-circuit evaluation mechanism:
+
+\lrmcomment{This is related to the note under \identr{LRHD}:}
+\begin{itemize}
+\item the first operand of \texttt{if} is always evaluated but only one of the
+remaining operands is evaluated;
+\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated;
+\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and,
+\item if the first operand of \texttt{implies\_bool} is $\False$, then the
+second operand is not evaluated.
+\end{itemize}
+
+However, note that relying on this short-circuit evaluation can be confusing
+for readers of ASL specifications and as a consequence it is recommended that
+an if-statement is used to achieve the same effect.
 
 \section{SemanticsRule.BinopImpl \label{sec:SemanticsRule.BinopImpl}}
 \subsection{Prose}
@@ -1171,7 +1270,25 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, acco
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{BKNT}, and \identi{QRXP}.}
+\lrmcomment{This is related to \identr{BKNT}: add table}
+
+\lrmcomment{This is related to \identi{QRXP}:}
+Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
+\texttt{-->} provide a short-circuit evaluation mechanism:
+
+\lrmcomment{This is related to the note under \identr{LRHD}:}
+\begin{itemize}
+\item the first operand of \texttt{if} is always evaluated but only one of the
+remaining operands is evaluated;
+\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated;
+\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and,
+\item if the first operand of \texttt{implies\_bool} is $\False$, then the
+second operand is not evaluated.
+\end{itemize}
+
+However, note that relying on this short-circuit evaluation can be confusing
+for readers of ASL specifications and as a consequence it is recommended that
+an if-statement is used to achieve the same effect.
 
 \section{SemanticsRule.Binop \label{sec:SemanticsRule.Binop}}
 
@@ -1227,7 +1344,7 @@ as well as \texttt{==}).
 \end{emptyformal}
 
 \subsection{Comments}
-\lrmcomment{This is related to \identr{BKNT}:}
+\lrmcomment{This is related to \identr{BKNT}: add table}
 
 \lrmcomment{This is related to \identr{XKGC}:}
 
@@ -1241,6 +1358,13 @@ In other words, it it is an error for an expression’s meaning to rely on
 evaluation order except that conditional expressions, and uses of the boolean
 operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
 from left to right.
+
+\lrmcomment{This is related to \identi{YMRT}:}
+
+An implementation could enforce this rule by performing a global analysis of
+all functions to determine whether a function can throw an exception and the
+set of global variables read and written by a function.
+
 
 \lrmcomment{This is related to \identi{QJTN}:}
 
@@ -1257,6 +1381,10 @@ subexpressions conflict with each other by:
 \item one writing to a variable and the other throwing an exception
 \item both throwing exceptions
 \end{itemize}
+
+\lrmcomment{This is related to \identi{GFZT}:}
+These conditions are sufficient but not necessary to ensure that evaluation
+order does not affect the result of an expression, including any side-effects.
 
 \section{SemanticsRule.Unop \label{sec:SemanticsRule.Unop}}
 \subsection{Prose}
@@ -1337,12 +1465,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{YCDB}:}
 
-A conditional expression evaluates to its then expression if the condition
-expression evaluates to TRUE. If the condition expression evaluates to FALSE
-each elsif condition expression is evaluated sequentially until an elsif
-condition expression evaluates to TRUE; the conditional expression evaluates to
-the corresponding elsif expression. If no elsif expression evaluates to TRUE
-the conditional expression evaluates to the else expression.
+A conditional expression evaluates to its \texttt{then} expression if the
+condition expression evaluates to $\True$. If the condition expression
+evaluates to $\False$ each \texttt{elsif} condition expression is evaluated
+sequentially until an \texttt{elsif} condition expression evaluates to $\True$;
+the conditional expression evaluates to the corresponding \texttt{elsif}
+expression. If no \texttt{elsif} expression evaluates to $\True$ the
+conditional expression evaluates to the \texttt{else} expression.
 
 \section{SemanticsRule.ESlice \label{sec:SemanticsRule.ESlice}}
 \subsection{Prose}
@@ -1581,6 +1710,10 @@ All of the following apply:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EConcat.asl}
     the expression \texttt{['10', '11']} evaluates to the value \texttt{'1011'}.
 
+  \subsection{Example}
+    In the specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EConcat2.asl}
+    the expression \texttt{['1111', '0000']} evaluates to the value \texttt{'11110000'}.
 
   \CodeSubsection{\EConcatBegin}{\EConcatEnd}{../Interpreter.ml}
 
@@ -4857,6 +4990,128 @@ currently executing catcher caught to be thrown.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Subprograms \label{chap:eval_call}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Informal Preamble}
+
+\lrmcomment{This is related to the preamble of Section 8.2:}
+
+An ASL specification describes behavior in terms of the execution of a single
+thread of control. Executing a function or procedure may modify global state
+and can result in one of the following situations:
+\begin{itemize}
+\item The function/procedure returns successfully (i.e., without throwing an
+ASL exception or detecting a dynamic error). In this case, the result is a
+possibly modified global state and, for functions, a return value.
+\item The function/procedure throws an ASL exception. In this case, the result
+is a possibly modified global state and an exception object (that could be
+caught by the caller in a try-catch block, if desired).
+\item The function/procedure detects a dynamic error condition. This indicates
+an error in the specification and the global state and any other behavior is
+meaningless.
+\item The function/procedure enters an infinite loop. This indicates an error
+in the specification and the global state and any other behavior is
+meaningless.
+\end{itemize}
+
+Note that Arm’s implementation of ASL also supports some builtin functions for
+printing to the console, etc. These internal extensions are not used in Arm’s
+published specifications but could be added to the description of the
+semantics.
+
+\subsection{Execution-time subprograms}
+
+\lrmcomment{This is related to Section 8.2.1:}
+
+\lrmcomment{This is related to \identi{NXJR}:}
+
+Subprogram declarations in ASL are either execution-time subprogram
+declarations or non-execution-time subprogram declarations.
+
+\lrmcomment{This is related to \identd{CSFT}:}
+
+A subprogram declaration is an execution-time declaration if it makes use of
+any of the following:
+\begin{itemize}
+\item an execution-time storage element
+\item an execution-time expression
+\item an execution-time subprogram invocation
+\end{itemize}
+
+\lrmcomment{This is related to \identi{HYBT}:}
+
+Subprogram invocations are also either execution-time or non-execution-time invocations.
+
+\lrmcomment{This is related to \identd{CCTY}:}
+
+A subprogram invocation is an execution-time invocation if the invoked
+subprogram has an execution-time declaration or if the invocation contains any
+of the following:
+\begin{itemize}
+\item an execution-time storage element
+\item an execution-time expression
+\item a bitvector whose width is an execution-time expression
+\end{itemize}
+
+\lrmcomment{This is related to \identi{LYKD}:}
+
+This means that an execution-time subprogram declaration shall only have
+execution-time invocations.
+
+\subsection{Compile-time-constant subprograms}
+
+\lrmcomment{This is related to \identi{ZPWM}:}
+
+Subprogram declarations in ASL are either compile-time-constant subprogram declarations or non-compile-time- constant subprogram declarations.
+
+\lrmcomment{This is related to \identd{KCKX}:}
+
+A subprogram declaration is a compile-time-constant declaration if all of the following are true:
+\begin{itemize}
+\item the subprogram is side-effect-free
+\item all assignments in the subprogram are to the subprogram’s local
+variables
+\item all expressions in the subprogram are compile-time-constant
+expressions
+\item any subprogram invocations made in the subprogram are
+compile-time-constant subprogram invocations
+\end{itemize}
+
+\lrmcomment{This is related to \identi{NTYZ}:}
+
+Standard (built-in) functions, as defined in the ASL standard library, are
+generally compile-time-constant, unless otherwise stated.
+
+\lrmcomment{This is related to \identi{MSZT}:}
+
+Subprogram invocations are also either compile-time-constant subprogram
+invocations or non-compile-time-constant subprogram invocations.
+
+\lrmcomment{This is related to \identd{QNHM}:}
+
+A subprogram invocation is a compile-time-constant invocation if all the
+following hold:
+\begin{itemize}
+\item the invoked subprogram is a compile-time-constant subprogram
+\item all of the actual arguments are compile-time-constant expressions
+\item all actual arguments which are bitvectors were declared with a constant
+expression width
+\end{itemize}
+
+Note:
+
+Subprogram declarations or invocations may be both non-compile-time-constant
+and non-execution-time.
+
+For example, storage elements declared with config are non-execution-time and
+non-compile-time-constant so any use of them in a function or procedure
+declaration or invocation renders it non-compile-time-constant, but does not
+cause it to be execution-time.
+
+Subprogram declarations or invocations may not be both compile-time-constant
+and execution-time since if the conditions for execution-time are met then
+the conditions for compile-time-constant cannot be met, and vice versa.
+
+\section{Formal Preamble}
 
 The relation
 \hypertarget{def-evalcall}{}
