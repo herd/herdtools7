@@ -391,25 +391,13 @@ Empty getters/setters
   $ aslref pstate-exp.asl --type-check-warn
   File pstate-exp.asl, line 60, characters 10 to 11:
   ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 60, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
   File pstate-exp.asl, line 62, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 62, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 78, characters 10 to 11:
   ASL Static Error: Unsupported expression n.
   File pstate-exp.asl, line 78, characters 10 to 11:
   ASL Static Error: Unsupported expression n.
   File pstate-exp.asl, line 80, characters 12 to 13:
   ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 80, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
   File pstate-exp.asl, line 96, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 96, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 98, characters 12 to 13:
   ASL Static Error: Unsupported expression n.
   File pstate-exp.asl, line 98, characters 12 to 13:
   ASL Static Error: Unsupported expression n.

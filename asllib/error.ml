@@ -86,17 +86,19 @@ let error_handling_time_to_string = function
   | Static -> "Static"
   | Dynamic -> "Dynamic"
 
-let pp_error =
-  let open Format in
-  let open PP in
+type warning_desc = IntervalTooBigToBeExploded of Z.t * Z.t
+type warning = warning_desc annotated
+
+module PPrint = struct
+  open Format
+  open PP
+
   let pp_comma_list pp_elt f li =
     pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") pp_elt f li
-  in
-  let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty) in
-  fun f e ->
-    pp_open_vbox f 0;
-    if e.pos_end != Lexing.dummy_pos && e.pos_start != Lexing.dummy_pos then
-      fprintf f "@[<h>%a:@]@ " pp_pos e;
+
+  let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty)
+
+  let pp_error_desc f e =
     pp_open_hovbox f 2;
     (match e.desc with
     | UnsupportedBinop (t, op, v1, v2) ->
@@ -255,11 +257,74 @@ let pp_error =
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
            expression@ of@ type@ %a@ is@ expected."
           pp_ty t);
-    pp_close_box f ();
     pp_close_box f ()
 
-let error_to_string = Format.asprintf "%a" pp_error
-let eprintln = Format.eprintf "@[<2>%a@]@." pp_error
+  let pp_warning_desc f w =
+    match w.desc with
+    | IntervalTooBigToBeExploded (za, zb) ->
+        fprintf f
+          "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as an \
+           interval.@]"
+          Z.pp_print za Z.pp_print zb
+
+  let pp_pos_begin f pos =
+    if pos.pos_end != Lexing.dummy_pos && pos.pos_start != Lexing.dummy_pos then
+      fprintf f "@[<h>%a:@]@ " pp_pos pos
+
+  let pp_error f e = fprintf f "@[<v 0>%a%a@]" pp_pos_begin e pp_error_desc e
+
+  let pp_warning f e =
+    fprintf f "@[<v 0>%a%a@]" pp_pos_begin e pp_warning_desc e
+
+  let error_desc_to_string = asprintf "%a" pp_error_desc
+
+  let desc_to_string_inf pp_desc =
+    asprintf "%a" @@ fun f e ->
+    let init_margin = pp_get_margin f () in
+    pp_set_margin f pp_infinity;
+    pp_desc f e;
+    pp_set_margin f init_margin
+
+  let error_to_string = asprintf "%a" pp_error
+end
+
+include PPrint
+
+let escape s =
+  let b = Buffer.create (String.length s) in
+  String.iter
+    (function
+      | '"' ->
+          Buffer.add_char b '"';
+          Buffer.add_char b '"'
+      | c -> Buffer.add_char b c)
+    s;
+  Buffer.contents b
+
+let pp_csv pp_desc =
+  let pos_in_line pos = Lexing.(pos.pos_cnum - pos.pos_bol) in
+  fun f pos ->
+    Printf.fprintf f "@[\"%s\",%d,%d,%d,%d,\"%s\"@]"
+      (escape pos.pos_start.pos_fname)
+      pos.pos_start.pos_lnum
+      (pos_in_line pos.pos_start)
+      pos.pos_end.pos_lnum (pos_in_line pos.pos_end)
+      (desc_to_string_inf pp_desc pos |> escape)
+
+let pp_error_csv f e = pp_csv pp_error_desc f e
+let pp_warning_csv f w = pp_csv pp_warning_desc f w
+
+let eprintln e =
+  match !Config.output_format with
+  | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_error e
+  | CSV -> Printf.eprintf "%a\n" pp_error_csv e
+
+let warn w =
+  match !Config.output_format with
+  | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_warning w
+  | CSV -> Printf.eprintf "%a\n" pp_warning_csv w
+
+let warn_from ~loc w = ASTUtils.add_pos_from loc w |> warn
 
 let () =
   Printexc.register_printer @@ function

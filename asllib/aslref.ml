@@ -174,6 +174,13 @@ let () =
 
   let () = if false then Format.eprintf "%a@." PP.pp_t ast in
 
+  let () =
+    match !Config.output_format with
+    | CSV ->
+        Printf.eprintf
+          {|"File","Start line","Start col","End line","End col","Exception"\n|}
+    | HumanReadable -> ()
+  in
   let typed_ast, static_env =
     or_exit @@ fun () -> Typing.type_check_ast ast StaticEnv.empty
   in

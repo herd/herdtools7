@@ -202,24 +202,36 @@ ATC's on bit vectors
 
 Large constraint sets
   $ aslref TPositive13.asl
+  File TPositive13.asl, line 8, characters 17 to 34:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TPositive13.asl, line 8, characters 17 to 34:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TPositive13.asl, line 9, characters 17 to 34:
   Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
   Keeping it as an interval.
+  File TPositive13.asl, line 9, characters 17 to 34:
   Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
   Keeping it as an interval.
+  File TPositive13.asl, line 10, characters 17 to 34:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TPositive13.asl, line 10, characters 17 to 34:
   Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
   Keeping it as an interval.
   $ aslref --no-exec TDegraded13.asl
+  File TDegraded13.asl, line 7, characters 29 to 46:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TDegraded13.asl, line 7, characters 29 to 46:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   $ if [ $(ocaml -vnum | cut -b 1) = "5" ]; then aslref TDegraded13.asl 2>/dev/null; fi
   $ aslref --no-exec TDegraded13-sets1.asl
+  File TDegraded13-sets1.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TDegraded13-sets1.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   $ aslref --no-exec TDegraded13-sets2.asl
+  File TDegraded13-sets2.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TDegraded13-sets2.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
 
 Named types for bit vector widths

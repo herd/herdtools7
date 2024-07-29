@@ -33,5 +33,13 @@ val allow_no_begin : bool ref
 type typing_strictness = Silence | Warn | TypeCheck
 
 val typing_strictness : typing_strictness ref
+(* How to type-check everything. *)
+
 val default_loop_unrolling : int ref
+(* Maximum bound on loop unrolling. *)
+
+type output_format = HumanReadable | CSV
+
+val output_format : output_format ref
 val command_line_args : (string * Arg.spec * string) list
+(* Command line arguments to set the config values. *)

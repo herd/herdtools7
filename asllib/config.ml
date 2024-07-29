@@ -21,12 +21,14 @@
 (******************************************************************************)
 
 type typing_strictness = Silence | Warn | TypeCheck
+type output_format = HumanReadable | CSV
 
 let max_exploding_interval_exp : int ref = ref 13
 let allow_double_colon : bool ref = ref true
 let allow_no_begin : bool ref = ref false
 let typing_strictness : typing_strictness ref = ref TypeCheck
 let default_loop_unrolling : int ref = ref 0
+let output_format : output_format ref = ref HumanReadable
 
 let command_line_args =
   let set_strictness s () = typing_strictness := s in
@@ -63,4 +65,7 @@ let command_line_args =
       Arg.Set_int max_exploding_interval_exp,
       " Set the log2 of the maximum width of an interval exploded before a \
        multiplication" );
+    ( "--print-csv",
+      Arg.Unit (fun () -> output_format := CSV),
+      " Set the output format to CSV." );
   ]
