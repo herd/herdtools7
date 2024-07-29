@@ -1,0 +1,10 @@
+Test V64 Required
+States 1
+x[0]=0; x[1]=2; x[2]=3; x[3]=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x[0]=0 /\ x[1]=2 /\ x[2]=3 /\ x[3]=0)
+Observation V64 Always 1 0
+Hash=0a4bf3e001a5bd32fceaf3651e759f70
+

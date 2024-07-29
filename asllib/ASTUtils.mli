@@ -1,7 +1,23 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 (** This module provides some tools to work on ASL ASTs. *)
 
@@ -179,10 +195,7 @@ val slice_equal : (expr -> expr -> bool) -> slice -> slice -> bool
 val slices_equal : (expr -> expr -> bool) -> slice list -> slice list -> bool
 val type_equal : (expr -> expr -> bool) -> ty -> ty -> bool
 val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
-
-val bitwidth_equal :
-  (expr -> expr -> bool) -> bits_constraint -> bits_constraint -> bool
-
+val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 val scope_equal : scope -> scope -> bool
 val scope_compare : scope -> scope -> int
 
@@ -210,6 +223,10 @@ val subst_expr : (identifier * expr) list -> expr -> expr
 val no_primitive : 'p AST.t -> 'q AST.t
 (** [no_primitive parsed_ast] is [parsed_ast] if does not contains any
     primitive. Otherwise, it fails with an assert false. *)
+
+val rename_locals : (identifier -> identifier) -> 'p AST.t -> 'p AST.t
+(** [rename_locals f ast] is [ast] where all instances of variables [x] are
+    replaced with [f x]. *)
 
 val is_simple_expr : expr -> bool
 (** [is_simple_expr e] is true if [e] does not contain any call to any other

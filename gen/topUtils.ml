@@ -225,7 +225,6 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           | Fr _|Leave CFr|Back CFr -> "Fr"
           | Rf _|Leave CRf|Back CRf -> "Rf"
           | Ws _|Leave CWs|Back CWs -> "Co"
-          | Irf _ -> "Irf" | Ifr _ -> "Ifr"
           | _ -> assert false)
         nss
 
@@ -298,7 +297,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            | None -> false
            | Some m -> not (m == n || C.C.po_pred m n)
          end
-    | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _ ->
+    | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr ->
         check_edge n.C.C.edge.C.E.edge && not (is_load_init n.C.C.evt)
 
 (* Poll for value is possible *)
@@ -309,8 +308,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | _,_,_ -> false
 
     let fetch_val n =
-      match n.C.C.prev.C.C.edge.C.E.edge, n.C.C.edge.C.E.edge with
-      | C.E.Irf _,_ -> 2
-      | _,C.E.Ifr _ -> 1
-      | _,_ -> 0
+      let n = C.C.find_node (fun n -> C.E.is_com n.C.C.edge) n.C.C.prev in
+      match n.C.C.edge.C.E.edge with
+      | C.E.Rf _-> 2
+      | C.E.Fr _ -> 1
+      | _ -> 0
   end

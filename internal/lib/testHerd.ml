@@ -89,14 +89,12 @@ let herd_command
      let args = apply_args  herd j args in
      Command.command mapply  (args @ litmuses)
 
-let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
-  let args =
-    herd_args
-      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
-      ~timeout:timeout in
+let do_run_herd_args herd args ?j litmuses =
   let litmuses = Base.Iter.of_list litmuses in
-
-  (* Record stdout and stderr to two sources if we need to reason about them separately *)
+  (*
+   * Record stdout and stderr to two sources if we need
+   * to reason about them separately.
+   *)
   let lines = ref [] in
   let err_lines = ref [] in
   let read_line line = lines := line :: !lines in
@@ -114,6 +112,14 @@ let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
          ~stdin:litmuses ~stdout:read_line ~stderr:read_err_line mapply args in
   (r,without_unstable_lines (List.rev !lines), (List.rev !err_lines))
 
+let run_herd_args herd args litmus = do_run_herd_args herd args [litmus]
+
+let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+  let args =
+    herd_args
+      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
+      ~timeout:timeout in
+  do_run_herd_args herd args ?j litmuses
 
 let run_herd_concurrent ~bell ~cat ~conf ~variants ~libdir herd ~j litmuses =
   let args =
@@ -135,6 +141,13 @@ let read_some_file litmus name =
     end
 
 let do_check_output litmus expected  expected_failure expected_warn t =
+  let () =
+    let _,lines,_ = t in
+    if false && lines <> [] then begin
+      Printf.eprintf "Expected %s, Out of test:\n" expected ;
+      List.iter prerr_endline lines
+    end in
+
   match t with
     | _,[],[] ->
       Printf.printf "Failed %s : Herd finished but returned no output or errors\n" litmus ; false
@@ -144,7 +157,7 @@ let do_check_output litmus expected  expected_failure expected_warn t =
          | None -> false
          | Some expected_output ->
             if log_compare stdout expected_output <> 0 then begin
-              Printf.printf "Failed %s : Logs do not match\n" litmus ;
+              Printf.printf "Failed %s : Logs do not match\n%!" litmus ;
               false
             end else true
        end
@@ -202,20 +215,32 @@ let output_matches_expected litmus expected =
      Printf.printf "Failed %s : %s \n" litmus
        (Command.string_of_error e) ; false
 
-let herd_output_matches_expected
-      ~bell ~cat ~conf ~variants ~libdir
-      herd litmus expected expected_failure expected_warn =
+let do_herd_output_matches_expected
+      do_run litmus expected expected_failure expected_warn =
   try
-    let t =
-    run_herd
-      ~bell:bell ~cat:cat ~conf:conf
-      ~variants:variants ~libdir:libdir herd [litmus] in
+    let t = do_run litmus in
     do_check_output
       litmus expected expected_failure expected_warn t
   with
   | Command.Error e ->
      Printf.printf "Failed %s : %s \n" litmus
        (Command.string_of_error e) ; false
+
+let herd_output_matches_expected
+      ~bell ~cat ~conf ~variants ~libdir
+      herd litmus expected expected_failure expected_warn =
+  do_herd_output_matches_expected
+    (fun litmus ->
+      run_herd
+        ~bell:bell ~cat:cat ~conf:conf
+        ~variants:variants ~libdir:libdir herd [litmus])
+    litmus expected expected_failure expected_warn
+
+let herd_args_output_matches_expected
+      herd args  litmus expected expected_failure expected_warn =
+  do_herd_output_matches_expected
+    (run_herd_args herd args)
+    litmus expected expected_failure expected_warn
 
 let is_litmus path = Filename.check_suffix path ".litmus"
 let is_expected path = Filename.check_suffix path ".litmus.expected"
@@ -227,3 +252,39 @@ let expected_failure_of_litmus litmus = litmus ^ ".expected-failure"
 let litmus_of_expected_failure expected = Filename.chop_suffix expected ".expected-failure"
 
 let expected_warn_of_litmus litmus = litmus ^ ".expected-warn"
+
+let remove_if_exists path =
+  if Sys.file_exists path then
+    Sys.remove path
+
+let write_file path lines =
+  Filesystem.write_file path (fun o -> Channel.write_lines o lines)
+
+
+let promote litmus t =
+  let expected = expected_of_litmus litmus in
+  let expected_failure = expected_failure_of_litmus litmus in
+  match t with
+  | 0, [], [] ->
+     Printf.printf "Failed %s : Returned neither stdout nor stderr\n" litmus ;
+     false
+
+  | 0, out, [] ->
+     remove_if_exists expected_failure ;
+     write_file expected out ;
+     true
+
+  | r, [], err when r <> 0 ->
+     remove_if_exists expected ;
+     write_file expected_failure err ;
+     true
+
+  | 0, out, err ->
+     write_file expected out ;
+     let expected_warn = expected_warn_of_litmus litmus in
+     write_file expected_warn err ;
+     true
+
+  | r, _, _  ->
+     Printf.printf "Failed %s : unexpected exit code %i\n" litmus r ;
+     false

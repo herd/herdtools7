@@ -1,0 +1,10 @@
+Test B004 Required
+States 1
+0:TFSR_ELx=1; [x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=1 /\ 0:TFSR_ELx=1)
+Observation B004 Always 1 0
+Hash=a8708b099b5f95ad916f70e33c905ffc
+

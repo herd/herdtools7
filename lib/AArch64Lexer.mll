@@ -81,6 +81,7 @@ match name with
 | "tbz" | "TBZ" -> TBZ
 (* Memory *)
 | "ldr"|"LDR" -> LDR
+| "ldrsw"|"LDRSW" -> LDRSW
 | "ldur"|"LDUR" -> LDUR
 | "ldp"|"LDP" -> LDP
 | "ldpsw"|"LDPSW" -> LDPSW
@@ -135,8 +136,11 @@ match name with
 | "st2" | "ST2" -> ST2
 | "st3" | "ST3" -> ST3
 | "st4" | "ST4" -> ST4
+| "addv" | "ADDV" -> ADDV
+| "dup" | "DUP" -> DUP
 | "movi" | "MOVI" -> MOVI
 | "mvn" | "MVN" -> MVN
+| "fmov" | "FMOV" -> FMOV
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -327,8 +331,6 @@ match name with
 | "stzg"|"STZG" -> STZG
 | "ldg"|"LDG" -> LDG
 (* Operations *)
-| "sxtw"|"SXTW" -> TOK_SXTW
-| "uxtw"|"UXTW" -> TOK_UXTW
 | "ubfm"|"UBFM" -> UBFM
 | "sbfm"|"SBFM" -> SBFM
 | "mov"|"MOV" -> MOV
@@ -336,11 +338,15 @@ match name with
 | "movn"|"MOVN" -> MOVN
 | "movk"|"MOVK" -> MOVK
 | "adr"|"ADR" -> ADR
+| "rev16"|"REV16" -> REV16
+| "rev32"|"REV32" -> REV32
+| "rev64"|"REV64" -> REV64
+| "rev"|"REV" -> REV
 | "rbit"|"RBIT" -> RBIT
+| "abs"|"ABS" -> ABS
 | "cmp"|"CMP" -> CMP
 | "tst"|"TST" -> TST
-(* Three argument opcodes factorized *)
-| "adds"|"ADDS" -> OP A.ADDS
+(* Those operations are factorized *)
 | "eor"|"EOR" -> OP A.EOR
 | "eon"|"EON" -> OP A.EOR
 | "orr"|"ORR" -> OP A.ORR
@@ -355,10 +361,31 @@ match name with
 | "asr" | "ASR" -> TOK_ASR
 | "lsl" | "LSL" -> TOK_LSL
 | "lsr" | "LSR" -> TOK_LSR
+| "ror" | "ROR" -> TOK_ROR
+(* extensions *)
+| "uxtb"|"UXTB" -> TOK_UXTB
+| "uxth"|"UXTH" -> TOK_UXTH
+| "uxtw"|"UXTW" -> TOK_UXTW
+| "uxtx"|"UXTX" -> TOK_UXTX
+| "sxtb"|"SXTB" -> TOK_SXTB
+| "sxth"|"SXTH" -> TOK_SXTH
+| "sxtw"|"SXTW" -> TOK_SXTW
+| "sxtx"|"SXTX" -> TOK_SXTX
 (* SUB, SUBS, ADD have 128 bits semantics*)
 | "sub"|"SUB" -> TOK_SUB
 | "subs"|"SUBS" -> TOK_SUBS
 | "add"|"ADD" -> TOK_ADD
+| "adds"|"ADDS" -> TOK_ADDS
+| "neg"|"NEG" -> TOK_NEG
+| "negs"|"NEGS" -> TOK_NEGS
+| "smaddl"|"SMADDL" -> MOPL AArch64Base.MOPLExt.(Signed,ADD)
+| "smsubl"|"SMSUBL" -> MOPL AArch64Base.MOPLExt.(Signed,SUB)
+| "umaddl"|"UMADDL" -> MOPL AArch64Base.MOPLExt.(Unsigned,ADD)
+| "umsubl"|"UMSUBL" -> MOPL AArch64Base.MOPLExt.(Unsigned,SUB)
+| "smull"|"SMULL" -> MOPLZ AArch64Base.MOPLExt.(Signed,ADD)
+| "smnegl"|"SMNEGL" -> MOPLZ AArch64Base.MOPLExt.(Signed,SUB)
+| "umull"|"UMULL" -> MOPLZ AArch64Base.MOPLExt.(Unsigned,ADD)
+| "umnegl"|"UMNEGL" -> MOPLZ AArch64Base.MOPLExt.(Unsigned,SUB)
 (* Morello *)
 | "alignd"|"ALIGND" -> ALIGND
 | "alignu"|"ALIGNU" -> ALIGNU

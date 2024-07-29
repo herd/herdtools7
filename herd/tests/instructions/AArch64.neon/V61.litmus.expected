@@ -1,0 +1,10 @@
+Test V61 Required
+States 1
+0:X1=4;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=4)
+Observation V61 Always 1 0
+Hash=9623cb4da7b349772b85ecae0442196a
+

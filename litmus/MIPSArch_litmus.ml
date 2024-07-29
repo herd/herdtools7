@@ -37,7 +37,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let pp_reg = pp_reg
         let reg_compare = reg_compare
         let reg_to_string = reg_to_string
-        let internal_init _r = None
+        let internal_init _r _v = None
 (*
           let some s = Some (s,"int") in
           if reg_compare r base = 0 then some "_a->_scratch"

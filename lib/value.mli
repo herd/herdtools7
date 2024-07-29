@@ -97,6 +97,8 @@ module type S =
       val is_virtual : v -> bool
       val as_virtual : v -> string option
 
+      val is_instrloc : v -> bool
+
       val op1 : op1_t -> v -> v
       val op : op_t -> v -> v -> v
       val op3 : Op.op3 -> v -> v -> v -> v

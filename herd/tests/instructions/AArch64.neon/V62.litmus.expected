@@ -1,0 +1,10 @@
+Test V62 Required
+States 1
+0:V0.4S={255,0,0,0}; 0:V1.4S={0,255,0,0}; 0:V2.4S={0,0,255,0}; 0:V3.4S={0,0,0,255};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:V0.4S={255,0,0,0} /\ 0:V1.4S={0,255,0,0} /\ 0:V2.4S={0,0,255,0} /\ 0:V3.4S={0,0,0,255})
+Observation V62 Always 1 0
+Hash=5e7da463e724d2cf5994922af9f7c86f
+

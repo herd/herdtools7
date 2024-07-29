@@ -37,3 +37,31 @@ let none = in_file "_none_";;
 let make p1 p2 = { loc_start=p1; loc_end=p2; loc_ghost=false; }
 
 let pp chan p = Pos.pp_pos2 chan (p.loc_start,p.loc_end)
+
+module Extract() =
+  struct
+
+    let t = Hashtbl.create 13
+
+    let read_chan chan =
+      let len = in_channel_length chan in
+      really_input_string chan len
+
+    let read_fname fname =
+      try Hashtbl.find t fname
+      with Not_found ->
+        try Misc.input_protect read_chan  fname
+        with Sys_error msg ->
+          Warn.fatal "Error %s, while attempting to read %s\n" msg fname
+
+    let extract t =
+      if t.loc_ghost then "** ?? **"
+      else begin
+        let open Lexing in
+        let cts = read_fname t.loc_start.pos_fname in
+        let n1 = t.loc_start.pos_cnum
+        and n2 = t.loc_end.pos_cnum in
+        try String.sub cts n1 (n2-n1)
+        with Invalid_argument _ -> assert false
+     end
+end

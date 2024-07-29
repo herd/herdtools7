@@ -53,6 +53,7 @@ let variant = ref (fun (_:Variant_gen.t) -> false)
 let rejects = ref None
 let stdout = ref false
 let cycleonly = ref false
+let metadata = ref true
 
 let info = ref ([]:MiscParser.info)
 let add_info_line line = match LexScan.info line with
@@ -214,6 +215,8 @@ let common_specs () =
   ("-nooptcond", Arg.Clear optcond, "do not optimize conditions")::
   ("-optcoherence", Arg.Set optcoherence, " optimize coherence")::
   ("-nooptcoherence", Arg.Clear optcoherence, "do not optimize coherence (default)")::
+  ("-metadata",Arg.Bool (fun b -> metadata := b),
+   sprintf "output metadata, default %b" !metadata)::
   ("-info",Arg.String add_info_line,"add metadata to generated test(s)")::
   ("-moreedges", Arg.Bool (fun b -> moreedges := b),
    Printf.sprintf

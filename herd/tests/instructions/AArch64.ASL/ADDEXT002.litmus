@@ -1,0 +1,9 @@
+AArch64 ADDEXT02
+{
+0:X0=4;
+0:X1=-4;
+}
+  P0                ;
+ ADD X2,X0,W1,SXTW  ;
+locations [0:X2;]
+forall 0:X2=0

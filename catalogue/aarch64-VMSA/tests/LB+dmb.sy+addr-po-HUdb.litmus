@@ -1,0 +1,16 @@
+AArch64 LB+dmb.sy+addr-po-HUdb
+Variant=vmsa
+TTHM=P1:HD
+{
+PTE(x)=(oa:PA(x),db:0,dbm:1);
+0:X10=PTE(x);
+0:X2=y;
+1:X0=x; 1:X2=y; 1:X4=z; 
+}
+ P0            | P1                  ;
+ LDR X11,[X10] | LDR W3,[X2]         ;
+ DMB SY        | EOR W6,W3,W3        ;
+ MOV W3,#1     | LDR W5,[X4,W6,SXTW] ;
+ STR W3,[X2]   | MOV W1,#1           ;
+               | STR W1,[X0]         ;
+exists (0:X11=(oa:PA(x),dbm:1) /\ 1:X3=1)

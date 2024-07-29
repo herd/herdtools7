@@ -234,6 +234,7 @@ let () =
     let hexa = !Config.hexa
     let stdout = if !Config.cycleonly then true else !Config.stdout
     let cycleonly = !Config.cycleonly
+    let metadata = !Config.metadata
 (* Specific *)
     let norm = !norm
     let cpp = cpp

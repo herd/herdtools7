@@ -1,5 +1,5 @@
 (executables
  (names herd_catalogue_regression_test herd_diycross_regression_test
-   herd_regression_test lint_shelves herd_redirect)
+   herd_regression_test lint_shelves herd_redirect herd_test herd_promote)
  (libraries internal_lib)
  (modes native))

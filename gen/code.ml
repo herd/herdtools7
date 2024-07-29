@@ -165,7 +165,7 @@ type info = (string * string) list
 let plain = "Na"
 
 (* Memory Space *)
-type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a | Pair
+type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a | Pair | Instr
 
 let pp_bank = function
   | Ord -> "Ord"
@@ -175,6 +175,7 @@ let pp_bank = function
   | Pte -> "Pte"
   | VecReg _ -> "VecReg"
   | Pair -> "Pair"
+  | Instr -> "Instr"
 
 let tag_of_int  = function
   | 0 -> "green"

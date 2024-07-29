@@ -1,0 +1,7 @@
+AArch64 V60
+(* Test FMOV (to general) *)
+{}
+P0            ;
+MOVI V0.4S,#1 ;
+FMOV W0,S0    ;
+forall 0:X0=1

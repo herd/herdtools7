@@ -1,0 +1,11 @@
+Test A006 Required
+States 1
+[x]=1;  ~Fault(P0:L0,x);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition forall ([x]=1)
+Observation A006 Always 1 0
+Hash=7a7266deb5d908ed212b3f3d1182f155
+

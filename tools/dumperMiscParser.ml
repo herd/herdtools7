@@ -18,13 +18,14 @@
 
 module type Opt = sig
   val hexa : bool
+  val compat : bool
 end
 
 module Make(Opt:Opt)(A:ArchBase.S) : CoreDumper.S
   with type test =  A.pseudo MiscParser.t
 = struct
   include
-   SimpleDumper.Make
+   SimpleDumper.Make(Opt)
       (struct
 
         module A = A

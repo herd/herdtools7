@@ -3,8 +3,8 @@ States 1
 a[0]=2; a[1]=2; x[0]=0; x[1]=0; y[0]=2; y[1]=2; z[0]=0; z[1]=0;
 Ok
 Witnesses
-Positive: 4 Negative: 0
+Positive: 16 Negative: 0
 Condition forall (x[0]=0 /\ x[1]=0 /\ y[0]=2 /\ y[1]=2 /\ z[0]=0 /\ z[1]=0 /\ a[0]=2 /\ a[1]=2)
-Observation A246 Always 4 0
+Observation A246 Always 16 0
 Hash=dfcdd105748ed1fb63dad2657811b691
 

@@ -1,0 +1,13 @@
+AArch64 L095
+{
+uint32_t 0:X1=0x87654321;
+uint32_t 0:X2;
+uint64_t 0:X3=0xfedcba87654321;
+uint64_t 0:X4;
+}
+  P0         ;
+ REV16 W2,W1 ;
+ REV16 X4,X3 ;
+
+forall 0:X2=0x65872143 /\ 0:X4=0xfe00badc65872143;
+

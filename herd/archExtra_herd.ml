@@ -166,7 +166,7 @@ module type S = sig
   val state_fold : (location -> v -> 'a -> 'a) -> state -> 'a -> 'a
   val state_filter : (location -> bool) -> state -> state
 
-  (* Exception raised when location is yet unkown *)
+  (* Exception raised when location is yet unknown *)
   exception LocUndetermined
   val look_address_in_state : state -> location -> v
 

@@ -29,6 +29,7 @@ module type S = sig
         ctag : int; cseal : int; dep : int ;
         v   : v ; (* Value read or written *)
         vecreg: v list list ; (* Alternative for SIMD *)
+        ins : int ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
@@ -147,6 +148,7 @@ module Make (O:Config) (E:Edge.S) :
         ctag : int; cseal : int; dep : int;
         v   : v ;
         vecreg: v list list ;
+        ins : int ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
@@ -163,7 +165,7 @@ module Make (O:Config) (E:Edge.S) :
     { loc=Code.loc_none ; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
       vecreg= [];
-      v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
+      v=(-1) ; ins=0;dir=None; proc=(-1); atom=None; rmw=false;
       cell=[||]; tcell=[||];
       bank=Code.Ord; idx=(-1);
       pte=pte_default; }
@@ -222,7 +224,7 @@ module Make (O:Config) (E:Edge.S) :
     let pp_v =
       match e.bank with
       | Pte -> PteVal.pp e.pte
-      | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _) -> debug_val e.v in
+      | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr) -> debug_val e.v in
     sprintf "%s%s %s %s%s%s%s%s"
       (debug_dir e.dir)
       (debug_atom e.atom)
@@ -376,9 +378,6 @@ let non_pseudo e = E.is_non_pseudo e.E.edge
 let find_non_pseudo m = find_edge non_pseudo m
 let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
-let is_real_edge e =  non_pseudo e && non_insert_store e
-
-let find_real_edge_prev = find_edge_prev is_real_edge
 
 (* generic scan *)
   let fold f m k =
@@ -452,9 +451,10 @@ let make_loc n =
   if n < locs_len then locs.(n)
   else Printf.sprintf "x%02i" (n-locs_len)
 
-let next_loc e ((loc0,lab0),vs) = match e.E.edge with
-| E.Irf _|E.Ifr _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
-| _ -> Code.Data (make_loc loc0),((loc0+1,lab0),vs)
+let next_loc e ((loc0,lab0),vs) = match E.is_fetch e with
+| true -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+| _ ->
+  Code.Data (make_loc loc0),((loc0+1,lab0),vs)
 
 let same_loc e = match E.loc_sd e with
     | Same -> true
@@ -482,7 +482,7 @@ module CoSt = struct
   let create ?(init=0) sz =
     let map  =
       M.add Tag init <<  M.add CapaTag init <<
-      M.add CapaSeal init << M.add Ord init <! M.empty
+      M.add CapaSeal init << M.add Ord init << M.add Instr init <! M.empty
     and co_cell = Array.make (if sz <= 0 then 1 else sz) init in
     { map; co_cell;  }
 
@@ -612,7 +612,7 @@ let is_rmw d e = match d with
 | W -> is_rmw_edge e.prev.edge
 | J -> is_rmw_edge e.edge
 
-
+let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge
 
 let remove_store n0 =
   let n0 =
@@ -687,7 +687,12 @@ let remove_store n0 =
       if not (E.is_ext p.edge || E.is_po_or_fenced_joker p.edge || E.is_ext n.edge || E.is_po_or_fenced_joker n.edge) then begin
         Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
-      end
+      end;
+      match p.edge.E.edge with 
+      | (E.Rf Ext | E.Fr Ext) ->
+        Warn.fatal "Insert pseudo edge %s appears after external communication edge %s"
+        (E.pp_edge m.edge) (E.pp_edge p.edge)
+      | _ -> ()
     end ;
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
@@ -702,25 +707,30 @@ let remove_store n0 =
 (* Set locations of events *)
 (***************************)
 
-  let is_non_fetch_and_same e =
-    is_real_edge e && same_loc e && not (E.is_fetch e)
+  let is_read_same_nonfetch m =
+    let check n = (n != m && (loc_compare n.evt.loc  m.evt.loc) = 0 && n.evt.dir = Some R &&
+                  not (E.is_ifetch n.edge.E.a1)) in
+    try ignore (find_node_prev (fun n -> check n) m); true
+    with Not_found -> false
 
   let check_fetch n0 =
     let rec do_rec m =
-      let p = find_real_edge_prev m.prev in
-      if E.is_fetch m.edge then begin
-        if E.is_fetch p.edge && find_real_edge_prev p.prev != m then
-          Warn.user_error "Bad consecutive fetches [%s] => [%s]"
-            (str_node p) (str_node m)
-      end ;
-      if
-        E.is_fetch p.edge && is_non_fetch_and_same m.edge ||
-        E.is_fetch m.edge && is_non_fetch_and_same p.edge
-      then begin
-        Warn.user_error "Ambiguous Data/Code location es [%s] => [%s]"
-          (str_node p) (str_node m)
-      end ;
-      if m.next != n0 then do_rec m.next in
+      (* ensure Instr read is followed or preceded by plain read to same location*)
+      begin match m.evt.loc, m.evt.dir with
+        | Code.Code _, Some R when not (E.is_ifetch m.edge.E.a1) ->
+            if is_read_same_nonfetch m then begin
+              Printf.printf "%s" (str_node m);
+              Warn.user_error "Multiple ifetch reads to same code location"
+              end;
+        | Code.Code _, Some R when E.is_ifetch m.edge.E.a1 ->
+            if not (is_read_same_nonfetch m) then begin
+             Warn.user_error "Reading from label that doesn't exist [%s]" (str_node m)
+            end;
+        | Code.Code _, Some W when not (E.is_ifetch m.edge.E.a1) ->
+          Warn.user_error "Writing non-instruction value to code location: [%s]" (str_node m)
+        | _ -> ();
+        end;
+        if m.next != n0 then do_rec m.next in
   do_rec n0
 
 (* Loc is changing *)
@@ -729,7 +739,14 @@ let set_diff_loc st n0 =
     let loc,st =
       if same_loc p.edge then begin
         p.evt.loc,st
-      end else next_loc m.edge st in
+      end
+    else
+      let n1 = try
+        (* check if new location needs to be ifetch *)
+        find_node
+          (fun n -> (if not (same_loc n.prev.edge) then raise Not_found); E.is_ifetch n.edge.E.a1 ) m.next
+        with Not_found -> m in
+      next_loc n1.edge st in
     m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.store != nil then begin
@@ -816,6 +833,11 @@ let set_same_loc st n0 =
             let ctag = CoSt.get_co st CapaTag in
             let cseal = CoSt.get_co st CapaSeal in
             n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
+          end
+        else begin
+          let instr = CoSt.get_co st Instr in
+          n.evt <- { n.evt with ins=instr}
+        end
 (*
           else if do_neon then (* set both fields, it cannot harm *)
             let ord = get_co st Ord in
@@ -823,7 +845,6 @@ let set_same_loc st n0 =
             let vecreg = [|v;v;v;v;|] in
             n.evt <- { n.evt with ord=ord; vecreg=vecreg; }
 *)
-          end
         end ;
         begin match n.evt.dir with
         | Some W ->
@@ -831,7 +852,7 @@ let set_same_loc st n0 =
             | Data _ ->
                 let bank = n.evt.bank in
                 begin match bank with
-                | Ord ->
+                | Ord | Instr ->
                    let st = set_write_val_ord st n in
                    do_set_write_val next_x_ok st pte_val ns
                 | Pair ->
@@ -839,7 +860,7 @@ let set_same_loc st n0 =
                       CoSet.set_cell has a case for pairs.
                       However increment of current value is by 2 *)
                    let cell = CoSt.get_cell st in
-                   assert (Array.length cell=2) ;
+                   assert (Array.length cell>=2) ;
                    let st = CoSt.next_co st Ord in (* Pre-increment *)
                    let st = set_write_val_ord st n in
                    do_set_write_val next_x_ok st pte_val ns
@@ -885,7 +906,15 @@ let set_same_loc st n0 =
                    do_set_write_val (!next_x_pred || next_x_ok) st pte_val ns
                 end
             | Code _ ->
-               do_set_write_val next_x_ok st pte_val ns
+              let bank = n.evt.bank in
+                begin match bank with
+              | Instr ->
+                  let st = CoSt.next_co st bank in
+                  let v = CoSt.get_co st bank in
+                  n.evt <- { n.evt with ins = v;} ;
+                  do_set_write_val next_x_ok st pte_val ns
+               | _ -> do_set_write_val next_x_ok st pte_val ns
+            end
             end
         | Some (R|J) |None -> do_set_write_val next_x_ok st pte_val ns
         end
@@ -922,16 +951,23 @@ let set_same_loc st n0 =
               m.prev.evt.loc <> m.evt.loc &&
               m.next.evt.loc = m.evt.loc) n in
         split_by_loc m
-      with Not_found -> try
-        let m =
-          find_node
-            (fun m -> match m.prev.edge.E.edge with
-            | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
-            | E.Hat|E.Rmw _|E.Irf _|E.Ifr _ -> true
-            | E.Po _|E.Dp _|E.Fenced _|E.Insert _|E.Store|E.Node _ -> false
-            | E.Id -> assert false) n in
-        split_one_loc m
-      with Exit -> Warn.fatal "Cannot set write values" in
+      with
+      | Not_found ->
+        (*check if node is preceded by a non com/rmw node and is itself a com/rmw node*)
+        let to_com_rmw n0 = not (is_com_rmw n0.prev) && is_com_rmw n0 in
+        fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
+        try
+          (* check for R ensures that we start on Fr or Rmw if possible*)
+          let m = find_node (fun m -> to_com_rmw m && m.evt.dir = Some R) n in
+          split_one_loc m
+        with Not_found -> try
+          (* The previous search failed. This search will return the W node from
+             which an Rf edge starts, provided that the previous edge is not a
+             communication or a Rmw edge *)
+          let m = find_node (fun m -> to_com_rmw m) n in
+          split_one_loc m
+        with Not_found -> Warn.fatal "cannot set write values"
+      | Exit -> Warn.fatal "cannot set write values" in
     let initvals = set_all_write_val nss in
     nss,initvals
 
@@ -987,11 +1023,14 @@ let do_set_read_v =
                set_read_pair_v n cell
             | VecReg a ->
                let v = E.SIMD.read a cell in
-               n.evt <- { n.evt with vecreg=v; }
+               let v = E.SIMD.reduce v in
+               n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord }
             | Tag|CapaTag|CapaSeal ->
                 n.evt <- { n.evt with v = CoSt.get_co st bank; }
             | Pte ->
                 n.evt <- { n.evt with pte = pte_cell; }
+            | Instr ->
+                n.evt <- { n.evt with ins = CoSt.get_co st bank; }
             end ;
             do_rec st cell pte_cell ns
         | Some W ->
@@ -999,6 +1038,7 @@ let do_set_read_v =
               match bank with
               | Tag|CapaTag|CapaSeal ->
                  CoSt.set_co st bank n.evt.v
+              |Instr -> CoSt.set_co st bank n.evt.ins
               | Pte|Ord|Pair|VecReg _ ->
                  st in
             do_rec st
@@ -1006,9 +1046,9 @@ let do_set_read_v =
                | Ord|Pair|VecReg _ ->
                   if Code.is_data n.evt.loc then n.evt.cell
                   else cell
-               | Tag|CapaTag|CapaSeal|Pte -> cell)
+               | Tag|CapaTag|CapaSeal|Pte|Instr -> cell)
               (match bank with
-               | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _ -> pte_cell
+               | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr -> pte_cell
                | Pte -> n.evt.pte)
               ns
         | None | Some J ->
@@ -1082,7 +1122,7 @@ let finish n =
             (fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
                 (Code.pp_loc loc) v) vs))
   end ;
-  if O.variant Variant_gen.Self then check_fetch n ;
+  if O.variant Variant_gen.Self then check_fetch n;
   initvals
 
 
@@ -1294,7 +1334,7 @@ let rec group_rec x ns = function
   let get_ord_writes =
     let open Code in
     do_get_writes (* Not so sure about capacity here... *)
-      (function Ord|Tag|VecReg _|Pair -> true | CapaTag|CapaSeal|Pte -> false)
+      (function Ord|Tag|VecReg _|Pair|Instr -> true | CapaTag|CapaSeal|Pte -> false)
 
   let get_pte_writes =
     do_get_writes (function Code.Pte -> true | _ -> false)

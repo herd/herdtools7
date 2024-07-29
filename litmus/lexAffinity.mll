@@ -38,8 +38,8 @@ let num = digit+
 
 rule coms = parse
 | space+ { coms lexbuf }
-| "Fr"|"Iff"|"Irf"  { Fr :: coms lexbuf }
-| "Rf"|"Fif"|"Ifr"  { Rf :: coms lexbuf }
+| "Fr"|"Iff"  { Fr :: coms lexbuf }
+| "Rf"|"Fif"  { Rf :: coms lexbuf }
 | "Ws"|"Co"    { Ws :: coms lexbuf }
 | "Hat"  { Hat :: coms lexbuf }
 | eof    { [] }

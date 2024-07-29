@@ -1,0 +1,10 @@
+Test L098 Required
+States 1
+0:X3=3840; 0:X4=3825; 0:X5=-1; 0:X6=-8589934591; 0:X7=3855; 0:X8=17179869181; 0:X9=-3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=3840 /\ 0:X4=3825 /\ 0:X5=-1 /\ 0:X6=-8589934591 /\ 0:X7=3855 /\ 0:X8=17179869181 /\ 0:X9=-3)
+Observation L098 Always 1 0
+Hash=69c9422977f390fc9590d51103553311
+

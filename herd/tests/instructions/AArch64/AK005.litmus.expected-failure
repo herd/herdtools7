@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64/AK005.litmus": Store to P0:Lself00 requires ifetch functionality. Please use `-variant ifetch` as an argument to herd7 to enable it. (User error)

@@ -45,7 +45,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let pp_reg = pp_reg
         let reg_compare = reg_compare
         let reg_to_string = reg_to_string
-        let internal_init r =
+        let internal_init r _ =
           if reg_compare r loop_idx = 0 then Some ("max_loop","int")
           else None
 

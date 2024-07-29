@@ -105,11 +105,11 @@ module Make
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
       let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
+
       let do_ascall =
         (* Self-modifing code or label constants in init section
            implies `-ascall true` mode *)
-        Cfg.ascall || do_self || do_label_init
-
+        Cfg.ascall || do_self || do_label_init || CfgLoc.need_prelude
       open Speedcheck
       let do_vp = Cfg.verbose_prelude
       let driver = Cfg.driver
@@ -278,6 +278,7 @@ module Make
         let sysarch = Cfg.sysarch
         let c11 = Cfg.c11
         let variant = Cfg.variant
+        let ascall = do_ascall
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -413,6 +414,7 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
+        Insert.insert_when_exists O.o "intrinsics.h" ;
         O.o
           (if Cfg.stdio then "#include <stdio.h>"
           else "#include \"litmus_io.h\"") ;
@@ -652,6 +654,7 @@ module Make
         | true ->  O.o "#define CACHE_FLUSH 1" ;
         | false -> ()
         end ;
+        O.o "#define CACHE_TOUCH_STORE 1" ;
         Insert.insert O.o "cache.c"
 
       let do_dump_cache_def = match Cfg.preload with
@@ -727,6 +730,7 @@ module Make
 (*************)
       let dump_global_type = SkelUtil.dump_global_type
       let dump_vars_types = UD.dump_vars_types
+      let dump_array_typedefs = UD.dump_array_typedefs
       let tag_malloc s = sprintf "malloc_%s" s
       let tag_mem s = sprintf "mem_%s" s
 
@@ -1189,6 +1193,10 @@ module Make
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
                   load (dump_a_v v)
+            | (Indirect,Array _) ->
+                let load = U.do_load t (wrap addr) in
+                sprintf "%s != %s"
+                  load (sprintf "%s_values[_j]" a)
             | Indirect,_ ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s" load (A.Out.dump_v v)
@@ -2387,15 +2395,6 @@ module Make
         O.o "}" ;
         O.o "" ;
         ()
-
-      let dump_array_typedefs test =
-        iter_all_outs
-          (fun _ (_,t) ->
-            match t with
-            | CType.Array (t',sz) ->
-              O.f "typedef %s %s[%i];" t' (CType.dump t) sz
-            | _ -> ())
-          test
 
       let dump_def_ctx env test =
         O.o "/**********************/" ;

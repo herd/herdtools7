@@ -39,7 +39,7 @@
    We use three main connecters here:
     - the classic data binder ( [>>=] )
     - a control binder ( [>>*=] or assimilate)
-    - a sequencing operator ( [M.aslseq] )
+    - a sequencing operator ( [M.para_bind_output_right] )
    And some specialized others:
     - the parallel operator ( [>>|] )
     - a choice operation
@@ -61,7 +61,7 @@
      output = 2.ouput (or 1.output if 2.output is None)
         same-ish with ctrl_output
 
-   - _seq_ binder (called [aslseq]):
+   - _seq_ binder (called [para_bind_output_right]):
      input = 1.input U 2.input
         same with data_input
      output = 2.output
@@ -113,11 +113,11 @@ module Make (C : Config) = struct
   end = struct
     module Mixed = M.Mixed (SZ)
 
-    let ( let* ) = M.( >>= )
-    let ( let*| ) = M.aslseq
+    let ( let* ) = M.asl_data
+    let ( let*| ) = M.asl_seq
     let ( and* ) = M.( >>| )
     let return = M.unitT
-    let ( >>= ) = M.( >>= )
+    let ( >>= ) = M.asl_data
     let ( >>! ) = M.( >>! )
 
     (**************************************************************************)
@@ -152,7 +152,9 @@ module Make (C : Config) = struct
         | L_Int i -> S_Int i |> concrete
         | L_Bool b -> S_Bool b |> concrete
         | L_BitVector bv -> S_BitVector bv |> concrete
-        | L_Real _f -> Warn.fatal "Cannot use reals yet."
+        | L_Real _f ->
+           Printf.eprintf "real: %s\n%!" (Q.to_string _f) ;
+           Warn.fatal "Cannot use reals yet."
         | L_String _f -> Warn.fatal "Cannot strings in herd yet."
       in
       fun v -> V.Val (tr v)
@@ -252,10 +254,10 @@ module Make (C : Config) = struct
     (**************************************************************************)
 
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
-      M.bind_ctrl_seq_data m1 (function
+      M.asl_ctrl m1 (function
         | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
         | b ->
-            M.bind_ctrl_seq_data (to_int_signed b) (fun v -> M.choiceT v m2 m3))
+            M.asl_ctrl (to_int_signed b) (fun v -> M.choiceT v m2 m3))
 
     let binop =
       let open AST in
@@ -555,8 +557,7 @@ module Make (C : Config) = struct
       let parameters =
         let get_param t =
           match t.desc with
-          | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) ->
-              Some (x, None)
+          | T_Bits ({ desc = E_Var x; _ }, _) -> Some (x, None)
           | _ -> None
         in
         args |> List.filter_map get_param (* |> List.sort String.compare *)
@@ -612,7 +613,7 @@ module Make (C : Config) = struct
       let reg = integer in
       let var x = E_Var x |> with_pos in
       let lit x = E_Literal (L_Int (Z.of_int x)) |> with_pos in
-      let bv x = T_Bits (BitWidth_SingleExpr x, []) |> with_pos in
+      let bv x = T_Bits (x, []) |> with_pos in
       let bv_var x = bv @@ var x in
       let bv_arg1 = bv_var "arg_1" in
       let bv_N = bv_var "N" in
@@ -693,9 +694,9 @@ module Make (C : Config) = struct
         let v_of_int = V.intToV
         let v_of_literal = v_of_literal
         let v_to_int = v_to_int
-        let bind_data = M.( >>= )
-        let bind_seq = M.aslseq
-        let bind_ctrl = M.bind_ctrl_seq_data
+        let bind_data = M.asl_data
+        let bind_seq = M.asl_seq
+        let bind_ctrl = M.asl_ctrl
         let prod_par = M.( >>| )
         let appl_data m f = m >>= fun v -> return (f v)
         let choice = choice
@@ -747,12 +748,23 @@ module Make (C : Config) = struct
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let shared =
+            (*
+             * Remove from shared pseudocode the functions declared in stdlib because:
+             * 1. it avoids name clashes at type-checking time;
+             * 2. when debugging, we know what function is called;
+             * 3. stdlib functions usually out-perform their shared-pseudocode
+             *    counterparts when executed in herd.
+             *)
             (List.filter
                AST.(
                  fun d ->
                    match d.desc with
-                   | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } ->
-                       false
+                   | D_Func { name;_} ->
+                      let is_stdlib = Asllib.Builder.is_stdlib_name name in
+                      let () =
+                        if false && is_stdlib then
+                          Printf.eprintf "Subprogram %s removed from shared\n%!" name in
+                      not is_stdlib
                    | _ -> true)
                shared [@warning "-40-42"])
           in

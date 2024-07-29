@@ -1,0 +1,33 @@
+AArch64 L098
+{
+0:X1=128;
+0:X2=15;
+int64_t 0:X3;
+int64_t 0:X4;
+int64_t 0:X5;
+int64_t 0:X6;
+int64_t 0:X7;
+int64_t 0:X8;
+int64_t 0:X9;
+}
+  P0                 ;
+ SMULL X3,W2,W1      ;
+ SMADDL X3,W2,W1,X3  ;
+ MOV W1,#-1          ;
+ SMADDL X4,W2,W1,X3  ;
+ SMNEGL X5,W1,W1     ;
+ UMULL X6,W1,W1      ;
+ SMSUBL X7,W2,W1,X3  ;
+ ADD W1,W1,W1        ;
+ MOV X10,1           ;
+ UMSUBL X8,W1,W1,X10 ;
+ SMSUBL X9,W1,W1,X10 ;
+
+forall
+ 0:X3=3840 /\
+ 0:X4=3825 /\
+ 0:X5=-1 /\
+ 0:X6=-8589934591 /\
+ 0:X7=3855 /\
+ 0:X8=17179869181 /\
+ 0:X9=-3

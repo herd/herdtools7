@@ -1,0 +1,10 @@
+Test L088 Required
+States 1
+0:X0=-2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation L088 Always 1 0
+Hash=4753bb3ba2b4f194e0768680e7bf13b4
+

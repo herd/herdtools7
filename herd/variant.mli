@@ -38,7 +38,8 @@ type t =
   | Unaligned
  (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)
   | DontCheckMixed
-  | MemTag           (* Memory Tagging *)
+  | MemTag           (* Memory Tagging, synonym of MTE *)
+  | MTE              (* Memory Tagging *)
   | TagPrecise of Precision.t (* Fault handling *)
   | TooFar         (* Do not discard candidates with TooFar events *)
   | Morello

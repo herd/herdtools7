@@ -1780,6 +1780,7 @@ let match_reg_events es =
       (* We can build those now *)
       let evts = es.E.events in
       let po_iico = U.po_iico es in
+      let partial_po = E.EventTransRel.to_transitive_rel es.E.partial_po in
       let ppoloc = make_ppoloc po_iico evts in
       let store_load_vbf = store_load rfm
       and init_load_vbf = init_load es rfm in
@@ -1863,6 +1864,7 @@ let match_reg_events es =
                    rfmap = rfm ;
                    fs = fsc ;
                    po = po_iico ;
+                   partial_po = partial_po;
                    pos = ppoloc ;
                    pco = pco ;
 
@@ -1880,6 +1882,7 @@ let match_reg_events es =
                      rfmap = rfm ;
                      fs = fsc ;
                      po = po_iico ;
+                     partial_po = partial_po ;
                      pos = ppoloc ;
                      pco = pco ;
 
@@ -1999,13 +2002,27 @@ let match_reg_events es =
         | None -> assert false)
         (E.mem_of es.E.events)
 
+      let check_noifetch_limitations es =
+        let non_init_stores = E.EventSet.filter
+          (fun e -> E.is_mem_store e && not (E.is_mem_store_init e))
+          es.E.events in
+        E.EventSet.iter (fun e ->
+          match E.location_of e with
+          | Some (A.Location_global (V.Val(Constant.Label(p, lbl)))) ->
+            Warn.user_error
+              "Store to %s:%s requires ifetch functionality. Please use \
+               `-variant ifetch` as an argument to herd7 to enable it."
+              (Proc.pp p) (Label.pp lbl)
+          | _ -> ()
+        ) non_init_stores
+
     let check_ifetch_limitations test es owls =
       let stores = E.EventSet.filter E.is_mem_store es.E.events in
       let program = test.Test_herd.program
       and code_segment = test.Test_herd.code_segment in
       E.EventSet.iter (fun e ->
         match E.location_of e with
-        | Some (A.Location_global (V.Val(Constant.Label(_, lbl))) as loc) ->
+        | Some (A.Location_global (V.Val(Constant.Label(p, lbl))) as loc) ->
           if Label.Set.mem lbl owls then begin
             if false then (* insert a proper test here *)
               Warn.user_error "Illegal store to '%s'; overwrite with the given argument not supported"
@@ -2026,8 +2043,8 @@ let match_reg_events es =
               with
               | Not_found ->
                  Warn.user_error
-                   "Label %s is undefined, yet it is used as constant"
-                   (Label.pp lbl)
+                   "Label %s not found on %s, yet it is used as constant"
+                   (Label.pp lbl) (Proc.pp p)
               end
             end
         | _ ->
@@ -2064,7 +2081,8 @@ let match_reg_events es =
                   when_unsolved test es rfm cs res
               | _ ->
                   check_symbolic_locations test es ;
-                  if self then check_ifetch_limitations test es owls ;
+                  if self then check_ifetch_limitations test es owls
+                  else check_noifetch_limitations es;
                   if (mixed && not unaligned) then check_aligned test es ;
                   if A.reject_mixed
                      && not (mixed || memtag || morello)

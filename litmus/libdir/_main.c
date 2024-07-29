@@ -113,7 +113,7 @@ int RUN(int argc,char **argv,FILE *out) {
   int nexe = glo_ptr->nexe ;
   hash_init(&glo_ptr->hash) ;
   for (int k=0 ; k < nexe ; k++) {
-    hash_adds(&glo_ptr->hash,&glo_ptr->ctx[k].t) ;
+    glo_ptr->hash_ok = hash_adds(&glo_ptr->hash,&glo_ptr->ctx[k].t) && glo_ptr->hash_ok ;
   }
 #ifdef OUT
   tsc_t total = timeofday()-start;

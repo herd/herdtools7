@@ -201,6 +201,9 @@ let emit_rmw _ = assert false
 (**********)
 
     let emit_fence st _ init _ f =  init,[Instruction (Pfence f)],st
+    let emit_fence_dp st a init b f _ r _ =
+      let init,cs,st = emit_fence st a init b f in
+      Some r,init,cs,st
     let _emit_fence_tagged o a = Instruction (Pfence(Fence(a,o)))
 
     let stronger_fence = strong

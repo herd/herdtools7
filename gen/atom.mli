@@ -22,6 +22,7 @@ module type SIMD = sig
     val initial : int -> int array
     val step : atom -> int -> int array -> int array
     val read : atom -> int array -> int list list
+    val reduce: int list list -> int
 end
 
 module type S = sig
@@ -32,7 +33,9 @@ module type S = sig
 
   type atom
   val default_atom : atom
+  val instr_atom : atom option
   val applies_atom : atom -> Code.dir -> bool
+  val is_ifetch : atom option -> bool
   val compare_atom : atom -> atom -> int
   val get_access_atom : atom option -> MachMixed.t option
   val set_access_atom : atom option -> MachMixed.t -> atom option

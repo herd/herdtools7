@@ -1,0 +1,18 @@
+AArch64 V63
+(* Test ST1 multiple structure (multiple registers)*)
+{
+int x[16];
+
+0:X0=x;
+}
+P0                                ;
+MOVI V0.4S,#1                     ;
+MOVI V1.4S,#2                     ;
+MOVI V2.4S,#3                     ;
+MOVI V3.4S,#4                     ;
+ST1 {V0.4S,V1.4S,V2.4S,V3.4S},[X0];
+
+forall x[0]=1 /\ x[1]=1 /\ x[2]=1 /\ x[3]=1 /\
+       x[4]=2 /\ x[5]=2 /\ x[6]=2 /\ x[7]=2 /\
+       x[8]=3 /\ x[9]=3 /\ x[10]=3/\ x[11]=3 /\
+       x[12]=4/\ x[13]=4/\ x[14]=4/\ x[15]=4

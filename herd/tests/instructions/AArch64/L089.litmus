@@ -1,0 +1,25 @@
+AArch64 L089
+{
+0:X1=255;
+uint64_t 0:X0=0xffff;
+uint64_t 0:X6;
+uint64_t 0:X7;
+uint64_t 0:X8;
+uint64_t 0:X9;
+
+}
+
+  P0            ;
+ORR W2,WZR,W1,LSL 4 ;
+ORR W3,WZR,W1,LSR 4 ;
+ORR W4,WZR,W1,ROR 4 ;
+ORR W5,WZR,W4,ASR 4 ;
+ORR X6,XZR,X0,LSL 8 ;
+ORR X7,XZR,X0,LSR 8 ;
+ORR X8,XZR,X0,ROR 8 ;
+ORR X9,XZR,X8,ASR 8 ;
+
+forall
+  0:X2=0xff0 /\ 0:X3=0xf /\ 0:X4=0xf000000f /\ 0:X5=0xff000000 /\
+  0:X6=0xffff00 /\ 0:X7=0xff /\
+  0:X8=0xff000000000000ff /\ 0:X9=0xffff000000000000

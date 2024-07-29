@@ -43,7 +43,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let pp_reg = pp_reg
         let reg_compare = reg_compare
         let reg_to_string = reg_to_string
-        let internal_init _ = None
+        let internal_init _ _ = None
 
         let reg_class r=
           match r with

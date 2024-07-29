@@ -1,10 +1,10 @@
 Test V47 Required
 States 1
-0:X0=x+8; 0:X2=32;
+0:X0=x; 0:X2=32;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:X2=32 /\ not (0:X0=x))
+Condition forall (0:X2=32 /\ 0:X0=x)
 Observation V47 Always 1 0
-Hash=44ef7b9af2582958e79823978516cd75
+Hash=8c0a05664c81098387cdbd76a20395a3
 

@@ -95,6 +95,7 @@ let OuterCacheability-conflict = (PTEOuter-write-back & PTEOuter-write-through)
 assert empty OuterCacheability-conflict as Invalid-Outer-Cacheability
 
 let PTENormal = try PTENormal with emptyset
+let PTETaggedNormal = try PTETaggedNormal with emptyset
 
 (*** Common attributes ***)
 let PTEXS = try PTEXS with emptyset
@@ -107,7 +108,7 @@ assert empty MemoryType-conflict as Invalid-Memory-Type
 
 (* No other memory attribute is allowed *)
 let PTEMemAttr = try PTEMemAttr with emptyset
-let PTEAll-Valid-Mem-Attr = PTENormal
+let PTEAll-Valid-Mem-Attr = PTENormal | PTETaggedNormal
                     | PTENon-shareable | PTEInner-shareable | PTEOuter-shareable
                     | PTEInner-write-back | PTEInner-write-through | PTEInner-non-cacheable
                     | PTEOuter-write-back | PTEOuter-write-through | PTEOuter-non-cacheable
@@ -128,8 +129,12 @@ let PTEInner-write-back = PTEInner-write-back
 let PTEOuter-write-back = PTEOuter-write-back
                         | (PTE \ (PTEDevice | PTEOuter-write-through | PTEOuter-non-cacheable))
 
+let ISH-WB = PTEInner-shareable & PTEInner-write-back & PTEOuter-write-back
+
 (* Default Memory Type *)
+let PTETaggedNormal = PTETaggedNormal | (if "memtag" then ISH-WB else 0)
 let PTENormal = PTENormal
               | PTENon-shareable | PTEInner-shareable | PTEOuter-shareable
               | PTEInner-write-back | PTEInner-write-through | PTEInner-non-cacheable
               | PTEOuter-write-back | PTEOuter-write-through | PTEOuter-non-cacheable
+let PTENormal = if "memtag" then PTENormal \ ISH-WB else PTENormal

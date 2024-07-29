@@ -40,7 +40,7 @@ type t = S_Int of Z.t | S_Bool of bool | S_BitVector of BV.t
 let machsize = MachSize.Quad
 let zero = S_Int Z.zero
 let one = S_Int Z.one
-
+let zeros sz = S_BitVector (BV.zeros sz)
 (*
  * Integer dump is made assuming a 64bits basis.
  * For instance '-1' in hexadecimal will be printed as
@@ -51,6 +51,10 @@ let z63 = Z.shift_left Z.one (MachSize.nbits machsize-1)
 let z64 = Z.shift_left Z.one (MachSize.nbits machsize)
 
 let norm_unsigned z = if Z.sign z < 0 then Z.add z z64 else z
+let norm_signed z =
+  let z = Z.erem z z64 in
+  if Z.geq z z63 then Z.sub z z64
+  else z
 
 let pp hexa = function
   | S_Int i ->
@@ -80,10 +84,11 @@ let of_string s =
 let of_int i = S_Int (Z.of_int i)
 
 let to_int = function
-  | S_Int i -> Z.to_int i
+  | S_Int i ->  Z.to_int (norm_signed i)
   | S_Bool true -> 1
   | S_Bool false -> 0
-  | S_BitVector bv -> BV.to_int bv
+  | S_BitVector bv -> 
+     BV.to_int_signed bv
 
 let of_int64 i = S_Int (Z.of_int64 i)
 
@@ -166,6 +171,10 @@ let lognot = function
   | S_Int i -> S_Int (Z.lognot i)
   | S_Bool b -> S_Bool (not b)
   | S_BitVector bv -> S_BitVector (BV.lognot bv)
+
+let abs = function
+  | S_Int i -> S_Int (Z.abs i)
+  | s -> Warn.fatal "ASLScalar invalid op: %s abs" (pp false s)
 
 let shift_left = function
   | S_Int i -> fun k -> S_Int (Z.shift_left i k)
@@ -255,7 +264,7 @@ let try_extract_slice s positions =
       else Some (S_BitVector (BV.extract_slice bv positions))
   | S_Int i ->
       if Z.equal Z.zero i then
-        Some (S_BitVector (BV.zeros (List.length positions)))
+        Some (S_BitVector (BV.zeros (List.length positions) ))
       else if Z.equal Z.minus_one i then
         Some (S_BitVector (BV.ones (List.length positions)))
       else if List.exists (( <= ) 64) positions then None
@@ -281,8 +290,8 @@ let try_write_slice positions dst src =
   | _ -> None
 
 let empty = S_BitVector BV.empty
+let zeros_size_one = S_BitVector (BV.zeros 1)
 
-let printable_z z =
-  let z = Z.erem z z64 in
-  if Z.geq z z63 then Z.sub z z64
-  else z
+let printable_z z = norm_signed z
+
+let rbit _ _ =  Warn.fatal "ASLScalar.rbit non-existent"

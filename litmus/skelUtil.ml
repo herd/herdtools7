@@ -28,6 +28,7 @@ module type Config = sig
   val sysarch : Archs.System.t
   val c11 : bool
   val variant : Variant_litmus.t -> bool
+  val ascall : bool
 end
 
 let no_timebase_error sysarch =
@@ -167,6 +168,9 @@ module Make
        (* Dump (typedef) array types, boolean argument commands
            also dumping types used for alignment. *)
         val dump_vars_types : bool -> T.t -> unit
+
+       (* Dump (typedef) array register type *)
+        val dump_array_typedefs : T.t -> unit
 
         (* Dump definition of struct fields that point in code*)
         val define_label_fields : Label.Full.Set.t -> unit
@@ -547,15 +551,17 @@ module Make
 
       let get_instrs_final t = T.C.get_instrs t.T.condition
 
+      let nop_set =
+        match A.V.Instr.nop with
+        | None -> A.V.Instr.Set.empty
+        | Some nop -> A.V.Instr.Set.singleton nop
+
       let get_instrs_others t =
         A.V.Instr.Set.union3
           (get_instrs_init t) (get_instrs_final t)
           (if Cfg.variant Variant_litmus.Self then
             A.V.Instr.Set.of_list A.GetInstr.self_instrs
-          else
-            match A.V.Instr.nop with
-            | None -> A.V.Instr.Set.empty
-            | Some nop -> A.V.Instr.Set.singleton nop)
+          else nop_set)
 
       let all_instrs t =
         let from_code = T.from_labels t
@@ -572,6 +578,20 @@ module Make
           end else
             let module Insert =  ObjUtil.Insert(Cfg) in
             Insert.insert O.o "mbar.c"
+
+        let dump_array_typedefs test =
+          let iter_outs f proc = List.iter (f proc) in
+          let iter_all_outs f test =
+            List.iter
+              (fun (proc,(_,(outs,_))) -> iter_outs f proc outs)
+              test.T.code in
+          iter_all_outs
+            (fun _ (_,t) ->
+              match t with
+              | CType.Array (t',sz) ->
+                O.f "typedef %s %s[%i];" t' (CType.dump t) sz
+              | _ -> ())
+              test
 
         let dump_vars_types dump_align test =
           let _,env = build_env test in
@@ -604,6 +624,11 @@ module Make
             O.fi "ins_t %s;"pp
           end
 
+        let check_ascall () =
+          if not (Cfg.ascall) then
+            Warn.user_error
+              "Use option `-ascall true` for this test"
+
 (* Label constant initialisation *)
         let initialise_labels ptr label_init =
           let open OutUtils in
@@ -613,6 +638,7 @@ module Make
               label_init IntSet.empty in
           IntSet.iter
             (fun p ->
+              check_ascall () ;
               O.fi "size_t %s = prelude_size((ins_t *)code%i);"
                 (fmt_prelude p) p)
             procs ;
@@ -867,6 +893,13 @@ module Make
               O.oi "emit_millions(tsc_millions(total));" ;
               O.oi "puts(\"\\n\");"
           end ;
+          begin match Cfg.mode with
+          | Mode.PreSi|Mode.Kvm ->
+             O.oi "if (!g->hash_ok) {" ;
+             EPF.fii "Warning: some hash table was full, some outcomes were not collected\n" [] ;
+             O.oi "}" ;
+          | Mode.Std -> ()
+          end ;
           if Cfg.exit_cond then O.oi "return cond;" ;
           O.o "}" ;
           O.o "" ;
@@ -921,6 +954,7 @@ module Make
               match ps with
               | [] -> assert false
               | ((p,_),_)::_ ->
+                  check_ascall () ;
                   O.fi "size_t %s = prelude_size((ins_t *)code%i);"
                     (fmt_prelude p) p ;
                   List.iter

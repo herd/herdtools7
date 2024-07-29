@@ -1,0 +1,11 @@
+AArch64 A006
+{
+ [PTE(x)]=(oa:PA(x),attrs:(Normal));
+ 0:X0=x:red;
+}
+  P0          ;
+  MOV W1,#1   ;
+ L0:          ;
+  STR W1,[X0] ;
+locations[fault(P0:L0,x);]
+forall([x]=1)

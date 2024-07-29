@@ -106,6 +106,7 @@ module SIMD = NoSIMD
 type atom = string list
 
 let default_atom = [] (* Wrong, extract from bell file? *)
+let instr_atom = None
 
 let tr_dir = function
   | R -> BellName.r
@@ -115,7 +116,7 @@ let tr_dir = function
 let applies_atom = match bi with
 | None -> (fun a _d -> match a with [] -> true | _ -> false)
 | Some bi -> (fun a d -> BellModel.check_event (tr_dir d) a bi)
-
+let is_ifetch _ = false
 let pp_plain = "P"
 let pp_as_a = None
 
@@ -271,6 +272,7 @@ include
       let is_symbolic _ = false
 
       let pp_reg = pp_reg
+      let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
     end)

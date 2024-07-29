@@ -1,10 +1,10 @@
 Test V44 Allowed
 States 1
-x[0]=254; x[1]=255;
+x[0]=65535; x[1]=255;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition exists (x[0]=254 /\ x[1]=255)
+Condition exists (x[0]=65535 /\ x[1]=255)
 Observation V44 Always 1 0
-Hash=73f90cd3569ce471cf44fc3d105e62b8
+Hash=defbf9207549dbd82105c6b6cc0dc38b
 

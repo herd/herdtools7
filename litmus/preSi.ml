@@ -26,6 +26,7 @@ module type Config = sig
   val word : Word.t
   val line : int
   val noccs : int
+  val affinity : Affinity.t
   val logicalprocs : int list option
   val smt : int
   val nsockets : int
@@ -74,6 +75,11 @@ module Make
         (struct
           let sysarch = Cfg.sysarch
         end)
+(* MacOS has no affinity control *)
+    let do_affinity =
+      match Cfg.affinity with
+      | Affinity.No -> false
+      | _ -> true
 
 (* Handle instruction as data *)
     let has_instruction_ptr = Insert.exists "instruction.h"
@@ -88,8 +94,9 @@ module Make
 
     let do_label_init = Misc.consp CfgLoc.all_labels
 
-    let do_ascall = Cfg.ascall || Cfg.is_kvm || do_label_init ||
-                      Cfg.variant Variant_litmus.Self
+    let do_ascall =
+      Cfg.ascall || Cfg.is_kvm || do_label_init || CfgLoc.need_prelude
+      || Cfg.variant Variant_litmus.Self
 
     let do_precise = Precision.is_fatal Cfg.precision
 
@@ -154,6 +161,7 @@ module Make
         let sysarch = Cfg.sysarch
         let c11 = Cfg.c11
         let variant = Cfg.variant
+        let ascall = do_ascall
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -173,12 +181,12 @@ module Make
 (***************)
 (* File header *)
 (***************)
+      module DP = DumpParams.Make(Cfg)
 
       let dump_header test =
         O.o "/* Parameters */" ;
         O.o "#define OUT 1" ;
-        let module D = DumpParams.Make(Cfg) in
-        D.dump O.o ;
+        DP.dump O.o ;
         let n = T.get_nprocs test in
         O.f "#define N %i" n ;
         let nvars = List.length test.T.globals in
@@ -195,6 +203,7 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
+        Insert.insert_when_exists O.o "intrinsics.h" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if do_stats then O.o "#define STATS 1" ;
         if Cfg.is_kvm then begin
@@ -223,8 +232,19 @@ module Make
           O.o "#include \"litmus_rand.h\"" ;
           O.o "#include \"utils.h\"" ;
           if Cfg.c11 then O.o "#include <stdatomic.h>";
-          if true then begin (* Affinity always used *)
-            O.o "#include \"affinity.h\""
+          if do_affinity then begin (* Affinity always used *)
+            O.o "#include \"affinity.h\"" ;
+            begin match Cfg.logicalprocs with
+            | Some procs ->
+               let len = List.length procs in
+               if len < DP.avail then
+                 Warn.user_error
+                   "Cannot run, %d available processors and mapping of size %d"
+                  DP.avail len ;
+               O.f "static int logical_procs[] = {%s};"
+                 (LexSplit.pp_ints procs)
+            | None -> ()
+            end
           end
         end ;
         if not do_inlined then O.o "#include \"topology.h\"" ;
@@ -273,8 +293,10 @@ module Make
 (* Memory barrier *)
       let dump_mbar_def () =
         O.o "" ;
+(*
         O.o "/* Full memory barrier */" ;
         UD.dump_mbar_def () ;
+*)
         let dump_find_ins =
           do_self
           || CfgLoc.need_prelude
@@ -593,10 +615,7 @@ module Make
               let verbose = Cfg.verbose
               let file_name = doc.Name.file
               let nthreads = n
-              let avail = match Cfg.avail with
-              | None -> 0
-              | Some a -> a
-
+              let avail = DP.avail
               let smt = Cfg.smt
               let nsockets = Cfg.nsockets
               let smtmode = Cfg.smtmode
@@ -717,7 +736,8 @@ module Make
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
           locs env
 
-      let some_vars test = Misc.consp test.T.globals || some_labels test
+      let some_test_vars test = Misc.consp test.T.globals
+      let some_vars test = some_test_vars test || some_labels test
 
       let dump_outcomes env test =
         let rlocs = U.get_displayed_locs test
@@ -761,6 +781,7 @@ module Make
         end ;
         O.o "" ;
         UD.dump_vars_types false test ;
+        UD.dump_array_typedefs test ;
         O.o "typedef struct {" ;
         let fields =
           A.RLocSet.fold
@@ -1743,8 +1764,9 @@ module Make
               Indent.indent3 in
           O.ox id "int _cond = final_ok(final_cond(_log));" ;
           (* recorded outcome *)
-          O.fx id "hash_add(&_ctx->t,_log%s,1,_cond);"
+          O.fx id "int _added = hash_add(&_ctx->t,_log%s,1,_cond);"
             (if do_stats then ",_p" else "") ;
+          O.ox id "if (!_added && _g->hash_ok) _g->hash_ok = 0; // Avoid writing too much." ;
           (* Result and stats *)
           O.ox id "if (_cond) {" ;
           let nid = Indent.tab id in
@@ -1792,7 +1814,7 @@ module Make
         O.oi "sense_t *_b = &_ctx->b;" ;
         O.oi "log_t *_log = &_ctx->out;" ;
         if some_ptr then O.oi "log_ptr_t *_log_ptr = &_ctx->out_ptr;" ;
-        if some_vars test then begin
+        if some_test_vars test then begin
           O.oi "vars_t *_vars = &_ctx->v;"
         end ;
         begin match test.T.globals with
@@ -2029,14 +2051,19 @@ module Make
              O.oi "exceptions_init_test(&vector_table);"
           end ;
         end ;
-        if not Cfg.is_kvm then begin
+        if do_affinity then begin
+          let id =
+            match Cfg.logicalprocs with
+            | Some _ ->
+               "logical_procs[id]"
+            | None -> "id" in
           O.oi
             (if Cfg.force_affinity then
               sprintf
-                "force_one_affinity(id,AVAIL,g->verbose,\"%s\");"
-                tname
+                "force_one_affinity(%s,AVAIL,g->verbose,\"%s\");"
+                id tname
             else
-              "write_one_affinity(id);")
+              sprintf "write_one_affinity(%s);" id)
         end ;
         O.oi "choose(id,g);" ;
         if Cfg.is_kvm then begin

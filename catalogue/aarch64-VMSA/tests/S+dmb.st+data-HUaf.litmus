@@ -1,0 +1,16 @@
+AArch64 S+dmb.st+data-HUaf
+Variant=vmsa
+TTHM=P1:HA
+{
+PTE(z)=(oa:PA(z),af:0);
+0:X15=(oa:PA(z),af:0);
+0:X14=PTE(z);
+0:X0=x; 0:X2=y;
+1:X0=x; 1:X2=y; 1:X4=z;
+}
+ P0            | P1                  ;
+ STR X15,[X14] | LDR W3,[X2]         ;
+ DMB ST        |                     ;
+ MOV W3,#1     |                     ;
+ STR W3,[X2]   | STR W3,[X4,W6,SXTW] ;
+exists (1:X3=1 /\ PTE(z)=(oa:PA(z),af:0))

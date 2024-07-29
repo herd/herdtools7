@@ -26,3 +26,8 @@ val none : t
 val make : Lexing.position -> Lexing.position -> t
 
 val pp : out_channel -> t -> unit
+
+module Extract() :
+sig
+ val extract : t -> string
+end

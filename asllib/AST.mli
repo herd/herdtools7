@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 (** An Abstract Syntax Tree for ASL. *)
 
@@ -14,7 +31,12 @@
 (** {2 Utils} *)
 
 type position = Lexing.position
-type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
+
+type 'a annotated = {
+  desc : 'a;
+  pos_start : position;
+  pos_end : position;
+}
 
 (* -------------------------------------------------------------------------
 
@@ -93,7 +115,7 @@ type literal =
 type expr_desc =
   | E_Literal of literal
   | E_Var of identifier
-  | E_Typed of expr * ty
+  | E_CTC of expr * ty
   | E_Binop of binop * expr * expr
   | E_Unop of unop * expr
   | E_Call of identifier * expr list * (identifier * expr) list
@@ -145,11 +167,13 @@ and slice =
 
 (** Type descriptors.*)
 and type_desc =
+  (* Begin Constrained *)
   | T_Int of int_constraints option
+  | T_Bits of expr * bitfield list
+  (* End Constrained *)
   | T_Real
   | T_String
   | T_Bool
-  | T_Bits of bits_constraint * bitfield list
   | T_Enum of identifier list
   | T_Tuple of ty list
   | T_Array of expr * ty
@@ -168,14 +192,6 @@ and int_constraint =
 
 and int_constraints = int_constraint list
 (** The int_constraints represent the union of the individual constraints.*)
-
-(** The width of a bitvector can be constrained in multiple ways. *)
-and bits_constraint =
-  | BitWidth_SingleExpr of expr  (** Statically evaluable expression. *)
-  | BitWidth_ConstrainedFormType of ty
-      (** Constrained by the domain of another type. *)
-  | BitWidth_Constraints of int_constraints
-      (** Constrained directly by a constraint on its width. *)
 
 (** Represent static slices on a given bitvector type. *)
 and bitfield =
@@ -202,13 +218,13 @@ and typed_identifier = identifier * ty
 
 (** Type of left-hand side of assignments. *)
 type lexpr_desc =
-  | LE_Ignore
+  | LE_Discard
   | LE_Var of identifier
   | LE_Slice of lexpr * slice list
   | LE_SetArray of lexpr * expr
   | LE_SetField of lexpr * identifier
   | LE_SetFields of lexpr * identifier list
-  | LE_TupleUnpack of lexpr list
+  | LE_Destructuring of lexpr list
   | LE_Concat of lexpr list * int list option
       (** LE_Concat (les, _) unpacks the various lexpr. Second argument is a type annotation. *)
 
@@ -218,7 +234,7 @@ type local_decl_keyword = LDK_Var | LDK_Constant | LDK_Let
 
 type local_decl_item =
   | LDI_Var of identifier * ty option
-  | LDI_Ignore of ty option
+  | LDI_Discard of ty option
   | LDI_Tuple of local_decl_item list * ty option
 
 (** Statements. Parametric on the type of literals in expressions. *)
@@ -228,7 +244,7 @@ type version = V0 | V1
 
 type stmt_desc =
   | S_Pass
-  | S_Then of stmt * stmt
+  | S_Seq of stmt * stmt
   | S_Decl of local_decl_keyword * local_decl_item * expr option
   | S_Assign of lexpr * expr * version
   | S_Call of identifier * expr list * (identifier * expr) list
@@ -262,7 +278,12 @@ and catcher = identifier option * ty * stmt
 
 (** {2 Top-level declarations} *)
 
-type subprogram_type = ST_Procedure | ST_Function | ST_Getter | ST_Setter
+type subprogram_type =
+  | ST_Procedure
+  | ST_Function
+  | ST_Getter
+  | ST_Setter
+
 type 'p subprogram_body = SB_ASL of stmt | SB_Primitive of 'p
 
 type 'p func = {
@@ -277,7 +298,11 @@ type 'p func = {
     functions, procedures and primitives. *)
 
 (** Declaration keyword for global storage elements. *)
-type global_decl_keyword = GDK_Constant | GDK_Config | GDK_Let | GDK_Var
+type global_decl_keyword =
+  | GDK_Constant
+  | GDK_Config
+  | GDK_Let
+  | GDK_Var
 
 type global_decl = {
   keyword : global_decl_keyword;
@@ -306,4 +331,5 @@ type 'p t = 'p decl list
 
 type scope =
   | Scope_Local of identifier * int
-  | Scope_Global  (** A scope is an unique identifier of the calling site. *)
+  | Scope_Global
+      (** A scope is an unique identifier of the calling site. *)

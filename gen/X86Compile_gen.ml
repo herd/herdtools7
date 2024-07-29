@@ -155,6 +155,9 @@ struct
   let emit_fence st _ init _ f = match f with
     | MFence -> init,[X86.Instruction I_MFENCE],st
 
+  let emit_fence_dp st a init b f _ r _ =
+    let init,cs,st = emit_fence st a init b f in
+    Some r,init,cs,st
   let stronger_fence = MFence
 
   let emit_inc r = I_INC (Effaddr_rm32 (Rm32_reg r))

@@ -20,11 +20,12 @@ inline static void cache_flush(void *p) {
 #endif
 }
 
-
 inline static void cache_touch(void *p) {
   asm __volatile__ ("prfm pldl1keep,[%[p]]" :: [p] "r" (p) : "memory");
 }
 
+#ifdef CACHE_TOUCH_STORE
 inline static void cache_touch_store(void *p) {
   asm __volatile__ ("prfm pstl1keep,[%[p]]" :: [p] "r" (p) : "memory");
 }
+#endif

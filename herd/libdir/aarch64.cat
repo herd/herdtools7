@@ -97,7 +97,9 @@ let hw-reqs = local-hw-reqs | haz-ob
 (*** Observed-by ***)
 
 (** Explicitly-observed-by **)
-let Exp-obs = [Exp & M]; (rf | ca) & ext; [Exp & M]
+let Exp-obs = 
+  [Exp & M]; rf & ext; [Exp & M]
+  | [Exp & M]; ca & ext; [Exp & M]
 
 (** Tag-observed-by **)
 let Tag-obs =
@@ -108,11 +110,11 @@ let Tag-obs =
 
 (* TLBUncacheable-predecessor *)
 let TLBuncacheable-pred =
-  [range([TLBUncacheable & FAULT]; tr-ib^-1)]; ca \ intervening-write(ca); [Exp & W]
+  [range([TLBUncacheable & FAULT]; tr-ib^-1)]; (ca & ~intervening(W,ca)); [Exp & W]
 
 (* Hardware-update-predecessor *)
 let HU-pred =
-  ca \ intervening-write(ca); [HU]
+  (ca & ~intervening(W,ca)); [HU]
 
 (* TLBI-coherence-after *)
 let TLBI-ca =

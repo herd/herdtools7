@@ -66,6 +66,10 @@ module type S =
     val data_input_next : 'a t -> ('a -> 'b t) -> 'b t
  (* Input to both args *)
     val data_input_union : 'a t -> ('a -> 'b t) -> 'b t
+
+    (* Same as [>>=] but sequences partial_po *)
+    val asl_data : 'a t -> ('a -> 'b t) -> 'b t
+
     val (>>==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first arg *)
 
 (* Control composition *)
@@ -87,6 +91,9 @@ module type S =
        second is empty. *)
     val bind_ctrl_seq_data : 'a t -> ('a -> 'b t) -> 'b t
 
+    (* Similar as [bind_ctrl_seq_data] but sequences partial_po *)
+    val asl_ctrl : 'a t -> ('a -> 'b t) -> 'b t
+
     (* Hybrid composition m1 m2 m3, m1 -ctrl+data-> m3 and m2 -data-> m3.
        ctrl+data -> ctrl from maximal commit evts + data from
        monad output *)
@@ -104,11 +111,10 @@ module type S =
     (* Same as [>>=] but with order deps instead of data between the arguments. *)
     val bind_order : 'a t -> ('a -> 'b t) -> 'b t
 
-    (* Very ad-hoc transformation, [short3 p1 p2 s],
-     * add relation r;r;r where r is intra_causality_data,
-     *  with starting event(s) selected by p1 and final one(s) by p2
-     *)
-    val short3 : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
+    val short : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
+    (** [short p1 p2 s] adds iico_causality_data relations to [s].
+        New relation start from all events in [s] that satisfy [p1]
+        and finish on all events in [s] that satisfy [p2]. *)
 
     (* Another ad-hoc transformation. [upOneRW p m]
      * Let r be iico_data, e1 and e2 be events s.t. p is true, e1 is 1 read e2 is a write,
@@ -181,23 +187,19 @@ module type S =
       bool -> (* physical access *)
         'loc t -> 'v t ->
           ('v -> unit t) -> ('loc -> 'v t) ->
+           ('loc -> unit t) ->
             ('v -> 'v -> unit t) -> unit t
 
     val aarch64_cas_ok :
       bool -> (* physical access *)
         'loc t -> 'v t -> 'v t ->
           ('v -> unit t) -> ('loc -> 'v t) -> ('loc -> 'v -> unit t) ->
+           ('loc -> unit t) ->
             ('v -> 'v -> unit t) -> unit t
     (* Temporary morello variation of CAS *)
     val aarch64_cas_ok_morello :
         'loc t -> 'v t -> 'v t -> ('loc -> 'v -> unit t) -> unit t
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
-
-    (* Same as [>>|], but binding style. *)
-    val cseq : 'a t -> ('a -> 'b t) -> 'b t
-
-    (* Same as [cseq], but output on right argument. *)
-    val aslseq : 'a t -> ('a -> 'b t) -> 'b t
 
     type poi = int
 
@@ -213,12 +215,28 @@ module type S =
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|||) : unit t -> unit t -> unit t
 
-(*
- *Sequence of memorory events by iico_order.
- * Notice that the combinator is otherwise similar
- * to ``>>|`.
- *)
+    val cseq : 'a t -> ('a -> 'b t) -> 'b t
+    (** [cseq s1 s2] similar to [>>|], but binding style. *)
+
+    val para_bind_output_right : 'a t -> ('a -> 'b t) -> 'b t
+    (** [para_bind_output_right s f] returns a parallel composition of
+        the event structures of [s] and the result of [f] where the
+        input of the new event structure is the union of the inputs of
+        [s] and the result of [f], like [cseq]. Unlike [cseq] the output of
+        the resulting event structure is set to the result of [f]. *)
+
+    val asl_seq : 'a t -> ('a -> 'b t) -> 'b t
+    (** [asl_seq s f] returns a parallel composition of [s] and the result of
+        [f] where the input of the new event structure is the union of the
+        inputs of [s] and the result of [f], like [cseq] and
+        [para_bind_output_right]. Unlike the later, a [partial_po] arrow is put
+        between the two structures. *)
+
     val seq_mem : 'a t -> 'b t -> ('a * 'b) t
+    (** [seq_mem s1 s2] returns a composition of the event structures
+        of [s1] and [s2] where in addition to the existing relations,
+        every memory event in [s1] is iico_order before every memory
+        event in [s2] *)
 
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
@@ -238,6 +256,11 @@ module type S =
     val altT : 'a t -> 'a t -> 'a t
 
     val tooFar : string -> E.A.inst_instance_id -> 'v -> 'v t
+
+    val debugT : string -> 'a t -> 'a t
+    (** [debugT str s] prints [str] followed by a string
+        representation of the input event structure [s], and returns
+        the input [s] without making any changes to it *)
 
     (**********************************************************)
     (* A few action instruction instance -> monad constructors *)

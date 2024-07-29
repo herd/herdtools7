@@ -1,0 +1,9 @@
+AArch64 L088
+{
+int64_t 0:X0=0;
+int64_t 0:X1=2;
+int 0:X2=255;
+}
+  P0                 ;
+ ADD X0,X1,W2,SXTB 2 ;
+locations [0:X0;] 

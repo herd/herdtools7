@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 open Lexing
 
@@ -94,6 +111,7 @@ let rec list_first_opt f = function
   | [] -> None
   | h :: t -> ( match f h with Some x -> Some x | None -> list_first_opt f t)
 
+let offuscate = ASTUtils.rename_locals (( ^ ) "__stdlib_local_")
 let asl_libdir = Filename.concat Version.libdir "asllib"
 
 let stdlib_not_found_message =
@@ -149,10 +167,34 @@ let stdlib =
   in
   lazy
     (match list_first_opt try_one to_try with
-    | Some ast -> ast
+    | Some ast -> offuscate ast
     | None ->
         let () = prerr_string stdlib_not_found_message in
         exit 1)
 
 let with_stdlib ast =
   List.rev_append (Lazy.force stdlib |> ASTUtils.no_primitive) ast
+
+let extract_name k d =
+  let open AST in
+  match d.desc with
+  | D_Func {name;_}
+    -> name::k
+  | D_TypeDecl _ ->
+     prerr_string  "Type declaration in stdlib.asl" ;
+     exit 1
+  | D_GlobalStorage _ ->
+     prerr_string "Storage declaration in stdlib.asl" ;
+     exit 1
+
+
+let is_stdlib_name =
+  let module StringSet = Set.Make(String) in
+  let set =
+    lazy
+      begin
+        let extract_names ds =
+          List.fold_left extract_name [] ds |> StringSet.of_list in
+        Lazy.force stdlib |> extract_names
+      end in
+  fun name -> StringSet.mem name (Lazy.force set)

@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 (*
   Goals:
@@ -31,7 +48,7 @@
 open AST
 open ASTUtils
 
-let t_bit = T_Bits (BitWidth_SingleExpr (E_Literal (L_Int Z.one) |> add_dummy_pos), [])
+let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
 
 let make_ldi_tuple xs ty =
   LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
@@ -282,8 +299,8 @@ let make_expr(sub_expr) ==
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
     | ~=bracketed(nclist(expr));                                  < E_Concat             >
-    | ~=sub_expr; AS; ~=ty;                                       < E_Typed              >
-    | ~=sub_expr; AS; ~=implicit_t_int;                           < E_Typed              >
+    | ~=sub_expr; AS; ~=ty;                                       < E_CTC              >
+    | ~=sub_expr; AS; ~=implicit_t_int;                           < E_CTC              >
 
     | ~=sub_expr; IN; ~=pattern_set;                              < E_Pattern            >
     | e=sub_expr; IN; m=MASK_LIT;                                 { E_Pattern (e, Pattern_Mask m) }
@@ -309,11 +326,6 @@ let int_constraints == braced(nclist(int_constraint_elt))
 let int_constraint_elt ==
   | ~=expr;                     < Constraint_Exact >
   | e1=expr; SLICING; e2=expr;  < Constraint_Range >
-
-let bits_constraint ==
-  | e = expr ;                      < BitWidth_SingleExpr           >
-  | MINUS ; colon_for_type ; ~=ty ; < BitWidth_ConstrainedFormType  >
-  | c = int_constraints ;           < BitWidth_Constraints          >
 
 let expr_pattern := make_expr (expr_pattern)
 let pattern_set ==
@@ -358,7 +370,7 @@ let ty :=
     | BOOLEAN;                                          { T_Bool      }
     | STRING;                                           { T_String    }
     | BIT;                                              { t_bit       }
-    | BITS; ~=pared(bits_constraint); ~=bitfields_opt;  < T_Bits      >
+    | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits      >
     | ENUMERATION; l=braced(tclist(IDENTIFIER));        < T_Enum      >
     | l=plist(ty);                                      < T_Tuple     >
     | ARRAY; e=bracketed(expr); OF; t=ty;               < T_Array     >
@@ -382,13 +394,13 @@ let implicit_t_int == annotated ( ~=some(int_constraints) ; <T_Int> )
 
 (* Left-hand-side expressions and helpers *)
 let le_var == ~=IDENTIFIER ; <LE_Var>
-let lexpr_ignore == { LE_Ignore }
+let lexpr_ignore == { LE_Discard }
 
 let lexpr ==
   annotated(
     | MINUS; lexpr_ignore
     | lexpr_atom
-    | ~=pared(nclist(lexpr)); <LE_TupleUnpack>
+    | ~=pared(nclist(lexpr)); <LE_Destructuring>
   )
 
 let lexpr_atom :=
@@ -404,7 +416,7 @@ let lexpr_atom :=
 
 let decl_item ==
   | ~=IDENTIFIER               ; ~=ty_opt ; < LDI_Var    >
-  | MINUS                      ; ~=ty_opt ; < LDI_Ignore >
+  | MINUS                      ; ~=ty_opt ; < LDI_Discard >
   | ~=pared(nclist(decl_item)) ; ~=ty_opt ; < LDI_Tuple  >
 
 (* ------------------------------------------------------------------------- *)

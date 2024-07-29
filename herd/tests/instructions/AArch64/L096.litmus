@@ -1,0 +1,10 @@
+AArch64 L096
+{
+uint64_t 0:X3=0xfedcba87654321;
+uint64_t 0:X4;
+}
+  P0         ;
+ REV32 X4,X3 ;
+
+forall 0:X4=0xbadcfe0021436587
+

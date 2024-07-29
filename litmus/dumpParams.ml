@@ -27,13 +27,13 @@ module Make (O:Config) =
   struct
     open Printf
 
+    let avail = match O.avail with None -> 1 | Some n -> n
+
     let dump out =
       let dump_def var x = out (sprintf "#define %s %s" var x) in
       dump_def "SIZE_OF_TEST" (sprintf "%i" O.size) ;
       dump_def "NUMBER_OF_RUN" (sprintf "%i" O.runs) ;
-      dump_def "AVAIL"
-        (match O.avail with
-        | None -> "1" | Some n -> sprintf "%i" n) ;
+      dump_def "AVAIL" (sprintf "%i" avail) ;
       begin match O.mode with
       | Mode.Std ->
           begin

@@ -1,0 +1,23 @@
+AArch64 L099
+{
+int x=-7;
+0:X0=x;
+int64_t 0:X5;
+int64_t 0:X2;
+int64_t 0:X6;
+int64_t 0:X4;
+0:X9=0;
+}
+  P0                  ;
+LDR W1,[X0]           ;
+ADD X5,X5,W1,UXTW     ;
+LDRSW X2,[X0]         ;
+LDR W3,[X0,W9,UXTW]   ;
+ADD X6,X6,W3,UXTW     ;
+LDRSW X4,[X0,W9,SXTW] ;
+locations [0:X5;0:X2;0:X6;0:X4;]
+forall
+  0:X2=-7 /\
+  0:X4=-7 /\
+  0:X5=4294967289 /\
+  0:X6=4294967289

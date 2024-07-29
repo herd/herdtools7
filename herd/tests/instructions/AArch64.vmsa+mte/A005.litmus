@@ -1,0 +1,10 @@
+AArch64 A005
+{
+ [PTE(x)]=(oa:PA(x),db:0,attrs:(TaggedNormal));
+ 0:X0=x:red;
+}
+ P0          ;
+ MOV W1,#1   ;
+L0:          ;
+ STR W1,[X0] ;
+forall([x]=0 /\ fault(P0:L0,x,MMU:Permission))

@@ -30,6 +30,11 @@ module Task(A:TArg) = struct
   open Unix
   module W = Warn.Make(A)
 
+  let update_exit_status,get_exit_status =
+    let exit_status = ref 0 in
+    (fun n -> if n <> 0 && !exit_status = 0 then exit_status := n),
+    (fun () -> !exit_status)
+
   type task =
       { idx : int ; com : string ; chan : in_channel ;
         oname : string ; buff : Buffer.t; }
@@ -132,8 +137,9 @@ module Task(A:TArg) = struct
       with Not_found -> assert false in
     Hashtbl.remove table fd ;
     begin match close_process_in task.chan with
-    | WEXITED 0 ->
-        to_stdout task.oname ;
+    | WEXITED n ->
+       update_exit_status n ;
+       to_stdout task.oname ;
         start_task task.idx (nrun-1,files)
     | st ->
         warn_status st ;
@@ -167,7 +173,8 @@ module Task(A:TArg) = struct
       if A.verbose > 1 then eprintf "Over %02i\n%!" task.idx ;
       Hashtbl.remove table fd ;
       begin match close_process_in task.chan with
-      | WEXITED 0 ->
+      | WEXITED n ->
+          update_exit_status n ;
           Buffer.output_buffer stdout_chan task.buff ;
           flush stdout_chan
       | st ->
@@ -238,6 +245,7 @@ let args = ref []
 let com = ref "echo"
 let verbose = ref 0
 let j = ref 1
+let do_exit = ref false
 let mode = ref Buff
 let comargs = ref []
 
@@ -268,6 +276,10 @@ let () =
   Arg.parse
     ["-v", Arg.Unit (fun () -> incr verbose)," be verbose";
      "-j", Arg.Int (fun i -> j := i),"<n> manage <n> simultaneaous tasks" ;
+     "-exit",
+     Arg.Bool (fun b -> do_exit := b),
+     Printf.sprintf "replicate (first) non-zero exit status, default %b"
+       !do_exit;
      "-com", Arg.String (fun c -> com := c),"<com> set command (default echo)";
      "-comargs",
      Arg.String (fun args -> comargs := !comargs @ Misc.split_comma args),
@@ -297,4 +309,5 @@ let () =
           let verbose = !verbose
           let mode = !mode
         end) in
-    T.run !j names
+    T.run !j names ;
+    if !do_exit then T.get_exit_status () |> exit

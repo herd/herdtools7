@@ -1,0 +1,10 @@
+Test ADDEXT01 Required
+States 1
+0:X2=x+4;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation ADDEXT01 Always 1 0
+Hash=ac17dc410c5be1bbfed37f414d2c793a
+

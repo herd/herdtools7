@@ -1,0 +1,10 @@
+Test L091 Required
+States 1
+0:X2=-2147483648; 0:X3=-1; 0:X4=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation L091 Always 1 0
+Hash=fe66543cddeef0354b07bed04c66085f
+

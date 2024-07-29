@@ -74,6 +74,8 @@ let pp_unsigned = pp (* Hum *)
 
 let lt v1 v2 = compare v1 v2 < 0
 let le v1 v2 = compare v1 v2 <= 0
+let abs v = if lt v zero then sub zero v else v
+
 let mask sz =
   let open MachSize in
   match sz with
@@ -101,3 +103,6 @@ let sxt sz v = match sz with
 
 type mask = Int64.t
 let to_mask = to_int64
+
+let rbit _ _ = Warn.fatal "Capatibility.rbit not implemented"
+

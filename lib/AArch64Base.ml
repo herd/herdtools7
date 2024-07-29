@@ -14,12 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Simplified AArch64, for generators *)
+(** Simplified Arch64, for generators *)
 open Printf
 
 let arch = Archs.aarch64
 let endian = Endian.Little
 let base_type = CType.Base "int"
+
 
 (*************)
 (* Registers *)
@@ -64,7 +65,8 @@ type sysreg =
   CTR_EL0 | DCIZ_EL0 |
   MDCCSR_EL0 | DBGDTR_EL0 |
   DBGDTRRX_EL0 | DBGDTRTX_EL0 |
-  ELR_EL1 | ESR_EL1 | SYS_NZCV
+  ELR_EL1 | ESR_EL1 | SYS_NZCV |
+  TFSR_ELx
 
 let sysregs = [
     CTR_EL0, "CTR_EL0";
@@ -76,6 +78,7 @@ let sysregs = [
     ELR_EL1, "ELR_EL1";
     ESR_EL1, "ESR_EL1";
     SYS_NZCV, "NZCV";
+    TFSR_ELx, "TFSR_ELx";
   ]
 
 type reg =
@@ -90,6 +93,49 @@ type reg =
   | SP
   | ResAddr
   | SysReg of sysreg
+
+(*************)
+(* Utilities *)
+(*************)
+
+type variant = V32 | V64 | V128
+
+type rev_variant = RV16 of variant | RV32 | RV64 of variant
+
+let memo_of_rev = function
+  | RV16 _ -> "REV16"
+  | RV32 -> "REV32"
+  | RV64 _ -> "REV"
+
+let variant_of_rev = function
+  | RV16 v|RV64 v -> v
+  | RV32 -> V64
+
+type 'k kr = K of 'k | RV of variant * reg
+let k0 = K 0
+
+
+let pp_label =
+  let open BranchTarget in
+  function
+  | Lbl lbl -> Label.pp lbl
+  | Offset o -> "." ^ BranchTarget.pp_offset o
+
+open PPMode
+
+let pp_hash m = match m with
+| Ascii | Dot -> "#"
+| Latex -> "\\#"
+| DotFig -> "\\\\#"
+
+let pp_k m v = pp_hash m ^ string_of_int v
+
+(*
+ * The boolean `compat` specifies backward comparibility.
+ * Backward compatibility is important for preserving hashes.
+ *)
+type 'k basic_pp =
+  { compat : bool; pp_k : 'k -> string; zerop : 'k -> bool; k0 : 'k kr }
 
 let gprs =
 [
@@ -119,6 +165,7 @@ let vregs = List.map (fun v -> Vreg (v,(4,32))) vec_regs
 
 let linkreg = Ireg R30
 let elr_el1 = SysReg ELR_EL1
+let tfsr = SysReg TFSR_ELx
 
 let cgprs =
 [
@@ -244,7 +291,10 @@ let simd_regs =
 let parse_list rs = List.map (fun (r,s) -> s,r) rs
 
 let parse_some plist s =
-  try Some (List.assoc (Misc.uppercase s) plist)
+  try
+    let plist = List.map (fun (n,r) -> Misc.uppercase n,r) plist in
+    let s = Misc.uppercase s in
+    Some (List.assoc s plist)
   with Not_found -> None
 
 let make_parser rs =
@@ -275,7 +325,11 @@ let parse_simd_reg = parse_some simd_regs
 
 let parse_reg s = match parse_vreg s with
 | Some v -> Some v
-| None -> parse_xreg s
+| None ->
+  begin match parse_xreg s with
+    | Some v -> Some v
+    | None -> Option.map (fun r -> (SysReg r)) (parse_sysreg s)
+  end
 
 let pp_sysreg r = try List.assoc r sysregs with Not_found -> assert false
 
@@ -308,13 +362,22 @@ let pp_reg r = match r with
 | Vreg _ -> pp_simd_vector_reg r
 | SIMDreg _ -> pp_simd_scalar_reg vvrs r
 | _ -> pp_xreg r
-
+let pp_i n = match n with
+  | 1 -> "instr:\"NOP\""
+  | 0 -> "instr:\"B .+12\""
+  | _ -> Warn.fatal "instruction currently not supported"
 let pp_wreg r = match r with
 | Symbolic_reg r -> "W%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
 | NZCV -> "NZCV"
 | ResAddr -> "Res"
 | _ -> try List.assoc r wregs with Not_found -> assert false
+
+
+let pp_vreg v r = match v with
+| V32 -> pp_wreg r
+| V64 -> pp_xreg r
+| V128 -> pp_creg r
 
 let reg_compare r1 r2 =
   let strip_reg r = match r with
@@ -374,6 +437,12 @@ type barrier =
   | DSB of mBReqDomain*mBReqTypes
   | ISB
 
+type syncType = 
+  | DC_CVAU
+  | IC_IVAU
+type dirloc =
+  | Next
+  | Prev
 let fold_barrier_option kvm more f k =
   if more then
     fold_domain
@@ -691,9 +760,167 @@ type op =
 
 type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
 type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
-type variant = V32 | V64 | V128
 type simd_variant = VSIMD8 | VSIMD16 | VSIMD32 | VSIMD64 | VSIMD128
 
+module Ext = struct (* Arguments of extended ADD and SUB operations *)
+
+  type op = ADD|ADDS|SUB|SUBS
+
+  let pp_op =  function
+    | ADD -> "ADD"
+    | ADDS -> "ADDS"
+    | SUB -> "SUB"
+    | SUBS -> "SUBS"
+
+  type sext =
+    | UXTB
+    | UXTH
+    | UXTW
+    | UXTX
+    | SXTB
+    | SXTH
+    | SXTW
+    | SXTX
+
+  let v2sext = function
+    | V32 -> SXTW
+    | V64 -> SXTX
+    | V128 -> assert false
+
+  let no_ext = UXTX,None
+
+  type 'k ext = sext * 'k option
+
+  let pp_sext = function
+    | UXTB -> "UXTB"
+    | UXTH -> "UXTH"
+    | UXTW -> "UXTW"
+    | UXTX -> "UXTX"
+    | SXTB -> "SXTB"
+    | SXTH -> "SXTH"
+    | SXTW -> "SXTW"
+    | SXTX -> "SXTX"
+
+  let pp_ext m (e,ko) =
+    sprintf "%s%s" (pp_sext e)
+      (match ko with None -> "" | Some k -> " "^m.pp_k k)
+
+end
+
+type idx_mode = Idx | PreIdx | PostIdx
+type 'k idx = 'k * idx_mode
+
+
+module MemExt = struct (* Extensions for memory accesses *)
+
+  (*********************)
+  (* Register argument *)
+  (*********************)
+
+  type rext =
+    | UXTW
+    | LSL
+    | SXTW
+    | SXTX
+
+  let v2sext = function
+    | V32 -> SXTW
+    | V64|V128 -> LSL
+
+  let pp_sext = function
+    | UXTW ->"UXTW"
+    | LSL ->"LSL"
+    | SXTW ->"SXTW"
+    | SXTX ->"SXTX"
+
+  type 'k ext =
+    | Imm of 'k idx
+    | Reg of variant * reg * rext * 'k
+
+  let v2idx_reg v r =
+    match v with
+    | V32 -> Reg (v,r,SXTW,0)
+    | V64 -> Reg (v,r,LSL,0)
+    | _ -> assert false
+
+  let k2idx k = Imm (k,Idx)
+  let zero = k2idx 0
+
+end
+
+module OpExt = struct (* Third argumen tabnd extension of operations *)
+
+  type 'k shift =
+    | LSL of 'k
+    | LSR of 'k
+    | ASR of 'k
+    | ROR of 'k
+
+  let no_shift = LSL 0
+
+  let map_shift f = function
+    | LSL k -> LSL (f k)
+    | LSR k -> LSR (f k)
+    | ASR k ->  ASR (f k)
+    | ROR k ->  ROR (f k)
+
+  let is_no_shift = function
+    | LSL 0
+    | LSR 0
+    | ASR 0
+    | ROR 0
+      -> true
+    | LSL _
+    | LSR _
+    | ASR _
+    | ROR _
+      -> false
+
+  let pp_shift m = function
+    | LSL k | LSR k | ASR k | ROR k
+         when m.zerop k ->
+       ""
+    | LSL k -> sprintf ",LSL %s" (m.pp_k k)
+    | LSR k ->  sprintf ",LSR %s" (m.pp_k k)
+    | ASR k ->  sprintf ",ASR %s" (m.pp_k k)
+    | ROR k ->  sprintf ",ROR %s" (m.pp_k k)
+
+  type 'k ext =
+    | Imm of 'k * 'k (* second 'k is (left) shift *)
+    | Reg of reg * 'k shift
+
+  let zero = Imm (0,0)
+
+  let pp_ext m v = function
+    | Imm (k,s) when m.zerop s ->
+       m.pp_k k
+    | Imm (k,s) ->
+       sprintf "%s,LSL %s" (m.pp_k k) (m.pp_k s)
+    | Reg (r,s) ->
+       sprintf "%s%s" (pp_vreg v r) (pp_shift m s)
+end
+
+module  MOPLExt = struct
+
+  type s = Signed|Unsigned
+
+  type op = ADD | SUB
+
+  type sop = s * op
+
+  let memo sop = match sop with
+    | Signed,ADD -> "SMADDL"
+    | Signed,SUB -> "SMSUBL"
+    | Unsigned,ADD -> "UMADDL"
+    | Unsigned,SUB -> "UMSUBL"
+
+  let memo_z sop = match sop with
+    | Signed,ADD -> "SMULL"
+    | Signed,SUB -> "SMNEGL"
+    | Unsigned,ADD -> "UMULL"
+    | Unsigned,SUB -> "UMNEGL"
+
+end
 
 let pp_variant = function
   | V32 -> "V32"
@@ -705,17 +932,18 @@ let tr_variant = function
   | V64 -> MachSize.Quad
   | V128 -> MachSize.S128
 
+let container_size = function
+  | RV16 _ -> MachSize.Short
+  | RV32 -> MachSize.Word
+  | RV64 v -> tr_variant v
+
+
 let tr_simd_variant = function
   | VSIMD8 -> MachSize.Byte
   | VSIMD16 -> MachSize.Short
   | VSIMD32 -> MachSize.Word
   | VSIMD64 -> MachSize.Quad
   | VSIMD128 -> MachSize.S128
-
-type 'k kr = K of 'k | RV of variant * reg
-let k0 = K 0
-
-type idx_mode = Idx | PreIdx | PostIdx
 
 type temporal = TT | NT
 type pair_opt = Pa | PaN | PaI
@@ -794,6 +1022,8 @@ let pp_bh = function
   | B -> "B"
   | H -> "H"
 
+let ldrs_memo bh = "LDRS" ^ pp_bh bh
+
 let bh_to_sz = function
   | B -> MachSize.Byte
   | H -> MachSize.Short
@@ -819,8 +1049,6 @@ type 'k s
   | S_LSR of 'k
   | S_ASR of 'k
   | S_MSL of 'k
-  | S_SXTW
-  | S_UXTW
   | S_NOEXT
 
 let pp_barrel_shift sep s pp_k = match s with
@@ -828,8 +1056,6 @@ let pp_barrel_shift sep s pp_k = match s with
   | S_LSR(k) -> sep ^ "LSR "  ^ (pp_k k)
   | S_ASR(k) -> sep ^ "ASR "  ^ (pp_k k)
   | S_MSL(k) -> sep ^ "MSL "  ^ (pp_k k)
-  | S_SXTW -> sep ^ "SXTW"
-  | S_UXTW -> sep ^ "UXTW"
   | S_NOEXT  -> ""
 
 let pp_imm n = "#" ^ string_of_int n
@@ -847,7 +1073,8 @@ type 'k kinstruction =
   | I_RET of reg option
   | I_ERET
 (* Load and Store *)
-  | I_LDR of variant * reg * reg * 'k kr * 'k s
+  | I_LDR of variant * reg * reg * 'k MemExt.ext
+  | I_LDRSW of reg * reg * 'k MemExt.ext
   | I_LDUR of variant * reg * reg * 'k option
 (* Neon Extension Load and Store*)
   | I_LD1 of reg * int * reg * 'k kr
@@ -880,6 +1107,9 @@ type 'k kinstruction =
   | I_STR_P_SIMD of simd_variant * reg * reg * 'k
   | I_LDUR_SIMD of simd_variant * reg * reg * 'k option
   | I_STUR_SIMD of simd_variant * reg * reg * 'k option
+  | I_ADDV of simd_variant * reg * reg
+  | I_DUP of reg * variant * reg
+  | I_FMOV_TG of variant * reg * simd_variant * reg
   | I_MOV_VE of reg * int * reg * int
   | I_MOV_V of reg * reg
   | I_MOV_TG of variant * reg * reg * int
@@ -890,16 +1120,14 @@ type 'k kinstruction =
   | I_EOR_SIMD of reg * reg * reg
   | I_ADD_SIMD of reg * reg * reg
   | I_ADD_SIMD_S of reg * reg * reg
-(* Post-indexed load with immediate - like a writeback *)
-(* sufficiently different (and semantically interesting) to need a new inst *)
-  | I_LDR_P of variant * reg * reg * 'k
-  | I_LDP of pair_opt * variant * reg * reg * reg * 'k * idx_mode
-  | I_LDPSW of reg * reg * reg * 'k * idx_mode
+  (* More loads *)
+  | I_LDP of pair_opt * variant * reg * reg * reg * 'k idx
+  | I_LDPSW of reg * reg * reg * 'k idx
   | I_LDAR of variant * ld_type * reg * reg
   | I_LDXP of variant * ldxp_type * reg * reg * reg
-  | I_STR of variant * reg * reg * 'k kr * 'k s
-  | I_STP of pair_opt * variant * reg * reg * reg * 'k * idx_mode
-  | I_STR_P of variant * reg * reg * 'k
+  (* Stores *)
+  | I_STR of variant * reg * reg * 'k MemExt.ext
+  | I_STP of pair_opt * variant * reg * reg * reg * 'k idx
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
   | I_STXP of variant * st_type * reg * reg * reg * reg
@@ -921,10 +1149,10 @@ type 'k kinstruction =
   | I_STCT of reg * reg
   | I_UNSEAL of reg * reg * reg
 (* Idem for bytes and half words *)
-  | I_LDRBH of bh * reg * reg * 'k kr * 'k s
-  | I_LDRS of variant * bh * reg * reg
+  | I_LDRBH of bh * reg * reg * 'k MemExt.ext
+  | I_LDRS of (variant * bh) * reg * reg * 'k MemExt.ext
   | I_LDARBH of bh * ld_type * reg * reg
-  | I_STRBH of bh * reg * reg * 'k kr * 'k s
+  | I_STRBH of bh * reg * reg * 'k MemExt.ext
   | I_STLRBH of bh * reg * reg
   | I_STXRBH of bh * st_type * reg * reg * reg
 (* CAS *)
@@ -947,9 +1175,14 @@ type 'k kinstruction =
   | I_SXTW of reg * reg
   | I_SBFM of variant * reg * reg * 'k * 'k
   | I_UBFM of variant * reg * reg * 'k * 'k
-  | I_OP3 of variant * op * reg * reg * 'k kr * 'k s
+  | I_ADDSUBEXT of
+      variant * Ext.op * reg * reg * (variant * reg) * 'k Ext.ext
+  | I_MOPL of MOPLExt.sop * reg * reg * reg *reg
+  | I_OP3 of variant * op * reg * reg * 'k OpExt.ext
   | I_ADR of reg * lbl
   | I_RBIT of variant * reg * reg
+  | I_ABS of variant * reg * reg
+  | I_REV of rev_variant * reg * reg
 (* Barrier *)
   | I_FENCE of barrier
 (* Conditional select *)
@@ -963,31 +1196,14 @@ type 'k kinstruction =
 (* Write system register *)
   | I_MSR of sysreg * reg
 (* Memory Tagging *)
-  | I_STG of reg * reg * 'k
-  | I_STZG of reg * reg * 'k
+  | I_STG of reg * reg * 'k idx
+  | I_STZG of reg * reg * 'k idx
   | I_LDG of reg * reg * 'k
   | I_UDF of 'k
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
-let pp_label =
-  let open BranchTarget in
-  function
-  | Lbl lbl -> Label.pp lbl
-  | Offset o -> "." ^ BranchTarget.pp_offset o
-
-open PPMode
-
-let pp_hash m = match m with
-| Ascii | Dot -> "#"
-| Latex -> "\\#"
-| DotFig -> "\\\\#"
-
-let pp_k m v = pp_hash m ^ string_of_int v
-
-type 'k basic_pp =
-  { compat : bool; pp_k : 'k -> string; zerop : 'k -> bool; k0 : 'k kr }
 
 
 let pp_memo memo = memo
@@ -1008,11 +1224,6 @@ let pp_cond = function
   | GT -> "GT"
   | LE -> "LE"
   | AL -> "AL"
-
-let pp_vreg v r = match v with
-| V32 -> pp_wreg r
-| V64 -> pp_xreg r
-| V128 -> pp_creg r
 
 let pp_vsimdreg v r = match v with
 | VSIMD8 -> pp_simd_scalar_reg bvrs r
@@ -1061,9 +1272,6 @@ let do_pp_instruction m =
   let pp_rrr memo v rt rn rm =
     pp_memo memo ^ " " ^ pp_vreg v rt ^ "," ^
     pp_vreg v rn ^ "," ^ pp_vreg v  rm
-  and pp_rri memo v rt rn k =
-    pp_memo memo ^ " " ^ pp_vreg v rt ^ "," ^
-    pp_vreg v rn ^ "," ^ m.pp_k k
   and pp_ri memo v r k =
     pp_memo memo ^ " " ^ pp_vreg v r ^ "," ^  m.pp_k k
   and pp_rr memo v r1 r2 =
@@ -1093,7 +1301,12 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^ pp_vsimdreg VSIMD64 r1 ^ "," ^ pp_vsimdreg VSIMD64 r2
     ^ "," ^ pp_vsimdreg VSIMD64 r3 in
 
-  let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
+  let pp_op2 memo v r e =
+    sprintf "%s %s,%s" memo (pp_vreg v r) (OpExt.pp_ext m v e)
+
+  and pp_op3 memo v r1 r2 e =
+    sprintf "%s %s,%s,%s"
+      memo (pp_vreg v r1) (pp_vreg v r2) (OpExt.pp_ext m v e) in
 
   let pp_kr showsxtw showzero kr = match kr with
   | K k when m.zerop k && not showzero -> ""
@@ -1103,37 +1316,56 @@ let do_pp_instruction m =
       (match v with V32 when showsxtw -> ",SXTW" | V32|V64 -> "" | V128 -> assert false) in
 
 
+  let pp_ra r = if C.is_morello then pp_creg r else pp_xreg r in
+
+  let do_pp_idx from_pair ra (k,idx) =
+    match idx with
+    | Idx when  m.zerop k ->
+       sprintf "[%s]" (pp_ra ra)
+    | Idx ->
+       sprintf "[%s,%s]" (pp_xreg ra) (m.pp_k k)
+    | PostIdx ->
+       let pp =
+         if m.compat then begin
+             if from_pair then
+               sprintf " [%s]%s"
+             else
+               sprintf "[%s]%s"
+           end else
+           sprintf "[%s],%s" in
+       pp (pp_xreg ra) (m.pp_k k)
+    | PreIdx ->
+       sprintf "[%s,%s]!" (pp_xreg ra) (m.pp_k k) in
+
+  let pp_idx = do_pp_idx false in
+
+  let pp_mem_idx memo v rt ra idx =
+    Printf.sprintf "%s %s,%s" memo (pp_vreg v rt) (pp_idx ra idx) in
+
+  let pp_addr ra =
+    let open MemExt in
+    function
+    | Imm idx -> pp_idx ra idx
+    | Reg (v,r,LSL,k) when m.zerop k ->
+       sprintf "[%s,%s]" (pp_xreg ra) (pp_vreg v r)
+    | Reg (v,r,(UXTW|SXTW|SXTX as ext),k) when m.zerop k->
+       sprintf "[%s,%s,%s]" (pp_xreg ra) (pp_vreg v r) (pp_sext ext)
+    | Reg (v,r,ext,k) ->
+       sprintf "[%s,%s,%s %s]" (pp_xreg ra) (pp_vreg v r) (pp_sext ext) (m.pp_k k) in
+
+  let pp_mem_ext memo v rt ra idx =
+    Printf.sprintf "%s %s,%s" memo (pp_vreg v rt) (pp_addr ra idx) in
+
   let pp_mem memo v rt ra kr =
     let pp_addr = if C.is_morello then pp_creg else pp_xreg in
     pp_memo memo ^ " " ^ pp_vreg v rt ^
     ",[" ^ pp_addr ra ^ pp_kr true false kr ^ "]" in
 
-  let pp_mem_shift memo v rt ra kr s =
-    pp_memo memo ^ " " ^ pp_vreg v rt ^
-    ",[" ^ pp_xreg ra ^ pp_kr false false kr ^
-    pp_barrel_shift "," s (m.pp_k) ^ "]" in
-
-  let pp_mem_post memo v rt ra k =
-    pp_memo memo ^ " " ^ pp_vreg v rt ^
-    (if m.compat then ",[" ^ pp_xreg ra ^ "]" else",[" ^ pp_xreg ra ^ "],") ^ m.pp_k k in
-
-  let pp_ea_idx ra k md = match md with
-  | Idx ->
-      sprintf "[%s%s]" (pp_xreg ra) (pp_k_nz k)
-  | PostIdx ->
-      sprintf "%s[%s]%s"
-        (if m.compat then " " else "")
-        (pp_xreg ra)
-        (let ppk = m.pp_k k in
-        if m.compat then ppk else "," ^ ppk)
-  | PreIdx ->
-       sprintf "[%s%s]!" (pp_xreg ra) (pp_k_nz k) in
-
-  let pp_memp memo v r1 r2 ra k md =
+  let pp_memp memo v r1 r2 ra idx =
     pp_memo memo ^ " " ^
     pp_vreg v r1 ^ "," ^
     pp_vreg v r2 ^ "," ^
-    pp_ea_idx ra k md in
+    do_pp_idx true ra idx in
 
   let pp_smem memo v rt ra kr =
     pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
@@ -1184,22 +1416,6 @@ let do_pp_instruction m =
   | V64,RV ((V32|V128),_)
   | V128,RV ((V32|V64),_) -> assert false in
 
-  let pp_rrkr memo v r1 r2 kr = match v,kr with
-  | _,K k -> pp_rri memo v r1 r2 k
-  | V32,RV (V32,r3)
-  | V64,RV (V64,r3)
-  | V128,RV (V128,r3) -> pp_rrr memo v r1 r2 r3
-  | V64,RV (V32,_) ->
-      pp_memo memo ^ " " ^
-      pp_xreg r1  ^ "," ^
-      pp_xreg r2 ^ pp_kr false true kr
-  | V128,RV ((V32|V64),_) ->
-      pp_memo memo ^ " " ^
-      pp_creg r1  ^ "," ^
-      pp_creg r2 ^ pp_kr false true kr
-  | V32,RV (V64,_)
-  | _,RV (V128,_) -> assert false in
-
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^
     pp_wreg r1 ^"," ^
@@ -1248,46 +1464,40 @@ let do_pp_instruction m =
      "ERET"
 
 (* Load and Store *)
-  | I_LDR (v,r1,r2,k,S_NOEXT) ->
-      pp_mem "LDR" v r1 r2 k
-  | I_LDR (v,r1,r2,k,s) ->
-      pp_mem_shift "LDR" v r1 r2 k s
+  | I_LDR (v,r1,r2,idx) ->
+      pp_mem_ext "LDR" v r1 r2 idx
+  | I_LDRSW (r1,r2,idx) ->
+      pp_mem_ext "LDRSW" V64 r1 r2 idx
+  | I_LDRS ((v,bh),r1,r2,idx) ->
+     pp_mem_ext (ldrs_memo bh) v r1 r2 idx
   | I_LDUR (_,r1,r2,None) ->
       sprintf "LDUR %s, [%s]" (pp_reg r1) (pp_reg r2)
   | I_LDUR (_,r1,r2,Some(k)) ->
       sprintf "LDUR %s, [%s, %s]" (pp_reg r1) (pp_reg r2) (m.pp_k k)
-  | I_LDR_P (v,r1,r2,k) ->
-      pp_mem_post "LDR" v r1 r2 k
-  | I_LDP (t,v,r1,r2,r3,k,md) ->
-      pp_memp (ldp_memo t) v r1 r2 r3 k md
-  | I_LDPSW (r1,r2,r3,k,md) ->
-      pp_memp "LDPSW" V64 r1 r2 r3 k md
-  | I_STP (t,v,r1,r2,r3,k,md) ->
-      pp_memp (stp_memo t) v r1 r2 r3 k md
+  | I_LDP (t,v,r1,r2,r3,idx) ->
+      pp_memp (ldp_memo t) v r1 r2 r3 idx
+  | I_LDPSW (r1,r2,r3,idx) ->
+      pp_memp "LDPSW" V64 r1 r2 r3 idx
+  | I_STP (t,v,r1,r2,r3,idx) ->
+      pp_memp (stp_memo t) v r1 r2 r3 idx
   | I_LDAR (v,t,r1,r2) ->
       pp_mem (ldr_memo t) v r1 r2 m.k0
   | I_LDARBH (bh,t,r1,r2) ->
       pp_mem (ldrbh_memo bh t)  V32 r1 r2 m.k0
   | I_LDXP (v,t,r1,r2,r3) ->
       pp_ldxp (ldxp_memo t) v r1 r2 r3
-  | I_LDRS (v,bh,r1,r2) ->
-      sprintf "%s %s,[%s]" ("LDRS"^pp_bh bh) (pp_vreg v r1) (pp_xreg r2)
-  | I_STR (v,r1,r2,k,S_NOEXT) ->
-      pp_mem "STR" v r1 r2 k
-  | I_STR (v,r1,r2,k,s) ->
-      pp_mem_shift "STR" v r1 r2 k s
-  | I_STR_P (v,r1,r2, os) ->
-      pp_mem_post "STR" v r1 r2 os
+  | I_STR (v,r1,r2,idx) ->
+      pp_mem_ext "STR" v r1 r2 idx
   | I_STLR (v,r1,r2) ->
       pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
       pp_stxr (str_memo t) v r1 r2 r3
   | I_STXP (v,t,r1,r2,r3,r4) ->
      pp_stxp (stxp_memo t) v r1 r2 r3 r4
-  | I_LDRBH (bh,r1,r2,k, s) ->
-      pp_mem_shift ("LDR"^pp_bh bh) V32 r1 r2 k s
-  | I_STRBH (bh,r1,r2,k, s) ->
-      pp_mem_shift ("STR"^pp_bh bh) V32 r1 r2 k s
+  | I_LDRBH (bh,r1,r2,idx) ->
+      pp_mem_ext ("LDR"^pp_bh bh) V32 r1 r2 idx
+  | I_STRBH (bh,r1,r2,idx) ->
+      pp_mem_ext ("STR"^pp_bh bh) V32 r1 r2 idx
   | I_STLRBH (bh,r1,r2) ->
       pp_mem ("STLR"^pp_bh bh) V32 r1 r2 m.k0
   | I_STXRBH (bh,t,r1,r2,r3) ->
@@ -1361,6 +1571,12 @@ let do_pp_instruction m =
       sprintf "STUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
   | I_STUR_SIMD (v,r1,r2,Some(k)) ->
       sprintf "STUR %s, [%s, %s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
+  | I_ADDV (v,r1,r2) ->
+      sprintf "ADDV %s,%s" (pp_vsimdreg v r1) (pp_simd_vector_reg r2)
+  | I_DUP (r1,v,r2) ->
+      sprintf "DUP %s,%s" (pp_simd_vector_reg r1) (pp_vreg v r2)
+  | I_FMOV_TG (v1,r1,v2,r2) ->
+      sprintf "FMOV %s,%s" (pp_vreg v1 r1) (pp_vsimdreg v2 r2)
   | I_MOV_VE (r1,i1,r2,i2) ->
       pp_vrivri "MOV" r1 i1 r2 i2
   | I_MOV_V (r1,r2) ->
@@ -1472,24 +1688,45 @@ let do_pp_instruction m =
       sprintf "UBFM %s,%s,%s,%s" (pp_reg r1) (pp_reg r2) (m.pp_k k1) (m.pp_k k2)
   | I_SBFM (_,r1,r2,k1,k2) ->
       sprintf "SBFM %s,%s,%s,%s" (pp_reg r1) (pp_reg r2) (m.pp_k k1) (m.pp_k k2)
-  | I_OP3 (v,SUBS,ZR,r,K k, S_NOEXT) ->
-      pp_ri "CMP" v r k
-  | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), s) when v=v3->
-      pp_rr "CMP" v r2 r3 ^ (pp_barrel_shift "," s m.pp_k)
-  | I_OP3 (v,ANDS,ZR,r,(K _ as kr), S_NOEXT) ->
-      pp_rkr "TST" v r kr
-  | I_OP3 (v,ORN,r1,ZR,RV (_,r2), S_NOEXT) ->
-      pp_rr "MVN" v r1 r2
-  | I_OP3 (v,op,r1,r2,K k, S_NOEXT) ->
-      pp_rri (pp_op op) v r1 r2 k
-  | I_OP3 (v,op,r1,r2,kr, s) ->
-      pp_rrkr (pp_op op) v r1 r2 kr ^ pp_barrel_shift "," s (m.pp_k)
+  | I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),ext) ->
+     sprintf "%s %s,%s,%s,%s"
+       (Ext.pp_op op)
+       (pp_vreg v1 r1)
+       (pp_vreg v1 r2)
+       (pp_vreg v3 r3)
+       (Ext.pp_ext m ext)
+  | I_MOPL (sop,rd,rn,rm,ZR) ->
+     sprintf "%s %s,%s,%s"
+       (MOPLExt.memo_z sop)
+       (pp_xreg rd) (pp_wreg rn) (pp_wreg rm)
+  | I_MOPL (sop,rd,rn,rm,ra) ->
+     sprintf "%s %s,%s,%s,%s"
+       (MOPLExt.memo sop)
+       (pp_xreg rd) (pp_wreg rn) (pp_wreg rm) (pp_xreg ra)
+  | I_OP3 (v,SUBS,ZR,r,e) ->
+     pp_op2 "CMP" v r e
+  | I_OP3 (v,SUB,r,ZR,(OpExt.Reg _ as e)) when not m.compat ->
+     pp_op2 "NEG" v r e
+  | I_OP3 (v,SUBS,r,ZR,(OpExt.Reg _ as e)) when not m.compat ->
+     pp_op2 "NEGS" v r e
+  | I_OP3 (v,ANDS,ZR,r,e) ->
+      pp_op2 "TST" v r e
+  | I_OP3 (v,ORN,r,ZR,e) ->
+      pp_op2 "MVN" v r e
+  | I_OP3 (v,op,r1,r2,e) ->
+      pp_op3 (pp_op op) v r1 r2 e
   | I_ADR (r,lbl) ->
      sprintf "%s %s,%s"
        (if m.compat then "ADDR" else "ADR")
        (pp_xreg r) (pp_label lbl)
   | I_RBIT (v,rd,rs) ->
       sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
+  | I_ABS (v,rd,rs) ->
+      sprintf "ABS %s,%s" (pp_vreg v rd) (pp_vreg v rs)
+  | I_REV (rv,rd,rs) ->
+     let memo = memo_of_rev rv
+     and v = variant_of_rev rv in
+     sprintf "%s %s,%s" memo (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
   | I_FENCE b ->
       pp_barrier b
@@ -1519,10 +1756,10 @@ let do_pp_instruction m =
   | I_MSR (sr,r) ->
      sprintf "MSR %s,%s" (pp_sysreg sr) (pp_xreg r)
 (* Memory Tagging *)
-  | I_STG (rt,rn,k) ->
-      pp_mem "STG" V64 rt rn (K k)
-  | I_STZG (rt,rn,k) ->
-      pp_mem "STZG" V64 rt rn (K k)
+  | I_STG (rt,rn,idx) ->
+      pp_mem_idx  "STG" V64 rt rn idx
+  | I_STZG (rt,rn,idx) ->
+      pp_mem_idx "STZG" V64 rt rn idx
   | I_LDG (rt,rn,k) ->
       pp_mem "LDG" V64 rt rn (K k)
   | I_UDF k ->
@@ -1532,12 +1769,12 @@ let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
               k0 = k0; }
 
+let m_hash = { m_int with pp_k = sprintf "#%i"; }
+
 let pp_instruction m =
   do_pp_instruction {m_int with pp_k = pp_k m; }
 
-let dump_instruction =
-  do_pp_instruction
-    {m_int with pp_k = (fun v -> "#" ^ string_of_int v); }
+let dump_instruction = do_pp_instruction m_hash
 
 let dump_instruction_hash =
   do_pp_instruction
@@ -1576,6 +1813,18 @@ let fold_regs (f_regs,f_sregs) =
   | K _ -> y
   | RV (_,r) -> fold_reg r y in
 
+  let fold_idx idx c =
+    let open MemExt in
+    match idx with
+    | Imm _ -> c
+    | Reg (_,r,_,_) -> fold_reg r c in
+
+  let fold_op_ext e c =
+    let open OpExt in
+    match e with
+    | Imm _ -> c
+    | Reg (r,_) -> fold_reg r c in
+
   fun c ins -> match ins with
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_UDF _
     -> c
@@ -1590,27 +1839,34 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOV (_,r1,kr)
     -> fold_reg r1 (fold_kr kr c)
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
-  | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2) | I_LDRS (_,_,r1,r2)
+  | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_SBFM (_,r1,r2,_,_) | I_UBFM (_,r1,r2,_,_)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
-  | I_RBIT (_,r1,r2) | I_LDR_P (_, r1, r2, _) | I_LDUR (_, r1, r2, _)
+  | I_RBIT (_,r1,r2) | I_ABS (_,r1,r2)
+  | I_REV (_,r1,r2) | I_LDUR (_, r1, r2, _)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
-  | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_) | I_STR_P (_,r1,r2,_)
+  | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_)
   | I_MOV_VE (r1,_,r2,_) | I_MOV_V (r1,r2) | I_MOV_TG (_,r1,r2,_) | I_MOV_FG (r1,_,_,r2)
   | I_MOV_S (_,r1,r2,_)
+  | I_FMOV_TG (_,r1,_,r2)
+  | I_DUP (r1,_,r2)
+  | I_ADDV (_,r1,r2)
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r) -> fold_reg (SysReg sr) (fold_reg r c)
-  | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr,_)
-  | I_OP3 (_,_,r1,r2,kr,_)
-  | I_LDRBH (_,r1,r2,kr,_) | I_STRBH (_,r1,r2,kr,_)
   | I_LD1 (r1,_,r2,kr) | I_LD1R (r1,r2,kr)
   | I_ST1 (r1,_,r2,kr)
   | I_LDR_SIMD (_,r1,r2,kr,_) | I_STR_SIMD(_,r1,r2,kr,_)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
+  | I_OP3 (_,_,r1,r2,e)
+    -> fold_reg r1 (fold_reg r2 (fold_op_ext e c))
+  | I_LDR (_,r1,r2,idx) | I_LDRSW (r1,r2,idx)
+  | I_LDRS (_,r1,r2,idx) | I_STR (_,r1,r2,idx)
+  | I_LDRBH (_,r1,r2,idx) | I_STRBH (_,r1,r2,idx)
+    -> fold_reg r1 (fold_reg r2 (fold_idx idx c))
   | I_LD1M (rs,r2,kr)
   | I_LD2 (rs,_,r2,kr) | I_LD2M (rs,r2,kr) | I_LD2R (rs,r2,kr)
   | I_LD3 (rs,_,r2,kr) | I_LD3M (rs,r2,kr) | I_LD3R (rs,r2,kr)
@@ -1632,9 +1888,9 @@ let fold_regs (f_regs,f_sregs) =
   | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
   | I_LDXP (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
-  | I_LDP (_,_,r1,r2,r3,_,_)
-  | I_LDPSW (r1,r2,r3,_,_)
-  | I_STP (_,_,r1,r2,r3,_,_)
+  | I_LDP (_,_,r1,r2,r3,_)
+  | I_LDPSW (r1,r2,r3,_)
+  | I_STP (_,_,r1,r2,r3,_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_CAS (_,_,r1,r2,r3)
   | I_CASBH (_,_,r1,r2,r3)
@@ -1642,8 +1898,10 @@ let fold_regs (f_regs,f_sregs) =
   | I_SWPBH (_,_,r1,r2,r3)
   | I_LDOP (_,_,_,r1,r2,r3)
   | I_LDOPBH (_,_,_,r1,r2,r3)
+  | I_ADDSUBEXT (_,_,r1,r2,(_,r3),_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_STXP (_,_,r1,r2,r3,r4)
+  | I_MOPL (_,r1,r2,r3,r4)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
   | I_CASP (_,_,r1,r2,r3,r4,r5)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 (fold_reg r5 c))))
@@ -1660,6 +1918,18 @@ let map_regs f_reg f_symb =
   let map_kr kr = match kr with
   | K _ -> kr
   | RV (v,r) -> RV (v,map_reg r) in
+
+  let map_idx idx =
+    let open MemExt in
+    match idx with
+    | Imm _ -> idx
+    | Reg (v,r,ext,k) -> Reg (v,map_reg r,ext,k) in
+
+  let map_op_ext e =
+    let open OpExt in
+    match e with
+    | Imm _ -> e
+    | Reg (r,s) -> Reg (map_reg r,s) in
 
   fun ins -> match ins with
   | I_NOP
@@ -1687,30 +1957,32 @@ let map_regs f_reg f_symb =
   | I_RET (Some r) ->
       I_RET (Some (map_reg r))
 (* Load and Store *)
-  | I_LDR (v,r1,r2,kr,os) ->
-     I_LDR (v,map_reg r1,map_reg r2,map_kr kr,os)
+  | I_LDR (v,r1,r2,idx) ->
+     I_LDR (v,map_reg r1,map_reg r2,map_idx idx)
+  | I_LDRSW (r1,r2,idx) ->
+     I_LDRSW (map_reg r1,map_reg r2,map_idx idx)
+  | I_LDRS (v,r1,r2,idx) ->
+     I_LDRS (v,map_reg r1,map_reg r2,map_idx idx)
+  | I_LDRBH (v,r1,r2,idx) ->
+     I_LDRBH (v,map_reg r1,map_reg r2,map_idx idx)
   | I_LDUR (v,r1,r2,k) ->
      I_LDUR (v,map_reg r1,map_reg r2,k)
-  | I_LDR_P (v,r1,r2,k) ->
-     I_LDR_P (v,map_reg r1, map_reg r2, k)
-  | I_LDP (t,v,r1,r2,r3,k,md) ->
-     I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,k,md)
-  | I_LDPSW (r1,r2,r3,k,md) ->
-     I_LDPSW (map_reg r1,map_reg r2,map_reg r3,k,md)
-  | I_STP (t,v,r1,r2,r3,k,md) ->
-     I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,k,md)
+  | I_LDP (t,v,r1,r2,r3,idx) ->
+     I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,idx)
+  | I_LDPSW (r1,r2,r3,idx) ->
+     I_LDPSW (map_reg r1,map_reg r2,map_reg r3,idx)
+  | I_STP (t,v,r1,r2,r3,idx) ->
+     I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,idx)
   | I_LDAR (v,t,r1,r2) ->
      I_LDAR (v,t,map_reg r1,map_reg r2)
   | I_LDARBH (bh,t,r1,r2) ->
      I_LDARBH (bh,t,map_reg r1,map_reg r2)
   | I_LDXP (v,t,r1,r2,r3) ->
      I_LDXP (v,t,map_reg r1,map_reg r2,map_reg r3)
-  | I_LDRS (v,bh,r1,r2) ->
-     I_LDRS (v,bh,map_reg r1,map_reg r2)
-  | I_STR (v,r1,r2,kr,s) ->
-      I_STR (v,map_reg r1,map_reg r2,map_kr kr,s)
-  | I_STR_P (v,r1,r2,s) ->
-      I_STR_P (v,map_reg r1,map_reg r2,s)
+  | I_STR (v,r1,r2,idx) ->
+      I_STR (v,map_reg r1,map_reg r2,map_idx idx)
+  | I_STRBH (v,r1,r2,idx) ->
+     I_STRBH (v,map_reg r1,map_reg r2,map_idx idx)
   | I_STLR (v,r1,r2) ->
       I_STLR (v,map_reg r1,map_reg r2)
   | I_STLRBH (v,r1,r2) ->
@@ -1782,6 +2054,12 @@ let map_regs f_reg f_symb =
       I_LDUR_SIMD (v,map_reg r1, map_reg r2,k)
   | I_STUR_SIMD (v,r1,r2,k) ->
       I_STUR_SIMD (v,map_reg r1, map_reg r2,k)
+  | I_ADDV (v,r1,r2) ->
+      I_ADDV (v,map_reg r1,map_reg r2)
+  | I_DUP (r1,v,r2) ->
+      I_DUP (map_reg r1,v,map_reg r2)
+  | I_FMOV_TG (v1,r1,v2,r2) ->
+      I_FMOV_TG (v1,map_reg r1,v2,map_reg r2)
   | I_MOV_VE (r1,i1,r2,i2) ->
       I_MOV_VE (map_reg r1,i1,map_reg r2,i2)
   | I_MOV_V (r1,r2) ->
@@ -1835,11 +2113,6 @@ let map_regs f_reg f_symb =
       I_STCT(map_reg r1,map_reg r2)
   | I_UNSEAL (r1,r2,r3) ->
       I_UNSEAL(map_reg r1,map_reg r2,map_reg r3)
-(* Byte and Half loads and stores *)
-  | I_LDRBH (v,r1,r2,kr,os) ->
-     I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr,os)
-  | I_STRBH (v,r1,r2,kr,os) ->
-     I_STRBH (v,map_reg r1,map_reg r2,map_kr kr,os)
 (* CAS *)
   | I_CAS (v,rmw,r1,r2,r3) ->
       I_CAS (v,rmw,map_reg r1,map_reg r2,map_reg r3)
@@ -1876,13 +2149,21 @@ let map_regs f_reg f_symb =
       I_SBFM (v,map_reg r1, map_reg r2, k1, k2)
   | I_UBFM (v,r1,r2,k1,k2) ->
       I_UBFM (v,map_reg r1, map_reg r2, k1, k2)
-  | I_OP3 (v,op,r1,r2,kr,os) ->
-      I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr,os)
+  | I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),ext) ->
+     I_ADDSUBEXT (v1,op,map_reg r1,map_reg r2,(v3,map_reg r3),ext)
+  | I_MOPL (sop,r1,r2,r3,r4) ->
+     I_MOPL (sop,map_reg r1,map_reg r2,map_reg r3,map_reg r4)
+  | I_OP3 (v,op,r1,r2,e) ->
+      I_OP3 (v,op,map_reg r1,map_reg r2,map_op_ext e)
   | I_ADR (r,lbl) ->
       I_ADR (map_reg r,lbl)
   | I_RBIT (v,r1,r2) ->
       I_RBIT (v,map_reg r1,map_reg r2)
-(* Conditinal select *)
+  | I_ABS (v,r1,r2) ->
+      I_ABS (v,map_reg r1,map_reg r2)
+  | I_REV (rv,r1,r2) ->
+     I_REV (rv,r1,r2)
+  (* Conditinal select *)
   | I_CSEL (v,r1,r2,r3,c,op) ->
       I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c,op)
 (* Cache maintenance *)
@@ -1940,16 +2221,15 @@ let get_next =
   | I_BLR _|I_BR _|I_RET _ |I_ERET -> [Label.Any]
   | I_NOP
   | I_LDR _
+  | I_LDRSW _
+  | I_LDRS _
   | I_LDUR _
-  | I_LDR_P _
   | I_LDP _
   | I_LDPSW _
   | I_STP _
   | I_STR _
-  | I_STR_P _
   | I_LDAR _
   | I_LDARBH _
-  | I_LDRS _
   | I_STLR _
   | I_STLRBH _
   | I_STXR _
@@ -1963,6 +2243,8 @@ let get_next =
   | I_SXTW _
   | I_SBFM _
   | I_UBFM _
+  | I_ADDSUBEXT _
+  | I_MOPL _
   | I_OP3 _
   | I_FENCE _
   | I_CSEL _
@@ -1977,6 +2259,8 @@ let get_next =
   | I_STOPBH _
   | I_ADR _
   | I_RBIT _
+  | I_ABS _
+  | I_REV _
   | I_IC _
   | I_DC _
   | I_TLBI _
@@ -1998,6 +2282,7 @@ let get_next =
   | I_LDR_SIMD _ | I_LDR_P_SIMD _
   | I_STR_SIMD _ | I_STR_P_SIMD _
   | I_LDUR_SIMD _ | I_STUR_SIMD _
+  | I_ADDV _ | I_DUP _ | I_FMOV_TG _
   | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
@@ -2052,37 +2337,32 @@ let shift_amount = function
   | S_LSL s| S_LSR s| S_ASR s (* | S_ROR s *)
   | S_MSL s
     -> s
-  | sh ->
-     Warn.fatal
-       "Innapropriate shift, no amount %s"
-       (dump_barrel_shift sh)
-
 
 let unalias i =
   match i with
   | I_MOV (v,r1,RV (w,r2))
        when v=w ->
      if r1=SP || r2=SP then
-       I_OP3 (v,ADD,r1,r2,K 0,S_NOEXT)
+       I_OP3 (v,ADD,r1,r2,OpExt.zero)
      else
-       I_OP3 (v,ORR,r1,ZR,RV (v,r2),S_NOEXT)
+       I_OP3 (v,ORR,r1,ZR,OpExt.Reg (r2,OpExt.no_shift))
   | I_SXTW (rd,rn) -> I_SBFM (V64,rd,rn,0,31)
-  | I_OP3 (V64|V32 as v,LSL,rd,rn,K i,S_NOEXT) ->
+  | I_OP3 (V64|V32 as v,LSL,rd,rn,OpExt.Imm (k,0)) ->
      let sz = variant_raw v-1 in
-     let imms = sz-i in
+     let imms = sz-k in
      let immr = imms+1 in
     I_UBFM (v,rd,rn,immr,imms)
-  | I_OP3 (V64|V32 as v,LSR,rd,rn,K i,S_NOEXT) ->
+  | I_OP3 (V64|V32 as v,LSR,rd,rn,OpExt.Imm (k,0)) ->
      let sz = variant_raw v-1 in
      let imms = sz in
-     let immr = i in
+     let immr = k in
      I_UBFM (v,rd,rn,immr,imms)
-  | I_OP3 (V64|V32 as v,ASR,rd,rn,K i,S_NOEXT) ->
+  | I_OP3 (V64|V32 as v,ASR,rd,rn,OpExt.Imm (k,0)) ->
          let sz = variant_raw v-1 in
          let imms = sz in
-         let immr = i in
+         let immr = k in
          I_SBFM (v,rd,rn,immr,imms)
-  | I_OP3 (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn, K k,ext)
+  | I_OP3 (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn,OpExt.Imm (k,s))
        when k < 0 ->
      let k = -k
      and op =
@@ -2092,7 +2372,7 @@ let unalias i =
        | ADDS -> SUBS
        | SUBS -> ADDS
        | _ -> assert false in
-     I_OP3 (v, op, rd, rn, K k,ext)
+     I_OP3 (v, op, rd, rn,OpExt.Imm (k,s))
   | I_MOV (v,rd,K k) ->
      begin
        match tr_mov_imm v k with
@@ -2110,10 +2390,10 @@ let is_valid i =
   | I_MOV (v,_,RV (w,_)) -> v=w
   | I_CAS (_,_,_,_,ZR) -> false
   | I_CAS (_,_,_,_,_) -> true
-  | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,ZR,K _,_)
-  | I_OP3 (_,(ADD|SUB),ZR,_,K _,_)
+  | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,ZR,OpExt.Imm _)
+  | I_OP3 (_,(ADD|SUB),ZR,_,OpExt.Imm _)
     -> false
-  | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,K k,(S_NOEXT|S_LSL (0|12)))
+  | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,OpExt.Imm (k,(0|12)))
     ->
 (*
  * Using either ADD or SUB the immediate constant size is 12 bits
@@ -2121,23 +2401,15 @@ let is_valid i =
  *  the adequate  instruction and the immediate constant is unsigned.
  *)
      is_12bits_unsigned (abs k)
-  | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,K _,_)
+  | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,OpExt.(Imm _|Reg (_,ROR _)))
     -> false
-  | I_OP3 (_,(AND|EOR|ORR),ZR,_,K _,_)
+  | I_OP3 (_,(AND|EOR|ORR),ZR,_,OpExt.Imm _)
     -> false
-  | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,RV _,S_NOEXT)
-    -> true
-  | I_OP3 (v,(ADD|SUB|ADDS|SUBS|AND|ANDS|BIC|BICS|EOR|EON|ORN|ORR),
-           _,_,RV (w,_),(S_NOEXT|S_LSL _|S_LSR _|S_ASR _ as s))
-       when v=w
-    -> is_6bits_unsigned (shift_amount s)
-  | I_OP3 (_,(AND|ANDS|EOR|ORR),_,_,K _,S_NOEXT)
-    -> true (* TODO: handle encoding of immediates here? *)
-  | I_OP3 (v,(AND|ANDS|EOR|ORR),_,_,RV (v',_),
-           (S_NOEXT|S_LSL _|S_LSR _|S_ASR _))
-    -> v=v'
-  | I_OP3 (_,(AND|ANDS|EOR|ORR),_,_,K _,_)
-    -> false
+  | I_OP3 (_,(ADD|SUB|ADDS|SUBS|AND|ANDS|BIC|BICS|EOR|EON|ORN|ORR),
+           _,_,OpExt.(Reg (_,(LSL s|LSR s|ASR s|ROR s)))) ->
+           is_6bits_unsigned s
+  | I_OP3 (_,(AND|ANDS|EOR|ORR),_,_,OpExt.Imm (_,s))
+    -> s=0 (* TODO: handle encoding of immediates here? *)
   | I_MOV (v,_,K k) ->
        Misc.is_some (tr_mov_imm v k)
   | I_MOVZ (_,_,k,S_NOEXT)|I_MOVN (_,_,k,S_NOEXT) ->
@@ -2151,10 +2423,15 @@ let is_valid i =
        | _ -> true
      end
   | I_MOVZ _|I_MOVN _ -> false
-  | I_STR (_,_,ZR,_,_)
+  | I_STR (_,_,ZR,_)
   | I_STLR (_,_,ZR)
   | I_LDAR (_,_,_,ZR)
   | I_STXR (_,_,_,_,ZR)
+    -> false
+  | I_LDRBH (_,_,ZR,_)
+  | I_STRBH (_,_,ZR,_)
+  | I_LDRBH (_,_,_,MemExt.(Reg(V32,_,LSL,_)))
+  | I_STRBH (_,_,_,MemExt.(Reg(V32,_,LSL,_)))
     -> false
   | _ -> true
 
@@ -2166,17 +2443,30 @@ module PseudoI = struct
       type reg_arg = reg
 
       let k_tr = MetaConst.as_int
+
       let kr_tr = function
         | K i -> K (k_tr i)
         | RV _ as kr -> kr
 
+      let idx_tr (k,e) = k_tr k,e
+
+      let ext_tr idx =
+        let open MemExt in
+        match idx with
+        | Imm k -> Imm (idx_tr k)
+        | Reg (v,r,ext,k) -> Reg (v,r,ext,k_tr k)
+
+      let op_ext_tr e =
+        let open OpExt in
+        match e with
+        | Imm (k,s) -> Imm (k_tr k,k_tr s)
+        | Reg (r,s) -> Reg (r,map_shift k_tr s)
+
       let ap_shift f s = match s with
-        | S_LSL(s) -> S_LSL(f s)
-        | S_LSR(s) -> S_LSR(f s)
-        | S_ASR(s) -> S_ASR(f s)
-        | S_MSL(s) -> S_MSL(f s)
-        | S_SXTW -> S_SXTW
-        | S_UXTW -> S_UXTW
+        | S_LSL s -> S_LSL(f s)
+        | S_LSR s -> S_LSR(f s)
+        | S_ASR s -> S_ASR(f s)
+        | S_MSL s -> S_MSL(f s)
         | S_NOEXT  -> S_NOEXT
 
       let parsed_tr i = match i with
@@ -2192,7 +2482,6 @@ module PseudoI = struct
         | I_ERET
         | I_LDAR _
         | I_LDARBH _
-        | I_LDRS _
         | I_STLR _
         | I_STLRBH _
         | I_STXR _
@@ -2211,6 +2500,8 @@ module PseudoI = struct
         | I_STOPBH _
         | I_ADR _
         | I_RBIT _
+        | I_ABS _
+        | I_REV _
         | I_IC _
         | I_DC _
         | I_TLBI _
@@ -2218,26 +2509,27 @@ module PseudoI = struct
         | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|I_CPYTYPE _
         | I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
         | I_UNSEAL _
+        | I_ADDV _ | I_DUP _ | I_FMOV_TG _
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
         | I_LDXP _| I_STXP _
+        | I_MOPL _
             as keep -> keep
-        | I_LDR (v,r1,r2,kr,s) -> I_LDR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
+        | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
+        | I_LDRS (v,r1,r2,idx) -> I_LDRS (v,r1,r2,ext_tr idx)
+
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
         | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
-        | I_LDR_P (v,r1,r2,k) -> I_LDR_P (v,r1,r2,k_tr k)
-        | I_LDP (t,v,r1,r2,r3,k,md) -> I_LDP (t,v,r1,r2,r3,k_tr k,md)
-        | I_LDPSW (r1,r2,r3,k,md) -> I_LDPSW (r1,r2,r3,k_tr k,md)
-        | I_STP (t,v,r1,r2,r3,k,md) -> I_STP (t,v,r1,r2,r3,k_tr k,md)
-        | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
-        | I_STR_P (v,r1,r2,s) -> I_STR_P (v,r1,r2, k_tr s)
-        | I_STG (r1,r2,k) -> I_STG (r1,r2,k_tr k)
-        | I_STZG (r1,r2,k) -> I_STZG (r1,r2,k_tr k)
+        | I_LDP (t,v,r1,r2,r3,idx) -> I_LDP (t,v,r1,r2,r3,idx_tr idx)
+        | I_LDPSW (r1,r2,r3,idx) -> I_LDPSW (r1,r2,r3,idx_tr idx)
+        | I_STP (t,v,r1,r2,r3,idx) -> I_STP (t,v,r1,r2,r3,idx_tr idx)
+        | I_STR (v,r1,r2,idx) -> I_STR (v,r1,r2,ext_tr idx)
+        | I_STG (r1,r2,k) -> I_STG (r1,r2,idx_tr k)
+        | I_STZG (r1,r2,k) -> I_STZG (r1,r2,idx_tr k)
         | I_LDG (r1,r2,k) -> I_LDG (r1,r2,k_tr k)
-        | I_LDRBH (v,r1,r2,kr,s) ->
-            I_LDRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
-        | I_STRBH (v,r1,r2,kr,s) ->
-            I_STRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_LDRBH (v,r1,r2,idx) -> I_LDRBH (v,r1,r2,ext_tr idx)
+        | I_STRBH (v,r1,r2,idx) -> I_STRBH (v,r1,r2,ext_tr idx)
         | I_SBFM (v,r1,r2,k1,k2) ->
             I_SBFM (v,r1,r2,k_tr k1, k_tr k2)
         | I_UBFM (v,r1,r2,k1,k2) ->
@@ -2248,7 +2540,10 @@ module PseudoI = struct
         | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,k_tr k,ap_shift k_tr s)
         | I_MOVN (v,r,k,s) -> I_MOVN (v,r,k_tr k,ap_shift k_tr s)
         | I_MOVK (v,r,k,s) -> I_MOVK (v,r,k_tr k,ap_shift k_tr s)
-        | I_OP3 (v,op,r1,r2,kr,s) -> I_OP3 (v,op,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),(e,ko)) ->
+           let ko = Misc.app_opt k_tr ko in
+           I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),(e,ko))
+        | I_OP3 (v,op,r1,r2,e) -> I_OP3 (v,op,r1,r2,op_ext_tr e)
         | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,k_tr k)
         | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,k_tr k)
         | I_LD1 (r1,i,r2,kr) -> I_LD1 (r1,i,r2,kr_tr kr)
@@ -2310,8 +2605,8 @@ module PseudoI = struct
       | _ -> assert false
 
       let get_naccesses ins = match ins with
-        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _ | I_LDRS _
-        | I_STR _ | I_STR_P _ | I_STLR _ | I_STLRBH _ | I_STXR _
+        | I_LDR _ | I_LDRSW _ | I_LDAR _ | I_LDARBH _ | I_LDUR _ | I_LDRS _
+        | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
         | I_LDR_SIMD _ | I_STR_SIMD _
@@ -2330,7 +2625,7 @@ module PseudoI = struct
         | I_LD2 _ | I_LD2R _
         | I_ST2 _
           -> 2
-        | I_LDR_P _ (* reads, stores, then post-index stores *)
+        (* reads, stores, then post-index stores *)
         | I_LDP_P_SIMD _ | I_STP_P_SIMD _
         | I_LDR_P_SIMD _ | I_STR_P_SIMD _
         | I_LD3 _ | I_LD3R _
@@ -2358,16 +2653,21 @@ module PseudoI = struct
         | I_SXTW _
         | I_SBFM _
         | I_UBFM _
+        | I_ADDSUBEXT _
+        | I_MOPL _
         | I_OP3 _
         | I_FENCE _
         | I_CSEL _
         | I_ADR _
         | I_RBIT _
+        | I_ABS _
+        | I_REV _
 (*        | I_TLBI (_,ZR) *)
         | I_MRS _ | I_MSR _
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
         | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_SC _|I_SEAL _
         | I_UNSEAL _
+        | I_ADDV _|I_DUP _| I_FMOV_TG _
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
         | I_MOVI_V _ | I_MOVI_S _

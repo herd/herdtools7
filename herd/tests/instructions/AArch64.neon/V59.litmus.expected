@@ -1,0 +1,10 @@
+Test V59 Required
+States 1
+0:V0.4S={1,1,1,1};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:V0.4S={1,1,1,1})
+Observation V59 Always 1 0
+Hash=ef8d888e6a606d01bfaf9fbdc5246597
+

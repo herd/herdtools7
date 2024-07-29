@@ -23,6 +23,7 @@ type 'op1 t =
   | Valid (* get Valid bit from PTE entry *)
   | EL0 (* get EL0 bit from PTE entry *)
   | OA (* get OA from PTE entry *)
+  | Tagged (* get Tag attribute from PTE entry *)
   | Extra of 'op1
 
 module
@@ -53,6 +54,7 @@ module
       | Valid -> "Valid"
       | EL0 -> "EL0"
       | OA -> "OA"
+      | Tagged -> "Tagged"
       | Extra op1 -> Extra.pp_op1 hexa op1
 
     type scalar = S.t
@@ -93,6 +95,8 @@ module
 
     let getel0 = op_get_pteval (fun p -> p.el0 <> 0)
 
+    let gettagged = op_get_pteval (fun p -> Attrs.mem "TaggedNormal" p.attrs)
+
     let getoa v =
       let open Constant in
       match v with
@@ -120,6 +124,7 @@ module
       | Valid -> getvalid
       | EL0 -> getel0
       | OA -> getoa
+      | Tagged -> gettagged
       | Extra op1 ->
          fun cst ->
            try

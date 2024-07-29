@@ -33,6 +33,7 @@ module type S = sig
   type instruction
 
   val dump_instruction : instruction -> string
+  val dump_instruction_hash : instruction -> string
 
   include Pseudo.Types
    with type ins = instruction

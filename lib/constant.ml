@@ -88,7 +88,8 @@ type symbol =
 let get_index = function
   | Virtual s -> Some s.offset
   | Physical (_,o) -> Some o
-  | System _ -> None
+  | System (PTE, _ | PTE2, _ |TAG, _) -> Some 0
+  | System (TLB, _) -> None
 
 let pp_index base o = match o with
 | 0 -> base

@@ -510,6 +510,9 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
          | PPC.LwSync -> PPC.Plwsync
          | PPC.ISync -> PPC.Pisync
          | PPC.Eieio -> PPC.Peieio)],st
+    let emit_fence_dp st a init b f _ r _ =
+      let init,cs,st = emit_fence st a init b f in
+      Some r,init,cs,st
     let stronger_fence = PPC.Sync
 
 (* Check load *)

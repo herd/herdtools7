@@ -60,17 +60,21 @@ module Mixed =
 let bellatom = false
 module SIMD = struct
 
-  type atom = N1|N2|N3|N4
+  type atom = Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i
 
-  let fold_neon f r = f N1 (f N2 (f N3 (f N4 r)))
+  let fold_neon f r = f Ne1 (f Ne2 (f Ne3 (f Ne4 (f Ne2i (f Ne3i (f Ne4i r))))))
 
   let nregs = function
-    | N1 -> 1
-    | N2 -> 2
-    | N3 -> 3
-    | N4 -> 4
+    | Ne1 -> 1
+    | Ne2 | Ne2i -> 2
+    | Ne3 | Ne3i -> 3
+    | Ne4 | Ne4i -> 4
 
-  let pp n = Printf.sprintf "N%i" (nregs n)
+  let pp_opt = function
+    | Ne2i | Ne3i | Ne4i -> "i"
+    | _ -> ""
+
+  let pp n = Printf.sprintf "Ne%i%s" (nregs n) (pp_opt n)
 
   let initial sz =
     let sz = if sz <= 0 then 1 else sz in
@@ -82,16 +86,21 @@ module SIMD = struct
     let v = Array.copy v in
     for k = 0 to sz-1 do
       for i=0 to 3 do
-       let j = k+i*sz in
+        let j = match n with
+          | Ne2i | Ne3i | Ne4i -> k+i*sz
+          | Ne1  | Ne2 | Ne3 | Ne4 -> i+k*4
+        in
        v.(j) <- start+k
       done
     done ;
     v
 
-
   let read n v =
     let sz = nregs n in
-    let access r k = sz*k + r in
+    let access r k = match n with
+      | Ne2i | Ne3i | Ne4i -> sz*k + r
+      | Ne1 | Ne2 | Ne3 | Ne4 -> 4*r + k
+    in
     let rec reg r k =
       if k >= 4 then []
       else v.(access r k)::reg r (k+1) in
@@ -100,6 +109,8 @@ module SIMD = struct
       else reg r 0::regs (r+1) in
     regs 0
 
+  let reduce vec =
+    List.fold_right (+) (List.flatten vec) 0
 end
 
 type atom_rw =  PP | PL | AP | AL
@@ -148,13 +159,14 @@ type pair_idx = Both
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
   | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_sizes
-  | Pair of pair_opt * pair_idx
+  | Pair of pair_opt * pair_idx | Instr
 
 let  plain = Plain None
 
 type atom = atom_acc * MachMixed.t option
 
 let default_atom = Atomic PP,None
+let instr_atom = Some (Instr,None)
 
 let applies_atom (a,_) d = match a,d with
 | Acq _,R
@@ -162,8 +174,12 @@ let applies_atom (a,_) d = match a,d with
 | Rel _,W
 | Pte (Read|ReadAcq|ReadAcqPc),R
 | Pte (Set _|SetRel _),W
-| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
+| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _|Instr),(R|W)
   -> true
+| _ -> false
+
+let is_ifetch a = match a with
+| Some (Instr,_) -> true
 | _ -> false
 
    let pp_plain = "P"
@@ -210,6 +226,7 @@ let applies_atom (a,_) d = match a,d with
      | Neon n -> SIMD.pp n
      | Pair (opt,idx)
        -> sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
+     | Instr -> "I"
 
    let pp_atom (a,m) = match a with
    | Plain o ->
@@ -307,6 +324,7 @@ let applies_atom (a,_) d = match a,d with
         let r = f (Acq o) r in
         let r = f (AcqPc o) r in
         let r = f (Rel o) r in
+        let r = f Instr r in
         r
 
    let fold_acc mixed f r =
@@ -339,7 +357,7 @@ let applies_atom (a,_) d = match a,d with
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
-     | Acq _|AcqPc _|Rel _|Plain _|Tag
+     | Acq _|AcqPc _|Rel _|Plain _|Tag|Instr
      | CapaTag|CapaSeal
      | Pte _|Neon _
      | Pair _
@@ -411,10 +429,10 @@ let applies_atom (a,_) d = match a,d with
    let neon_as_integers =
      let open SIMD in
      function
-     | N1 -> 4
-     | N2 -> 8
-     | N3 -> 12
-     | N4 -> 16
+     | Ne1 -> 4
+     | Ne2 | Ne2i -> 8
+     | Ne3 | Ne3i -> 12
+     | Ne4 | Ne4i -> 16
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
@@ -423,6 +441,7 @@ let applies_atom (a,_) d = match a,d with
    | CapaSeal,None -> Code.CapaSeal
    | Neon n,None -> Code.VecReg n
    | Pair (_,Both),_ -> Code.Pair
+   | Instr,_ -> Code.Instr
    | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
    | (Plain _|Acq _|AcqPc _|Rel _|Atomic _),_
      -> Code.Ord
@@ -448,9 +467,9 @@ let overwrite_value v ao w = match ao with
 | None
 | Some
     ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|
-    Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _),None)
+    Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None)
   -> w (* total overwrite *)
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _),Some (sz,o)) ->
+| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _|Instr),Some (sz,o)) ->
    ValsMixed.overwrite_value v sz o w
 | Some ((Tag|CapaTag|CapaSeal|Pte _|Pair _),Some _) ->
     assert false
@@ -459,10 +478,10 @@ let overwrite_value v ao w = match ao with
   | None
   | Some
       ((Atomic _|Acq _|AcqPc _|Rel _|Plain _
-        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _),None) -> v
+        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None) -> v
   | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
      ValsMixed.extract_value v sz o
-  | Some ((Pte _|Pair _),Some _) -> assert false
+  | Some ((Pte _|Pair _|Instr),Some _) -> assert false
 
 (* Page table entries *)
   module PteVal = struct
@@ -523,9 +542,10 @@ let overwrite_value v ao w = match ao with
 
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
+let fold_dirloc f r = f Next (f Prev r)
 type sync = Sync | NoSync
 type fence = | Barrier of barrier | CacheSync of strength * bool |
-               Shootdown of mBReqDomain * TLBI.op * sync
+               Shootdown of mBReqDomain * TLBI.op * sync | CMO of syncType * dirloc
 
 let is_isync = function
   | Barrier ISB -> true
@@ -553,6 +573,7 @@ let compare_fence b1 b2 = match b1,b2 with
     end
 | (Shootdown _,(Barrier _|CacheSync _))
 | (CacheSync _,Barrier _)
+| (CMO _,_) | (_, CMO _)
  -> +1
 
 
@@ -580,6 +601,11 @@ let pp_fence f = match f with
      (match sync with
       | NoSync -> ""
       | Sync -> add_dot pp_domain d)
+| CMO (t,loc) ->
+  sprintf "%s%s"
+    (match t with DC_CVAU -> "DC.CVAU" | IC_IVAU -> "IC.IVAU")
+    (match loc with Prev -> "p"| Next -> "n")
+  
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
@@ -609,9 +635,14 @@ let fold_cachesync =
         (fun b k -> fold_strength (fun s k -> f (CacheSync (s,b)) k) k)
   else fun _ k -> k
 
+
+let fold_cmo f k = fold_dirloc (fun d k -> f (CMO (DC_CVAU,d)) (f (CMO (IC_IVAU,d)) k)) k
+  
+
 let fold_all_fences f k =
   let k = fold_shootdown f k in
   let k = fold_cachesync f k in
+  let k = fold_cmo f k in
   fold_barrier do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
 
 
@@ -632,6 +663,7 @@ let orders f d1 d2 = match f,d1,d2 with
 | Barrier (DSB (_,LD)|DMB (_,LD)),_,_ -> false
 | CacheSync _,_,_ -> true
 | Shootdown _,_,_ -> false
+| CMO _,_,_ -> true
 
 let var_fence f r = f default r
 
@@ -795,6 +827,7 @@ include
         | _ -> false
 
       let pp_reg = pp_reg
+      let pp_i = pp_i
       let free_registers = allowed_for_symb
 
       type special = reg

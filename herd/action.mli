@@ -93,7 +93,7 @@ module type S = sig
 
 (* Commits *)
   val is_bcc : action -> bool
-  val is_pred : action -> bool
+  val is_pred : ?cond:string option -> action -> bool
   val is_commit : action -> bool
 
 (* Unrolling control *)

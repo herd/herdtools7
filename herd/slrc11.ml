@@ -862,6 +862,7 @@ module Make (M:Cfg)
                      po = E.EventRel.empty;
                      pos = E.EventRel.empty;
                      pco = E.EventRel.empty;
+                     partial_po = E.EventRel.empty;
 
                      store_load_vbf = E.EventRel.empty;
                      init_load_vbf = E.EventRel.empty;

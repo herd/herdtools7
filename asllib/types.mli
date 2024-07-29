@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 (** Type Algebra *)
 
@@ -22,8 +39,8 @@ val is_builtin_aggregate : ty -> bool
 
 (** Note that a builtin type is either builtin aggregate or builtin singular. *)
 
-val is_singular : env -> ty -> bool
-val is_aggregate : env -> ty -> bool
+val is_singular : env -> ty -> bool 
+val is_aggregate : env -> ty -> bool 
 
 (** Note that a type is either singular or aggregate. *)
 
@@ -99,15 +116,15 @@ val type_clashes : env -> ty -> ty -> bool
 
     Notes:
       - T subtype-satisfies S implies T and S type-clash
-      - This is a equivalence relation
+      - This is an equivalence relation
 
-    As par Definition VPZZ.
+    per Definition VPZZ.
 *)
 
 val subprogram_clashes : env -> 'a func -> 'b func -> bool
 (** Subprogram clashing relation.
 
-    As per Definition BTBR.
+    per Definition BTBR.
 *)
 
 val lowest_common_ancestor : env -> ty -> ty -> ty option

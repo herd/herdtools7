@@ -36,20 +36,20 @@ begin
   return bus(x, y);
 end
 
-func legal_fun_constrained_actual (arg: bits({32,64})) => bits(32)
-begin
+// func legal_fun_constrained_actual (arg: bits({32,64})) => bits(32)
+// begin
   // This invocation is OK because the actual has undetermined width
   // so the formal is treated as having undetermined width
   // and the domain of bits({32,64}) is a subset of the domain of the
   // undetermined width bitvector
   // return bus(arg, [arg,arg])[31:0];
-  return Zeros(32);
-end
+  // return Zeros(32);
+// end
 
-func illegal_fun_parameter_mismatch (N: integer{32,64}, M: integer{64,128})
-begin
-  var argN: bits(N);
-  var argM: bits(M);
+// func illegal_fun_parameter_mismatch (N: integer{32,64}, M: integer{64,128})
+// begin
+  // var argN: bits(N);
+  // var argM: bits(M);
 
   // Illegal invocation:
   // Either bus's wid takes its value from argN
@@ -59,16 +59,16 @@ begin
   // let illegal = bus(argN, argM);
 
   // A checked type conversion might be useful...
-  let legal = bus(argN, argM as bits(N*2));
-end
+  // let legal = bus(argN, argM as bits(N*2));
+// end
 
 func main () => integer
 begin
   let - = legal_fun_fixed_width_actual ();
   let - = legal_fun_underconstrained_actual (4);
-  let - = legal_fun_constrained_actual (Zeros(32));
-  let - = legal_fun_constrained_actual (Zeros(64));
-  illegal_fun_parameter_mismatch (32, 64);
+  // let - = legal_fun_constrained_actual (Zeros(32));
+  // let - = legal_fun_constrained_actual (Zeros(64));
+  // illegal_fun_parameter_mismatch (32, 64);
 
   return 0;
 end

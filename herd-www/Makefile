@@ -11,7 +11,7 @@ PROG=jerd.js
 WWW_PROG=www/$(PROG)
 WWW_LIB=www/weblib
 JSON_SHELVES=$(foreach book,$(BOOKS),$(WWW_CATALOGUE)/$(book)/shelf.json)
-CATINCLUDES=../herd/libdir ../asllib/libdir linux $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
+CATINCLUDES=../herd/libdir linux $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
 CATINCLUDESDEP=$(foreach d,$(CATINCLUDES),$(wildcard $(d)/*.*))
 DUNETGT=../_build/default/herd-www
 all: web

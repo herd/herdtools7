@@ -16,12 +16,14 @@ REGRESSION_TEST_MODE = test
 # REGRESSION_TEST_MODE = promote
 # REGRESSION_TEST_MODE = show
 
+DUNE_PROFILE = release
+
 DIYCROSS                      = _build/install/default/bin/diycross7
 HERD                          = _build/install/default/bin/herd7
 HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
-
+BENTO                         = _build/default/tools/bento.exe
 
 all: build
 
@@ -30,7 +32,10 @@ Version.ml:
 	sh ./version-gen.sh $(PREFIX)
 
 build: Version.ml | check-deps
-	dune build -j $(J) --profile release
+	dune build -j $(J) --profile $(DUNE_PROFILE)
+
+$(BENTO): | check-deps
+	dune build -j $(J) --profile $(DUNE_PROFILE) $@
 
 install:
 	sh ./dune-install.sh $(PREFIX)
@@ -45,7 +50,7 @@ dune-clean:
 	dune clean
 
 versions: Version.ml
-	@ dune build -j $(J) --workspace dune-workspace.versions @default
+	@ dune build -j $(J) --workspace dune-workspace.versions
 
 
 # Dependencies.
@@ -67,12 +72,13 @@ test:: dune-test
 
 dune-test:
 	@ echo
-	dune runtest --profile=release
+	dune runtest --profile=$(DUNE_PROFILE)
 
 test:: test.aarch64
 test.aarch64:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64 \
@@ -208,6 +214,7 @@ test-pseudo-asl:
 test-aarch64-asl: asl-pseudocode
 	@echo
 	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
@@ -346,6 +353,40 @@ mte-test:
 		-shelf-path catalogue/aarch64-MTE/shelf.py \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-MTE tests: OK"
+
+vmsa-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-VMSA/tests/VMSA-kinds.txt \
+		-shelf-path catalogue/aarch64-VMSA/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
+
+ets2-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-ETS2/tests/VMSA-ETS2-kinds.txt \
+		-shelf-path catalogue/aarch64-ETS2/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue aarch64-ETS2 tests: OK"
+
+test.vmsa+mte:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.vmsa+mte \
+		-conf ./herd/tests/instructions/AArch64.vmsa+mte/vmsa+mte.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
 
 test:: diy-test
 
@@ -529,3 +570,5 @@ herd/libdir/asl-pseudocode/shared_pseudocode.asl:
 clean-asl-pseudocode:
 	@ $(MAKE) -C $(@D)/herd/libdir/asl-pseudocode clean
 
+asldoc: $(BENTO)
+	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc all

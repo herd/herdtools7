@@ -1,0 +1,12 @@
+AArch64 L094
+{
+uint32_t 0:X1=0x87654321;
+uint32_t 0:X2;
+uint64_t 0:X3=0xfedcba87654321;
+uint64_t 0:X4;
+}
+  P0       ;
+ REV W2,W1 ;
+ REV X4,X3 ;
+
+forall 0:X2=0x21436587 /\ 0:X4=0x21436587badcfe00

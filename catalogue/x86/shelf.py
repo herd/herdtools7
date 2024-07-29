@@ -1,7 +1,7 @@
 record = "X86"
 
 cats = [
-    "cats/x86tso.cat",
+    "cats/x86tso-mixed.cat",
     "cats/sc.cat",
     ]
 

@@ -1,0 +1,12 @@
+AArch64 L100
+{
+int x=-7;
+0:X0=x;
+int64_t 0:X1;
+}
+  P0          ;
+LDRSW X1,[X0] ;
+forall 0:X1=-7
+
+
+

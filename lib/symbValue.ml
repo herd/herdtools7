@@ -473,8 +473,10 @@ module
   let capatagloc = op_tagged "capatagloc" (op_tagloc Misc.add_ctag)
 
   let tagloc v =  match v with
-  | Val (Symbolic (Virtual {name=a;_}|Physical (a,_))) ->
+  | Val (Symbolic (Virtual {name=a;_})) ->
        Val (Symbolic (System (TAG,a)))
+  | Val (Symbolic (Physical _)) ->
+    Val (Symbolic (System (TAG,pp_v v)))
   | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
         |Symbolic (System _)|Label _
@@ -553,6 +555,10 @@ module
   | Var _ -> raise Undetermined
 
   let is_virtual_v v =  if is_virtual v then one else zero
+
+  let is_instrloc v = match v with
+  | Val c -> Constant.is_label c
+  | Var _ -> false
 
   let is_instr_v =
     function
@@ -791,6 +797,7 @@ module
     | Val _,Val (Concrete _) -> v2
     | _,_ ->
        Warn.user_error "Illegal ToInteger on %s and %s" (pp_v v1) (pp_v v2)
+
   let op1 op =
     let open! Cst.Scalar in
     match op with
@@ -817,7 +824,14 @@ module
     | AndK k -> unop op (fun s -> Cst.Scalar.logand s (Cst.Scalar.of_string k))
     | Mask sz -> maskop op sz
     | Sxt sz -> sxtop op sz
+    | Rbit sz ->
+       let module R = Rbit.Make(Cst.Scalar) in
+       unop op (R.rbit sz)
+    | RevBytes (csz,sz) ->
+       let module R = Rbit.Make(Cst.Scalar) in
+       unop op (R.revbytes csz sz)
     | Inv -> unop op Cst.Scalar.lognot
+    | Abs -> unop op Cst.Scalar.abs
     | TagLoc -> tagloc
     | CapaTagLoc -> capatagloc
     | TagExtract -> tagextract

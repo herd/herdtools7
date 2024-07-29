@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 open AST
 open ASTUtils
@@ -20,6 +37,7 @@ type global = {
 type local = {
   constants_values : literal IMap.t;
   storage_types : (ty * local_decl_keyword) IMap.t;
+  return_type: ty option;
 }
 
 type env = { global : global; local : local }
@@ -42,11 +60,13 @@ module PPEnv = struct
       (PP.pp_print_seq ~pp_sep pp_print_string)
       (ISet.to_seq s)
 
-  let pp_local f { constants_values; storage_types } =
-    fprintf f "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@]"
+  let pp_local f { constants_values; storage_types; return_type } =
+    fprintf f "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - @[return type:@ %a@]@]"
       (pp_map PP.pp_literal) constants_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
+      (pp_print_option ~none:(fun f () -> fprintf f "none") PP.pp_ty)
+      return_type
 
   let pp_subprogram f func_sig =
     fprintf f "@[<hov 2>%a@ -> %a@]"
@@ -102,7 +122,9 @@ let empty_global =
   }
 
 (** An empty local static env. *)
-let empty_local = { constants_values = IMap.empty; storage_types = IMap.empty }
+let empty_local = { constants_values = IMap.empty; storage_types = IMap.empty; return_type = None }
+
+let empty_local_return_type return_type = { empty_local with return_type }
 
 (** An empty static env. *)
 let empty = { local = empty_local; global = empty_global }

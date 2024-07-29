@@ -89,7 +89,7 @@ module Make(Cfg:Config)(A:Arch_gen.S)
        let emit_pteval  st p init v = next_const st p init (A.P v)
 
        let emit_nop st p init nop =
-         let rA,init,st = next_const st p init (S nop) in
+         let rA,init,st = next_const st p init (S ("instr:\""^nop^"\"")) in
          rA,init,st
 
        let emit_mov st p init v = match emit_const st p init v with

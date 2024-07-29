@@ -37,6 +37,7 @@ module type Config = sig
   val hexa : bool
   val variant : Variant_gen.t -> bool
   val cycleonly: bool
+  val metadata : bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
@@ -214,9 +215,15 @@ let get_fence n =
                    fs is))
             chk loc_writes st p ro_prev init ns
       | E.Insert f ->
+          let ro_prev,init,cs,st, n1 = match ro_prev with
+          | No  -> let init, cs, st = Comp.emit_fence st p init n f in
+              None, init, cs, st, n
+          | Yes (dp,r1,n1) ->
+            let ro_prev,init,cs,st =
+              Comp.emit_fence_dp st p init n f dp r1 n1 in
+              ro_prev,init,cs,st, n1 in
           let init,is,finals,st =
-            compile_proc pref chk loc_writes st p ro_prev init ns in
-          let init,cs,st = Comp.emit_fence st p init n f in
+            compile_proc pref chk loc_writes st p (edge_to_prev_load ro_prev n1) init ns in
           init,cs@is,finals,st
       | _ ->
           let o,init,i,st = emit_access ro_prev st p init n in
@@ -250,9 +257,16 @@ let get_fence n =
               begin match o with
               | None   -> finals (* Code write *)
               | Some r -> (* fetch! *)
+                  match n.C.prev.C.edge.E.edge, n.C.edge.E.edge with
+                  | E.Rf _, _ when E.is_ifetch n.C.prev.C.edge.E.a2 ->
+                      F.add_final (A.get_friends st) p o n finals
+                  | _, E.Po _ | _, E.Fr _ when E.is_ifetch n.C.edge.E.a1 ->
+                      F.add_final (A.get_friends st) p o n finals
+                  | _, _-> begin
                   let m,fenv =  finals in
                   m,F.add_final_v p r (IntSet.singleton (U.fetch_val n))
                     fenv
+                    end
               end),
           st
       end
@@ -581,7 +595,7 @@ let max_set = IntSet.max_elt
     let lst = Misc.last ns in
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
-      | Data x,(Ord|Pair) -> (* TODO check for -obs local mode and pairs *)
+      | Data x,(Ord|Pair|Instr) -> (* TODO check for -obs local mode and pairs *)
          let nxt = lst.C.next.C.evt in
          let bank = nxt.C.bank in
          begin match bank with
@@ -932,11 +946,13 @@ let fmt_cols =
 
   let dump_test_channel_full chan t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
-    if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
-    List.iter
-      (fun (k,v) -> fprintf chan "%s=%s\n" k v)
-      t.info ;
-    Hint.dump O.hout t.name t.info ;
+    if O.metadata then begin
+      if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
+      List.iter
+        (fun (k,v) -> fprintf chan "%s=%s\n" k v)
+        t.info ;
+      Hint.dump O.hout t.name t.info
+    end ;
     dump_init chan t.init t.env ;
     dump_code chan t.prog ;
     begin match t.scopes with

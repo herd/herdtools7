@@ -1,0 +1,11 @@
+AArch64 L093
+{
+0:X1=0x87654321;
+uint64_t 0:X3=0xfedcba87654321;
+uint64_t 0:X4;
+}
+  P0        ;
+ RBIT W2,W1 ;
+ RBIT X4,X3 ;
+
+forall 0:X2=0x84c2a6e1 /\ 0:X4=0x84c2a6e15d3b7f00

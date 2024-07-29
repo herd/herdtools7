@@ -241,6 +241,12 @@ module Make
                   relevant e1 && relevant e2 &&
                  not (E.same_instance e1 e2))))
           conc.S.po in
+      let partial_po =
+        lazy (
+          E.EventRel.filter_nodes relevant
+            conc.S.partial_po
+        )
+      in
       let id =
         lazy begin
           E.EventRel.of_list
@@ -316,7 +322,8 @@ module Make
                   (fun (r,w) -> E.po_eq r w)
                   conc.S.atomic_load_store
               end;
-              "po", lazy  po;
+              "po", lazy po;
+              "partial_po", partial_po;
               "depend", lazy (Lazy.force pr).S.depend;
               "success", lazy (Lazy.force pr).S.success;
               "rf", lazy (Lazy.force pr).S.rf;

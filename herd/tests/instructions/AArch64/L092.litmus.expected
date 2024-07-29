@@ -1,0 +1,10 @@
+Test L092 Required
+States 1
+0:X2=-24; 0:X3=24;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=-24 /\ 0:X3=24)
+Observation L092 Always 1 0
+Hash=f1a80d976e83bde8a704e682d8c25f7e
+

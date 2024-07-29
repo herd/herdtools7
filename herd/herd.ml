@@ -26,6 +26,8 @@ let get_cmd_arg s = args := s :: !args
 
 (* Helpers *)
 
+open ArgUtils
+
 let parse_tag opt set tags msg =
   opt,
   Arg.String
@@ -38,85 +40,6 @@ let parse_tag opt set tags msg =
     | true -> ()),
   sprintf "<%s> %s" (String.concat "|" tags) msg
 
-
-let badarg opt arg ty =
-  raise
-    (Arg.Bad
-       (sprintf "wrong argument '%s'; option '%s' expects a %s"
-          opt arg ty))
-
-let parse_bool opt v msg =
-  opt,
-  Arg.Bool (fun b -> v := b),
-  sprintf "<bool> %s, default %b" msg !v
-
-let parse_int opt v msg =
-  opt,
-  Arg.Int (fun b -> v := b),
-  sprintf "<int> %s, default %i" msg !v
-
-let parse_int_opt opt v msg =
-  opt,
-  Arg.String
-    (fun tag -> match tag with
-    | "none" -> v := None
-    | _ ->
-        try v := Some (int_of_string tag)
-        with _ -> badarg opt tag "integer"),
-  sprintf "<int|none> %s" msg
-
-let parse_float opt v msg =
-  opt,
-  Arg.Float (fun b -> v := b),
-  sprintf "<float> %s, default %.1f" msg !v
-
-let parse_float_opt opt v msg =
-  opt,
-  Arg.String
-    (fun tag -> match tag with
-    | "none" -> v := None
-    | _ ->
-        try v := Some (float_of_string tag)
-        with _ -> badarg tag opt "float"   ),
-  sprintf "<float|none> %s" msg
-
-let parse_pos opt v msg =
-  opt,
-  Arg.String
-    (fun tag -> match Misc.pos_of_string tag with
-    | Some p -> v := p
-    | None ->  badarg tag opt "float,float"),
-  let x,y = !v in
-  sprintf "<float,float> %s, default %.1f,%.1f" msg x y
-
-let parse_posopt opt v msg =
-  opt,
-  Arg.String
-    (fun tag -> match Misc.pos_of_string tag with
-    | Some p -> v := Some p
-    | None ->  badarg tag opt "float,float"),
-  sprintf "<float,float> %s" msg
-
-let parse_string_opt opt v msg =
-  opt,
-  Arg.String (fun s -> match s with "none" -> v := None | _ -> v := Some s),
-  sprintf "<string|none> %s" msg
-
-let parse_string opt v msg =
-  opt,
-  Arg.String (fun s -> v := s),
-  sprintf "<string> %s, default %s" msg !v
-
-let parse_stringsetfun opt f msg =
-  opt,
-  Arg.String
-    (fun tag ->
-      let es = Misc.split_comma tag in
-      f (StringSet.of_list es)),
-  sprintf "<name,..,name> %s" msg
-
-let parse_stringset opt v msg =
-  parse_stringsetfun opt (fun s -> v := StringSet.union s !v) msg
 
 
 (* Option list *)
@@ -376,7 +299,7 @@ let options = [
     "position of pseudo target event for final rf" ;
   parse_bool "-oneinit" PP.oneinit
     "show a init writes pseudo-event, with all initial writes grouped" ;
-  parse_posopt "-initpos" PP.initpos
+  parse_pos_opt "-initpos" PP.initpos
     "position of the init writes pseudo-event" ;
   parse_bool "-showinitwrites" PP.showinitwrites
     "show init write events in pictures" ;

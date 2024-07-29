@@ -1,0 +1,18 @@
+AArch64 L102
+{
+int x[4] = {-1,-2,-3,-2};
+0:X0=x;
+int64_t 0:X2;
+int64_t 0:X3;
+int64_t 0:X4;
+}
+  P0                   ;
+MOV W1,#-7             ;
+STR W1,[X0],#12        ;
+LDRSW X3,[X0],#4       ;
+LDRSW X4,[X0,X3,LSL 2] ;
+LDRSW X2,[X0,#-16]!    ;
+forall 0:X2=-7 /\ 0:X3=-2 /\ 0:X4=-3
+
+
+

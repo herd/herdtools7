@@ -76,6 +76,15 @@ val run_herd :
      path -> ?j:int -> ?timeout:float ->
      path list -> int * string list * string list
 
+(** [run_herd_args herd args litmus] similar in functionality  to
+  * [run_herd] above but different as regards interface:
+  *   1. Command-line options are given as a list of strings;
+  *   2. One litmus test only is given as argument.
+  *)
+val run_herd_args :
+  path -> string list -> path ->
+    int * string list * string list
+
 (** [run_herd_concurrent ~bell ~cat ~conf ~variants ~libdir herd j litmuses]
  *  Similar to [run_herd] except that output is stored into files specific
  *  to each test: [litmus].out and [litmus].err. *)
@@ -113,6 +122,13 @@ val herd_output_matches_expected :
   libdir   : path ->
     path -> path -> path -> path -> path  -> bool
 
+(** [herd_args_output_mathes_expected herd args litmus
+  *  expected expected_failure expected_warn] has the same functionality
+  *  as [herd_output_matches_expected] above but a different interface,
+  *   as command line options are given as the list [args]. *)
+val herd_args_output_matches_expected :
+  path -> string list -> path -> path -> path -> path  -> bool
+
 (** [is_litmus filename] returns whether the [filename] is a .litmus file. *)
 val is_litmus : path -> bool
 
@@ -133,3 +149,8 @@ val litmus_of_expected_failure : path -> path
 
 (** [expected_warn_of_litmus filename] returns the .litmus.expected-warn name for a given .litmus [filename]. *)
 val expected_warn_of_litmus : path -> path
+
+(** [promote  litmus result] it is assumed that result is the result of running the test [litmus].
+  * Promote [result] as the reference for test [litmus]. If anyrging is wrong, return [false].
+  *)
+val promote : path -> (int * string list * string list) -> bool

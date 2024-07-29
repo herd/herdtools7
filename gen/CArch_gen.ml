@@ -28,12 +28,13 @@ module SIMD = NoSIMD
 type atom = MemOrder.t
 
 let default_atom = SC
+let instr_atom = None
 
 let applies_atom a d = match a,d with
 | (Acq|Acq_Rel|Con),W -> false
 | (Rel|Acq_Rel),R -> false
 | _,_ -> true
-
+let is_ifetch _ = false
 let compare_atom = Misc.polymorphic_compare
 
 include MachMixed.No
@@ -131,6 +132,7 @@ let location_compare loc1 loc2 = match loc1,loc2 with
 end
 
 let of_reg p r = Reg (p,r)
+let pp_i _ = assert false
 let of_loc loc = Loc (as_data loc)
 
 type tbase = TypBase.t

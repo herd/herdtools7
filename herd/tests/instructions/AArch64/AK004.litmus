@@ -1,0 +1,7 @@
+AArch64 AK004
+{
+0:X5=P0:Lself00;
+}
+ P0         ;
+ MOV X4,X5  ;
+locations [0:X4]

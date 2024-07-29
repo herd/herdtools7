@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 open Format
 open AST
@@ -85,8 +102,7 @@ let pp_literal f = function
   | L_Bool true -> pp_print_string f "TRUE"
   | L_Bool false -> pp_print_string f "FALSE"
   | L_Real r ->
-      if Q.den r = Z.one then fprintf f "%a.0" Z.pp_print (Q.num r)
-      else Q.pp_print f r
+      fprintf f "(%a.0 / %a.0)" Z.pp_print (Q.num r) Z.pp_print (Q.den r)
   | L_BitVector bv -> Bitvector.pp_t f bv
   | L_String s -> fprintf f "%S" s
 
@@ -94,7 +110,7 @@ let rec pp_expr f e =
   match e.desc with
   | E_Literal v -> pp_literal f v
   | E_Var x -> pp_print_string f x
-  | E_Typed (e, ty) -> fprintf f "@[%a@ as %a@]" pp_expr e pp_ty ty
+  | E_CTC (e, ty) -> fprintf f "@[%a@ as %a@]" pp_expr e pp_ty ty
   | E_Binop (b, e1, e2) ->
       fprintf f "(@[<hov 2>%a@ %s %a@])" pp_expr e1 (binop_to_string b) pp_expr
         e2
@@ -115,7 +131,7 @@ let rec pp_expr f e =
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
   | E_Concat es -> fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
-  | E_Unknown ty -> fprintf f "@[<h>UNKNOWN ::@ %a@]" pp_ty ty
+  | E_Unknown ty -> fprintf f "@[<h>UNKNOWN :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
 
 and pp_expr_list f = pp_comma_list pp_expr f
@@ -149,11 +165,9 @@ and pp_ty f t =
   | T_Real -> pp_print_string f "real"
   | T_String -> pp_print_string f "string"
   | T_Bool -> pp_print_string f "boolean"
-  | T_Bits (bits_constraint, []) ->
-      fprintf f "@[bits(%a)@]" pp_bits_constraint bits_constraint
-  | T_Bits (bits_constraint, fields) ->
-      fprintf f "@[bits (%a)@ %a@]" pp_bits_constraint bits_constraint
-        pp_bitfields fields
+  | T_Bits (width, []) -> fprintf f "@[bits(%a)@]" pp_expr width
+  | T_Bits (width, fields) ->
+      fprintf f "@[bits (%a)@ %a@]" pp_expr width pp_bitfields fields
   | T_Enum enum_ty ->
       fprintf f "@[<hov 2>enumeration {@,%a@;<0 -2>}@]"
         (pp_comma_list pp_print_string)
@@ -191,13 +205,7 @@ and pp_int_constraint f = function
 
 and pp_int_constraints f = pp_comma_list pp_int_constraint f
 
-and pp_bits_constraint f = function
-  | BitWidth_SingleExpr i -> pp_expr f i
-  | BitWidth_Constraints int_constraint ->
-      fprintf f "@[{%a}@]" pp_int_constraints int_constraint
-  | BitWidth_ConstrainedFormType ty -> fprintf f "- : %a" pp_ty ty
-
-let pp_typed_identifier f (name, ty) = fprintf f "%s::%a" name pp_ty ty
+let pp_typed_identifier f (name, ty) = fprintf f "@[%s:@ %a@]" name pp_ty ty
 
 let rec pp_lexpr f le =
   match le.desc with
@@ -209,8 +217,8 @@ let rec pp_lexpr f le =
       fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le
         (pp_comma_list pp_print_string)
         li
-  | LE_Ignore -> pp_print_string f "-"
-  | LE_TupleUnpack les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
+  | LE_Discard -> pp_print_string f "-"
+  | LE_Destructuring les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
   | LE_Concat (les, _) -> fprintf f "@[[%a]@]" (pp_comma_list pp_lexpr) les
 
 let pp_for_direction = function Up -> "to" | Down -> "downto"
@@ -224,11 +232,11 @@ let pp_local_decl_keyword f k =
 
 let rec pp_local_decl_item f =
   let pp_ty_opt f = function
-    | Some ty -> fprintf f "@ :: @[%a@]" pp_ty ty
+    | Some ty -> fprintf f ": @[%a@]" pp_ty ty
     | None -> ()
   in
   function
-  | LDI_Ignore ty_opt -> fprintf f "@[-%a@]" pp_ty_opt ty_opt
+  | LDI_Discard ty_opt -> fprintf f "@[-%a@]" pp_ty_opt ty_opt
   | LDI_Var (s, ty_opt) -> fprintf f "@[%s%a@]" s pp_ty_opt ty_opt
   | LDI_Tuple (ldis, ty_opt) ->
       fprintf f "@[(%a)%a@]"
@@ -238,7 +246,7 @@ let rec pp_local_decl_item f =
 let rec pp_stmt f s =
   match s.desc with
   | S_Pass -> pp_print_string f "pass;"
-  | S_Then (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
+  | S_Seq (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
   | S_Assign (le, e, _) -> fprintf f "@[<h 2>%a =@ %a;@]" pp_lexpr le pp_expr e
   | S_Call (name, args, _) ->
       fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
@@ -317,9 +325,9 @@ let pp_decl f =
     | { name; keyword; ty = None; initial_value = Some e } ->
         fprintf f "%a %s@ = %a" pp_gdk keyword name pp_expr e
     | { name; keyword; ty = Some t; initial_value = Some e } ->
-        fprintf f "%a %s@ :: %a@ = %a" pp_gdk keyword name pp_ty t pp_expr e
+        fprintf f "%a %s:@ %a@ = %a" pp_gdk keyword name pp_ty t pp_expr e
     | { name; keyword; ty = Some t; initial_value = None } ->
-        fprintf f "%a %s@ :: %a" pp_gdk keyword name pp_ty t
+        fprintf f "%a %s:@ %a" pp_gdk keyword name pp_ty t
     | { name = _; keyword = _; ty = None; initial_value = None } -> assert false
   in
   let pp_func_sig f

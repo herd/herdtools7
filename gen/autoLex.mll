@@ -61,7 +61,7 @@ and lex_conf cfg = parse
   {
    lex_conf
      (match Archs.parse arg with
-       | None -> error (sprintf "unkown architecture: %s" arg)
+       | None -> error (sprintf "unknown architecture: %s" arg)
        | Some a -> { cfg with arch =a; } )
      lexbuf
   }

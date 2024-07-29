@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 open AST
 open ASTUtils
@@ -166,12 +183,32 @@ module NativeBackend = struct
 
   let read_from_bitvector positions bv =
     let positions = slices_to_positions as_int positions in
-    let max_pos = List.fold_left int_max 1 positions in
+    let max_pos = List.fold_left int_max 0 positions in
+    let () =
+      List.iter
+        (fun x -> if x < 0 then mismatch_type bv [ default_t_bits ])
+        positions
+    in
     let bv =
       match bv with
-      | NV_Literal (L_BitVector bv) -> bv
+      | NV_Literal (L_BitVector bv) when Bitvector.length bv > max_pos -> bv
       | NV_Literal (L_Int i) -> Bitvector.of_z (max_pos + 1) i
-      | _ -> mismatch_type bv [ default_t_bits ]
+      | _ ->
+          mismatch_type bv
+            [
+              T_Bits
+                ( E_CTC
+                    ( E_Var "-" |> add_dummy_pos,
+                      T_Int
+                        (Some
+                           [
+                             Constraint_Range
+                               (expr_of_int 0, expr_of_int max_pos);
+                           ])
+                      |> add_dummy_pos )
+                  |> add_dummy_pos,
+                  [] );
+            ]
     in
     let res = Bitvector.extract_slice bv positions in
     bitvector_to_value res
@@ -280,7 +317,7 @@ module NativePrimitives = struct
 
   let primitives =
     let with_pos = add_dummy_pos in
-    let t_bits e = T_Bits (BitWidth_SingleExpr e, []) |> with_pos in
+    let t_bits e = T_Bits (e, []) |> with_pos in
     let e_var x = E_Var x |> with_pos in
     let d_func_string i =
       D_Func

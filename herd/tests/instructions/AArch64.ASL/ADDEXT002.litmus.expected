@@ -1,0 +1,10 @@
+Test ADDEXT02 Required
+States 1
+0:X2=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=0)
+Observation ADDEXT02 Always 1 0
+Hash=46768c1a69fcfdc354ab34efcd393619
+
