@@ -3103,6 +3103,7 @@ or an abnormal configuration and one of the following applies:
 \end{itemize}
 
 Recall that ASL has three different categories of variable declarations ---
+%Recall from where?
 constants, mutable variables (declared via \texttt{var}), and immutable variables (declared via \texttt{let}).
 From the perspective of evaluating the semantics of local declarations (and local declarations statements
 in \chapref{eval_stmt}), they are all treated the same way.
@@ -3316,6 +3317,31 @@ which is $\nvint(3)$.
 \chapter{Evaluation of Statements \label{chap:eval_stmt}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Syntax}
+
+\section{Abstract Syntax}
+
+\lrmcomment{This is related to \identr{PTNG}:}
+
+\section{Informal preamble}
+Statements consist of:
+\begin{itemize}
+\item Pass statements, which do nothing (see \secref{SemanticsRule.SPass}), 
+\item Assignment statements (see \secref{SemanticsRule.SAssign} and \secref{SemanticsRule.SAssignCall}),     
+\item Sequencing statements (see \secref{SemanticsRule.SSeq}),
+\item Return statements (see Section~\label{sec:ReturnStatements}, \secref{SemanticsRule.SReturnNone}, \secref{SemanticsRule.SReturnOne} and \secref{SemanticsRule.SReturnSome}),
+\item Procedure invocation statements (see \secref{SemanticsRule.SCall}),
+\item Case statements (see \secref{SemanticsRule.SCase}),
+\item Assertion statements (see \secref{SemanticsRule.Assert}),
+\item Repetitive statements (see \secref{SemanticsRule.SWhile}, \secref{SemanticsRule.Repeat}, \secref{SemanticsRule.For}),
+\item Throw statements, which throw exceptions (see \secref{SemanticsRule.ThrowNone} and \secref{SemanticsRule.SThrowSomeTyped}),
+\item Conditional statements (see \secref{SemanticsRule.SCond}),
+\item Exception handling (see \secref{SemanticsRule.STry}),
+\item Declarations of variables, let values and constants (see \secref{SemanticsRule.SDeclSome} and \secref{SemanticsRule.SDeclNone}).
+\end{itemize}
+
+\section{Formal preamble}
+
 The relation
 \hypertarget{def-evalstmt}{}
 \[
@@ -3362,7 +3388,16 @@ In evaluating a statement $\vs$, one of the following applies:
 \end{itemize}
 
 \section{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
-\subsection{Prose}
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\subsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SPass.asl}
+\texttt{pass;} does nothing.
+
+\subsection{Formally}
 All of the following apply:
 \begin{itemize}
 \item $\vs$ is a \texttt{pass} statement, $\SPass$;
@@ -3370,31 +3405,28 @@ All of the following apply:
 \item $\newenv$ is $\env$.
 \end{itemize}
 
-\subsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SPass.asl}
-\texttt{pass;} does nothing.
-
-\CodeSubsection{\SPassBegin}{\SPassEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{}{
   \evalstmt{\env, \SPass} \evalarrow \Continuing(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
-\section{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
-This rule covers all assignment statements, except the ones where the right-hand side expression
-is a function call, which is covered by SemanticsRule.SAssignCall (see \secref{SemanticsRule.SAssignCall}).
-Although the sequential semantics of both statements is the same, SemanticsRule.SAssignCall
-generates a different execution graph.
+\CodeSubsection{\SPassBegin}{\SPassEnd}{../Interpreter.ml}
 
-\subsection{Prose}
+\section{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\subsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssign.asl}
+\texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
+$\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
+
+\subsection{Formally}
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assignment statement, $\SAssign(\vle, \vre)$;
@@ -3405,16 +3437,6 @@ All of the following apply:
         as per \chapref{eval_lexpr}, is $\Normal(\newg, \newenv)$\ProseOrAbnormal.
 \end{itemize}
 
-\subsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssign.asl}
-\texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
-$\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
-
-\CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \astlabel(\vre) \neq \ECall\\
@@ -3424,15 +3446,36 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
   \evalstmt{\env, \SAssign(\vle, \vre)} \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
+This rule covers all assignment statements, except the ones where the
+right-hand side expression is a function call, which is covered by
+SemanticsRule.SAssignCall (see \secref{SemanticsRule.SAssignCall}).  Although
+the sequential semantics of both statements is the same,
+SemanticsRule.SAssignCall generates a different execution graph.
+
 Notice that this rule first produces a value for the right-hand side expression
-and then completes the update via an appropriate rule for evaluating the left-hand side expression,
-which in turn handles variables, tuples, bitvectors, etc.
+and then completes the update via an appropriate rule for evaluating the
+left-hand side expression, which in turn handles variables, tuples, bitvectors,
+etc.
+
+\CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SAssignCall \label{sec:SemanticsRule.SAssignCall}}
-\subsection{Prose}
+
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\subsection{Example}
+
+\VerbatimInput{\testdir/SemanticsRule.SAssignCall.asl}
+given that the function call \texttt{f(1)} returns a pair of values --- $\nvint(1)$ and $\nvint(2)$
+(each with its own associated execution graph),
+the statement \texttt{(a,b) = f(1)} assigns the value $\nvint(1)$ to the mutable variable \texttt{a}
+and the value $\nvint(2)$ to the mutable variable~\texttt{b}.
+
+\subsection{Formally}
 All of the following apply:
 \begin{itemize}
   \item $\vs$ assigns a left-hand-side expression list from a subprogram call, \\
@@ -3445,18 +3488,6 @@ All of the following apply:
         $\Normal(\vgtwo, \newg)$\ProseOrAbnormal.
 \end{itemize}
 
-\subsection{Example}
-
-\VerbatimInput{\testdir/SemanticsRule.SAssignCall.asl}
-given that the function call \texttt{f(1)} returns a pair of values --- $\nvint(1)$ and $\nvint(2)$
-(each with its own associated execution graph),
-the statement \texttt{(a,b) = f(1)} assigns the value $\nvint(1)$ to the mutable variable \texttt{a}
-and the value $\nvint(2)$ to the mutable variable~\texttt{b}.
-
-\CodeSubsection{\SAssignCallBegin}{\SAssignCallEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 We first define the syntactic relation
 \hypertarget{def-lexprisvar}{}
 \[
@@ -3482,12 +3513,36 @@ We now define the evaluation of assigning from a subprogram call:
   \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
-\section{SemanticsRule.SReturnNone \label{sec:SemanticsRule.SReturnNone}}
-    \subsection{Prose}
+\CodeSubsection{\SAssignCallBegin}{\SAssignCallEnd}{../Interpreter.ml}
+
+\section{Return statements \label{sec:ReturnStatements}}
+
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\lrmcomment{This is related to \identd{HTPL}:}
+
+A return statement returns the control flow to the caller of a subprogram.
+
+\lrmcomment{This is related to \identr{PHNZ}:}
+
+A return statement appearing in a getter or function requires a return value expression that type-satisfies the return type of the subprogram.
+
+\lrmcomment{This is related to \identr{NYWH}:}
+
+A return statement appearing in a setter or procedure must have no return value expression.
+
+\subsection{SemanticsRule.SReturnNone \label{sec:SemanticsRule.SReturnNone}}
+    \subsubsection{Example}
+    The specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
+    exits the current procedure.
+
+\subsubsection{Formally}
     All of the following apply:
     \begin{itemize}
     \item $\vs$ is a \texttt{return} statement, $\SReturn(\None)$;
@@ -3496,28 +3551,31 @@ We now define the evaluation of assigning from a subprogram call:
     \item $\newenv$ is $\env$.
     \end{itemize}
 
-    \subsection{Example}
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
-    exits the current procedure.
-
-
-  \CodeSubsection{\SReturnNoneBegin}{\SReturnNoneEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 \begin{mathpar}
   \inferrule{}
   {
     \evalstmt{\env, \SReturn(\None)} \evalarrow \Returning((\emptylist, \emptygraph), \env)
   }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\isempty{\subsubsection{Comments}}
 
-\section{SemanticsRule.SReturnOne \label{sec:SemanticsRule.SReturnOne}}
-    \subsection{Prose}
+\CodeSubsubsection{\SReturnNoneBegin}{\SReturnNoneEnd}{../Interpreter.ml}
+
+\subsection{SemanticsRule.SReturnOne \label{sec:SemanticsRule.SReturnOne}}
+
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\subsubsection{Example}
+    In the specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
+    \texttt{return 3;} exits the current subprogram with value \texttt{3}.
+
+
+\subsubsection{Formally}
+
     All of the following apply:
     \begin{itemize}
     \item $\vs$ is a \texttt{return} statement;
@@ -3528,16 +3586,6 @@ We now define the evaluation of assigning from a subprogram call:
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
     \end{itemize}
 
-    \subsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
-    \texttt{return 3;} exits the current subprogram with value \texttt{3}.
-
-
-  \CodeSubsection{\SReturnOneBegin}{\SReturnOneEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 \begin{mathpar}
   \inferrule{
     \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\\\
@@ -3549,12 +3597,22 @@ We now define the evaluation of assigning from a subprogram call:
     \evalstmt{\env, \SReturn(\langle\ve\rangle)} \evalarrow \Returning(([\vv], \newg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\isempty{\subsubsection{Comments}}
+  \CodeSubsubsection{\SReturnOneBegin}{\SReturnOneEnd}{../Interpreter.ml}
 
-\section{SemanticsRule.SReturnSome \label{sec:SemanticsRule.SReturnSome}}
-    \subsection{Prose}
+\subsection{SemanticsRule.SReturnSome \label{sec:SemanticsRule.SReturnSome}}
+
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+    \subsubsection{Example}
+    In the specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
+    \texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
+
+\subsubsection{Formally}
     All of the following apply:
     \begin{itemize}
     \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
@@ -3563,16 +3621,6 @@ We now define the evaluation of assigning from a subprogram call:
     \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
     \end{itemize}
 
-    \subsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
-    \texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
-
-
-  \CodeSubsection{\SReturnSomeBegin}{\SReturnSomeEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 \newcommand\writefolder[1]{\texttt{write\_folder}(#1)}
 
 We first define the helper relation
@@ -3611,12 +3659,23 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \evalstmt{\env, \SReturn(\langle\ETuple(\es)\rangle)} \evalarrow \Returning((\vvs, \newg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\isempty{\subsubsection{Comments}}
+
+\CodeSubsubsection{\SReturnSomeBegin}{\SReturnSomeEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SSeq \label{sec:SemanticsRule.SSeq}}
-  \subsection{Prose}
+
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\subsection{Example}
+  In the specification:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
+  \texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
+
+\subsection{Formally}
   All of the following apply:
   \begin{itemize}
     \item $\vs$ is a \emph{sequencing statement} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
@@ -3630,16 +3689,6 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
   \end{itemize}
 
-  \subsection{Example}
-  In the specification:
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
-  \texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
-
-
-  \CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 \begin{mathpar}
   \inferrule{
     \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\
@@ -3651,12 +3700,27 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \evalstmt{\env, \SSeq(\vsone, \vstwo)} \evalarrow D
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+\CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Interpreter.ml}
+
 \section{SemanticsRule.SCall \label{sec:SemanticsRule.SCall}}
-    \subsection{Prose}
+
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\lrmcomment{This is related to \identd{KCYT}:}
+A procedure invocation statement calls a procedure subprogram using the given
+actual arguments. The subprogram must not have a return type.
+
+\subsection{Example}
+    In the specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
+    \texttt{Zeros(3)} evaluates to \texttt{'000'}.
+
+\subsection{Formally}
     All of the following apply:
     \begin{itemize}
     \item $\vs$ is a call statement;
@@ -3666,16 +3730,6 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \subsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
-    \texttt{Zeros(3)} evaluates to \texttt{'000'}.
-
-
-  \CodeSubsection{\SCallBegin}{\SCallEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 \begin{mathpar}
   \inferrule{
     \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
@@ -3684,12 +3738,45 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \evalstmt{\env, \SCall(\name, \args, \namedargs)} \evalarrow \Continuing(\newg, \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+\CodeSubsection{\SCallBegin}{\SCallEnd}{../Interpreter.ml}
+
 \section{SemanticsRule.SCond \label{sec:SemanticsRule.SCond}}
-    \subsection{Prose}
+
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\subsection{Informally}
+
+\lrmcomment{This is related to \identr{TMYS}:}
+Conditional statements select which block to execute by testing condition expressions sequentially until a $\True$ condition is found.
+
+\lrmcomment{This is related to \identr{XSSL}:}
+If no $\True$ condition is found and there is an \texttt{else} block, the
+\texttt{else} block is executed. 
+
+\lrmcomment{This is related to \identr{KZTJ}:}
+If no $\True$ condition is found and there is no \texttt{else} block, no block is executed.
+
+\subsection{Examples}
+    The specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
+    does not result in any Assertion Error.
+
+    The specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond2.asl}
+ 
+    The specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond3.asl}
+
+    The specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond4.asl}
+ 
+
+\subsection{Formally}
     Evaluation of the statement $\vs$ in an environment $\env$ is
     the output configuration $D$, and all of the following apply:
     \begin{itemize}
@@ -3705,16 +3792,6 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
     \end{itemize}
 
-    \subsection{Example}
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
-    does not result in any Assertion Error.
-
-
-  \CodeSubsection{\SCondBegin}{\SCondEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
 \begin{mathpar}
   \inferrule{
     \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envone) \OrAbnormal\\
@@ -3728,12 +3805,23 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \evalstmt{\env, \SCond(\ve, \vsone, \vstwo)} \evalarrow D
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+\CodeSubsection{\SCondBegin}{\SCondEnd}{../Interpreter.ml}
+
 \section{SemanticsRule.SCase \label{sec:SemanticsRule.SCase}}
-    \subsection{Prose}
+
+\subsection{Syntax}
+
+\subsection{AbstractSyntax}
+
+\subsection{Example}
+    The specification:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl}
+    uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
+
+\subsection{Formally}
     Evaluation of the statement $\vs$ in an environment $\env$ is a configuration $C$,
     and all of the following apply:
     \begin{itemize}
@@ -3744,16 +3832,7 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
     \item evaluating $\vsone$ in $\env$ results in the output configuration $C$.
     \end{itemize}
 
-    \subsection{Example}
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl}
-    uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
 
-
-  \CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Interpreter.ml}
-
-\begin{emptyformal}
-\subsection{Formally}
   \hypertarget{def-casetoconds}{}
 A case statement is syntactic sugar for a condition ladder where each
 of the alternatives is a pattern.
@@ -3804,11 +3883,25 @@ We now define the semantics of a case statement in terms of the desugared statem
     \evalstmt{\env, \SCase(\ve, \caselist)} \evalarrow C
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
+\CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Interpreter.ml}
+
 \section{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
+
+\lrmcomment{This is related to \identd{QJYV}:}
+An assertion statement takes an expression that is asserted by the
+specification to be $\True$ when the assertion statement is executed.
+
+\lrmcomment{This is related to \identr{WZSL}:}
+If an assertion expression is $\False$ when the assertion statement is
+executed, it is a dynamic error. An implementation may throw an
+implementation-defined exception in this case, but is not required to.
+
+\lrmcomment{This is related to \identr{WQRN}:}
+The expression in an assertion statement must be side-effect-free.
+
     \subsection{Prose}
     All of the following apply:
     \begin{itemize}
