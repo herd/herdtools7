@@ -341,10 +341,10 @@ of the semantics in this document, to test and analyze a given specification.
   and how to produce the corresponding typed ASTs and static environments.
 \end{itemize}
 
-\paragraph{Undestanding the Semantics Formalization:}
+\paragraph{Understanding the Semantics Formalization:}
 We assume basic familiarity with the ASL language constructs. % (see the Language Reference Manual~\cite{LRM}).
 The ASL semantics is defined in terms of its AST,
-and familiarity with the AST is \underline{required} to understand it.
+and as a consequence familiarity with the AST is required to understand the semantics.
 The few components of the type system needed to understand the ASL semantics are explained in context.
 The mathematical background needed to understand the mathematical formalization
 of the ASL semantics appears in \chapref{formal} and \chapref{semanticsbuildingblocks}.
@@ -407,15 +407,16 @@ Technically, the sequential semantics are defined by omitting the concurrent exe
 from all configurations.
 
 \section{Reading guide}
-The semantic rules are organized into chapters, which roughly group the rules by their AST node type.
-The set of rules in each chapter is further split according to additional syntactic and semantic
-predicates over the AST node.
-For example, expressions are split into literal expressions, binary operation expressions, etc.
-Each such subset of rules is named accordingly and appears in a section with the same name.
-For example, the rule for literal expressions is named SemanticsRule.Lit\footnote{Sometimes rules are split into cases.
-We then drop the SemanticsRule prefix from each case, for succinctness.
-The same convention applies to helper rules.} and defined in
-\secref{SemanticsRule.Lit}.
+The semantic rules are organized into chapters, which roughly group the rules
+by their AST node type.  The set of rules in each chapter is further split
+according to additional syntactic and semantic predicates over the AST node.
+For example, expressions are split into literal expressions, binary operation
+expressions, etc.  Each such subset of rules is named accordingly and appears
+in a section with the same name.  For example, the rule for literal expressions
+is named SemanticsRule.Lit and defined in \secref{SemanticsRule.Lit}.
+
+Sometimes rules are split into cases.  We then drop the SemanticsRule prefix
+from each case, for succinctness.  The same convention applies to helper rules.
 
 Each rule is presented using the following template:
 \begin{itemize}
@@ -567,7 +568,7 @@ This is used in matching a raised exception to a corresponding catch clause.
 
 \hypertarget{def-envs}{}
 \begin{definition}[Environments]
-Environments simply pair static environments with dynamic environments:
+Environments pair static environments with dynamic environments:
 $\envs = \staticenvs \times \dynamicenvs$.
 \end{definition}
 \hypertarget{def-env}{}
@@ -717,10 +718,11 @@ ASL semantics mainly utilizes the following types of output configurations:
   The ASL semantics propagates these \emph{early return configurations} to the respective call expression/statement.
 
   \hypertarget{def-continuing}{}
-  \item[Subprogram In-flight.] Configurations in $\Continuing(\XGraphs, \envs)$
+  \item[In-flight Subprogram.] Configurations in $\Continuing(\XGraphs, \envs)$
   represent the fact that a subprogram has more statements to execute.
   The ASL semantics treats these configurations as a signal to keep evaluating the remainder
   of the subprogram currently being evaluated.
+%where is this used?
 
   \hypertarget{def-error}{}
   \item[Dynamic Errors.] Configurations in $\Error(\texttt{<string>})$
@@ -748,10 +750,17 @@ We define the following shorthands for types of output configurations:
   \end{array}
 \]
 
-We will say that a semantic transition \emph{terminates normally} when the output configuration domain is $\Normal$,
-\emph{terminates exceptionally} when the output configuration domain is $\Throwing$,
-\emph{terminates erroneously} when the output configuration domain is $\Error$,
-and \emph{terminates abnormally} when it either terminates exceptionally or erroneously.
+We will say that a semantic transition \emph{terminates}:
+\begin{itemize}
+\item \emph{normally} when the output configuration domain is
+$\Normal$,
+\item \emph{exceptionally} when the output configuration domain is
+$\Throwing$,
+\item \emph{erroneously} when the output configuration domain is
+$\Error$, and 
+\item \emph{abnormally} when it either terminates exceptionally or
+erroneously.
+\end{itemize}
 
 We introduce the following shorthands for configurations where all variables
 appearing are \hyperlink{def-freshvariables}{fresh}:
@@ -1218,14 +1227,36 @@ as well as \texttt{==}).
 \end{emptyformal}
 
 \subsection{Comments}
-\lrmcomment{This is related to \identr{XKGC} and \identr{BKNT}.}
+\lrmcomment{This is related to \identr{BKNT}:}
+
+\lrmcomment{This is related to \identr{XKGC}:}
+
+The semantics takes a semantic transition over the left subexpression before
+the right subexpression.
+
+This is an arbitrary choice as the type-checker must ensure that either order
+of evaluation of the operands yields the same result.
+
+In other words, it it is an error for an expression’s meaning to rely on
+evaluation order except that conditional expressions, and uses of the boolean
+operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
+from left to right.
+
+\lrmcomment{This is related to \identi{QJTN}:}
 
 Notice that when one of the subexpressions terminates exceptionally,
-the other expression must be side effect-free and non-throwing (\identi{QJTN}).
+the other expression must be side effect-free and non-throwing.
 
-The semantics takes a semantic transition over the left subexpression before the right subexpression.
-This is an arbitrary choice as the type-checker must ensure that either order of evaluation of the operands
-yields the same result.
+In other words, for any function call \texttt{F (e1, ..., em)}, tuple
+\texttt{(e1, ..., em)}, or operation \texttt{e1 op e2} (with the exception of
+\texttt{\&\&}, \texttt{||} and \texttt{-->}), it is an error if the
+subexpressions conflict with each other by:
+\begin{itemize}
+\item both writing to the same variable.
+\item one writing to a variable and the other reading from that same variable 
+\item one writing to a variable and the other throwing an exception
+\item both throwing exceptions
+\end{itemize}
 
 \section{SemanticsRule.Unop \label{sec:SemanticsRule.Unop}}
 \subsection{Prose}
@@ -1304,7 +1335,14 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{YCDB}.}
+\lrmcomment{This is related to \identr{YCDB}:}
+
+A conditional expression evaluates to its then expression if the condition
+expression evaluates to TRUE. If the condition expression evaluates to FALSE
+each elsif condition expression is evaluated sequentially until an elsif
+condition expression evaluates to TRUE; the conditional expression evaluates to
+the corresponding elsif expression. If no elsif expression evaluates to TRUE
+the conditional expression evaluates to the else expression.
 
 \section{SemanticsRule.ESlice \label{sec:SemanticsRule.ESlice}}
 \subsection{Prose}
@@ -1560,7 +1598,10 @@ All of the following apply:
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{BRCM}.}
+\lrmcomment{This is related to \identr{BRCM}:}
+
+Concatenation of multiple bitvectors is done using a comma separated list
+surrounded with square brackets.
 
 \section{SemanticsRule.ETuple \label{sec:SemanticsRule.ETuple}}
   \subsection{Prose}
@@ -1640,7 +1681,10 @@ Notice that this rule introduces non-determinism.
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{WLCH}.}
+\lrmcomment{This is related to \identr{WLCH}:}
+
+The expression \texttt{UNKNOWN: ty} evaluates to an arbitrary value in the
+domain of \texttt{ty}.
 
 \section{SemanticsRule.EPattern \label{sec:SemanticsRule.EPattern}}
   \subsection{Prose}
@@ -1685,6 +1729,24 @@ Notice that this rule introduces non-determinism.
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
+\lrmcomment{This is related to \identi{TCST}:}
+The rule about domains in the definitions of subtype-satisfaction and
+type-satisfaction means that it is illegal to use the unconstrained integer
+where a constrained integer is expected. An asserting type conversion (ATC) can
+be used to overcome this.
+
+\lrmcomment{This is related to \identi{CGRH}:}
+An ATC allows code to explicitly mark places where uses of constrained types
+would otherwise be a static type-checking error. The intent is to reduce the
+incidence of unintended errors by making such uses fail type-checking unless
+the asserting type conversion is provided.
+
+\lrmcomment{This is related to \identr{WZVX}:}
+Note that ATCs are exectution-time checks. An execution-time check is a
+condition that is evaluated during the evaluation of an execution-time
+initializer expression or subprogram. If the condition evaluates to $\False$ it
+is a dynamic error.
+
   \subsection{Prose}
   All of the following apply:
   \begin{itemize}
@@ -1712,6 +1774,22 @@ Notice that this rule introduces non-determinism.
 \subsection{Example}
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCError.asl}
 
+\subsection{Example}
+\lrmcomment{This is related to \identr{YCPX}:}
+
+Dynamic error conditions only hold if the asserting type conversion is
+evaluated. 
+
+In the example below, the asserting type conversion on \texttt{y} is
+not a dynamic error if the invocation of \texttt{f1} returns $\False$ when
+evaluated:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
+
+\subsection{Example}
+
+The following excerpts indicates several points where various static and
+dynamic errors can occur:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCVariousErrors.asl}
 
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Interpreter.ml}
 
@@ -1738,7 +1816,6 @@ Notice that this rule introduces non-determinism.
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{WZVX}, \identi{VQLX}, \identr{YCPX}, \identi{TCST}, \identi{CGRH}.}
 
 \section{SemanticsRule.EExprList \label{sec:SemanticsRule.EExprList}}
 \subsection{Prose}
@@ -2022,7 +2099,19 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{WHRS}.}
+\lrmcomment{This is related to \identr{WHRS}:}
+
+If the declared type of a setter’s RHS argument has the structure of a
+bitvector or a type with fields, then if a bitslice or field selection is
+applied to a setter invocation, then the assignment to that bitslice is
+implemented using the following Read-Modify-Write (RMW) behavior:
+\begin{itemize}
+\item invoking the getter of the same name as the setter, with the same actual
+arguments as the setter invocation 
+\item performing the assignment to the bitslice or field of the result of the
+getter invocation
+\item invoking the setter to assign the resulting value
+\end{itemize}
 
 \section{SemanticsRule.LESetArray \label{sec:SemanticsRule.LESetArray}}
   \subsection{Prose}
@@ -2069,7 +2158,19 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 \end{emptyformal}
 
 \subsection{Comments}
-\lrmcomment{This is related to \identr{WHRS}.}
+\lrmcomment{This is related to \identr{WHRS}:}
+If the declared type of a setter’s RHS argument has the structure of a
+bitvector or a type with fields, then if a bitslice or field selection is
+applied to a setter invocation, then the assignment to that bitslice is
+implemented using the following Read-Modify-Write (RMW) behavior:
+\begin{itemize}
+\item invoking the getter of the same name as the setter, with the same actual
+arguments as the setter invocation 
+\item performing the assignment to the bitslice or field of the result of the
+getter invocation
+\item invoking the setter to assign the resulting value
+\end{itemize}
+
 
 We note that the index is guaranteed by the type-checker to be within the array bounds
 via TypingRule.LESetArray (see the ASL Typing Reference~\cite{ASLTypingReference} chapter
@@ -2119,10 +2220,21 @@ via TypingRule.LESetArray (see the ASL Typing Reference~\cite{ASLTypingReference
 \end{emptyformal}
 
 \subsection{Comments}
-\lrmcomment{This is related to \identr{WHRS}.}
-
 We note that the type-checker guarantees that $\fieldname$ exists in the record given by $\record$
 via TypingRule.LESetStructuredField.
+
+\lrmcomment{This is related to \identr{WHRS}:}
+If the declared type of a setter’s RHS argument has the structure of a
+bitvector or a type with fields, then if a bitslice or field selection is
+applied to a setter invocation, then the assignment to that bitslice is
+implemented using the following Read-Modify-Write (RMW) behavior:
+\begin{itemize}
+\item invoking the getter of the same name as the setter, with the same actual
+arguments as the setter invocation 
+\item performing the assignment to the bitslice or field of the result of the
+getter invocation
+\item invoking the setter to assign the resulting value
+\end{itemize}
 
 \section{SemanticsRule.LEDestructuring \label{sec:SemanticsRule.LEDestructuring}}
     \subsection{Prose}
@@ -4665,7 +4777,10 @@ One of the following applies:
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{SPNM}.}
+\lrmcomment{This is related to \identr{SPNM}:}
+When the \texttt{catch} of a \texttt{try} statement is executed, then the
+thrown exception is caught by the first catcher in that \texttt{catch} which it
+type-satisfies or the \texttt{otherwise\_opt} in that catch if it exists.
 
 \section{SemanticsRule.RethrowImplicit \label{sec:SemanticsRule.RethrowImplicit}}
 
@@ -4735,7 +4850,9 @@ One of the following applies:
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{GVKS}.}
+\lrmcomment{This is related to \identr{GVKS}:}
+An expressionless \texttt{throw} statement causes the exception which the
+currently executing catcher caught to be thrown.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Subprograms \label{chap:eval_call}}
@@ -4968,7 +5085,9 @@ calls the function \texttt{foo} and the procedure \texttt{bar}.
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{DFWZ}.}
+\lrmcomment{This is related to \identr{DFWZ}:}
+It is not an error for execution of a procedure or setter to end without a
+return statement.
 
 \section{SemanticsRule.ReadValueFrom \label{sec:SemanticsRule.ReadValueFrom}}
 \hypertarget{def-readvaluefrom}{}
