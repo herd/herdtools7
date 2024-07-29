@@ -28,9 +28,14 @@
 type strictness = [ `Silence | `Warn | `TypeCheck ]
 (** Possible strictness of type-checking. *)
 
-val type_check_ast :
-  strictness -> AST.t -> StaticEnv.env -> AST.t * StaticEnv.env
-(** Typechecks the AST, and returns an AST with type inference holes filled.
+module type ANNOTATE_CONFIG = sig
+  val check : strictness
+  val output_format : Error.output_format
+end
 
-    @raise Error.ASLException if the AST does not type-check.
-*)
+module type S = sig
+  val type_check_ast : ?env:StaticEnv.env -> AST.t -> AST.t * StaticEnv.env
+end
+
+module Annotate : functor (C : ANNOTATE_CONFIG) -> S
+module TypeCheckDefault : S

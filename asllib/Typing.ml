@@ -160,9 +160,16 @@ type strictness = [ `Silence | `Warn | `TypeCheck ]
 
 module type ANNOTATE_CONFIG = sig
   val check : strictness
+  val output_format : Error.output_format
+end
+
+module type S = sig
+  val type_check_ast : ?env:StaticEnv.env -> AST.t -> AST.t * StaticEnv.env
 end
 
 module Property (C : ANNOTATE_CONFIG) = struct
+  module EP = Error.ErrorPrinter (C)
+
   exception TypingAssumptionFailed
 
   type ('a, 'b) property = 'a -> 'b
@@ -178,7 +185,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
     match C.check with
     | `TypeCheck -> fun f () -> f ()
     | `Warn -> (
-        fun f () -> try f () with Error.ASLException e -> Error.eprintln e)
+        fun f () -> try f () with Error.ASLException e -> EP.eprintln e)
     | `Silence -> fun _f () -> ()
 
   let best_effort' : ('a, 'a) property -> ('a, 'a) property =
@@ -188,7 +195,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
         fun f x ->
           try f x
           with Error.ASLException e ->
-            Error.eprintln e;
+            EP.eprintln e;
             x)
     | `Silence -> ( fun f x -> try f x with Error.ASLException _ -> x)
 
@@ -350,7 +357,7 @@ end
 
    ---------------------------------------------------------------------------*)
 
-module Annotate (C : ANNOTATE_CONFIG) = struct
+module Annotate (C : ANNOTATE_CONFIG) : S = struct
   open Property (C)
   module Fn = FunctionRenaming (C)
 
@@ -603,23 +610,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let max_interval_size = ~$1 lsl 14 in
       Compare.(abs (a - b) > max_interval_size)
     in
-    let explode_constraint env = function
+    let explode_constraint ~loc env = function
       | Constraint_Exact _ as c -> [ c ]
       | Constraint_Range (a, b) as c -> (
           match (reduce_to_z_opt env a, reduce_to_z_opt env b) with
           | Some za, Some zb ->
               if interval_is_too_big za zb then
                 let () =
-                  Format.eprintf
-                    "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as \
-                     an interval.@]@."
-                    Z.pp_print za Z.pp_print zb
+                  EP.warn_from ~loc Error.(IntervalTooBigToBeExploded (za, zb))
                 in
                 [ c ]
-              else make_interval [] ~loc:b za zb
+              else make_interval [] ~loc za zb
           | _ -> [ c ])
     in
-    fun env -> list_concat_map (explode_constraint env)
+    fun ~loc env -> list_concat_map (explode_constraint ~loc env)
 
   let e_zero = expr_of_int 0
   let e_one = expr_of_int 1
@@ -703,7 +707,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let cs2 = binop_filter_right ~loc env op cs2 in
     let cs1, cs2 =
       if binop_is_exploding op then
-        (explode_intervals env cs1, explode_intervals env cs2)
+        (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2)
       else (cs1, cs2)
     in
     let res = constraint_binop op cs1 cs2 |> reduce_constraints env in
@@ -2350,14 +2354,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   and try_annotate_stmt env s =
     best_effort (s, env) (fun _ -> annotate_stmt env s)
 
-  and set_fields_should_reduce_to_call env le x fields (t_e, e) =
+  and set_fields_should_reduce_to_call ~loc env x fields (t_e, e) =
     (*
      * Field indices are extracted from the return type
      * of "associated" getter.
      *)
     let ( let* ) = Option.bind in
     let _, _, callee =
-      try Fn.try_subprogram_for_name le env x []
+      try Fn.try_subprogram_for_name loc env x []
       with Error.ASLException _ -> assert false
     in
     let* ty = callee.return_type in
@@ -2365,10 +2369,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let* name, args = should_fields_reduce_to_call env x ty fields in
     let args = (t_e, e) :: List.map (annotate_expr env) args in
     let name, args, eqs, ret_ty =
-      annotate_call_arg_typed (to_pos le) env name args ST_Setter
+      annotate_call_arg_typed loc env name args ST_Setter
     in
     let () = assert (ret_ty = None) in
-    Some (S_Call (name, args, eqs) |> add_pos_from le)
+    Some (S_Call (name, args, eqs) |> add_pos_from loc)
 
   and setter_should_reduce_to_call_recurse ~loc env (t_e, e) make_old_le sub_le
       =
@@ -2410,7 +2414,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetField (sub_le, field) -> (
         match sub_le.desc with
         | LE_Var x when should_reduce_to_call env x ST_Setter ->
-            set_fields_should_reduce_to_call env le x [ field ] (t_e, e)
+            set_fields_should_reduce_to_call env ~loc x [ field ] (t_e, e)
         | _ ->
             let old_le le' = LE_SetField (le', field) |> here in
             setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
@@ -2418,7 +2422,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetFields (sub_le, fields, slices) -> (
         match sub_le.desc with
         | LE_Var x when should_reduce_to_call env x ST_Setter ->
-            set_fields_should_reduce_to_call env le x fields (t_e, e)
+            set_fields_should_reduce_to_call env ~loc x fields (t_e, e)
         | _ ->
             let old_le le' = LE_SetFields (le', fields, slices) |> here in
             setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
@@ -2970,25 +2974,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       else fold
     in
     let fold_topo ast acc = TopoSort.ASTFold.fold fold ast acc in
-    fun ast env ->
+    fun ?(env = StaticEnv.empty) ast ->
       let ast_rev, env = fold_topo ast ([], env) in
       (List.rev ast_rev, env)
   (* End *)
 end
 
-module TypeCheck = Annotate (struct
+module TypeCheckDefault = Annotate (struct
   let check = `TypeCheck
+  let output_format = Error.HumanReadable
 end)
-
-module TypeInferWarn = Annotate (struct
-  let check = `Warn
-end)
-
-module TypeInferSilence = Annotate (struct
-  let check = `Silence
-end)
-
-let type_check_ast = function
-  | `TypeCheck -> TypeCheck.type_check_ast
-  | `Warn -> TypeInferWarn.type_check_ast
-  | `Silence -> TypeInferSilence.type_check_ast

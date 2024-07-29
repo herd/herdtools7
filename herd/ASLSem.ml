@@ -103,6 +103,22 @@ module Make (C : Config) = struct
   module Act = ASLAction.Make (ASL64AH)
   include SemExtra.Make (C) (ASL64AH) (Act)
 
+  module TypeCheck = Asllib.Typing.Annotate (struct
+    let check : Asllib.Typing.strictness =
+      if C.variant (Variant.ASLType `Warn) then `Warn
+      else if C.variant (Variant.ASLType `TypeCheck) then `TypeCheck
+      else `Silence
+
+    let output_format = Asllib.Error.HumanReadable
+  end)
+
+  module ASLInterpreterConfig = struct
+    let unroll =
+      match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
+
+    module Instr = Asllib.Instrumentation.SemanticsNoInstr
+  end
+
   let is_experimental = C.variant Variant.ASLExperimental
   let barriers = []
   let isync = None
@@ -781,18 +797,8 @@ module Make (C : Config) = struct
         let v_unknown_of_type = v_unknown_of_type
         let primitives = extra_funcs ii_env
       end in
-      let module Config = struct
-        let type_checking_strictness : Asllib.Typing.strictness =
-          if C.variant (Variant.ASLType `Warn) then `Warn
-          else if C.variant (Variant.ASLType `TypeCheck) then `TypeCheck
-          else `Silence
-
-        let unroll =
-          match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
-
-        module Instr = Asllib.Instrumentation.SemanticsNoInstr
-      end in
-      let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
+      let module ASLInterpreter =
+        Asllib.Interpreter.Make (ASLBackend) (ASLInterpreterConfig)
       in
       let ast =
         if not (C.variant Variant.ASL_AArch64) then ii.A.inst
@@ -873,7 +879,12 @@ module Make (C : Config) = struct
             | _ -> env)
           t.Test_herd.init_state []
       in
-      let exec () = ASLInterpreter.run_env env ast in
+      let ast, tenv =
+        ast |> Asllib.Builder.with_stdlib
+        |> Asllib.Builder.with_primitives ASLBackend.primitives
+        |> TypeCheck.type_check_ast
+      in
+      let exec () = ASLInterpreter.run_typed_env env tenv ast in
       let* i =
         match Asllib.Error.intercept exec () with
         | Ok m -> m

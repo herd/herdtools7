@@ -14,7 +14,7 @@ let debug f = Logs.debug ~src:_log_src f
 let get_ref_result ast =
   let open Asllib in
   try
-    match Native.interprete `TypeCheck ~instrumentation:false ast with
+    match Native.type_and_run ast with
     | 0, _ -> Ok ()
     | i, _ -> Error ("Bad return code: " ^ string_of_int i)
   with
@@ -31,18 +31,18 @@ let get_ref_result_instr =
   let open Native in
   let module B = Instrumentation.SemanticsSingleSetBuffer in
   let module C : Interpreter.Config = struct
-    let type_checking_strictness = `TypeCheck
     let unroll = 0
 
     module Instr = Instrumentation.SemMake (B)
   end in
   let module I = NativeInterpreter (C) in
   fun ast ->
-    let ast = List.rev_append Native.primitive_decls ast in
     B.reset ();
     let res =
       try
-        match I.run ast with
+        let ast = Builder.with_primitives Native.NativeBackend.primitives ast in
+        let ast, static_env = Typing.TypeCheckDefault.type_check_ast ast in
+        match I.run_typed static_env ast with
         | NV_Literal (L_Int z) when Z.equal z Z.zero -> Ok ()
         | NV_Literal (L_Int z) -> Error ("Bad return code: " ^ Z.to_string z)
         | _ -> Error "Bad return code (not integer)."

@@ -30,15 +30,14 @@ type native_value =
 module NativeBackend :
   Backend.S with type value = native_value and type 'a m = 'a
 
-val primitive_decls : AST.decl list
-(** List of primitives declared by the Native Backend. *)
-
 module NativeInterpreter (C : Interpreter.Config) :
   Interpreter.S with module B = NativeBackend
 
 val interprete :
-  Typing.strictness ->
   ?instrumentation:bool ->
-  ?static_env:StaticEnv.env ->
+  StaticEnv.env ->
   AST.t ->
   int * Instrumentation.semantics_rule list
+
+val type_and_run :
+  ?instrumentation:bool -> AST.t -> int * Instrumentation.semantics_rule list
