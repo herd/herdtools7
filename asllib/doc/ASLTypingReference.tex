@@ -128,6 +128,14 @@
 \newcommand\evaltoint[0]{\hyperlink{def-evaltoint}{\texttt{eval\_to\_int}}}
 \newcommand\sort[0]{\hyperlink{def-sort}{\texttt{sort}}}
 \newcommand\comparemonomialbindings[0]{\hyperlink{def-comparemonomialbindings}{\texttt{compare\_monomial\_bindings}}}
+\newcommand\annotatecalleeparameters[0]{\hyperlink{def-annotatecalleeparameters}{\texttt{annotate\_callee\_params}}}
+\newcommand\checkargstypesat[0]{\hyperlink{def-checkargstypesat}{\texttt{check\_args\_typesat}}}
+\newcommand\checkcalleeparams[0]{\hyperlink{def-checkcalleeparams}{\texttt{check\_callee\_params}}}
+\newcommand\annotateretty[0]{\hyperlink{def-annotateretty}{\texttt{annotate\_ret\_ty}}}
+\newcommand\renametyeqs[0]{\hyperlink{def-renametyeqs}{\texttt{rename\_ty\_eqs}}}
+\newcommand\substexpr[0]{\hyperlink{def-substexpr}{\texttt{subst\_expr}}}
+\newcommand\substexprnormalize[0]{\hyperlink{def-substexprnormalize}{\texttt{subst\_expr\_normalize}}}
+\newcommand\substconstraint[0]{\hyperlink{def-substconstraint}{\texttt{subst\_constraint}}}
 
 % Symbolic equivalence testing macros
 \newcommand\normalize[0]{\hyperlink{def-normalize}{\texttt{normalize}}}
@@ -201,7 +209,7 @@
 \newcommand\sliceswidth[0]{\texttt{slices\_width}}
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\texttt{annotate\_expr}}(#1)}
-\newcommand\annotateexprlist[1]{\hyperlink{def-annotateexprs}{\texttt{annotate\_exprs}}(#1)}
+\newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\texttt{annotate\_exprs}}}
 \newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\texttt{annotate\_lexpr}}(#1)}
 \newcommand\annotatearrayindex[0]{\texttt{annotate\_array\_index}}
 \newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\texttt{annotate\_slice}}}
@@ -211,7 +219,9 @@
 \newcommand\annotatestmt[1]{\hyperlink{def-annotatestmt}{\texttt{annotate\_stmt}}(#1)}
 \newcommand\annotateblock[1]{\hyperlink{def-annotateblock}{\texttt{annotate\_block}}(#1)}
 \newcommand\inlinesetter[1]{\texttt{setter\_should\_reduce\_to\_call\_s}(#1)}
-\newcommand\annotatecall[1]{\hyperlink{def-annotatecall}{\texttt{annotate\_call}}(#1)}
+\newcommand\annotatecall[0]{\hyperlink{def-annotatecall}{\texttt{annotate\_call}}}
+\newcommand\annotatecallargtyped[0]{\hyperlink{def-annotatecallargtyped}{\texttt{annotate\_call\_arg\_typed}}}
+\newcommand\annotateparameterdefining[0]{\hyperlink{def-annotateparameterdefining}{\texttt{annotate\_parameter\_defining}}}
 \newcommand\annotatecatcher[1]{\hyperlink{def-annotatecatcher}{\texttt{annotate\_catcher}}(#1)}
 \newcommand\reduceconstants[0]{\hyperlink{def-reduceconstants}{\texttt{reduce\_constants}}}
 \newcommand\declarelocalconstant[1]{\texttt{declare\_local\_constant}(#1)}
@@ -234,8 +244,7 @@
 \newcommand\constraintequal[0]{\hyperlink{def-constraintequal}{\texttt{constraint\_equal}}}
 \newcommand\arraylengthequal[0]{\hyperlink{def-arraylengthequal}{\texttt{array\_length\_equal}}}
 \newcommand\literalequal[0]{\hyperlink{def-literalequal}{\texttt{literal\_equal}}}
-\newcommand\findcheckdeduce[0]{\hyperlink{def-findcheckdeduce}{\texttt{find\_check\_deduce}}}
-%\newcommand\renametyeqs[0]{\texttt{rename\_ty\_eqs}}
+\newcommand\finddeducecheck[0]{\hyperlink{def-finddeducecheck}{\texttt{find\_deduce\_check}}}
 \newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\texttt{annotate\_bitfield}}}
 \newcommand\annotatebitfields[0]{\hyperlink{def-annotatebitfields}{\texttt{annotate\_bitfields}}}
 \newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\texttt{check\_no\_duplicates}}}
@@ -285,6 +294,8 @@
 \newcommand\TooManyCandidates[0]{\hyperlink{def-toomanycandidates}{\TypeErrorCode{TMC}}}
 \newcommand\ParameterWithoutDecl[0]{\hyperlink{def-parameterwithoutdecl}{\TypeErrorCode{PWD}}}
 \newcommand\NoLCA[0]{\hyperlink{def-nolca}{\TypeErrorCode{LCA}}}
+\newcommand\MismatchedReturnValue[0]{\hyperlink{def-mrv}{\TypeErrorCode{MRV}}}
+\newcommand\CallBadArity[0]{\hyperlink{def-cba}{\TypeErrorCode{CBA}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Typeset variable names
@@ -4815,7 +4826,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \reduceslicestocall(\tenv, \vep, \slices) \typearrow \langle(\name, \vargs)\rangle \OrTypeError\\\\
-  \annotatecall{\tenv, \name, \vargs, \STSetter} \typearrow (\nameone, \vargsone, \eqs, \langle\tty\rangle) \OrTypeError\\
+  \annotatecall(\tenv, \name, \vargs, \STSetter) \typearrow (\nameone, \vargsone, \eqs, \langle\tty\rangle) \OrTypeError\\
 }{
   \annotateexpr{\tenv, \ESlice(\vep, \slices)} \typearrow (\tty, \ECall(\nameone, \vargsone, \eqs))
 }
@@ -4844,7 +4855,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatecall{\tenv, \name, \vargs, \STFunction} \typearrow (\namep, \vargsp, \eqsp, \langle \vt \rangle) \OrTypeError
+  \annotatecall(\tenv, \name, \vargs, \STFunction) \typearrow (\namep, \vargsp, \eqsp, \langle \vt \rangle) \OrTypeError
 }{
   \annotateexpr{\tenv, \ECall(\name, \vargs)} \typearrow (\vt, \ECall(\name, \vargsp, \eqsp))
 }
@@ -5638,11 +5649,13 @@ In the following example, we show several literals and their corresponding types
 \hypertarget{def-annotateexprs}{}
 The function
 \[
-  \annotateexprlist{\overname{\staticenvs}{\tenv} \aslsep \overname{\expr^*}{\exprs}}
+  \annotateexprlist(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr^*}{\exprs})
   \aslto \overname{(\ty \times \expr)^*}{\typedexprs}
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a list of expressions in from left to right.
+annotates a list of expressions $\exprs$ from left to right, yielding a list of pairs $\typedexprs$,
+each consisting of a type and expression.
+The result is a type error, if one is detected.
 
 \subsection{Prose}
 One of the following applies:
@@ -5655,13 +5668,12 @@ One of the following applies:
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
-    \item $\exprs$ has $\ve$ as its head expression and $\exprsone$ as its tail;
+    \item $\exprs$ has $\ve$ as its \head\ expression and $\exprsone$ as its \tail;
     \item annotating $\ve$ in $\tenv$ yields the pair $\typedexpr$ consisting of a type and an expression
     \ProseOrTypeError;
     \item annotating the expression list $\exprsone$ in $\tenv$ yields
     $\typedexprs$\ProseOrTypeError;
-    \item $\typedexprs$ is the list with $\typedexpr$ as its head
-    and $\typedexprs$ as its tail.
+    \item $\typedexprs$ is the list with $\typedexpr$ as its \head\ and $\typedexprs$ as its \tail.
   \end{itemize}
 \end{itemize}
 
@@ -5670,16 +5682,16 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \annotateexprlist{\tenv, \emptylist} \typearrow \emptylist
+  \annotateexprlist(\tenv, \emptylist) \typearrow \emptylist
 }
 \and
 \inferrule[non\_empty]{
   \annotateexpr{\tenv, \ve} \typearrow \typedexpr \OrTypeError\\
-  \annotateexprlist{\tenv, \exprsone} \typearrow \typedexprs \OrTypeError\\
+  \annotateexprlist(\tenv, \exprsone) \typearrow \typedexprs \OrTypeError\\
   \typedexprs \eqdef [\typedexpr] + \typedexprsone
 }
 {
-  \annotateexprlist{\tenv, [\ve] + \exprsone} \typearrow \typedexprs
+  \annotateexprlist(\tenv, [\ve] + \exprsone) \typearrow \typedexprs
 }
 \end{mathpar}
 \end{emptyformal}
@@ -6022,7 +6034,8 @@ All of the following apply:
   \item determining whether $\slices$ is a single slice with index expression $\eindex$ yields $\True$\ProseOrTypeError;
   \item annotating the index expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$\ProseOrTypeError;
   \item determining the array length type of $\size$ in $\tenv$ (via $\typeofarraylength$) yields $\wantedtindex$;
-  \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields \\
+        $\True$\ProseOrTypeError;
   \item $\newle$ is an access to array $\vletwo$ at index $\eindexp$, that is, \\ $\LESetArray(\vletwo, \eindexp)$.
 \end{itemize}
 
@@ -6060,7 +6073,8 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
-  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\
+        $\vletwo$\ProseOrTypeError;
   \item the \structure\ of $\vtleone$ in $\tenv$ is either a record type or an exception type with list of fields $\fields$\ProseOrTypeError;
   \item $\field$ is not associated with any type in $\fields$;
   \item the result is an error indicating that the field $\field$ is missing from the type of $\vleone$.
@@ -6130,7 +6144,8 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
-  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields $\vtleone$\ProseOrTypeError;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\
+        $\vtleone$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
   \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields \\ $\bitfields$, that is,
         $\TBits(\Ignore, \bitfields)$\ProseOrTypeError;
@@ -6139,7 +6154,6 @@ All of the following apply:
 \end{itemize}
 
 \subsection{Example}
-
 
 \CodeSubsection{\LESetBadBitFieldBegin}{\LESetBadBitFieldEnd}{../Typing.ml}
 
@@ -7173,7 +7187,7 @@ All of the following apply:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Statements}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+\hypertarget{def-annotatestmt}{}
 The function
 \[
   \annotatestmt{\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}} \aslto
@@ -7439,7 +7453,7 @@ All of the following apply:
   \item $\vs$ is a call to a subprogram named $\name$ with arguments $\vargs$;
   \item annotating the call to $\name$ with arguments $\vargs$, as a procedure (that is, with $\STProcedure$),
         as per \chapref{TypingSubprogramCalls} (which makes sure that the call does not have a return type),
-        yields $(\newname, \newargs, \neweqs)$\ProseOrTypeError;
+        yields $(\newname, \newargs, \eqs, \None)$\ProseOrTypeError;
   \item $\news$ is the call to a subprogram named $\newname$ with arguments
         $\newargs$ and parameter assignments $\neweqs$;
   \item $\newtenv$ is $\tenv$.
@@ -7453,15 +7467,24 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatecall{\tenv, \name, \vargs, \STProcedure} \typearrow (\newname, \newargs, \neweqs)
+  \annotatecall(\tenv, \name, \vargs, \STProcedure) \typearrow (\newname, \newargs, \eqs, \None)
 }{
-  \annotatestmt{\tenv, \overname{\SCall(\name, \vargs)}{\vs}} \typearrow (\overname{\SCall(\newname, \newargs, \neweqs)}{\news}, \tenv)
+  {
+    \begin{array}{r}
+  \annotatestmt{\tenv, \overname{\SCall(\name, \vargs)}{\vs}} \typearrow \\
+  (\overname{\SCall(\newname, \newargs, \eqs)}{\news}, \tenv)
+    \end{array}
+  }
 }
 \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-\lrmcomment{This is related to \identd{VXKM}.}
+Notice that the input statement, which belongs to the parsed AST, has two children nodes ---
+$\name$ and $\vargs$, whereas the output statement, which belongs to the typed AST has the additional
+node $\neweqs$, which associates expressions with parameters.
+
+This is related to \identd{VXKM}.
 
 \section{TypingRule.SCond \label{sec:TypingRule.SCond}}
 
@@ -8584,265 +8607,1012 @@ All of the following apply:
 The function
 \[
   \begin{array}{rl}
-  \annotatecall{ &
+  \annotatecall( &
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\identifier}{\name} \aslsep
     \overname{\expr^*}{\vargs} \aslsep
     \overname{\subprogramtype}{\calltype}
-  } \aslto \\ &
+   ) \aslto \\ &
   (\overname{\identifier}{\nameone} \aslsep
   \overname{\expr^*}{\vargsone} \aslsep
-  \overname{(\identifier\times\expr)^*}{\eqsone} \aslsep
-  \overname{\langle \ty \rangle}{\rettyone})
+  \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{\langle \ty \rangle}{\rettyopt})
 \end{array}
 \]
-annotates the call to subprogram $\name$ with arguments $\vargs$,
-parameters $\eqs$, and call type $\calltype$, resulting in values for an annotated call ---
-$\nameone$, $\vargsone$, $\eqstwo$, $\rettyone$ --- or a type error if one is detected.
+annotates the call to subprogram $\name$ with arguments $\vargs$
+and call type $\calltype$, resulting in the following:
+\begin{itemize}
+  \item $\nameone$ --- a unique string, which uniquely identifies $\name$ among the set of overloading subprograms declared with $\name$;
+  \item $\vargsone$ --- the annotated argument expressions;
+  \item $\eqs$ --- the expressions providing values to the parameters;
+  \item $\rettyopt$ --- the optional annotated return type.
+\end{itemize}
+The result is a type error, if one is detected.
 
-The rule TypingRule.FCall (see \secref{TypingRule.FCall}) applies.
+The function is defined by the rule TypingRule.AnnotateCall (see \secref{TypingRule.AnnotateCall}).
 
 We also define helper functions via respective rules:
 \begin{itemize}
-  \item TypingRule.FindCheckDeduce (see \secref{TypingRule.FindCheckDeduce}),
-  which finds a subprogram that matches the call, checks for type errors, and infers expressions
-  for parameters.
-  % \item TypingRule.FindSubprogram (see \secref{TypingRule.FindSubprogram}),
-  % which finds a subprogram that clashes with the subprogram
-  % \item TypingRule.SubprogramFinder (see \secref{TypingRule.SubprogramFinder}),
-  % \item TypingRule.DeduceEquations (see \secref{TypingRule.DeduceEquations}),
-  % \item TypingRule.RenameTypeEquations (see \secref{TypingRule.RenameTypeEquations}),
+  \item TypingRule.AnnotateCallArgTyped (see \secref{TypingRule.AnnotateCallArgTyped}),
+        which finds annotates the call with the annotated list of arguments.
+  \item TypingRule.CheckCalleeParams (see \secref{TypingRule.CheckCalleeParams})
+  \item TypingRule.RenameTyEqs (see \secref{TypingRule.RenameTyEqs})
+  \item TypingRule.SubstExprNormalize (see \secref{TypingRule.SubstExprNormalize})
+  \item TypingRule.SubstExpr (see \secref{TypingRule.SubstExpr})
+  \item TypingRule.SubstConstraint (see \secref{TypingRule.SubstConstraint})
+  \item TypingRule.CheckArgsTypeSat (see \secref{TypingRule.CheckArgsTypeSat})
+  \item TypingRule.AnnotateParameterDefining (see \secref{TypingRule.AnnotateParameterDefining})
+  \item TypingRule.AnnotateRetTy (\secref{TypingRule.AnnotateRetTy})
   \item TypingRule.SubprogramForName (see \secref{TypingRule.SubprogramForName})
   \item TypingRule.FilterCallCandidates (see \secref{TypingRule.FilterCallCandidates})
   \item TypingRule.HasArgClash (see \secref{TypingRule.HasArgClash})
 \end{itemize}
 
-\section{TypingRule.FCall \label{sec:TypingRule.FCall}}
+\section{TypingRule.AnnotateCall \label{sec:TypingRule.AnnotateCall}}
 \subsection{Prose}
-One of the following applies:
+All of the following apply:
 \begin{itemize}
-  \item All of the following apply (\textsc{function\_or\_getter}):
-  \begin{itemize}
-    \item Applying $\findcheckdeduce$ to $\tenv$, $\name$, $\exprs$, $\eqs$, and $\calltype$
-    yields $(\nameone, \vargsone, \eqsone, \langle \tty \rangle)$\ProseOrTypeError;
-    \item $\calltype$ is either a function $\STFunction$ or a getter $\STGetter$;
-    \item substituting the variables appearing in $\tty$ by the corresponding expressions,
-    according to $\eqsone$ yields $\retty$;
-    \item $\rettyone$ is $\langle\retty\rangle$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{procedure\_or\_setter}):
-  \begin{itemize}
-    \item Applying $\findcheckdeduce$ to $\tenv$, $\name$, $\exprs$, $\eqs$, and $\calltype$
-    yields $(\nameone, \vargsone, \eqsone, \None)$;
-    \item $\calltype$ is either a procedure $\STProcedure$ or a setter $\STSetter$;
-    \item $\rettyone$ is $\None$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{mismatch}):
-  \begin{itemize}
-    \item Applying $\findcheckdeduce$ to $\tenv$, $\name$, $\exprs$, $\eqs$, and $\calltype$
-    yields $(\nameone, \vargsone, \eqsone, \retty)$;
-    \item the following condition does not hold:
-    $\retty$ is $\None$ if and only if $\calltype$ is one of $\STProcedure$ or $\STSetter$;
-    \item a type error is returned indicating that the existence of a return value does not match
-    the kind of subprogram.
-  \end{itemize}
+  \item applying $\annotateexprlist$ to annotate the expression list $\vargs$ in $\tenv$ yields \\
+        $\callerargtyped$\ProseOrTypeError;
+  \item applying $\annotatecallargtyped$ to $\name$, $\callerargtyped$, $\calltype$ in $\tenv$ yields
+        $(\nameone, \vargsone, \eqs, \retty)$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
-
-\CodeSubsection{\FCallBegin}{\FCallEnd}{../Typing.ml}
+\CodeSubsection{\AnnotateCallBegin}{\AnnotateCallEnd}{../Typing.ml}
 
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[function\_or\_getter]{
-  \findcheckdeduce(\tenv, \name, \exprs, \calltype) \typearrow \\
-  (\nameone, \vargsone, \eqsone, \langle \tty \rangle) \OrTypeError\\\\
-  \calltype \in \{\STFunction, \STGetter, \STEmptyGetter\}\\
-  \tododefine{rename\_ty\_eqs}(\tenv, \eqsone, \tty) \typearrow \retty
-}
-{
-  \annotatecall{\tenv, \name, \exprs, \calltype} \typearrow (\nameone, \vargsone, \eqsone, \langle\retty\rangle)
-}
-\and
-\inferrule[procedure\_or\_setter]{
-  \findcheckdeduce(\tenv, \name, \exprs,\calltype) \typearrow \\
-  (\nameone, \vargsone, \eqsone, \None) \\\\
-  \calltype \in \{\STProcedure, \STSetter, \STEmptySetter\}
-}
-{
-  \annotatecall{\tenv, \name, \exprs, \calltype} \typearrow (\nameone, \vargsone, \eqsone, \None)
-}
-\and
-\inferrule[mismatch]{
-  \findcheckdeduce(\tenv, \name, \exprs, \calltype) \typearrow \\
-  (\nameone, \vargsone, \eqsone, \retty) \\\\
-  \neg(\calltype \in \{\STProcedure, \STSetter\} \leftrightarrow \retty=\None)
-}
-{
-  \annotatecall{\tenv, \name, \exprs, \calltype} \typearrow \TypeErrorVal{CallMismatch}
+\inferrule{
+  \annotateexprlist(\tenv, \vargs) \typearrow \callerargtyped \OrTypeError\\\\
+  {
+    \begin{array}{r}
+  \annotatecallargtyped(\tenv, \name, \callerargtyped, \calltype) \typearrow \\
+   (\nameone, \vargsone, \eqs, \retty) \OrTypeError
+    \end{array}
+  }
+}{
+  \annotatecall(\tenv, \name, \vargs, \calltype) \typearrow
+  (\nameone, \vargsone, \eqs, \retty)
 }
 \end{mathpar}
 \end{emptyformal}
 
 \subsection{Comments}
-\lrmcomment{
   This is related to \identi{VFDP}, \identd{TRFW}, \identr{KMDB},
   \identi{YMHX}, \identr{CCVD}, \identr{QYBH}, \identr{PFWQ}, \identr{ZLWD},
   \identi{FLKF}, \identd{PMBL}, \identr{MWBN}, \identr{TZSP}, \identr{SBWR},
   \identi{CMLP}, \identr{BQJG}, \identr{RTCF}.
-}
 
-\section{TypingRule.FindCheckDeduce \label{sec:TypingRule.FindCheckDeduce}}
-\hypertarget{def-findcheckdeduce}{}
+\section{TypingRule.AnnotateCallArgTyped \label{sec:TypingRule.AnnotateCallArgTyped}}
+\hypertarget{def-annotatecallargtyped}{}
 The function
 \[
-  \begin{array}{rl}
-    \findcheckdeduce( &
-      \overname{\staticenvs}{\tenv} \aslsep
-      \overname{\identifier}{\name} \aslsep
-      \overname{\expr^*}{\vargs} \aslsep
-      \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
-      \overname{\subprogramtype}{\calltype}
-     ) \aslto \\ &
-    \overname{\identifier}{\nameone} \aslsep
-    \overname{\expr^*}{\vargsone} \aslsep
-    \overname{(\identifier\times\expr)^*}{\eqsone} \aslsep
-    \overname{\subprogramtype}{\retty}
-  \end{array}
+  \begin{array}{r}
+  \annotatecallargtyped(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\identifier}{\name} \aslsep
+    \overname{(\ty \times\expr)^*}{\callerargstyped} \aslsep
+    \overname{\subprogramtype}{\calltype}
+   ) \aslto \\
+  (\overname{\identifier}{\nameone} \aslsep
+  \overname{\expr^*}{\vargsone} \aslsep
+  \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{\langle \ty \rangle}{\rettyopt})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
-performs three tasks:
-\begin{itemize}
-  \item Resolving the correct subprogram from the rule arguments. That is, finding a subprogram
-  that with the same name and argument types that \typeclash\ with the actual argument types;
-  \item Deducing from the actual arguments and formal parameters equations ---
-  the expressions associated with parameter names;
-  \item Checking that the call expression matches the subprogram declaration.
-\end{itemize}
-The function takes a static environment $\tenv$, a subprogram $\name$,
-a list of actual arguments $\vargs$,
-parameters $\eqs$ arguments, and call type $\calltype$.
-It returns a unique name $\nameone$, annotated actual arguments $\vargsone$,
-parameter arguments $\eqsfour$, and an optional return type $\retty$.
-A type error is returned, if one is detected.
+is same as $\annotatecall$, except that the argument expressions are replaced by
+the annotated expressions. That is, pairs consisting of a type and an expression.
+The result is a type error, if one is detected.
 
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item Annotating the list of actual argument expressions $\vargs$ in $\tenv$ yields \\ $\callerargtyped$\ProseOrTypeError;
-  \item $\callerargtyped$ is a list of pairs where the first element is a type and the second is an expression;
-  \item splitting $\callerargtyped$ yields a list of types --- $\callerargtypes$ --- and a list of expressions ---
-  $\vargsone$, respectively;
-  \item finding the subprogram matching the name $\name$ and argument types \\ $\callerargtypes$ in $\tenv$
-  yields a tuple \\ $(\extranargs, \nameone, \calleeargtypes, \retty, \calleeparams)$\ProseOrTypeError;
-  \item One of the following applies:
-  \begin{itemize}
-    \item All of the following apply (\textsc{bad\_arity}):
-    \begin{itemize}
-      \item the length of the actual list of arguments is not the same as the list of arguments of the matched
-      subprogram;
-      \item a type error is returned.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{okay}):
-    \begin{itemize}
-      \item The list of parameter arguments $\eqs$ is reversed and prepended to the list of parameter arguments
-      i$\extranargs$, yielding $\eqstwo$;
-      \item annotating static constrained integers in $\eqstwo$ in $\tenv$ yields $\eqsthree$\ProseOrTypeError;
-      \item annotating the callee parameters using $\calleeargtypes$ and \\ $\callerargtypes$ in $\tenv$
-      yields $\eqsfour'$;
-      \item $\eqsfour$ is $\eqsfour'$ concatenated with $\eqsthree$;
-      \item checking that $\callerargtypes$ \typesatisfies\ $\calleeargtypes$ in $\tenv$ yields
-      $\True$\ProseOrTypeError;
-      \item checking that each callee parameter in $\calleeparams$ is defined by the call
-      parameters $\eqsfour$ yields $\True$\ProseOrTypeError.
-    \end{itemize}
-  \end{itemize}
+  \item applying $\splitlist$ to $\callerargtyped$ yields into the corresponding lists of types
+        and expressions $\callerargtypes$ and $\vargsone$;
+  \item applying $\subprogramforname$ to match $\name$ and $\callerargtypes$ in $\tenv$
+        yields $(\eqsone, \nameone, \callee)$\ProseOrTypeError;
+  \item checking that $\subprogramtype$ of $\callee$ equals $\calltype$ yields $\True$\ProseOrTypeError;
+  \item checking that the lengths of $\calleeargtypes$ and $\vargsone$ are the same yields $\True$\ProseOrTypeError;
+  \item applying $\annotateparameterdefining$ to $\callee.\funcargs$,
+        $\callerargstyped$, and \\
+        $\calleeparams$ in $\tenv$, to annotate the implicit parameters
+        yields $\eqsthreep$\ProseOrTypeError;
+  \item define $\eqsthree$ is the concatenation of $\eqsthreep$ and $\eqsone$;
+  \item applying $\checkargstypesat$ to $\calleeargtypes$
+        to check that the actual arguments have correct types with respect to $\callerargtypes$
+        in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item applying $\checkcalleeparams$ to $\calleeparams$ to check they have correct types
+        with respect to $\eqsthree$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item applying $\annotateretty$ to $\calltype$ and $\callee.\funcreturntype$
+        to check that the two call types match and to substitute actual parameter arguments in the formal return type
+        yields $\rettyopt$ \ProseOrTypeError;
+  \item define $\eqs$ as $\eqsthree$.
 \end{itemize}
 
-\CodeSubsection{\FindCheckDeduceBegin}{\FindCheckDeduceEnd}{../Typing.ml}
+\CodeSubsection{\AnnotateCallArgTypedBegin}{\AnnotateCallArgTypedEnd}{../Typing.ml}
 
 \begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[bad\_arity]{
-  \annotateexprlist{\tenv, \vargs} \typearrow \callerargtyped \OrTypeError\\
-  \splitlist(\callerargtyped) = (\callerargtypes, \vargsone)\\
-  \findsubprogram(\tenv, \name, \callerargtypes) \typearrow \\
-  (\Ignore, \Ignore, \calleeargtypes, \Ignore, \Ignore) \OrTypeError\\\\
-  \equallength(\calleeargtypes, \vargsone) \typearrow \False
-}
-{
-  \findcheckdeduce(\tenv, \name, \vargs, \eqs, \calltype) \typearrow \\
-  \TypeErrorVal{CallBadArity}
-}
-\and
-\inferrule[okay]{
-  \annotateexprlist{\tenv, \vargs} \typearrow \callerargtyped \OrTypeError\\
-  \splitlist(\callerargtyped) = (\callerargtypes, \defpoint{\vargsone})\\
-  \findsubprogram(\tenv, \name, \callerargtypes) \typearrow \\
-  (\extranargs, \defpoint{\nameone}, \calleeargtypes, \defpoint{\retty}, \calleeparams) \OrTypeError\\\\
-  \equallength(\calleeargtypes, \vargsone) \typearrow \True\\
-  \eqs \eqname \veq_{1..k}\\
-  \eqstwo \eqdef [i=k..1: \veq_i] + \extranargs\\
-  % \tododefine{apply\_eqs}(\tenv, \calleeargtypes, \callerargtyped) \typearrow \eqstwo' \OrTypeError\\
-  % \eqstwo \eqdef \eqstwo' + \eqsone\\
-  \tododefine{annotate\_static\_constrained\_integers}(\tenv, \eqstwo) \typearrow \eqsthree \OrTypeError\\
-  \tododefine{annotate\_callee\_params}(\tenv, \calleeargtypes, \callerargtypes) \typearrow \eqsfour' \OrTypeError\\
-  \defpoint{\eqsfour} \eqdef \eqsfour' + \eqsthree\\
-  \tododefine{check\_args\_typesat}(\tenv, \calleeargtypes, \callerargtypes) \typearrow \True \OrTypeError\\
-  \tododefine{check\_callee\_params}(\tenv, \calleeparams, \eqsfour) \typearrow \True \OrTypeError\\
-}
-{
-  \findcheckdeduce(\tenv, \name, \vargs, \eqs, \calltype) \typearrow
-  (\nameone, \vargsone, \eqsfour, \retty)
+\inferrule{
+  \splitlist(\callerargstyped) = (\callerargtypes, \vargsone)\\
+  {
+    \begin{array}{r}
+    \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \\
+  (\eqsone, \nameone, \callee) \OrTypeError
+    \end{array}
+  }\\
+  \checktrans{\callee.\subprogramtype = \calltype}{\MismatchedReturnValue} \checktransarrow \True\OrTypeError\\\\
+  \equallength(\calleeargtypes, \vargsone) \typearrow \aritymatch\\
+  \checktrans{\aritymatch}{\CallBadArity} \checktransarrow \True\\\\
+  {
+  \annotateparameterdefining\left(
+    \begin{array}{l}
+      \tenv,\\
+      \callee.\funcargs, \\
+      \callerargstyped, \\
+      \callee.\funcparameters
+    \end{array}
+    \right)
+    \typearrow \eqsthreep \OrTypeError
+  }\\
+  \eqsthree \eqdef \eqsthreep \concat \eqsone\\
+  \checkargstypesat(\tenv, \callee.\funcargs, \callerargtypes, \eqsthree) \typearrow \True \OrTypeError\\\\
+  \checkcalleeparams(\tenv, \callee.\funcparameters, \eqsthree) \typearrow \True \OrTypeError\\\\
+  \annotateretty(\tenv, \calltype, \callee.\funcreturntype) \typearrow \rettyopt \OrTypeError
+}{
+  {
+    \begin{array}{r}
+  \annotatecallargtyped(\tenv, \name, \callerargstyped, \calltype) \typearrow \\
+  (\nameone, \vargsone, \overname{\eqsthree}{\eqs}, \rettyopt)
+    \end{array}
+  }
 }
 \end{mathpar}
 \end{emptyformal}
 
-\isempty{\subsection{Comments}}
-
-\section{TypingRule.FindSubprogram \label{sec:TypingRule.FindSubprogram}}
-\hypertarget{def-findsubprogram}{}
+\section{TypingRule.CheckCalleeParams \label{sec:TypingRule.CheckCalleeParams}}
+\hypertarget{def-checkcalleeparams}{}
 The function
 \[
-  \begin{array}{l}
-    \findsubprogram(
-      \overname{\staticenvs}{\tenv} \aslsep
-      \overname{\identifier}{\name} \aslsep
-      \overname{\ty^*}{\callerargtypes}
-     ) \aslto \\
-    (
-      \overname{(\identifier\times\expr)^*}{\extranargs} \aslsep
-      \overname{\identifier}{\nameone} \aslsep
-      \overname{(\identifier\times\ty)^*}{\calleeargtypes} \aslsep
-      \overname{\langle\ty\rangle}{\retty} \aslsep
-      \overname{(\identifier \times \langle\ty\rangle)}{\calleeparams}
-    )
-  \end{array}
+\checkcalleeparams(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{(\identifier\times\langle\ty\rangle)^*}{\calleeparams}
+  \overname{(\identifier\times\expr)^*}{\eqsthree}
+  ) \aslto \\
+  \True\ \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-takes the name of a subprogram --- $\name$ --- and a list argument types --- \\ $\calleeargtypes$,
-and determines whether:
+checks that the parameters in $\calleeparams$ are correct with respect
+to the parameter expressions $\eqsthree$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
 \begin{itemize}
-  \item there is no declared subprogram that matches $\name$ and $\calleeargtypes$;
-  \item there is exactly one subprogram that matches $\name$ and $\calleeargtypes$;
-  \item there is more than one subprogram that matches ($\name$ and $\calleeargtypes$);
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\calleeparams$ is an empty list;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item $\calleeparams$ is a non-empty with \head\ $\calleeparam$ and \tail\ \\
+          $\calleeparamsone$;
+    \item One of the following applies:
+    \begin{itemize}
+      \item All of the following apply (\textsc{no\_type}):
+      \begin{itemize}
+        \item $\calleeparam$ does not have a type annotation, that is, $(\Ignore, \None)$.
+      \end{itemize}
+
+      \item All of the following apply (\textsc{underconstrained}):
+      \begin{itemize}
+        \item $\calleeparam$ is a parameter $\vs$ with a type annotation of an
+              underconstrained integer for the same parameter, that is, \\
+              $(\vs, \langle\TInt(\underconstrained(\vs))\rangle)$.
+      \end{itemize}
+
+      \item All of the following apply (\textsc{other}):
+      \begin{itemize}
+        \item $\calleeparam$ is a parameter $\vs$ whose type annotation is \\
+              $\calleeparamt$, that is, $(\vs, \langle\calleeparamt\rangle)$;
+        \item $\calleeparamt$ is not the underconstrained integer for the same parameter;
+        \item substituting the parameter expressions from $\eqsthree$ in $\calleeparamt$
+              yields $\calleeparamtrenamed$\ProseOrTypeError;
+        \item applying $\assocopt$ to $\eqsthree$ and $\vs$ the expression $\callerparame$
+              (that is, the parameter $\vs$ is associated with the expression \\
+              $\callerparame$);
+        \item annotating the expression $\callerparame$ in $\tenv$ yields \\
+              $(\callerparamt, \Ignore)$\ProseOrTypeError;
+        \item checking that $\callerparamt$ \typesatisfies\ $\calleeparamtrenamed$ in $\tenv$ yields
+              $\True$\ProseOrTypeError;
+      \end{itemize}
+    \end{itemize}
+    \item applying $\checkcalleeparams$ to $\calleeparamsone$ and $\eqsthree$ in $\tenv$
+          yields $\True$\ProseOrTypeError.
+  \end{itemize}
 \end{itemize}
-The first and last cases indicate a type error.
-If the second case holds, the function returns:
-\begin{itemize}
-\item $\extranargs$ --- a list matching parameters to their caller expressions based on bitvector parameters;
-\item $\identifier$ --- an identifier that uniquely matches this subprogram;
-\item $\calleeargtypes$ --- the list of formal argument types of the matched subprogram;
-\item $\retty$ --- the type of the returned value, in case of a function or a getter;
-\item $\calleeparams$ --- parameters declared in the matched subprogram.
-\end{itemize}
-A type error is returned, if one is detected.
 
 \begin{emptyformal}
 \subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{
+}{
+  \checkcalleeparams(\tenv, \overname{\emptylist}{\calleeparams}, \eqsthree) \typearrow \True
+}
+\and
+\inferrule[no\_type]{
+  \calleeparams \eqname [(\Ignore, \None)] \concat \calleeparamsone\\
+  \checkcalleeparams(\tenv, \calleeparamsone, \eqsthree) \typearrow \True \OrTypeError
+}{
+  \checkcalleeparams(\tenv, \calleeparams, \eqsthree) \typearrow \True
+}
+\and
+\inferrule[underconstrained]{
+  \calleeparams \eqname [(\vs, \langle\TInt(\underconstrained(\vs))\rangle)] \concat \calleeparamsone\\
+  \checkcalleeparams(\tenv, \calleeparamsone, \eqsthree) \typearrow \True \OrTypeError
+}{
+  \checkcalleeparams(\tenv, \calleeparams, \eqsthree) \typearrow \True
+}
+\and
+\inferrule[other]{
+  \calleeparams \eqname [(\vs, \langle\calleeparamt\rangle)] \concat \calleeparamsone\\
+  \calleeparamt \neq \TInt(\underconstrained(\vs))\\
+  \renametyeqs(\tenv, \eqsthree, \calleeparamt) \typearrow \calleeparamtrenamed \OrTypeError\\\\
+  \assocopt(\eqsthree, \vs) \typearrow \langle \ve \rangle\\
+  \annotateexpr{\tenv, \callerparame} \typearrow \callerparamt \OrTypeError\\\\
+  \checktypesat(\tenv, \callerparamt, \calleeparamtrenamed) \typearrow \True \OrTypeError\\\\
+  \checkcalleeparams(\tenv, \calleeparamsone, \eqsthree) \typearrow \True \OrTypeError
+}{
+  \checkcalleeparams(\tenv, \calleeparams, \eqsthree) \typearrow \True
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.RenameTyEqs \label{sec:TypingRule.RenameTyEqs}}
+\hypertarget{def-renametyeqs}{}
+The function
+\[
+\renametyeqs(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{\ty}{\tty}
+) \aslto
+\overname{\ty}{\newty} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+transforms the type $\tty$ in the static environment $\tenv$,
+by substituting parameter names by their corresponding expressions in
+$\eqs$, yielding the type $\newty$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{t\_bits}):
+  \begin{itemize}
+    \item $\tty$ is a bitvector type with width expression $\ve$ and fields $\fields$, that is, $\TBits(\ve, \fields)$;
+    \item applying $\substexprnormalize$ to $\eqs$ and $\ve$ in $\tenv$ yields the expression $\newe$;
+    \item define $\newty$ as a bitvector type with with expression $\newe$ and fields $\fields$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_int\_wellconstrained}):
+  \begin{itemize}
+    \item $\tty$ is a well-constrained integer type with constraints $\constraints$;
+    \item applying $\substconstraint$ to each constraint $\constraints[\vi]$, for $\vi$ in \\
+          $\listrange(\constraints)$, yields the constraint $\newc_\vi$;
+    \item define $\newconstraints$ as the list of constraints $\newc_\vi$, for $\vi$ in \\
+          $\listrange(\constraints)$;
+    \item define $\newty$ as the well-constraint integer type with constraints \\
+          $\newconstraints$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_int\_underconstrained}):
+  \begin{itemize}
+    \item $\tty$ is an underconstrained integer type for the parameter $\name$;
+    \item applying $\substexprnormalize$ to $\eqs$ and the expression $\EVar(\name)$ yields $\ve$;
+    \item define $\newty$ as the well-constrained integer type with the single constraint for $\ve$, that is,
+          $\TInt(\wellconstrained(\ConstraintExact(\ve)))$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_tuple}):
+  \begin{itemize}
+    \item $\tty$ is the tuple type over the list of tuples $\tys$, that is, $\TTuple(\tys)$;
+    \item applying $\renametyeqs$ to $\eqs$ and the type $\tys[\vi]$, for each $\vi$ in \\
+          $\listrange(\tys)$, yields the type $\newty_\vi$;
+    \item define $\newtys$ as the list of types $\newty_\vi$, for each $\vi$ in $\listrange(\tys)$;
+    \item define $\newty$ as the tuple type over $\newtys$, that is, $\TTuple(\newtys)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other}):
+  \begin{itemize}
+    \item $\tty$ is not one of the types in the previous cases: bitvector type, integer type, or a tuple type;
+    \item $\newty$ is $\tty$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[t\_bits]{
+  \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
+}{
+  \renametyeqs(\tenv, \eqs, \overname{\TBits(\ve, \fields)}{\tty}) \typearrow \overname{\TBits(\newe, \fields)}{\newty}
+}
+\and
+\inferrule[t\_int\_wellconstrained]{
+  \vi\in\listrange(\constraints): \substconstraint(\tenv, \constraints[\vi]) \typearrow \newc_\vi\\
+  \newconstraints \eqdef [\vi\in\listrange(\constraints): \newc_\vi]\\
+  \newty \eqdef \TInt(\wellconstrained(\newconstraints))
+}{
+  \renametyeqs(\tenv, \eqs, \overname{\TInt(\wellconstrained(\constraints))}{\tty}) \typearrow
+  \newty
+}
+\and
+\inferrule[t\_int\_underconstrained]{
+  \substexprnormalize(\eqs, \EVar(\name)) \typearrow \ve\\
+  \newty \eqdef \TInt(\wellconstrained(\ConstraintExact(\ve)))
+}{
+  \renametyeqs(\tenv, \eqs, \overname{\TInt(\underconstrained(\name))}{\tty}) \typearrow \newty
+}
+\and
+\inferrule[t\_tuple]{
+  \vi\in\listrange(\tys): \renametyeqs(\eqs, \tys[\vi]) \typearrow \newty_\vi\\
+  \newtys \eqdef [\vi\in\listrange(\tys): \newty_\vi]
+}{
+  \renametyeqs(\tenv, \eqs, \overname{\TTuple(\tys)}{\tty}) \typearrow
+  \overname{\TTuple(\newtys)}{\newty}
+}
+\and
+\inferrule[other]{
+  \astlabel(\tty) \not\in \{\TBits, \TInt, \TTuple\}
+}{
+  \renametyeqs(\tenv, \eqs, \tty) \typearrow \overname{\tty}{\newty}
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.SubstExprNormalize \label{sec:TypingRule.SubstExprNormalize}}
+\hypertarget{def-substexprnormalize}{}
+The function
+\[
+\substexprnormalize(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{\expr}{\ve}
+) \aslto \overname{\newe}{\expr}
+\]
+transforms the expression $\ve$ in the static environment $\tenv$,
+by substituting parameter names by their corresponding expressions in
+$\eqs$, and then attempting to symbolically simplify the result, yielding the expression $\newe$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item transforming $\ve$ in the static environment $\tenv$, by substituting the parameter expressions
+        $\eqs$, yields $\veone$;
+  \item symbolically simplifying $\veone$ in $\tenv$ yields $\newe$.
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \substexpr(\tenv, \ve) \typearrow \veone\\
+  \normalize(\tenv, \veone) \typearrow \newe
+}{
+  \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.SubstExpr \label{sec:TypingRule.SubstExpr}}
+\hypertarget{def-substexpr}{}
+The function
+\[
+\substexpr(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{(\identifier\times\expr)^*}{\substs} \aslsep
+  \overname{\expr}{\ve}
+) \aslto \overname{\newe}{\expr}
+\]
+transforms the expression $\ve$ in the static environment $\tenv$,
+by substituting parameter names by their corresponding expressions in
+$\eqs$, yielding the expression $\newe$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{e\_var\_in\_substs}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for the identifier $\vs$, that is, $\EVar(\vs)$;
+    \item applying $\assocopt$ to $\vs$ and $\substs$ yields the expression $\newe$.
+          That is, $\vs$ is a parameter with an associated expression;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_var\_not\_in\_substs}):
+  \begin{itemize}
+    \item $\ve$ is the variable expression for the identifier $\vs$, that is, $\EVar(\vs)$;
+    \item applying $\assocopt$ to $\vs$ and $\substs$ yields $\None$.
+          That is, $\vs$ is not a parameter with an associated expression;
+    \item define $\newe$ is $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_unop}):
+  \begin{itemize}
+    \item $\ve$ is the unary operator expression for the operator $\op$ and expression $\ve$, that is, $\EUnop(\op, \veone)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item define $\newe$ as the unary operator expression for the operator $\op$ and expression $\veonep$, that is, $\EUnop(\op, \veonep)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_binop}):
+  \begin{itemize}
+    \item $\ve$ is the binary operator expression for the operator $\op$ and expressions $\veone$ and $\vetwo$, that is, $\EBinop(\op, \veone, \vetwo)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item applying $\substexpr$ to $\substs$ and $\vetwo$ in $\tenv$ yields $\vetwop$;
+    \item define $\newe$ as the unary operator expression for the operator $\op$ and expression $\veonep$, that is, $\EUnop(\op, \veonep)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_cond}):
+  \begin{itemize}
+    \item $\ve$ is the conditional expression for expressions $\veone$, $\vetwo$, and $\vethree$, that is, \\
+          $\ECond(\veone, \vetwo, \vethree)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item applying $\substexpr$ to $\substs$ and $\vetwo$ in $\tenv$ yields $\vetwop$;
+    \item applying $\substexpr$ to $\substs$ and $\vethree$ in $\tenv$ yields $\vethreep$;
+    \item define $\newe$ as the conditional expression for expressions $\veonep$, $\vetwop$, and $\vethreep$, that is, $\ECond(\veonep, \vetwop, \vethreep)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_concat}):
+  \begin{itemize}
+    \item $\ve$ is the concatenation of expressions $\ves$, that is, $\EConcat(\ves)$;
+    \item applying $\substexpr$ to $\substs$ and every expression $\ves[\vi]$, for $\vi$ in \\
+          $\listrange(\ves)$ yields $\vep[\vi]$;
+    \item define $\vesp$ as the list of expressions $\vep[\vi]$, for $\vi$ in $\listrange(\ves)$;
+    \item define $\newe$ as the concatenation of expressions $\vesp$, that is, $\EConcat(\vesp)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_call}):
+  \begin{itemize}
+    \item $\ve$ is the call expression for subprogram $\vx$ with arguments $\vargs$ and parameter expressions $\paramargs$,
+          that is, $\ECall(\vx, \vargs, \paramargs)$;
+    \item applying $\substexpr$ to $\substs$ and every argument expression $\vargs[\vi]$, for $\vi$ in \\
+          $\listrange(\vargs)$ yields $\ve_\vi$;
+    \item define $\vargsp$ as $\ve_\vi$ or $\vi$ in $\listrange(\vargs)$;
+    \item define $\newe$ as the the call expression for subprogram $\vx$ with arguments $\vargsp$ and parameter expressions $\paramargs$,
+    that is, $\ECall(\vx, \vargsp, \paramargs)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_getarray}):
+  \begin{itemize}
+    \item $\ve$ is the array access expression for base expression $\veone$ and index expression $\vetwo$,
+          that is, $\EGetArray(\veone, \vetwo)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item applying $\substexpr$ to $\substs$ and $\vetwo$ in $\tenv$ yields $\vetwop$;
+    \item define $\newe$ as the array access expression for base expression $\veonep$ and index expression $\vetwop$,
+    that is, $\EGetArray(\veonep, \vetwop)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_getfield}):
+  \begin{itemize}
+    \item $\ve$ is the field access expression for base expression $\ve$ and field $\vx$,
+          that is, $\EGetField(\veone, \vx)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item define $\newe$ as the field access expression for base expression $\ve$ and field $\vx$,
+          that is, $\EGetField(\veonep, \vx)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_getfields}):
+  \begin{itemize}
+    \item $\ve$ is the access to fields $\fields$ with base expression $\veone$, that is, \\
+          $\EGetFields(\veone, \fields)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item define $\newe$ as the access to fields $\fields$ with base expression $\veonep$, that is, $\EGetFields(\veonep, \fields)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_getitem}):
+  \begin{itemize}
+    \item $\ve$ is the access to tuple item $\vi$ of the tuple expression $\veone$, that is, \\
+          $\EGetItem(\veone, \vi)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item define $\newe$ as the access to tuple item $\vi$ of the tuple expression $\veonep$, that is, \\
+          $\EGetItem(\veonep, \vi)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_pattern}):
+  \begin{itemize}
+    \item $\ve$ is the pattern expression of expression $\veone$ and patterns $\vps$, that is, \\
+          $\EPattern(\veone, \vps)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item define $\newe$ as the pattern expression of expression $\veonep$ and patterns $\vps$, that is, $\EPattern(\veonep, \vps)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_record}):
+  \begin{itemize}
+    \item $\ve$ is the record expression of record type $\vt$ and list of fields $\fields$;
+    \item for every pair $(\vx,\veone)$ in $\fields$, applying $\substexpr$ to $\substs$ $\veone$ in $\tenv$ yields $\veonep_\vx$;
+    \item define $\fieldsp$ as the list of pairs $(\vx,\veonep_\vx)$ for every pair $(\vx,\veone)$ in $\fields$;
+    \item define $\newe$ as the record expression of record type $\vt$ and list of fields $\fieldsp$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_tuple}):
+  \begin{itemize}
+    \item $\ve$ is the tuple expression of expressions $\ves$, that is, $\ETuple(\ves)$;
+    \item applying $\substexpr$ to $\substs$ and every expression $\ves[\vi]$ in $\tenv$, for every $\vi$ in $\listrange(\ves)$
+          yields $\newe_\vi$;
+    \item define $\vesp$ as the list of expressions $\newe_\vi$, for every $\vi$ in $\listrange(\ves)$;
+    \item define $\newe$ as the tuple expression of expressions $\vesp$, that is, $\ETuple(\vesp)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_atc}):
+  \begin{itemize}
+    \item $\ve$ is the type assertion of expression $\veone$ and type $\vt$, that is, $\EATC(\veone, \vt)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item define $\newe$ as the type assertion of expression $\veonep$ and type $\vt$, that is, $\EATC(\veonep, \vt)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other}):
+  \begin{itemize}
+    \item $\ve$ is either a literal expression or an unknown value expression;
+    \item define $\newe$ as $\ve$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[e\_var\_in\_substs]{
+  \assocopt(\vs, \substs) \typearrow \langle\newe\rangle
+}{
+  \substexpr(\tenv, \substs, \overname{\EVar(\vs)}{\ve}) \typearrow \newe
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_var\_not\_in\_substs]{
+  \assocopt(\vs, \substs) \typearrow \None
+}{
+  \substexpr(\tenv, \substs, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\ve}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_unop]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep\
+}{
+  \substexpr(\tenv, \substs, \overname{\EUnop(\op, \veone)}{\ve}) \typearrow \overname{\EUnop(\op, \veonep)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_binop]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep\\
+  \substexpr(\tenv, \substs, \vetwop) \typearrow \vetwop
+}{
+  \substexpr(\tenv, \substs, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \overname{\EBinop(\op, \veonep, \vetwop)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_cond]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep\\
+  \substexpr(\tenv, \substs, \vetwop) \typearrow \vetwop\\
+  \substexpr(\tenv, \substs, \vethreep) \typearrow \vethreep\\
+}{
+  \substexpr(\tenv, \substs, \overname{\ECond(\veone, \vetwo, \vethree)}{\ve}) \typearrow \overname{\ECond(\veonep, \vetwop, \vethreep)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_concat]{
+  \vi\in\listrange(\ves): \substexpr(\tenv, \substs, \ves[\vi]) \typearrow \vep[\vi]\\
+  \vesp \eqdef [\vi\in\listrange(\ves): \vep[\vi]]
+}{
+  \substexpr(\tenv, \substs, \overname{\EConcat(\ves)}{\ve}) \typearrow \overname{\EConcat(\vesp)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_call]{
+  \vi\in\listrange(\vargs): \substexpr(\tenv, \substs, \vargs[\vi]) \typearrow \ve_\vi\\
+  \vargsp \eqdef [\vi\in\listrange(\vargs): \ve_\vi]
+}{
+  \substexpr(\tenv, \substs, \overname{\ECall(\vx, \vargs, \paramargs)}{\ve}) \typearrow \overname{\ECall(\vx, \vargsp, \paramargs)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getarray]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep\\
+  \substexpr(\tenv, \substs, \vetwop) \typearrow \vetwop
+}{
+  \substexpr(\tenv, \substs, \overname{\EGetArray(\veone, \vetwo)}{\ve}) \typearrow \overname{\EGetArray(\veonep, \vetwop)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getfield]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep
+}{
+  \substexpr(\tenv, \substs, \overname{\EGetField(\veone, \vx)}{\ve}) \typearrow \overname{\EGetField(\veonep, \vx)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getfields]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep
+}{
+  \substexpr(\tenv, \substs, \overname{\EGetFields(\veone, \fields)}{\ve}) \typearrow \overname{\EGetFields(\veonep, \fields)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getitem]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep
+}{
+  \substexpr(\tenv, \substs, \overname{\EGetItem(\veone, \vi)}{\ve}) \typearrow \overname{\EGetItem(\veonep, \vi)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_pattern]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep
+}{
+  \substexpr(\tenv, \substs, \overname{\EPattern(\veone, \vps)}{\ve}) \typearrow \overname{\EPattern(\veonep, \vps)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_record]{
+  (\vx, \veone)\in\fields: \substexpr(\tenv, \substs, \veone) \typearrow \veone_\vx\\
+  \fieldsp \eqdef [(\vx, \veone)\in\fields: (\vx, \veone_\vx)]
+}{
+  \substexpr(\tenv, \substs, \overname{\ERecord(\vt, \fields)}{\ve}) \typearrow \overname{\ERecord(\vt, \fieldsp)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_slice]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep
+}{
+  \substexpr(\tenv, \substs, \overname{\ESlice(\veone, \slices)}{\ve}) \typearrow \overname{\ESlice(\veonep, \slices)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_tuple]{
+  \vi\in\listrange(\ves): \substexpr(\tenv, \substs, \ves[\vi]) \typearrow \newe_\vi\\
+  \vesp \eqdef [\vi\in\listrange(\ves): \newe_\vi]
+}{
+  \substexpr(\tenv, \substs, \overname{\ETuple(\ves)}{\ve}) \typearrow \overname{\ETuple(\vesp)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_atc]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep
+}{
+  \substexpr(\tenv, \substs, \overname{\EATC(\veone, \vt)}{\ve}) \typearrow \overname{\EATC(\veonep, \vt)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other]{
+  \astlabel(\ve) \in \{\ELiteral, \EUnknown\}\
+}{
+  \substexpr(\tenv, \substs, \ve) \typearrow \overname{\ve}{\newe}
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.SubstConstraint \label{sec:TypingRule.SubstConstraint}}
+\hypertarget{def-substconstraint}{}
+The function
+\[
+\substconstraint(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{\intconstraint}{\vc}
+) \aslto \overname{\newc}{\intconstraint}
+\]
+transforms the integer constraint $\vc$ in the static environment $\tenv$,
+by substituting parameter names by their corresponding expressions in
+$\eqs$, and then attempting to symbolically simplify the result,
+yielding the integer constraint $\newc$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item applying $\substexprnormalize$ in $\tenv$ to $\eqs$ and $\ve$ yields $\newe$;
+    \item define $\newc$ as the exact constraint for the expression $\newe$, that is, \\
+          $\ConstraintExact(\newe)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
+          $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\substexprnormalize$ in $\tenv$ to $\eqs$ and $\veone$ yields $\veonep$;
+    \item applying $\substexprnormalize$ in $\tenv$ to $\eqs$ and $\vetwo$ yields $\vetwop$;
+    \item define $\newc$ as the range constraint for the expressions $\veonep$ and $\vetwop$, that is, $\ConstraintRange(\veonep, \vetwop)$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{
+  \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
+}{
+  \substconstraint(\tenv, \eqs, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\ConstraintExact(\newe)}{\newc}
+}
+\and
+\inferrule[range]{
+  \substexprnormalize(\tenv, \eqs, \veone) \typearrow \veonep\\
+  \substexprnormalize(\tenv, \eqs, \vetwo) \typearrow \vetwop
+}{
+  \substconstraint(\tenv, \eqs, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.CheckArgsTypeSat \label{sec:TypingRule.CheckArgsTypeSat}}
+\hypertarget{def-checkargstypesat}{}
+The function
+\[
+\begin{array}{r}
+  \checkargstypesat(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{(\identifier\times\ty)^*}{\calleeargs} \aslsep
+    \overname{\ty^*}{\callerargtypes} \aslsep
+    \overname{(\identifier\times\expr)^*}{\eqsthree}
+  ) \aslto \\
+  \True\ \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+checks that the types $\callerargtypes$ \typesatisfy\ the types of the corresponding
+formal arguments $\calleeargs$ with the parameters substituted by their corresponding
+arguments as per $\eqsthree$ and results in a type error otherwise.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item both $\calleeargs$ and $\callerargtypes$ are empty;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item view $\calleeargs$ as a list with \head\ $(\calleeargname, \calleearg)$ and \tail\ $\calleeargsone$;
+    \item view $\callerargtypes$ as a list with \head\ $\callerarg$ and \tail\ \\
+          $\callerargtypesone$;
+    \item applying $\renametyeqs$ to $\eqsthree$ and $\calleearg$ in $\tenv$
+          to substitute parameter arguments in $\calleearg$ yields $\calleeargone$\ProseOrTypeError;
+    \item checking that $\callerarg$ \typesatisfies\ $\calleeargone$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item applying $\checkargstypesat$ to $\calleeargsone$, $\callerargtypesone$, and $\eqsthree$ in $\tenv$
+          yields $\True$\ProseOrTypeError;
+    \item the result is $\True$.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+We note that it is guaranteed by TypingRule.AnnotateCallArgTyped
+that $\vargs$ and $\callerargstyped$ have the same length.
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \checkargstypesat(\tenv, \overname{\emptylist}{\calleeargs}, \overname{\emptylist}{\callerargtypes}, \eqsthree)
+  \typearrow \True
+}
+\and
+\inferrule[non\_empty]{
+  \calleeargs \eqname [(\calleeargname, \calleearg)] \concat \calleeargsone\\
+  \callerargtypes \eqname [\callerarg] \concat \callerargtypesone\\
+  \renametyeqs(\tenv, \eqsthree, \calleearg) \typearrow \calleeargone\OrTypeError\\\\
+  \checktypesat(\tenv, \callerarg, \calleeargone) \typearrow \True\OrTypeError\\\\
+  \checkargstypesat(\tenv, \calleeargsone, \callerargtypesone, \eqsthree) \typearrow \True
+}{
+  \checkargstypesat(\tenv, \calleeargs, \callerargtypes, \eqsthree) \typearrow \True
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.AnnotateParameterDefining \label{sec:TypingRule.AnnotateParameterDefining}}
+\hypertarget{def-annotateparameterdefining}{}
+The function
+\[
+  \annotateparameterdefining
+  \left(
+    \begin{array}{c}
+      \overname{\staticenvs}{\tenv} \aslsep\\
+      \overname{(\identifier\times\expr)^*}{\eqsone} \aslsep\\
+      \overname{(\identifier\times\ty)^*}{\vargs} \aslsep\\
+      \overname{(\ty\times\expr)^*}{\callerargstyped} \aslsep\\
+      \overname{(\identifier\times\langle\ty\rangle)^*}{\calleeparams}
+    \end{array}
+  \right)
+  \aslto
+  \begin{array}{c}
+  \overname{(\identifier\times\expr)^*}{\eqs} \cup \\
+  \overname{\TTypeError}{\TypeErrorConfig}
+  \end{array}
+\]
+checks that all parameter-defining arguments
+in $\calleeparams$ are \staticallyevaluable\ constrained integers.
+The result --- $\eqs$ --- is the list of parameter identifiers and their corresponding expressions,
+added to $\eqsone$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item both $\vargs$ and $\callerargstyped$ are empty;
+    \item define $\eqs$ as $\eqsone$.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item view $\vargs$ as a list with \head\ $(\calleex, \Ignore)$ and \tail\ $\vargsone$;
+    \item view $\callerargstyped$ as a list with \head\ $(\callerty, \callere)$ and \tail\ $\callerargstypedone$;
+    \item define $\calleeargisparam$ as $\True$ if and only if $\calleex$ is listed as a parameter in $\calleeparams$;
+    \item One of the following applies:
+    \begin{itemize}
+      \item All of the following apply (\textsc{arg\_is\_param}):
+      \begin{itemize}
+        \item $\calleeargisparam$ is $\True$;
+        \item checking that $\callere$ is \staticallyevaluable\ in $\tenv$ yields $\True$\ProseOrTypeError;
+        \item checking that $\callerty$ is a constrained integer in $\tenv$ yields \\
+              $\True$\ProseOrTypeError;
+        \item applying $\annotateparameterdefining$ to $\vargsone$, $\callerargstypedone$, $\eqsone$ in $\tenv$
+              yields $\eqstwo$\ProseOrTypeError;
+        \item define $\eqs$ as a list with \head\ $(\calleex, \callere)$ and \tail\ $\eqstwo$.
+      \end{itemize}
+
+      \item All of the following apply (\textsc{arg\_is\_not\_param}):
+      \begin{itemize}
+        \item $\calleeargisparam$ is $\False$;
+        \item applying $\annotateparameterdefining$ to $\vargsone$, $\callerargstypedone$, $\eqsone$ in $\tenv$
+              yields $\eqs$\ProseOrTypeError.
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+We note that it is guaranteed by TypingRule.AnnotateCallArgTyped
+that $\vargs$ and $\callerargstyped$ have the same length.
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \annotateparameterdefining(\tenv, \eqsone, \overname{\emptylist}{\vargs}, \overname{\emptylist}{\callerargstyped}, \calleeparams)
+  \typearrow
+  \overname{\eqsone}{\eqs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[arg\_is\_param]{
+  \vargs \eqname [(\calleex, \Ignore)] \concat \vargsone\\
+  \callerargstyped \eqname [(\callerty, \callere)] \concat \callerargstypedone\\
+  \calleeargisparam \eqdef \exists \vi\in\listrange(\calleeparams).\ \calleeparams[\vi]=(\calleex, \Ignore)\\
+  \calleeargisparam\ = \True\\
+  \checkstaticallyevaluable(\tenv, \callere) \typearrow \True\OrTypeError\\\\
+  \checkconstrainedinteger(\tenv, \callerty) \typearrow \True\OrTypeError\\\\
+  \annotateparameterdefining(\tenv, \vargsone, \callerargstypedone, \eqsone) \typearrow \eqstwo \OrTypeError\\\\
+  \eqs \eqdef [(\calleex, \callere)] \concat \eqstwo
+}{
+  {
+    \begin{array}{r}
+    \annotateparameterdefining(\tenv, \eqsone, \vargs, \callerargstyped, \calleeparams) \\
+    \typearrow \eqs \OrTypeError
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[arg\_is\_not\_param]{
+  \vargs \eqname [(\calleex, \Ignore)] \concat \vargsone\\
+  \callerargstyped \eqname [(\callerty, \callere)] \concat \callerargstypedone\\
+  \calleeargisparam \eqdef \exists \vi\in\listrange(\calleeparams).\ \calleeparams[\vi]=(\calleex, \Ignore)\\
+  \calleeargisparam = \False\\
+  \annotateparameterdefining(\tenv, \vargsone, \callerargstypedone, \eqsone) \typearrow \eqs\\
+}{
+  {
+    \begin{array}{r}
+    \annotateparameterdefining(\tenv, \eqsone, \vargs, \callerargstyped, \calleeparams) \\
+    \typearrow \eqs \OrTypeError
+    \end{array}
+  }
+}
+\end{mathpar}
+\end{emptyformal}
+
+\section{TypingRule.AnnotateRetTy \label{sec:TypingRule.AnnotateRetTy}}
+\hypertarget{def-annotateretty}{}
+The function
+\[
+\begin{array}{r}
+\annotateretty(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\subprogramtype}{\calltype} \aslsep
+  \overname{\langle\ty\rangle}{\calleerettyopt}
+  \overname{(\identifier\times\expr)^*}{\eqsthree}
+) \aslto \\
+\overname{\langle\ty\rangle}{\rettyopt}
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the optional return type $\calleerettyopt$ given with the subprogram type
+$\calltype$ with respect to the parameter expressions $\eqsthree$,
+yielding the optional annotated type $\rettyopt$.
+The result is a type error, if one is detected.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{function\_or\_getter}):
+  \begin{itemize}
+    \item $\calltype$ is one of $\STFunction$, $\STGetter$, or $\STEmptyGetter$;
+    \item $\calleerettyopt$ is $\langle\tty\rangle$;
+    \item define $\rettyopt$ as $\langle\ttyone\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{procedure\_or\_setter}):
+  \begin{itemize}
+    \item $\calltype$ is one of $\STProcedure$, $\STSetter$, or $\STEmptySetter$;
+    \item $\calleerettyopt$ is $\None$;
+    \item define $\rettyopt$ as $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ret\_type\_mismatch}):
+  \begin{itemize}
+    \item the condition that $\calltype$ is one of $\STProcedure$, $\STSetter$, or \\
+          $\STEmptySetter$
+          if and only if $\calleerettyopt$ is $\None$ does not hold;
+    \item the result is a type error indicating the mismatch.
+  \end{itemize}
+\end{itemize}
+
+\begin{emptyformal}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[function\_or\_getter]{
+  \calltype \in \{\STFunction, \STGetter, \STEmptyGetter\}\\
+  \renametyeqs(\eqsthree, \tty) \typearrow \ttyone \OrTypeError
+}{
+  \annotateretty(\tenv, \calltype, \overname{\langle\tty\rangle}{\calleerettyopt}, \eqsthree) \typearrow
+  \overname{\langle\ttyone\rangle}{\rettyopt}
+}
+\and
+\inferrule[procedure\_or\_setter]{
+  \calltype \in \{\STProcedure, \STSetter, \STEmptySetter\}\\
+}{
+  \annotateretty(\tenv, \calltype, \overname{\None}{\calleerettyopt}, \eqsthree) \typearrow
+  \overname{\None}{\rettyopt}
+}
+\and
+\inferrule[ret\_type\_mismatch]{
+  \neg(\calltype \in \{\STProcedure, \STSetter, \STEmptySetter\} \leftrightarrow \calleerettyopt=\None)
+}{
+  \annotateretty(\tenv, \calltype, \calleerettyopt, \eqsthree) \typearrow
+  \TypeErrorVal{\MismatchedReturnValue}
+}
+\end{mathpar}
 \end{emptyformal}
 
 \section{TypingRule.SubprogramForName \label{sec:TypingRule.SubprogramForName}}
@@ -9007,12 +9777,12 @@ One of the following applies:
 
   \item All of the following apply (\textsc{candidates\_exist}):
   \begin{itemize}
-    \item $\candidates$ is a list with head $\name$ and tail $\candidatesone$;
+    \item $\candidates$ is a list with \head\ $\name$ and \tail\ $\candidatesone$;
     \item the function definition associated with $\name$ in $\tenv$ is $\funcdef$;
     \item determining whether there is an argument clash between $\formaltypes$ and the arguments in $\funcdef$
           (that is, $\funcdef.\funcargs$) yields $\vb$\ProseOrTypeError;
     \item filtering the call candidates in $\candidatesone$ with $\formaltypes$ in $\tenv$ yields $\matchesone$\ProseOrTypeError;
-    \item if $\vb$ is $\True$ then $\matches$ is the list with head $(\name,\funcdef)$ and tail $\matchesone$,
+    \item if $\vb$ is $\True$ then $\matches$ is the list with \head\ $(\name,\funcdef)$ and \tail\ $\matchesone$,
           and otherwise it is $\matchesone$.
   \end{itemize}
 \end{itemize}
@@ -9206,7 +9976,7 @@ All of the following apply:
   \item annotating the subprogram definition $\vfone$ in $\tenv$ as per \chapref{TypingSubprograms} yields
         the annotated subprogram definition $\vftwo$\ProseOrTypeError;
   \item $\newd$ is the subprogram AST node with $\vftwo$, that is, $\DFunc(\vftwo)$;
-  \item $\annotateddecls$ is the list with $\newd$ as its head and $\decls$ as its tail.
+  \item $\annotateddecls$ is the list with $\newd$ as its \head\ and $\decls$ as its \tail.
 \end{itemize}
 
 \subsection{Example}
@@ -9234,7 +10004,7 @@ All of the following apply:
   \item declaring the global storage with description $\gsd$ in $\tenv$ yields the new environment
         $\newtenv$ and new global storage description $\gsdp$\ProseOrTypeError;
   \item $\newd$ is the global storage declaration with description $\gsdp$, that is, \\ $\DGlobalStorage(\gsdp)$;
-  \item $\annotateddecls$ is the list with $\newd$ as its head and $\decls$ as its tail.
+  \item $\annotateddecls$ is the list with $\newd$ as its \head\ and $\decls$ as its \tail.
 \end{itemize}
 \subsection{Example}
 
@@ -9261,7 +10031,7 @@ All of the following apply:
         and optional field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
   \item declaring the type described by $(\vx, \tty, \vs)$ in $\tenv$
         as per \secref{TypingRule.DeclaredType} yields the modified environment $\newtenv$\ProseOrTypeError;
-  \item $\annotateddecls$ is the list with $\vd$ as its head and $\decls$ as its tail.
+  \item $\annotateddecls$ is the list with $\vd$ as its \head\ and $\decls$ as its \tail.
   \end{itemize}
 
 \subsection{Example}
@@ -9587,9 +10357,10 @@ One of the following applies:
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
-    \item $\vparameters$ is a list with $(\vx, \tyopt)$ as its head and $\vparametersone$ as its tail;
-    \item annotating the parameter $(\vx, \tyopt)$ in $\tenvone$ with $\potentialparams$ and the pair $(\tenvonep, \acc)$
-          via $\annotateoneparam$ yields the pair $(\tenvonepp, \accp)$\ProseOrTypeError;
+    \item $\vparameters$ is a list with $(\vx, \tyopt)$ as its \head\ and $\vparametersone$ as its \tail;
+    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ in $\tenvone$ with $\potentialparams$ and the pair $(\tenvonep, \acc)$
+          yields the pair \\
+          $(\tenvonepp, \accp)$\ProseOrTypeError;
     \item annotating the parameter list $\vparametersone$ in $\tenvone$ with $\potentialparams$, starting with the pair
           $(\tenvonepp, \accp)$ yields the pair \\ $(\newtenv, \declaredparams)$.
   \end{itemize}
@@ -10420,8 +11191,8 @@ All of the following apply:
         or $\True$, which short-circuits the entire rule
         (since the subprogram is not any kind of setter and no getter is required);
   \item \view\ the list of arguments of $\funcsig$ (that is, $\funcsig.\funcargs$) as follows:
-        the head is an argument that has the type $\rettype$;
-        the tail is a list with arguments that have the types $\argtypes$;
+        the \head\ is an argument that has the type $\rettype$;
+        the \tail\ is a list with arguments that have the types $\argtypes$;
   \item applying $\subprogramforname$ to look up $\tenv$ for a subprogram with the name given by $\funcsig$ (that is, $\funcsig.\funcname$)
         yields a subprogram definition AST node $\funcsigp$\ProseOrTypeError;
   \item define $\watendgettertype$ as $\STGetter$ if $\funcsig.\subprogramtype$ is \\ $\STSetter$ and
@@ -10430,7 +11201,8 @@ All of the following apply:
   \item define $\argtypesp$ as the list of types appearing in the signature of $\funcsigp$ (that is, in $\funcsigp.\funcargs$);
   \item checking, for each index $\vi$ in the indices for $\argtypes$, that the type at $\argtypes[\vi]$ and the type at $\argtypesp[\vi]$
         are \typeequivalent\ yields $\True$\ProseOrTypeError;
-  \item checking that $\rettype$ and $\funcsigp.\funcreturntype$ are \typeequivalent\ yields $\True$\ProseOrTypeError;
+  \item checking that $\rettype$ and $\funcsigp.\funcreturntype$ are \typeequivalent\ yields \\
+        $\True$\ProseOrTypeError;
   \item define $\vb$ as $\True$ (that is, unless the rule short-circuited with a type error).
 \end{itemize}
 
@@ -10515,7 +11287,8 @@ All of the following apply:
   \item $\gsd$ is a global storage declaration with keyword $\keyword$, initial value \\ $\initialvalue$,
         optional type $\tyopt$, and name $\name$;
   \item checking that $\name$ is not already declared in the global environment of $\tenv$ yields $\True$\ProseOrTypeError;
-  \item annotating the optional type $\tyoptp$ in $\tenv$ via $\annotatetypeopt$ yields $\tyoptp$\ProseOrTypeError;
+  \item annotating the optional type $\tyoptp$ in $\tenv$ via $\annotatetypeopt$ yields \\
+        $\tyoptp$\ProseOrTypeError;
   \item annotating the optional expression $\initialvalue$ in $\tenv$ via $\annotateexpropt$ yields
         $(\initialvaluetype, \initialvaluep)$\ProseOrTypeError;
   \item choosing the correct type between $\initialvaluetype$ and $\tyoptp$ in $tenv$ via $\annotateinittype$ yields
@@ -11443,7 +12216,7 @@ argument types for a given binary operator:
   (\MINUS     &,& \lreal &,& \lreal)&,\\
   (\MUL       &,& \lreal &,& \lreal)&,\\
   (\RDIV      &,& \lreal &,& \lreal)&,\\
-  (\POW       &,& \lreal &,& \lreal)&,\\
+  (\POW       &,& \lreal &,& \lint)&,\\
   (\EQOP      &,& \lreal &,& \lreal)&,\\
   (\NEQ       &,& \lreal &,& \lreal)&,\\
   (\LEQ       &,& \lreal &,& \lreal)&,\\
@@ -12155,7 +12928,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
-    \item \view\ $\slices$ as the list with $\vs$ as its head and $\slicesone$ as its tail;
+    \item \view\ $\slices$ as the list with $\vs$ as its \head\ and $\slicesone$ as its \tail;
     \item applying $\slicetopositions$ to $\vs$ in $\tenv$ yields the list of positions \\
           $\positionsone$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
     \item transforming $\slicesone$ to a list of positions in $\tenv$ via $\slicestopositions$ yields
@@ -14571,7 +15344,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
-    \item $\monoms$ is a list with $(\vm,q)$ as its head and $\monomsone$ as its tail;
+    \item $\monoms$ is a list with $(\vm,q)$ as its \head\ and $\monomsone$ as its \tail;
     \item transforming the unitary monomial $\vm$ to an expression via \\ $\unitarymonomialstoexpr$ yields $\veonep$;
     \item transforming $\veonep$ and $q$ via $\monomialtoexpr$ yields the expression $\veone$ and sign $\vsone$;
     \item transforming $\monoms$ to an expression and sign via $\monomialstoexpr$ yields $(\vetwo, \vstwo)$;
@@ -16221,12 +16994,27 @@ A subprogram includes a parameter that is not associated with any variable appea
 \hypertarget{def-nolca}{}
 \item[$\NoLCA$]
 A conditional expressions results in two types that have no common ancestor type that can represent both
-(see \secref{sec:TypingRule.LowestCommonAncestor}).
+(see \secref{TypingRule.LowestCommonAncestor}).
 
+\hypertarget{def-mrv}{}
+\item[$\MismatchedReturnValue$]
+A call to a function must result in a returned value,
+whereas a call to a procedure must not.
+This error occurs when a call to a function or a getter is inferred to refer to a procedure or a setter,
+or a call to a procedure or a setter is inferred to refer to a function or a getter.
+(see \secref{TypingRule.AnnotateCallArgTyped}).
+
+\hypertarget{def-cba}{}
+\item[$\CallBadArity$]
+A call to a subprogram must have the same number of arguments as the list of formal arguments
+declared for the subprogram.
+This error indicates that the number of arguments is different to the number of declared formal arguments
+(see \secref{TypingRule.AnnotateCallArgTyped}).
 \end{description}
 
 \noindent\makebox[\linewidth]{\rule{\linewidth}{0.4pt}}
-\hypertarget{tododefine}{Function names with red hyperlinks indicated a missing definition that needs to be done.}
+\hypertarget{tododefine}{}
+Function names with red hyperlinks indicate a missing definition that needs to be done.
 
 \bibliographystyle{plain}
 \bibliography{ASL}

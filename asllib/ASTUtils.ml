@@ -622,7 +622,7 @@ let rec subst_expr substs e =
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
   | E_Concat es -> E_Concat (List.map tr es)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
-  | E_Call (x, args, ta) -> E_Call (x, List.map tr args, ta)
+  | E_Call (x, args, param_args) -> E_Call (x, List.map tr args, param_args)
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)

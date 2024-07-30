@@ -379,7 +379,7 @@ except for the following differences.
 The rules for expressions have the extra derivation rule:
 \[
 \begin{array}{rcl}
-\expr &::=& \EGetArray(\expr, \expr) \\
+\expr &::=& \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) \\
 \end{array}
 \]
 
