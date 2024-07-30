@@ -42,7 +42,7 @@ Propagation of constrained integers
 Use of global vars in constraints
   $ aslref --no-exec TPositive4.asl
   File TPositive4.asl, line 15, characters 4 to 54:
-  ASL Typing error: a subtype of integer {LET_ALLOWED_NUMS_B} was expected,
+  ASL Typing error: a subtype of integer {8} was expected,
     provided integer {16}.
   [1]
   $ aslref --no-exec TPositive4-1.asl
@@ -154,6 +154,7 @@ Bit vector widths defined by constrained integers
 Symbolic execution of bit vector widths expressions
   $ aslref --no-exec TPositive10.asl
   $ aslref --no-exec TPositive10-0.asl
+  $ aslref --no-exec TPositive10-1.asl
   $ aslref --no-exec TNegative10.asl
   ASL Typing error: a pure expression was expected, found widthN
   [1]

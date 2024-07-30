@@ -30,6 +30,7 @@ type global = {
   subtypes : identifier IMap.t;
   subprograms : AST.func IMap.t;
   subprogram_renamings : ISet.t IMap.t;
+  expr_equiv : expr IMap.t;
 }
 
 type local = {
@@ -82,16 +83,17 @@ module PPEnv = struct
         subtypes;
         subprograms;
         subprogram_renamings;
+        expr_equiv;
       } =
     fprintf f
       "@[<v 2>Global with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
        @[types:@ %a@]@ - @[subtypes:@ %a@]@ - @[subprograms:@ %a@]@ - \
-       @[subprogram_renamings:@ %a@]@]"
+       @[subprogram_renamings:@ %a@]@ - @[expr equiv:@ %a@]@]"
       (pp_map PP.pp_literal) constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types (pp_map PP.pp_ty) declared_types (pp_map pp_print_string)
       subtypes (pp_map pp_subprogram) subprograms (pp_map pp_iset)
-      subprogram_renamings
+      subprogram_renamings (pp_map PP.pp_expr) expr_equiv
 
   let pp_env f { global; local } =
     fprintf f "@[<v 2>Env with:@ - %a@ - %a@]" pp_local local pp_global global
@@ -110,6 +112,7 @@ let empty_global =
     subtypes = IMap.empty;
     subprograms = IMap.empty;
     subprogram_renamings = IMap.empty;
+    expr_equiv = IMap.empty;
   }
 
 (** An empty local static env. *)
@@ -142,7 +145,10 @@ let type_of env x =
   with Not_found -> IMap.find x env.global.storage_types |> fst
 
 let type_of_opt env x = try Some (type_of env x) with Not_found -> None
-let lookup_immutable_expr env x = IMap.find x env.local.expr_equiv
+
+let lookup_immutable_expr env x =
+  try IMap.find x env.local.expr_equiv
+  with Not_found -> IMap.find x env.global.expr_equiv
 
 let lookup_immutable_expr_opt env x =
   try Some (lookup_immutable_expr env x) with Not_found -> None
@@ -233,6 +239,15 @@ let add_local_immutable_expr x e env =
   {
     env with
     local = { env.local with expr_equiv = IMap.add x e env.local.expr_equiv };
+  }
+
+let add_global_immutable_expr x e env =
+  let () =
+    if false then Format.eprintf "Adding to env %S <- %a@." x PP.pp_expr e
+  in
+  {
+    env with
+    global = { env.global with expr_equiv = IMap.add x e env.global.expr_equiv };
   }
 
 let add_subtype s t env =

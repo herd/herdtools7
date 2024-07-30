@@ -38,6 +38,8 @@ type global = {
   subprogram_renamings : ISet.t IMap.t;
       (** Maps each subprogram declared name to the equivalence class of all
           the subprogram runtime names that were declared with this name. *)
+  expr_equiv : expr IMap.t;
+      (** Maps every expression to a reduced immutable form. *)
 }
 (** Store all the global environment information at compile-time. *)
 
@@ -78,6 +80,10 @@ val add_local_constant : identifier -> literal -> env -> env
 
 val add_local_immutable_expr : identifier -> expr -> env -> env
 (** [add_local_immutable_expr x e env] binds [x] to [e] in [env], [e] is
+    supposed to be the oldest expression corresponding to [x].*)
+
+val add_global_immutable_expr : identifier -> expr -> env -> env
+(** [add_global_immutable_expr x e env] binds [x] to [e] in [env], [e] is
     supposed to be the oldest expression corresponding to [x].*)
 
 val add_local : identifier -> ty -> local_decl_keyword -> env -> env

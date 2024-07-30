@@ -2860,6 +2860,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let env2 =
       match (keyword, initial_value') with
       | GDK_Constant, Some e -> try_add_global_constant name env1 e
+      | GDK_Let, Some e when is_statically_evaluable ~loc env1 e ->
+          let e' = StaticModel.try_normalize env1 e in
+          add_global_immutable_expr name e' env1
       | (GDK_Constant | GDK_Let), None ->
           Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
