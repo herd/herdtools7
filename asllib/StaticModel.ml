@@ -392,6 +392,7 @@ let rec to_ir env (e : expr) : ir_expr =
       let ir1' = ASTUtils.list_cross restrict ctnts ir1
       and ir2' = ASTUtils.list_cross restrict nctnts ir2 in
       Disjunction (ir1' @ ir2')
+  | E_ATC (e', _) -> to_ir env e'
   | _ -> (
       let v =
         let open StaticInterpreter in

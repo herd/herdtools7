@@ -1240,11 +1240,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           PP.pp_pos loc
     in
     let caller_arg_typed = List.map (annotate_expr env) args in
-    annotate_call_arg_typed loc env name caller_arg_typed eqs call_type
+    annotate_call_arg_typed loc env name caller_arg_typed call_type
 
-  and annotate_call_arg_typed loc env name caller_arg_typed eqs call_type =
+  and annotate_call_arg_typed loc env name caller_arg_typed call_type =
     let caller_arg_types, args1 = List.split caller_arg_typed in
-    let extra_nargs, name1, callee =
+    let eqs1, name1, callee =
       Fn.try_subprogram_for_name loc env name caller_arg_types
     in
     let () =
@@ -1266,7 +1266,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let () =
       if false then
-        match extra_nargs with
+        match eqs1 with
         | [] -> ()
         | _ ->
             Format.eprintf "@[<2>%a: Adding@ @[{%a}@]@ to call of %s@."
@@ -1275,9 +1275,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                  ~pp_sep:(fun f () -> Format.fprintf f ";@ ")
                  (fun f (n, e) ->
                    Format.fprintf f "@[%s@ <- %a@]" n PP.pp_expr e))
-              extra_nargs name
+              eqs1 name
     in
-    let eqs1 = List.rev_append eqs extra_nargs in
     let () =
       if List.compare_lengths callee.args args1 != 0 then
         fatal_from loc
@@ -1286,14 +1285,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let eqs2 =
       let folder acc (_x, ty) (t_e, _e) =
         match ty.desc with
-        | T_Bits ({ desc = E_Var x; _ }, _) -> (
-            match (Types.get_structure env t_e).desc with
-            | T_Bits (e, _) -> (
-                match List.assoc_opt x acc with
-                | None -> (x, e) :: acc
-                | Some e' ->
-                    if StaticModel.equal_in_env env e e' then acc
-                    else (x, e) :: acc)
+        | T_Bits ({ desc = E_Var param_name; _ }, _) -> (
+            match (Types.make_anonymous env t_e).desc with
+            | T_Bits (param_actual_e, _) -> (
+                (* If param has another defining expression, we need to check that they are equal. *)
+                match List.assoc_opt param_name acc with
+                | Some param_actual_e2
+                  when StaticModel.equal_in_env env param_actual_e
+                         param_actual_e2 ->
+                    (* If they are, we can ignore the other expression. *)
+                    acc
+                | Some _
+                (* If they are not equal, the parameter satisfaction later will fail. *)
+                | None
+                  (* If there are no other defining expression, there is nothing to check. *)
+                  ->
+                    (* We don't need to check that param_actual_e is a static constrained integer, because it comes from a bitvector type. *)
+                    (param_name, param_actual_e) :: acc)
             | _ -> acc)
         | _ -> acc
       in
@@ -1303,24 +1311,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           List.fold_left2 folder eqs1 callee.args caller_arg_typed
     in
     let eqs3 =
-      List.map
-        (fun (param_name, e) ->
-          let e' = annotate_static_constrained_integer ~loc env e in
-          (param_name, e'))
-        eqs2
-    in
-    let eqs4 =
+      (* Checking that all implicit parameters are static constrained integers. *)
       List.fold_left2
         (fun eqs (callee_x, _) (caller_ty, caller_e) ->
+          (* If [callee_x] is an implicit parameter. *)
           if
             List.exists
               (fun (p_name, _ty) -> String.equal callee_x p_name)
               callee.parameters
           then
+            let+ () = check_statically_evaluable env caller_e in
             let+ () = check_constrained_integer ~loc env caller_ty in
             (callee_x, caller_e) :: eqs
           else eqs)
-        eqs3 callee.args caller_arg_typed
+        eqs2 callee.args caller_arg_typed
     in
     let () =
       if false then
@@ -1328,12 +1332,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         eprintf "@[<hov 2>Eqs for this call are: %a@]@."
           (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
                fprintf f "%S<--%a" name PP.pp_expr e))
-          eqs4
+          eqs3
     in
     let () =
       List.iter2
         (fun (callee_arg_name, callee_arg) caller_arg ->
-          let callee_arg = rename_ty_eqs env eqs4 callee_arg in
+          let callee_arg = rename_ty_eqs env eqs3 callee_arg in
           let () =
             if false then
               Format.eprintf "Checking calling arg %s from %a to %a@."
@@ -1357,10 +1361,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               ()
           | callee_param_name, Some callee_param_t ->
               let callee_param_t_renamed =
-                rename_ty_eqs env eqs4 callee_param_t
+                rename_ty_eqs env eqs3 callee_param_t
               in
               let caller_param_e =
-                match List.assoc_opt callee_param_name eqs4 with
+                match List.assoc_opt callee_param_name eqs3 with
                 | None ->
                     assert false
                     (* Bad behaviour, there should be a defining expression *)
@@ -1387,12 +1391,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let ret_ty1 =
       match (call_type, callee.return_type) with
       | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
-          Some (rename_ty_eqs env eqs4 ty |> annotate_type env ~loc)
+          Some (rename_ty_eqs env eqs3 ty)
       | (ST_Setter | ST_EmptySetter | ST_Procedure), None -> None
       | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
-    (name1, args1, eqs4, ret_ty1) |: TypingRule.FCall
+    (name1, args1, eqs3, ret_ty1) |: TypingRule.FCall
   (* End *)
 
   and annotate_expr env (e : expr) : ty * expr =
@@ -2380,7 +2384,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let* name, args = should_fields_reduce_to_call env x ty fields in
     let args = (t_e, e) :: List.map (annotate_expr env) args in
     let name, args, eqs, ret_ty =
-      annotate_call_arg_typed (to_pos le) env name args [] ST_Setter
+      annotate_call_arg_typed (to_pos le) env name args ST_Setter
     in
     let () = assert (ret_ty = None) in
     Some (S_Call (name, args, eqs) |> add_pos_from le)
@@ -2449,7 +2453,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             let typed_args = (t_e, e) :: List.map (annotate_expr env) args in
             let name, args, eqs, ret_ty =
-              annotate_call_arg_typed loc env x typed_args [] ST_Setter
+              annotate_call_arg_typed loc env x typed_args ST_Setter
             in
             let () = assert (ret_ty = None) in
             Some (S_Call (name, args, eqs) |> here)
@@ -2484,7 +2488,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         if should_reduce_to_call env x st then
           let args = [ (t_e, e) ] in
           let name, args, eqs, ret_ty =
-            annotate_call_arg_typed loc env x args [] st
+            annotate_call_arg_typed loc env x args st
           in
           let () = assert (ret_ty = None) in
           Some (S_Call (name, args, eqs) |> here)
@@ -2856,6 +2860,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let env2 =
       match (keyword, initial_value') with
       | GDK_Constant, Some e -> try_add_global_constant name env1 e
+      | GDK_Let, Some e when is_statically_evaluable ~loc env1 e ->
+          let e' = StaticModel.try_normalize env1 e in
+          add_global_immutable_expr name e' env1
       | (GDK_Constant | GDK_Let), None ->
           Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
