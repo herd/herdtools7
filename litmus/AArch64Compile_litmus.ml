@@ -542,6 +542,33 @@ module Make(V:Constant.S)(C:Config) =
           outputs = [r1;]; reg_env=[r3,voidstar; r1,word;]@add_q r2}
     | V128 -> assert false
 
+(* Memory Tagging Extension Load and Store *)
+    let store_tag memo r1 r2 idx = match idx with
+    | 0,Idx ->
+        { empty_ins with
+          memo = sprintf "%s ^i0,[^i1]" memo;
+          inputs = [r1;r2;];
+          outputs = [];
+          reg_env = (add_q [r1]) @ [(r2,voidstar)]}
+    | k,Idx ->
+        { empty_ins with
+          memo = sprintf "%s ^i0,[^i1,#%i]" memo k;
+          inputs = [r1;r2];
+          outputs = [];
+          reg_env = (add_q [r1]) @ [(r2,voidstar)]}
+    | k,PostIdx ->
+        { empty_ins with
+          memo = sprintf "%s ^i0,[^i1],#%i" memo k;
+          inputs = [r1;r2];
+          outputs = [];
+          reg_env = (add_q [r1]) @ [(r2,voidstar)]}
+    | k,PreIdx ->
+        { empty_ins with
+          memo = sprintf "%s ^i0,[^i1,#%i]!" memo k;
+          inputs = [r1;r2];
+          outputs = [];
+          reg_env = (add_q [r1]) @ [(r2,voidstar)]}
+
 (* Neon Extension Load and Store *)
 
     let print_simd_reg io offset i r = match r with
@@ -1972,9 +1999,17 @@ module Make(V:Constant.S)(C:Config) =
          sprintf "msr %s,%s" (Misc.lowercase (pp_sysreg sr)) f in
        {empty_ins with
          memo; outputs=r; reg_env=add_type quad r;}::k
-    | I_STG _|I_ST2G _|I_STZG _|I_STZ2G _|I_LDG _ ->
-        Warn.fatal "No litmus output for instruction %s"
-          (dump_instruction ins)
+    | I_STG (r1,r2,idx) -> store_tag "stg" r1 r2 idx::k
+    | I_ST2G (r1,r2,idx) -> store_tag "st2g" r1 r2 idx::k
+    | I_STZG (r1,r2,idx) -> store_tag "stzg" r1 r2 idx::k
+    | I_STZ2G (r1,r2,idx) -> store_tag "stz2g" r1 r2 idx::k
+    | I_LDG (r1,r2,k1) ->
+      let offset = if k1 == 0 then "" else sprintf ",#%i" k1 in
+      { empty_ins with
+        memo = sprintf "ldg ^o0,[^i0%s]" offset;
+        inputs = [r1;r2];
+        outputs = [r1];
+        reg_env = (add_q [r1]) @ [(r2,voidstar)]}::k
     | I_ALIGND _|I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|
       I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|
       I_SEAL _|I_STCT _|I_UNSEAL _ ->
