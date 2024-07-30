@@ -16,12 +16,12 @@ end
 
 getter f2[x::integer] => integer
 begin
-  return f1 + x;
+  return f1[] + x;
 end
 
 setter f2[x::integer] = v :: integer
 begin
-  f1 = v + x;
+  f1[] = v + x;
 end
 
 var f3_storage: integer = -1;
@@ -50,8 +50,8 @@ end
 func main() => integer
 begin
   f1[] = f1[];
-  f1 = f1;
-  let a = f1;
+  // f1 = f1; // Illegal 
+  let a = f1[];
   let b = f1[];
   let c = f2[4];
   f2[5] = 6;

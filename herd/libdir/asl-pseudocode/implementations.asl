@@ -526,12 +526,12 @@ end
 
 // =============================================================================
 
-getter _PC [] => bits(64)
+getter _PC => bits(64)
 begin
   return read_pc();
 end
 
-setter _PC [] = value :: bits(64)
+setter _PC = value :: bits(64)
 begin
   write_pc(value);
 end

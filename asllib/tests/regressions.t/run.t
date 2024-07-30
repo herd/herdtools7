@@ -240,7 +240,7 @@ UnderConstrained integers:
   $ aslref record-getfields.asl
 
   $ aslref integer-accessed-bitvector.asl
-  File integer-accessed-bitvector.asl, line 4, characters 2 to 3:
+  File integer-accessed-bitvector.asl, line 4, characters 2 to 6:
   ASL Typing error: a subtype of bits(-) was expected, provided integer.
   [1]
 
@@ -352,12 +352,13 @@ Base values
 
 Empty getters/setters
   $ aslref empty-getter-called-with-slices.asl
-  File empty-getter-called-with-slices.asl, line 8, characters 10 to 14:
-  ASL Error: Mismatched use of return value from call to 'f1'
+  $ aslref empty-getter-called-with-slices-2.asl
+  File empty-getter-called-with-slices-2.asl, line 8, characters 10 to 14:
+  ASL Typing error: boolean does not subtype any of: integer, bits(-).
   [1]
   $ aslref nonempty-getter-called-without-slices.asl
   File nonempty-getter-called-without-slices.asl, line 8, characters 10 to 12:
-  ASL Error: Mismatched use of return value from call to 'f1'
+  ASL Error: Undefined identifier: 'f1'
   [1]
   $ aslref empty-setter-nonempty-getter.asl
   File empty-setter-nonempty-getter.asl, line 6, character 0 to line 9,
@@ -373,9 +374,42 @@ Empty getters/setters
   [1]
   $ aslref empty-setter-called-with-slices.asl
   File empty-setter-called-with-slices.asl, line 13, characters 2 to 6:
-  ASL Error: Mismatched use of return value from call to 'f1'
+  ASL Typing error: a subtype of bits(-) was expected, provided integer.
   [1]
   $ aslref nonempty-setter-called-without-slices.asl
   File nonempty-setter-called-without-slices.asl, line 13, characters 2 to 4:
-  ASL Error: Mismatched use of return value from call to 'f1'
+  ASL Error: Undefined identifier: 'f1'
   [1]
+  $ aslref setter_subfield.asl
+  $ aslref setter_sub_tuple.asl
+  $ aslref setter_subslice.asl
+  $ aslref getter_subfield.asl
+  $ aslref getter_sub_tuple.asl
+  $ aslref getter_subslice.asl
+  $ aslref getter_subfields.asl
+  $ aslref setter_bitfields.asl
+  $ aslref pstate-exp.asl --type-check-warn
+  File pstate-exp.asl, line 60, characters 10 to 11:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 60, characters 10 to 11:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 62, characters 12 to 13:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 62, characters 12 to 13:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 78, characters 10 to 11:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 78, characters 10 to 11:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 80, characters 12 to 13:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 80, characters 12 to 13:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 96, characters 10 to 11:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 96, characters 10 to 11:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 98, characters 12 to 13:
+  ASL Static Error: Unsupported expression n.
+  File pstate-exp.asl, line 98, characters 12 to 13:
+  ASL Static Error: Unsupported expression n.
