@@ -4,10 +4,6 @@ H Examples
   $ aslref --no-exec HExample3.asl
   $ aslref --no-exec HExample4.asl
   $ aslref --no-exec HExample5.asl
-  File HExample5.asl, line 28, characters 4 to 9:
-  ASL Typing error: a subtype of bits((size * 8)) was expected,
-    provided bits((halfsize * 16)).
-  [1]
   $ aslref --no-exec HExample6.asl
   $ aslref --no-exec HExample7.asl
   $ aslref --no-exec HExample8.asl
