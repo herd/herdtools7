@@ -1,0 +1,14 @@
+Test LB+posWrlxrlx-porlxrlx+fetch.addrlxrlx-porlxrlx Allowed
+States 5
+0:r0=0; 1:r0=0; [x]=1; [y]=1;
+0:r0=0; 1:r0=0; [x]=2; [y]=1;
+0:r0=0; 1:r0=1; [x]=1; [y]=3;
+0:r0=0; 1:r0=1; [x]=2; [y]=3;
+0:r0=1; 1:r0=0; [x]=2; [y]=1;
+No
+Witnesses
+Positive: 0 Negative: 5
+Condition exists ([x]=2 /\ [y]=3 /\ 0:r0=1 /\ 1:r0=1)
+Observation LB+posWrlxrlx-porlxrlx+fetch.addrlxrlx-porlxrlx Never 0 5
+Hash=2c8aa4cfdfb4ba7e167a051222ddebbf
+

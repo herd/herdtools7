@@ -1,0 +1,13 @@
+Test RR+RW+porlxrlx+rmwrlxrlx-porlxrlx Allowed
+States 4
+0:r0=0; 0:r1=0; 1:r0=0;
+0:r0=0; 0:r1=1; 1:r0=0;
+0:r0=1; 0:r1=0; 1:r0=0;
+0:r0=1; 0:r1=1; 1:r0=0;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:r0=1 /\ 0:r1=0 /\ 1:r0=0)
+Observation RR+RW+porlxrlx+rmwrlxrlx-porlxrlx Sometimes 1 3
+Hash=49a67c88ff40855bd9c3d5ce7f41507a
+

@@ -641,6 +641,27 @@ diy-test-mte::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.MTE diycross7 tests: OK"
 
+diy-test::  diy-test-C
+diy-test-C:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diycross/C \
+		-conf ./herd/tests/diycross/C/C.cfg \
+		-diycross-arg -arch \
+                -diycross-arg C \
+		-diycross-arg [Rlx,Coe,Rlx],[Rlx,Rfe,Rlx],[Rlx,Fre,Rlx],[Rlx,Hat,Rlx] \
+                -diycross-arg PosRW,Fetch.Add,Exch \
+                -diycross-arg Rlx \
+                -diycross-arg PodW* \
+		-diycross-arg [Rlx,Coe,Rlx],[Rlx,Rfe,Rlx],[Rlx,Fre,Rlx] \
+                -diycross-arg Pod**,[Fetch.Add,Rlx,PodW*] \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 C diycross7 tests: OK"
+
 .PHONY: asl-pseudocode clean-asl-pseudocode
 asl-pseudocode: herd/libdir/asl-pseudocode/shared_pseudocode.asl
 herd/libdir/asl-pseudocode/shared_pseudocode.asl:
