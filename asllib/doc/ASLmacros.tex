@@ -159,7 +159,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Abstract Syntax macros
-% These are used by the AST reference, typing rerence, and semantics reference.
+% These are used by the AST reference, typing reference, and semantics reference.
 \newcommand\specification[0]{\textsf{specification}}
 
 \newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
@@ -182,7 +182,7 @@
 \newcommand\LT[0]{\texttt{LT}} % Less than for int or reals
 \newcommand\LEQ[0]{\texttt{LEQ}} % Less or equal for int or reals
 \newcommand\MOD[0]{\texttt{MOD}} % Remainder of integer division
-\newcommand\MINUS[0]{\texttt{MINUS}} % Substraction for int or reals or bitvectors
+\newcommand\MINUS[0]{\texttt{MINUS}} % Subtraction for int or reals or bitvectors
 \newcommand\MUL[0]{\texttt{MUL}} % Multiplication for int or reals or bitvectors
 \newcommand\NEQ[0]{\texttt{NEQ}} % Non equality on two base values of same type
 \newcommand\OR[0]{\texttt{OR}} % Bitvector bitwise or
@@ -446,6 +446,10 @@
 \newcommand\denv[0]{\textsf{denv}}
 \newcommand\aslsep[0]{\mathbf{,}}
 
+% Glossary
+\newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
+\newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LRM Ident info
 \newcommand\ident[2]{\texttt{#1}\textsubscript{\texttt{\MakeUppercase{#2}}}}
@@ -525,6 +529,7 @@
 \newcommand\eqsone[0]{\texttt{eqs1}}
 \newcommand\eqstwo[0]{\texttt{eqs2}}
 \newcommand\eqsthree[0]{\texttt{eqs3}}
+\newcommand\eqsthreep[0]{\texttt{eqs3'}}
 \newcommand\eqsfour[0]{\texttt{eqs4}}
 \newcommand\retty[0]{\texttt{ret\_ty}}
 \newcommand\rettyone[0]{\texttt{ret\_ty1}}
@@ -569,7 +574,9 @@
 \newcommand\callerargtypes[0]{\texttt{caller\_arg\_types}}
 \newcommand\callee[0]{\texttt{callee}}
 \newcommand\calleeargtypes[0]{\texttt{callee\_arg\_types}}
+\newcommand\calleeparam[0]{\texttt{callee\_param}}
 \newcommand\calleeparams[0]{\texttt{callee\_params}}
+\newcommand\calleeparamsone[0]{\texttt{callee\_params1}}
 \newcommand\extranargs[0]{\texttt{extra\_nargs}}
 \newcommand\veq[0]{\texttt{eq}}
 \newcommand\newconstraints[0]{\texttt{new\_constraints}}
@@ -583,6 +590,7 @@
 \newcommand\bits[0]{\texttt{bits}}
 \newcommand\veonep[0]{\texttt{e1'}}
 \newcommand\vetwop[0]{\texttt{e2'}}
+\newcommand\vethreep[0]{\texttt{e2'}}
 \newcommand\vepp[0]{\texttt{e''}}
 \newcommand\vtpp[0]{\texttt{t''}}
 \newcommand\vsp[0]{\texttt{s'}}
@@ -774,3 +782,28 @@
 \newcommand\vqone[0]{\texttt{q1}}
 \newcommand\vqtwo[0]{\texttt{q2}}
 \newcommand\tty[0]{\texttt{ty}}
+\newcommand\aritymatch[0]{\texttt{arity\_match}}
+\newcommand\paramname[0]{\texttt{param\_name}}
+\newcommand\calleeargs[0]{\texttt{callee\_args}}
+\newcommand\callerargstyped[0]{\texttt{caller\_args\_typed}}
+\newcommand\callerargstypedone[0]{\texttt{caller\_args\_typed1}}
+\newcommand\calleex[0]{\texttt{callee\_x}}
+\newcommand\callerty[0]{\texttt{caller\_ty}}
+\newcommand\callere[0]{\texttt{caller\_e}}
+\newcommand\calleearg[0]{\texttt{callee\_arg}}
+\newcommand\calleeargone[0]{\texttt{callee\_arg1}}
+\newcommand\callerarg[0]{\texttt{caller\_arg}}
+\newcommand\calleeargname[0]{\texttt{callee\_arg\_name}}
+\newcommand\calleeargisparam[0]{\texttt{callee\_arg\_is\_param}}
+\newcommand\calleeargsone[0]{\texttt{callee\_args\_one}}
+\newcommand\callerargtypesone[0]{\texttt{caller\_arg\_types1}}
+\newcommand\calleeparamt[0]{\texttt{callee\_param\_t}}
+\newcommand\calleeparamtrenamed[0]{\texttt{callee\_param\_t\_renamed}}
+\newcommand\callerparame[0]{\texttt{caller\_param\_e}}
+\newcommand\callerparamt[0]{\texttt{caller\_param\_t}}
+\newcommand\callerparamname[0]{\texttt{caller\_param\_name}}
+\newcommand\calleerettyopt[0]{\texttt{callee\_ret\_ty\_opt}}
+\newcommand\newtys[0]{\texttt{new\_tys}}
+\newcommand\substs[0]{\texttt{substs}}
+\newcommand\vesp[0]{\texttt{es'}}
+\newcommand\paramargs[0]{\texttt{param\_args}}

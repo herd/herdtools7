@@ -186,10 +186,15 @@ is defined as follows:
 \subsection{Lists}
 In the remainder of this document, we use the term \emph{list} and \emph{sequence} interchangeably.
 
-A list of elements \hypertarget{def-emptylist}{can be empty, denoted by $\emptylist$}, or non-empty.
+A list of elements \hypertarget{def-emptylist}{is either empty, denoted by $\emptylist$}, or non-empty.
 A non-empty list is either denoted by listing the elements in sequence, $v_1 \ldots\ v_k$,
 or in bracketed form, $[v_1,\ldots,v_k]$, which is used to aesthetically separate it from surrounding mathematical expressions.
-The commas are entirely aesthetic and are not part of the list.
+The commas are entirely aesthetic and carry no special meaning.
+
+\hypertarget{def-head}{}
+\hypertarget{def-tail}{}
+For a non-empty list $v_1 \ldots\ v_k$, the \emph{\head} of the list is the first element --- $v_1$ ---
+and the \emph{\tail} of the list is the suffix obtained by removing $v_1$ from the list.
 
 We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\N$.
 
@@ -248,7 +253,7 @@ The parametric function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-bas
 
 \hypertarget{def-splitlist}{}
 \begin{definition}[Splitting a List of Pairs]
-The parametric function $\splitlist : T^* \rightarrow (T_1^* \times T_2^*)$
+The parametric function $\splitlist : (T_1 \times T_2)^* \rightarrow (T_1^* \times T_2^*)$
 splits a list of pairs into the corresponding pair of lists:
 \[
     \begin{array}{rcl}
