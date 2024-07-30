@@ -153,7 +153,8 @@ let dump_typ = function
 type exp =
   | Load of location
   | AtomicLoad of MemOrder.t * exp
-  | AtomicExcl of MemOrder.t * exp * Code.v
+  | AtomicExch of MemOrder.t * exp * Code.v
+  | AtomicFetchOp of MemOrder.t * exp * Code.v
   | Deref of exp
   | Const of Code.v
   | AssertVal of exp * Code.v
@@ -172,7 +173,7 @@ let rec addrs_of_exp = function
         (addrs_of_exp loc1)
         (addrs_of_location loc2)
   | Deref e|AssertVal (e,_)
-  | AtomicLoad (_,e)|AtomicExcl (_,e,_)-> addrs_of_exp e
+  | AtomicLoad (_,e)|AtomicExch (_,e,_)|AtomicFetchOp (_,e,_)-> addrs_of_exp e
 
 type cond = Eq | Ne
 
@@ -228,16 +229,23 @@ let pp_dp = function
   | DATA -> "Data"
   | CTRL -> "Ctrl"
 
-type rmw = unit
+
+(* Read-Modify-Write *)
+type rmw =
+  | Exch
+  | Add
 
 type rmw_atom = atom
 
-let pp_rmw compat () = if compat then "Rmw" else "Exch"
+let pp_rmw compat = function
+  | Exch -> if compat then "Rmw" else "Exch"
+  | Add -> "Fetch.Add"
 
-let is_one_instruction () = true
+let is_one_instruction _ = true
 
-let fold_rmw f r = f () r
-let fold_rmw_compat = fold_rmw
+let fold_rmw f r = let r = f Add r in  f Exch r
+
+let fold_rmw_compat f r = f Exch r
 
 let tr_atom_rmw omo_r omo_w = match omo_r,omo_w with
 | (None,_)|(_, None) -> None
@@ -247,21 +255,23 @@ let tr_atom_rmw omo_r omo_w = match omo_r,omo_w with
         (match mo_r,mo_w with
          | SC,SC -> SC
          | Rlx,Rlx -> Rlx
-         | Acq,Rel -> Acq_Rel
-         | Acq,Rlx -> Acq
+         | Acq,Rel -> Acq_Rel         | Acq,Rlx -> Acq
          | Rlx,Rel -> Rel
          | _,_ -> raise Exit)
     with Exit -> None
 
-let applies_atom_rmw () ar aw = match ar,aw with
+let applies_atom_rmw _ ar aw = match ar,aw with
 | None,None -> true (* to allow edge lexemes `Rmw`  *)
 | _,_ ->
     match tr_atom_rmw ar aw with
     | Some _ -> true
     | None -> false
 
-let show_rmw_reg () = false
+let show_rmw_reg _ = true
 
-let compute_rmw () _old co_cell  = co_cell
+let compute_rmw rmw old co =
+  match rmw with
+  | Exch -> co
+  | Add -> old+co
 
 include NoEdge
