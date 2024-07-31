@@ -84,7 +84,8 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     | Location_reg (proc,reg) -> Out.dump_out_reg proc reg
     | Location_global (G.Addr s) -> s
     | Location_global (G.Pte s) -> Printf.sprintf "pte_%s" s
-    | Location_global (G.Phy _)
+    | Location_global (G.Tag (s,_)) -> Printf.sprintf "tag_%s" s
+    | Location_global (G.Phy _) | Location_global (G.AddrT _)
       -> assert false
 
   let dump_rloc_tag =
