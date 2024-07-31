@@ -153,7 +153,8 @@ let dump_typ = function
 type exp =
   | Load of location
   | AtomicLoad of MemOrder.t * exp
-  | AtomicExcl of MemOrder.t * exp * Code.v
+  | AtomicExch of MemOrder.t * exp * Code.v
+  | AtomicFetchOp of MemOrder.t * exp * Code.v
   | Deref of exp
   | Const of Code.v
   | AssertVal of exp * Code.v
@@ -172,7 +173,7 @@ let rec addrs_of_exp = function
         (addrs_of_exp loc1)
         (addrs_of_location loc2)
   | Deref e|AssertVal (e,_)
-  | AtomicLoad (_,e)|AtomicExcl (_,e,_)-> addrs_of_exp e
+  | AtomicLoad (_,e)|AtomicExch (_,e,_)|AtomicFetchOp (_,e,_)-> addrs_of_exp e
 
 type cond = Eq | Ne
 
@@ -228,6 +229,49 @@ let pp_dp = function
   | DATA -> "Data"
   | CTRL -> "Ctrl"
 
-include Exch.Exch(struct type arch_atom = MemOrder.t end)
+
+(* Read-Modify-Write *)
+type rmw =
+  | Exch
+  | Add
+
+type rmw_atom = atom
+
+let pp_rmw compat = function
+  | Exch -> if compat then "Rmw" else "Exch"
+  | Add -> "Fetch.Add"
+
+let is_one_instruction _ = true
+
+let fold_rmw f r = let r = f Add r in  f Exch r
+
+let fold_rmw_compat f r = f Exch r
+
+let tr_atom_rmw omo_r omo_w = match omo_r,omo_w with
+| (None,_)|(_, None) -> None
+| (Some mo_r,Some mo_w) ->
+    try
+      Some
+        (match mo_r,mo_w with
+         | SC,SC -> SC
+         | Rlx,Rlx -> Rlx
+         | Acq,Rel -> Acq_Rel         | Acq,Rlx -> Acq
+         | Rlx,Rel -> Rel
+         | _,_ -> raise Exit)
+    with Exit -> None
+
+let applies_atom_rmw _ ar aw = match ar,aw with
+| None,None -> true (* to allow edge lexemes `Rmw`  *)
+| _,_ ->
+    match tr_atom_rmw ar aw with
+    | Some _ -> true
+    | None -> false
+
+let show_rmw_reg _ = true
+
+let compute_rmw rmw old co =
+  match rmw with
+  | Exch -> co
+  | Add -> old+co
 
 include NoEdge

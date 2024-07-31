@@ -1,0 +1,12 @@
+Test LB+fetch.addrlxrlx-porlxrlxs Allowed
+States 3
+0:r0=0; 1:r0=0; [x]=1; [y]=1;
+0:r0=0; 1:r0=1; [x]=1; [y]=3;
+0:r0=1; 1:r0=0; [x]=3; [y]=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([x]=3 /\ [y]=3 /\ 0:r0=1 /\ 1:r0=1)
+Observation LB+fetch.addrlxrlx-porlxrlxs Never 0 3
+Hash=fe66b6eadbe105fba30116ad60a70bd6
+

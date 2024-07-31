@@ -1,0 +1,13 @@
+Test RR+WR+fetch.addrlxrlx-porlxrlx+porlxrlx Allowed
+States 4
+0:r0=0; 0:r1=0; 1:r0=0;
+0:r0=0; 0:r1=0; 1:r0=1;
+0:r0=0; 0:r1=1; 1:r0=0;
+0:r0=0; 0:r1=1; 1:r0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:r0=0 /\ 0:r1=0 /\ 1:r0=0)
+Observation RR+WR+fetch.addrlxrlx-porlxrlx+porlxrlx Sometimes 1 3
+Hash=5611301eed53e6e00bcfa42ba5efd519
+

@@ -16,6 +16,8 @@
 
 (* Utilities for running Herd binaries in tests. *)
 
+let _dbg = true
+
 type path = string
 
 type stdout_lines = string list
@@ -62,7 +64,7 @@ let herd_args  ~bell ~cat ~conf ~variants ~libdir ~timeout =
     List.concat (List.map (fun v -> ["-variant"; v]) variants)
   in
   let libdirs = ["-set-libdir"; libdir] in
-  List.concat [["-exit"; "true";]; timeout; bells; cats; confs; variants; libdirs]
+  List.concat [["-exit"; "true";]; libdirs; timeout; bells; cats; confs; variants;]
 
 let apply_args herd j herd_args =
   let herd_args = String.concat "," herd_args in
@@ -133,12 +135,14 @@ let run_herd_concurrent ~bell ~cat ~conf ~variants ~libdir herd ~j litmuses =
   r
 
 let read_some_file litmus name =
-  try Some (Filesystem.read_file name Channel.read_lines)
-  with _ ->
-    begin
-      Printf.printf "Failed %s : Missing file %s\n" litmus name ;
-      None
-    end
+  if name = "" then None
+  else
+    try Some (Filesystem.read_file name Channel.read_lines)
+    with _ ->
+      begin
+        Printf.printf "Failed %s : Missing file '%s'\n" litmus name ;
+        None
+      end
 
 let do_check_output litmus expected  expected_failure expected_warn t =
   let () =
@@ -187,13 +191,20 @@ let do_check_output litmus expected  expected_failure expected_warn t =
               false
             end else
               match read_some_file litmus expected_warn with
-              | None -> false
+              | None ->
+                  if _dbg then begin
+                    Printf.eprintf
+                      "** Unexpected warning stderr for %s\n"
+                      (Filename.basename litmus) ;
+                    List.iter prerr_endline stderr
+                  end ;
+                  false
               | Some expected_warn ->
-                 if log_compare stderr expected_warn <> 0 then begin
-                   Printf.printf
-                     "Failed %s : Warning logs do not match\n" litmus ;
-                     false
-                   end else true
+                  if log_compare stderr expected_warn <> 0 then begin
+                    Printf.printf
+                      "Failed %s : Warning logs do not match\n" litmus ;
+                    false
+                  end else true
         end
     | r,stdout,stderr ->
        let some f =
@@ -203,6 +214,15 @@ let do_check_output litmus expected  expected_failure expected_warn t =
        Printf.printf
          "Failed %s : unexpected exit code %i, %s output %s error.\n"
          litmus r (some stdout) (some stderr) ;
+       if _dbg then begin
+         let display tag = function
+           | [] -> ()
+           | _::_ as lines ->
+             Printf.printf "** %s %%\n" tag ;
+             List.iter print_endline lines in
+         display "stdout" stdout ;
+         display "stderr" stderr
+       end ;
        false
 
 let read_output_files litmus =

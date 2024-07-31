@@ -1,0 +1,13 @@
+Test S+porlxrlx+rmwrlxrlx-porlxrlx Allowed
+States 4
+1:r0=0; [x]=1; [y]=1;
+1:r0=0; [x]=2; [y]=1;
+1:r0=1; [x]=1; [y]=2;
+1:r0=1; [x]=2; [y]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ [y]=2 /\ 1:r0=1)
+Observation S+porlxrlx+rmwrlxrlx-porlxrlx Sometimes 1 3
+Hash=c113916b80d46fa5e3f7ee7fc2bea61e
+
