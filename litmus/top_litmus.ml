@@ -436,6 +436,7 @@ end = struct
         let module Cfg = struct
           include OT
           let precision = TestConf.fault_handling
+          let tagcheck = TestConf.mte_precision
           let variant = TestConf.variant
           include ODep
           let debuglexer = debuglexer
