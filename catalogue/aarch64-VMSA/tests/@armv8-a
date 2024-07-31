@@ -626,3 +626,5 @@ nBBM+LDR.litmus
 needTLBI1.litmus
 needTLBI2.litmus
 permchange-M-shoot+DMB.ISH.litmus
+MP+dmb.st+trib-po-isb-po.litmus
+S+dmb.st+trib-po.litmus

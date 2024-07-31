@@ -1,0 +1,13 @@
+AArch64 S+dmb.st+trib-po
+Variant=vmsa,fatal
+{
+TTD(y)=(oa:PA(y),valid:0);
+0:X1=x; 0:X4=(oa:PA(y),valid:1); 0:X5=PTE(y);
+1:X1=x; 1:X3=y;
+}
+P0          |P1          ;
+ MOV W0,#1  | LDR W2,[X3];
+ STR W0,[X1]|L0:         ;
+ DMB ST     | MOV W0,#2  ;
+ STR X4,[X5]| STR W0,[X1];
+exists ~Fault(P1,y) /\ x=1

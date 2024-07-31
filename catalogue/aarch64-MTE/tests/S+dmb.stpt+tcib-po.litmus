@@ -1,0 +1,12 @@
+AArch64 S+dmb.stpt+tcib-po
+Variant=memtag,sync
+{
+0:X1=x; 0:X3=y:green; 0:X2=y:red;
+1:X1=x; 1:X3=y:red;
+}
+P0          | P1          ;
+MOV W0,#1   | LDR W2,[X3] ;
+STR W0,[X1] |L0:          ;
+DMB ST      | MOV W0,#2   ;
+STG X2,[X3] | STR W0,[X1] ;
+exists ~Fault(P1,y) /\ x=1

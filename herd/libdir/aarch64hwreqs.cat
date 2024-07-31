@@ -77,6 +77,9 @@ let CSE-ob =
  [Exp & R]; ctrl; [CSE]; po
  | DSB-ob; [CSE]; po
  | [Imp & TTD & R]; tr-ib; [CSE]; po
+ | [Imp & TTD & R]; tr-ib; po; [CSE]; po
+ | [Imp & Tag & R]; tc-ib; [CSE]; po
+ | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & M) \ Tag) | TagCheck & FAULT]; po; [CSE]; po
  | [Imp & Instr & R]; f-ib; [CSE]; po
 
 (* Dependency-ordered-before *)
@@ -131,6 +134,9 @@ let rec local-hw-reqs =
   | (if "ETS2" then [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R] else 0)
   | DSB-ob
   | CSE-ob
+  | [Imp & TTD & R]; tr-ib; po; [Exp & W]
+  | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & M) \ Tag) | TagCheck & FAULT]; po; [Exp & W]
+
   | [Imp & TTD & R]; (po & same-loc); [W]
   | [Imp & TTD & R]; rmw; [HU]
   | [Exp & M]; (po & same-loc); [TLBUncacheable & FAULT]
