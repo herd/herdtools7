@@ -482,9 +482,14 @@ module RegMap = A.RegMap)
               else find_rec (k+1) rem in
         find_rec 0
 
+      let add_tag star s t = sprintf "tagged(%s%s,%d)" star s (Misc.int_of_tag t)
+
       let compile_val_fun =
         let open Constant in
         fun ptevalEnv v -> match v with
+        | Symbolic (Virtual {name=s;tag=Some t;cap=0L;_}) ->
+            let star = match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*" in
+            add_tag star s t
         | Symbolic sym ->
             let s = Constant.pp_symbol_old sym in
             sprintf "%s%s"
@@ -578,7 +583,9 @@ module RegMap = A.RegMap)
           List.map
             (fun x ->
               let ty =
-                try RegMap.find x t.Tmpl.ty_env
+                try
+                  let ty = RegMap.find x t.Tmpl.ty_env in
+                  if CType.is_tag_ptr ty then CType.pointer_type ty else ty
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
