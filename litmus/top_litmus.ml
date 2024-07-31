@@ -270,7 +270,8 @@ end = struct
                 let src = MyName.outname name ".c" in
                 let flags =
                   { Flags.pac = O.variant Variant_litmus.Pac;
-                    Flags.self = O.variant Variant_litmus.Self; } in
+                    Flags.self = O.variant Variant_litmus.Self;
+                    Flags.memtag = O.variant Variant_litmus.MemTag } in
                 dump src doc compiled;
                 if not OT.is_out then begin
                     let _utils =
@@ -441,6 +442,7 @@ end = struct
           include OT
           let hash = HashInfo.Std
           let precision = TestConf.fault_handling
+          let tagcheck = TestConf.mte_precision
           let variant = TestConf.variant
           include ODep
           let debuglexer = debuglexer
