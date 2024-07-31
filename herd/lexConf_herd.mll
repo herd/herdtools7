@@ -119,6 +119,12 @@ let handle_key main key arg = match key with
    includes := !includes @ [arg]
 | "timeout" ->
    lex_float_opt timeout arg
+| "debug" ->
+    begin
+      match Debug_herd.parse !debug arg with
+      | Some t -> debug := t
+      | None -> error (sprintf "bad argument for key debug: '%s'" arg)
+    end
 (* Change input *)
 | "names" ->
     names := !names @ [arg]
@@ -275,10 +281,9 @@ let handle_key main key arg = match key with
       List.map
         (fun f ->
           try float_of_string f
-          with _ -> error "bad argument for keyt shift: '%s' arg")
+          with _ -> error "bad argument for key shift: '%s' arg")
         fs in
     PP.shift := Array.of_list fs
-
 | "edgemerge" ->
     lex_bool PP.edgemerge arg
 | _ ->
