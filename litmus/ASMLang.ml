@@ -502,6 +502,8 @@ module RegMap = A.RegMap)
               else find_rec (k+1) rem in
         find_rec 0
 
+      let add_tag tag name = sprintf "tagged(%s,%d)" name (Misc.int_of_tag tag)
+
       let check_memory =
         let open Memory in
         match O.memory with
@@ -521,6 +523,8 @@ module RegMap = A.RegMap)
                 let t = check_memory name in
                 sprintf "&(*%s)[%d]" t offset
               else Constant.pp_symbol_old sym |> check_memory
+          | Virtual {name; tag=Some t; cap=0L; _ } ->
+              add_tag t (check_memory name)
           | _ -> Constant.pp_symbol_old sym |> check_memory
 
       let compile_val_fun =
@@ -633,7 +637,9 @@ module RegMap = A.RegMap)
           List.map
             (fun x ->
               let ty =
-                try RegMap.find x t.Tmpl.ty_env
+                try
+                  let ty = RegMap.find x t.Tmpl.ty_env in
+                  if CType.is_tag_ptr ty then CType.pointer_type ty else ty
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
