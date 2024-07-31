@@ -771,3 +771,5 @@ NT-33-tlbi                                     Allowed
 NT-33-tlbi-isb                                 Allowed
 NT-33-tlbi+dsb                                 Allowed
 NT-33-tlbi-isb+dsb                             Allowed
+MP+dmb.st+trib-po-isb-po                       Forbidden
+S+dmb.st+trib-po                               Forbidden
