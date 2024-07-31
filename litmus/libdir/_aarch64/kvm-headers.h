@@ -21,6 +21,7 @@
 #include <asm/delay.h>
 #include <asm/mmu.h>
 #include <asm/pgtable-hwdef.h>
+#include "utils.h"
 
 #define LITMUS_PAGE_SIZE PAGE_SIZE
 
@@ -126,6 +127,7 @@ static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
 
 typedef enum
   { attr_Normal_iWB_oWB,
+    attr_TaggedNormal,
     attr_Normal_iWT_oWT,
     attr_Normal_iNC_oNC,
     attr_NSH,
@@ -181,6 +183,15 @@ static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
     break;
   case attr_Device_GRE:
     *p = litmus_set_memattr(*p, MT_DEVICE_GRE);
+    break;
+  case attr_TaggedNormal:
+#ifdef __ARM_FEATURE_MEMORY_TAGGING
+#ifdef MT_NORMAL_TAGGED
+    *p = litmus_set_memattr(*p, MT_NORMAL_TAGGED);
+#else
+    fatal("Normal Tagged attribute not supported");
+#endif
+#endif
     break;
   }
 }
