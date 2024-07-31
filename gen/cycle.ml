@@ -720,8 +720,7 @@ let remove_store n0 =
       begin match m.evt.loc, m.evt.dir with
         | Code.Code _, Some R when not (E.is_ifetch m.edge.E.a1) ->
             if is_read_same_nonfetch m then begin
-              Printf.printf "%s" (str_node m);
-              Warn.user_error "Multiple ifetch reads to same code location"
+              Warn.user_error "Multiple ifetch reads to same code location [%s]" (str_node m)
               end;
         | Code.Code _, Some R when E.is_ifetch m.edge.E.a1 ->
             if not (is_read_same_nonfetch m) then begin
