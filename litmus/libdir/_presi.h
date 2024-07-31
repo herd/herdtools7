@@ -131,4 +131,8 @@ void munmap_exec(void *p,size_t sz) ;
 void interval_init(int *p,size_t sz) ;
 void interval_shuffle(st_t *seed,int *p,size_t sz) ;
 
+/* Rounding */
+#define round_up(x, n) (((x) + (n) - 1) / (n)) * (n)
+#define round_down(x, n) (x) - ((x) % (n))
+
 #endif

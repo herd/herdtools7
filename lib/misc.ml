@@ -742,6 +742,32 @@ let pp_physical = sprintf "PA(%s)"
 let add_valid = sprintf "valid_%s"
 let add_oa = sprintf "oa_%s"
 
+let tag_int_assoc : (string * int) list =
+  [ ("green", 0)
+  ; ("red", 1)
+  ; ("blue", 2)
+  ; ("black", 3)
+  ; ("white", 4)
+  ; ("cyan", 5)
+  ; ("yellow", 6)
+  ; ("magenta", 7)
+  ]
+
+let int_of_tag (t : string) : int =
+  try List.assoc t tag_int_assoc with
+  | Not_found -> raise (Fatal (sprintf "cannot convert %s of tag" t))
+
+let tag_of_int (v : int) : string =
+  let rec find = function
+    | [] -> raise (Fatal (sprintf "cannot convert %d of int" v))
+    | (tag, i) :: rest -> if i = v then tag else find rest
+  in
+  find tag_int_assoc
+
+let pp_tagged s t = sprintf "%s:%s" s (tag_of_int t)
+let pp_tag = sprintf "tag(%s)"
+let add_tag = sprintf "tag_%s"
+
 (******************)
 (* Hash utilities *)
 (******************)

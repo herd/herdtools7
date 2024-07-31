@@ -169,6 +169,7 @@ let carch = ref `Unknown
 let mode = ref Mode.Std
 let usearch = ref UseArch.Trad
 let fault_handling = ref Fault.Handling.default
+let mte_precision = ref Precision.default
 let variant = ref (fun _ -> false)
 
 (* Arch dependent options *)

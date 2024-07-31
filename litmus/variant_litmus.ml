@@ -23,6 +23,8 @@ type t =
   | Telechat (* Telechat idiosyncrasies *)
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
+  | MemTag           (* Memory Tagging, synonym of MTE *)
+  | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
   | NoInit (* Do not initialise variables *)
   | Pac (* Pointer authentication instructions *)
   | FPac (* Fault on pointer authentication *)
@@ -32,7 +34,7 @@ let compare = compare
 
 let tags =
   "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"::"pac"
-  ::"const-pac-field"::"fpac"::Fault.Handling.tags
+  ::"const-pac-field"::"fpac"::"memtag"::Fault.Handling.tags@Precision.tags
 
 let parse s = match Misc.lowercase s with
 | "noinit" -> Some NoInit
@@ -46,24 +48,26 @@ let parse s = match Misc.lowercase s with
 | "pac" -> Some Pac
 | "fpac" -> Some FPac
 | "const-pac-field" -> Some ConstPacField
+| "memtag" | "mte" -> Some MemTag
+| tag when Misc.is_some (Fault.Handling.parse tag) ->
+  let fh = Misc.as_some (Fault.Handling.parse tag) in
+  Some (FaultHandling fh)
+| tag when  Misc.is_some (Precision.parse tag) ->
+  let p = Misc.as_some (Precision.parse tag) in
+  Some (MTEPrecision p)
 | tag ->
-  match
-   Misc.app_opt (fun p -> FaultHandling p) (Fault.Handling.parse tag)
-  with
-  | Some _ as r ->  r
-  | None ->
-    let len = String.length tag in
-    if len > 4 then
-      let sve = String.sub tag 0 4 = "sve:" in
-      let sme = String.sub tag 0 4 = "sme:" in
-      if sve || sme then
-        Warn.warn_always "Ignoring vector length setting %s" tag ;
-      if sve then
-        Some SVE
-      else if sme then
-        Some SME
-      else None
+  let len = String.length tag in
+  if len > 4 then
+    let sve = String.sub tag 0 4 = "sve:" in
+    let sme = String.sub tag 0 4 = "sme:" in
+    if sve || sme then
+      Warn.warn_always "Ignoring vector length setting %s" tag ;
+    if sve then
+      Some SVE
+    else if sme then
+      Some SME
     else None
+  else None
 
 let pp = function
   | NoInit -> "noinit"
@@ -78,6 +82,8 @@ let pp = function
   | Pac -> "pac"
   | FPac -> "fpac"
   | ConstPacField -> "const-pac-field"
+  | MemTag -> "memtag"
+  | MTEPrecision p -> Precision.pp p
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true
@@ -87,7 +93,10 @@ let set_fault_handling r = function
 | FaultHandling p -> r := p ; true
 | _ -> false
 
-let set_mte_precision _ _ = false
+let set_mte_precision r = function
+  | MTEPrecision p -> r := p; true
+  | _ -> false
+
 let set_mte_store_only _ _ = false
 
 let set_sve_length _ _ = None

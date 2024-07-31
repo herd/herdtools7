@@ -132,6 +132,7 @@ module type Config = sig
   val platform : string
   val asmcommentaslabel : bool
   val cached : bool
+  val variant : Variant_litmus.t -> bool
 end
 
 module Make(O:Config)(Tar:Tar.S) =
@@ -262,6 +263,15 @@ module Make(O:Config)(Tar:Tar.S) =
             let fnames = do_cpy fnames affi "affinity" ".c" in
             let fnames = cpy fnames "affinity" ".h" in
             fnames in
+      let fnames =
+        if flags.Flags.memtag then
+          begin
+            let sub = dir_of_sysarch O.sysarch in
+            let fnames = cpy ~sub:sub fnames "memtag" ".c" in
+            let fnames = cpy ~sub:sub fnames "memtag" ".h" in
+            fnames
+          end
+        else fnames in
       let fnames =
         if flags.Flags.pac then
           let sub = dir_of_sysarch O.sysarch in

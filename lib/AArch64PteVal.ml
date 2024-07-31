@@ -102,8 +102,8 @@ module Attrs = struct
       match a with
       | {sh; ich; och; tagged=false} when ich = och ->
         [sprintf "attr_Normal_i%s_o%s" (pp_ch ich) (pp_ch och); "attr_" ^ (pp_sh sh)]
+      | {tagged=true; _} -> ["attr_TaggedNormal"]
       | _ -> Warn.user_error "Memory attribute not supported in kvm-unit-tests"
-
   end
 
   module DeviceAttrs = struct

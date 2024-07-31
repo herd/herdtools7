@@ -20,4 +20,5 @@ type t =
   {
     pac : bool     ; (* Requires pointer authentification *)
     self : bool    ; (* Self modying code *)
+    memtag : bool  ; (* Requires memory tagging *)
   }

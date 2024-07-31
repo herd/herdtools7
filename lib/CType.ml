@@ -38,6 +38,7 @@ let pteval_t = Base "pteval_t"
 let parel1_t = Base "parel1_t"
 let pte = Pointer pteval_t
 let ins_t = Base "ins_t"
+let tag_t = Base "tag_t"
 
 let rec  dump = function
   | Base s -> s
@@ -78,6 +79,7 @@ let fmt10 = function
   | "uint128_t" | "__uint128_t" -> Some (Direct "llu")
   | "intprt_t" -> Some (Macro "PRIiPTR")
   | "uintprt_t" -> Some (Macro "PRIuPTR")
+  | "tag_t" -> Some (Direct "s")
   | _ -> None
 
 let fmt16 = function
@@ -98,6 +100,7 @@ let fmt16 = function
   | "intprt_t" -> Some (Macro "PRIxPTR")
   | "uintprt_t" -> Some (Macro "PRIxPTR")
   | "ins_t" -> Some (Direct "s")
+  | "tag_t" -> Some (Direct "s")
   | _ -> None
 
 let get_fmt hexa = if hexa then fmt16 else fmt10
@@ -106,6 +109,15 @@ let rec is_ptr =  function
   | Pointer _ -> true
   | Atomic t | Volatile t | Const t -> is_ptr t
   | Array _ | Base _ -> false
+
+let rec is_tag t = match t with
+| Base "tag_t" -> true
+| Atomic t|Volatile t -> is_tag t
+| _ -> false
+
+let is_tag_ptr = function
+  | Pointer p -> is_tag p
+  | Atomic _ | Volatile _ | Const _ | Array _|Base _ -> false
 
 let rec is_pte t = match t with
 | Base "pteval_t" -> true
@@ -187,6 +199,10 @@ let type_for_align i = Array ("uint8_t",i)
 let element_type = function
   | Array (b,_) -> Base b
   | t -> Warn.fatal "Array type expected, found %s" (dump t)
+
+let pointer_type = function
+  | Pointer t -> strip_attributes t
+  | t -> Warn.fatal "Pointer type expected, found %s" (dump t)
 
 let rec signed = function
   | Atomic t|Volatile t| Const t -> signed t
