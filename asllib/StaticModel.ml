@@ -473,7 +473,11 @@ let monomial_to_expr (Prod map) =
     | 2 -> e ** e
     | p -> binop POW e (expr_of_int p)
   in
-  AMap.fold (fun s p e -> (e_var s ^^ p) ** e) map
+  let ( // ) e z = if Z.(equal z one) then e else binop DIV e (expr_of_z z) in
+  fun c ->
+    let start = Q.num c |> expr_of_z in
+    let num = AMap.fold (fun s p e -> e ** (e_var s ^^ p)) map start in
+    num // Q.den c
 
 let sign_of_q c =
   match Q.sign c with
@@ -486,10 +490,10 @@ let polynomial_to_expr (Sum map) =
   let add e1 (s, e2) = if s > 0 then binop PLUS e1 e2 else binop MINUS e1 e2 in
   List.fold_left
     (fun e (m, c) ->
-      if e == zero then monomial_to_expr m (expr_of_q c)
+      if e == zero then monomial_to_expr m c
       else if Q.sign c = 0 then e
       else
-        let e_m = monomial_to_expr m (expr_of_q (Q.abs c)) in
+        let e_m = monomial_to_expr m (Q.abs c) in
         add e (Q.sign c, e_m))
     zero
     (MMap.bindings map |> List.rev)
