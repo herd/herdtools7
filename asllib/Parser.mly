@@ -120,6 +120,11 @@ let make_ty_decl_subtype (x, s) =
      expr_term <------------------|IN|----------------------< expr_atom
      expr_atom <-----------|DOT, brackets, ...|-------------< expr
 
+
+  Note that the token MINUS has two different precedence: one for when it is a
+  binary operator, in that case it has the same precedence as PLUS, and one for
+  when it is a unary operator, in which case it has the same precendence as
+  NOT.
 *)
 
 (* IF *)
@@ -141,8 +146,8 @@ let make_ty_decl_subtype (x, s) =
 (* binop_pow *)
 %left POW CONCAT
 
-(* unop *)
-%nonassoc BNOT NOT
+(* unop: NOT, BNOT, MINUS *)
+%nonassoc UNOPS
 
 (* IN *)
 %nonassoc IN
@@ -300,7 +305,7 @@ let make_expr(sub_expr) ==
     | ~=value ;                                                   < E_Literal            >
     | ~=IDENTIFIER ;                                              < E_Var                >
     | e1=sub_expr; op=binop; e2=expr;                             { E_Binop (op, e1, e2) }
-    | op=unop; e=expr;                                            < E_Unop               >
+    | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
     | x=IDENTIFIER; args=plist(expr); ~=nargs;                    < E_Call               >
     | e=sub_expr; ~=slices;                                       < E_Slice              >
