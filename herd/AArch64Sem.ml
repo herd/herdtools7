@@ -409,14 +409,25 @@ module Make
 
       let write_reg_scalable = write_reg_scalable_sz MachSize.S128
 
+      (* ZA offset, in bits, see ARM ARM B.1.4.10 "ZA tile access" *)
       let za_getoffset tile slice idx esize =
-        let dim = scalable_nbits / esize in
-        let tile = V.op Op.Mul (V.intToV tile) (V.intToV (dim*dim)) in
-        let tiles = V.intToV (esize/8) in
-         M.op Op.Mul slice tiles >>= fun v ->
-          M.op Op.Add tile v  >>= fun v ->
-            M.op Op.Add v idx >>= fun v ->
-              M.op Op.Mul v (V.intToV esize)
+        let esize_to_shift = function
+          | 8 -> 0
+          | 16 -> 1
+          | 32 -> 2
+          | 64 -> 3
+          | 128 -> 4
+          | _ -> assert false in
+        let shift = esize_to_shift esize in
+        let mk_shift k = M.op1 (Op.LeftShift k) in
+          begin
+            begin
+              mk_shift shift slice >>=
+              M.add (V.intToV tile) >>=
+              M.op Op.Mul (V.intToV scalable_nbits)
+            end >>|
+            mk_shift (shift+3) idx
+          end >>= fun (base,idx) -> M.add base idx
 
       let za_getoffset_dir dir tile slice idx esize =
         match dir with
