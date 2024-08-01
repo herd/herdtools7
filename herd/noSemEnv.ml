@@ -21,3 +21,5 @@ let opt_env = false
 let killed _ = []
 
 let get_lx_sz _ = MachSize.No
+
+let reg_defaults = []

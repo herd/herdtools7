@@ -174,7 +174,7 @@ module type S = sig
 (* Register state *)
 (******************)
 
-  val build_reg_state : proc -> state -> reg_state
+  val build_reg_state : proc -> I.arch_reg list -> state -> reg_state
   val look_reg : I.arch_reg -> reg_state -> I.V.v option
   val set_reg : I.arch_reg -> v -> reg_state -> reg_state
   val kill_regs : I.arch_reg list -> reg_state -> reg_state
@@ -569,14 +569,19 @@ module Make(C:Config) (I:I) : S with module I = I
 (* Register state *)
 (******************)
 
-      let build_reg_state p st =
+      let reg_default_value = I.V.zero
+
+      let build_reg_state p defaults st =
+        List.fold_right
+          (fun r -> RegMap.add r reg_default_value)
+          defaults RegMap.empty |>
         LocMap.fold
           (fun loc v k ->
             match loc with
             | Location_reg (q,r) when Proc.equal p q ->
                RegMap.add r v k
             | _ -> k)
-          st RegMap.empty
+          st
 
       let look_reg r st = RegMap.find_opt r st
       let set_reg r v st = RegMap.add r v st
@@ -732,8 +737,7 @@ module Make(C:Config) (I:I) : S with module I = I
                 "Very strange location (look_address) %s\n"
                 (pp_location loc)
           | Location_global (I.V.Val (Symbolic (Virtual _|Physical _)))
-          | Location_reg _
-            -> I.V.zero
+          | Location_reg _ -> reg_default_value
 
       let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
 
