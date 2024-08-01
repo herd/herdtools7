@@ -441,6 +441,7 @@ module Make
             M.op Op.And mask cur_val >>= fun masked_val ->
               M.op Op.ShiftRight masked_val amount
 
+
       let za_getlane_dir dir cur_val tile slice idx esize =
         match dir with
         | AArch64Base.Horizontal -> za_getlane cur_val tile slice idx esize
@@ -2593,13 +2594,19 @@ module Make
                     get_predicate_last p2 psize idx >>= fun (v1,v2) ->
                       M.op Op.And v1 v2 >>= fun last ->
                         M.choiceT
-                        last
-                        (scalable_getlane src idx esize)
-                        (mzero_promoted)
-                        >>|
-                        za_getlane_dir dir acc tile (V.intToV slice) (V.intToV idx) esize >>=
-                          sum_elems >>= fun v ->
-                            za_setlane_dir dir cur_val tile (V.intToV slice) (V.intToV idx) esize v
+                          last
+                          (let slice_v = V.intToV slice
+                           and idx_v = V.intToV idx in
+                           begin
+                            scalable_getlane src idx esize
+                            >>|
+                            za_getlane_dir dir acc tile slice_v idx_v esize
+                           end >>=
+                            sum_elems
+                            >>= fun v ->
+                              za_setlane_dir
+                                dir cur_val tile slice_v idx_v esize v)
+                            (M.unitT cur_val)
                 in
                 let rec repeat_row old_val slice idx =
                   if idx < dim then
@@ -2613,7 +2620,7 @@ module Make
                   else
                     M.unitT old_val
                 in
-                repeat_col V.zero 0 >>= fun v ->
+                repeat_col acc 0 >>= fun v ->
                   write_reg_za dst v ii >>! v
 
 (******************************)
