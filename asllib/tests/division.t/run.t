@@ -4,18 +4,24 @@ Simple division checks:
 Division by zero:
 
   $ aslref static-div-zero.asl
+  File static-div-zero.asl, line 3, characters 19 to 26: All values in
+  constraints {0} would fail with op DIV, operation will always fail.
   File static-div-zero.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator DIV on types integer {6}
     and integer {0}
   [1]
 
   $ aslref static-divrm-zero.asl
+  File static-divrm-zero.asl, line 3, characters 19 to 28: All values in
+  constraints {0} would fail with op DIVRM, operation will always fail.
   File static-divrm-zero.asl, line 3, characters 19 to 28:
   ASL Typing error: Illegal application of operator DIVRM on types integer {6}
     and integer {0}
   [1]
 
   $ aslref static-mod-zero.asl
+  File static-mod-zero.asl, line 3, characters 19 to 26: All values in
+  constraints {0} would fail with op MOD, operation will always fail.
   File static-mod-zero.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator MOD on types integer {6}
     and integer {0}
@@ -24,25 +30,31 @@ Division by zero:
 Unsupported divisions (caught at type-checking time):
 
   $ aslref static-div-neg.asl
+  File static-div-neg.asl, line 3, characters 19 to 27: All values in
+  constraints {(- 3)} would fail with op DIV, operation will always fail.
   File static-div-neg.asl, line 3, characters 19 to 27:
   ASL Typing error: Illegal application of operator DIV on types integer {6}
     and integer {(- 3)}
   [1]
 
   $ aslref static-divrm-neg.asl
+  File static-divrm-neg.asl, line 3, characters 19 to 29: All values in
+  constraints {(- 3)} would fail with op DIVRM, operation will always fail.
   File static-divrm-neg.asl, line 3, characters 19 to 29:
   ASL Typing error: Illegal application of operator DIVRM on types integer {6}
     and integer {(- 3)}
   [1]
 
   $ aslref static-mod-neg.asl
+  File static-mod-neg.asl, line 3, characters 19 to 27: All values in
+  constraints {(- 3)} would fail with op MOD, operation will always fail.
   File static-mod-neg.asl, line 3, characters 19 to 27:
   ASL Typing error: Illegal application of operator MOD on types integer {6}
     and integer {(- 3)}
   [1]
 
   $ aslref static-div-undiv.asl
-  ASL Static error: Illegal application of operator DIV for values 5 and 3.
+  ASL Dynamic error: Illegal application of operator DIV for values 5 and 3.
   [1]
 
 For completeness, those operations are dynamic errors:
@@ -85,19 +97,16 @@ More complicated examples
 
 Fails because N typing cannot infer that N + 1 is strictly positive.
   $ aslref div-by-param.asl
-  File div-by-param.asl, line 3, characters 10 to 23:
-  ASL Typing error: Illegal application of operator DIV on types integer {5}
-    and integer {(N + 1)}
+  ASL Dynamic error: Illegal application of operator DIV for values 5 and 2.
   [1]
 
 Examples with multiple constraints in slices:
   $ aslref div-multi-slices.asl
 
   $ aslref div-multi-slices-zero.asl
-  File div-multi-slices-zero.asl, line 6, characters 10 to 17:
-  ASL Typing error: Illegal application of operator DIV on types
-    integer {2, 4, 8} and integer {0, 1, 2}
-  [1]
+  File div-multi-slices-zero.asl, line 6, characters 10 to 17: Warning:
+  Removing some values that would fail with op DIV from constraint set
+  {0, 1, 2} gave {1, 2}. Continuing with this constraint set.
 
 Example with constant:
 

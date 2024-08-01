@@ -1,0 +1,20 @@
+File ./herd/libdir/asl-pseudocode/shared_pseudocode.asl, line 10960,
+  characters 19 to 26:
+Warning: Removing some values that would fail with op << from constraint set
+{-1..6} gave {0..6}. Continuing with this constraint set.
+File ./herd/libdir/asl-pseudocode/shared_pseudocode.asl, line 10960,
+  characters 19 to 26:
+Warning: Removing some values that would fail with op << from constraint set
+{-1..6} gave {0..6}. Continuing with this constraint set.
+File ./herd/libdir/asl-pseudocode/shared_pseudocode.asl, line 10960,
+  characters 19 to 26:
+Warning: Removing some values that would fail with op << from constraint set
+{-1..6} gave {0..6}. Continuing with this constraint set.
+File ./herd/libdir/asl-pseudocode/shared_pseudocode.asl, line 10960,
+  characters 19 to 26:
+Warning: Removing some values that would fail with op << from constraint set
+{-1..6} gave {0..6}. Continuing with this constraint set.
+File ./herd/libdir/asl-pseudocode/shared_pseudocode.asl, line 10960,
+  characters 19 to 26:
+Warning: Removing some values that would fail with op << from constraint set
+{-1..6} gave {0..6}. Continuing with this constraint set.
