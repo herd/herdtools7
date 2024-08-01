@@ -603,8 +603,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* As name suggests, add events of one thread *)
       let add_events_for_a_processor env (proc,code,fh_code) evts =
         let env =
-          if A.opt_env then A.build_reg_state proc env
+          if A.opt_env then A.build_reg_state proc A.reg_defaults env
           else A.reg_state_empty in
+        let () =
+          if dbg then
+            Printf.eprintf  "Init reg state for proc %s: %s\n%!"
+              (Proc.pp proc) (A.pp_reg_state env) in
         let evts_proc =
           jump_start proc { A.regs=env; lx_sz=None; fh_code } code in
         evts_proc |*| evts

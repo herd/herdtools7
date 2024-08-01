@@ -24,6 +24,8 @@ module type S =
 
     include ArchBase.S
 
+    module V : Value.S with type Cst.Instr.t = instruction
+
     val is_amo : instruction -> bool
     val pp_barrier_short : barrier -> string
     val reject_mixed : bool (* perform a check that rejects mixed-size tests *)
@@ -31,10 +33,10 @@ module type S =
 
     val opt_env : bool (* environemnt optimisation is available *)
     val killed : instruction -> reg list
-
     val get_lx_sz : instruction -> MachSize.lr_sc
+    (* Those register are to be initialised to the default value explicitly *)
+    val reg_defaults : reg list
 
-    module V : Value.S with type Cst.Instr.t = instruction
 
     include ArchExtra_herd.S with module I.V = V
     and type I.arch_reg = reg
@@ -60,4 +62,5 @@ module type S =
     module Barrier:AllBarrier.S with type a = barrier
 
     module CMO:Cmo.S
+
   end

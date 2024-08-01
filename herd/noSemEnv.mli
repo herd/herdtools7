@@ -24,3 +24,6 @@ val killed : 'i -> 'r list
 
 (* Size of load reserve access *)
 val get_lx_sz : 'i -> MachSize.lr_sc
+
+(* Register initialised by default *)
+val reg_defaults : 'r list
