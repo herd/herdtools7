@@ -195,7 +195,13 @@ Large constraint sets
   $ aslref TPositive13.asl
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
+  Keeping it as an interval.
+  Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
+  Keeping it as an interval.
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
+  Keeping it as an interval.
   $ aslref --no-exec TDegraded13.asl
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
@@ -265,7 +271,7 @@ C Tests
   $ aslref --no-exec CNegative1.asl
   File CNegative1.asl, line 5, characters 4 to 31:
   ASL Typing error: a subtype of integer {0..N} was expected,
-    provided integer {(- 1)}.
+    provided integer {-1}.
   [1]
   $ aslref --no-exec CNegative2.asl
   File CNegative2.asl, line 4, characters 2 to 11:

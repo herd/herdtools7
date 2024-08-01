@@ -450,6 +450,7 @@ and bitfield_equal eq bf1 bf2 =
 
 let var_ x = E_Var x |> add_dummy_pos
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
+let unop op = map_desc (fun e -> E_Unop (op, e))
 let literal v = E_Literal v |> add_dummy_pos
 let expr_of_int i = literal (L_Int (Z.of_int i))
 

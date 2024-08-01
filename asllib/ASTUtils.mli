@@ -139,6 +139,9 @@ val var_ : identifier -> expr
 val binop : binop -> expr -> expr -> expr
 (** Builds a binary operation from to sub-expressions. *)
 
+val unop : unop -> expr -> expr
+(** Builds a unary operation from its sub-expression. *)
+
 val fresh_var : string -> identifier
 (** [fresh_var "doc"] is a fresh variable whose name begins with "doc". *)
 

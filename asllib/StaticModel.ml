@@ -483,29 +483,16 @@ let sign_of_q c =
   | _ -> assert false
 
 let polynomial_to_expr (Sum map) =
-  let add s1 e1 s2 e2 =
-    match (s1, s2) with
-    | _, Null -> e1
-    | Null, _ -> e2
-    | StrictPositive, StrictPositive | StrictNegative, StrictNegative ->
-        binop PLUS e1 e2
-    | StrictPositive, StrictNegative | StrictNegative, StrictPositive ->
-        binop MINUS e1 e2
-    | _ -> assert false
-  in
-  let res, sign =
-    MMap.fold
-      (fun m c (e, sign) ->
-        let c' = Q.abs c and sign' = sign_of_q c in
-        let m' = monomial_to_expr m (expr_of_q c') in
-        (add sign' m' sign e, sign'))
-      map (zero, Null)
-  in
-  match sign with
-  | Null -> zero
-  | StrictPositive -> res
-  | StrictNegative -> unop NEG res
-  | _ -> assert false
+  let add e1 (s, e2) = if s > 0 then binop PLUS e1 e2 else binop MINUS e1 e2 in
+  List.fold_left
+    (fun e (m, c) ->
+      if e == zero then monomial_to_expr m (expr_of_q c)
+      else if Q.sign c = 0 then e
+      else
+        let e_m = monomial_to_expr m (expr_of_q (Q.abs c)) in
+        add e (Q.sign c, e_m))
+    zero
+    (MMap.bindings map |> List.rev)
 
 let sign_to_binop = function
   | Null -> EQ_OP
