@@ -1621,6 +1621,25 @@ module Make(V:Constant.S)(C:Config) =
         inputs=rs@ra; outputs=rd;
         reg_env = add_q rd@ add_w rs@add_q ra; }
 
+    let mopz op v rd rn rm =
+      let rd,fd = do_arg1o v rd 0
+      and rs,fn,fm = do_arg2i v rn rm 0
+      and memo = MOPExt.memo_z op |> Misc.lowercase in
+      { empty_ins with
+        memo = sprintf "%s %s,%s,%s" memo fd fn fm;
+        inputs=rs; outputs=rd;
+        reg_env = add_v v (rs@rd); }
+
+    let mop op v rd rn rm ra =
+      let rd,fd = do_arg1o v rd 0
+      and rs,fn,fm = do_arg2i v rn rm 0
+      and memo = MOPExt.memo op |> Misc.lowercase in
+      let ra,fa = do_arg1i v ra (List.length rs) in
+      { empty_ins with
+        memo = sprintf "%s %s,%s,%s,%s" memo fd fn fm fa;
+        inputs=rs@ra; outputs=rd;
+        reg_env = add_v v (rd@rs@ra); }
+
     let addsub_ext v op r1 r2 (v3,r3) e =
       let r1,f1 = do_arg1o v r1 0
       and r2,f2 = do_arg1i v r2 0
@@ -1867,6 +1886,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_OP3 (v,op,r1,r2,e) ->  op3 v op r1 r2 e::k
     | I_MOPL (sop,rd,rn,rm,ZR) -> moplz sop rd rn rm::k
     | I_MOPL (sop,rd,rn,rm,ra) -> mopl sop rd rn rm ra::k
+    | I_MOP (op,v,rd,rn,rm,ZR) -> mopz op v rd rn rm::k
+    | I_MOP (op,v,rd,rn,rm,ra) -> mop op v rd rn rm ra::k
     | I_ADDSUBEXT (v,op,r1,r2,vr3,e) -> addsub_ext v op r1 r2 vr3 e::k
 (* Fence *)
     | I_FENCE f -> fence f::k

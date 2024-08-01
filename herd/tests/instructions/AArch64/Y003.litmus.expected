@@ -1,0 +1,10 @@
+Test Y003 Required
+States 1
+0:X1=2; 0:X2=3; 0:X3=6;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=2 /\ 0:X2=3 /\ 0:X3=6)
+Observation Y003 Always 1 0
+Hash=7c6f007938f27a483b5b6ffa4f06c270
+

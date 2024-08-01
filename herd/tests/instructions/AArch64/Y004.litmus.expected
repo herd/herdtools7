@@ -1,0 +1,10 @@
+Test Y004 Required
+States 1
+0:X1=65536; 0:X2=65536; 0:X3=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=65536 /\ 0:X2=65536 /\ 0:X3=0)
+Observation Y004 Always 1 0
+Hash=64af9f2820eb24f19b9bd2665872394e
+

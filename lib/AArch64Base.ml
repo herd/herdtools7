@@ -1144,6 +1144,20 @@ module  MOPLExt = struct
 
 end
 
+module MOPExt = struct
+
+  type op = ADD | SUB
+
+  let memo op = match op with
+    | ADD -> "MADD"
+    | SUB -> "MSUB"
+
+  let memo_z op = match op with
+    | ADD -> "MUL"
+    | SUB -> "MNEG"
+
+end
+
 let pp_variant = function
   | V32 -> "V32"
   | V64 -> "V64"
@@ -1667,6 +1681,7 @@ type 'k kinstruction =
   | I_ADDSUBEXT of
       variant * Ext.op * reg * reg * (variant * reg) * 'k Ext.ext
   | I_MOPL of MOPLExt.sop * reg * reg * reg *reg
+  | I_MOP of MOPExt.op * variant * reg * reg * reg * reg
   | I_OP3 of variant * op * reg * reg * 'k OpExt.ext
   | I_ADR of reg * lbl
   | I_RBIT of variant * reg * reg
@@ -1841,7 +1856,9 @@ let do_pp_instruction m =
 
   and pp_op3 memo v r1 r2 e =
     sprintf "%s %s,%s,%s"
-      memo (pp_vreg v r1) (pp_vreg v r2) (OpExt.pp_ext m v e) in
+      memo (pp_vreg v r1) (pp_vreg v r2) (OpExt.pp_ext m v e)
+  in
+
 
   let pp_kr showsxtw showzero kr = match kr with
   | K k when m.zerop k && not showzero -> ""
@@ -2313,6 +2330,14 @@ let do_pp_instruction m =
      sprintf "%s %s,%s,%s,%s"
        (MOPLExt.memo sop)
        (pp_xreg rd) (pp_wreg rn) (pp_wreg rm) (pp_xreg ra)
+  | I_MOP (op, v, rd, rn, rm, ZR) ->
+      sprintf "%s %s,%s,%s"
+      (MOPExt.memo_z op)
+      (pp_vreg v rd) (pp_vreg v rn) (pp_vreg v rm)
+  | I_MOP (op, v, rd, rn, rm, ra) ->
+      sprintf "%s %s,%s,%s,%s"
+      (MOPExt.memo op)
+      (pp_vreg v rd) (pp_vreg v rn) (pp_vreg v rm) (pp_vreg v ra)
   | I_OP3 (v,SUBS,ZR,r,e) ->
      pp_op2 "CMP" v r e
   | I_OP3 (v,SUB,r,ZR,(OpExt.Reg _ as e)) when not m.compat ->
@@ -2549,6 +2574,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOVA_VT (r1,r2,_,r3,r4)
   | I_MOVA_TV (r1,r2,r3,r4,_)
   | I_ADDA (_,r1,r2,r3,r4)
+  | I_MOP (_,_,r1,r2,r3,r4)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
   | I_CASP (_,_,r1,r2,r3,r4,r5)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 (fold_reg r5 c))))
@@ -2877,6 +2903,8 @@ let map_regs f_reg f_symb =
      I_ADDSUBEXT (v1,op,map_reg r1,map_reg r2,(v3,map_reg r3),ext)
   | I_MOPL (sop,r1,r2,r3,r4) ->
      I_MOPL (sop,map_reg r1,map_reg r2,map_reg r3,map_reg r4)
+  | I_MOP (op, v, r1, r2, r3, r4) ->
+      I_MOP (op, v, map_reg r1, map_reg r2, map_reg r3, map_reg r4)
   | I_OP3 (v,op,r1,r2,e) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_op_ext e)
   | I_ADR (r,lbl) ->
@@ -2973,6 +3001,7 @@ let get_next =
   | I_UBFM _
   | I_ADDSUBEXT _
   | I_MOPL _
+  | I_MOP _
   | I_OP3 _
   | I_FENCE _
   | I_CSEL _
@@ -3139,6 +3168,7 @@ let is_valid i =
   | I_MOV (v,_,RV (w,_)) -> v=w
   | I_CAS (_,_,_,_,ZR) -> false
   | I_CAS (_,_,_,_,_) -> true
+  | I_MOP (_, V128,_,_, _,_) -> false
   | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,ZR,OpExt.Imm _)
   | I_OP3 (_,(ADD|SUB),ZR,_,OpExt.Imm _)
     -> false
@@ -3272,6 +3302,7 @@ module PseudoI = struct
         | I_MOV_S _
         | I_LDXP _| I_STXP _
         | I_MOPL _
+        | I_MOP _
         | I_WHILELT _ | I_WHILELE _ | I_WHILELO _| I_WHILELS _
         | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
         | I_ADD_SV _ | I_INDEX_SS _
@@ -3433,6 +3464,7 @@ module PseudoI = struct
         | I_UBFM _
         | I_ADDSUBEXT _
         | I_MOPL _
+        | I_MOP _
         | I_OP3 _
         | I_FENCE _
         | I_CSEL _

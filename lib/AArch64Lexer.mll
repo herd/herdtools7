@@ -475,6 +475,9 @@ match name with
 | "smnegl"|"SMNEGL" -> MOPLZ AArch64Base.MOPLExt.(Signed,SUB)
 | "umull"|"UMULL" -> MOPLZ AArch64Base.MOPLExt.(Unsigned,ADD)
 | "umnegl"|"UMNEGL" -> MOPLZ AArch64Base.MOPLExt.(Unsigned,SUB)
+| "madd"|"MADD" -> MOP AArch64Base.MOPExt.(ADD)
+| "msub"|"MSUB" -> MOP AArch64Base.MOPExt.(SUB)
+| "mneg"|"MNEG" -> MOPZ AArch64Base.MOPExt.(SUB)
 (* Morello *)
 | "alignd"|"ALIGND" -> ALIGND
 | "alignu"|"ALIGNU" -> ALIGNU
