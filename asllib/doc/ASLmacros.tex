@@ -82,6 +82,15 @@
 \newcommand\CodeSubsection[3]{}
 \fi
 
+\ifcode
+% First argument is \<rule>Begin, second is \<rule>End, third is the file name.
+% Example: for SemanticsRule.Lit, use the following:
+% \CodeSubsubsection{\LitBegin}{\LitEnd}{../Interpreter.ml}
+\newcommand\CodeSubsubsection[3]{\subsubsection{Code} \VerbatimInput[firstline=#1, lastline=#2]{#3}}
+\else
+\newcommand\CodeSubsubsection[3]{}
+\fi
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typesetting macros
 \newtheorem{definition}{Definition}
