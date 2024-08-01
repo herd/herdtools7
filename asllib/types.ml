@@ -303,11 +303,9 @@ module Domain = struct
     match e.desc with
     | E_Literal v -> of_literal v
     | E_Var x -> (
-        try StaticEnv.lookup_constants env x |> of_literal
+        try SEnv.lookup_constants env x |> of_literal
         with Not_found -> (
-          try
-            let ty = StaticEnv.type_of env x in
-            of_type env ty
+          try SEnv.type_of env x |> of_type env
           with Not_found -> Error.fatal_from e (Error.UndefinedIdentifier x)))
     | E_Unop (NEG, e') ->
         of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
@@ -382,17 +380,172 @@ module Domain = struct
 
   let compare _d1 _d2 = assert false
 
-  let syntax_is_subset env is1 is2 =
-    (* TODO: improve for basic cases. *)
-    constraints_equal env is1 is2
+  module Iterators = struct
+    type approx = Over | Under
+
+    exception CannotOverApproximate
+
+    let assert_under approx acc =
+      if approx = Over then raise CannotOverApproximate else acc
+
+    let fold_zs =
+      let rec aux f z1 z2 acc =
+        if Z.lt z2 z1 then acc else f z1 acc |> aux f (Z.succ z1) z2
+      in
+      fun f z1 z2 acc ->
+        if Z.equal z1 z2 then f z1 acc
+        else acc |> f z1 |> f z2 |> aux f (Z.succ z1) (Z.pred z2)
+
+    let rec expr_fold :
+          'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
+     fun approx env f e acc ->
+      let e = StaticModel.try_normalize env e in
+      match e.desc with
+      | E_Literal l -> f l acc
+      | E_Var x ->
+          if approx = Over then
+            let t = try SEnv.type_of env x with Not_found -> assert false in
+            type_fold Over env f t acc
+          else acc
+      | E_Unop (op, e) ->
+          let f' z = Operations.unop_values e Error.Static op z |> f in
+          expr_fold approx env f' e acc
+      | E_Binop (op, e1, e2) ->
+          let f1 z2 z1 = Operations.binop_values e Error.Static op z1 z2 |> f in
+          let f2 z2 = expr_fold approx env (f1 z2) e1 in
+          expr_fold approx env f2 e2 acc
+      | E_Unknown t -> type_fold approx env f t acc
+      | E_Cond (e1, e2, e3) ->
+          let f' = function
+            | L_Bool b -> expr_fold approx env f (if b then e2 else e3)
+            | _ ->
+                assert false (* Type error - should have been caught earlier. *)
+          in
+          expr_fold approx env f' e1 acc
+      | E_GetArray _ | E_GetField _ | E_GetFields _ | E_GetItem _ | E_Record _
+      | E_Tuple _ ->
+          (* Not supported: aggregate types. *)
+          assert_under approx acc
+      | E_ATC (_, _)
+      | E_Slice (_, _)
+      | E_Pattern (_, _)
+      | E_Call (_, _, _)
+      | E_Concat _ ->
+          (* Not yet implemented *)
+          assert_under approx acc
+
+    and type_fold :
+          'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
+     fun approx env f t acc ->
+      let t = make_anonymous env t in
+      match t.desc with
+      | T_Real | T_String | T_Int (UnConstrained | UnderConstrained _) ->
+          assert_under approx acc (* We can't iterate on all of those. *)
+      | T_Int (WellConstrained cs) -> constraints_fold approx env f cs acc
+      | T_Bool -> acc |> f (L_Bool true) |> f (L_Bool false)
+      | T_Bits (e_len, _) ->
+          let f1 length z = L_BitVector (Bitvector.of_z length z) |> f in
+          let f2 = function
+            | L_Int z when Z.fits_int z && Z.sign z >= 0 ->
+                let length = Z.to_int z in
+                let max = Z.shift_left Z.one length |> Z.pred in
+                fold_zs (f1 length) Z.zero max
+            | L_Int _ -> Fun.id (* Those are delayed until runtime. *)
+            | _ -> assert false (* Type error. *)
+          in
+          expr_fold approx env f2 e_len acc
+      | T_Enum li ->
+          List.fold_left
+            (fun acc x ->
+              expr_fold approx env f (E_Var x |> add_pos_from t) acc)
+            acc li
+      | T_Tuple _ | T_Array (_, _) | T_Record _ | T_Exception _ ->
+          (* Non supported: aggregate types. *)
+          assert_under approx acc
+      | T_Named _ -> assert false (* Error in output of [make_anonmymous]. *)
+
+    and constraint_fold :
+          'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
+     fun approx env f c acc ->
+      match c with
+      | Constraint_Exact e -> expr_fold approx env f e acc
+      | Constraint_Range (e1, e2) ->
+          let z1, z2 =
+            match approx with
+            | Over -> (get_min env e1, get_max env e2)
+            | Under -> (get_max env e1, get_min env e2)
+          in
+          let f z = f (L_Int z) in
+          fold_zs f z1 z2 acc
+
+    and constraints_fold :
+          'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
+     fun approx env f li acc ->
+      List.fold_left (fun acc c -> constraint_fold approx env f c acc) acc li
+
+    and get_min env e =
+      expr_fold Over env
+        (function L_Int z1 -> Z.min z1 | _ -> assert false)
+        e
+        Z.(shift_left one 30)
+
+    and get_max env e =
+      expr_fold Over env
+        (function L_Int z1 -> Z.max z1 | _ -> assert false)
+        e
+        Z.(shift_left minus_one 30)
+
+    let constraints_for_all env is f =
+      let exception FalseFound in
+      let f' l _acc = f l || raise FalseFound in
+      try constraints_fold Over env f' is true
+      with CannotOverApproximate | FalseFound -> false
+
+    let constraints_exists env is f =
+      let exception TrueFound in
+      let f' l _acc = f l && raise TrueFound in
+      try constraints_fold Under env f' is false with
+      | CannotOverApproximate -> false
+      | TrueFound -> true
+  end
+
+  let int_set_for_all =
+    let interval_iter elt_iter interval =
+      let x = IntSet.Interval.x interval and y = IntSet.Interval.y interval in
+      (* We try the extremities first, in case it's linear. *)
+      elt_iter x;
+      elt_iter y;
+      let n = Z.(sub y x |> to_int) in
+      for i = 0 to n do
+        Z.of_int i |> Z.add x |> elt_iter
+      done
+    in
+    let exception FalseFound in
+    fun is f ->
+      let elt_iter z = if f z then () else raise FalseFound in
+      try
+        IntSet.iter (interval_iter elt_iter) is;
+        true
+      with FalseFound -> false
 
   let int_set_is_subset env is1 is2 =
     match (is1, is2) with
     | _, Top -> true
     | Top, _ -> false
     | Finite is1, Finite is2 -> IntSet.(is_empty (diff is1 is2))
-    | FromSyntax is1, FromSyntax is2 -> syntax_is_subset env is1 is2
-    | _ -> false
+    | FromSyntax is1, FromSyntax is2 ->
+        constraints_equal env is1 is2
+        || Iterators.constraints_for_all env is1 @@ fun l1 ->
+           Iterators.constraints_exists env is2 @@ fun l2 -> literal_equal l1 l2
+    | Finite is1, FromSyntax is2 -> (
+        int_set_for_all is1 @@ fun z1 ->
+        Iterators.constraints_exists env is2 @@ function
+        | L_Int z2 -> Z.equal z1 z2
+        | _ -> false)
+    | FromSyntax is1, Finite is2 -> (
+        Iterators.constraints_for_all env is1 @@ function
+        | L_Int z1 -> IntSet.mem z1 is2
+        | _ -> false)
 
   let is_subset env d1 d2 =
     let () =
