@@ -2486,7 +2486,9 @@ module Make
           | 0 -> op >>= fun old_val -> increment old_val n i
           | _ -> reduce (n-1) (op >>= fun old_val -> increment old_val n i)
         in
-        reduce (nelem-1) mzero >>= fun v -> write_reg_scalable r v ii
+        reduce (nelem-1) mzero
+        >>= fun v -> write_reg_scalable r v ii
+        >>! v
 
       let cnt_inc (op,v) r pat k ii =
         let open AArch64 in
@@ -3646,28 +3648,28 @@ module Make
             read_reg_ord_sz sz r2 ii >>= promote >>= fun v ->
             write_reg_scalable_rep r1 v ii)
         | I_INDEX_SI (r1,var,r2,k) ->
-          check_sve inst;
-          !(let sz = tr_variant var  in
+            check_sve inst;
+            let sz = tr_variant var  in
             let v2 = V.intToV k in
             read_reg_ord_sz sz r2 ii >>= fun v1 ->
-              index r1 v1 v2 ii)
+            index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_IS (r1,var,k,r2) ->
-          check_sve inst;
-          !(let sz = tr_variant var  in
+            check_sve inst;
+            let sz = tr_variant var  in
             let v1 = V.intToV k in
             read_reg_ord_sz sz r2 ii >>= fun v2 ->
-              index r1 v1 v2 ii)
+            index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_SS (r1,var,r2,r3) ->
-          check_sve inst;
-          !(let sz = tr_variant var  in
+            check_sve inst;
+            let sz = tr_variant var  in
             read_reg_ord_sz sz r2 ii >>|
             read_reg_ord_sz sz r3 ii >>= fun (v1,v2) ->
-              index r1 v1 v2 ii)
+            index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_II (r1,k1,k2) ->
-          check_sve inst;
-          !(let v1 = V.intToV k1 in
+            check_sve inst;
+            let v1 = V.intToV k1 in
             let v2 = V.intToV k2 in
-            index r1 v1 v2 ii)
+            index r1 v1 v2 ii >>= nextSet r1
         | I_RDVL (rd,k) ->
            check_sve inst;
            let v = scalable_nbytes * k |> V.intToV in
