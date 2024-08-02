@@ -11,6 +11,7 @@ H Examples
   $ aslref --no-exec HExample10.asl
   $ aslref --no-exec HExample11.asl
   $ aslref --no-exec HExample12.asl
+  $ aslref --no-exec HExample13.asl
 
 T Tests
   $ aslref --no-exec TPositive1.asl
