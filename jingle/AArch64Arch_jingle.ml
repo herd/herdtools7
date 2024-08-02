@@ -674,6 +674,7 @@ include Arch.MakeArch(struct
     (* Scalable Vector Extension *)
     | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
     | I_UADDV _ | I_DUP_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
+    | I_EOR_SV _
     | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
     | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
     | I_MOV_SV _ | I_PTRUE _

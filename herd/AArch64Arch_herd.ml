@@ -118,7 +118,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
     | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
     | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
-    | I_NEG_SV _ | I_MOVPRFX _
+    | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
     | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
     | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
       -> true
@@ -318,7 +318,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
       | I_UADDV _
       | I_MOV_SV _ | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
-      | I_NEG_SV _ | I_MOVPRFX _
+      | I_NEG_SV _ | I_MOVPRFX _ | I_EOR_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
       | I_SMSTART _ | I_SMSTOP _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
@@ -395,7 +395,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_UADDV (_,r,_,_)
       | I_MOV_SV (r,_,_)
       | I_DUP_SV (r,_,_) | I_ADD_SV (r,_,_) | I_PTRUE (r,_)
-      | I_NEG_SV (r,_,_) | I_MOVPRFX (r,_,_)
+      | I_NEG_SV (r,_,_) | I_MOVPRFX (r,_,_) | I_EOR_SV (r,_,_)
       | I_INDEX_SI (r,_,_,_) | I_INDEX_IS (r,_,_,_) | I_INDEX_SS (r,_,_,_) | I_INDEX_II (r,_,_)
       | I_RDVL (r,_) | I_ADDVL (r,_,_) | I_CNT_INC_SVE (_,r,_,_)
       | I_LD1SPT (_,r,_,_,_,_,_) | I_MOVA_TV (r,_,_,_,_) | I_MOVA_VT (r,_,_,_,_)
@@ -477,7 +477,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
       | I_ADD_SV _ | I_PTRUE _
-      | I_NEG_SV _ | I_MOVPRFX _
+      | I_NEG_SV _ | I_MOVPRFX _ | I_EOR_SV _
       | I_MOV_SV _ | I_DUP_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _

@@ -76,6 +76,7 @@ module Make(V:Constant.S)(C:Config) =
     (* Accept P/M register so assume partial update of register *)
     | I_NEG_SV (r,_,_)
     | I_MOVPRFX (r,_,_)
+    | I_EOR_SV (r,_,_)
       -> A.RegSet.of_list [r]
     (* Reserve slice index *)
     | I_LD1SPT (_,_,r,_,_,_,_)
@@ -1261,6 +1262,13 @@ module Make(V:Constant.S)(C:Config) =
         outputs = [r1];
         reg_env = (add_svint32_t [r1;r3;])@(add_svbool_t [pg;])}
 
+    let eor_sv r1 r2 r3 =
+      { empty_ins with
+        memo = sprintf "eor %s,%s,%s" (print_zreg "o" 0 0 r1) (print_zreg "i" 0 0 r2) (print_zreg "i" 0 1 r3);
+        inputs = [r2;r3];
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;r2;r3;])}
+
     let rdvl rd k =
       { empty_ins with
         memo = sprintf "rdvl ^o0,#%i" k;
@@ -1852,6 +1860,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_PTRUE (pred,pat) -> ptrue pred pat::k
     | I_NEG_SV (r1,r2,r3) -> neg_sv r1 r2 r3::k
     | I_MOVPRFX (r1,r2,r3) -> movprfx r1 r2 r3::k
+    | I_EOR_SV (r1,r2,r3) -> eor_sv r1 r2 r3::k
     | I_RDVL (r1,k1) -> rdvl r1 k1::k
     | I_ADDVL (r1,r2,k1) -> addvl r1 r2 k1::k
     | I_CNT_INC_SVE  (op,rd,pat,k1) -> cnt_inc_sve op rd pat k1::k

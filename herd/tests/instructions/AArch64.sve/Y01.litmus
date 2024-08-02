@@ -1,0 +1,18 @@
+AArch64 Y01
+(* EOR *)
+{
+  uint64_t t[2] = {1,2};
+  uint64_t s[2] = {3,4};
+  0:X0=t;
+  0:X1=s;
+}
+P0                    ;
+PTRUE P0.D,VL2        ;
+LD1D {Z0.D},P0/Z,[X0] ;
+LD1D {Z1.D},P0/Z,[X1] ;
+EOR Z0.D,Z0.D,Z1.D    ;
+ST1D {Z0.D},P0,[X0]   ;
+forall (
+  t={2,6} /\
+  s={3,4}
+)
