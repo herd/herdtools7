@@ -1,3 +1,6 @@
+Simple division checks:
+  $ aslref examples.asl
+
 Division by zero:
 
   $ aslref static-div-zero.asl

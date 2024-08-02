@@ -139,6 +139,9 @@ val var_ : identifier -> expr
 val binop : binop -> expr -> expr -> expr
 (** Builds a binary operation from to sub-expressions. *)
 
+val unop : unop -> expr -> expr
+(** Builds a unary operation from its sub-expression. *)
+
 val fresh_var : string -> identifier
 (** [fresh_var "doc"] is a fresh variable whose name begins with "doc". *)
 
@@ -251,8 +254,8 @@ val is_simple_expr : expr -> bool
 val use_e : expr -> ISet.t -> ISet.t
 val use_ty : ty -> ISet.t -> ISet.t
 
-val use_constant_decl : decl -> ISet.t -> ISet.t
-(** [use_constant_decl d] is the set of other declared names required to have
+val use_decl : decl -> ISet.t -> ISet.t
+(** [use_decl d] is the set of other declared names required to have
     in the environment to be able to type-check d. *)
 
 val used_identifiers : decl list -> ISet.t

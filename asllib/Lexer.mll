@@ -137,6 +137,7 @@ and string_lit acc = parse
   | '\\'  { escaped_string_chars acc lexbuf }
   | '\n'  { Buffer.add_char acc '\n'; new_line lexbuf |> string_lit acc }
   | [^ '"' '\\' '\n']+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
+  | ""    { raise LexerError }
 
 (*
    Lexing of c-style comments
@@ -148,6 +149,7 @@ and c_comments = parse
   | '*'           { c_comments lexbuf }
   | '\n'          { new_line lexbuf |> c_comments }
   | [^ '*' '\n']+ { c_comments lexbuf }
+  | ""            { raise LexerError  }
 
 (*
    Lexing of ASL tokens

@@ -192,7 +192,7 @@ module ASTFold = struct
       ->
         name
 
-  let use d = ASTUtils.use_constant_decl d OSet.empty
+  let use d = ASTUtils.use_decl d OSet.empty
 
   let extra_def d =
     let open AST in

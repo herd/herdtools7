@@ -57,6 +57,7 @@ let normalize () =
       ( binop PLUS (binop MINUS !%"N" !%"m") (binop MINUS !%"m" !$1),
         binop MINUS !%"N" !$1,
         StaticEnv.add_local "m" integer LDK_Let env_with_N );
+      (unop NEG !$3, !$(-3), StaticEnv.empty);
     ]
 
 let fpzero_example () =

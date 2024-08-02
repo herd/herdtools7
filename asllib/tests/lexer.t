@@ -32,6 +32,13 @@
   File print.asl, line 1, characters 32 to 33:
   ASL Error: Unknown symbol.
   [1]
+  $ cat >print.asl <<EOF
+  > constant msg = "Some unterminated string;
+  > func main () => integer begin print(msg); return 0; end
+  $ aslref print.asl
+  File print.asl, line 3, character 0:
+  ASL Error: Unknown symbol.
+  [1]
 
 C-Style comments
   $ cat >comments.asl <<EOF
