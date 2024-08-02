@@ -3746,7 +3746,7 @@ module Make
         | I_ADDA (dir,za,pslice,pelem,z) ->
            check_sme inst;
            adda dir za pslice pelem z ii
-           >>= nextSet z
+           >>= nextSet za
         | I_LD1SPT (var,za,ri,k,p,rA,MemExt.Imm(0,Idx)) ->
            check_sme inst;
            !(let sz = tr_simd_variant var in
