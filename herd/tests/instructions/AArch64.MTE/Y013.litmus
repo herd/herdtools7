@@ -1,0 +1,17 @@
+AArch64 Y013
+(* IRG is limited to generate tags of string "t0" to "t15", but not e.g.
+  "green". Although an implementation can only have 16 possible tags, "green"
+  can't be identified with any of "t0" to "t15" tags.
+
+  Future fixes should invalidate this test. *)
+{
+  int x=100;
+  0:X0=x;
+  0:GCR_EL1=0x10000;  (* RRND=1 *)
+}
+
+P0        ;
+IRG X1,X0 ;
+
+forall (not 0:X1=x:green)
+

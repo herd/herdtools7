@@ -1125,7 +1125,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       if dbg then eprintf " %a\n" (debug_opt debug_events) r ;
       r
 
-(* Control sequencing, in all circonstances es1 output must be discarded *)
+(* Control sequencing, in all circumstances es1 output must be discarded *)
     let sequence_control_output _es1 es2 = Some (get_output es2)
 
 (*******************************)

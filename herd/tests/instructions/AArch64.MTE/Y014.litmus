@@ -1,0 +1,15 @@
+AArch64 MP+dmb.st+irg.v2
+{
+  [tag(x)]=:t0;
+  1:GCR_EL1=0x1fffe;
+  0:X1=x:t0; 0:X3=y;
+  1:X1=x; 1:X3=y;
+}
+P0          | P1           ;
+MOV X0,#1   | LDR X2,[X3]  ;
+STR X0,[X1] | IRG X1,X1,X2 ;
+DMB ST      |              ;
+MOV X2,#1   |              ;
+STR X2,[X3] | LDR X0,[X1]  ;
+
+~exists 1:X2=1 /\ 1:X0=0 /\ ~fault(P1)

@@ -162,6 +162,7 @@ module type S =  sig
 
   val tr : (string,ParsedPteVal.t,InstrLit.t) t -> v
   val intToV  : int -> v
+  val int64ToV : int64 -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
 

@@ -597,6 +597,20 @@ module Make
       let read_tag_mem a ii =
         M.op1 Op.TagLoc a >>= fun atag -> do_read_tag_nexp atag ii
 
+(* Extract value to OCaml values *)
+
+      (* convert a bit-represented unsigned integer value to OCaml int *)
+      let int_of_bits (n_bits : int) (v : global_loc) : int M.t =
+        if n_bits > Sys.int_size
+        then failwith "int_of_bits: too many bits for OCaml int"
+        else
+          match V.as_int v with
+          | Some n ->
+            let mask = (1 lsl n_bits) - 1 in
+            M.unitT (n land mask)
+          | None ->
+            failwith "AArch64 does not support reading bits of symbolic values"
+
 (*******************)
 (* Memory accesses *)
 (*******************)
@@ -3298,6 +3312,129 @@ module Make
       let stzg = do_stzg Once
       and stz2g = do_stzg Twice
 
+      let irg rd rn rm ii =
+        let debug = false in
+        let reg_gcr_el1 = AArch64Base.(SysReg GCR_EL1) in
+        let reg_rgsr_el1 = AArch64Base.(SysReg RGSR_EL1) in
+        let ffff = V.intToV 0xFFFF in
+        (* ChooseRandomNonExcludedTag *)
+        let choose_random_non_excluded_tag exclude =
+          let do_irg n =
+            let>= () = M.add_constraint_bit_unset exclude n in
+            M.unitT n
+          in
+          List.fold_right M.altT (List.init 15 do_irg) (do_irg 15)
+        in
+        (* AArch64.NextRandomTagBit *)
+        let aarch64_next_random_tag_bit lfsr =
+          let bit i = (lfsr lsr i) land 1 in
+          let top = (bit 5) lxor (bit 3) lxor (bit 2) lxor (bit 0) in
+          let lfsr' = (top lsl 15) lor (lfsr lsr 1) in
+          if debug then
+            Format.eprintf "lfsr: 0x%x, top: %d, lfsr': 0x%x\n" lfsr top lfsr';
+          (top, lfsr')
+        in
+        (* AArch64.RandomTag *)
+        let aarch64_random_tag seed =
+          let rec go (acc, cur, seed) = function
+            | 4 -> (acc, seed)
+            | n ->
+              let bit, seed = aarch64_next_random_tag_bit seed in
+              let acc = if bit = 1 then acc + cur else acc in
+              go (acc, Int.shift_left cur 1, seed) (n + 1)
+          in
+          go (0, 1, seed) 0
+        in
+        (* AArch64.ChooseNonExcludedTag *)
+        let aarch64_choose_non_excluded_tag tag_in offset_in exclude =
+          if debug then
+            Format.eprintf "tag_in: 0x%x, offset_in: 0x%x, exclude: 0x%x\n"
+              tag_in offset_in exclude;
+          if exclude = 0xFFFF
+          then 0
+          else
+            let bits4_inc n =
+              (n + 1) mod 0xF
+            in
+            let rec find_next_non_excluded n =
+              if (Int.shift_right exclude n) |> Int.logand 1 = 1
+              then find_next_non_excluded (bits4_inc n)
+              else n
+            in
+            let rec go tag = function
+              | 0 -> tag
+              | offset ->
+                if debug then Format.eprintf "tag: %d, offset: %d\n" tag offset;
+                let tag = find_next_non_excluded (bits4_inc tag) in
+                go tag (offset - 1)
+            in
+            if offset_in = 0
+            then find_next_non_excluded tag_in
+            else go tag_in offset_in
+        in
+        let random exclude vn =
+          let>= rtag =
+            let>= is_ones_exclude = M.op Op.Eq ffff exclude in
+            M.choiceT
+              is_ones_exclude
+              (M.unitT 0)
+              (choose_random_non_excluded_tag exclude)
+          in
+          let tag = V.Val (Constant.Tag ("t" ^ string_of_int rtag)) in
+          let>= v = M.op Op.SetTag vn tag in
+          let>= rdv = write_reg_dest rd v ii in
+          M.unitT [(rd, rdv)]
+        in
+        let pseudorandom exclude vn =
+          let set_rgsr_el1 ~seed ~tag rgsr_el1 =
+            let>= new_rgsr_el1 =
+              M.op Op.And rgsr_el1 (V.int64ToV 0xFFFF_FFFF_FF00_00F0L) >>=
+                M.op Op.Or (V.intToV tag) >>=
+                  M.op Op.Or (V.intToV (Int.shift_left seed 8))
+            in
+            write_reg_dest reg_rgsr_el1 new_rgsr_el1 ii
+          in
+          let<>= rgsr_el1 = read_reg_ord reg_rgsr_el1 ii in (* TODO: use [int64] *)
+          (* NOTE: reads & writes to RGSR_EL1 appear in program order, see its
+             system register configuration. Therefore, the value value is lifted
+             to OCaml to calculate the next seed and tag with one read and one
+             write. *)
+          let>= start_tag = int_of_bits 4 rgsr_el1
+          and* seed = M.op1 (Op.ArithRightShift 8) rgsr_el1 >>= int_of_bits 16 in
+          if debug then Format.eprintf "seed: 0x%x\n" seed;
+          let (offset, seed) = aarch64_random_tag seed in
+          if debug then Format.eprintf "offset: 0x%x, seed: 0x%x\n" offset seed;
+          let>= exclude = int_of_bits 16 exclude in
+          let rtag = aarch64_choose_non_excluded_tag start_tag offset exclude in
+          let tag = V.Val (Constant.Tag ("t" ^ string_of_int rtag)) in
+          let>= v = M.op Op.SetTag vn tag in
+          let>= rdv = write_reg_dest rd v ii
+          and* new_rgsr_el1 = set_rgsr_el1 ~seed ~tag:rtag rgsr_el1 in
+          M.unitT [(rd, rdv); (reg_rgsr_el1, new_rgsr_el1)]
+        in
+        let mgcr_el1 = read_reg_ord reg_gcr_el1 ii |> M.force_once in
+        let<>= vn = read_reg_ord rn ii
+        and* vm = read_reg_ord rm ii
+        and* gcr_el1 = mgcr_el1 in
+        let>= exclude = M.op Op.And gcr_el1 ffff >>= M.op Op.Or vm in
+        let>= is_random =
+          let>= rrnd = (M.op1 (Op.ReadBit 16) gcr_el1) in
+          M.choiceT rrnd (M.unitT true) (M.unitT false)
+        in
+        let commit_evt mgcr_el1 is_random =
+          let t = if is_random then "GCR_EL1.RRND(1)" else "GCR_EL1.RRND(0)" in
+          mgcr_el1 >>= fun _ -> commit_pred_txt (Some t) ii
+        in
+        let>= bds =
+          M.bind_control_set_data_input_first
+            (commit_evt mgcr_el1 is_random)
+            (fun _ ->
+              if is_random
+              then random exclude vn
+              else pseudorandom exclude vn)
+        in
+        M.unitT (B.Next bds)
+
 (*********************)
 (* Instruction fetch *)
 (*********************)
@@ -3424,7 +3561,7 @@ module Make
           let (>>!) = M.(>>!) in
           let ft = Some FaultType.AArch64.SupervisorCall in
           let m_fault = mk_fault None Dir.R Annot.N ii ft None in
-          let lbl_ret = get_link_addr test ii in          
+          let lbl_ret = get_link_addr test ii in
           m_fault >>| set_elr_el1 lbl_ret ii
           >>! B.syscall [AArch64Base.elr_el1, lbl_ret]
 
@@ -3498,6 +3635,9 @@ module Make
         | I_LDG (rt,rn,k) ->
             check_memtag "LDG" ;
             ldg rt rn k ii
+        | I_IRG (rd,rn,rm) ->
+            check_memtag "IRG" ;
+            irg rd rn rm ii
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii
         | I_STXRBH(bh,t,rr,rs,rd) ->

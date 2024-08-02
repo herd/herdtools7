@@ -829,7 +829,7 @@ Monad type:
               (Evt.map fr ract) in
           (eiid, (un, None))
 
-(* Extract speculaive behaviout, base case is to speculate active branch *)
+(* Extract speculaive behaviour, base case is to speculate active branch *)
     let as_speculated (act,spec) = match spec with
     | Some spec -> spec
     | None -> do_speculates act
@@ -1713,6 +1713,14 @@ Monad type:
 
     let cutoffT msg ii v =
       forceT v (mk_singleton_es (E.Act.cutoff msg) ii)
+
+    let add_constraint_bit_set : V.v -> int -> unit t
+        = fun v n ->
+          op1 (Op.ReadBit n) v >>= eqT V.one
+
+    let add_constraint_bit_unset : V.v -> int -> unit t
+        = fun v n ->
+          op1 (Op.ReadBit n) v >>= eqT V.zero
 
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct

@@ -1,0 +1,13 @@
+Test Y006 Required
+States 4
+0:X1=x:t0;
+0:X1=x:t1;
+0:X1=x:t2;
+0:X1=x:t3;
+Ok
+Witnesses
+Positive: 4 Negative: 0
+Condition forall (0:X1=x:t0 \/ 0:X1=x:t1 \/ 0:X1=x:t2 \/ 0:X1=x:t3)
+Observation Y006 Always 4 0
+Hash=a20a89d60a1fc0c3b44afb5d452036ed
+

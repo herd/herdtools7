@@ -1,0 +1,24 @@
+Test Y002 Required
+States 15
+0:X1=x:t1;
+0:X1=x:t10;
+0:X1=x:t11;
+0:X1=x:t12;
+0:X1=x:t13;
+0:X1=x:t14;
+0:X1=x:t15;
+0:X1=x:t2;
+0:X1=x:t3;
+0:X1=x:t4;
+0:X1=x:t5;
+0:X1=x:t6;
+0:X1=x:t7;
+0:X1=x:t8;
+0:X1=x:t9;
+Ok
+Witnesses
+Positive: 15 Negative: 0
+Condition forall (not (0:X1=x:t0))
+Observation Y002 Always 15 0
+Hash=759815f2fc1b88479b10acaca049b937
+
