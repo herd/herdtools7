@@ -91,6 +91,8 @@ type ('scalar, 'pte, 'instr) t =
   | Instruction of 'instr  (** An instruction. *)
   | Frozen of int (** Frozen symbolic value. *)
 
+val as_scalar : ('scalar, 'pte, 'instr) t -> 'scalar option
+
 val compare :
   ('scalar -> 'scalar -> int) ->
     ('pte -> 'pte -> int) ->
@@ -173,5 +175,5 @@ module type S =  sig
   val eq : v -> v -> bool
   val vToName : v -> string
   val is_nop : v -> bool
-
+  val access_of_constant : v -> Access.t
 end

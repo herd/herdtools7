@@ -29,7 +29,8 @@ type 'op1 t =
 module
    Make
      (S:Scalar.S)
-     (Extra:ArchOp.S with type scalar = S.t) : ArchOp.S
+     (Extra:ArchOp.WithTr
+      with type scalar = S.t) : ArchOp.S
    with type op = Extra.op
     and type extra_op1 = Extra.op1
     and type 'a constr_op1 = 'a t
@@ -61,7 +62,6 @@ module
     type pteval = AArch64PteVal.t
     type instr = AArch64Base.instruction
     type cst = (scalar,pteval,instr) Constant.t
-
 
     open AArch64PteVal
 
@@ -104,14 +104,15 @@ module
       | _ -> None
 
     let exit _ = raise Exit
-    let toExtra cst = Constant.map Misc.identity exit exit cst
-    and fromExtra cst = Constant.map Misc.identity exit exit cst
+
+    let trToExtra cst = Constant.map Misc.identity Extra.toExtra exit cst
+    and trFromExtra cst = Constant.map Misc.identity Extra.fromExtra exit cst
 
     let do_op op c1 c2 =
       try
-        match Extra.do_op op (toExtra c1) (toExtra c2) with
+        match Extra.do_op op (trToExtra c1) (trToExtra c2) with
         | None -> None
-        | Some cst -> Some (fromExtra cst)
+        | Some cst -> Some (trFromExtra cst)
       with Exit -> None
 
 
@@ -128,9 +129,9 @@ module
       | Extra op1 ->
          fun cst ->
            try
-             match Extra.do_op1 op1 (toExtra cst) with
+             match Extra.do_op1 op1 (trToExtra cst) with
              | None -> None
-             | Some cst -> Some (fromExtra cst)
+             | Some cst -> Some (trFromExtra cst)
            with Exit -> None
 
 

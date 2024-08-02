@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+let _dbg = false
+
 open Printf
 
 (** Constants in code *)
@@ -209,6 +211,12 @@ type ('scalar, 'pte, 'instr) t =
   | Instruction of 'instr
   | Frozen of int
 
+let as_scalar = function
+  | Concrete c -> Some c
+  | ConcreteVector _|ConcreteRecord _|Symbolic _|Label _
+  | Tag _|PteVal _|Instruction _|Frozen _
+      -> None
+
 let rec compare scalar_compare pteval_compare instr_compare c1 c2 =
   match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_compare i1 i2
@@ -293,9 +301,11 @@ let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr = function
   | Instruction i -> pp_instr i
   | Frozen i -> sprintf "S%i" i (* Same as for symbolic values? *)
 
-let pp pp_scalar pp_pteval pp_instr =
+let pp pp_scalar pp_pteval pp_instr c =
   let pp_label = sprintf "label:\"P%i:%s\"" in
-  mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr
+  let pp = mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr c in
+  if _dbg && String.length pp > 6 then "..." else pp
+
 and pp_old pp_scalar pp_pteval pp_instr =
   let pp_label = sprintf "%i:%s" in
   mk_pp pp_symbol_old pp_scalar pp_label pp_pteval pp_instr
@@ -477,4 +487,5 @@ module type S =  sig
   val eq : v -> v -> bool
   val vToName : v -> string
   val is_nop : v -> bool
+  val access_of_constant : v -> Access.t
 end
