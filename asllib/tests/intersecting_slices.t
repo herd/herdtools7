@@ -1,5 +1,5 @@
 One slice cannot intersect itself:
-  $ cat >intersecting_slices.asl <<EOF
+  $ cat >intersecting_slices1.asl <<EOF
   > func main () => integer
   > begin
   >   var x = Zeros(4);
@@ -8,11 +8,11 @@ One slice cannot intersect itself:
   >   print (x);
   >   return 0;
   > end
-  $ aslref intersecting_slices.asl
+  $ aslref intersecting_slices1.asl
   '0001'
 
 Two intersecting slices...
-  $ cat >intersecting_slices.asl <<EOF
+  $ cat >intersecting_slices2.asl <<EOF
   > func main () => integer
   > begin
   >   var x = Zeros(4);
@@ -22,13 +22,13 @@ Two intersecting slices...
   >   return 0;
   > end
 
-  $ aslref intersecting_slices.asl
-  File intersecting_slices.asl, line 5, characters 2 to 9:
+  $ aslref intersecting_slices2.asl
+  File intersecting_slices2.asl, line 5, characters 2 to 9:
   ASL Typing error: overlapping slices i+:1, j+:1.
   [1]
 
 Two maybe intersecting slices...
-  $ cat >intersecting_slices.asl <<EOF
+  $ cat >intersecting_slices3.asl <<EOF
   > func main () => integer
   > begin
   >   var x = Zeros(4);
@@ -39,13 +39,13 @@ Two maybe intersecting slices...
   >   return 0;
   > end
 
-  $ aslref intersecting_slices.asl
-  File intersecting_slices.asl, line 6, characters 7 to 8:
+  $ aslref intersecting_slices3.asl
+  File intersecting_slices3.asl, line 6, characters 7 to 8:
   ASL Static Error: Unsupported expression j.
   [1]
 
 Two intersecting bitfields
-  $ cat >intersecting_slices.asl <<EOF
+  $ cat >intersecting_slices4.asl <<EOF
   > type myty of bits (4) { [0] f1, [0] f2 };
   > func main () => integer
   > begin
@@ -55,7 +55,7 @@ Two intersecting bitfields
   >   return 0;
   > end
 
-  $ aslref intersecting_slices.asl
-  File intersecting_slices.asl, line 5, characters 2 to 12:
+  $ aslref intersecting_slices4.asl
+  File intersecting_slices4.asl, line 5, characters 2 to 12:
   ASL Typing error: overlapping slices 0+:1, 0+:1.
   [1]

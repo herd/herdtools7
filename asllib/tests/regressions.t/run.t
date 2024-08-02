@@ -53,7 +53,7 @@ Global ignored:
   [1]
 
 Constrained-type satisfaction:
-  $ cat >type-sat.asl <<EOF
+  $ cat >type-sat1.asl <<EOF
   > func illegal_f1()
   > begin
   >   var x: integer { 8, 16 };
@@ -62,13 +62,13 @@ Constrained-type satisfaction:
   > end
   > EOF
 
-  $ aslref type-sat.asl
-  File type-sat.asl, line 5, characters 2 to 3:
+  $ aslref type-sat1.asl
+  File type-sat1.asl, line 5, characters 2 to 3:
   ASL Typing error: a subtype of integer {8, 16} was expected,
     provided integer {8, 16, 32}.
   [1]
 
-  $ cat >type-sat.asl <<EOF
+  $ cat >type-sat2.asl <<EOF
   > func illegal_f2()
   > begin
   >   var x: integer { 8 , 16 };
@@ -77,8 +77,8 @@ Constrained-type satisfaction:
   > end
   > EOF
 
-  $ aslref type-sat.asl
-  File type-sat.asl, line 5, characters 2 to 3:
+  $ aslref type-sat2.asl
+  File type-sat2.asl, line 5, characters 2 to 3:
   ASL Typing error: a subtype of integer {8, 16} was expected,
     provided integer.
   [1]
@@ -95,7 +95,7 @@ Constrained-type satisfaction:
     provided integer {8..64}.
   [1]
 
-  $ cat >type-sat.asl <<EOF
+  $ cat >type-sat3.asl <<EOF
   > func illegal_f5 {N} (b: bits(N))
   > begin
   >   // N is under-constrained integer
@@ -103,13 +103,13 @@ Constrained-type satisfaction:
   >    return;
   > end
 
-  $ aslref type-sat.asl
-  File type-sat.asl, line 4, characters 2 to 29:
+  $ aslref type-sat3.asl
+  File type-sat3.asl, line 4, characters 2 to 29:
   ASL Typing error: a subtype of integer {2, 4} was expected,
     provided integer {N}.
   [1]
 
-  $ cat >type-sat.asl <<EOF
+  $ cat >type-sat4.asl <<EOF
   > func invokeMe_2 {N} (b: bits(N))
   > begin
   >   // N is under-constrained integer
@@ -117,27 +117,27 @@ Constrained-type satisfaction:
   >   return;
   > end
 
-  $ aslref type-sat.asl
-  File type-sat.asl, line 4, characters 2 to 29:
+  $ aslref type-sat4.asl
+  File type-sat4.asl, line 4, characters 2 to 29:
   ASL Typing error: a subtype of integer {2, 4} was expected,
     provided integer {N}.
   [1]
 
 Runtime checks:
-  $ cat >runtime-type-sat.asl <<EOF
+  $ cat >runtime-type-sat1.asl <<EOF
   > func main () => integer
   > begin
   >   let x: integer {1} = 2 as integer {1};
   >   return 0;
   > end
 
-  $ aslref runtime-type-sat.asl
-  File runtime-type-sat.asl, line 3, characters 23 to 24:
+  $ aslref runtime-type-sat1.asl
+  File runtime-type-sat1.asl, line 3, characters 23 to 24:
   ASL Execution error: Mismatch type:
     value 2 does not belong to type integer {1}.
   [1]
 
-  $ cat >runtime-type-sat.asl <<EOF
+  $ cat >runtime-type-sat2.asl <<EOF
   > func test(size: integer {3, 4}) begin
   >   let - = Zeros(4) as bits(size);
   > end
@@ -147,8 +147,8 @@ Runtime checks:
   >   return 0;
   > end
 
-  $ aslref runtime-type-sat.asl
-  File runtime-type-sat.asl, line 2, characters 10 to 18:
+  $ aslref runtime-type-sat2.asl
+  File runtime-type-sat2.asl, line 2, characters 10 to 18:
   ASL Execution error: Mismatch type:
     value '0000' does not belong to type bits(size).
   [1]
