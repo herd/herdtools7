@@ -38,8 +38,8 @@ module Trigger_Mode = struct
 
   let trigger_mode_of_string s =
     match s with
-    | "edge-triggered" -> EDGE
-    | "level-sensitive" -> LEVEL
+    | "edge" -> EDGE
+    | "level" -> LEVEL
     | _ -> Warn.user_error "Field trigger_mode should be edge or level" s
 
   let string_of_trigger_mode v =
