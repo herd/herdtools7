@@ -32,7 +32,7 @@ module type I = sig
   val internal_init : arch_reg -> string option -> (string * string) option
 (* gcc assembly template register class *)
   val reg_class : arch_reg -> string
-  val reg_class_stable : arch_reg -> string
+  val reg_class_stable : bool -> arch_reg -> string
 (* type errors ad warnings *)
   val error : CType.t -> CType.t  -> bool
   val warn : CType.t -> CType.t  -> bool
@@ -96,6 +96,8 @@ module RegMap = A.RegMap)
       let init_val reg test =
         try Some (List.assoc reg test.Tmpl.init)
         with Not_found -> None
+
+      let has_init reg test = List.mem_assoc reg test.Tmpl.init
 
       let strip_equal s =
         let explode s =
@@ -208,6 +210,8 @@ module RegMap = A.RegMap)
 
       let pp_regs rs = String.concat "," (List.map A.reg_to_string (RegSet.elements rs))
 
+      let reg_class_stable reg t = A.reg_class_stable (has_init reg t) reg
+
       let dump_outputs args0 compile_addr compile_out_reg chan proc t trashed =
         let stable = RegSet.of_list t.Tmpl.stable in
         let final = RegSet.of_list t.Tmpl.final in
@@ -243,7 +247,7 @@ module RegMap = A.RegMap)
                     else if RegSet.mem reg stable then
                       sprintf "%s \"%s\" (%s)"
                         (tag_reg_def reg)
-                        (A.reg_class_stable reg)
+                        (reg_class_stable reg t)
                         (dump_stable_reg reg)
                     else
                       sprintf "%s \"%s\" (%s)"
@@ -262,7 +266,7 @@ module RegMap = A.RegMap)
                   (fun reg k ->
                     sprintf "%s \"%s\" (%s)"
                       (tag_reg_def reg)
-                      (A.reg_class_stable reg)
+                      (reg_class_stable reg t)
                       (dump_stable_reg reg)::k)
                   (RegSet.diff stable final) []) in
         fprintf chan ":%s\n" outs

@@ -74,7 +74,10 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           | Vreg _ | SIMDreg _ | Zreg _ -> "=&w"
           | Preg _ | PMreg _ -> "=&Upl"
           | _ -> "=&r"
-        let reg_class_stable reg = match reg with
+
+        let check_init b s = (if b then "+" else "=&") ^ s
+
+        let reg_class_stable init reg = match reg with
           (* Certain Neon instructions do not affect the whole register, so we need to
              guarantee that unaffected parts are initialized to zero which basically means
              that we need to initialize whole register to zero. Several options have been
@@ -82,8 +85,8 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
              constraint "+" and the explicit initialization of the 'stable_*' variables.
              The same applies to SVE instruction with P/M (merging predicate) *)
           | Vreg _ | SIMDreg _  | Zreg _ -> "+w"
-          | Preg _ | PMreg _ -> "=&Upl"
-          | _ -> "=&r"
+          | Preg _ | PMreg _ -> check_init init "Upl"
+          | _ -> check_init init "r"
         let comment = comment
 
 (* t1 is declared (or inferred) type, t2 is type from instruction *)

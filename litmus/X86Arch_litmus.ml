@@ -49,15 +49,21 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           if reg_compare r loop_idx = 0 then Some ("max_loop","int")
           else None
 
-        let reg_class = function
+        let do_reg_class = function
           (* as some instructions have eax as implicit argument,
              we must allocate our EAX to machine %eax *)
-          | EAX -> "=&a"
+          | EAX -> "a"
           (* esi and edi implicit for MOVSD *)
-          | ESI -> "=&S"
-          | EDI -> "=&D"
-          | _ -> "=&r"
-        let reg_class_stable r = reg_class r
+          | ESI -> "S"
+          | EDI -> "D"
+          | _ -> "r"
+
+        let reg_class r = "=&" ^ do_reg_class r
+
+        let reg_class_stable init r =
+          (if init then "+" else "=&")
+          ^ do_reg_class r
+
         let comment = comment
         let error _ _ = false
         let warn _ _ = false
