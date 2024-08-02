@@ -1,0 +1,8 @@
+AArch64 STABLE
+Stable=X2
+(* Check that the initialisation of 0:X2 to 0 is not lost *)
+{}
+  P0        | P1        ;
+ MOV W0,W2  | MOV W2,#1 ;
+            | MOV W0,W2 ;
+forall 0:X0=0 /\ 1:X0=1
