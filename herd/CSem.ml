@@ -28,7 +28,7 @@ module
       | None -> Opts.unroll_default `C
       | Some u -> u
 
-    let lkmm_legacy = Opts.lkmm_legacy
+    let lkmm_legacy = not (Conf.variant Variant.LkmmLatest)
 
     module C = CArch_herd.Make(SemExtra.ConfigToArchConfig(Conf))(V)
     module Act = CAction.Make(C)
@@ -111,14 +111,14 @@ module
         let add_mb = match a with
         | ["mb"] -> true | _ -> false in
         let aw =
-          (if !lkmm_legacy then
+          (if lkmm_legacy then
             match a with
             | ["release"] -> MOorAN.AN a
             | _ -> an_once
           else
             MOorAN.AN a)
         and ar =
-          (if !lkmm_legacy then
+          (if lkmm_legacy then
             match a with
             | ["acquire"] -> MOorAN.AN a
             | _ -> an_once
@@ -127,7 +127,7 @@ module
         let rmem = fun loc -> read_mem_atomic is_data ar loc ii
         and wmem = fun loc v -> write_mem_atomic aw loc v ii >>! () in
         let exch = M.linux_exch rloc re rmem wmem in
-        if !lkmm_legacy && add_mb then
+        if lkmm_legacy && add_mb then
           mk_fence_a a ii >>*=
           fun () -> exch >>*=
             fun v -> mk_fence_a a ii >>! v
@@ -220,7 +220,7 @@ module
           let mloc =  build_semantics_expr false eloc ii
           and mold =  build_semantics_expr true eold ii in
           let add_mb r =
-            (if !lkmm_legacy then
+            (if lkmm_legacy then
               (match a with
               | ["mb"] ->
                   mk_mb ii >>*= fun () -> r >>*= fun v -> mk_mb ii >>! v
@@ -228,7 +228,7 @@ module
             else
               r)
           and arok =
-            (if !lkmm_legacy then
+            (if lkmm_legacy then
               (match a with
               | ["acquire"] -> MOorAN.AN a
               | _ -> an_once)
@@ -237,7 +237,7 @@ module
               | [] -> Warn.user_error "Missing success memory order tag for __cmpxchg"
               | fst::_ -> MOorAN.AN [fst]))
           and awok =
-            (if !lkmm_legacy then
+            (if lkmm_legacy then
               (match a with
               | ["release"] -> MOorAN.AN a
               | _ -> an_once)
@@ -246,7 +246,7 @@ module
               | [] -> Warn.user_error "Missing success memory order tag for __cmpxchg"
               | fst::_ -> MOorAN.AN [fst]))
           and arnok =
-            (if !lkmm_legacy then
+            (if lkmm_legacy then
               an_once
             else
               (match a with
@@ -306,7 +306,7 @@ module
 
 
       | C.AtomicOpReturn (eloc,op,e,ret,a) ->
-        if !lkmm_legacy then
+        if lkmm_legacy then
           begin match a with
           | ["mb"] ->
               mk_mb ii >>*=
@@ -332,7 +332,7 @@ module
                 mu mrmem
                 (fun loc v -> write_mem_atomic an_once loc v ii >>! ())
                 M.neqT M.add (if retbool then Some V.one else None) in
-            (if !lkmm_legacy then
+            (if lkmm_legacy then
               mk_mb ii >>*= fun () -> r >>*= fun v ->
                 mk_mb ii >>! v
             else
@@ -467,7 +467,7 @@ module
                 >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
         | C.AtomicOp  (eloc,op,e,a) ->
-            build_atomic_op C.OpReturn (if !lkmm_legacy then a_noreturn else a) a_once eloc op e ii
+            build_atomic_op C.OpReturn (if lkmm_legacy then a_noreturn else a) a_once eloc op e ii
               >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
         | C.Fence(mo) ->

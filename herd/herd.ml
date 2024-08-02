@@ -84,7 +84,6 @@ let options = [
   ("-I", Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path");
   parse_bool "-exit" Opts.exit_if_failed "exit in case of failure";
-  parse_bool "-lkmm-legacy" Opts.lkmm_legacy "Legacy mode for lkmm: it wraps rmw[Mb] instructions with explicit Mb fences";
   parse_float_opt "-timeout" Opts.timeout "timeout (CPU time)";
   ("-conf",
    Arg.String load_config,

@@ -34,6 +34,7 @@ type t =
   | SwitchDepScResult  (* Switch dependency from address read to sc result register,  aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | NotWeakPredicated (* NOT "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+  | LkmmLatest  (* Avoid wrapping rmw[Mb] instructions with explicit Mb fences *)
 (* Mixed size *)
   | Mixed
   | Unaligned
@@ -107,7 +108,7 @@ type t =
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
-   "mixed";"dontcheckmixed";"weakpredicated"; "memtag";"vmsa";"kvm";]@
+   "mixed";"dontcheckmixed";"weakpredicated"; "lkmmlatest"; "memtag";"vmsa";"kvm";]@
     Precision.tags @ Fault.Handling.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
@@ -131,6 +132,7 @@ let parse s = match Misc.lowercase s with
 | "unaligned" -> Some Unaligned
 | "dontcheckmixed" -> Some DontCheckMixed
 | "notweakpredicated"|"notweakpred" -> Some NotWeakPredicated
+| "lkmmlatest" -> Some LkmmLatest
 | "tagmem"|"memtag"|"mte" -> Some MemTag
 | "toofar" -> Some TooFar
 | "morello" -> Some Morello
@@ -216,6 +218,7 @@ let pp = function
   | Unaligned -> "unaligned"
   | DontCheckMixed -> "DontCheckMixed"
   | NotWeakPredicated -> "NotWeakPredicated"
+  | LkmmLatest -> "LkmmLatest"
   | MemTag -> "memtag"
   | MTEPrecision p -> Precision.pp p
   | FaultHandling p -> Fault.Handling.pp p
