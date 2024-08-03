@@ -45,19 +45,24 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let reg_to_string = reg_to_string
         let internal_init _ _ = None
 
-        let reg_class r=
-          match r with
+        let do_reg_class =
+          function
           (* as some instructions have eax as implicit argument,
              we must allocate our EAX to machine %eax
-          | Ireg RAX -> "=&a"
+          | Ireg RAX -> "a"
           (* esi and edi implicit for MOVSD *)
-          | Ireg RSI -> "=&S"
-          | Ireg RDI -> "=&D" *)
-          | Ireg (AX, _) -> "=&a"
-          | Ireg (_, R8bH) -> "=&Q"
-          | XMM _ -> "=&x"
-          | _ -> "=&r"
-        let reg_class_stable r = reg_class r
+          | Ireg RSI -> "S"
+          | Ireg RDI -> "D" *)
+          | Ireg (AX, _) -> "a"
+          | Ireg (_, R8bH) -> "Q"
+          | XMM _ -> "x"
+          | _ -> "r"
+
+        let reg_class r = "=&" ^ do_reg_class r 
+
+        let reg_class_stable init r =
+          (if init then "+" else "=&")
+          ^ do_reg_class r
         let comment = comment
         let error _ _ = false
         let warn _ _ = false

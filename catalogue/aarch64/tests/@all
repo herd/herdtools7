@@ -41,3 +41,5 @@ MP+rel+CAS-ok-MRs-addr.litmus
 MP+rel+CAS-ok-bothRs-addr.litmus
 SB+CAS-rfi-addr+DMBSY.litmus
 SB+SWP-rfi-addr+DMBSY.litmus
+#Litmus testing
+STABLE.litmus

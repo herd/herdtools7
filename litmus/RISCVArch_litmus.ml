@@ -40,7 +40,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let reg_to_string = reg_to_string
         let internal_init _r _v = None
         let reg_class _ = "=&r"
-        let reg_class_stable _ = "=&r"
+        let reg_class_stable init _r = if init then "+w" else "=&r"
         let comment = comment
         let error _t1 _t2 = false
         and warn _t1 _t2 = false
