@@ -1,0 +1,11 @@
+Test UnknownInteger Required
+States 2
+0:main.0.x=0;
+0:main.0.x=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (true)
+Observation UnknownInteger Always 2 0
+Hash=ed993d2e5e2767aeaae40022aabc1627
+

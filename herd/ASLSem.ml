@@ -262,13 +262,33 @@ module Make (C : Config) = struct
     let commit (ii,poi) msg =
       M.mk_singleton_es (Act.Branching msg) (use_ii_with_poi ii poi)
 
+    let vbool b = V.Val (Constant.Concrete (ASLScalar.S_Bool b))
+
+(* Handle choice from boolean condition *)
+    let choice_bool v m2 m3 =
+      let mbool b m  =
+        let* () = M.assign v (vbool b) in m in
+        (* The underlying choice operator operates
+         * by adding equations ToInt(v) := 1
+         * and ToInt(v) := 0, which our naive solver
+         * does not resolve as v=TRUE and v=FALSE,
+         * Thereby leaving the equation unsolved.
+         * To correct this, we add
+         * the direct equations on "v":
+         * v := TRUE and v := FALSE in the
+         * positive and negative branches of choice.
+         *)
+      let m2 = mbool true m2 and m3 = mbool false m3 in
+      let* v = to_int_signed v in
+      M.choiceT v m2 m3
+
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
       M.asl_data
         m1
         (function
          | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) ->
             if b then m2 else m3
-         | b -> M.asl_data (to_int_signed b) (fun v -> M.choiceT v m2 m3))
+         | v -> choice_bool v m2 m3)
 
     let binop =
       let open AST in
@@ -427,8 +447,6 @@ module Make (C : Config) = struct
 
     type primitive_t = V.v M.t list -> V.v M.t list M.t
 
-    let vbool b = V.Val (Constant.Concrete (ASLScalar.S_Bool b))
-
     (*
      * Add equation, the effect will be silent
      * discard of execution candidate if a
@@ -445,23 +463,7 @@ module Make (C : Config) = struct
      * while the value is FALSE for the other.
      *)
 
-    let somebool _ =
-      let v = V.fresh_var () in
-      let mbool b =
-        (* The underlying choice operator operates
-         * by adding equations ToInt(v) := 1
-         * and ToInt(v) := 0, which our naive solver
-         * does not resolve as v=TRUE and v=FALSE,
-         * Thereby leaving the equation unsolved.
-         * To correct this, we add
-         * the direct equations on "v":
-         * v := TRUE and v := FALSE in the
-         * positive and negative branches of choice.
-         *)
-        let* () = M.assign v (vbool b) in
-        M.unitT (vbool b) in
-      (* Using "choice" and not returning "v" directly performs the split *)
-      choice (M.unitT v) (mbool true) (mbool false)
+    let somebool _ = V.fresh_var () |> M.unitT
 
     (*
      * Primitives that generate fence events.
@@ -569,7 +571,7 @@ module Make (C : Config) = struct
       let eq_case = M.altT v_m w_m in
       let*| v = v_m and* w = w_m in
       let*| c = M.op Op.Eq v w in
-      M.choiceT c eq_case diff_case
+      choice_bool c eq_case diff_case
 
     (**************************************************************************)
     (* ASL environment                                                        *)

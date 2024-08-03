@@ -1,11 +1,11 @@
 Test Unknown Required
 States 2
-0:main.0.x=0;
-0:main.0.x=1;
+0:main.0.b=FALSE; 0:main.0.x=0;
+0:main.0.b=TRUE; 0:main.0.x=1;
 Ok
 Witnesses
 Positive: 2 Negative: 0
 Condition forall (true)
 Observation Unknown Always 2 0
-Hash=e9207fd12ef12177972a17e0c8a08546
+Hash=c0f43ab99032e03a9007bb4c2eeccc8b
 

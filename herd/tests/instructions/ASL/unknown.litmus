@@ -1,6 +1,12 @@
 ASL Unknown
-variant = ASL
-(* Variant ASL to allow unresolved variables in result. *)
+
+(* variant = ASL *)
+(*
+  Variant ASL allows unresolved equations.
+  Deleted as the new implementation of 'if'
+  now assigns condition to TRUE or FALSE,
+  depending upon the selected branch.
+*)
 
 {}
 
@@ -11,9 +17,9 @@ end
 
 func main () => integer
 begin
-  var x: boolean;
-
-  if random_bool () then
+  var x: integer;
+  let b = random_bool ();
+  if b then
     x = 1;
   else
     x = 0;
@@ -22,4 +28,4 @@ begin
   return 0;
 end
 
-locations [0: main.0.x]
+locations [0:main.0.x; 0:main.0.b;]

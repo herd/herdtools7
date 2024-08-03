@@ -1,0 +1,30 @@
+ASL UnknownInteger
+
+variant = ASL
+(*
+  Variant ASL implies that candidates with
+  unresolved equations are not rejected.
+  Without it, evaluatong this tests results
+  in zero execution.
+*)
+
+{}
+
+func random_integer () => integer
+begin
+  return (UNKNOWN :: integer);
+end
+
+func main () => integer
+begin
+  var x: integer;
+  let y = random_integer ();
+  if y == 0 then
+    x = 1;
+  else
+    x = 0;
+  end
+  return 0;
+end
+
+locations [0:main.0.x;]
