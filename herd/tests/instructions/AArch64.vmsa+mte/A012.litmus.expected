@@ -1,0 +1,13 @@
+Test A012 Allowed
+States 3
+[x]=0; Fault(P0:L0,x:red,TagCheck);
+[x]=0; Fault(P0:L0,x:red,MMU:Permission);
+[x]=1;  ~Fault(P0:L0,x);
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition exists ([x]=1 /\ not (fault(P0:L0,x)))
+Observation A012 Sometimes 1 2
+Hash=3fce4d56177b06c14bfd934326a0645b
+

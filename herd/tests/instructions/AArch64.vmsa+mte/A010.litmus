@@ -1,0 +1,11 @@
+AArch64 A010
+{
+ [x]=1;
+ [tag(x)]=:green;
+ [PTE(x)]=(oa:PA(x),attrs:(Normal));
+ 0:X0=x:red;
+}
+ P0          ;
+L0:          ;
+ LDR W1,[X0] ;
+forall(0:X1=1 /\ ~fault(P0:L0,x,TagCheck))
