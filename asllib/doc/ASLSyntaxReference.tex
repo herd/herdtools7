@@ -306,18 +306,15 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \SRepeat(\stmt, \expr)\\
   &|& \SThrow((\expr, \langle\rangle)?)\\
   & & \ASTComment{The option represents an implicit throw: \texttt{throw;}.}\\
-  &|& \STry(\stmt, \catcher^*, \overname{\stmt?}{otherwise})\\
+  &|& \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})\\
   &|& \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
 \end{array}
 \]
 
 \[
 \begin{array}{rcl}
-\casealt &::=& \{ \text{pattern} : \pattern, \text{where} : \expr?, \text{stmt} : \stmt \}\\
-\catcher &::=& (\identifier?, \ty, \stmt)\\
-  & & \ASTComment{The optional name of the matched exception,}\\
-  & & \ASTComment{the guard type and the statement}\\
-  & & \ASTComment{to be executed if the guard matches.}\\
+\casealt &::=& \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \}\\
+\catcher &::=& (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match})
 \end{array}
 \]
 
@@ -354,10 +351,10 @@ We sometimes provide extra details to individual derivations by adding comments 
 \[
 \begin{array}{rrl}
 \globaldecl &::= \{& \\
- & & \text{keyword} : \globaldeclkeyword, \\
- & & \text{name} : \identifier,\\
- & & \text{ty} : \ty?,\\
- & & \text{initial\_value} : \expr?\\
+ & & \GDkeyword : \globaldeclkeyword, \\
+ & & \GDname : \identifier,\\
+ & & \GDty : \ty?,\\
+ & & \GDinitialvalue : \expr?\\
  & \} &
 \end{array}
 \]

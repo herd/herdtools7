@@ -506,6 +506,8 @@ module TypingRule = struct
     | ReduceConstants
     | Normalize
     | RenameTyEqs
+    | TypeCheckMutuallyRec
+    | FoldEnvAndFs
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -669,6 +671,8 @@ module TypingRule = struct
     | ReduceConstants -> "ReduceConstants"
     | Normalize -> "Normalize"
     | RenameTyEqs -> "RenameTyEqs"
+    | TypeCheckMutuallyRec -> "TypeCheckMutuallyRec"
+    | FoldEnvAndFs -> "FoldEnvAndFs"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -814,6 +818,8 @@ module TypingRule = struct
       ReduceConstants;
       Normalize;
       RenameTyEqs;
+      TypeCheckMutuallyRec;
+      FoldEnvAndFs;
     ]
 
   let all_nb = List.length all

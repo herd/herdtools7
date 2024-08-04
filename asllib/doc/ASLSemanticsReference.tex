@@ -757,7 +757,7 @@ $\Normal$,
 \item \emph{exceptionally} when the output configuration domain is
 $\Throwing$,
 \item \emph{erroneously} when the output configuration domain is
-$\Error$, and 
+$\Error$, and
 \item \emph{abnormally} when it either terminates exceptionally or
 erroneously.
 \end{itemize}
@@ -966,7 +966,7 @@ An expression is a compile-time-constant expression if each one of its atomic ex
 \begin{itemize}
 \item a literal constant
 \item a compile-time-constant storage element identifier
-\item an immutable storage element identifier with a compile-time-constant initializer expression. 
+\item an immutable storage element identifier with a compile-time-constant initializer expression.
 \item compile-time-constant function or getter invocations
 \end{itemize}
 \section{Formal Preamble}
@@ -1170,11 +1170,11 @@ Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
 \lrmcomment{This is related to the note under \identr{LRHD}:}
 \begin{itemize}
 \item the first operand of \texttt{if} is always evaluated but only one of the
-remaining operands is evaluated; 
-\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated; 
-\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and, 
+remaining operands is evaluated;
+\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated;
+\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and,
 \item if the first operand of \texttt{implies\_bool} is $\False$, then the
-second operand is not evaluated. 
+second operand is not evaluated.
 \end{itemize}
 
 However, note that relying on this short-circuit evaluation can be confusing
@@ -1211,7 +1211,7 @@ it evaluates to $\False$, is $\vetwo$ evaluated.
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{BKNT}: add table} 
+\lrmcomment{This is related to \identr{BKNT}: add table}
 
 \lrmcomment{This is related to \identr{XKGC}:}
 
@@ -1380,7 +1380,7 @@ In other words, for any function call \texttt{F (e1, ..., em)}, tuple
 subexpressions conflict with each other by:
 \begin{itemize}
 \item both writing to the same variable.
-\item one writing to a variable and the other reading from that same variable 
+\item one writing to a variable and the other reading from that same variable
 \item one writing to a variable and the other throwing an exception
 \item both throwing exceptions
 \end{itemize}
@@ -1914,7 +1914,7 @@ is a dynamic error.
 \lrmcomment{This is related to \identr{YCPX}:}
 
 Dynamic error conditions only hold if the asserting type conversion is
-evaluated. 
+evaluated.
 
 In the example below, the asserting type conversion on \texttt{y} is
 not a dynamic error if the invocation of \texttt{f1} returns $\False$ when
@@ -2243,7 +2243,7 @@ applied to a setter invocation, then the assignment to that bitslice is
 implemented using the following Read-Modify-Write (RMW) behavior:
 \begin{itemize}
 \item invoking the getter of the same name as the setter, with the same actual
-arguments as the setter invocation 
+arguments as the setter invocation
 \item performing the assignment to the bitslice or field of the result of the
 getter invocation
 \item invoking the setter to assign the resulting value
@@ -2301,7 +2301,7 @@ applied to a setter invocation, then the assignment to that bitslice is
 implemented using the following Read-Modify-Write (RMW) behavior:
 \begin{itemize}
 \item invoking the getter of the same name as the setter, with the same actual
-arguments as the setter invocation 
+arguments as the setter invocation
 \item performing the assignment to the bitslice or field of the result of the
 getter invocation
 \item invoking the setter to assign the resulting value
@@ -2366,7 +2366,7 @@ applied to a setter invocation, then the assignment to that bitslice is
 implemented using the following Read-Modify-Write (RMW) behavior:
 \begin{itemize}
 \item invoking the getter of the same name as the setter, with the same actual
-arguments as the setter invocation 
+arguments as the setter invocation
 \item performing the assignment to the bitslice or field of the result of the
 getter invocation
 \item invoking the setter to assign the resulting value
@@ -3326,8 +3326,8 @@ which is $\nvint(3)$.
 \section{Informal preamble}
 Statements consist of:
 \begin{itemize}
-\item Pass statements, which do nothing (see \secref{SemanticsRule.SPass}), 
-\item Assignment statements (see \secref{SemanticsRule.SAssign} and \secref{SemanticsRule.SAssignCall}),     
+\item Pass statements, which do nothing (see \secref{SemanticsRule.SPass}),
+\item Assignment statements (see \secref{SemanticsRule.SAssign} and \secref{SemanticsRule.SAssignCall}),
 \item Sequencing statements (see \secref{SemanticsRule.SSeq}),
 \item Return statements (see Section~\label{sec:ReturnStatements}, \secref{SemanticsRule.SReturnNone}, \secref{SemanticsRule.SReturnOne} and \secref{SemanticsRule.SReturnSome}),
 \item Procedure invocation statements (see \secref{SemanticsRule.SCall}),
@@ -3756,7 +3756,7 @@ Conditional statements select which block to execute by testing condition expres
 
 \lrmcomment{This is related to \identr{XSSL}:}
 If no $\True$ condition is found and there is an \texttt{else} block, the
-\texttt{else} block is executed. 
+\texttt{else} block is executed.
 
 \lrmcomment{This is related to \identr{KZTJ}:}
 If no $\True$ condition is found and there is no \texttt{else} block, no block is executed.
@@ -3768,13 +3768,13 @@ If no $\True$ condition is found and there is no \texttt{else} block, no block i
 
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond2.asl}
- 
+
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond3.asl}
 
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond4.asl}
- 
+
 
 \subsection{Formally}
     Evaluation of the statement $\vs$ in an environment $\env$ is

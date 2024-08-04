@@ -2911,6 +2911,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (d :: acc, new_env) |: TypingRule.TypecheckTypeDecl
   (* End *)
 
+  (* Begin TypeCheckMutuallyRec *)
   let type_check_mutually_rec ds (acc, env) =
     let () =
       if false then
@@ -2933,7 +2934,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    (List.map ASTUtils.identifier_of_decl ds)))
         ds
     in
-    let env_and_fs =
+    let env_and_fs1 =
       (* Setters last as they need getters declared. *)
       let others, setters =
         List.partition
@@ -2945,13 +2946,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       in
       List.rev_append setters others
     in
-    let genv, fs =
+    let genv, env_and_fs2 =
       list_fold_left_map
         (fun genv (lenv, f, loc) ->
           let env = { global = genv; local = lenv } in
-          let env', f = declare_one_func loc f env in
-          (env'.global, (env'.local, f, loc)))
-        env.global env_and_fs
+          let env1, f1 = declare_one_func loc f env in
+          (env1.global, (env1.local, f1, loc)))
+        env.global env_and_fs1
+      |: TypingRule.FoldEnvAndFs
     in
     let ds =
       List.map
@@ -2965,11 +2967,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               in
               D_Func (try_annotate_subprogram env' f) |> here
           | SB_Primitive -> D_Func (rename_primitive loc env' f) |> here)
-        fs
+        env_and_fs2
     in
     (List.rev_append ds acc, { env with global = genv })
+    |: TypingRule.TypeCheckMutuallyRec
+  (* End *)
 
-  (* Begin Specification *)
+  (* Begin TypeCheckAST *)
   let type_check_ast =
     let fold = function
       | TopoSort.ASTFold.Single d -> type_check_decl d
