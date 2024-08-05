@@ -23,6 +23,7 @@ module type S = sig
   val compare : t -> t -> int
 
   val pp : t -> string
+  val get_prio : t -> int option
   val tr : ParsedIntidVal.t -> t
   val pp_norm : ParsedIntidVal.t -> string
 end
