@@ -28,11 +28,9 @@
 
 \newcommand\dynamicdomain[0]{\hyperlink{def-dyndomain}{\textsf{dyn\_dom}}}
 
-\newcommand\TypeErrorConfig[0]{\hyperlink{def-typeerrorconfig}{\texttt{\#TE}}}
 \newcommand\OrTypeError[0]{\;\terminateas \TypeErrorConfig}
 %\newcommand\ProseOrTypeError[0]{or a type error that short-circuits the entire rule}
-\newcommand\ProseTerminateAs[1]{\hyperlink{def-proseterminateas}{${}^{\terminateas #1 }$}}
-\newcommand\ProseOrTypeError[0]{\hyperlink{def-proseortypeerror}{$^{\terminateas \TypeErrorConfig}$}}
+\newcommand\ProseOrTypeError[0]{\ProseTerminateAs{\TypeErrorConfig}}
 
 \newcommand\annotaterel[0]{\hyperlink{def-annotaterel}{\textsf{type}}}
 \newcommand\typearrow[0]{\xrightarrow{\annotaterel}}
@@ -296,7 +294,6 @@
 \newcommand\tenvtwo[0]{\texttt{tenv2}}
 \newcommand\tenvtwop[0]{\texttt{tenv2'}}
 \newcommand\tenvtwopp[0]{\texttt{tenv2''}}
-\newcommand\va[0]{\texttt{a}}
 \newcommand\vc[0]{\texttt{c}}
 \newcommand\vcone[0]{\texttt{c1}}
 \newcommand\vctwo[0]{\texttt{c2}}
@@ -354,7 +351,6 @@
 \newcommand\newle[0]{\texttt{new\_le}}
 \newcommand\ldi[0]{\texttt{ldi}}
 \newcommand\ldk[0]{\texttt{ldk}}
-\newcommand\tty[0]{\texttt{ty}}
 \newcommand\tsy[0]{\texttt{sy}}
 \newcommand\tyopt[0]{\texttt{ty\_opt}}
 \newcommand\ldis[0]{\texttt{ldis}}
@@ -471,10 +467,10 @@ Otherwise, the type checker returns a type error.
 
 \paragraph{Related documents:}
 \begin{itemize}
-  \item The ASL Language Reference Manual~\cite{LRM} (LRM, for short) introduces the concrete syntax and intent
-  of all ASL language constructs.
-  Please note that the LRM will be retired in due course. For ease of reviewing, we currently indicate which statement
-  of the LRM the present rules correspond to.
+  % \item The ASL Language Reference Manual~\cite{LRM} (LRM, for short) introduces the concrete syntax and intent
+  % of all ASL language constructs.
+  % Please note that the LRM will be retired in due course. For ease of reviewing, we currently indicate which statement
+  % of the LRM the present rules correspond to.
   \item The Abstract Syntax Reference~\cite{ASLAbstractSyntaxReference} defines the abstract syntax, parsed AST, and typed AST.
   \item The ASL Semantics Reference~\cite{ASLSemanticsReference} defines all valid behaviors of a well-typed ASL specification.
 \end{itemize}
@@ -487,6 +483,29 @@ The mathematical background needed to understand the mathematical formalization
 of the ASL semantics appears in \chapref{formal} and \chapref{typesystembuildingblocks}.
 
 \include{ASLFormal}
+
+\section{Reading guide}
+The typing rules are organized into chapters, which roughly group the rules by their AST node type.
+The set of rules in each chapter is further split according to additional syntactic and semantic
+predicates over the AST node.
+For example, an expression can be a literal, or a binary operator, amongst other
+things. Each of those has its own evaluation rule: TypingRule.ELit in
+\secref{TypingRule.ELit} and
+Typing.Binop in \secref{TypingRule.Binop}, respectively.
+
+Each rule is presented using the following template:
+\begin{itemize}
+\item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at
+\href{https://github.com/herd/herdtools7//tree/master/asllib}{/herdtools7/asllib};
+\item one or several Example paragraphs, which as much as possible are also given as regression tests in
+\href{https://github.com/herd/herdtools7//tree/master/asllib/tests/ASLTypingReference.t}{/herdtools7/asllib/tests/ASLTypingReference.t};
+\ifcode
+\item a Code paragraph which gives a verbatim of the corresponding OCaml implementation in the type-checker of ASLRef
+\href{https://github.com/herd/herdtools7//tree/master/asllib/Typing.ml}{/herdtools7/asllib/Typing.ml};
+\fi
+\item Formal paragraphs which give formal definitions of the rule.
+\item Comments paragraphs, which provide additional details. %refer to one or more rules from the Language Reference Manual~\cite{LRM} and
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Type System Building Blocks}
@@ -593,7 +612,7 @@ We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a
 To update a function component $f$ (e.g., $\declaredtypes$) of an environment $\tenv$ (either local or global)
 with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to stand for $\tenv[f \mapsto E.f[x \mapsto v]]$.
 
-This is related to \identd{JRXM} and \identi{ZTMQ}.
+\lrmcomment{This is related to \identd{JRXM} and \identi{ZTMQ}.}
 
 \section{Constrained Types}
 \begin{itemize}
@@ -626,7 +645,7 @@ We define the following shorthands for classifying integers:
 \]
 
 \subsection{Comments}
-    This is related to \identd{ZTPP}, \identr{WJYH}, \identr{HJPN}, \identr{CZTX}, \identr{TPHR}
+\lrmcomment{This is related to \identd{ZTPP}, \identr{WJYH}, \identr{HJPN}, \identr{CZTX}, \identr{TPHR}.}
 
 \section{ASL Type System}
 \hypertarget{def-annotaterel}{}
@@ -658,14 +677,9 @@ as follows:
 \hypertarget{def-typeerrorconfig}{}
 and the shorthand $\TypeErrorConfig \triangleq \TypeError(\vs)$ for type error configurations.
 
-\hypertarget{def-proseterminateas}{}
-\ProseTerminateAs{x, y, \ldots} means
-``if the outcome is one of $x, y, \ldots$ then the result short-circuits the rule.
-We use this when explaining rules in English prose.
-
-\hypertarget{def-proseortypeerror}{}
-Specifically,\ProseOrTypeError\ means: ``or a type error configuration $\TypeErrorConfig$, which short-circuits the rule,
-making it transition into the type error configuration $\TypeErrorConfig$.''.
+% \hypertarget{def-proseortypeerror}{}
+% Specifically,\ProseOrTypeError\ means: ``or a type error configuration $\TypeErrorConfig$, which short-circuits the rule,
+% making it transition into the type error configuration $\TypeErrorConfig$.''.
 %
 When several \hyperlink{def-caserules}{case rules} for the same function use the same short-circuiting transition assertion,
 we do not repeat the\ProseOrTypeError, but rather include it only in the first rule.
@@ -714,32 +728,6 @@ We use the shorthand $\ELInt{n}$ for the expression denoting the literal integer
 We use the shorthand notation $\unconstrainedinteger$ to denote the unconstrained integer type: $\TInt(\unconstrained)$.
 
 Note that throughout this document we use $\tty$ to denote a type variable, which should not be confused with the abstract syntax variable $\ty$.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Reading guide}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-The definition of each \texttt{annotation\_<label>} function is given by a number of
-rules, which follow the possible shapes the \texttt{label} can have. For
-example, an expression can be a literal, or a binary operator, amongst other
-things. Each of those has its own evaluation rule: TypingRule.ELit in
-\secref{TypingRule.ELit} and
-Typing.Binop in \secref{TypingRule.Binop}, respectively.
-
-Each rule is presented using the following template:
-\begin{itemize}
-\item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at
-\href{https://github.com/herd/herdtools7//tree/master/asllib}{/herdtools7/asllib};
-\item one or several Example paragraphs, which as much as possible are also given as regression tests in
-\href{https://github.com/herd/herdtools7//tree/master/asllib/tests/ASLTypingReference.t}{/herdtools7/asllib/tests/ASLTypingReference.t};
-\ifcode
-\item a Code paragraph which gives a verbatim of the corresponding OCaml implementation in the type-checker of ASLRef
-\href{https://github.com/herd/herdtools7//tree/master/asllib/Typing.ml}{/herdtools7/asllib/Typing.ml};
-\fi
-\item Formal paragraphs which give formal definitions of the rule.
-\item Comments paragraphs which may refer to one or more statements from the Language Reference Manual~\cite{LRM}
-      and may add more information.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Domain of Values for Types}
@@ -1215,10 +1203,12 @@ the native integer value $c$,
 which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
 is the infinite set of all native integer values.
 
+\lrmcomment{
 This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
 \identr{RLQP}, \identr{LYDS}, \identr{SVDJ}, \identi{WLPJ}, \identr{FWMM},
 \identi{WPWL}, \identi{CDVY}, \identi{KFCR}, \identi{BBQR}, \identr{ZWGH},
 \identr{DKGQ}, \identr{DHZT}, \identi{HSWR}, \identd{YZBQ}.
+}
 
 \section{Subsumption Testing}
 Whether an assignment statement is well-typed depends on whether the dynamic domain of the
@@ -1358,7 +1348,7 @@ The builtin singular type \texttt{Color} consists in two constants
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identd{PQCK} and \identd{NZWT}.
+\lrmcomment{This is related to \identd{PQCK} and \identd{NZWT}.}
 
 \section{TypingRule.BuiltinAggregateType \label{sec:TypingRule.BuiltinAggregateType}}
 \hypertarget{def-isbuiltinaggregate}{}
@@ -1420,7 +1410,7 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identd{PQCK} and \identd{KNBD}.
+\lrmcomment{This is related to \identd{PQCK} and \identd{KNBD}.}
 
 \section{TypingRule.BuiltinSingularOrAggregate \label{sec:TypingRule.BuiltinSingularOrAggregate}}
 \hypertarget{def-isbuiltin}{}
@@ -1492,7 +1482,7 @@ In the specification
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identd{vmzx}.
+\lrmcomment{This is related to \identd{vmzx}.}
 
 \section{TypingRule.AnonymousType \label{sec:TypingRule.AnonymousType}}
 \hypertarget{def-isanonymous}{}
@@ -1519,7 +1509,7 @@ The tuple type \texttt{(integer, integer)} is an anonymous type.
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identd{VMZX}.
+\lrmcomment{This is related to \identd{VMZX}.}
 
 \section{TypingRule.SingularType \label{sec:TypingRule.SingularType}}
 \hypertarget{def-issingular}{}
@@ -1559,7 +1549,7 @@ type C of B;
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identr{GVZK}.
+\lrmcomment{This is related to \identr{GVZK}.}
 
 \section{TypingRule.AggregateType \label{sec:TypingRule.AggregateType}}
 \hypertarget{def-isbuiltinaggregate}{}
@@ -1600,7 +1590,7 @@ type C of B;
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identr{GVZK}.
+\lrmcomment{This is related to \identr{GVZK}.}
 
 \section{TypingRule.NonPrimitiveType \label{sec:TypingRule.NonPrimitiveType}}
 \hypertarget{def-isnonprimitive}{}
@@ -1692,7 +1682,7 @@ Boolean variables by using the types denoted by $\vt$ as a subscript.
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identd{GWXK}.
+\lrmcomment{This is related to \identd{GWXK}.}
 
 \section{TypingRule.PrimitiveType \label{sec:TypingRule.PrimitiveType}}
 \hypertarget{def-isprimitive}{}
@@ -1731,7 +1721,7 @@ The following types are primitive:
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identd{GWXK}.
+\lrmcomment{This is related to \identd{GWXK}.}
 
 \section{TypingRule.Structure \label{sec:structure}}
 \hypertarget{def-structure}{}
@@ -1849,7 +1839,7 @@ the type of \texttt{z} is the anonymous non-primitive type
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identd{FXQV}.
+\lrmcomment{This is related to \identd{FXQV}.}
 
 \section{TypingRule.Anonymize \label{sec:anonymize}}
 \hypertarget{def-makeanonymous}{}
@@ -2088,7 +2078,7 @@ type subInt of integer subtypes superInt;
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.
+\lrmcomment{This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.}
 
 \section{TypingRule.StructuralSubtypeSatisfaction\label{sec:TypingRule.StructuralSubtypeSatisfaction}}
 \hypertarget{def-structsubtypesat}{}
@@ -2330,7 +2320,7 @@ if there is a unique one, as follows:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identd{TRVR}, \identi{SJDC}, \identi{MHYB}, \identi{TWTZ}, \identi{GYSK}, \identi{KXSD}.
+\lrmcomment{This is related to \identd{TRVR}, \identi{SJDC}, \identi{MHYB}, \identi{TWTZ}, \identi{GYSK}, \identi{KXSD}.}
 
 \section{TypingRule.DomainSubtypeSatisfaction\label{sec:TypingRule.DomainSubtypeSatisfaction}}
 \hypertarget{def-domsubtypesat}{}
@@ -2414,7 +2404,7 @@ One of the following applies:
 \end{emptyformal}
 
 \subsection{Comments}
-    This is related to \identd{TRVR}.
+\lrmcomment{This is related to \identd{TRVR}.}
 
 \section{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
 \hypertarget{def-subtypesat}{}
@@ -2452,7 +2442,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-    This is related to \identd{TRVR}, \identi{KNXJ}.
+\lrmcomment{This is related to \identd{TRVR}, \identi{KNXJ}.}
 
 \section{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
 \hypertarget{def-typesatisfies}{}
@@ -2609,7 +2599,7 @@ Since the subtype relation is a partial order, it is reflexive. Therefore
 every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
 \typesatisfies\  itself.
 
-This is related to \identr{FMXK} and \identi{NLFD}.
+\lrmcomment{This is related to \identr{FMXK} and \identi{NLFD}.}
 
 \section{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
 \hypertarget{def-typeclashes}{}
@@ -2766,7 +2756,7 @@ way around.
 Note that type-clashing is an equivalence relation. Therefore if $\vt$
 type-clashes with \texttt{A} and \texttt{B} then it is also the case that \texttt{A} and \texttt{B} type-clash.
 
-This is related to \identd{VPZZ}, \identi{PQCT} and \identi{WZKM}.
+\lrmcomment{This is related to \identd{VPZZ}, \identi{PQCT} and \identi{WZKM}.}
 
 \section{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
 \hypertarget{def-lowestcommonancestor}{}
@@ -3062,7 +3052,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 \end{emptyformal}
 
 \subsection{Comments}
-    This is related to \identr{YZHM}.
+\lrmcomment{This is related to \identr{YZHM}.}
 
 \section{TypingRule.CheckUnop \label{sec:TypingRule.CheckUnop}}
 \hypertarget{def-checkunop}{}
@@ -3702,10 +3692,12 @@ The following two rules are not mutually exclusive, but both yield the same resu
 \end{emptyformal}
 
 \subsection{Comments}
+\lrmcomment{
   This is related to \identr{BKNT}, \identr{ZYWY}, \identr{BZKW},
   \identr{KFYS}, \identr{KXMR}, \identr{SQXN}, \identr{MRHT}, \identr{JGWF},
   \identr{TTGQ}, \identi{YHML}, \identi{YHRP}, \identi{VMZF}, \identi{YXSY},
   \identi{LGHJ}, \identi{RXLG}.
+}
 
 \section{TypingRule.FindNamedLCA \label{sec:TypingRule.FindNamedLCA}}
 \hypertarget{def-namedlowestcommonancestor}{}
@@ -4175,7 +4167,7 @@ The following example declares a valid enumeration type:
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}.
+\lrmcomment{This is related to \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}.}
 
 \section{TypingRule.TRecordExceptionDecl \label{sec:TypingRule.TRecordExceptionDecl}}
 
@@ -4750,7 +4742,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{XZVT}.
+\lrmcomment{This is related to \identr{XZVT}.}
 
 \section{TypingRule.ESlice \label{sec:TypingRule.ESlice}}
 
@@ -4796,7 +4788,7 @@ All of the following apply:
   widths references a \texttt{let} identifier with a non-compile-time-constant
   initialiser expression.
 
-  This is related to \identi{MJWM}.
+  \lrmcomment{This is related to \identi{MJWM}.}
 
 \section{TypingRule.ESetter \label{sec:TypingRule.ESetter}}
 
@@ -4859,7 +4851,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identd{CFYP}, \identr{BQJG}.
+\lrmcomment{This is related to \identd{CFYP}, \identr{BQJG}.}
 
 \section{TypingRule.EGetArray \label{sec:TypingRule.EGetArray}}
 
@@ -4990,7 +4982,7 @@ All of the following apply:
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-  This is related to \identr{WBCQ}.
+\lrmcomment{This is related to \identr{WBCQ}.}
 
 \section{TypingRule.EStructuredMissingField \label{sec:TypingRule.EStructuredMissingField}}
 
@@ -5026,7 +5018,7 @@ A§ll of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{WBCQ}.
+\lrmcomment{This is related to \identr{WBCQ}.}
 
 \section{TypingRule.ERecord \label{sec:TypingRule.ERecord}}
 
@@ -5065,7 +5057,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{WBCQ}.
+\lrmcomment{This is related to \identr{WBCQ}.}
 
 \section{TypingRule.EGetRecordField \label{sec:TypingRule.EGetRecordField}}
 \subsection{Prose}
@@ -5411,7 +5403,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{NYNK} and \identr{KCZS}.
+\lrmcomment{This is related to \identr{NYNK} and \identr{KCZS}.}
 
   The sum of the widths of the bitvector types~\texttt{ts} might be a symbolic
 expression that is unresolvable to an integer. For example:
@@ -5590,9 +5582,11 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
+\lrmcomment{
   This is related to \identr{VBLL}, \identi{KRLL}, \identg{PFRQ}, \identi{XVBG},
   \identr{GYJZ}, \identi{SZVF}, \identr{PZZJ}, \identr{YCPX}, \identi{ZLBW},
   \identi{TCST}, \identi{CGRH}, \identi{YJBB}.
+}
 
 \hypertarget{def-annotateliteral}{}
 \section{TypingRule.Lit \label{sec:TypingRule.Lit}}
@@ -5893,8 +5887,10 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
+\lrmcomment{
   This is related to \identr{WDGQ}, \identr{GNTS}, \identi{MMKF},
   \identi{DGWJ}, \identi{KKCC} and \identr{LXQZ}.
+}
 
 \section{TypingRule.LEGlobalVar \label{sec:TypingRule.LEGlobalVar}}
 
@@ -5925,7 +5921,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{WDGQ}.
+\lrmcomment{This is related to \identr{WDGQ}.}
 
 \section{TypingRule.LEDestructuring \label{sec:TypingRule.LEDestructuring}}
 
@@ -6963,7 +6959,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identi{VMKF}.
+\lrmcomment{This is related to \identi{VMKF}.}
 
 \section{TypingRule.PTuple \label{sec:TypingRule.PTuple}}
 
@@ -7033,7 +7029,7 @@ One of the following applies:
 \item TypingRule.LDTuple (see \secref{TypingRule.LDTuple}).
 \end{itemize}
 
-This is related to \identr{YSPM}.
+\lrmcomment{This is related to \identr{YSPM}.}
 
 \section{TypingRule.LDDiscard \label{sec:TypingRule.LDDiscard}}
 
@@ -7090,7 +7086,7 @@ All of the following apply:
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-This is related to \identr{YSPM}, \identd{FXST}.
+\lrmcomment{This is related to \identr{YSPM}, \identd{FXST}.}
 
 \section{TypingRule.LDTyped\label{sec:TypingRule.LDTyped}}
 
@@ -7322,7 +7318,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{FTPK}.
+\lrmcomment{This is related to \identr{FTPK}.}
 
 \section{TypingRule.SReturnOne \label{sec:TypingRule.SReturnOne}}
 
@@ -7368,7 +7364,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{FTPK}.
+\lrmcomment{This is related to \identr{FTPK}.}
 
 \section{TypingRule.SReturnSome \label{sec:TypingRule.SReturnSome}}
 
@@ -7402,7 +7398,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-This is related to \identr{FTPK}.
+\lrmcomment{This is related to \identr{FTPK}.}
 
 \section{TypingRule.SSeq \label{sec:TypingRule.SSeq}}
 
@@ -7464,7 +7460,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identd{VXKM}.
+\lrmcomment{This is related to \identd{VXKM}.}
 
 \section{TypingRule.SCond \label{sec:TypingRule.SCond}}
 
@@ -7500,7 +7496,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{NBDJ}.
+\lrmcomment{This is related to \identr{NBDJ}.}
 
 \section{TypingRule.SCase \label{sec:TypingRule.SCase}}
 
@@ -7534,7 +7530,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{WGSY}.
+\lrmcomment{This is related to \identr{WGSY}.}
 
 \section{TypingRule.SAssert \label{sec:TypingRule.SAssert}}
 \subsection{Prose}
@@ -7564,7 +7560,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{JQYF}.
+\lrmcomment{This is related to \identr{JQYF}.}
 
 \section{TypingRule.SWhile \label{sec:TypingRule.SWhile}}
 \subsection{Prose}
@@ -7596,7 +7592,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{FTVN}.
+\lrmcomment{This is related to \identr{FTVN}.}
 
 \section{TypingRule.SRepeat \label{sec:TypingRule.SRepeat}}
 
@@ -7631,7 +7627,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{FTVN}.
+\lrmcomment{This is related to \identr{FTVN}.}
 
 \section{TypingRule.SFor \label{sec:TypingRule.SFor}}
 \subsection{Prose}
@@ -7756,7 +7752,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{SSBD}, \identr{ZSND}, \identr{VTJW}.
+\lrmcomment{This is related to \identr{SSBD}, \identr{ZSND}, \identr{VTJW}.}
 
 \section{TypingRule.SThrowNone \label{sec:TypingRule.SThrowNone}}
 
@@ -7815,7 +7811,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{NXRC}.
+\lrmcomment{This is related to \identr{NXRC}.}
 
 \section{TypingRule.STry \label{sec:TypingRule.STry}}
 
@@ -7877,7 +7873,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{WVXS}.
+\lrmcomment{This is related to \identr{WVXS}.}
 
 \section{TypingRule.SDeclSome \label{sec:TypingRule.SDeclSome}}
 
@@ -7936,7 +7932,7 @@ All of the following apply:
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
-  This is related to \identr{YSPM}.
+\lrmcomment{This is related to \identr{YSPM}.}
 
 \section{TypingRule.SDeclNone \label{sec:TypingRule.SDeclNone}}
 
@@ -8484,7 +8480,7 @@ is in scope from the point immediately after its declaration until the end of th
 immediately enclosing block. This means, we can discard the environment at the end of
 an enclosing block, which has the effect of dropping bindings of the identifiers declared inside the block.
 
-  This is related to \identr{JBXQ}.
+\lrmcomment{This is related to \identr{JBXQ}.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Catchers}
@@ -8541,7 +8537,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{SDJK}.
+\lrmcomment{This is related to \identr{SDJK}.}
 
 \section{TypingRule.CatcherSome \label{sec:TypingRule.CatcherSome}}
 
@@ -8578,7 +8574,7 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.
+\lrmcomment{This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Subprogram Calls \label{chap:TypingSubprogramCalls}}
@@ -8691,10 +8687,12 @@ One of the following applies:
 \end{emptyformal}
 
 \subsection{Comments}
+\lrmcomment{
   This is related to \identi{VFDP}, \identd{TRFW}, \identr{KMDB},
   \identi{YMHX}, \identr{CCVD}, \identr{QYBH}, \identr{PFWQ}, \identr{ZLWD},
   \identi{FLKF}, \identd{PMBL}, \identr{MWBN}, \identr{TZSP}, \identr{SBWR},
   \identi{CMLP}, \identr{BQJG}, \identr{RTCF}.
+}
 
 \section{TypingRule.FindCheckDeduce \label{sec:TypingRule.FindCheckDeduce}}
 \hypertarget{def-findcheckdeduce}{}
@@ -9138,8 +9136,10 @@ All of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
+\lrmcomment{
 This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 \identr{TJKQ}, \identi{LFJZ}, \identi{BZVB}, \identi{RQQB}.
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Global Declarations}
@@ -10133,6 +10133,7 @@ One of the following applies:
 \end{emptyformal}
 
 \section{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
+\hypertarget{def-declareonefunc}{}
 The function
 \[
   \declareonefunc(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig})
@@ -10291,7 +10292,7 @@ which defines whether two subprogram types are considered to be clashing:
 
 \subsection{Comments}
 
-This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.
+\lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
 
 \section{TypingRule.AddNewFunc \label{sec:TypingRule.AddNewFunc}}
 \hypertarget{def-addnewfunc}{}
@@ -10397,7 +10398,7 @@ to the corresponding string.
 
 \subsection{Comments}
 
-This is related to \identr{PGFC}.
+\lrmcomment{This is related to \identr{PGFC}.}
 
 \section{TypingRule.CheckSetterHasGetter \label{sec:TypingRule.CheckSetterHasGetter}}
 \hypertarget{def-checksetterhashgetter}{}
@@ -10860,7 +10861,7 @@ All of the following apply:
 \end{mathpar}
 \end{emptyformal}
 \subsection{Comments}
-This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.
+\lrmcomment{This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.}
 
 \section{TypingRule.AnnotateExtraFields \label{sec:TypingRule.AnnotateExtraFields}}
 \hypertarget{def-annotateextrafields}{}
@@ -12009,7 +12010,7 @@ One of the following applies:
 The function $\bintounsigned : \{0,1\}^* \rightarrow \N$ converts a non-empty sequence of bits
 into a natural number:
 \[
-  \bintounsigned(a_{n..1}) \triangleq \sum_{i=1}^n 2^{a_i}
+  \bintounsigned(a_{n..1}) \triangleq \sum_{i=1}^n a_i \cdot 2^{a_i}
 \]
 and an empty sequence of bits into $0$:
 \[

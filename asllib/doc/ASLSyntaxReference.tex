@@ -28,16 +28,6 @@ what looks like a slicing expression, which turns out to be a call to a getter.
 The typed AST represents that call directly, making it easier for an interpreter
 to evaluate that expression.
 
-Technically, there are two abstract syntaxes:
-a \emph{parsed abstract syntax} and a \emph{typed abstract syntax}.
-The first syntax results from parsing the text of an ASL specification.
-The type checker checks whether the parsed AST is valid and if so produces
-a typed AST where some nodes in the parsed AST have been transformed to
-more explicit representation. For example, the parsed AST may contain
-what looks like a slicing expression, which turns out to be a call to a getter.
-The typed AST represents that call directly, making it easier for an interpreter
-to evaluate that expression.
-
 \chapter{ASL Abstract Syntax}
 
 \section{ASL Abstract Syntax Trees}

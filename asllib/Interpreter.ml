@@ -373,7 +373,7 @@ module Make (B : Backend.S) (C : Config) = struct
     if false then Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_expr e;
     match e.desc with
     (* Begin Lit *)
-    | E_Literal v -> return_normal (B.v_of_literal v, env) |: SemanticsRule.Lit
+    | E_Literal l -> return_normal (B.v_of_literal l, env) |: SemanticsRule.Lit
     (* End *)
     (* Begin ATC *)
     | E_ATC (e1, t) ->
@@ -831,7 +831,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* End *)
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
-  and eval_local_decl s ldi env m_init_opt : env maybe_exception m =
+  and eval_local_decl pos ldi env m_init_opt : env maybe_exception m =
     let () =
       if false then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
     in
@@ -847,12 +847,12 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin LDTyped *)
     | LDI_Typed (ldi1, _t), Some m ->
-        eval_local_decl s ldi1 env (Some m) |: SemanticsRule.LDTyped
+        eval_local_decl pos ldi1 env (Some m) |: SemanticsRule.LDTyped
     (* End *)
     (* Begin LDUninitialisedTyped *)
     | LDI_Typed (ldi1, t), None ->
         let m = base_value env t in
-        eval_local_decl s ldi1 env (Some m)
+        eval_local_decl pos ldi1 env (Some m)
         |: SemanticsRule.LDUninitialisedTyped
     (* End *)
     (* Begin LDTuple *)
@@ -862,14 +862,14 @@ module Make (B : Backend.S) (C : Config) = struct
         let liv = List.init n (fun i -> B.return vm >>= B.get_index i) in
         let folder envm ldi1 vm =
           let**| env = envm in
-          eval_local_decl s ldi1 env (Some vm)
+          eval_local_decl pos ldi1 env (Some vm)
         in
         List.fold_left2 folder (return_normal env) ldis liv
         |: SemanticsRule.LDTuple
     (* End *)
     | LDI_Var _, None | LDI_Tuple _, None ->
         (* Should not happen in V1 because of TypingRule.LDUninitialisedTuple *)
-        fatal_from s Error.TypeInferenceNeeded
+        fatal_from pos Error.TypeInferenceNeeded
 
   (* Evaluation of Statements *)
   (* ------------------------ *)
@@ -891,8 +891,8 @@ module Make (B : Backend.S) (C : Config) = struct
           { desc = E_Call (name, args, named_args); _ },
           ver )
       when List.for_all lexpr_is_var les ->
-        let**| vs, env1 = eval_call (to_pos s) name env args named_args in
-        let**| new_env = protected_multi_assign ver env1 s les vs in
+        let**| vms, env1 = eval_call (to_pos s) name env args named_args in
+        let**| new_env = protected_multi_assign ver env1 s les vms in
         return_continue new_env |: SemanticsRule.SAssignCall
     (* End *)
     (* Begin SAssign *)

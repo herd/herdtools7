@@ -672,6 +672,12 @@ Notice that after all rule macros are expanded into normal rules,
 they behave like normal rules where the order of premises does
 not matter.
 
+\hypertarget{def-proseterminateas}{}
+\paragraph{Alternative Outcomes Expressed in English Prose:}
+In English prose, we use
+\ProseTerminateAs{x, y, \ldots} to mean
+``if the outcome is one of $x, y, \ldots$ then the result short-circuits the rule.
+
 As an example, consider the rule SemanticsRule.Binop.
 This time, not simplified:
 \begin{mathpar}
@@ -802,14 +808,14 @@ For example, the ASL Semantics Reference defines the rule SemanticsRule.BaseValu
 cases of which two are the following:
 \begin{mathpar}
   \inferrule[bool]{
-    \tstruct(\vt) = \TBool
+    \tstruct(\vt) \typearrow \TBool
   }
   {
     \texttt{base\_value}(\textsf{env}, \vt) \evalarrow (\texttt{Bool}(\True), \emptyset_\textsf{g})
   }
   \and
   \inferrule[real]{
-    \tstruct(\vt) = \TReal
+    \tstruct(\vt) \typearrow \TReal
   }
   {
     \texttt{base\_value}(\textsf{env}, \vt) \evalarrow (\texttt{Real}(0), \emptyset_\textsf{g})
