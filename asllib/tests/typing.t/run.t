@@ -111,6 +111,15 @@ Named types
 
 Loops
   $ aslref --no-exec TPositive8.asl
+  File TPositive8.asl, line 16, characters 8 to 40:
+  ASL Typing error: a subtype of integer {0..15} was expected,
+    provided integer {0..N}.
+  [1]
+  $ aslref --no-exec TPositive8-1.asl
+  File TPositive8-1.asl, line 5, characters 8 to 40:
+  ASL Typing error: a subtype of integer {8..31} was expected,
+    provided integer {100..110}.
+  [1]
   $ aslref --no-exec TNegative8-0.asl
   File TNegative8-0.asl, line 5, characters 8 to 40:
   ASL Typing error: a subtype of integer {0..7} was expected, provided integer.

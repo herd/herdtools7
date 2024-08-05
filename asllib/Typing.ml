@@ -35,7 +35,6 @@ let unsupported_expr e = Error.fatal_from e Error.(UnsupportedExpr (Static, e))
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
 
-let expr_of_z z = literal (L_Int z)
 let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
@@ -132,50 +131,6 @@ let annotate_literal = function
   | L_String _ -> T_String
   | L_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
 (* End *)
-
-exception ConstraintMinMaxTop
-
-let min_constraint env = function
-  | Constraint_Exact e | Constraint_Range (e, _) -> (
-      let e = StaticModel.try_normalize env e in
-      match e.desc with
-      | E_Literal (L_Int i) -> i
-      | _ ->
-          let () =
-            if false then
-              Format.eprintf "Min constraint found strange value %a@."
-                PP.pp_expr e
-          in
-          raise ConstraintMinMaxTop)
-
-let max_constraint env = function
-  | Constraint_Exact e | Constraint_Range (_, e) -> (
-      let e = StaticModel.try_normalize env e in
-      match e.desc with
-      | E_Literal (L_Int i) -> i
-      | _ ->
-          let () =
-            if false then
-              Format.eprintf "Max constraint found strange value %a@."
-                PP.pp_expr e
-          in
-          raise ConstraintMinMaxTop)
-
-let min_max_constraints m_constraint m =
-  let rec do_rec env = function
-    | [] ->
-        failwith
-          "A well-constrained integer cannot have an empty list of constraints."
-    | [ c ] -> m_constraint env c
-    | c :: cs ->
-        let i = m_constraint env c and j = do_rec env cs in
-        m i j
-  in
-  do_rec
-
-(* NB: functions raise [ConstraintMinMaxTop] if no approximation can be found *)
-let min_constraints = min_max_constraints min_constraint min
-and max_constraints = min_max_constraints max_constraint max
 
 let get_first_duplicate extractor li =
   let exception Duplicate of identifier in
@@ -2238,33 +2193,19 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Begin SFor *)
     | S_For (id, e1, dir, e2, s') ->
         let t1, e1' = annotate_expr env e1 and t2, e2' = annotate_expr env e2 in
-        let struct1 = Types.get_well_constrained_structure env t1
-        and struct2 = Types.get_well_constrained_structure env t2 in
+        let struct1 = Types.make_anonymous env t1
+        and struct2 = Types.make_anonymous env t2 in
         let cs =
           match (struct1.desc, struct2.desc) with
           | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
               UnConstrained
-          | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) -> (
-              let bot_cs, top_cs =
-                match dir with Up -> (cs1, cs2) | Down -> (cs2, cs1)
+          | T_Int _, T_Int _ ->
+              let e1n = StaticModel.try_normalize env e1'
+              and e2n = StaticModel.try_normalize env e2' in
+              let e_bot, e_top =
+                match dir with Up -> (e1n, e2n) | Down -> (e2n, e1n)
               in
-              try
-                let bot = min_constraints env bot_cs
-                and top = max_constraints env top_cs in
-                if bot <= top then
-                  WellConstrained
-                    [ Constraint_Range (expr_of_z bot, expr_of_z top) ]
-                else WellConstrained cs1
-              with ConstraintMinMaxTop -> (
-                match (bot_cs, top_cs) with
-                | [ Constraint_Exact e_bot ], [ Constraint_Exact e_top ] ->
-                    WellConstrained [ Constraint_Range (e_bot, e_top) ]
-                | _ ->
-                    (* TODO: this case is not specified by the LRM. *)
-                    UnConstrained))
-          | T_Int (UnderConstrained _), T_Int _
-          | T_Int _, T_Int (UnderConstrained _) ->
-              assert false
+              WellConstrained [ Constraint_Range (e_bot, e_top) ]
           | T_Int _, _ -> conflict s [ integer' ] t2
           | _, _ -> conflict s [ integer' ] t1
           (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
