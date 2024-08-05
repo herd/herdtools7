@@ -143,3 +143,7 @@ let tr p =
   StringMap.fold add_field p.params r
 
 let pp_norm v = pp (tr v)
+
+let get_prio = function
+  | { enabled=true; pending=true; priority; _ } -> Some priority
+  | _ -> None

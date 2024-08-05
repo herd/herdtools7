@@ -21,6 +21,7 @@ module type S = sig
   val eq : t -> t -> bool
   val compare : t -> t -> int
   val pp : t -> string
+  val get_prio : t -> int option
   val tr : ParsedIntidVal.t -> t
   val pp_norm : ParsedIntidVal.t -> string
 end
@@ -32,6 +33,7 @@ module No = struct
   let eq _ _ = true
   let compare _ _ = 0
   let pp _ = "()"
+  let get_prio _ = None
   let tr _ = ()
   let pp_norm _ = "()"
 end
