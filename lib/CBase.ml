@@ -36,6 +36,7 @@ let symb_reg_name r =
 
 let symb_reg r = sprintf "%%%s" r
 let type_reg _ = base_type
+let is_sysreg _ = false
 
 type mem_order = MemOrder.t
 

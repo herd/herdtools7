@@ -502,6 +502,7 @@ module Make
                  "F", E.is_barrier;
                  "Rreg", E.is_reg_load_any;
                  "Wreg", E.is_reg_store_any;
+                 "SysReg", E.is_sysreg;
                  "DATA", is_data_port;
                  "NDATA", (fun e -> not (is_data_port e));])) in
       let m =

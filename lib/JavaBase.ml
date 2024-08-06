@@ -219,5 +219,6 @@ include Pseudo.Make
   let hash_pteval _ = assert false
   let base_type     = CType.Base "int"
   let type_reg _    =  base_type
+  let is_sysreg _   = false
 
   module Instr = Instr.No(struct type instr = instruction end)

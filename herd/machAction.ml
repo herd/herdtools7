@@ -443,6 +443,10 @@ end = struct
   | Access (_,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
 
+  let is_sysreg = function
+  | Access (_,A.Location_reg (_,r),_,_,_,_,_) -> A.is_sysreg r
+  | _ -> false
+
   let is_reg_store_any a = match a with
   | Access (W,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
