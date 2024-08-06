@@ -189,7 +189,7 @@ In the remainder of this document, we use the term \emph{list} and \emph{sequenc
 A list of elements \hypertarget{def-emptylist}{is either empty, denoted by $\emptylist$}, or non-empty.
 A non-empty list is either denoted by listing the elements in sequence, $v_1 \ldots\ v_k$,
 or in bracketed form, $[v_1,\ldots,v_k]$, which is used to aesthetically separate it from surrounding mathematical expressions.
-The commas are entirely aesthetic and carry no special meaning.
+The commas carry no special meaning.
 
 \hypertarget{def-head}{}
 \hypertarget{def-tail}{}
@@ -276,6 +276,8 @@ denotes the tuple $(L,v_{1..k})$.
 We also write $L(T_{1..k})$, where $T_{1..k}$ denotes mathematical types of values, to stand for the type
 $\{L\} \times T_1 \times \ldots \times T_k$.
 
+\hypertarget{def-optional}{}
+\begin{definition}[Optional]
 \hypertarget{def-none}{}
 The notation $\langle \cdot \rangle$ stands for either an empty set or a singleton set,
 where $\None\triangleq\langle\rangle$ denotes an empty set
@@ -283,6 +285,9 @@ and $\langle v \rangle$ denotes a set containing the single element $v$.
 %
 The notation $\langle T \rangle$, where $T$ denotes a mathematical type, stands for
 $\{ \langle\rangle \} \cup \{\langle v \rangle \;|\; v \in T\}$.
+
+We refer to $\langle T\rangle$ as an \emph{optional}.
+\end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{How we use Rules}
