@@ -210,6 +210,7 @@ module Domain = struct
 
   exception StaticEvaluationTop
 
+  (* Begin NormalizeToInt *)
   let eval (env : env) (e : expr) =
     let v =
       let open StaticInterpreter in
@@ -224,7 +225,9 @@ module Domain = struct
         failwith
           "Type error? Cannot use an expression that is not an int in a \
            constraint."
+  (* End *)
 
+  (* Begin ConstraintToIntSet *)
   let add_constraint_to_intset env acc = function
     | Constraint_Exact e ->
         let v = eval env e in
@@ -232,7 +235,9 @@ module Domain = struct
     | Constraint_Range (bot, top) ->
         let bot = eval env bot and top = eval env top in
         add_interval_to_intset acc bot top
+  (* End *)
 
+  (* Begin IntSetOfIntConstraints *)
   let int_set_of_int_constraints env constraints =
     match constraints with
     | [] ->
@@ -245,7 +250,9 @@ module Domain = struct
                (add_constraint_to_intset env)
                IntSet.empty constraints)
         with StaticEvaluationTop -> FromSyntax constraints)
+  (* End *)
 
+  (* Begin IntSetToIntConstraints *)
   let int_set_to_int_constraints =
     let interval_to_constraint interval =
       let x = IntSet.Interval.x interval and y = IntSet.Interval.y interval in
@@ -256,7 +263,9 @@ module Domain = struct
       IntSet.fold
         (fun interval acc -> interval_to_constraint interval :: acc)
         is []
+  (* End *)
 
+  (* Begin IntSetOp *)
   let rec int_set_raise_interval_op fop op is1 is2 =
     match (is1, is2) with
     | Top, _ | _, Top -> Top
@@ -280,6 +289,7 @@ module Domain = struct
         match constraint_binop op s1 s2 with
         | WellConstrained s2 -> FromSyntax s2
         | _ -> Top)
+  (* End *)
 
   let monotone_interval_op op i1 i2 =
     let open IntSet.Interval in
@@ -292,13 +302,14 @@ module Domain = struct
     if x < y then make x y else raise StaticEvaluationTop
 
   let of_literal = function
-    | L_Int i -> D_Int (Finite (IntSet.singleton i))
+    | L_Int n -> D_Int (Finite (IntSet.singleton n))
     | L_Bool _ -> D_Bool
     | L_Real _ -> D_Real
     | L_String _ -> D_String
     | L_BitVector bv ->
         D_Bits (Finite (Bitvector.length bv |> Z.of_int |> IntSet.singleton))
 
+  (* [of_expr env e] returns the symbolic integer domain for the integer-typed expression [e]. *)
   let rec of_expr env e =
     match e.desc with
     | E_Literal v -> of_literal v
@@ -307,8 +318,8 @@ module Domain = struct
         with Not_found -> (
           try SEnv.type_of env x |> of_type env
           with Not_found -> Error.fatal_from e (Error.UndefinedIdentifier x)))
-    | E_Unop (NEG, e') ->
-        of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
+    | E_Unop (NEG, e1) ->
+        of_expr env (E_Binop (MINUS, !$0, e1) |> add_pos_from e)
     | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
         let is1 = match of_expr env e1 with D_Int is -> is | _ -> assert false
         and is2 = match of_expr env e2 with D_Int is -> is | _ -> assert false
@@ -528,6 +539,7 @@ module Domain = struct
         true
       with FalseFound -> false
 
+  (* SymIntSetSubset *)
   let int_set_is_subset env is1 is2 =
     match (is1, is2) with
     | _, Top -> true
@@ -547,6 +559,7 @@ module Domain = struct
         | L_Int z1 -> IntSet.mem z1 is2
         | _ -> false)
 
+  (* Begin SyDomIsSubrset *)
   let is_subset env d1 d2 =
     let () =
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
@@ -557,6 +570,7 @@ module Domain = struct
     | D_Bits is1, D_Bits is2 | D_Int is1, D_Int is2 ->
         int_set_is_subset env is1 is2
     | _ -> false
+  (* End *)
 
   let get_width_singleton_opt = function
     | D_Bits (Finite int_set) ->

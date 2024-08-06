@@ -740,7 +740,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            Asllib.constraint_binop *)
         Some c
 
-  let constraint_binop ~loc env op cs1 cs2 =
+  (* Begin AnnotateConstraintBinop *)
+  let annotate_constraint_binop ~loc env op cs1 cs2 =
     match op with
     | SHL | SHR | POW | MOD | DIVRM | MINUS | MUL | PLUS | DIV ->
         let cs2 = binop_filter_right ~loc env op cs2 in
@@ -769,6 +770,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false
+    (* End *)
 
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc = function
@@ -869,7 +871,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
                 let cs =
                   best_effort UnConstrained (fun _ ->
-                      constraint_binop ~loc env op cs1 cs2)
+                      annotate_constraint_binop ~loc env op cs1 cs2)
                 in
                 T_Int cs |> with_loc
             | T_Real, T_Real -> (

@@ -585,6 +585,7 @@ let is_right_decreasing = function
   | RDIV ->
       raise FailedConstraintOp
 
+(* Begin ConstraintBinop *)
 let constraint_binop op =
   let righ_inc = is_right_increasing op
   and righ_dec = is_right_decreasing op
@@ -610,6 +611,7 @@ let constraint_binop op =
   fun cs1 cs2 ->
     try WellConstrained (list_cross do_op cs1 cs2)
     with FailedConstraintOp -> UnConstrained
+(* End *)
 
 let rec subst_expr substs e =
   (* WARNING: only subst runtime vars. *)
