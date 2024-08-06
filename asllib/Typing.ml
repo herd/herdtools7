@@ -702,7 +702,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
     | _ -> Fun.id
 
-  let constraint_binop ~loc env op cs1 cs2 =
+  let annotate_constraint_binop ~loc env op cs1 cs2 =
     let cs2 = binop_filter_right ~loc env op cs2 in
     let cs1, cs2 =
       if binop_is_exploding op then
@@ -719,6 +719,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (T_Int res |> add_dummy_pos)
     in
     res
+  (* End *)
 
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc = function
@@ -819,7 +820,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
                 let cs =
                   best_effort UnConstrained (fun _ ->
-                      constraint_binop ~loc env op cs1 cs2)
+                      annotate_constraint_binop ~loc env op cs1 cs2)
                 in
                 T_Int cs |> with_loc
             | T_Real, T_Real -> (

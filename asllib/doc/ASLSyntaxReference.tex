@@ -88,16 +88,6 @@ We sometimes provide extra details to individual derivations by adding comments 
         \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}} \\
         &|& \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \\
 
-% \literal &=& \texttt{<int\_lit>}  \\
-%  &|&\ASTComment{Includes \texttt{hex\_int}} \\
-%  &|&\texttt{<boolean\_lit>}  \\
-%  &|& \texttt{<real\_lit>}  \\
-%  &|& \texttt{<bitmask\_lit>}   \\
-%  & & \ASTComment{also represents \texttt{<bitvector\_lit>}}\\
-%  &|&\texttt{<string\_lit>} \\
-%  &|& \texttt{"IN"}   \\
-%  & & \ASTComment{\texttt{binop\_in}}\\
-
 \literal &=& \lint(\overname{n}{n \in \Z}) \\
  &|& \lbool(\overname{b}{b \in \{\True, \False\}}) \\
  &|& \lreal(\overname{q}{q \in \Q}) \\
