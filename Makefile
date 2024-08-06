@@ -20,6 +20,7 @@ DUNE_PROFILE = release
 
 DIYCROSS                      = _build/install/default/bin/diycross7
 HERD                          = _build/install/default/bin/herd7
+LITMUS                        = _build/install/default/bin/litmus7
 HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
@@ -672,3 +673,65 @@ clean-asl-pseudocode:
 
 asldoc: $(BENTO)
 	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc all
+
+$(V).SILENT:
+
+litmus-test:: litmus-cata-aarch64-test-std
+litmus-cata-aarch64-test-std: TEMP_DIR:=$(shell mktemp -d)
+litmus-cata-aarch64-test-std:
+	$(LITMUS) -mode std -a 4 catalogue/aarch64/tests/@all -o $(TEMP_DIR)
+	make -C $(TEMP_DIR) -j $(J)
+	$(RM) -r $(TEMP_DIR)
+	@ echo "litmus7 in -mode std catalogue aarch64 tests: OK"
+
+litmus-test:: litmus-cata-aarch64-test-presi
+litmus-cata-aarch64-test-presi: TEMP_DIR:=$(shell mktemp -d)
+litmus-cata-aarch64-test-presi:
+	$(LITMUS) -mode presi -a 4 catalogue/aarch64/tests/@all -o $(TEMP_DIR)
+	make -C $(TEMP_DIR) -j $(J)
+	$(RM) -r $(TEMP_DIR)
+	@ echo "litmus7 in -mode presi catalogue aarch64 tests: OK"
+
+ifeq ($(OS),Darwin)
+KUT_CONFIG_PARAMS=--page-size=4k --cross-prefix=aarch64-elf-
+endif
+KUT_DIR:=$(shell mktemp -d)
+
+litmus-dep:
+	cd $(KUT_DIR); \
+	git clone -q git@gitlab.com:kvm-unit-tests/kvm-unit-tests.git; \
+	cd kvm-unit-tests; \
+	./configure $(KUT_CONFIG_PARAMS); \
+	make
+
+litmus-test:: litmus-cata-aarch64-test-kvm
+litmus-cata-aarch64-test-kvm: litmus-dep
+	mkdir $(KUT_DIR)/kvm-unit-tests/t
+	$(LITMUS) -set-libdir $(PWD)/litmus/libdir -mach kvm-armv8.1 -a 4 catalogue/aarch64/tests/@all -o $(KUT_DIR)/kvm-unit-tests/t
+	cd $(KUT_DIR)/kvm-unit-tests/t; make -j $(J)
+	$(RM) -r $(KUT_DIR)/kvm-unit-tests/t
+	@ echo "litmus7 in -mode kvm catalogue aarch64 tests: OK"
+
+litmus-test:: litmus-cata-aarch64-VMSA-test-kvm
+litmus-cata-aarch64-VMSA-test-kvm: litmus-dep
+	mkdir $(KUT_DIR)/kvm-unit-tests/t
+	$(LITMUS) -set-libdir $(PWD)/litmus/libdir -mach kvm-armv8.1 -a 4 catalogue/aarch64-VMSA/tests/@all -o $(KUT_DIR)/kvm-unit-tests/t
+	cd $(KUT_DIR)/kvm-unit-tests/t; make -j $(J)
+	$(RM) -r $(KUT_DIR)/kvm-unit-tests/t
+	@ echo "litmus7 in -mode kvm catalogue aarch64-VMSA tests: OK"
+
+litmus-test:: litmus-cata-aarch64-ifetch-test-kvm
+litmus-cata-aarch64-ifetch-test-kvm: litmus-dep
+	mkdir $(KUT_DIR)/kvm-unit-tests/t
+	$(LITMUS) -set-libdir $(PWD)/litmus/libdir -mach kvm-armv8.1 -variant self -a 4 catalogue/aarch64-ifetch/tests/@all -o $(KUT_DIR)/kvm-unit-tests/t
+	cd $(KUT_DIR)/kvm-unit-tests/t; make -j $(J)
+	$(RM) -r $(KUT_DIR)/kvm-unit-tests/t
+	@ echo "litmus7 in -mode kvm catalogue aarch64-ifetch tests: OK"
+
+litmus-test:: litmus-cata-aarch64-ifetch-test
+litmus-cata-aarch64-ifetch-test: TEMP_DIR:=$(shell mktemp -d)
+litmus-cata-aarch64-ifetch-test:
+	$(LITMUS) -mode std -a 4 catalogue/aarch64/tests/@all -o $(TEMP_DIR)
+	make -C $(TEMP_DIR) -j $(J)
+	$(RM) -r $(TEMP_DIR)
+	@ echo "litmus7 in -mode std catalogue aarch64-ifetch tests: OK"
