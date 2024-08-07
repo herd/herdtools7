@@ -229,10 +229,10 @@ include Arch.MakeArch(struct
     | PCall (f,es) ->
         mapT expl_expr es >! fun es ->
         PCall (f,es)
-    | AtomicOp(e1,op,e2) ->
+    | AtomicOp(e1,op,e2,a) ->
         expl_expr e1 >> fun e1 ->
         expl_expr e2 >! fun e2 ->
-        AtomicOp (e1,op,e2)
+        AtomicOp (e1,op,e2,a)
     | InstrSRCU (e,a,oe) ->
         expl_expr e >> fun e ->
         optT expl_expr oe >! fun oe ->

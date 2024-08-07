@@ -291,14 +291,19 @@ instruction:
   { Unlock ($3,MutexLinux) }
 | UNDERFENCE LBRACE annot_list RBRACE SEMI
   { Fence(AN $3) }
-| UNDERATOMICOP LPAR expr COMMA atomic_op COMMA expr RPAR SEMI
-  { AtomicOp($3,$5,$7) }
+| UNDERATOMICOP opt_annot LPAR expr COMMA atomic_op COMMA expr RPAR SEMI
+  { AtomicOp($4,$6,$8,$2) }
 | FENCE LPAR MEMORDER RPAR SEMI
   { Fence(MO $3) }
 | CODEVAR SEMI
   { Symb $1 }
 | NAME LPAR args RPAR SEMI
   { PCall ($1,$3) }
+
+opt_annot:
+// In legacy mode the annotation is simply droped, thus we can use the empty string
+| { [""] }
+| LBRACE annot_list RBRACE { $2 }
 
 ins_seq:
 | block_ins { [$1] }

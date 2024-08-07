@@ -85,7 +85,7 @@ type instruction =
   | StoreMem of expression * expression * MemOrderOrAnnot.t
   | Lock of expression * mutex_kind
   | Unlock of expression * mutex_kind
-  | AtomicOp of expression * op * expression
+  | AtomicOp of expression * op * expression * MemOrderOrAnnot.annot
   | InstrSRCU of expression * MemOrderOrAnnot.annot * expression option
   | Symb of string
   | PCall of string * expression list
@@ -215,7 +215,7 @@ let rec do_dump_instruction indent =
      pindent "spin_lock(%s);" (dump_expr l)
   | Unlock (l,MutexLinux) ->
       pindent "spin_unlock(%s);" (dump_expr l)
-  | AtomicOp(l,op,e) ->
+  | AtomicOp(l,op,e,_) ->
       pindent "atomic_%s(%s,%s);" (dump_op op)
         (dump_expr l) (dump_expr e)
   | InstrSRCU(loc,a,oe) ->
@@ -297,7 +297,7 @@ include Pseudo.Make
             StoreMem(parsed_expr_tr l,parsed_expr_tr e,mo)
         | Lock (e,k) -> Lock (parsed_expr_tr e,k)
         | Unlock (e,k) -> Unlock  (parsed_expr_tr e,k)
-        | AtomicOp(l,op,e) -> AtomicOp(parsed_expr_tr l,op,parsed_expr_tr e)
+        | AtomicOp(l,op,e,a) -> AtomicOp(parsed_expr_tr l,op,parsed_expr_tr e,a)
         | InstrSRCU(e,a,oe) -> InstrSRCU(parsed_expr_tr e,a,Misc.app_opt parsed_expr_tr oe)
         | Symb _ -> Warn.fatal "No term variable allowed"
         | PCall (f,es) -> PCall (f,List.map parsed_expr_tr es)
@@ -334,7 +334,7 @@ include Pseudo.Make
           | While (e,i,_) -> get_exp (get_rec k i) e
           | CastExpr e|StoreReg (_,_,e) -> get_exp k e
           | StoreMem (loc,e,_)
-          | AtomicOp(loc,_,e) -> get_exp (get_exp k loc) e
+          | AtomicOp(loc,_,e,_) -> get_exp (get_exp k loc) e
           | Lock (e,_)|Unlock (e,_) -> get_exp (k+1) e
           | InstrSRCU(e,_,oe) -> get_exp (match oe with None -> k+1 | Some e -> get_exp (k+1) e) e
           | PCall (_,es) ->  List.fold_left get_exp k es
@@ -441,7 +441,7 @@ let rec subst env i = match i with
     StoreMem (subst_expr env loc,subst_expr env e,mo)
 | Lock (loc,k) -> Lock (subst_expr env loc,k)
 | Unlock (loc,k) -> Unlock (subst_expr env loc,k)
-| AtomicOp (loc,op,e) -> AtomicOp(subst_expr env loc,op,subst_expr env e)
+| AtomicOp (loc,op,e,a) -> AtomicOp(subst_expr env loc,op,subst_expr env e,a)
 | InstrSRCU (e,a,oe) -> InstrSRCU(subst_expr env e,a,Misc.app_opt (subst_expr env) oe)
 | PCall (f,es) ->
     let xs,body = find_macro f env.proc in

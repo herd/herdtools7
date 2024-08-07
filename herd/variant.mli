@@ -33,7 +33,8 @@ type t =
   | SwitchDepScResult    (* Switch dependency from address read to sc result write, riscv,aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | NotWeakPredicated (* NOT "Weak" predicated instructions, not performing non-selected events, aarch64 *)
-(* Mixed size *)
+  | LkmmLatest  (* Avoid wrapping rmw[Mb] instructions with explicit Mb fences *)
+ (* Mixed size *)
   | Mixed
   | Unaligned
  (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)

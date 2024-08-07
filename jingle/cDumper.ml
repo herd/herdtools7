@@ -102,7 +102,7 @@ let list_loc prog =
     | PCall (_,es) ->
         List.fold_left expr s es
     | Fence _|Symb _ -> s
-    | AtomicOp(e1,_,e2) -> expr (expr s e1) e2
+    | AtomicOp(e1,_,e2,_) -> expr (expr s e1) e2
     | InstrSRCU(e,_,None) -> expr s e
     | InstrSRCU(e,_,Some f) -> expr (expr s f) e
   in
