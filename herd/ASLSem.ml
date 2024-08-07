@@ -751,6 +751,71 @@ module Make (C : Config) = struct
         p1 "CheckProp" ("prop", boolean) checkprop;
       ]
 
+    let build_shared_pseudocode primitives =
+      let open Asllib in
+      let open AST in
+      let open ASTUtils in
+      let build ?ast_type version fname =
+        Filename.concat "asl-pseudocode" fname
+        |> C.libfind
+        |> ASLBase.build_ast_from_file ?ast_type version
+      in
+      let patches =
+        let patches = build `ASLv1 "patches.asl" in
+        if is_experimental then
+          (* Replace default "PSTATE" definition by experimental ones. *)
+          let pstate = build `ASLv1 "pstate-exp.asl" in
+          List.fold_right
+            (fun d k ->
+              match identifier_of_decl d with
+              | "PSTATE" -> pstate @ k
+              | _ -> d :: k)
+            patches []
+        else patches
+      and custom_implems = build `ASLv1 "implementations.asl"
+      and shared = build `ASLv0 "shared_pseudocode.asl" in
+      let is_primitive =
+        let set =
+          List.fold_left
+            (fun [@warning "-42"] acc ({ name; body = _; _ }, _) ->
+              ISet.add name acc)
+            ISet.empty primitives
+        in
+        fun name -> ISet.mem name set
+      in
+      let shared =
+        (*
+         * Remove from shared pseudocode the functions declared in stdlib because:
+         * 1. it avoids name clashes at type-checking time;
+         * 2. when debugging, we know what function is called;
+         * 3. stdlib functions usually out-perform their shared-pseudocode
+         *    counterparts when executed in herd.
+         *)
+        let filter d =
+          let open AST in
+          match[@warning "-42"] d.desc with
+          | D_Func { name; body = _; _ } ->
+              let should_remove =
+                Builder.is_stdlib_name name || is_primitive name
+              in
+              let () =
+                if false && should_remove then
+                  Printf.eprintf "Subprogram %s removed from shared\n%!" name
+              in
+              not should_remove
+          | _ -> true
+        in
+        List.filter filter shared
+      in
+      let ( @! ) = List.rev_append in
+      let ast = patch ~patches:(custom_implems @! patches) ~src:shared in
+      ast |> Asllib.Builder.with_stdlib
+      |> Asllib.Builder.with_primitives primitives
+      |> TypeCheck.type_check_ast
+
+    let typed_shared_pseudocode: (AST.t * Asllib.StaticEnv.env) option ref =
+      ref None
+
     (**************************************************************************)
     (* Execution                                                              *)
     (**************************************************************************)
@@ -800,71 +865,24 @@ module Make (C : Config) = struct
       let module ASLInterpreter =
         Asllib.Interpreter.Make (ASLBackend) (ASLInterpreterConfig)
       in
-      let ast =
-        if not (C.variant Variant.ASL_AArch64) then ii.A.inst
+      let ast, tenv =
+        if not (C.variant Variant.ASL_AArch64) then
+          ii.A.inst |> Asllib.Builder.with_stdlib
+          |> Asllib.Builder.with_primitives ASLBackend.primitives
+          |> TypeCheck.type_check_ast
         else
-          let build ?ast_type version fname =
-            Filename.concat "asl-pseudocode" fname
-            |> C.libfind
-            |> ASLBase.build_ast_from_file ?ast_type version
+          let shared_ast, shared_tenv =
+            match !typed_shared_pseudocode with
+            | Some (ast, tenv) -> (ast, tenv)
+            | None ->
+                let ast, tenv = build_shared_pseudocode ASLBackend.primitives in
+                typed_shared_pseudocode := Some (ast, tenv);
+                (ast, tenv)
           in
-          let patches =
-            let patches = build `ASLv1 "patches.asl" in
-            if is_experimental then
-              (* Replace default "PSTATE" definition by experimental ones. *)
-              let pstate =  build `ASLv1 "pstate-exp.asl" in
-              List.fold_right
-                (fun d k ->
-                   match ASTUtils.identifier_of_decl d with
-                   | "PSTATE" -> pstate @ k
-                   | _ -> d::k)
-                patches []
-            else patches
-          and custom_implems = build `ASLv1 "implementations.asl"
-          and shared = build `ASLv0 "shared_pseudocode.asl" in
-          let is_primitive =
-            let open AST in
-            let open ASTUtils in
-            let set =
-              List.fold_left
-                (fun [@warning "-42"] acc ({ name; body = _; _ }, _) ->
-                  ISet.add name acc)
-                ISet.empty ASLBackend.primitives
-            in
-            fun name -> ISet.mem name set
+          let main, tenv =
+            TypeCheck.type_check_ast ~env:shared_tenv ii.A.inst
           in
-          let shared =
-            (*
-             * Remove from shared pseudocode the functions declared in stdlib because:
-             * 1. it avoids name clashes at type-checking time;
-             * 2. when debugging, we know what function is called;
-             * 3. stdlib functions usually out-perform their shared-pseudocode
-             *    counterparts when executed in herd.
-             *)
-            let filter d =
-              let open AST in
-              match[@warning "-42"] d.desc with
-              | D_Func { name; body = _; _ } ->
-                  let should_remove =
-                    Asllib.Builder.is_stdlib_name name || is_primitive name
-                  in
-                  let () =
-                    if false && should_remove then
-                      Printf.eprintf "Subprogram %s removed from shared\n%!"
-                        name
-                  in
-                  not should_remove
-              | _ -> true
-            in
-            List.filter filter shared
-          in
-          let ( @! ) = List.rev_append in
-          let shared =
-            Asllib.ASTUtils.patch
-              ~patches:(custom_implems @! patches)
-              ~src:shared
-          in
-          ii.A.inst @! shared
+          (List.rev_append main shared_ast, tenv)
       in
       let () =
         if false then Format.eprintf "Completed AST: %a.@." Asllib.PP.pp_t ast
@@ -878,11 +896,6 @@ module Make (C : Config) = struct
                 (name, v) :: env
             | _ -> env)
           t.Test_herd.init_state []
-      in
-      let ast, tenv =
-        ast |> Asllib.Builder.with_stdlib
-        |> Asllib.Builder.with_primitives ASLBackend.primitives
-        |> TypeCheck.type_check_ast
       in
       let exec () = ASLInterpreter.run_typed_env env tenv ast in
       let* i =
