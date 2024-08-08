@@ -40,9 +40,9 @@ module type S = sig
   module B : Backend.S
 
   val run_typed_env :
-    (AST.identifier * B.value) list -> StaticEnv.env -> AST.t -> B.value B.m
+    (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
 
-  val run_typed : StaticEnv.env -> AST.t -> B.value B.m
+  val run_typed : StaticEnv.global -> AST.t -> B.value B.m
 end
 
 module type Config = sig
@@ -232,19 +232,17 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
-  let build_genv env0 eval_expr base_value (static_env : StaticEnv.env)
+  let build_genv env0 eval_expr base_value (static_env : StaticEnv.global)
       (ast : AST.t) =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then
         Format.eprintf "@[<v 2>Executing in env:@ %a@.]" StaticEnv.pp_global
-          static_env.global
+          static_env
     in
     let env =
       let open IEnv in
-      let global =
-        { static = static_env.StaticEnv.global; storage = Storage.empty; funcs }
-      in
+      let global = { static = static_env; storage = Storage.empty; funcs } in
       { global; local = empty_scoped (Scope_Global true) }
     in
     let env =
@@ -1388,7 +1386,8 @@ module Make (B : Backend.S) (C : Config) = struct
         List.init i_length (Fun.const v) |> B.create_vector
 
   (* Begin TopLevel *)
-  let run_typed_env env (static_env : StaticEnv.env) (ast : AST.t) : B.value m =
+  let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
+      B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in
     let*| res = eval_subprogram env "main" dummy_annotated [] [] in
     (match res with

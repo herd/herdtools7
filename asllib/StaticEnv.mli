@@ -64,18 +64,30 @@ val empty_global : global
 val empty_local : local
 val empty_local_return_type : ty option -> local
 val empty : env
+val with_empty_local : global -> env
+
 val lookup_constants : env -> identifier -> literal
+(** [lookup x env] is the value of x as defined in environment.
+
+      @raise Not_found if it is not defined inside. *)
+
 val lookup_constants_opt : env -> identifier -> literal option
+
 val type_of : env -> identifier -> ty
+(** [type_of env "x"] is the type of ["x"] in the environment [env]. *)
+
 val type_of_opt : env -> identifier -> ty option
 val lookup_immutable_expr : env -> identifier -> expr
 val lookup_immutable_expr_opt : env -> identifier -> expr option
 val mem_constants : env -> identifier -> bool
 val add_subprogram : identifier -> AST.func -> env -> env
 val set_renamings : identifier -> ISet.t -> env -> env
-val add_global_storage : identifier -> ty -> global_decl_keyword -> env -> env
+
+val add_global_storage :
+  identifier -> ty -> global_decl_keyword -> global -> global
+
 val add_type : identifier -> ty -> env -> env
-val add_global_constant : identifier -> literal -> env -> env
+val add_global_constant : identifier -> literal -> global -> global
 val add_local_constant : identifier -> literal -> env -> env
 
 val add_local_immutable_expr : identifier -> expr -> env -> env

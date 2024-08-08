@@ -940,7 +940,11 @@ module Typed (C : Config.S) = struct
       and+ keyword = Untyped.gdk
       and+ initial_value = expr env ty n2 |> option in
       ( D_GlobalStorage { name; keyword; ty = Some ty; initial_value } |> annot,
-        StaticEnv.add_global_storage name ty keyword env )
+        StaticEnv.
+          {
+            global = add_global_storage name ty keyword env.global;
+            local = env.local;
+          } )
     and func env n : (decl * env) gen =
       let* n2 = int_bound ((n / 2) + 1) in
       let* n3 = int_bound ((n / 4) + 1) in

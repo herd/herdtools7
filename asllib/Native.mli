@@ -35,7 +35,7 @@ module NativeInterpreter (C : Interpreter.Config) :
 
 val interprete :
   ?instrumentation:bool ->
-  StaticEnv.env ->
+  StaticEnv.global ->
   AST.t ->
   int * Instrumentation.semantics_rule list
 

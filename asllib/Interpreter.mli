@@ -26,13 +26,13 @@ module type S = sig
   module B : Backend.S
 
   val run_typed_env :
-    (AST.identifier * B.value) list -> StaticEnv.env -> AST.t -> B.value B.m
+    (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
   (** [run env0 tenv ast] runs the function main of the ast,
       in the typing environment [tenv]. However, the (global)
       identifiers listed in the A-list [env0] will take their
       initial values from [env0]  and _not_ from [ast]. *)
 
-  val run_typed : StaticEnv.env -> AST.t -> B.value B.m
+  val run_typed : StaticEnv.global -> AST.t -> B.value B.m
   (** [run_typed ast env] runs the function main of the typed-checked [ast], in
       typed-checking environment [env]. *)
 end

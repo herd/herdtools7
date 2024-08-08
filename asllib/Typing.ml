@@ -164,7 +164,8 @@ module type ANNOTATE_CONFIG = sig
 end
 
 module type S = sig
-  val type_check_ast : ?env:StaticEnv.env -> AST.t -> AST.t * StaticEnv.env
+  val type_check_ast :
+    ?env:StaticEnv.global -> AST.t -> AST.t * StaticEnv.global
 end
 
 module Property (C : ANNOTATE_CONFIG) = struct
@@ -886,18 +887,22 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | T_Named _, _ | _, T_Named _ -> assert false
       | _ -> fail
 
-  let var_in_env ?(local = true) env x =
-    (local && IMap.mem x env.local.storage_types)
-    || IMap.mem x env.global.storage_types
-    || IMap.mem x env.global.subprograms
-    || IMap.mem x env.global.declared_types
+  let var_in_genv (genv : StaticEnv.global) x =
+    IMap.mem x genv.storage_types
+    || IMap.mem x genv.subprograms
+    || IMap.mem x genv.declared_types
 
-  let check_var_not_in_env ?(local = true) loc env x () =
-    if var_in_env ~local env x then
-      fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+  let var_in_env env x =
+    IMap.mem x env.local.storage_types || var_in_genv env.global x
+
+  let check_var_not_in_env loc env x () =
+    if var_in_env env x then fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
 
-  let check_var_not_in_genv loc = check_var_not_in_env ~local:false loc
+  let check_var_not_in_genv loc genv x () =
+    if var_in_genv genv x then
+      fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+    else ()
 
   let get_variable_enum' env e =
     match e.desc with
@@ -1050,7 +1055,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
         in
         let+ () =
-         fun () -> List.iter (fun s -> check_var_not_in_genv ty env s ()) li
+         fun () ->
+          List.iter (fun s -> check_var_not_in_genv ty env.global s ()) li
         in
         ty |: TypingRule.TEnumDecl
         (* Begin TNonDecl *)
@@ -2510,13 +2516,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     fold_types_func_sig (Fun.flip ASTUtils.use_ty) f ISet.empty
 
   (* Begin AnnotateFuncSig *)
-  let annotate_func_sig ~loc env1 (func_sig : AST.func) : env * AST.func =
+  let annotate_func_sig ~loc (genv : StaticEnv.global) (func_sig : AST.func) :
+      env * AST.func =
     (* Build typing local environment. *)
-    let env1 = { env1 with local = empty_local } in
+    let env1 = with_empty_local genv in
     let () =
       if false then
-        Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name
-          StaticEnv.pp_env env1
+        Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name pp_env env1
     in
     let potential_params = get_undeclared_defining env1 func_sig in
     (* Add explicit parameters *)
@@ -2740,7 +2746,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    let+ () = check_var_not_in_genv loc env1 name' in
+    let+ () = check_var_not_in_genv loc env1.global name' in
     let+ () = check_setter_has_getter ~loc env1 func_sig in
     let new_func_sig = { func_sig with name = name' } in
     (add_subprogram name' new_func_sig env1, new_func_sig)
@@ -2748,26 +2754,28 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin AnnotateAndDeclareFunc *)
-  let annotate_and_declare_func ~loc func_sig env =
-    let env1, func_sig1 = annotate_func_sig ~loc env func_sig in
+  let annotate_and_declare_func ~loc func_sig genv =
+    let env1, func_sig1 = annotate_func_sig ~loc genv func_sig in
     declare_one_func loc func_sig1 env1 |: TypingRule.AnnotateAndDeclareFunc
   (* End *)
 
-  let add_global_storage loc name keyword env ty =
-    if is_global_ignored name then env
+  let add_global_storage loc name keyword genv ty =
+    if is_global_ignored name then genv
     else
-      let+ () = check_var_not_in_genv loc env name in
-      add_global_storage name ty keyword env
+      let+ () = check_var_not_in_genv loc genv name in
+      add_global_storage name ty keyword genv
 
-  let declare_const loc name t v env =
-    add_global_storage loc name GDK_Constant env t |> add_global_constant name v
+  let declare_const loc name t v genv =
+    add_global_storage loc name GDK_Constant genv t
+    |> add_global_constant name v
 
   (* Begin DeclareType *)
-  let declare_type loc name ty s env =
+  let declare_type loc name ty s genv =
     let () =
       if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
     in
-    let+ () = check_var_not_in_genv loc env name in
+    let+ () = check_var_not_in_genv loc genv name in
+    let env = with_empty_local genv in
     let env1, t1 =
       match s with
       | None -> (env, ty)
@@ -2781,7 +2789,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let new_ty =
             if extra_fields = [] then ty
             else
-              match IMap.find_opt super env.global.declared_types with
+              match IMap.find_opt super genv.declared_types with
               | Some { desc = T_Record fields; _ } ->
                   T_Record (fields @ extra_fields) |> add_pos_from_st ty
               | Some { desc = T_Exception fields; _ } ->
@@ -2800,32 +2808,32 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let declare_one (env2, i) x =
             (declare_const loc x t (L_Int (Z.of_int i)) env2, succ i)
           in
-          let env3, _ = List.fold_left declare_one (env2, 0) ids in
-          env3
+          let genv3, _ = List.fold_left declare_one (env2.global, 0) ids in
+          { env2 with global = genv3 }
       | _ -> env2
     in
     let () = if false then Format.eprintf "Declared %s.@." name in
-    new_tenv
+    new_tenv.global
   (* End *)
 
   let try_add_global_constant name env e =
     try
       let v = reduce_constants env e in
-      add_global_constant name v env
+      { env with global = add_global_constant name v env.global }
     with Error.(ASLException { desc = UnsupportedExpr _; _ }) -> env
 
   (* Begin DeclareGlobalStorage *)
-  let declare_global_storage loc gsd env =
+  let declare_global_storage loc gsd genv =
     let () = if false then Format.eprintf "Declaring %s@." gsd.name in
-    best_effort (gsd, env) @@ fun _ ->
+    best_effort (gsd, genv) @@ fun _ ->
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
-    let+ () = check_var_not_in_genv loc env name in
+    let+ () = check_var_not_in_genv loc genv name in
+    let env = with_empty_local genv in
     let ty_opt' =
       match ty_opt with
       | Some t -> Some (annotate_type ~loc env t)
       | None -> ty_opt
-    in
-    let initial_value_type, initial_value' =
+    and initial_value_type, initial_value' =
       match initial_value with
       | Some e ->
           let t, e' = annotate_expr env e in
@@ -2841,7 +2849,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Some t1, None -> t1
       | None, None -> Error.fatal_from loc UnrespectedParserInvariant
     in
-    let env1 = add_global_storage loc name keyword env declared_t in
+    let genv1 = add_global_storage loc name keyword genv declared_t in
+    let env1 = with_empty_local genv1 in
     let env2 =
       match (keyword, initial_value') with
       | GDK_Constant, Some e -> try_add_global_constant name env1 e
@@ -2852,7 +2861,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
     in
-    ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2)
+    let () = assert (env2.local == empty_local) in
+    ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2.global)
   (* End *)
 
   let rename_primitive loc env (f : AST.func) =
@@ -2871,38 +2881,41 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (*                                                                            *)
   (******************************************************************************)
 
-  let type_check_decl d (acc, env) =
+  let type_check_decl d (acc, genv) =
     let here = add_pos_from_st d and loc = to_pos d in
     let () =
       if false then
         Format.eprintf "@[<v>Typing with %s in env:@ %a@]@." strictness_string
-          StaticEnv.pp_env env
+          StaticEnv.pp_global genv
       else if false then Format.eprintf "@[Typing %a.@]@." PP.pp_t [ d ]
     in
-    match d.desc with
-    (* Begin TypecheckFunc *)
-    | D_Func ({ body = SB_ASL _; _ } as f) ->
-        let new_env, f1 = annotate_and_declare_func ~loc f env in
-        let new_d = D_Func (try_annotate_subprogram new_env f1) |> here in
-        (new_d :: acc, new_env) |: TypingRule.TypecheckFunc
-    (* End *)
-    | D_Func ({ body = SB_Primitive; _ } as f) ->
-        let new_env, f1 = annotate_and_declare_func ~loc f env in
-        let new_d = D_Func f1 |> here in
-        (new_d :: acc, new_env)
-    (* Begin TypecheckGlobalStorage *)
-    | D_GlobalStorage gsd ->
-        let gsd', new_env = declare_global_storage loc gsd env in
-        let new_d = D_GlobalStorage gsd' |> here in
-        (new_d :: acc, new_env) |: TypingRule.TypecheckGlobalStorage
-    (* End *)
-    (* Begin TypecheckTypeDecl *)
-    | D_TypeDecl (x, ty, s) ->
-        let new_env = declare_type loc x ty s env in
-        (d :: acc, new_env) |: TypingRule.TypecheckTypeDecl
-  (* End *)
+    let new_d, new_genv =
+      match d.desc with
+      (* Begin TypecheckFunc *)
+      | D_Func ({ body = SB_ASL _; _ } as f) ->
+          let new_env, f1 = annotate_and_declare_func ~loc f genv in
+          let new_d = D_Func (try_annotate_subprogram new_env f1) |> here in
+          (new_d, new_env.global) |: TypingRule.TypecheckFunc
+      (* End *)
+      | D_Func ({ body = SB_Primitive; _ } as f) ->
+          let new_env, f1 = annotate_and_declare_func ~loc f genv in
+          let new_d = D_Func f1 |> here in
+          (new_d, new_env.global)
+      (* Begin TypecheckGlobalStorage *)
+      | D_GlobalStorage gsd ->
+          let gsd', new_genv = declare_global_storage loc gsd genv in
+          let new_d = D_GlobalStorage gsd' |> here in
+          (new_d, new_genv) |: TypingRule.TypecheckGlobalStorage
+      (* End *)
+      (* Begin TypecheckTypeDecl *)
+      | D_TypeDecl (x, ty, s) ->
+          let new_genv = declare_type loc x ty s genv in
+          (d, new_genv) |: TypingRule.TypecheckTypeDecl
+      (* End *)
+    in
+    (new_d :: acc, new_genv)
 
-  let type_check_mutually_rec ds (acc, env) =
+  let type_check_mutually_rec ds (acc, genv) =
     let () =
       if false then
         let open Format in
@@ -2916,7 +2929,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match d.desc with
           | D_Func f ->
               let loc = to_pos d in
-              let env', f = annotate_func_sig ~loc env f in
+              let env', f = annotate_func_sig ~loc genv f in
               (env'.local, f, loc)
           | _ ->
               fatal_from d
@@ -2942,7 +2955,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let env = { global = genv; local = lenv } in
           let env', f = declare_one_func loc f env in
           (env'.global, (env'.local, f, loc)))
-        env.global env_and_fs
+        genv env_and_fs
     in
     let ds =
       List.map
@@ -2958,7 +2971,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | SB_Primitive -> D_Func (rename_primitive loc env' f) |> here)
         fs
     in
-    (List.rev_append ds acc, { env with global = genv })
+    (List.rev_append ds acc, genv)
 
   (* Begin Specification *)
   let type_check_ast =
@@ -2974,7 +2987,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       else fold
     in
     let fold_topo ast acc = TopoSort.ASTFold.fold fold ast acc in
-    fun ?(env = StaticEnv.empty) ast ->
+    fun ?(env = StaticEnv.empty_global) ast ->
       let ast_rev, env = fold_topo ast ([], env) in
       (List.rev ast_rev, env)
   (* End *)

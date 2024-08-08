@@ -813,7 +813,7 @@ module Make (C : Config) = struct
       |> Asllib.Builder.with_primitives primitives
       |> TypeCheck.type_check_ast
 
-    let typed_shared_pseudocode: (AST.t * Asllib.StaticEnv.env) option ref =
+    let typed_shared_pseudocode: (AST.t * Asllib.StaticEnv.global) option ref =
       ref None
 
     (**************************************************************************)
