@@ -305,6 +305,34 @@ let mult_polys : polynomial -> polynomial -> polynomial =
 let mult_poly_const : Q.t -> polynomial -> polynomial =
  fun f2 (Sum monos) -> Sum (MMap.map (fun f1 -> Q.mul f1 f2) monos)
 
+let divide_monos : monomial -> monomial -> monomial =
+ fun (Prod map1) (Prod map2) ->
+  Prod
+    (AMap.merge
+       (fun _x o1 o2 ->
+         match (o1, o2) with
+         | _, None -> o1
+         | None, Some 0 -> None
+         | None, Some _ -> raise NotYetImplemented
+         | Some p1, Some p2 when p1 > p2 -> Some (p2 - p1)
+         | Some p1, Some p2 when p1 = p2 -> None
+         | Some _, Some _ -> raise NotYetImplemented)
+       map1 map2)
+
+let divide_poly_mono : polynomial -> monomial -> polynomial =
+ fun (Sum monos) m ->
+  Sum
+    (MMap.fold
+       (fun m' f -> add_mono_to_poly (divide_monos m' m) f)
+       monos MMap.empty)
+
+let divide_polys : polynomial -> polynomial -> polynomial =
+ fun poly1 (Sum monos2) ->
+  if MMap.cardinal monos2 = 1 then
+    let m, c = MMap.choose monos2 in
+    divide_poly_mono poly1 m |> mult_poly_const (Q.inv c)
+  else raise NotYetImplemented
+
 let ctnts_and : ctnts -> ctnts -> ctnts =
  fun c1 c2 ->
   match (c1, c2) with
@@ -370,12 +398,19 @@ let rec to_ir env (e : expr) : ir_expr =
   | E_Binop (MINUS, e1, e2) ->
       let e2 = E_Unop (NEG, e2) |> ASTUtils.add_pos_from_st e2 in
       E_Binop (PLUS, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
+  | E_Binop (MUL, { desc = E_Binop (DIV, e1, e2); _ }, e3) ->
+      to_ir env (binop DIV (binop MUL e1 e3) e2)
+  | E_Binop (MUL, e1, { desc = E_Binop (DIV, e2, e3); _ }) ->
+      to_ir env (binop DIV (binop MUL e1 e2) e3)
   | E_Binop (MUL, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       cross_num ir1 ir2 mult_polys
   | E_Binop (DIV, e1, { desc = E_Literal (L_Int i2); _ }) ->
       let ir1 = to_ir env e1 and f2 = Q.(Z.one /// i2) in
       map_num (mult_poly_const f2) ir1
+  | E_Binop (DIV, e1, e2) ->
+      let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
+      cross_num ir1 ir2 divide_polys
   | E_Binop (SHL, e1, { desc = E_Literal (L_Int i2); _ }) when Z.leq Z.zero i2
     ->
       let ir1 = to_ir env e1
@@ -473,7 +508,11 @@ let monomial_to_expr (Prod map) =
     | 2 -> e ** e
     | p -> binop POW e (expr_of_int p)
   in
-  AMap.fold (fun s p e -> (e_var s ^^ p) ** e) map
+  let ( // ) e z = if Z.equal z Z.one then e else binop DIV e (expr_of_z z) in
+  fun c ->
+    let start = Q.num c |> expr_of_z in
+    let num = AMap.fold (fun s p e -> e ** (e_var s ^^ p)) map start in
+    num // Q.den c
 
 let sign_of_q c =
   match Q.sign c with
@@ -486,10 +525,10 @@ let polynomial_to_expr (Sum map) =
   let add e1 (s, e2) = if s > 0 then binop PLUS e1 e2 else binop MINUS e1 e2 in
   List.fold_left
     (fun e (m, c) ->
-      if e == zero then monomial_to_expr m (expr_of_q c)
+      if e == zero then monomial_to_expr m c
       else if Q.sign c = 0 then e
       else
-        let e_m = monomial_to_expr m (expr_of_q (Q.abs c)) in
+        let e_m = monomial_to_expr m (Q.abs c) in
         add e (Q.sign c, e_m))
     zero
     (MMap.bindings map |> List.rev)

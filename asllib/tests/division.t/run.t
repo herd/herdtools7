@@ -119,7 +119,7 @@ Other example from typing.t:
   $ aslref --no-exec TNegative9-1.asl
   File TNegative9-1.asl, line 3, characters 4 to 59:
   ASL Typing error: a subtype of bits(N) was expected,
-    provided bits((N * (3 DIV 4))).
+    provided bits(((3 * N) DIV 4)).
   [1]
   $ aslref --no-exec TPositive9.asl
 

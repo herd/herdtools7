@@ -11,6 +11,7 @@ H Examples
   $ aslref --no-exec HExample10.asl
   $ aslref --no-exec HExample11.asl
   $ aslref --no-exec HExample12.asl
+  $ aslref --no-exec HExample13.asl
 
 T Tests
   $ aslref --no-exec TPositive1.asl
@@ -149,7 +150,7 @@ Bit vector widths defined by constrained integers
   $ aslref --no-exec TNegative9-1.asl
   File TNegative9-1.asl, line 3, characters 4 to 59:
   ASL Typing error: a subtype of bits(N) was expected,
-    provided bits((N * (3 DIV 4))).
+    provided bits(((3 * N) DIV 4)).
   [1]
   $ aslref --no-exec TNegative9-2.asl
   File TNegative9-2.asl, line 3, characters 4 to 35:
@@ -187,7 +188,7 @@ Complex symbolic execution of bit vector widths expressions
   $ aslref --no-exec TPositive11.asl
   File TPositive11.asl, line 11, characters 4 to 64:
   ASL Typing error: a subtype of bits(numBits) was expected,
-    provided bits((numBytes * 8)).
+    provided bits((8 * numBytes)).
   [1]
   $ aslref --no-exec TPositive11-0.asl
   $ aslref --no-exec TPositive11-1.asl
@@ -269,7 +270,7 @@ C Tests
   $ aslref --no-exec CPositive6.asl
   $ aslref --no-exec CPositive7.asl
   File CPositive7.asl, line 4, characters 4 to 31:
-  ASL Typing error: a subtype of integer {0..(N * 2)} was expected,
+  ASL Typing error: a subtype of integer {0..(2 * N)} was expected,
     provided integer {0..N}.
   [1]
   $ aslref --no-exec CPositive9.asl
