@@ -79,6 +79,7 @@
 \newcommand\pairstomap[0]{\hyperlink{def-pairstomap}{\texttt{pairs\_to\_map}}}
 \newcommand\assocopt[0]{\hyperlink{def-assocopt}{\texttt{assoc\_opt}}}
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\texttt{annotate\_field\_init}}}
+\newcommand\annotatestaticinteger[0]{\hyperlink{def-annotatestaticinteger}{\texttt{annotate\_static\_integer}}}
 \newcommand\annotatestaticconstrainedinteger[0]{\hyperlink{def-annotatestaticconstrainedinteger}{\texttt{annotate\_static\_constrained\_integer}}}
 \newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\texttt{check\_structure}}}
 \newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\texttt{check\_structure\_integer}}}
@@ -229,6 +230,10 @@
 %% Type functions
 \newcommand\CheckUnop[0]{\hyperlink{def-checkunop}{\texttt{check\_unop}}}
 \newcommand\CheckBinop[0]{\hyperlink{def-checkbinop}{\texttt{check\_binop}}}
+\newcommand\constraintsisstrictpositive[0]{\hyperlink{def-constraintsisstrictpositive}{\texttt{constraints\_is\_strict\_positive}}}
+\newcommand\exprisstrictpositive[0]{\hyperlink{def-exprisstrictpositive}{\texttt{expr\_is\_strict\_positive}}}
+\newcommand\constraintsisnonnegative[0]{\hyperlink{def-constraintsisnonnegative}{\texttt{constraints\_is\_non\_negative}}}
+\newcommand\exprisnonnegative[0]{\hyperlink{def-exprisnonnegative}{\texttt{expr\_is\_non\_negative}}}
 \newcommand\constraintsbinop[0]{\hyperlink{def-constraintbinops}{\texttt{constraints\_binop}}}
 \newcommand\constraintbinop[0]{\hyperlink{def-constraintbinop}{\texttt{constraint\_binop}}}
 \newcommand\isrightincreasing[0]{\hyperlink{def-isrightincreasing}{\texttt{is\_right\_increasing}}}
@@ -237,6 +242,8 @@
 \newcommand\annotateconstraintbinop[0]{\hyperlink{def-annotateconstraintbinop}{\texttt{constraint\_binop}}}
 \newcommand\sliceswidth[0]{\texttt{slices\_width}}
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
+\newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\texttt{annotate\_constraint}}}
+\newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\texttt{get\_variable\_enum}}}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\texttt{annotate\_expr}}(#1)}
 \newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\texttt{annotate\_exprs}}}
 \newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\texttt{annotate\_lexpr}}(#1)}
@@ -2014,6 +2021,14 @@ We define the following relations over types and operators:
   \item Checking adequacy of a binary operator for a pair of types (\secref{TypingRule.CheckBinop})
 \end{itemize}
 
+Finally, we define the following helper functions:
+\begin{itemize}
+  \item TypingRule.ConstraintsIsStrictPositive (see \secref{TypingRule.ConstraintsIsStrictPositive})
+  \item TypingRule.ExprIsStrictPositive (see \secref{TypingRule.ExprIsStrictPositive})
+  \item TypingRule.ConstraintsIsNonNegative (see \secref{TypingRule.ConstraintsIsNonNegative})
+  \item TypingRule.ExprIsNonNegative (see \secref{TypingRule.ExprIsNonNegative})
+\end{itemize}
+
 We also define the helper rule TypingRule.FindNamedLCA (\secref{TypingRule.FindNamedLCA}).
 
 \section{TypingRule.Subtype\label{sec:TypingRule.Subtype}}
@@ -2445,7 +2460,7 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule{
-  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vbone \OrTypeError\\
+  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vbone \OrTypeError\\\\
   \domsubtypesat(\tenv, \vt, \vs) \typearrow \vbtwo\\
   \vb \eqdef \vbone \land \vbtwo
 }{
@@ -2572,7 +2587,7 @@ type \texttt{pairT}.
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
   \checktrans{\astlabel(\vt) = \TBits}{\ExpectedBitvectorType} \checktransarrow \True \OrTypeError\\\\
   \vt \eqname \TBits(\widtht, \Ignore)\\
-  \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\
+  \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\\\
   \bitwidthequal(\tenv, \widtht, \widths) \typearrow \vb
 }{
   \typesat(\tenv, \vt, \vs) \typearrow \vb
@@ -2923,9 +2938,9 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 \begin{mathpar}
 \inferrule[named\_subtype1]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
-  \namedlca(\tenv, \namesubs, \namesubt) \typearrow \None \OrTypeError\\
-  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\
-  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\
+  \namedlca(\tenv, \namesubs, \namesubt) \typearrow \None \OrTypeError\\\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
   \lca(\tenv, \vanont, \vanons) \typearrow \tty \OrTypeError
 }{
   \lca(\tenv, \TNamed(\namesubs), \TNamed(\namesubt)) \typearrow \tty
@@ -2951,8 +2966,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   (\astlabel(\vt) = \TNamed \lor \astlabel(\vs) = \TNamed)\\
   \astlabel(\vt) \neq \astlabel(\vs)\\
-  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\
-  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
   \typeequal(\tenv, \vanont, \vanons) \typearrow \True\\
   \tty \eqdef \choice{\astlabel(\vt) = \TNamed}{\vt}{\vs}
 }{
@@ -2965,8 +2980,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   (\astlabel(\vt) = \TNamed \lor \astlabel(\vs) = \TNamed)\\
   \astlabel(\vt) \neq \astlabel(\vs)\\
-  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\
-  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
   \typeequal(\tenv, \vanont, \vanons) \typearrow \False\\
   \lca(\tenv, \vanont, \vanons) \typearrow \tty \OrTypeError
 }{
@@ -3189,7 +3204,7 @@ the values it represents:
 
 \begin{mathpar}
 \inferrule[neg\_error]{
-  \typesat(\tenv, \vtone, \TInt(\unconstrained)) \typearrow \False \OrTypeError\\
+  \typesat(\tenv, \vtone, \TInt(\unconstrained)) \typearrow \False \OrTypeError\\\\
   \typesat(\tenv, \vtone, \TReal) \typearrow \False \OrTypeError\\
 }{
   \CheckUnop(\tenv, \NEG, \vt) \typearrow \TypeErrorVal{InappropriateTypeForNeg}
@@ -3206,7 +3221,7 @@ the values it represents:
 
 \begin{mathpar}
 \inferrule[neg\_t\_int\_unconstrained]{
-  \typesat(\tenv, \vtone, \unconstrainedinteger) \typearrow \vbone \OrTypeError\\
+  \typesat(\tenv, \vtone, \unconstrainedinteger) \typearrow \vbone \OrTypeError\\\\
   \tstruct(\tenv, \vtone) \typearrow \TInt(\unconstrained)\\
 }{
   \CheckUnop(\tenv, \NEG, \vt) \typearrow \TInt(\unconstrained)
@@ -3480,7 +3495,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[boolean]{
   \op \in  \{\BAND, \BOR, \IMPL, \EQOP\}\\
-  \checktypesat(\tenv, \vt1, \TBool) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vt1, \TBool) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vttwo, \TBool) \typearrow \True \OrTypeError
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TBool}
@@ -3489,7 +3504,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[bits\_bool]{
   \op \in  \{\AND, \OR, \EOR\}\\
-  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError\\
+  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError\\\\
   \getbitvectorwidth(\tenv, \vtone) \typearrow \vw
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TBits(\vw, \emptylist)
@@ -3520,7 +3535,7 @@ One of the following applies:
   \tstruct(\tenv, \vtone) \typearrow \TBits(\vwone, \Ignore) \\
   \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \False\\
   \tstruct(\tenv, \vttwo) \typearrow \vttwostruct \OrTypeError\\\\
-  \checktrans{\astlabel(\vttwostruct)=\TBits}{\ExpectedBitvectorType} \checktransarrow \True \OrTypeError\\
+  \checktrans{\astlabel(\vttwostruct)=\TBits}{\ExpectedBitvectorType} \checktransarrow \True \OrTypeError\\\\
   \vttwostruct \eqname \TBits(\vwtwo, \Ignore)\\
   \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb\\
   \checktrans{\vb}{DifferentBitwidths} \checktransarrow \True \OrTypeError
@@ -3533,8 +3548,8 @@ One of the following applies:
 \inferrule[eq\_neq\_error]
 {
   \op \in  \{\EQOP, \NEQ\}\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
   {
     \left(\begin{array}{ll}
   \astlabel(\vtoneanon) \neq \astlabel(\vttwoanon) & \lor \\
@@ -3547,9 +3562,9 @@ One of the following applies:
 \and
 \inferrule[eq\_neq\_bits]{
   \op \in  \{\EQOP, \NEQ\}\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
   \astlabel(\vtoneanon) = \TBits\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
   \checkbitsequalwidth(\tenv, \vtoneanon, \vttwoanon) \typearrow \True \OrTypeError
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TBool
@@ -3559,7 +3574,7 @@ One of the following applies:
   \op \in  \{\EQOP, \NEQ\}\\
   \makeanonymous(\tenv, \vtone) \typearrow \TBool\\
   \makeanonymous(\tenv, \vttwo) \typearrow \TBool\\
-  \checktypesat(\tenv, \vtoneanon, \TBool) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vtoneanon, \TBool) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vttwoanon, \TBool) \typearrow \True \OrTypeError
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TBool
@@ -3569,7 +3584,7 @@ One of the following applies:
   \op \in  \{\EQOP, \NEQ\}\\
   \makeanonymous(\tenv, \vtone) \typearrow \TReal\\
   \makeanonymous(\tenv, \vttwo) \typearrow \TReal\\
-  \checktypesat(\tenv, \vtoneanon, \TReal) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vtoneanon, \TReal) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vttwoanon, \TReal) \typearrow \True \OrTypeError
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TBool
@@ -3579,7 +3594,7 @@ One of the following applies:
   \op \in  \{\EQOP, \NEQ\}\\
   \makeanonymous(\tenv, \vtone) \typearrow \TString\\
   \makeanonymous(\tenv, \vttwo) \typearrow \TString\\
-  \checktypesat(\tenv, \vtoneanon, \TString) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vtoneanon, \TString) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vttwoanon, \TString) \typearrow \True \OrTypeError
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TBool
@@ -3598,10 +3613,10 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[relational]{
   \op \in  \{\LT, \LEQ, \GT, \GEQ\}\\
-  \typesat(\tenv, \vtone, \unconstrainedinteger) \typearrow \vbone \OrTypeError\\
-  \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \vbtwo \OrTypeError\\
-  \typesat(\tenv, \vtone, \TReal) \typearrow \vbthree \OrTypeError\\
-  \typesat(\tenv, \vttwo, \TReal) \typearrow \vbfour \OrTypeError\\
+  \typesat(\tenv, \vtone, \unconstrainedinteger) \typearrow \vbone \OrTypeError\\\\
+  \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \vbtwo \OrTypeError\\\\
+  \typesat(\tenv, \vtone, \TReal) \typearrow \vbthree \OrTypeError\\\\
+  \typesat(\tenv, \vttwo, \TReal) \typearrow \vbfour \OrTypeError\\\\
   \checktrans{\vbone \land \vbtwo \lor \vbthree \land \vbfour}{InappropriateTypeForRel} \checktransarrow \True \OrTypeError
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TBool
@@ -3610,8 +3625,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[arith\_error]{
-  \tstruct(\tenv, \vtone) \typearrow \vtonestruct \OrTypeError\\
-  \tstruct(\tenv, \vttwo) \typearrow \vttwostruct \OrTypeError\\
+  \tstruct(\tenv, \vtone) \typearrow \vtonestruct \OrTypeError\\\\
+  \tstruct(\tenv, \vttwo) \typearrow \vttwostruct \OrTypeError\\\\
   (\op, \astlabel(\vtonestruct), \astlabel(\vttwostruct)) \not\in
   {
     \left\{
@@ -3662,7 +3677,7 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \op \in  \{\MUL, \POW, \PLUS, \MINUS\}\\
   \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
   \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
-  \tododefine{annotate\_constraint\_binop}(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
+  \tododefine{annotate\_constraints\_binop}(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
 }
@@ -3671,9 +3686,9 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \op \in  \{\DIVRM, \DIV, \MOD\}\\
   \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
   \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
-  \tododefine{constraints\_is\_strict\_positive}(\vcstwo) \typearrow \vb\\
-  \checktrans{\vb}{DenominatorMustBePositive} \checktransarrow \True \OrTypeError\\
-  \tododefine{constraints\_binop}(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
+  \constraintsisstrictpositive(\vcstwo) \typearrow \vb\\
+  \checktrans{\vb}{DenominatorMustBePositive} \checktransarrow \True \OrTypeError\\\\
+  \tododefine{annotate\_constraints\_binop}(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
 }
@@ -3682,8 +3697,8 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \op \in  \{\SHL, \SHR\}\\
   \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
   \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
-  \tododefine{constraints\_is\_non\_negative}(\vcstwo) \typearrow \vb\\
-  \checktrans{\vb}{ShifterMustBeNonNegative} \checktransarrow \True \OrTypeError\\
+  \constraintsisnonnegative(\vcstwo) \typearrow \vb\\
+  \checktrans{\vb}{ShifterMustBeNonNegative} \checktransarrow \True \OrTypeError\\\\
   \tododefine{annotate\_constraints\_binop}(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
@@ -3711,7 +3726,7 @@ The following two rules are not mutually exclusive, but both yield the same resu
 
 \begin{mathpar}
 \inferrule[rdiv]{
-  \checktypesat(\tenv, \vtone, \TReal) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vtone, \TReal) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vttwo, \TReal) \typearrow \True \OrTypeError\\
 }{
   \CheckBinop(\tenv, \RDIV, \vtone, \vttwo) \typearrow \TReal
@@ -3725,6 +3740,196 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \identr{TTGQ}, \identi{YHML}, \identi{YHRP}, \identi{VMZF}, \identi{YXSY},
   \identi{LGHJ}, \identi{RXLG}.
 }
+
+\section{TypingRule.ConstraintsIsStrictPositive \label{sec:TypingRule.ConstraintsIsStrictPositive}}
+\hypertarget{def-constraintsisstrictpositive}{}
+The function
+\[
+  \constraintsisstrictpositive(\overname{\intconstraints}{\cs}) \aslto \overname{\Bool}{\vb}
+\]
+Conservatively tests whether the set of integer constraints $\cs$ always represent positive integers,
+yielding the result in $\vb$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\cs$ is the empty list;
+    \item define $\vb$ as $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\cs$ is the list with \head\ a constraint for the expression $\ve$ (that is, \\
+          $\ConstraintExact(\ve)$) and \tail\ $\csone$;
+    \item applying $\exprisstrictpositive$ to $\ve$ yields $\vbone$;
+    \item applying $\constraintsisstrictpositive$ to $\csone$ yields $\vbtwo$;
+    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\cs$ is the list with \head\ a range constraint for the bottom expression $\ve$ (that is, $\ConstraintRange(\ve, \Ignore)$)
+          and \tail\ $\csone$;
+    \item applying $\exprisstrictpositive$ to $\ve$ yields $\vbone$;
+    \item applying $\constraintsisstrictpositive$ to $\csone$ yields $\vbtwo$;
+    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \constraintsisstrictpositive(\overname{\emptylist}{\cs}) \typearrow \overname{\True}{\vb}
+}
+\and
+\inferrule[exact]{
+  \exprisstrictpositive(\ve) \typearrow \vbone\\
+  \constraintsisstrictpositive(\csone) \typearrow \vbtwo
+}{
+  \constraintsisstrictpositive(\overname{[\ConstraintExact(\ve)]\concat \csone}{\cs}) \typearrow \overname{\vbone\land\vbtwo}{\vb}
+}
+\and
+\inferrule[range]{
+  \exprisstrictpositive(\ve) \typearrow \vbone\\
+  \constraintsisstrictpositive(\csone) \typearrow \vbtwo
+}{
+  \constraintsisstrictpositive(\overname{[\ConstraintRange(\ve, \Ignore)]\concat \csone}{\cs}) \typearrow \overname{\vbone\land\vbtwo}{\vb}
+}
+\end{mathpar}
+
+\section{TypingRule.ExprIsStrictPositive \label{sec:TypingRule.ExprIsStrictPositive}}
+\hypertarget{def-exprisstrictpositive}{}
+The function
+\[
+\exprisstrictpositive(\overname{\expr}{\ve}) \aslto \overname{\Bool}{vb}
+\]
+conservatively tests whether the expression $\ve$ is always positive, yielding the result in $\vb$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{true}):
+  \begin{itemize}
+    \item $\ve$ is a literal expression for the integer literal $\vi$;
+    \item define $\vb$ as $\True$ if and only if $\vi$ is greater than $0$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{false}):
+  \begin{itemize}
+    \item $\ve$ is not a literal expression for an integer literal;
+    \item define $\vb$ as $\False$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[true]{}{
+  \exprisstrictpositive(\overname{\ELiteral(\lint(\vi))}{\ve}) \typearrow \overname{\vi > 0}{\vb}
+}
+\and
+\inferrule[false]{
+  \ve \neq \ELiteral(\lint(\Ignore))
+}{
+  \exprisstrictpositive(\ve) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\section{TypingRule.ConstraintsIsNonNegative \label{sec:TypingRule.ConstraintsIsNonNegative}}
+\hypertarget{def-constraintsisnonnegative}{}
+The function
+\[
+  \constraintsisnonnegative(\overname{\intconstraints}{\cs}) \aslto \overname{\Bool}{\vb}
+\]
+Conservatively tests whether the set of integer constraints $\cs$ always represent positive integers,
+yielding the result in $\vb$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\cs$ is the empty list;
+    \item define $\vb$ as $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\cs$ is the list with \head\ a constraint for the expression $\ve$ (that is, \\
+          $\ConstraintExact(\ve)$) and \tail\ $\csone$;
+    \item applying $\exprisnonnegative$ to $\ve$ yields $\vbone$;
+    \item applying $\constraintsisnonnegative$ to $\csone$ yields $\vbtwo$;
+    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\cs$ is the list with \head\ a range constraint for the bottom expression $\ve$ (that is, $\ConstraintRange(\ve, \Ignore)$)
+          and \tail\ $\csone$;
+    \item applying $\exprisnonnegative$ to $\ve$ yields $\vbone$;
+    \item applying $\constraintsisnonnegative$ to $\csone$ yields $\vbtwo$;
+    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \constraintsisnonnegative(\overname{\emptylist}{\cs}) \typearrow \overname{\True}{\vb}
+}
+\and
+\inferrule[exact]{
+  \exprisnonnegative(\ve) \typearrow \vbone\\
+  \constraintsisnonnegative(\csone) \typearrow \vbtwo
+}{
+  \constraintsisnonnegative(\overname{[\ConstraintExact(\ve)]\concat \csone}{\cs}) \typearrow \overname{\vbone\land\vbtwo}{\vb}
+}
+\and
+\inferrule[range]{
+  \exprisnonnegative(\ve) \typearrow \vbone\\
+  \constraintsisnonnegative(\csone) \typearrow \vbtwo
+}{
+  \constraintsisnonnegative(\overname{[\ConstraintRange(\ve, \Ignore)]\concat \csone}{\cs}) \typearrow \overname{\vbone\land\vbtwo}{\vb}
+}
+\end{mathpar}
+
+\section{TypingRule.ExprIsNonNegative \label{sec:TypingRule.ExprIsNonNegative}}
+\hypertarget{def-exprisnonnegative}{}
+The function
+\[
+\exprisnonnegative(\overname{\expr}{\ve}) \aslto \overname{\Bool}{vb}
+\]
+conservatively tests whether the expression $\ve$ is always non-negative, yielding the result in $\vb$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{true}):
+  \begin{itemize}
+    \item $\ve$ is a literal expression for the integer literal $\vi$;
+    \item define $\vb$ as $\True$ if and only if $\vi$ is greater than $-1$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{false}):
+  \begin{itemize}
+    \item $\ve$ is not a literal expression for an integer literal;
+    \item define $\vb$ as $\False$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[true]{}{
+  \exprisnonnegative(\overname{\ELiteral(\lint(\vi))}{\ve}) \typearrow \overname{\vi > -1}{\vb}
+}
+\and
+\inferrule[false]{
+  \ve \neq \ELiteral(\lint(\Ignore))
+}{
+  \exprisnonnegative(\ve) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
 
 \section{TypingRule.FindNamedLCA \label{sec:TypingRule.FindNamedLCA}}
 \hypertarget{def-namedlowestcommonancestor}{}
@@ -3827,11 +4032,17 @@ One of the following applies:
   \item TypingRule.TTuple (see \secref{TypingRule.TTuple});
   \item TypingRule.TArray (see \secref{TypingRule.TArray});
   \item TypingRule.TEnumDecl (see \secref{TypingRule.TEnumDecl});
-  \item TypingRule.TRecordExceptionDecl (see
-    \secref{TypingRule.TRecordExceptionDecl});
+  \item TypingRule.TRecordExceptionDecl (see \secref{TypingRule.TRecordExceptionDecl});
   \item TypingRule.TNonDecl (see \secref{TypingRule.TNonDecl});
 \end{itemize}
 A type error is returned, if one is detected.
+
+We also define the following helper functions:
+\begin{itemize}
+  \item TypingRule.AnnotateConstraint (see \secref{TypingRule.AnnotateConstraint})
+  \item TypingRule.GetVariableEnum (see \secref{TypingRule.GetVariableEnum})
+  \item TypingRule.AnnotateStaticInteger (see \secref{TypingRule.AnnotateStaticInteger})
+\end{itemize}
 
 \section{TypingRule.TString \label{sec:TypingRule.TString}}
 
@@ -3988,7 +4199,7 @@ In the following examples, all the uses of integer types are valid:
 \and
 \inferrule[well\_constrained]{
   \constraints \eqname \vc_{1..k}\\
-  i=1..k: \tododefine{annotate\_constraint}(\vc_i) \typearrow\newc_i \OrTypeError\\\\
+  i=1..k: \annotateconstraint(\vc_i) \typearrow\newc_i \OrTypeError\\\\
   \newconstraints \eqdef \newc_{1..k}
 }{
   \annotatetype{\Ignore, \tenv, \TInt(\wellconstrained(\constraints))} \typearrow \\ \TInt(\wellconstrained(\newconstraints))
@@ -3998,7 +4209,6 @@ In the following examples, all the uses of integer types are valid:
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.TBits \label{sec:TypingRule.TBits}}
-
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -4077,8 +4287,8 @@ All of the following apply:
     \item All of the following apply (\textsc{expr\_is\_enum}):
     \begin{itemize}
       \item determining whether $\ve$ corresponds to an enumeration in $\tenv$
-      via \\ $\tododefine{get\_variable\_enum}$ yields the enumeration variable
-      name $\vs$ of size $\vi$, that is, $\langle \vs, \vi \rangle$;
+      via \\ $\getvariableenum$ yields the enumeration variable
+      name $\vs$ of size $\vi$, that is, $\langle \vs, \vi \rangle$\ProseOrTypeError;
       \item $\newty$ is the array type indexed by an enumeration type
       named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$.
     \end{itemize}
@@ -4086,8 +4296,8 @@ All of the following apply:
     \item All of the following apply (\textsc{expr\_not\_enum}):
     \begin{itemize}
       \item determining whether $\ve$ corresponds to an enumeration in $\tenv$
-      via \\ $\tododefine{get\_variable\_enum}$ yields $\None$ (meaning it does not
-      correspond to an enumeration);
+      via \\ $\getvariableenum$ yields $\None$ (meaning it does not
+      correspond to an enumeration)\ProseOrTypeError;
       \item annotating the statically evaluable integer expression $\ve$ yields
       $\vep$\ProseOrTypeError;
       \item $\newty$ the array type indexed by integer bounded by
@@ -4120,7 +4330,7 @@ In the following example, all the uses of array types are valid:
 \begin{mathpar}
 \inferrule[expr\_is\_enum]{
   \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \tododefine{get\_variable\_enum}(\tenv, \ve) \typearrow \langle \vs, \vi \rangle
+  \getvariableenum(\tenv, \ve) \typearrow \langle \vs, \vi \rangle\OrTypeError
 }{
   {
     \begin{array}{r}
@@ -4134,8 +4344,8 @@ In the following example, all the uses of array types are valid:
 \begin{mathpar}
 \inferrule[expr\_not\_enum]{
   \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \tododefine{get\_variable\_enum}(\tenv, \ve) \typearrow \None\\
-  \tododefine{annotate\_static\_integer}(\tenv, \ve) \typearrow \vep \OrTypeError
+  \getvariableenum(\tenv, \ve) \typearrow \None \OrTypeError\\\\
+  \annotatestaticinteger(\tenv, \ve) \typearrow \vep \OrTypeError
 }{
   {
     \begin{array}{r}
@@ -4185,7 +4395,7 @@ The following example declares a valid enumeration type:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checknoduplicates(\vli) \typearrow \True \OrTypeError\\
+  \checknoduplicates(\vli) \typearrow \True \OrTypeError\\\\
   \vl \in \vli: \checkvarnotingenv{\tenv, \vl} \typearrow \True \OrTypeError
 }{
   \annotatetype{\True, \tenv, \TEnum(\vli)} \typearrow \TEnum(\vli)
@@ -4223,8 +4433,8 @@ In the following example, all the uses of record or exception types are valid:
 \begin{mathpar}
 \inferrule{
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
-  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\
-  i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow \vtp_i \OrTypeError\\
+  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
+  i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow \vtp_i \OrTypeError\\\\
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]
 }{
   \annotatetype{\True, \tenv, L(\fields)} \typearrow L(\fieldsp)
@@ -4262,6 +4472,166 @@ In the following example, the use of a record type outside of a declaration is e
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
+
+\section{TypingRule.AnnotateConstraint \label{sec:TypingRule.AnnotateConstraint}}
+\hypertarget{def-annotateconstraint}{}
+The function
+\[
+\annotateconstraint(\overname{staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
+\aslto \overname{\intconstraint}{\newc} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding the annotated
+integer constraint $\newc$.
+Otherwise, the result is a type error.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
+    \item applying $\annotatestaticconstrainedinteger$ to $\ve$ in $\tenv$ yields $\vep$\ProseOrTypeError;
+    \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\vep)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vc$ is the range integer constraint for expressions $\veone$ and $\vetwo$, that is, \\ $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\annotatestaticconstrainedinteger$ to $\veone$ in $\tenv$ yields $\veonep$\ProseOrTypeError;
+    \item applying $\annotatestaticconstrainedinteger$ to $\vetwo$ in $\tenv$ yields $\vetwop$\ProseOrTypeError;
+    \item define $\newc$ as the range integer constraint for expressions $\veonep$ and $\vetwop$, that is, $\ConstraintRange(\veonep, \vetwop)$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{
+  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow \vep \OrTypeError
+}{
+  \annotateconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\ConstraintExact(\vep)}{\newc}
+}
+\and
+\inferrule[range]{
+  \annotatestaticconstrainedinteger(\tenv, \veone) \typearrow \veonep \OrTypeError\\\\
+  \annotatestaticconstrainedinteger(\tenv, \vetwo) \typearrow \vetwop \OrTypeError
+}{
+  \annotateconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+}
+\end{mathpar}
+
+\section{TypingRule.GetVariableEnum \label{sec:TypingRule.GetVariableEnum}}
+\hypertarget{def-getvariableenum}{}
+The function
+\[
+\getvariableenum(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+\langle (\overname{\identifier}{\vx}, \overname{\N}{n})\rangle
+\]
+tests whether the expression $\ve$ represents a variable of an enumeration type.
+If so, the result is $\vx$ --- the name of the variable and the number of labels defined for the enumeration type.
+Otherwise, the result is $\None$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{not\_evar}):
+  \begin{itemize}
+    \item $\ve$ is not a variable expression;
+    \item the result is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{no\_declared\_type}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item $\vx$ is not associated with a type in the global environment of $\tenv$;
+    \item the result is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{declared\_enum}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
+    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields an enumeration type with labels $\vli$\ProseOrTypeError;
+    \item the result is the pair consisting of $\vx$ and the length of $\vli$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{declared\_not\_enum}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
+    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields a type that is not an enumeration type;
+    \item the result is $\None$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[not\_evar]{
+  \astlabel(\ve) \neq \EVar
+}{
+  \getvariableenum(\tenv, \ve) \typearrow \None
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_declared\_type]{
+  G^\tenv.\declaredtypes(\vx) \typearrow \None
+}{
+  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[declared\_enum]{
+  G^\tenv.\declaredtypes(\vx) \typearrow \langle\vt\rangle\\
+  \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vli) \OrTypeError
+}{
+  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \langle(\vx, |\vli|)\rangle
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[declared\_not\_enum]{
+  G^\tenv.\declaredtypes(\vx) \typearrow \langle\vt\rangle\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtone\\
+  \astlabel(\vtone) \neq \TEnum
+}{
+  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
+}
+\end{mathpar}
+
+\section{TypingRule.AnnotateStaticInteger \label{sec:TypingRule.AnnotateStaticInteger}}
+\hypertarget{def-annotatestaticinteger}{}
+The function
+\[
+  \annotatestaticinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \overname{\expr}{\vepp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a \staticallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
+and returns the annotated expression $\vepp$.
+A type error is returned, if one is detected.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the expression $\ve$ in $\tenv$ yields $ (\vt, \vep)$\ProseOrTypeError;
+  \item determining whether $\vt$ has the structure of an integer yields $\True$\ProseOrTypeError;
+  \item determining whether $\vep$ is \staticallyevaluable\  in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
+\end{itemize}
+
+\CodeSubsection{\StaticIntegerBegin}{\StaticIntegerEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep) \OrTypeError\\\\
+  \checkstructureinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
+  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \normalize(\tenv, \vep) \typearrow \vepp
+}{
+  \annotatestaticinteger(\tenv, \ve) \typearrow \vepp
+}
+\end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Bitfields}
@@ -4329,7 +4699,7 @@ In the following example, all the uses of bitvector types with bitfields are val
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[simple]{
-  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\
+  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\\\
   \tododefine{check\_slices\_in\_width}(\tenv, \width, \slicesone) \typearrow \True \OrTypeError
 }{
   \annotatebitfield(\tenv, \width, \BitFieldSimple(\name, \slices)) \typearrow \\
@@ -4339,9 +4709,9 @@ In the following example, all the uses of bitvector types with bitfields are val
 
 \begin{mathpar}
 \inferrule[nested]{
-  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\
+  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\\\
   \tododefine{disjoint\_slices\_to\_positions}(\tenv, \width, \slicesone) \typearrow \positions \OrTypeError\\\\
-  \tododefine{check\_positions\_in\_width}(\tenv, \width, \positions) \typearrow \True \OrTypeError\\
+  \tododefine{check\_positions\_in\_width}(\tenv, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
   \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow \bitfieldspp \OrTypeError\\
 }{
@@ -4352,11 +4722,11 @@ In the following example, all the uses of bitvector types with bitfields are val
 
 \begin{mathpar}
 \inferrule[type]{
-  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\
-  \tododefine{check\_slices\_in\_width}(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\
+  \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\\\
+  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \tododefine{check\_slices\_in\_width}(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\\\
   \tododefine{disjoint\_slices\_to\_positions}(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
-  \tododefine{check\_positions\_in\_width}(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\
+  \tododefine{check\_positions\_in\_width}(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
   \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError
 }{
@@ -4397,9 +4767,9 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \names \eqdef [\field\in\fields: \bitfieldgetname(\field)]\\
-  \checknoduplicates(\names) \typearrow \True \OrTypeError\\
+  \checknoduplicates(\names) \typearrow \True \OrTypeError\\\\
   \reduceconstants(\tenv, \ewidth) \typearrow \lint(\width) \OrTypeError\\\\
-  \field\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow \newfield \OrTypeError\\
+  \field\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow \newfield \OrTypeError\\\\
   \newfields \eqdef [\field\in\fields: \newfield]
 }{
   \annotatebitfields(\tenv, \ewidth, \fields) \typearrow \newfields
@@ -4701,7 +5071,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vep} \typearrow (\vtpp, \vepp) \OrTypeError\\
+  \annotateexpr{\tenv, \vep} \typearrow (\vtpp, \vepp) \OrTypeError\\\\
   \CheckUnop(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
 }{
   \annotateexpr{\tenv, \EUnop(\op, \vep)} \typearrow (\vt, \EUnop(\op, \vepp))
@@ -4730,9 +5100,9 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \econd} \typearrow (\tcond, \econd') \OrTypeError\\
-  \annotateexpr{\tenv, \etrue} \typearrow (\ttrue, \etrue') \OrTypeError\\
-  \annotateexpr{\tenv, \efalse} \typearrow (\tfalse, \efalse') \OrTypeError\\
+  \annotateexpr{\tenv, \econd} \typearrow (\tcond, \econd') \OrTypeError\\\\
+  \annotateexpr{\tenv, \etrue} \typearrow (\ttrue, \etrue') \OrTypeError\\\\
+  \annotateexpr{\tenv, \efalse} \typearrow (\tfalse, \efalse') \OrTypeError\\\\
   \lca(\ttrue, \tfalse) \typearrow \vt \OrTypeError
 }{
   {
@@ -4905,7 +5275,7 @@ All of the following apply:
   \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
   \slices = [ \SliceSingle(\eindex) ]\\
-  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\
+  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\\\
   \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\
 }{
@@ -4975,7 +5345,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\
+  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
   \tstruct{\tenv, \tty} \typearrow\vtp \OrTypeError\\\\
   \astlabel(\vtp) \not\in \{\TRecord, \TException\}
 }
@@ -5005,7 +5375,7 @@ A§ll of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\
+  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
   \tstruct(\tenv, \tty) \typearrow L(\fieldtypes) \OrTypeError\\\\
   L \in \{\TRecord, \TException\}\\
   \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\fields\}\\
@@ -5042,7 +5412,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\
+  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
   \tstruct(\tenv, \tty) \typearrow L(\fieldtypes) \OrTypeError\\\\
   L \in \{\TRecord, \TException\}\\
   \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\fields\}\\
@@ -5085,7 +5455,7 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \langle \vt\rangle
@@ -5117,9 +5487,9 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \None
@@ -5151,11 +5521,11 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \ve \eqname \EGetField(\veone, \fieldname)\\
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
-  \tododefine{find\_bitfield}(\bitfields, \fieldname) \typearrow \None
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
 }{
   \annotateexpr{\tenv, \ve} \typearrow \TypeErrorVal{FieldDoesNotExist}
 }
@@ -5186,11 +5556,11 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \ve \eqname \EGetField(\veone, \fieldname)\\
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
-  \tododefine{find\_bitfield}(\bitfields, \fieldname) \typearrow \langle \BitFieldSimple(\Ignore, \slices)\rangle\\
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldSimple(\Ignore, \slices)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vt, \newe) \OrTypeError
 }{
@@ -5227,10 +5597,10 @@ All of the following apply:
 \inferrule{
   \ve \eqname \EGetField(\veone, \fieldname)\\
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
-  \tododefine{find\_bitfield}(\bitfields, \fieldname) \typearrow \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle\\
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe) \OrTypeError\\\\
   \vtefour \eqname \TBits(\width, \Ignore)\\
@@ -5268,10 +5638,10 @@ All of the following apply:
 \inferrule{
   \ve \eqname \EGetField(\veone, \fieldname)\\
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
-  \tododefine{find\_bitfield}(\bitfields, \fieldname) \typearrow \langle \BitFieldType(\Ignore, \slices, \vt)\rangle\\
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldType(\Ignore, \slices, \vt)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe) \OrTypeError\\\\
   \checktypesat(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
@@ -5307,7 +5677,7 @@ All of the following apply:
 \inferrule{
   \ve \eqname \EGetField(\veone, \fieldname)\\
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TTuple(\tys)\\
   \fieldname \eqname \texttt{"item<index>"}\\
@@ -5343,7 +5713,7 @@ All of the following apply:
 \inferrule{
   \ve \eqname \EGetField(\veone, \fieldname)\\
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \astlabel(\vtetwo) \not\in \{\TRecord, \TException, \TBits, \TTuple\}
 }{
@@ -5439,7 +5809,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\tenv, \tty} \typearrow \ttyone \OrTypeError\\
+  \annotatetype{\tenv, \tty} \typearrow \ttyone \OrTypeError\\\\
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError
 }{
   \annotateexpr{\tenv, \EUnknown(\tty)} \typearrow (\ttyone, \EUnknown(\ttytwo))
@@ -5467,7 +5837,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo) \OrTypeError\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo) \OrTypeError\\\\
   \annotatepattern(\tenv, \vtetwo) \typearrow \vpatp \OrTypeError
 }{
   \annotateexpr{\tenv, \EPattern(\veone, \vpat)} \typearrow (\TBool, \EPattern(\vetwo, \vpatp))
@@ -5518,10 +5888,10 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[type\_equal]{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
+  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
+  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
   \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \True
 }{
   \annotateexpr{\tenv, \EATC(\vep, \tty)} \typearrow (\tty', \vepp)
@@ -5530,10 +5900,10 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[dynamic]{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
+  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
+  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
   \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
   \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
   \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
@@ -5545,10 +5915,10 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\
+  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
+  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
   \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
   \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
   \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
@@ -5648,8 +6018,8 @@ One of the following applies:
 }
 \and
 \inferrule[non\_empty]{
-  \annotateexpr{\tenv, \ve} \typearrow \typedexpr \OrTypeError\\
-  \annotateexprlist(\tenv, \exprsone) \typearrow \typedexprs \OrTypeError\\
+  \annotateexpr{\tenv, \ve} \typearrow \typedexpr \OrTypeError\\\\
+  \annotateexprlist(\tenv, \exprsone) \typearrow \typedexprs \OrTypeError\\\\
   \typedexprs \eqdef [\typedexpr] + \typedexprsone
 }
 {
@@ -5728,15 +6098,14 @@ One of the following applies:
 }
 \end{mathpar}
 
-\hypertarget{def-annotatestaticconstrainedinteger}{}
 \section{TypingRule.StaticConstrainedInteger \label{sec:TypingRule.StaticConstrainedInteger}}
-
+\hypertarget{def-annotatestaticconstrainedinteger}{}
 The function
 \[
   \annotatestaticconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
   \overname{\expr}{\vepp} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a \staticallyevaluable\  integer expression $\ve$ in the static environment $\tenv$
+annotates a \staticallyevaluable\ integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
 and returns the annotated expression $\vepp$.
 A type error is returned, if one is detected.
 
@@ -5754,9 +6123,9 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep) \OrTypeError\\
-  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\
-  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep) \OrTypeError\\\\
+  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
+  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
   \normalize(\tenv, \vep) \typearrow \vepp
 }{
   \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow \vepp
@@ -5918,7 +6287,7 @@ All of the following apply:
   \equallength(\les, \subtys) \typearrow \vb\\
   \checktrans{\vb}{DifferentLengths} \checktransarrow \True \OrTypeError\\\\
   \subtys \eqname [\vt_{1..k}]\\
-  i=1..k: \annotatelexpr{\tenv, \ve_i,\vt_i} \typearrow \vep_i \OrTypeError\\
+  i=1..k: \annotatelexpr{\tenv, \ve_i,\vt_i} \typearrow \vep_i \OrTypeError\\\\
   \lesp \eqname [i=1..k: \vep_i]
 }{
   \annotatelexpr{\tenv, \vle, \vte} \typearrow \LEDestructuring(\lesp)
@@ -5953,15 +6322,15 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore)\\
-  \tstruct(\tenv, \vtleone) \typearrow \structtleone \OrTypeError\\
+  \tstruct(\tenv, \vtleone) \typearrow \structtleone \OrTypeError\\\\
   \astlabel(\structtleone) = \TBits\\
   \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo\\
   \sliceswidth(\tenv, \slices) \typearrow \widthp\\
   \normalize(\tenv, \widthp) \typearrow \vwidth\\
   \vt \eqdef \TBits(\vwidth, \emptylist)\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
-  \annotateslices(\tenv, \slices) \typearrow \slicestwo \OrTypeError\\
-  \tododefine{check\_disjoint\_slices}(\tenv, \slicestwo) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \annotateslices(\tenv, \slices) \typearrow \slicestwo \OrTypeError\\\\
+  \tododefine{check\_disjoint\_slices}(\tenv, \slicestwo) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESlice(\vletwo, \slicestwo)
 }{
   \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
@@ -5995,17 +6364,17 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
-  \tstruct(\tenv, \vtleone) \typearrow \TArray(\size, \vt) \OrTypeError\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TArray(\size, \vt) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \checktrans{\listlen{\slices} = 1}{ArraySliceShouldBeSingleIndex} \checktransarrow \True \OrTypeError\\\\
   \slices \eqname [\vs]\\
   \checktrans{\astlabel(\vs) = \SliceSingle}{ArraySliceShouldBeSingleIndex} \checktransarrow \True \OrTypeError\\\\
   \vs \eqname \SliceSingle(\eindex)\\
-  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\
+  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\\\
   \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
-  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESetArray(\vletwo, \eindexp)
 }{
   \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
@@ -6034,9 +6403,9 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
-  \tstruct(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\\\
   L \in \{\TException, \TRecord\}\\
   \assocopt(\fields, \field) \typearrow \None
 }{
@@ -6067,9 +6436,9 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
-  \tstruct(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\\\
   L \in \{\TException, \TRecord\}\\
   \assocopt(\fields, \field) \typearrow \langle\vt\rangle\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
@@ -6103,10 +6472,10 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\
-  \tododefine{find\_bitfield\_opt}(\bitfields, \field) \typearrow \None
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \findbitfieldopt(\bitfields, \field) \typearrow \None
 }{
   \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{MissingField}
 }
@@ -6138,13 +6507,13 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\
-  \tododefine{find\_bitfield\_opt}(\bitfields, \field) \typearrow \langle \BitFieldSimple(\Ignore, \slices) \rangle\\
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \findbitfieldopt(\bitfields, \field) \typearrow \langle \BitFieldSimple(\Ignore, \slices) \rangle\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vt \eqdef \TBits(\vw, \emptylist)\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
 }{
@@ -6179,13 +6548,13 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\
-  \tododefine{find\_bitfield\_opt}(\bitfields, \field) \typearrow \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp) \rangle\\
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \findbitfieldopt(\bitfields, \field) \typearrow \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp) \rangle\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vt \eqdef \TBits(\vw, \bitfieldsp)\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
 }{
@@ -6221,14 +6590,14 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\
-  \tododefine{find\_bitfield\_opt}(\bitfields, \field) \typearrow \langle \BitFieldType(\Ignore, \vslices, \vt) \rangle\\
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \findbitfieldopt(\bitfields, \field) \typearrow \langle \BitFieldType(\Ignore, \vslices, \vt) \rangle\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vtp \eqdef \TBits(\vw , \emptylist)
-  \checktypesat(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
 }{
@@ -6258,9 +6627,9 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\
-  \tstruct(\tenv, \vtleone) \typearrow \vt \OrTypeError\\
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \vt \OrTypeError\\\\
   \astlabel(\vt) \not\in \{\TException, \TRecord, \TBits\}
 }{
   \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{TypeConflict}
@@ -6293,10 +6662,10 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \vle \eqname \LEConcat(\les, \Ignore)\\
-  \annotateexpr{\tenv, \torexpr(\vle)} \typearrow (\vteeq, \Ignore) \OrTypeError\\
-  \checkbitsequalwidth(\tenv, \vteeq, \vte) \typearrow \True \OrTypeError\\
+  \annotateexpr{\tenv, \torexpr(\vle)} \typearrow (\vteeq, \Ignore) \OrTypeError\\\\
+  \checkbitsequalwidth(\tenv, \vteeq, \vte) \typearrow \True \OrTypeError\\\\
   \les \eqname \vle_{1..k}\\
-  i=1..k: \annotatelebits(\tenv, \vle_i) \typearrow (\vleone_i, \width_i) \OrTypeError\\
+  i=1..k: \annotatelebits(\tenv, \vle_i) \typearrow (\vleone_i, \width_i) \OrTypeError\\\\
   \lesone \eqdef \vleone_{1..k}\\
   \widths \eqdef \width_{1..k}
 }{
@@ -6334,12 +6703,12 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vteone, \Ignore) \OrTypeError\\
-  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\
-  \checktrans{\astlabel(\vteonestruct) = \TBits}{BitvectorTypeExpected} \checktransarrow \True \OrTypeError\\
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vteone, \Ignore) \OrTypeError\\\\
+  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
+  \checktrans{\astlabel(\vteonestruct) = \TBits}{BitvectorTypeExpected} \checktransarrow \True \OrTypeError\\\\
   \vteonestruct \eqname \TBits(\ewidth, \Ignore)\\
   \reduceconstants(\tenv, \ewidth) \typearrow \vl\\
-  \checktrans{\astlabel(\vl) = \lint}{IntegerLiteralExpected} \checktransarrow \True \OrTypeError\\
+  \checktrans{\astlabel(\vl) = \lint}{IntegerLiteralExpected} \checktransarrow \True \OrTypeError\\\\
   \vl \eqname \lint(\width)\\
   \vtetwo \eqdef \TBits(\ELInt{\width}, \emptylist)\\
   \annotatelexpr{\tenv, \vtetwo} \typearrow \vleone \OrTypeError
@@ -6434,8 +6803,8 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp) \OrTypeError\\
-  \annotatestaticconstrainedinteger(\tenv, \elength) \typearrow \elengthp \OrTypeError\\
+  \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp) \OrTypeError\\\\
+  \annotatestaticconstrainedinteger(\tenv, \elength) \typearrow \elengthp \OrTypeError\\\\
   \checkstructureinteger(\tenv, \eoffsetp, \toffset) \typearrow \True \OrTypeError
 }{
   {
@@ -6739,11 +7108,11 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \veonep) \OrTypeError\\
-  \annotateexpr{\tenv, \vetwo} \typearrow (\vtetwo, \vetwop) \OrTypeError\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\
-  \tstruct(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \veonep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \vetwo} \typearrow (\vtetwo, \vetwop) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
+  \tstruct(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\\\
   {
     \begin{array}{rl}
       \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vteonestruct) = \astlabel(\vtetwostruct)\ \land\\
@@ -6803,9 +7172,9 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   {
     \begin{array}{r}
   \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{InvalidTypesForBinop} \checktransarrow \\ \True \OrTypeError
@@ -6819,9 +7188,9 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[t\_bits]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \astlabel(\vtstruct) = \astlabel(\testruct) = \TBits\\
   \bitwidthequal(\tenv, \vtstruct, \testruct) \typearrow \vb\\
   \checktrans{\vb}{BitvectorsDifferentWidths} \checktransarrow \True \OrTypeError\\
@@ -6832,9 +7201,9 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[t\_enum]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \vtstruct \eqname \TEnum(\vlione)\\
   \vtestruct \eqname \TEnum(\vlitwo)\\
   \checktrans{\vlione = \vlitwo}{EnumDifferentLabels} \checktransarrow \True \OrTypeError\\
@@ -6845,9 +7214,9 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   {
     \begin{array}{r}
   \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{InvalidTypesForBinop} \checktransarrow \\ \True \OrTypeError
@@ -6881,7 +7250,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\\
+  \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\\\\
   \vn \eqdef \listlen{\vm}\\
   \checktypesat(\tenv, \vt, \TBits(\vn, \emptylist)) \typearrow \True \OrTypeError
 }{
@@ -6915,11 +7284,11 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\
-  \checktrans{\astlabel(\vtstruct) = \TTuple}{TypeConflict} \checktransarrow \True \OrTypeError\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \checktrans{\astlabel(\vtstruct) = \TTuple}{TypeConflict} \checktransarrow \True \OrTypeError\\\\
   \vtstruct \eqname \TTuple(\vts)\\
-  \checktrans{\equallength(\vli, \vts)}{InvalidArity} \checktransarrow \True \OrTypeError\\
-  \vi\in\listrange(\vli): \annotatepattern(\tenv, \vts[\vi], \vli[\vi]) \typearrow \vlip[i] \OrTypeError\\
+  \checktrans{\equallength(\vli, \vts)}{InvalidArity} \checktransarrow \True \OrTypeError\\\\
+  \vi\in\listrange(\vli): \annotatepattern(\tenv, \vts[\vi], \vli[\vi]) \typearrow \vlip[i] \OrTypeError\\\\
   \newli \eqdef \vi\in\listrange(\vli): \vlip[\vi]
 }{
   \annotatepattern(\tenv, \vt, \PatternTuple(\vli)) \typearrow \PatternTuple(\newli)
@@ -7003,7 +7372,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checkvarnotinenv{\tenv, \vx} \typearrow \True \OrTypeError\\
+  \checkvarnotinenv{\tenv, \vx} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \newtenv
 }{
   \annotatelocaldeclitem{\tenv, \tty, \LDIVar(\vx), \ldk} \typearrow (\newtenv, \LDIVar(\vx))
@@ -7036,8 +7405,8 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\
-  \canbeinitializedwith(\tenv, \vtp, \tty) \typearrow \True \OrTypeError\\
+  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \canbeinitializedwith(\tenv, \vtp, \tty) \typearrow \True \OrTypeError\\\\
   \annotatelocaldeclitem{\tenv, \vtp, \ldip, \ldk} \typearrow (\newtenv, \newldip) \OrTypeError
 }
 {
@@ -7202,7 +7571,7 @@ All of the following apply:
 }
 \and
 \inferrule[non\_setter]{
-  \inlinesetter{\tenv, \vle, \vre} \typearrow \langle \rangle \OrTypeError\\
+  \inlinesetter{\tenv, \vle, \vre} \typearrow \langle \rangle \OrTypeError\\\\
   \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone) \OrTypeError\\\\
   \annotatelexpr{\tenv, \vle, \vtre} \typearrow \vleone \OrTypeError
 }{
@@ -7466,7 +7835,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep) \OrTypeError\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep) \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError
 }{
   \annotatestmt{\tenv, \overname{\SAssert(\ve)}{\vs}} \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv})
@@ -7496,7 +7865,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
-  \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\
+  \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
   \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError
 }{
   \annotatestmt{\tenv, \overname{\SWhile(\veone, \vsone)}{\vs}} \typearrow (\overname{\SWhile(\vetwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv})
@@ -8337,8 +8706,8 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\
-  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\
+  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\\\
+  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
   \annotateblock{\tenv, \vstmt} \typearrow \newstmt \OrTypeError
 }{
   \annotatecatcher{\tenv, (\overname{\None}{\nameopt}, \tty, \vstmt)} \typearrow (\overname{\None}{\nameopt}, \ttyp, \newstmt)
@@ -8369,7 +8738,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\
+  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\\\
   \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
   \checkvarnotinenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \name, \ttyp, \LDKLet) \typearrow \tenvp\\
@@ -8427,6 +8796,7 @@ We also define helper functions via respective rules:
   \item TypingRule.AnnotateParameterDefining (see \secref{TypingRule.AnnotateParameterDefining})
   \item TypingRule.AnnotateRetTy (\secref{TypingRule.AnnotateRetTy})
   \item TypingRule.SubprogramForName (see \secref{TypingRule.SubprogramForName})
+  \item TypingRule.DeduceEqs (see \secref{TypingRule.DeduceEqs})
   \item TypingRule.FilterCallCandidates (see \secref{TypingRule.FilterCallCandidates})
   \item TypingRule.HasArgClash (see \secref{TypingRule.HasArgClash})
 \end{itemize}
@@ -9481,7 +9851,7 @@ One of the following applies:
           in $\tenv$ (see \secref{TypingRule.FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains a single element --- $(\matchedname, \funcsig)$;
     \item deducing the argument values for the parameters via $\deduceeqs$ with \\
-          $\callerargtypes$, $\funcsig.\funcargs$, $\matchedname$, and $\funcsig$ in $\tenv$ yields
+          $\callerargtypes$, $\funcsig.\funcargs$ in $\tenv$ yields
           $(\extranargs, \namep, \callee)$\ProseOrTypeError.
   \end{itemize}
 \end{itemize}
@@ -9497,7 +9867,9 @@ One of the following applies:
 }{
   \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[no\_candidates]{
   G^\tenv.\subprogramrenamings(\name) = \renamingset\\
   {
@@ -9508,7 +9880,9 @@ One of the following applies:
 }{
   \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\NoCallCandidates}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[too\_many\_candidates]{
   G^\tenv.\subprogramrenamings(\name) = \renamingset\\
   {
@@ -9520,7 +9894,9 @@ One of the following applies:
 }{
   \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\TooManyCandidates}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[one\_candidate]{
   G^\tenv.\subprogramrenamings(\name) = \renamingset\\
   {
@@ -9531,12 +9907,98 @@ One of the following applies:
   \matchingrenamings = [(\matchedname, \funcsig)]\\
   {
     \begin{array}{r}
-  \tododefine{deduce\_eqs}(\tenv, \callerargtypes, \funcsig.\funcargs, \matchedname, \funcsig)
+  \deduceeqs(\tenv, \callerargtypes, \funcsig.\funcargs)
   \typearrow \\ (\extranargs, \namep, \callee) \OrTypeError
     \end{array}
   }
 }{
-  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow (\extranargs, \namep, \callee)
+  {
+    \begin{array}{r}
+  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \\ (\extranargs, \namep, \callee)
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\section{TypingRule.DeduceEqs \label{sec:TypingRule.DeduceEqs}}
+\hypertarget{def-deduceeqs}{}
+The function
+\[
+\deduceeqs(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\ty^*}{\callerargtypes} \aslsep
+  \overname{(\identifier\times\ty)^*}{\vargs}
+) \aslto
+\overname{(\identifier\times\expr)^*}{\eqs}
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+takes the types of the actual arguments of a call --- $\callerargtypes$,
+the list of formal arguments --- $\vargs$ --- which consist of the names of a subprogram arguments
+and their associated types, and
+infers the expressions associated with parameters that correspond to bitvector widths,
+yielding the result in $\eqs$.
+Otherwise, the result is a type error.
+
+It is assumed that $\callerargtypes$ and $\vargs$ have the same length.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item both $\callerargtypes$ and $\vargs$ are empty lists;
+    \item define $\eqs$ as the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_bits\_parameter}):
+  \begin{itemize}
+    \item $\callerargtypes$ has \head\ $\caller$ and \tail\ $\callerargtypesone$;
+    \item $\vargs$ has \head\ $(\Ignore, \callee)$ and \tail\ $\vargsone$;
+    \item $\caller$ is not a bitvector type with a width expression that is a variable expression;
+    \item applying $\deduceeqs$ to $\callerargtypesone$ and $\vargsone$ in $\tenv$ yields $\eqs$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bits\_parameter}):
+  \begin{itemize}
+    \item $\callerargtypes$ has \head\ $\caller$ and \tail\ $\callerargtypesone$;
+    \item $\vargs$ has \head\ $(\Ignore, \callee)$ and \tail\ $\vargsone$;
+    \item $\caller$ is bitvector type whose width expression is the variable expression for $\vx$;
+    \item obtaining the \structure\ of $\caller$ in $\tenv$ yields the bitvector type with width expression $\ecaller$\ProseOrTypeError;
+    \item applying $\deduceeqs$ to $\callerargtypesone$ and $\vargsone$ in $\tenv$ yields $\eqsone$;
+    \item define $\eqs$ as the list with \head\ $(\vx, \ecaller)$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \deduceeqs(\tenv, \overname{\emptylist}{\callerargtypes}, \overname{\emptylist}{\vargs}) \typearrow \overname{\emptylist}{\eqs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[not\_bits\_parameter]{
+  \caller \neq \TBits(\EVar(\vx))\\
+  \deduceeqs(\tenv, \callerargtypesone, \vargsone) \typearrow \eqs
+}{
+  \deduceeqs(
+    \tenv,
+    \overname{[\caller] \concat \callerargtypesone}{\callerargtypes},
+    \overname{[(\Ignore, \callee)] \concat \vargsone}{\vargs}) \typearrow \eqs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bits\_parameter]{
+  \caller = \TBits(\EVar(\vx))\\
+  \tstruct(\tenv, \caller) \typearrow \TBits(\ecaller, \Ignore) \OrTypeError\\\\
+  \deduceeqs(\tenv, \callerargtypesone, \vargsone) \typearrow \eqsone\\
+  \eqs \eqdef [(\vx, \ecaller)] \concat \eqsone
+}{
+  \deduceeqs(
+    \tenv,
+    \overname{[\caller] \concat \callerargtypesone}{\callerargtypes},
+    \overname{[(\Ignore, \callee)] \concat \vargsone}{\vargs}) \typearrow \eqs
 }
 \end{mathpar}
 
@@ -9676,7 +10138,7 @@ All of the following apply:
               \} &&&
     \end{array}
   }\\
-  \annotateblock{\tenv, \body} \typearrow \newbody \OrTypeError\\
+  \annotateblock{\tenv, \body} \typearrow \newbody \OrTypeError\\\\
   {
     \begin{array}{rrcl}
   \vfp \eqdef \{ & \funcname            &:& \id,\\
@@ -11009,7 +11471,7 @@ We define the helper function
   \argtypes \eqdef [(\Ignore, \vt) \in \vargs: \vt]\\
   \subprogramforname(\tenv, \funcsig.\funcname, \argtypes) \typearrow (\Ignore, \Ignore, \funcsigp) \OrTypeError\\\\
   \matchsettertype(\funcsig.\funcsubprogramtype) \typearrow \watendgettertype\\
-  \checktrans{\watendgettertype = \funcsigp.\funcsubprogramtype}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\
+  \checktrans{\watendgettertype = \funcsigp.\funcsubprogramtype}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\
   \argtypesp \eqdef [(\Ignore, \vt) \in \funcsigp.\funcargs : \vt]\\
   \vi\in\listrange(\argtypes): \typeequal(\argtypes[\vi], \argtypesp[\vi]) \typearrow \vb_\vi \OrTypeError\\\\
   \vi\in\listrange(\argtypes): \checktrans{\vb_\vi}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\
@@ -11373,8 +11835,7 @@ All of the following apply:
     \item All of the following apply (\textsc{enum}):
     \begin{itemize}
       \item $\vttwo$ is an enumeration type with labels $\ids$, that is, $\TEnum(\ids)$;
-      \item annotating the enumeration declaration $\vttwo$ in $\tenvtwo$ via \\
-            $\tododefine{annotate\_enum\_decl}$ yields $\newtenv$\ProseOrTypeError.
+      \item applying $\declareenumlabels$ to $\vttwo$ in $\tenvtwo$ $\newtenv$\ProseOrTypeError.
     \end{itemize}
 
     \item All of the following apply (\textsc{not\_enum}):
@@ -11804,7 +12265,7 @@ One of the following applies:
 \and
 \inferrule[single]{
   \comp = [\vd]\\
-  \typecheckdecl(\tenv, \vd) \typearrow (\vdone, \tenvone) \OrTypeError\\
+  \typecheckdecl(\tenv, \vd) \typearrow (\vdone, \tenvone) \OrTypeError\\\\
   \annotatedeclcomps(\tenvone, \compsone) \typearrow (\newtenv, \declsone) \OrTypeError
 }{
   \annotatedeclcomps(\tenv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
@@ -11813,7 +12274,7 @@ One of the following applies:
 \and
 \inferrule[mutually\_recursive]{
   |\comp| > 1\\
-  \typecheckmutuallyrec(\tenv, \comp) \typearrow (\declsone, \tenvone) \OrTypeError\\
+  \typecheckmutuallyrec(\tenv, \comp) \typearrow (\declsone, \tenvone) \OrTypeError\\\\
   \annotatedeclcomps(\tenvone, \compsone) \typearrow (\newtenv, \declstwo) \OrTypeError
 }{
   \annotatedeclcomps(\tenv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
@@ -16390,7 +16851,7 @@ One of the following applies:
 \and
 \inferrule[int\_constant]{
   \lookupconstant(\tenv, \vs) \typearrow \ELiteral(\vv)\\
-  \checktrans{\astlabel(\vv) = \lint}{ExpectedIntegerLiteral} \typearrow \True \OrTypeError\\
+  \checktrans{\astlabel(\vv) = \lint}{ExpectedIntegerLiteral} \typearrow \True \OrTypeError\\\\
   \vv \eqname \lint(\vi)
 }{
   \toircase(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )}{\vp}
@@ -19182,16 +19643,16 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[true]{
-  \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\
-  \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\
+  \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\\\
+  \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\\\
   \bitwidthequal(\tenv, \vn, \vm) \typearrow \True
 }{
   \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True
 }
 \and
 \inferrule[error]{
-  \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\
-  \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\
+  \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\\\
+  \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\\\
   \bitwidthequal(\tenv, \vn, \vm) \typearrow \False
 }{
   \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{DifferentBitwidths}
