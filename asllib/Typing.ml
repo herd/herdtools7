@@ -72,11 +72,13 @@ let reduce_to_z_opt env e =
   | E_Literal (L_Int z) -> Some z
   | _ -> None
 
+(* Begin ReduceConstraint *)
 let reduce_constraint env = function
   | Constraint_Exact e -> Constraint_Exact (StaticModel.try_normalize env e)
   | Constraint_Range (e1, e2) ->
       Constraint_Range
         (StaticModel.try_normalize env e1, StaticModel.try_normalize env e2)
+(* End *)
 
 let list_remove_duplicates eq =
   let rec aux prev acc = function
@@ -85,6 +87,7 @@ let list_remove_duplicates eq =
   in
   function [] -> [] | x :: li -> aux x [ x ] li
 
+(* Begin ReduceConstraints *)
 let reduce_constraints env = function
   | (UnConstrained | UnderConstrained _) as c -> c
   | WellConstrained constraints ->
@@ -93,7 +96,7 @@ let reduce_constraints env = function
       |> list_remove_duplicates
            (constraint_equal (StaticModel.equal_in_env env))
       |> fun constraints -> WellConstrained constraints
-
+(* End *)
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
 let slices_width env =
@@ -616,6 +619,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | OR | RDIV ->
         assert false
 
+  (* Begin ExplodeIntervals *)
   let explode_intervals =
     let rec make_interval ~loc acc a b =
       if Z.leq a b then
@@ -643,7 +647,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | _ -> [ c ])
     in
     fun ~loc env -> list_concat_map (explode_constraint ~loc env)
-
+  (* END *)
   let e_zero = expr_of_int 0
   let e_one = expr_of_int 1
   let e_minus_one = expr_of_int ~-1
