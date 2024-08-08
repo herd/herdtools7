@@ -704,6 +704,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
     | _ -> Fun.id
 
+  (* Begin AnnotateConstraintBinop *)
   let annotate_constraint_binop ~loc env op cs1 cs2 =
     let cs2 = binop_filter_right ~loc env op cs2 in
     let cs1, cs2 =
