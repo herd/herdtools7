@@ -42,30 +42,23 @@ Propagation of constrained integers
 
 Use of global vars in constraints
   $ aslref --no-exec TPositive4.asl
-  File TPositive4.asl, line 15, characters 4 to 54:
+  $ aslref --no-exec TPositive4-1.asl
+  File TPositive4-1.asl, line 5, characters 4 to 54:
   ASL Typing error: a subtype of integer {8} was expected,
     provided integer {16}.
   [1]
-  $ aslref --no-exec TPositive4-1.asl
-  File TPositive4-1.asl, line 16, characters 4 to 54:
+  $ aslref --no-exec TPositive4-2.asl
+  File TPositive4-2.asl, line 8, characters 4 to 54:
   ASL Typing error: a subtype of integer {LET_ALLOWED_NUMS_C} was expected,
     provided integer {16}.
   [1]
-  $ aslref --no-exec TPositive4-2.asl
-  File TPositive4-2.asl, line 20, characters 4 to 53:
-  ASL Typing error: a subtype of integer {0..LET_ALLOWED_NUMS_C} was expected,
-    provided integer {3}.
-  [1]
   $ aslref --no-exec TPositive4-3.asl
-  File TPositive4-3.asl, line 22, characters 4 to 57:
-  ASL Typing error: a subtype of integer {0..16} was expected,
-    provided integer {0..LET_ALLOWED_NUMS_C}.
-  [1]
   $ aslref --no-exec TPositive4-4.asl
-  File TPositive4-4.asl, line 25, characters 4 to 54:
+  File TPositive4-4.asl, line 9, characters 4 to 54:
   ASL Typing error: a subtype of integer {CONFIG_ALLOWED_NUMS} was expected,
     provided integer {16}.
   [1]
+  $ aslref --no-exec TPositive4-5.asl
   $ aslref --no-exec TReconsider4-0.asl
   File TReconsider4-0.asl, line 13, characters 4 to 54:
   ASL Typing error: a subtype of integer {8} was expected,
@@ -112,10 +105,6 @@ Named types
 
 Loops
   $ aslref --no-exec TPositive8.asl
-  File TPositive8.asl, line 16, characters 8 to 40:
-  ASL Typing error: a subtype of integer {0..15} was expected,
-    provided integer {0..N}.
-  [1]
   $ aslref --no-exec TPositive8-1.asl
   File TPositive8-1.asl, line 5, characters 8 to 40:
   ASL Typing error: a subtype of integer {8..31} was expected,
