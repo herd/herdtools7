@@ -17,10 +17,18 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.EBinopDIVBackendDefinedError.asl
   File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
     characters 10 to 17:
+  All values in constraints {0} would fail with op DIV, operation will always
+  fail.
+  File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
+    characters 10 to 17:
   ASL Typing error: Illegal application of operator DIV on types integer {3}
     and integer {0}
   [1]
   $ aslref --no-type-check SemanticsRule.EBinopDIVBackendDefinedError.asl
+  File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
+    characters 10 to 17:
+  All values in constraints {0} would fail with op DIV, operation will always
+  fail.
   ASL Dynamic error: Illegal application of operator DIV for values 3 and 0.
   [1]
   $ aslref SemanticsRule.EUnopAssert.asl

@@ -260,11 +260,16 @@ module Domain = struct
   let rec int_set_raise_interval_op fop op is1 is2 =
     match (is1, is2) with
     | Top, _ | _, Top -> Top
-    | Finite is1, Finite is2 ->
-        Finite
-          (IntSet.fold
-             (fun i1 -> IntSet.fold (fun i2 -> IntSet.add (fop i1 i2)) is2)
-             is1 IntSet.empty)
+    | Finite is1, Finite is2 -> (
+        try
+          Finite
+            (IntSet.fold
+               (fun i1 -> IntSet.fold (fun i2 -> IntSet.add (fop i1 i2)) is2)
+               is1 IntSet.empty)
+        with StaticEvaluationTop ->
+          let s1 = int_set_to_int_constraints is1
+          and s2 = int_set_to_int_constraints is2 in
+          int_set_raise_interval_op fop op (FromSyntax s1) (FromSyntax s2))
     | Finite is1, FromSyntax _ ->
         let s1 = int_set_to_int_constraints is1 in
         int_set_raise_interval_op fop op (FromSyntax s1) is2
@@ -278,11 +283,13 @@ module Domain = struct
 
   let monotone_interval_op op i1 i2 =
     let open IntSet.Interval in
-    make (op (x i1) (x i2)) (op (y i1) (y i2))
+    let x = op (x i1) (x i2) and y = op (y i1) (y i2) in
+    if x < y then make x y else raise StaticEvaluationTop
 
   let anti_monotone_interval_op op i1 i2 =
     let open IntSet.Interval in
-    make (op (x i1) (y i2)) (op (y i1) (x i2))
+    let x = op (x i1) (y i2) and y = op (y i1) (x i2) in
+    if x < y then make x y else raise StaticEvaluationTop
 
   let of_literal = function
     | L_Int i -> D_Int (Finite (IntSet.singleton i))
@@ -558,7 +565,10 @@ and domain_subtype_satisfies env t s =
    (* If S does not have the structure of an aggregate type or bitvector type
       then the domain of T must be a subset of the domain of S. *)
    | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-   | T_Real | T_String | T_Bool | T_Enum _ | T_Int _ ->
+   (* Those are very basic domains who do not need domain subsumption,
+      structural is enough. *)
+   | T_Real | T_String | T_Bool | T_Int UnConstrained -> true
+   | T_Enum _ | T_Int _ ->
        let d_s = Domain.of_type env s_struct
        and d_t = get_structure env t |> Domain.of_type env in
        let () =

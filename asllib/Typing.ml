@@ -582,29 +582,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let has_bitvector_structure env t =
     match (Types.get_structure env t).desc with T_Bits _ -> true | _ -> false
 
-  let expr_is_strict_positive e =
-    match e.desc with
-    | E_Literal (L_Int i) -> Z.sign i = 1
-    | E_Var _n -> false
-    | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
-
-  let constraint_is_strict_positive = function
-    | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_strict_positive e
-
-  let constraints_is_strict_positive =
-    List.for_all constraint_is_strict_positive
-
-  let expr_is_non_negative e =
-    match e.desc with
-    | E_Literal (L_Int i) -> Z.sign i != -1
-    | E_Var _n -> false
-    | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
-
-  let constraint_is_non_negative = function
-    | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_non_negative e
-
-  let constraints_is_non_negative = List.for_all constraint_is_non_negative
-
   let binop_is_exploding = function
     | MUL | SHL | POW -> true
     | PLUS | DIV | MINUS | MOD | SHR | DIVRM -> false
@@ -643,7 +620,86 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     fun env -> list_concat_map (explode_constraint env)
 
-  let constraint_binop env op cs1 cs2 =
+  let e_zero = expr_of_int 0
+  let e_one = expr_of_int 1
+  let e_minus_one = expr_of_int ~-1
+  let c_range e1 e2 = Some (Constraint_Range (e1, e2))
+
+  let list_filter_map_modified f =
+    let rec aux (accu, flag) = function
+      | [] -> (List.rev accu, flag)
+      | x :: l -> (
+          match f x with
+          | None -> aux (accu, true) l
+          | Some v -> aux (v :: accu, v <> x || flag) l)
+    in
+    aux ([], false)
+
+  let raw_filter_sign env matches = function
+    | Constraint_Exact e as c -> (
+        match reduce_to_z_opt env e with
+        | Some z when matches (Z.sign z) -> Some c
+        | Some _ -> None
+        | None -> Some c)
+    | Constraint_Range (e1, e2) as c -> (
+        match (reduce_to_z_opt env e1, reduce_to_z_opt env e2) with
+        | Some z1, Some z2 -> (
+            match (matches (Z.sign z1), matches (Z.sign z2)) with
+            | true, true -> Some c
+            | false, true -> c_range (if matches 0 then e_zero else e_one) e2
+            | true, false ->
+                c_range e1 (if matches 0 then e_zero else e_minus_one)
+            | false, false -> None)
+        | None, Some z2 ->
+            if matches (Z.sign z2) then Some c
+            else c_range e1 (if matches 0 then e_zero else e_minus_one)
+        | Some z1, None ->
+            if matches (Z.sign z1) then Some c
+            else c_range (if matches 0 then e_zero else e_one) e2
+        | None, None -> Some c)
+
+  let filter_sign ~loc env op matches constraints =
+    let pp_constraints f cs =
+      Format.fprintf f "@[<h>{%a}@]" PP.pp_int_constraints cs
+    in
+    let constraints', modified =
+      list_filter_map_modified (raw_filter_sign env matches) constraints
+    in
+    match constraints' with
+    | [] ->
+        let () =
+          Format.eprintf
+            "@[%a:@ All@ values@ in@ constraints@ %a@ would@ fail@ with@ op \
+             %s,@ operation@ will@ always@ fail.@]@."
+            PP.pp_pos loc pp_constraints constraints
+            PP.(binop_to_string op)
+        in
+        assumption_failed ()
+    | _ ->
+        let () =
+          if modified then
+            Format.eprintf
+              "@[%a:@ Warning:@ Removing@ some@ values@ that@ would@ fail@ \
+               with@ op %s@ from@ constraint@ set@ %a@ gave@ %a.@ Continuing@ \
+               with@ this@ constraint@ set.@]@."
+              PP.pp_pos loc
+              PP.(binop_to_string op)
+              pp_constraints constraints pp_constraints constraints'
+          else if false then
+            Format.eprintf "Unmodified for op %s: %a = %a@."
+              PP.(binop_to_string op)
+              pp_constraints constraints pp_constraints constraints'
+        in
+        constraints'
+
+  let binop_filter_right ~loc env op =
+    match op with
+    | SHL | SHR | POW -> filter_sign ~loc env op @@ fun x -> x >= 0
+    | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
+    | _ -> Fun.id
+
+  let constraint_binop ~loc env op cs1 cs2 =
+    let cs2 = binop_filter_right ~loc env op cs2 in
     let cs1, cs2 =
       if binop_is_exploding op then
         (explode_intervals env cs1, explode_intervals env cs2)
@@ -757,26 +813,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             | T_Int (UnderConstrained _), _ | _, T_Int (UnderConstrained _) ->
                 assert false (* We used to_well_constrained before *)
             | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
-                (* Rule KFYS: If both operands of an integer binary primitive
-                   operation are well-constrained integers, then it shall
-                   return a constrained integer whose constraint is calculated
-                   by applying the operation to all possible value pairs. *)
-                let+ () =
-                  match op with
-                  | DIV ->
-                      (* TODO cs1 divides cs2 ? How is it expressable in term of constraints? *)
-                      check_true' (constraints_is_strict_positive cs2)
-                  | DIVRM | MOD ->
-                      (* assert cs2 strict-positive *)
-                      check_true' (constraints_is_strict_positive cs2)
-                  | SHL | SHR ->
-                      (* assert cs2 non-negative *)
-                      check_true' (constraints_is_non_negative cs2)
-                  | _ -> fun () -> ()
-                in
                 let cs =
                   best_effort UnConstrained (fun _ ->
-                      constraint_binop env op cs1 cs2)
+                      constraint_binop ~loc env op cs1 cs2)
                 in
                 T_Int cs |> with_loc
             | T_Real, T_Real -> (
