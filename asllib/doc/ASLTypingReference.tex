@@ -91,10 +91,6 @@
 \newcommand\annotatelebits[0]{\hyperlink{def-annotatelebits}{\texttt{annotate\_lebits}}}
 \newcommand\annotatecase[1]{\hyperlink{def-annotatecase}{\texttt{annotate\_case}}(#1)}
 \newcommand\getforconstraints[0]{\hyperlink{def-getforconstraints}{\texttt{for\_constraints}}}
-\newcommand\minconstraints[0]{\hyperlink{def-minconstraints}{\texttt{min\_constraints}}}
-\newcommand\maxconstraints[0]{\hyperlink{def-maxconstraints}{\texttt{max\_constraints}}}
-\newcommand\minconstraint[0]{\hyperlink{def-minconstraint}{\texttt{min\_constraint}}}
-\newcommand\maxconstraint[0]{\hyperlink{def-maxconstraint}{\texttt{max\_constraint}}}
 \newcommand\findbitfieldopt[0]{\hyperlink{def-findbitfieldopt}{\texttt{find\_bitfield\_opt}}}
 \newcommand\lookupconstant[0]{\hyperlink{def-lookupconstant}{\texttt{lookup\_constant}}}
 \newcommand\typeof[0]{\hyperlink{def-typeof}{\texttt{type\_of}}}
@@ -343,6 +339,7 @@
 \newcommand\MismatchedReturnValue[0]{\hyperlink{def-mrv}{\TypeErrorCode{MRV}}}
 \newcommand\CallBadArity[0]{\hyperlink{def-cba}{\TypeErrorCode{CBA}}}
 \newcommand\BadRecursiveDecls[0]{\hyperlink{def-brd}{\TypeErrorCode{BRA}}}
+\newcommand\RequireIntegerForLoopBounds[0]{\hyperlink{def-lbi}{\TypeErrorCode{LBI}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Typeset variable names
@@ -7916,11 +7913,13 @@ All of the following apply:
         $\veone$, end expression $\vetwo$, and a body statement (block) $\vsp$, that is, $\SFor(\id, \dir, \veone, \vetwo, \vsp)$;
   \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vtone, \veonep)$\ProseOrTypeError;
   \item annotating the right-hand-side expression $\vetwo$ in $\tenv$ yields $(\vttwo, \vetwop)$\ProseOrTypeError;
-  \item obtaining the \wellconstrainedversion\ of $\vtone$ in $\tenv$ yields $\structone$;
-  \item obtaining the \wellconstrainedversion\ of $\vttwo$ in $\tenv$ yields $\structtwo$;
-  \item obtaining the constraints on the loop index $\id$ from $\structone$, $\structtwo$, and $\dir$ in $\tenv$
-        via $\getforconstraints$ yields $\vcs$\ProseOrTypeError;
-  \item $\tty$ is the integer type with constraints $\vcs$;
+  \item obtaining the \underlyingtype\ of $\vtone$ in $\tenv$ yields $\structone$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vttwo$ in $\tenv$ yields $\structtwo$\ProseOrTypeError;
+  \item applying $\getforconstraints$ to $\structone$, $\structtwo$,
+        $\veonep$, $\vetwop$, and $\dir$ in $\tenv$,
+        to obtain the constraints on the loop index $\id$,
+        yields $\cs$\ProseOrTypeError;
+  \item $\tty$ is the integer type with constraints $\cs$;
   \item checking that $\id$ is not already declared in $\tenv$ yields $\True$\ProseOrTypeError;
   \item adding $\id$ as a local immutable variable with type $\tty$ to $\tenv$ yields $\tenvp$;
   \item annotating $\vsp$ as a block statement in $\tenvp$ yields $\vspp$\ProseOrTypeError;
@@ -7940,10 +7939,10 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veonep) \OrTypeError\\\\
   \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwop) \OrTypeError\\\\
-  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \structone\\
-  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \structtwo\\
-  \getforconstraints(\tenv, \structone, \structtwo, \dir) \typearrow \vcs \OrTypeError\\\\
-  \tty \eqdef \TInt(\vcs)\\
+  \makeanonymous(\tenv, \vtone) \typearrow \structone \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \structtwo \OrTypeError\\\\
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \cs \OrTypeError\\\\
+  \tty \eqdef \TInt(\cs)\\
   \checkvarnotinenv{\tenv, \id} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \tty, \id, \LDKLet) \typearrow \tenvp\\
   \annotateblock{\tenvp, \vsp} \typearrow \vspp \OrTypeError\\\\
@@ -8228,394 +8227,84 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\ty}{\structone} \aslsep
     \overname{\ty}{\structtwo} \aslsep
+    \overname{\expr}{\veonep} \aslsep
+    \overname{\expr}{\vetwop} \aslsep
     \overname{\dir}{\dir}
   ) \aslto
-  \begin{array}{c}
-    \overname{\left\{
-      \begin{array}{c}
-        \unconstrained,\\
-        \wellconstrained(\intconstraint^+),\\
-        \underconstrained(\identifier)
-      \end{array}
-    \right\}}{\vcs} \\
-    \cup\ \overname{\TTypeError}{\TypeErrorConfig}
-    \end{array}
+  \overname{\intconstraints}{\vis} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
-infers the constraints --- $\vcs$ --- for a \texttt{for} loop index variable from the
-\wellconstrainedversion\ of the type of the start expression --- $\structone$ ---
-and the \wellconstrainedversion\ of the type of the end expression --- $\structtwo$.
-A type error is returned, if one is detected.
+infers the list of constraints --- $\vis$ --- for a \texttt{for} loop index variable from the following:
+\begin{itemize}
+  \item the \wellconstrainedversion\ of the type of the start expression --- $\structone$
+  \item the \wellconstrainedversion\ of the type of the end expression --- $\structtwo$
+  \item the annotated start expression --- $\veonep$
+  \item the annotated end expression --- $\vetwop$
+  \item the loop direction --- $\dir$
+\end{itemize}
+Otherwise, the result is a type error.
 
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{non\_integer\_error}):
+  \item All of the following apply (\textsc{not\_integers}):
   \begin{itemize}
     \item at least one of $\structone$ and $\structtwo$ is not an integer type;
-    \item the result is a type error indicating that an integer-typed expression is expected.
+    \item the result is a type error indicating that the start expression and end expression of \texttt{for} loops
+          must have the \structure\ of integer types.
   \end{itemize}
 
   \item All of the following apply (\textsc{unconstrained}):
   \begin{itemize}
-    \item both $\structone$ and $\structtwo$ are integer types;
-    \item either one of $\structone$ and $\structtwo$ is an unconstrained integer;
-    \item $\vc$ is $\unconstrained$.
+    \item both of $\structone$ and $\structtwo$ is not an integer type;
+    \item at least one of $\structone$ and $\structtwo$ is the unconstrained integer type;
+    \item define $\vis$ as $\unconstrained$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{well\_constrained\_int\_range}):
+  \item All of the following apply (\textsc{well\_constrained}):
   \begin{itemize}
-    \item $\structone$ is an integer type with constraint $\vcone$;
-    \item $\structtwo$ is an integer type with constraint $\vctwo$;
-    \item the pair $(\botcs, \topcs)$ is defined to be $(\csone, \cstwo)$ if $\dir$ is $\UP$ and $(\cstwo, \csone)$, otherwise;
-    \item obtaining the minimum of $\botcs$ via $\minconstraints$ in $\tenv$ yields an integer $\vbot$;
-    \item obtaining the maximum of $\topcs$ via $\maxconstraints$ in $\tenv$ yields an integer $\vvtop$;
-    \item $\vbot$ is less than or equal to $\vvtop$;
-    \item $\vc$ is the well-constrained range between between the literal integer expression for $\vbot$ and
-          the literal integer expression for $\vvtop$, that is, \\
-          $\wellconstrained([\ConstraintRange(\ELInt{\vbot}, \ELInt{\vvtop})])$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{well\_constrained\_int\_reverse\_range}):
-  \begin{itemize}
-    \item $\structone$ is an integer type with constraint $\vcone$;
-    \item $\structtwo$ is an integer type with constraint $\vctwo$;
-    \item the pair $(\botcs, \topcs)$ is defined to be $(\csone, \cstwo)$ if $\dir$ is $\UP$ and $(\cstwo, \csone)$, otherwise;
-    \item obtaining the minimum of $\botcs$ via $\minconstraints$ in $\tenv$ yields an integer $\vbot$;
-    \item obtaining the maximum of $\topcs$ via $\maxconstraints$ in $\tenv$ yields an integer $\vvtop$;
-    \item $\vbot$ is greater than $\vvtop$;
-    \item $\vc$ is the well-constrained constraint for $\csone$, that is, \\
-          $\wellconstrained(\csone)$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{well\_constrained\_int\_symbolic\_range}):
-  \begin{itemize}
-    \item $\structone$ is a well-constrained integer with constraints $\csone$;
-    \item $\structtwo$ is a well-constrained integer with constraints $\cstwo$;
-    \item the pair $(\botcs, \topcs)$ is defined to be $(\csone, \cstwo)$ if $\dir$ is $\UP$ and $(\cstwo, \csone)$, otherwise;
-    \item obtaining the minimum of $\botcs$ via $\minconstraints$ in $\tenv$ yields $\vbot$;
-    \item obtaining the maximum of $\topcs$ via $\maxconstraints$ in $\tenv$ yields $\vvtop$;
-    \item at least one of $\vbot$ and $\vvtop$ is not an integer;
-    \item $\botcs$ is a single exact constraint with expression $\ebot$;
-    \item $\topcs$ is a single exact constraint with expression $\etop$;
-    \item $\vc$ is the single (well-constrained) range constraint for from $\ebot$ to $\etop$, that is, \\
-          $\wellconstrained([\ConstraintRange(\ebot, \etop)])$
-  \end{itemize}
-
-  \item All of the following apply (\textsc{well\_constrained\_else}):
-  \begin{itemize}
-    \item $\structone$ is a well-constrained integer with constraints $\csone$;
-    \item $\structtwo$ is a well-constrained integer with constraints $\cstwo$;
-    \item the pair $(\botcs, \topcs)$ is defined to be $(\csone, \cstwo)$ if $\dir$ is $\UP$ and $(\cstwo, \csone)$, otherwise;
-    \item obtaining the minimum of $\botcs$ via $\minconstraints$ in $\tenv$ yields $\vbot$;
-    \item obtaining the maximum of $\topcs$ via $\maxconstraints$ in $\tenv$ yields $\vvtop$;
-    \item at least one of $\vbot$ and $\vvtop$ is not an integer;
-    \item at least one of $\botcs$ and $\topcs$ is not a single exact constraint;
-    \item $\vc$ is $\unconstrained$
+    \item $\structone$ is the integer type with integer constraints $\csone$;
+    \item $\structtwo$ is the integer type with integer constraints $\cstwo$;
+    \item symbolically simplifying $\veonep$ in $\tenv$ yields $\eonen$\ProseOrTypeError;
+    \item symbolically simplifying $\vetwop$ in $\tenv$ yields $\etwon$\ProseOrTypeError;
+    \item define $\icsup$ as the single range constraint with expressions $\eonen$ and $\etwon$;
+    \item define $\icsdown$ as the single range constraint with expressions $\etwon$ and $\eonen$;
+    \item define $\vis$ as $\icsup$ if $\dir$ is $\UP$ and $\icsdown$ otherwise.
   \end{itemize}
 \end{itemize}
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[non\_integer\_error]{
-    \astlabel(\structone) \neq \TInt \land \astlabel(\structtwo) \neq \TInt
+\inferrule[not\_integers]{
+  \astlabel(\structone) \neq \TInt \lor \astlabel(\structtwo) = \TInt
 }{
-  \getforconstraints(\tenv, \structone, \structtwo, \dir) \typearrow \\
-  \TypeErrorVal{IntegerTypeExpected}
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \TypeErrorVal{\RequireIntegerForLoopBounds}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[unconstrained]{
-  \astlabel(\vcone) = \unconstrained \lor \astlabel(\vctwo) = \unconstrained
+  {
+    \begin{array}{cccl}
+    \structone = \TInt(\unconstrained) &\land& \astlabel(\structtwo) = \TInt & \lor\\
+    \astlabel(\structone) = \TInt &\land& \structtwo = \TInt(\unconstrained) & \\
+    \end{array}
+  }
 }{
-  \getforconstraints(\tenv, \overname{\TInt(\vcone)}{\structone}, \overname{\TInt(\vctwo)}{\structtwo}, \dir) \typearrow
-  \overname{\unconstrained}{\vc}
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \overname{\unconstrained}{\vis}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[well\_constrained\_int\_range]{
-    \astlabel(\vcone) = \wellconstrained(\csone) \land \astlabel(\vctwo) = \wellconstrained(\cstwo)\\
-    (\botcs, \topcs) \eqdef \choice{\dir = \UP}{(\csone, \cstwo)}{(\cstwo, \csone)}\\
-    \minconstraints(\tenv, \botcs) \typearrow \vbot \in \Z\\
-    \maxconstraints(\tenv, \topcs) \typearrow \vvtop \in \Z\\
-    \vbot \leq \vvtop\\
-    \vc \eqdef \wellconstrained([\ConstraintRange(\ELInt{\vbot}, \ELInt{\vvtop})])
+\inferrule[well\_constrained]{
+  \structone = \TInt(\csone)\\
+  \structtwo = \TInt(\cstwo)\\
+  \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\\\\
+  \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\\\\
+  \icsup \eqdef \wellconstrained([\ConstraintRange(\eonen, \etwon)])\\
+  \icsdown \eqdef \wellconstrained([\ConstraintRange(\etwon, \eonen)])\\
+  \vis \eqdef \choice{\dir=\UP}{\icsup}{\icsdown}
 }{
-  \getforconstraints(\tenv, \overname{\TInt(\vcone)}{\structone}, \overname{\TInt(\vctwo)}{\structtwo}, \dir) \typearrow \vc
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[well\_constrained\_int\_reverse\_range]{
-    \astlabel(\vcone) = \wellconstrained(\csone) \land \astlabel(\vctwo) = \wellconstrained(\cstwo)\\
-    (\botcs, \topcs) \eqdef \choice{\dir = \UP}{(\csone, \cstwo)}{(\cstwo, \csone)}\\
-    \minconstraints(\tenv, \botcs) \typearrow \vbot \in \Z\\
-    \maxconstraints(\tenv, \topcs) \typearrow \vvtop \in \Z\\
-    \vbot > \vvtop
-}{
-  \getforconstraints(\tenv, \overname{\TInt(\vcone)}{\structone}, \overname{\TInt(\vctwo)}{\structtwo}, \dir) \typearrow
-  \overname{\wellconstrained(\csone)}{\vc}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[well\_constrained\_int\_symbolic\_range]{
-    \astlabel(\vcone) = \wellconstrained(\csone) \land \astlabel(\vctwo) = \wellconstrained(\cstwo)\\
-    (\botcs, \topcs) \eqdef \choice{\dir = \UP}{(\csone, \cstwo)}{(\cstwo, \csone)}\\
-    \minconstraints(\tenv, \botcs) \typearrow \vbot\\
-    \maxconstraints(\tenv, \topcs) \typearrow \vvtop\\
-    (\vbot \not\in \Z \lor \vvtop \not\in \Z)\\
-    \botcs = [\ConstraintExact(\ebot)]\\
-    \topcs = [\ConstraintExact(\etop)]\\
-    \vc \eqdef \wellconstrained([\ConstraintRange(\ebot, \etop)])
-}{
-  \getforconstraints(\tenv, \overname{\TInt(\vcone)}{\structone}, \overname{\TInt(\vctwo)}{\structtwo}, \dir) \typearrow \vc
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[well\_constrained\_else]{
-  \astlabel(\vcone) = \wellconstrained(\csone) \land \astlabel(\vctwo) = \wellconstrained(\cstwo)\\
-  (\botcs, \topcs) \eqdef \choice{\dir = \UP}{(\csone, \cstwo)}{(\cstwo, \csone)}\\
-  \minconstraints(\tenv, \botcs) \typearrow \vbot\\
-  \maxconstraints(\tenv, \topcs) \typearrow \vvtop\\
-  (\vbot \not\in \Z \lor \vvtop \not\in \Z)\\
-  (\botcs \neq [\ConstraintExact(\Ignore)] \lor \botcs \neq [\ConstraintExact(\Ignore)])
-}{
-  \getforconstraints(\tenv, \overname{\TInt(\vcone)}{\structone}, \overname{\TInt(\vctwo)}{\structtwo}, \dir) \typearrow \overname{\unconstrained}{\vc}
-}
-\end{mathpar}
-
-\section{TypingRule.MinConstraints \label{sec:TypingRule.MinConstraints}}
-The function
-\hypertarget{def-minconstraints}{}
-\[
-  \minconstraints(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\vcs}) \aslto
-  \overname{\overname{\Z}{\vi} \cup \{\minmaxtop\}}{r}
-\]
-operate over a list of constraints $\vcs$ to find whether there is an integer $\vi$ that represents the
-minimal value of all the constraints. Otherwise, the result is the special value $\minmaxtop$.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{single}):
-  \begin{itemize}
-    \item $\vcs$ consists of a single constraint $\vc$;
-    \item $r$ is the result of finding the minimal constraint in $\vc$ via $\minconstraint$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{head\_tail}):
-  \begin{itemize}
-    \item $\vcs$ is a list consisting of a constraint $\vc_1$ followed by a non-empty list of constraints $\vc_{2..k}$;
-    \item finding the minimal constraint in $\vc_1$ via $\minconstraint$ results in the integer $a$ or $\minmaxtop$,
-          which short-circuits the entire rule;
-    \item finding the minimal constraints in $\vc_{2..k}$ via $\minconstraints$ results in the integer $b$ or $\minmaxtop$,
-          which short-circuits the entire rule;
-    \item $r$ is the minimum of $a$ and $b$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[single]{
-  \minconstraint(\tenv, \vc) \typearrow r
-}{
-  \minconstraints(\tenv, [\vc]) \typearrow r
-}
-\and
-\inferrule[head\_tail]{
-  k > 1\\
-  \minconstraint(\tenv, \vc_1) \typearrow a \terminateas \minmaxtop\\\\
-  \minconstraints(\tenv, \vc_{2..k}) \typearrow b \terminateas \minmaxtop
-}{
-  \minconstraints(\tenv, [\vc_{1..k}]) \typearrow \overname{\min\{a,b\}}{r}
-}
-\end{mathpar}
-
-\section{TypingRule.MaxConstraints \label{sec:TypingRule.MaxConstraints}}
-The function
-\hypertarget{def-maxconstraints}{}
-\[
-  \maxconstraints(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\vcs}) \aslto
-  \overname{\overname{\Z}{\vi} \cup \{\minmaxtop\}}{r}
-\]
-operate over a list of constraints $\vcs$ to find whether there is an integer $\vi$ that represents the
-maximal value of all the constraints. Otherwise, the result is the special value $\minmaxtop$.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{single}):
-  \begin{itemize}
-    \item $\vcs$ consists of a single constraint $\vc$;
-    \item $r$ is the result of finding the maximal constraint in $\vc$ via $\maxconstraint$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{head\_tail}):
-  \begin{itemize}
-    \item $\vcs$ is a list consisting of a constraint $\vc_1$ followed by a non-empty list of constraints $\vc_{2..k}$;
-    \item finding the maximal constraint in $\vc_1$ via $\maxconstraint$ results in the integer $a$ or $\minmaxtop$,
-          which short-circuits the entire rule;
-    \item finding the maximal constraints in $\vc_{2..k}$ via $\maxconstraints$ results in the integer $b$ or $\minmaxtop$,
-          which short-circuits the entire rule;
-    \item $r$ is the maximum of $a$ and $b$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[single]{
-  \maxconstraint(\tenv, \vc) \typearrow r
-}{
-  \maxconstraints(\tenv, [\vc]) \typearrow r
-}
-\and
-\inferrule[head\_tail]{
-  k > 1\\
-  \maxconstraint(\tenv, \vc_1) \typearrow a \terminateas \minmaxtop\\\\
-  \maxconstraints(\tenv, \vc_{2..k}) \typearrow b \terminateas \minmaxtop
-}{
-  \maxconstraints(\tenv, [\vc_{1..k}]) \typearrow \overname{\max\{a,b\}}{r}
-}
-\end{mathpar}
-
-\section{TypingRule.MinConstraint \label{sec:TypingRule.MinConstraint}}
-\hypertarget{def-minconstraint}{}
-The function
-\[
-  \minconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc}) \aslto \overname{\Z \cup \{\minmaxtop\}}{r}\\
-\]
-infers an integer representing the minimal value of the constraint $\vc$ if it can be symbolically
-simplified into an integer literal. Otherwise, the result is $\minmaxtop$.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{min\_exact\_literal}):
-  \begin{itemize}
-    \item $\vc$ is a single value constraint with expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields a literal integer expression for $\vi$;
-    \item $r$ is $\vi$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{min\_exact\_top}):
-  \begin{itemize}
-    \item $\vc$ is a single value constraint with expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ does not yield a literal integer expression for $\vi$;
-    \item $r$ is $\minmaxtop$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{min\_range\_literal}):
-  \begin{itemize}
-    \item $\vc$ is a range constraint with start expression $\ve$, that is, $\ConstraintRange(\ve, \Ignore)$;
-    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields a literal integer expression for $\vi$;
-    \item $r$ is $\vi$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{min\_range\_top}):
-  \begin{itemize}
-    \item $\vc$ is a range constraint with start expression $\ve$, that is, $\ConstraintRange(\ve, \Ignore)$;
-    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ does not yield a literal integer expression for $\vi$;
-    \item $r$ is $\minmaxtop$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[min\_exact\_literal]{
-  \normalize(\tenv, \ve) \typearrow \ELInt{\vi}
-}{
-  \minconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vi
-}
-\and
-\inferrule[min\_exact\_top]{
-  \normalize(\tenv, \ve) \typearrow \vep\\
-  \astlabel(\vep) \neq \ELiteral
-}{
-  \minconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \minmaxtop
-}
-\and
-\inferrule[min\_range\_literal]{
-  \normalize(\tenv, \ve) \typearrow \ELInt{\vi}
-}{
-  \minconstraint(\tenv, \overname{\ConstraintRange(\ve, \Ignore)}{\vc}) \typearrow \vi
-}
-\and
-\inferrule[min\_range\_top]{
-  \normalize(\tenv, \ve) \typearrow \vep\\
-  \astlabel(\vep) \neq \ELiteral
-}{
-  \minconstraint(\tenv, \overname{\ConstraintRange(\ve, \Ignore)}{\vc}) \typearrow \minmaxtop
-}
-\end{mathpar}
-
-\section{TypingRule.MaxConstraint \label{sec:TypingRule.MaxConstraint}}
-\hypertarget{def-maxconstraint}{}
-\[
-  \maxconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc}) \aslto \Z \cup \{\minmaxtop\}\\
-\]
-infers an integer representing the maximal value of the constraint $\vc$ if it can be symbolically
-simplified into an integer literal. Otherwise, the result is $\minmaxtop$.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{max\_exact\_literal}):
-  \begin{itemize}
-    \item $\vc$ is a single value constraint with expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields a literal integer expression for $\vi$;
-    \item $r$ is $\vi$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{max\_exact\_top}):
-  \begin{itemize}
-    \item $\vc$ is a single value constraint with expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ does not yield a literal integer expression for $\vi$;
-    \item $r$ is $\minmaxtop$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{max\_range\_literal}):
-  \begin{itemize}
-    \item $\vc$ is a range constraint with an end expression $\ve$, that is, $\ConstraintRange(\Ignore, \ve)$;
-    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields a literal integer expression for $\vi$;
-    \item $r$ is $\vi$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{max\_range\_top}):
-  \begin{itemize}
-    \item $\vc$ is a range constraint with an end expression $\ve$, that is, $\ConstraintRange(\Ignore, \ve)$;
-    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ does not yield a literal integer expression for $\vi$;
-    \item $r$ is $\minmaxtop$.
-  \end{itemize}
-\end{itemize}
-
-\begin{mathpar}
-\inferrule[max\_exact\_literal]{
-  \normalize(\tenv, \ve) \typearrow \ELInt{\vi}
-}{
-  \maxconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vi
-}
-\and
-\inferrule[max\_exact\_top]{
-  \normalize(\tenv, \ve) \typearrow \vep\\
-  \astlabel(\vep) \neq \ELiteral
-}{
-  \maxconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \minmaxtop
-}
-\and
-\inferrule[max\_range\_literal]{
-  \normalize(\tenv, \ve) \typearrow \ELInt{\vi}
-}{
-  \maxconstraint(\tenv, \overname{\ConstraintRange(\Ignore, \ve)}{\vc}) \typearrow \vi
-}
-\and
-\inferrule[max\_range\_top]{
-  \normalize(\tenv, \ve) \typearrow \vep\\
-  \astlabel(\vep) \neq \ELiteral
-}{
-  \maxconstraint(\tenv, \overname{\ConstraintRange(\Ignore, \ve)}{\vc}) \typearrow \minmaxtop
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \vis
 }
 \end{mathpar}
 
@@ -19947,6 +19636,14 @@ This error indicates that the number of arguments is different to the number of 
 Only subprogram declarations may be mutually recursive.
 This error indicates that at least one declaration in a given list of mutually recursive declarations
 is not a subprogram
+(see \secref{TypingRule.TypeCheckMutuallyRec}).
+
+\hypertarget{def-lbi}{}
+\item[$\RequireIntegerForLoopBounds$]
+The expressions defining the bounds of a \texttt{for} loop are required to have the \structure\ of
+an integer type.
+This error indicates that at least one of the start expression and end expression violate this
+requirement.
 (see \secref{TypingRule.TypeCheckMutuallyRec}).
 
 \end{description}
