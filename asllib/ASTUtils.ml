@@ -686,7 +686,10 @@ let bitfield_get_slices = function
       slices
 
 let has_name name bf = bitfield_get_name bf |> String.equal name
+
+(* Begin FindBitfieldOpt *)
 let find_bitfield_opt name bitfields = List.find_opt (has_name name) bitfields
+(* End *)
 
 let find_bitfields_slices_opt name bitfields =
   try List.find (has_name name) bitfields |> bitfield_get_slices |> Option.some

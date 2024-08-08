@@ -472,12 +472,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | Some bitfield -> to_singles env (slices_of_bitfield bitfield)
     | None -> raise NoSingleField
 
+  (* Begin ShoulFieldsReduceToCall *)
   let should_fields_reduce_to_call env name ty fields =
     match (Types.make_anonymous env ty).desc with
     | T_Bits (_, bf) -> (
         try Some (name, list_concat_map (field_to_single env bf) fields)
         with NoSingleField -> None)
     | _ -> None
+  (* End *)
 
   let should_field_reduce_to_call env name ty field =
     should_fields_reduce_to_call env name ty [ field ]
@@ -954,6 +956,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
 
+  (* Begin GetVariableEnum *)
   let get_variable_enum' env e =
     match e.desc with
     | E_Var x -> (
@@ -964,6 +967,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | _ -> None)
         | None -> None)
     | _ -> None
+  (* End *)
 
   let check_diet_in_width loc slices width diet () =
     let x = Diet.Int.min_elt diet |> Diet.Int.Interval.x
@@ -1120,11 +1124,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |: TypingRule.TNonDecl
   (* End *)
 
+  (* AnnotateStaticInteger *)
   and annotate_static_integer ~(loc : 'a annotated) env e =
     let t, e' = annotate_expr env e in
     let+ () = check_structure_integer loc env t in
     let+ () = check_statically_evaluable env e in
     StaticModel.try_normalize env e'
+  (* End *)
 
   (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
@@ -1134,6 +1140,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     StaticModel.try_normalize env e'
   (* End *)
 
+  (* Begin AnnotateConstraint *)
   and annotate_constraint ~loc env = function
     | Constraint_Exact e ->
         let e' = annotate_static_constrained_integer ~loc env e in
@@ -1142,6 +1149,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let e1' = annotate_static_constrained_integer ~loc env e1
         and e2' = annotate_static_constrained_integer ~loc env e2 in
         Constraint_Range (e1', e2')
+  (* End *)
 
   and annotate_slices env =
     (* Rules:
