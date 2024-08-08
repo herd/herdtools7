@@ -12,6 +12,22 @@ H Examples
   $ aslref --no-exec HExample11.asl
   $ aslref --no-exec HExample12.asl
   $ aslref --no-exec HExample13.asl
+  $ aslref --no-exec HExample15.asl
+  $ aslref --no-exec HExample16.asl
+  File HExample16.asl, line 10, characters 19 to 33:
+  ASL Typing error: a subtype of integer {1..a} was expected,
+    provided integer {8, 16, 32, 64}.
+  [1]
+  $ aslref --no-exec HExample17.asl
+  File HExample17.asl, line 11, characters 19 to 33:
+  ASL Typing error: a subtype of integer {1..a} was expected,
+    provided integer {32}.
+  [1]
+  $ aslref --no-exec HExample18.asl
+  File HExample18.asl, line 12, characters 20 to 35:
+  ASL Typing error: a subtype of integer {1..a2} was expected,
+    provided integer {8, 16, 32, 64}.
+  [1]
 
 T Tests
   $ aslref --no-exec TPositive1.asl
@@ -102,6 +118,7 @@ Named types
   ASL Typing error: a subtype of MyOtherSizes was expected,
     provided MyBitsSizes.
   [1]
+  $ aslref --no-exec KPositive01.asl
 
 Loops
   $ aslref --no-exec TPositive8.asl

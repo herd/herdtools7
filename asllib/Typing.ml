@@ -213,6 +213,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
   let ok () = () [@@inline]
   let check_true b fail () = if b then () else fail () [@@inline]
   let check_true' b = check_true b assumption_failed [@@inline]
+  let check_all2 li1 li2 f () = List.iter2 (fun x1 x2 -> f x1 x2 ()) li1 li2
 end
 
 (* -------------------------------------------------------------------------
@@ -871,6 +872,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         t1 |: TypingRule.CheckUnop
   (* End *)
 
+  let rec check_atc ~fail env t1 t2 =
+    if Types.type_equal env t1 t2 then ok
+    else
+      match (t1.desc, t2.desc) with
+      | T_Int _, T_Int _ | T_Bits _, T_Bits _ -> ok
+      | T_Tuple l1, T_Tuple l2 when List.compare_lengths l1 l2 = 0 ->
+          check_all2 l1 l2 (check_atc ~fail env)
+      | T_Named _, _ | _, T_Named _ -> assert false
+      | _ -> fail
+
   let var_in_env ?(local = true) env x =
     (local && IMap.mem x env.local.storage_types)
     || IMap.mem x env.global.storage_types
@@ -1399,12 +1410,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_struct = Types.get_structure env t in
         let ty' = annotate_type ~loc env ty in
         let ty_struct = Types.get_structure env ty' in
-        (if Types.type_equal env t_struct ty_struct then (ty', e'')
-         else
-           match (t_struct.desc, ty_struct.desc) with
-           | T_Bits _, T_Bits _ | T_Int _, T_Int _ ->
-               (ty', E_ATC (e'', ty_struct) |> here)
-           | _ -> fatal_from e (BadATC (t, ty')))
+        let+ () =
+          check_atc env t_struct ty_struct ~fail:(fun () ->
+              fatal_from loc (BadATC (t, ty)))
+        in
+        (if Types.subtype_satisfies env t ty' then (ty', e'')
+         else (ty', E_ATC (e'', ty_struct) |> here))
         |: TypingRule.ATC
     (* End *)
     | E_Var x -> (

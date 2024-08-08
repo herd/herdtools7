@@ -64,9 +64,9 @@ ATCs on other types
   > end
 
   $ aslref atcs6.asl
-  File atcs6.asl, line 3, characters 11 to 33:
-  ASL Typing error: cannot perform Asserted Type Conversion on
-    (integer {42}, bits(4)) by myty.
+  File atcs6.asl, line 3, characters 11 to 25:
+  ASL Execution error: Mismatch type:
+    value [42, '0000'] does not belong to type (integer {0..10}, bits(4)).
   [1]
 
   $ cat > atcs7.asl <<EOF
