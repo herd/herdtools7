@@ -221,6 +221,7 @@
 \newcommand\wellconstrainedversion[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
 \newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
 \newcommand\arrayaccess[0]{\hyperlink{def-arrayaccess}{array access}}
+\newcommand\symbolicallysimplifies[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -235,7 +236,9 @@
 \newcommand\isrightincreasing[0]{\hyperlink{def-isrightincreasing}{\texttt{is\_right\_increasing}}}
 \newcommand\isrightdecreasing[0]{\hyperlink{def-isrightdecreasing}{\texttt{is\_right\_decreasing}}}
 \newcommand\isleftincreasing[0]{\hyperlink{def-isleftincreasing}{\texttt{is\_left\_increasing}}}
-\newcommand\annotateconstraintbinop[0]{\hyperlink{def-annotateconstraintbinop}{\texttt{constraint\_binop}}}
+\newcommand\annotateconstraintbinop[0]{\hyperlink{def-annotateconstraintbinop}{\texttt{annotate\_constraint\_binop}}}
+\newcommand\explodeintervals[0]{\hyperlink{def-explodeintervals}{\texttt{explode\_intervals}}}
+\newcommand\binopisexploding[0]{\hyperlink{def-binopisexploding}{\texttt{binop\_is\_exploding}}}
 \newcommand\sliceswidth[0]{\texttt{slices\_width}}
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
 \newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\texttt{annotate\_constraint}}}
@@ -256,6 +259,8 @@
 \newcommand\annotateparameterdefining[0]{\hyperlink{def-annotateparameterdefining}{\texttt{annotate\_parameter\_defining}}}
 \newcommand\annotatecatcher[1]{\hyperlink{def-annotatecatcher}{\texttt{annotate\_catcher}}(#1)}
 \newcommand\reduceconstants[0]{\hyperlink{def-reduceconstants}{\texttt{reduce\_constants}}}
+\newcommand\reduceconstraint[0]{\hyperlink{def-reduceconstraint}{\texttt{reduce\_constraint}}}
+\newcommand\reduceconstraints[0]{\hyperlink{def-reduceconstraints}{\texttt{reduce\_constraints}}}
 \newcommand\declarelocalconstant[1]{\texttt{declare\_local\_constant}(#1)}
 \newcommand\annotatelocaldeclitemuninit[1]{\texttt{annotate\_local\_decl\_item\_uninit}(#1)}
 \newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\texttt{check\_var\_not\_in\_env}}(#1)}
@@ -542,9 +547,7 @@ and familiarity with the AST is \underline{required} to understand it.
 The mathematical background needed to understand the mathematical formalization
 of the ASL semantics appears in \chapref{formal} and \chapref{typesystembuildingblocks}.
 
-\include{ASLFormal}
-
-\section{Reading guide}
+\paragraph{Reading guide:}
 The typing rules are organized into chapters, which roughly group the rules by their AST node type.
 The set of rules in each chapter is further split according to additional syntactic and semantic
 predicates over the AST node.
@@ -566,6 +569,11 @@ Each rule is presented using the following template:
 \item Formal paragraphs which give formal definitions of the rule.
 \item Comments paragraphs, which provide additional details. %refer to one or more rules from the Language Reference Manual~\cite{LRM} and
 \end{itemize}
+
+Note that rules use a specific language to define variables, deconstruct mathematical data types,
+and assert equality. See \secref{FlavoursOfEqualityInRules} for details.
+
+\include{ASLFormal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Type System Building Blocks}
@@ -704,7 +712,7 @@ We define the following shorthands for classifying integers:
 \end{array}
 \]
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{ZTPP}, \identr{WJYH}, \identr{HJPN}, \identr{CZTX}, \identr{TPHR}.}
 
 \section{ASL Type System}
@@ -1391,7 +1399,7 @@ The builtin singular type \texttt{Color} consists in two constants
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{PQCK} and \identd{NZWT}.}
 
 \section{TypingRule.BuiltinAggregateType \label{sec:TypingRule.BuiltinAggregateType}}
@@ -1451,7 +1459,7 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 { \isbuiltinaggregate(\tty) \typearrow \vb }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{PQCK} and \identd{KNBD}.}
 
 \section{TypingRule.BuiltinSingularOrAggregate \label{sec:TypingRule.BuiltinSingularOrAggregate}}
@@ -1519,7 +1527,7 @@ In the specification
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{vmzx}.}
 
 \section{TypingRule.AnonymousType \label{sec:TypingRule.AnonymousType}}
@@ -1544,7 +1552,7 @@ The tuple type \texttt{(integer, integer)} is an anonymous type.
 { \isanonymous(\tty) \typearrow \vb }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{VMZX}.}
 
 \section{TypingRule.SingularType \label{sec:TypingRule.SingularType}}
@@ -1583,7 +1591,7 @@ type C of B;
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{GVZK}.}
 
 \section{TypingRule.AggregateType \label{sec:TypingRule.AggregateType}}
@@ -1622,7 +1630,7 @@ type C of B;
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{GVZK}.}
 
 \section{TypingRule.NonPrimitiveType \label{sec:TypingRule.NonPrimitiveType}}
@@ -1712,7 +1720,7 @@ Boolean variables by using the types denoted by $\vt$ as a subscript.
   }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{GWXK}.}
 
 \section{TypingRule.PrimitiveType \label{sec:TypingRule.PrimitiveType}}
@@ -1749,7 +1757,7 @@ The following types are primitive:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{GWXK}.}
 
 \section{TypingRule.Structure \label{sec:structure}}
@@ -1865,7 +1873,7 @@ the type of \texttt{z} is the anonymous non-primitive type
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{FXQV}.}
 
 \section{TypingRule.Anonymize \label{sec:anonymize}}
@@ -1931,7 +1939,7 @@ The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.CheckConstrainedInteger \label{sec:TypingRule.CheckConstrainedInteger}}
 \hypertarget{def-checkconstrainedinteger}{}
@@ -1999,7 +2007,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Relations Over Types \label{chap:relationsovertypes}}
@@ -2108,7 +2116,7 @@ type subInt of integer subtypes superInt;
   }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.}
 
 \section{TypingRule.StructuralSubtypeSatisfaction\label{sec:TypingRule.StructuralSubtypeSatisfaction}}
@@ -2348,7 +2356,7 @@ if there is a unique one, as follows:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{TRVR}, \identi{SJDC}, \identi{MHYB}, \identi{TWTZ}, \identi{GYSK}, \identi{KXSD}.}
 
 \section{TypingRule.DomainSubtypeSatisfaction\label{sec:TypingRule.DomainSubtypeSatisfaction}}
@@ -2430,7 +2438,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{TRVR}.}
 
 \section{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
@@ -2465,7 +2473,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{TRVR}, \identi{KNXJ}.}
 
 \section{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
@@ -3090,7 +3098,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{YZHM}.}
 
 \section{TypingRule.CheckUnop \label{sec:TypingRule.CheckUnop}}
@@ -3674,7 +3682,7 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \op \in  \{\MUL, \POW, \PLUS, \MINUS\}\\
   \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
   \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
-  \tododefine{annotate\_constraints\_binop}(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
+  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
 }
@@ -3685,7 +3693,7 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
   \constraintsisstrictpositive(\vcstwo) \typearrow \vb\\
   \checktrans{\vb}{DenominatorMustBePositive} \checktransarrow \True \OrTypeError\\\\
-  \tododefine{annotate\_constraints\_binop}(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
+  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
 }
@@ -3696,7 +3704,7 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
   \constraintsisnonnegative(\vcstwo) \typearrow \vb\\
   \checktrans{\vb}{ShifterMustBeNonNegative} \checktransarrow \True \OrTypeError\\\\
-  \tododefine{annotate\_constraints\_binop}(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
+  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
 }
@@ -3730,7 +3738,7 @@ The following two rules are not mutually exclusive, but both yield the same resu
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{
   This is related to \identr{BKNT}, \identr{ZYWY}, \identr{BZKW},
   \identr{KFYS}, \identr{KXMR}, \identr{SQXN}, \identr{MRHT}, \identr{JGWF},
@@ -3742,9 +3750,9 @@ The following two rules are not mutually exclusive, but both yield the same resu
 \hypertarget{def-constraintsisstrictpositive}{}
 The function
 \[
-  \constraintsisstrictpositive(\overname{\intconstraints}{\cs}) \aslto \overname{\Bool}{\vb}
+  \constraintsisstrictpositive(\overname{\intconstraint^*}{\cs}) \aslto \overname{\Bool}{\vb}
 \]
-Conservatively tests whether the set of integer constraints $\cs$ always represent positive integers,
+conservatively tests whether the list of integer constraints $\cs$ always represent positive integers,
 yielding the result in $\vb$.
 
 \subsection{Prose}
@@ -3837,9 +3845,9 @@ One of the following applies:
 \hypertarget{def-constraintsisnonnegative}{}
 The function
 \[
-  \constraintsisnonnegative(\overname{\intconstraints}{\cs}) \aslto \overname{\Bool}{\vb}
+  \constraintsisnonnegative(\overname{\intconstraint^*}{\cs}) \aslto \overname{\Bool}{\vb}
 \]
-Conservatively tests whether the set of integer constraints $\cs$ always represent positive integers,
+conservatively tests whether the list of integer constraints $\cs$ always represent positive integers,
 yielding the result in $\vb$.
 
 \subsection{Prose}
@@ -4003,6 +4011,68 @@ One of the following holds:
   \namedlca(\tenv, \vt, \vs) \typearrow \None
 }
 \end{mathpar}
+
+\section{TypingRule.AnnotateConstraintBinop \label{sec:TypingRule.AnnotateConstraintBinop}}
+\hypertarget{def-annotateconstraintbinop}{}
+The function
+\[
+\begin{array}{r}
+\annotateconstraintbinop(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\binop}{\op} \aslsep
+  \overname{\intconstraint^*}{\csone} \aslsep
+  \overname{\intconstraint^*}{\cstwo}
+) \aslto \\
+\overname{\intconstraints}{\vics}
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the application of the binary operation $\op$ to the lists of integer constraints
+$\csone$ and $\cstwo$, yielding an integer constraints element $\vics$.
+Otherwise, the result is a type error.
+
+\subsection{Prose}
+
+\CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[exploding]{
+  \tododefine{binop\_filter\_right}(\tenv, \op, \cstwo) \typearrow \cstwof\\
+  \binopisexploding(\op) \typearrow \True\\
+  \explodeintervals(\tenv, \csone) \typearrow \csonee\\
+  \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
+  \constraintbinop(\op, \csonee, \cstwoe) \typearrow \cs\\
+  \reduceconstraints(\tenv, \cs) \typearrow \vics
+}{
+  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \vics
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[non\_exploding]{
+    \tododefine{binop\_filter\_right}(\tenv, \op, \cstwo) \typearrow \cstwof\\
+    \binopisexploding(\op) \typearrow \False\\
+    \constraintbinop(\op, \csone, \cstwof) \typearrow \cs\\
+    \reduceconstraints(\tenv, \cs) \typearrow \vics
+  }{
+    \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \vics
+  }
+  \end{mathpar}
+
+% \section{TypingRule.ExplodeIntervals \label{sec:TypingRule.ExplodeIntervals}}
+% \hypertarget{def-explodeintervals}{}
+% The function
+% \[
+% \explodeintervals()
+% \]
+
+% \section{TypingRule.BinopIsExploding \label{sec:TypingRule.BinopIsExploding}}
+% \hypertarget{def-binopisexploding}{}
+% The function
+% \[
+% \binopisexploding()
+% \]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of types \label{chap:typingoftypes}}
@@ -4399,7 +4469,7 @@ The following example declares a valid enumeration type:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}.}
 
 \section{TypingRule.TRecordExceptionDecl \label{sec:TypingRule.TRecordExceptionDecl}}
@@ -4659,7 +4729,7 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
   \begin{itemize}
     \item All of the following apply (\textsc{simple}):
     \begin{itemize}
-      \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
+      \item checking whether the range of positions in $\slicesone$ fits inside $0..\width$ yields $\True$\ProseOrTypeError;
       \item $\newfield$ is a bitfield named $\name$ with list of slices $\slicesone$, that is, $\BitFieldSimple(\name, \sliceone)$.
     \end{itemize}
 
@@ -5111,7 +5181,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{XZVT}.}
 
 \section{TypingRule.ESlice \label{sec:TypingRule.ESlice}}
@@ -5187,7 +5257,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.ECall \label{sec:TypingRule.ECall}}
 
@@ -5214,7 +5284,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{CFYP}, \identr{BQJG}.}
 
 \section{TypingRule.EGetArray \label{sec:TypingRule.EGetArray}}
@@ -5385,7 +5455,7 @@ A§ll of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{WBCQ}.}
 
 \section{TypingRule.ERecord \label{sec:TypingRule.ERecord}}
@@ -5427,7 +5497,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{WBCQ}.}
 
 \section{TypingRule.EGetRecordField \label{sec:TypingRule.EGetRecordField}}
@@ -5597,7 +5667,11 @@ All of the following apply:
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle\\
+  {
+    \begin{array}{r}
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle
+    \end{array}
+  }\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe) \OrTypeError\\\\
   \vtefour \eqname \TBits(\width, \Ignore)\\
@@ -5755,11 +5829,11 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Comments}
-\lrmcomment{This is related to \identr{NYNK} and \identr{KCZS}.}
-
-  The sum of the widths of the bitvector types~\texttt{ts} might be a symbolic
+The sum of the widths of the bitvector types~\texttt{ts} might be a symbolic
 expression that is unresolvable to an integer. For example:
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.EConcatUnresolvableToInteger.asl}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.EConcatUnresolvableToInteger.asl}
+
+\lrmcomment{This is related to \identr{NYNK} and \identr{KCZS}.}
 
 \section{TypingRule.ETuple \label{sec:TypingRule.ETuple}}
 
@@ -5925,7 +5999,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{
   This is related to \identr{VBLL}, \identi{KRLL}, \identg{PFRQ}, \identi{XVBG},
   \identr{GYJZ}, \identi{SZVF}, \identr{PZZJ}, \identr{YCPX}, \identi{ZLBW},
@@ -6220,7 +6294,7 @@ All of the following apply:
 \end{mathpar}
 
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{
   This is related to \identr{WDGQ}, \identr{GNTS}, \identi{MMKF},
   \identi{DGWJ}, \identi{KKCC} and \identr{LXQZ}.
@@ -6252,7 +6326,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{WDGQ}.}
 
 \section{TypingRule.LEDestructuring \label{sec:TypingRule.LEDestructuring}}
@@ -6777,8 +6851,8 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
-  \identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.
+\isempty{\subsection{Comments}}
+\lrmcomment{\identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.}
 
 \section{TypingRule.SliceLength \label{sec:TypingRule.SliceLength}}
 \subsection{Prose}
@@ -6840,8 +6914,8 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
-    \identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i+:(j-i+1)]}.
+\isempty{\subsection{Comments}}
+\lrmcomment{\identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i+:(j-i+1)]}.}
 
 \section{TypingRule.SliceStar \label{sec:TypingRule.SliceStar}}
 
@@ -6867,8 +6941,8 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
-    \identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}
+\isempty{\subsection{Comments}}
+\lrmcomment{\identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}}
 
 \section{TypingRule.Slices \label{sec:TypingRule.Slices}}
 \subsection{Prose}
@@ -6889,7 +6963,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Patterns}
@@ -7255,7 +7329,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identi{VMKF}.}
 
 \section{TypingRule.PTuple \label{sec:TypingRule.PTuple}}
@@ -7603,7 +7677,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{FTPK}.}
 
 \section{TypingRule.SReturnOne \label{sec:TypingRule.SReturnOne}}
@@ -7647,7 +7721,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{FTPK}.}
 
 \section{TypingRule.SReturnSome \label{sec:TypingRule.SReturnSome}}
@@ -7679,7 +7753,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{FTPK}.}
 
 \section{TypingRule.SSeq \label{sec:TypingRule.SSeq}}
@@ -7779,7 +7853,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{NBDJ}.}
 
 \section{TypingRule.SCase \label{sec:TypingRule.SCase}}
@@ -7811,7 +7885,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{WGSY}.}
 
 \section{TypingRule.SAssert \label{sec:TypingRule.SAssert}}
@@ -7839,7 +7913,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{JQYF}.}
 
 \section{TypingRule.SWhile \label{sec:TypingRule.SWhile}}
@@ -7869,7 +7943,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{FTVN}.}
 
 \section{TypingRule.SRepeat \label{sec:TypingRule.SRepeat}}
@@ -7902,7 +7976,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{FTVN}.}
 
 \section{TypingRule.SFor \label{sec:TypingRule.SFor}}
@@ -7952,7 +8026,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{SSBD}, \identr{ZSND}, \identr{VTJW}.}
 
 \section{TypingRule.SThrowNone \label{sec:TypingRule.SThrowNone}}
@@ -7976,8 +8050,8 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
-  Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.
+\isempty{\subsection{Comments}}
+\lrmcomment{Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.}
 
 \section{TypingRule.SThrowSome \label{sec:TypingRule.SThrowSome}}
 
@@ -8007,7 +8081,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{NXRC}.}
 
 \section{TypingRule.STry \label{sec:TypingRule.STry}}
@@ -8067,7 +8141,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{WVXS}.}
 
 \section{TypingRule.SDeclSome \label{sec:TypingRule.SDeclSome}}
@@ -8233,7 +8307,7 @@ The function
   ) \aslto
   \overname{\intconstraints}{\vis} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
-infers the list of constraints --- $\vis$ --- for a \texttt{for} loop index variable from the following:
+infers the integer constraints --- $\vis$ --- for a \texttt{for} loop index variable from the following:
 \begin{itemize}
   \item the \wellconstrainedversion\ of the type of the start expression --- $\structone$
   \item the \wellconstrainedversion\ of the type of the end expression --- $\structtwo$
@@ -8403,7 +8477,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{SDJK}.}
 
 \section{TypingRule.CatcherSome \label{sec:TypingRule.CatcherSome}}
@@ -8438,7 +8512,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -8474,8 +8548,7 @@ The function is defined by the rule TypingRule.AnnotateCall (see \secref{TypingR
 
 We also define helper functions via respective rules:
 \begin{itemize}
-  \item TypingRule.AnnotateCallArgTyped (see \secref{TypingRule.AnnotateCallArgTyped}),
-        which finds annotates the call with the annotated list of arguments.
+  \item TypingRule.AnnotateCallArgTyped (see \secref{TypingRule.AnnotateCallArgTyped})
   \item TypingRule.CheckCalleeParams (see \secref{TypingRule.CheckCalleeParams})
   \item TypingRule.RenameTyEqs (see \secref{TypingRule.RenameTyEqs})
   \item TypingRule.SubstExprNormalize (see \secref{TypingRule.SubstExprNormalize})
@@ -8518,7 +8591,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{
   This is related to \identi{VFDP}, \identd{TRFW}, \identr{KMDB},
   \identi{YMHX}, \identr{CCVD}, \identr{QYBH}, \identr{PFWQ}, \identr{ZLWD},
@@ -8544,7 +8617,7 @@ The function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-is same as $\annotatecall$, except that the argument expressions are replaced by
+is similar to $\annotatecall$, except that the argument expressions are replaced by
 the annotated expressions. That is, pairs consisting of a type and an expression.
 Otherwise, the result is a type error.
 
@@ -8722,7 +8795,7 @@ The function
 \overname{\ty}{\newty} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 transforms the type $\tty$ in the static environment $\tenv$,
-by substituting parameter names by their corresponding expressions in
+by substituting parameter names with their corresponding expressions in
 $\eqs$, yielding the type $\newty$.
 Otherwise, the result is a type error.
 
@@ -8743,7 +8816,7 @@ One of the following applies:
           $\listrange(\constraints)$, yields the constraint $\newc_\vi$;
     \item define $\newconstraints$ as the list of constraints $\newc_\vi$, for $\vi$ in \\
           $\listrange(\constraints)$;
-    \item define $\newty$ as the well-constraint integer type with constraints \\
+    \item define $\newty$ as the well-constrained integer type with constraints \\
           $\newconstraints$.
   \end{itemize}
 
@@ -8822,7 +8895,7 @@ The function
 ) \aslto \overname{\newe}{\expr}
 \]
 transforms the expression $\ve$ in the static environment $\tenv$,
-by substituting parameter names by their corresponding expressions in
+by substituting parameter names with their corresponding expressions in
 $\eqs$, and then attempting to symbolically simplify the result, yielding the expression $\newe$.
 Otherwise, the result is a type error.
 
@@ -8855,7 +8928,7 @@ The function
 ) \aslto \overname{\newe}{\expr}
 \]
 transforms the expression $\ve$ in the static environment $\tenv$,
-by substituting parameter names by their corresponding expressions in
+by substituting parameter names with their corresponding expressions in
 $\eqs$, yielding the expression $\newe$.
 Otherwise, the result is a type error.
 
@@ -9157,7 +9230,7 @@ The function
 ) \aslto \overname{\newc}{\intconstraint}
 \]
 transforms the integer constraint $\vc$ in the static environment $\tenv$,
-by substituting parameter names by their corresponding expressions in
+by substituting parameter names with their corresponding expressions in
 $\eqs$, and then attempting to symbolically simplify the result,
 yielding the integer constraint $\newc$.
 Otherwise, the result is a type error.
@@ -9390,10 +9463,17 @@ that $\vargs$ and $\callerargstyped$ have the same length.
   \annotateparameterdefining(\tenv, \vargsone, \callerargstypedone, \eqsone) \typearrow \eqs\\
 }{
   {
-    \begin{array}{r}
-    \annotateparameterdefining(\tenv, \eqsone, \vargs, \callerargstyped, \calleeparams) \\
+    \annotateparameterdefining
+    \left(
+      \begin{array}{c}
+      \tenv, \\
+      \eqsone, \\
+      \vargs, \\
+      \callerargstyped, \\
+      \calleeparams
+      \end{array}
+    \right)
     \typearrow \eqs \OrTypeError
-    \end{array}
   }
 }
 \end{mathpar}
@@ -9453,16 +9533,26 @@ One of the following applies:
   \annotateretty(\tenv, \calltype, \overname{\langle\tty\rangle}{\calleerettyopt}, \eqsthree) \typearrow
   \overname{\langle\ttyone\rangle}{\rettyopt}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[procedure\_or\_setter]{
   \calltype \in \{\STProcedure, \STSetter, \STEmptySetter\}\\
 }{
   \annotateretty(\tenv, \calltype, \overname{\None}{\calleerettyopt}, \eqsthree) \typearrow
   \overname{\None}{\rettyopt}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[ret\_type\_mismatch]{
-  \neg(\calltype \in \{\STProcedure, \STSetter, \STEmptySetter\} \leftrightarrow \calleerettyopt=\None)
+  {
+  \neg\left(
+    \begin{array}{c}\calltype \in \{\STProcedure, \STSetter, \STEmptySetter\} \leftrightarrow \\
+      \calleerettyopt=\None
+    \end{array}
+  \right)
+  }
 }{
   \annotateretty(\tenv, \calltype, \calleerettyopt, \eqsthree) \typearrow
   \TypeErrorVal{\MismatchedReturnValue}
@@ -9540,7 +9630,7 @@ One of the following applies:
           in $\tenv$ (see \secref{TypingRule.FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains a single element --- $(\matchedname, \funcsig)$;
     \item deducing the argument values for the parameters via $\deduceeqs$ with \\
-          $\callerargtypes$, $\funcsig.\funcargs$ in $\tenv$ yields
+          $\callerargtypes$, $\funcsig.\funcargs$ in $\tenv$ yields \\
           $(\extranargs, \namep, \callee)$\ProseOrTypeError.
   \end{itemize}
 \end{itemize}
@@ -9628,7 +9718,9 @@ infers the expressions associated with parameters that correspond to bitvector w
 yielding the result in $\eqs$.
 Otherwise, the result is a type error.
 
-It is assumed that $\callerargtypes$ and $\vargs$ have the same length.
+It guaranteed that by TypingRule.HasArgClash,
+which is used by \\ TypingRule.FilterCallCandidates before calling $\deduceeqs$,
+that $\callerargtypes$ and $\vargs$ have the same length.
 
 \subsection{Prose}
 One of the following applies:
@@ -9844,7 +9936,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{
 This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 \identr{TJKQ}, \identi{LFJZ}, \identi{BZVB}, \identi{RQQB}.
@@ -10921,9 +11013,8 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
-
-This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.
+\isempty{\subsection{Comments}}
+\lrmcomment{This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.}
 
 \section{TypingRule.SubprogramClash \label{sec:TypingRule.SubprogramClash}}
 \hypertarget{def-subprogramclash}{}
@@ -10998,8 +11089,7 @@ which defines whether two subprogram types are considered to be clashing:
 }
 \end{mathpar}
 
-\subsection{Comments}
-
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
 
 \section{TypingRule.AddNewFunc \label{sec:TypingRule.AddNewFunc}}
@@ -11020,8 +11110,9 @@ The function
 ensures that the subprogram given by the identifier $\name$, list of formals $\formals$,
 and subprogram type $\subpgmtype$ has a unique name among all the potential subprograms
 that overload $\name$.
-The result is the unique subprogram identifier $\newname$, which is used to distinguish it from the overloaded
-subprograms and the environment $\newtenv$, which is updated with $\newname$.
+The result is the unique subprogram identifier $\newname$, which is used to distinguish it in the set
+of overloaded subprograms (that is, other subprograms that share the same name)
+and the environment $\newtenv$, which is updated with $\newname$.
 Otherwise, the result is a type error.
 
 \subsection{Prose}
@@ -11102,8 +11193,7 @@ to the corresponding string.
 }
 \end{mathpar}
 
-\subsection{Comments}
-
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{PGFC}.}
 
 \section{TypingRule.CheckSetterHasGetter \label{sec:TypingRule.CheckSetterHasGetter}}
@@ -11285,7 +11375,9 @@ All of the following apply:
 }{
   \declareglobalstorage(\tenv, \gsd) \typearrow (\overname{\tenvtwo}{\newtenv}, \newgsd)
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[non\_constant]{
   \gsd \eqname \{
     \GDkeyword : \keyword,
@@ -11295,23 +11387,31 @@ All of the following apply:
   \}\\
 \checkvarnotingenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
 \annotatetypeopt(\tenv, \tyopt) \typearrow \tyoptp \OrTypeError\\\\
-\annotateexpropt(\tenv, \initialvalue) \typearrow (\initialvaluetype, \initialvaluep) \OrTypeError\\\\
+{
+  \begin{array}{r}
+\annotateexpropt(\tenv, \initialvalue) \typearrow \\ (\initialvaluetype, \initialvaluep) \OrTypeError
+  \end{array}
+}\\
 \annotateinittype(\tenv, \initialvaluetype, \tyoptp) \typearrow \declaredt\\
 \addglobalstorage(\tenv, \name, \keyword, \declaredt) \typearrow \tenvone \OrTypeError\\\\
 \keyword \neq \GDKConstant\\
-\newgsd \eqdef \{
-  \GDkeyword : \keyword,
-  \GDinitialvalue : \initialvalue,
-  \GDty : \tyoptp,
-  \GDname: \name
-\}
+{
+\newgsd \eqdef \left\{
+  \begin{array}{rcl}
+  \GDkeyword &:& \keyword, \\
+  \GDinitialvalue &:& \initialvalue, \\
+  \GDty &:& \tyoptp, \\
+  \GDname &:& \name
+  \end{array}
+\right\}
+}
 }{
   \declareglobalstorage(\tenv, \gsd) \typearrow (\overname{\tenvone}{\newtenv}, \newgsd)
 }
 \end{mathpar}
 
-\subsection{Comments}
-This relates to \identr{YSPM} and \identr{FWQM}.
+\isempty{\subsection{Comments}}
+\lrmcomment{This relates to \identr{YSPM} and \identr{FWQM}.}
 
 \section{TypingRule.AnnotateTypeOpt \label{sec:TypingRule.AnnotateTypeOpt}}
 \hypertarget{def-annotatetypeopt}{}
@@ -11563,7 +11663,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{Comments}
+\isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.}
 
 \section{TypingRule.AnnotateExtraFields \label{sec:TypingRule.AnnotateExtraFields}}
@@ -11631,7 +11731,9 @@ One of the following applies:
 \inferrule[none]{}{
   \annotateextrafields(\tenv, \tty, \overname{\None}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty})
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[empty\_fields]{
   \vs = \langle(\vsuper, \emptylist)\rangle\\
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
@@ -11639,7 +11741,9 @@ One of the following applies:
 }{
   \annotateextrafields(\tenv, \tty, \vs) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty})
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[no\_super]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \checktrans{\vb}{TypeConflict} \typearrow \True \OrTypeError\\\\
@@ -11648,12 +11752,18 @@ One of the following applies:
   \annotateextrafields(\tenv, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow
   \TypeErrorVal{\UndefinedIdentifier}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[structured]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \checktrans{\vb}{TypeConflict} \typearrow \True \OrTypeError\\\\
   G^\tenv.\declaredtypes(\vsuper) = \vt\\
-  \checktrans{\astlabel(\vt) \in \{\TRecord, \TException\}}{ExpectedStructuredType} \typearrow \True \OrTypeError\\\\
+  {
+    \begin{array}{r}
+  \checktrans{\astlabel(\vt) \in \{\TRecord, \TException\}}{ExpectedStructuredType} \typearrow \\ \True \OrTypeError
+    \end{array}
+  }\\
   \vt \eqname L(\fields)\\
   \newty \eqdef L(\fields \concat \extrafields)\\
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv)
@@ -11802,7 +11912,7 @@ if the following condition holds:
 \[
 C_1 < C_2 \Leftrightarrow \exists c_1\in C_1.\ c_2\in C_2.\ (c_1,c_2) \in E^* \enspace.
 \]
-This ordering is not total. That is, there may very well exist to strongly connected components
+This ordering is not total. That is, there may exist to strongly connected components
 $A,B\in\comps$ such that $A \not< B$ and $B \not< A$.
 
 \hypertarget{def-topologicalordering}{}
@@ -11980,7 +12090,7 @@ The function
 (\overname{\identifier^*}{\defs}, \overname{(\identifier\times\identifier)^*}{\dependencies})
 \]
 takes a set of declarations $\decls$ and
-returns a graph whose set of nodes are identifiers are used to name declarations
+returns a graph whose set of nodes are the identifiers that are used to name declarations
 and whose set of edges $\dependencies$ consists of pairs $(a,b)$
 where the declaration of $a$ uses an identifier defined by $b$.
 We refer to this graph as the \emph{dependency graph} (of $\decls$).
@@ -11988,9 +12098,9 @@ We refer to this graph as the \emph{dependency graph} (of $\decls$).
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item define $\defs$ the union of two sets:
+  \item define $\defs$ as the union of two sets:
   \begin{enumerate}
-  \item set of identifiers given by applying $\defdecl$ to each declaration in $\decls$;
+  \item the set of identifiers obtained by applying $\defdecl$ to each declaration in $\decls$;
   \item the union of applying $\defenumlabels$ to each declaration in $\decls$.
   \end{enumerate}
   \item define $\dependencies$ as the union of applying $\decldependencies$ to each declaration in $\decls$.
@@ -12234,7 +12344,7 @@ The function
 \[
 \usedecl(\overname{\decl}{\vd}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the declaration $\vd$ depends on.
+returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -12312,7 +12422,7 @@ The function
 \[
 \usety(\overname{\ty \cup \langle\ty\rangle}{\vt}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the type or \optional\ type $\vt$ depends on.
+returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -12474,7 +12584,7 @@ One of the following applies:
   \begin{itemize}
     \item $\fields$ is $\langle(\vx, \subfields)\rangle$;
     \item define $\ids$ as the union of the singleton set for $\vx$ and the union of applying $\usety$
-          to each type of a field in $\subfields$.
+          to each field type in $\subfields$.
   \end{itemize}
 \end{itemize}
 
@@ -12497,7 +12607,7 @@ The function
 \[
 \useexpr(\overname{\expr}{\ve} \cup \langle\overname{\expr}{\ve}\rangle) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the expression or \optional\ expression $\ve$ depends on.
+returns the set of identifiers $\ids$ which the expression or \optional\ expression $\ve$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -12546,7 +12656,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{e\_unop}):
   \begin{itemize}
-    \item $\ve$ is the unary operation expression over expression $\veone$;
+    \item $\ve$ is the unary operation expression over any unary operation and an expression $\veone$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$.
   \end{itemize}
 
@@ -12731,7 +12841,7 @@ The function
 \[
 \uselexpr(\overname{\lexpr}{\vle}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the left-hand-side expression $\vle$ depends on.
+returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -12835,7 +12945,7 @@ The function
 \[
 \usepattern(\overname{\pattern}{\vp}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the declaration $\vd$ depends on.
+returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -12946,7 +13056,7 @@ The function
 \[
 \useslice(\overname{\slice}{\vs}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the slice $\vs$ depends on.
+returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -12983,7 +13093,7 @@ The function
 \[
 \usebitfield(\overname{\decl}{\vbf}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the bitfield $\vbf$ depends on.
+returns the set of identifiers $\ids$ which the bitfield $\vbf$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -13034,7 +13144,7 @@ The function
 \[
 \useconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the integer constraint $\vc$ depends on.
+returns the set of identifiers $\ids$ which the integer constraint $\vc$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -13069,7 +13179,7 @@ The function
 \[
 \usestmt(\overname{\stmt}{\vs}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the statement $\vs$ depends on.
+returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -13246,7 +13356,7 @@ The function
 \[
 \useldi(\overname{\localdeclitem}{\ldi}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the local declaration item $\ldi$ depends on.
+returns the set of identifiers $\ids$ which the local declaration item $\ldi$ depends on.
 
 \subsection{Prose}
 One of the following applies:
@@ -13295,7 +13405,7 @@ The function
 \[
 \usecase(\overname{\casealt}{\vc}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the case alternative $\vc$ depends on.
+returns the set of identifiers $\ids$ which the case alternative $\vc$ depends on.
 
 \subsection{Prose}
 All of the following apply:
@@ -13321,7 +13431,7 @@ The function
 \[
 \usecatcher(\overname{\catcher}{\vc}) \aslto \overname{\pow{\identifier}}{\ids}
 \]
-returns the set of identifiers $\ids$ on which the try statement catcher $\vc$ depends on.
+returns the set of identifiers $\ids$ which the try statement catcher $\vc$ depends on.
 
 \subsection{Prose}
 All of the following apply:
@@ -13792,7 +13902,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{shr}):
   \begin{itemize}
-    \item $\op$ is $\SHL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\SHR$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
     \item applying $\binopliterals$ to $\POW$ with $2$ and $\vltwo$ yields the literal integer for $e$;
     \item applying $\binopliterals$ to $\DIVRM$ with $2$ and the literal integer for $e$ yields $\vr$.
@@ -13806,31 +13916,31 @@ One of the following applies:
 
   \item All of the following apply (\textsc{ne\_int}):
   \begin{itemize}
-    \item $\op$ is $\EQOP$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\NEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$ holds.
   \end{itemize}
 
   \item All of the following apply (\textsc{le\_int}):
   \begin{itemize}
-    \item $\op$ is $\EQOP$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\LEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$s.
   \end{itemize}
 
   \item All of the following apply (\textsc{lt\_int}):
   \begin{itemize}
-    \item $\op$ is $\EQOP$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\LT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$s.
   \end{itemize}
 
   \item All of the following apply (\textsc{ge\_int}):
   \begin{itemize}
-    \item $\op$ is $\EQOP$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\GEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater or equal than $b$s.
   \end{itemize}
 
   \item All of the following apply (\textsc{gt\_int}):
   \begin{itemize}
-    \item $\op$ is $\EQOP$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\GT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$s.
   \end{itemize}
 
@@ -13860,7 +13970,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{ne\_bool}):
   \begin{itemize}
-    \item $\op$ is $\EQOP$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item $\op$ is $\NEQ$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if one of $a$ is different from $b$.
   \end{itemize}
 
@@ -13968,8 +14078,8 @@ One of the following applies:
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is a bitvector literal for $b$;
-    \item $\op$ is $\NEQ$;
-    \item applying $\binopliterals$ to $\EQOP$ for $\vvone$ and $\vvtwo$ yields the Boolean literal for $\vb$\ProseOrTypeError;
+    \item $\op$ is $\EQOP$;
+    \item applying $\binopliterals$ to $\NEQ$ for $\vvone$ and $\vvtwo$ yields the Boolean literal for $\vb$\ProseOrTypeError;
     \item define $\vr$ as the Boolean literal for $\neg\vb$.
   \end{itemize}
 
@@ -14036,7 +14146,7 @@ One of the following applies:
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is an integer literal for $b$;
-    \item $\op$ is $\PLUS$;
+    \item $\op$ is $\MINUS$;
     \item define $y$ as the natural number represented by $a$;
     \item define $c$ as the two's complement little endian representation of $y-b$ in $\listlen{a}$ bits;
     \item define $\vr$ as the bitvector literal for $c$.
@@ -14983,7 +15093,7 @@ One of the following applies:
   \item All of the following apply (\textsc{e\_binop\_supported}):
   \begin{itemize}
     \item $\ve$ is a binary operation expression for an operation that is one of $\PLUS$, $\MINUS$, or $\MUL$
-          and subexpression $\veone$ and $\vetwo$;
+          and subexpressions $\veone$ and $\vetwo$;
     \item applying $\symdomofexpr$ to $\veone$ in $\tenv$ yields a symbolic constrained integer domain with constraint $\visone$,
           that is, $\DInt(\visone)$;
     \item applying $\symdomofexpr$ to $\vetwo$ in $\tenv$ yields a symbolic constrained integer domain with constraint $\vistwo$,
@@ -15000,7 +15110,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{unsupported}):
   \begin{itemize}
-    \item $\ve$ is not one of the expression types above: a literal expression, a variable expression, a unary operation
+    \item $\ve$ is not one of the following expression types a literal expression, a variable expression, a unary operation
           expression, or a binary operation expression;
     \item define $\vs$ as $\DUnknown$.
   \end{itemize}
@@ -15076,17 +15186,6 @@ One of the following applies:
   \symdomofexpr(\tenv, \ve) \typearrow \overname{\DUnknown}{\vd}
 }
 \end{mathpar}
-% | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
-%     let is1 = match of_expr env e1 with D_Int is -> is | _ -> assert false
-%     and is2 = match of_expr env e2 with D_Int is -> is | _ -> assert false
-%     and fop =
-%       match op with
-%       | PLUS -> monotone_interval_op Z.add
-%       | MINUS -> anti_monotone_interval_op Z.sub
-%       | MUL -> monotone_interval_op Z.mul
-%       | _ -> assert false
-%     in
-%     D_Int (int_set_raise_interval_op fop op is1 is2)
 
 \section{TypingRule.IntSetOp \label{sec:TypingRule.IntSetOp}}
 \hypertarget{def-intsetop}{}
@@ -15205,7 +15304,7 @@ One of the following applies:
 The function
 \[
 \intsettointconstraints(\overname{\powfin{\Z}}{\vs})
-\aslto \overname{\intconstraints}{\cs}
+\aslto \overname{\intconstraint^*}{\cs}
 \]
 transforms a finite set of integers into the equivalent list of integer constraints.
 
@@ -15477,7 +15576,7 @@ The function
   \overname{\expr}{\ve}
 ) \aslto \overname{\Z}{n} \cup \{\Top\}
 \]
-symbolically simplifies the \underline{integer-typed} expression $\ve$ and returns the resulting integer or $\Top$ if
+\symbolicallysimplifies\ the \underline{integer-typed} expression $\ve$ and returns the resulting integer or $\Top$ if
 the result of the simplification is not an integer.
 
 We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
@@ -15711,14 +15810,14 @@ The function
 \[
 \constraintsbinop(
   \overname{\binop}{\op} \aslsep
-  \overname{\intconstraints}{\csone} \aslsep
-  \overname{\intconstraints}{\cstwo}
+  \overname{\intconstraint^*}{\csone} \aslsep
+  \overname{\intconstraint^*}{\cstwo}
 )
-\aslto \overname{\intconstraints}{\cs} \cup \{\top\}
+\aslto \overname{\intconstraint^*}{\cs} \cup \{\top\}
 \]
 symbolically applies the binary operation $\op$ to the lists of integer constraints $\csone$ and $\cstwo$,
 yielding the list of integer constraints $\cs$.
-Otherwise, the result is $\top$, which indicates a failure of representing the result by a list of integer constraints.
+Otherwise, the result is $\top$, which indicates a failure in representing the result by a list of integer constraints.
 
 \subsection{Prose}
 All of the following apply:
@@ -15759,8 +15858,8 @@ The function
 \]
 symbolically applies the binary operation $\op$ to the integer constraints $\vcone$ and $\vctwo$,
 yielding the integer constraint $\vc$.
-Otherwise, the result is $\top$, which indicates a failure of representing the result of
-by an integer constraints.
+Otherwise, the result is $\top$, which indicates a failure in representing the result of
+by an integer constraint.
 
 \subsection{Prose}
 
@@ -16027,6 +16126,8 @@ and then we define the following rules:
 \begin{itemize}
   \item TypingRule.Normalize (see \secref{TypingRule.Normalize})
   \item TypingRule.ReduceConstants (see \secref{TypingRule.ReduceConstants})
+  \item TypingRule.ReduceConstraint (see \secref{TypingRule.ReduceConstraint})
+  \item TypingRule.ReduceConstraints (see \secref{TypingRule.ReduceConstraints})
   \item TypingRule.ToIR (see \secref{TypingRule.ToIR})
   \item TypingRule.ToIRCase (see \secref{TypingRule.ToIRCase})
   \item TypingRule.ExprEqualNorm (see \secref{TypingRule.ExprEqualNorm})
@@ -16193,7 +16294,7 @@ The function
 \[
 \normalize(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \overname{\expr}{\newe} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-symbolically simplifies an expression $\ve$ in the static environment $\tenv$,
+\hypertarget{def-symbolicallysimplifies}{symbolically simplifies} an expression $\ve$ in the static environment $\tenv$,
 yielding an expression $\newe$.
 Otherwise, the result is a type error.
 
@@ -16239,7 +16340,7 @@ The function
 \aslto
 \overname{\literal}{\vl} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-symbolically simplifies an expression $\ve$ into the literal $\vl$.
+\symbolicallysimplifies\ an expression $\ve$ into the literal $\vl$.
 Otherwise, the result is a type error.
 
 \subsection{Prose}
@@ -16267,6 +16368,7 @@ One of the following applies:
 \end{itemize}
 
 \CodeSubsection{\ReduceConstantsBegin}{\ReduceConstantsEnd}{../Typing.ml}
+
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[eval\_literal]{
@@ -16291,6 +16393,105 @@ One of the following applies:
   \reduceconstants(\tenv, \ve) \typearrow \TypeErrorVal{CannotBeReducedToAConstant}
 }
 \end{mathpar}
+
+\section{TypingRule.ReduceConstraint \label{sec:TypingRule.ReduceConstraint}}
+\hypertarget{def-reduceconstraint}{}
+The function
+\[
+\reduceconstraint(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\intconstraint}{\vc}
+) \aslto
+\overname{\intconstraint}{\newc}
+\]
+\symbolicallysimplifies\ an integer constraint $\vc$, yielding the integer constraint $\newc$
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\vc$ is an exact integer constraint for $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$;
+    \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\ve)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vc$ is an range integer constraint for $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\normalize$ to $\veone$ in $\tenv$ yields $\veonep$;
+    \item applying $\normalize$ to $\vetwo$ in $\tenv$ yields $\vetwop$;
+    \item define $\newc$ as the exact integer constraint for $\vep$, that is, \\ $\ConstraintRange(\veonep, \vetwop)$.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{
+  \normalize(\tenv, \ve) \typearrow \vep
+}{
+  \reduceconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\ConstraintExact(\vep)}{\newc}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \normalize(\tenv, \veone) \typearrow \veonep\\
+  \normalize(\tenv, \vetwo) \typearrow \vetwop\\
+}{
+  \reduceconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+}
+\end{mathpar}
+
+\section{TypingRule.ReduceConstraints \label{sec:TypingRule.ReduceConstraints}}
+\hypertarget{def-reduceconstraints}{}
+The function
+\[
+\reduceconstraints(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\intconstraints}{\vc}
+) \aslto
+\overname{\intconstraints}{\newc}
+\]
+\symbolicallysimplifies\ an integer constraints $\vc$, yielding the integer constraints $\newc$
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{unconstrained\_underconstrained}):
+  \begin{itemize}
+    \item the AST label of $\vc$ is either $\unconstrained$ or $\underconstrained$;
+    \item define $\newc$ as $\vc$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{well\_constrained}):
+  \begin{itemize}
+    \item $\vc$ is a list of constraints, that is, $\wellconstrained(\cs)$;
+    \item define $\newc$ as the application of $\reduceconstraint$ to every constraint in $\cs$ in $\tenv$.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[unconstrained\_underconstrained]{
+  \astlabel(\vc) \in \{\unconstrained, \underconstrained\}
+}{
+  \reduceconstraints(\tenv, \vc) \typearrow \overname{\vc}{\newc}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[unconstrained\_underconstrained]{
+  \newc \eqdef [\vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi])]
+}{
+  \reduceconstraints(\tenv, \overname{\wellconstrained(\cs)}{\vc}) \typearrow \newc
+}
+\end{mathpar}
+
 \section{TypingRule.ToIR \label{sec:TypingRule.ToIR}}
 \hypertarget{def-toir}{}
 The function
@@ -16424,7 +16625,7 @@ One of the following applies:
   \item All of the following apply (\textsc{ebinop\_minus}):
   \begin{itemize}
     \item $\ve$ is a binary subtraction expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\MINUS, \veone, \vetwo)$;
-    \item $\vep$ is the addition expression with operands $\veone$ and the negation of $\vetwo$, that is, \\ $\EBinop(\PLUS, \veone, \EBinop(\MINUS, \vetwo))$;
+    \item $\vep$ is the subtraction expression with operands $\veone$ and the negation of $\vetwo$, that is, \\ $\EBinop(\MINUS, \veone, \EUnop(\MINUS, \vetwo))$;
     \item converting $\vpp$ into a symbolic expression in $\tenv$ yields $\vp$\ProseOrTypeErrorOrBot.
   \end{itemize}
 
@@ -16580,7 +16781,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[ebinop\_minus]{
-  \vep \eqdef \EBinop(\PLUS, \veone, \EBinop(\MINUS, \vetwo))\\
+  \vep \eqdef \EBinop(\PLUS, \veone, \EUnop(\MINUS, \vetwo))\\
   \toir(\tenv, \vpp) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
 }{
   \toircase(\tenv, \overname{\EBinop(\MINUS, \veone, \vetwo)}{\ve}) \typearrow \vp
@@ -16932,9 +17133,9 @@ One of the following applies:
 
   \item All of the following apply (\textsc{e\_tuple}):
   \begin{itemize}
-    \item $\veone$ is a tuple expression with subexpressions list $\vlone$,
+    \item $\veone$ is a tuple expression with subexpression list $\vlone$,
           that is, $\ETuple(\vlone)$;
-    \item $\vetwo$ is a tuple expression with subexpressions list $\vltwo$,
+    \item $\vetwo$ is a tuple expression with subexpression list $\vltwo$,
           that is, $\ETuple(\vltwo)$;
     \item checking whether the lengths of $\vlone$ and $\vltwo$ are equal yields either $\True$ or $\False$, which short-circuits
           the entire rule;
@@ -17542,7 +17743,7 @@ One of the following applies:
 \hypertarget{def-constraintsequal}{}
 The function
 \[
-  \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraints}{\csone} \aslsep \overname{\intconstraints}{\cstwo})
+  \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\csone} \aslsep \overname{\intconstraint^*}{\cstwo})
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
@@ -17788,8 +17989,8 @@ One of the following applies:
 
   \item All of the following apply (\textsc{expr\_expr}):
   \begin{itemize}
-    \item $\vlone$ is an integer type length expression with subexpression $\veoneone$, that is, $\ArrayLengthExpr(\veoneone)$;
-    \item $\vltwo$ is an integer type length expression with subexpression $\vetwoone$, that is, $\ArrayLengthExpr(\vetwoone)$;
+    \item $\vlone$ is an integer type length expression with subexpression $\veoneone$, that is, \\ $\ArrayLengthExpr(\veoneone)$;
+    \item $\vltwo$ is an integer type length expression with subexpression $\vetwoone$, that is, \\ $\ArrayLengthExpr(\vetwoone)$;
     \item testing whether $\veoneone$ and $\vetwoone$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
   \end{itemize}
 

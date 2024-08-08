@@ -7,10 +7,7 @@ PDFS=ASLSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf ASL
 all: $(PDFS)
 
 short:
-	$(MAKE) $(MFLAGS) NOEMPTY=1 NOFORMAL=1 all
-
-no-formal:
-	$(MAKE) $(MFLAGS) NOFORMAL=1 all
+	$(MAKE) $(MFLAGS) NOEMPTY=1 all
 
 code:
 	$(MAKE) $(MFLAGS) CODE=1 all
@@ -21,7 +18,7 @@ no-empty:
 todo:
 	$(MAKE) $(MFLAGS) TODO=1 all
 
-CONTROLS=ifempty.tex ifformal.tex ifcode.tex
+CONTROLS=ifempty.tex ifcode.tex
 
 .PHONY: control
 control: control.tex $(CONTROLS)
@@ -72,20 +69,12 @@ ifcode.tex: force
 	@echo "\\\\newif\\ifcode\\\\codefalse" >$@
 endif
 
-ifdef NOFORMAL
-ifformal.tex: force
-	@echo "\\\\newif\\ifformal\\\\formalfalse" >$@
-else
-ifformal.tex: force
-	@echo "\\\\newif\\ifformal\\\\formaltrue" >$@
-endif
-
-ifdef NOEMPTY
-ifempty.tex: force
-	@echo "\\\\newif\\ifempty\\\\emptyfalse" >$@
-else
+ifdef SHOW_EMPTY
 ifempty.tex: force
 	@echo "\\\\newif\\ifempty\\\\emptytrue" >$@
+else
+ifempty.tex: force
+	@echo "\\\\newif\\ifempty\\\\emptyfalse" >$@
 endif
 
 clean:

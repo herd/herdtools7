@@ -72,16 +72,20 @@ let reduce_to_z_opt env e =
   | E_Literal (L_Int z) -> Some z
   | _ -> None
 
+(* Begin ReduceConstraint *)
 let reduce_constraint env = function
   | Constraint_Exact e -> Constraint_Exact (StaticModel.try_normalize env e)
   | Constraint_Range (e1, e2) ->
       Constraint_Range
         (StaticModel.try_normalize env e1, StaticModel.try_normalize env e2)
+(* End *)
 
+(* Begin ReduceConstraints *)
 let reduce_constraints env = function
   | (UnConstrained | UnderConstrained _) as c -> c
   | WellConstrained constraints ->
       WellConstrained (List.map (reduce_constraint env) constraints)
+(* End *)
 
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
@@ -595,6 +599,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | OR | RDIV ->
         assert false
 
+  (* Begin ExplodeIntervals *)
   let explode_intervals =
     let rec make_interval ~loc acc a b =
       if Z.leq a b then
@@ -625,6 +630,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | _ -> [ c ])
     in
     fun env -> list_concat_map (explode_constraint env)
+  (* End *)
 
   let e_zero = expr_of_int 0
   let e_one = expr_of_int 1
@@ -706,19 +712,19 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   (* Begin AnnotateConstraintBinop *)
   let annotate_constraint_binop ~loc env op cs1 cs2 =
-    let cs2 = binop_filter_right ~loc env op cs2 in
-    let cs1, cs2 =
+    let cs2_f = binop_filter_right ~loc env op cs2 in
+    let cs1_e, cs2_e =
       if binop_is_exploding op then
-        (explode_intervals env cs1, explode_intervals env cs2)
-      else (cs1, cs2)
+        (explode_intervals env cs1, explode_intervals env cs2_f)
+      else (cs1, cs2_f)
     in
-    let res = constraint_binop op cs1 cs2 |> reduce_constraints env in
+    let res = constraint_binop op cs1_e cs2_e |> reduce_constraints env in
     let () =
       if false then
         Format.eprintf
           "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
-          (PP.binop_to_string op) PP.pp_int_constraints cs1
-          PP.pp_int_constraints cs2 PP.pp_ty
+          (PP.binop_to_string op) PP.pp_int_constraints cs1_e
+          PP.pp_int_constraints cs2_e PP.pp_ty
           (T_Int res |> add_dummy_pos)
     in
     res
