@@ -73,6 +73,9 @@ type error = error_desc annotated
 
 exception ASLException of error
 
+(* This error resulted from AArch64 test execution in ASL mode *)
+exception AArch64ASLException of error
+
 type 'a result = ('a, error) Result.t
 
 let fatal e = raise (ASLException e)
