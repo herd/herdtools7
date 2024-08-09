@@ -639,6 +639,12 @@ let () =
            if dbg_exc then raise exc ;
            Warn.warn_always "%s" (Asllib.Error.error_to_string e);
            check_exit seen
+        | Asllib.Error.AArch64ASLException e as exc ->
+          (* Add litmus filename *)
+           if dbg_exc then raise exc ;
+           Warn.warn_always "%a:\n%s"
+             Pos.pp_pos0 name (Asllib.Error.error_to_string e);
+           check_exit seen
         | e ->
            Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
            raise e)
