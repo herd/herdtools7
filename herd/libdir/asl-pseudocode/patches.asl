@@ -233,3 +233,18 @@ func UsingAArch32() => boolean
 begin
   return FALSE;
 end
+
+// AltDecodeBitMasks()
+// ===================
+// Alternative but logically equivalent implementation of DecodeBitMasks() that
+// uses simpler primitives to compute tmask and wmask.
+// Luc: Overridden for avoiding a warning, not called anyway
+
+type NotImplemented of exception;
+
+func AltDecodeBitMasks(immN:bit,imms:bits(6), immr:bits(6),
+                  immediate:boolean, M:integer)
+=> (bits(M), bits(M))
+begin
+  throw NotImplemented {};
+end
