@@ -39,15 +39,15 @@ let _dbg = false
 module type S = sig
   module B : Backend.S
 
-  val run_env : (AST.identifier * B.value) list -> AST.t -> B.value B.m
-  val run : AST.t -> B.value B.m
-  val run_typed : AST.t -> StaticEnv.env -> B.value B.m
+  val run_typed_env :
+    (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
+
+  val run_typed : StaticEnv.global -> AST.t -> B.value B.m
 end
 
 module type Config = sig
   module Instr : Instrumentation.SEMINSTR
 
-  val type_checking_strictness : Typing.strictness
   val unroll : int
 end
 
@@ -232,19 +232,17 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
-  let build_genv env0 eval_expr base_value (static_env : StaticEnv.env)
+  let build_genv env0 eval_expr base_value (static_env : StaticEnv.global)
       (ast : AST.t) =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then
         Format.eprintf "@[<v 2>Executing in env:@ %a@.]" StaticEnv.pp_global
-          static_env.global
+          static_env
     in
     let env =
       let open IEnv in
-      let global =
-        { static = static_env.StaticEnv.global; storage = Storage.empty; funcs }
-      in
+      let global = { static = static_env; storage = Storage.empty; funcs } in
       { global; local = empty_scoped (Scope_Global true) }
     in
     let env =
@@ -1388,10 +1386,11 @@ module Make (B : Backend.S) (C : Config) = struct
         List.init i_length (Fun.const v) |> B.create_vector
 
   (* Begin TopLevel *)
-  let run_typed_env env (ast : AST.t) (static_env : StaticEnv.env) : B.value m =
+  let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
+      B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in
     let*| res = eval_subprogram env "main" dummy_annotated [] [] in
-    match res with
+    (match res with
     | Normal ([ v ], _genv) -> read_value_from v
     | Normal _ -> Error.(fatal_unknown_pos (MismatchedReturnValue "main"))
     | Throwing (v_opt, _genv) ->
@@ -1401,22 +1400,9 @@ module Make (B : Backend.S) (C : Config) = struct
           | Some ((v, _, _scope), ty) ->
               Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v)
         in
-        Error.fatal_unknown_pos (Error.UncaughtException msg)
+        Error.fatal_unknown_pos (Error.UncaughtException msg))
+    |: SemanticsRule.TopLevel
 
-  let run_typed ast env = run_typed_env [] ast env
-
-  let run_env (env : (AST.identifier * B.value) list) (ast : AST.t) : B.value m
-      =
-    let ast = List.rev_append primitive_decls ast in
-    let ast = Builder.with_stdlib ast in
-    let ast, static_env =
-      Typing.type_check_ast C.type_checking_strictness ast StaticEnv.empty
-    in
-    let () =
-      if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
-    in
-    run_typed_env env ast static_env
-
-  let run ast = run_env [] ast |: SemanticsRule.TopLevel
+  let run_typed env ast = run_typed_env [] env ast
   (* End TopLevel *)
 end

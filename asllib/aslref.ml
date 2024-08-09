@@ -33,6 +33,7 @@ type args = {
   print_typed : bool;
   show_rules : bool;
   strictness : Typing.strictness;
+  output_format : Error.output_format;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -49,6 +50,7 @@ let parse_args () =
   let set_strictness s () = strictness := s in
   let show_version = ref false in
   let push_file file_type s = target_files := (file_type, s) :: !target_files in
+  let output_format = ref Error.HumanReadable in
 
   let speclist =
     [
@@ -63,6 +65,9 @@ let parse_args () =
       ( "--print-typed",
         Arg.Set print_typed,
         " Print the parsed AST after typing and before executing it." );
+      ( "--format-csv",
+        Arg.Unit (fun () -> output_format := Error.CSV),
+        " Output the errors in a CSV format." );
       ( "--opn",
         Arg.Set_string opn,
         "OPN_FILE Parse the following opn file as main." );
@@ -118,6 +123,7 @@ let parse_args () =
       print_typed = !print_typed;
       strictness = !strictness;
       show_rules = !show_rules;
+      output_format = !output_format;
     }
   in
 
@@ -182,14 +188,28 @@ let () =
     if args.print_serialized then print_string (Serialize.t_to_string ast)
   in
 
-  let ast = List.rev_append Native.primitive_decls ast in
-  let ast = Builder.with_stdlib ast in
+  let ast =
+    let open Builder in
+    with_primitives Native.NativeBackend.primitives ast |> with_stdlib
+  in
 
   let () = if false then Format.eprintf "%a@." PP.pp_t ast in
 
+  let () =
+    match args.output_format with
+    | Error.CSV ->
+        Printf.eprintf
+          {|"File","Start line","Start col","End line","End col","Exception"\n|}
+    | Error.HumanReadable -> ()
+  in
+
   let typed_ast, static_env =
-    or_exit @@ fun () ->
-    Typing.type_check_ast args.strictness ast StaticEnv.empty
+    let module C = struct
+      let output_format = args.output_format
+      let check = args.strictness
+    end in
+    let module T = Typing.Annotate (C) in
+    or_exit @@ fun () -> T.type_check_ast ast
   in
 
   let () =
@@ -201,7 +221,7 @@ let () =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
-      Native.interprete ~instrumentation ~static_env args.strictness typed_ast
+      Native.interprete ~instrumentation static_env typed_ast
     else (0, [])
   in
 

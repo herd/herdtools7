@@ -43,3 +43,6 @@ val from_file_multi_version :
 val stdlib : AST.t Lazy.t
 val with_stdlib : AST.t -> AST.t
 val is_stdlib_name : AST.identifier -> bool
+
+val with_primitives :
+  ?loc:unit AST.annotated -> (AST.func * 'a) list -> AST.t -> AST.t

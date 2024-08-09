@@ -160,9 +160,17 @@ type strictness = [ `Silence | `Warn | `TypeCheck ]
 
 module type ANNOTATE_CONFIG = sig
   val check : strictness
+  val output_format : Error.output_format
+end
+
+module type S = sig
+  val type_check_ast :
+    ?env:StaticEnv.global -> AST.t -> AST.t * StaticEnv.global
 end
 
 module Property (C : ANNOTATE_CONFIG) = struct
+  module EP = Error.ErrorPrinter (C)
+
   exception TypingAssumptionFailed
 
   type ('a, 'b) property = 'a -> 'b
@@ -178,7 +186,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
     match C.check with
     | `TypeCheck -> fun f () -> f ()
     | `Warn -> (
-        fun f () -> try f () with Error.ASLException e -> Error.eprintln e)
+        fun f () -> try f () with Error.ASLException e -> EP.eprintln e)
     | `Silence -> fun _f () -> ()
 
   let best_effort' : ('a, 'a) property -> ('a, 'a) property =
@@ -188,7 +196,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
         fun f x ->
           try f x
           with Error.ASLException e ->
-            Error.eprintln e;
+            EP.eprintln e;
             x)
     | `Silence -> ( fun f x -> try f x with Error.ASLException _ -> x)
 
@@ -350,7 +358,7 @@ end
 
    ---------------------------------------------------------------------------*)
 
-module Annotate (C : ANNOTATE_CONFIG) = struct
+module Annotate (C : ANNOTATE_CONFIG) : S = struct
   open Property (C)
   module Fn = FunctionRenaming (C)
 
@@ -603,23 +611,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let max_interval_size = ~$1 lsl 14 in
       Compare.(abs (a - b) > max_interval_size)
     in
-    let explode_constraint env = function
+    let explode_constraint ~loc env = function
       | Constraint_Exact _ as c -> [ c ]
       | Constraint_Range (a, b) as c -> (
           match (reduce_to_z_opt env a, reduce_to_z_opt env b) with
           | Some za, Some zb ->
               if interval_is_too_big za zb then
                 let () =
-                  Format.eprintf
-                    "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as \
-                     an interval.@]@."
-                    Z.pp_print za Z.pp_print zb
+                  EP.warn_from ~loc Error.(IntervalTooBigToBeExploded (za, zb))
                 in
                 [ c ]
-              else make_interval [] ~loc:b za zb
+              else make_interval [] ~loc za zb
           | _ -> [ c ])
     in
-    fun env -> list_concat_map (explode_constraint env)
+    fun ~loc env -> list_concat_map (explode_constraint ~loc env)
 
   let e_zero = expr_of_int 0
   let e_one = expr_of_int 1
@@ -703,7 +708,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let cs2 = binop_filter_right ~loc env op cs2 in
     let cs1, cs2 =
       if binop_is_exploding op then
-        (explode_intervals env cs1, explode_intervals env cs2)
+        (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2)
       else (cs1, cs2)
     in
     let res = constraint_binop op cs1 cs2 |> reduce_constraints env in
@@ -882,18 +887,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | T_Named _, _ | _, T_Named _ -> assert false
       | _ -> fail
 
-  let var_in_env ?(local = true) env x =
-    (local && IMap.mem x env.local.storage_types)
-    || IMap.mem x env.global.storage_types
-    || IMap.mem x env.global.subprograms
-    || IMap.mem x env.global.declared_types
+  let var_in_genv (genv : StaticEnv.global) x =
+    IMap.mem x genv.storage_types
+    || IMap.mem x genv.subprograms
+    || IMap.mem x genv.declared_types
 
-  let check_var_not_in_env ?(local = true) loc env x () =
-    if var_in_env ~local env x then
-      fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+  let var_in_env env x =
+    IMap.mem x env.local.storage_types || var_in_genv env.global x
+
+  let check_var_not_in_env loc env x () =
+    if var_in_env env x then fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
 
-  let check_var_not_in_genv loc = check_var_not_in_env ~local:false loc
+  let check_var_not_in_genv loc genv x () =
+    if var_in_genv genv x then
+      fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+    else ()
 
   let get_variable_enum' env e =
     match e.desc with
@@ -1046,7 +1055,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
         in
         let+ () =
-         fun () -> List.iter (fun s -> check_var_not_in_genv ty env s ()) li
+         fun () ->
+          List.iter (fun s -> check_var_not_in_genv ty env.global s ()) li
         in
         ty |: TypingRule.TEnumDecl
         (* Begin TNonDecl *)
@@ -1068,7 +1078,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
-    let t, e' = annotate_expr env e in
+    let t, e' = annotate_expr env ~forbid_atcs:true e in
     let+ () = check_constrained_integer ~loc env t in
     let+ () = check_statically_evaluable env e in
     StaticModel.try_normalize env e'
@@ -1397,7 +1407,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (name1, args1, eqs3, ret_ty1) |: TypingRule.FCall
   (* End *)
 
-  and annotate_expr env (e : expr) : ty * expr =
+  and annotate_expr env ?(forbid_atcs = false) (e : expr) : ty * expr =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
     let here x = add_pos_from e x and loc = to_pos e in
     match e.desc with
@@ -1415,6 +1425,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               fatal_from loc (BadATC (t, ty)))
         in
         (if Types.subtype_satisfies env t ty' then (ty', e'')
+         else if forbid_atcs then fatal_from loc Error.UnexpectedATC
          else (ty', E_ATC (e'', ty_struct) |> here))
         |: TypingRule.ATC
     (* End *)
@@ -1477,14 +1488,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin Binop *)
     | E_Binop (op, e1, e2) ->
-        let t1, e1' = annotate_expr env e1 in
-        let t2, e2' = annotate_expr env e2 in
+        let t1, e1' = annotate_expr ~forbid_atcs env e1 in
+        let t2, e2' = annotate_expr ~forbid_atcs env e2 in
         let t = check_binop e env op t1 t2 in
         (t, E_Binop (op, e1', e2') |> here) |: TypingRule.Binop
     (* End *)
     (* Begin Unop *)
     | E_Unop (op, e') ->
-        let t'', e'' = annotate_expr env e' in
+        let t'', e'' = annotate_expr ~forbid_atcs env e' in
         let t = check_unop e env op t'' in
         (t, E_Unop (op, e'') |> here) |: TypingRule.Unop
     (* End *)
@@ -1504,10 +1515,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin ECond *)
     | E_Cond (e_cond, e_true, e_false) ->
-        let t_cond, e_cond' = annotate_expr env e_cond in
+        let t_cond, e_cond' = annotate_expr ~forbid_atcs env e_cond in
         let+ () = check_structure_boolean e env t_cond in
-        let t_true, e_true' = annotate_expr env e_true
-        and t_false, e_false' = annotate_expr env e_false in
+        let t_true, e_true' = annotate_expr ~forbid_atcs env e_true
+        and t_false, e_false' = annotate_expr ~forbid_atcs env e_false in
         let t =
           best_effort t_true (fun _ ->
               match Types.lowest_common_ancestor env t_true t_false with
@@ -1519,13 +1530,17 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin ETuple *)
     | E_Tuple li ->
-        let ts, es = List.map (annotate_expr env) li |> List.split in
+        let ts, es =
+          List.map (annotate_expr ~forbid_atcs env) li |> List.split
+        in
         (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
     (* End *)
     | E_Concat [] -> fatal_from loc UnrespectedParserInvariant
     (* Begin EConcat *)
     | E_Concat (_ :: _ as li) ->
-        let ts, es = List.map (annotate_expr env) li |> List.split in
+        let ts, es =
+          List.map (annotate_expr ~forbid_atcs env) li |> List.split
+        in
         let w =
           let widths = List.map (get_bitvector_width e env) ts in
           let wh = List.hd widths and wts = List.tl widths in
@@ -1579,7 +1594,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               (* Begin ERecord *)
               List.map
                 (fun (name, e') ->
-                  let t', e'' = annotate_expr env e' in
+                  let t', e'' = annotate_expr ~forbid_atcs env e' in
                   let t_spec' =
                     match List.assoc_opt name field_types with
                     | None -> fatal_from e (Error.BadField (name, ty))
@@ -1614,7 +1629,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (ty, E_Call (name1, args1, eqs) |> here) |: TypingRule.ESetter
             (* End ReduceSlicesToCall *)
         | _ -> (
-            let t_e', e'' = annotate_expr env e' in
+            let t_e', e'' = annotate_expr ~forbid_atcs env e' in
             let struct_t_e' = Types.make_anonymous env t_e' in
             match struct_t_e'.desc with
             (* Begin ESlice *)
@@ -1633,7 +1648,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             | T_Array (size, ty') -> (
                 match slices with
                 | [ Slice_Single e_index ] ->
-                    let t_index', e_index' = annotate_expr env e_index in
+                    let t_index', e_index' =
+                      annotate_expr ~forbid_atcs env e_index
+                    in
                     let wanted_t_index = type_of_array_length ~loc:e size in
                     let+ () =
                       check_type_satisfies e env t_index' wanted_t_index
@@ -1652,7 +1669,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           match e1.desc with
           | E_Var name when should_reduce_to_call env name ST_Getter ->
               let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-              let ty, _ = annotate_expr env empty_getter in
+              let ty, _ = annotate_expr ~forbid_atcs env empty_getter in
               should_field_reduce_to_call env name ty field_name
           | _ -> None
         in
@@ -1664,7 +1681,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
         | None -> (
-            let t_e2, e2 = annotate_expr env e1 in
+            let t_e2, e2 = annotate_expr ~forbid_atcs env e1 in
             match (Types.make_anonymous env t_e2).desc with
             | T_Exception fields | T_Record fields -> (
                 match List.assoc_opt field_name fields with
@@ -1688,12 +1705,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* Begin EGetBitField *)
                 | Some (BitField_Simple (_field, slices)) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    annotate_expr env e3 |: TypingRule.EGetBitField
+                    annotate_expr ~forbid_atcs env e3 |: TypingRule.EGetBitField
                 (* End *)
                 (* Begin EGetBitFieldNested *)
                 | Some (BitField_Nested (_field, slices, bitfields')) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    let t_e4, new_e = annotate_expr env e3 in
+                    let t_e4, new_e = annotate_expr ~forbid_atcs env e3 in
                     let t_e5 =
                       match t_e4.desc with
                       | T_Bits (width, _bitfields) ->
@@ -1705,7 +1722,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* Begin EGetBitFieldTyped *)
                 | Some (BitField_Type (_field, slices, t)) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    let t_e4, new_e = annotate_expr env e3 in
+                    let t_e4, new_e = annotate_expr ~forbid_atcs env e3 in
                     let+ () = check_type_satisfies new_e env t_e4 t in
                     (t, new_e) |: TypingRule.EGetBitFieldTyped
                     (* End *))
@@ -1732,7 +1749,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           match e1.desc with
           | E_Var name when should_reduce_to_call env name ST_Getter ->
               let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-              let ty, _ = annotate_expr env empty_getter in
+              let ty, _ = annotate_expr ~forbid_atcs env empty_getter in
               should_fields_reduce_to_call env name ty fields
           | _ -> None
         in
@@ -1744,7 +1761,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
         | None -> (
-            let t_e2, e2 = annotate_expr env e1 in
+            let t_e2, e2 = annotate_expr ~forbid_atcs env e1 in
             match (Types.make_anonymous env t_e2).desc with
             | T_Bits (_, bitfields) ->
                 let one_field field =
@@ -1753,7 +1770,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   | Some slices -> slices
                 in
                 E_Slice (e1, list_concat_map one_field fields)
-                |> here |> annotate_expr env |: TypingRule.EGetBitFields
+                |> here
+                |> annotate_expr ~forbid_atcs env
+                |: TypingRule.EGetBitFields
             | T_Record tfields ->
                 let one_field field =
                   match List.assoc_opt field tfields with
@@ -1795,7 +1814,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          bad number of times), but we will apply the same typing rules as for
          those desugared expressions.
          *)
-        let t_e2, e2 = annotate_expr env e1 in
+        let t_e2, e2 = annotate_expr ~forbid_atcs env e1 in
         let pat' = best_effort pat (annotate_pattern e env t_e2) in
         (T_Bool |> here, E_Pattern (e2, pat') |> here) |: TypingRule.EPattern
     (* End *)
@@ -2350,14 +2369,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   and try_annotate_stmt env s =
     best_effort (s, env) (fun _ -> annotate_stmt env s)
 
-  and set_fields_should_reduce_to_call env le x fields (t_e, e) =
+  and set_fields_should_reduce_to_call ~loc env x fields (t_e, e) =
     (*
      * Field indices are extracted from the return type
      * of "associated" getter.
      *)
     let ( let* ) = Option.bind in
     let _, _, callee =
-      try Fn.try_subprogram_for_name le env x []
+      try Fn.try_subprogram_for_name loc env x []
       with Error.ASLException _ -> assert false
     in
     let* ty = callee.return_type in
@@ -2365,10 +2384,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let* name, args = should_fields_reduce_to_call env x ty fields in
     let args = (t_e, e) :: List.map (annotate_expr env) args in
     let name, args, eqs, ret_ty =
-      annotate_call_arg_typed (to_pos le) env name args ST_Setter
+      annotate_call_arg_typed loc env name args ST_Setter
     in
     let () = assert (ret_ty = None) in
-    Some (S_Call (name, args, eqs) |> add_pos_from le)
+    Some (S_Call (name, args, eqs) |> add_pos_from loc)
 
   and setter_should_reduce_to_call_recurse ~loc env (t_e, e) make_old_le sub_le
       =
@@ -2410,7 +2429,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetField (sub_le, field) -> (
         match sub_le.desc with
         | LE_Var x when should_reduce_to_call env x ST_Setter ->
-            set_fields_should_reduce_to_call env le x [ field ] (t_e, e)
+            set_fields_should_reduce_to_call env ~loc x [ field ] (t_e, e)
         | _ ->
             let old_le le' = LE_SetField (le', field) |> here in
             setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
@@ -2418,7 +2437,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetFields (sub_le, fields, slices) -> (
         match sub_le.desc with
         | LE_Var x when should_reduce_to_call env x ST_Setter ->
-            set_fields_should_reduce_to_call env le x fields (t_e, e)
+            set_fields_should_reduce_to_call env ~loc x fields (t_e, e)
         | _ ->
             let old_le le' = LE_SetFields (le', fields, slices) |> here in
             setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
@@ -2506,13 +2525,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     fold_types_func_sig (Fun.flip ASTUtils.use_ty) f ISet.empty
 
   (* Begin AnnotateFuncSig *)
-  let annotate_func_sig ~loc env1 (func_sig : AST.func) : env * AST.func =
+  let annotate_func_sig ~loc (genv : StaticEnv.global) (func_sig : AST.func) :
+      env * AST.func =
     (* Build typing local environment. *)
-    let env1 = { env1 with local = empty_local } in
+    let env1 = with_empty_local genv in
     let () =
       if false then
-        Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name
-          StaticEnv.pp_env env1
+        Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name pp_env env1
     in
     let potential_params = get_undeclared_defining env1 func_sig in
     (* Add explicit parameters *)
@@ -2736,7 +2755,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    let+ () = check_var_not_in_genv loc env1 name' in
+    let+ () = check_var_not_in_genv loc env1.global name' in
     let+ () = check_setter_has_getter ~loc env1 func_sig in
     let new_func_sig = { func_sig with name = name' } in
     (add_subprogram name' new_func_sig env1, new_func_sig)
@@ -2744,26 +2763,28 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (* End *)
 
   (* Begin AnnotateAndDeclareFunc *)
-  let annotate_and_declare_func ~loc func_sig env =
-    let env1, func_sig1 = annotate_func_sig ~loc env func_sig in
+  let annotate_and_declare_func ~loc func_sig genv =
+    let env1, func_sig1 = annotate_func_sig ~loc genv func_sig in
     declare_one_func loc func_sig1 env1 |: TypingRule.AnnotateAndDeclareFunc
   (* End *)
 
-  let add_global_storage loc name keyword env ty =
-    if is_global_ignored name then env
+  let add_global_storage loc name keyword genv ty =
+    if is_global_ignored name then genv
     else
-      let+ () = check_var_not_in_genv loc env name in
-      add_global_storage name ty keyword env
+      let+ () = check_var_not_in_genv loc genv name in
+      add_global_storage name ty keyword genv
 
-  let declare_const loc name t v env =
-    add_global_storage loc name GDK_Constant env t |> add_global_constant name v
+  let declare_const loc name t v genv =
+    add_global_storage loc name GDK_Constant genv t
+    |> add_global_constant name v
 
   (* Begin DeclareType *)
-  let declare_type loc name ty s env =
+  let declare_type loc name ty s genv =
     let () =
       if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
     in
-    let+ () = check_var_not_in_genv loc env name in
+    let+ () = check_var_not_in_genv loc genv name in
+    let env = with_empty_local genv in
     let env1, t1 =
       match s with
       | None -> (env, ty)
@@ -2777,7 +2798,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           let new_ty =
             if extra_fields = [] then ty
             else
-              match IMap.find_opt super env.global.declared_types with
+              match IMap.find_opt super genv.declared_types with
               | Some { desc = T_Record fields; _ } ->
                   T_Record (fields @ extra_fields) |> add_pos_from_st ty
               | Some { desc = T_Exception fields; _ } ->
@@ -2796,32 +2817,32 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           let declare_one (env2, i) x =
             (declare_const loc x t (L_Int (Z.of_int i)) env2, succ i)
           in
-          let env3, _ = List.fold_left declare_one (env2, 0) ids in
-          env3
+          let genv3, _ = List.fold_left declare_one (env2.global, 0) ids in
+          { env2 with global = genv3 }
       | _ -> env2
     in
     let () = if false then Format.eprintf "Declared %s.@." name in
-    new_tenv
+    new_tenv.global
   (* End *)
 
   let try_add_global_constant name env e =
     try
       let v = reduce_constants env e in
-      add_global_constant name v env
+      { env with global = add_global_constant name v env.global }
     with Error.(ASLException { desc = UnsupportedExpr _; _ }) -> env
 
   (* Begin DeclareGlobalStorage *)
-  let declare_global_storage loc gsd env =
+  let declare_global_storage loc gsd genv =
     let () = if false then Format.eprintf "Declaring %s@." gsd.name in
-    best_effort (gsd, env) @@ fun _ ->
+    best_effort (gsd, genv) @@ fun _ ->
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
-    let+ () = check_var_not_in_genv loc env name in
+    let+ () = check_var_not_in_genv loc genv name in
+    let env = with_empty_local genv in
     let ty_opt' =
       match ty_opt with
       | Some t -> Some (annotate_type ~loc env t)
       | None -> ty_opt
-    in
-    let initial_value_type, initial_value' =
+    and initial_value_type, initial_value' =
       match initial_value with
       | Some e ->
           let t, e' = annotate_expr env e in
@@ -2837,7 +2858,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | Some t1, None -> t1
       | None, None -> Error.fatal_from loc UnrespectedParserInvariant
     in
-    let env1 = add_global_storage loc name keyword env declared_t in
+    let genv1 = add_global_storage loc name keyword genv declared_t in
+    let env1 = with_empty_local genv1 in
     let env2 =
       match (keyword, initial_value') with
       | GDK_Constant, Some e -> try_add_global_constant name env1 e
@@ -2848,7 +2870,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
     in
-    ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2)
+    let () = assert (env2.local == empty_local) in
+    ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2.global)
   (* End *)
 
   let rename_primitive loc env (f : AST.func) =
@@ -2867,38 +2890,41 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
-  let type_check_decl d (acc, env) =
+  let type_check_decl d (acc, genv) =
     let here = add_pos_from_st d and loc = to_pos d in
     let () =
       if false then
         Format.eprintf "@[<v>Typing with %s in env:@ %a@]@." strictness_string
-          StaticEnv.pp_env env
+          StaticEnv.pp_global genv
       else if false then Format.eprintf "@[Typing %a.@]@." PP.pp_t [ d ]
     in
-    match d.desc with
-    (* Begin TypecheckFunc *)
-    | D_Func ({ body = SB_ASL _; _ } as f) ->
-        let new_env, f1 = annotate_and_declare_func ~loc f env in
-        let new_d = D_Func (try_annotate_subprogram new_env f1) |> here in
-        (new_d :: acc, new_env) |: TypingRule.TypecheckFunc
-    (* End *)
-    | D_Func ({ body = SB_Primitive; _ } as f) ->
-        let new_env, f1 = annotate_and_declare_func ~loc f env in
-        let new_d = D_Func f1 |> here in
-        (new_d :: acc, new_env)
-    (* Begin TypecheckGlobalStorage *)
-    | D_GlobalStorage gsd ->
-        let gsd', new_env = declare_global_storage loc gsd env in
-        let new_d = D_GlobalStorage gsd' |> here in
-        (new_d :: acc, new_env) |: TypingRule.TypecheckGlobalStorage
-    (* End *)
-    (* Begin TypecheckTypeDecl *)
-    | D_TypeDecl (x, ty, s) ->
-        let new_env = declare_type loc x ty s env in
-        (d :: acc, new_env) |: TypingRule.TypecheckTypeDecl
-  (* End *)
+    let new_d, new_genv =
+      match d.desc with
+      (* Begin TypecheckFunc *)
+      | D_Func ({ body = SB_ASL _; _ } as f) ->
+          let new_env, f1 = annotate_and_declare_func ~loc f genv in
+          let new_d = D_Func (try_annotate_subprogram new_env f1) |> here in
+          (new_d, new_env.global) |: TypingRule.TypecheckFunc
+      (* End *)
+      | D_Func ({ body = SB_Primitive; _ } as f) ->
+          let new_env, f1 = annotate_and_declare_func ~loc f genv in
+          let new_d = D_Func f1 |> here in
+          (new_d, new_env.global)
+      (* Begin TypecheckGlobalStorage *)
+      | D_GlobalStorage gsd ->
+          let gsd', new_genv = declare_global_storage loc gsd genv in
+          let new_d = D_GlobalStorage gsd' |> here in
+          (new_d, new_genv) |: TypingRule.TypecheckGlobalStorage
+      (* End *)
+      (* Begin TypecheckTypeDecl *)
+      | D_TypeDecl (x, ty, s) ->
+          let new_genv = declare_type loc x ty s genv in
+          (d, new_genv) |: TypingRule.TypecheckTypeDecl
+      (* End *)
+    in
+    (new_d :: acc, new_genv)
 
-  let type_check_mutually_rec ds (acc, env) =
+  let type_check_mutually_rec ds (acc, genv) =
     let () =
       if false then
         let open Format in
@@ -2912,7 +2938,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           match d.desc with
           | D_Func f ->
               let loc = to_pos d in
-              let env', f = annotate_func_sig ~loc env f in
+              let env', f = annotate_func_sig ~loc genv f in
               (env'.local, f, loc)
           | _ ->
               fatal_from d
@@ -2938,7 +2964,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           let env = { global = genv; local = lenv } in
           let env', f = declare_one_func loc f env in
           (env'.global, (env'.local, f, loc)))
-        env.global env_and_fs
+        genv env_and_fs
     in
     let ds =
       List.map
@@ -2954,7 +2980,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | SB_Primitive -> D_Func (rename_primitive loc env' f) |> here)
         fs
     in
-    (List.rev_append ds acc, { env with global = genv })
+    (List.rev_append ds acc, genv)
 
   (* Begin Specification *)
   let type_check_ast =
@@ -2970,25 +2996,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       else fold
     in
     let fold_topo ast acc = TopoSort.ASTFold.fold fold ast acc in
-    fun ast env ->
+    fun ?(env = StaticEnv.empty_global) ast ->
       let ast_rev, env = fold_topo ast ([], env) in
       (List.rev ast_rev, env)
   (* End *)
 end
 
-module TypeCheck = Annotate (struct
+module TypeCheckDefault = Annotate (struct
   let check = `TypeCheck
+  let output_format = Error.HumanReadable
 end)
-
-module TypeInferWarn = Annotate (struct
-  let check = `Warn
-end)
-
-module TypeInferSilence = Annotate (struct
-  let check = `Silence
-end)
-
-let type_check_ast = function
-  | `TypeCheck -> TypeCheck.type_check_ast
-  | `Warn -> TypeInferWarn.type_check_ast
-  | `Silence -> TypeInferSilence.type_check_ast

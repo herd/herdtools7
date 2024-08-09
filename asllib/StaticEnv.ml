@@ -129,6 +129,8 @@ let empty_local_return_type return_type = { empty_local with return_type }
 (** An empty static env. *)
 let empty = { local = empty_local; global = empty_global }
 
+let with_empty_local global = { global; local = empty_local }
+
 (** [lookup x env] is the value of x as defined in environment.
 
       @raise Not_found if it is not defined inside. *)
@@ -176,15 +178,8 @@ let set_renamings name set env =
       };
   }
 
-let add_global_storage x ty gdk env =
-  {
-    env with
-    global =
-      {
-        env.global with
-        storage_types = IMap.add x (ty, gdk) env.global.storage_types;
-      };
-  }
+let add_global_storage x ty gdk (genv : global) =
+  { genv with storage_types = IMap.add x (ty, gdk) genv.storage_types }
 
 let add_type x ty env =
   let () =
@@ -209,15 +204,8 @@ let add_local_constant name v env =
       };
   }
 
-let add_global_constant name v env =
-  {
-    env with
-    global =
-      {
-        env.global with
-        constant_values = IMap.add name v env.global.constant_values;
-      };
-  }
+let add_global_constant name v (genv : global) =
+  { genv with constant_values = IMap.add name v genv.constant_values }
 
 let add_local x ty ldk env =
   let () =

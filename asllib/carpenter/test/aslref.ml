@@ -6,7 +6,7 @@
 let check_no_strange_error ast =
   let open Asllib in
   try
-    let _ = Native.interprete `TypeCheck ~instrumentation:false ast in
+    let _ = Native.type_and_run ast in
     true
   with
   | Error.ASLException _ -> true
@@ -15,7 +15,7 @@ let check_no_strange_error ast =
 let no_strange_error ast =
   let open Asllib in
   try
-    let _ = Native.interprete `TypeCheck ~instrumentation:false ast in
+    let _ = Native.type_and_run ast in
     ()
   with
   | Error.ASLException _ -> ()

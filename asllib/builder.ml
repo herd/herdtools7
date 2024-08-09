@@ -143,3 +143,7 @@ let is_stdlib_name =
        Lazy.force stdlib |> extract_names)
   in
   fun name -> ISet.mem name (Lazy.force set)
+
+let with_primitives ?(loc = ASTUtils.dummy_annotated) primitives =
+  List.map AST.(fun (f, _) -> D_Func f |> ASTUtils.add_pos_from loc) primitives
+  |> List.rev_append

@@ -78,3 +78,11 @@ ATCs on other types
 
   $ aslref atcs7.asl
 
+ATCs in types:
+  $ cat > atcs8.asl <<EOF
+  > let bv : bits(1 as integer{2}) = Ones(1);
+
+  $ aslref atcs8.asl
+  File atcs8.asl, line 1, characters 14 to 29:
+  ASL Typing error: unexpected ATC.
+  [1]

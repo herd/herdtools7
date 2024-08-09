@@ -317,6 +317,7 @@ Required tests:
   $ aslref func6.asl
   $ aslref func7.asl
   $ aslref global_vars.asl
+  $ aslref global_vars-02.asl
   $ aslref lexpr-concat.asl
   $ aslref masks.asl
   $ aslref more-assignments-examples.asl
