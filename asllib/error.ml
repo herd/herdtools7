@@ -66,6 +66,7 @@ type error_desc =
   | BaseValueEmptyType of ty
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
+  | UnexpectedATC
 
 type error = error_desc annotated
 
@@ -252,6 +253,7 @@ module PPrint = struct
           "ASL Typing error:@ setter@ \"%s\"@ does@ not@ have@ a@ \
            corresponding@ getter@ of@ signature@ @[@[%a@]@ ->@ %a@]"
           func.name (pp_comma_list pp_ty) args pp_ty ret
+    | UnexpectedATC -> pp_print_text f "ASL Typing error: unexpected ATC."
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
