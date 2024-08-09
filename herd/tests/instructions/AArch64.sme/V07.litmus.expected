@@ -1,0 +1,11 @@
+Test V07 Required
+States 1
+x={1,1,1,1}; y={1,2,3,4};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (x={1,1,1,1} /\ y={1,2,3,4})
+Observation V07 Always 1 0
+Hash=caa0c4811f6f4e7cf8d9840493ad4622
+

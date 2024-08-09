@@ -76,6 +76,19 @@ let sve_pred_modifier =
   Zero,"/Z"; Merge,"/M";
 ]
 
+type za_direction =
+  | Vertical | Horizontal
+
+let za_arrange_specifier =
+[
+  8,".B"; 16,".H"; 32,".S"; 64,".D"; 128,".Q";
+]
+
+let za_direction_specifier =
+[
+  Vertical,"V"; Horizontal,"H";
+]
+
 (********************)
 (* System registers *)
 (*  (Some of...)    *)
@@ -119,9 +132,12 @@ type reg =
   | Zreg of (vec_reg * int)
   | Preg of (pred_reg * int)
   | PMreg of (pred_reg * pred_mode)
+  | ZAreg of (int * za_direction option * int)
   | Symbolic_reg of string
   | Internal of int
   | NZCV
+  | SM (* PSTATE.SM *)
+  | ZA (* PSTATE.ZA *)
   | SP
   | PC
   | ResAddr
@@ -209,6 +225,11 @@ let pred_regs =
 ]
 
 let pregs = List.map (fun p -> Preg (p,32)) pred_regs
+
+let zaslices =
+  let tiles = List.init 4 (fun tile -> ZAreg (tile,None,32)) in
+  let slices = List.init 4 Fun.id in
+  List.concat (List.map (fun s -> List.map(fun r -> s,r) tiles ) slices)
 
 let linkreg = Ireg R30
 let elr_el1 = SysReg ELR_EL1
@@ -351,6 +372,14 @@ let pvrs =
   P12,"P12"; P13,"P13"; P14,"P14"; P15,"P15";
 ]
 
+let zavrs =
+  [
+    ZA ,"ZA0";  ZA ,"ZA1";  ZA ,"ZA2";  ZA ,"ZA3";
+    ZA ,"ZA4";  ZA ,"ZA5";  ZA ,"ZA6";  ZA ,"ZA7";
+    ZA ,"ZA8";  ZA ,"ZA9";  ZA ,"ZA10"; ZA ,"ZA11";
+    ZA ,"ZA12"; ZA ,"ZA13"; ZA ,"ZA14"; ZA ,"ZA15";
+  ]
+
 let simd_regs =
   let rs = bvrs @ hvrs @ svrs @ dvrs @ qvrs in
   List.map (fun (r,s) -> s,SIMDreg r) rs
@@ -421,6 +450,20 @@ let parse_pmreg =
         in Some (PMreg (List.assoc g1 pplist, List.assoc g2 mplist))
       with Not_found -> None
 
+let parse_zareg =
+  let arplist = parse_list za_arrange_specifier
+  and dirplist = parse_list za_direction_specifier in
+  fun s ->
+    try let (g1,g2,g3) =
+        ignore (Str.search_forward (Str.regexp "ZA\\([0-9]+\\)\\([V,H]\\)?\\(\\.[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
+        let dir = try Some (Str.matched_group 2 s) with Not_found -> None in
+        (Str.matched_group 1 s, dir, Str.matched_group 3 s);
+      in let dir = match g2 with
+      | Some d -> Some (List.assoc d dirplist)
+      | None -> None in
+      Some (ZAreg (int_of_string g1, dir, List.assoc g3 arplist))
+    with Not_found -> None
+
 let parse_reg s = match parse_vreg s with
 | Some v -> Some v
 | None ->
@@ -444,6 +487,8 @@ let pp_xreg r = match r with
 | NZCV -> "NZCV"
 | ResAddr -> "Res"
 | PC -> "PC"
+| SM -> "PSTATE.SM"
+| ZA -> "PSTATE.ZA"
 | SysReg sreg -> pp_sysreg sreg
 | _ -> try List.assoc r regs with Not_found -> assert false
 
@@ -456,6 +501,11 @@ let pp_simd_vector_reg r = match r with
 let pp_simd_scalar_reg rl r = match r with
 | SIMDreg r -> (try List.assoc r rl with Not_found -> assert false)
 | _ -> assert false
+
+let pp_sm = function
+  | SM -> "SM"
+  | ZA -> "ZA"
+  | _ -> assert false
 
 let pp_sve_arrange_specifier s =
   try List.assoc s sve_arrange_specifier with Not_found -> assert false
@@ -484,11 +534,13 @@ let pp_preg r = match r with
   pp_sve_pred_modifier m
 | _ -> assert false
 
+
 let pp_reg r = match r with
 | Vreg _ -> pp_simd_vector_reg r
 | SIMDreg _ -> pp_simd_scalar_reg vvrs r
 | Zreg _ -> pp_zreg r
 | Preg _ | PMreg _ -> pp_preg r
+| ZAreg _ -> "ZA"
 | _ -> pp_xreg r
 let pp_i n = match n with
   | 1 -> "instr:\"NOP\""
@@ -507,12 +559,27 @@ let pp_vreg v r = match v with
 | V64 -> pp_xreg r
 | V128 -> pp_creg r
 
+let pp_za_arrange_specifier s =
+  try List.assoc s za_arrange_specifier with Not_found -> assert false
+
+let pp_za_dirrection_specifier s =
+  try List.assoc s za_direction_specifier with Not_found -> assert false
+
+let pp_zareg r = match r with
+| ZAreg (tile,dir,s) ->
+  let dir = match dir with
+  | Some d -> pp_za_dirrection_specifier d
+  | None -> "" in
+  "ZA" ^ (string_of_int tile) ^ dir ^ pp_za_arrange_specifier s
+| _ -> assert false
+
 let reg_compare r1 r2 =
   let strip_reg r = match r with
   | Vreg (v,_) -> SIMDreg v
   | Zreg (v,_) -> SIMDreg v
   | Preg (v,_) -> Preg (v,0)
   | PMreg (v,_) -> Preg (v,0)
+  | ZAreg _ -> ZAreg (0,None,0)
   | _ -> r in
   compare (strip_reg r1) (strip_reg r2)
 
@@ -914,6 +981,7 @@ type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
 type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
 type simd_variant = VSIMD8 | VSIMD16 | VSIMD32 | VSIMD64 | VSIMD128
 type cnt_inc_op_variant = cnt_inc_op * simd_variant
+type adda_op_variant = za_direction
 
 module Ext = struct (* Arguments of extended ADD and SUB operations *)
 
@@ -1502,6 +1570,56 @@ type 'k kinstruction =
   | I_ADDVL of reg * reg * 'k
 (* {CNT,INC}<B|H|W|D> <Xd>{, pattern{, MULL #imm}} *)
   | I_CNT_INC_SVE of ( cnt_inc_op * simd_variant ) * reg * pattern * 'k
+(* Scalable Matrix Extension *)
+  (*
+   * LD1{B,H,W,D,Q} (scalar plus scalar, tile slice)
+   *
+   * LD1B { ZA0<HV>.B[<Ws>, <offs>] }, <Pg>/Z, [<Xn|SP>{, <Xm>}]
+   * LD1H { <ZAt><HV>.H[<Ws>, <offs>] }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #1}]
+   * LD1W { <ZAt><HV>.S[<Ws>, <offs>] }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #2}]
+   * LD1D { <ZAt><HV>.D[<Ws>, <offs>] }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #3}]
+   * LD1Q { <ZAt><HV>.Q[<Ws>, <offs>] }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #4}]
+   *)
+  | I_LD1SPT of simd_variant * reg * reg * 'k * reg * reg * 'k MemExt.ext
+  (*
+   * ST1{B,H,W,D,Q} (scalar plus scalar, tile slice)
+   *
+   * ST1B { ZA0<HV>.B[<Ws>, <offs>] }, <Pg>, [<Xn|SP>{, <Xm>}]
+   * ST1H { <ZAt><HV>.H[<Ws>, <offs>] }, <Pg>, [<Xn|SP>{, <Xm>, LSL #1}]
+   * ST1W { <ZAt><HV>.S[<Ws>, <offs>] }, <Pg>, [<Xn|SP>{, <Xm>, LSL #2}]
+   * ST1D { <ZAt><HV>.D[<Ws>, <offs>] }, <Pg>, [<Xn|SP>{, <Xm>, LSL #3}]
+   * ST1Q { <ZAt><HV>.Q[<Ws>, <offs>] }, <Pg>, [<Xn|SP>{, <Xm>, LSL #4}]
+   *)
+  | I_ST1SPT of simd_variant * reg * reg * 'k * reg * reg * 'k MemExt.ext
+  (*
+   * MOVA (vector to tile, single)
+   *
+   * MOVA ZA0<HV>.B[<Ws>, <offs>], <Pg>/M, <Zn>.B
+   * MOVA <ZAd><HV>.H[<Ws>, <offs>], <Pg>/M, <Zn>.H
+   * MOVA <ZAd><HV>.S[<Ws>, <offs>], <Pg>/M, <Zn>.S
+   * MOVA <ZAd><HV>.D[<Ws>, <offs>], <Pg>/M, <Zn>.D
+   * MOVA <ZAd><HV>.Q[<Ws>, <offs>], <Pg>/M, <Zn>.Q
+   *)
+  | I_MOVA_VT of reg * reg * 'k * reg * reg
+  (*
+   * MOVA (tile to vector, single)
+   *
+   * MOVA <Zd>.B, <Pg>/M, ZA0<HV>.B[<Ws>, <offs>]
+   * MOVA <Zd>.H, <Pg>/M, <ZAn><HV>.H[<Ws>, <offs>]
+   * MOVA <Zd>.S, <Pg>/M, <ZAn><HV>.S[<Ws>, <offs>]
+   * MOVA <Zd>.D, <Pg>/M, <ZAn><HV>.D[<Ws>, <offs>]
+   * MOVA <Zd>.Q, <Pg>/M, <ZAn><HV>.Q[<Ws>, <offs>]
+   *)
+  | I_MOVA_TV of reg * reg * reg * reg * 'k
+  (*
+   * ADDHA <ZAda>.S, <Pn>/M, <Pm>/M, <Zn>.S
+   * ADDVA <ZAda>.S, <Pn>/M, <Pm>/M, <Zn>.S
+   *)
+   | I_ADDA of za_direction * reg * reg * reg * reg
+  (* SMSTART {<option>} *)
+  | I_SMSTART of reg option
+  (* SMSTOP {<option>} *)
+  | I_SMSTOP  of reg option
 (* Morello *)
   | I_ALIGND of reg * reg * 'k
   | I_ALIGNU of reg * reg * 'k
@@ -2059,6 +2177,25 @@ let do_pp_instruction m =
       sprintf "ADDVL %s,%s,%s" (pp_xreg r1) (pp_xreg r2) (m.pp_k k1)
   | I_CNT_INC_SVE (op,r,pat,k) ->
       pp_cnt_inc op r pat k
+(* Scalable Matrix Extention *)
+  | I_LD1SPT (v,r,ri,k,p,ra,idx) ->
+      sprintf "LD1%s {%s[%s,%s]},%s,%s" (pp_simd_variant v) (pp_zareg r) (pp_wreg ri) (m.pp_k k) (pp_preg p) (pp_addr ra idx)
+  | I_ST1SPT (v,r,ri,k,p,ra,idx) ->
+      sprintf "ST1%s {%s[%s,%s]},%s,%s" (pp_simd_variant v) (pp_zareg r) (pp_wreg ri) (m.pp_k k) (pp_preg_simple p) (pp_addr ra idx)
+  | I_MOVA_VT (r,ri,k,p,rs) ->
+      sprintf "MOVA %s[%s,%s],%s,%s" (pp_zareg r) (pp_wreg ri) (m.pp_k k) (pp_preg p) (pp_zreg rs)
+  | I_MOVA_TV (r,p,rs,ri,k) ->
+      sprintf "MOVA %s,%s,%s[%s,%s]" (pp_zreg r) (pp_preg p) (pp_zareg rs) (pp_wreg ri) (m.pp_k k)
+  | I_ADDA (s,r1,p1,p2,r2) ->
+      sprintf "ADD%sA %s,%s,%s,%s" (pp_za_dirrection_specifier s) (pp_zareg r1) (pp_preg p1) (pp_preg p2) (pp_zreg r2)
+  | I_SMSTART (None) ->
+      "SMSTART"
+  | I_SMSTART (Some(mode)) ->
+      sprintf "SMSTART %s" (pp_sm mode)
+  | I_SMSTOP (None) ->
+      "SMSTOP"
+  | I_SMSTOP (Some(mode)) ->
+      sprintf "SMSTOP %s" (pp_sm mode)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (m.pp_k k)
@@ -2293,7 +2430,7 @@ let fold_regs (f_regs,f_sregs) =
   | Preg _ -> f_regs reg y_reg,y_sreg
   | PMreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZCV | ZR | SP | PC
+  | Internal _ | NZCV | ZR | SP | PC | SM | ZA | ZAreg _
   | ResAddr | Tag _ | SysReg _
     -> y_reg,y_sreg in
 
@@ -2316,6 +2453,7 @@ let fold_regs (f_regs,f_sregs) =
 
   fun c ins -> match ins with
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_UDF _
+  | I_SMSTART (None) | I_SMSTOP (None)
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOVZ (_,r,_,_) | I_MOVN (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -2329,6 +2467,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_RDVL (r,_)
   | I_CNT_INC_SVE (_,r,_,_)
   | I_PTRUE (r,_)
+  | I_SMSTART (Some(r)) | I_SMSTOP (Some(r))
     -> fold_reg r c
   | I_MOV (_,r1,kr)
     -> fold_reg r1 (fold_kr kr c)
@@ -2407,9 +2546,15 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_STXP (_,_,r1,r2,r3,r4)
   | I_MOPL (_,r1,r2,r3,r4)
+  | I_MOVA_VT (r1,r2,_,r3,r4)
+  | I_MOVA_TV (r1,r2,r3,r4,_)
+  | I_ADDA (_,r1,r2,r3,r4)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
   | I_CASP (_,_,r1,r2,r3,r4,r5)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 (fold_reg r5 c))))
+  | I_LD1SPT (_,r1,r2,_,r3,r4,idx)
+  | I_ST1SPT (_,r1,r2,_,r3,r4,idx)
+    -> fold_reg r1 (fold_reg r2 ( fold_reg r3 (fold_reg r4 (fold_idx idx c))))
 
 let map_regs f_reg f_symb =
 
@@ -2421,7 +2566,7 @@ let map_regs f_reg f_symb =
   | Preg _ -> f_reg reg
   | PMreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | SP| PC
+  | Internal _ | ZR | SP| PC | SM | ZA | ZAreg _
   | NZCV | ResAddr | Tag _ | SysReg _
     -> reg in
 
@@ -2644,6 +2789,21 @@ let map_regs f_reg f_symb =
      I_ADDVL (map_reg r1,map_reg r2,k1)
   | I_CNT_INC_SVE (op,r1,pat,k1) ->
      I_CNT_INC_SVE (op,map_reg r1,pat,k1)
+  | I_LD1SPT (v,r1,r2,k,r3,r4,idx) ->
+     I_LD1SPT (v,map_reg r1,map_reg r2,k,map_reg r3,map_reg r4,map_idx idx)
+  | I_ST1SPT (v,r1,r2,k,r3,r4,idx) ->
+     I_ST1SPT (v,map_reg r1,map_reg r2,k,map_reg r3,map_reg r4,map_idx idx)
+  | I_MOVA_VT (r1,r2,k,r3,r4) ->
+      I_MOVA_VT (map_reg r1,map_reg r2,k,map_reg r3,map_reg r4)
+  | I_MOVA_TV (r1,r2,r3,r4,k) ->
+      I_MOVA_TV (map_reg r1,map_reg r2,map_reg r3,map_reg r4,k)
+  | I_ADDA (s,r1,r2,r3,r4) ->
+      I_ADDA (s,map_reg r1,map_reg r2,map_reg r3,map_reg r4)
+  | I_SMSTART (Some(r)) -> 
+      I_SMSTART (Some(map_reg r))
+  | I_SMSTOP (Some(r)) ->
+      I_SMSTOP (Some(map_reg r))
+  | I_SMSTART (None) | I_SMSTOP (None) -> ins
 (* Morello *)
   | I_ALIGNU (r1,r2,k) ->
       I_ALIGNU(map_reg r1,map_reg r2,k)
@@ -2864,6 +3024,8 @@ let get_next =
   | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
   | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
   | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
+  | I_LD1SPT _  | I_ST1SPT _ | I_SMSTART _ | I_SMSTOP _
+  | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
     -> [Label.Next;]
 
 (* Check instruction validity, beyond parsing *)
@@ -3114,6 +3276,7 @@ module PseudoI = struct
         | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
         | I_ADD_SV _ | I_INDEX_SS _
         | I_NEG_SV _ | I_MOVPRFX _
+        | I_SMSTART _ | I_SMSTOP _ | I_ADDA _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -3197,6 +3360,11 @@ module PseudoI = struct
         | I_RDVL (r1,k1) -> I_RDVL (r1,k_tr k1)
         | I_ADDVL (r1,r2,k1) -> I_ADDVL (r1,r2,k_tr k1)
         | I_CNT_INC_SVE (op,r1,pat,k1) -> I_CNT_INC_SVE (op,r1,pat,k_tr k1)
+        | I_LD1SPT (v,r1,r2,k,r3,r4,idx) -> I_LD1SPT (v,r1,r2,k_tr k,r3,r4,ext_tr idx)
+        | I_ST1SPT (v,r1,r2,k,r3,r4,idx) -> I_ST1SPT (v,r1,r2,k_tr k,r3,r4,ext_tr idx)
+        | I_MOVA_VT (r1,r2,k,r3,r4) -> I_MOVA_VT (r1,r2,k_tr k,r3,r4)
+        | I_MOVA_TV (r1,r2,r3,r4,k) -> I_MOVA_TV (r1,r2,r3,r4,k_tr k)
+
       let get_simd_rpt_selem ins rs = match ins with
       | I_LD1M _
       | I_ST1M _
@@ -3290,7 +3458,8 @@ module PseudoI = struct
         | I_NEG_SV _ | I_MOVPRFX _
         | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
         | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
-        | I_MOV_SV _
+        | I_MOV_SV _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
+        | I_SMSTART _ | I_SMSTOP _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)
@@ -3306,6 +3475,9 @@ module PseudoI = struct
         | I_LD1SP (_,rs,_,_,_) | I_LD2SP (_,rs,_,_,_) | I_LD3SP (_,rs,_,_,_) | I_LD4SP (_,rs,_,_,_)
         | I_ST1SP (_,rs,_,_,_) | I_ST2SP (_,rs,_,_,_) | I_ST3SP (_,rs,_,_,_) | I_ST4SP (_,rs,_,_,_)
           -> 16 * List.length rs (* upper bound *)
+        | I_LD1SPT _ | I_ST1SPT _
+          -> 16
+
 
       let size_of_ins _ = 4
 

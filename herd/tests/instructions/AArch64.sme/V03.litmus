@@ -1,0 +1,15 @@
+AArch64 V03
+{
+  uint32_t x[4] = {1,2,3,4};
+  0:X0=x;
+}
+P0 ;
+SMSTART                       ;
+PTRUE P0.S,VL4                ;
+MOV W12,WZR                   ;
+LD1W {ZA1H.S[W12,0]},P0/Z,[X0];
+MOVA Z0.S,P0/M,ZA1H.S[W12,0]  ;
+UADDV D1,P0,Z0.S              ;
+FMOV W1,S1                    ; (* Stash result in GP register or SMSTOP would zero it out *)
+SMSTOP                        ;
+forall 0:X1=10

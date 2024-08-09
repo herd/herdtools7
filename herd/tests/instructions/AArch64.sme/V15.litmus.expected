@@ -1,0 +1,11 @@
+Test V15 Required
+States 1
+out1={6,2,3,4,0,0,0,0,0,0,0,0,0,0,0,0}; out2={12,4,6,8,0,0,0,0,0,0,0,0,0,0,0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (out1={6,2,3,4,0,0,0,0,0,0,0,0,0,0,0,0} /\ out2={12,4,6,8,0,0,0,0,0,0,0,0,0,0,0,0})
+Observation V15 Always 1 0
+Hash=e543292764b340f4a2c44192e1b4acb5
+

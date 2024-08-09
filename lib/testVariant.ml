@@ -25,6 +25,7 @@ module
       val mte_precision : Precision.t
       val fault_handling : Fault.Handling.t
       val sve_vector_length : int
+      val sme_vector_length : int
     end) =
     struct
       type t = Var.Opt.t
@@ -34,6 +35,7 @@ module
         let mte_precision = ref Var.mte_precision
         and fault_handling = ref Var.fault_handling
         and sve_vector_length = ref Var.sve_vector_length
+        and sme_vector_length = ref Var.sme_vector_length
 
         let variant = ref Var.variant
     end
@@ -55,6 +57,7 @@ module
        let mte_precision = !Refs.mte_precision
        and fault_handling = !Refs.fault_handling
        and sve_vector_length = !Refs.sve_vector_length
+       and sme_vector_length = !Refs.sme_vector_length
        and variant = !Refs.variant
 
     end

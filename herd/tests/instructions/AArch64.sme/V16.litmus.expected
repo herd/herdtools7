@@ -1,0 +1,11 @@
+Test V16 Required
+States 1
+out1={18,6,24}; out2={24,8,32};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (out1={18,6,24} /\ out2={24,8,32})
+Observation V16 Always 1 0
+Hash=51b39d2dc6abd0d1ff28fd7d37dbb410
+

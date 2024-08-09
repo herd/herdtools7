@@ -1,0 +1,30 @@
+AArch64 V19
+{
+ uint32_t x[4] = {101,102,103,104};
+ uint32_t y[4] = {201,202,203,204};
+
+ uint32_t out1[4];
+ uint32_t out2[4];
+
+ 0:X0=x;
+ 0:X1=y;
+ 0:X2=out1;
+ 0:X3=out2;
+
+}
+P0                            ;
+SMSTART                       ;
+INDEX Z0.S,#1,#1              ;
+PTRUE P0.S,VL4                ;
+PTRUE P1.S,VL4                ;
+ADDHA ZA0.S,P0/M,P1/M,Z0.S    ;
+MOV W12,WZR                   ;
+LD1W {ZA0H.S[W12,0]},P1/Z,[X0];
+LD1W {ZA1H.S[W12,1]},P1/Z,[X1];
+MOVA Z1.S,P0/M,ZA0H.S[W12,0]  ;
+MOVA Z2.S,P0/M,ZA1H.S[W12,1]  ;
+ST1W {Z1.S},P0,[X2]           ;
+ST1W {Z2.S},P0,[X3]           ;
+SMSTOP                        ;
+
+forall out1={101,102,103,104} /\ out2={201,202,203,204}

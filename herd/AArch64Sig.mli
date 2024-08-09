@@ -30,6 +30,7 @@ module type Config = sig
   val dirty : DirtyBit.t option
   val procs_user : Proc.t list
   val sve_vector_length : int
+  val sme_vector_length : int
 end
 
 module type Semantics =

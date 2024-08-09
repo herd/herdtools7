@@ -1,0 +1,31 @@
+AArch64 V12
+{
+uint16_t out1[8];
+uint16_t out2[8];
+uint16_t out3[8];
+uint16_t out4[8];
+
+0:X0=out1;
+0:X1=out2;
+0:X2=out3;
+0:X3=out4;
+
+}
+P0                            ;
+SMSTART                       ;
+INDEX Z0.H,#1,#1              ;
+PTRUE P0.H,VL4                ;
+PTRUE P1.H,VL2                ;
+ADDHA ZA0.S,P0/M,P1/M,Z0.S    ;
+MOV W12,WZR                   ;
+MOVA Z1.H,P0/M,ZA0H.H[W12,0]  ;
+MOVA Z2.H,P0/M,ZA0H.H[W12,1]  ;
+MOVA Z3.H,P0/M,ZA0H.H[W12,2]  ;
+MOVA Z4.H,P0/M,ZA0H.H[W12,3]  ;
+ST1H {Z1.H},P0,[X0]           ;
+ST1H {Z2.H},P0,[X1]           ;
+ST1H {Z3.H},P0,[X2]           ;
+ST1H {Z4.H},P0,[X3]           ;
+SMSTOP                        ;
+
+forall out1={1,2,0,0,0,0,0,0} /\ out2={0,0,0,0,0,0,0,0} /\ out3={1,2,0,0,0,0,0,0} /\ out4={0,0,0,0,0,0,0,0}

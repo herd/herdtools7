@@ -254,7 +254,10 @@ module Make
             let pp_i _ = assert false
             let free_registers = allowed_for_symb
             type special = xmm
+            type special2
+            type special3
             let specials = xmms
             let specials2 = []
+            let specials3 = []
           end)
     end

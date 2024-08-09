@@ -1,0 +1,11 @@
+Test V01 Required
+States 1
+0:X0=0; 0:X1=8; 0:V0.4S={0,0,0,0}; 0:V1.4S={0,0,0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (0:V0.4S={0,0,0,0} /\ 0:V1.4S={0,0,0,0} /\ 0:X0=0 /\ 0:X1=8)
+Observation V01 Always 1 0
+Hash=74f1ff03050a34cea97027a6e212626d
+

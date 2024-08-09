@@ -17,5 +17,9 @@
 (* Nothing special *)
 
 type special
+type special2
+type special3
+
 val specials : special list
-val specials2 : special list
+val specials2 : special2 list
+val specials3 : special3 list

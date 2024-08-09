@@ -33,8 +33,9 @@ module Make
     let endian = AArch64.endian
     let memtag = C.variant Variant.MemTag
     let morello = C.variant Variant.Morello
-    let neon = C.variant Variant.Neon
-    let sve = C.variant Variant.SVE
+    let sme = C.variant Variant.SME
+    let sve = C.variant Variant.SVE || sme
+    let neon = C.variant Variant.Neon || sve
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
@@ -56,7 +57,7 @@ module Make
           (AArch64.dump_instruction inst)
 
     let check_neon inst =
-      if not (neon || sve) then
+      if not neon then
         Warn.user_error
           "Neon instruction %s requires -variant neon"
           (AArch64.dump_instruction inst)
@@ -65,6 +66,12 @@ module Make
       if not sve then
         Warn.user_error
           "SVE instruction %s requires -variant sve"
+          (AArch64.dump_instruction inst)
+
+    let check_sme inst =
+      if not sme then
+        Warn.user_error
+          "SME instruction %s requires -variant sme"
           (AArch64.dump_instruction inst)
 
 (* Barrier pretty print *)
@@ -261,19 +268,28 @@ module Make
          >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
-      let scalable_nbits = TopConf.sve_vector_length
+      let scalable_nbits =
+        if C.variant Variant.SME && C.variant Variant.SVE && (TopConf.sme_vector_length != TopConf.sve_vector_length) then
+            Warn.user_error "Mismatch vector lengths: SME VL%d != SVE VL%d" TopConf.sme_vector_length TopConf.sve_vector_length
+        else if C.variant Variant.SME then
+          TopConf.sme_vector_length
+        else if C.variant Variant.SVE then
+          TopConf.sve_vector_length
+        else 0
 
       let scalable_nbytes = scalable_nbits / 8
 
       let predicate_psize r = match r with
       | AArch64Base.Preg (_,esize)
-      (* Infer predicate bitsize from Z register *)
+      (* Infer predicate bitsize from Z or ZA register *)
+      | AArch64Base.ZAreg (_,_,esize)
       | AArch64Base.Zreg (_,esize) -> esize / 8
       | _ -> assert false
 
       let predicate_nelem r = match r with
       | AArch64Base.Preg (_,esize)
-      (* Infer predicate elements from Z register *)
+      (* Infer predicate elements from Z or ZA register *)
+      | AArch64Base.ZAreg (_,_,esize)
       | AArch64Base.Zreg (_,esize) -> scalable_nbits / esize
       | _ -> assert false
 
@@ -346,10 +362,12 @@ module Make
         M.op Op.Ne all AArch64.zero_promoted
 
       let scalable_esize r = match r with
+      | AArch64Base.ZAreg (_,_,esize)
       | AArch64Base.Zreg (_,esize) -> esize
       | _ -> assert false
 
       let scalable_nelem r = match r with
+      | AArch64Base.ZAreg (_,_,esize)
       | AArch64Base.Zreg (_,esize) -> scalable_nbits / esize
       | _ -> assert false
 
@@ -390,6 +408,77 @@ module Make
           M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
 
       let write_reg_scalable = write_reg_scalable_sz MachSize.S128
+
+      (* ZA offset, in bits, see ARM ARM B.1.4.10 "ZA tile access" *)
+      let za_getoffset tile slice idx esize =
+        let esize_to_shift = function
+          | 8 -> 0
+          | 16 -> 1
+          | 32 -> 2
+          | 64 -> 3
+          | 128 -> 4
+          | _ -> assert false in
+        let shift = esize_to_shift esize in
+        let mk_shift k = M.op1 (Op.LeftShift k) in
+          begin
+            begin
+              mk_shift shift slice >>=
+              M.add (V.intToV tile) >>=
+              M.op Op.Mul (V.intToV scalable_nbits)
+            end >>|
+            mk_shift (shift+3) idx
+          end >>= fun (base,idx) -> M.add base idx
+
+      let za_getoffset_dir dir tile slice idx esize =
+        match dir with
+        | AArch64Base.Horizontal -> za_getoffset tile slice idx esize
+        | AArch64Base.Vertical -> za_getoffset tile idx slice esize
+
+      let za_getlane cur_val tile slice idx esize =
+        let mask = AArch64.scalable_mask esize in
+        za_getoffset tile slice idx esize >>= fun amount ->
+          M.op Op.ShiftLeft mask amount >>= fun mask ->
+            M.op Op.And mask cur_val >>= fun masked_val ->
+              M.op Op.ShiftRight masked_val amount
+
+
+      let za_getlane_dir dir cur_val tile slice idx esize =
+        match dir with
+        | AArch64Base.Horizontal -> za_getlane cur_val tile slice idx esize
+        | AArch64Base.Vertical -> za_getlane cur_val tile idx slice esize
+
+      let za_setlane old_val tile slice idx esize v =
+        let mask = AArch64.scalable_mask esize in
+        za_getoffset tile slice idx esize >>= fun amount ->
+          M.op Op.ShiftLeft mask amount >>= fun mask ->
+            M.op1 Op.Inv mask >>= fun invert ->
+              M.op Op.And invert old_val >>|
+                (M.op Op.ShiftLeft v amount >>= fun new_val ->
+                  M.op Op.And mask new_val) >>= fun (v1,v2) ->
+                    M.op Op.Or v1 v2
+
+      let za_setlane_dir dir old_val tile slice idx esize v =
+        match dir with
+        | AArch64Base.Horizontal -> za_setlane old_val tile slice idx esize v
+        | AArch64Base.Vertical -> za_setlane old_val tile idx slice esize v
+
+      let read_reg_za is_data r ii =
+        let vr = match r with
+        | AArch64Base.ZAreg _ -> r
+        | _ -> assert false in
+          let location = A.Location_reg (ii.A.proc,vr) in
+          M.read_loc is_data (mk_read MachSize.S128 Annot.N aexp) location ii
+
+      let write_reg_za_sz sz r v ii =
+        let pr = match r with
+        | AArch64Base.ZAreg(_,_,_) -> r
+        | _ -> assert false in
+        (* Clear unused register bits (zero extend) *)
+          M.op1 (Op.Mask sz) v >>= fun v ->
+          let location = A.Location_reg (ii.A.proc,pr) in
+          M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
+
+      let write_reg_za = write_reg_za_sz MachSize.S128
 
       let write_reg_scalable_rep r v ii =
         let nelem = scalable_nelem r in
@@ -2397,7 +2486,9 @@ module Make
           | 0 -> op >>= fun old_val -> increment old_val n i
           | _ -> reduce (n-1) (op >>= fun old_val -> increment old_val n i)
         in
-        reduce (nelem-1) mzero >>= fun v -> write_reg_scalable r v ii
+        reduce (nelem-1) mzero
+        >>= fun v -> write_reg_scalable r v ii
+        >>! v
 
       let cnt_inc (op,v) r pat k ii =
         let open AArch64 in
@@ -2409,6 +2500,128 @@ module Make
          | INC -> read_reg_ord_sz sz r ii)
         >>= M.op1 (Op.AddK off)
         >>= fun v -> write_reg_sz_dest sz r v ii
+
+      let reset_sm v ii =
+        let z = AArch64.zero_promoted in
+        let zop = List.map (fun r -> write_reg_scalable r z ii) AArch64.zregs in
+        let pop = List.map (fun r -> write_reg_predicate r z ii) AArch64.pregs in
+        let zval = List.map (fun r -> r,z) AArch64.zregs in
+        let pval = List.map (fun r -> r,z) AArch64.pregs in
+        let ops = zop@pop@[write_reg AArch64.SM v ii] in
+        let vals = zval@pval@[AArch64.SM,v] in
+        ops,vals
+
+      let reset_za v ii =
+        let z = AArch64.zero_promoted in
+        let r = AArch64.ZAreg(0,None,0) in
+        let ops = [write_reg_za r z ii; write_reg AArch64.ZA v ii] in
+        let vals = [r,z;AArch64.ZA,v] in
+        ops,vals
+
+      let mova_vt r ri k pg src ii =
+        let dst,tile,dir = match r with
+        | AArch64Base.ZAreg (tile,Some dir,_) -> r,tile,dir
+        | _ -> assert false in
+        let psize = predicate_psize src in
+        let esize = scalable_esize src in
+        let dim = scalable_nbits / esize; in
+        read_reg_ord ri ii >>= fun index ->
+          M.add index (V.intToV k) >>= fun slice ->
+            M.op Op.Rem slice (V.intToV dim) >>= fun slice ->
+              read_reg_za false dst ii >>|
+                read_reg_predicate false pg ii >>|
+                  read_reg_scalable false src ii >>= fun ((orig,pred),src) ->
+                    let mova cur_val idx =
+                      get_predicate_last pred psize idx >>= fun last ->
+                        M.choiceT
+                        last
+                        (scalable_getlane src idx esize)
+                        (za_getlane_dir dir orig tile slice (V.intToV idx) esize)
+                        >>= fun v ->
+                          za_setlane_dir dir cur_val tile slice (V.intToV idx) esize v
+                    in
+                    let rec reduce n op =
+                      match n with
+                      | 0 -> op >>= fun old_val -> mova old_val n
+                      | _ -> reduce (n-1) (op >>= fun old_val -> mova old_val n)
+                    in
+                    reduce (dim-1) (M.unitT orig) >>= fun v ->
+                      write_reg_za dst v ii >>! v
+
+      let mova_tv dst pg r ri k ii =
+        let src,tile,dir = match r with
+        | AArch64Base.ZAreg (tile,Some dir,_) -> r,tile,dir
+        | _ -> assert false in
+        let psize = predicate_psize dst in
+        let esize = scalable_esize dst in
+        let dim = scalable_nbits / esize; in
+        read_reg_ord ri ii >>= fun index ->
+          M.add index (V.intToV k) >>= fun slice ->
+            M.op Op.Rem slice (V.intToV dim) >>= fun slice ->
+              read_reg_za false src ii >>|
+                read_reg_predicate false pg ii >>|
+                  read_reg_scalable false dst ii >>= fun ((src,pred),orig) ->
+                    let mova cur_val idx =
+                      get_predicate_last pred psize idx >>= fun last ->
+                        M.choiceT
+                        last
+                        (za_getlane_dir dir src tile slice (V.intToV idx) esize)
+                        (scalable_getlane orig idx esize)
+                        >>= fun v ->
+                          scalable_setlane cur_val idx esize v
+                    in
+                    let rec reduce n op =
+                      match n with
+                      | 0 -> op >>= fun old_val -> mova old_val n
+                      | _ -> reduce (n-1) (op >>= fun old_val -> mova old_val n)
+                    in
+                    reduce (dim-1) mzero_promoted >>= fun v ->
+                      write_reg_scalable dst v ii >>! v
+
+      let adda dir dst pslice pelem src ii =
+        let acc,tile,dir = match dst with
+        | AArch64Base.ZAreg (tile,None,_) -> dst,tile,dir
+        | _ -> assert false in
+        let psize = predicate_psize src in
+        let esize = scalable_esize src in
+        let dim = scalable_nbits / esize; in
+        read_reg_za false acc ii >>|
+          read_reg_predicate false pslice ii >>|
+            read_reg_predicate false pelem ii >>|
+              read_reg_scalable false src ii >>= fun (((acc,p1),p2),src) ->
+                let add cur_val slice idx =
+                  get_predicate_last p1 psize slice >>|
+                    get_predicate_last p2 psize idx >>= fun (v1,v2) ->
+                      M.op Op.And v1 v2 >>= fun last ->
+                        M.choiceT
+                          last
+                          (let slice_v = V.intToV slice
+                           and idx_v = V.intToV idx in
+                           begin
+                            scalable_getlane src idx esize
+                            >>|
+                            za_getlane_dir dir acc tile slice_v idx_v esize
+                           end >>=
+                            sum_elems
+                            >>= fun v ->
+                              za_setlane_dir
+                                dir cur_val tile slice_v idx_v esize v)
+                            (M.unitT cur_val)
+                in
+                let rec repeat_row old_val slice idx =
+                  if idx < dim then
+                    add old_val slice idx >>= fun old_val ->
+                      repeat_row old_val slice (idx+1)
+                  else M.unitT old_val in
+                let rec repeat_col old_val slice =
+                  if slice < dim then
+                    repeat_row old_val slice 0 >>= fun old_val ->
+                      repeat_col old_val (slice+1)
+                  else
+                    M.unitT old_val
+                in
+                repeat_col acc 0 >>= fun v ->
+                  write_reg_za dst v ii >>! v
 
 (******************************)
 (* Move constant instructions *)
@@ -2724,6 +2937,79 @@ module Make
               let ops = List.map op (Misc.interval 0 nelem) in
               List.fold_right (>>::) ops (M.unitT [()]))
             (M.unitT [()])
+
+      let load_predicated_slice sz r ri k p ma ii =
+        let dst,tile,dir,esize = match r with
+        | AArch64Base.ZAreg (tile,Some(dir),esize) -> r,tile,dir,esize
+        | _ -> assert false in
+        let psize = predicate_psize dst in
+        let dim = scalable_nbits / esize; in
+        ma >>|
+        read_reg_za false dst ii >>|
+          read_reg_predicate false p ii >>|
+            (read_reg_ord ri ii >>= fun index ->
+              M.add index (V.intToV k) >>= fun slice ->
+                M.op Op.Rem slice (V.intToV dim)) >>= fun ((((base,orig)),pred),slice) ->
+            let load idx =
+              let offset = idx * MachSize.nbytes sz in
+              get_predicate_last pred psize idx >>= fun last ->
+                M.choiceT
+                last
+                (M.op1 (Op.AddK offset) base >>= fun addr ->
+                  do_read_mem_ret sz Annot.N aexp Access.VIR addr ii)
+                mzero
+                >>= promote >>| za_getoffset_dir dir tile slice (V.intToV idx) esize >>= fun (v,amount) ->
+                  M.op Op.ShiftLeft v amount
+            in
+            let rec reduce idx op =
+              match idx with
+              | 0 -> op >>| load idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
+              | _ -> reduce (idx-1) (op >>| load idx >>= fun (v1,v2) -> M.op Op.Or v1 v2)
+            in
+            reduce (dim-1) mzero_promoted >>|
+            ( let mask idx =
+                za_getoffset_dir dir tile slice (V.intToV idx) esize >>= fun amount ->
+                M.op Op.ShiftLeft (AArch64.scalable_mask esize) amount
+              in
+              let rec genmask idx op =
+                match idx with
+                | 0 -> op >>| mask idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
+                | _ -> genmask (idx-1) (op >>| mask idx >>= fun (v1,v2) -> M.op Op.Or v1 v2)
+              in
+              genmask (dim-1) mzero_promoted >>= M.op1 Op.Inv >>= fun invert ->
+                M.op Op.And invert orig) >>= fun (new_val,old_val) ->
+                  M.op Op.Or new_val old_val >>= fun v ->
+                    write_reg_za dst v ii
+
+      let store_predicated_slice sz r ri k p ma ii =
+        let src,tile,dir,esize = match r with
+        | AArch64Base.ZAreg (tile,Some(dir),esize) -> r,tile,dir,esize
+        | _ -> assert false in
+        let psize = predicate_psize src in
+        let dim = scalable_nbits / esize; in
+        ma >>|
+        read_reg_za false src ii >>|
+          read_reg_predicate false p ii >>|
+            (read_reg_ord ri ii >>= fun index ->
+              M.add index (V.intToV k) >>= fun slice ->
+                M.op Op.Rem slice (V.intToV dim)) >>= fun ((((base,orig)),pred),slice) ->
+            let store idx =
+              let offset = idx * MachSize.nbytes sz in
+              get_predicate_last pred psize idx >>= fun last ->
+                M.choiceT
+                last
+                (M.op1 (Op.AddK offset) base >>|
+                 (za_getlane_dir dir orig tile slice (V.intToV idx) esize >>= demote)
+                 >>= fun (addr,v) -> write_mem sz aexp Access.VIR addr v ii)
+                (M.unitT ())
+            in
+            let rec reduce idx op =
+              match idx with
+              | 0 -> store idx >>:: op
+              | _ -> reduce (idx-1) (store idx >>:: op)
+            in
+            reduce (dim-1) (M.unitT [()])
+
 
       (* Data cache operations *)
       let dc_loc op a ii =
@@ -3362,28 +3648,28 @@ module Make
             read_reg_ord_sz sz r2 ii >>= promote >>= fun v ->
             write_reg_scalable_rep r1 v ii)
         | I_INDEX_SI (r1,var,r2,k) ->
-          check_sve inst;
-          !(let sz = tr_variant var  in
+            check_sve inst;
+            let sz = tr_variant var  in
             let v2 = V.intToV k in
             read_reg_ord_sz sz r2 ii >>= fun v1 ->
-              index r1 v1 v2 ii)
+            index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_IS (r1,var,k,r2) ->
-          check_sve inst;
-          !(let sz = tr_variant var  in
+            check_sve inst;
+            let sz = tr_variant var  in
             let v1 = V.intToV k in
             read_reg_ord_sz sz r2 ii >>= fun v2 ->
-              index r1 v1 v2 ii)
+            index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_SS (r1,var,r2,r3) ->
-          check_sve inst;
-          !(let sz = tr_variant var  in
+            check_sve inst;
+            let sz = tr_variant var  in
             read_reg_ord_sz sz r2 ii >>|
             read_reg_ord_sz sz r3 ii >>= fun (v1,v2) ->
-              index r1 v1 v2 ii)
+            index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_II (r1,k1,k2) ->
-          check_sve inst;
-          !(let v1 = V.intToV k1 in
+            check_sve inst;
+            let v1 = V.intToV k1 in
             let v2 = V.intToV k2 in
-            index r1 v1 v2 ii)
+            index r1 v1 v2 ii >>= nextSet r1
         | I_RDVL (rd,k) ->
            check_sve inst;
            let v = scalable_nbytes * k |> V.intToV in
@@ -3400,6 +3686,107 @@ module Make
         | I_CNT_INC_SVE (op,r,pat,k) ->
            check_sve inst;
            cnt_inc op r pat k ii >>= nextSet r
+        | I_SMSTART (None) ->
+           check_sme inst;
+           let ops1,vals1 = reset_sm V.one ii in
+           let ops2,vals2 = reset_za V.one ii in
+           read_reg_ord AArch64.SM ii >>|
+           read_reg_ord AArch64.ZA ii >>= fun (sm,za) ->
+            M.op Op.Ne sm V.one >>|
+            M.op Op.Ne za V.one >>= fun (diffsm,diffza) ->
+              M.choiceT
+              diffsm
+              (M.choiceT diffza
+               (List.fold_right (>>::) (ops1@ops2) (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next (vals1@vals2)))
+               (List.fold_right (>>::) ops1 (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals1)))
+              (M.choiceT diffza
+               (List.fold_right (>>::) ops2 (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals2))
+              (B.nextT))
+        | I_SMSTART (Some(SM)) ->
+           check_sme inst;
+           let ops,vals = reset_sm V.one ii in
+           read_reg_ord AArch64.SM ii >>= fun sm ->
+            M.op Op.Ne sm V.one >>= fun diff ->
+              M.choiceT
+              diff
+              (List.fold_right (>>::) ops (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals))
+              (B.nextT)
+        | I_SMSTART (Some(ZA)) ->
+           check_sme inst;
+           let ops,vals = reset_za V.one ii in
+           read_reg_ord AArch64.ZA ii >>= fun sm ->
+            M.op Op.Ne sm V.one >>= fun diff ->
+              M.choiceT
+              diff
+              (List.fold_right (>>::) ops (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals))
+              (B.nextT)
+        | I_SMSTOP (None) ->
+          let ops1,vals1 = reset_sm V.zero ii in
+          let ops2,vals2 = reset_za V.zero ii in
+          read_reg_ord AArch64.SM ii >>|
+          read_reg_ord AArch64.ZA ii >>= fun (sm,za) ->
+           M.op Op.Ne sm V.zero >>|
+           M.op Op.Ne za V.zero >>= fun (diffsm,diffza) ->
+             M.choiceT
+             diffsm
+             (M.choiceT diffza
+              (List.fold_right (>>::) (ops1@ops2) (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next (vals1@vals2)))
+              (List.fold_right (>>::) ops1 (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals1)))
+             (M.choiceT diffza
+             (List.fold_right (>>::) ops2 (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals2))
+             (B.nextT))
+        | I_SMSTOP (Some(SM)) ->
+           check_sme inst;
+           let ops,vals = reset_sm V.zero ii in
+           read_reg_ord AArch64.SM ii >>= fun sm ->
+            M.op Op.Ne sm V.zero >>= fun diff ->
+              M.choiceT
+              diff
+              (List.fold_right (>>::) ops (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals))
+              (B.nextT)
+        | I_SMSTOP (Some(ZA)) ->
+           check_sme inst;
+           let ops,vals = reset_za V.zero ii in
+           read_reg_ord AArch64.ZA ii >>= fun sm ->
+            M.op Op.Ne sm V.zero >>= fun diff ->
+              M.choiceT
+              diff
+              (List.fold_right (>>::) ops (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals))
+              (B.nextT)
+        | I_MOVA_VT (za,ri,k,p,z) ->
+           check_sme inst;
+           mova_vt za ri k p z ii
+           >>= nextSet za
+        | I_MOVA_TV (z,p,za,ri,k) ->
+           check_sme inst;
+           mova_tv z p za ri k ii
+           >>= nextSet z
+        | I_ADDA (dir,za,p1,p2,z) ->
+           check_sme inst;
+           let pslice, pelem = match dir with
+           | AArch64.Vertical -> p2,p1
+           | AArch64.Horizontal -> p1,p2 in
+           adda dir za pslice pelem z ii >>= nextSet za
+        | I_LD1SPT (var,za,ri,k,p,rA,MemExt.Imm(0,Idx)) ->
+           check_sme inst;
+           !(let sz = tr_simd_variant var in
+             let ma = read_reg_ord rA ii in
+             load_predicated_slice sz za ri k p ma ii)
+        | I_LD1SPT(var,za,ri,k,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
+          !(let sz = tr_simd_variant var in
+            let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
+            load_predicated_slice sz za ri k p ma ii)
+        | I_ST1SPT (var,za,ri,k,p,rA,MemExt.Imm(0,Idx)) ->
+           check_sme inst;
+           !!!(let sz = tr_simd_variant var in
+               let ma = read_reg_ord rA ii in
+               store_predicated_slice sz za ri k p ma ii >>|
+               M.unitT ())
+        | I_ST1SPT (var,za,ri,k,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
+          !!!(let sz = tr_simd_variant var in
+              let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
+              store_predicated_slice sz za ri k p ma ii >>|
+              M.unitT ())
         (* Morello instructions *)
         | I_ALIGND(rd,rn,k) ->
             check_morello inst ;
@@ -3806,7 +4193,8 @@ module Make
         | (I_STG _|I_STZG _|I_STZ2G _
         | I_LDR_SIMD _| I_STR_SIMD _
         | I_LD1SP _| I_LD2SP _| I_LD3SP _| I_LD4SP _
-        | I_ST1SP _|I_ST2SP _|I_ST3SP _|I_ST4SP _) as i ->
+        | I_ST1SP _|I_ST2SP _|I_ST3SP _|I_ST4SP _
+        | I_SMSTART _ | I_SMSTOP _ |I_LD1SPT _ |I_ST1SPT _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
 (* Compute a safe set of instructions that can

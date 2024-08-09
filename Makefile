@@ -159,6 +159,19 @@ test.sve::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 SVE instructions tests: OK"
 
+test:: test.sme
+test-local:: test.sme
+test.sme::
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.sme \
+		-variant sme \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 SME instructions tests: OK"
+
 test:: test.mte
 test-local:: test.mte
 test.mte::

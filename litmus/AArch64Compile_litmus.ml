@@ -77,6 +77,13 @@ module Make(V:Constant.S)(C:Config) =
     | I_NEG_SV (r,_,_)
     | I_MOVPRFX (r,_,_)
       -> A.RegSet.of_list [r]
+    (* Reserve slice index *)
+    | I_LD1SPT (_,_,r,_,_,_,_)
+    | I_ST1SPT (_,_,r,_,_,_,_)
+    | I_MOVA_VT (_,r,_,_,_)
+      -> A.RegSet.of_list [r]
+    | I_MOVA_TV (r1,_,_,r2,_)
+      -> A.RegSet.of_list [r1;r2]
     | _ ->  A.RegSet.empty
 
 (* Generic funs for zr *)
@@ -1284,6 +1291,110 @@ module Make(V:Constant.S)(C:Config) =
            | INC -> rd);
         reg_env = add_q rd; }
 
+    let adda s rD p1 p2 rS =
+      { empty_ins with
+        memo = sprintf "add%sa %s,%s,%s,%s"
+        (Misc.lowercase (pp_za_dirrection_specifier s))
+        (Misc.lowercase (pp_zareg rD))
+        (print_preg "i" 0 0 p1)
+        (print_preg "i" 1 0 p2)
+        (print_zreg "i" 2 0 rS);
+        outputs = [];
+        inputs = [p1;p2;rS];
+        reg_env = add_svbool_t [p1;p2]@add_svint32_t[rS;];
+        clobbers = [rD]
+      }
+
+    let mova_vt rD rI k p rS =
+      { empty_ins with
+        memo = sprintf "mova %s[^wi0,%d],%s,%s"
+        (Misc.lowercase (pp_zareg rD))
+        k
+        (print_preg "i" 1 0 p)
+        (print_zreg "i" 2 0 rS);
+        outputs = [];
+        inputs = [rI;p;rS];
+        reg_env = add_w [rI;]@add_svbool_t [p;]@add_svint32_t[rS;];
+        clobbers = [rD]
+      }
+
+    let mova_tv rD p rS rI k  =
+      { empty_ins with
+        memo = sprintf "mova %s,%s,%s[^wi1,%d]"
+        (print_zreg "o" 0 0 rD)
+        (print_preg "i" 0 0 p)
+        (Misc.lowercase (pp_zareg rS))
+        k;
+        outputs = [rD];
+        inputs = [p;rI];
+        reg_env = add_w [rI;]@add_svbool_t [p;]@add_svint32_t[rD;];
+      }
+
+    let ld1spt v rD rI k p rA idx =
+      let open MemExt in
+      match idx with
+      | Imm (0,Idx) ->
+        { empty_ins with
+          memo = sprintf "ld1%s {%s[^wi0,%d]},%s,[^i2]"
+          (Misc.lowercase (pp_simd_variant v))
+          (Misc.lowercase (pp_zareg rD))
+          k
+          (print_preg "i" 1 0 p);
+          outputs = [];
+          inputs = [rI;p;rA];
+          reg_env = add_w [rI;]@add_svbool_t [p;]@[(rA,voidstar)];
+          clobbers = [rD]
+        }
+      | Reg (V64,rM,LSL,k1) ->
+        { empty_ins with
+          memo = sprintf "ld1%s {%s[^wi0,%d]},%s,[^i2,^i3,LSL #%d]"
+          (Misc.lowercase (pp_simd_variant v))
+          (Misc.lowercase (pp_zareg rD))
+          k
+          (print_preg "i" 1 0 p)
+          k1;
+          outputs = [];
+          inputs = [rI;p;rA;rM];
+          reg_env = add_w [rI;]@add_svbool_t [p;]@[(rA,voidstar)]@add_q [rM;];
+          clobbers = [rD]
+        }
+      | _ -> assert false
+
+    let st1spt v rD rI k p rA idx =
+      let open MemExt in
+      match idx with
+      | Imm (0,Idx) ->
+        { empty_ins with
+          memo = sprintf "st1%s {%s[^wi0,%d]},%s,[^i2]"
+          (Misc.lowercase (pp_simd_variant v))
+          (Misc.lowercase (pp_zareg rD))
+          k
+          (print_preg "i" 1 0 p);
+          outputs = [];
+          inputs = [rI;p;rA];
+          reg_env = add_w [rI;]@add_svbool_t [p;]@[(rA,voidstar)];
+        }
+      | Reg (V64,rM,LSL,k1) ->
+        { empty_ins with
+          memo = sprintf "st1%s {%s[^wi0,%d]},%s,[^i2,^i3,LSL #%d]"
+          (Misc.lowercase (pp_simd_variant v))
+          (Misc.lowercase (pp_zareg rD))
+          k
+          (print_preg "i" 1 0 p)
+          k1;
+          outputs = [];
+          inputs = [rI;p;rA;rM];
+          reg_env = add_w [rI;]@add_svbool_t [p;]@[(rA,voidstar)]@add_q [rM;];
+        }
+      | _ -> assert false
+
+    let pp_sm_op = function 
+    | None -> ""
+    | Some r -> " " ^ (pp_sm r |> Misc.lowercase)
+
+    let sm_op memo op =
+      { empty_ins with memo = sprintf "%s%s" memo (pp_sm_op op); }
+
 (* Compare and swap *)
 
     let cas_memo rmw = Misc.lowercase (cas_memo rmw)
@@ -1698,7 +1809,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_EOR_SIMD (r1,r2,r3) -> eor_simd r1 r2 r3::k
     | I_ADD_SIMD (r1,r2,r3) -> add_simd r1 r2 r3::k
     | I_ADD_SIMD_S (r1,r2,r3) -> add_simd_s r1 r2 r3::k
-(* Scalable Vector Extension Load and Store *)
+(* Scalable Vector Extension *)
     | I_WHILELT (z,v,r1,r2) -> while_op "whilelt" z v r1 r2::k
     | I_WHILELE (z,v,r1,r2) -> while_op "whilele" z v r1 r2::k
     | I_WHILELO (z,v,r1,r2) -> while_op "whilelo" z v r1 r2::k
@@ -1725,6 +1836,14 @@ module Make(V:Constant.S)(C:Config) =
     | I_RDVL (r1,k1) -> rdvl r1 k1::k
     | I_ADDVL (r1,r2,k1) -> addvl r1 r2 k1::k
     | I_CNT_INC_SVE  (op,rd,pat,k1) -> cnt_inc_sve op rd pat k1::k
+(* Scalable Matrix Extension *)
+    | I_LD1SPT (v,r,ri,k1,p,ra,idx) -> ld1spt v r ri k1 p ra idx::k
+    | I_ST1SPT (v,r,ri,k1,p,ra,idx) -> st1spt v r ri k1 p ra idx::k
+    | I_MOVA_VT (r,ri,k1,p,rs) -> mova_vt r ri k1 p rs::k
+    | I_MOVA_TV (r,p,rs,ri,k1) -> mova_tv r p rs ri k1::k
+    | I_ADDA (s,r,p1,p2,rs) -> adda s r p1 p2 rs::k
+    | I_SMSTART op -> sm_op "smstart" op::k
+    | I_SMSTOP op -> sm_op "smstop" op::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  mov_const v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k

@@ -119,6 +119,7 @@ module type SArg = sig
   val set_fault_handling :  Fault.Handling.t ref -> t -> bool
   val set_mte_precision : Precision.t ref -> t -> bool
   val set_sve_length : int ref -> t -> t option
+  val set_sme_length : int ref -> t -> t option
   val check_tag : t -> t list
 end
 
@@ -126,6 +127,7 @@ module type RefsArg = sig
   val fault_handling : Fault.Handling.t ref
   val mte_precision : Precision.t ref
   val sve_vector_length : int ref
+  val sme_vector_length : int ref
 end
 
 module MakeOptS =
@@ -137,8 +139,15 @@ module MakeOptS =
       set_fault_handling Refs.fault_handling t ||
       set_mte_precision Refs.mte_precision t
 
+    let check_lengths t =
+      let (>>=) o f = match o with
+      | Some _ -> o
+      | None -> f t in
+      set_sve_length Refs.sve_vector_length t
+      >>= fun t -> set_sme_length Refs.sme_vector_length t
+
     let reducetag tag =
-      match set_sve_length Refs.sve_vector_length tag with
+      match check_lengths tag with
       | Some tag -> [tag]
       | None -> check_tag tag
 

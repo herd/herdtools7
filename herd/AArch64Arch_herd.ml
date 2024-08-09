@@ -28,8 +28,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       MakeAArch64Base.Make
         (struct let is_morello = C.variant Variant.Morello end)
 
-    let is_kvm = C.variant Variant.VMSA
+    module V = V
 
+    let is_kvm = C.variant Variant.VMSA
 
     let is_amo _ = false
     let pp_barrier_short = pp_barrier
@@ -118,6 +119,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
     | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
     | I_NEG_SV _ | I_MOVPRFX _
+    | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
+    | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
       -> true
 
     let is_cmodx_restricted_value =
@@ -198,8 +201,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | NExp AF-> "NExpAF"
       | NExp DB-> "NExpDB"
       | NExp AFDB-> "NExpAFDB"
-
-    module V = V
 
     let promote_int64 x =
       let sc =
@@ -285,6 +286,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD4 (rs,_,_,_) | I_LD4R (rs,_,_) | I_ST4 (rs,_,_,_)
       | I_LD4M (rs,_,_) | I_ST4M (rs,_,_) ->
           Some (simd_mem_access_size rs)
+      | I_LD1SPT (v,_,_,_,_,_,_) | I_ST1SPT (v,_,_,_,_,_,_)
       | I_LD1SP (v,_,_,_,_) | I_ST1SP (v,_,_,_,_)
       | I_LD2SP (v,_,_,_,_) | I_ST2SP (v,_,_,_,_)
       | I_LD3SP (v,_,_,_,_) | I_ST3SP (v,_,_,_,_)
@@ -319,10 +321,14 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NEG_SV _ | I_MOVPRFX _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
+      | I_SMSTART _ | I_SMSTOP _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
           -> None
 
     let all_regs =
       all_gprs@vregs (* Should be enough, only those are tracked *)
+
+    let all_streaming_regs =
+      zregs@pregs
 
     let opt_env = true
 
@@ -351,6 +357,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_TBZ _|I_TBNZ _
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_UDF _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
+      | I_ST1SPT _
         -> [] (* For -variant self only ? *)
       | I_LDR (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRBH (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
@@ -390,6 +397,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NEG_SV (r,_,_) | I_MOVPRFX (r,_,_)
       | I_INDEX_SI (r,_,_,_) | I_INDEX_IS (r,_,_,_) | I_INDEX_SS (r,_,_,_) | I_INDEX_II (r,_,_)
       | I_RDVL (r,_) | I_ADDVL (r,_,_) | I_CNT_INC_SVE (_,r,_,_)
+      | I_LD1SPT (_,r,_,_,_,_,_) | I_MOVA_TV (r,_,_,_,_) | I_MOVA_VT (r,_,_,_,_)
+      | I_ADDA (_,r,_,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
@@ -400,6 +409,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD3SP (_,rs,_,_,_)
       | I_LD4SP (_,rs,_,_,_)
         -> rs
+      | I_SMSTART _ | I_SMSTOP _
+        -> all_streaming_regs
       | I_LDAP1 _
       | I_STL1 _
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
@@ -422,7 +433,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CASP _
         ->
          all_regs (* safe approximation *)
-
+ 
     let get_lx_sz = function
       | I_LDAR (var,(XX|AX),_,_)|I_LDXP (var,_,_,_,_) -> MachSize.Ld (tr_variant var)
       | I_LDARBH (bh,(XX|AX),_,_) -> MachSize.Ld (bh_to_sz bh)
@@ -469,7 +480,14 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_SV _ | I_DUP_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
+      | I_SMSTART _ | I_SMSTOP _
+      | I_LD1SPT _ | I_ST1SPT _
+      | I_MOVA_TV _| I_MOVA_VT _ | I_ADDA _
         -> MachSize.No
+
+    let reg_defaults =
+      if C.variant Variant.SME then [ZA; SM;]
+      else []
 
     include ArchExtra_herd.Make(C)
         (struct

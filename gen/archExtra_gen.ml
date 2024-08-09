@@ -24,8 +24,12 @@ module type I = sig
   val free_registers : arch_reg list
 
   type special
+  type special2
+  type special3
+
   val specials : special list
-  val specials2 : special list
+  val specials2 : special2 list
+  val specials3 : special3 list
   val pp_i : int -> string
 end
 
@@ -74,8 +78,12 @@ module type S = sig
   val alloc_loop_idx : string -> st -> arch_reg * st
 
   type special
+  type special2
+  type special3
+
   val alloc_special : st -> special * st
-  val alloc_special2 : st -> special * st
+  val alloc_special2 : st -> special2 * st
+  val alloc_special3 : st -> special3 * st
 
   val set_friends : arch_reg -> arch_reg list -> st -> st
   val get_friends : st -> arch_reg -> arch_reg list
@@ -91,7 +99,10 @@ module type S = sig
 end
 
 module Make(I:I) : S
-with type arch_reg = I.arch_reg and type special = I.special
+with type arch_reg = I.arch_reg
+and type special = I.special
+and type special2 = I.special2
+and type special3 = I.special3
 = struct
   type arch_reg = I.arch_reg
 
@@ -221,7 +232,8 @@ with type arch_reg = I.arch_reg and type special = I.special
       { regs : arch_reg list ;
         map  : arch_reg StringMap.t ;
         specials : I.special list ;
-        specials2 : I.special list ;
+        specials2 : I.special2 list ;
+        specials3 : I.special3 list ;
         noks : int ;
         env : TypBase.t LocMap.t ; (* Record types *)
         (* Group special registers together *)
@@ -239,6 +251,7 @@ with type arch_reg = I.arch_reg and type special = I.special
       map = StringMap.empty;
       specials = I.specials;
       specials2 = I.specials2;
+      specials3 = I.specials3;
       noks = 0;
       env = LocMap.empty;
       friends = RegMap.empty;
@@ -267,6 +280,9 @@ with type arch_reg = I.arch_reg and type special = I.special
   and alloc_loop_idx k st = do_alloc_trashed_reg alloc_last_reg k st
 
   type special = I.special
+  type special2 = I.special2
+  type special3 = I.special3
+
   let alloc_special st = match st.specials with
   | [] -> Warn.fatal "No more special registers"
   | r::rs -> r,{ st with specials = rs; }
@@ -274,6 +290,10 @@ with type arch_reg = I.arch_reg and type special = I.special
   let alloc_special2 st = match st.specials2 with
   | [] -> Warn.fatal "No more special registers"
   | r::rs -> r,{ st with specials2 = rs; }
+
+  let alloc_special3 st = match st.specials3 with
+  | [] -> Warn.fatal "No more special registers"
+  | r::rs -> r,{ st with specials3 = rs; }
 
   let set_friends r rs st =
     let friends = RegMap.add r rs st.friends in
