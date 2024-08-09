@@ -3080,6 +3080,8 @@ let is_nbits_signed n =
 
 let is_6bits_signed = is_nbits_signed 6
 
+let is_granule_offset k = is_nbits_signed 9 k && (k mod MachSize.granule_nbytes == 0)
+
 let variant_raw = function
   | V128 -> 128
   | V64 -> 64
@@ -3226,6 +3228,13 @@ let is_valid i =
     -> is_6bits_signed k
   | I_CNT_INC_SVE (_,_,_,k)
     -> is_4bits_unsigned (k-1)
+  | I_STG (_,_,(k,Idx))
+  | I_STZG (_,_,(k,Idx))
+  | I_STZ2G (_,_,(k,Idx))
+  | I_LDG (_,_,k)
+    -> is_granule_offset k
+  | I_STG _ | I_STZG _ | I_STZ2G _
+    -> false
   | _ -> true
 
 

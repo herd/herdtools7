@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (not (fault(P0,x)))
 Observation B010 Always 1 0
-Hash=96b31e9a3d4696c3cc7ba14e1aa59685
+Hash=683370b37c1159c10a7517d849f3c051
 

@@ -3090,7 +3090,7 @@ module Make
         end
 
       let ldg rt rn k ii =
-        let ma = get_ea rn (AArch64.K k) (AArch64.S_LSL MachSize.granule_log2bytes) ii in
+        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii in
         let do_ldg a_virt ac ma =
           let ( let* ) = (>>=) in
           let _do_ldg a =
@@ -3112,7 +3112,7 @@ module Make
       type double = Once|Twice
 
       let stg d rt rn k ii =
-        let ma = get_ea rn (AArch64.K k) (AArch64.S_LSL MachSize.granule_log2bytes) ii
+        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii
         and mv = read_reg_data MachSize.Quad rt ii >>= tag_extract in
         let do_stg ac ma mv =
           let __do_stg a v =
@@ -3148,7 +3148,7 @@ module Make
                  M.op1 (Op.AddK MachSize.granule_nbytes) a
                  >>= fun a -> do_write_mem sz Annot.N aexp  ac a v ii in
                (mop1 >>| mop2) >>! () in
-        let ma = get_ea rn (AArch64.K k) (AArch64.S_LSL MachSize.granule_log2bytes) ii >>= loc_extract in
+        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii >>= loc_extract in
         lift_memop rn Dir.W true false (* Unchecked *)
           (fun ac ma mv ->
             if Access.is_physical ac then begin
