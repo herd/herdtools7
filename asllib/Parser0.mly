@@ -115,6 +115,7 @@
 %token LBRACE
 %token LBRACE_LBRACE
 %token LBRACK
+%token LIMIT
 %token LPAREN
 %token LT
 %token LT_EQ
@@ -663,10 +664,11 @@ let apattern ==
 
 let repetitive_stmt ==
   | FOR; index_name=ident; EQ; start_e=expr; dir=direction; end_e=expr;
-      body=indented_block;
-      { AST.S_For { index_name; start_e; dir; end_e; body } }
-  | WHILE; ~=expr; DO; ~=indented_block; <AST.S_While>
-  | REPEAT; ~=indented_block; UNTIL; ~=expr; SEMICOLON; EOL; <AST.S_Repeat>
+      limit=ioption(LIMIT; expr); body=indented_block;
+      { AST.S_For { index_name; start_e; dir; end_e; body; limit } }
+  | WHILE; ~=expr; ~=ioption(LIMIT; expr); DO; ~=indented_block; <AST.S_While>
+  | REPEAT; ~=indented_block; UNTIL; ~=expr; ~=ioption(LIMIT; expr);
+      SEMICOLON; EOL; <AST.S_Repeat>
 
 let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 

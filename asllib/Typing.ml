@@ -2293,23 +2293,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (S_Assert e' |> here, env) |: TypingRule.SAssert
     (* End *)
     (* Begin SWhile *)
-    | S_While (e1, s1) ->
+    | S_While (e1, limit1, s1) ->
         let t, e2 = annotate_expr env e1 in
+        let limit2 = annotate_loop_limit ~loc env limit1 in
         let+ () = check_type_satisfies e2 env t boolean in
         let s2 = try_annotate_block env s1 in
-        (S_While (e2, s2) |> here, env) |: TypingRule.SWhile
+        (S_While (e2, limit2, s2) |> here, env) |: TypingRule.SWhile
     (* End *)
     (* Begin SRepeat *)
-    | S_Repeat (s1, e1) ->
+    | S_Repeat (s1, e1, limit1) ->
         let s2 = try_annotate_block env s1 in
+        let limit2 = annotate_loop_limit ~loc env limit1 in
         let t, e2 = annotate_expr env e1 in
         let+ () = check_type_satisfies e2 env t boolean in
-        (S_Repeat (s2, e2) |> here, env) |: TypingRule.SRepeat
+        (S_Repeat (s2, e2, limit2) |> here, env) |: TypingRule.SRepeat
     (* End *)
     (* Begin SFor *)
-    | S_For { index_name; start_e; end_e; dir; body } ->
+    | S_For { index_name; start_e; end_e; dir; body; limit } ->
         let start_t, start_e' = annotate_expr env start_e
-        and end_t, end_e' = annotate_expr env end_e in
+        and end_t, end_e' = annotate_expr env end_e
+        and limit' = annotate_loop_limit ~loc env limit in
         let start_struct = Types.make_anonymous env start_t
         and struct2 = Types.make_anonymous env end_t in
         let cs =
@@ -2342,6 +2345,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               start_e = start_e';
               end_e = end_e';
               body = body';
+              limit = limit';
             }
           |> here,
           env )
@@ -2394,6 +2398,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_Print { args; debug } ->
         let args' = List.map (fun e -> annotate_expr env e |> snd) args in
         (S_Print { args = args'; debug } |> here, env) |: TypingRule.SDebug
+
+  and annotate_loop_limit ~loc env = function
+    | None -> None
+    | Some limit ->
+        let t, limit' = annotate_expr_ env ~forbid_atcs:true limit in
+        let+ () = check_constrained_integer ~loc env t in
+        Some limit'
 
   and annotate_catcher loc env (name_opt, ty, stmt) =
     let ty' = annotate_type ~loc env ty in

@@ -967,18 +967,18 @@ module Make (B : Backend.S) (C : Config) = struct
         else fatal_from e @@ Error.AssertionFailed e |: SemanticsRule.SAssert
     (* End *)
     (* Begin SWhile *)
-    | S_While (e, body) ->
+    | S_While (e, _limit, body) ->
         let env = IEnv.tick_push env in
         eval_loop true env e body |: SemanticsRule.SWhile
     (* End *)
     (* Begin SRepeat *)
-    | S_Repeat (body, e) ->
+    | S_Repeat (body, e, _limit) ->
         let*> env1 = eval_block env body in
         let env2 = IEnv.tick_push_bis env1 in
         eval_loop false env2 e body |: SemanticsRule.SRepeat
     (* End *)
     (* Begin SFor *)
-    | S_For { index_name; start_e; dir; end_e; body } ->
+    | S_For { index_name; start_e; dir; end_e; body; limit = _limit } ->
         let* start_v = eval_expr_sef env start_e
         and* end_v = eval_expr_sef env end_e in
         (* By typing *)

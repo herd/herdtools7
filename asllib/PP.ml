@@ -225,6 +225,9 @@ let rec pp_lexpr f le =
   | LE_Destructuring les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
   | LE_Concat (les, _) -> fprintf f "@[[%a]@]" (pp_comma_list pp_lexpr) les
 
+let pp_loop_limit =
+  pp_print_option @@ fun f e -> fprintf f "@ @[<h 2>limit@ %a@]" pp_expr e
+
 let pp_for_direction = function Up -> "to" | Down -> "downto"
 
 let pp_local_decl_keyword f k =
@@ -279,16 +282,16 @@ let rec pp_stmt f s =
         (pp_print_list ~pp_sep:pp_print_space pp_case_alt)
         case_li
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
-  | S_While (e, s) ->
-      fprintf f "@[<hv>@[<h>while %a@ do@]@;<1 2>@[<hv>%a@]@ end@]" pp_expr e
-        pp_stmt s
-  | S_Repeat (s, e) ->
-      fprintf f "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a;@]@]"
-        pp_stmt s pp_expr e
-  | S_For { index_name; start_e; end_e; dir; body } ->
-      fprintf f "@[<hv>@[<h>for %a = %a %s %a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
+  | S_While (e, limit, s) ->
+      fprintf f "@[<hv>@[<h>while %a%a@ do@]@;<1 2>@[<hv>%a@]@ end@]" pp_expr e
+        pp_loop_limit limit pp_stmt s
+  | S_Repeat (s, e, limit) ->
+      fprintf f "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a%a;@]@]"
+        pp_stmt s pp_expr e pp_loop_limit limit
+  | S_For { index_name; start_e; end_e; dir; body; limit } ->
+      fprintf f "@[<hv>@[<h>for %a = %a %s %a%a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
         pp_print_string index_name pp_expr start_e (pp_for_direction dir)
-        pp_expr end_e pp_stmt body
+        pp_expr end_e pp_loop_limit limit pp_stmt body
   | S_Decl (ldk, ldi, None) ->
       fprintf f "@[<2>%a %a;@]" pp_local_decl_keyword ldk pp_local_decl_item ldi
   | S_Decl (ldk, ldi, Some e) ->
