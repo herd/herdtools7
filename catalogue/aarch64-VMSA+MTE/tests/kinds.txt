@@ -25,3 +25,6 @@ STRred-NormalXorRW-DB+SWP-2     Allowed
 
 STRgreen-TaggedNormalXorV0      Forbidden
 
+cLDRnToD+BBM                    Allowed
+cSTRnToD+BBM                    Forbidden
+cSTRoTnD+BBM                    Allowed
