@@ -285,7 +285,13 @@ type stmt_desc =
   | S_Cond of expr * stmt * stmt
   | S_Case of expr * case_alt list
   | S_Assert of expr
-  | S_For of identifier * expr * for_direction * expr * stmt
+  | S_For of {
+      index_name : identifier;
+      start_e : expr;
+      dir : for_direction;
+      end_e : expr;
+      body : stmt;
+    }
   | S_While of expr * stmt
   | S_Repeat of stmt * expr
   | S_Throw of (expr * ty option) option

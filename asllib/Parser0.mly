@@ -662,7 +662,9 @@ let apattern ==
   | ~=MASK_LIT; < AST.Pattern_Mask >
 
 let repetitive_stmt ==
-  | FOR; ~=ident; EQ; e1=expr; ~=direction; e2=expr; ~=indented_block; <AST.S_For>
+  | FOR; index_name=ident; EQ; start_e=expr; dir=direction; end_e=expr;
+      body=indented_block;
+      { AST.S_For { index_name; start_e; dir; end_e; body } }
   | WHILE; ~=expr; DO; ~=indented_block; <AST.S_While>
   | REPEAT; ~=indented_block; UNTIL; ~=expr; SEMICOLON; EOL; <AST.S_Repeat>
 

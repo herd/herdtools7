@@ -262,10 +262,11 @@ let rec pp_stmt =
     | S_Assert e -> bprintf f "S_Assert (%a)" pp_expr e
     | S_While (e, s) -> bprintf f "S_While(%a, %a)" pp_expr e pp_stmt s
     | S_Repeat (s, e) -> bprintf f "S_Repeat(%a, %a)" pp_stmt s pp_expr e
-    | S_For (id, e1, dir, e2, s) ->
-        bprintf f "S_For (%S, %a, %s, %a, %a)" id pp_expr e1
+    | S_For { index_name; start_e; end_e; body; dir } ->
+        bprintf f "S_For { index_name=%S; start=%a; dir=%s; end_=%a; body=%a }"
+          index_name pp_expr start_e
           (match dir with Up -> "Up" | Down -> "Down")
-          pp_expr e2 pp_stmt s
+          pp_expr end_e pp_stmt body
     | S_Decl (ldk, ldi, e_opt) ->
         bprintf f "S_Decl (%a, %a, %a)" pp_local_decl_keyboard ldk
           pp_local_decl_item ldi (pp_option pp_expr) e_opt

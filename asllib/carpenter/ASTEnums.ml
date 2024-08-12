@@ -354,7 +354,9 @@ module Make (C : Config.S) = struct
       let make_s_decl (ldk, (ldi, expr_opt)) = S_Decl (ldk, ldi, expr_opt) in
       ldks ** ldis ** option exprs |> map make_s_decl
     and s_for =
-      let make_s_for (name, (e1, (d, (e2, s)))) = S_For (name, e1, d, e2, s) in
+      let make_s_for (index_name, (start_e, (dir, (end_e, body)))) =
+        S_For { index_name; start_e; dir; end_e; body }
+      in
       names ** exprs ** finite [ Up; Down ] ** exprs ** block |> map make_s_for
     and s_while =
       let make_s_while (e, s) = S_While (e, s) in

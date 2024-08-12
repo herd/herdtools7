@@ -248,7 +248,8 @@ let rec use_s s =
       ISet.add x $ use_fields named_args $ use_es args
   | S_Cond (e, s1, s2) -> use_s s1 $ use_s s2 $ use_e e
   | S_Case (e, cases) -> use_e e $ use_cases cases
-  | S_For (_, e1, _, e2, s) -> use_e e1 $ use_e e2 $ use_s s
+  | S_For { start_e; end_e; body; index_name = _; dir = _ } ->
+      use_e start_e $ use_e end_e $ use_s body
   | S_While (e, s) | S_Repeat (s, e) -> use_s s $ use_e e
   | S_Decl (_, ldi, e) -> use_option use_e e $ use_ldi ldi
   | S_Throw (Some (e, _)) -> use_e e
@@ -741,8 +742,12 @@ let rename_locals map_name ast =
     | S_Cond (e, s1, s2) -> S_Cond (map_e e, map_s s1, map_s s2)
     | S_Case (_, _) -> failwith "Not yet implemented: offuscate cases"
     | S_Assert e -> S_Assert (map_e e)
-    | S_For (x, e1, d, e2, s) ->
-        S_For (map_name x, map_e e1, d, map_e e2, map_s s)
+    | S_For { index_name; start_e; dir; end_e; body } ->
+        let index_name = map_name index_name
+        and start_e = map_e start_e
+        and end_e = map_e end_e
+        and body = map_s body in
+        S_For { index_name; start_e; dir; end_e; body }
     | S_While (e, s) -> S_While (map_e e, map_s s)
     | S_Repeat (s, e) -> S_Repeat (map_s s, map_e e)
     | S_Throw (Some (e, t)) -> S_Throw (Some (map_e e, Option.map map_t t))

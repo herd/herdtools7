@@ -478,8 +478,8 @@ let stmt ==
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
       | CASE; ~=expr; OF; alt=list(alt);              <S_Case>
       | WHILE; ~=expr; DO; ~=stmt_list;               <S_While>
-      | FOR; id=IDENTIFIER; EQ; e1=expr;
-        d=direction; e2=expr; DO; s=stmt_list;        <S_For>
+      | FOR; index_name=IDENTIFIER; EQ; start_e=expr; dir=direction; end_e=expr; DO;
+          body=stmt_list; { S_For { index_name; start_e; end_e; dir; body } }
       | TRY; s=stmt_list; CATCH; c=nonempty_list(catcher); o=otherwise_opt; < S_Try >
     )
     | terminated_by(SEMI_COLON,

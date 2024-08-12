@@ -1463,7 +1463,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin ATC *)
     | E_ATC (e', ty) ->
-        let t, e'' = annotate_expr env e' in
+        let t, e'' = annotate_expr_ ~forbid_atcs env e' in
         let t_struct = Types.get_structure env t in
         let ty' = annotate_type ~loc env ty in
         let ty_struct = Types.get_structure env ty' in
@@ -2307,32 +2307,45 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (S_Repeat (s2, e2) |> here, env) |: TypingRule.SRepeat
     (* End *)
     (* Begin SFor *)
-    | S_For (id, e1, dir, e2, s') ->
-        let t1, e1' = annotate_expr env e1 and t2, e2' = annotate_expr env e2 in
-        let struct1 = Types.make_anonymous env t1
-        and struct2 = Types.make_anonymous env t2 in
+    | S_For { index_name; start_e; end_e; dir; body } ->
+        let start_t, start_e' = annotate_expr env start_e
+        and end_t, end_e' = annotate_expr env end_e in
+        let start_struct = Types.make_anonymous env start_t
+        and struct2 = Types.make_anonymous env end_t in
         let cs =
-          match (struct1.desc, struct2.desc) with
+          match (start_struct.desc, struct2.desc) with
           | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
               UnConstrained
           | T_Int _, T_Int _ ->
-              let e1n = StaticModel.try_normalize env e1'
-              and e2n = StaticModel.try_normalize env e2' in
+              let start_n = StaticModel.try_normalize env start_e'
+              and end_n = StaticModel.try_normalize env end_e' in
               let e_bot, e_top =
-                match dir with Up -> (e1n, e2n) | Down -> (e2n, e1n)
+                match dir with
+                | Up -> (start_n, end_n)
+                | Down -> (end_n, start_n)
               in
               WellConstrained [ Constraint_Range (e_bot, e_top) ]
-          | T_Int _, _ -> conflict s [ integer' ] t2
-          | _, _ -> conflict s [ integer' ] t1
+          | T_Int _, _ -> conflict s [ integer' ] end_t
+          | _, _ -> conflict s [ integer' ] start_t
           (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
         in
         let ty = T_Int cs |> here in
-        let s'' =
-          let+ () = check_var_not_in_env s' env id in
-          let env' = add_local id ty LDK_Let env in
-          try_annotate_block env' s'
+        let body' =
+          let+ () = check_var_not_in_env loc env index_name in
+          let env' = add_local index_name ty LDK_Let env in
+          try_annotate_block env' body
         in
-        (S_For (id, e1', dir, e2', s'') |> here, env) |: TypingRule.SFor
+        ( S_For
+            {
+              index_name;
+              dir;
+              start_e = start_e';
+              end_e = end_e';
+              body = body';
+            }
+          |> here,
+          env )
+        |: TypingRule.SFor
     (* End *)
     | S_Decl (ldk, ldi, e_opt) -> (
         match (ldk, e_opt) with

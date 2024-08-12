@@ -285,10 +285,10 @@ let rec pp_stmt f s =
   | S_Repeat (s, e) ->
       fprintf f "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a;@]@]"
         pp_stmt s pp_expr e
-  | S_For (id, e1, dir, e2, s) ->
+  | S_For { index_name; start_e; end_e; dir; body } ->
       fprintf f "@[<hv>@[<h>for %a = %a %s %a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
-        pp_print_string id pp_expr e1 (pp_for_direction dir) pp_expr e2 pp_stmt
-        s
+        pp_print_string index_name pp_expr start_e (pp_for_direction dir)
+        pp_expr end_e pp_stmt body
   | S_Decl (ldk, ldi, None) ->
       fprintf f "@[<2>%a %a;@]" pp_local_decl_keyword ldk pp_local_decl_item ldi
   | S_Decl (ldk, ldi, Some e) ->
