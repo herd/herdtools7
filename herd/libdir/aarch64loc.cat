@@ -1,9 +1,12 @@
 (* Same General Purpose Register *)
 let same-gpr = [Rreg|Wreg]; loc; [Rreg|Wreg]
 
+(* Intrinsic Direct Data Dependency *)
+let ii_direct_data = iico_data \ (iico_data; [M]; iico_data)
+
 (* Translation-intrinsically-before *)
 let tr-ib =
-  [Imp & TTD & R]; iico_data; [B]; iico_ctrl; [Exp & M | MMU & FAULT]
+  [Imp & TTD & R]; ii_direct_data; [B]; iico_ctrl; [Exp & M | Imp & Tag & R | MMU & FAULT | TagCheck & FAULT]
 
 (* Effect with valid PA *)
 let E-valid-PA = M | DC.CVAU | IC

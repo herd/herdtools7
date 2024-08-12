@@ -32,4 +32,7 @@ illustrative_tests = [
     "tests/STRred-NormalXorV0.litmus",
     "tests/STRred-TaggedNormalXorV0-async.litmus",
     "tests/STRred-TaggedNormalXorV0.litmus",
+    "tests/cLDRnToD+BBM.litmus",
+    "tests/cSTRnToD+BBM.litmus",
+    "tests/cSTRoTnD+BBM.litmus",
 ]

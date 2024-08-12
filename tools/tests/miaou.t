@@ -963,17 +963,31 @@
   \item \expandafter{\MakeUppercase\notthecase{\ExpR{E\textsubscript{2}}}}.
   \end{itemize}
 
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show ii_direct_data aarch64.cat
+  \expandafter{\MakeUppercase\iidirectdataemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
+  \begin{itemize}
+  \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \expandafter{\MakeUppercase\notthecase{all of the following apply}}:
+    \begin{itemize}
+    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \M{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{2}}}.
+    \end{itemize}
+  \end{itemize}
+
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show tr-ib aarch64.cat
   \expandafter{\MakeUppercase\tribemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpTTDR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \expandafter{\MakeUppercase\iidirectdata{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \B{E\textsubscript{3}}.
   \item \expandafter{\MakeUppercase\iicoctrl{E\textsubscript{3}}{E\textsubscript{2}}}.
   \item One of the following applies:
     \begin{itemize}
     \item \ExpM{E\textsubscript{2}}.
+    \item \ImpTagR{E\textsubscript{2}}.
     \item \MMUFAULT{E\textsubscript{2}}.
+    \item \TagCheckFAULT{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
