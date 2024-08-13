@@ -756,6 +756,8 @@ module Make (C : Config) = struct
         (fun (func, make_primitive) -> (func, make_primitive ii_env))
         extra_funcs
 
+    let type_check_ast ast = TypeCheck.type_check_ast ast
+
     let build_shared_pseudocode () =
       let open AST in
       let open ASTUtils in
@@ -815,7 +817,7 @@ module Make (C : Config) = struct
       let ast = patch ~patches:(custom_implems @! patches) ~src:shared in
       ast |> Asllib.Builder.with_stdlib
       |> Asllib.Builder.with_primitives extra_funcs
-      |> TypeCheck.type_check_ast
+      |> type_check_ast
 
     let typed_shared_pseudocode : unit -> AST.t * Asllib.StaticEnv.global =
       let if_asl_aarch64 = Lazy.from_fun build_shared_pseudocode
@@ -823,7 +825,7 @@ module Make (C : Config) = struct
         lazy
           (Lazy.force Asllib.Builder.stdlib
           |> Asllib.Builder.with_primitives extra_funcs
-          |> TypeCheck.type_check_ast)
+          |> type_check_ast)
       in
       fun () ->
         Lazy.force

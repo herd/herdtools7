@@ -486,8 +486,7 @@ let interprete ?instrumentation static_env ast =
 
 let type_and_run ?instrumentation ast =
   let ast, static_env =
-    Builder.with_stdlib ast
-    |> Builder.with_primitives NativeBackend.primitives
-    |> Typing.TypeCheckDefault.type_check_ast
+    Builder.with_stdlib ast |> Builder.with_primitives NativeBackend.primitives
+    |> fun ast -> Typing.TypeCheckDefault.type_check_ast ast
   in
   interprete ?instrumentation static_env ast

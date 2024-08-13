@@ -1247,7 +1247,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (Serialize.subprogram_type_to_string call_type)
           PP.pp_pos loc
     in
-    let caller_arg_typed = List.map (annotate_expr env) args in
+    let caller_arg_typed = List.map (annotate_expr_def env) args in
     annotate_call_arg_typed loc env name caller_arg_typed call_type
 
   and annotate_call_arg_typed loc env name caller_arg_typed call_type =
@@ -1405,7 +1405,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
     (name1, args1, eqs3, ret_ty1) |: TypingRule.FCall
+
   (* End *)
+  and annotate_expr_def env e = annotate_expr env e
 
   and annotate_expr env ?(forbid_atcs = false) (e : expr) : ty * expr =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
@@ -1867,7 +1869,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.LEDestructuring
     (* End *)
     | LE_Slice (le1, slices) -> (
-        let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
+        let t_le1, _ = expr_of_lexpr le1 |> annotate_expr_def env in
         let struct_t_le1 = Types.make_anonymous env t_le1 in
         (* Begin LESlice *)
         match struct_t_le1.desc with
@@ -1901,7 +1903,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | _ -> invalid_expr (expr_of_lexpr le1))
         | _ -> conflict le1 [ default_t_bits ] t_le1)
     | LE_SetField (le1, field) ->
-        (let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
+        (let t_le1, _ = expr_of_lexpr le1 |> annotate_expr_def env in
          let le2 = annotate_lexpr env le1 t_le1 in
          let t_le1_struct = Types.make_anonymous env t_le1 in
          match t_le1_struct.desc with
@@ -1954,7 +1956,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.LESetBadField
         (* End *)
     | LE_SetFields (le', fields, []) -> (
-        let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
+        let t_le', _ = expr_of_lexpr le' |> annotate_expr_def env in
         let le' = annotate_lexpr env le' t_le' in
         let t_le'_struct = Types.make_anonymous env t_le' in
         match t_le'_struct.desc with
@@ -2230,7 +2232,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             match w0 with
             | None -> None
             | Some e_w0 ->
-                let twe, e_w1 = (annotate_expr env) e_w0 in
+                let twe, e_w1 = (annotate_expr_def env) e_w0 in
                 let+ () = check_structure_boolean e_w0 env twe in
                 Some e_w1
           in
@@ -2382,7 +2384,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let* ty = callee.return_type in
     let ty = Types.make_anonymous env ty in
     let* name, args = should_fields_reduce_to_call env x ty fields in
-    let args = (t_e, e) :: List.map (annotate_expr env) args in
+    let args = (t_e, e) :: List.map (annotate_expr_def env) args in
     let name, args, eqs, ret_ty =
       annotate_call_arg_typed loc env name args ST_Setter
     in
@@ -2393,7 +2395,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       =
     let x = fresh_var "__setter_setfield" in
     let here le = add_pos_from loc le in
-    let t_sub_re, sub_re = expr_of_lexpr sub_le |> annotate_expr env in
+    let t_sub_re, sub_re = expr_of_lexpr sub_le |> annotate_expr_def env in
     let env1, ldi_x =
       annotate_local_decl_item loc env t_sub_re LDK_Var (LDI_Var x)
     in
@@ -2451,7 +2453,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               try List.map slice_as_single slices
               with Invalid_argument _ -> assert false
             in
-            let typed_args = (t_e, e) :: List.map (annotate_expr env) args in
+            let typed_args =
+              (t_e, e) :: List.map (annotate_expr_def env) args
+            in
             let name, args, eqs, ret_ty =
               annotate_call_arg_typed loc env x typed_args ST_Setter
             in
