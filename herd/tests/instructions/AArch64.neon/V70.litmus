@@ -1,0 +1,11 @@
+AArch64 V70
+{
+ int x=1;
+ 0:X0=x; 0:X3=y;
+}
+P0                    ;
+LDR S1,[X3];
+FMOV W1,S1            ;
+LDR W2,[X0,W1,SXTW]   ;
+
+forall 0:X2=1
