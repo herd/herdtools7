@@ -17,23 +17,34 @@
 // SInt
 // UInt
 
-func Min(a :: integer, b :: integer) => integer
+func Min(a: integer, b: integer) => integer
 begin
   return if a < b then a else b;
 end
 
-func Max(a :: integer, b :: integer) => integer
+func Max(a: integer, b: integer) => integer
 begin
   return if a > b then a else b;
 end
 
-func Abs(x :: integer) => integer
+func Abs(x: integer) => integer
 begin
   return if x < 0 then -x else x;
 end
 
 // Log2
 
+// Return true if integer is even (0 modulo 2).
+func IsEven(a: integer) => boolean
+begin
+    return (a MOD 2) == 0;
+end
+
+// Return true if integer is odd (1 modulo 2).
+func IsOdd(a: integer) => boolean
+begin
+    return (a MOD 2) == 1;
+end
 
 //------------------------------------------------------------------------------
 // Functions on reals (TODO, §9.2)
@@ -71,8 +82,28 @@ end
 // Calculate the square root of x to sf binary digits.
 // The second tuple element of the return value is TRUE if the result is
 // inexact, else FALSE.
-// func SqrtRoundDown(x: real, sf: integer) => (real, boolean);
-// TODO
+func SqrtRoundDown(x: real, sf: integer) => (real, boolean)
+begin
+  assert x > 0.0 && sf > 0;
+
+  // Following https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Heron's_method
+
+  // Initial guess
+  let x0 = 1.0 + (x / 4.0);
+  // assert x0 <= x && x <= x0 * x0
+
+  let precision = 1.0 / (2.0 ^ sf);
+
+  var xn: real = x0;
+  while Abs(x - xn * xn) > precision do
+    xn = (xn + x / xn) / 2.0 ;
+  end
+  let root = xn;
+
+  let inexact = x != root * root;
+
+  return (root, inexact);
+end
 
 //------------------------------------------------------------------------------
 // Standard bitvector functions and procedures
@@ -82,7 +113,7 @@ end
 
 // Externals
 
-func ReplicateBit(isZero : boolean, N : integer) => bits(N)
+func ReplicateBit(isZero: boolean, N: integer) => bits(N)
 begin
   return if isZero then Zeros(N) else Ones(N);
 end
@@ -100,14 +131,14 @@ begin
   end
 end
 
-func Len{N}(x :: bits(N)) => integer {N}
+func Len{N}(x: bits(N)) => integer {N}
 begin
   return N;
 end
 
-func BitCount{N}(x : bits(N)) => integer{0..N}
+func BitCount{N}(x: bits(N)) => integer{0..N}
 begin
-  var result : integer = 0;
+  var result: integer = 0;
   for i = 0 to N-1 do
     if x[i] == '1' then
       result = result + 1;
@@ -136,62 +167,64 @@ begin
   return -1 as {-1..N-1};
 end
 
-func Zeros(N :: integer) => bits(N)
+func Zeros(N: integer) => bits(N)
 begin
   return 0[N-1:0];
 end
 
-func Ones(N :: integer) => bits(N)
+func Ones(N: integer) => bits(N)
 begin
   return NOT Zeros(N);
 end
 
-func IsZero{N}(x :: bits(N)) => boolean
+func IsZero{N}(x: bits(N)) => boolean
 begin
   return x == Zeros(N);
 end
 
-func IsOnes{N}(x :: bits(N)) => boolean
+func IsOnes{N}(x: bits(N)) => boolean
 begin
   return x == Ones(N);
 end
 
-func SignExtend {M} (x::bits(M), N::integer) => bits(N)
+func SignExtend {M} (x: bits(M), N: integer) => bits(N)
 begin
+  assert N >= M;
   return [Replicate(x[M-1], N - M), x];
 end
 
-func ZeroExtend {M} (x :: bits(M), N::integer) => bits(N)
+func ZeroExtend {M} (x: bits(M), N: integer) => bits(N)
 begin
+  assert N >= M;
   return [Zeros(N - M), x];
 end
 
-func Extend {M} (x :: bits(M), N :: integer, unsigned::boolean) => bits(N)
+func Extend {M} (x: bits(M), N: integer, unsigned: boolean) => bits(N)
 begin
   return if unsigned then ZeroExtend(x, N) else SignExtend(x, N);
 end
 
-func CountLeadingZeroBits{N}(x :: bits(N)) => integer {0..N}
+func CountLeadingZeroBits{N}(x: bits(N)) => integer {0..N}
 begin
   return N - 1 - HighestSetBit(x);
 end
 
 // Leading sign bits in a bitvector. Count the number of consecutive
 // bits following the leading bit, that are equal to it.
-func CountLeadingSignBits{N}(x::bits(N)) => integer{0..N-1}
+func CountLeadingSignBits{N}(x: bits(N)) => integer{0..N-1}
 begin
   return CountLeadingZeroBits(x[N-1:1] EOR x[N-2:0]);
 end
 
 // Treating input as an integer, align down to nearest multiple of 2^y.
-func AlignDown{N}(x:: bits(N), y:: integer{1..N}) => bits(N)
+func AlignDown{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
     return [x[N-1:y], Zeros(y)];
 end
 
 // Treating input as an integer, align up to nearest multiple of 2^y.
 // Returns zero if the result is not representable in N bits.
-func AlignUp{N}(x::bits(N), y::integer{1..N}) => bits(N)
+func AlignUp{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
   if IsZero(x[y-1:0]) then
     return x;
@@ -216,7 +249,7 @@ begin
 end
 
 // Logical left shift with carry out.
-func LSL_C{N}(x:: bits(N), shift:: integer) => (bits(N), bit)
+func LSL_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   if shift <= N then
@@ -276,7 +309,7 @@ end
 
 // Rotate right with carry out.
 // As ROR, the function effectively operates modulo N.
-func ROR_C{N}(x:: bits(N), shift:: integer) => (bits(N), bit)
+func ROR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   let cpos = (shift-1) MOD N;
