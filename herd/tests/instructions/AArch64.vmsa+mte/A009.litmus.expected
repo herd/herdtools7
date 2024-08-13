@@ -1,0 +1,13 @@
+Test A009 Allowed
+States 3
+[tag(x)]=:green; Fault(P0:L0,x,MMU:Translation);
+[tag(x)]=:red;  ~Fault(P0:L0,x,MMU:Translation);
+[tag(x)]=:red; Fault(P0:L0,x,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 4
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition exists (fault(P0:L0,x,MMU:Translation) /\ [tag(x)]=:red)
+Observation A009 Sometimes 1 4
+Hash=280421b2e57a7340aa55ba5d655bde3b
+

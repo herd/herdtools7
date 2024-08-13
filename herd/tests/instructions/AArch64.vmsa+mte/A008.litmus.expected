@@ -1,0 +1,13 @@
+Test A008 Allowed
+States 3
+[x]=0;  ~Fault(P0:L0,x,MMU:Translation);
+[x]=0; Fault(P0:L0,x,MMU:Translation);
+[x]=1; Fault(P0:L0,x,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 4
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition exists (fault(P0:L0,x,MMU:Translation) /\ [x]=0)
+Observation A008 Sometimes 1 4
+Hash=476835ada4ec0e0c73096d09264acc89
+

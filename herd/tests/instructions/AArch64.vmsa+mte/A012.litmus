@@ -1,0 +1,12 @@
+AArch64 A012
+{
+ [tag(x)]=:green;
+ [PTE(x)]=(oa:PA(x),db:0,attrs:(Normal));
+ 0:X0=x:red;
+ 1:X4=PTE(x); 1:X3=(oa:PA(x),db:1,attrs:(TaggedNormal));
+}
+ P0          | P1          ;
+ MOV W1,#1   | STR X3,[X4] ;
+ L0:         |             ;
+ STR W1,[X0] |             ;
+exists([x]=1 /\ ~fault(P0:L0,x))

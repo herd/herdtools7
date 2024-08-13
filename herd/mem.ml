@@ -1472,6 +1472,8 @@ let match_reg_events es =
          | A.Location_global (V.Val (Symbolic (Physical (s,idx)))) ->
              let sym = { default_symbolic_data with name=s; offset=idx; } in
              A.of_symbolic_data sym
+         | A.Location_global (V.Val (Symbolic (TagAddr (PHY,s,o)))) ->
+             A.Location_global (V.Val (Symbolic (TagAddr (VIR,s,o))))
          | loc -> loc)
       else
         Misc.identity
@@ -1606,7 +1608,7 @@ let match_reg_events es =
       if kvm then
         let open Constant in
         fun loc -> match loc with
-        | A.Location_global (V.Val (Symbolic (Physical _ as sym1))) ->
+        | A.Location_global (V.Val (Symbolic (Physical _|TagAddr (PHY, _, _) as sym1))) ->
             let p oloc = match oloc with
             | A.Location_global (V.Val (Symbolic sym2)) ->
                 Constant.virt_match_phy sym2 sym1
