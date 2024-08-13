@@ -103,6 +103,22 @@ module Make (C : Config) = struct
   module Act = ASLAction.Make (ASL64AH)
   include SemExtra.Make (C) (ASL64AH) (Act)
 
+  module TypeCheck = Asllib.Typing.Annotate (struct
+    let check : Asllib.Typing.strictness =
+      if C.variant (Variant.ASLType `Warn) then `Warn
+      else if C.variant (Variant.ASLType `TypeCheck) then `TypeCheck
+      else `Silence
+
+    let output_format = Asllib.Error.HumanReadable
+  end)
+
+  module ASLInterpreterConfig = struct
+    let unroll =
+      match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
+
+    module Instr = Asllib.Instrumentation.SemanticsNoInstr
+  end
+
   let is_experimental = C.variant Variant.ASLExperimental
   let barriers = []
   let isync = None
@@ -435,7 +451,7 @@ module Make (C : Config) = struct
      * contradiction appears.
      *)
 
-    let checkprop m_prop =
+    let checkprop _ m_prop =
       let* vprop = m_prop in
       M.assign (vbool true) vprop >>! []
 
@@ -445,7 +461,7 @@ module Make (C : Config) = struct
      * while the value is FALSE for the other.
      *)
 
-    let somebool _ =
+    let somebool _ _ =
       let v = V.fresh_var () in
       let mbool b =
         (* The underlying choice operator operates
@@ -560,11 +576,11 @@ module Make (C : Config) = struct
       write_loc MachSize.Quad (loc_sp ii) v aneutral (use_ii_with_poi ii poi)
       >>! []
 
-    let uint bv_m = bv_m >>= to_int_unsigned
-    let sint bv_m = bv_m >>= to_int_signed
+    let uint _ bv_m = bv_m >>= to_int_unsigned
+    let sint _ bv_m = bv_m >>= to_int_signed
     let processor_id (ii, _poi) () = return (V.intToV ii.A.proc)
 
-    let can_predict_from v_m w_m =
+    let can_predict_from _ v_m w_m =
       let diff_case = v_m in
       let eq_case = M.altT v_m w_m in
       let*| v = v_m and* w = w_m in
@@ -577,7 +593,7 @@ module Make (C : Config) = struct
 
     (* Helpers *)
     let build_primitive ?(args = []) ?returns ?(parameters = []) name f :
-        AST.func * primitive_t =
+        AST.func * (_ -> primitive_t) =
       let open AST in
       let subprogram_type =
         match returns with None -> ST_Procedure | _ -> ST_Function
@@ -592,48 +608,48 @@ module Make (C : Config) = struct
 
     (** Build a primitive with arity 0 and no return value. *)
     let p0 name ?parameters f =
-      let f = function
-        | [] -> f ()
+      let f ii_env = function
+        | [] -> f ii_env ()
         | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ?parameters name f
 
     (** Build a primitive with arity 0 and a return value. *)
     let p0r name ~returns f =
-      let f = function
-        | [] -> return [ f () ]
+      let f ii_env = function
+        | [] -> return [ f ii_env () ]
         | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ?returns:(Some returns) name f
 
     (** Build a primitive with arity 1 and no return value. *)
     let p1 name arg ?parameters f =
-      let f = function
-        | [ v ] -> f v
+      let f ii_env = function
+        | [ v ] -> f ii_env v
         | [] | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ~args:[ arg ] ?parameters name f
 
     (** Build a primitive with arity 1 and a return value. *)
     let p1r name arg ~returns ?parameters f =
-      let f = function
-        | [ v ] -> return [ f v ]
+      let f ii_env = function
+        | [ v ] -> return [ f ii_env v ]
         | [] | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ?returns:(Some returns) ~args:[ arg ] ?parameters name f
 
     (** Build a primitive with arity 2 and no return value. *)
     let p2 name arg1 arg2 ?parameters f =
-      let f = function
-        | [ v1; v2 ] -> f v1 v2
+      let f ii_env = function
+        | [ v1; v2 ] -> f ii_env v1 v2
         | _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ~args:[ arg1; arg2 ] ?parameters name f
 
     (** Build a primitive with arity 2 and a return value. *)
     let p2r name arg1 arg2 ~returns ?parameters f =
-      let f = function
-        | [ v1; v2 ] -> return [ f v1 v2 ]
+      let f ii_env = function
+        | [ v1; v2 ] -> return [ f ii_env v1 v2 ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ?returns:(Some returns) ~args:[ arg1; arg2 ] ?parameters
@@ -641,16 +657,16 @@ module Make (C : Config) = struct
 
     (** Build a primitive with arity 3 and no return value. *)
     let p3 name arg1 arg2 arg3 ?parameters f =
-      let f = function
-        | [ v1; v2; v3 ] -> f v1 v2 v3
+      let f ii_env = function
+        | [ v1; v2; v3 ] -> f ii_env v1 v2 v3
         | _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ~args:[ arg1; arg2; arg3 ] ?parameters name f
 
     (** Build a primitive with arity 3 and a return value. *)
     let p3r name arg1 arg2 arg3 ~returns ?parameters f =
-      let f = function
-        | [ v1; v2; v3 ] -> return [ f v1 v2 v3 ]
+      let f ii_env = function
+        | [ v1; v2; v3 ] -> return [ f ii_env v1 v2 v3 ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ?returns:(Some returns) ~args:[ arg1; arg2; arg3 ]
@@ -658,14 +674,14 @@ module Make (C : Config) = struct
 
     (** Build a primitive with arity 4 and no return value. *)
     let p4 name arg1 arg2 arg3 arg4 ?parameters f =
-      let f = function
-        | [ v1; v2; v3; v4 ] -> f v1 v2 v3 v4
+      let f ii_env = function
+        | [ v1; v2; v3; v4 ] -> f ii_env v1 v2 v3 v4
         | _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ~args:[ arg1; arg2; arg3; arg4 ] ?parameters name f
 
     (* Primitives *)
-    let extra_funcs ii_env =
+    let extra_funcs =
       let open AST in
       let with_pos = Asllib.ASTUtils.add_dummy_pos in
       let integer = Asllib.ASTUtils.integer in
@@ -691,32 +707,32 @@ module Make (C : Config) = struct
         int_ctnt (E_Unop(NEG, big_pow) |> with_pos) (minus_one big_pow)
       in
       [
-(* Fences *)
-        p0 "primitive_isb" (primitive_isb ii_env);
-        p2 "primitive_dmb" ("d", integer) ("t", integer) (primitive_dmb ii_env);
-        p2 "primitive_dsb" ("d", integer) ("t", integer) (primitive_dsb ii_env);
-(* Registers *)
-        p1r "read_register" ("reg", reg) ~returns:bv_64 (read_register ii_env);
-        p2 "write_register" ("data", bv_64) ("reg", reg) (write_register ii_env);
-        p0r "read_pc" ~returns:bv_64 (read_pc ii_env);
-        p1 "write_pc" ("data", bv_64) (write_pc ii_env);
-        p0r "SP_EL0" ~returns:bv_64 (read_sp ii_env);
-        p1 "SP_EL0" ("data", bv_64) (write_sp ii_env);
-(* Memory *)
+        (* Fences *)
+        p0 "primitive_isb" primitive_isb;
+        p2 "primitive_dmb" ("d", integer) ("t", integer) primitive_dmb;
+        p2 "primitive_dsb" ("d", integer) ("t", integer) primitive_dsb;
+        (* Registers *)
+        p1r "read_register" ("reg", reg) ~returns:bv_64 read_register;
+        p2 "write_register" ("data", bv_64) ("reg", reg) write_register;
+        p0r "read_pc" ~returns:bv_64 read_pc;
+        p1 "write_pc" ("data", bv_64) write_pc;
+        p0r "SP_EL0" ~returns:bv_64 read_sp;
+        p1 "SP_EL0" ("data", bv_64) write_sp;
+        (* Memory *)
         p2r "read_memory" ("addr", bv_64) ("size", integer) ~returns:bv_64
-          (read_memory ii_env);
+          read_memory;
         p3r "read_memory_gen" ("addr", bv_64) ("size", integer)
           ("accdesc", t_named "AccessDescriptor")
-          ~returns:bv_64 (read_memory_gen ii_env);
+          ~returns:bv_64 read_memory_gen;
         p3 "write_memory" ("addr", bv_64) ("size", integer)
           ("data", bv_var "size")
-          (write_memory ii_env);
+          write_memory;
         p4 "write_memory_gen" ("addr", bv_64) ("size", integer)
           ("data", bv_var "size")
           ("accdesc", t_named "AccessDescriptor")
-          (write_memory_gen ii_env);
-(* Translations *)
-         p1r "UInt"
+          write_memory_gen;
+        (* Translations *)
+        p1r "UInt"
           ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
           ~returns:uint_returns uint;
@@ -724,8 +740,8 @@ module Make (C : Config) = struct
           ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
           ~returns:sint_returns sint;
-(* Misc *)
-        p0r "ProcessorID" ~returns:integer (processor_id ii_env);
+        (* Misc *)
+        p0r "ProcessorID" ~returns:integer processor_id;
         p2r "CanPredictFrom"
           ~parameters:[ ("N", None) ]
           ("predicted", bv_var "N")
@@ -734,6 +750,84 @@ module Make (C : Config) = struct
         p0r "SomeBoolean" ~returns:boolean somebool;
         p1 "CheckProp" ("prop", boolean) checkprop;
       ]
+
+    let make_extra_funcs ii_env =
+      List.map
+        (fun (func, make_primitive) -> (func, make_primitive ii_env))
+        extra_funcs
+
+    let build_shared_pseudocode () =
+      let open AST in
+      let open ASTUtils in
+      let is_primitive =
+        let set =
+          List.fold_left
+            (fun [@warning "-42"] acc ({ name; body = _; _ }, _) ->
+               ISet.add name acc)
+            ISet.empty extra_funcs
+        in
+        fun name -> ISet.mem name set
+      in
+      let build ?ast_type version fname =
+        Filename.concat "asl-pseudocode" fname
+        |> C.libfind
+        |> ASLBase.build_ast_from_file ?ast_type version
+      in
+      let patches =
+        let patches = build `ASLv1 "patches.asl" in
+        if is_experimental then
+          (* Replace default "PSTATE" definition by experimental ones. *)
+          let pstate = build `ASLv1 "pstate-exp.asl" in
+          List.fold_right
+            (fun d k ->
+              match identifier_of_decl d with
+              | "PSTATE" -> pstate @ k
+              | _ -> d :: k)
+            patches []
+        else patches
+      and custom_implems = build `ASLv1 "implementations.asl"
+      and shared = build `ASLv0 "shared_pseudocode.asl" in
+      let shared =
+        (*
+         * Remove from shared pseudocode the functions declared in stdlib because:
+         * 1. it avoids name clashes at type-checking time;
+         * 2. when debugging, we know what function is called;
+         * 3. stdlib functions usually out-perform their shared-pseudocode
+         *    counterparts when executed in herd.
+         *)
+        let filter d =
+          let open AST in
+          match[@warning "-42"] d.desc with
+          | D_Func { name; body = _; _ } ->
+              let should_remove =
+                Asllib.Builder.is_stdlib_name name || is_primitive name
+              in
+              let () =
+                if false && should_remove then
+                  Printf.eprintf "Subprogram %s removed from shared\n%!" name
+              in
+              not should_remove
+          | _ -> true
+        in
+        List.filter filter shared
+      in
+      let ( @! ) = List.rev_append in
+      let ast = patch ~patches:(custom_implems @! patches) ~src:shared in
+      ast |> Asllib.Builder.with_stdlib
+      |> Asllib.Builder.with_primitives extra_funcs
+      |> TypeCheck.type_check_ast
+
+    let typed_shared_pseudocode : unit -> AST.t * Asllib.StaticEnv.global =
+      let if_asl_aarch64 = Lazy.from_fun build_shared_pseudocode
+      and otherwise =
+        lazy
+          (Lazy.force Asllib.Builder.stdlib
+          |> Asllib.Builder.with_primitives extra_funcs
+          |> TypeCheck.type_check_ast)
+      in
+      fun () ->
+        Lazy.force
+        @@ if C.variant Variant.ASL_AArch64 then if_asl_aarch64 else otherwise
 
     (**************************************************************************)
     (* Execution                                                              *)
@@ -779,86 +873,15 @@ module Make (C : Config) = struct
         let concat_bitvectors = concat_bitvectors
         let bitvector_length = bitvector_length
         let v_unknown_of_type = v_unknown_of_type
-        let primitives = extra_funcs ii_env
+        let primitives = make_extra_funcs ii_env
       end in
-      let module Config = struct
-        let type_checking_strictness : Asllib.Typing.strictness =
-          if C.variant (Variant.ASLType `Warn) then `Warn
-          else if C.variant (Variant.ASLType `TypeCheck) then `TypeCheck
-          else `Silence
-
-        let unroll =
-          match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
-
-        module Instr = Asllib.Instrumentation.SemanticsNoInstr
-      end in
-      let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
+      let module ASLInterpreter =
+        Asllib.Interpreter.Make (ASLBackend) (ASLInterpreterConfig)
       in
-      let ast =
-        if not (C.variant Variant.ASL_AArch64) then ii.A.inst
-        else
-          let build ?ast_type version fname =
-            Filename.concat "asl-pseudocode" fname
-            |> C.libfind
-            |> ASLBase.build_ast_from_file ?ast_type version
-          in
-          let patches =
-            let patches = build `ASLv1 "patches.asl" in
-            if is_experimental then
-              (* Replace default "PSTATE" definition by experimental ones. *)
-              let pstate =  build `ASLv1 "pstate-exp.asl" in
-              List.fold_right
-                (fun d k ->
-                   match ASTUtils.identifier_of_decl d with
-                   | "PSTATE" -> pstate @ k
-                   | _ -> d::k)
-                patches []
-            else patches
-          and custom_implems = build `ASLv1 "implementations.asl"
-          and shared = build `ASLv0 "shared_pseudocode.asl" in
-          let is_primitive =
-            let open AST in
-            let open ASTUtils in
-            let set =
-              List.fold_left
-                (fun [@warning "-42"] acc ({ name; body = _; _ }, _) ->
-                  ISet.add name acc)
-                ISet.empty ASLBackend.primitives
-            in
-            fun name -> ISet.mem name set
-          in
-          let shared =
-            (*
-             * Remove from shared pseudocode the functions declared in stdlib because:
-             * 1. it avoids name clashes at type-checking time;
-             * 2. when debugging, we know what function is called;
-             * 3. stdlib functions usually out-perform their shared-pseudocode
-             *    counterparts when executed in herd.
-             *)
-            let filter d =
-              let open AST in
-              match[@warning "-42"] d.desc with
-              | D_Func { name; body = _; _ } ->
-                  let should_remove =
-                    Asllib.Builder.is_stdlib_name name || is_primitive name
-                  in
-                  let () =
-                    if false && should_remove then
-                      Printf.eprintf "Subprogram %s removed from shared\n%!"
-                        name
-                  in
-                  not should_remove
-              | _ -> true
-            in
-            List.filter filter shared
-          in
-          let ( @! ) = List.rev_append in
-          let shared =
-            Asllib.ASTUtils.patch
-              ~patches:(custom_implems @! patches)
-              ~src:shared
-          in
-          ii.A.inst @! shared
+      let ast, tenv =
+        let shared_ast, shared_tenv = typed_shared_pseudocode () in
+        let main, tenv = TypeCheck.type_check_ast ~env:shared_tenv ii.A.inst in
+        (List.rev_append main shared_ast, tenv)
       in
       let () =
         if false then Format.eprintf "Completed AST: %a.@." Asllib.PP.pp_t ast
@@ -873,7 +896,7 @@ module Make (C : Config) = struct
             | _ -> env)
           t.Test_herd.init_state []
       in
-      let exec () = ASLInterpreter.run_env env ast in
+      let exec () = ASLInterpreter.run_typed_env env tenv ast in
       let* i =
         match Asllib.Error.intercept exec () with
         | Ok m -> m

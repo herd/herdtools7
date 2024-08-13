@@ -458,9 +458,6 @@ module NativeBackend = struct
   let primitives = Primitives.primitives
 end
 
-let primitive_decls =
-  List.map (fun (f, _) -> D_Func f |> add_dummy_pos) NativeBackend.primitives
-
 module NativeInterpreter (C : Interpreter.Config) =
   Interpreter.Make (NativeBackend) (C)
 
@@ -475,19 +472,22 @@ let instrumentation_buffer = function
   | Some false | None ->
       (module Instrumentation.SemanticsNoBuffer : Instrumentation.SEMBUFFER)
 
-let interprete strictness ?instrumentation ?static_env ast =
+let interprete ?instrumentation static_env ast =
   let module B = (val instrumentation_buffer instrumentation) in
-  let module C : Interpreter.Config = struct
-    let type_checking_strictness = strictness
+  let module CI : Interpreter.Config = struct
     let unroll = 0
 
     module Instr = Instrumentation.SemMake (B)
   end in
-  let module I = NativeInterpreter (C) in
+  let module I = NativeInterpreter (CI) in
   B.reset ();
-  let res =
-    match static_env with
-    | Some static_env -> I.run_typed ast static_env
-    | None -> I.run ast
-  in
+  let res = I.run_typed static_env ast in
   (exit_value res, B.get ())
+
+let type_and_run ?instrumentation ast =
+  let ast, static_env =
+    Builder.with_stdlib ast
+    |> Builder.with_primitives NativeBackend.primitives
+    |> Typing.TypeCheckDefault.type_check_ast
+  in
+  interprete ?instrumentation static_env ast

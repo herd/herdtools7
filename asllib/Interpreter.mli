@@ -25,25 +25,20 @@
 module type S = sig
   module B : Backend.S
 
-  val run_env : (AST.identifier * B.value) list -> AST.t -> B.value B.m
-  (** [run env0 ast] runs the function main of the ast,
-      in an environment build from the ast. However, the (global)
+  val run_typed_env :
+    (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
+  (** [run env0 tenv ast] runs the function main of the ast,
+      in the typing environment [tenv]. However, the (global)
       identifiers listed in the A-list [env0] will take their
       initial values from [env0]  and _not_ from [ast]. *)
 
-  val run : AST.t -> B.value B.m
-  (** Shorthand for [run [] ast] *)
-
-  val run_typed : AST.t -> StaticEnv.env -> B.value B.m
+  val run_typed : StaticEnv.global -> AST.t -> B.value B.m
   (** [run_typed ast env] runs the function main of the typed-checked [ast], in
       typed-checking environment [env]. *)
 end
 
 module type Config = sig
   module Instr : Instrumentation.SEMINSTR
-
-  val type_checking_strictness : Typing.strictness
-  (** The strictness of type-checking. *)
 
   val unroll : int
   (** Loop unrolling threshold *)
