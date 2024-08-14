@@ -164,8 +164,10 @@ module type ANNOTATE_CONFIG = sig
 end
 
 module type S = sig
-  val type_check_ast :
-    ?env:StaticEnv.global -> AST.t -> AST.t * StaticEnv.global
+  val type_check_ast : AST.t -> AST.t * StaticEnv.global
+
+  val type_check_ast_in_env :
+    StaticEnv.global -> AST.t -> AST.t * StaticEnv.global
 end
 
 module Property (C : ANNOTATE_CONFIG) = struct
@@ -1078,7 +1080,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
-    let t, e' = annotate_expr env ~forbid_atcs:true e in
+    let t, e' = annotate_expr_ env ~forbid_atcs:true e in
     let+ () = check_constrained_integer ~loc env t in
     let+ () = check_statically_evaluable env e in
     StaticModel.try_normalize env e'
@@ -1407,7 +1409,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (name1, args1, eqs3, ret_ty1) |: TypingRule.FCall
   (* End *)
 
-  and annotate_expr env ?(forbid_atcs = false) (e : expr) : ty * expr =
+  and annotate_expr env e : ty * expr = annotate_expr_ env ~forbid_atcs:false e
+
+  and annotate_expr_ env ~forbid_atcs (e : expr) : ty * expr =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
     let here x = add_pos_from e x and loc = to_pos e in
     match e.desc with
@@ -1488,14 +1492,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin Binop *)
     | E_Binop (op, e1, e2) ->
-        let t1, e1' = annotate_expr ~forbid_atcs env e1 in
-        let t2, e2' = annotate_expr ~forbid_atcs env e2 in
+        let t1, e1' = annotate_expr_ ~forbid_atcs env e1 in
+        let t2, e2' = annotate_expr_ ~forbid_atcs env e2 in
         let t = check_binop e env op t1 t2 in
         (t, E_Binop (op, e1', e2') |> here) |: TypingRule.Binop
     (* End *)
     (* Begin Unop *)
     | E_Unop (op, e') ->
-        let t'', e'' = annotate_expr ~forbid_atcs env e' in
+        let t'', e'' = annotate_expr_ ~forbid_atcs env e' in
         let t = check_unop e env op t'' in
         (t, E_Unop (op, e'') |> here) |: TypingRule.Unop
     (* End *)
@@ -1515,10 +1519,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin ECond *)
     | E_Cond (e_cond, e_true, e_false) ->
-        let t_cond, e_cond' = annotate_expr ~forbid_atcs env e_cond in
+        let t_cond, e_cond' = annotate_expr_ ~forbid_atcs env e_cond in
         let+ () = check_structure_boolean e env t_cond in
-        let t_true, e_true' = annotate_expr ~forbid_atcs env e_true
-        and t_false, e_false' = annotate_expr ~forbid_atcs env e_false in
+        let t_true, e_true' = annotate_expr_ ~forbid_atcs env e_true
+        and t_false, e_false' = annotate_expr_ ~forbid_atcs env e_false in
         let t =
           best_effort t_true (fun _ ->
               match Types.lowest_common_ancestor env t_true t_false with
@@ -1531,7 +1535,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin ETuple *)
     | E_Tuple li ->
         let ts, es =
-          List.map (annotate_expr ~forbid_atcs env) li |> List.split
+          List.map (annotate_expr_ ~forbid_atcs env) li |> List.split
         in
         (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
     (* End *)
@@ -1539,7 +1543,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin EConcat *)
     | E_Concat (_ :: _ as li) ->
         let ts, es =
-          List.map (annotate_expr ~forbid_atcs env) li |> List.split
+          List.map (annotate_expr_ ~forbid_atcs env) li |> List.split
         in
         let w =
           let widths = List.map (get_bitvector_width e env) ts in
@@ -1594,7 +1598,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               (* Begin ERecord *)
               List.map
                 (fun (name, e') ->
-                  let t', e'' = annotate_expr ~forbid_atcs env e' in
+                  let t', e'' = annotate_expr_ ~forbid_atcs env e' in
                   let t_spec' =
                     match List.assoc_opt name field_types with
                     | None -> fatal_from e (Error.BadField (name, ty))
@@ -1629,7 +1633,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (ty, E_Call (name1, args1, eqs) |> here) |: TypingRule.ESetter
             (* End ReduceSlicesToCall *)
         | _ -> (
-            let t_e', e'' = annotate_expr ~forbid_atcs env e' in
+            let t_e', e'' = annotate_expr_ ~forbid_atcs env e' in
             let struct_t_e' = Types.make_anonymous env t_e' in
             match struct_t_e'.desc with
             (* Begin ESlice *)
@@ -1649,7 +1653,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 match slices with
                 | [ Slice_Single e_index ] ->
                     let t_index', e_index' =
-                      annotate_expr ~forbid_atcs env e_index
+                      annotate_expr_ ~forbid_atcs env e_index
                     in
                     let wanted_t_index = type_of_array_length ~loc:e size in
                     let+ () =
@@ -1669,7 +1673,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match e1.desc with
           | E_Var name when should_reduce_to_call env name ST_Getter ->
               let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-              let ty, _ = annotate_expr ~forbid_atcs env empty_getter in
+              let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
               should_field_reduce_to_call env name ty field_name
           | _ -> None
         in
@@ -1681,7 +1685,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
         | None -> (
-            let t_e2, e2 = annotate_expr ~forbid_atcs env e1 in
+            let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
             match (Types.make_anonymous env t_e2).desc with
             | T_Exception fields | T_Record fields -> (
                 match List.assoc_opt field_name fields with
@@ -1705,12 +1709,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (* Begin EGetBitField *)
                 | Some (BitField_Simple (_field, slices)) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    annotate_expr ~forbid_atcs env e3 |: TypingRule.EGetBitField
+                    annotate_expr_ ~forbid_atcs env e3
+                    |: TypingRule.EGetBitField
                 (* End *)
                 (* Begin EGetBitFieldNested *)
                 | Some (BitField_Nested (_field, slices, bitfields')) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    let t_e4, new_e = annotate_expr ~forbid_atcs env e3 in
+                    let t_e4, new_e = annotate_expr_ ~forbid_atcs env e3 in
                     let t_e5 =
                       match t_e4.desc with
                       | T_Bits (width, _bitfields) ->
@@ -1722,7 +1727,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (* Begin EGetBitFieldTyped *)
                 | Some (BitField_Type (_field, slices, t)) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    let t_e4, new_e = annotate_expr ~forbid_atcs env e3 in
+                    let t_e4, new_e = annotate_expr_ ~forbid_atcs env e3 in
                     let+ () = check_type_satisfies new_e env t_e4 t in
                     (t, new_e) |: TypingRule.EGetBitFieldTyped
                     (* End *))
@@ -1749,7 +1754,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match e1.desc with
           | E_Var name when should_reduce_to_call env name ST_Getter ->
               let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-              let ty, _ = annotate_expr ~forbid_atcs env empty_getter in
+              let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
               should_fields_reduce_to_call env name ty fields
           | _ -> None
         in
@@ -1761,7 +1766,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
         | None -> (
-            let t_e2, e2 = annotate_expr ~forbid_atcs env e1 in
+            let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
             match (Types.make_anonymous env t_e2).desc with
             | T_Bits (_, bitfields) ->
                 let one_field field =
@@ -1771,7 +1776,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 in
                 E_Slice (e1, list_concat_map one_field fields)
                 |> here
-                |> annotate_expr ~forbid_atcs env
+                |> annotate_expr_ ~forbid_atcs env
                 |: TypingRule.EGetBitFields
             | T_Record tfields ->
                 let one_field field =
@@ -1814,7 +1819,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          bad number of times), but we will apply the same typing rules as for
          those desugared expressions.
          *)
-        let t_e2, e2 = annotate_expr ~forbid_atcs env e1 in
+        let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
         let pat' = best_effort pat (annotate_pattern e env t_e2) in
         (T_Bool |> here, E_Pattern (e2, pat') |> here) |: TypingRule.EPattern
     (* End *)
@@ -2983,7 +2988,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (List.rev_append ds acc, genv)
 
   (* Begin Specification *)
-  let type_check_ast =
+  let type_check_ast_in_env =
     let fold = function
       | TopoSort.ASTFold.Single d -> type_check_decl d
       | TopoSort.ASTFold.Recursive ds -> type_check_mutually_rec ds
@@ -2996,9 +3001,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       else fold
     in
     let fold_topo ast acc = TopoSort.ASTFold.fold fold ast acc in
-    fun ?(env = StaticEnv.empty_global) ast ->
+    fun env ast ->
       let ast_rev, env = fold_topo ast ([], env) in
       (List.rev ast_rev, env)
+
+  let type_check_ast ast = type_check_ast_in_env StaticEnv.empty_global ast
   (* End *)
 end
 

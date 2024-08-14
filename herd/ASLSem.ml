@@ -880,7 +880,7 @@ module Make (C : Config) = struct
       in
       let ast, tenv =
         let shared_ast, shared_tenv = typed_shared_pseudocode () in
-        let main, tenv = TypeCheck.type_check_ast ~env:shared_tenv ii.A.inst in
+        let main, tenv = TypeCheck.type_check_ast_in_env shared_tenv ii.A.inst in
         (List.rev_append main shared_ast, tenv)
       in
       let () =
