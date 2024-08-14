@@ -34,8 +34,10 @@ module type ANNOTATE_CONFIG = sig
 end
 
 module type S = sig
-  val type_check_ast :
-    ?env:StaticEnv.global -> AST.t -> AST.t * StaticEnv.global
+  val type_check_ast : AST.t -> AST.t * StaticEnv.global
+
+  val type_check_ast_in_env :
+    StaticEnv.global -> AST.t -> AST.t * StaticEnv.global
 end
 
 module Annotate : functor (C : ANNOTATE_CONFIG) -> S
