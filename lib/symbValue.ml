@@ -275,7 +275,7 @@ module
 (* specific binops, with some specific cases for symbolic constants *)
 
   let add v1 v2 =
-(* Particular cases are important for symbolic constants *)
+    (* Particular cases are important for symbolic constants *)
     if protect_is is_zero v1 then v2
     else if protect_is is_zero v2 then v1
     else match v1,v2 with
@@ -287,6 +287,10 @@ module
     | (Val (Symbolic (Physical (s,i2))),Val (Concrete i1)) ->
         let i1 = Cst.Scalar.to_int i1 in
         Val (Symbolic (Physical (s,i1+i2)))
+    | (Val (Symbolic _) as v,Val cst)
+        when Cst.is_zero cst -> v
+    | (Val cst,(Val (Symbolic _) as v))
+        when Cst.is_zero cst -> v
     | _,_ -> (* General case *)
         binop Op.Add Cst.Scalar.add v1 v2
 
