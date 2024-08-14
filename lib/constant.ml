@@ -527,6 +527,7 @@ module type S =  sig
   val nameToV  : string -> v
   val zero : v
   val one : v
+  val is_zero : v -> bool
   val cst_true : v
   val cst_false : v
   val as_int : v -> int option
