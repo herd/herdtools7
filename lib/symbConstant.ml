@@ -37,6 +37,11 @@ module Make
   let bit_at k v = Scalar.bit_at k v
 
   let zero = Concrete Scalar.zero
+  and is_zero = function
+    | Concrete sc -> Scalar.is_zero sc
+    | ConcreteVector _|ConcreteRecord _|Symbolic _
+    | Label (_, _)|Tag _|PteVal _|Instruction _|Frozen _
+      -> false
   and one = Concrete Scalar.one
   and cst_true = Concrete Scalar.s_true
   and cst_false = Concrete Scalar.s_false
