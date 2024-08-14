@@ -485,6 +485,7 @@ module type S =  sig
   val nameToV  : string -> v
   val zero : v
   val one : v
+  val is_zero : v -> bool
   val as_int : v -> int option
   val bit_at : int -> Scalar.t -> Scalar.t
   val pp : bool -> v -> string (* true -> hexa *)
