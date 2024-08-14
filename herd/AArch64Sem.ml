@@ -3367,8 +3367,8 @@ module Make
               fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
         | I_FMOV_TG(_,r1,_,r2) ->
             check_neon inst;
-            !(read_reg_neon false r2 ii >>=
-              fun v -> write_reg r1 v ii)
+            read_reg_neon false r2 ii >>= demote
+            >>= fun v -> write_reg_dest r1 v ii >>= nextSet r1
         | I_MOV_VE(r1,i1,r2,i2) ->
             check_neon inst;
             !(read_reg_neon_elem false r2 i2 ii >>=
