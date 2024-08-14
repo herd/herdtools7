@@ -56,6 +56,8 @@ type 'a constr_op1 =
   | BoolNot
   | BVLength
   | OA
+  | ToAArch64
+  | FromAArch64
 
 type op1 = extra_op1 constr_op1
 type scalar = ASLScalar.t
@@ -87,6 +89,8 @@ let pp_op1 _hexa = function
   | BoolNot -> "BoolNot"
   | BVLength -> "BVLength"
   | OA -> "GetOA"
+  | ToAArch64 -> "ToAArch64"
+  | FromAArch64 -> "FromAArch64"
 
 let ( let* ) = Option.bind
 let return c = Some c
@@ -201,6 +205,18 @@ let do_op1 op cst =
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_signed s |> return_concrete
       | Constant.Symbolic _ -> Some cst
+      | _ -> None)
+  | ToAArch64 -> (
+      match cst with
+      | Constant.Concrete s ->
+          ASLScalar.convert_to_int_signed s |> return_concrete
+      | Constant.Symbolic _|Constant.PteVal _ -> Some cst
+      | _ -> None)
+  | FromAArch64 -> (
+      match cst with
+      | Constant.Concrete s ->
+          ASLScalar.as_bv s |> return_concrete
+      | Constant.Symbolic _|Constant.PteVal _ -> Some cst
       | _ -> None)
   | ToIntU -> (
       match cst with
