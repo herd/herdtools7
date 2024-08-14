@@ -28,11 +28,17 @@ module
   struct
     type t = Narrow of Narrow.t | Wide of Wide.t
 
+    let choose fn fw = function
+      | Narrow i -> fn i
+      | Wide i -> fw i
+
     let machsize = Narrow.machsize
 
     let zero = Narrow Narrow.zero
-    let unique_zero = false (* Wide also have a zero *)
     let one = Narrow Narrow.one
+
+    let unique_zero = false (* Wide also have a zero *)
+    let is_zero = choose Narrow.is_zero Wide.is_zero
 
     let s_true = one
     let s_false = zero
@@ -42,10 +48,6 @@ module
     (*****************)
 
     let to_narrow f i = Narrow (f i)
-
-    let choose fn fw = function
-      | Narrow i -> fn i
-      | Wide i -> fw i
 
     let map fn fw = function
       | Narrow i -> Narrow (fn i)
