@@ -695,13 +695,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ ->
         let () =
           if modified then
-            Format.eprintf
-              "@[%a:@ Warning:@ Removing@ some@ values@ that@ would@ fail@ \
-               with@ op %s@ from@ constraint@ set@ %a@ gave@ %a.@ Continuing@ \
-               with@ this@ constraint@ set.@]@."
-              PP.pp_pos loc
-              PP.(binop_to_string op)
-              pp_constraints constraints pp_constraints constraints'
+            EP.warn_from ~loc
+              Error.(
+                RemovingValuesFromConstraints
+                  { op; prev = constraints; after = constraints' })
           else if false then
             Format.eprintf "Unmodified for op %s: %a = %a@."
               PP.(binop_to_string op)

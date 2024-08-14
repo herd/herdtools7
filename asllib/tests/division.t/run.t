@@ -67,10 +67,17 @@ Unsupported divisions (caught at type-checking time):
   ASL Typing error: Illegal application of operator DIV on types integer {1}
     and integer {2}
   [1]
+  $ aslref static-div-undiv-bis.asl
+  File static-div-undiv-bis.asl, line 3, characters 11 to 18: All values in
+  constraints {(1 DIV 2)} would fail with op DIV, operation will always fail.
+  File static-div-undiv-bis.asl, line 3, characters 11 to 18:
+  ASL Typing error: Illegal application of operator DIV on types integer {1}
+    and integer {2}
+  [1]
   $ aslref --no-exec static-div-undiv-ter.asl
-  File static-div-undiv-ter.asl, line 4, characters 10 to 17: Warning: Removing
-  some values that would fail with op DIV from constraint set {1, (3 DIV 2)}
-  gave {1}. Continuing with this constraint set.
+  File static-div-undiv-ter.asl, line 4, characters 10 to 17:
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {1, (3 DIV 2)} gave {1}. Continuing with this constraint set.
 
 For completeness, those operations are dynamic errors:
 
@@ -119,8 +126,8 @@ Examples with multiple constraints in slices:
   $ aslref div-multi-slices.asl
 
   $ aslref div-multi-slices-zero.asl
-  File div-multi-slices-zero.asl, line 6, characters 10 to 17: Warning:
-  Removing some values that would fail with op DIV from constraint set
+  File div-multi-slices-zero.asl, line 6, characters 10 to 17:
+  Warning: Removing some values that would fail with op DIV from constraint set
   {0, 1, 2} gave {1, 2}. Continuing with this constraint set.
 
 Example with constant:
