@@ -43,6 +43,7 @@ module type S = sig
 
   val compare : t -> t -> int
   val equal : t -> t -> bool
+  val is_zero : t -> bool
 
 (* Operations *)
   val logor : t -> t -> t
