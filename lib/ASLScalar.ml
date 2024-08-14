@@ -139,6 +139,11 @@ let equal s1 s2 =
   | S_BitVector bv1, S_BitVector bv2 -> BV.equal bv1 bv2
   | _ -> false
 
+let is_zero = function
+  | S_Int i -> Z.equal Z.zero i
+  | S_BitVector bv -> BV.is_zeros bv
+  | S_Bool _ -> false
+
 let zop_expressive pp_op op s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (op i1 i2)

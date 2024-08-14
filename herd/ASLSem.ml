@@ -271,6 +271,10 @@ module Make (C : Config) = struct
         (Op.ArchOp1 (ASLOp.ToBV (MachSize.nbits sz)))
     let to_int_unsigned = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntU)
     let to_int_signed = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntS)
+    let to_aarch64_val =
+      wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToAArch64)
+    and from_aarch64_val =
+      wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.FromAArch64)
 
     (**************************************************************************)
     (* Special monad interactions                                              *)
@@ -549,9 +553,10 @@ module Make (C : Config) = struct
       let* rval = r_m in
       let loc = virtual_to_loc_reg rval ii in
       read_loc MachSize.Quad loc aneutral aexp areg (use_ii_with_poi ii poi)
+      >>= from_aarch64_val
 
     let write_register (ii, poi) r_m v_m =
-      let* v = v_m >>= to_int_signed and* r = r_m in
+      let* v = v_m >>= to_aarch64_val and* r = r_m in
       let loc = virtual_to_loc_reg r ii in
       write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
 

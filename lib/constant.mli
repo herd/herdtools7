@@ -165,11 +165,12 @@ module type S =  sig
   val stringToV  : string -> v
   val nameToV  : string -> v
 
-  (** numeric zero *)
+  (** Numeric zero and one *)
   val zero : v
-
-  (** numeric one *)
   val one : v
+
+  (** Tolerant predicate that takes alternative "zero" values *)
+  val is_zero : v -> bool
 
   val as_int : v -> int option
   val bit_at : int -> Scalar.t -> Scalar.t
