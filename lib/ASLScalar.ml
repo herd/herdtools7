@@ -118,6 +118,10 @@ let to_int64 = function
   | S_BitVector bv -> BV.to_int64_signed bv
   | S_Label s -> Warn.fatal "Trying to convert label %s to int64" s
 
+let as_bool = function
+  | S_Bool b -> Some b
+  | _ -> None
+
 let s_true = S_Bool true
 let s_false = S_Bool false
 
@@ -154,19 +158,27 @@ let unsigned_compare s1 s2 =
     | S_Label s1, S_Label s2 -> String.equal s1 s2
     | _ -> false
 
-    let zop_expressive pp_op op s1 s2 =
-    match (s1, s2) with
-    | S_Int i1, S_Int i2 -> S_Int (op i1 i2)
-    | S_BitVector bv1, S_Int i2 ->
-        let sz = BV.length bv1 in
-        S_BitVector (bv1 |> BV.to_z_unsigned |> op i2 |> BV.of_z sz)
-    | S_BitVector bv1, S_BitVector bv2 when BV.length bv1 = BV.length bv2 ->
-        let z1 = BV.to_z_unsigned bv1 and z2 = BV.to_z_unsigned bv2 in
-        let z = op z1 z2 in
-        S_BitVector (BV.of_z (BV.length bv1) z)
-    | _ ->
-        Warn.fatal "ASLScalar invalid op: %s %s %s" (pp false s1) pp_op
-          (pp false s2)
+let is_zero = function
+  | S_Int i -> Z.equal Z.zero i
+  | S_BitVector bv -> BV.is_zeros bv
+  | S_Bool _|S_Label _ -> false
+
+let zop_expressive pp_op op s1 s2 =
+  match (s1, s2) with
+  | S_Int i1, S_Int i2 -> S_Int (op i1 i2)
+  | S_BitVector bv1, S_Int i2 ->
+      let sz = BV.length bv1 in
+      S_BitVector (bv1 |> BV.to_z_unsigned |> op i2 |> BV.of_z sz)
+  | S_BitVector bv1, S_BitVector bv2
+       when BV.length bv1=BV.length bv2
+    ->
+     let z1 = BV.to_z_unsigned bv1
+     and z2 = BV.to_z_unsigned bv2 in
+     let z = op z1 z2 in
+     S_BitVector (BV.of_z (BV.length bv1) z)
+  | _ ->
+     Warn.fatal "ASLScalar invalid op: %s %s %s"
+       (pp false s1) pp_op (pp false s2)
 
 let add = zop_expressive "add" Z.add
 and sub = zop_expressive "sub" Z.sub
@@ -286,6 +298,12 @@ let sxt sz = function S_Int i -> S_Int (do_sxt sz i) | s -> s
 let get_tag _t = assert false
 let set_tag _b _t = assert false
 
+let as_int = function
+  | S_Int z -> Z.to_int z |> Misc.some
+  | S_Bool false -> Some 0
+  | S_Bool true -> Some 1
+  | S_BitVector _|S_Label _ -> None
+
 let convert_to_int_signed = function
   | S_Int _ as s -> s
   | S_Bool false -> S_Int Z.zero
@@ -299,11 +317,6 @@ let convert_to_int_unsigned = function
   | S_Bool true -> S_Int Z.one
   | S_BitVector bv -> S_Int (BV.to_z_unsigned bv)
   | S_Label s -> Warn.fatal "ASLScalar invalid op: label %S convert to int" s
-
-let as_bool = function
-  | S_Int i -> Some (not (Z.equal i Z.zero))
-  | S_Bool b -> Some b
-  | S_BitVector _|S_Label _ -> None
 
 let convert_to_bool c =
   match as_bool c with
