@@ -78,10 +78,21 @@ let reduce_constraint env = function
       Constraint_Range
         (StaticModel.try_normalize env e1, StaticModel.try_normalize env e2)
 
+let list_remove_duplicates eq =
+  let rec aux prev acc = function
+    | [] -> List.rev acc
+    | x :: li -> if eq prev x then aux prev acc li else aux x (x :: acc) li
+  in
+  function [] -> [] | x :: li -> aux x [ x ] li
+
 let reduce_constraints env = function
   | (UnConstrained | UnderConstrained _) as c -> c
   | WellConstrained constraints ->
-      WellConstrained (List.map (reduce_constraint env) constraints)
+      List.map (reduce_constraint env) constraints
+      |> List.sort compare
+      |> list_remove_duplicates
+           (constraint_equal (StaticModel.equal_in_env env))
+      |> fun constraints -> WellConstrained constraints
 
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
