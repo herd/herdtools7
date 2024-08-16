@@ -203,7 +203,7 @@ UnderConstrained integers:
   '00000'
 
   $ aslref unreachable.asl
-  File ASL Standard Library, line 289, characters 9 to 14:
+  File ASL Standard Library, line 322, characters 9 to 14:
   ASL Execution error: Assertion failed: FALSE
   [1]
 
