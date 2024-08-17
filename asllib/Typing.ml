@@ -78,10 +78,21 @@ let reduce_constraint env = function
       Constraint_Range
         (StaticModel.try_normalize env e1, StaticModel.try_normalize env e2)
 
+let list_remove_duplicates eq =
+  let rec aux prev acc = function
+    | [] -> List.rev acc
+    | x :: li -> if eq prev x then aux prev acc li else aux x (x :: acc) li
+  in
+  function [] -> [] | x :: li -> aux x [ x ] li
+
 let reduce_constraints env = function
   | (UnConstrained | UnderConstrained _) as c -> c
   | WellConstrained constraints ->
-      WellConstrained (List.map (reduce_constraint env) constraints)
+      List.map (reduce_constraint env) constraints
+      |> List.sort compare
+      |> list_remove_duplicates
+           (constraint_equal (StaticModel.equal_in_env env))
+      |> fun constraints -> WellConstrained constraints
 
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
@@ -666,13 +677,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             else c_range (if matches 0 then e_zero else e_one) e2
         | None, None -> Some c)
 
-  let filter_sign ~loc env op matches constraints =
+  let filter_constraints ~loc op filter constraints =
     let pp_constraints f cs =
       Format.fprintf f "@[<h>{%a}@]" PP.pp_int_constraints cs
     in
-    let constraints', modified =
-      list_filter_map_modified (raw_filter_sign env matches) constraints
-    in
+    let constraints', modified = list_filter_map_modified filter constraints in
     match constraints' with
     | [] ->
         let () =
@@ -700,29 +709,79 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         constraints'
 
+  let filter_sign ~loc env op matches constraints =
+    filter_constraints ~loc op (raw_filter_sign env matches) constraints
+
   let binop_filter_right ~loc env op =
     match op with
     | SHL | SHR | POW -> filter_sign ~loc env op @@ fun x -> x >= 0
     | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
-    | _ -> Fun.id
+    | MINUS | MUL | PLUS -> Fun.id
+    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
+    | OR | RDIV ->
+        assert false
+
+  let filter_reduce_constraint =
+    let get_literal_div_opt e =
+      match e.desc with
+      | E_Binop (DIV, a, b) -> (
+          match (a.desc, b.desc) with
+          | E_Literal (L_Int z1), E_Literal (L_Int z2) -> Some (z1, z2)
+          | _ -> None)
+      | _ -> None
+    in
+    function
+    | Constraint_Exact e as c -> (
+        match get_literal_div_opt e with
+        | None -> Some c
+        | Some (z1, z2) -> if Z.divisible z1 z2 then Some c else None)
+    | Constraint_Range (e1, e2) ->
+        let e1' =
+          match get_literal_div_opt e1 with
+          | None -> e1
+          | Some (z1, z2) ->
+              let d, r = Z.ediv_rem z1 z2 in
+              if Z.equal r Z.zero then L_Int d |> literal
+              else L_Int (Z.succ d) |> literal
+        and e2' =
+          match get_literal_div_opt e2 with
+          | None -> e1
+          | Some (z1, z2) ->
+              let d, r = Z.ediv_rem z1 z2 in
+              if Z.equal r Z.zero then L_Int d |> literal
+              else L_Int (Z.pred d) |> literal
+        in
+        Some (Constraint_Range (e1', e2'))
 
   let constraint_binop ~loc env op cs1 cs2 =
-    let cs2 = binop_filter_right ~loc env op cs2 in
-    let cs1, cs2 =
-      if binop_is_exploding op then
-        (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2)
-      else (cs1, cs2)
-    in
-    let res = constraint_binop op cs1 cs2 |> reduce_constraints env in
-    let () =
-      if false then
-        Format.eprintf
-          "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
-          (PP.binop_to_string op) PP.pp_int_constraints cs1
-          PP.pp_int_constraints cs2 PP.pp_ty
-          (T_Int res |> add_dummy_pos)
-    in
-    res
+    match op with
+    | SHL | SHR | POW | MOD | DIVRM | MINUS | MUL | PLUS | DIV ->
+        let cs2 = binop_filter_right ~loc env op cs2 in
+        let cs1, cs2 =
+          if binop_is_exploding op then
+            (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2)
+          else (cs1, cs2)
+        in
+        let cs = constraint_binop op cs1 cs2 |> reduce_constraints env in
+        let cs =
+          match (op, cs) with
+          | DIV, WellConstrained cs ->
+              WellConstrained
+                (filter_constraints ~loc DIV filter_reduce_constraint cs)
+          | _ -> cs
+        in
+        let () =
+          if false then
+            Format.eprintf
+              "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
+              (PP.binop_to_string op) PP.pp_int_constraints cs1
+              PP.pp_int_constraints cs2 PP.pp_ty
+              (T_Int cs |> add_dummy_pos)
+        in
+        cs
+    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
+    | OR | RDIV ->
+        assert false
 
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc = function

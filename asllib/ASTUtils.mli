@@ -206,6 +206,9 @@ val literal_equal : literal -> literal -> bool
 val slice_equal : (expr -> expr -> bool) -> slice -> slice -> bool
 val slices_equal : (expr -> expr -> bool) -> slice list -> slice list -> bool
 
+val constraint_equal :
+  (expr -> expr -> bool) -> int_constraint -> int_constraint -> bool
+
 val constraints_equal :
   (expr -> expr -> bool) -> int_constraint list -> int_constraint list -> bool
 
