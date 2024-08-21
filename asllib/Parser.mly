@@ -395,8 +395,14 @@ let ty_decl := ty |
   )
 
 (* Constructs on ty *)
+(* Begin AsTy *)
 let as_ty == colon_for_type; ty
+(* End *)
+
+(* Begin TypedIdentifier *)
 let typed_identifier == pair(IDENTIFIER, as_ty)
+(* End *)
+
 let ty_opt == ioption(as_ty)
 let implicit_t_int == annotated ( ~=int_constraints ; <T_Int> )
 
@@ -533,6 +539,7 @@ let ignored_or_identifier ==
 
 let decl ==
   annotated (
+    (* Begin func_decl *)
     | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; body=func_body;
         {
           D_Func {
@@ -544,6 +551,8 @@ let decl ==
             subprogram_type = ST_Function;
           }
         }
+    (* End *)
+    (* Begin procedure_decl *)
     | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
         {
           D_Func {
@@ -555,7 +564,9 @@ let decl ==
             subprogram_type = ST_Procedure;
           }
         }
-    | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; ret=return_type;
+    (* End *)
+    (* Begin getter *)
+    | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; ~=return_type;
         ~=func_body;
         {
           D_Func
@@ -563,11 +574,13 @@ let decl ==
               name;
               parameters = params_opt;
               args = access_args;
-              return_type = Some ret;
+              return_type = Some return_type;
               body = SB_ASL func_body;
               subprogram_type = ST_Getter;
             }
         }
+    (* End *)
+    (* Begin no_arg_getter *)
     | GETTER; name=IDENTIFIER; ret=return_type; ~=func_body;
         {
           D_Func
@@ -580,6 +593,8 @@ let decl ==
               subprogram_type = ST_EmptyGetter;
             }
         }
+    (* End *)
+    (* Begin setter *)
     | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; EQ; v=typed_identifier;
         ~=func_body;
         {
@@ -593,6 +608,8 @@ let decl ==
               subprogram_type = ST_Setter;
             }
         }
+    (* End *)
+    (* Begin no_arg_setter *)
     | SETTER; name=IDENTIFIER; EQ; v=typed_identifier; ~=func_body;
         {
           D_Func
@@ -605,20 +622,33 @@ let decl ==
               subprogram_type = ST_EmptySetter;
             }
         }
+    (* End *)
     | terminated_by(SEMI_COLON,
+      (* Begin type_decl *)
       | TYPE; x=IDENTIFIER; OF; t=ty_decl; ~=subtype_opt; < D_TypeDecl           >
+      (* End *)
+      (* Begin subtype_decl *)
       | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
+      (* End *)
+      (* Begin global_storage *)
       | keyword=storage_keyword; name=ignored_or_identifier;
         ty=ioption(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
+      (* End *)
+      (* Begin global_uninit_var *)
       | VAR; name=ignored_or_identifier; ty=some(as_ty);
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
+      (* End *)
+      (* Begin global_pragma *)
       | loc=annotated(PRAGMA; IDENTIFIER; clist(expr); <>);
         { Error.fatal_from loc @@ Error.NotYetImplemented "Pragma in declarations"}
+      (* End *)
     )
   )
 
+(* Begin AST *)
 let ast := terminated(list(decl), EOF)
+(* End *)
 
 let opn := body=stmt;
     {
