@@ -26,6 +26,8 @@ exception LexerError
 
 open Parser
 
+open Error
+
 let new_line lexbuf = Lexing.new_line lexbuf; lexbuf
 let bitvector_lit lxm = BITVECTOR_LIT (Bitvector.of_string lxm)
 let mask_lit lxm = MASK_LIT (Bitvector.mask_of_string lxm)
@@ -52,7 +54,7 @@ let tr_name s = match s with
 | "elsif"         -> ELSIF
 | "end"           -> END
 | "enumeration"   -> ENUMERATION
-| "EOR" | "XOR"   -> EOR
+| "XOR"           -> EOR
 | "exception"     -> EXCEPTION
 | "FALSE"         -> BOOL_LIT false
 | "for"           -> FOR
@@ -93,6 +95,37 @@ let tr_name s = match s with
 | "where"         -> WHERE
 | "while"         -> WHILE
 | "with"          -> WITH
+(* Reserved identifiers *)
+| "SAMPLE" | "UNSTABLE"
+| "_" | "access" | "advice" | "after"
+| "any" | "aspect"
+| "assume" | "assumes" | "before"
+| "call" | "cast"
+| "class" | "dict"
+| "endcase" | "endcatch" | "endclass"
+| "endevent" | "endfor" | "endfunc" | "endgetter"
+| "endif" | "endmodule" | "endnamespace" | "endpackage"
+| "endproperty" | "endrule" | "endsetter" | "endtemplate"
+| "endtry" | "endwhile" | "entry"
+| "event" | "export" | "expression"
+| "extends" | "extern" | "feature"
+| "get" | "gives"
+| "iff" | "implies" | "import"
+| "intersect" | "intrinsic"
+| "invariant" | "is" | "list"
+| "map" | "module" | "namespace" | "newevent"
+| "newmap" | "original"
+| "package" | "parallel" (* | "pattern" *)
+| "pointcut" | "port" | "private"
+| "profile" | "property" | "protected" | "public"
+| "replace"
+| "requires" | "rethrow" | "rule"
+| "set" | "shared" | "signal"
+| "statements" | "template"
+| "typeof" | "union"
+| "using" | "watch"
+| "ztype" -> Error.fatal_unknown_pos @@ (Error.ReservedIdentifier s)
+(* End of reserved identifiers *)
 | x               -> IDENTIFIER x
 
 }
@@ -112,7 +145,7 @@ let identifier = (alpha | '_') (alpha|digit|'_')*
    Lexing of string literals
    =========================
 
-   We are not using [Scanf.unescape] because:
+   We are not using [Scanf.unescaped] because:
      - [Scanf.unescaped] basically follows the lexical conventions of OCaml,
        while we follow the lexical conventions of ASL;
      - if they were to diverge, we would have to re-implement it

@@ -9,7 +9,7 @@
     -------------------
 
 This file is a list of implementations for use in herd of functions left non-
--implemented in the ARM Reference Manual. We copy the explainations from it.
+-implemented in the ARM Reference Manual. We copy the explanations from it.
 
 The ARM Reference Manual is available here:
     https://developer.arm.com/documentation/ddi0602/2023-09/
@@ -434,8 +434,6 @@ begin
 end
 
 // =============================================================================
-
-type signal of integer;
 
 // =============================================================================
 

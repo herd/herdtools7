@@ -12,10 +12,10 @@ begin
     // Same principle applies to the when clauses in a case statement
     let testG : integer {8,16} = foo();
     case testG of
-            when 32:
+            when 32 =>
                 pass;
                 // <some code>
-            when 64:
+            when 64 =>
                 pass;
                 // <some code>
     end

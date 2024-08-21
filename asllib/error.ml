@@ -27,6 +27,7 @@ open AST
 type error_handling_time = Static | Dynamic
 
 type error_desc =
+  | ReservedIdentifier of string
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
@@ -109,6 +110,8 @@ module PPrint = struct
   let pp_error_desc f e =
     pp_open_hovbox f 2;
     (match e.desc with
+    | ReservedIdentifier id ->
+        fprintf f "ASL Lexical error: %S is a reserved keyword." id
     | UnsupportedBinop (t, op, v1, v2) ->
         fprintf f
           "ASL %s error: Illegal application of operator %s for values@ %a@ \
