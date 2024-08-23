@@ -2036,17 +2036,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let e_eq = expr_of_lexpr le in
         let t_e_eq, _e_eq = annotate_expr env e_eq in
         let+ () = check_bits_equal_width le env t_e_eq t_e in
-        let bv_length t = get_bitvector_const_width le env t in
         let annotate_one (les, widths, sum) le =
           let e = expr_of_lexpr le in
           let t_e1, _e = annotate_expr env e in
-          let width = bv_length t_e1 in
-          let t_e2 = T_Bits (expr_of_int width, []) |> add_pos_from le in
+          let width = get_bitvector_width le env t_e1 in
+          let t_e2 = T_Bits (width, []) |> add_pos_from le in
           let le1 = annotate_lexpr env le t_e2 in
-          (le1 :: les, width :: widths, sum + width)
+          (le1 :: les, width :: widths, binop PLUS sum width)
         in
         let rev_les, rev_widths, _real_width =
-          List.fold_left annotate_one ([], [], 0) les
+          List.fold_left annotate_one ([], [], e_zero) les
         in
         (* as the first check, we have _real_width == bv_length t_e *)
         let les1 = List.rev rev_les and widths = List.rev rev_widths in

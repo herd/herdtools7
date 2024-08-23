@@ -683,13 +683,17 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin LEConcat *)
     | LE_Concat (les, Some widths) ->
-        let extract_one width (ms, start) =
-          let end_ = start + width in
-          let v_width = B.v_of_int width and v_start = B.v_of_int start in
-          let m' = m >>= B.read_from_bitvector [ (v_start, v_width) ] in
-          (m' :: ms, end_)
+        let extract_one e_width (ms, e_start) =
+          let e_end = binop PLUS e_start e_width in
+          let m' =
+            let* v = m
+            and* width = eval_expr_sef env e_width
+            and* start = eval_expr_sef env e_start in
+            B.read_from_bitvector [ (start, width) ] v
+          in
+          (m' :: ms, e_end)
         in
-        let ms, _ = List.fold_right extract_one widths ([], 0) in
+        let ms, _ = List.fold_right extract_one widths ([], expr_of_int 0) in
         multi_assign V1 env les ms
     (* End *)
     | LE_SetFields (le_record, fields, slices) ->
