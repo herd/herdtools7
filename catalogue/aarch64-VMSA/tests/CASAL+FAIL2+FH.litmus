@@ -1,0 +1,23 @@
+AArch64 CASAL+FAIL2+FH
+Hash=a597df72171a5859069c3f897cbda284
+Variant=vmsa
+
+{
+ int x=0;
+ int y=0;
+ [PTE(x)]=(oa:PA(x), db:0);
+ pteval_t 0:X1=(oa:PA(x), db:1); 0:X2=y; 0:X4=PTE(x); 0:X6=z; 0:X8=x;
+ 1:X6=z; 1:X2=y; 1:X8=x;
+}
+ P0              | P1               | P1.F           ;
+ STR X1,[X4]     | LDR W7,[X6]      | ADR X9,L1      ;
+ DSB ISH         |                  | MSR ELR_EL1,X9 ;
+ MOV W3,#1       | MOV W1,#0        | ERET           ;
+ STR W3,[X2]     | MOV W3,#1        |                ;
+ LSR X9,X8,#12   |                  |                ;
+ TLBI VAAE1IS,X9 | L0:              |                ;
+ DSB ISH         | CASAL W1,W3,[X8] |                ;
+ MOV W5,#1       | L1:              |                ;
+ STR W5,[X6]     | LDR W5,[X2]      |                ;
+
+exists (fault(P1:L0,x) /\ 1:X5=0)
