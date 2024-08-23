@@ -1,7 +1,7 @@
 @armv8-a
 CAS-AF.litmus
-CASAL+FAIL.litmus
-CASAL+FAIL2.litmus
+CASAL+FAIL+FH.litmus
+CASAL+FAIL2+FH.litmus
 D15347-load-DMB.litmus
 F1c+Fatal.litmus
 F1c+Handled.litmus
