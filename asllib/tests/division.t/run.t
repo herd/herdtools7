@@ -79,6 +79,12 @@ Unsupported divisions (caught at type-checking time):
   Warning: Removing some values that would fail with op DIV from constraint set
   {1, (3 DIV 2)} gave {1}. Continuing with this constraint set.
 
+  $ aslref --no-exec static-div-intervals.asl
+  File static-div-intervals.asl, line 5, characters 2 to 35:
+  ASL Typing error: a subtype of integer {0..10} was expected,
+    provided integer.
+  [1]
+
 For completeness, those operations are dynamic errors:
 
   $ aslref dynamic-div-neg.asl

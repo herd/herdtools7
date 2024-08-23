@@ -205,9 +205,9 @@ and pp_fields f =
 
 and pp_int_constraint f = function
   | Constraint_Exact x -> pp_expr f x
-  | Constraint_Range (x, y) -> fprintf f "%a..%a" pp_expr x pp_expr y
+  | Constraint_Range (x, y) -> fprintf f "@[<h>%a..%a@]" pp_expr x pp_expr y
 
-and pp_int_constraints f = pp_comma_list pp_int_constraint f
+and pp_int_constraints f = fprintf f "@[%a@]" (pp_comma_list pp_int_constraint)
 
 let pp_typed_identifier f (name, ty) = fprintf f "@[%s:@ %a@]" name pp_ty ty
 

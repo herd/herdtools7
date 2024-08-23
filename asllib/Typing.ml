@@ -718,7 +718,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | OR | RDIV ->
         assert false
 
-  let filter_reduce_constraint =
+  let filter_reduce_constraint_div =
     let get_literal_div_opt e =
       match e.desc with
       | E_Binop (DIV, a, b) -> (
@@ -732,23 +732,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match get_literal_div_opt e with
         | None -> Some c
         | Some (z1, z2) -> if Z.divisible z1 z2 then Some c else None)
-    | Constraint_Range (e1, e2) ->
-        let e1' =
-          match get_literal_div_opt e1 with
-          | None -> e1
-          | Some (z1, z2) ->
-              let d, r = Z.ediv_rem z1 z2 in
-              if Z.equal r Z.zero then L_Int d |> literal
-              else L_Int (Z.succ d) |> literal
-        and e2' =
-          match get_literal_div_opt e2 with
-          | None -> e1
-          | Some (z1, z2) ->
-              let d, r = Z.ediv_rem z1 z2 in
-              if Z.equal r Z.zero then L_Int d |> literal
-              else L_Int (Z.pred d) |> literal
-        in
-        Some (Constraint_Range (e1', e2'))
+    | Constraint_Range _ as c ->
+        (* No need to reduce those as they are not handled by
+           Asllib.constraint_binop *)
+        Some c
 
   let constraint_binop ~loc env op cs1 cs2 =
     match op with
@@ -764,7 +751,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match (op, cs) with
           | DIV, WellConstrained cs ->
               WellConstrained
-                (filter_constraints ~loc DIV filter_reduce_constraint cs)
+                (filter_constraints ~loc DIV filter_reduce_constraint_div cs)
           | _ -> cs
         in
         let () =
