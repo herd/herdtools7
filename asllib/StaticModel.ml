@@ -174,9 +174,7 @@ let poly_neg (Sum monos) = Sum (MMap.map Q.neg monos)
 
 let poly_of_val = function
   | L_Int i -> poly_of_z i
-  | v ->
-      Error.fatal_unknown_pos
-        (Error.MismatchType (PP.literal_to_string v, [ integer' ]))
+  | _ -> raise NotYetImplemented
 
 let sign_not = function
   | NotNull -> Null
@@ -389,9 +387,7 @@ let rec to_ir env (e : expr) : ir_expr =
           match ty1.desc with
           | T_Int (WellConstrained [ Constraint_Exact e ]) -> to_ir env e
           | T_Int _ -> poly_of_var s |> always
-          | _ ->
-              Error.fatal_unknown_pos
-                (Error.ConflictingTypes ([ integer' ], ty1)))))
+          | _ -> raise NotYetImplemented)))
   | E_Binop (PLUS, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       cross_num ir1 ir2 add_polys
