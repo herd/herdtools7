@@ -84,6 +84,26 @@ include "cos.cat"
 let IC = IC.IALLUIS | IC.IALLU | IC.IVAU
 
 (*
+ * Acquire, Release and AcquirePC semantics applies to Explicit Memory Effects
+ * and Fault Effects arising from those. Notably, not to Implicit Effects.
+ * TODO: move this refinement to herd7.
+ *)
+ let A = A & (Exp & M)
+ let L = L & (Exp & M | FAULT)
+ let Q = Q & (Exp & M)
+
+(* Renaming default herd names *)
+let Imp = NExp
+let SPONTANEOUS = SPURIOUS
+let inv-scope = inv-domain
+let TTD = PTE
+let Tag = T
+
+(* HW TTD Updates permitted only for the AF or DB *)
+let HU = Imp & TTD & W
+assert empty HU \ (AF | DB)
+
+(*
  * Include aarch64fences.cat to define barriers.
  *)
 include "aarch64fences.cat"
@@ -111,13 +131,6 @@ let intervening(S,r) = r; [S]; r
 
 (* Properties of single-copy atomic accesses *)
 let sca-class = [M & Exp]; sm; [M & Exp]
-
-(* Renaming default herd names *)
-let Imp = NExp
-let SPONTANEOUS = SPURIOUS
-let inv-scope = inv-domain
-let TTD = PTE
-let Tag = T
 
 (* Flag any occurrence of writes to two different locations that might be on
  * the same cache line. *)

@@ -1,3 +1,4 @@
+@newlob
 IDC1.2SM.B+cachesync-isb.litmus
 IDC1.2SM.B+dmb.sy-dsb.ish-ic.vau-dsb.ish+dmb.sy.litmus
 IDC1.2SM.B+dsb.ish-ic.vau-dsb.ish.litmus

@@ -56,104 +56,124 @@ let tc-ib = if "MTE" then [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & W
 let f-ib =
   [Imp & Instr & R]; iico_data; [B]; iico_ctrl; [_]
 
-(* HW TTD Updates permitted only for the AF or DB *)
-let HU = Imp & TTD & W
-assert empty HU \ (AF | DB)
-
 (* DSB-ordered-before *)
 let DSB-ob =
- [M | DC.CVAU | IC]; po; [dsb.full]; po; [~(Imp & M)]
+[M | DC.CVAU | IC]; po; [dsb.full]; po; [~(Imp & M) | Imp & Tag & R]
  | (if "ETS2" then [M | DC.CVAU | IC]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
- | [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [~(Imp & M)]
+ | [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [~(Imp & M)| Imp & Tag & R]
  | (if "ETS2" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
- | [Exp & W]; po; [dsb.st]; po; [~(Imp & M)]
+ | [Exp & W]; po; [dsb.st]; po; [~(Imp & M) | Imp & Tag & R]
  | (if "ETS2" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
 
 (* CSE-ordered-before *)
 let EXC-ENTRY-CSE = EXC-ENTRY
 let EXC-RET-CSE = if not "ExS" || "EOS" then EXC-RET else {}
 let CSE = ISB | EXC-ENTRY-CSE | EXC-RET-CSE
+
+let Sync-EXC = EXC-ENTRY | EXC-RET
+
 let CSE-ob =
  [Exp & R]; ctrl; [CSE]; po
+ | [Exp & R]; pick-ctrl-dep; [CSE]; po
+ | [Exp & R]; addr; [Exp & M]; po; [CSE]; po
+ | [Exp & R]; pick-addr-dep; [Exp & M]; po; [CSE]; po
  | DSB-ob; [CSE]; po
+ | [Imp & Instr & R]; f-ib; [CSE]; po
  | [Imp & TTD & R]; tr-ib; [CSE]; po
  | [Imp & TTD & R]; tr-ib; po; [CSE]; po
  | [Imp & Tag & R]; tc-ib; [CSE]; po
- | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & M) \ Tag) | TagCheck & FAULT]; po; [CSE]; po
- | [Imp & Instr & R]; f-ib; [CSE]; po
+ | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & M) \ Tag) | TagCheck & FAULT & Sync-EXC]; po; [CSE]; po
 
 (* Dependency-ordered-before *)
-let dob = addr 
-        | data
-        | ctrl; [W]
-        | addr; [Exp]; po; [W]
-        | addr; [Exp]; po; [CSE]; po; [R]
-        | addr; [Exp]; lrs
-        | data; [Exp]; lrs
+let dob =
+ addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC]
+ | data; [Exp & W]
+ | ctrl; [Exp & W | HU | TLBI | DC.CVAU | IC]
+ | addr; [Exp & M]; po; [Exp & W | HU]
+ | addr; [Exp & M]; lrs; [Exp & R | Imp & Tag & R]
+ | data; [Exp & M]; lrs; [Exp & R | Imp & Tag & R]
+ | [Imp & TTD & R]; tr-ib; po; [Exp & W]
+ | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & M) \ Tag) | TagCheck & FAULT & Sync-EXC]; po; [Exp & W]
 
 (* Pick-ordered-before *)
-let pob = [Exp]; pick-dep; [W]
-        | [Exp]; pick-ctrl-dep; [CSE]; po; [M]
-        | [Exp]; pick-addr-dep; [Exp]; po; [CSE]; po; [M]
-        | [Exp]; pick-addr-dep; [Exp & M]; po; [W]
+let pob = 
+ pick-addr-dep; [Exp & W | Imp & Tag & R | HU | TLBI | DC.CVAU | IC]
+ | pick-data-dep; [Exp & W]
+ | pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
+ | pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
+
+(*
+pick-dep; [Exp & W]
+| pick-addr-dep; [Exp & W | Imp & Tag & R | HU | TLBI | DC.CVAU | IC]
+| pick-data-dep; [Exp & W]
+| pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
+| pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
+| [Exp & R]; pick-basic-dep; [Exp & W & range(rmw)]
+
+pick-dep; [Exp & W]
+| pick-addr-dep; [Imp & Tag & R | HU | TLBI | DC.CVAU | IC]
+| pick-data-dep; [Exp & W]
+| pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
+| pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
+| pick-addr-dep; [Exp & M]; po; [W]
+*)
 
 (* Atomic-ordered-before *)
-let aob = rmw
-        | rmw; lrs; [A | Q]
+let aob =
+ [Exp & M]; rmw; [Exp & M]
+ | [Exp & M]; rmw; lrs; [A | Q]
+ | [Imp & TTD & R]; rmw; [HU]
 
 (* Barrier-ordered-before *)
-let bob = po; [dmb.full]; po
-        | [R \ NoRet]; po; [dmb.ld]; po
-        | [W]; po; [dmb.st]; po; [W | MMU & FAULT]
-        | [range([A];amo;[L])]; po
-        | [L]; po; [A]
-        | [A | Q]; po
-        | [A | Q]; iico_order
-        | po; [L]
-        | iico_order; [L]
+let bob =
+ [Exp & M | Imp & Tag & R]; po; [dmb.full]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [Exp & M]; po; [dmb.full]; po; [DC.CVAU]
+ | [DC.CVAU]; po; [dmb.full]; po; [Exp & M]
+ | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
+ | [Exp & (R \ NoRet)]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [Exp & W]; po; [dmb.st]; po; [Exp & W | MMU & FAULT]
+ | [range([A];amo;[L])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [L]; po; [A]
+ | [A | Q]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [A | Q]; iico_order; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [Exp & M | Imp & Tag & R]; po; [L]
+ | [Exp & M | Imp & Tag & R]; iico_order; [L]
 
-(* Locally-ordered-before *)
-let rec lob = lws
-            | lws; sca-class
-            | dob
-            | pob
-            | aob
-            | bob
-            | lob; lob
-let pick-lob = pick-basic-dep; lob; [W]
+let po-scl-ob =
+ [Exp & M]; (po & scl); [DC.CVAU]
+ | [DC.CVAU]; (po & scl); [Exp & M]
+ | [DC.CVAU]; (po & scl); [DC.CVAU]
+
+let po-fetch-ob =
+ [Imp & Instr & R]; po; [~(Imp & Instr & R)]
 
 let TLBUncacheable = MMU & (Translation | AccessFlag)
 
-(* Locally-hardware-required-ordered-before *)
-let rec local-hw-reqs =
-  tc-ib
-  | tr-ib
-  | f-ib
-  | [Exp & M | Imp & Tag & R]; lob; [Exp & M | Imp & Tag & R | TagCheck & FAULT | MMU & FAULT]
-  | [Exp & M | Imp & Tag & R]; pick-lob; [Exp & M | Imp & Tag & R | TagCheck & FAULT | MMU & FAULT]
-  | (if "ETS2" then [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R] else 0)
-  | DSB-ob
-  | CSE-ob
-  | [Imp & TTD & R]; tr-ib; po; [Exp & W]
-  | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & M) \ Tag) | TagCheck & FAULT]; po; [Exp & W]
+let ets2-ob =
+ (if "ETS2" then
+     [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R]
+ else 0)
 
-  | [Imp & TTD & R]; (po & same-loc); [W]
-  | [Imp & TTD & R]; rmw; [HU]
-  | [Exp & M]; (po & same-loc); [TLBUncacheable & FAULT]
-  | [Exp & R]; addr; [TLBI | DC.CVAU | IC]
-  | [Exp & R]; ctrl; [HU]
-  | [Exp & R]; addr; [HU]
-  | [Exp & R]; addr; [Exp]; po; [HU]
-  | [Exp & R]; addr; [Exp]; po; [CSE]; po
+(* Locally-ordered-before *)
+let rec lob =
+ tc-ib
+ | tr-ib
+ | f-ib
+ | ets2-ob
+ | po-fetch-ob
+ | po-scl-ob
+ | DSB-ob
+ | CSE-ob
+ | lws
+ | lws; sca-class
+ | dob
+ | pob
+ | aob
+ | bob
+ | lob; lob
 
-  | [Imp & Instr & R]; po; [~(Imp & Instr & R)]
+let pick-lob =
+  pick-dep; lob; [Exp & W]
 
-  | [Exp & M]; po; [dmb.full]; po; [DC.CVAU]
-  | [DC.CVAU]; po; [dmb.full]; po; [Exp & M]
-  | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
-
-  | [Exp & M]; (po & scl); [DC.CVAU]
-  | [DC.CVAU]; (po & scl); [Exp & M]
-  | [DC.CVAU]; (po & scl); [DC.CVAU]
-  
-  | local-hw-reqs; local-hw-reqs
+let local-hw-reqs =
+ lob | pick-lob

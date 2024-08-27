@@ -1,3 +1,4 @@
+newlob/@all
 2+2W+dmb.st+dmb.stpt.litmus
 2+2W+dmb.st+dmb.sttp.litmus
 2+2W+dmb.st+dmb.sttt.litmus
@@ -353,6 +354,8 @@ MP+dmb.stpt+dsb.sy.litmus
 MP+dmb.stpt+dsb.sypt.litmus
 MP+dmb.stpt+dsb.sytp.litmus
 MP+dmb.stpt+dsb.sytt.litmus
+MP+dmb.stpt+tcib-po-isb-po.litmus
+MP+dmb.stpt+tcib-tagfault-po.litmus
 MP+dmb.sttp+addr.litmus
 MP+dmb.sttp+addrpt.litmus
 MP+dmb.sttp+addrtp.litmus
@@ -781,6 +784,7 @@ S+dmb.stpt+dsb.sy.litmus
 S+dmb.stpt+dsb.sypt.litmus
 S+dmb.stpt+dsb.sytp.litmus
 S+dmb.stpt+dsb.sytt.litmus
+S+dmb.stpt+tcib-po.litmus
 S+dmb.sttp+addr.litmus
 S+dmb.sttp+addrpt.litmus
 S+dmb.sttp+addrtp.litmus
@@ -1138,6 +1142,3 @@ coTWTR.litmus
 coTWTW.litmus
 coWR-mte.litmus
 coWTW.litmus
-MP+dmb.stpt+tcib-po-isb-po.litmus
-MP+dmb.stpt+tcib-tagfault-po.litmus
-S+dmb.stpt+tcib-po.litmus

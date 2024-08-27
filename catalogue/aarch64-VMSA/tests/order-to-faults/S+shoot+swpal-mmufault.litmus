@@ -1,0 +1,16 @@
+AArch64 S+shoot+swpal-mmufault
+Variant=fatal
+{
+PTE(x)=(oa:phy_x,db:0);
+0:X7=(oa:phy_x,db:1);    0:X8=PTE(x);
+0:X1=x;   1:X1=x;   0:X3=y;   1:X3=y;
+}
+P0               |P1                ;
+ STR X7,[X8]     |                  ;
+ DSB SY          | SWPAL W4,W2,[X3] ;
+ LSR X9,X1,#12   |                  ;
+ TLBI VAAE1IS,X9 | MOV W0,#1        ;
+ DSB SY          | STR W0,[X1]      ;
+ MOV W2,#1       |L0:               ;
+ STR W2,[X3]     |                  ;
+exists 1:X2=1 /\ x=0 /\ Fault(P1)

@@ -1,0 +1,11 @@
+AArch64 MP+dmb.stpt+acq
+{
+0:X1=x:green; 0:X3=y:green; 0:X4=y:red;
+1:X1=x:green; 1:X3=y:red;
+}
+ P0          | P1           ;
+ MOV W0,#1   | LDAR W2,[X3] ;
+ STR W0,[X1] |              ;
+ DMB ST      |              ;
+ STG X4,[X3] | LDR W0,[X1]  ;
+exists ~fault (P1,y) /\ 1:X0=0

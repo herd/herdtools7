@@ -1,0 +1,15 @@
+AArch64 R+shoot+dmb.st-mmufault_af
+{
+1:X1=x; 1:X3=y;
+0:X1=x; 0:X3=y; 0:X7=(oa:phy_x,af:1);
+0:X8=PTE(x); PTE(x)=(oa:phy_x,af:0);
+}
+P0              |P1           ;
+ STR X7,[X8]    | MOV W2,#2   ;
+ DSB SY         | STR W2,[X3] ;
+ LSR X9,X1,#12  | DMB ST      ;
+ TLBI VAAE1IS,X9|             ;
+ DSB SY         | LDR W0,[X1] ;
+ MOV W2,#1      |             ;
+ STR W2,[X3]    |             ;
+exists y=2 /\ x=0 /\ Fault(P1)

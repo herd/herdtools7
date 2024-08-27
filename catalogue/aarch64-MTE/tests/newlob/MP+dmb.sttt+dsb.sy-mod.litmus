@@ -1,0 +1,10 @@
+AArch64 MP+dmb.sttt+dsb.sy-mod
+{
+0:X1=x:green; 0:X3=y:green; 0:X4=x:red; 0:X5=y:red;
+1:X1=x:red; 1:X3=y:red;
+}
+ P0          | P1          ;
+ STG X4,[X1] | LDR W2,[X3] ;
+ DMB ST      | DSB SY      ;
+ STG X5,[X3] | LDR W0,[X1] ;
+exists ~fault(P1,y) /\ fault (P1,x)

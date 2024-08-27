@@ -1,0 +1,25 @@
+AArch64 S+dmb.stpt+tagfault-rel
+Variant=memtag
+{
+0:X1=x; 0:X3=y:green; 0:X2=y:red;
+1:X1=x; 1:X3=y:green; 1:X2=1;
+}
+P0          | P1          | P1.F           ;
+MOV W0,#1   | LDR W2,[X3] | ADR X9,L0      ;
+STR W0,[X1] |L0:          | MSR ELR_EL1,X9 ;
+DMB ST      | MOV W0,#2   | MOV X8,#1      ;
+STG X2,[X3] | STLR W0,[X1]| ERET           ;
+exists 1:X8=1 /\ ~(x=2)
+
+(*
+Verdicts:
+- 2023-09-12 current model: Forbid
+*)
+
+(* Discussion *
+***************
+2023-09-12, AK:
+
+Can this clause start with Imp & Tag & R?
+    (po | iico_order); [L]
+*)

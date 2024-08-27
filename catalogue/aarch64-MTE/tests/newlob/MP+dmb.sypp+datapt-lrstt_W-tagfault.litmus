@@ -1,0 +1,17 @@
+AArch64 MP+dmb.sypp+datapt-lrstt_W-tagfault
+(* PPO-D-FAULT feat. Imp Tag Read *)
+Variant=memtag,sync
+{
+    y=z:red;
+    0:X1=x; 0:X2=z:green; 0:X3=y;
+    1:X1=x; 1:X3=y; 1:X5=z:red;
+}
+P0           | P1          | P1.F           ;
+ MOV W0,#1   | LDR X2,[X3] | ADR X8,L0      ;
+ STR W0,[X1] | STG X2,[X5] | MSR ELR_EL1,X8 ;
+ DMB SY      | STR W4,[X5] | ERET           ;
+ STR X2,[X3] |L0:          |;
+             | LDR W9,[X1] |;
+exists 1:X2=z:green /\ 1:X9=0
+
+

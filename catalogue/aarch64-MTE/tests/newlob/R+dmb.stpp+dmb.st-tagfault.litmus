@@ -1,0 +1,14 @@
+AArch64 R+dmb.stpp+dmb.st-tagfault
+Variant=memtag
+{
+0:X1=x; 0:X3=y;
+1:X1=x; 1:X3=y;
+1:X5=z:red;
+}
+P0          | P1          | P1.F           ;
+MOV W0,#1   | MOV W2,#2   | ADR X9,L0      ;
+STR W0,[X1] | STR W2,[X3] | MSR ELR_EL1,X9 ;
+DMB ST      | DMB ST      | LDR W0,[X1]    ;
+MOV W2,#1   | STR W4,[X5] | ERET           ;
+STR W2,[X3] |L0:          |                ;
+exists y=2 /\ 1:X0=0
