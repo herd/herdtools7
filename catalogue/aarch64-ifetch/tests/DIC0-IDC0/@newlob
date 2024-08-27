@@ -1,0 +1,4 @@
+MP+dmb.st+addrisb-Imp_Instr_R.litmus
+MP.RF+dc.cvau-dmb.ish+ctrl-ic.ivau-dsb.ish-isb.litmus
+MP.RF+dc.cvau-dmb.ish+pickctrl-ic.ivau-isb.litmus
+MP.RF+dmb.st+pickaddr-cachesyncisb.litmus

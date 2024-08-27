@@ -1,0 +1,18 @@
+AArch64 MP+rel+pickaddrpoisb-mmufault-po
+Hash=eff377d0dbb1875f089e5b348ecfd279
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), valid:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=w; 1:X7=z;
+}
+ P0           | P1                  | P1.F        ;
+ MOV W2,#1    | LDR W0,[X1]         |             ;
+ STR W2,[X3]  | CMP W0,#1           |             ;
+ MOV W0,#1    | CSEL W6,WZR,WZR,EQ  | LDR W2,[X3] ;
+ STLR W0,[X1] | LDR W4,[X5,W6,SXTW] |             ;
+              | ISB                 |             ;
+              | LDR W8,[X7]         |             ;
+              |                     |             ;
+
+exists (1:X0=1 /\ 1:X2=0)

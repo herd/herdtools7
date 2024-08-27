@@ -1,3 +1,4 @@
 @nofault
+@newlob
 DIC1.SM+lob-fault.litmus
 DIC1.SM-invalid-2.litmus

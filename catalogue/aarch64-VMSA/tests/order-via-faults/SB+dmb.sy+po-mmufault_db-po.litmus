@@ -1,0 +1,15 @@
+AArch64 SB+dmb.sy+po-mmufault_db-po
+Hash=41cd033d48a759d71b80d48b8decdb60
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), db:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0          | P1           | P1.F        ;
+ MOV W2,#1   | MOV W0,#1    |             ;
+ STR W2,[X3] | STR W0,[X1]  |             ;
+ DMB SY      | STR WZR,[X5] | LDR W2,[X3] ;
+ LDR W0,[X1] |              |             ;
+
+exists (0:X0=0 /\ 1:X2=0)

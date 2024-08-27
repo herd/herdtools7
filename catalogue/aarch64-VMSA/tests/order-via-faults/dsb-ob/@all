@@ -1,0 +1,12 @@
+MP+rel+dsb.ld_rr-mmufault-po.litmus
+MP+rel+dsb.ld_rw-mmufault-po.litmus
+MP+rel+dsb.ld_rw-mmufault_db-po.litmus
+MP+rel+dsb.sy_rr-mmufault-po.litmus
+MP+rel+dsb.sy_rw-mmufault-po.litmus
+MP+rel+dsb.sy_rw-mmufault_db-po.litmus
+R+rel+dsb.st_wr-mmufault-po.litmus
+R+rel+dsb.st_ww-mmufault-po.litmus
+R+rel+dsb.st_ww-mmufault_db-po.litmus
+R+rel+dsb.sy_wr-mmufault-po.litmus
+R+rel+dsb.sy_ww-mmufault-po.litmus
+R+rel+dsb.sy_ww-mmufault_db-po.litmus

@@ -1,0 +1,15 @@
+AArch64 S+dmb.sttp+pickdata--async
+Hash=ab74828848617689c4c4f9471f06550b
+Variant=memtag,async
+
+{
+ 0:X4=x:red; 0:X3=x:green; 0:X1=y:green;
+ 1:X3=x:red; 1:X1=y:green;
+}
+ P0          | P1               ;
+ STG X4,[X3] | LDR W0,[X1]      ;
+ DMB ST      | CMP W0,#1        ;
+ MOV W0,#1   | CSEL W2,W8,W9,EQ ;
+ STR W0,[X1] | STR W2,[X3]      ;
+
+exists (1:X0=1 /\ 1:TFSR_Elx=1)

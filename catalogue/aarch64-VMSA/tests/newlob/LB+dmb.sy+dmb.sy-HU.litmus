@@ -1,0 +1,16 @@
+AArch64 LB+dmb.sy+dsb.sy-isb-HU
+Hash=cdaced1615380e9e83ef389aca532947
+TTHM=P1:HD
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x), dbm:1, db:0);
+ 0:X1=y; 0:X5=PTE(x);
+ 1:X1=y; 1:X3=x;
+}
+ P0          | P1          ;
+ LDR X4,[X5] | LDR W0,[X1] ;
+ DMB SY      | DSB SY      ;
+ MOV W0,#1   | ISB         ;
+ STR W0,[X1] | STR W2,[X3] ;
+
+exists (1:X0=1 /\ 0:X4=(oa:PA(x), dbm:1, db:1))

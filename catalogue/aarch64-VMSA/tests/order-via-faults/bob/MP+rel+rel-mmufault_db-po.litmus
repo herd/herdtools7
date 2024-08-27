@@ -1,0 +1,15 @@
+AArch64 MP+rel+rel-mmufault_db-po
+Hash=dddc75c535f36556f66d96606e475aaa
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), db:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0           | P1            | P1.F        ;
+ MOV W2,#1    |               | LDR W2,[X3] ;
+ STR W2,[X3]  | LDR W0,[X1]   |             ;
+ MOV W0,#1    | STLR WZR,[X5] |             ;
+ STLR W0,[X1] |               |             ;
+
+exists (1:X0=1 /\ 1:X2=0)

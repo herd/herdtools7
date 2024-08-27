@@ -1,0 +1,14 @@
+AArch64 coRW2-ExpTag+ImpTag-ExpTag
+Variant=memtag
+"RfeTP DMB.SYsRWPT CoeTT"
+Generator=diyone7 (version 7.56+03)
+Com=Rf Co
+Orig=RfeTP DMB.SYsRWPT CoeTT
+{
+0:X0=x:red; 0:X1=x:green;
+1:X0=x:red; 1:X2=x:blue;
+}
+ P0          | P1          ;
+ STG X0,[X1] | LDR W1,[X0] ;
+             | STG X2,[X0] ;
+exists ~fault (P1,x) /\ ~(tag(x)=:blue)

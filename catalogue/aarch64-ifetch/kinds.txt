@@ -1,1 +1,13 @@
-MP+rel+blr                      		Allowed
+MP+rel+blr                                      Allowed
+
+# Added as a part of the hw reqs revision
+
+MP+dmb.st+addrisb-Imp_Instr_R                   Allowed
+MP.RF+dc.cvau-dmb.ish+ctrl-ic.ivau-dsb.ish-isb  Forbidden
+MP.RF+dc.cvau-dmb.ish+pickctrl-ic.ivau-isb      Forbidden
+MP.RF+dmb.st+pickaddr-cachesyncisb              Forbidden
+
+IDC1.MP+dmb.st+addrisb-Imp_Instr_R              Allowed
+IDC1.MP.FF+dsb.ish-ic.ivau-dsb.ish+po           Forbidden
+
+DIC1.MP+dmb.st+addrisb-Imp_Instr_R              Forbidden

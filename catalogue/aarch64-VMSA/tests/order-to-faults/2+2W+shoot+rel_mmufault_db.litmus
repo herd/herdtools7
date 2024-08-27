@@ -1,0 +1,18 @@
+AArch64 2+2W+shoot+rel_mmufault_db
+Hash=d31837393e61ad17726d2bbcb98e02a5
+Variant=vmsa,fatal
+{
+ [PTE(x)]=(oa:PA(x), db:0);
+ pteval_t 0:X0=(oa:PA(x), db:1); 0:X1=PTE(x); 0:X3=y; 0:X5=x;
+ 1:X3=y; 1:X5=x;
+}
+ P0               | P1           ;
+ STR X0,[X1]      | MOV W2,#2    ;
+ DSB SY           | STR W2,[X3]  ;
+ LSR X10,X5,#12   |              ;
+ TLBI VAAE1IS,X10 | MOV W4,#1    ;
+ DSB SY           | L0:          ;
+ MOV W2,#1        | STLR W4,[X5] ;
+ STR W2,[X3]      |              ;
+
+exists ([y]=2 /\ fault(P1:L0,x))

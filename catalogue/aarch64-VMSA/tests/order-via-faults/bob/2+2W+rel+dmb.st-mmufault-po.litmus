@@ -1,0 +1,15 @@
+AArch64 2+2W+rel+dmb.st-mmufault-po
+Hash=3d185686c941800cce42a790f8aac3a4
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), valid:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0           | P1           | P1.F        ;
+ MOV W2,#1    | MOV W0,#2    |             ;
+ STR W2,[X3]  | STR W0,[X1]  | MOV W2,#2   ;
+ MOV W0,#1    | DMB ST       | STR W2,[X3] ;
+ STLR W0,[X1] | STR WZR,[X5] |             ;
+
+exists ([y]=2 /\ [x]=1)

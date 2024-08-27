@@ -1,0 +1,16 @@
+AArch64 2+2W+dmb.sttp+dsb.st--sync
+Hash=801667ac15496c84ed2d4cdabdd41521
+Variant=memtag,sync
+
+{
+ 0:X4=x:red; 0:X3=x:green; 0:X1=y:green;
+ 1:X3=x:red; 1:X1=y:green;
+}
+ P0          | P1          ;
+ STG X4,[X3] | MOV W0,#2   ;
+ DMB ST      | STR W0,[X1] ;
+ MOV W0,#1   | DSB ST      ;
+ STR W0,[X1] | MOV W2,#1   ;
+             | STR W2,[X3] ;
+
+exists ([y]=2 /\ fault(P1,L1))

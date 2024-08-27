@@ -1,0 +1,15 @@
+AArch64 coWR+HU-dsb.ld-Imp_TTD_R
+Hash=e0a5c071307e2560d7199de83f8c32f0
+TTHM=P0:HD
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x), dbm:1, db:0);
+ 0:X1=x; 0:X3=PTE(x);
+}
+ P0          ;
+ MOV W0,#1   ;
+ STR W0,[X1] ;
+ DSB LD      ;
+ LDR X2,[X3] ;
+
+exists (0:X2=(oa:PA(x), dbm:1, db:0))

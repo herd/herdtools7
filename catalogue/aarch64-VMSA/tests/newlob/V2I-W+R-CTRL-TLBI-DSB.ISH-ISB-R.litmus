@@ -1,0 +1,20 @@
+AArch64 V2I-W+R-CTRL-TLBI-DSB.ISH-ISB-R
+Hash=4a1ab5baef57704dfa833a3a3c214635
+Variant=vmsa
+{
+ pteval_t 0:X1=(oa:PA(x), valid:0); 0:X2=PTE(x); 0:X8=y;
+ 1:X2=PTE(x); 1:X3=x;
+}
+ P0          | P1              ;
+ STR X1,[X2] | LDR X7,[X2]     ;
+             | CMP X7,#0       ;
+             | B.EQ over       ;
+             | LSR X9,X3,#12   ;
+             | TLBI VAAE1IS,X9 ;
+             | DSB ISH         ;
+             | ISB             ;
+             | L0:             ;
+             | LDR W4,[X3]     ;
+             | over:           ;
+
+exists (1:X7=(oa:PA(x), valid:0) /\ not (fault(P1:L0,x)))

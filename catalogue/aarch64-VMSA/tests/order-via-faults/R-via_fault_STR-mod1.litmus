@@ -1,0 +1,16 @@
+AArch64 R-via_fault_STR-mod1
+Hash=57e154c8d70f112d51214a1ab2a56aae
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X3=y; 0:X8=z;
+ 1:X3=y; 1:X1=x; 1:X8=z;
+}
+ P0           | P1          | P1.F           ;
+ MOV W7,#1    |             | ADR X9,L0      ;
+ STR W7,[X8]  | LDR W2,[X3] | MSR ELR_EL1,X9 ;
+ STLR W7,[X3] | DMB LD      | LDR W10,[X8]   ;
+              | STR W0,[X1] | MOV X11,#42    ;
+              | L0:         | ERET           ;
+
+exists ([y]=2 /\ 1:X10=0 /\ 1:X11=42)

@@ -1,0 +1,15 @@
+AArch64 R+rel+acqrel-mmufault_db-po
+Hash=1a0ffca56a38c4ed221462a131e507b5
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), db:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z; 1:X9=w;
+}
+ P0           | P1               | P1.F        ;
+ MOV W2,#1    | MOV W0,#2        |             ;
+ STR W2,[X3]  | STR W0,[X1]      |             ;
+ MOV W0,#1    | SWPAL W7,W8,[X9] | LDR W2,[X3] ;
+ STLR W0,[X1] | STR WZR,[X5]     |             ;
+
+exists ([y]=2 /\ 1:X2=0)

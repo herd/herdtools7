@@ -1,0 +1,18 @@
+AArch64 S+dsb.sy-tlbi-dsb.sy+ctrl
+Hash=4098308efc114650998070255c6432fa
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x), db:1);
+ pteval_t 0:X0=(oa:PA(x), db:0); 0:X1=PTE(x); 0:X3=y; 0:X5=x;
+ 1:X3=y; 1:X5=x;
+}
+ P0              | P1          | P1.F           ;
+ STR X0,[X1]     | L1:         | ADR X9,L0      ;
+ DSB SY          | LDR W2,[X3] | MSR ELR_EL1,X9 ;
+ LSR X9,X5,#12   | CBZ W2,L1   | ERET           ;
+ TLBI VAAE1IS,X9 | MOV W4,#1   |                ;
+ DSB SY          | STR W4,[X5] |                ;
+ MOV W2,#1       | L0:         |                ;
+ STR W2,[X3]     |             |                ;
+
+exists (1:X2=1 /\ not (fault(P1,x,MMU:Permission)))

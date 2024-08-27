@@ -1,0 +1,19 @@
+AArch64 S+shoot+pickaddr_mmufault_db
+Hash=d57b0891dbc1f159c1be01e92c027f03
+Variant=vmsa,fatal
+{
+ [PTE(x)]=(oa:PA(x), db:0);
+ pteval_t 0:X0=(oa:PA(x), db:1); 0:X1=PTE(x); 0:X3=y; 0:X5=x;
+ 1:X3=y; 1:X5=x; 1:X11=0; 1:X12=0;
+}
+ P0               | P1                  ;
+ STR X0,[X1]      |                     ;
+ DSB SY           | LDR W2,[X3]         ;
+ LSR X10,X5,#12   | CMP W2,#1           ;
+ TLBI VAAE1IS,X10 | CSEL W6,W11,W12,EQ  ;
+ DSB SY           |                     ;
+ MOV W2,#1        | MOV W4,#1           ;
+ STR W2,[X3]      | L0:                 ;
+                  | STR W4,[X5,W6,SXTW] ;
+
+exists (1:X2=1 /\ fault(P1:L0,x))

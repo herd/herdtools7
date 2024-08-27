@@ -1,0 +1,17 @@
+AArch64 MP+rel+pickctrlW-mmufault-po
+Hash=c340749e51d84dca40efd7c1df7e240c
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), valid:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0           | P1                 | P1.F        ;
+ MOV W2,#1    | LDR W0,[X1]        |             ;
+ STR W2,[X3]  | CMP W0,#1          |             ;
+ MOV W0,#1    | CSEL W6,WZR,WZR,EQ | LDR W2,[X3] ;
+ STLR W0,[X1] | CBNZ W6,L0         |             ;
+              | STR WZR,[X5]       |             ;
+              | L0:                |             ;
+
+exists (1:X0=1 /\ 1:X2=0)

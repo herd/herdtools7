@@ -1,0 +1,16 @@
+AArch64 RWRR+HU-dmb.sy+acq
+Hash=3d54228c4ad48ff4c72345f974af7fd1
+TTHM=P0:HA
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x), af:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X5=PTE(x);
+}
+ P0          | P1           ;
+ LDR W2,[X3] | LDAR W0,[X1] ;
+ MOV W0,#1   |              ;
+ DMB SY      |              ;
+ STR W0,[X1] | LDR X4,[X5]  ;
+
+exists (1:X0=1 /\ 1:X4=(oa:PA(x), af:0))

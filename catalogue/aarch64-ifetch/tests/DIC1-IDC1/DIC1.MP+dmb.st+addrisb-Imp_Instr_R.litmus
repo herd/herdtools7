@@ -1,0 +1,20 @@
+AArch64 DIC1.MP+dmb.st+addrisb-Imp_Instr_R
+Hash=38478543c02b3f9136a1ae7895994d43
+Variant=self
+CacheType=DIC
+
+{
+ ins_t 0:X8=instr:"NOP"; 0:X9=label:"P1:Lself00"; 0:X3=y;
+ 1:X1=x; 1:X3=y; 1:X5=z;
+}
+ P0          | P1                  ;
+             | LDR W2,[X3]         ;
+ STR W8,[X9] | EOR W6,W2,W2        ;
+ DMB ST      | LDR W4,[X5,W6,SXTW] ;
+ MOV W2,#1   | ISB                 ;
+ STR W2,[X3] | Lself00:            ;
+             | B L00               ;
+             | MOV W0,#1           ;
+             | L00:                ;
+
+exists (1:X2=1 /\ 1:X0=0)

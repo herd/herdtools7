@@ -1,0 +1,20 @@
+AArch64 S+dmb.st+pickctrl-HUdb
+Hash=d05c3ebf2f1ec81c2a41593b138f3f85
+Variant=vmsa
+TTHM=P1:HD
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), valid:1, dbm:1, db:0);
+ pteval_t 0:X15=(oa:PA(z), valid:1, dbm:1, db:0); 0:X14=PTE(z); 0:X0=x; 0:X2=y;
+ 1:X0=x; 1:X2=y; 1:X4=z;
+}
+ P0            | P1                 ;
+ STR X15,[X14] | LDR W3,[X2]        ;
+ DMB ST        | CMP W3,#1          ;
+ MOV W3,#1     | CSEL W6,WZR,WZR,EQ ;
+ STR W3,[X2]   | CBNZ W6,L00        ;
+               | L00:               ;
+               | MOV W5,#1          ;
+               | STR W5,[X4]        ;
+
+exists (1:X3=1 /\ [PTE(z)]=(oa:PA(z), valid:1, dbm:1, db:0))

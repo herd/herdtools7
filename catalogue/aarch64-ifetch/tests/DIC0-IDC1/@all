@@ -1,3 +1,4 @@
 @nofault
+@newlob
 IDC1.SM+lob-fault.litmus
 IDC1.SM-invalid-2.litmus

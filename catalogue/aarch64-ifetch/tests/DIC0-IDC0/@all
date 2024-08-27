@@ -1,3 +1,4 @@
 @nofault
+@newlob
 SM+lob-fault.litmus
 SM-invalid-2.litmus

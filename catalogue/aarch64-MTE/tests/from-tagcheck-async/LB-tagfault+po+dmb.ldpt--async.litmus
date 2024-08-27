@@ -1,0 +1,14 @@
+AArch64 LB-tagfault+po+dmb.ldpt--async
+Hash=83943d9dfb9e877d26a2b84c716f446c
+Variant=memtag,async
+
+{
+ 0:X1=x:green; 0:X2=y:green;
+ 1:X1=x:green; 1:X2=y:green; 1:X3=x:red;
+}
+ P0              | P1          ;
+ L0: LDR W3,[X1] | LDR W4,[X2] ;
+ L1: MOV W4,#1   | DMB LD      ;
+ STR W4,[X2]     | STG X3,[X1] ;
+
+exists (0:TFSR_Elx=1 /\ 1:X4=1)
