@@ -1,0 +1,15 @@
+AArch64 MP+dmb.st+tlbi.vmall-dsb.ish-isb
+Hash=6bce297dccc312a960ab8315aa2f15a2
+Variant=vmsa
+{
+ pteval_t 0:X0=(oa:PA(x), valid:0); 0:X1=PTE(x); 0:X3=y;
+ 1:X3=y; 1:X5=x;
+}
+ P0          | P1             ;
+ STR X0,[X1] | LDR W2,[X3]    ;
+ DMB ST      | TLBI VMALLE1IS ;
+ MOV W2,#1   | DSB ISH        ;
+ STR W2,[X3] | ISB            ;
+             | LDR X4,[X5]    ;
+
+exists (1:X2=1 /\ not (fault(P1,x,MMU:Translation)))

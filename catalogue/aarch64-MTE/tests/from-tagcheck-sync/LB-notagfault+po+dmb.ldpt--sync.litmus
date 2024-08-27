@@ -1,0 +1,14 @@
+AArch64 LB-notagfault+po+dmb.ldpt--sync
+Hash=38dcfcff97110f98e95131b9af34cbf3
+Variant=memtag,sync
+
+{
+ 0:X1=x:red; 0:X2=y:green;
+ 1:X1=x:green; 1:X2=y:green; 1:X3=x:red;
+}
+ P0              | P1          | P0.F           ;
+ L0: LDR W3,[X1] | LDR W4,[X2] | ADR X9,L1      ;
+ L1: MOV W4,#1   | DMB LD      | MSR ELR_EL1,X9 ;
+ STR W4,[X2]     | STG X3,[X1] | ERET           ;
+
+exists (not (fault(P0:L0,x)) /\ 1:X4=1)

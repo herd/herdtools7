@@ -1,0 +1,16 @@
+AArch64 2+2W+rel+rel-mmufault-po
+Hash=001743f83049a8b07a4d4df7babe66a0
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), valid:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0           | P1            | P1.F        ;
+ MOV W2,#1    | MOV W0,#2     |             ;
+ STR W2,[X3]  | STR W0,[X1]   | MOV W2,#2   ;
+ MOV W0,#1    |               | STR W2,[X3] ;
+ STLR W0,[X1] | STLR WZR,[X5] |             ;
+              |               |             ;
+
+exists ([y]=2 /\ [x]=1)

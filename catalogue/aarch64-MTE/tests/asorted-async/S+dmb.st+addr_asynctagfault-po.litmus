@@ -1,0 +1,16 @@
+AArch64 S+dmb.st+addr_asynctagfault-po
+Variant=memtag,async
+{
+    tag(z)=:green;
+    0:X1=x:green; 1:X1=x:green;
+    0:X3=y:green; 1:X3=y:green;
+    1:X5=z:red;
+}
+P0           | P1                    ;
+ MOV W0,#1   |  LDR W2,[X3]          ;
+ STR W0,[X1] |  EOR W6,W2,W2          ;
+ DMB ST      |  STR W4,[X5,W6,SXTW]  ;
+ MOV W2,#1   | L0:                   ;
+ STR W2,[X3] |  MOV W0,#2            ;
+             |  STR W0,[X1]          ;
+exists 1:X2=1 /\ ~(x=2) /\ 1:TFSR_ELx=1

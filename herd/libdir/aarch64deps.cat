@@ -45,8 +45,11 @@ catdep (* This option tells that the cat file computes dependencies *)
 
 include "aarch64util.cat"
 
-(* Local write successor *)
-let lws = [M]; (po & same-loc); [W | MMU & FAULT]
+(* Local write or MMU Fault successor *)
+let lwfs =
+ [Exp & M | Imp & Tag & R]; (po & same-loc); [Exp & W]
+ | [Exp & M]; (po & same-loc); [MMU & FAULT]
+ | [Imp & TTD & R]; (po & same-loc); [Exp & W | HU]
 
 (* Local read successor *)
 let lrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
@@ -62,30 +65,32 @@ let rec dtrm =
 let ADDR = Rreg \ DATA
 let basic-dep =
    [Exp & R | Rreg]; dtrm?
-let data = (basic-dep; [DATA]; iico_data+; [W]) \ same-instance
-let addr = [Exp & M]; (basic-dep; [ADDR]; iico_data+; [M | TLBI | IC.IVAU | DC.CVAU]) \ same-instance
-let ctrl = (basic-dep; [BCC]; po) \ same-instance
+let data = [Exp & R]; (basic-dep; [DATA]; iico_data+; [Exp & W]) & ~same-instance
+let addr = [Exp & R]; (basic-dep; [ADDR]; iico_data+; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]) & ~same-instance
+let ctrl = [Exp & R]; basic-dep; [BCC]; po
 
 (** Pick dependencies *)
-let pick-dtrm = (dtrm|iico_ctrl)+
+let rec pick-dtrm =
+  dtrm
+  | iico_ctrl
+  | pick-dtrm; pick-dtrm
 
 let pick-basic-dep =
    [Exp & R | Rreg];  pick-dtrm?
+
 let pick-addr-dep =
-   pick-basic-dep; [ADDR]; iico_data+; [M]
+   [Exp & R]; (pick-basic-dep; [ADDR]; iico_data+; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]) & ~same-instance
 let pick-data-dep =
-   pick-basic-dep; [DATA]; iico_data+; [W]
-let pick-addr-dep =
-   pick-basic-dep; [ADDR]; iico_data+; [M]
+   [Exp & R]; (pick-basic-dep; [DATA]; (iico_data|iico_ctrl)+; [Exp & W]) & ~same-instance
 let pick-ctrl-dep =
-   pick-basic-dep; [BCC]; po
+   [Exp & R]; pick-basic-dep; [BCC]; po
+
 let pick-dep =
-(
-   pick-basic-dep |
-   pick-addr-dep  |
-   pick-data-dep  |
-   pick-ctrl-dep
-) \ same-instance
+   ( pick-basic-dep
+   | pick-addr-dep
+   | pick-data-dep
+   | pick-ctrl-dep
+   ) & ~same-instance
 
 include "aarch64show.cat"
 

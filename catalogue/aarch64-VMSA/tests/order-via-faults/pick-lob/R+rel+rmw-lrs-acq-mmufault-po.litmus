@@ -1,0 +1,16 @@
+AArch64 R+rel+rmw-lrs-acq-mmufault-po
+Hash=89b94cfb9ae867dd2f6f85c35f65e5f9
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), valid:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0           | P1             | P1.F        ;
+ MOV W2,#1    | MOV W8,#2      |             ;
+ STR W2,[X3]  | SWP W8,W0,[X1] |             ;
+ MOV W0,#1    | LDAR W4,[X5]   | LDR W2,[X3] ;
+ STLR W0,[X1] |                |             ;
+
+locations [1:X0;]
+exists (1:X0=1 /\ 1:X2=0)

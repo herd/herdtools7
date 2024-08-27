@@ -62,6 +62,7 @@ type t =
 (* AArch64: Enhanced Translation Synchronization - FEAT_ETS, FEAT_ETS2 *)
   | ETS (*Deprecated*)
   | ETS2 (*New feature introduced after deprecating ETS*)
+  | ETS3 (*A feature further strengthening ETS2*)
 (* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
   | ExS | EIS | EOS
 (* Do not insert branching event between pte read and accesses *)
@@ -153,6 +154,7 @@ let parse s = match Misc.lowercase s with
 | "vmsa" -> Some VMSA
 | "ets" -> Some ETS
 | "ets2" -> Some ETS2
+| "ets3" -> Some ETS3
 | "exs" -> Some ExS
 | "eis" -> Some EIS
 | "eos" -> Some EOS
@@ -253,6 +255,7 @@ let pp = function
   | VMSA -> "vmsa"
   | ETS -> "ets"
   | ETS2 -> "ets2"
+  | ETS3 -> "ets3"
   | ExS -> "exs"
   | EIS -> "eis"
   | EOS -> "eos"

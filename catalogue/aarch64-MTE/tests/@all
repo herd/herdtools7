@@ -1,3 +1,10 @@
+asorted/@all
+asorted-async/@all
+from-tagcheck-async/@all
+from-tagcheck-sync/@all
+to-tagcheck-async/@all
+to-tagcheck-sync/@all
+order-via-fault/@all
 2+2W+dmb.st+dmb.stpt.litmus
 2+2W+dmb.st+dmb.sttp.litmus
 2+2W+dmb.st+dmb.sttt.litmus
@@ -1138,6 +1145,3 @@ coTWTR.litmus
 coTWTW.litmus
 coWR-mte.litmus
 coWTW.litmus
-MP+dmb.stpt+tcib-po-isb-po.litmus
-MP+dmb.stpt+tcib-tagfault-po.litmus
-S+dmb.stpt+tcib-po.litmus

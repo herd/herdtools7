@@ -1,0 +1,17 @@
+AArch64 S-I2V+dmb.st+ctrl_Imp_TTD_R
+Hash=c2cc60b1a78df25e506b763ba6f527e9
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x), valid:0);
+ pteval_t 0:X0=(oa:PA(x), valid:1); 0:X1=PTE(x); 0:X3=y;
+ 1:X5=x; 1:X3=y;
+}
+ P0          | P1          | P1.F           ;
+ STR X0,[X1] | L1:         | ADR X9,L0      ;
+ DMB ST      | LDR W2,[X3] | MSR ELR_EL1,X9 ;
+ MOV W2,#1   | CBZ W2,L1   | ERET           ;
+ STR W2,[X3] | MOV W4,#1   |                ;
+             | STR W4,[X5] |                ;
+             | L0:         |                ;
+
+exists (1:X2=1 /\ [x]=0)

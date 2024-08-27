@@ -1,0 +1,21 @@
+AArch64 MP.RF+dmb.st+pickaddr-cachesyncisb
+Hash=529fdb3a120f3c9c07d0d8e56802adf7
+
+{
+ ins_t 0:X0=NOP; 0:X1=label:"P1:m0"; 0:X3=z;
+ 1:X14=label:"P1:m0"; 1:X24=z; 1:X3=z; 1:X9=0;
+}
+ P0          | P1                 ;
+ STR W0,[X1] | LDR W2,[X3]        ;
+ DMB ST      | CMP W2,#1          ;
+ MOV W2,#1   | CSEL X1,X14,X24,EQ ;
+ STR W2,[X3] | DC CVAU,X1         ;
+             | DSB ISH            ;
+             | IC IVAU,X1         ;
+             | DSB ISH            ;
+             | ISB                ;
+             | m0: B l0           ;
+             | MOV W9,#1          ;
+             | l0:                ;
+
+exists (1:X2=1 /\ 1:X9=0)

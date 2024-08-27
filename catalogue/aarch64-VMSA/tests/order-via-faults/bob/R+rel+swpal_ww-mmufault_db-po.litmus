@@ -1,0 +1,16 @@
+AArch64 R+rel+swpal_ww-mmufault_db-po
+Hash=f23749626cd036be2bff41e476d4a072
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), db:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0           | P1               | P1.F        ;
+ MOV W2,#1    | MOV W8,#2        |             ;
+ STR W2,[X3]  | SWPAL W8,W0,[X1] |             ;
+ MOV W0,#1    | STR WZR,[X5]     | LDR W2,[X3] ;
+ STLR W0,[X1] |                  |             ;
+
+locations [1:X0;]
+exists ([y]=2 /\ 1:X2=0)

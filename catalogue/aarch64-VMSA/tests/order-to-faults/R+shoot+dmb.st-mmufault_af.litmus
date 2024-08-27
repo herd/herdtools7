@@ -1,0 +1,18 @@
+AArch64 R+shoot+dmb.st-mmufault_af
+Hash=9d97dcf8c74619b50ca34d32f7e4844d
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x), af:0);
+ 0:X1=x; 0:X3=y; pteval_t 0:X7=(oa:PA(x), af:1); 0:X8=PTE(x);
+ 1:X1=x; 1:X3=y;
+}
+ P0              | P1          ;
+ STR X7,[X8]     | MOV W2,#2   ;
+ DSB SY          | STR W2,[X3] ;
+ LSR X9,X1,#12   | DMB ST      ;
+ TLBI VAAE1IS,X9 |             ;
+ DSB SY          | LDR W0,[X1] ;
+ MOV W2,#1       |             ;
+ STR W2,[X3]     |             ;
+
+exists ([y]=2 /\ [x]=0 /\ fault(P1))

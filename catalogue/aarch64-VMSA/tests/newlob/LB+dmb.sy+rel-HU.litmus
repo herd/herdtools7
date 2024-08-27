@@ -1,0 +1,16 @@
+AArch64 LB+dmb.sy+rel-HU
+Hash=49ff215d07bf6c256e798b7e88f52d6f
+TTHM=P1:HD
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x), dbm:1, db:0);
+ 0:X1=y; 0:X5=PTE(x);
+ 1:X1=y; 1:X3=x;
+}
+ P0          | P1           ;
+ LDR X4,[X5] | LDR W0,[X1]  ;
+ DMB SY      |              ;
+ MOV W0,#1   |              ;
+ STR W0,[X1] | STLR W2,[X3] ;
+
+exists (1:X0=1 /\ 0:X4=(oa:PA(x), dbm:1, db:1))

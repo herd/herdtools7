@@ -1,0 +1,16 @@
+AArch64 MP+dmb.sypp+ctrlt-lrstt-addrpp
+(* PPOCA feat. Imp Tag Read *)
+Variant=memtag,sync
+{
+    0:X1=x; 0:X3=y;
+    1:X1=x; 1:X3=y; 1:X4=z:red; 1:X5=z:red;
+}
+P0           | P1          ;
+ MOV W0,#1   | LDR W2,[X3] ;
+ STR W0,[X1] | CBNZ W2,L0  ;
+ DMB SY      |L0:          ;
+ MOV W2,#1   | STG X4,[X5] ;
+ STR W2,[X3] | LDR W6,[X5] ;
+             | EOR W7,W6,W6;
+             | LDR W9,[X1,W7,SXTW] ;
+exists 1:X2=1 /\ 1:X9=0

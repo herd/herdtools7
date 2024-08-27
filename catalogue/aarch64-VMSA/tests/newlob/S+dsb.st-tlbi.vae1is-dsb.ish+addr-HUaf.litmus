@@ -1,0 +1,19 @@
+AArch64 S+dsb.st-tlbi.vae1is-dsb.ish+addr-HUaf
+Hash=c2e6c4d7bae665cf193e233fc8c25d50
+TTHM=P1:HA
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), valid:1, af:0);
+ pteval_t 0:X15=(oa:PA(z), valid:1, af:0); 0:X14=PTE(z); 0:X2=y; 0:X4=z;
+ 1:X2=y; 1:X4=z;
+}
+ P0             | P1                  ;
+ STR X15,[X14]  | LDR W3,[X2]         ;
+ DSB ST         | EOR W6,W3,W3        ;
+ LSR X9,X4,#12  | LDR W5,[X4,W6,SXTW] ;
+ TLBI VAE1IS,X9 |                     ;
+ DSB ISH        |                     ;
+ MOV W3,#1      |                     ;
+ STR W3,[X2]    |                     ;
+
+exists (1:X3=1 /\ [PTE(z)]=(oa:PA(z), valid:1, af:0))

@@ -1,0 +1,18 @@
+AArch64 IDC1.MP.FF+dsb.ish-ic.ivau-dsb.ish+po
+Hash=925a3f7d39205363b72b018f56fdcaf9
+CacheType=IDC
+
+{
+ ins_t 0:X0=NOP; 0:X1=label:"P1:Lself00"; 0:X2=label:"P1:Lself01";
+ 1:X1=label:"P1:Lself00";
+}
+ P0          | P1         ;
+ STR W0,[X1] | Lself01:   ;
+ DSB ISH     | B Lself00  ;
+ IC IVAU,X1  | MOV W10,#1 ;
+ DSB ISH     | Lself00:   ;
+ STR W0,[X2] | B L01      ;
+             | MOV W11,#1 ;
+             | L01:       ;
+
+exists (1:X10=1 /\ 1:X11=0)

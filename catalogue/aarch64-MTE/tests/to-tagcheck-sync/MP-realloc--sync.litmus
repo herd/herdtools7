@@ -1,0 +1,19 @@
+AArch64 MP-realloc--sync
+Hash=b4c36fd1761707b73ee557f156fa1286
+Variant=memtag,sync
+
+{
+ int64_t y=z;
+ 0:X3=x:red; 0:X5=z; 0:X1=x:green; 0:X2=y:green;
+ 1:X5=z; 1:X1=x:red; 1:X11=x:red; 1:X2=y:green;
+}
+ P0           | P1           ;
+ STG X3,[X1]  | LDAR W4,[X5] ;
+              | LDR X3,[X2]  ;
+              | CMP X3,X1    ;
+ STR WZR,[X3] | B.EQ L0      ;
+ STR X3,[X2]  | MOV X11,X3   ;
+ MOV W4,#1    | L0:          ;
+ STLR W4,[X5] | LDR W0,[X11] ;
+
+exists (1:X4=1 /\ fault(P1:L0))

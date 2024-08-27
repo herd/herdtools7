@@ -61,14 +61,14 @@ with IC-after from (all-IC-Imp_Instr_R-enums local-hw-reqs)
 
 (** Explicitly-hazard-ordered-before **)
 let Exp-haz-ob =
-  [Exp & R]; po-loc; [Exp & R]; (ca & ext); [Exp & W]
+  [Exp & R]; (po & same-loc); [Exp & R]; (ca & ext); [Exp & W]
 
 (** TLBI-ordered-before **)
 
 (* TTD-read-ordered-before *)
 let TTD-read-ordered-before =
   TLBI-after; [TLBI]; po; [dsb.full]; po; [~(Imp & M)]
-  | TLBI-after; [TLBI]; po; [dsb.full]; po; [CSE]; po; [Imp & M]
+  | TLBI-after; [TLBI]; po; [dsb.full]; po; [IFB]; po; [Imp & M]
   | (if "ETS2" then TLBI-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
 
 (* TLBI-ordered-before *)
@@ -125,7 +125,7 @@ let TTD-obs =
     [Imp & TTD]; rf | rf; [Imp & TTD]
     | TLBuncacheable-pred
     | HU-pred
-    | [HU]; co | co; [HU]
+    | [HU]; ca; [W] | [W]; ca; [HU]
     | TLBI-ca
 
 (** Instr-observed-by **)
@@ -160,11 +160,11 @@ let rec ob =
 irreflexive ob as external
 
 (*** Internal visibility requirements ***)
-irreflexive [Exp & R]; (po-loc | rmw); [Exp & W]; rfi; [Exp & R] as coRW1-Exp
-irreflexive [Imp & Tag & R]; po-loc; [Exp & Tag & W]; rfi; [Imp & Tag & R] as coRW1-MTE
-irreflexive [Exp & W]; po-loc; [Exp & W]; (ca & int); [Exp & W] as coWW-Exp
-irreflexive [Exp & W]; po-loc; [Exp & R]; (ca & int); [Exp & W] as coWR-Exp
-irreflexive [Exp & Tag & W]; po-loc; [Imp & Tag & R]; (ca & int) as coWR-MTE
+irreflexive [Exp & R]; ((po & same-loc) | rmw); [Exp & W]; rfi; [Exp & R] as coRW1-Exp
+irreflexive [Imp & Tag & R]; (po & same-loc); [Exp & Tag & W]; rfi; [Imp & Tag & R] as coRW1-MTE
+irreflexive [Exp & W]; (po & same-loc); [Exp & W]; (ca & int); [Exp & W] as coWW-Exp
+irreflexive [Exp & W]; (po & same-loc); [Exp & R]; (ca & int); [Exp & W] as coWR-Exp
+irreflexive [Exp & Tag & W]; (po & same-loc); [Imp & Tag & R]; (ca & int) as coWR-MTE
 
 (*** Atomic: LDXR/STXR, AMO and HU constraint to forbid intervening writes. ***)
 empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic

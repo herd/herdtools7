@@ -1,0 +1,16 @@
+AArch64 MP+dmb.ish+scope-tlbi.vmall-dsb.ish-isb
+Hash=45de5b154edc234b1460f77cb8335126
+Variant=vmsa
+{
+ [z]=y;
+ pteval_t 0:X0=(oa:PA(x), valid:0); 0:X1=PTE(x); 0:X2=x; 0:X3=z;
+ 1:X3=z;
+}
+ P0          | P1             ;
+ STR X0,[X1] | LDR X2,[X3]    ;
+ DMB ISH     | TLBI VMALLE1IS ;
+ STR X2,[X3] | DSB ISH        ;
+             | ISB            ;
+             | LDR X4,[X2]    ;
+
+exists (1:X2=x /\ not (fault(P1,x,MMU:Translation)))

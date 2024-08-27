@@ -1,0 +1,15 @@
+AArch64 R+rel+dsb.sy_ww-mmufault_db-po
+Hash=a310c3da7f9b575c5b8c0bd26f261ba1
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), db:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0           | P1           | P1.F        ;
+ MOV W2,#1    | MOV W0,#2    |             ;
+ STR W2,[X3]  | STR W0,[X1]  |             ;
+ MOV W0,#1    | DSB SY       | LDR W2,[X3] ;
+ STLR W0,[X1] | STR WZR,[X5] |             ;
+
+exists ([y]=2 /\ 1:X2=0)

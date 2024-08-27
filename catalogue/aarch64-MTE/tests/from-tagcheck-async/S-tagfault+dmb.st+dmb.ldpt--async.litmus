@@ -1,0 +1,15 @@
+AArch64 S-tagfault+dmb.st+dmb.ldpt--async
+Hash=74d1f99a6b269682c2c7c39b79e3072b
+Variant=memtag,async
+
+{
+ 0:X1=x:green; 0:X2=y:green;
+ 1:X1=x:green; 1:X2=y:green; 1:X3=x:red;
+}
+ P0          | P1          ;
+ MOV W0,#1   | LDR W4,[X2] ;
+ STR W0,[X1] | DMB LD      ;
+ DMB ST      | STG X3,[X1] ;
+ STR W0,[X2] |             ;
+
+exists (0:TFSR_ELx=1 /\ 1:X4=1)

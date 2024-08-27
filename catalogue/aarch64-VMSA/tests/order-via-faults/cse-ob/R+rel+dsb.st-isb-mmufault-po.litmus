@@ -1,0 +1,17 @@
+AArch64 R+rel+dsb.st-isb-mmufault-po
+Hash=061a365cf349f83108c78b1b725a234f
+Variant=vmsa
+{
+ [PTE(z)]=(oa:PA(z), valid:0);
+ 0:X1=y; 0:X3=x;
+ 1:X1=y; 1:X3=x; 1:X5=z;
+}
+ P0           | P1          | P1.F        ;
+ MOV W2,#1    | MOV W0,#2   |             ;
+ STR W2,[X3]  | STR W0,[X1] |             ;
+ MOV W0,#1    | DSB ST      | LDR W2,[X3] ;
+ STLR W0,[X1] | ISB         |             ;
+              | LDR W8,[X5] |             ;
+              |             |             ;
+
+exists (1:X0=1 /\ 1:X2=0)

@@ -1,0 +1,15 @@
+AArch64 MP+dmb.stpt+tcib-po-isb-po
+Hash=9a8d67c864e202c5b04f08b02e42c8de
+Variant=memtag,sync
+
+{
+ 0:X1=x; 0:X3=y:green; 0:X2=y:red;
+ 1:X1=x; 1:X3=y:red; 1:X2=1;
+}
+ P0          | P1          ;
+ MOV W0,#1   | LDR W2,[X3] ;
+ STR W0,[X1] | L0:         ;
+ DMB ST      | ISB         ;
+ STG X2,[X3] | LDR W0,[X1] ;
+
+exists (not (fault(P1,y)) /\ 1:X0=0)
