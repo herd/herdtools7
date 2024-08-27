@@ -87,7 +87,14 @@ let error_handling_time_to_string = function
   | Static -> "Static"
   | Dynamic -> "Dynamic"
 
-type warning_desc = IntervalTooBigToBeExploded of Z.t * Z.t
+type warning_desc =
+  | IntervalTooBigToBeExploded of Z.t * Z.t
+  | RemovingValuesFromConstraints of {
+      op : binop;
+      prev : int_constraint list;
+      after : int_constraint list;
+    }
+
 type warning = warning_desc annotated
 
 module PPrint = struct
@@ -268,6 +275,13 @@ module PPrint = struct
           "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as an \
            interval.@]"
           Z.pp_print za Z.pp_print zb
+    | RemovingValuesFromConstraints { op; prev; after } ->
+        fprintf f
+          "@[Warning:@ Removing@ some@ values@ that@ would@ fail@ with@ op %s@ \
+           from@ constraint@ set@ @[<h>{%a}@]@ gave@ @[<h>{%a}@].@ Continuing@ \
+           with@ this@ constraint@ set.@]"
+          (binop_to_string op) PP.pp_int_constraints prev PP.pp_int_constraints
+          after
 
   let pp_pos_begin f pos =
     if pos.pos_end != Lexing.dummy_pos && pos.pos_start != Lexing.dummy_pos then
@@ -282,10 +296,8 @@ module PPrint = struct
 
   let desc_to_string_inf pp_desc =
     asprintf "%a" @@ fun f e ->
-    let init_margin = pp_get_margin f () in
     pp_set_margin f 1_000_000_000;
-    pp_desc f e;
-    pp_set_margin f init_margin
+    pp_desc f e
 
   let error_to_string = asprintf "%a" pp_error
 end
@@ -306,7 +318,7 @@ let escape s =
 let pp_csv pp_desc =
   let pos_in_line pos = Lexing.(pos.pos_cnum - pos.pos_bol) in
   fun f pos ->
-    Printf.fprintf f "@[\"%s\",%d,%d,%d,%d,\"%s\"@]"
+    Printf.fprintf f "\"%s\",%d,%d,%d,%d,\"%s\""
       (escape pos.pos_start.pos_fname)
       pos.pos_start.pos_lnum
       (pos_in_line pos.pos_start)

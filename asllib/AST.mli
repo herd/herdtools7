@@ -240,7 +240,7 @@ type lexpr_desc =
   | LE_SetFields of lexpr * identifier list * (int * int) list
       (** LE_SetFields (le, fields, _) unpacks the various fields. Third argument is a type annotation. *)
   | LE_Destructuring of lexpr list
-  | LE_Concat of lexpr list * int list option
+  | LE_Concat of lexpr list * expr list option
       (** LE_Concat (les, _) unpacks the various lexpr. Second argument is a type annotation. *)
 
 and lexpr = lexpr_desc annotated

@@ -103,7 +103,8 @@ begin
   for a = -100 to 100 do
     for b = 1 to 5 do
       assert a MOD b + (a DIVRM b) * b == a;
-      if a MOD b == 0 then assert b * a DIV b == a; end
+      assert (b * a) DIV b == a;
+      if a MOD b == 0 then assert b * (a DIV b) == a; end
     end
   end
 

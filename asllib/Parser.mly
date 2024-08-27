@@ -525,7 +525,8 @@ let return_type == ARROW; ty
 let params_opt == { [] } | braced(clist(opt_type_identifier))
 let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
-let func_body == delimited(ioption(BEGIN), stmt_list, END)
+let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
+let func_body == delimited(ioption(BEGIN), maybe_empty_stmt_list, END)
 let ignored_or_identifier ==
   | MINUS; { global_ignored () }
   | IDENTIFIER

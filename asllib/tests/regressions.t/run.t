@@ -319,6 +319,7 @@ Required tests:
   $ aslref global_vars.asl
   $ aslref global_vars-02.asl
   $ aslref lexpr-concat.asl
+  $ aslref --no-exec lexpr-concat-2.asl
   $ aslref masks.asl
   $ aslref more-assignments-examples.asl
   $ aslref more-invocation-examples.asl

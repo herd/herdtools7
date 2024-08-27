@@ -695,13 +695,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ ->
         let () =
           if modified then
-            Format.eprintf
-              "@[%a:@ Warning:@ Removing@ some@ values@ that@ would@ fail@ \
-               with@ op %s@ from@ constraint@ set@ %a@ gave@ %a.@ Continuing@ \
-               with@ this@ constraint@ set.@]@."
-              PP.pp_pos loc
-              PP.(binop_to_string op)
-              pp_constraints constraints pp_constraints constraints'
+            EP.warn_from ~loc
+              Error.(
+                RemovingValuesFromConstraints
+                  { op; prev = constraints; after = constraints' })
           else if false then
             Format.eprintf "Unmodified for op %s: %a = %a@."
               PP.(binop_to_string op)
@@ -721,7 +718,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | OR | RDIV ->
         assert false
 
-  let filter_reduce_constraint =
+  let filter_reduce_constraint_div =
     let get_literal_div_opt e =
       match e.desc with
       | E_Binop (DIV, a, b) -> (
@@ -735,23 +732,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match get_literal_div_opt e with
         | None -> Some c
         | Some (z1, z2) -> if Z.divisible z1 z2 then Some c else None)
-    | Constraint_Range (e1, e2) ->
-        let e1' =
-          match get_literal_div_opt e1 with
-          | None -> e1
-          | Some (z1, z2) ->
-              let d, r = Z.ediv_rem z1 z2 in
-              if Z.equal r Z.zero then L_Int d |> literal
-              else L_Int (Z.succ d) |> literal
-        and e2' =
-          match get_literal_div_opt e2 with
-          | None -> e1
-          | Some (z1, z2) ->
-              let d, r = Z.ediv_rem z1 z2 in
-              if Z.equal r Z.zero then L_Int d |> literal
-              else L_Int (Z.pred d) |> literal
-        in
-        Some (Constraint_Range (e1', e2'))
+    | Constraint_Range _ as c ->
+        (* No need to reduce those as they are not handled by
+           Asllib.constraint_binop *)
+        Some c
 
   let constraint_binop ~loc env op cs1 cs2 =
     match op with
@@ -767,7 +751,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match (op, cs) with
           | DIV, WellConstrained cs ->
               WellConstrained
-                (filter_constraints ~loc DIV filter_reduce_constraint cs)
+                (filter_constraints ~loc DIV filter_reduce_constraint_div cs)
           | _ -> cs
         in
         let () =
@@ -2052,17 +2036,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let e_eq = expr_of_lexpr le in
         let t_e_eq, _e_eq = annotate_expr env e_eq in
         let+ () = check_bits_equal_width le env t_e_eq t_e in
-        let bv_length t = get_bitvector_const_width le env t in
         let annotate_one (les, widths, sum) le =
           let e = expr_of_lexpr le in
           let t_e1, _e = annotate_expr env e in
-          let width = bv_length t_e1 in
-          let t_e2 = T_Bits (expr_of_int width, []) |> add_pos_from le in
+          let width = get_bitvector_width le env t_e1 in
+          let t_e2 = T_Bits (width, []) |> add_pos_from le in
           let le1 = annotate_lexpr env le t_e2 in
-          (le1 :: les, width :: widths, sum + width)
+          (le1 :: les, width :: widths, binop PLUS sum width)
         in
         let rev_les, rev_widths, _real_width =
-          List.fold_left annotate_one ([], [], 0) les
+          List.fold_left annotate_one ([], [], e_zero) les
         in
         (* as the first check, we have _real_width == bv_length t_e *)
         let les1 = List.rev rev_les and widths = List.rev rev_widths in
