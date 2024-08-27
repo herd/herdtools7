@@ -21,107 +21,95 @@
 (******************************************************************************)
 
 {
-open Parser0       (* The type token is defined in parser.mli *)
+open Parser0 (* The type token is defined in parser.mli *)
 
-let int_of_string_no_fail s =
-  match int_of_string_opt s with
-  | None -> 0
-  | Some i -> i
-
-let names_to_tokens = [
-  ( "AArch32", QUALIFIER "AArch32");
-  ( "AArch64", QUALIFIER "AArch64");
-  ( "AND", AND );
-  ( "CONSTRAINED_UNPREDICTABLE", CONSTRAINED_UNPRED );
-  ( "DIV", DIV );
-  ( "EOR", EOR );
-  ( "IMPLEMENTATION_DEFINED", IMPLEM_DEFINED );
-  ( "IN", IN );
-  ( "IFF", IFF );
-  ( "IMPLIES", IMPLIES );
-  ( "MOD", MOD );
-  ( "NOT", NOT );
-  ( "OR", OR );
-  ( "QUOT", QUOT );
-  ( "REM", REM );
-  ( "SEE", SEE );
-  ( "UNDEFINED", UNDEFINED );
-  ( "UNKNOWN", UNKNOWN );
-  ( "UNPREDICTABLE", UNPREDICTABLE );
-  ( "__ExceptionTaken", UU_EXCEPTIONTAKEN );
-  ( "__NOP", UU_NOP );
-  ( "__UNALLOCATED", UU_UNALLOCATED );
-  ( "__UNPREDICTABLE", UU_UNPREDICTABLE );
-  ( "__array", UU_ARRAY );
-  ( "__builtin", UU_BUILTIN );
-  ( "__conditional", UU_CONDITIONAL );
-  ( "__config", UU_CONFIG );
-  ( "__decode", UU_DECODE );
-  ( "__encoding", UU_ENCODING );
-  ( "__event", UU_EVENT );
-  ( "__execute", UU_EXECUTE );
-  ( "__field", UU_FIELD );
-  ( "__function", UU_FUNCTION );
-  ( "__guard", UU_GUARD );
-  ( "__instruction", UU_INSTRUCTION );
-  ( "__instruction_set", UU_INSTRUCTION_SET );
-  ( "__map", UU_MAP );
-  ( "__newmap", UU_NEWMAP );
-  ( "__newevent", UU_NEWEVENT );
-  ( "__operator1", UU_OPERATOR_ONE );
-  ( "__operator2", UU_OPERATOR_TWO );
-  ( "__opcode", UU_OPCODE );
-  ( "__postdecode", UU_POSTDECODE );
-  ( "__readwrite", UU_READWRITE );
-  ( "__register", UU_REGISTER );
-  ( "__unpredictable_unless", UU_UNPREDICTABLE_UNLESS );
-  ( "__write", UU_WRITE );
-  ( "array", ARRAY );
-  ( "assert", ASSERT );
-  ( "bit", BIT );
-  ( "bits", BITS );
-  ( "boolean", BOOLEAN );
-  ( "case", CASE );
-  ( "catch", CATCH );
-  ( "constant", CONSTANT );
-  ( "config", CONFIG );
-  ( "DEBUG", DEBUG );
-  ( "do", DO );
-  ( "downto", DOWNTO );
-  ( "else", ELSE );
-  ( "elsif", ELSIF );
-  ( "enumeration", ENUMERATION );
-  ( "FALSE", BOOL_LIT false);
-  ( "for", FOR );
-  ( "integer", INTEGER);
-  ( "if", IF );
-  ( "is", IS );
-  ( "let", LET );
-  ( "of", OF );
-  ( "otherwise", OTHERWISE );
-  ( "real", REAL);
-  ( "record", RECORD );
-  ( "repeat", REPEAT );
-  ( "return", RETURN );
-  ( "then", THEN );
-  ( "throw", THROW );
-  ( "to", TO );
-  ( "TRUE", BOOL_LIT true);
-  ( "try", TRY );
-  ( "type", TYPE );
-  ( "typeof", TYPEOF );
-  ( "until", UNTIL );
-  ( "when", WHEN );
-  ( "while", WHILE );
-]
-
-let tr_name =
-  let tr_table = Hashtbl.create ~random:false (List.length names_to_tokens) in
-  let () = List.iter (fun (name, tok) -> Hashtbl.add tr_table name tok) names_to_tokens in
-  fun name ->
-    match Hashtbl.find_opt tr_table name with
-    | Some tok -> tok
-    | None -> IDENTIFIER name
+let tr_name = function
+  | "AArch32" -> QUALIFIER "AArch32"
+  | "AArch64" -> QUALIFIER "AArch64"
+  | "AND" -> AND
+  | "CONSTRAINED_UNPREDICTABLE" -> CONSTRAINED_UNPRED
+  | "DIV" -> DIV
+  | "EOR" -> EOR
+  | "IMPLEMENTATION_DEFINED" -> IMPLEM_DEFINED
+  | "IN" -> IN
+  | "IFF" -> IFF
+  | "IMPLIES" -> IMPLIES
+  | "MOD" -> MOD
+  | "NOT" -> NOT
+  | "OR" -> OR
+  | "QUOT" -> QUOT
+  | "REM" -> REM
+  | "SEE" -> SEE
+  | "UNDEFINED" -> UNDEFINED
+  | "UNKNOWN" -> UNKNOWN
+  | "UNPREDICTABLE" -> UNPREDICTABLE
+  | "__ExceptionTaken" -> UU_EXCEPTIONTAKEN
+  | "__NOP" -> UU_NOP
+  | "__UNALLOCATED" -> UU_UNALLOCATED
+  | "__UNPREDICTABLE" -> UU_UNPREDICTABLE
+  | "__array" -> UU_ARRAY
+  | "__builtin" -> UU_BUILTIN
+  | "__conditional" -> UU_CONDITIONAL
+  | "__config" -> UU_CONFIG
+  | "__decode" -> UU_DECODE
+  | "__encoding" -> UU_ENCODING
+  | "__event" -> UU_EVENT
+  | "__execute" -> UU_EXECUTE
+  | "__field" -> UU_FIELD
+  | "__function" -> UU_FUNCTION
+  | "__guard" -> UU_GUARD
+  | "__instruction" -> UU_INSTRUCTION
+  | "__instruction_set" -> UU_INSTRUCTION_SET
+  | "__map" -> UU_MAP
+  | "__newmap" -> UU_NEWMAP
+  | "__newevent" -> UU_NEWEVENT
+  | "__operator1" -> UU_OPERATOR_ONE
+  | "__operator2" -> UU_OPERATOR_TWO
+  | "__opcode" -> UU_OPCODE
+  | "__postdecode" -> UU_POSTDECODE
+  | "__readwrite" -> UU_READWRITE
+  | "__register" -> UU_REGISTER
+  | "__unpredictable_unless" -> UU_UNPREDICTABLE_UNLESS
+  | "__write" -> UU_WRITE
+  | "array" -> ARRAY
+  | "assert" -> ASSERT
+  | "bit" -> BIT
+  | "bits" -> BITS
+  | "boolean" -> BOOLEAN
+  | "case" -> CASE
+  | "catch" -> CATCH
+  | "constant" -> CONSTANT
+  | "config" -> CONFIG
+  | "DEBUG" -> DEBUG
+  | "do" -> DO
+  | "downto" -> DOWNTO
+  | "else" -> ELSE
+  | "elsif" -> ELSIF
+  | "enumeration" -> ENUMERATION
+  | "FALSE" -> BOOL_LIT false
+  | "for" -> FOR
+  | "integer" -> INTEGER
+  | "if" -> IF
+  | "is" -> IS
+  | "let" -> LET
+  | "limit" -> LIMIT
+  | "of" -> OF
+  | "otherwise" -> OTHERWISE
+  | "real" -> REAL
+  | "record" -> RECORD
+  | "repeat" -> REPEAT
+  | "return" -> RETURN
+  | "then" -> THEN
+  | "throw" -> THROW
+  | "to" -> TO
+  | "TRUE" -> BOOL_LIT true
+  | "try" -> TRY
+  | "type" -> TYPE
+  | "typeof" -> TYPEOF
+  | "until" -> UNTIL
+  | "when" -> WHEN
+  | "while" -> WHILE
+  | name -> IDENTIFIER name
 
 let string_of_token = function
   | AND -> "AND"
@@ -223,6 +211,7 @@ let string_of_token = function
   | LBRACE -> "{"
   | LBRACE_LBRACE -> "{{"
   | LBRACK -> "["
+  | LIMIT -> "limit"
   | LPAREN -> "("
   | LT -> "<"
   | LT_EQ -> "<="
@@ -237,10 +226,9 @@ let string_of_token = function
   | RPAREN -> ")"
   | SEMICOLON -> ";"
   | SLASH -> "/"
-  | STAR -> "*"
-    (* Literals *)
+  | STAR -> "*" (* Literals *)
   | BOOL_LIT b -> if b then "TRUE" else "FALSE"
-  | STRING_LIT (s) -> "\"" ^ s ^ "\""
+  | STRING_LIT s -> "\"" ^ s ^ "\""
   | BITS_LIT bv -> Bitvector.to_string bv
   | MASK_LIT m -> "'" ^ Bitvector.mask_to_string m ^ "'"
   | INT_LIT i -> Z.to_string i
@@ -253,7 +241,6 @@ let string_of_token = function
   | EOL -> "EOL"
   | LET -> "LET"
   | IDENTIFIER s -> s
-
 }
 
 let hex_lit = '0''x'['0'-'9' 'A' - 'F' 'a'-'f' '_']+

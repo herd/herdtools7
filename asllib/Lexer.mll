@@ -62,6 +62,9 @@ let tr_name s = match s with
 | "IN"            -> IN
 | "integer"       -> INTEGER
 | "let"           -> LET
+(*
+| "limit"         -> LIMIT
+ *)
 | "MOD"           -> MOD
 | "NOT"           -> NOT
 | "of"            -> OF
@@ -202,6 +205,7 @@ and token = parse
     | "*:"                     { STAR_COLON                       }
     | ';'                      { SEMI_COLON                       }
     | ">="                     { GEQ                              }
+    | "@looplimit"             { ARROBASE_LOOPLIMIT               }
     | identifier as lxm        { tr_name lxm                      }
     | eof                      { EOF                              }
     | ""                       { raise LexerError                 }

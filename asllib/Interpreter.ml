@@ -967,32 +967,37 @@ module Make (B : Backend.S) (C : Config) = struct
         else fatal_from e @@ Error.AssertionFailed e |: SemanticsRule.SAssert
     (* End *)
     (* Begin SWhile *)
-    | S_While (e, body) ->
+    | S_While (e, _limit, body) ->
         let env = IEnv.tick_push env in
         eval_loop true env e body |: SemanticsRule.SWhile
     (* End *)
     (* Begin SRepeat *)
-    | S_Repeat (body, e) ->
+    | S_Repeat (body, e, _limit) ->
         let*> env1 = eval_block env body in
         let env2 = IEnv.tick_push_bis env1 in
         eval_loop false env2 e body |: SemanticsRule.SRepeat
     (* End *)
     (* Begin SFor *)
-    | S_For (id, e1, dir, e2, s) ->
-        let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
+    | S_For { index_name; start_e; dir; end_e; body; limit = _limit } ->
+        let* start_v = eval_expr_sef env start_e
+        and* end_v = eval_expr_sef env end_e in
         (* By typing *)
-        let undet = B.is_undetermined v1 || B.is_undetermined v2 in
-        let*| env1 = declare_local_identifier env id v1 in
+        let undet = B.is_undetermined start_v || B.is_undetermined end_v in
+        let*| env1 = declare_local_identifier env index_name start_v in
         let env2 = if undet then IEnv.tick_push_bis env1 else env1 in
         let loop_msg =
-          if undet then Printf.sprintf "for %s" id
+          if undet then Printf.sprintf "for %s" index_name
           else
-            Printf.sprintf "for %s = %s %s %s" id (B.debug_value v1)
-              (PP.pp_for_direction dir) (B.debug_value v2)
+            Printf.sprintf "for %s = %s %s %s" index_name
+              (B.debug_value start_v) (PP.pp_for_direction dir)
+              (B.debug_value end_v)
         in
-        let*> env3 = eval_for loop_msg undet env2 id v1 dir v2 s in
+        let*> env3 =
+          eval_for loop_msg undet env2 index_name start_v dir end_v body
+        in
         let env4 = if undet then IEnv.tick_pop env3 else env3 in
-        IEnv.remove_local id env4 |> return_continue |: SemanticsRule.SFor
+        IEnv.remove_local index_name env4
+        |> return_continue |: SemanticsRule.SFor
     (* End *)
     (* Begin SThrowNone *)
     | S_Throw None -> return (Throwing (None, env)) |: SemanticsRule.SThrowNone

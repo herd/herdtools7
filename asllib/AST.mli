@@ -285,9 +285,16 @@ type stmt_desc =
   | S_Cond of expr * stmt * stmt
   | S_Case of expr * case_alt list
   | S_Assert of expr
-  | S_For of identifier * expr * for_direction * expr * stmt
-  | S_While of expr * stmt
-  | S_Repeat of stmt * expr
+  | S_For of {
+      index_name : identifier;
+      start_e : expr;
+      dir : for_direction;
+      end_e : expr;
+      body : stmt;
+      limit : expr option;
+    }
+  | S_While of expr * expr option * stmt
+  | S_Repeat of stmt * expr * expr option
   | S_Throw of (expr * ty option) option
       (** The ty option is a type annotation added by the type-checker to be
           matched later with the catch guards. The bigger option is to

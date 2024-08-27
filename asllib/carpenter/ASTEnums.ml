@@ -354,13 +354,15 @@ module Make (C : Config.S) = struct
       let make_s_decl (ldk, (ldi, expr_opt)) = S_Decl (ldk, ldi, expr_opt) in
       ldks ** ldis ** option exprs |> map make_s_decl
     and s_for =
-      let make_s_for (name, (e1, (d, (e2, s)))) = S_For (name, e1, d, e2, s) in
+      let make_s_for (index_name, (start_e, (dir, (end_e, body)))) =
+        S_For { index_name; start_e; dir; end_e; body; limit = None }
+      in
       names ** exprs ** finite [ Up; Down ] ** exprs ** block |> map make_s_for
     and s_while =
-      let make_s_while (e, s) = S_While (e, s) in
+      let make_s_while (e, s) = S_While (e, None, s) in
       exprs ** block |> map make_s_while |> pay
     and s_repeat =
-      let make_s_repeat (s, e) = S_Repeat (s, e) in
+      let make_s_repeat (s, e) = S_Repeat (s, e, None) in
       block ** exprs |> map make_s_repeat |> pay
     and s_throw =
       let make_s_throw opt = S_Throw opt in
