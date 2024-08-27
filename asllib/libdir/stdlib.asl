@@ -213,7 +213,7 @@ end
 // bits following the leading bit, that are equal to it.
 func CountLeadingSignBits{N}(x: bits(N)) => integer{0..N-1}
 begin
-  return CountLeadingZeroBits(x[N-1:1] EOR x[N-2:0]);
+  return CountLeadingZeroBits(x[N-1:1] XOR x[N-2:0]);
 end
 
 // Treating input as an integer, align down to nearest multiple of 2^y.

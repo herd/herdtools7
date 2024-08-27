@@ -31,11 +31,8 @@
       dummy value.
 
   Notes:
-    - Usually, big blocks where all rules end with <> are not implemented in
-      the AST yet.
-
+    - In some cases, rules ending with <> are not implemented in the AST yet.
  *)
-
 
 (* ------------------------------------------------------------------------
 
@@ -198,7 +195,7 @@ let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endp
 
 (* A trailing separator list.
 
-   This recognise a possibly-empty, separated, with potentially a trailing
+   This recognises a possibly-empty, separated, with potentially a trailing
    separator list.
  *)
 let trailing_list(sep, x) == loption(non_empty_trailing_list(sep, x))
@@ -275,7 +272,6 @@ let binop ==
   | SHL   ; { SHL    }
   | SHR   ; { SHR    }
   | POW   ; { POW    }
-
   | unimplemented_binop(
     | CONCAT; <>
   )
@@ -323,7 +319,6 @@ let make_expr(sub_expr) ==
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
   )
-
   | pared(sub_expr)
 
 (* ------------------------------------------------------------------------
@@ -429,7 +424,7 @@ let lexpr_atom_desc :=
 
 let lexpr_atom == annotated(lexpr_atom_desc)
 
-(* Decl items are another kind of left-hand-side expressions, that appear only
+(* Decl items are another kind of left-hand-side expressions, which appear only
    on declarations. They cannot have setter calls or set record fields, they
    have to declare new variables. *)
 
@@ -462,11 +457,10 @@ let pass == { S_Pass }
 let assign(x, y) == ~=x ; EQ ; ~=y ; { S_Assign (x,y,V1) }
 let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
-let alt_delim == ARROW | COLON
 let alt == annotated (
-  | WHEN; pattern=pattern_list; where=ioption(WHERE; expr); alt_delim; stmt=stmt_list;
+  | WHEN; pattern=pattern_list; where=ioption(WHERE; expr); ARROW; stmt=stmt_list;
       { {pattern; where; stmt } }
-  | OTHERWISE; alt_delim; stmt=stmt_list; { { pattern=Pattern_All; where= None; stmt } }
+  | OTHERWISE; ARROW; stmt=stmt_list; { { pattern=Pattern_All; where= None; stmt } }
 )
 
 let otherwise == OTHERWISE; ARROW; stmt_list
@@ -503,7 +497,6 @@ let stmt ==
           { S_Repeat (body, cond, Some looplimit) }
       | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
       | THROW;                                               { S_Throw None             }
-
       | loc=annotated(PRAGMA; IDENTIFIER; clist(expr); <>);
           { Error.fatal_from loc @@ Error.NotYetImplemented "Pragmas in statements" }
     )
@@ -527,13 +520,13 @@ let s_else :=
 let subtype == SUBTYPES; ~=IDENTIFIER; ~=loption(WITH; fields); <>
 let subtype_opt == option(subtype)
 
-let opt_type_identifier == pair(IDENTIFIER, ty_opt)
+let opt_typed_identifier == pair(IDENTIFIER, ty_opt)
 let return_type == ARROW; ty
-let params_opt == { [] } | braced(clist(opt_type_identifier))
+let params_opt == { [] } | braced(clist(opt_typed_identifier))
 let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
-let func_body == delimited(ioption(BEGIN), maybe_empty_stmt_list, END)
+let func_body == delimited(BEGIN, maybe_empty_stmt_list, END)
 let ignored_or_identifier ==
   | MINUS; { global_ignored () }
   | IDENTIFIER
@@ -612,17 +605,14 @@ let decl ==
               subprogram_type = ST_EmptySetter;
             }
         }
-
     | terminated_by(SEMI_COLON,
       | TYPE; x=IDENTIFIER; OF; t=ty_decl; ~=subtype_opt; < D_TypeDecl           >
-      | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype > 
-
+      | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
       | keyword=storage_keyword; name=ignored_or_identifier;
         ty=ioption(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
       | VAR; name=ignored_or_identifier; ty=some(as_ty);
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
-
       | loc=annotated(PRAGMA; IDENTIFIER; clist(expr); <>);
         { Error.fatal_from loc @@ Error.NotYetImplemented "Pragma in declarations"}
     )

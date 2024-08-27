@@ -18,15 +18,14 @@ begin
     // Same principle applies to the when clauses in a case statement, although the case statement must still be exhaustive or contain an otherwise clause.
     let testG : integer {8,16} = foo();
     case testG of
-        when 8:
+        when 8 =>
             pass;
             // <some code>
-        when 16:
+        when 16 =>
             pass;
             // <some code>
-        when 32: // Unreachable but legal code
+        when 32 => // Unreachable but legal code
             pass;
             // <some code>
     end
 end
-
