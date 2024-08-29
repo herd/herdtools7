@@ -96,6 +96,7 @@ let reduce_constraints env = function
       |> list_remove_duplicates
            (constraint_equal (StaticModel.equal_in_env env))
       |> fun constraints -> WellConstrained constraints
+
 (* End *)
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
@@ -647,6 +648,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | _ -> [ c ])
     in
     fun ~loc env -> list_concat_map (explode_constraint ~loc env)
+
   (* END *)
   let e_zero = expr_of_int 0
   let e_one = expr_of_int 1
@@ -776,7 +778,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false
-    (* End *)
+  (* End *)
 
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc = function
@@ -3023,7 +3025,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (new_d :: acc, new_genv)
 
   (* Begin TypeCheckMutuallyRec *)
-  let type_check_mutually_rec ds (acc, env) =
+  let type_check_mutually_rec ds (acc, genv) =
     let () =
       if false then
         let open Format in
@@ -3063,7 +3065,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let env = { global = genv; local = lenv } in
           let env1, f1 = declare_one_func loc f env in
           (env1.global, (env1.local, f1, loc)))
-        env.global env_and_fs1
+        genv env_and_fs1
       |: TypingRule.FoldEnvAndFs
     in
     let ds =
@@ -3080,12 +3082,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | SB_Primitive -> D_Func (rename_primitive loc env' f) |> here)
         env_and_fs2
     in
-    (List.rev_append ds acc, { env with global = genv })
-    |: TypingRule.TypeCheckMutuallyRec
+    (List.rev_append ds acc, genv) |: TypingRule.TypeCheckMutuallyRec
   (* End *)
 
   (* Begin TypeCheckAST *)
-  let type_check_ast =
+  let type_check_ast_in_env =
     let fold = function
       | TopoSort.ASTFold.Single d -> type_check_decl d
       | TopoSort.ASTFold.Recursive ds -> type_check_mutually_rec ds

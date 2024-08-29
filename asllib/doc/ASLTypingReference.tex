@@ -3457,7 +3457,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{arith\_t\_int\_wellconstrained3}):
   \begin{itemize}
-    \item $\op$ is one of $\{\DIVRM, \DIV, \MOD\}$;
+    \item $\op$ is one of $\{\SHL, \SHR\}$;
     \item the \wellconstrainedstructure\ of either $\vtone$ in $\tenv$ is that of a well-constrained integer type with
           constraints $\vcsone$;
           \item the \wellconstrainedstructure\ of either $\vttwo$ in $\tenv$ is that of a well-constrained integer type with
@@ -4729,7 +4729,7 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
   \begin{itemize}
     \item All of the following apply (\textsc{simple}):
     \begin{itemize}
-      \item checking whether the range of positions in $\slicesone$ fits inside $0..\width$ yields $\True$\ProseOrTypeError;
+      \item checking whether the range of positions in $\slicesone$ fits inside $0..\width-1$ yields $\True$\ProseOrTypeError;
       \item $\newfield$ is a bitfield named $\name$ with list of slices $\slicesone$, that is, $\BitFieldSimple(\name, \sliceone)$.
     \end{itemize}
 
@@ -10094,9 +10094,9 @@ All of the following apply:
   \item annotating the signature of $\funcsig$ in $\tenv$ as per
         \secref{TypingRule.AnnotateFuncSig} yields
         the environment $\tenvone$ and subprogram definition $\funcsigone$\ProseOrTypeError;
-  \item declaring the function with description $\funcsigone$ in $\tenvone$
+  \item declaring the subprogram defined by $\funcsigone$ in $\tenvone$
         as per \secref{TypingRule.DeclareOneFunc} yields the environment $\newtenv$
-        and new function description $\newfuncsig$\ProseOrTypeError.
+        and new $\func$ node $\newfuncsig$\ProseOrTypeError.
 \end{itemize}
 
 \subsection{Example}
@@ -14788,7 +14788,8 @@ The predicate
 soundly approximates $\subsumes(\tenv, \vt, \vs)$.
 Otherwise, the result is a type error.
 
-We assume that both $\vt$ and $\vs$ have been successfully annotated as per \chapref{typingoftypes}.
+We assume that both $\vt$ and $\vs$ have been successfully annotated as per \chapref{typingoftypes}
+(otherwise a typing error prevents us from applying this function).
 
 \subsection{Prose}
 All of the following apply:
@@ -19849,9 +19850,9 @@ requirement.
 
 \end{description}
 
-\noindent\makebox[\linewidth]{\rule{\linewidth}{0.4pt}}
 \hypertarget{tododefine}{}
-Function names with red hyperlinks indicate a missing definition that needs to be done.
+\noindent\makebox[\linewidth]{\rule{\linewidth}{0.4pt}}
+\textbf{Missing definition:} Red hyperlinks indicate items that are yet to be defined.
 
 \bibliographystyle{plain}
 \bibliography{ASL}
