@@ -195,7 +195,7 @@ and int_constraints =
   | WellConstrained of int_constraint list
       (** An integer type constrained from ASL syntax: it is the union of each
           constraint in the list. *)
-  | UnderConstrained of uid * identifier
+  | Parameterized of uid * identifier
       (** An under-constrained integer, the default type for parameters of
           function at compile time, with a unique identifier and the variable
           bearing its name. *)

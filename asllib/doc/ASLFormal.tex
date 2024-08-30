@@ -550,9 +550,9 @@ $\textsf{name}$, $\textsf{parameters}$, $\textsf{args}$, $\textsf{body}$, $\text
 The notation $\{ \textsf{body}:\SBASL(\texttt{body}),\ \textsf{args}:\texttt{arg\_decls}, \ldots \}$
 allows us to deconstruct a given \func\ node by matching only the \textsf{body} and \textsf{args} fields.
 
-\hypertarget{def-astlabel}{}
 Recall that a subset of AST nodes are either labels or labelled tuples.
-The partial function $\astlabel$ returns the corresponding label $\vl\in\astlabels$, when it exists.
+\hypertarget{def-astlabel}{}
+The partial function $\astlabel$ returns the label $\vl\in\astlabels$ an AST node, when it exists.
 For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\texttt{x})) = \TNamed$.
 
 \subsection{How to Parse Rules Efficiently}

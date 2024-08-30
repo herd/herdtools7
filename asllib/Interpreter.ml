@@ -567,14 +567,14 @@ module Make (B : Backend.S) (C : Config) = struct
     let rec in_values v ty =
       match ty.desc with
       | T_Int UnConstrained -> m_true
-      | T_Int (UnderConstrained _) ->
+      | T_Int (Parameterized _) ->
           (* This cannot happen, because:
              1. Forgetting now about named types, or any kind of compound types,
                 you cannot ask: [expr as ty] if ty is the unconstrained integer
                 because there is no syntax for it.
              2. You cannot construct a type that is an alias for the
-                underconstrained integer type.
-             3. You cannot put the underconstrained integer type in a compound
+                parameterized integer type.
+             3. You cannot put the parameterized integer type in a compound
                 type.
           *)
           fatal_from loc Error.UnrespectedParserInvariant
@@ -1324,8 +1324,8 @@ module Make (B : Backend.S) (C : Config) = struct
         try IMap.find (List.hd li) env.global.static.constant_values |> lit
         with Not_found -> fatal_from t Error.TypeInferenceNeeded)
     | T_Int UnConstrained -> m_zero
-    | T_Int (UnderConstrained _) ->
-        failwith "Cannot request the base value of a under-constrained integer."
+    | T_Int (Parameterized _) ->
+        failwith "Cannot request the base value of a parameterized integer."
     | T_Int (WellConstrained []) ->
         failwith
           "A well constrained integer cannot have an empty list of constraints."
