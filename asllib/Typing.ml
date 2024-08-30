@@ -89,7 +89,7 @@ let list_remove_duplicates eq =
 
 (* Begin ReduceConstraints *)
 let reduce_constraints env = function
-  | (UnConstrained | UnderConstrained _) as c -> c
+  | (UnConstrained | Parameterized _) as c -> c
   | WellConstrained constraints ->
       List.map (reduce_constraint env) constraints
       |> List.sort compare
@@ -132,7 +132,7 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     | T_Int (WellConstrained constraints) ->
         let constraints = subst_constraints env eqs constraints in
         T_Int (WellConstrained constraints) |> add_pos_from_st ty
-    | T_Int (UnderConstrained (_uid, name)) ->
+    | T_Int (Parameterized (_uid, name)) ->
         let e = E_Var name |> add_pos_from ty |> subst_expr_normalize env eqs in
         T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from ty
     | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> add_pos_from ty
@@ -555,7 +555,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_constrained_integer ~loc env t () =
     match (Types.make_anonymous env t).desc with
     | T_Int UnConstrained -> fatal_from loc Error.(ConstrainedIntegerExpected t)
-    | T_Int (WellConstrained _ | UnderConstrained _) -> ()
+    | T_Int (WellConstrained _ | Parameterized _) -> ()
     | _ -> conflict loc [ integer' ] t
   (* End *)
 
@@ -874,7 +874,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                    unconstrained integer then the result shall be an
                    unconstrained integer. *)
                 T_Int UnConstrained |> with_loc
-            | T_Int (UnderConstrained _), _ | _, T_Int (UnderConstrained _) ->
+            | T_Int (Parameterized _), _ | _, T_Int (Parameterized _) ->
                 assert false (* We used to_well_constrained before *)
             | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
                 let cs =
@@ -927,7 +927,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             T_Int (WellConstrained (List.map constraint_minus cs))
             |> add_pos_from loc
-        | T_Int (UnderConstrained _) ->
+        | T_Int (Parameterized _) ->
             assert false (* We used to_well_constrained just before. *)
         | _ -> (* fail case *) t1)
     | NOT ->
@@ -1057,7 +1057,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               List.map (annotate_constraint ~loc env) constraints
             in
             T_Int (WellConstrained new_constraints) |> here
-        | UnderConstrained _ | UnConstrained -> ty)
+        | Parameterized _ | UnConstrained -> ty)
         |: TypingRule.TInt
     (* Begin TBits *)
     | T_Bits (e_width, bitfields) ->
@@ -1438,7 +1438,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       List.iter
         (function
           | _, None -> ()
-          | s, Some { desc = T_Int (UnderConstrained (_, s')); _ }
+          | s, Some { desc = T_Int (Parameterized (_, s')); _ }
             when String.equal s' s ->
               ()
           | callee_param_name, Some callee_param_t ->
@@ -2098,7 +2098,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     *)
     let s_struct = Types.get_structure env s in
     match s_struct.desc with
-    | T_Int (UnderConstrained _) -> assert false
+    | T_Int (Parameterized _) -> assert false
     | _ -> Types.type_satisfies env t s
 
   let check_can_be_initialized_with loc env s t () =

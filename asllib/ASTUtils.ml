@@ -214,7 +214,7 @@ and use_slices slices = use_list use_slice slices
 and use_ty t =
   match t.desc with
   | T_Named s -> ISet.add s
-  | T_Int (UnConstrained | UnderConstrained _)
+  | T_Int (UnConstrained | Parameterized _)
   | T_Enum _ | T_Bool | T_Real | T_String ->
       Fun.id
   | T_Int (WellConstrained cs) -> use_constraints cs
@@ -404,8 +404,7 @@ and type_equal eq t1 t2 =
   | T_String, T_String
   | T_Int UnConstrained, T_Int UnConstrained ->
       true
-  | T_Int (UnderConstrained (i1, _)), T_Int (UnderConstrained (i2, _)) ->
-      i1 == i2
+  | T_Int (Parameterized (i1, _)), T_Int (Parameterized (i2, _)) -> i1 == i2
   | T_Int (WellConstrained c1), T_Int (WellConstrained c2) ->
       constraints_equal eq c1 c2
   | T_Bits (w1, bf1), T_Bits (w2, bf2) ->
@@ -725,7 +724,7 @@ let rename_locals map_name ast =
   and map_t t =
     map_desc_st' t @@ function
     | T_Real | T_String | T_Bool | T_Enum _ | T_Named _
-    | T_Int (UnConstrained | UnderConstrained _) ->
+    | T_Int (UnConstrained | Parameterized _) ->
         t.desc
     | T_Int (WellConstrained cs) -> T_Int (WellConstrained (map_cs cs))
     | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)

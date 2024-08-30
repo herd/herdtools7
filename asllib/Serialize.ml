@@ -208,7 +208,7 @@ and pp_int_constraints f = function
   | WellConstrained cs ->
       addb f "WellConstrained ";
       pp_list pp_int_constraint f cs
-  | UnderConstrained (i, x) -> bprintf f "UnderConstrained (%d, %S)" i x
+  | Parameterized (i, x) -> bprintf f "Parameterized (%d, %S)" i x
 
 let rec pp_lexpr =
   let pp_desc f = function

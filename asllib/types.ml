@@ -148,14 +148,14 @@ let under_constrained_constraints =
   fun var ->
     let uid = !next_uid in
     incr next_uid;
-    UnderConstrained (uid, var)
+    Parameterized (uid, var)
 
 let under_constrained_ty var =
   T_Int (under_constrained_constraints var) |> add_dummy_pos
 
 let to_well_constrained ty =
   match ty.desc with
-  | T_Int (UnderConstrained (_uid, var)) -> var_ var |> integer_exact
+  | T_Int (Parameterized (_uid, var)) -> var_ var |> integer_exact
   | _ -> ty
 
 let get_well_constrained_structure env ty =
@@ -347,7 +347,7 @@ module Domain = struct
     | T_Real -> D_Real
     | T_Enum li -> D_Symbols (ISet.of_list li)
     | T_Int UnConstrained -> D_Int Top
-    | T_Int (UnderConstrained (_uid, var)) ->
+    | T_Int (Parameterized (_uid, var)) ->
         D_Int (FromSyntax [ Constraint_Exact (var_ var) ])
     | T_Int (WellConstrained constraints) ->
         D_Int (int_set_of_int_constraints env constraints)
@@ -450,7 +450,7 @@ module Domain = struct
      fun approx env f t acc ->
       let t = make_anonymous env t in
       match t.desc with
-      | T_Real | T_String | T_Int (UnConstrained | UnderConstrained _) ->
+      | T_Real | T_String | T_Int (UnConstrained | Parameterized _) ->
           assert_under approx acc (* We can't iterate on all of those. *)
       | T_Int (WellConstrained cs) -> constraints_fold approx env f cs acc
       | T_Bool -> acc |> f (L_Bool true) |> f (L_Bool false)
@@ -915,7 +915,7 @@ let rec lowest_common_ancestor env s t =
       (* If either S or T is an unconstrained integer type: the unconstrained
          integer type. *)
       Some integer
-  | T_Int _, T_Int (UnderConstrained _) | T_Int (UnderConstrained _), T_Int _ ->
+  | T_Int _, T_Int (Parameterized _) | T_Int (Parameterized _), T_Int _ ->
       lowest_common_ancestor env (to_well_constrained s) (to_well_constrained t)
   | T_Int (WellConstrained cs_s), T_Int (WellConstrained cs_t) ->
       (* If S and T both are well-constrained integer types: the

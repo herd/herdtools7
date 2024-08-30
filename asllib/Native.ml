@@ -304,8 +304,7 @@ module NativeBackend = struct
         (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
       ->
         eval_expr_sef e
-    | T_Int (UnderConstrained (_, x)) ->
-        eval_expr_sef (E_Var x |> add_pos_from ty)
+    | T_Int (Parameterized (_, x)) -> eval_expr_sef (E_Var x |> add_pos_from ty)
     | T_Int (WellConstrained []) -> assert false
     | T_Bits (e, _) -> (
         match eval_expr_sef e with

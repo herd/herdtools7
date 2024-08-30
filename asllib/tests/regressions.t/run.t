@@ -155,7 +155,7 @@ Runtime checks:
 
   $ aslref under-constrained-used.asl
 
-UnderConstrained integers:
+Parameterized integers:
   $ aslref bad-underconstrained-call.asl
   File bad-underconstrained-call.asl, line 9, characters 9 to 23:
   ASL Typing error: a subtype of integer {0..(M - 1)} was expected,

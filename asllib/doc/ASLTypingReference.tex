@@ -46,7 +46,7 @@
 \newcommand\isprimitive[0]{\hyperlink{def-isprimitive}{\texttt{is\_primitive}}}
 
 \newcommand\isunconstrainedinteger[0]{\hyperlink{def-isunconstrainedinteger}{\textsf{is\_unconstrained\_integer}}}
-\newcommand\isunderconstrainedinteger[0]{\hyperlink{def-isunderconstrainedinteger}{\textsf{is\_under\_constrained\_integer}}}
+\newcommand\isparameterizedinteger[0]{\hyperlink{def-isparameterizedinteger}{\textsf{is\_parameterized\_integer}}}
 \newcommand\iswellconstrainedinteger[0]{\hyperlink{def-iswellconstrainedinteger}{\textsf{is\_well\_constrained\_integer}}}
 \newcommand\unconstrainedinteger[0]{\hyperlink{def-unconstrainedinteger}{\textsf{unconstrained\_integer}}}
 
@@ -202,6 +202,7 @@
 \newcommand\ELInt[1]{\hyperlink{def-elint}{\texttt{ELInt}}(#1)}
 
 % Glossary
+\newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
 \newcommand\structuredtype[0]{\hyperlink{def-structuredtype}{structured type}}
 \newcommand\structure[0]{\hyperlink{def-structure}{structure}}
 \newcommand\underlyingtype[0]{\hyperlink{def-underlyingtype}{underlying type}}
@@ -689,18 +690,19 @@ with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to 
   \item A \emph{constrained type} is a type whose definition relies on an expression, for example, certain integers and bitvectors.
   \item A type which is not constrained is \emph{unconstrained}.
   \item A constrained type with a non-empty constraint is \emph{well-constrained}.
-  \item An \emph{under-constrained integer type} is an implicit type of a subprogram parameter.
+  \hypertarget{def-parameterizedintegertype}
+  \item A \emph{\parameterizedintegertype} is an implicit type of a subprogram parameter.
   \end{itemize}
 The widths of bitvector storage elements are constrained integers.
 
 \hypertarget{def-isunconstrainedinteger}{}
-\hypertarget{def-isunderconstrainedinteger}{}
+\hypertarget{def-isparameterizedinteger}{}
 \hypertarget{def-iswellconstrainedinteger}{}
 We define the following helper predicates to classify integer types:
 \[
   \begin{array}{rcl}
   \isunconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
-  \isunderconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
+  \isparameterizedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
   \iswellconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool
   \end{array}
 \]
@@ -708,8 +710,8 @@ We define the following helper predicates to classify integer types:
 We define the following shorthands for classifying integers:
 \[
   \begin{array}{rcl}
-  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(\unconstrained)\\
-  \isunderconstrainedinteger(\vt) &\triangleq& \vt = \TInt(\Ignore)\\
+  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\unconstrained\\
+  \isparameterizedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\parameterized\\
   \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\wellconstrained\\
 \end{array}
 \]
@@ -993,9 +995,9 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_int\_underconstrained}):
+  \item All of the following apply (\textsc{t\_int\_parameterized}):
   \begin{itemize}
-    \item $\vt$ is an under constrained integer for parameter $\id$, \\ $\TInt(\underconstrained(\id))$;
+    \item $\vt$ is a \parameterizedintegertype\ for parameter $\id$, \\ $\TInt(\parameterized(\id))$;
     \item the native value associated with $\id$ in the local dynamic environment is the native integer value for $n$;
     \item $\vd$ is the set containing the single integer value for $n$.
   \end{itemize}
@@ -1144,10 +1146,10 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 The notation $L^\denv(\id)$ denotes the native value associated with the identifier $\id$
 in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
-  \inferrule[t\_int\_underconstrained]{
+  \inferrule[t\_int\_parameterized]{
   L^\denv(\id) = \nvint(n)
 }{
-  \dynamicdomain(\env, \overname{\TInt(\underconstrained(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
+  \dynamicdomain(\env, \overname{\TInt(\parameterized(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
 }
 \end{mathpar}
 
@@ -1994,9 +1996,9 @@ One of the following applies:
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{underconstrained}):
+  \item All of the following apply (\textsc{parameterized}):
   \begin{itemize}
-    \item $\vt$ is an underconstrained integer;
+    \item $\vt$ is a \parameterizedintegertype;
     \item the result is $\True$.
   \end{itemize}
 
@@ -2024,9 +2026,9 @@ One of the following applies:
   \checkconstrainedinteger(\tenv, \TInt(\wellconstrained(\Ignore))) \typearrow \True
 }
 \and
-\inferrule[underconstrained]{}
+\inferrule[parameterized]{}
 {
-  \checkconstrainedinteger(\tenv, \TInt(\underconstrained(\Ignore))) \typearrow \True
+  \checkconstrainedinteger(\tenv, \TInt(\parameterized(\Ignore))) \typearrow \True
 }
 \and
 \inferrule[unconstrained]{}
@@ -2892,9 +2894,10 @@ One of the following applies:
       \item $\tty$ is the unconstrained integer type.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_int\_underconstrained}):
+    \item All of the following apply (\textsc{t\_int\_parameterized}):
     \begin{itemize}
-      \item neither of $\vt$ and $\vs$ are the unconstrained integer type;
+      \item neither $\vt$ nor $\vs$ are the unconstrained integer type;
+      \item one of $\vt$ and $\vs$ is a \parameterizedintegertype;
       \item the \wellconstrainedversion\ of $\vt$ is $\vtone$;
       \item the \wellconstrainedversion\ of $\vs$ is $\vsone$;
       \item $\tty$ the lowest common ancestor of $\vtone$ and $\vsone$ in $\tenv$ is $\tty$\ProseOrTypeError.
@@ -3039,12 +3042,12 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
   \lca(\tenv, \vt, \vs) \typearrow \unconstrainedinteger
 }
 \and
-\inferrule[t\_int\_underconstrained]{
+\inferrule[t\_int\_parameterized]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \astlabel(\vt) = \astlabel(\vs) = \TInt\\
   \neg\isunconstrainedinteger(\vt)\\
   \neg\isunconstrainedinteger(\vs)\\
-  \isunderconstrainedinteger(\vt) \lor \isunderconstrainedinteger(\vs)\\
+  \isparameterizedinteger(\vt) \lor \isparameterizedinteger(\vs)\\
   \towellconstrained(\tenv, \vt) \typearrow \vtone\\
   \towellconstrained(\tenv, \vs) \typearrow \vsone\\
   \lca(\tenv, \vtone, \vsone) \typearrow \tty \OrTypeError
@@ -3190,11 +3193,11 @@ One of the following applies:
   $\TInt(\wellconstrained(\vcsnew))$;
 \end{itemize}
 
-\item All of the following apply (\textsc{neg\_t\_int\_underconstrained}):
+\item All of the following apply (\textsc{neg\_t\_int\_parameterized}):
 \begin{itemize}
   \item $\op$ is $\NEG$;
   \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vt$ yields the underconstrained integer type with parameter $\vv$, that is,
+  \item obtaining the \structure\ of $\vt$ yields the \parameterizedintegertype\ with parameter $\vv$, that is,
   $\TInt(\wellconstrained(\vv))$\ProseOrTypeError;
   \item converting $\TInt(\wellconstrained(\vv))$ to a well-constrained integer with an exact constraint expression for $\vv$
   (see $\getwellconstrainedstructure$) yields $\vtone$;
@@ -3281,9 +3284,9 @@ the values it represents:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[neg\_t\_int\_underconstrained]{
+\inferrule[neg\_t\_int\_parameterized]{
   \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \True\\
-  \tstruct(\tenv, \vtone) \typearrow \TInt(\underconstrained(\vv))\\
+  \tstruct(\tenv, \vtone) \typearrow \TInt(\parameterized(\vv))\\
   \getwellconstrainedstructure(\tenv, \vt) \typearrow \vtone\\
   \CheckUnop(\tenv, \NEG, \vtone) \typearrow \vs
 }{
@@ -4294,8 +4297,8 @@ In the following examples, all the uses of integer types are valid:
   \annotatetype{\Ignore, \tenv, \tty} \typearrow \tty
 }
 \and
-\inferrule[underconstrained]{
-  \tty \eqname \TInt(\underconstrained(\Ignore))\\
+\inferrule[parameterized]{
+  \tty \eqname \TInt(\parameterized(\Ignore))\\
 }{
   \annotatetype{\Ignore, \tenv, \tty} \typearrow \tty
 }
@@ -8761,18 +8764,18 @@ One of the following applies:
         \item $\calleeparam$ does not have a type annotation, that is, $(\Ignore, \None)$.
       \end{itemize}
 
-      \item All of the following apply (\textsc{underconstrained}):
+      \item All of the following apply (\textsc{parameterized}):
       \begin{itemize}
-        \item $\calleeparam$ is a parameter $\vs$ with a type annotation of an
-              underconstrained integer for the same parameter, that is, \\
-              $(\vs, \langle\TInt(\underconstrained(\vs))\rangle)$.
+        \item $\calleeparam$ is a parameter $\vs$ with a type annotation of a
+              \parameterizedintegertype\ for the same parameter, that is, \\
+              $(\vs, \langle\TInt(\parameterized(\vs))\rangle)$.
       \end{itemize}
 
       \item All of the following apply (\textsc{other}):
       \begin{itemize}
         \item $\calleeparam$ is a parameter $\vs$ whose type annotation is \\
               $\calleeparamt$, that is, $(\vs, \langle\calleeparamt\rangle)$;
-        \item $\calleeparamt$ is not the underconstrained integer for the same parameter;
+        \item $\calleeparamt$ is not the \parameterizedintegertype\ for the same parameter;
         \item substituting the parameter expressions from $\eqsthree$ in $\calleeparamt$
               yields $\calleeparamtrenamed$\ProseOrTypeError;
         \item applying $\assocopt$ to $\eqsthree$ and $\vs$ the expression $\callerparame$
@@ -8803,8 +8806,8 @@ One of the following applies:
   \checkcalleeparams(\tenv, \calleeparams, \eqsthree) \typearrow \True
 }
 \and
-\inferrule[underconstrained]{
-  \calleeparams \eqname [(\vs, \langle\TInt(\underconstrained(\vs))\rangle)] \concat \calleeparamsone\\
+\inferrule[parameterized]{
+  \calleeparams \eqname [(\vs, \langle\TInt(\parameterized(\vs))\rangle)] \concat \calleeparamsone\\
   \checkcalleeparams(\tenv, \calleeparamsone, \eqsthree) \typearrow \True \OrTypeError
 }{
   \checkcalleeparams(\tenv, \calleeparams, \eqsthree) \typearrow \True
@@ -8812,7 +8815,7 @@ One of the following applies:
 \and
 \inferrule[other]{
   \calleeparams \eqname [(\vs, \langle\calleeparamt\rangle)] \concat \calleeparamsone\\
-  \calleeparamt \neq \TInt(\underconstrained(\vs))\\
+  \calleeparamt \neq \TInt(\parameterized(\vs))\\
   \renametyeqs(\tenv, \eqsthree, \calleeparamt) \typearrow \calleeparamtrenamed \OrTypeError\\\\
   \assocopt(\eqsthree, \vs) \typearrow \langle \ve \rangle\\
   \annotateexpr{\tenv, \callerparame} \typearrow \callerparamt \OrTypeError\\\\
@@ -8860,9 +8863,9 @@ One of the following applies:
           $\newconstraints$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_int\_underconstrained}):
+  \item All of the following apply (\textsc{t\_int\_parameterized}):
   \begin{itemize}
-    \item $\tty$ is an underconstrained integer type for the parameter $\name$;
+    \item $\tty$ is a \parameterizedintegertype\ for the parameter $\name$;
     \item applying $\substexprnormalize$ to $\eqs$ and the expression $\EVar(\name)$ yields $\ve$;
     \item define $\newty$ as the well-constrained integer type with the single constraint for $\ve$, that is,
           $\TInt(\wellconstrained(\ConstraintExact(\ve)))$.
@@ -8902,11 +8905,11 @@ One of the following applies:
   \newty
 }
 \and
-\inferrule[t\_int\_underconstrained]{
+\inferrule[t\_int\_parameterized]{
   \substexprnormalize(\eqs, \EVar(\name)) \typearrow \ve\\
   \newty \eqdef \TInt(\wellconstrained(\ConstraintExact(\ve)))
 }{
-  \renametyeqs(\tenv, \eqs, \overname{\TInt(\underconstrained(\name))}{\tty}) \typearrow \newty
+  \renametyeqs(\tenv, \eqs, \overname{\TInt(\parameterized(\name))}{\tty}) \typearrow \newty
 }
 \and
 \inferrule[t\_tuple]{
@@ -10506,10 +10509,10 @@ All of the following apply:
         indicating that each parameter must have a defining argument, thus short-circuiting the entire rule;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{type\_underconstrained}):
+    \item All of the following apply (\textsc{type\_parameterized}):
     \begin{itemize}
-      \item $\tyopt$ is either $\None$ or an unconstrained integer type;
-      \item $\vt$ is defined as the underconstrained integer type for the identifier $\vx$.
+      \item $\tyopt$ is either $\None$ or a \parameterizedintegertype;
+      \item $\vt$ is defined as the \parameterizedintegertype\ for the identifier $\vx$.
     \end{itemize}
 
     \item All of the following apply (\textsc{type\_annotated}):
@@ -10527,11 +10530,11 @@ All of the following apply:
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[type\_underconstrained]{
+\inferrule[type\_parameterized]{
   \checkvarnotinenv{\tenvonep, \vx} \typearrow \True \OrTypeError\\\\
   \checktrans{\vx \in \potentialparams}{\ParameterWithoutDecl} \checktransarrow \True \OrTypeError\\\\
   (\tyopt = \None \lor \tyopt = \langle \TInt(\unconstrained)\rangle) \\
-  \vt \eqdef \TInt(\underconstrained(\vx))\\
+  \vt \eqdef \TInt(\parameterized(\vx))\\
   \checkconstrainedinteger(\tenvone, \vt) \typearrow \True \OrTypeError\\\\
   \addlocal(\tenvonep, \vx, \vt, \LDKLet) \typearrow \newtenv\\
   \declaredparams \eqdef \acc[\vx \mapsto \vt]
@@ -10743,7 +10746,7 @@ One of the following applies:
   \item All of the following apply (\textsc{tint\_unconstrained}):
   \begin{itemize}
     \item $\tty$ is the unconstrained integer type;
-    \item $\newty$ is the underconstrained integer type for the identifier $\vx$.
+    \item $\newty$ is the \parameterizedintegertype\ for the identifier $\vx$.
   \end{itemize}
 
   \item All of the following apply (\textsc{other}):
@@ -12493,7 +12496,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{int\_no\_constraints}):
   \begin{itemize}
-    \item $\vt$ is either the unconstrained integer type or an underconstrained integer type;
+    \item $\vt$ is either the unconstrained integer type or a \parameterizedintegertype;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
@@ -12559,7 +12562,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[int\_no\_constraints]{
-  \astlabel(\vc) \in \{\unconstrained, \underconstrained\}
+  \astlabel(\vc) \in \{\unconstrained, \parameterized\}
 }{
   \usety(\overname{\TInt(\vc)}{\vt}) \typearrow \overname{\emptyset}{\ids}
 }
@@ -14891,9 +14894,9 @@ One of the following applies:
     \item define $\vd$ as $\DInt(\Top)$, which intuitively represents the entire set of integers.
   \end{itemize}
 
-  \item All of the following apply (\textsc{int\_underconstrained}):
+  \item All of the following apply (\textsc{int\_parameterized}):
   \begin{itemize}
-    \item $\vt$ is the underconstrained integer type for the identifier $\id$;
+    \item $\vt$ is the \parameterizedintegertype\ for the identifier $\id$;
     \item define $\vd$ as the symbolic constrained integer domain with a single constraint for the variable expression for $\id$,
           that is, \\ $\DInt(\FromSyntax([\ConstraintExact(\EVar(\id))]))$.
   \end{itemize}
@@ -14993,8 +14996,8 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[int\_underconstrained]{}{
-  \symdomoftype(\tenv, \overname{\TInt(\underconstrained(\id))}{\vt}) \typearrow \\
+\inferrule[int\_parameterized]{}{
+  \symdomoftype(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \\
   \overname{\DInt(\FromSyntax([\ConstraintExact(\EVar(\id))]))}{\vd}
 }
 \end{mathpar}
@@ -16501,9 +16504,9 @@ The function
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{unconstrained\_underconstrained}):
+  \item All of the following apply (\textsc{unconstrained\_parameterized}):
   \begin{itemize}
-    \item the AST label of $\vc$ is either $\unconstrained$ or $\underconstrained$;
+    \item the AST label of $\vc$ is either $\unconstrained$ or $\parameterized$;
     \item define $\newc$ as $\vc$.
   \end{itemize}
 
@@ -16518,15 +16521,15 @@ One of the following applies:
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[unconstrained\_underconstrained]{
-  \astlabel(\vc) \in \{\unconstrained, \underconstrained\}
+\inferrule[unconstrained\_parameterized]{
+  \astlabel(\vc) \in \{\unconstrained, \parameterized\}
 }{
   \reduceconstraints(\tenv, \vc) \typearrow \overname{\vc}{\newc}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[unconstrained\_underconstrained]{
+\inferrule[unconstrained\_parameterized]{
   \newc \eqdef [\vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi])]
 }{
   \reduceconstraints(\tenv, \overname{\wellconstrained(\cs)}{\vc}) \typearrow \newc
@@ -17452,10 +17455,10 @@ One of the following applies:
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tint\_underconstrained}):
+  \item All of the following apply (\textsc{tint\_parameterized}):
   \begin{itemize}
-    \item $\vtone$ is the underconstrained integer type with identifier $\vione$, that is, \\ $\TInt(\underconstrained(\vione))$;
-    \item $\vttwo$ is the underconstrained integer type with identifier $\vitwo$, that is, \\ $\TInt(\underconstrained(\vitwo))$;
+    \item $\vtone$ is the \parameterizedintegertype\  with identifier $\vione$, that is, \\ $\TInt(\parameterized(\vione))$;
+    \item $\vttwo$ is the \parameterizedintegertype\ with identifier $\vitwo$, that is, \\ $\TInt(\parameterized(\vitwo))$;
     \item $\vb$ is $\True$ if and only if $\vione$ is equal to $\vitwo$.
   \end{itemize}
 
@@ -17548,10 +17551,10 @@ One of the following applies:
   \typeequal(\tenv, \TInt(\unconstrained), \TInt(\unconstrained)) \typearrow \True
 }
 \and
-\inferrule[tint\_underconstrained]{
+\inferrule[tint\_parameterized]{
   \vb \eqdef \vione = \vitwo
 }{
-  \typeequal(\tenv, \TInt(\underconstrained(\vione)), \TInt(\underconstrained(\vitwo))) \typearrow \vb
+  \typeequal(\tenv, \TInt(\parameterized(\vione)), \TInt(\parameterized(\vitwo))) \typearrow \vb
 }
 \and
 \inferrule[tint\_wellconstrained]{
@@ -19431,29 +19434,29 @@ returns the \wellconstrainedversion\ of a type $\vt$ --- $\vtp$, which is define
 
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{t\_int\_underconstrained}):
+  \item All of the following apply (\textsc{t\_int\_parameterized}):
   \begin{itemize}
-    \item $\vt$ is an underconstrained integer for the variable $\vv$;
+    \item $\vt$ is a \parameterizedintegertype\ for the variable $\vv$;
     \item $\vtp$ is the well-constrained integer constrained by the variable expression for $\vv$,
     that is, $\TInt(\wellconstrained(\constraintexact(\EVar(\vv))))$.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_int\_other, other}):
   \begin{itemize}
-    \item $\vt$ is not an underconstrained integer for the variable $\vv$;
+    \item $\vt$ is not a \parameterizedintegertype\ for the variable $\vv$;
     \item $\vtp$ is $\vt$.
   \end{itemize}
 \end{itemize}
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[t\_int\_underconstrained]{}
+\inferrule[t\_int\_parameterized]{}
 {
-  \towellconstrained(\TInt(\underconstrained(\vv))) \typearrow\\ \TInt(\wellconstrained(\constraintexact(\EVar(\vv))))
+  \towellconstrained(\TInt(\parameterized(\vv))) \typearrow\\ \TInt(\wellconstrained(\constraintexact(\EVar(\vv))))
 }
 \and
 \inferrule[t\_int\_other]{
-  \astlabel(\vi) \neq \underconstrained
+  \astlabel(\vi) \neq \parameterized
 }
 {
   \towellconstrained(\TInt(\vi)) \typearrow \vt
