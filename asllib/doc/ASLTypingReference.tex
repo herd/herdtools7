@@ -41,6 +41,7 @@
 \newcommand\isanonymous[0]{\hyperlink{def-isanonymous}{\texttt{is\_anonymous}}}
 \newcommand\issingular[0]{\hyperlink{def-issingular}{\texttt{is\_singular}}}
 \newcommand\isaggregate[0]{\hyperlink{def-isaggregate}{\texttt{is\_aggregate}}}
+\newcommand\isstructured[0]{\hyperlink{def-isstructured}{\texttt{is\_structured}}}
 \newcommand\isnonprimitive[0]{\hyperlink{def-isnonprimitive}{\texttt{is\_non\_primitive}}}
 \newcommand\isprimitive[0]{\hyperlink{def-isprimitive}{\texttt{is\_primitive}}}
 
@@ -201,6 +202,7 @@
 \newcommand\ELInt[1]{\hyperlink{def-elint}{\texttt{ELInt}}(#1)}
 
 % Glossary
+\newcommand\structuredtype[0]{\hyperlink{def-structuredtype}{structured type}}
 \newcommand\structure[0]{\hyperlink{def-structure}{structure}}
 \newcommand\underlyingtype[0]{\hyperlink{def-underlyingtype}{underlying type}}
 \newcommand\symbolicdomain[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
@@ -1063,7 +1065,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 
   \item All of the following apply (\textsc{t\_structured}):
   \begin{itemize}
-    \item $\vt$ is either a record type or an exception type with typed fields $(\id_i, \vt_i$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
+    \item $\vt$ is a \structuredtype\ with typed fields $(\id_i, \vt_i$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
     where $L\in\{\TRecord, \TException\}$;
     \item the domain of each type $\vt_i$ is $D_i$, for $i=1..k$;
     \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$.
@@ -1080,26 +1082,26 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 \subsection{Formally}
 
 \begin{mathpar}
-\inferrule[t\_bool]{}{ \dynamicdomain(\env, \TBool) = \tbool }
+\inferrule[t\_bool]{}{ \dynamicdomain(\env, \overname{\TBool}{\vt}) = \overname{\tbool}{\vd} }
 \and
-\inferrule[t\_string]{}{ \dynamicdomain(\env, \TString) = \tstring }
+\inferrule[t\_string]{}{ \dynamicdomain(\env, \overname{\TString}{\vt}) = \overname{\tstring}{\vd} }
 \and
-\inferrule[t\_real]{}{ \dynamicdomain(\env, \TReal) = \treal }
+\inferrule[t\_real]{}{ \dynamicdomain(\env, \overname{\TReal}{\vt}) = \overname{\treal}{\vd} }
 \and
 \inferrule[t\_enumeration]{}{
-  \dynamicdomain(\env, \TEnum(\id_{1..k})) = \{\nvint(1),\ldots,\nvint(k)\}
+  \dynamicdomain(\env, \overname{\TEnum(\id_{1..k})}{\vt}) = \overname{\{\nvint(1),\ldots,\nvint(k)\}}{\vd}
 }
 \end{mathpar}
 
 \begin{mathpar}
   \inferrule[t\_int\_unconstrained]{}{
-  \dynamicdomain(\env, \TInt(\unconstrained)) = \tint
+  \dynamicdomain(\env, \overname{\TInt(\unconstrained)}{\vt}) = \overname{\tint}{\vd}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[t\_int\_well\_constrained]{}{
-  \dynamicdomain(\env, \TInt(\wellconstrained(\vc_{1..k}))) = \bigcup_{i=1}^k \dynamicdomain(\env, \vc_i)
+  \dynamicdomain(\env, \overname{\TInt(\wellconstrained(\vc_{1..k}))}{\vt}) = \overname{\bigcup_{i=1}^k \dynamicdomain(\env, \vc_i)}{\vd}
 }
 \end{mathpar}
 
@@ -1107,13 +1109,13 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 \inferrule[constraint\_exact\_okay]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(n), \Ignore)
 }{
-  \dynamicdomain(\env, \ConstraintExact(\ve)) = \{ \nvint(n) \}
+  \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\{ \nvint(n) \}}{\vd}
 }
 \and
 \inferrule[constraint\_exact\_dynamic\_error]{
   \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
 }{
-  \dynamicdomain(\env, \ConstraintExact(\ve)) = \emptyset
+  \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\emptyset}{\vd}
 }
 \end{mathpar}
 
@@ -1122,20 +1124,20 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \evalexprsef{\env, \veone} \evalarrow \Normal(\nvint(a), \Ignore)\\
   \evalexprsef{\env, \vetwo} \evalarrow \Normal(\nvint(b), \Ignore)
 }{
-  \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \{ \nvint(n) \;|\;  a \leq n \land n \leq b\}
+  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\{ \nvint(n) \;|\;  a \leq n \land n \leq b\}}{\vd}
 }
 \and
 \inferrule[constraint\_range\_dynamic\_error1]{
   \evalexprsef{\env, \veone} \evalarrow \ErrorConfig
 }{
-  \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \emptyset
+  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[constraint\_range\_dynamic\_error2]{
   \evalexprsef{\env, \veone} \evalarrow \Normal(\Ignore, \Ignore)\\
   \evalexprsef{\env, \vetwo} \evalarrow \ErrorConfig
 }{
-  \dynamicdomain(\env, \ConstraintRange(\veone, \vetwo)) = \emptyset
+  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
 \end{mathpar}
 
@@ -1145,7 +1147,7 @@ in the \emph{local dynamic environment} of $\denv$.
   \inferrule[t\_int\_underconstrained]{
   L^\denv(\id) = \nvint(n)
 }{
-  \dynamicdomain(\env, \TInt(\underconstrained(\id))) = \{ \nvint(n) \}
+  \dynamicdomain(\env, \overname{\TInt(\underconstrained(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
 }
 \end{mathpar}
 
@@ -1153,27 +1155,27 @@ in the \emph{local dynamic environment} of $\denv$.
 \inferrule[t\_bits\_dynamic\_error]{
   \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
 }{
-  \dynamicdomain(\env, \TBits(\ve, \Ignore)) = \emptyset
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_bits\_negative\_width\_error]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
   k < 0
 }{
-  \dynamicdomain(\env, \TBits(\ve, \Ignore)) = \emptyset
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_bits\_empty]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(0), \Ignore)
 }{
-  \dynamicdomain(\env, \TBits(\ve, \Ignore)) = \{ \nvbitvector(\emptylist) \}
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\emptylist) \}}{\vd}
 }
 \and
 \inferrule[t\_bits\_non\_empty]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
   k > 0
 }{
-  \dynamicdomain(\env, \TBits(\ve, \Ignore)) = \{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \{0,1\} \}
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \{0,1\} \}}{\vd}
 }
 \end{mathpar}
 
@@ -1181,8 +1183,8 @@ in the \emph{local dynamic environment} of $\denv$.
 \inferrule[t\_tuple]{
   i=1..k: \dynamicdomain(\env, \vt_i) = D_i
 }{
-  \dynamicdomain(\env, \TTuple(\vt_{1..k})) =
-  \{ \nvvector{\vv_{1..k}} \;|\; \vv_i \in D_i \}
+  \dynamicdomain(\env, \overname{\TTuple(\vt_{1..k})}{\vt}) =
+  \overname{\{ \nvvector{\vv_{1..k}} \;|\; \vv_i \in D_i \}}{\vd}
 }
 \end{mathpar}
 
@@ -1190,22 +1192,22 @@ in the \emph{local dynamic environment} of $\denv$.
 \inferrule[t\_array\_dynamic\_error]{
   \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
 }{
-  \dynamicdomain(\env, \TArray(\ve, \vtone)) = \emptyset
+  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_array\_negative\_length\_error]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
   k < 0
 }{
-  \dynamicdomain(\env, \TArray(\ve, \vtone)) = \emptyset
+  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_array\_okay]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
   \dynamicdomain(\env, \vtone) = D_\vtone
 }{
-  \dynamicdomain(\env, \TArray(\ve, \vtone)) =
-  \{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\vtone} \}
+  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) =
+  \overname{\{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\vtone} \}}{\vd}
 }
 \end{mathpar}
 
@@ -1214,8 +1216,8 @@ in the \emph{local dynamic environment} of $\denv$.
   L \in \{\TRecord, \TException\}\\
   i=1..k: \dynamicdomain(\env, \vt_i) = D_i
 }{
-  \dynamicdomain(\env, L([i=1..k: (\id_i,\vt_i))]) = \\
-  \{ \nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}} \;|\; \vv_i \in D_i \}
+  \dynamicdomain(\env, \overname{L([i=1..k: (\id_i,\vt_i))]}{\vt}) = \\
+  \overname{\{ \nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}} \;|\; \vv_i \in D_i \}}{\vd}
 }
 \end{mathpar}
 
@@ -1223,7 +1225,7 @@ in the \emph{local dynamic environment} of $\denv$.
 \inferrule[t\_named]{
   G^\tenv.\declaredtypes(\id)=\tty
 }{
-  \dynamicdomain(\env, \TNamed(\id)) = \dynamicdomain(\env, \tty)
+  \dynamicdomain(\env, \overname{\TNamed(\id)}{\vt}) = \overname{\dynamicdomain(\env, \tty)}{\vd}
 }
 \end{mathpar}
 
@@ -1633,6 +1635,40 @@ type C of B;
 \isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{GVZK}.}
 
+\section{TypingRule.StructuredType \label{sec:TypingRule.StructuredType}}
+\hypertarget{def-isstructured}{}
+\hypertarget{def-structuredtype}{}
+A \emph{\structuredtype} is any type that consists of a list of field identifiers
+that denote individual storage elements. In ASL there are two such types --- record types and exception types.
+
+The predicate
+\[
+  \isstructured(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
+\]
+tests whether the type $\tty$ is a \structuredtype\ and yields the result in $\vb$.
+
+\subsection{Prose}
+The result $\vb$ is $\True$ if and only if $\tty$ is either a record type or an exception type,
+which is determined via the AST label of $\tty$.
+
+\subsection{Example}
+In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}
+are each an example of a \structuredtype:
+\begin{verbatim}
+type SyntaxException of exception {message: string };
+type PointRecord of Record {x : real, y: real, z: real};
+\end{verbatim}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \isstructured(\tty) \typearrow \overname{\astlabel(\tty) \in \{\TRecord, \TException\}}{\vb}
+}
+\end{mathpar}
+
+\isempty{\subsection{Comments}}
+\lrmcomment{This is related to \identd{WGQS}, \identd{QXYC}.}
+
 \section{TypingRule.NonPrimitiveType \label{sec:TypingRule.NonPrimitiveType}}
 \hypertarget{def-isnonprimitive}{}
 The predicate
@@ -1666,7 +1702,7 @@ One of the following applies:
     \end{itemize}
   \item All of the following apply (\textsc{structured}):
     \begin{itemize}
-    \item $\tty$ is a record or exception with fields $\fields$;
+    \item $\tty$ is a \structuredtype\ with fields $\fields$;
     \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\fields$.
     \end{itemize}
 \end{itemize}
@@ -1804,7 +1840,7 @@ One of the following applies:
   \end{itemize}
 \item All of the following apply (\textsc{structured}):
   \begin{itemize}
-  \item $\tty$ is either a record or an exception with fields $\fields$;
+  \item $\tty$ is a \structuredtype\ with fields $\fields$;
   \item obtaining the structure for each type $\vt$ associated with field $\id$ yields a type $\vt_\id$\ProseOrTypeError;
   \item $\vt$ is a record or an exception, in correspondence to $\tty$, with the list of pairs $(\id, \vt\_\id)$;
   \end{itemize}
@@ -2213,8 +2249,8 @@ One of the following applies:
 
 \item All of the following apply (\textsc{structured}):
   \begin{itemize}
-  \item $\vs$ has the \underlyingtype\ $L(\vfieldss)$, which is either a record type or an exception type;
-  \item $\vt$ has the \underlyingtype\ $L(\vfieldst)$, which is either a record type or an exception type;
+  \item $\vs$ has the \underlyingtype\ $L(\vfieldss)$, which is a \structuredtype;
+  \item $\vt$ has the \underlyingtype\ $L(\vfieldst)$, which is a \structuredtype;
   \item since both underlying types have the same AST label they are either both record types or both exception types;
   \item $\vb$ is $\True$ if and only if for each field in $\vfieldss$ with type $\vtys$
   there exists a field in $\vfieldst$ with type $\vtyt$ such that both $\vtys$ and $\vtyt$
@@ -4477,7 +4513,7 @@ The following example declares a valid enumeration type:
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\tty$ is either a record type or an exception type, corresponding to its AST label $L$;
+  \item $\tty$ is a \structuredtype\ with AST label $L$;
   \item the list of fields of $\tty$ is $\fields$;
   \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
   \item $\fields$ is a list of pairs where the first element is an identifier and the second is a type --- $(\vx_i, \vt_i)$, for $i=1..k$;
@@ -4499,6 +4535,7 @@ In the following example, all the uses of record or exception types are valid:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
+  L \in \{\TRecord, \TException\}\\
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
   \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
   i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow \vtp_i \OrTypeError\\\\
@@ -4515,7 +4552,7 @@ In the following example, all the uses of record or exception types are valid:
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\tty$ is either a record type, an exception type, or an enumeration type;
+  \item $\tty$ is a \structuredtype\ or an enumeration type;
   \item $\decl$ is $\False$, indicating that $\tty$ should be considered to be outside the context of a declaration
   of $\tty$;
   \item a type error is returned, indicating that the use of anonymous form of enumerations, record,
@@ -5401,7 +5438,7 @@ All of the following apply:
 \item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
 \item determining whether $\tty$ is a named type yields $\True$\ProseOrTypeError;
 \item determining the \structure\ of $\tty$ yields $\vtp$\ProseOrTypeError;
-\item $\vtp$ is neither a record nor an exception type;
+\item $\vtp$ is not a \structuredtype;
 \item the result is an error indicating that $\tty$ is not appropriate for constructing a record.
 \end{itemize}
 
@@ -5430,7 +5467,7 @@ All of the following apply:
 A§ll of the following apply:
 \begin{itemize}
   \item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
-  \item $\tty$ is the name of a record or exception type with fields $\fieldtypes$;
+  \item $\tty$ is a \structuredtype\ with fields $\fieldtypes$;
   \item there exists a field in $\fieldtypes$ that is not initialised by $\fields$;
   \item the result is an error indicating that a field is missing initialization.
 \end{itemize}
@@ -5464,7 +5501,7 @@ A§ll of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes the record creation expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$;
-  \item $\tty$ is the name of a record or exception type with fields $\fieldtypes$;
+  \item $\tty$ is the name of a \structuredtype\ with fields $\fieldtypes$;
   \item \underline{every} field in $\fieldtypes$ is initialised by a corresponding expression in $\fields$;
   \item annotating the expressions that initialize each of the fields in $\fields$ via \\
         $\annotatefieldinit$ yields $\fieldsp$\ProseOrTypeError;
@@ -5508,7 +5545,7 @@ All of the following apply:
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
-  \item $\vtetwo$ is either a record type or an exception type with fields $\fields$;
+  \item $\vtetwo$ is a \structuredtype\ with fields $\fields$;
   \item the field $\fieldname$ is associated with the type $\vt$ in $\fields$
   \item $\newe$ is the access of field $\fieldname$ on the record or exception object $\vetwo$, that is, $\EGetField(\vetwo, \fieldname)$.
 \end{itemize}
@@ -5542,7 +5579,7 @@ All of the following apply:
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
-  \item $\vtetwo$ is either a record type or an exception type with fields $\fields$;
+  \item $\vtetwo$ is a \structuredtype\ with fields $\fields$;
   \item the field $\fieldname$ is not associated with any type in $\fields$
   \item the result is a type error indicating the missing field.
 \end{itemize}
@@ -6462,7 +6499,7 @@ All of the following apply:
   \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\
         $\vletwo$\ProseOrTypeError;
-  \item the \structure\ of $\vtleone$ in $\tenv$ is either a record type or an exception type with list of fields $\fields$\ProseOrTypeError;
+  \item the \structure\ of $\vtleone$ in $\tenv$ is a \structuredtype\ with list of fields $\fields$\ProseOrTypeError;
   \item $\field$ is not associated with any type in $\fields$;
   \item the result is an error indicating that the field $\field$ is missing from the type of $\vleone$.
 \end{itemize}
@@ -6494,7 +6531,7 @@ All of the following apply:
   \item $\vle$ denotes the access to the field named \texttt{field} in $\vleone$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields either a record type or an exception type with fields $\fields$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a\structuredtype\ with fields $\fields$\ProseOrTypeError;
   \item the type associated with the field $\field$ in $\fields$ is $\vt$;
   \item determining whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
   \item $\newle$ is the access to the field $\field$ in $\vletwo$, that is, $\LESetField(\vletwo, \field)$.
@@ -6687,7 +6724,7 @@ All of the following apply:
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
   \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a type $\vt$\ProseOrTypeError;
-  \item $\vt$ is neither a record type, an exception type, or a bitvector type;
+  \item $\vt$ is neither a \structuredtype\ nor a bitvector type;
   \item the result is an error indicating that the type of $\vle$ conflicts with the requirements of a field access expression.
 \end{itemize}
 
@@ -11718,8 +11755,8 @@ One of the following applies:
     \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is,\\ $\TNamed(\vsuper)$) yields
           $\True$\ProseOrTypeError;
     \item $\vsuper$ is bound to a type $\vt$ in $\tenv$;
-    \item checking that $\vt$ is either a record type or an exception type yields $\True$ or a type error
-          indicating that either a record type or an exception was expected, thereby short-circuiting the entire rule;
+    \item checking that $\vt$ is a \structuredtype\ yields $\True$ or a type error
+          indicating that a \structuredtype\ was expected, thereby short-circuiting the entire rule;
     \item $\vt$ has AST label $L$ and fields $\fields$;
     \item $\newty$ is the type with AST label $L$ and list fields that is the concatenation of $\fields$ and $\extrafields$;
     \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$.
@@ -12471,7 +12508,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{structured}):
   \begin{itemize}
-    \item $\vt$ is a structured type with fields $\fields$;
+    \item $\vt$ is a \structuredtype\ with fields $\fields$;
     \item define $\ids$ as the union of applying $\usety$ to each field type in $\fields$.
   \end{itemize}
 
@@ -17461,8 +17498,8 @@ One of the following applies:
   \item All of the following apply (\textsc{tstructured}):
   \begin{itemize}
     \item $L$ is either $\TRecord$ or $\TException$;
-    \item $\vtone$ is either a record type or an exception type with list of fields $\vfieldsone$, that is $L(\vfieldsone)$;
-    \item $\vttwo$ is either a record type or an exception type with list of fields $\vfieldstwo$, that is $L(\vfieldstwo)$;
+    \item $\vtone$ is a \structuredtype\ with list of fields $\vfieldsone$, that is $L(\vfieldsone)$;
+    \item $\vttwo$ is a \structuredtype\ with list of fields $\vfieldstwo$, that is $L(\vfieldstwo)$;
     \item checking whether the set of field names in $\vfieldsone$ is equal to the set of field names in $\vfieldstwo$
           yields $\True$ or $\False$, which short-circuits the entire rule;
     \item for each field $\vf$ in the set of fields of $\vfieldsone$, testing whether the type associated with
