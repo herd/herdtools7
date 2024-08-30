@@ -99,6 +99,14 @@ Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
   \]
 \end{definition}
 
+\hypertarget{def-powfin}{}
+\begin{definition}[Powerset of Finite Subets]
+  The \emph{powerset of finite subsets} of a set $A$, denoted as $\powfin{A}$, is the set of all finite subsets (including the empty set) of $A$:
+  \[
+     \powfin{A} \triangleq \{ B \;|\; B \subseteq A, |B|=n, n\in\N\} \enspace.
+  \]
+\end{definition}
+
 \begin{definition}[Cartesian Product]
     The \emph{Cartesian product} of sets $A$ and $B$, denoted $A \times B$
     is $A \times B \triangleq \{(a,b) \;|\; a \in A, b \in B\}$.
@@ -186,10 +194,15 @@ is defined as follows:
 \subsection{Lists}
 In the remainder of this document, we use the term \emph{list} and \emph{sequence} interchangeably.
 
-A list of elements \hypertarget{def-emptylist}{can be empty, denoted by $\emptylist$}, or non-empty.
+A list of elements \hypertarget{def-emptylist}{is either empty, denoted by $\emptylist$}, or non-empty.
 A non-empty list is either denoted by listing the elements in sequence, $v_1 \ldots\ v_k$,
 or in bracketed form, $[v_1,\ldots,v_k]$, which is used to aesthetically separate it from surrounding mathematical expressions.
-The commas are entirely aesthetic and are not part of the list.
+The commas carry no special meaning.
+
+\hypertarget{def-head}{}
+\hypertarget{def-tail}{}
+For a non-empty list $v_1 \ldots\ v_k$, the \emph{\head} of the list is the first element --- $v_1$ ---
+and the \emph{\tail} of the list is the suffix obtained by removing $v_1$ from the list.
 
 We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\N$.
 
@@ -248,7 +261,10 @@ The parametric function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-bas
 
 \hypertarget{def-splitlist}{}
 \begin{definition}[Splitting a List of Pairs]
-The parametric function $\splitlist : T^* \rightarrow (T_1^* \times T_2^*)$
+The parametric function
+\[
+\splitlist : (T_1 \times T_2)^* \rightarrow (T_1^* \times T_2^*)
+\]
 splits a list of pairs into the corresponding pair of lists:
 \[
     \begin{array}{rcl}
@@ -268,6 +284,8 @@ denotes the tuple $(L,v_{1..k})$.
 We also write $L(T_{1..k})$, where $T_{1..k}$ denotes mathematical types of values, to stand for the type
 $\{L\} \times T_1 \times \ldots \times T_k$.
 
+\hypertarget{def-optional}{}
+\begin{definition}[Optional]
 \hypertarget{def-none}{}
 The notation $\langle \cdot \rangle$ stands for either an empty set or a singleton set,
 where $\None\triangleq\langle\rangle$ denotes an empty set
@@ -275,6 +293,9 @@ and $\langle v \rangle$ denotes a set containing the single element $v$.
 %
 The notation $\langle T \rangle$, where $T$ denotes a mathematical type, stands for
 $\{ \langle\rangle \} \cup \{\langle v \rangle \;|\; v \in T\}$.
+
+We refer to $\langle T\rangle$ as an \emph{optional}.
+\end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{How we use Rules}
@@ -454,7 +475,7 @@ uses an ignore variable to stand for the value being matched by a \texttt{-} pat
 Since the rule does not need to refer to the value, we do not name it and use an ignore variable
 instead.
 
-\subsection{Flavors of Equality In Rules}
+\subsection{Flavors of Equality In Rules \label{sec:FlavoursOfEqualityInRules}}
 We now explain equality notations in rules, two of which are used in SemanticsRule.Lit,
 shown here:
 \begin{mathpar}

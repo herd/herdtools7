@@ -461,7 +461,8 @@ module TypingRule = struct
     | FPrimitive
     | FBadArity
     | FindCheckDeduce
-    | FCall
+    | AnnotateCall
+    | AnnotateCallArgTyped
     | Block
     | Loop
     | For
@@ -504,6 +505,9 @@ module TypingRule = struct
     | StaticEval
     | ReduceConstants
     | Normalize
+    | RenameTyEqs
+    | TypeCheckMutuallyRec
+    | FoldEnvAndFs
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -622,7 +626,8 @@ module TypingRule = struct
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
     | FindCheckDeduce -> "FindCheckDeduce"
-    | FCall -> "FCall"
+    | AnnotateCall -> "AnnotateCall"
+    | AnnotateCallArgTyped -> "AnnotateCallArgTyped"
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
@@ -665,6 +670,9 @@ module TypingRule = struct
     | StaticEval -> "StaticEval"
     | ReduceConstants -> "ReduceConstants"
     | Normalize -> "Normalize"
+    | RenameTyEqs -> "RenameTyEqs"
+    | TypeCheckMutuallyRec -> "TypeCheckMutuallyRec"
+    | FoldEnvAndFs -> "FoldEnvAndFs"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -769,7 +777,8 @@ module TypingRule = struct
       FPrimitive;
       FBadArity;
       FindCheckDeduce;
-      FCall;
+      AnnotateCall;
+      AnnotateCallArgTyped;
       Block;
       Loop;
       For;
@@ -808,6 +817,9 @@ module TypingRule = struct
       StaticEval;
       ReduceConstants;
       Normalize;
+      RenameTyEqs;
+      TypeCheckMutuallyRec;
+      FoldEnvAndFs;
     ]
 
   let all_nb = List.length all

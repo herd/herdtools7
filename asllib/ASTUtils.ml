@@ -585,6 +585,7 @@ let is_right_decreasing = function
   | RDIV ->
       raise FailedConstraintOp
 
+(* Begin ConstraintBinop *)
 let constraint_binop op =
   let righ_inc = is_right_increasing op
   and righ_dec = is_right_decreasing op
@@ -610,6 +611,7 @@ let constraint_binop op =
   fun cs1 cs2 ->
     try WellConstrained (list_cross do_op cs1 cs2)
     with FailedConstraintOp -> UnConstrained
+(* End *)
 
 let rec subst_expr substs e =
   (* WARNING: only subst runtime vars. *)
@@ -622,7 +624,7 @@ let rec subst_expr substs e =
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
   | E_Concat es -> E_Concat (List.map tr es)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
-  | E_Call (x, args, ta) -> E_Call (x, List.map tr args, ta)
+  | E_Call (x, args, param_args) -> E_Call (x, List.map tr args, param_args)
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
@@ -684,7 +686,10 @@ let bitfield_get_slices = function
       slices
 
 let has_name name bf = bitfield_get_name bf |> String.equal name
+
+(* Begin FindBitfieldOpt *)
 let find_bitfield_opt name bitfields = List.find_opt (has_name name) bitfields
+(* End *)
 
 let find_bitfields_slices_opt name bitfields =
   try List.find (has_name name) bitfields |> bitfield_get_slices |> Option.some

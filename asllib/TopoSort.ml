@@ -171,6 +171,7 @@ module ASTFold = struct
 
   type t = {
     nodes : string list;
+        (**  [succs(a)] returns the identifiers on which [a] depends. *)
     succs : string -> string list;
     decls : AST.decl list Tbl.t;
   }
@@ -238,7 +239,7 @@ module ASTFold = struct
     let folder nodes acc =
       let ds = ASTUtils.list_concat_map (Tbl.find decls) nodes in
       match ds with
-      | [] -> acc (* Can happen for fantom dependencies. *)
+      | [] -> acc (* Can happen for phantom dependencies. *)
       | [ d ] -> fold (Single d) acc
       | _ -> fold (Recursive ds) acc
     in

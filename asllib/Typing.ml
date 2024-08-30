@@ -72,11 +72,13 @@ let reduce_to_z_opt env e =
   | E_Literal (L_Int z) -> Some z
   | _ -> None
 
+(* Begin ReduceConstraint *)
 let reduce_constraint env = function
   | Constraint_Exact e -> Constraint_Exact (StaticModel.try_normalize env e)
   | Constraint_Range (e1, e2) ->
       Constraint_Range
         (StaticModel.try_normalize env e1, StaticModel.try_normalize env e2)
+(* End *)
 
 let list_remove_duplicates eq =
   let rec aux prev acc = function
@@ -85,6 +87,7 @@ let list_remove_duplicates eq =
   in
   function [] -> [] | x :: li -> aux x [ x ] li
 
+(* Begin ReduceConstraints *)
 let reduce_constraints env = function
   | (UnConstrained | UnderConstrained _) as c -> c
   | WellConstrained constraints ->
@@ -94,6 +97,7 @@ let reduce_constraints env = function
            (constraint_equal (StaticModel.equal_in_env env))
       |> fun constraints -> WellConstrained constraints
 
+(* End *)
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
 let slices_width env =
@@ -108,31 +112,34 @@ let slices_width env =
 
 let width_plus env acc w = plus acc w |> StaticModel.try_normalize env
 
+(* Begin RenameTyEqs *)
 let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     =
-  let subst_expr env eqs e =
+  let subst_expr_normalize env eqs e =
     subst_expr eqs e |> StaticModel.try_normalize env
   in
   let subst_constraint env eqs = function
-    | Constraint_Exact e -> Constraint_Exact (subst_expr env eqs e)
+    | Constraint_Exact e -> Constraint_Exact (subst_expr_normalize env eqs e)
     | Constraint_Range (e1, e2) ->
-        Constraint_Range (subst_expr env eqs e1, subst_expr env eqs e2)
+        Constraint_Range
+          (subst_expr_normalize env eqs e1, subst_expr_normalize env eqs e2)
   in
   let subst_constraints env eqs = List.map (subst_constraint env eqs) in
   let rec rename env eqs ty =
     match ty.desc with
     | T_Bits (e, fields) ->
-        T_Bits (subst_expr env eqs e, fields) |> add_pos_from_st ty
+        T_Bits (subst_expr_normalize env eqs e, fields) |> add_pos_from_st ty
     | T_Int (WellConstrained constraints) ->
         let constraints = subst_constraints env eqs constraints in
         T_Int (WellConstrained constraints) |> add_pos_from_st ty
     | T_Int (UnderConstrained (_uid, name)) ->
-        let e = E_Var name |> add_pos_from ty |> subst_expr env eqs in
+        let e = E_Var name |> add_pos_from ty |> subst_expr_normalize env eqs in
         T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from ty
     | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> add_pos_from ty
     | _ -> ty
   in
-  rename
+  rename |: TypingRule.RenameTyEqs
+(* End *)
 
 (* Begin Lit *)
 let annotate_literal = function
@@ -469,12 +476,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | Some bitfield -> to_singles env (slices_of_bitfield bitfield)
     | None -> raise NoSingleField
 
+  (* Begin ShoulFieldsReduceToCall *)
   let should_fields_reduce_to_call env name ty fields =
     match (Types.make_anonymous env ty).desc with
     | T_Bits (_, bf) -> (
         try Some (name, list_concat_map (field_to_single env bf) fields)
         with NoSingleField -> None)
     | _ -> None
+  (* End *)
 
   let should_field_reduce_to_call env name ty field =
     should_fields_reduce_to_call env name ty [ field ]
@@ -611,6 +620,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | OR | RDIV ->
         assert false
 
+  (* Begin ExplodeIntervals *)
   let explode_intervals =
     let rec make_interval ~loc acc a b =
       if Z.leq a b then
@@ -639,6 +649,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     fun ~loc env -> list_concat_map (explode_constraint ~loc env)
 
+  (* END *)
   let e_zero = expr_of_int 0
   let e_one = expr_of_int 1
   let e_minus_one = expr_of_int ~-1
@@ -737,7 +748,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            Asllib.constraint_binop *)
         Some c
 
-  let constraint_binop ~loc env op cs1 cs2 =
+  (* Begin AnnotateConstraintBinop *)
+  let annotate_constraint_binop ~loc env op cs1 cs2 =
     match op with
     | SHL | SHR | POW | MOD | DIVRM | MINUS | MUL | PLUS | DIV ->
         let cs2 = binop_filter_right ~loc env op cs2 in
@@ -766,6 +778,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false
+  (* End *)
 
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc = function
@@ -866,7 +879,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
                 let cs =
                   best_effort UnConstrained (fun _ ->
-                      constraint_binop ~loc env op cs1 cs2)
+                      annotate_constraint_binop ~loc env op cs1 cs2)
                 in
                 T_Int cs |> with_loc
             | T_Real, T_Real -> (
@@ -949,6 +962,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
 
+  (* Begin GetVariableEnum *)
   let get_variable_enum' env e =
     match e.desc with
     | E_Var x -> (
@@ -959,6 +973,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | _ -> None)
         | None -> None)
     | _ -> None
+  (* End *)
 
   let check_diet_in_width loc slices width diet () =
     let x = Diet.Int.min_elt diet |> Diet.Int.Interval.x
@@ -1115,11 +1130,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |: TypingRule.TNonDecl
   (* End *)
 
+  (* AnnotateStaticInteger *)
   and annotate_static_integer ~(loc : 'a annotated) env e =
     let t, e' = annotate_expr env e in
     let+ () = check_structure_integer loc env t in
     let+ () = check_statically_evaluable env e in
     StaticModel.try_normalize env e'
+  (* End *)
 
   (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
@@ -1129,6 +1146,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     StaticModel.try_normalize env e'
   (* End *)
 
+  (* Begin AnnotateConstraint *)
   and annotate_constraint ~loc env = function
     | Constraint_Exact e ->
         let e' = annotate_static_constrained_integer ~loc env e in
@@ -1137,6 +1155,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let e1' = annotate_static_constrained_integer ~loc env e1
         and e2' = annotate_static_constrained_integer ~loc env e2 in
         Constraint_Range (e1', e2')
+  (* End *)
 
   and annotate_slices env =
     (* Rules:
@@ -1283,9 +1302,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> conflict loc [ T_Tuple [] ] t
         (* End *))
 
+  (* Begin AnnotateCall *)
+
   and annotate_call loc env name args eqs call_type =
     let () = assert (List.length eqs == 0) in
-    (* Begin FindCheckDeduce *)
     let () =
       if false then
         Format.eprintf "Annotating call to %S (%s) at %a.@." name
@@ -1294,9 +1314,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let caller_arg_typed = List.map (annotate_expr env) args in
     annotate_call_arg_typed loc env name caller_arg_typed call_type
+    |: TypingRule.AnnotateCall
+  (* End *)
 
-  and annotate_call_arg_typed loc env name caller_arg_typed call_type =
-    let caller_arg_types, args1 = List.split caller_arg_typed in
+  (* Begin AnnotateCallArgTyped *)
+  and annotate_call_arg_typed loc env name caller_args_typed call_type =
+    let caller_arg_types, args1 = List.split caller_args_typed in
     let eqs1, name1, callee =
       Fn.try_subprogram_for_name loc env name caller_arg_types
     in
@@ -1361,13 +1384,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match C.check with
       | `TypeCheck -> eqs1
       | `Warn | `Silence ->
-          List.fold_left2 folder eqs1 callee.args caller_arg_typed
+          List.fold_left2 folder eqs1 callee.args caller_args_typed
     in
     let eqs3 =
-      (* Checking that all implicit parameters are static constrained integers. *)
+      (* Checking that all parameter-defining arguments are static constrained integers. *)
       List.fold_left2
         (fun eqs (callee_x, _) (caller_ty, caller_e) ->
-          (* If [callee_x] is an implicit parameter. *)
+          (* If [callee_x] is a parameter-defining argument. *)
           if
             List.exists
               (fun (p_name, _ty) -> String.equal callee_x p_name)
@@ -1377,7 +1400,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let+ () = check_constrained_integer ~loc env caller_ty in
             (callee_x, caller_e) :: eqs
           else eqs)
-        eqs2 callee.args caller_arg_typed
+        eqs2 callee.args caller_args_typed
     in
     let () =
       if false then
@@ -1387,16 +1410,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                fprintf f "%S<--%a" name PP.pp_expr e))
           eqs3
     in
+    (* check that the caller argument types type-satisfy their corresponding
+        callee formal types.
+    *)
     let () =
       List.iter2
         (fun (callee_arg_name, callee_arg) caller_arg ->
-          let callee_arg = rename_ty_eqs env eqs3 callee_arg in
+          let callee_arg1 = rename_ty_eqs env eqs3 callee_arg in
           let () =
             if false then
               Format.eprintf "Checking calling arg %s from %a to %a@."
-                callee_arg_name PP.pp_ty caller_arg PP.pp_ty callee_arg
+                callee_arg_name PP.pp_ty caller_arg PP.pp_ty callee_arg1
           in
-          let+ () = check_type_satisfies loc env caller_arg callee_arg in
+          let+ () = check_type_satisfies loc env caller_arg callee_arg1 in
           ())
         callee.args caller_arg_types
     in
@@ -1405,6 +1431,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Format.eprintf "Renaming call from %s to %s@ at %a.@." name name1
           PP.pp_pos loc
     in
+    (* check that the callee parameters are correctly typed with respect
+       to the parameter expressions.
+    *)
     let () =
       List.iter
         (function
@@ -1437,11 +1466,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               in
               ())
         callee.parameters
-      |: TypingRule.FindCheckDeduce
     in
-    (* End *)
-    (* Begin FCall *)
-    let ret_ty1 =
+    (* check that the formal return type matches [call_type] and
+       substitute actual parameter arguments in the formal return type.
+    *)
+    let ret_ty_opt =
       match (call_type, callee.return_type) with
       | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
           Some (rename_ty_eqs env eqs3 ty)
@@ -1449,7 +1478,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
-    (name1, args1, eqs3, ret_ty1) |: TypingRule.FCall
+    (name1, args1, eqs3, ret_ty_opt) |: TypingRule.AnnotateCallArgTyped
   (* End *)
 
   and annotate_expr env e : ty * expr = annotate_expr_ env ~forbid_atcs:false e
@@ -2995,6 +3024,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     (new_d :: acc, new_genv)
 
+  (* Begin TypeCheckMutuallyRec *)
   let type_check_mutually_rec ds (acc, genv) =
     let () =
       if false then
@@ -3017,7 +3047,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                    (List.map ASTUtils.identifier_of_decl ds)))
         ds
     in
-    let env_and_fs =
+    let env_and_fs1 =
       (* Setters last as they need getters declared. *)
       let others, setters =
         List.partition
@@ -3029,13 +3059,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       List.rev_append setters others
     in
-    let genv, fs =
+    let genv, env_and_fs2 =
       list_fold_left_map
         (fun genv (lenv, f, loc) ->
           let env = { global = genv; local = lenv } in
-          let env', f = declare_one_func loc f env in
-          (env'.global, (env'.local, f, loc)))
-        genv env_and_fs
+          let env1, f1 = declare_one_func loc f env in
+          (env1.global, (env1.local, f1, loc)))
+        genv env_and_fs1
+      |: TypingRule.FoldEnvAndFs
     in
     let ds =
       List.map
@@ -3049,11 +3080,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               in
               D_Func (try_annotate_subprogram env' f) |> here
           | SB_Primitive -> D_Func (rename_primitive loc env' f) |> here)
-        fs
+        env_and_fs2
     in
-    (List.rev_append ds acc, genv)
+    (List.rev_append ds acc, genv) |: TypingRule.TypeCheckMutuallyRec
+  (* End *)
 
-  (* Begin Specification *)
+  (* Begin TypeCheckAST *)
   let type_check_ast_in_env =
     let fold = function
       | TopoSort.ASTFold.Single d -> type_check_decl d

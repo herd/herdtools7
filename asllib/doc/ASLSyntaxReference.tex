@@ -88,16 +88,6 @@ We sometimes provide extra details to individual derivations by adding comments 
         \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}} \\
         &|& \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \\
 
-% \literal &=& \texttt{<int\_lit>}  \\
-%  &|&\ASTComment{Includes \texttt{hex\_int}} \\
-%  &|&\texttt{<boolean\_lit>}  \\
-%  &|& \texttt{<real\_lit>}  \\
-%  &|& \texttt{<bitmask\_lit>}   \\
-%  & & \ASTComment{also represents \texttt{<bitvector\_lit>}}\\
-%  &|&\texttt{<string\_lit>} \\
-%  &|& \texttt{"IN"}   \\
-%  & & \ASTComment{\texttt{binop\_in}}\\
-
 \literal &=& \lint(\overname{n}{n \in \Z}) \\
  &|& \lbool(\overname{b}{b \in \{\True, \False\}}) \\
  &|& \lreal(\overname{q}{q \in \Q}) \\
@@ -306,18 +296,15 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \SRepeat(\stmt, \expr)\\
   &|& \SThrow((\expr, \langle\rangle)?)\\
   & & \ASTComment{The option represents an implicit throw: \texttt{throw;}.}\\
-  &|& \STry(\stmt, \catcher^*, \overname{\stmt?}{otherwise})\\
+  &|& \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})\\
   &|& \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
 \end{array}
 \]
 
 \[
 \begin{array}{rcl}
-\casealt &::=& \{ \text{pattern} : \pattern, \text{where} : \expr?, \text{stmt} : \stmt \}\\
-\catcher &::=& (\identifier?, \ty, \stmt)\\
-  & & \ASTComment{The optional name of the matched exception,}\\
-  & & \ASTComment{the guard type and the statement}\\
-  & & \ASTComment{to be executed if the guard matches.}\\
+\casealt &::=& \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \}\\
+\catcher &::=& (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match})
 \end{array}
 \]
 
@@ -354,10 +341,10 @@ We sometimes provide extra details to individual derivations by adding comments 
 \[
 \begin{array}{rrl}
 \globaldecl &::= \{& \\
- & & \text{keyword} : \globaldeclkeyword, \\
- & & \text{name} : \identifier,\\
- & & \text{ty} : \ty?,\\
- & & \text{initial\_value} : \expr?\\
+ & & \GDkeyword : \globaldeclkeyword, \\
+ & & \GDname : \identifier,\\
+ & & \GDty : \ty?,\\
+ & & \GDinitialvalue : \expr?\\
  & \} &
 \end{array}
 \]
@@ -379,7 +366,7 @@ except for the following differences.
 The rules for expressions have the extra derivation rule:
 \[
 \begin{array}{rcl}
-\expr &::=& \EGetArray(\expr, \expr) \\
+\expr &::=& \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) \\
 \end{array}
 \]
 

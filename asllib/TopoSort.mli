@@ -8,7 +8,7 @@
        constant x: integer = 4;
        constant y: integer = x + 1;
     v}
-    the type-checker should first type-checks [x] and put it in the
+    the type-checker should first type-check [x] and put it in the
     environment, before type-checking [y], which would otherwise complain about
     [x] not being defined.
 

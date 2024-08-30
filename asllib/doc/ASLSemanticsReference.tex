@@ -406,7 +406,7 @@ of execution; notice that ASL does not contain any concurrency constructs.
 Technically, the sequential semantics are defined by omitting the concurrent execution graph components
 from all configurations.
 
-\section{Reading guide}
+\paragraph{Reading guide:}
 The semantic rules are organized into chapters, which roughly group the rules
 by their AST node type.  The set of rules in each chapter is further split
 according to additional syntactic and semantic predicates over the AST node.
@@ -431,12 +431,10 @@ Each rule is presented using the following template:
 \href{https://github.com/herd/herdtools7//tree/master/asllib/Interpreter.ml}{/herdtools7/asllib/Interpreter.ml};
 \fi
 
-\ifformal
 \item a Formal paragraph, which provides semantic rules that essentially give the same information as the Prose paragraph, for both
 the sequential semantics and the concurrent semantics, in the form of concurrent execution graphs.
 The latter enables defining, for each AArch64 instruction,
 the Intrinsic dependencies used by the AArch64 memory model from the ASL code of the instruction~\cite[B2.3.2]{ArmARM}.
-\fi
 
 \item Comments paragraphs, which provide additional details. %refer to one or more rules from the Language Reference Manual~\cite{LRM} and
 \end{itemize}
@@ -757,7 +755,7 @@ $\Normal$,
 \item \emph{exceptionally} when the output configuration domain is
 $\Throwing$,
 \item \emph{erroneously} when the output configuration domain is
-$\Error$, and 
+$\Error$, and
 \item \emph{abnormally} when it either terminates exceptionally or
 erroneously.
 \end{itemize}
@@ -966,7 +964,7 @@ An expression is a compile-time-constant expression if each one of its atomic ex
 \begin{itemize}
 \item a literal constant
 \item a compile-time-constant storage element identifier
-\item an immutable storage element identifier with a compile-time-constant initializer expression. 
+\item an immutable storage element identifier with a compile-time-constant initializer expression.
 \item compile-time-constant function or getter invocations
 \end{itemize}
 \section{Formal Preamble}
@@ -1033,14 +1031,12 @@ each of the expressions \texttt{3} evaluates to the native value $\nvint(3)$.
 
 \CodeSubsection{\LitBegin}{\LitEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{}{
   \evalexpr{\env, \overname{\ELiteral(\vl)}{\ve}} \evalarrow \Normal((\overname{\nvliteral{\vl}}{\vv},\overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1062,7 +1058,6 @@ the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.E
 
 \CodeSubsection{\ELocalVarBegin}{\ELocalVarEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -1072,7 +1067,6 @@ the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.E
   \evalexpr{\env, \EVar(\vx)} \evalarrow \Normal((\overname{L^\denv(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
-\end{emptyformal}
 
 \subsection{Comments}
 When there exists a global variable $\vx$, the type system
@@ -1100,7 +1094,6 @@ uses the rule \\ SemanticsRule.EGlobalVar.
 
 \CodeSubsection{\EGlobalVarBegin}{\EGlobalVarEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
   \inferrule{
@@ -1112,7 +1105,6 @@ uses the rule \\ SemanticsRule.EGlobalVar.
   }
   {\evalexpr{\denv, \EVar(\vx)} \evalarrow \Normal((\vv, \vg), \newenv)}
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1132,7 +1124,6 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 
 \CodeSubsection{\BinopAndBegin}{\BinopAndEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -1143,7 +1134,6 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
   \evalexpr{\env, \EBinop(\BAND, \veone, \vetwo)} \evalarrow C
   }
 \end{mathpar}
-\end{emptyformal}
 
 \subsection{Comments}
 The evaluation via the rule above ensures that $\veone$ is evaluated first and
@@ -1170,17 +1160,16 @@ Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
 \lrmcomment{This is related to the note under \identr{LRHD}:}
 \begin{itemize}
 \item the first operand of \texttt{if} is always evaluated but only one of the
-remaining operands is evaluated; 
-\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated; 
-\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and, 
+remaining operands is evaluated;
+\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated;
+\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and,
 \item if the first operand of \texttt{implies\_bool} is $\False$, then the
-second operand is not evaluated. 
+second operand is not evaluated.
 \end{itemize}
 
 However, note that relying on this short-circuit evaluation can be confusing
 for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
-
 
 \section{SemanticsRule.BinopOr \label{sec:SemanticsRule.BinopOr}}
 \subsection{Prose}
@@ -1197,7 +1186,6 @@ The expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 
 \CodeSubsection{\BinopOrBegin}{\BinopOrEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \begin{mathpar}
 \inferrule{
   \truep \eqdef \ELiteral(\lbool(\True))\\
@@ -1208,10 +1196,9 @@ The expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 \end{mathpar}
 The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
 it evaluates to $\False$, is $\vetwo$ evaluated.
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{BKNT}: add table} 
+\subsection{Comments}
+\lrmcomment{This is related to \identr{BKNT}: add table}
 
 \lrmcomment{This is related to \identr{XKGC}:}
 
@@ -1256,9 +1243,8 @@ All of the following apply:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopImplExFalso.asl}
 the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
 
-
   \CodeSubsection{\BinopImplBegin}{\BinopImplEnd}{../Interpreter.ml}
-\begin{emptyformal}
+
   \begin{mathpar}
     \inferrule{
       \truep \eqdef \ELiteral(\lbool(\True))\\
@@ -1270,7 +1256,6 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, acco
   \end{mathpar}
   The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
   it evaluates to \True, is $\vetwo$ evaluated.
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{BKNT}: add table}
@@ -1324,10 +1309,8 @@ In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopDIVBackendDefinedError.asl}
 the expression \texttt{3 DIV 0} results in a type error.
 
-
 \CodeSubsection{\BinopBegin}{\BinopEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\
@@ -1344,7 +1327,6 @@ the expression \texttt{3 DIV 0} results in a type error.
 \end{mathpar}
 The rule above applies to many binary operators, including $\EQOP$ (which is used for \texttt{<->}
 as well as \texttt{==}).
-\end{emptyformal}
 
 \subsection{Comments}
 \lrmcomment{This is related to \identr{BKNT}: add table}
@@ -1368,7 +1350,6 @@ An implementation could enforce this rule by performing a global analysis of
 all functions to determine whether a function can throw an exception and the
 set of global variables read and written by a function.
 
-
 \lrmcomment{This is related to \identi{QJTN}:}
 
 Notice that when one of the subexpressions terminates exceptionally,
@@ -1380,7 +1361,7 @@ In other words, for any function call \texttt{F (e1, ..., em)}, tuple
 subexpressions conflict with each other by:
 \begin{itemize}
 \item both writing to the same variable.
-\item one writing to a variable and the other reading from that same variable 
+\item one writing to a variable and the other reading from that same variable
 \item one writing to a variable and the other throwing an exception
 \item both throwing exceptions
 \end{itemize}
@@ -1405,7 +1386,6 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 
 \CodeSubsection{\UnopBegin}{\UnopEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \begin{mathpar}
   \inferrule{
     \evalexpr{ \env, \veone} \evalarrow \Normal((\vvone,\vg), \newenv) \OrAbnormal\\\\
@@ -1416,7 +1396,6 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
     \Normal((\vv, \vg), \newenv)
   }
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1446,10 +1425,8 @@ the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will
 evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \texttt{UNKNOWN} is implemented.
 
-
   \CodeSubsection{\ECondBegin}{\ECondEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \begin{mathpar}
   \inferrule{
     \evalexpr{\env, \ECond} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
@@ -1463,9 +1440,8 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
     \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
 \lrmcomment{This is related to \identr{YCDB}:}
 
 A conditional expression evaluates to its \texttt{then} expression if the
@@ -1499,7 +1475,6 @@ the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
 
 \CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -1515,7 +1490,6 @@ the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
     \evalexpr{\env, \ESlice(\ebv, \slices)} \evalarrow \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1549,10 +1523,8 @@ All of the following apply:
     the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
     subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 
-
   \CodeSubsection{\ECallBegin}{\ECallEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[single\_returned\_value]{
@@ -1573,7 +1545,6 @@ All of the following apply:
   \evalexpr{\env, \ECall(\name, \actualargs, \params)} \evalarrow \Normal((\vv, \vg), \newenv)
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1604,10 +1575,8 @@ indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
     results in a typing error since we are trying to access index \texttt{3} of an array
     which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 
-
   \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
     \inferrule{
@@ -1623,7 +1592,6 @@ indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
       \evalexpr{\env, \EGetArray(\earray, \eindex)} \evalarrow \Normal((\vv, \vg), \newenv)
     }
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1648,7 +1616,6 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -1663,7 +1630,6 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
     \evalexpr{\env, \ERecord(\Ignore, \efields)} \evalarrow \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1681,10 +1647,8 @@ All of the following apply:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl}
     the expression \texttt{my\_record.a} evaluates to the value \texttt{3}.
 
-
   \CodeSubsection{\EGetFieldBegin}{\EGetFieldEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -1695,7 +1659,6 @@ All of the following apply:
     \evalexpr{\env, \EGetField(\erecord, \fieldname)} \evalarrow \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1720,7 +1683,6 @@ All of the following apply:
 
   \CodeSubsection{\EConcatBegin}{\EConcatEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -1731,9 +1693,8 @@ All of the following apply:
     \evalexpr{\env, \EConcat(\elist)} \evalarrow \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
 \lrmcomment{This is related to \identr{BRCM}:}
 
 Concatenation of multiple bitvectors is done using a comma separated list
@@ -1753,10 +1714,8 @@ surrounded with square brackets.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ETuple.asl}
     the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 
-
   \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -1767,7 +1726,6 @@ surrounded with square brackets.
     \evalexpr{\env, \ETuple(\elist)} \evalarrow \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1802,7 +1760,6 @@ the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ 
 
 \CodeSubsection{\EUnknownBegin}{\EUnknownEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{\env \eqname (\tenv, \denv)\\
@@ -1814,9 +1771,8 @@ the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ 
   }
 \end{mathpar}
 Notice that this rule introduces non-determinism.
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
 \lrmcomment{This is related to \identr{WLCH}:}
 
 The expression \texttt{UNKNOWN: ty} evaluates to an arbitrary value in the
@@ -1845,10 +1801,8 @@ domain of \texttt{ty}.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EPatternTRUE.asl}
     the expression \texttt{42 IN \{0..3, 42\}} evaluates to \True.
 
-
   \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -1860,7 +1814,6 @@ domain of \texttt{ty}.
     \evalexpr{\env, \EPattern(\ve, \vp)} \evalarrow \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1914,7 +1867,7 @@ is a dynamic error.
 \lrmcomment{This is related to \identr{YCPX}:}
 
 Dynamic error conditions only hold if the asserting type conversion is
-evaluated. 
+evaluated.
 
 In the example below, the asserting type conversion on \texttt{y} is
 not a dynamic error if the invocation of \texttt{f1} returns $\False$ when
@@ -1929,7 +1882,6 @@ dynamic errors can occur:
 
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[okay]{
@@ -1949,7 +1901,6 @@ dynamic errors can occur:
   \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \ErrorVal{ATC\_TypeMismatch}
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -1967,7 +1918,6 @@ and returns the resulting value $\vv$, the parallel composition of the execution
 generated from evaluating each expression, and the new environment $\newenv$.
 If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[empty]{}
@@ -1986,7 +1936,6 @@ If the evaluation of any expression terminates abnormally then the abnormal conf
     \evalexprlist{\env, \vle} \evalarrow \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.EExprListM \label{sec:SemanticsRule.EExprListM}}
 \subsection{Prose}
@@ -2000,7 +1949,6 @@ evaluates a list of expressions $\vle$ in left-to-right in the initial environme
 and returns the list of values associated with graphs $\vms$ and the new environment $\newenv$.
 If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[empty]{}
@@ -2018,7 +1966,6 @@ If the evaluation of any expression terminates abnormally then the abnormal conf
     \evalexprlistm{\env, \vle} \evalarrow \Normal([\vmtwo]\concat\vmstwo, \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.ESideEffectFreeExpr \label{sec:SemanticsRule.ESideEffectFreeExpr}}
 \subsection{Prose}
@@ -2032,7 +1979,6 @@ The relation
 specializes the expression evaluation relation for side-effect-free expressions
 by omitting throwing configurations as possible output configurations.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2044,7 +1990,6 @@ by omitting throwing configurations as possible output configurations.
 \end{mathpar}
 Notice that the output configuration does not contain an environment,
 since side-effect-free expressions do not modify the environment.
-\end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Left-Hand Side Expressions \label{chap:eval_lexpr}}
@@ -2103,10 +2048,8 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDiscard.asl}
   \texttt{- = 42;} does not affect the environment.
 
-
   \CodeSubsection{\LEDiscardBegin}{\LEDiscardEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
     \inferrule{
@@ -2115,7 +2058,6 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     }
     { \evallexpr{\env, \LEDiscard, (\vv, \vg)} \evalarrow \Normal(\newg, \newenv) }
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2135,10 +2077,8 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   SemanticsRule.LELocalVar is (only) used to assign the value $42$ to the left-hand-side expression
   \texttt{x} within \texttt{x = 42;}.
 
-
   \CodeSubsection{\LELocalVarBegin}{\LELocalVarEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
     \inferrule{
@@ -2149,7 +2089,6 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     }
     { \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \Normal(\newg,\newenv) }
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2169,10 +2108,8 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the left-hand-side expression
   \texttt{x} within \texttt{x = 42;}.
 
-
   \CodeSubsection{\LEGlobalVarBegin}{\LEGlobalVarEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
     \inferrule{
@@ -2183,7 +2120,6 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
     }
     { \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \Normal(\newg,\newenv) }
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2217,7 +2153,6 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 
 \CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
     \inferrule{
@@ -2232,9 +2167,8 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
     }
     { \evallexpr{\envtwo, \LESlice(\ebv, \slices), (\vv, \vg)} \evalarrow C }
   \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
 \lrmcomment{This is related to \identr{WHRS}:}
 
 If the declared type of a setter’s RHS argument has the structure of a
@@ -2243,7 +2177,7 @@ applied to a setter invocation, then the assignment to that bitslice is
 implemented using the following Read-Modify-Write (RMW) behavior:
 \begin{itemize}
 \item invoking the getter of the same name as the setter, with the same actual
-arguments as the setter invocation 
+arguments as the setter invocation
 \item performing the assignment to the bitslice or field of the result of the
 getter invocation
 \item invoking the setter to assign the resulting value
@@ -2273,10 +2207,8 @@ getter invocation
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetArray.asl}
   binds the third element of \texttt{my\_array} to the value \texttt{53}.
 
-
   \CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2291,7 +2223,6 @@ getter invocation
   }
   { \evallexpr{\env, \LESetArray(\rearray, \eindex), (\vv, \vg)} \evalarrow C }
 \end{mathpar}
-\end{emptyformal}
 
 \subsection{Comments}
 \lrmcomment{This is related to \identr{WHRS}:}
@@ -2301,12 +2232,11 @@ applied to a setter invocation, then the assignment to that bitslice is
 implemented using the following Read-Modify-Write (RMW) behavior:
 \begin{itemize}
 \item invoking the getter of the same name as the setter, with the same actual
-arguments as the setter invocation 
+arguments as the setter invocation
 \item performing the assignment to the bitslice or field of the result of the
 getter invocation
 \item invoking the setter to assign the resulting value
 \end{itemize}
-
 
 We note that the index is guaranteed by the type-checker to be within the array bounds
 via TypingRule.LESetArray (see the ASL Typing Reference~\cite{ASLTypingReference} chapter
@@ -2338,10 +2268,8 @@ via TypingRule.LESetArray (see the ASL Typing Reference~\cite{ASLTypingReference
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetField.asl}
     \texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}} in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\}}.
 
-
   \CodeSubsection{\LESetFieldBegin}{\LESetFieldEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2353,7 +2281,6 @@ via TypingRule.LESetArray (see the ASL Typing Reference~\cite{ASLTypingReference
   }
   { \evallexpr{\env, \LESetField(\rerecord, \fieldname), (\vv, \vg)} \evalarrow C }
 \end{mathpar}
-\end{emptyformal}
 
 \subsection{Comments}
 We note that the type-checker guarantees that $\fieldname$ exists in the record given by $\record$
@@ -2366,7 +2293,7 @@ applied to a setter invocation, then the assignment to that bitslice is
 implemented using the following Read-Modify-Write (RMW) behavior:
 \begin{itemize}
 \item invoking the getter of the same name as the setter, with the same actual
-arguments as the setter invocation 
+arguments as the setter invocation
 \item performing the assignment to the bitslice or field of the result of the
 getter invocation
 \item invoking the setter to assign the resulting value
@@ -2394,7 +2321,6 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and \t
 
 \CodeSubsection{\LEDestructuringBegin}{\LEDestructuringEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2405,7 +2331,6 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and \t
   }
   { \evallexpr{\env, \LEDestructuring(\vlelist), (\vv, \vg)} \evalarrow C }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2423,7 +2348,6 @@ That is, the simultaneous assignment of the list of value-execution graph pairs 
 to the corresponding list of left-hand side expressions $\vlelist$, in the environment $\env$.
 The result is either the execution graph $\vg$ and new environment $\newenv$ or an abnormal configuration.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[empty]{}
@@ -2448,7 +2372,6 @@ to form a derivation tree, we must employ the \textsc{nonempty} case, which ensu
 have at least one element and shortens the lengths of both lists by one,
 until both lists become empty
 which is when the \textsc{empty} axiom case is used.
-\end{emptyformal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Slices \label{chap:eval_slices}}
@@ -2518,10 +2441,8 @@ and one of the following applies:
 correspond to the start (included) and the length of each slice in
 $\slices$.
 
-
 \CodeSubsection{\SlicesBegin}{\SlicesEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[empty]{}
@@ -2540,7 +2461,6 @@ $\slices$.
     \evalslices{\env, \slices} \evalarrow \Normal((\ranges, \newg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2559,10 +2479,8 @@ $\slices$.
   the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, i.\,e.\ the slice of
   length 1 starting at index 2.
 
-
   \CodeSubsection{\SliceSingleBegin}{\SliceSingleEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2573,7 +2491,6 @@ $\slices$.
     \evalslice{\env, \SliceSingle(\ve)} \evalarrow \Normal(((\vstart, \vlength), \newg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2595,10 +2512,8 @@ $\slices$.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceLength.asl}
   \texttt{2+:3} evaluates to \texttt{(2, 3)}.
 
-
   \CodeSubsection{\SliceLengthBegin}{\SliceLengthEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2612,7 +2527,6 @@ $\slices$.
     \evalslice{\env, \SliceLength(\estart, \elength)} \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2635,10 +2549,8 @@ $\slices$.
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceRange.asl}
   \texttt{4:2} evaluates to \texttt{(2, 3)}.
 
-
   \CodeSubsection{\SliceRangeBegin}{\SliceRangeEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2654,7 +2566,6 @@ $\slices$.
     \evalslice{\env, \SliceRange(\etop, \estart)} \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2673,16 +2584,13 @@ $\slices$.
    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
    \end{itemize}
 
-
   \subsection{Example}
   In the specification:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceStar.asl}
   \texttt{x[3*:2]} evaluates to \texttt{'11'}.
 
-
   \CodeSubsection{\SliceStarBegin}{\SliceStarEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2697,7 +2605,6 @@ $\slices$.
     \evalslice{\env, \SliceStar(\efactor, \elength)} \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2739,10 +2646,8 @@ and one of the following applies:
   \subsection{Example}
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAll.asl}
 
-
   \CodeSubsection{\PAllBegin}{\PAllEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{}
@@ -2750,7 +2655,6 @@ and one of the following applies:
     \evalpattern{\env, \Ignore, \PatternAll} \evalarrow \Normal(\nvbool(\True), \emptygraph)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2771,10 +2675,8 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAnyFALSE.asl}
 
-
     \CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2787,7 +2689,6 @@ and one of the following applies:
     \evalpattern{\env, \vv, \PatternAny(\vps)} \evalarrow \Normal(\vb, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2809,10 +2710,8 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PGeqFALSE.asl}
 
-
   \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2823,7 +2722,6 @@ and one of the following applies:
     \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \Normal(\vb, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2845,10 +2743,8 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PLeqFALSE.asl}
 
-
   \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2859,7 +2755,6 @@ and one of the following applies:
     \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \Normal(\vb, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2879,10 +2774,8 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotFALSE.asl}
 
-
   \CodeSubsection{\PNotBegin}{\PNotEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2893,7 +2786,6 @@ and one of the following applies:
     \evalpattern{\env, \vv, \PatternNot(\vpone)} \evalarrow \Normal(\vb, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2921,10 +2813,8 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PRangeFALSE.asl}
 
-
   \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2939,7 +2829,6 @@ and one of the following applies:
     \evalpattern{\env, \vv, \PatternRange(\veone, \vetwo)} \evalarrow \Normal(\vb, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2961,10 +2850,8 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PSingleFALSE.asl}
 
-
   \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -2975,7 +2862,6 @@ and one of the following applies:
     \evalpattern{\env, \vv, \PatternSingle(\ve)} \evalarrow \Normal(\vb, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -2997,10 +2883,8 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PMaskFALSE.asl}
 
-
   \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \newcommand\maskmatch[0]{\text{mask\_match}}
   The helper function $\maskmatch : \{0, 1, \vx\} \times \{0,1\} \rightarrow \Bool$,
@@ -3028,7 +2912,6 @@ and one of the following applies:
     \evalpattern{\env, \vv, \PatternMask(\vm)} \evalarrow \Normal(\vb, \emptygraph)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3052,10 +2935,8 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleFALSE.asl}
 
-
   \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -3069,7 +2950,6 @@ and one of the following applies:
     \evalpattern{\env, \vv, \PatternTuple(\vps)} \evalarrow \Normal(\vres, \emptygraph)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3125,7 +3005,6 @@ In the specification:
 
 \CodeSubsection{\LDDiscardBegin}{\LDDiscardEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{}
@@ -3134,7 +3013,6 @@ In the specification:
   \evalarrow \Normal(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3162,7 +3040,6 @@ In the specification:
 
 \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -3174,7 +3051,6 @@ In the specification:
     \evallocaldecl{\env, \LDIVar(\vx), \langle \vm\rangle} \evalarrow \Normal(\newg, \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3196,7 +3072,6 @@ In the specification:
 
 \CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -3205,7 +3080,6 @@ In the specification:
   \evallocaldecl{\env, \LDITyped(\ldi1, \Ignore), \langle \vm\rangle} \evalarrow C
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3230,10 +3104,8 @@ In the specification:
 \texttt{1}, \texttt{y} to the evaluation of \texttt{2}, and \texttt{z} to the
 evaluation of \texttt{3}) in $\env$.
 
-
   \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \newcommand\ldituplefolder[1]{\texttt{ldi\_tuple\_folder}(#1)}
 
 \subsection{Formally}
@@ -3275,7 +3147,6 @@ We now use the helper rules to define the rule for local declaration item tuples
     \evallocaldecl{\env, \LDITuple(\ldis), \langle \vm\rangle} \evalarrow C
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3298,7 +3169,6 @@ which is $\nvint(3)$.
 
 \CodeSubsection{\LDUninitialisedTypedBegin}{\LDUninitialisedTypedEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -3309,7 +3179,6 @@ which is $\nvint(3)$.
     \evallocaldecl{\env, \LDITyped(\ldione, \vt), \None} \evalarrow C
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3326,8 +3195,8 @@ which is $\nvint(3)$.
 \section{Informal preamble}
 Statements consist of:
 \begin{itemize}
-\item Pass statements, which do nothing (see \secref{SemanticsRule.SPass}), 
-\item Assignment statements (see \secref{SemanticsRule.SAssign} and \secref{SemanticsRule.SAssignCall}),     
+\item Pass statements, which do nothing (see \secref{SemanticsRule.SPass}),
+\item Assignment statements (see \secref{SemanticsRule.SAssign} and \secref{SemanticsRule.SAssignCall}),
 \item Sequencing statements (see \secref{SemanticsRule.SSeq}),
 \item Return statements (see Section~\label{sec:ReturnStatements}, \secref{SemanticsRule.SReturnNone}, \secref{SemanticsRule.SReturnOne} and \secref{SemanticsRule.SReturnSome}),
 \item Procedure invocation statements (see \secref{SemanticsRule.SCall}),
@@ -3573,7 +3442,6 @@ A return statement appearing in a setter or procedure must have no return value 
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
     \texttt{return 3;} exits the current subprogram with value \texttt{3}.
 
-
 \subsubsection{Formally}
 
     All of the following apply:
@@ -3756,7 +3624,7 @@ Conditional statements select which block to execute by testing condition expres
 
 \lrmcomment{This is related to \identr{XSSL}:}
 If no $\True$ condition is found and there is an \texttt{else} block, the
-\texttt{else} block is executed. 
+\texttt{else} block is executed.
 
 \lrmcomment{This is related to \identr{KZTJ}:}
 If no $\True$ condition is found and there is no \texttt{else} block, no block is executed.
@@ -3768,13 +3636,12 @@ If no $\True$ condition is found and there is no \texttt{else} block, no block i
 
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond2.asl}
- 
+
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond3.asl}
 
     The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond4.asl}
- 
 
 \subsection{Formally}
     Evaluation of the statement $\vs$ in an environment $\env$ is
@@ -3832,13 +3699,11 @@ If no $\True$ condition is found and there is no \texttt{else} block, no block i
     \item evaluating $\vsone$ in $\env$ results in the output configuration $C$.
     \end{itemize}
 
-
   \hypertarget{def-casetoconds}{}
 A case statement is syntactic sugar for a condition ladder where each
 of the alternatives is a pattern.
 That is, a statement of the form
 \texttt{if e1 then s1; else if e2 then s2; else if e3 then s3; ... else pass;}
-
 
 We define the relation
 \[
@@ -3934,10 +3799,8 @@ The expression in an assertion statement must be side-effect-free.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertNo.asl}
     \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
 
-
   \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[okay]{
@@ -3956,7 +3819,6 @@ The expression in an assertion statement must be side-effect-free.
     \evalstmt{\env, \SAssert(\ve)} \evalarrow \ErrorVal{AssertionFailed}
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -3976,10 +3838,8 @@ The expression in an assertion statement must be side-effect-free.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SWhile.asl}
     prints \texttt{0123}.
 
-
   \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -3989,7 +3849,6 @@ The expression in an assertion statement must be side-effect-free.
     \evalstmt{\env, \SWhile(\ve, \vbody)} \evalarrow C
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4022,7 +3881,6 @@ prints
 
 \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -4034,7 +3892,6 @@ prints
   \evalstmt{\env, \SRepeat(\ve, \vbody)} \evalarrow D
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4069,10 +3926,8 @@ prints
       3
     \end{Verbatim}
 
-
   \CodeSubsection{\SForBegin}{\SForEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 Recall that the expressions for the \texttt{for} loop range are side-effect-free,
 which is why they are evaluated via the rule for evaluating side-effect-free expressions.
@@ -4090,7 +3945,6 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \evalstmt{\env, \SFor(\id, \veone, \dir, \vetwo, \vs)} \evalarrow \Continuing(\newg, \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4110,10 +3964,8 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl}
     throws a \texttt{MyException} exception.
 
-
   \CodeSubsection{\SThrowNoneBegin}{\SThrowNoneEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{}
@@ -4121,7 +3973,6 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \evalstmt{\env, \SThrow(\None)} \evalarrow \Throwing((\None, \emptygraph), \env)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4147,7 +3998,6 @@ terminates successfully. That is, no dynamic error occurs.
 
 \CodeSubsection{\SThrowSomeTypedBegin}{\SThrowSomeTypedEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
   \inferrule{
@@ -4162,7 +4012,6 @@ terminates successfully. That is, no dynamic error occurs.
     \Throwing((\vex, \newg), \newenv)
   }
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4182,10 +4031,8 @@ terminates successfully. That is, no dynamic error occurs.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
     does not result in any Assertion error, and the specification terminates with the exit code $0$.
 
-
   \CodeSubsection{\STryBegin}{\STryEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -4196,7 +4043,6 @@ terminates successfully. That is, no dynamic error occurs.
     \evalstmt{\env, \STry(\vsone, \catchers, \otherwiseopt)} \evalarrow C
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4219,7 +4065,6 @@ The specification:
 
 \CodeSubsection{\SDeclSomeBegin}{\SDeclSomeEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -4230,7 +4075,6 @@ The specification:
     \evalstmt{\env, \SDecl(\Ignore, \ldi, \langle\ve\rangle)} \evalarrow \Continuing(\newg, \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4249,10 +4093,8 @@ The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclNone.asl}
     \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
 
-
   \CodeSubsection{\SDeclNoneBegin}{\SDeclNoneEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -4262,7 +4104,6 @@ The specification:
     \evalstmt{\env, \SDecl(\Ignore, \ldi, \None)} \evalarrow \Continuing(\newg, \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4309,7 +4150,6 @@ is defined before the block and hence still exists after the block.
 
 \CodeSubsection{\BlockBegin}{\BlockEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -4324,7 +4164,6 @@ is defined before the block and hence still exists after the block.
 \end{mathpar}
 
 That is, evaluating a block discards the bindings for variables declared inside $\stm$.
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4394,10 +4233,8 @@ One of the following applies:
     does not result in any Assertion Error and the specification terminates with exit
     code $0$.
 
-
     \CodeSubsection{\LoopBegin}{\LoopEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
   \subsection{Formally}
 The premise $\vb \neq \iswhile$ is $\True$ in the case of a \texttt{while} loop
 and the loop condition $\ve$ not holding, which is exactly when we want the
@@ -4426,7 +4263,6 @@ The negation of the condition is used to decide whether to continue the loop ite
     \evalloop{\env, \iswhile, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4547,10 +4383,8 @@ The specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
 does not result in any assertion error, and the specification terminates with exit-code $0$.
 
-
 \CodeSubsection{\ForBegin}{\ForEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 
 Advancing the loop counter one step towards the end of its range is achieved via the following rule:
@@ -4649,7 +4483,6 @@ and $\evalforloop$ (the latter in a mutually recursive manner):
 %     \evalfor{\env, \vindexname, \vstart, \texttt{Down}, \vend, \vbody} \evalarrow C
 %   }
 % \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4727,7 +4560,6 @@ terminates successfully. That is, no dynamic error occurs.
 
 \CodeSubsection{\CatchBegin}{\CatchEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -4744,7 +4576,6 @@ terminates successfully. That is, no dynamic error occurs.
     \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{D}{\newg}
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4779,10 +4610,8 @@ terminates successfully. That is, no dynamic error occurs.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNamed.asl}
     prints \texttt{My exception with my message}.
 
-
   \CodeSubsection{\CatchNamedBegin}{\CatchNamedEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -4804,7 +4633,6 @@ terminates successfully. That is, no dynamic error occurs.
     \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{E}{\newg}
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4834,10 +4662,8 @@ terminates successfully. That is, no dynamic error occurs.
      \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
      prints \texttt{Another exception}.
 
-
   \CodeSubsection{\CatchOtherwiseBegin}{\CatchOtherwiseEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
   \inferrule{
@@ -4854,7 +4680,6 @@ terminates successfully. That is, no dynamic error occurs.
     \evalcatchers{\env, \catchers, \langle\vs\rangle, \sm} \evalarrow \withgraph{D}{\vg}
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4876,10 +4701,8 @@ terminates successfully. That is, no dynamic error occurs.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNone.asl}
     does not print anything.
 
-
   \CodeSubsection{\CatchNoneBegin}{\CatchNoneEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
   \inferrule{
@@ -4891,7 +4714,6 @@ terminates successfully. That is, no dynamic error occurs.
     \evalcatchers{\env, \catchers, \None, \sm} \evalarrow \sm
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -4912,11 +4734,10 @@ terminates successfully. That is, no dynamic error occurs.
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNoThrow.asl}
   prints \texttt{No exception raised}.
 
-
 \CodeSubsection{\CatchNoThrowBegin}{\CatchNoThrowEnd}{../Interpreter.ml}
 
   % For some reason the emptyformal environment here fails LaTeX compilation.
-  %\begin{emptyformal}
+  %
   \subsection{Formally}
       \begin{mathpar}
       \inferrule[implicit\_throw]{
@@ -4933,7 +4754,7 @@ terminates successfully. That is, no dynamic error occurs.
         \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
       }
     \end{mathpar}
-  %\end{emptyformal}
+  %
 
   \isempty{\subsection{Comments}}
 
@@ -4976,10 +4797,8 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-
 \CodeSubsection{\FindCatcherBegin}{\FindCatcherEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[empty]{}{\findcatcher(\tenv, \vvty, \emptylist) \evalarrow \None}
@@ -5003,9 +4822,8 @@ One of the following applies:
   \findcatcher(\tenv, \vvty, \catchers) \evalarrow d
 }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
 \lrmcomment{This is related to \identr{SPNM}:}
 When the \texttt{catch} of a \texttt{try} statement is executed, then the
 thrown exception is caught by the first catcher in that \texttt{catch} which it
@@ -5051,10 +4869,8 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-
 \CodeSubsection{\RethrowImplicitBegin}{\RethrowImplicitEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[implicit\_throwing]{}
@@ -5076,9 +4892,8 @@ One of the following applies:
   \rethrowimplicit(\Ignore, \Ignore, C, \Ignore) \evalarrow C
 }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
 \lrmcomment{This is related to \identr{GVKS}:}
 An expressionless \texttt{throw} statement causes the exception which the
 currently executing catcher caught to be thrown.
@@ -5307,7 +5122,6 @@ All of the following apply:
 
 \CodeSubsection{\CallBegin}{\CallEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -5329,7 +5143,6 @@ All of the following apply:
   \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\vmstwo, \newenv)
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -5358,7 +5171,6 @@ In the specification:
 
 \CodeSubsection{\FPrimitiveBegin}{\FPrimitiveEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 The following rule utilizes the transition relation
 \hypertarget{def-evalprimitive}{}
@@ -5382,7 +5194,6 @@ That is, it is not a part of $\evalarrow$ but rather a separate transition relat
   \evalsubprogram{\env, \name, \actualargs, \params} \evalarrow \Normal((\vvs, \newg), \newenv)
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -5417,7 +5228,6 @@ calls the function \texttt{foo} and the procedure \texttt{bar}.
 
 \CodeSubsection{\FCallBegin}{\FCallEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -5433,9 +5243,8 @@ calls the function \texttt{foo} and the procedure \texttt{bar}.
   \evalsubprogram{\env, \name, \actualargs, \params} \evalarrow \withgraph{C}{\newg}
 }
 \end{mathpar}
-\end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
 \lrmcomment{This is related to \identr{DFWZ}:}
 It is not an error for execution of a procedure or setter to end without a
 return statement.
@@ -5458,7 +5267,6 @@ All of the following apply:
 
 \CodeSubsection{\ReadValueFromBegin}{\ReadValueFromEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -5467,7 +5275,6 @@ All of the following apply:
   \readvaluefrom(\vv, \id) \evalarrow (\vv, \newg)
 }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -5509,7 +5316,6 @@ returned by the evaluation of a primitive subprogram:
 %
 %   \CodeSubsection{\WriteRetValsBegin}{\WriteRetValsEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
     \inferrule[empty]{}
@@ -5530,7 +5336,6 @@ returned by the evaluation of a primitive subprogram:
       \writeretvals(\vvsm) \evalarrow (\vvs, \newg)
     }
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -5566,7 +5371,6 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
     \inferrule[empty]{}
@@ -5582,7 +5386,6 @@ One of the following applies:
       \assignargs((\env, \vgone), [(\vx, \Ignore)] \concat \argdecls, [\vm] \concat \actualargs) \evalarrow (\newenv, \vg)
     }
   \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -5633,7 +5436,6 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 \newcommand\isbound[0]{\hyperlink{def-isbound}{\texttt{is\_bound}}}
 \hypertarget{def-isbound}{}
@@ -5674,7 +5476,6 @@ to test whether the variable $\vx$ is bound in the dynamic environment $\denv$.
     \assignnamedargs((\env, \vgone), \params) \evalarrow (\newenv, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -5708,7 +5509,6 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[continuing]{}
@@ -5726,7 +5526,6 @@ One of the following applies:
   }
 \end{mathpar}
 
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -5785,10 +5584,8 @@ environment.
 
   \subsection{Example}
 
-
   \CodeSubsection{\TopLevelBegin}{\TopLevelEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
   \begin{mathpar}
   \inferrule[normal]{
@@ -5815,7 +5612,6 @@ environment.
 Notice that when the type-checker fails due to a type error in the given specification,
 the corresponding premise in the rule above does not hold, and the semantics
 is undefined. Indeed, the ASL semantics is only defined for well-typed specifications.
-\end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
@@ -5869,7 +5665,6 @@ One of the following applies:
 
 % \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[empty]{
@@ -5903,7 +5698,7 @@ One of the following applies:
     \evalglobals(\vdecls, \envm) \evalarrow C
   }
 \end{mathpar}
-\end{emptyformal}
+
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.BuildGlobalEnv \label{sec:SemanticsRule.BuildGlobalEnv}}
@@ -5933,7 +5728,6 @@ All of the following apply:
 
 \CodeSubsection{\BuildGlobalEnvBegin}{\BuildGlobalEnvEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \subsection{Formally}
 \hypertarget{def-topologicaldecls}{}
 The helper relation $\topologicaldecls(\overname{\decl^*}{\parsedspec}, \overname{\decl^*}{\parsedstd})$
@@ -5949,7 +5743,7 @@ dependency order.
     \buildgenv(\env, \typedspec) \evalarrow (\newenv, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
+
 \isempty{\subsection{Comments}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -5999,7 +5793,6 @@ is the environment $\newenv$ and all of the following apply:
   with the identifier $\name$ removed from its domain.
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 (Recall that $[\name\mapsto\bot]$ means that $\name$ is not in the domain of the resulting function.)
 \begin{mathpar}
@@ -6011,7 +5804,6 @@ is the environment $\newenv$ and all of the following apply:
     \removelocal(\env, \name) \evalarrow \newenv
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.ReadIdentifier \label{sec:SemanticsRule.ReadIdentifier}}
 \subsection{Prose}
@@ -6024,7 +5816,6 @@ reads a value $\vv$ into a storage element given by an identifier $\name$.
 The result is the value and an execution graph containing a single Read Effect,
 which denoting reading from $\name$.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{}
@@ -6032,7 +5823,6 @@ which denoting reading from $\name$.
     \readidentifier(\name, \vv) \evalarrow (\vv, \ReadEffect(\name))
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.WriteIdentifier \label{sec:SemanticsRule.WriteIdentifier}}
 \subsection{Prose}
@@ -6045,7 +5835,6 @@ writes the value $\vv$ into a storage element given by an identifier $\name$.
 The result is an execution graph containing a single Write Effect,
 which denotes writing into $\name$.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{}
@@ -6053,7 +5842,6 @@ which denotes writing into $\name$.
     \writeidentifier(\name, \vv) \evalarrow \WriteEffect(\name)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.CreateBitvector \label{sec:SemanticsRule.CreateBitvector}}
 \subsection{Prose}
@@ -6063,7 +5851,6 @@ The relation
 \]
 creates a native vector value bitvector from a sequence of values $\vvs$.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{}
@@ -6071,7 +5858,6 @@ creates a native vector value bitvector from a sequence of values $\vvs$.
     \createbitvector(\vvs) \evalarrow \nvbitvector{\vvs}
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.ConcatBitvectors \label{sec:SemanticsRule.ConcatBitvectors}}
 \subsection{Prose}
@@ -6081,7 +5867,6 @@ The relation
 \]
 transforms a (possibly empty) list of bitvector native values $\vvs$ into a single bitvector.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[ConcatBitvector.Empty]{}
@@ -6099,7 +5884,6 @@ transforms a (possibly empty) list of bitvector native values $\vvs$ into a sing
     \concatbitvectors(\vvs) \evalarrow \nvbitvector(\vres)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.ReadFromBitvector \label{sec:SemanticsRule.ReadFromBitvector}}
 \subsection{Prose}
@@ -6117,7 +5901,6 @@ and one of the following applies:
   \item there exists an out-of-range index and an error is returned.
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 We start by introducing a few helper relations.
 
@@ -6195,7 +5978,6 @@ The effect of placing the bits in sequence is that of concatenating the results
 from all of the given slices.
 Also notice that bitvector bits are numbered from 1 and onwards, which is why we add 1 to the indices specified
 by the slices when accessing a bit.
-\end{emptyformal}
 
 \section{SemanticsRule.WriteToBitvector \label{sec:SemanticsRule.WriteToBitvector}}
 \subsection{Prose}
@@ -6212,7 +5994,6 @@ and one of the following applies:
   \item there exists a position in $\slices$ that is not in range for $\dst$ and an error is returned.
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[WriteToBitvector.Empty]{}
@@ -6234,7 +6015,6 @@ and one of the following applies:
     \writetobitvector(\slices, \src, \dst) \evalarrow \vv
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.GetIndex \label{sec:SemanticsRule.GetIndex}}
 \subsection{Prose}
@@ -6245,7 +6025,6 @@ The relation
 \]
 reads the value $\vv_i$ from the vector of values $\vvec$ at the index $\vi$.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -6266,7 +6045,6 @@ this is guaranteed by the type-checker not to happen. Specifically,
   involved and the corresponding lists of expressions.
 \end{itemize}
 If the rules listed above do not hold the type checker fails.
-\end{emptyformal}
 
 \section{SemanticsRule.SetIndex \label{sec:SemanticsRule.SetIndex}}
 \subsection{Prose}
@@ -6277,7 +6055,6 @@ The relation
 \]
 overwrites the value at the given index $\vi$ in a vector of values $\vvec$ with the new value $\vv$.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -6292,7 +6069,6 @@ overwrites the value at the given index $\vi$ in a vector of values $\vvec$ with
   }
 \end{mathpar}
 Similar to $\getindex$, there is no need to handle the out-of-range index case.
-\end{emptyformal}
 
 \section{SemanticsRule.GetField \label{sec:SemanticsRule.GetField}}
 \subsection{Prose}
@@ -6303,7 +6079,6 @@ The relation
 \]
 retrieves the value corresponding to the field name $\name$ from the record value $\record$.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -6314,7 +6089,6 @@ retrieves the value corresponding to the field name $\name$ from the record valu
   }
 \end{mathpar}
 The type-checker ensures, via TypingRule.EGetRecordField, that the field $\name$ exists in $\record$.
-\end{emptyformal}
 
 \section{SemanticsRule.SetField \label{sec:SemanticsRule.SetField}}
 \subsection{Prose}
@@ -6325,7 +6099,6 @@ The relation
 \]
 overwrites the value corresponding to the field name $\name$ in the record value $\record$ with the value $\vv$.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -6337,7 +6110,6 @@ overwrites the value corresponding to the field name $\name$ in the record value
   }
 \end{mathpar}
 The type-checker ensures that the field $\name$ exists in $\record$.
-\end{emptyformal}
 
 \section{SemanticsRule.DeclareLocalIdentifier \label{sec:SemanticsRule.DeclareLocalIdentifier}}
 \subsection{Prose}
@@ -6350,7 +6122,6 @@ The relation
 associates $\vv$ to $\name$ as a local storage element in the environment $\env$ and
 returns the updated environment $\newenv$ with the execution graph consisting of a Write Effect to $\name$.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -6360,7 +6131,6 @@ returns the updated environment $\newenv$ with the execution graph consisting of
   }
   { \declarelocalidentifier(\env, \name, \vv) \evalarrow (\newenv, \vg)  }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.DeclareLocalIdentifierM \label{sec:SemanticsRule.DeclareLocalIdentifierM}}
 \subsection{Prose}
@@ -6381,7 +6151,6 @@ of the value-graph pair $(\vv, \vg)$, and all of the following apply:
   with the $\asldata$ edge.
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -6393,7 +6162,6 @@ of the value-graph pair $(\vv, \vg)$, and all of the following apply:
     \declarelocalidentifierm(\env, \vx, \vm) \evalarrow (\newenv, \newg)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.DeclareLocalIdentifierMM \label{sec:SemanticsRule.DeclareLocalIdentifierMM}}
 \subsection{Prose}
@@ -6415,7 +6183,6 @@ and all of the following apply:
   with the $\aslpo$ edge.
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -6427,7 +6194,6 @@ and all of the following apply:
     \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\newenv, \vgtwo)
   }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.DeclareGlobal \label{sec:SemanticsRule.DeclareGlobal}}
 \subsection{Prose}
@@ -6438,7 +6204,6 @@ The relation
 \]
 updates the environment $\env$ by mapping $\name$ to $\vv$ as a global storage element.
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
@@ -6447,7 +6212,6 @@ updates the environment $\env$ by mapping $\name$ to $\vv$ as a global storage e
   }
   { \declareglobal(\name, \vv, \env) \evalarrow \newenv  }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.BaseValue \label{sec:SemanticsRule.BaseValue}}
 The relation
@@ -6578,7 +6342,6 @@ or an error, and one of the following applies:
   \end{itemize}
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 Evaluating the inner expressions of the type $\vt$ is done via the relation\\
 $\evalexprsef$~\ref{sec:SemanticsRule.ESideEffectFreeExpr}.
@@ -6728,7 +6491,6 @@ declared as a constant.
   \basevalue(\env, \vt) \evalarrow (\overname{\nvvector{i=1..n: \velem}}{\vv}, \overname{\ordered{\vgone}{\asldata}{\vgtwo}}{\vg})
 }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.IsValOfType}
 \subsection{Prose}
@@ -6816,7 +6578,6 @@ One of the following applies:
 %
 %   \CodeSubsection{\ValOfTypeBegin}{\ValOfTypeEnd}{../Interpreter.ml}
 
-\begin{emptyformal}
 \hypertarget{def-astlabel}{}
 \subsection{Formally}
 \begin{mathpar}
@@ -6933,7 +6694,6 @@ cannot appear as a type, since ASL syntax does not allow the following:
 \item Declaring an alias to an underconstrained integer type, and
 \item Declaring an underconstrained integer in a compound type.
 \end{itemize}
-\end{emptyformal}
 
 \section{SemanticsRule.UnopValues \label{sec:SemanticsRule.UnopValues}}
 \hypertarget{def-unoprel}{}
@@ -6987,7 +6747,6 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[negate\_int]{
@@ -7014,7 +6773,6 @@ One of the following applies:
   \unoprel(\overname{\NOT}{\op}, \overname{\nvbitvector(\bits)}{\vv}) \evalarrow \overname{\nvbitvector(c)}{\vw}
 }
 \end{mathpar}
-\end{emptyformal}
 
 \section{SemanticsRule.BinopValues \label{sec:SemanticsRule.BinopValues}}
 \hypertarget{def-binoprel}{}
@@ -7135,7 +6893,6 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\begin{emptyformal}
 \subsection{Formally}
 
 \begin{mathpar}
@@ -7225,7 +6982,6 @@ One of the following applies:
   \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \Error(m)
 }
 \end{mathpar}
-\end{emptyformal}
 
 \bibliographystyle{plain}
 \bibliography{ASL}
