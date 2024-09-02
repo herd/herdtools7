@@ -1,5 +1,523 @@
 \documentclass{book}
 \input{ASLmacros}
+\usepackage{tikz}
+
+\newcommand\nonterminal[1]{\texttt{#1}}
+\newcommand\terminal[1]{\mathtt{\mathbf{#1}}}
+%\newcommand\verbatimterminal[2]{\mathtt{\mathbf{#1}}}
+\newcommand\verbatimterminal[2]{\texttt{"}\texttt{#2}\texttt{"}}
+\newcommand\emptysentence[0]{\hyperlink{def-emptysentence}{\epsilon}}
+\newcommand\astof[1]{\overline{{#1}}}
+\newcommand\parsenode[1]{\hyperlink{def-parsenode}{\textsf{Node}}[#1]}
+\newcommand\namednode[2]{#1:#2} % #1 is a free variable, #2 is the grammar symbol
+\newcommand\punnode[1]{#1}
+\newcommand\epsilonnode[0]{\hyperlink{def-epsilonnode}{\textsf{epsilon\_node}}}
+\newcommand\yield[0]{\hyperlink{def-yield}{\textsf{yield}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros for terminal tokens
+\newcommand\Tlooplimit[0]{\verbatimterminal{LOOP\_LIMIT}{@looplimit}}
+\newcommand\Tand[0]{\verbatimterminal{AND}{AND}}
+\newcommand\Tarray[0]{\verbatimterminal{ARRAY}{array}}
+\newcommand\Tarrow[0]{\verbatimterminal{ARROW}{=>}}
+\newcommand\Tas[0]{\verbatimterminal{AS}{as}}
+\newcommand\Tassert[0]{\verbatimterminal{ASSERT}{assert}}
+\newcommand\Tband[0]{\verbatimterminal{BAND}{\&\&}}
+\newcommand\Tbegin[0]{\verbatimterminal{BEGIN}{begin}}
+\newcommand\Tbeq[0]{\verbatimterminal{BEQ}{<->}}
+\newcommand\Tbit[0]{\verbatimterminal{BIT}{bit}}
+\newcommand\Tbits[0]{\verbatimterminal{BITS}{bits}}
+\newcommand\Tbnot[0]{\verbatimterminal{BNOT}{!}}
+\newcommand\Tboolean[0]{\verbatimterminal{BOOLEAN}{boolean}}
+\newcommand\Tbor[0]{\verbatimterminal{BOR}{||}}
+\newcommand\Tcase[0]{\verbatimterminal{CASE}{case}}
+\newcommand\Tcatch[0]{\verbatimterminal{CATCH}{catch}}
+\newcommand\Tcolon[0]{\verbatimterminal{COLON}{:}}
+\newcommand\Tcoloncolon[0]{\verbatimterminal{COLON\_COLON}{::}}
+\newcommand\Tcomma[0]{\verbatimterminal{COMMA}{,}}
+\newcommand\Tconcat[0]{\verbatimterminal{CONCAT}{++}}
+\newcommand\Tconfig[0]{\verbatimterminal{CONFIG}{config}}
+\newcommand\Tconstant[0]{\verbatimterminal{CONSTANT}{constant}}
+\newcommand\Tdebug[0]{\verbatimterminal{DEBUG}{debug}}
+\newcommand\Tdiv[0]{\verbatimterminal{DIV}{DIV}}
+\newcommand\Tdivrm[0]{\verbatimterminal{DIVRM}{DIVRM}}
+\newcommand\Tdo[0]{\verbatimterminal{DO}{do}}
+\newcommand\Tdot[0]{\verbatimterminal{DOT}{.}}
+\newcommand\Tdownto[0]{\verbatimterminal{DOWNTO}{downto}}
+\newcommand\Telse[0]{\verbatimterminal{ELSE}{else}}
+\newcommand\Telseif[0]{\verbatimterminal{ELSIF}{elseif}}
+\newcommand\Tend[0]{\verbatimterminal{END}{end}}
+\newcommand\Tenumeration[0]{\verbatimterminal{ENUMERATION}{enumeration}}
+\newcommand\Txor[0]{\verbatimterminal{XOR}{XOR}}
+\newcommand\Teq[0]{\verbatimterminal{EQ}{=}}
+\newcommand\Teqop[0]{\verbatimterminal{EQ\_OP}{==}}
+\newcommand\Texception[0]{\verbatimterminal{EXCEPTION}{exception}}
+\newcommand\Tfor[0]{\verbatimterminal{FOR}{for}}
+\newcommand\Tfunc[0]{\verbatimterminal{FUNC}{func}}
+\newcommand\Tgeq[0]{\verbatimterminal{GEQ}{>=}}
+\newcommand\Tgetter[0]{\verbatimterminal{GETTER}{getter}}
+\newcommand\Tgt[0]{\verbatimterminal{GT}{>}}
+\newcommand\Tif[0]{\verbatimterminal{IF}{if}}
+\newcommand\Timpl[0]{\verbatimterminal{IMPL}{-->}}
+\newcommand\Tin[0]{\verbatimterminal{IN}{in}}
+\newcommand\Tinteger[0]{\verbatimterminal{INTEGER}{integer}}
+\newcommand\Tlbrace[0]{\verbatimterminal{LBRACE}{\{}}
+\newcommand\Tlbracket[0]{\verbatimterminal{LBRACKET}{[}}
+\newcommand\Tleq[0]{\verbatimterminal{LEQ}{<=}}
+\newcommand\Tlet[0]{\verbatimterminal{LET}{let}}
+\newcommand\Tlpar[0]{\verbatimterminal{LPAR}{(}}
+\newcommand\Tlt[0]{\verbatimterminal{LT}{<}}
+\newcommand\Tminus[0]{\verbatimterminal{MINUS}{-}}
+\newcommand\Tmod[0]{\verbatimterminal{MOD}{MOD}}
+\newcommand\Tmul[0]{\verbatimterminal{MUL}{*}}
+\newcommand\Tneq[0]{\verbatimterminal{NEQ}{!=}}
+\newcommand\Tnot[0]{\verbatimterminal{NOT}{NOT}}
+\newcommand\Tof[0]{\verbatimterminal{OF}{of}}
+\newcommand\Tor[0]{\verbatimterminal{OR}{OR}}
+\newcommand\Totherwise[0]{\verbatimterminal{OTHERWISE}{otherwise}}
+\newcommand\Tpass[0]{\verbatimterminal{PASS}{pass}}
+\newcommand\Tplus[0]{\verbatimterminal{PLUS}{+}}
+\newcommand\Tpluscolon[0]{\verbatimterminal{PLUS\_COLON}{+:}}
+\newcommand\Tpow[0]{\verbatimterminal{POW}{\^{}}}
+\newcommand\Tpragma[0]{\verbatimterminal{PRAGMA}{pragma}}
+\newcommand\Tprint[0]{\verbatimterminal{PRINT}{print}}
+\newcommand\Trbrace[0]{\verbatimterminal{RBRACE}{\}}}
+\newcommand\Trbracket[0]{\verbatimterminal{RBRACKET}{]}}
+\newcommand\Trdiv[0]{\verbatimterminal{RDIV}{RDIV}}
+\newcommand\Treal[0]{\verbatimterminal{REAL}{real}}
+\newcommand\Trecord[0]{\verbatimterminal{RECORD}{record}}
+\newcommand\Trepeat[0]{\verbatimterminal{REPEAT}{repeat}}
+\newcommand\Treturn[0]{\verbatimterminal{RETURN}{return}}
+\newcommand\Trpar[0]{\verbatimterminal{RPAR}{)}}
+\newcommand\Tstarcolon[0]{\verbatimterminal{STAR\_COLON}{*:}}
+\newcommand\Tsemicolon[0]{\verbatimterminal{SEMI\_COLON}{;}}
+\newcommand\Tsetter[0]{\verbatimterminal{SETTER}{setter}}
+\newcommand\Tshl[0]{\verbatimterminal{SHL}{<<}}
+\newcommand\Tshr[0]{\verbatimterminal{SHR}{>>}}
+\newcommand\Tslicing[0]{\verbatimterminal{SLICING}{..}}
+\newcommand\Tstring[0]{\verbatimterminal{STRING}{string}}
+\newcommand\Tsubtypes[0]{\verbatimterminal{SUBTYPES}{subtypes}}
+\newcommand\Tthen[0]{\verbatimterminal{THEN}{then}}
+\newcommand\Tthrow[0]{\verbatimterminal{THROW}{throw}}
+\newcommand\Tto[0]{\verbatimterminal{TO}{to}}
+\newcommand\Ttry[0]{\verbatimterminal{TRY}{try}}
+\newcommand\Ttype[0]{\verbatimterminal{TYPE}{type}}
+\newcommand\Tunknown[0]{\verbatimterminal{UNKNOWN}{UNKNOWN}}
+\newcommand\Tuntil[0]{\verbatimterminal{UNTIL}{until}}
+\newcommand\Tvar[0]{\verbatimterminal{VAR}{var}}
+\newcommand\Twhen[0]{\verbatimterminal{WHEN}{when}}
+\newcommand\Twhere[0]{\verbatimterminal{WHERE}{where}}
+\newcommand\Twhile[0]{\verbatimterminal{WHILE}{while}}
+\newcommand\Twith[0]{\verbatimterminal{WITH}{with}}
+
+% \newcommand\Tidentifier[1]{\terminal{IDENTIFIER(#1)}}
+\newcommand\Tidentifier[0]{\hyperlink{def-tidentifier}{\terminal{ID}}}
+\newcommand\Tstringlit[0]{\terminal{STRING\_LIT}}
+\newcommand\Tmasklit[0]{\terminal{MASK\_LIT}}
+\newcommand\Tbitvectorlit[0]{\terminal{BITVECTOR\_LIT}}
+\newcommand\Tintlit[0]{\terminal{INT\_LIT}}
+\newcommand\Treallit[0]{\terminal{REAL\_LIT}}
+\newcommand\Tboollit[0]{\terminal{BOOL\_LIT}}
+\newcommand\Tlexeme[0]{\terminal{LEXEME}}
+
+\newcommand\Tunops[0]{\terminal{UNOPS}}
+\newcommand\precedence[1]{\textsf{precedence: }#1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros for non-terminals
+\newcommand\Nast[0]{\hyperlink{def-nast}{\nonterminal{ast}}}
+\newcommand\Ndecl[0]{\hyperlink{def-ndecl}{\nonterminal{decl}}}
+\newcommand\Nparamsopt[0]{\hyperlink{def-nparamsopt}{\nonterminal{params\_opt}}}
+\newcommand\Nfuncargs[0]{\hyperlink{def-nfuncargs}{\nonterminal{func\_args}}}
+\newcommand\Nreturntype[0]{\hyperlink{def-nreturntype}{\nonterminal{return\_type}}}
+\newcommand\Nfuncbody[0]{\hyperlink{def-nfuncbody}{\nonterminal{func\_body}}}
+\newcommand\Naccessargs[0]{\hyperlink{def-naccessargs}{\nonterminal{access\_args}}}
+\newcommand\Ntypedidentifier[0]{\hyperlink{def-ntypedidentifier}{\nonterminal{typed\_identifier}}}
+\newcommand\Nasty[0]{\hyperlink{def-nasty}{\nonterminal{as\_ty}}}
+\newcommand\Ntydecl[0]{\hyperlink{def-ntydecl}{\nonterminal{ty\_decl}}}
+\newcommand\Nsubtype[0]{\hyperlink{def-nsubtype}{\nonterminal{subtype}}}
+\newcommand\Nsubtypeopt[0]{\hyperlink{def-nsubtypeopt}{\nonterminal{subtype\_opt}}}
+\newcommand\Nstoragekeyword[0]{\hyperlink{def-nstoragekeyword}{\nonterminal{storage\_keyword}}}
+\newcommand\Nignoredoridentifier[0]{\hyperlink{def-nignoredoridentifier}{\nonterminal{ignored\_or\_identifier}}}
+\newcommand\Ninitialvalue[0]{\hyperlink{def-ninitialvalue}{\nonterminal{initial\_value}}}
+\newcommand\Nty[0]{\hyperlink{def-nty}{\nonterminal{ty}}}
+\newcommand\Nexpr[0]{\hyperlink{def-nexpr}{\nonterminal{expr}}}
+\newcommand\Nlexpr[0]{\hyperlink{def-nlexpr}{\nonterminal{lexpr}}}
+\newcommand\Nlexpratom[0]{\hyperlink{def-nlexpratom}{\nonterminal{lexpr\_atom}}}
+\newcommand\Nfields[0]{\hyperlink{def-nfields}{\nonterminal{fields}}}
+\newcommand\Nfieldsopt[0]{\hyperlink{def-nfieldsopt}{\nonterminal{fields\_opt}}}
+\newcommand\Nopttypedidentifier[0]{\hyperlink{def-nopttypeidentifier}{\nonterminal{opt\_typed\_identifier}}}
+\newcommand\Nstmtlist[0]{\hyperlink{def-nstmtlist}{\nonterminal{stmt\_list}}}
+\newcommand\Nmaybeemptystmtlist[0]{\hyperlink{def-nmaybeemptystmtlist}{\nonterminal{maybe\_empty\_stmt\_list}}}
+\newcommand\Nlocaldeclkeyword[0]{\hyperlink{def-nlocaldeclkeyword}{\nonterminal{local\_decl\_keyword}}}
+\newcommand\Ndirection[0]{\hyperlink{def-ndirection}{\nonterminal{direction}}}
+\newcommand\Nalt[0]{\hyperlink{def-nalt}{\nonterminal{alt}}}
+\newcommand\Npatternlist[0]{\hyperlink{def-npatternlist}{\nonterminal{pattern\_list}}}
+\newcommand\Notherwiseopt[0]{\hyperlink{def-notherwiseopt}{\nonterminal{otherwise\_opt}}}
+\newcommand\Ncatcher[0]{\hyperlink{def-ncatcher}{\nonterminal{catcher}}}
+\newcommand\Nstmt[0]{\hyperlink{def-nstmt}{\nonterminal{stmt}}}
+\newcommand\Nselse[0]{\hyperlink{def-nselse}{\nonterminal{s\_else}}}
+\newcommand\Ndeclitem[0]{\hyperlink{def-ndeclitem}{\nonterminal{decl\_item}}}
+\newcommand\Nuntypeddeclitem[0]{\hyperlink{def-nuntypeddeclitem}{\nonterminal{untyped\_decl\_item}}}
+\newcommand\Nslice[0]{\hyperlink{def-nslice}{\nonterminal{slice}}}
+\newcommand\Nslices[0]{\hyperlink{def-nslices}{\nonterminal{slices}}}
+\newcommand\Nnslices[0]{\hyperlink{def-nnslice}{\nonterminal{nslices}}}
+\newcommand\Nintconstraints[0]{\hyperlink{def-nintconstraints}{\nonterminal{int\_constraints}}}
+\newcommand\Nintconstraintsopt[0]{\hyperlink{def-nintconstraintsopt}{\nonterminal{int\_constraints\_opt}}}
+\newcommand\Nintconstraint[0]{\hyperlink{def-nintconstraint}{\nonterminal{int\_constraint}}}
+\newcommand\Nexprpattern[0]{\hyperlink{def-nexprpattern}{\nonterminal{expr\_pattern}}}
+\newcommand\Npatternset[0]{\hyperlink{def-npatternset}{\nonterminal{pattern\_set}}}
+\newcommand\Npattern[0]{\hyperlink{def-npattern}{\nonterminal{pattern}}}
+\newcommand\Nbitfields[0]{\hyperlink{def-nbitfields}{\nonterminal{bitfields}}}
+\newcommand\Nbitfield[0]{\hyperlink{def-nbitfield}{\nonterminal{bitfield}}}
+\newcommand\Nvalue[0]{\hyperlink{def-nvalue}{\nonterminal{value}}}
+\newcommand\Nbinop[0]{\hyperlink{def-nbinop}{\nonterminal{binop}}}
+\newcommand\Nunop[0]{\hyperlink{def-nunop}{\nonterminal{unop}}}
+\newcommand\Neelse[0]{\hyperlink{def-neelse}{\nonterminal{e\_else}}}
+\newcommand\Nfieldassign[0]{\hyperlink{def-nfieldassign}{\nonterminal{field\_assign}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros for defining associativity
+\newcommand\nonassoc[0]{\textsf{nonassoc}}
+\newcommand\leftassoc[0]{\textsf{left}}
+\newcommand\rightassoc[0]{\textsf{right}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros for generic parsing symbols and parsing functions
+% \newcommand\derives[0]{\texttt{::=}}
+\newcommand\derives[0]{\longrightarrow}
+\newcommand\derivesinline[0]{\xlongrightarrow{\textsf{inline}}}
+\newcommand\parsesep[0]{\ } % separates symbols in a single production
+
+\newcommand\maybeemptylist[1]{\hyperlink{def-maybeemptylist}{\textsf{list}^{*}}(#1)} % This stands for list(x)
+\newcommand\nonemptylist[1]{\hyperlink{def-nonemptylist}{\textsf{list}^{+}}(#1)} % This stands for non_empty_list(x)
+\newcommand\NClist[1]{\hyperlink{def-nclist}{\textsf{clist}^{+}}(#1)}
+\newcommand\Plist[1]{\hyperlink{def-plist}{\textsf{plist}}(#1)}
+\newcommand\Plisttwo[1]{\hyperlink{def-plisttwo}{\textsf{plist2}}(#1)}
+\newcommand\Clist[1]{\hyperlink{def-clist}{\textsf{clist}}(#1)}
+\newcommand\Clisttwo[1]{\hyperlink{def-clisttwo}{\textsf{clist2}}(#1)}
+\newcommand\NTClist[1]{\hyperlink{def-ntclist}{\textsf{ntclist}}(#1)}
+\newcommand\TClist[1]{\hyperlink{def-tclist}{\textsf{tclist}}(#1)}
+\newcommand\option[1]{\hyperlink{def-option}{\textsf{option}}(#1)}
+%\newcommand\option[1]{(#1)\hyperlink{def-option}{?}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% AST macros with hyperlinks
+\renewcommand\identifier[0]{\hyperlink{ast-identifier}{\textsf{identifier}}} % Boolean inversion
+
+\renewcommand\BNOT[0]{\hyperlink{ast-bnot}{\texttt{BNOT}}} % Boolean inversion
+\renewcommand\NEG[0]{\hyperlink{ast-neg}{\texttt{NEG}}} % Integer or real negation
+\renewcommand\NOT[0]{\hyperlink{ast-not}{\texttt{NOT}}} % Bitvector bitwise inversion
+
+\renewcommand\AND[0]{\hyperlink{ast-and}{\texttt{AND}}} % Bitvector bitwise and
+\renewcommand\BAND[0]{\hyperlink{ast-band}{\texttt{BAND}}} % Boolean and
+\renewcommand\BEQ[0]{\hyperlink{ast-beq}{\texttt{BEQ}}} % Boolean equivalence
+\renewcommand\BOR[0]{\hyperlink{ast-bor}{\texttt{BOR}}} % Boolean or
+\renewcommand\DIV[0]{\hyperlink{ast-div}{\texttt{DIV}}} % Integer division
+\renewcommand\DIVRM[0]{\hyperlink{ast-divrm}{\texttt{DIVRM}}} % Inexact integer division, with rounding towards negative infinity.
+\newcommand\XOR[0]{\hyperlink{ast-xor}{\texttt{XOR}}} % Bitvector bitwise exclusive or
+\renewcommand\EQOP[0]{\hyperlink{ast-eqop}{\texttt{EQ\_OP}}} % Equality on two base values of same type
+\renewcommand\GT[0]{\hyperlink{ast-gt}{\texttt{GT}}} % Greater than for int or reals
+\renewcommand\GEQ[0]{\hyperlink{ast-geq}{\texttt{GEQ}}} % Greater or equal for int or reals
+\renewcommand\IMPL[0]{\hyperlink{ast-impl}{\texttt{IMPL}}} % Boolean implication
+\renewcommand\LT[0]{\hyperlink{ast-lt}{\texttt{LT}}} % Less than for int or reals
+\renewcommand\LEQ[0]{\hyperlink{ast-leq}{\texttt{LEQ}}} % Less or equal for int or reals
+\renewcommand\MOD[0]{\hyperlink{ast-mod}{\texttt{MOD}}} % Remainder of integer division
+\renewcommand\MINUS[0]{\hyperlink{ast-minus}{\texttt{MINUS}}} % Subtraction for int or reals or bitvectors
+\renewcommand\MUL[0]{\hyperlink{ast-mul}{\texttt{MUL}}} % Multiplication for int or reals or bitvectors
+\renewcommand\NEQ[0]{\hyperlink{ast-neq}{\texttt{NEQ}}} % Non equality on two base values of same type
+\renewcommand\OR[0]{\hyperlink{ast-or}{\texttt{OR}}} % Bitvector bitwise or
+\renewcommand\PLUS[0]{\hyperlink{ast-plus}{\texttt{PLUS}}} % Addition for int or reals or bitvectors
+\renewcommand\POW[0]{\hyperlink{ast-pow}{\texttt{POW}}} % Exponentiation for integers
+\renewcommand\RDIV[0]{\hyperlink{ast-rdiv}{\texttt{RDIV}}} % Division for reals
+\renewcommand\SHL[0]{\hyperlink{ast-shl}{\texttt{SHL}}} % Shift left for integers
+\renewcommand\SHR[0]{\hyperlink{ast-shr}{\texttt{SHR}}} % Shift right for integers
+
+\renewcommand\UNKNOWN[0]{\hyperlink{ast-unknown}{\texttt{UNKNOWN}}}
+
+% For loop direction
+\renewcommand\UP[0]{\hyperlink{ast-up}{\texttt{Up}}}
+\renewcommand\DOWN[0]{\hyperlink{ast-down}{\texttt{Down}}}
+
+% Non-terminal names
+\renewcommand\unop[0]{\hyperlink{ast-unop}{\textsf{unop}}}
+\renewcommand\binop[0]{\hyperlink{ast-binop}{\textsf{binop}}}
+\renewcommand\literal[0]{\hyperlink{ast-literal}{\textsf{literal}}}
+\renewcommand\expr[0]{\hyperlink{ast-expr}{\textsf{expr}}}
+\renewcommand\lexpr[0]{\hyperlink{ast-lexpr}{\textsf{lexpr}}}
+\renewcommand\slice[0]{\hyperlink{ast-slice}{\textsf{slice}}}
+\renewcommand\arrayindex[0]{\hyperlink{ast-arrayindex}{\textsf{array\_index}}}
+
+\renewcommand\ty[0]{\hyperlink{ast-ty}{\textsf{ty}}}
+\renewcommand\pattern[0]{\hyperlink{ast-pattern}{\textsf{pattern}}}
+\renewcommand\intconstraints[0]{\hyperlink{ast-intconstraints}{\textsf{int\_constraints}}}
+\renewcommand\intconstraint[0]{\hyperlink{ast-intconstraint}{\textsf{int\_constraint}}}
+\renewcommand\unconstrained[0]{\hyperlink{ast-unconstrained}{\textsf{Unconstrained}}}
+\renewcommand\wellconstrained[0]{\hyperlink{ast-wellconstrained}{\textsf{WellConstrained}}}
+\renewcommand\parameterized[0]{\hyperlink{ast-parameterized}{\textsf{Parameterized}}}
+\renewcommand\constraintexact[0]{\hyperlink{ast-constraintexact}{\textsf{Constraint\_Exact}}}
+\renewcommand\constraintrange[0]{\hyperlink{ast-constraintrange}{\textsf{Constraint\_Range}}}
+\renewcommand\bitfield[0]{\hyperlink{ast-bitfield}{\textsf{bitfield}}}
+\renewcommand\spec[0]{\hyperlink{ast-spec}{\textsf{spec}}}
+\renewcommand\typedidentifier[0]{\hyperlink{ast-typedidentifier}{\textsf{typed\_identifier}}}
+\renewcommand\localdeclkeyword[0]{\hyperlink{ast-localdeclkeyword}{\textsf{local\_decl\_keyword}}}
+\renewcommand\globaldeclkeyword[0]{\hyperlink{ast-globaldeclkeyword}{\textsf{global\_decl\_keyword}}}
+\renewcommand\localdeclitem[0]{\hyperlink{ast-localdeclitem}{\textsf{local\_decl\_item}}}
+\renewcommand\globaldecl[0]{\hyperlink{ast-globaldecl}{\textsf{global\_decl}}}
+\renewcommand\fordirection[0]{\hyperlink{ast-fordirection}{\textsf{for\_direction}}}
+\renewcommand\stmt[0]{\hyperlink{ast-stmt}{\textsf{stmt}}}
+\renewcommand\decl[0]{\hyperlink{ast-decl}{\textsf{decl}}}
+\renewcommand\casealt[0]{\hyperlink{ast-casealt}{\textsf{case\_alt}}}
+\renewcommand\catcher[0]{\hyperlink{ast-catcher}{\textsf{catcher}}}
+\renewcommand\subprogramtype[0]{\hyperlink{ast-subprogramtype}{\textsf{sub\_program\_type}}}
+\renewcommand\subprogrambody[0]{\hyperlink{ast-subprogrambody}{\textsf{sub\_program\_body}}}
+\renewcommand\func[0]{\hyperlink{ast-func}{\textsf{func}}}
+\renewcommand\Field[0]{\hyperlink{ast-field}{\textsf{field}}}
+
+% Expression labels
+\renewcommand\ELiteral[0]{\hyperlink{ast-eliteral}{\textsf{E\_Literal}}}
+\renewcommand\EVar[0]{\hyperlink{ast-evar}{\textsf{E\_Var}}}
+\renewcommand\EATC[0]{\hyperlink{ast-eatc}{\textsf{E\_ATC}}}
+\renewcommand\EBinop[0]{\hyperlink{ast-ebinop}{\textsf{E\_Binop}}}
+\renewcommand\EUnop[0]{\hyperlink{ast-eunop}{\textsf{E\_Unop}}}
+\renewcommand\ECall[0]{\hyperlink{ast-ecall}{\textsf{E\_Call}}}
+\renewcommand\ESlice[0]{\hyperlink{ast-eslice}{\textsf{E\_Slice}}}
+\renewcommand\ECond[0]{\hyperlink{ast-econd}{\textsf{E\_Cond}}}
+\renewcommand\EGetArray[0]{\hyperlink{ast-egetarray}{\textsf{E\_GetArray}}}
+\renewcommand\EGetField[0]{\hyperlink{ast-egetfield}{\textsf{E\_GetField}}}
+\renewcommand\EGetItem[0]{\hyperlink{ast-egetitem}{\textsf{E\_GetItem}}}
+\renewcommand\EGetFields[0]{\hyperlink{ast-getfields}{\textsf{E\_GetFields}}}
+\renewcommand\ERecord[0]{\hyperlink{ast-erecord}{\textsf{E\_Record}}}
+\renewcommand\EConcat[0]{\hyperlink{ast-econcat}{\textsf{E\_Concat}}}
+\renewcommand\ETuple[0]{\hyperlink{ast-etuple}{\textsf{E\_Tuple}}}
+\renewcommand\EUnknown[0]{\hyperlink{ast-eunknown}{\textsf{E\_Unknown}}}
+\renewcommand\EPattern[0]{\hyperlink{ast-epattern}{\textsf{E\_Pattern}}}
+
+% Left-hand-side expression labels
+\renewcommand\LEConcat[0]{\hyperlink{ast-leconcat}{\textsf{LE\_Concat}}}
+\renewcommand\LEDiscard[0]{\hyperlink{ast-lediscard}{\textsf{LE\_Discard}}}
+\renewcommand\LEVar[0]{\hyperlink{ast-levar}{\textsf{LE\_Var}}}
+\renewcommand\LESlice{\hyperlink{ast-leslice}{\textsf{LE\_Slice}}}
+\renewcommand\LESetArray[0]{\hyperlink{ast-lesetarray}{\textsf{LE\_SetArray}}}
+\renewcommand\LESetField[0]{\hyperlink{ast-lesetfield}{\textsf{LE\_SetField}}}
+\renewcommand\LESetFields[0]{\hyperlink{ast-lesetfields}{\textsf{LE\_SetFields}}}
+\renewcommand\LEDestructuring[0]{\hyperlink{ast-ledestructuring}{\textsf{LE\_Destructuring}}}
+
+% Statement labels
+\renewcommand\SPass[0]{\hyperlink{ast-spass}{\textsf{S\_Pass}}}
+\renewcommand\SAssign[0]{\hyperlink{ast-sassign}{\textsf{S\_Assign}}}
+\renewcommand\SReturn[0]{\hyperlink{ast-sreturn}{\textsf{S\_Return}}}
+\renewcommand\SSeq[0]{\hyperlink{ast-sseq}{\textsf{S\_Seq}}}
+\renewcommand\SCall[0]{\hyperlink{ast-scall}{\textsf{S\_Call}}}
+\renewcommand\SCond[0]{\hyperlink{ast-scond}{\textsf{S\_Cond}}}
+\renewcommand\SCase[0]{\hyperlink{ast-scase}{\textsf{S\_Case}}}
+\renewcommand\SDecl[0]{\hyperlink{ast-sdecl}{\textsf{S\_Decl}}}
+\renewcommand\SAssert[0]{\hyperlink{ast-sassert}{\textsf{S\_Assert}}}
+\renewcommand\SWhile[0]{\hyperlink{ast-swhile}{\textsf{S\_While}}}
+\renewcommand\SRepeat[0]{\hyperlink{ast-srepeat}{\textsf{S\_Repeat}}}
+\renewcommand\SFor[0]{\hyperlink{ast-sfor}{\textsf{S\_For}}}
+\renewcommand\SThrow[0]{\hyperlink{ast-sthrow}{\textsf{S\_Throw}}}
+\renewcommand\STry[0]{\hyperlink{ast-stry}{\textsf{S\_Try}}}
+\renewcommand\SPrint[0]{\hyperlink{ast-sprint}{\textsf{S\_Print}}}
+
+% Literal labels
+\renewcommand\lint[0]{\hyperlink{ast-lint}{\textsf{L\_Int}}}
+\renewcommand\lbool[0]{\hyperlink{ast-lbool}{\textsf{L\_Bool}}}
+\renewcommand\lreal[0]{\hyperlink{ast-lreal}{\textsf{L\_Real}}}
+\renewcommand\lbitvector[0]{\hyperlink{ast-lbitvector}{\textsf{L\_Bitvector}}}
+\renewcommand\lstring[0]{\hyperlink{ast-lstring}{\textsf{L\_String}}}
+
+% Type labels
+\renewcommand\TInt[0]{\hyperlink{ast-tint}{\textsf{T\_Int}}}
+\renewcommand\TReal[0]{\hyperlink{ast-treal}{\textsf{T\_Real}}}
+\renewcommand\TString[0]{\hyperlink{ast-tstring}{\textsf{T\_String}}}
+\renewcommand\TBool[0]{\hyperlink{ast-tbool}{\textsf{T\_Bool}}}
+\renewcommand\TBits[0]{\hyperlink{ast-tbits}{\textsf{T\_Bits}}}
+\renewcommand\TEnum[0]{\hyperlink{ast-tenum}{\textsf{T\_Enum}}}
+\renewcommand\TTuple[0]{\hyperlink{ast-ttuple}{\textsf{T\_Tuple}}}
+\renewcommand\TArray[0]{\hyperlink{ast-tarray}{\textsf{T\_Array}}}
+\renewcommand\TRecord[0]{\hyperlink{ast-trecord}{\textsf{T\_Record}}}
+\renewcommand\TException[0]{\hyperlink{ast-texception}{\textsf{T\_Exception}}}
+\renewcommand\TNamed[0]{\hyperlink{ast-tnamed}{\textsf{T\_Named}}}
+
+\renewcommand\BitFieldSimple[0]{\hyperlink{ast-bitfieldsimple}{\textsf{BitField\_Simple}}}
+\renewcommand\BitFieldNested[0]{\hyperlink{ast-bitfieldnested}{\textsf{BitField\_Nested}}}
+\renewcommand\BitFieldType[0]{\hyperlink{ast-bitfieldtype}{\textsf{BitField\_Type}}}
+
+\renewcommand\ConstraintExact[0]{\hyperlink{ast-constraintexact}{\textsf{Constraint\_Exact}}}
+\renewcommand\ConstraintRange[0]{\hyperlink{ast-constraintrange}{\textsf{Constraint\_Range}}}
+
+% Array index labels
+\renewcommand\ArrayLengthExpr[0]{\hyperlink{ast-arraylengthexpr}{\textsf{ArrayLength\_Expr}}}
+\renewcommand\ArrayLengthEnum[0]{\hyperlink{ast-arraylengthenum}{\textsf{ArrayLength\_Enum}}}
+
+% Slice labels
+\renewcommand\SliceSingle[0]{\hyperlink{ast-slicesingle}{\textsf{Slice\_Single}}}
+\renewcommand\SliceRange[0]{\hyperlink{ast-slicerange}{\textsf{Slice\_Range}}}
+\renewcommand\SliceLength[0]{\hyperlink{ast-slicelength}{\textsf{Slice\_Length}}}
+\renewcommand\SliceStar[0]{\hyperlink{ast-slicestar}{\textsf{Slice\_Star}}}
+
+% Pattern labels
+\renewcommand\PatternAll[0]{\hyperlink{ast-patternall}{\textsf{Pattern\_All}}}
+\renewcommand\PatternAny[0]{\hyperlink{ast-patternany}{\textsf{Pattern\_Any}}}
+\renewcommand\PatternGeq[0]{\hyperlink{ast-patterngeq}{\textsf{Pattern\_Geq}}}
+\renewcommand\PatternLeq[0]{\hyperlink{ast-patternleq}{\textsf{Pattern\_Leq}}}
+\renewcommand\PatternNot[0]{\hyperlink{ast-patternnot}{\textsf{Pattern\_Not}}}
+\renewcommand\PatternRange[0]{\hyperlink{ast-patternrange}{\textsf{Pattern\_Range}}}
+\renewcommand\PatternSingle[0]{\hyperlink{ast-patternsingle}{\textsf{Pattern\_Single}}}
+\renewcommand\PatternMask[0]{\hyperlink{ast-patternmask}{\textsf{Pattern\_Mask}}}
+\renewcommand\PatternTuple[0]{\hyperlink{ast-patterntuple}{\textsf{Pattern\_Tuple}}}
+
+% Local declarations
+\renewcommand\LDIDiscard[0]{\hyperlink{ast-ldidiscard}{\textsf{LDI\_Discard}}}
+\renewcommand\LDIVar[0]{\hyperlink{ast-ldivar}{\textsf{LDI\_Var}}}
+\renewcommand\LDITyped[0]{\hyperlink{ast-ldityped}{\textsf{LDI\_Typed}}}
+\renewcommand\LDITuple[0]{\hyperlink{ast-ldituple}{\textsf{LDI\_Tuple}}}
+
+\renewcommand\LDKVar[0]{\hyperlink{ast-ldkvar}{\textsf{LDK\_Var}}}
+\renewcommand\LDKConstant[0]{\hyperlink{ast-ldkconstant}{\textsf{LDK\_Constant}}}
+\renewcommand\LDKLet[0]{\hyperlink{ast-ldklet}{\textsf{LDK\_Let}}}
+
+\renewcommand\GDKConstant[0]{\hyperlink{ast-gdkconstant}{\textsf{GDK\_Constant}}}
+\renewcommand\GDKConfig[0]{\hyperlink{ast-gdkconfig}{\textsf{GDK\_Config}}}
+\renewcommand\GDKLet[0]{\hyperlink{ast-gdklet}{\textsf{GDK\_Let}}}
+\renewcommand\GDKVar[0]{\hyperlink{ast-gdkvar}{\textsf{GDK\_Var}}}
+
+\renewcommand\SBASL[0]{\hyperlink{ast-sbasl}{\textsf{SB\_ASL}}}
+\renewcommand\SBPrimitive[0]{\hyperlink{ast-sbprimitive}{\textsf{SB\_Primitive}}}
+
+\renewcommand\STFunction[0]{\hyperlink{ast-stfunction}{\texttt{ST\_Function}}}
+\renewcommand\STGetter[0]{\hyperlink{ast-stgetter}{\texttt{ST\_Getter}}}
+\renewcommand\STEmptyGetter[0]{\hyperlink{ast-stemptygetter}{\texttt{ST\_EmptyGetter}}}
+\renewcommand\STSetter[0]{\hyperlink{ast-stsetter}{\texttt{ST\_Setter}}}
+\renewcommand\STEmptySetter[0]{\hyperlink{ast-stemptysetter}{\texttt{ST\_EmptySetter}}}
+\renewcommand\STProcedure[0]{\hyperlink{ast-stprocedure}{\texttt{ST\_Procedure}}}
+
+\renewcommand\DFunc[0]{\hyperlink{ast-dfunc}{\texttt{D\_Func}}}
+\renewcommand\DGlobalStorage[0]{\hyperlink{ast-dglobalstorage}{\texttt{D\_GlobalStorage}}}
+\renewcommand\DTypeDecl[0]{\hyperlink{ast-dtypedecl}{\texttt{D\_TypeDecl}}}
+
+\renewcommand\specification[0]{\hyperlink{ast-specification}{\texttt{specification}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand\astarrow[0]{\xrightarrow{\textsf{ast}}}
+\newcommand\scanarrow[0]{\xrightarrow{\textsf{scan}}}
+%\newcommand\productionname[2]{[\hyperlink{build-#1}{\textsc{#2}}]}
+\newcommand\productionname[2]{}
+
+\newcommand\buildidentity[0]{\hyperlink{build-identity}{\textsf{build\_identity}}}
+\newcommand\buildlist[0]{\hyperlink{build-list}{\textsf{build\_list}}}
+\newcommand\buildplist[0]{\hyperlink{build-plist}{\textsf{build\_plist}}}
+\newcommand\buildclist[0]{\hyperlink{build-clist}{\textsf{build\_clist}}}
+\newcommand\buildntclist[0]{\hyperlink{build-ntclist}{\textsf{build\_ntclist}}}
+\newcommand\buildtclist[0]{\hyperlink{build-tclist}{\textsf{build\_tclist}}}
+\newcommand\buildoption[0]{\hyperlink{build-option}{\textsf{build\_option}}}
+
+\newcommand\buildast[0]{\hyperlink{build-ast}{\textsf{build\_ast}}}
+\newcommand\builddecl[0]{\hyperlink{build-decl}{\textsf{build\_decl}}}
+\newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textsf{build\_decl\_item}}}
+\newcommand\builduntypeddeclitem[0]{\hyperlink{build-untypeddeclitem}{\textsf{build\_untyped\_decl\_item}}}
+\newcommand\buildstmt[0]{\hyperlink{build-stmt}{\textsf{build\_stmt}}}
+\newcommand\buildexpr[0]{\hyperlink{build-expr}{\textsf{build\_expr}}}
+\newcommand\buildlexpr[0]{\hyperlink{build-lexpr}{\textsf{build\_lexpr}}}
+\newcommand\buildlexpratom[0]{\hyperlink{build-lexpratom}{\textsf{build\_lexpr\_atom}}}
+\newcommand\buildparamsopt[0]{\hyperlink{build-paramsopt}{\textsf{build\_params\_opt}}}
+\newcommand\buildaccessargs[0]{\hyperlink{build-accessargs}{\textsf{build\_access\_args}}}
+\newcommand\buildfuncargs[0]{\hyperlink{build-funcargs}{\textsf{build\_func\_args}}}
+\newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textsf{build\_return\_type}}}
+\newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textsf{build\_func\_body}}}
+\newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textsf{build\_typed\_identifier}}}
+\newcommand\buildopttypedidentifier[0]{\hyperlink{build-opttypedidentifier}{\textsf{build\_opt\_typed\_identifier}}}
+\newcommand\buildtydecl[0]{\hyperlink{build-tydecl}{\textsf{build\_ty\_decl}}}
+\newcommand\buildsubtype[0]{\hyperlink{build-subtype}{\textsf{build\_subtype}}}
+\newcommand\buildsubtypeopt[0]{\hyperlink{build-subtypeopt}{\textsf{build\_subtype\_opt}}}
+\newcommand\buildstoragekeyword[0]{\hyperlink{build-storagekeyword}{\textsf{build\_storage\_keyword}}}
+\newcommand\builddirection[0]{\hyperlink{build-direction}{\textsf{build\_direction}}}
+\newcommand\buildalt[0]{\hyperlink{build-alt}{\textsf{build\_alt}}}
+\newcommand\buildotherwiseopt[0]{\hyperlink{build-otherwiseopt}{\textsf{build\_otherwise\_opt}}}
+\newcommand\buildcatcher[0]{\hyperlink{build-catcher}{\textsf{build\_catcher}}}
+\newcommand\buildasty[0]{\textsf{build\_as\_ty}}
+\newcommand\buildignoredoridentifier[0]{\hyperlink{build-ignoredoridentifier}{\textsf{build\_ignored\_or\_identifier}}}
+\newcommand\buildlocaldeclkeyword[0]{\hyperlink{build-localdeclkeyword}{\textsf{build\_local\_decl\_keyword}}}
+\newcommand\buildstmtlist[0]{\hyperlink{build-stmtlist}{\textsf{build\_stmt\_list}}}
+\newcommand\buildmaybeemptystmtlist[0]{\hyperlink{build-maybeemptystmtlist}{\textsf{build\_maybe\_empty\_stmt\_list}}}
+\newcommand\buildselse[0]{\hyperlink{build-selse}{\textsf{build\_s\_else}}}
+\newcommand\buildintconstraints[0]{\hyperlink{build-intconstraints}{\textsf{build\_int\_constraints}}}
+\newcommand\buildintconstraintsopt[0]{\hyperlink{build-intconstraintsopt}{\textsf{build\_int\_constraints\_opt}}}
+\newcommand\buildintconstraint[0]{\hyperlink{build-intconstraint}{\textsf{build\_int\_constraint}}}
+\newcommand\buildexprpattern[0]{\hyperlink{build-exprpattern}{\textsf{build\_expr\_pattern}}}
+\newcommand\buildfieldassign[0]{\hyperlink{build-fieldassign}{\textsf{build\_field\_assign}}}
+\newcommand\buildpatternset[0]{\hyperlink{build-patternset}{\textsf{build\_pattern\_set}}}
+\newcommand\buildpatternlist[0]{\hyperlink{build-patternlist}{\textsf{build\_pattern\_list}}}
+\newcommand\buildpattern[0]{\hyperlink{build-pattern}{\textsf{build\_pattern}}}
+\newcommand\buildfields[0]{\hyperlink{build-fields}{\textsf{build\_fields}}}
+\newcommand\buildfieldsopt[0]{\hyperlink{build-fieldsopt}{\textsf{build\_fields\_opt}}}
+\newcommand\buildnslices[0]{\hyperlink{build-nslices}{\textsf{build\_nslices}}}
+\newcommand\buildslices[0]{\hyperlink{build-slices}{\textsf{build\_slices}}}
+\newcommand\buildslice[0]{\hyperlink{build-slice}{\textsf{build\_slice}}}
+\newcommand\buildbitfields[0]{\hyperlink{build-bitfields}{\textsf{build\_bitfields}}}
+\newcommand\buildbitfield[0]{\hyperlink{build-bitfield}{\textsf{build\_bitfield}}}
+\newcommand\buildty[0]{\hyperlink{build-ty}{\textsf{build\_ty}}}
+\newcommand\buildeelse[0]{\hyperlink{build-eelse}{\textsf{build\_e\_else}}}
+\newcommand\buildvalue[0]{\hyperlink{build-value}{\textsf{build\_value}}}
+\newcommand\buildunop[0]{\hyperlink{build-unop}{\textsf{build\_unop}}}
+\newcommand\buildbinop[0]{\hyperlink{build-binop}{\textsf{build\_binop}}}
+
+\newcommand\stmtfromlist[0]{\hyperlink{def-stmtfromlist}{\textsf{stmt\_from\_list}}}
+\newcommand\sequencestmts[0]{\hyperlink{def-sequencestmts}{\textsf{sequence\_stmts}}}
+
+\newcommand\eof[0]{\hyperlink{def-eof}{\textsf{eof}}}
+
+\newcommand\Char[1]{\fbox{#1}}
+\newcommand\SpaceChar[0]{\framebox[1cm]{\color{white}A}}
+%\newcommand\Underscore[0]{\fbox{\_}}
+\newcommand\Underscore[0]{'\_'}
+
+\newcommand\REasciichar[0]{\hyperlink{def-reasciichar}{\texttt{<}\textsf{ascii\_char}\texttt{>}}}
+\newcommand\REdigit[0]{\hyperlink{def-redigit}{\texttt{<}\textsf{digit}\texttt{>}}}
+\newcommand\REintlit[0]{\hyperlink{def-reintlit}{\texttt{<}\textsf{int\_lit}\texttt{>}}}
+\newcommand\REhexlit[0]{\hyperlink{def-rehexlit}{\texttt{<}\textsf{hex\_lit}\texttt{>}}}
+\newcommand\REreallit[0]{\hyperlink{def-rereallit}{\texttt{<}\textsf{real\_lit}\texttt{>}}}
+\newcommand\REstrchar[0]{\hyperlink{def-restrchar}{\texttt{<}\textsf{str\_char}\texttt{>}}}
+\newcommand\REstringlit[0]{\hyperlink{def-restringlit}{\texttt{<}\textsf{string\_lit}\texttt{>}}}
+\newcommand\REbitvectorlit[0]{\hyperlink{def-rebitvectorlit}{\texttt{<}\textsf{bitvector\_lit}\texttt{>}}}
+\newcommand\REbitmasklit[0]{\hyperlink{def-rebitmasklit}{\texttt{<}\textsf{bitmask\_lit}\texttt{>}}}
+\newcommand\REletter[0]{\hyperlink{def-reletter}{\texttt{<}\textsf{letter}\texttt{>}}}
+\newcommand\REidentifier[0]{\hyperlink{def-reidentifier}{\texttt{<}\textsf{identifier}\texttt{>}}}
+\newcommand\REcomment[0]{\hyperlink{def-recomment}{\texttt{<}\textsf{comment}\texttt{>}}}
+
+\newcommand\aslparse[0]{\textsf{asl\_parse}}
+\newcommand\aslscan[0]{\hyperlink{def-aslscan}{\textsf{scan}}}
+\newcommand\maxmatches[0]{\hyperlink{def-maxmatch}{\textsf{max\_matches}}}
+\newcommand\remaxmatch[0]{\hyperlink{def-rematch}{\textsf{re\_max\_match}}}
+\newcommand\Token[0]{\hyperlink{def-token}{\textsf{Token}}}
+\newcommand\LexicalError[0]{\textsf{\#LE}}
+\newcommand\ParseError[0]{\textsf{\#PE}}
+\newcommand\discard[0]{\textsf{discard}}
+\newcommand\booltolit[0]{\textsf{bool\_to\_lit}}
+\newcommand\decimaltolit[0]{\textsf{dec\_to\_lit}}
+\newcommand\hextolit[0]{\textsf{hex\_to\_lit}}
+\newcommand\realtolit[0]{\textsf{real\_to\_lit}}
+\newcommand\strtolit[0]{\textsf{str\_to\_lit}}
+\newcommand\bitstolit[0]{\textsf{bits\_to\_lit}}
+\newcommand\masktolit[0]{\textsf{mask\_to\_lit}}
+\newcommand\truetolit[0]{\textsf{true\_to\_lit}}
+\newcommand\falsetolit[0]{\textsf{false\_to\_lit}}
+\newcommand\tokenid[0]{\textsf{token\_id}}
+\newcommand\lexicalerror[0]{\textsf{lexical\_error}}
+\newcommand\toidentifier[0]{\textsf{to\_identifier}}
+\newcommand\eoftoken[0]{\textsf{eof\_token}}
+\newcommand\Teof[0]{\textsf{EOF()}}
+\newcommand\Terror[0]{\textsf{ERROR()}}
+\newcommand\Twhitespace[0]{\textsf{WHITE\_SPACE()}}
+\newcommand\LexSpec[0]{\textsf{LexSpec}}
+%\newcommand\Teof[0]{\verbatimterminal{EOF}{EOF}}
+\newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
+\newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
+
+\newcommand\name[0]{\texttt{name}}
+
+\newcommand\astversion[1]{#1\texttt{\_ast}}
 
 \author{Arm Architecture Technology Group}
 \title{ASL Syntax Reference \\
@@ -13,10 +531,1175 @@
 
 \include{disclaimer.tex}
 
-\chapter{Preamble}
-An abstract syntax is a form of context-free grammar over structured trees. Compilers and interpreters typically start by parsing the text of a program and producing an abstract syntax tree (AST, for short), and then continue to operate over that tree.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This document defines how an ASL specification, given as text, can be transformed into an \emph{abstract syntax tree},
+which is a tree-like data structure. This transformation occurs in three stages:
+
+\begin{description}
+  \item[Lexical Analysis] The text is first transformed into a list of \emph{tokens}.
+        This stage is defined in \chapref{lexicalanalysis};
+  \item[Parsing] The list of tokens is transformed into a \emph{parse tree}.
+        This stage is defined in \chapref{parsing};
+  \item[Abstraction] The parse tree is transformed into an abstract syntax tree. This is a conceptual stage. In actuality,
+        the parsing stage transforms the list of tokens directly into an abstract syntax tree. However, it is useful to
+        distinguish between the parsing state and the abstraction stage.
+        ASL abstract syntax trees are defined in \chapref{ASLAbstractSyntax}.
+        This stage is defined in \chapref{BuildingAbstractSyntaxTrees}.
+\end{description}
+
+% The following macros will be moved to ASLmacros.tex when we unify all reference documents.
+\newcommand\ReadEffect[0]{\textsf{ReadEffect}}
+\newcommand\Normal[0]{\textsf{Normal}}
+\newcommand\ThrowingConfig[0]{\texttt{\#T}}
+\newcommand\OrAbnormal[0]{\terminateas \ThrowingConfig, \ErrorConfig}
+\newcommand\vg[0]{\texttt{g}}
+\newcommand\env[0]{\texttt{env}}
+\newcommand\parallelcomp[0]{\parallel}
+\newcommand\binoprel[0]{\texttt{binop}}
+\newcommand\unoprel[0]{\texttt{unop}}
+\newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\texttt{eval\_expr\_sef}}(#1)}
+\newcommand\XGraphs[0]{\mathcal{G}}
+\newcommand\TError[0]{\textsf{TDynError}}
+\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
+\newcommand\annotaterel[0]{\textsf{type}}
+\newcommand\typearrow[0]{\xrightarrow{\annotaterel}}
+\newcommand\evalexpr[1]{\texttt{eval\_expr}(#1)}
+\newcommand\vt[0]{\texttt{t}}
+\newcommand\veone[0]{\texttt{e1}}
+\newcommand\vetwo[0]{\texttt{e2}}
+\newcommand\vvone[0]{\texttt{v1}}
+\newcommand\vvtwo[0]{\texttt{v2}}
+\newcommand\vl[0]{\texttt{l}}
+\newcommand\vm[0]{\texttt{m}}
+\newcommand\vmone[0]{\texttt{m1}}
+\newcommand\vmtwo[0]{\texttt{m2}}
+\input{ASLFormal.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{ASL Lexical Definition \label{chap:lexicalanalysis}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This chapter defines the various elements of an ASL specification text in a high-level way
+and then formalizes the lexical analysis as a function that takes a text and returns
+a list of \emph{tokens} or a lexical error.
+
+\section{ASL Specification Text}
+An ASL specification is a string --- a list of ASCII characters --- consisting of a \emph{content text} followed by an \emph{end-of-file}.
+The context text is a list of
+ASCII characters that have the decimal encoding of 32 through 126 (inclusive),
+which includes the space character (decimal encoding 32),
+as well as
+carriage return (decimal encoding 13) and line feed (decimal encoding 10).
+\hypertarget{def-eof}{}
+The end of file is the combination of two characters --- a carriage return followed by a line feed,
+which we denote by $\eof$.
+The context text does not contain an end-of-file.
+
+Comments, newlines and space characters are treated as whitespace.
+
+It is an error to use a tab character in ASL specification text (decimal encoding 9).
+
+\hypertarget{def-regex}{}
+Table~\ref{ta:LexicalRegularExpressions} defines the regular expressions $\RegExp$ used to define
+\emph{lexemes} --- substrings of the ASL specification text that are used to form \emph{tokens}.
+We use the notation \Char{c} for characters such as the apostrophe.
+
+\hypertarget{def-reasciichar}{}
+Let $\REasciichar$ stand for any ASCII character:
+\begin{center}
+\begin{tabular}{rcl}
+$\REasciichar$  &$\triangleq$& \texttt{ASCII\{0-255\}}
+\end{tabular}
+\end{center}
+
+\begin{table}
+\caption{Lexical Regular Expressions \label{ta:LexicalRegularExpressions}}
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{RegExp} & \textbf{Matches}\\
+\hline
+\texttt{'c'}              & The character c\\
+\Char{c}                  & The character c\\
+\texttt{ASCII\{a-b\}}       & The ASCII range between decimals 'a' and 'b'\\
+\texttt{( $A$ )}          & $A$\\
+$A$ $B$                   & $A$ followed by $B$\\
+\texttt{$A$ | $B$}        & A or B\\
+\texttt{$A$ - $B$}        & $A$ but not $B$\\
+\texttt{$A$*}             & Zero or more repetitions of A\\
+\texttt{$A$+}             & One or more repetitions of A\\
+\texttt{["a\_string"]}    & Any character in \texttt{a\_string}\\
+\texttt{\{"a\_string"\}}  & The string \texttt{a\_string} verbatim\\
+\texttt{<}r\texttt{>}     & The lexical regular expression defined for \texttt{<}r\texttt{>}\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\section{Comments}
+ASL supports comments in the style of C++:
+\begin{itemize}
+\item Single-line comments: the text from \text{//} until the end of the line
+is a comment.
+\item Multi-line comments: the text between \texttt{/*} and \texttt{*/} is a comment.
+\end{itemize}
+Comments do not nest and the two styles of comments do not interact with each other.
+
+\section{Integer Literals}
+Integers are written either in decimal using one or more of the characters \texttt{0-9} and underscore, or in hexadecimal
+using \texttt{0x} at the start followed by the characters \texttt{0-9, a-f, A-F} and underscore. An integer literal cannot start with
+an underscore.
+
+This is formalized by the following lexical regular expression:
+\hypertarget{def-redigit}{}
+\hypertarget{def-reintlit}{}
+\hypertarget{def-rehexlit}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REdigit$  &$\triangleq$& \texttt{['0-9']}\\
+$\REintlit$ &$\triangleq$& \texttt{\REdigit\ ('\_' | \REdigit)*}\\
+$\REhexlit$ &$\triangleq$& \texttt{'0' 'x' (\REdigit\ | ["abcdefABCDEF"])} \\
+          &            & $\wrappedline$ \texttt{('\_' | \REdigit\ | ["abcdefABCDEF"])*}
+\end{tabular}
+\end{center}
+
+\section{Real Number Literals}
+Fixed point real numbers are written in decimal and consist of one or more decimal digits, a decimal point and one
+or more decimal digits. Underscores can be added between digits to aid readability
+
+Underscores in numbers are not significant, and their only purpose is to separate groups of digits to make constants
+such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} easier to read,
+
+This is formalized by the following lexical regular expression:
+\hypertarget{def-reallit}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* '.' \REdigit\ (\Underscore\ | \REdigit)*}
+\end{tabular}
+\end{center}
+
+\section{Boolean Literals}
+Boolean literals are written using \texttt{TRUE} or \texttt{FALSE}.
+
+\section{Bitvector Literals}
+Constant bit-vectors are written using 1, 0 and spaces surrounded by single-quotes.
+\hypertarget{def-rebitvectorlit}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REbitvectorlit$ &$\triangleq$& \texttt{\Char{'} ["01 "]* \Char{'}}
+\end{tabular}
+\end{center}
+
+The spaces in a bitvector are not significant and are only used to improve readability.
+For example, \texttt{'1111 1111 1111 1111'} is the same as \texttt{'1111111111111111'}.
+
+Constant bit-masks are written using \texttt{1}, \texttt{0}, \texttt{x} and spaces surrounded by single-quotes.
+The \texttt{x} represents a don’t care character.
+
+\section{Bit-mask Literals}
+
+\hypertarget{def-rebitmasklit}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REbitmasklit$ &$\triangleq$& \texttt{\Char{'} ["01x "]* \Char{'}}
+\end{tabular}
+\end{center}
+
+The spaces in a constant bit-mask are not significant and are only used to improve readability.
+
+\section{String Literals}
+
+A string value is a string of zero or more characters, where a character is a printable ASCII character, tab (ASCII
+code \texttt{0x09}) or newline (ASCII code \texttt{0x0A}). String values are created by string literals.
+String literals consist of printable characters surrounded by double-quotes. Actual tabs and newlines are not
+permitted in string literals, meaning that string literals cannot span multiple source lines. The backslash character,
+\verb|`\'|, is treated as an escape character.
+
+The escape sequences allowed in string literals appear in Table~\ref{ta:SscapeSeuqnces}.
+\begin{table}
+\caption{Escape Sequences in String Literals\label{ta:SscapeSeuqnces}}
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Escape sequence} & \textbf{Meaning}\\
+\hline
+\verb|\n| & The newline, ASCII code \texttt{0x0A}\\
+\verb|\t| & The tab, ASCII code \texttt{0x09}\\
+\verb|\\| & The backslash character, \verb|\|\\
+\verb|\"| & The double-quote character, \texttt{"}\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\hypertarget{def-restringlit}{}
+\hypertarget{def-restrchar}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REstrchar$ &$\triangleq$& ASCII\{32-126\}\\
+$\REstringlit$ &$\triangleq$& \Char{\texttt{"}} ( ($\REstrchar$ \texttt{-} [ \Char{\texttt{"}} \Char{$\backslash$}]) $|$ (\Char{\textbackslash} [\texttt{"n t \Char{\texttt{"}} \Char{\textbackslash}"}])  )* \Char{\texttt{"}}
+\end{tabular}
+\end{center}
+
+\section{Identifiers}
+Identifiers start with a letter or underscore and continue with zero or more letters, underscores or digits.
+Identifiers are case sensitive. To improve readability, it is recommended to avoid the use of identifiers that differ
+only by the case of some characters.
+
+By convention, identifiers that begin with double-underscore are reserved for use in the implementation and should
+not be used in specifications.
+
+\hypertarget{def-reletter}{}
+\hypertarget{def-reidentifier}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REletter$ &$\triangleq$& \texttt{'a-z' $|$ 'A-Z'}\\
+$\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ '\_') ($\REletter$ $|$ '\_' $|$ $\REdigit$)*}\\
+\end{tabular}
+\end{center}
+
+An enumeration literal is also classed as a literal constant, but is syntactically an identifier.
+
+\section{Lexical Analysis}
+Lexical analysis is defined via the function
+\hypertarget{def-aslscal}{}
+\[
+\aslscan : \LexSpec \times \REasciichar^* \aslto (\Token^* \cup \{\LexicalError\})
+\]
+which takes a \emph{lexical specification} (explained soon), an ASL specification string
+(where characters are simply numbers representing ASCII characters)
+and returns a sequence of tokens (tokens are defined below) or a \emph{lexical error} $\LexicalError$.
+
+Tokens have the form $L(v)$ where $L$ is a token label, signifying the meaning of the token,
+and $v$ is a value carried by the token, which is used to construct the respective Abstract Syntax Tree nodes.
+
+The set of tokens used for the lexical analysis of ASL strings is defined below, using the following notations.
+
+\hypertarget{def-lang}{}
+The notation $\Lang$ stands for \emph{formal language} of a given regular expression. That is, the set of strings that match
+that regular expression.
+
+\hypertarget{def-token}{}
+\[
+\begin{array}{rcl}
+\Token &\triangleq& \{\Tintlit(n) \;|\; n\in\Z\}\ \cup\\
+        & & \{\Treallit(q) \;|\; q\in\Q\}\ \cup\\
+        & & \{\Tstringlit(s) \;|\; s\in \Lang(\REstringlit)\}\ \cup\\
+        & & \{\Tbitvectorlit(b) \;|\; b\in\{0,1\}^*\}\ \cup\\
+        & & \{\Tmasklit(m) \;|\; m\in\{0,1,x\}^*\}\ \cup\\
+        & & \{\Tboollit(\True), \Tboollit(\False)\}\ \cup \hypertarget{def-tidentifier}{}\\
+        & & \{\Tidentifier(\id) \;|\; \id\in \Lang(\REidentifier)\} \\
+        & & \{\Tlexeme(s) \;|\; s\in\Strings\} \\
+        & & \{\Twhitespace, \Teof, \Terror\}
+\end{array}
+\]
+
+Tokens with the label $\Tlexeme$ are ones where the value $s$ is simply the \emph{lexeme} for that token.
+That is, the substring representing that token. Later when we will refer to such token by simply quoting
+the lexeme of the token and dropping the label, for brevity. For example, instead of $\Tlexeme(\texttt{for})$,
+we will write $\Tfor$.
+
+The special tokens $\Twhitespace$, $\Teof$ and $\Terror$ represent white space lexemes, $\eof$, and an error situation
+(for example, using a reserved keyword), respectively.
+
+A lexical specification consists of a list of pairs $[(r_1,f_1),\ldots,(r_k,f_k)] \in \LexSpec$
+where each pair $(r_i,f_i)$ consists of a lexical regular expression $r_i$
+and a function $f_i : \Strings \aslto \Token$.
+
+The function $\remaxmatch : \overname{\RegExp}{e} \times \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \times \overname{\Strings}{s_2}) \cup \{\bot\}$
+returns the \emph{longest} match of a regular expression $e$ for a prefix of a string $s$.
+More precisely:
+$\remaxmatch(e, s) = (s_1,s_2)$ means that $s_1\in\Lang(e)$ and $s = s_1 \concat s_2$.
+If no match exists, it is indicated by returning $\bot$.
+
+The function $\maxmatches : \overname{\LexSpec}{R} \times \overname{\Strings}{s} \aslto \overname{\LexSpec}{R'}$
+returns the sublist of $R$ consisting of pairs whose maximal matching $s$ is equal. Importantly, the result sublist $R'$ maintains
+the order of pairs in $R$. If all expressions in $R$ do not match (that is $\remaxmatch$ return $\bot$), then $R'$ is the empty list.
+
+The function $\aslscan$ is constructively defined via the following inference rules:
+
+\begin{mathpar}
+\inferrule[no\_match]{
+  \maxmatches(R, s) = \emptylist
+}{
+  \aslscan(R, s) \scanarrow \LexicalError
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[whitespace]{
+  \maxmatches(R, s) = [(e_1,g_1),\ldots,(e_n,g_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  s = s_1 \concat s_2\\
+  g_1(s_1) = \Twhitespace\\
+  \aslscan(R, s_2) \scanarrow \tstwo \terminateas \LexicalError
+}{
+  \aslscan(R, s) \scanarrow \tstwo
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[eof]{
+  \maxmatches(R, s) = [(e_1,g_1),\ldots,(e_n,g_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  s = s_1 \concat s_2\\
+  g_1(s_1) = \Teof
+}{
+  \aslscan(R, s) \scanarrow [t_1]
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \maxmatches(R, s) = [(e_1,g_1),\ldots,(e_n,g_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  s = s_1 \concat s_2\\
+  g_1(s_1) = \Terror
+}{
+  \aslscan(R, s) \scanarrow \LexicalError
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[token]{
+  \maxmatches(R, s) = [(e_1,g_1),\ldots,(e_n,g_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  s = s_1 \concat s_2\\
+  g_1(s_1) = t_1\\
+  t_1 \not\in \{\Teof, \Twhitespace, \Terror\}\\
+  \aslscan(s_2) \scanarrow \tstwo \terminateas \LexicalError
+}{
+  \aslscan(R, s) \scanarrow [t_1] \concat \tstwo
+}
+\end{mathpar}
+
+This form of lexical analysis is referred to as ``Maximal Munch'' in Compiler Theory
+and is the most common form of lexical analysis.
+See ``Compilers: Principles, Techniques, and Tools''~\cite{ASU86} for more details.
+
+\section{ASL Lexical Specification}
+We now define the lexical specification for ASL via token functions and tables
+that associate regular expressions to token functions.
+
+\subsection{Token Functions}
+\begin{itemize}
+\item The function $\discard$ is a constant function that always returns $\Twhitespace$.
+
+\item The function $\decimaltolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
+by decimal representation.
+
+\item The function $\hextolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
+by hexadecimal representation.
+
+\item The function $\realtolit(s)$ returns $\Treallit(q)$ where $q$ is the real value represented by $s$
+by floating point representation.
+
+\item The function $\strtolit(s)$ returns $\Tstringlit(s')$ where $s'$ is the string value represented by $s$.
+
+\item The function $\bitstolit(s)$ returns $\Tbitvectorlit(b)$ where $b$ is the sequence of bits
+given by $s$.
+
+\item The function $\masktolit(s)$ returns $\Tmasklit(m)$ where $m$ is the bitmask given by $s$.
+
+\item The function $\falsetolit(s)$ returns $\Tboollit(\False)$.
+
+\item The function $\truetolit(s)$ returns $\Tboollit(\True)$.
+
+\item The function $\tokenid(s)$ returns $\Tlexeme(s)$.
+\end{itemize}
+
+\subsection{Regular Expressions and Corresponding Token Functions}
+When several regular expressions are listed in a row, it means that they are all associated with the same
+token function.
+
+The lexical specification is given by the following four tables.
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expressions} & \textbf{Token Function}\\
+\hline
+\texttt{'\textbackslash n'}           & $\discard$ \\
+\texttt{[' ' '\textbackslash r']+}    & $\discard$ \\
+$\REcomment$                          & $\discard$ \\
+$\REintlit$                           & $\decimaltolit$ \\
+$\REhexlit$                           & $\hextolit$ \\
+$\REreallit$                          & $\realtolit$ \\
+$\REstringlit$                        & $\strtolit$ \\
+$\REbitvectorlit$                     & $\bitstolit$ \\
+$\REbitmasklit$                       & $\masktolit$ \\
+\texttt{'!'}, \texttt{','}, \texttt{'<'}, \texttt{">>"}, \texttt{"\&\&"}, \texttt{"-->"}, \texttt{"<<"}                         & $\tokenid$  \\
+\texttt{']'}, \texttt{')'}, \texttt{".."}, \texttt{'='}, \texttt{'\{'}, \texttt{"!="}, \texttt{'-'}, \texttt{"<->"}                        & $\tokenid$  \\
+\texttt{'['}, \texttt{'('}, \texttt{'.'}, \texttt{"<="}, \texttt{'\textasciicircum'}, \texttt{'*'}, \texttt{'/'}                          & $\tokenid$  \\
+\texttt{"=="}, \texttt{"||"}, \texttt{'+'}, texttt{':'}, \texttt{"=>"},                          & $\tokenid$  \\
+\texttt{'\}'}, \texttt{"++"}, \texttt{'>'}, \texttt{"+:"}, \texttt{"*:"}, \texttt{';'}, \texttt{">="}                         & $\tokenid$  \\
+"@looplimit"                          & $\tokenid$  \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expressions} & \textbf{Token Function}\\
+\hline
+\texttt{"AND"}, \texttt{"array"}, \texttt{"as"}, \texttt{"assert"},      & $\tokenid$ \\
+\texttt{"begin"}, \texttt{"bit"}, \texttt{"bits"}, \texttt{"boolean"}       & $\tokenid$ \\
+\texttt{"case"}, \texttt{"catch"}, \texttt{"config"}, \texttt{"constant"}      & $\tokenid$ \\
+\texttt{"DIV"}, \texttt{"DIVRM"}, \texttt{"do"},\texttt{"downto"}        & $\tokenid$ \\
+\texttt{"else"}, \texttt{"elsif"}, \texttt{"end"}, \texttt{"enumeration"}   & $\tokenid$ \\
+\texttt{"XOR"}           & $\tokenid$ \\
+\texttt{"exception"}     & $\tokenid$ \\
+\texttt{"FALSE"} & $\falsetolit$  \\
+\texttt{"for"}, \texttt{"func"}          & $\tokenid$ \\
+\texttt{"getter"}        & $\tokenid$ \\
+\texttt{"if"}, \texttt{"IN"}, \texttt{"integer"}       & $\tokenid$ \\
+\texttt{"let"}           & $\tokenid$ \\
+%"limit"}         & LIMIT \\
+\texttt{"MOD"}           & $\tokenid$ \\
+\texttt{"NOT"}           & $\tokenid$ \\
+\texttt{"of"},      \texttt{"OR"},      \texttt{"otherwise"}                  & $\tokenid$ \\
+\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}                      & $\tokenid$ \\
+\texttt{"real"},    \texttt{"record"},  \texttt{"repeat"}, \texttt{"return"}  & $\tokenid$ \\
+\texttt{"setter"},  \texttt{"string"},  \texttt{"subtypes"}                   & $\tokenid$ \\
+\texttt{"then"},    \texttt{"throw"},   \texttt{"to"}, \texttt{"try"}         & $\tokenid$ \\
+\texttt{"TRUE"}          & $\truetolit$ \\
+\texttt{"type"}          & $\tokenid$ \\
+\texttt{"UNKNOWN"}, \texttt{"until"}         & $\tokenid$ \\
+\texttt{"var"}           & $\tokenid$ \\
+\texttt{"when"}, \texttt{"where"}, \texttt{"while"}, \texttt{"with"}          & $\tokenid$ \\
+\hline
+\end{tabular}
+\end{center}
+
+The following list represents keywords that are reserved for future use.
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expressions} & \textbf{Token Function}\\
+\hline
+\texttt{"SAMPLE"}, \texttt{"UNSTABLE"} & $\lexicalerror$ \\
+\texttt{"\_"}, \texttt{"access"}, \texttt{"advice"}, \texttt{"after"} & $\lexicalerror$ \\
+\texttt{"any"}, \texttt{"aspect"} & $\lexicalerror$ \\
+\texttt{"assume"}, \texttt{"assumes"}, \texttt{"before"} & $\lexicalerror$ \\
+\texttt{"call"}, \texttt{"cast"} & $\lexicalerror$ \\
+\texttt{"class"}, \texttt{"dict"} & $\lexicalerror$ \\
+\texttt{"endcase"}, \texttt{"endcatch"}, \texttt{"endclass"} & $\lexicalerror$ \\
+\texttt{"endevent"}, \texttt{"endfor"}, \texttt{"endfunc"}, \texttt{"endgetter"} & $\lexicalerror$ \\
+\texttt{"endif"}, \texttt{"endmodule"}, \texttt{"endnamespace"}, \texttt{"endpackage"} & $\lexicalerror$ \\
+\texttt{"endproperty"}, \texttt{"endrule"}, \texttt{"endsetter"}, \texttt{"endtemplate"} & $\lexicalerror$ \\
+\texttt{"endtry"}, \texttt{"endwhile"}, \texttt{"entry"} & $\lexicalerror$ \\
+\texttt{"event"}, \texttt{"export"}, \texttt{"expression"} & $\lexicalerror$ \\
+\texttt{"extends"}, \texttt{"extern"}, \texttt{"feature"} & $\lexicalerror$ \\
+\texttt{"get"}, \texttt{"gives"} & $\lexicalerror$ \\
+\texttt{"iff"}, \texttt{"implies"}, \texttt{"import"} & $\lexicalerror$ \\
+\texttt{"intersect"}, \texttt{"intrinsic"} & $\lexicalerror$ \\
+\texttt{"invariant"}, \texttt{"is"}, \texttt{"list"} & $\lexicalerror$ \\
+\texttt{"map"}, \texttt{"module"}, \texttt{"namespace"}, \texttt{"newevent"} & $\lexicalerror$ \\
+\texttt{"newmap"}, \texttt{"original"} & $\lexicalerror$ \\
+\texttt{"package"}, \texttt{"parallel"} & $\lexicalerror$ \\
+\texttt{"pointcut"}, \texttt{"port"}, \texttt{"private"} & $\lexicalerror$ \\
+\texttt{"profile"}, \texttt{"property"}, \texttt{"protected"}, \texttt{"public"} & $\lexicalerror$ \\
+\texttt{"replace"} & $\lexicalerror$ \\
+\texttt{"requires"}, \texttt{"rethrow"}, \texttt{"rule"} & $\lexicalerror$ \\
+\texttt{"set"}, \texttt{"shared"}, \texttt{"signal"} & $\lexicalerror$ \\
+\texttt{"statements"}, \texttt{"template"} & $\lexicalerror$ \\
+\texttt{"typeof"}, \texttt{"union"} & $\lexicalerror$ \\
+\texttt{"using"}, \texttt{"watch"} & $\lexicalerror$ \\
+\texttt{"ztype"} & $\lexicalerror$ \\
+% "pattern"
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expression} & \textbf{Token Function}\\
+\hline
+$\REidentifier$   & $\toidentifier$ \\
+$\eof$            & $\eoftoken$ \\
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{ASL Concrete Syntax \label{chap:parsing}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This chapter defines the grammar of ASL. The grammar is presented via two extensions
+to context-free grammars --- \emph{inlined derivations} and \emph{parametric productions},
+inspired by the Menhir Parser Generator~\cite{MenhirManual} for the OCaml language.
+Those extensions can be viewed as macros over context-free grammars, which can be
+expanded to yield a standard context-free grammar.
+
+Our definition of the grammar and description of the parsing mechanism heavily relies
+on the theory of parsing via LR(1) grammars and LR(1) parser generators.
 %
-The reason for this is that abstract syntax trees abstract away details that are irrelevant to the semantics of the program, such as punctuation and scoping syntax, which are mostly there to facilitate parsing.
+See ``Compilers: Principles, Techniques, and Tools''~\cite{ASU86} for a detailed
+definition of LR(1) grammars and parser construction.
+
+The expanded context-free grammar is an LR(1) grammar, modulo shift-reduce
+conflicts that are resolved via appropriate precedence definitions.
+That is, given a list of token, returned from $\aslscan$, it is possible to apply
+an LR(1) parser to obtain a parse tree if the list of tokens is in the formal language
+of the grammar and return a parse error otherwise.
+
+The outline of this chapter is as follows:
+\begin{itemize}
+  \item Definition of inlined derivations (see \secref{InlinedDerivations})
+  \item Definition of parametric productions (see \secref{ParametricProductions})
+  \item Definition of the ASL grammar (see \secref{ASLGrammar})
+  \item Definition of priority and associativity of operators (see \secref{PriorityAndAssociativity})
+  \item Definition of parse trees (see \secref{ParseTrees})
+\end{itemize}
+
+\section{Inlined Derivations \label{sec:InlinedDerivations}}
+Context-free grammars consist of a list of \emph{derivations} $N \derives S^*$
+where $N$ is a non-terminal symbol and $S$ is a list of non-terminal symbols and terminal symbols,
+which correspond to tokens.
+We refer to a list of such symbols as a \emph{sentence}.
+A special form of a sentence is the \emph{empty sentence}, written $\emptysentence$.
+
+As commonly done, we aggregate all derivations associated with the same non-terminal symbol
+by writing $N \derives R_1 \;|\; \ldots \;|\; R_k$.
+We refer to the right-hand-side sentences $R_{1..k}$ as the \emph{alternatives} of $N$.
+
+Our grammar contains another form of derivation --- \emph{inlined derivation} ---
+written as $N \derivesinline R_1 \;|\; \ldots \;|\; R_k$.
+Expanding an inlined derivation consists of replacing each instance of $N$
+in a right-hand-side sentence of a derivation with each of $R_{1..k}$, thereby
+creating $k$ variations of it (and removing $N \derivesinline R_1 \;|\; \ldots \;|\; R_k$
+from the set of derivations).
+For example, given the inlined derivation
+\[
+  A \derivesinline a \;|\; b
+\]
+and another derivation where $A$ appears:
+\[
+B \derives A \parsesep c
+\]
+expanding $A$ yields:
+\[
+B \derives a \parsesep c \;|\; b \parsesep c
+\]
+Note that the same would apply if $B$ was defined via an inlined derivation.
+That is, an inlined derivation can itself be expanded if it contains non-terminal
+symbols defined via inlined derivations.
+For example, if we had
+\[
+B \derivesinline A \parsesep c
+\]
+expanding $A$ in $B$ would result in
+\[
+B \derivesinline a \parsesep c \;|\; b \parsesep c
+\]
+
+Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
+all inlined derivations to obtain a context-free grammar without any inlined derivations.
+
+\section{Parametric Productions \label{sec:ParametricProductions}}
+A parametric production has the form
+$N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
+where $p_{1..m}$ are place holders for grammar symbols and may appear in any of the alternatives $R_{1..k}$.
+We refer to $N(p_{1..m})$ as a \emph{parametric non-terminal}.
+
+\newcommand\uniquesymb[1]{\textsf{unique}(#1)}
+Given sentences $S_{1..m}$, we can expand $N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
+by creating a unique symbols for $N(p_{1..m})$, denoted as $\uniquesymb{S_{1..m}}$, defining the
+derivations
+\[
+  \uniquesymb{S_{1..m}} \derives R_1[S_1/p_1,\ldots,S_m/p_m] \;|\; \ldots \;|\; R_k[S_1/p_1,\ldots,S_m/p_m]
+\]
+where $R_i[S_1/p_1,\ldots,S_m/p_m]$ means replacing each instance of $p_i$ with $S_i$.
+Then, the each instance of $S_{1..m}$ in the grammar is replaced by $\uniquesymb{S_{1..m}}$.
+If all instances of a parametric non-terminal are expanded this way, we can remove the derivations of the parametric
+non-terminal altogether.
+
+We note that a parametric production can be either a normal derivation of an inlined derivation.
+
+For example,
+\[
+  \option{x} \derives \emptysentence \;|\; x
+\]
+is useful for compactly defining derivations where part of a sentence may or may not appear.
+
+Suppose we have
+\[
+B \derives a \parsesep \option{A \parsesep b}
+\]
+then expanding the instance $\option{A, b}$ produces
+\[
+\uniquesymb{\option{A \parsesep b}} \derives \emptysentence \;|\; A \parsesep b
+\]
+since $x[A \parsesep b/x]$ yields $A \parsesep b$ and $\emptysentence[A \parsesep b/x]$ yields $\emptysentence$,
+and the derivations for $B$ are replaced by
+\[
+B \derives a \parsesep \uniquesymb{\option{A \parsesep b}}
+\]
+
+Expanding all instances of parametric productions results in a grammar without any parametric productions.
+
+\section{ASL Parametric Productions \label{sec:ASLParametricProductions}}
+We define the following parametric productions for various types of lists and optional productions.
+
+\paragraph{Optional Symbol}
+\hypertarget{def-option}{}
+\begin{flalign*}
+\option{x}   \derives\ & \emptysentence \;|\; x &\\
+\end{flalign*}
+
+\paragraph{Possibly-empty List}
+\hypertarget{def-maybeemptylist}{}
+\begin{flalign*}
+\maybeemptylist{x}   \derives\ & \emptysentence \;|\; x \parsesep \maybeemptylist{x} &\\
+\end{flalign*}
+
+\paragraph{Non-empty List}
+\hypertarget{def-nonemptylist}{}
+\begin{flalign*}
+\nonemptylist{x}   \derives\ & x \;|\; x \parsesep \nonemptylist{x}&\\
+\end{flalign*}
+
+\paragraph{Non-empty Comma-separated List}
+\hypertarget{def-nclist}{}
+\begin{flalign*}
+\NClist{x}   \derives\ & x \;|\; x \parsesep \Tcomma \parsesep \NClist{x} &\\
+\end{flalign*}
+
+\paragraph{Possibly-empty Comma-separated List}
+\hypertarget{def-clist}{}
+\begin{flalign*}
+\Clist{x}   \derivesinline\ & \emptysentence \;|\; \NClist{x} &\\
+\end{flalign*}
+
+\paragraph{Comma-separated List With At Least Two Elements}
+\hypertarget{def-clisttwo}{}
+\begin{flalign*}
+\Clisttwo{x}   \derivesinline\ & x \parsesep \Tcomma \parsesep \NClist{x} &\\
+\end{flalign*}
+
+\paragraph{Possibly-empty Parenthesized, Comma-separated List}
+\hypertarget{def-plist}{}
+\begin{flalign*}
+\Plist{x}   \derivesinline\ & \Tlpar \parsesep \Clist{x} \parsesep \Trpar &\\
+\end{flalign*}
+
+\paragraph{Parenthesized Comma-separated List With At Least Two Elements}
+\hypertarget{def-plisttwo}{}
+\begin{flalign*}
+\Plisttwo{x}   \derivesinline\ & \Tlpar \parsesep x \parsesep \Tcomma \parsesep \NClist{x} \parsesep \Trpar &\\
+\end{flalign*}
+
+\paragraph{Non-empty Comma-separated Trailing List}
+\hypertarget{def-tclist}{}
+\begin{flalign*}
+\NTClist{x}   \derives\ & x \parsesep \option{\Tcomma} &\\
+                          |\  & x \parsesep \Tcomma \parsesep \NTClist{x}
+\end{flalign*}
+
+\paragraph{Comma-separated Trailing List}
+\hypertarget{def-tclist}{}
+\begin{flalign*}
+\TClist{x}   \derivesinline\ & \option{\NTClist{x}} &\\
+\end{flalign*}
+
+\section{ASL Grammar \label{sec:ASLGrammar}}
+We now present the list of derivations for the ASL Grammar where the start non-terminal is $\Nast$.
+
+Notice that two of the derivations (for $\Nexprpattern$ and for $\Nexpr$) end with \\
+$\precedence{\Tunops}$.
+This is a precedence annotation, which is not part of the right-hand-side sentence, and is explained in \secref{PriorityAndAssociativity}
+and can be ignored upon first reading.
+
+For brevity, tokens are presented via their label only, dropping their associated value.
+For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
+
+\hypertarget{def-nast}{}
+\begin{flalign*}
+\Nast   \derives\ & \productionname{ast}{ast}\ \maybeemptylist{\Ndecl} &
+\end{flalign*}
+
+\hypertarget{def-ndecl}{}
+\hypertarget{def-funcdecl}{}
+\begin{flalign*}
+\Ndecl  \derivesinline\ & \productionname{funcdecl}{func\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &
+\hypertarget{def-proceduredecl}{}\\
+|\ & \productionname{proceduredecl}{procedure\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &
+\hypertarget{def-getter}{}\\
+|\ & \productionname{getter}{getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Nreturntype \parsesep \Nfuncbody&
+\hypertarget{def-noarggetter}{}\\
+|\ & \productionname{noarggetter}{no\_arg\_getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nreturntype \parsesep \Nfuncbody &
+\hypertarget{def-setter}{}\\
+|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Teq \parsesep \Ntypedidentifier \parsesep \Nfuncbody &
+\hypertarget{def-noargsetter}{}\\
+|\ & \productionname{noargsetter}{no\_arg\_setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Teq \parsesep \Ntypedidentifier \parsesep \Nfuncbody&
+\hypertarget{def-typedecl}{}\\
+|\ & \productionname{typedecl}{type\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&
+\hypertarget{def-subtypedecl}{}\\
+|\ & \productionname{subtypedecl}{subtype\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&
+\hypertarget{def-globalstorage}{}\\
+|\ & \productionname{globalstorage}{global\_storage}\ \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+   & \wrappedline\ \Nexpr \parsesep \Tsemicolon &
+\hypertarget{def-globaluninitvar}{}\\
+|\ & \productionname{globaluninitvar}{global\_uninit\_var}\ \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&
+\hypertarget{def-globalpragma}{}\\
+|\ & \productionname{globalpragma}{global\_pragma}\ \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+\end{flalign*}
+
+\hypertarget{def-nsubtype}{}
+\begin{flalign*}
+\Nsubtype \derivesinline\ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
+          |\              & \Tsubtypes \parsesep \Tidentifier &\\
+\end{flalign*}
+
+\hypertarget{def-nsubtypeopt}{}
+\begin{flalign*}
+\Nsubtypeopt           \derivesinline\ & \option{\Nsubtype} &
+\end{flalign*}
+
+\hypertarget{def-ntypedidentifier}{}
+\begin{flalign*}
+\Ntypedidentifier \derivesinline\ & \Tidentifier \parsesep \Nasty &
+\end{flalign*}
+
+\hypertarget{def-nopttypeidentifier}{}
+\begin{flalign*}
+\Nopttypedidentifier \derivesinline\ & \Tidentifier \parsesep \option{\Nasty} &
+\end{flalign*}
+
+\hypertarget{def-nasty}{}
+\begin{flalign*}
+\Nasty \derivesinline\ & \Tcolon \parsesep \Nty &
+\end{flalign*}
+
+\hypertarget{def-nreturntype}{}
+\begin{flalign*}
+\Nreturntype        \derivesinline\ & \Tarrow \parsesep \Nty &
+\end{flalign*}
+
+\hypertarget{def-nparamsopt}{}
+\begin{flalign*}
+\Nparamsopt \derivesinline\ & \emptysentence &\\
+                   |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-naccessargs}{}
+\begin{flalign*}
+\Naccessargs        \derivesinline\ & \Tlbracket \parsesep \Clist{\Ntypedidentifier} \parsesep \Trbracket &
+\end{flalign*}
+
+\hypertarget{def-nfuncargs}{}
+\begin{flalign*}
+\Nfuncargs          \derivesinline\ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &
+\end{flalign*}
+
+\hypertarget{def-nmaybeemptystmtlist}{}
+\begin{flalign*}
+\Nmaybeemptystmtlist          \derivesinline\ & \emptysentence \;|\; \Nstmtlist &
+\end{flalign*}
+
+\hypertarget{def-nfuncbody}{}
+\begin{flalign*}
+\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend &
+\end{flalign*}
+
+\hypertarget{def-nignoredoridentifier}{}
+\begin{flalign*}
+\Nignoredoridentifier \derivesinline\ & \Tminus \;|\; \Tidentifier &
+\end{flalign*}
+
+\vspace*{-\baselineskip}
+\paragraph{Parsing note:} $\Tvar$ is not derived by $\Nlocaldeclkeyword$ to avoid an LR(1) conflict.
+\hypertarget{def-nlocaldeclkeyword}{}
+\begin{flalign*}
+\Nlocaldeclkeyword \derivesinline\ & \Tlet \;|\; \Tconstant&
+\end{flalign*}
+
+\hypertarget{def-nstoragekeyword}{}
+\begin{flalign*}
+\Nstoragekeyword \derivesinline\ & \Tlet \;|\; \Tconstant \;|\; \Tvar \;|\; \Tconfig&
+\end{flalign*}
+
+\hypertarget{def-ndirection}{}
+\begin{flalign*}
+\Ndirection \derivesinline\ & \Tto \;|\; \Tdownto &
+\end{flalign*}
+
+\hypertarget{def-nalt}{}
+\begin{flalign*}
+\Nalt       \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
+|\ & \Totherwise \parsesep \Nstmtlist &
+\end{flalign*}
+
+\hypertarget{def-notherwiseopt}{}
+\begin{flalign*}
+\Notherwiseopt     \derives\ & \option{\Totherwise \parsesep \Tarrow \parsesep \Nstmtlist} &
+\end{flalign*}
+
+\hypertarget{def-ncatcher}{}
+\begin{flalign*}
+\Ncatcher \derivesinline\ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+          |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\end{flalign*}
+
+\hypertarget{def-nstmt}{}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend &\\
+|\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \maybeemptylist{\Nalt} \parsesep \Tend &\\
+|\ & \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+|\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
+                    \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+|\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend &\\
+|\ & \Tpass \parsesep \Tsemicolon &\\
+|\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
+|\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
+%|\ & \Tdebug \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tthrow \parsesep \Tsemicolon &\\
+|\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon &
+\end{flalign*}
+
+\hypertarget{def-nstmtlist}{}
+\begin{flalign*}
+\Nstmtlist \derivesinline\ & \nonemptylist{\Nstmt} &
+\end{flalign*}
+
+\hypertarget{def-nselse}{}
+\begin{flalign*}
+\Nselse \derives\ & \Telseif \parsesep \Nexpr \parsesep \Twhen \parsesep \Nstmtlist \parsesep \Nselse &\\
+|\ & \Tpass &\\
+|\ & \Telse \parsesep \Nstmtlist &
+\end{flalign*}
+
+\hypertarget{def-nlexpr}{}
+\begin{flalign*}
+\Nlexpr \derivesinline\ & \Nlexpratom &\\
+|\ & \Tminus &\\
+|\ & \Tlpar \parsesep \NClist{\Nlexpr} \parsesep \Trpar &
+\end{flalign*}
+
+\hypertarget{def-nlexpratom}{}
+\begin{flalign*}
+\Nlexpratom \derives\ & \Tidentifier &\\
+|\ & \Nlexpratom \parsesep \Nslices &\\
+|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier{\field} &\\
+|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &\\
+|\ & \Tlbracket \parsesep \NClist{{\Nlexpratom}} \parsesep \Trbracket &
+\end{flalign*}
+
+A $\Ndeclitem$ is another kind of left-hand-side expression,
+which appears only in declarations. It cannot have setter calls or set record fields,
+it must declare a new variable.
+\hypertarget{def-ndeclitem}{}
+\begin{flalign*}
+\Ndeclitem \derives\ & \Nuntypeddeclitem \parsesep \Nasty&\\
+|\ & \Nuntypeddeclitem  &
+\end{flalign*}
+
+\hypertarget{def-nuntypeddeclitem}{}
+\begin{flalign*}
+\Nuntypeddeclitem \derivesinline\ & \Tidentifier &\\
+|\ & \Tminus &\\
+|\ & \Plisttwo{\Ndeclitem} &
+\end{flalign*}
+
+\hypertarget{def-nintconstraints}{}
+\begin{flalign*}
+\Nintconstraints \derivesinline\ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-nintconstraintsopt}{}
+\begin{flalign*}
+\Nintconstraintsopt \derivesinline\ & \Nintconstraints \;|\; \emptysentence &
+\end{flalign*}
+
+\hypertarget{def-nintconstraint}{}
+\begin{flalign*}
+\Nintconstraint \derivesinline\ & \Nexpr &\\
+|\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
+\end{flalign*}
+
+\hypertarget{def-nexprpattern}{}
+\begin{flalign*}
+\Nexprpattern \derives\ & \Nvalue &\\
+                    |\  & \Tidentifier &\\
+                    |\  & \Nexprpattern \parsesep \Nbinop \parsesep \Nexpr &\\
+                    |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
+                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+                    |\  & \Tidentifier \parsesep \Plist{\Nexpr} &\\
+                    |\  & \Nexprpattern \parsesep \Nslices &\\
+                    |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tidentifier&\\
+                    |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
+                    |\  & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &\\
+                    |\  & \Nexprpattern \parsesep \Tas \parsesep \Nty &\\
+                    |\  & \Nexprpattern \parsesep \Tas \parsesep \Nintconstraints &\\
+                    |\  & \Nexprpattern \parsesep \Tin \parsesep \Npatternset &\\
+                    |\  & \Nexprpattern \parsesep \Tin \parsesep \Tmasklit &\\
+                    |\  & \Tunknown \parsesep \Tcolon \parsesep \Nty &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
+                    |\  & \Tlpar \parsesep \Nexprpattern \parsesep \Trpar &
+\end{flalign*}
+
+\hypertarget{def-npatternset}{}
+\begin{flalign*}
+\Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+                  |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-npatternlist}{}
+\begin{flalign*}
+\Npatternlist \derivesinline\ & \NClist{\Npattern} &
+\end{flalign*}
+
+\hypertarget{def-npattern}{}
+\begin{flalign*}
+\Npattern \derives\ & \Nexprpattern &\\
+                |\  & \Nexprpattern \parsesep \Tslicing \parsesep \Nexpr &\\
+                |\  & \Tminus &\\
+                |\  & \Tleq \parsesep \Nexpr &\\
+                |\  & \Tgeq \parsesep \Nexpr &\\
+                |\  & \Tmasklit &\\
+                |\  & \Plisttwo{\Npattern} &\\
+                |\  & \Npatternset &
+\end{flalign*}
+
+\hypertarget{def-nfields}{}
+\begin{flalign*}
+\Nfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Ntypedidentifier} \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-nfieldsopt}{}
+\begin{flalign*}
+\Nfieldsopt \derivesinline\ & \Nfields \;|\; \emptysentence &
+\end{flalign*}
+
+\hypertarget{def-nnslices}{}
+\begin{flalign*}
+\Nnslices \derivesinline\ & \Tlbracket \parsesep \NClist{\Nslice} \parsesep \Trbracket &
+\end{flalign*}
+
+\hypertarget{def-nslices}{}
+\begin{flalign*}
+\Nslices \derivesinline\ & \Tlbracket \parsesep \Clist{\Nslice} \parsesep \Trbracket &
+\end{flalign*}
+
+\hypertarget{def-nslice}{}
+\begin{flalign*}
+\Nslice \derivesinline\ & \Nexpr &\\
+              |\  & \Nexpr \parsesep \Tcolon \parsesep \Nexpr &\\
+              |\  & \Nexpr \parsesep \Tpluscolon \parsesep \Nexpr &\\
+              |\  & \Nexpr \parsesep \Tstarcolon \parsesep \Nexpr &
+\end{flalign*}
+
+\hypertarget{def-nbitfields}{}
+\begin{flalign*}
+\Nbitfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-nbitfield}{}
+\begin{flalign*}
+\Nbitfield \derivesinline\ & \Nnslices \parsesep \Tidentifier &\\
+                  |\ & \Nnslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
+                  |\ & \Nnslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &
+\end{flalign*}
+
+\hypertarget{def-nty}{}
+\begin{flalign*}
+\Nty \derives\ & \Tinteger \parsesep \option{\Nintconstraints} &\\
+            |\ & \Treal &\\
+            |\ & \Tboolean &\\
+            |\ & \Tstring &\\
+            |\ & \Tbit &\\
+            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \maybeemptylist{\Nbitfields} &\\
+            |\ & \Plist{\Nty} &\\
+            |\ & \Tidentifier &\\
+            |\ & \Tarray \parsesep \Tlbracket \parsesep \Nexpr \parsesep \Trbracket \parsesep \Tof \parsesep \Nty &
+\end{flalign*}
+
+\hypertarget{def-ntydecl}{}
+\begin{flalign*}
+\Ntydecl \derives\ & \Nty &\\
+            |\ & \Tenumeration \parsesep \Tlbrace \parsesep \NTClist{\Tidentifier} \parsesep \Trbrace &\\
+            |\ & \Trecord \parsesep \Nfieldsopt &\\
+            |\ & \Texception \parsesep \Nfieldsopt &
+\end{flalign*}
+
+\hypertarget{def-nfieldassign}{}
+\begin{flalign*}
+\Nfieldassign \derivesinline\ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
+\end{flalign*}
+
+\hypertarget{def-neelse}{}
+\begin{flalign*}
+\Neelse \derives\ & \Telse \parsesep \Nexpr &\\
+                     |\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &
+\end{flalign*}
+
+\hypertarget{def-nexpr}{}
+\begin{flalign*}
+\Nexpr \derives\  & \Nvalue &\\
+                    |\  & \Tidentifier &\\
+                    |\  & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &\\
+                    |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
+                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+                    |\  & \Tidentifier \parsesep \Plist{\Nexpr} &\\
+                    |\  & \Nexpr \parsesep \Nslices &\\
+                    |\  & \Nexpr \parsesep \Tdot \parsesep \Tidentifier&\\
+                    |\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
+                    |\  & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &\\
+                    |\  & \Nexpr \parsesep \Tas \parsesep \Nty &\\
+                    |\  & \Nexpr \parsesep \Tas \parsesep \Nintconstraints &\\
+                    |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
+                    |\  & \Nexpr \parsesep \Tin \parsesep \Tmasklit &\\
+                    |\  & \Tunknown \parsesep \Tcolon \parsesep \Nty &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
+                    |\  & \Tlpar \parsesep \Nexpr \parsesep \Trpar &\\
+                    |\  & \Plisttwo{\Nexpr} &
+\end{flalign*}
+
+\hypertarget{def-nvalue}{}
+\begin{flalign*}
+\Nvalue \derivesinline\ & \Tintlit &\\
+                     |\ & \Tboollit &\\
+                     |\ & \Treallit &\\
+                     |\ & \Tbitvectorlit &\\
+                     |\ & \Tstringlit &
+\end{flalign*}
+
+\hypertarget{def-nunop}{}
+\begin{flalign*}
+\Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &
+\end{flalign*}
+
+\hypertarget{def-nbinop}{}
+\begin{flalign*}
+\Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
+                     |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                     |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+\end{flalign*}
+
+\section{Parse Trees \label{sec:ParseTrees}}
+We now define \emph{parse trees} for the ASL expanded grammar. Those are later used for build Abstract Syntax Trees.
+
+\begin{definition}[Parse Trees]
+A \emph{parse tree} has one of the following forms:
+\begin{itemize}
+  \item A \emph{token node}, given by the token itself, for example, $\Tlexeme(\Tarrow)$ and $\Tidentifier(\id)$;
+  \item \hypertarget{def-epsilonnode}{} $\epsilonnode$, which represents the empty sentence --- $\emptysentence$.
+  \item A \emph{non-terminal node} of the form $N(n_{1..k})$ where $N$ is a non-terminal symbol,
+        which is said to label the node,
+        and $n_{1..k}$ are its children parse nodes,
+        for example,
+        $\Ndecl(\Tfunc, \Tidentifier(\id), \Nparamsopt, \Nfuncargs, \Nfuncbody)$
+        is labeled by $\Ndecl$ and has five children nodes.
+\end{itemize}
+\end{definition}
+(In the literature, parse trees are also referred to as \emph{derivation trees}.)
+
+\begin{definition}[Well-formed Parse Trees]
+A parse tree is \emph{well-formed} if its root is labelled by the start non-terminal ($\Nast$ for ASL)
+and each non-terminal node $N(n_{1..k})$ corresponds to a grammar derivation
+$N \derives l_{1..k}$ where $l_i$ is the label of node $n_i$ if it is a non-terminal node and $n_i$
+itself when it is a token.
+A non-terminal node $N(\epsilonnode)$ is well-formed if the grammar includes a derivation
+$N \derives \emptysentence$.
+\end{definition}
+
+\hypertarget{def-yield}{}
+\begin{definition}[Parse Tree Yield]
+The \emph{\yield} of a parse tree is the list of its tokens
+given by an in-order walk of the tree:
+\[
+\yield(n) \triangleq \begin{cases}
+  [t] & n \text{ is a token }t\\
+  \emptylist & n = \epsilonnode\\
+  \yield(n_1) \concat \ldots \concat \yield(n_k) & n = N(n_{1..k})\\
+\end{cases}
+\]
+\end{definition}
+
+% \newcommand\cleantokens[0]{\textsf{clean\_tokens}}
+% The function $\cleantokens : \Token^* \aslto \Token^*$
+% filters out all whitespace tokens and the $\eoftoken$,
+% leaving all other tokens in the same order.
+
+\hypertarget{def-parsenode}{}
+We denote the set of well-formed parse trees for a non-terminal symbol $S$ by $\parsenode{S}$.
+
+A parser is a function
+\[
+\aslparse : \Token^* \setminus \{\Terror\} \aslto \parsenode{\Nast} \cup \{\ParseError\}
+\]
+such that if $\aslparse(\ts) = n$ then $\yield(n)=\ts$ $\yield(n)=\ts$
+and if $\aslparse(\ts) = \ParseError$ then there is no well-formed tree
+$n$ such that $\yield(n)=\ts$.
+(Notice that we do not define a parser if $\ts$ is lexically illegal.)
+
+The language of a grammar $G$ is defined as follows:
+\[
+\Lang(G) = \{\yield(n) \;|\; n \text{ is a well-formed parse tree for }G\} \enspace.
+\]
+
+\section{Priority and Associativity \label{sec:PriorityAndAssociativity}}
+A context-free grammar $G$ is \emph{ambiguous} if there can be more than one parse tree for a given list of tokens
+$\ts \in \Lang(G)$.
+Indeed the expanded ASL grammar is ambiguous, for example, due to its definition of binary operation expressions.
+To allow assigning a unique parse tree to each sequence of tokens in the language of the ASL grammar,
+we utilize the standard technique of associating priority levels to productions and using them to resolve
+any shift-reduce conflicts in the LR(1) parser associated with our grammar (our grammar does not have any
+reduce-reduce conflicts).
+
+The priority of a grammar derivation is defined as the priority of its rightmost token.
+Derivations that do not contain tokens do not require a priority as they do not induce shift-reduce conflicts.
+
+The table below assigns priorities to tokens in increasing order, starting from the lowest priority (for $\Telse$)
+to the highest priority (for $\Tdot$).
+When a shift-reduce conflict arises during the LR(1) grammar construction
+it resolve in favor of the action (shift or reduce) associated with the derivation that has the higher priority.
+If two derivations have the same priority due to them both having the same rightmost token,
+the conflict is resolved based on the associativity associated with the token below:
+reduce for $\leftassoc$, shift for $\rightassoc$, and a parsing error for $\nonassoc$.
+
+The two rules involving a unary minus operation are not assigned the priority level of $\Tminus$,
+but rather then the priority level $\Tunops$, as denoted by the notation \\
+$\precedence{\Tunops}$
+appearing to their right. This is a standard way of dealing with a unary minus operation
+in many programming languages, which involves defining an artificial token $\Tunops$,
+which is never returned by the lexical analysis.
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Terminals} & \textbf{Associativity}\\
+\hline
+\Telse & \nonassoc\\
+\Tbor, \Tband, \Timpl, \Tbeq, \Tas & \leftassoc\\
+\Teqop, \Tneq & \leftassoc\\
+\Tgt, \Tgeq, \Tlt, \Tleq & \nonassoc\\
+\Tplus, \Tminus, \Tor, \Txor, \Tand & \leftassoc\\
+\Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr & \leftassoc\\
+\Tpow, \Tconcat & \leftassoc\\
+$\Tunops$ & \nonassoc\\
+\Tin & \nonassoc\\
+\Tdot, \Tlbracket & \leftassoc
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{ASL Abstract Syntax \label{chap:ASLAbstractSyntax}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+An abstract syntax is a form of context-free grammar over structured trees.
+Compilers and interpreters typically start by parsing the text of a program and producing an abstract syntax tree (AST, for short),
+and then continue to operate over that tree.
+%
+The reason for this is that abstract syntax trees abstract away details that are irrelevant to the semantics of the program,
+such as punctuation and scoping syntax, which are mostly there to facilitate parsing.
 
 Technically, there are two abstract syntaxes:
 a \emph{parsed abstract syntax} and a \emph{typed abstract syntax}.
@@ -28,8 +1711,6 @@ what looks like a slicing expression, which turns out to be a call to a getter.
 The typed AST represents that call directly, making it easier for an interpreter
 to evaluate that expression.
 
-\chapter{ASL Abstract Syntax}
-
 \section{ASL Abstract Syntax Trees}
 
 In an ASL abstract syntax tree, a node is one the following data types:
@@ -39,9 +1720,10 @@ In an ASL abstract syntax tree, a node is one the following data types:
 \item[Unlabelled Tuple Node.] A tuple of children nodes, denoted as $(n_1,\ldots,n_k)$;
 \item[Labelled Tuple Node.] A tuple labelled~$L$, denoted as~$L(n_1,\ldots,n_k)$;
 \item[List Node.] A list of~$0$ or more children nodes, denoted as~$\emptylist$
-when the list is empty and~$[n_1,\ldots,n_k]$ for non-empty lists;
+      when the list is empty and~$[n_1,\ldots,n_k]$ for non-empty lists;
 \item[Optional.] An optional node stands for a list of 0 or 1 occurrences of a sub-node $n$. We denote an empty optional by $\langle\rangle$ and the non-empty optional by $\langle n \rangle$;
-\item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
+\item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where \\
+      $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
 \end{description}
 
 \newpage
@@ -50,7 +1732,7 @@ when the list is empty and~$[n_1,\ldots,n_k]$ for non-empty lists;
 
 An abstract syntax is defined in terms of derivation rules containing variables (also referred to as non-terminals).
 %
-A \emph{derivation rule} has the form $v ::= \textit{rhs}$ where $v$ is a non-terminal variable and \textit{rhs} is a \emph{node type}. We write $n$, $n_1,\ldots,n_k$ to denote node types.
+A \emph{derivation rule} has the form $v \derives \textit{rhs}$ where $v$ is a non-terminal variable and \textit{rhs} is a \emph{node type}. We write $n$, $n_1,\ldots,n_k$ to denote node types.
 %
 Node types are defined recursively as follows:
 \begin{description}
@@ -75,181 +1757,258 @@ The abstract syntax of ASL is given in terms of the derivation rules below and t
 %
 We sometimes provide extra details to individual derivations by adding comments below them, in the form \ASTComment{this is a comment}.
 
+\hypertarget{ast-unop}{} \hypertarget{ast-bnot}{} \hypertarget{ast-neg}{} \hypertarget{ast-not}{}
 \[
 \begin{array}{rcl}
-\unop &::=& \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}} \\
-\binop  &::=& \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
-              \;|\; \overname{\BEQ}{\texttt{"<->"}}  \\
+\unop &\derives& \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
+\hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{}
+\\
+\binop  &\derives& \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
+              \;|\; \overname{\BEQ}{\texttt{"<->"}}
+\hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
+\\
         &|& \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
-        \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}} \\
+        \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
+\hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
+\\
         &|& \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
-        \;|\; \overname{\EOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}} \\
+        \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
+\hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
+\\
         &|& \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
-        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}} \\
-        &|& \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \\
-
-\literal &=& \lint(\overname{n}{n \in \Z}) \\
- &|& \lbool(\overname{b}{b \in \{\True, \False\}}) \\
- &|& \lreal(\overname{q}{q \in \Q}) \\
- &|& \lbitvector(\overname{B}{B \in \{0, 1\}^*}) \\
+        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
+\hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{}
+\\
+        &|& \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}}
+\hypertarget{ast-literal}{} \hypertarget{ast-lint}{}
+\\
+\literal &\derives& \lint(\overname{n}{\Z})
+\hypertarget{ast-lbool}{}
+\\
+ &|& \lbool(\overname{b}{\{\True, \False\}})
+\hypertarget{ast-lreal}{}
+\\
+ &|& \lreal(\overname{q}{\Q})
+\hypertarget{ast-lbitvector}{}
+\\
+ &|& \lbitvector(\overname{B}{B \in \{0, 1\}^*})
+\hypertarget{ast-lstring}{}
+\\
  &|& \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"} \in \texttt{<string\_lit>}\}})\\
 \end{array}
 \]
 
+\hypertarget{ast-expr}{} \hypertarget{ast-eliteral}{}
 \[
 \begin{array}{rcl}
-\expr &::=& \ELiteral(\literal) \\
-	&|& \EVar(\overtext{\identifier}{variable name}) \\
-	&|& \overtext{\EATC}{Asserting type conversion}(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type}) \\
-	&|& \EBinop(\binop, \expr, \expr) \\
-	&|& \EUnop(\unop, \expr) \\
-	&|& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}) \\
-	&|& \ESlice(\expr, \slice^{*}) \\
-	&|& \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else}) \\
-	&|& \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name}) \\
-	&|& \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names}) \\
-	&|& \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})\\
+\expr &\derives& \ELiteral(\literal)
+\hypertarget{ast-evar}{} \hypertarget{ast-identifier}{}\\
+	&|& \EVar(\overtext{\identifier}{variable name})
+\hypertarget{ast-eatc}{}\\
+	&|& \overtext{\EATC}{Type assertion}(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type})
+\hypertarget{ast-ebinop}{}\\
+	&|& \EBinop(\binop, \expr, \expr)
+  \hypertarget{ast-eunop}{}\\
+	&|& \EUnop(\unop, \expr)
+  \hypertarget{ast-ecall}{}\\
+	&|& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})
+  \hypertarget{ast-eslice}{}\\
+	&|& \ESlice(\expr, \slice^{*})
+  \hypertarget{ast-econd}{}\\
+	&|& \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
+  \hypertarget{ast-egetfield}{}\\
+	&|& \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})
+  \hypertarget{ast-egetfields}{}\\
+	&|& \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names})
+  \hypertarget{ast-erecord}{}\\
+	&|& \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})
+  \hypertarget{ast-econcat}{}\\
     & & \ASTComment{Both record construction and exception construction}\\
-	&|& \EConcat(\expr^{+}) \\
-	&|& \ETuple(\expr^{+}) \\
-	&|& \EUnknown(\ty) \\
+	&|& \EConcat(\expr^{+})
+  \hypertarget{ast-etuple}{}\\
+	&|& \ETuple(\expr^{+})
+  \hypertarget{ast-eunknown}{}\\
+	&|& \EUnknown(\ty)
+  \hypertarget{ast-epattern}{}\\
 	&|& \EPattern(\expr, \pattern)
 \end{array}
 \]
 
+\hypertarget{ast-pattern}{} \hypertarget{ast-patternall}{}
 \[
 \begin{array}{rcl}
-\pattern &::=& \PatternAll \\
-  &|& \PatternAny(\pattern^{*}) \\
-  &|& \PatternGeq(\expr) \\
-  &|& \PatternLeq(\expr) \\
-  &|& \PatternMask(\texttt{bitmask\_lit}) \\
-  &|& \PatternNot(\pattern) \\
-  &|& \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper included})\\
-  &|& \PatternSingle(\expr) \\
+\pattern &\derives& \PatternAll
+\hypertarget{ast-patternany}{}\\
+  &|& \PatternAny(\pattern^{*})
+  \hypertarget{ast-patterngeq}{}\\
+  &|& \PatternGeq(\expr)
+  \hypertarget{ast-patternleq}{}\\
+  &|& \PatternLeq(\expr)
+  \hypertarget{ast-patternmask}{}\\
+  &|& \PatternMask(\Tmasklit)
+  \hypertarget{ast-patternnot}{}\\
+  &|& \PatternNot(\pattern)
+  \hypertarget{ast-patternrange}{}\\
+  &|& \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper included})
+  \hypertarget{ast-patternsingle}{}\\
+  &|& \PatternSingle(\expr)
+  \hypertarget{ast-patterntuple}{}\\
   &|& \PatternTuple(\pattern^{*}) \\
 \end{array}
 \]
 
+\hypertarget{ast-slice}{} \hypertarget{ast-slicesingle}{}
 \[
 \begin{array}{rcl}
 &&\ASTComment{Indexes an array or a bitvector.}\\
 &&\ASTComment{All positions mentioned below are inclusive}\\
 \hline
-\slice &::=& \SliceSingle(\overname{\expr}{\vi}) \\
+\slice &\derives& \SliceSingle(\overname{\expr}{\vi})
+\hypertarget{ast-slicerange}{}\\
   & & \ASTComment{the slice of length \texttt{1} at position \vi.}\\
-  &|& \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi}) \\
+  &|& \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi})
+  \hypertarget{ast-slicelength}{}\\
   & & \ASTComment{the slice from \vi\ to \texttt{j - 1}.}\\
-  &|& \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn}) \\
+  &|& \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn})
+  \hypertarget{ast-slicestar}{}\\
   & & \ASTComment{the slice starting at \vi\ of length \vn.}\\
   &|& \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) \\
   & & \ASTComment{the slice starting at \texttt{i*n} of length \vn}
 \end{array}
 \]
 
+\hypertarget{ast-ty}{} \hypertarget{ast-tint}{}
 \[
 \begin{array}{rcl}
-\ty &::=& \TInt(\intconstraints) \\
-  &|& \TReal \\
-  &|& \TString \\
-  &|& \TBool \\
-  &|& \TBits(\expr, \bitfield^{*}) \\
-  & & \ASTComment{\expr\ is a statically evaluable expression denoting the length of the bit-vector.}\\
-  &|& \TEnum(\identifier^{*}) \\
-  &|& \TTuple(\ty^{*}) \\
-  &|& \TArray(\arrayindex, \ty) \\
-  &|& \TRecord(\Field^{*}) \\
-  &|& \TException(\Field^{*}) \\
-  &|& \TNamed(\identifier)\\
-  & & \ASTComment{A type variable.}\\
-  & & \ASTComment{This is related to \identi{LDNP}}
+\ty &\derives& \TInt(\intconstraints)
+\hypertarget{ast-treal}{}\\
+  &|& \TReal
+  \hypertarget{ast-tstring}{}\\
+  &|& \TString
+  \hypertarget{ast-tbool}{}\\
+  &|& \TBool
+  \hypertarget{ast-tbits}{}\\
+  &|& \TBits(\overtext{\expr}{width}, \bitfield^{*})
+  \hypertarget{ast-tenum}{}\\
+  &|& \TEnum(\overtext{\identifier^{*}}{labels})
+  \hypertarget{ast-ttuple}{}\\
+  &|& \TTuple(\ty^{*})
+  \hypertarget{ast-tarray}{}\\
+  &|& \TArray(\arrayindex, \ty)
+  \hypertarget{ast-trecord}{}\\
+  &|& \TRecord(\Field^{*})
+  \hypertarget{ast-texception}{}\\
+  &|& \TException(\Field^{*})
+  \hypertarget{ast-tnamed}{}\\
+  &|& \TNamed(\overtext{\identifier}{type name})\\
+%  & & \ASTComment{This is related to \identi{LDNP}}
 \end{array}
 \]
 
+\hypertarget{ast-intconstraints}{} \hypertarget{ast-unconstrained}{}
 \[
   \begin{array}{rcl}
-    & & \ASTComment{Constraints that can be put on integer types.}  \\
+    & & \ASTComment{Constraints that may be assigned to integer types.}  \\
     \hline
-    \intconstraints & ::=
+    \intconstraints & \derives
       & \unconstrained                                      \\
-    & & \ASTComment{This integer type is unconstrained.}            \\
+    & & \ASTComment{The unconstrained integer type.}
+    \hypertarget{ast-wellconstrained}{}\\
     &|& \wellconstrained(\intconstraint^{+})                \\
-    & & \ASTComment{Has some explicit constraints}                  \\
-    &|& \underconstrained(\texttt{uid}, \identifier)        \\
-    & & \ASTComment{Implicitly constrained integer from function declaration.} \\
-    & & \ASTComment{Attributes are:} \\
-    & & \ASTComment{- a unique integer identifier and the variable} \\
-    & & \ASTComment{- the type was implicitly constructed from.} \\
+    & & \ASTComment{An integer type with explicit constraints.}
+    \hypertarget{ast-parameterized}{}\\
+    &|& \parameterized(\overtext{\identifier}{parameter})        \\
+    % & & \ASTComment{Implicitly constrained integer from function declaration.} \\
+    % & & \ASTComment{Attributes are:} \\
+    % & & \ASTComment{- a unique integer identifier and the variable} \\
+    % & & \ASTComment{- the type was implicitly constructed from.} \\
   \end{array}
 \]
 
+\hypertarget{ast-intconstraint}{} \hypertarget{ast-constraintexact}{}
 \[
 \begin{array}{rcl}
 & & \ASTComment{A constraint on an integer part.}\\
 \hline
-\intconstraint &::=& \ConstraintExact(\expr) \\
-  & & \ASTComment{A single value, given by a statically evaluable expression.}\\
+\intconstraint &\derives& \ConstraintExact(\expr) \\
+  & & \ASTComment{A single value, given by a statically evaluable expression.}
+  \hypertarget{ast-constraintrange}{}\\
   &|& \ConstraintRange(\expr, \expr) \\
   & & \ASTComment{An interval between two statically evaluable expression.}\\
 \end{array}
 \]
 
+\hypertarget{ast-bitfield}{} \hypertarget{ast-bitfieldsimple}{}
 \[
 \begin{array}{rcl}
 & & \ASTComment{Represent static slices on a given bitvector type.}\\
 \hline
-\bitfield &::=& \BitFieldSimple(\identifier, \slice^{*}) \\
-  & & \ASTComment{A name and its corresponding slice.}\\
+\bitfield &\derives& \BitFieldSimple(\identifier, \slice^{*}) \\
+  & & \ASTComment{A name and its corresponding slice.}
+  \hypertarget{ast-bitfieldnested}{}\\
   &|& \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*}) \\
-  & & \ASTComment{A name, its corresponding slice and some nested bitfields.}\\
+  & & \ASTComment{A name, its corresponding slice and some nested bitfields.}
+  \hypertarget{ast-bitfieldtype}{}\\
   &|& \BitFieldType(\identifier, \slice^{*}, \ty) \\
   & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
 \end{array}
 \]
 
+\hypertarget{ast-arrayindex}{} \hypertarget{ast-arraylengthexpr}{}
 \[
   \begin{array}{rcl}
     & & \ASTComment{The type of indexes for an array.}  \\
     \hline
-    \arrayindex & ::=
-      & \ArrayLengthExpr(\overtext{\expr}{array length}) \\
+    \arrayindex & \derives
+      & \ArrayLengthExpr(\overtext{\expr}{array length})
+      \hypertarget{ast-arraylengthenum}{}\\
     &|& \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) \\
   \end{array}
 \]
 
+\hypertarget{ast-field}{}
 \[
 \begin{array}{rcl}
-\Field &::=& (\identifier, \ty)\\
-  & & \ASTComment{A field of a record-like structure.}\\
-\typedidentifier &::=& (\identifier, \ty)\\
+\Field &\derives& (\identifier, \ty)\\
+  & & \ASTComment{A field of a record-like structure.}
+  \hypertarget{ast-typedidentifier}{}\\
+\typedidentifier &\derives& (\identifier, \ty)\\
   & & \ASTComment{An identifier declared with its type.}\\
 \end{array}
 \]
 
+\hypertarget{ast-lexpr}{} \hypertarget{ast-lediscard}{}
 \[
 \begin{array}{rcl}
 & & \ASTComment{Type of left-hand side of assignments.}\\
 \hline
-\lexpr &::=& \LEDiscard\\
+\lexpr &\derives& \LEDiscard\\
   & & \ASTComment{\texttt{"-"}}\\
-  &|& \LEVar(\identifier)\\
-  &|& \LESlice(\lexpr, \slice^*)\\
-  &|& \LESetArray(\lexpr, \expr)\\
-  &|& \LESetField(\lexpr, \identifier)\\
-  &|& \LESetFields(\lexpr, \identifier^*)\\
-  &|& \LEDestructuring(\lexpr^*)\\
-  &|& \LEConcat(\lexpr^+, \texttt{<int\_lit>}^+?)\\
-  & & \ASTComment{$\LEConcat(\texttt{les}, \_)$ unpacks the various lexpr.}\\
-  & & \ASTComment{The second argument is a type annotation.}\\
+  &|& \LEVar(\identifier)
+  \hypertarget{ast-leslice}{}\\
+  &|& \LESlice(\lexpr, \slice^*)
+  \hypertarget{ast-lesetarray}{}\\
+  &|& \LESetArray(\lexpr, \expr)
+  \hypertarget{ast-lesetfield}{}\\
+  &|& \LESetField(\lexpr, \identifier)
+  \hypertarget{ast-lesetfields}{}\\
+  &|& \LESetFields(\lexpr, \identifier^*)
+  \hypertarget{ast-ledestructuring}{}\\
+  &|& \LEDestructuring(\lexpr^*)
+  \hypertarget{ast-leconcat}{}\\
+  &|& \LEConcat(\lexpr^+)\\
+  & & \ASTComment{$\LEConcat(\texttt{les}, \_)$ unpacks a list of \lexpr.}
 \end{array}
 \]
 
+\hypertarget{ast-localdeclkeyword}{} \hypertarget{ast-ldkvar}{} \hypertarget{ast-ldkconstant}{} \hypertarget{ast-ldklet}{}
 \[
 \begin{array}{rcl}
-\localdeclkeyword &::=& \texttt{LDK\_Var} \;|\; \texttt{LDK\_Constant} \;|\; \texttt{LDK\_Let}\\
+\localdeclkeyword &\derives& \LDKVar \;|\; \LDKConstant \;|\; \LDKLet\\
 \end{array}
 \]
 
+\hypertarget{ast-localdeclitem}{} \hypertarget{ast-ldidiscard}{}
 \[
 \begin{array}{rcl}
   & & \ASTComment{A left-hand side of a declaration statement.}\\
@@ -258,105 +2017,139 @@ We sometimes provide extra details to individual derivations by adding comments 
   & & \ASTComment{\Verb|(x, -, z): (integer, integer, integer \{0..32\})| is the}\\
   & & \ASTComment{local declaration item:}\\
   \hline
-\localdeclitem &::=
+\localdeclitem &\derives
     & \LDIDiscard\\
-  & & \ASTComment{The ignored local declaration item, for example used in: \Verb!let - = 42;!.}\\
+  & & \ASTComment{The ignored local declaration item, for example used in: \Verb!let - = 42;!.}
+  \hypertarget{ast-ldivar}{}\\
   &|& \LDIVar(\identifier)\\
   & & \ASTComment{\texttt{LDI\_Var x} is the variable declaration of the variable \texttt{x}, used for example in:}\\
-  & & \ASTComment{\texttt{let x = 42;}.}\\
+  & & \ASTComment{\texttt{let x = 42;}.}
+  \hypertarget{ast-ldituple}{}\\
   &|& \LDITuple(\localdeclitem^*)\\
   & & \ASTComment{\texttt{LDI\_Tuple ldis} is the tuple declarations of the items in \texttt{ldis},}\\
   & & \ASTComment{used for example in: \texttt{let (x, y, -, z) = (1, 2, 3, 4);}}\\
-  & & \ASTComment{Note that a the list here must be at least 2 items long.}\\
+  & & \ASTComment{Note that a the list here must be at least 2 items long.}
+  \hypertarget{ast-ldityped}{}\\
   &|& \LDITyped(\localdeclitem, \ty)\\
   & & \ASTComment{\texttt{LDI\_Typed (ldi, t)} declares the item \texttt{ldi} with type \texttt{t}, used for example in:} \\
   & & \ASTComment{\texttt{let x: integer = 4;}}
 \end{array}
 \]
 
+\hypertarget{ast-fordirection}{} \hypertarget{ast-up}{} \hypertarget{ast-down}{}
 \[
 \begin{array}{rcl}
-\fordirection &::=& \UP \;|\; \DOWN\\
+\fordirection &\derives& \UP \;|\; \DOWN\\
 \end{array}
 \]
 
-\[
-\begin{array}{rcl}
-\stmt &::=& \SPass\\
-  &|& \SSeq(\stmt, \stmt)\\
-  &|& \SDecl(\localdeclkeyword, \localdeclitem, \expr?)\\
-  &|& \SAssign(\lexpr, \expr)\\
-  &|& \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})\\
-  &|& \SReturn(\expr?)\\
-  &|& \SCond(\expr, \stmt, \stmt)\\
-  &|& \SCase(\expr, \casealt^*)\\
-  &|& \SAssert(\expr)\\
-  &|& \SFor(\identifier, \expr, \fordirection, \expr, \stmt)\\
-  &|& \SWhile(\expr, \stmt)\\
-  &|& \SRepeat(\stmt, \expr)\\
-  &|& \SThrow((\expr, \langle\rangle)?)\\
-  & & \ASTComment{The option represents an implicit throw: \texttt{throw;}.}\\
-  &|& \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})\\
-  &|& \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
-\end{array}
-\]
+\hypertarget{ast-stmt}{} \hypertarget{ast-spass}{}
+\begin{flalign*}
+\stmt \derives\ & \SPass
+\hypertarget{ast-sseq}{} &\\
+  |\ & \SSeq(\stmt, \stmt)
+  \hypertarget{ast-sdecl}{} &\\
+  |\ & \SDecl(\localdeclkeyword, \localdeclitem, \expr?)
+  \hypertarget{ast-sassign}{} &\\
+  |\ & \SAssign(\lexpr, \expr)
+  \hypertarget{ast-scall}{} &\\
+  |\ & \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})
+  \hypertarget{ast-sreturn}{} &\\
+  |\ & \SReturn(\expr?)
+  \hypertarget{ast-scond}{} &\\
+  |\ & \SCond(\expr, \stmt, \stmt)
+  \hypertarget{ast-scase}{} &\\
+  |\ & \SCase(\expr, \casealt^*)
+  \hypertarget{ast-sassert}{} &\\
+  |\ & \SAssert(\expr)
+  \hypertarget{ast-sfor}{} &\\
+  |\ & \SFor(\identifier, \expr, \fordirection, \expr, \stmt)
+  \hypertarget{ast-swhile}{} &\\
+  |\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \stmt)
+  \hypertarget{ast-srepeat}{} &\\
+  |\ & \SRepeat(\stmt, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit})
+  \hypertarget{ast-sthrow}{} &\\
+  |\ & \SThrow((\expr, \None)?) &\\
+     & \ASTComment{The option represents an implicit throw: \texttt{throw;}.}
+  \hypertarget{ast-stry}{} &\\
+  |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
+  \hypertarget{ast-sprint}{} &\\
+  |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
+\end{flalign*}
 
-\[
-\begin{array}{rcl}
-\casealt &::=& \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \}\\
-\catcher &::=& (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match})
-\end{array}
-\]
+\hypertarget{ast-casealt}{}
+\begin{flalign*}
+\casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
+\end{flalign*}
 
-\[
-\begin{array}{rcl}
-\subprogramtype &::=& \STProcedure \;|\; \STFunction\\
-                &|  & \STGetter \;|\; \STEmptyGetter\\
-                &|  & \STSetter \;|\; \STEmptySetter\\
-\subprogrambody &::=& \SBASL(\stmt)\\
-  &|& \SBPrimitive\\
-\end{array}
-\]
+\hypertarget{ast-catcher}{}
+\begin{flalign*}
+\catcher \derives\ & (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
+\end{flalign*}
 
-\[
-\begin{array}{rrl}
-\func &::= \{& \\
- & & \funcname : \Strings, \\
- & & \funcparameters : (\identifier, \ty?)^*,\\
- & & \funcargs : \typedidentifier^*,\\
- & & \funcbody : \subprogrambody,\\
- & & \funcreturntype : \ty?,\\
- & & \funcsubprogramtype : \subprogramtype\\
- & \} &
-\end{array}
-\]
+\hypertarget{ast-subprogramtype}{} \hypertarget{ast-stprocedure}{} \hypertarget{ast-stfunction}{}
+\begin{flalign*}
+\subprogramtype \derives\ & \STProcedure \;|\; \STFunction
+\hypertarget{ast-stgetter}{} \hypertarget{ast-stemptygetter}{} &\\
+                |\  & \STGetter \;|\; \STEmptyGetter
+                \hypertarget{ast-stsetter}{} \hypertarget{ast-stemptysetter}{} &\\
+                |\  & \STSetter \;|\; \STEmptySetter &
+\end{flalign*}
 
-\[
-\begin{array}{rcl}
-\globaldeclkeyword &::=& \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar\\
-  & & \ASTComment{Declaration keyword for global storage elements.}\\
-\end{array}
-\]
+\hypertarget{ast-subprogrambody}{} \hypertarget{ast-sbasl}{}
+\begin{flalign*}
+\subprogrambody \derives\ & \SBASL(\stmt) \hypertarget{ast-sbprimitive}{} \;|\; \SBPrimitive &
+\end{flalign*}
 
-\[
-\begin{array}{rrl}
-\globaldecl &::= \{& \\
- & & \GDkeyword : \globaldeclkeyword, \\
- & & \GDname : \identifier,\\
- & & \GDty : \ty?,\\
- & & \GDinitialvalue : \expr?\\
- & \} &
+\hypertarget{ast-func}{}
+\begin{flalign*}
+\func \derives\ &
+{
+\left\{
+  \begin{array}{rcl}
+ \funcname &:& \Strings, \\
+ \funcparameters &:& (\identifier, \ty?)^*,\\
+ \funcargs &:& \typedidentifier^*,\\
+ \funcbody &:& \subprogrambody,\\
+ \funcreturntype &:& \ty?,\\
+ \funcsubprogramtype &:& \subprogramtype
 \end{array}
-\]
+\right\}
+} &
+\end{flalign*}
 
-\[
-\begin{array}{rcl}
-\decl &::=& \DFunc(\func)\\
-  & & \DGlobalStorage(\globaldecl)\\
-  & & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?)\\
-\specification &::=& \decl^*\\
-\end{array}
-\]
+Declaration keyword for global storage elements:
+\hypertarget{ast-globaldeclkeyword}{} \hypertarget{ast-gdkconstant}{} \hypertarget{ast-gdkconfig}{} \hypertarget{ast-gdklet}{} \hypertarget{ast-gdkvar}{}
+\begin{flalign*}
+\globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
+\end{flalign*}
+
+\hypertarget{ast-globaldecl}{}
+\begin{flalign*}
+\globaldecl \derives\ &
+{\left\{
+  \begin{array}{rcl}
+  \GDkeyword &:& \globaldeclkeyword, \\
+  \GDname &:& \identifier,\\
+  \GDty &:& \ty?,\\
+  \GDinitialvalue &:& \expr?
+  \end{array}
+  \right\}
+ } &
+\end{flalign*}
+
+\hypertarget{ast-decl}{}
+\hypertarget{ast-dfunc}{}
+\begin{flalign*}
+\decl \derives\ & \DFunc(\func) & \hypertarget{ast-dglobalstorage}{}\\
+  |\ & \DGlobalStorage(\globaldecl) & \hypertarget{ast-dtypedecl}{}\\
+  |\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &
+\end{flalign*}
+
+\hypertarget{ast-specification}{}
+\begin{flalign*}
+\specification \derives\ & \decl^* &
+\end{flalign*}
 
 \section{ASL Typed Abstract Syntax}
 
@@ -364,9 +2157,10 @@ The derivation rules for the typed abstract syntax are the same as the rules for
 except for the following differences.
 
 The rules for expressions have the extra derivation rule:
+\hypertarget{ast-egetarray}{}
 \[
 \begin{array}{rcl}
-\expr &::=& \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) \\
+\expr &\derives& \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) \\
 \end{array}
 \]
 
@@ -374,7 +2168,14 @@ The AST node for call expressions includes an extra component that explicitly as
 with parameters:
 \[
 \begin{array}{rcl}
-\ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers})
+\expr &\derives& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers})
+\end{array}
+\]
+
+The AST node for a left-hand-side tuple of expressions contains a second component, which is a type annotation:
+\[
+\begin{array}{rcl}
+\lexpr &\derives& \LEConcat(\lexpr^+, \Tintlit^+?)
 \end{array}
 \]
 
@@ -382,7 +2183,7 @@ The rules for statements refine the throw statement by annotating it with
 the type of the throw exception.
 \[
 \begin{array}{rcl}
-\stmt &::=& \SThrow((\expr, \overtext{\langle\ty\rangle}{exception type})?)
+\stmt &\derives& \SThrow((\expr, \overtext{\langle\ty\rangle}{exception type})?)
 \end{array}
 \]
 
@@ -390,22 +2191,2685 @@ Similar to expressions, the AST node for call statements includes an extra compo
 with parameters:
 \[
 \begin{array}{rcl}
-  \stmt &::=&  \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers})
+  \stmt &\derives&  \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers})
 \end{array}
 \]
-
 
 The rules for slices is replaced by the following:
 \[
 \begin{array}{rcl}
-\slice &::=& \SliceLength(\expr, \expr) \\
+\slice &\derives& \SliceLength(\expr, \expr) \\
 \end{array}
 \]
 This reflects the fact that all other slicing constructs are syntactic sugar
 for \SliceLength.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Building Abstract Syntax Trees \label{chap:BuildingAbstractSyntaxTrees}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This chapter define how to transform a parse tree into the corresponding AST
+via recursively traversing the parse tree and applying a \emph{builder} function
+for each non-terminal node.
+
+(Some of the builders are relations due to non-determinism induced by naming global variables
+for assignments whose left-hand-side variable is discarded ($\Tminus$).)
+
+For each non-terminal $N \derives R_1 \;|\; \ldots R_k$, we define a builder function
+$\textsf{build\_}N $ which takes a parse tree $\parsenode{N}$ and returns the corresponding
+AST. The builder function is defined in terms of one inference rule per alternative $R_i$.
+The input for the builder for an alternative $R = S_{1..m}$ is a parse node
+$N(S_{1..m})$. To allow the builder to refer to the children nodes of $N$,
+we use the notation $\namednode{n_i}{S_i}$, which names the child node $S_i$ as $n_i$.
+
+\section{Example}
+Consider the derivation
+\[
+\Nstmt \derives \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend
+\]
+for while loops.
+
+The parse node for a while statement has the form
+\[
+\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend)
+\]
+where $\ve$ names the node representing the condition of the loop and $\vstmtlist$ names
+the list of statements that form the body of the loop.
+
+To build the corresponding AST, we would employ the builder function $\buildstmt$, since
+the non-terminal labelling the parse node is $\Nstmt$.
+
+We would also employ the following rule:
+\begin{mathpar}
+\inferrule{
+  \buildexpr(\ve) \astarrow \astversion{\ve}\\
+  \buildstmtlist(\vstmtlist) \astarrow \astversion{\vstmtlist}
+}{
+{
+\begin{array}{r}
+  \buildstmt(\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend))
+  \astarrow\\
+  \SWhile(\astversion{\ve}, \None, \astversion{\vstmtlist})
+\end{array}
+}
+}
+\end{mathpar}
+That is, we apply the $\buildexpr$ to transform the condition parse node into the corresponding AST node,
+we apply $\buildstmtlist$ to transform the body of the list into the corresponding AST node,
+and finally return the AST node with AST label $\SWhile$ with the two nodes as its children.
+
+\subsection{Abbreviated Rule Notation}
+Notice that there is only one instance of $\Nexpr$ and one instance of $\Nstmtlist$ in this production.
+This is very common and we therefore use the following shorthand notation for such cases, as explained next.
+
+In a non-terminal $N$ appears only once in the right-hand-side of a derivation,
+we use the name $\texttt{N}$ to name the corresponding child parse node.
+For example, $\namednode{\vexpr}{\Nexpr}$ and $\namednode{\vstmtlist}{\Nstmtlist}$.
+In such cases, we always have the premise $\textsf{build\_}N(\texttt{N}) \astarrow \astversion{N}$
+to obtain the corresponding AST node.
+We therefore make this premise implicit, by dropping it entirely and using $\astof{N}$ to mean that
+the parse node $N$ is named $\texttt{N}$, the premise $\textsf{build\_}N(\texttt{N}) \astarrow \astversion{N}$
+is considered part of the rule and $\astversion{N}$ itself stands for $\astversion{N}$.
+
+In our example, this results in the abbreviated rule notation
+\begin{mathpar}
+\inferrule{}{
+{
+\begin{array}{r}
+  \buildstmt(\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend))
+  \astarrow\\
+  \SWhile(\astof{\vexpr}, \None, \astof{\vstmtlist})
+  \end{array}
+}
+}
+\end{mathpar}
+
+\section{AST Builder Functions and Relations}
+We define the following rules for transforming the various non-terminal parse nodes into
+the corresponding AST nodes:
+\begin{itemize}
+  \item SyntaxRule.AST (see \secref{SyntaxRule.AST})
+  \item SyntaxRule.GlobalDecl (see \secref{SyntaxRule.GlobalDecl})
+  \item SyntaxRule.Subtype (see \secref{SyntaxRule.Subtype})
+  \item SyntaxRule.Subtypeopt (see \secref{SyntaxRule.Subtypeopt})
+  \item SyntaxRule.TypedIdentifier (see \secref{SyntaxRule.TypedIdentifier})
+  \item SyntaxRule.OptTypedIdentifier (see \secref{SyntaxRule.OptTypedIdentifier})
+  \item SyntaxRule.ReturnType (see \secref{SyntaxRule.ReturnType})
+  \item SyntaxRule.ParamsOpt (see \secref{SyntaxRule.ParamsOpt})
+  \item SyntaxRule.AccessArgs (see \secref{SyntaxRule.AccessArgs})
+  \item SyntaxRule.FuncArgs (see \secref{SyntaxRule.FuncArgs})
+  \item SyntaxRule.MaybeEmptyStmtList (see \secref{SyntaxRule.MaybeEmptyStmtList})
+  \item SyntaxRule.FuncBody (see \secref{SyntaxRule.FuncBody})
+  \item SyntaxRule.IgnoredOrIdentifier (see \secref{SyntaxRule.IgnoredOrIdentifier})
+  \item SyntaxRule.LocalDeclKeyword (see \secref{SyntaxRule.LocalDeclKeyword})
+  \item SyntaxRule.StorageKeyword (see \secref{SyntaxRule.StorageKeyword})
+  \item SyntaxRule.Direction (see \secref{SyntaxRule.Direction})
+  \item SyntaxRule.Alt (see \secref{SyntaxRule.Alt})
+  \item SyntaxRule.OtherwiseOpt (see \secref{SyntaxRule.OtherwiseOpt})
+  \item SyntaxRule.Catcher (see \secref{SyntaxRule.Catcher})
+  \item SyntaxRule.Stmt (see \secref{SyntaxRule.Stmt})
+  \item SyntaxRule.StmtList (see \secref{SyntaxRule.StmtList})
+  \item SyntaxRule.SElse (see \secref{SyntaxRule.SElse})
+  \item SyntaxRule.LExpr (see \secref{SyntaxRule.LExpr})
+  \item SyntaxRule.LExprAtom (see \secref{SyntaxRule.LExprAtom})
+  \item SyntaxRule.DeclItem (see \secref{SyntaxRule.DeclItem})
+  \item SyntaxRule.UntypedDeclItem (see \secref{SyntaxRule.UntypedDeclItem})
+  \item SyntaxRule.IntConstraints (see \secref{SyntaxRule.IntConstraints})
+  \item SyntaxRule.IntConstraintsopt (see \secref{SyntaxRule.IntConstraintsopt})
+  \item SyntaxRule.IntConstraint (see \secref{SyntaxRule.IntConstraint})
+  \item SyntaxRule.ExprPattern (see \secref{SyntaxRule.ExprPattern})
+  \item SyntaxRule.PatternSet (see \secref{SyntaxRule.PatternSet})
+  \item SyntaxRule.PatternList (see \secref{SyntaxRule.PatternList})
+  \item SyntaxRule.Pattern (see \secref{SyntaxRule.Pattern})
+  \item SyntaxRule.Fields (see \secref{SyntaxRule.Fields})
+  \item SyntaxRule.FieldsOpt (see \secref{SyntaxRule.FieldsOpt})
+  \item SyntaxRule.NSlices (see \secref{SyntaxRule.NSlices})
+  \item SyntaxRule.Slices (see \secref{SyntaxRule.Slices})
+  \item SyntaxRule.Slice (see \secref{SyntaxRule.Slice})
+  \item SyntaxRule.Bitfields (see \secref{SyntaxRule.Bitfields})
+  \item SyntaxRule.Bitfield (see \secref{SyntaxRule.Bitfield})
+  \item SyntaxRule.Ty (see \secref{SyntaxRule.Ty})
+  \item SyntaxRule.TyDecl (see \secref{SyntaxRule.TyDecl})
+  \item SyntaxRule.FieldAssign (see \secref{SyntaxRule.FieldAssign})
+  \item SyntaxRule.EElse (see \secref{SyntaxRule.EElse})
+  \item SyntaxRule.Expr (see \secref{SyntaxRule.Expr})
+  \item SyntaxRule.Value (see \secref{SyntaxRule.Value})
+  \item SyntaxRule.Unop (see \secref{SyntaxRule.Unop})
+  \item SyntaxRule.Binop (see \secref{SyntaxRule.Binop})
+\end{itemize}
+
+We also define the following helper functions:
+\begin{itemize}
+\item SyntaxRule.StmtFromList (see \secref{SyntaxRule.StmtFromList})
+\item SyntaxRule.SequenceStmts (see \secref{SyntaxRule.SequenceStmts})
+\end{itemize}
+
+\section{SyntaxRule.AST \label{sec:SyntaxRule.AST}}
+\hypertarget{build-ast}{}
+The relation
+\[
+  \buildast : \overname{\parsenode{\Nast}}{\vparsednode} \;\aslrel\; \overname{\specification}{\vastnode}
+\]
+transforms an $\Nast$ node $\vparsednode$ into an AST specification node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[ast]{
+  \buildlist[\builddecl](\vdecls) \astarrow \vadecls
+}{
+  \buildast(\overname{\Nast(\namednode{\vdecls}{\maybeemptylist{\Ndecl}})}{\vparsednode}) \astarrow \overname{\vadecls}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.GlobalDecl \label{sec:SyntaxRule.GlobalDecl}}
+\hypertarget{build-decl}{}
+The relation
+\[
+  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+
+\subsection{Formally}
+\hypertarget{build-funcdecl}{}
+\begin{mathpar}
+\inferrule[func\_decl]{}{
+    \builddecl(
+      \overname{\Ndecl(
+      \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \punnode{\Nfuncbody}
+    )}{\vparsednode})
+  \astarrow \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \astof{\vparamsopt},\\
+            \funcargs &:& \astof{\vfuncargs},\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \langle \astof{\vreturntype} \rangle,\\
+            \funcsubprogramtype &:& \STFunction
+    \end{array}
+  \right\}\right)}{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-procedureecl}{}
+\begin{mathpar}
+\inferrule[procedure\_decl]{}{
+  \builddecl(
+    \overname{\Ndecl(\Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nfuncbody})}{\vparsednode}
+    )
+  \astarrow \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \astof{\vparamsopt},\\
+            \funcargs &:& \astof{\vfuncargs},\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \None,\\
+            \funcsubprogramtype &:& \STProcedure
+    \end{array}
+  \right\}\right)
+    }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-getter}{}
+\begin{mathpar}
+\inferrule[getter]{}{
+  {
+    \begin{array}{r}
+  \builddecl\left(\overname{\Ndecl\left(
+    \begin{array}{l}
+      \Tgetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Naccessargs}, \\
+      \wrappedline\ \punnode{\Nreturntype}, \punnode{\Nfuncbody}
+    \end{array}
+      \right)}{\vparsednode}\right)
+  \astarrow \\
+  \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \astof{\vparamsopt},\\
+            \funcargs &:& \astof{\vaccessargs},\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
+            \funcsubprogramtype &:& \STGetter
+    \end{array}
+  \right\}\right)
+  }{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-noarggetter}{}
+\begin{mathpar}
+\inferrule[no\_arg\_getter]{}{
+  \builddecl(\overname{\Ndecl(\Tgetter, \Tidentifier(\name), \punnode{\Nreturntype}, \punnode{\Nfuncbody})}{\vparsednode})
+  \astarrow \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \emptylist,\\
+            \funcargs &:& \emptylist,\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
+            \funcsubprogramtype &:& \STEmptyGetter
+    \end{array}
+  \right\}\right)
+    }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-setter}{}
+\begin{mathpar}
+\inferrule[setter]{}{
+  {
+      \builddecl\left(\overname{\Ndecl\left(
+        \begin{array}{r}
+          \Tsetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Naccessargs}, \Teq, \\
+   \wrappedline\ \namednode{\vv}{\Ntypedidentifier}, \punnode{\Nfuncbody}
+        \end{array}
+   \right)}{\vparsednode}\right)
+  } \astarrow
+  \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \astof{\vparamsopt},\\
+            \funcargs &:& [\vv] \concat \astof{\vaccessargs},\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \None,\\
+            \funcsubprogramtype &:& \STSetter
+    \end{array}
+  \right\}\right)
+    }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-noargsetter}{}
+\begin{mathpar}
+\inferrule[no\_arg\_setter]{}{
+  \builddecl(\overname{\Ndecl(\Tsetter, \Tidentifier(\name), \Teq, \namednode{\vv}{\Ntypedidentifier}, \punnode{\Nfuncbody})}{\vparsednode})
+  \astarrow \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \emptylist,\\
+            \funcargs &:& [\vv],\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \None,\\
+            \funcsubprogramtype &:& \STEmptySetter
+    \end{array}
+  \right\}\right)
+    }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-typedecl}{}
+\begin{mathpar}
+\inferrule[type\_decl]{}
+{
+  {
+    \begin{array}{c}
+      \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Ntydecl}, \Nsubtypeopt, \Tsemicolon)}{\vparsednode})
+  \astarrow \\
+  \overname{\DTypeDecl(\vx, \astof{\vt}, \astof{\vsubtypeopt})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-subtypedecl}{}
+\begin{mathpar}
+\inferrule[subtype\_decl]{
+  \buildsubtype(\vsubtype) \astarrow \vs\\
+  \vs \eqname (\name, \vfields)
+}{
+  {
+    \begin{array}{c}
+      \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Nsubtype}, \Tsemicolon)}{\vparsednode})
+  \astarrow \\
+  \overname{\DTypeDecl(\vx, \TNamed(\name), \langle(\name, \vfields)\rangle)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-globalstorage}{}
+\begin{mathpar}
+\inferrule[global\_storage]{
+  \buildstoragekeyword(\keyword) \astarrow \astof{\keyword}\\
+  \buildoption[\buildasty](\tty) \astarrow \ttyp\\
+  \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
+}
+{
+  {
+      \builddecl\left(\overname{\Ndecl\left(
+      \begin{array}{r}
+      \namednode{\vkeyword}{\Nstoragekeyword}, \namednode{\name}{\Nignoredoridentifier},  \\
+  \wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
+      \end{array}
+  \right)}{\vparsednode}\right)
+  } \astarrow \\
+  {
+    \overname{
+  \DGlobalStorage\left(\left\{
+    \begin{array}{rcl}
+    \GDkeyword &:& \astof{\vkeyword},\\
+    \GDname &:& \astof{\name},\\
+    \GDty &:& \ttyp,\\
+    \GDinitialvalue &:& \astof{\vinitialvalue}
+  \end{array}
+  \right\}\right)
+  }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-globaluninitvar}{}
+\begin{mathpar}
+\inferrule[global\_uninit\_var]{
+  \buildignoredoridentifier(\cname) \astarrow \name
+}
+{
+  {
+    \begin{array}{r}
+      \builddecl(\overname{\Ndecl(\Tvar, \namednode{\cname}{\Nignoredoridentifier}, \Nasty, \Tsemicolon)}{\vparsednode}) \astarrow
+    \end{array}
+  } \\
+  \overname{\DGlobalStorage(\{\GDkeyword: \GDKVar, \GDname: \name, \GDty: \langle\astof{\Nasty}\rangle, \GDinitialvalue: \None\})}{\vastnode}
+}
+\end{mathpar}
+
+\hypertarget{build-globalpragma}{}
+\begin{mathpar}
+\inferrule[global\_pragma]{}
+{
+  \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\vx), \Clist{\Nexpr}, \Tsemicolon)}{\vparsednode}) \astarrow \overname{\tododefine{pragma\_node}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Subtype \label{sec:SyntaxRule.Subtype}}
+\hypertarget{build-subtype}{}
+The function
+\[
+  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\identifier \times (\identifier\times \ty)^*)}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\hypertarget{build-subtype}{}
+\begin{mathpar}
+\inferrule[with\_fields]{}{
+  {
+    \begin{array}{r}
+  \buildsubtype(\overname{\Nsubtype(
+    \Tsubtypes, \Tidentifier(\id), \Twith, \punnode{\Nfields}
+    )}{\vparsednode})
+  \astarrow \\
+  \overname{(\id, \astof{\vfields})}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[no\_fields]{}{
+  \buildsubtype(\overname{\Nsubtype(
+    \Tsubtypes, \Tidentifier(\id))}{\vparsednode})
+  \astarrow
+  \overname{(\id, \emptylist)}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Subtypeopt \label{sec:SyntaxRule.Subtypeopt}}
+\hypertarget{build-subtypeopt}{}
+The function
+\[
+   \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
+    \overname{\langle(\identifier \times \langle (\identifier\times \ty)^* \rangle)\rangle}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[subtype\_opt]{
+  \buildoption[\Nsubtype](\vsubtypeopt) \astarrow \vastnode
+}{
+  \buildsubtypeopt(\overname{\Nsubtypeopt(\namednode{\vsubtypeopt}{\option{\Nsubtype}})}{\vparsednode}) \astarrow \vastnode
+}
+\end{mathpar}
+
+\section{SyntaxRule.TypedIdentifier \label{sec:SyntaxRule.TypedIdentifier}}
+\hypertarget{build-typedidentifier}{}
+The function
+\[
+\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\identifier \times \ty)}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{}{
+  \buildtypedidentifier(\overname{\Ntypedidentifier(\Tidentifier(\id), \punnode{\Nasty})}{\vparsednode}) \astarrow \overname{(\id,\astof{\vasty})}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.OptTypedIdentifier \label{sec:SyntaxRule.OptTypedIdentifier}}
+\hypertarget{build-opttypedidentifier}{}
+The function
+\[
+\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\identifier \times \langle\ty\rangle)}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildoption[\Nasty](\vastyopt) \astarrow \astversion{\vastyopt}
+}{
+  {
+  \begin{array}{r}
+  \buildopttypedidentifier(\overname{\Ntypedidentifier(\Tidentifier(\id), \namednode{\vastyopt}{\option{\Nasty}})}{\vparsednode}) \astarrow \\
+  \overname{(\id, \astversion{\vastyopt})}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.ReturnType \label{sec:SyntaxRule.ReturnType}}
+\hypertarget{build-returntype}{}
+The function
+\[
+\buildreturntype(\overname{\parsenode{\Nreturntype}}{\vparsednode}) \aslto \overname{\ty}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \buildreturntype(\overname{\Nreturntype(\Tarrow, \punnode{\Nty})}{\vparsednode}) \astarrow
+  \overname{\astof{\tty}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.ParamsOpt \label{sec:SyntaxRule.ParamsOpt}}
+\hypertarget{build-paramsopt}{}
+The function
+\[
+\buildparamsopt(\overname{\parsenode{\Nparamsopt}}{\vparsednode}) \aslto
+  \overname{(\identifier\times\langle\ty\rangle)^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildparamsopt(\overname{\Nparamsopt(\epsilonnode)}{\vparsednode}) \astarrow
+  \overname{\emptylist}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \buildclist[\Nopttypedidentifier](\ids) \astarrow \astversion{\ids}
+}{
+  \buildparamsopt(\overname{\Nparamsopt(\Tlbrace, \namednode{\ids}{\Clist{\Nopttypedidentifier}}, \Trbrace)}{\vparsednode}) \astarrow
+  \overname{\astversion{\ids}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.AccessArgs \label{sec:SyntaxRule.AccessArgs}}
+\hypertarget{build-accessargs}{}
+The function
+\[
+\buildaccessargs(\overname{\parsenode{\Naccessargs}}{\vparsednode}) \aslto
+  \overname{(\identifier\times\ty)^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
+}{
+  \buildaccessargs(\overname{\Naccessargs(\Tlbracket, \namednode{\ids}{\Clist{\Ntypedidentifier}}, \Trbracket)}{\vparsednode}) \astarrow
+  \overname{\astversion{\ids}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.FuncArgs \label{sec:SyntaxRule.FuncArgs}}
+\hypertarget{build-funcargs}{}
+The function
+\[
+\buildfuncargs(\overname{\parsenode{\Nfuncargs}}{\vparsednode}) \aslto
+  \overname{(\identifier\times\ty)^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
+}{
+  \buildfuncargs(\overname{\Nfuncargs(\Tlpar, \namednode{\ids}{\Clist{\Ntypedidentifier}}, \Trpar)}{\vparsednode}) \astarrow
+  \overname{\astversion{\ids}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.MaybeEmptyStmtList \label{sec:SyntaxRule.MaybeEmptyStmtList}}
+\hypertarget{build-maybeemptystmtlist}{}
+The function
+\[
+\buildmaybeemptystmtlist(\overname{\parsenode{\Nmaybeemptystmtlist}}{\vparsednode}) \aslto
+  \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildfuncbody(\overname{\Nmaybeemptystmtlist(\epsilonnode)}{\vparsednode}) \astarrow
+  \overname{\SPass}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{}{
+  \buildfuncbody(\overname{\Nmaybeemptystmtlist(\Nstmtlist)}{\vparsednode}) \astarrow
+  \overname{\astof{\vstmtlist}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.FuncBody \label{sec:SyntaxRule.FuncBody}}
+\hypertarget{build-funcbody}{}
+The function
+\[
+\buildfuncargs(\overname{\parsenode{\Nfuncbody}}{\vparsednode}) \aslto
+  \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  {
+  \begin{array}{r}
+  \buildfuncbody(\overname{\Nfuncbody(\Tbegin, \namednode{\vstmts}{\Nmaybeemptystmtlist}, \Tend)}{\vparsednode}) \astarrow \\
+  \overname{\astof{\vmaybeemptystmtlist}}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.IgnoredOrIdentifier \label{sec:SyntaxRule.IgnoredOrIdentifier}}
+\hypertarget{build-ignoredoridentifier}{}
+The relation
+\[
+\buildfuncargs(\overname{\parsenode{\Nignoredoridentifier}}{\vparsednode}) \;\aslrel\;
+  \overname{\identifier}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[discard]{
+  \id \in \identifier \text{ is fresh}
+}{
+  \buildignoredoridentifier(\overname{\Nignoredoridentifier(\Tminus)}{\vparsednode}) \astarrow
+  \overname{\id}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[id]{}{
+  \buildignoredoridentifier(\overname{\Nignoredoridentifier(\Tidentifier(\id))}{\vparsednode}) \astarrow
+  \overname{\id}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.LocalDeclKeyword \label{sec:SyntaxRule.LocalDeclKeyword}}
+\hypertarget{build-localdeclkeyword}{}
+The function
+\[
+\buildlocaldeclkeyword(\overname{\parsenode{\Nlocaldeclkeyword}}{\vparsednode}) \;\aslto\;
+  \overname{\localdeclkeyword}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[let]{}{
+  \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\LDKLet}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constant]{}{
+  \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tconstant)}{\vparsednode}) \astarrow \overname{\LDKConstant}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.StorageKeyword \label{sec:SyntaxRule.StorageKeyword}}
+\hypertarget{build-storagekeyword}{}
+The function
+\[
+\buildstoragekeyword(\overname{\parsenode{\Nstoragekeyword}}{\vparsednode}) \;\aslto\;
+  \overname{\globaldeclkeyword}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[let]{}{
+  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\GDKLet}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constant]{}{
+  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tconstant)}{\vparsednode}) \astarrow \overname{\GDKConstant}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[var]{}{
+  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tvar)}{\vparsednode}) \astarrow \overname{\GDKVar}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[config]{}{
+  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tconfig)}{\vparsednode}) \astarrow \overname{\GDKConfig}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Direction \label{sec:SyntaxRule.Direction}}
+\hypertarget{build-direction}{}
+The function
+\[
+\builddirection(\overname{\parsenode{\Ndirection}}{\vparsednode}) \;\aslto\; \overname{\fordirection}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[to]{}{
+  \builddirection(\overname{\Ndirection(\Tto)}{\vparsednode}) \astarrow \overname{\UP}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[downto]{}{
+  \builddirection(\overname{\Ndirection(\Tdownto)}{\vparsednode}) \astarrow \overname{\DOWN}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Alt \label{sec:SyntaxRule.Alt}}
+\hypertarget{build-alt}{}
+The function
+\[
+\buildalt(\overname{\parsenode{\Nalt}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[when]{
+  \buildoption[\buildexpr](\vwhereopt) \astarrow \vwhereast
+}{
+  {
+    \begin{array}{r}
+  \buildalt\left(\overname{\Nalt\left(
+    \begin{array}{l}
+    \Twhen, \punnode{\Npatternlist}, \\
+    \wrappedline\ \namednode{\vwhereopt}{\option{\Twhere, \Nexpr}}, \Tarrow, \\
+    \wrappedline\ \namednode{\vstmts}{\Nstmtlist}
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow \\
+  \overname{\casealt(\CasePattern: \astof{\vpatternlist}, \CaseWhere: \vwhereast, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise]{}{
+  {
+    \begin{array}{r}
+  \buildalt(\overname{\Nalt(\Totherwise, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode})
+  \astarrow \\
+  \overname{\casealt(\CasePattern: \PatternAll, \CaseWhere: \None, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.OtherwiseOpt \label{sec:SyntaxRule.OtherwiseOpt}}
+\hypertarget{build-otherwiseopt}{}
+The function
+\[
+\buildotherwiseopt(\overname{\parsenode{\Notherwiseopt}}{\vparsednode}) \;\aslto\; \overname{\stmt?}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildoption[\buildstmtlist] (\vv)\astarrow \vastnode
+}{
+  {
+  \begin{array}{r}
+  \buildotherwiseopt(\overname{\Notherwiseopt(\namednode{\vv}{\option{\Totherwise, \Tarrow, \Nstmtlist}})}{\vparsednode})
+  \astarrow \\
+  \vastnode
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.Catcher \label{sec:SyntaxRule.Catcher}}
+\hypertarget{build-catcher}{}
+The function
+\[
+\buildcatcher(\overname{\parsenode{\Ncatcher}}{\vparsednode}) \;\aslto\; \overname{\catcher}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[named]{}{
+  {
+  \begin{array}{r}
+  \buildcatcher(\overname{\Ncatcher(\Twhen, \Tidentifier(\id), \Tcolon, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
+  \astarrow \\
+  \overname{(\langle\id\rangle, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[unnamed]{}{
+  {
+  \begin{array}{r}
+  \buildcatcher(\overname{\Ncatcher(\Twhen, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
+  \astarrow \\
+  \overname{(\None, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.Stmt \label{sec:SyntaxRule.Stmt}}
+\hypertarget{build-stmt}{}
+The function
+\[
+\buildstmt(\overname{\parsenode{\Nstmt}}{\vparsednode}) \;\aslto\; \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+
+\begin{mathpar}
+\inferrule[if]{}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Tif, \punnode{\Nexpr}, \Tthen, \punnode{\Nstmtlist}, \punnode{\Nselse}, \Tend)}{\vparsednode})
+  \astarrow \\
+  \overname{\SCond(\astof{\vexpr}, \astof{\vstmtlist}, \astof{\velse})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[case]{
+  \buildlist[\Nalt](\valtlist) \astarrow \valtlistast
+}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\valtlist}{\maybeemptylist{\Nalt}}, \Tend)}{\vparsednode})
+  \astarrow \\
+  \overname{\SCase(\astof{\vexpr}, \valtlistast)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[while]{}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend)}{\vparsednode})
+  \astarrow\\
+  \overname{\SWhile(\astof{\vexpr}, \None, \astof{\vstmtlist})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[looplimit\_while]{
+  \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}
+}{
+  {
+    \begin{array}{r}
+  \buildstmt\left(\overname{\Nstmt\left(
+    \begin{array}{r}
+    \Tlooplimit, \Tlpar, \namednode{\vlimitexpr}{\Nexpr}, \Trpar, \Twhile,  \\
+    \wrappedline\ \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow\\
+  \overname{\SWhile(\astof{\vexpr}, \langle\astversion{\vlimitexpr}\rangle, \astof{\vstmtlist})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[for]{
+  \buildexpr(\vfromexpr) \astarrow \astversion{\vfromexpr}\\
+  \buildexpr(\vtoexpr) \astarrow \astversion{\vtoexpr}\\
+}{
+  {
+    \begin{array}{r}
+  \buildstmt\left(\overname{\Nstmt\left(
+    \begin{array}{l}
+    \Tfor, \Tidentifier(\id), \Teq, \namednode{\vfromexpr}{\Nexpr}, \Ndirection, \\
+    \wrappedline\ \namednode{\vtoexpr}{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend
+    \end{array}
+                       \right)}{\vparsednode}\right)
+  \astarrow \\
+  \overname{\SFor(\id, \astversion{\vfromexpr}, \astof{\vdirection}, \astversion{\vtoexpr}, \astof{\vstmtlist})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[try]{
+  \buildlist[\Ncatcher] \astarrow \astversion{\vcatcherlist}
+}{
+  {
+    \begin{array}{r}
+  \buildstmt\left(\overname{\Nstmt\left(
+    \begin{array}{r}
+    \Ttry, \Nstmtlist, \Tcatch,  \\
+    \wrappedline\ \namednode{\vcatcherlist}{\nonemptylist{\Ncatcher}}, \\
+    \wrappedline\ \Notherwiseopt, \Tend
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow \\
+  \overname{\STry(\astof{\vstmtlist}, \astversion{\vcatcherlist}, \astof{\votherwiseopt})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pass]{}{
+  \buildstmt(\overname{\Nstmt(\Tpass, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SPass}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[return]{
+  \buildoption[\Nexpr](\vexpr) \astarrow \astversion{\vexpr}
+}{
+  \buildstmt(\overname{\Nstmt(\Treturn, \namednode{\vexpr}{\option{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SReturn(\astversion{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[call]{
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+}{
+  \buildstmt(\overname{\Nstmt(\Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SCall(\vx, \astversion{\vargs})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[assert]{}{
+  \buildstmt(\overname{\Nstmt(\Tassert, \Nexpr, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SAssert(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[decl]{}{
+  {
+  \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
+  \astarrow\\
+  \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \langle\astof{\vexpr}\rangle)}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[assignment]{}{
+  \buildstmt(\overname{\Nstmt(\punnode{\Nlexpr}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SAssign(\astof{\vlexpr}, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[var\_decl]{
+  \buildoption[\buildexpr](\ve) \astarrow \astversion{\ve}
+}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow \\
+  \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\ve})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[multi\_var\_decl]{
+  \buildclist[\buildidentity](\vids) \astarrow \astversion{\vids}\\
+  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astof{\tty})]\\
+  \stmtfromlist(\vstmts) \astarrow \vastnode
+}{
+  \buildstmt(\overname{\Nstmt(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \Tcolon, \punnode{\Nty}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \vastnode
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[print]{
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+}{
+  \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SPrint(\astversion{\vargs})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[repeat]{}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Trepeat, \Nstmtlist, \Tuntil, \Nexpr, \Tsemicolon)}{\vparsednode})
+  \astarrow\\
+  \overname{\SRepeat(\astof{\vstmtlist}, \astof{\vexpr}, \None)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[looplimit\_repeat]{
+  \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}
+}{
+  {
+    \begin{array}{r}
+  \buildstmt\left(\overname{\Nstmt\left(
+    \begin{array}{r}
+    \Tlooplimit, \Tlpar, \namednode{\vlimitexpr}{\Nexpr}, \Trpar, \Trepeat, \\
+    \wrappedline\ \Nstmtlist, \Tuntil, \Nexpr, \Tsemicolon
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow\\
+  \overname{\SRepeat(\astof{\vstmtlist}, \astof{\vexpr}, \langle\astversion{\vlimitexpr}\rangle)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[throw\_some]{}{
+  \buildstmt(\overname{\Nstmt(\Tthrow, \Nexpr, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SThrow(\langle(\astof{\vexpr}, \None)\rangle)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[throw\_none]{}{
+  \buildstmt(\overname{\Nstmt(\Tthrow, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SThrow(\None)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pragma]{}{
+  \buildstmt(\overname{\Nstmt(\Tpragma, \Tidentifier, \Clist{\Nexpr}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\tododefine{pragma\_node}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.StmtList \label{sec:SyntaxRule.StmtList}}
+\hypertarget{build-stmtlist}{}
+The function
+\[
+  \buildstmtlist(\overname{\parsenode{\Nstmtlist}}{\vparsednode}) \;\aslto\; \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildlist[\Nstmt](\vstmts) \astarrow \vstmtlist\\
+  \stmtfromlist(\vstmtlist) \astarrow \vastnode
+}{
+  \buildstmtlist(\Nstmtlist(\namednode{\vstmts}{\nonemptylist{\Nstmt}})) \astarrow \vastnode
+}
+\end{mathpar}
+
+\section{SyntaxRule.SElse \label{sec:SyntaxRule.SElse}}
+\hypertarget{build-selse}{}
+The function
+\[
+  \buildselse(\overname{\parsenode{\Nselse}}{\vparsednode}) \;\aslto\; \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[elseif]{}{
+  {
+    \begin{array}{r}
+  \buildselse(\Nselse(\Telseif, \Nexpr, \Twhen, \Nstmtlist, \Nselse)) \astarrow \\
+  \overname{\SCond(\astof{\vexpr}, \astof{\vstmtlist}, \astof{\vselse})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pass]{}{
+  \buildselse(\Nselse(\Tpass)) \astarrow \overname{\SPass}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[else]{}{
+  \buildselse(\Nselse(\Telse, \punnode{\Nstmtlist})) \astarrow \overname{\astof{\vstmtlist}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.LExpr \label{sec:SyntaxRule.LExpr}}
+\hypertarget{build-lexpr}{}
+The function
+\[
+  \buildlexpr(\overname{\parsenode{\Nlexpr}}{\vparsednode}) \;\aslto\; \overname{\lexpr}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[lexpr\_atom]{}{
+  \buildlexpr(\Nlexpr(\punnode{\Nlexpratom})) \astarrow \overname{\astof{\vlexpratom}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[discard]{}{
+  \buildlexpr(\Nlexpr(\Tminus)) \astarrow \overname{\LEDiscard}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[multi\_lexpr]{
+  \buildclist[\Nlexpr](\vlexprs) \astarrow \vlexprasts
+}{
+  \buildlexpr(\Nlexpr(\Tlpar, \namednode{\vlexprs}{\NClist{\Nlexpr}}, \Trpar)) \astarrow
+  \overname{\LEDestructuring(\vlexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.LExprAtom \label{sec:SyntaxRule.LExprAtom}}
+\hypertarget{build-lexpratom}{}
+The function
+\[
+  \buildlexpratom(\overname{\parsenode{\Nlexpratom}}{\vparsednode}) \;\aslto\; \overname{\lexpr}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[var]{}{
+  \buildlexpratom(\Nlexpr(\Tidentifier(\id))) \astarrow
+  \overname{\LEVar(\id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[slice]{}{
+  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \punnode{\Nslices})) \astarrow
+  \overname{\LESlice(\astof{\vlexpratom}, \astof{\vslices})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[set\_field]{}{
+  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tdot, \Tidentifier(\id))) \astarrow
+  \overname{\LESetField(\astof{\vlexpratom}, \id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[set\_fields]{
+  \buildclist[\buildidentity](\vfields) \astarrow \vfieldasts
+}{
+  {
+  \begin{array}{r}
+  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tdot, \Tlbracket, \namednode{\vfields}{\Clist{\Tidentifier}}, \Trbracket)) \astarrow\\
+  \overname{\LESetFields(\astof{\vlexpratom}, \vfieldasts)}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[concat]{
+  \buildclist[\buildlexpratom](\vlexprs) \astarrow \vlexprasts
+}{
+  {
+    \begin{array}{r}
+  \buildlexpratom(\Nlexpr(\Tlbracket, \namednode{\vlexprs}{\NClist{{\Nlexpratom}}}, \Trbracket)) \astarrow\\
+  \overname{\LEConcat(\vlexprasts)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.DeclItem \label{sec:SyntaxRule.DeclItem}}
+\hypertarget{build-declitem}{}
+The function
+\[
+  \builddeclitem(\overname{\parsenode{\Ndeclitem}}{\vparsednode}) \;\aslto\; \overname{\localdeclitem}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[typed]{}{
+  {
+    \begin{array}{r}
+  \builddeclitem(\Ndeclitem(\punnode{\Nuntypeddeclitem}, \punnode{\Nasty})) \astarrow \\
+  \overname{\LDITyped(\astof{\vuntypedlocaldeclitem}, \astof{\vasty})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[untyped]{}{
+  \builddeclitem(\Ndeclitem(\punnode{\Nuntypeddeclitem})) \astarrow
+  \overname{\astof{\vuntypedlocaldeclitem}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.UntypedDeclItem \label{sec:SyntaxRule.UntypedDeclItem}}
+\hypertarget{build-untypeddeclitem}{}
+The function
+\[
+  \builduntypeddeclitem(\overname{\parsenode{\Nuntypeddeclitem}}{\vparsednode}) \;\aslto\; \overname{\localdeclitem}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[var]{}{
+  \builduntypeddeclitem(\Nuntypeddeclitem(\Tidentifier(\id))) \astarrow
+  \overname{\LDIVar(\id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[discard]{}{
+  \builduntypeddeclitem(\Nuntypeddeclitem(\Tminus)) \astarrow
+  \overname{\LDIDiscard}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \buildclist[\builddeclitem](\vdeclitems) \astarrow \vdeclitemasts
+}{
+  {
+    \begin{array}{r}
+  \builduntypeddeclitem(\Nuntypeddeclitem(\namednode{\vdeclitems}{\Plisttwo{\Ndeclitem}})) \astarrow \\
+  \overname{\LDITuple(\vdeclitemasts)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.IntConstraints \label{sec:SyntaxRule.IntConstraints}}
+\hypertarget{build-intconstraints}{}
+The function
+\[
+  \buildintconstraints(\overname{\parsenode{\Nintconstraints}}{\vparsednode}) \;\aslto\; \overname{\intconstraints}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildintconstraint](\vconstraintasts) \astarrow \vconstraintasts
+}{
+  {
+    \begin{array}{r}
+  \buildintconstraints(\Nintconstraints(\Tlbrace, \namednode{\vconstraints}{\NClist{\Nintconstraint}}, \Trbrace)) \astarrow\\
+  \overname{\wellconstrained(\vconstraintasts)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.IntConstraintsopt \label{sec:SyntaxRule.IntConstraintsopt}}
+\hypertarget{build-intconstraintsopt}{}
+The function
+\[
+  \buildintconstraintsopt(\overname{\parsenode{\Nintconstraintsopt}}{\vparsednode}) \;\aslto\; \overname{\intconstraints}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[constrained]{}{
+  \buildintconstraintsopt(\Nintconstraints(\punnode{\Nintconstraints})) \astarrow
+  \overname{\astof{\vintconstraints}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[unconstrained]{}{
+  \buildintconstraintsopt(\Nintconstraints(\emptysentence)) \astarrow
+  \overname{\unconstrained}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.IntConstraint \label{sec:SyntaxRule.IntConstraint}}
+\hypertarget{build-intconstraint}{}
+The function
+\[
+  \buildintconstraint(\overname{\parsenode{\Nintconstraint}}{\vparsednode}) \;\aslto\; \overname{\intconstraint}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{}{
+  \buildintconstraint(\Nintconstraint(\punnode{\Nexpr})) \astarrow
+  \overname{\ConstraintExact(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \buildexpr(\vfromexpr) \astarrow \astversion{\vfromexpr}\\
+  \buildexpr(\vtoexpr) \astarrow \astversion{\vtoexpr}\\
+}{
+  {
+    \begin{array}{r}
+  \buildintconstraint(\Nintconstraint(\namednode{\vfromexpr}{\Nexpr}, \Tslicing, \namednode{\vtoexpr}{\Nexpr})) \astarrow\\
+  \overname{\ConstraintRange(\astversion{\vfromexpr}, \astversion{\vtoexpr})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.ExprPattern \label{sec:SyntaxRule.ExprPattern}}
+\hypertarget{build-exprpattern}{}
+The function
+\[
+  \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[literal]{}{
+  \buildexprpattern(\Nexprpattern(\punnode{\Nvalue})) \astarrow
+  \overname{\ELiteral(\astof{\vvalue})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[var]{}{
+  \buildexprpattern(\Nexprpattern(\Tidentifier(\id))) \astarrow
+  \overname{\EVar(\id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[binop]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nbinop}, \punnode{\Nexpr})) \astarrow\\
+  \overname{\EBinop(\astof{\vexprpattern}, \astof{\vbinop}, \astof{\vexpr})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[unop]{}{
+  \buildexprpattern(\Nexprpattern(\punnode{\Nunop}, \punnode{\Nexpr})) \astarrow
+  \overname{\EUnop(\astof{\vunop}, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[cond]{
+    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
+    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+  }{
+    {
+      \begin{array}{r}
+  \buildexprpattern\left(\Nexprpattern\left(
+    \begin{array}{l}
+    \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
+    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
+    \end{array}
+    \right)\right) \astarrow\\
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[call]{
+    \buildplist[\buildexpr](\vargs) \astarrow \vexprasts
+  }{
+  \buildexprpattern(\Nexprpattern(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})) \astarrow
+  \overname{\ECall(\id, \vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[slice]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nslice})) \astarrow\\
+  \overname{\ESlice(\astof{\vexprpattern}, \astof{\vslice})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[get\_field]{}{
+  \buildexprpattern(\Nexprpattern(\Nexprpattern, \Tdot, \Tidentifier)) \astarrow
+  \overname{\EGetField()}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[get\_fields]{
+    \buildclist[\buildidentity](\vids) \astarrow \vidasts
+  }{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)) \astarrow\\
+  \overname{\EGetFields(\astof{\vexprpattern}, \vidasts)}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[concat]{
+    \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts
+  }{
+  \buildexprpattern(\Nexprpattern(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)) \astarrow
+  \overname{\EConcat(\vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[atc]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nty})) \astarrow\\
+  \overname{\EATC(\astof{\vexprpattern}, \astof{\tty})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[atc\_int\_constraints]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nintconstraints})) \astarrow\\
+  \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vintconstraints}))}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[pattern\_set]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \punnode{\Npatternset})) \astarrow\\
+  \overname{\EPattern(\astof{\vexprpattern}, \astof{\vpatternset})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[pattern\_mask]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \Tmasklit(\vm))) \astarrow\\
+  \overname{\EPattern(\astof{\vexprpattern}, \vm)}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[unknown]{}{
+  \buildexprpattern(\Nexprpattern(\Tunknown, \Tcolon, \punnode{\Nty})) \astarrow
+  \overname{\EUnknown(\astof{\tty})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[record]{
+    \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
+  }{
+    {
+      \begin{array}{r}
+  \buildexprpattern\left(\Nexprpattern\left(
+    \begin{array}{l}
+    \Tidentifier(\vt), \Tlbrace, \\
+    \wrappedline\ \namednode{\vfieldassigns}{\Clist{\Nfieldassign}}, \\
+    \wrappedline\ \Trbrace
+    \end{array}
+    \right)\right) \\
+    \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[sub\_expr]{}{
+  \buildexprpattern(\Nexprpattern(\Tlpar, \punnode{\Nexprpattern}, \Trpar)) \astarrow
+  \overname{\astof{\vexprpattern}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.PatternSet \label{sec:SyntaxRule.PatternSet}}
+\hypertarget{build-patternset}{}
+The function
+\[
+  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[not]{}{
+  {
+    \begin{array}{r}
+  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow\\
+  \overname{\PatternNot(\astof{\vpatternlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[list]{}{
+  \buildpatternset(\Npatternset(\Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
+  \overname{\astof{\vpatternlist}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.PatternList \label{sec:SyntaxRule.PatternList}}
+\hypertarget{build-patternlist}{}
+The function
+\[
+  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
+}{
+  {
+    \begin{array}{r}
+  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\NClist{\Npattern}})) \astarrow\\
+  \overname{\PatternAny(\vpatternasts)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.Pattern \label{sec:SyntaxRule.Pattern}}
+\hypertarget{build-pattern}{}
+The function
+\[
+  \buildpattern(\overname{\parsenode{\Npattern}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[single]{}{
+  \buildpattern(\Npattern(\punnode{\Nexprpattern})) \astarrow
+  \overname{\PatternSingle(\astof{\vexprpattern})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{}{
+  {
+    \begin{array}{r}
+  \buildpattern(\Npattern(\punnode{\Nexprpattern}, \Tslicing, \punnode{\Nexpr})) \astarrow\\
+  \overname{\PatternRange(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[all]{}{
+  \buildpattern(\Npattern(\Tminus)) \astarrow
+  \overname{\PatternAll}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[leq]{}{
+  \buildpattern(\Npattern(\Tleq, \punnode{\Nexpr})) \astarrow
+  \overname{\PatternLeq(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[geq]{}{
+  \buildpattern(\Npattern(\Tgeq, \punnode{\Nexpr})) \astarrow
+  \overname{\PatternGeq(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[mask]{}{
+  \buildpattern(\Npattern(\Tmasklit(\vm))) \astarrow
+  \overname{\PatternMask(\vm)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \buildplist[\buildpattern](\vpatterns) \astarrow \vpatternasts
+}{
+  \buildpattern(\Npattern(\namednode{\vpatterns}{\Plisttwo{\Npattern}})) \astarrow
+  \overname{\PatternTuple(\vpatternasts)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[set]{}{
+  \buildpattern(\Npattern(\punnode{\Npatternset})) \astarrow
+  \overname{\astof{\vpatternset}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Fields \label{sec:SyntaxRule.Fields}}
+\hypertarget{build-fields}{}
+The function
+\[
+  \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\Field^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildtclist[\buildtypedidentifier](\vfields) \astarrow \vfieldasts
+}{
+  \buildfields(\Nfields(\Tlbrace, \namednode{\vfields}{\TClist{\Ntypedidentifier}}, \Trbrace)) \astarrow
+  \overname{\vfieldasts}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.FieldsOpt \label{sec:SyntaxRule.FieldsOpt}}
+\hypertarget{build-fieldsopt}{}
+The function
+\[
+  \buildfieldsopt(\overname{\parsenode{\Nfieldsopt}}{\vparsednode}) \;\aslto\; \overname{\Field^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[fields]{}{
+  \buildfieldsopt(\Nfieldsopt(\punnode{\Nfields})) \astarrow
+  \overname{\astof{\vfields}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildfieldsopt(\Nfieldsopt(\emptysentence)) \astarrow
+  \overname{\emptylist}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.NSlices \label{sec:SyntaxRule.NSlices}}
+\hypertarget{build-nslices}{}
+The function
+\[
+  \buildnslices(\overname{\parsenode{\Nnslices}}{\vparsednode}) \;\aslto\; \overname{\slice^+}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
+}{
+  \buildnslices(\Nnslices(\Tlbracket, \namednode{\vslices}{\NClist{\Nslice}}, \Trbracket)) \astarrow
+  \overname{\vsliceasts}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Slices \label{sec:SyntaxRule.Slices}}
+\hypertarget{build-slices}{}
+The function
+\[
+  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\slice^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
+}{
+  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\Clist{\Nslice}}, \Trbracket)) \astarrow
+  \overname{\vsliceasts}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Slice \label{sec:SyntaxRule.Slice}}
+\hypertarget{build-slice}{}
+The function
+\[
+  \buildslice(\overname{\parsenode{\Nslice}}{\vparsednode}) \;\aslto\; \overname{\slice}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[single]{}{
+  \buildslices(\Nslice(\punnode{\Nexpr})) \astarrow
+  \overname{\SliceSingle(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \buildexpr(\veone) \astarrow \astversion{\veone}\\
+  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+}{
+  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \overname{\SliceRange(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[length]{
+  \buildexpr(\veone) \astarrow \astversion{\veone}\\
+  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+}{
+  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tpluscolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \overname{\SliceLength(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[star]{
+  \buildexpr(\veone) \astarrow \astversion{\veone}\\
+  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+}{
+  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tstarcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \overname{\SliceStar(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Bitfields \label{sec:SyntaxRule.Bitfields}}
+\hypertarget{build-bitfields}{}
+The function
+\[
+  \buildbitfields(\overname{\parsenode{\Nbitfields}}{\vparsednode}) \;\aslto\; \overname{\bitfield^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \buildtclist[\buildbitfield](\vbitfields) \astarrow \vbitfieldasts
+}{
+  \buildbitfields(\Nbitfields(\Tlbrace, \namednode{\vbitfields}{\TClist{\Nbitfield}}, \Trbrace)) \astarrow
+  \overname{\vbitfieldasts}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Bitfield \label{sec:SyntaxRule.Bitfield}}
+\hypertarget{build-bitfield}{}
+The function
+\[
+  \buildbitfield(\overname{\parsenode{\Nbitfield}}{\vparsednode}) \;\aslto\; \overname{\bitfield}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[simple]{}{
+  \buildbitfields(\Nbitfield(\punnode{\Nnslices}, \Tidentifier(\vx))) \astarrow
+  \overname{\BitFieldSimple(\vx, \astof{\vslices})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[nested]{}{
+  {
+    \begin{array}{r}
+  \buildbitfields(\Nbitfield(\punnode{\Nnslices}, \Tidentifier(\vx), \punnode{\Nbitfields})) \astarrow\\
+  \overname{\BitFieldNested(\vx, \astof{\vslices}, \astof{\vbitfields})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[type]{}{
+  \buildbitfields(\Nbitfield(\punnode{\Nnslices}, \Tidentifier(\vx), \Tcolon, \punnode{\Nty})) \astarrow
+  \overname{\BitFieldType(\vx, \astof{\vslices}, \astof{\tty})}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Ty \label{sec:SyntaxRule.Ty}}
+\hypertarget{build-ty}{}
+The function
+\[
+  \buildty(\overname{\parsenode{\Nty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[integer]{}{
+  \buildty(\Nty(\Tinteger, \punnode{\Nintconstraintsopt})) \astarrow
+  \overname{\TInt(\vintconstraintsopt)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[real]{}{
+  \buildty(\Nty(\Treal)) \astarrow
+  \overname{\TReal}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[boolean]{}{
+  \buildty(\Nty(\Tboolean)) \astarrow
+  \overname{\TBool}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[string]{}{
+  \buildty(\Nty(\Tstring)) \astarrow
+  \overname{\TString}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bit]{}{
+  \buildty(\Nty(\Tbit)) \astarrow
+  \overname{\TBits(\ELiteral(\lint(1)), \emptylist)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bits]{
+  \buildlist[\buildbitfield](\vbitfields) \astarrow \vbitfieldasts
+}{
+  {
+    \begin{array}{r}
+  \buildty(\Nty(\Tbits, \Tlpar, \punnode{\Nexpr}, \Trpar, \namednode{\vbitfields}{\maybeemptylist{\Nbitfields}})) \astarrow\\
+  \overname{\TBits(\astof{\vexpr}, \vbitfieldasts)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \buildplist[\buildty](\vtypes) \astarrow \vtypeasts
+}{
+  \buildty(\Nty(\namednode{\vtypes}{\Plist{\Nty}})) \astarrow
+  \overname{\TTuple(\vtypeasts)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[named]{}{
+  \buildty(\Nty(\Tidentifier(\id))) \astarrow
+  \overname{\TNamed(\id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[array]{}{
+  \buildty(\Nty(\Tarray, \Tlbracket, \punnode{\Nexpr}, \Trbracket, \Tof, \punnode{\Nty})) \astarrow
+  \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.TyDecl \label{sec:SyntaxRule.TyDecl}}
+\hypertarget{build-tydecl}{}
+The function
+\[
+  \buildtydecl(\overname{\parsenode{\Ntydecl}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[ty]{}{
+  \buildtydecl(\Ntydecl(\punnode{\Nty})) \astarrow
+  \overname{\astversion{\tty}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[enumeration]{
+  \buildtclist[\buildidentity](\vids) \astarrow \vidasts
+}{
+  {
+    \begin{array}{r}
+  \buildtydecl(\Ntydecl(\Tenumeration, \Tlbrace, \namednode{\vids}{\NTClist{\Tidentifier}}, \Trbrace)) \astarrow\\
+  \overname{\TEnum(\vidasts)}{\vastnode}
+\end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[record]{}{
+  \buildtydecl(\Ntydecl(\Trecord, \punnode{\Nfieldsopt})) \astarrow
+  \overname{\TRecord(\astof{\vfieldsopt})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exception]{}{
+  \buildtydecl(\Ntydecl(\Texception, \punnode{\Nfieldsopt})) \astarrow
+  \overname{\TException(\astof{\vfieldsopt})}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.FieldAssign \label{sec:SyntaxRule.FieldAssign}}
+\hypertarget{build-fieldassign}{}
+The function
+\[
+  \buildfieldassign(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{(\identifier\times\expr)}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \buildfieldassign(\Nfieldassign(\Tidentifier(\id), \Teq, \punnode{\Nexpr})) \astarrow
+  \overname{(\id, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.EElse \label{sec:SyntaxRule.EElse}}
+\hypertarget{build-eelse}{}
+The function
+\[
+  \buildeelse(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[else]{}{
+  \buildeelse(\Neelse(\Telse, \punnode{\Nexpr})) \astarrow
+  \overname{\astof{\vexpr}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[else\_if]{
+  \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
+  \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+}{
+  {
+    \begin{array}{r}
+  \buildeelse\left(\Neelse\left(
+    \begin{array}{l}
+    \Telseif, \namednode{\vcondexpr}{\Nexpr},  \\
+    \wrappedline\ \Tthen, \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
+  \end{array}
+    \right)\right) \astarrow\\
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
+\end{array}
+  }
+}
+\end{mathpar}
+
+\section{SyntaxRule.Expr \label{sec:SyntaxRule.Expr}}
+\hypertarget{build-expr}{}
+The function
+\[
+  \buildexpr(\overname{\parsenode{\Nexpr}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[literal]{}{
+  \buildexpr(\Nexpr(\punnode{\Nvalue})) \astarrow
+  \overname{\ELiteral(\astof{\vvalue})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[var]{}{
+  \buildexpr(\Nexpr(\Tidentifier(\id))) \astarrow
+  \overname{\EVar(\id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[binop]{}{
+    {
+      \begin{array}{r}
+  \buildexpr(\Nexpr(\punnode{\Nexpr}, \punnode{\Nbinop}, \punnode{\Nexpr})) \astarrow\\
+  \overname{\EBinop(\astof{\vexpr}, \astof{\vbinop}, \astof{\vexpr})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[unop]{}{
+  \buildexpr(\Nexpr(\punnode{\Nunop}, \punnode{\Nexpr})) \astarrow
+  \overname{\EUnop(\astof{\vunop}, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[cond]{
+    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
+    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+  }{
+    {
+      \begin{array}{r}
+  \buildexpr\left(\Nexpr\left(
+    \begin{array}{l}
+    \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
+    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
+    \end{array}
+    \right)\right) \astarrow\\
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[call]{
+    \buildplist[\buildexpr](\vargs) \astarrow \vexprasts
+  }{
+  \buildexpr(\Nexpr(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})) \astarrow
+  \overname{\ECall(\id, \vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[slice]{}{
+    {
+      \begin{array}{r}
+  \buildexpr(\Nexpr(\punnode{\Nexpr}, \punnode{\Nslice})) \astarrow\\
+  \overname{\ESlice(\astof{\vexpr}, \astof{\vslice})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[get\_field]{}{
+  \buildexpr(\Nexpr(\Nexpr, \Tdot, \Tidentifier)) \astarrow
+  \overname{\EGetField()}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[get\_fields]{
+    \buildclist[\buildidentity](\vids) \astarrow \vidasts
+  }{
+    {
+      \begin{array}{r}
+  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)) \astarrow\\
+  \overname{\EGetFields(\astof{\vexpr}, \vidasts)}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[concat]{
+    \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts
+  }{
+  \buildexpr(\Nexpr(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)) \astarrow
+  \overname{\EConcat(\vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[atc]{}{
+    {
+      \begin{array}{r}
+  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nty})) \astarrow\\
+  \overname{\EATC(\astof{\vexpr}, \astof{\tty})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[atc\_int\_constraints]{}{
+    {
+      \begin{array}{r}
+  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nintconstraints})) \astarrow\\
+  \overname{\EATC(\astof{\vexpr}, \TInt(\astof{\vintconstraints}))}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[pattern\_set]{}{
+    {
+      \begin{array}{r}
+  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternset})) \astarrow\\
+  \overname{\EPattern(\astof{\vexpr}, \astof{\vpatternset})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[pattern\_mask]{}{
+    {
+      \begin{array}{r}
+  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tin, \Tmasklit(\vm))) \astarrow\\
+  \overname{\EPattern(\astof{\vexpr}, \vm)}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[unknown]{}{
+  \buildexpr(\Nexpr(\Tunknown, \Tcolon, \punnode{\Nty})) \astarrow
+  \overname{\EUnknown(\astof{\tty})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[record]{
+    \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
+  }{
+    {
+      \begin{array}{r}
+  \buildexpr\left(\Nexpr\left(
+    \begin{array}{l}
+    \Tidentifier(\vt), \Tlbrace, \\
+    \wrappedline\ \namednode{\vfieldassigns}{\Clist{\Nfieldassign}}, \\
+    \wrappedline\ \Trbrace
+    \end{array}
+    \right)\right) \\
+    \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[sub\_expr]{}{
+  \buildexpr(\Nexpr(\Tlpar, \punnode{\Nexpr}, \Trpar)) \astarrow
+  \overname{\astof{\vexpr}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[tuple]{
+    \buildplist[\buildexpr](\vexprs) \astarrow \vexprasts
+  }{
+  \buildexpr(\Nexpr(\namednode{\vexprs}{\Plisttwo{\Nexpr}})) \astarrow
+  \overname{\ETuple(\vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Value \label{sec:SyntaxRule.Value}}
+\hypertarget{build-value}{}
+The function
+\[
+  \buildvalue(\overname{\parsenode{\Nvalue}}{\vparsednode}) \;\aslto\; \overname{\literal}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[integer]{}{
+  \buildvalue(\Nvalue(\Tintlit(\vi))) \astarrow
+  \overname{\lint(\vi)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[boolean]{}{
+  \buildvalue(\Nvalue(\Tboollit(\vb))) \astarrow
+  \overname{\lbool(\vb)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[real]{}{
+  \buildvalue(\Nvalue(\Treallit(\vr))) \astarrow
+  \overname{\lreal(\vr)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitvector]{}{
+  \buildvalue(\Nvalue(\Tbitvectorlit(\vb))) \astarrow
+  \overname{\lbitvector(\vb)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[string]{}{
+  \buildvalue(\Nvalue(\Tstringlit(\vs))) \astarrow
+  \overname{\lstring(\vs)}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Unop \label{sec:SyntaxRule.Unop}}
+\hypertarget{build-unop}{}
+The function
+\[
+  \buildunop(\overname{\parsenode{\Nunop}}{\vparsednode}) \;\aslto\; \overname{\unop}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[bnot]{}{
+  \buildunop(\Nunop(\Tbnot)) \astarrow \overname{\BNOT}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[neg]{}{
+  \buildunop(\Nunop(\Tminus)) \astarrow \overname{\NEG}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[not]{}{
+  \buildunop(\Nunop(\Tnot)) \astarrow \overname{\NOT}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Binop \label{sec:SyntaxRule.Binop}}
+\hypertarget{build-binop}{}
+The function
+\[
+  \buildbinop(\overname{\parsenode{\Nbinop}}{\vparsednode}) \;\aslto\; \overname{\binop}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tand)) \astarrow \overname{\AND}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tband)) \astarrow \overname{\BAND}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tbor)) \astarrow \overname{\BOR}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tbeq)) \astarrow \overname{\EQOP}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tdiv)) \astarrow \overname{\DIV}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tdivrm)) \astarrow \overname{\DIVRM}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Txor)) \astarrow \overname{\XOR}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Teqop)) \astarrow \overname{\EQOP}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tneq)) \astarrow \overname{\NEQ}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tgt)) \astarrow \overname{\GT}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tgeq)) \astarrow \overname{\GEQ}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Timpl)) \astarrow \overname{\IMPL}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tlt)) \astarrow \overname{\LT}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tleq)) \astarrow \overname{\LEQ}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tplus)) \astarrow \overname{\PLUS}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tminus)) \astarrow \overname{\MINUS}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tmod)) \astarrow \overname{\MOD}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tmul)) \astarrow \overname{\MUL}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tor)) \astarrow \overname{\OR}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Trdiv)) \astarrow \overname{\RDIV}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tshl)) \astarrow \overname{\SHL}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tshr)) \astarrow \overname{\SHR}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tpow)) \astarrow \overname{\POW}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildunop(\Nbinop(\Tconcat)) \astarrow \overname{\tododefine{CONCAT}}{\vastnode}
+}
+\end{mathpar}
+
+\section{SyntaxRule.StmtFromList \label{sec:SyntaxRule.StmtFromList}}
+\hypertarget{def-stmtfromlist}{}
+The function
+\[
+\stmtfromlist(\overname{\stmt^*}{\vstmts}) \aslto \overname{\stmt}{\news}
+\]
+builds a statement $\news$ from a possibly-empty list of statements $\vstmts$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{
+}{
+  \stmtfromlist(\overname{\emptylist}{\vstmts}) \astarrow \overname{\SPass}{\news}
+}
+\and
+\inferrule[non\_empty]{
+  \stmtfromlist(\vstmtsone) \astarrow \vsone\\
+  \sequencestmts(\vs, \vsone) \astarrow \news
+}{
+  \stmtfromlist(\overname{[\vs] \concat \vstmtsone}{\vstmts}) \astarrow \news
+}
+\end{mathpar}
+
+\section{SyntaxRule.SequenceStmts \label{sec:SyntaxRule.SequenceStmts}}
+\hypertarget{def-sequencestmts}{}
+The function
+\[
+\sequencestmts(\overname{\stmt}{\vsone}, \overname{\stmt}{\vstwo}) \aslto \overname{\stmt}{\news}
+\]
+Combines the statement $\vsone$ with $\vstwo$ into the statement $\news$, while filtering away
+instances of $\SPass$.
+
+\isempty{\subsection{Prose}}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[s1\_spass]{}{
+  \sequencestmts(\overname{\SPass}{\vsone}, \vstwo) \astarrow \overname{\vstwo}{\news}
+}
+\and
+\inferrule[s2\_spass]{
+  \vsone \neq \SPass
+}{
+  \sequencestmts(\vsone, \overname{\SPass}{\vstwo}) \astarrow \overname{\vsone}{\news}
+}
+\and
+\inferrule[no\_spass]{
+  \vsone \neq \SPass\\
+  \vstwo \neq \SPass
+}{
+  \sequencestmts(\vsone, \vstwo) \astarrow \overname{\SSeq(\vsone, \vstwo)}{\news}
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Building Macro Productions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This chapter defines builder relations for the
+subset of macro productions in \secref{ParametricProductions}
+that are not inlined:
+\begin{itemize}
+  \item SyntaxRule.List (see \secref{SyntaxRule.List})
+  \item SyntaxRule.CList (see \secref{SyntaxRule.CList})
+  \item SyntaxRule.NTCList (see \secref{SyntaxRule.NTCList})
+  \item SyntaxRule.Option (see \secref{SyntaxRule.Option})
+\end{itemize}
+
+We also define SyntaxRule.Identity (see \secref{SyntaxRule.Identity}),
+which can be used in conjunction with the rules above in application
+to terminals.
+
+\section{SyntaxRule.List \label{sec:SyntaxRule.List}}
+\hypertarget{build-list}{}
+The meta relation
+\[
+\buildlist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents a possibly-empty list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
+to each of them --- $\vsymasts$.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildlist[b](\overname{\emptysentence}{\vsyms}) \astarrow \overname{\emptylist}{\vsymasts}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  b(\vv) \astarrow \astversion{\vv}\\
+  \buildlist[b](\vsymsone) \astarrow \vsymastsone
+}{
+  \buildlist[b](\overname{\namednode{\vv}{E}, \namednode{\vsymsone}{\maybeemptylist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+}
+\end{mathpar}
+
+\section{SyntaxRule.CList \label{sec:SyntaxRule.CList}}
+\hypertarget{build-clist}{}
+The meta relation
+\[
+\buildclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents a possibly-empty comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
+to each of them --- $\vsymasts$.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildclist[b](\overname{\emptysentence}{\vsyms}) \astarrow \overname{\emptylist}{\vsymasts}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  b(\vv) \astarrow \astversion{\vv}\\
+  \buildclist[b](\vsymsone) \astarrow \vsymastsone
+}{
+  \buildclist[b](\overname{\namednode{\vv}{E}, \namednode{\vsymsone}{\NClist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+}
+\end{mathpar}
+
+\section{SyntaxRule.NTCList \label{sec:SyntaxRule.NTCList}}
+\hypertarget{build-ntclist}{}
+The meta relation
+\[
+\buildntclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents a non-empty comma-separated trailing list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
+to each of them --- $\vsymasts$.
+
+\begin{mathpar}
+\inferrule[empty]{
+  b(\vv) \astarrow \astversion{\vv}
+}{
+  \buildntclist[b](\overname{\vv \parsesep \option{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  b(\vv) \astarrow \astversion{\vv}\\
+  \buildntclist[b](\vsymsone) \astarrow \vsymastsone
+}{
+  \buildntclist[b](\overname{\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\NTClist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+}
+\end{mathpar}
+
+\section{SyntaxRule.Option \label{sec:SyntaxRule.Option}}
+\hypertarget{build-option}{}
+The meta relation
+\[
+\buildoption[b](\overname{N}{\vsym}) \;\aslrel\; \overname{\langle A \rangle}{\vsymast}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents an optional $E$ value --- $\vsym$ --- and returns the result of applying $b$
+to the value if it exists --- $\vsymasts$.
+
+\begin{mathpar}
+\inferrule[none]{}{
+  \buildoption[b](\overname{\emptysentence}{\vsym}) \astarrow \overname{\None}{\vsymast}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some]{
+  b(\vv) \astarrow \astversion{\vv}
+}{
+  \buildoption[b](\overname{\namednode{\vv}{E}}{\vsym}) \astarrow \overname{\langle\astversion{\vv}\rangle}{\vsymast}
+}
+\end{mathpar}
+
+When this relation is applied to a sentence consisting of a prefix of terminals $t_{1..k}$, ending with a non-terminal $\vv$,
+it ignore the terminals and returns the result for the non-terminal.
+\begin{mathpar}
+\inferrule[last]{
+  \buildoption[b](\vv) \astarrow \vsymast
+}{
+  \buildoption[b](t_{1..k}, \namednode{\vv}{E}) \astarrow \vsymast
+}
+\end{mathpar}
+
+\section{SyntaxRule.Identity \label{sec:SyntaxRule.Identity}}
+\hypertarget{build-identity}{}
+The meta function
+\[
+\buildidentity(\overname{T}{x}) \aslto \overname{T}{x}
+\]
+is the identity function, which can be used as an argument to meta functions such as $\buildlist$ when they are applied
+to terminals.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \buildidentity(x) \astarrow x
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Correspondence Between Left-hand-side Expressions and Right-hand-side Expressions
 \label{ch:LeftToRight}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The recursive function $\torexpr : \lexpr \rightarrow \expr$ transforms
 left-hand-side expressions to corresponding right-hand-side expressions,
@@ -425,4 +4889,6 @@ which is utilized both for the type system and semantics:
 \end{array}
 \]
 
+\bibliographystyle{plain}
+\bibliography{ASL}
 \end{document}
