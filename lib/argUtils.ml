@@ -27,10 +27,14 @@ let badarg opt arg ty =
        (sprintf "wrong argument '%s'; option '%s' expects a %s"
           opt arg ty))
 
+(* Parsing booleans *)
+
 let parse_bool opt v msg =
   opt,
   Arg.Bool (fun b -> v := b),
   sprintf "<bool> %s, default %b" msg !v
+
+(* Parsing ints *)
 
 let parse_int opt v msg =
   opt,
@@ -47,6 +51,8 @@ let parse_int_opt opt v msg =
         with _ -> badarg opt tag "integer"),
   sprintf "<int|none> %s" msg
 
+(* Parsing floats *)
+
 let parse_float opt v msg =
   opt,
   Arg.Float (fun b -> v := b),
@@ -62,6 +68,8 @@ let parse_float_opt opt v msg =
         with _ -> badarg tag opt "float"   ),
   sprintf "<float|none> %s" msg
 
+(* Parsing positions *)
+
 type pos = float * float
 
 let parse_pos opt v msg =
@@ -73,6 +81,7 @@ let parse_pos opt v msg =
   let x,y = !v in
   sprintf "<float,float> %s, default %.1f,%.1f" msg x y
 
+
 let parse_pos_opt opt v msg =
   opt,
   Arg.String
@@ -80,6 +89,8 @@ let parse_pos_opt opt v msg =
     | Some p -> v := Some p
     | None ->  badarg tag opt "float,float"),
   sprintf "<float,float> %s" msg
+
+(* Parsing strings *)
 
 let parse_string opt v msg =
   opt,
@@ -101,3 +112,28 @@ let parse_stringsetfun opt f msg =
 
 let parse_stringset opt v msg =
   parse_stringsetfun opt (fun s -> v := StringSet.union s !v) msg
+
+(* Parsing tags *)
+
+type ttag =
+  string -> (string -> bool) -> string list
+    -> string -> string * Arg.spec * string
+
+let do_tag opt set tags tag =
+  if not (set tag) then
+    raise
+      (Arg.Bad
+         (sprintf "bad tag for %s, allowed tag are %s"
+            opt (String.concat "," tags)))
+
+let parse_tag opt set tags msg =
+  opt,
+  Arg.String (do_tag opt set tags),
+  sprintf "<%s> %s" (String.concat "|" tags) msg
+
+let parse_tags opt set tags msg =
+  let do_tag = do_tag opt set tags in
+  opt,
+  Arg.String
+    (fun tags -> Misc.split_comma tags |>  List.iter do_tag),
+  sprintf "<%s> (comma separated list) %s" (String.concat "|" tags) msg
