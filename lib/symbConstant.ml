@@ -40,7 +40,7 @@ module Make
   and is_zero = function
     | Concrete sc -> Scalar.is_zero sc
     | ConcreteVector _|ConcreteRecord _|Symbolic _
-    | Label (_, _)|Tag _|PteVal _|Instruction _|Frozen _
+    | Label (_, _)|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _
       -> false
   and one = Concrete Scalar.one
   and cst_true = Concrete Scalar.s_true
