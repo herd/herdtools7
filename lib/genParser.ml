@@ -225,7 +225,6 @@ module Make
                       | _ -> assert false
                       end
                 in
-                if O.verbose > 0 then prerr_endline "Bingo" ;
                 ConstrGen.map_constr map_atom cond
               with Not_found -> cond in
             { parsed with
