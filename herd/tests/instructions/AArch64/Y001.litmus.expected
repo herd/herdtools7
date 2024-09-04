@@ -1,0 +1,10 @@
+Test Y001 Required
+States 1
+0:X1=2; 0:X2=3; 0:X3=5; 0:X4=11;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=2 /\ 0:X2=3 /\ 0:X3=5 /\ 0:X4=11)
+Observation Y001 Always 1 0
+Hash=8e0874f28c5c0114d00e84182a875131
+

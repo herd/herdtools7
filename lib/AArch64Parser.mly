@@ -102,6 +102,8 @@ let check_op3 op e =
 %token TOK_NEG TOK_NEGS
 %token <AArch64Base.MOPLExt.sop> MOPLZ
 %token <AArch64Base.MOPLExt.sop> MOPL
+%token <AArch64Base.MOPExt.op> MOPZ
+%token <AArch64Base.MOPExt.op> MOP
 %token CSEL CSINC CSINV CSNEG CSET CSETM CINC
 %token TOK_DMB TOK_DSB TOK_ISB
 %token TOK_SY TOK_ST TOK_LD
@@ -1729,6 +1731,18 @@ instr:
     { I_MOPL ($1,$2,$4,$6,ZR) }
 | MOPL xreg COMMA wreg COMMA wreg COMMA xreg
     { I_MOPL ($1,$2,$4,$6,$8) }
+| MOPZ xreg COMMA xreg COMMA xreg
+    { I_MOP ($1,V64,$2,$4,$6,ZR) }
+| MOPZ wreg COMMA wreg COMMA wreg
+    { I_MOP ($1,V32,$2,$4,$6,ZR) }
+| TOK_MUL xreg COMMA xreg COMMA xreg
+    { I_MOP (MOPExt.ADD,V64,$2,$4,$6,ZR) }
+| TOK_MUL wreg COMMA wreg COMMA wreg
+    { I_MOP (MOPExt.ADD,V32,$2,$4,$6,ZR) }
+| MOP xreg COMMA xreg COMMA xreg COMMA xreg
+    { I_MOP ($1,V64,$2,$4,$6,$8) }
+| MOP wreg COMMA wreg COMMA wreg COMMA wreg
+    { I_MOP ($1,V32,$2,$4,$6,$8) }
 
 (* Aliases of SUB *)
 | CMP wreg COMMA op_ext_w

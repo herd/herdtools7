@@ -109,7 +109,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_STXRBH _| I_STZG _| I_STZ2G _
     | I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
     | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _ | I_EXTR _
-    | I_MOPL _
+    | I_MOPL _ | I_MOP _
     | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
     | I_UADDV _
     | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
@@ -314,7 +314,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
       | I_MOVI_S _ | I_MOVI_V _ | I_ADDV _ | I_DUP _ |  I_FMOV_TG _
       | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
-      | I_UDF _ | I_ADDSUBEXT _ | I_MOPL _
+      | I_UDF _ | I_ADDSUBEXT _ | I_MOPL _ | I_MOP _
       | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
       | I_UADDV _
       | I_MOV_SV _ | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
@@ -387,6 +387,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_UBFM (_,r,_,_,_) | I_SBFM (_,r,_,_,_)
       | I_ADDSUBEXT (_,_,r,_,_,_)
       | I_MOPL (_,r,_,_,_)
+      | I_MOP (_,_,r,_,_,_)
       | I_ADDV (_,r,_)
       | I_DUP (r,_,_)
       | I_FMOV_TG (_,r,_,_)
@@ -470,7 +471,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_OP3 _|I_ADR _|I_RBIT _|I_ABS _|I_REV _|I_EXTR _|I_FENCE _
       | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
       | I_STG _|I_STZG _|I_STZ2G _|I_LDG _|I_UDF _
-      | I_ADDSUBEXT _|I_MOPL _
+      | I_ADDSUBEXT _|I_MOPL _ | I_MOP _
       | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
       | I_UADDV _
       | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
