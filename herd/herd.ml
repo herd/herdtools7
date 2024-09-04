@@ -28,19 +28,6 @@ let get_cmd_arg s = args := s :: !args
 
 open ArgUtils
 
-let parse_tag opt set tags msg =
-  opt,
-  Arg.String
-    (fun tag -> match set tag with
-    | false ->
-        raise
-          (Arg.Bad
-             (sprintf "bad tags for %s, allowed tag are %s"
-                opt (String.concat "," tags)))
-    | true -> ()),
-  sprintf "<%s> %s" (String.concat "|" tags) msg
-
-
 
 (* Option list *)
 
@@ -127,14 +114,14 @@ let options = [
    Arg.Unit (fun () -> load_config "web.cfg")," alias for -conf web.cfg");
   ("-c11",
    Arg.Unit (fun () -> load_config "cpp11.cfg")," alias for -conf cpp11.cfg");
-  parse_tag
+  parse_tags
     "-debug"
     (fun tag -> match Debug_herd.parse !debug tag with
     | None -> false
     | Some t -> debug := t ; true)
     Debug_herd.tags
     "show debug messages for specific parts" ;
-   parse_bool "-morefences" (ref false) "does nothing (deprecated)" ;
+  parse_bool "-morefences" (ref false) "does nothing (deprecated)" ;
 (* Engine control *)
   gen_model_opt "-model";
   gen_model_opt "-cat";
