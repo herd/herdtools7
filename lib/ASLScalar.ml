@@ -293,16 +293,13 @@ let convert_to_int_unsigned = function
   | S_Bool true -> S_Int Z.one
   | S_BitVector bv -> S_Int (BV.to_z_unsigned bv)
 
-let as_bool = function
-  | S_Int i -> Some (not (Z.equal i Z.zero))
-  | S_Bool b -> Some b
-  | S_BitVector _ -> None
+let to_caml_bool = function
+  | S_Bool b -> b
+  | S_Int _|S_BitVector _   as sc -> not (is_zero sc)
 
-let convert_to_bool c =
-  match as_bool c with
-  | Some b -> S_Bool b
-  | None ->
-      Warn.fatal "ASLScalar invalid op: to_bool %s" (pp false c)
+let as_bool sc = Some (to_caml_bool sc)
+let convert_to_bool sc = S_Bool (to_caml_bool sc)
+
 
 (** Convert to bitvector of known size *)
 let convert_to_bv sz = function

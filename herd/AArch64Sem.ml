@@ -38,7 +38,7 @@ module Make
     let neon = C.variant Variant.Neon || sve
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
-    let pte2 = kvm && C.variant Variant.PTE2
+    let pte2 = kvm && (C.variant Variant.PTE2 || C.variant Variant.ASL)
     let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
 

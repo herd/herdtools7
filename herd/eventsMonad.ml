@@ -1275,6 +1275,9 @@ Monad type:
       let memtag = C.variant Variant.MemTag
       let morello = C.variant Variant.Morello
       let kvm = C.variant Variant.VMSA
+      let is_asl = C.variant Variant.ASL
+      (* Combining the ASL and VMSA variant implies PTE2 mode *)
+      let is_pte2 = kvm && (is_asl || C.variant Variant.PTE2)
 
       module AM = A.Mixed(SZ)
 
@@ -1529,7 +1532,7 @@ Monad type:
                 else (pte_loc s,default_pteval s)::env)
               virt env in
           let env =
-            if C.variant Variant.PTE2 then
+            if is_pte2 then
               List.fold_right
                 (fun (loc,_ as bd) env -> match loc with
                 | A.Location_global (V.Val (Symbolic (System (PTE,s))))

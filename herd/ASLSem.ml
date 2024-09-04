@@ -260,6 +260,18 @@ module Make (C : Config) = struct
       in
       an
 
+    let access_to_access acc =
+      let open Access in
+      match v_as_int acc with
+      | 0 -> REG
+      | 1 -> VIR
+      | 2 -> PHY
+      | 3 -> PTE
+      | 4 -> TLB
+      | 5 -> TAG
+      | 6 -> PHY_PTE
+      | i -> Warn.fatal "Bad access code from ASL: %d" i
+
     let wrap_op1_symb_as_var op1 = function
       | V.Val (Constant.Symbolic _) as v ->
           let v' = V.fresh_var () in
@@ -567,7 +579,7 @@ module Make (C : Config) = struct
         (use_ii_with_poi ii poi)
 
     let write_pc (ii,poi) v_m =
-      let* v = v_m >>= to_int_unsigned in
+      let* v = v_m >>= to_aarch64_val in
       write_loc MachSize.Quad (loc_pc ii)
         v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
 
@@ -584,11 +596,10 @@ module Make (C : Config) = struct
       do_read_memory ii (M.unitT addr)  (M.unitT (V.intToV 64))
         aneutral (AArch64Explicit.(NExp Other)) apte
 
-    let vir_or_phy = if is_kvm then Access.PHY else Access.VIR
-
-    let read_memory_gen ii datasize_m addr_m accdesc_m =
-      let* accdesc = accdesc_m in
-      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc) aexp vir_or_phy
+    let read_memory_gen ii datasize_m addr_m accdesc_m access_m =
+      let* accdesc = accdesc_m and* access = access_m in
+      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc)
+        aexp (access_to_access access)
 
     let do_write_memory (ii, poi) addr_m datasize_m value_m an aexp acc =
       let value_m = M.as_data_port value_m in
@@ -601,10 +612,10 @@ module Make (C : Config) = struct
     let write_memory ii datasize_m addr_m value_m =
       do_write_memory ii addr_m datasize_m value_m aneutral aexp avir
 
-    let write_memory_gen ii datasize_m addr_m value_m accdesc_m =
-      let* accdesc = accdesc_m in
+    let write_memory_gen ii datasize_m addr_m value_m accdesc_m access_m =
+      let* accdesc = accdesc_m and* access = access_m in
       do_write_memory ii addr_m datasize_m value_m
-        (accdesc_to_annot false accdesc)  aexp vir_or_phy
+        (accdesc_to_annot false accdesc)  aexp (access_to_access access)
 
     let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
 
@@ -613,7 +624,7 @@ module Make (C : Config) = struct
         (use_ii_with_poi ii poi)
 
     let write_sp (ii, poi) v_m =
-      let* v = v_m >>= to_int_signed in
+      let* v = v_m >>= to_aarch64_val in
       write_loc MachSize.Quad (loc_sp ii) v aneutral aexp areg
         (use_ii_with_poi ii poi)
       >>! []
@@ -621,6 +632,10 @@ module Make (C : Config) = struct
     let uint _ bv_m = bv_m >>= to_int_unsigned
     let sint _ bv_m = bv_m >>= to_int_signed
     let processor_id (ii, _poi) () = return (V.intToV ii.A.proc)
+    let is_virtual _ addr_m =
+      addr_m
+      >>= M.op1 Op.IsVirtual
+      >>=  M.op1 (Op.ArchOp1 ASLOp.ToBool)
 
     let can_predict_from _ v_m w_m =
       let diff_case = v_m in
@@ -762,34 +777,39 @@ module Make (C : Config) = struct
         | [ v1 ], [ v2 ] -> return [ f ii_env v1 v2 ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ?returns:(Some returns) ~args:[ arg1 ]
-        ~parameters:[ param1 ] ~side_effecting name f
+      build_primitive ?returns:(Some returns)
+        ~args:[ arg1; ] ~parameters:[param1;]
+        ~side_effecting name f
 
     let p1a2 name param1 arg1 arg2 ?(side_effecting = false) f =
       let f ii_env params args =
-        match (params, args) with
-        | [ v1 ], [ v2; v3 ] -> f ii_env v1 v2 v3
-        | _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ~args:[ arg1; arg2 ] ~parameters:[ param1 ]
+        match params,args with
+        | [v1],[v2; v3; ] -> f ii_env v1 v2 v3
+        | _ -> Warn.fatal "Arity error for function %s." name in
+      build_primitive
+        ~args:[ arg1; arg2; ] ~parameters:[param1;]
         ~side_effecting name f
 
-    let p1a2r name param1 arg1 arg2 ~returns ?(side_effecting = false) f =
+    let p1a3r name param1 arg1 arg2 arg3 ~returns
+        ?(side_effecting = false)  f =
       let f ii_env params args =
-        match (params, args) with
-        | [ v1 ], [ v2; v3 ] -> return [ f ii_env v1 v2 v3 ]
+        match params,args with
+        | [ v1; ], [ v2; v3; v4; ] -> return [ f ii_env v1 v2 v3 v4; ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ?returns:(Some returns) ~side_effecting
-        ~args:[ arg1; arg2 ] ~parameters:[ param1 ] name f
+      build_primitive ?returns:(Some returns)
+        ~args:[ arg1; arg2; arg3; ] ~parameters:[param1;]
+        ~side_effecting name f
 
-    let p1a3 name param1 arg1 arg2 arg3 ?(side_effecting = false) f =
+    let p1a4 name param1 arg1 arg2 arg3 arg4
+        ?(side_effecting = false) f =
       let f ii_env params args =
-        match (params, args) with
-        | [ v1 ], [ v2; v3; v4 ] -> f ii_env v1 v2 v3 v4
-        | _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ~args:[ arg1; arg2; arg3 ] ~parameters:[ param1 ]
+        match params,args with
+        | [v1],[v2; v3; v4; v5; ] -> f ii_env v1 v2 v3 v4 v5
+        | _ -> Warn.fatal "Arity error for function %s." name in
+      build_primitive
+        ~args:[ arg1; arg2; arg3; arg4;]
+        ~parameters:[param1;]
         ~side_effecting name f
 
     (* Primitives *)
@@ -836,17 +856,25 @@ module Make (C : Config) = struct
         p0r "SP_EL0" ~side_effecting ~returns:bv_64 read_sp;
         p1 "SP_EL0" ~side_effecting ("data", bv_64) write_sp;
         (* Memory *)
-        p1a1r "read_memory" ("N", None) ("addr", bv_64) ~returns:(bv_var "N")
+        p1a1r "read_memory"  ("N", None) ("addr", bv_64)
+          ~returns:(bv_var "N")
           ~side_effecting read_memory;
-        p1a2r "read_memory_gen" ("N", None) ("addr", bv_64)
+        p1a3r "read_memory_gen" ("N",None)
+          ("addr", bv_64)
           ("accdesc", t_named "AccessDescriptor")
-          ~returns:(bv_var "N") read_memory_gen;
-        p1a2 "write_memory" ~side_effecting ("size", None) ("addr", bv_64)
-          ("data", bv_var "size")
-          write_memory;
-        p1a3 "write_memory_gen" ~side_effecting ("size", None) ("addr", bv_64)
-          ("data", bv_var "size")
+          ("access", t_named "EventAccess")
+          ~returns:(bv_var "N")
+          ~side_effecting read_memory_gen;
+        p1a2 "write_memory" ("N", None)
+          ("addr", bv_64)
+          ("data", bv_var "N")
+          ~side_effecting write_memory;
+        p1a4 "write_memory_gen" ("N",None)
+          ("addr", bv_64)
+          ("data", bv_var "N")
           ("accdesc", t_named "AccessDescriptor")
+          ("access", t_named "EventAccess")
+          ~side_effecting
           write_memory_gen;
 (* VMSA *)
         p1r ~side_effecting "ComputePtePrimitive"
@@ -869,9 +897,11 @@ module Make (C : Config) = struct
           ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
           ~returns:sint_returns sint;
-        (* Misc *)
-        p0r ~side_effecting "ProcessorID" ~returns:integer processor_id;
-        p2r ~side_effecting "CanPredictFrom"
+(* Misc *)
+        p0r "ProcessorID" ~side_effecting ~returns:integer processor_id;
+        p1r "IsVirtual" ~side_effecting
+          ("addr",bv_64)  ~returns:boolean is_virtual;
+        p2r "CanPredictFrom" ~side_effecting
           ~parameters:[ ("N", None) ]
           ("predicted", bv_var "N")
           ("from", bv_var "N")
