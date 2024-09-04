@@ -154,12 +154,18 @@ let ets2-ob =
      [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R]
  else 0)
 
+let ets3-ob =
+ (if "ETS3" then
+     [Exp & M]; po; [MMU & FAULT]; tr-ib^-1; [Imp & TTD & R]
+ else 0)
+
 (* Locally-ordered-before *)
 let rec lob =
  tc-ib
  | tr-ib
  | f-ib
  | ets2-ob
+ | ets3-ob
  | po-fetch-ob
  | po-scl-ob
  | DSB-ob
