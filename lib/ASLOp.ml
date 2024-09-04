@@ -92,6 +92,7 @@ let pp_op1 _hexa = function
   | ToAArch64 -> "ToAArch64"
   | FromAArch64 -> "FromAArch64"
 
+
 let ( let* ) = Option.bind
 let return c = Some c
 let return_concrete s = Constant.Concrete s |> return
@@ -260,6 +261,7 @@ let do_op1 op cst =
               (* Valid *)
                 let valid = pte.AArch64PteVal.valid in
                 Some (Constant.Concrete (ASLScalar.bv_of_bit valid))
+            | _ when  is_address_mask positions -> Some cst
             | _ -> None
           end
       | Constant.Symbolic x ->
