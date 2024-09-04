@@ -102,6 +102,7 @@ Constrained-type satisfaction:
   >   var x: integer { 2, 4} = N;
   >    return;
   > end
+  > EOF
 
   $ aslref type-sat3.asl
   File type-sat3.asl, line 4, characters 2 to 29:
@@ -116,6 +117,7 @@ Constrained-type satisfaction:
   >   var x: integer { 2, 4} = N;
   >   return;
   > end
+  > EOF
 
   $ aslref type-sat4.asl
   File type-sat4.asl, line 4, characters 2 to 29:
@@ -130,6 +132,7 @@ Runtime checks:
   >   let x: integer {1} = 2 as integer {1};
   >   return 0;
   > end
+  > EOF
 
   $ aslref runtime-type-sat1.asl
   File runtime-type-sat1.asl, line 3, characters 23 to 24:
@@ -146,6 +149,7 @@ Runtime checks:
   >   test(3);
   >   return 0;
   > end
+  > EOF
 
   $ aslref runtime-type-sat2.asl
   File runtime-type-sat2.asl, line 2, characters 10 to 18:

@@ -8,6 +8,7 @@ One slice cannot intersect itself:
   >   print (x);
   >   return 0;
   > end
+  > EOF
   $ aslref intersecting_slices1.asl
   '0001'
 
@@ -21,6 +22,7 @@ Two intersecting slices...
   >   print (x);
   >   return 0;
   > end
+  > EOF
 
   $ aslref intersecting_slices2.asl
   File intersecting_slices2.asl, line 5, characters 2 to 9:
@@ -38,6 +40,7 @@ Two maybe intersecting slices...
   >   print (x);
   >   return 0;
   > end
+  > EOF
 
   $ aslref intersecting_slices3.asl
   File intersecting_slices3.asl, line 6, characters 7 to 8:
@@ -54,6 +57,7 @@ Two intersecting bitfields
   >   print (x);
   >   return 0;
   > end
+  > EOF
 
   $ aslref intersecting_slices4.asl
   File intersecting_slices4.asl, line 5, characters 2 to 12:

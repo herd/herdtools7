@@ -4,6 +4,7 @@ Deferred to execution ATCs
   >   let x = (3 as integer {42});
   >   return 0;
   > end
+  > EOF
 
   $ aslref atcs1.asl
   File atcs1.asl, line 2, characters 11 to 12:
@@ -17,6 +18,7 @@ Bad structure ATCs
   >   let x = (3 as boolean);
   >   return 0;
   > end
+  > EOF
 
   $ aslref atcs2.asl
   File atcs2.asl, line 2, characters 11 to 23:
@@ -30,6 +32,7 @@ ATCs on other types
   >   let x = ("a string" as string);
   >   return 0;
   > end
+  > EOF
 
   $ aslref atcs3.asl
 
@@ -39,6 +42,7 @@ ATCs on other types
   >   let x = (myty { a = 4, b = Zeros(4) }) as myty;
   >   return 0;
   > end
+  > EOF
 
   $ aslref atcs4.asl
 
@@ -50,6 +54,7 @@ ATCs on other types
   >   let y = x as myty2;
   >   return 0;
   > end
+  > EOF
 
   $ aslref atcs5.asl
   File atcs5.asl, line 5, characters 10 to 20:
@@ -62,6 +67,7 @@ ATCs on other types
   >   let x = ((42, Zeros(4)) as myty);
   >   return 0;
   > end
+  > EOF
 
   $ aslref atcs6.asl
   File atcs6.asl, line 3, characters 11 to 25:
@@ -75,12 +81,14 @@ ATCs on other types
   >   let x = ((42, Zeros(4)) as myty);
   >   return 0;
   > end
+  > EOF
 
   $ aslref atcs7.asl
 
 ATCs in types:
   $ cat > atcs8.asl <<EOF
   > let bv : bits(1 as integer{2}) = Ones(1);
+  > EOF
 
   $ aslref atcs8.asl
   File atcs8.asl, line 1, characters 14 to 29:
