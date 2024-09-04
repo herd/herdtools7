@@ -599,3 +599,16 @@ func EndOfInstruction()
 begin
   return;
 end;
+
+// Type of underlying accesses (same order as lib/access.mli),
+// as recorder un events.
+
+type EventAccess of enumeration {
+     REG,
+     VIR,
+     PHY,
+     PTE,
+     TLB,
+     TAG,
+     PHY_PTE,
+};
