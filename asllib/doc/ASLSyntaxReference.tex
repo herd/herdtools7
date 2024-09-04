@@ -112,13 +112,13 @@
 
 % \newcommand\Tidentifier[1]{\terminal{IDENTIFIER(#1)}}
 \newcommand\Tidentifier[0]{\hyperlink{def-tidentifier}{\terminal{ID}}}
-\newcommand\Tstringlit[0]{\terminal{STRING\_LIT}}
-\newcommand\Tmasklit[0]{\terminal{MASK\_LIT}}
-\newcommand\Tbitvectorlit[0]{\terminal{BITVECTOR\_LIT}}
-\newcommand\Tintlit[0]{\terminal{INT\_LIT}}
-\newcommand\Treallit[0]{\terminal{REAL\_LIT}}
-\newcommand\Tboollit[0]{\terminal{BOOL\_LIT}}
-\newcommand\Tlexeme[0]{\terminal{LEXEME}}
+\newcommand\Tstringlit[0]{\hyperlink{def-tstringlit}{\terminal{STRING\_LIT}}}
+\newcommand\Tmasklit[0]{\hyperlink{def-tmasklit}{\terminal{MASK\_LIT}}}
+\newcommand\Tbitvectorlit[0]{\hyperlink{def-tbitvectorlit}{\terminal{BITVECTOR\_LIT}}}
+\newcommand\Tintlit[0]{\hyperlink{def-tintlit}{\terminal{INT\_LIT}}}
+\newcommand\Treallit[0]{\hyperlink{def-treallit}{\terminal{REAL\_LIT}}}
+\newcommand\Tboollit[0]{\hyperlink{def-tboollit}{\terminal{BOOL\_LIT}}}
+\newcommand\Tlexeme[0]{\hyperlink{def-tlexeme}{\terminal{LEXEME}}}
 
 \newcommand\Tunops[0]{\terminal{UNOPS}}
 \newcommand\precedence[1]{\textsf{precedence: }#1}
@@ -477,7 +477,7 @@
 \newcommand\REdigit[0]{\hyperlink{def-redigit}{\texttt{<}\textsf{digit}\texttt{>}}}
 \newcommand\REintlit[0]{\hyperlink{def-reintlit}{\texttt{<}\textsf{int\_lit}\texttt{>}}}
 \newcommand\REhexlit[0]{\hyperlink{def-rehexlit}{\texttt{<}\textsf{hex\_lit}\texttt{>}}}
-\newcommand\REreallit[0]{\hyperlink{def-rereallit}{\texttt{<}\textsf{real\_lit}\texttt{>}}}
+\newcommand\REreallit[0]{\hyperlink{def-reallit}{\texttt{<}\textsf{real\_lit}\texttt{>}}}
 \newcommand\REstrchar[0]{\hyperlink{def-restrchar}{\texttt{<}\textsf{str\_char}\texttt{>}}}
 \newcommand\REstringlit[0]{\hyperlink{def-restringlit}{\texttt{<}\textsf{string\_lit}\texttt{>}}}
 \newcommand\REbitvectorlit[0]{\hyperlink{def-rebitvectorlit}{\texttt{<}\textsf{bitvector\_lit}\texttt{>}}}
@@ -491,26 +491,26 @@
 \newcommand\maxmatches[0]{\hyperlink{def-maxmatch}{\textsf{max\_matches}}}
 \newcommand\remaxmatch[0]{\hyperlink{def-rematch}{\textsf{re\_max\_match}}}
 \newcommand\Token[0]{\hyperlink{def-token}{\textsf{Token}}}
-\newcommand\LexicalError[0]{\textsf{\#LE}}
+\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\textsf{\#LE}}}
 \newcommand\ParseError[0]{\textsf{\#PE}}
-\newcommand\discard[0]{\textsf{discard}}
-\newcommand\booltolit[0]{\textsf{bool\_to\_lit}}
-\newcommand\decimaltolit[0]{\textsf{dec\_to\_lit}}
-\newcommand\hextolit[0]{\textsf{hex\_to\_lit}}
-\newcommand\realtolit[0]{\textsf{real\_to\_lit}}
-\newcommand\strtolit[0]{\textsf{str\_to\_lit}}
-\newcommand\bitstolit[0]{\textsf{bits\_to\_lit}}
-\newcommand\masktolit[0]{\textsf{mask\_to\_lit}}
-\newcommand\truetolit[0]{\textsf{true\_to\_lit}}
-\newcommand\falsetolit[0]{\textsf{false\_to\_lit}}
-\newcommand\tokenid[0]{\textsf{token\_id}}
-\newcommand\lexicalerror[0]{\textsf{lexical\_error}}
-\newcommand\toidentifier[0]{\textsf{to\_identifier}}
-\newcommand\eoftoken[0]{\textsf{eof\_token}}
-\newcommand\Teof[0]{\textsf{EOF()}}
-\newcommand\Terror[0]{\textsf{ERROR()}}
-\newcommand\Twhitespace[0]{\textsf{WHITE\_SPACE()}}
-\newcommand\LexSpec[0]{\textsf{LexSpec}}
+\newcommand\discard[0]{\hyperlink{def-discard}{\textsf{discard}}}
+\newcommand\booltolit[0]{\hyperlink{def-booltolit}{\textsf{bool\_to\_lit}}}
+\newcommand\decimaltolit[0]{\hyperlink{def-decimaltolit}{\textsf{dec\_to\_lit}}}
+\newcommand\hextolit[0]{\hyperlink{def-hextolit}{\textsf{hex\_to\_lit}}}
+\newcommand\realtolit[0]{\hyperlink{def-realtolit}{\textsf{real\_to\_lit}}}
+\newcommand\strtolit[0]{\hyperlink{def-strtolit}{\textsf{str\_to\_lit}}}
+\newcommand\bitstolit[0]{\hyperlink{def-bitstolit}{\textsf{bits\_to\_lit}}}
+\newcommand\masktolit[0]{\hyperlink{def-masktolit}{\textsf{mask\_to\_lit}}}
+\newcommand\truetolit[0]{\hyperlink{def-truetolit}{\textsf{true\_to\_lit}}}
+\newcommand\falsetolit[0]{\hyperlink{def-falsetolit}{\textsf{false\_to\_lit}}}
+\newcommand\tokenid[0]{\hyperlink{def-tokenid}{\textsf{token\_id}}}
+\newcommand\lexicalerror[0]{\hyperlink{def-lexicalerror}{\textsf{lexical\_error}}}
+\newcommand\toidentifier[0]{\hyperlink{def-toidentifier}{\textsf{to\_identifier}}}
+\newcommand\eoftoken[0]{\hyperlink{def-eoftoken}{\textsf{eof\_token}}}
+\newcommand\Teof[0]{\hyperlink{def-teof}{\textsf{EOF}}}
+\newcommand\Terror[0]{\hyperlink{def-terror}{\textsf{ERROR}}}
+\newcommand\Twhitespace[0]{\hyperlink{def-twhitespace}{\textsf{WHITE\_SPACE}}}
+\newcommand\LexSpec[0]{\hyperlink{def-lexspec}{\textsf{LexSpec}}}
 %\newcommand\Teof[0]{\verbatimterminal{EOF}{EOF}}
 \newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
@@ -596,22 +596,14 @@ The end of file is the combination of two characters --- a carriage return follo
 which we denote by $\eof$.
 The context text does not contain an end-of-file.
 
-Comments, newlines and space characters are treated as whitespace.
+In particular, it is an error to use a tab character in ASL specification text (decimal encoding 9).
 
-It is an error to use a tab character in ASL specification text (decimal encoding 9).
+\section{Lexical Regular Expressions}
 
 \hypertarget{def-regex}{}
 Table~\ref{ta:LexicalRegularExpressions} defines the regular expressions $\RegExp$ used to define
 \emph{lexemes} --- substrings of the ASL specification text that are used to form \emph{tokens}.
 We use the notation \Char{c} for characters such as the apostrophe.
-
-\hypertarget{def-reasciichar}{}
-Let $\REasciichar$ stand for any ASCII character:
-\begin{center}
-\begin{tabular}{rcl}
-$\REasciichar$  &$\triangleq$& \texttt{ASCII\{0-255\}}
-\end{tabular}
-\end{center}
 
 \begin{table}
 \caption{Lexical Regular Expressions \label{ta:LexicalRegularExpressions}}
@@ -636,6 +628,21 @@ $A$ $B$                   & $A$ followed by $B$\\
 \end{tabular}
 \end{center}
 \end{table}
+
+\hypertarget{def-reasciichar}{}
+Let $\REasciichar$ stand for any ASCII character:
+\begin{center}
+\begin{tabular}{rcl}
+$\REasciichar$  &$\triangleq$& \texttt{ASCII\{0-255\}}
+\end{tabular}
+\end{center}
+
+\hypertarget{def-lang}{}
+The notation $\Lang(e)$ stands for \emph{formal language} of a regular expression $e$.
+That is, the set of strings that match that regular expression.
+
+\section{Whitespace}
+Comments, newlines and space characters are treated as whitespace.
 
 \section{Comments}
 ASL supports comments in the style of C++:
@@ -664,15 +671,15 @@ $\REhexlit$ &$\triangleq$& \texttt{'0' 'x' (\REdigit\ | ["abcdefABCDEF"])} \\
 \end{tabular}
 \end{center}
 
-\section{Real Number Literals}
+\section{Fixed Point Real Number Literals}
 Fixed point real numbers are written in decimal and consist of one or more decimal digits, a decimal point and one
 or more decimal digits. Underscores can be added between digits to aid readability
 
 Underscores in numbers are not significant, and their only purpose is to separate groups of digits to make constants
 such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} easier to read,
 
-This is formalized by the following lexical regular expression:
 \hypertarget{def-reallit}{}
+This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
 $\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* '.' \REdigit\ (\Underscore\ | \REdigit)*}
@@ -694,10 +701,10 @@ $\REbitvectorlit$ &$\triangleq$& \texttt{\Char{'} ["01 "]* \Char{'}}
 The spaces in a bitvector are not significant and are only used to improve readability.
 For example, \texttt{'1111 1111 1111 1111'} is the same as \texttt{'1111111111111111'}.
 
-Constant bit-masks are written using \texttt{1}, \texttt{0}, \texttt{x} and spaces surrounded by single-quotes.
+Constant bitmasks are written using \texttt{1}, \texttt{0}, \texttt{x} and spaces surrounded by single-quotes.
 The \texttt{x} represents a don’t care character.
 
-\section{Bit-mask Literals}
+\section{Bitmask Literals}
 
 \hypertarget{def-rebitmasklit}{}
 \begin{center}
@@ -706,7 +713,7 @@ $\REbitmasklit$ &$\triangleq$& \texttt{\Char{'} ["01x "]* \Char{'}}
 \end{tabular}
 \end{center}
 
-The spaces in a constant bit-mask are not significant and are only used to improve readability.
+The spaces in a constant bitmask are not significant and are only used to improve readability.
 
 \section{String Literals}
 
@@ -761,51 +768,71 @@ $\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ '\_') ($\REletter$ $|$ '
 
 An enumeration literal is also classed as a literal constant, but is syntactically an identifier.
 
+Tuple element selectors are classed as identifiers. That is, in cases like \texttt{(1, 2).item0},
+the selector \texttt{item0} is classed as an identifier.
+\lrmcomment{This is related to \identiTSXL}
+
 \section{Lexical Analysis}
 Lexical analysis is defined via the function
-\hypertarget{def-aslscal}{}
+\hypertarget{def-aslscan}{}
 \[
 \aslscan : \LexSpec \times \REasciichar^* \aslto (\Token^* \cup \{\LexicalError\})
 \]
+\hypertarget{def-lexicalerrorresult}{}
 which takes a \emph{lexical specification} (explained soon), an ASL specification string
 (where characters are simply numbers representing ASCII characters)
 and returns a sequence of tokens (tokens are defined below) or a \emph{lexical error} $\LexicalError$.
 
-Tokens have the form $L(v)$ where $L$ is a token label, signifying the meaning of the token,
-and $v$ is a value carried by the token, which is used to construct the respective Abstract Syntax Tree nodes.
+Tokens have one of two forms:
+\begin{description}
+  \item[Value-carrying] Tokens that carry value have the form $L(v)$ where $L$ is a token label,
+        signifying the meaning of the token, and $v$ is a value carried by the token,
+        which is used to construct the respective Abstract Syntax Tree nodes.
+  \item[Valueless] Tokens that do not carry values have the form $L$ where $L$ is a token label.
+\end{description}
 
-The set of tokens used for the lexical analysis of ASL strings is defined below, using the following notations.
-
-\hypertarget{def-lang}{}
-The notation $\Lang$ stands for \emph{formal language} of a given regular expression. That is, the set of strings that match
-that regular expression.
+The set of tokens used for the lexical analysis of ASL strings is defined below.
 
 \hypertarget{def-token}{}
 \[
 \begin{array}{rcl}
-\Token &\triangleq& \{\Tintlit(n) \;|\; n\in\Z\}\ \cup\\
-        & & \{\Treallit(q) \;|\; q\in\Q\}\ \cup\\
-        & & \{\Tstringlit(s) \;|\; s\in \Lang(\REstringlit)\}\ \cup\\
-        & & \{\Tbitvectorlit(b) \;|\; b\in\{0,1\}^*\}\ \cup\\
-        & & \{\Tmasklit(m) \;|\; m\in\{0,1,x\}^*\}\ \cup\\
-        & & \{\Tboollit(\True), \Tboollit(\False)\}\ \cup \hypertarget{def-tidentifier}{}\\
-        & & \{\Tidentifier(\id) \;|\; \id\in \Lang(\REidentifier)\} \\
-        & & \{\Tlexeme(s) \;|\; s\in\Strings\} \\
-        & & \{\Twhitespace, \Teof, \Terror\}
+\Token &\triangleq& \{\ \Tintlit(n) \;|\; n\in\Z\ \}\ \cup\\
+        & & \{\ \Treallit(q) \;|\; q\in\Q\ \}\ \cup\\
+        & & \{\ \Tstringlit(s) \;|\; s\in \Lang(\REstringlit)\ \}\ \cup\\
+        & & \{\ \Tbitvectorlit(b) \;|\; b\in\{0,1\}^*\ \}\ \cup\\
+        & & \{\ \Tmasklit(m) \;|\; m\in\{0,1,x\}^*\ \}\ \cup\\
+        & & \{\ \Tboollit(\True), \Tboollit(\False)\ \}\ \cup \hypertarget{def-tidentifier}{}\\
+        & & \{\ \Tidentifier(\id) \;|\; \id\in \Lang(\REidentifier)\ \} \\
+        & & \{\ \Tlexeme(s) \;|\; s\in\Strings\ \} \\
+        & & \{\ \Twhitespace, \Teof, \Terror\ \}
 \end{array}
 \]
 
-Tokens with the label $\Tlexeme$ are ones where the value $s$ is simply the \emph{lexeme} for that token.
-That is, the substring representing that token. Later when we will refer to such token by simply quoting
-the lexeme of the token and dropping the label, for brevity. For example, instead of $\Tlexeme(\texttt{for})$,
-we will write $\Tfor$.
+\hypertarget{def-tintlit}{}
+\begin{itemize}
+  \item Tokens of the form $\Tintlit(n)$ represent integer literals; \hypertarget{def-treallit}{}
+  \item Tokens of the form $\Treallit(q)$ represent real literals; \hypertarget{def-tstringlit}{}
+  \item Tokens of the form $\Tstringlit(s)$ represent string literals; \hypertarget{def-tbitvectorlit}{}
+  \item Tokens of the form $\Tbitvectorlit(b)$ represent bitvector literals; \hypertarget{def-tmasklit}
+  \item Tokens of the form $\Tmasklit(m)$ represent bitmasks; \hypertarget{def-tboollit}{}
+  \item Tokens of the form $\Tboollit(b)$ represent Boolean literals; \hypertarget{def-tidentifier}{}
+  \item Tokens of the form $\Tidentifier(b)$ represent identifiers; \hypertarget{def-tlexeme}{}
+  \item Tokens with the label $\Tlexeme$ are ones where the value $s$ is simply the \emph{lexeme} for that token.
+  That is, the substring representing that token. Later when we will refer to such token by simply quoting
+  the lexeme of the token and dropping the label, for brevity. For example, instead of $\Tlexeme(\texttt{for})$,
+  we will write $\Tfor$. \hypertarget{def-twhitespace}{}
+  \item The valueless token $\Twhitespace$ represents white spaces; \hypertarget{def-terror}{}
+  \item The valueless token $\Terror$ represents an illegal lexeme such as the use of a reserved keyword;
+  \hypertarget{def-teof}{}
+  \item The valueless token $\Teof$ represents $\eof$.
+\end{itemize}
 
-The special tokens $\Twhitespace$, $\Teof$ and $\Terror$ represent white space lexemes, $\eof$, and an error situation
-(for example, using a reserved keyword), respectively.
-
-A lexical specification consists of a list of pairs $[(r_1,f_1),\ldots,(r_k,f_k)] \in \LexSpec$
+\hypertarget{def-lexspec}{}
+\begin{definition}[Lexical Specification]
+A \emph{lexical specification} consists of a list of pairs $[(r_1,f_1),\ldots,(r_k,f_k)] \in \LexSpec$
 where each pair $(r_i,f_i)$ consists of a lexical regular expression $r_i$
-and a function $f_i : \Strings \aslto \Token$.
+and a \emph{token function} $f_i : \Strings \aslto \Token$.
+\end{definition}
 
 The function $\remaxmatch : \overname{\RegExp}{e} \times \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \times \overname{\Strings}{s_2}) \cup \{\bot\}$
 returns the \emph{longest} match of a regular expression $e$ for a prefix of a string $s$.
@@ -883,30 +910,37 @@ We now define the lexical specification for ASL via token functions and tables
 that associate regular expressions to token functions.
 
 \subsection{Token Functions}
+\hypertarget{def-discard}{}
 \begin{itemize}
 \item The function $\discard$ is a constant function that always returns $\Twhitespace$.
-
+\hypertarget{def-decimaltolit}{}
 \item The function $\decimaltolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
 by decimal representation.
-
+\hypertarget{def-hextolit}{}
 \item The function $\hextolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
 by hexadecimal representation.
-
+\hypertarget{def-realtolit}{}
 \item The function $\realtolit(s)$ returns $\Treallit(q)$ where $q$ is the real value represented by $s$
 by floating point representation.
-
+\hypertarget{def-strtolit}{}
 \item The function $\strtolit(s)$ returns $\Tstringlit(s')$ where $s'$ is the string value represented by $s$.
-
+\hypertarget{def-bitstolit}{}
 \item The function $\bitstolit(s)$ returns $\Tbitvectorlit(b)$ where $b$ is the sequence of bits
 given by $s$.
-
+\hypertarget{def-masktolit}{}
 \item The function $\masktolit(s)$ returns $\Tmasklit(m)$ where $m$ is the bitmask given by $s$.
-
-\item The function $\falsetolit(s)$ returns $\Tboollit(\False)$.
-
-\item The function $\truetolit(s)$ returns $\Tboollit(\True)$.
-
+\hypertarget{def-falsetolit}{}
+\item The function $\falsetolit(s)$ returns $\Tboollit(\False)$ ($s$ is ensured to be \texttt{FALSE}).
+\hypertarget{def-truetolit}{}
+\item The function $\truetolit(s)$ returns $\Tboollit(\True)$ ($s$ is ensured to be \texttt{TRUE}).
+\hypertarget{def-tokenid}{}
 \item The function $\tokenid(s)$ returns $\Tlexeme(s)$.
+\hypertarget{def-lexicalerror}{}
+\item The function $\lexicalerror$ returns $\Terror$.
+\hypertarget{def-toidentifier}{}
+\item The function $\toidentifier(s)$ returns $\Tidentifier(s)$.
+\hypertarget{def-eoftoken}{}
+\item The function $\eoftoken$ returns $\Teof$.
 \end{itemize}
 
 \subsection{Regular Expressions and Corresponding Token Functions}
@@ -4255,24 +4289,27 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[literal]{}{
-  \buildexpr(\Nexpr(\punnode{\Nvalue})) \astarrow
+  \buildexpr(\overname{\Nexpr(\punnode{\Nvalue})}{\vparsednode}) \astarrow
   \overname{\ELiteral(\astof{\vvalue})}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
   \inferrule[var]{}{
-  \buildexpr(\Nexpr(\Tidentifier(\id))) \astarrow
+  \buildexpr(\overname{\Nexpr(\Tidentifier(\id))}{\vparsednode}) \astarrow
   \overname{\EVar(\id)}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[binop]{}{
+  \inferrule[binop]{
+    \buildexpr(\veone) \astarrow \astversion{\veone}\\
+    \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+  }{
     {
       \begin{array}{r}
-  \buildexpr(\Nexpr(\punnode{\Nexpr}, \punnode{\Nbinop}, \punnode{\Nexpr})) \astarrow\\
-  \overname{\EBinop(\astof{\vexpr}, \astof{\vbinop}, \astof{\vexpr})}{\vastnode}
+  \buildexpr(\overname{\Nexpr(\namednode{\veone}{\Nexpr}, \punnode{\Nbinop}, \namednode{\vetwo}{\Nexpr})}{\vparsednode}) \astarrow\\
+  \overname{\EBinop(\astversion{\veone}, \astof{\vbinop}, \astversion{\vetwo})}{\vastnode}
       \end{array}
     }
 }
@@ -4280,7 +4317,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
   \inferrule[unop]{}{
-  \buildexpr(\Nexpr(\punnode{\Nunop}, \punnode{\Nexpr})) \astarrow
+  \buildexpr(\overname{\Nexpr(\punnode{\Nunop}, \punnode{\Nexpr})}{\vparsednode}) \astarrow
   \overname{\EUnop(\astof{\vunop}, \astof{\vexpr})}{\vastnode}
 }
 \end{mathpar}
@@ -4292,12 +4329,12 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   }{
     {
       \begin{array}{r}
-  \buildexpr\left(\Nexpr\left(
+  \buildexpr\left(\overname{\Nexpr\left(
     \begin{array}{l}
     \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
     \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
     \end{array}
-    \right)\right) \astarrow\\
+    \right)}{\vparsednode}\right) \astarrow\\
   \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
       \end{array}
     }
@@ -4308,7 +4345,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \inferrule[call]{
     \buildplist[\buildexpr](\vargs) \astarrow \vexprasts
   }{
-  \buildexpr(\Nexpr(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})) \astarrow
+  \buildexpr(\overname{\Nexpr(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})}{\vparsednode}) \astarrow
   \overname{\ECall(\id, \vexprasts)}{\vastnode}
 }
 \end{mathpar}
@@ -4317,7 +4354,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \inferrule[slice]{}{
     {
       \begin{array}{r}
-  \buildexpr(\Nexpr(\punnode{\Nexpr}, \punnode{\Nslice})) \astarrow\\
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \punnode{\Nslice})}{\vparsednode}) \astarrow\\
   \overname{\ESlice(\astof{\vexpr}, \astof{\vslice})}{\vastnode}
       \end{array}
     }
@@ -4326,7 +4363,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
   \inferrule[get\_field]{}{
-  \buildexpr(\Nexpr(\Nexpr, \Tdot, \Tidentifier)) \astarrow
+  \buildexpr(\overname{\Nexpr(\Nexpr, \Tdot, \Tidentifier)}{\vparsednode}) \astarrow
   \overname{\EGetField()}{\vastnode}
 }
 \end{mathpar}
@@ -4337,7 +4374,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   }{
     {
       \begin{array}{r}
-  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)) \astarrow\\
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)}{\vparsednode}) \astarrow\\
   \overname{\EGetFields(\astof{\vexpr}, \vidasts)}{\vastnode}
       \end{array}
     }
@@ -4348,7 +4385,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \inferrule[concat]{
     \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts
   }{
-  \buildexpr(\Nexpr(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)) \astarrow
+  \buildexpr(\overname{\Nexpr(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)}{\vparsednode}) \astarrow
   \overname{\EConcat(\vexprasts)}{\vastnode}
 }
 \end{mathpar}
@@ -4357,7 +4394,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \inferrule[atc]{}{
     {
       \begin{array}{r}
-  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nty})) \astarrow\\
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nty})}{\vparsednode}) \astarrow\\
   \overname{\EATC(\astof{\vexpr}, \astof{\tty})}{\vastnode}
       \end{array}
     }
@@ -4368,7 +4405,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \inferrule[atc\_int\_constraints]{}{
     {
       \begin{array}{r}
-  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nintconstraints})) \astarrow\\
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nintconstraints})}{\vparsednode}) \astarrow\\
   \overname{\EATC(\astof{\vexpr}, \TInt(\astof{\vintconstraints}))}{\vastnode}
 \end{array}
 }
@@ -4379,7 +4416,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \inferrule[pattern\_set]{}{
     {
       \begin{array}{r}
-  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternset})) \astarrow\\
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternset})}{\vparsednode}) \astarrow\\
   \overname{\EPattern(\astof{\vexpr}, \astof{\vpatternset})}{\vastnode}
 \end{array}
 }
@@ -4390,7 +4427,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \inferrule[pattern\_mask]{}{
     {
       \begin{array}{r}
-  \buildexpr(\Nexpr(\punnode{\Nexpr}, \Tin, \Tmasklit(\vm))) \astarrow\\
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
   \overname{\EPattern(\astof{\vexpr}, \vm)}{\vastnode}
 \end{array}
 }
@@ -4399,7 +4436,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
   \inferrule[unknown]{}{
-  \buildexpr(\Nexpr(\Tunknown, \Tcolon, \punnode{\Nty})) \astarrow
+  \buildexpr(\overname{\Nexpr(\Tunknown, \Tcolon, \punnode{\Nty})}{\vparsednode}) \astarrow
   \overname{\EUnknown(\astof{\tty})}{\vastnode}
 }
 \end{mathpar}
@@ -4410,13 +4447,13 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   }{
     {
       \begin{array}{r}
-  \buildexpr\left(\Nexpr\left(
+  \buildexpr\left(\overname{\Nexpr\left(
     \begin{array}{l}
     \Tidentifier(\vt), \Tlbrace, \\
     \wrappedline\ \namednode{\vfieldassigns}{\Clist{\Nfieldassign}}, \\
     \wrappedline\ \Trbrace
     \end{array}
-    \right)\right) \\
+    \right)}{\vparsednode}\right) \\
     \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
 \end{array}
 }
@@ -4425,7 +4462,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
   \inferrule[sub\_expr]{}{
-  \buildexpr(\Nexpr(\Tlpar, \punnode{\Nexpr}, \Trpar)) \astarrow
+  \buildexpr(\overname{\Nexpr(\Tlpar, \punnode{\Nexpr}, \Trpar)}{\vparsednode}) \astarrow
   \overname{\astof{\vexpr}}{\vastnode}
 }
 \end{mathpar}
@@ -4434,7 +4471,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \inferrule[tuple]{
     \buildplist[\buildexpr](\vexprs) \astarrow \vexprasts
   }{
-  \buildexpr(\Nexpr(\namednode{\vexprs}{\Plisttwo{\Nexpr}})) \astarrow
+  \buildexpr(\overname{\Nexpr(\namednode{\vexprs}{\Plisttwo{\Nexpr}})}{\vparsednode}) \astarrow
   \overname{\ETuple(\vexprasts)}{\vastnode}
 }
 \end{mathpar}
@@ -4759,7 +4796,10 @@ to each of them --- $\vsymasts$.
   b(\vv) \astarrow \astversion{\vv}\\
   \buildlist[b](\vsymsone) \astarrow \vsymastsone
 }{
-  \buildlist[b](\overname{\namednode{\vv}{E}, \namednode{\vsymsone}{\maybeemptylist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+  \buildlist[b](\overname{
+    \maybeemptylist{N}(\namednode{\vv}{E}, \namednode{\vsymsone}{\maybeemptylist{N}})
+    }{\vsyms}) \astarrow
+  \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
 }
 \end{mathpar}
 
@@ -4785,7 +4825,9 @@ to each of them --- $\vsymasts$.
   b(\vv) \astarrow \astversion{\vv}\\
   \buildclist[b](\vsymsone) \astarrow \vsymastsone
 }{
-  \buildclist[b](\overname{\namednode{\vv}{E}, \namednode{\vsymsone}{\NClist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+  \buildclist[b](\overname{
+    \Clist{N}(\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\NClist{N}})
+    }{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
 }
 \end{mathpar}
 

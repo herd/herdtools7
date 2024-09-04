@@ -243,7 +243,7 @@
 \newcommand\catchersone[0]{\texttt{catchers1}}
 \newcommand\otherwiseopt[0]{\texttt{otherwise\_opt}}
 \newcommand\iswhile[0]{\texttt{is\_while}}
-\newcommand\econd[0]{\ECond}
+\newcommand\econd[0]{\texttt{e\_cond}}
 \newcommand\condm[0]{\texttt{cond\_m}}
 \newcommand\condv[0]{\texttt{cond\_v}}
 \newcommand\condg[0]{\texttt{cond\_g}}
@@ -1316,7 +1316,7 @@ the expression \texttt{3 DIV 0} results in a type error.
   \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
+  \evalexpr{ \env, \overname{\EBinop(\op, \veone, \vetwo)}{\ve} } \evalarrow
   \Normal((\vv, \vg), \newenv)
 }
 \end{mathpar}
@@ -1757,13 +1757,11 @@ the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ 
 
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule{\env \eqname (\tenv, \denv)\\
-    \vv \in \textsf{dyn-dom}(\tenv, \env, \vt) \\
-  \newenv \eqdef\env
-  }
-  {
-    \evalexpr{\env, \EUnknown} \evalarrow \Normal(\newenv, \vv, \emptygraph)
-  }
+\inferrule{\env \eqname (\tenv, \denv)\\
+  \vv \in \textsf{dyn-dom}(\tenv, \env, \vt)
+}{
+  \evalexpr{\env, \overname{\EUnknown}{\ve}} \evalarrow \Normal(\overname{\env}{\newenv}, \vv, \emptygraph)
+}
 \end{mathpar}
 Notice that this rule introduces non-determinism.
 
@@ -4180,7 +4178,7 @@ The semantic rule \emph{For} is only used by the semantic rule \emph{SFor} at
 The relation
 \hypertarget{def-evalloop}{}
 \[
-  \evalloop{\overname{\envs}{\env} \aslsep \overname{\Bool}{\iswhile} \aslsep \overname{\expr}{\ve} \aslsep \overname{\stmt}{\vbody}}
+  \evalloop{\overname{\envs}{\env} \aslsep \overname{\Bool}{\iswhile} \aslsep \overname{\expr}{\econd} \aslsep \overname{\stmt}{\vbody}}
   \;\aslrel\;
   \left(
     \begin{array}{cl}
@@ -4191,8 +4189,8 @@ The relation
     \end{array}
   \right)
 \]
-evaluates $\vbody$ in $\env$ as long as $\ve$ holds when $\iswhile$ is $\True$
-or until $\ve$ holds when $\iswhile$ is $\False$.
+evaluates $\vbody$ in $\env$ as long as $\econd$ holds when $\iswhile$ is $\True$
+or until $\econd$ holds when $\iswhile$ is $\False$.
 The result is either the continuing configuration $\Continuing(\newg,\newenv)$,
 an early return configuration, or an abnormal configuration.
 

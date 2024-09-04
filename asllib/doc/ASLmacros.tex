@@ -121,7 +121,7 @@
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\texttt{indices}}}
 \newcommand\listlen[1]{\hyperlink{def-listlen}{|}#1\hyperlink{def-listlen}{|}}
 \newcommand\cardinality[1]{\hyperlink{def-cardinality}{|}#1\hyperlink{def-cardinality}{|}}
-\newcommand\splitlist[0]{\hyperlink{def-splitlist}{\texttt{split}}}
+\newcommand\unziplist[0]{\hyperlink{def-unziplist}{\texttt{unzip}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
 \newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
@@ -157,6 +157,10 @@
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\checktrans[2]{\hyperlink{def-checktrans}{\texttt{check}}(#1, \texttt{#2})}
 \newcommand\checktransarrow[0]{\longrightarrow}
+
+\newcommand\termx[0]{\mathit{tx}}
+\newcommand\termy[0]{\mathit{ty}}
+\newcommand\rulearrow[0]{\xrightarrow{R}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Abstract Syntax macros
@@ -547,7 +551,7 @@
 \newcommand\rettyopt[0]{\texttt{ret\_ty\_opt}}
 \newcommand\exprs[0]{\texttt{exprs}}
 \newcommand\exprsone[0]{\texttt{exprs1}}
-\newcommand\typedexpr[0]{\texttt{typed\_exprs}}
+\newcommand\typedexpr[0]{\texttt{typed\_expr}}
 \newcommand\typedexprs[0]{\texttt{typed\_exprs}}
 \newcommand\typedexprsone[0]{\texttt{typed\_exprs1}}
 \newcommand\cst[0]{\texttt{cs\_t}}
@@ -832,7 +836,7 @@
 \newcommand\newids[0]{\texttt{new\_ids}}
 \newcommand\subfields[0]{\texttt{subfields}}
 \newcommand\veopt[0]{\texttt{e\_opt}}
-\newcommand\dependencies[0]{\texttt{dependencies}}
+\newcommand\dependencies[0]{\texttt{depends}}
 \newcommand\vdone[0]{\texttt{d1}}
 \newcommand\vdtwo[0]{\texttt{d2}}
 \newcommand\vlabels[0]{\texttt{labels}}
@@ -843,7 +847,7 @@
 \newcommand\compstwo[0]{\texttt{comps2}}
 \newcommand\declsone[0]{\texttt{decls1}}
 \newcommand\declstwo[0]{\texttt{decls2}}
-\newcommand\declsthree[0]{\texttt{declsthree}}
+\newcommand\declsthree[0]{\texttt{decls3}}
 \newcommand\compdecls[0]{\texttt{comp\_decls}}
 \newcommand\vbase[0]{\texttt{base}}
 \newcommand\visone[0]{\texttt{is1}}
@@ -950,3 +954,7 @@
 \newcommand\vwhereopt[0]{\texttt{where\_opt}}
 \newcommand\tstwo[0]{\textit{ts2}}
 \newcommand\ts[0]{\textit{ts}}
+\newcommand\vdecl[0]{\texttt{decl}}
+\newcommand\tsanon[0]{\texttt{t\_s\_anon}}
+\newcommand\ttyanon[0]{\texttt{ty\_anon}}
+\newcommand\vlethree[0]{\texttt{le3}}
