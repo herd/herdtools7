@@ -752,8 +752,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           None
 
     let tr_cst tr =
-      Constant.map tr
-        (fun _ -> Warn.fatal "Cannot translate PTE")
+      Constant.map tr Misc.identity
         (fun _ -> Warn.fatal "Cannot translate instruction")
 
     let aarch64_to_asl_bv = function
