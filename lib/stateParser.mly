@@ -244,7 +244,7 @@ atom_init:
        (t, arr)
      else
        Warn.user_error
-         "Declared size of array %s does not match initial vakue size"
+         "Declared size of array %s does not match initial value size"
 	 (dump_location t) }
 /* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
 | locindex EQUAL maybev { raise Parsing.Parse_error }
