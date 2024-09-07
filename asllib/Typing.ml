@@ -2420,12 +2420,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let args' = List.map (fun e -> annotate_expr env e |> snd) args in
         (S_Print { args = args'; debug } |> here, env) |: TypingRule.SDebug
 
+  (* Begin AnnotateLoopLimit *)
   and annotate_loop_limit ~loc env = function
     | None -> None
     | Some limit ->
         let t, limit' = annotate_expr_ env ~forbid_atcs:true limit in
         let+ () = check_constrained_integer ~loc env t in
-        Some limit'
+        Some limit' |: TypingRule.AnnotateLoopLimit
+  (* End *)
 
   and annotate_catcher loc env (name_opt, ty, stmt) =
     let ty' = annotate_type ~loc env ty in

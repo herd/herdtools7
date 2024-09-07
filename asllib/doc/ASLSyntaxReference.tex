@@ -2097,11 +2097,20 @@ We sometimes provide extra details to individual derivations by adding comments 
   \hypertarget{ast-sassert}{} &\\
   |\ & \SAssert(\expr)
   \hypertarget{ast-sfor}{} &\\
-  |\ & \SFor(\identifier, \expr, \fordirection, \expr, \stmt)
+  |\ & \SFor\left\{
+    \begin{array}{rcl}
+    \Forindexname  &:& \identifier,\\
+    \Forstarte     &:& \expr,\\
+    \Fordir        &:& \fordirection,\\
+    \Forende       &:& \expr,\\
+    \Forbody       &:& \stmt,\\
+    \Forlimit      &:& \expr?
+    \end{array}
+  \right\}
   \hypertarget{ast-swhile}{} &\\
-  |\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \stmt)
+  |\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body})
   \hypertarget{ast-srepeat}{} &\\
-  |\ & \SRepeat(\stmt, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit})
+  |\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit})
   \hypertarget{ast-sthrow}{} &\\
   |\ & \SThrow((\expr, \None)?) &\\
      & \ASTComment{The option represents an implicit throw: \texttt{throw;}.}
@@ -3139,21 +3148,31 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[for]{
-  \buildexpr(\vfromexpr) \astarrow \astversion{\vfromexpr}\\
-  \buildexpr(\vtoexpr) \astarrow \astversion{\vtoexpr}\\
+  \buildexpr(\vstarte) \astarrow \astversion{\vstarte}\\
+  \buildexpr(\vende) \astarrow \astversion{\vende}\\
 }{
   {
     \begin{array}{r}
-  \buildstmt\left(\overname{\Nstmt\left(
-    \begin{array}{l}
-    \Tfor, \Tidentifier(\id), \Teq, \namednode{\vfromexpr}{\Nexpr}, \Ndirection, \\
-    \wrappedline\ \namednode{\vtoexpr}{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend
+      \buildstmt\left(\overname{\Nstmt\left(
+        \begin{array}{l}
+        \Tfor, \Tidentifier(\vindexname), \Teq, \namednode{\vstarte}{\Nexpr}, \Ndirection, \\
+        \wrappedline\ \namednode{\vende}{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend
+        \end{array}
+        \right)}{\vparsednode}\right)
+      \astarrow \\
+       \overname{
+        \SFor\left(\left\{
+          \begin{array}{rcl}
+            \Forindexname &:& \vindexname\\
+            \Forstarte &:& \astversion{\vstarte}\\
+            \Forende &:& \astversion{\vende}\\
+            \Forbody &:& \astof{\vstmtlist}\\
+            \Forlimit &:& \None\\
+          \end{array}
+            \right\}\right)
+    }{\vastnode}
     \end{array}
-                       \right)}{\vparsednode}\right)
-  \astarrow \\
-  \overname{\SFor(\id, \astversion{\vfromexpr}, \astof{\vdirection}, \astversion{\vtoexpr}, \astof{\vstmtlist})}{\vastnode}
-\end{array}
-}
+  }
 }
 \end{mathpar}
 

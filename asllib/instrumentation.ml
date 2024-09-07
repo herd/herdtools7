@@ -506,6 +506,7 @@ module TypingRule = struct
     | RenameTyEqs
     | TypeCheckMutuallyRec
     | FoldEnvAndFs
+    | AnnotateLoopLimit
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -669,6 +670,7 @@ module TypingRule = struct
     | RenameTyEqs -> "RenameTyEqs"
     | TypeCheckMutuallyRec -> "TypeCheckMutuallyRec"
     | FoldEnvAndFs -> "FoldEnvAndFs"
+    | AnnotateLoopLimit -> "AnnotateLoopLimit"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -814,6 +816,7 @@ module TypingRule = struct
       RenameTyEqs;
       TypeCheckMutuallyRec;
       FoldEnvAndFs;
+      AnnotateLoopLimit;
     ]
 
   let all_nb = List.length all

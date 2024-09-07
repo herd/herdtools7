@@ -237,7 +237,6 @@
 \newcommand\wid[0]{\texttt{wid}}
 \newcommand\es[0]{\texttt{es}}
 \newcommand\ms[0]{\texttt{ms}}
-\newcommand\vbody[0]{\texttt{body}}
 \newcommand\dir[0]{\texttt{dir}}
 \newcommand\catchers[0]{\texttt{catchers}}
 \newcommand\catchersone[0]{\texttt{catchers1}}
@@ -247,7 +246,6 @@
 \newcommand\condm[0]{\texttt{cond\_m}}
 \newcommand\condv[0]{\texttt{cond\_v}}
 \newcommand\condg[0]{\texttt{cond\_g}}
-\newcommand\vindexname[0]{\texttt{index\_name}}
 \newcommand\envthrow[0]{\texttt{env\_throw}}
 \newcommand\envthrowone[0]{\texttt{env\_throw1}}
 \newcommand\denvthrow[0]{\texttt{denv\_throw}}
@@ -3820,7 +3818,7 @@ The expression in an assertion statement must be side-effect-free.
     Evaluation of the statement $\vs$ in an environment $\env$ is
     the output configuration $C$ and all of the following apply:
     \begin{itemize}
-    \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \vbody)$;
+    \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \Ignore, \vbody)$;
     \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\env$,
     with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\ve$, and $\vbody$
     results in $C$.
@@ -3835,12 +3833,11 @@ The expression in an assertion statement must be side-effect-free.
 
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \evalloop{\env, \True, \ve, \vbody} \evalarrow C
-  }
-  {
-    \evalstmt{\env, \SWhile(\ve, \vbody)} \evalarrow C
-  }
+\inferrule{
+  \evalloop{\env, \True, \ve, \vbody} \evalarrow C
+}{
+  \evalstmt{\env, \overname{\SWhile(\ve, \Ignore, \vbody)}{\vs}} \evalarrow C
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -3850,7 +3847,7 @@ The expression in an assertion statement must be side-effect-free.
 Evaluation of the statement $\vs$ in an environment $\env$ is
 either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ and all of the following apply:
 \begin{itemize}
-\item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody)$;
+\item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \Ignore)$;
 \item evaluating $\vbody$ in $\env$ as per \chapref{eval_block}
       yields $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\ErrorConfig};
 \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\envone$,
@@ -3882,7 +3879,7 @@ prints
   \vgtwo \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\vgtwo}
 }{
-  \evalstmt{\env, \SRepeat(\ve, \vbody)} \evalarrow D
+  \evalstmt{\env, \overname{\SRepeat(\ve, \vbody, \Ignore)}{\vs}} \evalarrow D
 }
 \end{mathpar}
 
@@ -3892,15 +3889,22 @@ prints
     \subsection{Prose}
     All of the following apply:
     \begin{itemize}
-    \item $\vs$ is a \texttt{for} statement, $\SFor(\id, \veone, \dir, \vetwo, \vs)$;
+    \item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
+      \Forindexname &:& \vindexname\\
+      \Forstarte &:& \vstarte\\
+      \fordirection &:& \vdirection\\
+      \Forende &:& \vende\\
+      \Forbody &:& \vbody\\
+      Forlimit &:& \Ignore
+    \end{array}\right\}$;
     \item evaluating the side-effect-free expression $\veone$ in $\env$ is either
     $\Normal(\vvone, \vgone)$\ProseOrError;
     \item evaluating the side-effect-free expression $\vetwo$ in $\env$ is either
     $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
-    \item declaring the local identifier $\id$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
-    \item evaluating the \texttt{for} loop with arguments $(\id, \veone, \dir, \vetwo, \vs)$ in $\envone$,
+    \item declaring the local identifier $\vindexname$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
+    \item evaluating the \texttt{for} loop with arguments $(\vindexname, \veone, \dir, \vetwo, \vs)$ in $\envone$,
     as per \secref{SemanticsRule.For} is $\Normal(\vgfour, \envtwo)$\ProseOrAbnormal;
-    \item removing the local $\id$ from $\envtwo$ is $\envthree$;
+    \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
     \item $\newg$ is formed as follows: taking the parallel composition of $\vgone$ and $\vgtwo$,
     then taking the ordered composition of the result with the $\asldata$ edge,
     and finally taking the ordered composition of the result with the $\aslpo$ edges;
@@ -3926,16 +3930,28 @@ Recall that the expressions for the \texttt{for} loop range are side-effect-free
 which is why they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
   \inferrule{
-    \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \vgone) \terminateas \Error\\
-    \evalexprsef{\env, \vetwo} \evalarrow \Normal(\vvtwo, \vgtwo) \terminateas \Error\\
-    \declarelocalidentifier(\env, \id, \vvone) \evalarrow (\vgthree,\envone)\\
-    \evalfor{\envone, \id, \vvone, \dir, \vvtwo, \vs} \evalarrow \Normal(\vgfour, \envtwo) \OrAbnormal\\
-    \removelocal(\envtwo, \id) \evalarrow \envthree\\
+    \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \terminateas \ErrorConfig\\
+    \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \terminateas \ErrorConfig\\
+    \declarelocalidentifier(\env, \vindexname, \vendv) \evalarrow (\vgthree,\envone)\\
+    \evalfor{\envone, \vindexname, \vstartv, \dir, \vendv, \vbody} \evalarrow \Normal(\vgfour, \envtwo) \OrAbnormal\\
+    \removelocal(\envtwo, \vindexname) \evalarrow \envthree\\
     \newg \eqdef \ordered{(\vgone \parallelcomp \vgtwo)}{\asldata}{ \ordered{\vgthree}{\aslpo}{\vgfour}   }\\
     \newenv \eqdef \envthree
   }
   {
-    \evalstmt{\env, \SFor(\id, \veone, \dir, \vetwo, \vs)} \evalarrow \Continuing(\newg, \newenv)
+    {
+    \begin{array}{r}
+    \evalstmt{\env,
+    \SFor\left\{\begin{array}{rcl}
+      \Forindexname &:& \vindexname\\
+      \Forstarte &:& \vstarte\\
+      \fordirection &:& \vdirection\\
+      \Forende &:& \vende\\
+      \Forbody &:& \vbody\\
+      \Forlimit &:& \Ignore\\
+    \end{array}\right\}} \evalarrow \\ \Continuing(\newg, \newenv)
+    \end{array}
+    }
   }
 \end{mathpar}
 
