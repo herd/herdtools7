@@ -507,6 +507,7 @@ module TypingRule = struct
     | TypeCheckMutuallyRec
     | FoldEnvAndFs
     | AnnotateLoopLimit
+    | CheckATC
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -671,6 +672,7 @@ module TypingRule = struct
     | TypeCheckMutuallyRec -> "TypeCheckMutuallyRec"
     | FoldEnvAndFs -> "FoldEnvAndFs"
     | AnnotateLoopLimit -> "AnnotateLoopLimit"
+    | CheckATC -> "CheckATC"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -817,6 +819,7 @@ module TypingRule = struct
       TypeCheckMutuallyRec;
       FoldEnvAndFs;
       AnnotateLoopLimit;
+      CheckATC;
     ]
 
   let all_nb = List.length all

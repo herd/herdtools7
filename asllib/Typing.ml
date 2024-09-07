@@ -935,6 +935,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         t |: TypingRule.CheckUnop
   (* End *)
 
+  (* Begin CheckATC *)
   let rec check_atc ~fail env t1 t2 =
     if Types.type_equal env t1 t2 then ok
     else
@@ -943,7 +944,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | T_Tuple l1, T_Tuple l2 when List.compare_lengths l1 l2 = 0 ->
           check_all2 l1 l2 (check_atc ~fail env)
       | T_Named _, _ | _, T_Named _ -> assert false
-      | _ -> fail
+      | _ -> fail |: TypingRule.CheckATC
+  (* End *)
 
   let var_in_genv (genv : StaticEnv.global) x =
     IMap.mem x genv.storage_types

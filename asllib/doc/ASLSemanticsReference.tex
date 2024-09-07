@@ -6584,27 +6584,26 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-%
 %   \CodeSubsection{\ValOfTypeBegin}{\ValOfTypeEnd}{../Interpreter.ml}
 
 \hypertarget{def-astlabel}{}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule[Basic (bool, real, string, enum)]{
-    \astlabel(\tstruct(\env, \vt)) \in \{\TBool, \TReal, \TString, \TEnum\}\\
-    \vg \eqdef \emptygraph
-  }
-  {
-    \isvaloftype(\env, \vv, \vt) \evalarrow (\True, \vg)
-  }
-  \and
-  \inferrule[int\_unconstrained]{
-    \tstruct(\env, \vt) \eqname \TInt(\unconstrained)\\
-    \vg \eqdef \emptygraph
-  }
-  {
-    \isvaloftype(\env, \vv, \vt) \evalarrow (\True, \vg)
-  }
+\inferrule[Basic (bool, real, string, enum)]{
+  \astlabel(\tstruct(\env, \vt)) \in \{\TBool, \TReal, \TString, \TEnum\}\\
+  \vg \eqdef \emptygraph
+}{
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\True, \vg)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[int\_unconstrained]{
+  \tstruct(\env, \vt) \eqname \TInt(\unconstrained)\\
+  \vg \eqdef \emptygraph
+}{
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\True, \vg)
+}
 \end{mathpar}
 
 \hypertarget{def-integerconstraintsatisfied}{}

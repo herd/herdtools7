@@ -83,6 +83,7 @@
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\texttt{annotate\_field\_init}}}
 \newcommand\annotatestaticinteger[0]{\hyperlink{def-annotatestaticinteger}{\texttt{annotate\_static\_integer}}}
 \newcommand\annotatestaticconstrainedinteger[0]{\hyperlink{def-annotatestaticconstrainedinteger}{\texttt{annotate\_static\_constrained\_integer}}}
+\newcommand\checkatc[0]{\hyperlink{def-checkatc}{\texttt{check\_atc}}}
 \newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\texttt{check\_structure}}}
 \newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\texttt{check\_structure\_integer}}}
 \newcommand\checkstaticallyevaluable[0]{\hyperlink{def-checkstaticallyevaluable}{\texttt{check\_statically\_evaluable}}}
@@ -359,6 +360,7 @@
 \newcommand\RequireStructuredType[0]{\hyperlink{def-rst}{\TypeErrorCode{RST}}}
 \newcommand\MissingFieldInitializer[0]{\hyperlink{def-mfi}{\TypeErrorCode{MFI}}}
 \newcommand\RequireSameBitwidths[0]{\hyperlink{def-rsb}{\TypeErrorCode{RSB}}}
+\newcommand\TypeAsssertionFails[0]{\hyperlink{def-taf}{\TypeErrorCode{TAF}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Typeset variable names
@@ -5003,6 +5005,7 @@ We also define the following helper rules:
   \item TypingRule.ExpressionList (\secref{TypingRule.ExpressionList})
   \item TypingRule.TypingRule.ReduceSlicesToCall (\secref{TypingRule.ReduceSlicesToCall})
   \item TypingRule.StaticConstrainedInteger (\secref{TypingRule.StaticConstrainedInteger})
+  \item TypingRule.CheckATC (\secref{TypingRule.CheckATC})
 \end{itemize}
 
 \section{TypingRule.ELit \label{sec:TypingRule.ELit}}
@@ -5975,29 +5978,11 @@ All of the following apply:
   \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
   \item annotating the type $\tty$ in $\tenv$ yields $\tty'$\ProseOrTypeError;
   \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
-  \item One of the following applies:
-  \begin{itemize}
-  \item All of the following apply (\textsc{type\_equal}):
-  \begin{itemize}
-    \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\True$;
-    \item $\vt$ is $\tty'$ and $\newe$ is $\vepp$.
-  \end{itemize}
-  \item All of the following apply (\textsc{dynamic}):
-    \begin{itemize}
-      \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$,
-      meaning that an execution-time check that the expression $\vep$ evaluates to a value in the
-      dynamic domain of $\tty$ is required;
-      \item both $\vtstruct$ and $\vtystruct$ are bitvector types or integer types;
-      \item $\vt$ is $\vtp$ and $\newe$ is the asserting type conversion expression over $\vepp$ \\ and
-      $\vtystruct$, that is, $\EATC(\vepp, \vtystruct)$.
-    \end{itemize}
-  \item All of the following apply (\textsc{error}):
-    \begin{itemize}
-    \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$;
-    \item $\vtstruct$ and $\vtystruct$ are not both bitvector types or integer types;
-    \item a type error indicating the conflicting types is returned.
-    \end{itemize}
-  \end{itemize}
+  \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
+        will always fail yields $\True$\ProseOrTypeError;
+  \item checking whether $\vt$ \subtypesatisfies\ $\ttyp$ in $\tenv$ yields $\vb$\ProseOrTypeError;
+  \item $\newe$ is $\EATC(\ttyp, \vepp)$ if $\vb$ is $\True$ and $\vepp$ otherwise;
+  \item $\vt$ is $\ttyp$.
 \end{itemize}
 
 \isempty{\subsection{Example}}
@@ -6009,41 +5994,13 @@ All of the following apply:
 \inferrule[type\_equal]{
   \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
-  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \True
+  \annotatetype{\tenv, \tty} \typearrow \ttyp \OrTypeError\\\\
+  \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
+  \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
+  \subtypesat(\tenv, \vt, \ttyp) \typearrow \vb \OrTypeError\\\\
+  \newe \eqdef \choice{\vb}{\EATC(\ttyp, \vepp)}{\vepp}
 }{
-  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\tty'}{\ve}, \overname{\vepp}{\newe})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[dynamic]{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
-  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
-  \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
-  \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
-  \vb = \True
-}{
-  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\vtp}{\vt}, \overname{\EATC(\vepp, \vtystruct)}{\newe})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
-  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
-  \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
-  \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
-  \vb = \False
-}{
-  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow \TypeErrorVal{ATC}
+  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \newe)
 }
 \end{mathpar}
 
@@ -6255,6 +6212,110 @@ All of the following apply:
   \normalize(\tenv, \vep) \typearrow \vepp
 }{
   \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow \vepp
+}
+\end{mathpar}
+
+\section{TypingRule.CheckATC \label{sec:TypingRule.CheckATC}}
+\hypertarget{def-checkatc}{}
+The function
+\[
+  \checkatc(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
+  \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the types $\vtone$ and $\vttwo$, which are assumed to not be named types,
+are compatible for a typing assertion in the static environment $\tenv$, yielding $\True$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{equal}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{different\_labels\_error}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are different;
+    \item the result is a type error indicating that the type assertion will always fail.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_bits}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are the same;
+    \item the AST label of $\vtone$ is either $\TInt$ or $\TBits$;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item $\vtone$ is a tuple type with list of tuples $\vlone$, that is, $\TTuple(\vlone)$;
+    \item $\vtone$ is a tuple type with list of tuples $\vltwo$, that is, $\TTuple(\vltwo)$;
+    \item checking whether $\vlone$ and $\vltwo$ have the same length yields $\True$\ProseTerminateAs{\TypeErrorVal{\TypeAsssertionFails}};
+    \item applying $\checkatc$ to $\vlone[\vi]$ and $\vltwo[\vi]$ in $\tenv$ for every $\vi\in\listrange(\vlone)$ yields $\True$\ProseOrTypeError;
+    \item the result is $\True$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other\_error}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are the same;
+    \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
+    \item the result is a type error indicating that the type assertion will always fail.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[equal]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[different\_labels\_error]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) \neq \astlabel(\vttwo)
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAsssertionFails}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[int\_bits]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) = \astlabel(\vttwo)\\
+  \astlabel(\vtone) \in \{\TInt, \TBits\}
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \vtone = \TTuple(\vlone)\\
+  \vttwo = \TTuple(\vltwo)\\
+  \checktrans{|\vlone|=|\vltwo|}{\TypeAsssertionFails} \typearrow \True\OrTypeError\\\\
+  \vi\in\listrange(\vlone): \checkatc(\vlone[\vi], \vltwo[\vi]) \typearrow \True\OrTypeError
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other\_error]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) = \astlabel(\vttwo)\\
+  \astlabel(\vtone) \not\in \{\TInt, \TBits, \TTuple\}
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
 }
 \end{mathpar}
 
@@ -20048,6 +20109,10 @@ This error indicates that two bitvector types are required to have the same bitw
 was not able to prove it
 (see \secref{BitvectorOperations}).
 
+\hypertarget{def-taf}{}
+\item[$\TypeAsssertionFails$]
+This error indicates that a given at type assertion expression will always fail
+(see \secref{TypingRule.CheckATC}).
 
 \end{description}
 
