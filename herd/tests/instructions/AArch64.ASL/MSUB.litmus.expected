@@ -1,0 +1,10 @@
+Test MSUB Required
+States 1
+0:X3=0; 0:X4=131071;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=0 /\ 0:X4=131071)
+Observation MSUB Always 1 0
+Hash=dd705259084ac3576e32782a08c99293
+
