@@ -237,7 +237,6 @@
 \newcommand\wid[0]{\texttt{wid}}
 \newcommand\es[0]{\texttt{es}}
 \newcommand\ms[0]{\texttt{ms}}
-\newcommand\vbody[0]{\texttt{body}}
 \newcommand\dir[0]{\texttt{dir}}
 \newcommand\catchers[0]{\texttt{catchers}}
 \newcommand\catchersone[0]{\texttt{catchers1}}
@@ -247,7 +246,6 @@
 \newcommand\condm[0]{\texttt{cond\_m}}
 \newcommand\condv[0]{\texttt{cond\_v}}
 \newcommand\condg[0]{\texttt{cond\_g}}
-\newcommand\vindexname[0]{\texttt{index\_name}}
 \newcommand\envthrow[0]{\texttt{env\_throw}}
 \newcommand\envthrowone[0]{\texttt{env\_throw1}}
 \newcommand\denvthrow[0]{\texttt{denv\_throw}}
@@ -448,6 +446,16 @@ An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
 \hypertarget{def-vals}{}
 The semantics of an ASL specification associates \emph{native values} to variables.
 The set of native values $\vals$ is the minimal set defined by the following recursive rules (\texttt{NV} stands for Native Value):
+
+\subsection{Prose}
+The set of native values $\vals$ is the minimal set satisfying all of the following rules:
+\begin{itemize}
+  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a native value;
+  \item \textsc{tuple values and array values}: if $\vl$ is a list of native values then $\nvvector{\vl}$ is a native value;
+  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to native values then $\nvrecord{\vr}$ is a native value.
+\end{itemize}
+
+\subsection{Formally}
 \hypertarget{def-nvliteral}{}
 \hypertarget{def-nvvector}{}
 \hypertarget{def-nvrecord}{}
@@ -515,11 +523,11 @@ We now explain the components over which configurations are defined:
   \item Dynamic Environments (\defref{dynamicenvironments}) associate native values to variables.
   \item Concurrent Execution Graphs (\secref{concurrentexecutiongraphs}) track Read and Write Effects over variables.
 \end{itemize}
-
+\newpage
 \hypertarget{def-dynamicenvs}{}
 \begin{definition}[Dynamic Environments \label{def:dynamicenvironments}]
 A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}, for short, is a structure which,
-amongst other things, associates native values to variables.
+associates native values to variables.
 Formally, a sequential environment $\denv \in \dynamicenvs$ is a pair consisting of a partial function
 (see \defref{PartialFunction}) from global
 variable names to their native value, and a partial function from local variable names to their
@@ -1320,6 +1328,7 @@ the expression \texttt{3 DIV 0} results in a type error.
   \Normal((\vv, \vg), \newenv)
 }
 \end{mathpar}
+
 The rule above applies to many binary operators, including $\EQOP$ (which is used for \texttt{<->}
 as well as \texttt{==}).
 
@@ -1760,7 +1769,7 @@ the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ 
 \inferrule{\env \eqname (\tenv, \denv)\\
   \vv \in \textsf{dyn-dom}(\tenv, \env, \vt)
 }{
-  \evalexpr{\env, \overname{\EUnknown}{\ve}} \evalarrow \Normal(\overname{\env}{\newenv}, \vv, \emptygraph)
+  \evalexpr{\env, \overname{\EUnknown}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 Notice that this rule introduces non-determinism.
@@ -1824,7 +1833,7 @@ incidence of unintended errors by making such uses fail type-checking unless
 the asserting type conversion is provided.
 
 \lrmcomment{This is related to \identr{WZVX}:}
-Note that ATCs are exectution-time checks. An execution-time check is a
+Note that ATCs are execution-time checks. An execution-time check is a
 condition that is evaluated during the evaluation of an execution-time
 initializer expression or subprogram. If the condition evaluates to $\False$ it
 is a dynamic error.
@@ -3820,7 +3829,7 @@ The expression in an assertion statement must be side-effect-free.
     Evaluation of the statement $\vs$ in an environment $\env$ is
     the output configuration $C$ and all of the following apply:
     \begin{itemize}
-    \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \vbody)$;
+    \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \Ignore, \vbody)$;
     \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\env$,
     with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\ve$, and $\vbody$
     results in $C$.
@@ -3835,12 +3844,11 @@ The expression in an assertion statement must be side-effect-free.
 
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \evalloop{\env, \True, \ve, \vbody} \evalarrow C
-  }
-  {
-    \evalstmt{\env, \SWhile(\ve, \vbody)} \evalarrow C
-  }
+\inferrule{
+  \evalloop{\env, \True, \ve, \vbody} \evalarrow C
+}{
+  \evalstmt{\env, \overname{\SWhile(\ve, \Ignore, \vbody)}{\vs}} \evalarrow C
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -3850,7 +3858,7 @@ The expression in an assertion statement must be side-effect-free.
 Evaluation of the statement $\vs$ in an environment $\env$ is
 either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ and all of the following apply:
 \begin{itemize}
-\item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody)$;
+\item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \Ignore)$;
 \item evaluating $\vbody$ in $\env$ as per \chapref{eval_block}
       yields $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\ErrorConfig};
 \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\envone$,
@@ -3882,7 +3890,7 @@ prints
   \vgtwo \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\vgtwo}
 }{
-  \evalstmt{\env, \SRepeat(\ve, \vbody)} \evalarrow D
+  \evalstmt{\env, \overname{\SRepeat(\ve, \vbody, \Ignore)}{\vs}} \evalarrow D
 }
 \end{mathpar}
 
@@ -3892,15 +3900,22 @@ prints
     \subsection{Prose}
     All of the following apply:
     \begin{itemize}
-    \item $\vs$ is a \texttt{for} statement, $\SFor(\id, \veone, \dir, \vetwo, \vs)$;
+    \item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
+      \Forindexname &:& \vindexname\\
+      \Forstarte &:& \vstarte\\
+      \fordirection &:& \vdirection\\
+      \Forende &:& \vende\\
+      \Forbody &:& \vbody\\
+      Forlimit &:& \Ignore
+    \end{array}\right\}$;
     \item evaluating the side-effect-free expression $\veone$ in $\env$ is either
     $\Normal(\vvone, \vgone)$\ProseOrError;
     \item evaluating the side-effect-free expression $\vetwo$ in $\env$ is either
     $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
-    \item declaring the local identifier $\id$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
-    \item evaluating the \texttt{for} loop with arguments $(\id, \veone, \dir, \vetwo, \vs)$ in $\envone$,
+    \item declaring the local identifier $\vindexname$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
+    \item evaluating the \texttt{for} loop with arguments $(\vindexname, \veone, \dir, \vetwo, \vs)$ in $\envone$,
     as per \secref{SemanticsRule.For} is $\Normal(\vgfour, \envtwo)$\ProseOrAbnormal;
-    \item removing the local $\id$ from $\envtwo$ is $\envthree$;
+    \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
     \item $\newg$ is formed as follows: taking the parallel composition of $\vgone$ and $\vgtwo$,
     then taking the ordered composition of the result with the $\asldata$ edge,
     and finally taking the ordered composition of the result with the $\aslpo$ edges;
@@ -3926,16 +3941,28 @@ Recall that the expressions for the \texttt{for} loop range are side-effect-free
 which is why they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
   \inferrule{
-    \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \vgone) \terminateas \Error\\
-    \evalexprsef{\env, \vetwo} \evalarrow \Normal(\vvtwo, \vgtwo) \terminateas \Error\\
-    \declarelocalidentifier(\env, \id, \vvone) \evalarrow (\vgthree,\envone)\\
-    \evalfor{\envone, \id, \vvone, \dir, \vvtwo, \vs} \evalarrow \Normal(\vgfour, \envtwo) \OrAbnormal\\
-    \removelocal(\envtwo, \id) \evalarrow \envthree\\
+    \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \terminateas \ErrorConfig\\
+    \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \terminateas \ErrorConfig\\
+    \declarelocalidentifier(\env, \vindexname, \vendv) \evalarrow (\vgthree,\envone)\\
+    \evalfor{\envone, \vindexname, \vstartv, \dir, \vendv, \vbody} \evalarrow \Normal(\vgfour, \envtwo) \OrAbnormal\\
+    \removelocal(\envtwo, \vindexname) \evalarrow \envthree\\
     \newg \eqdef \ordered{(\vgone \parallelcomp \vgtwo)}{\asldata}{ \ordered{\vgthree}{\aslpo}{\vgfour}   }\\
     \newenv \eqdef \envthree
   }
   {
-    \evalstmt{\env, \SFor(\id, \veone, \dir, \vetwo, \vs)} \evalarrow \Continuing(\newg, \newenv)
+    {
+    \begin{array}{r}
+    \evalstmt{\env,
+    \SFor\left\{\begin{array}{rcl}
+      \Forindexname &:& \vindexname\\
+      \Forstarte &:& \vstarte\\
+      \fordirection &:& \vdirection\\
+      \Forende &:& \vende\\
+      \Forbody &:& \vbody\\
+      \Forlimit &:& \Ignore\\
+    \end{array}\right\}} \evalarrow \\ \Continuing(\newg, \newenv)
+    \end{array}
+    }
   }
 \end{mathpar}
 
@@ -4149,7 +4176,7 @@ is defined before the block and hence still exists after the block.
   \env \eqname (\tenv,\denv)\\
   \blockenv \eqdef (\tenv, (G^\denv, \emptylist))\\
   \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\\\
-  \blockenvone\eqdef(\tenv, \denvone)\\
+  \blockenvone\eqname(\tenv, \denvone)\\
   \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
 }{
   \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)
@@ -4729,29 +4756,26 @@ terminates successfully. That is, no dynamic error occurs.
 
 \CodeSubsection{\CatchNoThrowBegin}{\CatchNoThrowEnd}{../Interpreter.ml}
 
-  % For some reason the emptyformal environment here fails LaTeX compilation.
-  %
-  \subsection{Formally}
-      \begin{mathpar}
-      \inferrule[implicit\_throw]{
-        \sm \eqname \Throwing((\None, \sg), \envthrow)
-      }
-      {
-        \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
-      }
-      \and
-      \inferrule[non\_throwing]{
-        \configdomain{\sm} = \Normal
-      }
-      {
-        \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
-      }
-    \end{mathpar}
-  %
+\subsection{Formally}
+  \begin{mathpar}
+  \inferrule[implicit\_throw]{
+    \sm \eqname \Throwing((\None, \sg), \envthrow)
+  }
+  {
+    \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+  }
+  \and
+  \inferrule[non\_throwing]{
+    \configdomain{\sm} = \Normal
+  }
+  {
+    \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+  }
+\end{mathpar}
 
-  \isempty{\subsection{Comments}}
+\isempty{\subsection{Comments}}
 
-  \section{SemanticsRule.FindCatcher \label{sec:SemanticsRule.FindCatcher}}
+\section{SemanticsRule.FindCatcher \label{sec:SemanticsRule.FindCatcher}}
 
 \hypertarget{def-findcatcher}{}
 The (recursively-defined) helper relation
@@ -5552,8 +5576,8 @@ environment.
   \begin{itemize}
     \item the AST for the parsed specification, $\parsedspec$, and AST for the parsed standard library,
     $\parsedstd$, are concatenated to give $\parsedast$;
-    \item applying the type-checker to $\parsedast$ with an empty static environment is either
-    $(\typedspec, \tenv)$\ProseOrError;
+    \item applying the type-checker to $\parsedast$ with an empty static environment yields
+    $(\typedspec, \tenv)$;
     \item populating the environment with the declarations of the global storage elements
     is $(\env, \vgone)$\ProseOrError;
     \item One of the following applies:
@@ -5580,27 +5604,29 @@ environment.
   \CodeSubsection{\TopLevelBegin}{\TopLevelEnd}{../Interpreter.ml}
 
 \subsection{Formally}
-  \begin{mathpar}
-  \inferrule[normal]{
-    \parsedast \eqdef \parsedspec \concat \parsedstd\\
-    \annotatespec(\emptytenv, \parsedast) \eqname (\typedspec,\tenv)\\
-    \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone) \OrDynError\\\\
-    \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
-    \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
-  }
-  {
-    \evalspec{\parsedast, \parsedstd} \evalarrow (\vv, \newg)
-  }
-  \and
-  \inferrule[throwing]{
-    \parsedast \eqdef \parsedspec \concat \parsedstd\\
-    \annotatespec(\emptytenv, \parsedast) \eqdef (\typedspec,\tenv)\\
-    \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone)\\
-    \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\texttt{v\_opt}, \Ignore)
-  }
-  {
-    \evalspec{\parsedspec, \parsedstd} \evalarrow \ErrorVal{UncaughtException}
-  }
+\begin{mathpar}
+\inferrule[normal]{
+  \parsedast \eqdef \parsedspec \concat \parsedstd\\
+  \annotatespec(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
+  \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone) \OrDynError\\\\
+  \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
+  \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
+}
+{
+  \evalspec{\parsedast, \parsedstd} \evalarrow (\vv, \newg)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[throwing]{
+  \parsedast \eqdef \parsedspec \concat \parsedstd\\
+  \annotatespec(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
+  \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone)\\
+  \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\texttt{v\_opt}, \Ignore)
+}
+{
+  \evalspec{\parsedspec, \parsedstd} \evalarrow \ErrorVal{UncaughtException}
+}
 \end{mathpar}
 Notice that when the type-checker fails due to a type error in the given specification,
 the corresponding premise in the rule above does not hold, and the semantics
@@ -6568,27 +6594,26 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-%
 %   \CodeSubsection{\ValOfTypeBegin}{\ValOfTypeEnd}{../Interpreter.ml}
 
 \hypertarget{def-astlabel}{}
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule[Basic (bool, real, string, enum)]{
-    \astlabel(\tstruct(\env, \vt)) \in \{\TBool, \TReal, \TString, \TEnum\}\\
-    \vg \eqdef \emptygraph
-  }
-  {
-    \isvaloftype(\env, \vv, \vt) \evalarrow (\True, \vg)
-  }
-  \and
-  \inferrule[int\_unconstrained]{
-    \tstruct(\env, \vt) \eqname \TInt(\unconstrained)\\
-    \vg \eqdef \emptygraph
-  }
-  {
-    \isvaloftype(\env, \vv, \vt) \evalarrow (\True, \vg)
-  }
+\inferrule[Basic (bool, real, string, enum)]{
+  \astlabel(\tstruct(\env, \vt)) \in \{\TBool, \TReal, \TString, \TEnum\}\\
+  \vg \eqdef \emptygraph
+}{
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\True, \vg)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[int\_unconstrained]{
+  \tstruct(\env, \vt) \eqname \TInt(\unconstrained)\\
+  \vg \eqdef \emptygraph
+}{
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\True, \vg)
+}
 \end{mathpar}
 
 \hypertarget{def-integerconstraintsatisfied}{}

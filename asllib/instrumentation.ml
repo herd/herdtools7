@@ -368,7 +368,6 @@ module TypingRule = struct
     | CheckBinop
     | ELit
     | ATC
-    | ELocalVarConstant
     | ELocalVar
     | EGlobalVarConstantVal
     | EGlobalVarConstantNoVal
@@ -506,6 +505,8 @@ module TypingRule = struct
     | RenameTyEqs
     | TypeCheckMutuallyRec
     | FoldEnvAndFs
+    | AnnotateLoopLimit
+    | CheckATC
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -531,7 +532,6 @@ module TypingRule = struct
     | LowestCommonAncestor -> "LowestCommonAncestor"
     | ELit -> "ELit"
     | ATC -> "ATC"
-    | ELocalVarConstant -> "ELocalVarConstant"
     | ELocalVar -> "ELocalVar"
     | EGlobalVarConstantVal -> "EGlobalVarConstantVal"
     | EGlobalVarConstantNoVal -> "EGlobalVarConstantNoVal"
@@ -669,6 +669,8 @@ module TypingRule = struct
     | RenameTyEqs -> "RenameTyEqs"
     | TypeCheckMutuallyRec -> "TypeCheckMutuallyRec"
     | FoldEnvAndFs -> "FoldEnvAndFs"
+    | AnnotateLoopLimit -> "AnnotateLoopLimit"
+    | CheckATC -> "CheckATC"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -697,7 +699,6 @@ module TypingRule = struct
       LowestCommonAncestor;
       ELit;
       ATC;
-      ELocalVarConstant;
       ELocalVar;
       EGlobalVarConstantVal;
       EGlobalVarConstantNoVal;
@@ -814,6 +815,8 @@ module TypingRule = struct
       RenameTyEqs;
       TypeCheckMutuallyRec;
       FoldEnvAndFs;
+      AnnotateLoopLimit;
+      CheckATC;
     ]
 
   let all_nb = List.length all

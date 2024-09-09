@@ -28,6 +28,7 @@
 
 \newcommand\dynamicdomain[0]{\hyperlink{def-dyndomain}{\textsf{dyn\_dom}}}
 
+\newcommand\ProseOtherwiseTypeError[0]{Otherwise, the result is a type error.}
 \newcommand\OrTypeError[0]{\;\terminateas \TypeErrorConfig}
 %\newcommand\ProseOrTypeError[0]{or a type error that short-circuits the entire rule}
 \newcommand\ProseOrTypeError[0]{\ProseTerminateAs{\TypeErrorConfig}}
@@ -82,6 +83,7 @@
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\texttt{annotate\_field\_init}}}
 \newcommand\annotatestaticinteger[0]{\hyperlink{def-annotatestaticinteger}{\texttt{annotate\_static\_integer}}}
 \newcommand\annotatestaticconstrainedinteger[0]{\hyperlink{def-annotatestaticconstrainedinteger}{\texttt{annotate\_static\_constrained\_integer}}}
+\newcommand\checkatc[0]{\hyperlink{def-checkatc}{\texttt{check\_atc}}}
 \newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\texttt{check\_structure}}}
 \newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\texttt{check\_structure\_integer}}}
 \newcommand\checkstaticallyevaluable[0]{\hyperlink{def-checkstaticallyevaluable}{\texttt{check\_statically\_evaluable}}}
@@ -254,13 +256,14 @@
 \newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\texttt{get\_variable\_enum}}}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\texttt{annotate\_expr}}(#1)}
 \newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\texttt{annotate\_exprs}}}
+\newcommand\annotatelooplimit[0]{\hyperlink{def-annotatelooplimit}{\texttt{annotate\_loop\_limit}}}
 \newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\texttt{annotate\_lexpr}}(#1)}
 \newcommand\annotatearrayindex[0]{\texttt{annotate\_array\_index}}
 \newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\texttt{annotate\_slice}}}
 \newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\texttt{annotate\_slices}}}
 \newcommand\annotatepattern[0]{\hyperlink{def-annotatepattern}{\texttt{annotate\_pattern}}}
 \newcommand\annotatelocaldeclitem[1]{\hyperlink{def-annotatelocaldeclitem}{\texttt{annotate\_local\_decl\_item}}(#1)}
-\newcommand\annotatestmt[1]{\hyperlink{def-annotatestmt}{\texttt{annotate\_stmt}}(#1)}
+\newcommand\annotatestmt[0]{\hyperlink{def-annotatestmt}{\texttt{annotate\_stmt}}}
 \newcommand\annotateblock[1]{\hyperlink{def-annotateblock}{\texttt{annotate\_block}}(#1)}
 \newcommand\inlinesetter[1]{\texttt{setter\_should\_reduce\_to\_call\_s}(#1)}
 \newcommand\annotatecall[0]{\hyperlink{def-annotatecall}{\texttt{annotate\_call}}}
@@ -357,6 +360,7 @@
 \newcommand\RequireStructuredType[0]{\hyperlink{def-rst}{\TypeErrorCode{RST}}}
 \newcommand\MissingFieldInitializer[0]{\hyperlink{def-mfi}{\TypeErrorCode{MFI}}}
 \newcommand\RequireSameBitwidths[0]{\hyperlink{def-rsb}{\TypeErrorCode{RSB}}}
+\newcommand\TypeAsssertionFails[0]{\hyperlink{def-taf}{\TypeErrorCode{TAF}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Typeset variable names
@@ -625,7 +629,7 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 We use $\tenv$ and similar variable names (for example, $\tenvone$ and $\newtenv$) to range over static environments.
 
 A static environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
-distinct components: the global environment $G^\tenv \in \globalstoragetypes$ --- pertaining to AST nodes
+distinct components: the global environment $G^\tenv \in \globalstaticenvs$ --- pertaining to AST nodes
 appearing outside of a given subprogram, and the local environment
 $L^\tenv \in \localstaticenvs$ --- pertaining to AST nodes appearing inside a given subprogram.
 This separation allows us to type-check subprograms by using an empty local environment.
@@ -3225,7 +3229,7 @@ The function
 \]
 determines the result type of applying a unary operator when the type of its operand is known.
 Similarly, we determine the negation of integer constraints.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -3369,7 +3373,7 @@ The function
 \]
 determines the result type $\vt$ of applying the binary operator $\op$
 to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -4125,7 +4129,7 @@ The function
 \]
 annotates the application of the binary operation $\op$ to the lists of integer constraints
 $\csone$ and $\cstwo$, yielding an integer constraints element $\vics$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 
@@ -4182,7 +4186,7 @@ The function
 annotates a type $\tty$ in an environment $\tenv$, resulting in a
 annotated type $\newty$.
 The flag $\decl$ indicates whether $\tty$ is a type currently being declared.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 The flag $\decl$ is makes a difference only when $\tty$ is an enumeration type or a \structuredtype.
 
@@ -4200,7 +4204,7 @@ One of the following applies:
   \item TypingRule.TRecordExceptionDecl (see \secref{TypingRule.TRecordExceptionDecl});
   \item TypingRule.TNonDecl (see \secref{TypingRule.TNonDecl});
 \end{itemize}
-A type error is returned, if one is detected.
+\ProseOtherwiseTypeError
 
 We also define the following helper functions:
 \begin{itemize}
@@ -4646,7 +4650,7 @@ The function
 \]
 annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding the annotated
 integer constraint $\newc$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -4772,7 +4776,7 @@ The function
 \]
 annotates a \staticallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
 and returns the annotated expression $\vepp$.
-A type error is returned, if one is detected.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -4958,7 +4962,6 @@ $\ve$ in \tenv\ is either the pair $(\vt, \newe)$, where $\vt$ is a type and
 $\newe$ is an annotated expression, or a type error, and one of the following applies:
 \begin{itemize}
 \item TypingRule.ELit (see \secref{TypingRule.ELit});
-\item TypingRule.ELocalVarConstant (see \secref{TypingRule.ELocalVarConstant})
 \item TypingRule.ELocalVar (see \secref{TypingRule.ELocalVar})
 \item TypingRule.EGlobalVarConstant (see \secref{TypingRule.EGlobalVarConstant})
 \item TypingRule.EGlobalVarConstantNoVal (see \secref{TypingRule.EGlobalVarConstantNoVal})
@@ -5001,6 +5004,7 @@ We also define the following helper rules:
   \item TypingRule.ExpressionList (\secref{TypingRule.ExpressionList})
   \item TypingRule.TypingRule.ReduceSlicesToCall (\secref{TypingRule.ReduceSlicesToCall})
   \item TypingRule.StaticConstrainedInteger (\secref{TypingRule.StaticConstrainedInteger})
+  \item TypingRule.CheckATC (\secref{TypingRule.CheckATC})
 \end{itemize}
 
 \section{TypingRule.ELit \label{sec:TypingRule.ELit}}
@@ -5022,61 +5026,47 @@ All of the following apply:
 {\annotateexpr{\tenv, \ELiteral(\vv)} \typearrow (\vt, \ELiteral(\vv))}
 \end{mathpar}
 
-\section{TypingRule.ELocalVarConstant \label{sec:TypingRule.ELocalVarConstant}}
-
+\section{TypingRule.ELocalVar \label{sec:TypingRule.ELocalVar}}
 \subsection{Prose}
-All of the following apply:
+One of the following applies:
 \begin{itemize}
-\item $\ve$ denotes a local variable $\vx$;
-\item $\vx$ is bound to a local constant $\vv$ of type $\tty$ in the local environment given by $\tenv$;
-\item $\vt$ is $\tty$;
-\item $\newe$ is the Literal $\vv$.
+  \item All of the following apply (\textsc{constant}):
+  \begin{itemize}
+  \item $\ve$ denotes a local variable $\vx$;
+  \item $\vx$ is bound to a local constant $\vv$ of type $\tty$ in the local environment given by $\tenv$;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is the Literal $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_constant}):
+  \begin{itemize}
+  \item $\ve$ denotes a local variable $\vx$;
+  \item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
+  \item $\vx$ has type $\tty$ in the local environment given by $\tenv$;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is $\ve$.
+  \end{itemize}
 \end{itemize}
-
-\isempty{\subsection{Example}}
-
-\CodeSubsection{\ELocalVarConstantBegin}{\ELocalVarConstantEnd}{../Typing.ml}
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[constant]{
   L^\tenv.\constantvalues(\vx) = \vv\\
   L^\tenv.\localstoragetypes(\vx) = (\tty, \LDKConstant)
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\eliteral{\vv}}{\newe})
 }
 \end{mathpar}
 
-\isempty{\subsection{Comments}}
-
-\section{TypingRule.ELocalVar \label{sec:TypingRule.ELocalVar}}
-
-\subsection{Prose}
-All of the following apply:
-\begin{itemize}
-\item $\ve$ denotes a local variable $\vx$;
-\item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
-\item $\vx$ has type $\tty$ in the local environment given by $\tenv$;
-\item $\vt$ is $\tty$;
-\item $\newe$ is $\ve$.
-\end{itemize}
-
-\isempty{\subsection{Example}}
-
-\CodeSubsection{\ELocalVarBegin}{\ELocalVarEnd}{../Typing.ml}
-
-\subsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[non\_constant]{
   L^\tenv.\constantvalues(\vx) = \bot\\
   L^\tenv.\localstoragetypes(\vx) =  (\tty, k) \\
   k \in \{\LDKVar, \LDKLet\}
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\EVar(\vx)}{\newe})
 }
 \end{mathpar}
-
-\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGlobalVarConstantVal \label{sec:TypingRule.EGlobalVarConstant}}
 
@@ -5168,7 +5158,7 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
 \item $\ve$ is a variable $\vx$;
-\item $\vx$ is not bound in $\tenv$;
+\item $\vx$ is not bound to a type in $\tenv$;
 \item the result is a type error indicating that $\vx$ is an undefined identifier.
 \end{itemize}
 
@@ -5182,7 +5172,7 @@ All of the following apply:
   G^\tenv.\globalstoragetypes(\vx) = \bot\\
   L^\tenv.\globalstoragetypes(\vx) = \bot\\
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow \TypeErrorVal{UndefinedIdentifier}
+  \annotateexpr{\tenv,\overname{\EVar(\vx)}{\ve}} \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
 
@@ -5973,29 +5963,11 @@ All of the following apply:
   \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
   \item annotating the type $\tty$ in $\tenv$ yields $\tty'$\ProseOrTypeError;
   \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
-  \item One of the following applies:
-  \begin{itemize}
-  \item All of the following apply (\textsc{type\_equal}):
-  \begin{itemize}
-    \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\True$;
-    \item $\vt$ is $\tty'$ and $\newe$ is $\vepp$.
-  \end{itemize}
-  \item All of the following apply (\textsc{dynamic}):
-    \begin{itemize}
-      \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$,
-      meaning that an execution-time check that the expression $\vep$ evaluates to a value in the
-      dynamic domain of $\tty$ is required;
-      \item both $\vtstruct$ and $\vtystruct$ are bitvector types or integer types;
-      \item $\vt$ is $\vtp$ and $\newe$ is the asserting type conversion expression over $\vepp$ \\ and
-      $\vtystruct$, that is, $\EATC(\vepp, \vtystruct)$.
-    \end{itemize}
-  \item All of the following apply (\textsc{error}):
-    \begin{itemize}
-    \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$;
-    \item $\vtstruct$ and $\vtystruct$ are not both bitvector types or integer types;
-    \item a type error indicating the conflicting types is returned.
-    \end{itemize}
-  \end{itemize}
+  \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
+        will always fail yields $\True$\ProseOrTypeError;
+  \item checking whether $\vt$ \subtypesatisfies\ $\ttyp$ in $\tenv$ yields $\vb$\ProseOrTypeError;
+  \item $\newe$ is $\EATC(\ttyp, \vepp)$ if $\vb$ is $\True$ and $\vepp$ otherwise;
+  \item $\vt$ is $\ttyp$.
 \end{itemize}
 
 \isempty{\subsection{Example}}
@@ -6007,41 +5979,13 @@ All of the following apply:
 \inferrule[type\_equal]{
   \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
-  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \True
+  \annotatetype{\tenv, \tty} \typearrow \ttyp \OrTypeError\\\\
+  \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
+  \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
+  \subtypesat(\tenv, \vt, \ttyp) \typearrow \vb \OrTypeError\\\\
+  \newe \eqdef \choice{\vb}{\EATC(\ttyp, \vepp)}{\vepp}
 }{
-  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\tty'}{\ve}, \overname{\vepp}{\newe})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[dynamic]{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
-  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
-  \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
-  \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
-  \vb = \True
-}{
-  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\vtp}{\vt}, \overname{\EATC(\vepp, \vtystruct)}{\newe})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \annotatetype{\tenv, \tty} \typearrow \tty' \OrTypeError\\\\
-  \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
-  \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
-  \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
-  \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
-  \vb = \False
-}{
-  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow \TypeErrorVal{ATC}
+  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \newe)
 }
 \end{mathpar}
 
@@ -6112,7 +6056,7 @@ The function
 \]
 annotates a list of expressions $\exprs$ from left to right, yielding a list of pairs $\typedexprs$,
 each consisting of a type and expression.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -6164,7 +6108,7 @@ checks whether the expression $\ve$ together with the list of slices $\slices$ c
 a call to a subprogram in $\tenv$.
 If so, it returns a pair consisting of the name of the called subprogram --- $\name$ ---
 and the list of actual arguments --- $\vargs$. Otherwise, it returns $\None$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -6231,7 +6175,7 @@ The function
 \]
 annotates a \staticallyevaluable\ integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
 and returns the annotated expression $\vepp$.
-A type error is returned, if one is detected.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -6256,6 +6200,110 @@ All of the following apply:
 }
 \end{mathpar}
 
+\section{TypingRule.CheckATC \label{sec:TypingRule.CheckATC}}
+\hypertarget{def-checkatc}{}
+The function
+\[
+  \checkatc(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
+  \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the types $\vtone$ and $\vttwo$, which are assumed to not be named types,
+are compatible for a typing assertion in the static environment $\tenv$, yielding $\True$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{equal}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{different\_labels\_error}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are different;
+    \item the result is a type error indicating that the type assertion will always fail.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_bits}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are the same;
+    \item the AST label of $\vtone$ is either $\TInt$ or $\TBits$;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item $\vtone$ is a tuple type with list of tuples $\vlone$, that is, $\TTuple(\vlone)$;
+    \item $\vtone$ is a tuple type with list of tuples $\vltwo$, that is, $\TTuple(\vltwo)$;
+    \item checking whether $\vlone$ and $\vltwo$ have the same length yields $\True$\ProseTerminateAs{\TypeErrorVal{\TypeAsssertionFails}};
+    \item applying $\checkatc$ to $\vlone[\vi]$ and $\vltwo[\vi]$ in $\tenv$ for every $\vi\in\listrange(\vlone)$ yields $\True$\ProseOrTypeError;
+    \item the result is $\True$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other\_error}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are the same;
+    \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
+    \item the result is a type error indicating that the type assertion will always fail.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[equal]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[different\_labels\_error]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) \neq \astlabel(\vttwo)
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAsssertionFails}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[int\_bits]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) = \astlabel(\vttwo)\\
+  \astlabel(\vtone) \in \{\TInt, \TBits\}
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \vtone = \TTuple(\vlone)\\
+  \vttwo = \TTuple(\vltwo)\\
+  \checktrans{|\vlone|=|\vltwo|}{\TypeAsssertionFails} \typearrow \True\OrTypeError\\\\
+  \vi\in\listrange(\vlone): \checkatc(\vlone[\vi], \vltwo[\vi]) \typearrow \True\OrTypeError
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other\_error]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) = \astlabel(\vttwo)\\
+  \astlabel(\vtone) \not\in \{\TInt, \TBits, \TTuple\}
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Left-Hand-Side Expressions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -6271,7 +6319,7 @@ The function
 annotates a left-hand side expression $\vle$ in an environment $\tenv$, assuming $\vle$
 to be the type of the corresponding right-hand-side expression,
 resulting in an annotated expression $\newle$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 One of the following applies:
 \begin{itemize}
 \item TypingRule.LEDiscard (see \secref{TypingRule.LEDiscard}),
@@ -6854,7 +6902,7 @@ The function
 \]
 annotates a slices $\vs$ in the static environment $\tenv$,
 resulting in an annotated slice $\vsp$.
-A type error is returned, if one is detected.
+\ProseOtherwiseTypeError
 
 One of the following applies:
 \begin{itemize}
@@ -6876,7 +6924,7 @@ The function
 \]
 annotates a list of slices $\slices$ in the static environment $\tenv$,
 resulting in an annotated list of slices $\slicesp$.
-A type error is returned, if one is detected.
+\ProseOtherwiseTypeError
 
 The relevant rule is given by:
 \begin{itemize}
@@ -7442,7 +7490,7 @@ The function
 annotates a local declaration item $\ldi$ with a local declaration keyword $\ldk$, given a type $\tty$,
 in a static environment $\tenv$ results in $(\newenv, \newldi)$ where $\newenv$ is the modified
 static environment and $\newldi$ is the annotated local declaration item.
-A type error is returned, if one is detected.
+\ProseOtherwiseTypeError
 
 One of the following applies:
 \begin{itemize}
@@ -7595,12 +7643,12 @@ All of the following apply:
 \hypertarget{def-annotatestmt}{}
 The function
 \[
-  \annotatestmt{\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}} \aslto
+  \annotatestmt(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}) \aslto
   (\overname{\stmt}{\news}\aslsep \overname{\staticenvs}{\newenv})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a statement $\vs$ in an environment $\tenv$, resulting in the annotated statement
-$\news$ and a modified environment $\newenv$. Otherwise, the result is a type error.
+$\news$ and a modified environment $\newenv$. \ProseOtherwiseTypeError
 
 One of the following applies:
 \begin{itemize}
@@ -7627,11 +7675,8 @@ One of the following applies:
 We also define the following helper functions:
 \begin{itemize}
   \item TypingRule.CaseAlt (see \secref{TypingRule.CaseAlt}),
-  \item TypingRule.SForConstraints (see \secref{TypingRule.SForConstraints}),
-  \item TypingRule.MinConstraints (see \secref{TypingRule.MinConstraints}),
-  \item TypingRule.MaxConstraints (see \secref{TypingRule.MaxConstraints}),
-  \item TypingRule.MinConstraint (see \secref{TypingRule.MinConstraint}),
-  \item TypingRule.MaxConstraint (see \secref{TypingRule.MaxConstraint}).
+  \item TypingRule.SForConstraints (see \secref{TypingRule.SForConstraints})
+  \item TypingRule.AnnotateLoopLimit (see \secref{TypingRule.AnnotateLoopLimit})
 \end{itemize}
 
 \section{TypingRule.SPass \label{sec:TypingRule.SPass}}
@@ -7650,7 +7695,7 @@ All of the following apply:
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule{}{\annotatestmt{\tenv, \SPass} \typearrow (\SPass,\tenv)}
+\inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass,\tenv)}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -7692,7 +7737,7 @@ All of the following apply:
 \inferrule[setter]{
   \inlinesetter{\tenv, \vle, \vre} \typearrow \langle \news \rangle \OrTypeError\\
 }{
-  \annotatestmt{\tenv, \overname{\SAssign(\vle, \vre)}{\vs}} \typearrow (\news,\overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow (\news,\overname{\tenv}{\newtenv})
 }
 \and
 \inferrule[non\_setter]{
@@ -7700,7 +7745,7 @@ All of the following apply:
   \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone) \OrTypeError\\\\
   \annotatelexpr{\tenv, \vle, \vtre} \typearrow \vleone \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SAssign(\vle, \vre)}{\vs}} \typearrow (\overname{\SAssign(\vleone, \vreone)}{\news},\overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow (\overname{\SAssign(\vleone, \vreone)}{\news},\overname{\tenv}{\newtenv})
 }
 \end{mathpar}
 
@@ -7727,7 +7772,7 @@ All of the following apply:
 \inferrule{
   L^\tenv.\returntype = \None
 }{
-  \annotatestmt{\tenv, \overname{\SReturn(\None)}{\vs}} \typearrow (\overname{\SReturn(\None)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SReturn(\None)}{\vs}) \typearrow (\overname{\SReturn(\None)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
 
@@ -7765,13 +7810,13 @@ All of the following apply:
 \inferrule[return\_expr\_no\_return\_type]{
   L^\tenv.\returntype = \None
 }{
-  \annotatestmt{\tenv, \overname{\SReturn(\langle\Ignore\rangle)}{\vs}} \typearrow \TypeErrorVal{InvalidReturnStmt}
+  \annotatestmt(\tenv, \overname{\SReturn(\langle\Ignore\rangle)}{\vs}) \typearrow \TypeErrorVal{InvalidReturnStmt}
 }
 \and
 \inferrule[return\_type\_no\_return\_expr]{
   L^\tenv.\returntype = \langle\Ignore\rangle
 }{
-  \annotatestmt{\tenv, \overname{\SReturn(\None)}{\vs}} \typearrow \TypeErrorVal{InvalidReturnStmt}
+  \annotatestmt(\tenv, \overname{\SReturn(\None)}{\vs}) \typearrow \TypeErrorVal{InvalidReturnStmt}
 }
 \end{mathpar}
 
@@ -7802,7 +7847,7 @@ All of the following apply:
   \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep) \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SReturn(\langle \ve \rangle)}{\vs}} \typearrow
+  \annotatestmt(\tenv, \overname{\SReturn(\langle \ve \rangle)}{\vs}) \typearrow
   (\overname{\SReturn(\langle \vep \rangle)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
@@ -7828,10 +7873,10 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatestmt{\tenv, \vs1} \typearrow (\newsone, \tenvone) \OrTypeError\\\\
-  \annotatestmt{\tenvone, \vs2} \typearrow (\newstwo, \newtenv) \OrTypeError
+  \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone) \OrTypeError\\\\
+  \annotatestmt(\tenvone, \vs2) \typearrow (\newstwo, \newtenv) \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}} \typearrow (\overname{\SSeq(\newsone, \newstwo)}{\news}, \newtenv)
+  \annotatestmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow (\overname{\SSeq(\newsone, \newstwo)}{\news}, \newtenv)
 }
 \end{mathpar}
 
@@ -7862,7 +7907,7 @@ All of the following apply:
 }{
   {
     \begin{array}{r}
-  \annotatestmt{\tenv, \overname{\SCall(\name, \vargs)}{\vs}} \typearrow \\
+  \annotatestmt(\tenv, \overname{\SCall(\name, \vargs)}{\vs}) \typearrow \\
   (\overname{\SCall(\newname, \newargs, \eqs)}{\news}, \tenv)
     \end{array}
   }
@@ -7902,7 +7947,7 @@ All of the following apply:
   \annotateblock{\tenv, \vsone} \typearrow \vsonep \OrTypeError\\\\
   \annotateblock{\tenv, \vstwo} \typearrow \vstwop \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}} \typearrow
+  \annotatestmt(\tenv, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \typearrow
   (\overname{\SCond(\econd, \vsonep, \vstwop)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
@@ -7934,7 +7979,7 @@ All of the following apply:
   \vi\in\listrange(\vcases): \annotatecase{\tenv, \vcases[\vi]} \typearrow \vcase_\vi \OrTypeError\\\\
   \vcasesone \eqdef [\vi\in\listrange(\vcases): \vcase_\vi]
 }{
-  \annotatestmt{\tenv, \overname{\SCase(\ve, \vcases)}{\vs}} \typearrow
+  \annotatestmt(\tenv, \overname{\SCase(\ve, \vcases)}{\vs}) \typearrow
   (\overname{\SCase(\veone, \vcasesone)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
@@ -7963,7 +8008,7 @@ All of the following apply:
   \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep) \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SAssert(\ve)}{\vs}} \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
 
@@ -7974,11 +8019,13 @@ All of the following apply:
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-\item $\vs$ is a \texttt{while} statement with expression $\veone$ and statement block $\vsone$, that is, \\
-      $\SWhile(\veone, \vsone)$;
+\item $\vs$ is a \texttt{while} statement with expression $\veone$, optional limit expression $\vlimitone$,
+      and statement block $\vsone$, that is, $\SWhile(\veone, \vsone)$;
 \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo)$\ProseOrTypeError;
+\item annotating the optional limit expression $\vlimitone$ via $\annotatelooplimit$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
 \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-\item $\news$ is a \texttt{while} statement with expression $\vetwo$ and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
+\item $\news$ is a \texttt{while} statement with expression $\vetwo$, optional limit expression $\vlimittwo$,
+      and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
 \item $\newenv$ is $\tenv$.
 \end{itemize}
 
@@ -7990,10 +8037,12 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
+  \annotatelooplimit(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
   \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
   \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SWhile(\veone, \vsone)}{\vs}} \typearrow (\overname{\SWhile(\vetwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SWhile(\veone, \vlimitone, \vsone)}{\vs}) \typearrow
+  (\overname{\SWhile(\vetwo, \vlimittwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
 
@@ -8005,12 +8054,14 @@ All of the following apply:
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vs$ is a \texttt{repeat} statement with expression $\veone$ and statement block $\vsone$, that is, \\
-        $\SRepeat(\vetwo, \vstwo)$;
+  \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
+        optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
   \item annotating $\vsone$ as a block statement in $\tenv$ yields $\vstwo$\ProseOrTypeError;
+  \item annotating the optional limit expression $\vlimitone$ via $\annotatelooplimit$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
   \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo)$\ProseOrTypeError;
   \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\news$ is a \texttt{repeat} statement with expression $\vetwo$ and statement block $\vstwo$, that is, $\SRepeat(\vetwo, \vstwo)$;
+  \item $\news$ is a \texttt{repeat} statement with statement block $\vstwo$, optional limit expression $\vlimittwo$,
+        and condition expression $\vetwo$ and , that is, $\SRepeat(\vstwo, \vetwo, \vlimittwo)$;
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
@@ -8022,11 +8073,12 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError\\\\
+  \annotatelooplimit(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
   \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
   \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SRepeat(\veone, \vsone)}{\vs}} \typearrow
-  (\overname{\SRepeat(\vetwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SRepeat(\veone, \vsone, \vlimitone)}{\vs}) \typearrow
+  (\overname{\SRepeat(\vetwo, \vstwo, \vlimittwo)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
 
@@ -8037,24 +8089,41 @@ All of the following apply:
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vs$ is a \texttt{for} statement with index $\id$, direction $\dir$, start expression
-        $\veone$, end expression $\vetwo$, and a body statement (block) $\vsp$, that is, $\SFor(\id, \dir, \veone, \vetwo, \vsp)$;
-  \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vtone, \veonep)$\ProseOrTypeError;
-  \item annotating the right-hand-side expression $\vetwo$ in $\tenv$ yields $(\vttwo, \vetwop)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vtone$ in $\tenv$ yields $\structone$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vttwo$ in $\tenv$ yields $\structtwo$\ProseOrTypeError;
-  \item applying $\getforconstraints$ to $\structone$, $\structtwo$,
-        $\veonep$, $\vetwop$, and $\dir$ in $\tenv$,
-        to obtain the constraints on the loop index $\id$,
+  \item $\vs$ is a \texttt{for} statement with index $\vindexname$,
+        start expression $\vstarte$,
+        direction $\dir$,
+        end expression $\vende$,
+        body statement (block) $\vbody$,
+        and optional limit expression $\vlimit$,
+        that is, $\SFor\left\{\begin{array}{rcl}
+          \Forindexname &:& \vindexname\\
+          \Forstarte &:& \vstarte\\
+          \fordirection &:& \vdirection\\
+          \Forende &:& \vende\\
+          \Forbody &:& \vbody\\
+          \Forlimit &:& \vlimit
+        \end{array}\right\}$;
+  \item annotating the right-hand-side expression $\vstarte$ in $\tenv$ yields \\
+        $(\vstartt, \vstartep)$\ProseOrTypeError;
+  \item annotating the right-hand-side expression $\vende$ in $\tenv$ yields $(\vendt, \vendep)$\ProseOrTypeError;
+  \item annotating the optional loop limit expression $\vlimit$ via $\annotatelooplimit$ in $\tenv$
+        yields $\vlimitp$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vstartt$ in $\tenv$ yields $\vstartstruct$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vendt$ in $\tenv$ yields $\vendstruct$\ProseOrTypeError;
+  \item applying $\getforconstraints$ to $\vstartstruct$, $\vendstruct$,
+        $\vstartep$, $\vendep$, and $\dir$ in $\tenv$,
+        to obtain the constraints on the loop index $\vindexname$,
         yields $\cs$\ProseOrTypeError;
   \item $\tty$ is the integer type with constraints $\cs$;
-  \item checking that $\id$ is not already declared in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item adding $\id$ as a local immutable variable with type $\tty$ to $\tenv$ yields $\tenvp$;
-  \item annotating $\vsp$ as a block statement in $\tenvp$ yields $\vspp$\ProseOrTypeError;
-  \item $\news$ is the \texttt{for} statement with index $\id$, direction $\dir$, start expression $\veonep$,
-        end expression $\vetwop$, and the body statement (block) $\vspp$, that is, \\
-        $\SFor(\id, \veonep, \dir, \vetwop, \vspp)$;
-  \item $\newtenv$ is $\tenv$ (notice that this means $\id$ is only declared for annotating $\vsp$ but then goes
+  \item checking that $\vindexname$ is not already declared in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item adding $\vindexname$ as a local immutable variable with type $\tty$ to $\tenv$ yields $\tenvp$;
+  \item annotating $\vbody$ as a block statement in $\tenvp$ yields $\vbodyp$\ProseOrTypeError;
+  \item $\news$ is the \texttt{for} statement with index $\vindexname$,
+        start expression $\vstartep$, direction $\dir$,
+        end expression $\vendep$,
+        body statement (block) $\vbodyp$, and
+        optional limit expression $\vlimit$;
+  \item $\newtenv$ is $\tenv$ (notice that this means $\vindexname$ is only declared for annotating $\vbodyp$ but then goes
         out of scope).
 \end{itemize}
 
@@ -8065,18 +8134,42 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veonep) \OrTypeError\\\\
-  \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwop) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtone) \typearrow \structone \OrTypeError\\\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \structtwo \OrTypeError\\\\
-  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \cs \OrTypeError\\\\
+  \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep) \OrTypeError\\\\
+  \annotatelooplimit(\tenv, \vlimit) \typearrow \vlimitp \OrTypeError\\\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vstartstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vendstruct \OrTypeError\\\\
+  {
+    \begin{array}{r}
+  \getforconstraints(\tenv, \vstartstruct, \vendstruct, \vstartep, \vendep, \dir) \typearrow \\
+    \cs \OrTypeError
+    \end{array}
+  }\\\\
   \tty \eqdef \TInt(\cs)\\
-  \checkvarnotinenv{\tenv, \id} \typearrow \True \OrTypeError\\\\
-  \addlocal(\tenv, \tty, \id, \LDKLet) \typearrow \tenvp\\
-  \annotateblock{\tenvp, \vsp} \typearrow \vspp \OrTypeError\\\\
-  \news \eqdef \SFor(\id, \veonep, \dir, \vetwop, \vspp)
+  \checkvarnotinenv{\tenv, \vindexname} \typearrow \True \OrTypeError\\\\
+  \addlocal(\tenv, \tty, \vindexname, \LDKLet) \typearrow \tenvp\\
+  \annotateblock{\tenvp, \vbody} \typearrow \vbodyp \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SFor(\id, \dir, \veone, \vetwo, \vsp)}{\vs}} \typearrow (\news, \overname{\tenv}{\newtenv})
+  {
+    \begin{array}{r}
+  \annotatestmt\left(\tenv, \overname{\SFor\left\{\begin{array}{rcl}
+    \Forindexname &:& \vindexname\\
+    \Forstarte &:& \vstarte\\
+    \fordirection &:& \vdirection\\
+    \Forende &:& \vende\\
+    \Forbody &:& \vbody\\
+    \Forlimit &:& \vlimit
+  \end{array}\right\}}{\vs}\right) \typearrow \\
+  \left(\overname{\SFor\left\{\begin{array}{rcl}
+    \Forindexname &:& \vindexname\\
+    \Forstarte &:& \vstartep\\
+    \fordirection &:& \vdirection\\
+    \Forende &:& \vendep\\
+    \Forbody &:& \vbodyp\\
+    \Forlimit &:& \vlimitp
+  \end{array}\right\}}{\news}, \overname{\tenv}{\newtenv}\right)
+\end{array}
+  }
 }
 \end{mathpar}
 
@@ -8100,7 +8193,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{}{
-  \annotatestmt{\tenv, \overname{\SThrow(\None)}{\vs}} \typearrow (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
 
@@ -8130,7 +8223,7 @@ All of the following apply:
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError
 }{
-  \annotatestmt{\tenv, \overname{\SThrow(\langle (\ve, \Ignore) \rangle)}{\vs}} \typearrow
+  \annotatestmt(\tenv, \overname{\SThrow(\langle (\ve, \Ignore) \rangle)}{\vs}) \typearrow
   (\overname{\SThrow(\langle (\vep, \langle\vte\rangle) \rangle)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
@@ -8181,7 +8274,7 @@ All of the following apply:
   \catchersp \eqdef [\vc \in \catchers : \vcp]\\
   \news \eqdef \STry(\vspp, \catchersp, \None)
 }{
-  \annotatestmt{\tenv, \overname{\STry(\vsp, \catchers, \None)}{\vs}} \typearrow (\news, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \None)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv})
 }
 \and
 \inferrule[otherwise]{
@@ -8191,7 +8284,7 @@ All of the following apply:
   \catchersp \eqdef [\vc \in \catchers : \vcp]\\
   \news \eqdef \STry(\vspp, \catchersp, \otherwise')
 }{
-  \annotatestmt{\tenv, \overname{\STry(\vsp, \catchers, \langle\otherwise\rangle)}{\vs}} \typearrow (\news, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \langle\otherwise\rangle)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
 
@@ -8239,7 +8332,7 @@ All of the following apply:
   \declarelocalconstant{\tenv, \vte, \vv, \ldi} \typearrow (\newtenv, \ldip)\\
   \news \eqdef \SDecl(\LDKConstant, \ldip, \langle\vep\rangle)
 }{
-  \annotatestmt{\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}} \typearrow (\news, \newtenv)
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv)
 }
 \and
 \inferrule[non\_constant]{
@@ -8248,7 +8341,7 @@ All of the following apply:
   \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\newtenv, \ldip)\\
   \news \eqdef \SDecl(\LDKConstant, \ldip, \langle\vep\rangle)
 }{
-  \annotatestmt{\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}} \typearrow (\news, \newtenv)
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv)
 }
 \end{mathpar}
 
@@ -8278,7 +8371,7 @@ All of the following apply:
   \annotatelocaldeclitemuninit{\tenv, \ldi} \typearrow (\newtenv, \ldip) \OrTypeError\\\\
   \news \eqdef \SDecl(\LDKVar, \ldip, \None)
 }{
-  \annotatestmt{\tenv, \overname{\SDecl(\LDKVar, \ldi, \None)}{\vs}} \typearrow (\news, \newtenv)
+  \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \None)}{\vs}) \typearrow (\news, \newtenv)
 }
 \end{mathpar}
 
@@ -8348,7 +8441,6 @@ All of the following apply:
 
 \section{TypingRule.SForConstraints \label{sec:TypingRule.SForConstraints}}
 \hypertarget{def-getforconstraints}{}
-\newcommand\minmaxtop[0]{\texttt{MinMaxTop}}
 The function
 \[
   \getforconstraints(
@@ -8369,7 +8461,7 @@ infers the integer constraints --- $\vis$ --- for a \texttt{for} loop index vari
   \item the annotated end expression --- $\vetwop$
   \item the loop direction --- $\dir$
 \end{itemize}
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -8425,7 +8517,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[well\_constrained]{
   \structone = \TInt(\csone)\\
-  \structtwo = \TInt(\cstwo)\\
+  \structtwo = \TInt(\cstwo)\\\\
   \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\\\\
   \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\\\\
   \icsup \eqdef \wellconstrained([\ConstraintRange(\eonen, \etwon)])\\
@@ -8433,6 +8525,57 @@ One of the following applies:
   \vis \eqdef \choice{\dir=\UP}{\icsup}{\icsdown}
 }{
   \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \vis
+}
+\end{mathpar}
+
+\section{TypingRule.AnnotateLoopLimit \label{sec:TypingRule.AnnotateLoopLimit}}
+\hypertarget{def-annotatelooplimit}{}
+The function
+\[
+  \annotatelooplimit(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\langle\expr\rangle}{\ve} \aslsep
+  ) \aslto
+  \overname{\expr}{\vep} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates an optional expression $\ve$ serving as the limit of a loop in $\tenv$,
+yielding the optional loop expression $\vep$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item $\ve$ is $\None$;
+    \item $\vep$ is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some}):
+  \begin{itemize}
+    \item $\ve$ is $\langle\vlimit\rangle$;
+    \item annotating $\vlimit$ in $\tenv$ yields $(\vt, \vlimitp)$\ProseOrTypeError;
+    \item checking that $\vt$ is a constrained integer in $\tenv$ via \\
+          $\checkconstrainedinteger$ yields $\True$\ProseOrTypeError;
+    \item $\vep$ is $\langle\vlimitp\rangle$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[none]{}{
+  \annotatelooplimit(\tenv, \overname{\None}{\vlimit}) \typearrow \overname{\None}{\vlimitp}
+}
+\end{mathpar}
+
+\CodeSubsection{\AnnotateLoopLimitBegin}{\AnnotateLoopLimitEnd}{../Typing.ml}
+
+\begin{mathpar}
+\inferrule[some]{
+  \annotateexpr{\tenv, \vlimit} \typearrow (\vt, \vlimitp) \OrTypeError\\\\
+  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError
+}{
+  \annotatelooplimit(\tenv, \overname{\langle\vlimit\rangle}{\vlimit}) \typearrow \overname{\langle\vlimitp\rangle}{\vlimitp}
 }
 \end{mathpar}
 
@@ -8465,7 +8608,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatestmt{\tenv, \vs} \typearrow (\newstmt, \Ignore) \OrTypeError
+  \annotatestmt(\tenv, \vs) \typearrow (\newstmt, \Ignore) \OrTypeError
 }{
   \annotateblock{\tenv, \vs} \typearrow \newstmt
 }
@@ -8497,7 +8640,7 @@ The function
 annotates a catcher given by the \optional\ name of the matched exception --- $\nameopt$ ---
 the exception type --- $\tty$ --- and the statement to execute upon catching the exception --- $\vstmt$.
 The result is the catcher with the same \optional\ name --- $\nameopt$, an annotated type $\ttyp$, and annotated statement $\newstmt$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 One of the following applies:
 \begin{itemize}
@@ -8596,7 +8739,7 @@ and call type $\calltype$, resulting in the following:
   \item $\eqs$ --- the expressions providing values to the parameters;
   \item $\rettyopt$ --- the \optional\ annotated return type.
 \end{itemize}
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 The function is defined by the rule TypingRule.AnnotateCall (see \secref{TypingRule.AnnotateCall}).
 
@@ -8673,7 +8816,7 @@ The function
 \]
 is similar to $\annotatecall$, except that the argument expressions are replaced by
 the annotated expressions. That is, pairs consisting of a type and an expression.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -8753,7 +8896,7 @@ The function
 \]
 checks that the parameters in $\calleeparams$ are correct with respect
 to the parameter expressions $\eqsthree$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -8851,7 +8994,7 @@ The function
 transforms the type $\tty$ in the static environment $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\eqs$, yielding the type $\newty$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -8951,7 +9094,7 @@ The function
 transforms the expression $\ve$ in the static environment $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\eqs$, and then attempting to symbolically simplify the result, yielding the expression $\newe$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -8984,7 +9127,7 @@ The function
 transforms the expression $\ve$ in the static environment $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\eqs$, yielding the expression $\newe$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -9287,7 +9430,7 @@ transforms the integer constraint $\vc$ in the static environment $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\eqs$, and then attempting to symbolically simplify the result,
 yielding the integer constraint $\newc$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -9412,7 +9555,7 @@ checks that all parameter-defining arguments
 in $\calleeparams$ are \staticallyevaluable\ constrained integers.
 The result --- $\eqs$ --- is the list of parameter identifiers and their corresponding expressions,
 added to $\eqsone$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -9550,7 +9693,7 @@ The function
 annotates the \optional\ return type $\calleerettyopt$ given with the subprogram type
 $\calltype$ with respect to the parameter expressions $\eqsthree$,
 yielding the \optional\ annotated type $\rettyopt$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -9646,7 +9789,7 @@ If the second case holds, the function returns a tuple comprised of:
 \item $\namep$ --- the string that uniquely identifies this subprogram;
 \item $\callee$ --- the AST node defining the called subprogram.
 \end{itemize}
-A type error is returned, if one is detected.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -9770,7 +9913,7 @@ the list of formal arguments --- $\vargs$ --- which consist of the names of a su
 and their associated types, and
 infers the expressions associated with parameters that correspond to bitvector widths,
 yielding the result in $\eqs$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 It guaranteed that by TypingRule.HasArgClash,
 which is used by \\ TypingRule.FilterCallCandidates before calling $\deduceeqs$,
@@ -9852,7 +9995,7 @@ iterates over the list of unique subprogram names in $\candidates$ and checks wh
 their lists of arguments clash with the types in $\formaltypes$ in $\tenv$.
 The result is the set of pairs consisting of the names and function definitions of the
 subprograms whose arguments clash in $\candidates$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 
@@ -9908,7 +10051,7 @@ The function
 \]
 checks whether a list of types $\formaltys$ clashes with the list of types appearing
 in the list of arguments $\vargs$ in $\tenv$, yielding the result in $\vb$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -10011,7 +10154,7 @@ The function
 \]
 annotates a global declaration $\vd$ in the static environment $\tenv$,
 yielding an annotated global declaration $\newd$ and modified environment $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 One of the following applies:
 \begin{itemize}
@@ -10140,7 +10283,7 @@ The function
 annotates a subprogram definition $\funcsig$ in the static environment $\tenv$,
 yielding a new subprogram definition $\newfuncsig$ and modified static environment
 $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -10178,7 +10321,7 @@ The function
 annotates the signature of a function definition $\funcsig$ in the static environment $\tenv$,
 yielding a new function definition $\newfuncsig$ and modified static environment
 $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -10424,7 +10567,7 @@ consisting of an updated environment $\tenvonep$, which accumulates local storag
 for the parameters, and a function $\acc$, which maps identifiers corresponding to parameters
 to their associated types.
 The updated pair is given in $\newtenv$ and $\declaredparams$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Example}
 In the following specification, the list of explicitly defined parameters
@@ -10510,7 +10653,7 @@ consisting of an updated environment $\tenvonep$, which accumulates local storag
 for the parameters, and a function $\acc$, which maps identifiers corresponding to parameters
 to their associated types.
 The updated pair is given in $\newtenv$ and $\declaredparams$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -10594,7 +10737,7 @@ scans the list of arguments in $\func$ ($\func.\funcargs$) to find the ones that
 implicit parameters in $\tenvone$ and are not already included in the domain of $\declaredparams$.
 The found parameters are added as local declarations to $\tenvtwo$, resulting in $\newtenv$,
 and are used to update $\argparams$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -10690,7 +10833,7 @@ checks whether the argument given by $\vx$ and type $\tty$ is an implicit parame
 by checking whether it appears in $\vused$ and not in $\acc$.
 If it is identified as an implicit parameter, it is used to update $\tenvtwop$ to yield $\newtenv$
 and to update $\acc$ to yield $\accp$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -10749,7 +10892,7 @@ annotates the type $\tty$ in $\tenv$, considering it as a subprogram parameter w
 yielding the type $\newtenv$.
 It is assumed that $\tenv$ is an environment to which all explicitly defined parameters of the subprogram
 in context were added to, but the implicitly defined parameters were not added to.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -10804,7 +10947,7 @@ $\tenvtwo$ --- the environment to which only explicit parameters were added, and
 $\tenvthree$ --- the environment to which all parameters (explicit and implicit) were added.
 The result is the environment $\newtenv$ where all arguments have been declared and
 the annotated list of arguments $\vnewargs$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -10883,7 +11026,7 @@ $\tenvthree$ --- $\tenvtwo$ with the addition of implicit parameters, and
 $\tenvthreep$ --- same as $\tenvthree$ but updated with previously annotated arguments.
 The result is the updated environment $\newtenv$ with the added declaration for the current argument
 and the annotated argument, which has the same identifier $\vx$ and the annotated type $\vtp$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -10949,7 +11092,7 @@ $\tenvthree$ where all parameters have been added to, and
 $\tenvfour$ where all parameters and arguments have been added to.
 The result is the static environment $\newtenv$, which is $\tenvfour$ with the
 annotated return type and the \optional\ annotated return type $\newreturntype$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -10999,7 +11142,7 @@ The function
 \]
 checks that a subprogram defined by $\funcsig$ can be added to the static environment $\tenv$,
 resulting in an annotated function definition $\newfuncdef$ and new static environment $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -11087,7 +11230,7 @@ checks whether the unique subprogram associated with $\name$
 clashes with another subprogram
 that has subprogram type $\subpgmtype$ and list of formal types $\formaltypes$,
 yielding a Boolean value in $\vb$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 The function is only defined when there exists a binding for $\name$ in the
 $\subprograms$ map of $\tenv$.
@@ -11167,7 +11310,7 @@ that overload $\name$.
 The result is the unique subprogram identifier $\newname$, which is used to distinguish it in the set
 of overloaded subprograms (that is, other subprograms that share the same name)
 and the environment $\newtenv$, which is updated with $\newname$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -11353,7 +11496,7 @@ The function
 \]
 annotates the global storage declaration $\gsd$ in the static environment $\tenv$,
 yielding a modified static environment $\newtenv$ and annotated global storage declaration $\newgsd$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -11476,7 +11619,7 @@ The function
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates the type $\vt$ inside an \optional\ $\tyopt$, if there is one, and leaves it as is if $\tyopt$ is $\None$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -11518,7 +11661,7 @@ The function
 \]
 annotates the \optional\ expression $\expropt$ in $\tenv$ and returns a pair of \optional\ expressions
 for the type and annotated expression in $\vres$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -11564,7 +11707,7 @@ The function
 takes the \optional\ type associated with the initialization value of a global storage declaration --- $\initialvaluetype$ ---
 and the \optional\ type annotation for the same global storage declaration --- $\typeannotation$ ---
 and chooses the type that should be associated with the declaration --- $\declaredtype$ -- in $\tenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 The ASL parser ensures that at least one of $\initialvaluetype$ and \\
 $\typeannotation$ should not be $\None$.
@@ -11628,7 +11771,7 @@ The function
 modifies the static environment $\tenv$ by adding a global storage
 for the identifier $\name$ with global storage keyword $\keyword$ and type $\declaredtypes$,
 resulting in the environment $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -11663,7 +11806,7 @@ The function
 declares a type named $\name$ with type $\tty$ and \optional\ additional fields
 over another type $\vs$
 in the static environment $\tenv$, resulting in the modified environment $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -11736,7 +11879,7 @@ The function
 \]
 annotates the type $\tty$ with the \optional\ extra fields $\vs$ in $\tenv$, yielding
 the modified environment $\newtenv$ and type $\newty$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -11839,7 +11982,7 @@ The function
 \]
 updates the static environment $\tenv$ with the identifiers $\ids$ listed by an enumeration type,
 yielding the modified environment $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -11876,7 +12019,7 @@ The function
 \]
 adds a constant given by the identifier $\name$, type $\tty$, and literal $\vv$ to the
 static environment $\tenv$, yielding the modified environment $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -11941,7 +12084,7 @@ The relation
 \]
 annotates a list of declarations $\decls$ in an input static environment $\tenv$,
 yielding an output static environment $\newtenv$ and annotated list of declarations $\newdecls$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \begin{definition}[Strongly Connected Components]
 \hypertarget{def-scc}{}
@@ -12078,7 +12221,7 @@ The function
 annotates a list of declaration components $\comps$
 (a list of lists) in the static environment $\tenv$,
 yielding the annotated list of declarations $\newdecls$ and modified environment $\newtenv$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 We note that a strongly-connected component containing just a single declaration may contain
 any kind of global declaration ---
@@ -13294,14 +13437,22 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_for}):
   \begin{itemize}
-    \item $\vs$ is the for statement with expressions $\veone$ and $\vetwo$ and body statement $\vsone$;
-    \item define $\ids$ as the union of applying $\useexpr$ to both $\veone$ and $\vetwo$ and $\usestmt$ to $\vsone$.
+    \item $\vs$ is the for statement $\SFor\left\{\begin{array}{rcl}
+      \Forindexname &:& \Ignore\\
+      \Forstarte &:& \vstarte\\
+      \fordirection &:& \vdirection\\
+      \Forende &:& \vende\\
+      \Forbody &:& \vbody\\
+      \Forlimit &:& \vlimit
+    \end{array}\right\}$;
+    \item define $\ids$ as the union of applying $\useexpr$ to $\vlimit$, $\vstarte$, and $\vende$ and applying $\usestmt$ to $\vsone$.
   \end{itemize}
 
   \item All of the following apply (\textsc{while\_repeat}):
   \begin{itemize}
-    \item $\vs$ is either a while statement or repeat statement, each with expression $\ve$ and body statement $\vsone$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and $\usestmt$ to $\vsone$.
+    \item $\vs$ is either a while statement or repeat statement, each with expression $\ve$, body statement $\vsone$,
+          and optional limit expression $\vlimit$;
+    \item define $\ids$ as the union of applying $\useexpr$ to $\vlimit$ and to $\ve$, and applying $\usestmt$ to $\vsone$.
   \end{itemize}
 
   \item All of the following apply (\textsc{s\_decl}):
@@ -13374,15 +13525,24 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[s\_for]{
-  \ids \eqdef \useexpr(\veone) \cup \useexpr(\vetwo) \cup \usestmt(\vsone)
+  \ids \eqdef \useexpr(\vlimit) \cup \useexpr(\vstarte) \cup \useexpr(\vende) \cup \usestmt(\vbody)
 }{
-  \usestmt(\overname{\SFor(\Ignore, \veone, \Ignore, \vetwo, \vsone)}{\vs}) \typearrow \ids
+  {
+  \usestmt\left(\overname{\SFor\left\{\begin{array}{rcl}
+    \Forindexname &:& \Ignore\\
+    \Forstarte &:& \vstarte\\
+    \fordirection &:& \vdirection\\
+    \Forende &:& \vende\\
+    \Forbody &:& \vbody\\
+    \Forlimit &:& \vlimit
+  \end{array}\right\}}{\vs}\right) \typearrow \ids
+  }
 }
 \and
 \inferrule[while\_repeat]{
-  \vs = \SWhile(\ve, \vsone) \lor \vs = \SRepeat(\ve, \vsone)
+  \vs = \SWhile(\ve, \vlimit, \vs) \lor \vs = \SRepeat(\vs, \ve, \vlimit)
 }{
-  \usestmt(\vs) \typearrow \overname{\useexpr(\ve) \cup \usestmt(\vsone)}{\ids}
+  \usestmt(\vs) \typearrow \overname{\useexpr(\vlimit) \cup \useexpr(\ve) \cup \usestmt(\vsone)}{\ids}
 }
 \end{mathpar}
 
@@ -13546,7 +13706,7 @@ evaluates an expression $\ve$, from a restricted subset of all expressions,
 in the static environment $\tenv$, returning a literal $\vv$.
 If $\ve$ is not in the restricted set of expressions or cannot be statically evaluated to a compile-time
 constant, the result is $\CannotBeTransformed$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -13740,7 +13900,7 @@ The function
 \]
 statically evaluates a unary operator $\op$ (a terminal derived from the AST non-terminal for unary operators)
 over a literal $\vl$ and returns the resulting literal $\vr$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \hypertarget{def-unopsignatures}{}
 The following set of unary operator types and argument types defines the correct argument type
@@ -14570,7 +14730,7 @@ The function
 transforms the list of slices $\slices$ in $\tenv$ into a list of indices $\positions$.
 The result is $\CannotBeTransformed$ if $\slices$ cannot be statically evaluated to
 a list of positions.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -14617,7 +14777,7 @@ The function
 transforms a slice $\vs$ in $\tenv$ into a list of indices $\positions$.
 The result is $\CannotBeTransformed$ if $\slices$ cannot be statically evaluated to
 a list of positions.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -14713,7 +14873,7 @@ The function
 statically evaluates the expression $\ve$ to the integer $n$.
 The result is $\CannotBeTransformed$ if $\ve$ cannot be statically evaluated
 to an integer.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -14749,7 +14909,7 @@ The function
   \overname{\{0,1\}^*}{\vr} \cup\ \TTypeError
 \]
 extracts from the list of bits $\bits$ the sublist $\vr$ of bits appearing at the positions given by $\positions$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 Define $\vr$ the sublist of $\bits$ given by taking $\bits[\vi]$, for every value given in $\positions$ (in the order they appear).
@@ -14848,7 +15008,7 @@ The predicate
   \aslto \overname{\Bool}{\vb}
 \]
 soundly approximates $\subsumes(\tenv, \vt, \vs)$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 We assume that both $\vt$ and $\vs$ have been successfully annotated as per \chapref{typingoftypes}
 (otherwise a typing error prevents us from applying this function).
@@ -16367,7 +16527,7 @@ The function
 \]
 \hypertarget{def-symbolicallysimplifies}{symbolically simplifies} an expression $\ve$ in the static environment $\tenv$,
 yielding an expression $\newe$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -16412,7 +16572,7 @@ The function
 \overname{\literal}{\vl} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 \symbolicallysimplifies\ an expression $\ve$ into the literal $\vl$.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -17459,7 +17619,7 @@ The function
    \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo$ in environment $\tenv$
-and yields the result in $\vb$.  Otherwise, the result is a type error.
+and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -17660,7 +17820,7 @@ The function
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the bitwidth expression $\vwone$ is equivalent to the bitwidth expression $\vwtwo$
-in environment $\tenv$ and yields the result in $\vb$.  Otherwise, the result is a type error.
+in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \subsection{Prose}
 Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
@@ -17682,7 +17842,7 @@ The function
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
-in environment $\tenv$ and yields the result in $\vb$.  Otherwise, the result is a type error.
+in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -17726,7 +17886,7 @@ The function
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield $\bftwo$ in environment $\tenv$
-and yields the result in $\vb$.  Otherwise, the result is a type error.
+and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 One of the following applies:
 \begin{itemize}
@@ -17818,7 +17978,7 @@ The function
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
-and yields the result in $\vb$.  Otherwise, the result is a type error.
+and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -17863,7 +18023,7 @@ The function
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environment $\tenv$
-and yields the result in $\vb$.  Otherwise, the result is a type error.
+and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -17926,7 +18086,7 @@ The function
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
-in environment $\tenv$ and yields the result in $\vb$.  Otherwise, the result is a type error.
+in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \subsection{Formally}
 One of the following applies:
@@ -17971,7 +18131,7 @@ The function
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the slice $\sliceone$ is equivalent to the slice $\slicetwo$
-in environment $\tenv$ and yields the result in $\vb$. Otherwise, the result is a type error.
+in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -18047,7 +18207,7 @@ The function
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 tests whether the array lengths $\vlone$ and $\vltwo$ are equivalent and yields the result
-in $\vb$. Otherwise, the result is a type error.
+in $\vb$. \ProseOtherwiseTypeError
 
 \subsection{Prose}
 One of the following applies:
@@ -18715,7 +18875,7 @@ The function
 \]
 annotates a field initializers $(\name, \vep)$ in a record expression
 with list of fields \\ $\fieldtypes$ and returns the annotated field initializer
-$(\name, \vepp)$. A type error is returned, if one is detected.
+$(\name, \vepp)$. \ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -19504,7 +19664,7 @@ The function
   \aslto \overname{\ty}{\vtp} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the \wellconstrainedstructure\ of a type $\vt$ in the static environment $\tenv$ --- $\vtp$, which is defined as follows.
-Otherwise, the result is a type error.
+\ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -19577,7 +19737,7 @@ The function
   \True \cup \TTypeError
 \]
 tests whether the types $\vtone$ and $\vttwo$ are bitvector types of the same width.
-If the answer is positive, the result is $\True$. Otherwise, the result is a type error.
+If the answer is positive, the result is $\True$. \ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
@@ -19934,6 +20094,10 @@ This error indicates that two bitvector types are required to have the same bitw
 was not able to prove it
 (see \secref{BitvectorOperations}).
 
+\hypertarget{def-taf}{}
+\item[$\TypeAsssertionFails$]
+This error indicates that a given at type assertion expression will always fail
+(see \secref{TypingRule.CheckATC}).
 
 \end{description}
 

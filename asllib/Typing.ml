@@ -935,6 +935,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         t |: TypingRule.CheckUnop
   (* End *)
 
+  (* Begin CheckATC *)
   let rec check_atc ~fail env t1 t2 =
     if Types.type_equal env t1 t2 then ok
     else
@@ -943,7 +944,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | T_Tuple l1, T_Tuple l2 when List.compare_lengths l1 l2 = 0 ->
           check_all2 l1 l2 (check_atc ~fail env)
       | T_Named _, _ | _, T_Named _ -> assert false
-      | _ -> fail
+      | _ -> fail |: TypingRule.CheckATC
+  (* End *)
 
   let var_in_genv (genv : StaticEnv.global) x =
     IMap.mem x genv.storage_types
@@ -1525,7 +1527,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           try
             match IMap.find x env.local.storage_types with
-            (* Begin ELocalVarConstant *)
+            (* Begin ELocalVar *)
             | ty, LDK_Constant ->
                 let e =
                   try
@@ -1533,9 +1535,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     E_Literal v |> here
                   with Not_found -> e
                 in
-                (ty, e) |: TypingRule.ELocalVarConstant
-            (* End *)
-            (* Begin ELocalVar *)
+                (ty, e)
             | ty, _ -> (ty, e) |: TypingRule.ELocalVar
             (* End *)
           with Not_found -> (
@@ -2420,12 +2420,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let args' = List.map (fun e -> annotate_expr env e |> snd) args in
         (S_Print { args = args'; debug } |> here, env) |: TypingRule.SDebug
 
+  (* Begin AnnotateLoopLimit *)
   and annotate_loop_limit ~loc env = function
     | None -> None
     | Some limit ->
         let t, limit' = annotate_expr_ env ~forbid_atcs:true limit in
         let+ () = check_constrained_integer ~loc env t in
-        Some limit'
+        Some limit' |: TypingRule.AnnotateLoopLimit
+  (* End *)
 
   and annotate_catcher loc env (name_opt, ty, stmt) =
     let ty' = annotate_type ~loc env ty in
