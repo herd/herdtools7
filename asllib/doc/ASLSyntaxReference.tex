@@ -2430,9 +2430,7 @@ The relation
 \]
 transforms an $\Nast$ node $\vparsednode$ into an AST specification node $\vastnode$.
 
-\isempty{\subsection{Prose}}
 
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[ast]{
   \buildlist[\builddecl](\vdecls) \astarrow \vadecls
@@ -2449,9 +2447,7 @@ The relation
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
 
-\subsection{Formally}
 \hypertarget{build-funcdecl}{}
 \begin{mathpar}
 \inferrule[func\_decl]{}{
@@ -2694,8 +2690,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \hypertarget{build-subtype}{}
 \begin{mathpar}
 \inferrule[with\_fields]{}{
@@ -2729,8 +2723,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[subtype\_opt]{
   \buildoption[\Nsubtype](\vsubtypeopt) \astarrow \vastnode
@@ -2761,8 +2753,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildoption[\Nasty](\vastyopt) \astarrow \astversion{\vastyopt}
@@ -2784,8 +2774,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{}{
   \buildreturntype(\overname{\Nreturntype(\Tarrow, \punnode{\Nty})}{\vparsednode}) \astarrow
@@ -2802,8 +2790,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
   \buildparamsopt(\overname{\Nparamsopt(\epsilonnode)}{\vparsednode}) \astarrow
@@ -2829,8 +2815,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
@@ -2849,8 +2833,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
@@ -2869,8 +2851,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
   \buildfuncbody(\overname{\Nmaybeemptystmtlist(\epsilonnode)}{\vparsednode}) \astarrow
@@ -2894,8 +2874,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{}{
   {
@@ -2916,8 +2894,6 @@ The relation
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[discard]{
   \id \in \identifier \text{ is fresh}
@@ -2943,8 +2919,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[let]{}{
   \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\LDKLet}{\vastnode}
@@ -2966,8 +2940,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[let]{}{
   \buildstoragekeyword(\overname{\Nstoragekeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\GDKLet}{\vastnode}
@@ -3000,8 +2972,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[to]{}{
   \builddirection(\overname{\Ndirection(\Tto)}{\vparsednode}) \astarrow \overname{\UP}{\vastnode}
@@ -3022,8 +2992,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[when]{
   \buildoption[\buildexpr](\vwhereopt) \astarrow \vwhereast
@@ -3064,8 +3032,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildoption[\buildstmtlist] (\vv)\astarrow \vastnode
@@ -3088,8 +3054,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[named]{}{
   {
@@ -3122,8 +3086,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 
 \begin{mathpar}
 \inferrule[if]{}{
@@ -3387,8 +3349,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildlist[\Nstmt](\vstmts) \astarrow \vstmtlist\\
@@ -3406,8 +3366,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[elseif]{}{
   {
@@ -3439,8 +3397,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[lexpr\_atom]{}{
   \buildlexpr(\Nlexpr(\punnode{\Nlexpratom})) \astarrow \overname{\astof{\vlexpratom}}{\vastnode}
@@ -3470,8 +3426,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[var]{}{
   \buildlexpratom(\Nlexpr(\Tidentifier(\id))) \astarrow
@@ -3527,8 +3481,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[typed]{}{
   {
@@ -3555,8 +3507,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[var]{}{
   \builduntypeddeclitem(\Nuntypeddeclitem(\Tidentifier(\id))) \astarrow
@@ -3592,8 +3542,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildclist[\buildintconstraint](\vconstraintasts) \astarrow \vconstraintasts
@@ -3615,8 +3563,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[constrained]{}{
   \buildintconstraintsopt(\Nintconstraints(\punnode{\Nintconstraints})) \astarrow
@@ -3639,8 +3585,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[exact]{}{
   \buildintconstraint(\Nintconstraint(\punnode{\Nexpr})) \astarrow
@@ -3670,8 +3614,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[literal]{}{
   \buildexprpattern(\Nexprpattern(\punnode{\Nvalue})) \astarrow
@@ -3857,8 +3799,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[not]{}{
   {
@@ -3885,8 +3825,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
@@ -3908,8 +3846,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[single]{}{
   \buildpattern(\Npattern(\punnode{\Nexprpattern})) \astarrow
@@ -3980,8 +3916,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildtclist[\buildtypedidentifier](\vfields) \astarrow \vfieldasts
@@ -3999,8 +3933,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[fields]{}{
   \buildfieldsopt(\Nfieldsopt(\punnode{\Nfields})) \astarrow
@@ -4023,8 +3955,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
@@ -4042,8 +3972,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
@@ -4061,8 +3989,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[single]{}{
   \buildslices(\Nslice(\punnode{\Nexpr})) \astarrow
@@ -4108,8 +4034,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{
   \buildtclist[\buildbitfield](\vbitfields) \astarrow \vbitfieldasts
@@ -4127,8 +4051,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[simple]{}{
   \buildbitfields(\Nbitfield(\punnode{\Nnslices}, \Tidentifier(\vx))) \astarrow
@@ -4162,8 +4084,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[integer]{}{
   \buildty(\Nty(\Tinteger, \punnode{\Nintconstraintsopt})) \astarrow
@@ -4243,8 +4163,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[ty]{}{
   \buildtydecl(\Ntydecl(\punnode{\Nty})) \astarrow
@@ -4287,8 +4205,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{}{
   \buildfieldassign(\Nfieldassign(\Tidentifier(\id), \Teq, \punnode{\Nexpr})) \astarrow
@@ -4304,8 +4220,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[else]{}{
   \buildeelse(\Neelse(\Telse, \punnode{\Nexpr})) \astarrow
@@ -4340,8 +4254,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[literal]{}{
   \buildexpr(\overname{\Nexpr(\punnode{\Nvalue})}{\vparsednode}) \astarrow
@@ -4539,8 +4451,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[integer]{}{
   \buildvalue(\Nvalue(\Tintlit(\vi))) \astarrow
@@ -4584,8 +4494,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[bnot]{}{
   \buildunop(\Nunop(\Tbnot)) \astarrow \overname{\BNOT}{\vastnode}
@@ -4612,8 +4520,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[]{}{
   \buildunop(\Nbinop(\Tand)) \astarrow \overname{\AND}{\vastnode}
@@ -4766,8 +4672,6 @@ The function
 \]
 builds a statement $\news$ from a possibly-empty list of statements $\vstmts$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{
 }{
@@ -4791,8 +4695,6 @@ The function
 Combines the statement $\vsone$ with $\vstwo$ into the statement $\news$, while filtering away
 instances of $\SPass$.
 
-\isempty{\subsection{Prose}}
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[s1\_spass]{}{
   \sequencestmts(\overname{\SPass}{\vsone}, \vstwo) \astarrow \overname{\vstwo}{\news}
@@ -4839,7 +4741,6 @@ which is parameterized by an AST building relation $b : E \aslrel A$,
 takes a parse node that represents a possibly-empty list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
   \buildlist[b](\overname{\emptysentence}{\vsyms}) \astarrow \overname{\emptylist}{\vsymasts}
@@ -4868,7 +4769,6 @@ which is parameterized by an AST building relation $b : E \aslrel A$,
 takes a parse node that represents a possibly-empty comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
-\subsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
   \buildclist[b](\overname{\emptysentence}{\vsyms}) \astarrow \overname{\emptylist}{\vsymasts}
@@ -4956,7 +4856,6 @@ The meta function
 is the identity function, which can be used as an argument to meta functions such as $\buildlist$ when they are applied
 to terminals.
 
-\subsection{Formally}
 \begin{mathpar}
 \inferrule{}{
   \buildidentity(x) \astarrow x
