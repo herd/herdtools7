@@ -82,7 +82,7 @@ let CSE-ob =
  | [Imp & TTD & R]; tr-ib; [CSE]; po
  | [Imp & TTD & R]; tr-ib; po; [CSE]; po
  | [Imp & Tag & R]; tc-ib; [CSE]; po
- | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & M) \ Tag) | TagCheck & FAULT & Sync-EXC]; po; [CSE]; po
+ | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [Exp & M]; po; [CSE]; po
 
 (* Dependency-ordered-before *)
 let dob =
@@ -93,7 +93,7 @@ let dob =
  | addr; [Exp & M]; lrs; [Exp & R | Imp & Tag & R]
  | data; [Exp & M]; lrs; [Exp & R | Imp & Tag & R]
  | [Imp & TTD & R]; tr-ib; po; [Exp & W]
- | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & M) \ Tag) | TagCheck & FAULT & Sync-EXC]; po; [Exp & W]
+ | [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [Exp & M]; po; [Exp & W]
 
 (* Pick-ordered-before *)
 let pob = 
@@ -101,22 +101,6 @@ let pob =
  | pick-data-dep; [Exp & W]
  | pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
  | pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
-
-(*
-pick-dep; [Exp & W]
-| pick-addr-dep; [Exp & W | Imp & Tag & R | HU | TLBI | DC.CVAU | IC]
-| pick-data-dep; [Exp & W]
-| pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
-| pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
-| [Exp & R]; pick-basic-dep; [Exp & W & range(rmw)]
-
-pick-dep; [Exp & W]
-| pick-addr-dep; [Imp & Tag & R | HU | TLBI | DC.CVAU | IC]
-| pick-data-dep; [Exp & W]
-| pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
-| pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
-| pick-addr-dep; [Exp & M]; po; [W]
-*)
 
 (* Atomic-ordered-before *)
 let aob =
