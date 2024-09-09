@@ -21,7 +21,7 @@ The ARM Reference Manual is available here:
 
 // =============================================================================
 
-// GenMPAMatEL()
+// GenMPAMAtEL()
 // =============
 // Returns MPAMinfo for the specified EL.
 // May be called if MPAM is not implemented (but in an version that supports
@@ -34,7 +34,7 @@ The ARM Reference Manual is available here:
 // The whole logic is too complex for our simple use, so we return the base value of the return type.
 
 // MPAMinfo GenMPAMatEL(AccessType acctype, bits(2) el)
-func GenMPAMatEL(acctype:: AccessType, el::bits(2)) => MPAMinfo
+func GenMPAMAtEL(acctype:: AccessType, el::bits(2)) => MPAMinfo
 begin
   var x : MPAMinfo;
   return x;
@@ -180,7 +180,7 @@ var PSTATE : ProcState;
 // We don't want the checked pointer arithmetic.
 // LUC simplify because failure of slice operatin on symbolic address.
 
-func GenerateAddress(base:bits(64), offset:bits(64), accdesc:AccessDescriptor) => bits(64)
+func AddressAdd(base:bits(64), offset:bits(64), accdesc:AccessDescriptor) => bits(64)
 begin
   return base + offset;
 end
@@ -248,3 +248,28 @@ func AltDecodeBitMasks(immN:bit,imms:bits(6), immr:bits(6),
 begin
   throw NotImplemented {};
 end
+
+
+
+// MemSingleGranule()
+// ==================
+// When FEAT_LSE2 is implemented, for some memory accesses if all bytes
+// of the accesses are within 16-byte quantity aligned to 16-bytes and
+// satisfy additional requirements - then the access is guaranteed to
+// be single copy atomic.
+// However, when the accesses do not all lie within such a boundary, it
+// is CONSTRAINED UNPREDICTABLE if the access is single copy atomic.
+// In the pseudocode, this CONSTRAINED UNPREDICTABLE aspect is modeled via
+// MemSingleGranule() which is IMPLEMENTATION DEFINED and, is at least 16 bytes
+// and at most 4096 bytes.
+// This is a limitation of the pseudocode.
+//
+// LUC Granule size set to 32, why not!
+func MemSingleGranule() => integer
+  begin
+    let size = 32;
+    // access is assumed to be within 4096 byte aligned quantity to
+    // avoid multiple translations for a single copy atomic access.
+    assert (size >= 16) && (size <= 4096);
+    return size;
+  end

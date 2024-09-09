@@ -368,13 +368,21 @@ module Make (C : Config) = struct
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr)
       else A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
 
+    (* AArch64 registers hold integers, not bitvectors *) 
+    let is_aarch64_reg = function
+      | A.Location_reg (_, ASLBase.ArchReg _) -> true
+      | _ -> false
+
+    let tr_regval = M.op1 (Op.ArchOp1 ASLOp.ToIntU)
+
     let on_access_identifier dir (ii, poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
       let m v =
         let action = Act.Access (dir, loc, v, MachSize.Quad, aneutral) in
         M.mk_singleton_es action (use_ii_with_poi ii poi)
       in
-      if is_nzcv x scope then M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m else m v
+      if is_aarch64_reg loc then tr_regval v >>= m
+      else m v
 
     let on_write_identifier = on_access_identifier Dir.W
     and on_read_identifier = on_access_identifier Dir.R
