@@ -132,7 +132,7 @@ let rec is_non_primitive ty =
   (match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> false
   | T_Named _ -> true
-  | T_Tuple li -> List.exists is_non_primitive li
+  | T_Tuple tys -> List.exists is_non_primitive tys
   | T_Array (_, ty) -> is_non_primitive ty
   | T_Record fields | T_Exception fields ->
       List.exists (fun (_, ty) -> is_non_primitive ty) fields)
@@ -732,8 +732,8 @@ and domain_subtype_satisfies env t s =
    (* If S does not have the structure of an aggregate type or bitvector type
       then the domain of T must be a subset of the domain of S. *)
    | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-   (* Those are very basic domains who do not need domain subsumption,
-      structural is enough. *)
+   (* These are very basic domains, which do not require checking for domain subsumption.
+      Checking for structural subtyping is enough. *)
    | T_Real | T_String | T_Bool | T_Int UnConstrained -> true
    | T_Enum _ | T_Int _ ->
        let d_s = Domain.of_type env s_struct

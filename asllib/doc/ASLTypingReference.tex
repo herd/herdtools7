@@ -240,8 +240,14 @@
 \newcommand\isrightdecreasing[0]{\hyperlink{def-isrightdecreasing}{\texttt{is\_right\_decreasing}}}
 \newcommand\isleftincreasing[0]{\hyperlink{def-isleftincreasing}{\texttt{is\_left\_increasing}}}
 \newcommand\annotateconstraintbinop[0]{\hyperlink{def-annotateconstraintbinop}{\texttt{annotate\_constraint\_binop}}}
-\newcommand\explodeintervals[0]{\hyperlink{def-explodeintervals}{\texttt{explode\_intervals}}}
-\newcommand\binopisexploding[0]{\hyperlink{def-binopisexploding}{\texttt{binop\_is\_exploding}}}
+\newcommand\explodeintervals[0]{\tododefine{explode\_intervals}} %{\hyperlink{def-explodeintervals}{\texttt{explode\_intervals}}}
+\newcommand\binopisexploding[0]{\tododefine{binop\_is\_exploding}} %{\hyperlink{def-binopisexploding}{\texttt{binop\_is\_exploding}}}
+\newcommand\binopfilterright[0]{\tododefine{binop\_filter\_right}}
+\newcommand\checkslicesinwidth[0]{\tododefine{check\_slices\_in\_width}}
+\newcommand\disjointslicestopositions[0]{\tododefine{disjoint\_slices\_to\_positions}}
+\newcommand\checkpositionsinwidth[0]{\tododefine{check\_positions\_in\_width}}
+\newcommand\shouldslicesreducetocall[0]{\tododefine{should\_slices\_reduce\_to\_call}}
+\newcommand\checkdisjointslices[0]{\tododefine{check\_disjoint\_slices}}
 \newcommand\sliceswidth[0]{\texttt{slices\_width}}
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\texttt{annotate\_type}}(#1)}
 \newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\texttt{annotate\_constraint}}}
@@ -334,7 +340,7 @@
 \newcommand\intsetop[0]{\hyperlink{def-intsetop}{\texttt{intset\_op}}}
 \newcommand\intsettointconstraints[0]{\hyperlink{def-intsettointconstraints}{\texttt{int\_set\_to\_int\_constraints}}}
 
-%% Type Error codes
+%% Type Error Codes
 \newcommand\TypeErrorCode[1]{\texttt{TE\_#1}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
 \newcommand\SetterWithoutGetter[0]{\hyperlink{def-setterwithoutgetter}{\TypeErrorCode{SWG}}}
@@ -348,6 +354,9 @@
 \newcommand\CallBadArity[0]{\hyperlink{def-cba}{\TypeErrorCode{CBA}}}
 \newcommand\BadRecursiveDecls[0]{\hyperlink{def-brd}{\TypeErrorCode{BRA}}}
 \newcommand\RequireIntegerForLoopBounds[0]{\hyperlink{def-lbi}{\TypeErrorCode{LBI}}}
+\newcommand\RequireStructuredType[0]{\hyperlink{def-rst}{\TypeErrorCode{RST}}}
+\newcommand\MissingFieldInitializer[0]{\hyperlink{def-mfi}{\TypeErrorCode{MFI}}}
+\newcommand\RequireSameBitwidths[0]{\hyperlink{def-rsb}{\TypeErrorCode{RSB}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Typeset variable names
@@ -717,8 +726,8 @@ We define the following shorthands for classifying integers:
 \section{ASL Type System}
 \hypertarget{def-annotaterel}{}
 The type system of ASL is given by the relation $\annotaterel$, which is defined as the disjoint union
-of the partial functions and relations defined in this document.
-The \hyperlink{def-partialfunc}{partial functions} and relations in this document are defined, in turn, via type system rules.
+of the functions and relations defined in this document.
+The functions and relations in this document are defined, in turn, via type system rules.
 
 The output configurations of type assertions have two flavors:
 \begin{description}
@@ -727,7 +736,7 @@ The output configurations of type assertions have two flavors:
   of \emph{static environments}, types, and Boolean values.
 
   \hypertarget{def-typeerror}{}
-  \item[Type Errors.] Configurations in $\TypeError(\texttt{<string>})$
+  \item[Type Errors.] Configurations in $\TypeError(\Strings)$
   represent type errors, for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|.
   The ASL type system is designed such that when these \emph{type error configurations} appear,
   the typing of the entire specification terminates by outputting them.
@@ -738,7 +747,7 @@ We define the mathematical type of type error configurations
 as follows:
 \hypertarget{def-ttypeerror}{}
 \[
-  \TTypeError \triangleq \{\TypeErrorVal{\vs} \;|\; \vs \in \texttt{<string>} \} \enspace.
+  \TTypeError \triangleq \{\TypeErrorVal{\vs} \;|\; \vs \in \Strings \} \enspace.
 \]
 
 \hypertarget{def-typeerrorconfig}{}
@@ -793,9 +802,19 @@ for one type is included in the set of values for another type.
 \hypertarget{def-vals}{}
 \section{Native Values \label{sec:nativevalues}}
 
-Types define sets of values that variables can take when a specification is executed.
-To formalize this, we define the set of \emph{native values}, denoted $\vals$,
-as the minimal set defined by the following recursive rules (\texttt{NV} stands for Native Value):
+Types define sets of values that variables can take when a specification is semantically evaluated.
+To formalize this, we define the set of \emph{native values}, denoted $\vals$
+(\texttt{NV} stands for Native Value).
+
+\subsection{Prose}
+The set of native values $\vals$ is the minimal set satisfying all of the following rules:
+\begin{itemize}
+  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a native value;
+  \item \textsc{tuple values and array values}: if $\vl$ is a list of native values then $\nvvector{\vl}$ is a native value;
+  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to native values then $\nvrecord{\vr}$ is a native value.
+\end{itemize}
+
+\subsection{Formally}
 \hypertarget{def-nvliteral}{}
 \hypertarget{def-nvvector}{}
 \hypertarget{def-nvrecord}{}
@@ -831,7 +850,7 @@ We define the following types of native values:
   \tint       &\triangleq& \{ \nvint(z) \;|\; z \in \Z\}                                        \hypertarget{def-tbool}{}\\
   \tbool      &\triangleq& \{ \nvbool(\True), \nvbool(\False) \}                                \hypertarget{def-treal}{}\\
   \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
-  \tstring    &\triangleq& \{ \nvstring(s) \;|\; \texttt{"}s\texttt{"} \in \texttt{<string>}\}  \hypertarget{def-tbitvector}{}\\
+  \tstring    &\triangleq& \{ \nvstring(s) \;|\; s \in \Strings\}  \hypertarget{def-tbitvector}{}\\
   \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^*\}   \hypertarget{def-tvector}{}\\
   \tvector    &\triangleq& \{ \nvvector{\textit{vals}} \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
   \trecord  &\triangleq& \{ \nvrecord{\fieldmap} \;|\; \fieldmap \in \Identifiers\rightarrow\vals\}\\
@@ -870,7 +889,7 @@ The \emph{static domain} of a type is the set of values which storage elements o
 \underline{across all possible dynamic environments}.
 %
 The reason for this distinction is that the sets of values
-of integer types, bitvector types, array types can depend on the dynamic values of variables.
+of integer types, bitvector types, and array types can depend on the dynamic values of variables.
 
 Types that do not refer to variables whose values are only known dynamically have
 a static domain that is equal to any of their dynamic domains.
@@ -942,7 +961,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 
   \item All of the following apply (\textsc{t\_int\_unconstrained}):
   \begin{itemize}
-    \item $\vt$ is the unconstrained integer type, $\TInt(\unconstrained)$;
+    \item $\vt$ is the unconstrained integer type, $\unconstrainedinteger$;
     \item $\vd$ is the set of all native integer values, $\tint$.
   \end{itemize}
 
@@ -1092,7 +1111,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 
 \begin{mathpar}
   \inferrule[t\_int\_unconstrained]{}{
-  \dynamicdomain(\env, \overname{\TInt(\unconstrained)}{\vt}) = \overname{\tint}{\vd}
+  \dynamicdomain(\env, \overname{\unconstrainedinteger}{\vt}) = \overname{\tint}{\vd}
 }
 \end{mathpar}
 
@@ -1201,6 +1220,7 @@ in the \emph{local dynamic environment} of $\denv$.
 \and
 \inferrule[t\_array\_okay]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  k \geq 0\\
   \dynamicdomain(\env, \vtone) = D_\vtone
 }{
   \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) =
@@ -1236,7 +1256,8 @@ The domain of \verb|integer{1..3}| is the set $\{\nvint(1), \nvint(2), \nvint(3)
 The domain of \verb|integer{10..1}| is the empty set as there are no integers that are
 both greater than $10$ and smaller than $1$.
 
-The domain of \texttt{bits(1)} is the set $\{\nvint(1), \nvint(2)\}$.
+The domain of \texttt{bits(2)} is the set $\{\nvbitvector(00)$, $\nvbitvector(01),$
+$\nvbitvector(10)$, $\nvbitvector(11)\}$.
 
 The domain of \verb|enumeration {GREEN, ORANGE, RED}| is the set \\
 $\{\nvint(1), \nvint(2), \nvint(3)\}$ and so is the domain
@@ -1333,6 +1354,9 @@ which inevitably leads to higher computational complexity.
 The symbolic subsumption test in \chapref{symbolicsubsumptiontesting}
 attempts to accept a large enough set of true positives, based on empirical trial and error,
 while maintaining the computational complexity of the symbolic reasoning relatively low.
+%
+In particular, it serves as the definitive subsumption test that must be utilized
+by any implementation of the ASL type system.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Basic Type Attributes}
@@ -1375,7 +1399,6 @@ The \emph{builtin singular types} are:
 \end{itemize}
 
 \subsection{Example}
-
 In this example:
 \VerbatimInput[firstline=3,lastline=8]{\tests/TypingRule.BuiltinSingularTypes.asl}
 
@@ -1547,8 +1570,11 @@ The tuple type \texttt{(integer, integer)} is an anonymous type.
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule{ \vb \eqdef \astlabel(\tty) \neq \TNamed }
-{ \isanonymous(\tty) \typearrow \vb }
+\inferrule{ \vb \eqdef \astlabel(\tty) \neq \TNamed
+}
+{
+  \isanonymous(\tty) \typearrow \vb
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -1583,7 +1609,7 @@ type C of B;
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \makeanonymous(\tenv, \vt) \typearrow \vtone \OrTypeError\\\\
+  \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\\\\
   \isbuiltinsingular(\vtone) \typearrow \vb
 }{
 \issingular(\tenv, \tty) \typearrow \vb
@@ -1722,35 +1748,42 @@ The following types are non-primitive:
 The cases \textsc{tuple} and \textsc{structured} below, use the notation $\vb_\vt$ to name
 Boolean variables by using the types denoted by $\vt$ as a subscript.
 \begin{mathpar}
-  \inferrule[singular]{
-    \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
-  }
-  {
-    \isnonprimitive(\tty) \typearrow \False
-  }
-  \and
-  \inferrule[named]{\astlabel(\tty) = \TNamed}{\isnonprimitive(\tty) \typearrow \True}
-  \and
-  \inferrule[tuple]{
-    \vt \in \vli: \isnonprimitive(\vt) \typearrow \vb_{\vt}\\
-    \vb \eqdef \bigvee_{\vt \in \vli} \vb_{\vt}
-  }{
-    \isnonprimitive(\TTuple(\vli)) \typearrow \vb
-  }
-  \and
-  \inferrule[array]{
-    \isnonprimitive(\tty') \typearrow \vb
-  }{
-    \isnonprimitive(\TArray(\Ignore, \tty')) \typearrow \vb
-  }
-  \and
-  \inferrule[structured]{
-    L \in \{\TRecord, \TException\}\\
-    (\Ignore,\vt) \in \fields : \isnonprimitive(\vt) \typearrow \vb_\vt\\
-    \vb \eqdef \bigvee_{\vt \in \vli} \vb_{\vt}
-  }{
-    \isnonprimitive(L(\fields)) \typearrow \vb
-  }
+\inferrule[singular]{
+  \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
+}{
+  \isnonprimitive(\tty) \typearrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[named]{\astlabel(\tty) = \TNamed}{\isnonprimitive(\tty) \typearrow \True}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \vt \in \tys: \isnonprimitive(\vt) \typearrow \vb_{\vt}\\
+  \vb \eqdef \bigvee_{\vt \in \tys} \vb_{\vt}
+}{
+  \isnonprimitive(\overname{\TTuple(\tys)}{\tty}) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[array]{
+  \isnonprimitive(\tty') \typearrow \vb
+}{
+  \isnonprimitive(\overname{\TArray(\Ignore, \tty')}{\tty}) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[structured]{
+  L \in \{\TRecord, \TException\}\\
+  (\Ignore,\vt) \in \fields : \isnonprimitive(\vt) \typearrow \vb_\vt\\
+  \vb \eqdef \bigvee_{\vt \in \vli} \vb_{\vt}
+}{
+  \isnonprimitive(\overname{L(\fields)}{\tty}) \typearrow \vb
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -2010,7 +2043,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}
 
@@ -2034,8 +2067,7 @@ One of the following applies:
 \and
 \inferrule[conflicting\_type]{
   \astlabel(\vt) \neq \TInt
-}
-{
+}{
   \checkconstrainedinteger(\tenv, \vt) \typearrow \TypeErrorVal{TypeConflict}
 }
 \end{mathpar}
@@ -2195,9 +2227,9 @@ One of the following applies:
 
 \item All of the following apply (\textsc{t\_enum}):
   \begin{itemize}
-  \item the \underlyingtype\ of $\vt$, $\vttwo$, is an enumeration type;
-  \item the \underlyingtype\ of $\vs$ is $\vstwo$;
-  \item $\vb$ is $\True$ if and only if $\vttwo$ is equal to $\vstwo$.
+  \item the \underlyingtype\ of $\vt$ is an enumeration type with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
+  \item the \underlyingtype\ of $\vs$ is is an enumeration type with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
+  \item $\vb$ is $\True$ if and only if $\vlit$ is equal to $\vlis$.
   \end{itemize}
 
 \item All of the following apply (\textsc{t\_bits}):
@@ -2255,7 +2287,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\StructuralSubtypeSatisfactionBegin}{\StructuralSubtypeSatisfactionEnd}{../types.ml}
 
@@ -2298,13 +2330,13 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[t\_enum]{
-    \makeanonymous(\tenv, \vt) \typearrow \TEnum(\Ignore)\\
-    \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
-    \vb \eqdef \vstwo = \vttwo
-  }{
-    \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
-  }
+\inferrule[t\_enum]{
+  \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vlit)\\
+  \makeanonymous(\tenv, \vs) \typearrow \TEnum(\vlis)\\
+  \vb \eqdef \vlit = \vlis
+}{
+  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
@@ -2327,8 +2359,7 @@ One of the following applies:
   \vlengths \eqname \ArrayLengthExpr(\vlengthexprs)\\
   \vlengtht \eqname \ArrayLengthExpr(\vlengthexprt)\\
   \exprequal(\tenv, \vlengthexprs, \vlengthexprt) \typearrow \vb
-}
-{
+}{
   \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
 \and
@@ -2340,8 +2371,7 @@ One of the following applies:
   \vlengths \eqname \ArrayLengthEnum(\vnames, \Ignore)\\
   \vlengtht \eqname \ArrayLengthEnum(\vnamet, \Ignore)\\
   \vb \eqdef \vnames = \vnamet
-}
-{
+}{
   \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
@@ -2402,6 +2432,7 @@ The predicate
 tests whether a type $\vt$ \emph{domain-subtype-satisfies} a type $\vs$ in environment $\tenv$,\\
 \underline{assuming that $\vt$ structurally-subtype-satisfies $\vs$},
 returning the result $\vb$ or a type error, if one is detected.
+The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{typingoftypes}.
 
 \subsection{Prose}
 One of the following applies:
@@ -2435,7 +2466,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\DomainSubtypeSatisfactionBegin}{\DomainSubtypeSatisfactionEnd}{../types.ml}
 
@@ -2483,6 +2514,7 @@ The predicate
 \]
 tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
+The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{typingoftypes}.
 
 \subsection{Prose}
 All of the following apply:
@@ -2492,7 +2524,7 @@ All of the following apply:
   \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
 
@@ -2527,6 +2559,8 @@ We also define
 \]
 which is the same as $\typesat$, but yields a type error when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
 
+These functions assume that both $\vt$ and $\vs$ are well-typed according to \chapref{typingoftypes}.
+
 \subsection{Prose}
 One of the following applies:
  \begin{itemize}
@@ -2536,7 +2570,7 @@ One of the following applies:
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{anonymous1}, \textsc{anonymous2}):
+  \item All of the following apply (\textsc{anonymous}):
   \begin{itemize}
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item at least one of $\vt$ and $\vs$ is an anonymous type in $\tenv$;
@@ -2551,24 +2585,34 @@ One of the following applies:
     \item determining whether $\vs$ is anonymous yields $\vbtwo$;
     \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
     \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
-    \item determining whether $\vt$ is a bitvector type yields $\True$\ProseOrTypeError;
-    \item $\vt$ is a bitvector type with width $\widtht$;
+    \item $\vt$ is a bitvector type with width $\widtht$ and no bitfields;
     \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a bitvector type with width \\
           $\widths$\ProseOrTypeError;
     \item determining whether $\widtht$ and $\widths$ are \bitwidthequivalent\ yields $\vb$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{otherwise}):
+  \item All of the following apply (\textsc{otherwise1}):
   \begin{itemize}
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
-    \item neither one of $\vt$ and $\vs$ is an anonymous type in $\tenv$;
-    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\False$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a type $\vtone$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a type $\vsone$;
-    \item at least one of $\vtone$ and $\vsone$ is not a bitvector type;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a bitvector type of length \\
-          $\widths$\ProseOrTypeError;
-    \item $\vb$ is $\False$.
+    \item determining whether $\vt$ is anonymous yields $\vbone$;
+    \item determining whether $\vs$ is anonymous yields $\vbtwo$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
+    \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a $\vsstruct$\ProseOrTypeError;
+    \item at least one of $\vt$ and $\vsstruct$ is not a bitvector type;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{otherwise2}):
+  \begin{itemize}
+    \item $\vt$ does not subtype $\vs$ in $\tenv$;
+    \item determining whether $\vt$ is anonymous yields $\vbone$;
+    \item determining whether $\vs$ is anonymous yields $\vbtwo$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
+    \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a $\vsstruct$\ProseOrTypeError;
+    \item both $\vt$ and $\vsstruct$ are bitvector types;
+    \item the bitvector type $\vt$ has a non-empty list of bitfields;
+    \item $\vb$ is $\False$;
   \end{itemize}
 \end{itemize}
 
@@ -2600,47 +2644,62 @@ type \texttt{pairT}.
 }{
   \typesat(\tenv, \vt, \vs) \typearrow \True
 }
-\and
-\inferrule[anonymous1]{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[anonymous]{
   \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
-  \isanonymous(\tenv, \vt) \typearrow \True\\
-  \subtypesat(\tenv, \vt, \vs) \typearrow \True \OrTypeError
-}{
-  \typesat(\tenv, \vt, \vs) \typearrow \True
-}
-\and
-\inferrule[anonymous2]{
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
-  \isanonymous(\tenv, \vs) \typearrow \True\\
+  \isanonymous(\tenv, \vt) \typearrow \vbone\\
+  \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
+  \vbone \lor \vbtwo\\
   \subtypesat(\tenv, \vt, \vs) \typearrow \True
 }{
   \typesat(\tenv, \vt, \vs) \typearrow \True
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[t\_bits]{
   \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vt) \typearrow \vbone\\
   \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
   \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
-  \checktrans{\astlabel(\vt) = \TBits}{\ExpectedBitvectorType} \checktransarrow \True \OrTypeError\\\\
-  \vt \eqname \TBits(\widtht, \Ignore)\\
+  \vt \eqname \TBits(\widtht, \emptylist)\\
   \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\\\
   \bitwidthequal(\tenv, \widtht, \widths) \typearrow \vb
 }{
   \typesat(\tenv, \vt, \vs) \typearrow \vb
 }
-\and
-\inferrule[otherwise]{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise1]{
   \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
-  \isanonymous(\tenv, \vt) \typearrow \False\\
-  \isanonymous(\tenv, \vs) \typearrow \False\\
-  \subtypesat(\tenv, \vt, \vs) \typearrow \False\\
-  \tstruct(\tenv, \vt) \typearrow \vtone\\
-  \tstruct(\tenv, \vs) \typearrow \vsone\\
-  \astlabel(\vtone) \neq \TBits \lor \astlabel(\vsone) \neq \TBits
+  \isanonymous(\tenv, \vt) \typearrow \vbone\\
+  \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
+  \neg((\vbone \lor \vbtwo) \land \vbthree)\\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct\\
+  \astlabel(\vt) \neq \TBits \lor \astlabel(\vsstruct) \neq \TBits
 }{
-  \typesat(\tenv, \vt, \vs) \typearrow \False
+  \typesat(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise2]{
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vt) \typearrow \vbone\\
+  \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
+  \neg((\vbone \lor \vbtwo) \land \vbthree)\\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct\\
+  \astlabel(\vt) = \TBits \land \astlabel(\vsstruct) = \TBits\\
+  \vt \eqname \TBits(\widtht, \bitfields)\\
+  \bitfields \neq \emptylist
+}{
+  \typesat(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
 
@@ -2651,7 +2710,9 @@ The rules for the checked type-satisfy predicate are:
 }{
   \checktypesat(\tenv, \vt, \vs) \typearrow \True
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[error]{
   \typesat(\tenv, \vt, \vs) \typearrow \False
 }{
@@ -2719,18 +2780,27 @@ returning the result $\vb$ or a type error, if one is detected.
     \item $\vb$ is $\True$ if and only if $\vt_i$ type-clashes with $\vs_i$, for all $i=1..k$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{otherwise}):
+  \item All of the following apply (\textsc{otherwise\_different\_labels}):
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a tuple type with element types $\vt_{1..k}$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a tuple type with element types $\vs_{1..n}$;
-    \item either $\vsstruct$ and $\vtstruct$ have different AST labels or one of their labels
-    is $\TRecord$ or $\TException$;
-    \item $\vb$ is $\False$.
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$;
+    \item $\vsstruct$ and $\vtstruct$ have different AST labels;
+    \item $\vb$ is $\False$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{otherwise\_structured}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$;
+    \item $\vsstruct$ and $\vtstruct$ have the same AST label;
+    \item $\vtstruct$ (and thus $\vsstruct$) is a \structuredtype;
+    \item $\vb$ is $\False$;
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
@@ -2753,10 +2823,11 @@ returning the result $\vb$ or a type error, if one is detected.
 \begin{mathpar}
 \inferrule[simple]{
   \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \\
-  \astlabel(\vtstruct)=\astlabel(\vsstruct) \in \{\TInt, \TReal, \TString, \TBits\}
+  \astlabel(\vtstruct)=\astlabel(\vsstruct)\\
+  \astlabel(\vtstruct) \in \{\TInt, \TReal, \TString, \TBits\}
 }{
   \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\True}{\vb}
 }
@@ -2765,7 +2836,7 @@ returning the result $\vb$ or a type error, if one is detected.
 \begin{mathpar}
 \inferrule[t\_enum]{
   \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \TEnum(\Ignore, \vlis) \\
   \tstruct(\tenv, \vs) \typearrow \TEnum(\Ignore, \vlit)
 }{
@@ -2776,7 +2847,7 @@ returning the result $\vb$ or a type error, if one is detected.
 \begin{mathpar}
 \inferrule[t\_array]{
   \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \TArray(\Ignore, \vtyt) \\
   \tstruct(\tenv, \vs) \typearrow \TArray(\Ignore, \vtys) \\
   \typeclashes(\tenv, \vtyt, \vtys) \typearrow \vb
@@ -2788,7 +2859,7 @@ returning the result $\vb$ or a type error, if one is detected.
 \begin{mathpar}
 \inferrule[t\_tuple]{
   \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \\
   \booltrans{n = k} \booltransarrow \True \terminateas \False\\
@@ -2800,15 +2871,27 @@ returning the result $\vb$ or a type error, if one is detected.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[otherwise]{
+\inferrule[otherwise\_different\_labels]{
   \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \\
-  \booltrans{\astlabel(\vtstruct) \neq \astlabel(\vsstruct)} \booltransarrow \True \terminateas \False\\
-  \vb \eqdef \astlabel(\vtstruct) \not\in \{\TRecord, \TException\}\\
+  \astlabel(\vtstruct) \neq \astlabel(\vsstruct)
 }{
-  \typeclashes(\tenv, \vt, \vs) \typearrow \False
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise\_structured]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \\
+  \astlabel(\vtstruct) = \astlabel(\vsstruct)\\
+  \vb \eqdef \astlabel(\vtstruct) \in \{\TRecord, \TException\}\\
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
 
@@ -2957,7 +3040,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
@@ -2976,27 +3059,26 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 
 \begin{mathpar}
 \inferrule[named\_subtype1]{
+  \vt = \TNamed(\namesubs)\\
+  \vs = \TNamed(\namesubt)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \namedlca(\tenv, \namesubs, \namesubt) \typearrow \None \OrTypeError\\\\
   \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
   \lca(\tenv, \vanont, \vanons) \typearrow \tty \OrTypeError
 }{
-  \lca(\tenv, \TNamed(\namesubs), \TNamed(\namesubt)) \typearrow \tty
+  \lca(\tenv, \vt, \vs) \typearrow \tty
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[named\_subtype2]{
+  \vt = \TNamed(\namesubs)\\
+  \vs = \TNamed(\namesubt)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \namedlca(\tenv, \namesubs, \namesubt) \typearrow \langle\name\rangle \OrTypeError\\
 }{
-  {
-    \begin{array}{r}
-  \lca(\tenv, \TNamed(\namesubs), \TNamed(\namesubt)) \typearrow \\
-  \TNamed(\name)
-    \end{array}
-  }
+  \lca(\tenv, \vt, \vs) \typearrow \TNamed(\name)
 }
 \end{mathpar}
 
@@ -3126,8 +3208,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   (\astlabel(\vt) \neq \astlabel(\vs)) \lor
   \astlabel(\vt) \in \{\TEnum, \TRecord, \TException\}
-}
-{
+}{
   \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\NoLCA}
 }
 \end{mathpar}
@@ -3140,10 +3221,11 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 The function
 \[
   \CheckUnop(\overname{\staticenvs}{\tenv} \aslsep \overname{\unop}{\op} \aslsep \overname{\ty}{\vt})
-  \aslto \overname{\ty}{\vs}
+  \aslto \overname{\ty}{\vs} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 determines the result type of applying a unary operator when the type of its operand is known.
 Similarly, we determine the negation of integer constraints.
+Otherwise, the result is a type error.
 
 \subsection{Prose}
 One of the following applies:
@@ -3159,22 +3241,22 @@ One of the following applies:
 \begin{itemize}
   \item $\op$ is $\NEG$;
   \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\False$\ProseOrTypeError;
-  \item determining whether $\vt$ \typesatisfies\ $\TInt(\unconstrained)$ yields $\False$\ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\False$\ProseOrTypeError;
   \item the result is a type error indicating the $\NEG$ is appropriate only for \texttt{real} and \texttt{integer} types;
 \end{itemize}
 
-\item All of the following apply (\textsc{neg\_t\_rel}):
+\item All of the following apply (\textsc{neg\_t\_real}):
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\True$;
   \item $\vs$ is $\TReal$;
 \end{itemize}
 
 \item All of the following apply (\textsc{neg\_t\_int\_unconstrained}):
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vt$ yields $\unconstrainedinteger$\ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$;
+  \item obtaining the \wellconstrainedstructure\ of $\vt$ yields $\unconstrainedinteger$\ProseOrTypeError;
   \item $\vs$ is $\unconstrainedinteger$;
 \end{itemize}
 
@@ -3182,21 +3264,10 @@ One of the following applies:
 \begin{itemize}
   \item $\op$ is $\NEG$;
   \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vt$ yields the well-constrained integer type with constraints $\vcs$\ProseOrTypeError;
+  \item obtaining the \wellconstrainedstructure\ of $\vt$ yields the well-constrained integer type with constraints $\vcs$\ProseOrTypeError;
   \item negating the constraints in $\vcs$ (see $\negateconstraint$) yields $\vcsnew$;
   \item $\vs$ is the well-constrained integer type with constraints $\vcsnew$, that is, \\
   $\TInt(\wellconstrained(\vcsnew))$;
-\end{itemize}
-
-\item All of the following apply (\textsc{neg\_t\_int\_parameterized}):
-\begin{itemize}
-  \item $\op$ is $\NEG$;
-  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\True$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vt$ yields the \parameterizedintegertype\ with parameter $\vv$, that is,
-  $\TInt(\wellconstrained(\vv))$\ProseOrTypeError;
-  \item converting $\TInt(\wellconstrained(\vv))$ to a well-constrained integer with an exact constraint expression for $\vv$
-  (see $\getwellconstrainedstructure$) yields $\vtone$;
-  \item obtaining the appropriate type for the unary operator $\NEG$ in $\tenv$ for $\vt$ yields $\vs$.
 \end{itemize}
 
 \item All of the following apply (\textsc{not\_t\_bits}):
@@ -3207,7 +3278,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\CheckUnopBegin}{\CheckUnopEnd}{../Typing.ml}
 
@@ -3243,49 +3314,38 @@ the values it represents:
 
 \begin{mathpar}
 \inferrule[neg\_error]{
-  \typesat(\tenv, \vtone, \TInt(\unconstrained)) \typearrow \False \OrTypeError\\\\
-  \typesat(\tenv, \vtone, \TReal) \typearrow \False \OrTypeError\\
+  \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\\\\
+  \typesat(\tenv, \vt, \TReal) \typearrow \False \OrTypeError\\
 }{
-  \CheckUnop(\tenv, \NEG, \vt) \typearrow \TypeErrorVal{InappropriateTypeForNeg}
+  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \TypeErrorVal{InappropriateTypeForNeg}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[neg\_t\_real]{
-  \typesat(\tenv, \vtone, \TReal) \typearrow \True \OrTypeError
+  \typesat(\tenv, \vt, \TReal) \typearrow \True
 }{
-  \CheckUnop(\tenv, \NEG, \vt) \typearrow \TReal
+  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TReal}{\vs}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[neg\_t\_int\_unconstrained]{
-  \typesat(\tenv, \vtone, \unconstrainedinteger) \typearrow \vbone \OrTypeError\\\\
-  \tstruct(\tenv, \vtone) \typearrow \TInt(\unconstrained)\\
+  \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \True\\\\
+  \getwellconstrainedstructure(\tenv, \vt) \typearrow \unconstrainedinteger \OrTypeError
 }{
-  \CheckUnop(\tenv, \NEG, \vt) \typearrow \TInt(\unconstrained)
+  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\unconstrainedinteger}{\vs}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[neg\_t\_int\_well\_constrained]{
   \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \True\\
-  \tstruct(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcs))\\
+  \getwellconstrainedstructure(\tenv, \vt) \typearrow \TInt(\wellconstrained(\vcs))\\
   \vc \in \vcs: \negateconstraint(\vc) \typearrow \vneg_\vc\\
   \vcsnew \eqdef [\vc \in \vcs: \vneg_\vc]
 }{
-  \CheckUnop(\tenv, \NEG, \vt) \typearrow \TInt(\wellconstrained(\vcsnew))
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[neg\_t\_int\_parameterized]{
-  \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \True\\
-  \tstruct(\tenv, \vtone) \typearrow \TInt(\parameterized(\vv))\\
-  \getwellconstrainedstructure(\tenv, \vt) \typearrow \vtone\\
-  \CheckUnop(\tenv, \NEG, \vtone) \typearrow \vs
-}{
-  \CheckUnop(\tenv, \NEG, \vt) \typearrow \vs
+  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TInt(\wellconstrained(\vcsnew))}{\vs}
 }
 \end{mathpar}
 
@@ -3293,7 +3353,7 @@ the values it represents:
 \inferrule[not\_t\_bits]{
   \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError
 }{
-  \CheckUnop(\tenv, \NOT, \vt) \typearrow \vt
+  \CheckUnop(\tenv, \overname{\NOT}{\op}, \vt) \typearrow \vt
 }
 \end{mathpar}
 
@@ -3305,11 +3365,11 @@ The function
 \[
   \CheckBinop(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\ty}{\vtone}
   \aslsep \overname{\ty}{\vttwo})
-  \aslto \overname{\ty}{\vt}
+  \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 determines the result type $\vt$ of applying the binary operator $\op$
-to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$,
-returning a type error, if one is detected.
+to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
+Otherwise, the result is a type error.
 
 \subsection{Prose}
 One of the following applies:
@@ -3378,6 +3438,7 @@ One of the following applies:
     \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\vtoneanon$\ProseOrTypeError;
     \item $\vtoneanon$ is a bitvector type;
     \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\vttwoanon$\ProseOrTypeError;
+    \item $\vttwoanon$ is a bitvector type;
     \item checking whether the bitwidth of $\vtoneanon$ and $\vttwoanon$ is the same yields $\True$\ProseOrTypeError;
     \item $\vt$ is $\TBool$.
   \end{itemize}
@@ -3416,7 +3477,7 @@ One of the following applies:
   \begin{itemize}
     \item $\op$ is either $\EQOP$ or $\NEQ$;
     \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TEnum(\vlione)$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\\TEnum(\vlitwo)$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TEnum(\vlitwo)$\ProseOrTypeError;
     \item checking whether $\vlione$ is equal to $\vlitwo$ yields $\True$\ProseOrTypeError;
     \item $\vt$ is $\TBool$.
   \end{itemize}
@@ -3526,7 +3587,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\CheckBinopBegin}{\CheckBinopEnd}{../Typing.ml}
 
@@ -3604,6 +3665,7 @@ One of the following applies:
   \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
   \astlabel(\vtoneanon) = \TBits\\
   \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  \astlabel(\vttwoanon) = \TBits\\
   \checkbitsequalwidth(\tenv, \vtoneanon, \vttwoanon) \typearrow \True \OrTypeError
 }{
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TBool
@@ -4072,7 +4134,7 @@ Otherwise, the result is a type error.
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[exploding]{
-  \tododefine{binop\_filter\_right}(\tenv, \op, \cstwo) \typearrow \cstwof\\
+  \binopfilterright(\tenv, \op, \cstwo) \typearrow \cstwof\\
   \binopisexploding(\op) \typearrow \True\\
   \explodeintervals(\tenv, \csone) \typearrow \csonee\\
   \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
@@ -4085,7 +4147,7 @@ Otherwise, the result is a type error.
 
 \begin{mathpar}
   \inferrule[non\_exploding]{
-    \tododefine{binop\_filter\_right}(\tenv, \op, \cstwo) \typearrow \cstwof\\
+    \binopfilterright(\tenv, \op, \cstwo) \typearrow \cstwof\\
     \binopisexploding(\op) \typearrow \False\\
     \constraintbinop(\op, \csone, \cstwof) \typearrow \cs\\
     \reduceconstraints(\tenv, \cs) \typearrow \vics
@@ -4114,13 +4176,15 @@ Otherwise, the result is a type error.
 \hypertarget{def-annotatetype}{}
 The function
 \[
-  \annotatetype{\overname{\Bool}{\decl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
+  \annotatetype{\overname{\Bool}{\vdecl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
   \aslto \overname{\ty}{\newty} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a type $\tty$ in an environment $\tenv$, resulting in a
 annotated type $\newty$.
 The flag $\decl$ indicates whether $\tty$ is a type currently being declared.
 Otherwise, the result is a type error.
+
+The flag $\decl$ is makes a difference only when $\tty$ is an enumeration type or a \structuredtype.
 
 One of the following applies:
 \begin{itemize}
@@ -4164,7 +4228,7 @@ In the following example, all the uses of \texttt{string} are valid:
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\Ignore, \tenv, \TString} \typearrow \TString
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TString}{\tty}} \typearrow \overname{\TString}{\newty}
 }
 \end{mathpar}
 
@@ -4187,7 +4251,7 @@ In the following example, all the uses of \texttt{real} are valid:
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\Ignore, \tenv, \TReal} \typearrow \TReal
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TReal}{\tty}} \typearrow \overname{\TReal}{\newty}
 }
 \end{mathpar}
 
@@ -4214,7 +4278,7 @@ In the following example, all the uses of \texttt{boolean} are valid:
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\Ignore, \tenv, \TBool} \typearrow \TBool
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBool}{\tty}} \typearrow \overname{\TBool}{\newty}
 }
 \end{mathpar}
 
@@ -4226,7 +4290,7 @@ In the following example, all the uses of \texttt{boolean} are valid:
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
-  \item retrieving the type associated with $\vx$ from the static environment $\tenv$ \\ (via $\declaredtype$) yields $\vt$\ProseOrTypeError;
+  \item checking whether $\vx$ is associated with a declared type in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\newty$ is $\tty$.
 \end{itemize}
 
@@ -4239,9 +4303,9 @@ In the following example, all the uses of \texttt{MyType} are valid:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \declaredtype(\tenv, \vx) \typearrow \vt \OrTypeError
+  \checktrans{G^\tenv(\vx) \neq \bot}{\UndefinedIdentifier} \typearrow \True \OrTypeError
 }{
-  \annotatetype{\Ignore, \tenv, \TNamed(\vx)} \typearrow \TNamed(\vx)
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}} \typearrow \overname{\TNamed(\vx)}{\newty}
 }
 \end{mathpar}
 
@@ -4252,17 +4316,12 @@ In the following example, all the uses of \texttt{MyType} are valid:
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply:
+  \item All of the following apply (\textsc{not\_well\_constrained}):
     \begin{itemize}
-      \item $\tty$ is the unconstrained integer type;
+      \item $\tty$ is an integer type that is not well-constrained;
       \item $\newty$ is the unconstrained integer type.
     \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-      \item $\tty$ is a under-constrained integer type;
-      \item $\newty$ is the under-constrained integer type $\tty$.
-    \end{itemize}
-  \item All of the following apply:
+  \item All of the following apply (\textsc{well\_constrained}):
     \begin{itemize}
       \item $\tty$ is the well-constrained integer type constrained by
         constraints $\vc_i$, for $u=1..k$;
@@ -4276,7 +4335,6 @@ One of the following applies:
 \end{itemize}
 
 \subsection{Example}
-
 In the following examples, all the uses of integer types are valid:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntUnConstrained.asl}
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TIntWellConstrained.asl}
@@ -4286,24 +4344,26 @@ In the following examples, all the uses of integer types are valid:
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[unconstrained]{
-  \tty \eqname \TInt(\unconstrained)\\
+\inferrule[not\_well\_constrained]{
+  \tty \eqname \TInt(\vc)\\
+  \astlabel(\vc) \neq \wellconstrained
 }{
-  \annotatetype{\Ignore, \tenv, \tty} \typearrow \tty
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow \overname{\tty}{\newty}
 }
-\and
-\inferrule[parameterized]{
-  \tty \eqname \TInt(\parameterized(\Ignore))\\
-}{
-  \annotatetype{\Ignore, \tenv, \tty} \typearrow \tty
-}
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[well\_constrained]{
   \constraints \eqname \vc_{1..k}\\
   i=1..k: \annotateconstraint(\vc_i) \typearrow\newc_i \OrTypeError\\\\
   \newconstraints \eqdef \newc_{1..k}
 }{
-  \annotatetype{\Ignore, \tenv, \TInt(\wellconstrained(\constraints))} \typearrow \\ \TInt(\wellconstrained(\newconstraints))
+  {
+    \begin{array}{r}
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\wellconstrained(\constraints))}{\tty}} \typearrow \\
+  \overname{\TInt(\wellconstrained(\newconstraints))}{\newty}
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -4335,7 +4395,7 @@ In the following example, all the uses of bitvector types are valid:
 }{
   {
     \begin{array}{r}
-  \annotatetype{\Ignore, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \\
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \\
   \TBits(\ewidthp, \bitfieldsp)
     \end{array}
   }
@@ -4372,7 +4432,7 @@ In the following example, all the uses of tuple types are valid:
   \tys \eqname \tty_{1..k}\\
   i=1..k: \annotatetype{\False, \tenv, \tty_i} \typearrow \ttyp_i \OrTypeError
 }{
-  \annotatetype{\Ignore, \tenv, \TTuple(\tys)} \typearrow \TTuple(\tysp)
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TTuple(\tys)} \typearrow \TTuple(\tysp)
 }
 \end{mathpar}
 
@@ -4414,8 +4474,8 @@ All of the following apply:
       \item $\ve$ is an enumeration type index with variable $\vs$ and size $\vi$,
       that is, \\ $\ArrayLengthEnum(\vs, \vi)$;
       \item let $\tty$ be the named type defined for $\vs$, that is, $\TNamed(\vs)$;
-      \item determining the \underlyingtype\ of $\tty$ yields $\vt$\ProseOrTypeError;
-      \item checking whether $\vt$ is an enumeration type yields $\True$\ProseOrTypeError;
+      \item determining the \underlyingtype\ of $\tty$ yields $\tsanon$\ProseOrTypeError;
+      \item checking whether $\tsanon$ is an enumeration type yields $\True$\ProseOrTypeError;
       \item $\vt$ is an enumeration with labels $\vli$;
       \item checking whether $\vli$ has the same length as $\vi$ yields $\True$\ProseOrTypeError;
       \item $\newty$ is the array type indexed by an enumeration type
@@ -4438,8 +4498,8 @@ In the following example, all the uses of array types are valid:
 }{
   {
     \begin{array}{r}
-  \annotatetype{\Ignore, \tenv, \TArray(\ArrayLengthExpr(\ve), \vt)} \typearrow \\
-  \TArray(\ArrayLengthEnum(\vs, \vi), \vtp)
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TArray(\ArrayLengthExpr(\ve), \vt)}{\tty}} \typearrow \\
+  \overname{\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)}{\newty}
     \end{array}
   }
 }
@@ -4447,14 +4507,14 @@ In the following example, all the uses of array types are valid:
 
 \begin{mathpar}
 \inferrule[expr\_not\_enum]{
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
   \getvariableenum(\tenv, \ve) \typearrow \None \OrTypeError\\\\
   \annotatestaticinteger(\tenv, \ve) \typearrow \vep \OrTypeError
 }{
   {
     \begin{array}{r}
-  \annotatetype{\Ignore, \tenv, \TArray(\ArrayLengthExpr(\ve), \vt)} \typearrow \\
-  \TArray(\ArrayLengthExpr(\vep), \vtp)
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TArray(\ArrayLengthExpr(\ve), \vt)}{\tty}} \typearrow \\
+  \overname{\TArray(\ArrayLengthExpr(\vep), \vtp)}{\newty}
     \end{array}
   }
 }
@@ -4464,13 +4524,13 @@ In the following example, all the uses of array types are valid:
 \inferrule[index\_enum]{
   \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
   \tsubs \eqdef \TNamed(\vs)\\
-  \makeanonymous(\tenv, \tsubs) \typearrow \vt \OrTypeError\\\\
-  \checktrans{\astlabel(\vt) = \TEnum}{ExpectedEnumeration} \checktransarrow \True \OrTypeError\\\\
-  \vt \eqname \TEnum((\vli))\\
+  \makeanonymous(\tenv, \tsubs) \typearrow \tsanon \OrTypeError\\\\
+  \checktrans{\astlabel(\tsanon) = \TEnum}{ExpectedEnumeration} \checktransarrow \True \OrTypeError\\\\
+  \vt \eqname \TEnum(\vli)\\
   \checktrans{\equallength(\vli, \vi)}{TypeConflict} \checktransarrow \True \OrTypeError
 }{
-  \annotatetype{\Ignore, \tenv, \TArray(\ArrayLengthEnum(\vs, \vi), \vt)} \typearrow \\
-  \TArray(\ArrayLengthEnum(\vs, \vi), \vtp)
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TArray(\ArrayLengthEnum(\vs, \vi), \vt)}{\tty}} \typearrow \\
+  \overname{\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)}{\newty}
 }
 \end{mathpar}
 
@@ -4561,7 +4621,6 @@ All of the following apply:
 \end{itemize}
 
 \subsection{Example}
-
 In the following example, the use of a record type outside of a declaration is erroneous:
 \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TNonDecl.asl}
 
@@ -4582,7 +4641,7 @@ In the following example, the use of a record type outside of a declaration is e
 \hypertarget{def-annotateconstraint}{}
 The function
 \[
-\annotateconstraint(\overname{staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
+\annotateconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
 \aslto \overname{\intconstraint}{\newc} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding the annotated
@@ -4805,7 +4864,7 @@ In the following example, all the uses of bitvector types with bitfields are val
 \begin{mathpar}
 \inferrule[simple]{
   \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\\\
-  \tododefine{check\_slices\_in\_width}(\tenv, \width, \slicesone) \typearrow \True \OrTypeError
+  \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError
 }{
   \annotatebitfield(\tenv, \width, \BitFieldSimple(\name, \slices)) \typearrow \\
   \BitFieldSimple(\name, \sliceone)
@@ -4815,8 +4874,8 @@ In the following example, all the uses of bitvector types with bitfields are val
 \begin{mathpar}
 \inferrule[nested]{
   \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\\\
-  \tododefine{disjoint\_slices\_to\_positions}(\tenv, \width, \slicesone) \typearrow \positions \OrTypeError\\\\
-  \tododefine{check\_positions\_in\_width}(\tenv, \width, \positions) \typearrow \True \OrTypeError\\\\
+  \disjointslicestopositions(\tenv, \width, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \checkpositionsinwidth(\tenv, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
   \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow \bitfieldspp \OrTypeError\\
 }{
@@ -4829,9 +4888,9 @@ In the following example, all the uses of bitvector types with bitfields are val
 \inferrule[type]{
   \annotateslices(\tenv, \slices) \typearrow \slicesone \OrTypeError\\\\
   \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \tododefine{check\_slices\_in\_width}(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\\\
-  \tododefine{disjoint\_slices\_to\_positions}(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
-  \tododefine{check\_positions\_in\_width}(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\\\
+  \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\\\
+  \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \checkpositionsinwidth(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
   \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError
 }{
@@ -4913,8 +4972,6 @@ $\newe$ is an annotated expression, or a type error, and one of the following ap
 \item TypingRule.ECall (see \secref{TypingRule.ECall})
 \item TypingRule.EGetArray (see \secref{TypingRule.EGetArray})
 \item TypingRule.ESliceOrEGetArrayError (see \secref{TypingRule.ESliceOrEGetArrayError})
-\item TypingRule.EStructuredNotStructured (see \secref{TypingRule.EStructuredNotStructured})
-\item TypingRule.EStructuredMissingField (see \secref{TypingRule.EStructuredMissingField})
 \item TypingRule.ERecord (see \secref{TypingRule.ERecord})
 \item TypingRule.EGetRecordField (see \secref{TypingRule.EGetRecordField})
 \item TypingRule.EGetBadRecordField (see \secref{TypingRule.EGetBadRecordField})
@@ -4955,7 +5012,7 @@ All of the following apply:
 \item $\newe$ is $\ve$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
 
@@ -4976,7 +5033,7 @@ All of the following apply:
 \item $\newe$ is the Literal $\vv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ELocalVarConstantBegin}{\ELocalVarConstantEnd}{../Typing.ml}
 
@@ -4985,8 +5042,9 @@ All of the following apply:
 \inferrule{
   L^\tenv.\constantvalues(\vx) = \vv\\
   L^\tenv.\localstoragetypes(\vx) = (\tty, \LDKConstant)
-  }
-{\annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})}
+}{
+  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -5003,7 +5061,7 @@ All of the following apply:
 \item $\newe$ is $\ve$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ELocalVarBegin}{\ELocalVarEnd}{../Typing.ml}
 
@@ -5013,8 +5071,9 @@ All of the following apply:
   L^\tenv.\constantvalues(\vx) = \bot\\
   L^\tenv.\localstoragetypes(\vx) =  (\tty, k) \\
   k \in \{\LDKVar, \LDKLet\}
-  }
-{\annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))}
+}{
+  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -5027,10 +5086,10 @@ All of the following apply:
 \item $\ve$ denotes a global variable $\vx$;
 \item $\vx$ is bound to a constant $\vv$ of type $\tty$ in the global environment given by $\tenv$;
 \item $\vt$ is $\tty$;
-\item $\newe$ is the Literal $\vv$.
+\item $\newe$ is the Literal for $\vv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGlobalVarConstantBegin}{\EGlobalVarConstantEnd}{../Typing.ml}
 
@@ -5039,8 +5098,9 @@ All of the following apply:
 \inferrule{
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
   G^\tenv.\constantvalues(\vx) = \vv
-  }
-{\annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})}
+}{
+  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -5059,7 +5119,7 @@ All of the following apply:
 \item $\newe$ is $\ve$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGlobalVarConstantNoValBegin}{\EGlobalVarConstantNoValEnd}{../Typing.ml}
 
@@ -5086,7 +5146,7 @@ All of the following apply:
 \item $\newe$ is $\ve$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGlobalVarBegin}{\EGlobalVarEnd}{../Typing.ml}
 
@@ -5112,7 +5172,7 @@ All of the following apply:
 \item the result is a type error indicating that $\vx$ is an undefined identifier.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
 
@@ -5141,7 +5201,7 @@ All of the following apply:
   \item $\newenv$ denotes $\op$ over $\veonep$ and $\vetwop$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
 
@@ -5152,7 +5212,7 @@ All of the following apply:
   \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwo') \OrTypeError\\\\
   \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError
 }{
-  \annotateexpr{\tenv, \EBinop(\op, \veone, \vetwo)} \typearrow (\vt, \EBinop(\op, \veone', \vetwo'))
+  \annotateexpr{\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}} \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe})
 }
 \end{mathpar}
 
@@ -5169,7 +5229,7 @@ All of the following apply:
   \item $\newe$ denotes $\op$ over $\vepp$, that is, $\EUnop(\op, \vepp)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
 
@@ -5198,7 +5258,7 @@ All of the following apply:
   \item $\newe$ is the condition $\econdp$ with two options $\etruep$ and $\efalsep$, that is, $\ECond(\econdp, \etruep, \efalsep)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
 
@@ -5241,7 +5301,7 @@ All of the following apply:
   $\ESlice(\vepp, \slicesp)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
 
@@ -5281,7 +5341,7 @@ All of the following apply:
   \item $\newe$ is the call expression $\ECall(\nameone, \vargsone, \eqs)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ESetterBegin}{\ESetterEnd}{../Typing.ml}
 
@@ -5303,13 +5363,15 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a call to a subprogram named $\name$ with arguments $\vargs$, that is, \\ $\ECall(\name, \vargs)$;
-  \item annotating the call of that subprogram in $\tenv$ (annotating calls is defined in Chapter~\ref{chap:TypingSubprogramCalls})
-  yields $(\namep, \vargsp, \eqsp, \langle \vt \rangle)$\ProseOrTypeError;
+  \item applying $\annotatecall$ to $\name$, $\vargs$, and $\STFunction$ in $\tenv$
+        annotates the call of that subprogram in $\tenv$ as a function (annotating calls is defined in Chapter~\ref{chap:TypingSubprogramCalls})
+        and yields $(\namep, \vargsp, \eqsp, \langle \vt \rangle)$\ProseOrTypeError.
+        Notice that passing $\STFunction$ to $\annotatecall$ checks that $\name$ is not a procedure and that a value is indeed returned;
   \item $\newe$ is the call to the subprogram named $\namep$ with arguments $\vargsp$
     and parameters $\eqsp$, that is, $\ECall(\name, \vargsp, \eqsp)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
 
@@ -5369,7 +5431,7 @@ All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
 
@@ -5413,7 +5475,7 @@ All of the following apply:
   \item the result is an error indicating that the type of $\vep$ is inappropriate for slicing.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ESliceOrEGetArrayErrorBegin}{\ESliceOrEGetArrayErrorEnd}{../Typing.ml}
 
@@ -5431,86 +5493,31 @@ All of the following apply:
 
 \isempty{\subsection{Comments}}
 
-\section{TypingRule.EStructuredNotStructured \label{sec:TypingRule.EStructuredNotStructured}}
-
-\subsection{Prose}
-All of the following apply:
-\begin{itemize}
-\item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
-\item determining whether $\tty$ is a named type yields $\True$\ProseOrTypeError;
-\item determining the \structure\ of $\tty$ yields $\vtp$\ProseOrTypeError;
-\item $\vtp$ is not a \structuredtype;
-\item the result is an error indicating that $\tty$ is not appropriate for constructing a record.
-\end{itemize}
-
-\subsection{Example}
-
-\CodeSubsection{\EStructuredNotStructuredBegin}{\EStructuredNotStructuredEnd}{../Typing.ml}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
-  \tstruct{\tenv, \tty} \typearrow\vtp \OrTypeError\\\\
-  \astlabel(\vtp) \not\in \{\TRecord, \TException\}
-}
-{
-  \annotateexpr{\tenv, \ERecord(\tty, \fields)} \typearrow \TypeErrorVal{NonStructuredType}
-}
-\end{mathpar}
-
-\isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{WBCQ}.}
-
-\section{TypingRule.EStructuredMissingField \label{sec:TypingRule.EStructuredMissingField}}
-
-\subsection{Prose}
-A§ll of the following apply:
-\begin{itemize}
-  \item $\ve$ denotes the record expression or an exception expression of type $\tty$ with fields $\fields$;
-  \item $\tty$ is a \structuredtype\ with fields $\fieldtypes$;
-  \item there exists a field in $\fieldtypes$ that is not initialised by $\fields$;
-  \item the result is an error indicating that a field is missing initialization.
-\end{itemize}
-
-\subsection{Example}
-
-\CodeSubsection{\EStructuredMissingFieldBegin}{\EStructuredMissingFieldEnd}{../Typing.ml}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
-  \tstruct(\tenv, \tty) \typearrow L(\fieldtypes) \OrTypeError\\\\
-  L \in \{\TRecord, \TException\}\\
-  \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\fields\}\\
-  \names \eqdef \fieldnames(\fieldtypes)\\
-  \vb \eqdef \initializedfields = \names\\
-  \vb = \False
-}
-{
-  \annotateexpr{\tenv, \ERecord(\tty, \fields)} \typearrow \TypeErrorVal{MissingField}
-}
-\end{mathpar}
-
-\isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identr{WBCQ}.}
-
 \section{TypingRule.ERecord \label{sec:TypingRule.ERecord}}
 
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ve$ denotes the record creation expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$;
-  \item $\tty$ is the name of a \structuredtype\ with fields $\fieldtypes$;
-  \item \underline{every} field in $\fieldtypes$ is initialised by a corresponding expression in $\fields$;
-  \item annotating the expressions that initialize each of the fields in $\fields$ via \\
-        $\annotatefieldinit$ yields $\fieldsp$\ProseOrTypeError;
+  \item $\ve$ denotes the record construction expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$,
+        that is, $\ERecord(\tty, \vfields)$;
+  \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
+  \item checking that $\ttyanon$ is a \structuredtype\ yields $\True$\ProseOrTypeError;% \ProseTerminateAs{\TypeErrorVal{\RequireStructuredType}};
+  \item $\ttyanon$ is a \structuredtype\ with a list of $\field$ elements (consisting of a field name and a field type);
+  \item obtaining the list of field names from $\vfields$ yields the list of identifiers \\
+        $\initializedfields$;
+  \item obtaining the list of field names from $\fieldtypes$ yields the list of identifiers $\names$;
+  \item checking whether the set of identifiers in $\names$ is equal to the set of identifiers in $\initializedfields$
+        yields $\True$\ProseOrTypeError;
+  \item checking that the list $\initializedfields$ does not contain duplicates yields \\
+        $\True$\ProseOrTypeError;
+  \item applying $\annotatefieldinit$ to annotate each $\field$ element $(\name,\vep)$ of \\
+        $\vfields$ in $\tenv$ yields $(\name,\vepp)$\ProseOrTypeError;
+  \item define $\fieldsp$ as the list containing $(\name,\vep)$ for each $\field$ element $(\name,\vep)$ of $\vfields$;
   \item $\vt$ is $\tty$;
   \item $\newe$ is the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 
@@ -5518,20 +5525,22 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
-  \tstruct(\tenv, \tty) \typearrow L(\fieldtypes) \OrTypeError\\\\
-  L \in \{\TRecord, \TException\}\\
-  \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\fields\}\\
+  \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\\\\
+  \checktrans{\astlabel(\ttyanon) \in \{\TRecord, \TException\}}{\RequireStructuredType} \typearrow \True\OrTypeError\\\\
+  \ttyanon \eqname L(\fieldtypes)\\
+  \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\vfields\}\\
   \names \eqdef \fieldnames(\fieldtypes)\\
-  \initializedfields = \names\\
+  \checktrans{\{\names\} = \{\initializedfields\}}{\MissingFieldInitializer} \typearrow \True \OrTypeError\\\\
+  \checknoduplicates(\initializedfields) \typearrow \True \OrTypeError\\\\
   {
     \begin{array}{r}
-  (\name, \vep) \in \fields: \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow \\
+  (\name, \vep) \in \vfields: \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow \\
   (\name, \vepp) \OrTypeError
     \end{array}
   }\\
   \fieldsp \eqdef [(\name, \vep) \in \fields : (\name, \vepp)]
 }{
-  \annotateexpr{\tenv, \ERecord(\tty, \fields)} \typearrow (\tty, \ERecord(\tty, \fieldsp))
+  \annotateexpr{\tenv, \overname{\ERecord(\tty, \vfields)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\ERecord(\tty, \fieldsp)}{\newe})
 }
 \end{mathpar}
 
@@ -5551,7 +5560,7 @@ All of the following apply:
   \item $\newe$ is the access of field $\fieldname$ on the record or exception object $\vetwo$, that is, $\EGetField(\vetwo, \fieldname)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
 
@@ -5585,7 +5594,7 @@ All of the following apply:
   \item the result is a type error indicating the missing field.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetBadRecordFieldBegin}{\EGetBadRecordFieldEnd}{../Typing.ml}
 
@@ -5619,7 +5628,7 @@ All of the following apply:
   \item the result is a type error indicating the missing field.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetBadBitFieldBegin}{\EGetBadBitFieldEnd}{../Typing.ml}
 
@@ -5653,7 +5662,7 @@ All of the following apply:
   \item annotating $\vethree$ in $\tenv$ yields $(\vt, \newe)$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
 
@@ -5669,7 +5678,7 @@ All of the following apply:
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vt, \newe) \OrTypeError
 }{
-  \annotateexpr{\tenv, \ve} \typearrow \typearrow (\vt, \newe)
+  \annotateexpr{\tenv, \ve} \typearrow (\vt, \newe)
 }
 \end{mathpar}
 
@@ -5693,7 +5702,7 @@ All of the following apply:
   \item $\vt$ is a bitvector type with length expression $\width$ and bitfields $\bitfieldsp$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
 
@@ -5738,7 +5747,7 @@ All of the following apply:
   \item determining whether $\vtefour$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
 
@@ -5777,7 +5786,7 @@ All of the following apply:
   \item $\newe$ is the expression for obtaining the item at index $\vindex$ from the expression $\vetwo$, that is, $\EGetItem(\vetwo, \vindex)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
 
@@ -5813,7 +5822,7 @@ All of the following apply:
   \item the result is an error indicating that the type of $\veone$ is inappropriate for accessing the field $\fieldname$.
 \end{itemize}
 
- \subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
 
@@ -5848,7 +5857,7 @@ All of the following apply:
   \item $\newe$ is the concatenation expression for $\ves$, that is, $\EConcat(\ves)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EConcatBegin}{\EConcatEnd}{../Typing.ml}
 
@@ -5884,7 +5893,7 @@ All of the following apply:
   \item $\newe$ is tuple expression over list of expressions $\ve_i$, for $i=1..k$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
 
@@ -5911,7 +5920,7 @@ All of the following apply:
   \item $\newe$ is an expression \UNKNOWN\ of type $\ttytwo$, that is, $\EUnknown(\ttytwo)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EUnknownBegin}{\EUnknownEnd}{../Typing.ml}
 
@@ -5939,7 +5948,7 @@ All of the following apply:
   \item $\newe$ denotes whether the expression $\vetwo$ matches $\vpatp$, that is, $\EPattern(\vetwo, \vpatp)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
 
@@ -5956,7 +5965,6 @@ All of the following apply:
 \isempty{\subsection{Comments}}
 
 \section{TypingRule.ATC \label{sec:TypingRule.ATC}}
-
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -5977,20 +5985,20 @@ All of the following apply:
       \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$,
       meaning that an execution-time check that the expression $\vep$ evaluates to a value in the
       dynamic domain of $\tty$ is required;
-      \item both $\vtstruct$ and $\vtystruct$ are bitvector types or integer types.
+      \item both $\vtstruct$ and $\vtystruct$ are bitvector types or integer types;
       \item $\vt$ is $\vtp$ and $\newe$ is the asserting type conversion expression over $\vepp$ \\ and
       $\vtystruct$, that is, $\EATC(\vepp, \vtystruct)$.
     \end{itemize}
-  \item All of the following apply:
+  \item All of the following apply (\textsc{error}):
     \begin{itemize}
     \item determining whether $\vtstruct$ is equivalent to $\vtystruct$ in $\tenv$ \\ yields $\False$;
-    \item $\vtstruct$ and $\vtystruct$ are not both bitvector types or integer types.
+    \item $\vtstruct$ and $\vtystruct$ are not both bitvector types or integer types;
     \item a type error indicating the conflicting types is returned.
     \end{itemize}
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
 
@@ -6003,7 +6011,7 @@ All of the following apply:
   \tstruct(\tenv, \tty') \typearrow \vtystruct \OrTypeError\\\\
   \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \True
 }{
-  \annotateexpr{\tenv, \EATC(\vep, \tty)} \typearrow (\tty', \vepp)
+  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\tty'}{\ve}, \overname{\vepp}{\newe})
 }
 \end{mathpar}
 
@@ -6016,9 +6024,9 @@ All of the following apply:
   \typeequal(\tenv, \vtstruct, \vtystruct) \typearrow \False\\
   \vb \eqdef \astlabel(\vtstruct) = \astlabel(\vtystruct) \land
   \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
-  \vb \eqdef \True
+  \vb = \True
 }{
-  \annotateexpr{\tenv, \EATC(\vep, \tty)} \typearrow (\vtp, \EATC(\vepp, \vtystruct))
+  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\vtp}{\vt}, \overname{\EATC(\vepp, \vtystruct)}{\newe})
 }
 \end{mathpar}
 
@@ -6033,7 +6041,7 @@ All of the following apply:
   \astlabel(\vtstruct) \in \{\TBits, \TInt \}\\
   \vb = \False
 }{
-  \annotateexpr{\tenv, \EATC(\vep, \tty)} \typearrow \TypeErrorVal{ATC}
+  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow \TypeErrorVal{ATC}
 }
 \end{mathpar}
 
@@ -6055,13 +6063,12 @@ which we use in this chapter for TypingRule.ELit as well as in subsequent chapte
 \subsection{Prose}
 The result of annotating a literal $\vl$ is $\vt$ and one of the following applies:
 \begin{itemize}
-\item $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
+\item (\texttt{int}): $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
 its set to the single value $\vn$;
-\item $\vl$ is a Boolean literal and $\vt$ is the Boolean type;
-\item $\vl$ is a real literal and $\vt$ is the real type;
-\item $\vl$ is a string literal and $\vt$ is the string type;
-\item $\vl$ is a string literal and $\vt$ is the string type;
-\item $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
+\item (\texttt{bool}): $\vl$ is a Boolean literal and $\vt$ is the Boolean type;
+\item (\texttt{real}): $\vl$ is a real literal and $\vt$ is the real type;
+\item (\texttt{string}): $\vl$ is a string literal and $\vt$ is the string type;
+\item (\texttt{bitvector}): $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
 \end{itemize}
 
 \subsection{Example}
@@ -6072,15 +6079,23 @@ In the following example, we show several literals and their corresponding types
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule{}{\annotateliteral{\lint(n)}\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
-\and
-\inferrule{}{\annotateliteral{\lbool(\Ignore)}\typearrow \TBool}
-\and
-\inferrule{}{\annotateliteral{\lreal(\Ignore)}\typearrow \TReal}
-\and
-\inferrule{}{\annotateliteral{\lstring(\Ignore)}\typearrow \TString}
-\and
-\inferrule{
+\inferrule[int]{}{\annotateliteral{\lint(n)}\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bool]{}{\annotateliteral{\lbool(\Ignore)}\typearrow \TBool}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[real]{}{\annotateliteral{\lreal(\Ignore)}\typearrow \TReal}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[string]{}{\annotateliteral{\lstring(\Ignore)}\typearrow \TString}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitvector]{
   n \eqdef \listlen{\bits}
 }{
   \annotateliteral{\lbitvector(\bits)}\typearrow \TBits(\ELInt{n}, \emptylist)
@@ -6123,16 +6138,16 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \annotateexprlist(\tenv, \emptylist) \typearrow \emptylist
+  \annotateexprlist(\tenv, \overname{\emptylist}{\exprs}) \typearrow \overname{\emptylist}{\typedexprs}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[non\_empty]{
   \annotateexpr{\tenv, \ve} \typearrow \typedexpr \OrTypeError\\\\
-  \annotateexprlist(\tenv, \exprsone) \typearrow \typedexprs \OrTypeError\\\\
-  \typedexprs \eqdef [\typedexpr] + \typedexprsone
-}
-{
-  \annotateexprlist(\tenv, [\ve] + \exprsone) \typearrow \typedexprs
+  \annotateexprlist(\tenv, \exprsone) \typearrow \typedexprsone \OrTypeError
+}{
+  \annotateexprlist(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \overname{[\typedexpr] \concat \typedexprsone}{\typedexprs}
 }
 \end{mathpar}
 
@@ -6158,7 +6173,7 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item determining whether $\vx$ is a subprogram name with $\slices$ as its actual arguments
-    via $\tododefine{should\_slices\_reduce\_to\_call}$
+    via $\shouldslicesreducetocall$
     yields a list of actual argument expressions $\vargs$\ProseOrTypeError;
     \item $\name$ is $\vx$;
     \item the result is $\langle (\name, \vle)\rangle$.
@@ -6168,7 +6183,7 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item determining whether $\vx$ is a subprogram name with $\slices$ as its actual arguments
-    via $\tododefine{should\_slices\_reduce\_to\_call}$
+    via $\shouldslicesreducetocall$
     yields $\None$;
     \item the result is $\None$.
   \end{itemize}
@@ -6185,7 +6200,7 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[yes]{
-  \tododefine{should\_slices\_reduce\_to\_call}(\tenv, \vx, \slices) \typearrow \langle \vargs \rangle\\
+  \shouldslicesreducetocall(\tenv, \vx, \slices) \typearrow \langle \vargs \rangle\\
   \name \eqdef \vx
 }
 {
@@ -6193,7 +6208,7 @@ One of the following applies:
 }
 \and
 \inferrule[no]{
-  \tododefine{should\_slices\_reduce\_to\_call}(\tenv, \vx, \slices) \typearrow \None
+  \shouldslicesreducetocall(\tenv, \vx, \slices) \typearrow \None
 }
 {
   \reduceslicestocall(\tenv, \EVar(\vx), \slices) \typearrow \None
@@ -6292,14 +6307,14 @@ All of the following apply:
 \item $\newle$ is $\vle$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LEDiscardBegin}{\LEDiscardEnd}{../Typing.ml}
 
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{}{
-  \annotatelexpr{\tenv, \LEDiscard, \vte} \typearrow \vle
+  \annotatelexpr{\tenv, \overname{\LEDiscard}{\vlt}, \vte} \typearrow \overname{\LEDiscard}{\newle}
 }
 \end{mathpar}
 
@@ -6316,7 +6331,7 @@ All of the following apply:
   \item $\newle$ is $\vle$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LELocalVarBegin}{\LELocalVarEnd}{../Typing.ml}
 
@@ -6349,7 +6364,7 @@ All of the following apply:
   \item $\newle$ is $\vle$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LEGlobalVarBegin}{\LEGlobalVarEnd}{../Typing.ml}
 
@@ -6360,7 +6375,7 @@ All of the following apply:
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKVar)\\
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
  }{
-  \annotatelexpr{\tenv, \vle, \vte} \typearrow \newle
+  \annotatelexpr{\tenv, \vle, \vte} \typearrow \overname{\vle}{\newle}
 }
 \end{mathpar}
 
@@ -6382,7 +6397,7 @@ All of the following apply:
   \item $\newle$  is the list of left-hand-side expressions $\lesp$, that is, $\LEDestructuring(\lesp)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LEDestructuringBegin}{\LEDestructuringEnd}{../Typing.ml}
 
@@ -6423,7 +6438,7 @@ All of the following apply:
   \item $\newle$ is the slicing of $\vletwo$ by $\slicestwo$, that is, $\LESlice(\vletwo, \slicestwo)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Typing.ml}
 
@@ -6439,7 +6454,7 @@ All of the following apply:
   \vt \eqdef \TBits(\vwidth, \emptylist)\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \annotateslices(\tenv, \slices) \typearrow \slicestwo \OrTypeError\\\\
-  \tododefine{check\_disjoint\_slices}(\tenv, \slicestwo) \typearrow \True \OrTypeError\\\\
+  \checkdisjointslices(\tenv, \slicestwo) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESlice(\vletwo, \slicestwo)
 }{
   \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
@@ -6466,7 +6481,7 @@ All of the following apply:
   \item $\newle$ is an access to array $\vletwo$ at index $\eindexp$, that is, \\ $\LESetArray(\vletwo, \eindexp)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Typing.ml}
 
@@ -6505,7 +6520,7 @@ All of the following apply:
   \item the result is an error indicating that the field $\field$ is missing from the type of $\vleone$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESetBadStructuredFieldBegin}{\LESetBadStructuredFieldEnd}{../Typing.ml}
 
@@ -6532,13 +6547,14 @@ All of the following apply:
   \item $\vle$ denotes the access to the field named \texttt{field} in $\vleone$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a\structuredtype\ with fields $\fields$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a\structuredtype\ with fields \\
+        $\fields$\ProseOrTypeError;
   \item the type associated with the field $\field$ in $\fields$ is $\vt$;
   \item determining whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
   \item $\newle$ is the access to the field $\field$ in $\vletwo$, that is, $\LESetField(\vletwo, \field)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
 
@@ -6574,7 +6590,7 @@ All of the following apply:
   \item the result is a type error indicating that the field $\field$ is missing from the type of $\vleone$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESetBadBitFieldBegin}{\LESetBadBitFieldEnd}{../Typing.ml}
 
@@ -6609,7 +6625,7 @@ All of the following apply:
 \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields $\newle$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESetBitFieldBegin}{\LESetBitFieldEnd}{../Typing.ml}
 
@@ -6646,11 +6662,11 @@ All of the following apply:
 \item $\vw$ is the width of $\slices$;
 \item $\vt$ is defined as the bitvector type of width $\vw$ and list of bitfields $\bitfieldsp$, that is, $\TBits(\vw, \bitfieldsp)$;
 \item checking whether $\vt$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
-\item $\vletwo$ is defined as the slicing of $\vleone$ by $\slices$, that is, $\LESlice(\vleone, \slices)$;
-\item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields $\newle$\ProseOrTypeError.
+\item $\vlethree$ is defined as the slicing of $\vleone$ by $\slices$, that is, $\LESlice(\vleone, \slices)$;
+\item annotating the left-hand-side expression $\vlethree$ in $\tenv$ yields $\newle$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESetBitFieldNestedBegin}{\LESetBitFieldNestedEnd}{../Typing.ml}
 
@@ -6664,8 +6680,8 @@ All of the following apply:
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vt \eqdef \TBits(\vw, \bitfieldsp)\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
-  \vletwo \eqdef \LESlice(\vleone, \slices)\\
-  \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
+  \vlethree \eqdef \LESlice(\vleone, \slices)\\
+  \annotatelexpr{\tenv, \vlethree, \vte} \typearrow \newle \OrTypeError
 }{
   \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
 }
@@ -6692,7 +6708,7 @@ All of the following apply:
   \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields $\newle$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESetBitFieldTypedBegin}{\LESetBitFieldTypedEnd}{../Typing.ml}
 
@@ -6729,7 +6745,7 @@ All of the following apply:
   \item the result is an error indicating that the type of $\vle$ conflicts with the requirements of a field access expression.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
 
@@ -6763,7 +6779,7 @@ All of the following apply:
   \item $\newle$ is the concatenation of left-hand-side expressions $\lesone$ with corresponding list of widths $\widths$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\LEConcatBegin}{\LEConcatEnd}{../Typing.ml}
 
@@ -6876,7 +6892,7 @@ All of the following apply:
   \item annotating the slice at offset $\vi$ of length $1$ yields $\vsp$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SliceSingleBegin}{\SliceSingleEnd}{../Typing.ml}
 
@@ -6905,7 +6921,7 @@ All of the following apply:
    $\SliceLength(\eoffsetp, \elength')$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SliceLengthBegin}{\SliceLengthEnd}{../Typing.ml}
 
@@ -6937,7 +6953,7 @@ All of the following apply:
   \item annotating the slice at offset $\vi$ of length $\prelength$ yields $\vsp$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SliceRangeBegin}{\SliceRangeEnd}{../Typing.ml}
 
@@ -6965,7 +6981,7 @@ All of the following apply:
   \item annotating the slice at offset $\preoffset$ of length $\prelength$ yields $\vsp$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SliceStarBegin}{\SliceStarEnd}{../Typing.ml}
 
@@ -6989,7 +7005,7 @@ All of the following apply:
   \item annotating the slices in $\slices$ from left to right yields the list of annotated slices $\slicesp$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -7037,7 +7053,7 @@ All of the following apply:
   \item $\newp$ is $\vp$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
 
@@ -7061,7 +7077,7 @@ All of the following apply:
 \item $\newp$ is the pattern which matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
 
@@ -7096,7 +7112,7 @@ which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything greater than or equal to $\vep$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
 
@@ -7140,7 +7156,7 @@ which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything less than or equal to $\vep$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
 
@@ -7176,7 +7192,7 @@ Annotating a pattern $\vt$ in an environment $\tenv$ given a type $\vt$ (\texttt
   \item $\newp$ is pattern which matches the negation of $\newq$, that is, $\PatternLeq(\newq)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
@@ -7210,7 +7226,7 @@ All of the following apply:
   \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$, that is, $\PatternRange(\veonep, \vetwop)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
 
@@ -7274,7 +7290,7 @@ All of the following apply:
   \item $\newp$ is the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
 
@@ -7352,7 +7368,7 @@ All of the following apply:
   \item $\newp$ is $\vp$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
 
@@ -7386,7 +7402,7 @@ All of the following apply:
   \item $\newp$ is the pattern which matches the tuple $\newli$, that is, $\PatternTuple(\newli)$.
   \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
 
@@ -7628,7 +7644,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
 
@@ -7667,7 +7683,7 @@ All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Typing.ml}
 
@@ -7702,7 +7718,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SReturnNoneBegin}{\SReturnNoneEnd}{../Typing.ml}
 
@@ -7740,7 +7756,7 @@ All of the following apply:
         and the (existence of the) return expression.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SReturnOneBegin}{\SReturnOneEnd}{../Typing.ml}
 
@@ -7775,7 +7791,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SReturnSomeBegin}{\SReturnSomeEnd}{../Typing.ml}
 
@@ -7805,7 +7821,7 @@ All of the following apply:
   \item $\news$ is the AST node for the sequence of statements $\newsone$ and $\newstwo$, that is, $\SSeq(\newsone, \newstwo)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Typing.ml}
 
@@ -7835,7 +7851,7 @@ All of the following apply:
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SCallBegin}{\SCallEnd}{../Typing.ml}
 
@@ -7874,7 +7890,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SCondBegin}{\SCondEnd}{../Typing.ml}
 
@@ -7907,7 +7923,7 @@ All of the following apply:
   \item $\newenv$ is $\tenvone$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Typing.ml}
 
@@ -7937,7 +7953,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
 
@@ -7966,7 +7982,7 @@ All of the following apply:
 \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
 
@@ -7998,7 +8014,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
 
@@ -8077,7 +8093,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SThrowNoneBegin}{\SThrowNoneEnd}{../Typing.ml}
 
@@ -8104,7 +8120,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SThrowSomeBegin}{\SThrowSomeEnd}{../Typing.ml}
 
@@ -8153,7 +8169,7 @@ All of the following apply:
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
 
@@ -8210,7 +8226,7 @@ All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SDeclSomeBegin}{\SDeclSomeEnd}{../Typing.ml}
 
@@ -8252,7 +8268,7 @@ All of the following apply:
       that is, $\SDecl(\LDKVar, \ldip, \None)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SDeclNoneBegin}{\SDeclNoneEnd}{../Typing.ml}
 
@@ -8397,8 +8413,8 @@ One of the following applies:
 \inferrule[unconstrained]{
   {
     \begin{array}{cccl}
-    \structone = \TInt(\unconstrained) &\land& \astlabel(\structtwo) = \TInt & \lor\\
-    \astlabel(\structone) = \TInt &\land& \structtwo = \TInt(\unconstrained) & \\
+    \structone = \unconstrainedinteger &\land& \astlabel(\structtwo) = \TInt & \lor\\
+    \astlabel(\structone) = \TInt &\land& \structtwo = \unconstrainedinteger & \\
     \end{array}
   }
 }{
@@ -8500,7 +8516,7 @@ All of the following apply:
   \item annotating the block $\vstmt$ in $\tenv$ yields $\newstmt$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
 
@@ -8532,7 +8548,7 @@ All of the following apply:
   \item annotating the block $\vstmt$ in $\tenvp$ yields $\newstmt$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\CatcherSomeBegin}{\CatcherSomeEnd}{../Typing.ml}
 
@@ -8662,12 +8678,12 @@ Otherwise, the result is a type error.
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item applying $\splitlist$ to $\callerargtyped$ yields the corresponding lists of types
+  \item applying $\unziplist$ to $\callerargtyped$ yields the corresponding lists of types
         and expressions $\callerargtypes$ and $\vargsone$;
   \item applying $\subprogramforname$ to match $\name$ and $\callerargtypes$ in $\tenv$
         yields $(\eqsone, \nameone, \callee)$\ProseOrTypeError;
   \item checking that $\subprogramtype$ of $\callee$ equals $\calltype$ yields $\True$\ProseOrTypeError;
-  \item checking that the lengths of $\calleeargtypes$ and $\vargsone$ are the same yields $\True$\ProseOrTypeError;
+  \item checking that the lengths of $\callee.\funcargs$ and $\vargsone$ are the same yields $\True$\ProseOrTypeError;
   \item applying $\annotateparameterdefining$ to $\callee.\funcargs$,
         $\callerargstyped$, and \\
         $\calleeparams$ in $\tenv$ to annotate the implicit parameters
@@ -8689,7 +8705,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \splitlist(\callerargstyped) = (\callerargtypes, \vargsone)\\
+  \unziplist(\callerargstyped) = (\callerargtypes, \vargsone)\\
   {
     \begin{array}{r}
     \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \\
@@ -8697,7 +8713,7 @@ All of the following apply:
     \end{array}
   }\\
   \checktrans{\callee.\subprogramtype = \calltype}{\MismatchedReturnValue} \checktransarrow \True\OrTypeError\\\\
-  \equallength(\calleeargtypes, \vargsone) \typearrow \aritymatch\\
+  \equallength(\callee.\funcargs, \vargsone) \typearrow \aritymatch\\
   \checktrans{\aritymatch}{\CallBadArity} \checktransarrow \True\\\\
   {
   \annotateparameterdefining\left(
@@ -9673,7 +9689,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SubprogramForNameBegin}{\SubprogramForNameEnd}{../Typing.ml}
 
@@ -9939,7 +9955,7 @@ All of the following apply:
   \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
 
@@ -10070,7 +10086,7 @@ All of the following apply:
         $\newtenv$ and new global storage description $\gsdp$\ProseOrTypeError;
   \item define $\newd$ as the global storage declaration with description $\gsdp$, that is, \\ $\DGlobalStorage(\gsdp)$.
 \end{itemize}
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\TypecheckGlobalStorageBegin}{\TypecheckGlobalStorageEnd}{../Typing.ml}
 
@@ -10099,7 +10115,7 @@ All of the following apply:
   \item define $\newd$ as $\vd$.
   \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\TypecheckTypeDeclBegin}{\TypecheckTypeDeclEnd}{../Typing.ml}
 
@@ -10137,7 +10153,7 @@ All of the following apply:
         and new $\func$ node $\newfuncsig$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\AnnotateAndDeclareFuncBegin}{\AnnotateAndDeclareFuncEnd}{../Typing.ml}
 
@@ -10187,7 +10203,7 @@ All of the following apply:
         the list of arguments substituted with $\vargs$, and return type substituted with $\vreturntype$;
   \item $\newtenv$ is $\tenvfive$.
 \end{itemize}
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
 
@@ -10528,7 +10544,7 @@ All of the following apply:
 \inferrule[type\_parameterized]{
   \checkvarnotinenv{\tenvonep, \vx} \typearrow \True \OrTypeError\\\\
   \checktrans{\vx \in \potentialparams}{\ParameterWithoutDecl} \checktransarrow \True \OrTypeError\\\\
-  (\tyopt = \None \lor \tyopt = \langle \TInt(\unconstrained)\rangle) \\
+  (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
   \vt \eqdef \TInt(\parameterized(\vx))\\
   \checkconstrainedinteger(\tenvone, \vt) \typearrow \True \OrTypeError\\\\
   \addlocal(\tenvonep, \vx, \vt, \LDKLet) \typearrow \newtenv\\
@@ -10544,7 +10560,7 @@ All of the following apply:
 \inferrule[type\_annotated]{
   \checkvarnotinenv{\tenvonep, \vx} \typearrow \True \OrTypeError\\\\
   \checktrans{\vx \in \potentialparams}{\ParameterWithoutDecl} \checktransarrow \True \OrTypeError\\\\
-  \vtone \neq \TInt(\unconstrained)\\
+  \vtone \neq \unconstrainedinteger\\
   \annotatetype{\False, \tenvone, \vtone} \typearrow \vt \OrTypeError\\\\
   \checkconstrainedinteger(\tenvone, \vt) \typearrow \True \OrTypeError\\\\
   \addlocal(\tenvonep, \vx, \vt, \LDKLet) \typearrow \newtenv\\
@@ -10754,11 +10770,11 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[tint\_unconstrained]{}
 {
-  \annotateparamtype(\tenv, \overname{\TInt(\unconstrained)}{\tty}) \typearrow \overname{\TInt(\unconstrained(\vx))}{\newty}
+  \annotateparamtype(\tenv, \overname{\unconstrainedinteger}{\tty}) \typearrow \overname{\TInt(\parameterized(\vx))}{\newty}
 }
 \and
 \inferrule[other]{
-  \tty \neq \TInt(\unconstrained)\\
+  \tty \neq \unconstrainedinteger\\
   \annotatetype{\tenv, \tty} \typearrow \newty \OrTypeError
 }{
   \annotateparamtype(\tenv, \tty) \typearrow \newty
@@ -11010,7 +11026,7 @@ All of the following apply:
   \item adding a subprogram with name $\namep$ and definition $\funcsigone$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
 
@@ -11056,7 +11072,7 @@ All of the following apply:
 
 \section{TypingRule.SubprogramClash \label{sec:TypingRule.SubprogramClash}}
 \hypertarget{def-subprogramclash}{}
-The partial function
+The function
 \[
   \subprogramclash(
     \overname{\staticenvs}{\tenv} \aslsep
@@ -11089,7 +11105,7 @@ All of the following apply:
         $\nameformals$ in $\tenv$ yields $\vb$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \subsection{Formally}
 \hypertarget{def-subprogramtypeclash}{}
@@ -11180,7 +11196,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
 
@@ -11268,7 +11284,7 @@ All of the following apply:
   \item define $\vb$ as $\True$ (that is, unless the rule short-circuited with a type error).
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\CheckSetterHasGetterBegin}{\CheckSetterHasGetterEnd}{../Typing.ml}
 
@@ -11374,7 +11390,7 @@ All of the following apply:
   \item $\newgsd$ is $\gsd$ with its type component as $\tyoptp$ and $\initialvalue$ component as $\initialvaluep$;
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
 
@@ -11673,7 +11689,7 @@ All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 
@@ -12064,6 +12080,14 @@ annotates a list of declaration components $\comps$
 yielding the annotated list of declarations $\newdecls$ and modified environment $\newtenv$.
 Otherwise, the result is a type error.
 
+We note that a strongly-connected component containing just a single declaration may contain
+any kind of global declaration ---
+a type declaration, a global storage declaration, or a subprogram declaration ---
+whereas a strongly-connected component containing multiple declarations must be checked
+to contain only subprograms. This is because the only type of mutually-recursive declarations
+allows in ASL are between subprograms. The rules below handle these cases separately (\textsc{single}
+for single declarations and \textsc{mutually\_recursive} for more than one declaration).
+
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
@@ -12086,7 +12110,7 @@ One of the following applies:
   \item All of the following apply (\textsc{mutually\_recursive}):
   \begin{itemize}
     \item $\comps$ is a list with \head\ $\comp$ and \tail\ $\compsone$;
-    \item $\comp$ is a list with more than one declaration (which together represent a mutually recursive
+    \item $\comp$ is a list with more than one declaration (which together represent a mutually-recursive
           list of declarations);
     \item applying $\typecheckmutuallyrec$ to $\comp$ in $\tenv$ yields \\ $(\declsone, \tenvone)$\ProseOrTypeError;
     \item applying $\annotatedeclcomps$ to $\compsone$ in $\tenvone$ yields \\ $(\newtenv, \declstwo)$\ProseOrTypeError;
@@ -14433,7 +14457,7 @@ of \texttt{width} bits.
   \listlen{a} \neq \listlen{b}
 }{
   \binopliterals(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \typearrow
-  \TypeErrorVal{DifferentBitwidths}
+  \TypeErrorVal{\RequireSameBitwidths}
 }
 \and
 \inferrule[bitwise\_empty]{
@@ -14579,7 +14603,7 @@ One of the following applies:
   \slicetopositions(\tenv, \vs) \typearrow \positionsone \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
   \slicestopositions(\tenv, \slicesone) \typearrow \positionstwo \terminateas \CannotBeTransformed,\TypeErrorConfig
 }{
-  \slicestopositions(\tenv, \overname{[\vs] + \slicesone}{\slices}) \typearrow \overname{\positionsone \concat \positionstwo}{\positions}
+  \slicestopositions(\tenv, \overname{[\vs] \concat \slicesone}{\slices}) \typearrow \overname{\positionsone \concat \positionstwo}{\positions}
 }
 \end{mathpar}
 
@@ -14987,7 +15011,7 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[int\_unconstrained]{}{ \symdomoftype(\tenv, \overname{\TInt(\unconstrained)}{\vt}) \typearrow \overname{\DInt(\Top)}{\vd} }
+\inferrule[int\_unconstrained]{}{ \symdomoftype(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow \overname{\DInt(\Top)}{\vd} }
 \end{mathpar}
 
 \begin{mathpar}
@@ -15536,7 +15560,8 @@ One of the following applies:
   \begin{itemize}
     \item there exists a constraint $\vc$ in $\vcs$ such that applying $\constrainttointset$ to $\vc$
           in $\tenv$ does not yield a finite set of integers;
-    \item define $\vis$ as the symbolic constrained integer domain for $\vcs$, that is, $\FromSyntax(\vcs)$.
+    \item define $\vis$ as the symbolic constrained integer domain for $\vcs$, that is, \\
+          $\FromSyntax(\vcs)$.
   \end{itemize}
 \end{itemize}
 
@@ -15548,9 +15573,16 @@ One of the following applies:
 }{
   \intsetofintconstraints(\tenv, \vcs) \typearrow \overname{\Finite(C)}{\vis}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[symbolic]{
-  \exists \vi\in\listrange(\vcs): \constrainttointset(\tenv, \vcs[\vi]) \typearrow \visone \land \astlabel(\visone) \neq \Finite
+  {
+    \begin{array}{r}
+  \exists \vi\in\listrange(\vcs): \constrainttointset(\tenv, \vcs[\vi]) \typearrow \\
+     \visone \land \astlabel(\visone) \neq \Finite
+    \end{array}
+  }
 }{
   \intsetofintconstraints(\tenv, \vcs) \typearrow \overname{\FromSyntax(\vcs)}{\vis}
 }
@@ -17446,7 +17478,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{tint\_unconstrained}):
   \begin{itemize}
-    \item both $\vtone$ and $\vttwo$ are the unconstrained integer type $\TInt(\unconstrained)$;
+    \item both $\vtone$ and $\vttwo$ are the unconstrained integer type $\unconstrainedinteger$;
     \item $\vb$ is $\True$.
   \end{itemize}
 
@@ -17543,7 +17575,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[tint\_unconstrained]{}
 {
-  \typeequal(\tenv, \TInt(\unconstrained), \TInt(\unconstrained)) \typearrow \True
+  \typeequal(\tenv, \unconstrainedinteger, \unconstrainedinteger) \typearrow \True
 }
 \and
 \inferrule[tint\_parameterized]{
@@ -18968,7 +19000,7 @@ One of the following applies:
 \inferrule[match]{
   \bitfieldgetname(\vbf) \typearrow \name
 }{
-  \findbitfieldopt(\name, \overname{\vbf + \bitfieldsp}{\bitfields}) \typearrow \overname{\langle\vbf\rangle}{\vr}
+  \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\bitfields}) \typearrow \overname{\langle\vbf\rangle}{\vr}
 }
 \and
 \inferrule[tail]{
@@ -18976,7 +19008,7 @@ One of the following applies:
   \name \neq \namep\\
   \findbitfieldopt(\name, \bitfieldsp) \typearrow \vr
 }{
-  \findbitfieldopt(\name, \overname{\vbf + \bitfieldsp}{\bitfields}) \typearrow \vr
+  \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\bitfields}) \typearrow \vr
 }
 \and
 \inferrule[empty]{}{
@@ -19385,6 +19417,7 @@ One of the following applies:
 \end{mathpar}
 
 \hypertarget{def-checkstaticallyevaluable}{}
+\hypertarget{def-staticallyevaluable}{}
 \section{TypingRule.CheckStaticallyEvaluable \label{sec:TypingRule.CheckStaticallyEvaluable}}
 The function
 \[
@@ -19452,15 +19485,13 @@ One of the following applies:
 \and
 \inferrule[t\_int\_other]{
   \astlabel(\vi) \neq \parameterized
-}
-{
+}{
   \towellconstrained(\TInt(\vi)) \typearrow \vt
 }
 \and
 \inferrule[other]{
   \astlabel(\vt) \neq \TInt
-}
-{
+}{
   \towellconstrained(\vt) \typearrow \vt
 }
 \end{mathpar}
@@ -19470,9 +19501,10 @@ One of the following applies:
 The function
 \[
   \getwellconstrainedstructure(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt})
-  \aslto \overname{\ty}{\vtp}
+  \aslto \overname{\ty}{\vtp} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-returns the \wellconstrainedstructure\ of a type $\vt$ in a static environment $\tenv$ --- $\vtp$, which is defined as follows.
+returns the \wellconstrainedstructure\ of a type $\vt$ in the static environment $\tenv$ --- $\vtp$, which is defined as follows.
+Otherwise, the result is a type error.
 
 \subsection{Prose}
 All of the following apply:
@@ -19486,8 +19518,7 @@ All of the following apply:
 \inferrule{
   \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError\\\\
   \towellconstrained(\vtone) \typearrow \vtp
-}
-{
+}{
   \getwellconstrainedstructure(\tenv, \vt) \typearrow \vtp
 }
 \end{mathpar}
@@ -19799,7 +19830,7 @@ One of the following applies:
   \sort(\vlone, \compare) \typearrow \overname{\vlone}{\vltwo}
 }
 \and
-\inferrule{two\_or\_more}{
+\inferrule[two\_or\_more]{
   \listlen{\vlone} = n\\
   f : 1..n \rightarrow 1..n \text{ is a bijection}\\
   \vltwo \eqdef [\ i=1..n: \vlone[f(i)]\ ]\\
@@ -19885,6 +19916,24 @@ an integer type.
 This error indicates that at least one of the start expression and end expression violate this
 requirement.
 (see \secref{TypingRule.TypeCheckMutuallyRec}).
+
+\hypertarget{def-rst}{}
+\item[$\RequireStructuredType$]
+This error indicates that a \structuredtype\ is required where a non-\structuredtype\ was supplied.
+(see \secref{TypingRule.ERecord}).
+
+\hypertarget{def-mfi}{}
+\item[$\MissingFieldInitializer$]
+This error indicates that an initialization of a \structuredtype\ is missing an expression to initialize
+one of its fields.
+(see \secref{TypingRule.ERecord}).
+
+\hypertarget{def-rsb}{}
+\item[$\RequireSameBitwidths$]
+This error indicates that two bitvector types are required to have the same bitwidths but the type-checker
+was not able to prove it
+(see \secref{BitvectorOperations}).
+
 
 \end{description}
 

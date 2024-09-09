@@ -384,8 +384,6 @@ module TypingRule = struct
     | EGetArray
     | ESliceOrEGetArrayError
     | ERecord
-    | EStructuredMissingField
-    | EStructuredNotStructured
     | EGetRecordField
     | EGetBitField
     | EGetBadField
@@ -545,8 +543,6 @@ module TypingRule = struct
     | ECall -> "ECall"
     | ESetter -> "ESetter"
     | ERecord -> "ERecord"
-    | EStructuredMissingField -> "EStructuredMissingField"
-    | EStructuredNotStructured -> "EStructuredNotStructured"
     | EGetRecordField -> "EGetRecordField"
     | EGetBitField -> "EGetBitField"
     | EGetBadField -> "EGetBadField"
@@ -712,8 +708,6 @@ module TypingRule = struct
       ESlice;
       ECall;
       ESetter;
-      EStructuredMissingField;
-      EStructuredNotStructured;
       ERecord;
       EGetRecordField;
       EGetBadField;

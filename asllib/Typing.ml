@@ -904,19 +904,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckUnop *)
-  let check_unop loc env op t1 =
+  let check_unop loc env op t =
     match op with
     | BNOT ->
-        let+ () = check_type_satisfies loc env t1 boolean in
+        let+ () = check_type_satisfies loc env t boolean in
         T_Bool |> add_pos_from loc
     | NEG -> (
         let+ () =
           either
-            (check_type_satisfies loc env t1 integer)
-            (check_type_satisfies loc env t1 real)
+            (check_type_satisfies loc env t integer)
+            (check_type_satisfies loc env t real)
         in
-        let struct1 = Types.get_well_constrained_structure env t1 in
-        match struct1.desc with
+        let t_struct = Types.get_well_constrained_structure env t in
+        match t_struct.desc with
         | T_Int UnConstrained -> T_Int UnConstrained |> add_pos_from loc
         | T_Int (WellConstrained cs) ->
             let neg e = E_Unop (NEG, e) |> add_pos_from e in
@@ -929,10 +929,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             |> add_pos_from loc
         | T_Int (Parameterized _) ->
             assert false (* We used to_well_constrained just before. *)
-        | _ -> (* fail case *) t1)
+        | _ -> (* fail case *) t)
     | NOT ->
-        let+ () = check_structure_bits loc env t1 in
-        t1 |: TypingRule.CheckUnop
+        let+ () = check_structure_bits loc env t in
+        t |: TypingRule.CheckUnop
   (* End *)
 
   let rec check_atc ~fail env t1 t2 =
@@ -1624,6 +1624,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         (T_Bits (w, []) |> here, E_Concat es |> here) |: TypingRule.EConcat
     (* End *)
+    (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
            with the structure of a record type, and whose fields have the values
@@ -1637,13 +1638,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               failwith "Typing error: should be a named type")
         in
         let field_types =
-          (* Begin EStructuredNotStructured *)
           match (Types.make_anonymous env ty).desc with
           | T_Exception fields | T_Record fields -> fields
-          | _ ->
-              conflict e [ T_Record [] ] ty
-              |: TypingRule.EStructuredNotStructured
-          (* End *)
+          | _ -> conflict e [ T_Record [] ] ty
         in
         let fields' =
           best_effort fields (fun _ ->
@@ -1654,11 +1651,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     (fun (name, _) -> List.mem_assoc name fields)
                     field_types
                 then ()
-                else
-                  (* Begin EStructuredMissingField *)
-                  fatal_from e (Error.MissingField (List.map fst fields, ty))
-                  |: TypingRule.EStructuredMissingField
-                (* End *)
+                else fatal_from e (Error.MissingField (List.map fst fields, ty))
                 (* and whose fields have the values given in the field_assignment_list. *)
               in
               let+ () =
@@ -1667,7 +1660,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 | Some x ->
                     fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
               in
-              (* Begin ERecord *)
               List.map
                 (fun (name, e') ->
                   let t', e'' = annotate_expr_ ~forbid_atcs env e' in
@@ -2024,8 +2016,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                (* End *)
              in
              let+ () = check_type_satisfies le1 env t_e t in
-             let le2 = LE_Slice (le1, slices) |> here in
-             annotate_lexpr env le2 t_e
+             let le3 = LE_Slice (le1, slices) |> here in
+             annotate_lexpr env le3 t_e
          (* Begin LESetBadField *)
          | _ -> conflict le1 [ default_t_bits; T_Record []; T_Exception [] ] t_e)
         |: TypingRule.LESetBadField
