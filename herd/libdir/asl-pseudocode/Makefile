@@ -8,25 +8,24 @@ BUNDLER_ARGS := -vv $(BUNDLER_JOBS)
 BUNDLER := bundler.py
 BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 
-BASE_URL := https://developer.arm.com/-/media/developer/products/architecture/armv9-a-architecture/2023-09/
+BASE_URL := https://developer.arm.com/-/cdn-downloads/permalink/
 
-ISA_A64_NAME := ISA_A64_xml_A_profile-2023-09
-ISA_A32_NAME := ISA_AArch32_xml_A_profile-2023-09
-REGS_NAME := SysReg_xml_A_profile-2023-09
+ISA_A64_DIR := Exploration-Tools-A64-ISA/ISA_A64
+ISA_A64_NAME := ISA_A64_xml_A_profile-2024-06
 
-TARGETS := $(ISA_A64_NAME) $(ISA_A32_NAME) $(REGS_NAME)
+TARGETS := $(ISA_A64_NAME)
 TARGETS_TAR_GZ := $(addsuffix .tar.gz,$(TARGETS))
 TARGETS_LOG := $(addsuffix .log,$(TARGETS))
 
 # .SECONDARY does not support wildcards
 .SECONDARY: $(TARGETS_TAR_GZ) $(TARGETS)
 
-$(TARGETS_TAR_GZ):
-	@ echo "Downloading ISA from developer.arm.com ..."
-	curl $(BASE_URL)/$@ --silent --output $@
+$(ISA_A64_NAME).tar.gz:
+	@echo "Downloading ISA $@ from developer.arm.com ..."
+	curl $(BASE_URL)/$(ISA_A64_DIR)/$@ --silent --output $@
 
 $(TARGETS): %: | %.tar.gz
-	@ echo "Unpacking xml archive ..."
+	@ echo "Unpacking xml archive ..." $*.tar.gz
 	@ tar -zxf $*.tar.gz $*
 
 $(TARGETS_LOG): %.log: | %
@@ -36,10 +35,8 @@ $(TARGETS_LOG): %.log: | %
 	@ $(BUNDLER_CMD) -o $(@D) --log-file $@ $*
 	@ echo "You can find extraction log at $@"
 
-.PHONY: a64 a32 regs
+.PHONY: a64
 a64: $(ISA_A64_NAME).log
-a32: $(ISA_A32_NAME).log
-regs: $(REGS_NAME).log
 
 .PHONY: all
 all: a64 a32 regs

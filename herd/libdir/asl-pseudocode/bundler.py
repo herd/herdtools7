@@ -56,12 +56,16 @@ def o_path_of_tree(root: Element, o_dir: Path) -> Path:
     root_type = root.get("type")
     if root_type == "instruction":
         ps_name = root.find("ps_section").find("ps").get("name")
-        file_name = Path(ps_name + ".opn")
-
-        if not ps_name.startswith("aarch"):
-            _logger.debug("Moving file %s to %s", ps_name, DEFAULT_INSTR_DIR)
-            file_name = DEFAULT_INSTR_DIR / file_name
-
+        if ps_name.startswith("A64"):
+          ftmp = ps_name.split('.',1)[1]
+          ftmp = "aarch64." + ftmp
+          ftmp = ftmp.split('.')
+          ftmp = '/'.join(ftmp) + ".opn"
+          file_name = Path(ftmp)
+        else:
+          _logger.debug("Moving file %s to %s", ps_name, DEFAULT_INSTR_DIR)
+          file_name = Path(ps_name + ".opn")
+          file_name = DEFAULT_INSTR_DIR / file_name
         o_path = o_dir / file_name
         o_path.parent.mkdir(parents=True, exist_ok=True)
 
