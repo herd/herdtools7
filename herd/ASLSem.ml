@@ -109,7 +109,7 @@ module Make (C : Config) = struct
       else if C.variant (Variant.ASLType `TypeCheck) then `TypeCheck
       else `Silence
 
-    let output_format = Asllib.Error.HumanReadable
+    let output_format = Asllib.Error.Silence
   end)
 
   module ASLInterpreterConfig = struct
