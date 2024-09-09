@@ -1,0 +1,10 @@
+AArch64 MADD
+{
+0:X0=65536;
+0:X1=65535;
+}
+  P0             ;
+MADD W3,W0,W1,W0 ;
+MUL  W4,W1,W1    ;
+locations [0:X3;0:X4;]
+forall 0:X3=0 /\  0:X4=-131071

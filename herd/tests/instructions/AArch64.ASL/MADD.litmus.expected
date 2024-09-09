@@ -1,0 +1,10 @@
+Test MADD Required
+States 1
+0:X3=0; 0:X4=-131071;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=0 /\ 0:X4=-131071)
+Observation MADD Always 1 0
+Hash=37b637d8e9d53b68c8fad63415cc190b
+

@@ -438,8 +438,21 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           Some
             ( "integer/arithmetic/mul/widening/32-64/" ^ fname,
               stmt
-                [ "d" ^= reg rd; "n" ^= reg rn; "m" ^= reg rm; "a" ^= reg ra ]
+                [ "d" ^= reg rd; "n" ^= reg rn; "m" ^= reg rm; "a" ^= reg ra; ]
             )
+      | I_MOP (op,v,rd,rn,rm,ra) ->
+           let fname =
+            let open MOPExt in
+            match op with
+            | ADD -> "MADD_32A_dp_3src.opn"
+            | SUB -> "MSUB_32A_dp_3src.opn"
+          in
+          Some
+            ( "integer/arithmetic/mul/uniform/add-sub/" ^ fname,
+              stmt
+                ["destsize" ^= variant v;
+                 "d" ^= reg rd; "n" ^= reg rn;
+                 "m" ^= reg rm; "a" ^= reg ra; ])
       | I_OP3
           ( v,
             (( ADD | ADDS | SUB | SUBS | AND | ANDS | BIC | BICS | EOR | EON
