@@ -1,0 +1,11 @@
+Test Y01 Required
+States 1
+s={3,4}; t={2,6};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (t={2,6} /\ s={3,4})
+Observation Y01 Always 1 0
+Hash=c4df84c412ce399286611bf8e695a12a
+

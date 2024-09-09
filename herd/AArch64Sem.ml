@@ -3634,6 +3634,12 @@ module Make
         |  I_ADD_SV (r1,r2,r3) ->
           check_sve inst;
           !(add_sv r1 r2 r3 ii)
+        |  I_EOR_SV (r1,r2,r3) ->
+          check_sve inst;
+          !(read_reg_scalable false r3 ii >>|
+            read_reg_scalable false r2 ii >>= fun (v1,v2) ->
+              M.op Op.Xor v1 v2 >>= fun v ->
+                write_reg_scalable r1 v ii)
         | I_UADDV(var,v,p,z) ->
           check_sve inst;
           !(uaddv var v p z ii)

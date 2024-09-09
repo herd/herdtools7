@@ -1310,6 +1310,10 @@ instr:
     I_DUP_SV ($2 , v, r) }
 | TOK_ADD zreg COMMA zreg COMMA zreg
   { I_ADD_SV ($2,$4,$6) }
+| OP ARCH_ZDREG COMMA ARCH_ZDREG COMMA ARCH_ZDREG
+  { match $1 with
+    | EOR -> I_EOR_SV ($2,$4,$6)
+    | _ -> assert false}
 | TOK_INDEX zreg COMMA xreg COMMA k
   { match $2 with
     | Zreg(_,64) -> I_INDEX_SI ($2,V64,$4,$6)
