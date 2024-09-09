@@ -446,6 +446,16 @@ An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
 \hypertarget{def-vals}{}
 The semantics of an ASL specification associates \emph{native values} to variables.
 The set of native values $\vals$ is the minimal set defined by the following recursive rules (\texttt{NV} stands for Native Value):
+
+\subsection{Prose}
+The set of native values $\vals$ is the minimal set satisfying all of the following rules:
+\begin{itemize}
+  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a native value;
+  \item \textsc{tuple values and array values}: if $\vl$ is a list of native values then $\nvvector{\vl}$ is a native value;
+  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to native values then $\nvrecord{\vr}$ is a native value.
+\end{itemize}
+
+\subsection{Formally}
 \hypertarget{def-nvliteral}{}
 \hypertarget{def-nvvector}{}
 \hypertarget{def-nvrecord}{}
@@ -513,11 +523,11 @@ We now explain the components over which configurations are defined:
   \item Dynamic Environments (\defref{dynamicenvironments}) associate native values to variables.
   \item Concurrent Execution Graphs (\secref{concurrentexecutiongraphs}) track Read and Write Effects over variables.
 \end{itemize}
-
+\newpage
 \hypertarget{def-dynamicenvs}{}
 \begin{definition}[Dynamic Environments \label{def:dynamicenvironments}]
 A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}, for short, is a structure which,
-amongst other things, associates native values to variables.
+associates native values to variables.
 Formally, a sequential environment $\denv \in \dynamicenvs$ is a pair consisting of a partial function
 (see \defref{PartialFunction}) from global
 variable names to their native value, and a partial function from local variable names to their
@@ -1318,6 +1328,7 @@ the expression \texttt{3 DIV 0} results in a type error.
   \Normal((\vv, \vg), \newenv)
 }
 \end{mathpar}
+
 The rule above applies to many binary operators, including $\EQOP$ (which is used for \texttt{<->}
 as well as \texttt{==}).
 
@@ -1758,7 +1769,7 @@ the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ 
 \inferrule{\env \eqname (\tenv, \denv)\\
   \vv \in \textsf{dyn-dom}(\tenv, \env, \vt)
 }{
-  \evalexpr{\env, \overname{\EUnknown}{\ve}} \evalarrow \Normal(\overname{\env}{\newenv}, \vv, \emptygraph)
+  \evalexpr{\env, \overname{\EUnknown}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 Notice that this rule introduces non-determinism.
@@ -1822,7 +1833,7 @@ incidence of unintended errors by making such uses fail type-checking unless
 the asserting type conversion is provided.
 
 \lrmcomment{This is related to \identr{WZVX}:}
-Note that ATCs are exectution-time checks. An execution-time check is a
+Note that ATCs are execution-time checks. An execution-time check is a
 condition that is evaluated during the evaluation of an execution-time
 initializer expression or subprogram. If the condition evaluates to $\False$ it
 is a dynamic error.
@@ -4165,7 +4176,7 @@ is defined before the block and hence still exists after the block.
   \env \eqname (\tenv,\denv)\\
   \blockenv \eqdef (\tenv, (G^\denv, \emptylist))\\
   \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\\\
-  \blockenvone\eqdef(\tenv, \denvone)\\
+  \blockenvone\eqname(\tenv, \denvone)\\
   \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
 }{
   \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)
@@ -4745,29 +4756,26 @@ terminates successfully. That is, no dynamic error occurs.
 
 \CodeSubsection{\CatchNoThrowBegin}{\CatchNoThrowEnd}{../Interpreter.ml}
 
-  % For some reason the emptyformal environment here fails LaTeX compilation.
-  %
-  \subsection{Formally}
-      \begin{mathpar}
-      \inferrule[implicit\_throw]{
-        \sm \eqname \Throwing((\None, \sg), \envthrow)
-      }
-      {
-        \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
-      }
-      \and
-      \inferrule[non\_throwing]{
-        \configdomain{\sm} = \Normal
-      }
-      {
-        \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
-      }
-    \end{mathpar}
-  %
+\subsection{Formally}
+  \begin{mathpar}
+  \inferrule[implicit\_throw]{
+    \sm \eqname \Throwing((\None, \sg), \envthrow)
+  }
+  {
+    \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+  }
+  \and
+  \inferrule[non\_throwing]{
+    \configdomain{\sm} = \Normal
+  }
+  {
+    \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+  }
+\end{mathpar}
 
-  \isempty{\subsection{Comments}}
+\isempty{\subsection{Comments}}
 
-  \section{SemanticsRule.FindCatcher \label{sec:SemanticsRule.FindCatcher}}
+\section{SemanticsRule.FindCatcher \label{sec:SemanticsRule.FindCatcher}}
 
 \hypertarget{def-findcatcher}{}
 The (recursively-defined) helper relation
@@ -5568,8 +5576,8 @@ environment.
   \begin{itemize}
     \item the AST for the parsed specification, $\parsedspec$, and AST for the parsed standard library,
     $\parsedstd$, are concatenated to give $\parsedast$;
-    \item applying the type-checker to $\parsedast$ with an empty static environment is either
-    $(\typedspec, \tenv)$\ProseOrError;
+    \item applying the type-checker to $\parsedast$ with an empty static environment yields
+    $(\typedspec, \tenv)$;
     \item populating the environment with the declarations of the global storage elements
     is $(\env, \vgone)$\ProseOrError;
     \item One of the following applies:
@@ -5596,27 +5604,29 @@ environment.
   \CodeSubsection{\TopLevelBegin}{\TopLevelEnd}{../Interpreter.ml}
 
 \subsection{Formally}
-  \begin{mathpar}
-  \inferrule[normal]{
-    \parsedast \eqdef \parsedspec \concat \parsedstd\\
-    \annotatespec(\emptytenv, \parsedast) \eqname (\typedspec,\tenv)\\
-    \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone) \OrDynError\\\\
-    \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
-    \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
-  }
-  {
-    \evalspec{\parsedast, \parsedstd} \evalarrow (\vv, \newg)
-  }
-  \and
-  \inferrule[throwing]{
-    \parsedast \eqdef \parsedspec \concat \parsedstd\\
-    \annotatespec(\emptytenv, \parsedast) \eqdef (\typedspec,\tenv)\\
-    \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone)\\
-    \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\texttt{v\_opt}, \Ignore)
-  }
-  {
-    \evalspec{\parsedspec, \parsedstd} \evalarrow \ErrorVal{UncaughtException}
-  }
+\begin{mathpar}
+\inferrule[normal]{
+  \parsedast \eqdef \parsedspec \concat \parsedstd\\
+  \annotatespec(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
+  \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone) \OrDynError\\\\
+  \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
+  \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
+}
+{
+  \evalspec{\parsedast, \parsedstd} \evalarrow (\vv, \newg)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[throwing]{
+  \parsedast \eqdef \parsedspec \concat \parsedstd\\
+  \annotatespec(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
+  \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone)\\
+  \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\texttt{v\_opt}, \Ignore)
+}
+{
+  \evalspec{\parsedspec, \parsedstd} \evalarrow \ErrorVal{UncaughtException}
+}
 \end{mathpar}
 Notice that when the type-checker fails due to a type error in the given specification,
 the corresponding premise in the rule above does not hold, and the semantics

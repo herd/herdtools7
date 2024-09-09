@@ -368,7 +368,6 @@ module TypingRule = struct
     | CheckBinop
     | ELit
     | ATC
-    | ELocalVarConstant
     | ELocalVar
     | EGlobalVarConstantVal
     | EGlobalVarConstantNoVal
@@ -533,7 +532,6 @@ module TypingRule = struct
     | LowestCommonAncestor -> "LowestCommonAncestor"
     | ELit -> "ELit"
     | ATC -> "ATC"
-    | ELocalVarConstant -> "ELocalVarConstant"
     | ELocalVar -> "ELocalVar"
     | EGlobalVarConstantVal -> "EGlobalVarConstantVal"
     | EGlobalVarConstantNoVal -> "EGlobalVarConstantNoVal"
@@ -701,7 +699,6 @@ module TypingRule = struct
       LowestCommonAncestor;
       ELit;
       ATC;
-      ELocalVarConstant;
       ELocalVar;
       EGlobalVarConstantVal;
       EGlobalVarConstantNoVal;

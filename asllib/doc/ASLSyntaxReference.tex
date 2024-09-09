@@ -1102,29 +1102,35 @@ Expanding an inlined derivation consists of replacing each instance of $N$
 in a right-hand-side sentence of a derivation with each of $R_{1..k}$, thereby
 creating $k$ variations of it (and removing $N \derivesinline R_1 \;|\; \ldots \;|\; R_k$
 from the set of derivations).
-For example, given the inlined derivation
-\[
-  A \derivesinline a \;|\; b
-\]
-and another derivation where $A$ appears:
-\[
-B \derives A \parsesep c
-\]
-expanding $A$ yields:
-\[
-B \derives a \parsesep c \;|\; b \parsesep c
-\]
-Note that the same would apply if $B$ was defined via an inlined derivation.
-That is, an inlined derivation can itself be expanded if it contains non-terminal
-symbols defined via inlined derivations.
-For example, if we had
-\[
-B \derivesinline A \parsesep c
-\]
-expanding $A$ in $B$ would result in
-\[
-B \derivesinline a \parsesep c \;|\; b \parsesep c
-\]
+
+For example, consider the derivation
+\begin{flalign*}
+\Nexpr \derives\ & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &
+\end{flalign*}
+coupled with the derivation
+\begin{flalign*}
+\Nbinop \derives\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
+                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+\end{flalign*}
+
+A grammar containing these two derivations results in shift-reduce conflicts.
+Resolving these conflicts is done by associating priority levels to each of the binary operators
+and creating a version of the first derivation for each binary operator:
+\begin{flalign*}
+\Nexpr \derives\ & \Nexpr \parsesep \Tand \parsesep \Nexpr & \\
+              |\ & \Nexpr \parsesep \Tband \parsesep \Nexpr & \\
+              |\ & \Nexpr \parsesep \Tbor \parsesep \Nexpr & \\
+              \ldots \\
+              |\ & \Nexpr \parsesep \Tconcat \parsesep \Nexpr &
+\end{flalign*}
+
+By defining the derivations of $\Nbinop$ as inlined, we achieve the same effect more compactly:
+\begin{flalign*}
+\Nbinop \derives\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
+                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+\end{flalign*}
 
 Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
 all inlined derivations to obtain a context-free grammar without any inlined derivations.
@@ -1149,25 +1155,47 @@ non-terminal altogether.
 
 We note that a parametric production can be either a normal derivation of an inlined derivation.
 
-For example,
-\[
-  \option{x} \derives \emptysentence \;|\; x
-\]
-is useful for compactly defining derivations where part of a sentence may or may not appear.
+For example, the derivation for a list of ASL global declarations is as follows:
+\begin{flalign*}
+\Nast \derives\ & \maybeemptylist{\Ndecl} &
+\end{flalign*}
+It is defined via the parametric production for possibly-empty lists:
+\begin{flalign*}
+\maybeemptylist{x}   \derives\ & \emptysentence \;|\; x \parsesep \maybeemptylist{x} &\\
+\end{flalign*}
 
-Suppose we have
-\[
-B \derives a \parsesep \option{A \parsesep b}
-\]
-then expanding the instance $\option{A, b}$ produces
-\[
-\uniquesymb{\option{A \parsesep b}} \derives \emptysentence \;|\; A \parsesep b
-\]
-since $x[A \parsesep b/x]$ yields $A \parsesep b$ and $\emptysentence[A \parsesep b/x]$ yields $\emptysentence$,
-and the derivations for $B$ are replaced by
-\[
-B \derives a \parsesep \uniquesymb{\option{A \parsesep b}}
-\]
+\newcommand\Ndecllist[0]{\nonterminal{decl\_list}}
+Expanding $\maybeemptylist{\Ndecl}$ produces the following derivations for a new unique symbol.
+That is, a symbol that does not appear anywhere else in the grammar.
+In this example we will choose the new symbol to be $\Ndecllist$. The result of the expansion is then:
+\begin{flalign*}
+\Ndecllist   \derives\ & \emptysentence \;|\; \Ndecl \parsesep \Ndecllist &\\
+\end{flalign*}
+The new symbol is substituted anywhere $\maybeemptylist{\Ndecl}$ appears in the original grammar,
+which results in the following derivation replacing the original derivation for $\Nast$:
+\begin{flalign*}
+\Nast \derives\ & \Ndecllist &
+\end{flalign*}
+
+% For example,
+% \[
+%   \option{x} \derives \emptysentence \;|\; x
+% \]
+% is useful for compactly defining derivations where part of a sentence may or may not appear.
+
+% Suppose we have
+% \[
+% B \derives a \parsesep \option{A \parsesep b}
+% \]
+% then expanding the instance $\option{A, b}$ produces
+% \[
+% \uniquesymb{\option{A \parsesep b}} \derives \emptysentence \;|\; A \parsesep b
+% \]
+% since $x[A \parsesep b/x]$ yields $A \parsesep b$ and $\emptysentence[A \parsesep b/x]$ yields $\emptysentence$,
+% and the derivations for $B$ are replaced by
+% \[
+% B \derives a \parsesep \uniquesymb{\option{A \parsesep b}}
+% \]
 
 Expanding all instances of parametric productions results in a grammar without any parametric productions.
 
@@ -2322,6 +2350,14 @@ In our example, this results in the abbreviated rule notation
   \astarrow\\
   \SWhile(\astof{\vexpr}, \None, \astof{\vstmtlist})
   \end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+{
+  \Nexpr(\Nexpr, \Nbinop, \Nexpr)
 }
 }
 \end{mathpar}

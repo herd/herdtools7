@@ -629,7 +629,7 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 We use $\tenv$ and similar variable names (for example, $\tenvone$ and $\newtenv$) to range over static environments.
 
 A static environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
-distinct components: the global environment $G^\tenv \in \globalstoragetypes$ --- pertaining to AST nodes
+distinct components: the global environment $G^\tenv \in \globalstaticenvs$ --- pertaining to AST nodes
 appearing outside of a given subprogram, and the local environment
 $L^\tenv \in \localstaticenvs$ --- pertaining to AST nodes appearing inside a given subprogram.
 This separation allows us to type-check subprograms by using an empty local environment.
@@ -4962,7 +4962,6 @@ $\ve$ in \tenv\ is either the pair $(\vt, \newe)$, where $\vt$ is a type and
 $\newe$ is an annotated expression, or a type error, and one of the following applies:
 \begin{itemize}
 \item TypingRule.ELit (see \secref{TypingRule.ELit});
-\item TypingRule.ELocalVarConstant (see \secref{TypingRule.ELocalVarConstant})
 \item TypingRule.ELocalVar (see \secref{TypingRule.ELocalVar})
 \item TypingRule.EGlobalVarConstant (see \secref{TypingRule.EGlobalVarConstant})
 \item TypingRule.EGlobalVarConstantNoVal (see \secref{TypingRule.EGlobalVarConstantNoVal})
@@ -5027,61 +5026,47 @@ All of the following apply:
 {\annotateexpr{\tenv, \ELiteral(\vv)} \typearrow (\vt, \ELiteral(\vv))}
 \end{mathpar}
 
-\section{TypingRule.ELocalVarConstant \label{sec:TypingRule.ELocalVarConstant}}
-
+\section{TypingRule.ELocalVar \label{sec:TypingRule.ELocalVar}}
 \subsection{Prose}
-All of the following apply:
+One of the following applies:
 \begin{itemize}
-\item $\ve$ denotes a local variable $\vx$;
-\item $\vx$ is bound to a local constant $\vv$ of type $\tty$ in the local environment given by $\tenv$;
-\item $\vt$ is $\tty$;
-\item $\newe$ is the Literal $\vv$.
+  \item All of the following apply (\textsc{constant}):
+  \begin{itemize}
+  \item $\ve$ denotes a local variable $\vx$;
+  \item $\vx$ is bound to a local constant $\vv$ of type $\tty$ in the local environment given by $\tenv$;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is the Literal $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_constant}):
+  \begin{itemize}
+  \item $\ve$ denotes a local variable $\vx$;
+  \item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
+  \item $\vx$ has type $\tty$ in the local environment given by $\tenv$;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is $\ve$.
+  \end{itemize}
 \end{itemize}
-
-\isempty{\subsection{Example}}
-
-\CodeSubsection{\ELocalVarConstantBegin}{\ELocalVarConstantEnd}{../Typing.ml}
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[constant]{
   L^\tenv.\constantvalues(\vx) = \vv\\
   L^\tenv.\localstoragetypes(\vx) = (\tty, \LDKConstant)
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\eliteral{\vv}}{\newe})
 }
 \end{mathpar}
 
-\isempty{\subsection{Comments}}
-
-\section{TypingRule.ELocalVar \label{sec:TypingRule.ELocalVar}}
-
-\subsection{Prose}
-All of the following apply:
-\begin{itemize}
-\item $\ve$ denotes a local variable $\vx$;
-\item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
-\item $\vx$ has type $\tty$ in the local environment given by $\tenv$;
-\item $\vt$ is $\tty$;
-\item $\newe$ is $\ve$.
-\end{itemize}
-
-\isempty{\subsection{Example}}
-
-\CodeSubsection{\ELocalVarBegin}{\ELocalVarEnd}{../Typing.ml}
-
-\subsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[non\_constant]{
   L^\tenv.\constantvalues(\vx) = \bot\\
   L^\tenv.\localstoragetypes(\vx) =  (\tty, k) \\
   k \in \{\LDKVar, \LDKLet\}
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\EVar(\vx)}{\newe})
 }
 \end{mathpar}
-
-\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGlobalVarConstantVal \label{sec:TypingRule.EGlobalVarConstant}}
 
@@ -5173,7 +5158,7 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
 \item $\ve$ is a variable $\vx$;
-\item $\vx$ is not bound in $\tenv$;
+\item $\vx$ is not bound to a type in $\tenv$;
 \item the result is a type error indicating that $\vx$ is an undefined identifier.
 \end{itemize}
 
@@ -5187,7 +5172,7 @@ All of the following apply:
   G^\tenv.\globalstoragetypes(\vx) = \bot\\
   L^\tenv.\globalstoragetypes(\vx) = \bot\\
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow \TypeErrorVal{UndefinedIdentifier}
+  \annotateexpr{\tenv,\overname{\EVar(\vx)}{\ve}} \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
 
@@ -8563,7 +8548,7 @@ One of the following applies:
   \item All of the following apply (\textsc{none}):
   \begin{itemize}
     \item $\ve$ is $\None$;
-    \item $\vep$ is $None$.
+    \item $\vep$ is $\None$.
   \end{itemize}
 
   \item All of the following apply (\textsc{some}):

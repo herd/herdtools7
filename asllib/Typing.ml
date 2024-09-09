@@ -1527,7 +1527,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           try
             match IMap.find x env.local.storage_types with
-            (* Begin ELocalVarConstant *)
+            (* Begin ELocalVar *)
             | ty, LDK_Constant ->
                 let e =
                   try
@@ -1535,9 +1535,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     E_Literal v |> here
                   with Not_found -> e
                 in
-                (ty, e) |: TypingRule.ELocalVarConstant
-            (* End *)
-            (* Begin ELocalVar *)
+                (ty, e)
             | ty, _ -> (ty, e) |: TypingRule.ELocalVar
             (* End *)
           with Not_found -> (
