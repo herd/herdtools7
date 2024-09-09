@@ -201,7 +201,7 @@ let () =
         Printf.eprintf
           {|"File","Start line","Start col","End line","End col","Exception"
 |}
-    | Error.HumanReadable -> ()
+    | Error.(HumanReadable | Silence) -> ()
   in
 
   let typed_ast, static_env =

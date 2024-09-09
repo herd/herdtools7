@@ -331,7 +331,7 @@ let pp_csv pp_desc =
 let pp_error_csv f e = pp_csv pp_error_desc f e
 let pp_warning_csv f w = pp_csv pp_warning_desc f w
 
-type output_format = HumanReadable | CSV
+type output_format = HumanReadable | CSV | Silence
 
 module type ERROR_PRINTER_CONFIG = sig
   val output_format : output_format
@@ -342,11 +342,13 @@ module ErrorPrinter (C : ERROR_PRINTER_CONFIG) = struct
     match C.output_format with
     | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_error e
     | CSV -> Printf.eprintf "%a\n" pp_error_csv e
+    | Silence -> ()
 
   let warn w =
     match C.output_format with
     | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_warning w
     | CSV -> Printf.eprintf "%a\n" pp_warning_csv w
+    | Silence -> ()
 
   let warn_from ~loc w = ASTUtils.add_pos_from loc w |> warn
 end
