@@ -1433,14 +1433,14 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 
 \begin{mathpar}
   \inferrule{
-    \evalexpr{\env, \ECond} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
+    \evalexpr{\env, \econd} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
     \mcond \eqname (\nvbool(\vb), \vgone)\\
     \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
     \evalexpr{\envone, \vep} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
     \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
   }
   {
-    \evalexpr{\env, \ECond(\ECond, \veone, \vetwo)} \evalarrow
+    \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
     \Normal((\vv, \vg), \newenv)
   }
 \end{mathpar}
@@ -1769,7 +1769,7 @@ the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ 
 \inferrule{\env \eqname (\tenv, \denv)\\
   \vv \in \textsf{dyn-dom}(\tenv, \env, \vt)
 }{
-  \evalexpr{\env, \overname{\EUnknown}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
+  \evalexpr{\env, \overname{\EUnknown(\vt)}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 Notice that this rule introduces non-determinism.

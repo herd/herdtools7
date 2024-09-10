@@ -8,6 +8,7 @@ and then describe how sets of rules formally define functions and relations.
 
 \section{Mathematical Definitions and Notations}
 
+\hypertarget{def-triangleq}{}
 We use $\triangleq$ to define mathematical concepts.
 
 We define the following sets:
@@ -34,9 +35,11 @@ We define the following sets:
 \hypertarget{def-false}{}
 \hypertarget{def-true}{}
 \item $\Bool$ is the set of ASL Boolean literals, which consists of $\True$ and $\False$.
-We also use the these literals to represent the corresponding mathematical truth values,
+We employ these literals to represent the corresponding mathematical truth values,
 which are used to denote whether logical assertions hold or not.
-We also employ the mathematical meaning of logical conjunction $\land$, logical disjunction $\vee$,
+\hypertarget{def-land}{}
+\hypertarget{def-lor}{}
+We also employ the mathematical meaning of logical conjunction $\land$, logical disjunction $\lor$,
 and logical negation $\neg$, given next.
 For a set of Boolean values $A$:
 \[
@@ -46,15 +49,16 @@ For a set of Boolean values $A$:
     \True & \text{if all values in A are }\True\\
     \False & \text{otherwise}
   \end{cases}\\
-  \vee A &\triangleq&
+  \lor A &\triangleq&
   \begin{cases}
     \False & \text{if all values in A are }\False\\
     \True & \text{otherwise}
   \end{cases}\\
 \end{array}
 \]
+\hypertarget{def-neg}{}
 For a pair of Boolean values $a,b\in\Bool$, we define $a \land b \triangleq \land\{a, b\}$
-and $a \vee b \triangleq \vee\{a, b\}$.
+and $a \lor b \triangleq \lor\{a, b\}$.
 Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 
 \item
@@ -112,9 +116,10 @@ which is defined next is named $q$.
   \]
 \end{definition}
 
+\hypertarget{def-cartimes}{}
 \begin{definition}[Cartesian Product]
-    The \emph{Cartesian product} of sets $A$ and $B$, denoted $A \times B$
-    is $A \times B \triangleq \{(a,b) \;|\; a \in A, b \in B\}$.
+    The \emph{Cartesian product} of sets $A$ and $B$, denoted $A \cartimes B$
+    is $A \cartimes B \triangleq \{(a,b) \;|\; a \in A, b \in B\}$.
 \end{definition}
 
 \hypertarget{def-partialfunc}{}
@@ -174,7 +179,7 @@ This makes convenient to refer to arguments by referring to the corresponding na
 the expressions corresponding to the arguments.
 For example,
 \[
-    \textsf{choice} : \overname{\Bool}{b} \times \overname{T}{x} \times \overname{T}{y} \rightarrow \overname{T}{z}
+    \textsf{choice} : \overname{\Bool}{b} \cartimes \overname{T}{x} \cartimes \overname{T}{y} \rightarrow \overname{T}{z}
 \]
 defines a function type and lets us refer to the first argument as $b$, the second argument as $x$,
 the third argument as $y$, and to the result as $z$.
@@ -185,7 +190,7 @@ $x$, $y$, and $z$ is unspecified and inferred from the context where the functio
 
 \hypertarget{def-choice}{}
 \begin{definition}[Choice]
-The parametric function $\textsf{choice} : \overname{\Bool}{b} \times \overname{T}{x} \times \overname{T}{y} \rightarrow \overname{T}{z}$,
+The parametric function $\textsf{choice} : \overname{\Bool}{b} \cartimes \overname{T}{x} \cartimes \overname{T}{y} \rightarrow \overname{T}{z}$,
 is defined as follows:
 \[
   \choice{\vb}{x}{y} \triangleq
@@ -230,7 +235,7 @@ and $T^+$ for a non-empty list of elements of type $T$.
 
 \hypertarget{def-concat}{}
 \begin{definition}[List Concatenation]
-The parametric function $\concat : T^* \times T^* \rightarrow T^*$ concatenates two lists:
+The parametric function $\concat : T^* \cartimes T^* \rightarrow T^*$ concatenates two lists:
 \[
     \begin{array}{rcl}
     \emptylist \concat L &\triangleq& L\\
@@ -245,7 +250,7 @@ The parametric function $\concat : T^* \times T^* \rightarrow T^*$ concatenates 
 \begin{definition}[Equating List Lengths]
 The parametric function
 \[
-  \equallength : \overname{L}{a} \times \overname{L}{b} \rightarrow \Bool
+  \equallength : \overname{L}{a} \cartimes \overname{L}{b} \rightarrow \Bool
 \]
 compares the length of two lists:
 \[
@@ -264,18 +269,36 @@ The parametric function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-bas
 \]
 \end{definition}
 
+% \hypertarget{def-filterlist}{}
+% \begin{definition}[Filtering a List]
+% The parametric function
+% \[
+% \filterlist : \overname{T^*}{l} \times \overname{(T \rightarrow \Bool)}{p} \rightarrow T^*
+% \]
+% retains the elements of the list $l$ for which the predicate $p$ returns $\True$:
+% \[
+% \begin{array}{rcl}
+% \filterlist(\emptylist, p) &\triangleq& \emptylist\\
+% \filterlist([h] \concat t, p) &\triangleq& \begin{cases}
+% [h]\concat \filterlist(t) & \text{if }p(h) = \True\\
+%  \filterlist(t) & \text{else}\\
+% \end{cases}\\
+% \end{array}
+% \]
+% \end{definition}
+
 \hypertarget{def-unziplist}{}
 \begin{definition}[Unzipping a List of Pairs]
 The parametric function
 \[
-\unziplist : (T_1 \times T_2)^* \rightarrow (T_1^* \times T_2^*)
+\unziplist : (T_1 \cartimes T_2)^* \rightarrow (T_1^* \cartimes T_2^*)
 \]
 transforms a list of pairs into the corresponding pair of lists:
 \[
-    \begin{array}{rcl}
-        \unziplist(\emptylist) &\triangleq& (\emptylist, \emptylist)\\
-        \listrange([i=1..k: (u_i,v_i)]) &\triangleq& (u_{1..k}, v_{1..k}) \enspace.
-    \end{array}
+  \unziplist(\pairs) \triangleq \begin{cases}
+    (\emptylist, \emptylist)  & \text{if }\pairs = \emptylist\\
+    (a_{1..k}, b_{1..k})      & \text{else }\pairs = (a_1,b_1) \ldots (a_k,b_k)  \enspace.
+  \end{cases}
 \]
 \end{definition}
 
@@ -410,7 +433,7 @@ the set of semantic rules, we must apply rules to form a \emph{derivation tree}.
 
 We use rules as a structured way for defining relations (and therefore functions, as a special case).
 
-To define a relation $R \subseteq X \times Y$, we use assertions of the form $\termx \rulearrow \termy$
+To define a relation $R \subseteq X \cartimes Y$, we use assertions of the form $\termx \rulearrow \termy$
 where $\termx$ and $\termy$ are logical terms denoting sets of elements from $X$ and $Y$, respectively.
 %
 We call such assertions \emph{transitions}.
@@ -854,9 +877,14 @@ definitions (see, for example, the Prose paragraph of SemanticsRule.BaseValue
 or that of TypingRule.CheckUnop).
 
 \subsection{Generic Notations}
-
 \hypertarget{def-wrapline}{}
+\begin{itemize}
+\item
 The notation $\wrappedline$ denotes that a line that is longer than the page width continues on the next line.
 
+\hypertarget{def-casesplitline}{}
+\item The notation $\casesplitline$ serves as a visual aid to delimit a common prefix of premises shared by two rule cases.
+
 \hypertarget{tododefine}{}
-\textbf{Missing definition:} Red hyperlinks indicate items that are yet to be defined.
+\item \textbf{Missing definition:} Red hyperlinks indicate items that are yet to be defined.
+\end{itemize}

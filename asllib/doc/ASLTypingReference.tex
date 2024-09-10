@@ -232,19 +232,22 @@
 %% Type functions
 \newcommand\CheckUnop[0]{\hyperlink{def-checkunop}{\texttt{check\_unop}}}
 \newcommand\CheckBinop[0]{\hyperlink{def-checkbinop}{\texttt{check\_binop}}}
-\newcommand\constraintsisstrictpositive[0]{\hyperlink{def-constraintsisstrictpositive}{\texttt{constraints\_is\_strict\_positive}}}
-\newcommand\exprisstrictpositive[0]{\hyperlink{def-exprisstrictpositive}{\texttt{expr\_is\_strict\_positive}}}
-\newcommand\constraintsisnonnegative[0]{\hyperlink{def-constraintsisnonnegative}{\texttt{constraints\_is\_non\_negative}}}
-\newcommand\exprisnonnegative[0]{\hyperlink{def-exprisnonnegative}{\texttt{expr\_is\_non\_negative}}}
 \newcommand\constraintsbinop[0]{\hyperlink{def-constraintbinops}{\texttt{constraints\_binop}}}
 \newcommand\constraintbinop[0]{\hyperlink{def-constraintbinop}{\texttt{constraint\_binop}}}
 \newcommand\isrightincreasing[0]{\hyperlink{def-isrightincreasing}{\texttt{is\_right\_increasing}}}
 \newcommand\isrightdecreasing[0]{\hyperlink{def-isrightdecreasing}{\texttt{is\_right\_decreasing}}}
 \newcommand\isleftincreasing[0]{\hyperlink{def-isleftincreasing}{\texttt{is\_left\_increasing}}}
 \newcommand\annotateconstraintbinop[0]{\hyperlink{def-annotateconstraintbinop}{\texttt{annotate\_constraint\_binop}}}
-\newcommand\explodeintervals[0]{\tododefine{explode\_intervals}} %{\hyperlink{def-explodeintervals}{\texttt{explode\_intervals}}}
-\newcommand\binopisexploding[0]{\tododefine{binop\_is\_exploding}} %{\hyperlink{def-binopisexploding}{\texttt{binop\_is\_exploding}}}
-\newcommand\binopfilterright[0]{\tododefine{binop\_filter\_right}}
+\newcommand\explodeintervals[0]{\hyperlink{def-explodeintervals}{\texttt{explode\_intervals}}}
+\newcommand\explodeconstraint[0]{\hyperlink{def-explodeconstraint}{\texttt{explode\_constraint}}}
+\newcommand\intervaltoolarge[0]{\hyperlink{def-intervaltoolarge}{\texttt{interval\_too\_large}}}
+\newcommand\binopisexploding[0]{\hyperlink{def-binopisexploding}{\texttt{binop\_is\_exploding}}}
+\newcommand\binopfilterrhs[0]{\hyperlink{def-binopfilter}{\texttt{binop\_filter\_rhs}}}
+\newcommand\refineconstraintbysign[0]{\hyperlink{def-refineconstraintbysign}{\texttt{refine\_constraint\_by\_sign}}}
+\newcommand\reducetozopt[0]{\hyperlink{def-reducetozopt}{\texttt{reduce\_to\_z\_opt}}}
+\newcommand\refineconstraints[0]{\hyperlink{def-refineconstraints}{\texttt{refine\_constraints}}}
+\newcommand\filterreduceconstraintdiv[0]{\hyperlink{def-filterreduceconstraintdiv}{\texttt{filter\_reduce\_constraint\_div}}}
+\newcommand\getliteraldivopt[0]{\hyperlink{def-getliteraldivopt}{\texttt{get\_literal\_div\_opt}}}
 \newcommand\checkslicesinwidth[0]{\tododefine{check\_slices\_in\_width}}
 \newcommand\disjointslicestopositions[0]{\tododefine{disjoint\_slices\_to\_positions}}
 \newcommand\checkpositionsinwidth[0]{\tododefine{check\_positions\_in\_width}}
@@ -361,6 +364,7 @@
 \newcommand\MissingFieldInitializer[0]{\hyperlink{def-mfi}{\TypeErrorCode{MFI}}}
 \newcommand\RequireSameBitwidths[0]{\hyperlink{def-rsb}{\TypeErrorCode{RSB}}}
 \newcommand\TypeAsssertionFails[0]{\hyperlink{def-taf}{\TypeErrorCode{TAF}}}
+\newcommand\BinaryOperationFailsAllConstraints[0]{\hyperlink{def-ofc}{\TypeErrorCode{OFC}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Typeset variable names
@@ -695,7 +699,8 @@ with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to 
 
 \section{Constrained Types}
 \begin{itemize}
-  \item A \emph{constrained type} is a type whose definition relies on an expression, for example, certain integers and bitvectors.
+  \item A \emph{constrained type} is a type whose definition is parameterized by an expression.
+        In ASL only integer types and bitvector types can be constrained.
   \item A type which is not constrained is \emph{unconstrained}.
   \item A constrained type with a non-empty constraint is \emph{well-constrained}.
   \hypertarget{def-parameterizedintegertype}
@@ -706,7 +711,7 @@ The widths of bitvector storage elements are constrained integers.
 \hypertarget{def-isunconstrainedinteger}{}
 \hypertarget{def-isparameterizedinteger}{}
 \hypertarget{def-iswellconstrainedinteger}{}
-We define the following helper predicates to classify integer types:
+We use the following helper predicates to classify integer types:
 \[
   \begin{array}{rcl}
   \isunconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
@@ -714,8 +719,7 @@ We define the following helper predicates to classify integer types:
   \iswellconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool
   \end{array}
 \]
-
-We define the following shorthands for classifying integers:
+Those are defined as follows:
 \[
   \begin{array}{rcl}
   \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\unconstrained\\
@@ -2097,10 +2101,17 @@ We define the following relations over types and operators:
 
 Finally, we define the following helper functions:
 \begin{itemize}
-  \item TypingRule.ConstraintsIsStrictPositive (see \secref{TypingRule.ConstraintsIsStrictPositive})
-  \item TypingRule.ExprIsStrictPositive (see \secref{TypingRule.ExprIsStrictPositive})
-  \item TypingRule.ConstraintsIsNonNegative (see \secref{TypingRule.ConstraintsIsNonNegative})
-  \item TypingRule.ExprIsNonNegative (see \secref{TypingRule.ExprIsNonNegative})
+  \item TypingRule.AnnotateConstraintBinop (see \secref{TypingRule.AnnotateConstraintBinop})
+  \item TypingRule.BinopFilterRhs (see \secref{TypingRule.BinopFilterRhs})
+  \item TypingRule.RefineConstraintBySign (see \secref{TypingRule.RefineConstraintBySign})
+  \item TypingRule.ReduceToZOpt (see \secref{TypingRule.ReduceToZOpt})
+  \item TypingRule.RefineConstraints (see \secref{TypingRule.RefineConstraints})
+  \item TypingRule.FilterReduceConstraintDiv (see \secref{TypingRule.FilterReduceConstraintDiv})
+  \item TypingRule.GetLiteralDivOpt (see \secref{TypingRule.GetLiteralDivOpt})
+  \item TypingRule.ExplodeIntervals (see \secref{TypingRule.ExplodeIntervals})
+  \item TypingRule.ExplodeConstraint (see \secref{TypingRule.ExplodeConstraint})
+  \item TypingRule.IntervalTooLarge (see \secref{TypingRule.IntervalTooLarge})
+  \item TypingRule.BinopIsExploding (see \secref{TypingRule.BinopIsExploding})
 \end{itemize}
 
 We also define the helper rule TypingRule.FindNamedLCA (\secref{TypingRule.FindNamedLCA}).
@@ -3531,39 +3542,15 @@ One of the following applies:
     \item $\vt$ is the unconstrained integer type;
   \end{itemize}
 
-  \item All of the following apply (\textsc{arith\_t\_int\_wellconstrained1}):
+  \item All of the following apply (\textsc{arith\_t\_int\_wellconstrained}):
   \begin{itemize}
-    \item $\op$ is one of $\{\MUL, \POW, \PLUS, \MINUS\}$;
+    \item $\op$ is one of $\{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}$;
     \item the \wellconstrainedstructure\ of either $\vtone$ in $\tenv$ is that of a well-constrained integer type with
           constraints $\vcsone$;
-          \item the \wellconstrainedstructure\ of either $\vttwo$ in $\tenv$ is that of a well-constrained integer type with
+    \item the \wellconstrainedstructure\ of either $\vttwo$ in $\tenv$ is that of a well-constrained integer type with
           constraints $\vcstwo$;
-    \item applying $\op$ to $\vcsone$ and $\vcstwo$ in $\tenv$ yields $\vcs$;
-    \item $\vt$ is the well-constrained integer type with constraints $\vcs$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{arith\_t\_int\_wellconstrained2}):
-  \begin{itemize}
-    \item $\op$ is one of $\{\DIVRM, \DIV, \MOD\}$;
-    \item the \wellconstrainedstructure\ of either $\vtone$ in $\tenv$ is that of a well-constrained integer type with
-          constraints $\vcsone$;
-          \item the \wellconstrainedstructure\ of either $\vttwo$ in $\tenv$ is that of a well-constrained integer type with
-          constraints $\vcstwo$;
-    \item checking whether $\vcstwo$ represents strictly-positive integers yields $\True$\ProseOrTypeError;
-    \item applying $\op$ to $\vcsone$ and $\vcstwo$ in $\tenv$ yields $\vcs$;
-    \item $\vt$ is the well-constrained integer type with constraints $\vcs$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{arith\_t\_int\_wellconstrained3}):
-  \begin{itemize}
-    \item $\op$ is one of $\{\SHL, \SHR\}$;
-    \item the \wellconstrainedstructure\ of either $\vtone$ in $\tenv$ is that of a well-constrained integer type with
-          constraints $\vcsone$;
-          \item the \wellconstrainedstructure\ of either $\vttwo$ in $\tenv$ is that of a well-constrained integer type with
-          constraints $\vcstwo$;
-    \item checking whether $\vcstwo$ represents non-negative integers yields $\True$\ProseOrTypeError;
-    \item applying $\op$ to $\vcsone$ and $\vcstwo$ in $\tenv$ yields $\vcs$;
-    \item $\vt$ is the well-constrained integer type with constraints $\vcs$;
+    \item applying $\annotateconstraintbinop$ to $\op$, $\vcsone$, and $\vcstwo$ in $\tenv$ yields $\vcs$;
+    \item $\vt$ is the integer type with constraints $\vcs$;
   \end{itemize}
 
   \item All of the following apply (\textsc{plus\_minus\_mul\_real}):
@@ -3778,35 +3765,13 @@ The following two rules are not mutually exclusive, but both yield the same resu
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[arith\_t\_int\_wellconstrained1]{
-  \op \in  \{\MUL, \POW, \PLUS, \MINUS\}\\
+\inferrule[arith\_t\_int\_wellconstrained]{
+  \op \in  \{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}\\
   \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
   \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
   \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
 }{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
-}
-\and
-\inferrule[arith\_t\_int\_wellconstrained2]{
-  \op \in  \{\DIVRM, \DIV, \MOD\}\\
-  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
-  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
-  \constraintsisstrictpositive(\vcstwo) \typearrow \vb\\
-  \checktrans{\vb}{DenominatorMustBePositive} \checktransarrow \True \OrTypeError\\\\
-  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
-}
-\and
-\inferrule[arith\_t\_int\_wellconstrained3]{
-  \op \in  \{\SHL, \SHR\}\\
-  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
-  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
-  \constraintsisnonnegative(\vcstwo) \typearrow \vb\\
-  \checktrans{\vb}{ShifterMustBeNonNegative} \checktransarrow \True \OrTypeError\\\\
-  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\wellconstrained(\vcs))
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\vcs)
 }
 \end{mathpar}
 
@@ -3845,196 +3810,6 @@ The following two rules are not mutually exclusive, but both yield the same resu
   \identr{TTGQ}, \identi{YHML}, \identi{YHRP}, \identi{VMZF}, \identi{YXSY},
   \identi{LGHJ}, \identi{RXLG}.
 }
-
-\section{TypingRule.ConstraintsIsStrictPositive \label{sec:TypingRule.ConstraintsIsStrictPositive}}
-\hypertarget{def-constraintsisstrictpositive}{}
-The function
-\[
-  \constraintsisstrictpositive(\overname{\intconstraint^*}{\cs}) \aslto \overname{\Bool}{\vb}
-\]
-conservatively tests whether the list of integer constraints $\cs$ always represent positive integers,
-yielding the result in $\vb$.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{empty}):
-  \begin{itemize}
-    \item $\cs$ is the empty list;
-    \item define $\vb$ as $\True$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{exact}):
-  \begin{itemize}
-    \item $\cs$ is the list with \head\ a constraint for the expression $\ve$ (that is, \\
-          $\ConstraintExact(\ve)$) and \tail\ $\csone$;
-    \item applying $\exprisstrictpositive$ to $\ve$ yields $\vbone$;
-    \item applying $\constraintsisstrictpositive$ to $\csone$ yields $\vbtwo$;
-    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{range}):
-  \begin{itemize}
-    \item $\cs$ is the list with \head\ a range constraint for the bottom expression $\ve$ (that is, $\ConstraintRange(\ve, \Ignore)$)
-          and \tail\ $\csone$;
-    \item applying $\exprisstrictpositive$ to $\ve$ yields $\vbone$;
-    \item applying $\constraintsisstrictpositive$ to $\csone$ yields $\vbtwo$;
-    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[empty]{}{
-  \constraintsisstrictpositive(\overname{\emptylist}{\cs}) \typearrow \overname{\True}{\vb}
-}
-\and
-\inferrule[exact]{
-  \exprisstrictpositive(\ve) \typearrow \vbone\\
-  \constraintsisstrictpositive(\csone) \typearrow \vbtwo
-}{
-  \constraintsisstrictpositive(\overname{[\ConstraintExact(\ve)]\concat \csone}{\cs}) \typearrow \overname{\vbone\land\vbtwo}{\vb}
-}
-\and
-\inferrule[range]{
-  \exprisstrictpositive(\ve) \typearrow \vbone\\
-  \constraintsisstrictpositive(\csone) \typearrow \vbtwo
-}{
-  \constraintsisstrictpositive(\overname{[\ConstraintRange(\ve, \Ignore)]\concat \csone}{\cs}) \typearrow \overname{\vbone\land\vbtwo}{\vb}
-}
-\end{mathpar}
-
-\section{TypingRule.ExprIsStrictPositive \label{sec:TypingRule.ExprIsStrictPositive}}
-\hypertarget{def-exprisstrictpositive}{}
-The function
-\[
-\exprisstrictpositive(\overname{\expr}{\ve}) \aslto \overname{\Bool}{vb}
-\]
-conservatively tests whether the expression $\ve$ is always positive, yielding the result in $\vb$.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{true}):
-  \begin{itemize}
-    \item $\ve$ is a literal expression for the integer literal $\vi$;
-    \item define $\vb$ as $\True$ if and only if $\vi$ is greater than $0$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{false}):
-  \begin{itemize}
-    \item $\ve$ is not a literal expression for an integer literal;
-    \item define $\vb$ as $\False$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[true]{}{
-  \exprisstrictpositive(\overname{\ELiteral(\lint(\vi))}{\ve}) \typearrow \overname{\vi > 0}{\vb}
-}
-\and
-\inferrule[false]{
-  \ve \neq \ELiteral(\lint(\Ignore))
-}{
-  \exprisstrictpositive(\ve) \typearrow \overname{\False}{\vb}
-}
-\end{mathpar}
-
-\section{TypingRule.ConstraintsIsNonNegative \label{sec:TypingRule.ConstraintsIsNonNegative}}
-\hypertarget{def-constraintsisnonnegative}{}
-The function
-\[
-  \constraintsisnonnegative(\overname{\intconstraint^*}{\cs}) \aslto \overname{\Bool}{\vb}
-\]
-conservatively tests whether the list of integer constraints $\cs$ always represent positive integers,
-yielding the result in $\vb$.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{empty}):
-  \begin{itemize}
-    \item $\cs$ is the empty list;
-    \item define $\vb$ as $\True$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{exact}):
-  \begin{itemize}
-    \item $\cs$ is the list with \head\ a constraint for the expression $\ve$ (that is, \\
-          $\ConstraintExact(\ve)$) and \tail\ $\csone$;
-    \item applying $\exprisnonnegative$ to $\ve$ yields $\vbone$;
-    \item applying $\constraintsisnonnegative$ to $\csone$ yields $\vbtwo$;
-    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{range}):
-  \begin{itemize}
-    \item $\cs$ is the list with \head\ a range constraint for the bottom expression $\ve$ (that is, $\ConstraintRange(\ve, \Ignore)$)
-          and \tail\ $\csone$;
-    \item applying $\exprisnonnegative$ to $\ve$ yields $\vbone$;
-    \item applying $\constraintsisnonnegative$ to $\csone$ yields $\vbtwo$;
-    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[empty]{}{
-  \constraintsisnonnegative(\overname{\emptylist}{\cs}) \typearrow \overname{\True}{\vb}
-}
-\and
-\inferrule[exact]{
-  \exprisnonnegative(\ve) \typearrow \vbone\\
-  \constraintsisnonnegative(\csone) \typearrow \vbtwo
-}{
-  \constraintsisnonnegative(\overname{[\ConstraintExact(\ve)]\concat \csone}{\cs}) \typearrow \overname{\vbone\land\vbtwo}{\vb}
-}
-\and
-\inferrule[range]{
-  \exprisnonnegative(\ve) \typearrow \vbone\\
-  \constraintsisnonnegative(\csone) \typearrow \vbtwo
-}{
-  \constraintsisnonnegative(\overname{[\ConstraintRange(\ve, \Ignore)]\concat \csone}{\cs}) \typearrow \overname{\vbone\land\vbtwo}{\vb}
-}
-\end{mathpar}
-
-\section{TypingRule.ExprIsNonNegative \label{sec:TypingRule.ExprIsNonNegative}}
-\hypertarget{def-exprisnonnegative}{}
-The function
-\[
-\exprisnonnegative(\overname{\expr}{\ve}) \aslto \overname{\Bool}{vb}
-\]
-conservatively tests whether the expression $\ve$ is always non-negative, yielding the result in $\vb$.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{true}):
-  \begin{itemize}
-    \item $\ve$ is a literal expression for the integer literal $\vi$;
-    \item define $\vb$ as $\True$ if and only if $\vi$ is greater than $-1$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{false}):
-  \begin{itemize}
-    \item $\ve$ is not a literal expression for an integer literal;
-    \item define $\vb$ as $\False$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[true]{}{
-  \exprisnonnegative(\overname{\ELiteral(\lint(\vi))}{\ve}) \typearrow \overname{\vi > -1}{\vb}
-}
-\and
-\inferrule[false]{
-  \ve \neq \ELiteral(\lint(\Ignore))
-}{
-  \exprisnonnegative(\ve) \typearrow \overname{\False}{\vb}
-}
-\end{mathpar}
 
 \section{TypingRule.FindNamedLCA \label{sec:TypingRule.FindNamedLCA}}
 \hypertarget{def-namedlowestcommonancestor}{}
@@ -4129,50 +3904,656 @@ The function
 \]
 annotates the application of the binary operation $\op$ to the lists of integer constraints
 $\csone$ and $\cstwo$, yielding an integer constraints element $\vics$.
-\ProseOtherwiseTypeError
+\ProseOtherwiseTypeError\
+
+The operator $\op$ is assumed to be only one of the operators in the following set:
+$\{\SHL, \SHR, \POW, \MOD, \DIVRM, \MINUS, \MUL, \PLUS, \DIV\}$.
+
+Annotating the constraints involves applying symbolic reasoning and in particular filtering out values that
+will definitely result in a dynamic error.
 
 \subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item applying $\binopfilterrhs$ to $\op$ $\cstwo$ in $\tenv$, to filter out constraints that will definitely fail dynamically, yields $\cstwof$;
+  \item applying $\binopisexploding$ to $\op$ yields $\vbexploding$;
+  \item applying $\explodeintervals$ to $\csone$ in $\tenv$ yields $\csonee$;
+  \item applying $\explodeintervals$ to $\cstwo$ in $\tenv$ yields $\cstwo$;
+  \item define $(\csonearg, \cstwoarg)$ as $(\csonee, \cstwoe)$ if $\vbexploding$ is $\True$ and $(\csone, \cstwof)$, otherwise;
+  \item applying $\constraintbinop$ yo $\op$, $\csonearg$, and $\cstwoarg$ yields $\csvanilla$;
+  \item applying $\reduceconstraints$ to $\csvanilla$ in $\tenv$ yields $\cs$;
+  \item one of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{div\_wellconstrained}):
+    \begin{itemize}
+      \item $\op$ is $\DIV$ and $\cs$ is a $\wellconstrained$ constraint;
+      \item view $\cs$ as $\wellconstrained(\cslist)$;
+      \item applying $\refineconstraints$ to $\filterreduceconstraintdiv$ and \\
+            $\cslist$ yields $\cslistfiltered$;
+      \item applying $\reduceconstants$ to $\cslistfiltered$ yields $\vics$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{else}):
+    \begin{itemize}
+      \item either $\op$ is not $\DIV$ or $\cs$ is not a $\wellconstrained$ constraint;
+      \item $\vics$ is $\cs$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
 
 \CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../Typing.ml}
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[exploding]{
-  \binopfilterright(\tenv, \op, \cstwo) \typearrow \cstwof\\
-  \binopisexploding(\op) \typearrow \True\\
+\inferrule[div\_wellconstrained]{
+  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\
+  \binopisexploding(\op) \typearrow \vbexploding\\
   \explodeintervals(\tenv, \csone) \typearrow \csonee\\
   \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
-  \constraintbinop(\op, \csonee, \cstwoe) \typearrow \cs\\
-  \reduceconstraints(\tenv, \cs) \typearrow \vics
+  (\csonearg, \cstwoarg) \eqdef \choice{\vbexploding}{(\csonee, \cstwoe)}{(\csone, \cstwof)}\\
+  \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
+  \reduceconstraints(\tenv, \csvanilla) \typearrow \cs\\\\
+  \casesplitline\\\\
+  \op = \DIV \land \astlabel(\cs) = \wellconstrained\\
+  \cs \eqname \wellconstrained(\cslist)\\
+  {
+    \begin{array}{r}
+  \refineconstraints(\filterreduceconstraintdiv, \cslist) \typearrow \\
+    \cslistfiltered
+    \end{array}
+  }\\
+  \reduceconstraints(\cslistfiltered) \typearrow \vics
 }{
   \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \vics
 }
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[non\_exploding]{
-    \binopfilterright(\tenv, \op, \cstwo) \typearrow \cstwof\\
-    \binopisexploding(\op) \typearrow \False\\
-    \constraintbinop(\op, \csone, \cstwof) \typearrow \cs\\
-    \reduceconstraints(\tenv, \cs) \typearrow \vics
-  }{
-    \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \vics
+\inferrule[else]{
+  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\
+  \binopisexploding(\op) \typearrow \vbexploding\\
+  \explodeintervals(\tenv, \csone) \typearrow \csonee\\
+  \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
+  (\csonearg, \cstwoarg) \eqdef \choice{\vbexploding}{(\csonee, \cstwoe)}{(\csone, \cstwof)}\\
+  \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
+  \reduceconstraints(\tenv, \csvanilla) \typearrow \cs\\\\
+  \casesplitline\\\\
+  \neg(\op = \DIV \land \astlabel(\cs) = \wellconstrained)
+}{
+  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \overname{\cs}{\vics}
+}
+\end{mathpar}
+
+\section{TypingRule.BinopFilterRhs \label{sec:TypingRule.BinopFilterRhs}}
+\hypertarget{def-binopfilterrhs}{}
+The function
+\[
+\binopfilterrhs(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\intconstraint^*}{\cs})
+\aslto \overname{\intconstraint^*}{\newcs}
+\]
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{greater\_or\_equal}):
+  \begin{itemize}
+    \item $\op$ is one of $\SHL$, $\SHR$, and $\POW$;
+    \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
+          $\lambda x.\ x \geq 0$, which is $\True$ if and only if the tested number if greater or equal to $0$;
+    \item refining the list of constraints $\cs$ with $\vp$ via $\refineconstraints$ yields $\newcs$;
+    \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BinaryOperationFailsAllConstraints}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{greater\_than}):
+  \begin{itemize}
+    \item $\op$ is one of $\MOD$, $\DIV$, and $\DIVRM$;
+    \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
+          $\lambda x.\ x > 0$, which is $\True$ if and only if the tested number if greater than $0$;
+    \item refining the list of constraints $\cs$ with $\vp$ via $\refineconstraints$ yields $\newcs$;
+    \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BinaryOperationFailsAllConstraints}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{no\_filtering}):
+  \begin{itemize}
+    \item $\op$ is one of $\MINUS$, $\MUL$, and $\PLUS$;
+    \item $\newcs$ is $\cs$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[greater\_or\_equal]{
+  \op \in \{\SHL, \SHR, \POW\}\\\\
+  \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x \geq 0, \vc)\\
+  \refineconstraints(\cs, \vp) \typearrow \newcs\\
+  \checktrans{\newcs \neq \emptylist}{\BinaryOperationFailsAllConstraints} \typearrow \True\OrTypeError
+}{
+  \binopfilterrhs(\tenv, \op, \cs) \typearrow \newcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[greater\_than]{
+  \op \in \{\MOD, \DIV, \DIVRM\}\\\\
+  \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x > 0, \vc)\\
+  \refineconstraints(\cs, \vp) \typearrow \newcs\\
+  \checktrans{\newcs \neq \emptylist}{\BinaryOperationFailsAllConstraints} \typearrow \True\OrTypeError
+}{
+  \binopfilterrhs(\tenv, \op, \cs) \typearrow \newcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_filter]{
+  \op \in \{\MINUS, \MUL, \PLUS\}
+}{
+  \binopfilterrhs(\tenv, \op, \cs) \typearrow \overname{\cs}{\newcs}
+}
+\end{mathpar}
+
+\section{TypingRule.RefineConstraintBySign \label{sec:TypingRule.RefineConstraintBySign}}
+\hypertarget{def-refineconstraintbysign}{}
+The function
+\[
+\refineconstraintbysign(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z\rightarrow \Bool}{\vp} \aslsep \overname{\intconstraint}{\vc})
+\aslto \overname{\langle\intconstraint\rangle}{\vcopt}
+\]
+takes a predicate $\vp$ that returns $\True$ based on the sign of its input.
+The function conservatively refines the constraint $\vc$ in $\tenv$ by applying symbolic reasoning to yield a new constraint
+(inside an optional)
+that represents the values that satisfy the $\vc$ and for which $\vp$ holds.
+In this context, conservatively means that the new constraint may represent a superset of the values that a more precise
+reasoning may yield.
+If the set of those values is empty the result is $\None$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact\_reduces\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
+          yields $\langle\vz\rangle$;
+    \item $\vcopt$ is $\langle\vc\rangle$ if $\vp$ holds for $\vz$ and $\None$ otherwise.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exact\_does\_not\_reduce\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
+          yields $\None$;
+    \item $\vcopt$ is $\langle\vc\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range\_both\_reduce\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
+          $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
+          yields $\langle\vzone\rangle$;
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
+          yields $\langle\vztwo\rangle$;
+    \item One of the following applies (defining $\vcopt$):
+    \begin{itemize}
+      \item if $\vp$ is $\True$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\False$ for $\vzone$ and $\True$ for $\vztwo$, define $\vcopt$ as the optional range constraint
+            where the bottom expression is the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $1$ otherwise,
+            and the top expression is $\vetwo$;
+      \item if $\vp$ is $\True$ for $\vzone$ and $\False$ for $\vztwo$, define $\vcopt$ as the optional range constraint
+            where the bottom expression is $\veone$ and the top expression is the literal expression for $0$ if $\vp$ holds for $0$
+            and the literal expression for $-1$ otherwise;
+      \item if $\vp$ is $\False$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\None$.
+    \end{itemize}
+  \end{itemize}
+
+  \item All of the following apply (\textsc{only\_e1\_reduces\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
+          $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
+          yields $\langle\vzone\rangle$;
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
+          yields $\None$;
+    \item One of the following applies (defining $\vcopt$):
+    \begin{itemize}
+      \item if $\vp$ is $\True$ for $\vzone$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\False$ for $\vzone$, define $\vcopt$ as the optional range constraint with the bottom expression
+            as the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $1$ otherwise,
+            and the top expression $\vetwo$.
+    \end{itemize}
+  \end{itemize}
+
+  \item All of the following apply (\textsc{only\_e2\_reduces\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
+          $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
+          yields $\None$;
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
+          yields $\langle\vztwo\rangle$;
+    \item One of the following applies (defining $\vcopt$):
+    \begin{itemize}
+      \item if $\vp$ is $\True$ for $\vztwo$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\False$ for $\vztwo$, define $\vcopt$ as the optional range constraint with the bottom expression
+            $\veone$ and the top expression the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $-1$ otherwise.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[exact\_reduces\_to\_z]{
+  \reducetozopt(\tenv, \ve) \typearrow \langle\vz\rangle\\
+  \vcopt \eqdef \choice{\vp(\vz)}{\langle\vc\rangle}{\None}
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vcopt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exact\_does\_not\_reduce\_to\_z]{
+  \reducetozopt(\tenv, \ve) \typearrow \None
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_both\_reduce\_to\_z]{
+  \reducetozopt(\tenv, \veone) \typearrow \langle\vzone\rangle\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vztwo\rangle\\
+  {
+    \begin{array}{c}
+  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+    \langle\vc\rangle& \text{if }\vp(\vzone) \land \vp(\vztwo)\\
+    \langle\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)\rangle& \text{if }\neg\vp(\vzone) \land \vp(\vztwo)\\
+    \langle\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})\rangle& \text{if }\vp(\vzone) \land \neg\vp(\vztwo)\\
+    \None& \text{if }\neg\vp(\vzone) \land \neg\vp(\vztwo)\\
+  \end{cases}
+\end{array}
   }
-  \end{mathpar}
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
+}
+\end{mathpar}
 
-% \section{TypingRule.ExplodeIntervals \label{sec:TypingRule.ExplodeIntervals}}
-% \hypertarget{def-explodeintervals}{}
-% The function
-% \[
-% \explodeintervals()
-% \]
+\begin{mathpar}
+\inferrule[only\_e1\_reduces\_to\_z]{
+  \reducetozopt(\tenv, \veone) \typearrow \langle\vzone\rangle\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \None\\
+  {
+    \begin{array}{c}
+  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+    \langle\vc\rangle& \text{if }\vp(\vzone)\\
+    \langle\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)\rangle& \text{else}\\
+  \end{cases}
+\end{array}
+  }
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
+}
+\end{mathpar}
 
-% \section{TypingRule.BinopIsExploding \label{sec:TypingRule.BinopIsExploding}}
-% \hypertarget{def-binopisexploding}{}
-% The function
-% \[
-% \binopisexploding()
-% \]
+\begin{mathpar}
+\inferrule[only\_e2\_reduces\_to\_z]{
+  \reducetozopt(\tenv, \veone) \typearrow \None\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vztwo\rangle\\
+  {
+    \begin{array}{c}
+  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+    \langle\vc\rangle& \text{if }\vp(\vztwo)\\
+    \langle\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})\rangle& \text{else}\\
+  \end{cases}
+\end{array}
+  }
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[none\_reduce\_to\_z]{
+  \reducetozopt(\tenv, \veone) \typearrow \None\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \None
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\vc}{\vcopt}
+}
+\end{mathpar}
+
+\section{TypingRule.ReduceToZOpt \label{sec:TypingRule.ReduceToZOpt}}
+\hypertarget{def-reducetozopt}{}
+The function
+\[
+\reducetozopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
+\aslto \overname{\langle\Z\rangle}{\vzopt}
+\]
+returns an integer inside an optional if $\ve$ can be symbolically simplified into an integer in $\tenv$
+and $\None$ otherwise.
+The expression $\ve$ is assumed to appear in a constraint for a type that has been successfully annotated,
+which means that applying $\normalize$ to it should not yield a type error.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{normalizes\_to\_z}):
+  \begin{itemize}
+    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields a literal expression for the integer $\vz$;
+    \item define $\vzopt$ as $\langle\vz\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{does\_not\_normalize\_to\_z}):
+  \begin{itemize}
+    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields an expression that is not an integer literal;
+    \item define $\vzopt$ as $\None$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[normalizes\_to\_z]{
+  \normalize(\tenv, \ve) \typearrow \ELInt{\vz}
+}{
+  \reducetozopt(\tenv, \ve) \typearrow \overname{\langle\vz\rangle}{\vzopt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[does\_not\_normalize\_to\_z]{
+  \normalize(\tenv, \ve) \typearrow \vep\\
+  \forall \vz\in\Z.\ \vep \neq \ELInt{\vz}
+}{
+  \reducetozopt(\tenv, \ve) \typearrow \overname{\None}{\vzopt}
+}
+\end{mathpar}
+
+\section{TypingRule.RefineConstraints \label{sec:TypingRule.RefineConstraints}}
+\hypertarget{def-refineconstraints}{}
+The function
+\[
+\begin{array}{r}
+\refineconstraints(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint\rightarrow\langle\intconstraint\rangle}{\vf} \aslsep \overname{\intconstraint^*}{\cs})
+\aslto \\
+\overname{\intconstraint^*}{\newcs}
+\end{array}
+\]
+refines a list of constraints $\cs$ by applying the refinement function $\vf$ to each constraint and retaining the constraints
+that do not refine to $\None$ in $\tenv$. The resulting list of constraints is given in $\newcs$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\cs$ is the empty list;
+    \item $\newcs$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty\_none}):
+  \begin{itemize}
+    \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
+    \item applying $\vf$ to $\vc$ in $\tenv$ yields $\None$;
+    \item applying $\refineconstraints$ to $\vf$ and $\csone$ in $\tenv$ yields $\csonep$;
+    \item $\newcs$ is $\csonep$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty\_somee}):
+  \begin{itemize}
+    \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
+    \item applying $\vf$ to $\vc$ in $\tenv$ yields $\langle\vcp\rangle$;
+    \item applying $\refineconstraints$ to $\vf$ and $\csone$ in $\tenv$ yields $\csonep$;
+    \item $\newcs$ is the list with $\vcp$ as its \head\ and $\csonep$ as its \tail.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \refineconstraints(\tenv, \vf, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty\_none]{
+  \vf(\tenv, \vc) \typearrow \None\\
+  \refineconstraints(\tenv, \vf, \csone) \typearrow \csonep\\
+}{
+  \refineconstraints(\tenv, \vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{\csonep}{\newcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty\_some]{
+  \vf(\tenv, \vc) \typearrow \langle\vcp\rangle\\
+  \refineconstraints(\tenv, \vf, \csone) \typearrow \csonep\\
+}{
+  \refineconstraints(\tenv, \vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{[\vcp] \concat \csonep}{\newcs}
+}
+\end{mathpar}
+
+\section{TypingRule.FilterReduceConstraintDiv \label{sec:TypingRule.FilterReduceConstraintDiv}}
+\hypertarget{def-filterreduceconstraintdiv}{}
+The function
+\[
+\filterreduceconstraintdiv(\overname{\intconstraint}{\vc}) \aslto \overname{\langle\intconstraint\rangle}{\vcopt}
+\]
+returns $\None$ if $\vc$ is an exact constraint for a binary expression for dividing two integer literals
+where the denominator does not divide the numerator and an optional containing $\vc$.
+The result is returned in $\vcopt$.
+This is used to conservatively test whether $\vc$ would always fail dynamically.
+
+\subsection{Prose}
+If $\vc$ is an exact constraint for a binary expression for the division operation and two integer literal
+expressions for the integers $\vzone$ and $\vztwo$ such that $\vztwo$ does not divide $\vzone$ then
+$\vcopt$ is $\None$. Otherwise $\vcopt$ is $\langle\vc\rangle$.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[exact\_div\_literals]{
+  \vc = \ConstraintExact(\ve)\\
+  \getliteraldivopt(\ve) \typearrow \None
+}{
+  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exact\_not\_div\_literals]{
+  \vc = \ConstraintExact(\ve)\\
+  \getliteraldivopt(\ve) \typearrow \langle(\vzone, \vztwo)\rangle
+  \vcopt \eqdef \choice{\frac{\vzone}{\vztwo} \in \Z}{\langle\vc\rangle}{\None}
+}{
+  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \vcopt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \astlabel(\vc) = \ConstraintRange
+}{
+  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+}
+\end{mathpar}
+
+\section{TypingRule.GetLiteralDivOpt \label{sec:TypingRule.GetLiteralDivOpt}}
+\hypertarget{def-getliteraldivopt}{}
+The function
+\[
+\getliteraldivopt(\overname{\expr}{\ve}) \aslto \overname{\langle\Z\cartimes\Z\rangle}{\rangeopt}
+\]
+matches the expression $\ve$ to a binary operation expression over the division operation and two literal integer expressions.
+If $\ve$ matches this pattern the result $\rangeopt$ is an optional containing the pair of integers appearing in the operand
+expressions. Otherwise, the result is $\None$.
+
+\subsection{Prose}
+The value $\rangeopt$ is $\langle(\vzone, \vztwo)\rangle$ if $\ve$ is a binary operation expression over the division operation
+and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $\None$ otherwise.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \rangeopt \eqdef \choice{\ve = \EBinop(\DIV, \ELInt{\vzone}, \ELInt{\vztwo})}{\langle(\vzone, \vztwo)\rangle}{\None}
+}{
+  \getliteraldivopt(\ve) \typearrow \rangeopt
+}
+\end{mathpar}
+
+\section{TypingRule.ExplodeIntervals \label{sec:TypingRule.ExplodeIntervals}}
+\hypertarget{def-explodeintervals}{}
+The function
+\[
+\explodeintervals(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\cs})
+\aslto \overname{\intconstraint^*}{\newcs}
+\]
+applies $\explodedinterval$ to each constraint of $\cs$ in $\tenv$ and concatenates the resulting
+list, yielding the result in $\newcs$.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\cs$ is the empty list;
+    \item $\newcs$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
+    \item applying $\explodeconstraint$ to $\vc$ in $\tenv$ yields $\vcp$ (a list of constraints);
+    \item applying $\explodeintervals$ to $\csone$ in $\tenv$ yields $\csonep$;
+    \item $\newcs$ is the concatenation of $\vcp$ and $\csonep$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \explodeintervals(\tenv, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \explodeconstraint(\tenv, \vc) \typearrow \vcp\\
+  \explodeintervals(\tenv, \csone) \typearrow \csonep\\
+}{
+  \explodeintervals(\tenv, \overname{[\vc] \concat \csone}{\cs}) \typearrow \overname{\vcp \concat \csonep}{\newcs}
+}
+\end{mathpar}
+
+\section{TypingRule.ExplodeConstraint \label{sec:TypingRule.ExplodeConstraint}}
+\hypertarget{def-explodeconstraint}{}
+The function
+\[
+\explodeconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
+\aslto \overname{\intconstraint^*}{\vcs}
+\]
+expands the constraint $\vc$ into the equivalent list of exact constraints if
+$\vc$ matches a n ascending range constraint that is not too large in $\tenv$
+and the singleton list for $\vc$ otherwise.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\vc$ is an exact constraint;
+    \item $\vcs$ is the singleton list for $\vc$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range\_reduced}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\va$ and $\vb$;
+    \item applying $\reducetozopt$ to $\va$ in $\tenv$ yields $\langle\vza\rangle$;
+    \item applying $\reducetozopt$ to $\vb$ in $\tenv$ yields $\langle\vzb\rangle$;
+    \item define $\explodedinterval$ as the list of exact constraints for each integer literal in the range starting
+          at $\vza$ and ending at $\vzb$, inclusively, which is empty if $\vzb < \vza$;
+    \item applying $\intervaltoolarge$ to $\vza$ and $\vzb$ yields $\vbtoolarge$;
+    \item define $\vcs$ as the singleton list for $\vc$ if $\vbtoolarge$ is $\True$ and \\
+          $\explodedinterval$ otherwise.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range\_not\_reduced}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\va$ and $\vb$;
+    \item applying $\reducetozopt$ to $\va$ in $\tenv$ yields $\vzaopt$;
+    \item applying $\reducetozopt$ to $\vb$ in $\tenv$ yields $\vzbopt$;
+    \item at least one of $\vzaopt$ and $\vzbopt$ is $\None$;
+    \item $\vcs$ is the singleton list for $\vc$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{
+  \astlabel(\vc) = \ConstraintExact
+}{
+  \explodeconstraint(\tenv, \vc) \typearrow \overname{[\vc]}{\vcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_reduced]{
+  \vc = \ConstraintRange(\va, \vb)\\
+  \reducetozopt(\tenv, \va) \typearrow \langle\vza\rangle\\
+  \reducetozopt(\tenv, \vb) \typearrow \langle\vzb\rangle\\
+  \explodedinterval \eqdef [\vz \in \vza..\vzb: \ConstraintExact(\ELInt{\vz})]\\
+  \intervaltoolarge(\vza, \vzb) \typearrow \vbtoolarge\\
+  \vcs \eqdef \choice{\vbtoolarge}{[\vc]}{\explodedinterval}
+}{
+  \explodeconstraint(\tenv, \vc) \typearrow \vcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_not\_reduced]{
+  \vc = \ConstraintRange(\va, \vb)\\
+  \reducetozopt(\tenv, \va) \typearrow \vzaopt\\
+  \reducetozopt(\tenv, \vb) \typearrow \vzbopt\\
+  \vzaopt = \None \lor \vzbopt = \None
+}{
+  \explodeconstraint(\tenv, \vc) \typearrow \overname{[\vc]}{\vcs}
+}
+\end{mathpar}
+
+\section{TypingRule.IntervalTooLarge \label{sec:TypingRule.IntervalTooLarge}}
+\hypertarget{def-intervaltoolarge}{}
+The function
+\[
+\intervaltoolarge(\overname{\Z}{\vzone} \aslsep \overname{\Z}{\vztwo}) \aslto \overname{\Bool}{\vb}
+\]
+tests whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, contains more than $2^{14}$
+integers, yielding the result in $\vb$.
+
+\subsection{Prose}
+The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ is greater than $2^{14}$.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \intervaltoolarge(\vzone, \vztwo) \typearrow \overname{|\vzone-\vztwo| > 2^{14}}{\vb}
+}
+\end{mathpar}
+
+\section{TypingRule.BinopIsExploding \label{sec:TypingRule.BinopIsExploding}}
+\hypertarget{def-binopisexploding}{}
+The function
+\[
+\binopisexploding(\overname{\binop}{\op}) \aslto \overname{\Bool}{\vb}
+\]
+determines whether the binary operation $\op$ should lead to applying $\explodeintervals$
+when the $\op$ is applied to a pair of constraint lists.
+It is assumed that $\op$ is one of $\MUL$, $\SHL$, $\POW$, $\PLUS$, $\DIV$, $\MINUS$, $\MOD$, $\SHR$,
+and $\DIVRM$.
+
+\subsection{Prose}
+The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\POW$.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \binopisexploding(\op) \typearrow \overname{\op \in \{\MUL, \SHL, \POW\}}{\vb}
+}
+\end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Types \label{chap:typingoftypes}}
@@ -5033,8 +5414,7 @@ One of the following applies:
   \item All of the following apply (\textsc{constant}):
   \begin{itemize}
   \item $\ve$ denotes a local variable $\vx$;
-  \item $\vx$ is bound to a local constant $\vv$ of type $\tty$ in the local environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
+  \item $\vx$ is bound to a local constant $\vv$ of type $\vt$ in the local environment given by $\tenv$;
   \item $\newe$ is the Literal $\vv$.
   \end{itemize}
 
@@ -5042,8 +5422,7 @@ One of the following applies:
   \begin{itemize}
   \item $\ve$ denotes a local variable $\vx$;
   \item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
-  \item $\vx$ has type $\tty$ in the local environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
+  \item $\vx$ has type $\vt$ in the local environment given by $\tenv$;
   \item $\newe$ is $\ve$.
   \end{itemize}
 \end{itemize}
@@ -5052,19 +5431,19 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[constant]{
   L^\tenv.\constantvalues(\vx) = \vv\\
-  L^\tenv.\localstoragetypes(\vx) = (\tty, \LDKConstant)
+  L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)
 }{
-  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\eliteral{\vv}}{\newe})
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\eliteral{\vv}}{\newe})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_constant]{
   L^\tenv.\constantvalues(\vx) = \bot\\
-  L^\tenv.\localstoragetypes(\vx) =  (\tty, k) \\
+  L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
   k \in \{\LDKVar, \LDKLet\}
 }{
-  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\EVar(\vx)}{\newe})
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe})
 }
 \end{mathpar}
 
@@ -8475,15 +8854,15 @@ One of the following applies:
 
   \item All of the following apply (\textsc{unconstrained}):
   \begin{itemize}
-    \item both of $\structone$ and $\structtwo$ is not an integer type;
+    \item both of $\structone$ and $\structtwo$ are integer types;
     \item at least one of $\structone$ and $\structtwo$ is the unconstrained integer type;
     \item define $\vis$ as $\unconstrained$.
   \end{itemize}
 
   \item All of the following apply (\textsc{well\_constrained}):
   \begin{itemize}
-    \item $\structone$ is the integer type with integer constraints $\csone$;
-    \item $\structtwo$ is the integer type with integer constraints $\cstwo$;
+    \item both of $\structone$ and $\structtwo$ are integer types;
+    \item neither $\structone$ nor $\structtwo$ is the unconstrained integer type;
     \item symbolically simplifying $\veonep$ in $\tenv$ yields $\eonen$\ProseOrTypeError;
     \item symbolically simplifying $\vetwop$ in $\tenv$ yields $\etwon$\ProseOrTypeError;
     \item define $\icsup$ as the single range constraint with expressions $\eonen$ and $\etwon$;
@@ -8495,7 +8874,7 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[not\_integers]{
-  \astlabel(\structone) \neq \TInt \lor \astlabel(\structtwo) = \TInt
+  \astlabel(\structone) \neq \TInt \lor \astlabel(\structtwo) \neq \TInt
 }{
   \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \TypeErrorVal{\RequireIntegerForLoopBounds}
 }
@@ -8503,12 +8882,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[unconstrained]{
-  {
-    \begin{array}{cccl}
-    \structone = \unconstrainedinteger &\land& \astlabel(\structtwo) = \TInt & \lor\\
-    \astlabel(\structone) = \TInt &\land& \structtwo = \unconstrainedinteger & \\
-    \end{array}
-  }
+  \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
+  \structone = \unconstrainedinteger \lor \structtwo = \unconstrainedinteger\\
 }{
   \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \overname{\unconstrained}{\vis}
 }
@@ -8516,8 +8891,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[well\_constrained]{
-  \structone = \TInt(\csone)\\
-  \structtwo = \TInt(\cstwo)\\\\
+  \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
+  \structone \neq \unconstrainedinteger \land \structtwo \neq \unconstrainedinteger\\
   \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\\\\
   \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\\\\
   \icsup \eqdef \wellconstrained([\ConstraintRange(\eonen, \etwon)])\\
@@ -10205,7 +10580,7 @@ All of the following apply:
   \item define $\newd$ as the subprogram AST node with $\vftwo$, that is, $\DFunc(\vftwo)$.
 \end{itemize}
 
-\subsection{Example}
+\isempty{\subsection{Example}}
 \CodeSubsection{\TypecheckFuncBegin}{\TypecheckFuncEnd}{../Typing.ml}
 
 \subsection{Formally}
@@ -14503,13 +14878,13 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[or\_bool]{}{
-  \binopliterals(\overname{\BOR}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(a \vee b)}{\vr}
+  \binopliterals(\overname{\BOR}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(a \lor b)}{\vr}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[implies\_bool]{}{
-  \binopliterals(\overname{\IMPL}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(\neg a \vee b)}{\vr}
+  \binopliterals(\overname{\IMPL}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(\neg a \lor b)}{\vr}
 }
 \end{mathpar}
 
@@ -16686,7 +17061,7 @@ The function
 ) \aslto
 \overname{\intconstraints}{\newc}
 \]
-\symbolicallysimplifies\ an integer constraints $\vc$, yielding the integer constraints $\newc$
+\symbolicallysimplifies\ an integer constraints AST node $\vc$, yielding the integer constraints AST node $\newc$
 
 \subsection{Prose}
 One of the following applies:
@@ -16700,7 +17075,10 @@ One of the following applies:
   \item All of the following apply (\textsc{well\_constrained}):
   \begin{itemize}
     \item $\vc$ is a list of constraints, that is, $\wellconstrained(\cs)$;
-    \item define $\newc$ as the application of $\reduceconstraint$ to every constraint in $\cs$ in $\tenv$.
+    \item applying $\reduceconstraint$ to every constraint $\cs[\vi]$ in $\tenv$ for every $\vi$ in $\listrange(\cs)$
+          yields $\vc_\vi$;
+    \item define $\newcs$ as the list containing $\vc_\vi$ for every $\vi$ in $\listrange(\cs)$;
+    \item $\newc$ is $\wellconstrained(\newcs)$.
   \end{itemize}
 \end{itemize}
 
@@ -16716,10 +17094,11 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[unconstrained\_parameterized]{
-  \newc \eqdef [\vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi])]
+\inferrule[well\_constrained]{
+  \vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi]) \typearrow \vc_\vi\\
+  \newcs \eqdef [\vi\in\listrange(\cs): \vc_\vi]
 }{
-  \reduceconstraints(\tenv, \overname{\wellconstrained(\cs)}{\vc}) \typearrow \newc
+  \reduceconstraints(\tenv, \overname{\wellconstrained(\cs)}{\vc}) \typearrow \overname{\wellconstrained(\newcs)}{\newc}
 }
 \end{mathpar}
 
@@ -20098,6 +20477,12 @@ was not able to prove it
 \item[$\TypeAsssertionFails$]
 This error indicates that a given at type assertion expression will always fail
 (see \secref{TypingRule.CheckATC}).
+
+\hypertarget{def-ofc}{}
+\item[$\BinaryOperationFailsAllConstraints$]
+This error indicates that a binary expression appearing in a constraint will always fail dynamically
+(see \secref{sec:TypingRule.BinopFilterRhs}). This means that the set of values that the type containing
+the constraint can take is empty.
 
 \end{description}
 

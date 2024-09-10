@@ -67,10 +67,12 @@ let reduce_constants env e =
     |: TypingRule.ReduceConstants
 (* End *)
 
+(* Begin ReduceToZOpt *)
 let reduce_to_z_opt env e =
   match (StaticModel.try_normalize env e).desc with
   | E_Literal (L_Int z) -> Some z
   | _ -> None
+(* End *)
 
 (* Begin ReduceConstraint *)
 let reduce_constraint env = function
@@ -96,8 +98,8 @@ let reduce_constraints env = function
       |> list_remove_duplicates
            (constraint_equal (StaticModel.equal_in_env env))
       |> fun constraints -> WellConstrained constraints
-
 (* End *)
+
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
 let slices_width env =
@@ -629,17 +631,17 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         make_interval ~loc acc' a (Z.pred b)
       else acc
     in
-    let[@warning "-44"] interval_is_too_big a b =
+    let[@warning "-44"] interval_too_large z1 z2 =
       let open Z in
       let max_interval_size = ~$1 lsl 14 in
-      Compare.(abs (a - b) > max_interval_size)
+      Compare.(abs (z1 - z2) > max_interval_size)
     in
     let explode_constraint ~loc env = function
       | Constraint_Exact _ as c -> [ c ]
       | Constraint_Range (a, b) as c -> (
           match (reduce_to_z_opt env a, reduce_to_z_opt env b) with
           | Some za, Some zb ->
-              if interval_is_too_big za zb then
+              if interval_too_large za zb then
                 let () =
                   EP.warn_from ~loc Error.(IntervalTooBigToBeExploded (za, zb))
                 in
@@ -648,8 +650,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | _ -> [ c ])
     in
     fun ~loc env -> list_concat_map (explode_constraint ~loc env)
+  (* End *)
 
-  (* END *)
   let e_zero = expr_of_int 0
   let e_one = expr_of_int 1
   let e_minus_one = expr_of_int ~-1
@@ -665,30 +667,34 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     aux ([], false)
 
-  let raw_filter_sign env matches = function
+  (* Begin RefineConstraintBySign *)
+  let refine_constraint_by_sign env sign_predicate = function
     | Constraint_Exact e as c -> (
         match reduce_to_z_opt env e with
-        | Some z when matches (Z.sign z) -> Some c
+        | Some z when sign_predicate (Z.sign z) -> Some c
         | Some _ -> None
         | None -> Some c)
     | Constraint_Range (e1, e2) as c -> (
         match (reduce_to_z_opt env e1, reduce_to_z_opt env e2) with
         | Some z1, Some z2 -> (
-            match (matches (Z.sign z1), matches (Z.sign z2)) with
+            match (sign_predicate (Z.sign z1), sign_predicate (Z.sign z2)) with
             | true, true -> Some c
-            | false, true -> c_range (if matches 0 then e_zero else e_one) e2
+            | false, true ->
+                c_range (if sign_predicate 0 then e_zero else e_one) e2
             | true, false ->
-                c_range e1 (if matches 0 then e_zero else e_minus_one)
+                c_range e1 (if sign_predicate 0 then e_zero else e_minus_one)
             | false, false -> None)
         | None, Some z2 ->
-            if matches (Z.sign z2) then Some c
-            else c_range e1 (if matches 0 then e_zero else e_minus_one)
+            if sign_predicate (Z.sign z2) then Some c
+            else c_range e1 (if sign_predicate 0 then e_zero else e_minus_one)
         | Some z1, None ->
-            if matches (Z.sign z1) then Some c
-            else c_range (if matches 0 then e_zero else e_one) e2
+            if sign_predicate (Z.sign z1) then Some c
+            else c_range (if sign_predicate 0 then e_zero else e_one) e2
         | None, None -> Some c)
+  (* End *)
 
-  let filter_constraints ~loc op filter constraints =
+  (* Begin RefineConstraints *)
+  let refine_constraints ~loc op filter constraints =
     let pp_constraints f cs =
       Format.fprintf f "@[<h>{%a}@]" PP.pp_int_constraints cs
     in
@@ -716,11 +722,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               pp_constraints constraints pp_constraints constraints'
         in
         constraints'
+  (* End *)
 
-  let filter_sign ~loc env op matches constraints =
-    filter_constraints ~loc op (raw_filter_sign env matches) constraints
+  let filter_sign ~loc env op sign_predicate constraints =
+    refine_constraints ~loc op
+      (refine_constraint_by_sign env sign_predicate)
+      constraints
 
-  let binop_filter_right ~loc env op =
+  (* Begin BinopFilterRight *)
+
+  (** Filters out values from the right-hand-side operand of [op] that will definitely
+  result in a dynamic error. *)
+  let binop_filter_rhs ~loc env op =
     match op with
     | SHL | SHR | POW -> filter_sign ~loc env op @@ fun x -> x >= 0
     | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
@@ -728,7 +741,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false
+  (* End *)
 
+  (* Begin FilterReduceConstraintDiv *)
   let filter_reduce_constraint_div =
     let get_literal_div_opt e =
       match e.desc with
@@ -747,34 +762,38 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* No need to reduce those as they are not handled by
            Asllib.constraint_binop *)
         Some c
+  (* End *)
 
   (* Begin AnnotateConstraintBinop *)
   let annotate_constraint_binop ~loc env op cs1 cs2 =
     match op with
     | SHL | SHR | POW | MOD | DIVRM | MINUS | MUL | PLUS | DIV ->
-        let cs2 = binop_filter_right ~loc env op cs2 in
-        let cs1, cs2 =
+        let cs2_f = binop_filter_rhs ~loc env op cs2 in
+        let cs1_arg, cs2_arg =
           if binop_is_exploding op then
-            (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2)
-          else (cs1, cs2)
+            (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2_f)
+          else (cs1, cs2_f)
         in
-        let cs = constraint_binop op cs1 cs2 |> reduce_constraints env in
         let cs =
+          constraint_binop op cs1_arg cs2_arg |> reduce_constraints env
+        in
+        let annotated_cs =
           match (op, cs) with
-          | DIV, WellConstrained cs ->
+          | DIV, WellConstrained cs_list ->
               WellConstrained
-                (filter_constraints ~loc DIV filter_reduce_constraint_div cs)
+                (refine_constraints ~loc DIV filter_reduce_constraint_div
+                   cs_list)
           | _ -> cs
         in
         let () =
           if false then
             Format.eprintf
               "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
-              (PP.binop_to_string op) PP.pp_int_constraints cs1
-              PP.pp_int_constraints cs2 PP.pp_ty
-              (T_Int cs |> add_dummy_pos)
+              (PP.binop_to_string op) PP.pp_int_constraints cs1_arg
+              PP.pp_int_constraints cs2_arg PP.pp_ty
+              (T_Int annotated_cs |> add_dummy_pos)
         in
-        cs
+        annotated_cs
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false

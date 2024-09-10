@@ -2853,14 +2853,14 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[empty]{}{
-  \buildfuncbody(\overname{\Nmaybeemptystmtlist(\epsilonnode)}{\vparsednode}) \astarrow
+  \buildmaybeemptystmtlist(\overname{\Nmaybeemptystmtlist(\epsilonnode)}{\vparsednode}) \astarrow
   \overname{\SPass}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty]{}{
-  \buildfuncbody(\overname{\Nmaybeemptystmtlist(\Nstmtlist)}{\vparsednode}) \astarrow
+  \buildmaybeemptystmtlist(\overname{\Nmaybeemptystmtlist(\Nstmtlist)}{\vparsednode}) \astarrow
   \overname{\astof{\vstmtlist}}{\vastnode}
 }
 \end{mathpar}
