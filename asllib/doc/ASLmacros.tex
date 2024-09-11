@@ -99,11 +99,22 @@
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
 \newcommand\wrappedline[0]{{\hyperlink{def-wrapline}{\color{red}\hookrightarrow}}}
+\newcommand\casesplitline[0]{{\hyperlink{def-casesplitline}{\color{cyan}\tiny{\text{******** common prefix ********}} }}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%
 %% Mathematical notations and Inference Rule macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%%
 \usepackage{relsize}
+\let\OldLand\land
+\renewcommand\land[0]{\hyperlink{def-land}{\OldLand}}
+\let\OldLor\lor
+\renewcommand\lor[0]{\hyperlink{def-lor}{\OldLor}}
+\let\OldNeg\neg
+\renewcommand\neg[0]{\hyperlink{def-neg}{\OldNeg}}
+\let\OldTriangleq\triangleq
+\renewcommand\triangleq[0]{\hyperlink{def-triangleq}{\OldTriangleq}}
+\newcommand\cartimes[0]{\hyperlink{def-cartimes}{\times}}
+
 \newcommand\view[0]{\hyperlink{def-deconstruction}{view}}
 %\newcommand\defpoint[1]{\underline{#1}}
 \newcommand\defpoint[1]{#1}
@@ -121,6 +132,7 @@
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\texttt{indices}}}
 \newcommand\listlen[1]{\hyperlink{def-listlen}{|}#1\hyperlink{def-listlen}{|}}
 \newcommand\cardinality[1]{\hyperlink{def-cardinality}{|}#1\hyperlink{def-cardinality}{|}}
+\newcommand\filterlist[0]{\hyperlink{def-filterlist}{\texttt{filter\_list}}}
 \newcommand\unziplist[0]{\hyperlink{def-unziplist}{\texttt{unzip}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
@@ -981,3 +993,22 @@
 \newcommand\vbodyp[0]{\texttt{body'}}
 \newcommand\vstartstruct[0]{\texttt{start\_struct}}
 \newcommand\vendstruct[0]{\texttt{end\_struct}}
+\newcommand\csvanilla[0]{\texttt{cs\_vanilla}}
+\newcommand\vbexploding[0]{\texttt{b\_exploding}}
+\newcommand\csonearg[0]{\texttt{cs1\_arg}}
+\newcommand\cstwoarg[0]{\texttt{cs2\_arg}}
+\newcommand\cslist[0]{\texttt{cs\_list}}
+\newcommand\cslistfiltered[0]{\texttt{cs\_list\_filtered}}
+\newcommand\vfilter[0]{\texttt{filter}}
+\newcommand\vcopt[0]{\texttt{c\_opt}}
+\newcommand\vzone[0]{\texttt{z1}}
+\newcommand\vztwo[0]{\texttt{z2}}
+\newcommand\vzopt[0]{\texttt{z\_opt}}
+\newcommand\csonep[0]{\texttt{cs1'}}
+\newcommand\rangeopt[0]{\texttt{range\_opt}}
+\newcommand\vza[0]{\texttt{za}}
+\newcommand\vzb[0]{\texttt{zb}}
+\newcommand\vzaopt[0]{\texttt{za\_opt}}
+\newcommand\vzbopt[0]{\texttt{zb\_opt}}
+\newcommand\explodedinterval[0]{\texttt{exploded\_interval}}
+\newcommand\vbtoolarge[0]{\texttt{b\_too\_large}}
