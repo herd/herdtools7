@@ -1,0 +1,17 @@
+X86_64 SB+mfence+po-rfi-po
+"MFencedWR Fre PodWW Rfi PodRR Fre"
+Cycle=Rfi PodRR Fre MFencedWR Fre PodWW
+Relax=
+Safe=[Rfi,PodRR] Fre PodWW MFencedWR
+Generator=diy7 (version 7.57+1)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=MFencedWR Fre PodWW Rfi PodRR Fre
+{
+}
+ P0            | P1            ;
+ movl $1,(x)   | movl $1,(y)   ;
+ mfence        | movl $1,(z)   ;
+ movl (y),%eax | movl (z),%eax ;
+               | movl (x),%ebx ;
+exists (0:rax=0 /\ 1:rax=1 /\ 1:rbx=0)

@@ -1,0 +1,30 @@
+# diy7 -arch X86_64 -safe Pod**,Rfe,Fre,Coe,[Rfi,PodRR],FencedWR -num false -size 5
+# Version 7.57+1, Revision: 9db4e9370b5b41855c6e914dcad7e0438edfca10
+SB+rfi-pos.litmus
+SB+rfi-po+po-rfi-po.litmus
+SB+po+rfi-po.litmus
+RWC+po+rfi-po.litmus
+SB+mfence+rfi-po.litmus
+R+po+rfi-po.litmus
+WRW+WR+po+rfi-po.litmus
+SB+po+po-rfi-po.litmus
+SB+mfence+po-rfi-po.litmus
+R+po+po-rfi-po.litmus
+MP+po+po-rfi-po.litmus
+RWC.litmus
+WRW+WR.litmus
+WRC.litmus
+RWC+po+mfence.litmus
+WRW+WR+po+mfence.litmus
+WRR+2W.litmus
+WRW+2W.litmus
+WWC.litmus
+MP.litmus
+S.litmus
+LB.litmus
+SB.litmus
+SB+mfence+po.litmus
+R.litmus
+SB+mfences.litmus
+R+po+mfence.litmus
+2+2W.litmus

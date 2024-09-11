@@ -1,0 +1,17 @@
+X86_64 MP+po+po-rfi-po
+"PodWW Rfe PodRW Rfi PodRR Fre"
+Cycle=Rfi PodRR Fre PodWW Rfe PodRW
+Relax=
+Safe=[Rfi,PodRR] Rfe Fre PodWW PodRW
+Generator=diy7 (version 7.57+1)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWW Rfe PodRW Rfi PodRR Fre
+{
+}
+ P0          | P1            ;
+ movl $1,(x) | movl (y),%eax ;
+ movl $1,(y) | movl $1,(z)   ;
+             | movl (z),%ebx ;
+             | movl (x),%ecx ;
+exists (1:rax=1 /\ 1:rbx=1 /\ 1:rcx=0)
