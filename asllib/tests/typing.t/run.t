@@ -216,17 +216,8 @@ Large constraint sets
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   File TPositive13.asl, line 8, characters 17 to 34:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
-  File TPositive13.asl, line 9, characters 17 to 34:
-  Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
-  Keeping it as an interval.
-  File TPositive13.asl, line 9, characters 17 to 34:
-  Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
-  Keeping it as an interval.
   File TPositive13.asl, line 10, characters 17 to 34:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
-  File TPositive13.asl, line 10, characters 17 to 34:
-  Interval too large: [ -9223372036854775808 .. 9223372036854775807 ].
-  Keeping it as an interval.
   $ aslref --no-exec TDegraded13.asl
   File TDegraded13.asl, line 7, characters 29 to 46:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.

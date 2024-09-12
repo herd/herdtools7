@@ -424,19 +424,7 @@ let rec to_ir env (e : expr) : ir_expr =
       and ir2' = ASTUtils.list_cross restrict nctnts ir2 in
       Disjunction (ir1' @ ir2')
   | E_ATC (e', _) -> to_ir env e'
-  | _ -> (
-      let v =
-        let open StaticInterpreter in
-        try static_eval env e
-        with
-        | StaticEvaluationUnknown
-        | Error.ASLException { desc = UnsupportedExpr _; _ }
-        ->
-          raise NotYetImplemented
-      in
-      match v with
-      | L_Int i -> poly_of_z i |> always
-      | _ -> raise NotYetImplemented)
+  | _ -> raise NotYetImplemented
 
 and to_cond env (e : expr) : ctnts disjunction * ctnts disjunction =
   let ( ||| ) = disjunction_or in
