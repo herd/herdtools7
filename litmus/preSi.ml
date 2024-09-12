@@ -85,7 +85,9 @@ module Make
     let has_instruction_ptr = Insert.exists "instruction.h"
 
 (* Precise fault handling, impact on label tables *)
-    let do_precise = Cfg.is_kvm && Fault.Handling.is_fatal Cfg.precision
+    let do_precise =
+      has_instruction_ptr &&
+      Cfg.is_kvm && Fault.Handling.is_fatal Cfg.precision
 
     module
       LocMake
