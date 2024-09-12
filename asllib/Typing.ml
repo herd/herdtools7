@@ -49,22 +49,9 @@ let rec list_mapi2 f i l1 l2 =
 (* Begin ReduceConstants *)
 let reduce_constants env e =
   let open StaticInterpreter in
-  let open StaticModel in
-  let eval_expr env e =
-    try static_eval env e with NotYetImplemented -> unsupported_expr e
-  in
-  try eval_expr env e
+  try static_eval env e
   with StaticEvaluationUnknown ->
-    (let () =
-       if false then
-         Format.eprintf
-           "@[<hov>Static evaluation failed. Trying to reduce.@ For %a@ at \
-            %a@]@."
-           PP.pp_expr e PP.pp_pos e
-     in
-     try StaticModel.try_normalize env e |> eval_expr env
-     with StaticEvaluationUnknown -> unsupported_expr e)
-    |: TypingRule.ReduceConstants
+    unsupported_expr e |: TypingRule.ReduceConstants
 (* End *)
 
 (* Begin ReduceToZOpt *)
