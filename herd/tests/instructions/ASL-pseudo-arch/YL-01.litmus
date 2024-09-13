@@ -1,0 +1,15 @@
+ASL YL-01
+
+(* testing multiple XOR on bitvector slices *)
+
+{ }
+
+func main() => integer
+begin
+  constant x : bits(1) = '0';
+  constant y : bit = x[0] XOR '0' XOR '1';
+  let res = UInt(y);
+  return 0;
+end
+
+forall (0: main.0.res = 0)
