@@ -324,7 +324,17 @@ module Domain = struct
             Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
               PP.pp_expr e
         in
-        raise StaticEvaluationTop
+        D_Int (FromSyntax [ Constraint_Exact e ])
+
+  and of_width_expr env e =
+    let e_domain = of_expr env e in
+    let exact_domain = D_Int (FromSyntax [ Constraint_Exact e ]) in
+    match e_domain with
+    | D_Int (Finite int_set) ->
+        if Z.equal (IntSet.cardinal int_set) Z.one then e_domain
+        else exact_domain
+    | D_Int (FromSyntax [ Constraint_Exact _ ]) -> e_domain
+    | _ -> exact_domain
 
   and of_type env ty =
     let ty = make_anonymous env ty in
@@ -646,23 +656,22 @@ and structural_subtype_satisfies env t s =
         every bitfield in S there must be a bitfield in T of the same name, width
         and offset, whose type type-satisfies the bitfield in S.
     *)
-  | T_Bits (_, bf_s), T_Bits (_, bf_t) ->
+  | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) ->
       let bitfields_subtype = bitfields_included env bf_s bf_t in
       let widths_subtype =
         (*
         • If either S or T have the structure of a bitvector type with
           undetermined width then the domain of T must be a subset of the
           domain of S.
-         *)
-        (* Implicitly, T must have the structure of a bitvector. *)
-        let t_domain = get_structure env t |> Domain.of_type env
-        and s_domain = get_structure env s |> Domain.of_type env in
+        *)
+        let t_width_domain = Domain.of_width_expr env w_t
+        and s_width_domain = Domain.of_width_expr env w_s in
         let () =
           if false then
-            Format.eprintf "Is %a included in %a?@." Domain.pp t_domain
-              Domain.pp s_domain
+            Format.eprintf "Is %a included in %a?@." Domain.pp t_width_domain
+              Domain.pp s_width_domain
         in
-        Domain.is_subset env t_domain s_domain
+        Domain.is_subset env t_width_domain s_width_domain
       in
       bitfields_subtype && widths_subtype
   (* If S has the structure of an array type with elements of type E then
