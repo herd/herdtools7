@@ -549,13 +549,6 @@ module Domain = struct
         int_set_is_subset env is1 is2
     | _ -> false
   (* End *)
-
-  let get_width_singleton_opt = function
-    | D_Bits (Finite int_set) ->
-        if Z.equal (IntSet.cardinal int_set) Z.one then
-          Some (IntSet.min_elt int_set |> IntSet.Interval.x)
-        else None
-    | _ -> None
 end
 
 (* --------------------------------------------------------------------------*)
@@ -653,13 +646,8 @@ and structural_subtype_satisfies env t s =
         every bitfield in S there must be a bitfield in T of the same name, width
         and offset, whose type type-satisfies the bitfield in S.
     *)
-  | T_Bits (_w_s, bf_s), T_Bits (_w_t, bf_t) ->
-      let bitfields_subtype =
-        match (bf_s, bf_t) with
-        | [], _ -> true
-        | _, [] -> false
-        | bfs_s, bfs_t -> bitfields_included env bfs_s bfs_t
-      in
+  | T_Bits (_, bf_s), T_Bits (_, bf_t) ->
+      let bitfields_subtype = bitfields_included env bf_s bf_t in
       let widths_subtype =
         (*
         • If either S or T have the structure of a bitvector type with
@@ -674,12 +662,7 @@ and structural_subtype_satisfies env t s =
             Format.eprintf "Is %a included in %a?@." Domain.pp t_domain
               Domain.pp s_domain
         in
-        match
-          ( Domain.get_width_singleton_opt s_domain,
-            Domain.get_width_singleton_opt t_domain )
-        with
-        | Some w_s, Some w_t -> Z.equal w_s w_t
-        | _ -> Domain.is_subset env t_domain s_domain
+        Domain.is_subset env t_domain s_domain
       in
       bitfields_subtype && widths_subtype
   (* If S has the structure of an array type with elements of type E then
