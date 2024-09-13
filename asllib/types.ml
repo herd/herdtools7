@@ -169,12 +169,7 @@ module Domain = struct
   type syntax = AST.int_constraint list
 
   (** Represents the domain of an integer expression. *)
-  type int_set = Finite of IntSet.t | Top | FromSyntax of syntax
-
-  (* Begin Domain *)
-  type t = D_Int of int_set
-  (* |: TypingRule.Domain *)
-  (* End *)
+  type t = Finite of IntSet.t | Top | FromSyntax of syntax
 
   let add_interval_to_intset acc bot top =
     if bot > top then acc
@@ -182,16 +177,12 @@ module Domain = struct
       let interval = IntSet.Interval.make bot top in
       IntSet.add interval acc
 
-  let pp_int_set f =
+  let pp f =
     let open Format in
     function
     | Top -> pp_print_string f "ℤ"
     | Finite set -> fprintf f "@[{@,%a}@]" IntSet.pp set
     | FromSyntax slices -> PP.pp_int_constraints f slices
-
-  let pp f =
-    let open Format in
-    function D_Int set -> pp_int_set f set
 
   exception StaticEvaluationTop
 
@@ -287,7 +278,7 @@ module Domain = struct
     if x < y then make x y else raise StaticEvaluationTop
 
   let of_literal = function
-    | L_Int n -> D_Int (Finite (IntSet.singleton n))
+    | L_Int n -> Finite (IntSet.singleton n)
     | _ -> raise StaticEvaluationTop
 
   (* [of_expr env e] returns the symbolic integer domain for the integer-typed expression [e]. *)
@@ -302,8 +293,8 @@ module Domain = struct
     | E_Unop (NEG, e1) ->
         of_expr env (E_Binop (MINUS, !$0, e1) |> add_pos_from e)
     | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
-        let is1 = match of_expr env e1 with D_Int is -> is
-        and is2 = match of_expr env e2 with D_Int is -> is
+        let is1 = of_expr env e1
+        and is2 = of_expr env e2
         and fop =
           match op with
           | PLUS -> monotone_interval_op Z.add
@@ -311,33 +302,33 @@ module Domain = struct
           | MUL -> monotone_interval_op Z.mul
           | _ -> assert false
         in
-        D_Int (int_set_raise_interval_op fop op is1 is2)
+        int_set_raise_interval_op fop op is1 is2
     | _ ->
         let () =
           if false then
             Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
               PP.pp_expr e
         in
-        D_Int (FromSyntax [ Constraint_Exact e ])
+        FromSyntax [ Constraint_Exact e ]
 
   and of_width_expr env e =
     let e_domain = of_expr env e in
-    let exact_domain = D_Int (FromSyntax [ Constraint_Exact e ]) in
+    let exact_domain = FromSyntax [ Constraint_Exact e ] in
     match e_domain with
-    | D_Int (Finite int_set) ->
+    | Finite int_set ->
         if Z.equal (IntSet.cardinal int_set) Z.one then e_domain
         else exact_domain
-    | D_Int (FromSyntax [ Constraint_Exact _ ]) -> e_domain
+    | FromSyntax [ Constraint_Exact _ ] -> e_domain
     | _ -> exact_domain
 
   and of_type env ty =
     let ty = make_anonymous env ty in
     match ty.desc with
-    | T_Int UnConstrained -> D_Int Top
+    | T_Int UnConstrained -> Top
     | T_Int (Parameterized (_uid, var)) ->
-        D_Int (FromSyntax [ Constraint_Exact (var_ var) ])
+        FromSyntax [ Constraint_Exact (var_ var) ]
     | T_Int (WellConstrained constraints) ->
-        D_Int (int_set_of_int_constraints env constraints)
+        int_set_of_int_constraints env constraints
     | T_Bool | T_String | T_Real ->
         failwith "Unimplemented: domain of primitive type"
     | T_Bits _ | T_Enum _ | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _
@@ -348,14 +339,14 @@ module Domain = struct
   let mem v d =
     match (v, d) with
     | L_Bool _, _ | L_Real _, _ | L_String _, _ | L_BitVector _, _ -> false
-    | L_Int _, D_Int Top -> true
-    | L_Int i, D_Int (Finite intset) -> IntSet.mem i intset
+    | L_Int _, Top -> true
+    | L_Int i, Finite intset -> IntSet.mem i intset
     | L_Int _, _ -> false
 
   let equal d1 d2 =
     match (d1, d2) with
-    | D_Int Top, D_Int Top -> true
-    | D_Int (Finite is1), D_Int (Finite is2) -> IntSet.equal is1 is2
+    | Top, Top -> true
+    | Finite is1, Finite is2 -> IntSet.equal is1 is2
     | _ -> false
 
   let compare _d1 _d2 = assert false
@@ -533,7 +524,7 @@ module Domain = struct
     let () =
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
     in
-    match (d1, d2) with D_Int is1, D_Int is2 -> int_set_is_subset env is1 is2
+    int_set_is_subset env d1 d2
   (* End *)
 end
 
@@ -544,8 +535,8 @@ let is_bits_width_fixed env ty =
   | T_Bits _ -> (
       let open Domain in
       match of_type env ty with
-      | D_Int (Finite int_set) -> IntSet.cardinal int_set = Z.one
-      | D_Int Top -> false
+      | Finite int_set -> IntSet.cardinal int_set = Z.one
+      | Top -> false
       | _ -> failwith "Wrong domain for a bitwidth.")
   | _ -> failwith "Wrong type for some bits."
 
