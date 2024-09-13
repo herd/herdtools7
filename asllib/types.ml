@@ -173,7 +173,6 @@ module Domain = struct
 
   (* Begin Domain *)
   type t =
-    | D_Symbols of ISet.t  (** The domain of an enum is a set of symbols *)
     | D_Int of int_set
     | D_Bits of int_set  (** The domain of a bitvector is given by its width. *)
   (* |: TypingRule.Domain *)
@@ -195,10 +194,6 @@ module Domain = struct
   let pp f =
     let open Format in
     function
-    | D_Symbols li ->
-        fprintf f "@[{@,%a}@]"
-          (PP.pp_print_seq ~pp_sep:pp_print_space pp_print_string)
-          (ISet.to_seq li)
     | D_Int set -> pp_int_set f set
     | D_Bits set -> fprintf f "@[#bits(%a)@]" pp_int_set set
 
@@ -334,7 +329,6 @@ module Domain = struct
   and of_type env ty =
     let ty = make_anonymous env ty in
     match ty.desc with
-    | T_Enum li -> D_Symbols (ISet.of_list li)
     | T_Int UnConstrained -> D_Int Top
     | T_Int (Parameterized (_uid, var)) ->
         D_Int (FromSyntax [ Constraint_Exact (var_ var) ])
@@ -352,7 +346,7 @@ module Domain = struct
           D_Bits (FromSyntax [ Constraint_Exact width ]))
     | T_Bool | T_String | T_Real ->
         failwith "Unimplemented: domain of primitive type"
-    | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
+    | T_Enum _ | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
         failwith "Unimplemented: domain of a non singular type."
     | T_Named _ -> assert false (* make anonymous *)
 
@@ -369,7 +363,6 @@ module Domain = struct
 
   let equal d1 d2 =
     match (d1, d2) with
-    | D_Symbols s1, D_Symbols s2 -> ISet.equal s1 s2
     | D_Bits Top, D_Bits Top | D_Int Top, D_Int Top -> true
     | D_Int (Finite is1), D_Int (Finite is2)
     | D_Bits (Finite is1), D_Bits (Finite is2) ->
@@ -552,7 +545,6 @@ module Domain = struct
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
     in
     match (d1, d2) with
-    | D_Symbols s1, D_Symbols s2 -> ISet.subset s1 s2
     | D_Bits is1, D_Bits is2 | D_Int is1, D_Int is2 ->
         int_set_is_subset env is1 is2
     | _ -> false
@@ -717,11 +709,11 @@ and domain_subtype_satisfies env t s =
    match s_struct.desc with
    (* If S does not have the structure of an aggregate type or bitvector type
       then the domain of T must be a subset of the domain of S. *)
-   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
+   | T_Enum _ | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
    (* These are very basic domains, which do not require checking for domain subsumption.
       Checking for structural subtyping is enough. *)
    | T_Real | T_String | T_Bool | T_Int UnConstrained -> true
-   | T_Enum _ | T_Int _ ->
+   | T_Int _ ->
        let d_s = Domain.of_type env s_struct
        and d_t = get_structure env t |> Domain.of_type env in
        let () =
