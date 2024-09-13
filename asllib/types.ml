@@ -172,9 +172,7 @@ module Domain = struct
   type int_set = Finite of IntSet.t | Top | FromSyntax of syntax
 
   (* Begin Domain *)
-  type t =
-    | D_Int of int_set
-    | D_Bits of int_set  (** The domain of a bitvector is given by its width. *)
+  type t = D_Int of int_set
   (* |: TypingRule.Domain *)
   (* End *)
 
@@ -193,9 +191,7 @@ module Domain = struct
 
   let pp f =
     let open Format in
-    function
-    | D_Int set -> pp_int_set f set
-    | D_Bits set -> fprintf f "@[#bits(%a)@]" pp_int_set set
+    function D_Int set -> pp_int_set f set
 
   exception StaticEvaluationTop
 
@@ -292,8 +288,6 @@ module Domain = struct
 
   let of_literal = function
     | L_Int n -> D_Int (Finite (IntSet.singleton n))
-    | L_BitVector bv ->
-        D_Bits (Finite (Bitvector.length bv |> Z.of_int |> IntSet.singleton))
     | _ -> raise StaticEvaluationTop
 
   (* [of_expr env e] returns the symbolic integer domain for the integer-typed expression [e]. *)
@@ -308,8 +302,8 @@ module Domain = struct
     | E_Unop (NEG, e1) ->
         of_expr env (E_Binop (MINUS, !$0, e1) |> add_pos_from e)
     | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
-        let is1 = match of_expr env e1 with D_Int is -> is | _ -> assert false
-        and is2 = match of_expr env e2 with D_Int is -> is | _ -> assert false
+        let is1 = match of_expr env e1 with D_Int is -> is
+        and is2 = match of_expr env e2 with D_Int is -> is
         and fop =
           match op with
           | PLUS -> monotone_interval_op Z.add
@@ -344,39 +338,24 @@ module Domain = struct
         D_Int (FromSyntax [ Constraint_Exact (var_ var) ])
     | T_Int (WellConstrained constraints) ->
         D_Int (int_set_of_int_constraints env constraints)
-    | T_Bits (width, _) -> (
-        try
-          match of_expr env width with
-          | D_Int (Finite int_set as d) ->
-              if Z.equal (IntSet.cardinal int_set) Z.one then D_Bits d
-              else raise StaticEvaluationTop
-          | D_Int (FromSyntax [ Constraint_Exact _ ] as d) -> D_Bits d
-          | _ -> raise StaticEvaluationTop
-        with StaticEvaluationTop ->
-          D_Bits (FromSyntax [ Constraint_Exact width ]))
     | T_Bool | T_String | T_Real ->
         failwith "Unimplemented: domain of primitive type"
-    | T_Enum _ | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
+    | T_Bits _ | T_Enum _ | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _
+      ->
         failwith "Unimplemented: domain of a non singular type."
     | T_Named _ -> assert false (* make anonymous *)
 
   let mem v d =
     match (v, d) with
-    | L_Bool _, _ | L_Real _, _ | L_String _, _ -> false
-    | L_BitVector _, D_Bits Top -> true
-    | L_BitVector bv, D_Bits (Finite intset) ->
-        IntSet.mem (Bitvector.length bv |> Z.of_int) intset
-    | L_BitVector _, _ | _, D_Bits _ -> false
+    | L_Bool _, _ | L_Real _, _ | L_String _, _ | L_BitVector _, _ -> false
     | L_Int _, D_Int Top -> true
     | L_Int i, D_Int (Finite intset) -> IntSet.mem i intset
     | L_Int _, _ -> false
 
   let equal d1 d2 =
     match (d1, d2) with
-    | D_Bits Top, D_Bits Top | D_Int Top, D_Int Top -> true
-    | D_Int (Finite is1), D_Int (Finite is2)
-    | D_Bits (Finite is1), D_Bits (Finite is2) ->
-        IntSet.equal is1 is2
+    | D_Int Top, D_Int Top -> true
+    | D_Int (Finite is1), D_Int (Finite is2) -> IntSet.equal is1 is2
     | _ -> false
 
   let compare _d1 _d2 = assert false
@@ -554,10 +533,7 @@ module Domain = struct
     let () =
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
     in
-    match (d1, d2) with
-    | D_Bits is1, D_Bits is2 | D_Int is1, D_Int is2 ->
-        int_set_is_subset env is1 is2
-    | _ -> false
+    match (d1, d2) with D_Int is1, D_Int is2 -> int_set_is_subset env is1 is2
   (* End *)
 end
 
