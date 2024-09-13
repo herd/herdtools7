@@ -620,25 +620,27 @@ and structural_subtype_satisfies env t s =
   (match ((make_anonymous env s).desc, (make_anonymous env t).desc) with
   (* If S has the structure of an integer type then T must have the structure
      of an integer type. *)
-  | T_Int _, T_Int _ -> true
-  | T_Int _, _ -> false
+  | T_Int _, T_Int _ ->
+      let d_s = Domain.of_type env s and d_t = Domain.of_type env t in
+      let () =
+        if false then
+          Format.eprintf "domain_subtype_satisfies: %a included in %a?@."
+            Domain.pp d_t Domain.pp d_s
+      in
+      Domain.is_subset env d_t d_s
   (* If S has the structure of a real type then T must have the
      structure of a real type. *)
   | T_Real, T_Real -> true
-  | T_Real, _ -> false
   (* If S has the structure of a string type then T must have the
      structure of a string type. *)
   | T_String, T_String -> true
-  | T_String, _ -> false
   (* If S has the structure of a boolean type then T must have the
      structure of a boolean type. *)
   | T_Bool, T_Bool -> true
-  | T_Bool, _ -> false
   (* If S has the structure of an enumeration type then T must have
      the structure of an enumeration type with exactly the same
      enumeration literals. *)
   | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
-  | T_Enum _, _ -> false
   (*
       • If S has the structure of a bitvector type with determined width then
         either T must have the structure of a bitvector type of the same
@@ -651,15 +653,35 @@ and structural_subtype_satisfies env t s =
         every bitfield in S there must be a bitfield in T of the same name, width
         and offset, whose type type-satisfies the bitfield in S.
     *)
-  | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) -> (
-      (* Interpreting the first two condition as just a condition on
-         domains. *)
-      match (bf_s, bf_t) with
-      | [], _ -> true
-      | _, [] -> false
-      | bfs_s, bfs_t ->
-          bitwidth_equal env w_s w_t && bitfields_included env bfs_s bfs_t)
-  | T_Bits _, _ -> false
+  | T_Bits (_w_s, bf_s), T_Bits (_w_t, bf_t) ->
+      let bitfields_subtype =
+        match (bf_s, bf_t) with
+        | [], _ -> true
+        | _, [] -> false
+        | bfs_s, bfs_t -> bitfields_included env bfs_s bfs_t
+      in
+      let widths_subtype =
+        (*
+        • If either S or T have the structure of a bitvector type with
+          undetermined width then the domain of T must be a subset of the
+          domain of S.
+         *)
+        (* Implicitly, T must have the structure of a bitvector. *)
+        let t_domain = get_structure env t |> Domain.of_type env
+        and s_domain = get_structure env s |> Domain.of_type env in
+        let () =
+          if false then
+            Format.eprintf "Is %a included in %a?@." Domain.pp t_domain
+              Domain.pp s_domain
+        in
+        match
+          ( Domain.get_width_singleton_opt s_domain,
+            Domain.get_width_singleton_opt t_domain )
+        with
+        | Some w_s, Some w_t -> Z.equal w_s w_t
+        | _ -> Domain.is_subset env t_domain s_domain
+      in
+      bitfields_subtype && widths_subtype
   (* If S has the structure of an array type with elements of type E then
      T must have the structure of an array type with elements of type E,
      and T must have the same element indices as S. *)
@@ -674,7 +696,6 @@ and structural_subtype_satisfies env t s =
       | ArrayLength_Enum (_, _), ArrayLength_Expr _
       | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
           false)
-  | T_Array _, _ -> false
   (* If S has the structure of a tuple type then T must have the
      structure of a tuple type with same number of elements as S,
      and each element in T must type-satisfy the corresponding
@@ -682,7 +703,6 @@ and structural_subtype_satisfies env t s =
   | T_Tuple li_s, T_Tuple li_t ->
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_satisfies env) li_t li_s
-  | T_Tuple _, _ -> false
   (* If S has the structure of an exception type then T must have the
      structure of an exception type with at least the same fields
      (each with the same type) as S.
@@ -698,68 +718,19 @@ and structural_subtype_satisfies env t s =
               String.equal name_s name_t && type_equal env ty_s ty_t)
             fields_t)
         fields_s
-  | T_Exception _, _ | T_Record _, _ -> false (* A structure cannot be a name *)
-  | T_Named _, _ -> assert false)
+  | T_Named _, _ -> assert false
+  | _, _ -> false)
   |: TypingRule.StructuralSubtypeSatisfaction
-
-(* End *)
-(* Begin DomainSubtypeSatisfaction *)
-and domain_subtype_satisfies env t s =
-  (let s_struct = get_structure env s in
-   match s_struct.desc with
-   (* If S does not have the structure of an aggregate type or bitvector type
-      then the domain of T must be a subset of the domain of S. *)
-   | T_Enum _ | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-   (* These are very basic domains, which do not require checking for domain subsumption.
-      Checking for structural subtyping is enough. *)
-   | T_Real | T_String | T_Bool | T_Int UnConstrained -> true
-   | T_Int _ ->
-       let d_s = Domain.of_type env s_struct
-       and d_t = get_structure env t |> Domain.of_type env in
-       let () =
-         if false then
-           Format.eprintf "domain_subtype_satisfies: %a included in %a?@."
-             Domain.pp d_t Domain.pp d_s
-       in
-       Domain.is_subset env d_t d_s
-   | T_Bits _ -> (
-       (*
-        • If either S or T have the structure of a bitvector type with
-          undetermined width then the domain of T must be a subset of the
-          domain of S.
-         *)
-       (* Implicitly, T must have the structure of a bitvector. *)
-       let t_struct = get_structure env t in
-       let t_domain = Domain.of_type env t_struct
-       and s_domain = Domain.of_type env s_struct in
-       let () =
-         if false then
-           Format.eprintf "Is %a included in %a?@." Domain.pp t_domain Domain.pp
-             s_domain
-       in
-       match
-         ( Domain.get_width_singleton_opt s_domain,
-           Domain.get_width_singleton_opt t_domain )
-       with
-       | Some w_s, Some w_t -> Z.equal w_s w_t
-       | _ -> Domain.is_subset env t_domain s_domain)
-   | T_Named _ ->
-       (* Cannot happen *)
-       assert false)
-  |: TypingRule.DomainSubtypeSatisfaction
 
 (* End *)
 (* Begin SubtypeSatisfaction *)
 and subtype_satisfies env t s =
   let () =
     if false then
-      let b1 = structural_subtype_satisfies env t s in
-      let b2 = domain_subtype_satisfies env t s in
-      Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@." PP.pp_ty t
-        PP.pp_ty s b1 b2
+      let b = structural_subtype_satisfies env t s in
+      Format.eprintf "%a subtypes %a ? %B@." PP.pp_ty t PP.pp_ty s b
   in
-  (structural_subtype_satisfies env t s && domain_subtype_satisfies env t s)
-  |: TypingRule.SubtypeSatisfaction
+  structural_subtype_satisfies env t s |: TypingRule.SubtypeSatisfaction
 
 (* End *)
 (* Begin TypeSatisfaction *)
