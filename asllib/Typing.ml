@@ -220,24 +220,12 @@ module Property (C : ANNOTATE_CONFIG) = struct
   let best_effort : 'a -> ('a, 'a) property -> 'a = fun x f -> best_effort' f x
   let[@inline] ( let+ ) m f = check m () |> f
 
-  let[@inline] both (p1 : prop) (p2 : prop) () =
-    let () = p1 () in
-    let () = p2 () in
-    ()
-
   let either (p1 : ('a, 'b) property) (p2 : ('a, 'b) property) x =
     try p1 x with TypingAssumptionFailed | Error.ASLException _ -> p2 x
-
-  let rec any (li : prop list) : prop =
-    match li with
-    | [] -> raise (Invalid_argument "any")
-    | [ f ] -> f
-    | p :: li -> either p (any li)
 
   let assumption_failed () = raise TypingAssumptionFailed [@@inline]
   let ok () = () [@@inline]
   let check_true b fail () = if b then () else fail () [@@inline]
-  let check_true' b = check_true b assumption_failed [@@inline]
   let check_all2 li1 li2 f () = List.iter2 (fun x1 x2 -> f x1 x2 ()) li1 li2
 end
 
@@ -504,13 +492,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
      -------------------------------------------------------------------------- *)
 
-  let check_type_satisfies' env t1 t2 () =
-    let () =
-      if false then
-        Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
-    in
-    if Types.type_satisfies env t1 t2 then () else assumption_failed ()
-
   let get_bitvector_width' env t =
     match (Types.get_structure env t).desc with
     | T_Bits (n, _) -> n
@@ -623,9 +604,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     with TypingAssumptionFailed ->
       fatal_from loc (Error.UnreconciliableTypes (t1, t2))
   (* End *)
-
-  let has_bitvector_structure env t =
-    match (Types.get_structure env t).desc with T_Bits _ -> true | _ -> false
 
   let binop_is_exploding = function
     | MUL | SHL | POW -> true
@@ -818,119 +796,55 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckBinop *)
-  let check_binop loc env op t1 t2 : ty =
+  let rec check_binop loc env op t1 t2 : ty =
     let () =
       if false then
         Format.eprintf "Checking binop %s between %a and %a@."
           (PP.binop_to_string op) PP.pp_ty t1 PP.pp_ty t2
     in
-    let with_loc = add_pos_from loc in
-    either
-      (fun () ->
-        match op with
-        | BAND | BOR | BEQ | IMPL ->
-            let+ () = check_type_satisfies' env t1 boolean in
-            let+ () = check_type_satisfies' env t2 boolean in
-            T_Bool |> with_loc
-        | AND | OR | EOR (* when has_bitvector_structure env t1 ? *) ->
-            (* Rule KXMR: If the operands of a primitive operation are
-               bitvectors, the widths of the operands must be equivalent
-               statically evaluable expressions. *)
-            let+ () = check_bits_equal_width' env t1 t2 in
-            let w = get_bitvector_width' env t1 in
-            T_Bits (w, []) |> with_loc
-        | (PLUS | MINUS) when has_bitvector_structure env t1 ->
-            (* Rule KXMR: If the operands of a primitive operation are
-               bitvectors, the widths of the operands must be equivalent
-               statically evaluable expressions. *)
-            let+ () =
-              either
-                (check_bits_equal_width' env t1 t2)
-                (check_type_satisfies' env t2 integer)
+    let with_loc x = add_pos_from loc x in
+    (match (op, (t1.desc, t2.desc)) with
+    | _, (T_Named _, _) | _, (_, T_Named _) ->
+        let t1_anon = Types.make_anonymous env t1
+        and t2_anon = Types.make_anonymous env t2 in
+        check_binop loc env op t1_anon t2_anon
+    | (BAND | BOR | BEQ | IMPL), (T_Bool, T_Bool) -> T_Bool |> with_loc
+    | (AND | OR | EOR | PLUS | MINUS), (T_Bits (w1, _), T_Bits (w2, _))
+      when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
+        T_Bits (w1, []) |> with_loc
+    | (PLUS | MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> with_loc
+    | (LEQ | GEQ | GT | LT), (T_Int _, T_Int _ | T_Real, T_Real)
+    | ( (EQ_OP | NEQ),
+        (T_Int _, T_Int _ | T_Bool, T_Bool | T_Real, T_Real | T_String, T_String)
+      ) ->
+        T_Bool |> with_loc
+    | (EQ_OP | NEQ), (T_Bits (w1, _), T_Bits (w2, _))
+      when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
+        T_Bool |> with_loc
+    | (EQ_OP | NEQ), (T_Enum li1, T_Enum li2)
+      when list_equal String.equal li1 li2 ->
+        T_Bool |> with_loc
+    | ( (MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS),
+        (T_Int c1, T_Int c2) ) -> (
+        match (c1, c2) with
+        | UnConstrained, _ | _, UnConstrained -> T_Int UnConstrained |> with_loc
+        | Parameterized _, _ | _, Parameterized _ ->
+            let t1_well_constrained = Types.to_well_constrained t1
+            and t2_well_constrained = Types.to_well_constrained t2 in
+            check_binop loc env op t1_well_constrained t2_well_constrained
+        | WellConstrained cs1, WellConstrained cs2 ->
+            let cs =
+              best_effort UnConstrained @@ fun _ ->
+              try annotate_constraint_binop ~loc env op cs1 cs2
+              with TypingAssumptionFailed ->
+                fatal_from loc (Error.BadTypesForBinop (op, t1, t2))
             in
-            let w = get_bitvector_width' env t1 in
-            T_Bits (w, []) |> with_loc
-        | EQ_OP | NEQ ->
-            (* Wrong! *)
-            let t1_anon = Types.make_anonymous env t1
-            and t2_anon = Types.make_anonymous env t2 in
-            let+ () =
-              any
-                [
-                  (* If an argument of a comparison operation is a
-                     constrained integer then it is treated as an
-                     unconstrained integer. *)
-                  both
-                    (check_type_satisfies' env t1_anon integer)
-                    (check_type_satisfies' env t2_anon integer);
-                  (* If the arguments of a comparison operation are
-                     bitvectors then they must have the same determined
-                     width. *)
-                  check_bits_equal_width' env t1_anon t2_anon;
-                  both
-                    (check_type_satisfies' env t1_anon boolean)
-                    (check_type_satisfies' env t2_anon boolean);
-                  both
-                    (check_type_satisfies' env t1_anon real)
-                    (check_type_satisfies' env t2_anon real);
-                  both
-                    (check_type_satisfies' env t1_anon string)
-                    (check_type_satisfies' env t2_anon string);
-                  (fun () ->
-                    match (t1_anon.desc, t2_anon.desc) with
-                    | T_Enum li1, T_Enum li2 ->
-                        check_true' (list_equal String.equal li1 li2) ()
-                    | _ -> assumption_failed ());
-                ]
-            in
-            T_Bool |> with_loc
-        | LEQ | GEQ | GT | LT ->
-            let+ () =
-              either
-                (both
-                   (check_type_satisfies' env t1 integer)
-                   (check_type_satisfies' env t2 integer))
-                (both
-                   (check_type_satisfies' env t1 real)
-                   (check_type_satisfies' env t2 real))
-            in
-            T_Bool |> with_loc
-        | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> (
-            let struct1 = Types.get_well_constrained_structure env t1
-            and struct2 = Types.get_well_constrained_structure env t2 in
-            match (struct1.desc, struct2.desc) with
-            | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
-                (* Rule ZYWY: If both operands of an integer binary primitive
-                   operator are integers and at least one of them is an
-                   unconstrained integer then the result shall be an
-                   unconstrained integer. *)
-                T_Int UnConstrained |> with_loc
-            | T_Int (Parameterized _), _ | _, T_Int (Parameterized _) ->
-                assert false (* We used to_well_constrained before *)
-            | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
-                let cs =
-                  best_effort UnConstrained (fun _ ->
-                      annotate_constraint_binop ~loc env op cs1 cs2)
-                in
-                T_Int cs |> with_loc
-            | T_Real, T_Real -> (
-                match op with
-                | PLUS | MINUS | MUL -> T_Real |> with_loc
-                | _ -> assumption_failed ())
-            | T_Real, T_Int _ -> (
-                match op with
-                | POW -> T_Real |> with_loc
-                | _ -> assumption_failed ())
-            | _ -> assumption_failed ())
-        | RDIV ->
-            let+ () =
-              both
-                (check_type_satisfies' env t1 real)
-                (check_type_satisfies' env t2 real)
-            in
-            T_Real |> with_loc)
-      (fun () -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
-      ()
+            T_Int cs |> with_loc)
+    | (PLUS | MINUS | MUL), (T_Real, T_Real)
+    | POW, (T_Real, T_Int _)
+    | RDIV, (T_Real, T_Real) ->
+        T_Real |> with_loc
+    | _ -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
     |: TypingRule.CheckBinop
   (* End *)
 
