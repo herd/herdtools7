@@ -173,9 +173,6 @@ module Domain = struct
 
   (* Begin Domain *)
   type t =
-    | D_Bool
-    | D_String
-    | D_Real
     | D_Symbols of ISet.t  (** The domain of an enum is a set of symbols *)
     | D_Int of int_set
     | D_Bits of int_set  (** The domain of a bitvector is given by its width. *)
@@ -198,9 +195,6 @@ module Domain = struct
   let pp f =
     let open Format in
     function
-    | D_Bool -> pp_print_string f "𝔹"
-    | D_String -> pp_print_string f "𝕊"
-    | D_Real -> pp_print_string f "ℚ"
     | D_Symbols li ->
         fprintf f "@[{@,%a}@]"
           (PP.pp_print_seq ~pp_sep:pp_print_space pp_print_string)
@@ -303,11 +297,9 @@ module Domain = struct
 
   let of_literal = function
     | L_Int n -> D_Int (Finite (IntSet.singleton n))
-    | L_Bool _ -> D_Bool
-    | L_Real _ -> D_Real
-    | L_String _ -> D_String
     | L_BitVector bv ->
         D_Bits (Finite (Bitvector.length bv |> Z.of_int |> IntSet.singleton))
+    | _ -> raise StaticEvaluationTop
 
   (* [of_expr env e] returns the symbolic integer domain for the integer-typed expression [e]. *)
   let rec of_expr env e =
@@ -342,9 +334,6 @@ module Domain = struct
   and of_type env ty =
     let ty = make_anonymous env ty in
     match ty.desc with
-    | T_Bool -> D_Bool
-    | T_String -> D_String
-    | T_Real -> D_Real
     | T_Enum li -> D_Symbols (ISet.of_list li)
     | T_Int UnConstrained -> D_Int Top
     | T_Int (Parameterized (_uid, var)) ->
@@ -361,27 +350,25 @@ module Domain = struct
           | _ -> raise StaticEvaluationTop
         with StaticEvaluationTop ->
           D_Bits (FromSyntax [ Constraint_Exact width ]))
+    | T_Bool | T_String | T_Real ->
+        failwith "Unimplemented: domain of primitive type"
     | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
         failwith "Unimplemented: domain of a non singular type."
     | T_Named _ -> assert false (* make anonymous *)
 
   let mem v d =
     match (v, d) with
-    | L_Bool _, D_Bool | L_Real _, D_Real -> true
-    | L_Bool _, _ | L_Real _, _ | _, D_Bool | _, D_Real -> false
+    | L_Bool _, _ | L_Real _, _ | L_String _, _ -> false
     | L_BitVector _, D_Bits Top -> true
     | L_BitVector bv, D_Bits (Finite intset) ->
         IntSet.mem (Bitvector.length bv |> Z.of_int) intset
     | L_BitVector _, _ | _, D_Bits _ -> false
     | L_Int _, D_Int Top -> true
     | L_Int i, D_Int (Finite intset) -> IntSet.mem i intset
-    | L_Int _, _ | _, D_Int _ -> false
-    | L_String _, D_String -> true
-    | L_String _, _ (* | _, D_String *) -> false
+    | L_Int _, _ -> false
 
   let equal d1 d2 =
     match (d1, d2) with
-    | D_Bool, D_Bool | D_String, D_String | D_Real, D_Real -> true
     | D_Symbols s1, D_Symbols s2 -> ISet.equal s1 s2
     | D_Bits Top, D_Bits Top | D_Int Top, D_Int Top -> true
     | D_Int (Finite is1), D_Int (Finite is2)
@@ -565,7 +552,6 @@ module Domain = struct
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
     in
     match (d1, d2) with
-    | D_Bool, D_Bool | D_String, D_String | D_Real, D_Real -> true
     | D_Symbols s1, D_Symbols s2 -> ISet.subset s1 s2
     | D_Bits is1, D_Bits is2 | D_Int is1, D_Int is2 ->
         int_set_is_subset env is1 is2
