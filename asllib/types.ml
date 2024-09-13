@@ -579,12 +579,12 @@ let rec bitfields_included env bfs1 bfs2 =
         | BitField_Type (name1, slices1, ty1) ->
             String.equal name1 name2
             && slices_equal env slices1 slices2
-            && structural_subtype_satisfies env ty1 ty2)
+            && subtype_satisfies env ty1 ty2)
   and incl_bfs bfs1 bfs2 = List.for_all (mem_bfs bfs2) bfs1 in
   incl_bfs bfs1 bfs2
 
-(* Begin TypingRule.StructuralSubtypeSatisfaction *)
-and structural_subtype_satisfies env t s =
+(* Begin TypingRule.SubtypeSatisfaction *)
+and subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
   (match ((make_anonymous env s).desc, (make_anonymous env t).desc) with
@@ -598,15 +598,11 @@ and structural_subtype_satisfies env t s =
             Domain.pp d_t Domain.pp d_s
       in
       Domain.is_subset env d_t d_s
-  (* If S has the structure of a real type then T must have the
-     structure of a real type. *)
-  | T_Real, T_Real -> true
-  (* If S has the structure of a string type then T must have the
-     structure of a string type. *)
-  | T_String, T_String -> true
-  (* If S has the structure of a boolean type then T must have the
-     structure of a boolean type. *)
-  | T_Bool, T_Bool -> true
+  (* If S has the structure of a real/string/bool then T must have the
+     same structure. *)
+  | ( ((T_Real | T_String | T_Bool) as s_anon),
+      ((T_Real | T_String | T_Bool) as t_anon) ) ->
+      s_anon = t_anon
   (* If S has the structure of an enumeration type then T must have
      the structure of an enumeration type with exactly the same
      enumeration literals. *)
@@ -679,17 +675,7 @@ and structural_subtype_satisfies env t s =
         fields_s
   | T_Named _, _ -> assert false
   | _, _ -> false)
-  |: TypingRule.StructuralSubtypeSatisfaction
-
-(* End *)
-(* Begin SubtypeSatisfaction *)
-and subtype_satisfies env t s =
-  let () =
-    if false then
-      let b = structural_subtype_satisfies env t s in
-      Format.eprintf "%a subtypes %a ? %B@." PP.pp_ty t PP.pp_ty s b
-  in
-  structural_subtype_satisfies env t s |: TypingRule.SubtypeSatisfaction
+  |: TypingRule.SubtypeSatisfaction
 
 (* End *)
 (* Begin TypeSatisfaction *)

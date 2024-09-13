@@ -438,8 +438,7 @@ module Typed (C : Config.S) = struct
     in
     let e_var env ty =
       let folder name (t, _) vars =
-        if Types.structural_subtype_satisfies env t ty then
-          (E_Var name |> annot) :: vars
+        if Types.subtype_satisfies env t ty then (E_Var name |> annot) :: vars
         else vars
       in
       []
@@ -476,7 +475,7 @@ module Typed (C : Config.S) = struct
             match func_sig.return_type with
             | Some t ->
                 if
-                  Types.structural_subtype_satisfies env t ty
+                  Types.subtype_satisfies env t ty
                   && List.length func_sig.args <= n
                 then (name, func_sig) :: funcs
                 else funcs
@@ -582,7 +581,7 @@ module Typed (C : Config.S) = struct
     in
     let e_get_field expr env ty n : expr gen option =
       let field_folder new_ty acc (field_name, field_ty) =
-        if Types.structural_subtype_satisfies env field_ty ty then
+        if Types.subtype_satisfies env field_ty ty then
           (let+ e' = expr (env, new_ty, n) in
            E_GetField (e', field_name) |> annot)
           :: acc
@@ -776,7 +775,7 @@ module Typed (C : Config.S) = struct
       let le_discard = LE_Discard |> annot |> pure
       and le_var env ty =
         let folder name (t, _) vars =
-          if Types.structural_subtype_satisfies env t ty then
+          if Types.subtype_satisfies env t ty then
             (LE_Var name |> annot) :: vars
           else vars
         in
@@ -798,7 +797,7 @@ module Typed (C : Config.S) = struct
         | _ -> None
       and le_set_field lexpr env ty n =
         let field_folder new_ty acc (field_name, field_ty) =
-          if Types.structural_subtype_satisfies env field_ty ty then
+          if Types.subtype_satisfies env field_ty ty then
             (let+ le' = lexpr (env, new_ty, n) in
              LE_SetField (le', field_name) |> annot)
             :: acc

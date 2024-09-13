@@ -105,12 +105,11 @@ let subtype_examples () =
     !!(T_Bits (!$4, [ BitField_Simple ("a", [ Slice_Single !$3 ]) ]))
   in
 
-  assert (structural_subtype_satisfies empty_env bits_btifields bits_btifields);
+  assert (subtype_satisfies empty_env bits_btifields bits_btifields);
 
   let bits_n = !!(T_Bits (!%"N", [])) in
   let bits_n_1 = !!(T_Bits (binop MUL !%"N" !$1, [])) in
 
-  assert (structural_subtype_satisfies env_with_n bits_n bits_n_1);
   assert (subtype_satisfies env_with_n bits_n bits_n_1);
 
   ()
