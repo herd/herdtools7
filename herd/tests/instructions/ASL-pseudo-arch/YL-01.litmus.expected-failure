@@ -1,3 +1,0 @@
-F
-Fatal: File "./herd/tests/instructions/ASL-pseudo-arch/YL-01.litmus" Adios
-Fatal error: exception Invalid_argument("bitwise_op")

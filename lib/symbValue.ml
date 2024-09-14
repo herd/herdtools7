@@ -340,9 +340,14 @@ module
           end
       | _ -> binop_cs_cs Op.Or Cst.Scalar.logor v1 v2
 
-  and xor v1 v2 =
+  and xor v1 v2 = binop Op.Xor Cst.Scalar.logxor v1 v2
+  (* Originally, an optimizaiton is applied here:
+    
     if compare v1 v2 = 0 then zero else
-    binop Op.Xor (Cst.Scalar.logxor) v1 v2
+
+    It's removed because [zero] might not be the correct value for all
+    [Constant.S.t] values (e.g. [ASLScalar.S_BitVector]). This might affect
+    symbolic value constraint solving. *)
 
   and maskop op sz v = match v,sz with
   | Val (Tag _),_ -> v (* tags are small enough for any mask be idempotent *)

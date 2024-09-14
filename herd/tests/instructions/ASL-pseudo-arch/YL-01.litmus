@@ -12,4 +12,4 @@ begin
   return 0;
 end
 
-forall (0: main.0.res = 0)
+forall (0: main.0.res = 1)
