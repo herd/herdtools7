@@ -1,0 +1,15 @@
+X86_64 WRR+2W
+"Rfe PodRR Fre PodWW Coe"
+Cycle=Rfe PodRR Fre PodWW Coe
+Relax=
+Safe=Rfe Fre Coe PodWW PodRR
+Generator=diy7 (version 7.57+1)
+Prefetch=1:x=F,1:y=T,2:y=F,2:x=W
+Com=Rf Fr Co
+Orig=Rfe PodRR Fre PodWW Coe
+{
+}
+ P0          | P1            | P2          ;
+ movl $2,(x) | movl (x),%eax | movl $1,(y) ;
+             | movl (y),%ebx | movl $1,(x) ;
+exists ([x]=2 /\ 1:rax=2 /\ 1:rbx=0)

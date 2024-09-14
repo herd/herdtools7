@@ -20,6 +20,8 @@ DUNE_PROFILE = release
 
 DIYCROSS                      = _build/install/default/bin/diycross7
 HERD                          = _build/install/default/bin/herd7
+LITMUS                        = _build/install/default/bin/litmus7
+LITMUS_LIB_DIR                = $(PWD)/litmus/libdir
 HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
@@ -685,3 +687,9 @@ clean-asl-pseudocode:
 
 asldoc: $(BENTO)
 	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc all
+
+
+KUT_DIR := $(shell mktemp -d)
+RUN_TESTS := false
+
+include Makefile.x86_64
