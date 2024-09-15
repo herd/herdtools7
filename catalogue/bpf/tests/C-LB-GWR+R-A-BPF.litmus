@@ -1,0 +1,26 @@
+BPF C-LB-GWR+R-A-BPF
+(*
+ *  * Result: Sometimes
+ *  * P0 GWR: Never->Sometimes: Power rel-acq does not provide write-to-read global transitivity
+ *  *
+ *  * 0:-tmp- -> 0:r1
+ *  * 1:r1 -> 1:r1
+ *  * 1:r2 -> 1:r2
+ *  * 2:-tmp- -> 2:r1
+ *  * 2:r2 -> 2:r2
+ *)
+{
+	0:r10 = u0;
+	0:r9 = x1;
+	1:r10 = v0;
+	1:r9 = x1;
+	2:r10 = u0;
+	2:r9 = v0;
+	2:r8 = __temporary_2;
+}
+ P0                                 | P1                                 | P2                                        ;
+ *(u32 *)(r10 + 0) = 3              | r1 = load_acquire((u32 *)(r9 + 0)) | *(u32 *)(r9 + 0) = 1                      ;
+ r1 = 1                             | r2 = *(u32 *)(r10 + 0)             | r1 = atomic_fetch_add((u64*)(r8 + 0), r1) ;
+ store_release((u32 *)(r9 + 0), r1) |                                    | r2 = *(u32 *)(r10 + 0)                    ;
+exists
+((1:r2=0 /\ 2:r2=0 /\ 1:r1=1))

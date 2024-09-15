@@ -1,0 +1,27 @@
+BPF MP+pooncerelease+poacquireonce
+
+(*
+ * Result: Never
+ *
+ * This litmus test demonstrates that store_release() and load_acquire()
+ * provide sufficient ordering for the message-passing pattern.
+ *)
+
+{
+int buf;
+int flag;
+
+0:r0=buf;
+0:r1=flag;
+0:r6=1;
+
+1:r0=buf;
+1:r1=flag;
+}
+
+(* Producer *)                          (* Consumer *)
+P0                                    | P1                                      ;
+*(u32 *)(r0 + 0) = 1                  | r3 = load_acquire((u32 *)(r1 + 0))      ;
+store_release((u32 *)(r1 + 0), r6)    | r4 = *(u32 *)(r0 + 0)                   ;
+
+exists (1:r3=1 /\ 1:r4=0)

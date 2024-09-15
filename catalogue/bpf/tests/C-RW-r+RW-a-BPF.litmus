@@ -1,0 +1,28 @@
+BPF C-RW-r+RW-a-BPF
+(*
+ *  * Result: Never
+ *  * 
+ *  * Process 0 starts (t=100000).
+ *  * 
+ *  * P0 advances slightly (t=100001).
+ *  * 
+ *  * P1 advances slightly (t=100003).
+ *  * 
+ *  * Process 0 start at t=100000, process 2 end at t=100003: Cycle forbidden.
+ *  *
+ *  * 0:r1 -> 0:r1
+ *  * 0:-tmp- -> 0:r2
+ *  * 1:r1 -> 1:r1
+ *)
+{
+	0:r10 = x0;
+	0:r9 = x1;
+	1:r10 = x0;
+	1:r9 = x1;
+}
+ P0                                 | P1                                 ;
+ r1 = *(u32 *)(r10 + 0)             | r1 = load_acquire((u32 *)(r9 + 0)) ;
+ r2 = 1                             | *(u32 *)(r10 + 0) = 1              ;
+ store_release((u32 *)(r9 + 0), r2) |                                    ;
+exists
+((0:r1=1 /\ 1:r1=1))

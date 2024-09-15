@@ -118,10 +118,14 @@ let barrier_compare = compare
 (* X  -> Atomic without any ordering *)
 (* SC -> Atomic with full ordering *)
 (* N  -> Plain: non-atomic and no ordering *)
+(* A  -> Non-atomic and acquire ordering *)
+(* R  -> Non-atomic and release ordering *)
 type lannot =
   | X
   | SC
   | N
+  | A
+  | R
 
 (****************)
 (* Instructions *)
@@ -170,8 +174,10 @@ type instruction =
   | OP of op * reg * reg
   | OPI of op * reg * k
   | LOAD of width * signed * reg * reg * k
+  | LDAQ of width * reg * reg * k
   | STORE of width * reg * k * reg
   | STOREI of width * reg * k * k
+  | STRL of width * reg * k * reg
   | MOV of reg * reg
   | MOVI of reg * k
   | AMO of op * width * reg * k * reg * lannot * bool
@@ -292,10 +298,19 @@ let pp_instruction _m i =
       (pp_width w)
       (pp_reg r2)
       (pp_k k)
+  | LDAQ (w, r1, r2, k) ->
+    sprintf
+      "%s = load_acquire((u%s *) (%s %s))"
+      (pp_reg r1)
+      (pp_width w)
+      (pp_reg r2)
+      (pp_k k)
   | STORE (w, r1, k, r2) ->
     sprintf "*(u%s *)(%s %s) = %s" (pp_width w) (pp_reg r1) (pp_k k) (pp_reg r2)
   | STOREI (w, r1, k1, k2) ->
     sprintf "*(u%s *)(%s %s) = %i" (pp_width w) (pp_reg r1) (pp_k k1) k2
+  | STRL (w, r1, k, r2) ->
+    sprintf "store_release ((u%s *)(%s %s), %s)" (pp_width w) (pp_reg r1) (pp_k k) (pp_reg r2)
   | AMO (op, sz, r1, k, r2, _an, f) ->
     if f
     then pp_amo_op_f op sz r1 k r2
@@ -336,9 +351,11 @@ let fold_regs (f_reg, f_sreg) =
     match ins with
     | OP (_, r1, r2)
     | LOAD (_, _, r1, r2, _)
+    | LDAQ (_, r1, r2, _)
     | MOV (r1, r2)
     | AMO (_, _, r1, _, r2, _, _)
     | JCOND (_, r1, r2, _)
+    | STRL (_, r1, _, r2)
     | STORE (_, r1, _, r2) -> fold_reg r1 (fold_reg r2 c)
     | MOVI (r1, _) | STOREI (_, r1, _, _) | JCONDI (_, r1, _, _) | OPI (_, r1, _) ->
       fold_reg r1 c
@@ -357,7 +374,9 @@ let map_regs f_reg f_symb =
     | OP (op, r1, r2) -> OP (op, map_reg r1, map_reg r2)
     | OPI (op, r1, k) -> OPI (op, map_reg r1, k)
     | LOAD (w, s, r1, r2, k) -> LOAD (w, s, map_reg r1, map_reg r2, k)
+    | LDAQ (w, r1, r2, k) -> LDAQ (w, map_reg r1, map_reg r2, k)
     | STORE (w, r1, k, r2) -> STORE (w, map_reg r1, k, map_reg r2)
+    | STRL (w, r1, k, r2) -> STRL (w, map_reg r1, k, map_reg r2)
     | STOREI (w, r1, k1, k2) -> STOREI (w, map_reg r1, k1, k2)
     | MOV (r1, r2) -> MOV (map_reg r1, map_reg r2)
     | MOVI (r1, k) -> MOVI (map_reg r1, k)
@@ -376,7 +395,7 @@ let norm_ins ins = ins
 
 (* Instruction continuation *)
 let get_next = function
-  | OP _ | OPI _ | LOAD _ | STORE _ | STOREI _ | MOV _ | AMO _ | MOVI _ -> [ Label.Next ]
+  | OP _ | OPI _ | LOAD _ | LDAQ _ | STORE _ | STRL _ | STOREI _ | MOV _ | AMO _ | MOVI _ -> [ Label.Next ]
   | GOTO lbl -> [ Label.To lbl ]
   | JCONDI (_, _, _, lbl) | JCOND (_, _, _, lbl) -> [ Label.Next; Label.To lbl ]
 ;;
@@ -392,7 +411,7 @@ include Pseudo.Make (struct
 
     let get_naccesses = function
       | OP _ | GOTO _ | OPI _ | JCOND _ | JCONDI _ | MOV _ | MOVI _ -> 0
-      | STORE _ | STOREI _ | LOAD _ -> 1
+      | STORE _ | STRL _ | STOREI _ | LOAD _ | LDAQ _ -> 1
       | AMO _ -> 2
     ;;
 

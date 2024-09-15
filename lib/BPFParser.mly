@@ -36,6 +36,8 @@ module A=BPFBase
 %token GOTO
 %token IF
 %token <BPFBase.cond> COND
+%token LDAQ
+%token STRL
 
 %type <MiscParser.proc list * (BPFBase.pseudo) list list> main
 %start  main
@@ -93,6 +95,11 @@ instr:
   { let s,w = $5 in
     A.LOAD (w,s,$1,$9,$10) }
 
+/* LDAQ rd = load_acquire ((u64/u32 *)(rs + offset16)) */
+| reg EQUAL LDAQ LPAR LPAR SIZE STAR RPAR LPAR reg k RPAR RPAR
+ { let _,w = $6 in
+   A.LDAQ (w,$1,$10,$11) }
+
 /* STX *(size *)(r1 + 0) = r2  */
 | STAR LPAR SIZE STAR RPAR LPAR reg k RPAR EQUAL reg
   { let _,w = $3 in
@@ -102,6 +109,11 @@ instr:
 | STAR LPAR SIZE STAR RPAR LPAR reg k RPAR EQUAL k
   { let _,w = $3 in
     A.STOREI (w,$7,$8,$11) }
+
+/* STRL store_release ((size *)(rd + offset16), rs) */
+| STRL LPAR LPAR SIZE STAR RPAR LPAR reg k RPAR COMMA reg RPAR
+  { let _,w = $4 in
+    A.STRL (w,$8,$9,$12) }
 
 /* MOV r0 = r1 */
 | reg EQUAL reg
