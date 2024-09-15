@@ -351,7 +351,7 @@ val same_instance : event -> event -> bool
   val data_input_union : (* input to both structures *)
     event_structure -> event_structure -> event_structure option
 
-  val data_to_output : (* inut to second es output *)
+  val data_to_output : (* input to second es output *)
     event_structure -> event_structure -> event_structure option
 
   val data_to_minimals : (* second es entries are minimal evts all iico *)
