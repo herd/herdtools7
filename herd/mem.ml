@@ -2008,6 +2008,8 @@ let match_reg_events es =
             Constant.is_symbol cst ||
             Constant.is_label cst
             -> ()
+        | Some (A.Location_global (V.Var _))
+            -> ()
         | Some loc ->
             Warn.user_error "Non-symbolic memory access found on '%s'"
               (A.pp_location loc)

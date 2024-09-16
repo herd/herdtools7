@@ -340,7 +340,13 @@ module
           end
       | _ -> binop_cs_cs Op.Or Cst.Scalar.logor v1 v2
 
-  and xor v1 v2 = binop Op.Xor Cst.Scalar.logxor v1 v2
+  and xor v1 v2 =
+    match v1,v2 with
+    | (Val (Symbolic id1),Val (Symbolic id2))
+      when Constant.symbol_eq id1 id2
+        -> zero
+    | _ ->
+        binop Op.Xor Cst.Scalar.logxor v1 v2
   (* Originally, an optimizaiton is applied here:
     
     if compare v1 v2 = 0 then zero else
