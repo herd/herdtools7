@@ -57,7 +57,7 @@ let tc-ib = tc-before; [exempt(Exp & R)]
 
 (* Fetch-intrinsically-before *)
 let f-ib =
-  [Imp & Instr & R]; iico_data; [B]; iico_ctrl; [_]
+  [Imp & Instr & R]; iico_data; [B]; (iico_ctrl | iico_ctrl; iico_data)
 
 (* DSB-ordered-before *)
 let DSB-ob =
