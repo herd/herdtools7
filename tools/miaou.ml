@@ -451,7 +451,7 @@ module Make
          tr_evts_id e1 loc "anyevent"
       | Var (loc,id) ->
          tr_evts_id e1 loc id
-      | Op1 (loc,Comp,e) ->
+      | Op1 (loc,Comp,e) | App (loc,Var (_,"exempt"),e) ->
          begin
            match tr_evts_not e1 e with
            | None -> tr_fail loc
