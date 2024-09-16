@@ -14,7 +14,13 @@
     filecolor=magenta,
     urlcolor=cyan,
 }
-\makeatletter
+\usepackage{diagbox}
+
+% "Dark theme"
+% \usepackage{xcolor}
+% \pagecolor[rgb]{0.2,0.2,0.2}
+% \color[rgb]{0.5,0.5,0.5}
+
 \makeatletter
   \newcommand{\linkdest}[1]{\Hy@raisedlink{\hypertarget{#1}{}}}
 % \newcommand{\linkdest}[1]{\Hy@raisedlink{\hypertarget{#1}{}}}
@@ -48,6 +54,7 @@
 
 \newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
 \newcommand\lrmcomment[1]{}
+\newcommand\textfunc[1]{\textit{#1}}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -99,7 +106,8 @@
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
 \newcommand\wrappedline[0]{{\hyperlink{def-wrapline}{\color{red}\hookrightarrow}}}
-\newcommand\casesplitline[0]{{\hyperlink{def-casesplitline}{\color{cyan}\tiny{\text{******** common prefix ********}} }}}
+\newcommand\commonprefixline[0]{{\hyperlink{def-commonprefixline}{\color{cyan}\tiny{\text{******** common prefix ********}} }}}
+\newcommand\commonsuffixline[0]{{\hyperlink{def-commonsuffixline}{\color{cyan}\tiny{\text{******** common suffix ********}} }}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%
 %% Mathematical notations and Inference Rule macros
@@ -120,7 +128,7 @@
 \newcommand\defpoint[1]{#1}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
-\newcommand\overname[2]{\overbracket{#1}^{#2}}
+\newcommand\overname[2]{\overbrace{#1}^{#2}}
 \newcommand\overtext[2]{\overbracket{#1}^{\text{#2}}}
 \newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
 \newcommand\restrictfunc[2]{{#1}\hyperlink{def-restrictfunc}{|}_{#2}}
@@ -165,9 +173,9 @@
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
 \newcommand\terminateas[0]{\hyperlink{def-terminateas}{\sslash}\;}
-\newcommand\booltrans[1]{\hyperlink{def-booltrans}{\texttt{bool\_transition}}(#1)}
+\newcommand\booltrans[1]{\hyperlink{def-booltrans}{\textfunc{bool\_transition}}(#1)}
 \newcommand\booltransarrow[0]{\longrightarrow}
-\newcommand\checktrans[2]{\hyperlink{def-checktrans}{\texttt{check}}(#1, \texttt{#2})}
+\newcommand\checktrans[2]{\hyperlink{def-checktrans}{\textfunc{check}}(#1, \texttt{#2})}
 \newcommand\checktransarrow[0]{\longrightarrow}
 
 \newcommand\termx[0]{\mathit{tx}}
@@ -420,9 +428,9 @@
 \newcommand\localstaticenvs[0]{\hyperlink{def-localstaticenvs}{\mathbb{L}}}
 \newcommand\globalstaticenvs[0]{\hyperlink{def-globalstaticenvs}{\mathbb{G}}}
 \newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\tenv}}}
-\newcommand\tstruct[0]{\hyperlink{def-tstruct}{\texttt{get\_structure}}}
-\newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textsf{ast\_label}}}
-\newcommand\typesat[0]{\hyperlink{def-typesatisfies}{\texttt{type\_satisfies}}}
+\newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}}
+\newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}}
+\newcommand\typesat[0]{\hyperlink{def-typesatisfies}{\textfunc{type\_satisfies}}}
 
 \newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
 \newcommand\globalstoragetypes[0]{\hyperlink{def-globalstoragetypes}{\textsf{global\_storage\_types}}}
@@ -434,8 +442,8 @@
 \newcommand\subprogramrenamings[0]{\hyperlink{def-subprogramrenamings}{\textsf{subprogram\_renamings}}}
 \newcommand\parameters[0]{\hyperlink{def-parameters}{\textsf{parameters}}}
 
-\newcommand\unopliterals[0]{\hyperlink{def-unopliterals}{\texttt{unop\_literals}}}
-\newcommand\binopliterals[0]{\hyperlink{def-binopliterals}{\texttt{binop\_literals}}}
+\newcommand\unopliterals[0]{\hyperlink{def-unopliterals}{\textfunc{unop\_literals}}}
+\newcommand\binopliterals[0]{\hyperlink{def-binopliterals}{\textfunc{binop\_literals}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Semantics macros
@@ -623,7 +631,7 @@
 \newcommand\bits[0]{\texttt{bits}}
 \newcommand\veonep[0]{\texttt{e1'}}
 \newcommand\vetwop[0]{\texttt{e2'}}
-\newcommand\vethreep[0]{\texttt{e2'}}
+\newcommand\vethreep[0]{\texttt{e3'}}
 \newcommand\vepp[0]{\texttt{e''}}
 \newcommand\vtpp[0]{\texttt{t''}}
 \newcommand\vsp[0]{\texttt{s'}}
@@ -1012,3 +1020,7 @@
 \newcommand\vzbopt[0]{\texttt{zb\_opt}}
 \newcommand\explodedinterval[0]{\texttt{exploded\_interval}}
 \newcommand\vbtoolarge[0]{\texttt{b\_too\_large}}
+\newcommand\vbequallength[0]{\texttt{b\_equal\_length}}
+\newcommand\vbequal[0]{\texttt{b\_equal}}
+\newcommand\newes[0]{\texttt{new\_e\_s}}
+\newcommand\orderedps[0]{\texttt{ordered\_ps}}

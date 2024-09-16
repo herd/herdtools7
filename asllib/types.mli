@@ -75,11 +75,11 @@ val get_structure : env -> ty -> ty
 (** The structure of a type is the primitive type that can hold the same
     values. *)
 
-val under_constrained_ty : identifier -> ty
-(** From a declared variable, builds an under-constrained integer. *)
+val parameterized_ty : identifier -> ty
+(** Builds an parameterized integer type from a declared variable. *)
 
 val to_well_constrained : ty -> ty
-(** Transform an under-constrained type into a well-constrained integer equal
+(** Transform a parameterized integer type into a well-constrained integer equal
     to the parameter that have this type, and leave the other types (such as
     well-constrained integers) as they are. *)
 

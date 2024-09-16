@@ -709,8 +709,10 @@ let reduce (Disjunction ir) =
           | None -> (ctnts, p) :: acc)
         li [] )
 
+(* Begin Normalize *)
 let normalize (env : StaticEnv.env) (e : expr) : expr =
   e |> to_ir env |> reduce |> of_ir |> with_pos_from e
+(* End *)
 
 let free_variables (Disjunction li) =
   let mono_free (Prod map) = AMap.fold (fun s _ -> ISet.add s) map in

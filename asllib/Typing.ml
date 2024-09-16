@@ -102,15 +102,17 @@ let reduce_constraints env = function
 
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
+(* Begin SlicesWidth *)
 let slices_width env =
   let minus = binop MINUS in
   let one = !$1 in
-  let slice_length = function
+  let slice_width = function
     | Slice_Single _ -> one
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
     | Slice_Range (e1, e2) -> plus one (minus e1 e2)
   in
-  fun li -> List.map slice_length li |> sum |> StaticModel.try_normalize env
+  fun li -> List.map slice_width li |> sum |> StaticModel.try_normalize env
+(* End *)
 
 let width_plus env acc w = plus acc w |> StaticModel.try_normalize env
 
@@ -1151,7 +1153,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |: TypingRule.TNonDecl
   (* End *)
 
-  (* AnnotateStaticInteger *)
+  (* Begin AnnotateStaticInteger *)
   and annotate_static_integer ~(loc : 'a annotated) env e =
     let t, e' = annotate_expr env e in
     let+ () = check_structure_integer loc env t in
@@ -1407,6 +1409,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | `Warn | `Silence ->
           List.fold_left2 folder eqs1 callee.args caller_args_typed
     in
+    (* AnnotateParameterDefining( *)
     let eqs3 =
       (* Checking that all parameter-defining arguments are static constrained integers. *)
       List.fold_left2
@@ -1422,6 +1425,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (callee_x, caller_e) :: eqs
           else eqs)
         eqs2 callee.args caller_args_typed
+      (* AnnotateParameterDefining) *)
     in
     let () =
       if false then
@@ -1452,7 +1456,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Format.eprintf "Renaming call from %s to %s@ at %a.@." name name1
           PP.pp_pos loc
     in
-    (* check that the callee parameters are correctly typed with respect
+    (* check_callee_params: check that the callee parameters are correctly typed with respect
        to the parameter expressions.
     *)
     let () =
@@ -1714,7 +1718,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name1, args1, eqs) |> here) |: TypingRule.ESetter
-            (* End ReduceSlicesToCall *)
+            (* End *)
         | _ -> (
             let t_e', e'' = annotate_expr_ ~forbid_atcs env e' in
             let struct_t_e' = Types.make_anonymous env t_e' in
@@ -1920,36 +1924,34 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin LEDiscard *)
     | LE_Discard -> le |: TypingRule.LEDiscard
     (* End *)
+    (* Begin LEVar *)
     | LE_Var x ->
         let+ () =
          fun () ->
           let ty =
-            (* Begin LELocalVar *)
             match IMap.find_opt x env.local.storage_types with
-            | Some (ty, LDK_Var) -> ty |: TypingRule.LELocalVar
-            (* End *)
+            | Some (ty, LDK_Var) -> ty
             | Some _ -> fatal_from le @@ Error.AssignToImmutable x
             | None -> (
-                (* Begin LEGlobalVar *)
                 match IMap.find_opt x env.global.storage_types with
-                | Some (ty, GDK_Var) -> ty |: TypingRule.LEGlobalVar
-                (* End *)
+                | Some (ty, GDK_Var) -> ty
                 | Some _ -> fatal_from le @@ Error.AssignToImmutable x
                 | None -> undefined_identifier le x)
           in
           check_type_satisfies le env t_e ty ()
         in
-        le
+        le |: TypingRule.LEVar
+    (* End *)
     (* Begin LEDestructuring *)
     | LE_Destructuring les ->
         (match t_e.desc with
-        | T_Tuple sub_tys ->
-            if List.compare_lengths sub_tys les != 0 then
+        | T_Tuple tys ->
+            if List.compare_lengths tys les != 0 then
               Error.fatal_from le
                 (Error.BadArity
-                   ("LEDestructuring", List.length sub_tys, List.length les))
+                   ("LEDestructuring", List.length tys, List.length les))
             else
-              let les' = List.map2 (annotate_lexpr env) les sub_tys in
+              let les' = List.map2 (annotate_lexpr env) les tys in
               LE_Destructuring les' |> here
         | _ -> conflict le [ T_Tuple [] ] t_e)
         |: TypingRule.LEDestructuring
@@ -1993,50 +1995,37 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          let le2 = annotate_lexpr env le1 t_le1 in
          let t_le1_struct = Types.make_anonymous env t_le1 in
          match t_le1_struct.desc with
+         (* Begin LESetStructuredField *)
          | T_Exception fields | T_Record fields ->
              let t =
                match List.assoc_opt field fields with
-               (* Begin LESetBadStructuredField *)
-               | None ->
-                   fatal_from le (Error.BadField (field, t_le1))
-                   |: TypingRule.LESetBadStructuredField
-               (* End *)
-               (* Begin LESetStructuredField *)
+               | None -> fatal_from le (Error.BadField (field, t_le1))
                | Some t -> t
              in
              let+ () = check_type_satisfies le env t_e t in
              LE_SetField (le2, field) |> here |: TypingRule.LESetStructuredField
-             (* End *)
+         (* End *)
+         (* Begin LESetBitField *)
          | T_Bits (_, bitfields) ->
              let bits slices bitfields =
                T_Bits (slices_width env slices, bitfields) |> here
              in
              let t, slices =
                match find_bitfield_opt field bitfields with
-               (* Begin LESetBadBitField *)
-               | None ->
-                   fatal_from le1 (Error.BadField (field, t_le1_struct))
-                   |: TypingRule.LESetBadBitField
-               (* End *)
-               (* Begin LESetBitField *)
+               | None -> fatal_from le1 (Error.BadField (field, t_le1_struct))
                | Some (BitField_Simple (_field, slices)) ->
-                   (bits slices [], slices) |: TypingRule.LESetBitField
-               (* End *)
-               (* Begin LESetBitFieldNested *)
+                   (bits slices [], slices)
                | Some (BitField_Nested (_field, slices, bitfields')) ->
                    (bits slices bitfields', slices)
-                   |: TypingRule.LESetBitFieldNested
-               (* End *)
-               (* Begin LESetBitFieldTyped *)
                | Some (BitField_Type (_field, slices, t)) ->
                    let t' = bits slices [] in
                    let+ () = check_type_satisfies le env t' t in
-                   (t, slices) |: TypingRule.LESetBitFieldTyped
-               (* End *)
+                   (t, slices)
              in
              let+ () = check_type_satisfies le1 env t_e t in
              let le3 = LE_Slice (le1, slices) |> here in
-             annotate_lexpr env le3 t_e
+             annotate_lexpr env le3 t_e |: TypingRule.LESetBitField
+         (* End *)
          (* Begin LESetBadField *)
          | _ -> conflict le1 [ default_t_bits; T_Record []; T_Exception [] ] t_e)
         |: TypingRule.LESetBadField
@@ -2092,6 +2081,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         LE_Concat (les1, Some widths) |> add_pos_from le |: TypingRule.LEConcat
   (* End *)
 
+  (* Begin CheckCanBeInitializedWith *)
   let can_be_initialized_with env s t =
     (* Rules:
        - ZCVD: It is illegal for a storage element whose type has the
@@ -2114,6 +2104,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let check_can_be_initialized_with loc env s t () =
     if can_be_initialized_with env s t then () else conflict loc [ s.desc ] t
+  (* End *)
 
   let add_immutable_expressions ~loc env ldk e_opt x =
     match (ldk, e_opt) with
@@ -2170,6 +2161,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (new_env, LDI_Tuple new_ldis) |: TypingRule.LDTuple
   (* End *)
 
+  (* Begin AnnotateLocalDeclItemUninit *)
   let annotate_local_decl_item_uninit loc (env : env) ldi =
     (* Here implicitly ldk=LDK_Var *)
     match ldi with
@@ -2184,7 +2176,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           annotate_local_decl_item loc env t' LDK_Var ldi'
         in
         (new_env, LDI_Typed (new_ldi', t')) |: TypingRule.LDUninitialisedTyped
+  (* End *)
 
+  (* Begin DeclareLocalConstant *)
   let declare_local_constant =
     let rec add_constants v env ldi =
       match ldi with
@@ -2194,6 +2188,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | LDI_Typed (ldi, _ty) -> add_constants v env ldi
     in
     fun env v ldi -> add_constants v env ldi
+  (* End *)
 
   let rec annotate_stmt env s =
     let () =
@@ -2663,7 +2658,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t =
           match ty_opt with
           | None | Some { desc = T_Int UnConstrained; _ } ->
-              Types.under_constrained_ty x
+              Types.parameterized_ty x
           | Some t1 -> annotate_type ~loc env1 t1
           (* Type should be valid in the env with no param declared. *)
         in
@@ -2691,17 +2686,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           Format.eprintf "Undefined used in func sig: %a@." ISet.pp_print used
       in
       let folder (env2', acc) (x, ty) =
+        (* ArgAsParam( *)
         if ISet.mem x used then
           let+ () = check_var_not_in_env loc env2' x in
+          (* AnnotateParamType( *)
           let t =
             match ty.desc with
-            | T_Int UnConstrained -> Types.under_constrained_ty x
+            | T_Int UnConstrained -> Types.parameterized_ty x
             | _ -> annotate_type ~loc env2 ty
             (* Type sould be valid in env with explicit parameters added, but no implicit parameter from args added. *)
+            (* AnnotateParamType) *)
           in
           let+ () = check_constrained_integer ~loc env2 t in
           (add_local x t LDK_Let env2', IMap.add x t acc)
         else (env2', acc)
+        (* ArgAsParam) *)
       in
       List.fold_left folder (env2, IMap.empty) func_sig.args
       |: TypingRule.ArgsAsParams
@@ -2717,7 +2716,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let folder x (env3', parameters) =
           if var_in_env env3 x then (env3', parameters)
           else
-            let t = Types.under_constrained_ty x in
+            let t = Types.parameterized_ty x in
             (add_local x t LDK_Let env3', (x, Some t) :: parameters)
         in
         ISet.fold folder potential_params (env3, parameters)
@@ -2900,6 +2899,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env = with_empty_local genv in
     let env1, t1 =
       match s with
+      (* AnnotateExtraFields( *)
       | None -> (env, ty)
       | Some (super, extra_fields) ->
           let+ () =
@@ -2920,6 +2920,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               | None -> undefined_identifier loc super
           and env = add_subtype name super env in
           (env, new_ty)
+      (* AnnotateExtraFields) *)
     in
     let t2 = annotate_type ~decl:true ~loc env1 t1 in
     let env2 = add_type name t2 env1 in
@@ -2951,16 +2952,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
     let+ () = check_var_not_in_genv loc genv name in
     let env = with_empty_local genv in
+    (* AnnotateTypeOpt( *)
     let ty_opt' =
       match ty_opt with
       | Some t -> Some (annotate_type ~loc env t)
       | None -> ty_opt
+    (* AnnotateTypeOpt) *)
+    (* AnnotateExprOpt( *)
     and initial_value_type, initial_value' =
       match initial_value with
       | Some e ->
           let t, e' = annotate_expr env e in
           (Some t, Some e')
       | None -> (None, None)
+      (* AnnotateExprOpt) *)
     in
     let declared_t =
       match (initial_value_type, ty_opt') with

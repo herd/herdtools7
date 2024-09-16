@@ -589,7 +589,7 @@ let constraint_binop op =
   let righ_inc = is_right_increasing op
   and righ_dec = is_right_decreasing op
   and left_inc = is_left_increasing op in
-  let do_op c1 c2 =
+  let constraint_binop_pair c1 c2 =
     match (c1, c2) with
     | Constraint_Exact e1, Constraint_Exact e2 ->
         Constraint_Exact (binop op e1 e2)
@@ -608,10 +608,11 @@ let constraint_binop op =
     | _ -> raise_notrace FailedConstraintOp
   in
   fun cs1 cs2 ->
-    try WellConstrained (list_cross do_op cs1 cs2)
+    try WellConstrained (list_cross constraint_binop_pair cs1 cs2)
     with FailedConstraintOp -> UnConstrained
 (* End *)
 
+(* Begin SubstExpr *)
 let rec subst_expr substs e =
   (* WARNING: only subst runtime vars. *)
   let tr e = subst_expr substs e in
@@ -637,6 +638,7 @@ let rec subst_expr substs e =
   | E_ATC (e, t) -> E_ATC (tr e, t)
   | E_Unknown _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
+(* End *)
 
 let scope_equal s1 s2 =
   match (s1, s2) with
