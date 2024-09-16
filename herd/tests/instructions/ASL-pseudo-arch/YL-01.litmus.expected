@@ -1,0 +1,10 @@
+Test YL-01 Required
+States 1
+0:main.0.res=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:main.0.res=1)
+Observation YL-01 Always 1 0
+Hash=ec33afcd7ced9e8d29ae6ef7ec580a1a
+

@@ -31,6 +31,7 @@ module
     let machsize = Narrow.machsize
 
     let zero = Narrow Narrow.zero
+    let unique_zero = false (* Wide also have a zero *)
     let one = Narrow Narrow.one
 
     (*****************)

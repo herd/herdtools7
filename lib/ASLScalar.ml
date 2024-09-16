@@ -39,6 +39,9 @@ type t = S_Int of Z.t | S_Bool of bool | S_BitVector of BV.t
 (* Irrelevant here? *)
 let machsize = MachSize.Quad
 let zero = S_Int Z.zero
+
+let unique_zero = false
+
 let one = S_Int Z.one
 let zeros sz = S_BitVector (BV.zeros sz)
 (*

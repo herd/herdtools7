@@ -22,6 +22,9 @@ module type S = sig
   val machsize : MachSize.sz
 
   val zero : t
+
+  (** zero is unique and here it is *)
+  val unique_zero : bool
   val one : t
 
   val of_string : string -> t

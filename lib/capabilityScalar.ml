@@ -18,6 +18,7 @@ open Uint
 type t = bool * Uint128.t
 
 let zero = false, Uint128.zero
+let unique_zero = true
 let one = false, Uint128.one
 (* "NUM COLON NUM" as "Value:Tag" *)
 let of_string x =

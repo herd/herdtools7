@@ -341,8 +341,12 @@ module
       | _ -> binop_cs_cs Op.Or Cst.Scalar.logor v1 v2
 
   and xor v1 v2 =
-    if compare v1 v2 = 0 then zero else
-    binop Op.Xor (Cst.Scalar.logxor) v1 v2
+    if equal v1 v2 && Cst.Scalar.unique_zero then zero else
+    match v1,v2 with
+    | (Val (Symbolic id1),Val (Symbolic id2))
+      when Constant.symbol_eq id1 id2
+        -> zero
+    | _ -> binop Op.Xor Cst.Scalar.logxor v1 v2
 
   and maskop op sz v = match v,sz with
   | Val (Tag _),_ -> v (* tags are small enough for any mask be idempotent *)
