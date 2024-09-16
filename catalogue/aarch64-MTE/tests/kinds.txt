@@ -49,7 +49,7 @@ coTRTW Forbidden
 coRR-RTW Forbidden
 coRTW Forbidden
 MTE-CoRR+addr+READS Allowed
-MTE-CoRR+dmb.ld+READS                Allowed
+MTE-CoRR+dmb.ld+READS                Forbidden
 MTE-RW+WR+amo.ldeoral-polp+dmb.sytq  Forbidden
 2+2W+dmb.st+dmb.stpt                 Forbidden
 2+2W+dmb.st+dmb.sttp                 Allowed
@@ -390,7 +390,7 @@ MP+dmb.st+dsb.sytt                   Allowed
 MP+dmb.stpt+addrpt                   Allowed
 MP+dmb.stpt+addrtp                   Forbidden
 MP+dmb.stpt+addrtt                   Allowed
-MP+dmb.stpt+dmb.ld                   Allowed
+MP+dmb.stpt+dmb.ld                   Forbidden
 MP+dmb.stpt+dmb.ldpt                 Allowed
 MP+dmb.stpt+dmb.ldtp                 Forbidden
 MP+dmb.stpt+dmb.ldtt                 Allowed
@@ -423,8 +423,8 @@ MP+dmb.sttp                          Allowed
 MP+dmb.sttt+addrpt                   Allowed
 MP+dmb.sttt+addrtp                   Forbidden
 MP+dmb.sttt+addrtt                   Forbidden
-MP+dmb.sttt+dmb.ld                   Allowed
-MP+dmb.sttt+dmb.ldpt                 Allowed
+MP+dmb.sttt+dmb.ld                   Forbidden
+MP+dmb.sttt+dmb.ldpt                 Forbidden
 MP+dmb.sttt+dmb.ldtp                 Forbidden
 MP+dmb.sttt+dmb.ldtt                 Forbidden
 MP+dmb.sttt+dmb.sy                   Forbidden
@@ -454,7 +454,7 @@ MP+dmb.sypt+addr                     Allowed
 MP+dmb.sypt+addrpt                   Allowed
 MP+dmb.sypt+addrtp                   Forbidden
 MP+dmb.sypt+addrtt                   Allowed
-MP+dmb.sypt+dmb.ld                   Allowed
+MP+dmb.sypt+dmb.ld                   Forbidden
 MP+dmb.sypt+dmb.ldpt                 Allowed
 MP+dmb.sypt+dmb.ldtp                 Forbidden
 MP+dmb.sypt+dmb.ldtt                 Allowed
@@ -487,8 +487,8 @@ MP+dmb.sytt+addr                     Allowed
 MP+dmb.sytt+addrpt                   Allowed
 MP+dmb.sytt+addrtp                   Forbidden
 MP+dmb.sytt+addrtt                   Forbidden
-MP+dmb.sytt+dmb.ld                   Allowed
-MP+dmb.sytt+dmb.ldpt                 Allowed
+MP+dmb.sytt+dmb.ld                   Forbidden
+MP+dmb.sytt+dmb.ldpt                 Forbidden
 MP+dmb.sytt+dmb.ldtp                 Forbidden
 MP+dmb.sytt+dmb.ldtt                 Forbidden
 MP+dmb.sytt+dmb.sy                   Forbidden
@@ -519,7 +519,7 @@ MP+dsb.stpt+addr                     Allowed
 MP+dsb.stpt+addrpt                   Allowed
 MP+dsb.stpt+addrtp                   Forbidden
 MP+dsb.stpt+addrtt                   Allowed
-MP+dsb.stpt+dmb.ld                   Allowed
+MP+dsb.stpt+dmb.ld                   Forbidden
 MP+dsb.stpt+dmb.ldpt                 Allowed
 MP+dsb.stpt+dmb.ldtp                 Forbidden
 MP+dsb.stpt+dmb.ldtt                 Allowed
@@ -551,8 +551,8 @@ MP+dsb.sttt+addr                     Allowed
 MP+dsb.sttt+addrpt                   Allowed
 MP+dsb.sttt+addrtp                   Forbidden
 MP+dsb.sttt+addrtt                   Forbidden
-MP+dsb.sttt+dmb.ld                   Allowed
-MP+dsb.sttt+dmb.ldpt                 Allowed
+MP+dsb.sttt+dmb.ld                   Forbidden
+MP+dsb.sttt+dmb.ldpt                 Forbidden
 MP+dsb.sttt+dmb.ldtp                 Forbidden
 MP+dsb.sttt+dmb.ldtt                 Forbidden
 MP+dsb.sttt+dmb.sy                   Forbidden
@@ -582,7 +582,7 @@ MP+dsb.sypt+addr                     Allowed
 MP+dsb.sypt+addrpt                   Allowed
 MP+dsb.sypt+addrtp                   Forbidden
 MP+dsb.sypt+addrtt                   Allowed
-MP+dsb.sypt+dmb.ld                   Allowed
+MP+dsb.sypt+dmb.ld                   Forbidden
 MP+dsb.sypt+dmb.ldpt                 Allowed
 MP+dsb.sypt+dmb.ldtp                 Forbidden
 MP+dsb.sypt+dmb.ldtt                 Allowed
@@ -615,8 +615,8 @@ MP+dsb.sytt+addr                     Allowed
 MP+dsb.sytt+addrpt                   Allowed
 MP+dsb.sytt+addrtp                   Forbidden
 MP+dsb.sytt+addrtt                   Forbidden
-MP+dsb.sytt+dmb.ld                   Allowed
-MP+dsb.sytt+dmb.ldpt                 Allowed
+MP+dsb.sytt+dmb.ld                   Forbidden
+MP+dsb.sytt+dmb.ldpt                 Forbidden
 MP+dsb.sytt+dmb.ldtp                 Forbidden
 MP+dsb.sytt+dmb.ldtt                 Forbidden
 MP+dsb.sytt+dmb.sy                   Forbidden
@@ -835,7 +835,7 @@ S+dmb.sttt+addrtt                    Forbidden
 S+dmb.sttt+datapt                    Forbidden
 S+dmb.sttt+datatp                    Allowed
 S+dmb.sttt+datatt                    Forbidden
-S+dmb.sttt+dmb.ld                    Allowed
+S+dmb.sttt+dmb.ld                    Forbidden
 S+dmb.sttt+dmb.ldpt                  Forbidden
 S+dmb.sttt+dmb.ldtp                  Forbidden
 S+dmb.sttt+dmb.ldtt                  Forbidden
@@ -915,7 +915,7 @@ S+dmb.sytt+data                      Allowed
 S+dmb.sytt+datapt                    Forbidden
 S+dmb.sytt+datatp                    Allowed
 S+dmb.sytt+datatt                    Forbidden
-S+dmb.sytt+dmb.ld                    Allowed
+S+dmb.sytt+dmb.ld                    Forbidden
 S+dmb.sytt+dmb.ldpt                  Forbidden
 S+dmb.sytt+dmb.ldtp                  Forbidden
 S+dmb.sytt+dmb.ldtt                  Forbidden
@@ -995,7 +995,7 @@ S+dsb.sttt+data                      Allowed
 S+dsb.sttt+datapt                    Forbidden
 S+dsb.sttt+datatp                    Allowed
 S+dsb.sttt+datatt                    Forbidden
-S+dsb.sttt+dmb.ld                    Allowed
+S+dsb.sttt+dmb.ld                    Forbidden
 S+dsb.sttt+dmb.ldpt                  Forbidden
 S+dsb.sttt+dmb.ldtp                  Forbidden
 S+dsb.sttt+dmb.ldtt                  Forbidden
@@ -1075,7 +1075,7 @@ S+dsb.sytt+data                      Allowed
 S+dsb.sytt+datapt                    Forbidden
 S+dsb.sytt+datatp                    Allowed
 S+dsb.sytt+datatt                    Forbidden
-S+dsb.sytt+dmb.ld                    Allowed
+S+dsb.sytt+dmb.ld                    Forbidden
 S+dsb.sytt+dmb.ldpt                  Forbidden
 S+dsb.sytt+dmb.ldtp                  Forbidden
 S+dsb.sytt+dmb.ldtt                  Forbidden

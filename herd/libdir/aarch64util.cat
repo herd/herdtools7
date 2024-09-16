@@ -122,8 +122,12 @@ procedure included(r1, r2) =
 end
 
 procedure equal(r1, r2) =
+(*
   call included(r1, r2)
   call included(r2, r1)
+*)
+  assert empty (r1 \ r2) | (r2 \ r1)
+    as Failure-of-an-equivalence-check
 end
 
 (* Intervening Effect *)
@@ -153,3 +157,14 @@ flag ~empty (if "sme" then _ else 0)
   as Scalable-Matrix-Extensions-is-work-in-progress
 
 include "aarch64loc.cat"
+
+let ALL_EFFECTS_SUBJECT_TO_ORDERING = M
+  | FAULT
+  | EXC-ENTRY
+  | EXC-RET
+  | TLBI
+  | IC.IVAU
+  | DC.CVAU
+  | ISB
+
+let exempt(A) = ALL_EFFECTS_SUBJECT_TO_ORDERING & ~A
