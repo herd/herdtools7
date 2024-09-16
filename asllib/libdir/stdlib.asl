@@ -89,8 +89,7 @@ begin
   // Following https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Heron's_method
 
   // Initial guess
-  let x0 = 1.0 + (x / 4.0);
-  // assert x0 <= x && x <= x0 * x0
+  let x0 = x;
 
   let precision = 1.0 / (2.0 ^ sf);
 
