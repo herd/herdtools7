@@ -49,6 +49,10 @@
  *)
 include "aarch64deps.cat"
 
+(* Tag-Check-before *)
+(* Note: in asynchronous fault handling mode, instruction semantics for
+         checked memory accesses does not feature the iico_ctrl edge to Exp & M
+ *)
 let tc-before =
  [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [Exp & M | TagCheck & FAULT]
 
