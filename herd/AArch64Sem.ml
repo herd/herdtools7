@@ -2838,34 +2838,55 @@ module Make
         let psize = predicate_psize r in
         let esize = scalable_esize r in
         let nregs = List.length rlist in
-        read_reg_predicate false p ii >>= fun pred ->
-          get_predicate_any pred psize nelem >>= fun any ->
+        let (let>=) = M.(>>=) in
+        let (let<>=) = M.bind_data_to_output in
+        let (let>*) = M.bind_control_set_data_input_first in
+        let>= pred = read_reg_predicate false p ii in
+        let<>= base =
+          let>= any = get_predicate_any pred psize nelem in
+          let>* () =
+            let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
+            commit_pred_txt (Some cond) ii
+          in
+          M.choiceT any ma (M.unitT M.A.V.zero)
+        in
+        let ops i r =
+          let op idx =
+            let load =
+              let offset = (idx * nregs + i) * MachSize.nbytes sz in
+              let>= addr = M.op1 (Op.AddK offset) base in
+              let>= v = do_read_mem_ret sz Annot.N aexp Access.VIR addr ii in
+              let>= v = promote v in
+              M.op1 (Op.LeftShift (idx * esize)) v
+            in
+            let>= last = get_predicate_last pred psize idx in
+            let>* () =
+              let cond = Printf.sprintf "ActiveElem(%s, %d)" (A.pp_reg p) idx in
+              commit_pred_txt (Some cond) ii
+            in
             M.choiceT
-            any
-            (ma >>= fun addr ->
-              let op i r =
-                let calc_offset idx = (idx*nregs+i) * MachSize.nbytes sz in
-                let load idx =
-                  let offset = calc_offset idx in
-                  get_predicate_last pred psize idx >>= fun last ->
-                    M.choiceT
-                      last
-                      (M.op1 (Op.AddK offset) addr >>= fun addr ->
-                       do_read_mem_ret sz Annot.N aexp Access.VIR addr ii)
-                      mzero
-                    >>= promote >>= M.op1 (Op.LeftShift (idx*esize)) in
-                let rec reduce idx op =
-                  match idx with
-                  | 0 -> op >>| load idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
-                  | _ -> reduce (idx-1) (op >>| load idx >>= fun (v1,v2) -> M.op Op.Or v1 v2)
-                in
-                reduce (nelem-1) mzero_promoted >>= fun v ->
-                write_reg_scalable r v ii
-                in
-                let ops = List.mapi op rlist in
-                List.fold_right (>>::) ops (M.unitT [()]))
-              (let ops = List.map (fun r -> write_reg_scalable r AArch64.zero_promoted ii) rlist in
-                List.fold_right (>>::) ops (M.unitT [()]))
+              last
+              load
+              (let>= () = M.mk_singleton_es Act.NoAction ii in
+               mzero)
+          in
+          let ops = List.map op (Misc.interval 0 nelem) in
+          let final vs =
+            let>= result =
+              List.fold_right
+                (fun v macc ->
+                  let>= acc = macc in
+                  M.op Op.Or v acc)
+                vs mzero
+            in
+            write_reg_scalable r result ii
+          in
+          M.data_output_union
+            (List.fold_right ( >>:: ) ops (M.unitT []))
+            final
+        in
+        let ops = List.mapi ops rlist in
+        List.fold_right ( >>:: ) ops (M.unitT [()])
 
       let store_predicated_elem_or_merge_m sz p ma rlist ii =
         let r = List.hd rlist in
@@ -2945,14 +2966,14 @@ module Make
         let final vs =
           let>= result =
             List.fold_right
-            (fun v macc ->
-              let>= acc = macc in
-              M.op Op.Or v acc)
-            vs mzero
+              (fun v macc ->
+                let>= acc = macc in
+                M.op Op.Or v acc)
+              vs mzero
           in
           write_reg_scalable r result ii
         in
-        M.data_output_union (List.fold_right  M.( >>:: ) ops (M.unitT [])) final
+        M.data_output_union (List.fold_right ( >>:: ) ops (M.unitT [])) final
 
       let store_scatter_predicated_elem_or_merge sz p ma mo rs e k ii =
         let r = List.hd rs in
