@@ -57,7 +57,7 @@ let tc-before =
  [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [Exp & M | TagCheck & FAULT]
 
 (* Tag-Check-intrinsically-before *)
-let tc-ib = tc-before; [exempt(Exp & R)]
+let tc-ib = tc-before; [~(Exp & R)]
 
 (* Fetch-intrinsically-before *)
 let f-ib =
@@ -65,29 +65,28 @@ let f-ib =
 
 (* DSB-ordered-before *)
 let DSB-ob =
-[M | DC.CVAU | IC]; po; [dsb.full]; po; [exempt(Imp & TTD & M | Imp & Instr & R)]
+[M | DC.CVAU | IC]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
  | (if "ETS2" then [M | DC.CVAU | IC]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
- | [(Exp & R) \ NoRet | Imp & Tag & R]; po; [dsb.ld]; po; [exempt(Imp & TTD & M | Imp & Instr & R)]
+ | [(Exp & R) \ NoRet | Imp & Tag & R]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
  | (if "ETS2" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
- | [Exp & W]; po; [dsb.st]; po; [exempt(Imp & TTD & M | Imp & Instr & R)]
+ | [Exp & W]; po; [dsb.st]; po; [~(Imp & TTD & M | Imp & Instr & R)]
  | (if "ETS2" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
 
-(* CSOE-ordered-before *)
-let EXC-ENTRY-CSOE = EXC-ENTRY
-let EXC-RET-CSOE = if not "ExS" || "EOS" then EXC-RET else {}
-let CSOE = ISB | EXC-ENTRY-CSOE | EXC-RET-CSOE
+(* IFB-ordered-before *)
+let EXC-ENTRY-IFB = EXC-ENTRY
+let EXC-RET-IFB = if not "ExS" || "EOS" then EXC-RET else {}
+let IFB = ISB | EXC-ENTRY-IFB | EXC-RET-IFB
 
-let CSOE-ob =
- [Exp & R]; ctrl; [CSOE]; po
- | [Exp & R]; pick-ctrl-dep; [CSOE]; po
- | [Exp & R]; addr; [Exp & M]; po; [CSOE]; po
- | [Exp & R]; pick-addr-dep; [Exp & M]; po; [CSOE]; po
- | DSB-ob; [CSOE]; po
-(* | [Imp & Instr & R]; f-ib; [CSOE]; po *)
- | [Imp & TTD & R]; tr-ib; [CSOE]; po
- | [Imp & Tag & R]; tc-ib; [CSOE]; po
- | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [CSOE]; po
- | [Imp & Tag & R]; tc-before; [Exp & M]; po; [CSOE]; po
+let IFB-ob =
+ [Exp & R]; ctrl; [IFB]; po
+ | [Exp & R]; pick-ctrl-dep; [IFB]; po
+ | [Exp & R]; addr; [Exp & M]; po; [IFB]; po
+ | [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
+ | DSB-ob; [IFB]; po
+ | [Imp & TTD & R]; tr-ib; [IFB]; po
+ | [Imp & Tag & R]; tc-ib; [IFB]; po
+ | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [IFB]; po
+ | [Imp & Tag & R]; tc-before; [Exp & M]; po; [IFB]; po
 
 (* Dependency-ordered-before *)
 let dob =
@@ -102,11 +101,11 @@ let dob =
 
 (* Fetch-ordered-before *)
 let f-ob =
- [Imp & Instr & R]; po; [exempt(Imp & Instr & R)]
+ [Imp & Instr & R]; po; [~(Imp & Instr & R)]
 
 (* Pick-ordered-before *)
 let pob = 
- pick-addr-dep; [exempt(Exp & R)]
+ pick-addr-dep; [~(Exp & R)]
  | pick-data-dep
  | pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
  | pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
@@ -157,7 +156,7 @@ let rec lob =
  | f-ob
  | po-scl-ob
  | DSB-ob
- | CSOE-ob
+ | IFB-ob
  | lws
  | lws; sca-class
  | dob
