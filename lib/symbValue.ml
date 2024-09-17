@@ -72,8 +72,17 @@ module
 
   let pp_unsigned hexa = do_pp (Cst.pp_unsigned hexa)
 
+
   let pp_v =  do_pp Cst.pp_v
   let pp_v_old =  do_pp Cst.pp_v_old
+
+(* Basic utilities *)
+
+  let as_constant = function
+    | Var _ -> None
+    | Val c -> Some c
+
+  let as_scalar v = Option.bind (as_constant v) Constant.as_scalar
 
   let printable = function
     | Val (c) ->

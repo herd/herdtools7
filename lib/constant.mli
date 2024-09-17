@@ -91,6 +91,8 @@ type ('scalar, 'pte, 'instr) t =
   | Instruction of 'instr  (** An instruction. *)
   | Frozen of int (** Frozen symbolic value. *)
 
+val as_scalar : ('scalar, 'pte, 'instr) t -> 'scalar option
+
 val compare :
   ('scalar -> 'scalar -> int) ->
     ('pte -> 'pte -> int) ->
@@ -143,6 +145,7 @@ val check_sym : ('a,'pte,'instr) t -> ('b,'pte,'instr) t
 val is_virtual : ('scalar,'pte,'instr) t -> bool
 val as_virtual : ('scalar,'pte,'instr) t -> string option
 val as_symbol : ('scalar,'pte,'instr) t -> symbol option
+val as_fault_base :  ('scalar,'pte,'instr) t -> string option
 val as_symbolic_data : ('scalar,'pte,'instr) t -> symbolic_data option
 val of_symbolic_data : symbolic_data -> ('scalar,'pte,'instr) t
 

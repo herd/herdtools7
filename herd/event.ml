@@ -283,6 +283,7 @@ val same_instance : event -> event -> bool
   val location_of   : event -> A.location option
   val location_reg_of : event -> A.reg option
   val global_loc_of    : event -> A.global_loc option
+  val global_index_of : event -> int option
   val virtual_loc_of : event -> string option
 
 (****************************)

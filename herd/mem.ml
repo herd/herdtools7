@@ -751,7 +751,9 @@ let map_loc_find loc m =
 
 let match_reg_events es =
   let loc_loads = U.collect_reg_loads es
-  and loc_stores = U.collect_reg_stores es in
+  and loc_stores = U.collect_reg_stores es
+  (* Share computation of the iico relation *)
+  and is_before_strict =  U.is_before_strict es in
 
 (* For all loads find the right store, the one "just before" the load *)
   let rfm =
@@ -763,7 +765,7 @@ let match_reg_events es =
             let rf =
               List.fold_left
                 (fun rf ew ->
-                  if U.is_before_strict es ew er then
+                  if is_before_strict ew er then
                     match rf with
                     | S.Init -> S.Store ew
                     | S.Store ew0 ->
@@ -771,7 +773,7 @@ let match_reg_events es =
                           S.Store ew
                         else begin
                           (* store order is total *)
-                            if not (U.is_before_strict es ew ew0) then begin
+                            if not (is_before_strict ew ew0) then begin
                               Printf.eprintf "Not ordered stores %a and %a\n"
                                 E.debug_event ew0
                                 E.debug_event ew ;
