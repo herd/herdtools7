@@ -314,7 +314,7 @@
 
 The semantics of ASL define all valid behaviors of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
-or AST, for short. Second, a type checker analyzes the \emph{parsed AST} to determine whether it
+or AST, for short. Second, a type checker analyzes the \emph{untyped AST} to determine whether it
 is well-typed and, if successful, returns a \emph{static environment} and a \emph{typed AST}.
 Otherwise, it returns a type error.
 
@@ -327,9 +327,9 @@ of the semantics in this document, to test and analyze a given specification.
   % of all ASL language constructs.
   % Please note that the LRM will be retired in due course. For ease of reviewing, we currently indicate which statement
   % of the LRM the present rules correspond to.
-  \item The Syntax Reference~\cite{ASLAbstractSyntaxReference} defines the concrete syntax, the abstract syntax, the parsed AST,
+  \item The Syntax Reference~\cite{ASLAbstractSyntaxReference} defines the concrete syntax, the abstract syntax, the untyped AST,
         and the typed AST.
-  \item The ASL Typing Reference~\cite{ASLTypingReference} defines the set of parsed ASTs that are considered statically valid
+  \item The ASL Typing Reference~\cite{ASLTypingReference} defines the set of untyped ASTs that are considered statically valid
   and how to produce the corresponding typed ASTs and static environments.
 \end{itemize}
 
@@ -543,7 +543,7 @@ native values:
 \hypertarget{def-staticenvs}{}
 \begin{definition}[Static Environment \label{def:staticenvironments}]
 A \emph{static environment}~\cite{ASLTypingReference} $\tenv \in \staticenvs$ (also referred to as a \emph{type environment})
-is produced by the type-checker from the parsed AST.
+is produced by the type-checker from the untyped AST.
 
 We assume that the static environment supports the following functions:
 \hypertarget{def-findfunc}{}
@@ -4000,7 +4000,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{throw} statement that provides an expression and a type,
-        $\SThrow(\langle\ve, \langle\vt\rangle\rangle)$;
+        $\SThrow(\langle(\ve, \vt)\rangle)$;
   \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
   \item $\name$ is a fresh identifier (which conceptually holds the exception value);
   \item $\vgtwo$ is a Write Effect to $\name$;
@@ -4027,7 +4027,7 @@ terminates successfully. That is, no dynamic error occurs.
     \vex \eqdef \langle(\valuereadfrom(\vv, \name),\vt)\rangle
   }
   {
-    \evalstmt{\env, \SThrow(\langle\ve, \langle\vt\rangle\rangle)} \evalarrow
+    \evalstmt{\env, \SThrow(\langle(\ve, \vt)\rangle)} \evalarrow
     \Throwing((\vex, \newg), \newenv)
   }
   \end{mathpar}
@@ -5567,7 +5567,7 @@ evaluates the \texttt{main} function in a given specification and standard libra
 \newcommand\annotatespec[0]{\hyperlink{def-annotatespec}{\texttt{annotate\_spec}}}
 \hypertarget{def-annotatespec}{}
 The function $\annotatespec$, which is defined in the typing reference~\cite{ASLTypingReference},
-takes an initial typing environment and a parsed AST and returns a corresponding typed AST and typing
+takes an initial typing environment and a untyped AST and returns a corresponding typed AST and typing
 environment.
 
 \subsection{Prose}

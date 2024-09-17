@@ -1,14 +1,16 @@
 \documentclass{book}
 \input{ASLmacros}
 \usepackage{tikz}
+\newcommand{\tests}{../tests/ASLSyntaxReference.t/}
 
 \newcommand\nonterminal[1]{\texttt{#1}}
 \newcommand\terminal[1]{\mathtt{\mathbf{#1}}}
 %\newcommand\verbatimterminal[2]{\mathtt{\mathbf{#1}}}
-\newcommand\verbatimterminal[2]{\texttt{"}\texttt{#2}\texttt{"}}
+\newcommand\verbatimterminal[2]{\texttt{"}\texttt{#2}\texttt{"}} % Grammar terminals
 \newcommand\emptysentence[0]{\hyperlink{def-emptysentence}{\epsilon}}
 \newcommand\astof[1]{\overline{{#1}}}
-\newcommand\parsenode[1]{\hyperlink{def-parsenode}{\textsf{Node}}[#1]}
+%\newcommand\parsenode[1]{\hyperlink{def-parsenode}{\textsf{Parse}}[#1]}
+\newcommand\parsenode[1]{\hyperlink{def-parsenode}{\mathbb{P}\mathbb{A}\mathbb{R}\mathbb{S}\mathbb{E}}[#1]}
 \newcommand\namednode[2]{#1:#2} % #1 is a free variable, #2 is the grammar symbol
 \newcommand\punnode[1]{#1}
 \newcommand\epsilonnode[0]{\hyperlink{def-epsilonnode}{\textsf{epsilon\_node}}}
@@ -59,7 +61,7 @@
 \newcommand\Tgt[0]{\verbatimterminal{GT}{>}}
 \newcommand\Tif[0]{\verbatimterminal{IF}{if}}
 \newcommand\Timpl[0]{\verbatimterminal{IMPL}{-->}}
-\newcommand\Tin[0]{\verbatimterminal{IN}{in}}
+\newcommand\Tin[0]{\verbatimterminal{IN}{IN}}
 \newcommand\Tinteger[0]{\verbatimterminal{INTEGER}{integer}}
 \newcommand\Tlbrace[0]{\verbatimterminal{LBRACE}{\{}}
 \newcommand\Tlbracket[0]{\verbatimterminal{LBRACKET}{[}}
@@ -192,12 +194,12 @@
 \newcommand\maybeemptylist[1]{\hyperlink{def-maybeemptylist}{\textsf{list}^{*}}(#1)} % This stands for list(x)
 \newcommand\nonemptylist[1]{\hyperlink{def-nonemptylist}{\textsf{list}^{+}}(#1)} % This stands for non_empty_list(x)
 \newcommand\NClist[1]{\hyperlink{def-nclist}{\textsf{clist}^{+}}(#1)}
-\newcommand\Plist[1]{\hyperlink{def-plist}{\textsf{plist}}(#1)}
+\newcommand\Plist[1]{\hyperlink{def-plist}{\textsf{plist}^{*}}(#1)}
 \newcommand\Plisttwo[1]{\hyperlink{def-plisttwo}{\textsf{plist2}}(#1)}
-\newcommand\Clist[1]{\hyperlink{def-clist}{\textsf{clist}}(#1)}
+\newcommand\Clist[1]{\hyperlink{def-clist}{\textsf{clist}^{*}}(#1)}
 \newcommand\Clisttwo[1]{\hyperlink{def-clisttwo}{\textsf{clist2}}(#1)}
 \newcommand\NTClist[1]{\hyperlink{def-ntclist}{\textsf{ntclist}}(#1)}
-\newcommand\TClist[1]{\hyperlink{def-tclist}{\textsf{tclist}}(#1)}
+\newcommand\TClist[1]{\hyperlink{def-tclist}{\textsf{tclist}^{*}}(#1)}
 \newcommand\option[1]{\hyperlink{def-option}{\textsf{option}}(#1)}
 %\newcommand\option[1]{(#1)\hyperlink{def-option}{?}}
 
@@ -468,12 +470,13 @@
 
 \newcommand\eof[0]{\hyperlink{def-eof}{\textsf{eof}}}
 
-\newcommand\Char[1]{\fbox{#1}}
+\newcommand\anycharacter[1]{$\underbracket{#1}$}
+\newcommand\Char[1]{\underline{#1}}
 \newcommand\SpaceChar[0]{\framebox[1cm]{\color{white}A}}
-%\newcommand\Underscore[0]{\fbox{\_}}
-\newcommand\Underscore[0]{'\_'}
+\newcommand\Underscore[0]{\anycharacter{\texttt{ \_ }}}
 
 \newcommand\REasciichar[0]{\hyperlink{def-reasciichar}{\texttt{<}\textsf{ascii\_char}\texttt{>}}}
+\newcommand\REchar[0]{\hyperlink{def-rechar}{\texttt{<}\textsf{char}\texttt{>}}}
 \newcommand\REdigit[0]{\hyperlink{def-redigit}{\texttt{<}\textsf{digit}\texttt{>}}}
 \newcommand\REintlit[0]{\hyperlink{def-reintlit}{\texttt{<}\textsf{int\_lit}\texttt{>}}}
 \newcommand\REhexlit[0]{\hyperlink{def-rehexlit}{\texttt{<}\textsf{hex\_lit}\texttt{>}}}
@@ -484,13 +487,14 @@
 \newcommand\REbitmasklit[0]{\hyperlink{def-rebitmasklit}{\texttt{<}\textsf{bitmask\_lit}\texttt{>}}}
 \newcommand\REletter[0]{\hyperlink{def-reletter}{\texttt{<}\textsf{letter}\texttt{>}}}
 \newcommand\REidentifier[0]{\hyperlink{def-reidentifier}{\texttt{<}\textsf{identifier}\texttt{>}}}
-\newcommand\REcomment[0]{\hyperlink{def-recomment}{\texttt{<}\textsf{comment}\texttt{>}}}
+\newcommand\RElinecomment[0]{\hyperlink{def-relinecomment}{\texttt{<}\textsf{line\_comment}\texttt{>}}}
 
 \newcommand\aslparse[0]{\hyperlink{def-aslparse}{\textfunc{asl\_parse}}}
 \newcommand\aslscan[0]{\hyperlink{def-aslscan}{\textfunc{scan}}}
 \newcommand\maxmatches[0]{\hyperlink{def-maxmatch}{\textfunc{max\_matches}}}
 \newcommand\remaxmatch[0]{\hyperlink{def-rematch}{\textfunc{re\_max\_match}}}
-\newcommand\Token[0]{\hyperlink{def-token}{\textsf{Token}}}
+\newcommand\munch[0]{\hyperlink{def-munch}{\textfunc{munch}}}
+\newcommand\Token[0]{\hyperlink{def-token}{\mathbb{T}\mathbb{O}\mathbb{K}\mathbb{E}\mathbb{N}}}
 \newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\textsf{\#LE}}}
 \newcommand\ParseError[0]{\hyperlink{def-parseerror}{\textsf{\#PE}}}
 \newcommand\discard[0]{\hyperlink{def-discard}{\textfunc{discard}}}
@@ -508,13 +512,34 @@
 \newcommand\toidentifier[0]{\hyperlink{def-toidentifier}{\textfunc{to\_identifier}}}
 \newcommand\eoftoken[0]{\hyperlink{def-eoftoken}{\textfunc{eof\_token}}}
 \newcommand\Teof[0]{\hyperlink{def-teof}{\textsf{EOF}}}
-\newcommand\Terror[0]{\hyperlink{def-terror}{\textsf{ERROR}}}
+\newcommand\Terror[0]{\hyperlink{def-terror}{\terminal{T\_ERR}}}
 \newcommand\Twhitespace[0]{\hyperlink{def-twhitespace}{\textsf{WHITE\_SPACE}}}
 \newcommand\LexSpec[0]{\hyperlink{def-lexspec}{\textsf{LexSpec}}}
 %\newcommand\Teof[0]{\verbatimterminal{EOF}{EOF}}
 \newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
+\newcommand\ascii[1]{\textsf{ASCII}\texttt{\{#1\}}}
+\newcommand\scantoken[0]{\textfunc{scan\_token}}
+\newcommand\scancomment[0]{\textfunc{scan\_comment}}
 
+\newcommand\spectoken[0]{\hyperlink{def-spectoken}{\textsc{spec\_token}}}
+\newcommand\specstring[0]{\hyperlink{def-specstring}{\textsc{spec\_string}}}
+\newcommand\speccomment[0]{\hyperlink{def-speccomment}{\textsc{spec\_comment}}}
+
+\newcommand\actiondiscard[0]{\hyperlink{def-actiondiscard}{\textfunc{discard}}}
+\newcommand\discardcommentchar[0]{\hyperlink{def-discardcommentchar}{\textfunc{discard\_comment\_char}}}
+\newcommand\actiontoken[0]{\hyperlink{def-actiontoken}{\textfunc{return\_token}}}
+\newcommand\actionstartstring[0]{\hyperlink{def-actionstartstring}{\textfunc{start\_string}}}
+\newcommand\actionstartcomment[0]{\hyperlink{def-actionstartcomment}{\textfunc{start\_comment}}}
+
+\newcommand\stringchar[0]{\hyperlink{def-stringchar}{\textfunc{string\_char}}}
+\newcommand\stringfinish[0]{\hyperlink{def-stringfinish}{\textfunc{string\_finish}}}
+\newcommand\stringescape[0]{\hyperlink{def-stringescape}{\textfunc{string\_escape}}}
+\newcommand\Tstringchar[0]{\hyperlink{def-tstringchar}{\terminal{STRING\_CHAR}}}
+\newcommand\Tstringend[0]{\hyperlink{def-tstringend}{\terminal{STRING\_END}}}
+\newcommand\scanstring[0]{\hyperlink{def-scanstring}{\textfunc{scan\_string}}}
+
+\newcommand\buff[0]{\texttt{buf}}
 \newcommand\name[0]{\texttt{name}}
 
 \newcommand\astversion[1]{#1\texttt{\_ast}}
@@ -585,16 +610,16 @@ and then formalizes the lexical analysis as a function that takes a text and ret
 a list of \emph{tokens} or a lexical error.
 
 \section{ASL Specification Text}
-An ASL specification is a string --- a list of ASCII characters --- consisting of a \emph{content text} followed by an \emph{end-of-file}.
-The context text is a list of
+An ASL specification is a string --- a list of ASCII characters --- consisting of a \emph{content text}
+followed by an \emph{end-of-file}.
+The content text is a list of
 ASCII characters that have the decimal encoding of 32 through 126 (inclusive),
 which includes the space character (decimal encoding 32),
 as well as
 carriage return (decimal encoding 13) and line feed (decimal encoding 10).
 \hypertarget{def-eof}{}
-The end of file is the combination of two characters --- a carriage return followed by a line feed,
-which we denote by $\eof$.
-The context text does not contain an end-of-file.
+The end of file character is denote by $\eof$.
+The content text does not contain an end-of-file character.
 
 In particular, it is an error to use a tab character in ASL specification text (decimal encoding 9).
 
@@ -612,28 +637,39 @@ We use the notation \Char{c} for characters such as the apostrophe.
 \hline
 \textbf{RegExp} & \textbf{Matches}\\
 \hline
-\texttt{'c'}              & The character c\\
-\Char{c}                  & The character c\\
-\texttt{ASCII\{a-b\}}       & The ASCII range between decimals 'a' and 'b'\\
-\texttt{( $A$ )}          & $A$\\
+%\texttt{'c'}              & The character c\\
+%\Char{c}                  & The character c\\
+$\underbracket{\texttt{a\_string}}$  & Any character in \texttt{a\_string}\\
+$\square$            & The space character (decimal 32)\\
+\ascii{a}       & The ASCII with decimal 'a'\\
+\ascii{a-b}     & The ASCII range between decimals 'a' and 'b'\\
+(\texttt{$A$})          & $A$\\
 $A$ $B$                   & $A$ followed by $B$\\
 \texttt{$A$ | $B$}        & A or B\\
 \texttt{$A$ - $B$}        & $A$ but not $B$\\
-\texttt{$A$*}             & Zero or more repetitions of A\\
-\texttt{$A$+}             & One or more repetitions of A\\
-\texttt{["a\_string"]}    & Any character in \texttt{a\_string}\\
-\texttt{\{"a\_string"\}}  & The string \texttt{a\_string} verbatim\\
+$A*$             & Zero or more repetitions of A\\
+$A+$             & One or more repetitions of A\\
+%\texttt{["a\_string"]}    & Any character in \texttt{a\_string}\\
+\texttt{"a\_string"}  & The string \texttt{a\_string} verbatim\\
 \texttt{<}r\texttt{>}     & The lexical regular expression defined for \texttt{<}r\texttt{>}\\
 \hline
 \end{tabular}
 \end{center}
 \end{table}
 
-\hypertarget{def-reasciichar}{}
 Let $\REasciichar$ stand for any ASCII character:
+\hypertarget{def-reasciichar}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REasciichar$  &$\triangleq$& \texttt{ASCII\{0-255\}}
+$\REasciichar$  &$\triangleq$& \ascii{0-255}
+\end{tabular}
+\end{center}
+
+Let $\REchar$ stand for an ASCII character that may appear in the content text:
+\hypertarget{def-rechar}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REchar$       &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \ascii{32-126}\\
 \end{tabular}
 \end{center}
 
@@ -648,10 +684,17 @@ Comments, newlines and space characters are treated as whitespace.
 ASL supports comments in the style of C++:
 \begin{itemize}
 \item Single-line comments: the text from \text{//} until the end of the line
-is a comment.
+is a comment (\ascii{10} is the line feed character \verb|\n|).
 \item Multi-line comments: the text between \texttt{/*} and \texttt{*/} is a comment.
 \end{itemize}
 Comments do not nest and the two styles of comments do not interact with each other.
+
+\hypertarget{def-recomment}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \texttt{-} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
+\end{tabular}
+\end{center}
 
 \section{Integer Literals}
 Integers are written either in decimal using one or more of the characters \texttt{0-9} and underscore, or in hexadecimal
@@ -664,15 +707,14 @@ This is formalized by the following lexical regular expression:
 \hypertarget{def-rehexlit}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REdigit$  &$\triangleq$& \texttt{['0-9']}\\
-$\REintlit$ &$\triangleq$& \texttt{\REdigit\ ('\_' | \REdigit)*}\\
-$\REhexlit$ &$\triangleq$& \texttt{'0' 'x' (\REdigit\ | ["abcdefABCDEF"])} \\
-          &            & $\wrappedline$ \texttt{('\_' | \REdigit\ | ["abcdefABCDEF"])*}
+$\REdigit$  &$\triangleq$& \anycharacter{\texttt{0123456789}}\\
+$\REintlit$ &$\triangleq$& \texttt{\REdigit\ ($\square$ | \REdigit)*}\\
+$\REhexlit$ &$\triangleq$& \anycharacter{\texttt{0x}} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})*
 \end{tabular}
 \end{center}
 
-\section{Fixed Point Real Number Literals}
-Fixed point real numbers are written in decimal and consist of one or more decimal digits, a decimal point and one
+\section{Real Number Literals}
+Real numbers are written in decimal and consist of one or more decimal digits, a decimal point and one
 or more decimal digits. Underscores can be added between digits to aid readability
 
 Underscores in numbers are not significant, and their only purpose is to separate groups of digits to make constants
@@ -694,22 +736,21 @@ Constant bit-vectors are written using 1, 0 and spaces surrounded by single-quot
 \hypertarget{def-rebitvectorlit}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REbitvectorlit$ &$\triangleq$& \texttt{\Char{'} ["01 "]* \Char{'}}
+$\REbitvectorlit$ &$\triangleq$& \anycharacter{\texttt{'}} (\anycharacter{\texttt{01}\square})* \anycharacter{\texttt{'}}
 \end{tabular}
 \end{center}
 
 The spaces in a bitvector are not significant and are only used to improve readability.
 For example, \texttt{'1111 1111 1111 1111'} is the same as \texttt{'1111111111111111'}.
 
+\section{Bitmasks}
 Constant bitmasks are written using \texttt{1}, \texttt{0}, \texttt{x} and spaces surrounded by single-quotes.
 The \texttt{x} represents a don’t care character.
-
-\section{Bitmask Literals}
 
 \hypertarget{def-rebitmasklit}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REbitmasklit$ &$\triangleq$& \texttt{\Char{'} ["01x "]* \Char{'}}
+$\REbitmasklit$ &$\triangleq$& \anycharacter{\texttt{'}} (\anycharacter{\texttt{01x}\square})* \anycharacter{\texttt{'}}
 \end{tabular}
 \end{center}
 
@@ -717,11 +758,16 @@ The spaces in a constant bitmask are not significant and are only used to improv
 
 \section{String Literals}
 
-A string value is a string of zero or more characters, where a character is a printable ASCII character, tab (ASCII
-code \texttt{0x09}) or newline (ASCII code \texttt{0x0A}). String values are created by string literals.
-String literals consist of printable characters surrounded by double-quotes. Actual tabs and newlines are not
-permitted in string literals, meaning that string literals cannot span multiple source lines. The backslash character,
-\verb|`\'|, is treated as an escape character.
+String literals consist of printable characters surrounded by double quotes.
+They are used to create string values, which are strings of zero or more characters,
+where a character is a printable ASCII character,
+tab (ASCII code \texttt{10}),
+newline (ASCII code \texttt{10}),
+the backslash character (ASCII code \texttt{92}),
+and double-quote character (ASCII code \texttt{34}).
+Unprintable characters (tabs and newlines) are not permitted in string literals,
+so they are represented by treating the backslash character \textbackslash, as an escape character.
+Note therefore that string literals cannot span multiple source lines.
 
 The escape sequences allowed in string literals appear in Table~\ref{ta:SscapeSeuqnces}.
 \begin{table}
@@ -731,10 +777,10 @@ The escape sequences allowed in string literals appear in Table~\ref{ta:SscapeSe
 \hline
 \textbf{Escape sequence} & \textbf{Meaning}\\
 \hline
-\verb|\n| & The newline, ASCII code \texttt{0x0A}\\
-\verb|\t| & The tab, ASCII code \texttt{0x09}\\
-\verb|\\| & The backslash character, \verb|\|\\
-\verb|\"| & The double-quote character, \texttt{"}\\
+\verb|\n| & The newline, ASCII code \texttt{10}\\
+\verb|\t| & The tab, ASCII code \texttt{9}\\
+\verb|\\| & The backslash character, \verb|\|, ASCII code \texttt{92}\\
+\verb|\"| & The double-quote character, \texttt{"}, ASCII code \texttt{34}\\
 \hline
 \end{tabular}
 \end{center}
@@ -744,8 +790,8 @@ The escape sequences allowed in string literals appear in Table~\ref{ta:SscapeSe
 \hypertarget{def-restrchar}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REstrchar$ &$\triangleq$& ASCII\{32-126\}\\
-$\REstringlit$ &$\triangleq$& \Char{\texttt{"}} ( ($\REstrchar$ \texttt{-} [ \Char{\texttt{"}} \Char{$\backslash$}]) $|$ (\Char{\textbackslash} [\texttt{"n t \Char{\texttt{"}} \Char{\textbackslash}"}])  )* \Char{\texttt{"}}
+$\REstrchar$ &$\triangleq$& \ascii{32-126}\\
+$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \texttt{-} $\underbracket{\texttt{"}\ \backslash\ }$) $|$ ($\underbracket{\backslash\ }$ $\underbracket{\texttt{" n t }\backslash\ }$)  )* \anycharacter{\texttt{"}}
 \end{tabular}
 \end{center}
 
@@ -762,18 +808,18 @@ not be used in specifications.
 \begin{center}
 \begin{tabular}{rcl}
 $\REletter$ &$\triangleq$& \texttt{'a-z' $|$ 'A-Z'}\\
-$\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ '\_') ($\REletter$ $|$ '\_' $|$ $\REdigit$)*}\\
+$\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$) ($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$ $|$ $\REdigit$)*}\\
 \end{tabular}
 \end{center}
 
-An enumeration literal is also classed as a literal constant, but is syntactically an identifier.
+% An enumeration literal is also classed as a literal constant, but is syntactically an identifier.
 
 Tuple element selectors are classed as identifiers. That is, in cases like \texttt{(1, 2).item0},
 the selector \texttt{item0} is classed as an identifier.
 \lrmcomment{This is related to \identiTSXL}
 
 \section{Lexical Analysis}
-Lexical analysis is defined via the function
+Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function
 \hypertarget{def-aslscan}{}
 \[
 \aslscan : \LexSpec \times \REasciichar^* \aslto (\Token^* \cup \{\LexicalError\})
@@ -791,20 +837,21 @@ Tokens have one of two forms:
   \item[Valueless] Tokens that do not carry values have the form $L$ where $L$ is a token label.
 \end{description}
 
-The set of tokens used for the lexical analysis of ASL strings is defined below.
-
 \hypertarget{def-token}{}
+The set of tokens used for the lexical analysis of ASL strings is defined below.
 \[
-\begin{array}{rcl}
-\Token &\triangleq& \{\ \Tintlit(n) \;|\; n\in\Z\ \}\ \cup\\
-        & & \{\ \Treallit(q) \;|\; q\in\Q\ \}\ \cup\\
-        & & \{\ \Tstringlit(s) \;|\; s\in \Lang(\REstringlit)\ \}\ \cup\\
-        & & \{\ \Tbitvectorlit(b) \;|\; b\in\{0,1\}^*\ \}\ \cup\\
-        & & \{\ \Tmasklit(m) \;|\; m\in\{0,1,x\}^*\ \}\ \cup\\
-        & & \{\ \Tboollit(\True), \Tboollit(\False)\ \}\ \cup \hypertarget{def-tidentifier}{}\\
-        & & \{\ \Tidentifier(\id) \;|\; \id\in \Lang(\REidentifier)\ \} \\
-        & & \{\ \Tlexeme(s) \;|\; s\in\Strings\ \} \\
-        & & \{\ \Twhitespace, \Teof, \Terror\ \}
+\begin{array}{rcll}
+\Token &\triangleq& \{\ \Tintlit(n) \;|\; n\in\Z\ \} & \cup\\
+        & & \{\ \Treallit(q) \;|\; q\in\Q\ \} & \cup\\
+        & & \{\ \Tstringlit(s) \;|\; s\in \Lang(\REstringlit) \} & \cup\\
+        & & \{\ \Tstringchar(c) \;|\; c \in \Lang(\REchar) \} & \cup\\
+        & & \{\ \Tstringend \} & \cup\\
+        & & \{\ \Tbitvectorlit(b) \;|\; b\in\{0,1\}^*\ \} & \cup\\
+        & & \{\ \Tmasklit(m) \;|\; m\in\{0,1,x\}^*\ \} & \cup\\
+        & & \{\ \Tboollit(\True), \Tboollit(\False)\ \} & \cup \\
+        & & \{\ \Tidentifier(\id) \;|\; \id\in \Lang(\REidentifier)\ \} & \cup \\
+        & & \{\ \Tlexeme(s) \;|\; s\in\Strings\ \} & \cup \\
+        & & \{\ \Twhitespace, \Teof, \Terror\ \} &
 \end{array}
 \]
 
@@ -812,13 +859,19 @@ The set of tokens used for the lexical analysis of ASL strings is defined below.
 \begin{itemize}
   \item Tokens of the form $\Tintlit(n)$ represent integer literals; \hypertarget{def-treallit}{}
   \item Tokens of the form $\Treallit(q)$ represent real literals; \hypertarget{def-tstringlit}{}
-  \item Tokens of the form $\Tstringlit(s)$ represent string literals; \hypertarget{def-tbitvectorlit}{}
+  \item Tokens of the form $\Tstringlit(s)$ represent string literals;
+  \hypertarget{def-tstringchar}{}
+  \item Tokens of the form $\Tstringchar(c)$ represent a single character in a string literal;
+  \hypertarget{def-tstringend}{}
+  \item The token $\Tstringend$ represents the closing quotes of a string literal;
+  \hypertarget{def-tbitvectorlit}{}
   \item Tokens of the form $\Tbitvectorlit(b)$ represent bitvector literals; \hypertarget{def-tmasklit}
-  \item Tokens of the form $\Tmasklit(m)$ represent bitmasks; \hypertarget{def-tboollit}{}
+  \item Tokens of the form $\Tmasklit(m)$ represent constant bitmasks; \hypertarget{def-tboollit}{}
   \item Tokens of the form $\Tboollit(b)$ represent Boolean literals; \hypertarget{def-tidentifier}{}
-  \item Tokens of the form $\Tidentifier(b)$ represent identifiers; \hypertarget{def-tlexeme}{}
+  \hypertarget{def-tidentifier}{}
+  \item Tokens of the form $\Tidentifier(i)$ represent identifiers; \hypertarget{def-tlexeme}{}
   \item Tokens with the label $\Tlexeme$ are ones where the value $s$ is simply the \emph{lexeme} for that token.
-  That is, the substring representing that token. Later when we will refer to such token by simply quoting
+  That is, the substring representing that token. Later we will refer to such token by simply quoting
   the lexeme of the token and dropping the label, for brevity. For example, instead of $\Tlexeme(\texttt{for})$,
   we will write $\Tfor$. \hypertarget{def-twhitespace}{}
   \item The valueless token $\Twhitespace$ represents white spaces; \hypertarget{def-terror}{}
@@ -829,20 +882,23 @@ The set of tokens used for the lexical analysis of ASL strings is defined below.
 
 \hypertarget{def-lexspec}{}
 \begin{definition}[Lexical Specification]
-A \emph{lexical specification} consists of a list of pairs $[(r_1,f_1),\ldots,(r_k,f_k)] \in \LexSpec$
-where each pair $(r_i,f_i)$ consists of a lexical regular expression $r_i$
-and a \emph{token function} $f_i : \Strings \aslto \Token$.
+A \emph{lexical specification} consists of a list of pairs $[(r_1,a_1),\ldots,(r_k,a_k)] \in \LexSpec$
+where each pair $(r_i,a_i)$ consists of a lexical regular expression $r_i$
+and a \emph{lexeme action} $a_i : \Strings\times\Strings \aslto \Token^*$.
 \end{definition}
 
-The function $\remaxmatch : \overname{\RegExp}{e} \times \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \times \overname{\Strings}{s_2}) \cup \{\bot\}$
+The function
+\[
+\remaxmatch : \overname{\RegExp}{e} \times \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \times \overname{\Strings}{s_2}) \cup \{\bot\}
+\]
 returns the \emph{longest} match of a regular expression $e$ for a prefix of a string $s$.
 More precisely:
 $\remaxmatch(e, s) = (s_1,s_2)$ means that $s_1\in\Lang(e)$ and $s = s_1 \concat s_2$.
 If no match exists, it is indicated by returning $\bot$.
 
 The function $\maxmatches : \overname{\LexSpec}{R} \times \overname{\Strings}{s} \aslto \overname{\LexSpec}{R'}$
-returns the sublist of $R$ consisting of pairs whose maximal matching $s$ is equal. Importantly, the result sublist $R'$ maintains
-the order of pairs in $R$. If all expressions in $R$ do not match (that is $\remaxmatch$ return $\bot$), then $R'$ is the empty list.
+returns the sublist of $R$ consisting of pairs whose maximal matches for $s$ are equal. Importantly, the result sublist $R'$ maintains
+the order of pairs in $R$. If all expressions in $R$ do not match (that is $\remaxmatch$ returns $\bot$ for all pairs in $R$), then $R'$ is the empty list.
 
 The function $\aslscan$ is constructively defined via the following inference rules:
 
@@ -855,64 +911,94 @@ The function $\aslscan$ is constructively defined via the following inference ru
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[whitespace]{
-  \maxmatches(R, s) = [(e_1,g_1),\ldots,(e_n,g_n)]\\
-  \remaxmatch(s, e_1) = (s_1, s_2)\\
-  s = s_1 \concat s_2\\
-  g_1(s_1) = \Twhitespace\\
-  \aslscan(R, s_2) \scanarrow \tstwo \terminateas \LexicalError
-}{
-  \aslscan(R, s) \scanarrow \tstwo
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[eof]{
-  \maxmatches(R, s) = [(e_1,g_1),\ldots,(e_n,g_n)]\\
-  \remaxmatch(s, e_1) = (s_1, s_2)\\
-  s = s_1 \concat s_2\\
-  g_1(s_1) = \Teof
-}{
-  \aslscan(R, s) \scanarrow [t_1]
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \maxmatches(R, s) = [(e_1,g_1),\ldots,(e_n,g_n)]\\
-  \remaxmatch(s, e_1) = (s_1, s_2)\\
-  s = s_1 \concat s_2\\
-  g_1(s_1) = \Terror
-}{
-  \aslscan(R, s) \scanarrow \LexicalError
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[token]{
-  \maxmatches(R, s) = [(e_1,g_1),\ldots,(e_n,g_n)]\\
+  \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
   \remaxmatch(s, e_1) = (s_1, s_2)\\
-  s = s_1 \concat s_2\\
-  g_1(s_1) = t_1\\
-  t_1 \not\in \{\Teof, \Twhitespace, \Terror\}\\
-  \aslscan(s_2) \scanarrow \tstwo \terminateas \LexicalError
+  a_1(s_1, s_2) \scanarrow \ts \terminateas \LexicalError
 }{
-  \aslscan(R, s) \scanarrow [t_1] \concat \tstwo
+  \aslscan(R, s) \scanarrow \ts
 }
 \end{mathpar}
 
-This form of lexical analysis is referred to as ``Maximal Munch'' in Compiler Theory
-and is the most common form of lexical analysis.
+This form of scanning is referred to as ``Maximal Munch'' in Compiler Theory
+and is the most common form of scanning.
 See ``Compilers: Principles, Techniques, and Tools''~\cite{ASU86} for more details.
 
-\section{ASL Lexical Specification}
-We now define the lexical specification for ASL via token functions and tables
-that associate regular expressions to token functions.
+While Maximal Munch is a useful policy for scanning of most tokens,
+it does not work well for string literals and multi-line comments, which require
+identifying the respective tokens via shortest match.
+%
+For this purpose, most lexical analyzers split the analysis into separate ``states'' ---
+one for keywords, symbols, single-line comments, and identifiers, one for string literals,
+and one for multi-line comments. The lexical analyzers switches between the states as
+needed, and analyzing string literals involves concatenating the individual characters
+of the string literal into a single token.
 
-\subsection{Token Functions}
-\hypertarget{def-discard}{}
+Lexical analysis of ASL follows this approach by defining three specifications:
 \begin{itemize}
-\item The function $\discard$ is a constant function that always returns $\Twhitespace$.
+  \item $\spectoken$: For keywords, symbols, single-line comments, and identifiers;
+  \item $\speccomment$: For multi-line comments;
+  \item $\specstring$: For string literals.
+\end{itemize}
+
+Additionally, lexical analysis of string literals carries the extra state ---
+the string characters encountered along the way.
+
+We now define each of the lexical specifications and related lexeme actions.
+
+Each lexical specification is depicted by a table where the order of elements
+of a specification corresponds to the order of rows in the table.
+
+\subsection{Scanning Regular Tokens}
+To scan keywords, symbols, single-line comments, and identifiers,
+we define the following lexeme actions:
+
+\hypertarget{def-actiondiscard}{}
+\begin{itemize}
+\item
+The lexeme action
+\[
+\actiondiscard(s_1, s_2) \triangleq \aslscan(\spectoken, s_2)
+\]
+discards the string $s_1$ and continues scanning $s_2$ with $\spectoken$.
+This is used for whitespace.
+
+\item
+\hypertarget{def-actiontoken}{}
+The lexeme action
+\[
+\begin{array}{l}
+\actiontoken(f) \triangleq \lambda (s_1,s_2). \\
+\wrappedline\
+\begin{cases}
+  \LexicalError & \text{if }f(s_1) = \Terror \text{ or}\\
+   & \aslscan(\spectoken, s_2) = \Terror\\
+  [f(s_1)] \concat \aslscan(\spectoken, s_2) & \text{else}
+\end{cases}
+\end{array}
+\]
+
+is parameterized by a function $f$ that converts strings into corresponding tokens.
+It applies $f$ to convert $s_1$ into a token and then continues scanning $s_2$ with \\
+$\spectoken$.
+If at any point a lexical error is encountered, the entire result is a lexical error.
+
+\item
+\hypertarget{def-actionstartstring}{}
+The lexeme action
+\[
+\actionstartstring(s_1, s_2) \triangleq \scanstring(\emptylist, s_2)
+\]
+switches to scanning literal strings via $\scanstring$.
+
+\item The lexeme action
+\hypertarget{def-actionstartcomment}{}
+\[
+\actionstartcomment(s_1, s_2) \triangleq \aslscan(\speccomment, s_2)
+\]
+switches to scanning multi-line comments by changing the lexical specification
+to $\speccomment$.
+
 \hypertarget{def-decimaltolit}{}
 \item The function $\decimaltolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
 by decimal representation.
@@ -940,67 +1026,78 @@ given by $s$.
 \hypertarget{def-toidentifier}{}
 \item The function $\toidentifier(s)$ returns $\Tidentifier(s)$.
 \hypertarget{def-eoftoken}{}
-\item The function $\eoftoken$ returns $\Teof$.
+\item The lexeme action
+\[
+\eoftoken(s_1, s_2) \triangleq \begin{cases}
+  \emptylist & s_2 = \emptylist\\
+  \LexicalError & \text{else}
+\end{cases}
+\]
+checks whether $\eof$ is not followed by more characters and returns a lexical error otherwise.
 \end{itemize}
 
-\subsection{Regular Expressions and Corresponding Token Functions}
+\hypertarget{def-spectoken}{}
+The lexical specification  $\spectoken$ is given by the following four tables.
+Splitting the lexical specification into four tables is done for presentation purposes ---
+the ordering between the entries is induced by the order between the tables
+and the order of entries in each table.
+%
 When several regular expressions are listed in a row, it means that they are all associated with the same
 token function.
 
-The lexical specification is given by the following four tables.
-
 \begin{center}
 \begin{tabular}{ll}
-\textbf{Lexical Regular Expressions} & \textbf{Token Function}\\
+\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
 \hline
 \texttt{'\textbackslash n'}           & $\discard$ \\
-\texttt{[' ' '\textbackslash r']+}    & $\discard$ \\
-$\REcomment$                          & $\discard$ \\
-$\REintlit$                           & $\decimaltolit$ \\
-$\REhexlit$                           & $\hextolit$ \\
-$\REreallit$                          & $\realtolit$ \\
-$\REstringlit$                        & $\strtolit$ \\
-$\REbitvectorlit$                     & $\bitstolit$ \\
-$\REbitmasklit$                       & $\masktolit$ \\
-\texttt{'!'}, \texttt{','}, \texttt{'<'}, \texttt{">>"}, \texttt{"\&\&"}, \texttt{"-->"}, \texttt{"<<"}                         & $\tokenid$  \\
-\texttt{']'}, \texttt{')'}, \texttt{".."}, \texttt{'='}, \texttt{'\{'}, \texttt{"!="}, \texttt{'-'}, \texttt{"<->"}                        & $\tokenid$  \\
-\texttt{'['}, \texttt{'('}, \texttt{'.'}, \texttt{"<="}, \texttt{'\textasciicircum'}, \texttt{'*'}, \texttt{'/'}                          & $\tokenid$  \\
-\texttt{"=="}, \texttt{"||"}, \texttt{'+'}, texttt{':'}, \texttt{"=>"},                          & $\tokenid$  \\
-\texttt{'\}'}, \texttt{"++"}, \texttt{'>'}, \texttt{"+:"}, \texttt{"*:"}, \texttt{';'}, \texttt{">="}                         & $\tokenid$  \\
-"@looplimit"                          & $\tokenid$  \\
+\texttt{['\textvisiblespace ' '\textbackslash r']+}    & $\discard$ \\
+$\texttt{"/*"}$                       & $\actionstartcomment$ \\
+$\Char{"}$                       & $\actionstartstring$ \\
+$\REintlit$                           & $\actiontoken(\decimaltolit)$ \\
+$\REhexlit$                           & $\actiontoken(\hextolit)$ \\
+$\REreallit$                          & $\actiontoken(\realtolit)$ \\
+$\REstringlit$                        & $\actiontoken(\strtolit)$ \\
+$\REbitvectorlit$                     & $\actiontoken(\bitstolit)$ \\
+$\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
+\texttt{'!'}, \texttt{','}, \texttt{'<'}, \texttt{">>"}, \texttt{"\&\&"}, \texttt{"-->"}, \texttt{"<<"}                         & $\actiontoken(\tokenid)$  \\
+\texttt{']'}, \texttt{')'}, \texttt{".."}, \texttt{'='}, \texttt{'\{'}, \texttt{"!="}, \texttt{'-'}, \texttt{"<->"}                        & $\actiontoken(\tokenid)$  \\
+\texttt{'['}, \texttt{'('}, \texttt{'.'}, \texttt{"<="}, \texttt{'\textasciicircum'}, \texttt{'*'}, \texttt{'/'}                          & $\actiontoken(\tokenid)$  \\
+\texttt{"=="}, \texttt{"||"}, \texttt{'+'}, \texttt{':'}, \texttt{"=>"},                          & $\actiontoken(\tokenid)$  \\
+\texttt{'\}'}, \texttt{"++"}, \texttt{'>'}, \texttt{"+:"}, \texttt{"*:"}, \texttt{';'}, \texttt{">="}                         & $\actiontoken(\tokenid)$  \\
+\texttt{"@looplimit"}                 & $\actiontoken(\tokenid)$  \\
 \hline
 \end{tabular}
 \end{center}
 
 \begin{center}
 \begin{tabular}{ll}
-\textbf{Lexical Regular Expressions} & \textbf{Token Function}\\
+\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
 \hline
-\texttt{"AND"}, \texttt{"array"}, \texttt{"as"}, \texttt{"assert"},      & $\tokenid$ \\
-\texttt{"begin"}, \texttt{"bit"}, \texttt{"bits"}, \texttt{"boolean"}       & $\tokenid$ \\
-\texttt{"case"}, \texttt{"catch"}, \texttt{"config"}, \texttt{"constant"}      & $\tokenid$ \\
-\texttt{"DIV"}, \texttt{"DIVRM"}, \texttt{"do"},\texttt{"downto"}        & $\tokenid$ \\
-\texttt{"else"}, \texttt{"elsif"}, \texttt{"end"}, \texttt{"enumeration"}   & $\tokenid$ \\
-\texttt{"XOR"}           & $\tokenid$ \\
-\texttt{"exception"}     & $\tokenid$ \\
-\texttt{"FALSE"} & $\falsetolit$  \\
-\texttt{"for"}, \texttt{"func"}          & $\tokenid$ \\
-\texttt{"getter"}        & $\tokenid$ \\
-\texttt{"if"}, \texttt{"IN"}, \texttt{"integer"}       & $\tokenid$ \\
-\texttt{"let"}           & $\tokenid$ \\
+\texttt{"AND"}, \texttt{"array"}, \texttt{"as"}, \texttt{"assert"},      & $\actiontoken(\tokenid)$ \\
+\texttt{"begin"}, \texttt{"bit"}, \texttt{"bits"}, \texttt{"boolean"}       & $\actiontoken(\tokenid)$ \\
+\texttt{"case"}, \texttt{"catch"}, \texttt{"config"}, \texttt{"constant"}      & $\actiontoken(\tokenid)$ \\
+\texttt{"DIV"}, \texttt{"DIVRM"}, \texttt{"do"},\texttt{"downto"}        & $\actiontoken(\tokenid)$ \\
+\texttt{"else"}, \texttt{"elsif"}, \texttt{"end"}, \texttt{"enumeration"}   & $\actiontoken(\tokenid)$ \\
+\texttt{"XOR"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"exception"}     & $\actiontoken(\tokenid)$ \\
+\texttt{"FALSE"} & $\actiontoken(\falsetolit)$  \\
+\texttt{"for"}, \texttt{"func"}          & $\actiontoken(\tokenid)$ \\
+\texttt{"getter"}        & $\actiontoken(\tokenid)$ \\
+\texttt{"if"}, \texttt{"IN"}, \texttt{"integer"}       & $\actiontoken(\tokenid)$ \\
+\texttt{"let"}           & $\actiontoken(\tokenid)$ \\
 %"limit"}         & LIMIT \\
-\texttt{"MOD"}           & $\tokenid$ \\
-\texttt{"NOT"}           & $\tokenid$ \\
-\texttt{"of"},      \texttt{"OR"},      \texttt{"otherwise"}                  & $\tokenid$ \\
-\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}                      & $\tokenid$ \\
-\texttt{"real"},    \texttt{"record"},  \texttt{"repeat"}, \texttt{"return"}  & $\tokenid$ \\
-\texttt{"setter"},  \texttt{"string"},  \texttt{"subtypes"}                   & $\tokenid$ \\
-\texttt{"then"},    \texttt{"throw"},   \texttt{"to"}, \texttt{"try"}         & $\tokenid$ \\
-\texttt{"TRUE"}          & $\truetolit$ \\
-\texttt{"type"}          & $\tokenid$ \\
-\texttt{"UNKNOWN"}, \texttt{"until"}         & $\tokenid$ \\
-\texttt{"var"}           & $\tokenid$ \\
-\texttt{"when"}, \texttt{"where"}, \texttt{"while"}, \texttt{"with"}          & $\tokenid$ \\
+\texttt{"MOD"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"NOT"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"of"},      \texttt{"OR"},      \texttt{"otherwise"}                  & $\actiontoken(\tokenid)$ \\
+\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}                      & $\actiontoken(\tokenid)$ \\
+\texttt{"real"},    \texttt{"record"},  \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
+\texttt{"setter"},  \texttt{"string"},  \texttt{"subtypes"}                   & $\actiontoken(\tokenid)$ \\
+\texttt{"then"},    \texttt{"throw"},   \texttt{"to"}, \texttt{"try"}         & $\actiontoken(\tokenid)$ \\
+\texttt{"TRUE"}          & $\actiontoken(\truetolit)$ \\
+\texttt{"type"}          & $\actiontoken(\tokenid)$ \\
+\texttt{"UNKNOWN"}, \texttt{"until"}         & $\actiontoken(\tokenid)$ \\
+\texttt{"var"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"when"}, \texttt{"where"}, \texttt{"while"}, \texttt{"with"}          & $\actiontoken(\tokenid)$ \\
 \hline
 \end{tabular}
 \end{center}
@@ -1008,7 +1105,7 @@ $\REbitmasklit$                       & $\masktolit$ \\
 The following list represents keywords that are reserved for future use.
 \begin{center}
 \begin{tabular}{ll}
-\textbf{Lexical Regular Expressions} & \textbf{Token Function}\\
+\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
 \hline
 \texttt{"SAMPLE"}, \texttt{"UNSTABLE"} & $\lexicalerror$ \\
 \texttt{"\_"}, \texttt{"access"}, \texttt{"advice"}, \texttt{"after"} & $\lexicalerror$ \\
@@ -1046,10 +1143,128 @@ The following list represents keywords that are reserved for future use.
 
 \begin{center}
 \begin{tabular}{ll}
-\textbf{Lexical Regular Expression} & \textbf{Token Function}\\
+\textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
 \hline
-$\REidentifier$   & $\toidentifier$ \\
+$\REidentifier$   & $\actiontoken(\toidentifier)$ \\
 $\eof$            & $\eoftoken$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Scanning Strings}
+\hypertarget{def-scanstring}{}
+To scan string literals, we define the following specialized scanning function.
+The function
+\[
+\scanstring : \overname{\REasciichar^*}{\buff} \times \overname{\REasciichar^*}{s} \aslto (\Token^* \cup \{\LexicalError\})
+\]
+scans string with the $\specstring$ specification while building the final string literal in $\buff$.
+It is defined via the following rules:
+\begin{mathpar}
+\inferrule[no\_match]{
+  \maxmatches(\specstring, s) = \emptylist
+}{
+  \scanstring(\buff, s) \scanarrow \LexicalError
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[char]{
+  \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  a_1(s_1, s_2) = \Tstringchar(t)\\
+  \scanstring(\buff \concat t, s_2) \scanarrow \tstwo \terminateas \LexicalError
+}{
+  \scanstring(\buff, s) \scanarrow \tstwo
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[end]{
+  \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  a_1(s_1, s_2) = \Tstringend\\
+  \aslscan(\spectoken, s_2) \scanarrow \tstwo \terminateas \LexicalError
+}{
+  \scanstring(\buff, s) \scanarrow [\Tstringlit(\buff)] \concat \tstwo
+}
+\end{mathpar}
+
+We also employ the following lexeme actions:
+\begin{itemize}
+\item
+\hypertarget{def-stringchar}{}
+The lexeme action
+\[
+\stringchar(s_1, s_2) \triangleq \Tstringchar(s_1)
+\]
+returns $s_1$, which is always a single character, as a $\Tstringchar$
+token, which is added to the characters that make up the final string
+literal.
+
+\item
+\hypertarget{def-stringescape}{}
+The lexeme action
+\[
+\stringescape(s_1, s_2) \triangleq \begin{cases}
+  \Tstringchar(10) & s_1 = \texttt{\textbackslash\;\;n}\\
+  \Tstringchar(9) & s_1 = \texttt{\textbackslash\;\;t}\\
+  \Tstringchar(34) & s_1 = \texttt{\textbackslash\;\;"}\\
+  \Tstringchar(92) & s_1 = \texttt{\textbackslash\;\;\textbackslash}\\
+\end{cases}
+\]
+returns the ASCII character for the corresponding escape string, in decimal encoding,
+as a $\Tstringchar$ token, which is added to the characters that make up the final string
+literal.
+
+\item
+\hypertarget{def-stringfinish}{}
+The lexeme action
+\[
+\stringfinish(s_1, s_2) \triangleq \Tstringend
+\]
+signals that the string literal has ended, which makes $\scanstring$
+switch to scanning via $\aslscan$ and $\spectoken$.
+\end{itemize}
+
+\hypertarget{def-specstring}{}
+The lexical specification for string literals --- $\specstring$ --- is given by the following table:
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
+\hline
+$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{n }}  &  $\stringescape$\\
+$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{t }}  &  $\stringescape$\\
+$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{" }}  &  $\stringescape$\\
+$\underbracket{\backslash\ }$ \anycharacter{\ \backslash\ }  & $\stringescape$ \\
+\anycharacter{{\color{white}\backslash}\texttt{" }}   &  $\stringfinish$\\
+$\REchar$                                             &  $\stringchar$\\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Scanning Multi-line Comments}
+The lexeme action
+\hypertarget{def-discardcommentchar}{}
+\[
+\discardcommentchar(s_1, s_2) \triangleq \aslscan(\spectoken, s_2)
+\]
+discards the string $s_1$ (which is always a single character) and continues scanning $s_2$ with $\speccomment$.
+This is the same as $\discard$, except that $s_2$ is scanned with $\speccomment$ instead of $\spectoken$.
+
+\hypertarget{def-speccomment}{}
+The lexical specification for multi-line comments --- $\speccomment$ --- is given by the table below.
+%
+Notice that here, $\actiondiscard$ below is used to discard the closing of the multi-line comment and to switch
+to scanning with $\spectoken$.
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
+\hline
+\texttt{"*/"} & $\actiondiscard$ \\
+$\REchar$     & $\discardcommentchar$ \\
 \hline
 \end{tabular}
 \end{center}
@@ -1080,9 +1295,10 @@ The outline of this chapter is as follows:
 \begin{itemize}
   \item Definition of inlined derivations (see \secref{InlinedDerivations})
   \item Definition of parametric productions (see \secref{ParametricProductions})
+  \item ASL Parametric Productions (see \secref{ASLParametricProductions})
   \item Definition of the ASL grammar (see \secref{ASLGrammar})
-  \item Definition of priority and associativity of operators (see \secref{PriorityAndAssociativity})
   \item Definition of parse trees (see \secref{ParseTrees})
+  \item Definition of priority and associativity of operators (see \secref{PriorityAndAssociativity})
 \end{itemize}
 
 \section{Inlined Derivations \label{sec:InlinedDerivations}}
@@ -1143,17 +1359,17 @@ We refer to $N(p_{1..m})$ as a \emph{parametric non-terminal}.
 
 \newcommand\uniquesymb[1]{\textsf{unique}(#1)}
 Given sentences $S_{1..m}$, we can expand $N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
-by creating a unique symbols for $N(p_{1..m})$, denoted as $\uniquesymb{S_{1..m}}$, defining the
+by creating a unique symbols for $N(p_{1..m})$, denoted as $\uniquesymb{N(S_{1..m})}$, defining the
 derivations
 \[
-  \uniquesymb{S_{1..m}} \derives R_1[S_1/p_1,\ldots,S_m/p_m] \;|\; \ldots \;|\; R_k[S_1/p_1,\ldots,S_m/p_m]
+  \uniquesymb{N(S_{1..m})} \derives R_1[S_1/p_1,\ldots,S_m/p_m] \;|\; \ldots \;|\; R_k[S_1/p_1,\ldots,S_m/p_m]
 \]
-where $R_i[S_1/p_1,\ldots,S_m/p_m]$ means replacing each instance of $p_i$ with $S_i$.
-Then, the each instance of $S_{1..m}$ in the grammar is replaced by $\uniquesymb{S_{1..m}}$.
+where for each $i= 1..k$, $R_i[S_1/p_1,\ldots,S_m/p_m]$ means replacing each instance of $p_j$ with $S_j$, for each $j=1..m$.
+Then, each instance of $S_{1..m}$ in the grammar is replaced by $\uniquesymb{N(S_{1..m})}$.
 If all instances of a parametric non-terminal are expanded this way, we can remove the derivations of the parametric
 non-terminal altogether.
 
-We note that a parametric production can be either a normal derivation of an inlined derivation.
+We note that a parametric production can be either a normal derivation or an inlined derivation.
 
 For example, the derivation for a list of ASL global declarations is as follows:
 \begin{flalign*}
@@ -1167,7 +1383,8 @@ It is defined via the parametric production for possibly-empty lists:
 \newcommand\Ndecllist[0]{\nonterminal{decl\_list}}
 Expanding $\maybeemptylist{\Ndecl}$ produces the following derivations for a new unique symbol.
 That is, a symbol that does not appear anywhere else in the grammar.
-In this example we will choose the new symbol to be $\Ndecllist$. The result of the expansion is then:
+In this example we will choose $\uniquesymb{\maybeemptylist{\Ndecl}}$ the be the symbol $\Ndecllist$.
+The result of the expansion is then:
 \begin{flalign*}
 \Ndecllist   \derives\ & \emptysentence \;|\; \Ndecl \parsesep \Ndecllist &\\
 \end{flalign*}
@@ -1265,6 +1482,9 @@ We define the following parametric productions for various types of lists and op
 
 \section{ASL Grammar \label{sec:ASLGrammar}}
 We now present the list of derivations for the ASL Grammar where the start non-terminal is $\Nast$.
+%
+The derivations allow certain parse trees where lists may have invalid sizes.
+Those parse trees must be rejected in a later phase.
 
 Notice that two of the derivations (for $\Nexprpattern$ and for $\Nexpr$) end with \\
 $\precedence{\Tunops}$.
@@ -1290,7 +1510,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-noarggetter}{}\\
 |\ & \productionname{noarggetter}{no\_arg\_getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nreturntype \parsesep \Nfuncbody &
 \hypertarget{def-setter}{}\\
-|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Teq \parsesep \Ntypedidentifier \parsesep \Nfuncbody &
+|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
+   & \wrappedline\ \parsesep \Nfuncbody &
 \hypertarget{def-noargsetter}{}\\
 |\ & \productionname{noargsetter}{no\_arg\_setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Teq \parsesep \Ntypedidentifier \parsesep \Nfuncbody&
 \hypertarget{def-typedecl}{}\\
@@ -1405,7 +1626,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-nstmt}{}
 \begin{flalign*}
 \Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend &\\
-|\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \maybeemptylist{\Nalt} \parsesep \Tend &\\
+|\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \nonemptylist{\Nalt} \parsesep \Tend &\\
 |\ & \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
 |\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
 |\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
@@ -1435,7 +1656,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nselse}{}
 \begin{flalign*}
-\Nselse \derives\ & \Telseif \parsesep \Nexpr \parsesep \Twhen \parsesep \Nstmtlist \parsesep \Nselse &\\
+\Nselse \derives\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse &\\
 |\ & \Tpass &\\
 |\ & \Telse \parsesep \Nstmtlist &
 \end{flalign*}
@@ -1487,6 +1708,9 @@ it must declare a new variable.
 \Nintconstraint \derivesinline\ & \Nexpr &\\
 |\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
 \end{flalign*}
+
+Pattern expressions ($\Nexprpattern$), given by the following derivations, is similar to regular expressions  ($\Nexpr$),
+except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nexprpattern}{}
 \begin{flalign*}
@@ -1687,22 +1911,17 @@ given by an in-order walk of the tree:
 \]
 \end{definition}
 
-% \newcommand\cleantokens[0]{\textsf{clean\_tokens}}
-% The function $\cleantokens : \Token^* \aslto \Token^*$
-% filters out all whitespace tokens and the $\eoftoken$,
-% leaving all other tokens in the same order.
-
 \hypertarget{def-parsenode}{}
 We denote the set of well-formed parse trees for a non-terminal symbol $S$ by $\parsenode{S}$.
 
 \hypertarget{def-aslparse}{}
 A parser is a function
 \[
-\aslparse : \Token^* \setminus \{\Terror\} \aslto \parsenode{\Nast} \cup \{\ParseError\}
+\aslparse : (\Token^* \setminus \{\Terror\}) \aslto \parsenode{\Nast} \cup \{\ParseError\}
 \]
 \hypertarget{def-parseerror}{}
 where $\ParseError$ stands for a \emph{parse error}.
-If $\aslparse(\ts) = n$ then $\yield(n)=\ts$ $\yield(n)=\ts$
+If $\aslparse(\ts) = n$ then $\yield(n)=\ts$
 and if $\aslparse(\ts) = \ParseError$ then there is no well-formed tree
 $n$ such that $\yield(n)=\ts$.
 (Notice that we do not define a parser if $\ts$ is lexically illegal.)
@@ -1737,7 +1956,7 @@ but rather then the priority level $\Tunops$, as denoted by the notation \\
 $\precedence{\Tunops}$
 appearing to their right. This is a standard way of dealing with a unary minus operation
 in many programming languages, which involves defining an artificial token $\Tunops$,
-which is never returned by the lexical analysis.
+which is never returned by the scanner.
 
 \begin{center}
 \begin{tabular}{ll}
@@ -1764,19 +1983,45 @@ Compilers and interpreters typically start by parsing the text of a program and 
 and then continue to operate over that tree.
 %
 The reason for this is that abstract syntax trees abstract away details that are irrelevant to the semantics of the program,
-such as punctuation and scoping syntax, which are mostly there to facilitate parsing.
+such as punctuation and scoping syntax, which are useful for readability and parsing.
 
 Technically, there are two abstract syntaxes:
-a \emph{parsed abstract syntax} and a \emph{typed abstract syntax}.
+an \emph{untyped abstract syntax} and a \emph{typed abstract syntax}.
 The first syntax results from parsing the text of an ASL specification.
-The type checker checks whether the parsed AST is valid and if so produces
-a typed AST where some nodes in the parsed AST have been transformed to
-more explicit representation. For example, the parsed AST may contain
+The type checker checks whether the untyped AST is valid and if so produces
+a typed AST where some nodes in the untyped AST have been transformed to
+more explicit representation. For example, the untyped AST may contain
 what looks like a slicing expression, which turns out to be a call to a getter.
-The typed AST represents that call directly, making it easier for an interpreter
+The typed AST represents that call directly, making it simpler for an interpreter
 to evaluate that expression.
 
-\section{ASL Abstract Syntax Trees}
+\paragraph{Outline}
+The outline of this chapter is as follows,
+We first define the type of Abstract Syntax Trees used by ASL (\secref{ASLAbstractSyntaxTrees}).
+We then define the notations for defining the AST grammar used by ASL (\secref{ASLAbstractSyntaxGrammar})
+Finally, we define the AST grammar rules for the different ASL constructs along with examples:
+\begin{itemize}
+  \item Literal values (\secref{ASTLiterals})
+  \item Basic Operations (\secref{BasicOperations})
+  \item Expressions (\secref{Expressions})
+  \item Patterns (\secref{Patterns})
+  \item Slices (\secref{Slices})
+  \item Types (\secref{Types})
+  \item Constraints (\secref{Constraints})
+  \item Bit Fields (\secref{BitFields})
+  \item Array Indices (\secref{ArrayIndices})
+  \item Fields and Typed Identifiers (\secref{FieldsAndTypedIdentifiers})
+  \item Left-hand Side Expressions (\secref{LeftHandSideExpressions})
+  \item Local Declarations (\secref{LocalDeclarations})
+  \item Statements (\secref{Statements})
+  \item Case Alternatives (\secref{CaseAlternatives})
+  \item Exception Catchers (\secref{ExceptionCatchers})
+  \item Subprograms (\secref{Subprograms})
+  \item Global Declarations (\secref{GlobalDeclarations})
+  \item Specifications (\secref{Specifications})
+\end{itemize}
+
+\section{ASL Abstract Syntax Trees \label{sec:ASLAbstractSyntaxTrees}}
 
 In an ASL abstract syntax tree, a node is one the following data types:
 \begin{description}
@@ -1793,7 +2038,7 @@ In an ASL abstract syntax tree, a node is one the following data types:
 
 \newpage
 
-\section{ASL Abstract Syntax Grammar}
+\section{ASL Abstract Syntax Grammar \label{sec:ASLAbstractSyntaxGrammar}}
 
 An abstract syntax is defined in terms of derivation rules containing variables (also referred to as non-terminals).
 %
@@ -1816,300 +2061,335 @@ An abstract syntax consists of a set of derivation rules and a start non-termina
 
 \newcommand\ASTComment[1]{//\quad\textit{#1}\ }
 
-\section{ASL Parsed Abstract Syntax}
+\section{ASL Untyped Abstract Syntax}
 
 The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\specification$.
 %
-We sometimes provide extra details to individual derivations by adding comments below them, in the form \ASTComment{this is a comment}.
+Some extra details are given by using the notation $\overname{\textit{symbol}}{\text{detail}}$.
+
+\subsection{Literal Values \label{sec:ASTLiterals}}
+The following rules correspond to literal values of the following ASL data types:
+integers, Booleans, real numbers, bitvectors, and strings.
+
+\begin{flalign*}
+\literal \derives\ & \lint(\overname{n}{\Z})
+& \hypertarget{ast-lbool}{}
+\\
+ |\ & \lbool(\overname{b}{\{\True, \False\}})
+ & \hypertarget{ast-lreal}{}
+\\
+ |\ & \lreal(\overname{q}{\Q})
+ & \hypertarget{ast-lbitvector}{}
+\\
+ |\ & \lbitvector(\overname{B}{B \in \{0, 1\}^*})
+ & \hypertarget{ast-lstring}{}
+\\
+ |\ & \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}}) &
+\end{flalign*}
+
+\subsection{Basic Operations \label{sec:BasicOperations}}
+The following rules correspond to unary operations and binary operations that can be applied to expressions.
 
 \hypertarget{ast-unop}{} \hypertarget{ast-bnot}{} \hypertarget{ast-neg}{} \hypertarget{ast-not}{}
-\[
-\begin{array}{rcl}
-\unop &\derives& \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
-\hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{}
+\begin{flalign*}
+\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
+& \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{}
 \\
-\binop  &\derives& \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
+\binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
               \;|\; \overname{\BEQ}{\texttt{"<->"}}
-\hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
+              & \hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
 \\
-        &|& \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
+        |\ & \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
         \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
-\hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
+        & \hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
 \\
-        &|& \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
+        |\ & \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
         \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
-\hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
+        & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
 \\
-        &|& \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
+        |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
         \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
-\hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{}
+        & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{}
 \\
-        &|& \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}}
-\hypertarget{ast-literal}{} \hypertarget{ast-lint}{}
-\\
-\literal &\derives& \lint(\overname{n}{\Z})
-\hypertarget{ast-lbool}{}
-\\
- &|& \lbool(\overname{b}{\{\True, \False\}})
-\hypertarget{ast-lreal}{}
-\\
- &|& \lreal(\overname{q}{\Q})
-\hypertarget{ast-lbitvector}{}
-\\
- &|& \lbitvector(\overname{B}{B \in \{0, 1\}^*})
-\hypertarget{ast-lstring}{}
-\\
- &|& \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}})\\
-\end{array}
-\]
+        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}}
+        & \hypertarget{ast-literal}{} \hypertarget{ast-lint}{}
+\end{flalign*}
+
+\subsection{Expressions \label{sec:Expressions}}
+The following rules correspond to various types of expressions:
+literal expressions, variable expressions, typing assertions, binary operation expressions, unary operation expressions,
+call expressions, slicing expressions, conditional expressions, single-field access expressions, multiple-field access expressions,
+record and exception construction expressions, concatenation expressions, tuple expressions, unknown-value expressions,
+and pattern matching expressions.
 
 \hypertarget{ast-expr}{} \hypertarget{ast-eliteral}{}
-\[
-\begin{array}{rcl}
-\expr &\derives& \ELiteral(\literal)
-\hypertarget{ast-evar}{} \hypertarget{ast-identifier}{}\\
-	&|& \EVar(\overtext{\identifier}{variable name})
-\hypertarget{ast-eatc}{}\\
-	&|& \overtext{\EATC}{Type assertion}(\overtext{\expr}{given expression}, \overtext{\ty}{asserted type})
-\hypertarget{ast-ebinop}{}\\
-	&|& \EBinop(\binop, \expr, \expr)
-  \hypertarget{ast-eunop}{}\\
-	&|& \EUnop(\unop, \expr)
-  \hypertarget{ast-ecall}{}\\
-	&|& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})
-  \hypertarget{ast-eslice}{}\\
-	&|& \ESlice(\expr, \slice^{*})
-  \hypertarget{ast-econd}{}\\
-	&|& \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
-  \hypertarget{ast-egetfield}{}\\
-	&|& \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})
-  \hypertarget{ast-egetfields}{}\\
-	&|& \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names})
-  \hypertarget{ast-erecord}{}\\
-	&|& \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})
-  \hypertarget{ast-econcat}{}\\
-    & & \ASTComment{Both record construction and exception construction}\\
-	&|& \EConcat(\expr^{+})
-  \hypertarget{ast-etuple}{}\\
-	&|& \ETuple(\expr^{+})
-  \hypertarget{ast-eunknown}{}\\
-	&|& \EUnknown(\ty)
-  \hypertarget{ast-epattern}{}\\
-	&|& \EPattern(\expr, \pattern)
-\end{array}
-\]
+\begin{flalign*}
+\expr \derives\ & \ELiteral(\literal)
+& \hypertarget{ast-evar}{} \hypertarget{ast-identifier}{}\\
+	|\ & \EVar(\overtext{\identifier}{variable name})
+  &\hypertarget{ast-eatc}{}\\
+	|\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type})
+  &\hypertarget{ast-ebinop}{}\\
+	|\ & \EBinop(\binop, \expr, \expr)
+  &\hypertarget{ast-eunop}{}\\
+	|\ & \EUnop(\unop, \expr)
+  &\hypertarget{ast-ecall}{}\\
+	|\ & \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})
+  &\hypertarget{ast-eslice}{}\\
+	|\ & \ESlice(\expr, \slice^{*})
+  &\hypertarget{ast-econd}{}\\
+	|\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
+  &\hypertarget{ast-egetfield}{}\\
+	|\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})
+  &\hypertarget{ast-egetfields}{}\\
+	|\ & \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names})
+  &\hypertarget{ast-erecord}{}\\
+	|\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})
+  &\hypertarget{ast-econcat}{}\\
+	|\ & \EConcat(\expr^{+})
+  &\hypertarget{ast-etuple}{}\\
+	|\ & \ETuple(\expr^{+})
+  &\hypertarget{ast-eunknown}{}\\
+	|\ & \EUnknown(\ty)
+  &\hypertarget{ast-epattern}{}\\
+	|\ & \EPattern(\expr, \pattern)
+\end{flalign*}
+
+\figref{expr1} and \figref{expr2} exemplify the different kinds of expressions,
+as indicated by respective comments.
+\begin{figure}
+\CodeExample{\tests/expr1.asl}
+\caption{Examples of expressions \label{fi:expr1}}
+\end{figure}
+
+\begin{figure}
+\CodeExample{\tests/expr2.asl}
+\caption{Examples of expressions \label{fi:expr2}}
+\end{figure}
+
+\begin{itemize}
+  \item $\EVar(\vx)$ represents variables (\texttt{E\_Var 1})
+  as well as getters declared without a list of arguments (\texttt{E\_Var 2}).
+
+  \item $\EATC(\ve, \vt)$ represents typing assertions. For example: \texttt{x as integer}.
+  Here $\ve$ corresponds to \texttt{x} and $\vt$ corresponds to \texttt{integer}.
+
+  \item $\ESlice(\ve, \vslices)$ represents slices of bitvectors (\texttt{E\_Slice 1}),
+  slices of integers \\
+  (\texttt{E\_Slice 2}),
+  calls to getters (\texttt{E\_Slice 3} and \texttt{E\_Slice 4}),
+  and access to array elements (\texttt{E\_Slice 5}).
+
+  \item $\EGetField(\ve, \id)$ represents an access to a record (\texttt{E\_GetField 1})
+        or exception field
+        as well as an access to a tuple component (\texttt{E\_GetField 2}).
+
+  \item $\EGetFields(\ve, \ids)$ represents an access to multiple record fields (\texttt{E\_GetFields 1}).
+\end{itemize}
+
+\subsection{Patterns \label{sec:Patterns}}
 
 \hypertarget{ast-pattern}{} \hypertarget{ast-patternall}{}
-\[
-\begin{array}{rcl}
-\pattern &\derives& \PatternAll
-\hypertarget{ast-patternany}{}\\
-  &|& \PatternAny(\pattern^{*})
-  \hypertarget{ast-patterngeq}{}\\
-  &|& \PatternGeq(\expr)
-  \hypertarget{ast-patternleq}{}\\
-  &|& \PatternLeq(\expr)
-  \hypertarget{ast-patternmask}{}\\
-  &|& \PatternMask(\Tmasklit)
-  \hypertarget{ast-patternnot}{}\\
-  &|& \PatternNot(\pattern)
-  \hypertarget{ast-patternrange}{}\\
-  &|& \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper included})
-  \hypertarget{ast-patternsingle}{}\\
-  &|& \PatternSingle(\expr)
-  \hypertarget{ast-patterntuple}{}\\
-  &|& \PatternTuple(\pattern^{*}) \\
-\end{array}
-\]
+\begin{flalign*}
+\pattern \derives\ & \PatternAll
+  & \hypertarget{ast-patternany}{}\\
+  |\ & \PatternAny(\pattern^{*})
+  & \hypertarget{ast-patterngeq}{}\\
+  |\ & \PatternGeq(\expr)
+  & \hypertarget{ast-patternleq}{}\\
+  |\ & \PatternLeq(\expr)
+  & \hypertarget{ast-patternmask}{}\\
+  |\ & \PatternMask(\overtext{\{0,1,x\}^*}{mask constant})
+  & \hypertarget{ast-patternnot}{}\\
+  |\ & \PatternNot(\pattern)
+  & \hypertarget{ast-patternrange}{}\\
+  |\ & \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper})
+  & \hypertarget{ast-patternsingle}{}\\
+  |\ & \PatternSingle(\expr)
+  & \hypertarget{ast-patterntuple}{}\\
+  |\ & \PatternTuple(\pattern^{*}) &
+\end{flalign*}
+
+\subsection{Slices \label{sec:Slices}}
 
 \hypertarget{ast-slice}{} \hypertarget{ast-slicesingle}{}
-\[
-\begin{array}{rcl}
-&&\ASTComment{Indexes an array or a bitvector.}\\
-&&\ASTComment{All positions mentioned below are inclusive}\\
-\hline
-\slice &\derives& \SliceSingle(\overname{\expr}{\vi})
-\hypertarget{ast-slicerange}{}\\
-  & & \ASTComment{the slice of length \texttt{1} at position \vi.}\\
-  &|& \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi})
-  \hypertarget{ast-slicelength}{}\\
-  & & \ASTComment{the slice from \vi\ to \texttt{j - 1}.}\\
-  &|& \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn})
-  \hypertarget{ast-slicestar}{}\\
-  & & \ASTComment{the slice starting at \vi\ of length \vn.}\\
-  &|& \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) \\
-  & & \ASTComment{the slice starting at \texttt{i*n} of length \vn}
-\end{array}
-\]
+\begin{flalign*}
+% &&\ASTComment{Indexes an array or a bitvector.}\\
+% &&\ASTComment{All positions mentioned below are inclusive}\\
+\slice \derives\ & \SliceSingle(\overname{\expr}{\vi})
+  & \hypertarget{ast-slicerange}{}\\
+  % & & \ASTComment{the slice of length \texttt{1} at position \vi.}\\
+  |\ & \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi})
+  & \hypertarget{ast-slicelength}{}\\
+  % & & \ASTComment{the slice from \vi\ to \texttt{j - 1}.}\\
+  |\ & \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn})
+  & \hypertarget{ast-slicestar}{}\\
+  % & & \ASTComment{the slice starting at \vi\ of length \vn.}\\
+  |\ & \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &
+  % & & \ASTComment{the slice starting at \texttt{i*n} of length \vn}
+\end{flalign*}
+
+\subsection{Types \label{sec:Types}}
 
 \hypertarget{ast-ty}{} \hypertarget{ast-tint}{}
-\[
-\begin{array}{rcl}
-\ty &\derives& \TInt(\intconstraints)
+\begin{flalign*}
+\ty \derives\ & \TInt(\intconstraints)
 \hypertarget{ast-treal}{}\\
-  &|& \TReal
-  \hypertarget{ast-tstring}{}\\
-  &|& \TString
-  \hypertarget{ast-tbool}{}\\
-  &|& \TBool
-  \hypertarget{ast-tbits}{}\\
-  &|& \TBits(\overtext{\expr}{width}, \bitfield^{*})
-  \hypertarget{ast-tenum}{}\\
-  &|& \TEnum(\overtext{\identifier^{*}}{labels})
-  \hypertarget{ast-ttuple}{}\\
-  &|& \TTuple(\ty^{*})
-  \hypertarget{ast-tarray}{}\\
-  &|& \TArray(\arrayindex, \ty)
-  \hypertarget{ast-trecord}{}\\
-  &|& \TRecord(\Field^{*})
-  \hypertarget{ast-texception}{}\\
-  &|& \TException(\Field^{*})
-  \hypertarget{ast-tnamed}{}\\
-  &|& \TNamed(\overtext{\identifier}{type name})\\
-%  & & \ASTComment{This is related to \identi{LDNP}}
-\end{array}
-\]
+  |\ & \TReal
+  & \hypertarget{ast-tstring}{}\\
+  |\ & \TString
+  & \hypertarget{ast-tbool}{}\\
+  |\ & \TBool
+  & \hypertarget{ast-tbits}{}\\
+  |\ & \TBits(\overtext{\expr}{width}, \bitfield^{*})
+  & \hypertarget{ast-tenum}{}\\
+  |\ & \TEnum(\overtext{\identifier^{*}}{labels})
+  & \hypertarget{ast-ttuple}{}\\
+  |\ & \TTuple(\ty^{*})
+  & \hypertarget{ast-tarray}{}\\
+  |\ & \TArray(\arrayindex, \ty)
+  & \hypertarget{ast-trecord}{}\\
+  |\ & \TRecord(\Field^{*})
+  & \hypertarget{ast-texception}{}\\
+  |\ & \TException(\Field^{*})
+  & \hypertarget{ast-tnamed}{}\\
+  |\ & \TNamed(\overtext{\identifier}{type name}) &
+% &  & & \ASTComment{This is related to \identi{LDNP}}
+\end{flalign*}
+
+\subsection{Constraints \label{sec:Constraints}}
 
 \hypertarget{ast-intconstraints}{} \hypertarget{ast-unconstrained}{}
-\[
-  \begin{array}{rcl}
-    & & \ASTComment{Constraints that may be assigned to integer types.}  \\
-    \hline
-    \intconstraints & \derives
-      & \unconstrained                                      \\
-    & & \ASTComment{The unconstrained integer type.}
-    \hypertarget{ast-wellconstrained}{}\\
-    &|& \wellconstrained(\intconstraint^{+})                \\
-    & & \ASTComment{An integer type with explicit constraints.}
-    \hypertarget{ast-parameterized}{}\\
-    &|& \parameterized(\overtext{\identifier}{parameter})        \\
-    % & & \ASTComment{Implicitly constrained integer from function declaration.} \\
-    % & & \ASTComment{Attributes are:} \\
-    % & & \ASTComment{- a unique integer identifier and the variable} \\
-    % & & \ASTComment{- the type was implicitly constructed from.} \\
-  \end{array}
-\]
+\begin{flalign*}
+  % & & \ASTComment{Constraints that may be assigned to integer types.}  \\
+  \intconstraints \derives\ & \unconstrained
+  % & & \ASTComment{The unconstrained integer type.}
+  & \hypertarget{ast-wellconstrained}{}\\
+  |\ & \wellconstrained(\intconstraint^{+})
+  % & & \ASTComment{An integer type with explicit constraints.}
+  & \hypertarget{ast-parameterized}{}\\
+  |\ & \parameterized(\overtext{\identifier}{parameter}) &
+  % & & \ASTComment{Implicitly constrained integer from function declaration.} \\
+  % & & \ASTComment{Attributes are:} \\
+  % & & \ASTComment{- a unique integer identifier and the variable} \\
+  % & & \ASTComment{- the type was implicitly constructed from.} \\
+\end{flalign*}
 
 \hypertarget{ast-intconstraint}{} \hypertarget{ast-constraintexact}{}
-\[
-\begin{array}{rcl}
-& & \ASTComment{A constraint on an integer part.}\\
-\hline
-\intconstraint &\derives& \ConstraintExact(\expr) \\
-  & & \ASTComment{A single value, given by a statically evaluable expression.}
-  \hypertarget{ast-constraintrange}{}\\
-  &|& \ConstraintRange(\expr, \expr) \\
-  & & \ASTComment{An interval between two statically evaluable expression.}\\
-\end{array}
-\]
+\begin{flalign*}
+% & & \ASTComment{A constraint on an integer part.}\\
+\intconstraint \derives\ & \ConstraintExact(\expr)
+  % & & \ASTComment{A single value, given by a statically evaluable expression.}
+  & \hypertarget{ast-constraintrange}{}\\
+  |\ & \ConstraintRange(\expr, \expr)&
+  % & & \ASTComment{An interval between two statically evaluable expression.}\\
+\end{flalign*}
+
+\subsection{Bit Fields \label{sec:BitFields}}
 
 \hypertarget{ast-bitfield}{} \hypertarget{ast-bitfieldsimple}{}
-\[
-\begin{array}{rcl}
-& & \ASTComment{Represent static slices on a given bitvector type.}\\
-\hline
-\bitfield &\derives& \BitFieldSimple(\identifier, \slice^{*}) \\
-  & & \ASTComment{A name and its corresponding slice.}
-  \hypertarget{ast-bitfieldnested}{}\\
-  &|& \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*}) \\
-  & & \ASTComment{A name, its corresponding slice and some nested bitfields.}
-  \hypertarget{ast-bitfieldtype}{}\\
-  &|& \BitFieldType(\identifier, \slice^{*}, \ty) \\
-  & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
-\end{array}
-\]
+\begin{flalign*}
+% & & \ASTComment{Represent static slices on a given bitvector type.}\\
+\bitfield \derives\ & \BitFieldSimple(\identifier, \slice^{*})
+  % & & \ASTComment{A name and its corresponding slice.}
+  & \hypertarget{ast-bitfieldnested}{}\\
+  |\ & \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*})
+  % & & \ASTComment{A name, its corresponding slice and some nested bitfields.}
+  & \hypertarget{ast-bitfieldtype}{}\\
+  |\ & \BitFieldType(\identifier, \slice^{*}, \ty) &
+  % & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
+\end{flalign*}
+
+\subsection{Array Indices \label{sec:ArrayIndices}}
 
 \hypertarget{ast-arrayindex}{} \hypertarget{ast-arraylengthexpr}{}
-\[
-  \begin{array}{rcl}
-    & & \ASTComment{The type of indexes for an array.}  \\
-    \hline
-    \arrayindex & \derives
-      & \ArrayLengthExpr(\overtext{\expr}{array length})
-      \hypertarget{ast-arraylengthenum}{}\\
-    &|& \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) \\
-  \end{array}
-\]
+The type of array indices is given by the following AST type:
+\begin{flalign*}
+\arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
+\end{flalign*}
 
+% \[
+%   \begin{array}{rcl}
+%     & & \ASTComment{The type of indexes for an array.}  \\
+%     \hline
+%     \arrayindex & \derives
+%       & \ArrayLengthExpr(\overtext{\expr}{array length})
+%       \hypertarget{ast-arraylengthenum}{}\\
+%     &|& \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) \\
+%   \end{array}
+% \]
+
+\subsection{Fields and Typed Identifiers \label{sec:FieldsAndTypedIdentifiers}}
+
+The following rule corresponds to a field of a record-like structure:
 \hypertarget{ast-field}{}
-\[
-\begin{array}{rcl}
-\Field &\derives& (\identifier, \ty)\\
-  & & \ASTComment{A field of a record-like structure.}
-  \hypertarget{ast-typedidentifier}{}\\
-\typedidentifier &\derives& (\identifier, \ty)\\
-  & & \ASTComment{An identifier declared with its type.}\\
-\end{array}
-\]
+\begin{flalign*}
+\Field \derives\ & (\identifier, \ty) & \hypertarget{ast-typedidentifier}{}
+\end{flalign*}
 
+The following rule corresponds to an identifier with its associated type:
+\hypertarget{ast-typedidentifier}{}
+\begin{flalign*}
+\typedidentifier \derives\ & (\identifier, \ty) &
+\end{flalign*}
+
+\subsection{Left-hand Side Expressions \label{sec:LeftHandSideExpressions}}
+
+The following rules define the types of left-hand side of assignments:
 \hypertarget{ast-lexpr}{} \hypertarget{ast-lediscard}{}
-\[
-\begin{array}{rcl}
-& & \ASTComment{Type of left-hand side of assignments.}\\
-\hline
-\lexpr &\derives& \overtext{\LEDiscard}{\texttt{"-"}}\\
-  &|& \LEVar(\identifier)
-  \hypertarget{ast-leslice}{}\\
-  &|& \LESlice(\lexpr, \slice^*)
-  \hypertarget{ast-lesetarray}{}\\
-  &|& \LESetArray(\lexpr, \expr)
-  \hypertarget{ast-lesetfield}{}\\
-  &|& \LESetField(\lexpr, \identifier)
-  \hypertarget{ast-lesetfields}{}\\
-  &|& \LESetFields(\lexpr, \identifier^*)
-  \hypertarget{ast-ledestructuring}{}\\
-  &|& \LEDestructuring(\lexpr^*)
-  \hypertarget{ast-leconcat}{}\\
-  &|& \LEConcat(\lexpr^+)\\
-\end{array}
-\]
+\begin{flalign*}
+\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} &\\
+  |\ & \LEVar(\identifier) & \hypertarget{ast-leslice}{}\\
+  |\ & \LESlice(\lexpr, \slice^*) & \hypertarget{ast-lesetarray}{}\\
+  |\ & \LESetArray(\lexpr, \expr) & \hypertarget{ast-lesetfield}{}\\
+  |\ & \LESetField(\lexpr, \identifier) & \hypertarget{ast-lesetfields}{}\\
+  |\ & \LESetFields(\lexpr, \identifier^*) & \hypertarget{ast-ledestructuring}{}\\
+  |\ & \LEDestructuring(\lexpr^*) & \hypertarget{ast-leconcat}{}\\
+  |\ & \LEConcat(\lexpr^+) &\\
+\end{flalign*}
 
 $\LEConcat(\texttt{les})$ represents the left-hand-side list of expressions for simultaneous assignments.
 
+\subsection{Local Declarations \label{sec:LocalDeclarations}}
+
 \hypertarget{ast-localdeclkeyword}{} \hypertarget{ast-ldkvar}{} \hypertarget{ast-ldkconstant}{} \hypertarget{ast-ldklet}{}
-\[
-\begin{array}{rcl}
-\localdeclkeyword &\derives& \LDKVar \;|\; \LDKConstant \;|\; \LDKLet\\
-\end{array}
-\]
+\begin{flalign*}
+\localdeclkeyword \derives\ & \LDKVar \;|\; \LDKConstant \;|\; \LDKLet &
+\end{flalign*}
+
+A local declaration item is the left-hand side of a declaration statements.
+In the following example of a declaration statement:
+\begin{verbatim}
+let (x, -, z): (integer, integer, integer {0..32}) = (2, 3, 4);
+\end{verbatim}
+the local declaration item is
+\Verb|(x, -, z): (integer, integer, integer {0..32})|.
 
 \hypertarget{ast-localdeclitem}{} \hypertarget{ast-ldidiscard}{}
-\[
-\begin{array}{rcl}
-  & & \ASTComment{A left-hand side of a declaration statement.}\\
-  & & \ASTComment{In the following example of a declaration statement:}\\
-  & & \ASTComment{\Verb|let (x, -, z): (integer, integer, integer \{0..32\}) = (2, 3, 4);|}\\
-  & & \ASTComment{\Verb|(x, -, z): (integer, integer, integer \{0..32\})| is the}\\
-  & & \ASTComment{local declaration item:}\\
-  \hline
-\localdeclitem &\derives
-    & \LDIDiscard\\
-  & & \ASTComment{The ignored local declaration item, for example used in: \Verb!let - = 42;!.}
-  \hypertarget{ast-ldivar}{}\\
-  &|& \LDIVar(\identifier)\\
-  & & \ASTComment{\texttt{LDI\_Var x} is the variable declaration of the variable \texttt{x}, used for example in:}\\
-  & & \ASTComment{\texttt{let x = 42;}.}
-  \hypertarget{ast-ldituple}{}\\
-  &|& \LDITuple(\localdeclitem^*)\\
-  & & \ASTComment{\texttt{LDI\_Tuple ldis} is the tuple declarations of the items in \texttt{ldis},}\\
-  & & \ASTComment{used for example in: \texttt{let (x, y, -, z) = (1, 2, 3, 4);}}\\
-  & & \ASTComment{Note that a the list here must be at least 2 items long.}
-  \hypertarget{ast-ldityped}{}\\
-  &|& \LDITyped(\localdeclitem, \ty)\\
-  & & \ASTComment{\texttt{LDI\_Typed (ldi, t)} declares the item \texttt{ldi} with type \texttt{t}, used for example in:} \\
-  & & \ASTComment{\texttt{let x: integer = 4;}}
-\end{array}
-\]
+\begin{flalign*}
+\localdeclitem \derives\ & \LDIDiscard
+  % & & \ASTComment{The ignored local declaration item, for example used in: \Verb!let - = 42;!.}
+  & \hypertarget{ast-ldivar}{}\\
+  |\ & \LDIVar(\identifier)
+  % & & \ASTComment{\texttt{LDI\_Var x} is the variable declaration of the variable \texttt{x}, used for example in:}\\
+  % & & \ASTComment{\texttt{let x = 42;}.}
+  & \hypertarget{ast-ldituple}{}\\
+  |\ & \LDITuple(\localdeclitem^*)
+  % & & \ASTComment{\texttt{LDI\_Tuple ldis} is the tuple declarations of the items in \texttt{ldis},}\\
+  % & & \ASTComment{used for example in: \texttt{let (x, y, -, z) = (1, 2, 3, 4);}}\\
+  % & & \ASTComment{Note that a the list here must be at least 2 items long.}
+  & \hypertarget{ast-ldityped}{}\\
+  |\ & \LDITyped(\localdeclitem, \ty) &
+  % & & \ASTComment{\texttt{LDI\_Typed (ldi, t)} declares the item \texttt{ldi} with type \texttt{t}, used for example in:} \\
+  % & & \ASTComment{\texttt{let x: integer = 4;}}
+\end{flalign*}
+
+\subsection{Statements \label{sec:Statements}}
 
 \hypertarget{ast-fordirection}{} \hypertarget{ast-up}{} \hypertarget{ast-down}{}
-\[
-\begin{array}{rcl}
-\fordirection &\derives& \UP \;|\; \DOWN\\
-\end{array}
-\]
-
-\hypertarget{ast-stmt}{} \hypertarget{ast-spass}{}
 \begin{flalign*}
+\fordirection \derives\ & \UP \;|\; \DOWN &\\
+\hypertarget{ast-stmt}{} \hypertarget{ast-spass}{}\\
 \stmt \derives\ & \SPass
 \hypertarget{ast-sseq}{} &\\
   |\ & \SSeq(\stmt, \stmt)
@@ -2144,23 +2424,27 @@ $\LEConcat(\texttt{les})$ represents the left-hand-side list of expressions for 
   |\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit})
   \hypertarget{ast-sthrow}{} &\\
   & \ASTComment{The option represents an implicit throw: \texttt{throw;}.}\\
-  |\ & \SThrow((\expr, \None)?) &\\
+  |\ & \SThrow(\expr?) &\\
   \hypertarget{ast-stry}{} &\\
   |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
   \hypertarget{ast-sprint}{} &\\
   |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
 \end{flalign*}
 
+\subsection{Case Alternatives \label{sec:CaseAlternatives}}
+
 \hypertarget{ast-casealt}{}
 \begin{flalign*}
 \casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
 \end{flalign*}
 
+\subsection{Exception Catchers \label{sec:ExceptionCatchers}}
 \hypertarget{ast-catcher}{}
 \begin{flalign*}
 \catcher \derives\ & (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
 \end{flalign*}
 
+\subsection{Subprograms \label{sec:Subprograms}}
 \hypertarget{ast-subprogramtype}{} \hypertarget{ast-stprocedure}{} \hypertarget{ast-stfunction}{}
 \begin{flalign*}
 \subprogramtype \derives\ & \STProcedure \;|\; \STFunction
@@ -2192,6 +2476,7 @@ $\LEConcat(\texttt{les})$ represents the left-hand-side list of expressions for 
 } &
 \end{flalign*}
 
+\subsection{Global Declarations \label{sec:GlobalDeclarations}}
 Declaration keyword for global storage elements:
 \hypertarget{ast-globaldeclkeyword}{} \hypertarget{ast-gdkconstant}{} \hypertarget{ast-gdkconfig}{} \hypertarget{ast-gdklet}{} \hypertarget{ast-gdkvar}{}
 \begin{flalign*}
@@ -2220,6 +2505,7 @@ Declaration keyword for global storage elements:
   |\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &
 \end{flalign*}
 
+\subsection{Specifications \label{sec:Specifications}}
 \hypertarget{ast-specification}{}
 \begin{flalign*}
 \specification \derives\ & \decl^* &
@@ -2227,56 +2513,50 @@ Declaration keyword for global storage elements:
 
 \section{ASL Typed Abstract Syntax}
 
-The derivation rules for the typed abstract syntax are the same as the rules for the parsed abstract syntax,
+The derivation rules for the typed abstract syntax are the same as the rules for the untyped abstract syntax,
 except for the following differences.
 
 The rules for expressions have the extra derivation rule:
 \hypertarget{ast-egetarray}{}
-\[
-\begin{array}{rcl}
-\expr &\derives& \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) \\
-\end{array}
-\]
+\begin{flalign*}
+\expr \derives\ & \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) &
+\end{flalign*}
 
 The AST node for call expressions includes an extra component that explicitly associates expressions
 with parameters:
-\[
-\begin{array}{rcl}
-\expr &\derives& \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers})
-\end{array}
-\]
+\begin{flalign*}
+\expr \derives\ & \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) &
+\end{flalign*}
 
 The AST node for a left-hand-side tuple of expressions contains a second component, which is a type annotation:
-\[
-\begin{array}{rcl}
-\lexpr &\derives& \LEConcat(\lexpr^+, \Tintlit^+?)
-\end{array}
-\]
+\begin{flalign*}
+\lexpr \derives\ & \LEConcat(\lexpr^+, \Tintlit^+?) &
+\end{flalign*}
 
 The rules for statements refine the throw statement by annotating it with
-the type of the throw exception.
-\[
-\begin{array}{rcl}
-\stmt &\derives& \SThrow((\expr, \overtext{\langle\ty\rangle}{exception type})?)
-\end{array}
-\]
+the type of the thrown exception.
+\begin{flalign*}
+\stmt \derives\ & \SThrow((\expr, \overtext{\ty}{exception type})?) &
+\end{flalign*}
 
 Similar to expressions, the AST node for call statements includes an extra component that explicitly associates expressions
 with parameters:
-\[
-\begin{array}{rcl}
-  \stmt &\derives&  \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers})
-\end{array}
-\]
+\begin{flalign*}
+\stmt \derives\ & \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) &
+\end{flalign*}
 
 The rules for slices is replaced by the following:
-\[
-\begin{array}{rcl}
-\slice &\derives& \SliceLength(\expr, \expr) \\
-\end{array}
-\]
+\begin{flalign*}
+\slice \derives\ & \SliceLength(\expr, \expr) &
+\end{flalign*}
 This reflects the fact that all other slicing constructs are syntactic sugar
 for \SliceLength.
+
+The following extra rule enables expressing array indices based on enumeration:
+\hypertarget{ast-arraylengthenum}{}
+\begin{flalign*}
+\arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) &
+\end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Building Abstract Syntax Trees \label{chap:BuildingAbstractSyntaxTrees}}
@@ -2424,6 +2704,14 @@ The relation
 \]
 transforms an $\Nast$ node $\vparsednode$ into an AST specification node $\vastnode$.
 
+Notice that we define some builders as relations rather than functions. This is due to the non-determinism
+in creating identifiers for auxiliary variables that stand in for instances of \texttt{-} on the left-hand-side
+of assignments and declarations.
+For example, \texttt{- = 5;} will effectively create some auxiliary variable, which will result in
+an AST node such as $\SAssign(\EVar(\texttt{aux-1}), \ELiteral(\lint(5)))$.
+Recall that hyphens are not legal characters in ASL identifiers, which avoids potential clashes with
+user-supplied identifiers. An implementation is free however to choose other naming schemes that
+avoid name clashes, for example, by employing counters.
 
 \begin{mathpar}
 \inferrule[ast]{
@@ -3099,7 +3387,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }{
   {
     \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\valtlist}{\maybeemptylist{\Nalt}}, \Tend)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\valtlist}{\nonemptylist{\Nalt}}, \Tend)}{\vparsednode})
   \astarrow \\
   \overname{\SCase(\astof{\vexpr}, \valtlistast)}{\vastnode}
     \end{array}
@@ -3315,7 +3603,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[throw\_some]{}{
   \buildstmt(\overname{\Nstmt(\Tthrow, \Nexpr, \Tsemicolon)}{\vparsednode})
   \astarrow
-  \overname{\SThrow(\langle(\astof{\vexpr}, \None)\rangle)}{\vastnode}
+  \overname{\SThrow(\langle\astof{\vexpr}\rangle)}{\vastnode}
 }
 \end{mathpar}
 
@@ -3559,14 +3847,18 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[constrained]{}{
-  \buildintconstraintsopt(\Nintconstraints(\punnode{\Nintconstraints})) \astarrow
+  {
+    \begin{array}{r}
+  \buildintconstraintsopt(\Nintconstraintsopt(\punnode{\Nintconstraints})) \astarrow \\
   \overname{\astof{\vintconstraints}}{\vastnode}
+    \end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[unconstrained]{}{
-  \buildintconstraintsopt(\Nintconstraints(\emptysentence)) \astarrow
+  \buildintconstraintsopt(\Nintconstraintsopt(\emptysentence)) \astarrow
   \overname{\unconstrained}{\vastnode}
 }
 \end{mathpar}
@@ -3681,8 +3973,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
   \inferrule[get\_field]{}{
-  \buildexprpattern(\Nexprpattern(\Nexprpattern, \Tdot, \Tidentifier)) \astarrow
-  \overname{\EGetField()}{\vastnode}
+  \buildexprpattern(\Nexprpattern(\Nexprpattern, \Tdot, \Tidentifier(\id))) \astarrow
+  \overname{\EGetField(\astof{\vexpr}, \id)}{\vastnode}
 }
 \end{mathpar}
 
@@ -3746,7 +4038,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
     {
       \begin{array}{r}
   \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \Tmasklit(\vm))) \astarrow\\
-  \overname{\EPattern(\astof{\vexprpattern}, \vm)}{\vastnode}
+  \overname{\EPattern(\astof{\vexprpattern}, \PatternMask(\vm))}{\vastnode}
 \end{array}
 }
 }
@@ -4081,7 +4373,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[integer]{}{
   \buildty(\Nty(\Tinteger, \punnode{\Nintconstraintsopt})) \astarrow
-  \overname{\TInt(\vintconstraintsopt)}{\vastnode}
+  \overname{\TInt(\astof{\vintconstraintsopt})}{\vastnode}
 }
 \end{mathpar}
 
@@ -4160,7 +4452,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[ty]{}{
   \buildtydecl(\Ntydecl(\punnode{\Nty})) \astarrow
-  \overname{\astversion{\tty}}{\vastnode}
+  \overname{\astof{\tty}}{\vastnode}
 }
 \end{mathpar}
 
@@ -4324,8 +4616,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
   \inferrule[get\_field]{}{
-  \buildexpr(\overname{\Nexpr(\Nexpr, \Tdot, \Tidentifier)}{\vparsednode}) \astarrow
-  \overname{\EGetField()}{\vastnode}
+  \buildexpr(\overname{\Nexpr(\Nexpr, \Tdot, \Tidentifier(\id))}{\vparsednode}) \astarrow
+  \overname{\EGetField(\astof{\vexpr}, \id)}{\vastnode}
 }
 \end{mathpar}
 
@@ -4389,7 +4681,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
     {
       \begin{array}{r}
   \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-  \overname{\EPattern(\astof{\vexpr}, \vm)}{\vastnode}
+  \overname{\EPattern(\astof{\vexpr}, \PatternMask(\vm))}{\vastnode}
 \end{array}
 }
 }

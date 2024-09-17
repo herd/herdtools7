@@ -297,8 +297,9 @@ type stmt_desc =
   | S_Repeat of stmt * expr * expr option
   | S_Throw of (expr * ty option) option
       (** The ty option is a type annotation added by the type-checker to be
-          matched later with the catch guards. The bigger option is to
-          represent the implicit throw, such as [throw;]. *)
+          matched later with the catch guards. It is always None for the untyped
+          AST and never None for the typed AST.
+          The outer option is used to represent the implicit throw, such as [throw;]. *)
   | S_Try of stmt * catcher list * stmt option
       (** The stmt option is the optional otherwise guard. *)
   | S_Print of { args : expr list; debug : bool }
