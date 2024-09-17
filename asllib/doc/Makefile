@@ -15,9 +15,6 @@ code:
 no-empty:
 	$(MAKE) $(MFLAGS) NOEMPTY=1 all
 
-todo:
-	$(MAKE) $(MFLAGS) TODO=1 all
-
 CONTROLS=ifempty.tex ifcode.tex
 
 .PHONY: control
@@ -35,7 +32,7 @@ ASLSemanticsReference.pdf: control ASLSyntaxReference.pdf ASLSemanticsReference.
 	$(BIBTEX) ASLSemanticsReference
 	$(LATEX) ASLSemanticsReference.tex
 
-ASLTypingReference.pdf: control ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
+ASLTypingReference.pdf: control ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLStaticModelLines.tex ASLStaticInterpreterLines.tex ASLStaticEnvLines.tex ASLASTUtilsLines.tex
 	$(LATEX) ASLTypingReference.tex
 	$(BIBTEX) ASLTypingReference
 	$(LATEX) ASLTypingReference.tex
@@ -59,6 +56,18 @@ ASLTypeSatisfactionLines.tex: ../types.ml
 ASLASTLines.tex: ../AST.mli
 	$(BENTO) $< > $@
 
+ASLStaticModelLines.tex: ../StaticModel.ml
+	$(BENTO) $< > $@
+
+ASLStaticInterpreterLines.tex: ../StaticInterpreter.ml
+	$(BENTO) $< > $@
+
+ASLStaticEnvLines.tex: ../StaticEnv.ml
+	$(BENTO) $< > $@
+
+ASLASTUtilsLines.tex: ../ASTUtils.ml
+	$(BENTO) $< > $@
+
 .PHONY: force
 
 ifdef CODE
@@ -79,7 +88,7 @@ endif
 
 clean:
 	/bin/rm -f $(PDFS)
-	/bin/rm -f ASLSemanticsLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex
+	/bin/rm -f ASLSemanticsLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex ASLStaticModelLines.tex ASLStaticInterpreterLines.tex ASLStaticEnvLines.tex ASLASTUtilsLines.tex
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
 	/bin/rm -f $(CONTROLS)
 	/bin/rm -f comment.cut

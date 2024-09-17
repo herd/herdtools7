@@ -67,7 +67,7 @@ Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 
 \item
 \hypertarget{def-astlabels}{}
-    $\astlabels$ is the set of all AST labels.
+    $\astlabels$ is the set of all labels of Abstract Syntax Tree (AST) nodes.
 
 \item
 \hypertarget{def-strings}{}
@@ -102,7 +102,7 @@ which is defined next is named $q$.
 
 \hypertarget{def-pow}{}
 \begin{definition}[Powerset]
-  The \emph{powerset} of a set $A$, denoted as $\pow{A}$, is the set of all subsets (including the empty set) of $A$:
+  The \emph{powerset} of a set $A$, denoted as $\pow{A}$, is the set of all subsets of $A$, including the empty set and $A$ itself:
   \[
      \pow{A} \triangleq \{ B \;|\; B \subseteq A\} \enspace.
   \]
@@ -214,7 +214,7 @@ The commas carry no special meaning.
 For a non-empty list $v_1 \ldots\ v_k$, the \emph{\head} of the list is the first element --- $v_1$ ---
 and the \emph{\tail} of the list is the suffix obtained by removing $v_1$ from the list.
 
-We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\N$.
+We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\Npos$.
 
 \hypertarget{def-listlen}{}
 \begin{definition}[List Length]
@@ -222,7 +222,7 @@ The \emph{length} of a list is the number of elements in that list:
 $\listlen{\emptylist} \triangleq 0$ and $\listlen{v_1,\ldots,v_k}=k$.
 \end{definition}
 
-We use the notation $a..b$, where $a,b\in\Z$ and $a\leq b$, as a shorthand for the interval $a\ldots b$.
+We use the notation $a..b$, where $a,b\in\Z$ and $a\leq b$, as a shorthand for the interval $[a\ldots b]$.
 We write $x_{a..b}$ as a shorthand for the sequence $x_a \ldots x_b$.
 %
 We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterized by $i$,
@@ -715,7 +715,7 @@ Stands for the set of rule macros
 }
 \end{mathpar}
 
-Notice that after all rule macros are expanded into normal rules,
+Notice that after all rule macros are expanded, in a top-to-bottom and left-to-right order, into normal rules,
 they behave like normal rules where the order of premises does
 not matter.
 
@@ -882,8 +882,11 @@ or that of TypingRule.CheckUnop).
 \item
 The notation $\wrappedline$ denotes that a line that is longer than the page width continues on the next line.
 
-\hypertarget{def-casesplitline}{}
-\item The notation $\casesplitline$ serves as a visual aid to delimit a common prefix of premises shared by two rule cases.
+\hypertarget{def-commonprefixline}{}
+\item The notation $\commonprefixline$ serves as a visual aid to delimit a common prefix of premises shared by rule cases.
+
+\hypertarget{def-commonsufffixline}{}
+\item The notation $\commonsuffixline$ serves as a visual aid to delimit a common suffix of premises shared by rule cases.
 
 \hypertarget{tododefine}{}
 \item \textbf{Missing definition:} Red hyperlinks indicate items that are yet to be defined.

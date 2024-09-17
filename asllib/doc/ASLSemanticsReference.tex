@@ -20,10 +20,10 @@
 \newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\parallel}}
 
-\newcommand\graphof[1]{\hyperlink{def-graphof}{\texttt{graph}}({#1})}
-\newcommand\withgraph[2]{{#1}(\hyperlink{def-withgraph}{\texttt{graph}}\mapsto{#2})}
-\newcommand\environof[1]{\hyperlink{def-environof}{\texttt{environ}}({#1})}
-\newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\texttt{environ}}\mapsto{#2})}
+\newcommand\graphof[1]{\hyperlink{def-graphof}{\textfunc{graph}}({#1})}
+\newcommand\withgraph[2]{{#1}(\hyperlink{def-withgraph}{\textfunc{graph}}\mapsto{#2})}
+\newcommand\environof[1]{\hyperlink{def-environof}{\textfunc{environ}}({#1})}
+\newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#2})}
 
 \newcommand\primitiverel[0]{\hyperlink{def-primitiverel}{\textsf{primitive}}}
 \newcommand\evalprimitivearrow[0]{\hyperlink{def-evalprimitivearrow}{\stackrel{\primitiverel}{\rightsquigarrow}}}
@@ -42,65 +42,64 @@
 \newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
 \newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
 
-\newcommand\evalexpr[1]{\hyperlink{def-evalexpr}{\texttt{eval\_expr}}(#1)}
-\newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\texttt{eval\_expr\_sef}}(#1)}
-\newcommand\evallexpr[1]{\hyperlink{def-evallexpr}{\texttt{eval\_lexpr}}(#1)}
-\newcommand\evalexprlist[1]{\hyperlink{def-evalexprlist}{\texttt{eval\_expr\_list}}(#1)}
-\newcommand\evalexprlistm[1]{\hyperlink{def-evalexprlistm}{\texttt{eval\_expr\_list\_m}}(#1)}
-\newcommand\evalpattern[1]{\hyperlink{def-evalpattern}{\texttt{eval\_pattern}}(#1)}
-\newcommand\evallocaldecl[1]{\hyperlink{def-evallocaldecl}{\texttt{eval\_local\_decl}}(#1)}
-\newcommand\evalslices[1]{\hyperlink{def-evalslices}{\texttt{eval\_slices}}(#1)}
-\newcommand\evalslice[1]{\hyperlink{def-evalslice}{\texttt{eval\_slice}}(#1)}
-\newcommand\evalstmt[1]{\hyperlink{def-evalstmt}{\texttt{eval\_stmt}}(#1)}
-\newcommand\evalblock[1]{\hyperlink{def-evalblock}{\texttt{eval\_block}}(#1)}
-\newcommand\evalloop[1]{\hyperlink{def-evalloop}{\texttt{eval\_loop}}(#1)}
-\newcommand\evalfor[1]{\hyperlink{def-evalfor}{\texttt{eval\_for}}(#1)}
-\newcommand\evalcatchers[1]{\hyperlink{def-evalcatchers}{\texttt{eval\_catchers}}(#1)}
-\newcommand\evalsubprogram[1]{\hyperlink{def-evalsubprogram}{\texttt{eval\_subprogram}}(#1)}
-\newcommand\evalcall[1]{\hyperlink{def-evalcall}{\texttt{eval\_call}}(#1)}
-\newcommand\evalprimitive[1]{\hyperlink{def-evalprimitive}{\texttt{eval\_primitive}}(#1)}
-\newcommand\evalmultiassignment[1]{\hyperlink{def-evalmultiassign}{\texttt{multi\_assign}}(#1)}
-\newcommand\rethrowimplicit[0]{\hyperlink{def-rethrowimplicit}{\texttt{rethrow\_implicit}}}
-\newcommand\assignargs[0]{\hyperlink{def-assignargs}{\texttt{assign\_args}}}
-\newcommand\assignnamedargs[0]{\hyperlink{def-assignnamedargs}{\texttt{assign\_named\_args}}}
-\newcommand\matchfuncres[0]{\hyperlink{def-matchfuncres}{\texttt{match\_func\_res}}}
-\newcommand\buildgenv[0]{\hyperlink{def-buildgenv}{\texttt{build\_genv}}}
-\newcommand\topologicaldecls[0]{\hyperlink{def-topologicaldecls}{\texttt{topological\_decls}}}
-\newcommand\evalglobals[0]{\hyperlink{def-evalglobals}{\texttt{eval\_globals}}}
-\newcommand\evalspec[1]{\hyperlink{def-evalspec}{\texttt{eval\_spec}}(#1)}
-\newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\texttt{lexpr\_is\_var}}}
-\newcommand\casetoconds[0]{\hyperlink{def-casetoconds}{\texttt{case\_to\_conds}}}
-\newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\texttt{find\_catcher}}}
+\newcommand\evalexpr[1]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}(#1)}
+\newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}(#1)}
+\newcommand\evallexpr[1]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}(#1)}
+\newcommand\evalexprlist[1]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}(#1)}
+\newcommand\evalexprlistm[1]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}(#1)}
+\newcommand\evalpattern[1]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}(#1)}
+\newcommand\evallocaldecl[1]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}(#1)}
+\newcommand\evalslices[1]{\hyperlink{def-evalslices}{\textfunc{eval\_slices}}(#1)}
+\newcommand\evalslice[1]{\hyperlink{def-evalslice}{\textfunc{eval\_slice}}(#1)}
+\newcommand\evalstmt[1]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}(#1)}
+\newcommand\evalblock[1]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}(#1)}
+\newcommand\evalloop[1]{\hyperlink{def-evalloop}{\textfunc{eval\_loop}}(#1)}
+\newcommand\evalfor[1]{\hyperlink{def-evalfor}{\textfunc{eval\_for}}(#1)}
+\newcommand\evalcatchers[1]{\hyperlink{def-evalcatchers}{\textfunc{eval\_catchers}}(#1)}
+\newcommand\evalsubprogram[1]{\hyperlink{def-evalsubprogram}{\textfunc{eval\_subprogram}}(#1)}
+\newcommand\evalcall[1]{\hyperlink{def-evalcall}{\textfunc{eval\_call}}(#1)}
+\newcommand\evalprimitive[1]{\hyperlink{def-evalprimitive}{\textfunc{eval\_primitive}}(#1)}
+\newcommand\evalmultiassignment[1]{\hyperlink{def-evalmultiassign}{\textfunc{multi\_assign}}(#1)}
+\newcommand\rethrowimplicit[0]{\hyperlink{def-rethrowimplicit}{\textfunc{rethrow\_implicit}}}
+\newcommand\assignargs[0]{\hyperlink{def-assignargs}{\textfunc{assign\_args}}}
+\newcommand\assignnamedargs[0]{\hyperlink{def-assignnamedargs}{\textfunc{assign\_named\_args}}}
+\newcommand\matchfuncres[0]{\hyperlink{def-matchfuncres}{\textfunc{match\_func\_res}}}
+\newcommand\buildgenv[0]{\hyperlink{def-buildgenv}{\textfunc{build\_genv}}}
+\newcommand\topologicaldecls[0]{\hyperlink{def-topologicaldecls}{\textfunc{topological\_decls}}}
+\newcommand\evalglobals[0]{\hyperlink{def-evalglobals}{\textfunc{eval\_globals}}}
+\newcommand\evalspec[1]{\hyperlink{def-evalspec}{\textfunc{eval\_spec}}(#1)}
+\newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\textfunc{lexpr\_is\_var}}}
+\newcommand\casetoconds[0]{\hyperlink{def-casetoconds}{\textfunc{case\_to\_conds}}}
+\newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\textfunc{find\_catcher}}}
 
-\newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\texttt{declare\_local\_identifier}}}
-\newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\texttt{declare\_local\_identifier\_m}}}
-\newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\texttt{declare\_local\_identifier\_mm}}}
-\newcommand\removelocal[0]{\hyperlink{def-removelocal}{\texttt{remove\_local}}}
-\newcommand\readidentifier[0]{\hyperlink{def-readidentifier}{\texttt{read\_identifier}}}
-\newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\texttt{write\_identifier}}}
-\newcommand\createbitvector[0]{\hyperlink{def-createbitvector}{\texttt{create\_bitvector}}}
-\newcommand\concatbitvectors[0]{\hyperlink{def-concatbitvector}{\texttt{concat\_bitvectors}}}
-\newcommand\readfrombitvector[0]{\hyperlink{def-readfrinbitvector}{\texttt{read\_from\_bitvector}}}
-\newcommand\writetobitvector[0]{\hyperlink{def-writetobitvector}{\texttt{write\_to\_bitvector}}}
-\newcommand\asbitvector[0]{\hyperlink{def-asbitvector}{\texttt{as\_bitvector}}}
-\newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\texttt{slices\_to\_positions}}}
-\newcommand\getindex[0]{\hyperlink{def-getindex}{\texttt{get\_index}}}
-\newcommand\setindex[0]{\hyperlink{def-setindex}{\texttt{set\_index}}}
-\newcommand\getfield[0]{\hyperlink{def-getfield}{\texttt{get\_field}}}
-\newcommand\setfield[0]{\hyperlink{def-setfield}{\texttt{set\_field}}}
-\newcommand\declareglobal[0]{\hyperlink{def-declareglobal}{\texttt{declare\_global}}}
-\newcommand\basevalue[0]{\hyperlink{def-basevalue}{\texttt{base\_value}}}
-\newcommand\isvaloftype[0]{\hyperlink{def-isvaloftype}{\texttt{is\_val\_of\_type}}}
-\newcommand\positioninrange[0]{\hyperlink{def-positioninrange}{\texttt{position\_in\_range}}}
-\newcommand\integerconstraintsatisfied[0]{\hyperlink{def-integerconstraintsatisfied}{\texttt{int\_constraint\_sat}}}
-\newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\texttt{read\_value\_from}}}
-\newcommand\writeretvals[0]{\hyperlink{def-writeretvals}{\texttt{write\_ret\_vals}}}
+\newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
+\newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
+\newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\textfunc{declare\_local\_identifier\_mm}}}
+\newcommand\removelocal[0]{\hyperlink{def-removelocal}{\textfunc{remove\_local}}}
+\newcommand\readidentifier[0]{\hyperlink{def-readidentifier}{\textfunc{read\_identifier}}}
+\newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\textfunc{write\_identifier}}}
+\newcommand\createbitvector[0]{\hyperlink{def-createbitvector}{\textfunc{create\_bitvector}}}
+\newcommand\concatbitvectors[0]{\hyperlink{def-concatbitvector}{\textfunc{concat\_bitvectors}}}
+\newcommand\readfrombitvector[0]{\hyperlink{def-readfrinbitvector}{\textfunc{read\_from\_bitvector}}}
+\newcommand\writetobitvector[0]{\hyperlink{def-writetobitvector}{\textfunc{write\_to\_bitvector}}}
+\newcommand\asbitvector[0]{\hyperlink{def-asbitvector}{\textfunc{as\_bitvector}}}
+\newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\textfunc{slices\_to\_positions}}}
+\newcommand\getindex[0]{\hyperlink{def-getindex}{\textfunc{get\_index}}}
+\newcommand\setindex[0]{\hyperlink{def-setindex}{\textfunc{set\_index}}}
+\newcommand\getfield[0]{\hyperlink{def-getfield}{\textfunc{get\_field}}}
+\newcommand\setfield[0]{\hyperlink{def-setfield}{\textfunc{set\_field}}}
+\newcommand\declareglobal[0]{\hyperlink{def-declareglobal}{\textfunc{declare\_global}}}
+\newcommand\basevalue[0]{\hyperlink{def-basevalue}{\textfunc{base\_value}}}
+\newcommand\isvaloftype[0]{\hyperlink{def-isvaloftype}{\textfunc{is\_val\_of\_type}}}
+\newcommand\positioninrange[0]{\hyperlink{def-positioninrange}{\textfunc{position\_in\_range}}}
+\newcommand\integerconstraintsatisfied[0]{\hyperlink{def-integerconstraintsatisfied}{\textfunc{int\_constraint\_sat}}}
+\newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\textfunc{read\_value\_from}}}
+\newcommand\writeretvals[0]{\hyperlink{def-writeretvals}{\textfunc{write\_ret\_vals}}}
 
-\newcommand\unoprel[0]{\hyperlink{def-unoprel}{\texttt{unop}}}
-\newcommand\binoprel[0]{\hyperlink{def-binoprel}{\texttt{binop}}}
+\newcommand\unoprel[0]{\hyperlink{def-unoprel}{\textfunc{unop}}}
+\newcommand\binoprel[0]{\hyperlink{def-binoprel}{\textfunc{binop}}}
 
-\newcommand\findfunc[0]{\hyperlink{def-findfunc}{\texttt{find\_func}}}
-\newcommand\unknownval[0]{\texttt{unknown\_val}}
+\newcommand\findfunc[0]{\hyperlink{def-findfunc}{\textfunc{find\_func}}}
 
 \newcommand\valuereadfrom[0]{\hyperlink{def-valuereadfrom}{\textsf{value\_read\_from}}}
 \newcommand\Normal[0]{\hyperlink{def-normal}{\textsf{Normal}}}
@@ -3906,7 +3905,7 @@ prints
       \fordirection &:& \vdirection\\
       \Forende &:& \vende\\
       \Forbody &:& \vbody\\
-      Forlimit &:& \Ignore
+      \Forlimit &:& \Ignore
     \end{array}\right\}$;
     \item evaluating the side-effect-free expression $\veone$ in $\env$ is either
     $\Normal(\vvone, \vgone)$\ProseOrError;

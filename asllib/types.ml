@@ -143,15 +143,15 @@ let rec is_non_primitive ty =
 let is_primitive ty = (not (is_non_primitive ty)) |: TypingRule.PrimitiveType
 (* End *)
 
-let under_constrained_constraints =
+let parameterized_constraints =
   let next_uid = ref 0 in
   fun var ->
     let uid = !next_uid in
     incr next_uid;
     Parameterized (uid, var)
 
-let under_constrained_ty var =
-  T_Int (under_constrained_constraints var) |> add_dummy_pos
+let parameterized_ty var =
+  T_Int (parameterized_constraints var) |> add_dummy_pos
 
 let to_well_constrained ty =
   match ty.desc with
@@ -559,7 +559,7 @@ module Domain = struct
         | L_Int z1 -> IntSet.mem z1 is2
         | _ -> false)
 
-  (* Begin SyDomIsSubrset *)
+  (* Begin SyDomIsSubset *)
   let is_subset env d1 d2 =
     let () =
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2

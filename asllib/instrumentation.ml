@@ -397,19 +397,15 @@ module TypingRule = struct
     | EUnknown
     | EPattern
     | LEDiscard
-    | LELocalVar
-    | LEGlobalVar
+    | LEVar
     | LEUndefIdentV0
     | LEUndefIdentV1
     | LEDestructuring
     | LESlice
     | LESetArray
-    | LESetBadStructuredField
     | LESetStructuredField
     | LESetBadBitField
     | LESetBitField
-    | LESetBitFieldNested
-    | LESetBitFieldTyped
     | LESetBadField
     | LESetFields
     | LEConcat
@@ -561,16 +557,12 @@ module TypingRule = struct
     | EUnknown -> "EUnknown"
     | EPattern -> "EPattern"
     | LEDiscard -> "LEDiscard"
-    | LELocalVar -> "LELocalVar"
-    | LEGlobalVar -> "LEGlobalVar"
+    | LEVar -> "LEVar"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
-    | LESetBadStructuredField -> "LESetBadStructuredField"
     | LESetStructuredField -> "LESetStructuredField"
     | LESetBadBitField -> "LESetBadBitField"
     | LESetBitField -> "LESetBitField"
-    | LESetBitFieldNested -> "LESetBitFieldNested"
-    | LESetBitFieldTyped -> "LESetBitFieldTyped"
     | LESetBadField -> "LESetBadField"
     | LESetFields -> "LESetFields"
     | LEConcat -> "LEConcat"
@@ -728,16 +720,12 @@ module TypingRule = struct
       EConcat;
       ETuple;
       LEDiscard;
-      LELocalVar;
-      LEGlobalVar;
+      LEVar;
       LESlice;
       LESetArray;
-      LESetBadStructuredField;
       LESetStructuredField;
       LESetBadBitField;
       LESetBitField;
-      LESetBitFieldNested;
-      LESetBitFieldTyped;
       LESetBadField;
       LESetFields;
       LESetFields;
