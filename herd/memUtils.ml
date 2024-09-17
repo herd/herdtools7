@@ -354,17 +354,12 @@ let lift_proc_info i evts =
 
 (* Collect various events by their location *)
 
-  let map_loc_find loc m =
-    try LocEnv.find loc m
-    with Not_found -> []
-
   let collect_by_loc es pred =
     E.EventSet.fold
       (fun e k ->
         if pred e then
           let loc = get_loc e in
-          let evts = map_loc_find loc k in
-          LocEnv.add loc (e::evts) k
+          LocEnv.accumulate loc e k
         else k)
       es.E.events LocEnv.empty
 
@@ -387,8 +382,7 @@ let lift_proc_info i evts =
       E.EventSet.fold
         (fun e k -> match E.location_of e with
         | Some loc ->
-            let evts = map_loc_find loc k in
-            LocEnv.add loc (e::evts) k
+            LocEnv.accumulate loc e k
         | None -> k) es LocEnv.empty in
 
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
