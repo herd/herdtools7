@@ -2928,23 +2928,27 @@ module Make
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
         let>= pred = read_reg_predicate false p ii in
-        let<>= (base, offsets) =
-          any_active p pred psize nelem ii (ma >>| mo) (M.unitT M.A.V.(zero, zero))
-        in
-        let op idx =
-          let load =
-            let>= lane = scalable_getlane offsets idx esize in
-            let>= lane = demote lane in
-            let>= o = memext_sext e k lane in
-            let>= addr = M.add base o in
-            let>= v = do_read_mem_ret sz Annot.N aexp Access.VIR addr ii in
-            let>= v = promote v in
-            M.op1 (Op.LeftShift (idx * esize)) v
+        let>= result =
+          let<>= (base, offsets) =
+            any_active p pred psize nelem ii
+              (ma >>| mo)
+              (M.unitT M.A.V.(zero, zero))
           in
-          is_active_element p pred psize idx ii load (no_action ii >>! M.A.V.zero)
+          let op idx =
+            let load =
+              let>= lane = scalable_getlane offsets idx esize in
+              let>= lane = demote lane in
+              let>= o = memext_sext e k lane in
+              let>= addr = M.add base o in
+              let>= v = do_read_mem_ret sz Annot.N aexp Access.VIR addr ii in
+              let>= v = promote v in
+              M.op1 (Op.LeftShift (idx * esize)) v
+            in
+            is_active_element p pred psize idx ii load (no_action ii >>! M.A.V.zero)
+          in
+          let ops = List.map op (Misc.interval 0 nelem) in
+          para_fold_right (M.op Op.Or) ops mzero
         in
-        let ops = List.map op (Misc.interval 0 nelem) in
-        let>= result = para_fold_right (M.op Op.Or) ops mzero in
         write_reg_scalable r result ii
 
       let store_scatter_predicated_elem_or_merge sz p ma mo rs e k ii =
