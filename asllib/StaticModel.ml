@@ -57,14 +57,14 @@ end
 module PMap = Map.Make (PolynomialOrdered)
 (** Map from polynomials. *)
 
-(** A constraint on a numerical value. *)
-type sign = Null | NotNull
+(** A (in)equation for a numerical value. *)
+type eq = Zero | NonZero
 
 (** A conjunctive logical formulae with polynomials.
 
-      For example, {m X^2 \leq 0 } is represented with {m X^2 \to \leq 0 }.
+      For example, {m X^2 = 0 } is represented with {m X^2 \to Null }.
   *)
-type ctnts = Conjunction of sign PMap.t | Bottom
+type ctnts = Conjunction of eq PMap.t | Bottom
 
 (** Case disjunctions. *)
 type ir_expr =
@@ -112,13 +112,13 @@ let pp_poly f (Sum poly) =
     PP.pp_print_seq ~pp_sep pp_mono f (MMap.to_seq poly);
     pp_close_box f ())
 
-let pp_sign f s =
-  let s = match s with Null -> "= 0" | NotNull -> "!= 0" in
+let pp_eq f s =
+  let s = match s with Zero -> "= 0" | NonZero -> "!= 0" in
   Format.pp_print_string f s
 
 let pp_ctnt f (p, s) =
   let open Format in
-  fprintf f "@[<h>%a@ %a@]" pp_poly p pp_sign s
+  fprintf f "@[<h>%a@ %a@]" pp_poly p pp_eq s
 
 let pp_ctnts f =
   let open Format in
@@ -150,11 +150,11 @@ let poly_neg (Sum monos) = Sum (MMap.map Q.neg monos)
 
 exception ConjunctionBottomInterrupt
 
-let sign_and _p s1 s2 =
+let eq_and _p s1 s2 =
   match (s1, s2) with
-  | Null, Null -> Some Null
-  | NotNull, NotNull -> Some NotNull
-  | Null, NotNull | NotNull, Null -> raise_notrace ConjunctionBottomInterrupt
+  | Zero, Zero -> Some Zero
+  | NonZero, NonZero -> Some NonZero
+  | Zero, NonZero | NonZero, Zero -> raise_notrace ConjunctionBottomInterrupt
 
 let add_mono_to_poly =
   let updater factor = function
@@ -219,7 +219,7 @@ let ctnts_and : ctnts -> ctnts -> ctnts =
   match (c1, c2) with
   | Bottom, _ | _, Bottom -> Bottom
   | Conjunction ctnts1, Conjunction ctnts2 -> (
-      try Conjunction (PMap.union sign_and ctnts1 ctnts2)
+      try Conjunction (PMap.union eq_and ctnts1 ctnts2)
       with ConjunctionBottomInterrupt -> Bottom)
 
 let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
@@ -305,9 +305,9 @@ and to_cond env (e : expr) : ctnts list * ctnts list =
   let ( ||| ) = ( @ ) in
   let ( &&& ) = ASTUtils.list_cross ctnts_and in
   let ctnts_of_bool b = if b then ctnts_true else Bottom in
-  let ir_to_cond sign (Disjunction li2) =
+  let ir_to_cond eq (Disjunction li2) =
     List.map
-      (fun (ctnts, p) -> ctnts_and (Conjunction (PMap.singleton p sign)) ctnts)
+      (fun (ctnts, p) -> ctnts_and (Conjunction (PMap.singleton p eq)) ctnts)
       li2
   in
   match e.desc with
@@ -323,7 +323,7 @@ and to_cond env (e : expr) : ctnts list * ctnts list =
   | E_Binop (EQ_OP, e1, e2) ->
       let e' = E_Binop (MINUS, e1, e2) |> ASTUtils.add_pos_from_st e in
       let ir = to_ir env e' in
-      (ir_to_cond Null ir, ir_to_cond NotNull ir)
+      (ir_to_cond Zero ir, ir_to_cond NonZero ir)
   | E_Cond (cond, e1, e2) ->
       let ctnts_cond, nctnts_cond = to_cond env cond
       and ctnts1, nctnts1 = to_cond env e1
@@ -380,22 +380,21 @@ let polynomial_to_expr (Sum map) =
     zero
     (MMap.bindings map |> List.rev)
 
-let sign_to_binop = function Null -> EQ_OP | NotNull -> NEQ
+let eq_to_binop = function Zero -> EQ_OP | NonZero -> NEQ
 
 let ctnts_to_expr : ctnts -> expr option =
   let e_band e1 e2 =
     if e1 == e_true then e2 else if e2 == e_true then e1 else binop BAND e1 e2
   in
-  let ctnt_to_expr (Sum p) sign =
+  let ctnt_to_expr (Sum p) eq =
     let c = try MMap.find mono_one p with Not_found -> Q.zero
     and p = Sum (MMap.remove mono_one p) in
-    binop (sign_to_binop sign) (expr_of_q (Q.neg c)) (polynomial_to_expr p)
+    binop (eq_to_binop eq) (expr_of_q (Q.neg c)) (polynomial_to_expr p)
   in
   function
   | Bottom -> None
   | Conjunction map ->
-      Some
-        (PMap.fold (fun p sign e -> e_band (ctnt_to_expr p sign) e) map e_true)
+      Some (PMap.fold (fun p eq e -> e_band (ctnt_to_expr p eq) e) map e_true)
 
 let of_ir : ir_expr -> expr = function
   | Disjunction [] -> zero
@@ -427,7 +426,7 @@ let poly_get_constant_opt (Sum p) =
 
 let constant_satisfies c s =
   let eq_zero = Q.equal c Q.zero in
-  match s with Null -> eq_zero | NotNull -> not eq_zero
+  match s with Zero -> eq_zero | NonZero -> not eq_zero
 
 let ctnt_is_trivial p s =
   match poly_get_constant_opt p with
@@ -447,7 +446,7 @@ let reduce_ctnts : ctnts -> ctnts = function
                if ctnt_is_trivial p s then acc
                else
                  PMap.update p
-                   (function None -> Some s | Some s' -> sign_and p s s')
+                   (function None -> Some s | Some s' -> eq_and p s s')
                    acc)
              ctnts PMap.empty)
       with ConjunctionBottomInterrupt -> Bottom)
@@ -484,7 +483,7 @@ let equal_mod_branches (Disjunction li1) (Disjunction li2) =
   let to_cond (ctnts1, p1) (ctnts2, p2) =
     let equality =
       let p = add_polys p1 (poly_neg p2) in
-      Conjunction (PMap.singleton p Null)
+      Conjunction (PMap.singleton p Zero)
     in
     let ctnts = ctnts_and ctnts1 ctnts2 in
     match ctnts with
