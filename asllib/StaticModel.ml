@@ -159,18 +159,8 @@ let pp_ir f (Disjunction li) =
 (* Constructors *)
 
 let ctnts_true : ctnts = Conjunction PMap.empty
-let ctnts_false : ctnts = Bottom
-let always e = Disjunction [ (ctnts_true, e) ]
 let mono_one = Prod AMap.empty
-let mono_of_var s = Prod (AMap.singleton s 1)
-let poly_of_var s = Sum (MMap.singleton (mono_of_var s) Q.one)
-let poly_of_q i = Sum (MMap.singleton mono_one i)
-let poly_of_z i = Q.of_bigint i |> poly_of_q
 let poly_neg (Sum monos) = Sum (MMap.map Q.neg monos)
-
-let poly_of_val = function
-  | L_Int i -> poly_of_z i
-  | _ -> raise NotYetImplemented
 
 exception ConjunctionBottomInterrupt
 
@@ -217,18 +207,6 @@ let sign_and _p s1 s2 =
   | StrictPositive, StrictNegative ->
       raise_notrace ConjunctionBottomInterrupt
 
-let constant_satisfies c s =
-  let open Q in
-  match s with
-  | Null -> equal c zero
-  | NotNull -> not (equal c zero)
-  | Positive -> geq c zero
-  | StrictPositive -> gt c zero
-  | Negative -> leq c zero
-  | StrictNegative -> lt c zero
-
-let ctnts_of_bool b = if b then ctnts_true else ctnts_false
-
 let add_mono_to_poly =
   let updater factor = function
     | None -> Some factor
@@ -242,50 +220,50 @@ let add_polys : polynomial -> polynomial -> polynomial =
  fun (Sum monos1) (Sum monos2) ->
   Sum (MMap.union (fun _mono c1 c2 -> Some (Q.add c1 c2)) monos1 monos2)
 
-let mult_monos : monomial -> monomial -> monomial =
- fun (Prod map1) (Prod map2) ->
-  Prod (AMap.union (fun _ p1 p2 -> Some (p1 + p2)) map1 map2)
-
 let mult_polys : polynomial -> polynomial -> polynomial =
- fun (Sum monos1) (Sum monos2) ->
-  Sum
-    (MMap.fold
-       (fun m1 f1 ->
-         MMap.fold
-           (fun m2 f2 -> add_mono_to_poly (mult_monos m1 m2) (Q.mul f1 f2))
-           monos2)
-       monos1 MMap.empty)
+  let mult_monos : monomial -> monomial -> monomial =
+   fun (Prod map1) (Prod map2) ->
+    Prod (AMap.union (fun _ p1 p2 -> Some (p1 + p2)) map1 map2)
+  in
+  fun (Sum monos1) (Sum monos2) ->
+    Sum
+      (MMap.fold
+         (fun m1 f1 ->
+           MMap.fold
+             (fun m2 f2 -> add_mono_to_poly (mult_monos m1 m2) (Q.mul f1 f2))
+             monos2)
+         monos1 MMap.empty)
 
 let mult_poly_const : Q.t -> polynomial -> polynomial =
  fun f2 (Sum monos) -> Sum (MMap.map (fun f1 -> Q.mul f1 f2) monos)
 
-let divide_monos : monomial -> monomial -> monomial =
- fun (Prod map1) (Prod map2) ->
-  Prod
-    (AMap.merge
-       (fun _x o1 o2 ->
-         match (o1, o2) with
-         | _, None -> o1
-         | None, Some 0 -> None
-         | None, Some _ -> raise NotYetImplemented
-         | Some p1, Some p2 when p1 > p2 -> Some (p2 - p1)
-         | Some p1, Some p2 when p1 = p2 -> None
-         | Some _, Some _ -> raise NotYetImplemented)
-       map1 map2)
-
-let divide_poly_mono : polynomial -> monomial -> polynomial =
- fun (Sum monos) m ->
-  Sum
-    (MMap.fold
-       (fun m' f -> add_mono_to_poly (divide_monos m' m) f)
-       monos MMap.empty)
-
 let divide_polys : polynomial -> polynomial -> polynomial =
- fun poly1 (Sum monos2) ->
-  if MMap.cardinal monos2 = 1 then
-    let m, c = MMap.choose monos2 in
-    divide_poly_mono poly1 m |> mult_poly_const (Q.inv c)
-  else raise NotYetImplemented
+  let divide_monos : monomial -> monomial -> monomial =
+   fun (Prod map1) (Prod map2) ->
+    Prod
+      (AMap.merge
+         (fun _x o1 o2 ->
+           match (o1, o2) with
+           | _, None -> o1
+           | None, Some 0 -> None
+           | None, Some _ -> raise NotYetImplemented
+           | Some p1, Some p2 when p1 > p2 -> Some (p2 - p1)
+           | Some p1, Some p2 when p1 = p2 -> None
+           | Some _, Some _ -> raise NotYetImplemented)
+         map1 map2)
+  in
+  let divide_poly_mono : polynomial -> monomial -> polynomial =
+   fun (Sum monos) m ->
+    Sum
+      (MMap.fold
+         (fun m' f -> add_mono_to_poly (divide_monos m' m) f)
+         monos MMap.empty)
+  in
+  fun poly1 (Sum monos2) ->
+    if MMap.cardinal monos2 = 1 then
+      let m, c = MMap.choose monos2 in
+      divide_poly_mono poly1 m |> mult_poly_const (Q.inv c)
+    else raise NotYetImplemented
 
 let ctnts_and : ctnts -> ctnts -> ctnts =
  fun c1 c2 ->
@@ -294,18 +272,6 @@ let ctnts_and : ctnts -> ctnts -> ctnts =
   | Conjunction ctnts1, Conjunction ctnts2 -> (
       try Conjunction (PMap.union sign_and ctnts1 ctnts2)
       with ConjunctionBottomInterrupt -> Bottom)
-
-let cross_num (Disjunction li1) (Disjunction li2) f =
-  let on_pair (ctnts1, e1) (ctnts2, e2) = (ctnts_and ctnts1 ctnts2, f e1 e2) in
-  Disjunction (ASTUtils.list_cross on_pair li1 li2)
-
-let map_num f (Disjunction li1 : ir_expr) : ir_expr =
-  Disjunction (List.map (fun (ctnt, e) -> (ctnt, f e)) li1)
-
-let ir_to_cond sign (Disjunction li2) =
-  List.map
-    (fun (ctnts, p) -> ctnts_and (Conjunction (PMap.singleton p sign)) ctnts)
-    li2
 
 let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
   match ty.desc with
@@ -316,6 +282,22 @@ let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
   | _ -> ty
 
 let rec to_ir env (e : expr) : ir_expr =
+  let always e = Disjunction [ (ctnts_true, e) ] in
+  let poly_of_var s = Sum (MMap.singleton (Prod (AMap.singleton s 1)) Q.one) in
+  let poly_of_z i = Sum (i |> Q.of_bigint |> MMap.singleton mono_one) in
+  let poly_of_val = function
+    | L_Int i -> poly_of_z i
+    | _ -> raise NotYetImplemented
+  in
+  let cross_num (Disjunction li1) (Disjunction li2) f =
+    let on_pair (ctnts1, e1) (ctnts2, e2) =
+      (ctnts_and ctnts1 ctnts2, f e1 e2)
+    in
+    Disjunction (ASTUtils.list_cross on_pair li1 li2)
+  in
+  let map_num f (Disjunction li1 : ir_expr) : ir_expr =
+    Disjunction (List.map (fun (ctnt, e) -> (ctnt, f e)) li1)
+  in
   match e.desc with
   | E_Literal (L_Int i) -> poly_of_z i |> always
   | E_Var s -> (
@@ -373,6 +355,12 @@ let rec to_ir env (e : expr) : ir_expr =
 and to_cond env (e : expr) : ctnts list * ctnts list =
   let ( ||| ) = ( @ ) in
   let ( &&& ) = ASTUtils.list_cross ctnts_and in
+  let ctnts_of_bool b = if b then ctnts_true else Bottom in
+  let ir_to_cond sign (Disjunction li2) =
+    List.map
+      (fun (ctnts, p) -> ctnts_and (Conjunction (PMap.singleton p sign)) ctnts)
+      li2
+  in
   match e.desc with
   | E_Literal (L_Bool b) -> ([ ctnts_of_bool b ], [ ctnts_of_bool (not b) ])
   | E_Binop (BAND, e1, e2) ->
@@ -399,10 +387,8 @@ and to_cond env (e : expr) : ctnts list * ctnts list =
 (* Destructors *)
 (* ----------- *)
 
-let loc = dummy_annotated
 let zero = expr_of_int 0
 let one = expr_of_int 1
-let cannot_happen_expr = zero
 
 let expr_of_z z =
   if Z.equal z Z.one then one
@@ -416,12 +402,6 @@ let expr_of_q q =
   else binop DIV (expr_of_z (Q.num q)) (expr_of_z (Q.den q))
 
 let e_true = L_Bool true |> literal
-let e_var s = var_ s
-
-let e_band e1 e2 =
-  if e1 == e_true then e2 else if e2 == e_true then e1 else binop BAND e1 e2
-
-let e_cond e1 e2 e3 = E_Cond (e1, e2, e3) |> add_pos_from loc
 
 let monomial_to_expr (Prod map) =
   let ( ** ) e1 e2 =
@@ -436,7 +416,7 @@ let monomial_to_expr (Prod map) =
   let ( // ) e z = if Z.equal z Z.one then e else binop DIV e (expr_of_z z) in
   fun c ->
     let start = Q.num c |> expr_of_z in
-    let num = AMap.fold (fun s p e -> e ** (e_var s ^^ p)) map start in
+    let num = AMap.fold (fun s p e -> e ** (var_ s ^^ p)) map start in
     num // Q.den c
 
 let polynomial_to_expr (Sum map) =
@@ -459,12 +439,16 @@ let sign_to_binop = function
   | Negative -> GEQ
   | StrictNegative -> GT
 
-let ctnt_to_expr (Sum p) sign =
-  let c = try MMap.find mono_one p with Not_found -> Q.zero
-  and p = Sum (MMap.remove mono_one p) in
-  binop (sign_to_binop sign) (expr_of_q (Q.neg c)) (polynomial_to_expr p)
-
-let ctnts_to_expr : ctnts -> expr option = function
+let ctnts_to_expr : ctnts -> expr option =
+  let e_band e1 e2 =
+    if e1 == e_true then e2 else if e2 == e_true then e1 else binop BAND e1 e2
+  in
+  let ctnt_to_expr (Sum p) sign =
+    let c = try MMap.find mono_one p with Not_found -> Q.zero
+    and p = Sum (MMap.remove mono_one p) in
+    binop (sign_to_binop sign) (expr_of_q (Q.neg c)) (polynomial_to_expr p)
+  in
+  function
   | Bottom -> None
   | Conjunction map ->
       Some
@@ -476,23 +460,37 @@ let of_ir : ir_expr -> expr = function
       polynomial_to_expr p
   | Disjunction [ (_, _) ] -> assert false
   | Disjunction map ->
-      let map = List.rev map in
+      let cannot_happen_expr = zero in
+      let e_cond e1 e2 e3 =
+        E_Cond (e1, e2, e3) |> add_pos_from dummy_annotated
+      in
       List.fold_left
         (fun e (ctnts, p) ->
           match ctnts_to_expr ctnts with
           | None -> e
           | Some cond -> e_cond cond (polynomial_to_expr p) e)
-        cannot_happen_expr map
+        cannot_happen_expr (List.rev map)
 
-let reduce_mono (Prod _) factor =
-  if Q.equal factor Q.zero then None else Some factor
-
-let reduce_poly (Sum ms) = Sum (MMap.filter_map reduce_mono ms)
+let reduce_poly (Sum ms) =
+  let reduce_mono (Prod _) factor =
+    if Q.equal factor Q.zero then None else Some factor
+  in
+  Sum (MMap.filter_map reduce_mono ms)
 
 let poly_get_constant_opt (Sum p) =
   if MMap.is_empty p then Some Q.zero
   else if MMap.cardinal p = 1 then MMap.find_opt mono_one p
   else None
+
+let constant_satisfies c s =
+  let open Q in
+  match s with
+  | Null -> equal c Q.zero
+  | NotNull -> not (equal c Q.zero)
+  | Positive -> geq c Q.zero
+  | StrictPositive -> gt c Q.zero
+  | Negative -> leq c Q.zero
+  | StrictNegative -> lt c Q.zero
 
 let ctnt_is_trivial p s =
   match poly_get_constant_opt p with
@@ -507,13 +505,13 @@ let reduce_ctnts : ctnts -> ctnts = function
       try
         Conjunction
           (PMap.fold
-             (fun p s ->
+             (fun p s acc ->
                let p = reduce_poly p in
-               if ctnt_is_trivial p s then Fun.id
+               if ctnt_is_trivial p s then acc
                else
-                 PMap.update p (function
-                   | None -> Some s
-                   | Some s' -> sign_and p s s'))
+                 PMap.update p
+                   (function None -> Some s | Some s' -> sign_and p s s')
+                   acc)
              ctnts PMap.empty)
       with ConjunctionBottomInterrupt -> Bottom)
 
@@ -530,7 +528,7 @@ let reduce (Disjunction ir) =
            let ctnts = reduce_ctnts ctnts in
            match ctnts with
            | Bottom -> None
-           | Conjunction _ as c -> Some (c, reduce_poly p))
+           | Conjunction _ -> Some (ctnts, reduce_poly p))
     |> fun li ->
       List.fold_right
         (fun (ctnts, p) acc ->
