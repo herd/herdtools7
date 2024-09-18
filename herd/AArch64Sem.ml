@@ -2092,6 +2092,12 @@ module Make
           (read_reg_data sz rs ii >>= tr_input)
           an ii
 
+      (* Neon/SVE/SME instructions *)
+      let (let>*) = M.bind_control_set_data_input_first
+      let (let>=) = M.(>>=)
+      let (and*) = M.(>>|)
+      let (let<>=) = M.bind_data_to_output
+
       (* Utility that performes an `N`-bit load as two independent `N/2`-bit
        * loads. Used by 128-bit Neon LDR.
        *
@@ -2375,9 +2381,6 @@ module Make
         let nelem = predicate_nelem src in
         let psize = predicate_psize src in
         let esize = scalable_esize dst in
-        let (let>*) = M.bind_control_set_data_input_first in
-        let (let>=) = M.(>>=) in
-        let (and*) = (>>|) in
         let>= result =
           let neg_elem idx pred orig cur_val =
             let>= last = get_predicate_last pred psize idx in
@@ -2832,24 +2835,49 @@ module Make
         let ops = List.mapi op rlist in
         List.fold_right (>>::) ops (M.unitT [[()]])
 
+      (** branch on whether [p]'s value [pred] has any active elements,
+          add [iico_causality_ctrl] to [mtrue] or [mfalse] *)
+      let any_active p pred psize nelem ii mtrue mfalse =
+        let>= any = get_predicate_any pred psize nelem in
+        let>* () =
+          let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
+          commit_pred_txt (Some cond) ii
+        in
+        M.choiceT any mtrue mfalse
+
+      (** branch on whether [idx] has past the last active predicate,
+          add [iico_causality_ctrl] to [mtrue] or [mfalse] *)
+      let last_or_no_action p pred psize idx ii mtrue mfalse =
+        let>= last = get_predicate_last pred psize idx in
+        let>* () =
+          let cond = Printf.sprintf "ActiveElem(%s, %d)" (A.pp_reg p) idx in
+          commit_pred_txt (Some cond) ii
+        in
+        M.choiceT
+          last
+          mtrue
+          (let>= () = M.mk_singleton_es Act.NoAction ii in
+           mfalse)
+
+      (** perform [ops] in parallel and fold right on results *)
+      let para_fold_right mbind munit ops =
+        let final results =
+          List.fold_right
+            (fun v macc -> macc >>= mbind v)
+            results munit
+        in
+        M.data_output_union
+          (List.fold_right ( >>:: ) ops (M.unitT []))
+          final
+
       let load_predicated_elem_or_zero_m sz p ma rlist ii =
         let r = List.hd rlist in
         let nelem = scalable_nelem r in
         let psize = predicate_psize r in
         let esize = scalable_esize r in
         let nregs = List.length rlist in
-        let (let>=) = M.(>>=) in
-        let (let<>=) = M.bind_data_to_output in
-        let (let>*) = M.bind_control_set_data_input_first in
         let>= pred = read_reg_predicate false p ii in
-        let<>= base =
-          let>= any = get_predicate_any pred psize nelem in
-          let>* () =
-            let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
-            commit_pred_txt (Some cond) ii
-          in
-          M.choiceT any ma (M.unitT M.A.V.zero)
-        in
+        let<>= base = any_active p pred psize nelem ii ma mzero in
         let ops i r =
           let op idx =
             let load =
@@ -2859,31 +2887,11 @@ module Make
               let>= v = promote v in
               M.op1 (Op.LeftShift (idx * esize)) v
             in
-            let>= last = get_predicate_last pred psize idx in
-            let>* () =
-              let cond = Printf.sprintf "ActiveElem(%s, %d)" (A.pp_reg p) idx in
-              commit_pred_txt (Some cond) ii
-            in
-            M.choiceT
-              last
-              load
-              (let>= () = M.mk_singleton_es Act.NoAction ii in
-               mzero)
+            last_or_no_action p pred psize idx ii load mzero
           in
           let ops = List.map op (Misc.interval 0 nelem) in
-          let final vs =
-            let>= result =
-              List.fold_right
-                (fun v macc ->
-                  let>= acc = macc in
-                  M.op Op.Or v acc)
-                vs mzero
-            in
-            write_reg_scalable r result ii
-          in
-          M.data_output_union
-            (List.fold_right ( >>:: ) ops (M.unitT []))
-            final
+          let>= result = para_fold_right (M.op Op.Or) mzero ops in
+          write_reg_scalable r result ii
         in
         let ops = List.mapi ops rlist in
         List.fold_right ( >>:: ) ops (M.unitT [()])
@@ -2927,19 +2935,9 @@ module Make
         let psize = predicate_psize r in
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
-        let (let>=) = M.(>>=) in
-        let (let<>=) = M.bind_data_to_output in
-        let (let>*) = M.bind_control_set_data_input_first in
         let>= pred = read_reg_predicate false p ii in
         let<>= (base, offsets) =
-          let>= any = get_predicate_any pred psize nelem in
-          let>* () =
-            let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
-            commit_pred_txt (Some cond) ii
-          in
-          M.choiceT any
-            (ma >>| mo)
-            (M.unitT M.A.V.(zero, zero))
+          any_active p pred psize nelem ii (ma >>| mo) (M.unitT M.A.V.(zero, zero))
         in
         let op idx =
           let load =
@@ -2951,47 +2949,23 @@ module Make
             let>= v = promote v in
             M.op1 (Op.LeftShift (idx * esize)) v
           in
-          let>= last = get_predicate_last pred psize idx in
-          let>* () =
-            let cond = Printf.sprintf "ActiveElem(%s, %d)" (A.pp_reg p) idx in
-            commit_pred_txt (Some cond) ii
-          in
-          M.choiceT
-            last
-            load
-            (let>= () = M.mk_singleton_es Act.NoAction ii in
-             mzero)
+          last_or_no_action p pred psize idx ii load mzero
         in
         let ops = List.map op (Misc.interval 0 nelem) in
-        let final vs =
-          let>= result =
-            List.fold_right
-              (fun v macc ->
-                let>= acc = macc in
-                M.op Op.Or v acc)
-              vs mzero
-          in
-          write_reg_scalable r result ii
-        in
-        M.data_output_union (List.fold_right ( >>:: ) ops (M.unitT [])) final
+        let>= result = para_fold_right (M.op Op.Or) mzero ops in
+        write_reg_scalable r result ii
 
       let store_scatter_predicated_elem_or_merge sz p ma mo rs e k ii =
         let r = List.hd rs in
         let psize = predicate_psize r in
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
-        let (let>=) = M.(>>=) in
-        let (let<>=) = M.bind_data_to_output in
-        let (let>*) = M.bind_control_set_data_input_first in
         let>= pred = read_reg_predicate false p ii in
         let<>= ((base,offsets),v) =
-          let>= any = get_predicate_any pred psize nelem in
-          let>* () =
-            let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
-            commit_pred_txt (Some cond) ii in
-          M.choiceT any
+          any_active p pred psize nelem ii
             (ma >>| mo >>| read_reg_scalable true r ii)
-            (M.unitT ((M.A.V.zero, M.A.V.zero), M.A.V.zero)) in
+            (M.unitT ((M.A.V.zero, M.A.V.zero), M.A.V.zero))
+        in
         let op idx =
           let store =
             let>= lane = scalable_getlane offsets idx esize in
@@ -3001,13 +2975,10 @@ module Make
             let>= v = scalable_getlane v idx esize in
             let>= v = demote v in
             write_mem sz aexp Access.VIR addr v ii in
-          let>= last = get_predicate_last pred psize idx in
-          let>* () =
-            let cond = Printf.sprintf "ActiveElem(%s, %d)" (A.pp_reg p) idx in
-            commit_pred_txt (Some cond) ii in
-          M.choiceT last store (M.mk_singleton_es (Act.NoAction) ii) in
+          last_or_no_action r pred psize idx ii store (M.unitT ())
+        in
         let ops = List.map op (Misc.interval 0 nelem) in
-        List.fold_right (M.seq_mem_list) ops (M.unitT [()])
+        List.fold_right M.seq_mem_list ops (M.unitT [()])
 
       let load_predicated_slice sz r ri k p ma ii =
         let dst,tile,dir,esize = match r with
