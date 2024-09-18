@@ -73,10 +73,9 @@ type sign =
 type ctnts = Conjunction of sign PMap.t | Bottom
 
 (** Case disjunctions. *)
-type 'a disjunction = Disjunction of 'a list
-
-type ir_expr = (ctnts * polynomial) disjunction
-(** Constrained polynomials.
+type ir_expr =
+  | Disjunction of (ctnts * polynomial) list
+      (** Constrained polynomials.
 
       This is a branched tree of polynomials.
   *)
@@ -296,8 +295,6 @@ let ctnts_and : ctnts -> ctnts -> ctnts =
       try Conjunction (PMap.union sign_and ctnts1 ctnts2)
       with ConjunctionBottomInterrupt -> Bottom)
 
-let disjunction_or (Disjunction li1) (Disjunction li2) = Disjunction (li1 @ li2)
-
 let cross_num (Disjunction li1) (Disjunction li2) f =
   let on_pair (ctnts1, e1) (ctnts2, e2) = (ctnts_and ctnts1 ctnts2, f e1 e2) in
   Disjunction (ASTUtils.list_cross on_pair li1 li2)
@@ -305,14 +302,10 @@ let cross_num (Disjunction li1) (Disjunction li2) f =
 let map_num f (Disjunction li1 : ir_expr) : ir_expr =
   Disjunction (List.map (fun (ctnt, e) -> (ctnt, f e)) li1)
 
-let disjunction_cross f (Disjunction li1) (Disjunction li2) =
-  Disjunction (ASTUtils.list_cross f li1 li2)
-
 let ir_to_cond sign (Disjunction li2) =
-  Disjunction
-    (List.map
-       (fun (ctnts, p) -> ctnts_and (Conjunction (PMap.singleton p sign)) ctnts)
-       li2)
+  List.map
+    (fun (ctnts, p) -> ctnts_and (Conjunction (PMap.singleton p sign)) ctnts)
+    li2
 
 let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
   match ty.desc with
@@ -367,7 +360,7 @@ let rec to_ir env (e : expr) : ir_expr =
       Operations.binop_values e Error.Static op l1 l2 |> poly_of_val |> always
   | E_Unop (NEG, e0) -> e0 |> to_ir env |> map_num poly_neg
   | E_Cond (cond, e1, e2) ->
-      let Disjunction ctnts, Disjunction nctnts = to_cond env cond
+      let ctnts, nctnts = to_cond env cond
       and (Disjunction ir1) = to_ir env e1
       and (Disjunction ir2) = to_ir env e2 in
       let restrict ctnts (ctnts', p) = (ctnts_and ctnts ctnts', p) in
@@ -377,12 +370,11 @@ let rec to_ir env (e : expr) : ir_expr =
   | E_ATC (e', _) -> to_ir env e'
   | _ -> raise NotYetImplemented
 
-and to_cond env (e : expr) : ctnts disjunction * ctnts disjunction =
-  let ( ||| ) = disjunction_or in
-  let ( &&& ) = disjunction_cross ctnts_and in
+and to_cond env (e : expr) : ctnts list * ctnts list =
+  let ( ||| ) = ( @ ) in
+  let ( &&& ) = ASTUtils.list_cross ctnts_and in
   match e.desc with
-  | E_Literal (L_Bool b) ->
-      (Disjunction [ ctnts_of_bool b ], Disjunction [ ctnts_of_bool (not b) ])
+  | E_Literal (L_Bool b) -> ([ ctnts_of_bool b ], [ ctnts_of_bool (not b) ])
   | E_Binop (BAND, e1, e2) ->
       let ctnts1, nctnts1 = to_cond env e1
       and ctnts2, nctnts2 = to_cond env e2 in
