@@ -159,37 +159,19 @@ let pp_ir f (Disjunction li) =
 (* ----------------------------------------------------------------------- *)
 (* Constructors *)
 
-let disjunction map = Disjunction map
 let ctnts_true : ctnts = Conjunction PMap.empty
 let ctnts_false : ctnts = Bottom
 let always e = Disjunction [ (ctnts_true, e) ]
 let mono_one = Prod AMap.empty
 let mono_of_var s = Prod (AMap.singleton s 1)
-let poly_zero = Sum MMap.empty
 let poly_of_var s = Sum (MMap.singleton (mono_of_var s) Q.one)
 let poly_of_q i = Sum (MMap.singleton mono_one i)
 let poly_of_z i = Q.of_bigint i |> poly_of_q
-let poly_of_int i = Q.of_int i |> poly_of_q
 let poly_neg (Sum monos) = Sum (MMap.map Q.neg monos)
 
 let poly_of_val = function
   | L_Int i -> poly_of_z i
   | _ -> raise NotYetImplemented
-
-let sign_not = function
-  | NotNull -> Null
-  | Null -> NotNull
-  | Positive -> StrictNegative
-  | Negative -> StrictPositive
-  | StrictPositive -> Negative
-  | StrictNegative -> Positive
-
-let sign_minus = function
-  | (NotNull | Null) as s -> s
-  | Positive -> Negative
-  | Negative -> Positive
-  | StrictPositive -> StrictNegative
-  | StrictNegative -> StrictPositive
 
 exception ConjunctionBottomInterrupt
 
@@ -247,31 +229,6 @@ let constant_satisfies c s =
   | StrictNegative -> lt c zero
 
 let ctnts_of_bool b = if b then ctnts_true else ctnts_false
-
-let ctnts_not = function
-  | Bottom -> ctnts_true
-  | Conjunction ctnts -> (
-      try Conjunction (PMap.map sign_not ctnts)
-      with ConjunctionBottomInterrupt -> Bottom)
-
-let sign_compare = Stdlib.compare
-let mono_compare = MonomialOrdered.compare
-let poly_compare (Sum p1) (Sum p2) = MMap.compare Q.compare p1 p2
-
-let ctnts_compare cs1 cs2 =
-  match (cs1, cs2) with
-  | Bottom, Bottom -> 0
-  | Bottom, _ -> 1
-  | _, Bottom -> -1
-  | Conjunction ctnts1, Conjunction ctnts2 ->
-      PMap.compare sign_compare ctnts1 ctnts2
-
-let ir_compare (Disjunction li1) (Disjunction li2) =
-  ASTUtils.list_compare
-    (fun (cs1, p1) (cs2, p2) ->
-      let n = ctnts_compare cs1 cs2 in
-      if n = 0 then poly_compare p1 p2 else n)
-    li1 li2
 
 let add_mono_to_poly =
   let updater factor = function
@@ -338,12 +295,6 @@ let ctnts_and : ctnts -> ctnts -> ctnts =
   | Conjunction ctnts1, Conjunction ctnts2 -> (
       try Conjunction (PMap.union sign_and ctnts1 ctnts2)
       with ConjunctionBottomInterrupt -> Bottom)
-
-let restrict (Disjunction ctntss1) (Disjunction li2) =
-  Disjunction
-    (ASTUtils.list_cross
-       (fun ctnts1 (ctnts2, e2) -> (ctnts_and ctnts1 ctnts2, e2))
-       ctntss1 li2)
 
 let disjunction_or (Disjunction li1) (Disjunction li2) = Disjunction (li1 @ li2)
 
@@ -473,14 +424,12 @@ let expr_of_q q =
   else binop DIV (expr_of_z (Q.num q)) (expr_of_z (Q.den q))
 
 let e_true = L_Bool true |> literal
-let e_false = L_Bool true |> literal
 let e_var s = var_ s
 
 let e_band e1 e2 =
   if e1 == e_true then e2 else if e2 == e_true then e1 else binop BAND e1 e2
 
 let e_cond e1 e2 e3 = E_Cond (e1, e2, e3) |> add_pos_from loc
-let unop op e = E_Unop (op, e) |> add_pos_from loc
 
 let monomial_to_expr (Prod map) =
   let ( ** ) e1 e2 =
@@ -497,13 +446,6 @@ let monomial_to_expr (Prod map) =
     let start = Q.num c |> expr_of_z in
     let num = AMap.fold (fun s p e -> e ** (e_var s ^^ p)) map start in
     num // Q.den c
-
-let sign_of_q c =
-  match Q.sign c with
-  | 1 -> StrictPositive
-  | 0 -> Null
-  | -1 -> StrictNegative
-  | _ -> assert false
 
 let polynomial_to_expr (Sum map) =
   let add e1 (s, e2) = if s > 0 then binop PLUS e1 e2 else binop MINUS e1 e2 in
@@ -524,8 +466,6 @@ let sign_to_binop = function
   | Positive -> LEQ
   | Negative -> GEQ
   | StrictNegative -> GT
-
-let sign_to_expr sign e = binop (sign_to_binop sign) zero e
 
 let ctnt_to_expr (Sum p) sign =
   let c = try MMap.find mono_one p with Not_found -> Q.zero
@@ -554,16 +494,6 @@ let of_ir : ir_expr -> expr = function
 
 let reduce_mono (Prod _) factor =
   if Q.equal factor Q.zero then None else Some factor
-
-let rec int_exp x = function
-  | 0 -> 1
-  | 1 -> x
-  | 2 -> x * x
-  | 3 -> x * x * x
-  | n ->
-      let r = int_exp x (n / 2) in
-      let r2 = r * r in
-      if n mod 2 == 0 then r2 else r2 * x
 
 let reduce_poly (Sum ms) = Sum (MMap.filter_map reduce_mono ms)
 
@@ -595,39 +525,6 @@ let reduce_ctnts : ctnts -> ctnts = function
              ctnts PMap.empty)
       with ConjunctionBottomInterrupt -> Bottom)
 
-let poly_get_linear (Sum ms) =
-  let ms = MMap.filter (fun _ f -> not (Q.equal f Q.zero)) ms in
-  let n = MMap.cardinal ms in
-  if false && n > 2 then None
-  else
-    let exception NotLinear in
-    let mono_get_linear (Prod m) =
-      match AMap.bindings m |> List.filter (fun (_, p) -> p != 0) with
-      | [] -> None
-      | [ (x, 1) ] -> Some x
-      | [ (_, 0) ] -> assert false
-      | [ (_, _) ] -> raise NotLinear
-      | _ :: _ :: _ -> raise NotLinear
-    in
-    let o, c =
-      try
-        MMap.fold
-          (fun mono factor o ->
-            match (o, mono_get_linear mono) with
-            | (o, c), None -> (o, Q.sub c factor)
-            | (None, c), Some x -> (Some x, c)
-            | (Some x, _), Some x' ->
-                assert (not (String.equal x x'));
-                raise_notrace NotLinear)
-          ms (None, Q.zero)
-      with NotLinear -> (None, Q.zero)
-    in
-    match o with
-    | None ->
-        if not (Q.equal Q.zero c) then raise_notrace ConjunctionBottomInterrupt
-        else None
-    | Some x -> if Z.equal Z.one (Q.den c) then Some (x, Q.num c) else None
-
 let ctnts_get_trivial_opt = function
   | Bottom -> Some false
   | Conjunction li -> (
@@ -655,18 +552,6 @@ let reduce (Disjunction ir) =
 let normalize (env : StaticEnv.env) (e : expr) : expr =
   e |> to_ir env |> reduce |> of_ir |> with_pos_from e
 (* End *)
-
-let free_variables (Disjunction li) =
-  let mono_free (Prod map) = AMap.fold (fun s _ -> ISet.add s) map in
-  let poly_free (Sum map) = MMap.fold (fun m _ -> mono_free m) map in
-  let ctnt_free p _s = poly_free p in
-  let ctnts_free = function
-    | Bottom -> Fun.id
-    | Conjunction map -> PMap.fold ctnt_free map
-  in
-  List.fold_left
-    (fun acc (ctnts, p) -> acc |> poly_free p |> ctnts_free ctnts)
-    ISet.empty li
 
 let equal_mod_branches (Disjunction li1) (Disjunction li2) =
   let to_cond (ctnts1, p1) (ctnts2, p2) =
@@ -710,13 +595,6 @@ let equal_in_env env e1 e2 =
   with NotYetImplemented ->
     let () = if dbg then Format.eprintf "Cannot answer this question yet." in
     false
-
-let statically_free_variables env e =
-  try to_ir env e |> reduce |> free_variables
-  with NotYetImplemented -> ASTUtils.ISet.empty
-
-let bitwidth_statically_equal_in_env env =
-  ASTUtils.bitwidth_equal (equal_in_env env)
 
 let try_normalize env e =
   try normalize env e with Error.ASLException _ | NotYetImplemented -> e
