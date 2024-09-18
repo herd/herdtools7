@@ -565,36 +565,7 @@ let rec int_exp x = function
       let r2 = r * r in
       if n mod 2 == 0 then r2 else r2 * x
 
-type affectation = atom * Z.t * polynomial option
-type affectations = affectation list
-
-let subst_mono (affectations : affectations) (Prod m) factor =
-  let m, factor =
-    List.fold_left
-      (fun (m, f) (a, v, _) ->
-        match AMap.find_opt a m with
-        | None -> (m, f)
-        | Some power -> (AMap.remove a m, Q.mul f (Z.pow v power |> Q.of_bigint)))
-      (m, factor) affectations
-  in
-  (Prod m, factor)
-
-let subst_poly (affectations : affectations) (Sum map as poly) =
-  Sum
-    (MMap.fold
-       (fun mono factor ->
-         let affectations =
-           List.filter
-             (function _, _, Some p -> poly_compare p poly != 0 | _ -> true)
-             affectations
-         in
-         let mono, factor = subst_mono affectations mono factor in
-         if Q.equal Q.zero factor then Fun.id else add_mono_to_poly mono factor)
-       map MMap.empty)
-
-let reduce_poly affectations : polynomial -> polynomial =
- fun (Sum ms) ->
-  Sum (ms |> MMap.filter_map reduce_mono) |> subst_poly affectations
+let reduce_poly (Sum ms) = Sum (MMap.filter_map reduce_mono ms)
 
 let poly_get_constant_opt (Sum p) =
   if MMap.is_empty p then Some Q.zero
@@ -608,14 +579,14 @@ let ctnt_is_trivial p s =
       else raise_notrace ConjunctionBottomInterrupt
   | None -> false
 
-let reduce_ctnts affectations : ctnts -> ctnts = function
+let reduce_ctnts : ctnts -> ctnts = function
   | Bottom -> Bottom
   | Conjunction ctnts -> (
       try
         Conjunction
           (PMap.fold
              (fun p s ->
-               let p = reduce_poly affectations p in
+               let p = reduce_poly p in
                if ctnt_is_trivial p s then Fun.id
                else
                  PMap.update p (function
@@ -657,23 +628,6 @@ let poly_get_linear (Sum ms) =
         else None
     | Some x -> if Z.equal Z.one (Q.den c) then Some (x, Q.num c) else None
 
-let deduce_equations : ctnts -> ctnts * affectations = function
-  | Bottom -> (Bottom, [])
-  | Conjunction map as ctnts -> (
-      try
-        let affectations =
-          PMap.fold
-            (fun p s affectations ->
-              if s != Null then affectations
-              else
-                match poly_get_linear p with
-                | None -> affectations
-                | Some (s, i) -> (s, i, Some p) :: affectations)
-            map []
-        in
-        (reduce_ctnts affectations ctnts, affectations)
-      with ConjunctionBottomInterrupt -> (Bottom, []))
-
 let ctnts_get_trivial_opt = function
   | Bottom -> Some false
   | Conjunction li -> (
@@ -684,10 +638,10 @@ let reduce (Disjunction ir) =
   Disjunction
     ( ir
     |> List.filter_map (fun (ctnts, p) ->
-           let ctnts, affectations = deduce_equations ctnts in
+           let ctnts = reduce_ctnts ctnts in
            match ctnts with
            | Bottom -> None
-           | Conjunction _ as c -> Some (c, reduce_poly affectations p))
+           | Conjunction _ as c -> Some (c, reduce_poly p))
     |> fun li ->
       List.fold_right
         (fun (ctnts, p) acc ->
@@ -721,22 +675,10 @@ let equal_mod_branches (Disjunction li1) (Disjunction li2) =
       Conjunction (PMap.singleton p Null)
     in
     let ctnts = ctnts_and ctnts1 ctnts2 in
-    let ctnts, affectations = deduce_equations ctnts in
-    let affectations = List.map (fun (x, v, _) -> (x, v, None)) affectations in
-    let () =
-      if false then
-        Format.eprintf
-          "@[<hv 2>Equality between@ %a@ and %a @ gave affectations %a@.@]"
-          pp_ctnts_and_poly (ctnts1, p1) pp_ctnts_and_poly (ctnts2, p2)
-          Format.(
-            pp_print_list ~pp_sep:pp_print_space (fun f (x, d, _) ->
-                fprintf f "%s/%a" x Z.pp_print d))
-          affectations
-    in
     match ctnts with
     | Bottom -> Bottom
     | Conjunction _ ->
-        let equality' = reduce_ctnts affectations equality in
+        let equality' = reduce_ctnts equality in
         let () =
           if false then Format.eprintf "@[Gave %a@.@]" pp_ctnts equality'
         in
