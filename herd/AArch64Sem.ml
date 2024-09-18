@@ -2860,7 +2860,7 @@ module Make
            mfalse)
 
       (** perform [ops] in parallel and fold right on results *)
-      let para_fold_right mbind munit ops =
+      let para_fold_right mbind ops munit =
         let final results =
           List.fold_right
             (fun v macc -> macc >>= mbind v)
@@ -2890,7 +2890,7 @@ module Make
             last_or_no_action p pred psize idx ii load mzero
           in
           let ops = List.map op (Misc.interval 0 nelem) in
-          let>= result = para_fold_right (M.op Op.Or) mzero ops in
+          let>= result = para_fold_right (M.op Op.Or) ops mzero in
           write_reg_scalable r result ii
         in
         let ops = List.mapi ops rlist in
@@ -2902,33 +2902,25 @@ module Make
         let psize = predicate_psize r in
         let esize = scalable_esize r in
         let nregs = List.length rlist in
-        read_reg_predicate false p ii >>= fun pred ->
-        get_predicate_any pred psize nelem >>= fun any ->
-        M.choiceT
-          any
-          (ma >>= fun addr ->
-           let op i r =
-             read_reg_scalable true r ii >>= fun v ->
-             let calc_offset idx =  (idx*nregs+i) * MachSize.nbytes sz in
-             let store idx =
-               let offset = calc_offset idx in
-               get_predicate_last pred psize idx >>= fun last ->
-               M.choiceT
-                 last
-                 (M.op1 (Op.AddK offset) addr
-                  >>| (scalable_getlane v idx esize >>= demote)
-                  >>= fun (addr,v) -> write_mem sz aexp Access.VIR addr v ii)
-                 (M.unitT ())
-             in
-             let rec reduce idx op =
-               match idx with
-               | 0 -> store idx >>:: op
-               | _ -> reduce (idx-1) (store idx >>:: op)
-             in
-             reduce (nelem-1) (M.unitT [()]) in
-           let ops = List.mapi op rlist in
-           List.fold_right (>>::) ops (M.unitT [[()]]))
-          (M.unitT [[()]])
+        let>= pred = read_reg_predicate false p ii in
+        let<>= base = any_active p pred psize nelem ii ma mzero in
+        let ops i r =
+          let op idx =
+            let store =
+              let>= v = read_reg_scalable true r ii in 
+              let offset = (idx * nregs + i) * MachSize.nbytes sz in
+              let>= addr = M.op1 (Op.AddK offset) base
+              and* v = scalable_getlane v idx esize >>= demote
+              in
+              write_mem sz aexp Access.VIR addr v ii
+            in
+            last_or_no_action p pred psize idx ii store (M.unitT ())
+          in
+          let ops = List.map op (Misc.interval 0 nelem) in
+          List.fold_right M.seq_mem_list ops (M.unitT [()])
+        in
+        let ops = List.mapi ops rlist in
+        List.fold_right M.seq_mem_list ops (M.unitT [[()]])
 
       let load_gather_predicated_elem_or_zero sz p ma mo rs e k ii =
         let r = List.hd rs in
@@ -2952,7 +2944,7 @@ module Make
           last_or_no_action p pred psize idx ii load mzero
         in
         let ops = List.map op (Misc.interval 0 nelem) in
-        let>= result = para_fold_right (M.op Op.Or) mzero ops in
+        let>= result = para_fold_right (M.op Op.Or) ops mzero in
         write_reg_scalable r result ii
 
       let store_scatter_predicated_elem_or_merge sz p ma mo rs e k ii =
