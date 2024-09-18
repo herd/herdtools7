@@ -2847,17 +2847,15 @@ module Make
 
       (** branch on whether [idx] has past the last active predicate,
           add [iico_causality_ctrl] to [mtrue] or [mfalse] *)
-      let last_or_no_action p pred psize idx ii mtrue mfalse =
+      let is_active_element p pred psize idx ii mtrue mfalse =
         let>= last = get_predicate_last pred psize idx in
         let>* () =
           let cond = Printf.sprintf "ActiveElem(%s, %d)" (A.pp_reg p) idx in
           commit_pred_txt (Some cond) ii
         in
-        M.choiceT
-          last
-          mtrue
-          (let>= () = M.mk_singleton_es Act.NoAction ii in
-           mfalse)
+        M.choiceT last mtrue mfalse
+
+      let no_action = M.mk_singleton_es Act.NoAction
 
       (** perform [ops] in parallel and fold right on results *)
       let para_fold_right mbind ops munit =
@@ -2876,8 +2874,9 @@ module Make
         let psize = predicate_psize r in
         let esize = scalable_esize r in
         let nregs = List.length rlist in
-        let>= pred = read_reg_predicate false p ii in
-        let<>= base = any_active p pred psize nelem ii ma mzero in
+        let>= pred = read_reg_predicate false p ii
+        and* base = ma
+        in
         let ops i r =
           let op idx =
             let load =
@@ -2887,7 +2886,7 @@ module Make
               let>= v = promote v in
               M.op1 (Op.LeftShift (idx * esize)) v
             in
-            last_or_no_action p pred psize idx ii load mzero
+            is_active_element p pred psize idx ii load (no_action ii >>! M.A.V.zero)
           in
           let ops = List.map op (Misc.interval 0 nelem) in
           let>= result = para_fold_right (M.op Op.Or) ops mzero in
@@ -2902,19 +2901,20 @@ module Make
         let psize = predicate_psize r in
         let esize = scalable_esize r in
         let nregs = List.length rlist in
-        let>= pred = read_reg_predicate false p ii in
-        let<>= base = any_active p pred psize nelem ii ma mzero in
+        let>= pred = read_reg_predicate false p ii
+        and* base = ma
+        in
         let ops i r =
           let op idx =
             let store =
-              let>= v = read_reg_scalable true r ii in 
+              let>= v = read_reg_scalable true r ii in
               let offset = (idx * nregs + i) * MachSize.nbytes sz in
               let>= addr = M.op1 (Op.AddK offset) base
               and* v = scalable_getlane v idx esize >>= demote
               in
               write_mem sz aexp Access.VIR addr v ii
             in
-            last_or_no_action p pred psize idx ii store (M.unitT ())
+            is_active_element p pred psize idx ii store (M.unitT ())
           in
           let ops = List.map op (Misc.interval 0 nelem) in
           List.fold_right M.seq_mem_list ops (M.unitT [()])
@@ -2941,7 +2941,7 @@ module Make
             let>= v = promote v in
             M.op1 (Op.LeftShift (idx * esize)) v
           in
-          last_or_no_action p pred psize idx ii load mzero
+          is_active_element p pred psize idx ii load (no_action ii >>! M.A.V.zero)
         in
         let ops = List.map op (Misc.interval 0 nelem) in
         let>= result = para_fold_right (M.op Op.Or) ops mzero in
@@ -2953,7 +2953,7 @@ module Make
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
         let>= pred = read_reg_predicate false p ii in
-        let<>= ((base,offsets),v) =
+        let<>= ((base, offsets), v) =
           any_active p pred psize nelem ii
             (ma >>| mo >>| read_reg_scalable true r ii)
             (M.unitT ((M.A.V.zero, M.A.V.zero), M.A.V.zero))
@@ -2967,7 +2967,7 @@ module Make
             let>= v = scalable_getlane v idx esize in
             let>= v = demote v in
             write_mem sz aexp Access.VIR addr v ii in
-          last_or_no_action r pred psize idx ii store (M.unitT ())
+          is_active_element r pred psize idx ii store (M.unitT ())
         in
         let ops = List.map op (Misc.interval 0 nelem) in
         List.fold_right M.seq_mem_list ops (M.unitT [()])
