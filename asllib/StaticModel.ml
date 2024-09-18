@@ -58,13 +58,7 @@ module PMap = Map.Make (PolynomialOrdered)
 (** Map from polynomials. *)
 
 (** A constraint on a numerical value. *)
-type sign =
-  | Null
-  | StrictPositive
-  | Positive
-  | Negative
-  | StrictNegative
-  | NotNull
+type sign = Null | NotNull
 
 (** A conjunctive logical formulae with polynomials.
 
@@ -119,15 +113,7 @@ let pp_poly f (Sum poly) =
     pp_close_box f ())
 
 let pp_sign f s =
-  let s =
-    match s with
-    | Null -> "= 0"
-    | NotNull -> "!= 0"
-    | StrictPositive -> "> 0"
-    | Positive -> "\u{2265} 0"
-    | Negative -> "\u{2264} 0"
-    | StrictNegative -> "< 0"
-  in
+  let s = match s with Null -> "= 0" | NotNull -> "!= 0" in
   Format.pp_print_string f s
 
 let pp_ctnt f (p, s) =
@@ -166,46 +152,9 @@ exception ConjunctionBottomInterrupt
 
 let sign_and _p s1 s2 =
   match (s1, s2) with
-  | Null, Null
-  | Null, Positive
-  | Positive, Null
-  | Negative, Null
-  | Null, Negative
-  | Negative, Positive
-  | Positive, Negative ->
-      Some Null
-  | StrictPositive, StrictPositive
-  | StrictPositive, Positive
-  | Positive, StrictPositive
-  | Positive, NotNull
-  | NotNull, Positive
-  | StrictPositive, NotNull
-  | NotNull, StrictPositive ->
-      Some StrictPositive
-  | Positive, Positive -> Some Positive
-  | Negative, Negative -> Some Negative
+  | Null, Null -> Some Null
   | NotNull, NotNull -> Some NotNull
-  | StrictNegative, StrictNegative
-  | StrictNegative, Negative
-  | Negative, StrictNegative
-  | Negative, NotNull
-  | NotNull, Negative
-  | NotNull, StrictNegative
-  | StrictNegative, NotNull ->
-      Some StrictNegative
-  | Null, NotNull
-  | NotNull, Null
-  | Negative, StrictPositive
-  | StrictPositive, Negative
-  | StrictNegative, Positive
-  | Positive, StrictNegative
-  | Null, StrictPositive
-  | StrictPositive, Null
-  | Null, StrictNegative
-  | StrictNegative, Null
-  | StrictNegative, StrictPositive
-  | StrictPositive, StrictNegative ->
-      raise_notrace ConjunctionBottomInterrupt
+  | Null, NotNull | NotNull, Null -> raise_notrace ConjunctionBottomInterrupt
 
 let add_mono_to_poly =
   let updater factor = function
@@ -431,13 +380,7 @@ let polynomial_to_expr (Sum map) =
     zero
     (MMap.bindings map |> List.rev)
 
-let sign_to_binop = function
-  | Null -> EQ_OP
-  | NotNull -> NEQ
-  | StrictPositive -> LT
-  | Positive -> LEQ
-  | Negative -> GEQ
-  | StrictNegative -> GT
+let sign_to_binop = function Null -> EQ_OP | NotNull -> NEQ
 
 let ctnts_to_expr : ctnts -> expr option =
   let e_band e1 e2 =
@@ -483,14 +426,8 @@ let poly_get_constant_opt (Sum p) =
   else None
 
 let constant_satisfies c s =
-  let open Q in
-  match s with
-  | Null -> equal c Q.zero
-  | NotNull -> not (equal c Q.zero)
-  | Positive -> geq c Q.zero
-  | StrictPositive -> gt c Q.zero
-  | Negative -> leq c Q.zero
-  | StrictNegative -> lt c Q.zero
+  let eq_zero = Q.equal c Q.zero in
+  match s with Null -> eq_zero | NotNull -> not eq_zero
 
 let ctnt_is_trivial p s =
   match poly_get_constant_opt p with
