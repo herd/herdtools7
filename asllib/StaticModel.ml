@@ -22,7 +22,9 @@ module AMap = Map.Make (AtomOrdered)
       {m 3 \times X^2 } is not unitary, while {m x^2 } is.
 
       For example: {m X^2 + Y^4 } represented by {m X \to 2, Y \to 4 },
-      and {m 1 } is represented by the empty map. *)
+      and {m 1 } is represented by the empty map.
+
+      Invariant: all integer exponents are strictly positive. *)
 type monomial = Prod of int AMap.t  (** Maps each variable to its exponent. *)
 
 module MonomialOrdered = struct
@@ -34,12 +36,6 @@ end
 (** A map from a monomial. *)
 module MMap = struct
   include Map.Make (MonomialOrdered)
-
-  (* Available from 4.11.0 *)
-  let filter_map f m =
-    fold
-      (fun key v r -> match f key v with None -> r | Some v -> add key v r)
-      m empty
 end
 
 (** A polynomial.
@@ -158,7 +154,7 @@ let eq_and _p s1 s2 =
 
 let add_mono_to_poly =
   let updater factor = function
-    | None -> Some factor
+    | None -> if Q.equal factor Q.zero then None else Some factor
     | Some f ->
         let f' = Q.add f factor in
         if Q.equal f' Q.zero then None else Some f'
@@ -167,7 +163,12 @@ let add_mono_to_poly =
 
 let add_polys : polynomial -> polynomial -> polynomial =
  fun (Sum monos1) (Sum monos2) ->
-  Sum (MMap.union (fun _mono c1 c2 -> Some (Q.add c1 c2)) monos1 monos2)
+  Sum
+    (MMap.union
+       (fun _mono c1 c2 ->
+         let coeff = Q.add c1 c2 in
+         if Q.equal coeff Q.zero then None else Some coeff)
+       monos1 monos2)
 
 let mult_polys : polynomial -> polynomial -> polynomial =
   let mult_monos : monomial -> monomial -> monomial =
@@ -413,12 +414,6 @@ let of_ir : ir_expr -> expr = function
           | Some cond -> e_cond cond (polynomial_to_expr p) e)
         cannot_happen_expr (List.rev map)
 
-let reduce_poly (Sum ms) =
-  let reduce_mono (Prod _) factor =
-    if Q.equal factor Q.zero then None else Some factor
-  in
-  Sum (MMap.filter_map reduce_mono ms)
-
 let poly_get_constant_opt (Sum p) =
   if MMap.is_empty p then Some Q.zero
   else if MMap.cardinal p = 1 then MMap.find_opt mono_one p
@@ -440,15 +435,7 @@ let reduce_ctnts : ctnts -> ctnts = function
   | Conjunction ctnts -> (
       try
         Conjunction
-          (PMap.fold
-             (fun p s acc ->
-               let p = reduce_poly p in
-               if ctnt_is_trivial p s then acc
-               else
-                 PMap.update p
-                   (function None -> Some s | Some s' -> eq_and p s s')
-                   acc)
-             ctnts PMap.empty)
+          (PMap.filter (fun poly eq -> not (ctnt_is_trivial poly eq)) ctnts)
       with ConjunctionBottomInterrupt -> Bottom)
 
 let ctnts_get_trivial_opt = function
@@ -462,9 +449,7 @@ let reduce (Disjunction ir) =
     ( ir
     |> List.filter_map (fun (ctnts, p) ->
            let ctnts = reduce_ctnts ctnts in
-           match ctnts with
-           | Bottom -> None
-           | Conjunction _ -> Some (ctnts, reduce_poly p))
+           match ctnts with Bottom -> None | Conjunction _ -> Some (ctnts, p))
     |> fun li ->
       List.fold_right
         (fun (ctnts, p) acc ->
