@@ -196,7 +196,7 @@ let divide_polys : polynomial -> polynomial -> polynomial =
            | _, None -> o1
            | None, Some 0 -> None
            | None, Some _ -> raise NotYetImplemented
-           | Some p1, Some p2 when p1 > p2 -> Some (p2 - p1)
+           | Some p1, Some p2 when p1 > p2 -> Some (p1 - p2)
            | Some p1, Some p2 when p1 = p2 -> None
            | Some _, Some _ -> raise NotYetImplemented)
          map1 map2)
@@ -487,7 +487,7 @@ let equal_mod_branches (Disjunction li1) (Disjunction li2) =
     in
     let ctnts = ctnts_and ctnts1 ctnts2 in
     match ctnts with
-    | Bottom -> Bottom
+    | Bottom -> ctnts_true
     | Conjunction _ ->
         let equality' = reduce_ctnts equality in
         let () =
