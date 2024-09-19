@@ -2874,26 +2874,31 @@ module Make
         let psize = predicate_psize r in
         let esize = scalable_esize r in
         let nregs = List.length rlist in
-        let>= pred = read_reg_predicate false p ii
-        and* base = ma
-        in
-        let ops i r =
-          let op idx =
-            let load =
-              let offset = (idx * nregs + i) * MachSize.nbytes sz in
-              let>= addr = M.op1 (Op.AddK offset) base in
-              let>= v = do_read_mem_ret sz Annot.N aexp Access.VIR addr ii in
-              let>= v = promote v in
-              M.op1 (Op.LeftShift (idx * esize)) v
-            in
-            is_active_element p pred psize idx ii load (no_action ii >>! M.A.V.zero)
+        let>= results =
+          let<>= base = ma
+          and* pred = read_reg_predicate false p ii
           in
-          let ops = List.map op (Misc.interval 0 nelem) in
-          let>= result = para_fold_right (M.op Op.Or) ops mzero in
-          write_reg_scalable r result ii
+          let ops i =
+            let op idx =
+              let load =
+                let offset = (idx * nregs + i) * MachSize.nbytes sz in
+                let>= addr = M.op1 (Op.AddK offset) base in
+                let>= v = do_read_mem_ret sz Annot.N aexp Access.VIR addr ii in
+                let>= v = promote v in
+                M.op1 (Op.LeftShift (idx * esize)) v
+              in
+              is_active_element p pred psize idx ii load (no_action ii >>! M.A.V.zero)
+            in
+            let ops = List.map op (Misc.interval 0 nelem) in
+            para_fold_right (M.op Op.Or) ops mzero
+          in
+          let ops = List.map ops (Misc.interval 0 nregs) in
+          List.fold_right ( >>:: ) ops (M.unitT [])
         in
-        let ops = List.mapi ops rlist in
-        List.fold_right ( >>:: ) ops (M.unitT [()])
+        let f (r, result) macc =
+          write_reg_scalable r result ii >>:: macc
+        in
+        List.fold_right f (List.combine rlist results) (M.unitT [()])
 
       let store_predicated_elem_or_merge_m sz p ma rlist ii =
         let r = List.hd rlist in
