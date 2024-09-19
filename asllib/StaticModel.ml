@@ -145,14 +145,6 @@ let mono_one = Prod AMap.empty
 let poly_neg (Sum monos) = Sum (MMap.map Q.neg monos)
 let poly_singleton mono factor = Sum (MMap.singleton mono factor)
 
-exception ConjunctionBottomInterrupt
-
-let eq_and _p s1 s2 =
-  match (s1, s2) with
-  | Zero, Zero -> Some Zero
-  | NonZero, NonZero -> Some NonZero
-  | Zero, NonZero | NonZero, Zero -> raise_notrace ConjunctionBottomInterrupt
-
 let add_polys : polynomial -> polynomial -> polynomial =
  fun (Sum monos1) (Sum monos2) ->
   Sum
@@ -207,12 +199,19 @@ let divide_polys : polynomial -> polynomial -> polynomial =
     | Some (mono, factor) -> divide_poly_mono poly1 mono factor
 
 let ctnts_and : ctnts -> ctnts -> ctnts =
- fun c1 c2 ->
-  match (c1, c2) with
-  | Bottom, _ | _, Bottom -> Bottom
-  | Conjunction ctnts1, Conjunction ctnts2 -> (
-      try Conjunction (PMap.union eq_and ctnts1 ctnts2)
-      with ConjunctionBottomInterrupt -> Bottom)
+  let exception ConjunctionBottomInterrupt in
+  let eq_and _p s1 s2 =
+    match (s1, s2) with
+    | Zero, Zero -> Some Zero
+    | NonZero, NonZero -> Some NonZero
+    | Zero, NonZero | NonZero, Zero -> raise_notrace ConjunctionBottomInterrupt
+  in
+  fun c1 c2 ->
+    match (c1, c2) with
+    | Bottom, _ | _, Bottom -> Bottom
+    | Conjunction ctnts1, Conjunction ctnts2 -> (
+        try Conjunction (PMap.union eq_and ctnts1 ctnts2)
+        with ConjunctionBottomInterrupt -> Bottom)
 
 let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
   match ty.desc with
@@ -417,26 +416,29 @@ let constant_satisfies c s =
   let eq_zero = Q.equal c Q.zero in
   match s with Zero -> eq_zero | NonZero -> not eq_zero
 
-let ctnt_is_trivial p s =
+let ctnt_is_true p s =
   match poly_get_constant_opt p with
-  | Some c ->
-      if constant_satisfies c s then true
-      else raise_notrace ConjunctionBottomInterrupt
+  | Some c -> constant_satisfies c s
+  | None -> false
+
+let ctnt_is_false p eq =
+  match poly_get_constant_opt p with
+  | Some c -> not (constant_satisfies c eq)
   | None -> false
 
 let reduce_ctnts : ctnts -> ctnts = function
   | Bottom -> Bottom
-  | Conjunction ctnts -> (
-      try
-        Conjunction
-          (PMap.filter (fun poly eq -> not (ctnt_is_trivial poly eq)) ctnts)
-      with ConjunctionBottomInterrupt -> Bottom)
+  | Conjunction ctnts ->
+      let non_trivial = PMap.filter (fun p s -> not (ctnt_is_true p s)) ctnts in
+      if PMap.exists ctnt_is_false non_trivial then Bottom
+      else Conjunction non_trivial
 
 let ctnts_get_trivial_opt = function
   | Bottom -> Some false
-  | Conjunction li -> (
-      try if PMap.for_all ctnt_is_trivial li then Some true else None
-      with ConjunctionBottomInterrupt -> Some false)
+  | Conjunction li ->
+      if PMap.for_all ctnt_is_true li then Some true
+      else if PMap.exists ctnt_is_false li then Some false
+      else None
 
 let reduce (Disjunction ir) =
   Disjunction
