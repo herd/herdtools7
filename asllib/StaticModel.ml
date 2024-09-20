@@ -2,216 +2,428 @@ open AST
 open ASTUtils
 open Error
 
-exception NotYetImplemented
+exception NotSupported
 
-type atom = identifier
-(** Our basic variables. *)
+(*---------- Expression helpers - consider moving to AST.mli ----------*)
 
-module AtomOrdered = struct
-  type t = atom
+module Expr = struct
+  let truth = literal (L_Bool true)
+  let from_int z = literal (L_Int z)
+  let zero = from_int Z.zero
+  let one = from_int Z.one
 
-  let compare = String.compare
+  let from_rational q =
+    if Z.equal (Q.den q) Z.one then from_int (Q.num q)
+    else binop DIV (from_int (Q.num q)) (from_int (Q.den q))
+
+  let mul e1 e2 =
+    if e1 = one then e2 else if e2 = one then e1 else binop MUL e1 e2
+
+  let pow e = function
+    | 0 -> one
+    | 1 -> e
+    | 2 -> mul e e
+    | p -> binop POW e (expr_of_int p)
+
+  let div e z = if Z.equal z Z.one then e else binop DIV e (from_int z)
+
+  let add e1 (s, e2) =
+    if s = 0 then e1 else if s > 0 then binop PLUS e1 e2 else binop MINUS e1 e2
+
+  let conj e1 e2 =
+    if e1 = truth then e2 else if e2 = truth then e1 else binop BAND e1 e2
+
+  let cond e1 e2 e3 = E_Cond (e1, e2, e3) |> add_pos_from dummy_annotated
 end
 
-module AMap = Map.Make (AtomOrdered)
-(** A map from atoms. *)
+(*---------- Symbolic representation ----------*)
 
-(** A unitary monomial.
+module Monomial : sig
+  type t
 
+  val compare : t -> t -> int
+  val one : t
+  val single_term : string -> t
+  val mult : t -> t -> t
+  val divide : t -> t -> t
+  val to_expr : t -> Q.t -> expr
+  val pp_with_factor : Format.formatter -> t * Q.t -> unit
+end = struct
+  module AtomMap = Map.Make (String)
+  (** A map from identifiers. *)
+
+  type t = int AtomMap.t
+  (** A unitary monomial.
       They are unitary in the sense that they do not have any factors:
       {m 3 \times X^2 } is not unitary, while {m x^2 } is.
 
+      Maps each variable to its exponent.
       For example: {m X^2 + Y^4 } represented by {m X \to 2, Y \to 4 },
       and {m 1 } is represented by the empty map.
 
       Invariant: all integer exponents are strictly positive. *)
-type monomial = Prod of int AMap.t  (** Maps each variable to its exponent. *)
 
-module MonomialOrdered = struct
-  type t = monomial
+  let compare = AtomMap.compare Int.compare
+  let one = AtomMap.empty
+  let single_term atom = AtomMap.singleton atom 1
 
-  let compare (Prod ms1) (Prod ms2) = AMap.compare Int.compare ms1 ms2
+  let mult mono1 mono2 =
+    AtomMap.union
+      (fun _ p1 p2 ->
+        assert (p1 > 0 && p2 > 0);
+        Some (p1 + p2))
+      mono1 mono2
+
+  let divide mono1 mono2 =
+    let divide_unitary a1 a2 =
+      match (a1, a2) with
+      | _, None -> a1
+      | Some p1, Some p2 when p1 > p2 -> Some (p1 - p2) (* not currently used *)
+      | Some p1, Some p2 when p1 = p2 -> None
+      | _ -> raise NotSupported
+    in
+    AtomMap.merge (fun _ -> divide_unitary) mono1 mono2
+
+  let to_expr monos factor =
+    let start = Expr.from_int (Q.num factor) in
+    let numerator =
+      AtomMap.fold
+        (fun atom exponent acc -> Expr.mul acc (Expr.pow (var_ atom) exponent))
+        monos start
+    in
+    Expr.div numerator (Q.den factor)
+
+  let pp_with_factor f (monos, factor) =
+    let open Format in
+    if AtomMap.is_empty monos then Q.pp_print f factor
+    else (
+      pp_open_hbox f ();
+      let pp_sep f () = fprintf f "@ \u{d7} " in
+      if Q.equal factor Q.one then ()
+      else (
+        Q.pp_print f factor;
+        pp_sep f ());
+      PP.pp_print_seq ~pp_sep
+        (fun f (x, p) ->
+          pp_print_string f x;
+          match p with
+          | 1 -> ()
+          | 2 -> pp_print_string f "\u{b2}"
+          | _ -> fprintf f "^%d" p)
+        f (AtomMap.to_seq monos);
+      pp_close_box f ())
 end
 
-(** A map from a monomial. *)
-module MMap = struct
-  include Map.Make (MonomialOrdered)
-end
+module Polynomial : sig
+  type t
 
-(** A polynomial.
+  val compare : t -> t -> int
+  val single_term : Monomial.t -> Q.t -> t
+  val to_mono : t -> (Monomial.t * Q.t) option
+  val scale : Q.t -> t -> t
+  val neg : t -> t
+  val add : t -> t -> t
+  val mult : t -> t -> t
+  val divide_by_term : t -> Q.t -> Monomial.t -> t
+  val extract_constant_term : t -> Q.t * t
+  val is_constant : t -> Q.t option
+  val to_expr : t -> expr
+  val pp : Format.formatter -> t -> unit
+end = struct
+  module MonomialMap = Map.Make (Monomial)
+  (** A map from a monomial. *)
 
+  type t = Q.t MonomialMap.t
+  (** A polynomial.
+      Maps each monomial to its factor.
       For example, {m X^2 - X + 4 } is represented by
       {m X^2 \to 1, X \to -1, 1 \to 4 } *)
-type polynomial = Sum of Q.t MMap.t  (** Maps each monomial to its factor. *)
 
-module PolynomialOrdered = struct
-  type t = polynomial
+  let compare = MonomialMap.compare Q.compare
 
-  let compare (Sum p1) (Sum p2) = MMap.compare Q.compare p1 p2
+  let single_term mono factor =
+    if Q.equal factor Q.zero then MonomialMap.empty
+    else MonomialMap.singleton mono factor
+
+  let to_mono poly =
+    if MonomialMap.cardinal poly = 1 then Some (MonomialMap.choose poly)
+    else None
+
+  let add poly1 poly2 =
+    MonomialMap.union
+      (fun _ c1 c2 ->
+        let coeff = Q.add c1 c2 in
+        if Q.equal coeff Q.zero then None else Some coeff)
+      poly1 poly2
+
+  let scale factor poly =
+    assert (factor <> Q.zero);
+    MonomialMap.map (Q.mul factor) poly
+
+  let termwise f poly =
+    MonomialMap.fold
+      (fun mono factor -> add (f factor mono))
+      poly MonomialMap.empty
+
+  let mult_mono poly factor mono =
+    termwise
+      (fun f m -> single_term (Monomial.mult m mono) (Q.mul f factor))
+      poly
+
+  let neg poly = MonomialMap.map Q.neg poly
+  let mult poly1 poly2 = termwise (mult_mono poly1) poly2
+
+  let divide_by_term poly factor mono =
+    termwise
+      (fun f m -> single_term (Monomial.divide m mono) (Q.div f factor))
+      poly
+
+  let extract_constant_term poly =
+    let c = try MonomialMap.find Monomial.one poly with Not_found -> Q.zero
+    and p = MonomialMap.remove Monomial.one poly in
+    (c, p)
+
+  let is_constant poly =
+    if MonomialMap.is_empty poly then Some Q.zero
+    else if MonomialMap.cardinal poly = 1 then
+      MonomialMap.find_opt Monomial.one poly
+    else None
+
+  let to_expr poly =
+    List.fold_left
+      (fun acc (m, c) ->
+        if acc = Expr.zero then Monomial.to_expr m c
+        else
+          let e_m = Monomial.to_expr m (Q.abs c) in
+          Expr.add acc (Q.sign c, e_m))
+      Expr.zero
+      (MonomialMap.bindings poly |> List.rev)
+
+  let pp f poly =
+    let open Format in
+    if MonomialMap.is_empty poly then pp_print_string f "0"
+    else (
+      pp_open_hvbox f 2;
+      let pp_sep f () = fprintf f "@ + " in
+      PP.pp_print_seq ~pp_sep Monomial.pp_with_factor f
+        (MonomialMap.to_seq poly);
+      pp_close_box f ())
 end
 
-module PMap = Map.Make (PolynomialOrdered)
-(** Map from polynomials. *)
+module Conjunction : sig
+  type eq = Zero | NonZero
+  type t
 
-(** A (in)equation for a numerical value. *)
-type eq = Zero | NonZero
+  val empty : t
+  val is_bottom : t -> bool
+  val is_empty : t -> bool
+  val of_bool : bool -> t
+  val single_conjunct : Polynomial.t -> eq -> t
+  val conj : t -> t -> t
+  val to_expr : t -> expr option
+  val is_trivial : t -> bool option
+  val reduce : t -> t
+  val pp : Format.formatter -> t -> unit
+end = struct
+  type eq = Zero | NonZero  (** A (in)equation for a numerical value. *)
 
-(** A conjunctive logical formulae with polynomials.
+  let satisfies_eq q eq =
+    let eq_zero = Q.equal q Q.zero in
+    match eq with Zero -> eq_zero | NonZero -> not eq_zero
 
-      For example, {m X^2 = 0 } is represented with {m X^2 \to Null }.
+  let pp_eq f s =
+    let s = match s with Zero -> "= 0" | NonZero -> "!= 0" in
+    Format.pp_print_string f s
+
+  let eq_to_op = function Zero -> EQ_OP | NonZero -> NEQ
+
+  module PolynomialMap = Map.Make (Polynomial)
+  (** Map from polynomials. *)
+
+  type t = eq PolynomialMap.t option
+  (** A conjunctive logical formulae with polynomials.
+
+      For example, {m X^2 = 0 } is represented with {m X^2 \to Zero }.
   *)
-type ctnts = Conjunction of eq PMap.t | Bottom
 
-(** Case disjunctions. *)
-type ir_expr =
-  | Disjunction of (ctnts * polynomial) list
-      (** Constrained polynomials.
+  let is_bottom = function None -> true | Some _ -> false
 
+  let is_empty = function
+    | None -> false
+    | Some map -> PolynomialMap.is_empty map
+
+  let empty = Some PolynomialMap.empty
+  let of_bool b = if b then empty else None
+  let single_conjunct p eq = Some (PolynomialMap.singleton p eq)
+
+  let conj c1 c2 =
+    let exception BottomInterrupt in
+    let eq_and eq1 eq2 =
+      if eq1 = eq2 then eq1 else raise_notrace BottomInterrupt
+    in
+    match (c1, c2) with
+    | None, _ | _, None -> None
+    | Some cjs1, Some cjs2 -> (
+        try
+          Some
+            (PolynomialMap.union
+               (fun _ eq1 eq2 -> Some (eq_and eq1 eq2))
+               cjs1 cjs2)
+        with BottomInterrupt -> None)
+
+  let to_expr =
+    let one_to_expr poly eq =
+      let c, p = Polynomial.extract_constant_term poly in
+      binop (eq_to_op eq) (Expr.from_rational (Q.neg c)) (Polynomial.to_expr p)
+    in
+    Option.map (fun map ->
+        PolynomialMap.fold
+          (fun p eq e -> Expr.conj (one_to_expr p eq) e)
+          map Expr.truth)
+
+  let is_true p eq =
+    match Polynomial.is_constant p with
+    | Some q -> satisfies_eq q eq
+    | None -> false
+
+  let is_false p eq =
+    match Polynomial.is_constant p with
+    | Some q -> not (satisfies_eq q eq)
+    | None -> false
+
+  let reduce = function
+    | None -> None
+    | Some cjs ->
+        let non_trivial =
+          PolynomialMap.filter (fun p s -> not (is_true p s)) cjs
+        in
+        if PolynomialMap.exists is_false non_trivial then None
+        else Some non_trivial
+
+  let is_trivial = function
+    | None -> Some false
+    | Some cjs ->
+        if PolynomialMap.for_all is_true cjs then Some true
+        else if PolynomialMap.exists is_false cjs then Some false
+        else None
+
+  let pp f =
+    let open Format in
+    let pp_one f (p, s) = fprintf f "@[<h>%a@ %a@]" Polynomial.pp p pp_eq s in
+    function
+    | None -> pp_print_string f "\u{22a5}"
+    | Some m ->
+        if PolynomialMap.is_empty m then pp_print_string f "\u{22a4}"
+        else
+          let pp_sep f () = fprintf f "@ \u{2227} " in
+          fprintf f "@[<hov 2>%a@]"
+            (PP.pp_print_seq ~pp_sep pp_one)
+            (PolynomialMap.to_seq m)
+end
+
+module IR : sig
+  type t
+
+  val of_var : string -> t
+  val of_int : Z.t -> t
+  val combine : t -> t -> t
+
+  val cross_combine :
+    (Polynomial.t -> Polynomial.t -> Polynomial.t) -> t -> t -> t
+
+  val map : (Polynomial.t -> Polynomial.t) -> t -> t
+  val restrict : Conjunction.t list -> t -> t
+  val to_conjuncts : Conjunction.eq -> t -> Conjunction.t list
+  val to_expr : t -> expr
+  val reduce : t -> t
+  val equal_mod_branches : t -> t -> bool
+  val pp : Format.formatter -> t -> unit
+end = struct
+  type t = (Conjunction.t * Polynomial.t) list
+  (** Case disjunctions: constrained polynomials.
       This is a branched tree of polynomials.
   *)
-(* Wanted invariants for (e : ir_expr) :
-   ⋁ {c | (c, d) ∈ e } <=> true                           (I₂)
-   ∀ (cᵢ, eᵢ), (cⱼ, eⱼ) ∈ e, i != j => cⱼ ∩ cⱼ = ∅        (I₃)
-*)
+  (* Wanted invariants for (e : IR.t) :
+     ∀ {c | (c, d) ∈ e } <=> true                           (I₂)
+     ∀ (cᵢ, eᵢ), (cⱼ, eⱼ) ∈ e, i != j => cⱼ ∩ cⱼ = ∅        (I₃)
+  *)
 
-(* ----------------------------------------------------------------------- *)
-(* Printers *)
+  let always e = [ (Conjunction.of_bool true, e) ]
+  let of_var s = Polynomial.single_term (Monomial.single_term s) Q.one |> always
+  let of_int i = Polynomial.single_term Monomial.one (Q.of_bigint i) |> always
+  let combine = ( @ )
 
-let pp_mono f (Prod mono, factor) =
-  let open Format in
-  let mono = AMap.filter (fun _ p -> p != 0) mono in
-  if AMap.is_empty mono then Q.pp_print f factor
-  else (
-    pp_open_hbox f ();
-    let pp_sep f () = fprintf f "@ \u{d7} " in
-    if Q.equal factor Q.one then ()
-    else (
-      Q.pp_print f factor;
-      pp_sep f ());
-    PP.pp_print_seq ~pp_sep
-      (fun f (x, p) ->
-        pp_print_string f x;
-        match p with
-        | 1 -> ()
-        | 2 -> pp_print_string f "\u{b2}"
-        | _ -> fprintf f "^%d" p)
-      f (AMap.to_seq mono);
-    pp_close_box f ())
+  let cross_combine f =
+    let on_pair (cjs1, e1) (cjs2, e2) = (Conjunction.conj cjs1 cjs2, f e1 e2) in
+    ASTUtils.list_cross on_pair
 
-let pp_poly f (Sum poly) =
-  let open Format in
-  let poly = MMap.filter (fun _ f -> not (Q.equal Q.zero f)) poly in
-  if MMap.is_empty poly then pp_print_string f "0"
-  else (
-    pp_open_hvbox f 2;
-    let pp_sep f () = fprintf f "@ + " in
-    PP.pp_print_seq ~pp_sep pp_mono f (MMap.to_seq poly);
-    pp_close_box f ())
+  let map f = List.map (fun (cj, e) -> (cj, f e))
 
-let pp_eq f s =
-  let s = match s with Zero -> "= 0" | NonZero -> "!= 0" in
-  Format.pp_print_string f s
+  let restrict cjs ir =
+    let restrict_one cjs (cjs', p) = (Conjunction.conj cjs cjs', p) in
+    ASTUtils.list_cross restrict_one cjs ir
 
-let pp_ctnt f (p, s) =
-  let open Format in
-  fprintf f "@[<h>%a@ %a@]" pp_poly p pp_eq s
+  let to_conjuncts eq ir =
+    List.map
+      (fun (cjs, p) -> Conjunction.conj (Conjunction.single_conjunct p eq) cjs)
+      ir
 
-let pp_ctnts f =
-  let open Format in
-  function
-  | Bottom -> pp_print_string f "\u{22a5}"
-  | Conjunction m ->
-      if PMap.is_empty m then pp_print_string f "\u{22a4}"
+  let to_expr = function
+    | [] -> Expr.zero
+    | [ (cjs, p) ] ->
+        assert (Conjunction.is_empty cjs);
+        Polynomial.to_expr p
+    | map ->
+        let cannot_happen_expr = Expr.zero in
+        List.fold_left
+          (fun e (cjs, p) ->
+            match Conjunction.to_expr cjs with
+            | None -> e
+            | Some condition -> Expr.cond condition (Polynomial.to_expr p) e)
+          cannot_happen_expr (List.rev map)
+
+  let reduce ir =
+    ir
+    |> List.filter_map (fun (cjs, poly) ->
+           let cjs = Conjunction.reduce cjs in
+           if Conjunction.is_bottom cjs then None else Some (cjs, poly))
+    |> fun ir ->
+    List.fold_right
+      (fun (cjs, poly) acc ->
+        match Conjunction.is_trivial cjs with
+        | Some true -> [ (Conjunction.empty, poly) ]
+        | Some false -> acc
+        | None -> (cjs, poly) :: acc)
+      ir []
+
+  let equal_mod_branches ir1 ir2 =
+    let to_cond (cjs1, poly1) (cjs2, poly2) =
+      let equality =
+        let poly = Polynomial.add poly1 (Polynomial.neg poly2) in
+        Conjunction.single_conjunct poly Zero
+      in
+      let cjs = Conjunction.conj cjs1 cjs2 in
+      if Conjunction.is_bottom cjs then Conjunction.empty
       else
-        let pp_sep f () = fprintf f "@ \u{2227} " in
-        fprintf f "@[<hov 2>%a@]"
-          (PP.pp_print_seq ~pp_sep pp_ctnt)
-          (PMap.to_seq m)
+        let equality = Conjunction.reduce equality in
+        let () =
+          if false then Format.eprintf "@[Gave %a@.@]" Conjunction.pp equality
+        in
+        equality
+    in
+    ASTUtils.list_cross to_cond ir1 ir2
+    |> List.for_all (fun cjs ->
+           if Conjunction.is_bottom cjs then false else Conjunction.is_empty cjs)
 
-let pp_ctnts_and_poly f (ctnts, p) =
-  Format.fprintf f "@[<2>%a@ -> %a@]" pp_ctnts ctnts pp_poly p
+  let pp f li =
+    let open Format in
+    let pp_one f (cjs, poly) =
+      Format.fprintf f "@[<2>%a@ -> %a@]" Conjunction.pp cjs Polynomial.pp poly
+    in
+    fprintf f "@[<v 2>%a@]" (pp_print_list ~pp_sep:pp_print_space pp_one) li
+end
 
-let pp_ir f (Disjunction li) =
-  let open Format in
-  fprintf f "@[<v 2>%a@]"
-    (pp_print_list ~pp_sep:pp_print_space pp_ctnts_and_poly)
-    li
-
-(* ----------------------------------------------------------------------- *)
-(* Constructors *)
-
-let ctnts_true : ctnts = Conjunction PMap.empty
-let mono_one = Prod AMap.empty
-let poly_neg (Sum monos) = Sum (MMap.map Q.neg monos)
-let poly_singleton mono factor = Sum (MMap.singleton mono factor)
-
-let add_polys : polynomial -> polynomial -> polynomial =
- fun (Sum monos1) (Sum monos2) ->
-  Sum
-    (MMap.union
-       (fun _mono c1 c2 ->
-         let coeff = Q.add c1 c2 in
-         if Q.equal coeff Q.zero then None else Some coeff)
-       monos1 monos2)
-
-let poly_termwise f (Sum monos) =
-  MMap.fold
-    (fun mono factor -> add_polys (f mono factor))
-    monos (Sum MMap.empty)
-
-let mult_polys : polynomial -> polynomial -> polynomial =
-  let mult_monos : monomial -> monomial -> monomial =
-   fun (Prod map1) (Prod map2) ->
-    Prod (AMap.union (fun _ p1 p2 -> Some (p1 + p2)) map1 map2)
-  in
-  let mult_poly_mono poly mono factor =
-    poly_termwise
-      (fun m f -> poly_singleton (mult_monos m mono) (Q.mul f factor))
-      poly
-  in
-  fun poly1 poly2 -> poly_termwise (mult_poly_mono poly1) poly2
-
-let divide_polys : polynomial -> polynomial -> polynomial =
-  let mono_of_poly (Sum monos) =
-    if MMap.cardinal monos <> 1 then None else Some (MMap.choose monos)
-  in
-  let divide_monos : monomial -> monomial -> monomial =
-   fun (Prod map1) (Prod map2) ->
-    Prod
-      (AMap.merge
-         (fun _x o1 o2 ->
-           match (o1, o2) with
-           | _, None -> o1
-           | Some p1, Some p2 when p1 > p2 ->
-               Some (p1 - p2) (* not currently used *)
-           | Some p1, Some p2 when p1 = p2 -> None
-           | _ -> raise NotYetImplemented)
-         map1 map2)
-  in
-  let divide_poly_mono poly mono factor =
-    poly_termwise
-      (fun m f -> poly_singleton (divide_monos m mono) (Q.div f factor))
-      poly
-  in
-  fun poly1 poly2 ->
-    match mono_of_poly poly2 with
-    | None -> raise NotYetImplemented
-    | Some (mono, factor) -> divide_poly_mono poly1 mono factor
-
-let ctnts_and : ctnts -> ctnts -> ctnts =
-  let exception ConjunctionBottomInterrupt in
-  let eq_and _p s1 s2 =
-    match (s1, s2) with
-    | Zero, Zero -> Some Zero
-    | NonZero, NonZero -> Some NonZero
-    | Zero, NonZero | NonZero, Zero -> raise_notrace ConjunctionBottomInterrupt
-  in
-  fun c1 c2 ->
-    match (c1, c2) with
-    | Bottom, _ | _, Bottom -> Bottom
-    | Conjunction ctnts1, Conjunction ctnts2 -> (
-        try Conjunction (PMap.union eq_and ctnts1 ctnts2)
-        with ConjunctionBottomInterrupt -> Bottom)
+(*---------- Converting expressions to symbolic representation ----------*)
 
 let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
   match ty.desc with
@@ -221,33 +433,15 @@ let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
       | None -> fatal_from ty (Error.UndefinedIdentifier x))
   | _ -> ty
 
-let rec to_ir env (e : expr) : ir_expr =
-  let always e = Disjunction [ (ctnts_true, e) ] in
-  let poly_of_var s = poly_singleton (Prod (AMap.singleton s 1)) Q.one in
-  let poly_of_z i = Sum (i |> Q.of_bigint |> MMap.singleton mono_one) in
-  let poly_of_val = function
-    | L_Int i -> poly_of_z i
-    | _ -> raise NotYetImplemented
-  in
-  let cross_num (Disjunction li1) (Disjunction li2) f =
-    let on_pair (ctnts1, e1) (ctnts2, e2) =
-      (ctnts_and ctnts1 ctnts2, f e1 e2)
-    in
-    Disjunction (ASTUtils.list_cross on_pair li1 li2)
-  in
-  let map_num f (Disjunction li1 : ir_expr) : ir_expr =
-    Disjunction (List.map (fun (ctnt, e) -> (ctnt, f e)) li1)
-  in
-  let mult_poly_const : Q.t -> polynomial -> polynomial =
-   fun f2 (Sum monos) -> Sum (MMap.map (fun f1 -> Q.mul f1 f2) monos)
-  in
+let rec to_ir env (e : expr) =
+  let of_lit = function L_Int i -> IR.of_int i | _ -> raise NotSupported in
   match e.desc with
-  | E_Literal (L_Int i) -> poly_of_z i |> always
+  | E_Literal (L_Int i) -> IR.of_int i
   | E_Var s -> (
-      try StaticEnv.lookup_constants env s |> poly_of_val |> always
+      try StaticEnv.lookup_constants env s |> of_lit
       with Not_found -> (
         try StaticEnv.lookup_immutable_expr env s |> to_ir env
-        with Not_found | NotYetImplemented -> (
+        with Not_found | NotSupported -> (
           let t =
             try StaticEnv.type_of env s
             with Not_found -> Error.fatal_from e (UndefinedIdentifier s)
@@ -255,11 +449,11 @@ let rec to_ir env (e : expr) : ir_expr =
           let ty1 = make_anonymous env t in
           match ty1.desc with
           | T_Int (WellConstrained [ Constraint_Exact e ]) -> to_ir env e
-          | T_Int _ -> poly_of_var s |> always
-          | _ -> raise NotYetImplemented)))
+          | T_Int _ -> IR.of_var s
+          | _ -> raise NotSupported)))
   | E_Binop (PLUS, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
-      cross_num ir1 ir2 add_polys
+      IR.cross_combine Polynomial.add ir1 ir2
   | E_Binop (MINUS, e1, e2) ->
       let e2 = E_Unop (NEG, e2) |> ASTUtils.add_pos_from_st e2 in
       E_Binop (PLUS, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
@@ -269,217 +463,67 @@ let rec to_ir env (e : expr) : ir_expr =
       to_ir env (binop DIV (binop MUL e1 e2) e3)
   | E_Binop (MUL, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
-      cross_num ir1 ir2 mult_polys
+      IR.cross_combine Polynomial.mult ir1 ir2
   | E_Binop (DIV, e1, { desc = E_Literal (L_Int i2); _ }) ->
       let ir1 = to_ir env e1 and f2 = Q.(Z.one /// i2) in
-      map_num (mult_poly_const f2) ir1
+      IR.map (Polynomial.scale f2) ir1
   | E_Binop (DIV, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
-      cross_num ir1 ir2 divide_polys
+      IR.cross_combine
+        (fun poly1 poly2 ->
+          match Polynomial.to_mono poly2 with
+          | Some (mono, factor) -> Polynomial.divide_by_term poly1 factor mono
+          | None -> raise NotSupported)
+        ir1 ir2
   | E_Binop (SHL, e1, { desc = E_Literal (L_Int i2); _ }) when Z.leq Z.zero i2
     ->
       let ir1 = to_ir env e1
       and f2 = Z.to_int i2 |> Z.shift_left Z.one |> Q.of_bigint in
-      map_num (mult_poly_const f2) ir1
+      IR.map (Polynomial.scale f2) ir1
   | E_Binop (op, { desc = E_Literal l1; _ }, { desc = E_Literal l2; _ }) ->
-      Operations.binop_values e Error.Static op l1 l2 |> poly_of_val |> always
-  | E_Unop (NEG, e0) -> e0 |> to_ir env |> map_num poly_neg
+      Operations.binop_values e Error.Static op l1 l2 |> of_lit
+  | E_Unop (NEG, e0) -> IR.map Polynomial.neg (to_ir env e0)
   | E_Cond (cond, e1, e2) ->
-      let ctnts, nctnts = to_cond env cond
-      and (Disjunction ir1) = to_ir env e1
-      and (Disjunction ir2) = to_ir env e2 in
-      let restrict ctnts (ctnts', p) = (ctnts_and ctnts ctnts', p) in
-      let ir1' = ASTUtils.list_cross restrict ctnts ir1
-      and ir2' = ASTUtils.list_cross restrict nctnts ir2 in
-      Disjunction (ir1' @ ir2')
+      let cjs, neg_cjs = to_cond env cond
+      and ir1 = to_ir env e1
+      and ir2 = to_ir env e2 in
+      let ir1' = IR.restrict cjs ir1 and ir2' = IR.restrict neg_cjs ir2 in
+      IR.combine ir1' ir2'
   | E_ATC (e', _) -> to_ir env e'
-  | _ -> raise NotYetImplemented
+  | _ -> raise NotSupported
 
-and to_cond env (e : expr) : ctnts list * ctnts list =
-  let ( ||| ) = ( @ ) in
-  let ( &&& ) = ASTUtils.list_cross ctnts_and in
-  let ctnts_of_bool b = if b then ctnts_true else Bottom in
-  let ir_to_cond eq (Disjunction li2) =
-    List.map
-      (fun (ctnts, p) -> ctnts_and (Conjunction (PMap.singleton p eq)) ctnts)
-      li2
-  in
+and to_cond env (e : expr) : Conjunction.t list * Conjunction.t list =
+  let ( ||| ) = ( @ ) and ( &&& ) = ASTUtils.list_cross Conjunction.conj in
   match e.desc with
-  | E_Literal (L_Bool b) -> ([ ctnts_of_bool b ], [ ctnts_of_bool (not b) ])
+  | E_Literal (L_Bool b) ->
+      ([ Conjunction.of_bool b ], [ Conjunction.of_bool (not b) ])
   | E_Binop (BAND, e1, e2) ->
-      let ctnts1, nctnts1 = to_cond env e1
-      and ctnts2, nctnts2 = to_cond env e2 in
-      (ctnts1 &&& ctnts2, nctnts1 ||| nctnts2)
+      let cjs1, neg_cjs1 = to_cond env e1 and cjs2, neg_cjs2 = to_cond env e2 in
+      (cjs1 &&& cjs2, neg_cjs1 ||| neg_cjs2)
   | E_Binop (BOR, e1, e2) ->
-      let ctnts1, nctnts1 = to_cond env e1
-      and ctnts2, nctnts2 = to_cond env e2 in
-      (ctnts1 ||| ctnts2, nctnts1 &&& nctnts2)
+      let cjs1, neg_cjs1 = to_cond env e1 and cjs2, neg_cjs2 = to_cond env e2 in
+      (cjs1 ||| cjs2, neg_cjs1 &&& neg_cjs2)
   | E_Binop (EQ_OP, e1, e2) ->
       let e' = E_Binop (MINUS, e1, e2) |> ASTUtils.add_pos_from_st e in
       let ir = to_ir env e' in
-      (ir_to_cond Zero ir, ir_to_cond NonZero ir)
+      (IR.to_conjuncts Zero ir, IR.to_conjuncts NonZero ir)
   | E_Cond (cond, e1, e2) ->
-      let ctnts_cond, nctnts_cond = to_cond env cond
-      and ctnts1, nctnts1 = to_cond env e1
-      and ctnts2, nctnts2 = to_cond env e2 in
-      ( ctnts_cond &&& ctnts1 ||| (nctnts_cond &&& ctnts2),
-        nctnts_cond ||| nctnts1 &&& (ctnts_cond ||| nctnts2) )
-  | _ -> raise NotYetImplemented
+      let cjs_cond, neg_cjs_cond = to_cond env cond
+      and cjs1, neg_cjs1 = to_cond env e1
+      and cjs2, neg_cjs2 = to_cond env e2 in
+      ( cjs_cond &&& cjs1 ||| (neg_cjs_cond &&& cjs2),
+        neg_cjs_cond ||| neg_cjs1 &&& (cjs_cond ||| neg_cjs2) )
+  | _ -> raise NotSupported
 
-(* ----------------------------------------------------------------------- *)
-(* Destructors *)
-(* ----------- *)
-
-let zero = expr_of_int 0
-let one = expr_of_int 1
-
-let expr_of_z z =
-  if Z.equal z Z.one then one
-  else if Z.equal z Z.zero then zero
-  else literal (L_Int z)
-
-let expr_of_q q =
-  if Q.equal q Q.one then one
-  else if Q.equal q Q.zero then zero
-  else if Z.equal (Q.den q) Z.one then expr_of_z (Q.num q)
-  else binop DIV (expr_of_z (Q.num q)) (expr_of_z (Q.den q))
-
-let e_true = L_Bool true |> literal
-
-let monomial_to_expr (Prod map) =
-  let ( ** ) e1 e2 =
-    if e1 == one then e2 else if e2 == one then e1 else binop MUL e1 e2
-  in
-  let ( ^^ ) e = function
-    | 0 -> one
-    | 1 -> e
-    | 2 -> e ** e
-    | p -> binop POW e (expr_of_int p)
-  in
-  let ( // ) e z = if Z.equal z Z.one then e else binop DIV e (expr_of_z z) in
-  fun c ->
-    let start = Q.num c |> expr_of_z in
-    let num = AMap.fold (fun s p e -> e ** (var_ s ^^ p)) map start in
-    num // Q.den c
-
-let polynomial_to_expr (Sum map) =
-  let add e1 (s, e2) = if s > 0 then binop PLUS e1 e2 else binop MINUS e1 e2 in
-  List.fold_left
-    (fun e (m, c) ->
-      if e == zero then monomial_to_expr m c
-      else if Q.sign c = 0 then e
-      else
-        let e_m = monomial_to_expr m (Q.abs c) in
-        add e (Q.sign c, e_m))
-    zero
-    (MMap.bindings map |> List.rev)
-
-let eq_to_binop = function Zero -> EQ_OP | NonZero -> NEQ
-
-let ctnts_to_expr : ctnts -> expr option =
-  let e_band e1 e2 =
-    if e1 == e_true then e2 else if e2 == e_true then e1 else binop BAND e1 e2
-  in
-  let ctnt_to_expr (Sum p) eq =
-    let c = try MMap.find mono_one p with Not_found -> Q.zero
-    and p = Sum (MMap.remove mono_one p) in
-    binop (eq_to_binop eq) (expr_of_q (Q.neg c)) (polynomial_to_expr p)
-  in
-  function
-  | Bottom -> None
-  | Conjunction map ->
-      Some (PMap.fold (fun p eq e -> e_band (ctnt_to_expr p eq) e) map e_true)
-
-let of_ir : ir_expr -> expr = function
-  | Disjunction [] -> zero
-  | Disjunction [ (Conjunction map, p) ] when PMap.is_empty map ->
-      polynomial_to_expr p
-  | Disjunction [ (_, _) ] -> assert false
-  | Disjunction map ->
-      let cannot_happen_expr = zero in
-      let e_cond e1 e2 e3 =
-        E_Cond (e1, e2, e3) |> add_pos_from dummy_annotated
-      in
-      List.fold_left
-        (fun e (ctnts, p) ->
-          match ctnts_to_expr ctnts with
-          | None -> e
-          | Some cond -> e_cond cond (polynomial_to_expr p) e)
-        cannot_happen_expr (List.rev map)
-
-let poly_get_constant_opt (Sum p) =
-  if MMap.is_empty p then Some Q.zero
-  else if MMap.cardinal p = 1 then MMap.find_opt mono_one p
-  else None
-
-let constant_satisfies c s =
-  let eq_zero = Q.equal c Q.zero in
-  match s with Zero -> eq_zero | NonZero -> not eq_zero
-
-let ctnt_is_true p s =
-  match poly_get_constant_opt p with
-  | Some c -> constant_satisfies c s
-  | None -> false
-
-let ctnt_is_false p eq =
-  match poly_get_constant_opt p with
-  | Some c -> not (constant_satisfies c eq)
-  | None -> false
-
-let reduce_ctnts : ctnts -> ctnts = function
-  | Bottom -> Bottom
-  | Conjunction ctnts ->
-      let non_trivial = PMap.filter (fun p s -> not (ctnt_is_true p s)) ctnts in
-      if PMap.exists ctnt_is_false non_trivial then Bottom
-      else Conjunction non_trivial
-
-let ctnts_get_trivial_opt = function
-  | Bottom -> Some false
-  | Conjunction li ->
-      if PMap.for_all ctnt_is_true li then Some true
-      else if PMap.exists ctnt_is_false li then Some false
-      else None
-
-let reduce (Disjunction ir) =
-  Disjunction
-    ( ir
-    |> List.filter_map (fun (ctnts, p) ->
-           let ctnts = reduce_ctnts ctnts in
-           match ctnts with Bottom -> None | Conjunction _ -> Some (ctnts, p))
-    |> fun li ->
-      List.fold_right
-        (fun (ctnts, p) acc ->
-          match ctnts_get_trivial_opt ctnts with
-          | Some true -> [ (ctnts_true, p) ]
-          | Some false -> acc
-          | None -> (ctnts, p) :: acc)
-        li [] )
+(*---------- Solving in the symbolic representation  ----------*)
 
 (* Begin Normalize *)
-let normalize (env : StaticEnv.env) (e : expr) : expr =
-  e |> to_ir env |> reduce |> of_ir |> with_pos_from e
+let normalize env e =
+  e |> to_ir env |> IR.reduce |> IR.to_expr |> with_pos_from e
 (* End *)
 
-let equal_mod_branches (Disjunction li1) (Disjunction li2) =
-  let to_cond (ctnts1, p1) (ctnts2, p2) =
-    let equality =
-      let p = add_polys p1 (poly_neg p2) in
-      Conjunction (PMap.singleton p Zero)
-    in
-    let ctnts = ctnts_and ctnts1 ctnts2 in
-    match ctnts with
-    | Bottom -> ctnts_true
-    | Conjunction _ ->
-        let equality' = reduce_ctnts equality in
-        let () =
-          if false then Format.eprintf "@[Gave %a@.@]" pp_ctnts equality'
-        in
-        equality'
-  in
-  list_cross to_cond li1 li2
-  |> List.for_all (function
-       | Bottom -> false
-       | Conjunction m -> PMap.is_empty m)
+let try_normalize env e =
+  try normalize env e with Error.ASLException _ | NotSupported -> e
 
 let equal_in_env env e1 e2 =
   let dbg = false in
@@ -489,19 +533,16 @@ let equal_in_env env e1 e2 =
         PP.pp_expr e2
   in
   try
-    let ir1 = to_ir env e1 |> reduce and ir2 = to_ir env e2 |> reduce in
+    let ir1 = to_ir env e1 |> IR.reduce and ir2 = to_ir env e2 |> IR.reduce in
     let () =
       if dbg then
-        Format.eprintf "@[Reducing them to@ %a@ and %a.@]@ " pp_ir ir1 pp_ir ir2
+        Format.eprintf "@[Reducing them to@ %a@ and %a.@]@ " IR.pp ir1 IR.pp ir2
     in
-    let res = equal_mod_branches ir1 ir2 in
+    let res = IR.equal_mod_branches ir1 ir2 in
     let () =
       if dbg then if res then Format.eprintf "YES@." else Format.eprintf "NO@."
     in
     res
-  with NotYetImplemented ->
+  with NotSupported ->
     let () = if dbg then Format.eprintf "Cannot answer this question yet." in
     false
-
-let try_normalize env e =
-  try normalize env e with Error.ASLException _ | NotYetImplemented -> e
