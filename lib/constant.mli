@@ -161,8 +161,13 @@ module type S =  sig
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
+
+  (** numeric zero *)
   val zero : v
+
+  (** numeric one *)
   val one : v
+
   val as_int : v -> int option
   val bit_at : int -> Scalar.t -> Scalar.t
   val pp : bool -> v -> string (* true -> hexa *)

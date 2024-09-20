@@ -17,6 +17,8 @@
 open Uint
 include Uint128
 
+let unique_zero = true
+
 let promote_int64 x = Uint64.of_int64 x |> Uint128.of_uint64
 
 (* Compare is unsigned *)

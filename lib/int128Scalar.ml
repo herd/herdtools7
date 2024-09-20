@@ -16,6 +16,8 @@
 
 include Int128
 
+let unique_zero = true
+
 let printable c = c
 
 let shift_right_arithmetic = Int128.shift_right

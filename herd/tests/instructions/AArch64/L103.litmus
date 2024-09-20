@@ -1,0 +1,16 @@
+AArch64 L103
+(* Test xor'ing symbolic addresses *)
+{
+int z = 1;
+int *p = z;
+int *q = z;
+int x = 2;
+int y = 2;
+0:X0=p; 0:X1=q; 0:X2=x;
+1:X0=p; 1:X1=q; 1:X2=y;
+}
+  P0           |  P1         ;
+LDR X3,[X0]    | LDR X3,[X1] ;
+EOR X4,X3,X3   | STR X2,[X0] ;
+STR X2,[X1,X4] |             ;
+exists 0:X3=y /\ 1:X3=x

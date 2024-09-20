@@ -438,6 +438,8 @@ cata-test:: mte-test
 mte-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-herd-timeout $(TIMEOUT) \
+		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-kinds-path catalogue/aarch64-MTE/tests/kinds.txt \
