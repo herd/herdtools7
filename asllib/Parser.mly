@@ -228,6 +228,13 @@ let plist2(x) == pared(
   ~=x; COMMA; li=separated_nonempty_list(COMMA, x); { x :: li }
 )
 
+(* Produces a list of [x]s, optionally followed by a single [y] that would go
+   in the tail of the list *)
+let nlist_opt_terminated(x, y) :=
+  | ~=x; { [ x ] }
+  | ~=x; ~=y; { [ x; y ] }
+  | ~=x; l=nlist_opt_terminated(x, y); { x :: l }
+
 (* ------------------------------------------------------------------------
 
                              First parsing rules
@@ -417,11 +424,11 @@ let implicit_t_int == annotated ( ~=int_constraints ; <T_Int> )
   ------------------------------------------------------------------------- *)
 
 (* Left-hand-side expressions and helpers *)
-let lexpr ==
+let lexpr :=
   | lexpr_atom
   | annotated (MINUS; { LE_Discard })
   | annotated (
-      ~=pared(nclist(lexpr)); <LE_Destructuring>
+      ~=pared(clist2(lexpr)); <LE_Destructuring>
     )
 
 let lexpr_atom_desc :=
@@ -466,11 +473,13 @@ let pass == { S_Pass }
 let assign(x, y) == ~=x ; EQ ; ~=y ; { S_Assign (x,y,V1) }
 let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
-let alt == annotated (
-  | WHEN; pattern=pattern_list; where=ioption(WHERE; expr); ARROW; stmt=stmt_list;
-      { {pattern; where; stmt } }
-  | OTHERWISE; ARROW; stmt=stmt_list; { { pattern=Pattern_All; where= None; stmt } }
-)
+let case_alt ==
+  WHEN; pattern=pattern_list; where=ioption(WHERE; expr); ARROW; stmt=stmt_list;
+      { { pattern; where; stmt } }
+let case_otherwise ==
+  OTHERWISE; ARROW; stmt=stmt_list; { { pattern=Pattern_All; where=None; stmt } }
+let case_alt_list ==
+  nlist_opt_terminated(annotated(case_alt), annotated(case_otherwise))
 
 let otherwise == OTHERWISE; ARROW; stmt_list
 let otherwise_opt == ioption(otherwise)
@@ -481,7 +490,7 @@ let stmt ==
   annotated (
     | terminated_by(END,
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
-      | CASE; ~=expr; OF; alt=nonempty_list(alt);     <S_Case>
+      | CASE; ~=expr; OF; alt=case_alt_list;          <S_Case>
       | WHILE; ~=expr; ~=loop_limit; DO; ~=stmt_list; <S_While>
       | FOR; index_name=IDENTIFIER; EQ; start_e=expr; dir=direction;
           end_e=expr; limit=loop_limit; DO; body=stmt_list;

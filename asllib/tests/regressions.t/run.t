@@ -231,6 +231,10 @@ Parameterized integers:
 
   $ aslref tuple_items.asl
   $ aslref cases_where.asl
+  $ aslref duplicated-otherwise.asl
+  File duplicated-otherwise.asl, line 7, characters 8 to 12:
+  ASL Error: Cannot parse.
+  [1]
   $ aslref duplicate_expr_record.asl
   File duplicate_expr_record.asl, line 5, characters 12 to 27:
   ASL Typing error: cannot declare already declared element "h".
