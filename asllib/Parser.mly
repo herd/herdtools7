@@ -312,8 +312,7 @@ let make_expr(sub_expr) ==
     | ~=sub_expr; AS; ~=ty;                                       < E_ATC              >
     | ~=sub_expr; AS; ~=implicit_t_int;                           < E_ATC              >
 
-    | ~=sub_expr; IN; ~=pattern_set;                              < E_Pattern            >
-    | e=sub_expr; IN; m=MASK_LIT;                                 { E_Pattern (e, Pattern_Mask m) }
+    | ~=sub_expr; IN; ~=pattern_or_mask;                          < E_Pattern            >
     | UNKNOWN; colon_for_type; ~=ty;                              < E_Unknown            >
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
@@ -352,6 +351,10 @@ let pattern :=
   | ~=MASK_LIT; < Pattern_Mask >
   | ~=plist2(pattern); < Pattern_Tuple >
   | pattern_set
+let pattern_or_mask ==
+  | pattern_set
+  | ~=MASK_LIT; < Pattern_Mask >
+  | b=BITVECTOR_LIT; { Pattern_Mask (Bitvector.mask_of_bitvector b) }
 
 let fields == braced(tclist(typed_identifier))
 let fields_opt == { [] } | fields
