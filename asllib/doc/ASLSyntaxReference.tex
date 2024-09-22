@@ -471,7 +471,6 @@
 \newcommand\eof[0]{\hyperlink{def-eof}{\textsf{eof}}}
 
 \newcommand\anycharacter[1]{$\underbracket{#1}$}
-\newcommand\Char[1]{\underline{#1}}
 \newcommand\SpaceChar[0]{\framebox[1cm]{\color{white}A}}
 \newcommand\Underscore[0]{\anycharacter{\texttt{ \_ }}}
 
@@ -515,7 +514,6 @@
 \newcommand\Terror[0]{\hyperlink{def-terror}{\terminal{T\_ERR}}}
 \newcommand\Twhitespace[0]{\hyperlink{def-twhitespace}{\textsf{WHITE\_SPACE}}}
 \newcommand\LexSpec[0]{\hyperlink{def-lexspec}{\textsf{LexSpec}}}
-%\newcommand\Teof[0]{\verbatimterminal{EOF}{EOF}}
 \newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
 \newcommand\ascii[1]{\textsf{ASCII}\texttt{\{#1\}}}
@@ -538,9 +536,6 @@
 \newcommand\Tstringchar[0]{\hyperlink{def-tstringchar}{\terminal{STRING\_CHAR}}}
 \newcommand\Tstringend[0]{\hyperlink{def-tstringend}{\terminal{STRING\_END}}}
 \newcommand\scanstring[0]{\hyperlink{def-scanstring}{\textfunc{scan\_string}}}
-
-\newcommand\buff[0]{\texttt{buf}}
-\newcommand\name[0]{\texttt{name}}
 
 \newcommand\astversion[1]{#1\texttt{\_ast}}
 
@@ -579,8 +574,6 @@ which is a tree-like data structure. This transformation occurs in three stages:
 \newcommand\Normal[0]{\textsf{Normal}}
 \newcommand\ThrowingConfig[0]{\texttt{\#T}}
 \newcommand\OrAbnormal[0]{\terminateas \ThrowingConfig, \ErrorConfig}
-\newcommand\vg[0]{\texttt{g}}
-\newcommand\env[0]{\texttt{env}}
 \newcommand\parallelcomp[0]{\parallel}
 \newcommand\binoprel[0]{\texttt{binop}}
 \newcommand\unoprel[0]{\texttt{unop}}
@@ -591,15 +584,7 @@ which is a tree-like data structure. This transformation occurs in three stages:
 \newcommand\annotaterel[0]{\textsf{type}}
 \newcommand\typearrow[0]{\xrightarrow{\annotaterel}}
 \newcommand\evalexpr[1]{\texttt{eval\_expr}(#1)}
-\newcommand\vt[0]{\texttt{t}}
-\newcommand\veone[0]{\texttt{e1}}
-\newcommand\vetwo[0]{\texttt{e2}}
-\newcommand\vvone[0]{\texttt{v1}}
-\newcommand\vvtwo[0]{\texttt{v2}}
-\newcommand\vl[0]{\texttt{l}}
-\newcommand\vm[0]{\texttt{m}}
-\newcommand\vmone[0]{\texttt{m1}}
-\newcommand\vmtwo[0]{\texttt{m2}}
+
 \input{ASLFormal.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -628,7 +613,6 @@ In particular, it is an error to use a tab character in ASL specification text (
 \hypertarget{def-regex}{}
 Table~\ref{ta:LexicalRegularExpressions} defines the regular expressions $\RegExp$ used to define
 \emph{lexemes} --- substrings of the ASL specification text that are used to form \emph{tokens}.
-We use the notation \Char{c} for characters such as the apostrophe.
 
 \begin{table}
 \caption{Lexical Regular Expressions \label{ta:LexicalRegularExpressions}}
@@ -637,18 +621,16 @@ We use the notation \Char{c} for characters such as the apostrophe.
 \hline
 \textbf{RegExp} & \textbf{Matches}\\
 \hline
-%\texttt{'c'}              & The character c\\
-%\Char{c}                  & The character c\\
-$\underbracket{\texttt{a\_string}}$  & Any character in \texttt{a\_string}\\
-$\square$            & The space character (decimal 32)\\
-\ascii{a}       & The ASCII with decimal 'a'\\
-\ascii{a-b}     & The ASCII range between decimals 'a' and 'b'\\
-(\texttt{$A$})          & $A$\\
-$A$ $B$                   & $A$ followed by $B$\\
-\texttt{$A$ | $B$}        & A or B\\
-\texttt{$A$ - $B$}        & $A$ but not $B$\\
-$A*$             & Zero or more repetitions of A\\
-$A+$             & One or more repetitions of A\\
+$\underbracket{\texttt{a\_string}}$   & Any character in \texttt{a\_string}\\
+$\square$                             & The space character (decimal 32)\\
+\ascii{a}                             & The ASCII with decimal 'a'\\
+\ascii{a-b}                           & The ASCII range between decimals 'a' and 'b'\\
+(\texttt{$A$})                        & $A$\\
+$A$ $B$                               & $A$ followed by $B$\\
+\texttt{$A$ | $B$}                    & A or B\\
+\texttt{$A$ - $B$}                    & $A$ but not $B$\\
+$A*$                                  & Zero or more repetitions of A\\
+$A+$                                  & One or more repetitions of A\\
 %\texttt{["a\_string"]}    & Any character in \texttt{a\_string}\\
 \texttt{"a\_string"}  & The string \texttt{a\_string} verbatim\\
 \texttt{<}r\texttt{>}     & The lexical regular expression defined for \texttt{<}r\texttt{>}\\
@@ -1049,8 +1031,9 @@ token function.
 \begin{tabular}{ll}
 \textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
 \hline
-(\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+ & $\discard$ \\
+(\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+         & $\discard$ \\
 $\texttt{"/*"}$                       & $\actionstartcomment$ \\
+$\underbracket{\texttt{"}}$           & $\actionstartstring$ \\
 $\underbracket{\texttt{"}}$           & $\actionstartstring$ \\
 $\REintlit$                           & $\actiontoken(\decimaltolit)$ \\
 $\REhexlit$                           & $\actiontoken(\hextolit)$ \\
