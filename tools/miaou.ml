@@ -150,7 +150,7 @@ module Make
       | 1 -> 3
       | n -> n+1
 
-    let pp_evt k = sprintf "E%d" k
+    let pp_evt k = sprintf "E\\textsubscript{%d}" k
 
     (* Pretty print elements for n-ary operators *)
 
@@ -258,7 +258,7 @@ module Make
     let pp_rel_id e1 e2 id =
       Item
         (sprintf
-           "\\expandafter\\MakeUppercase%s"
+           "\\expandafter{\\MakeUppercase%s}"
            (do_pp_rel_id e1 e2 id))
 
     let tr_rel_id e1 e2 loc id = pp_rel_id  e1 e2 (pp_id loc id)
@@ -440,7 +440,7 @@ module Make
       | Item txt ->
          Some
            (Item
-              (sprintf "\\expandafter\\MakeUppercase\\notthecase{%s}" txt))
+              (sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" txt))
       | List _|DiffPair _|IfCond _ ->
          None
 
@@ -669,11 +669,11 @@ module Make
         match ty with
         | Some RLN|None ->
            sprintf
-             "\\expandafter\\MakeUppercase\\%s{an Effect %s}{an Effect %s} if and only if"
+             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}{an Effect %s}} if and only if"
              (pp_id loc id) (pp_evt 1) (pp_evt 2)
         | Some SET ->
            sprintf
-             "\\expandafter\\MakeUppercase\\%s{an Effect %s} if and only if"
+             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}} if and only if"
              (pp_id loc id) (pp_evt 1) in
       let d =
         if O.flatten then
