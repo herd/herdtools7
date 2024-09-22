@@ -561,10 +561,10 @@ An ASL parser accepts an ASL specification and checks whether it is valid with r
 which is defined in~\cite{ASLAbstractSyntaxReference}.
 If the specification is syntactically valid, the parser returns an \emph{abstract syntax tree} (AST, for short),
 which represents the specification as a labelled structured tree. Otherwise, it returns a syntax error.
-When an ASL specification is successfully parsed, we refer to the resulting AST as the \emph{parsed AST}.
+When an ASL specification is successfully parsed, we refer to the resulting AST as the \emph{untyped AST}.
 
-A \emph{type checker} is an implementation of the ASL type system, which accepts a parsed AST and applies the
-rules of the type system to the parsed AST. If it is successful, the specification
+A \emph{type checker} is an implementation of the ASL type system, which accepts an untyped AST and applies the
+rules of the type system to the untyped AST. If it is successful, the specification
 is considered \emph{well-typed} and the result is a pair consisting of
 a \emph{static environment} and a \emph{typed AST}, which are used in defining the ASL semantics~\cite{ASLSemanticsReference}.
 Otherwise, the type checker returns a type error.
@@ -575,7 +575,7 @@ Otherwise, the type checker returns a type error.
   % of all ASL language constructs.
   % Please note that the LRM will be retired in due course. For ease of reviewing, we currently indicate which statement
   % of the LRM the present rules correspond to.
-  \item The Abstract Syntax Reference~\cite{ASLAbstractSyntaxReference} defines the abstract syntax, parsed AST, and typed AST.
+  \item The Abstract Syntax Reference~\cite{ASLAbstractSyntaxReference} defines the abstract syntax, untyped AST, and typed AST.
   \item The ASL Semantics Reference~\cite{ASLSemanticsReference} defines all valid behaviors of a well-typed ASL specification.
 \end{itemize}
 
@@ -5778,7 +5778,7 @@ where $b, i$ are subexpressions, as an \arrayaccess\ expression.
 We refer to $b$ and $i$ as the \emph{base}
 and the $\emph{index}$ subexpressions, respectively.
 
-In the parsed AST, an \arrayaccess\ expression is represented by
+In the untyped AST, an \arrayaccess\ expression is represented by
 $\ESlice(\vbase, [\vindex])$.
 In the typed AST, it is represented by $\EGetArray(\vbase, \vindex)$
 \end{definition}
@@ -8393,7 +8393,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Comments}
-Notice that the input statement, which belongs to the parsed AST, has two children nodes ---
+Notice that the input statement, which belongs to the untyped AST, has two children nodes ---
 $\name$ and $\vargs$, whereas the output statement, which belongs to the typed AST has the additional
 node $\neweqs$, which associates expressions with parameters.
 
@@ -8683,11 +8683,11 @@ All of the following apply:
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\langle (\ve, \Ignore) \rangle)$;
+  \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\langle\ve\rangle)$;
   \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
   \item checking that $\vte$ has the structure of an exception type yields $\True$\ProseOrTypeError;
   \item $\news$ is a throw statement with expression $\vep$ and type $\vte$, that is, \\
-        $\SThrow(\langle (\vep, \langle\vte\rangle) \rangle)$;
+        $\SThrow(\langle (\vep, \vte) \rangle)$;
   \item $\newenv$ is $\tenv$.
 \end{itemize}
 
@@ -8701,8 +8701,8 @@ All of the following apply:
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError
 }{
-  \annotatestmt(\tenv, \overname{\SThrow(\langle (\ve, \Ignore) \rangle)}{\vs}) \typearrow
-  (\overname{\SThrow(\langle (\vep, \langle\vte\rangle) \rangle)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SThrow(\langle\ve\rangle)}{\vs}) \typearrow
+  (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
 
@@ -12666,8 +12666,8 @@ All of the following apply:
 \chapter{Typing of Specifications}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The parsed AST of an ASL specification consists of a list of declarations.
-Type-checking the parsed AST succeeds if all declarations can be successfully annotated.
+The untyped AST of an ASL specification consists of a list of declarations.
+Type-checking the untyped AST succeeds if all declarations can be successfully annotated.
 This is achieved via the function $\typecheckast$, which is detailed in
 TypingRule.TypeCheckAST (see \secref{TypingRule.TypeCheckAST}).
 
@@ -14184,7 +14184,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[s\_throw\_some]{}{
-  \usestmt(\overname{\SThrow(\langle(\ve, \Ignore)\rangle)}\vs) \typearrow \overname{\useexpr(\ve)}{\ids}
+  \usestmt(\overname{\SThrow(\langle\ve\rangle)}\vs) \typearrow \overname{\useexpr(\ve)}{\ids}
 }
 \end{mathpar}
 
@@ -15560,7 +15560,7 @@ TypingRule.DomainSubtypeSatisfaction (see \secref{TypingRule.DomainSubtypeSatisf
 
 \hypertarget{def-symbolicdomain}{}
 The symbolic reasoning operates by first transforming types into expressions in a \emph{symbolic domain} AST
-(defined next, reusing $\intconstraint$ from the parsed AST) over which it then operates:
+(defined next, reusing $\intconstraint$ from the untyped AST) over which it then operates:
 \hypertarget{def-symdom}{}
 \hypertarget{def-dbool}{}
 \[

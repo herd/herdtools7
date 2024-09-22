@@ -14,10 +14,10 @@
     filecolor=magenta,
     urlcolor=cyan,
 }
-\usepackage{diagbox}
+\usepackage{diagbox} % for the table in TypingRule.SymAddExpr
 
 % "Dark theme"
-% \usepackage{xcolor}
+\usepackage{xcolor}
 % \pagecolor[rgb]{0.2,0.2,0.2}
 % \color[rgb]{0.5,0.5,0.5}
 
@@ -88,6 +88,17 @@
 \newcommand\CodeSubsection[3]{}
 \fi
 
+\definecolor{verylightgray}{RGB}{240,240,240}
+\newcommand\CodeExample[1]{
+  \begin{center}
+  \colorbox{verylightgray}{
+    \begin{minipage}{\textwidth - 0.5cm}
+      \VerbatimInput{#1}
+    \end{minipage}
+  }
+  \end{center}
+}
+
 \ifcode
 % First argument is \<rule>Begin, second is \<rule>End, third is the file name.
 % Example: for SemanticsRule.Lit, use the following:
@@ -100,7 +111,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typesetting macros
 \newtheorem{definition}{Definition}
-\newcommand\defref[1]{Def.~\ref{def:#1}}
+\newtheorem{example}{Example}
+\newcommand\figref[1]{Figure.~\ref{fi:#1}}
+\newcommand\defref[1]{Definition~\ref{def:#1}}
 \newcommand\secref[1]{Section~\ref{sec:#1}}
 \newcommand\chapref[1]{Chapter~\ref{chap:#1}}
 \newcommand\ie{i.\,e.}
@@ -1024,3 +1037,4 @@
 \newcommand\vbequal[0]{\texttt{b\_equal}}
 \newcommand\newes[0]{\texttt{new\_e\_s}}
 \newcommand\orderedps[0]{\texttt{ordered\_ps}}
+\newcommand\vz[0]{\texttt{z}}

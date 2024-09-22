@@ -23,6 +23,9 @@ versus the LRM (Build \#215 from Feb 22, 2024).
 % ------------------------------------------------------------------------------
 \section{Syntax}
 
+\subsection{Reserved Keyword}
+\texttt{pattern} is a reserved keyword.
+
 \subsection{Pragmas}
 ASLRef does not currently parse pragmas:
 \begin{verbatim}
@@ -100,6 +103,22 @@ Precedence Class Operators\\
 
 % ------------------------------------------------------------------------------
 \section{Typing}
+
+\subsection{Throwing Exceptions without Braces}
+In the following example, the commented out \texttt{throw} statement should type-check,
+but it currently fails.
+
+\begin{verbatim}
+  type except of exception;
+
+  func main() => integer
+  begin
+    // throw except; // Should type-check
+    throw except{}; // Okay
+
+    return 0;
+  end
+\end{verbatim}
 
 \subsection{Checking that All Paths in a Function Return a Value}
 The following function currently passes type-checking even though

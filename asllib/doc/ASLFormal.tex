@@ -109,10 +109,10 @@ which is defined next is named $q$.
 \end{definition}
 
 \hypertarget{def-powfin}{}
-\begin{definition}[Powerset of Finite Subets]
+\begin{definition}[Powerset of Finite Subsets]
   The \emph{powerset of finite subsets} of a set $A$, denoted as $\powfin{A}$, is the set of all finite subsets (including the empty set) of $A$:
   \[
-     \powfin{A} \triangleq \{ B \;|\; B \subseteq A, |B|=n, n\in\N\} \enspace.
+     \powfin{A} \triangleq \{ B \;|\; B \subseteq A, |B| \in \N\} \enspace.
   \]
 \end{definition}
 
@@ -130,14 +130,17 @@ which is defined next is named $q$.
   We write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$, that is, $x \not\in \dom(f)$.
 \end{definition}
 
+Notice that the domain of a partial function need not be finite, which is what the following definition covers.
+
+\hypertarget{def-finfunction}{}
+\begin{definition}[Finite-domain Function]
+The notation $\rightarrowfin$ stands for a function \\ whose domain is finite.
+\end{definition}
+
 \hypertarget{def-emptyfunc}{}
 \begin{definition}[Empty Function\label{def:EmptyFunction}]
 The function with an empty domain is denoted as $\emptyfunc$.
 \end{definition}
-
-\hypertarget{def-finfunction}{
-The notation $\rightarrowfin$ stands for a function whose domain is finite.
-}
 
 \begin{definition}[Function Update\label{def:FunctionUpdate}]
   The function denoted as $f[x \mapsto v]$ is a function identical to $f$, except that $x$ is bound
@@ -398,8 +401,8 @@ A set of rules is interpreted \underline{disjunctively}. That is, each rule is u
 holds independently of other rules.
 
 \begin{definition}[Axiom]
-  An \emph{axiom} is a rule with an empty set of premises.
-  An axiom ia denoted by simply stating its conclusion.
+An \emph{axiom} is a rule with an empty set of premises.
+An axiom is denoted by simply stating its conclusion.
 \end{definition}
 
 An example of an axiom in the ASL type system is TypingRule.SPass:
@@ -485,7 +488,7 @@ Our rules always define relations whose sets of input configurations and output 
 \begin{definition}[Fresh Element]
   Premises of the form \texttt{$x\in T$ is fresh} mean that in any
   instantiation in a derivation tree, the value of $x$ is unique.
-  That is, different from all other values instantiated for any other variable of type $T$.
+  That is, different from all other values instantiated for any other variable.
 \end{definition}
 
 \hypertarget{def-ignore}{}

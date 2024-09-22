@@ -478,7 +478,7 @@ let stmt ==
   annotated (
     | terminated_by(END,
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
-      | CASE; ~=expr; OF; alt=list(alt);              <S_Case>
+      | CASE; ~=expr; OF; alt=nonempty_list(alt);     <S_Case>
       | WHILE; ~=expr; ~=loop_limit; DO; ~=stmt_list; <S_While>
       | FOR; index_name=IDENTIFIER; EQ; start_e=expr; dir=direction;
           end_e=expr; limit=loop_limit; DO; body=stmt_list;
