@@ -1049,10 +1049,9 @@ token function.
 \begin{tabular}{ll}
 \textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
 \hline
-\texttt{'\textbackslash n'}           & $\discard$ \\
-\texttt{['\textvisiblespace ' '\textbackslash r']+}    & $\discard$ \\
+(\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+ & $\discard$ \\
 $\texttt{"/*"}$                       & $\actionstartcomment$ \\
-$\Char{"}$                       & $\actionstartstring$ \\
+$\underbracket{\texttt{"}}$           & $\actionstartstring$ \\
 $\REintlit$                           & $\actiontoken(\decimaltolit)$ \\
 $\REhexlit$                           & $\actiontoken(\hextolit)$ \\
 $\REreallit$                          & $\actiontoken(\realtolit)$ \\
@@ -2001,6 +2000,7 @@ We first define the type of Abstract Syntax Trees used by ASL (\secref{ASLAbstra
 We then define the notations for defining the AST grammar used by ASL (\secref{ASLAbstractSyntaxGrammar})
 Finally, we define the AST grammar rules for the different ASL constructs along with examples:
 \begin{itemize}
+  \item Identifiers (\secref{Identifiers})
   \item Literal values (\secref{ASTLiterals})
   \item Basic Operations (\secref{BasicOperations})
   \item Expressions (\secref{Expressions})
@@ -2067,6 +2067,11 @@ The abstract syntax of ASL is given in terms of the derivation rules below and t
 %
 Some extra details are given by using the notation $\overname{\textit{symbol}}{\text{detail}}$.
 
+\subsection{Identifiers \label{sec:Identifiers}}
+\hypertarget{ast-identifier}{}
+Identifiers in the AST, denoted $\identifier$ are simply strings representing ASL identifiers.
+Those are obtained directly from the values of identifier tokens, $\Tidentifier(s)$.
+
 \subsection{Literal Values \label{sec:ASTLiterals}}
 The following rules correspond to literal values of the following ASL data types:
 integers, Booleans, real numbers, bitvectors, and strings.
@@ -2093,7 +2098,7 @@ The following rules correspond to unary operations and binary operations that ca
 \hypertarget{ast-unop}{} \hypertarget{ast-bnot}{} \hypertarget{ast-neg}{} \hypertarget{ast-not}{}
 \begin{flalign*}
 \unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
-& \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{}
+& \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
 \\
 \binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
               \;|\; \overname{\BEQ}{\texttt{"<->"}}
@@ -4808,145 +4813,145 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tand)) \astarrow \overname{\AND}{\vastnode}
+  \buildbinop(\Nbinop(\Tand)) \astarrow \overname{\AND}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tband)) \astarrow \overname{\BAND}{\vastnode}
+  \buildbinop(\Nbinop(\Tband)) \astarrow \overname{\BAND}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tbor)) \astarrow \overname{\BOR}{\vastnode}
+  \buildbinop(\Nbinop(\Tbor)) \astarrow \overname{\BOR}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tbeq)) \astarrow \overname{\EQOP}{\vastnode}
+  \buildbinop(\Nbinop(\Tbeq)) \astarrow \overname{\EQOP}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tdiv)) \astarrow \overname{\DIV}{\vastnode}
+  \buildbinop(\Nbinop(\Tdiv)) \astarrow \overname{\DIV}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tdivrm)) \astarrow \overname{\DIVRM}{\vastnode}
+  \buildbinop(\Nbinop(\Tdivrm)) \astarrow \overname{\DIVRM}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Txor)) \astarrow \overname{\XOR}{\vastnode}
+  \buildbinop(\Nbinop(\Txor)) \astarrow \overname{\XOR}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Teqop)) \astarrow \overname{\EQOP}{\vastnode}
+  \buildbinop(\Nbinop(\Teqop)) \astarrow \overname{\EQOP}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tneq)) \astarrow \overname{\NEQ}{\vastnode}
+  \buildbinop(\Nbinop(\Tneq)) \astarrow \overname{\NEQ}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tgt)) \astarrow \overname{\GT}{\vastnode}
+  \buildbinop(\Nbinop(\Tgt)) \astarrow \overname{\GT}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tgeq)) \astarrow \overname{\GEQ}{\vastnode}
+  \buildbinop(\Nbinop(\Tgeq)) \astarrow \overname{\GEQ}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Timpl)) \astarrow \overname{\IMPL}{\vastnode}
+  \buildbinop(\Nbinop(\Timpl)) \astarrow \overname{\IMPL}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tlt)) \astarrow \overname{\LT}{\vastnode}
+  \buildbinop(\Nbinop(\Tlt)) \astarrow \overname{\LT}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tleq)) \astarrow \overname{\LEQ}{\vastnode}
+  \buildbinop(\Nbinop(\Tleq)) \astarrow \overname{\LEQ}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tplus)) \astarrow \overname{\PLUS}{\vastnode}
+  \buildbinop(\Nbinop(\Tplus)) \astarrow \overname{\PLUS}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tminus)) \astarrow \overname{\MINUS}{\vastnode}
+  \buildbinop(\Nbinop(\Tminus)) \astarrow \overname{\MINUS}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tmod)) \astarrow \overname{\MOD}{\vastnode}
+  \buildbinop(\Nbinop(\Tmod)) \astarrow \overname{\MOD}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tmul)) \astarrow \overname{\MUL}{\vastnode}
+  \buildbinop(\Nbinop(\Tmul)) \astarrow \overname{\MUL}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tor)) \astarrow \overname{\OR}{\vastnode}
+  \buildbinop(\Nbinop(\Tor)) \astarrow \overname{\OR}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Trdiv)) \astarrow \overname{\RDIV}{\vastnode}
+  \buildbinop(\Nbinop(\Trdiv)) \astarrow \overname{\RDIV}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tshl)) \astarrow \overname{\SHL}{\vastnode}
+  \buildbinop(\Nbinop(\Tshl)) \astarrow \overname{\SHL}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tshr)) \astarrow \overname{\SHR}{\vastnode}
+  \buildbinop(\Nbinop(\Tshr)) \astarrow \overname{\SHR}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tpow)) \astarrow \overname{\POW}{\vastnode}
+  \buildbinop(\Nbinop(\Tpow)) \astarrow \overname{\POW}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildunop(\Nbinop(\Tconcat)) \astarrow \overname{\tododefine{CONCAT}}{\vastnode}
+  \buildbinop(\Nbinop(\Tconcat)) \astarrow \overname{\tododefine{CONCAT}}{\vastnode}
 }
 \end{mathpar}
 
@@ -5150,7 +5155,7 @@ to terminals.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Correspondence Between Left-hand-side Expressions and Right-hand-side Expressions
-\label{ch:LeftToRight}}
+\label{chap:LeftToRight}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The recursive function $\torexpr : \lexpr \rightarrow \expr$ transforms
