@@ -1,12 +1,10 @@
-\chapter{Formal System}
-\label{chap:formal}
+\part{Formal System \label{part:FormalSystem}}
 
-In this chapter, we define the mathematical concepts and notations used throughout.
-This chapter appears in all of the ASL references as its content it used in all of them.
+In this part, we define the mathematical concepts and notations used throughout.
 We start by defining general mathematical concepts
 and then describe how sets of rules formally define functions and relations.
 
-\section{Mathematical Definitions and Notations}
+\chapter{Mathematical Definitions and Notations}
 
 \hypertarget{def-triangleq}{}
 We use $\triangleq$ to define mathematical concepts.
@@ -328,7 +326,7 @@ We refer to $\langle T\rangle$ as an \emph{optional}.
 \end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{How we use Rules}
+\chapter{Inference Rules}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 An \emph{inference rule} (rule, for short) is an implication between a set of logical assertions,
 called the \emph{premises} of the rule,
@@ -340,7 +338,6 @@ We use the following rule notation, where $P_{1..k}$ are the rule premises and $
   \inferrule{P_1 \and \ldots \and P_k}{C}
 \end{mathpar}
 
-\hypertarget{TypingRule.ELit}{}
 For example, the rule TypingRule.ELit has one premise:
 \begin{mathpar}
 \inferrule{
@@ -638,9 +635,6 @@ If the transition results in the first of the alternative output configurations,
 However, if the result is the second, short-circuit output configuration, then the following premises are ignored
 and the conclusion transitions into the short-circuit output configuration.
 These short-circuit output configurations are typically, but not always, due to (type or dynamic) errors.
-
-\newcommand\XP[0]{\mathit{XP}}
-\newcommand\XQ[0]{\mathit{XQ}}
 
 \hypertarget{def-terminateas}{}
 In the following, $\XP$ and $\XQ$ stand for, possibly empty, sequences of premises.

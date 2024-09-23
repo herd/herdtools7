@@ -1,411 +1,36 @@
-\documentclass{book}
-\input{ASLmacros}
-\input{ASLTypingLines}
-\input{ASLTypeSatisfactionLines}
-\input{ASLStaticModelLines}
-\input{ASLStaticInterpreterLines}
-\input{ASLStaticEnvLines}
-\input{ASLASTUtilsLines}
-\input{ASLASTLines}
-\newcommand{\tests}{../tests/ASLTypingReference.t/}
+% \documentclass{book}
+% \input{ASLmacros}
+% \input{ASLTypingLines}
+% \input{ASLTypeSatisfactionLines}
+% \input{ASLStaticModelLines}
+% \input{ASLStaticInterpreterLines}
+% \input{ASLStaticEnvLines}
+% \input{ASLASTUtilsLines}
+% \input{ASLASTLines}
+% \newcommand{\typingtests}{../tests/ASLTypingReference.t/}
 
 \newcommand\todocomment[1]{}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Increase indentation of sections in the table of contents
+% % to allow a space between the section numbers and their titles.
+% \makeatletter
+% \renewcommand{\l@section}{\@dottedtocline{1}{1.5em}{2.6em}}
+% \makeatother
+% \setcounter{tocdepth}{1}
 
-\newcommand\typingrulecasename[2]{TypingRule.{#1}.\textsc{#2}}
+% \author{Arm Architecture Technology Group}
+% \title{ASL Typing Reference \\
+%        DDI 0622}
+% \begin{document}
+% \maketitle
 
-% The following macros will be moved to ASLmacros.tex when we unify all reference documents.
-\newcommand\ReadEffect[0]{\textsf{ReadEffect}}
-\newcommand\Normal[0]{\textsf{Normal}}
-\newcommand\ThrowingConfig[0]{\texttt{\#T}}
-\newcommand\OrAbnormal[0]{\terminateas \ThrowingConfig, \ErrorConfig}
-\newcommand\parallelcomp[0]{\parallel}
-\newcommand\binoprel[0]{\texttt{binop}}
-\newcommand\unoprel[0]{\texttt{unop}}
-\newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\texttt{eval\_expr\_sef}}(#1)}
-\newcommand\XGraphs[0]{\mathcal{G}}
-\newcommand\TError[0]{\textsf{TDynError}}
-\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
+% \tableofcontents{}
 
-\newcommand\ProseOtherwiseTypeError[0]{Otherwise, the result is a type error.}
-\newcommand\OrTypeError[0]{\;\terminateas \TypeErrorConfig}
-%\newcommand\ProseOrTypeError[0]{or a type error that short-circuits the entire rule}
-\newcommand\ProseOrTypeError[0]{\ProseTerminateAs{\TypeErrorConfig}}
+% \include{notice.tex}
 
-\newcommand\annotaterel[0]{\hyperlink{def-annotaterel}{\textsf{type}}}
-\newcommand\typearrow[0]{\xrightarrow{\annotaterel}}
+% \include{disclaimer.tex}
 
-\newcommand\dynamicdomain[0]{\hyperlink{def-dyndomain}{\textsf{dyn\_dom}}}
-
-\newcommand\isbuiltinsingular[0]{\hyperlink{def-isbuiltinsingular}{\\textfunc{is\_builtin\_singular}}}
-\newcommand\isbuiltinaggregate[0]{\hyperlink{def-isbuiltinaggregate}{\\textfunc{is\_builtin\_aggregate}}}
-\newcommand\isbuiltin[0]{\hyperlink{def-isbuiltin}{\textfunc{is\_builtin}}}
-\newcommand\isnamed[0]{\hyperlink{def-isnamed}{\textfunc{is\_named}}}
-\newcommand\isanonymous[0]{\hyperlink{def-isanonymous}{\textfunc{is\_anonymous}}}
-\newcommand\issingular[0]{\hyperlink{def-issingular}{\textfunc{is\_singular}}}
-\newcommand\isaggregate[0]{\hyperlink{def-isaggregate}{\textfunc{is\_aggregate}}}
-\newcommand\isstructured[0]{\hyperlink{def-isstructured}{\textfunc{is\_structured}}}
-\newcommand\isnonprimitive[0]{\hyperlink{def-isnonprimitive}{\textfunc{is\_non\_primitive}}}
-\newcommand\isprimitive[0]{\hyperlink{def-isprimitive}{\textfunc{is\_primitive}}}
-
-\newcommand\isunconstrainedinteger[0]{\hyperlink{def-isunconstrainedinteger}{\textsf{is\_unconstrained\_integer}}}
-\newcommand\isparameterizedinteger[0]{\hyperlink{def-isparameterizedinteger}{\textsf{is\_parameterized\_integer}}}
-\newcommand\iswellconstrainedinteger[0]{\hyperlink{def-iswellconstrainedinteger}{\textsf{is\_well\_constrained\_integer}}}
-\newcommand\unconstrainedinteger[0]{\hyperlink{def-unconstrainedinteger}{\textsf{unconstrained\_integer}}}
-
-\newcommand\checkconstrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{\textfunc{check\_constrained\_integer}}}
-
-\newcommand\staticeval[0]{\hyperlink{def-staticeval}{\textfunc{static\_eval}}}
-\newcommand\isstaticallyevaluable[0]{\textfunc{check\_statically\_evaluable}}
-
-\newcommand\makeanonymous[0]{\hyperlink{def-makeanonymous}{\textfunc{make\_anonymous}}}
-\newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\textfunc{is\_subtype}}}
-\newcommand\structsubtypesat[0]{\hyperlink{def-structsubtypesat}{\textfunc{structural\_subtype\_satisfies}}}
-\newcommand\domsubtypesat[0]{\hyperlink{def-domsubtypesat}{\textfunc{domain\_subtype\_satisfies}}}
-\newcommand\subtypesat[0]{\hyperlink{def-subtypesat}{\textfunc{subtype\_satisfies}}}
-\newcommand\checktypesat[0]{\hyperlink{def-checktypesat}{\textfunc{checked\_typesat}}}
-\newcommand\typeclashes[0]{\hyperlink{def-typeclashes}{\textfunc{type\_clashes}}}
-\newcommand\lca[0]{\hyperlink{def-lowestcommonancestor}{\textfunc{lowest\_common\_ancestor}}}
-\newcommand\namedlca[0]{\hyperlink{def-namedlowestcommonancestor}{\textfunc{named\_lowest\_common\_ancestor}}}
-\newcommand\Supers{\textsf{Supers}}
-\newcommand\bitfieldsincluded[0]{\hyperlink{def-bitfieldsincluded}{\textfunc{bitfields\_included}}}
-\newcommand\membfs[0]{\hyperlink{def-membfs}{\textfunc{mem\_bfs}}}
-\newcommand\instantiate[0]{\textfunc{instantiate}}
-\newcommand\checkcanbeinitializedwith[0]{\hyperlink{def-checkcanbeinitializedwith}{\textfunc{check\_can\_be\_initialized\_with}}}
-\newcommand\getbitvectorwidth[0]{\hyperlink{def-getbitvectorwidth}{\textfunc{get\_bitvector\_width}}}
-\newcommand\checkbitsequalwidth[0]{\hyperlink{def-checkbitsequalwidth}{\textfunc{check\_bits\_equal\_width}}}
-\newcommand\findsubprogram[0]{\hyperlink{def-findsubprogram}{\textfunc{find\_subprogram}}}
-\newcommand\subprogramtypeclash[0]{\textfunc{subprogram\_type\_clash}}
-\newcommand\hassubprogramtypeclash[0]{\textfunc{subprogram\_type\_clash}}
-\newcommand\subprogramclash[0]{\hyperlink{def-subprogramclash}{\textfunc{subprogram\_clash}}}
-\newcommand\argsclash[0]{\textfunc{args\_clash}}
-\newcommand\bitfieldgetname[0]{\hyperlink{def-bitfieldgetname}{\textfunc{bitfield\_get\_name}}}
-\newcommand\pairstomap[0]{\hyperlink{def-pairstomap}{\textfunc{pairs\_to\_map}}}
-\newcommand\assocopt[0]{\hyperlink{def-assocopt}{\textfunc{assoc\_opt}}}
-\newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\textfunc{annotate\_field\_init}}}
-\newcommand\annotatestaticinteger[0]{\hyperlink{def-annotatestaticinteger}{\textfunc{annotate\_static\_integer}}}
-\newcommand\annotatestaticconstrainedinteger[0]{\hyperlink{def-annotatestaticconstrainedinteger}{\textfunc{annotate\_static\_constrained\_integer}}}
-\newcommand\checkatc[0]{\hyperlink{def-checkatc}{\textfunc{check\_atc}}}
-\newcommand\sliceswidth[0]{\hyperlink{def-sliceswidth}{\textfunc{slices\_width}}}
-\newcommand\slicewidth[0]{\hyperlink{def-slicewidth}{\textfunc{slice\_width}}}
-\newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\textfunc{check\_structure}}}
-\newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\textfunc{check\_structure\_integer}}}
-\newcommand\checkstaticallyevaluable[0]{\hyperlink{def-checkstaticallyevaluable}{\textfunc{check\_statically\_evaluable}}}
-\newcommand\storageispure[0]{\hyperlink{def-storageispure}{\textfunc{storage\_is\_pure}}}
-\newcommand\negateconstraint[0]{\hyperlink{def-negateconstraint}{\textfunc{negate\_constraint}}}
-\newcommand\getwellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{\textfunc{get\_well\_constrained\_structure}}}
-\newcommand\towellconstrained[0]{\hyperlink{def-towellconstrained}{\textfunc{to\_well\_constrained}}}
-\newcommand\annotatelebits[0]{\hyperlink{def-annotatelebits}{\textfunc{annotate\_lebits}}}
-\newcommand\annotatecase[1]{\hyperlink{def-annotatecase}{\textfunc{annotate\_case}}(#1)}
-\newcommand\getforconstraints[0]{\hyperlink{def-getforconstraints}{\textfunc{for\_constraints}}}
-\newcommand\findbitfieldopt[0]{\hyperlink{def-findbitfieldopt}{\textfunc{find\_bitfield\_opt}}}
-\newcommand\lookupconstant[0]{\hyperlink{def-lookupconstant}{\textfunc{lookup\_constant}}}
-\newcommand\typeof[0]{\hyperlink{def-typeof}{\textfunc{type\_of}}}
-\newcommand\typecheckdecl[0]{\hyperlink{def-typecheckdecl}{\textfunc{typecheck\_decl}}}
-\newcommand\annotateanddeclarefunc[0]{\hyperlink{def-annotateanddeclarefunc}{\textfunc{annotate\_and\_declare\_func}}}
-\newcommand\declareglobalstorage[0]{\hyperlink{def-declareglobalstorage}{\textfunc{declare\_global\_storage}}}
-\newcommand\annotatefuncsig[0]{\hyperlink{def-annotatefuncsig}{\textfunc{annotate\_func\_sig}}}
-\newcommand\declareonefunc[0]{\hyperlink{def-declareonefunc}{\textfunc{declare\_one\_func}}}
-\newcommand\checksetterhasgetter[0]{\hyperlink{def-checksetterhashgetter}{\textfunc{check\_setter\_has\_getter}}}
-\newcommand\addnewfunc[0]{\hyperlink{def-addnewfunc}{\textfunc{add\_new\_func}}}
-\newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
-\newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
-\newcommand\scanforparams[0]{\hyperlink{def-scanforparams}{\textfunc{scan\_for\_params}}}
-\newcommand\annotateparams[0]{\hyperlink{def-annotateparams}{\textfunc{annotate\_params}}}
-\newcommand\annotateoneparam[0]{\hyperlink{def-annotateoneparam}{\textfunc{annotate\_one\_param}}}
-\newcommand\argsasparams[0]{\hyperlink{def-argsasparams}{\textfunc{args\_as\_params}}}
-\newcommand\argasparam[0]{\hyperlink{def-argasparam}{\textfunc{arg\_as\_param}}}
-\newcommand\annotatetypeopt[0]{\hyperlink{def-annotatetypeopt}{\textfunc{annotate\_type\_opt}}}
-\newcommand\annotateexpropt[0]{\hyperlink{def-annotateexpropt}{\textfunc{annotate\_expr\_opt}}}
-\newcommand\annotateinittype[0]{\hyperlink{def-annotateinittype}{\textfunc{annotate\_init\_type}}}
-\newcommand\addglobalstorage[0]{\hyperlink{def-addglobalstorage}{\textfunc{add\_global\_storage}}}
-\newcommand\annotateextrafields[0]{\hyperlink{def-annotateextrafields}{\textfunc{annotate\_extra\_fields}}}
-\newcommand\declareenumlabels[0]{\hyperlink{def-annotateenumlabels}{\textfunc{declare\_enum\_labels}}}
-\newcommand\declareconst[0]{\hyperlink{def-declareconst}{\textfunc{declare\_const}}}
-\newcommand\annotateparamtype[0]{\hyperlink{def-annotateparamtype}{\textfunc{annotate\_param\_type}}}
-\newcommand\annotateargs[0]{\hyperlink{def-annotateargs}{\textfunc{annotate\_args}}}
-\newcommand\annotateonearg[0]{\hyperlink{def-annotateonearg}{\textfunc{annotate\_one\_arg}}}
-\newcommand\annotatereturntype[0]{\hyperlink{def-annotatereturntype}{\textfunc{annotate\_return\_type}}}
-\newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\textfunc{slices\_to\_positions}}}
-\newcommand\extractslice[0]{\hyperlink{def-extractslice}{\textfunc{extract\_slice}}}
-\newcommand\slicetopositions[0]{\hyperlink{def-slicetopositions}{\textfunc{slice\_to\_positions}}}
-\newcommand\evaltoint[0]{\hyperlink{def-evaltoint}{\textfunc{eval\_to\_int}}}
-\newcommand\sort[0]{\hyperlink{def-sort}{\textfunc{sort}}}
-\newcommand\comparemonomialbindings[0]{\hyperlink{def-comparemonomialbindings}{\textfunc{compare\_monomial\_bindings}}}
-\newcommand\annotatecalleeparameters[0]{\hyperlink{def-annotatecalleeparameters}{\textfunc{annotate\_callee\_params}}}
-\newcommand\checkargstypesat[0]{\hyperlink{def-checkargstypesat}{\textfunc{check\_args\_typesat}}}
-\newcommand\checkcalleeparams[0]{\hyperlink{def-checkcalleeparams}{\textfunc{check\_callee\_params}}}
-\newcommand\annotateretty[0]{\hyperlink{def-annotateretty}{\textfunc{annotate\_ret\_ty}}}
-\newcommand\renametyeqs[0]{\hyperlink{def-renametyeqs}{\textfunc{rename\_ty\_eqs}}}
-\newcommand\substexpr[0]{\hyperlink{def-substexpr}{\textfunc{subst\_expr}}}
-\newcommand\substexprnormalize[0]{\hyperlink{def-substexprnormalize}{\textfunc{subst\_expr\_normalize}}}
-\newcommand\substconstraint[0]{\hyperlink{def-substconstraint}{\textfunc{subst\_constraint}}}
-\newcommand\typecheckmutuallyrec[0]{\hyperlink{def-typecheckmutuallyrec}{\textfunc{type\_check\_mutually\_rec}}}
-\newcommand\foldenvandfs[0]{\hyperlink{def-foldenvandfs}{\textfunc{fold\_env\_and\_fs}}}
-\newcommand\defdecl[0]{\hyperlink{def-defdecl}{\textfunc{def\_decl}}}
-\newcommand\defenumlabels[0]{\hyperlink{def-defenumlabels}{\textfunc{def\_enum\_labels}}}
-\newcommand\usedecl[0]{\hyperlink{def-usedecl}{\textfunc{use\_decl}}}
-\newcommand\usety[0]{\hyperlink{def-usety}{\textfunc{use\_ty}}}
-\newcommand\usesubtypes[0]{\hyperlink{def-usesubtypes}{\textfunc{use\_subtypes}}}
-\newcommand\useexpr[0]{\hyperlink{def-useexpr}{\textfunc{use\_e}}}
-\newcommand\uselexpr[0]{\hyperlink{def-uselexpr}{\textfunc{use\_le}}}
-\newcommand\usefields[0]{\hyperlink{def-usefields}{\textfunc{use\_fields}}}
-\newcommand\usepattern[0]{\hyperlink{def-usepattern}{\textfunc{use\_pattern}}}
-\newcommand\useslice[0]{\hyperlink{def-useslice}{\textfunc{use\_slice}}}
-\newcommand\usebitfield[0]{\hyperlink{def-usebitfield}{\textfunc{use\_bitfield}}}
-\newcommand\useconstraint[0]{\hyperlink{def-useconstraint}{\textfunc{use\_constraint}}}
-\newcommand\usestmt[0]{\hyperlink{def-usestmt}{\textfunc{use\_s}}}
-\newcommand\useldi[0]{\hyperlink{def-useldi}{\textfunc{use\_ldi}}}
-\newcommand\usecase[0]{\hyperlink{def-usecase}{\textfunc{use\_case}}}
-\newcommand\usecatcher[0]{\hyperlink{def-usecatcher}{\textfunc{use\_catcher}}}
-\newcommand\usefuncsig[0]{\hyperlink{def-usefuncsig}{\textfunc{use\_func\_sig}}}
-\newcommand\builddependencies[0]{\hyperlink{def-builddependencies}{\textfunc{build\_dependencies}}}
-\newcommand\decldependencies[0]{\hyperlink{def-decldependencies}{\textfunc{decl\_dependencies}}}
-
-% Symbolic equivalence testing macros
-\newcommand\normalize[0]{\hyperlink{def-normalize}{\textfunc{normalize}}}
-\newcommand\typeequal[0]{\hyperlink{def-typeequal}{\textfunc{type\_equal}}}
-\newcommand\exprequal[0]{\hyperlink{def-exprequal}{\textfunc{expr\_equal}}}
-\newcommand\bitwidthequal[0]{\hyperlink{def-bitwidthequal}{\textfunc{bitwidth\_equal}}}
-\newcommand\bitfieldequal[0]{\hyperlink{def-bitfieldequal}{\textfunc{bitfield\_equal}}}
-\newcommand\bitfieldsequal[0]{\hyperlink{def-bitfieldsequal}{\textfunc{bitfields\_equal}}}
-\newcommand\reduceir[0]{\hyperlink{def-reduceir}{\textfunc{reduce\_ir}}}
-\newcommand\polynomialtoexpr[0]{\hyperlink{def-polynomialtoexpr}{\textfunc{polynomial\_to\_expr}}}
-\newcommand\monomialtoexpr[0]{\hyperlink{def-monomialtoexpr}{\textfunc{monomial\_to\_expr}}}
-\newcommand\symmulexpr[0]{\hyperlink{def-symmulexpr}{\textfunc{sym\_mul\_expr}}}
-\newcommand\symaddexpr[0]{\hyperlink{def-symaddexpr}{\textfunc{sym\_add\_expr}}}
-\newcommand\monomialstoexpr[0]{\hyperlink{def-monomialstoexpr}{\textfunc{monomials\_to\_expr}}}
-\newcommand\unitarymonomialstoexpr[0]{\hyperlink{def-unitarymonomialstoexpr}{\textfunc{unitary\_monomials\_to\_expr}}}
-\newcommand\compareidentifier[0]{\hyperlink{def-compareidentifier}{\textfunc{compare\_identifier}}}
-
-\newcommand\subsumes[0]{\hyperlink{def-subsumes}{\textfunc{subsumes}}}
-\newcommand\symsubsumes[0]{\hyperlink{def-symsubsumes}{\textfunc{sym\_subsumes}}}
-
-\newcommand\toir[0]{\hyperlink{def-toir}{\textfunc{to\_ir}}}
-\newcommand\toircase[0]{\hyperlink{def-toircase}{\textfunc{to\_ir\_case}}}
-\newcommand\Prod[0]{\hyperlink{def-prod}{\textsf{Prod}}}
-\newcommand\Sum[0]{\hyperlink{def-sum}{\textsf{Sum}}}
-\newcommand\unitarymonomial[0]{\hyperlink{def-unitarymonomial}{\textsf{unitary\_monomial}}}
-\newcommand\monomial[0]{\hyperlink{def-monomial}{\textsf{monomial}}}
-\newcommand\polynomial[0]{\hyperlink{def-polynomial}{\textsf{polynomial}}}
-\newcommand\addpolynomials[0]{\hyperlink{def-addpolynomials}{\textfunc{add\_polynomials}}}
-\newcommand\mulpolynomials[0]{\hyperlink{def-mulpolynomials}{\textfunc{mul\_polynomials}}}
-\newcommand\mulmonomials[0]{\hyperlink{def-mulmonomials}{\textfunc{mul\_monomials}}}
-
-\newcommand\declaredtype[0]{\hyperlink{def-declaredtype}{\textfunc{declared\_type}}}
-
-\newcommand\fieldnames[0]{\hyperlink{def-fieldnames}{\textfunc{field\_names}}}
-\newcommand\fieldtype[0]{\hyperlink{def-fieldtype}{\textfunc{field\_type}}}
-
-\newcommand\eliteral[1]{\textsf{E\_Literal}(#1)}
-
-% An expression that we do not statically evaluate.
-\newcommand\CannotBeTransformed[0]{\hyperlink{def-unsupportedexpression}{\top}}
-
-\newcommand\unopsignatures[0]{\hyperlink{def-unopsignatures}{\textfunc{unop\_signatures}}}
-\newcommand\binopsignatures[0]{\hyperlink{def-binopsignatures}{\textfunc{binop\_signatures}}}
-
-% AST abbreviations
-%\newcommand\ELInt[1]{\hyperlink{def-elint}{\texttt{ELInt}}(#1)}
-\newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\lint)}}}
-\newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\scriptscriptstyle{\ConstraintExact}}}}
-\newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\scriptscriptstyle{\ConstraintRange}}}}
-\newcommand\AbbrevEBinop[3]{\overbracket{#2\ #1\ #3}^{\hyperlink{def-abbrevebinop}{\scriptscriptstyle{\EBinop}}}}
-\newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-tarrayshort}{\scriptscriptstyle{\TArray}}}}
-% \newcommand\AbbrevArrayLengthExpr[1]{\overbracket{#1}^{\hyperlink{def-arraylengthexpr}{\scriptscriptstyle{\ArrayLengthExpr}}}}
-% \newcommand\AbbrevArrayLengthEnum[2]{\overbracket{\texttt{enum }#1 |#2|}^{\hyperlink{def-arraylengthenum}{\scriptscriptstyle{\ArrayLengthEnum}}}}
-\newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\scriptscriptstyle{\TArray(\ArrayLengthExpr)}}}}
-\newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\scriptscriptstyle{\TArray(\ArrayLengthEnum)}}}}
-
-% Glossary
-\newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
-\newcommand\structuredtype[0]{\hyperlink{def-structuredtype}{structured type}}
-\newcommand\structure[0]{\hyperlink{def-structure}{structure}}
-\newcommand\underlyingtype[0]{\hyperlink{def-underlyingtype}{underlying type}}
-\newcommand\symbolicdomain[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
-\newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
-\newcommand\typesatisfy[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
-\newcommand\checkedtypesatisfies[0]{\hyperlink{def-checktypesat}{checked-type-satisfies}}
-\newcommand\typesatisft[0]{\hyperlink{def-typesatisfies}{type-satisft}}
-\newcommand\subtypesatisfies[0]{\hyperlink{def-subtypesatisfies}{subtype-satisfies}}
-\newcommand\subtypesatisfy[0]{\hyperlink{def-subtypesatisfies}{subtype-satisfisfy}}
-\newcommand\typeequivalent[0]{\hyperlink{def-typeequal}{type-equivalent}}
-\newcommand\bitwidthequivalent[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
-\newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
-\newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
-\newcommand\structureofinteger[0]{\hyperlink{def-checkstructureinteger}{structure of an integer}}
-\newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
-\newcommand\pure[0]{\hyperlink{def-storageispure}{pure}}
-\newcommand\wellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
-\newcommand\wellconstrainedversion[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
-\newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
-\newcommand\arrayaccess[0]{\hyperlink{def-arrayaccess}{array access}}
-\newcommand\symbolicallysimplifies[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Type functions
-\newcommand\CheckUnop[0]{\hyperlink{def-checkunop}{\textfunc{check\_unop}}}
-\newcommand\CheckBinop[0]{\hyperlink{def-checkbinop}{\textfunc{check\_binop}}}
-\newcommand\constraintbinop[0]{\hyperlink{def-constraintbinop}{\textfunc{constraint\_binop}}}
-\newcommand\constraintbinoppair[0]{\hyperlink{def-constraintbinoppair}{\textfunc{constraint\_binop\_pair}}}
-\newcommand\isrightincreasing[0]{\hyperlink{def-isrightincreasing}{\textfunc{is\_right\_increasing}}}
-\newcommand\isrightdecreasing[0]{\hyperlink{def-isrightdecreasing}{\textfunc{is\_right\_decreasing}}}
-\newcommand\isleftincreasing[0]{\hyperlink{def-isleftincreasing}{\textfunc{is\_left\_increasing}}}
-\newcommand\annotateconstraintbinop[0]{\hyperlink{def-annotateconstraintbinop}{\textfunc{annotate\_constraint\_binop}}}
-\newcommand\explodeintervals[0]{\hyperlink{def-explodeintervals}{\textfunc{explode\_intervals}}}
-\newcommand\explodeconstraint[0]{\hyperlink{def-explodeconstraint}{\textfunc{explode\_constraint}}}
-\newcommand\intervaltoolarge[0]{\hyperlink{def-intervaltoolarge}{\textfunc{interval\_too\_large}}}
-\newcommand\binopisexploding[0]{\hyperlink{def-binopisexploding}{\textfunc{binop\_is\_exploding}}}
-\newcommand\binopfilterrhs[0]{\hyperlink{def-binopfilterrhs}{\textfunc{binop\_filter\_rhs}}}
-\newcommand\refineconstraintbysign[0]{\hyperlink{def-refineconstraintbysign}{\textfunc{refine\_constraint\_by\_sign}}}
-\newcommand\reducetozopt[0]{\hyperlink{def-reducetozopt}{\textfunc{reduce\_to\_z\_opt}}}
-\newcommand\refineconstraints[0]{\hyperlink{def-refineconstraints}{\textfunc{refine\_constraints}}}
-\newcommand\filterreduceconstraintdiv[0]{\hyperlink{def-filterreduceconstraintdiv}{\textfunc{filter\_reduce\_constraint\_div}}}
-\newcommand\getliteraldivopt[0]{\hyperlink{def-getliteraldivopt}{\textfunc{get\_literal\_div\_opt}}}
-\newcommand\checkslicesinwidth[0]{\tododefine{check\_slices\_in\_width}}
-\newcommand\disjointslicestopositions[0]{\tododefine{disjoint\_slices\_to\_positions}}
-\newcommand\checkpositionsinwidth[0]{\tododefine{check\_positions\_in\_width}}
-\newcommand\shouldslicesreducetocall[0]{\tododefine{should\_slices\_reduce\_to\_call}}
-\newcommand\checkdisjointslices[0]{\tododefine{check\_disjoint\_slices}}
-\newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\textfunc{annotate\_type}}(#1)}
-\newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\textfunc{annotate\_constraint}}}
-\newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\textfunc{get\_variable\_enum}}}
-\newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\textfunc{annotate\_expr}}(#1)}
-\newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\textfunc{annotate\_exprs}}}
-\newcommand\annotatelooplimit[0]{\hyperlink{def-annotatelooplimit}{\textfunc{annotate\_loop\_limit}}}
-\newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}(#1)}
-\newcommand\annotatearrayindex[0]{\textfunc{annotate\_array\_index}}
-\newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\textfunc{annotate\_slice}}}
-\newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\textfunc{annotate\_slices}}}
-\newcommand\annotatepattern[0]{\hyperlink{def-annotatepattern}{\textfunc{annotate\_pattern}}}
-\newcommand\annotatelocaldeclitem[1]{\hyperlink{def-annotatelocaldeclitem}{\textfunc{annotate\_local\_decl\_item}}(#1)}
-\newcommand\annotatestmt[0]{\hyperlink{def-annotatestmt}{\textfunc{annotate\_stmt}}}
-\newcommand\annotateblock[1]{\hyperlink{def-annotateblock}{\textfunc{annotate\_block}}(#1)}
-\newcommand\inlinesetter[0]{\tododefine{setter\_should\_reduce\_to\_call\_s}}
-\newcommand\annotatecall[0]{\hyperlink{def-annotatecall}{\textfunc{annotate\_call}}}
-\newcommand\annotatecallargtyped[0]{\hyperlink{def-annotatecallargtyped}{\textfunc{annotate\_call\_arg\_typed}}}
-\newcommand\annotateparameterdefining[0]{\hyperlink{def-annotateparameterdefining}{\textfunc{annotate\_parameter\_defining}}}
-\newcommand\annotatecatcher[1]{\hyperlink{def-annotatecatcher}{\textfunc{annotate\_catcher}}(#1)}
-\newcommand\reduceconstants[0]{\hyperlink{def-reduceconstants}{\textfunc{reduce\_constants}}}
-\newcommand\reduceconstraint[0]{\hyperlink{def-reduceconstraint}{\textfunc{reduce\_constraint}}}
-\newcommand\reduceconstraints[0]{\hyperlink{def-reduceconstraints}{\textfunc{reduce\_constraints}}}
-\newcommand\declarelocalconstant[0]{\hyperlink{def-declarelocalconstant}{\textfunc{declare\_local\_constant}}}
-\newcommand\annotatelocaldeclitemuninit[0]{\hyperlink{def-annotatelocaldeclitemuninit}{\textfunc{annotate\_local\_decl\_item\_uninit}}}
-\newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}(#1)}
-\newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
-\newcommand\varinenv[1]{\hyperlink{def-varinenv}{\textfunc{var\_in\_env}}(#1)}
-\newcommand\annotatesubprogram[1]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}(#1)}
-\newcommand\annotatedecl[1]{\hyperlink{def-annotatedecl}{\textfunc{annotate\_decl}}(#1)}
-\newcommand\declaredecl[1]{\hyperlink{def-declaredecl}{\textfunc{declare\_decl}}(#1)}
-\newcommand\typecheckast[0]{\hyperlink{def-typecheckast}{\textfunc{type\_check\_ast}}}
-\newcommand\SCC[0]{\hyperlink{def-scc}{\textfunc{SCC}}}
-\newcommand\topologicalordering[0]{\hyperlink{def-topologicalordering}{\textfunc{topological\_ordering}}}
-\newcommand\declsofcomp[0]{\hyperlink{def-declsofcomp}{\textfunc{decls\_of\_comp}}}
-\newcommand\sortcomponents[0]{\hyperlink{def-sortcomponents}{\textfunc{sort\_components}}}
-\newcommand\annotatedeclcomps[0]{\hyperlink{def-annotatedeclcomps}{\textfunc{annotate\_decl\_comps}}}
-\newcommand\evalexpr[1]{\textfunc{eval\_expr}(#1)}
-\newcommand\evalconstraint[1]{\textfunc{eval\_constraint}(#1)}
-\newcommand\annotateliteral[1]{\hyperlink{def-annotateliteral}{\textfunc{annotate\_literal}}(#1)}
-\newcommand\exprequalcase[0]{\hyperlink{def-exprequalcase}{\textfunc{expr\_equal\_case}}}
-\newcommand\exprequalnorm[0]{\hyperlink{def-exprequalnorm}{\textfunc{expr\_equal\_norm}}}
-\newcommand\slicesequal[0]{\hyperlink{def-slicesequal}{\textfunc{slices\_equal}}}
-\newcommand\sliceequal[0]{\hyperlink{def-sliceequal}{\textfunc{slice\_equal}}}
-\newcommand\constraintsequal[0]{\hyperlink{def-constraintsequal}{\textfunc{constraints\_equal}}}
-\newcommand\constraintequal[0]{\hyperlink{def-constraintequal}{\textfunc{constraint\_equal}}}
-\newcommand\arraylengthequal[0]{\hyperlink{def-arraylengthequal}{\textfunc{array\_length\_equal}}}
-\newcommand\literalequal[0]{\hyperlink{def-literalequal}{\textfunc{literal\_equal}}}
-\newcommand\finddeducecheck[0]{\hyperlink{def-finddeducecheck}{\textfunc{find\_deduce\_check}}}
-\newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\textfunc{annotate\_bitfield}}}
-\newcommand\annotatebitfields[0]{\hyperlink{def-annotatebitfields}{\textfunc{annotate\_bitfields}}}
-\newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\textfunc{check\_no\_duplicates}}}
-\newcommand\reduceslicestocall[0]{\hyperlink{def-reduceslicestocall}{\textfunc{reduce\_slices\_to\_call}}}
-\newcommand\typeofarraylength[0]{\hyperlink{def-typeofarraylength}{\textfunc{type\_of\_array\_length}}}
-\newcommand\addlocal[0]{\hyperlink{def-addlocal}{\textfunc{add\_local}}}
-\newcommand\declaretype[0]{\hyperlink{def-declaretype}{\textfunc{declare\_type}}}
-\newcommand\subprogramtypesclash[0]{\hyperlink{def-subprogramtypeclash}{\textfunc{subprogram\_types\_clash}}}
-\newcommand\subprogramforname[0]{\hyperlink{def-subprogramforname}{\textfunc{subprogram\_for\_name}}}
-\newcommand\hasargclash[0]{\hyperlink{def-hasargclash}{\textfunc{has\_arg\_clash}}}
-\newcommand\filtercallcandidates[0]{\hyperlink{def-filtercandidates}{\textfunc{filter\_call\_candidates}}}
-\newcommand\deduceeqs[0]{\hyperlink{def-deduceeqs}{\textfunc{deduce\_eqs}}}
-\newcommand\getundeclareddefining[0]{\hyperlink{def-getundeclareddefining}{\textfunc{get\_undeclared\_defining}}}
-\newcommand\bintounsigned[0]{\hyperlink{def-bintounsigned}{\textsf{binary\_to\_unsigned}}}
-\newcommand\inttobits[0]{\hyperlink{def-inttobits}{\textfunc{int\_to\_bits}}}
-
-% Symbolic domain subsumption
-\newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
-\newcommand\intset[0]{\hyperlink{def-intset}{\textsf{int\_set}}}
-\newcommand\syntax[0]{\hyperlink{def-syntax}{\textsf{syntax}}}
-
-\newcommand\DBool[0]{\hyperlink{def-dbool}{\textsf{D\_Bool}}}
-\newcommand\DString[0]{\hyperlink{def-dstring}{\textsf{D\_String}}}
-\newcommand\DReal[0]{\hyperlink{def-dreal}{\textsf{D\_Real}}}
-\newcommand\DSymbols[0]{\hyperlink{def-dsymbols}{\textsf{D\_Symbols}}}
-\newcommand\DInt[0]{\hyperlink{def-dint}{\textsf{D\_Int}}}
-\newcommand\DBits[0]{\hyperlink{def-dbits}{\textsf{D\_Bits}}}
-\newcommand\DUnknown[0]{\hyperlink{def-dunknown}{\textsf{D\_Unknown}}}
-
-\newcommand\Finite[0]{\hyperlink{def-finite}{\textsf{Finite}}}
-\newcommand\Top[0]{\hyperlink{def-top}{\textsf{Top}}}
-\newcommand\FromSyntax[0]{\hyperlink{def-fromsymtax}{\textsf{FromSyntax}}}
-
-\newcommand\symdomoftype[0]{\hyperlink{def-symdomoftype}{\textfunc{symdom\_of\_type}}}
-\newcommand\symdomofexpr[0]{\hyperlink{def-symdomofexpr}{\textfunc{symdom\_of\_expr}}}
-\newcommand\symdomofliteral[0]{\hyperlink{def-symdomofliteral}{\textfunc{symdom\_of\_literal}}}
-\newcommand\intsetofintconstraints[0]{\hyperlink{def-intsetofintconstraintse}{\textfunc{intset\_of\_intconstraints}}}
-\newcommand\symdomissubset[0]{\hyperlink{def-symdomissubset}{\textfunc{symdom\_is\_subset}}}
-\newcommand\constrainttointset[0]{\hyperlink{def-constrainttointset}{\textfunc{constraint\_to\_intset}}}
-\newcommand\normalizetoint[0]{\hyperlink{def-normalizetoint}{\textfunc{normalize\_to\_int}}}
-\newcommand\symintsetsubset[0]{\hyperlink{def-symintsetsubset}{\textfunc{sym\_intset\_subset}}}
-\newcommand\intsetop[0]{\hyperlink{def-intsetop}{\textfunc{intset\_op}}}
-\newcommand\intsettointconstraints[0]{\hyperlink{def-intsettointconstraints}{\textfunc{int\_set\_to\_int\_constraints}}}
-
-%% Type Error Codes
-\newcommand\TypeErrorCode[1]{\texttt{TE\_#1}}
-\newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
-\newcommand\LengthsMismatch[0]{\hyperlink{def-lengthsmismatch}{\TypeErrorCode{LMM}}}
-\newcommand\SetterWithoutGetter[0]{\hyperlink{def-setterwithoutgetter}{\TypeErrorCode{SWG}}}
-\newcommand\ExpectedBitvectorType[0]{\hyperlink{def-expectedbitvectortype}{\TypeErrorCode{EBT}}}
-\newcommand\SubrogramDeclaredMultipleTimes[0]{\hyperlink{def-subprogramdeclaredmultipletimes}{\TypeErrorCode{SDM}}}
-\newcommand\NoCallCandidates[0]{\hyperlink{def-nocallcandidates}{\TypeErrorCode{NCC}}}
-\newcommand\TooManyCandidates[0]{\hyperlink{def-toomanycandidates}{\TypeErrorCode{TMC}}}
-\newcommand\ParameterWithoutDecl[0]{\hyperlink{def-parameterwithoutdecl}{\TypeErrorCode{PWD}}}
-\newcommand\NoLCA[0]{\hyperlink{def-nolca}{\TypeErrorCode{LCA}}}
-\newcommand\MismatchedReturnValue[0]{\hyperlink{def-mrv}{\TypeErrorCode{MRV}}}
-\newcommand\CallBadArity[0]{\hyperlink{def-cba}{\TypeErrorCode{CBA}}}
-\newcommand\BadRecursiveDecls[0]{\hyperlink{def-brd}{\TypeErrorCode{BRA}}}
-\newcommand\RequireIntegerForLoopBounds[0]{\hyperlink{def-lbi}{\TypeErrorCode{LBI}}}
-\newcommand\ExpectedStructuredType[0]{\hyperlink{def-expectedstructuredtype}{\TypeErrorCode{EST}}}
-\newcommand\ExpectedTupleType[0]{\hyperlink{def-expectedtupletype}{\TypeErrorCode{ETT}}}
-\newcommand\MissingFieldInitializer[0]{\hyperlink{def-mfi}{\TypeErrorCode{MFI}}}
-\newcommand\RequireSameBitwidths[0]{\hyperlink{def-rsb}{\TypeErrorCode{RSB}}}
-\newcommand\TypeAsssertionFails[0]{\hyperlink{def-taf}{\TypeErrorCode{TAF}}}
-\newcommand\BinaryOperationFailsAllConstraints[0]{\hyperlink{def-ofc}{\TypeErrorCode{OFC}}}
-\newcommand\InvalidOperandTypesForBinop[0]{\hyperlink{def-otb}{\TypeErrorCode{OTB}}}
-\newcommand\ExpectedEnumerationType[0]{\hyperlink{def-expectedenumerationtype}{\TypeErrorCode{EET}}}
-\newcommand\AnnonymousFormNotAllowedHere[0]{\hyperlink{def-iaf}{\TypeErrorCode{IAF}}}
-\newcommand\AssignmentToImmutable[0]{\hyperlink{def-aim}{\TypeErrorCode{AIM}}}
-\newcommand\MissingField[0]{\hyperlink{def-mf}{\TypeErrorCode{MF}}}
-\newcommand\DivIntIndivisible[0]{\hyperlink{def-dii}{\TypeErrorCode{DII}}}
-
-% Increase indentation of sections in the table of contents
-% to allow a space between the section numbers and their titles.
-\makeatletter
-\renewcommand{\l@section}{\@dottedtocline{1}{1.5em}{2.6em}}
-\makeatother
-\setcounter{tocdepth}{1}
-
-\author{Arm Architecture Technology Group}
-\title{ASL Typing Reference \\
-       DDI 0622}
-\begin{document}
-\maketitle
-
-\tableofcontents{}
-
-\include{notice.tex}
-
-\include{disclaimer.tex}
+\part{ASL Typing Reference}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Introduction}
@@ -417,7 +42,7 @@ Whether a specification is well-typed is defined in terms of a \emph{type system
 That is, a set of \emph{typing rules}.
 
 An ASL parser accepts an ASL specification and checks whether it is valid with respect to the syntax of ASL,
-which is defined in~\cite{ASLAbstractSyntaxReference}.
+which is defined in \secref{ASLGrammar}.
 If the specification is syntactically valid, the parser returns an \emph{abstract syntax tree} (AST, for short),
 which represents the specification as a labelled structured tree. Otherwise, it returns a syntax error.
 When an ASL specification is successfully parsed, we refer to the resulting AST as the \emph{untyped AST}.
@@ -425,25 +50,15 @@ When an ASL specification is successfully parsed, we refer to the resulting AST 
 A \emph{type checker} is an implementation of the ASL type system, which accepts an untyped AST and applies the
 rules of the type system to the untyped AST. If it is successful, the specification
 is considered \emph{well-typed} and the result is a pair consisting of
-a \emph{static environment} and a \emph{typed AST}, which are used in defining the ASL semantics~\cite{ASLSemanticsReference}.
+a \emph{static environment} and a \emph{typed AST}, which are used in defining the ASL semantics (\partref{ASLSemanticsReference}).
 Otherwise, the type checker returns a type error.
-
-\paragraph{Related documents:}
-\begin{itemize}
-  % \item The ASL Language Reference Manual~\cite{LRM} (LRM, for short) introduces the concrete syntax and intent
-  % of all ASL language constructs.
-  % Please note that the LRM will be retired in due course. For ease of reviewing, we currently indicate which statement
-  % of the LRM the present rules correspond to.
-  \item The Abstract Syntax Reference~\cite{ASLAbstractSyntaxReference} defines the abstract syntax, untyped AST, and typed AST.
-  \item The ASL Semantics Reference~\cite{ASLSemanticsReference} defines all valid behaviors of a well-typed ASL specification.
-\end{itemize}
 
 \paragraph{Understanding the Typing Formalization:}
 We assume basic familiarity with the ASL language.
 The ASL type system is defined in terms of its AST,
 and familiarity with the AST is \underline{required} to understand it.
 The mathematical background needed to understand the mathematical formalization
-of the ASL semantics appears in \chapref{formal} and \chapref{typesystembuildingblocks}.
+of the ASL semantics appears in \partref{FormalSystem} and \chapref{typesystembuildingblocks}.
 
 \paragraph{Reading guide:}
 The typing rules are organized into chapters, which roughly group the rules by their AST node type.
@@ -465,13 +80,11 @@ Each rule is presented using the following template:
 \href{https://github.com/herd/herdtools7//tree/master/asllib/Typing.ml}{/herdtools7/asllib/Typing.ml};
 \fi
 \item Formal paragraphs which give formal definitions of the rule.
-\item Comments paragraphs, which provide additional details. %refer to one or more rules from the Language Reference Manual~\cite{LRM} and
+\item Comments paragraphs, which provide additional details.
 \end{itemize}
 
 Note that rules use a specific language to define variables, deconstruct mathematical data types,
 and assert equality. See \secref{FlavoursOfEqualityInRules} for details.
-
-\include{ASLFormal}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Type System Building Blocks}
@@ -479,10 +92,9 @@ and assert equality. See \secref{FlavoursOfEqualityInRules} for details.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This chapter defines necessary mathematical types and concepts for the ASL system.
 
-Types are represented by ASTs derived from the non-terminal $\ty$ (see \cite{ASLAbstractSyntaxReference}
-for the precise definition of $\ty$).
+Types are represented by ASTs derived from the non-terminal $\ty$.
 
-\section{Static Environments}
+\section{Static Environments \label{sec:StaticEnvironments}}
 
 A \emph{static environment} (also called a \emph{type environment}) is what the typing rules operate over:
 a structure, which amongst other things, associates types to variables.
@@ -700,7 +312,7 @@ $\AbbrevTArrayLengthEnum{\ve}{\vs}{\vt}$ & $\TArray(\ArrayLengthEnum(\ve, \vs), 
 Note that throughout this document we use $\tty$ to denote a type variable, which should not be confused with the abstract syntax variable $\ty$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Domain of Values for Types}
+\chapter{Domain of Values for Types\label{chap:DomainOfValuesForTypes}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This chapter formalizes the concept of the set of values for a given type.
 The formalism is given in the form of rules.
@@ -709,18 +321,20 @@ The chapter also defines the concept of checking whether the set of values
 for one type is included in the set of values for another type.
 
 \hypertarget{def-vals}{}
+\hypertarget{def-nativevalue}{}
+\hypertarget{def-nativevalues}{}
 \section{Native Values \label{sec:nativevalues}}
 
 Types define sets of values that variables can take when a specification is semantically evaluated.
-To formalize this, we define the set of \emph{native values}, denoted $\vals$
+To formalize this, we define the set of \emph{\nativevalues}, denoted $\vals$
 (\texttt{NV} stands for Native Value).
 
 \subsection{Prose}
-The set of native values $\vals$ is the minimal set satisfying all of the following rules:
+The set of \nativevalues\ $\vals$ is the minimal set satisfying all of the following rules:
 \begin{itemize}
-  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a native value;
-  \item \textsc{tuple values and array values}: if $\vl$ is a list of native values then $\nvvector{\vl}$ is a native value;
-  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to native values then $\nvrecord{\vr}$ is a native value.
+  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a \nativevalue;
+  \item \textsc{tuple values and array values}: if $\vl$ is a list of \nativevalues\ then $\nvvector{\vl}$ is a \nativevalue;
+  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to \nativevalues\ then $\nvrecord{\vr}$ is a \nativevalue.
 \end{itemize}
 
 \subsection{Formally}
@@ -740,7 +354,7 @@ The set of native values $\vals$ is the minimal set satisfying all of the follow
   { \nvrecord{\vr} \in \vals }
 \end{mathpar}
 
-We define the following shorthands for native value literals:
+We define the following shorthands for \nativevalue\ literals:
 \hypertarget{def-nvint}{}
 \[
 \begin{array}{rcl}
@@ -752,7 +366,7 @@ We define the following shorthands for native value literals:
 \end{array}
 \]
 
-We define the following types of native values:
+We define the following types of \nativevalues:
 \hypertarget{def-tint}{}
 \[
 \begin{array}{rcl}
@@ -766,19 +380,19 @@ We define the following types of native values:
 \end{array}
 \]
 
-\section{Dynamic Domain of a Type}
+\section{Dynamic Domain of a Type\label{sec:DynDomain}}
 \hypertarget{def-dyndomain}{}
 
 We now define the concept of a \emph{dynamic domain} of a type
 and the \emph{static domain} of a type.
-Intuitively, domains assign potentially infinite sets of native values to types.
+Intuitively, domains assign potentially infinite sets of \nativevalues\ to types.
 Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{UNKNOWN: t}
 by choosing a single value from the dynamic domain of $\vt$.
 Static domains are used to define (domain) subtype satisfaction in \secref{TypingRule.DomainSubtypeSatisfaction}.
 
 \hypertarget{def-dynamicenvs}{}
 The definition of a dynamic domain refers to \emph{dynamic environments}, denoted $\dynamicenvs$,
-which assigns native values to identifiers~\cite{ASLSemanticsReference}.
+which assigns \nativevalues\ to identifiers.
 
 \hypertarget{def-envs}{}
 We define \emph{environments} as pairs of static environments and dynamic environments:
@@ -805,18 +419,10 @@ a static domain that is equal to any of their dynamic domains.
 In those cases, we simply refer to their \emph{domain}.
 
 Associating a set of values to a type is done by evaluating any expression appearing
-in the type definitions. Evaluation is defined by the ASL semantics~\cite{ASLSemanticsReference}
-via the relation
-\hypertarget{def-evalexprsef}{}
-\[
-  \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
-  \Normal(\overname{\vals}{\vv}\aslsep\overname{\XGraphs}{\vg}) \cup
-  \overname{\TError}{\ErrorConfig}
-\]
-\hypertarget{def-errorconfig}{}
+in the type definitions. Evaluation is defined by the relation $\evalexprsef$.
 which evaluates side-effect-free expressions and either returns
 a configuration of the form $\Normal(\vv,\vg)$ or a dynamic error configuration $\ErrorConfig$.
-In the first case, $\vv$ is a native value and $\vg$
+In the first case, $\vv$ is a \nativevalue\ and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
 and can be ignored in the context of defining dynamic domains.
 In the latter case (which can occur if, for example, an expression attempts to divide
@@ -920,7 +526,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \item All of the following apply (\textsc{t\_int\_parameterized}):
   \begin{itemize}
     \item $\vt$ is a \parameterizedintegertype\ for parameter $\id$, \\ $\TInt(\parameterized(\id))$;
-    \item the native value associated with $\id$ in the local dynamic environment is the native integer value for $n$;
+    \item the \nativevalue\ associated with $\id$ in the local dynamic environment is the native integer value for $n$;
     \item $\vd$ is the set containing the single integer value for $n$.
   \end{itemize}
 
@@ -943,7 +549,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $0$;
-    \item $\vd$ is the set containing the single native value for an empty bitvector.
+    \item $\vd$ is the set containing the single \nativevalue\ for an empty bitvector.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_bits\_non\_empty}):
@@ -951,7 +557,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
     \item $k$ is greater than $0$;
-    \item $\vd$ is the set containing all native values for bitvectors of size exactly $k$.
+    \item $\vd$ is the set containing all \nativevalues\ for bitvectors of size exactly $k$.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_tuple}):
@@ -1065,7 +671,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 }
 \end{mathpar}
 
-The notation $L^\denv(\id)$ denotes the native value associated with the identifier $\id$
+The notation $L^\denv(\id)$ denotes the \nativevalue\ associated with the identifier $\id$
 in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
   \inferrule[t\_int\_parameterized]{
@@ -1282,7 +888,7 @@ functions that inspect the structure of types:
   \item Aggregate types (\secref{TypingRule.AggregateType})
   \item Non-primitive types (\secref{TypingRule.NonPrimitiveType})
   \item Primitive types (\secref{TypingRule.PrimitiveType})
-  \item The structure of a type (\secref{structure})
+  \item The structure of a type (\secref{TypingRule.structure})
   \item The underlying type of a type (\secref{anonymize})
   \item Checked constrained integers (\secref{TypingRule.CheckConstrainedInteger})
 \end{itemize}
@@ -1308,13 +914,13 @@ The \emph{builtin singular types} are:
 
 \subsection{Example}
 In this example:
-\VerbatimInput[firstline=3,lastline=8]{\tests/TypingRule.BuiltinSingularTypes.asl}
+\VerbatimInput[firstline=3,lastline=8]{\typingtests/TypingRule.BuiltinSingularTypes.asl}
 
 Variables of builtin singular types \texttt{integer}, \texttt{real},
 \texttt{boolean}, \texttt{bits(4)}, \\ and~\texttt{bits(2)} are defined.
 
 \subsection{Example}
-\VerbatimInput{\tests/TypingRule.EnumerationType.asl}
+\VerbatimInput{\typingtests/TypingRule.EnumerationType.asl}
 The builtin singular type \texttt{Color} consists in two constants
 \texttt{RED}, and~\texttt{BLACK}.
 
@@ -1350,7 +956,7 @@ The builtin aggregate types are:
 \end{itemize}
 
 \subsection{Example}
-\VerbatimInput{\tests/TypingRule.BuiltinAggregateTypes.asl}
+\VerbatimInput{\typingtests/TypingRule.BuiltinAggregateTypes.asl}
 Type \texttt{Pair} is the type of integer and boolean pairs.
 
 Arrays are declared with indices that are either integer-typed
@@ -1372,7 +978,7 @@ The (builtin aggregate) type \verb|{ x : real, y : real, z : real }| is a record
 \texttt{x}, \texttt{y} and \texttt{z}.
 
 \subsection{Example}
-\VerbatimInput{\tests/TypingRule.BuiltinExceptionType.asl}
+\VerbatimInput{\typingtests/TypingRule.BuiltinExceptionType.asl}
 Two (builtin aggregate) exception types are defined:
 \begin{itemize}
 \item \verb|exception{}| (for \texttt{Not\_found}), which carries no value; and
@@ -1734,7 +1340,7 @@ The following types are primitive:
 \isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identd{GWXK}.}
 
-\section{TypingRule.Structure \label{sec:structure}}
+\section{TypingRule.Structure\label{sec:TypingRule.structure}}
 \hypertarget{def-structure}{}
 The function
 \[
@@ -3274,7 +2880,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{bits\_bool}):
   \begin{itemize}
-    \item $\op$ is $\AND$, $\OR$, or $\EOR$;
+    \item $\op$ is $\AND$, $\OR$, or $\XOR$;
     \item checking whether $\vtone$ and $\vttwo$ have the \structure\ of bitvector types
           of the same width in $\tenv$ yields $\True$\ProseOrTypeError;
     \item the bitvector width of $\vtone$ in $\tenv$ is $\vw$;
@@ -3470,7 +3076,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[bits\_bool]{
-  \op \in  \{\AND, \OR, \EOR\}\\
+  \op \in  \{\AND, \OR, \XOR\}\\
   \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError\\\\
   \getbitvectorwidth(\tenv, \vtone) \typearrow \vw
 }{
@@ -5637,9 +5243,10 @@ where $b, i$ are subexpressions, as an \arrayaccess\ expression.
 We refer to $b$ and $i$ as the \emph{base}
 and the $\emph{index}$ subexpressions, respectively.
 
-In the untyped AST, an \arrayaccess\ expression is represented by
-$\ESlice(\vbase, [\vindex])$.
-In the typed AST, it is represented by $\EGetArray(\vbase, \vindex)$
+In the untyped AST, an \arrayaccess\ expression is represented by \\
+$\ESlice(\vbase, [\vindex])$, whereas in the typed AST,
+it is represented by \\
+$\EGetArray(\vbase, \vindex)$
 \end{definition}
 
 \subsection{Prose}
@@ -6670,10 +6277,7 @@ One of the following applies:
 \item TypingRule.LESlice (see \secref{TypingRule.LESlice}),
 \item TypingRule.LESetArray (see \secref{TypingRule.LESetArray}),
 \item TypingRule.LESetStructuredField (see \secref{TypingRule.LESetStructuredField}),
-\item TypingRule.LESetBadBitField (see \secref{TypingRule.LESetBadBitField}),
 \item TypingRule.LESetBitField (see \secref{TypingRule.LESetBitField}),
-\item TypingRule.LESetBitFieldNested (see \secref{TypingRule.LESetBitFieldNested}),
-\item TypingRule.LESetBitFieldTyped (see \secref{TypingRule.LESetBitFieldTyped}),
 \item TypingRule.LESetBadField (see \secref{TypingRule.LESetBadField}),
 \item TypingRule.LEConcat (see \secref{TypingRule.LEConcat}).
 \end{itemize}
@@ -6683,8 +6287,7 @@ TypingRule.LEBits (see \secref{TypingRule.LEBits}).
 
 \hypertarget{def-rexpr}{}
 Some of the rules require viewing left-hand-side expressions as their corresponding right-hand side expressions.
-The correspondence is defined in the ASL Syntax Reference~\cite[Chapter 5]{ASLAbstractSyntaxReference}
-and given by the function $\torexpr : \lexpr \rightarrow \expr$.
+The correspondence is defined by the function $\torexpr : \lexpr \rightarrow \expr$.
 
 \section{TypingRule.LEDiscard \label{sec:TypingRule.LEDiscard}}
 \subsection{Prose}
@@ -9984,7 +9587,8 @@ One of the following applies:
     \item applying $\renametyeqs$ to $\eqsthree$ and $\calleearg$ in $\tenv$
           to substitute parameter arguments in $\calleearg$ yields $\calleeargone$\ProseOrTypeError;
     \item checking that $\callerarg$ \typesatisfies\ $\calleeargone$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item applying $\checkargstypesat$ to $\calleeargsone$, $\callerargtypesone$, and $\eqsthree$ in $\tenv$
+    \item applying $\checkargstypesat$ to $\calleeargsone$, $\callerargtypesone$, \\
+          and $\eqsthree$ in $\tenv$
           yields $\True$\ProseOrTypeError;
     \item the result is $\True$.
   \end{itemize}
@@ -10917,7 +10521,7 @@ to parameters of the function \texttt{signature\_example} is $\{\texttt{A}\}$,
 since \texttt{A} appears in the type \texttt{bits(A)}
 of the argument \texttt{bv}.
 
-\VerbatimInput{\tests/TypingRule.AnnotateFuncSig.asl}
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \CodeSubsection{\GetUndeclaredDefiningBegin}{\GetUndeclaredDefiningEnd}{../Typing.ml}
 
@@ -10958,7 +10562,7 @@ identifiers that may be parameters in $\tenv$.
 
 \subsection{Example}
 Consider the following specification:
-\VerbatimInput{\tests/TypingRule.AnnotateFuncSig.asl}
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 Scanning each type in the signature
 of the function \texttt{signature\_example} yields the following results:
@@ -11059,7 +10663,7 @@ of the function \texttt{signature\_example} is $\{\texttt{A}\}$.
 Therefore, $\declaredparams$ binds \texttt{A} to the type \verb|integer{A}|
 and $\newtenv$ effectively reflects an added declaration \verb|let A: integer{A}|.
 
-\VerbatimInput{\tests/TypingRule.AnnotateFuncSig.asl}
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \subsection{Prose}
 One of the following applies:
@@ -11074,7 +10678,8 @@ One of the following applies:
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
     \item $\vparameters$ is a list with $(\vx, \tyopt)$ as its \head\ and $\vparametersone$ as its \tail;
-    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ in $\tenvone$ with $\potentialparams$ and the pair $(\tenvonep, \acc)$
+    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ in $\tenvone$ with \\
+          $\potentialparams$ and the pair $(\tenvonep, \acc)$
           yields the pair \\
           $(\tenvonepp, \accp)$\ProseOrTypeError;
     \item annotating the parameter list $\vparametersone$ in $\tenvone$ with $\potentialparams$, starting with the pair
@@ -11258,7 +10863,7 @@ as it appears in the type \texttt{bits(A+B)}
 and it is not listed as an explicit parameter.
 Therefore, $\newtenv$ will effectively contain the declaration \verb|let B: integer{B}|.
 
-\VerbatimInput{\tests/TypingRule.AnnotateFuncSig.asl}
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -11456,7 +11061,7 @@ In the following specification, the annotated arguments are
 The argument \texttt{B} is not annotated as an argument since it is classified
 and annotated as a parameter.
 
-\VerbatimInput{\tests/TypingRule.AnnotateFuncSig.asl}
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -11717,7 +11322,8 @@ $\subprograms$ map of $\tenv$.
 All of the following apply:
 \begin{itemize}
   \item the subprogram type associated with the unique subprogram named by $\name$ is $\namesubpgmtype$;
-  \item applying $\subprogramtypesclash$ to $\namesubpgmtype$ and $\subpgmtype$ yields $\True$\ProseTerminateAs{\False}
+  \item applying $\subprogramtypesclash$ to $\namesubpgmtype$ and $\subpgmtype$ yields \\
+        $\True$\ProseTerminateAs{\False}
         (that is, if both $\namesubpgmtype$ and $\subpgmtype$ are $\STGetter$ or both are $\STSetter$ then the
         subprogram types are considered to be non-clashing and the entire rule short-circuits to $\False$);
   \item $\nameargs$ is the list of pairs of types and identifiers associated with the function definition
@@ -14254,7 +13860,7 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a slicing expression of the integer literal for $\vi$ and slice list $\vslices$, that is,
           $\ESlice(\lint(\vi), \vslices)$;
-    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\slicestopositions$
+    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\typingslicestopositions$
           yields $\positions$\ProseOrTypeError;
     \item $\posmax$ is the maximum index in $\positions$;
     \item converting the first $\posmax+1$ digits of the binary representation of $\vi$ into a bitvector
@@ -14267,7 +13873,7 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a slicing expression of the bitvector literal for $\bv$ and slice list $\vslices$, that is,
           $\ESlice(\lbitvector(\bv), \vslices)$;
-    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\slicestopositions$
+    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\typingslicestopositions$
           yields $\positions$\ProseOrTypeError;
     \item $\posmax$ is the maximum index in $\positions$;
     \item checking that the length of $\bv$ is greater than $\posmax$ (which is $0$-based) yields $\True$\ProseOrTypeError;
@@ -14346,7 +13952,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_slice\_int]{
-  \slicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
+  \typingslicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
   \posmax \eqdef \max(\positions)\\
   \bvone \eqdef \inttobits(\vi, \posmax + 1)\\
   \extractslice(\bvone, \positions) \typearrow \bvtwo \OrTypeError
@@ -14357,7 +13963,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_slice\_bitvector]{
-  \slicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
+  \typingslicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
   \posmax \eqdef \max(\positions)\\
   \checktrans{\listlen{\bv} > \posmax}{SliceOutOfRange} \checktransarrow \True \OrTypeError\\\\
   \extractslice(\bv, \positions) \typearrow \bvtwo \OrTypeError
@@ -14546,7 +14152,7 @@ argument types for a given binary operator:
   (\NEQ       &,& \lbitvector &,& \lbitvector)&,\\
   (\OR        &,& \lbitvector &,& \lbitvector)&,\\
   (\AND       &,& \lbitvector &,& \lbitvector)&,\\
-  (\EOR       &,& \lbitvector &,& \lbitvector)&,\\
+  (\XOR       &,& \lbitvector &,& \lbitvector)&,\\
   (\MINUS     &,& \lbitvector &,& \lbitvector)&,\\
   (\PLUS      &,& \lbitvector &,& \lbitvector)&,\\
   (\MINUS     &,& \lbitvector &,& \lint)&,\\
@@ -14777,7 +14383,7 @@ One of the following applies:
   \begin{itemize}
     \item $\vvone$ is the empty bitvector literal;
     \item $\vvtwo$ is the empty bitvector literal;
-    \item $\op$ is one of $\OR$, $\AND$, $\EOR$, $\PLUS$, or $\MINUS$;
+    \item $\op$ is one of $\OR$, $\AND$, $\XOR$, $\PLUS$, or $\MINUS$;
     \item define $\vr$ as the empty bitvector literal.
   \end{itemize}
 
@@ -14829,7 +14435,7 @@ One of the following applies:
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
-    \item $\op$ is $\EOR$;
+    \item $\op$ is $\XOR$;
     \item define $c_i$ as $1$ if $a_i$ is different from $b_i$ and $0$ otherwise, for $i=1..k$;
     \item define $\vr$ as the bitvector literal for $c_{1..k}$.
   \end{itemize}
@@ -15123,7 +14729,7 @@ of \texttt{width} bits.
 }
 \and
 \inferrule[bitwise\_empty]{
-  \op \in \{\OR, \AND, \EOR, \PLUS, \MINUS\}
+  \op \in \{\OR, \AND, \XOR, \PLUS, \MINUS\}
 }{
   \binopliterals(\op, \overname{\lbitvector(\emptylist)}{\vvone}, \overname{\lbitvector(\emptylist)}{\vvtwo}) \typearrow
   \overname{\lbitvector(\emptylist)}{\vr}
@@ -15180,7 +14786,7 @@ of \texttt{width} bits.
   }\\
   i=1..k: c_i=\textit{xor\_bit}(a_i, b_i)
 }{
-  \binopliterals(\overname{\EOR}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow \lbitvector(c_{1..k})
+  \binopliterals(\overname{\XOR}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow \lbitvector(c_{1..k})
 }
 \end{mathpar}
 
@@ -15223,10 +14829,10 @@ of \texttt{width} bits.
 \end{mathpar}
 
 \section{TypingRule.SlicesToPositions \label{sec:TypingRule.SlicesToPositions}}
-\hypertarget{def-slicestopositions}{}
+\hypertarget{def-typingslicestopositions}{}
 The function
 \[
-  \slicestopositions(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slices}) \aslto
+  \typingslicestopositions(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slices}) \aslto
   \overname{\Z^*}{\positions} \cup \{\CannotBeTransformed\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 transforms the list of slices $\slices$ in $\tenv$ into a list of indices $\positions$.
@@ -15248,7 +14854,7 @@ One of the following applies:
     \item \view\ $\slices$ as the list with $\vs$ as its \head\ and $\slicesone$ as its \tail;
     \item applying $\slicetopositions$ to $\vs$ in $\tenv$ yields the list of positions \\
           $\positionsone$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
-    \item transforming $\slicesone$ to a list of positions in $\tenv$ via $\slicestopositions$ yields
+    \item transforming $\slicesone$ to a list of positions in $\tenv$ via $\typingslicestopositions$ yields
           $\positionstwo$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
     \item $\positions$ is the concatenation of $\positionsone$ and $\positionstwo$.
   \end{itemize}
@@ -15258,14 +14864,14 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \slicestopositions(\tenv, \overname{\emptylist}{\slices}) \typearrow \overname{\emptylist}{\positions}
+  \typingslicestopositions(\tenv, \overname{\emptylist}{\slices}) \typearrow \overname{\emptylist}{\positions}
 }
 \and
 \inferrule[non\_empty]{
   \slicetopositions(\tenv, \vs) \typearrow \positionsone \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  \slicestopositions(\tenv, \slicesone) \typearrow \positionstwo \terminateas \CannotBeTransformed,\TypeErrorConfig
+  \typingslicestopositions(\tenv, \slicesone) \typearrow \positionstwo \terminateas \CannotBeTransformed,\TypeErrorConfig
 }{
-  \slicestopositions(\tenv, \overname{[\vs] \concat \slicesone}{\slices}) \typearrow \overname{\positionsone \concat \positionstwo}{\positions}
+  \typingslicestopositions(\tenv, \overname{[\vs] \concat \slicesone}{\slices}) \typearrow \overname{\positionsone \concat \positionstwo}{\positions}
 }
 \end{mathpar}
 
@@ -16212,7 +15818,7 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{finite}):
   \begin{itemize}
-    \item applying $\constrainttointset$ to every constraint $\vcs[\vi]$ in $\tenv$, for $\vi$ in $\listrange(\vcs)$,
+    \item applying $\constrainttointset$ to every constraint $\vcs[\vi]$ in $\tenv$, for $\vi$ in \\ $\listrange(\vcs)$,
           yields a finite set of integers $C_\vi$, that is, $\Finite(C_\vi)$;
     \item define $\vis$ as the union of $C_\vi$ for all $\vi$ in $\listrange(\vcs)$.
   \end{itemize}
@@ -16847,7 +16453,7 @@ One of the following applies:
 
   \item All of the following (\textsc{top}):
   \begin{itemize}
-    \item $\op$ is one of $\AND ,\BAND ,\BEQ ,\BOR ,\EOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV$;
+    \item $\op$ is one of $\AND ,\BAND ,\BEQ ,\BOR ,\XOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV$;
     \item define $\vb$ as $\top$.
   \end{itemize}
 \end{itemize}
@@ -16865,7 +16471,7 @@ One of the following applies:
 }
 \and
 \inferrule[top]{
-  \op \in \{\AND ,\BAND ,\BEQ ,\BOR ,\EOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV\}
+  \op \in \{\AND ,\BAND ,\BEQ ,\BOR ,\XOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV\}
 }{
   \isrightdecreasing(\op) \typearrow \top
 }
@@ -16891,7 +16497,7 @@ One of the following applies:
 
   \item All of the following (\textsc{top}):
   \begin{itemize}
-    \item $\op$ is one of $\AND ,\BAND ,\BEQ ,\BOR ,\EOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV$;
+    \item $\op$ is one of $\AND ,\BAND ,\BEQ ,\BOR ,\XOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV$;
     \item define $\vb$ as $\top$.
   \end{itemize}
 \end{itemize}
@@ -16905,7 +16511,7 @@ One of the following applies:
 }
 \and
 \inferrule[top]{
-  \op \in \{\AND ,\BAND ,\BEQ ,\BOR ,\EOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV\}
+  \op \in \{\AND ,\BAND ,\BEQ ,\BOR ,\XOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV\}
 }{
   \isleftincreasing(\op) \typearrow \top
 }
@@ -20759,7 +20365,7 @@ See \textsc{TypingRule.BinopLiterals.DIV\_INT} (\secref{TypingRule.BinopLiterals
 
 \end{description}
 
-\bibliographystyle{plain}
-\bibliography{ASL}
+% \bibliographystyle{plain}
+% \bibliography{ASL}
 
-\end{document}
+% \end{document}

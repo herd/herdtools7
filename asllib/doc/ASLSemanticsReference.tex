@@ -1,138 +1,26 @@
-\documentclass{book}
-\input{ASLmacros}
-
-% The following macros will be moved to ASLmacros.tex when we unify all reference documents.
-\newcommand\exprequalcase[0]{\texttt{expr\_equal\_case}}
-\newcommand\exprequalnorm[0]{\texttt{expr\_equal\_norm}}
-\newcommand\exprequal[0]{\texttt{expr\_equal}}
-
-\newcommand\typearrow[0]{\xrightarrow{\mathsf{type}}}
-
-\newcommand\Nodes[0]{\hyperlink{def-nodes}{\mathcal{N}}}
-\newcommand\Read[0]{\hyperlink{def-read}{\text{Read}}}
-\newcommand\Write[0]{\hyperlink{def-write}{\text{Write}}}
-\newcommand\Labels[0]{\hyperlink{def-labels}{\mathcal{L}}}
-\newcommand\XGraphs[0]{\hyperlink{def-xgraphs}{\mathcal{G}}}
-\newcommand\WriteEffect[0]{\hyperlink{def-writeeffect}{\textsf{WriteEffect}}}
-\newcommand\ReadEffect[0]{\hyperlink{def-writeeffect}{\textsf{ReadEffect}}}
-
-\newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\emptyset_{\env}}}
-\newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
-\newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\parallel}}
-
-\newcommand\graphof[1]{\hyperlink{def-graphof}{\textfunc{graph}}({#1})}
-\newcommand\withgraph[2]{{#1}(\hyperlink{def-withgraph}{\textfunc{graph}}\mapsto{#2})}
-\newcommand\environof[1]{\hyperlink{def-environof}{\textfunc{environ}}({#1})}
-\newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#2})}
-
-\newcommand\primitiverel[0]{\hyperlink{def-primitiverel}{\textsf{primitive}}}
-\newcommand\evalprimitivearrow[0]{\hyperlink{def-evalprimitivearrow}{\stackrel{\primitiverel}{\rightsquigarrow}}}
-\newcommand\ContinuingConfig[0]{\hyperlink{def-continuingconfig}{\texttt{\#C}}}
-\newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
-\newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
-\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
-\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \ErrorConfig}
-\newcommand\OrDynError[0]{\;\terminateas \ErrorConfig}
-\newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \ErrorConfig}}
-\newcommand\ProseOrError[0]{\ProseTerminateAs{\ErrorConfig}}
-\newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
-\newcommand\TError[0]{\hyperlink{def-terror}{\textsf{TDynError}}}
-\newcommand\TThrowing[0]{\hyperlink{def-tthrowing}{\textsf{TThrowing}}}
-\newcommand\TContinuing[0]{\hyperlink{def-tcontinuing}{\textsf{TContinuing}}}
-\newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
-\newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
-
-\newcommand\evalexpr[1]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}(#1)}
-\newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}(#1)}
-\newcommand\evallexpr[1]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}(#1)}
-\newcommand\evalexprlist[1]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}(#1)}
-\newcommand\evalexprlistm[0]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}}
-\newcommand\evalpattern[1]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}(#1)}
-\newcommand\evallocaldecl[1]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}(#1)}
-\newcommand\evalslices[1]{\hyperlink{def-evalslices}{\textfunc{eval\_slices}}(#1)}
-\newcommand\evalslice[1]{\hyperlink{def-evalslice}{\textfunc{eval\_slice}}(#1)}
-\newcommand\evalstmt[1]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}(#1)}
-\newcommand\evalblock[1]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}(#1)}
-\newcommand\evalloop[1]{\hyperlink{def-evalloop}{\textfunc{eval\_loop}}(#1)}
-\newcommand\evalfor[1]{\hyperlink{def-evalfor}{\textfunc{eval\_for}}(#1)}
-\newcommand\evalcatchers[1]{\hyperlink{def-evalcatchers}{\textfunc{eval\_catchers}}(#1)}
-\newcommand\evalsubprogram[1]{\hyperlink{def-evalsubprogram}{\textfunc{eval\_subprogram}}(#1)}
-\newcommand\evalcall[1]{\hyperlink{def-evalcall}{\textfunc{eval\_call}}(#1)}
-\newcommand\evalprimitive[1]{\hyperlink{def-evalprimitive}{\textfunc{eval\_primitive}}(#1)}
-\newcommand\evalmultiassignment[1]{\hyperlink{def-evalmultiassign}{\textfunc{multi\_assign}}(#1)}
-\newcommand\rethrowimplicit[0]{\hyperlink{def-rethrowimplicit}{\textfunc{rethrow\_implicit}}}
-\newcommand\assignargs[0]{\hyperlink{def-assignargs}{\textfunc{assign\_args}}}
-\newcommand\assignnamedargs[0]{\hyperlink{def-assignnamedargs}{\textfunc{assign\_named\_args}}}
-\newcommand\matchfuncres[0]{\hyperlink{def-matchfuncres}{\textfunc{match\_func\_res}}}
-\newcommand\buildgenv[0]{\hyperlink{def-buildgenv}{\textfunc{build\_genv}}}
-\newcommand\topologicaldecls[0]{\hyperlink{def-topologicaldecls}{\textfunc{topological\_decls}}}
-\newcommand\evalglobals[0]{\hyperlink{def-evalglobals}{\textfunc{eval\_globals}}}
-\newcommand\evalspec[1]{\hyperlink{def-evalspec}{\textfunc{eval\_spec}}(#1)}
-\newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\textfunc{lexpr\_is\_var}}}
-\newcommand\casetoconds[0]{\hyperlink{def-casetoconds}{\textfunc{case\_to\_conds}}}
-\newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\textfunc{find\_catcher}}}
-
-\newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
-\newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
-\newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\textfunc{declare\_local\_identifier\_mm}}}
-\newcommand\removelocal[0]{\hyperlink{def-removelocal}{\textfunc{remove\_local}}}
-\newcommand\readidentifier[0]{\hyperlink{def-readidentifier}{\textfunc{read\_identifier}}}
-\newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\textfunc{write\_identifier}}}
-\newcommand\createbitvector[0]{\hyperlink{def-createbitvector}{\textfunc{create\_bitvector}}}
-\newcommand\concatbitvectors[0]{\hyperlink{def-concatbitvector}{\textfunc{concat\_bitvectors}}}
-\newcommand\readfrombitvector[0]{\hyperlink{def-readfrombitvector}{\textfunc{read\_from\_bitvector}}}
-\newcommand\writetobitvector[0]{\hyperlink{def-writetobitvector}{\textfunc{write\_to\_bitvector}}}
-\newcommand\asbitvector[0]{\hyperlink{def-asbitvector}{\textfunc{as\_bitvector}}}
-\newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\textfunc{slices\_to\_positions}}}
-\newcommand\getindex[0]{\hyperlink{def-getindex}{\textfunc{get\_index}}}
-\newcommand\setindex[0]{\hyperlink{def-setindex}{\textfunc{set\_index}}}
-\newcommand\getfield[0]{\hyperlink{def-getfield}{\textfunc{get\_field}}}
-\newcommand\setfield[0]{\hyperlink{def-setfield}{\textfunc{set\_field}}}
-\newcommand\declareglobal[0]{\hyperlink{def-declareglobal}{\textfunc{declare\_global}}}
-\newcommand\basevalue[0]{\hyperlink{def-basevalue}{\textfunc{base\_value}}}
-\newcommand\isvaloftype[0]{\hyperlink{def-isvaloftype}{\textfunc{is\_val\_of\_type}}}
-\newcommand\positioninrange[0]{\hyperlink{def-positioninrange}{\textfunc{position\_in\_range}}}
-\newcommand\integerconstraintsatisfied[0]{\hyperlink{def-integerconstraintsatisfied}{\textfunc{int\_constraint\_sat}}}
-\newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\textfunc{read\_value\_from}}}
-\newcommand\writeretvals[0]{\hyperlink{def-writeretvals}{\textfunc{write\_ret\_vals}}}
-
-\newcommand\unoprel[0]{\hyperlink{def-unoprel}{\textfunc{unop}}}
-\newcommand\binoprel[0]{\hyperlink{def-binoprel}{\textfunc{binop}}}
-
-\newcommand\findfunc[0]{\hyperlink{def-findfunc}{\textfunc{find\_func}}}
-
-\newcommand\valuereadfrom[0]{\hyperlink{def-valuereadfrom}{\textsf{value\_read\_from}}}
-\newcommand\Normal[0]{\hyperlink{def-normal}{\textsf{Normal}}}
-\newcommand\Throwing[0]{\hyperlink{def-throwing}{\textsf{Throwing}}}
-\newcommand\Continuing[0]{\hyperlink{def-continuing}{\textsf{Continuing}}}
-\newcommand\Returning[0]{\hyperlink{def-returning}{\textsf{Returning}}}
-\newcommand\Error[0]{\hyperlink{def-error}{\textsf{DynError}}}
-
-\newcommand\ErrorVal[1]{\Error(\texttt{"ERROR[#1]"})}
-
-\input{ASLSemanticsLines}
+% \documentclass{book}
+% \input{ASLmacros}
 
 % Increase indentation of sections in the table of contents
 % to allow a space between the section numbers and their titles.
-\makeatletter
-\renewcommand{\l@section}{\@dottedtocline{1}{1.5em}{2.6em}}
-\makeatother
+% \makeatletter
+% \renewcommand{\l@section}{\@dottedtocline{1}{1.5em}{2.6em}}
+% \makeatother
+% \setcounter{tocdepth}{1}
 
-\setcounter{tocdepth}{1}
+% \author{Arm Architecture Technology Group}
+% \title{ASL Semantics Reference \\
+%        DDI 0621}
+% \begin{document}
+% \maketitle
 
-\newcommand{\testdir}{../tests/ASLSemanticsReference.t}
+% \tableofcontents{}
 
-\author{Arm Architecture Technology Group}
-\title{ASL Semantics Reference \\
-       DDI 0621}
-\begin{document}
-\maketitle
+% \include{notice.tex}
 
-\tableofcontents{}
+% \include{disclaimer.tex}
 
-\include{notice.tex}
-
-\include{disclaimer.tex}
+\part{ASL Semantics Reference \label{part:ASLSemanticsReference}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Introduction}
@@ -147,25 +35,13 @@ Otherwise, it returns a type error.
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the typed AST, based on the definition
 of the semantics in this document, to test and analyze a given specification.
 
-\paragraph{Related documents:}
-\begin{itemize}
-  % \item The ASL Language Reference Manual~\cite{LRM} (LRM, for short) introduces the concrete syntax and intent
-  % of all ASL language constructs.
-  % Please note that the LRM will be retired in due course. For ease of reviewing, we currently indicate which statement
-  % of the LRM the present rules correspond to.
-  \item The Syntax Reference~\cite{ASLAbstractSyntaxReference} defines the concrete syntax, the abstract syntax, the untyped AST,
-        and the typed AST.
-  \item The ASL Typing Reference~\cite{ASLTypingReference} defines the set of untyped ASTs that are considered statically valid
-  and how to produce the corresponding typed ASTs and static environments.
-\end{itemize}
-
 \paragraph{Understanding the Semantics Formalization:}
-We assume basic familiarity with the ASL language constructs. % (see the Language Reference Manual~\cite{LRM}).
+We assume basic familiarity with the ASL language constructs.
 The ASL semantics is defined in terms of its AST,
 and as a consequence familiarity with the AST is required to understand the semantics.
 The few components of the type system needed to understand the ASL semantics are explained in context.
 The mathematical background needed to understand the mathematical formalization
-of the ASL semantics appears in \chapref{formal} and \chapref{semanticsbuildingblocks}.
+of the ASL semantics appears in \partref{FormalSystem} and \chapref{semanticsbuildingblocks}.
 
 \section{When Do ASL Specifications Have Meaning \label{sec:MeaningfulASLSpecifications}}
 The ASL semantics defined here assign meaning only to \emph{well-typed specifications}.
@@ -254,10 +130,8 @@ the sequential semantics and the concurrent semantics, in the form of concurrent
 The latter enables defining, for each AArch64 instruction,
 the Intrinsic dependencies used by the AArch64 memory model from the ASL code of the instruction~\cite[B2.3.2]{ArmARM}.
 
-\item Comments paragraphs, which provide additional details. %refer to one or more rules from the Language Reference Manual~\cite{LRM} and
+\item Comments paragraphs, which provide additional details.
 \end{itemize}
-
-\input{ASLFormal.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Semantics Building Blocks}
@@ -265,63 +139,6 @@ the Intrinsic dependencies used by the AArch64 memory model from the ASL code of
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This chapter defines the mathematical types over which our semantics are defined.
 An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
-
-%% This section is repeated, with small changes, in the typing reference.
-\section{Native Values \label{sec:nativevalues}}
-\hypertarget{def-vals}{}
-The semantics of an ASL specification associates \emph{native values} to variables.
-The set of native values $\vals$ is the minimal set defined by the following recursive rules (\texttt{NV} stands for Native Value):
-
-\subsection{Prose}
-The set of native values $\vals$ is the minimal set satisfying all of the following rules:
-\begin{itemize}
-  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a native value;
-  \item \textsc{tuple values and array values}: if $\vl$ is a list of native values then $\nvvector{\vl}$ is a native value;
-  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to native values then $\nvrecord{\vr}$ is a native value.
-\end{itemize}
-
-\subsection{Formally}
-\hypertarget{def-nvliteral}{}
-\hypertarget{def-nvvector}{}
-\hypertarget{def-nvrecord}{}
-\begin{mathpar}
-  \inferrule[(Basis Set: Integers, Reals, Booleans, Strings, and Bitvectors)]
-  {\vv \in \literal}
-  { \nvliteral{\vv} \in \vals }
-  \and
-  \inferrule[(Tuple Values and Array Values)]{\vvl \in \vals^*}
-  { \nvvector{\vvl} \in \vals }
-  \and
-  \inferrule[(Record Values)]
-  {\vr : \Identifiers \rightarrowfin \vals}
-  { \nvrecord{\vr} \in \vals }
-\end{mathpar}
-
-We define the following shorthands for native value literals:
-\hypertarget{def-nvint}{}
-\[
-\begin{array}{rcl}
-\nvint(z)       &\triangleq& \nvliteral{\lint(z)}           \hypertarget{def-nvbool}{}\\
-\nvbool(b)      &\triangleq& \nvliteral{\lbool(b)}          \hypertarget{def-nvreal}{}\\
-\nvreal(r)      &\triangleq& \nvliteral{\lreal(r)}          \hypertarget{def-nvstring}{}\\
-\nvstring(s)    &\triangleq& \nvliteral{\lstring(s)}        \hypertarget{def-nvbitvector}{}\\
-\nvbitvector(v) &\triangleq& \nvliteral{\lbitvector(v)}\\
-\end{array}
-\]
-
-We define the following types of native values:
-\hypertarget{def-tint}{}
-\[
-\begin{array}{rcl}
-  \tint       &\triangleq& \{ \nvint(z) \;|\; z \in \Z\}                                        \hypertarget{def-tbool}{}\\
-  \tbool      &\triangleq& \{ \nvbool(\True), \nvbool(\False) \}                                \hypertarget{def-treal}{}\\
-  \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
-  \tstring    &\triangleq& \{ \nvstring(s) \;|\; \texttt{"}s\texttt{"} \in \texttt{<string>}\}  \hypertarget{def-tbitvector}{}\\
-  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^*\}   \hypertarget{def-tvector}{}\\
-  \tvector    &\triangleq& \{ \nvvector{\textit{vals}} \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
-  \trecord  &\triangleq& \{ \nvrecord{\fieldmap} \;|\; \fieldmap \in \Identifiers\rightarrow\vals\}\\
-\end{array}
-\]
 
 \section{Semantic Configurations \label{sec:configurations}}
 
@@ -343,20 +160,20 @@ ones where an exception was raised, ones when a dynamic error occurred, etc.
 
 We now explain the components over which configurations are defined:
 \begin{itemize}
-  \item Static Environments (\defref{staticenvironments}) consist of the information inferred
+  \item Static Environments, which consist of the information inferred
   by the type-checker for the specification.
-  \item Dynamic Environments (\defref{dynamicenvironments}) associate native values to variables.
+  \item Dynamic Environments (\defref{dynamicenvironments}) associate \nativevalues\ to variables.
   \item Concurrent Execution Graphs (\secref{concurrentexecutiongraphs}) track Read and Write Effects over variables.
 \end{itemize}
 \newpage
 \hypertarget{def-dynamicenvs}{}
-\begin{definition}[Dynamic Environments \label{def:dynamicenvironments}]
+\begin{definition}[Dynamic Environments\label{def:dynamicenvironments}]
 A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}, for short, is a structure which,
-associates native values to variables.
+associates \nativevalues\ to variables.
 Formally, a sequential environment $\denv \in \dynamicenvs$ is a pair consisting of a partial function
 (see \defref{PartialFunction}) from global
-variable names to their native value, and a partial function from local variable names to their
-native values:
+variable names to their \nativevalue, and a partial function from local variable names to their
+\nativevalues:
 \[
 \begin{array}{rcl}
   \dynamicenvs          &\triangleq&  \mathbb{G} \times \mathbb{L} \\
@@ -366,9 +183,8 @@ native values:
 \]
 \end{definition}
 
-\hypertarget{def-staticenvs}{}
-\begin{definition}[Static Environment \label{def:staticenvironments}]
-A \emph{static environment}~\cite{ASLTypingReference} $\tenv \in \staticenvs$ (also referred to as a \emph{type environment})
+\paragraph{Static Environments}
+A \emph{static environment} (see \secref{StaticEnvironments}) $\tenv \in \staticenvs$ (also referred to as a \emph{type environment})
 is produced by the type-checker from the untyped AST.
 
 We assume that the static environment supports the following functions:
@@ -388,9 +204,8 @@ on its name alone.)
 %
 The function $\typesat(\vt, \vs)$ returns true
 if the type $\vt$ \emph{type-satisfies} the type $\vs$
-(see TypingRule.TypeSatisfaction~\cite{ASLTypingReference}).
+(see \secref{TypingRule.TypeSatisfaction}).
 This is used in matching a raised exception to a corresponding catch clause.
-\end{definition}
 
 \hypertarget{def-envs}{}
 \begin{definition}[Environments]
@@ -711,7 +526,7 @@ We annotate subexpressions to allow referring to them.
 We write $\emptyenv$ to stand for a trivial environment (that is, one where all functions are empty).
 
 Notice that, we have dropped the execution graph component and simplified pairs of the form $(\vv,\vg)$,
-where $\vv$ is a native value and $\vg$ is an execution graph, to just $\vv$.
+where $\vv$ is a \nativevalue\  and $\vg$ is an execution graph, to just $\vv$.
 This is because we are interested in demonstrating the sequential semantics (also, the execution graphs
 in this case are all empty).
 
@@ -761,42 +576,42 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 \chapter{Evaluation of Expressions \label{chap:eval_expr}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Informal Preamble}
+% \section{Informal Preamble}
 
-\lrmcomment{This is related to Section 8.3:}
+% \lrmcomment{This is related to Section 8.3:}
 
-\subsection{Execution-time expressions}
+% \subsection{Execution-time expressions}
 
-\lrmcomment{This is related to \identi{XYKC}:}
+% \lrmcomment{This is related to \identi{XYKC}:}
 
-Expressions in ASL are either execution-time expressions or non-execution-time
-expressions.
+% Expressions in ASL are either execution-time expressions or non-execution-time
+% expressions.
 
-\lrmcomment{This is related to \identd{ZPMF}:}
+% \lrmcomment{This is related to \identd{ZPMF}:}
 
-An expression is an execution-time expression if either:
-\begin{itemize}
-\item it contains an execution-time storage element identifier
-\item it contains an execution-time function or getter invocation
-\end{itemize}
+% An expression is an execution-time expression if either:
+% \begin{itemize}
+% \item it contains an execution-time storage element identifier
+% \item it contains an execution-time function or getter invocation
+% \end{itemize}
 
-\subsection{Compile-time-constant expressions}
+% \subsection{Compile-time-constant expressions}
 
-\lrmcomment{This is related to \identi{XSFY}:}
+% \lrmcomment{This is related to \identi{XSFY}:}
 
-Expressions in ASL are either compile-time-constant expressions or
-non-compile-time-constant expressions.
+% Expressions in ASL are either compile-time-constant expressions or
+% non-compile-time-constant expressions.
 
-\lrmcomment{This is related to \identd{XRBT}:}
+% \lrmcomment{This is related to \identd{XRBT}:}
 
-An expression is a compile-time-constant expression if each one of its atomic expressions is one of:
-\begin{itemize}
-\item a literal constant
-\item a compile-time-constant storage element identifier
-\item an immutable storage element identifier with a compile-time-constant initializer expression.
-\item compile-time-constant function or getter invocations
-\end{itemize}
-\section{Formal Preamble}
+% An expression is a compile-time-constant expression if each one of its atomic expressions is one of:
+% \begin{itemize}
+% \item a literal constant
+% \item a compile-time-constant storage element identifier
+% \item an immutable storage element identifier with a compile-time-constant initializer expression.
+% \item compile-time-constant function or getter invocations
+% \end{itemize}
+% \section{Formal Preamble}
 
 The relation
 \hypertarget{def-evalexpr}{}
@@ -807,7 +622,7 @@ The relation
 \]
 evaluates the expression $\ve$ in an environment $\env$ and one of the following applies:
 \begin{itemize}
-  \item the evaluation terminates normally, returning a native value $\vv$, a concurrent execution graph $\vg$,
+  \item the evaluation terminates normally, returning a \nativevalue\  $\vv$, a concurrent execution graph $\vg$,
   and a modified environment $\newenv$;
   \item the evaluation terminates abnormally.
 \end{itemize}
@@ -848,7 +663,7 @@ We also define the following helper relations:
 All of the following apply:
 \begin{itemize}
 \item $\ve$ is the literal expression for $\vl$, that is, $\ELiteral(\vl)$
-\item $\vv$ is the native value corresponding to $\vl$;
+\item $\vv$ is the \nativevalue\  corresponding to $\vl$;
 \item $\vg$ is the empty graph, as literals do not yield any Read and Write Effects;
 \item $\newenv$ is $\env$.
 \end{itemize}
@@ -856,9 +671,9 @@ All of the following apply:
 \subsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Lit.asl}
-each of the expressions \texttt{3} evaluates to the native value $\nvint(3)$.
+each of the expressions \texttt{3} evaluates to the \nativevalue\  $\nvint(3)$.
 
-\CodeSubsection{\LitBegin}{\LitEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalLitBegin}{\EvalLitEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -885,7 +700,7 @@ In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ELocalVar.asl}
 the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.ELocalVar.
 
-\CodeSubsection{\ELocalVarBegin}{\ELocalVarEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalELocalVarBegin}{\EvalELocalVarEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -921,7 +736,7 @@ In the specification:
 the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
 uses the rule \\ SemanticsRule.EGlobalVar.
 
-\CodeSubsection{\EGlobalVarBegin}{\EGlobalVarEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalEGlobalVarBegin}{\EvalEGlobalVarEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -952,7 +767,7 @@ All of the following apply:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopAndFalse.asl}
 the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
 
-\CodeSubsection{\BinopAndBegin}{\BinopAndEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalBinopAndBegin}{\EvalBinopAndEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1014,7 +829,7 @@ All of the following apply:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopOrTrue.asl}
 The expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 
-\CodeSubsection{\BinopOrBegin}{\BinopOrEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalBinopOrBegin}{\EvalBinopOrEnd}{../Interpreter.ml}
 
 \begin{mathpar}
 \inferrule{
@@ -1073,7 +888,7 @@ All of the following apply:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopImplExFalso.asl}
 the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
 
-  \CodeSubsection{\BinopImplBegin}{\BinopImplEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalBinopImplBegin}{\EvalBinopImplEnd}{../Interpreter.ml}
 
   \begin{mathpar}
     \inferrule{
@@ -1117,7 +932,7 @@ All of the following apply:
   \item the operator $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$.
         These operators are handled by rules
         SemanticsRule.BinopAnd (\secref{SemanticsRule.BinopAnd}),
-        SemanticsRule.BinopOr (\secref{SemanticsRule.BinopOr}), and
+        SemanticsRule.BinopOr \\ (\secref{SemanticsRule.BinopOr}), and
         SemanticsRule.BinopImpl (\secref{SemanticsRule.BinopImpl});
   \item the evaluation of the expression $\veone$ in $\env$ is the configuration \\
         $\Normal(\vmone, \envone)$\ProseOrAbnormal;
@@ -1139,7 +954,7 @@ In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopDIVBackendDefinedError.asl}
 the expression \texttt{3 DIV 0} results in a type error.
 
-\CodeSubsection{\BinopBegin}{\BinopEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalBinopBegin}{\EvalBinopEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1215,7 +1030,7 @@ In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnopAssert.asl}
 the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 
-\CodeSubsection{\UnopBegin}{\UnopEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalUnopBegin}{\EvalUnopEnd}{../Interpreter.ml}
 
 \begin{mathpar}
   \inferrule{
@@ -1237,7 +1052,8 @@ All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a conditional expression $\econd$ with two options $\veone$ and $\vetwo$,
         that is, $\ECond(\econd, \veone, \vetwo)$;
-  \item the evaluation of the conditional expression $\econd$ in $\env$ yields $\Normal(\mcond, \envone)$\ProseOrAbnormal;
+  \item the evaluation of the conditional expression $\econd$ in $\env$ yields \\
+        $\Normal(\mcond, \envone)$\ProseOrAbnormal;
   \item $\mcond$ consists of a native Boolean for $\vb$ and execution graph $\vgone$;
   \item $\vep$ is $\veone$ if $\vb$ is $\True$ and $\vetwo$ otherwise;
   \item the evaluation of $\vep$ in $\envone$ yields $\Normal((\vvtwo, \vgtwo), \newenv)$\ProseOrAbnormal;
@@ -1256,7 +1072,7 @@ the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will
 evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \texttt{UNKNOWN} is implemented.
 
-  \CodeSubsection{\ECondBegin}{\ECondEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
 
 \begin{mathpar}
   \inferrule{
@@ -1303,7 +1119,7 @@ In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ESlice.asl}
 the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
 
-\CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1339,7 +1155,7 @@ All of the following apply:
     \begin{itemize}
       \item $\vms$ consists of a list of returned value $(\vv_i,\vg_i)$, for $i=1..k$;
       \item $\vg$ is the parallel composition of $\vg_i$, for $i=1..k$;
-      \item $\vv$ is the native value vector of values $\vv_i$, for $i=1..k$;
+      \item $\vv$ is the \nativevalue\  vector of values $\vv_i$, for $i=1..k$;
       \item the resulting configuration is $\Normal((\vv, \vg), \newenv)$.
     \end{itemize}
   \end{itemize}
@@ -1351,7 +1167,7 @@ All of the following apply:
     the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
     subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 
-  \CodeSubsection{\ECallBegin}{\ECallEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1403,7 +1219,7 @@ indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
     results in a typing error since we are trying to access index \texttt{3} of an array
     which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 
-  \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -1432,7 +1248,7 @@ All of the following apply:
 \item the expressions associated with the fields are $\ve_{1..k}$;
 \item evaluating the expressions of $\fields$ in order yields \\
       $\Normal((\vvfields,\vg), \newenv)$\ProseOrAbnormal;
-\item $\vvfields$ is a list of native values $\vv_{1..k}$;
+\item $\vvfields$ is a list of \nativevalues\ $\vv_{1..k}$;
 \item $\vv$ is the native record that maps $\id_i$ to $\vv_i$, for $i=1..k$.
 \end{itemize}
 
@@ -1442,7 +1258,7 @@ In the specification:
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
 $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 
-\CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1475,7 +1291,7 @@ All of the following apply:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl}
     the expression \texttt{my\_record.a} evaluates to the value \texttt{3}.
 
-  \CodeSubsection{\EGetFieldBegin}{\EGetFieldEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1509,7 +1325,7 @@ All of the following apply:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EConcat2.asl}
     the expression \texttt{['1111', '0000']} evaluates to the value \texttt{'11110000'}.
 
-  \CodeSubsection{\EConcatBegin}{\EConcatEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalEConcatBegin}{\EvalEConcatEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1542,7 +1358,7 @@ surrounded with square brackets.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ETuple.asl}
     the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 
-  \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1558,40 +1374,39 @@ surrounded with square brackets.
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.EUnknown \label{sec:SemanticsRule.EUnknown}}
-  \begin{definition}[Domain of a Type]
-  The domain of a type $\vt$ in an environment $\env=(\tenv,\denv)$,
-  denoted by $\textsf{dyn-dom}(\tenv, \denv, \vt)$, is defined by the type system~\cite{ASLTypingReference}
-  (TypingRule.Domain)
-  as the set of values that $\vt$ may store in $\env$. The reason that the dynamic environment is
-  needed to determine the domain is due to subprogram parameters, which constrain integer parameters to
-  a singleton value domain.
-  \end{definition}
+\begin{definition}[Domain of a Type]
+The domain of a type $\vt$ in an environment $\env=(\tenv,\denv)$,
+denoted by $\dynamicdomain(\tenv, \denv, \vt)$, is defined by the type system (see \secref{DynDomain})
+as the set of values that $\vt$ may store in $\env$. The reason that the dynamic environment is
+needed to determine the domain is due to subprogram parameters, which constrain integer parameters to
+a singleton value domain.
+\end{definition}
 
-  \subsection{Prose}
-  All of the following apply:
-  \begin{itemize}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
   \item $\ve$ denotes the \texttt{UNKNOWN} expression annotated with type $\vt$;
   \item $\vv$ is an arbitrary value in the domain of $\vt$ in $\env$;
   \item $\newenv$ is $\env$.
   \item $\vg$ is the empty execution graph.
-  \end{itemize}
+\end{itemize}
 
-  \subsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownInteger3.asl}
-    the expression \texttt{[UNKNOWN : integer]} evaluates to an integer value.
+\subsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownInteger3.asl}
+the expression \texttt{[UNKNOWN : integer]} evaluates to an integer value.
 
 \subsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownIntegerRange3-42-3.asl}
 the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ or $\nvint(42)$.
 
-\CodeSubsection{\EUnknownBegin}{\EUnknownEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalEUnknownBegin}{\EvalEUnknownEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{\env \eqname (\tenv, \denv)\\
-  \vv \in \textsf{dyn-dom}(\tenv, \env, \vt)
+  \vv \in \dynamicdomain(\tenv, \env, \vt)
 }{
   \evalexpr{\env, \overname{\EUnknown(\vt)}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
@@ -1627,7 +1442,7 @@ domain of \texttt{ty}.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EPatternTRUE.asl}
     the expression \texttt{42 IN \{0..3, 42\}} evaluates to \True.
 
-  \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1706,7 +1521,7 @@ The following excerpts indicates several points where various static and
 dynamic errors can occur:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ATCVariousErrors.asl}
 
-\CodeSubsection{\ATCBegin}{\ATCEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalATCBegin}{\EvalATCEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -1866,8 +1681,7 @@ We also define the helper rule SemanticsRule.LEMultiAssign (\ref{sec:SemanticsRu
 
 \hypertarget{def-rexpr}{}
 Some of the rules require viewing left-hand-side expressions as their corresponding right-hand side expressions.
-The correspondence is defined in the ASL Syntax Reference~\cite[Chapter 5]{ASLAbstractSyntaxReference}
-and given by the function $\torexpr : \lexpr \rightarrow \expr$.
+The correspondence is defined by the function $\torexpr : \lexpr \rightarrow \expr$.
 %
 For example, \hyperlink{SemanticsRule.LESetField}{SemanticsRule.LESetField}
 needs to evaluate the record subexpression $\rerecord$, which is a left-hand-side expression.
@@ -1893,7 +1707,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDiscard.asl}
   \texttt{- = 42;} does not affect the environment.
 
-  \CodeSubsection{\LEDiscardBegin}{\LEDiscardEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalLEDiscardBegin}{\EvalLEDiscardEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -1922,7 +1736,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   SemanticsRule.LELocalVar is (only) used to assign the value $42$ to the left-hand-side expression
   \texttt{x} within \texttt{x = 42;}.
 
-  \CodeSubsection{\LELocalVarBegin}{\LELocalVarEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalLELocalVarBegin}{\EvalLELocalVarEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -1953,7 +1767,7 @@ For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vg
   SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the left-hand-side expression
   \texttt{x} within \texttt{x = 42;}.
 
-  \CodeSubsection{\LEGlobalVarBegin}{\LEGlobalVarEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalLEGlobalVarBegin}{\EvalLEGlobalVarEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -1996,7 +1810,7 @@ The assignment \texttt{x[3:0] = '0000'} binds \texttt{x} to $\nvbitvector(111100
 via the rule SemanticsRule.LESlice.asl
 in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 
-\CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalLESliceBegin}{\EvalLESliceEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -2052,7 +1866,7 @@ getter invocation
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetArray.asl}
   binds the third element of \texttt{my\_array} to the value \texttt{53}.
 
-  \CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalLESetArrayBegin}{\EvalLESetArrayEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2084,8 +1898,7 @@ getter invocation
 \end{itemize}
 
 We note that the index is guaranteed by the type-checker to be within the array bounds
-via TypingRule.LESetArray (see the ASL Typing Reference~\cite{ASLTypingReference} chapter
-``Typing of Left-Hand-Side Expression'').
+via \secref{TypingRule.LESetArray}.
 
 \hypertarget{SemanticsRule.LESetField}{}
 \section{SemanticsRule.LESetField \label{sec:SemanticsRule.LESetField}}
@@ -2113,7 +1926,7 @@ via TypingRule.LESetArray (see the ASL Typing Reference~\cite{ASLTypingReference
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetField.asl}
     \texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}} in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\}}.
 
-  \CodeSubsection{\LESetFieldBegin}{\LESetFieldEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalLESetFieldBegin}{\EvalLESetFieldEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2164,7 +1977,7 @@ In the specification:
 \texttt{(x, y) = (3, 42)} binds \texttt{x} to $\nvint(3)$ and \texttt{y} to
 $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and \texttt{y} is bound to $\nvint(3)$.
 
-\CodeSubsection{\LEDestructuringBegin}{\LEDestructuringEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalLEDestructuringBegin}{\EvalLEDestructuringEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2286,7 +2099,7 @@ One of the following applies:
 correspond to the start (included) and the length of each slice in
 $\slices$.
 
-\CodeSubsection{\SlicesBegin}{\SlicesEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSlicesBegin}{\EvalSlicesEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2324,7 +2137,7 @@ $\slices$.
   the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, i.\,e.\ the slice of
   length 1 starting at index 2.
 
-  \CodeSubsection{\SliceSingleBegin}{\SliceSingleEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSliceSingleBegin}{\EvalSliceSingleEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2357,7 +2170,7 @@ $\slices$.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceLength.asl}
   \texttt{2+:3} evaluates to \texttt{(2, 3)}.
 
-  \CodeSubsection{\SliceLengthBegin}{\SliceLengthEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSliceLengthBegin}{\EvalSliceLengthEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2394,7 +2207,7 @@ $\slices$.
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceRange.asl}
   \texttt{4:2} evaluates to \texttt{(2, 3)}.
 
-  \CodeSubsection{\SliceRangeBegin}{\SliceRangeEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSliceRangeBegin}{\EvalSliceRangeEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2434,7 +2247,7 @@ $\slices$.
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceStar.asl}
   \texttt{x[3*:2]} evaluates to \texttt{'11'}.
 
-  \CodeSubsection{\SliceStarBegin}{\SliceStarEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSliceStarBegin}{\EvalSliceStarEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2491,7 +2304,7 @@ and one of the following applies:
   \subsection{Example}
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAll.asl}
 
-  \CodeSubsection{\PAllBegin}{\PAllEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2520,7 +2333,7 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAnyFALSE.asl}
 
-    \CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Interpreter.ml}
+    \CodeSubsection{\EvalPAnyBegin}{\EvalPAnyEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2555,7 +2368,7 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PGeqFALSE.asl}
 
-  \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2588,7 +2401,7 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PLeqFALSE.asl}
 
-  \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2619,7 +2432,7 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotFALSE.asl}
 
-  \CodeSubsection{\PNotBegin}{\PNotEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2658,7 +2471,7 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PRangeFALSE.asl}
 
-  \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2695,7 +2508,7 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PSingleFALSE.asl}
 
-  \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2728,7 +2541,7 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PMaskFALSE.asl}
 
-  \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \newcommand\maskmatch[0]{\text{mask\_match}}
@@ -2780,7 +2593,7 @@ and one of the following applies:
     \subsection{Example}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleFALSE.asl}
 
-  \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalPTupleBegin}{\EvalPTupleEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2813,7 +2626,7 @@ The relation
     \Normal(\overname{\XGraphs}{\newg}, \overname{\envs}{\newenv})
 \]
 evaluates a local declaration of one or more variables $\ldi$ in
-$\env$ with an optional initialisation value $\minitopt$.
+$\env$ with an optional initialization value $\minitopt$.
 That is, the right-hand side of the declaration, if it exists,
 has already been evaluated, yielding $\minitopt$ (see, for example, SemanticsRule.SDeclSome in \secref{SemanticsRule.SDeclSome}).
 Evaluation of the local variables $\ldi$
@@ -2837,7 +2650,7 @@ in \chapref{eval_stmt}), they are all treated the same way.
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ldi$ indicates that the initialisation value will be discarded,
+  \item $\ldi$ indicates that the initialization value will be discarded,
         $\LDIDiscard$;
   \item $\newg$ is the empty graph;
   \item $\newenv$ is $\env$.
@@ -2848,7 +2661,7 @@ In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDDiscard.asl}
 \texttt{var - : integer;} does not modify the environment.
 
-\CodeSubsection{\LDDiscardBegin}{\LDDiscardEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalLDDiscardBegin}{\EvalLDDiscardEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2883,7 +2696,7 @@ In the specification:
 \texttt{var x : integer = 3;} binds \texttt{x} to the evaluation of
 \texttt{3} in $\env$, without type consideration at runtime.
 
-\CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2915,7 +2728,7 @@ In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTyped.asl}
 \texttt{var x : integer = 42;} binds \texttt{x} in $\env$ to $\nvint(42)$.
 
-\CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalLDTypedBegin}{\EvalLDTypedEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -2949,7 +2762,7 @@ In the specification:
 \texttt{1}, \texttt{y} to the evaluation of \texttt{2}, and \texttt{z} to the
 evaluation of \texttt{3}) in $\env$.
 
-\CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalLDTupleBegin}{\EvalLDTupleEnd}{../Interpreter.ml}
 
 \newcommand\ldituplefolder[0]{\hyperlink{def-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}}
 
@@ -3013,7 +2826,7 @@ In the specification:
 \verb|var x : integer{3..43};| binds \texttt{x} in $\env$ to the base value of \verb|integer{3..43}|,
 which is $\nvint(3)$.
 
-\CodeSubsection{\LDUninitialisedTypedBegin}{\LDUninitialisedTypedEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalLDUninitialisedTypedBegin}{\EvalLDUninitialisedTypedEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -3031,31 +2844,26 @@ which is $\nvint(3)$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Evaluation of Statements \label{chap:eval_stmt}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \lrmcomment{This is related to \identr{PTNG}:}
 
-\section{Syntax}
+% \section{Informal preamble}
+% Statements consist of:
+% \begin{itemize}
+% \item Pass statements, which do nothing (see \secref{SemanticsRule.SPass}),
+% \item Assignment statements (see \secref{SemanticsRule.SAssign} and \secref{SemanticsRule.SAssignCall}),
+% \item Sequencing statements (see \secref{SemanticsRule.SSeq}),
+% \item Return statements (see \secref{ReturnStatements}, \secref{SemanticsRule.SReturnNone}, \secref{SemanticsRule.SReturnOne}, and \secref{SemanticsRule.SReturnSome}),
+% \item Procedure invocation statements (see \secref{SemanticsRule.SCall}),
+% \item Case statements (see \secref{SemanticsRule.SCase}),
+% \item Assertion statements (see \secref{SemanticsRule.SAssert}),
+% \item Repetitive statements (see \secref{SemanticsRule.SWhile}, \secref{SemanticsRule.SRepeat}, \secref{SemanticsRule.SFor}),
+% \item Throw statements, which throw exceptions (see \secref{SemanticsRule.SThrowNone} and \secref{SemanticsRule.SThrowSomeTyped}),
+% \item Conditional statements (see \secref{SemanticsRule.SCond}),
+% \item Exception handling (see \secref{SemanticsRule.STry}),
+% \item Declarations of variables, let values and constants (see \secref{SemanticsRule.SDeclSome} and \secref{SemanticsRule.SDeclNone}).
+% \end{itemize}
 
-\section{Abstract Syntax}
-
-\lrmcomment{This is related to \identr{PTNG}:}
-
-\section{Informal preamble}
-Statements consist of:
-\begin{itemize}
-\item Pass statements, which do nothing (see \secref{SemanticsRule.SPass}),
-\item Assignment statements (see \secref{SemanticsRule.SAssign} and \secref{SemanticsRule.SAssignCall}),
-\item Sequencing statements (see \secref{SemanticsRule.SSeq}),
-\item Return statements (see Section~\label{sec:ReturnStatements}, \secref{SemanticsRule.SReturnNone}, \secref{SemanticsRule.SReturnOne} and \secref{SemanticsRule.SReturnSome}),
-\item Procedure invocation statements (see \secref{SemanticsRule.SCall}),
-\item Case statements (see \secref{SemanticsRule.SCase}),
-\item Assertion statements (see \secref{SemanticsRule.Assert}),
-\item Repetitive statements (see \secref{SemanticsRule.SWhile}, \secref{SemanticsRule.Repeat}, \secref{SemanticsRule.For}),
-\item Throw statements, which throw exceptions (see \secref{SemanticsRule.ThrowNone} and \secref{SemanticsRule.SThrowSomeTyped}),
-\item Conditional statements (see \secref{SemanticsRule.SCond}),
-\item Exception handling (see \secref{SemanticsRule.STry}),
-\item Declarations of variables, let values and constants (see \secref{SemanticsRule.SDeclSome} and \secref{SemanticsRule.SDeclNone}).
-\end{itemize}
-
-\section{Formal preamble}
+% \section{Formal preamble}
 
 The relation
 \hypertarget{def-evalstmt}{}
@@ -3105,8 +2913,6 @@ In evaluating a statement $\vs$, one of the following applies:
 \section{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
 \subsection{Syntax}
 
-\subsection{AbstractSyntax}
-
 \subsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SPass.asl}
@@ -3128,13 +2934,9 @@ All of the following apply:
 
 \isempty{\subsection{Comments}}
 
-\CodeSubsection{\SPassBegin}{\SPassEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
-\subsection{Syntax}
-
-\subsection{AbstractSyntax}
-
 \subsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssign.asl}
@@ -3174,17 +2976,13 @@ and then completes the update via an appropriate rule for evaluating the
 left-hand side expression, which in turn handles variables, tuples, bitvectors,
 etc.
 
-\CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSAssignBegin}{\EvalSAssignEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SAssignCall \label{sec:SemanticsRule.SAssignCall}}
 
-\subsection{Syntax}
+\isempty{\subsection{Example}}
 
-\subsection{AbstractSyntax}
-
-\subsection{Example}
-
-\VerbatimInput{\testdir/SemanticsRule.SAssignCall.asl}
+\VerbatimInput{\semanticstests/SemanticsRule.SAssignCall.asl}
 given that the function call \texttt{f(1)} returns a pair of values --- $\nvint(1)$ and $\nvint(2)$
 (each with its own associated execution graph),
 the statement \texttt{(a,b) = f(1)} assigns the value $\nvint(1)$ to the mutable variable \texttt{a}
@@ -3231,109 +3029,93 @@ We now define the evaluation of assigning from a subprogram call:
 
 \isempty{\subsection{Comments}}
 
-\CodeSubsection{\SAssignCallBegin}{\SAssignCallEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSAssignCallBegin}{\EvalSAssignCallEnd}{../Interpreter.ml}
 
 \section{Return statements \label{sec:ReturnStatements}}
 
-\subsection{Syntax}
+% \lrmcomment{This is related to \identd{HTPL}:}
 
-\subsection{AbstractSyntax}
+% A return statement returns the control flow to the caller of a subprogram.
 
-\lrmcomment{This is related to \identd{HTPL}:}
+% \lrmcomment{This is related to \identr{PHNZ}:}
 
-A return statement returns the control flow to the caller of a subprogram.
+% A return statement appearing in a getter or function requires a return value expression that type-satisfies the return type of the subprogram.
 
-\lrmcomment{This is related to \identr{PHNZ}:}
+% \lrmcomment{This is related to \identr{NYWH}:}
 
-A return statement appearing in a getter or function requires a return value expression that type-satisfies the return type of the subprogram.
-
-\lrmcomment{This is related to \identr{NYWH}:}
-
-A return statement appearing in a setter or procedure must have no return value expression.
+% A return statement appearing in a setter or procedure must have no return value expression.
 
 \subsection{SemanticsRule.SReturnNone \label{sec:SemanticsRule.SReturnNone}}
-    \subsubsection{Example}
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
-    exits the current procedure.
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
+exits the current procedure.
 
-\subsubsection{Formally}
-    All of the following apply:
-    \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement, $\SReturn(\None)$;
-    \item $\vvs$ is the empty list, $\emptylist$;
-    \item $\newg$ is the empty graph;
-    \item $\newenv$ is $\env$.
-    \end{itemize}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{return} statement, $\SReturn(\None)$;
+  \item $\vvs$ is the empty list, $\emptylist$;
+  \item $\newg$ is the empty graph;
+  \item $\newenv$ is $\env$.
+\end{itemize}
 
 \begin{mathpar}
-  \inferrule{}
-  {
-    \evalstmt{\env, \SReturn(\None)} \evalarrow \Returning((\emptylist, \emptygraph), \env)
-  }
+\inferrule{}
+{
+  \evalstmt{\env, \SReturn(\None)} \evalarrow \Returning((\emptylist, \emptygraph), \env)
+}
 \end{mathpar}
 
 \isempty{\subsubsection{Comments}}
 
-\CodeSubsubsection{\SReturnNoneBegin}{\SReturnNoneEnd}{../Interpreter.ml}
+\CodeSubsubsection{\SReturnNoneBegin}{\EvalSReturnNoneEnd}{../Interpreter.ml}
 
 \subsection{SemanticsRule.SReturnOne \label{sec:SemanticsRule.SReturnOne}}
-
-\subsection{Syntax}
-
-\subsection{AbstractSyntax}
-
 \subsubsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
-    \texttt{return 3;} exits the current subprogram with value \texttt{3}.
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
+\texttt{return 3;} exits the current subprogram with value \texttt{3}.
 
-\subsubsection{Formally}
-
-    All of the following apply:
-    \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement;
-    \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\langle\ve\rangle)$;
-    \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
-    \item $\vvs$ is $[\vv]$;
-    \item $\vgtwo$ is the result of adding a Write Effect for a fresh identifier and the value $\vv$;
-    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
-    \end{itemize}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{return} statement;
+  \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\langle\ve\rangle)$;
+  \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+  \item $\vvs$ is $[\vv]$;
+  \item $\vgtwo$ is the result of adding a Write Effect for a fresh identifier and the value $\vv$;
+  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
+\end{itemize}
 
 \begin{mathpar}
-  \inferrule{
-    \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\\\
-    \wid \in \Identifiers\text{ is fresh}\\
-    \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
-    \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
-  }
-  {
-    \evalstmt{\env, \SReturn(\langle\ve\rangle)} \evalarrow \Returning(([\vv], \newg), \newenv)
-  }
+\inferrule{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \wid \in \Identifiers\text{ is fresh}\\
+  \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
+  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+}{
+  \evalstmt{\env, \SReturn(\langle\ve\rangle)} \evalarrow \Returning(([\vv], \newg), \newenv)
+}
 \end{mathpar}
 
 \isempty{\subsubsection{Comments}}
-  \CodeSubsubsection{\SReturnOneBegin}{\SReturnOneEnd}{../Interpreter.ml}
+\CodeSubsubsection{\SReturnOneBegin}{\EvalSReturnOneEnd}{../Interpreter.ml}
 
 \subsection{SemanticsRule.SReturnSome \label{sec:SemanticsRule.SReturnSome}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
+\texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
 
-\subsection{Syntax}
-
-\subsection{AbstractSyntax}
-
-    \subsubsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
-    \texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
-
-\subsubsection{Formally}
-    All of the following apply:
-    \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
-    \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
-    is \\ $\Normal(\ms, \newenv)$\ProseOrAbnormal;
-    \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
-    \end{itemize}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
+  \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
+  is \\ $\Normal(\ms, \newenv)$\ProseOrAbnormal;
+  \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
+\end{itemize}
 
 \newcommand\writefolder[1]{\texttt{write\_folder}(#1)}
 
@@ -3376,33 +3158,29 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
 
 \isempty{\subsubsection{Comments}}
 
-\CodeSubsubsection{\SReturnSomeBegin}{\SReturnSomeEnd}{../Interpreter.ml}
+\CodeSubsubsection{\SReturnSomeBegin}{\EvalSReturnSomeEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SSeq \label{sec:SemanticsRule.SSeq}}
-
-\subsection{Syntax}
-
-\subsection{AbstractSyntax}
-
 \subsection{Example}
-  In the specification:
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
-  \texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
+\texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \emph{sequencing statement} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
+  \item evaluating $\vsone$ in $\env$ is either $\Continuing(\vgone, \envone)$ in which case
+  the evaluation continues,
+  or a returning configuration ($\Returning((\vvs, \newg), \newenv)$)\ProseOrAbnormal;
+  \item evaluating $\vstwo$ in $\envone$ yields a non-abnormal configuration \\
+        (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
+  \item $\newg$ is the ordered composition of $\vgone$ and the execution graph of $C$ with the
+  $\aslpo$ edge;
+  \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
+\end{itemize}
 
 \subsection{Formally}
-  All of the following apply:
-  \begin{itemize}
-    \item $\vs$ is a \emph{sequencing statement} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
-    \item evaluating $\vsone$ in $\env$ is either $\Continuing(\vgone, \envone)$ in which case
-    the evaluation continues,
-    or a returning configuration ($\Returning((\vvs, \newg), \newenv)$)\ProseOrAbnormal;
-    \item evaluating $\vstwo$ in $\envone$ yields a non-abnormal configuration \\
-          (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
-    \item $\newg$ is the ordered composition of $\vgone$ and the execution graph of $C$ with the
-    $\aslpo$ edge;
-    \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
-  \end{itemize}
-
 \begin{mathpar}
   \inferrule{
     \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\
@@ -3417,135 +3195,122 @@ We now use the helper relation \texttt{write\_folder} to define the rule for ret
 
 \isempty{\subsection{Comments}}
 
-\CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SCall \label{sec:SemanticsRule.SCall}}
-
-\subsection{Syntax}
-
-\subsection{AbstractSyntax}
-
-\lrmcomment{This is related to \identd{KCYT}:}
-A procedure invocation statement calls a procedure subprogram using the given
-actual arguments. The subprogram must not have a return type.
+% \lrmcomment{This is related to \identd{KCYT}:}
+% A procedure invocation statement calls a procedure subprogram using the given
+% actual arguments. The subprogram must not have a return type.
 
 \subsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
-    \texttt{Zeros(3)} evaluates to \texttt{'000'}.
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
+\texttt{Zeros(3)} evaluates to \texttt{'000'}.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a call statement, $\SCall(\name, \args, \namedargs)$;
+  \item evaluating the subprogram call as per \chapref{eval_call} is
+  \\ $\Normal(\newg, \newenv)$\ProseOrAbnormal;
+  \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+\end{itemize}
 
 \subsection{Formally}
-    All of the following apply:
-    \begin{itemize}
-    \item $\vs$ is a call statement;
-    \item $\vs$ is a call statement, $\SCall(\name, \args, \namedargs)$;
-    \item evaluating the subprogram call as per \chapref{eval_call} is
-    \\ $\Normal(\newg, \newenv)$\ProseOrAbnormal;
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-    \end{itemize}
-
 \begin{mathpar}
-  \inferrule{
-    \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
-  }
-  {
-    \evalstmt{\env, \SCall(\name, \args, \namedargs)} \evalarrow \Continuing(\newg, \newenv)
-  }
+\inferrule{
+  \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+}{
+  \evalstmt{\env, \overname{\SCall(\name, \args, \namedargs)}{\vs}} \evalarrow \Continuing(\newg, \newenv)
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
 
-\CodeSubsection{\SCallBegin}{\SCallEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SCond \label{sec:SemanticsRule.SCond}}
+% \subsection{Informally}
 
-\subsection{Syntax}
+% \lrmcomment{This is related to \identr{TMYS}:}
+% Conditional statements select which block to execute by testing condition expressions sequentially until a $\True$ condition is found.
 
-\subsection{AbstractSyntax}
+% \lrmcomment{This is related to \identr{XSSL}:}
+% If no $\True$ condition is found and there is an \texttt{else} block, the
+% \texttt{else} block is executed.
 
-\subsection{Informally}
+% \lrmcomment{This is related to \identr{KZTJ}:}
+% If no $\True$ condition is found and there is no \texttt{else} block, no block is executed.
 
-\lrmcomment{This is related to \identr{TMYS}:}
-Conditional statements select which block to execute by testing condition expressions sequentially until a $\True$ condition is found.
+% \subsection{Examples}
+%     The specification:
+%     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
+%     does not result in any Assertion Error.
 
-\lrmcomment{This is related to \identr{XSSL}:}
-If no $\True$ condition is found and there is an \texttt{else} block, the
-\texttt{else} block is executed.
+%     The specification:
+%     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond2.asl}
 
-\lrmcomment{This is related to \identr{KZTJ}:}
-If no $\True$ condition is found and there is no \texttt{else} block, no block is executed.
+%     The specification:
+%     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond3.asl}
 
-\subsection{Examples}
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
-    does not result in any Assertion Error.
+%     The specification:
+%     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond4.asl}
 
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond2.asl}
-
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond3.asl}
-
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond4.asl}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vs$ is a condition statement, $\SCond(\ve, \vsone, \vstwo)$;
+\item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone)$\ProseOrAbnormal;
+\item $\vv$ is a native Boolean for $\vb$;
+\item the statement $\vsp$ is $\vsone$ is $\vb$ is $\True$ and $\vstwo$ otherwise
+(so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
+$\vstwo$ will be evaluated);
+\item evaluating $\vsp$ in $\envone$ as per \chapref{eval_block} is a non-abnormal configuration
+      (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
+\item $\vg$ is the ordered composition of $\vgone$ and the execution graph of the configuration $C$;
+\item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
+\end{itemize}
 
 \subsection{Formally}
-    Evaluation of the statement $\vs$ in an environment $\env$ is
-    the output configuration $D$, and all of the following apply:
-    \begin{itemize}
-    \item $\vs$ is a condition statement, $\SCond(\ve, \vsone, \vstwo)$;
-    \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone)$\ProseOrAbnormal;
-    \item $\vv$ is a native Boolean for $\vb$;
-    \item the statement $\vsp$ is $\vsone$ is $\vb$ is $\True$ and $\vstwo$ otherwise
-    (so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
-    $\vstwo$ will be evaluated);
-    \item evaluating $\vsp$ in $\envone$ as per \chapref{eval_block} is a non-abnormal configuration
-          (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
-    \item $\vg$ is the ordered composition of $\vgone$ and the execution graph of the configuration $C$;
-    \item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
-    \end{itemize}
-
 \begin{mathpar}
-  \inferrule{
-    \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envone) \OrAbnormal\\
-    \vv \eqname \nvbool(\vb)\\
-    \vsp \eqdef \choice{\vb}{\vsone}{\vstwo}\\
-    \evalblock{\envone, \vsp} \evalarrow C \OrAbnormal\\\\
-    \vg \eqdef \ordered{\vgone}{\aslctrl}{\graphof{C}}\\
-    D \eqdef \withgraph{C}{\vg}
-  }
-  {
-    \evalstmt{\env, \SCond(\ve, \vsone, \vstwo)} \evalarrow D
-  }
+\inferrule{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envone) \OrAbnormal\\
+  \vv \eqname \nvbool(\vb)\\
+  \vsp \eqdef \choice{\vb}{\vsone}{\vstwo}\\
+  \evalblock{\envone, \vsp} \evalarrow C \OrAbnormal\\\\
+  \vg \eqdef \ordered{\vgone}{\aslctrl}{\graphof{C}}\\
+  D \eqdef \withgraph{C}{\vg}
+}{
+  \evalstmt{\env, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}} \evalarrow D
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
 
-\CodeSubsection{\SCondBegin}{\SCondEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SCase \label{sec:SemanticsRule.SCase}}
 
-\subsection{Syntax}
-
-\subsection{AbstractSyntax}
+% \subsection{Syntax}
 
 \subsection{Example}
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl}
-    uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl}
+uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
+
+\subsection{Prose}
+Evaluation of the statement $\vs$ in an environment $\env$ is a configuration $C$,
+and all of the following apply:
+\begin{itemize}
+  \item $\vs$ is a case statement, $\SCase(\ve, \caselist)$;
+  \item desugaring $\vs$ gives a statement $\vsone$, which assigns $\ve$ to a fresh variable
+  and then matches its value against a list of patterns corresponding to $\caselist$ nested conditions.
+  In particular, this means that the cases are considered in order and only one of them is executed;
+  \item evaluating $\vsone$ in $\env$ results in the output configuration $C$.
+\end{itemize}
 
 \subsection{Formally}
-    Evaluation of the statement $\vs$ in an environment $\env$ is a configuration $C$,
-    and all of the following apply:
-    \begin{itemize}
-    \item $\vs$ is a case statement, $\SCase(\ve, \caselist)$;
-    \item desugaring $\vs$ gives a statement $\vsone$, which assigns $\ve$ to a fresh variable
-    and then matches its value against a list of patterns corresponding to $\caselist$ nested conditions.
-    In particular, this means that the cases are considered in order and only one of them is executed;
-    \item evaluating $\vsone$ in $\env$ results in the output configuration $C$.
-    \end{itemize}
-
-  \hypertarget{def-casetoconds}{}
+\hypertarget{def-casetoconds}{}
 A case statement is syntactic sugar for a condition ladder where each
 of the alternatives is a pattern.
 That is, a statement of the form
@@ -3597,55 +3362,55 @@ We now define the semantics of a case statement in terms of the desugared statem
 
 \isempty{\subsection{Comments}}
 
-\CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSCaseBegin}{\EvalSCaseEnd}{../Interpreter.ml}
 
 \section{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
 
-\lrmcomment{This is related to \identd{QJYV}:}
-An assertion statement takes an expression that is asserted by the
-specification to be $\True$ when the assertion statement is executed.
+% \lrmcomment{This is related to \identd{QJYV}:}
+% An assertion statement takes an expression that is asserted by the
+% specification to be $\True$ when the assertion statement is executed.
 
-\lrmcomment{This is related to \identr{WZSL}:}
-If an assertion expression is $\False$ when the assertion statement is
-executed, it is a dynamic error. An implementation may throw an
-implementation-defined exception in this case, but is not required to.
+% \lrmcomment{This is related to \identr{WZSL}:}
+% If an assertion expression is $\False$ when the assertion statement is
+% executed, it is a dynamic error. An implementation may throw an
+% implementation-defined exception in this case, but is not required to.
 
-\lrmcomment{This is related to \identr{WQRN}:}
-The expression in an assertion statement must be side-effect-free.
+% \lrmcomment{This is related to \identr{WQRN}:}
+% The expression in an assertion statement must be side-effect-free.
 
-    \subsection{Prose}
-    All of the following apply:
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is an assertion statement, $\SAssert(\ve)$;
+  \item one of the following holds:
+  \begin{itemize}
+    \item all of the following hold (\textsc{okay}):
     \begin{itemize}
-      \item $\vs$ is an assertion statement, $\SAssert(\ve)$;
-      \item one of the following holds:
-      \begin{itemize}
-        \item all of the following hold (\textsc{okay}):
-        \begin{itemize}
-          \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$\ProseOrAbnormal;
-          \item $\vv$ is a native Boolean value for $\True$;
-          \item the resulting configuration is $\Continuing(\newg, \newenv)$.
-        \end{itemize}
-
-        \item all of the following hold (\textsc{error}):
-        \begin{itemize}
-          \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$;
-          \item $\vv$ is a native Boolean value for $\False$;
-          \item an AssertionFailed error is returned.
-        \end{itemize}
-      \end{itemize}
+      \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$\ProseOrAbnormal;
+      \item $\vv$ is a native Boolean value for $\True$;
+      \item the resulting configuration is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \subsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertOk.asl}
-    \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
+    \item all of the following hold (\textsc{error}):
+    \begin{itemize}
+      \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$;
+      \item $\vv$ is a native Boolean value for $\False$;
+      \item an AssertionFailed error is returned.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
 
-    \subsection{Example}
-    In the specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertNo.asl}
-    \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+\subsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertOk.asl}
+\texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
 
-  \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Interpreter.ml}
+\subsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertNo.asl}
+\texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+
+\CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -3684,7 +3449,7 @@ The expression in an assertion statement must be side-effect-free.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SWhile.asl}
     prints \texttt{0123}.
 
-  \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSWhileBegin}{\EvalSWhileEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -3724,7 +3489,7 @@ prints
   3
 \end{Verbatim}
 
-\CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -3783,7 +3548,7 @@ prints
   3
 \end{Verbatim}
 
-\CodeSubsection{\SForBegin}{\SForEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSForBegin}{\EvalSForEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 Recall that the expressions for the \texttt{for} loop range are side-effect-free,
@@ -3834,7 +3599,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl}
     throws a \texttt{MyException} exception.
 
-  \CodeSubsection{\SThrowNoneBegin}{\SThrowNoneEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSThrowNoneBegin}{\EvalSThrowNoneEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -3866,7 +3631,7 @@ The specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowSomeTyped.asl}
 terminates successfully. That is, no dynamic error occurs.
 
-\CodeSubsection{\SThrowSomeTypedBegin}{\SThrowSomeTypedEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSThrowSomeTypedBegin}{\EvalSThrowSomeTypedEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -3901,7 +3666,7 @@ terminates successfully. That is, no dynamic error occurs.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
     does not result in any Assertion error, and the specification terminates with the exit code $0$.
 
-  \CodeSubsection{\STryBegin}{\STryEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -3933,7 +3698,7 @@ The specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclSome.asl}
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
 
-\CodeSubsection{\SDeclSomeBegin}{\SDeclSomeEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalSDeclSomeBegin}{\EvalSDeclSomeEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -3963,7 +3728,7 @@ The specification:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclNone.asl}
     \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
 
-  \CodeSubsection{\SDeclNoneBegin}{\SDeclNoneEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalSDeclNoneBegin}{\EvalSDeclNoneEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -4000,7 +3765,7 @@ which drops back to the original local environment of $\env$ when the evaluation
       \item $\blockenv$ is the environment $\env$ modified by replacing the local component
       (of the inner dynamic environment) by an empty one;
       \item evaluating $\stm$ in $\blockenv$, as per \chapref{eval_stmt},
-      is $\Continuing(\newg, \blockenvone)$\ProseTerminateAs{\ReturningConfig};
+      is \\ $\Continuing(\newg, \blockenvone)$\ProseTerminateAs{\ReturningConfig};
       \item $\newenv$ is formed from $\blockenvone$ after restoring the
       variable bindings of $\env$ with the updated values of $\blockenv$.
       The effect is that of discarding the bindings for variables declared inside $\stm$;
@@ -4009,7 +3774,7 @@ which drops back to the original local environment of $\env$ when the evaluation
 
     \subsection{Example}
     In the specification:
-    \VerbatimInput{\testdir/SemanticsRule.Block.asl}
+    \VerbatimInput{\semanticstests/SemanticsRule.Block.asl}
     the conditional statement \texttt{if TRUE then\ldots{} end;} defines a
 block structure. Thus, the scope of the declaration \texttt{let y = 2;} is
 limited to its declaring block---or the binding for \texttt{y} no longer exists
@@ -4018,7 +3783,7 @@ once the block is exited. As a consequence, the subsequent declaration
 variable~\texttt{x} persists after block end. However, observe that \texttt{x}
 is defined before the block and hence still exists after the block.
 
-\CodeSubsection{\BlockBegin}{\BlockEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalBlockBegin}{\EvalBlockEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -4068,7 +3833,7 @@ The relation
 \]
 evaluates $\vbody$ in $\env$ as long as $\econd$ holds when $\iswhile$ is $\True$
 or until $\econd$ holds when $\iswhile$ is $\False$.
-The result is either the continuing configuration $\Continuing(\newg,\newenv)$,
+The result is either the continuing configuration \\ $\Continuing(\newg,\newenv)$,
 an early return configuration, or an abnormal configuration.
 
 \subsection{Prose}
@@ -4087,9 +3852,9 @@ One of the following applies:
     \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \envone)$;
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
-    \item evaluating $\vbody$ in $\envone$ as per \chapref{eval_block} is either
+    \item evaluating $\vbody$ in $\envone$ as per \chapref{eval_block} is either \\
     $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
-    \item evaluating $(\iswhile, \econd, \vbody)$ in $\envtwo$ as a loop is
+    \item evaluating $(\iswhile, \econd, \vbody)$ in $\envtwo$ as a loop is \\
     $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label
     and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
@@ -4103,7 +3868,7 @@ One of the following applies:
     does not result in any Assertion Error and the specification terminates with exit
     code $0$.
 
-    \CodeSubsection{\LoopBegin}{\LoopEnd}{../Interpreter.ml}
+    \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 
   \subsection{Formally}
 The premise $\vb \neq \iswhile$ is $\True$ in the case of a \texttt{while} loop
@@ -4242,7 +4007,7 @@ and All of the following apply:
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
       \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vstart, \dir, \vend, \vbody)$
-      in $\env$ is $\Continuing(\vgtwo, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+      in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
       \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
     \end{itemize}
   \end{itemize}
@@ -4253,7 +4018,7 @@ The specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
 does not result in any assertion error, and the specification terminates with exit-code $0$.
 
-\CodeSubsection{\ForBegin}{\ForEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalForBegin}{\EvalForEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 
@@ -4451,7 +4216,7 @@ The specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Catch.asl}
 terminates successfully. That is, no dynamic error occurs.
 
-\CodeSubsection{\CatchBegin}{\CatchEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalCatchBegin}{\EvalCatchEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -4502,7 +4267,7 @@ terminates successfully. That is, no dynamic error occurs.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNamed.asl}
     prints \texttt{My exception with my message}.
 
-  \CodeSubsection{\CatchNamedBegin}{\CatchNamedEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalCatchNamedBegin}{\EvalCatchNamedEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -4554,7 +4319,7 @@ terminates successfully. That is, no dynamic error occurs.
      \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
      prints \texttt{Otherwise}.
 
-  \CodeSubsection{\CatchOtherwiseBegin}{\CatchOtherwiseEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalCatchOtherwiseBegin}{\EvalCatchOtherwiseEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -4593,7 +4358,7 @@ terminates successfully. That is, no dynamic error occurs.
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNone.asl}
     does not print anything.
 
-  \CodeSubsection{\CatchNoneBegin}{\CatchNoneEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalCatchNoneBegin}{\EvalCatchNoneEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -4626,7 +4391,7 @@ terminates successfully. That is, no dynamic error occurs.
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNoThrow.asl}
   prints \texttt{No exception raised}.
 
-\CodeSubsection{\CatchNoThrowBegin}{\CatchNoThrowEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalCatchNoThrowBegin}{\EvalCatchNoThrowEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -4686,7 +4451,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\CodeSubsection{\FindCatcherBegin}{\FindCatcherEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalFindCatcherBegin}{\EvalFindCatcherEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -4758,7 +4523,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\CodeSubsection{\RethrowImplicitBegin}{\RethrowImplicitEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalRethrowImplicitBegin}{\EvalRethrowImplicitEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -4791,127 +4556,127 @@ currently executing catcher caught to be thrown.
 \chapter{Evaluation of Subprograms \label{chap:eval_call}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Informal Preamble}
+% \section{Informal Preamble}
 
-\lrmcomment{This is related to the preamble of Section 8.2:}
+% \lrmcomment{This is related to the preamble of Section 8.2:}
 
-An ASL specification describes behavior in terms of the execution of a single
-thread of control. Executing a function or procedure may modify global state
-and can result in one of the following situations:
-\begin{itemize}
-\item The function/procedure returns successfully (i.e., without throwing an
-ASL exception or detecting a dynamic error). In this case, the result is a
-possibly modified global state and, for functions, a return value.
-\item The function/procedure throws an ASL exception. In this case, the result
-is a possibly modified global state and an exception object (that could be
-caught by the caller in a try-catch block, if desired).
-\item The function/procedure detects a dynamic error condition. This indicates
-an error in the specification and the global state and any other behavior is
-meaningless.
-\item The function/procedure enters an infinite loop. This indicates an error
-in the specification and the global state and any other behavior is
-meaningless.
-\end{itemize}
+% An ASL specification describes behavior in terms of the execution of a single
+% thread of control. Executing a function or procedure may modify global state
+% and can result in one of the following situations:
+% \begin{itemize}
+% \item The function/procedure returns successfully (i.e., without throwing an
+% ASL exception or detecting a dynamic error). In this case, the result is a
+% possibly modified global state and, for functions, a return value.
+% \item The function/procedure throws an ASL exception. In this case, the result
+% is a possibly modified global state and an exception object (that could be
+% caught by the caller in a try-catch block, if desired).
+% \item The function/procedure detects a dynamic error condition. This indicates
+% an error in the specification and the global state and any other behavior is
+% meaningless.
+% \item The function/procedure enters an infinite loop. This indicates an error
+% in the specification and the global state and any other behavior is
+% meaningless.
+% \end{itemize}
 
-Note that Arm’s implementation of ASL also supports some builtin functions for
-printing to the console, etc. These internal extensions are not used in Arm’s
-published specifications but could be added to the description of the
-semantics.
+% Note that Arm’s implementation of ASL also supports some builtin functions for
+% printing to the console, etc. These internal extensions are not used in Arm’s
+% published specifications but could be added to the description of the
+% semantics.
 
-\subsection{Execution-time subprograms}
+% \subsection{Execution-time subprograms}
 
-\lrmcomment{This is related to Section 8.2.1:}
+% \lrmcomment{This is related to Section 8.2.1:}
 
-\lrmcomment{This is related to \identi{NXJR}:}
+% \lrmcomment{This is related to \identi{NXJR}:}
 
-Subprogram declarations in ASL are either execution-time subprogram
-declarations or non-execution-time subprogram declarations.
+% Subprogram declarations in ASL are either execution-time subprogram
+% declarations or non-execution-time subprogram declarations.
 
-\lrmcomment{This is related to \identd{CSFT}:}
+% \lrmcomment{This is related to \identd{CSFT}:}
 
-A subprogram declaration is an execution-time declaration if it makes use of
-any of the following:
-\begin{itemize}
-\item an execution-time storage element
-\item an execution-time expression
-\item an execution-time subprogram invocation
-\end{itemize}
+% A subprogram declaration is an execution-time declaration if it makes use of
+% any of the following:
+% \begin{itemize}
+% \item an execution-time storage element
+% \item an execution-time expression
+% \item an execution-time subprogram invocation
+% \end{itemize}
 
-\lrmcomment{This is related to \identi{HYBT}:}
+% \lrmcomment{This is related to \identi{HYBT}:}
 
-Subprogram invocations are also either execution-time or non-execution-time invocations.
+% Subprogram invocations are also either execution-time or non-execution-time invocations.
 
-\lrmcomment{This is related to \identd{CCTY}:}
+% \lrmcomment{This is related to \identd{CCTY}:}
 
-A subprogram invocation is an execution-time invocation if the invoked
-subprogram has an execution-time declaration or if the invocation contains any
-of the following:
-\begin{itemize}
-\item an execution-time storage element
-\item an execution-time expression
-\item a bitvector whose width is an execution-time expression
-\end{itemize}
+% A subprogram invocation is an execution-time invocation if the invoked
+% subprogram has an execution-time declaration or if the invocation contains any
+% of the following:
+% \begin{itemize}
+% \item an execution-time storage element
+% \item an execution-time expression
+% \item a bitvector whose width is an execution-time expression
+% \end{itemize}
 
-\lrmcomment{This is related to \identi{LYKD}:}
+% \lrmcomment{This is related to \identi{LYKD}:}
 
-This means that an execution-time subprogram declaration shall only have
-execution-time invocations.
+% This means that an execution-time subprogram declaration shall only have
+% execution-time invocations.
 
-\subsection{Compile-time-constant subprograms}
+% \subsection{Compile-time-constant subprograms}
 
-\lrmcomment{This is related to \identi{ZPWM}:}
+% \lrmcomment{This is related to \identi{ZPWM}:}
 
-Subprogram declarations in ASL are either compile-time-constant subprogram declarations or non-compile-time- constant subprogram declarations.
+% Subprogram declarations in ASL are either compile-time-constant subprogram declarations or non-compile-time- constant subprogram declarations.
 
-\lrmcomment{This is related to \identd{KCKX}:}
+% \lrmcomment{This is related to \identd{KCKX}:}
 
-A subprogram declaration is a compile-time-constant declaration if all of the following are true:
-\begin{itemize}
-\item the subprogram is side-effect-free
-\item all assignments in the subprogram are to the subprogram’s local
-variables
-\item all expressions in the subprogram are compile-time-constant
-expressions
-\item any subprogram invocations made in the subprogram are
-compile-time-constant subprogram invocations
-\end{itemize}
+% A subprogram declaration is a compile-time-constant declaration if all of the following are true:
+% \begin{itemize}
+% \item the subprogram is side-effect-free
+% \item all assignments in the subprogram are to the subprogram’s local
+% variables
+% \item all expressions in the subprogram are compile-time-constant
+% expressions
+% \item any subprogram invocations made in the subprogram are
+% compile-time-constant subprogram invocations
+% \end{itemize}
 
-\lrmcomment{This is related to \identi{NTYZ}:}
+% \lrmcomment{This is related to \identi{NTYZ}:}
 
-Standard (built-in) functions, as defined in the ASL standard library, are
-generally compile-time-constant, unless otherwise stated.
+% Standard (built-in) functions, as defined in the ASL standard library, are
+% generally compile-time-constant, unless otherwise stated.
 
-\lrmcomment{This is related to \identi{MSZT}:}
+% \lrmcomment{This is related to \identi{MSZT}:}
 
-Subprogram invocations are also either compile-time-constant subprogram
-invocations or non-compile-time-constant subprogram invocations.
+% Subprogram invocations are also either compile-time-constant subprogram
+% invocations or non-compile-time-constant subprogram invocations.
 
-\lrmcomment{This is related to \identd{QNHM}:}
+% \lrmcomment{This is related to \identd{QNHM}:}
 
-A subprogram invocation is a compile-time-constant invocation if all the
-following hold:
-\begin{itemize}
-\item the invoked subprogram is a compile-time-constant subprogram
-\item all of the actual arguments are compile-time-constant expressions
-\item all actual arguments which are bitvectors were declared with a constant
-expression width
-\end{itemize}
+% A subprogram invocation is a compile-time-constant invocation if all the
+% following hold:
+% \begin{itemize}
+% \item the invoked subprogram is a compile-time-constant subprogram
+% \item all of the actual arguments are compile-time-constant expressions
+% \item all actual arguments which are bitvectors were declared with a constant
+% expression width
+% \end{itemize}
 
-Note:
+% Note:
 
-Subprogram declarations or invocations may be both non-compile-time-constant
-and non-execution-time.
+% Subprogram declarations or invocations may be both non-compile-time-constant
+% and non-execution-time.
 
-For example, storage elements declared with config are non-execution-time and
-non-compile-time-constant so any use of them in a function or procedure
-declaration or invocation renders it non-compile-time-constant, but does not
-cause it to be execution-time.
+% For example, storage elements declared with config are non-execution-time and
+% non-compile-time-constant so any use of them in a function or procedure
+% declaration or invocation renders it non-compile-time-constant, but does not
+% cause it to be execution-time.
 
-Subprogram declarations or invocations may not be both compile-time-constant
-and execution-time since if the conditions for execution-time are met then
-the conditions for compile-time-constant cannot be met, and vice versa.
+% Subprogram declarations or invocations may not be both compile-time-constant
+% and execution-time since if the conditions for execution-time are met then
+% the conditions for compile-time-constant cannot be met, and vice versa.
 
-\section{Formal Preamble}
+% \section{Formal Preamble}
 
 The relation
 \hypertarget{def-evalcall}{}
@@ -5009,7 +4774,7 @@ All of the following apply:
   \item the entire evaluation results in $\Normal(\vmstwo, \newenv)$.
 \end{itemize}
 
-\CodeSubsection{\CallBegin}{\CallEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -5058,7 +4823,7 @@ In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.FPrimitive.asl}
 \texttt{print ("Hello, world!");} calls the primitive \texttt{print} on the evaluation of \texttt{"Hello, world!"}.
 
-\CodeSubsection{\FPrimitiveBegin}{\FPrimitiveEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalFPrimitiveBegin}{\EvalFPrimitiveEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 The following rule utilizes the transition relation
@@ -5115,7 +4880,7 @@ The specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.FCall.asl}
 calls the function \texttt{foo} and the procedure \texttt{bar}.
 
-\CodeSubsection{\FCallBegin}{\FCallEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalFCallBegin}{\EvalFCallEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -5154,7 +4919,7 @@ All of the following apply:
   \item the result is $(\vv, \newg)$.
 \end{itemize}
 
-\CodeSubsection{\ReadValueFromBegin}{\ReadValueFromEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalReadValueFromBegin}{\EvalReadValueFromEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -5203,7 +4968,7 @@ returned by the evaluation of a primitive subprogram:
 %% Annotating the OCaml code is problematic, since the code for this rule is inside the code
 %% for FPrimitive. One option is to factor it out into a separate function.
 %
-%   \CodeSubsection{\WriteRetValsBegin}{\WriteRetValsEnd}{../Interpreter.ml}
+%   \CodeSubsection{\EvalWriteRetValsBegin}{\EvalWriteRetValsEnd}{../Interpreter.ml}
 
 \subsection{Formally}
   \begin{mathpar}
@@ -5437,9 +5202,7 @@ The relation
 \]
 evaluates the \texttt{main} function in a given specification and standard library.
 
-\newcommand\annotatespec[0]{\hyperlink{def-annotatespec}{\texttt{annotate\_spec}}}
-\hypertarget{def-annotatespec}{}
-The function $\annotatespec$, which is defined in the typing reference~\cite{ASLTypingReference},
+The function $\typecheckast$ (see \secref{TypingRule.TypeCheckAST})
 takes an initial typing environment and a untyped AST and returns a corresponding typed AST and typing
 environment.
 
@@ -5473,13 +5236,13 @@ environment.
 
   \subsection{Example}
 
-  \CodeSubsection{\TopLevelBegin}{\TopLevelEnd}{../Interpreter.ml}
+  \CodeSubsection{\EvalTopLevelBegin}{\EvalTopLevelEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[normal]{
   \parsedast \eqdef \parsedspec \concat \parsedstd\\
-  \annotatespec(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
+  \typecheckast(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
   \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone) \OrDynError\\\\
   \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
   \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
@@ -5492,7 +5255,7 @@ environment.
 \begin{mathpar}
 \inferrule[throwing]{
   \parsedast \eqdef \parsedspec \concat \parsedstd\\
-  \annotatespec(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
+  \typecheckast(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
   \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone)\\
   \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\texttt{v\_opt}, \Ignore)
 }
@@ -5531,7 +5294,7 @@ One of the following applies:
     \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,
     name $\name$, and type $\vt$;
     \item $\envm$ is the environment-execution graph pair $(\env, \vgone)$;
-    \item evaluating the side-effect-free expression $\ve$ in $\env$ as per \secref{SemanticsRule.ESideEffectFreeExpr}
+    \item evaluating the side-effect-free expression $\ve$ in $\env$ as per \secref{SemanticsRule.ESideEffectFreeExpr} \\
     is $(\vv, \vgtwo)$\ProseOrError;
     \item declaring the global $\name$ with value $\vv$ in $\env$ gives $\envtwo$;
     \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envtwo$ and the execution graph
@@ -5554,7 +5317,7 @@ One of the following applies:
 \end{itemize}
 \subsection{Example}
 
-% \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
+% \CodeSubsection{\EvalEvalGlobalsBegin}{\EvalEvalGlobalsEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \begin{mathpar}
@@ -5617,7 +5380,7 @@ All of the following apply:
 \end{itemize}
 \subsection{Example}
 
-\CodeSubsection{\BuildGlobalEnvBegin}{\BuildGlobalEnvEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalBuildGlobalEnvBegin}{\EvalBuildGlobalEnvEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 \hypertarget{def-topologicaldecls}{}
@@ -5641,7 +5404,7 @@ dependency order.
 \chapter{Basic Utility Relations \label{chap:utility}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In this chapter, we define helper relations for operating on native values,
+In this chapter, we define helper relations for operating on \nativevalues,
 environments, and operations involving values and types.
 %
 In this chapter rules are presented without examples and the corresponding code.
@@ -5756,7 +5519,7 @@ The relation
 \[
   \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \tbitvector
 \]
-transforms a (possibly empty) list of bitvector native values $\vvs$ into a single bitvector.
+transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a single bitvector.
 
 \subsection{Formally}
 \begin{mathpar}
@@ -5833,7 +5596,7 @@ unless an index would be out of range for a bitvector of length $\vn$, in which 
 \end{mathpar}
 
 \hypertarget{def-asbitvector}{}
-The function $\asbitvector : (\tbitvector\cup\tint) \rightarrow \{0,1\}^*$ transforms native value integers and native value bitvectors into
+The function $\asbitvector : (\tbitvector\cup\tint) \rightarrow \{0,1\}^*$ transforms \nativevalue\  integers and \nativevalue\  bitvectors into
 a sequence of binary values:
 \begin{mathpar}
   \inferrule[AsBitvectorBitvector]{}
@@ -6125,9 +5888,8 @@ where $\TypeErrorConfig$ stands for a type error.
 
 The structure of a type is the type that can hold the same set of values, but does not itself
 contain any other type names.
-This is essentially done by recursively replacing type names by their definition.
-For more information refer to TypingRule.Structure in
-ASL Typing Reference~\cite{ASLTypingReference}.
+This is essentially done by recursively replacing type names by their definition
+(see \secref{TypingRule.structure}).
 %
 Since we assume the specification is well-typed (\secref{MeaningfulASLSpecifications}),
 $\tstruct$ returns a valid type.
@@ -6155,14 +5917,14 @@ or an error, and one of the following applies:
   \item all of the following apply (\textsc{string}):
   \begin{itemize}
     \item the structure of $\vt$ is the string type;
-    \item $\vv$ is the native value for the empty string;
+    \item $\vv$ is the \nativevalue\  for the empty string;
     \item $\vg$ is the empty graph.
   \end{itemize}
 
   \item all of the following apply (\textsc{bitvector}):
   \begin{itemize}
     \item the structure of $\vt$ is the bitvector with the length expression $\ve$;;
-    \item evaluating the side-effect-free expression $\ve$ results in the native value $\length$
+    \item evaluating the side-effect-free expression $\ve$ results in the \nativevalue\  $\length$
     and execution graph $\vg$\ProseOrError;
     \item $\vv$ is the bitvector of length $\length$ where all bits are $0$.
   \end{itemize}
@@ -6171,14 +5933,14 @@ or an error, and one of the following applies:
   \begin{itemize}
     \item the structure of $\vt$ is the enumeration type where the first identifier is $\id_1$;
     \item $\vl$ is the literal associated with $\id_1$ in the static environment;
-    \item $\vv$ is the native value literal for $\vl$;
+    \item $\vv$ is the \nativevalue\  literal for $\vl$;
     \item $\vg$ is the empty graph.
   \end{itemize}
 
   \item all of the following apply (\textsc{unconstrained\_integer}):
   \begin{itemize}
     \item the structure of $\vt$ is that of the unconstrained integer;
-    \item $\vv$ is the native value integer $0$;
+    \item $\vv$ is the \nativevalue\  integer $0$;
     \item $\vg$ is the empty graph.
   \end{itemize}
 
@@ -6194,7 +5956,7 @@ or an error, and one of the following applies:
     \item the structure of $\vt$ is that of a record or an exception;
     \item the base value of each field is obtained, and if any of the base values results in an error
     then the entire rule short-circuits with that error;
-    \item $\vv$ is the native value record where each identifier in the record is mapped to its
+    \item $\vv$ is the \nativevalue\  record where each identifier in the record is mapped to its
     respective base value;
     \item $\vg$ is the parallel composition of the graphs resulting from the base value evaluation
     of all the fields.
@@ -6205,7 +5967,7 @@ or an error, and one of the following applies:
     \item the structure of $\vt$ is that of a tuple of types;
     \item the base value of each type in the tuple is obtained, and if any of the base values results in an error
     then the entire rule short-circuits with that error;
-    \item $\vv$ is the native value vector consisting of the base values in the order of the corresponding types
+    \item $\vv$ is the \nativevalue\  vector consisting of the base values in the order of the corresponding types
     of the tuple;
     \item $\vg$ is the parallel composition of the graphs resulting from the base value evaluation
     of all the tuple types.
@@ -6218,7 +5980,7 @@ or an error, and one of the following applies:
     \item $\elength$ is a variable expression with the variable name $\vx$;
     \item the constant value for $\vx$ in the static environment is the literal integer for $n$;
     \item the base value of $\vvty$ in $\env$ is $(\velem, \vg)$\ProseOrError;
-    \item $\vv$ is the native value vector of length $n$ where each element is $\velem$;
+    \item $\vv$ is the \nativevalue\  vector of length $n$ where each element is $\velem$;
   \end{itemize}
 
   \item all of the following apply (\textsc{array\_length\_expression}):
@@ -6228,8 +5990,8 @@ or an error, and one of the following applies:
     \item the base value of $\vvty$ in $\env$ is $(\velem, \vg)$\ProseOrError;
     \item evaluating the side-effect-free expression $\elength$ in the environment $\env$
           results in $(\vlength, \vgtwo)$\ProseOrError;
-    \item $\vlength$ is the native value integer for $n$;
-    \item $\vv$ is the native value vector of length $n$ where each element is $\velem$;
+    \item $\vlength$ is the \nativevalue\  integer for $n$;
+    \item $\vv$ is the \nativevalue\  vector of length $n$ where each element is $\velem$;
     \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
   \end{itemize}
 \end{itemize}
@@ -6259,7 +6021,7 @@ If evaluating an inner expression results in an error, there is no base value an
 }
 \end{mathpar}
 
-The base value of a bitvector is a bitvector native value consisting of a sequence of zeros
+The base value of a bitvector is a bitvector \nativevalue\  consisting of a sequence of zeros
 of the length specified by the type (\ve). If the length is $0$, the bitvector consists of an
 empty sequence:
 \begin{mathpar}
@@ -6420,7 +6182,7 @@ One of the following applies:
   \item All of the following apply (\textsc{int\_wellconstrained}):
   \begin{itemize}
     \item $\vt$ has the structure of a well-constrained integer with constraints $\vc_{1..k}$;
-    \item $\vv$ is the native value integer for $n$;
+    \item $\vv$ is the \nativevalue\  integer for $n$;
     \item the evaluation of every constraint $\vc_i$ with $n$ in environment $\env$
     yields a Boolean value $\vb_i$ and an execution graph $\vg_i$\ProseOrError;
     \item $\vb$ is the Boolean disjunction of all Boolean values $\vb_i$, for $i=1..k$;
@@ -6457,7 +6219,7 @@ One of the following applies:
     \item $\vt$ has the structure of an array with length expression $\vt$
     and element type $\vtone$;
     \item evaluating the side-effect-free expression $\ve$ in environment $\env$
-    results in the native value integer for $k$ and execution graph $\vg$;
+    results in the \nativevalue\  integer for $k$ and execution graph $\vg$;
     \item obtaining the values at indices $i=1..k$ from $\vv$ result in $\vv_i$;
     \item evaluating $\isvaloftype$ for $\vv_i$ and $\vtone$, for $i=1..k$,
     all result in Boolean values $\vb_i$ and execution graphs $\vg_i$\ProseOrError;
@@ -6467,7 +6229,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-%   \CodeSubsection{\ValOfTypeBegin}{\ValOfTypeEnd}{../Interpreter.ml}
+%   \CodeSubsection{\EvalValOfTypeBegin}{\EvalValOfTypeEnd}{../Interpreter.ml}
 
 \hypertarget{def-astlabel}{}
 \subsection{Formally}
@@ -6592,15 +6354,10 @@ The function
 \[
   \unoprel(\overname{\unop}{\op} \aslsep \overname{\vals}{\vv}) \aslto \overname{\vals}{\vw}
 \]
-evaluates a unary operator $\op$ over a native value $\vv$ and returns the native value $\vw$.
+evaluates a unary operator $\op$ over a \nativevalue\  $\vv$ and returns the \nativevalue\  $\vw$.
 
 The evaluation is defined in terms of the static evaluation function
-\hypertarget{def-unopliterals}{}
-\[
-  \unopliterals(\overname{\unop}{\op} \aslsep \overname{\literals}{\vl}) \aslto
-  \overname{\literals}{\vr} \cup \TTypeError
-\]
-which is defined in the ASL Typing Reference~\cite{ASLTypingReference} (see TypingRule.UnopLiterals).
+$\unopliterals$.
 
 \subsection{Prose}
 One of the following applies:
@@ -6672,17 +6429,11 @@ The function
   \binoprel(\overname{\binop}{\op} \aslsep \overname{\vals}{\vvone} \aslsep \overname{\vals}{\vvtwo})
   \aslto \overname{\vals}{\vr} \cup \TError
 \]
-evaluates a binary operator $\op$ over a pair of native values --- $\vvone$ and $\vvtwo$ --- and returns the
-native value $\vw$ or an error.
+evaluates a binary operator $\op$ over a pair of \nativevalues\  --- $\vvone$ and $\vvtwo$ --- and returns the
+\nativevalue\  $\vw$ or an error.
 
 The evaluation is defined in terms of the static evaluation function
-\hypertarget{def-binopliterals}{}
-\[
-  \binopliterals(\overname{\binop}{\op} \aslsep \overname{\literals}{\vvone} \aslsep \overname{\literals}{\vvtwo}) \aslto
-  \overname{\literals}{\vr} \cup \TTypeError
-\]
-which is defined in the ASL Typing Reference~\cite{ASLTypingReference}
-(see TypingRule.BinopLiterals, Chapter ``Static Evaluation'').
+$\binopliterals$.
 
 \subsection{Prose}
 One of the following applies:
@@ -6874,6 +6625,6 @@ One of the following applies:
 }
 \end{mathpar}
 
-\bibliographystyle{plain}
-\bibliography{ASL}
-\end{document}
+% \bibliographystyle{plain}
+% \bibliography{ASL}
+% \end{document}

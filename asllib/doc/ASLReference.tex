@@ -1,0 +1,48 @@
+\documentclass{book}
+\input{ASLmacros}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Macros for including code snippets from the ASLRef implementation
+\input{ASLTypingLines}
+\input{ASLSemanticsLines}
+\input{ASLTypeSatisfactionLines}
+\input{ASLStaticModelLines}
+\input{ASLStaticInterpreterLines}
+\input{ASLStaticEnvLines}
+\input{ASLASTUtilsLines}
+\input{ASLASTLines}
+\newcommand{\syntaxtests}{../tests/ASLSyntaxReference.t/}
+\newcommand{\typingtests}{../tests/ASLTypingReference.t/}
+\newcommand{\semanticstests}{../tests/ASLSemanticsReference.t/}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Increase indentation of sections in the table of contents
+% to allow a space between the section numbers and their titles.
+\makeatletter
+\renewcommand{\l@section}{\@dottedtocline{1}{1.5em}{2.6em}}
+\makeatother
+\setcounter{tocdepth}{1}
+
+\author{Arm Architecture Technology Group}
+\title{ASL Reference \\
+       DDI 06??}
+\begin{document}
+\maketitle
+
+\tableofcontents{}
+
+\include{notice.tex}
+\include{disclaimer.tex}
+
+\input{ASLFormal.tex}
+\input{ASLSyntaxReference.tex}
+\input{ASLTypingReference.tex}
+\input{ASLSemanticsReference.tex}
+
+\bibliographystyle{plain}
+\bibliography{ASL}
+
+\appendix
+\input{ASLRefProgress.tex}
+
+\end{document}

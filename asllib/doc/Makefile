@@ -2,7 +2,7 @@ BENTO=../../_build/default/tools/bento.exe
 LATEX=pdflatex
 BIBTEX=bibtex
 
-PDFS=ASLSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf ASLRefProgress.pdf
+PDFS=ASLReference.pdf
 
 all: $(PDFS)
 
@@ -20,29 +20,15 @@ CONTROLS=ifempty.tex ifcode.tex
 .PHONY: control
 control: control.tex $(CONTROLS)
 
-ASLSyntaxReference.pdf: control ASLASTLines.tex ASLSyntaxReference.tex
-	$(LATEX) ASLSyntaxReference.tex
-	$(LATEX) ASLSyntaxReference.tex
-	$(LATEX) ASLSyntaxReference.tex
-
-ASLSemanticsReference.pdf: control ASLSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
-	$(LATEX) ASLSemanticsReference.tex
-	$(BIBTEX) ASLSemanticsReference
-	$(LATEX) ASLSemanticsReference.tex
-	$(BIBTEX) ASLSemanticsReference
-	$(LATEX) ASLSemanticsReference.tex
-
-ASLTypingReference.pdf: control ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLStaticModelLines.tex ASLStaticInterpreterLines.tex ASLStaticEnvLines.tex ASLASTUtilsLines.tex
-	$(LATEX) ASLTypingReference.tex
-	$(BIBTEX) ASLTypingReference
-	$(LATEX) ASLTypingReference.tex
-	$(BIBTEX) ASLTypingReference
-	$(LATEX) ASLTypingReference.tex
-
-ASLRefProgress.pdf: ASLRefProgress.tex
-	$(LATEX) $<
-	$(LATEX) $<
-	$(LATEX) $<
+ASLReference.pdf: control\
+				ASLASTLines.tex ASLTypeSatisfactionLines.tex ASLStaticModelLines.tex ASLStaticInterpreterLines.tex\
+				ASLStaticEnvLines.tex ASLASTUtilsLines.tex\
+				ASLTypingLines.tex ASLSemanticsLines.tex
+	$(LATEX) ASLReference.tex
+	$(BIBTEX) ASLReference
+	$(LATEX) ASLReference.tex
+	$(BIBTEX) ASLReference
+	$(LATEX) ASLReference.tex
 
 ASLSemanticsLines.tex: ../Interpreter.ml
 	$(BENTO) $< > $@

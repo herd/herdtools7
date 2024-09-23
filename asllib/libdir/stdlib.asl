@@ -12,7 +12,7 @@
 // SInt
 
 //------------------------------------------------------------------------------
-// Standard integer functions and procedures (§9.1)
+// Standard integer functions and procedures
 
 // SInt
 // UInt
@@ -47,7 +47,7 @@ begin
 end
 
 //------------------------------------------------------------------------------
-// Functions on reals (TODO, §9.2)
+// Functions on reals
 
 // Convert integer to rational value.
 // func Real(x: integer) => real;
