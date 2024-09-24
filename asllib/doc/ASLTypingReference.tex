@@ -8614,8 +8614,8 @@ All of the following apply:
   \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep) \OrTypeError\\\\
   \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep) \OrTypeError\\\\
   \annotatelooplimit(\tenv, \vlimit) \typearrow \vlimitp \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vstartstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vendstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
   {
     \begin{array}{r}
   \getforconstraints(\tenv, \vstartstruct, \vendstruct, \vstartep, \vendep, \dir) \typearrow \\
@@ -8820,7 +8820,7 @@ All of the following apply:
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
   \ldk \neq \LDKConstant\\
   \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\newtenv, \ldip)\\
-  \news \eqdef \SDecl(\LDKConstant, \ldip, \langle\vep\rangle)
+  \news \eqdef \SDecl(\ldk, \ldip, \langle\vep\rangle)
 }{
   \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv)
 }
@@ -9468,7 +9468,7 @@ All of the following apply:
   }\\
   \checktrans{\callee.\subprogramtype = \calltype}{\MismatchedReturnValue} \checktransarrow \True\OrTypeError\\\\
   \equallength(\callee.\funcargs, \vargsone) \typearrow \aritymatch\\
-  \checktrans{\aritymatch}{\CallBadArity} \checktransarrow \True\\\\
+  \checktrans{\aritymatch}{\CallBadArity} \checktransarrow \True \OrTypeError\\\\
   {
   \annotateparameterdefining\left(
     \begin{array}{l}
@@ -9503,7 +9503,7 @@ The function
   \overname{(\identifier\times\langle\ty\rangle)^*}{\calleeparams}
   \overname{(\identifier\times\expr)^*}{\eqsthree}
   ) \aslto \\
-  \True\ \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \{\True\}\ \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks that the parameters in $\calleeparams$ are correct with respect
 to the parameter expressions $\eqsthree$.
@@ -10100,7 +10100,7 @@ The function
     \overname{\ty^*}{\callerargtypes} \aslsep
     \overname{(\identifier\times\expr)^*}{\eqsthree}
   ) \aslto \\
-  \True\ \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \{\True\}\ \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 checks that the types $\callerargtypes$ \typesatisfy\ the types of the corresponding
@@ -10890,10 +10890,9 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vd = \DTypeDecl(\vx, \tty, \vs)\\
   \declaretype(\tenv, \vx, \tty, \vs) \typearrow \newtenv \OrTypeError
 }{
-  \typecheckdecl(\tenv, \vd) \typearrow (\overname{\vd}{\newd}, \newtenv)
+  \typecheckdecl(\tenv, \overname{\DTypeDecl(\vx, \tty, \vs)}{\vd}) \typearrow (\overname{\vd}{\newd}, \newtenv)
 }
 \end{mathpar}
 
@@ -12737,9 +12736,9 @@ $A,B\in\comps$ such that $A \not< B$ and $B \not< A$.
 
 \hypertarget{def-topologicalordering}{}
 We say that a list of subsets of $V$ --- $\compstwo$ --- respects the topological ordering of $\comps$
-if each element of $\compstwo$ is a member of $\comps$ and if $C_1,C_2\in\comps$ such that
-$C_1 < C_2$ then $C_1$ appears before $C_2$ in $\compstwo$.
-We denote this as $\compstwo \in \topologicalordering(V, E, \compsone)$.
+if each element of $\compstwo$ is a member of $\comps$ and for every $C_1,C_2\in\comps$ such that
+$C_1 < C_2$ we have that $C_1$ appears before $C_2$ in $\compstwo$.
+We denote this as $\compstwo \in \topologicalordering(V, E, \comps)$.
 \end{definition}
 
 \subsection{Prose}
@@ -12966,8 +12965,8 @@ Define $\dependencies$ as the union of the following two sets:
 \inferrule{
   {
     \begin{array}{rcll}
-  \dependencies & \eqdef  & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd), \idtwo \in \defenumlabels(\vd) \} & \cup\\
-                &         & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd),\ \idtwo \in \usedecl(\vd) \}  &
+  \dependencies & \eqdef  & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd) \land \idtwo \in \defenumlabels(\vd) \} & \cup\\
+                &         & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd) \land \idtwo \in \usedecl(\vd) \}  &
     \end{array}
   }
 }{
@@ -13028,11 +13027,25 @@ All of the following apply:
   \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadRecursiveDecls} \typearrow \True\OrTypeError\\\\
   \DFunc(\vf)\in\decls: \annotatefuncsig(\tenv, \vf) \typearrow (\tenv_\vf, \vd_\vf)\OrTypeError\\\\
   \envandfs \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf)]\\
-  \setters \eqdef [ (\lenv,\vd) \;|\; (\lenv, \DFunc(\vf)) \land \astlabel(\vf) \in \{\STSetter, \STEmptySetter\}  ]\\
-  \others \eqdef [ (\lenv,\vd) \;|\; (\lenv, \DFunc(\vf)) \land \astlabel(\vf) \not\in \{\STSetter, \STEmptySetter\}  ]\\
+  {
+  \setters \eqdef \left[ \begin{array}{r|l}
+    (\lenv,\vd) & (\lenv, \DFunc(\vf)) \in \envandfs\ \land \\
+                & \astlabel(\vf) \in \{\STSetter, \STEmptySetter\}
+  \end{array}\right]
+  }\\
+  {
+  \others \eqdef \left[ \begin{array}{r|l}
+    (\lenv,\vd) & (\lenv, \DFunc(\vf)) \in \envandfs\ \land \\
+                & \astlabel(\vf) \not\in \{\STSetter, \STEmptySetter\}
+  \end{array}\right]
+  }\\
   \envandfsone \eqdef \others \concat \setters\\
   \foldenvandfs(G^\tenv, \envandfsone) \typearrow (\genv, \envandfstwo) \OrTypeError\\\\
-  (\lenv, \DFunc(\vf))\in\envandfstwo: \annotatesubprogram{(\genv, \lenv), \vf} \typearrow \newd_\vf \OrTypeError\\\\
+  {
+    \begin{array}{r}
+  (\lenv, \DFunc(\vf))\in\envandfstwo: \annotatesubprogram{(\genv, \lenv), \vf} \typearrow \\ \newd_\vf \OrTypeError
+    \end{array}
+  }\\\\
   \newdecls \eqdef [(\Ignore, \DFunc(\vf))\in\envandfstwo: \DFunc(\newd_\vf)]
 }{
   \typecheckmutuallyrec(\tenv, \decls) \typearrow (\newdecls, \overname{(\genv, L^\tenv)}{\newtenv})
@@ -16650,7 +16663,7 @@ One of the following applies:
 \inferrule[syntax]{
   \constraintsequal(\tenv, \csone, \cstwo) \typearrow \vb
 }{
-  \symintsetsubset(\tenv, \overname{\FromSyntax(\csone)}{\visone}, \overname{\FromSyntax(\vitwo)}{\cstwo}) \typearrow \vb
+  \symintsetsubset(\tenv, \overname{\FromSyntax(\csone)}{\visone}, \overname{\FromSyntax(\cstwo)}{\vistwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -16878,13 +16891,13 @@ One of the following applies:
       % 5
       \AbbrevConstraintRange{\AbbrevEBinop{\op}{\veoneone}{\vetwoone}}{\AbbrevEBinop{\op}{\veonetwo}{\vetwotwo}} & \textbf{if }
       \left(\begin{array}{ll}
-      \isleftincreasing(\op) \typearrow \True\\
+      \isleftincreasing(\op) \typearrow \True\ \land\\
       \isrightincreasing(\op) \typearrow \True\\
       \end{array}\right)\\
       % 6
       \AbbrevConstraintRange{\AbbrevEBinop{\op}{\veoneone}{\vetwotwo}}{\AbbrevEBinop{\op}{\veonetwo}{\vetwoone}} & \textbf{if }
       \left(\begin{array}{ll}
-      \isleftincreasing(\op) \typearrow \True\\
+      \isleftincreasing(\op) \typearrow \True\ \land\\
       \isrightdecreasing(\op) \typearrow \True
       \end{array}\right)\\
       %
@@ -17088,6 +17101,7 @@ and then we define the following rules:
 
 \section{Symbolic Expressions \label{sec:symbolicexpressions}}
 Our symbolic reduction and equivalence testing rules use \emph{symbolic expressions}, defined below:
+\hypertarget{def-sum}{}
 \[
   \begin{array}{rcl}
     \polynomial &\triangleq& \Sum(\unitarymonomial \partialto \Q)                  \hypertarget{def-monomial}{}\hypertarget{def-prod}{}\\
@@ -17184,7 +17198,7 @@ adds two polynomials:
     \left\{
     \begin{array}{ll}
       \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
-      \vfone(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
+      \vftwo(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
       \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo)\\
     \end{array}
     \right.
@@ -17223,7 +17237,7 @@ multiplies two polynomials.
     \vps \eqdef \left\{
       \begin{array}{l}
         \Sum(\{\mulmonomials(\vmone, \vmtwo) \mapsto \vfone(\vmone)\times\vftwo(\vmtwo)\})  \;|\; \\
-       \vmone\in\dom(\vfone), \vmtwo\in\dom(\vgtwo)
+       \vmone\in\dom(\vfone)\ \land\ \vmtwo\in\dom(\vgtwo)
     \end{array}
     \right\}
   }\\
@@ -17321,7 +17335,8 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[eval\_literal]{
-  \staticeval(\tenv, \ve) \typearrow \vl \OrTypeError
+  \staticeval(\tenv, \ve) \typearrow \vl \OrTypeError\\\\
+  \vl \neq \CannotBeTransformed
 }{
   \reduceconstants(\tenv, \ve) \typearrow \vl
 }
@@ -19034,8 +19049,9 @@ One of the following applies:
           the graph of $f$;
     \item transforming $\monoms$ to an expression and sign via $\monomialstoexpr$ yields the expression $\veone$
           and sign $\vsone$;
-    \item define $\ve$ as $\veone$ if $\vsone$ is either $0$ or $1$ and the unary expression negating $\veone$, that is,
-          $\EUnop(\NEG, \veone)$.
+    \item define $\ve$ as $\veone$ if $\vsone$ is $1$, the integer literal expression for $0$ if $\vsone$ is $0$,
+          and the unary expression negating $\veone$, that is,
+          $\EUnop(\NEG, \veone)$, if $\vsone$ is $-1$.
   \end{itemize}
 \end{itemize}
 
@@ -19051,7 +19067,7 @@ One of the following applies:
   \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\\
   {
   \ve \eqdef \begin{cases}
-    \veone                & \text{if }\vsone = 0\\
+    \ELiteral(\lint(0))   & \text{if }\vsone = 0\\
     \veone                & \text{if }\vsone = 1\\
     \EUnop(\NEG, \veone)  & \text{if }\vsone = -1
   \end{cases}

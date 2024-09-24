@@ -589,11 +589,11 @@ and used in~\cite{AlglaveMT14,alglave2016syntax,AlglaveDGHM21}.
 
 \hypertarget{def-xgraphs}{}
 Formally, an execution graph $\xgraph = (N^\xgraph, E^\xgraph, O^\xgraph) \in \XGraphs$
-is defined via a set of \emph{nodes} ($N^\xgraph$), \emph{edges} ($E^\xgraph$), and \emph{output nodes} ($O^\xgraph$):
+is defined via a set of \emph{nodes} ($N^\xgraph$), a set of \emph{edges} ($E^\xgraph$), and a set of \emph{output nodes} ($O^\xgraph$):
 \hypertarget{def-nodes}{}
 \[
 \begin{array}{rcl}
-\XGraphs &\triangleq& \pow{\Nodes} \times \pow{\Nodes \times \Nodes \times \Labels} \times \Nodes  \hypertarget{def-read}{}\hypertarget{def-write}{}\\
+\XGraphs &\triangleq& \pow{\Nodes} \times \pow{\Nodes \times \Nodes \times \Labels} \times \pow{\Nodes}  \hypertarget{def-read}{}\hypertarget{def-write}{}\\
 \Nodes   &\triangleq& \N \times \{ \Read, \Write \} \times \Identifiers \hypertarget{def-labels}{}\\
 \Labels  &\triangleq& \{ \asldata, \aslctrl, \aslpo \}
 \end{array}

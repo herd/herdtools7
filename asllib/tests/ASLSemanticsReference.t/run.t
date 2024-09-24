@@ -86,6 +86,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.Catch.asl
   $ aslref SemanticsRule.CatchNamed.asl
   $ aslref SemanticsRule.CatchOtherwise.asl
+  Otherwise
   $ aslref SemanticsRule.CatchNone.asl
   File SemanticsRule.CatchNone.asl, line 15, characters 8 to 24:
   ASL Error: Cannot parse.
