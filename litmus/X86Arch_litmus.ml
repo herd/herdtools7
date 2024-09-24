@@ -34,6 +34,9 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   | Internal i -> sprintf "i%i" i
   | _ -> assert false
 
+  let error _ _ = false
+  let warn _ _ = false
+
   include
       ArchExtra_litmus.Make(O)
       (struct
@@ -65,9 +68,8 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           ^ do_reg_class r
 
         let comment = comment
-        let error _ _ = false
-        let warn _ _ = false
       end)
+
   let features = []
   let nop =  I_NOP
 

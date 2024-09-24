@@ -33,9 +33,6 @@ module type I = sig
 (* gcc assembly template register class *)
   val reg_class : arch_reg -> string
   val reg_class_stable : bool -> arch_reg -> string
-(* type errors ad warnings *)
-  val error : CType.t -> CType.t  -> bool
-  val warn : CType.t -> CType.t  -> bool
 end
 
 module Make
@@ -148,7 +145,7 @@ module RegMap = A.RegMap)
             match v with
             | Constant.Concrete _ ->
                begin try
-                 let ty = List.assoc reg t.Tmpl.ty_env in
+                 let ty = RegMap.find reg t.Tmpl.code_ty_env in
                  sprintf "(%s)(%s)" (CType.dump ty) (dump_v v)
                with Not_found -> dump_v v
                end
@@ -272,22 +269,12 @@ module RegMap = A.RegMap)
         fprintf chan ":%s\n" outs
 
       let dump_copies
-          compile_out_reg compile_val compile_cpy chan indent env proc t =
-(*
-  List.iter
-  (fun (_,a) ->
-  fprintf chan "%sint *%s = %s;\n" indent (copy_name a)
-  (match O.memory with
-  | Memory.Direct -> sprintf "&%s[_i]" a
-  | Memory.Indirect -> sprintf "%s[_i]" a) ;
-  fprintf chan "%smbar();\n" indent)
-  t.addrs ;
- *)
+        compile_out_reg compile_val compile_cpy chan indent proc t =
         List.iter
           (fun reg ->
             fprintf chan "%s%s %s = %s;\n" indent
               (let ty =
-                RegMap.safe_find Compile.base reg env in
+                RegMap.safe_find Compile.base reg t.Tmpl.ty_env in
               CType.dump ty)
               (copy_name (Tmpl.dump_out_reg proc reg))
               (compile_out_reg proc reg) ;
@@ -330,7 +317,7 @@ module RegMap = A.RegMap)
           t.Tmpl.final ;
         ()
 
-      let after_dump compile_out_reg chan indent proc t env =
+      let after_dump compile_out_reg chan indent proc t =
         if O.cautious then begin
           dump_save_copies compile_out_reg chan indent proc t
         end ;
@@ -339,8 +326,7 @@ module RegMap = A.RegMap)
         RegSet.iter
           (fun reg ->
             let ty =
-              try RegMap.find reg env
-              with Not_found -> Compile.base in
+              RegMap.safe_find Compile.base reg t.Tmpl.ty_env in
             match ty with
             | CType.Array _ when A.arch = `AArch64 ->
               fprintf chan "%s%s out_%s = cast(%s);\n" indent
@@ -353,18 +339,19 @@ module RegMap = A.RegMap)
           (RegSet.inter stable finals)
 
       let before_dump args0 compile_out_reg compile_val compile_cpy
-          chan indent env proc t trashed =
+          chan indent proc t trashed =
         begin match args0.Template.trashed with
         | [] -> ()
         | trs ->
             fprintf chan "uint64_t %s;" (String.concat "," trs)
         end ;
-        let reg_env = Tmpl.get_reg_env A.error A.warn t in
         RegSet.iter
           (fun reg ->
             let ty = match A.internal_init reg None with
             | Some (_,ty) -> ty
-            | None -> CType.dump (RegMap.safe_find CType.word reg reg_env) in
+            | None ->
+               CType.dump
+                 (RegMap.safe_find CType.word reg t.Tmpl.ty_env) in
             fprintf chan "%s%s %s;\n"
               indent ty (dump_trashed_reg reg))
           trashed ;
@@ -372,7 +359,8 @@ module RegMap = A.RegMap)
           (fun reg ->
             let ty = match A.internal_init reg None with
             | Some (_,ty) -> ty
-            | None -> CType.dump (RegMap.safe_find Compile.base reg reg_env) in
+            | None ->
+               CType.dump (RegMap.safe_find Compile.base reg t.Tmpl.ty_env) in
             let init = match init_val reg t with
             | None -> ""
             | Some v ->
@@ -395,7 +383,7 @@ module RegMap = A.RegMap)
 
         if O.cautious then begin
           dump_copies compile_out_reg compile_val compile_cpy chan
-            indent env proc t
+            indent proc t
         end
 
       let dump_code chan proc func code =
@@ -434,10 +422,11 @@ module RegMap = A.RegMap)
           dump_code chan proc ".F" code
 
       let do_dump args0 compile_val compile_addr compile_cpy compile_out_reg
-          chan indent env proc t =
+          chan indent proc t =
         let trashed = Tmpl.trashed_regs t in
         before_dump args0
-         compile_out_reg compile_val compile_cpy chan indent env proc t trashed;
+         compile_out_reg compile_val compile_cpy
+         chan indent proc t trashed;
         fprintf chan "asm __volatile__ (\n" ;
         fprintf chan "\"\\n\"\n" ;
         dump_main chan proc t.Tmpl.code ;
@@ -447,7 +436,7 @@ module RegMap = A.RegMap)
         dump_inputs args0 compile_val chan t trashed ;
         dump_clobbers chan args0.Template.clobbers t  ;
         fprintf chan ");\n" ;
-        after_dump compile_out_reg chan indent proc t env;
+        after_dump compile_out_reg chan indent proc t ;
         ()
 
       let debug_globEnv e =
@@ -460,7 +449,7 @@ module RegMap = A.RegMap)
           (String.concat " " pp)
 
 
-      let dump chan indent env (globEnv,_) _volatileEnv proc t =
+      let dump chan indent (globEnv,_) _volatileEnv proc t =
 
         if debug then debug_globEnv globEnv ;
 
@@ -470,7 +459,8 @@ module RegMap = A.RegMap)
         | Mode.Kvm|Mode.PreSi ->
             fun proc reg ->
               let ty =
-                try RegMap.find reg env with Not_found -> assert false in
+                try RegMap.find reg t.Tmpl.ty_env
+                with Not_found -> assert false in
               if CType.is_ptr ty || CType.is_pte ty then
                 Tmpl.compile_presi_out_ptr_reg proc reg
               else
@@ -480,7 +470,7 @@ module RegMap = A.RegMap)
           Template.no_extra_args compile_val_inline compile_addr_inline
           (fun x -> sprintf "_a->%s[_i]" (Tmpl.addr_cpy_name (Constant.as_address x) proc))
           compile_out_reg
-          chan indent env proc t
+          chan indent proc t
 
       let add_pteval k = sprintf "_pteval%d" k
 
@@ -521,7 +511,7 @@ module RegMap = A.RegMap)
 
       let nop_init t = List.exists (fun (_,v) -> A.V.is_nop v) t.Tmpl.init
 
-      let dump_fun ?(user=false) chan args0 env globEnv _volatileEnv proc t =
+      let dump_fun ?(user=false) chan args0 globEnv _volatileEnv proc t =
         let args0 = match t.Tmpl.fhandler with
           | [] -> args0
           | _ ->
@@ -588,7 +578,7 @@ module RegMap = A.RegMap)
           List.map
             (fun x ->
               let ty =
-                try RegMap.find x env
+                try RegMap.find x t.Tmpl.ty_env
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
@@ -602,7 +592,7 @@ module RegMap = A.RegMap)
           compile_addr_fun
           (fun sym -> compile_cpy_fun proc (Constant.as_address sym))
           (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
-          chan "  " env proc t ;
+          chan "  " proc t ;
         fprintf chan "}\n\n" ;
         ()
 
@@ -664,7 +654,8 @@ module RegMap = A.RegMap)
       module PU = SkelUtil.PteValUtil(A.V.PteVal)
 
       let dump_call f_id args0
-            _tr_idx chan indent env (_,alignedEnv) _volatileEnv proc t =
+            _tr_idx chan indent (_,alignedEnv) _volatileEnv proc t =
+        let env = t.Tmpl.ty_env in
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let instrs = List.map compile_instr_call (Tmpl.get_instructions t) in
         let addrs_proc,ptes = Tmpl.get_addrs t

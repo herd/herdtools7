@@ -44,7 +44,7 @@ module Make(V:Constant.S) = struct
  *)
         dump_ins (k+1) ts in
 (* Prefix *)
-    let reg_env = Tmpl.get_reg_env A.I.error A.I.warn t in
+    let reg_env = t.Tmpl.ty_env in
     let all_regs = Tmpl.all_regs_in_tmpl t in
     let init =
       List.fold_left (fun m (r,v) -> RegMap.add r v m)
@@ -101,8 +101,9 @@ module Make(V:Constant.S) = struct
 
   and compile_out_reg_fun p r = sprintf "*%s" (Tmpl.dump_out_reg p r)
 
-  let dump_fun ?user chan _args0 env globEnv _volatileEnv proc t =
+  let dump_fun ?user chan _args0 globEnv _volatileEnv proc t =
     assert (Misc.is_none user) ;
+    let env = t.Tmpl.ty_env in
     let addrs_proc = A.Out.get_addrs_only t in
     let addrs =
       List.map
@@ -142,7 +143,7 @@ module Make(V:Constant.S) = struct
     sprintf "&_a->%s" (Tmpl.compile_out_reg proc reg)
 
   let dump_call f_id args0
-        _tr_idx chan indent _env _globEnv _volatileEnv proc t =
+        _tr_idx chan indent _globEnv _volatileEnv proc t =
     let addrs_proc = Tmpl.get_addrs_only t in
     let addrs = List.map compile_addr_call addrs_proc
     and outs = List.map (compile_out_reg_call proc) t.Tmpl.final in
@@ -150,6 +151,6 @@ module Make(V:Constant.S) = struct
     LangUtils.dump_code_call chan indent f_id args
 
 
-  let dump _chan _indent _env _globEnv _volatileEnv _proc _t = ()
+  let dump _chan _indent _globEnv _volatileEnv _proc _t = ()
 
 end

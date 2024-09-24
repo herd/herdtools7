@@ -63,9 +63,7 @@ module Make
      and module A = A
      and module FaultType = A.FaultType)
     (O:Indent.S)
-    (Lang:Language.S
-    with type arch_reg = T.A.reg and type t = A.Out.t
-         and module RegMap = T.A.RegMap)
+    (Lang:Language.S with type t = A.Out.t)
        : sig
       val dump : Name.t -> T.t -> unit
     end = struct
@@ -1466,8 +1464,7 @@ module Make
 (* Thread code, as functions *)
       let dump_thread_code
             procs_user env (proc,(out,(_outregs,envVolatile)))  =
-        let myenv = U.select_proc proc env
-        and global_env = U.select_global env in
+        let global_env = U.select_global env in
         let global_env =
           List.map (* Array -> pointer to first element *)
             (fun (loc,t) ->
@@ -1490,7 +1487,7 @@ module Make
             }
           else no_extra_args in
         Lang.dump_fun ~user
-          O.out args0 myenv global_env envVolatile proc out
+          O.out args0 global_env envVolatile proc out
 
 (* Untouched variables, per thread + responsability *)
       let part_vars test =
@@ -1513,7 +1510,6 @@ module Make
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
         if Misc.consp faults && T.has_asmhandler test then
           Warn.user_error "Post condition cannot check for faults when using custom fault handlers" ;
-        let my_regs = U.select_proc proc env in
         let addrs = A.Out.get_addrs_only out in (* accessed in code *)
         O.fi "case %i: {" proc ;
         (* Delays *)
@@ -1651,11 +1647,11 @@ module Make
               (if user_mode then ["_c->id"] else [])
               (fun _ s -> s)
               O.out (Indent.as_string Indent.indent2)
-            my_regs (global_env,[]) envVolatile proc out
+            (global_env,[]) envVolatile proc out
         end else begin
           Lang.dump
             O.out (Indent.as_string Indent.indent2)
-            my_regs (global_env,[]) envVolatile proc out
+            (global_env,[]) envVolatile proc out
         end ;
 (* Synchronise *)
         O.oii "barrier_wait(_b);" ;

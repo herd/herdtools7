@@ -68,6 +68,10 @@ module type Base = sig
   val user_handler_clobbers : string list
   val vector_table : bool -> string -> string list
 
+(* Reaction to different types, fail or warn *)
+  val error : (CType.t -> CType.t -> bool)
+  val warn : (CType.t -> CType.t -> bool)
+
   module FaultType : FaultType.S
 
   module GetInstr : GetInstr.S with type t = instruction
@@ -102,6 +106,10 @@ module type S =
     include ArchBase.S
 
     module V : Constant.S with type Instr.t = instruction
+
+(* Reaction to different types, fail or warn *)
+    val error : (CType.t -> CType.t -> bool)
+    val warn : (CType.t -> CType.t -> bool)
 
     val reg_to_string : reg -> string
 

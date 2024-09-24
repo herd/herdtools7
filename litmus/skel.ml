@@ -86,9 +86,7 @@ module Make
      type instruction = A.instruction and
      type P.code = P.code and module A = A and module FaultType = A.FaultType)
     (O:Indent.S)
-    (Lang:Language.S
-    with type arch_reg = T.A.reg and type t = A.Out.t
-    and module RegMap = T.A.RegMap) : sig
+    (Lang:Language.S with type t = A.Out.t) : sig
       val dump : Name.t -> T.t -> unit
     end = struct
   module MakeLoc
@@ -1772,11 +1770,10 @@ module Make
             test.T.globals in
         List.iter
           (fun (proc,(out,(_outregs,envVolatile))) ->
-            let myenv = U.select_proc proc env
-            and global_env = U.select_global env in
+            let global_env = U.select_global env in
             if do_ascall then begin
                 Lang.dump_fun O.out
-                  Template.no_extra_args myenv global_env envVolatile proc out
+                  Template.no_extra_args global_env envVolatile proc out
             end ;
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
@@ -1981,8 +1978,9 @@ module Make
               let f_id =
                 if do_self then LangUtils.code_fun_cpy proc else
                 LangUtils.code_fun proc in
-              Lang.dump_call f_id [] (fun _ s -> s) else Lang.dump)
-              O.out (Indent.as_string iloop) myenv (global_env,aligned_env) envVolatile proc out ;
+              Lang.dump_call f_id [] (fun _ s -> s)
+             else Lang.dump)
+              O.out (Indent.as_string iloop) (global_env,aligned_env) envVolatile proc out ;
             if do_verbose_barrier && have_timebase  then begin
               if do_timebase then begin
                 O.fx iloop "_a->tb_delta[%i][_i] = _delta;" proc ;

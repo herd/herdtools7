@@ -25,6 +25,16 @@ module Make(V:Constant.S) = struct
   | GPRreg _ -> pp_reg r
   | Symbolic_reg _ -> assert false
 
+  let error t1 t2 =
+    let open CType in
+    match t1,t2 with
+    | (Base "int",Pointer _)
+      | (Pointer _,Base "int")  ->
+       true
+    | _ -> false
+
+  let warn _t1 _t2 = false
+
   include
       ArchExtra_litmus.Make
       (struct
@@ -44,14 +54,6 @@ module Make(V:Constant.S) = struct
         let reg_class _ = ""
         let reg_class_stable _ _ = ""
         let comment = comment
-        let error t1 t2 =
-          let open CType in
-          match t1,t2 with
-          | (Base "int",Pointer _)
-          | (Pointer _,Base "int")  ->
-              true
-          | _ -> false
-        let warn _t1 _t2 = false
       end)
   let features = []
   let nop = Pnop

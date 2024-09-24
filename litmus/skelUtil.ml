@@ -355,7 +355,7 @@ end
       let select_proc (p:int) (env,_) =
         select_types_reg
           (function
-            | A.Location_reg (q,reg) when p = q -> Some reg
+            | A.Location_reg (q,reg) when Proc.equal p q -> Some reg
             | A.Location_global _ | A.Location_reg _  -> None)
           env
 

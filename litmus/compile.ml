@@ -714,9 +714,9 @@ module A.FaultType = A.FaultType)
             A.LocMap.fold
               (fun loc t k -> match loc with
               | A.Location_reg (p,r) when Misc.int_eq p proc ->
-                  (r,t)::k
+                  RegMap.add r t k
               | _ -> k)
-              ty_env [] in
+              ty_env RegMap.empty in
           let init = compile_init proc init observed_proc code in
           let final = compile_final proc observed_proc in
           let addrs = StringSet.elements addrs in
@@ -725,7 +725,7 @@ module A.FaultType = A.FaultType)
                  (A.RegSet.union stable stable_info)
                  (A.Out.all_regs code fhandler final) in
           let stable = A.RegSet.elements stable in
-          proc,
+          let t =
           { init ;
             addrs ;
             ptes = StringSet.elements ptes ;
@@ -734,7 +734,11 @@ module A.FaultType = A.FaultType)
             all_clobbers;
             code; fhandler; name; nrets; nnops;
             ty_env;
-          }) outs
+            code_ty_env = RegMap.empty;
+          } in
+          let code_ty_env = A.Out.get_reg_env A.error A.warn t in
+          let t = { t with code_ty_env;} in
+        proc,t) outs
 
     let _pp_env env =
       StringMap.pp_str

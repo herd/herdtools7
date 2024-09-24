@@ -90,8 +90,9 @@ module Make(C:Config)(E:Extra) = struct
       (List.map
          (fun (x,ty) -> sprintf "%s -> %s" x (CType.debug ty))
          env)
-  let dump_fun ?user chan _args0 env globEnv _envVolatile proc t =
+  let dump_fun ?user chan _args0 globEnv _envVolatile proc t =
     assert (Misc.is_none user) ;
+    let env = t.CTarget.ty_env in
     if dbg then
       begin
         let pp = pp_env globEnv in
@@ -126,7 +127,7 @@ module Make(C:Config)(E:Extra) = struct
     out "}\n\n"
 
 
-  let dump_call f_id args0 tr_idx chan indent _env (globEnv,_) _envVolatile proc t =
+  let dump_call f_id args0 tr_idx chan indent (globEnv,_) _envVolatile proc t =
 
     if dbg then
       begin
@@ -175,7 +176,8 @@ module Make(C:Config)(E:Extra) = struct
     LangUtils.dump_code_call chan indent f_id args
 
 
-  let dump chan indent env (globEnv,_) _envVolatile proc t =
+  let dump chan indent (globEnv,_) _envVolatile proc t =
+    let env = t.CTarget.ty_env in
     let out x = fprintf chan x in
     out "%sdo {\n" indent;
     begin

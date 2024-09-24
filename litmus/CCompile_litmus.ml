@@ -28,6 +28,7 @@ module Make
      type P.code = string CAst.t and
      type A.reg = string and
      type A.loc_reg = string and
+     module A.RegMap = StringMap and
      type A.Out.t = CTarget.t) =
   struct
     module G = Global_litmus
@@ -115,7 +116,7 @@ module Make
        let f {CAst.param_name; param_ty; } = param_name,tr_param_ty param_ty in
        List.map f
 
-    let comp_template final code =
+    let comp_template ty_env final code =
       let inputs = string_of_params code.CAst.params in
       let body =
         let body =  code.CAst.body in
@@ -124,7 +125,8 @@ module Make
       {
         CTarget.inputs ;
         finals=final ;
-        code=body; }
+        code=body;
+        ty_env; }
 
 
     let comp_code obs env procs =
@@ -139,15 +141,16 @@ module Make
                    | _ -> k)
                    obs [] in
                let final = List.map fst regs in
-               let volatile = []
-(*
-                 let f acc = function
-                   | {CAst.volatile = true; param_name; _} -> param_name :: acc
-                   | {CAst.volatile = false; _} -> acc
-                 in
-                 List.fold_left f [] code.CAst.params *)
-               in
-               acc @ [(proc, (comp_template final code, (regs, volatile)))]
+               let volatile = [] in
+               let ty_env =
+                 A.LocMap.fold
+                   (fun loc ty k ->
+                     match loc with
+                     | A.Location_reg (q,r) when Proc.equal q proc ->
+                        A.RegMap.add r ty k
+                     | _ -> k)
+                   env A.RegMap.empty in
+               acc @ [(proc, (comp_template ty_env final code, (regs, volatile)))]
            | CAst.Global _ -> acc
         )
         [] procs

@@ -216,3 +216,16 @@ let rec sizeof = function
   | Base b ->
      do_base_size b >>= apply MachSize.nbytes
   | Pointer _ -> None
+
+let larger t1 t2 =
+  match sizeof t1,sizeof t2 with
+  | Some n1,Some n2 ->
+     if n1 > n2 then t1
+     else if n2 > n1 then t2
+     else begin
+       match signed t1,signed t2 with
+       | (true,false) -> t2
+       | (false,true) -> t1
+       | _,_ -> t2
+     end
+  | (None,_)|(_,None) -> t1

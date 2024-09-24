@@ -113,6 +113,9 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
 
   let features = []
 
+  let error _ _ = false
+  and warn _ _ = false
+
   include HardwareExtra.No
 
   module GetInstr = GetInstr.No(struct type instr = instruction end)

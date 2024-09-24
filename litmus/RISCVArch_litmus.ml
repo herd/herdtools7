@@ -26,6 +26,8 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   | Symbolic_reg _|RESADDR -> assert false
   | Ireg _ -> pp_reg r
 
+  let error _t1 _t2 = false
+  and warn _t1 _t2 = false
 
   include
       ArchExtra_litmus.Make(O)
@@ -42,8 +44,6 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let reg_class _ = "=&r"
         let reg_class_stable init _r = if init then "+w" else "=&r"
         let comment = comment
-        let error _t1 _t2 = false
-        and warn _t1 _t2 = false
       end)
   let features = []
   let nop = INop

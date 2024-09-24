@@ -47,10 +47,8 @@ module Make
      type instruction = A.instruction and
      type P.code = P.code and module A = A and module FaultType = A.FaultType)
     (O:Indent.S)
-    (Lang:Language.S
-    with type arch_reg = T.A.reg and type t = A.Out.t
-    and module RegMap = T.A.RegMap) :
-    sig
+    (Lang:Language.S with type t = A.Out.t)
+    : sig
       val dump : Name.t -> T.t -> unit
     end =
   struct
@@ -650,9 +648,8 @@ let dump_threads _tname env test =
       test.T.globals in
   List.iter
     (fun (proc,(out,(_outregs,envVolatile))) ->
-      let myenv = U.select_proc proc env in
       Lang.dump_fun O.out Template.no_extra_args
-        myenv global_env envVolatile proc out ;
+        global_env envVolatile proc out ;
       O.f "static int thread%i(void *_p) {" proc ;
       O.oi "ctx_t *_a = (ctx_t *)_p;" ;
       O.o "" ;
@@ -675,7 +672,7 @@ let dump_threads _tname env test =
       | Some _|None -> idx in
       Lang.dump_call (LangUtils.code_fun proc)
         [] tr_idx O.out (Indent.as_string indent3)
-        myenv (global_env,aligned_env) envVolatile proc out ;
+        (global_env,aligned_env) envVolatile proc out ;
       O.oii "}" ;
       O.oi "}" ;
       O.oi "smp_mb();" ;

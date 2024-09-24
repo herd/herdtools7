@@ -15,15 +15,12 @@
 (****************************************************************************)
 
 module type S = sig
-  type arch_reg
-  module RegMap : MyMap.S with type key = arch_reg
   type t
 
   val dump_fun :
     ?user:bool ->
     out_channel ->
     Template.extra_args ->
-    CType.t RegMap.t ->
     (string * CType.t) list ->
     string list ->
     Proc.t ->
@@ -36,7 +33,6 @@ module type S = sig
     (CType.t -> string -> string) ->
     out_channel ->
     string ->
-    CType.t RegMap.t ->
     ((string * CType.t) list * (string * CType.t) list) ->
     string list ->
     Proc.t ->
@@ -47,7 +43,6 @@ module type S = sig
   val dump :
     out_channel ->
     string ->
-    CType.t RegMap.t ->
     ((string * CType.t) list * (string * CType.t) list) ->
     string list ->
     Proc.t ->
