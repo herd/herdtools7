@@ -4,14 +4,14 @@ type MyExceptionType2 of exception{};
 func main () => integer
 begin
 
-     try 
+     try
        throw MyExceptionType1 {};
        assert FALSE;
      catch
        when MyExceptionType2 =>
          assert FALSE;
        otherwise =>
-         assert TRUE;
+         print("Otherwise");
      end
 
   return 0;
