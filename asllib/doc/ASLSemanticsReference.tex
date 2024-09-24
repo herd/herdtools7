@@ -46,7 +46,7 @@
 \newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}(#1)}
 \newcommand\evallexpr[1]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}(#1)}
 \newcommand\evalexprlist[1]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}(#1)}
-\newcommand\evalexprlistm[1]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}(#1)}
+\newcommand\evalexprlistm[0]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}}
 \newcommand\evalpattern[1]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}(#1)}
 \newcommand\evallocaldecl[1]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}(#1)}
 \newcommand\evalslices[1]{\hyperlink{def-evalslices}{\textfunc{eval\_slices}}(#1)}
@@ -80,7 +80,7 @@
 \newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\textfunc{write\_identifier}}}
 \newcommand\createbitvector[0]{\hyperlink{def-createbitvector}{\textfunc{create\_bitvector}}}
 \newcommand\concatbitvectors[0]{\hyperlink{def-concatbitvector}{\textfunc{concat\_bitvectors}}}
-\newcommand\readfrombitvector[0]{\hyperlink{def-readfrinbitvector}{\textfunc{read\_from\_bitvector}}}
+\newcommand\readfrombitvector[0]{\hyperlink{def-readfrombitvector}{\textfunc{read\_from\_bitvector}}}
 \newcommand\writetobitvector[0]{\hyperlink{def-writetobitvector}{\textfunc{write\_to\_bitvector}}}
 \newcommand\asbitvector[0]{\hyperlink{def-asbitvector}{\textfunc{as\_bitvector}}}
 \newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\textfunc{slices\_to\_positions}}}
@@ -701,10 +701,11 @@ ASL semantics mainly utilizes the following types of output configurations:
   \hypertarget{def-throwing}{}
   \item[Exceptions.] Configurations in
   \[
-    \Throwing((\langle \valuereadfrom(\vals,\Identifiers) \times \ty\rangle \times \XGraphs, \envs)
+    \Throwing(\langle \valuereadfrom(\vals,\Identifiers) \times \ty\rangle \times \XGraphs, \envs)
   \]
   represent thrown exceptions.
   \hypertarget{def-valuereadfrom}{}
+
   There are two flavors of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
@@ -1097,16 +1098,17 @@ uses the rule \\ SemanticsRule.EGlobalVar.
 \CodeSubsection{\EGlobalVarBegin}{\EGlobalVarEnd}{../Interpreter.ml}
 
 \subsection{Formally}
-  \begin{mathpar}
-  \inferrule{
-    \env \eqname (\tenv, \denv)\\
-    \vx \in \dom(G^\denv)\\
-    \vv \eqdef G^\denv(\vx) \\
-    \vg \eqdef \ReadEffect(\vx)\\
-    \newenv \eqname \env
-  }
-  {\evalexpr{\denv, \EVar(\vx)} \evalarrow \Normal((\vv, \vg), \newenv)}
-  \end{mathpar}
+\begin{mathpar}
+\inferrule{
+  \env \eqname (\tenv, \denv)\\
+  \vx \in \dom(G^\denv)\\
+  \vv \eqdef G^\denv(\vx) \\
+  \vg \eqdef \ReadEffect(\vx)\\
+  \newenv \eqname \env
+}{
+  \evalexpr{\env, \EVar(\vx)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
 
 \isempty{\subsection{Comments}}
 
@@ -1461,13 +1463,12 @@ All of the following apply:
 \begin{itemize}
 \item $\ve$ denotes a slicing expression, $\ESlice(\ebv, \slices)$;
 \item the evaluation of $\ebv$ in $\env$ yields $\Normal(\mbv, \envone)$\ProseOrAbnormal;
-\item the evaluation of $\slices$ in $\env$ yields $\Normal(\mpositions, \envone)$\ProseOrAbnormal;
+\item the evaluation of $\slices$ in $\env$ yields $\Normal(\mpositions, \newenv)$\ProseOrAbnormal;
 \item $\mpositions$ consists of $\positions$ --- all the indices that need to be added to the
 resulting bitvector --- and the execution graph $\vgone$;
 \item reading from $\vbv$ as a bitvector at the indices indicated by $\positions$
       (see \secref{SemanticsRule.ReadFromBitvector}) results in the bitvector $\vv$,
       which concatenates all of the values from the indicates indices\ProseOrError;
-\item $\newenv$ is $\envone$;
 \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
 
@@ -1480,18 +1481,16 @@ the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
 
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \evalexpr{\env, \ebv} \evalarrow \Normal(\mbv, \envone)  \OrAbnormal\\\\
-    \mbv \eqname (\vbv,\vgone) \\
-    \evalslices{\envone, \slices} \evalarrow \Normal(\mpositions, \envone)  \OrAbnormal \\
-    \mpositions \eqname (\positions, \vgtwo) \\
-    \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\\\\
-    \newenv \eqdef\envone \\
-    \vg \eqdef \vgone \parallelcomp \vgtwo
-  }
-  {
-    \evalexpr{\env, \ESlice(\ebv, \slices)} \evalarrow \Normal((\vv, \vg), \newenv)
-  }
+\inferrule{
+  \evalexpr{\env, \ebv} \evalarrow \Normal(\mbv, \envone)  \OrAbnormal\\\\
+  \mbv \eqname (\vbv,\vgone) \\
+  \evalslices{\envone, \slices} \evalarrow \Normal(\mpositions, \newenv)  \OrAbnormal \\
+  \mpositions \eqname (\positions, \vgtwo) \\
+  \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\\\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalexpr{\env, \ESlice(\ebv, \slices)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -1939,33 +1938,52 @@ If the evaluation of any expression terminates abnormally then the abnormal conf
 \end{mathpar}
 
 \section{SemanticsRule.EExprListM \label{sec:SemanticsRule.EExprListM}}
-\subsection{Prose}
 The relation
 \[
-  \evalexprlistm{\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vle}} \;\aslrel\;
-          \Normal(\overname{(\vals\times\XGraphs)^* }{\vms} \aslsep \envs) \cup
+  \evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
+          \Normal(\overname{(\vals\times\XGraphs)^* }{\vms} \aslsep \overname{\envs}{\newenv}) \cup
           \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
 \]
-evaluates a list of expressions $\vle$ in left-to-right in the initial environment $\env$
+evaluates a list of expressions $\vEs$ in left-to-right in the initial environment $\env$
 and returns the list of values associated with graphs $\vms$ and the new environment $\newenv$.
 If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
 
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vEs$ is an empty list;
+    \item $\vms$ is then empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vEs$ is a list with \head\ $\ve$ and \tail\ $\vesone$;
+    \item evaluating $\ve$ in $\env$ yields $\Normal(\vmone, \envone)$\ProseOrAbnormal;
+    \item evaluating $\vesone$ in $\envone$ via $\evalexprlistm$ yields \\
+          $\Normal(\vmsone, \newenv)$\ProseOrAbnormal;
+    \item the result is the normal configuration with the list consisting of $\vmone$ as its \head\ and $\vmsone$
+          as its \tail\ and $\newenv$.
+  \end{itemize}
+\end{itemize}
+
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule[empty]{}
-  {
-    \evalexprlistm{\env, \emptylist} \evalarrow \Normal((\emptylist, \emptygraph), \env)
-  }
-\and
-  \inferrule[nonempty]{
-    \vle \eqname [\ve] \concat \vle1\\
-    \vms \eqname [\vmone] \concat \vmsone\\
-    \evalexpr{\env, \ve} \evalarrow \Normal(\vmtwo, \envone) \OrAbnormal\\
-    \evalexprlistm{\envone, \vle1} \evalarrow \Normal(\vmstwo, \newenv) \OrAbnormal
-  }
-  {
-    \evalexprlistm{\env, \vle} \evalarrow \Normal([\vmtwo]\concat\vmstwo, \newenv)
-  }
+\inferrule[empty]{}
+{
+  \evalexprlistm(\env, \overname{\emptylist}{\vEs}) \evalarrow \Normal(\overname{\emptylist}{\vms}, \overname{\env}{\newenv})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \vEs \eqname [\ve] \concat \vesone\\
+  \evalexpr{\env, \ve} \evalarrow \Normal(\vmone, \envone) \OrAbnormal\\
+  \evalexprlistm(\envone, \vesone) \evalarrow \Normal(\vmsone, \newenv) \OrAbnormal
+}{
+  \evalexprlistm(\env, \vEs) \evalarrow \Normal([\vmone]\concat\vmsone, \newenv)
+}
 \end{mathpar}
 
 \section{SemanticsRule.ESideEffectFreeExpr \label{sec:SemanticsRule.ESideEffectFreeExpr}}
@@ -2159,7 +2177,7 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
     \inferrule{
       \evalexpr{\env, \torexpr(\ebv)} \evalarrow \Normal(\mbv,\envone) \OrAbnormal\\
       \evalslices{\envone, \slices} \evalarrow \Normal(\mpositions, \envtwo) \OrAbnormal\\
-      \mpositions \eqname (\vgone, \positions)\\
+      \mpositions \eqname (\positions, \vgone)\\
       \mbv \eqname (\vbv, \vgtwo)\\\\
       \writetobitvector(\positions, \vv, \vbv) \evalarrow \vvone \OrDynError\\\\
       \vgthree \eqdef \vg \parallelcomp \vgone \parallelcomp \vgtwo\\
@@ -2413,10 +2431,10 @@ The relation
     & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
   \end{array}
 \]
-
 evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
-$\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration,
-and one of the following applies:
+$\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration.
+
+One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
   \begin{itemize}
@@ -2802,7 +2820,7 @@ and one of the following applies:
       \item $\vbone$ is the Boolean value corresponding to whether
         $\vv$ is greater than or equal to $\vvone$;
         \item $\vbtwo$ is the Boolean value corresponding to whether
-        $\vv$ is greater than or equal to $\vvtwo$;
+        $\vv$ is less than or equal to $\vvtwo$;
       \item $\vb$ is the Boolean conjunction of $\vbone$ and
       $\vbtwo$;
       \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
@@ -2822,7 +2840,7 @@ and one of the following applies:
     \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \vgone) \OrDynError\\\\
     \binoprel(\GEQ, \vv, \vvone) \evalarrow \vbone\\
     \evalexprsef{\env, \veone} \evalarrow \Normal(\vvtwo, \vgtwo) \OrDynError\\\\
-    \binoprel(\GEQ, \vv, \vvtwo) \evalarrow \vbtwo\\
+    \binoprel(\LEQ, \vv, \vvtwo) \evalarrow \vbtwo\\
     \binoprel(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
     \newg \eqdef \vgone \parallelcomp \vgtwo
   }
@@ -3105,21 +3123,22 @@ In the specification:
 \texttt{1}, \texttt{y} to the evaluation of \texttt{2}, and \texttt{z} to the
 evaluation of \texttt{3}) in $\env$.
 
-  \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Interpreter.ml}
+\CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Interpreter.ml}
 
-\newcommand\ldituplefolder[1]{\texttt{ldi\_tuple\_folder}(#1)}
+\newcommand\ldituplefolder[0]{\hyperlink{def-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}}
 
 \subsection{Formally}
+\hypertarget{def-ldituplefolder}{}
 We first define the helper semantic relation
 \[
-    \ldituplefolder{\overname{\envs}{\env} \aslsep \overname{\localdeclitem^*}{\ldis} \aslsep \overname{(\vals \times \XGraphs)^*}{\liv}} \;\aslrel\;
+    \ldituplefolder(\overname{\envs}{\env} \aslsep \overname{\localdeclitem^*}{\ldis} \aslsep \overname{(\vals \times \XGraphs)^*}{\liv}) \;\aslrel\;
      \Normal(\overname{\XGraphs}{\vg} \aslsep \overname{\envs}{\newenv})
 \]
 via the following rules:
 \begin{mathpar}
   \inferrule{}
   {
-    \ldituplefolder{\env, \emptylist, \emptylist} \evalarrow \Normal(\emptygraph, \env)
+    \ldituplefolder(\env, \emptylist, \emptylist) \evalarrow \Normal(\emptygraph, \env)
   }
 \and
   \inferrule{
@@ -3127,11 +3146,11 @@ via the following rules:
     \liv \eqname [\vm] \concat \liv'\\
     \vm \eqname (\vv, \vgone)\\
     \evallocaldecl{\env, \ldi, \langle\vm\rangle} \evalarrow \Normal(\vgone, \envone)\\
-    \ldituplefolder{\envone, \ldis', \liv'} \evalarrow \Normal(\vgtwo, \newenv)\\
+    \ldituplefolder(\envone, \ldis', \liv') \evalarrow \Normal(\vgtwo, \newenv)\\
     \newg \eqdef \vgone \parallelcomp \vgtwo
   }
   {
-    \ldituplefolder{\env, \ldis, \liv} \evalarrow \Normal(\newg, \newenv)
+    \ldituplefolder(\env, \ldis, \liv) \evalarrow \Normal(\newg, \newenv)
   }
 \end{mathpar}
 
@@ -3142,7 +3161,7 @@ We now use the helper rules to define the rule for local declaration item tuples
     \ldis \eqname \ldi_{1..k}\\
     i=1..k: \getindex(i, \vv) \evalarrow \vv_i\\
     \liv \eqname [i=1..k: (\vv_i, \vg)]\\
-    \ldituplefolder{\env, \ldis, \liv} \evalarrow C
+    \ldituplefolder(\env, \ldis, \liv) \evalarrow C
   }
   {
     \evallocaldecl{\env, \LDITuple(\ldis), \langle \vm\rangle} \evalarrow C
@@ -3358,17 +3377,17 @@ All of the following apply:
         $\Normal(\vgtwo, \newg)$\ProseOrAbnormal.
 \end{itemize}
 
-We first define the syntactic relation
 \hypertarget{def-lexprisvar}{}
+We first define the syntactic predicate
 \[
-  \lexprisvar(\lexpr) \bigtimes \True
+  \lexprisvar(\lexpr) \aslto \True
 \]
 which holds when a left-hand side expression
 represents a variable:
 \begin{mathpar}
   \inferrule{}{ \lexprisvar(\LEVar(\Ignore)) \evalarrow \True}
   \and
-  \inferrule{}{ \lexprisvar(\LEDiscard) \evalarrow \True}
+  \inferrule{}{ \lexprisvar(\LEDiscard) \evalarrow \False}
 \end{mathpar}
 
 We now define the evaluation of assigning from a subprogram call:
@@ -3521,7 +3540,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 We now use the helper relation \texttt{write\_folder} to define the rule for returning a tuple of values:
 \begin{mathpar}
   \inferrule{
-    \evalexprlistm{\env, \es} \evalarrow \Normal(\ms, \newenv) \OrAbnormal\\
+    \evalexprlistm(\env, \es) \evalarrow \Normal(\ms, \newenv) \OrAbnormal\\
     \writefolder{\ms} \evalarrow (\vvs, \newg)
   }
   {
@@ -3896,44 +3915,49 @@ prints
 \isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SFor \label{sec:SemanticsRule.SFor}}
-    \subsection{Prose}
-    All of the following apply:
-    \begin{itemize}
-    \item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
-      \Forindexname &:& \vindexname\\
-      \Forstarte &:& \vstarte\\
-      \fordirection &:& \vdirection\\
-      \Forende &:& \vende\\
-      \Forbody &:& \vbody\\
-      \Forlimit &:& \Ignore
-    \end{array}\right\}$;
-    \item evaluating the side-effect-free expression $\veone$ in $\env$ is either
-    $\Normal(\vvone, \vgone)$\ProseOrError;
-    \item evaluating the side-effect-free expression $\vetwo$ in $\env$ is either
-    $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
-    \item declaring the local identifier $\vindexname$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
-    \item evaluating the \texttt{for} loop with arguments $(\vindexname, \veone, \dir, \vetwo, \vs)$ in $\envone$,
-    as per \secref{SemanticsRule.For} is $\Normal(\vgfour, \envtwo)$\ProseOrAbnormal;
-    \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
-    \item $\newg$ is formed as follows: taking the parallel composition of $\vgone$ and $\vgtwo$,
-    then taking the ordered composition of the result with the $\asldata$ edge,
-    and finally taking the ordered composition of the result with the $\aslpo$ edges;
-    \item $\newenv$ is $\envthree$.
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-    \end{itemize}
+Evaluating a \texttt{for} statement involves introducing an index variable to the
+environment. The type system ensures, via TypingRule.SFor, that the index variable
+is not already declared in the scope of the subprogram containing the \texttt{for}
+statement.
 
-    \subsection{Example}
-    The specification:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
-    prints
-    \begin{Verbatim}
-      0
-      1
-      2
-      3
-    \end{Verbatim}
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
+  \Forindexname &:& \vindexname\\
+  \Forstarte &:& \vstarte\\
+  \fordirection &:& \vdirection\\
+  \Forende &:& \vende\\
+  \Forbody &:& \vbody\\
+  \Forlimit &:& \Ignore
+\end{array}\right\}$;
+\item evaluating the side-effect-free expression $\veone$ in $\env$ is either
+$\Normal(\vvone, \vgone)$\ProseOrError;
+\item evaluating the side-effect-free expression $\vetwo$ in $\env$ is either
+$\Normal(\vvtwo, \vgtwo)$\ProseOrError;
+\item declaring the local identifier $\vindexname$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
+\item evaluating the \texttt{for} loop with arguments $(\vindexname, \veone, \dir, \vetwo, \vs)$ in $\envone$,
+as per \secref{SemanticsRule.For} is $\Normal(\vgfour, \envtwo)$\ProseOrAbnormal;
+\item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
+\item $\newg$ is formed as follows: taking the parallel composition of $\vgone$ and $\vgtwo$,
+then taking the ordered composition of the result with the $\asldata$ edge,
+and finally taking the ordered composition of the result with the $\aslpo$ edges;
+\item $\newenv$ is $\envthree$.
+\item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+\end{itemize}
 
-  \CodeSubsection{\SForBegin}{\SForEnd}{../Interpreter.ml}
+\subsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
+prints
+\begin{Verbatim}
+  0
+  1
+  2
+  3
+\end{Verbatim}
+
+\CodeSubsection{\SForBegin}{\SForEnd}{../Interpreter.ml}
 
 \subsection{Formally}
 Recall that the expressions for the \texttt{for} loop range are side-effect-free,
@@ -3952,6 +3976,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     {
     \begin{array}{r}
     \evalstmt{\env,
+    \overname{
     \SFor\left\{\begin{array}{rcl}
       \Forindexname &:& \vindexname\\
       \Forstarte &:& \vstarte\\
@@ -3959,7 +3984,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
       \Forende &:& \vende\\
       \Forbody &:& \vbody\\
       \Forlimit &:& \Ignore\\
-    \end{array}\right\}} \evalarrow \\ \Continuing(\newg, \newenv)
+    \end{array}\right\}}{\vs}} \evalarrow \\ \Continuing(\newg, \newenv)
     \end{array}
     }
   }
@@ -4173,7 +4198,7 @@ is defined before the block and hence still exists after the block.
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv,\denv)\\
-  \blockenv \eqdef (\tenv, (G^\denv, \emptylist))\\
+  \blockenv \eqdef (\tenv, (G^\denv, \emptyfunc))\\
   \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\\\
   \blockenvone\eqname(\tenv, \denvone)\\
   \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
@@ -4509,14 +4534,12 @@ and $\evalforloop$ (the latter in a mutually recursive manner):
 \chapter{Evaluation of Catchers \label{chap:eval_catchers}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The semantic relation for evaluating catchers employs input configurations
-consisting of output configuration as an argument.
-This argument corresponds to the output configuration resulting from raising
-an exception.
-The type of this argument is defined as follows:
+The semantic relation for evaluating catchers employs an argument
+that is an output configuration. This argument corresponds to the result
+of evaluating a \texttt{try} statement and its type is defined as follows:
 \hypertarget{def-toutconfig}{}
 \[
-  \TOutConfig \triangleq \TNormal \cup  \TThrowing \cup \TContinuing \cup \TReturning \cup \TError \enspace.
+  \TOutConfig \triangleq \TNormal \cup  \TThrowing \cup \TContinuing \cup \TReturning \enspace.
 \]
 
 The relation
@@ -4537,6 +4560,31 @@ evaluates a list of \texttt{catch} clauses $\catchers$, an \texttt{otherwise} cl
 and a configuration $\sm$ resulting from the evaluation of the throwing expression,
 in the environment $\env$. The result is either a continuation configuration,
 an early return configuration, or an abnormal configuration.
+
+When the statement in a \texttt{try} block, which we will refer to as the try-block statement,
+is evaluated, it may call a function that updates
+the global environment. If evaluation of the \texttt{try} block raises an exception that is caught,
+either by a \texttt{catch} clause or an \texttt{otherwise} clause,
+the statement associated with that clause, which we will refer to as the clause statement, is evaluated.
+It is important to evaluate the clause statement in an environment that includes any updates
+to the global environment made by evaluating the try-block statement.
+%
+We demonstrate this with the following example.
+
+Consider the following specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/EvalCatchers.asl}
+
+Here, the try-block statement consists of the single statement \texttt{update\_and\_throw();}.
+Evaluating the call to \texttt{update\_and\_throw} employs an environment $\env$ where
+\texttt{g} is bound to $0$.
+Notice that the call to \texttt{update\_and\_throw} binds \texttt{g} to $1$ before raising an exception.
+Therefore, evaluating the call to \texttt{update\_and\_throw} returns a configuration
+of the form
+$\Throwing(\Ignore, \envthrow)$ where $\envthrow$ binds \texttt{g} to $1$.
+When the catch clause is evaluated the semantics takes the global environment from $\envthrow$
+to account for the update to \texttt{g} and the local environment from $\env$ to account for the
+updates to the local environment in \texttt{main}, which binds \texttt{x} to $2$, and use this
+environment to evaluate \texttt{print(x, g)}, resulting in the output \texttt{2 1}.
 
 One of the following applies:
 \begin{itemize}
@@ -4581,19 +4629,18 @@ terminates successfully. That is, no dynamic error occurs.
 
 \subsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
-    \env \eqname (\tenv, (G^\denv, L^\denv))\\
-    \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
-    \envone \eqdef (\tenv, (G^{\denvthrow}, L^{\denv}))\\
-    \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\None, \Ignore, \vs) \rangle\\
-    \evalblock{\envone, \vs} \evalarrow C \OrDynError\\\\
-    D \eqdef \rethrowimplicit(\vv, \vvty, C)\\
-    \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{D}}
-  }
-  {
-    \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{D}{\newg}
-  }
+\inferrule{
+  \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+  \env \eqname (\tenv, (G^\denv, L^\denv))\\
+  \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+  \envone \eqdef (\tenv, (G^{\denvthrow}, L^{\denv}))\\
+  \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\None, \Ignore, \vs) \rangle\\
+  \evalblock{\envone, \vs} \evalarrow C \OrDynError\\\\
+  D \eqdef \rethrowimplicit(\vv, \vvty, C)\\
+  \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{D}}
+}{
+  \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{D}{\newg}
+}
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
@@ -4679,7 +4726,7 @@ terminates successfully. That is, no dynamic error occurs.
     \subsection{Example}
      The specification:
      \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
-     prints \texttt{Another exception}.
+     prints \texttt{Otherwise}.
 
   \CodeSubsection{\CatchOtherwiseBegin}{\CatchOtherwiseEnd}{../Interpreter.ml}
 
@@ -5144,8 +5191,8 @@ All of the following apply:
   \namedargs \eqname [i=1..k: (\id_i, \ve_i)]\\
   \names \eqdef [i=1..k: \id_i]\\
   \nargsone \eqdef [i=1..k: \ve_i]\\
-  \evalexprlistm{\env, \args} \evalarrow \Normal(\vvargs, \envone)\OrAbnormal\\
-  \evalexprlistm{\envone, \nargs1} \evalarrow \Normal(\nargstwo, \envtwo)\OrAbnormal\\
+  \evalexprlistm(\env, \args) \evalarrow \Normal(\vvargs, \envone)\OrAbnormal\\
+  \evalexprlistm(\envone, \nargs1) \evalarrow \Normal(\nargstwo, \envtwo)\OrAbnormal\\
   \nargstwo \eqname [i=1..k: \vm_i]\\
   \nargsthree \eqdef [i=1...k: (\id_i, \vm_i)]\\
   \envtwo \eqname (\tenv, \denvtwo)\\
@@ -5904,15 +5951,17 @@ transforms a (possibly empty) list of bitvector native values $\vvs$ into a sing
 \end{mathpar}
 
 \section{SemanticsRule.ReadFromBitvector \label{sec:SemanticsRule.ReadFromBitvector}}
-\subsection{Prose}
+\hypertarget{def-readfrombitvector}{}
 The relation
 \[
   \readfrombitvector(\overname{\tbitvector}{\bv} \aslsep \overname{(\tint\times\tint)^*}{\slices}) \;\aslrel\;
   \overname{\tbitvector}{\vv} \cup \overname{\TError}{\ErrorConfig}
 \]
 reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices specified by the list of slices $\slices$,
-thereby concatenating their values,
-and one of the following applies:
+thereby concatenating their values.
+
+\subsection{Prose}
+One of the following applies:
 \begin{itemize}
   \item all indices are in range for $\bv$ and the returned bitvector consists of the concatenated bits specified
   by the slices.
@@ -6204,8 +6253,7 @@ and all of the following apply:
 \subsection{Formally}
 \begin{mathpar}
   \inferrule{
-    \vm \eqname (\vv, \vg)\\
-    \declarelocalidentifierm(\env, \vx, \vv) \evalarrow (\newenv, \vgone)\\
+    \declarelocalidentifierm(\env, \vm) \evalarrow (\newenv, \vgone)\\
     \vgtwo \eqdef \ordered{\vg}{\aslpo}{\vgone}
   }
   {
