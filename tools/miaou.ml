@@ -164,8 +164,8 @@ module Make
 
     let sep op =
       match op with
-      | Union -> ",",", or"
-      | Inter|Seq|Cartesian -> ";","; and"
+      | Union -> ".","."
+      | Inter|Seq|Cartesian -> ".","."
       | _ -> assert false
 
     (***********)
@@ -441,7 +441,9 @@ module Make
          Some
            (Item
               (sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" txt))
-      | List _|DiffPair _|IfCond _ ->
+      | List (op,intro_txt,sep_txt,es) ->
+         Some (List (op,(sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" intro_txt),sep_txt,es))
+      | DiffPair _|IfCond _ ->
          None
 
     and tr_evts e1 = function
@@ -669,11 +671,11 @@ module Make
         match ty with
         | Some RLN|None ->
            sprintf
-             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}{an Effect %s}} if and only if"
+             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}{an Effect %s}} if"
              (pp_id loc id) (pp_evt 1) (pp_evt 2)
         | Some SET ->
            sprintf
-             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}} if and only if"
+             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}} if"
              (pp_id loc id) (pp_evt 1) in
       let d =
         if O.flatten then
