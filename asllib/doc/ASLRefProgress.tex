@@ -1,20 +1,20 @@
-\documentclass{book}
-\input{ASLmacros}
+% \documentclass{book}
+% \input{ASLmacros}
 
-\author{Arm Architecture Technology Group}
-\title{ASL Reference Progress \\
-       DDI 0623}
-\begin{document}
-\maketitle
+% \author{Arm Architecture Technology Group}
+% \title{ASL Reference Progress \\
+%        DDI 0623}
+% \begin{document}
+% \maketitle
 
-\tableofcontents{}
+% \tableofcontents{}
 
-\include{notice.tex}
+% \include{notice.tex}
 
-\include{disclaimer.tex}
+% \include{disclaimer.tex}
 
 % ------------------------------------------------------------------------------
-\chapter{Not Implemented by ASLRef}
+\chapter{Not Implemented by ASLRef\label{appendix:UnimplementedInASLRef}}
 % ------------------------------------------------------------------------------
 
 This chapter describes what is not yet present in the executable version of ASLRef
@@ -199,7 +199,7 @@ For example, the following will not raise a type-error:
 % ------------------------------------------------------------------------------
 \chapter{Issues Not Yet Addressed by the References}
 % ------------------------------------------------------------------------------
-
+\chapter{Issues Not Yet Addressed by the Reference\label{appendix:MissingTransliteration}}
 % ------------------------------------------------------------------------------
 \section{Semantics}
 
@@ -271,7 +271,7 @@ The domain of an enumeration type should be a set of enumeration labels.
 
 \subsection{Calls to Setters and Getters}
 The replacement of implicit calls to getters and setters (written for example as
-slices) to explicit calls to subprograms has not been transliterated.
+slices) to explicit calls to subprograms has not been defined.
 %
 In terms of abstract syntax, this corresponds to the translation between a
 \texttt{E\_Slice} and a \texttt{E\_Call}.
@@ -285,13 +285,38 @@ In terms of abstract syntax, this corresponds to the translation between a
 % \lrmcomment{This is related to \identr{ZJKY} and \identi{RYRP}.}
 
 % ------------------------------------------------------------------------------
+\section{Semantics}
+
+% \subsection{Base values of types}
+
+% Finding the base value of a type is not transliterated.
+
+% \lrmcomment{This is related to \identr{NJDZ}, \identr{CFTD}, \identr{QGGH}, \identi{WVQZ},
+% \identr{GYCG}, \identr{WKCY}, \identr{LCCN}, \identr{CPCK}, \identr{ZVPT},
+% \identi{QFZH}, \identr{ZGVR}, \identi{PGSS}, \identr{QWSQ}, \identr{HMRK},
+% \identr{MBRM}, \identr{SVJB}.}
+
+% \subsection{Operations}
+% Operations are not transliterated from ASLRef.
+
+% \lrmcomment{This is related to \identr{NCWM}, \identr{VGZF}, \identr{THSV}, \identr{CRQJ},
+% \identr{ZTJN}, \identr{SVMM}, \identr{WWTV}, \identr{GHXR}, \identi{NBCT}.}
+
+\subsection{Standard Library and Primitives}
+
+The standard library is not yet defined by the reference.
+
+\lrmcomment{This is related to \identr{RXYN}.}
+
+% ------------------------------------------------------------------------------
 \section{Side-Effects}
 
-Side-Effects are not yet defined by the references.
+Side-Effects are not yet defined by the reference.
 
 % \section{In scope for BET1}
 
 % Need to populate - for example Side-Effects should be there, as well as some
 % work on constraints.
 % Generally we need to review this Progress document and update it.
-\end{document}
+
+%\end{document}
