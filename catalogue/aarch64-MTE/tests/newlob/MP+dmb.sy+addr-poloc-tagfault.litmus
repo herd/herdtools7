@@ -1,0 +1,16 @@
+AArch64 MP+dmb.sy+addr-poloc-tagfault
+(* RSW variation feat. Imp Tag Read *)
+Variant=memtag,sync
+{
+  0:X1=y; 0:X3=x;
+  1:X1=y; 1:X3=x; 1:X4=z:green; 1:X5=z:red;
+}
+P0         | P1               | P1.F          ;
+MOV W2,#1  | LDR W0,[X1]      | ADR X9,L0     ;
+STR W2,[X3]| EOR W6,W0,W0     | MSR ELR_EL1,X9;
+DMB SY     | ADD X7,X5,W6,SXTW| ERET          ;
+MOV W0,#1  | LDG X8,[X7]      |;
+STR W0,[X1]| STR WZR,[X5]     |;
+           |L0:               |;
+           | LDR W2,[X3]      |;
+exists 1:X0=1 /\ 1:X2=0

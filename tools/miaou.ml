@@ -150,7 +150,7 @@ module Make
       | 1 -> 3
       | n -> n+1
 
-    let pp_evt k = sprintf "E%d" k
+    let pp_evt k = sprintf "E\\textsubscript{%d}" k
 
     (* Pretty print elements for n-ary operators *)
 
@@ -164,8 +164,8 @@ module Make
 
     let sep op =
       match op with
-      | Union -> ",",", or"
-      | Inter|Seq|Cartesian -> ";","; and"
+      | Union -> ".","."
+      | Inter|Seq|Cartesian -> ".","."
       | _ -> assert false
 
     (***********)
@@ -258,7 +258,7 @@ module Make
     let pp_rel_id e1 e2 id =
       Item
         (sprintf
-           "\\expandafter\\MakeUppercase%s"
+           "\\expandafter{\\MakeUppercase%s}"
            (do_pp_rel_id e1 e2 id))
 
     let tr_rel_id e1 e2 loc id = pp_rel_id  e1 e2 (pp_id loc id)
@@ -440,8 +440,10 @@ module Make
       | Item txt ->
          Some
            (Item
-              (sprintf "\\expandafter\\MakeUppercase\\notthecase{%s}" txt))
-      | List _|DiffPair _|IfCond _ ->
+              (sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" txt))
+      | List (op,intro_txt,sep_txt,es) ->
+         Some (List (op,(sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" intro_txt),sep_txt,es))
+      | DiffPair _|IfCond _ ->
          None
 
     and tr_evts e1 = function
@@ -451,7 +453,7 @@ module Make
          tr_evts_id e1 loc "anyevent"
       | Var (loc,id) ->
          tr_evts_id e1 loc id
-      | Op1 (loc,Comp,e) ->
+      | Op1 (loc,Comp,e) | App (loc,Var (_,"exempt"),e) ->
          begin
            match tr_evts_not e1 e with
            | None -> tr_fail loc
@@ -669,11 +671,11 @@ module Make
         match ty with
         | Some RLN|None ->
            sprintf
-             "\\expandafter\\MakeUppercase\\%s{an Effect %s}{an Effect %s} if and only if"
+             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}{an Effect %s}} if"
              (pp_id loc id) (pp_evt 1) (pp_evt 2)
         | Some SET ->
            sprintf
-             "\\expandafter\\MakeUppercase\\%s{an Effect %s} if and only if"
+             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}} if"
              (pp_id loc id) (pp_evt 1) in
       let d =
         if O.flatten then

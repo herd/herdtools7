@@ -1,1 +1,4 @@
 @armv8-a+lse
+newlob/@all
+order-to-faults/@all
+order-via-faults/@all

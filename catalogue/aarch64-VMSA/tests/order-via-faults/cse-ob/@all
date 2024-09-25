@@ -1,0 +1,6 @@
+MP+rel+ctrlisb-mmufault-po.litmus
+MP+rel+dsb.ld-isb-mmufault-po.litmus
+MP+rel+dsb.sy-isb-mmufault-po.litmus
+MP+rel+pickctrlisb-mmufault-po.litmus
+R+rel+dsb.st-isb-mmufault-po.litmus
+R+rel+dsb.sy-isb-mmufault-po.litmus

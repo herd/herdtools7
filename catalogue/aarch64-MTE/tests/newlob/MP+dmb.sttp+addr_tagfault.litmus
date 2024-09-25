@@ -1,0 +1,12 @@
+AArch64 MP+dmb.sttp+addr_tagfault
+Variant=memtag
+{
+0:X0=x:red; 0:X1=x:green; 0:X3=y:green;
+1:X1=x:red; 1:X3=y:green; x=1;
+}
+ P0          | P1                  | P1.F            ;
+ STG X0,[X1] | LDR W2,[X3]         |  ADR X9,L0      ;
+ DMB ST      | EOR W5,W2,W2        |  MSR ELR_EL1,X9 ;
+ MOV W2,#1   | LDR W4,[X1,W5,SXTW] |  ERET           ;
+ STR W2,[X3] |L0:                  |                 ;
+exists 1:X2=1 /\ 1:X4=0 (* /\ Fault (P1,x) *)

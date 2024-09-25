@@ -21,9 +21,9 @@ let DMB.OSHST = try DMB.OSHST with emptyset
 let DSB.OSHST = try DSB.OSHST with emptyset
 let ISB = try ISB with emptyset
 
-let A = try A with emptyset
-and L = try L with emptyset
-and Q = try Q with emptyset
+let A = try A & (Exp & M) with emptyset
+and L = try L & (Exp & M | FAULT) with emptyset
+and Q = try Q & (Exp & M) with emptyset
 and NoRet = try NoRet with emptyset
 
 (* Fences, for showing *)
