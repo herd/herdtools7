@@ -102,6 +102,15 @@ Precedence Class Operators\\
 \end{center}
 
 % ------------------------------------------------------------------------------
+\section{Semantics}
+
+\subsection{Enforcing Loop Limits}
+\verb|@looplimit| annotations are type-checked but not enforced for \texttt{while} and \texttt{repeat} loops.
+
+\subsection{Non-\texttt{main} Entry Point}
+Currently ASLRef only supports \texttt{main} as an entry point.
+
+% ------------------------------------------------------------------------------
 \section{Typing}
 
 \subsection{Throwing Exceptions without Braces}
@@ -188,17 +197,32 @@ For example, the following will not raise a type-error:
 \lrmcomment{This is related to \identi{TBHH}, \identr{ZDKC}.}
 
 % ------------------------------------------------------------------------------
-\section{Semantics}
-
-\subsection{Enforcing Loop Limits}
-\verb|@looplimit| annotations are type-checked but not enforced for \texttt{while} and \texttt{repeat} loops.
-
-\subsection{Non-\texttt{main} Entry Point}
-Currently ASLRef only supports \texttt{main} as an entry point.
-
-% ------------------------------------------------------------------------------
 \chapter{Issues Not Yet Addressed by the References}
 % ------------------------------------------------------------------------------
+
+% ------------------------------------------------------------------------------
+\section{Semantics}
+
+% \subsection{Base values of types}
+
+% Finding the base value of a type is not transliterated.
+
+% \lrmcomment{This is related to \identr{NJDZ}, \identr{CFTD}, \identr{QGGH}, \identi{WVQZ},
+% \identr{GYCG}, \identr{WKCY}, \identr{LCCN}, \identr{CPCK}, \identr{ZVPT},
+% \identi{QFZH}, \identr{ZGVR}, \identi{PGSS}, \identr{QWSQ}, \identr{HMRK},
+% \identr{MBRM}, \identr{SVJB}.}
+
+% \subsection{Operations}
+% Operations are not transliterated from ASLRef.
+
+% \lrmcomment{This is related to \identr{NCWM}, \identr{VGZF}, \identr{THSV}, \identr{CRQJ},
+% \identr{ZTJN}, \identr{SVMM}, \identr{WWTV}, \identr{GHXR}, \identi{NBCT}.}
+
+\subsection{Standard Library and Primitives}
+
+The standard library is not yet defined by a reference.
+
+\lrmcomment{This is related to \identr{RXYN}.}
 
 % ------------------------------------------------------------------------------
 \section{Typing}
@@ -259,30 +283,6 @@ In terms of abstract syntax, this corresponds to the translation between a
 % not yet transliterated.
 
 % \lrmcomment{This is related to \identr{ZJKY} and \identi{RYRP}.}
-
-% ------------------------------------------------------------------------------
-\section{Semantics}
-
-% \subsection{Base values of types}
-
-% Finding the base value of a type is not transliterated.
-
-% \lrmcomment{This is related to \identr{NJDZ}, \identr{CFTD}, \identr{QGGH}, \identi{WVQZ},
-% \identr{GYCG}, \identr{WKCY}, \identr{LCCN}, \identr{CPCK}, \identr{ZVPT},
-% \identi{QFZH}, \identr{ZGVR}, \identi{PGSS}, \identr{QWSQ}, \identr{HMRK},
-% \identr{MBRM}, \identr{SVJB}.}
-
-% \subsection{Operations}
-% Operations are not transliterated from ASLRef.
-
-% \lrmcomment{This is related to \identr{NCWM}, \identr{VGZF}, \identr{THSV}, \identr{CRQJ},
-% \identr{ZTJN}, \identr{SVMM}, \identr{WWTV}, \identr{GHXR}, \identi{NBCT}.}
-
-\subsection{Standard Library and Primitives}
-
-The standard library is not yet defined by a reference.
-
-\lrmcomment{This is related to \identr{RXYN}.}
 
 % ------------------------------------------------------------------------------
 \section{Side-Effects}
