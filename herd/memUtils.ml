@@ -51,7 +51,7 @@ module Make(S : SemExtra.S) = struct
   (* Slight extension of prog order *)
 
   let is_before_strict es =
-    let iico = E.iico  es in
+    let iico = E.iico es in
     fun e1 e2  ->
       (do_po_strict es e1 e2) ||           (* e1 is po-before e2 *)
       (if do_po_strict es e2 e1 then false (* e2 is po-before e1 *)
@@ -354,17 +354,12 @@ let lift_proc_info i evts =
 
 (* Collect various events by their location *)
 
-  let map_loc_find loc m =
-    try LocEnv.find loc m
-    with Not_found -> []
-
   let collect_by_loc es pred =
     E.EventSet.fold
       (fun e k ->
         if pred e then
           let loc = get_loc e in
-          let evts = map_loc_find loc k in
-          LocEnv.add loc (e::evts) k
+          LocEnv.accumulate loc e k
         else k)
       es.E.events LocEnv.empty
 
@@ -387,8 +382,7 @@ let lift_proc_info i evts =
       E.EventSet.fold
         (fun e k -> match E.location_of e with
         | Some loc ->
-            let evts = map_loc_find loc k in
-            LocEnv.add loc (e::evts) k
+            LocEnv.accumulate loc e k
         | None -> k) es LocEnv.empty in
 
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []

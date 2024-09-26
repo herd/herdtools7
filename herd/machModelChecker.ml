@@ -180,6 +180,113 @@ module Make
     module Equiv = EquivSpec.Make(S)
     module E = S.E
 
+    (* Fast "loc" relation computation *)
+
+    module NameEnv = StringMap
+
+    let loc_as_fault_base loc =
+      let (>>=) = Option.bind in
+      S.A.global loc >>= S.A.V.as_constant
+      >>=  Constant.as_fault_base
+
+    let comp_loc evts =
+      let mlocs,mfaults =
+        E.EventSet.fold
+          (fun e (mlocs,mfaults as k)  ->
+             match E.location_of e with
+             | None -> k
+             | Some loc ->
+                 if E.is_fault e then
+                   match loc_as_fault_base loc with
+                   | None -> k
+                   | Some name ->
+                       mlocs,NameEnv.accumulate name e mfaults
+                  else
+                   U.LocEnv.accumulate loc e mlocs,mfaults)
+          evts (U.LocEnv.empty,NameEnv.empty) in
+      let rel_locs = (* Standard "loc" relation same address *)
+        U.LocEnv.fold
+          (fun _ es k ->
+             let es = E.EventSet.of_list es in
+             E.EventRel.cartesian es es::k)
+          mlocs [] |> E.EventRel.unions
+      and rel_faults = (* Add faults with same base address *)
+        if NameEnv.is_empty mfaults then E.EventRel.empty
+        else
+          let mnames =
+            U.LocEnv.fold
+              (fun loc es mnames ->
+                 match loc_as_fault_base loc with
+                 | None -> mnames
+                 | Some name ->
+                     begin
+                       match
+                         NameEnv.safe_find [] name mfaults with
+                       | [] -> mnames
+                       | _ ->
+                           let old = NameEnv.safe_find [] name mnames in
+                           NameEnv.add name (es@old) mnames
+                     end)
+              mlocs NameEnv.empty in
+          NameEnv.fold
+            (fun name es k ->
+               let fs = E.EventSet.of_list es in
+               let es =
+                 NameEnv.safe_find [] name mnames
+                 |> E.EventSet.of_list in
+               E.EventRel.cartesian es fs::
+               E.EventRel.cartesian fs es::
+               E.EventRel.cartesian fs fs::k)
+            mfaults [] |> E.EventRel.unions in
+      E.EventRel.union rel_locs rel_faults
+(* Efficient "same-low-order-bits" *)
+    let comp_same_low_order_bits evts =
+      let m =
+        E.EventSet.fold
+          (fun e m ->
+             match E.global_index_of e with
+             | None -> m
+             | Some idx -> IntMap.accumulate idx e m)
+          evts IntMap.empty in
+      IntMap.fold
+        (fun _ es k ->
+           let es = E.EventSet.of_list es in
+           E.EventRel.cartesian es es::k)
+        m [] |> E.EventRel.unions
+(* Efficient "int" and "ext" relations *)
+    let comp_by_proc evts =
+      E.EventSet.fold
+        (fun e (i,m) ->
+           match E.proc_of e with
+           | None -> e::i,m
+           | Some p -> i,IntMap.accumulate p e m)
+        evts ([],IntMap.empty)
+
+    let comp_int m =
+      IntMap.fold
+        (fun _ es k ->
+           let es = E.EventSet.of_list es in
+           E.EventRel.cartesian es es::k)
+        m [] |> E.EventRel.unions
+
+    let comp_ext (i,m) =
+      let ess =
+        IntMap.fold
+          (fun _ es k -> E.EventSet.of_list es::k)
+          m [E.EventSet.of_list i] in
+      let t = Array.of_list ess in
+      let len = Array.length t in
+      let rec do_rec i j r =
+        if i >= len then r
+        else if j >= len then do_rec (i+1) (i+2) r
+        else
+          let es_i = t.(i) and es_j = t.(j) in
+          let r =
+            E.EventRel.cartesian es_i es_j::
+            E.EventRel.cartesian es_j es_i::r in
+          do_rec i (j+1) r in
+      do_rec 0 1 [] |> E.EventRel.unions
+
 (* Local utility: bell event selection *)
     let add_bell_events m pred evts annots =
       I.add_sets m
@@ -235,6 +342,7 @@ module Make
           Printf.eprintf
             "Cat run, fname=%s, nevts=%d\n%!"
             O.fname (E.EventSet.cardinal evts) in
+      let by_proc = lazy (comp_by_proc evts) in
       let mem_evts = lazy (E.EventSet.filter E.is_mem evts) in
       let po =
         choose_spec
@@ -260,7 +368,9 @@ module Make
                (fun e -> e,e)
                (E.EventSet.elements evts))
         end in
-      let unv = lazy begin E.EventRel.cartesian evts evts  end in
+      let unv = lazy begin
+          E.EventRel.cartesian evts evts
+        end in
       let ks = { I.id; unv; evts; conc; po;} in
       let calc_si sca =
         let r =
@@ -287,6 +397,7 @@ module Make
           E.EventRel.unions rs
         end in
       let rf_reg = lazy (U.make_rf_regs conc) in
+
 (* Initial env *)
       let m =
         I.add_rels
@@ -305,21 +416,16 @@ module Make
                ("ctrl", lazy (Lazy.force pr).S.ctrl)::k)
              ["id",id;
               "loc", lazy begin
-                E.EventRel.restrict_rel
-                  E.same_location_with_faults
-                  (Lazy.force unv)
+                comp_loc evts;
               end;
               "same-low-order-bits", lazy begin
-                E.EventRel.restrict_rel
-                  E.same_low_order_bits
-                  (Lazy.force unv)
+                comp_same_low_order_bits evts
               end;
               "int",lazy begin
-                E.EventRel.restrict_rel E.same_proc_not_init (Lazy.force unv)
+                let _,m = Lazy.force by_proc in comp_int m
               end ;
               "ext",lazy begin
-                E.EventRel.restrict_rel
-                  (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
+                comp_ext (Lazy.force by_proc)
               end ;
               "rmw",lazy conc.S.atomic_load_store;
               "amo",
@@ -474,7 +580,9 @@ module Make
           (List.map
              (fun (k,p) ->
                let pred (e1,e2) = p e1.E.action e2.E.action in
-               k,lazy (E.EventRel.filter pred (Lazy.force unv)))
+               k,lazy begin
+                 E.EventRel.filter pred (Lazy.force unv)
+               end)
              E.Act.arch_rels) in
 (* Event sets from proc info *)
       let m = match test.Test_herd.proc_info with
@@ -600,5 +708,8 @@ module Make
         U.apply_process_co test  conc process_co res
       else
 (*        let m = I.add_rels m ["co0",lazy  conc.S.pco] in *)
+        let kont x y z t u =
+          if O.debug then prerr_endline "Cat over" ;
+          kont x y z t u in
         run_interpret test kfail ks m vb_pp kont res
   end

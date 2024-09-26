@@ -212,6 +212,12 @@ type ('scalar, 'pte, 'instr) t =
   | Instruction of 'instr
   | Frozen of int
 
+let as_scalar = function
+  | Concrete c -> Some c
+  | ConcreteVector _|ConcreteRecord _|Symbolic _|Label _
+  | Tag _|PteVal _|Instruction _|Frozen _
+      -> None
+
 let rec compare scalar_compare pteval_compare instr_compare c1 c2 =
   match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_compare i1 i2
@@ -440,6 +446,11 @@ let as_virtual v = match v with
 
 let as_symbol = function
   | Symbolic sym -> Some sym
+  | _ -> None
+
+let as_fault_base = function
+  | Symbolic (Virtual {name;_}) -> Some name
+  | Symbolic (System (PTE,name)) -> Some (Misc.add_pte name)
   | _ -> None
 
 let as_symbolic_data =function

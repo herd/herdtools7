@@ -44,6 +44,9 @@ module type S = sig
   val from_bindings :  (key * 'a) list -> 'a t
 
   val fold_values : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+
+(* Bind keys to list of values *)
+  val accumulate : key -> 'a -> 'a list t -> 'a list t
 end
 
 module Make(O:Set.OrderedType) : S with type key = O.t =
@@ -93,4 +96,9 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
     let fold_values fold_value =
       let fold_binding _key v acc = fold_value v acc in
       fun t acc -> fold fold_binding t acc
+
+    let accumulate k v m =
+      let vs = safe_find [] k m in
+      add k (v::vs) m
+
   end
