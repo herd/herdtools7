@@ -208,6 +208,7 @@ let () =
     let module C = struct
       let output_format = args.output_format
       let check = args.strictness
+      let print_typed = args.print_typed
     end in
     let module T = Typing.Annotate (C) in
     or_exit @@ fun () -> T.type_check_ast ast

@@ -178,6 +178,7 @@ type strictness = [ `Silence | `Warn | `TypeCheck ]
 module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
+  val print_typed : bool
 end
 
 module type S = sig
@@ -2392,7 +2393,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let env1, ldi1 =
               annotate_local_decl_item loc env t_e ldk ~e:e' ldi
             in
-            let env2 =
+            let ldi1 =
+              if C.print_typed then
+                (* When [print_typed] is specified, wrap untyped items with their inferred type. *)
+                match ldi1 with
+                | LDI_Typed _ | LDI_Discard -> ldi1
+                | LDI_Var _ | LDI_Tuple _ -> LDI_Typed (ldi1, t_e)
+              else ldi1
+            in
+            let new_env =
               match ldk with
               | LDK_Let | LDK_Var -> env1
               | LDK_Constant -> (
@@ -2401,12 +2410,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     declare_local_constant env1 v ldi1
                   with Error.(ASLException _) -> env1)
             in
-            (S_Decl (ldk, ldi1, Some e') |> here, env2) |: TypingRule.SDeclSome
+            (S_Decl (ldk, ldi1, Some e') |> here, new_env)
+            |: TypingRule.SDeclSome
         (* SDecl.Some) *)
         (* SDecl.None( *)
         | LDK_Var, None ->
-            let env', ldi' = annotate_local_decl_item_uninit loc env ldi in
-            (S_Decl (LDK_Var, ldi', None) |> here, env') |: TypingRule.SDeclNone
+            let new_env, ldi1 = annotate_local_decl_item_uninit loc env ldi in
+            (S_Decl (LDK_Var, ldi1, None) |> here, new_env)
+            |: TypingRule.SDeclNone
         | (LDK_Constant | LDK_Let), None ->
             fatal_from s UnrespectedParserInvariant)
     (* SDecl.None) *)
@@ -2995,6 +3006,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* UpdateGlobalStorage) *)
     in
     let () = assert (env2.local == empty_local) in
+    (* If C.print_typed is specified pass [declared_t] to make sure the storage element is type-annotated. *)
+    let ty_opt' = if C.print_typed then Some declared_t else ty_opt' in
     ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2.global)
     |: TypingRule.DeclareGlobalStorage
   (* End *)
@@ -3135,4 +3148,5 @@ end
 module TypeCheckDefault = Annotate (struct
   let check = `TypeCheck
   let output_format = Error.HumanReadable
+  let print_typed = false
 end)

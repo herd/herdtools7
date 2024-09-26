@@ -31,6 +31,7 @@ type strictness = [ `Silence | `Warn | `TypeCheck ]
 module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
+  val print_typed : bool
 end
 
 module type S = sig
