@@ -69,13 +69,25 @@ module type S = sig
 
 (* relative to the registers of the given proc *)
   val is_reg_store : action -> A.proc -> bool
+  val is_sysreg_store : action -> A.proc -> bool
+  val is_non_sysreg_store : action -> A.proc -> bool
   val is_reg_load : action -> A.proc -> bool
+  val is_sysreg_load : action -> A.proc -> bool
+  val is_non_sysreg_load : action -> A.proc -> bool
   val is_reg : action -> A.proc -> bool
+  val is_sysreg : action -> A.proc -> bool
+  val is_non_sysreg: action -> A.proc -> bool
 
 (* Reg events, proc not specified *)
   val is_reg_store_any : action -> bool
+  val is_sysreg_store_any : action -> bool
+  val is_non_sysreg_store_any : action -> bool
   val is_reg_load_any : action -> bool
+  val is_sysreg_load_any : action -> bool
+  val is_non_sysreg_load_any : action -> bool
   val is_reg_any : action -> bool
+  val is_sysreg_any : action -> bool
+  val is_non_sysreg_any : action -> bool
 
 (* Store/Load to memory or register *)
   val is_store : action -> bool

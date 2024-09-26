@@ -402,12 +402,36 @@ end = struct
   | Access (W,A.Location_reg (q,_),_,_,_,_,_) -> p = q
   | _ -> false
 
+  let is_sysreg_store a (p:int) = match a with
+  | Access (W,A.Location_reg (q,r),_,_,_,_,_) -> p = q && A.is_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_store a (p:int) = match a with
+  | Access (W,A.Location_reg (q,r),_,_,_,_,_) -> p = q && not (A.is_sysreg r)
+  | _ -> false
+
   let is_reg_load a (p:int) = match a with
   | Access (R,A.Location_reg (q,_),_,_,_,_,_) -> p = q
   | _ -> false
 
+  let is_sysreg_load a (p:int) = match a with
+  | Access (R,A.Location_reg (q,r),_,_,_,_,_) -> p = q && A.is_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_load a (p:int) = match a with
+  | Access (R,A.Location_reg (q,r),_,_,_,_,_) -> p = q && not (A.is_sysreg r)
+  | _ -> false
+
   let is_reg a (p:int) = match a with
   | Access (_,A.Location_reg (q,_),_,_,_,_,_) -> p = q
+  | _ -> false
+
+  let is_sysreg a (p:int) = match a with
+  | Access (_,A.Location_reg (q,r),_,_,_,_,_) -> p = q && A.is_sysreg r
+  | _ -> false
+
+  let is_non_sysreg a (p:int) = match a with
+  | Access (_,A.Location_reg (q,r),_,_,_,_,_) -> p = q && not (A.is_sysreg r)
   | _ -> false
 
 (* Store/Load anywhere *)
@@ -437,12 +461,36 @@ end = struct
   | Access (_,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
 
+  let is_sysreg_any a = match a with
+  | Access (_,A.Location_reg (_, r),_,_,_,_,_) -> A.is_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_any a = match a with
+  | Access (_,A.Location_reg (_, r),_,_,_,_,_) -> not (A.is_sysreg r)
+  | _ -> false
+
   let is_reg_store_any a = match a with
   | Access (W,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
 
+  let is_sysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_,_) -> A.is_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_,_) -> not (A.is_sysreg r)
+  | _ -> false
+
   let is_reg_load_any a = match a with
   | Access (R,A.Location_reg _,_,_,_,_,_) -> true
+  | _ -> false
+
+  let is_sysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_,_) -> A.is_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_,_) -> not (A.is_sysreg r)
   | _ -> false
 
 (* Barriers *)

@@ -76,6 +76,10 @@ module Make : functor (S: SemExtra.S) -> sig
 (* Collect various events, indexed by location *)
   val collect_reg_loads : S.event_structure -> S.event list LocEnv.t
   val collect_reg_stores : S.event_structure -> S.event list LocEnv.t
+  val collect_sysreg_loads : S.event_structure -> S.event list LocEnv.t
+  val collect_sysreg_stores : S.event_structure -> S.event list LocEnv.t
+  val collect_non_sysreg_loads : S.event_structure -> S.event list LocEnv.t
+  val collect_non_sysreg_stores : S.event_structure -> S.event list LocEnv.t
   val collect_mem_loads : S.event_structure -> S.event list LocEnv.t
   val collect_mem_stores : S.event_structure -> S.event list LocEnv.t
   val collect_mem : S.event_structure -> S.event list LocEnv.t

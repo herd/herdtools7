@@ -106,13 +106,25 @@ val same_instance : event -> event -> bool
 
 (* relative to the registers of the given proc *)
   val is_reg_store : event -> A.proc -> bool
+  val is_sysreg_store : event -> A.proc -> bool
+  val is_non_sysreg_store : event -> A.proc -> bool
   val is_reg_load : event -> A.proc -> bool
+  val is_sysreg_load : event -> A.proc -> bool
+  val is_non_sysreg_load : event -> A.proc -> bool
   val is_reg : event -> A.proc -> bool
+  val is_sysreg : event -> A.proc -> bool
+  val is_non_sysreg: event -> A.proc -> bool
 
 (* Reg events, proc not specified *)
   val is_reg_store_any : event -> bool
+  val is_sysreg_store_any : event -> bool
+  val is_non_sysreg_store_any : event -> bool
   val is_reg_load_any : event -> bool
+  val is_sysreg_load_any : event -> bool
+  val is_non_sysreg_load_any : event -> bool
   val is_reg_any : event -> bool
+  val is_sysreg_any : event -> bool
+  val is_non_sysreg_any : event -> bool
 
 (* Store/Load to memory or register *)
   val is_store : event -> bool
@@ -690,15 +702,27 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
 (* relative to the registers of the given proc *)
     let is_reg_store e (p:int) = Act.is_reg_store e.action p
+    let is_sysreg_store e (p:int) = Act.is_sysreg_store e.action p
+    let is_non_sysreg_store e (p:int) = Act.is_non_sysreg_store e.action p
     let is_reg_load e (p:int) = Act.is_reg_load e.action p
+    let is_sysreg_load e (p:int) = Act.is_sysreg_load e.action p
+    let is_non_sysreg_load e (p:int) = Act.is_non_sysreg_load e.action p
     let is_reg e (p:int) = Act.is_reg e.action p
+    let is_sysreg e (p:int) = Act.is_sysreg e.action p
+    let is_non_sysreg e (p:int) = Act.is_non_sysreg e.action p
 
 (* Store/Load anywhere *)
     let is_store e = Act.is_store e.action
     let is_load e = Act.is_load e.action
     let is_reg_any e = Act.is_reg_any e.action
+    let is_sysreg_any e = Act.is_sysreg_any e.action
+    let is_non_sysreg_any e = Act.is_non_sysreg_any e.action
     let is_reg_store_any e = Act.is_reg_store_any e.action
+    let is_sysreg_store_any e = Act.is_sysreg_store_any e.action
+    let is_non_sysreg_store_any e = Act.is_non_sysreg_store_any e.action
     let is_reg_load_any e = Act.is_reg_load_any e.action
+    let is_sysreg_load_any e = Act.is_sysreg_load_any e.action
+    let is_non_sysreg_load_any e = Act.is_non_sysreg_load_any e.action
 
 (* Compatible events ie accesses of the same category *)
     let compatible_accesses e1 e2 =
