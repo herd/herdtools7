@@ -341,23 +341,24 @@ One of the following applies:
     \item $\vs$ is a declaration with local declaration keyword $\ldk$, local identifiers $\ldi$, and an expression $\ve$,
           that is, $\SDecl(\ldk, \ldi, \langle\ve\rangle)$;
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep)$\ProseOrTypeError;
-    \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$ and type $\vte$ in $\tenv$
-          yields $(\tenvone, \ldip)$;
+    \item annotating the local declaration item $\ldi$ with type $\vte$, local declaration keyword $\ldk$, initializing expression
+          $\vep$ in $\tenv$
+          yields $(\tenvone, \ldione)$;
+    \item define $\ldityped$ as $\ldione$ if $\ldione$ is one of $\LDIDiscard$ or $\LDITyped$ and $\LDITyped(\ldione, \vte)$, otherwise.
+          This is made to ensure that the typed local declaration is always annotated by a type;
     \item One of the following applies:
     \begin{itemize}
       \item All of the following apply (\textsc{constant}):
       \begin{itemize}
         \item $\ldk$ indicates a local constant declaration, that is, $\LDKConstant$;
         \item symbolically simplifying $\ve$ in $\tenvone$ yields the literal $\vv$\ProseOrTypeError;
-        \item declaring a local constant of type $\vte$, literal $\vv$ and identifier $\ldi$ in $\tenvone$ yields $(\newtenv, \ldip)$;
-        \item $\news$ is a declaration with $\ldk$, $\ldip$ and an expression $\vep$.
+        \item declaring a local constant of type $\vte$, literal $\vv$ and local declaration item $\ldityped$ in $\tenvone$ yields $\newtenv$;
+        \item $\news$ is a declaration with $\ldk$, $\ldityped$ and an expression $\vep$.
       \end{itemize}
 
       \item All of the following apply (\textsc{non\_constant}):
       \begin{itemize}
         \item $\ldk$ indicates that this is not a local constant declaration, that is, $\ldk\neq\LDKConstant$;
-        \item declaring the local identifiers $\ldi$ of type $\vte$ with local declaration keyword $\ldk$ in $\tenv$
-              yields $(\newtenv, \ldip)$;
         \item $\news$ is a declaration with $\ldk$, $\ldip$ and an expression $\vep$;
         \item $\newtenv$ is $\tenvone$.
       \end{itemize}
@@ -370,21 +371,22 @@ One of the following applies:
         that is, $\SDecl(\LDKVar, \ldi, \None)$ (local declarations of \texttt{let} variables and constants require
         an initializing expression, otherwise they are rejected by an ASL parser);
   \item annotating the uninitialised local declarations $\ldi$ in $\tenv$ yields \\
-        $(\newtenv, \ldip)$;
+        $(\newtenv, \ldione)$;
   \item $\news$ is a local declaration statement with variable keyword, local identifiers $\ldip$, and no initial expression,
-        that is, $\SDecl(\LDKVar, \ldip, \None)$.
+        that is, $\SDecl(\LDKVar, \ldione, \None)$.
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\tenvone, \ldip)\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione)\\\\
+  \ldityped \eqdef \choice{\ldione\in\{\LDIDiscard, \LDITyped\}}{\ldione}{\LDITyped(\ldione, \vte)}\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
   \reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
-  \declarelocalconstant(\tenvone, \vv, \ldi) \typearrow \newtenv\\
-  \news \eqdef \SDecl(\LDKConstant, \ldip, \langle\vep\rangle)
+  \declarelocalconstant(\tenvone, \vv, \ldityped) \typearrow \newtenv\\
+  \news \eqdef \SDecl(\LDKConstant, \ldityped, \langle\vep\rangle)
 }{
   \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv)
 }
@@ -393,10 +395,11 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[non\_constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\tenvone, \ldip)\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, , \ldi} \typearrow (\tenvone, \ldione)\\\\
+  \ldityped \eqdef \choice{\ldione\in\{\LDIDiscard, \LDITyped\}}{\ldione}{\LDITyped(\ldione, \vte)}\\
   \commonprefixline\\\\
   \ldk \neq \LDKConstant\\
-  \news \eqdef \SDecl(\ldk, \ldip, \langle\vep\rangle)
+  \news \eqdef \SDecl(\ldk, \ldityped, \langle\vep\rangle)
 }{
   \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv})
 }
@@ -405,8 +408,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[none]{
-  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow (\newtenv, \ldip) \OrTypeError\\\\
-  \news \eqdef \SDecl(\LDKVar, \ldip, \None)
+  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow (\newtenv, \ldione) \OrTypeError\\\\
+  \news \eqdef \SDecl(\LDKVar, \ldione, \None)
 }{
   \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \None)}{\vs}) \typearrow (\news, \newtenv)
 }

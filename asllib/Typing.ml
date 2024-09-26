@@ -2381,21 +2381,29 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let env1, ldi1 =
               annotate_local_decl_item loc env t_e ldk ~e:e' ldi
             in
-            let env2 =
+            (* Wrap untyped items with their inferred type. *)
+            let ldi_typed =
+              match ldi1 with
+              | LDI_Typed _ | LDI_Discard -> ldi1
+              | LDI_Var _ | LDI_Tuple _ -> LDI_Typed (ldi1, t_e)
+            in
+            let new_env =
               match ldk with
               | LDK_Let | LDK_Var -> env1
               | LDK_Constant -> (
                   try
                     let v = reduce_constants env1 e in
-                    declare_local_constant env1 v ldi1
+                    declare_local_constant env1 v ldi_typed
                   with Error.(ASLException _) -> env1)
             in
-            (S_Decl (ldk, ldi1, Some e') |> here, env2) |: TypingRule.SDeclSome
+            (S_Decl (ldk, ldi_typed, Some e') |> here, new_env)
+            |: TypingRule.SDeclSome
         (* End *)
         (* Begin SDeclNone *)
         | LDK_Var, None ->
-            let env', ldi' = annotate_local_decl_item_uninit loc env ldi in
-            (S_Decl (LDK_Var, ldi', None) |> here, env') |: TypingRule.SDeclNone
+            let new_env, ldi1 = annotate_local_decl_item_uninit loc env ldi in
+            (S_Decl (LDK_Var, ldi1, None) |> here, new_env)
+            |: TypingRule.SDeclNone
         | (LDK_Constant | LDK_Let), None ->
             fatal_from s UnrespectedParserInvariant)
     (* End *)
@@ -2977,7 +2985,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | _ -> env1
     in
     let () = assert (env2.local == empty_local) in
-    ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2.global)
+    ( { gsd with ty = Some declared_t; initial_value = initial_value' },
+      env2.global )
   (* End *)
 
   let rename_primitive loc env (f : AST.func) =
