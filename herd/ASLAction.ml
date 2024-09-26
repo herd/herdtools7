@@ -192,7 +192,6 @@ module Make (A : S) = struct
       ->
        fun _ -> false
 
-
   let is_reg = function
     | Access (_, A.Location_reg (p, _), _, _, _) -> Proc.equal p
     | Access _|Barrier _|Branching _|CutOff _|NoAction
@@ -204,16 +203,50 @@ module Make (A : S) = struct
     | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
+  let is_spsysreg_store_any = function
+  | Access (W, A.Location_reg (_, r), _, _, _) -> A.is_spsysreg r
+  | Access _|Barrier _|Branching _|TooFar _|NoAction
+    -> false
+
+  let is_non_sp_sysreg_store_any = function
+  | Access (W, A.Location_reg (_, r), _, _, _) -> A.is_non_sp_sysreg r
+  | Access _|Barrier _|Branching _|TooFar _|NoAction
+    -> false
+
+  let is_non_sysreg_store_any = function
+    | Access (W, A.Location_reg (_, r), _, _, _) -> not (A.is_sysreg r)
+    | Access _|Barrier _|Branching _|TooFar _|NoAction
+      -> false
+
   let is_reg_load_any = function
     | Access (R, A.Location_reg _, _, _, _) -> true
       | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
+  let is_spsysreg_load_any = function
+  | Access (R, A.Location_reg (_, r), _, _, _) -> A.is_spsysreg r
+  | Access _|Barrier _|Branching _|TooFar _|NoAction
+    -> false
+
+  let is_non_sp_sysreg_load_any = function
+  | Access (R, A.Location_reg (_, r), _, _, _) -> A.is_non_sp_sysreg r
+  | Access _|Barrier _|Branching _|TooFar _|NoAction
+    -> false
+
+  let is_non_sysreg_load_any = function
+  | Access (R, A.Location_reg (_, r), _, _, _) -> not (A.is_sysreg r)
+  | Access _|Barrier _|Branching _|TooFar _|NoAction
+    -> false
 
   let is_reg_any = function
     | Access (_, A.Location_reg _, _, _, _) -> true
     | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
+
+  let is_sysreg_any = function
+  | Access (_, A.Location_reg (_, r), _, _, _) -> A.is_sysreg r
+  | Access _|Barrier _|Branching _|TooFar _|NoAction
+    -> false
 
   (* Store/Load to memory or register *)
   let is_store =
