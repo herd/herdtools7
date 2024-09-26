@@ -176,8 +176,8 @@ PNG=$(DOTS:.dot=.png)
 ALLPNG=$(PNG) m1l-time.png
 PSTEX=$(DOTS:.dot=.pstex_t)
 CFG=hpcx.cfg saumur.cfg apoil.cfg trimslice.cfg dragon.cfg
-NOGENCAT=tso-00.cat tso-01.cat  tso-02.cat lamport.cat
-GENCAT=herd.cat x86tso.cat minimal.cat uniproc.cat cos-no-opt.cat  cross.cat sc.cat stdlib.cat
+NOGENCAT=tso-00.cat tso-01.cat  tso-02.cat lamport.cat sc.cat
+GENCAT=herd.cat x86tso.cat minimal.cat uniproc.cat cos-no-opt.cat  cross.cat stdlib.cat
 CAT=$(NOGENCAT) $(GENCAT)
 TXT=rename.txt cond.txt trimslice.sh dragon.sh kvm-log.txt
 DONT=x86.sc x86.explo x86-log.txt

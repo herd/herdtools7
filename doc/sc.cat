@@ -1,0 +1,11 @@
+SC
+
+(* Define the co and fr relation *)
+include "cos.cat"
+
+(* Group communication relations together *)
+let com = rf | fr | co
+
+(* Sequential consistency condition *)
+acyclic po | com as sc
+
