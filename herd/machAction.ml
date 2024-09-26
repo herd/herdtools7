@@ -622,6 +622,7 @@ end = struct
     ("T",is_tag)::
     ("TLBI",is_inv)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
+    ("SysReg", is_sysreg_any)::
     ("SysDirect", is_sys_direct)::
     ("SysIndirect", is_sys_indirect)::
     (if kvm then
