@@ -36,6 +36,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     include PteValSets.No
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
+    let is_sysdirect_annot _ = false
     let is_atomic = function
       | A | L | X | XL | XA | NoRet -> true
       | _ -> false

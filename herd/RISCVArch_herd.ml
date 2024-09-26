@@ -44,6 +44,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     include Explicit.No
     include PteValSets.No
 
+    let is_sysdirect_annot _ = false
+
     let is_atomic = function
     | X _ -> true
     | P _ -> false

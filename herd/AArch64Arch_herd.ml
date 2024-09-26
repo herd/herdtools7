@@ -45,6 +45,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_atomic = AArch64Annot.is_atomic
 
+    let is_sysdirect_annot = AArch64Annot.is_sysdirect
+
     let is_explicit_annot = function
       | Exp -> true
       | NExp _ -> false
