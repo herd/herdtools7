@@ -106,8 +106,9 @@ module Make(A:Arch_herd.S) =
     let mem_access_size_init init =
       let szs =
         List.fold_left
-          (fun k (_,(t,_)) ->
-            A.mem_access_size_of_t t::k)
+          (fun k (loc,(t,_)) ->
+            if A.is_global loc then A.mem_access_size_of_t t::k
+            else k)
           [] init in
       MachSize.Set.of_list szs
 
