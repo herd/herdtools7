@@ -35,6 +35,8 @@ module type S = sig
   val symb_reg_name : reg -> string option
   val symb_reg : string -> reg
   val type_reg : reg -> CType.t
+  val is_sysreg : reg -> bool
+  val is_spsysreg : reg -> bool
 
   type barrier
   val pp_barrier            : barrier -> string

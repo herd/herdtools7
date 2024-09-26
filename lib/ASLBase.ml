@@ -151,6 +151,8 @@ let symb_reg_name = function
 
 let symb_reg x = ArchReg (A64B.symb_reg x)
 let type_reg _ = assert false
+let is_sysreg _ = false
+let is_spsysreg _ = false
 
 type barrier = A64B.barrier
 

@@ -366,6 +366,10 @@ let lift_proc_info i evts =
   let not_speculated es e = not (E.EventSet.mem e es.E.speculated)
   let collect_reg_loads es = collect_by_loc es E.is_reg_load_any
   and collect_reg_stores es = collect_by_loc es E.is_reg_store_any
+  and collect_gpreg_and_spsysreg_reads es = collect_by_loc es (fun e ->
+    E.is_reg_load_any e && (E.is_spsysreg_any e || not (E.is_sysreg_any e)))
+  and collect_gpreg_and_spsysreg_writes es = collect_by_loc es (fun e ->
+    E.is_reg_store_any e && (E.is_spsysreg_any e || not (E.is_sysreg_any e)))
   and collect_mem_loads es = collect_by_loc es E.is_mem_load
   and collect_mem_stores es = collect_by_loc es E.is_mem_store
   and collect_mem es = collect_by_loc es E.is_mem
