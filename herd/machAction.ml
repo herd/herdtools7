@@ -30,6 +30,8 @@ module type A = sig
   val pteval_sets : (string * (V.Cst.PteVal.t -> bool)) list
   val dirty_sets : (string * (DirtyBit.my_t -> V.Cst.PteVal.t -> bool)) list
 
+  val is_sysdirect_annot : lannot -> bool
+
   val is_atomic : lannot -> bool
   val is_isync : barrier -> bool
   val pp_isync : string
@@ -493,6 +495,16 @@ end = struct
   | Access (R,A.Location_reg (_, r),_,_,_,_,_) -> not (A.is_sysreg r)
   | _ -> false
 
+  let is_sys_direct = function
+  | Access (_,A.Location_reg (_, r),_,annot,_,_,_)
+    when A.is_sysreg r -> A.is_sysdirect_annot annot
+  | _ -> false
+
+  let is_sys_indirect = function
+  | Access (_,A.Location_reg (_, r),_,annot,_,_,_)
+    when A.is_sysreg r -> not (A.is_sysdirect_annot annot)
+  | _ -> false
+
 (* Barriers *)
   let is_barrier a = match a with
   | Barrier _ -> true
@@ -610,6 +622,8 @@ end = struct
     ("T",is_tag)::
     ("TLBI",is_inv)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
+    ("SysDirect", is_sys_direct)::
+    ("SysIndirect", is_sys_indirect)::
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::

@@ -34,6 +34,8 @@ struct
     | _ -> false
   ;;
 
+  let is_sysdirect_annot _ = false
+
   let is_atomic = function
     | X | SC -> true
     | _ -> false
