@@ -55,7 +55,7 @@ One can then run some litmus test, for instance \atest{SB}
 (for \emph{Store Buffering},
 see also Sec.~\ref{litmus:simple}), on top of the SC model:
 \begin{verbatim}
-% herd7 -model ./sc.cat SB.litmus
+% herd7 -cat ./sc.cat SB.litmus
 Test SB Allowed
 States 3
 0:EAX=0; 1:EAX=1;
@@ -130,7 +130,7 @@ as the program order on memory events minus write-to-read pairs.
 
 We run \atest{SB} on top of the tentative TSO model:
 \begin{verbatim}
-% herd7 -model tso-00.cat SB.litmus
+% herd7 -cat tso-00.cat SB.litmus
 Test SB Allowed
 States 4
 0:EAX=0; 1:EAX=0;
@@ -170,7 +170,7 @@ being  satisfied from local stores.
 As can be seen by running the test on top of the \afile{tso-00.cat}
 model, the target execution is forbidden:
 \begin{verbatim}
-% herd7 -model tso-00.cat SB+rfi-pos.litmus
+% herd7 -cat tso-00.cat SB+rfi-pos.litmus
 Test SB+rfi-pos Allowed
 States 15
 0:EAX=0; 0:EBX=0; 1:EAX=0; 1:EBX=0;
@@ -218,7 +218,7 @@ still is. Notice that \texttt{rfe} and~\texttt{rfi} are pre-defined.
 
 As intended, this new tentative TSO model allows the behaviour of test~\atest{SB+rfi-pos}:
 \begin{verbatim}
-%  herd7 -model tso-01.cat SB+rfi-pos.litmus
+%  herd7 -cat tso-01.cat SB+rfi-pos.litmus
 Test SB+rfi-pos Allowed
 States 16
 ...
@@ -682,14 +682,14 @@ For displaying images, one uses the \opt{-gv} option.
 so as to display the image of the non-SC behaviour of \atest{SB}, one
 should invoke \herd{} as:
 \begin{verbatim}
-% herd7 -model tso-02.cat -show prop -gv SB.litmus
+% herd7 -cat tso-02.cat -show prop -gv SB.litmus
 \end{verbatim}
 \aname{sb:cluster}{As}
 a result, users should see a window popping and displaying this image:
 \begin{center}\img{SB+CLUSTER}\end{center}
 Notice that we got the PNG version of this image as follows:
 \begin{verbatim}
-% herd7 -model tso-02.cat -show prop -o /tmp SB.litmus
+% herd7 -cat tso-02.cat -show prop -o /tmp SB.litmus
 % dot -Tpng /tmp/SB.dot -o SB+CLUSTER.png
 \end{verbatim}
 That is, we applied the \prog{dot} tool from the
@@ -759,7 +759,7 @@ Consider for instance the test \atest{SB+mfences},
 where the \texttt{mfence} instruction is used to forbid
 \atest{SB} non-SC execution. Running \herd{} as
 \begin{verbatim}
-% herd7 -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
+% herd7 -cat tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
 \end{verbatim}
 will produce no picture, as the TSO model forbids the target execution
 of~\textsf{SB+mfences}.
@@ -767,7 +767,7 @@ of~\textsf{SB+mfences}.
 To get a picture, we can run \textsf{SB+mfences} on top of the minimal
 model, a pre-defined model that allows all executions:
 \begin{verbatim}
-% herd7 -model minimal -conf doc.cfg -show prop -gv SB+mfences.litmus
+% herd7 -cat minimal -conf doc.cfg -show prop -gv SB+mfences.litmus
 \end{verbatim}
 And we get the picture:
 \begin{center}\img{SB+mfences}\end{center}
@@ -789,8 +789,8 @@ either all checks (\opt{-through invalid}), or a selection of checks
 (\opt{-skipchecks~\textit{name$_1$},\ldots,\textit{name$_n$}}).
 Thus, either of the following two commands
 \begin{verbatim}
-% herd7 -through invalid -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
-% herd7 -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
+% herd7 -through invalid -cat tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
+% herd7 -skipcheck tso -cat tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
 \end{verbatim}
 will produce the picture we wish:
 \begin{center}\img{SB+mfences+GHB}\end{center}
@@ -804,8 +804,8 @@ The image above is barely readable.
 For such graphs with many relations, the \verb+cluster+ and~\verb+free+ modes
 are worth a try. The commands:
 \begin{verbatim}
-% herd7 -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -graph cluster -gv SB+mfences.litmus
-% herd7 -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -graph free -gv SB+mfences.litmus
+% herd7 -skipcheck tso -cat tso-02.cat -conf doc.cfg -show prop -graph cluster -gv SB+mfences.litmus
+% herd7 -skipcheck tso -cat tso-02.cat -conf doc.cfg -show prop -graph free -gv SB+mfences.litmus
 \end{verbatim}
 will produce the images:
 \begin{center}
@@ -1715,25 +1715,24 @@ a diagram of the execution.
 We now describe options that control those three stages.
 
 \begin{description}
-\item[{\tt -model (cav12|minimal|uniproc|<filename>.cat)}]
+\item[{\tt -cat (cav12|<filename>.cat)}]
 Select model, this option accepts one tag or one file name
 with extension~\texttt{.cat}.
 Tags instruct \herd{} to select an internal model,
 while file names are read for a model definition.
-Documented model tags are:
+There is one model tag:
 \begin{itemize}
 \item \opt{cav12}, the model of~\cite{mms12} (Power);
-\item \opt{minimal}, the minimal model that allows all executions;
-\item \opt{uniproc}, the uniproc model that checks single-thread correctness.
 \end{itemize}
+All the models that were previously accessible by tags are now implemented by cat files. 
 
 In fact, \herd{} accepts potentially infinitely many models,
 as models can be given in text files in an adhoc language described in
 Sec.~\ref{herd:language}.
 The \herd{} distribution includes several such models:
-\afile{minimal.cat} and \afile{uniproc.cat}
-are the text file versions of the homonymous internal models, but may
-produce pictures that show different relations.
+some are generic such as
+\afile{minimal.cat} (empty model), \afile{uniproc.cat}
+(sc-per-location model), \texttt{sc.cat}, etc.
 The \herd{} distribution also includes models for a variety of architectures
 and several models for the C~language.
 Model files are searched according to  the same
@@ -1782,8 +1781,8 @@ while passing others. Default is \opt{false}.
 When enabled by \opt{-optace true},  \herd{} does not generate candidate
 executions that fail the uniproc test. The default is ``\opt{true}''
 for internal models (except the minimal model), and ``\opt{false}'' for
-text file models. Notice that \opt{-model uniproc.cat}
-and \opt{-model minimal.cat -optace true} should yield identical results,
+text file models. Notice that \opt{-cat uniproc.cat}
+and \opt{-cat minimal.cat -optace true} should yield identical results,
 the second being faster.
 Setting \opt{-optace true} can lower the execution time significantly,
 but one should pay attention not to design models that forget the uniproc
