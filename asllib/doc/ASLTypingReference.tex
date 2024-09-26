@@ -15917,22 +15917,17 @@ The function
 \symbolicallysimplifies\ the \underline{integer-typed} expression $\ve$ and returns the resulting integer or $\Top$ if
 the result of the simplification is not an integer.
 
-We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
-and therefore applying $\normalize$ to it does not yield a type error.
-
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{integer}):
   \begin{itemize}
-    \item applying $\normalize$ to $\ve$ in $\tenv$ yields the expression $\veone$;
     \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the integer literal for $n$.
   \end{itemize}
 
   \item All of the following apply (\textsc{top}):
   \begin{itemize}
-    \item applying $\normalize$ to $\ve$ in $\tenv$ yields the expression $\veone$;
-    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields $\top$.
+    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields $\top$;
     \item the result is $\Top$.
   \end{itemize}
 \end{itemize}
@@ -15940,15 +15935,13 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[integer]{
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \staticeval(\tenv, \veone) \typearrow \lint(n)
+  \staticeval(\tenv, \ve) \typearrow \lint(n)
 }{
   \normalizetoint(\tenv, \ve) \typearrow n
 }
 \and
 \inferrule[top]{
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \staticeval(\tenv, \veone) \typearrow \top
+  \staticeval(\tenv, \ve) \typearrow \top
 }{
   \normalizetoint(\tenv, \ve) \typearrow \Top
 }
@@ -16780,18 +16773,9 @@ One of the following applies:
     \item applying $\staticeval$ to $\ve$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eval\_normalized}):
-  \begin{itemize}
-    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
-    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\veone$\ProseOrTypeError;
-    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError.
-  \end{itemize}
-
   \item All of the following apply (\textsc{eval\_failure}):
   \begin{itemize}
     \item applying $\staticeval$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
-    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\veone$\ProseOrTypeError;
-    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields $\CannotBeTransformed$'
     \item the result is a type error indicating that $\ve$ cannot be reduced to a constant in $\tenv$.
   \end{itemize}
 \end{itemize}
@@ -16807,18 +16791,8 @@ One of the following applies:
   \reduceconstants(\tenv, \ve) \typearrow \vl
 }
 \and
-\inferrule[eval\_noramalized]{
-  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed\\
-  \normalize(\tenv, \ve) \typearrow \veone \OrTypeError\\\\
-  \staticeval(\tenv, \veone) \typearrow \vl \OrTypeError
-}{
-  \reduceconstants(\tenv, \ve) \typearrow \vl
-}
-\and
 \inferrule[eval\_failure]{
-  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed\\
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \staticeval(\tenv, \veone) \typearrow \CannotBeTransformed \OrTypeError
+  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed
 }{
   \reduceconstants(\tenv, \ve) \typearrow \TypeErrorVal{CannotBeReducedToAConstant}
 }
