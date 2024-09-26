@@ -581,6 +581,7 @@ end = struct
     ("T",is_tag)::
     ("TLBI",is_inv)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
+    ("SysReg", is_sysreg_any)::
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::
