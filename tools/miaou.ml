@@ -442,6 +442,10 @@ module Make
            (Item
               (sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" txt))
       | List (op,intro_txt,sep_txt,es) ->
+         (* eprintf "~~~~~~~~~~~~~~~~~~~~\n"; *)
+         (* eprintf "%s\n" (sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" intro_txt); *)
+         (* eprintf "%s\n" (List.fold_left (fun acc e -> acc ^ "," ^ (pp_txt e)) " " es) ; *)
+         (* eprintf "~~~~~~~~~~~~~~~~~~~~\n"; *)
          Some (List (op,(sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" intro_txt),sep_txt,es))
       | DiffPair _|IfCond _ ->
          None
@@ -539,9 +543,9 @@ module Make
       | _,_ -> false
 
     let rec flatten_out = function
-      | List ((Inter|Union|Seq as op),_,_,ts)
+      | List ((Inter|Union|Seq as op),intro_txt,sep_txt,ts)
         ->
-         mk_list op (flatten_op op ts)
+         List (op,intro_txt,sep_txt,(flatten_op op ts))
       | List (op,txt,s,ts) ->
          List (op,txt,s,List.map flatten_out ts)
       | DiffPair (e1,e2) ->
@@ -592,9 +596,11 @@ module Make
     and pp_txt indent s = function
       | Item txt
       | List (_,_,_,[Item txt]) ->
+         (* eprintf "%s\\item %s%s:\n" indent txt s ; *)
          printf "%s\\item %s%s\n" indent txt s
       | List (_,txt,(s1,s2),txts) ->
          printf "%s\\item %s:\n" indent (Misc.capitalize txt) ;
+         (* eprintf "123%s\\item %s:\n" indent txt ; *)
          let indent = next_indent indent in
          printf "%s\\begin{itemize}\n" indent ;
          pp_txts indent s1 s2 s txts ;
@@ -670,9 +676,11 @@ module Make
       let pref =
         match ty with
         | Some RLN|None ->
+          (* assumes /<name>emph macro *)
+          let def_txt = (pp_id loc id) ^ "emph" in
            sprintf
              "\\expandafter{\\MakeUppercase\\%s{an Effect %s}{an Effect %s}} if"
-             (pp_id loc id) (pp_evt 1) (pp_evt 2)
+              def_txt (pp_evt 1) (pp_evt 2)
         | Some SET ->
            sprintf
              "\\expandafter{\\MakeUppercase\\%s{an Effect %s}} if"
