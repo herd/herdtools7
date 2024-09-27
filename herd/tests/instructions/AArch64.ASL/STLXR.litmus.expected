@@ -1,0 +1,12 @@
+Test STLXR Allowed
+States 3
+1:X1=0; 1:X3=0;
+1:X1=0; 1:X3=1;
+1:X1=1; 1:X3=1;
+No
+Witnesses
+Positive: 0 Negative: 5
+Condition exists (1:X1=1 /\ 1:X3=0)
+Observation STLXR Never 0 5
+Hash=da9628236cef54c57707fb89ca419f22
+

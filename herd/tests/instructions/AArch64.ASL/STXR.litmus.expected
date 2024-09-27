@@ -1,0 +1,10 @@
+Test STXR Required
+States 1
+[x]=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=0)
+Observation STXR Always 1 0
+Hash=ef384146ce65a4ffb2f64e869f344ae6
+

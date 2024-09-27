@@ -1,0 +1,10 @@
+AArch64 STXR
+{
+int x=0;
+0:X0=1;
+0:X2=x;
+}
+  P0             ;
+ STXR W0,W1,[X2] ;
+
+forall [x]=0
