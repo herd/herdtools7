@@ -494,13 +494,7 @@ module Make
                [Op1 (_,ToId,Var (_,"A"));
                 Var (_,"amo");
                 Op1 (_,ToId,Var (_,"L"));]))
-        ->
-         mk_list Inter
-           [pp_evts_id e1 "ExpW";
-            pp_evts_id e1 "A";
-            pp_evts_id e1 "REL";
-            pp_evts_id e1 "byamo";]
-(*         pp_evts_id e1 "rangeAamoL" *)
+        -> pp_evts_id e1 "rangeAamoL"
       | App (_,Var (_,"range"),Var (_,"lxsx")) ->
          pp_evts_id e1 "rangelxsx"
       |  App (_,
