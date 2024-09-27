@@ -1,0 +1,104 @@
+ifneq ($(OS),Darwin)
+AARCH64_PREFIX ?= aarch64-linux-gnu-
+endif
+
+litmus-aarch64-test:: litmus-cata-aarch64-test-std
+litmus-cata-aarch64-test-std: TEMP_DIR:=$(shell mktemp -d)
+litmus-cata-aarch64-test-std:
+	$(LITMUS)					\
+		-set-libdir $(LITMUS_LIB_DIR)	        \
+		-gcc=$(AARCH64_PREFIX)gcc		\
+		-ccopts='-march=armv8-a+lse'		\
+		-o $(TEMP_DIR)				\
+		-mode std -a 4				\
+		catalogue/aarch64/tests/@all
+	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
+	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh run.sh ); fi
+	$(RM) -r $(TEMP_DIR)
+	@ echo "litmus7 in -mode std catalogue aarch64 tests: OK"
+
+litmus-aarch64-test:: litmus-cata-aarch64-test-presi
+litmus-cata-aarch64-test-presi: TEMP_DIR:=$(shell mktemp -d)
+litmus-cata-aarch64-test-presi:
+	$(LITMUS)					\
+		-set-libdir $(LITMUS_LIB_DIR) 	        \
+		-gcc=$(AARCH64_PREFIX)gcc		\
+		-ccopts='-march=armv8-a+lse'		\
+		-o $(TEMP_DIR)				\
+		-mode presi -a 4			\
+		catalogue/aarch64/tests/@all
+	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
+	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh run.sh ); fi
+	$(RM) -r $(TEMP_DIR)
+	@ echo "litmus7 in -mode presi catalogue aarch64 tests: OK"
+
+litmus-aarch64-test:: litmus-cata-aarch64-ifetch-test
+litmus-cata-aarch64-ifetch-test: TEMP_DIR:=$(shell mktemp -d)
+litmus-cata-aarch64-ifetch-test:
+	$(LITMUS)					\
+		-set-libdir $(LITMUS_LIB_DIR)	        \
+		-gcc=$(AARCH64_PREFIX)gcc 	        \
+		-ccopts='-march=armv8-a+lse'		\
+		-o $(TEMP_DIR)				\
+		-mode std -a 4				\
+		catalogue/aarch64-ifetch/tests/@nofault
+	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
+	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh run.sh ); fi
+	$(RM) -r $(TEMP_DIR)
+	@ echo "litmus7 in -mode std catalogue aarch64-ifetch tests: OK"
+
+KUT_AARCH64_PREFFIX = $(AARCH64_PREFIX)
+ifeq ($(OS),Darwin)
+KUT_AARCH64_PREFFIX = aarch64-elf-
+endif
+KUT_CONFIG_PARAMS=--arch=arm64 --page-size=4k --cross-prefix=$(KUT_AARCH64_PREFFIX)
+
+KUT_DIR_AARCH64:=$(shell mktemp -d)
+
+litmus-aarch64-dep:
+	cd $(KUT_DIR_AARCH64);							\
+	git clone -q https://gitlab.com/kvm-unit-tests/kvm-unit-tests.git;	\
+	cd kvm-unit-tests;							\
+	./configure $(KUT_CONFIG_PARAMS); 					\
+	make $(SILENTOPT)
+
+litmus-aarch64-test:: litmus-cata-aarch64-test-kvm
+litmus-cata-aarch64-test-kvm: litmus-aarch64-dep
+	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	$(LITMUS)					\
+		-set-libdir $(LITMUS_LIB_DIR)	        \
+		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	\
+		-mach kvm-armv8.1 -a 4			\
+		catalogue/aarch64/tests/@all
+	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
+	if $(RUN_TESTS); then ( cd $(KUT_DIR)/kvm-unit-tests && sh t/run.sh ); fi
+	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	@ echo "litmus7 in -mode kvm catalogue aarch64 tests: OK"
+
+litmus-aarch64-test:: litmus-cata-aarch64-VMSA-test-kvm
+litmus-cata-aarch64-VMSA-test-kvm: litmus-aarch64-dep
+	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	$(LITMUS)					\
+		-set-libdir $(LITMUS_LIB_DIR)	        \
+		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	\
+		-mach kvm-armv8.1 -a 4			\
+		catalogue/aarch64-VMSA/tests/@all
+	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
+	if $(RUN_TESTS); then ( cd $(KUT_DIR)/kvm-unit-tests && sh t/run.sh ); fi
+	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	@ echo "litmus7 in -mode kvm catalogue aarch64-VMSA tests: OK"
+
+litmus-aarch64-test:: litmus-cata-aarch64-ifetch-test-kvm
+litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
+	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	$(LITMUS)					\
+		-set-libdir $(LITMUS_LIB_DIR)	        \
+		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	\
+		-mach kvm-armv8.1 -variant self -a 4	\
+		catalogue/aarch64-ifetch/tests/@all
+	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
+	if $(RUN_TESTS); then ( cd $(KUT_DIR)/kvm-unit-tests && sh t/run.sh ); fi
+	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	@ echo "litmus7 in -mode kvm catalogue aarch64-ifetch tests: OK"
+
+litmus-test:: litmus-aarch64-test

@@ -1,10 +1,10 @@
-GCC_X86_64 ?= gcc
+X86_64_PREFIX ?= x86_64-linux-gnu-
 
 litmus-x86_64-test:: litmus-cata-x86_64-test-std
 litmus-cata-x86_64-test-std: TEMP_DIR:=$(shell mktemp -d)
 litmus-cata-x86_64-test-std:
-	$(LITMUS) -set-libdir $(PWD)/litmus/libdir -mach x86_64 -gcc=$(GCC_X86_64) -mode std -a 4 catalogue/x86_64/tests/@all -o $(TEMP_DIR)
-	make -C $(TEMP_DIR) -j $(J)
+	$(LITMUS) -set-libdir $(PWD)/litmus/libdir -mach x86_64 -gcc=$(X86_64_PREFIX)gcc -mode std -a 4 catalogue/x86_64/tests/@all -o $(TEMP_DIR)
+	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
 	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh ./run.sh ); fi
 	$(RM) -rf $(TEMP_DIR)
 	@ echo "litmus7 in -mode std catalogue x86_64 tests: OK"
@@ -12,28 +12,30 @@ litmus-cata-x86_64-test-std:
 litmus-x86_64-test:: litmus-cata-x86_64-test-presi
 litmus-cata-x86_64-test-presi: TEMP_DIR:=$(shell mktemp -d)
 litmus-cata-x86_64-test-presi:
-	$(LITMUS) -set-libdir $(PWD)/litmus/libdir -mach x86_64 -gcc=$(GCC_X86_64) -mode presi -driver C -a 4 -s 1k -r 50 catalogue/x86_64/tests/@all -o $(TEMP_DIR)
-	make -C $(TEMP_DIR) -j $(J)
+	$(LITMUS) -set-libdir $(PWD)/litmus/libdir -mach x86_64 -gcc=$(X86_64_PREFIX)gcc -mode presi -driver C -a 4 -s 1k -r 50 catalogue/x86_64/tests/@all -o $(TEMP_DIR)
+	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
 	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && ./run.exe ); fi
 	$(RM) -rf $(TEMP_DIR)
 	@ echo "litmus7 in -mode presi catalogue x86_64 tests: OK"
 
-KUT_X86_64_CONFIG_PARAMS=
+KUT_X86_64_CONFIG_PARAMS=--cross-prefix=$(X86_64_PREFIX) --arch=x86_64
+KUT_DIR := $(shell mktemp -d)
 
 litmus-x86_64-dep:
 	cd $(KUT_DIR); \
 	git clone -q https://gitlab.com/kvm-unit-tests/kvm-unit-tests.git; \
 	cd kvm-unit-tests; \
 	./configure $(KUT_X86_64_CONFIG_PARAMS); \
-	make
+	make $(SILENTOPT)
 
 litmus-x86_64-test:: litmus-cata-x86_64-test-kvm
 litmus-cata-x86_64-test-kvm: litmus-x86_64-dep
 	mkdir $(KUT_DIR)/kvm-unit-tests/t
 	$(LITMUS) -set-libdir $(PWD)/litmus/libdir -mach kvm-x86_64 -s 1k -r 50 -driver C -a 4 catalogue/x86_64/tests/@all -o $(KUT_DIR)/kvm-unit-tests/t
-	cd $(KUT_DIR)/kvm-unit-tests/t; make -j $(J)
+	cd $(KUT_DIR)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
 	if $(RUN_TESTS); then ( cd $(KUT_DIR)/kvm-unit-tests && sh t/run.sh ); fi
 	$(RM) -rf $(KUT_DIR)
 	@ echo "litmus7 in -mode kvm catalogue x86_64 tests: OK"
 
 
+litmus-test:: litmus-x86_64-test

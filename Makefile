@@ -690,8 +690,9 @@ clean-asl-pseudocode:
 asldoc: $(BENTO)
 	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc all
 
-
-KUT_DIR := $(shell mktemp -d)
-RUN_TESTS := false
+RUN_TESTS?=false
+$(V).SILENT:
+$(V)SILENTOPT=-s
 
 include Makefile.x86_64
+include Makefile.aarch64
