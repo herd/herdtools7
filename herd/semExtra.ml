@@ -134,10 +134,13 @@ module type S = sig
    | Final of location
    | Load of event
 
+  val pp_write_to : write_to -> string
+
  type read_from =
     | Init
     | Store of event
 
+  val pp_read_from : read_from -> string
 
   val write_to_compare : write_to -> write_to -> int
   val read_from_compare : read_from -> read_from -> int
@@ -378,9 +381,17 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       | Final of location
       | Load of event
 
+    let pp_write_to = function
+      | Final loc -> Printf.sprintf "Final %s" (A.pp_location loc)
+      | Load e -> Printf.sprintf "Load %s" (E.debug_event_str e)
+
     type read_from =
       | Init
       | Store of event
+
+    let pp_read_from = function
+      | Init -> "Init"
+      | Store e -> Printf.sprintf "Store %s" (E.debug_event_str e)
 
     let write_to_compare wt1 wt2 =  match wt1,wt2 with
     | Final loc1, Final loc2 -> A.location_compare loc1 loc2

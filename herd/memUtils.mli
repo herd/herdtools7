@@ -80,6 +80,7 @@ module Make : functor (S: SemExtra.S) -> sig
   val collect_gpreg_and_spsysreg_stores : S.event_structure -> S.event list LocEnv.t
   val collect_mem_loads : S.event_structure -> S.event list LocEnv.t
   val collect_mem_stores : S.event_structure -> S.event list LocEnv.t
+  val collect_mem_and_non_sp_sysreg_stores : S.event_structure -> S.event list LocEnv.t
   val collect_mem : S.event_structure -> S.event list LocEnv.t
   val collect_mem_non_init : S.event_structure -> S.event list LocEnv.t
   val collect_loads : S.event_structure -> S.event list LocEnv.t
