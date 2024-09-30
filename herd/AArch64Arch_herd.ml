@@ -507,6 +507,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           | AArch64Base.Vreg(_,(nelem,esize)) -> neon_getvec nelem esize v
           | _ -> v
 
+          let is_non_sp_sysreg = AArch64Base.is_non_sp_sysreg
+
           module FaultType = FaultType.AArch64
         end)
 

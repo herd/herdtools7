@@ -221,7 +221,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
          overwritable_labels : Label.Set.t ;
         }
 
-(* All (virtual) locations from init state *)
+(* All (virtual) locations and system registers from init state *)
 
     let get_all_locs_init init =
       let locs =
@@ -231,6 +231,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               match loc with
               | A.Location_global _
                 -> loc::locs
+              | A.Location_reg (_, r) when A.is_sysreg r -> loc::locs
               | A.Location_reg _ -> locs in
             try
               match A.V.as_virtual v with
@@ -242,13 +243,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           init [] in
       A.LocSet.of_list locs
 
-(* All (virtual) memory locations reachable by a test *)
+(* All (virtual) memory locations or system registers reachable by a test *)
 
     let get_all_mem_locs test =
       let locs_final =
         A.LocSet.filter
           (function
            | A.Location_global _ -> true
+           | A.Location_reg (_, r) when A.is_sysreg r -> true
            | A.Location_reg _ -> false)
           (S.observed_locations test)
       and locs_init = get_all_locs_init test.Test_herd.init_state in
@@ -275,6 +277,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                     let loc = A.maybev_to_location x in
                     match loc with
                     | A.Location_global _ -> A.LocSet.add loc
+                    | A.Location_reg (_, r) when A.is_sysreg r -> A.LocSet.add loc
                     | _ -> fun locs -> locs)
                   locs ins)
               locs code)
@@ -750,12 +753,14 @@ let map_loc_find loc m =
   with Not_found -> []
 
 let match_reg_events es =
-  let loc_loads = U.collect_reg_loads es
-  and loc_stores = U.collect_reg_stores es
+  let loc_loads = U.collect_gpreg_and_spsysreg_loads es
+  and loc_stores = U.collect_gpreg_and_spsysreg_stores es
   (* Share computation of the iico relation *)
   and is_before_strict =  U.is_before_strict es in
 
-(* For all loads find the right store, the one "just before" the load *)
+(* For all loads find the right store, the one "just before" the load,
+   except when dealing with system registers, in which case any prior
+   store can do *)
   let rfm =
     U.LocEnv.fold
       (fun loc loads k ->
@@ -786,6 +791,7 @@ let match_reg_events es =
             S.RFMap.add (S.Load er) rf k)
           loads k)
       loc_loads S.RFMap.empty in
+
 (* Complete with stores to final state *)
   add_finals es loc_stores rfm
 
@@ -909,10 +915,18 @@ let match_reg_events es =
           end
       | S.Store store ->
           pp_add load store ;
-          add_eq v_loaded (get_written store)
-            (add_eq
-               (get_loc_as_value store)
-               (get_loc_as_value load) eqs)
+          (* System registers are not symbolic locations, so we
+             already know that the 2 locations will be equal,
+             otherwise they would not have been paired up *)
+          let eqs =
+            if E.is_sysreg_any load then
+              eqs
+            else
+              add_eq
+                (get_loc_as_value store)
+                (get_loc_as_value load) eqs
+          in
+          add_eq v_loaded (get_written store) eqs
 
 (* Our rather loose rfmaps can induce a cycle in
    causality. Check this. *)
@@ -991,6 +1005,21 @@ let match_reg_events es =
                 else c)
               map_load)
           stores (map_load_init loads) in
+
+      (* Add init write for system registers when one does not
+         already exist *)
+      let m = List.map
+                (fun ((load, stores) as c) ->
+                  let is_init_write = function
+                  | S.Init -> true
+                  | S.Store ew when ew.S.E.iiid = S.E.IdInit -> true
+                  | _ -> false in
+
+                  if E.is_non_sp_sysreg_load_any load &&
+                    not (List.exists is_init_write stores) then
+                    load, stores @ [S.Init]
+                  else c)
+                m in
       if dbg then begin
         let pp_read_froms chan rfs =
           List.iter
@@ -1151,8 +1180,11 @@ let match_reg_events es =
           E.EventSet.filter code_store es.E.events in
         let kont es rfm cns res =
           (* We get here once code accesses are solved *)
-          let loads =  E.EventSet.filter E.is_mem_load es.E.events
-          and stores = E.EventSet.filter E.is_mem_store es.E.events in
+          (* System registers behave like memory locations *)
+          let is_load e = E.is_mem_load e || E.is_non_sp_sysreg_load_any e in
+          let is_store e = E.is_mem_store e || E.is_non_sp_sysreg_store_any e in
+          let loads = E.EventSet.filter is_load es.E.events
+          and stores = E.EventSet.filter is_store es.E.events in
           let loads =
             (* Remove code loads that are now solved *)
             E.EventSet.diff loads code_loads in
@@ -1169,8 +1201,11 @@ let match_reg_events es =
         solve_mem_or_res test es rfm cns kont res
           code_loads code_stores compat_locs add_mem_eqs
       else
-        let loads = E.EventSet.filter E.is_mem_load es.E.events
-        and stores = E.EventSet.filter E.is_mem_store es.E.events in
+        (* System registers behave like memory locations *)
+        let is_load e = E.is_mem_load e || E.is_non_sp_sysreg_load_any e in
+        let is_store e = E.is_mem_store e || E.is_non_sp_sysreg_store_any e in
+        let loads = E.EventSet.filter is_load es.E.events
+        and stores = E.EventSet.filter is_store es.E.events in
         if dbg then begin
           eprintf "Loads : %a\n"E.debug_events loads ;
           eprintf "Stores: %a\n"E.debug_events stores
@@ -1622,7 +1657,7 @@ let match_reg_events es =
     let pp_locations = A.LocSet.pp_str " " A.pp_location
 
     let all_finals_non_mixed test es =
-      let loc_stores = U.remove_spec_from_map es (U.collect_mem_stores es) in
+      let loc_stores = U.remove_spec_from_map es (U.collect_mem_and_non_sp_sysreg_stores es) in
       let loc_stores =
         if C.observed_finals_only then
           let observed_locs =

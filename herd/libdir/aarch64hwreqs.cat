@@ -157,3 +157,5 @@ let rec local-hw-reqs =
   | [DC.CVAU]; (po & scl); [DC.CVAU]
   
   | local-hw-reqs; local-hw-reqs
+  | [SysIndirect & Wreg]; po; [CSE]; po; [SysDirect & Rreg]
+  | [SysDirect & Wreg]; po; [CSE]; (po | iico_data); [SysIndirect & Rreg]
