@@ -749,7 +749,7 @@ let map_loc_find loc m =
   try U.LocEnv.find loc m
   with Not_found -> []
 
-let match_reg_events es =
+let match_reg_events test es =
   let loc_loads = U.collect_reg_loads es
   and loc_stores = U.collect_reg_stores es
   (* Share computation of the iico relation *)
@@ -786,6 +786,21 @@ let match_reg_events es =
             S.RFMap.add (S.Load er) rf k)
           loads k)
       loc_loads S.RFMap.empty in
+
+  let locs_final =
+    A.LocSet.filter
+      (fun loc ->
+        match loc with
+        | A.Location_reg _ -> true
+        | _ -> false)
+      (S.observed_locations test) in
+
+  (* We filter out the stores to register locations that
+      are not part of the finals (postcondition) *)
+  let loc_stores = U.LocEnv.filter (fun loc ->
+    Option.is_some (A.LocSet.find_opt loc locs_final)
+  ) loc_stores in
+
 (* Complete with stores to final state *)
   add_finals es loc_stores rfm
 
@@ -824,7 +839,7 @@ let match_reg_events es =
       ()
 
     let solve_regs test es csn =
-      let rfm = match_reg_events es in
+      let rfm = match_reg_events test es in
       let csn =
         S.RFMap.fold
           (fun wt rf csn -> match wt with
