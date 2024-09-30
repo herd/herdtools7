@@ -355,6 +355,7 @@ end = struct
 
   let get_mem_dir a = match a with
   | Access (d,A.Location_global _,_,_,_,_,_) -> d
+  | Access (d, A.Location_reg (_, r),_,_,_,_,_) when A.is_sysreg r && not (A.is_spsysreg r) -> d
   | _ -> assert false
 
   let get_mem_size a = match a with

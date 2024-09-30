@@ -176,6 +176,7 @@ val same_instance : event -> event -> bool
   val mem_stores_init_of : EventSet.t -> EventSet.t
   val mem_loads_of : EventSet.t -> EventSet.t
   val mem_of : EventSet.t -> EventSet.t
+  val mem_and_non_sp_sysreg_of : EventSet.t -> EventSet.t
   val atomics_of : EventSet.t -> EventSet.t
 
 (* relative to the registers of the given proc *)
@@ -766,6 +767,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let mem_stores_init_of = EventSet.filter is_mem_store_init
     let mem_loads_of es = EventSet.filter is_mem_load es
     let mem_of es = EventSet.filter is_mem es
+    let mem_and_non_sp_sysreg_of es = EventSet.filter (fun e -> is_mem e || (is_sysreg_any e && not (is_spsysreg_any e))) es
     let atomics_of es = EventSet.filter is_atomic es
 
 (* relative to the registers of the given proc *)

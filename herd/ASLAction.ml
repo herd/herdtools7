@@ -159,6 +159,7 @@ module Make (A : S) = struct
 
   let get_mem_dir = function
     | Access (d, A.Location_global _, _, _, _) -> d
+    | Access (d, A.Location_reg (_, r), _, _, _) when A.is_sysreg r && not (A.is_spsysreg r) -> d
     | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> assert false
 

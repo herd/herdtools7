@@ -74,12 +74,11 @@ module Make : functor (S: SemExtra.S) -> sig
   module LocEnv : MyMap.S with type key = S.location
 
 (* Collect various events, indexed by location *)
-  val collect_reg_loads : S.event_structure -> S.event list LocEnv.t
-  val collect_reg_stores : S.event_structure -> S.event list LocEnv.t
   val collect_gpreg_and_spsysreg_reads : S.event_structure -> S.event list LocEnv.t
   val collect_gpreg_and_spsysreg_writes : S.event_structure -> S.event list LocEnv.t
   val collect_mem_loads : S.event_structure -> S.event list LocEnv.t
   val collect_mem_stores : S.event_structure -> S.event list LocEnv.t
+  val collect_mem_and_non_sp_sysreg_writes : S.event_structure -> S.event list LocEnv.t
   val collect_mem : S.event_structure -> S.event list LocEnv.t
   val collect_mem_non_init : S.event_structure -> S.event list LocEnv.t
   val collect_loads : S.event_structure -> S.event list LocEnv.t
@@ -92,6 +91,7 @@ module Make : functor (S: SemExtra.S) -> sig
   val partition_events : S.event_set -> S.event_set list
 
 (* Utilities for relations *)
+  val restrict_to_mem_or_non_sp_sysreg_writes : S.event_rel -> S.event_rel
   val restrict_to_mem_stores : S.event_rel -> S.event_rel
   val remove_spec_from_map : S.event_structure -> S.event list LocEnv.t -> S.event list LocEnv.t
 
