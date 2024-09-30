@@ -83,6 +83,7 @@ struct
         let reg_compare = reg_compare
         let fromto_of_instr _ = None
         let get_val _ v = v
+        let is_sysreg = BPFBase.is_sysreg
 
         module FaultType = FaultType.No
       end)

@@ -48,6 +48,7 @@ module Make
           | _ -> None
 
         let get_val _ v = v
+        let is_sysreg = BellBase.is_sysreg
 
         module FaultType=FaultType.No
       end)

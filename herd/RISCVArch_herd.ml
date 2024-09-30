@@ -133,6 +133,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
           let fromto_of_instr _ = None
 
           let get_val _ v = v
+          let is_sysreg = RISCVBase.is_sysreg
 
           module FaultType=FaultType.No
         end)

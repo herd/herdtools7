@@ -377,6 +377,7 @@ let lift_proc_info i evts =
   and collect_non_sysreg_stores es = collect_by_loc es E.is_non_sysreg_store_any
   and collect_mem_loads es = collect_by_loc es E.is_mem_load
   and collect_mem_stores es = collect_by_loc es E.is_mem_store
+  and collect_mem_and_sysreg_stores es = collect_by_loc es (fun e -> E.is_mem_store e || E.is_sysreg_store_any e)
   and collect_mem es = collect_by_loc es E.is_mem
   and collect_mem_non_init es =
     collect_by_loc es (fun e -> E.is_mem e && Misc.is_some (E.proc_of e))
