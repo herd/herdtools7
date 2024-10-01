@@ -76,3 +76,6 @@ val base_size : t -> MachSize.sz option
 
 (* Best effort to find size of types in bytes (C sizeof) *)
 val sizeof : t -> int option
+
+(* Select larger type of two, in case of impossibility, select second type *)
+val larger : t -> t -> t

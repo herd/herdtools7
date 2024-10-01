@@ -26,6 +26,29 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
   module V = V
 
+(* t1 is declared (or inferred) type, t2 is type from instruction *)
+  let error t1 t2 =
+    let open CType in
+(*          Printf.eprintf "Error %s and %s\n" (debug t1) (debug t2) ; *)
+    match t1,t2 with
+    | (Base
+         ("int"|"ins_t"|"int16_t"|"uint16_t"|"int8_t"|"uint8_t"),
+       Pointer _)
+      | (Pointer _,
+         Base ("int"|"ins_t"|"int16_t"|"uint16_t"|"int8_t"|"uint8_t"))  ->
+       true
+    | _ -> false
+
+  let warn t1 t2 =
+    let open CType in
+    match t1,t2 with
+    | Base ("ins_t"|"int"|"int32_t"|"uint32_t"
+            |"int16_t"|"uint16_t"
+            |"int8_t"|"uint8_t"),
+      Base ("ins_t"|"int"|"int32_t"|"uint32_t") -> false
+    | (Base "int",_)|(_,Base "int") -> true
+    | _ -> false
+
   module FaultType = FaultType.AArch64
 
   let tab = Hashtbl.create 17
@@ -89,29 +112,6 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           | Preg _ | PMreg _ -> check_init init "Upl"
           | _ -> check_init init "r"
         let comment = comment
-
-(* t1 is declared (or inferred) type, t2 is type from instruction *)
-        let error t1 t2 =
-          let open CType in
-(*          Printf.eprintf "Error %s and %s\n" (debug t1) (debug t2) ; *)
-          match t1,t2 with
-          | (Base
-               ("int"|"ins_t"|"int16_t"|"uint16_t"|"int8_t"|"uint8_t"),
-             Pointer _)
-          | (Pointer _,
-             Base ("int"|"ins_t"|"int16_t"|"uint16_t"|"int8_t"|"uint8_t"))  ->
-              true
-
-          | _ -> false
-        let warn t1 t2 =
-          let open CType in
-          match t1,t2 with
-          | Base ("ins_t"|"int"|"int32_t"|"uint32_t"
-                  |"int16_t"|"uint16_t"
-                  |"int8_t"|"uint8_t"),
-            Base ("ins_t"|"int"|"int32_t"|"uint32_t") -> false
-          | (Base "int",_)|(_,Base "int") -> true
-          | _ -> false
 
       end)
 

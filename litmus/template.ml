@@ -60,6 +60,8 @@ module type S = sig
 
   val comment : string
   type arch_reg
+  module RegSet : MySet.S with type elt = arch_reg
+  module RegMap : MyMap.S with type key = arch_reg
 
   type flow = Any | Next | Branch of string | Disp of int
 
@@ -90,7 +92,8 @@ module type S = sig
       all_clobbers : arch_reg list;
       nrets : int ; (* number of return instruction in code *)
       nnops : int ; (* number of nop instruction in code *)
-      ty_env :  (arch_reg * CType.t) list ;
+      ty_env :  CType.t RegMap.t ;
+      code_ty_env :  CType.t RegMap.t ;
     }
 
   val get_nrets : t -> int
@@ -118,9 +121,6 @@ module type S = sig
   val compile_presi_out_reg : int -> arch_reg -> string
   val compile_presi_out_ptr_reg : int -> arch_reg -> string
 
-  module RegSet : MySet.S with type elt = arch_reg
-  module RegMap : MyMap.S with type key = arch_reg
-
   val all_regs : ins list -> ins list -> arch_reg list -> RegSet.t
   val all_regs_in_tmpl : t -> RegSet.t
   val trashed_regs : t -> RegSet.t
@@ -145,6 +145,8 @@ module Make(O:Config)(A:I) =
     let comment = A.comment
 
     type arch_reg = A.arch_reg
+    module RegSet = A.RegSet
+    module RegMap = A.RegMap
 
     type flow = Any | Next | Branch of string | Disp of int
 
@@ -180,7 +182,8 @@ module Make(O:Config)(A:I) =
         name : Name.t ;
         all_clobbers : arch_reg list;
         nrets : int ; nnops : int ;
-        ty_env :  (arch_reg * CType.t) list ;
+        ty_env : CType.t RegMap.t ;
+        code_ty_env :  CType.t RegMap.t ;
       }
 
 
@@ -401,9 +404,6 @@ module Make(O:Config)(A:I) =
 
     let dump_init_val = dump_v
 
-    module RegSet = A.RegSet
-    module RegMap = A.RegMap
-
     let all_regs code fhandler final =
       let all_ins ins =
         RegSet.union (RegSet.of_list (ins.inputs@ins.outputs)) in
@@ -422,9 +422,11 @@ module Make(O:Config)(A:I) =
            (RegSet.of_list t.stable))
 
     let get_reg_env error warn tst =
-      let m =
-        List.fold_left (fun m (r,t) -> RegMap.add r t m)
-          RegMap.empty tst.ty_env in
+      let pp_type t =
+        match t with
+        | CType.Array _ -> CType.debug t
+        | _ -> CType.dump t in
+      let m = tst.ty_env in
       let m =
         List.fold_left
           (fun m t ->
@@ -436,12 +438,7 @@ module Make(O:Config)(A:I) =
                     Warn.user_error
                       "Register %s has different types: <%s> and <%s>"
                       (A.reg_to_string r)
-                      (match t0 with
-                      | CType.Array _ -> CType.debug t0
-                      | _ -> CType.dump t0)
-                      (match t with
-                      | CType.Array _ -> CType.debug t
-                      | _ -> CType.dump t)
+                      (pp_type t0) (pp_type t)
                   end else
                     if warn t0 t
                     then
@@ -449,14 +446,10 @@ module Make(O:Config)(A:I) =
                       "File \"%s\" Register %s has different types: <%s> and <%s>"
                       tst.name.Name.file
                       (A.reg_to_string r)
-                      (match t0 with
-                      | CType.Array _ -> CType.debug t0
-                      | _ -> CType.dump t0)
-                      (match t with
-                      | CType.Array _ -> CType.debug t
-                      | _ -> CType.dump t)
+                      (pp_type t0) (pp_type t)
                 end ;
-                RegMap.add r t m)
+                let tfinal = CType.larger t0 t in
+                RegMap.add r tfinal m)
               m  t.reg_env)
           m tst.code in
       m

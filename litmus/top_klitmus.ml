@@ -73,10 +73,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
 
 
   module Utils(A:Arch_litmus.Base)(MemType:MemoryType.S)
-      (Lang:Language.S
-      with type arch_reg = A.Out.arch_reg
-      and type t = A.Out.t
-      and module RegMap = A.RegMap)
+      (Lang:Language.S with type t = A.Out.t)
       (Pseudo:PseudoAbstract.S with type ins = A.instruction) =
     struct
       module T = Test_litmus.Make(O)(A)(Pseudo)

@@ -18,8 +18,8 @@
 module type S = sig
   module V : Constant.S
   type arch_reg
+  module RegMap : MyMap.S with type key = arch_reg
   type t
-
   val get_nrets : t -> int
   val get_nnops : t -> int
   val has_asmhandler : t -> bool
@@ -31,4 +31,9 @@ module type S = sig
   val dump_init_val : V.v -> string
   val has_fault_handler : t -> bool
   val find_offset : Label.t -> t -> int
+
+  val get_reg_env :
+    (CType.t ->CType.t ->bool)
+    -> (CType.t ->CType.t ->bool)
+    -> t -> CType.t RegMap.t
 end

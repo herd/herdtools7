@@ -155,10 +155,7 @@ end = struct
 
 
   module Utils (O:Config) (A':Arch_litmus.Base)
-           (Lang:Language.S
-            with type arch_reg = A'.Out.arch_reg
-             and type t = A'.Out.t
-             and module RegMap = A'.RegMap)
+           (Lang:Language.S with type t = A'.Out.t)
            (Pseudo:PseudoAbstract.S with type ins = A'.instruction) =
     struct
 

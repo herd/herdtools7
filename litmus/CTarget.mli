@@ -17,14 +17,15 @@
 (* C target, a simplified template *)
 
 type arch_reg = string
-module RegMap : MyMap.S with type key = String.t
+module RegMap = StringMap
 type ins = unit
 type code = string
 
 type t =
   { inputs : (arch_reg * CType.t) list ;
     finals : arch_reg list ;
-    code : code ; }
+    code : code ;
+    ty_env : CType.t RegMap.t ; }
 
 
 val fmt_reg : arch_reg -> string
@@ -40,3 +41,7 @@ val get_addrs : t -> string list * string list
 val out_code : out_channel -> code -> unit
 val has_fault_handler : t -> bool
 val find_offset : Label.t -> t -> int
+val get_reg_env :
+  (CType.t -> CType.t -> bool) ->
+  (CType.t -> CType.t -> bool) ->
+  t -> CType.t RegMap.t

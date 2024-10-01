@@ -23,8 +23,8 @@ type code = string
 type t =
   { inputs : (string * CType.t) list ;
     finals : arch_reg list ;
-    code : code ; }
-
+    code : code ;
+    ty_env : CType.t RegMap.t ; }
 
 let fmt_reg x = x
 
@@ -50,3 +50,5 @@ let out_code chan code = Printf.fprintf chan "%s\n" code
 let has_fault_handler _ = false
 
 let find_offset _ _ = assert false
+
+let get_reg_env _ _ t = t.ty_env

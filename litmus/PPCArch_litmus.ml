@@ -64,6 +64,9 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
   | Symbolic_reg _ -> assert false
   | _ -> assert false
 
+  let error _ _ = false
+  let warn _ _ = false
+
   include
       ArchExtra_litmus.Make(O)
       (struct
@@ -88,8 +91,6 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
         let reg_class _ = "=&r"
         let reg_class_stable init _ = if init then "+r" else "=&r"
         let comment = comment
-        let error _ _ = false
-        let warn _ _ = false
       end)
 
   let features = []
