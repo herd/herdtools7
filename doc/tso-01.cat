@@ -7,7 +7,7 @@ let com-tso = rfe | co | fr
 (* Program order that orders events *)
 let po-tso = po & (W*W | R*M)
 
-(* TSP global-happens-before *)
+(* TSO global-happens-before *)
 let ghb = po-tso | com-tso
 acyclic ghb
 show ghb
