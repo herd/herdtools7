@@ -1,0 +1,1496 @@
+\chapter{Primitive Operations\label{chap:PrimitiveOperations}}
+
+The term \emph{Primitive Operations} denotes the set of operations available in the expression syntax.
+\lrmcomment{\identd{KXWT}}
+This includes $\binop$, $\unop$ and \texttt{if..then..else} expressions.
+\lrmcomment{\identi{HSQL}}
+This chapter defines the Primitive Operations as functions over literals.
+
+ASL follows mathematical and programming language tradition of allowing operators such as \texttt{+} to be overloaded
+to refer to one of several different operations.
+%
+\taref{BooleanOperators}, \taref{IntegerOperators}, \taref{BitvectorOperators}, \taref{RealOperators},
+\taref{StringOperators}, and \taref{EnumerationOperators} define,
+for each primitive operation, the kinds of input literals and the kind of output literals,
+as well as a unique name.
+
+\begin{table}[!h]
+\caption{Boolean Operation Signatures\label{ta:BooleanOperators}}
+\centering
+\hypertarget{def-notbool}{}
+\hypertarget{def-andbool}{}
+\hypertarget{def-orbool}{}
+\hypertarget{def-eqbool}{}
+\hypertarget{def-nebool}{}
+\hypertarget{def-impliesbool}{}
+\hypertarget{def-equivbool}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Tbnot & \lbool & -        & \lbool & \notbool\\
+\Tband & \lbool & \lbool  & \lbool & \andbool\\
+\Tbor & \lbool & \lbool  & \lbool & \orbool\\
+\Teqop & \lbool & \lbool  & \lbool & \eqbool\\
+\Tneq & \lbool & \lbool  & \lbool & \nebool\\
+\Timpl & \lbool & \lbool  & \lbool & \impliesbool\\
+\Tbeq & \lbool & \lbool  & \lbool & \equivbool\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!h]
+\caption{Integer Operation Signatures\label{ta:IntegerOperators}}
+\centering
+\hypertarget{def-negateint}{}
+\hypertarget{def-addint}{}
+\hypertarget{def-subint}{}
+\hypertarget{def-mulint}{}
+\hypertarget{def-expint}{}
+\hypertarget{def-shiftleftint}{}
+\hypertarget{def-shiftrightint}{}
+\hypertarget{def-divint}{}
+\hypertarget{def-fdivint}{}
+\hypertarget{def-fremint}{}
+\hypertarget{def-eqint}{}
+\hypertarget{def-neint}{}
+\hypertarget{def-leint}{}
+\hypertarget{def-ltint}{}
+\hypertarget{def-gtint}{}
+\hypertarget{def-geint}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Tminus & \lint & - & \lint & \negateint\\
+\Tplus & \lint & \lint & \lint & \addint\\
+\Tminus & \lint & \lint & \lint & \subint\\
+\Tmul & \lint & \lint & \lint & \mulint\\
+\Tpow & \lint & \lint & \lint & \expint\\
+\Tshl & \lint & \lint & \lint & \shiftleftint\\
+\Tshr & \lint & \lint & \lint & \shiftrightint\\
+\Tdiv & \lint & \lint & \lint & \divint\\
+\Tdivrm & \lint & \lint & \lint & \fdivint\\
+\Tmod & \lint & \lint & \lint & \fremint\\
+\Teqop & \lint & \lint & \lbool & \eqint\\
+\Tneq & \lint & \lint & \lbool & \neint\\
+\Tleq & \lint & \lint & \lbool & \leint\\
+\Tlt & \lint & \lint & \lbool & \ltint\\
+\Tgt & \lint & \lint & \lbool & \gtint\\
+\Tgeq & \lint & \lint & \lbool & \geint\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!h]
+\caption{Real Operation Signatures\label{ta:RealOperators}}
+\centering
+\hypertarget{def-negatereal}{}
+\hypertarget{def-addreal}{}
+\hypertarget{def-subreal}{}
+\hypertarget{def-mulreal}{}
+\hypertarget{def-expreal}{}
+\hypertarget{def-divreal}{}
+\hypertarget{def-eqreal}{}
+\hypertarget{def-nereal}{}
+\hypertarget{def-lereal}{}
+\hypertarget{def-ltreal}{}
+\hypertarget{def-gtreal}{}
+\hypertarget{def-gereal}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Tminus & \lreal & - & \lreal & \negatereal\\
+\Tplus & \lreal & \lreal & \lreal & \addreal\\
+\Tminus & \lreal & \lreal & \lreal & \subreal\\
+\Tmul & \lreal & \lreal & \lreal & \mulreal\\
+\Tpow & \lreal & \lint & \lreal & \expreal\\
+\Tdiv & \lreal & \lreal & \lreal & \divreal\\
+\Teqop & \lreal & \lreal & \lbool & \eqreal\\
+\Tneq  & \lreal & \lreal & \lbool & \nereal\\
+\Tleq  & \lreal & \lreal & \lbool & \lereal\\
+\Tlt & \lreal & \lreal & \lbool & \ltreal\\
+\Tgt & \lreal & \lreal & \lbool & \gtreal\\
+\Tgeq  & \lreal & \lreal & \lbool & \gereal\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!h]
+\caption{Bitvector Operation Signatures\label{ta:BitvectorOperators}}
+\centering
+\hypertarget{def-addbits}{}
+\hypertarget{def-addbitsint}{}
+\hypertarget{def-subbits}{}
+\hypertarget{def-subbitsint}{}
+\hypertarget{def-notbits}{}
+\hypertarget{def-andbits}{}
+\hypertarget{def-orbits}{}
+\hypertarget{def-xorbits}{}
+\hypertarget{def-eqbits}{}
+\hypertarget{def-nebits}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Tplus  & \lbitvector & \lbitvector & \lbitvector & \addbits\\
+\Tplus  & \lbitvector & \lint  & \lbitvector & \addbitsint\\
+\Tminus & \lbitvector & \lbitvector & \lbitvector & \subbits\\
+\Tminus & \lbitvector & \lint  & \lbitvector & \subbitsint\\
+\Tnot   & \lbitvector & -      & \lbitvector & \notbits\\
+\Tand   & \lbitvector & \lbitvector & \lbitvector & \andbits\\
+\Tor    & \lbitvector & \lbitvector & \lbitvector & \orbits\\
+\Txor   & \lbitvector & \lbitvector & \lbitvector & \xorbits\\
+\Teqop  & \lbitvector & \lbitvector & \lbool & \eqbits\\
+\Tneq   & \lbitvector & \lbitvector & \lbool & \nebits\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!h]
+\caption{String Operation Signatures\label{ta:StringOperators}}
+\centering
+\hypertarget{def-eqstring}{}
+\hypertarget{def-nestring}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Teqop  & \lstring & \lstring & \lbool & \eqstring\\
+\Tneq   & \lstring & \lstring & \lbool & \nestring\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!h]
+\caption{Enumeration Operation Signatures\label{ta:EnumerationOperators}}
+\centering
+\hypertarget{def-eqenum}{}
+\hypertarget{def-neenum}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Teqop  & \lint & \lint & \lbool & \eqenum\\
+\Tneq   & \lint & \lint & \lbool & \neenum\\
+% \Teqop  & \lenum & \lenum & \lbool & \eqenum\\
+% \Tneq   & \lenum & \lenum & \lbool & \neenum\\
+\hline
+\end{tabular}
+\end{table}
+
+\pagebreak
+\newpage
+\section{Syntax}
+\begin{flalign*}
+\Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
+\Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
+                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+\end{flalign*}
+
+\section{Abstract Syntax}
+\begin{flalign*}
+\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
+& \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
+\\
+\binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
+              \;|\; \overname{\BEQ}{\texttt{"<->"}}
+              & \hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
+\\
+        |\ & \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
+        \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
+        & \hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
+\\
+        |\ & \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
+        \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
+        & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
+\\
+        |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
+        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
+        & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{}
+\\
+        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}}
+        &
+\end{flalign*}
+
+\subsection{ASTRule.Unop \label{sec:ASTRule.Unop}}
+\hypertarget{build-unop}{}
+The function
+\[
+  \buildunop(\overname{\parsenode{\Nunop}}{\vparsednode}) \;\aslto\; \overname{\unop}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[bnot]{}{
+  \buildunop(\Nunop(\Tbnot)) \astarrow \overname{\BNOT}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[neg]{}{
+  \buildunop(\Nunop(\Tminus)) \astarrow \overname{\NEG}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[not]{}{
+  \buildunop(\Nunop(\Tnot)) \astarrow \overname{\NOT}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{ASTRule.Binop \label{sec:ASTRule.Binop}}
+\hypertarget{build-binop}{}
+The function
+\[
+  \buildbinop(\overname{\parsenode{\Nbinop}}{\vparsednode}) \;\aslto\; \overname{\binop}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tand)) \astarrow \overname{\AND}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tband)) \astarrow \overname{\BAND}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tbor)) \astarrow \overname{\BOR}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tbeq)) \astarrow \overname{\EQOP}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tdiv)) \astarrow \overname{\DIV}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tdivrm)) \astarrow \overname{\DIVRM}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Txor)) \astarrow \overname{\XOR}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Teqop)) \astarrow \overname{\EQOP}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tneq)) \astarrow \overname{\NEQ}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tgt)) \astarrow \overname{\GT}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tgeq)) \astarrow \overname{\GEQ}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Timpl)) \astarrow \overname{\IMPL}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tlt)) \astarrow \overname{\LT}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tleq)) \astarrow \overname{\LEQ}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tplus)) \astarrow \overname{\PLUS}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tminus)) \astarrow \overname{\MINUS}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tmod)) \astarrow \overname{\MOD}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tmul)) \astarrow \overname{\MUL}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tor)) \astarrow \overname{\OR}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Trdiv)) \astarrow \overname{\RDIV}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tshl)) \astarrow \overname{\SHL}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tshr)) \astarrow \overname{\SHR}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tpow)) \astarrow \overname{\POW}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tconcat)) \astarrow \overname{\tododefine{CONCAT}}{\vastnode}
+}
+\end{mathpar}
+
+\section{Typing}
+\subsection{TypingRule.UnopLiterals \label{sec:TypingRule.UnopLiterals}}
+\hypertarget{def-unopliterals}{}
+The function
+\[
+  \unopliterals(\overname{\unop}{\op} \aslsep \overname{\literals}{\vl}) \aslto
+  \overname{\literals}{\vr} \cup \TTypeError
+\]
+statically evaluates a unary operator $\op$ (a terminal derived from the AST non-terminal for unary operators)
+over a literal $\vl$ and returns the resulting literal $\vr$.
+\ProseOtherwiseTypeError
+
+\hypertarget{def-unopsignatures}{}
+The following set of unary operator types and argument types defines the correct argument type
+for a given unary operator:
+\[
+\unopsignatures \triangleq
+\left\{
+\begin{array}{lcll}
+  (\NEG   &,& \lint)        &,\\
+  (\NEG   &,& \lreal)       &,\\
+  (\BNOT  &,& \lbool)       &,\\
+  (\NOT   &,& \lbitvector)  &\\
+\end{array}
+\right\}
+\]
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item $(\op, \astlabel(\vl))$ is not in $\unopsignatures$;
+    \item the result is a type error indicating that the combination of $\op$ and $\astlabel(\vl)$
+          is not legal.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{negate\_int}):
+  \begin{itemize}
+    \item $\op$ is $\NEG$ and $\vl$ is an integer literal for $\vn$;
+    \item define $\vr$ as the integer literal for $- \vn$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{negate\_real}):
+  \begin{itemize}
+    \item $\op$ is $\NEG$ and $\vl$ is a real literal for $\vq$;
+    \item define $\vr$ as the real literal for $- \vq$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\BNOT$ and $\vl$ is a Boolean literal for $\vb$;
+    \item define $\vr$ as the Boolean literal for $\neg\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_bits\_empty}, \textsc{not\_bits\_empty}):
+  \begin{itemize}
+    \item $\op$ is $\NOT$ and $\vl$ is a bitvector literal for the sequence of bits $\bits$;
+    \item $\vc$ is the sequence of bits of the same length as $\bits$ where in each position
+          the bit in $\vr$ is defined as the negation of the bit of $\bits$ in the same position;
+    \item define $\vr$ as the bitvector literal for $\vc$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[error]{
+  (\op, \vl) \not\in \unopsignatures
+}{
+  \unopliterals(\op, \astlabel(\vl)) \typearrow \TypeErrorVal{TypeMismatch}
+}
+\and
+\inferrule[negate\_int]{}{
+  \unopliterals(\overname{\NEG}{\op}, \overname{\lint(n)}{\vl}) \typearrow \overname{\lint(- n)}{\vr}
+}
+\and
+\inferrule[negate\_real]{}{
+  \unopliterals(\overname{\NEG}{\op}, \overname{\lreal(q)}{\vl}) \typearrow \overname{\lreal(- q)}{\vr}
+}
+\and
+\inferrule[not\_bool]{}{
+  \unopliterals(\overname{\BNOT}{\op}, \overname{\lbool(b)}{\vl}) \typearrow \overname{\lbool(\neg b)}{\vr}
+}
+\and
+\inferrule[not\_bits\_empty]{
+  \bits \eqname \emptylist\\
+  c \eqdef \emptylist
+}{
+  \unopliterals(\overname{\NOT}{\op}, \overname{\lbitvector(\bits)}{\vl}) \typearrow\overname{\lbitvector(c)}{\vr}
+}
+\and
+\inferrule[not\_bits\_not\_empty]{
+  \bits \eqname \vb_{1..k}\\
+  c \eqdef [i=1..k: (1-\vb_\vi)]
+}{
+  \unopliterals(\overname{\NOT}{\op}, \overname{\lbitvector(\bits)}{\vl}) \typearrow\overname{\lbitvector(c)}{\vr}
+}
+\end{mathpar}
+
+\subsection{TypingRule.BinopLiterals \label{sec:TypingRule.BinopLiterals}}
+\hypertarget{def-binopliterals}{}
+The function
+\[
+  \binopliterals(\overname{\binop}{\op} \aslsep \overname{\literals}{\vvone} \aslsep \overname{\literals}{\vvtwo}) \aslto
+  \overname{\literals}{\vr} \cup \TTypeError
+\]
+statically evaluates a binary operator $\op$ (a terminal derived from the AST non-terminal for binary operators)
+over a pair of literals $\vlone$ and $\vltwo$
+and returns the resulting literal $\vr$.
+The result is a type error, if it is illegal to apply the operator
+to the given values, or a different kind of type error is detected.
+
+\hypertarget{def-binopsignatures}{}
+The following set of binary operator types and argument types defines the correct
+argument types for a given binary operator:
+\[
+\binopsignatures \triangleq
+\left\{
+\begin{array}{lclcll}
+  (\PLUS      &,& \lint &,& \lint)&,\\
+  (\MINUS     &,& \lint &,& \lint)&,\\
+  (\MUL       &,& \lint &,& \lint)&,\\
+  (\DIV       &,& \lint &,& \lint)&,\\
+  (\DIVRM     &,& \lint &,& \lint)&,\\
+  (\MOD       &,& \lint &,& \lint)&,\\
+  (\POW       &,& \lint &,& \lint)&,\\
+  (\SHL       &,& \lint &,& \lint)&,\\
+  (\SHR       &,& \lint &,& \lint)&,\\
+  (\EQOP      &,& \lint &,& \lint)&,\\
+  (\NEQ       &,& \lint &,& \lint)&,\\
+  (\LEQ       &,& \lint &,& \lint)&,\\
+  (\LT        &,& \lint &,& \lint)&,\\
+  (\GEQ       &,& \lint &,& \lint)&,\\
+  (\GT        &,& \lint &,& \lint)&,\\
+  (\BAND      &,& \lbool &,& \lbool)&,\\
+  (\BOR       &,& \lbool &,& \lbool)&,\\
+  (\IMPL      &,& \lbool &,& \lbool)&,\\
+  (\EQOP      &,& \lbool &,& \lbool)&,\\
+  (\NEQ       &,& \lbool &,& \lbool)&,\\
+  (\PLUS      &,& \lreal &,& \lreal)&,\\
+  (\MINUS     &,& \lreal &,& \lreal)&,\\
+  (\MUL       &,& \lreal &,& \lreal)&,\\
+  (\RDIV      &,& \lreal &,& \lreal)&,\\
+  (\POW       &,& \lreal &,& \lint)&,\\
+  (\EQOP      &,& \lreal &,& \lreal)&,\\
+  (\NEQ       &,& \lreal &,& \lreal)&,\\
+  (\LEQ       &,& \lreal &,& \lreal)&,\\
+  (\LT        &,& \lreal &,& \lreal)&,\\
+  (\GEQ       &,& \lreal &,& \lreal)&,\\
+  (\GT        &,& \lreal &,& \lreal)&,\\
+  (\EQOP      &,& \lbitvector &,& \lbitvector)&,\\
+  (\NEQ       &,& \lbitvector &,& \lbitvector)&,\\
+  (\OR        &,& \lbitvector &,& \lbitvector)&,\\
+  (\AND       &,& \lbitvector &,& \lbitvector)&,\\
+  (\XOR       &,& \lbitvector &,& \lbitvector)&,\\
+  (\MINUS     &,& \lbitvector &,& \lbitvector)&,\\
+  (\PLUS      &,& \lbitvector &,& \lbitvector)&,\\
+  (\MINUS     &,& \lbitvector &,& \lint)&,\\
+  (\PLUS      &,& \lbitvector &,& \lint)&\\
+\end{array}
+\right\}
+\]
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item $(\op, \astlabel(\vlone), \astlabel(\vltwo))$ is not included in $\binopsignatures$;
+    \item the result is a type error indicating the $\op$ cannot be applied to the arguments
+          with the types given by $\astlabel(\vlone)$ and $\astlabel(\vltwo)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{add\_int}):
+  \begin{itemize}
+    \item $\op$ is $\PLUS$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the literal integer for $a+b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{sub\_int}):
+  \begin{itemize}
+    \item $\op$ is $\MINUS$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the literal integer for $a-b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{mul\_int}):
+  \begin{itemize}
+    \item $\op$ is $\MUL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the literal integer for $a\times b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{div\_int}):
+  \begin{itemize}
+    \item $\op$ is $\DIV$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item checking that $b$ is positive yields $\True$\ProseOrTypeError;
+    \item define $n$ as $a$ divided by $b$ (note that $n$ is potentially a fraction);
+    \item checking that $n$ is an integer yields $\True$\ProseOrTypeError;
+    \item define $\vr$ as the literal integer for $a\div b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{fdiv\_int}):
+  \begin{itemize}
+    \item $\op$ is $\DIVRM$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item checking that $b$ is positive yields $\True$\ProseOrTypeError;
+    \item define $n$ as $a$ divided by $b$, rounded down (if $a$ is negative, $n$ is rounded down towards infinity);
+    \item define $\vr$ as the literal integer for $n$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{frem\_int}):
+  \begin{itemize}
+    \item $\op$ is $\MOD$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item applying $\binopliterals$ to $\DIVRM$ with $\vlone$ and $\vltwo$ yields $c$\ProseOrTypeError;
+    \item define $n$ as $a-c$;
+    \item define $\vr$ as the literal integer for $n$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_int}):
+  \begin{itemize}
+    \item $\op$ is $\POW$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
+    \item define $n$ as $a^b$;
+    \item define $\vr$ as the literal integer for $n$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{shl}):
+  \begin{itemize}
+    \item $\op$ is $\SHL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
+    \item applying $\binopliterals$ to $\POW$ with $2$ and $\vltwo$ yields the literal integer for $e$;
+    \item applying $\binopliterals$ to $\MUL$ with $2$ and the literal integer for $e$ yields $\vr$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{shr}):
+  \begin{itemize}
+    \item $\op$ is $\SHR$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
+    \item applying $\binopliterals$ to $\POW$ with $2$ and $\vltwo$ yields the literal integer for $e$;
+    \item applying $\binopliterals$ to $\DIVRM$ with $2$ and the literal integer for $e$ yields $\vr$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_int}):
+  \begin{itemize}
+    \item $\op$ is $\EQOP$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ne\_int}):
+  \begin{itemize}
+    \item $\op$ is $\NEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$ holds.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{le\_int}):
+  \begin{itemize}
+    \item $\op$ is $\LEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$s.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{lt\_int}):
+  \begin{itemize}
+    \item $\op$ is $\LT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$s.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ge\_int}):
+  \begin{itemize}
+    \item $\op$ is $\GEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater or equal than $b$s.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{gt\_int}):
+  \begin{itemize}
+    \item $\op$ is $\GT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$s.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{and\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\BAND$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if both $a$ and $b$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{or\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\BOR$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if at least one of $a$ and $b$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{implies\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\IMPL$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is $\False$ or $b$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\EQOP$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ne\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\NEQ$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{add\_real}):
+  \begin{itemize}
+    \item $\op$ is $\PLUS$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the real literal for $a + b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{sub\_real}):
+  \begin{itemize}
+    \item $\op$ is $\MINUS$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the real literal for $a - b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{mul\_real}):
+  \begin{itemize}
+    \item $\op$ is $\MUL$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the real literal for $a \times b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{div\_real}):
+  \begin{itemize}
+    \item $\op$ is $\RDIV$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item checking whether $b$ is different from $0$ yields $\True$\ProseOrTypeError;
+    \item define $\vr$ as the real literal for $a \div b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_real}):
+  \begin{itemize}
+    \item $\op$ is $\POW$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the real literal for $a^b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_real}):
+  \begin{itemize}
+    \item $\op$ is $\EQOP$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ne\_real}):
+  \begin{itemize}
+    \item $\op$ is $\NEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{le\_real}):
+  \begin{itemize}
+    \item $\op$ is $\LEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{lt\_real}):
+  \begin{itemize}
+    \item $\op$ is $\LT$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ge\_real}):
+  \begin{itemize}
+    \item $\op$ is $\GEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than or equal to $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{gt\_real}):
+  \begin{itemize}
+    \item $\op$ is $\GT$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitwise\_different\_bitwidths}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a$;
+    \item $\vvtwo$ is a bitvector literal for $b$;
+    \item the lengths of $a$ and $b$ are different;
+    \item the result is a type error indicating that the bitvectors must be of the same width.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitwise\_empty}):
+  \begin{itemize}
+    \item $\vvone$ is the empty bitvector literal;
+    \item $\vvtwo$ is the empty bitvector literal;
+    \item $\op$ is one of $\OR$, $\AND$, $\XOR$, $\PLUS$, or $\MINUS$;
+    \item define $\vr$ as the empty bitvector literal.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_bits\_empty}):
+  \begin{itemize}
+    \item $\vvone$ is the empty bitvector literal;
+    \item $\vvtwo$ is the empty bitvector literal;
+    \item $\op$ is $\EQOP$;
+    \item define $\vr$ as the Boolean literal for $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_bits\_not\_empty}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\op$ is $\EQOP$;
+    \item define $\vb$ as $\True$ if and only if $a_i$ is equal to $b_i$, for $i=1..k$;
+    \item define $\vr$ as the Boolean literal for $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ne\_bits}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a$;
+    \item $\vvtwo$ is a bitvector literal for $b$;
+    \item $\op$ is $\NEQ$;
+    \item applying $\binopliterals$ to $\NEQ$ for $\vvone$ and $\vvtwo$ yields the Boolean literal for $\vb$\ProseOrTypeError;
+    \item define $\vr$ as the Boolean literal for $\neg\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{or\_bits}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\op$ is $\OR$;
+    \item define $c_i$ as the maximum of $a_i$ and $b_i$ for $i=1..k$;
+    \item define $\vr$ as the bitvector literal for $c_{1..k}$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{and\_bits}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\op$ is $\AND$;
+    \item define $c_i$ as the minimum of $a_i$ and $b_i$ for $i=1..k$;
+    \item define $\vr$ as the bitvector literal for $c_{1..k}$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{xor\_bits}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\op$ is $\XOR$;
+    \item define $c_i$ as $1$ if $a_i$ is different from $b_i$ and $0$ otherwise, for $i=1..k$;
+    \item define $\vr$ as the bitvector literal for $c_{1..k}$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{add\_bits}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\op$ is $\PLUS$;
+    \item define $a$ as the natural number represented by $a_{1..k}$;
+    \item define $b$ as the natural number represented by $b_{1..k}$;
+    \item define $c$ as the two's complement little endian representation of $a+b$ in $k$ bits;
+    \item define $\vr$ as the bitvector literal for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{sub\_bits}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\op$ is $\MINUS$;
+    \item define $a$ as the natural number represented by $a_{1..k}$;
+    \item define $b$ as the natural number represented by $b_{1..k}$;
+    \item define $c$ as the two's complement little endian representation of $a-b$ in $k$ bits;
+    \item define $\vr$ as the bitvector literal for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{add\_bits\_int}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a$;
+    \item $\vvtwo$ is an integer literal for $b$;
+    \item $\op$ is $\PLUS$;
+    \item define $y$ as the natural number represented by $a$;
+    \item define $c$ as the two's complement little endian representation of $y+b$ in $\listlen{a}$ bits;
+    \item define $\vr$ as the bitvector literal for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{sub\_bits\_int}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a$;
+    \item $\vvtwo$ is an integer literal for $b$;
+    \item $\op$ is $\MINUS$;
+    \item define $y$ as the natural number represented by $a$;
+    \item define $c$ as the two's complement little endian representation of $y-b$ in $\listlen{a}$ bits;
+    \item define $\vr$ as the bitvector literal for $c$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+
+\begin{mathpar}
+\inferrule[error]{
+  (\op, \astlabel(\vlone), \astlabel(\vltwo)) \not\in \binopsignatures
+}{
+  \binopliterals(\op, \overname{\vlone}{\vvone}, \overname{\vltwo}{\vvtwo}) \typearrow \TypeErrorVal{TypeMismatch}
+}
+\end{mathpar}
+
+\subsubsection{Arithmetic Operators Over Integer Values \label{sec:AthimeticOverInt}}
+\begin{mathpar}
+\inferrule[add\_int]{}{
+  \binopliterals(\overname{\PLUS}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(a + b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[sub\_int]{}{
+  \binopliterals(\overname{\MINUS}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(a - b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[mul\_int]{}{
+  \binopliterals(\overname{\MUL}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(a \times b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[div\_int]{
+  \checktrans{b > 0}{DIV\_DenominatorNegative} \checktransarrow \True \OrTypeError\\\\
+  n \eqdef a \div b \\\\
+  \checktrans{n \in \Z}{\DivIntIndivisible} \checktransarrow \True \OrTypeError
+}{
+  \binopliterals(\overname{\DIV}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(n)}{\vr}
+}
+\and
+\inferrule[fdiv\_int]{
+  \checktrans{b > 0}{FDIV\_DenominatorNegative} \checktransarrow \True \OrTypeError\\\\
+  n \eqdef \choice{a \geq 0}{\lfloor a \div b \rfloor}{-(\lceil (-a) \div b \rceil)}
+}{
+  \binopliterals(\overname{\DIVRM}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(n)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[frem\_int]{
+  \binopliterals(\DIVRM, \lint(a), \lint(b)) \typearrow \lint(c) \OrTypeError
+}{
+  \binopliterals(\overname{\MOD}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(a - (c \times b))}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_int]{
+  \checktrans{b \geq 0}{ExponentNegative} \checktransarrow \True \OrTypeError
+}{
+  \binopliterals(\overname{\POW}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(a^b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[shl]{
+  \checktrans{b \geq 0}{ShifterNegative} \checktransarrow \True \OrTypeError\\\\
+  \binopliterals(\POW, \lint(2), \lint(b)) \typearrow \lint(e)\\
+  \binopliterals(\MUL, \lint(a), \lint(e)) \typearrow \vr
+}{
+  \binopliterals(\overname{\SHL}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \vr
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[shr]{
+  \checktrans{b \geq 0}{ShifterNegative} \checktransarrow \True \OrTypeError\\\\
+  \binopliterals(\POW, \lint(2), \lint(b)) \typearrow \lint(e)\\
+  \binopliterals(\DIVRM, \lint(a), \lint(e)) \typearrow \vr
+}{
+  \binopliterals(\overname{\SHR}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \vr
+}
+\end{mathpar}
+
+\subsubsection{Relational Operators Over Integer Values \label{sec:RelationalOverInt}}
+\begin{mathpar}
+\inferrule[eq\_int]{}{
+  \binopliterals(\overname{\EQOP}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ne\_int]{}{
+  \binopliterals(\overname{\NEQ}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbool(a \neq b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_int]{}{
+  \binopliterals(\overname{\LEQ}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbool(a \leq b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[lt\_int]{}{
+  \binopliterals(\overname{\LT}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbool(a < b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ge\_int]{}{
+  \binopliterals(\overname{\GEQ}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbool(a \geq b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[gt\_int]{}{
+  \binopliterals(\overname{\GT}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbool(a > b)}{\vr}
+}
+\end{mathpar}
+
+\subsubsection{Boolean Operators Over Boolean Values \label{sec:BooleanOverBoolean}}
+\begin{mathpar}
+\inferrule[and\_bool]{}{
+  \binopliterals(\overname{\BAND}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(a \wedge b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[or\_bool]{}{
+  \binopliterals(\overname{\BOR}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(a \lor b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[implies\_bool]{}{
+  \binopliterals(\overname{\IMPL}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(\neg a \lor b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[eq\_bool]{}{
+  \binopliterals(\overname{\EQOP}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ne\_bool]{}{
+  \binopliterals(\overname{\NEQ}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(a \neq b)}{\vr}
+}
+\end{mathpar}
+
+\subsubsection{Arithmetic Operators Over Real Values \label{sec:AthimeticOverReal}}
+\begin{mathpar}
+\inferrule[add\_real]{}{
+  \binopliterals(\overname{\PLUS}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lreal(a+b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[sub\_real]{}{
+  \binopliterals(\overname{\MINUS}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lreal(a-b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[mul\_real]{}{
+  \binopliterals(\overname{\MUL}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lreal(a\times b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[div\_real]{
+  \checktrans{b \neq 0}{RDIV\_DenominatorZero} \checktransarrow \True \OrTypeError
+}{
+  \binopliterals(\overname{\RDIV}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lreal(a\div b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_real]{}{
+  \binopliterals(\overname{\POW}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lreal(a^b)}{\vr}
+}
+\end{mathpar}
+
+\subsubsection{Relational Operators Over Real Values \label{sec:RealtionalOverReal}}
+\begin{mathpar}
+\inferrule[eq\_real]{}{
+  \binopliterals(\overname{\EQOP}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ne\_real]{}{
+  \binopliterals(\overname{\NEQ}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lbool(a \neq b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_real]{}{
+  \binopliterals(\overname{\LEQ}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lbool(a \leq b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[lt\_real]{}{
+  \binopliterals(\overname{\LT}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lbool(a < b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ge\_real]{}{
+  \binopliterals(\overname{\GEQ}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lbool(a \geq b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[gt\_real]{}{
+  \binopliterals(\overname{\GT}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lbool(a > b)}{\vr}
+}
+\end{mathpar}
+
+\subsubsection{Operators Over Bitvectors \label{sec:BitvectorOperations}}
+\hypertarget{def-bintounsigned}{}
+The function $\bintounsigned : \{0,1\}^* \rightarrow \N$ converts a non-empty sequence of bits
+into a natural number:
+\[
+  \bintounsigned(a_{n..1}) \triangleq \sum_{i=1}^n a_i \cdot 2^{a_i}
+\]
+and an empty sequence of bits into $0$:
+\[
+  \bintounsigned(\emptylist) \triangleq 0 \enspace.
+\]
+
+\hypertarget{def-inttobits}{}
+The function $\inttobits : \overname{\Z}{\texttt{val}} \times \overname{\Z}{\texttt{width}} \rightarrow \{0,1\}^*$
+converts an integer \texttt{val} to its two's complement little endian representation
+of \texttt{width} bits.
+
+\begin{mathpar}
+\inferrule[bitwise\_different\_bitwidths]{
+  \listlen{a} \neq \listlen{b}
+}{
+  \binopliterals(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \typearrow
+  \TypeErrorVal{\RequireSameBitwidths}
+}
+\and
+\inferrule[bitwise\_empty]{
+  \op \in \{\OR, \AND, \XOR, \PLUS, \MINUS\}
+}{
+  \binopliterals(\op, \overname{\lbitvector(\emptylist)}{\vvone}, \overname{\lbitvector(\emptylist)}{\vvtwo}) \typearrow
+  \overname{\lbitvector(\emptylist)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[eq\_bits\_empty]{}{
+  \binopliterals(\overname{\EQOP}{\op}, \overname{\lbitvector(\emptylist)}{\vvone}, \overname{\lbitvector(\emptylist)}{\vvtwo}) \typearrow
+  \overname{\lbool(\True)}{\vr}
+}
+\and
+\inferrule[eq\_bits\_not\_empty]{
+  \vb \eqdef \bigwedge_{i=1}^k a_i = b_i
+}{
+  \binopliterals(\overname{\EQOP}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow
+  \overname{\lbool(\vb)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ne\_bits]{
+  \binopliterals(\EQOP, \lbitvector(a), \lbitvector(b)) \typearrow \lbool(\vb) \OrTypeError
+}{
+  \binopliterals(\overname{\NEQ}{\op}, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \typearrow \lbool(\neg\vb)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[or\_bits]{
+  i=1..k: c_i = \max(a_i, b_i)
+}{
+  \binopliterals(\overname{\OR}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow \lbitvector(c_{1..k})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[and\_bits]{
+  i=1..k: c_i = \min(a_i, b_i)
+}{
+  \binopliterals(\overname{\AND}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow \lbitvector(c_{1..k})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[xor\_bits]{
+  {
+    \textit{xor\_bit} = \lambda a,b\in\{0,1\}.\ \left\{
+      \begin{array}{ll}
+        0 & \text{ if } a = b\\
+        1 & \text{ otherwise}
+      \end{array}
+    \right.
+  }\\
+  i=1..k: c_i=\textit{xor\_bit}(a_i, b_i)
+}{
+  \binopliterals(\overname{\XOR}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow \lbitvector(c_{1..k})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[add\_bits]{
+  a \eqdef \bintounsigned(a_{1..k})\\
+  b \eqdef \bintounsigned(b_{1..k})\\
+  c \eqdef \inttobits(a + b, k)
+}{
+  \binopliterals(\overname{\PLUS}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow \overname{\lbitvector(c)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[sub\_bits]{
+  a \eqdef \bintounsigned(a_{1..k})\\
+  b \eqdef \bintounsigned(b_{1..k})\\
+  c \eqdef \inttobits(a - b, k)
+}{
+  \binopliterals(\overname{\MINUS}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow \overname{\lbitvector(c)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[add\_bits\_int]{
+  y \eqdef \bintounsigned(a)\\
+  c \eqdef \inttobits(y + b, \listlen{a})
+}{
+  \binopliterals(\overname{\PLUS}{\op}, \overname{\lbitvector(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbitvector(c)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[sub\_bits\_int]{
+  y \eqdef \bintounsigned(a)\\
+  c \eqdef \inttobits(y - b, \listlen{a})
+}{
+  \binopliterals(\overname{\MINUS}{\op}, \overname{\lbitvector(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbitvector(c)}{\vr}
+}
+\end{mathpar}
+
+\section{Semantics}
+
+\subsection{SemanticsRule.UnopValues \label{sec:SemanticsRule.UnopValues}}
+\hypertarget{def-unoprel}{}
+The function
+\[
+  \unoprel(\overname{\unop}{\op} \aslsep \overname{\vals}{\vv}) \aslto \overname{\vals}{\vw}
+\]
+evaluates a unary operator $\op$ over a \nativevalue\  $\vv$ and returns the \nativevalue\  $\vw$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{negate\_int}):
+  \begin{itemize}
+    \item $\op$ is $\NEG$ and $\vv$ is a literal integer for $n$;
+    \item statically evaluating $\NEG$ on the literal integer for $n$ yields the
+          literal integer for $m$;
+    \item $\vw$ is the native integer value for $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{negate\_real}):
+  \begin{itemize}
+    \item $\op$ is $\NEG$ and $\vv$ is a literal real for $p$;
+    \item statically evaluating $\NEG$ on the literal real for $n$ yields the
+          literal real for $q$;
+    \item $\vw$ is the native real value for $q$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\BNOT$ and $\vv$ is a literal Boolean for $b$;
+    \item statically evaluating $\BNOT$ on the literal Boolean for $b$ yields the
+          literal real for $c$;
+    \item $\vw$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_bits}):
+  \begin{itemize}
+    \item $\op$ is $\NOT$ and $\vv$ is a literal bitvector for $\bits$;
+    \item statically evaluating $\NOT$ on the literal bitvector for $\bits$ yields the
+          literal bitvector for $c$;
+    \item $\vw$ is the native bitvector value for $c$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[negate\_int]{
+  \unopliterals(\NEG, \lint(n)) \typearrow \lint(m)
+}{
+  \unoprel(\overname{\NEG}{\op}, \overname{\nvint(n)}{\vv}) \evalarrow \overname{\nvint(m)}{\vw}
+}
+\and
+\inferrule[negate\_real]{
+  \unopliterals(\NEG, \lreal(p)) \typearrow \lreal(q)
+}{
+  \unoprel(\overname{\NEG}{\op}, \overname{\nvreal(p)}{\vv}) \evalarrow \overname{\nvreal(q)}{\vw}
+}
+\and
+\inferrule[not\_bool]{
+  \unopliterals(\BNOT, \lbool(b)) \typearrow \lreal(c)
+}{
+  \unoprel(\overname{\BNOT}{\op}, \overname{\nvbool(b)}{\vv}) \evalarrow \overname{\nvbool(c)}{\vw}
+}
+\and
+\inferrule[not\_bits]{
+  \unopliterals(\NOT, \lbitvector(\bits)) \typearrow \lbitvector(c)
+}{
+  \unoprel(\overname{\NOT}{\op}, \overname{\nvbitvector(\bits)}{\vv}) \evalarrow \overname{\nvbitvector(c)}{\vw}
+}
+\end{mathpar}
+
+\subsection{SemanticsRule.BinopValues \label{sec:SemanticsRule.BinopValues}}
+\hypertarget{def-binoprel}{}
+The function
+\[
+  \binoprel(\overname{\binop}{\op} \aslsep \overname{\vals}{\vvone} \aslsep \overname{\vals}{\vvtwo})
+  \aslto \overname{\vals}{\vr} \cup \TError
+\]
+evaluates a binary operator $\op$ over a pair of \nativevalues\  --- $\vvone$ and $\vvtwo$ --- and returns the
+\nativevalue\  $\vw$ or an error.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{int\_arith}):
+  \begin{itemize}
+    \item $\vvone$ is a literal integer for $a$;
+    \item $\vvtwo$ is a literal integer for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal integer for $c$;
+    \item $\vr$ is the native integer value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_rel}):
+  \begin{itemize}
+    \item $\vvone$ is a literal integer for $a$;
+    \item $\vvtwo$ is a literal integer for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal integer for $a$;
+    \item $\vvtwo$ is a literal integer for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bool\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal Boolean for $a$;
+    \item $\vvtwo$ is a literal Boolean for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bool\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal Boolean for $a$;
+    \item $\vvtwo$ is a literal Boolean for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{real\_arith\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal real for $a$;
+    \item $\vvtwo$ is a literal real for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal real for $c$;
+    \item $\vr$ is the native real value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{real\_rel\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal real for $a$;
+    \item $\vvtwo$ is a literal real for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{real\_rel\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal real for $a$;
+    \item $\vvtwo$ is a literal real for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitvector\_rel\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal bitvector for $a$;
+    \item $\vvtwo$ is a literal bitvector for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitvector\_rel\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal bitvector for $a$;
+    \item $\vvtwo$ is a literal bitvector for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitvector\_bits\_okay}):
+  \begin{itemize}
+    \item $\vvone$ is a literal bitvector for $a$;
+    \item $\vvtwo$ is a literal bitvector for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal bitvector for $c$;
+    \item $\vr$ is the native bitvector value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitvector\_bits\_error}):
+  \begin{itemize}
+    \item $\vvone$ is a literal bitvector for $a$;
+    \item $\vvtwo$ is a literal bitvector for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[int\_arith]{
+  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \lint(c)
+}{
+  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \overname{\nvint(c)}{\vr}
+}
+\and
+\inferrule[int\_rel]{
+  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
+\and
+\inferrule[int\_error]{
+  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \Error(m)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bool\_okay]{
+  \binopliterals(\op, \lbool(a), \lbool(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\nvbool(a)}{\vvone}, \overname{\nvbool(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
+\and
+\inferrule[bool\_error]{
+  \binopliterals(\op, \lbool(a), \lbool(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\nvbool(a)}{\vvone}, \overname{\nvbool(b)}{\vvtwo}) \evalarrow \Error(m)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[real\_arith\_okay]{
+  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \lreal(c)
+}{
+  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \overname{\nvreal(c)}{\vr}
+}
+\and
+\inferrule[real\_arith\_error]{
+  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \Error(m)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[real\_rel\_okay]{
+  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
+\and
+\inferrule[real\_rel\_error]{
+  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \Error(m)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitvector\_rel\_okay]{
+  \binopliterals(\op, \nvbitvector(a), \nvbitvector(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
+\and
+\inferrule[bitvector\_rel\_error]{
+  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \Error(m)
+}
+\and
+\inferrule[bitvector\_bits\_okay]{
+  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \lbitvector(c)
+}{
+  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \overname{\nvbitvector(c)}{\vr}
+}
+\and
+\inferrule[bitvector\_bits\_error]{
+  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \TypeError(m)
+}{
+  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \Error(m)
+}
+\end{mathpar}

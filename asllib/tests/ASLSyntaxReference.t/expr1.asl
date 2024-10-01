@@ -1,12 +1,6 @@
-getter g_no_args => integer
-begin
-  return 0;
-end
+getter g_no_args => integer begin return 0; end
 
-getter g0_bits[] => bits(4)
-begin
-  return '1000';
-end
+getter g0_bits[] => bits(4) begin return '1000'; end
 
 getter g1_bits[p: integer] => bits(4)
 begin
@@ -30,16 +24,16 @@ begin
   // E_Slice 4: g1_bits[3] is a call to a getter.
   assert b0 == g1_bits[3];
   var bits_arr : array [1] of bits(4);
-  // E_Binop: 1: b0 == b1 is a binary expression for ==.
+  // E_Binop 1: b0 == b1 is a binary expression for ==.
   // E_Cond 1: the right-hand side of the assignment is
   //           a conditional expression.
   bits_arr[0] = if (b0 == b1) then '1000' else '0000';
   // E_Slice 5: bits_arr[0] stands for an array access
   assert b0 == bits_arr[0];
-  // E_Unop 1   : (NOT b8) negate the bits of b8.
-  // E_Binop 2  : the right-hand side of the assignment is
-  //              a binay AND expression.
-  // E_Concat 1 : [b0, b1] concatenates two bitvectors.
+  // E_Unop 1: (NOT b8) negates the bits of b8.
+  // E_Binop 2: the right-hand side of the assignment is
+  //            a binay AND expression.
+  // E_Concat 1: [b0, b1] concatenates two bitvectors.
   // E_Unknown 1: UNKNOWN: bits(8) represents an arbitrary
   //              8-bits bitvector
   var b8 = [b0, b1];

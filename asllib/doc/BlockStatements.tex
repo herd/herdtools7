@@ -1,0 +1,95 @@
+\chapter{Block Statements\label{chap:BlockStatements}}
+Block statements are statements executing in their own scope within the scope of their enclosing subprogram.
+
+\section{Typing\label{sec:BlockStatementsTyping}}
+\hypertarget{def-annotateblock}{}
+The function
+\[
+  \annotateblock{\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}} \aslto
+  \overname{\stmt}{\newstmt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a block statement $\vs$ in static environment $\tenv$ and returns the annotated
+statement $\newstmt$ or a type error, if one is detected.
+
+\subsubsection{TypingRule.Block\label{sec:TypingRule.Block}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the statement $\vs$ in $\tenv$ yields $(\newstmt, \newtenv)$\ProseOrTypeError;
+  \item the modified environment $\newtenv$ is dropped.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotatestmt(\tenv, \vs) \typearrow (\newstmt, \Ignore) \OrTypeError
+}{
+  \annotateblock{\tenv, \vs} \typearrow \newstmt
+}
+\end{mathpar}
+\CodeSubsection{\BlockBegin}{\BlockEnd}{../Typing.ml}
+
+\subsection{Comments}
+A local identifier declared in a block statement (with \texttt{var}, \texttt{let}, or \texttt{constant})
+is in scope from the point immediately after its declaration until the end of the
+immediately enclosing block. This means, we can discard the environment at the end of
+an enclosing block, which has the effect of dropping bindings of the identifiers declared inside the block.
+
+\lrmcomment{This is related to \identr{JBXQ}.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Semantics\label{sec:BlockStatementsSemantics}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The relation
+\hypertarget{def-evalblock}{}
+\[
+  \evalblock{\overname{\envs}{\env} \times \overname{\stmt}{\stm}} \;\aslrel\;
+  \overname{\TContinuing}{\Continuing(\newg, \newenv)} \cup
+  \overname{\TReturning}{\ReturningConfig} \cup
+  \overname{\TThrowing}{\ThrowingConfig} \cup
+  \overname{\TError}{\ErrorConfig}
+\]
+evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in a fresh local environment,
+which drops back to the original local environment of $\env$ when the evaluation terminates.
+
+\subsubsection{SemanticsRule.Block\label{sec:SemanticsRule.Block}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{\semanticstests/SemanticsRule.Block.asl}
+the conditional statement \texttt{if TRUE then\ldots{} end;} defines a
+block structure. Thus, the scope of the declaration \texttt{let y = 2;} is
+limited to its declaring block---or the binding for \texttt{y} no longer exists
+once the block is exited. As a consequence, the subsequent declaration
+\texttt{let y = 1} is valid.  By contrast, the assignment of the mutable
+variable~\texttt{x} persists after block end. However, observe that \texttt{x}
+is defined before the block and hence still exists after the block.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+    \item $\blockenv$ is the environment $\env$ modified by replacing the local component
+    (of the inner dynamic environment) by an empty one;
+    \item evaluating $\stm$ in $\blockenv$, as per \chapref{eval_stmt},
+    is \\ $\Continuing(\newg, \blockenvone)$\ProseTerminateAs{\ReturningConfig};
+    \item $\newenv$ is formed from $\blockenvone$ after restoring the
+    variable bindings of $\env$ with the updated values of $\blockenv$.
+    The effect is that of discarding the bindings for variables declared inside $\stm$;
+    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \env \eqname (\tenv,\denv)\\
+  \blockenv \eqdef (\tenv, (G^\denv, \emptyfunc))\\
+  \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\\\
+  \blockenvone\eqname(\tenv, \denvone)\\
+  \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
+}{
+  \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalBlockBegin}{\EvalBlockEnd}{../Interpreter.ml}
+
+That is, evaluating a block discards the bindings for variables declared inside $\stm$.

@@ -1,0 +1,568 @@
+\chapter{Type System Utility Rules\label{chap:TypeSystemUtilityRules}}
+
+\subsection{Checked Transitions}
+\hypertarget{def-checktrans}{}
+We define the following rules to allow us asserting that a condition holds,
+returning a type error otherwise:
+\begin{mathpar}
+  \inferrule[check\_trans\_true]{}{ \checktrans{\True}{<message>} \checktransarrow \True }
+  \and
+  \inferrule[check\_trans\_false]{}{ \checktrans{\False}{<message>} \checktransarrow \TypeErrorVal{\texttt{<message>}} }
+\end{mathpar}
+
+\hypertarget{def-pairstomap}{}
+\subsection{Converting a List of Pairs to a Map \label{sec:PairsToMap}}
+The parametric function
+\[
+  \pairstomap(\overname{(\identifier\times T)^*}{\pairs}) \aslto \overname{(\identifier\partialto T)}{f} \cup \TTypeError
+\]
+converts a list of pairs --- $\pairs$ --- where each pair consists of an identifier and a value
+of type $T$ into a function mapping each identifier to its respective value in the list.
+If a duplicate identifier exists in $\pairs$ then a type error is returned.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\pairs$ is empty;
+    \item $f$ is the empty function.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item there exist two different positions in the list where the identifier is the same;
+    \item the result is a type error indicating the existence of a duplicate identifier.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item all identifiers occurring in the list are unique;
+    \item $f$ is a function that associates to each identifier the value appearing with it in $\pairs$.
+  \end{itemize}
+\end{itemize}
+
+\begin{mathpar}
+\inferrule[empty]{}{ \pairstomap(\emptylist) \typearrow \emptyfunc }
+\and
+\inferrule[error]{
+  i,j \in 1..k\\
+  i \neq j\\
+  \id_i = \id_j
+}
+{
+  \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow \TypeErrorVal{DuplicateIdentifier}
+}
+\and
+\inferrule[okay]{
+  \forall i,j \in 1..k. \id_i \neq \id_j\\
+  {
+  f \eqdef \lambda \id.\ \begin{cases}
+    t_i & \text{ if }i\in1..k \land \id = \id_i\\
+    \bot & \text{ otherwise}
+  \end{cases}
+  }
+}
+{
+  \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow f
+}
+\end{mathpar}
+
+\hypertarget{def-checknoduplicates}{}
+\subsubsection{TypingRule.CheckNoDuplicates \label{sec:TypingRule.CheckNoDuplicates}}
+The function
+\[
+  \checknoduplicates(\overname{\identifier^*}{\id_{1..k}}) \aslto \{\True\} \cup \TTypeError
+\]
+checks whether a non-empty list of identifiers contains a duplicate identifier. If it does not, the result
+is $\True$ and otherwise the result is a type error.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item the set containing all identifiers in the list has the same cardinality as the length of the list;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item there exist two different positions in the list where the identifier is the same;
+    \item the result is a type error indicating the existence of a duplicate identifier.
+  \end{itemize}
+\end{itemize}
+
+\begin{mathpar}
+  \inferrule[okay]{
+    \cardinality{\{\id_{1..k}\}} = k
+  }
+  {
+    \checknoduplicates(\id_{1..k}) \typearrow \True
+  }
+\and
+\inferrule[error]{
+  i,j \in 1..k\\
+  i \neq j\\
+  \id_i = \id_j
+}
+{
+  \checknoduplicates(\id_{1..k}) \typearrow \TypeErrorVal{DuplicateIdentifier}
+}
+\end{mathpar}
+
+\hypertarget{def-checkvarnotinenv}{}
+\hypertarget{def-varinenv}{}
+\subsubsection{TypingRule.CheckVarNotInEnv}
+The function
+\[
+  \varinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}}
+  \aslto \overname{\Bool}{\vb}
+\]
+determines whether an identifier $\id$ is declared in the static environment $\tenv$.
+
+The function
+\[
+  \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
+  \aslto \{\True\} \cup \TTypeError
+\]
+checks whether $\id$ is already declared in $\tenv$. If it is, the result is a type error,
+and otherwise the result is $\True$.
+
+\subsubsection{Prose}
+$\varinenv{\tenv, \id}$ is true if and only if one of the following applies:
+\begin{itemize}
+  \item $\id$ is declared as a local identifier in $\tenv$;
+  \item $\id$ is declared as a global identifier in $\tenv$;
+  \item $\id$ is declared as a subprogram in $\tenv$;
+  \item $\id$ is declared as a type in $\tenv$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+    \begin{array}{rl}
+  \vb \eqdef & L^\tenv.\localstoragetypes(\id) \neq \bot\ \lor\\
+             & G^\tenv.\globalstoragetypes(\id) \neq \bot \lor\\
+             & G^\tenv.\subprograms(\id) \neq \bot\ \lor\\
+             & G^\tenv.\declaredtypes(\id) \neq \bot
+  \end{array}
+}
+}{
+  \varinenv{\tenv, \id} \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[okay]{
+  \varinenv{\tenv, \id} \typearrow \False
+}{
+  \checkvarnotinenv{\tenv, \id} \typearrow \True
+}
+\and
+  \inferrule[error]{
+  \varinenv{\tenv, \id} \typearrow \True
+}{
+  \checkvarnotinenv{\tenv, \id} \typearrow \TypeErrorVal{AlreadyDeclared}
+}
+\end{mathpar}
+
+\hypertarget{def-addlocal}{}
+\subsubsection{TypingRule.AddLocal \label{sec:TypingRule.AddLocal}}
+The function
+\[
+  \addlocal(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\identifier}{\id} \aslsep
+    \overname{\ty}{\tty} \aslsep
+    \overname{\localdeclkeyword}{\ldk})
+  \aslto
+  \overname{\staticenvs}{\newtenv}
+\]
+adds the identifier $\id$ as a local storage element with type $\tty$ and local declaration keyword $\ldk$
+to the local environment of $\tenv$, resulting in the static environment $\newtenv$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item the map $\newlocalstoragetypes$ is defined by updating the map \\
+        $\localstoragetypes$ of $\tenv$
+        with the binding $\id$ to the type $\tty$ and local declaration keyword $\ldk$, that is, $(\tty,\ldk)$;
+  \item $\newtenv$ is defined by updating the local environment with the binding of \\
+        $\localstoragetypes$ to $\newlocalstoragetypes$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \newlocalstoragetypes \eqdef L^\tenv.\localstoragetypes[\id \mapsto (\tty, \ldk)]\\
+  \newtenv \eqdef (G^\tenv, L^\tenv[\localstoragetypes \mapsto \newlocalstoragetypes])
+}
+{
+  \addlocal(\tenv, \id, \tty, \ldk) \typearrow \newtenv
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.FindBitfieldOpt}
+\hypertarget{def-findbitfieldopt}{}
+The function
+\[
+  \findbitfieldopt(\overname{\identifier}{\name} \aslsep \overname{\bitfield^*}{\bitfields})
+  \aslto \overname{\langle\bitfield\rangle}{\vr}
+\]
+returns the bitfield associated with the name $\name$ in the list of bitfields $\bitfields$,
+if there is one. Otherwise, the result is $\None$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{match}):
+  \begin{itemize}
+    \item $\bitfields$ starts with a bitfield $\vbf$;
+    \item obtaining the name associated with $\vbf$ yields $\name$;
+    \item the result if $\vbf$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tail}):
+  \begin{itemize}
+    \item $\bitfields$ starts with a bitfield $\vbf$ and continues with the tail list $\bitfieldsp$;
+    \item obtaining the name associated with $\vbf$ yields $\namep$, which is different than $\name$;
+    \item finding the bitfield associated with $\name$ in $\bitfieldsp$ yields the result $\vr$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\bitfields$ is an empty list;
+    \item the result is $\None$.
+  \end{itemize}
+\end{itemize}
+
+\begin{mathpar}
+\inferrule[match]{
+  \bitfieldgetname(\vbf) \typearrow \name
+}{
+  \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\bitfields}) \typearrow \overname{\langle\vbf\rangle}{\vr}
+}
+\and
+\inferrule[tail]{
+  \bitfieldgetname(\vbf) \typearrow \namep\\
+  \name \neq \namep\\
+  \findbitfieldopt(\name, \bitfieldsp) \typearrow \vr
+}{
+  \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\bitfields}) \typearrow \vr
+}
+\and
+\inferrule[empty]{}{
+  \findbitfieldopt(\name, \overname{\emptylist}{\bitfields}) \typearrow \None
+}
+\end{mathpar}
+
+\hypertarget{def-typeofarraylength}{}
+\subsubsection{TypingRule.TypeOfArrayLength \label{sec:TypingRule.TypeOfArrayLength}}
+The function
+\[
+  \typeofarraylength(\overname{\staticenvs}{\tenv} \aslsep \overname{\arrayindex}{\size}) \aslto
+  \overname{\ty}{\vt}
+\]
+returns the type for the array index $\size$ in the static environment $\tenv$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{enum}):
+  \begin{itemize}
+    \item $\size$ is an enumeration index over the enumeration $\vs$, that is, \\ $\ArrayLengthEnum(\vs, \Ignore)$;
+    \item $\vt$ is the named type for $\vs$, that is, $\TNamed(\vs)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{expr}):
+  \begin{itemize}
+    \item $\size$ is an expression index for $\ve$, that is, $\ArrayLengthExpr(\ve)$;
+    \item applying $\normalize$ to simplify the expression corresponding to $\ve - 1$ in $\tenv$
+          yields the expression $\vm$;
+    \item $\vc$ is the range constraint for $0..\vm$, that is, $\ConstraintRange(\eliteral{0}, \vm)$;
+    \item $\vt$ is the well-constrained integer with the single constraint $\vc$.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\TypeOfArrayLengthBegin}{\TypeOfArrayLengthEnd}{../types.ml}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[enum]{}
+{
+  \typeofarraylength(\tenv, \ArrayLengthEnum(\vs, \Ignore)) \typearrow \TNamed(\vs)
+}
+\and
+\inferrule[expr]{
+  \normalize(\tenv, \EBinop(\MINUS, \ve, \eliteral{1})) \typearrow \vm\\
+  \vc \eqdef \ConstraintRange(\eliteral{0}, \vm)
+}{
+  \typeofarraylength(\tenv, \ArrayLengthExpr(\ve)) \typearrow \TInt(\wellconstrained([\vc]))
+}
+\end{mathpar}
+
+\hypertarget{def-storageispure}{}
+\subsubsection{TypingRule.StorageIsPure \label{sec:TypingRule.StorageIsPure}}
+The function
+\[
+  \storageispure(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs}) \aslto
+  \overname{\Bool}{\vb} \cup \TTypeError
+\]
+$\vb$ is true if and only if the identifier $\vs$ corresponds to a \pure\ storage element
+in the static environment $\tenv$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local}):
+  \begin{itemize}
+    \item $\vs$ is a locally declared storage element;
+    \item $\vb$ is true if and only if $\vs$ is declared as a constant or as an immutable variable (\texttt{let}).
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item $\vs$ is a globally declared storage element;
+    \item $\vb$ is true if and only if $\vs$ is declared as a constant, a configuration variable, or an immutable variable.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item $\vs$ is not defined in the environment as a storage element;
+    \item the result is a type error indicating that $\vs$ is not defined as a storage element.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\StorageIsPureBegin}{\StorageIsPureEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\localstoragetypes(\vs) = (\Ignore, \ldk)\\
+  \vb \eqdef \ldk \in \{\LDKConstant, \LDKLet\}
+}
+{
+  \storageispure(\tenv, \vs) \typearrow \vb
+}
+\and
+\inferrule[global]{
+  L^\tenv.\localstoragetypes(\vs) = \bot\\
+  G^\tenv.\globalstoragetypes(\vs) = (\Ignore, \gdk)\\
+  \vb \eqdef \gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}
+}
+{
+  \storageispure(\tenv, \vs) \typearrow \vb
+}
+\and
+\inferrule[error]{
+  L^\tenv.\localstoragetypes(\vs) = \bot\\
+  G^\tenv.\globalstoragetypes(\vs) = \bot
+}
+{
+  \storageispure(\tenv, \vs) \typearrow \TypeErrorVal{UndefinedIdentifier}
+}
+\end{mathpar}
+
+\hypertarget{def-checkstaticallyevaluable}{}
+\hypertarget{def-staticallyevaluable}{}
+\subsubsection{TypingRule.CheckStaticallyEvaluable \label{sec:TypingRule.CheckStaticallyEvaluable}}
+The function
+\[
+  \checkstaticallyevaluable(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \{\True\} \cup \TTypeError
+\]
+returns $\True$ if $\ve$ is a \staticallyevaluable\ expression in the static environment $\tenv$ and a type error otherwise.
+
+\subsubsection{Prose}
+All of the following applies:
+\begin{itemize}
+  \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields $\veone$;
+  \item determining the set of used identifiers in $\veone$ yields $\useset$;
+  \item $\vb$ is true if and only if every identifier in $\useset$ is pure;
+  \item the result is $\True$ is $\vb$ is $\True$, otherwise it is a type error indicating that the expression
+  is not statically evaluable.
+\end{itemize}
+
+\CodeSubsection{\CheckStaticallyEvaluableBegin}{\CheckStaticallyEvaluableEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \normalize(\tenv, \ve) \typearrow \veone\\
+  \useexpr(\veone) \typearrow \useset\\
+  \id\in\useset: \storageispure(\tenv, \id) \typearrow \vb_\id\\
+  \vb \eqdef \bigwedge_{\id\in\useset} \vb_\id\\
+  \checktrans{\vb}{NotStaticallyEvaluable} \checktransarrow \True \OrTypeError
+}
+{
+  \checkstaticallyevaluable(\tenv, \ve) \typearrow \True
+}
+\end{mathpar}
+
+\subsection{AssocOpt}
+\hypertarget{def-assocopt}{}
+The function
+\[
+  \assocopt(\overname{(\identifier\times T)^*}{\vli} \aslsep \overname{\identifier}{\id}) \typearrow \langle \overname{T}{\vv} \rangle
+\]
+returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{member}):
+  \begin{itemize}
+    \item a pair $(\id,\vv)$ exists in the list $\vli$;
+    \item the result is $\langle\vv\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_member}):
+  \begin{itemize}
+    \item every pair $(\vx,\Ignore)$ in the list $\vli$ has $\vx\neq\id$;
+    \item the result is $\None$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[not\_member]{
+  (\vx, \vv) \in \vli: \vx \neq \id
+}{
+  \assocopt(\vli, \id) \typearrow \None
+}
+\and
+\inferrule[member]{
+  (\id, \vv) \in \vli
+}{
+  \assocopt(\vli, \id) \typearrow \langle \vv \rangle
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.IsUndefined \label{sec:TypingRule.IsUndefined}}
+\hypertarget{def-isundefined}{}
+The function
+\[
+\isundefined(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vx})
+\aslto \overname{\Bool}{\vb}
+\]
+checks whether the identifier $\vx$ is defined as a storage element in the static environment $\tenv$.
+
+\subsubsection{Prose}
+$\vb$ is $\True$ if and only if $\vx$ is not bound in to a global storage in $\tenv$ and
+$\vx$ is not bound to a local storage in $\tenv$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vb \eqdef G^\tenv.\globalstoragetypes(\vx) = \bot \land L^\tenv.\localstoragetypes(\vx) = \bot
+}{
+  \isundefined(\tenv, \vx) \typearrow \vb
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.LookupImmutableExpr\label{sec:TypingRule.LookupImmutableExpr}}
+\hypertarget{def-lookupimmutableexpr}{}
+The function
+\[
+\lookupimmutableexpr(\overname{\staticenvs}{\tenv}, \overname{\identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
+\]
+looks up the static environment $\tenv$ for an immutable expression associated with the identifier $\vx$,
+returning $\bot$ if there is none.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local}):
+  \begin{itemize}
+    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\bot$;
+    \item applying $\exprequiv$ to $\vx$ in the global component of $\tenv$, yields $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\bot$;
+    \item applying $\exprequiv$ to $\vx$ in the global component of $\tenv$, yields $\bot$;
+    \item $\ve$ is $\bot$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\exprequiv(\vx) = \ve
+}{
+  \lookupimmutableexpr(\tenv, \vx) \typearrow \ve
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global]{
+  L^\tenv.\exprequiv(\vx) = \bot\\
+  G^\tenv.\exprequiv(\vx) = \ve\\
+}{
+  \lookupimmutableexpr(\tenv, \vx) \typearrow \ve
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[none]{
+  L^\tenv.\exprequiv(\vx) = \bot\\
+  G^\tenv.\exprequiv(\vx) = \bot\\
+}{
+  \lookupimmutableexpr(\tenv, \vx) \typearrow \bot
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.Sort\label{sec:sortinglists}}
+\hypertarget{def-sort}{}
+The parametric function
+\[
+\sort(\overname{T^*}{\vlone}, \overname{(T\times T)\rightarrow \{-1,0,1\}}{\compare}) \typearrow \overname{T^*}{\vltwo}
+\]
+sorts a list of elements of type $T$ --- $\vlone$ --- using the comparison function $\compare$,
+resulting in the sorted list $\vltwo$.
+$\compare(a, b)$ returns $1$ to mean that $a$ should be ordered before $b$,
+$0$ to mean that $a$ and $b$ can be ordered in any way,
+and $-1$ to mean that $b$ should be ordered before $a$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty\_or\_single}):
+  \begin{itemize}
+    \item $\vlone$ is either empty or contains a single element;
+    \item $\vltwo$ is $\vlone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{two\_or\_more}):
+  \begin{itemize}
+    \item $\vlone$ contains at least two elements;
+    \item $f$ is a permutation of $1..n$;
+    \item $\vltwo$ is the application of the permutation $f$ to $\vlone$;
+    \item applying $\compare$ to every pair of consecutive elements in $\vltwo$ yields either $0$ or $1$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty\_or\_single]{
+  \listlen{\vlone} = n\\
+  n < 2
+}{
+  \sort(\vlone, \compare) \typearrow \overname{\vlone}{\vltwo}
+}
+\and
+\inferrule[two\_or\_more]{
+  \listlen{\vlone} = n\\
+  f : 1..n \rightarrow 1..n \text{ is a bijection}\\
+  \vltwo \eqdef [\ i=1..n: \vlone[f(i)]\ ]\\
+  i=1..n-1: \compare(\vltwo[i], \vltwo[i+1]) \geq 0
+}{
+  \sort(\vlone, \compare) \typearrow \vltwo
+}
+\end{mathpar}

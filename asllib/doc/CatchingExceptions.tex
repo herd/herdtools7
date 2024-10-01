@@ -1,0 +1,513 @@
+\chapter{Catching Exceptions\label{chap:CatchingExceptions}}
+
+Exception catchers are grammatically derived from $\Ncatcher$ and represented as ASTs by $\catcher$.
+
+\hypertarget{def-annotatecatcher}{}
+The function
+\[
+\begin{array}{r}
+  \annotatecatcher{
+    \overname{\staticenvs}{\tenv} \aslsep
+    (\overname{\langle\identifier\rangle}{\nameopt} \times \overname{\ty}{\tty} \times \overname{\stmt}{\vstmt})
+  } \aslto \\
+  (\overname{\langle\identifier\rangle}{\nameopt} \times \overname{\ty}{\ttyp} \times \overname{\stmt}{\newstmt})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates a catcher given by the \optional\ name of the matched exception --- $\nameopt$ ---
+the exception type --- $\tty$ --- and the statement to execute upon catching the exception --- $\vstmt$.
+The result is the catcher with the same \optional\ name --- $\nameopt$, an annotated type $\ttyp$, and annotated statement $\newstmt$.
+\ProseOtherwiseTypeError
+
+The semantic relation for evaluating catchers employs an argument
+that is an output configuration. This argument corresponds to the result
+of evaluating a \texttt{try} statement and its type is defined as follows:
+\hypertarget{def-toutconfig}{}
+\[
+  \TOutConfig \triangleq \TNormal \cup  \TThrowing \cup \TContinuing \cup \TReturning \enspace.
+\]
+
+The relation
+\hypertarget{def-evalcatchers}{}
+\[
+  \evalcatchers{\overname{\envs}{\env} \aslsep \overname{\catcher^*}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
+   \aslsep \overname{\TOutConfig}{\sm}} \;\aslrel\;
+  \left(
+    \begin{array}{cl}
+      \TReturning   & \cup\\
+      \TContinuing  & \cup\\
+      \TThrowing    & \cup \\
+      \TError       &
+    \end{array}
+  \right)
+\]
+evaluates a list of \texttt{catch} clauses $\catchers$, an \texttt{otherwise} clause,
+and a configuration $\sm$ resulting from the evaluation of the throwing expression,
+in the environment $\env$. The result is either a continuation configuration,
+an early return configuration, or an abnormal configuration.
+
+When the statement in a \texttt{try} block, which we will refer to as the try-block statement,
+is evaluated, it may call a function that updates
+the global environment. If evaluation of the \texttt{try} block raises an exception that is caught,
+either by a \texttt{catch} clause or an \texttt{otherwise} clause,
+the statement associated with that clause, which we will refer to as the clause statement, is evaluated.
+It is important to evaluate the clause statement in an environment that includes any updates
+to the global environment made by evaluating the try-block statement.
+%
+We demonstrate this with the following example.
+
+Consider the following specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/EvalCatchers.asl}
+
+Here, the try-block statement consists of the single statement \texttt{update\_and\_throw();}.
+Evaluating the call to \texttt{update\_and\_throw} employs an environment $\env$ where
+\texttt{g} is bound to $0$.
+Notice that the call to \texttt{update\_and\_throw} binds \texttt{g} to $1$ before raising an exception.
+Therefore, evaluating the call to \texttt{update\_and\_throw} returns a configuration
+of the form
+$\Throwing(\Ignore, \envthrow)$ where $\envthrow$ binds \texttt{g} to $1$.
+When the catch clause is evaluated the semantics takes the global environment from $\envthrow$
+to account for the update to \texttt{g} and the local environment from $\env$ to account for the
+updates to the local environment in \texttt{main}, which binds \texttt{x} to $2$, and use this
+environment to evaluate \texttt{print(x, g)}, resulting in the output \texttt{2 1}.
+
+\section{Syntax}
+\begin{flalign*}
+\Ncatcher \derivesinline\ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+          |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\end{flalign*}
+
+\section{Abstract Syntax}
+\begin{flalign*}
+\catcher \derives\ & (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.Catcher\label{sec:ASTRule.Catcher}}
+\hypertarget{build-catcher}{}
+The function
+\[
+\buildcatcher(\overname{\parsenode{\Ncatcher}}{\vparsednode}) \;\aslto\; \overname{\catcher}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[named]{}{
+  {
+  \begin{array}{r}
+  \buildcatcher(\overname{\Ncatcher(\Twhen, \Tidentifier(\id), \Tcolon, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
+  \astarrow \\
+  \overname{(\langle\id\rangle, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[unnamed]{}{
+  {
+  \begin{array}{r}
+  \buildcatcher(\overname{\Ncatcher(\Twhen, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
+  \astarrow \\
+  \overname{(\None, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\section{Typing}
+\subsubsection{TypingRule.Catcher\label{sec:TypingRule.Catcher}}
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item the catcher has no named identifier, that is, $(\None, \tty, \vstmt)$;
+    \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$\ProseOrTypeError;
+    \item determining whether $\ttyp$ has the \structure\ of an exception type yields $\True$\ProseOrTypeError;
+    \item annotating the block $\vstmt$ in $\tenv$ yields $\newstmt$.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item the catcher has a named identifier, that is, $(\langle\name\rangle, \tty, \vstmt)$;
+    \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$\ProseOrTypeError;
+    \item determining whether $\ttyp$ has the \structure\ of an exception type yields $\True$\ProseOrTypeError;
+    \item the identifier $\name$ is not bound in $\tenv$;
+    \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
+          (that is, with the local declaration keyword $\LDKLet$), yields the static environment $\tenvp$;
+    \item annotating the block $\vstmt$ in $\tenvp$ yields $\newstmt$.
+  \end{itemize}
+\end{itemize}
+\CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[none]{
+  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\\\
+  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
+  \annotateblock{\tenv, \vstmt} \typearrow \newstmt \OrTypeError
+}{
+  \annotatecatcher{\tenv, (\overname{\None}{\nameopt}, \tty, \vstmt)} \typearrow (\overname{\None}{\nameopt}, \ttyp, \newstmt)
+}
+\end{mathpar}
+\lrmcomment{This is related to \identr{SDJK}.}
+
+\begin{mathpar}
+\inferrule[some]{
+  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\\\
+  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
+  \addlocal(\tenv, \name, \ttyp, \LDKLet) \typearrow \tenvp\\
+  \annotateblock{\tenvp, \vstmt} \typearrow \newstmt \OrTypeError
+}{
+  \annotatecatcher{\tenv, (\overname{\langle\name\rangle}{\nameopt}, \tty, \vstmt)} \typearrow
+  (\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)
+}
+\end{mathpar}
+\lrmcomment{This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.}
+\CodeSubsection{\CatcherBegin}{\CatcherEnd}{../Typing.ml}
+
+\section{Semantics}
+\subsubsection{SemanticsRule.Catch\label{sec:SemanticsRule.Catch}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
+  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
+  \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
+  \item $\envone$ is defined by taking the static environment $\tenv$, the global component of the dynamic
+        environment from $\denvthrow$ and the local component of the dynamic environment from $\denv$;
+  \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
+  and the list of catchers $\catchers$ gives a catcher that does not declare a name ($\None$) and gives a statement $\vs$;
+  \item evaluating $\vs$ in $\envone$ as a block (\chapref{eval_block}) is not an error
+        configuration $C$\ProseOrError;
+  \item editing potential implicit throwing configurations via $\rethrowimplicit(\vv, \vvty, C)$
+        gives the configuration $D$;
+  \item $\newg$ is the ordered composition of $\sg$ and the graph of $D$;
+  \item the result of the entire evaluation is $D$ with its graph substituted with $\newg$.
+\end{itemize}
+
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Catch.asl}
+terminates successfully. That is, no dynamic error occurs.
+
+\CodeSubsection{\EvalCatchBegin}{\EvalCatchEnd}{../Interpreter.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+  \env \eqname (\tenv, (G^\denv, L^\denv))\\
+  \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+  \envone \eqdef (\tenv, (G^{\denvthrow}, L^{\denv}))\\
+  \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\None, \Ignore, \vs) \rangle\\
+  \evalblock{\envone, \vs} \evalarrow C \OrDynError\\\\
+  D \eqdef \rethrowimplicit(\vv, \vvty, C)\\
+  \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{D}}
+}{
+  \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{D}{\newg}
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.CatchNamed\label{sec:SemanticsRule.CatchNamed}}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNamed.asl}
+prints \texttt{My exception with my message}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
+  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
+  \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
+  \item $\envone$ is defined by taking the static environment $\tenv$, the global component of the dynamic
+  environment from $\denvthrow$ and the local component of the dynamic environment from $\denv$;
+  \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
+  and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives a statement $\vs$;
+  \item $\vgone$ is the execution graph resulting from reading $\vv$ into the identifier $\eid$;
+  \item declaring a local identifier $\name$ with $(\veone, \vgone)$ in $\envone$ gives $(\envtwo, \vgtwo)$;
+  \item evaluating $\vs$ in $\envtwo$ as a block (\chapref{eval_block}) is not an error
+  configuration $C$\ProseOrError;
+  \item $\envthree$ is the environment of the configuration $C$;
+  \item removing the binding for $\name$ from the local component of the dynamic environment in $\envthree$
+  gives $\envfour$;
+  \item substituting the environment of $C$ with $\envfour$ gives $D$;
+  \item editing potential implicit throwing configurations via $\rethrowimplicit(\vv, \vvty, D)$
+  gives the configuration $E$;
+  \item $\newg$ is the ordered composition of $\sg$, $\vgone$, $\vgtwo$, and the graph of $E$,
+  with the $\aslpo$ edges;
+  \item the result of the entire evaluation is $E$ with its graph substituted with $\newg$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+    \env \eqname (\tenv, (G^\denv, L^\denv))\\
+    \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+    \envone \eqdef (\tenv, (G^{\denvthrow}, L^{\denv}))\\
+    \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\langle\name\rangle, \Ignore, \vs) \rangle\\
+    \vgone \eqdef \readidentifier(\eid, \vv)\\
+    \declarelocalidentifierm(\envone, \name, (\veone, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
+    \evalblock{\envtwo, \vs} \evalarrow C \OrDynError\\\\
+    \envthree \eqdef \environof{C}\\
+    \removelocal(\envthree, \name) \evalarrow \envfour\\
+    D \eqdef \withenviron{C}{\envfour}\\
+    E \eqdef \rethrowimplicit(\vv, \vvty, D)\\
+    \newg \eqdef \ordered{\sg}{\aslpo}{ \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\graphof{E}} }
+  }
+  {
+    \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{E}{\newg}
+  }
+\end{mathpar}
+\CodeSubsection{\EvalCatchNamedBegin}{\EvalCatchNamedEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.CatchOtherwise\label{sec:SemanticsRule.CatchOtherwise}}
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+    \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
+    \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
+    \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
+    \item $\envone$ is defined by taking the static environment $\tenv$, the global component of the dynamic
+    environment from $\denvthrow$ and the local component of the dynamic environment from $\denv$;
+    \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
+    and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
+    (that is, neither of the \texttt{catch} clauses matches the raised exception);
+    \item evaluating the \texttt{otherwise} statement $\vs$ in $\envtwo$ as a block (\chapref{eval_block})
+    is not an error configuration $C$\ProseOrError;
+    \item editing potential implicit throwing configurations via $\rethrowimplicit(\vv, \vvty, C)$
+    gives the configuration $D$;
+    \item $\newg$ is the ordered composition of $\sg$ and the graph of $D$,
+    with the $\aslpo$ edge;
+    \item the result of the entire evaluation is $D$ with its graph substituted with $\newg$.
+  \end{itemize}
+
+    \subsubsection{Example}
+     The specification:
+     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
+     prints \texttt{Otherwise}.
+
+  \CodeSubsection{\EvalCatchOtherwiseBegin}{\EvalCatchOtherwiseEnd}{../Interpreter.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+  \env \eqname (\tenv, (G^\denv, L^\denv))\\
+  \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+  \envone \eqdef (\tenv, (G^{\denvthrow}, L^{\denv}))\\
+  \findcatcher(\tenv, \vvty, \catchers) = \None\\
+  \evalblock{\envone, \vs} \evalarrow C \OrDynError\\\\
+  D \eqdef \rethrowimplicit(\vv, \vvty, C)\\
+  \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{D}}
+}{
+  \evalcatchers{\env, \catchers, \langle\vs\rangle, \sm} \evalarrow \withgraph{D}{\vg}
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.CatchNone\label{sec:SemanticsRule.CatchNone}}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNone.asl}
+does not print anything.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
+  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
+  \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
+  \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
+  and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
+  (that is, neither of the \texttt{catch} clauses matches the raised exception);
+  \item since there no \texttt{otherwise} clause, the result is $\sm$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+  \env \eqname (\tenv, \denv)\\
+  \findcatcher(\tenv, \vvty, \catchers) = \None
+}{
+  \evalcatchers{\env, \catchers, \None, \sm} \evalarrow \sm
+}
+\end{mathpar}
+\CodeSubsection{\EvalCatchNoneBegin}{\EvalCatchNoneEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.CatchNoThrow\label{sec:SemanticsRule.CatchNoThrow}}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNoThrow.asl}
+prints \texttt{No exception raised}.
+
+\subsubsection{Prose}
+all of the following apply:
+\begin{itemize}
+  \item One of the following holds:
+  \begin{itemize}
+    \item (\textsc{implicit\_throw}) $\sm$ is $\Throwing((\None, \sg), \envthrow)$ (that is, an implicit throw);
+    \item (\textsc{non\_throwing}) $\sm$ is a normal configuration (that is, the domain of $\sm$ is $\Normal$);
+  \end{itemize}
+  \item the result is $\sm$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[implicit\_throw]{
+  \sm \eqname \Throwing((\None, \sg), \envthrow)
+}{
+  \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_throwing]{
+  \configdomain{\sm} = \Normal
+}{
+  \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+}
+\end{mathpar}
+\CodeSubsection{\EvalCatchNoThrowBegin}{\EvalCatchNoThrowEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.FindCatcher\label{sec:SemanticsRule.FindCatcher}}
+\hypertarget{def-findcatcher}{}
+The (recursively-defined) helper relation
+\[
+  \findcatcher(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vvty}, \overname{\catcher^*}{\catchers})
+  \;\aslrel\; \langle \catcher \rangle \enspace,
+\]
+returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
+by invoking $\typesat$ with the static environment $\tenv$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\catchers$ is an empty list;
+    \item the result is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{match}):
+  \begin{itemize}
+    \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
+    \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
+    \item $\vvty$ type-satisfies $\ety$ in the static environment $\tenv$;
+    \item the result is the singleton set for $\vc$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{no\_match}):
+  \begin{itemize}
+    \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
+    \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
+    \item $\vvty$ does not type-satisfy $\ety$ in the static environment $\tenv$;
+    \item the result of finding a catcher for $\vvty$ with the type environment $\tenv$ in the tail list $\catchersone$
+    is $d$;
+    \item the result is $d$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{\findcatcher(\tenv, \vvty, \emptylist) \evalarrow \None}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[match]{
+  \catchers \eqname [\vc] \concat \catchersone\\
+  \vc \eqname (\nameopt, \ety, \vs) \\
+  \typesat(\tenv, \vvty, \ety)
+}{
+  \findcatcher(\tenv, \vvty, \catchers) \evalarrow \langle\vc\rangle
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_match]{
+  \catchers \eqname [\vc] \concat \catchersone\\
+  \vc \eqname (\nameopt, \ety, \vs) \\
+  \neg\typesat(\tenv, \vvty, \ety)\\
+  d \eqdef \findcatcher(\tenv, \vvty, \catchersone)
+}{
+  \findcatcher(\tenv, \vvty, \catchers) \evalarrow d
+}
+\end{mathpar}
+\CodeSubsection{\EvalFindCatcherBegin}{\EvalFindCatcherEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+\lrmcomment{This is related to \identr{SPNM}:}
+When the \texttt{catch} of a \texttt{try} statement is executed, then the
+thrown exception is caught by the first catcher in that \texttt{catch} which it
+type-satisfies or the \texttt{otherwise\_opt} in that catch if it exists.
+
+\subsubsection{SemanticsRule.RethrowImplicit\label{sec:SemanticsRule.RethrowImplicit}}
+
+The helper relation
+\hypertarget{def-rethrowimplicit}{}
+\[
+  \rethrowimplicit(\overname{\valuereadfrom(\vals,\Identifiers)}{\vv} \aslsep \overname{\ty}{\vvty} \aslsep \overname{\TOutConfig}{\vres}) \;\aslrel\; \TOutConfig
+\]
+
+changes \emph{implicit throwing configurations} into \emph{explicit throwing configurations}.
+That is, configurations of the form $\Throwing((\None, \vg), \envthrowone))$.
+
+$\rethrowimplicit$ leaves non-throwing configurations, and \emph{explicit throwing configurations},
+which have the form $\Throwing(\langle(\valuereadfrom(\vv', \eid), \vvty')\rangle, \vg)$, as is.
+Implicit throwing configurations are changed by substituting the optional $\valuereadfrom$ configuration-exception type
+pair with $\vv$ and $\vvty$, respectively.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{implicit\_throwing}):
+  \begin{itemize}
+    \item $\vres$ is $\Throwing((\None, \vg), \envthrowone)$, which is an implicit throwing configuration;
+    \item the result is $\Throwing((\langle(\vv, \vvty)\rangle, \vg), \envthrowone)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{explicit\_throwing}):
+  \begin{itemize}
+    \item $\vres$ is $\Throwing(\langle(\vv', \vvty')\rangle, \vg)$, which is an explicit throwing configuration
+    (due to $(\vv', \vvty')$);
+    \item the result is $\Throwing((\langle(\vv', \vvty')\rangle, \vg), \envthrowone)$. \\
+    That is, the same throwing configuration is returned.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_throwing}):
+  \begin{itemize}
+    \item the configuration, $C$, domain is non-throwing;
+    \item the result is $C$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[implicit\_throwing]{}
+{
+  \rethrowimplicit(\vv, \vvty, \Throwing((\None, \vg), \envthrowone)) \evalarrow \\
+  \Throwing((\langle(\valuereadfrom(\vv, \eid), \vvty)\rangle, \vg), \envthrowone)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[explicit\_throwing]{}
+{
+  \rethrowimplicit(\vv, \vvty, \Throwing((\langle(\vv', \vvty')\rangle, \vg), \envthrowone)) \evalarrow \\
+  \Throwing((\langle(\vv', \vvty')\rangle, \vg), \envthrowone)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_throwing]{
+  \configdomain{C} \neq \Throwing
+}{
+  \rethrowimplicit(\Ignore, \Ignore, C, \Ignore) \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalRethrowImplicitBegin}{\EvalRethrowImplicitEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+\lrmcomment{This is related to \identr{GVKS}:}
+An expressionless \texttt{throw} statement causes the exception which the
+currently executing catcher caught to be thrown.

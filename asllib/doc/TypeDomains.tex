@@ -1,0 +1,492 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Domain of Values for Types\label{sec:DomainOfValuesForTypes}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This section formalizes the concept of the set of values for a given type.
+The formalism is given in the form of rules.
+%
+The section also defines the concept of checking whether the set of values
+for one type is included in the set of values for another type.
+
+\subsection{Dynamic Domain of a Type\label{sec:DynDomain}}
+\hypertarget{def-dyndomain}{}
+
+We now define the concept of a \emph{dynamic domain} of a type
+and the \emph{static domain} of a type.
+Intuitively, domains assign potentially infinite sets of \nativevalues\ to types.
+Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{UNKNOWN: t}
+by choosing a single value from the dynamic domain of $\vt$.
+Static domains are used to define subtype satisfaction in \secref{TypingRule.SubtypeSatisfaction}.
+
+Formally, the partial function
+\[
+  \dynamicdomain : \overname{\envs}{\env} \times \overname{\ty}{\vt}
+  \partialto \overname{\pow{\vals}}{\vd}
+\]
+assigns the set of values that a type $\vt$ can hold in a given environment $\env$.
+%
+We say that $\dynamicdomain(\env, \vt)$ is the \emph{dynamic domain} of $\vt$
+in the environment $\env$.
+%
+The \emph{static domain} of a type is the set of values which storage elements of that type may hold
+\underline{across all possible dynamic environments}.
+%
+The reason for this distinction is that the sets of values
+of integer types, bitvector types, and array types can depend on the dynamic values of variables.
+
+Types that do not refer to variables whose values are only known dynamically have
+a static domain that is equal to any of their dynamic domains.
+In those cases, we simply refer to their \emph{domain}.
+
+Associating a set of values to a type is done by evaluating any expression appearing
+in the type definitions. Evaluation is defined by the relation $\evalexprsef$.
+which evaluates side-effect-free expressions and either returns
+a configuration of the form $\Normal(\vv,\vg)$ or a dynamic error configuration $\ErrorConfig$.
+In the first case, $\vv$ is a \nativevalue\ and $\vg$
+is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
+and can be ignored in the context of defining dynamic domains.
+In the latter case (which can occur if, for example, an expression attempts to divide
+\texttt{8} by \texttt{0}), a dynamic error configuration, for which we use the notation
+$\ErrorConfig$, is returned.
+%
+The dynamic domain is empty in cases where evaluating side-effect-free expressions
+results in a dynamic error.
+%
+The dynamic domain is undefined if the type $\vt$ is not well-typed in $\tenv$.
+That is, if $\annotatetype{\tenv, \vt} \typearrow \TypeErrorConfig$.
+
+As part of the definition, we also associate dynamic domains to integer constraints
+by overloading $\dynamicdomain$:
+\[
+  \dynamicdomain : \overname{\envs}{\env} \times \overname{\intconstraint}{\vc}
+  \partialto \overname{\pow{\vals}}{\vd}
+\]
+
+\subsection{Prose}
+For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and one of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{t\_bool}):
+  \begin{itemize}
+    \item $\vt$ is the Boolean type, $\TBool$;
+    \item $\vd$ is the set of native Boolean values, $\tbool$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_string}):
+  \begin{itemize}
+    \item $\vt$ is the string type, $\TString$;
+    \item $\vd$ is the set of all native string values, $\tstring$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_real}):
+  \begin{itemize}
+    \item $\vt$ is the real type, $\TReal$;
+    \item $\vd$ is the set of all native real values, $\treal$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_enumeration}):
+  \begin{itemize}
+    \item $\vt$ is the enumeration type with labels $\id_{1..k}$, that is $\TEnum(\id_{1..k})$;
+    \item $\vd$ is the set of all native integer values for $1..k$.\\
+    \textbf{Why represent enumeration domains via integers:}
+    Conceptually, enumeration labels carry two pieces of information --- the identifiers themselves
+    and their position in the list of identifiers, which are used for accessing arrays.
+    For the purpose of type-checking, we use the identifiers, but for the purpose of the semantics
+    and the domain of values, only the positions are relevant.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_int\_unconstrained}):
+  \begin{itemize}
+    \item $\vt$ is the unconstrained integer type, $\unconstrainedinteger$;
+    \item $\vd$ is the set of all native integer values, $\tint$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_int\_well\_constrained}):
+  \begin{itemize}
+    \item $\vt$ is the well-constrained integer type $\TInt(\wellconstrained(\vc_{1..k}))$;
+    \item $\vd$ is the union of the dynamic domains of each of the constraints $\vc_{1..k}$ in $\env$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_exact\_okay}):
+  \begin{itemize}
+    \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $n$;
+    \item $\vd$ is the set containing the single native integer value for $n$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_exact\_dynamic\_error}):
+  \begin{itemize}
+    \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_range\_okay}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$, results in a configuration with the native integer for $b$;
+    \item $\vd$ is the set containing all native integer values for integers greater or equal to $a$ and less than or equal to $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_range\_dynamic\_error1}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item evaluating $\veone$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_range\_dynamic\_error2}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_int\_parameterized}):
+  \begin{itemize}
+    \item $\vt$ is a \parameterizedintegertype\ for parameter $\id$, \\ $\TInt(\parameterized(\id))$;
+    \item the \nativevalue\ associated with $\id$ in the local dynamic environment is the native integer value for $n$;
+    \item $\vd$ is the set containing the single integer value for $n$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_bits\_dynamic\_error}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
+    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_bits\_negative\_width\_error}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $k$ is negative;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_bits\_empty}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $0$;
+    \item $\vd$ is the set containing the single \nativevalue\ for an empty bitvector.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_bits\_non\_empty}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $k$ is greater than $0$;
+    \item $\vd$ is the set containing all \nativevalues\ for bitvectors of size exactly $k$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_tuple}):
+  \begin{itemize}
+    \item $\vt$ is a tuple type over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
+    \item the domain of each element $\vt_i$ is $D_i$, for $i=1..k$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $\vd$ is the set containing all native vectors of $k$ values, where the value at position $i$
+    is from $D_i$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_array\_dynamic\_error}):
+  \begin{itemize}
+    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
+    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_array\_negative\_length\_error}):
+  \begin{itemize}
+    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $k$ is negative;
+    \item $\vd$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_array\_okay}):
+  \begin{itemize}
+    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
+    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item $k$ is greater than or equal to $0$;
+    \item the domain of $\vtone$ is $D_\vtone$;
+    \item $\vd$ is the set containing all native vectors of $k$ values taken from $D_\vtone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_structured}):
+  \begin{itemize}
+    \item $\vt$ is a \structuredtype\ with typed fields $(\id_i, \vt_i$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
+    where $L\in\{\TRecord, \TException\}$;
+    \item the domain of each type $\vt_i$ is $D_i$, for $i=1..k$;
+    \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_named}):
+  \begin{itemize}
+    \item $\vt$ is a named type with name $\id$, $\TNamed(\id)$;
+    \item the type associated with $\id$ in $\tenv$ is $\tty$;
+    \item $\vd$ is the domain of $\tty$ in $\env$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+
+\begin{mathpar}
+\inferrule[t\_bool]{}{ \dynamicdomain(\env, \overname{\TBool}{\vt}) = \overname{\tbool}{\vd} }
+\and
+\inferrule[t\_string]{}{ \dynamicdomain(\env, \overname{\TString}{\vt}) = \overname{\tstring}{\vd} }
+\and
+\inferrule[t\_real]{}{ \dynamicdomain(\env, \overname{\TReal}{\vt}) = \overname{\treal}{\vd} }
+\and
+\inferrule[t\_enumeration]{}{
+  \dynamicdomain(\env, \overname{\TEnum(\id_{1..k})}{\vt}) = \overname{\{\nvint(1),\ldots,\nvint(k)\}}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[t\_int\_unconstrained]{}{
+  \dynamicdomain(\env, \overname{\unconstrainedinteger}{\vt}) = \overname{\tint}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int\_well\_constrained]{}{
+  \dynamicdomain(\env, \overname{\TInt(\wellconstrained(\vc_{1..k}))}{\vt}) = \overname{\bigcup_{i=1}^k \dynamicdomain(\env, \vc_i)}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constraint\_exact\_okay]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(n), \Ignore)
+}{
+  \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\{ \nvint(n) \}}{\vd}
+}
+\and
+\inferrule[constraint\_exact\_dynamic\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\emptyset}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constraint\_range\_okay]{
+  \evalexprsef{\env, \veone} \evalarrow \Normal(\nvint(a), \Ignore)\\
+  \evalexprsef{\env, \vetwo} \evalarrow \Normal(\nvint(b), \Ignore)
+}{
+  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\{ \nvint(n) \;|\;  a \leq n \land n \leq b\}}{\vd}
+}
+\and
+\inferrule[constraint\_range\_dynamic\_error1]{
+  \evalexprsef{\env, \veone} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
+}
+\and
+\inferrule[constraint\_range\_dynamic\_error2]{
+  \evalexprsef{\env, \veone} \evalarrow \Normal(\Ignore, \Ignore)\\
+  \evalexprsef{\env, \vetwo} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
+}
+\end{mathpar}
+
+The notation $L^\denv(\id)$ denotes the \nativevalue\ associated with the identifier $\id$
+in the \emph{local dynamic environment} of $\denv$.
+\begin{mathpar}
+  \inferrule[t\_int\_parameterized]{
+  L^\denv(\id) = \nvint(n)
+}{
+  \dynamicdomain(\env, \overname{\TInt(\parameterized(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits\_dynamic\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
+}
+\and
+\inferrule[t\_bits\_negative\_width\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  k < 0
+}{
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
+}
+\and
+\inferrule[t\_bits\_empty]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(0), \Ignore)
+}{
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\emptylist) \}}{\vd}
+}
+\and
+\inferrule[t\_bits\_non\_empty]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  k > 0
+}{
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \{0,1\} \}}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]{
+  i=1..k: \dynamicdomain(\env, \vt_i) = D_i
+}{
+  \dynamicdomain(\env, \overname{\TTuple(\vt_{1..k})}{\vt}) =
+  \overname{\{ \nvvector{\vv_{1..k}} \;|\; \vv_i \in D_i \}}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array\_dynamic\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+}{
+  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) = \overname{\emptyset}{\vd}
+}
+\and
+\inferrule[t\_array\_negative\_length\_error]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  k < 0
+}{
+  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) = \overname{\emptyset}{\vd}
+}
+\and
+\inferrule[t\_array\_okay]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  k \geq 0\\
+  \dynamicdomain(\env, \vtone) = D_\vtone
+}{
+  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) =
+  \overname{\{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\vtone} \}}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[structured]{
+  L \in \{\TRecord, \TException\}\\
+  i=1..k: \dynamicdomain(\env, \vt_i) = D_i
+}{
+  \dynamicdomain(\env, \overname{L([i=1..k: (\id_i,\vt_i))]}{\vt}) = \\
+  \overname{\{ \nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}} \;|\; \vv_i \in D_i \}}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_named]{
+  G^\tenv.\declaredtypes(\id)=\tty
+}{
+  \dynamicdomain(\env, \overname{\TNamed(\id)}{\vt}) = \overname{\dynamicdomain(\env, \tty)}{\vd}
+}
+\end{mathpar}
+
+\subsubsection{Examples}
+The domain of \texttt{integer} is the infinite set of all integers.
+
+The domain of \verb|integer {2,16}| is the set $\{\nvint(2), \nvint(16)\}$.
+
+The domain of \verb|integer{1..3}| is the set $\{\nvint(1), \nvint(2), \nvint(3)\}$.
+
+The domain of \verb|integer{10..1}| is the empty set as there are no integers that are
+both greater than $10$ and smaller than $1$.
+
+The domain of \texttt{bits(2)} is the set $\{\nvbitvector(00)$, $\nvbitvector(01),$
+$\nvbitvector(10)$, $\nvbitvector(11)\}$.
+
+The domain of \verb|enumeration {GREEN, ORANGE, RED}| is the set \\
+$\{\nvint(1), \nvint(2), \nvint(3)\}$ and so is the domain
+of \\
+\verb|type TrafficLights of enumeration {GREEN, ORANGE, RED}|.
+
+The domain of \texttt{bits({2,16})} is the set containing native bitvectors of all 2-bit and all 16-bit binary sequences.
+
+The domain of \texttt{(integer, integer)} is the set containing all pairs of native integer values.
+
+The domain of \verb|record {a: integer;  b: boolean}| contains all native records
+that map \texttt{a} to a native integer value and \texttt{b} to a native Boolean value.
+
+The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singleton) set containing
+the native integer value $c$,
+which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
+is the infinite set of all native integer values.
+
+\lrmcomment{
+This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
+\identr{RLQP}, \identr{LYDS}, \identr{SVDJ}, \identi{WLPJ}, \identr{FWMM},
+\identi{WPWL}, \identi{CDVY}, \identi{KFCR}, \identi{BBQR}, \identr{ZWGH},
+\identr{DKGQ}, \identr{DHZT}, \identi{HSWR}, \identd{YZBQ}.
+}
+
+\subsection{Subsumption Testing\label{sec:subsumptiontesting}}
+Whether an assignment statement is well-typed depends on whether the dynamic domain of the
+right hand side type is contained in the dynamic domain of the left hand side type,
+for any given dynamic environment
+(see \secref{TypingRule.SubtypeSatisfaction} where this is checked).
+
+\begin{definition}[Subsumption]
+For any given types $\vt$ and $\vs$ and static environment $\tenv$,
+we say that $\vt$ \emph{subsumes} $\vs$ in $\tenv$,
+if the following condition holds:
+\hypertarget{def-subsumes}{}
+\begin{equation}
+  \subsumes(\tenv, \vt, \vs) \triangleq \forall \denv\in\dynamicenvs.\ \dynamicdomain((\tenv, \denv), \vt) \supseteq \dynamicdomain((\tenv, \denv), \vs) \enspace.
+\end{equation}
+\end{definition}
+
+For example, consider the assignment
+\begin{center}
+\verb|var x : integer{1,2,3} = UNKNOWN : integer{1,2};|
+\end{center}
+
+It is legal, since (in any static environment), the domain of \verb|integer{1,2,3}|
+is \\
+$\{\nvint(1), \nvint(2), \nvint(3)\}$, which subsumes
+the domain of \verb|integer{1,2}|, which is \\ $\{\nvint(1), \nvint(2)\}$.
+
+Since dynamic domains are potentially infinite, this requires \emph{symbolic reasoning}.
+Furthermore, since any (statically evaluable) expressions may appear inside integer and bitvector
+types, testing subsumption is undecidable.
+We therefore approximate subsumption testing \emph{conservatively} via the predicate $\symsubsumes(\tenv, \vt, \vs)$.
+
+\hypertarget{def-soundsubsumptiontest}{}
+\begin{definition}[Sound Subsumption Test]
+A predicate
+\[
+  \symsubsumes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs}) \aslto \Bool
+\]
+is \emph{sound} if the following condition holds:
+\begin{equation}
+  \begin{array}{l}
+  \forall \vt,\vs\in\ty.\ \tenv\in\staticenvs. \\
+  \;\;\;\; \symsubsumes(\tenv, \vt, \vs) \typearrow \True \;\Longrightarrow\; \subsumes(\tenv, \vt, \vs)  \enspace.
+  \end{array}
+\end{equation}
+\end{definition}
+
+That is, if a sound subsumption test returns a positive answer, it means that
+$\vt$ definitely \emph{subsumes} $\vs$ in the static environment $\tenv$.
+This is referred to as a \emph{true positive}.
+However, a negative answer means one of two things:
+\begin{description}
+  \item[True Negative:] indeed, $\vt$ does not subsume $\vs$ in the static environment $\tenv$; or
+  \item[False Negative:] the symbolic reasoning is unable to decide.
+\end{description}
+
+In other words, $\symsubsumes(\tenv, \vt, \vs)$ errs on the \emph{safe side} ---
+it never answers $\True$ when the real answer is $\False$, which would (undesirably)
+determine the following statement as well-typed:
+\begin{center}
+  \verb|var x : integer{1,2} = UNKNOWN: integer;|
+\end{center}
+
+A sound but trivial subsumption test is one that always returns $\False$.
+However, that would make all assignments be considered as not well-typed.
+Indeed, it has the maximal set of false negatives.
+Reducing the set of false negatives requires stronger symbolic reasoning algorithms,
+which inevitably leads to higher computational complexity.
+%
+The symbolic subsumption test in \chapref{SymbolicSubsumptionTesting}
+attempts to accept a large enough set of true positives, based on empirical trial and error,
+while maintaining the computational complexity of the symbolic reasoning relatively low.
+%
+In particular, it serves as the definitive subsumption test that must be utilized
+by any implementation of the ASL type system.

@@ -1,0 +1,1017 @@
+\chapter{Pattern Matching\label{chap:PatternMatching}}
+Patterns are grammatically derived from $\Npattern$ and represented as an AST by $\pattern$.
+
+\hypertarget{build-pattern}{}
+The function
+\[
+  \buildpattern(\overname{\parsenode{\Npattern}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnode$.
+
+\hypertarget{def-annotatepattern}{}
+The function
+\[
+  \annotatepattern(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\ty}{\vt} \aslsep
+    \overname{\pattern}{\vp}) \aslto \overname{\pattern}{\newp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a pattern $\vp$ in a static environment $\tenv$ given a type $\vt$,
+resulting in $\newp$, which is the typed AST node for $\vp$. \ProseOtherwiseTypeError.
+
+The relation
+\hypertarget{def-evalpattern}{}
+\[
+  \evalpattern{\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\pattern}{\vp}} \;\aslrel\;
+  \Normal(\overname{\tbool}{\vb}, \overname{\XGraphs}{\newg})
+\]
+determines whether a value $\vv$ matches the pattern $\vp$ in an environment $\env$
+resulting in either $\Normal(\vb, \newg)$ or an abnormal configuration.
+
+We now define the syntax, abstract syntax, typing rules, and semantics rules for the following kinds of patterns:
+\begin{itemize}
+\item Matching All Values (\secref{MatchingAllValues})
+\item Matching a Single Value (\secref{MatchingASingleValue})
+\item Matching a Range of Integers (\secref{MatchingARangeOfIntegers})
+\item Matching an Upper Bounded Range of Integers (\secref{MatchingAnUpperBoundedRangeOfIntegers})
+\item Matching a Lower Bounded Range of Integers (\secref{MatchingALowerBoundedRangeOfIntegers})
+\item Matching a Bitmask (\secref{MatchingABitmask})
+\item Matching a Tuple of Patterns (\secref{MatchingATupleOfPatterns})
+\item Matching Any Pattern in a Set of Patterns (\secref{MatchingAnyPatternInASetOfPatterns})
+\item Matching a Negated Pattern (\secref{MatchingANegatedPattern})
+\end{itemize}
+
+Finally, expressions appearing in patterns are grammatically derived from \\
+$\Nexprpattern$.
+The grammar is almost identical to that of $\Nexpr$, except that pattern expressions
+for matching a single values and for matching a range of values, exclude tuples
+(for which the tuple expression is used).
+The AST for these expressions is $\expr$ --- same as the AST for $\Nexpr$.
+The builders for $\Nexprpattern$ are identical to those of $\Nexpr$. For completeness,
+we list those in \secref{ASTRulesForPatternExpressions}.
+
+\section{Matching All Values\label{sec:MatchingAllValues}}
+\subsection{Syntax}
+\begin{flalign*}
+\Npattern \derives\ & \Tminus &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternAll &
+\end{flalign*}
+
+\subsubsection{ASTRule.PAll}
+\begin{mathpar}
+\inferrule{}{
+  \buildpattern(\Npattern(\Tminus)) \astarrow
+  \overname{\PatternAll}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.PAll\label{sec:TypingRule.PAll}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern matching everything, that is, $\PatternAll$;
+  \item $\newp$ is $\vp$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}
+{
+  \annotatepattern(\tenv, \vt, \overname{\PatternAll}{\vp}) \typearrow \overname{\PatternAll}{\newp}
+}
+\end{mathpar}
+\CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.PAll \label{sec:SemanticsRule.PAll}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAll.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern which matches everything, $\PatternAll$, and therefore
+    matches $\vv$;
+  \item $\vb$ is the native Boolean value \True;
+  \item $\newg$ is the empty graph.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}
+{
+  \evalpattern{\env, \Ignore, \PatternAll} \evalarrow \Normal(\nvbool(\True), \emptygraph)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
+
+\section{Matching a Single Value\label{sec:MatchingASingleValue}}
+\subsection{Syntax}
+\begin{flalign*}
+\Npattern \derives\ & \Nexprpattern &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternSingle(\expr) &
+\end{flalign*}
+
+\subsubsection{ASTRule.PSingle}
+\begin{mathpar}
+\inferrule{}{
+  \buildpattern(\Npattern(\punnode{\Nexprpattern})) \astarrow
+  \overname{\PatternSingle(\astof{\vexprpattern})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.PSingle\label{sec:TypingRule.PSingle}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern that matches the expression $\ve$, that is, $\PatternSingle(\ve)$;
+  \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vte$ yields $\testruct$\ProseOrTypeError;
+  \item One of the following holds:
+  \begin{itemize}
+    \item All of the following apply (\textsc{t\_bool, t\_real, t\_int}):
+    \begin{itemize}
+      \item the AST label of $\vtstruct$ is one of $\TBool$, $\TReal$, or $\TInt$;
+      \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_bits}):
+    \begin{itemize}
+      \item the AST label of $\vtstruct$ is $\TBits$;
+      \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
+      \item determining whether the bitwidths of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_enum}):
+    \begin{itemize}
+      \item the AST label of $\vtstruct$ is $\TEnum$;
+      \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
+      \item determining whether the lists of enumeration literals of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item determining whether the labels of $\vtstruct$ and $\testruct$ are the same yields $\True$\ProseOrTypeError;
+      \item the label of $\vtstruct$ is not one of $\TBool$, $\TReal$, $\TInt$, $\TBits$, or $\TEnum$;
+      \item the result is a type error indicating that the types $\vt$ and $\vte$ are inappropriate for this pattern.
+    \end{itemize}
+  \end{itemize}
+  \item $\newp$ is the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[t\_bool, t\_real, t\_int]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  \commonprefixline\\\\
+  \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt\}\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \overname{\PatternSingle(\vep)}{\newp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
+  \commonprefixline\\\\
+  \astlabel(\vtstruct) = \TBits\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
+  \bitwidthequal(\tenv, \vtstruct, \testruct) \typearrow \vb\\
+  \checktrans{\vb}{BitvectorsDifferentWidths} \checktransarrow \True \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \overname{\PatternSingle(\vep)}{\newp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_enum]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
+  \commonprefixline\\\\
+  \astlabel(\vtstruct) = \TEnum\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
+  \vtstruct \eqname \TEnum(\vlione)\\
+  \vtestruct \eqname \TEnum(\vlitwo)\\
+  \checktrans{\vlione = \vlitwo}{EnumDifferentLabels} \checktransarrow \True \OrTypeError\\
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \overname{\PatternSingle(\vep)}{\newp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  \commonprefixline\\\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
+  \astlabel(\vtstruct) \not\in \{\TBool, \TReal, \TInt, \TBits, \TEnum\}
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \TypeErrorVal{TypeConflict}
+}
+\end{mathpar}
+\CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.PSingle \label{sec:SemanticsRule.PSingle}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PSingleTRUE.asl}
+
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PSingleFALSE.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the condition corresponding to being equal to the
+    side-effect-free expression $\ve$, $\PatternSingle(\ve)$;
+  \item the side-effect-free evaluation of $\ve$ in
+    environment $\env$ is \\ $\Normal(\vvone, \newg)$\ProseOrError;
+  \item $\vb$ is the Boolean value corresponding to whether $\vv$
+    is equal to $\vvone$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
+  \binoprel(\EQOP, \vvone, \vvone) \evalarrow \vb
+}{
+  \evalpattern{\env, \vv, \PatternSingle(\ve)} \evalarrow \Normal(\vb, \newg)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
+
+\section{Matching a Range of Integers\label{sec:MatchingARangeOfIntegers}}
+\subsection{Syntax}
+\begin{flalign*}
+\Npattern \derives\ & \Nexprpattern \parsesep \Tslicing \parsesep \Nexpr &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.PRange}
+\begin{mathpar}
+\inferrule{}{
+  {
+    \begin{array}{r}
+  \buildpattern(\Npattern(\punnode{\Nexprpattern}, \Tslicing, \punnode{\Nexpr})) \astarrow\\
+  \overname{\PatternRange(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.PRange\label{sec:TypingRule.PRange}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern which matches anything within the range given by
+  expressions $\veone$ and $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \veonep)$\ProseOrTypeError;
+  \item annotating the expression $\vetwo$ in $\tenv$ yields $(\vtetwo, \vetwop)$\ProseOrTypeError;
+  \item determining whether both $\veonep$ and $\vetwop$ are compile-time constant expressions yields $\True$\ProseOrTypeError;
+  \item obtaining the \structure\ for $\vt$, $\vteone$, and $\vtetwo$ yields
+        $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively\ProseOrTypeError;
+  \item a check the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
+        $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a type error, which short-circuits the entire rule.
+        The type error indicates that the types of
+        $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of real type.
+  \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$, that is, $\PatternRange(\veonep, \vetwop)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \veonep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \vetwo} \typearrow (\vtetwo, \vetwop) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
+  \tstruct(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\\\
+  {
+    \begin{array}{rl}
+      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vteonestruct) = \astlabel(\vtetwostruct)\ \land\\
+                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
+    \end{array}
+  }\\
+  \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternRange(\veone, \vetwo)}{\vp}) \typearrow \overname{\PatternRange(\veonep, \vetwop)}{\newp}
+}
+\end{mathpar}
+\CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.PRange \label{sec:SemanticsRule.PRange}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PRangeTRUE.asl}
+
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PRangeFALSE.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the condition corresponding to being greater than or equal
+    to $\veone$, and lesser or equal to $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
+  \item $\veone$ and $\vetwo$ are side-effect-free expressions;
+  \item the side-effect-free evaluation of $\veone$ in $\env$ is $\Normal(\vvone, \vgone)$\ProseOrError;
+  \item the side-effect-free evaluation of $\vetwo$ in $\env$ is $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
+  \item $\vbone$ is the Boolean value corresponding to whether
+    $\vv$ is greater than or equal to $\vvone$;
+    \item $\vbtwo$ is the Boolean value corresponding to whether
+    $\vv$ is less than or equal to $\vvtwo$;
+  \item $\vb$ is the Boolean conjunction of $\vbone$ and
+  $\vbtwo$;
+  \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \vgone) \OrDynError\\\\
+  \binoprel(\GEQ, \vv, \vvone) \evalarrow \vbone\\
+  \evalexprsef{\env, \veone} \evalarrow \Normal(\vvtwo, \vgtwo) \OrDynError\\\\
+  \binoprel(\LEQ, \vv, \vvtwo) \evalarrow \vbtwo\\
+  \binoprel(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
+  \newg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalpattern{\env, \vv, \PatternRange(\veone, \vetwo)} \evalarrow \Normal(\vb, \newg)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
+
+\section{Matching an Upper Bounded Range of Integers\label{sec:MatchingAnUpperBoundedRangeOfIntegers}}
+\subsection{Syntax}
+\begin{flalign*}
+\Npattern \derives\ & \Tleq \parsesep \Nexpr &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternLeq(\expr) &
+\end{flalign*}
+
+\subsubsection{ASTRule.PLeq}
+\begin{mathpar}
+\inferrule{}{
+  \buildpattern(\Npattern(\Tleq, \punnode{\Nexpr})) \astarrow
+  \overname{\PatternLeq(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.PLeq\label{sec:TypingRule.PLeq}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vp$ is the pattern which matches anything less than or equal to an expression $\ve$,
+that is, $\PatternLeq(\ve)$;
+\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
+\item determining whether $\vep$ is a \staticallyevaluable\ expression yields $\True$\ProseOrTypeError;
+\item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+\item obtaining the \structure\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
+\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
+\item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
+      are inappropriate for the $\LEQ$ operator),
+which short-circuits the entire rule;
+\item $\newp$ is the pattern which matches anything less than or equal to $\vep$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  {
+    \begin{array}{rl}
+      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\testruct)\ \land\\
+                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
+    \end{array}
+  }\\
+  \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow \overname{\PatternLeq(\vep)}{\newp}
+}
+\end{mathpar}
+\CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.PLeq \label{sec:SemanticsRule.PLeq}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PLeqTRUE.asl}
+
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PLeqFALSE.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the condition corresponding to being less than or equal
+    to the side-effect-free expression $\ve$, $\PatternLeq(\ve)$;
+  \item the side-effect-free evaluation of $\ve$ is either
+  $\Normal(\vvone, \newg)$\ProseOrError;
+  \item $\vb$ is the Boolean value corresponding to whether $\vv$
+    is less than or equal to $\vvone$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
+  \binoprel(\LEQ, \vv, \vvone) \evalarrow \vb
+}{
+  \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \Normal(\vb, \newg)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
+
+\section{Matching a Lower Bounded Range of Integers\label{sec:MatchingALowerBoundedRangeOfIntegers}}
+\subsection{Syntax}
+\begin{flalign*}
+\Npattern \derives\ & \Tgeq \parsesep \Nexpr &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternGeq(\expr) &
+\end{flalign*}
+
+\subsubsection{ASTRule.PGeq}
+\begin{mathpar}
+\inferrule{}{
+  \buildpattern(\Npattern(\Tgeq, \punnode{\Nexpr})) \astarrow
+  \overname{\PatternGeq(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.PGeq\label{sec:TypingRule.PGeq}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vp$ is the pattern which matches anything greater than or equal to an expression $\ve$,
+that is, $\PatternGeq(\ve)$;
+\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
+\item determining whether $\vep$ is a \staticallyevaluable\ expression yields $\True$\ProseOrTypeError;
+\item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+\item obtaining the \structure\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
+\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
+\item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
+      are inappropriate for the $\GEQ$ operator),
+which short-circuits the entire rule;
+\item $\newp$ is the pattern which matches anything greater than or equal to $\vep$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  {
+    \begin{array}{rl}
+      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\testruct)\ \land\\
+                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
+    \end{array}
+  }\\
+  \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternGeq(\ve)}{\vp}) \typearrow \overname{\PatternGeq(\vep)}{\newp}
+}
+\end{mathpar}
+\CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.PGeq \label{sec:SemanticsRule.PGeq}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PGeqTRUE.asl}
+
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PGeqFALSE.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the condition corresponding to being greater than or equal
+    than the side-effect-free expression $\ve$, $\PatternGeq(\ve)$;
+  \item the side-effect-free evaluation of $\ve$ is either
+  $\Normal(\vvone, \newg)$\ProseOrError;
+  \item $\vb$ is the Boolean value corresponding to whether $\vv$
+    is greater than or equal to $\vvone$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
+  \binoprel(\GEQ, \vv, \vvone) \evalarrow \vb
+}{
+  \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \Normal(\vb, \newg)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
+
+\section{Matching a Bitmask\label{sec:MatchingABitmask}}
+\subsection{Syntax}
+\begin{flalign*}
+\Npattern \derives\ & \Tmasklit &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternMask(\overtext{\{0,1,x\}^*}{mask constant}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.PMask}
+\begin{mathpar}
+\inferrule{}{
+  \buildpattern(\Npattern(\Tmasklit(\vm))) \astarrow
+  \overname{\PatternMask(\vm)}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.PMask\label{sec:TypingRule.PMask}}
+\subsubsection{Prose}
+All of the following apply:
+  \begin{itemize}
+  \item $\vp$ is the pattern which matches a mask $\vm$, that is, $\PatternMask(\vm)$;
+  \item determining whether $\vt$ has the structure of a bitvector type yields $\True$\ProseOrTypeError;
+  \item $\vn$ is the length of mask $\vm$;
+  \item determining whether $\vt$ \typesatisfies\ the bitvector type of length $\vn$ \\
+        (that is, $\TBits(\vn, \emptylist)$), yields $\True$\ProseOrTypeError;
+  \item $\newp$ is $\vp$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\\\\
+  \vn \eqdef \listlen{\vm}\\
+  \checktypesat(\tenv, \vt, \TBits(\vn, \emptylist)) \typearrow \True \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternMask(\vm)}{\vp}) \typearrow \overname{\PatternMask(\vm)}{\newp}
+}
+\end{mathpar}
+\CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
+\lrmcomment{This is related to \identi{VMKF}.}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.PMask \label{sec:SemanticsRule.PMask}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PMaskTRUE.asl}
+
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PMaskFALSE.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is a mask pattern, $\PatternMask(\vm)$,
+  of length $n$ (with spaces removed);
+  \item $\vv$ is a native bitvector of bits $\vu_{1..n}$;
+  \item $\vb$ is the native Boolean formed from the conjunction of Boolean values for each $i$,
+  where the bit $\vu_i$ is checked for matching the mask character $\vm_i$;
+  \item $\newg$ is the empty graph.
+\end{itemize}
+\subsubsection{Formally}
+\newcommand\maskmatch[0]{\text{mask\_match}}
+The helper function $\maskmatch : \{0, 1, \vx\} \times \{0,1\} \rightarrow \Bool$,
+checks whether a bit value (second operand) matches a mask value (first operand),
+is defined by the following table:
+\[
+\begin{array}{|c|c|c|c|}
+  \hline
+  \textbf{\maskmatch} & 0 & 1 & \vx\\
+  \hline
+  0 & \True & \False & \True\\
+  \hline
+  1 & \False & \True & \True\\
+  \hline
+\end{array}
+\]
+
+\begin{mathpar}
+\inferrule{
+  \vm \eqname \vm_{1..n}\\
+  \vv \eqname \nvbitvector(\vu_{1..n})\\
+  \vb \eqdef \nvbool(\bigwedge_{i=1..n} \maskmatch(\vm_i, \vu_i))
+}{
+  \evalpattern{\env, \vv, \PatternMask(\vm)} \evalarrow \Normal(\vb, \emptygraph)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
+
+\section{Matching a Tuple of Patterns\label{sec:MatchingATupleOfPatterns}}
+\subsection{Syntax}
+\begin{flalign*}
+\Npattern \derives\ & \Plisttwo{\Npattern} &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternTuple(\pattern^{*}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.PTuple}
+\begin{mathpar}
+\inferrule{
+  \buildplist[\buildpattern](\vpatterns) \astarrow \vpatternasts
+}{
+  \buildpattern(\Npattern(\namednode{\vpatterns}{\Plisttwo{\Npattern}})) \astarrow
+  \overname{\PatternTuple(\vpatternasts)}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.PTuple\label{sec:TypingRule.PTuple}}
+\subsubsection{Prose}
+All of the following apply:
+  \begin{itemize}
+  \item $\vp$ is the pattern which matches a tuple $\vli$, that is, $\PatternTuple(\vli)$;
+  \item obtaining the \structure\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
+  \item determining whether $\vtstruct$ is a tuple type yields $\True$\ProseOrTypeError;
+  \item $\vtstruct$ is a tuple type with list of tuple $\vts$;
+  \item determining whether $\vts$ is a list of the same size as $\vli$ yields $\True$\ProseOrTypeError;
+  \item annotating each pattern in $\vli$ with the corresponding type in $\vts$ at each position $\vi$
+        yields a pattern $\vlip[\vi]$\ProseOrTypeError;
+  \item $\newli$ is the list of annotated patterns $\vlip[\vi]$ at the same positions those of $\vli$;
+  \item $\newp$ is the pattern which matches the tuple $\newli$, that is, $\PatternTuple(\newli)$.
+  \end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \checktrans{\astlabel(\vtstruct) = \TTuple}{TypeConflict} \checktransarrow \True \OrTypeError\\\\
+  \vtstruct \eqname \TTuple(\vts)\\
+  \checktrans{\equallength(\vli, \vts)}{InvalidArity} \checktransarrow \True \OrTypeError\\\\
+  \vi\in\listrange(\vli): \annotatepattern(\tenv, \vts[\vi], \vli[\vi]) \typearrow \vlip[i] \OrTypeError\\\\
+  \newli \eqdef \vi\in\listrange(\vli): \vlip[\vi]
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternTuple(\vli)}{\vp}) \typearrow \overname{\PatternTuple(\newli)}{\newp}
+}
+\end{mathpar}
+\CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.PTuple \label{sec:SemanticsRule.PTuple}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleTRUE.asl}
+
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleFALSE.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ gives a list of patterns $\vps$ of length $k$, $\PatternTuple(\vps)$;
+  \item $\vv$ gives a tuple of values $\vvs$ of length $k$;
+  \item for all $1 \leq i \leq n$, $\vb_i$ is the evaluation result
+    of $\vp_i$ with respect to the value $\vv_i$ in
+    environment $\env$;
+  \item $\vbs$ is the list of all $\vb_i$ for $1 \leq i \leq k$;
+  \item $\vb$ is the conjunction of the Boolean values of $\vbs$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vps \eqname \vp_{1..k}\\
+  i=1..k: \getindex(i, \vv) \evalarrow \vvs_i\\
+  i=1..k: \evalpattern{\env, \vvs_i, \vp_i} \evalarrow \Normal(\nvbool(\vbs_i), \vg_i) \OrDynError\\\\
+  \vres \eqdef \nvbool(\bigwedge_{i=1..k} \vbs_i)\\
+  \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
+}{
+  \evalpattern{\env, \vv, \PatternTuple(\vps)} \evalarrow \Normal(\vres, \emptygraph)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPTupleBegin}{\EvalPTupleEnd}{../Interpreter.ml}
+
+\section{Matching Any Pattern in a Set of Patterns\label{sec:MatchingAnyPatternInASetOfPatterns}}
+\subsection{Syntax}
+\begin{flalign*}
+\Npattern \derives\ & \Npatternset &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternAny(\pattern^{*}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.PAny}
+\tododefine{Missing a rule for PatternAny}
+
+\begin{mathpar}
+\inferrule{}{
+  \buildpattern(\Npattern(\punnode{\Npatternset})) \astarrow
+  \overname{\astof{\vpatternset}}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.PAny\label{sec:TypingRule.PAny}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vp$ is the pattern which matches anything in a list $\vli$, that is, $\PatternAny(\vli)$;
+\item annotating each pattern in $\vli$ yields the list of annotated pattern $\newli$\ProseOrTypeError;
+\item $\newp$ is the pattern which matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$.
+\end{itemize}
+\CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow \vlp \OrTypeError\\\\
+  \newli \eqdef [\vl\in\vli: \vlp]
+}
+{
+  \annotatepattern(\tenv, \vt, \overname{\PatternAny(\vli)}{\vp}) \typearrow \overname{\PatternAny(\newli)}{\newp}
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.PAny \label{sec:SemanticsRule.PAny}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAnyTRUE.asl}
+
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAnyFALSE.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is a list of patterns, $\PatternAny(\vps)$;
+  \item $\vps$ is $\vp_{1..k}$;
+  \item evaluating each pattern $\vp_i$ in $\env$ results in $\Normal(\nvbool(\vb_i), \vg_i)$\ProseOrAbnormal;
+  \item $\vb$ is the native Boolean which is the disjunction of $\vb_i$, for $i=1..k$;
+  \item $\newg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vps \eqname \vp_{1..k}\\
+  i=1..k : \evalpattern{\env, \vv, \vp_i} \evalarrow \Normal(\nvbool(\vb_i), \vg_i) \OrDynError\\\\
+  \vb \eqdef \nvbool(\bigvee_{i=1..k} \vb_i)\\
+  \newg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
+}{
+  \evalpattern{\env, \vv, \PatternAny(\vps)} \evalarrow \Normal(\vb, \newg)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPAnyBegin}{\EvalPAnyEnd}{../Interpreter.ml}
+
+\section{Matching a Negated Pattern\label{sec:MatchingANegatedPattern}}
+\subsection{Syntax}
+See \secref{PatternMatchingExpressions}.
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\pattern \derives\ & \PatternNot(\pattern) &
+\end{flalign*}
+
+See \nameref{sec:ASTRule.PatternSet} (\textsc{NOT} case).
+
+\subsection{Typing}
+\subsubsection{TypingRule.PNot\label{sec:TypingRule.PNot}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is the pattern which matches the negation of a pattern $\vq$, that is, $\PatternNot(\vq)$;
+  \item annotating $\vq$ in $\tenv$ yields $\newq$\ProseOrTypeError;
+  \item $\newp$ is pattern which matches the negation of $\newq$, that is, $\PatternNot(\newq)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotatepattern(\tenv, \vq) \typearrow \newq \OrTypeError
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternNot(\vq)}{\vp}) \typearrow \overname{\PatternNot(\newq)}{\newp}
+}
+\end{mathpar}
+\CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
+
+\subsection{semantics}
+\subsubsection{SemanticsRule.PNot \label{sec:SemanticsRule.PNot}}
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotTRUE.asl}
+
+\subsubsection{Example}
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotFALSE.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vp$ is a negation pattern, $\PatternNot(\vpone)$;
+  \item evaluating that pattern $\vpone$ in an environment $\env$ is \\
+  $\Normal(\vbone, \newg)$\ProseOrError;
+  \item $\vb$ is the Boolean negation of $\vbone$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexprsef{\env, \vpone} \evalarrow \Normal(\vbone, \newg) \OrDynError\\\\
+  \unoprel(\BNOT, \vbone) \evalarrow \vb
+}{
+  \evalpattern{\env, \vv, \PatternNot(\vpone)} \evalarrow \Normal(\vb, \newg)
+}
+\end{mathpar}
+\CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}
+
+\section{AST Rules for Pattern Expressions\label{sec:ASTRulesForPatternExpressions}}
+\subsection{ASTRule.ExprPattern\label{sec:ASTRule.ExprPattern}}
+\hypertarget{build-exprpattern}{}
+The function
+\[
+  \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
+\]
+transforms a pattern expression parse node $\vparsednode$ into a pattern AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[literal]{}{
+  \buildexprpattern(\Nexprpattern(\punnode{\Nvalue})) \astarrow
+  \overname{\ELiteral(\astof{\vvalue})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[var]{}{
+  \buildexprpattern(\Nexprpattern(\Tidentifier(\id))) \astarrow
+  \overname{\EVar(\id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[binop]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nbinop}, \punnode{\Nexpr})) \astarrow\\
+  \overname{\EBinop(\astof{\vexprpattern}, \astof{\vbinop}, \astof{\vexpr})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[unop]{}{
+  \buildexprpattern(\Nexprpattern(\punnode{\Nunop}, \punnode{\Nexpr})) \astarrow
+  \overname{\EUnop(\astof{\vunop}, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[cond]{
+    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
+    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+  }{
+    {
+      \begin{array}{r}
+  \buildexprpattern\left(\Nexprpattern\left(
+    \begin{array}{l}
+    \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
+    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
+    \end{array}
+    \right)\right) \astarrow\\
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[call]{
+    \buildplist[\buildexpr](\vargs) \astarrow \vexprasts
+  }{
+  \buildexprpattern(\Nexprpattern(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})) \astarrow
+  \overname{\ECall(\id, \vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[slice]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nslice})) \astarrow\\
+  \overname{\ESlice(\astof{\vexprpattern}, \astof{\vslice})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[get\_field]{}{
+  \buildexprpattern(\Nexprpattern(\Nexprpattern, \Tdot, \Tidentifier(\id))) \astarrow
+  \overname{\EGetField(\astof{\vexpr}, \id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[get\_fields]{
+    \buildclist[\buildidentity](\vids) \astarrow \vidasts
+  }{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)) \astarrow\\
+  \overname{\EGetFields(\astof{\vexprpattern}, \vidasts)}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[concat]{
+    \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts
+  }{
+  \buildexprpattern(\Nexprpattern(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)) \astarrow
+  \overname{\EConcat(\vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[atc]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nty})) \astarrow\\
+  \overname{\EATC(\astof{\vexprpattern}, \astof{\tty})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[atc\_int\_constraints]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nintconstraints})) \astarrow\\
+  \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vintconstraints}))}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[pattern\_set]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \punnode{\Npatternset})) \astarrow\\
+  \overname{\EPattern(\astof{\vexprpattern}, \astof{\vpatternset})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[pattern\_mask]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \Tmasklit(\vm))) \astarrow\\
+  \overname{\EPattern(\astof{\vexprpattern}, \PatternMask(\vm))}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[unknown]{}{
+  \buildexprpattern(\Nexprpattern(\Tunknown, \Tcolon, \punnode{\Nty})) \astarrow
+  \overname{\EUnknown(\astof{\tty})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[record]{
+    \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
+  }{
+    {
+      \begin{array}{r}
+  \buildexprpattern\left(\Nexprpattern\left(
+    \begin{array}{l}
+    \Tidentifier(\vt), \Tlbrace, \\
+    \wrappedline\ \namednode{\vfieldassigns}{\Clist{\Nfieldassign}}, \\
+    \wrappedline\ \Trbrace
+    \end{array}
+    \right)\right) \\
+    \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[sub\_expr]{}{
+  \buildexprpattern(\Nexprpattern(\Tlpar, \punnode{\Nexprpattern}, \Trpar)) \astarrow
+  \overname{\astof{\vexprpattern}}{\vastnode}
+}
+\end{mathpar}

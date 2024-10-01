@@ -1,0 +1,2431 @@
+\chapter{Symbolic Reduction and Equivalence Testing\label{chap:SymbolicEquivalenceTesting}}
+
+In this chapter, we define two forms of symbolic reasoning ---
+\emph{symbolic reduction} and \emph{symbolic equivalence testing}.
+Symbolic reduction simplifies expressions into \emph{equivalent} expressions
+that are simpler to reason about.
+In our context, equivalence means that we can substitute one expression for another without
+affecting the semantics of the overall specification.
+%
+Symbolic equivalence is a \emph{conservative} test.
+By conservative, we mean that if a test for equivalence returns $\True$ then the expressions
+being compared are indeed equivalent, but if the test returns $\False$ then
+there are two possibilities:
+\begin{itemize}
+  \item the expressions are not equivalent;
+  \item the expressions are equivalent, but the reasoning power of our rules
+  is not enough to prove it, and so we conservatively answer negatively.
+\end{itemize}
+In proof-theoretic terms, we can say that our equivalence tests are \emph{sound} but \emph{incomplete}.
+
+Notice that for a conservative test, it is always correct to return $\False$.
+
+We first define symbolic expressions and operations over symbolic expressions in \secref{symbolicexpressions}
+and then define the rules for symbolic reduction and equivalence testing in \secref{SymbolicReductionAndEquivalenceTestingRules}.
+
+\section{Symbolic Expressions\label{sec:symbolicexpressions}}
+Our symbolic reduction and equivalence testing rules use \emph{symbolic expressions}, defined below:
+\hypertarget{def-sum}{}
+\[
+  \begin{array}{rcl}
+    \polynomial &\triangleq& \unitarymonomial \partialto \Q \setminus \{0\}\\
+    \unitarymonomial   &\triangleq& \Identifiers \partialto \Npos\\
+  \end{array}
+\]
+
+We now explain each component of a symbolic expression and how it can be interpreted as a mathematical formula
+via the interpretation function $\alpha$.
+We also define operations over symbolic expressions.
+
+\hypertarget{def-unitarymonomial}{}
+\begin{definition}[Unitary Monomial]
+A \emph{Unitary Monomial} is a partial function from identifiers to positive integers\footnote{A unitary monomial has a unit factor,
+for example $x^3$, whereas a non-unitary monomial has a non-unit factor, for example, $2 x^3$.}.
+
+A non-empty unitary monomial, $\vm\in\unitarymonomial$ where $\vm \neq \emptyfunc$, can be interpreted as follows:
+\[
+  \alpha(\vm) \triangleq \prod_{\vx \in \dom(\vm)} \vx^{\vm(\vx)} \enspace.
+\]
+
+An empty unitary monomial is interpreted as the constant $1$:
+\[
+  \alpha(\emptyfunc) \triangleq 1 \enspace.
+\]
+\end{definition}
+For example,
+\[
+  \alpha(\ \{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}\ ) = x^3 \cdot y \cdot z^2 \enspace.
+\]
+
+\hypertarget{def-mulmonomials}{}
+The function
+\[
+  \mulmonomials(\overname{\unitarymonomial}{\vmone} \aslsep \overname{\unitarymonomial}{\vmtwo}) \rightarrow
+  \overname{\unitarymonomial}{\vm}
+\]
+multiplies two unitary monomials and returns a unitary monomial
+\begin{mathpar}
+  \inferrule{
+    {
+      \vf \eqdef \lambda \vx\in\identifier.\
+      \left\{
+      \begin{array}{ll}
+        \vfone(\vx) & \text{if } \vx \in \dom(\vfone) \setminus \dom(\vftwo)\\
+        \vftwo(\vx) & \text{if } \vx \in \dom(\vftwo) \setminus \dom(\vfone)\\
+        \vfone(\vx)+\vftwo(\vx) & \text{else } \vx \in \dom(\vfone) \cap \dom(\vftwo)\\
+      \end{array}
+      \right.
+    }
+  }
+  {
+    \mulmonomials(\overname{\vfone}{\vmone}, \overname{\vftwo}{\vmtwo}) \typearrow \overname{\vf}{\vm}
+  }
+\end{mathpar}
+For example,
+\[
+  \begin{array}{ll}
+  \mulmonomials( & \{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}, \{\vx\mapsto 1, \vw\mapsto 2\}\ ) =\\
+                 & \{\vx\mapsto 4, \vy\mapsto 1, \vz\mapsto2, \vw\mapsto2\}
+  \end{array}
+\]
+
+\hypertarget{def-polynomial}{}
+\begin{definition}[Polynomial]
+  \emph{Polynomials} are partial functions from monomials to rationals other than zero.
+  Intuitively, each unitary monomial is mapped to its factor in the polynomial.
+  A polynomial $\vp$ can be interpreted as follows:
+  %
+\[
+  \alpha(\vp) \triangleq \sum_{\vm \in \dom(\vp)} \vp(\vm)\cdot\alpha(\vm)
+\]
+\end{definition}
+For example,
+\[
+  \left(\left\{
+    \begin{array}{lcl}
+      \{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\} &\mapsto& -1,\\
+      \{\vx\mapsto 2, \vy\mapsto 1\} &\mapsto& \frac{3}{4}
+    \end{array} \right\}\right) =
+    -1\cdot x^3 \cdot y \cdot z^2 + \frac{3}{4} \cdot \vx^2\cdot \vy \enspace.
+\]
+
+\hypertarget{def-addpolynomials}{}
+The function
+\[
+  \addpolynomials : \polynomial \times \polynomial \rightarrow \polynomial
+\]
+adds two polynomials:
+\begin{mathpar}
+\inferrule{
+  {
+    \vf \eqdef \lambda \vm\in\unitarymonomial.\
+    \left\{
+    \begin{array}{ll}
+      \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
+      \vftwo(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
+      \bot        & \text{if } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) = 0\\
+      \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) \neq 0\\
+    \end{array}
+    \right.
+  }
+}{
+  \addpolynomials(\overname{\vfone}{\vpone}, \overname{\vftwo}{\vptwo}) \typearrow \overname{\vf}{\vp}
+}
+\end{mathpar}
+
+The overloaded function
+\[
+  \addpolynomials : \polynomial^* \rightarrow \polynomial
+\]
+adds a list of polynomials:
+\begin{mathpar}
+\inferrule[empty]{}{ \addpolynomials(\emptylist) \typearrow \emptyfunc }
+\and
+\inferrule[one]{}{ \addpolynomials([ \vp ]) \typearrow \vp }
+\and
+\inferrule[two\_or\_more]{
+  \addpolynomials(\vp_{2..k}) \typearrow \vpp\\
+  \addpolynomials(\vp_1, \vpp) \typearrow \vp
+}{
+  \addpolynomials(\vp_{1..k}) \typearrow \vp
+}
+\end{mathpar}
+
+The function
+\[
+  \mulpolynomials : \overname{\polynomial}{\vpone} \times \overname{\polynomial}{\vptwo} \rightarrow \overname{\polynomial}{\vp}
+\]
+multiplies two polynomials.
+\begin{mathpar}
+\inferrule{
+  {
+    \vps \eqdef \left\{
+      \begin{array}{l}
+        \{\mulmonomials(\vmone, \vmtwo) \mapsto \vfone(\vmone)\times\vftwo(\vmtwo)\}  \;|\; \\
+       \vmone\in\dom(\vfone)\ \land\ \vmtwo\in\dom(\vgtwo)
+    \end{array}
+    \right\}
+  }\\
+  \orderedps \eqdef [i=1..k: \vp_i ] \text{ such that }\{\vp_i \;|\; i=1..k\} = \vps\\
+  \addpolynomials(i=1..k: \orderedps) \typearrow \vp\\
+}{
+  \mulpolynomials(\overname{\vfone}{\vpone}, \overname{\vftwo}{\vptwo}) \typearrow \vp
+}
+\end{mathpar}
+
+\section{Typing Rules\label{sec:SymbolicReductionAndEquivalenceTestingRules}}
+We employ the following rules:
+\begin{itemize}
+  \item TypingRule.Normalize (see \secref{TypingRule.Normalize})
+  \item TypingRule.ReduceConstants (see \secref{TypingRule.ReduceConstants})
+  \item TypingRule.ReduceConstraint (see \secref{TypingRule.ReduceConstraint})
+  \item TypingRule.ReduceConstraints (see \secref{TypingRule.ReduceConstraints})
+  \item TypingRule.ToIR (see \secref{TypingRule.ToIR})
+  \item TypingRule.ExprEqualNorm (see \secref{TypingRule.ExprEqualNorm})
+  \item TypingRule.ExprEqual (see \secref{TypingRule.ExprEqual})
+  \item TypingRule.ExprEqualCase (see \secref{TypingRule.ExprEqualCase})
+  \item TypingRule.TypeEqual (see \secref{TypingRule.TypeEqual})
+  \item TypingRule.BitwidthEqual (see \secref{TypingRule.BitwidthEqual})
+  \item TypingRule.BitFieldsEqual (see \secref{TypingRule.BitFieldsEqual})
+  \item TypingRule.BitFieldEqual (see \secref{TypingRule.BitFieldEqual})
+  \item TypingRule.ConstraintsEqual (see \secref{TypingRule.ConstraintsEqual})
+  \item TypingRule.ConstraintEqual (see \secref{TypingRule.ConstraintEqual})
+  \item TypingRule.SlicesEqual (see \secref{TypingRule.SlicesEqual})
+  \item TypingRule.SliceEqual (see \secref{TypingRule.SliceEqual})
+  \item TypingRule.ArrayLengthEqual (see \secref{TypingRule.ArrayLengthEqual})
+  \item TypingRule.LiteralEqual (see \secref{TypingRule.LiteralEqual})
+\end{itemize}
+
+\subsection{TypingRule.Normalize \label{sec:TypingRule.Normalize}}
+\hypertarget{def-normalize}{}
+The function
+\[
+\normalize(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \overname{\expr}{\newe} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+\hypertarget{def-symbolicallysimplifies}{symbolically simplifies} an expression $\ve$ in the static environment $\tenv$,
+yielding an expression $\newe$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{normalizable})
+  \begin{itemize}
+    \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields a symbolic expression $\vpone$\ProseOrTypeError;
+    \item applying $\reduceir$ to $\vpone$ to symbolically simplify $\vpone$ yields $\vptwo$;
+    \item applying $\polynomialtoexpr$ to $\vptwo$ to transform it into an expression yields $\newe$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_normalizable})
+  \begin{itemize}
+    \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields $\CannotBeTransformed$,
+          indicating it cannot be transformed to a corresponding symbolic expression;
+    \item define $\newe$ as $\ve$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[normalizable]{
+  \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\\\\
+  \vpone \neq \CannotBeTransformed\\
+  \reduceir(\vpone) \typearrow \vptwo\\
+  \polynomialtoexpr(\vptwo) \typearrow \newe
+}{
+  \normalize(\tenv, \ve) \typearrow \newe
+}
+\and
+\inferrule[not\_normalizable]{
+  \toir(\tenv, \ve) \typearrow \CannotBeTransformed
+}{
+  \normalize(\tenv, \ve) \typearrow \overname{\ve}{\newe}
+}
+\end{mathpar}
+
+\CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
+
+\subsection{TypingRule.ReduceConstants \label{sec:TypingRule.ReduceConstants}}
+\hypertarget{def-reduceconstants}{}
+The function
+\[
+\reduceconstants(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
+\aslto
+\overname{\literal}{\vl} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+\symbolicallysimplifies\ an expression $\ve$ into the literal $\vl$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{eval\_literal}):
+  \begin{itemize}
+    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eval\_failure}):
+  \begin{itemize}
+    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
+    \item the result is a type error indicating that $\ve$ cannot be reduced to a constant in $\tenv$.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\ReduceConstantsBegin}{\ReduceConstantsEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[eval\_literal]{
+  \staticeval(\tenv, \ve) \typearrow \vl \OrTypeError\\\\
+  \vl \neq \CannotBeTransformed
+}{
+  \reduceconstants(\tenv, \ve) \typearrow \vl
+}
+\and
+\inferrule[eval\_failure]{
+  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed
+}{
+  \reduceconstants(\tenv, \ve) \typearrow \TypeErrorVal{CannotBeReducedToAConstant}
+}
+\end{mathpar}
+
+\subsection{TypingRule.ReduceConstraint \label{sec:TypingRule.ReduceConstraint}}
+\hypertarget{def-reduceconstraint}{}
+The function
+\[
+\reduceconstraint(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\intconstraint}{\vc}
+) \aslto
+\overname{\intconstraint}{\newc}
+\]
+\symbolicallysimplifies\ an integer constraint $\vc$, yielding the integer constraint $\newc$
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\vc$ is an exact integer constraint for $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$;
+    \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\ve)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vc$ is an range integer constraint for $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\normalize$ to $\veone$ in $\tenv$ yields $\veonep$;
+    \item applying $\normalize$ to $\vetwo$ in $\tenv$ yields $\vetwop$;
+    \item define $\newc$ as the exact integer constraint for $\vep$, that is, \\ $\ConstraintRange(\veonep, \vetwop)$.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{
+  \normalize(\tenv, \ve) \typearrow \vep
+}{
+  \reduceconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\ConstraintExact(\vep)}{\newc}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \normalize(\tenv, \veone) \typearrow \veonep\\
+  \normalize(\tenv, \vetwo) \typearrow \vetwop\\
+}{
+  \reduceconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+}
+\end{mathpar}
+
+\subsection{TypingRule.ReduceConstraints \label{sec:TypingRule.ReduceConstraints}}
+\hypertarget{def-reduceconstraints}{}
+The function
+\[
+\reduceconstraints(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\intconstraints}{\vc}
+) \aslto
+\overname{\intconstraints}{\newc}
+\]
+\symbolicallysimplifies\ an integer constraints AST node $\vc$, yielding the integer constraints AST node $\newc$
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{unconstrained\_parameterized}):
+  \begin{itemize}
+    \item the AST label of $\vc$ is either $\unconstrained$ or $\parameterized$;
+    \item define $\newc$ as $\vc$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{well\_constrained}):
+  \begin{itemize}
+    \item $\vc$ is a list of constraints, that is, $\wellconstrained(\cs)$;
+    \item applying $\reduceconstraint$ to every constraint $\cs[\vi]$ in $\tenv$ for every $\vi$ in $\listrange(\cs)$
+          yields $\vc_\vi$;
+    \item define $\newcs$ as the list containing $\vc_\vi$ for every $\vi$ in $\listrange(\cs)$;
+    \item $\newc$ is $\wellconstrained(\newcs)$.
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[unconstrained\_parameterized]{
+  \astlabel(\vc) \in \{\unconstrained, \parameterized\}
+}{
+  \reduceconstraints(\tenv, \vc) \typearrow \overname{\vc}{\newc}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[well\_constrained]{
+  \vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi]) \typearrow \vc_\vi\\
+  \newcs \eqdef [\vi\in\listrange(\cs): \vc_\vi]
+}{
+  \reduceconstraints(\tenv, \overname{\wellconstrained(\cs)}{\vc}) \typearrow \overname{\wellconstrained(\newcs)}{\newc}
+}
+\end{mathpar}
+
+\subsection{TypingRule.ToIR \label{sec:TypingRule.ToIR}}
+\hypertarget{def-toir}{}
+The function
+\[
+  \toir(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \overname{\polynomial}{\vp}\ \cup\ \{\CannotBeTransformed\}\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+transforms a subset of ASL expressions into symbolic expressions. If an ASL expression cannot be represented
+by a symbolic expression (because, for example, it contains operations that are not available in symbolic expressions),
+the special value $\CannotBeTransformed$ is returned.
+
+\subsubsection{Prose}
+Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
+
+\newcommand\ProseOrTypeErrorOrBot[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
+
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{literal\_int}):
+  \begin{itemize}
+    \item $\ve$ is an integer literal expression for $\vi$, that is, $\ELiteral(\lint(\vi))$;
+    \item $\vp$ is the symbolic expression for $\vi$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{literal\_other}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression other than an integer literal;
+    \item $\vp$ is $\bot$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{evar\_int\_constant}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
+    \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields the literal expression for $\vv$, that is, $\ELiteral(\vv)$;
+    \item checking whether $\vv$ is an integer literal yields $\True$\ProseOrTypeError;
+    \item $\vv$ is an integer literal for $\vi$;
+    \item $\vp$ is the symbolic expression for $\vi$, that is, $\{ \emptyfunc\mapsto \vi \}$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{evar\_immutable\_expr}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
+    \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields $\bot$;
+    \item looking up $\vs$ in $\tenv$ for an associated immutable expression via $\lookupimmutableexpr$ yields the expression $\vep$;
+    \item applying $\toir$ to $\vep$ in $\tenv$ yields $\vp$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{evar\_exact\_constraint}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
+    \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields $\bot$;
+    \item looking up $\vs$ in $\tenv$ for an associated immutable expression via \\
+          $\lookupimmutableexpr$ yields $\bot$;
+    \item determining the type of $\vs$ yields $\vt$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
+    \item checking whether $\ttyone$ is an integer type yields $\True$\ProseOrTypeError;
+    \item $\ttyone$ is a well-constrained integer with the exact constraint $\ve$, that is, \\ $\TInt(\wellconstrained([\ConstraintExact(\ve)]))$;
+    \item converting $\ve$ to a symbolic expression yields $\vp$ (which may possibly be $\bot$).
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_var}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
+    \item looking up the constant associated with $\vs$ in $\tenv$ yields $\bot$;
+    \item determining the type of $\vs$ yields $\vt$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
+    \item checking whether $\ttyone$ is an integer type yields $\True$\ProseOrTypeError;
+    \item $\ttyone$ is not a well-constrained integer with a single exact constraint;
+    \item $\vp$ is the symbolic expression for the variable $\vs$, that is, $\{ \{\vs\mapsto 1\}\mapsto 1 \}$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_plus}):
+  \begin{itemize}
+    \item $\ve$ is a binary addition expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\PLUS, \veone, \vetwo)$;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrBot;
+    \item converting $\vetwo$ to a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrBot;
+    \item $\vp$ is the symbolic expression adding up $\irone$ and $\irtwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_minus}):
+  \begin{itemize}
+    \item $\ve$ is a binary subtraction expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\MINUS, \veone, \vetwo)$;
+    \item $\vep$ is the addition expression with operands $\veone$ and the negation of $\vetwo$, that is, \\ $\EBinop(\PLUS, \veone, \EUnop(\MINUS, \vetwo))$;
+    \item converting $\vep$ into a symbolic expression in $\tenv$ yields $\vp$\ProseOrTypeErrorOrBot.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_mul}):
+  \begin{itemize}
+    \item $\ve$ is a binary multiplication expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\MUL, \veone, \vetwo)$;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrBot;
+    \item converting $\vetwo$ to a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrBot;
+    \item $\vp$ is the symbolic expression multiplying $\irone$ and $\irtwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_div\_non\_int\_denominator}):
+  \begin{itemize}
+    \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
+    \item $\vetwo$ is not an integer literal expression;
+    \item $\vp$ is $\bot$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_div\_int\_denominator}):
+  \begin{itemize}
+    \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
+    \item $\vetwo$ is an integer literal expression for $\vitwo$;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrBot;
+    \item $\vftwo$ is $\frac{1}{\vitwo}$ (testing against $\vitwo = 0$ is done dynamically);
+    \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $\vftwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_shl\_non\_lint\_exponent}):
+  \begin{itemize}
+    \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
+    \item $\vetwo$ is not an integer literal expression;
+    \item $\vp$ is $\bot$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_shl\_non\_neg\_shift}):
+  \begin{itemize}
+    \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
+    \item $\vetwo$ is an integer literal expression for $\vitwo$;
+    \item $\vitwo$ is negative;
+    \item $\vp$ is $\bot$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_shl\_okay}):
+  \begin{itemize}
+    \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
+    \item $\vetwo$ is an integer literal expression for $\vitwo$;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrBot;
+    \item $\vitwo$ is non-negative;
+    \item $\vftwo$ is $2^{\vitwo}$;
+    \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $\vftwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_other\_non\_literals}):
+  \begin{itemize}
+    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
+          applied to the operand expressions $\veone$ and $\vetwo$;
+    \item at least one of $\veone$ and $\vetwo$ is not a literal expression;
+    \item $\vp$ is $\bot$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_other\_literals\_non\_int\_result}):
+  \begin{itemize}
+    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, $\DIV$, or $\SHL$,
+          applied to the operand expressions $\veone$ and $\vetwo$;
+    \item $\veone$ is the literal expression for literal $\vlone$;
+    \item $\vetwo$ is the literal expression for literal $\vltwo$;
+    \item statically applying $\op$ to $\vlone$ and $\vltwo$ yields the literal $\vl$, which is not an integer literal;
+    \item $\vp$ is $\bot$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_other\_literals\_int\_result}):
+  \begin{itemize}
+    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
+          applied to the operand expressions $\veone$ and $\vetwo$;
+    \item $\veone$ is the literal expression for literal $\vlone$;
+    \item $\vetwo$ is the literal expression for literal $\vltwo$;
+    \item statically applying $\op$ to $\vlone$ and $\vltwo$ yields the integer literal for $k$;
+    \item $\vp$ is the symbolic expression for the integer $k$, that is, $\{ \emptyfunc\mapsto k \}$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eunop\_neg}):
+  \begin{itemize}
+    \item $\ve$ is a unary expression with the negation operator $\NEG$ and operand $\veone$;
+    \item converting the binary expression with operator $\MUL$ and left-hand-side operand for the integer literal $-1$ and
+    right-hand-side operand $\veone$ in $\tenv$ yields $\vp$\ProseOrTypeErrorOrBot.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eunop\_other}):
+  \begin{itemize}
+    \item $\ve$ is a unary expression with an operator other than $\NEG$;
+    \item $\vp$ is $\CannotBeTransformed$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other}):
+  \begin{itemize}
+    \item $\ve$ is an expression with a label other than $\ELiteral$, $\EVar$, $\EBinop$, and $\EUnop$;
+    \item $\vp$ is $\CannotBeTransformed$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[literal\_int]{}
+{
+  \toir(\tenv, \overname{\ELiteral(\lint(\vi))}{\ve}) \typearrow \overname{\{ \emptyfunc\mapsto \vi \}}{\vp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[literal\_other]{
+  \astlabel(\vv) \neq \lint
+}{
+  \toir(\tenv, \overname{\ELiteral(\vv)}{\ve}) \typearrow \CannotBeTransformed
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[evar\_int\_constant]{
+  \lookupconstant(\tenv, \vs) \typearrow \ELiteral(\vv)\\
+  \checktrans{\astlabel(\vv) = \lint}{ExpectedIntegerLiteral} \typearrow \True \OrTypeError\\\\
+  \vv \eqname \lint(\vi)
+}{
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\{ \emptyfunc\mapsto \vi \}}{\vp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[evar\_immutable\_expr]{
+  \lookupconstant(\tenv, \vs) \typearrow \CannotBeTransformed\\
+  \lookupimmutableexpr(\tenv, \vs) \typearrow \vep\\
+  \toir(\vep) \typearrow \vp
+}{
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[evar\_exact\_constraint]{
+  \lookupconstant(\tenv, \vs) \typearrow \CannotBeTransformed\\
+  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
+  \typeof(\vs) \typearrow \vt \OrTypeError\\\\
+  \makeanonymous(\vt) \typearrow \ttyone \OrTypeError\\\\
+  \checktrans{\astlabel(\ttyone) = \TInt}{ExpectedIntegerType} \typearrow \True \OrTypeError\\\\
+  \ttyone = \TInt(\wellconstrained([\ConstraintExact(\ve)]))\\
+  \toir(\ve) \typearrow \vp
+}{
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[int\_var]{
+  \lookupconstant(\tenv, \vs) \typearrow \CannotBeTransformed\\
+  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
+  \typeof(\vs) \typearrow \vt\\
+  \makeanonymous(\vt) \typearrow \ttyone\\
+  \checktrans{\astlabel(\ttyone) = \TInt}{ExpectedIntegerType} \typearrow \True\\
+  \ttyone \neq \TInt(\wellconstrained([\ConstraintExact(\Ignore)]))
+}{
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\{ \{\vs\mapsto 1\}\mapsto 1 \}}{\vp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_plus]{
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
+  \vp \eqdef \addpolynomials(\irone, \irtwo)
+}{
+  \toir(\tenv, \overname{\EBinop(\PLUS, \veone, \vetwo)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_minus]{
+  \vep \eqdef \EBinop(\PLUS, \veone, \EUnop(\MINUS, \vetwo))\\
+  \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+}{
+  \toir(\tenv, \overname{\EBinop(\MINUS, \veone, \vetwo)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_mul]{
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
+  \vp \eqdef \mulpolynomials(\irone, \irtwo)
+}{
+  \toir(\tenv, \overname{\EBinop(\MUL, \veone, \vetwo)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_div\_non\_int\_denominator]{
+  \vetwo \neq \ELiteral(\lint(\Ignore))
+}{
+  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
+}
+\and
+\inferrule[ebinop\_div\_int\_denominator]{
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
+  \vftwo \eqdef \frac{1}{\vitwo}\\
+  \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
+  \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
+}{
+  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \overname{\ELiteral(\lint(\vitwo))}{\vetwo})}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_shl\_non\_lint\_exponent]{
+    \vetwo \neq \ELiteral(\lint(\Ignore))
+}{
+  \toir(\tenv, \overname{\EBinop(\SHL, \Ignore, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_shl\_neg\_shift]{
+  \vitwo < 0
+}{
+  \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \CannotBeTransformed
+}
+\and
+  \inferrule[ebinop\_shl\_okay]{
+    \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
+    \vitwo \geq 0\\
+    \vftwo \eqdef 2^{\vitwo}\\
+    \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
+    \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
+}{
+  \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_other\_non\_literals]{
+  \op \not\in \{\PLUS, \MINUS, \MUL, \DIV, \SHL\}\\
+  (\veone \neq \ELiteral(\Ignore) \lor \vetwo \neq \ELiteral(\Ignore))
+}{
+  \toir(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
+}
+\and
+\inferrule[ebinop\_other\_literals\_non\_int\_result]{
+  \op \not\in \{\PLUS, \MINUS, \MUL, \SHL\}\\
+  \binopliterals(\op, \vlone, \vltwo) \typearrow \vl\\
+  \vl \neq \lint(\Ignore)
+}{
+  \toir(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \CannotBeTransformed
+}
+\and
+\inferrule[ebinop\_other\_literals\_int\_result]{
+  \op \not\in \{\PLUS, \MINUS, \MUL, \SHL\}\\
+  \binopliterals(\op, \vlone, \vltwo) \typearrow \lint(k)\\
+  \vp \eqdef \{ \emptyfunc\mapsto k \}
+}{
+  \toir(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[eunop\_neg]{
+  \toir(\tenv, \EBinop(\MUL, \ELiteral(\lint(-1)),\veone )) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+}{
+  \toir(\tenv, \overname{\EUnop(\NEG, \veone)}{\ve}) \typearrow \vp
+}
+\and
+\inferrule[eunop\_other]{
+  \op \neq \NEG
+}{
+  \toir(\tenv, \overname{\EUnop(\op, \Ignore)}{\ve}) \typearrow \CannotBeTransformed
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other]{
+  \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EBinop, \EUnop\}
+}{
+  \toir(\tenv, \ve) \typearrow \CannotBeTransformed
+}
+\end{mathpar}
+
+\subsection{TypingRule.ExprEqualNorm \label{sec:TypingRule.ExprEqualNorm}}
+\hypertarget{def-exprequalnorm}{}
+The function
+\[
+  \exprequalnorm(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$
+by attempting to transform both expressions to their symbolic expression form
+and, if successful, comparing the resulting normal forms for equality.
+The result is given in $\vb$ or a type error, if one is detected.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{all\_supported}):
+  \begin{itemize}
+    \item transforming $\veone$ into a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeError;
+    \item transforming $\vetwo$ into a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeError;
+    \item $\vb$ is the result of equating $\irone$ and $\irtwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{unsupported1}):
+  \begin{itemize}
+    \item transforming $\veone$ into a symbolic expression in $\tenv$ yields $\CannotBeTransformed$;
+    \item $\vb$ is $\False$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{unsupported2}):
+  \begin{itemize}
+    \item transforming $\veone$ into a symbolic expression in $\tenv$ yields $\irone$;
+    \item transforming $\vetwo$ into a symbolic expression in $\tenv$ yields $\CannotBeTransformed$;
+    \item $\vb$ is $\False$;
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[all\_supported]{
+  \toir(\veone) \typearrow \irone \OrTypeError\\\\
+  \toir(\vetwo) \typearrow \irtwo \OrTypeError
+}{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\irone = \irtwo}{\vb}
+}
+\and
+\inferrule[unsupported1]{
+  \toir(\veone) \typearrow \CannotBeTransformed
+}{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
+}
+\and
+\inferrule[unsupported2]{
+  \toir(\veone) \typearrow \irone\\
+  \toir(\vetwo) \typearrow \CannotBeTransformed
+}{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\subsection{TypingRule.ExprEqual \label{sec:TypingRule.ExprEqual}}
+\hypertarget{def-exprequal}{}
+The function
+\[
+  \exprequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \aslto
+  \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
+The result is given in $\vb$ or a type error, if one is detected.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{norm\_true}):
+  \begin{itemize}
+    \item comparing $\veone$ to $\vetwo$ in $\tenv$ via $\exprequalnorm$ yields $\True$\ProseOrTypeError;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{norm\_false}):
+  \begin{itemize}
+    \item comparing $\veone$ to $\vetwo$ in $\tenv$ via $\exprequalnorm$ yields $\False$;
+    \item comparing $\veone$ to $\vetwo$ by case analysis via $\exprequalcase$ yields $\vb$\ProseOrTypeError.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[norm\_true]{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \True \OrTypeError
+}{
+  \exprequal(\tenv, \veone, \vetwo) \typearrow \True
+}
+\and
+\inferrule[norm\_false]{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False\\
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
+}{
+  \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.ExprEqualCase \label{sec:TypingRule.ExprEqualCase}}
+\hypertarget{def-exprequalcase}{}
+The function
+\[
+  \exprequalcase(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+specializes the equivalence test for expressions $\veone$ and $\vetwo$ in $\tenv$
+for the different types of expressions.
+The result is given in $\vb$ or a type error, if one is detected.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{different\_labels}):
+  \begin{itemize}
+    \item the AST labels of $\veone$ and $\vetwo$ are different;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_binop}):
+  \begin{itemize}
+    \item $\veone$ is a binary expression with operator $\opone$ and operands $\veoneone$ and $\veonetwo$,
+          that is, $\EBinop(\opone, \veoneone, \veonetwo)$;
+    \item $\vetwo$ is a binary expression with operator $\optwo$ and operands $\vetwoone$ and $\vetwotwo$,
+          that is, $\EBinop(\optwo, \vetwoone, \vetwotwo)$;
+    \item testing the equivalence of $\veoneone$ and $\vetwoone$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item testing the equivalence of $\veonetwo$ and $\vetwotwo$ in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\opone$ is equal to $\optwo$ and both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_call}):
+  \begin{itemize}
+    \item $\veone$ is a call expression with subprogram name $\nameone$ and list of arguments $\vargsone$,
+          that is, $\ECall(\nameone, \vargsone, \Ignore)$;
+    \item $\vetwo$ is a call expression with subprogram name $\nametwo$ and list of arguments $\vargstwo$,
+          that is, $\ECall(\nametwo, \vargstwo, \Ignore)$;
+    \item checking whether $\nameone$ is equal to $\nametwo$ either yields $\True$ or $\False$, which short-circuits the entire rule;
+    \item checking whether the lists of arguments $\vargsone$ and $\vargstwo$ have the same length yields
+          $\True$ or $\False$, which short-circuits the entire rule;
+    \item for each index $i$ in the list of indices for $\vargsone$, testing whether $\vargsone[i]$ is equivalent to $\vargstwo[i]$
+          in $\tenv$ yields $\vb_i$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vargsone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_concat}):
+  \begin{itemize}
+    \item $\veone$ is a concatenation expression with $\vlone$, that is, $\EConcat(\vlone)$;
+    \item $\vetwo$ is a concatenation expression with $\vltwo$, that is, $\EConcat(\vltwo)$;
+    \item checking whether the lists of expressions $\vlone$ and $\vltwo$ have the same length yields
+          $\True$ or $\False$, which short-circuits the entire rule;
+    \item for each index $i$ in the list of indices for $\vlone$, testing whether $\vlone[i]$ is equivalent to $\vltwo[i]$
+          in $\tenv$ yields $\vb_i$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vlone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_cond}):
+  \begin{itemize}
+    \item $\veone$ is a conditional expression with expressions $\veoneone$, $\veonetwo$, and $\veonethree$,
+          that is, $\ECond(\veoneone, \veonetwo, \veonethree)$;
+    \item $\vetwo$ is a conditional expression with expressions $\vetwoone$, $\vetwotwo$, and $\vetwothree$,
+          that is, $\ECond(\vetwoone, \vetwotwo, \vetwothree)$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether $\veonetwo$ is equivalent to $\vetwotwo$ yields $\vbtwo$\ProseOrTypeError;
+    \item testing whether $\veonethree$ is equivalent to $\vetwothree$ yields $\vbthree$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if all of $\vbone$, $\vbtwo$, and $\vbthree$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_slice}):
+  \begin{itemize}
+    \item $\veone$ is a slicing expression with expression $\veoneone$ and list of slices $\slicesone$,
+          that is, $\ESlice(\veoneone, \slicesone)$;
+    \item $\veone$ is a slicing expression with expression $\vetwoone$ and list of slices $\slicestwo$,
+          that is, $\ESlice(\vetwoone, \slicestwo)$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether the lists of slices $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_getarray}):
+  \begin{itemize}
+    \item $\veone$ is an \arrayaccess\ expression with array expression $\veoneone$ and position expression $\veonetwo$,
+          that is, $\EGetArray(\veoneone, \veonetwo)$;
+    \item $\vetwo$ is an \arrayaccess\ expression with array expression $\vetwoone$ and position expression $\vetwotwo$,
+          that is, $\EGetArray(\vetwoone, \vetwotwo)$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether $\veonetwo$ is equivalent to $\vetwotwo$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_getfield}):
+  \begin{itemize}
+    \item $\veone$ is a field access expression with subexpression $\veoneone$ and field name $\vfieldone$,
+          that is, $\EGetField(\veoneone, \vfieldone)$;
+    \item $\vetwo$ is a field access expression with subexpression $\vetwoone$ and field name $\vfieldtwo$,
+          that is, $\EGetField(\vetwoone, \vfieldtwo)$;
+    \item $\vbone$ is $\True$ if and only if $\vfieldone$ is equal to $\vfieldtwo$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_getfields}):
+  \begin{itemize}
+    \item $\veone$ is a fields access expression with subexpression $\veoneone$ and list of field names $\vfieldsone$,
+          that is, $\EGetFields(\veoneone, \vfieldsone)$;
+    \item $\vetwo$ is a fields access expression with subexpression $\vetwoone$ and list of field names $\vfieldstwo$,
+          that is, $\EGetFields(\vetwoone, \vfieldstwo)$;
+    \item $\vbone$ is $\True$ if and only if $\vfieldsone$ is equal to $\vfieldstwo$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_getitem}):
+  \begin{itemize}
+    \item $\veone$ is a tuple access expression with subexpression $\veoneone$ and position $\vione$,
+          that is, $\EGetItem(\veoneone, \vione)$;
+    \item $\vetwo$ is a tuple access expression with subexpression $\vetwoone$ and position $\vitwo$,
+          that is, $\EGetItem(\vetwoone, \vitwo)$;
+    \item $\vbone$ is $\True$ if and only if $\vione$ is equal to $\vitwo$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_literal}):
+  \begin{itemize}
+    \item $\veone$ is the literal expression with literal $\vvone$;
+    \item $\vetwo$ is the literal expression with literal $\vvtwo$;
+    \item $\vb$ is $\True$ if and only if $\vvone$ is equivalent to $\vvtwo$ in $\tenv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_pattern}):
+  \begin{itemize}
+    \item both $\veone$ and $\vetwo$ are pattern expressions;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_record}):
+  \begin{itemize}
+    \item both $\veone$ and $\vetwo$ are record expressions;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_tuple}):
+  \begin{itemize}
+    \item $\veone$ is a tuple expression with subexpression list $\vlone$,
+          that is, $\ETuple(\vlone)$;
+    \item $\vetwo$ is a tuple expression with subexpression list $\vltwo$,
+          that is, $\ETuple(\vltwo)$;
+    \item checking whether the lengths of $\vlone$ and $\vltwo$ are equal yields either $\True$ or $\False$, which short-circuits
+          the entire rule;
+    \item for each index $i$ in the list of indices for $\vlone$, testing whether $\vlone[i]$ is equivalent to $\vltwo[i]$
+          in $\tenv$ yields $\vb_i$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vlone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_unop}):
+  \begin{itemize}
+    \item $\veone$ is a unary operator expression with operator $\opone$ and operand expressions $\veoneone$,
+          that is, $\EUnop(\opone, \veoneone)$;
+    \item $\vetwo$ is a unary operator expression with operator $\optwo$ and operand expressions $\vetwoone$,
+          that is, $\EUnop(\optwo, \vetwoone)$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ in $\tenv$ yields $\vbone$;
+    \item $\vb$ is $\True$ if and only if $\opone$ is equal to $\optwo$ and $\vbone$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_unknown}):
+  \begin{itemize}
+    \item both $\veone$ and $\vetwo$ are $\UNKNOWN$ expressions;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_atc}):
+  \begin{itemize}
+    \item $\veone$ is a type assertion with subexpression with operator $\veoneone$ and type $\vtone$,
+          that is, $\EATC(\veoneone, \vtone)$;
+    \item $\vetwo$ is a type assertion with subexpression with operator $\vetwoone$ and type $\vttwo$,
+          that is, $\EATC(\vetwoone, \vttwo)$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ in $\tenv$ yields $\vbone$;
+    \item testing whether $\vtone$ is equivalent to $\vttwo$ in $\tenv$ yields $\vbtwo$;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_var}):
+  \begin{itemize}
+    \item $\veone$ is a variable expression with identifier $\nameone$, that is, $\EVar(\nameone)$;
+    \item $\vetwo$ is a variable expression with identifier $\nametwo$, that is, $\EVar(\nametwo)$;
+    \item $\vb$ is $\True$ if and only if both $\nameone$ is equal to $\nametwo$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[different\_labels]{
+  \astlabel(\veone) \neq \astlabel(\vetwo)
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_binop]{
+  \veone \eqname \EBinop(\opone, \veoneone, \veonetwo)\\
+  \vetwo \eqname \EBinop(\optwo, \vetwoone, \vetwotwo)\\
+  \exprequal(\veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \exprequal(\veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef (\opone = \optwo) \land \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+(Recall that a conjunction over an empty set equals $\True$.)
+\begin{mathpar}
+\inferrule[e\_call]{
+  \veone \eqname \ECall(\nameone, \vargsone, \Ignore)\\
+  \vetwo \eqname \ECall(\nametwo, \vargstwo, \Ignore)\\\\
+  \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False\\\\
+  \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
+  i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_concat]{
+  \veone \eqname \EConcat(\vlone)\\
+  \vetwo \eqname \EConcat(\vltwo)\\\\
+  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
+  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_cond]{
+  \veone \eqname \ECond(\veoneone, \veonetwo, \veonethree)\\
+  \vetwo \eqname \ECond(\vetwoone, \vetwotwo, \vetwothree)\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \veonethree, \vetwothree) \typearrow \vbthree \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo \land \vbthree
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_slice]{
+  \veone \eqname \ESlice(\veoneone, \slicesone)\\
+  \vetwo \eqname \ESlice(\vetwoone, \slicestwo)\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_getarray]{
+  \veone \eqname \EGetArray(\veoneone, \veonetwo)\\
+  \vetwo \eqname \EGetArray(\vetwoone, \vetwotwo)\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_getfield]{
+  \veone \eqname \EGetField(\veoneone, \vfieldone)\\
+  \vetwo \eqname \EGetField(\vetwoone, \vfieldtwo)\\\\
+  \vbone \eqdef \vfieldone = \vfieldtwo\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_getfields]{
+  \veone \eqname \EGetFields(\veoneone, \vfieldsone)\\
+  \vetwo \eqname \EGetFields(\vetwoone, \vfieldstwo)\\\\
+  \vbone \eqdef \vfieldsone = \vfieldstwo\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_getitem]{
+  \veone \eqname \EGetItem(\veoneone, \vione)\\
+  \vetwo \eqname \EGetItem(\vetwoone, \vitwo)\\\\
+  \vbone \eqdef \vione = \vitwo\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[e\_literal]{
+  \veone \eqname \ELiteral(\vvone)\\
+  \vetwo \eqname \ELiteral(\vvtwo)\\\\
+  \literalequal(\vvone, \vvtwo) \typearrow \vb
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_pattern]{
+  \astlabel(\veone) = \EPattern \land \astlabel(\vetwo) = \EPattern
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_record]{
+  \astlabel(\veone) = \ERecord \land \astlabel(\vetwo) = \ERecord
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_tuple]{
+  \veone \eqname \ETuple(\vlone)\\
+  \vetwo \eqname \ETuple(\vltwo)\\
+  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
+  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_unop]{
+  \veone \eqname \EUnop(\opone, \veoneone)\\
+  \vetwo \eqname \EUnop(\optwo, \vetwoone)\\\\
+  \exprequal(\veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \vb \eqdef (\opone = \optwo) \land \vbone
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_unknown]{
+  (\astlabel(\veone) = \EUnknown \land \astlabel(\vetwo) = \EUnknown)
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_atc]{
+  \veone \eqname \EATC(\veoneone, \vtone)\\
+  \vetwo \eqname \EATC(\vetwoone, \vttwo)\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_var]{
+  \veone \eqname \EVar(\nameone)\\
+  \vetwo \eqname \EVar(\nametwo)\\\\
+  \vb \eqdef \nameone = \nametwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+%   | E_Pattern _, _ | E_Record _, _ -> assert false
+
+\subsection{TypingRule.TypeEqual \label{sec:TypingRule.TypeEqual}}
+\hypertarget{def-typeequal}{}
+The function
+\[
+  \typeequal(\overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
+   \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo$ in environment $\tenv$
+and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{different\_labels}):
+  \begin{itemize}
+    \item the AST labels of $\vtone$ and $\vttwo$ are different;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tbool\_treal\_tstring}):
+  \begin{itemize}
+    \item both $\vtone$ and $\vttwo$ are both either $\TBool$, $\TReal$, or $\TString$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tint\_unconstrained}):
+  \begin{itemize}
+    \item both $\vtone$ and $\vttwo$ are the unconstrained integer type $\unconstrainedinteger$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tint\_parameterized}):
+  \begin{itemize}
+    \item $\vtone$ is the \parameterizedintegertype\  with identifier $\vione$, that is, \\ $\TInt(\parameterized(\vione))$;
+    \item $\vttwo$ is the \parameterizedintegertype\ with identifier $\vitwo$, that is, \\ $\TInt(\parameterized(\vitwo))$;
+    \item $\vb$ is $\True$ if and only if $\vione$ is equal to $\vitwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tint\_wellconstrained}):
+  \begin{itemize}
+    \item $\vtone$ is the well-constrained integer type with list of constraints $\vcone$, that is, \\ $\TInt(\wellconstrained(\vcone))$;
+    \item $\vttwo$ is the well-constrained integer type with list of constraints $\vctwo$, that is, \\ $\TInt(\wellconstrained(\vctwo))$;
+    \item testing whether $\vcone$ and $\vctwo$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tbits}):
+  \begin{itemize}
+    \item $\vtone$ is the bitvector type with width expression $\vwone$ and list of bitfields $\bfone$, that is, $\TBits(\vwone, \bfone)$;
+    \item $\vttwo$ is the bitvector type with width expression $\vwtwo$ and list of bitfields $\bftwo$, that is, $\TBits(\vwtwo, \bftwo)$;
+    \item testing whether $\vwone$ and $\vwtwo$ are equivalent bitwidths in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether $\bfone$ and $\bftwo$ are equivalent lists of bitfields in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tarray}):
+  \begin{itemize}
+    \item $\vtone$ is an array type with index $\vlone$ and element type $\vtone$, that is, $\TArray(\vlone, \vtone)$;
+    \item $\vttwo$ is an array type with index $\vltwo$ and element type $\vttwo$, that is, $\TArray(\vltwo, \vttwo)$;
+    \item testing whether $\vlone$ is equivalent to $\vltwo$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether $\vtone$ is equivalent to $\vttwo$ in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tnamed}):
+  \begin{itemize}
+    \item $\vtone$ is a named type with identifier $\vsone$, that is $\TNamed(\vsone)$;
+    \item $\vttwo$ is a named type with identifier $\vstwo$, that is $\TNamed(\vstwo)$;
+    \item $\vb$ is $\True$ if and only if $\vsone$ is equal to $\vstwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tenum}):
+  \begin{itemize}
+    \item $\vtone$ is an enumeration type with identifier $\vlone$, that is $\TEnum(\vlone)$;
+    \item $\vttwo$ is an enumeration type with identifier $\vltwo$, that is $\TEnum(\vltwo)$;
+    \item $\vb$ is $\True$ if and only if $\vlone$ is equal to $\vltwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tstructured}):
+  \begin{itemize}
+    \item $L$ is either $\TRecord$ or $\TException$;
+    \item $\vtone$ is a \structuredtype\ with list of fields $\vfieldsone$, that is $L(\vfieldsone)$;
+    \item $\vttwo$ is a \structuredtype\ with list of fields $\vfieldstwo$, that is $L(\vfieldstwo)$;
+    \item checking whether the set of field names in $\vfieldsone$ is equal to the set of field names in $\vfieldstwo$
+          yields $\True$ or $\False$, which short-circuits the entire rule;
+    \item for each field $\vf$ in the set of fields of $\vfieldsone$, testing whether the type associated with
+          $\vf$ in $\vfieldsone$ is equivalent to the type associated with
+          $\vf$ in $\vfieldstwo$ in $\tenv$ yields $\vb_\vf$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vb_\vf$ is $\True$ for each field $\vf$ in the set of fields of $\vfieldsone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ttuple}):
+  \begin{itemize}
+    \item $\vtone$ is a tuple type with list of types $\vtsone$, that is $\TTuple(\vtsone)$;
+    \item $\vttwo$ is a tuple type with list of types $\vtstwo$, that is $\TTuple(\vtstwo)$;
+    \item checking whether the list of types $\vtsone$ has the same length as the list of types $\vtstwo$ yields $\True$
+          or $\False$, which short-circuits the entire rule;
+    \item for each index $i$ in the list $\vtsone$, testing whether $\vtsone[i]$ is equivalent to $\vtstwo[i]$ in $\tenv$
+          yields $\vb_i$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list $\vtsone$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[different\_labels]{
+  \astlabel(\vtone) \neq \astlabel(\vttwo)
+}{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[TBool\_TReal\_TString]{
+  \astlabel(\vtone) = \astlabel(\vttwo)\\
+  \astlabel(\vtone) \in \{\TBool, \TReal, \TString\}
+}{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\and
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tint\_unconstrained]{}
+{
+  \typeequal(\tenv, \unconstrainedinteger, \unconstrainedinteger) \typearrow \True
+}
+\and
+\inferrule[tint\_parameterized]{
+  \vb \eqdef \vione = \vitwo
+}{
+  \typeequal(\tenv, \TInt(\parameterized(\vione)), \TInt(\parameterized(\vitwo))) \typearrow \vb
+}
+\and
+\inferrule[tint\_wellconstrained]{
+  \constraintsequal(\tenv, \vcone, \vctwo) \typearrow \vb \OrTypeError
+}{
+  \typeequal(\tenv, \TInt(\wellconstrained(\vcone)), \TInt(\wellconstrained(\vctwo))) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tbits]{
+  \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vbone \OrTypeError\\\\
+  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \typeequal(\tenv, \TBits(\vwone, \bfone), \TBits(\vwtwo, \bftwo)) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tarray]{
+  \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone \OrTypeError\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \typeequal(\tenv, \TArray(\vlone, \vtone), \TArray(\vltwo, \vttwo)) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tnamed]{
+  \vb \eqdef \vsone = \vstwo
+}{
+  \typeequal(\tenv, \TNamed(\vsone), \TNamed(\vstwo)) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tenum]{
+  \vb \eqdef \vlone = \vltwo
+}{
+  \typeequal(\tenv, \TEnum(\vlone), \TEnum(\vltwo)) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tstructured]{
+  L \in \{\TRecord, \TException\}\\
+  \booltrans{\fieldnames(\vfieldsone) = \fieldnames(\vfieldstwo)} \booltransarrow \True \terminateas \False\\\\
+  {
+    \begin{array}{l}
+  \vf \in \fieldnames(\vfieldsone): \\ \typeequal(\tenv, \fieldtype(\vfieldsone, \vf), \fieldtype(\vfieldstwo, \vf)) \typearrow \vb_\vf \OrTypeError
+    \end{array}
+  }\\\\
+  \vb \eqdef \bigwedge_{\vf \in \fieldnames(\vfieldsone)} \vb_\vf
+}{
+  \typeequal(\tenv, L(\vfieldsone), L(\vfieldstwo)) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ttuple]{
+  \equallength(\vtsone, \vtstwo) \typearrow \True \terminateas \False\\
+  i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[i], \vtstwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vtsone)} \vb_i
+}{
+  \typeequal(\tenv, \TTuple(\vtsone), \TTuple(\vtstwo)) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.BitwidthEqual \label{sec:TypingRule.BitwidthEqual}}
+\hypertarget{def-bitwidthequal}{}
+The function
+\[
+  \bitwidthequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\vwone} \aslsep \overname{\expr}{\vwtwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the bitwidth expression $\vwone$ is equivalent to the bitwidth expression $\vwtwo$
+in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \exprequal(\tenv, \vwone, \vwtwo) \typearrow \vb \OrTypeError
+}{
+  \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.BitFieldsEqual \label{sec:TypingRule.BitFieldsEqual}}
+\hypertarget{def-bitfieldsequal}{}
+The function
+\[
+  \bitfieldsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^*}{\bfone} \aslsep \overname{\bitfield^*}{\bftwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
+in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{different\_lengths}):
+  \begin{itemize}
+    \item the number of bitfields in $\bfone$ is different from the number of bitfields in $\bftwo$;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{same\_lengths}):
+  \begin{itemize}
+    \item the number of bitfields in $\bfone$ is the same as the number of bitfields in $\bftwo$;
+    \item testing whether the bitfield $\bfone[i]$ is equivalent to $\bftwo[i]$ in $\tenv$ for every index
+          of $\bfone$ yields $\vb_i$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for every index of $\bfone$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[different\_lengths]{
+  \equallength(\bfone, \bftwo) \typearrow \False
+}{
+  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \False
+}
+\and
+\inferrule[same\_lengths]{
+  \equallength(\bfone, \bftwo) \typearrow \True\\
+  i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[i], \bftwo[i]) \typearrow \vb_i\\\\
+  \vb \eqdef \bigwedge_{i\in\listrange(\bfone)} \vb_i
+}{
+  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.BitFieldEqual \label{sec:TypingRule.BitFieldEqual}}
+The function
+\[
+  \bitfieldequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield}{\bfone} \aslsep \overname{\bitfield}{\bftwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield $\bftwo$ in environment $\tenv$
+and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{different\_labels}):
+  \begin{itemize}
+    \item the AST labels of $\bfone$ and $\bftwo$ are different;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitfield\_simple}):
+  \begin{itemize}
+    \item $\bfone$ is a simple bitfield with name $\nameone$ and list of slices $\slicesone$, that is, \\ $\BitFieldSimple(\nameone, \slicesone)$;
+    \item $\bftwo$ is a simple bitfield with name $\nametwo$ and list of slices $\slicestwo$, that is, \\ $\BitFieldSimple(\nametwo, \slicestwo)$;
+    \item checking whether $\nameone$ is equal to $\nametwo$ yields $\vbone$;
+    \item testing whether $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitfield\_nested}):
+  \begin{itemize}
+    \item $\bfone$ is a nested bitfield with name $\nameone$, list of slices $\slicesone$, and nested bitfields $\bfoneone$, that is,
+          $\BitFieldNested(\nameone, \slicesone, \bfoneone)$;
+    \item $\bftwo$ is a nested bitfield with name $\nametwo$, list of slices $\slicestwo$, and nested bitfields $\bftwoone$, that is,
+          $\BitFieldNested(\nametwo, \slicestwo, \bftwoone)$;
+    \item checking whether $\nameone$ is equal to $\nametwo$ yields $\vbone$;
+    \item testing whether $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item testing whether the bitfields $\bfoneone$ and $\bftwoone$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bitfield\_typed}):
+  \begin{itemize}
+    \item $\bfone$ is a typed bitfield with name $\nameone$, list of slices $\slicesone$, and type $\vtone$, that is,
+          $\BitFieldType(\nameone, \slicesone, \vtone)$;
+    \item $\bftwo$ is a typed bitfield with name $\nametwo$, list of slices $\slicestwo$, and type $\vttwo$, that is,
+          $\BitFieldType(\nametwo, \slicestwo, \vttwo)$;
+    \item checking whether $\nameone$ is equal to $\nametwo$ yields $\True$\ProseTerminateAs{\False};
+    \item testing whether $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether the types $\vtone$ and $\vttwo$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[different\_labels]{
+  \astlabel(\bfone) \neq \astlabel(\bftwo)
+}{
+  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \False
+}
+\and
+\inferrule[bitfield\_simple]{
+  \bfone \eqname \BitFieldSimple(\nameone, \slicesone)\\
+  \bftwo \eqname \BitFieldSimple(\nametwo, \slicestwo)\\
+  \booltrans{\nameone = \nametwo} \booltransarrow \vbone\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+}
+\and
+\inferrule[bitfield\_nested]{
+  \bfone \eqname \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
+  \bftwo \eqname \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
+  \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False\\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \terminateas \TypeErrorConfig,\\\\
+  \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vbtwo
+}{
+  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+}
+\and
+\inferrule[bitfield\_typed]{
+  \bfone \eqname \BitFieldType(\nameone, \slicesone, \vtone)\\
+  \bftwo \eqname \BitFieldType(\nametwo, \slicestwo, \vttwo)\\
+  \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False \\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \OrTypeError\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.ConstraintsEqual \label{sec:TypingRule.ConstraintsEqual}}
+\hypertarget{def-constraintsequal}{}
+The function
+\[
+  \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\csone} \aslsep \overname{\intconstraint^*}{\cstwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
+and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item checking whether the number of constraints in $\csone$ is the same as the number of constraints in $\cstwo$
+        yields $\True$\ProseTerminateAs{\False};
+  \item testing whether the constraint $\csone[i]$ is equivalent to the constraint $\cstwo[i]$ in $\tenv$
+        yields $\vb_i$ for each index in the index in the indices for $\csone$ ($i\in\listrange(\csone)$)\ProseOrTypeError;
+  \item $\vb$ is $\True$ if and only if all $\vb_i$ are $\True$ for each index in the indices for $\csone$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \equallength(\csone, \cstwo) \typearrow \True \terminateas \False\\
+  i\in\listrange(\csone): \constraintequal(\tenv, \csone[i], \cstwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i\in\listrange(\csone)} \vb_i
+}{
+  \constraintsequal(\tenv, \csone, \cstwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.ConstraintEqual \label{sec:TypingRule.ConstraintEqual}}
+\hypertarget{def-constraintequal}{}
+The function
+\[
+  \constraintequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vstwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environment $\tenv$
+and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{different\_labels}):
+  \begin{itemize}
+    \item the AST labels of $\vcone$ and $\vctwo$ are different;
+    \item define $\vb$ as $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_exact}):
+  \begin{itemize}
+    \item $\vcone$ is an exact constraint with subexpression $\veone$, that is, $\ConstraintExact(\veone)$;
+    \item $\vctwo$ is an exact constraint with subexpression $\vetwo$, that is, $\ConstraintExact(\vetwo)$;
+    \item applying $\exprequal$ to $\veone$ and $\vetwo$ yields $\vb$\ProseOrTypeError.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{constraint\_range}):
+  \begin{itemize}
+    \item $\vcone$ is a range constraint with subexpressions $\veoneone$ and $\veonetwo$, that is, \\ $\ConstraintRange(\veoneone, \veonetwo)$;
+    \item $\vctwo$ is a range constraint with subexpressions $\vetwoone$ and $\vetwotwo$, that is, \\ $\ConstraintRange(\vetwoone, \vetwotwo)$;
+    \item applying $\exprequal$ to $\veoneone$ and $\vetwoone$ yields $\vbone$\ProseOrTypeError;
+    \item applying $\exprequal$ to $\veonetwo$ and $\vetwotwo$ yields $\vbtwo$\ProseOrTypeError;
+    \item define $\vb$ as $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[different\_labels]{
+  \astlabel(\vcone) \neq \astlabel(\vctwo)
+}{
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False
+}
+\and
+\inferrule[constraint\_exact]{
+  \vcone \eqname \ConstraintExact(\veone)\\
+  \vctwo \eqname \ConstraintExact(\vetwo)\\
+  \exprequal(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
+}{
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \vb
+}
+\and
+\inferrule[constraint\_range]{
+  \bfone \eqname \ConstraintRange(\veoneone, \veonetwo)\\
+  \bftwo \eqname \ConstraintRange(\vetwoone, \vetwotwo)\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \constraintequal(\tenv, \bfone, \bftwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.SlicesEqual \label{sec:TypingRule.SlicesEqual}}
+\hypertarget{def-slicesequal}{}
+The function
+\[
+  \slicesequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slicesone} \aslsep \overname{\slice^*}{\slicestwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
+in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\subsubsection{Formally}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{different\_lengths}):
+  \begin{itemize}
+    \item checking whether the number of slices in $\slicesone$ is equal to the number of slice in $\slicestwo$ yields $\False$;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{same\_lengths}):
+  \begin{itemize}
+    \item checking whether the number of slices in $\slicesone$ is equal to the number of slice in $\slicestwo$ yields $\True$;
+    \item determining whether the expression $\slicesone[i]$ is equivalent to $\slicestwo[i]$ in $\tenv$
+          for each index in the indices for $\slicesone$ ($i \in \listrange(\slicesone$) yields $\vb_i$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if all $\vb_i$ are $\True$ for each index in the indices for $\slicesone$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[different\_lengths]{
+  \equallength(\slicesone, \slicestwo) \typearrow \False
+}{
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \False
+}
+\and
+\inferrule[same\_lengths]{
+  \equallength(\slicesone, \slicestwo) \typearrow \True\\
+  i\in\listrange(\slicesone): \sliceequal(\tenv, \slicesone[i], \slicestwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i\in\listrange(\slicesone)} \vb_i
+}{
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.SliceEqual \label{sec:TypingRule.SliceEqual}}
+\hypertarget{def-sliceequal}{}
+The function
+\[
+  \sliceequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\sliceone} \aslsep \overname{\slice}{\slicetwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively tests whether the slice $\sliceone$ is equivalent to the slice $\slicetwo$
+in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{different\_labels}):
+  \begin{itemize}
+    \item $\sliceone$ and $\slicetwo$ have different AST labels;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{slice\_single}):
+  \begin{itemize}
+    \item $\sliceone$ is a slice for a single position, given by the expression $\veone$, that is, $\SliceSingle(\veone)$;
+    \item $\slicetwo$ is a slice for a single position, given by the expression $\vetwo$, that is, $\SliceSingle(\vetwo)$;
+    \item testing $\veone$ and $\vetwo$ for equivalence yields $\vb$\ProseOrTypeError.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{slice\_range}):
+  \begin{itemize}
+    \item $\sliceone$ is a slice for a range of positions, given by the expressions $\veoneone$ and $\veonetwo$, that is, $\SliceRange(\veoneone, \veonetwo)$;
+    \item $\slicetwo$ is a slice for a range of positions, given by the expressions $\vetwoone$ and $\vetwotwo$, that is, $\SliceRange(\vetwoone, \vetwotwo)$;
+    \item testing $\veoneone$ and $\vetwoone$ for equivalence yields $\vbone$\ProseOrTypeError;
+    \item testing $\veonetwo$ and $\vetwotwo$ for equivalence yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{slice\_length}):
+  \begin{itemize}
+    \item $\sliceone$ is a slice for a range of positions, given by the start expression $\veoneone$ and length expression $\veonetwo$, that is, $\SliceLength(\veoneone, \veonetwo)$;
+    \item $\slicetwo$ is a slice for a range of positions, given by the start expression $\vetwoone$ and length expression $\vetwotwo$, that is, $\SliceLength(\vetwoone, \vetwotwo)$;
+    \item testing $\veoneone$ and $\vetwoone$ for equivalence yields $\vbone$\ProseOrTypeError;
+    \item testing $\veonetwo$ and $\vetwotwo$ for equivalence yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[different\_label]{
+  \astlabel(\sliceone) \neq \astlabel(\slicetwo)
+}{
+  \slicesequal(\tenv, \sliceone, \slicetwo) \typearrow \False
+}
+\and
+\inferrule[slice\_single]{
+  \exprequal(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
+}{
+  \slicesequal(\tenv, \SliceSingle(\veone), \SliceSingle(\vetwo)) \typearrow \vb
+}
+\and
+\inferrule[slice\_range]{
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \slicesequal(\tenv, \SliceRange(\veoneone, \veonetwo), \SliceRange(\vetwoone, \vetwotwo)) \typearrow \vb
+}
+\and
+\inferrule[slice\_length]{
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \slicesequal(\tenv, \SliceLength(\veoneone, \veonetwo), \SliceLength(\vetwoone, \vetwotwo)) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.ArrayLengthEqual \label{sec:TypingRule.ArrayLengthEqual}}
+\hypertarget{def-arraylengthequal}{}
+The function
+\[
+  \arraylengthequal(\overname{\arrayindex}{\vlone} \aslsep \overname{\arrayindex}{\vltwo})
+  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+tests whether the array lengths $\vlone$ and $\vltwo$ are equivalent and yields the result
+in $\vb$. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{different\_labels}):
+  \begin{itemize}
+    \item $\vlone$ and $\vltwo$ have different AST labels;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{expr\_expr}):
+  \begin{itemize}
+    \item $\vlone$ is an integer type length expression with subexpression $\veoneone$, that is, \\ $\ArrayLengthExpr(\veoneone)$;
+    \item $\vltwo$ is an integer type length expression with subexpression $\vetwoone$, that is, \\ $\ArrayLengthExpr(\vetwoone)$;
+    \item testing whether $\veoneone$ and $\vetwoone$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{enum\_enum}):
+  \begin{itemize}
+    \item $\vlone$ is an enumeration type length expression over the enumeration $\vsone$, that is, $\ArrayLengthEnum(\vsone, \Ignore)$;
+    \item $\vltwo$ is an enumeration type length expression over the enumeration $\vstwo$, that is, $\ArrayLengthEnum(\vstwo, \Ignore)$;
+    \item $\vb$ is $\True$ if and only if $\vsone$ is equal to $\vstwo$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[different\_labels]{
+  \astlabel(\vlone) \neq \astlabel(\vltwo)
+}{
+  \arraylengthequal(\vlone, \vltwo) \typearrow \False
+}
+\and
+  \inferrule[expr\_expr]{
+  \exprequal(\veoneone, \vetwoone) \typearrow \vb \OrTypeError
+}{
+  \arraylengthequal(\ArrayLengthExpr(\veoneone), \ArrayLengthExpr(\vetwoone)) \typearrow \vb
+}
+\and
+\inferrule[enum\_enum]{
+  \vb \eqdef \vsone = \vstwo
+}{
+  \arraylengthequal(\ArrayLengthEnum(\vsone, \Ignore), \ArrayLengthEnum(\vstwo, \Ignore)) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.LiteralEqual \label{sec:TypingRule.LiteralEqual}}
+\hypertarget{def-literalequal}{}
+The function
+\[
+  \literalequal(\overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \rightarrow \overname{\{\True, \False\}}{\vb}
+\]
+tests whether literal $\vvone$ is $\vvtwo$ by equating them.
+
+\subsubsection{Prose}
+$\vb$ is $\True$ if and only if $\vvone$ is equal to $\vvtwo$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vb \eqdef \vvone = \vvtwo
+}{
+  \literalequal(\vvone, \vvtwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsection{TypingRule.ReduceIR \label{sec:TypingRule.ReduceIR}}
+\hypertarget{def-reduceir}{}
+The function
+\[
+\reduceir(\overname{\polynomial}{\vp}) \aslto \overname{\polynomial}{\newp}
+\]
+simplifies the polynomial $\vp$, yielding the simplified polynomial $\newp$.
+
+\subsubsection{Prose}
+\subsubsection{Formally}
+\subsection{TypingRule.PolynomialToExpr \label{sec:TypingRule.PolynomialToExpr}}
+\hypertarget{def-polynomialtoexpr}{}
+The function
+\[
+\polynomialtoexpr(\overname{\polynomial}{\vp}) \typearrow \overname{\expr}{\ve}
+\]
+transforms a polynomial $\vp$ into the corresponding expression $\ve$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vp$ is the polynomial with an empty list of monomials, that is, $\emptyfunc$;
+    \item define $\ve$ as the literal expression for $0$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vp$ is the polynomial $f$;
+    \item sorting (see $\sort$ for details) the graph of $f$ (see $\funcgraph$ for details)
+          yields $\monoms$ --- a list consisting of pairs of unitary monomials and rationals.
+          In principle, any total order of the graph of $f$ is acceptable for sorting.
+          The function $\comparemonomialbindings$ provides one such way of ordering
+          the graph of $f$;
+    \item transforming $\monoms$ to an expression and sign via $\monomialstoexpr$ yields the expression $\veone$
+          and sign $\vsone$;
+    \item define $\ve$ as $\veone$ if $\vsone$ is $1$, the integer literal expression for $0$ if $\vsone$ is $0$,
+          and the unary expression negating $\veone$, that is,
+          $\EUnop(\NEG, \veone)$, if $\vsone$ is $-1$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \polynomialtoexpr(\overname{\emptyfunc}{\vp}) \typearrow \overname{\ELiteral(\lint(0))}{\ve}
+}
+\and
+\inferrule[non\_empty]{
+  \sort(\funcgraph(f), \comparemonomialbindings) = \monoms\\
+  \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\\
+  {
+  \ve \eqdef \begin{cases}
+    \ELiteral(\lint(0))   & \text{if }\vsone = 0\\
+    \veone                & \text{if }\vsone = 1\\
+    \EUnop(\NEG, \veone)  & \text{if }\vsone = -1
+  \end{cases}
+  }
+}{
+  \polynomialtoexpr(\overname{f}{\vp}) \typearrow \ve
+}
+\end{mathpar}
+
+\subsection{TypingRule.CompareMonomialBindings \label{sec:TypingRule.CompareMonomialBindings}}
+\hypertarget{def-comparemonomialbindings}{}
+The function
+\[
+\comparemonomialbindings(
+  (\overname{\monomial}{\vmone}\times\overname{\Q}{\vqone}) \aslsep
+  (\overname{\monomial}{\vmtwo}\times\overname{\Q}{\vqtwo})
+) \aslto \overname{\{-1,0,1\}}{\vs}
+\]
+compares two monomial bindings given by $(\vmone, \vqone)$ and $(\vmtwo, \vqtwo)$
+and yields in $\vs$ $-1$ to mean that the first monomial binding should be ordered before the second,
+$0$ to mean that any ordering of the monomial bindings is acceptable,
+and $1$ to mean that the second monomial binding should be ordered before the first.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{equal\_monomials}):
+  \begin{itemize}
+    \item $\vmone$ is $f$ and $\vmtwo$ is $g$;
+    \item $f$ is equal to $g$;
+    \item $\vs$ is the sign of $\vqtwo - \vqone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{different\_monomials}):
+  \begin{itemize}
+    \item $\vmone$ is $f$ and $\vmtwo$ is $g$;
+    \item $f$ is different from to $g$;
+    \item $\ids$ is the list obtained by taking the set of identifiers in the domain of $f$ and in the domain of $g$,
+          and sorting them according to the lexical order for identifiers (ASCII string order);
+    \item $\vv$ is the first identifier in $\ids$ for which $f$ and $g$ behave differently (either one of them is defined
+          for $\vv$ and the other is not, or they both bind $\vv$ to a different value);
+    \item $s$ is determined as follows: $1$ if $\vv$ is not in the domain of $f$ and is in the domain of $g$;
+          $-1$ if $\vv$ is not in the domain of $f$ and is in the domain of $g$;
+          otherwise it is the sign of $g(\vv)-f(\vv)$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\hypertarget{def-compareidentifier}{}
+The function $\compareidentifier$ compares two identifiers, which are lists of ASCII characters,
+via the lexicographic ordering.
+
+\begin{mathpar}
+\inferrule[equal\_monomials]{
+  f = g\\
+  \vs \eqdef \sign(\vqtwo - \vqone)
+}{
+  \comparemonomialbindings((\overname{f}{\vmone}, \vqone), (\overname{g}{\vmtwo}, \vqtwo)) \typearrow \vs
+}
+\and
+\inferrule[different\_monomials]{
+  f \neq g\\
+  \ids \eqdef \sort(\dom(f) \cup \dom(g), \compareidentifier)\\
+  \ids \eqname \idsone \concat \idstwo\\
+  \vi\in\listrange(\idsone): f(\idsone[\vi]) = g(\idsone[\vi])\\
+  \vv \eqdef \idstwo[1]\\
+  \vs \eqdef {
+    \begin{cases}
+    1 & f(\vv) = \bot \land g(\vv) \neq \bot\\
+    -1  & f(\vv) \neq \bot \land g(\vv) = \bot\\
+    \sign(g(\vv) - f(\vv))  & f(\vv) \neq \bot \land g(\vv) \neq \bot\\
+    \end{cases}
+}
+}{
+  \comparemonomialbindings((\overname{f}{\vmone}, \vqone), (\overname{g}{\vmtwo}, \vqtwo)) \typearrow \vs
+}
+\end{mathpar}
+
+\subsection{TypingRule.MonomialsToExpr \label{sec:TypingRule.MonomialsToExpr}}
+\hypertarget{def-monomialstoexpr}{}
+The function
+\[
+\monomialstoexpr(\overname{(\overname{\unitarymonomial}{\vm}\times\overname{\Q}{q})^*}{\monoms}) \aslto
+(\overname{\expr}{\ve},\overname{\{-1,0,1\}}{\vs})
+\]
+transforms a list consisting of pairs of unitary monomials and rational factors $\monoms$ (so, general monomials),
+into an expression $\ve$, which represents the absolute value of the sum of all the monomials,
+and a sign value $\vs$, which indicates the sign of the resulting sum.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\monoms$ is an empty list;
+    \item $\ve$ is the literal expression for the integer $0$ and $\vs$ is $0$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\monoms$ is a list with $(\vm,q)$ as its \head\ and $\monomsone$ as its \tail;
+    \item transforming the unitary monomial $\vm$ to an expression via \\ $\unitarymonomialstoexpr$ yields $\veonep$;
+    \item transforming $\veonep$ and $q$ via $\monomialtoexpr$ yields the expression $\veone$ and sign $\vsone$;
+    \item transforming $\monoms$ to an expression and sign via $\monomialstoexpr$ yields $(\vetwo, \vstwo)$;
+    \item symbolically adding $\veone, \vsone, \vetwo, \vstwo$ via $\symaddexpr$ yields $(\ve, \vs)$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \monomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow (\overname{\ELiteral(\lint(0))}{\ve}, \overname{0}{\vs})
+}
+\and
+\inferrule[non\_empty]{
+  \unitarymonomialstoexpr(\vm) \typearrow \veonep\\
+  \monomialtoexpr(\veonep, q) \typearrow (\veone,\vsone)\\
+  \monomialstoexpr(\monoms) \typearrow (\vetwo, \vstwo)\\
+  \symaddexpr(\veone, \vsone, \vetwo, \vstwo) \typearrow (\ve, \vs)
+}{
+  \monomialstoexpr(\overname{[(\vm,q)] \concat \monomsone}{\monoms}) \typearrow (\ve, \vs)
+}
+\end{mathpar}
+
+\subsection{TypingRule.MonomialToExpr \label{sec:TypingRule.MonomialToExpr}}
+\hypertarget{def-monomialtoexpr}{}
+The function
+\[
+\monomialtoexpr(\overname{\expr}{\ve} \aslsep \overname{\Q}{q})
+\aslto (\overname{\expr}{\newe} \times \overname{\{-1,0,1\}}{\vs})
+\]
+transforms an expression $\ve$ and rational $q$ into the expression $\newe$,
+which represents the absolute value of $\ve$ multiplied by $q$, and the sign of $q$ as $\vs$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{q\_zero}):
+  \begin{itemize}
+    \item $q$ is $0$;
+    \item $\newe$ is the literal expression for $0$;
+    \item $\vs$ is $0$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{q\_natural}):
+  \begin{itemize}
+    \item $q$ a strictly positive;
+    \item symbolically multiplying the literal expression for $q$ and $\ve$ via $\symmulexpr$ yields $\newe$;
+    \item $\vs$ is $1$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{q\_positive\_fraction}):
+  \begin{itemize}
+    \item $q$ a strictly positive fraction, that is, not an integer;
+    \item the reduced representation of the fraction $q$ is $\frac{d}{n}$;
+    \item symbolically multiplying the literal expression for $q$ and $\ve$ via $\symmulexpr$ yields $\vetwo$;
+    \item $\ve$ is the binary expression with operator $\DIV$ and operands $\vetwo$ and the literal expression for $n$;
+    \item $\vs$ is $1$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{q\_negative}):
+  \begin{itemize}
+    \item $q$ a strictly negative;
+    \item transforming $\ve$ with $-q$ to an expression and a sign via $\monomialtoexpr$ yields $(\newe, 1)$;
+    \item $\vs$ is $-1$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[q\_zero]{
+  q = 0\\
+}{
+  \monomialtoexpr(\ve, q) \typearrow (\overname{\ELiteral(\lint(0))}{\newe}, \overname{0}{\vs})
+}
+\and
+\inferrule[q\_natural]{
+  q > 0\\
+  q \in \N\\
+  \symmulexpr(\ELiteral(\lint(q)), \ve) \typearrow \newe
+}{
+  \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{1}{\vs})
+}
+\and
+\inferrule[q\_positive\_fraction]{
+  q > 0\\
+  q \not\in \N\\\\
+  q \eqname \frac{d}{n} \;\;\;\;\text{ is the reduced fraction for }q\\\\
+  \symmulexpr(\ELiteral(\lint(d)), \ve) \typearrow \vetwo\\
+  \newe \eqdef \EBinop(\DIV, \vetwo, \ELiteral(\lint(n)))
+}{
+  \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{1}{\vs})
+}
+\and
+\inferrule[q\_negative]{
+  q < 0\\
+  \monomialtoexpr(\ve, -q) \typearrow (\newe, 1)
+}{
+  \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{-1}{\vs})
+}
+\end{mathpar}
+
+\subsection{TypingRule.SymAddExpr \label{sec:TypingRule.SymAddExpr}}
+\hypertarget{def-symaddexpr}{}
+The function
+\[
+\symaddexpr(
+  \overname{\expr}{\veone} \aslsep
+  \overname{\{-1,0,1\}}{\vsone} \aslsep
+  \overname{\expr}{\vetwo} \aslsep
+  \overname{\{-1,0,1\}}{\vstwo}
+  )
+  \typearrow (\overname{\expr}{\ve}, \overname{\{-1,0,1\}}{\vs})
+\]
+symbolically sums the expressions $\veone$ and $\vetwo$
+with respective signs $\vsone$ and $\vstwo$
+yielding the expression $\ve$ and sign $\vs$.
+
+The effect of the function can be summarized by the following table:
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+& \multicolumn{3}{c|}{$\vsone$}\\
+\hline
+$\vstwo$                      & -1                         & 0               & 1\\
+\hline
+-1                            &  $(\veone+\vetwo, \vsone)$ & (\vetwo,\vstwo) & $(\veone-\vetwo, \vsone)$ \\
+\hline
+ 0                            &  $(\veone, \vsone)$        & (\veone,\vsone) & $(\veone, \vsone)$ \\
+ \hline
+ 1                            &  $(\veone-\vetwo, \vsone)$ & (\vetwo,\vstwo) & $(\veone+\vetwo, \vsone)$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{zero}):
+  \begin{itemize}
+    \item either $\vsone$ is $0$ or $\vstwo$ is $0$;
+    \item the result is $(\vetwo, \vstwo)$ if $\vsone$ is $0$ and $(\veone, \vsone)$, otherwise.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{same\_sign}):
+  \begin{itemize}
+    \item both $\vsone$ and $\vstwo$ are not $0$;
+    \item $\vsone$ is equal to $\vstwo$;
+    \item $\ve$ is the binary expression with operator $\PLUS$ and operands $\veone$ and $\vetwo$,
+          that is, $\EBinop(\PLUS, \veone, \vetwo)$;
+    \item $\vs$ is $\vsone$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{same\_sign}):
+  \begin{itemize}
+    \item both $\vsone$ and $\vstwo$ are not $0$;
+    \item $\vsone$ is different from $\vstwo$;
+    \item $\ve$ is the binary expression with operator $\MINUS$ and operands $\veone$ and $\vetwo$,
+          that is, $\EBinop(\MINUS, \veone, \vetwo)$;
+    \item $\vs$ is $\vsone$;
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[zero]{
+  (\vsone = 0 \lor \vstwo = 0)\\
+  (\ve, \vs) \eqdef \choice{\vsone = 0}{(\vetwo, \vstwo)}{(\veone, \vsone)}
+}{
+  \symaddexpr(\veone, \vsone, \vetwo, \vstwo) \typearrow (\ve, \vs)
+}
+\and
+\inferrule[same\_sign]{
+  \vsone \neq 0 \land \vstwo \neq 0\\
+  \vsone = \vstwo
+}{
+  \symaddexpr(\veone, \vetwo) \typearrow (\overname{\EBinop(\PLUS, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
+}
+\and
+\inferrule[different\_signs]{
+  \vsone \neq 0 \land \vstwo \neq 0\\
+  \vsone \neq \vstwo
+}{
+  \symaddexpr(\veone, \vetwo) \typearrow (\overname{\EBinop(\MINUS, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
+}
+\end{mathpar}
+
+\subsection{TypingRule.UnitaryMonomialsToExpr \label{sec:TypingRule.UnitaryMonomialsToExpr}}
+\hypertarget{def-unitarymonomialstoexpr}{}
+The function
+\[
+\unitarymonomialstoexpr(\overname{(\identifier\times\N)^*}{\monoms}) \aslto \overname{\expr}{\ve}
+\]
+transforms a list of single-variable unitary monomials $\monoms$ into an expression $\ve$.
+Intuitively, $\monoms$ represented a multiplication of the single-variable unitary monomials.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\monoms$ is the empty list;
+    \item $\ve$ is the literal expression for $1$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_zero}):
+  \begin{itemize}
+    \item $\monoms$ is a list where the first element is $(\vv, 0)$ and its tail is $\monoms$;
+    \item transforming $\monomsone$ to an expression yields $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_one}):
+  \begin{itemize}
+    \item $\monoms$ is a list where the first element is $(\vv, 1)$ and its tail is $\monoms$;
+    \item $\veone$ is the variable expression for $\vv$;
+    \item transforming $\monomsone$ to an expression yields $\vetwo$;
+    \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_two}):
+  \begin{itemize}
+    \item $\monoms$ is a list where the first element is $(\vv, 2)$ and its tail is $\monoms$;
+    \item $\veone$ is the binary expression with operator $\MUL$ and operands $\EVar(\vv)$ and $\EVar(\vv)$
+          (that is, $\vv$ squared);
+    \item transforming $\monomsone$ to an expression yields $\vetwo$;
+    \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exp\_gt\_two}):
+  \begin{itemize}
+    \item $\monoms$ is a list where the first element is $(\vv, n)$ and its tail is $\monoms$;
+    \item $n$ is greater than $1$;
+    \item $\veone$ is the binary expression with operator $\POW$ and base operand being the variable expression for $\vv$
+          and the exponent operand being the variable expression for $n$;
+    \item transforming $\monomsone$ to an expression yields $\vetwo$;
+    \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \unitarymonomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow \overname{\ELiteral(\lint(1))}{\ve}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_zero]{
+  \unitarymonomialstoexpr(\monomsone) \typearrow \ve
+}{
+  \unitarymonomialstoexpr(\overname{[(\vv, 0)] \concat \monomsone}{\monoms}) \typearrow \ve
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_one]{
+  \veone \eqdef \EVar(\vv)\\
+  \unitarymonomialstoexpr(\monomsone) \typearrow \vetwo\\
+  \symmulexpr(\veone, \vetwo) \typearrow \ve
+}{
+  \unitarymonomialstoexpr(\overname{[(\vv, 1)] \concat \monomsone}{\monoms}) \typearrow \ve
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_two]{
+  \veone \eqdef \AbbrevEBinop{\MUL}{\EVar(\vv)}{\EVar(\vv)}\\
+  \unitarymonomialstoexpr(\monomsone) \typearrow \vetwo\\
+  \symmulexpr(\veone, \vetwo) \typearrow \ve
+}{
+  \unitarymonomialstoexpr(\overname{[(\vv, 2)] \concat \monomsone}{\monoms}) \typearrow \ve
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exp\_gt\_two]{
+  n \geq 2\\
+  \veone \eqdef \AbbrevEBinop{\POW}{\EVar(\vv)}{\ELiteral(n)}\\
+  \unitarymonomialstoexpr(\monomsone) \typearrow \vetwo\\
+  \symmulexpr(\veone, \vetwo) \typearrow \ve
+}{
+  \unitarymonomialstoexpr(\overname{[(\vv, n)] \concat \monomsone}{\monoms}) \typearrow \ve
+}
+\end{mathpar}
+
+\subsection{TypingRule.SymMulExpr \label{sec:TypingRule.SymMulExpr}}
+\hypertarget{def-symmulexpr}{}
+The function
+$
+\symmulexpr(\overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \typearrow \overname{\expr}{\ve}
+$
+produces an expression representing the multiplication of expressions $\veone$ and $\vetwo$,
+simplifying away the case where one of the operands is the literal one.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{one\_operand}):
+  \begin{itemize}
+    \item either $\veone$ or $\vetwo$ is the literal expression for $1$;
+    \item $\ve$ is $\vetwo$ if $\veone$ is the literal expression for $1$ and $\veone$, otherwise.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[one\_operand]{
+  (\veone = \ELiteral(\lint(1)) \lor \vetwo = \ELiteral(\lint(1)))\\
+  \ve \eqdef \choice{\veone = \ELiteral(\lint(1))}{\vetwo}{\veone}
+}{
+  \symmulexpr(\EBinop(\MUL, \veone, \vetwo)) \typearrow \ve
+}
+\and
+\inferrule[no\_one\_operand]{
+  (\veone \neq \ELiteral(\lint(1)) \land \vetwo \neq \ELiteral(\lint(1)))\\
+  \ve \eqdef \EBinop(\MUL, \veone, \vetwo)
+}{
+  \symmulexpr(\EBinop(\MUL, \veone, \vetwo)) \typearrow \ve
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.TypeOf}
+\hypertarget{def-typeof}{}
+The function
+\[
+  \typeof(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs})
+  \;\aslto\; \overname{\ty}{\tty}\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+looks up the environment $\tenv$ for a type $\tty$ associated with an identifier
+$\vs$. The result is type error if $\vs$ is not associated with any type.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local}):
+  \begin{itemize}
+    \item $\vs$ is associated with a type $\tty$ in the local environment of $\tenv$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item $\vs$ is not associated with a type in the local environment of $\tenv$;
+    \item $\vs$ is associated with a type $\tty$ in the global environment of $\tenv$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item $\vs$ is not associated with a type in the local environment of $\tenv$;
+    \item $\vs$ is not associated with a type in the global environment of $\tenv$;
+    \item the result is a type error indicating that $\vs$ was expected to be associated
+          with a type.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\localstoragetypes(\vs) = \tty
+}{
+  \typeof(\tenv, \vs) \typearrow \tty
+}
+\and
+\inferrule[global]{
+  L^\tenv.\localstoragetypes(\vs) = \bot\\
+  G^\tenv.\globalstoragetypes(\vs) = \tty
+}{
+  \typeof(\tenv, \vs) \typearrow \tty
+}
+\and
+\inferrule[none]{
+  L^\tenv.\localstoragetypes(\vs) = \bot\\
+  G^\tenv.\globalstoragetypes(\vs) = \bot
+}{
+  \typeof(\tenv, \vs) \typearrow \TypeErrorVal{\UndefinedIdentifier}
+}
+\end{mathpar}

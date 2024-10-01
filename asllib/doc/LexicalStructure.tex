@@ -1,0 +1,662 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Lexical Structure\label{chap:LexicalStructure}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This chapter defines the various elements of an ASL specification text in a high-level way
+and then formalizes the lexical analysis as a function that takes a text and returns
+a list of \emph{tokens} or a lexical error.
+
+\section{ASL Specification Text}
+An ASL specification is a string --- a list of ASCII characters --- consisting of a \emph{content text}
+followed by an \emph{end-of-file}.
+The content text is a list of
+ASCII characters that have the decimal encoding of 32 through 126 (inclusive),
+which includes the space character (decimal encoding 32),
+as well as
+carriage return (decimal encoding 13) and line feed (decimal encoding 10).
+\hypertarget{def-eof}{}
+The end of file character is denote by $\eof$.
+The content text does not contain an end-of-file character.
+
+In particular, it is an error to use a tab character in ASL specification text (decimal encoding 9).
+
+\section{Lexical Regular Expressions}
+
+\hypertarget{def-regex}{}
+Table~\ref{ta:LexicalRegularExpressions} defines the regular expressions $\RegExp$ used to define
+\emph{lexemes} --- substrings of the ASL specification text that are used to form \emph{tokens}.
+
+\begin{table}
+\caption{Lexical Regular Expressions \label{ta:LexicalRegularExpressions}}
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{RegExp} & \textbf{Matches}\\
+\hline
+$\underbracket{\texttt{a\_string}}$   & Any character in \texttt{a\_string}\\
+$\square$                             & The space character (decimal 32)\\
+\ascii{a}                             & The ASCII with decimal 'a'\\
+\ascii{a-b}                           & The ASCII range between decimals 'a' and 'b'\\
+(\texttt{$A$})                        & $A$\\
+$A$ $B$                               & $A$ followed by $B$\\
+\texttt{$A$ | $B$}                    & A or B\\
+\texttt{$A$ - $B$}                    & $A$ but not $B$\\
+$A*$                                  & Zero or more repetitions of A\\
+$A+$                                  & One or more repetitions of A\\
+%\texttt{["a\_string"]}    & Any character in \texttt{a\_string}\\
+\texttt{"a\_string"}  & The string \texttt{a\_string} verbatim\\
+\texttt{<}r\texttt{>}     & The lexical regular expression defined for \texttt{<}r\texttt{>}\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Let $\REasciichar$ stand for any ASCII character:
+\hypertarget{def-reasciichar}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REasciichar$  &$\triangleq$& \ascii{0-255}
+\end{tabular}
+\end{center}
+
+Let $\REchar$ stand for an ASCII character that may appear in the content text:
+\hypertarget{def-rechar}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REchar$       &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \ascii{32-126}\\
+\end{tabular}
+\end{center}
+
+\hypertarget{def-lang}{}
+The notation $\Lang(e)$ stands for \emph{formal language} of a regular expression $e$.
+That is, the set of strings that match that regular expression.
+
+\section{Whitespace}
+Comments, newlines and space characters are treated as whitespace.
+
+\section{Comments}
+ASL supports comments in the style of C++:
+\begin{itemize}
+\item Single-line comments: the text from \text{//} until the end of the line
+is a comment (\ascii{10} is the line feed character \verb|\n|).
+\item Multi-line comments: the text between \texttt{/*} and \texttt{*/} is a comment.
+\end{itemize}
+Comments do not nest and the two styles of comments do not interact with each other.
+
+\hypertarget{def-recomment}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \texttt{-} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
+\end{tabular}
+\end{center}
+
+\section{Integer Literals}
+Integers are written either in decimal using one or more of the characters \texttt{0-9} and underscore, or in hexadecimal
+using \texttt{0x} at the start followed by the characters \texttt{0-9, a-f, A-F} and underscore. An integer literal cannot start with
+an underscore.
+
+This is formalized by the following lexical regular expression:
+\hypertarget{def-redigit}{}
+\hypertarget{def-reintlit}{}
+\hypertarget{def-rehexlit}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REdigit$  &$\triangleq$& \anycharacter{\texttt{0123456789}}\\
+$\REintlit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)*}\\
+$\REhexlit$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})*
+\end{tabular}
+\end{center}
+
+\section{Real Number Literals}
+Real numbers are written in decimal and consist of one or more decimal digits, a decimal point and one
+or more decimal digits. Underscores can be added between digits to aid readability
+
+Underscores in numbers are not significant, and their only purpose is to separate groups of digits to make constants
+such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} easier to read,
+
+\hypertarget{def-reallit}{}
+This is formalized by the following lexical regular expression:
+\begin{center}
+\begin{tabular}{rcl}
+$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* '.' \REdigit\ (\Underscore\ | \REdigit)*}
+\end{tabular}
+\end{center}
+
+\section{Boolean Literals}
+Boolean literals are written using \texttt{TRUE} or \texttt{FALSE}.
+
+\section{Bitvector Literals}
+Constant bit-vectors are written using 1, 0 and spaces surrounded by single-quotes.
+\hypertarget{def-rebitvectorlit}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REbitvectorlit$ &$\triangleq$& \anycharacter{\texttt{'}} (\anycharacter{\texttt{01}\square})* \anycharacter{\texttt{'}}
+\end{tabular}
+\end{center}
+
+The spaces in a bitvector are not significant and are only used to improve readability.
+For example, \texttt{'1111 1111 1111 1111'} is the same as \texttt{'1111111111111111'}.
+
+\section{Bitmasks}
+Constant bitmasks are written using \texttt{1}, \texttt{0}, \texttt{x} and spaces surrounded by single-quotes.
+The \texttt{x} represents a don’t care character.
+
+\hypertarget{def-rebitmasklit}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REbitmasklit$ &$\triangleq$& \anycharacter{\texttt{'}} (\anycharacter{\texttt{01x}\square})* \anycharacter{\texttt{'}}
+\end{tabular}
+\end{center}
+
+The spaces in a constant bitmask are not significant and are only used to improve readability.
+
+\section{String Literals}
+
+String literals consist of printable characters surrounded by double quotes.
+They are used to create string values, which are strings of zero or more characters,
+where a character is a printable ASCII character,
+tab (ASCII code \texttt{10}),
+newline (ASCII code \texttt{10}),
+the backslash character (ASCII code \texttt{92}),
+and double-quote character (ASCII code \texttt{34}).
+Unprintable characters (tabs and newlines) are not permitted in string literals,
+so they are represented by treating the backslash character \textbackslash, as an escape character.
+Note therefore that string literals cannot span multiple source lines.
+
+The escape sequences allowed in string literals appear in Table~\ref{ta:SscapeSeuqnces}.
+\begin{table}
+\caption{Escape Sequences in String Literals\label{ta:SscapeSeuqnces}}
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Escape sequence} & \textbf{Meaning}\\
+\hline
+\verb|\n| & The newline, ASCII code \texttt{10}\\
+\verb|\t| & The tab, ASCII code \texttt{9}\\
+\verb|\\| & The backslash character, \verb|\|, ASCII code \texttt{92}\\
+\verb|\"| & The double-quote character, \texttt{"}, ASCII code \texttt{34}\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\hypertarget{def-restringlit}{}
+\hypertarget{def-restrchar}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REstrchar$ &$\triangleq$& \ascii{32-126}\\
+$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \texttt{-} $\underbracket{\texttt{"}\ \backslash\ }$) $|$ ($\underbracket{\backslash\ }$ $\underbracket{\texttt{" n t }\backslash\ }$)  )* \anycharacter{\texttt{"}}
+\end{tabular}
+\end{center}
+
+\section{Identifiers}
+Identifiers start with a letter or underscore and continue with zero or more letters, underscores or digits.
+Identifiers are case sensitive. To improve readability, it is recommended to avoid the use of identifiers that differ
+only by the case of some characters.
+
+By convention, identifiers that begin with double-underscore are reserved for use in the implementation and should
+not be used in specifications.
+
+\hypertarget{def-reletter}{}
+\hypertarget{def-reidentifier}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REletter$ &$\triangleq$& \texttt{'a-z' $|$ 'A-Z'}\\
+$\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$) ($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$ $|$ $\REdigit$)*}\\
+\end{tabular}
+\end{center}
+
+% An enumeration literal is also classed as a literal constant, but is syntactically an identifier.
+
+Tuple element selectors are classed as identifiers. That is, in cases like \texttt{(1, 2).item0},
+the selector \texttt{item0} is classed as an identifier.
+\lrmcomment{This is related to \identiTSXL}
+
+\section{Lexical Analysis}
+Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function
+\hypertarget{def-aslscan}{}
+\[
+\aslscan : \LexSpec \times \REasciichar^* \aslto (\Token^* \cup \{\LexicalError\})
+\]
+\hypertarget{def-lexicalerrorresult}{}
+which takes a \emph{lexical specification} (explained soon), an ASL specification string
+(where characters are simply numbers representing ASCII characters)
+and returns a sequence of tokens (tokens are defined below) or a \emph{lexical error} $\LexicalError$.
+
+Tokens have one of two forms:
+\begin{description}
+  \item[Value-carrying] Tokens that carry value have the form $L(v)$ where $L$ is a token label,
+        signifying the meaning of the token, and $v$ is a value carried by the token,
+        which is used to construct the respective Abstract Syntax Tree nodes.
+  \item[Valueless] Tokens that do not carry values have the form $L$ where $L$ is a token label.
+\end{description}
+
+\hypertarget{def-token}{}
+The set of tokens used for the lexical analysis of ASL strings is defined below.
+\[
+\begin{array}{rcll}
+\Token &\triangleq& \{\ \Tintlit(n) \;|\; n\in\Z\ \} & \cup\\
+        & & \{\ \Treallit(q) \;|\; q\in\Q\ \} & \cup\\
+        & & \{\ \Tstringlit(s) \;|\; s\in \Lang(\REstringlit) \} & \cup\\
+        & & \{\ \Tstringchar(c) \;|\; c \in \Lang(\REchar) \} & \cup\\
+        & & \{\ \Tstringend \} & \cup\\
+        & & \{\ \Tbitvectorlit(b) \;|\; b\in\{0,1\}^*\ \} & \cup\\
+        & & \{\ \Tmasklit(m) \;|\; m\in\{0,1,x\}^*\ \} & \cup\\
+        & & \{\ \Tboollit(\True), \Tboollit(\False)\ \} & \cup \\
+        & & \{\ \Tidentifier(\id) \;|\; \id\in \Lang(\REidentifier)\ \} & \cup \\
+        & & \{\ \Tlexeme(s) \;|\; s\in\Strings\ \} & \cup \\
+        & & \{\ \Twhitespace, \Teof, \Terror\ \} &
+\end{array}
+\]
+
+\hypertarget{def-tintlit}{}
+\begin{itemize}
+  \item Tokens of the form $\Tintlit(n)$ represent integer literals; \hypertarget{def-treallit}{}
+  \item Tokens of the form $\Treallit(q)$ represent real literals; \hypertarget{def-tstringlit}{}
+  \item Tokens of the form $\Tstringlit(s)$ represent string literals;
+  \hypertarget{def-tstringchar}{}
+  \item Tokens of the form $\Tstringchar(c)$ represent a single character in a string literal;
+  \hypertarget{def-tstringend}{}
+  \item The token $\Tstringend$ represents the closing quotes of a string literal;
+  \hypertarget{def-tbitvectorlit}{}
+  \item Tokens of the form $\Tbitvectorlit(b)$ represent bitvector literals; \hypertarget{def-tmasklit}
+  \item Tokens of the form $\Tmasklit(m)$ represent constant bitmasks; \hypertarget{def-tboollit}{}
+  \item Tokens of the form $\Tboollit(b)$ represent Boolean literals; \hypertarget{def-tidentifier}{}
+  \hypertarget{def-tidentifier}{}
+  \item Tokens of the form $\Tidentifier(i)$ represent identifiers; \hypertarget{def-tlexeme}{}
+  \item Tokens with the label $\Tlexeme$ are ones where the value $s$ is simply the \emph{lexeme} for that token.
+  That is, the substring representing that token. Later we will refer to such token by simply quoting
+  the lexeme of the token and dropping the label, for brevity. For example, instead of $\Tlexeme(\texttt{for})$,
+  we will write $\Tfor$. \hypertarget{def-twhitespace}{}
+  \item The valueless token $\Twhitespace$ represents white spaces; \hypertarget{def-terror}{}
+  \item The valueless token $\Terror$ represents an illegal lexeme such as the use of a reserved keyword;
+  \hypertarget{def-teof}{}
+  \item The valueless token $\Teof$ represents $\eof$.
+\end{itemize}
+
+\hypertarget{def-lexspec}{}
+\begin{definition}[Lexical Specification]
+A \emph{lexical specification} consists of a list of pairs $[(r_1,a_1),\ldots,(r_k,a_k)] \in \LexSpec$
+where each pair $(r_i,a_i)$ consists of a lexical regular expression $r_i$
+and a \emph{lexeme action} $a_i : \Strings\times\Strings \aslto \Token^*$.
+\end{definition}
+
+The function
+\[
+\remaxmatch : \overname{\RegExp}{e} \times \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \times \overname{\Strings}{s_2}) \cup \{\bot\}
+\]
+returns the \emph{longest} match of a regular expression $e$ for a prefix of a string $s$.
+More precisely:
+$\remaxmatch(e, s) = (s_1,s_2)$ means that $s_1\in\Lang(e)$ and $s = s_1 \concat s_2$.
+If no match exists, it is indicated by returning $\bot$.
+
+The function $\maxmatches : \overname{\LexSpec}{R} \times \overname{\Strings}{s} \aslto \overname{\LexSpec}{R'}$
+returns the sublist of $R$ consisting of pairs whose maximal matches for $s$ are equal. Importantly, the result sublist $R'$ maintains
+the order of pairs in $R$. If all expressions in $R$ do not match (that is $\remaxmatch$ returns $\bot$ for all pairs in $R$), then $R'$ is the empty list.
+
+The function $\aslscan$ is constructively defined via the following inference rules:
+
+\begin{mathpar}
+\inferrule[no\_match]{
+  \maxmatches(R, s) = \emptylist
+}{
+  \aslscan(R, s) \scanarrow \LexicalError
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[token]{
+  \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  a_1(s_1, s_2) \scanarrow \ts \terminateas \LexicalError
+}{
+  \aslscan(R, s) \scanarrow \ts
+}
+\end{mathpar}
+
+This form of scanning is referred to as ``Maximal Munch'' in Compiler Theory
+and is the most common form of scanning.
+See ``Compilers: Principles, Techniques, and Tools''~\cite{ASU86} for more details.
+
+While Maximal Munch is a useful policy for scanning of most tokens,
+it does not work well for string literals and multi-line comments, which require
+identifying the respective tokens via shortest match.
+%
+For this purpose, most lexical analyzers split the analysis into separate ``states'' ---
+one for keywords, symbols, single-line comments, and identifiers, one for string literals,
+and one for multi-line comments. The lexical analyzers switches between the states as
+needed, and analyzing string literals involves concatenating the individual characters
+of the string literal into a single token.
+
+Lexical analysis of ASL follows this approach by defining three specifications:
+\begin{itemize}
+  \item $\spectoken$: For keywords, symbols, single-line comments, and identifiers;
+  \item $\speccomment$: For multi-line comments;
+  \item $\specstring$: For string literals.
+\end{itemize}
+
+Additionally, lexical analysis of string literals carries the extra state ---
+the string characters encountered along the way.
+
+We now define each of the lexical specifications and related lexeme actions.
+
+Each lexical specification is depicted by a table where the order of elements
+of a specification corresponds to the order of rows in the table.
+
+\subsection{Scanning Regular Tokens}
+To scan keywords, symbols, single-line comments, and identifiers,
+we define the following lexeme actions:
+
+\hypertarget{def-actiondiscard}{}
+\begin{itemize}
+\item
+The lexeme action
+\[
+\actiondiscard(s_1, s_2) \triangleq \aslscan(\spectoken, s_2)
+\]
+discards the string $s_1$ and continues scanning $s_2$ with $\spectoken$.
+This is used for whitespace.
+
+\item
+\hypertarget{def-actiontoken}{}
+The lexeme action
+\[
+\begin{array}{l}
+\actiontoken(f) \triangleq \lambda (s_1,s_2). \\
+\wrappedline\
+\begin{cases}
+  \LexicalError & \text{if }f(s_1) = \Terror \text{ or}\\
+   & \aslscan(\spectoken, s_2) = \Terror\\
+  [f(s_1)] \concat \aslscan(\spectoken, s_2) & \text{else}
+\end{cases}
+\end{array}
+\]
+
+is parameterized by a function $f$ that converts strings into corresponding tokens.
+It applies $f$ to convert $s_1$ into a token and then continues scanning $s_2$ with \\
+$\spectoken$.
+If at any point a lexical error is encountered, the entire result is a lexical error.
+
+\item
+\hypertarget{def-actionstartstring}{}
+The lexeme action
+\[
+\actionstartstring(s_1, s_2) \triangleq \scanstring(\emptylist, s_2)
+\]
+switches to scanning literal strings via $\scanstring$.
+
+\item The lexeme action
+\hypertarget{def-actionstartcomment}{}
+\[
+\actionstartcomment(s_1, s_2) \triangleq \aslscan(\speccomment, s_2)
+\]
+switches to scanning multi-line comments by changing the lexical specification
+to $\speccomment$.
+
+\hypertarget{def-decimaltolit}{}
+\item The function $\decimaltolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
+by decimal representation.
+\hypertarget{def-hextolit}{}
+\item The function $\hextolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
+by hexadecimal representation.
+\hypertarget{def-realtolit}{}
+\item The function $\realtolit(s)$ returns $\Treallit(q)$ where $q$ is the real value represented by $s$
+by floating point representation.
+\hypertarget{def-strtolit}{}
+\item The function $\strtolit(s)$ returns $\Tstringlit(s')$ where $s'$ is the string value represented by $s$.
+\hypertarget{def-bitstolit}{}
+\item The function $\bitstolit(s)$ returns $\Tbitvectorlit(b)$ where $b$ is the sequence of bits
+given by $s$.
+\hypertarget{def-masktolit}{}
+\item The function $\masktolit(s)$ returns $\Tmasklit(m)$ where $m$ is the bitmask given by $s$.
+\hypertarget{def-falsetolit}{}
+\item The function $\falsetolit(s)$ returns $\Tboollit(\False)$ ($s$ is ensured to be \texttt{FALSE}).
+\hypertarget{def-truetolit}{}
+\item The function $\truetolit(s)$ returns $\Tboollit(\True)$ ($s$ is ensured to be \texttt{TRUE}).
+\hypertarget{def-tokenid}{}
+\item The function $\tokenid(s)$ returns $\Tlexeme(s)$.
+\hypertarget{def-lexicalerror}{}
+\item The function $\lexicalerror$ returns $\Terror$.
+\hypertarget{def-toidentifier}{}
+\item The function $\toidentifier(s)$ returns $\Tidentifier(s)$.
+\hypertarget{def-eoftoken}{}
+\item The lexeme action
+\[
+\eoftoken(s_1, s_2) \triangleq \begin{cases}
+  \emptylist & s_2 = \emptylist\\
+  \LexicalError & \text{else}
+\end{cases}
+\]
+checks whether $\eof$ is not followed by more characters and returns a lexical error otherwise.
+\end{itemize}
+
+\hypertarget{def-spectoken}{}
+The lexical specification  $\spectoken$ is given by the following four tables.
+Splitting the lexical specification into four tables is done for presentation purposes ---
+the ordering between the entries is induced by the order between the tables
+and the order of entries in each table.
+%
+When several regular expressions are listed in a row, it means that they are all associated with the same
+token function.
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
+\hline
+(\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+         & $\discard$ \\
+$\texttt{"/*"}$                       & $\actionstartcomment$ \\
+$\underbracket{\texttt{"}}$           & $\actionstartstring$ \\
+$\REintlit$                           & $\actiontoken(\decimaltolit)$ \\
+$\REhexlit$                           & $\actiontoken(\hextolit)$ \\
+$\REreallit$                          & $\actiontoken(\realtolit)$ \\
+$\REstringlit$                        & $\actiontoken(\strtolit)$ \\
+$\REbitvectorlit$                     & $\actiontoken(\bitstolit)$ \\
+$\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
+\texttt{'!'}, \texttt{','}, \texttt{'<'}, \texttt{">>"}, \texttt{"\&\&"}, \texttt{"-->"}, \texttt{"<<"}                         & $\actiontoken(\tokenid)$  \\
+\texttt{']'}, \texttt{')'}, \texttt{".."}, \texttt{'='}, \texttt{'\{'}, \texttt{"!="}, \texttt{'-'}, \texttt{"<->"}                        & $\actiontoken(\tokenid)$  \\
+\texttt{'['}, \texttt{'('}, \texttt{'.'}, \texttt{"<="}, \texttt{'\textasciicircum'}, \texttt{'*'}, \texttt{'/'}                          & $\actiontoken(\tokenid)$  \\
+\texttt{"=="}, \texttt{"||"}, \texttt{'+'}, \texttt{':'}, \texttt{"=>"},                          & $\actiontoken(\tokenid)$  \\
+\texttt{'\}'}, \texttt{"++"}, \texttt{'>'}, \texttt{"+:"}, \texttt{"*:"}, \texttt{';'}, \texttt{">="}                         & $\actiontoken(\tokenid)$  \\
+\texttt{"@looplimit"}                 & $\actiontoken(\tokenid)$  \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
+\hline
+\texttt{"AND"}, \texttt{"array"}, \texttt{"as"}, \texttt{"assert"},      & $\actiontoken(\tokenid)$ \\
+\texttt{"begin"}, \texttt{"bit"}, \texttt{"bits"}, \texttt{"boolean"}       & $\actiontoken(\tokenid)$ \\
+\texttt{"case"}, \texttt{"catch"}, \texttt{"config"}, \texttt{"constant"}      & $\actiontoken(\tokenid)$ \\
+\texttt{"DIV"}, \texttt{"DIVRM"}, \texttt{"do"},\texttt{"downto"}        & $\actiontoken(\tokenid)$ \\
+\texttt{"else"}, \texttt{"elsif"}, \texttt{"end"}, \texttt{"enumeration"}   & $\actiontoken(\tokenid)$ \\
+\texttt{"XOR"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"exception"}     & $\actiontoken(\tokenid)$ \\
+\texttt{"FALSE"} & $\actiontoken(\falsetolit)$  \\
+\texttt{"for"}, \texttt{"func"}          & $\actiontoken(\tokenid)$ \\
+\texttt{"getter"}        & $\actiontoken(\tokenid)$ \\
+\texttt{"if"}, \texttt{"IN"}, \texttt{"integer"}       & $\actiontoken(\tokenid)$ \\
+\texttt{"let"}           & $\actiontoken(\tokenid)$ \\
+%"limit"}         & LIMIT \\
+\texttt{"MOD"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"NOT"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"of"},      \texttt{"OR"},      \texttt{"otherwise"}                  & $\actiontoken(\tokenid)$ \\
+\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}                      & $\actiontoken(\tokenid)$ \\
+\texttt{"real"},    \texttt{"record"},  \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
+\texttt{"setter"},  \texttt{"string"},  \texttt{"subtypes"}                   & $\actiontoken(\tokenid)$ \\
+\texttt{"then"},    \texttt{"throw"},   \texttt{"to"}, \texttt{"try"}         & $\actiontoken(\tokenid)$ \\
+\texttt{"TRUE"}          & $\actiontoken(\truetolit)$ \\
+\texttt{"type"}          & $\actiontoken(\tokenid)$ \\
+\texttt{"UNKNOWN"}, \texttt{"until"}         & $\actiontoken(\tokenid)$ \\
+\texttt{"var"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"when"}, \texttt{"where"}, \texttt{"while"}, \texttt{"with"}          & $\actiontoken(\tokenid)$ \\
+\hline
+\end{tabular}
+\end{center}
+
+The following list represents keywords that are reserved for future use.
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
+\hline
+\texttt{"SAMPLE"}, \texttt{"UNSTABLE"} & $\lexicalerror$ \\
+\texttt{"\_"}, \texttt{"access"}, \texttt{"advice"}, \texttt{"after"} & $\lexicalerror$ \\
+\texttt{"any"}, \texttt{"aspect"} & $\lexicalerror$ \\
+\texttt{"assume"}, \texttt{"assumes"}, \texttt{"before"} & $\lexicalerror$ \\
+\texttt{"call"}, \texttt{"cast"} & $\lexicalerror$ \\
+\texttt{"class"}, \texttt{"dict"} & $\lexicalerror$ \\
+\texttt{"endcase"}, \texttt{"endcatch"}, \texttt{"endclass"} & $\lexicalerror$ \\
+\texttt{"endevent"}, \texttt{"endfor"}, \texttt{"endfunc"}, \texttt{"endgetter"} & $\lexicalerror$ \\
+\texttt{"endif"}, \texttt{"endmodule"}, \texttt{"endnamespace"}, \texttt{"endpackage"} & $\lexicalerror$ \\
+\texttt{"endproperty"}, \texttt{"endrule"}, \texttt{"endsetter"}, \texttt{"endtemplate"} & $\lexicalerror$ \\
+\texttt{"endtry"}, \texttt{"endwhile"}, \texttt{"entry"} & $\lexicalerror$ \\
+\texttt{"event"}, \texttt{"export"}, \texttt{"expression"} & $\lexicalerror$ \\
+\texttt{"extends"}, \texttt{"extern"}, \texttt{"feature"} & $\lexicalerror$ \\
+\texttt{"get"}, \texttt{"gives"} & $\lexicalerror$ \\
+\texttt{"iff"}, \texttt{"implies"}, \texttt{"import"} & $\lexicalerror$ \\
+\texttt{"intersect"}, \texttt{"intrinsic"} & $\lexicalerror$ \\
+\texttt{"invariant"}, \texttt{"is"}, \texttt{"list"} & $\lexicalerror$ \\
+\texttt{"map"}, \texttt{"module"}, \texttt{"namespace"}, \texttt{"newevent"} & $\lexicalerror$ \\
+\texttt{"newmap"}, \texttt{"original"} & $\lexicalerror$ \\
+\texttt{"package"}, \texttt{"parallel"} & $\lexicalerror$ \\
+\texttt{"pointcut"}, \texttt{"port"}, \texttt{"private"} & $\lexicalerror$ \\
+\texttt{"profile"}, \texttt{"property"}, \texttt{"protected"}, \texttt{"public"} & $\lexicalerror$ \\
+\texttt{"replace"} & $\lexicalerror$ \\
+\texttt{"requires"}, \texttt{"rethrow"}, \texttt{"rule"} & $\lexicalerror$ \\
+\texttt{"set"}, \texttt{"shared"}, \texttt{"signal"} & $\lexicalerror$ \\
+\texttt{"statements"}, \texttt{"template"} & $\lexicalerror$ \\
+\texttt{"typeof"}, \texttt{"union"} & $\lexicalerror$ \\
+\texttt{"using"}, \texttt{"watch"} & $\lexicalerror$ \\
+\texttt{"ztype"} & $\lexicalerror$ \\
+% "pattern"
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
+\hline
+$\REidentifier$   & $\actiontoken(\toidentifier)$ \\
+$\eof$            & $\eoftoken$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Scanning Strings}
+\hypertarget{def-scanstring}{}
+To scan string literals, we define the following specialized scanning function.
+The function
+\[
+\scanstring : \overname{\REasciichar^*}{\buff} \times \overname{\REasciichar^*}{s} \aslto (\Token^* \cup \{\LexicalError\})
+\]
+scans string with the $\specstring$ specification while building the final string literal in $\buff$.
+It is defined via the following rules:
+\begin{mathpar}
+\inferrule[no\_match]{
+  \maxmatches(\specstring, s) = \emptylist
+}{
+  \scanstring(\buff, s) \scanarrow \LexicalError
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[char]{
+  \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  a_1(s_1, s_2) = \Tstringchar(t)\\
+  \scanstring(\buff \concat t, s_2) \scanarrow \tstwo \terminateas \LexicalError
+}{
+  \scanstring(\buff, s) \scanarrow \tstwo
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[end]{
+  \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
+  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  a_1(s_1, s_2) = \Tstringend\\
+  \aslscan(\spectoken, s_2) \scanarrow \tstwo \terminateas \LexicalError
+}{
+  \scanstring(\buff, s) \scanarrow [\Tstringlit(\buff)] \concat \tstwo
+}
+\end{mathpar}
+
+We also employ the following lexeme actions:
+\begin{itemize}
+\item
+\hypertarget{def-stringchar}{}
+The lexeme action
+\[
+\stringchar(s_1, s_2) \triangleq \Tstringchar(s_1)
+\]
+returns $s_1$, which is always a single character, as a $\Tstringchar$
+token, which is added to the characters that make up the final string
+literal.
+
+\item
+\hypertarget{def-stringescape}{}
+The lexeme action
+\[
+\stringescape(s_1, s_2) \triangleq \begin{cases}
+  \Tstringchar(10) & s_1 = \texttt{\textbackslash\;\;n}\\
+  \Tstringchar(9) & s_1 = \texttt{\textbackslash\;\;t}\\
+  \Tstringchar(34) & s_1 = \texttt{\textbackslash\;\;"}\\
+  \Tstringchar(92) & s_1 = \texttt{\textbackslash\;\;\textbackslash}\\
+\end{cases}
+\]
+returns the ASCII character for the corresponding escape string, in decimal encoding,
+as a $\Tstringchar$ token, which is added to the characters that make up the final string
+literal.
+
+\item
+\hypertarget{def-stringfinish}{}
+The lexeme action
+\[
+\stringfinish(s_1, s_2) \triangleq \Tstringend
+\]
+signals that the string literal has ended, which makes $\scanstring$
+switch to scanning via $\aslscan$ and $\spectoken$.
+\end{itemize}
+
+\hypertarget{def-specstring}{}
+The lexical specification for string literals --- $\specstring$ --- is given by the following table:
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
+\hline
+$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{n }}  &  $\stringescape$\\
+$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{t }}  &  $\stringescape$\\
+$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{" }}  &  $\stringescape$\\
+$\underbracket{\backslash\ }$ \anycharacter{\ \backslash\ }  & $\stringescape$ \\
+\anycharacter{{\color{white}\backslash}\texttt{" }}   &  $\stringfinish$\\
+$\REchar$                                             &  $\stringchar$\\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Scanning Multi-line Comments}
+The lexeme action
+\hypertarget{def-discardcommentchar}{}
+\[
+\discardcommentchar(s_1, s_2) \triangleq \aslscan(\spectoken, s_2)
+\]
+discards the string $s_1$ (which is always a single character) and continues scanning $s_2$ with $\speccomment$.
+This is the same as $\discard$, except that $s_2$ is scanned with $\speccomment$ instead of $\spectoken$.
+
+\hypertarget{def-speccomment}{}
+The lexical specification for multi-line comments --- $\speccomment$ --- is given by the table below.
+%
+Notice that here, $\actiondiscard$ below is used to discard the closing of the multi-line comment and to switch
+to scanning with $\spectoken$.
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
+\hline
+\texttt{"*/"} & $\actiondiscard$ \\
+$\REchar$     & $\discardcommentchar$ \\
+\hline
+\end{tabular}
+\end{center}

@@ -1,0 +1,570 @@
+\chapter{Semantics Definitions\label{chap:Semantics}}
+
+The semantics of ASL define all valid behaviors of a given ASL specification.
+More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
+or AST, for short. Second, a type checker analyzes the \emph{untyped AST} to determine whether it
+is well-typed and, if successful, returns a \emph{static environment} and a \emph{typed AST}.
+Otherwise, it returns a type error.
+
+Tools such as interpreters, Verilog simulators, and verifiers can operate over the typed AST, based on the definition
+of the semantics in this reference, to test and analyze a given specification.
+
+\paragraph{Understanding the Semantics Formalization:}
+We assume basic familiarity with the ASL language constructs.
+The ASL semantics is defined in terms of its AST,
+and as a consequence familiarity with the AST is required to understand the semantics.
+The few components of the type system needed to understand the ASL semantics are explained in context.
+The mathematical background needed to understand the mathematical formalization
+of the ASL semantics appears in \chapref{FormalSystem} and \secref{semanticsbuildingblocks}.
+
+\section{When Do ASL Specifications Have Meaning\label{sec:MeaningfulASLSpecifications}}
+The ASL semantics defined here assign meaning only to \emph{well-typed specifications}.
+That is, specifications for which the type-checker produces a static environment rather than
+a type error.
+Specifications that are not well-typed have no defined semantics.
+In the rest of this reference, we assume well-typed specifications.
+
+ASL admits non-determinism, for example via the \texttt{UNKNOWN} expression.
+This means that a given specification might have (potentially infinitely) many
+\hyperlink{def-derivationtree}{derivation trees}.
+
+An ASL specification is \emph{terminating} when \underline{all} of its derivation trees are finite.
+
+Although ASL does not require specifications to terminate, the semantics defined in this
+reference assign meaning only to terminating specifications.
+A future version of this reference, will assign meaning to non-terminating specifications.
+
+\section{Basic Semantic Concepts}
+The ASL semantics are given by relations between \emph{semantic configurations},
+or \hyperlink{def-configuration}{\emph{semantic configurations}}~\cite{SemanticsWithApplicationsBook}, for short.
+We refer to relations between semantic configurations as \emph{semantic relations}.
+Semantic configurations encapsulate information needed to transition into other semantic configurations, such as:
+\begin{itemize}
+  \item a \emph{dynamic environment}, which binds variables to values;
+  \item the typed AST node that needs to be evaluated;
+  \item a \emph{concurrent execution graph}, as per a given memory model; and
+  \item values resulting from evaluating expressions.
+\end{itemize}
+The semantic relations are constructively defined via \emph{semantic rules}.
+These semantic rules are defined by induction over the typed AST.
+
+\paragraph{Execution:}
+A valid execution of an ASL specification transitions from an \emph{initial semantic configuration},
+which consists of the given specification and the standard library specification, to an output semantic configuration
+consisting of an output value and a concurrent execution graph.
+
+\paragraph{Primitive Subprograms:}
+The semantics of ASL are parameterized by a set of primitive subprograms ---
+subprograms whose implementation is not defined by ASL statements and whose effect on the dynamic environment
+is defined externally. Critically, access to memory is given by primitive subprograms.
+
+We define two types of semantics --- \emph{sequential semantics} and \emph{concurrent semantics}.
+
+\paragraph{Concurrent Semantics:}
+The concurrent semantics operate over concurrent execution graphs.
+Intuitively, these graphs define Read Effects and Write Effects to variables and constraints over those effects.
+Together with the constraints that define a given memory model (such as the ARM memory model~\cite{AlglaveDGHM21}),
+these graphs axiomatically define
+the valid interactions of shared variables of a given specification.
+
+\paragraph{Sequential Semantics:}
+The sequential semantics correspond to executing an ASL specification in the context of a single thread
+of execution; notice that ASL does not contain any concurrency constructs.
+%
+Technically, the sequential semantics are defined by omitting the concurrent execution graph components
+from all semantic configurations.
+
+\section{Semantics Building Blocks}
+\label{sec:semanticsbuildingblocks}
+This section defines the mathematical types over which our semantics are defined.
+An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
+
+\section{Semantic Configurations\label{sec:SemanticConfigurations}}
+
+Semantic configurations express intermediate states related by \emph{semantic relations}.
+%
+More precisely, semantic relations relate two distinct sets of semantic configurations ---
+\emph{input semantic configurations} and \emph{output semantic configurations}.
+Input semantic configurations consist of an environment and an AST node.
+Output semantic configurations consist of an output environment, values,
+and concurrent execution graphs.
+%
+Semantic configurations wrap together elements such as environments and AST nodes
+and associate them with a \emph{configuration domain}. Input semantic configuration domains
+determine the semantic relation they pertain to, while output semantic configuration
+domains distinguish between conceptually different kinds of outputs, for example
+ones where an exception was raised, ones when a dynamic error occurred, etc.
+
+We now explain the components over which semantic configurations are defined:
+\begin{itemize}
+    \item Native values.
+    \item Static Environments, which consist of the information inferred
+            by the type-checker for the specification.
+    \item Dynamic Environments (\defref{dynamicenvironments}) associate \nativevalues\ to variables.
+    \item Concurrent Execution Graphs (\secref{concurrentexecutiongraphs}) track Read and Write Effects over variables.
+\end{itemize}
+
+\hypertarget{def-vals}{}
+\hypertarget{def-nativevalue}{}
+\hypertarget{def-nativevalues}{}
+\section{Native Values\label{sec:nativevalues}}
+Semantic evaluation binds values to storage elements when a specification is semantically evaluated.
+To formalize this, we define the set of \emph{\nativevalues}, denoted $\vals$
+(\texttt{NV} stands for Native Value).
+
+\subsection{Prose}
+The set of \nativevalues\ $\vals$ is the minimal set satisfying all of the following rules:
+\begin{itemize}
+  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a \nativevalue;
+  \item \textsc{tuple values and array values}: if $\vl$ is a list of \nativevalues\ then $\nvvector{\vl}$ is a \nativevalue;
+  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to \nativevalues\ then $\nvrecord{\vr}$ is a \nativevalue.
+\end{itemize}
+
+\subsection{Formally}
+\hypertarget{def-nvliteral}{}
+\hypertarget{def-nvvector}{}
+\hypertarget{def-nvrecord}{}
+\begin{mathpar}
+  \inferrule[(Basis Set: Integers, Reals, Booleans, Strings, and Bitvectors)]
+  {\vv \in \literal}
+  { \nvliteral{\vv} \in \vals }
+  \and
+  \inferrule[(Tuple Values and Array Values)]{\vvl \in \vals^*}
+  { \nvvector{\vvl} \in \vals }
+  \and
+  \inferrule[(Record Values)]
+  {\vr : \Identifiers \rightarrowfin \vals}
+  { \nvrecord{\vr} \in \vals }
+\end{mathpar}
+
+We define the following shorthands for \nativevalue\ literals:
+\hypertarget{def-nvint}{}
+\[
+\begin{array}{rcl}
+\nvint(z)       &\triangleq& \nvliteral{\lint(z)}           \hypertarget{def-nvbool}{}\\
+\nvbool(b)      &\triangleq& \nvliteral{\lbool(b)}          \hypertarget{def-nvreal}{}\\
+\nvreal(r)      &\triangleq& \nvliteral{\lreal(r)}          \hypertarget{def-nvstring}{}\\
+\nvstring(s)    &\triangleq& \nvliteral{\lstring(s)}        \hypertarget{def-nvbitvector}{}\\
+\nvbitvector(v) &\triangleq& \nvliteral{\lbitvector(v)}\\
+\end{array}
+\]
+
+We define the following types of \nativevalues:
+\hypertarget{def-tint}{}
+\[
+\begin{array}{rcl}
+  \tint       &\triangleq& \{ \nvint(z) \;|\; z \in \Z\}                                        \hypertarget{def-tbool}{}\\
+  \tbool      &\triangleq& \{ \nvbool(\True), \nvbool(\False) \}                                \hypertarget{def-treal}{}\\
+  \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
+  \tstring    &\triangleq& \{ \nvstring(s) \;|\; s \in \Strings\}  \hypertarget{def-tbitvector}{}\\
+  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^*\}   \hypertarget{def-tvector}{}\\
+  \tvector    &\triangleq& \{ \nvvector{\textit{vals}} \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
+  \trecord  &\triangleq& \{ \nvrecord{\fieldmap} \;|\; \fieldmap \in \Identifiers\rightarrowfin\vals\}\\
+\end{array}
+\]
+
+\hypertarget{def-dynamicenvs}{}
+\begin{definition}[Dynamic Environments\label{def:dynamicenvironments}]
+A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}, for short, is a structure which,
+associates \nativevalues\ to variables.
+Formally, a sequential environment $\denv \in \dynamicenvs$ is a pair consisting of a partial function
+(see \defref{PartialFunction}) from global
+variable names to their \nativevalue, and a partial function from local variable names to their
+\nativevalues:
+\[
+\begin{array}{rcl}
+\dynamicenvs        &\triangleq&  \globaldynamicenvs \times \localdynamicenvs \\
+\globaldynamicenvs  &\triangleq&  (\Identifiers \partialto \vals) \\
+\localdynamicenvs   &\triangleq&  (\Identifiers \partialto \vals) \\
+\end{array}
+\]
+\end{definition}
+
+\paragraph{Static Environments}
+A \emph{static environment} (see \secref{StaticEnvironments}) $\tenv \in \staticenvs$ (also referred to as a \emph{type environment})
+is produced by the type-checker from the untyped AST.
+
+We assume that the static environment supports the following functions:
+\hypertarget{def-findfunc}{}
+\hypertarget{def-typesatisfies}{}
+\[
+  \begin{array}{rcl}
+    \findfunc       &:& \staticenvs \times \Identifiers \partialto \func\\
+    \typesat  &:& \staticenvs \times (\ty \times \ty) \rightarrow \{\True, \False\}
+  \end{array}
+\]
+The partial function $\findfunc$ returns the typed AST of the subprogram for a given identifier.
+(Recall that ASL allows subprogram overloading so a name does not uniquely identify
+a specific subprogram.
+However, the type-checker renames each function uniquely so that it can be accessed based
+on its name alone.)
+%
+The function $\typesat(\vt, \vs)$ returns true
+if the type $\vt$ \emph{type-satisfies} the type $\vs$
+(see \secref{TypingRule.TypeSatisfaction}).
+This is used in matching a raised exception to a corresponding catch clause.
+
+\hypertarget{def-envs}{}
+\begin{definition}[Environments]
+Environments pair static environments with dynamic environments:
+$\envs = \staticenvs \times \dynamicenvs$.
+\end{definition}
+\hypertarget{def-env}{}
+We write $\env \in \envs$ to range over environments.
+%
+From the perspective of the semantics, the static environment is immutable.
+That is, all environments share the same static environment.
+
+\subsection{Concurrent Execution Graphs\label{sec:concurrentexecutiongraphs}}
+
+The concurrent semantics of an ASL specification utilize \emph{concurrent execution graphs}
+(\emph{execution graphs}, for short),
+which track the Read and Write Effects over variables, yielded by the sequential semantics,
+and the \emph{ordering constraints} between those effects.
+The graphs resulting from executing an ASL specification are converted into
+\emph{candidate execution graphs}, which are introduced, defined,
+and used in~\cite{AlglaveMT14,alglave2016syntax,AlglaveDGHM21}.
+
+\hypertarget{def-xgraphs}{}
+Formally, an execution graph $\xgraph = (N^\xgraph, E^\xgraph, O^\xgraph) \in \XGraphs$
+is defined via a set of \emph{nodes} ($N^\xgraph$), a set of \emph{edges} ($E^\xgraph$), and a set of \emph{output nodes} ($O^\xgraph$):
+\hypertarget{def-nodes}{}
+\[
+\begin{array}{rcl}
+\XGraphs &\triangleq& \pow{\Nodes} \times \pow{\Nodes \times \Nodes \times \Labels} \times \pow{\Nodes}  \hypertarget{def-read}{}\hypertarget{def-write}{}\\
+\Nodes   &\triangleq& \N \times \{ \Read, \Write \} \times \Identifiers \hypertarget{def-labels}{}\\
+\Labels  &\triangleq& \{ \asldata, \aslctrl, \aslpo \}
+\end{array}
+\]
+
+Nodes represent unique Read and Write Effects. Formally, a node $(u,l,\id) \in \Nodes$ associates a unique instance counter $u$
+to an \emph{ordering label} $l$, which specifies whether it represents a Read Effect of a Write Effect to a variable named $\id$.
+%
+We say that en Effect \texttt{E1} is \emph{$l$-before} another Effect \texttt{E2}, for $l\in \Labels$ and a given execution graph
+$g$, when $(\texttt{E1}, l, \texttt{E2}) \in E^g$.
+
+An edge represents an ordering constraint between two effects, which can be one of the following:
+\hypertarget{def-asldata}{}
+\begin{description}
+\item[$\asldata$] Represents a \emph{data dependency}.
+That is, when one effect hands over its data to another effect.
+\hypertarget{def-aslctrl}{}
+\item[$\aslctrl$] Represents a \emph{control dependency}.
+That is, when a Read Effect to a variable determines the flow of control (e.g., which condition of a branch is taken),
+which then leads to another Read/Write Effect.
+\hypertarget{def-aslpo}{}
+\item[$\aslpo$] Represents a \emph{program order}.
+That is, when two Effects are generated by ASL constructs, which are separated by a semicolon in the text of the specification,
+or appear in successive iterations of loop a unrolling.
+% That is, when two effects are defined to be ordered according to the sequential semantics.
+\end{description}
+
+An execution graph is \emph{well-formed} if all nodes have unique instance counters, edges connect graph nodes,
+and the output nodes are contained in the set of nodes:
+\[
+  \begin{array}{rcl}
+  \forall n, n' \in N^\xgraph &.& n=(u,l,\id) \wedge n=(u',l',\id') \;\Rightarrow\; u \neq u' \\
+  \forall e \in E^\xgraph &.& e=(n, n', l) \;\Rightarrow\; n, n' \in N^\xgraph \\
+  & & O^\xgraph \subseteq N^\xgraph \enspace.
+  \end{array}
+\]
+\hypertarget{def-emptygraph}{}
+
+We denote the empty execution graph $\emptygraph \triangleq (\emptyset, \emptyset, \emptyset)$.
+%
+We define the following functions, which return an execution graph that represents a single Read/Write Effect to a variable \texttt{x}.
+\hypertarget{def-writeeffect}{}
+\hypertarget{def-readeffect}{}
+\begin{definition}[Read/Write Effects]
+\[
+  \begin{array}{rclll}
+    \WriteEffect(\vx) &\triangleq& (\{n\}, \emptyset, \{n\}) & \text{where } n=(u, \Write, \vx), & u\in\N \text{ is fresh}\\
+    \ReadEffect(\vx)  &\triangleq& (\{n\}, \emptyset, \{n\}) & \text{where } n=(u, \Read, \vx),   & u\in\N \text{ is fresh}\\
+  \end{array}
+\]
+\end{definition}
+
+We also define two ways to compose execution graphs --- \emph{unordered composition} and
+\emph{ordered composition with a given label}.
+
+\hypertarget{def-parallel}{}
+\begin{definition}[Unordered Graph Composition]
+Given two execution graphs $S_1 = (N_1, E_1, O_1)$ and $S_1 = (N_2, E_2, O_2)$ their unordered composition,
+denoted $S_1 \parallelcomp S_2$ is defined as follows:
+\[
+  S_1 \parallelcomp S_2\triangleq (N_1 \cup N_2, E_1 \cup E_2, O_1 \cup O_2) \enspace.
+\]
+Intuitively, this composition conveys the fact that there are no ordering constraints between the effects
+in the arguments graphs.
+\end{definition}
+
+\hypertarget{def-ordered}{}
+\begin{definition}[Ordered Graph Composition]
+Given two execution graphs, \\ $S_1 = (N_1, E_1, O_1)$ and $S_1 = (N_2, E_2, O_2)$ and an ordering label $l$,
+the ordered composition $\ordered{S_1}{l}{S_2}$ is defined as follows:
+\[
+  \ordered{S_1}{l}{S_2} \triangleq (N_1 \cup N_2,\ E_1 \cup E_2 \cup (O_1 \times \{l\} \times N_2),\ O_2) \enspace.
+\]
+Intuitively, this composition constrains the output effects of $S_1$ to appear before any effect of $S_2$ with respect
+to the given ordering label.
+\end{definition}
+
+\subsection{Kinds of Semantic Configurations\label{sec:KindsOfSemanticConfigurations}}
+
+Recall that the ASL semantics defines a relation between input semantic configurations and output semantic configurations
+(\secref{SemanticConfigurations}).
+Input semantic configuration domains are unique to the semantic relation that employs them.
+For that reason, we name semantic relations by the name of the corresponding configuration domain of the input semantic configuration.
+For example, the semantic relation that employs input semantic configurations with the domain $\texttt{eval\_expr}$
+is named $\texttt{eval\_expr}$.
+%
+We will often use the prefix \texttt{eval} for semantic relations with the intuition being that their input semantic configurations
+should be semantically evaluated, yielding an output semantic configuration.
+
+ASL semantics mainly utilizes the following types of output semantic configurations:
+\begin{description}
+  \item[Normal Values.] \hypertarget{def-normal}{}
+  Semantic configurations consisting of different combinations of values,
+  execution graphs, and environments, representing intermediate results
+  generated while evaluating statements:
+  \begin{itemize}
+  \item $\Normal(\vals \times \XGraphs)$,
+  \item $\Normal((\vals \times \XGraphs), \envs)$,
+  \item $\Normal(((\vals \times \vals)^* \times \XGraphs), \envs)$,
+  \item $\Normal(\XGraphs, \envs)$,
+  \item $\Normal((\vals^* \times \XGraphs), \envs)$, and
+  \item $\Normal((\vals\times\XGraphs)^*, \envs)$.
+  \end{itemize}
+
+  \hypertarget{def-throwing}{}
+  \item[Exceptions.] Semantic configurations in
+  \[
+    \Throwing(\langle \valuereadfrom(\vals,\Identifiers) \times \ty\rangle \times \XGraphs, \envs)
+  \]
+  represent thrown exceptions.
+  \hypertarget{def-valuereadfrom}{}
+
+  There are two flavors of exceptions:
+  exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
+  an identifier to which the Read Effect is attributed, and an associated type.
+  The type $\valuereadfrom(\vals,\Identifiers)$ is a semantic configuration nested inside an exception semantic configuration.
+  The ASL semantics propagates these \emph{exceptional semantic configurations} to the nearest catch clause that matches
+  them, and otherwise they are caught at the top-level and reported as errors (see dynamic errors below).
+
+  \hypertarget{def-returning}{}
+  \item[Returned Values.] Semantic configurations in $\Returning((\vals^* \times \XGraphs), \envs)$
+  represent (tuples of) values being returned by the currently executing subprogram.
+  The ASL semantics propagates these \emph{early return semantic configurations} to the respective call expression/statement.
+
+  \hypertarget{def-continuing}{}
+  \item[In-flight Subprogram.] Semantic semantic configurations in $\Continuing(\XGraphs, \envs)$
+  represent the fact that a subprogram has more statements to execute.
+  The ASL semantics treats these semantic configurations as a signal to keep evaluating the remainder
+  of the subprogram currently being evaluated.
+%where is this used?
+
+  \hypertarget{def-error}{}
+  \item[Dynamic Errors.] Semantic configurations in $\Error(\Strings)$
+  represent dynamic errors (for example, division by zero).
+  The ASL semantics is set up such that when these \emph{error semantic configurations} appear,
+  the evaluation of the entire specification terminates by outputting them.
+\end{description}
+Helper relations often have output semantic configurations that are just tuples, without an associated configuration domain.
+
+We define the following shorthands for types of output semantic configurations:
+\hypertarget{def-tnormal}{}
+\hypertarget{def-tcontinuing}{}
+\hypertarget{def-tthrowing}{}
+\hypertarget{def-treturning}{}
+\hypertarget{def-terror}{}
+\[
+  \begin{array}{rcl}
+    \TNormal          & \triangleq & \Normal(\vals, \XGraphs) \cup \Normal((\vals \times \XGraphs), \envs)\ \cup \\
+                      &            & \Normal(((\vals \times \vals)^* \times \XGraphs), \envs) \cup  \Normal(\XGraphs, \envs)\ \cup   \\
+                      &            & \Normal((\vals^* \times \XGraphs), \envs) \cup \Normal((\vals\times\XGraphs)^*, \envs)\\
+    \TThrowing        & \triangleq & \Throwing(\langle\vals \times \ty\rangle \times \XGraphs, \envs)\\
+    \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs)\\
+    \TReturning       & \triangleq & \Returning((\vals^* \times \XGraphs), \envs)\\
+    \TError           & \triangleq & \Error(\Strings)\\
+  \end{array}
+\]
+
+We will say that a semantic transition \emph{terminates}:
+\begin{itemize}
+\item \emph{normally} when the output semantic configuration domain is
+$\Normal$,
+\item \emph{exceptionally} when the output semantic configuration domain is
+$\Throwing$,
+\item \emph{erroneously} when the output semantic configuration domain is
+$\Error$, and
+\item \emph{abnormally} when it either terminates exceptionally or
+erroneously.
+\end{itemize}
+
+We introduce the following shorthands for semantic configurations where all variables
+appearing are \hyperlink{def-freshvariables}{fresh}:
+\begin{itemize}
+\hypertarget{def-throwingconfig}{}
+\item $\ThrowingConfig \triangleq \Throwing((\vv, \vg), \newenv)$.
+\hypertarget{def-errorconfig}{}
+\item $\ErrorConfig \triangleq \Error(\vs)$.
+\hypertarget{def-returningconfig}{}
+\item $\ReturningConfig \triangleq \Returning((\vvs,\newg), \newenv)$
+is an early return semantic configuration.
+\hypertarget{def-continuingconfig}{}
+\item $\ContinuingConfig \triangleq \Continuing(\newg, \newenv)$.
+\end{itemize}
+
+\subsection{Extracting and Substituting Elements of Semantic configurations}
+
+\hypertarget{def-graphof}{}
+\hypertarget{def-environof}{}
+Given a semantic configuration $C$, we define the graph component of the semantic configuration, \\
+$\graphof{C}$, and the environment of the semantic configuration, $\environof{C}$, as follows:
+\[
+\begin{array}{lcc}
+  C & \graphof{C} & \environof{C}\\
+  \hline
+  \Normal(\vv,\vg) & \vg & \text{undefined}\\
+  \Normal((\vv,\vg), \env) & \vg & \env\\
+  \Normal(([i=1..k: (\texttt{va}_i,\texttt{vb})],\vg), \env) & \vg & \env\\
+  \Normal(\vg, \env) & \vg & \env\\
+  \Normal([\vv_{1..k}], \vg) & \vg & \env\\
+  \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
+  \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \vg & \env\\
+  \Returning(([\vv_{1..k}],\vg), \env) & \vg & \env\\
+  \Continuing(\vg, \env) & \vg & \env\\
+\end{array}
+\]
+
+\hypertarget{def-withgraph}{}
+Given a semantic configuration $C$, we define $\withgraph{C}{\vgp}$ to be a semantic configuration
+like $C$ where the graph component is substituted with $\vgp$:
+\[
+\begin{array}{ll}
+  C & \withgraph{C}{\vgp}\\
+  \hline
+  \Normal(\vv,\vg) & \Normal(\vv,\vgp)\\
+  \Normal((\vv,\vg), \env) & \Normal((\vv,\vgp), \env)\\
+  \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vgp), \env)\\
+  \Normal(\vg, \env) & \Normal(\vgp, \env)\\
+  \Normal(i=1..k: \vv_i, \vg) & \Normal(i=1..k: \vv_i, \vgp)\\
+  \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
+  \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \Throwing((\valuereadfrom(\vx,\vv),\vgp), \env)\\
+  \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vgp), \env)\\
+  \Continuing(\vg, \env) & \Continuing(\vgp, \env)\\
+\end{array}
+\]
+\hypertarget{def-withenviron}{}
+Similarly, we define the $\withenviron{C}{\envp}$ to be a semantic configuration
+like $C$ where the environment component, if one exists, is substituted with $\envp$:
+\[
+\begin{array}{ll}
+  \textbf{Semantic configuration} & \withenviron{C}{\envp}\\
+  \hline
+  \Normal(\vv,\vg) & \text{undefined}\\
+  \Normal((\vv,\vg), \env) & \Normal((\vv,\vg), \envp)\\
+  \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \envp)\\
+  \Normal(\vg, \env) & \Normal(\vg, \envp)\\
+  \Normal(i=1..k: \vv_i, \vg) & \Normal(i=1..k: \vv_i, \vg)\\
+  \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \Normal([i=1..k: (\vv_i,\vg_i)], \envp)\\
+  \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \Throwing((\valuereadfrom(\vx,\vv),\vg), \envp)\\
+  \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vg), \envp)\\
+  \Continuing(\vg, \env) & \Continuing(\vg, \envp)\\
+\end{array}
+\]
+
+\section{Semantic Evaluation}
+\hypertarget{def-evalrel}{}
+\hypertarget{def-primitiverel}{}
+The semantics of ASL is given by the relations\footnote{The reason that relations, rather than functions, are used is due to the
+potential non-determinism in the primitive subprograms
+and the non-determinism inherent in the \texttt{UNKNOWN} expression.}
+\evalrel\ and \primitiverel.
+The relation \evalrel\ is defined as the disjoint union of the relations defined in this reference.
+The relation \primitiverel\ provides the semantics of primitive subprograms and is not otherwise defined
+constructively.
+
+\subsection{Natural Operational Semantics}
+We define the ASL semantics in the style of \emph{natural operational semantics}~\cite{SemanticsWithApplicationsBook}
+(also known as \emph{big step semantics}).
+Natural operational semantics evaluates the AST inductively.
+That is, it concludes transitions for semantic configurations starting from
+non-leaf AST nodes by concluding transitions from semantic configurations starting from their children nodes.
+
+\subsubsection{No Undefined Behaviors}
+When an input semantic configuration does not satisfy any semantic rule,
+there is no output semantic configuration for it to transition to. We say that
+the semantic configuration is \emph{stuck} and the ASL semantics is undefined for that
+input semantic configuration.
+
+The ASL semantics is defined for well-typed ASL specifications
+and gets stuck only in cases of non-terminating specifications
+(due to non-terminating loops, or infinite recursion).
+Otherwise, for every input semantic configuration there is at least one rule that can be used to take a semantic transition.
+
+\hypertarget{eval-example}{}
+\subsubsection{Evaluation Example}
+\newcommand\elint[1]{\ELiteral(\lint(#1))}
+The following example shows how to utilize the rules for expression literals and binary operator expressions
+to derive a transition from an input semantic configuration with the expression $(1+2)*(4+5)$,
+given by the AST
+\[
+  \begin{array}{rl}
+  \EBinop(\MUL, &\overname{\EBinop(\PLUS, \overname{\elint{1}}{\veone}, \overname{\elint{2}}{\vetwo})}{\veonetwo}, \\
+                &\overname{\EBinop(\PLUS, \overname{\elint{4}}{\vefour}, \overname{\elint{5}}{\vefive})}{\vefourfive})
+  \end{array}
+\]
+to an output semantic configuration with the value resulting from the calculation of the expression.
+
+We annotate subexpressions to allow referring to them.
+
+\hypertarget{def-emptyenv}{}
+We write $\emptyenv$ to stand for a trivial environment (that is, one where all functions are empty).
+
+Notice that, we have dropped the execution graph component and simplified pairs of the form $(\vv,\vg)$,
+where $\vv$ is a \nativevalue\  and $\vg$ is an execution graph, to just $\vv$.
+This is because we are interested in demonstrating the sequential semantics (also, the execution graphs
+in this case are all empty).
+
+The example shows (using references to the relevant rules on the right), how the expression for $1+2$ is evaluated
+using the rule for literal expressions, the rule for binary operator (for addition), and the rules for binary expressions.
+Similarly, the expression for $4+5$ is evaluated.
+Finally, the transitions for both of the subexpressions are used as premises for the binary expression
+rule, along with the rule for binary operator (for multiplication), to evaluate the entire expression.
+
+\begin{mathpar}
+  \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
+    \inferrule*[right=\ref{sec:SemanticsRule.Lit}]{}{ \evalexpr{\emptyenv, \veone} \evalarrow \Normal(\nvint(1), \emptyenv) } \\\\
+    \inferrule*[right=\ref{sec:SemanticsRule.Lit}]{}{ \evalexpr{\emptyenv, \vetwo} \evalarrow \Normal(\nvint(2), \emptyenv) } \\\\
+    \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
+  }
+  {
+    \evalexpr{ \emptyenv, \veonetwo } \evalarrow
+    \Normal(\nvint(3), \emptyenv)
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
+    \inferrule*[right=\ref{sec:SemanticsRule.Lit}]{}{ \evalexpr{\emptyenv, \vefour} \evalarrow \Normal(\nvint(4), \emptyenv) } \\\\
+    \inferrule*[right=\ref{sec:SemanticsRule.Lit}]{}{ \evalexpr{\emptyenv, \vefive} \evalarrow \Normal(\nvint(5), \emptyenv) } \\\\
+    \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
+  }
+  {
+    \evalexpr{ \emptyenv, \vefourfive } \evalarrow
+    \Normal(\nvint(9), \emptyenv)
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
+    \evalexpr{ \emptyenv, \veonetwo } \evalarrow \Normal(\nvint(3), \emptyenv)\\
+    \evalexpr{ \emptyenv, \vefourfive } \evalarrow \Normal(\nvint(9), \emptyenv)\\
+    \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\MUL, \nvint(3), \nvint(9)) \evalarrow \nvint(27)}
+  }
+  {
+    \evalexpr{ \emptyenv, \EBinop(\MUL, \veonetwo, \vefourfive) } \evalarrow
+    \Normal(\nvint(27), \emptyenv)
+  }
+\end{mathpar}

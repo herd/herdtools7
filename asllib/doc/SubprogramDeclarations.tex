@@ -1,0 +1,1577 @@
+\chapter{Subprogram Declarations\label{chap:SubprogramDeclarations}}
+
+Subprogram declarations are grammatically derived from $\Ndecl$ via the subset of productions shown in
+\secref{SubprogramDeclarationsSyntax} and represented as ASTs via the production of $\decl$
+shown in \secref{SubprogramDeclarationsAbstractSyntax}.
+%
+Subprogram declarations are typed via $\annotateanddeclarefunc$, which is defined in \nameref{sec:TypingRule.AnnotateAndDeclareFunc}.
+%
+Subprogram declarations have no associated semantics.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Syntax\label{sec:SubprogramDeclarationsSyntax}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{flalign*}
+\Ndecl  \derivesinline\ & \productionname{funcdecl}{func\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
+|\ & \productionname{proceduredecl}{procedure\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \productionname{getter}{getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
+|\ & \productionname{noarggetter}{no\_arg\_getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nreturntype \parsesep \Nfuncbody &\\
+|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
+    & \wrappedline\ \parsesep \Nfuncbody &\\
+|\ & \productionname{noargsetter}{no\_arg\_setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Teq \parsesep \Ntypedidentifier \parsesep \Nfuncbody&\\
+\end{flalign*}
+
+\begin{flalign*}
+\Nparamsopt \derivesinline\ & \emptysentence &\\
+                   |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &\\
+\Nopttypedidentifier \derivesinline\ & \Tidentifier \parsesep \option{\Nasty} &\\
+\Nfuncargs          \derivesinline\ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &\\
+\Nreturntype        \derivesinline\ & \Tarrow \parsesep \Nty &\\
+\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend &\\
+\Naccessargs        \derivesinline\ & \Tlbracket \parsesep \Clist{\Ntypedidentifier} \parsesep \Trbracket &\\
+\Nmaybeemptystmtlist \derivesinline\ & \emptysentence \;|\; \Nstmtlist &
+\end{flalign*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Abstract Syntax\label{sec:SubprogramDeclarationsAbstractSyntax}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{flalign*}
+\decl \derives\ & \DFunc(\func) &
+\end{flalign*}
+
+\begin{flalign*}
+\func \derives\ &
+{
+\left\{
+  \begin{array}{rcl}
+ \funcname &:& \Strings, \\
+ \funcparameters &:& (\identifier, \ty?)^*,\\
+ \funcargs &:& \typedidentifier^*,\\
+ \funcbody &:& \subprogrambody,\\
+ \funcreturntype &:& \ty?,\\
+ \funcsubprogramtype &:& \subprogramtype
+\end{array}
+\right\}
+} &\\
+\typedidentifier \derives\ & (\identifier, \ty) &\\
+\subprogrambody \derives\ & \SBASL(\stmt) \;|\; \SBPrimitive &\\
+\subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
+                |\  & \STGetter \;|\; \STEmptyGetter &\\
+                |\  & \STSetter \;|\; \STEmptySetter &
+\end{flalign*}
+
+\subsubsection{ASTRule.GlobalDecl}
+The relation
+\[
+  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\hypertarget{build-funcdecl}{}
+\begin{mathpar}
+\inferrule[func\_decl]{}{
+    \builddecl(
+      \overname{\Ndecl(
+      \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \punnode{\Nfuncbody}
+    )}{\vparsednode})
+  \astarrow \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \astof{\vparamsopt},\\
+            \funcargs &:& \astof{\vfuncargs},\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \langle \astof{\vreturntype} \rangle,\\
+            \funcsubprogramtype &:& \STFunction
+    \end{array}
+  \right\}\right)}{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-procedureecl}{}
+\begin{mathpar}
+\inferrule[procedure\_decl]{}{
+  \builddecl(
+    \overname{\Ndecl(\Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nfuncbody})}{\vparsednode}
+    )
+  \astarrow \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \astof{\vparamsopt},\\
+            \funcargs &:& \astof{\vfuncargs},\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \None,\\
+            \funcsubprogramtype &:& \STProcedure
+    \end{array}
+  \right\}\right)
+    }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-getter}{}
+\begin{mathpar}
+\inferrule[getter]{}{
+  {
+    \begin{array}{r}
+  \builddecl\left(\overname{\Ndecl\left(
+    \begin{array}{l}
+      \Tgetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Naccessargs}, \\
+      \wrappedline\ \punnode{\Nreturntype}, \punnode{\Nfuncbody}
+    \end{array}
+      \right)}{\vparsednode}\right)
+  \astarrow \\
+  \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \astof{\vparamsopt},\\
+            \funcargs &:& \astof{\vaccessargs},\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
+            \funcsubprogramtype &:& \STGetter
+    \end{array}
+  \right\}\right)
+  }{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-noarggetter}{}
+\begin{mathpar}
+\inferrule[no\_arg\_getter]{}{
+  \builddecl(\overname{\Ndecl(\Tgetter, \Tidentifier(\name), \punnode{\Nreturntype}, \punnode{\Nfuncbody})}{\vparsednode})
+  \astarrow \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \emptylist,\\
+            \funcargs &:& \emptylist,\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
+            \funcsubprogramtype &:& \STEmptyGetter
+    \end{array}
+  \right\}\right)
+    }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-setter}{}
+\begin{mathpar}
+\inferrule[setter]{}{
+  {
+      \builddecl\left(\overname{\Ndecl\left(
+        \begin{array}{r}
+          \Tsetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Naccessargs}, \Teq, \\
+   \wrappedline\ \namednode{\vv}{\Ntypedidentifier}, \punnode{\Nfuncbody}
+        \end{array}
+   \right)}{\vparsednode}\right)
+  } \astarrow
+  \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \astof{\vparamsopt},\\
+            \funcargs &:& [\vv] \concat \astof{\vaccessargs},\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \None,\\
+            \funcsubprogramtype &:& \STSetter
+    \end{array}
+  \right\}\right)
+    }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-noargsetter}{}
+\begin{mathpar}
+\inferrule[no\_arg\_setter]{}{
+  \builddecl(\overname{\Ndecl(\Tsetter, \Tidentifier(\name), \Teq, \namednode{\vv}{\Ntypedidentifier}, \punnode{\Nfuncbody})}{\vparsednode})
+  \astarrow \\
+  {
+    \overname{
+  \DFunc\left(\left\{
+    \begin{array}{rcl}
+            \funcname &:& \name,\\
+            \funcparameters &:& \emptylist,\\
+            \funcargs &:& [\vv],\\
+            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcreturntype &:& \None,\\
+            \funcsubprogramtype &:& \STEmptySetter
+    \end{array}
+  \right\}\right)
+    }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.TypedIdentifier \label{sec:ASTRule.TypedIdentifier}}
+\hypertarget{build-typedidentifier}{}
+The function
+\[
+\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\identifier \times \ty)}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{}{
+  \buildtypedidentifier(\overname{\Ntypedidentifier(\Tidentifier(\id), \punnode{\Nasty})}{\vparsednode}) \astarrow \overname{(\id,\astof{\vasty})}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.OptTypedIdentifier \label{sec:ASTRule.OptTypedIdentifier}}
+\hypertarget{build-opttypedidentifier}{}
+The function
+\[
+\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\identifier \times \langle\ty\rangle)}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildoption[\Nasty](\vastyopt) \astarrow \astversion{\vastyopt}
+}{
+  {
+  \begin{array}{r}
+  \buildopttypedidentifier(\overname{\Ntypedidentifier(\Tidentifier(\id), \namednode{\vastyopt}{\option{\Nasty}})}{\vparsednode}) \astarrow \\
+  \overname{(\id, \astversion{\vastyopt})}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.ReturnType \label{sec:ASTRule.ReturnType}}
+\hypertarget{build-returntype}{}
+The function
+\[
+\buildreturntype(\overname{\parsenode{\Nreturntype}}{\vparsednode}) \aslto \overname{\ty}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{}{
+  \buildreturntype(\overname{\Nreturntype(\Tarrow, \punnode{\Nty})}{\vparsednode}) \astarrow
+  \overname{\astof{\tty}}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.ParamsOpt \label{sec:ASTRule.ParamsOpt}}
+\hypertarget{build-paramsopt}{}
+The function
+\[
+\buildparamsopt(\overname{\parsenode{\Nparamsopt}}{\vparsednode}) \aslto
+  \overname{(\identifier\times\langle\ty\rangle)^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildparamsopt(\overname{\Nparamsopt(\epsilonnode)}{\vparsednode}) \astarrow
+  \overname{\emptylist}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \buildclist[\Nopttypedidentifier](\ids) \astarrow \astversion{\ids}
+}{
+  \buildparamsopt(\overname{\Nparamsopt(\Tlbrace, \namednode{\ids}{\Clist{\Nopttypedidentifier}}, \Trbrace)}{\vparsednode}) \astarrow
+  \overname{\astversion{\ids}}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.AccessArgs \label{sec:ASTRule.AccessArgs}}
+\hypertarget{build-accessargs}{}
+The function
+\[
+\buildaccessargs(\overname{\parsenode{\Naccessargs}}{\vparsednode}) \aslto
+  \overname{(\identifier\times\ty)^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
+}{
+  \buildaccessargs(\overname{\Naccessargs(\Tlbracket, \namednode{\ids}{\Clist{\Ntypedidentifier}}, \Trbracket)}{\vparsednode}) \astarrow
+  \overname{\astversion{\ids}}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.FuncArgs \label{sec:ASTRule.FuncArgs}}
+\hypertarget{build-funcargs}{}
+The function
+\[
+\buildfuncargs(\overname{\parsenode{\Nfuncargs}}{\vparsednode}) \aslto
+  \overname{(\identifier\times\ty)^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
+}{
+  \buildfuncargs(\overname{\Nfuncargs(\Tlpar, \namednode{\ids}{\Clist{\Ntypedidentifier}}, \Trpar)}{\vparsednode}) \astarrow
+  \overname{\astversion{\ids}}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.MaybeEmptyStmtList \label{sec:ASTRule.MaybeEmptyStmtList}}
+\hypertarget{build-maybeemptystmtlist}{}
+The function
+\[
+\buildmaybeemptystmtlist(\overname{\parsenode{\Nmaybeemptystmtlist}}{\vparsednode}) \aslto
+  \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildmaybeemptystmtlist(\overname{\Nmaybeemptystmtlist(\epsilonnode)}{\vparsednode}) \astarrow
+  \overname{\SPass}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{}{
+  \buildmaybeemptystmtlist(\overname{\Nmaybeemptystmtlist(\Nstmtlist)}{\vparsednode}) \astarrow
+  \overname{\astof{\vstmtlist}}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.FuncBody \label{sec:ASTRule.FuncBody}}
+\hypertarget{build-funcbody}{}
+The function
+\[
+\buildfuncargs(\overname{\parsenode{\Nfuncbody}}{\vparsednode}) \aslto
+  \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{}{
+  {
+  \begin{array}{r}
+  \buildfuncbody(\overname{\Nfuncbody(\Tbegin, \namednode{\vstmts}{\Nmaybeemptystmtlist}, \Tend)}{\vparsednode}) \astarrow \\
+  \overname{\astof{\vmaybeemptystmtlist}}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Typing}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+We also define the following helper rules:
+\begin{itemize}
+  \item TypingRule.AnnotateAndDeclareFunc (see \secref{TypingRule.AnnotateAndDeclareFunc})
+  \item TypingRule.AnnotateFuncSig (see \secref{TypingRule.AnnotateFuncSig})
+  \item TypingRule.UseFuncSig (\secref{TypingRule.UseFuncSig})
+  \item TypingRule.GetUndeclaredDefining (see \secref{TypingRule.GetUndeclaredDefining})
+  \item TypingRule.ScanForParams (see \secref{TypingRule.ScanForParams})
+  \item TypingRule.AnnotateParams (see \secref{TypingRule.AnnotateParams})
+  \item TypingRule.AnnotateOneParam (see \secref{TypingRule.AnnotateOneParam})
+  \item TypingRule.ArgsAsParams (see \secref{TypingRule.ArgsAsParams})
+  \item TypingRule.ArgAsParam (see \secref{TypingRule.ArgAsParam})
+  \item TypingRule.AnnotateParamType (see \secref{TypingRule.AnnotateParamType})
+  \item TypingRule.AnnotateArgs (see \secref{TypingRule.AnnotateArgs})
+  \item TypingRule.AnnotateOneArg (see \secref{TypingRule.AnnotateOneArg})
+  \item TypingRule.AnnotateReturnType (see \secref{TypingRule.AnnotateReturnType})
+  \item TypingRule.DeclareOneFunc (see \secref{TypingRule.DeclareOneFunc})
+  \item TypingRule.SubprogramClash (see \secref{TypingRule.SubprogramClash})
+  \item TypingRule.AddNewFunc (see \secref{TypingRule.AddNewFunc})
+  \item TypingRule.CheckSetterHasGetter (see \secref{TypingRule.CheckSetterHasGetter})
+  \item TypingRule.AddSubprogram (see \secref{TypingRule.AddSubprogram})
+\end{itemize}
+
+\subsubsection{TypingRule.AnnotateAndDeclareFunc \label{sec:TypingRule.AnnotateAndDeclareFunc}}
+\hypertarget{def-annotateanddeclarefunc}{}
+The function
+\[
+  \annotateanddeclarefunc(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig})
+  \aslto (\overname{\staticenvs}{\tenv} \times \overname{\func}{\newfuncsig})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a subprogram definition $\funcsig$ in the static environment $\tenv$,
+yielding a new subprogram definition $\newfuncsig$ and modified static environment
+$\newtenv$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the signature of $\funcsig$ in $\tenv$ as per
+        \secref{TypingRule.AnnotateFuncSig} yields
+        the environment $\tenvone$ and subprogram definition $\funcsigone$\ProseOrTypeError;
+  \item declaring the subprogram defined by $\funcsigone$ in $\tenvone$
+        as per \secref{TypingRule.DeclareOneFunc} yields the environment $\newtenv$
+        and new $\func$ node $\newfuncsig$\ProseOrTypeError.
+\end{itemize}
+\CodeSubsection{\AnnotateAndDeclareFuncBegin}{\AnnotateAndDeclareFuncEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotatefuncsig(\tenv, \funcsig) \typearrow (\tenvone, \funcsigone) \OrTypeError\\\\
+  \declareonefunc(\tenvone, \funcsigone) \typearrow (\newtenv, \newfuncsig) \OrTypeError
+}{
+  \annotateanddeclarefunc(\tenv, \funcsig) \typearrow (\newtenv, \newfuncsig)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AnnotateFuncSig \label{sec:TypingRule.AnnotateFuncSig}}
+\hypertarget{def-annotatefuncsig}{}
+The function
+\[
+  \annotatefuncsig(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig})
+  \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates the signature of a function definition $\funcsig$ in the static environment $\tenv$,
+yielding a new function definition $\newfuncsig$ and modified static environment
+$\newtenv$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\tenvone$ is the static environment comprised of the global environment of $\tenv$ and an empty local environment;
+  \item obtaining the variables appearing in the formal types in $\funcsig$ that may be parameter-defining
+        in $\tenvone$ via $\getundeclareddefining$ yields \\ $\potentialparams$;
+  \item annotating the parameters explicitly listed in $\funcsig$ ($\funcsig.\funcparameters)$ \\
+        yields environment $\tenvtwo$, in which the parameters are declared,
+        and the function \\
+        $\declaredparams$, which binds parameter identifiers to their types\ProseOrTypeError;
+  \item annotating arguments from $\funcsig$ that serve as parameters in $\tenvtwo$ yields the list of parameters
+        $\argparams$ and modified environment $\tenvthree$\ProseOrTypeError;
+  \item $\vparameters$ is the list $\declaredparams$ concatenated with $\argparams$ with each type
+        transformed to an \optional\ type;
+  \item annotating the arguments listed in $\funcsig$ in $\tenvthree$ with $\tenvtwo$ via \\
+        $\annotateargs$ yields the list of annotated
+        arguments $\vargs$ and modified environment $\tenvfour$\ProseOrTypeError;
+  \item annotating the return type of $\funcsig$ in $\tenvfour$ with $\tenvthree$ via \\ $\annotatereturntype$ yields
+        the annotated return type $\vreturntype$ and modified environment $\tenvfive$\ProseOrTypeError;
+  \item $\newfuncsig$ is $\funcsig$ with the listed of parameters substituted with \\ $\vparameters$,
+        the list of arguments substituted with $\vargs$, and return type substituted with $\vreturntype$;
+  \item $\newtenv$ is $\tenvfive$.
+\end{itemize}\CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \tenvone \eqdef (G^\tenv, L^{\emptytenv})\\
+  \getundeclareddefining(\tenvone, \funcsig) \typearrow \potentialparams\\
+  {
+    \begin{array}{r}
+    \annotateparams(\tenvone, \potentialparams, \funcsig.\funcparameters, (\tenvone, \emptyfunc)) \typearrow \\
+    (\tenvtwo, \declaredparams) \OrTypeError
+    \end{array}
+  }\\
+  {
+    \begin{array}{r}
+    \argsasparams(\tenvtwo, \funcsig) \typearrow (\tenvthree, \argparams) \OrTypeError
+    \end{array}
+  }\\
+  {
+    \begin{array}{rl}
+    \vparameters \eqdef & [(\id,\vt) \in \declaredparams: (\id, \langle\vt\rangle)]\ \concat \\
+                     & [(\id,\vt) \in \argparams: (\id, \langle\vt\rangle)]
+    \end{array}
+  }\\
+  \annotateargs(\tenvthree, \tenvtwo, \funcsig, \argparams) \typearrow (\tenvfour, \vargs) \OrTypeError\\\\
+  {
+    \begin{array}{r}
+  \annotatereturntype(\tenvfour, \tenvthree, \funcsig.\funcreturntype) \typearrow \\
+    (\tenvfive, \vreturntype) \OrTypeError
+    \end{array}
+  }\\\\
+  {
+    \begin{array}{rrcl}
+      \newfuncsig \eqdef \{
+                      & \funcname            &:& \funcsig.\funcname,\\
+                      & \funcparameters      &:& \vparameters,\\
+                      & \funcargs            &:& \vargs,\\
+                      & \funcbody            &:& \funcsig.\funcbody,\\
+                      & \funcreturntype      &:& \vreturntype,\\
+                      & \funcsubprogramtype  &:&  \funcsig.\subprogramtype \\
+                  \}  &  &&
+        \end{array}
+  }
+}{
+  \annotatefuncsig(\tenv, \funcsig) \typearrow (\overname{\tenvfive}{\newtenv}, \newfuncsig, \argparams)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.UseFuncSig \label{sec:TypingRule.UseFuncSig}}
+\hypertarget{def-usefuncsig}{}
+The function
+\[
+\usefuncsig(\overname{\func}{\vf}) \aslto \overname{\pow{\identifier}}{\ids}
+\]
+returns the set of identifiers $\ids$ which the subprogram signature given
+by $\vf$ depends on.
+
+\subsection{Prose}
+Define $\ids$ as the union of applying $\usety$ to every type of an argument of $\vf$
+and applying $\usety$ to the \optional\ return type of $\vf$.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \usefuncsig(\vf) \typearrow \overname{\bigcup_{(\Ignore, \vt) \in \vf.\funcargs}\usety(\vt) \cup \usety(\vf.\funcreturntype)}{\ids}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.GetUndeclaredDefining \label{sec:TypingRule.GetUndeclaredDefining}}
+\hypertarget{def-getundeclareddefining}{}
+The function
+\[
+\getundeclareddefining(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\funcsig})
+\aslto \overname{\pow{\identifier}}{\potentialparams}
+\]
+scans the list of types appearing in $\funcsig.\funcargs$ and in the return type
+and returns the set of
+identifiers that may be parameter-defining in $\tenv$.
+
+\subsection{Example}
+In the following specification, the set of identifiers that may correspond
+to parameters of the function \texttt{signature\_example} is $\{\texttt{A}\}$,
+since \texttt{A} appears in the type \texttt{bits(A)}
+of the argument \texttt{bv}.
+
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
+
+\CodeSubsection{\GetUndeclaredDefiningBegin}{\GetUndeclaredDefiningEnd}{../Typing.ml}
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item define $\formaltypes$ to consist of the types associated with the list of arguments in $\funcsig$
+        and the return type in $\funcsig$, if one exists;
+  \item scanning each type $\vt$ in $\formaltypes$ via $\scanforparams$ yields the set $\vparams_\vt$;
+  \item $\potentialparams$ is the union of $\vparams_\vt$ for each type $\vt$ in $\formaltypes$.
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+    \begin{array}{rcl}
+      \formaltypes &\eqdef&
+    [(\Ignore, \vt) \in \funcsig.\funcargs: \vt]\ \concat \\
+    && \choice{\funcsig.\funcreturntype = \langle\retty\rangle}{[\retty]}{\emptylist}
+    \end{array}
+  }\\
+  \vt\in\formaltypes: \scanforparams(\tenv, \vt) \typearrow \vparams_\vt
+}{
+  \getundeclareddefining(\tenv, \funcsig) \typearrow \overname{\bigcup_{\vt \in \tys} \vparams_\vt}{\potentialparams}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.ScanForParams \label{sec:TypingRule.ScanForParams}}
+\hypertarget{def-scanforparams}{}
+The function
+\[
+\scanforparams(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty})
+\aslto \overname{\pow{\identifier}}{\potentialparams}
+\]
+scans a single type $\tty$ in $\tenv$ and returns the set of
+identifiers that may be parameters in $\tenv$.
+
+\subsection{Example}
+Consider the following specification:
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
+
+Scanning each type in the signature
+of the function \texttt{signature\_example} yields the following results:
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Expression} & \textbf{Result} & \textbf{Reason}\\
+\hline
+\texttt{bits(A)} & $\{\texttt{A}\}$ & \texttt{A} is a variable expression \\
+& & and \texttt{A} is not defined in the environment.\\
+\texttt{bits(W)} & $\emptyset$ & \texttt{W} is defined in the environment.\\
+\texttt{bits(A+B)} & $\emptyset$ & \texttt{A+B} is not a variable expression.\\
+\end{tabular}
+\end{center}
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{tbits\_evar}):
+  \begin{itemize}
+    \item $\tty$ is a bitvector type over a variable expression for $\vx$, that is, \\ $\TBits(\EVar(\vx), \Ignore)$;
+    \item $\potentialparams$ is the singleton set consisting of $\vx$ if $\vx$ is not defined as a storage type in $\tenv$
+          and the empty set, otherwise.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tbits\_other}):
+  \begin{itemize}
+    \item $\tty$ is a bitvector type where the bitwidth expression is not a variable expression;
+    \item $\potentialparams$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ttuple}):
+  \begin{itemize}
+    \item $\tty$ is a tuple type over a list of types $\tys$;
+    \item obtaining the set of potential parameters for each type $\vt$ of $\tys$ in $\tenv$ yields $\vparams_\vt$;
+    \item $\potentialparams$ is the union of sets $\vparams_\vt$, for each type $\vt$ of $\tys$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other}):
+  \begin{itemize}
+    \item $\tty$ is neither a bitvector type or a tuple type;
+    \item $\potentialparams$ is the empty set.
+  \end{itemize}
+\end{itemize}
+
+\begin{mathpar}
+  \inferrule[tbits\_evar]{
+    \isundefined(\tenv, \vx) \typearrow \vb\\
+    \potentialparams \eqdef \choice{\vb}{\{\vx\}}{\emptyset}
+  }{
+    \scanforparams(\tenv, \overname{\TBits(\EVar(\vx), \Ignore)}{\tty}) \typearrow \potentialparams
+  }
+  \and
+  \inferrule[tbits\_other]{
+    \astlabel(\ve) \neq \EVar
+  }{
+    \scanforparams(\tenv, \overname{\TBits(\ve, \Ignore)}{\tty}) \typearrow \overname{\emptyset}{\potentialparams}
+  }
+  \and
+  \inferrule[ttuple]{
+    \vt \in \tys: \scanforparams(\tenv, \vt) \typearrow \vparams_\vt
+  }{
+    \scanforparams(\tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow \overname{\bigcup_{\vt \in \tys} \vparams_\vt}{\potentialparams}
+  }
+  \and
+  \inferrule[other]{
+    \astlabel(\tty) \not\in \{\TBits, \TTuple\}
+  }{
+    \scanforparams(\tenv, \tty) \typearrow \overname{\emptyset}{\potentialparams}
+  }
+  \end{mathpar}
+
+\subsubsection{TypingRule.AnnotateParams \label{sec:TypingRule.AnnotateParams}}
+\hypertarget{def-annotateparams}{}
+The function
+\[
+\begin{array}{r}
+\annotateparams(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\pow{\identifier}}{\potentialparams} \aslsep
+  \overname{(\identifier \times \langle\ty\rangle)^*}{\vparameters} \aslsep\
+  (\overname{\staticenvs}{\tenvonep} \times \overname{\identifier\rightarrow\ty}{\acc})
+) \aslto \\
+(\overname{\staticenvs}{\newtenv} \times \overname{\identifier\rightarrow\ty}{\declaredparams})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+scans the list of explicitly defined parameters $\vparameters$ with respect to the set of potential
+parameters $\potentialparams$ in $\tenv$ and then updates a pair
+consisting of an updated environment $\tenvonep$, which accumulates local storage declarations
+for the parameters, and a function $\acc$, which maps identifiers corresponding to parameters
+to their associated types.
+The updated pair is given in $\newtenv$ and $\declaredparams$.
+\ProseOtherwiseTypeError
+
+\subsection{Example}
+In the following specification, the list of explicitly defined parameters
+of the function \texttt{signature\_example} is $\{\texttt{A}\}$.
+Therefore, $\declaredparams$ binds \texttt{A} to the type \verb|integer{A}|
+and $\newtenv$ effectively reflects an added declaration \verb|let A: integer{A}|.
+
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vparameters$ is the empty list;
+    \item $\newtenv$ is $\tenvonep$;
+    \item $\declaredparams$ is $\acc$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vparameters$ is a list with $(\vx, \tyopt)$ as its \head\ and $\vparametersone$ as its \tail;
+    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ in $\tenvone$ with \\
+          $\potentialparams$ and the pair $(\tenvonep, \acc)$
+          yields the pair \\
+          $(\tenvonepp, \accp)$\ProseOrTypeError;
+    \item annotating the parameter list $\vparametersone$ in $\tenvone$ with $\potentialparams$, starting with the pair
+          $(\tenvonepp, \accp)$ yields the pair \\ $(\newtenv, \declaredparams)$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  {
+    \begin{array}{r}
+  \annotateparams(\tenvone, \potentialparams, \overname{\emptylist}{\vparameters}, (\tenvonep, \acc)) \typearrow \\
+  (\overname{\tenvonep}{\newtenv}, \overname{\acc}{\declaredparams})
+    \end{array}
+  }
+}
+\and
+\inferrule[non\_empty]{
+  \vparameters \eqname [(\vx,\tyopt)]\concat\vparametersone\\
+  {
+    \begin{array}{r}
+  \annotateoneparam(\tenvone, \potentialparams, (\vx,\tyopt), (\tenvonep, \acc)) \typearrow \\ (\tenvonepp, \accp) \OrTypeError
+    \end{array}
+  }\\\\
+  {
+    \begin{array}{r}
+  \annotateparams(\tenvone, \potentialparams, \vparametersone, (\tenvonepp, \accp)) \typearrow \\ (\newtenv, \declaredparams) \OrTypeError
+\end{array}
+}\\\\
+}{
+  {
+    \begin{array}{r}
+  \annotateparams(\tenvone, \potentialparams, \vparameters, (\tenvonep, \acc)) \typearrow \\
+  (\newtenv, \declaredparams)
+    \end{array}
+}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AnnotateOneParam \label{sec:TypingRule.AnnotateOneParam}}
+The function
+\hypertarget{def-annotateoneparam}{}
+\[
+\begin{array}{r}
+\annotateoneparam(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\pow{\identifier}}{\potentialparams} \aslsep
+  (\overname{\identifier}{\vx} \times \overname{\langle\ty\rangle}{\tyopt}) \aslsep
+  (\overname{\staticenvs}{\tenvonep} \times \overname{\identifier\rightarrow\ty}{\acc})
+) \\ \aslto
+(\overname{\staticenvs}{\newtenv} \times \overname{\identifier\rightarrow\ty}{\declaredparams})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the explicitly defined parameter given by $\vx$ and the \optional\ type $\tyoptp$
+with respect to the set of potential
+parameters $\potentialparams$ in $\tenv$ and then updates a pair
+consisting of an updated environment $\tenvonep$, which accumulates local storage declarations
+for the parameters, and a function $\acc$, which maps identifiers corresponding to parameters
+to their associated types.
+The updated pair is given in $\newtenv$ and $\declaredparams$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item checking that $\vx$ is not defined as a variable in $\tenvonep$ yields $\True$\ProseOrTypeError;
+  \item checking whether $\vx$ is included in the set $\potentialparams$ yields $\True$ or a type error
+        indicating that each parameter must have a defining argument, thus short-circuiting the entire rule;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{type\_parameterized}):
+    \begin{itemize}
+      \item $\tyopt$ is either $\None$ or a \parameterizedintegertype;
+      \item $\vt$ is defined as the \parameterizedintegertype\ for the identifier $\vx$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{type\_annotated}):
+    \begin{itemize}
+      \item $\tyopt$ is the type $\vtone$, which is not the unconstrained integer type;
+      \item annotating $\vtone$ in $\tenvone$ yields $\vt$\ProseOrTypeError.
+    \end{itemize}
+  \end{itemize}
+  \item checking that $\vt$ is a constrained integer in $\tenvone$ via $\checkconstrainedinteger$
+        yields $\True$\ProseOrTypeError;
+  \item adding the local storage element given by the identifier $\vx$, type $\vt$, and local declaration keyword
+        $\LDKLet$ in $\tenvonep$ yields $\newtenv$;
+  \item $\declaredparams$ is $\acc$ updated by the binding of $\vx$ to $\vt$.
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[type\_parameterized]{
+  \checkvarnotinenv{\tenvonep, \vx} \typearrow \True \OrTypeError\\\\
+  \checktrans{\vx \in \potentialparams}{\ParameterWithoutDecl} \checktransarrow \True \OrTypeError\\\\
+  (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
+  \vt \eqdef \TInt(\parameterized(\vx))\\
+  \checkconstrainedinteger(\tenvone, \vt) \typearrow \True \OrTypeError\\\\
+  \addlocal(\tenvonep, \vx, \vt, \LDKLet) \typearrow \newtenv\\
+  \declaredparams \eqdef \acc[\vx \mapsto \vt]
+}{
+  {
+    \begin{array}{r}
+  \annotateoneparam(\tenvone, \potentialparams, (\vx, \tyopt), (\tenvonep, \acc)) \typearrow \\ (\newtenv, \declaredparams)
+    \end{array}
+  }
+}
+\and
+\inferrule[type\_annotated]{
+  \checkvarnotinenv{\tenvonep, \vx} \typearrow \True \OrTypeError\\\\
+  \checktrans{\vx \in \potentialparams}{\ParameterWithoutDecl} \checktransarrow \True \OrTypeError\\\\
+  \vtone \neq \unconstrainedinteger\\
+  \annotatetype{\False, \tenvone, \vtone} \typearrow \vt \OrTypeError\\\\
+  \checkconstrainedinteger(\tenvone, \vt) \typearrow \True \OrTypeError\\\\
+  \addlocal(\tenvonep, \vx, \vt, \LDKLet) \typearrow \newtenv\\
+  \declaredparams \eqdef \acc[\vx \mapsto \vt]
+}{
+  {
+    \begin{array}{r}
+  \annotateoneparam(\tenvone, \potentialparams, (\vx, \overname{\langle\vtone\rangle}{\tyopt}),  (\tenvonep, \acc)) \typearrow \\ (\newtenv, \declaredparams)
+    \end{array}
+  }
+}
+  \end{mathpar}
+
+\subsubsection{TypingRule.ArgsAsParams \label{sec:TypingRule.ArgsAsParams}}
+\hypertarget{def-argsasparams}{}
+The function
+\[
+\begin{array}{r}
+\argsasparams(
+  \overname{\staticenvs}{\tenvone} \aslsep
+  \overname{\staticenvs}{\tenvtwo} \aslsep
+  \overname{\func}{\funcsig} \aslsep
+  \overname{\identifier\rightarrow\ty}{\declaredparams}
+  )
+\aslto \\
+(\overname{\staticenvs}{\newtenv} \times \overname{\identifier\rightarrow\ty}{\argparams})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+scans the list of arguments in $\func$ ($\func.\funcargs$) to find the ones that serve as
+implicit parameters in $\tenvone$ and are not already included in the domain of $\declaredparams$.
+The found parameters are added as local declarations to $\tenvtwo$, resulting in $\newtenv$,
+and are used to update $\argparams$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item the subprogram defined by $\funcsig$ has an empty list of arguments;
+    \item $\newtenv$ is $\tenvtwo$;
+    \item $\argparams$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item the subprogram defined by $\funcsig$ has arguments $\varg_{1..k}$;
+    \item obtaining the identifiers that can serve as parameters in the types of the formal arguments of $\funcsig$
+          and in its return type yields $\vusedone$;
+    \item the set $\vused$ contains all identifiers $\vs$ from $\vusedone$ that are undefined in $\tenvone$ and are not
+          bound in $\declaredparams$;
+    \item the following premises define the sequences $\argparams_{1..k}$ and $\tenvtwo_{0..k}$ as follows;
+    \item $\argparams_1$ is $\declaredparams$;
+    \item $\tenvtwo_0$ is $\tenvtwo$;
+    \item for $\vi=1..k$, annotating the argument $\varg_\vi$ in $\tenvtwo$ with $\vused$ and the static environment $\tenvtwo_{\vi-1}$
+          via $\argasparam$ yields $\tenvtwo_\vi$ and $\argparams_\vi$\ProseOrTypeError;
+    \item $\newtenv$ is $\tenvtwo_k$;
+    \item $\argparams$ is $\argparams_k$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Example}
+In the following specification, the argument \texttt{B}
+of the function \texttt{signature\_example} is an implicit parameter
+as it appears in the type \texttt{bits(A+B)}
+(both for the argument \texttt{bv3} and as the return type)
+and it is not listed as an explicit parameter.
+Therefore, $\newtenv$ will effectively contain the declaration \verb|let B: integer{B}|.
+
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{
+  \funcsig.\funcargs = \emptylist
+}{
+  {
+    \begin{array}{r}
+  \argsasparams(\tenvone, \tenvtwo, \funcsig, \declaredparams) \typearrow \\
+  (\overname{\tenvtwo}{\newtenv}, \overname{\emptylist}{\argparams})
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \funcsig.\funcargs \eqname \varg_{1..k}\\
+  \usefuncsig(\funcsig) \typearrow \vusedone\\
+  \vs\in\vusedone : \isundefined(\tenvone, \vs) \typearrow \vb_\vs\\
+  \vused \eqdef \setcomprehension{\vs\in\vusedone \land \vb_\vs \land \declaredparams(\vs) = \bot}{\vs}\\
+  \argparams_1 \eqdef \declaredparams\\
+  \tenvtwo_0 \eqdef \tenvtwo\\
+  \vi=1..k: \argasparam(\tenvtwo, \vused, \varg_\vi,\tenvtwo_{\vi-1}) \typearrow  (\tenvtwo_\vi, \argparams_\vi) \OrTypeError
+}{
+  \argsasparams(\tenvone, \tenvtwo, \funcsig, \declaredparams) \typearrow
+  (\overname{\tenvtwo_k}{\newtenv}, \overname{\argparams_k}{\argparams})
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.ArgAsParam \label{sec:TypingRule.ArgAsParam}}
+\hypertarget{def-argasparam}{}
+The function
+\[
+\argasparam\left(
+  \begin{array}{c}
+  \overname{\staticenvs}{\tenvtwo} \aslsep\\
+  \overname{\pow{\identifier}}{\vused} \aslsep\\
+  (\overname{\identifier}{\vx} \times \overname{\ty}{\tty}) \aslsep\\
+  (\overname{\staticenvs}{\tenvtwop} \times \overname{\identifier\rightarrow\ty}{\acc})
+  \end{array}
+  \right)
+\aslto
+(\overname{\staticenvs}{\newtenv} \times \overname{\identifier\rightarrow\ty}{\accp})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the argument given by $\vx$ and type $\tty$ is an implicit parameter
+by checking whether it appears in $\vused$ and not in $\acc$.
+If it is identified as an implicit parameter, it is used to update $\tenvtwop$ to yield $\newtenv$
+and to update $\acc$ to yield $\accp$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{not\_used}):
+  \begin{itemize}
+    \item $\vx$ is not a member of $\vused$;
+    \item $\newtenv$ is $\tenvtwop$;
+    \item $\accp$ is $\acc$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{used}):
+  \begin{itemize}
+    \item $\vx$ is a member of $\vused$;
+    \item checking that $\vx$ is not declared in $\tenvtwop$ yields $\True$\ProseOrTypeError;
+    \item annotating $\tty$ with identifier $\vx$ as a potential parameter type in $\tenvtwo$,
+          which is an environment to which all explicit parameters have been added but implicit parameters were not added to,
+          via $\annotateparamtype$ yields $\vt$\ProseOrTypeError;
+    \item checking whether $\vt$ is a constrained integer type in $\tenvtwo$ yields $\True$\ProseOrTypeError;
+    \item adding $\vx$ as a local storage element to $\tenvtwop$ with type $\vt$ and local declaration keyword $\LDKLet$ yields
+          $\newtenv$;
+    \item $\accp$ is $\acc$ updated by binding $\vx$ to $\vt$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[not\_used]{
+  \vx \not\in \vused
+}{
+  \argasparam(\tenvtwo, \vused, (\vx, \tty), (\tenvtwop, \acc))
+  \typearrow (\overname{\tenvtwop}{\newtenv}, \overname{\acc}{\accp})
+}
+\and
+\inferrule[used]{
+  \vx \in \vused\\
+  \checkvarnotinenv{\tenvtwop, \vx} \typearrow \True \OrTypeError\\\\
+  \annotateparamtype(\tenvtwo, \tty, \vx) \typearrow \vt \OrTypeError\\\\
+  \checkconstrainedinteger(\tenvtwo, \vt) \typearrow \True \OrTypeError\\\\
+  \addlocal(\tenvtwop, \vx, \vt, \LDKLet) \typearrow \newtenv\\
+  \accp \eqdef \acc[\vx\mapsto\vt]
+}{
+  \argasparam(\tenvtwo, \vused, (\vx, \tty), (\tenvtwop, \acc))
+  \typearrow (\newtenv, \accp)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AnnotateParamType \label{sec:TypingRule.AnnotateParamType}}
+\hypertarget{def-annotateparamtype}{}
+The function
+\[
+  \annotateparamtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty} \aslsep \overname{\identifier}{\vx})
+  \typearrow \overname{\ty}{\newty}
+\]
+annotates the type $\tty$ in $\tenv$, considering it as a subprogram parameter with identifier $\vx$,
+yielding the type $\newtenv$.
+It is assumed that $\tenv$ is an environment to which all explicitly defined parameters of the subprogram
+in context were added to, but the implicitly defined parameters were not added to.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{tint\_unconstrained}):
+  \begin{itemize}
+    \item $\tty$ is the unconstrained integer type;
+    \item $\newty$ is the \parameterizedintegertype\ for the identifier $\vx$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other}):
+  \begin{itemize}
+    \item $\tty$ is not the unconstrained integer type;
+    \item annotating the type $\tty$ in $\tenv$ yields $\newty$\ProseOrTypeError.
+  \end{itemize}
+\end{itemize}
+
+\begin{mathpar}
+\inferrule[tint\_unconstrained]{}
+{
+  \annotateparamtype(\tenv, \overname{\unconstrainedinteger}{\tty}, \vx) \typearrow \overname{\TInt(\parameterized(\vx))}{\newty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other]{
+  \tty \neq \unconstrainedinteger\\
+  \annotatetype{\tenv, \tty} \typearrow \newty \OrTypeError
+}{
+  \annotateparamtype(\tenv, \tty, \vx) \typearrow \newty
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AnnotateArgs \label{sec:TypingRule.AnnotateArgs}}
+\hypertarget{def-annotateargs}{}
+The function
+\[
+\begin{array}{r}
+\annotateargs(
+  \overname{\staticenvs}{\tenvtwo} \aslsep
+  \overname{\staticenvs}{\tenvthree} \aslsep
+  \overname{\func}{\funcsig} \aslsep
+  \overname{\identifier\rightarrow\ty}{\argparams}
+)
+\aslto \\
+(\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\vnewargs})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the arguments listed in $\funcsig$ in the context of
+of $\argparams$, which binds parameters to their types,
+and two static environments:
+$\tenvtwo$ --- the environment to which only explicit parameters were added, and
+$\tenvthree$ --- the environment to which all parameters (explicit and implicit) were added.
+The result is the environment $\newtenv$ where all arguments have been declared and
+the annotated list of arguments $\vnewargs$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{no\_args}):
+  \begin{itemize}
+    \item the function defined by $\funcsig$ has an empty list of arguments;
+    \item $\newtenv$ is $\tenvthree$;
+    \item $\vnewargs$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some\_args}):
+  \begin{itemize}
+    \item the function defined by $\funcsig$ has arguments $\varg_{1..k}$;
+    \item the following premises define the sequence of static environments $\tenvthree_{0..k}$ and
+          list of typed identifiers $\vnewarg_{1..k}$;
+    \item $\tenvthree_0$ is $\tenvthree$;
+    \item annotating the argument $\varg_\vi$ in the context of $\tenvtwo$, $\tenvthree$, $\argparams$,
+          and $\tenvthree_{\vi-1}$ via $\annotateonearg$ yields $(\tenvthree_\vi, \vnewarg_\vi)$\ProseOrTypeError;
+    \item $\newtenv$ is $\tenvthree_k$;
+    \item $\vnewargs$ is the list $\vnewarg_{1..k}$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Example}
+In the following specification, the annotated arguments are
+\texttt{bv}, \texttt{bv2}, \texttt{bv3}, and \texttt{C}.
+The argument \texttt{B} is not annotated as an argument since it is classified
+and annotated as a parameter.
+
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[no\_args]{
+  \funcsig.\funcargs = \emptylist
+}{
+  \annotateargs(\tenvtwo, \tenvthree, \funcsig, \argparams) \typearrow (\overname{\tenvthree}{\newtenv}, \overname{\emptylist}{\vnewargs})
+}
+\and
+\inferrule[some\_args]{
+  \funcsig.\funcargs \eqname \varg_{1..k}\\
+  \tenvthree_{0} \eqdef \tenvthree\\
+  {
+    \begin{array}{r}
+  \vi=1..k: \annotateonearg(\tenvtwo, \tenvthree, \argparams, (\tenvthree_{\vi-1}, \varg_{\vi})) \typearrow \\
+    (\tenvthree_{\vi}, \vnewarg_\vi) \OrTypeError
+    \end{array}
+  }\\
+  \vnewargs \eqdef [i=1..k: \vnewarg_{\vi}]
+}{
+  \annotateargs(\tenvtwo, \tenvthree, \funcsig, \argparams) \typearrow
+  (\overname{\tenvthree_k}{\newtenv}, \vnewargs)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AnnotateOneArg \label{sec:TypingRule.AnnotateOneArg}}
+\hypertarget{def-annotateonearg}{}
+The function
+\[
+\begin{array}{r}
+\annotateonearg(
+  \overname{\staticenvs}{\tenvtwo} \aslsep
+  \overname{\staticenvs}{\tenvthree} \aslsep
+  \overname{\identifier\rightarrow\ty}{\argparams} \aslsep
+  (\overname{\staticenvs}{\tenvthreep} \times (\overname{\vx}{\identifier} \times \overname{\ty}{\tty}))
+) \aslto \\
+(\overname{\staticenvs}{\newtenv} \times\ (\overname{\vx}{\identifier} \times \overname{\ty}{\ttyp}))
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the argument $\vx$ of type $\tty$ in the context of $\argparams$, which binds parameters to their types,
+and the following static environments:
+$\tenvtwo$ --- the environment to which only explicit parameters were added,
+$\tenvthree$ --- $\tenvtwo$ with the addition of implicit parameters, and
+$\tenvthreep$ --- same as $\tenvthree$ but updated with previously annotated arguments.
+The result is the updated environment $\newtenv$ with the added declaration for the current argument
+and the annotated argument, which has the same identifier $\vx$ and the annotated type $\vtp$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{param}):
+  \begin{itemize}
+    \item $\vx$ is not bound in $\argparams$;
+    \item annotating the type $\tty$ in $\tenvtwo$ yields $\ttyp$;
+    \item $\newtenv$ is $\tenvthreep$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_param}):
+  \begin{itemize}
+    \item $\vx$ is bound in $\argparams$;
+    \item checking that $\vx$ is not defined in $\tenvthreep$ yields $\True$\ProseOrTypeError;
+    \item annotating the type $\tty$ in $\tenvthree$ yields $\ttyp$;
+    \item adding a local storage element $\vx$ with type $\ttyp$ and local declaration keyword $\LDKLet$ yields
+          $\newtenv$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[param]{
+  \argparams(\vx) \neq \bot\\
+  \annotatetype{\tenvtwo, \tty} \typearrow \ttyp \OrTypeError
+}{
+  \annotateonearg(\tenvtwo, \tenvthree, \argparams, (\tenvthreep, (\vx, \tty)))
+  \typearrow (\overname{\tenvthreep}{\newtenv}, (\vx, \ttyp))
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[not\_param]{
+  \argparams(\vx) = \bot\\
+  \checkvarnotinenv{\tenvthreep, \vx} \typearrow \True \OrTypeError\\\\
+  \annotatetype{\tenvthree, \tty} \typearrow \ttyp \OrTypeError\\\\
+  \addlocal(\tenvthreep, \vx, \ttyp, \LDKLet) \typearrow \newtenv
+}{
+  {
+    \begin{array}{r}
+  \annotateonearg(\tenvtwo, \tenvthree, \argparams, (\tenvthreep, (\vx, \tty)))
+  \typearrow \\ (\newtenv, (\vx, \ttyp))
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AnnotateReturnType \label{sec:TypingRule.AnnotateReturnType}}
+\hypertarget{def-annotatereturntype}{}
+The function
+\[
+\annotatereturntype(
+  \overname{\staticenvs}{\tenvthree} \aslsep
+  \overname{\staticenvs}{\tenvfour} \aslsep
+  \overname{\langle\ty\rangle}{\returntype}
+) \aslto
+(\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newreturntype})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates the \optional\ return type $\returntype$ in the context of the static environment
+$\tenvthree$ where all parameters have been added to, and
+$\tenvfour$ where all parameters and arguments have been added to.
+The result is the static environment $\newtenv$, which is $\tenvfour$ with the
+annotated return type and the \optional\ annotated return type $\newreturntype$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{no\_return\_type}):
+  \begin{itemize}
+    \item $\returntype$ is $\None$;
+    \item $\newtenv$ is $\tenvfour$;
+    \item $\newreturntype$ is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{has\_return\_type}):
+  \begin{itemize}
+    \item $\returntype$ is $\langle\tty\rangle$;
+    \item annotating $\tty$ in $\tenvthree$ yields $\ttyp$\ProseOrTypeError;
+    \item $\newreturntype$ is $\langle\ttyp\rangle$;
+    \item $\newtenv$ is $\tenvfour$ with its local environment updated by binding its \\ $\funcreturntype$ field
+          to $\newreturntype$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[no\_return\_type]{}
+{
+  \annotatereturntype(\tenvthree, \tenvfour, \overname{\None}{\returntype}) \typearrow
+  (\overname{\tenvfour}{\newtenv}, \overname{\None}{\newreturntype})
+}
+\and
+\inferrule[has\_return\_type]{
+  \annotatetype{\tenvthree, \tty} \typearrow \ttyp \OrTypeError\\\\
+  \newreturntype \eqdef \langle\ttyp\rangle\\
+  \newtenv \eqdef (G^\tenvfour, L^\tenvfour[\funcreturntype\mapsto\newreturntype])
+}{
+  \annotatereturntype(\tenvthree, \tenvfour, \overname{\langle\tty\rangle}{\returntype}) \typearrow
+  (\newtenv, \newreturntype)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
+\hypertarget{def-declareonefunc}{}
+The function
+\[
+  \declareonefunc(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig})
+  \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks that a subprogram defined by $\funcsig$ can be added to the static environment $\tenv$,
+resulting in an annotated function definition $\newfuncdef$ and new static environment $\newtenv$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\funcsig$ has name $\name$, arguments $\vargs$, and type $\subprogramtype$, that is,
+  \[
+    \begin{array}{rrcl}
+      \funcsig \eqdef \{
+                      & \funcname            &:& \name,\\
+                      & \funcparameters      &:& \vp,\\
+                      & \funcargs            &:& \vargs,\\
+                      & \funcbody            &:& \SBASL(\bd),\\
+                      & \funcreturntype      &:& \vt,\\
+                      & \funcsubprogramtype  &:& \subprogramtype \\
+                  \}  & ; &&
+        \end{array}
+  \]
+  \item adding a new subprogram with $\name$, $\vargs$, and $\subprogramtype$ to $\tenv$ yields the new
+        environment $\tenvone$ and new name $\namep$\ProseOrTypeError;
+  \item checking that $\namep$ is not already declared in the global environment of $\tenvone$
+        yields $\True$\ProseOrTypeError;
+  \item ensuring that each setter has a getter given $\funcsig$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item $\funcsigone$ is $\funcsig$ with $\name$ substituted by $\nameone$;
+  \item adding a subprogram with name $\namep$ and definition $\funcsigone$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
+\end{itemize}
+\CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+  \begin{array}{rrcl}
+    \funcsig \eqdef \{
+                    & \funcname            &:& \name,\\
+                    & \funcparameters      &:& \vp,\\
+                    & \funcargs            &:& \vargs,\\
+                    & \funcbody            &:& \SBASL(\bd),\\
+                    & \funcreturntype      &:& \vt,\\
+                    & \funcsubprogramtype  &:& \subprogramtype \\
+                \} &&&
+      \end{array}
+    }\\
+  \addnewfunc(\tenv, \name, \vargs, \subprogramtype) \typearrow
+  (\tenvone, \namep) \OrTypeError\\\\
+  \checkvarnotingenv{\tenvone, \namep} \typearrow \True \OrTypeError\\\\
+  \checksetterhasgetter(\tenvone, \funcsig) \typearrow \True \OrTypeError\\\\
+  {
+  \begin{array}{rrcl}
+    \newfuncsig \eqdef \{
+                    & \funcname            &:& \namep,\\
+                    & \funcparameters      &:& \vp,\\
+                    & \funcargs            &:& \vargs,\\
+                    & \funcbody            &:& \SBASL(\bd),\\
+                    & \funcreturntype      &:& \vt,\\
+                    & \funcsubprogramtype  &:& \subprogramtype \\
+                \} &&&
+      \end{array}
+    }\\
+    \addsubprogram(\tenvone, \namep, \funcsigone) \typearrow \newtenv \OrTypeError
+}{
+  \declareonefunc(\tenv, \funcsig) \typearrow (\newtenv, \newfuncsig)
+}
+\end{mathpar}\lrmcomment{This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.}
+
+\subsubsection{TypingRule.SubprogramClash \label{sec:TypingRule.SubprogramClash}}
+\hypertarget{def-subprogramclash}{}
+The function
+\[
+  \subprogramclash(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\Strings}{\name} \aslsep
+    \overname{\subprogramtype}{\subpgmtype} \aslsep
+    \overname{\ty^*}{\formaltypes}
+  )
+  \aslto
+  \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the unique subprogram associated with $\name$
+clashes with another subprogram
+that has subprogram type $\subpgmtype$ and list of formal types $\formaltypes$,
+yielding a Boolean value in $\vb$.
+\ProseOtherwiseTypeError
+
+The function is only defined when there exists a binding for $\name$ in the
+$\subprograms$ map of $\tenv$.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item the subprogram type associated with the unique subprogram named by $\name$ is $\namesubpgmtype$;
+  \item applying $\subprogramtypesclash$ to $\namesubpgmtype$ and $\subpgmtype$ yields \\
+        $\True$\ProseTerminateAs{\False}
+        (that is, if both $\namesubpgmtype$ and $\subpgmtype$ are $\STGetter$ or both are $\STSetter$ then the
+        subprogram types are considered to be non-clashing and the entire rule short-circuits to $\False$);
+  \item $\nameargs$ is the list of pairs of types and identifiers associated with the function definition
+        of $\name$ in $\tenv$;
+  \item determining whether there is an argument clash between $\formaltypes$ and \\
+        $\nameformals$ in $\tenv$ yields $\vb$\ProseOrTypeError.
+\end{itemize}
+\subsection{Formally}
+\hypertarget{def-subprogramtypeclash}{}
+We first introduce the helper predicate
+\[
+  \subprogramtypesclash(
+    \overname{\subprogramtype}{\subpgmtypeone} \aslsep
+    \overname{\subprogramtype}{\subpgmtypetwo}
+  ) \aslto \overname{\Bool}{\vb}
+\]
+which defines whether two subprogram types are considered to be clashing:
+\begin{mathpar}
+\inferrule{
+  \vbone \eqdef
+  {
+    \begin{array}{l}
+  (\subpgmtypeone=\STGetter \land \subpgmtypetwo=\STSetter)\ \lor\\
+  (\subpgmtypeone=\STSetter \land \subpgmtypetwo=\STGetter)
+    \end{array}
+  }\\\\
+  \vb \eqdef \neg\vbone
+}{
+  \subprogramtypesclash(\subpgmtypeone, \subpgmtypetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \namesubpgmtype \eqdef G^\tenv.\subprograms(\name).\subprogramtype\\
+  \subprogramtypesclash(\namesubpgmtype, \subpgmtype) \typearrow \True \terminateas \False\\
+  \nameargs \eqdef G^\tenv.\subprograms(\name).\funcargs\\
+  \hasargclash(\formaltypes, \nameargs) \typearrow \vb
+}{
+  \subprogramclash(\tenv, \namep, \subpgmtype, \formaltypes) \typearrow \vb
+}
+\end{mathpar}\lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
+
+\subsubsection{TypingRule.AddNewFunc \label{sec:TypingRule.AddNewFunc}}
+\hypertarget{def-addnewfunc}{}
+The function
+\[
+  \begin{array}{rl}
+  \addnewfunc(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\identifier}{\name} \aslsep
+    \overname{\typedidentifier^*}{\formals} \aslsep
+    \overname{\subprogramtype}{\subpgmtype})
+  & \aslto\\
+  (\overname{\staticenvs}{\newtenv} \times \overname{\Strings}{\newname})
+  \cup \overname{\TTypeError}{\TypeErrorConfig} &
+  \end{array}
+\]
+ensures that the subprogram given by the identifier $\name$, list of formals $\formals$,
+and subprogram type $\subpgmtype$ has a unique name among all the potential subprograms
+that overload $\name$.
+The result is the unique subprogram identifier $\newname$, which is used to distinguish it in the set
+of overloaded subprograms (that is, other subprograms that share the same name)
+and the environment $\newtenv$, which is updated with $\newname$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{first\_name}):
+  \begin{itemize}
+    \item the $\subprogramrenamings$ map in the global environment of $\tenv$ does not have a binding for $\name$;
+    \item $\newtenv$ is $\tenv$ with the $\subprogramrenamings$ updated by binding $\name$ to the singleton set containing
+          $\name$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{name\_exists}):
+  \begin{itemize}
+    \item the $\subprogramrenamings$ map in the global environment of $\tenv$ binds $\name$ to the set of strings $\othernames$;
+    \item $\newname$ is the unique name that will be associated with the subprogram given by the identifier $\name$, list of formals $\formals$,
+          and subprogram type $\subpgmtype$. It is constructed by concatenating a hyphen (\texttt{-}) to $\name$, followed
+          by a string corresponding to the number of strings in $\othernames$.
+          Notice that this is not an ASL identifier, as ASL identifiers do not contain hyphens, which ensures that this string
+          does not occur in any specification;
+    \item $\formaltypes$ is the list of types that appear in $\formals$ in the same order;
+    \item checking for each $\namep$ in $\othernames$ whether the subprogram associated with $\namep$ clashes
+          with the subprogram type $\subpgmtype$ and list of types $\formaltypes$ yields $\False$
+          or a type error that indicates there are multiply defined subprograms, which short-circuits the entire rule;
+    \item $\newtenv$ is $\tenv$ with the $\subprogramrenamings$ updated by binding $\name$ to the union of $\othernames$ and
+          $\{\newname\}$.
+  \end{itemize}
+\end{itemize}
+\subsection{Formally}
+\newcommand\stringconcat[0]{\hyperlink{def-stringconcat}{\texttt{+}}}
+\newcommand\stringofint[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
+
+We use the following functions to construct a unique string for each subprogram:
+\begin{itemize}
+\hypertarget{def-stringconcat}{}
+\item The function $\stringconcat : \Strings \times \Strings \rightarrow \Strings$
+concatenates two strings.
+
+\hypertarget{def-stringofnat}{}
+\item The function $\stringofint : \N \rightarrow \Strings$ converts a natural number
+to the corresponding string.
+\end{itemize}
+
+\begin{mathpar}
+\inferrule[first\_name]{
+  G^\tenv.\subprogramrenamings(\name) = \bot\\
+  \newtenv \eqdef (G^\tenv.\subprogramrenamings[\name\mapsto\{\name\}],  L^\tenv)
+}{
+  \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
+  (\newtenv, \overname{\name}{\newname})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[name\_exists]{
+  G^\tenv.\subprogramrenamings(\name) = \othernames\\
+  k \eqdef \cardinality{\othernames}\\
+  \newname \eqdef \name\ \stringconcat\ \texttt{"-"}\ \stringconcat\ \stringofint(k)\\
+  \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
+  {
+    \left(\begin{array}{l}
+  \namep \in \othernames: \\ \subprogramclash(\tenv, \namep, \subpgmtype, \formaltypes) \typearrow
+  \vb_{\namep} \OrTypeError
+    \end{array}\right)
+  }\\\\
+  \namep \in \othernames: \checktrans{\neg\vb_{\namep}}{\SubrogramDeclaredMultipleTimes} \typearrow \True \OrTypeError\\\\
+  \newtenv \eqdef (G^\tenv.\subprogramrenamings[\name\mapsto \othernames \cup \{\newname\}],  L^\tenv)
+}{
+  \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
+  (\newtenv, \newname)
+}
+\end{mathpar}\lrmcomment{This is related to \identr{PGFC}.}
+
+\CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.CheckSetterHasGetter \label{sec:TypingRule.CheckSetterHasGetter}}
+\hypertarget{def-checksetterhashgetter}{}
+The function
+\[
+  \checksetterhasgetter(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\funcsig})
+  \aslto \overname{\True}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the setter procedure given by $\funcsig$ has a corresponding getter,
+returning $\True$ if this condition holds and a type error otherwise.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item checking that the subprogram type of $\funcsig$ is one of $\STSetter$ and \\ $\STEmptySetter$
+        has one of two outcomes:
+        $\False$, which satisfies the premise;
+        or $\True$, which short-circuits the entire rule
+        (since the subprogram is not any kind of setter and no getter is required);
+  \item \view\ the list of arguments of $\funcsig$ (that is, $\funcsig.\funcargs$) as follows:
+        the \head\ is an argument that has the type $\rettype$;
+        the \tail\ is a list with arguments that have the types $\argtypes$;
+  \item applying $\subprogramforname$ to look up $\tenv$ for a subprogram with the name given by $\funcsig$ (that is, $\funcsig.\funcname$)
+        yields a subprogram definition AST node $\funcsigp$\ProseOrTypeError;
+  \item define $\watendgettertype$ as $\STGetter$ if $\funcsig.\subprogramtype$ is \\ $\STSetter$ and
+        $\STEmptyGetter$ otherwise (meaning, $\funcsig.\subprogramtype$ is $\STEmptySetter$);
+  \item checking that $\watendgettertype$ is the same as $\funcsigp.\funcsubprogramtype$ \\ yields $\True$\ProseOrTypeError;
+  \item define $\argtypesp$ as the list of types appearing in the signature of $\funcsigp$ (that is, in $\funcsigp.\funcargs$);
+  \item checking, for each index $\vi$ in the indices for $\argtypes$, that the type at $\argtypes[\vi]$ and the type at $\argtypesp[\vi]$
+        are \typeequivalent\ yields $\True$\ProseOrTypeError;
+  \item checking that $\rettype$ and $\funcsigp.\funcreturntype$ are \typeequivalent\ yields \\
+        $\True$\ProseOrTypeError;
+  \item define $\vb$ as $\True$ (that is, unless the rule short-circuited with a type error).
+\end{itemize}
+\CodeSubsection{\CheckSetterHasGetterBegin}{\CheckSetterHasGetterEnd}{../Typing.ml}
+
+\subsection{Formally}
+We define the helper function
+\newcommand\matchsettertype[0]{\hyperlink{def-matchsettertype}{\texttt{match\_setter\_type}}}
+\hypertarget{def-matchsettertype}{}
+\[
+  \matchsettertype \triangleq [\STSetter \mapsto \STGetter, \STEmptySetter \mapsto \STEmptyGetter] \enspace.
+\]
+
+\begin{mathpar}
+\inferrule{
+  \issetter \eqdef \funcsig.\subprogramtype \in \{ \STSetter, \STEmptySetter\}\\
+  \booltrans{\issetter} \booltransarrow \False \terminateas \True\\\\
+  \funcsig.\funcargs \eqname (\Ignore, \rettype) \concat \vargs\\
+  \argtypes \eqdef [(\Ignore, \vt) \in \vargs: \vt]\\
+  \subprogramforname(\tenv, \funcsig.\funcname, \argtypes) \typearrow (\Ignore, \Ignore, \funcsigp) \OrTypeError\\\\
+  \matchsettertype(\funcsig.\funcsubprogramtype) \typearrow \watendgettertype\\
+  \checktrans{\watendgettertype = \funcsigp.\funcsubprogramtype}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\
+  \argtypesp \eqdef [(\Ignore, \vt) \in \funcsigp.\funcargs : \vt]\\
+  \vi\in\listrange(\argtypes): \typeequal(\argtypes[\vi], \argtypesp[\vi]) \typearrow \vb_\vi \OrTypeError\\\\
+  \vi\in\listrange(\argtypes): \checktrans{\vb_\vi}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\
+  \typeequal(\rettype, \funcsigp.\funcreturntype) \typearrow \vb_\ret \OrTypeError\\\\
+  \checktrans{\vb_\ret}{\SetterWithoutGetter} \typearrow \True \OrTypeError
+}{
+  \checksetterhasgetter(\tenv, \funcsig) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AddSubprogram \label{sec:TypingRule.AddSubprogram}}
+\hypertarget{def-addsubprogram}{}
+The function
+\[
+  \addsubprogram(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\Strings}{\name} \aslsep
+    \overname{\func}{\funcdef})
+   \aslto
+  \overname{\staticenvs}{\newtenv}
+\]
+updates the global environment of $\tenv$ by mapping the (unique) subprogram identifier $\name$
+to the function definition $\funcdef$ in $\tenv$, resulting in a new static environment $\newtenv$.
+
+\subsection{Prose}
+$\newtenv$ is $\tenv$ with its $\subprograms$ component updated by binding $\name$ to $\funcdef$.
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \newtenv \eqdef (G^\tenv.\subprograms[\name\mapsto\funcdef], L^\tenv)
+}{
+  \addsubprogram(\tenv, \name, \funcdef) \typearrow \newtenv
+}
+\end{mathpar}

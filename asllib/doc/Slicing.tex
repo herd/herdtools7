@@ -1,0 +1,541 @@
+\chapter{Bitvector Slicing\label{chap:BitvectorSlicing}}
+
+\section{A List of Slices}
+A list of bitvector slices is grammatically derived from $\Nslices$ and the AST
+is given by a list of $\slice$ AST nodes.
+%
+The function $\buildslices$ builds the AST for a list of slices.
+%
+The function $\annotateslices$ (see \nameref{sec:TypingRule.Slices}) annotates a list of slices.
+%
+The relation $\evalslices$ (see \nameref{sec:SemanticsRule.Slices}) evaluates a list of slices.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nslices \derivesinline\ & \Tlbracket \parsesep \Clist{\Nslice} \parsesep \Trbracket &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\subsubsection{ASTRule.Slices\label{sec:ASTRule.Slices}}
+\hypertarget{build-slices}{}
+The function
+\[
+  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\slice^*}{\vastnode}
+\]
+transforms a parse node for a list of slices $\vparsednode$ into an AST node for a list of slices $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
+}{
+  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\Clist{\Nslice}}, \Trbracket)) \astarrow
+  \overname{\vsliceasts}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.Slices\label{sec:TypingRule.Slices}}
+\hypertarget{def-annotateslices}{}
+The function
+\[
+\annotateslices(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices}) \aslto \overname{\slice^*}{\slicesp}
+\]
+annotates a list of slices $\vslices$ in the static environment $\tenv$, yielding a list of annotated slices (that is,
+slices in the \typedast). \ProseOtherwiseTypeError
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the slice $\vslices[\vi]$ in $\tenv$, for each $\vi\in\listrange(\vslices)$, yields the slice $\vs_\vi$\ProseOrTypeError;
+  \item define $\slicesp$ as the list of slices $\vs_\vi$, for each $\vi\in\listrange(\vslices)$.
+\end{itemize}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vi\in\listrange(\vslices): \annotateslice(\tenv, \vslices[\vi]) \typearrow \vs_\vi \OrTypeError\\\\
+  \slicesp \eqdef [\vi\in\listrange(\vslices): \vs_\vi]
+}{
+  \annotateslices(\tenv, \vslices) \typearrow \slicesp
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.Slices \label{sec:SemanticsRule.Slices}}
+The relation
+\hypertarget{def-evalslices}{}
+\[
+  \begin{array}{rl}
+  \evalslices(\overname{\envs}{\env} \aslsep \overname{\slice^*}{\slices}) \;\aslrel &
+    \Normal((\overname{(\vals \times \vals)^*}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv})\ \cup \\
+    & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+  \end{array}
+\]
+evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
+$\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration.
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item the list of slices is empty;
+    \item $\ranges$ is the empty list;
+    \item $\newg$ is the empty graph;
+    \item $\newenv$ is $\env$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{nonempty}):
+  \begin{itemize}
+    \item the list of slices has $\slice$ as the head and $\slicesone$ as the tail;
+    \item evaluating the slice $\vslice$ in $\env$ results in \\
+    $\Normal((\range, \vgone), \envone)$\ProseOrAbnormal;
+    \item evaluating the tail list $\slicesone$ in $\envone$ results in \\
+    $\Normal((\rangesone, \vgtwo), \newenv)$\ProseOrAbnormal;
+    \item $\ranges$ is the concatenation of $\range$ to $\rangesone$;
+    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+  \end{itemize}
+\end{itemize}
+
+$\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
+correspond to the start (included) and the length of each slice in
+$\slices$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \evalslices(\env, \emptylist) \evalarrow \Normal((\emptylist, \emptygraph), \env)
+}
+\end{mathpar}
+\begin{mathpar}
+\inferrule[nonempty]{
+  \slices \eqname [\vslice] \concat \slicesone\\
+  \evalslice(\env, \vslice) \evalarrow \Normal((\range, \vgone), \envone) \OrAbnormal\\
+  \evalslices(\envone, \slicesone) \evalarrow \Normal((\rangesone, \vgtwo), \newenv) \OrAbnormal\\
+  \ranges \eqdef [\range] \concat \rangesone\\
+  \newg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalslices(\env, \slices) \evalarrow \Normal((\ranges, \newg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalSlicesBegin}{\EvalSlicesEnd}{../Interpreter.ml}
+
+\section{Slicing Constructs}
+An individual slice construct is grammatically derived from $\Nslice$ and
+represented as an AST by $\slice$.
+%
+The function $\buildslice$ (see \nameref{sec:ASTRule.Slice}) builds the AST for an individual slice construct.
+%
+the function $\annotateslice$ (see \nameref{sec:TypingRule.Slice}) annotates a single slice.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nslice \derivesinline\ & \Nexpr &\\
+            |\  & \Nexpr \parsesep \Tcolon \parsesep \Nexpr &\\
+            |\  & \Nexpr \parsesep \Tpluscolon \parsesep \Nexpr &\\
+            |\  & \Nexpr \parsesep \Tstarcolon \parsesep \Nexpr &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\slice \derives\ & \SliceSingle(\overname{\expr}{\vi}) &\\
+  |\ & \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi}) &\\
+  |\ & \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &\\
+  |\ & \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.Slice\label{sec:ASTRule.Slice}}
+\hypertarget{build-slice}{}
+The function
+\[
+  \buildslice(\overname{\parsenode{\Nslice}}{\vparsednode}) \;\aslto\; \overname{\slice}{\vastnode}
+\]
+transforms a parse node for a slice $\vparsednode$ into an AST node for a slice $\vastnode$.
+
+\begin{mathpar}
+\inferrule[single]{}{
+  \buildslices(\Nslice(\punnode{\Nexpr})) \astarrow
+  \overname{\SliceSingle(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \buildexpr(\veone) \astarrow \astversion{\veone}\\
+  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+}{
+  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \overname{\SliceRange(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[length]{
+  \buildexpr(\veone) \astarrow \astversion{\veone}\\
+  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+}{
+  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tpluscolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \overname{\SliceLength(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[scaled]{
+  \buildexpr(\veone) \astarrow \astversion{\veone}\\
+  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+}{
+  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tstarcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \overname{\SliceStar(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.Slice\label{sec:TypingRule.Slice}}
+\hypertarget{def-annotateslice}{}
+the function
+\[
+  \annotateslice(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs})
+  \aslto
+  \overname{\slice}{\vsp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a single slice $\vs$ in the static environment $\tenv$,
+resulting in an annotated slice $\vsp$.
+\ProseOtherwiseTypeError
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{single}):
+  \begin{itemize}
+    \item $\vs$ is a \singleslice\ at index \vi, that is $\SliceSingle(\vi)$;
+    \item annotating the slice at offset $\vi$ of length $1$ yields $\vsp$\ProseOrTypeError.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vs$ is a slice for the range \texttt{(j, i)}, that is $\SliceRange(\vj, \vi)$;
+    \item $\prelength$ is \texttt{i+:(j-i+1)};
+    \item annotating the slice at offset $\vi$ of length $\prelength$ yields $\vsp$\ProseOrTypeError.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{length}):
+  \begin{itemize}
+    \item $\vs$ is a \lengthslice\ of length $\elength$ and offset $\eoffset$, that is, \\
+          $\SliceLength(\eoffset, \elength)$;
+    \item annotating the expression $\eoffset$ in $\tenv$ yields $(\toffset, \eoffsetp)$\ProseOrTypeError;
+    \item annotating the \staticallyevaluable\ \constrainedinteger\ expression $\elength$ in $\tenv$ yields
+    $\elength$\ProseOrTypeError;
+    \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$\ProseOrTypeError;
+    \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
+     $\SliceLength(\eoffsetp, \elength')$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{scaled}):
+  \begin{itemize}
+    \item $\vs$ is a \scaledslice\ \texttt{[factor *: pre\_length]}, that is, \\
+          $\SliceStar(\factor, \prelength)$;
+    \item $\preoffset$ is $\factor * \prelength$;
+    \item annotating the slice at offset $\preoffset$ of length $\prelength$ yields $\vsp$\ProseOrTypeError.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[single]{
+  \annotateslice(\SliceLength(\vi, \eliteral{1})) \typearrow \vsp \OrTypeError
+}{
+  \annotateslice(\tenv, \overname{\SliceSingle(\vi)}{\vs}) \typearrow \vsp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \binopliterals(\MINUS, \vi, \vi) \typearrow \prelengthp\\
+  \binopliterals(\PLUS, \prelengthp, \eliteral{1}) \typearrow \prelength\\
+  \annotateslice(\SliceLength(\vi, \prelength)) \typearrow \vsp \OrTypeError
+}{
+  \annotateslice(\tenv, \overname{\SliceRange(\vj, \vi)}{\vs}) \typearrow \vsp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[length]{
+  \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp) \OrTypeError\\\\
+  \annotatestaticconstrainedinteger(\tenv, \elength) \typearrow \elengthp \OrTypeError\\\\
+  \checkstructureinteger(\tenv, \toffset) \typearrow \True \OrTypeError
+}{
+  {
+    \begin{array}{r}
+  \annotateslice(\tenv, \overname{\SliceLength(\eoffset, \elength)}{\vs}) \typearrow \\
+    \overname{\SliceLength(\eoffsetp, \elength')}{\vsp}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[scaled]{
+  \binopliterals(\MUL, \factor, \prelength) \typearrow \preoffset\\
+  \annotateslice(\SliceLength(\preoffset, \prelength)) \typearrow \vsp \OrTypeError
+}{
+  \annotateslice(\tenv, \overname{\SliceStar(\factor, \prelength)}{\vs}) \typearrow \vsp
+}
+\end{mathpar}
+\lrmcomment{\identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i+:(j-i+1)]}.}
+\lrmcomment{\identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.}
+\lrmcomment{\identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}}
+
+\subsubsection{TypingRule.SlicesWidth\label{sec:TypingRule.SlicesWidth}}
+\hypertarget{def-sliceswidth}{}
+The helper function
+\[
+  \sliceswidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\vslices}) \aslto
+  \overname{\expr}{\vwidth} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns an expression $\vslices$ that represents the width of all slices given by $\vslices$
+in the static environment $\tenv$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vslices$ is the empty list;
+    \item $\vwidth$ is the literal integer expression for $0$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vslices$ is the list with \head\ $\vs$ and \tail\ $\slicesone$;
+    \item applying $\slicewidth$ to $\vs$ yields $\veone$;
+    \item applying $\sliceswidth$ to $\slicesone$ yields $\vetwo$;
+    \item symbolically simplifying the binary expression summing $\veone$ with $\vetwo$ yields $\vwidth$\ProseOrTypeError.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \sliceswidth(\tenv, \overname{\emptylist}{\vslices}) \typearrow \overname{\ELInt{0}}{\vwidth}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \slicewidth(\vs) \typearrow \veone\\
+  \sliceswidth(\slicesone) \typearrow \vetwo\\
+  \normalize(\AbbrevEBinop{\PLUS}{\veone}{\vetwo}) \typearrow \vwidth \OrTypeError
+}{
+  \sliceswidth(\tenv, \overname{[\vs]\concat\slicesone}{\vslices}) \typearrow \vwidth
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SliceWidth\label{sec:TypingRule.SliceWidth}}
+\hypertarget{def-slicewidth}{}
+The helper function
+\[
+  \slicewidth(\overname{\slice}{\vslice}) \aslto
+  \overname{\expr}{\vwidth}
+\]
+returns an expression $\vslices$ that represents the width of the slices given by $\vslice$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{single}):
+  \begin{itemize}
+    \item $\vslice$ is a single slice, that is, $\SliceSingle(\Ignore)$;
+    \item $\vwidth$ is the literal integer expression for $1$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{star}, \text{length}):
+  \begin{itemize}
+    \item $\vslice$ is either a slice of the form \texttt{\_:*$\ve$} or \texttt{\_:+$\ve$};
+    \item $\vwidth$ is $\ve$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vslice$ is a slice of the form \texttt{$\veone$..$\vetwo$};
+    \item $\vwidth$ is the expression for $1 + (\veone - \vetwo)$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[single]{}{
+  \slicewidth(\overname{\SliceSingle(\Ignore)}{\vslice}) \typearrow \overname{\ELInt{1}}{\vwidth}
+}
+\and
+\inferrule[scaled]{}{
+  \slicewidth(\overname{\SliceStar(\Ignore, \ve)}{\vslice}) \typearrow \overname{\ve}{\vwidth}
+}
+\and
+\inferrule[length]{}{
+  \slicewidth(\overname{\SliceLength(\Ignore, \ve)}{\vslices}) \typearrow \overname{\ve}{\vwidth}
+}
+\and
+\inferrule[range]{}{
+  \slicewidth(\overname{\SliceRange(\veone, \vetwo)}{\vslices}) \typearrow
+  \overname{\AbbrevEBinop{\PLUS}{\ELInt{1}}{(\AbbrevEBinop{\MINUS}{\veone}{\vetwo})}}{\vwidth}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.StaticConstrainedInteger\label{sec:TypingRule.StaticConstrainedInteger}}
+\hypertarget{def-annotatestaticconstrainedinteger}{}
+The function
+\[
+  \annotatestaticconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \overname{\expr}{\vepp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a \staticallyevaluable\ integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
+and returns the annotated expression $\vepp$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the expression $\ve$ in $\tenv$ yields $ (\vt, \vep)$\ProseOrTypeError;
+  \item determining whether $\vt$ is a statically \constrainedinteger\ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vep$ is \staticallyevaluable\  in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep) \OrTypeError\\\\
+  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
+  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \normalize(\tenv, \vep) \typearrow \vepp
+}{
+  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow \vepp
+}
+\end{mathpar}
+\CodeSubsection{\StaticConstrainedIntegerBegin}{\StaticConstrainedIntegerEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.Slice}
+The relation
+\hypertarget{def-evalslice}{}
+\[
+  \begin{array}{rl}
+  \evalslice{\overname{\envs}{\env} \aslsep \overname{\slice}{\vs}} \;\aslrel &
+    \Normal(((\overname{\tint}{\vstart} \times \overname{\tint}{\vlength}) \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv})\ \cup \\
+    & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+  \end{array}
+\]
+evaluates an individual slice $\vs$ in an environment $\env$ is,
+resulting either in \\
+$\Normal(((\vstart, \vlength), \vg), \newenv)$, a throwing configuration, or a dynamic error configuration.
+
+\subsubsection{Example (Single Slice)}
+In the specification:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceSingle.asl}
+the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, i.\,e.\ the slice of
+length 1 starting at index 2.
+
+\subsubsection{Example (Range Slice)}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceRange.asl}
+\texttt{4:2} evaluates to \texttt{(2, 3)}.
+
+\subsubsection{Example (Length Slice)}
+In the specification:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceLength.asl}
+\texttt{2+:3} evaluates to \texttt{(2, 3)}.
+
+\subsubsection{Example (Scaled Slice)}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceStar.asl}
+\texttt{x[3*:2]} evaluates to \texttt{'11'}.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{single}):
+  \begin{itemize}
+    \item $\vs$ is a \singleslice\ with the expression $\ve$, $\SliceSingle(\ve)$;
+    \item evaluating $\ve$ in $\env$ results in $\Normal((\vstart, \newg)$\newenv)\ProseOrAbnormal;
+    \item $\vlength$ is the integer value 1.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vs$ is the \rangeslice\ between the
+      expressions $\estart$ and $\etop$, that is, \\ $\SliceRange(\etop, \estart)$;
+    \item evaluating $\etop$ in $\env$ is $\Normal(\mtop, \envone)$\ProseOrAbnormal;
+    \item $\mtop$ is a pair consisting of the native integer $\vvsubtop$ and execution graph $\vgone$;
+    \item evaluating $\estart$ in $\envone$ is $\Normal(\mstart, \newenv)$\ProseOrAbnormal;
+    \item $\mstart$ is a pair consisting of the native integer $\vstart$ and execution graph $\vgtwo$;
+    \item $\vlength$ is the integer value \texttt{(v\_top - v\_start) + 1};
+    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{length}):
+  \begin{itemize}
+    \item $\vs$ is the \lengthslice, which starts at expression~$\estart$ with length~$\elength$,
+    that is, $\SliceLength(\estart, \elength)$;
+    \item evaluating $\estart$ in $\env$ is \Normal(\mstart, \envone)\ProseOrAbnormal;
+    \item evaluating $\elength$ in $\envone$ is \Normal(\mlength, \newenv)\ProseOrAbnormal;
+    \item $\mstart$ is a pair consisting of the native integer $\vstart$ and execution graph $\vgone$;
+    \item $\mlength$ is a pair consisting of the native integer $\vlength$ and execution graph $\vgtwo$;
+    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{scaled}):
+  \begin{itemize}
+    \item $\vs$ is the \scaledslice\ with factor given by the
+      expression $\efactor$ and length given by the
+      expression $\elength$, that is, $\SliceStar(\efactor, \elength)$;
+    \item evaluating $\efactor$ in $\env$ is $\Normal(\mfactor, \envone)$\ProseOrAbnormal;
+    \item $\mfactor$ is a pair consisting of the native integer $\vfactor$ and execution graph $\vgone$;
+    \item evaluating $\elength$ in $\env$ is $\Normal(\mlength, \newenv)$\ProseOrAbnormal;
+    \item $\mlength$ is a pair consisting of the native integer $\vlength$ and execution graph $\vgtwo$;
+    \item $\vstart$ is the native integer $\vfactor \times \vlength$;
+    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[single]{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vstart, \newg), \newenv) \OrAbnormal\\
+  \vlength \eqdef \nvint(1)
+}{
+  \evalslice(\env, \SliceSingle(\ve)) \evalarrow \Normal(((\vstart, \vlength), \newg), \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \evalexpr{\env, \etop} \evalarrow \Normal(\mtop, \envone) \OrAbnormal\\\\
+  \mtop \eqname (\vvsubtop, \vgone)\\
+  \evalexpr{\envone, \estart} \evalarrow \Normal(\mstart, \newenv) \OrAbnormal\\\\
+  \mstart \eqname (\vstart, \vgtwo)\\
+  \binoprel(\MINUS, \vvsubtop, \vstart) \evalarrow \vdiff\\
+  \binoprel(\PLUS, \nvint(1), \vdiff) \evalarrow \vlength\\
+  \newg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalslice(\env, \SliceRange(\etop, \estart)) \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[length]{
+  \evalexpr{\env, \estart} \evalarrow \Normal(\mstart, \envone) \OrAbnormal\\
+  \evalexpr{\envone, \elength} \evalarrow \Normal(\mlength, \newenv) \OrAbnormal\\
+  \mstart \eqname (\vstart, \vgone)\\
+  \mlength \eqname (\vlength, \vgtwo)\\
+  \newg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalslice(\env, \SliceLength(\estart, \elength)) \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[scaled]{
+  \evalexpr{\env, \efactor} \evalarrow \Normal(\mfactor, \envone) \OrAbnormal\\
+  \mfactor \eqname (\vfactor, \vgone)\\
+  \evalexpr{\envone, \elength} \evalarrow \Normal(\mlength, \newenv) \OrAbnormal\\
+  \mlength \eqname (\vlength, \vgtwo)\\
+  \binoprel(\MUL, \vfactor, \vlength) \evalarrow \vstart \\
+  \newg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
+}
+\end{mathpar}

@@ -1,0 +1,124 @@
+\chapter{Literals}
+ASL allows specifying literal values for the following types:
+integers, Booleans, real numbers, bitvectors, and strings.
+
+Enumeration labels are also considered literal values but are technically identifiers.
+
+\section{Syntax}
+
+\begin{flalign*}
+\Nvalue \derivesinline\ & \Tintlit &\\
+                        |\ & \Tboollit &\\
+                        |\ & \Treallit &\\
+                        |\ & \Tbitvectorlit &\\
+                        |\ & \Tstringlit &
+\end{flalign*}
+
+\section{Abstract Syntax}
+\begin{flalign*}
+\literal \derives\ & \lint(\overname{n}{\Z}) & \\
+    |\ & \lbool(\overname{b}{\{\True, \False\}})
+    & \\
+    |\ & \lreal(\overname{q}{\Q})
+    & \\
+    |\ & \lbitvector(\overname{B}{B \in \{0, 1\}^*})
+    & \\
+    |\ & \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}}) &
+\end{flalign*}
+
+\subsection{ASTRule.Value \label{sec:ASTRule.Value}}
+\hypertarget{build-value}{}
+The function
+\[
+  \buildvalue(\overname{\parsenode{\Nvalue}}{\vparsednode}) \;\aslto\; \overname{\literal}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ for $\Nvalue$ into an AST node $\vastnode$ for $\literal$.
+
+\begin{mathpar}
+\inferrule[integer]{}{
+  \buildvalue(\Nvalue(\Tintlit(\vi))) \astarrow
+  \overname{\lint(\vi)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[boolean]{}{
+  \buildvalue(\Nvalue(\Tboollit(\vb))) \astarrow
+  \overname{\lbool(\vb)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[real]{}{
+  \buildvalue(\Nvalue(\Treallit(\vr))) \astarrow
+  \overname{\lreal(\vr)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitvector]{}{
+  \buildvalue(\Nvalue(\Tbitvectorlit(\vb))) \astarrow
+  \overname{\lbitvector(\vb)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[string]{}{
+  \buildvalue(\Nvalue(\Tstringlit(\vs))) \astarrow
+  \overname{\lstring(\vs)}{\vastnode}
+}
+\end{mathpar}
+
+\section{Typing}
+\subsection{TypingRule.Lit \label{sec:TypingRule.Lit}}
+\hypertarget{def-annotateliteral}{}
+The function
+\[
+  \annotateliteral{\overname{\literal}{\vl}} \aslto \overname{\ty}{\vt}
+\]
+annotates a literal $\vl$, resulting in a type $\vt$.
+
+\subsection{Prose}
+The result of annotating a literal $\vl$ is $\vt$ and one of the following applies:
+\begin{itemize}
+\item (\texttt{int}): $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
+its set to the single value $\vn$;
+\item (\texttt{bool}): $\vl$ is a Boolean literal and $\vt$ is the Boolean type;
+\item (\texttt{real}): $\vl$ is a real literal and $\vt$ is the real type;
+\item (\texttt{string}): $\vl$ is a string literal and $\vt$ is the string type;
+\item (\texttt{bitvector}): $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
+\end{itemize}
+
+\CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[int]{}{\annotateliteral{\lint(n)}\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bool]{}{\annotateliteral{\lbool(\Ignore)}\typearrow \TBool}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[real]{}{\annotateliteral{\lreal(\Ignore)}\typearrow \TReal}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[string]{}{\annotateliteral{\lstring(\Ignore)}\typearrow \TString}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitvector]{
+  n \eqdef \listlen{\bits}
+}{
+  \annotateliteral{\lbitvector(\bits)}\typearrow \TBits(\ELInt{n}, \emptylist)
+}
+\end{mathpar}
+
+\subsection{Example}
+The following example shows literals and their corresponding types in comments:
+\ASLExample{\typingtests/TypingRule.Lit.asl}
+
+\section{Semantics}
+A literal $\vl$ can be converted to the \nativevalue\ $\nvliteral{\vl}$.

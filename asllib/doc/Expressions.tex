@@ -1,0 +1,2669 @@
+\chapter{Expressions\label{chap:Expressions}}
+
+Expressions calculate values.
+Expressions can have side effects and can raise exceptions and, therefore, there are constraints on the evaluation
+order and on the side-effects/exceptions to avoid surprising or unpredictable behavior (see \secref{PriorityAndAssociativity}).
+
+Expressions are grammatically derived from $\Nexpr$ and represented as ASTs by $\expr$.
+We will often refer to expressions defined in this chapter as \rhsexpressions\ to distinguish them
+from \assignableexpressions, which are defined in \chapref{AssignableExpressions}.
+
+\hypertarget{build-expr}{}
+The function
+\[
+  \buildexpr(\overname{\parsenode{\Nexpr}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
+\]
+transforms an expression parse node $\vparsednode$ into an expression AST node $\vastnode$.
+
+All expressions have a unique type (which can be a tuple type).
+\hypertarget{def-annotateexpr}{}
+The function
+\[
+  \annotateexpr{\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}}
+  \aslto (\overname{\ty}{\vt} \times \overname{\expr}{\newe})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+specifies how to annotate an expression $\ve$ in
+an environment \tenv.  The result of annotating the expression
+$\ve$ in \tenv\ is the pair $(\vt, \newe)$, where $\vt$ is the type inferred
+for $\ve$ and
+$\newe$ is the \typedast\ for $\ve$, also known as the \emph{annotated expression}. \ProseOtherwiseTypeError
+
+The annotation rewrites the input expression in the following cases, making the annotation of statements simpler:
+\begin{itemize}
+  \item Variables with constant values are substituted by their constant values.
+  \item Slicing expressions that correspond to calling a getter are replaced with respective call expressions.
+  \item Slicing expressions that correspond to \arrayaccess\ expressions are replaced by \arrayaccess\ expressions.
+\end{itemize}
+
+The relation
+\hypertarget{def-evalexpr}{}
+\[
+  \evalexpr{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
+            \Normal((\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg}) \aslsep \overname{\envs}{\newenv}) \cup
+            \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+\]
+evaluates the expression $\ve$ in an environment $\env$ and one of the following applies:
+\begin{itemize}
+  \item the evaluation terminates normally, returning a \nativevalue\  $\vv$, a concurrent execution graph $\vg$,
+  and a modified environment $\newenv$;
+  \item the evaluation terminates abnormally.
+\end{itemize}
+
+\section{Evaluation Order}
+It is an error for an expression’s meaning to rely on evaluation order except that conditional expressions, and uses
+of the boolean operators $\Tband$, $\Tbor$, $\Timpl$, are guaranteed to evaluate from left to right.
+\lrmcomment{\identr{XKGC}}
+
+An implementation could enforce this rule by performing a global analysis of all functions to determine whether a
+function can throw an exception and the set of global variables read and written by a function.
+\lrmcomment{\identi{YMRT}}
+
+For any function call $F(e_1,\ldots,e_m)$, tuple $(e_1,\ldots, e_m)$, or operation $e_1 \op e_2$
+(with the exception of $\Tband$, $\Tbor$, and$\Timpl$),
+it is an error if the subexpressions conflict with each other by:
+\begin{itemize}
+  \item both writing to the same variable.
+  \item one writing to a variable and the other reading from that same variable.
+  \item one writing to a variable and the other throwing an exception.
+  \item both throwing exceptions.
+\end{itemize}
+\lrmcomment{\identi{QJTN}}
+
+These conditions are sufficient but not necessary to ensure that evaluation order does not affect the result of an
+expression, including any side-effects.
+\lrmcomment{\identi{GFZT}}
+
+Conditional expressions and the operations $\Tband$, $\Tbor$, and$\Timpl$ have short-circuit evaluation.
+\lrmcomment{\identi{QRXP}}
+
+We now define the syntax, abstract syntax, typing, and semantics of the following kinds of expressions:
+\begin{itemize}
+  \item Literal expressions (see \secref{LiteralExpressions})
+  \item Variable expressions (see \secref{VariablExpressions})
+  \item Binary expressions (see \secref{BinaryExpressions})
+  \item Unary expressions (see \secref{UnaryExpressions})
+  \item Conditional expressions (see \secref{ConditionalExpressions})
+  \item Call expressions (see \secref{CallExpressions})
+  \item Slicing expressions (see \secref{SlicingExpressions})
+  \item Field reading expressions (see \secref{FieldReadingExpressions})
+  \item Bitvector concatenation expressions (see \secref{BitvectorConcatenationExpressions})
+  \item Asserting type conversion expressions (see \secref{AssertingTypeConversionExpressions})
+  \item Pattern matching expressions (see \secref{PatternMatchingExpressions})
+  \item Arbitrary value expressions (see \secref{ArbitraryValueExpressions})
+  \item Structured type construction expressions (see \secref{StructuredTypeConstructionExpressions})
+  \item Tuple expressions (see \secref{TupleExpressions})
+  \item Parenthesized expressions (see \secref{ParenthesizedExpressions})
+\end{itemize}
+
+Finally, we define side-effect-free expressions (see \secref{SideEffectFreeExpressions})
+
+\section{Literal Expressions\label{sec:LiteralExpressions}}
+A literal expression represents a literal as an expression.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Nvalue &\
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \ELiteral(\literal) &
+\end{flalign*}
+
+\subsubsection{ASTRule.ELit\label{sec:ASTRule.ELit}}
+\begin{mathpar}
+\inferrule{}{
+  \buildexpr(\overname{\Nexpr(\punnode{\Nvalue})}{\vparsednode}) \astarrow
+  \overname{\ELiteral(\astof{\vvalue})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.ELit\label{sec:TypingRule.ELit}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ is the literal expression $\vv$;
+\item $\vt$ is the type of the literal $\vv$;
+\item $\newe$ is $\ve$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateliteral{\vv} \typearrow \vt
+}{
+  \annotateexpr{\tenv, \overname{\ELiteral(\vv)}{\ve}} \typearrow (\vt, \overname{\ELiteral(\vv)}{\newe})
+}
+\end{mathpar}
+\CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.Lit.asl}
+each of the expressions \texttt{3} evaluates to the \nativevalue\  $\nvint(3)$.
+
+\subsubsection{SemanticsRule.ELit \label{sec:SemanticsRule.ELit}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ is the literal expression for $\vl$, that is, $\ELiteral(\vl)$
+\item $\vv$ is the \nativevalue\ corresponding to $\vl$;
+\item $\vg$ is the empty graph, as literals do not yield any Read and Write Effects;
+\item $\newenv$ is $\env$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \evalexpr{\env, \overname{\ELiteral(\vl)}{\ve}} \evalarrow \Normal((\overname{\nvliteral{\vl}}{\vv},\overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
+}
+\end{mathpar}
+\CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
+
+\section{Variable Expressions\label{sec:VariablExpressions}}
+A variable expression represents consists of an identifier.
+The identifier stands for either a storage element or the name of a getter with no arguments.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\ & \Tidentifier &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EVar(\overtext{\identifier}{variable name}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.EVAR}
+\begin{mathpar}
+  \inferrule{}{
+  \buildexpr(\overname{\Nexpr(\Tidentifier(\id))}{\vparsednode}) \astarrow
+  \overname{\EVar(\id)}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.EVar \label{sec:TypingRule.EVar}}
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local\_constant}):
+  \begin{itemize}
+  \item $\ve$ denotes a local variable $\vx$;
+  \item $\vx$ is bound to a local constant $\vv$ of type $\vt$ in the local environment given by $\tenv$;
+  \item $\newe$ is the Literal $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{local\_non\_constant}):
+  \begin{itemize}
+  \item $\ve$ denotes a local variable $\vx$;
+  \item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
+  \item $\vx$ has type $\vt$ in the local environment given by $\tenv$;
+  \item $\newe$ is $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global\_constant\_val}):
+  \begin{itemize}
+  \item $\ve$ denotes a global variable $\vx$;
+  \item $\vx$ is bound to a constant $\vv$ of type $\tty$ in the global environment given by $\tenv$;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is the Literal for $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global\_constant\_no\_val}):
+  \begin{itemize}
+  \item $\ve$ denotes a global variable $\vx$;
+  \item $\vx$ is not bound to constant in the global environment given by $\tenv$;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global\_var}):
+  \begin{itemize}
+  \item $\ve$ denotes a global variable $\vx$;
+  \item $\vx$ is not bound to a global constant;
+  \item $\vx$ has type $\tty$ in the global environment given by $\tenv$;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error\_undefined}):
+  \begin{itemize}
+  \item $\ve$ is a variable $\vx$;
+  \item $\vx$ is not bound to a type in $\tenv$;
+  \item the result is a type error indicating that $\vx$ is an undefined identifier.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty\_getter]{
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \True\\
+  \annotatecall(\tenv, \vx, \emptylist, \STEmptyGetter) \typearrow (\name, \vargs, \eqs, \langle\vt\rangle) \OrTypeError\\
+}{
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\ECall(\name, \vargs, \eqs)}{\newe})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[local\_constant]{
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  L^\tenv.\constantvalues(\vx) = \vv\\
+  L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)
+}{
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\eliteral{\vv}}{\newe})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[local\_non\_constant]{
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  L^\tenv.\constantvalues(\vx) = \bot\\
+  L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
+  k \in \{\LDKVar, \LDKLet\}
+}{
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global\_constant\_val]{
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
+  G^\tenv.\constantvalues(\vx) = \vv
+}{
+  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global\_constant\_no\_val]{
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
+  G^\tenv.\constantvalues(\vx) = \bot
+}{
+  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global\_var]{
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  G^\tenv.\constantvalues(\vx) = \bot\\
+  G^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
+  k \neq \GDKConstant
+}{
+  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error\_undefined]{
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  G^\tenv.\globalstoragetypes(\vx) = \bot\\
+  L^\tenv.\globalstoragetypes(\vx) = \bot\\
+}{
+  \annotateexpr{\tenv,\overname{\EVar(\vx)}{\ve}} \typearrow \TypeErrorVal{\UndefinedIdentifier}
+}
+\end{mathpar}
+
+\subsubsection{Comments}
+Our type system does not currently address assignments of non-constant expressions (for example,
+function calls) to global constant variables.
+\CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.EVar \label{sec:SemanticsRule.EVar}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a variable expression, that is, $\EVar(\vx)$;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{local}):
+    \begin{itemize}
+      \item $\vx$ is bound locally in $\env$;
+      \item $\vv$ is the value of $\vx$ in the local component of $\env$;
+    \end{itemize}
+
+    \item All of the following apply (\textsc{global}):
+    \begin{itemize}
+      \item $\vx$ is bound globally in $\env$;
+      \item $\vv$ is the value of $\vx$ in the global component of $\env$;
+    \end{itemize}
+  \end{itemize}
+  \item $\newenv$ is $\env$;
+  \item $\vg$ is the graph containing a single Read Effect for $\vx$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  \env \eqname (\Ignore, \denv)\\
+  \vx \in \dom(L^\denv)
+}{
+  \evalexpr{\env, \EVar(\vx)} \evalarrow \Normal((\overname{L^\denv(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global]{
+  \env \eqname (\Ignore, \denv)\\
+  \vx \in \dom(G^\denv)
+}{
+  \evalexpr{\env, \EVar(\vx)} \evalarrow \Normal((\overname{G^\denv(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
+}
+\end{mathpar}
+\CodeSubsection{\EvalEVarBegin}{\EvalEVarEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+When there exists a global variable $\vx$, the type system
+forbids having $\vx$ as a local variable.
+This is enforced by \nameref{sec:TypingRule.LDVar} in the Chapter ``Typing of Local Declarations'',
+and
+\nameref{sec:TypingRule.DeclareGlobalStorage} and \nameref{sec:TypingRule.DeclareOneFunc},
+both in the Chapter ``Typing of Global Declarations''.
+
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.ELocalVar.asl}
+the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.EVar.LOCAL.
+
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EGlobalVar.asl}
+the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
+uses the rule \\ SemanticsRule.EVar.GLOBAL.
+
+\section{Binary Expressions\label{sec:BinaryExpressions}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &\
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EBinop(\binop, \expr, \expr) &
+\end{flalign*}
+
+\subsubsection{ASTRule.Binop}
+\begin{mathpar}
+  \inferrule{
+    \buildexpr(\veone) \astarrow \astversion{\veone}\\
+    \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+  }{
+    {
+      \begin{array}{r}
+  \buildexpr(\overname{\Nexpr(\namednode{\veone}{\Nexpr}, \punnode{\Nbinop}, \namednode{\vetwo}{\Nexpr})}{\vparsednode}) \astarrow\\
+  \overname{\EBinop(\astversion{\veone}, \astof{\vbinop}, \astversion{\vetwo})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.Binop\label{sec:TypingRule.Binop}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a binary operation $\op$ over two expressions $\veone$ and $\vetwo$, that is, \\ $\EBinop(\op, \veone, \vetwo)$;
+  \item the result of annotating $\veone$ in $\tenv$ is $(\vtone, \veonep)$\ProseOrTypeError;
+  \item the result of annotating $\vetwo$ in $\tenv$ is $(\vttwo, \vetwop)$\ProseOrTypeError;
+  \item the result of checking compatibility of $\op$ with $\vtone$ and $\vttwo$ as per \secref{TypingRule.CheckBinop}
+  is $\vt$\ProseOrTypeError;
+  \item $\newenv$ denotes $\op$ over $\veonep$ and $\vetwop$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veone') \OrTypeError\\\\
+  \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwo') \OrTypeError\\\\
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError
+}{
+  \annotateexpr{\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}} \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe})
+}
+\end{mathpar}
+\CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.BinopAnd \label{sec:SemanticsRule.BinopAnd}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a conjunction over two expressions,
+      $\EBinop(\BAND, \veone, \vetwo)$;
+\item $C$ is the result of the evaluation of the expression
+      \texttt{if e1 then e2 else false} (see \secref{SemanticsRule.ECond}).
+\end{itemize}
+
+\subsubsection{Example}
+\ASLExample{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
+the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
+
+\CodeSubsection{\EvalBinopAndBegin}{\EvalBinopAndEnd}{../Interpreter.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \falsep \eqdef \ELiteral(\lbool(\False))\\
+  \evalexpr{\env, \ECond(\veone, \vetwo, \falsep)} \evalarrow C
+}{
+\evalexpr{\env, \EBinop(\BAND, \veone, \vetwo)} \evalarrow C
+}
+\end{mathpar}
+
+\subsubsection{Comments}
+The evaluation via the rule above ensures that $\veone$ is evaluated first and
+only if it evaluates to $\True$ is $\vetwo$ evaluated.
+
+\lrmcomment{This is related to \identr{BKNT}: add table}
+
+\lrmcomment{This is related to \identr{XKGC}:}
+
+It is an error for an expression’s meaning to rely on evaluation order except
+that conditional expressions, and uses of the boolean operators \texttt{\&\&},
+\texttt{||},\texttt{-->}, are guaranteed to evaluate from left to right.
+
+\lrmcomment{This is related to \identi{YMRT}:}
+
+An implementation could enforce this rule by performing a global analysis of
+all functions to determine whether a function can throw an exception and the
+set of global variables read and written by a function.
+
+\lrmcomment{This is related to \identi{QRXP}:}
+Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
+\texttt{-->} provide a short-circuit evaluation mechanism:
+
+\lrmcomment{This is related to the note under \identr{LRHD}:}
+\begin{itemize}
+\item the first operand of \texttt{if} is always evaluated but only one of the
+remaining operands is evaluated;
+\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated;
+\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and,
+\item if the first operand of \texttt{implies\_bool} is $\False$, then the
+second operand is not evaluated.
+\end{itemize}
+
+However, note that relying on this short-circuit evaluation can be confusing
+for readers of ASL specifications and as a consequence it is recommended that
+an if-statement is used to achieve the same effect.
+
+\subsubsection{SemanticsRule.BinopOr \label{sec:SemanticsRule.BinopOr}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a disjunction of two expressions, $\EBinop(\BOR, \veone, \vetwo)$;
+\item $C$ is the result of the evaluation of
+      \texttt{if e1 then true else e2} (see \secref{SemanticsRule.ECond}).
+\end{itemize}
+
+\subsubsection{Example}
+\ASLExample{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
+The expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
+
+\CodeSubsection{\EvalBinopOrBegin}{\EvalBinopOrEnd}{../Interpreter.ml}
+
+\begin{mathpar}
+\inferrule{
+  \truep \eqdef \ELiteral(\lbool(\True))\\
+  \evalexpr{\env, \ECond(\veone, \truep, \vetwo)} \evalarrow C
+}{
+\evalexpr{\env, \EBinop(\BOR, \veone, \vetwo)} \evalarrow C
+}
+\end{mathpar}
+The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
+it evaluates to $\False$, is $\vetwo$ evaluated.
+
+\subsubsection{Comments}
+\lrmcomment{This is related to \identr{BKNT}: add table}
+
+\lrmcomment{This is related to \identr{XKGC}:}
+
+It is an error for an expression’s meaning to rely on
+evaluation order except that conditional expressions, and uses of the boolean
+operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
+from left to right.
+
+\lrmcomment{This is related to \identi{YMRT}:}
+
+An implementation could enforce this rule by performing a global analysis of
+all functions to determine whether a function can throw an exception and the
+set of global variables read and written by a function.
+
+\lrmcomment{This is related to \identi{QRXP}:}
+Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
+\texttt{-->} provide a short-circuit evaluation mechanism:
+
+\lrmcomment{This is related to the note under \identr{LRHD}:}
+\begin{itemize}
+\item the first operand of \texttt{if} is always evaluated but only one of the
+remaining operands is evaluated;
+\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated;
+\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and,
+\item if the first operand of \texttt{implies\_bool} is $\False$, then the
+second operand is not evaluated.
+\end{itemize}
+
+However, note that relying on this short-circuit evaluation can be confusing
+for readers of ASL specifications and as a consequence it is recommended that
+an if-statement is used to achieve the same effect.
+
+\subsubsection{SemanticsRule.BinopImpl \label{sec:SemanticsRule.BinopImpl}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes an implication over two expressions, $\EBinop(\IMPL, \veone, \vetwo)$;
+  \item $\ve$ is evaluated as \texttt{if e1 then e2 else true}.
+\end{itemize}
+
+\subsubsection{Example}
+\ASLExample{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
+the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
+
+  \CodeSubsection{\EvalBinopImplBegin}{\EvalBinopImplEnd}{../Interpreter.ml}
+
+  \begin{mathpar}
+    \inferrule{
+      \truep \eqdef \ELiteral(\lbool(\True))\\
+      \evalexpr{\env, \ECond(\veone, \vetwo, \truep)} \evalarrow C
+    }
+    {
+    \evalexpr{\env, \EBinop(\IMPL, \veone, \vetwo)} \evalarrow C
+    }
+  \end{mathpar}
+  The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
+  it evaluates to \True, is $\vetwo$ evaluated.
+
+
+\lrmcomment{This is related to \identr{BKNT}: add table}
+
+\lrmcomment{This is related to \identi{QRXP}:}
+Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
+\texttt{-->} provide a short-circuit evaluation mechanism:
+
+\lrmcomment{This is related to the note under \identr{LRHD}:}
+\begin{itemize}
+\item the first operand of \texttt{if} is always evaluated but only one of the
+remaining operands is evaluated;
+\item if the first operand of \texttt{and\_bool} is $\False$, then the second operand is not evaluated;
+\item if the first operand of \texttt{or\_bool} is $\True$, then the second operand is not evaluated; and,
+\item if the first operand of \texttt{implies\_bool} is $\False$, then the
+second operand is not evaluated.
+\end{itemize}
+
+However, note that relying on this short-circuit evaluation can be confusing
+for readers of ASL specifications and as a consequence it is recommended that
+an if-statement is used to achieve the same effect.
+
+\subsubsection{SemanticsRule.Binop \label{sec:SemanticsRule.Binop}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a Binary Operator $\op$ over two expressions, $\EBinop(\op, \veone, \vetwo)$;
+  \item the operator $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$.
+        These operators are handled by rules
+        SemanticsRule.BinopAnd (\secref{SemanticsRule.BinopAnd}),
+        SemanticsRule.BinopOr \\ (\secref{SemanticsRule.BinopOr}), and
+        SemanticsRule.BinopImpl (\secref{SemanticsRule.BinopImpl});
+  \item the evaluation of the expression $\veone$ in $\env$ is the configuration \\
+        $\Normal(\vmone, \envone)$\ProseOrAbnormal;
+  \item the evaluation of the expression $\vetwo$ in $\envone$ is the configuration \\
+        $\Normal(\vmtwo, \newenv)$\ProseOrAbnormal;
+  \item $\vmone$ consists of the value $\vvone$ and the execution graph $\vgone$;
+  \item $\vmtwo$ consists of the value $\vvtwo$ and the execution graph $\vgtwo$;
+  \item applying the Binary Operator $\op$ to $\vvone$ and $\vvtwo$ results in $\vv$\ProseOrError;
+  \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+\end{itemize}
+
+\subsubsection{Example}
+In this specification:
+\ASLExample{\semanticstests/SemanticsRule.EBinopPlusAssert.asl}
+the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
+
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EBinopDIVBackendDefinedError.asl}
+the expression \texttt{3 DIV 0} results in a type error.
+
+\CodeSubsection{\EvalBinopBegin}{\EvalBinopEnd}{../Interpreter.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\
+  \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \OrAbnormal \\\\
+  \evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv) \OrAbnormal \\\\
+  \vmone \eqname (\vvone, \vgone) \\
+  \vmtwo \eqname (\vvtwo, \vgtwo) \\
+  \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\\\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalexpr{ \env, \overname{\EBinop(\op, \veone, \vetwo)}{\ve} } \evalarrow
+  \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+
+The rule above applies to many binary operators, including $\EQOP$ (which is used for \texttt{<->}
+as well as \texttt{==}).
+
+\subsubsection{Comments}
+\lrmcomment{This is related to \identr{BKNT}: add table}
+
+\lrmcomment{This is related to \identr{XKGC}:}
+
+The semantics takes a semantic transition over the left subexpression before
+the right subexpression.
+
+This is an arbitrary choice as the type-checker must ensure that either order
+of evaluation of the operands yields the same result.
+
+In other words, it it is an error for an expression’s meaning to rely on
+evaluation order except that conditional expressions, and uses of the boolean
+operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
+from left to right.
+
+\lrmcomment{This is related to \identi{YMRT}:}
+
+An implementation could enforce this rule by performing a global analysis of
+all functions to determine whether a function can throw an exception and the
+set of global variables read and written by a function.
+
+\lrmcomment{This is related to \identi{QJTN}:}
+
+Notice that when one of the subexpressions terminates exceptionally,
+the other expression must be side effect-free and non-throwing.
+
+In other words, for any function call \texttt{F (e1, ..., em)}, tuple
+\texttt{(e1, ..., em)}, or operation \texttt{e1 op e2} (with the exception of
+\texttt{\&\&}, \texttt{||} and \texttt{-->}), it is an error if the
+subexpressions conflict with each other by:
+\begin{itemize}
+\item both writing to the same variable.
+\item one writing to a variable and the other reading from that same variable
+\item one writing to a variable and the other throwing an exception
+\item both throwing exceptions
+\end{itemize}
+
+\lrmcomment{This is related to \identi{GFZT}:}
+These conditions are sufficient but not necessary to ensure that evaluation
+order does not affect the result of an expression, including any side-effects.
+
+\section{Unary Expressions\label{sec:UnaryExpressions}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Nunop \parsesep \Nexpr &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EUnop(\unop, \expr) &
+\end{flalign*}
+
+\subsubsection{ASTRule.Unop}
+\begin{mathpar}
+  \inferrule{}{
+  \buildexpr(\overname{\Nexpr(\punnode{\Nunop}, \punnode{\Nexpr})}{\vparsednode}) \astarrow
+  \overname{\EUnop(\astof{\vunop}, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.Unop\label{sec:TypingRule.Unop}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a unary operation $\op$ over an expression $\vep$, that is $\EUnop(\op, \vep)$;
+  \item annotating $\vep$ in $\tenv$ yields $(\vtpp, \vepp)$\ProseOrTypeError;
+  \item checking compatibility of $\op$ with $\vtpp$ as per \secref{TypingRule.CheckUnop} yields $\vt$\ProseOrTypeError;
+  \item $\newe$ denotes $\op$ over $\vepp$, that is, $\EUnop(\op, \vepp)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \vep} \typearrow (\vtpp, \vepp) \OrTypeError\\\\
+  \CheckUnop(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
+}{
+  \annotateexpr{\tenv, \EUnop(\op, \vep)} \typearrow (\vt, \EUnop(\op, \vepp))
+}
+\end{mathpar}
+\CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EUnopAssert.asl}
+the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
+
+\subsubsection{SemanticsRule.Unop\label{sec:SemanticsRule.Unop}}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a unary operator $\op$ over an expression, $\EUnop(\op, \veone)$;
+\item the evaluation of the expression $\veone$ in $\env$ yields \\ $\Normal((\vvone, \vg), \newenv)$\ProseOrAbnormal;
+\item applying the unary operator $\op$ to $\vvone$ is $\vv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{ \env, \veone} \evalarrow \Normal((\vvone,\vg), \newenv) \OrAbnormal\\\\
+  \unoprel(\op, \vvone) \evalarrow \vv
+}
+{
+  \evalexpr{ \env, \EUnop(\op, \veone) } \evalarrow
+  \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalUnopBegin}{\EvalUnopEnd}{../Interpreter.ml}
+
+\section{Conditional Expressions\label{sec:ConditionalExpressions}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+\Neelse \derives\ & \Telse \parsesep \Nexpr &\\
+|\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
+\end{flalign*}
+
+\subsubsection{ASTRule.ECond}
+\begin{mathpar}
+  \inferrule{
+    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
+    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+  }{
+    {
+      \begin{array}{r}
+  \buildexpr\left(\overname{\Nexpr\left(
+    \begin{array}{l}
+    \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
+    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
+    \end{array}
+    \right)}{\vparsednode}\right) \astarrow\\
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.EElse \label{sec:ASTRule.EElse}}
+\hypertarget{build-eelse}{}
+The function
+\[
+  \buildeelse(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[else]{}{
+  \buildeelse(\Neelse(\Telse, \punnode{\Nexpr})) \astarrow
+  \overname{\astof{\vexpr}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[else\_if]{
+  \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
+  \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+}{
+  {
+    \begin{array}{r}
+  \buildeelse\left(\Neelse\left(
+    \begin{array}{l}
+    \Telseif, \namednode{\vcondexpr}{\Nexpr},  \\
+    \wrappedline\ \Tthen, \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
+  \end{array}
+    \right)\right) \astarrow\\
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
+\end{array}
+  }
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.ECond \label{sec:TypingRule.ECond}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a conditional expression with condition $\econd$ with two options $\etrue$ and $\efalse$;
+  \item annotating $\econd$ in $\tenv$ results in $(\tcond, \econdp)$\ProseOrTypeError;
+  \item annotating $\etrue$ in $\tenv$ results in $(\ttrue, \etruep)$\ProseOrTypeError;
+  \item annotating $\efalse$ in $\tenv$ results in $(\tfalse, \efalsep)$;
+  \item obtaining the lowest common ancestor of $\ttrue$ and $\tfalse$ results in $\vt$\ProseOrTypeError;
+  \item $\newe$ is the condition $\econdp$ with two options $\etruep$ and $\efalsep$, that is, $\ECond(\econdp, \etruep, \efalsep)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \econd} \typearrow (\tcond, \econd') \OrTypeError\\\\
+  \annotateexpr{\tenv, \etrue} \typearrow (\ttrue, \etrue') \OrTypeError\\\\
+  \annotateexpr{\tenv, \efalse} \typearrow (\tfalse, \efalse') \OrTypeError\\\\
+  \lca(\ttrue, \tfalse) \typearrow \vt \OrTypeError
+}{
+  {
+    \begin{array}{r}
+  \annotateexpr{\ECond(\econd, \etrue, \efalse)} \typearrow \\
+  (\vt, \ECond(\econdp, \etruep, \efalsep))
+    \end{array}
+  }
+}
+\end{mathpar}
+\CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{XZVT}.}
+
+\subsection{Semantics}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.ECondFalse.asl}
+the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \texttt{3}.
+
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.ECondUNKNOWN3or42.asl}
+the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will
+evaluate either \texttt{3} or \texttt{Return42()} depending on how
+\texttt{UNKNOWN} is implemented.
+
+\subsubsection{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a conditional expression $\econd$ with two options $\veone$ and $\vetwo$,
+        that is, $\ECond(\econd, \veone, \vetwo)$;
+  \item the evaluation of the conditional expression $\econd$ in $\env$ yields \\
+        $\Normal(\mcond, \envone)$\ProseOrAbnormal;
+  \item $\mcond$ consists of a native Boolean for $\vb$ and execution graph $\vgone$;
+  \item $\vep$ is $\veone$ if $\vb$ is $\True$ and $\vetwo$ otherwise;
+  \item the evaluation of $\vep$ in $\envone$ yields $\Normal((\vvtwo, \vgtwo), \newenv)$\ProseOrAbnormal;
+  \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \econd} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
+    \mcond \eqname (\nvbool(\vb), \vgone)\\
+    \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
+    \evalexpr{\envone, \vep} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+    \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
+  }
+  {
+    \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
+    \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
+\CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+\lrmcomment{This is related to \identr{YCDB}:}
+
+A conditional expression evaluates to its \texttt{then} expression if the
+condition expression evaluates to $\True$. If the condition expression
+evaluates to $\False$ each \texttt{elsif} condition expression is evaluated
+sequentially until an \texttt{elsif} condition expression evaluates to $\True$;
+the conditional expression evaluates to the corresponding \texttt{elsif}
+expression. If no \texttt{elsif} expression evaluates to $\True$ the
+conditional expression evaluates to the \texttt{else} expression.
+
+\section{Call Expressions\label{sec:CallExpressions}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Tidentifier \parsesep \Plist{\Nexpr} &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.ECall}
+\begin{mathpar}
+\inferrule{
+  \buildplist[\buildexpr](\vargs) \astarrow \vexprasts
+}{
+  \buildexpr(\overname{\Nexpr(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})}{\vparsednode}) \astarrow
+  \overname{\ECall(\id, \vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.ECall\label{sec:TypingRule.ECall}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a call to a subprogram named $\name$ with arguments $\vargs$, that is, \\ $\ECall(\name, \vargs)$;
+  \item applying $\annotatecall$ to $\name$, $\vargs$, and $\STFunction$ in $\tenv$
+        annotates the call of that subprogram in $\tenv$ as a function (annotating calls is defined in Chapter~\ref{chap:TypingSubprogramCalls})
+        and yields $(\namep, \vargsp, \eqsp, \langle \vt \rangle)$\ProseOrTypeError.
+        Notice that passing $\STFunction$ to $\annotatecall$ checks that $\name$ is not a procedure and that a value is indeed returned;
+  \item $\newe$ is the call to the subprogram named $\namep$ with arguments $\vargsp$
+    and parameters $\eqsp$, that is, $\ECall(\namep, \vargsp, \eqsp)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotatecall(\tenv, \name, \vargs, \STFunction) \typearrow (\namep, \vargsp, \eqsp, \langle \vt \rangle) \OrTypeError
+}{
+  \annotateexpr{\tenv, \overname{\ECall(\name, \vargs)}{\ve}} \typearrow (\vt, \overname{\ECall(\namep, \vargsp, \eqsp)}{\newe})
+}
+\end{mathpar}
+\CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
+\lrmcomment{This is related to \identd{CFYP}, \identr{BQJG}.}
+
+\subsection{Semantics}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.ECall.asl}
+the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
+subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
+
+\subsubsection{SemanticsRule.ECall \label{sec:SemanticsRule.ECall}}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a subprogram call, $\ECall(\name, \actualargs, \params)$;
+  \item the evaluation of that subprogram call in $\env$ is either
+  $\Normal(\vms, \newenv)$\ProseOrAbnormal;
+  \item one of the following applies:
+  \begin{itemize}
+    \item all of the following apply (\textsc{single\_returned\_value}):
+    \begin{itemize}
+      \item $\vms$ consists of a single returned value $(\vv,\vg)$,
+      which goes into the output configuration $\Normal((\vv, \vg), \newenv)$.
+    \end{itemize}
+
+    \item all of the following apply (\textsc{multiple\_returned\_values}):
+    \begin{itemize}
+      \item $\vms$ consists of a list of returned value $(\vv_i,\vg_i)$, for $i=1..k$;
+      \item $\vg$ is the parallel composition of $\vg_i$, for $i=1..k$;
+      \item $\vv$ is the \nativevalue\  vector of values $\vv_i$, for $i=1..k$;
+      \item the resulting configuration is $\Normal((\vv, \vg), \newenv)$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[single\_returned\_value]{
+  \evalcall{\env, \name, \actualargs, \params} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
+  \vms \eqname [(\vv, \vg)]
+}{
+  \evalexpr{\env, \ECall(\name, \actualargs, \params)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[multiple\_returned\_values]{
+  \evalcall{\env, \name, \actualargs, \params} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
+  \vms \eqname [i=1..k: (\vv_i, \vg_i)]\\
+  \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
+  \vv \eqdef \nvvector{\vv_{1..k}}
+}{
+  \evalexpr{\env, \ECall(\name, \actualargs, \params)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
+
+\section{Slicing Expressions\label{sec:SlicingExpressions}}
+Slicing expressions stand for one of the following:
+\begin{itemize}
+  \item A call to a setter subprogram;
+  \item A bitvector slice; or
+  \item A read access to an array index.
+\end{itemize}
+This section details the high-level form of the syntax and abstract syntax of slicing expressions,
+explains how the type system differentiates between the different types of slicing expressions,
+and defines the semantics of bitvector slices and array access.
+The details of the various types of bitvector slices is deferred to \chapref{BitvectorSlicing}.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\ & \Nexpr \parsesep \Nslices &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \ESlice(\expr, \slice^{*}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.ESlice}
+\begin{mathpar}
+\inferrule{}{
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \punnode{\Nslice})}{\vparsednode}) \astarrow
+  \overname{\ESlice(\astof{\vexpr}, \astof{\vslice})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.ESetter \label{sec:TypingRule.ESetter}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
+  $\ESlice(\vep, \slices)$;
+  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
+  in $\tenv$ via $\reduceslicestocall$ yields a positive answer --- $\langle (\name, \vargs)\rangle$\ProseOrTypeError;
+  \item applying $\annotatecall$ to annotate the call with $(\tenv, \name, \vargs, \STSetter)$
+        yields $(\nameone, \vargsone, \eqs, \langle\tty\rangle)$\ProseOrTypeError;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is the call expression $\ECall(\nameone, \vargsone, \eqs)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \langle(\name, \vargs)\rangle \OrTypeError\\\\
+  \annotatecall(\tenv, \name, \vargs, \STSetter) \typearrow (\nameone, \vargsone, \eqs, \langle\tty\rangle) \OrTypeError\\
+}{
+  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\ECall(\nameone, \vargsone, \eqs)}{\newe})
+}
+\end{mathpar}
+\CodeSubsection{\ReduceSlicesToCallBegin}{\ReduceSlicesToCallEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.ESlice \label{sec:TypingRule.ESlice}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
+  $\ESlice(\vep, \slices)$;
+  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
+  in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$\ProseOrTypeError;
+  \item annotating the expression $\vep$ in $\tenv$ yields $(\tep,\vepp)$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
+  \item $\structtep$ is either a bitvector or an integer;
+  \item obtaining the width of $\slices$ in $\tenv$ via $\sliceswidth$ yields $\vw$\ProseOrTypeError;
+  \item $\slicesp$ is the result of annotating $\slices$ in $\tenv$;
+  \item $\vt$ is the bitvector type of width $\vw$, that is, $\TBits(\vw, \emptylist)$;
+  \item $\newe$ is the slicing of expression $\vepp$ by the slices $\slicesp$, that is, \\
+  $\ESlice(\vepp, \slicesp)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
+  \astlabel(\structtep) \in \{\TInt, \TBits\}\\
+  \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
+  \annotateslices(\tenv, \slices) \typearrow \slicesp \OrTypeError
+}{
+  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow (\overname{\TBits(\vw, \emptylist)}{\vt}, \overname{\ESlice(\vepp, \slicesp)}{\newe})
+}
+\end{mathpar}
+\CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
+\subsubsection{Comments}
+The width of \slices\ might be a symbolic expression if one of the
+widths references a \texttt{let} identifier with a non-compile-time-constant
+initializer expression.
+\lrmcomment{This is related to \identi{MJWM}.}
+
+\subsubsection{TypingRule.ESliceOrEGetArrayError\label{sec:TypingRule.ESliceOrEGetArrayError}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
+  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
+  in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$\ProseOrTypeError;
+  \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
+  \item $\tep$ has the structure $\vtp$;
+  \item $\vtp$ is neither an integer type, a bitvector type, or an array type;
+  \item the result is an error indicating that the type of $\vep$ is inappropriate for slicing.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \tep) \typearrow \vtp\\
+  \astlabel(\vtp) \not\in \{\TInt, \TBits, \TArray\}
+}{
+  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow \TypeErrorVal{IllegalSliceType}
+}
+\end{mathpar}
+\CodeSubsection{\ESliceOrEGetArrayErrorBegin}{\ESliceOrEGetArrayErrorEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.EGetArray \label{sec:TypingRule.EGetArray}}
+\hypertarget{def-arrayaccess}{}
+\begin{definition}[Array Access]
+We refer to a right-hand-side expression of the form $b[i]$,
+where $b, i$ are subexpressions, as an \arrayaccess\ expression.
+We refer to $b$ and $i$ as the \emph{base}
+and the $\emph{index}$ subexpressions, respectively.
+
+In the untyped AST, an \arrayaccess\ expression is represented by \\
+$\ESlice(\vbase, [\vindex])$, whereas in the typed AST,
+it is represented by \\
+$\EGetArray(\vbase, \vindex)$
+\end{definition}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
+  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
+        in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$\ProseOrTypeError;
+  \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
+  \item $\tep$ has the structure of an array with index $\size$ and element type $\tty$';
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{okay}):
+    \begin{itemize}
+      \item $\slices$ is a list containing a single slice for an expression $\eindex$, that is, $[\SliceSingle(\eindex)]$;
+      \item annotating the expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$\ProseOrTypeError;
+      \item determining the type of the array index for $\size$ in $\tenv$ via \\ $\typeofarraylength$
+            yields $\wantedtindex$;
+      \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ yields \\
+            $\True$\ProseOrTypeError;
+      \item $\vt$ is $\ttyp$;
+      \item $\newe$ is the \arrayaccess\ expression for $\vepp$ and index $\eindexp$, that is, $\EGetArray(\vepp, \eindexp)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item $\slices$ is not a list containing a single slice for an expression $\eindex$;
+      \item the result is a type error indicating that an array must be accessed with a slice corresponding
+            to a single index expression.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \slices = [ \SliceSingle(\eindex) ]\\
+  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\\\
+  \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
+  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\
+}{
+  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \overname{\EGetArray(\vepp, \eindexp)}{\newe})
+}
+\and
+\inferrule[error]{
+  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \slices \neq [ \SliceSingle(\Ignore) ]\\
+}{
+  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow \TypeErrorVal{IllegalArraySlice}
+}
+\end{mathpar}
+\CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.ReduceSlicesToCall \label{sec:TypingRule.ReduceSlicesToCall}}
+\hypertarget{def-reduceslicestocall}{}
+The helper function
+\[
+  \reduceslicestocall(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve} \aslsep \overname{\slice^*}{\slices})
+  \aslto
+  \langle (\overname{\identifier}{\name} \times \overname{\expr^*}{\vargs})\rangle
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the expression $\ve$ together with the list of slices $\slices$ constitute
+a call to a subprogram in $\tenv$.
+If so, it returns a pair consisting of the name of the called subprogram --- $\name$ ---
+and the list of actual arguments --- $\vargs$. Otherwise, it returns $\None$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{yes}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item determining whether $\vx$ is a subprogram name with $\slices$ as its actual arguments
+    via $\shouldslicesreducetocall$
+    yields a list of actual argument expressions $\vargs$\ProseOrTypeError;
+    \item the result is $\langle (\vx, \vargs)\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{no}):
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item determining whether $\vx$ is a subprogram name with $\slices$ as its actual arguments
+    via $\shouldslicesreducetocall$
+    yields $\None$;
+    \item the result is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_var}):
+  \begin{itemize}
+    \item $\ve$ is not a variable expression;
+    \item the result is $\None$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[yes]{
+  \shouldslicesreducetocall(\tenv, \vx, \slices) \typearrow \langle \vargs \rangle\\
+}{
+  \reduceslicestocall(\tenv, \EVar(\vx), \slices) \typearrow \langle (\vx, \vargs)\rangle
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no]{
+  \shouldslicesreducetocall(\tenv, \vx, \slices) \typearrow \None
+}{
+  \reduceslicestocall(\tenv, \EVar(\vx), \slices) \typearrow \None
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_var]{
+  \astlabel(\ve) \neq \EVar
+}{
+  \reduceslicestocall(\tenv, \ve, \slices) \typearrow \None
+}
+\end{mathpar}
+\CodeSubsection{\ReduceSlicesToCallBegin}{\ReduceSlicesToCallEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.ESlice \label{sec:SemanticsRule.ESlice}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.ESlice.asl}
+the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a slicing expression, $\ESlice(\ebv, \slices)$;
+\item the evaluation of $\ebv$ in $\env$ yields $\Normal(\mbv, \envone)$\ProseOrAbnormal;
+\item the evaluation of $\slices$ in $\env$ yields $\Normal(\mpositions, \newenv)$\ProseOrAbnormal;
+\item $\mpositions$ consists of $\positions$ --- all the indices that need to be added to the
+resulting bitvector --- and the execution graph $\vgone$;
+\item reading from $\vbv$ as a bitvector at the indices indicated by $\positions$
+      (see \secref{SemanticsRule.ReadFromBitvector}) results in the bitvector $\vv$,
+      which concatenates all of the values from the indicates indices\ProseOrError;
+\item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \ebv} \evalarrow \Normal(\mbv, \envone)  \OrAbnormal\\\\
+  \mbv \eqname (\vbv,\vgone) \\
+  \evalslices{\envone, \slices} \evalarrow \Normal(\mpositions, \newenv)  \OrAbnormal \\
+  \mpositions \eqname (\positions, \vgtwo) \\
+  \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\\\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalexpr{\env, \ESlice(\ebv, \slices)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.EGetArray \label{sec:SemanticsRule.EGetArray}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EGetArray.asl}
+the expression \texttt{my\_array[2]} appearing in the assertion evaluates to the value \texttt{42} since the element
+indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
+
+\subsubsection{Example}
+The specification:
+\ASLExample{\semanticstests/SemanticsRule.EGetArrayTooSmall.asl}
+results in a typing error since we are trying to access index \texttt{3} of an array
+which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes an array access expression, $\EGetArray(\earray, \eindex)$;
+  \item the evaluation of $\earray$ in $\env$ is $\Normal(\marray, \envone)$\ProseOrAbnormal;
+  \item the evaluation of $\eindex$ in $\env$ is  $\Normal(\mindex, \newenv)$\ProseOrAbnormal
+  \item $\marray$ consists of the native vector $\varray$ and execution graph $\vgone$;
+  \item $\mindex$ consists of the native integer $\vindex$ and execution graph $\vgtwo$;
+  \item $\vindex$ is the native integer for $\vi$;
+  \item evaluating the value at index $\vi$ of $\varray$ is $\vv$;
+  \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \earray} \evalarrow \Normal(\marray, \envone)  \OrAbnormal\\
+  \evalexpr{\envone, \eindex} \evalarrow \Normal(\mindex, \newenv)  \OrAbnormal\\
+  \marray \eqname (\varray, \vgone)\\
+  \mindex \eqname (\vindex, \vgtwo)\\
+  \vindex \eqname \nvint(\vi)\\
+  \getindex(\vi, \varray) \evalarrow \vv\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo\\
+}{
+  \evalexpr{\env, \EGetArray(\earray, \eindex)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
+
+\section{Field Reading Expressions\label{sec:FieldReadingExpressions}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Nexpr \parsesep \Tdot \parsesep \Tidentifier&\\
+                    |\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})
+    |\ & \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.EGetField}
+\begin{mathpar}
+  \inferrule{}{
+  \buildexpr(\overname{\Nexpr(\Nexpr, \Tdot, \Tidentifier(\id))}{\vparsednode}) \astarrow
+  \overname{\EGetField(\astof{\vexpr}, \id)}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.EGetFields}
+\begin{mathpar}
+  \inferrule{
+    \buildclist[\buildidentity](\vids) \astarrow \vidasts
+  }{
+    {
+      \begin{array}{r}
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)}{\vparsednode}) \astarrow\\
+  \overname{\EGetFields(\astof{\vexpr}, \vidasts)}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.EGetRecordField \label{sec:TypingRule.EGetRecordField}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
+  \item $\vtetwo$ is a \structuredtype\ with fields $\fields$;
+  \item the field $\fieldname$ is associated with the type $\vt$ in $\fields$
+  \item $\newe$ is the access of field $\fieldname$ on the record or exception object $\vetwo$, that is, $\EGetField(\vetwo, \fieldname)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
+  \vtetwo \eqname L(\fields)\\
+  L \in \{\TRecord, \TException\}\\
+  \assocopt(\fields, \fieldname) \typearrow \langle \vt\rangle
+}{
+  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow (\vt, \EGetField(\vetwo, \fieldname))
+}
+\end{mathpar}
+\CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.EGetBadRecordField \label{sec:TypingRule.EGetBadRecordField}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
+  \item $\vtetwo$ is a \structuredtype\ with fields $\fields$;
+  \item the field $\fieldname$ is not associated with any type in $\fields$
+  \item the result is a type error indicating the missing field.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
+  \vtetwo \eqname L(\fields)\\
+  L \in \{\TRecord, \TException\}\\
+  \assocopt(\fields, \fieldname) \typearrow \None
+}{
+  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow \TypeErrorVal{FieldDoesNotExist}
+}
+\end{mathpar}
+\CodeSubsection{\EGetBadRecordFieldBegin}{\EGetBadRecordFieldEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.EGetBadBitField \label{sec:TypingRule.EGetBadBitField}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
+  \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
+  \item the field $\fieldname$ is not found in $\bitfields$
+  \item the result is a type error indicating the missing field.
+\end{itemize}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
+  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
+}{
+  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{FieldDoesNotExist}
+}
+\end{mathpar}
+\CodeSubsection{\EGetBadBitFieldBegin}{\EGetBadBitFieldEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.EGetBitField \label{sec:TypingRule.EGetBitField}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
+  \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
+  \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$, that is, \\ $\BitFieldSimple(\Ignore, \slices)$;
+  \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
+  \item annotating $\vethree$ in $\tenv$ yields $(\vt, \newe)$\ProseOrTypeError.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
+  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldSimple(\Ignore, \slices)\rangle\\
+  \vethree \eqdef \ESlice(\vetwo, \slices)\\
+  \annotateexpr{\tenv, \vethree} \typearrow (\vt, \newe) \OrTypeError
+}{
+  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow (\vt, \newe)
+}
+\end{mathpar}
+\CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.EGetBitFieldNested \label{sec:TypingRule.EGetBitFieldNested}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
+  \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
+  \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$ and nested bitfields $\bitfieldsp$, that is,
+        $\BitFieldNested(\Ignore, \slices, \bitfieldsp)$;
+  \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
+  \item annotating $\vethree$ in $\tenv$ yields $(\vtefour, \newe)$\ProseOrTypeError;
+  \item $\vtefour$ is a bitvector type with length expression $\width$, that is, $\TBits(\width, \Ignore)$;
+  \item $\vt$ is a bitvector type with length expression $\width$ and bitfields $\bitfieldsp$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
+  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  {
+    \begin{array}{r}
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle
+    \end{array}
+  }\\
+  \vethree \eqdef \ESlice(\vetwo, \slices)\\
+  \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe) \OrTypeError\\\\
+  \vtefour \eqname \TBits(\width, \Ignore)\\
+  \vt \eqdef \TBits(\width, \bitfieldsp)
+}{
+  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow (\vt, \newe)
+}
+\end{mathpar}
+\CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.EGetBitFieldTyped \label{sec:TypingRule.EGetBitFieldTyped}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
+  \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
+  \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$ and typed-bitfield with type $\vt$ that is,
+        $\BitFieldType(\Ignore, \slices, \vt)$;
+  \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
+  \item annotating $\vethree$ in $\tenv$ yields $(\vtefour, \newe)$\ProseOrTypeError;
+  \item determining whether $\vtefour$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
+  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldType(\Ignore, \slices, \vt)\rangle\\
+  \vethree \eqdef \ESlice(\vetwo, \slices)\\
+  \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe) \OrTypeError\\\\
+  \checktypesat(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
+}{
+  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow (\vt, \newe)
+}
+\end{mathpar}
+\CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.EGetTupleItem \label{sec:TypingRule.EGetTupleItem}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
+  \item $\vtetwo$ is tuple type with list of types $\tys$, that is, $\TTuple(\tys)$;
+  \item $\fieldname$ is an identifier with the prefix \texttt{item} and the constant $\vindex$;
+  \item determining whether $\vindex$ is between $0$ and the number of types in $\tys$, inclusive, yields $\True$\ProseOrTypeError;
+  \item $\vt$ is the type at position $\vindex$ of $\tys$;
+  \item $\newe$ is the expression for obtaining the item at index $\vindex$ from the expression $\vetwo$, that is, $\EGetItem(\vetwo, \vindex)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
+  \vtetwo \eqname \TTuple(\tys)\\
+  \fieldname \eqname \texttt{"item<index>"}\\
+  \checktrans{0 \leq \vindex \leq \listlen{\tys}}{IndexOutOfRange} \checktransarrow \True \OrTypeError\\\\
+  \vt \eqdef \tys[\vindex]\\
+  \newe \eqdef \EGetItem(\vetwo, \vindex)
+}{
+  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow (\vt, \newe)
+}
+\end{mathpar}
+\CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.EGetBadField \label{sec:TypingRule.EGetBadField}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
+  \item $\vtetwo$ is neither one of the following types: record, exception, bitvector, or tuple;
+  \item the result is an error indicating that the type of $\veone$ is inappropriate for accessing the field $\fieldname$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
+  \astlabel(\vtetwo) \not\in \{\TRecord, \TException, \TBits, \TTuple\}
+}{
+  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{ConflictingTypes}
+}
+\end{mathpar}
+\CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.EGetField \label{sec:SemanticsRule.EGetField}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.ERecord.asl}
+the expression \texttt{my\_record.a} evaluates to the value \texttt{3}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a field access expression, $\EGetField(\erecord, \fieldname)$;
+\item the evaluation of $\erecord$ in $\env$ is $\Normal((\vrecord, \vg), \newenv)$\ProseOrAbnormal;
+\item $\vv$ is the value mapped by $\fieldname$ in the native record $\vrecord$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \erecord} \evalarrow \Normal((\vrecord, \vg), \newenv)  \OrAbnormal\\
+  \getfield(\fieldname, \vrecord) \evalarrow \vv
+}{
+  \evalexpr{\env, \EGetField(\erecord, \fieldname)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
+
+\section{Bitvector Concatenation Expressions\label{sec:BitvectorConcatenationExpressions}}
+\subsection{Syntax}
+Concatenation of multiple bitvectors is done using a comma separated list
+surrounded with square brackets.
+
+\begin{flalign*}
+\Nexpr \derives\ & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EConcat(\expr^{+}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.EConcat}
+\begin{mathpar}
+  \inferrule{
+    \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts
+  }{
+  \buildexpr(\overname{\Nexpr(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)}{\vparsednode}) \astarrow
+  \overname{\EConcat(\vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.EConcat \label{sec:TypingRule.EConcat}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the concatenation of a non-empty list of expressions $\vli$, that is, \\ $\EConcat(\vli)$;
+  \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields $(\vt_i, \ve_i$)\ProseOrTypeError;
+  \item $\ves$ is the list of expressions $\ve_i$, for $i=1..k$;
+  \item obtaining the bitvector width of $\vt_i$ in $\tenv$ (which also checks that $\vt_i$ is a bitvector type),
+        for $i=1..k$, yields $\vw_i$\ProseOrTypeError;
+  \item to obtain the (symbolic) width of the resulting bitvector, first define $\widthsum_1$ to be $\vw_1$;
+  \item then define $\widthsum_i$, for $i=2..k$, to be obtained by reducing the expression that sums \\ $\widthsum_{i-1}$ with the width $\vw_i$;
+  \item $\vt$ is the bitvector of length $\widthsum_k$ and the empty bitfield list, that is, \\ $\TBits(\widthsum_k, \emptylist)$;
+  \item $\newe$ is the concatenation expression for $\ves$, that is, $\EConcat(\ves)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  i=1..k: \annotateexpr{\tenv, \vli[i]} \typearrow (\vt_i, \ve_i) \OrTypeError\\\\
+  \vts \eqdef [i=1..k: \vt_i]\\
+  \ves \eqdef [i=1..k: \ve_i]\\
+  i=1..k: \getbitvectorwidth(\tenv, \vt_i) \typearrow \vw_i \OrTypeError\\\\
+  \widthsum_1 \eqdef \vw_1\\
+  i=2..k: \normalize(\tenv, \EBinop(\PLUS, \widthsum_{i-1}, \vw_i)) \typearrow \widthsum_i
+}{
+  \annotateexpr{\tenv, \EConcat(\vli)} \typearrow (\TBits(\widthsum_k, \emptylist), \EConcat(\ves))
+}
+\end{mathpar}
+\CodeSubsection{\EConcatBegin}{\EConcatEnd}{../Typing.ml}
+
+\subsubsection{Comments}
+The sum of the widths of the bitvector types~\texttt{ts} might be a symbolic
+expression that is unresolvable to an integer. For example:
+\ASLExample{\typingtests/TypingRule.EConcatUnresolvableToInteger.asl}
+\lrmcomment{This is related to \identr{NYNK} and \identr{KCZS}.}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.EConcat\label{sec:SemanticsRule.EConcat}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EConcat.asl}
+the expression \texttt{['10', '11']} evaluates to the value \texttt{'1011'}.
+
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EConcat2.asl}
+the expression \texttt{['1111', '0000']} evaluates to the value \texttt{'11110000'}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a concatenation of bitvector expressions, $\EConcat(\elist)$;
+\item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
+\item $\vv$ is the bitvector constructed from the concatenation of $\vlist$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv)  \OrAbnormal\\
+  \concatbitvectors(\vlist) \evalarrow \vv
+}{
+  \evalexpr{\env, \EConcat(\elist)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalEConcatBegin}{\EvalEConcatEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+\lrmcomment{This is related to \identr{BRCM}:}
+
+\subsubsection{SemanticsRule.EExprList \label{sec:SemanticsRule.EExprList}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-evalexprlist}{}
+\[
+  \evalexprlist{\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vle}} \;\aslrel\;
+  \Normal((\overname{\vals^*}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) \cup
+  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+\]
+evaluates the list of expressions $\vle$ in left-to-right order in the initial environment $\env$
+and returns the resulting value $\vv$, the parallel composition of the execution graphs
+generated from evaluating each expression, and the new environment $\newenv$.
+If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule[empty]{}
+  {
+    \evalexprlist{\env, \emptylist} \evalarrow \Normal((\emptylist, \emptygraph), \env)
+  }
+\and
+  \inferrule[nonempty]{
+    \texttt{le} \eqname [\ve] \concat \vle1\\
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \envone) \OrAbnormal\\
+    \evalexprlist{\envone, \vle1} \evalarrow \Normal((\vvs, \vgtwo), \newenv) \OrAbnormal\\
+    \vg \eqdef \vgone \parallelcomp \vgtwo \\
+    \vv \eqdef [\vvone] \concat \vvs
+  }
+  {
+    \evalexprlist{\env, \vle} \evalarrow \Normal((\vv, \vg), \newenv)
+  }
+\end{mathpar}
+
+\section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}
+\lrmcomment{This is related to \identi{TCST}:}
+The rule about domains in the definitions of subtype-satisfaction and
+type-satisfaction means that it is illegal to use the unconstrained integer
+where a constrained integer is expected. An asserting type conversion (ATC) can
+be used to overcome this.
+
+\lrmcomment{This is related to \identi{CGRH}:}
+An ATC allows code to explicitly mark places where uses of constrained types
+would otherwise be a static type-checking error. The intent is to reduce the
+incidence of unintended errors by making such uses fail type-checking unless
+the asserting type conversion is provided.
+
+\lrmcomment{This is related to \identr{WZVX}:}
+Note that ATCs are execution-time checks. An execution-time check is a
+condition that is evaluated during the evaluation of an execution-time
+initializer expression or subprogram. If the condition evaluates to $\False$ it
+is a dynamic error.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Nexpr \parsesep \Tas \parsesep \Nty &\\
+                    |\  & \Nexpr \parsesep \Tas \parsesep \Nintconstraints &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.ATC}
+\begin{mathpar}
+\inferrule[type]{}{
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nty})}{\vparsednode}) \astarrow
+  \overname{\EATC(\astof{\vexpr}, \astof{\tty})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[int\_constraints]{}{
+  {
+    \begin{array}{r}
+      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nintconstraints})}{\vparsednode}) \astarrow\\
+      \overname{\EATC(\astof{\vexpr}, \TInt(\astof{\vintconstraints}))}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.ATC\label{sec:TypingRule.ATC}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\vep, \tty)$;
+  \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \vepp)$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+  \item annotating the type $\tty$ in $\tenv$ yields $\tty'$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
+  \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
+        will always fail yields $\True$\ProseOrTypeError;
+  \item checking whether $\vt$ \subtypesatisfies\ $\ttyp$ in $\tenv$ yields $\vb$\ProseOrTypeError;
+  \item $\newe$ is $\EATC(\ttyp, \vepp)$ if $\vb$ is $\True$ and $\vepp$ otherwise;
+  \item $\vt$ is $\ttyp$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[type\_equal]{
+  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp) \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \annotatetype{\tenv, \tty} \typearrow \ttyp \OrTypeError\\\\
+  \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
+  \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
+  \subtypesat(\tenv, \vt, \ttyp) \typearrow \vb \OrTypeError\\\\
+  \newe \eqdef \choice{\vb}{\EATC(\ttyp, \vepp)}{\vepp}
+}{
+  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \newe)
+}
+\end{mathpar}
+\CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
+\lrmcomment{
+  This is related to \identr{VBLL}, \identi{KRLL}, \identg{PFRQ}, \identi{XVBG},
+  \identr{GYJZ}, \identi{SZVF}, \identr{PZZJ}, \identr{YCPX}, \identi{ZLBW},
+  \identi{TCST}, \identi{CGRH}, \identi{YJBB}.
+}
+
+\subsubsection{TypingRule.CheckATC \label{sec:TypingRule.CheckATC}}
+\hypertarget{def-checkatc}{}
+The helper function
+\[
+  \checkatc(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
+  \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the types $\vtone$ and $\vttwo$, which are assumed to not be named types,
+are compatible for a typing assertion in the static environment $\tenv$, yielding $\True$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{equal}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{different\_labels\_error}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are different;
+    \item the result is a type error indicating that the type assertion will always fail.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_bits}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are the same;
+    \item the AST label of $\vtone$ is either $\TInt$ or $\TBits$;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item $\vtone$ is a tuple type with list of tuples $\vlone$, that is, $\TTuple(\vlone)$;
+    \item $\vtone$ is a tuple type with list of tuples $\vltwo$, that is, $\TTuple(\vltwo)$;
+    \item checking whether $\vlone$ and $\vltwo$ have the same length yields $\True$\ProseTerminateAs{\TypeErrorVal{\TypeAsssertionFails}};
+    \item applying $\checkatc$ to $\vlone[\vi]$ and $\vltwo[\vi]$ in $\tenv$ for every $\vi\in\listrange(\vlone)$ yields $\True$\ProseOrTypeError;
+    \item the result is $\True$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other\_error}):
+  \begin{itemize}
+    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item the AST labels of $\vtone$ and $\vttwo$ are the same;
+    \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
+    \item the result is a type error indicating that the type assertion will always fail.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[equal]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[different\_labels\_error]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) \neq \astlabel(\vttwo)
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAsssertionFails}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[int\_bits]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) = \astlabel(\vttwo)\\
+  \astlabel(\vtone) \in \{\TInt, \TBits\}
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \vtone = \TTuple(\vlone)\\
+  \vttwo = \TTuple(\vltwo)\\
+  \checktrans{|\vlone|=|\vltwo|}{\TypeAsssertionFails} \typearrow \True\OrTypeError\\\\
+  \vi\in\listrange(\vlone): \checkatc(\vlone[\vi], \vltwo[\vi]) \typearrow \True\OrTypeError
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other\_error]{
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \astlabel(\vtone) = \astlabel(\vttwo)\\
+  \astlabel(\vtone) \not\in \{\TInt, \TBits, \TTuple\}
+}{
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
+\subsubsection{Example}
+\ASLExample{\semanticstests/SemanticsRule.ATCValue.asl}
+
+\subsubsection{Example}
+\ASLExample{\semanticstests/SemanticsRule.ATCError.asl}
+
+\subsubsection{Example}
+\lrmcomment{This is related to \identr{YCPX}:}
+
+Dynamic error conditions only hold if the asserting type conversion is
+evaluated.
+
+In the example below, the asserting type conversion on \texttt{y} is
+not a dynamic error if the invocation of \texttt{f1} returns $\False$ when
+evaluated:
+\ASLExample{\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
+
+\subsubsection{Example}
+The following excerpts indicates several points where various static and
+dynamic errors can occur:
+\ASLExample{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes an asserted type conversion expression, $\EATC(\veone, \vt)$;
+\item evaluating $\veone$ in $\env$ results in $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+\item evaluating whether $\vv$ has type $\vt$ in $\env$ results in $(\vb, \vgtwo)$\ProseTerminateAs{\ErrorConfig};
+\item one of the following applies:
+      \begin{itemize}
+      \item all of the following apply (\textsc{okay}):
+            \begin{itemize}
+            \item $\vb$ is the native Boolean for \True;
+            \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
+            \end{itemize}
+      \item all of the following apply (\textsc{error}):
+            \begin{itemize}
+            \item $\vb$ is the native Boolean for \True;
+            \item an asserted type conversion error is returned.
+            \end{itemize}
+      \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \evalexpr{\env, \veone} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \vgtwo) \OrDynError\\\\
+  \vb \eqname \nvbool(\True)\\
+  \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+}{
+  \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\and
+\inferrule[error]{
+  \evalexpr{\env, \veone} \evalarrow \Normal((\vv, \Ignore), \Ignore)\\
+  \neg\isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
+  \vb \eqname \nvbool(\False)
+}{
+  \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \ErrorVal{ATC\_TypeMismatch}
+}
+\end{mathpar}
+\CodeSubsection{\EvalATCBegin}{\EvalATCEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.IsValOfType}
+\subsubsection{Prose}
+\hypertarget{def-isvaloftype}{}
+The relation
+\[
+  \isvaloftype(\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\ty}{\vt}) \;\aslrel\;
+  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg}) \cup \overname{\TError}{\ErrorConfig}
+\]
+checks whether the value $\vv$ can be stored in a variable of type $\vt$ in the environment $\env$,
+resulting in a Boolean value $\vb$ and execution graph $\vg$ or a dynamic error.
+
+This relation is used in the context of a asserted type conversion,
+which means the type-checker rule \nameref{sec:TypingRule.ATC} was already applied,
+thus filtering cases where the type inferred for the converted expression
+does not type-satisfy $\vt$. The semantics takes this into account and
+only returns \False\ in cases where dynamic information is required.
+
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{type\_equal}):
+  \begin{itemize}
+    \item the AST label of $\vt$ is not $\TInt$, $\TBits$, or $\TTuple$;
+    \item $\vb$ is \True (since \nameref{sec:TypingRule.ATC}
+    succeeds in these cases only if the \structure\ of the type of the expression and the \structure\ of the type asserted against are \typeequivalent);
+    \item $\vg$ is the empty graph.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_unconstrained}):
+  \begin{itemize}
+    \item $\vt$ has the structure of the unconstrained integer;
+    \item $\vb$ is \True;
+    \item $\vg$ is the empty graph.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{int\_wellconstrained}):
+  \begin{itemize}
+    \item $\vt$ has the structure of a well-constrained integer with constraints $\vc_{1..k}$;
+    \item $\vv$ is the \nativevalue\  integer for $n$;
+    \item the evaluation of every constraint $\vc_i$ with $n$ in environment $\env$
+    yields a Boolean value $\vb_i$ and an execution graph $\vg_i$\ProseOrError;
+    \item $\vb$ is the Boolean disjunction of all Boolean values $\vb_i$, for $i=1..k$;
+    \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item $\vt$ is a tuple with types $\vt_i$, for $i=1..k$;
+    \item the value at every index $i=1..k$ of $\vv$ is $\vu_i$, for $i=1..k$,
+    \item the evaluation of $\isvaloftype$ for every value $\vu_i$
+    and corresponding type $\vt_i$, for $i=1..k$,
+    results in a Boolean $\vb_i$ and execution graph $\vg_i$\ProseOrError;
+    \item $\vb$ is the Boolean conjunction of all Boolean values $\vb_i$, for $i=1..k$;
+    \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
+    of the constraints.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[type\_equal]{
+  \astlabel(\vt) \not\in \{\TInt, \TBits\}
+}{
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\overname{\True}{\vb}, \overname{\emptygraph}{\vg})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[int\_unconstrained]{}{
+  \isvaloftype(\env, \vv, \overname{\TInt(\unconstrained)}{\vt}) \evalarrow (\overname{\True}{\vb}, \overname{\emptygraph}{\vg})
+}
+\end{mathpar}
+
+\hypertarget{def-integerconstraintsatisfied}{}
+To handle \emph{well-constrained integers} (integers with a non-empty list of constraints),
+we introduce the helper relation
+\[
+  \integerconstraintsatisfied(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
+  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg})
+\]
+which checks whether the integer value $n$ \emph{meets the constraint} $\vc$
+(that is, whether $n$ is within the range of values defined by $\vc$) in the environment $\env$
+and returns a Boolean answer $\vb$ and the execution graph $\vg$ resulting from evaluating
+the expressions appearing in $\vc$:
+\begin{mathpar}
+\inferrule[Constraint\_Exact\_Sat]{
+  \evalexprsef{\env, \ve} \evalarrow (\nvint(m), \vg) \OrDynError\\\\
+  \vb \eqdef m = n
+}
+{
+  \integerconstraintsatisfied(\env, \constraintexact(\ve), n) \evalarrow (\vb, \vg)
+}
+\and
+\inferrule[Constraint\_Range\_Sat]{
+  \evalexprsef{\env, \veone} \evalarrow (\nvint(a), \vgone) \OrDynError\\\\
+  \evalexprsef{\env, \vetwo} \evalarrow (\nvint(b), \vgtwo) \OrDynError\\\\
+  \vb \eqdef \choice{a \leq n \wedge n \leq b}{\True}{\False}\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo
+}
+{
+  \integerconstraintsatisfied(\env, \constraintrange(\veone, \vetwo), n) \evalarrow (\vb, \vg)
+}
+\end{mathpar}
+
+Finally, we can check whether an integer value satisfies any of the constraints:
+\begin{mathpar}
+\inferrule[int\_wellconstrained]{
+  \vv \eqname \nvint(n)\\
+  i=1..k: \integerconstraintsatisfied(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynError\\\\
+  \vb \eqdef \bigvee_{i=1}^k \vb_i\\
+  \vg \eqdef \parallel_{i=1}^k \vg_i
+}{
+  \isvaloftype(\env, \vv, \overname{\TInt(\wellconstrained(\vc_{1..k}))}{\vt}) \evalarrow (\vb, \vg)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  i=1..k: \getindex(i, \vv) \evalarrow \vu_i\\
+  i=1..k: \isvaloftype(\env, \vu_i, \vt_i) \evalarrow (\vb_i, \vg_i) \OrDynError\\\\
+  \vb \eqdef \bigwedge_{i=1}^k \vb_i \\
+  \vg \eqdef \parallel_{i=1}^k \vg_i
+}{
+  \isvaloftype(\env, \vv, \overname{\TTuple(i=1..k: \vt_i)}{\vt}) \evalarrow (\vb, \vg)
+}
+\end{mathpar}
+\CodeSubsection{\EvalValOfTypeBegin}{\EvalValOfTypeEnd}{../Interpreter.ml}
+
+Notice that these rules cover all types, including named types ($\TNamed$),
+since the \typedast\ returned from \nameref{sec:TypingRule.ATC} is the \structure\ of the type
+given in the specification.
+%
+Parameterized integers (integers with an empty set of constraints)
+cannot appear as a type, since ASL syntax does not allow the following:
+\begin{itemize}
+\item Declaring an parameterized integer as a variable,
+\item Declaring an alias to an parameterized integer type, and
+\item Declaring an parameterized integer in a compound type.
+\end{itemize}
+
+\section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
+The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.
+Lists of patterns are also used in case statements.
+%
+\chapref{PatternMatching} goes into the details of the various types of patterns that can be matched against.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
+                    |\  & \Nexpr \parsesep \Tin \parsesep \Tmasklit &\\
+\Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+                  |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+\Npatternlist \derivesinline\ & \NClist{\Npattern} &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EPattern(\expr, \pattern) &
+\end{flalign*}
+
+\subsubsection{ASTRule.EPattern}
+\begin{mathpar}
+\inferrule[pattern\_set]{}{
+  {
+    \begin{array}{r}
+      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternset})}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astof{\vexpr}, \astof{\vpatternset})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pattern\_mask]{}{
+  {
+    \begin{array}{r}
+      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astof{\vexpr}, \PatternMask(\vm))}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.PatternSet\label{sec:ASTRule.PatternSet}}
+\hypertarget{build-patternset}{}
+The function
+\[
+  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[not]{}{
+  {
+    \begin{array}{r}
+  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow\\
+  \overname{\PatternNot(\astof{\vpatternlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[list]{}{
+  \buildpatternset(\Npatternset(\Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
+  \overname{\astof{\vpatternlist}}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.PatternList \label{sec:ASTRule.PatternList}}
+\hypertarget{build-patternlist}{}
+The function
+\[
+  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
+}{
+  {
+    \begin{array}{r}
+  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\NClist{\Npattern}})) \astarrow\\
+  \overname{\PatternAny(\vpatternasts)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.EPattern \label{sec:TypingRule.EPattern}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a pattern expression to test whether $\veone$ matches the pattern $\vpat$, that is, \\ $\EPattern(\veone, \vpat)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vtetwo, \vetwo)$\ProseOrTypeError;
+  \item applying $\annotatepattern$ to $\vtetwo$ and $\vpat$ in $\tenv$ yields $\vpatp$\ProseOrTypeError;
+  \item $\vt$ is $\TBool$;
+  \item $\newe$ denotes whether the expression $\vetwo$ matches $\vpatp$, that is, $\EPattern(\vetwo, \vpatp)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo) \OrTypeError\\\\
+  \annotatepattern(\tenv, \vtetwo, \vpat) \typearrow \vpatp \OrTypeError
+}{
+  \annotateexpr{\tenv, \overname{\EPattern(\veone, \vpat)}{\ve}} \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe})
+}
+\end{mathpar}
+\CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.EPattern \label{sec:SemanticsRule.EPattern}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EPatternFALSE.asl}
+the expression \texttt{42 IN \{0..3, -4\}} evaluates to the value $\nvbool(\False)$.
+
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EPatternTRUE.asl}
+the expression \texttt{42 IN \{0..3, 42\}} evaluates to $\nvbool(\True)$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a pattern expression, $\EPattern(\ve, \vp)$;
+  \item evaluating the expression $\ve$ in an environment $\env$ results in \\
+  $\Normal((\vvone, \vgone), \newenv)$\ProseOrAbnormal;
+  \item evaluating whether the pattern $\vp$ matches the value $\vvone$ in $\env$
+  results in $\Normal(\vv, \vgtwo)$ where is a native Boolean that determines
+  whether the is indeed a match;
+  \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \newenv)  \OrAbnormal\\
+  \evalpattern{\env, \vvone, \vp} \evalarrow \Normal(\vv, \vgtwo)\\
+  \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+}{
+  \evalexpr{\env, \EPattern(\ve, \vp)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
+
+\section{Arbitrary Value Expressions\label{sec:ArbitraryValueExpressions}}
+An expression of the form \texttt{UNKNOWN: ty} evaluates to an arbitrary value in the
+domain of \texttt{ty}.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Tunknown \parsesep \Tcolon \parsesep \Nty &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EUnknown(\ty) &
+\end{flalign*}
+
+\subsubsection{ASTRule.EUnknown}
+\begin{mathpar}
+  \inferrule{}{
+  \buildexpr(\overname{\Nexpr(\Tunknown, \Tcolon, \punnode{\Nty})}{\vparsednode}) \astarrow
+  \overname{\EUnknown(\astof{\tty})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.EUnknown \label{sec:TypingRule.EUnknown}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes an expression \UNKNOWN\ of type $\tty$, that is, $\EUnknown(\tty)$;
+  \item annotating the type $\tty$ in $\tenv$ yields $\ttyone$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
+  \item $\vt$ is $\ttyone$;
+  \item $\newe$ is an expression \UNKNOWN\ of type $\ttytwo$, that is, $\EUnknown(\ttytwo)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotatetype{\tenv, \tty} \typearrow \ttyone \OrTypeError\\\\
+  \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError
+}{
+  \annotateexpr{\tenv, \EUnknown(\tty)} \typearrow (\ttyone, \EUnknown(\ttytwo))
+}
+\end{mathpar}
+\CodeSubsection{\EUnknownBegin}{\EUnknownEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.EUnknown\label{sec:SemanticsRule.EUnknown}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EUnknownInteger3.asl}
+the expression \texttt{[UNKNOWN : integer]} evaluates to an integer value.
+
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EUnknownIntegerRange3-42-3.asl}
+the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ or $\nvint(42)$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the \texttt{UNKNOWN} expression annotated with type $\vt$;
+  \item $\vv$ is an arbitrary value in the domain of $\vt$ in $\env$ (see \secref{DynDomain});
+  \item $\newenv$ is $\env$.
+  \item $\vg$ is the empty execution graph.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{\env \eqname (\tenv, \denv)\\
+  \vv \in \dynamicdomain(\tenv, \env, \vt)
+}{
+  \evalexpr{\env, \overname{\EUnknown(\vt)}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
+}
+\end{mathpar}
+\CodeSubsection{\EvalEUnknownBegin}{\EvalEUnknownEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+Notice that this rule introduces non-determinism.
+\lrmcomment{This is related to \identr{WLCH}:}
+
+\section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
+\Nfieldassign \derivesinline\ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.ERecord}
+\begin{mathpar}
+  \inferrule{
+    \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
+  }{
+    {
+      \begin{array}{r}
+  \buildexpr\left(\overname{\Nexpr\left(
+    \begin{array}{l}
+    \Tidentifier(\vt), \Tlbrace, \\
+    \wrappedline\ \namednode{\vfieldassigns}{\Clist{\Nfieldassign}}, \\
+    \wrappedline\ \Trbrace
+    \end{array}
+    \right)}{\vparsednode}\right) \\
+    \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.FieldAssign\label{sec:ASTRule.FieldAssign}}
+\hypertarget{build-fieldassign}{}
+The function
+\[
+  \buildfieldassign(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{(\identifier\times\expr)}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{}{
+  \buildfieldassign(\Nfieldassign(\Tidentifier(\id), \Teq, \punnode{\Nexpr})) \astarrow
+  \overname{(\id, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.ERecord \label{sec:TypingRule.ERecord}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the record construction expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$,
+        that is, $\ERecord(\tty, \vfields)$;
+  \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
+  \item checking that $\ttyanon$ is a \structuredtype\ yields $\True$\ProseOrTypeError;% \ProseTerminateAs{\TypeErrorVal{\ExpectedStructuredType}};
+  \item $\ttyanon$ is a \structuredtype\ with a list of $\field$ elements (consisting of a field name and a field type);
+  \item obtaining the list of field names from $\vfields$ yields the list of identifiers \\
+        $\initializedfields$;
+  \item obtaining the list of field names from $\fieldtypes$ yields the list of identifiers $\names$;
+  \item checking whether the set of identifiers in $\names$ is equal to the set of identifiers in $\initializedfields$
+        yields $\True$\ProseOrTypeError;
+  \item checking that the list $\initializedfields$ does not contain duplicates yields \\
+        $\True$\ProseOrTypeError;
+  \item applying $\annotatefieldinit$ to annotate each $\field$ element $(\name,\vep)$ of \\
+        $\vfields$ in $\tenv$ yields $(\name,\ve_\name)$\ProseOrTypeError;
+  \item define $\fieldsp$ as the list containing $(\name,\ve_\name)$ for each $\field$ element $(\name,\vep)$ of $\vfields$;
+  \item $\vt$ is $\tty$;
+  \item $\newe$ is the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
+  \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\\\\
+  \checktrans{\astlabel(\ttyanon) \in \{\TRecord, \TException\}}{\ExpectedStructuredType} \typearrow \True\OrTypeError\\\\
+  \ttyanon \eqname L(\fieldtypes)\\
+  \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\vfields\}\\
+  \names \eqdef \fieldnames(\fieldtypes)\\
+  \checktrans{\{\names\} = \{\initializedfields\}}{\MissingFieldInitializer} \typearrow \True \OrTypeError\\\\
+  \checknoduplicates(\initializedfields) \typearrow \True \OrTypeError\\\\
+  {
+    \begin{array}{r}
+  (\name, \vep) \in \vfields: \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow \\
+  (\name, \ve_\name) \OrTypeError
+    \end{array}
+  }\\
+  \fieldsp \eqdef [(\name, \vep) \in \fields : (\name, \ve_\name)]
+}{
+  \annotateexpr{\tenv, \overname{\ERecord(\tty, \vfields)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\ERecord(\tty, \fieldsp)}{\newe})
+}
+\end{mathpar}
+\CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{WBCQ}.}
+
+\hypertarget{def-annotatefieldinit}{}
+\subsubsection{TypingRule.AnnotateFieldInit}
+The function
+\[
+  \annotatefieldinit(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{(\identifier\times\expr)}{(\name, \vep)} \aslsep
+    \overname{\field^*}{\fieldtypes}
+  ) \aslto
+  \overname{(\identifier\times\expr)}{(\name, \vepp)}
+\]
+annotates a field initializers $(\name, \vep)$ in a record expression
+with list of fields \\ $\fieldtypes$ and returns the annotated field initializer
+$(\name, \vepp)$. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item annotating the expression $\vep$ in $\tenv$ yields $(\vtp, \vepp)$\ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{okay}):
+    \begin{itemize}
+      \item the unique type associated with $\name$ in $\fieldtypes$ is $\tspecp$;
+      \item determining whether $\vtp$ \typesatisfies\ $\tspecp$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item there is no type associated with $\name$ in $\fieldtypes$;
+      \item the result is a type error indicating that the field $\name$ does not exist.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \annotateexpr{\tenv, \vep} \typearrow (\vtp, \vepp) \OrTypeError\\\\
+  \fieldtype(\fieldtypes, \name) = \tspecp\\
+  \checktypesat(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
+}{
+  \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow (\name, \vepp)
+}
+\and
+\inferrule[error]{
+  \annotateexpr{\tenv, \vep} \typearrow (\vtp, \vepp) \OrTypeError\\\\
+  \fieldtype(\fieldtypes, \name) = \bot
+}{
+  \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow \\
+  \TypeErrorVal{FieldDoesNotExist}
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.ERecord \label{sec:SemanticsRule.ERecord}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.ERecord.asl}
+the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
+$\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\ve$ denotes a record creation expression, $\ERecord(\names, \efields)$;
+\item the names of the fields are $\id_{1..k}$;
+\item the expressions associated with the fields are $\ve_{1..k}$;
+\item evaluating the expressions of $\fields$ in order yields \\
+      $\Normal((\vvfields,\vg), \newenv)$\ProseOrAbnormal;
+\item $\vvfields$ is a list of \nativevalues\ $\vv_{1..k}$;
+\item $\vv$ is the native record that maps $\id_i$ to $\vv_i$, for $i=1..k$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \efields \eqname [i=1..k: (\id_i, \ve_i)]\\
+  \names \eqdef \id_{1..k} \\
+  \fields \eqdef \ve_{1..k} \\
+  \evalexprlist{\env, \fields} \evalarrow \Normal((\vvfields,\vg), \newenv)  \OrAbnormal\\
+  \vvfields \eqname \vv_{1..k}\\
+  \vv \eqdef \nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}}
+}{
+  \evalexpr{\env, \ERecord(\Ignore, \efields)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
+
+\section{Tuple Expressions\label{sec:TupleExpressions}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Plisttwo{\Nexpr} &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \ETuple(\expr^{+}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.ETuple}
+\begin{mathpar}
+\inferrule[tuple]{
+  \buildplist[\buildexpr](\vexprs) \astarrow \vexprasts
+}{
+  \buildexpr(\overname{\Nexpr(\namednode{\vexprs}{\Plisttwo{\Nexpr}})}{\vparsednode}) \astarrow
+  \overname{\ETuple(\vexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.ETuple \label{sec:TypingRule.ETuple}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a tuple expression with list of expressions $\vli$, that is, $ \ETuple(\vli)$;
+  \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields $(\vt_i, \ve_i$)\ProseOrTypeError;
+  \item $\vt$ is the tuple type with list of types $\vt_i$, for $i=1..k$;
+  \item $\newe$ is tuple expression over list of expressions $\ve_i$, for $i=1..k$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  i=1..k: \annotateexpr{\tenv, \vle[i]} \typearrow (\vt_i, \ve_i) \OrTypeError
+}{
+  \annotateexpr{\tenv, \ETuple(\vli)} \typearrow (\TTuple(\vt_{1..k}), \ETuple(\ve_{1..k}))
+}
+\end{mathpar}
+\CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.ETuple \label{sec:SemanticsRule.ETuple}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.ETuple.asl}
+the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes a tuple expression, $\ETuple(\elist)$;
+  \item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
+  \item $\vv$ is the native vector constructed from the values in $\vlist$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv)  \OrAbnormal\\
+  \vv \eqdef \nvvector{\vlist}
+}{
+  \evalexpr{\env, \ETuple(\elist)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
+
+\section{Parenthesized Expressions\label{sec:ParenthesizedExpressions}}
+A single expression inside parentheses is not a tuple.
+Parenthesizing an expression can be used to improve readability and enforce an order of evaluation.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Tlpar \parsesep \Nexpr \parsesep \Trpar &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\subsubsection{ASTRule.Expr \label{sec:ASTRule.Expr}}
+\begin{mathpar}
+  \inferrule[sub\_expr]{}{
+  \buildexpr(\overname{\Nexpr(\Tlpar, \punnode{\Nexpr}, \Trpar)}{\vparsednode}) \astarrow
+  \overname{\astof{\vexpr}}{\vastnode}
+}
+\end{mathpar}
+
+\section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
+\subsection{Typing}
+\subsection{Semantics}
+\subsubsection{SemanticsRule.ESideEffectFreeExpr \label{sec:SemanticsRule.ESideEffectFreeExpr}}
+\subsubsection{Prose}
+The helper relation
+\hypertarget{def-evalexprsef}{}
+\[
+  \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
+  \Normal(\overname{\vals}{\vv}\aslsep\overname{\XGraphs}{\vg}) \cup
+  \overname{\TError}{\ErrorConfig}
+\]
+specializes the expression evaluation relation for side-effect-free expressions
+by omitting throwing configurations as possible output configurations.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalexpr{\env, \ve} \evalarrow \Normal((\vv,\vg), \env) \OrDynError
+  }
+  {
+    \evalexprsef{\env, \ve} \evalarrow \Normal(\vv, \vg)
+  }
+\end{mathpar}
+Notice that the output configuration does not contain an environment,
+since side-effect-free expressions do not modify the environment.
