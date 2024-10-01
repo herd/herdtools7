@@ -82,7 +82,7 @@ let list_loc prog =
     | Exchange(l,e,_) -> loc (expr s e) l
     | Fetch(l,_,e,_) -> loc (expr s e) l
     | ECall (_,es) -> List.fold_left expr s es
-    | AtomicAddUnless(e1,e2,e3,_)
+    | AtomicAddUnless(e1,e2,e3,_,_)
     | CmpExchange (e1,e2,e3,_)
     | ECas (e1,e2,e3,_,_,_) -> expr (expr (expr s e1) e2) e3
     | TryLock (e,_)|IsLocked (e,_)|ExpSRCU(e,_) -> expr s e in
@@ -102,7 +102,7 @@ let list_loc prog =
     | PCall (_,es) ->
         List.fold_left expr s es
     | Fence _|Symb _ -> s
-    | AtomicOp(e1,_,e2) -> expr (expr s e1) e2
+    | AtomicOp(e1,_,e2,_) -> expr (expr s e1) e2
     | InstrSRCU(e,_,None) -> expr s e
     | InstrSRCU(e,_,Some f) -> expr (expr s f) e
   in

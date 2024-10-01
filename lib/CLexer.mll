@@ -94,7 +94,6 @@ let tr_name s = match s with
 | "__atomic_op_return" -> UNDERATOMICOPRETURN
 | "__atomic_fetch_op" -> UNDERATOMICFETCHOP
 | "__atomic_add_unless" -> UNDERATOMICADDUNLESS
-| "atomic_add_unless" -> ATOMICADDUNLESS
 (* Others *)
 | x -> NAME x
 }
