@@ -669,7 +669,7 @@ module RegMap = A.RegMap)
           List.map
             (fun p ->
               match A.V.PteVal.as_physical p with
-              | None ->
+              | None|Some "" ->
                   Warn.user_error "litmus cannot handle pte initialisation with '%s'"
                     (A.V.PteVal.pp O.hexa p)
               | Some s ->
