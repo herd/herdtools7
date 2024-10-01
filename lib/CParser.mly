@@ -60,7 +60,7 @@ open MemOrderOrAnnot
 %token <MemOrder.t> MEMORDER
 %token LD_EXPLICIT ST_EXPLICIT EXC_EXPLICIT FENCE LOCK UNLOCK SPINLOCK SPINUNLOCK SPINTRYLOCK SPINISLOCKED SCAS WCAS SCAS_EXPLICIT WCAS_EXPLICIT
 %token LOAD STORE UNDERFENCE XCHG CMPXCHG
-%token   UNDERATOMICOP  UNDERATOMICOPRETURN UNDERATOMICFETCHOP UNDERATOMICADDUNLESS ATOMICADDUNLESS
+%token   UNDERATOMICOP  UNDERATOMICOPRETURN UNDERATOMICFETCHOP UNDERATOMICADDUNLESS
 %token SRCU
 %token <CBase.op> ATOMIC_FETCH_EXPLICIT
 
@@ -240,10 +240,8 @@ expr1:
   { AtomicOpReturn($6,$8,$10,OpReturn,$3) }
 | UNDERATOMICFETCHOP LBRACE annot_list RBRACE LPAR expr COMMA atomic_op COMMA expr RPAR
   { AtomicOpReturn($6,$8,$10,FetchOp,$3) }
-| UNDERATOMICADDUNLESS LPAR expr COMMA expr COMMA expr RPAR
-  { AtomicAddUnless($3,$5,$7,false) }
-| ATOMICADDUNLESS LPAR expr COMMA expr COMMA expr RPAR
-  { AtomicAddUnless($3,$5,$7,true) }
+| UNDERATOMICADDUNLESS LBRACE annot_list RBRACE LPAR expr COMMA expr COMMA expr RPAR
+  { AtomicAddUnless($6,$8,$10,true,$3) }
 
 args:
 | { [] }
@@ -291,14 +289,19 @@ instruction:
   { Unlock ($3,MutexLinux) }
 | UNDERFENCE LBRACE annot_list RBRACE SEMI
   { Fence(AN $3) }
-| UNDERATOMICOP LPAR expr COMMA atomic_op COMMA expr RPAR SEMI
-  { AtomicOp($3,$5,$7) }
+| UNDERATOMICOP opt_annot LPAR expr COMMA atomic_op COMMA expr RPAR SEMI
+  { AtomicOp($4,$6,$8,$2) }
 | FENCE LPAR MEMORDER RPAR SEMI
   { Fence(MO $3) }
 | CODEVAR SEMI
   { Symb $1 }
 | NAME LPAR args RPAR SEMI
   { PCall ($1,$3) }
+
+opt_annot:
+// For variant lkmmv1, the annotation is simply droped, thus we can use the empty string
+| { [""] }
+| LBRACE annot_list RBRACE { $2 }
 
 ins_seq:
 | block_ins { [$1] }

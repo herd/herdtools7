@@ -34,6 +34,10 @@ type t =
   | SwitchDepScResult  (* Switch dependency from address read to sc result register,  aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | NotWeakPredicated (* NOT "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+  | LKMMVersion of [
+        `lkmmv1 (* Legacy mode, e.g., wrapp rmw[Mb] instructions with explicit Mb fences *)
+      | `lkmmv2 (* Avoid wrapping rmw[Mb] instructions with explicit Mb fences and adding noreturn tags *)
+    ]
 (* Mixed size *)
   | Mixed
   | Unaligned
@@ -109,7 +113,7 @@ type t =
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
-   "mixed";"dontcheckmixed";"weakpredicated"; "memtag";"vmsa";"kvm";]@
+   "mixed";"dontcheckmixed";"weakpredicated"; "lkmmv1"; "lkmmv2"; "memtag";"vmsa";"kvm";]@
     Precision.tags @ Fault.Handling.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
@@ -133,6 +137,8 @@ let parse s = match Misc.lowercase s with
 | "unaligned" -> Some Unaligned
 | "dontcheckmixed" -> Some DontCheckMixed
 | "notweakpredicated"|"notweakpred" -> Some NotWeakPredicated
+| "lkmmv1" -> Some (LKMMVersion `lkmmv1)
+| "lkmmv2" -> Some (LKMMVersion `lkmmv2)
 | "tagmem"|"memtag"|"mte" -> Some MemTag
 | "toofar" -> Some TooFar
 | "morello" -> Some Morello
@@ -227,6 +233,8 @@ let pp = function
   | Unaligned -> "unaligned"
   | DontCheckMixed -> "DontCheckMixed"
   | NotWeakPredicated -> "NotWeakPredicated"
+  | LKMMVersion `lkmmv1 -> "lkmmv1"
+  | LKMMVersion `lkmmv2 -> "lkmmv2"
   | MemTag -> "memtag"
   | MTEPrecision p -> Precision.pp p
   | FaultHandling p -> Fault.Handling.pp p
