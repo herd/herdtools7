@@ -74,7 +74,7 @@ module Make
               match szs with
               | [] -> MachSize.Byte
               | [sz] -> MachSize.pred sz
-              | sz::_ -> sz
+              | sz::_ -> sz (* Do not split the smallest size involved *)
           end else begin
             (* Cannot that easily check the test not to mix sizes,
                as there are several locations in test that may be of
