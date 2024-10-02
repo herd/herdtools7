@@ -43,10 +43,13 @@ module Monomial : sig
 
   val compare : t -> t -> int
   val one : t
-  val single_term : string -> t
+  val single_term : identifier -> t
   val mult : t -> t -> t
   val divide : t -> t -> t
-  val to_expr : t -> Q.t -> expr
+
+  val to_scaled_expr : t -> Q.t -> expr
+  (** Constructs an expression for [factor] * [monos]. *)
+
   val pp_with_factor : Format.formatter -> t * Q.t -> unit
 end = struct
   module AtomMap = Map.Make (String)
@@ -84,7 +87,7 @@ end = struct
     in
     AtomMap.merge (fun _ -> divide_unitary) mono1 mono2
 
-  let to_expr monos factor =
+  let to_scaled_expr monos factor =
     let start = Expr.from_int (Q.num factor) in
     let numerator =
       AtomMap.fold
@@ -192,9 +195,9 @@ end = struct
   let to_expr poly =
     List.fold_left
       (fun acc (m, c) ->
-        if acc = Expr.zero then Monomial.to_expr m c
+        if acc = Expr.zero then Monomial.to_scaled_expr m c
         else
-          let e_m = Monomial.to_expr m (Q.abs c) in
+          let e_m = Monomial.to_scaled_expr m (Q.abs c) in
           Expr.add acc (Q.sign c, e_m))
       Expr.zero
       (MonomialMap.bindings poly |> List.rev)
@@ -221,7 +224,10 @@ module Conjunction : sig
   val single_conjunct : Polynomial.t -> eq -> t
   val conj : t -> t -> t
   val to_expr : t -> expr option
-  val is_trivial : t -> bool option
+
+  type triviality = TriviallyTrue | TriviallyFalse | NonTrivial
+
+  val get_triviality : t -> triviality
   val reduce : t -> t
   val pp : Format.formatter -> t -> unit
 end = struct
@@ -241,9 +247,11 @@ end = struct
   (** Map from polynomials. *)
 
   type t = eq PolynomialMap.t option
-  (** A conjunctive logical formulae with polynomials.
+  (** A conjunctive logical formula with polynomials.
 
-      For example, {m X^2 = 0 } is represented with {m X^2 \to Zero }.
+      We use the [option] to represent falsity as [None].  [Some map] is then a
+      conjunction of constraints on polynomials, as dictated by [map].  For
+      example, {m X^2 = 0} is represented with {m Some (X^2 \to Zero)}.
   *)
 
   let is_bottom = function None -> true | Some _ -> false
@@ -300,12 +308,14 @@ end = struct
         if PolynomialMap.exists is_false non_trivial then None
         else Some non_trivial
 
-  let is_trivial = function
-    | None -> Some false
+  type triviality = TriviallyTrue | TriviallyFalse | NonTrivial
+
+  let get_triviality = function
+    | None -> TriviallyFalse
     | Some cjs ->
-        if PolynomialMap.for_all is_true cjs then Some true
-        else if PolynomialMap.exists is_false cjs then Some false
-        else None
+        if PolynomialMap.for_all is_true cjs then TriviallyTrue
+        else if PolynomialMap.exists is_false cjs then TriviallyFalse
+        else NonTrivial
 
   let pp f =
     let open Format in
@@ -324,7 +334,7 @@ end
 module IR : sig
   type t
 
-  val of_var : string -> t
+  val of_var : identifier -> t
   val of_int : Z.t -> t
   val combine : t -> t -> t
 
@@ -390,10 +400,10 @@ end = struct
     |> fun ir ->
     List.fold_right
       (fun (cjs, poly) acc ->
-        match Conjunction.is_trivial cjs with
-        | Some true -> [ (Conjunction.empty, poly) ]
-        | Some false -> acc
-        | None -> (cjs, poly) :: acc)
+        match Conjunction.get_triviality cjs with
+        | TriviallyTrue -> [ (Conjunction.empty, poly) ]
+        | TriviallyFalse -> acc
+        | NonTrivial -> (cjs, poly) :: acc)
       ir []
 
   let equal_mod_branches ir1 ir2 =
