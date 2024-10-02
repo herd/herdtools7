@@ -27,9 +27,6 @@ module type S = sig
   val exists2 : (elt -> elt -> bool) -> t -> t -> bool
   (* Like exists, but returns an elt that satisfy the predicate,
      raises Not_found, if no such elt exists *)
-  val fold2 : (elt -> elt -> 'a -> 'a) -> t -> t -> 'a -> 'a
-  (* You get the idea I guess *)
-
   val find : (elt -> bool) -> t -> elt
 
   (* Check for a singleton *)
@@ -48,15 +45,7 @@ module type S = sig
   (* Quite convenient: union of sets given in a list *)
   val unions : t list -> t
 
-  (* Quite convenient: build a set from the elts in a list,
-     which need not be pairwise distinct *)
-  val of_list : elt list -> t
-
-  (* Takes lists of lists and gets the set of all elements *)
-  val uniq_lists : elt list list -> elt list
-
   (* Should be obvious *)
-  val map : (elt -> elt) -> t -> t
   val map_list : (elt -> 'a) -> t -> 'a list
   val map_union : (elt -> t) -> t -> t
   val disjoint : t -> t -> bool
@@ -82,7 +71,6 @@ module Make(O:OrderedType) : S with type elt = O.t =
 
     let iter2 f s1 s2 = iter (fun e1 -> iter (f e1) s2) s1
     let exists2 p s1 s2 = exists (fun e1 -> exists (p e1) s2) s1
-    let fold2 f s1 s2 = fold (fun e1 -> fold (f e1) s2) s1
 
     exception Found of elt
 
@@ -131,18 +119,6 @@ module Make(O:OrderedType) : S with type elt = O.t =
     | [] -> empty
     | [s] -> s
     | _   -> unions (union2 [] sets)
-
-    (* Why not do it that way! *)
-    let of_list xs = unions (List.rev_map singleton xs)
-
-    let uniq_lists xss =
-      let sxs = List.map of_list xss in
-      elements (unions sxs)
-
-    let map f s =
-      fold
-        (fun e k -> add (f e) k)
-        s empty
 
 (* Reverse to preserve set ordering *)
     let map_list f s = List.rev (fold (fun e k -> f e::k) s [])
