@@ -608,12 +608,8 @@ and subtype_satisfies env t s =
      enumeration literals. *)
   | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
   (*
-      • If S has the structure of a bitvector type with determined width then
-        either T must have the structure of a bitvector type of the same
-        determined width or T must have the structure of a bitvector type with
-        undetermined width.
-      • If S has the structure of a bitvector type with undetermined width then T
-        must have the structure of a bitvector type.
+      • If S has the structure of a bitvector type then T must have the
+        structure of a bitvector type of the same width.
       • If S has the structure of a bitvector type which has bitfields then T
         must have the structure of a bitvector type of the same width and for
         every bitfield in S there must be a bitfield in T of the same name, width
@@ -622,11 +618,6 @@ and subtype_satisfies env t s =
   | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) ->
       let bitfields_subtype = bitfields_included env bf_s bf_t in
       let widths_subtype =
-        (*
-        • If either S or T have the structure of a bitvector type with
-          undetermined width then the domain of T must be a subset of the
-          domain of S.
-        *)
         let t_width_domain = Domain.of_width_expr env w_t
         and s_width_domain = Domain.of_width_expr env w_s in
         let () =
