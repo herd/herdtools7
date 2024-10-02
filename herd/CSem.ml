@@ -28,6 +28,13 @@ module
       | None -> Opts.unroll_default `C
       | Some u -> u
 
+    (*
+       We check if the variant does not match any of the others rather than explicitly
+       checking if it matchs v1 to get v1 as default even if no variant is given.
+       If more variants are added, this condition needs to be updated.
+    *)
+    let lkmmv1 = not (Conf.variant (Variant.LKMMVersion `lkmmv2))
+
     module C = CArch_herd.Make(SemExtra.ConfigToArchConfig(Conf))(V)
     module Act = CAction.Make(C)
     include SemExtra.Make(Conf)(C)(Act)
@@ -108,16 +115,24 @@ module
       let xchg is_data rloc re a ii =
         let add_mb = match a with
         | ["mb"] -> true | _ -> false in
-        let aw = match a with
-        | ["release"] -> MOorAN.AN a
-        | _ -> an_once
-        and ar = match a with
-        | ["acquire"] -> MOorAN.AN a
-        | _ -> an_once in
+        let aw =
+          (if lkmmv1 then
+            match a with
+            | ["release"] -> MOorAN.AN a
+            | _ -> an_once
+          else
+            MOorAN.AN a)
+        and ar =
+          (if lkmmv1 then
+            match a with
+            | ["acquire"] -> MOorAN.AN a
+            | _ -> an_once
+          else
+            MOorAN.AN a) in
         let rmem = fun loc -> read_mem_atomic is_data ar loc ii
         and wmem = fun loc v -> write_mem_atomic aw loc v ii >>! () in
         let exch = M.linux_exch rloc re rmem wmem in
-        if add_mb then
+        if lkmmv1 && add_mb then
           mk_fence_a a ii >>*=
           fun () -> exch >>*=
             fun v -> mk_fence_a a ii >>! v
@@ -207,27 +222,46 @@ module
                 read_exchange is_data v mo (A.Location_global l) ii)
 
       | C.CmpExchange (eloc,eold,enew,a) ->
-          let add_mb r = match a with
-          | ["mb"] ->
-              mk_mb ii >>*= fun () -> r >>*= fun v -> mk_mb ii >>! v
-          | _ -> r in
           let mloc =  build_semantics_expr false eloc ii
           and mold =  build_semantics_expr true eold ii in
+          let add_mb r =
+            (if lkmmv1 then
+              (match a with
+              | ["mb"] ->
+                  mk_mb ii >>*= fun () -> r >>*= fun v -> mk_mb ii >>! v
+              | _ -> r)
+            else
+              r)
+          and arok =
+            (if lkmmv1 then
+              (match a with
+              | ["acquire"] -> MOorAN.AN a
+              | _ -> an_once)
+            else
+              MOorAN.AN a)
+          and awok =
+            (if lkmmv1 then
+              (match a with
+              | ["release"] -> MOorAN.AN a
+              | _ -> an_once)
+            else
+              MOorAN.AN a)
+          and arnok =
+            (if lkmmv1 then
+              an_once
+            else
+              MOorAN.AN a) in
           M.altT
             (let r =
               let mnew = build_semantics_expr true enew ii
               and rmem vloc =
-                read_mem_atomic true
-                  (match a with ["acquire"] -> MOorAN.AN a | _ -> an_once)
-                  vloc ii
+                read_mem_atomic true arok vloc ii
               and wmem vloc w =
-                write_mem_atomic
-                  (match a with ["release"] ->  MOorAN.AN a | _ -> an_once)
-                  vloc w ii >>! () in
+                write_mem_atomic awok vloc w ii >>! () in
               M.linux_cmpexch_ok mloc mold mnew rmem wmem M.assign in
             add_mb r)
             (M.linux_cmpexch_no mloc mold
-               (fun vloc -> read_mem_atomic true an_once vloc ii)
+               (fun vloc -> read_mem_atomic true arnok vloc ii)
                M.neqT)
 
       | C.Fetch(l,op,e,mo) ->
@@ -269,6 +303,7 @@ module
 
 
       | C.AtomicOpReturn (eloc,op,e,ret,a) ->
+        if lkmmv1 then
           begin match a with
           | ["mb"] ->
               mk_mb ii >>*=
@@ -280,20 +315,25 @@ module
                 (match a with ["release"] -> a | _ -> a_once)
                 eloc op e ii
           end
-      | C.AtomicAddUnless (eloc,ea,eu,retbool) ->
+        else
+          build_atomic_op ret a a eloc op e ii
+      | C.AtomicAddUnless (eloc,ea,eu,retbool,a) ->
           (* read arguments *)
           let mloc = build_semantics_expr false eloc ii
           and mu =  build_semantics_expr true eu ii
           and mrmem loc =
-            read_mem_atomic true an_once loc ii in
+            read_mem_atomic true (if lkmmv1 then an_once else (MOorAN.AN a)) loc ii in
           M.altT
             (let r =
               M.linux_add_unless_ok mloc (build_semantics_expr true ea ii)
                 mu mrmem
-                (fun loc v -> write_mem_atomic an_once loc v ii >>! ())
+                (fun loc v -> write_mem_atomic (if lkmmv1 then an_once else (MOorAN.AN a)) loc v ii >>! ())
                 M.neqT M.add (if retbool then Some V.one else None) in
-            mk_mb ii >>*= fun () -> r >>*= fun v ->
-              mk_mb ii >>! v)
+            (if lkmmv1 then
+              mk_mb ii >>*= fun () -> r >>*= fun v ->
+                mk_mb ii >>! v
+            else
+              r))
             (M.linux_add_unless_no mloc mu mrmem M.assign (if retbool then Some V.zero else None))
       | C.ExpSRCU(eloc,a) ->
           let r = match a with
@@ -423,8 +463,10 @@ module
               M.mk_singleton_es (Act.Unlock (A.Location_global l,k)) ii
                 >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
-        | C.AtomicOp  (eloc,op,e) ->
-            build_atomic_op C.OpReturn a_noreturn a_once eloc op e ii
+        | C.AtomicOp  (eloc,op,e,a) ->
+            let ar = (if lkmmv1 then a_noreturn else a)
+            and aw = (if lkmmv1 then a_once else a) in
+            build_atomic_op C.OpReturn ar aw eloc op e ii
               >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
         | C.Fence(mo) ->

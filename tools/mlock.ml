@@ -104,8 +104,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
     | AtomicOpReturn (loc,op,u,ret,a) ->
         AtomicOpReturn (tr_expr loc,op,tr_expr u,ret,a)
-    | AtomicAddUnless (loc,a,u,retbool) ->
-        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool)
+    | AtomicAddUnless (loc,e,u,retbool,a) ->
+        AtomicAddUnless (tr_expr loc,tr_expr e,tr_expr u,retbool,a)
     | ExpSRCU(eloc,a) ->
         ExpSRCU(tr_expr eloc,a) in
 
@@ -148,10 +148,10 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let ec = tr_expr ec in
         let nxt,vs,it = tr_ins nxt it in
         nxt,vs,While (ec,it,n)
-    | AtomicOp (loc,op,e) ->
+    | AtomicOp (loc,op,e,a) ->
         let loc = tr_expr loc
         and e = tr_expr e in
-        nxt,StringSet.empty,AtomicOp(loc,op,e)
+        nxt,StringSet.empty,AtomicOp(loc,op,e,a)
     | InstrSRCU(eloc,a,oe) ->
         let eloc = tr_expr eloc in
         let oe = Misc.app_opt tr_expr oe in
@@ -225,7 +225,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
     -> StringSet.union (expr_read e1) (expr_read e2)
   | ECas (e1,e2,e3,_,_,_)
   | CmpExchange(e1,e2,e3,_)
-  | AtomicAddUnless (e1,e2,e3,_) ->
+  | AtomicAddUnless (e1,e2,e3,_,_) ->
       StringSet.union3 (expr_read e1) (expr_read e2) (expr_read e3)
 
   and exprs_read es = StringSet.unions (List.map expr_read es)
@@ -283,7 +283,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | PCall (_,es) ->
         let s = exprs_read es in
         add_locks s i
-    | AtomicOp (loc,_,e) ->
+    | AtomicOp (loc,_,e,_) ->
         let s1 = expr_read loc and s2 = expr_read e in
         let s = StringSet.union s1 s2 in
         add_locks s i in
@@ -338,8 +338,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
     | AtomicOpReturn (loc,op,e,ret,a) ->
         AtomicOpReturn (tr_expr loc,op,tr_expr e,ret,a)
-    | AtomicAddUnless (loc,a,u,retbool) ->
-        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool)
+    | AtomicAddUnless (loc,e,u,retbool,a) ->
+        AtomicAddUnless (tr_expr loc,tr_expr e,tr_expr u,retbool,a)
     | ExpSRCU(e,a) ->
         ExpSRCU(tr_expr e,a)
 
@@ -375,7 +375,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
         | _ -> StoreMem (e1,e2,a)
         end
     | PCall (f,es) -> PCall (f,tr_exprs es)
-    | AtomicOp (loc,op,e) -> AtomicOp(tr_expr loc,op,tr_expr e)
+    | AtomicOp (loc,op,e,a) -> AtomicOp(tr_expr loc,op,tr_expr e,a)
     | InstrSRCU(eloc,a,oe) -> InstrSRCU(tr_expr eloc,a,Misc.app_opt tr_expr oe) in
     tr_ins
 

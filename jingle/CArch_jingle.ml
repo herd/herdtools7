@@ -190,11 +190,11 @@ include Arch.MakeArch(struct
           expl_expr loc >> fun loc ->
           expl_expr e   >! fun e ->
           AtomicOpReturn (loc,op,e,ret,a)
-      | AtomicAddUnless (loc,u,a,rb) ->
+      | AtomicAddUnless (loc,u,e,rb,a) ->
           expl_expr loc >> fun loc ->
           expl_expr u >> fun u ->
-          expl_expr a >! fun a ->
-          AtomicAddUnless (loc,u,a,rb)
+          expl_expr e >! fun e ->
+          AtomicAddUnless (loc,u,e,rb,a)
       | ExpSRCU (e,a) -> expl_expr e >! fun e -> ExpSRCU (e,a) in
 
     let rec expl_instr =  function
@@ -229,10 +229,10 @@ include Arch.MakeArch(struct
     | PCall (f,es) ->
         mapT expl_expr es >! fun es ->
         PCall (f,es)
-    | AtomicOp(e1,op,e2) ->
+    | AtomicOp(e1,op,e2,a) ->
         expl_expr e1 >> fun e1 ->
         expl_expr e2 >! fun e2 ->
-        AtomicOp (e1,op,e2)
+        AtomicOp (e1,op,e2,a)
     | InstrSRCU (e,a,oe) ->
         expl_expr e >> fun e ->
         optT expl_expr oe >! fun oe ->
