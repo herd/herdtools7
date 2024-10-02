@@ -388,7 +388,7 @@ and the \emph{static domain} of a type.
 Intuitively, domains assign potentially infinite sets of \nativevalues\ to types.
 Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{UNKNOWN: t}
 by choosing a single value from the dynamic domain of $\vt$.
-Static domains are used to define (domain) subtype satisfaction in \secref{TypingRule.DomainSubtypeSatisfaction}.
+Static domains are used to define subtype satisfaction in \secref{TypingRule.SubtypeSatisfaction}.
 
 \hypertarget{def-dynamicenvs}{}
 The definition of a dynamic domain refers to \emph{dynamic environments}, denoted $\dynamicenvs$,
@@ -801,7 +801,7 @@ This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
 Whether an assignment statement is well-typed depends on whether the dynamic domain of the
 right hand side type is contained in the dynamic domain of the left hand side type,
 for any given dynamic environment
-(see \secref{TypingRule.DomainSubtypeSatisfaction} where this is checked).
+(see \secref{TypingRule.SubtypeSatisfaction} where this is checked).
 
 \begin{definition}[Subsumption]
 For any given types $\vt$ and $\vs$ and static environment $\tenv$,
@@ -1595,8 +1595,6 @@ One of the following applies:
 We define the following relations over types and operators:
 \begin{itemize}
   \item Subtype (\secref{TypingRule.Subtype})
-  \item Structural Subtype Satisfaction (\secref{TypingRule.StructuralSubtypeSatisfaction})
-  \item Domain Subtype Satisfaction (\secref{TypingRule.DomainSubtypeSatisfaction})
   \item Subtype Satisfaction (\secref{TypingRule.SubtypeSatisfaction})
   \item Type Satisfaction (\secref{TypingRule.TypeSatisfaction})
   \item Type Clash (\secref{TypingRule.TypeClash})
@@ -1705,14 +1703,14 @@ type subInt of integer subtypes superInt;
 \isempty{\subsection{Comments}}
 \lrmcomment{This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.}
 
-\section{TypingRule.StructuralSubtypeSatisfaction\label{sec:TypingRule.StructuralSubtypeSatisfaction}}
-\hypertarget{def-structsubtypesat}{}
+\section{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
+\hypertarget{def-subtypesat}
 The predicate
 \[
-  \structsubtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \subtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{structurally-subtype-satisfies} a type $\vs$ in environment $\tenv$,
+tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{typingoftypes}.
 
@@ -1741,9 +1739,16 @@ One of the following applies:
 
 \item All of the following apply (\textsc{simple}):
   \begin{itemize}
-  \item the \underlyingtype\ of $\vt$, $\vttwo$, is either \texttt{integer} (any kind), \texttt{real}, \texttt{string}, or \texttt{bool};
-  \item the \underlyingtype\ of $\vs$, $\vstwo$, is either \texttt{integer} (any kind), \texttt{real}, \texttt{string}, or \texttt{bool};
+  \item the \underlyingtype\ of $\vt$, $\vttwo$, is either \texttt{real}, \texttt{string}, or \texttt{bool};
+  \item the \underlyingtype\ of $\vs$, $\vstwo$, is either \texttt{real}, \texttt{string}, or \texttt{bool};
   \item $\vb$ is $\True$ if and only if both $\vttwo$ and $\vstwo$ have the same ASL label.
+  \end{itemize}
+
+\item All of the following apply (\textsc{t\_int}):
+  \begin{itemize}
+  \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \texttt{integer} (any kind);
+  \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \texttt{integer} (any kind);
+  \item determining whether $\vs$ subsumes $\vt$ in $\tenv$ via symbolic reasoning results in $\vb$.
   \end{itemize}
 
 \item All of the following apply (\textsc{t\_enum}):
@@ -1757,9 +1762,8 @@ One of the following applies:
   \begin{itemize}
   \item the \underlyingtype\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
   \item the \underlyingtype\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
-  \item determining whether the bitwidth $\ws$ is equivalent to $\wt$ in $\tenv$ either yields $\True$ or yields $\False$,
-        which short-circuits the entire rule;
-  \item determining whether the bit fields $\bfss$ are included in the bit fields $\bfst$ in $\tenv$ yields $\vb$\ProseOrTypeError
+  \item determining whether the bit fields $\bfss$ are included in the bit fields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether the \symbolicdomain{} of bitwidth $\ws$ subsumes the \symbolicdomain{} of bitwidth $\wt$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
 \item All of the following apply (\textsc{t\_array\_expr}):
@@ -1808,17 +1812,13 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\isempty{\subsection{Example}}
-
-\CodeSubsection{\StructuralSubtypeSatisfactionBegin}{\StructuralSubtypeSatisfactionEnd}{../types.ml}
-
 \subsection{Formally}
 \begin{mathpar}
   \inferrule[error1]{
     \makeanonymous(\tenv, \vt) \typearrow \TypeErrorConfig
   }
   {
-    \structsubtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
+    \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
   }
   \and
   \inferrule[error2]{
@@ -1826,7 +1826,7 @@ One of the following applies:
     \makeanonymous(\tenv, \vs) \typearrow \TypeErrorConfig
   }
   {
-    \structsubtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
+    \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
   }
   \and
   \inferrule[different\_labels]{
@@ -1835,7 +1835,7 @@ One of the following applies:
     \astlabel(\vttwo) \neq \astlabel(\vstwo)
   }
   {
-    \structsubtypesat(\tenv, \vt, \vs) \typearrow \False
+    \subtypesat(\tenv, \vt, \vs) \typearrow \False
   }
 \end{mathpar}
 
@@ -1846,8 +1846,19 @@ One of the following applies:
     \astlabel(\vttwo) \in \{\TInt, \TReal, \TString, \TBool\}\\
     \vb \eqdef \astlabel(\vstwo) = \astlabel(\vttwo)
   }{
-    \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
+    \subtypesat(\tenv, \vt, \vs) \typearrow \vb
   }
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int]{
+  \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
+  \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
+  \vsstruct = \TInt(\vc)\\
+  \symsubsumes(\tenv, \vsstruct, \vtstruct) \typearrow \vb
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+}
 \end{mathpar}
 
 \begin{mathpar}
@@ -1856,7 +1867,7 @@ One of the following applies:
   \makeanonymous(\tenv, \vs) \typearrow \TEnum(\vlis)\\
   \vb \eqdef \vlit = \vlis
 }{
-  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1864,10 +1875,12 @@ One of the following applies:
 \inferrule[t\_bits]{
   \makeanonymous(\tenv, \vs) \typearrow \TBits(\ws, \bfss)\\
   \makeanonymous(\tenv, \vt) \typearrow \TBits(\wt, \bfst)\\
-  \bitwidthequal(\tenv, \ws, \wt) \typearrow \True \terminateas \False\\
-  \bitfieldsincluded(\tenv, \bfss, \bfst) \typearrow \vb \OrTypeError
+  \bitfieldsincluded(\tenv, \bfss, \bfst) \typearrow \True \OrTypeError \\
+  \symdomofwidth(\tenv, \ws) \typearrow \ds \\
+  \symdomofwidth(\tenv, \wt) \typearrow \dt \\
+  \symdomissubset(\tenv, \ds, \dt) \typearrow \vb
 }{
-  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1881,7 +1894,7 @@ One of the following applies:
   \vlengtht \eqname \ArrayLengthExpr(\vlengthexprt)\\
   \exprequal(\tenv, \vlengthexprs, \vlengthexprt) \typearrow \vb
 }{
-  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
 \and
 \inferrule[t\_array\_enum]{
@@ -1893,7 +1906,7 @@ One of the following applies:
   \vlengtht \eqname \ArrayLengthEnum(\vnamet, \Ignore)\\
   \vb \eqdef \vnames = \vnamet
 }{
-  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1905,7 +1918,7 @@ One of the following applies:
   \vi\in\listrange(\vlis): \typesat(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vb_i \terminateas \TTypeError\\
   \vb \eqdef \bigwedge_{\vi=1}^k \vb_\vi
 }{
-  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1936,144 +1949,16 @@ if there is a unique one, as follows:
   (\id,\vtys)\in\vfieldss: \typeequal(\tenv, \vtys, \fieldtype(\vfieldst, \id)) \typearrow \vb_\id\\
   \vb \eqdef \bigwedge_{\id \in \vnamess} \vb_\id
 }{
-  \structsubtypesat(\tenv, \vs, \vt) \typearrow \vb
+  \subtypesat(\tenv, \vs, \vt) \typearrow \vb
 }
 \end{mathpar}
 
 \isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identd{TRVR}, \identi{SJDC}, \identi{MHYB}, \identi{TWTZ}, \identi{GYSK}, \identi{KXSD}.}
-
-\section{TypingRule.DomainSubtypeSatisfaction\label{sec:TypingRule.DomainSubtypeSatisfaction}}
-\hypertarget{def-domsubtypesat}{}
-The predicate
-\[
-  \domsubtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-tests whether a type $\vt$ \emph{domain-subtype-satisfies} a type $\vs$ in environment $\tenv$,\\
-\underline{assuming that $\vt$ structurally-subtype-satisfies $\vs$},
-returning the result $\vb$ or a type error, if one is detected.
-The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{typingoftypes}.
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{error1}):
-  \begin{itemize}
-    \item obtaining the \structure\ of $\vs$ results in a type error;
-    \item the rule gives a type error.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{error2}):
-  \begin{itemize}
-    \item obtaining the \structure\ of $\vs$ results in a type $\vsstruct$;
-    \item obtaining the \structure\ of $\vt$ results in a type error;
-    \item the rule gives a type error.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{simple}):
-  \begin{itemize}
-    \item obtaining the \structure\ of $\vs$ results in a type $\vsstruct$;
-    \item the AST label of $\vsstruct$ is either $\TTuple$, $\TArray$, $\TRecord$, or $\TException$;
-    \item $\vb$ is $\True$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{symbolic}):
-  \begin{itemize}
-    \item obtaining the \structure\ of $\vs$ results in a type $\vsstruct$;
-    \item obtaining the \structure\ of $\vt$ results in a type $\vtstruct$;
-    \item the AST label of $\vsstruct$ is either $\TReal$, $\TString$, $\TBool$, $\TEnum$, or $\TInt$;
-    \item determining whether $\vs$ subsumes $\vt$ in $\tenv$ via symbolic reasoning results in $\vb$.
-  \end{itemize}
-\end{itemize}
-
-\isempty{\subsection{Example}}
-
-\CodeSubsection{\DomainSubtypeSatisfactionBegin}{\DomainSubtypeSatisfactionEnd}{../types.ml}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[error]{
-  (\tstruct(\tenv, \vs) \typearrow \TypeErrorConfig) \lor (\tstruct(\tenv, \vt) \typearrow \TypeErrorConfig)\\
-}{
-  \domsubtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[simple]{
-  \tstruct(\tenv, \vs) \typearrow \vsstruct\\
-  {
-    \left(\begin{array}{ll}
-  \astlabel(\vsstruct) \in \{\TTuple, \TArray, \TRecord, \TException\} & \lor\\
-  \vsstruct \in \{\TReal, \TString, \TBool, \TEnum, \unconstrainedinteger\} &
-    \end{array}\right)
-  }
-}{
-  \domsubtypesat(\tenv, \vt, \vs) \typearrow \True
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[constrained\_int\_enum]{
-  \tstruct(\tenv, \vs) \typearrow \vsstruct\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct\\
-  (\vsstruct = \TInt(\vc) \land \vc \neq \unconstrained) \lor \astlabel(\vsstruct) = \TEnum\\
-  \symsubsumes(\tenv, \vsstruct, \vtstruct) \typearrow \vb
-}{
-  \domsubtypesat(\tenv, \vt, \vs) \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bits]{
-  \tstruct(\tenv, \vs) \typearrow \vsstruct\\
-  \astlabel(\vsstruct) = \TBits\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct\\
-  \symsubsumes(\tenv, \vsstruct, \vtstruct) \typearrow \vb
-}{
-  \domsubtypesat(\tenv, \vt, \vs) \typearrow \vb
-}
-\end{mathpar}
-
-\isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identd{TRVR}.}
-
-\section{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
-\hypertarget{def-subtypesat}{}
-The predicate
-\[
-  \subtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
-returning the result $\vb$ or a type error, if one is detected.
-The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{typingoftypes}.
-
-\subsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item determining whether $\vt$ structurally-subtype-satisfies $\vs$ yields $\vbone$\ProseOrTypeError;
-  \item determining whether $\vt$ domain-subtype-satisfies $\vs$ yields $\vbtwo$;
-  \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
-\end{itemize}
+\lrmcomment{This is related to \identd{TRVR}, \identi{SJDC}, \identi{MHYB}, \identi{TWTZ}, \identi{GYSK}, \identi{KXSD}, \identi{KNXJ}.}
 
 \isempty{\subsection{Example}}
 
 \CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
-
-\begin{mathpar}
-\inferrule{
-  \structsubtypesat(\tenv, \vt, \vs) \typearrow \vbone \OrTypeError\\\\
-  \domsubtypesat(\tenv, \vt, \vs) \typearrow \vbtwo\\
-  \vb \eqdef \vbone \land \vbtwo
-}{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
-}
-\end{mathpar}
-
-\isempty{\subsection{Comments}}
-\lrmcomment{This is related to \identd{TRVR}, \identi{KNXJ}.}
 
 \section{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
 \hypertarget{def-typesatisfies}{}
@@ -15032,25 +14917,17 @@ Define $\vr$ the sublist of $\bits$ given by taking $\bits[\vi]$, for every valu
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Symbolic Subsumption Testing \label{chap:symbolicsubsumptiontesting}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-This chapter is concerned with implementing a \hyperlink{def-soundsubsumptiontest}{sound subsumption test},
-as defined in \secref{subsumptiontesting} and employed by
-TypingRule.DomainSubtypeSatisfaction (see \secref{TypingRule.DomainSubtypeSatisfaction}).
+This chapter is concerned with implementing a \hyperlink{def-soundsubsumptiontest}{sound subsumption test} for integer types, as defined in \secref{subsumptiontesting} and employed by
+TypingRule.SubtypeSatisfaction (see \secref{TypingRule.SubtypeSatisfaction}).
 
 \hypertarget{def-symbolicdomain}{}
 The symbolic reasoning operates by first transforming types into expressions in a \emph{symbolic domain} AST
 (defined next, reusing $\intconstraint$ from the untyped AST) over which it then operates:
 \hypertarget{def-symdom}{}
-\hypertarget{def-dbool}{}
+\hypertarget{def-finite}{}
 \[
   \begin{array}{rcl}
-    \symdom &::=& \DBool                    \hypertarget{def-dstring}{}\\
-            &|  & \DString                  \hypertarget{def-dreal}{}\\
-            &|  & \DReal                    \hypertarget{def-dsymbols}{}\\
-            &|  & \DSymbols(\identifier^+)  \hypertarget{def-dint}{}\\
-            &|  & \DInt(\intset)            \hypertarget{def-dbits}{}\\
-            &|  & \DBits(\intset)           \hypertarget{def-intset}{} \hypertarget{def-dunknown}{}\\
-            &|  & \DUnknown                 \hypertarget{def-intset}{} \hypertarget{def-finite}{}\\
-    \intset &::=& \Finite(\powfin{\Z} \setminus \emptyset) \hypertarget{def-top}{}\\
+    \symdom &::=& \Finite(\powfin{\Z} \setminus \emptyset) \hypertarget{def-top}{}\\
             &|  & \Top                      \hypertarget{def-fromsymtax}{}\\
             &|  & \FromSyntax(\syntax)      \hypertarget{def-syntax}{}\\
     \syntax &::=& \intconstraint^*
@@ -15058,32 +14935,12 @@ The symbolic reasoning operates by first transforming types into expressions in 
 \]
 
 \begin{itemize}
-  \item $\DBool$, $\DString$, and $\DReal$ denote the symbolic domains of the Boolean type, the string type,
-        and the real type, respectively;
-  \item $\DSymbols$ denotes the symbolic domain of an enumeration type with a specific set of labels;
-  \item $\DInt$ denotes the symbolic domain of integer types.
-        More specifically:
-        \begin{itemize}
-          \item We refer to an element of the form $\DInt(\Finite(S))$ as a \emph{symbolic finite set integer domain},
-                which represents the set of integers $S$;
-          \item We refer to an element of the form $\DInt(\FromSyntax(\vcs))$ as a \emph{symbolic constrained integer domain},
-                which represents the set of integers given by the list of constraints $\vcs$; and
-          \item We refer to an element of the form $\DInt(\Top)$ as a \emph{symbolic unconstrained integer domain},
-                which represents the set of all integers.
-        \end{itemize}
-  \item $\DBits$ denotes the symbolic domain of bitvector types.
-        More specifically:
-        \begin{itemize}
-        \item We refer to an element of the form $\DBits(\Finite(S))$ as a \emph{symbolic finite set width bitvector domain},
-              which represents all bitvectors whose width is given by one of the integers in $S$;
-        \item We refer to an element of the form $\DBits(\FromSyntax(\vcs))$ as a
-              \emph{symbolic constrained width bitvector domain}, which represents all bitvectors whose width
-              is given by the list of constraints $\vcs$ ; and
-        \item We refer to an element of the form $\DBits(\Top)$ as a \emph{symbolic unconstrained width bitvector domain},
-              which represents all bitvectors whose width is unknown.
-        \end{itemize}
-  \item $\DUnknown$ is assigned to types that are not treated precisely by the symbolic subsumption testing,
-        such as array types, record types, and tuple types.
+  \item We refer to an element of the form $\Finite(S)$ as a \emph{symbolic finite set integer domain},
+        which represents the set of integers $S$;
+  \item We refer to an element of the form $\FromSyntax(\vcs)$ as a \emph{symbolic constrained integer domain},
+        which represents the set of integers given by the list of constraints $\vcs$; and
+  \item We refer to an element of the form $\Top$ as a \emph{symbolic unconstrained integer domain},
+        which represents the set of all integers.
 \end{itemize}
 
 The main rule is of this chapter is TypingRule.SymSubsumes (see \secref{TypingRule.SymSubsumes}), which defines the function
@@ -15093,6 +14950,7 @@ Other helper rules are as follows:
 \begin{itemize}
   \item TypingRule.SymDomOfType (see \secref{TypingRule.SymDomOfType})
   \item TypingRule.SymDomOfExpr (see \secref{TypingRule.SymDomOfExpr})
+  \item TypingRule.SymDomOfWidth (see \secref{TypingRule.SymDomOfWidth})
   \item TypingRule.IntSetOp (see \secref{TypingRule.IntSetOp})
   \item TypingRule.IntSetToIntConstraints (see \secref{TypingRule.IntSetToIntConstraints})
   \item TypingRule.SymDomOfLiteral (see \secref{TypingRule.SymDomOfLiteral})
@@ -15114,10 +14972,10 @@ The predicate
   \symsubsumes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb}
 \]
-soundly approximates $\subsumes(\tenv, \vt, \vs)$.
+soundly approximates $\subsumes(\tenv, \vt, \vs)$ for integer types.
 \ProseOtherwiseTypeError
 
-We assume that both $\vt$ and $\vs$ have been successfully annotated as per \chapref{typingoftypes}
+We assume that both $\vt$ and $\vs$ have been successfully annotated to integer types as per \chapref{typingoftypes}
 (otherwise a typing error prevents us from applying this function).
 
 \subsection{Prose}
@@ -15146,45 +15004,21 @@ The function
   \symdomoftype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto \overname{\symdom}{\vd}
 \]
 transforms a type $\vt$ in a static environment $\tenv$ into a symbolic domain $\vd$.
-
+It assumes its input type has an \underlyingtype{} which is an integer.
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{t\_bool}):
-  \begin{itemize}
-    \item $\vt$ is the Boolean type;
-    \item define $\vd$ as $\DBool$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{t\_string}):
-  \begin{itemize}
-    \item $\vt$ is the string type;
-    \item define $\vd$ as $\DString$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{t\_real}):
-  \begin{itemize}
-    \item $\vt$ is the real type;
-    \item define $\vd$ as $\DReal$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{t\_enum}):
-  \begin{itemize}
-    \item $\vt$ is the enumeration type with list of labels $\vli$;
-    \item define $\vd$ as the symbolic list of symbols $\vli$, that is, $\DSymbols(\vli)$.
-  \end{itemize}
-
   \item All of the following apply (\textsc{int\_unconstrained}):
   \begin{itemize}
     \item $\vt$ is the unconstrained integer type;
-    \item define $\vd$ as $\DInt(\Top)$, which intuitively represents the entire set of integers.
+    \item define $\vd$ as $\Top$, which intuitively represents the entire set of integers.
   \end{itemize}
 
   \item All of the following apply (\textsc{int\_parameterized}):
   \begin{itemize}
     \item $\vt$ is the \parameterizedintegertype\ for the identifier $\id$;
     \item define $\vd$ as the symbolic constrained integer domain with a single constraint for the variable expression for $\id$,
-          that is, \\ $\DInt(\FromSyntax([\ConstraintExact(\EVar(\id))]))$.
+          that is, \\ $\FromSyntax([\ConstraintExact(\EVar(\id))])$.
   \end{itemize}
 
   \item All of the following apply (\textsc{int\_well\_constrained\_finite}):
@@ -15200,56 +15034,7 @@ One of the following applies:
     \item $\vt$ is the well-constrained integer type for the list of constraints $\vcs$;
     \item applying $\intsetofintconstraints$ to $\vcs$ in $\tenv$ yields $\vis$;
     \item $\vis$ is not a set of integers, that is, $\astlabel(\vis)$ is not $\Finite$;
-    \item define $\vd$ as the symbolic constrained integer domain for the list of constraints $\vcs$, that is, $\DInt(\FromSyntax(\vcs))$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bits\_finite\_single}):
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with width expression $\width$;
-    \item applying $\symdomofexpr$ to $\width$ in $\tenv$ yields a symbolic integer domain for the integer $n$;
-    \item define $\vd$ as the symbolic finite set width bitvector domain for the integer $n$, that is, \\
-          $\DBits(\Finite(\{n\}))$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bits\_finite\_set}):
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with width expression $\width$;
-    \item applying $\symdomofexpr$ to $\width$ in $\tenv$ yields a list of at least two integers;
-    \item define $\vd$ as the symbolic constrained width bitvector domain for the expression $\width$, that is, $\DBits(\FromSyntax([\ConstraintExact(\width)]))$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bits\_constraint\_exact}):
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with width expression $\width$;
-    \item applying $\symdomofexpr$ to $\width$ in $\tenv$ yields a symbolic integer domain for the single expression constraint $\vv$,
-          that is \\
-          $\DInt(\FromSyntax([\ConstraintExact(\vv)]))$;
-    \item define $\vd$ as the symbolic constrained width bitvector domain for the single-value constraint $\vv$, that is,
-          $\DBits(\FromSyntax([\ConstraintExact(\vv)]))$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bits\_symbolic}):
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with width expression $\width$;
-    \item applying $\symdomofexpr$ to $\width$ in $\tenv$ yields a symbolic integer domain for the symbolic constraint $\vc$,
-          that is, $\DInt(\FromSyntax(\vc))$, and $\vc$ is not a single expression constraint;
-    \item define $\vd$ as the symbolic constrained width bitvector domain for the expression $\width$, that is,
-          $\DBits(\FromSyntax([\ConstraintExact(\width)]))$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bits\_top}):
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with width expression $\width$;
-    \item applying $\symdomofexpr$ to $\width$ in $\tenv$ yields a symbolic integer domain for the unconstrained integer,
-          that is, $\DInt(\Top)$;
-    \item define $\vd$ as the symbolic constrained width bitvector domain for the expression $\width$, that is,
-          $\DBits(\FromSyntax([\ConstraintExact(\width)]))$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{unsupported}):
-  \begin{itemize}
-    \item $\vt$ is one of the following types: an array type, an exception type, a record type, a tuple type;
-    \item define $\vs$ as $\DUnknown$, meaning that the symbolic reasoning does not currently reason about them precisely.
+    \item define $\vd$ as the symbolic constrained integer domain for the list of constraints $\vcs$, that is, $\FromSyntax(\vcs)$.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_named}):
@@ -15262,29 +15047,13 @@ One of the following applies:
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[t\_bool]{}{ \symdomoftype(\tenv, \overname{\TBool}{\vt}) \typearrow \overname{\DBool}{\vd} }
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_string]{}{ \symdomoftype(\tenv, \overname{\TString}{\vt}) \typearrow \overname{\DString}{\vd} }
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_real]{}{ \symdomoftype(\tenv, \overname{\TReal}{\vt}) \typearrow \overname{\DReal}{\vd} }
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_enum]{}{ \symdomoftype(\tenv, \overname{\TEnum(\vli)}{\vt}) \typearrow \overname{\DSymbols(\vli)}{\vd} }
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[int\_unconstrained]{}{ \symdomoftype(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow \overname{\DInt(\Top)}{\vd} }
+\inferrule[int\_unconstrained]{}{ \symdomoftype(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow \overname{\Top}{\vd} }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[int\_parameterized]{}{
   \symdomoftype(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \\
-  \overname{\DInt(\FromSyntax([\ConstraintExact(\EVar(\id))]))}{\vd}
+  \overname{\FromSyntax([\ConstraintExact(\EVar(\id))])}{\vd}
 }
 \end{mathpar}
 
@@ -15293,7 +15062,7 @@ One of the following applies:
   \intsetofintconstraints(\tenv, \vcs) \typearrow \vis\\
   \astlabel(\vis) = \Finite
 }{
-  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\DInt(\vis)}{\vd}
+  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\vis}{\vd}
 }
 \end{mathpar}
 
@@ -15302,62 +15071,7 @@ One of the following applies:
   \intsetofintconstraints(\tenv, \vcs) \typearrow \vis\\
   \astlabel(\vis) \neq \Finite
 }{
-  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\DInt(\FromSyntax(\vcs))}{\vd}
-}
-\end{mathpar}
-
-Notice that a bitvector type given by $\TBits(\width)$ guarantees that
-$\width$ is an integer type via TypingRule.TBits (see \secref{TypingRule.TBits}),
-which is why $\symdomofexpr(\tenv, \width)$ is guaranteed to return
-a symbolic domain of the form $\DInt(i)$.
-
-\begin{mathpar}
-\inferrule[bits\_finite\_single]{
-  \symdomofexpr(\tenv, \width) \typearrow \DInt(\Finite(\{n\}))
-}{
-  \symdomoftype(\tenv, \overname{\TBits(\width)}{\vt}) \typearrow \overname{\DBits(\Finite(\{n\}))}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bits\_finite\_set]{
-  \symdomofexpr(\tenv, \width) \typearrow \DInt(\Finite(N))\\
-  |N| > 1
-}{
-  \symdomoftype(\tenv, \overname{\TBits(\width)}{\vt}) \typearrow \\ \overname{\DBits(\FromSyntax([\ConstraintExact(\width)]))}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bits\_constraint\_exact]{
-  \symdomofexpr(\tenv, \width) \typearrow \DInt(\FromSyntax([\ConstraintExact(\vv)]))
-}{
-  \symdomoftype(\tenv, \overname{\TBits(\width)}{\vt}) \typearrow \\ \overname{\DBits(\FromSyntax([\ConstraintExact(\vv)]))}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bits\_symbolic]{
-  \symdomofexpr(\tenv, \width) \typearrow \DInt(\FromSyntax(\vc))\\
-  \vc \neq [\ConstraintExact(\vv)]
-}{
-  \symdomoftype(\tenv, \overname{\TBits(\width)}{\vt}) \typearrow \\ \overname{\DBits(\FromSyntax([\ConstraintExact(\width)]))}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bits\_top]{
-  \symdomofexpr(\tenv, \width) \typearrow \DInt(\Top)
-}{
-  \symdomoftype(\tenv, \overname{\TBits(\width)}{\vt}) \typearrow \\ \overname{\DBits(\FromSyntax([\ConstraintExact(\width)]))}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unsupported]{
-  \astlabel(\vt) \in \{\TArray, \TException, \TRecord, \TTuple\}
-}{
-  \symdomoftype(\tenv, \vt) \typearrow \DUnknown
+  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\FromSyntax(\vcs)}{\vd}
 }
 \end{mathpar}
 
@@ -15417,32 +15131,30 @@ One of the following applies:
   \item All of the following apply (\textsc{e\_unop\_unknown}):
   \begin{itemize}
     \item $\ve$ is a unary operation expression for an operation that is not $\MINUS$;
-    \item define $\vd$ as $\DUnknown$.
+    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$
   \end{itemize}
 
   \item All of the following apply (\textsc{e\_binop\_supported}):
   \begin{itemize}
     \item $\ve$ is a binary operation expression for an operation that is one of $\PLUS$, $\MINUS$, or $\MUL$
           and subexpressions $\veone$ and $\vetwo$;
-    \item applying $\symdomofexpr$ to $\veone$ in $\tenv$ yields a symbolic constrained integer domain with constraint $\visone$,
-          that is, $\DInt(\visone)$;
-    \item applying $\symdomofexpr$ to $\vetwo$ in $\tenv$ yields a symbolic constrained integer domain with constraint $\vistwo$,
-          that is, $\DInt(\vistwo)$;
+    \item applying $\symdomofexpr$ to $\veone$ in $\tenv$ yields a symbolic domain $\visone$;
+    \item applying $\symdomofexpr$ to $\vetwo$ in $\tenv$ yields a symbolic domain $\vistwo$;
     \item applying $\intsetop$ to $\op$ and $\visone$ and $\vistwo$ yields $\vis$;
-    \item define $\vs$ as the symbolic finite set integer domain over $\vis$, that is, $\DInt(\vis)$.
+    \item define $\vd$ as $\vis$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_binop\_sunupported}):
+  \item All of the following apply (\textsc{e\_binop\_unsupported}):
   \begin{itemize}
     \item $\ve$ is a binary operation expression for an operation that is not one of $\PLUS$, $\MINUS$, or $\MUL$;
-    \item define $\vs$ as $\DUnknown$.
+    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$
   \end{itemize}
 
   \item All of the following apply (\textsc{unsupported}):
   \begin{itemize}
     \item $\ve$ is not one of the following expression types a literal expression, a variable expression, a unary operation
           expression, or a binary operation expression;
-    \item define $\vs$ as $\DUnknown$.
+    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$
   \end{itemize}
 \end{itemize}
 
@@ -15486,18 +15198,18 @@ One of the following applies:
 \inferrule[e\_unop\_unknown]{
   \op \neq \MINUS
 }{
-  \symdomofexpr(\tenv, \overname{\EUnop(\op, \veone)}{\ve}) \typearrow \overname{\DUnknown}{\vd}
+  \symdomofexpr(\tenv, \overname{\EUnop(\op, \veone)}{\ve}) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[e\_binop\_supported]{
   \op \in \{\PLUS, \MINUS, \MUL\}\\
-  \symdomofexpr(\tenv, \veone) \typearrow \DInt(\visone)\\
-  \symdomofexpr(\tenv, \vetwo) \typearrow \DInt(\vistwo)\\
+  \symdomofexpr(\tenv, \veone) \typearrow \visone\\
+  \symdomofexpr(\tenv, \vetwo) \typearrow \vistwo\\
   \intsetop(\op, \visone, \vistwo) \typearrow \vis
 }{
-  \symdomofexpr(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \overname{\DInt(\vis)}{\vd}
+  \symdomofexpr(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \overname{\vis}{\vd}
 }
 \end{mathpar}
 
@@ -15505,7 +15217,7 @@ One of the following applies:
 \inferrule[e\_binop\_unsupported]{
   \op \not\in \{\PLUS, \MINUS, \MUL\}\\
 }{
-  \symdomofexpr(\tenv, \overname{\EBinop(\op, \Ignore, \Ignore)}{\ve}) \typearrow \overname{\DUnknown}{\vd}
+  \symdomofexpr(\tenv, \overname{\EBinop(\op, \Ignore, \Ignore)}{\ve}) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
 }
 \end{mathpar}
 
@@ -15513,7 +15225,77 @@ One of the following applies:
 \inferrule[unsupported]{
   \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EUnop, \EBinop\}
 }{
-  \symdomofexpr(\tenv, \ve) \typearrow \overname{\DUnknown}{\vd}
+  \symdomofexpr(\tenv, \ve) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
+}
+\end{mathpar}
+
+\section{TypingRule.SymDomOfWidth \label{sec:TypingRule.SymDomOfWidth}}
+\hypertarget{def-symdomofwidth}{}
+The function
+\[
+\symdomofwidth(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\expr}{\ve}
+) \aslto
+\overname{\symdom}{\vd}
+\]
+assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$ in the static environment $\tenv$.
+In contrast to $\symdomofexpr$, $\symdomofwidth$ should be applied to expressions that represent a bit vector width.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{finite\_one\_width}):
+  \begin{itemize}
+    \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
+    \item $\vdone$ is a set of integers, that is, $\Finite(s)$;
+    \item the cardinality of $s$ is one;
+    \item $\vd$ is $\vdone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{finite\_multiple\_widths}):
+  \begin{itemize}
+    \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
+    \item $\vdone$ is a set of integers, that is, $\Finite(s)$;
+    \item the cardinality of $s$ is \emph{not} one;
+    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_finite}):
+  \begin{itemize}
+    \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
+    \item $\vdone$ is not a set of integers, that is, $\astlabel(\vdone)$ is not $\Finite$;
+    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[finite\_one\_width]{
+  \symdomofexpr(\tenv, \ve) \typearrow \vdone \\
+  \vdone = \Finite(s) \\
+  \cardinality{s} = 1
+}{
+  \symdomofwidth(\tenv, \ve) \typearrow \overname{\vdone}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[finite\_multiple\_widths]{
+  \symdomofexpr(\tenv, \ve) \typearrow \vdone \\
+  \vdone = \Finite(s) \\
+  \cardinality{s} \neq 1
+}{
+  \symdomofwidth(\tenv, \ve) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_finite]{
+  \symdomofexpr(\tenv, \ve) \typearrow \vdone \\
+  \astlabel(\vdone) \neq \Finite
+}{
+  \symdomofwidth(\tenv, \ve) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
 }
 \end{mathpar}
 
@@ -15521,11 +15303,11 @@ One of the following applies:
 \hypertarget{def-intsetop}{}
 The function
 \[
-\intsetop(\overname{\binop}{\op} \aslsep \overname{\intset}{\visone} \aslsep \overname{\intset}{\vistwo})
-\aslto \overname{\intset}{\vis}
+\intsetop(\overname{\binop}{\op} \aslsep \overname{\symdom}{\visone} \aslsep \overname{\symdom}{\vistwo})
+\aslto \overname{\symdom}{\vis}
 \]
-applies the binary operation $\op$ to the symbolic integer sets $\visone$ and $\vistwo$,
-yielding the symbolic integer set $\vis$.
+applies the binary operation $\op$ to the symbolic domains $\visone$ and $\vistwo$,
+yielding the symbolic domain $\vis$.
 
 \subsection{Prose}
 One of the following applies:
@@ -15733,70 +15515,16 @@ The function
 returns the symbolic domain $\vd$ that corresponds to the literal $\vv$.
 
 \subsection{Prose}
-One of the following applies:
+All of the following apply:
 \begin{itemize}
-  \item All of the following apply (\textsc{l\_int}):
-  \begin{itemize}
-    \item $\vv$ is an integer literal for $n$;
-    \item define $\vd$ as the symbolic finite set integer domain for the singleton set for $n$, that is, $\DInt(\Finite(\{n\}))$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{l\_bool}):
-  \begin{itemize}
-    \item $\vv$ is a Boolean literal;
-    \item define $\vd$ as the symbolic Boolean domain.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{l\_real}):
-  \begin{itemize}
-    \item $\vv$ is a real literal;
-    \item define $\vd$ as the symbolic real domain.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{l\_string}):
-  \begin{itemize}
-    \item $\vv$ is a string literal;
-    \item define $\vd$ as the symbolic string domain.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{l\_bitvector}):
-  \begin{itemize}
-    \item $\vv$ is a bitvector literal for the sequence of bits $\bv$;
-    \item the length of $\bv$ is $n$;
-    \item define $\vd$ as the symbolic finite set width bitvector domain for the singleton set for $n$.
-  \end{itemize}
+  \item $\vv$ is an integer literal for $n$;
+  \item define $\vd$ as the symbolic finite set integer domain for the singleton set for $n$, that is, $\Finite(\{n\})$.
 \end{itemize}
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[l\_int]{}{
-  \symdomofliteral(\overname{\lint(n)}{\vv}) \typearrow \overname{\DInt(\Finite(\{n\}))}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[l\_bool]{}{
-  \symdomofliteral(\overname{\lbool(\Ignore)}{\vv}) \typearrow \overname{\DBool}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[l\_real]{}{
-  \symdomofliteral(\overname{\lreal(\Ignore)}{\vv}) \typearrow \overname{\DReal}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[l\_string]{}{
-  \symdomofliteral(\overname{\lstring(\Ignore)}{\vv}) \typearrow \overname{\DString}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[l\_bitvector]{
-  n \eqdef |\bv|
-}{
-  \symdomofliteral(\overname{\lbitvector(\bv)}{\vv}) \typearrow \overname{\DBits(\Finite(\{n\}))}{\vd}
+\inferrule{}{
+  \symdomofliteral(\overname{\lint(n)}{\vv}) \typearrow \overname{\Finite(\{n\})}{\vd}
 }
 \end{mathpar}
 
@@ -15808,9 +15536,9 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\constraints}{\vcs}
   ) \aslto
-  \overname{\intset}{\vis}
+  \overname{\symdom}{\vis}
 \]
-returns the symbolic set of integers $\vis$ for the list of constraints $\vcs$
+returns the symbolic domain $\vis$ for the list of constraints $\vcs$
 in the static environment $\tenv$.
 
 \subsection{Prose}
@@ -15863,10 +15591,10 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\intconstraint}{\vc}
   ) \aslto
-  \overname{\intset}{\vis} \cup \{\Top\}
+  \overname{\symdom}{\vis}
 \]
-transforms an integer constraint $\vc$ into a set of integers $\vis$ or $\Top$
-if the expressions involved in the integer constraints cannot be simplified
+transforms an integer constraint $\vc$ into a symbolic domain $\vis$.
+It produces $\Top$ when the expressions involved in the integer constraints cannot be simplified
 to integers.
 
 \subsection{Prose}
@@ -15969,93 +15697,17 @@ conservatively tests whether the symbolic domain $\vdone$ is subsumed by the sym
 yielding the result $\vb$.
 
 \subsection{Prose}
-One of the following applies:
+All of the following apply:
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_labels}):
-  \begin{itemize}
-    \item the AST labels of $\vdone$ and $\vdtwo$ are different, which means they are symbolic domains of unrelated types;
-    \item define $\vb$ as $\False$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{unknown}):
-  \begin{itemize}
-    \item one of $\vdone$ and $\vdtwo$ is $\DUnknown$;
-    \item define $\vb$ as $\False$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bool\_string\_real}):
-  \begin{itemize}
-    \item the AST labels of $\vdone$ and $\vdtwo$ are equal and they are one of $\DBool$, $\DString$, and $\DReal$;
-    \item define $\vb$ as $\True$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{symbols}):
-  \begin{itemize}
-    \item $\vdone$ is a symbolic enumeration domain for the list of identifiers $\visone$;
-    \item $\vdtwo$ is a symbolic enumeration domain for the list of identifiers $\vistwo$;
-    \item $\vb$ is $\True$ if and only if the set for $\visone$ is a subset of the set for $\vistwo$ (including if both sets are equal).
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bits}):
-  \begin{itemize}
-    \item $\vdone$ is a symbolic bitvector domain for $\visone$;
-    \item $\vdtwo$ is a symbolic bitvector domain for $\vistwo$;
-    \item applying $\symintsetsubset$ to $\visone$ and $\vistwo$ in $\tenv$ yields $\vb$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{int}):
-  \begin{itemize}
-    \item $\vdone$ is a symbolic integer domain for $\visone$;
-    \item $\vdtwo$ is a symbolic integer domain for $\vistwo$;
-    \item applying $\symintsetsubset$ to $\visone$ and $\vistwo$ in $\tenv$ yields $\vb$.
-  \end{itemize}
+  \item applying $\symintsetsubset$ to $\vdone$ and $\vdtwo$ in $\tenv$ yields $\vb$.
 \end{itemize}
 
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[different\_labels]{
-  \astlabel(\vdone) \neq \astlabel(\vdtwo)
-}{
-  \symdomissubset(\tenv, \vdone, \vdtwo) \typearrow \overname{\False}{\vb}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unknown]{
-  \astlabel(\vdone) = \DUnknown \lor \astlabel(\vdtwo) = \DUnknown
-}{
-  \symdomissubset(\tenv, \vdone, \vdtwo) \typearrow \overname{\False}{\vb}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bool\_string\_real]{
-  \astlabel(\vdone) = \astlabel(\vdtwo)\\
-  \astlabel(\vdone) \in \{\DBool, \DString, \DReal\}
-}{ \symdomissubset(\tenv, \vdone, \vdtwo) \typearrow \overname{\True}{\vb} }
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[symbols]{
-  \vb \eqdef \{\vsone\} \subseteq \{\vstwo\}
-}{
-  \symdomissubset(\tenv, \overname{\DSymbols(\vsone)}{\vdone}, \overname{\DSymbols(\vstwo)}{\vdtwo}) \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bits]{
-  \symintsetsubset(\tenv, \isone, \istwo) \typearrow \vb
-}{
-  \symdomissubset(\tenv, \overname{\DBits(\isone)}{\vdone}, \overname{\DBits(\istwo)}{\vdtwo}) \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[int]{
-  \symintsetsubset(\tenv, \isone, \istwo) \typearrow \vb
+  \symintsetsubset(\tenv, \vdone, \vdtwo) \typearrow \vb
 }{
-  \symdomissubset(\tenv, \overname{\DInt(\isone)}{\vdone}, \overname{\DInt(\istwo)}{\vdtwo}) \typearrow \vb
+  \symdomissubset(\tenv, \vdone, \vdtwo) \typearrow \vb
 }
 \end{mathpar}
 
@@ -16063,7 +15715,7 @@ One of the following applies:
 \hypertarget{def-symintsetsubset}{}
 The function
 \[
-\symintsetsubset(\overname{\staticenvs}{\tenv} \aslsep \overname{\intset}{\visone} \aslsep \overname{\intset}{\vistwo}) \aslto \overname{\Bool}{\vb}
+\symintsetsubset(\overname{\staticenvs}{\tenv} \aslsep \overname{\symdom}{\visone} \aslsep \overname{\symdom}{\vistwo}) \aslto \overname{\Bool}{\vb}
 \]
 
 \subsection{Prose}
@@ -19469,7 +19121,7 @@ One of the following applies:
     \item $\vbfone$ is a typed bitfield with name $\nameone$, slices $\slicesone$, and type $\ttyone$;
     \item $\vbone$ is true if and only if $\nameone$ is equal to $\nametwo$;
     \item symbolically equating the slices $\slicesone$ and $\slicestwo$ in $\tenv$ yields $\vbtwo$;
-    \item checking whether $\ttyone$ structurally subtypes $\ttytwo$ in $\tenv$ yields $\vbthree$;
+    \item checking whether $\ttyone$ subtypes $\ttytwo$ in $\tenv$ yields $\vbthree$;
     \item $\vb$ is defined as the conjunction of $\vbone$, $\vbtwo$, and $\vbthree$.
   \end{itemize}
 \end{itemize}
@@ -19553,7 +19205,7 @@ One of the following applies:
   \vbfone = \BitFieldType(\nameone, \slicesone, \ttyone)\\
   \vbone \eqdef \nameone = \nametwo\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
-  \structsubtypesat(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\\\\
+  \subtypesat(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo \land \vbthree
 }{
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb

@@ -169,18 +169,7 @@ module Domain = struct
   type syntax = AST.int_constraint list
 
   (** Represents the domain of an integer expression. *)
-  type int_set = Finite of IntSet.t | Top | FromSyntax of syntax
-
-  (* Begin Domain *)
-  type t =
-    | D_Bool
-    | D_String
-    | D_Real
-    | D_Symbols of ISet.t  (** The domain of an enum is a set of symbols *)
-    | D_Int of int_set
-    | D_Bits of int_set  (** The domain of a bitvector is given by its width. *)
-  (* |: TypingRule.Domain *)
-  (* End *)
+  type t = Finite of IntSet.t | Top | FromSyntax of syntax
 
   let add_interval_to_intset acc bot top =
     if bot > top then acc
@@ -188,25 +177,12 @@ module Domain = struct
       let interval = IntSet.Interval.make bot top in
       IntSet.add interval acc
 
-  let pp_int_set f =
+  let pp f =
     let open Format in
     function
     | Top -> pp_print_string f "ℤ"
     | Finite set -> fprintf f "@[{@,%a}@]" IntSet.pp set
     | FromSyntax slices -> PP.pp_int_constraints f slices
-
-  let pp f =
-    let open Format in
-    function
-    | D_Bool -> pp_print_string f "𝔹"
-    | D_String -> pp_print_string f "𝕊"
-    | D_Real -> pp_print_string f "ℚ"
-    | D_Symbols li ->
-        fprintf f "@[{@,%a}@]"
-          (PP.pp_print_seq ~pp_sep:pp_print_space pp_print_string)
-          (ISet.to_seq li)
-    | D_Int set -> pp_int_set f set
-    | D_Bits set -> fprintf f "@[#bits(%a)@]" pp_int_set set
 
   exception StaticEvaluationTop
 
@@ -302,12 +278,8 @@ module Domain = struct
     if x < y then make x y else raise StaticEvaluationTop
 
   let of_literal = function
-    | L_Int n -> D_Int (Finite (IntSet.singleton n))
-    | L_Bool _ -> D_Bool
-    | L_Real _ -> D_Real
-    | L_String _ -> D_String
-    | L_BitVector bv ->
-        D_Bits (Finite (Bitvector.length bv |> Z.of_int |> IntSet.singleton))
+    | L_Int n -> Finite (IntSet.singleton n)
+    | _ -> raise StaticEvaluationTop
 
   (* [of_expr env e] returns the symbolic integer domain for the integer-typed expression [e]. *)
   let rec of_expr env e =
@@ -321,8 +293,8 @@ module Domain = struct
     | E_Unop (NEG, e1) ->
         of_expr env (E_Binop (MINUS, !$0, e1) |> add_pos_from e)
     | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
-        let is1 = match of_expr env e1 with D_Int is -> is | _ -> assert false
-        and is2 = match of_expr env e2 with D_Int is -> is | _ -> assert false
+        let is1 = of_expr env e1
+        and is2 = of_expr env e2
         and fop =
           match op with
           | PLUS -> monotone_interval_op Z.add
@@ -330,63 +302,51 @@ module Domain = struct
           | MUL -> monotone_interval_op Z.mul
           | _ -> assert false
         in
-        D_Int (int_set_raise_interval_op fop op is1 is2)
+        int_set_raise_interval_op fop op is1 is2
     | _ ->
         let () =
           if false then
             Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
               PP.pp_expr e
         in
-        raise StaticEvaluationTop
+        FromSyntax [ Constraint_Exact e ]
+
+  and of_width_expr env e =
+    let e_domain = of_expr env e in
+    let exact_domain = FromSyntax [ Constraint_Exact e ] in
+    match e_domain with
+    | Finite int_set ->
+        if Z.equal (IntSet.cardinal int_set) Z.one then e_domain
+        else exact_domain
+    | FromSyntax [ Constraint_Exact _ ] -> e_domain
+    | _ -> exact_domain
 
   and of_type env ty =
     let ty = make_anonymous env ty in
     match ty.desc with
-    | T_Bool -> D_Bool
-    | T_String -> D_String
-    | T_Real -> D_Real
-    | T_Enum li -> D_Symbols (ISet.of_list li)
-    | T_Int UnConstrained -> D_Int Top
+    | T_Int UnConstrained -> Top
     | T_Int (Parameterized (_uid, var)) ->
-        D_Int (FromSyntax [ Constraint_Exact (var_ var) ])
+        FromSyntax [ Constraint_Exact (var_ var) ]
     | T_Int (WellConstrained constraints) ->
-        D_Int (int_set_of_int_constraints env constraints)
-    | T_Bits (width, _) -> (
-        try
-          match of_expr env width with
-          | D_Int (Finite int_set as d) ->
-              if Z.equal (IntSet.cardinal int_set) Z.one then D_Bits d
-              else raise StaticEvaluationTop
-          | D_Int (FromSyntax [ Constraint_Exact _ ] as d) -> D_Bits d
-          | _ -> raise StaticEvaluationTop
-        with StaticEvaluationTop ->
-          D_Bits (FromSyntax [ Constraint_Exact width ]))
-    | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
+        int_set_of_int_constraints env constraints
+    | T_Bool | T_String | T_Real ->
+        failwith "Unimplemented: domain of primitive type"
+    | T_Bits _ | T_Enum _ | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _
+      ->
         failwith "Unimplemented: domain of a non singular type."
     | T_Named _ -> assert false (* make anonymous *)
 
   let mem v d =
     match (v, d) with
-    | L_Bool _, D_Bool | L_Real _, D_Real -> true
-    | L_Bool _, _ | L_Real _, _ | _, D_Bool | _, D_Real -> false
-    | L_BitVector _, D_Bits Top -> true
-    | L_BitVector bv, D_Bits (Finite intset) ->
-        IntSet.mem (Bitvector.length bv |> Z.of_int) intset
-    | L_BitVector _, _ | _, D_Bits _ -> false
-    | L_Int _, D_Int Top -> true
-    | L_Int i, D_Int (Finite intset) -> IntSet.mem i intset
-    | L_Int _, _ | _, D_Int _ -> false
-    | L_String _, D_String -> true
-    | L_String _, _ (* | _, D_String *) -> false
+    | L_Bool _, _ | L_Real _, _ | L_String _, _ | L_BitVector _, _ -> false
+    | L_Int _, Top -> true
+    | L_Int i, Finite intset -> IntSet.mem i intset
+    | L_Int _, _ -> false
 
   let equal d1 d2 =
     match (d1, d2) with
-    | D_Bool, D_Bool | D_String, D_String | D_Real, D_Real -> true
-    | D_Symbols s1, D_Symbols s2 -> ISet.equal s1 s2
-    | D_Bits Top, D_Bits Top | D_Int Top, D_Int Top -> true
-    | D_Int (Finite is1), D_Int (Finite is2)
-    | D_Bits (Finite is1), D_Bits (Finite is2) ->
-        IntSet.equal is1 is2
+    | Top, Top -> true
+    | Finite is1, Finite is2 -> IntSet.equal is1 is2
     | _ -> false
 
   let compare _d1 _d2 = assert false
@@ -564,20 +524,8 @@ module Domain = struct
     let () =
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
     in
-    match (d1, d2) with
-    | D_Bool, D_Bool | D_String, D_String | D_Real, D_Real -> true
-    | D_Symbols s1, D_Symbols s2 -> ISet.subset s1 s2
-    | D_Bits is1, D_Bits is2 | D_Int is1, D_Int is2 ->
-        int_set_is_subset env is1 is2
-    | _ -> false
+    int_set_is_subset env d1 d2
   (* End *)
-
-  let get_width_singleton_opt = function
-    | D_Bits (Finite int_set) ->
-        if Z.equal (IntSet.cardinal int_set) Z.one then
-          Some (IntSet.min_elt int_set |> IntSet.Interval.x)
-        else None
-    | _ -> None
 end
 
 (* --------------------------------------------------------------------------*)
@@ -587,8 +535,8 @@ let is_bits_width_fixed env ty =
   | T_Bits _ -> (
       let open Domain in
       match of_type env ty with
-      | D_Int (Finite int_set) -> IntSet.cardinal int_set = Z.one
-      | D_Int Top -> false
+      | Finite int_set -> IntSet.cardinal int_set = Z.one
+      | Top -> false
       | _ -> failwith "Wrong domain for a bitwidth.")
   | _ -> failwith "Wrong type for some bits."
 
@@ -631,57 +579,55 @@ let rec bitfields_included env bfs1 bfs2 =
         | BitField_Type (name1, slices1, ty1) ->
             String.equal name1 name2
             && slices_equal env slices1 slices2
-            && structural_subtype_satisfies env ty1 ty2)
+            && subtype_satisfies env ty1 ty2)
   and incl_bfs bfs1 bfs2 = List.for_all (mem_bfs bfs2) bfs1 in
   incl_bfs bfs1 bfs2
 
-(* Begin TypingRule.StructuralSubtypeSatisfaction *)
-and structural_subtype_satisfies env t s =
+(* Begin TypingRule.SubtypeSatisfaction *)
+and subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
   (match ((make_anonymous env s).desc, (make_anonymous env t).desc) with
   (* If S has the structure of an integer type then T must have the structure
      of an integer type. *)
-  | T_Int _, T_Int _ -> true
-  | T_Int _, _ -> false
-  (* If S has the structure of a real type then T must have the
-     structure of a real type. *)
-  | T_Real, T_Real -> true
-  | T_Real, _ -> false
-  (* If S has the structure of a string type then T must have the
-     structure of a string type. *)
-  | T_String, T_String -> true
-  | T_String, _ -> false
-  (* If S has the structure of a boolean type then T must have the
-     structure of a boolean type. *)
-  | T_Bool, T_Bool -> true
-  | T_Bool, _ -> false
+  | T_Int _, T_Int _ ->
+      let d_s = Domain.of_type env s and d_t = Domain.of_type env t in
+      let () =
+        if false then
+          Format.eprintf "domain_subtype_satisfies: %a included in %a?@."
+            Domain.pp d_t Domain.pp d_s
+      in
+      Domain.is_subset env d_t d_s
+  (* If S has the structure of a real/string/bool then T must have the
+     same structure. *)
+  | ( ((T_Real | T_String | T_Bool) as s_anon),
+      ((T_Real | T_String | T_Bool) as t_anon) ) ->
+      s_anon = t_anon
   (* If S has the structure of an enumeration type then T must have
      the structure of an enumeration type with exactly the same
      enumeration literals. *)
   | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
-  | T_Enum _, _ -> false
   (*
-      • If S has the structure of a bitvector type with determined width then
-        either T must have the structure of a bitvector type of the same
-        determined width or T must have the structure of a bitvector type with
-        undetermined width.
-      • If S has the structure of a bitvector type with undetermined width then T
-        must have the structure of a bitvector type.
+      • If S has the structure of a bitvector type then T must have the
+        structure of a bitvector type of the same width.
       • If S has the structure of a bitvector type which has bitfields then T
         must have the structure of a bitvector type of the same width and for
         every bitfield in S there must be a bitfield in T of the same name, width
         and offset, whose type type-satisfies the bitfield in S.
     *)
-  | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) -> (
-      (* Interpreting the first two condition as just a condition on
-         domains. *)
-      match (bf_s, bf_t) with
-      | [], _ -> true
-      | _, [] -> false
-      | bfs_s, bfs_t ->
-          bitwidth_equal env w_s w_t && bitfields_included env bfs_s bfs_t)
-  | T_Bits _, _ -> false
+  | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) ->
+      let bitfields_subtype = bitfields_included env bf_s bf_t in
+      let widths_subtype =
+        let t_width_domain = Domain.of_width_expr env w_t
+        and s_width_domain = Domain.of_width_expr env w_s in
+        let () =
+          if false then
+            Format.eprintf "Is %a included in %a?@." Domain.pp t_width_domain
+              Domain.pp s_width_domain
+        in
+        Domain.is_subset env t_width_domain s_width_domain
+      in
+      bitfields_subtype && widths_subtype
   (* If S has the structure of an array type with elements of type E then
      T must have the structure of an array type with elements of type E,
      and T must have the same element indices as S. *)
@@ -696,7 +642,6 @@ and structural_subtype_satisfies env t s =
       | ArrayLength_Enum (_, _), ArrayLength_Expr _
       | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
           false)
-  | T_Array _, _ -> false
   (* If S has the structure of a tuple type then T must have the
      structure of a tuple type with same number of elements as S,
      and each element in T must type-satisfy the corresponding
@@ -704,7 +649,6 @@ and structural_subtype_satisfies env t s =
   | T_Tuple li_s, T_Tuple li_t ->
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_satisfies env) li_t li_s
-  | T_Tuple _, _ -> false
   (* If S has the structure of an exception type then T must have the
      structure of an exception type with at least the same fields
      (each with the same type) as S.
@@ -720,67 +664,8 @@ and structural_subtype_satisfies env t s =
               String.equal name_s name_t && type_equal env ty_s ty_t)
             fields_t)
         fields_s
-  | T_Exception _, _ | T_Record _, _ -> false (* A structure cannot be a name *)
-  | T_Named _, _ -> assert false)
-  |: TypingRule.StructuralSubtypeSatisfaction
-
-(* End *)
-(* Begin DomainSubtypeSatisfaction *)
-and domain_subtype_satisfies env t s =
-  (let s_struct = get_structure env s in
-   match s_struct.desc with
-   (* If S does not have the structure of an aggregate type or bitvector type
-      then the domain of T must be a subset of the domain of S. *)
-   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-   (* These are very basic domains, which do not require checking for domain subsumption.
-      Checking for structural subtyping is enough. *)
-   | T_Real | T_String | T_Bool | T_Int UnConstrained -> true
-   | T_Enum _ | T_Int _ ->
-       let d_s = Domain.of_type env s_struct
-       and d_t = get_structure env t |> Domain.of_type env in
-       let () =
-         if false then
-           Format.eprintf "domain_subtype_satisfies: %a included in %a?@."
-             Domain.pp d_t Domain.pp d_s
-       in
-       Domain.is_subset env d_t d_s
-   | T_Bits _ -> (
-       (*
-        • If either S or T have the structure of a bitvector type with
-          undetermined width then the domain of T must be a subset of the
-          domain of S.
-         *)
-       (* Implicitly, T must have the structure of a bitvector. *)
-       let t_struct = get_structure env t in
-       let t_domain = Domain.of_type env t_struct
-       and s_domain = Domain.of_type env s_struct in
-       let () =
-         if false then
-           Format.eprintf "Is %a included in %a?@." Domain.pp t_domain Domain.pp
-             s_domain
-       in
-       match
-         ( Domain.get_width_singleton_opt s_domain,
-           Domain.get_width_singleton_opt t_domain )
-       with
-       | Some w_s, Some w_t -> Z.equal w_s w_t
-       | _ -> Domain.is_subset env t_domain s_domain)
-   | T_Named _ ->
-       (* Cannot happen *)
-       assert false)
-  |: TypingRule.DomainSubtypeSatisfaction
-
-(* End *)
-(* Begin SubtypeSatisfaction *)
-and subtype_satisfies env t s =
-  let () =
-    if false then
-      let b1 = structural_subtype_satisfies env t s in
-      let b2 = domain_subtype_satisfies env t s in
-      Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@." PP.pp_ty t
-        PP.pp_ty s b1 b2
-  in
-  (structural_subtype_satisfies env t s && domain_subtype_satisfies env t s)
+  | T_Named _, _ -> assert false
+  | _, _ -> false)
   |: TypingRule.SubtypeSatisfaction
 
 (* End *)

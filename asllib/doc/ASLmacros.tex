@@ -175,8 +175,8 @@
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
 \newcommand\wrappedline[0]{{\hyperlink{def-wrapline}{\color{red}\hookrightarrow}}}
-\newcommand\commonprefixline[0]{{\hyperlink{def-commonprefixline}{\color{cyan}\tiny{\text{******** common prefix ********}} }}}
-\newcommand\commonsuffixline[0]{{\hyperlink{def-commonsuffixline}{\color{cyan}\tiny{\text{******** common suffix ********}} }}}
+\newcommand\commonprefixline[0]{{\hyperlink{def-commonprefixline}{\color{cyan}{\text{\tiny******** common prefix ********}} }}}
+\newcommand\commonsuffixline[0]{{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{\tiny******** common suffix ********}} }}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%
 %% Mathematical notations and Inference Rule macros
@@ -1025,8 +1025,6 @@
 
 \newcommand\makeanonymous[0]{\hyperlink{def-makeanonymous}{\textfunc{make\_anonymous}}}
 \newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\textfunc{is\_subtype}}}
-\newcommand\structsubtypesat[0]{\hyperlink{def-structsubtypesat}{\textfunc{structural\_subtype\_satisfies}}}
-\newcommand\domsubtypesat[0]{\hyperlink{def-domsubtypesat}{\textfunc{domain\_subtype\_satisfies}}}
 \newcommand\subtypesat[0]{\hyperlink{def-subtypesat}{\textfunc{subtype\_satisfies}}}
 \newcommand\checktypesat[0]{\hyperlink{def-checktypesat}{\textfunc{checked\_typesat}}}
 \newcommand\typeclashes[0]{\hyperlink{def-typeclashes}{\textfunc{type\_clashes}}}
@@ -1192,8 +1190,7 @@
 \newcommand\typesatisfy[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
 \newcommand\checkedtypesatisfies[0]{\hyperlink{def-checktypesat}{checked-type-satisfies}}
 \newcommand\typesatisft[0]{\hyperlink{def-typesatisfies}{type-satisft}}
-\newcommand\subtypesatisfies[0]{\hyperlink{def-subtypesatisfies}{subtype-satisfies}}
-\newcommand\subtypesatisfy[0]{\hyperlink{def-subtypesatisfies}{subtype-satisfisfy}}
+\newcommand\subtypesatisfies[0]{\hyperlink{def-subtypesat}{subtype-satisfies}}
 \newcommand\typeequivalent[0]{\hyperlink{def-typeequal}{type-equivalent}}
 \newcommand\bitwidthequivalent[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
 \newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
@@ -1299,16 +1296,7 @@
 
 % Symbolic domain subsumption
 \newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
-\newcommand\intset[0]{\hyperlink{def-intset}{\textsf{int\_set}}}
 \newcommand\syntax[0]{\hyperlink{def-syntax}{\textsf{syntax}}}
-
-\newcommand\DBool[0]{\hyperlink{def-dbool}{\textsf{D\_Bool}}}
-\newcommand\DString[0]{\hyperlink{def-dstring}{\textsf{D\_String}}}
-\newcommand\DReal[0]{\hyperlink{def-dreal}{\textsf{D\_Real}}}
-\newcommand\DSymbols[0]{\hyperlink{def-dsymbols}{\textsf{D\_Symbols}}}
-\newcommand\DInt[0]{\hyperlink{def-dint}{\textsf{D\_Int}}}
-\newcommand\DBits[0]{\hyperlink{def-dbits}{\textsf{D\_Bits}}}
-\newcommand\DUnknown[0]{\hyperlink{def-dunknown}{\textsf{D\_Unknown}}}
 
 \newcommand\Finite[0]{\hyperlink{def-finite}{\textsf{Finite}}}
 \newcommand\Top[0]{\hyperlink{def-top}{\textsf{Top}}}
@@ -1316,6 +1304,7 @@
 
 \newcommand\symdomoftype[0]{\hyperlink{def-symdomoftype}{\textfunc{symdom\_of\_type}}}
 \newcommand\symdomofexpr[0]{\hyperlink{def-symdomofexpr}{\textfunc{symdom\_of\_expr}}}
+\newcommand\symdomofwidth[0]{\hyperlink{def-symdomofwidth}{\textfunc{symdom\_of\_width}}}
 \newcommand\symdomofliteral[0]{\hyperlink{def-symdomofliteral}{\textfunc{symdom\_of\_literal}}}
 \newcommand\intsetofintconstraints[0]{\hyperlink{def-intsetofintconstraintse}{\textfunc{intset\_of\_intconstraints}}}
 \newcommand\symdomissubset[0]{\hyperlink{def-symdomissubset}{\textfunc{symdom\_is\_subset}}}
