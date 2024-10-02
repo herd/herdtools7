@@ -454,6 +454,37 @@ let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
 let unop op = map_desc (fun e -> E_Unop (op, e))
 let literal v = E_Literal v |> add_dummy_pos
 let expr_of_int i = literal (L_Int (Z.of_int i))
+let expr_of_z z = literal (L_Int z)
+let zero_expr = expr_of_z Z.zero
+let one_expr = expr_of_z Z.one
+
+let expr_of_rational q =
+  if Z.equal (Q.den q) Z.one then expr_of_z (Q.num q)
+  else binop DIV (expr_of_z (Q.num q)) (expr_of_z (Q.den q))
+
+let mul_expr e1 e2 =
+  if expr_equal (fun _ _ -> false) e1 one_expr then e2
+  else if expr_equal (fun _ _ -> false) e2 one_expr then e1
+  else binop MUL e1 e2
+
+let pow_expr e = function
+  | 0 -> one_expr
+  | 1 -> e
+  | 2 -> mul_expr e e
+  | p -> binop POW e (expr_of_int p)
+
+let div_expr e z = if Z.equal z Z.one then e else binop DIV e (expr_of_z z)
+
+let add_expr e1 (s, e2) =
+  if s = 0 then e1 else if s > 0 then binop PLUS e1 e2 else binop MINUS e1 e2
+
+let conj_expr e1 e2 =
+  let lit_true = literal (L_Bool true) in
+  if expr_equal (fun _ _ -> false) e1 lit_true then e2
+  else if expr_equal (fun _ _ -> false) e2 lit_true then e1
+  else binop BAND e1 e2
+
+let cond_expr e1 e2 e3 = E_Cond (e1, e2, e3) |> add_pos_from dummy_annotated
 
 module Infix = struct
   let ( ~$ ) i = L_Int (Z.of_int i)

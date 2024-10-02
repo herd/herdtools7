@@ -15645,22 +15645,17 @@ The function
 \symbolicallysimplifies\ the \underline{integer-typed} expression $\ve$ and returns the resulting integer or $\Top$ if
 the result of the simplification is not an integer.
 
-We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
-and therefore applying $\normalize$ to it does not yield a type error.
-
 \subsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{integer}):
   \begin{itemize}
-    \item applying $\normalize$ to $\ve$ in $\tenv$ yields the expression $\veone$;
     \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the integer literal for $n$.
   \end{itemize}
 
   \item All of the following apply (\textsc{top}):
   \begin{itemize}
-    \item applying $\normalize$ to $\ve$ in $\tenv$ yields the expression $\veone$;
-    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields $\top$.
+    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields $\top$;
     \item the result is $\Top$.
   \end{itemize}
 \end{itemize}
@@ -15668,15 +15663,13 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[integer]{
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \staticeval(\tenv, \veone) \typearrow \lint(n)
+  \staticeval(\tenv, \ve) \typearrow \lint(n)
 }{
   \normalizetoint(\tenv, \ve) \typearrow n
 }
 \and
 \inferrule[top]{
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \staticeval(\tenv, \veone) \typearrow \top
+  \staticeval(\tenv, \ve) \typearrow \top
 }{
   \normalizetoint(\tenv, \ve) \typearrow \Top
 }
@@ -16201,7 +16194,6 @@ and then we define the following rules:
   \item TypingRule.ReduceConstraint (see \secref{TypingRule.ReduceConstraint})
   \item TypingRule.ReduceConstraints (see \secref{TypingRule.ReduceConstraints})
   \item TypingRule.ToIR (see \secref{TypingRule.ToIR})
-  \item TypingRule.ToIRCase (see \secref{TypingRule.ToIRCase})
   \item TypingRule.ExprEqualNorm (see \secref{TypingRule.ExprEqualNorm})
   \item TypingRule.ExprEqual (see \secref{TypingRule.ExprEqual})
   \item TypingRule.ExprEqualCase (see \secref{TypingRule.ExprEqualCase})
@@ -16222,8 +16214,8 @@ Our symbolic reduction and equivalence testing rules use \emph{symbolic expressi
 \hypertarget{def-sum}{}
 \[
   \begin{array}{rcl}
-    \polynomial &\triangleq& \Sum(\unitarymonomial \partialto \Q)                  \hypertarget{def-monomial}{}\hypertarget{def-prod}{}\\
-    \unitarymonomial   &\triangleq& \Prod(\Identifiers \partialto \Npos)\\
+    \polynomial &\triangleq& \unitarymonomial \partialto \Q \setminus \{0\}\\
+    \unitarymonomial   &\triangleq& \Identifiers \partialto \Npos\\
   \end{array}
 \]
 
@@ -16236,19 +16228,19 @@ We also define operations over symbolic expressions.
 A \emph{Unitary Monomial} is a partial function from identifiers to positive integers\footnote{A unitary monomial has a unit factor,
 for example $x^3$, whereas a non-unitary monomial has a non-unit factor, for example, $2 x^3$.}.
 
-A non-empty unitary monomial, $\Prod(\vm)\in\unitarymonomial$ where $\vm \neq \emptyfunc$, can be interpreted as follows:
+A non-empty unitary monomial, $\vm\in\unitarymonomial$ where $\vm \neq \emptyfunc$, can be interpreted as follows:
 \[
-  \alpha(\Prod(\vm)) \triangleq \prod_{\vx \in \dom(\vm)} \vx^{\vm(\vx)} \enspace.
+  \alpha(\vm) \triangleq \prod_{\vx \in \dom(\vm)} \vx^{\vm(\vx)} \enspace.
 \]
 
 An empty unitary monomial is interpreted as the constant $1$:
 \[
-  \alpha(\Prod(\emptyfunc)) \triangleq 1 \enspace.
+  \alpha(\emptyfunc) \triangleq 1 \enspace.
 \]
 \end{definition}
 For example,
 \[
-  \alpha(\ \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\})\ ) = x^3 \cdot y \cdot z^2 \enspace.
+  \alpha(\ \{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}\ ) = x^3 \cdot y \cdot z^2 \enspace.
 \]
 
 \hypertarget{def-mulmonomials}{}
@@ -16272,33 +16264,33 @@ multiplies two unitary monomials and returns a unitary monomial
     }
   }
   {
-    \mulmonomials(\overname{\Prod(\vfone)}{\vmone}, \overname{\Prod(\vftwo)}{\vmtwo}) \typearrow \overname{\Prod(\vf)}{\vm}
+    \mulmonomials(\overname{\vfone}{\vmone}, \overname{\vftwo}{\vmtwo}) \typearrow \overname{\vf}{\vm}
   }
 \end{mathpar}
 For example,
 \[
   \begin{array}{ll}
-  \mulmonomials( & \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}), \Prod(\{\vx\mapsto 1, \vw\mapsto 2\})\ ) =\\
-                 & \Prod(\{\vx\mapsto 4, \vy\mapsto 1, \vz\mapsto2, \vw\mapsto2\})
+  \mulmonomials( & \{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}, \{\vx\mapsto 1, \vw\mapsto 2\}\ ) =\\
+                 & \{\vx\mapsto 4, \vy\mapsto 1, \vz\mapsto2, \vw\mapsto2\}
   \end{array}
 \]
 
 \hypertarget{def-polynomial}{}
 \begin{definition}[Polynomial]
-  \emph{Polynomials} are partial functions from monomials to rationals.
+  \emph{Polynomials} are partial functions from monomials to rationals other than zero.
   Intuitively, each unitary monomial is mapped to its factor in the polynomial.
-  A polynomial $\Sum(\vp)$ can be interpreted as follows:
+  A polynomial $\vp$ can be interpreted as follows:
   %
 \[
-  \alpha(\Sum(\vp)) \triangleq \sum_{\vm \in \dom(\vp)} \vp(\vm)\cdot\alpha(\vm)
+  \alpha(\vp) \triangleq \sum_{\vm \in \dom(\vp)} \vp(\vm)\cdot\alpha(\vm)
 \]
 \end{definition}
 For example,
 \[
-  \Sum\left(\left\{
+  \left(\left\{
     \begin{array}{lcl}
-      \Prod(\{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}) &\mapsto& -1,\\
-      \Prod(\{\vx\mapsto 2, \vy\mapsto 1\}) &\mapsto& \frac{3}{4}
+      \{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\} &\mapsto& -1,\\
+      \{\vx\mapsto 2, \vy\mapsto 1\} &\mapsto& \frac{3}{4}
     \end{array} \right\}\right) =
     -1\cdot x^3 \cdot y \cdot z^2 + \frac{3}{4} \cdot \vx^2\cdot \vy \enspace.
 \]
@@ -16317,12 +16309,13 @@ adds two polynomials:
     \begin{array}{ll}
       \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
       \vftwo(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
-      \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo)\\
+      \bot        & \text{if } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) = 0\\
+      \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) \neq 0\\
     \end{array}
     \right.
   }
 }{
-  \addpolynomials(\overname{\Sum(\vfone)}{\vpone}, \overname{\Sum(\vftwo)}{\vptwo}) \typearrow \overname{\Sum(\vf)}{\vp}
+  \addpolynomials(\overname{\vfone}{\vpone}, \overname{\vftwo}{\vptwo}) \typearrow \overname{\vf}{\vp}
 }
 \end{mathpar}
 
@@ -16332,7 +16325,7 @@ The overloaded function
 \]
 adds a list of polynomials:
 \begin{mathpar}
-\inferrule[empty]{}{ \addpolynomials(\emptylist) \typearrow \Prod(\emptyfunc) }
+\inferrule[empty]{}{ \addpolynomials(\emptylist) \typearrow \emptyfunc }
 \and
 \inferrule[one]{}{ \addpolynomials([ \vp ]) \typearrow \vp }
 \and
@@ -16354,7 +16347,7 @@ multiplies two polynomials.
   {
     \vps \eqdef \left\{
       \begin{array}{l}
-        \Sum(\{\mulmonomials(\vmone, \vmtwo) \mapsto \vfone(\vmone)\times\vftwo(\vmtwo)\})  \;|\; \\
+        \{\mulmonomials(\vmone, \vmtwo) \mapsto \vfone(\vmone)\times\vftwo(\vmtwo)\}  \;|\; \\
        \vmone\in\dom(\vfone)\ \land\ \vmtwo\in\dom(\vgtwo)
     \end{array}
     \right\}
@@ -16362,7 +16355,7 @@ multiplies two polynomials.
   \orderedps \eqdef [i=1..k: \vp_i ] \text{ such that }\{\vp_i \;|\; i=1..k\} = \vps\\
   \addpolynomials(i=1..k: \orderedps) \typearrow \vp\\
 }{
-  \mulpolynomials(\overname{\Sum(\vfone)}{\vpone}, \overname{\Sum(\vftwo)}{\vptwo}) \typearrow \vp
+  \mulpolynomials(\overname{\vfone}{\vpone}, \overname{\vftwo}{\vptwo}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -16432,18 +16425,9 @@ One of the following applies:
     \item applying $\staticeval$ to $\ve$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eval\_normalized}):
-  \begin{itemize}
-    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
-    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\veone$\ProseOrTypeError;
-    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError.
-  \end{itemize}
-
   \item All of the following apply (\textsc{eval\_failure}):
   \begin{itemize}
     \item applying $\staticeval$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
-    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\veone$\ProseOrTypeError;
-    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields $\CannotBeTransformed$'
     \item the result is a type error indicating that $\ve$ cannot be reduced to a constant in $\tenv$.
   \end{itemize}
 \end{itemize}
@@ -16459,18 +16443,8 @@ One of the following applies:
   \reduceconstants(\tenv, \ve) \typearrow \vl
 }
 \and
-\inferrule[eval\_noramalized]{
-  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed\\
-  \normalize(\tenv, \ve) \typearrow \veone \OrTypeError\\\\
-  \staticeval(\tenv, \veone) \typearrow \vl \OrTypeError
-}{
-  \reduceconstants(\tenv, \ve) \typearrow \vl
-}
-\and
 \inferrule[eval\_failure]{
-  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed\\
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \staticeval(\tenv, \veone) \typearrow \CannotBeTransformed \OrTypeError
+  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed
 }{
   \reduceconstants(\tenv, \ve) \typearrow \TypeErrorVal{CannotBeReducedToAConstant}
 }
@@ -16590,68 +16564,7 @@ by a symbolic expression (because, for example, it contains operations that are 
 the special value $\CannotBeTransformed$ is returned.
 
 \subsection{Prose}
-Intuitively, $\toir$ first conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
-If that fails, it proceeds to check whether the expression is a compile time constant.
-
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{case\_success}):
-  \begin{itemize}
-    \item applying $\toircase$ to $\ve$ in $\tenv$ yields a symbolic expression $\vp$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{static\_eval\_literal}):
-  \begin{itemize}
-    \item applying $\toircase$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
-    \item applying $\staticeval$ to $\ve$ yields an integer literal for $\vv$\ProseTerminateAs{\CannotBeTransformed};
-    \item define $\vp$ as the polynomial representing the value $\vv$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{static\_eval\_non\_literal}):
-  \begin{itemize}
-    \item applying $\toircase$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
-    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields a literal $\vl$\ProseTerminateAs{\CannotBeTransformed};
-    \item $\vl$ is not an integer value;
-    \item define $\vp$ as $\CannotBeTransformed$.
-  \end{itemize}
-\end{itemize}
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[case\_success]{
-  \toircase(\tenv, \ve) \typearrow \vp\\
-  \vp \neq \CannotBeTransformed
-}{
-  \toir(\tenv, \ve) \typearrow \vp
-}
-\and
-\inferrule[static\_eval\_literal]{
-  \toircase(\tenv, \ve) \typearrow \CannotBeTransformed\\
-  \staticeval(\tenv, \ve) \typearrow \lint(\vv) \terminateas \CannotBeTransformed\\\\
-  \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto \vv \} )
-}{
-  \toir(\tenv, \ve) \typearrow \vp
-}
-\and
-\inferrule[static\_eval\_non\_literal]{
-  \toircase(\tenv, \ve) \typearrow \CannotBeTransformed\\
-  \staticeval(\tenv, \ve) \typearrow \vl \terminateas \CannotBeTransformed\\\\
-  \astlabel(\vl) \neq \lint
-}{
-  \toir(\tenv, \ve) \typearrow \CannotBeTransformed
-}
-\end{mathpar}
-\section{TypingRule.ToIRCase \label{sec:TypingRule.ToIRCase}}
-\hypertarget{def-toircase}{}
-The function
-\[
-  \toircase(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \overname{\polynomial}{\vp} \cup \{\CannotBeTransformed\}
-\]
-transforms a subset of ASL expressions into symbolic expressions. If an expression cannot be represented
-by a symbolic expression, the special value $\CannotBeTransformed$ is returned.
-
-\subsection{Prose}
-Intuitively, $\toir$ first conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
-If that fails, it proceeds to check whether the expression is a compile time constant.
+Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
 
 \newcommand\ProseOrTypeErrorOrBot[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
 
@@ -16675,7 +16588,7 @@ One of the following applies:
     \item looking up the constant associated with $\vs$ in $\tenv$ yields the literal expression for $\vv$, that is, $\ELiteral(\vv)$;
     \item checking whether $\vv$ is an integer literal yields $\True$\ProseOrTypeError;
     \item $\vv$ is an integer literal for $\vi$;
-    \item $\vp$ is the symbolic expression for $\vi$, that is, $\Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )$.
+    \item $\vp$ is the symbolic expression for $\vi$, that is, $\{ \emptyfunc\mapsto \vi \}$.
   \end{itemize}
 
   \item All of the following apply (\textsc{int\_exact\_constant}):
@@ -16697,7 +16610,7 @@ One of the following applies:
     \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
     \item checking whether $\ttyone$ is an integer type yields $\True$\ProseOrTypeError;
     \item $\ttyone$ is not a well-constrained integer with a single exact constraint;
-    \item $\vp$ is the symbolic expression for the variable $\vs$, that is, $\Sum( \{ \Prod(\{\vs\mapsto 1\})\mapsto 1 \} )$.
+    \item $\vp$ is the symbolic expression for the variable $\vs$, that is, $\{ \{\vs\mapsto 1\}\mapsto 1 \}$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_plus}):
@@ -16789,7 +16702,7 @@ One of the following applies:
     \item $\veone$ is the literal expression for literal $\vlone$;
     \item $\vetwo$ is the literal expression for literal $\vltwo$;
     \item statically applying $\op$ to $\vlone$ and $\vltwo$ yields the integer literal for $k$;
-    \item $\vp$ is the symbolic expression for the integer $k$, that is, $\Sum( \{ \Prod(\emptyfunc)\mapsto k \} )$.
+    \item $\vp$ is the symbolic expression for the integer $k$, that is, $\{ \emptyfunc\mapsto k \}$.
   \end{itemize}
 
   \item All of the following apply (\textsc{eunop\_neg}):
@@ -16816,13 +16729,13 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[literal\_int]{}
 {
-  \toircase(\tenv, \overname{\ELiteral(\lint(\vi))}{\ve}) \typearrow \overname{\Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )}{\vp}
+  \toir(\tenv, \overname{\ELiteral(\lint(\vi))}{\ve}) \typearrow \overname{\{ \emptyfunc\mapsto \vi \}}{\vp}
 }
 \and
 \inferrule[literal\_other]{
   \astlabel(\vv) \neq \lint
 }{
-  \toircase(\tenv, \overname{\ELiteral(\vv)}{\ve}) \typearrow \CannotBeTransformed
+  \toir(\tenv, \overname{\ELiteral(\vv)}{\ve}) \typearrow \CannotBeTransformed
 }
 \and
 \inferrule[int\_constant]{
@@ -16830,7 +16743,7 @@ One of the following applies:
   \checktrans{\astlabel(\vv) = \lint}{ExpectedIntegerLiteral} \typearrow \True \OrTypeError\\\\
   \vv \eqname \lint(\vi)
 }{
-  \toircase(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\Sum( \{ \Prod(\emptyfunc)\mapsto \vi \} )}{\vp}
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\{ \emptyfunc\mapsto \vi \}}{\vp}
 }
 \and
 \inferrule[int\_exact\_constraint]{
@@ -16841,7 +16754,7 @@ One of the following applies:
   \ttyone = \TInt(\wellconstrained([\ConstraintExact(\ve)]))\\
   \toir(\ve) \typearrow \vp
 }{
-  \toircase(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
 }
 \and
 \inferrule[int\_var]{
@@ -16851,7 +16764,7 @@ One of the following applies:
   \checktrans{\astlabel(\ttyone) = \TInt}{ExpectedIntegerType} \typearrow \True\\
   \ttyone \neq \TInt(\wellconstrained([\ConstraintExact(\Ignore)]))
 }{
-  \toircase(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\Sum( \{ \Prod(\{\vs\mapsto 1\})\mapsto 1 \} )}{\vp}
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\{ \{\vs\mapsto 1\}\mapsto 1 \}}{\vp}
 }
 \end{mathpar}
 
@@ -16861,7 +16774,7 @@ One of the following applies:
   \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
   \vp \eqdef \addpolynomials(\irone, \irtwo)
 }{
-  \toircase(\tenv, \overname{\EBinop(\PLUS, \veone, \vetwo)}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EBinop(\PLUS, \veone, \vetwo)}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -16870,7 +16783,7 @@ One of the following applies:
   \vep \eqdef \EBinop(\PLUS, \veone, \EUnop(\MINUS, \vetwo))\\
   \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
 }{
-  \toircase(\tenv, \overname{\EBinop(\MINUS, \veone, \vetwo)}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EBinop(\MINUS, \veone, \vetwo)}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -16880,7 +16793,7 @@ One of the following applies:
   \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
   \vp \eqdef \mulpolynomials(\irone, \irtwo)
 }{
-  \toircase(\tenv, \overname{\EBinop(\MUL, \veone, \vetwo)}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EBinop(\MUL, \veone, \vetwo)}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -16888,16 +16801,16 @@ One of the following applies:
 \inferrule[ebinop\_div\_non\_int\_denominator]{
   \vetwo \neq \ELiteral(\lint(\Ignore))
 }{
-  \toircase(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
+  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
 }
 \and
 \inferrule[ebinop\_div\_int\_denominator]{
   \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
   \vftwo \eqdef \frac{1}{\vitwo}\\
-  \irone \eqname \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
-  \vp \eqdef \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
+  \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
+  \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
 }{
-  \toircase(\tenv, \overname{\EBinop(\DIV, \veone, \overname{\ELiteral(\lint(\vitwo))}{\vetwo})}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \overname{\ELiteral(\lint(\vitwo))}{\vetwo})}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -16905,7 +16818,7 @@ One of the following applies:
 \inferrule[ebinop\_shl\_non\_lint\_exponent]{
     \vetwo \neq \ELiteral(\lint(\Ignore))
 }{
-  \toircase(\tenv, \overname{\EBinop(\SHL, \Ignore, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
+  \toir(\tenv, \overname{\EBinop(\SHL, \Ignore, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
 
@@ -16913,17 +16826,17 @@ One of the following applies:
 \inferrule[ebinop\_shl\_neg\_shift]{
   \vitwo < 0
 }{
-  \toircase(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \CannotBeTransformed
+  \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \CannotBeTransformed
 }
 \and
   \inferrule[ebinop\_shl\_okay]{
     \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
     \vitwo \geq 0\\
     \vftwo \eqdef 2^{\vitwo}\\
-    \irone \eqname \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
-    \vp \eqdef \Sum [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
+    \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
+    \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
 }{
-  \toircase(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -16932,7 +16845,7 @@ One of the following applies:
   \op \not\in \{\PLUS, \MINUS, \MUL, \DIV, \SHL\}\\
   (\veone \neq \ELiteral(\Ignore) \lor \vetwo \neq \ELiteral(\Ignore))
 }{
-  \toircase(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
+  \toir(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
 }
 \and
 \inferrule[ebinop\_other\_literals\_non\_int\_result]{
@@ -16940,15 +16853,15 @@ One of the following applies:
   \binopliterals(\op, \vlone, \vltwo) \typearrow \vl\\
   \vl \neq \lint(\Ignore)
 }{
-  \toircase(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \CannotBeTransformed
+  \toir(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \CannotBeTransformed
 }
 \and
 \inferrule[ebinop\_other\_literals\_int\_result]{
   \op \not\in \{\PLUS, \MINUS, \MUL, \SHL\}\\
   \binopliterals(\op, \vlone, \vltwo) \typearrow \lint(k)\\
-  \vp \eqdef \Sum( \{ \Prod(\emptyfunc)\mapsto k \} )
+  \vp \eqdef \{ \emptyfunc\mapsto k \}
 }{
-  \toircase(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -16956,13 +16869,13 @@ One of the following applies:
 \inferrule[eunop\_neg]{
   \toir(\tenv, \EBinop(\MUL, \ELiteral(\lint(-1)),\veone )) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
 }{
-  \toircase(\tenv, \overname{\EUnop(\NEG, \veone)}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EUnop(\NEG, \veone)}{\ve}) \typearrow \vp
 }
 \and
 \inferrule[eunop\_other]{
   \op \neq \NEG
 }{
-  \toircase(\tenv, \overname{\EUnop(\op, \Ignore)}{\ve}) \typearrow \CannotBeTransformed
+  \toir(\tenv, \overname{\EUnop(\op, \Ignore)}{\ve}) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
 
@@ -16970,7 +16883,7 @@ One of the following applies:
 \inferrule[other]{
   \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EBinop, \EUnop\}
 }{
-  \toircase(\tenv, \ve) \typearrow \CannotBeTransformed
+  \toir(\tenv, \ve) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
 
@@ -18124,22 +18037,7 @@ The function
 simplifies the polynomial $\vp$, yielding the simplified polynomial $\newp$.
 
 \subsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\vp$ is $\Sum(f)$ where $f$ binds monomials to their integer coefficients;
-  \item $g$ is the restriction of $f$ to the bindings where the coefficients are non-zero;
-  \item $\newp$ is $\Sum(g)$.
-\end{itemize}
-
 \subsection{Formally}
-\begin{mathpar}
-\inferrule{
-  { g \eqdef \restrictfunc{f}{\{\vm \in \dom(f)\;|\; f(\vm) \neq 0\}} }
-}{
-  \reduceir(\overname{\Sum(f)}{\vp}) \typearrow \overname{\Sum(g)}{\newp}
-}
-\end{mathpar}
-
 \section{TypingRule.PolynomialToExpr \label{sec:TypingRule.PolynomialToExpr}}
 \hypertarget{def-polynomialtoexpr}{}
 The function
@@ -18153,13 +18051,13 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
   \begin{itemize}
-    \item $\vp$ is the polynomial with an empty list of monomials, that is, $\Sum(\emptyfunc)$;
+    \item $\vp$ is the polynomial with an empty list of monomials, that is, $\emptyfunc$;
     \item define $\ve$ as the literal expression for $0$.
   \end{itemize}
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
-    \item $\vp$ is the polynomial $\Sum(f)$;
+    \item $\vp$ is the polynomial $f$;
     \item sorting (see $\sort$ for details) the graph of $f$ (see $\funcgraph$ for details)
           yields $\monoms$ --- a list consisting of pairs of unitary monomials and rationals.
           In principle, any total order of the graph of $f$ is acceptable for sorting.
@@ -18177,7 +18075,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \polynomialtoexpr(\overname{\Sum(\emptyfunc)}{\vp}) \typearrow \overname{\ELiteral(\lint(0))}{\ve}
+  \polynomialtoexpr(\overname{\emptyfunc}{\vp}) \typearrow \overname{\ELiteral(\lint(0))}{\ve}
 }
 \and
 \inferrule[non\_empty]{
@@ -18191,7 +18089,7 @@ One of the following applies:
   \end{cases}
   }
 }{
-  \polynomialtoexpr(\overname{\Sum(f)}{\vp}) \typearrow \ve
+  \polynomialtoexpr(\overname{f}{\vp}) \typearrow \ve
 }
 \end{mathpar}
 
@@ -18214,14 +18112,14 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{equal\_monomials}):
   \begin{itemize}
-    \item $\vmone$ is $\Prod(f)$ and $\vmtwo$ is $\Prod(g)$;
+    \item $\vmone$ is $f$ and $\vmtwo$ is $g$;
     \item $f$ is equal to $g$;
     \item $\vs$ is the sign of $\vqtwo - \vqone$.
   \end{itemize}
 
   \item All of the following apply (\textsc{different\_monomials}):
   \begin{itemize}
-    \item $\vmone$ is $\Prod(f)$ and $\vmtwo$ is $\Prod(g)$;
+    \item $\vmone$ is $f$ and $\vmtwo$ is $g$;
     \item $f$ is different from to $g$;
     \item $\ids$ is the list obtained by taking the set of identifiers in the domain of $f$ and in the domain of $g$,
           and sorting them according to the lexical order for identifiers (ASCII string order);
@@ -18243,7 +18141,7 @@ via the lexicographic ordering.
   f = g\\
   \vs \eqdef \sign(\vqtwo - \vqone)
 }{
-  \comparemonomialbindings((\overname{\Prod(f)}{\vmone}, \vqone), (\overname{\Prod(g)}{\vmtwo}, \vqtwo)) \typearrow \vs
+  \comparemonomialbindings((\overname{f}{\vmone}, \vqone), (\overname{g}{\vmtwo}, \vqtwo)) \typearrow \vs
 }
 \and
 \inferrule[different\_monomials]{
@@ -18260,7 +18158,7 @@ via the lexicographic ordering.
     \end{cases}
 }
 }{
-  \comparemonomialbindings((\overname{\Prod(f)}{\vmone}, \vqone), (\overname{\Prod(g)}{\vmtwo}, \vqtwo)) \typearrow \vs
+  \comparemonomialbindings((\overname{f}{\vmone}, \vqone), (\overname{g}{\vmtwo}, \vqtwo)) \typearrow \vs
 }
 \end{mathpar}
 

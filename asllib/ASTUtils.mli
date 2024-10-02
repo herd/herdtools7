@@ -142,6 +142,34 @@ val binop : binop -> expr -> expr -> expr
 val unop : unop -> expr -> expr
 (** Builds a unary operation from its sub-expression. *)
 
+val expr_of_z : Z.t -> expr
+(** [expr_of_z z] is the integer literal for [z]. *)
+
+val zero_expr : expr
+(** The integer literal for [0]. *)
+
+val expr_of_rational : Q.t -> expr
+(** [expr_of_rational q] is the rational literal for [q]. *)
+
+val mul_expr : expr -> expr -> expr
+(** [mul_expr e1 e2] is an expression representing [e1 * e2]. *)
+
+val pow_expr : expr -> int -> expr
+(** [pow_expr e i] is an expression representing [e ^ i]. *)
+
+val div_expr : expr -> Z.t -> expr
+(** [div_expr e z] is an expression representing [e DIV z]. *)
+
+val add_expr : expr -> int * expr -> expr
+(** [add_expr e1 (s, e2)] is an expression representing [e1 + sign(s) * e2].
+    [e2] is expected to be non-negative. *)
+
+val conj_expr : expr -> expr -> expr
+(** [conj_expr e1 e2] is an expression representing [e1 && e2]. *)
+
+val cond_expr : expr -> expr -> expr -> expr
+(** [cond_expr e e1 e2] is an expression representing [if e then e1 else e2]. *)
+
 val fresh_var : string -> identifier
 (** [fresh_var "doc"] is a fresh variable whose name begins with "doc". *)
 

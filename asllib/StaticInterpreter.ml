@@ -38,15 +38,17 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
     | E_Literal v -> v
     | E_Var x -> (
         try SEnv.lookup_constants env x
-        with Not_found ->
+        with Not_found -> (
           let () =
             if false then
               Format.eprintf "Failed to lookup %S in env: %a@." x
                 StaticEnv.pp_env env
           in
-          if SEnv.is_undefined x env then
-            Error.fatal_from e (Error.UndefinedIdentifier x)
-          else raise StaticEvaluationUnknown)
+          try SEnv.lookup_immutable_expr env x |> static_eval env
+          with Not_found ->
+            if SEnv.is_undefined x env then
+              Error.fatal_from e (Error.UndefinedIdentifier x)
+            else raise StaticEvaluationUnknown))
     | E_Binop (op, e1, e2) ->
         let v1 = expr_ e1 and v2 = expr_ e2 in
         Operations.binop_values e Error.Static op v1 v2

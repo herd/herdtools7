@@ -191,7 +191,6 @@ module Domain = struct
     let v =
       let open StaticInterpreter in
       let open StaticModel in
-      let e = try normalize env e with NotYetImplemented -> e in
       try static_eval env e
       with StaticEvaluationUnknown -> raise_notrace StaticEvaluationTop
     in
