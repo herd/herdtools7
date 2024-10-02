@@ -2896,7 +2896,6 @@ module Make
         let psize = predicate_psize r in
         let esize = scalable_esize r in
         let nregs = List.length rlist in
-        let>= results =
           let<>= base = ma in
           let>= pred = read_reg_predicate false p ii in
           let ops i r =
@@ -2905,30 +2904,17 @@ module Make
                 let>= v = read_reg_scalable true r ii in
                 let offset = (idx * nregs + i) * MachSize.nbytes sz in
                 let>= addr = M.op1 (Op.AddK offset) base
-                and* v = scalable_getlane v idx esize >>= demote
-                in
-                M.unitT (Some (addr, v))
-                (* write_mem sz aexp Access.VIR addr v ii *)
+                and* v = scalable_getlane v idx esize >>= demote in
+                write_mem sz aexp Access.VIR addr v ii
               in
-              is_active_element p pred psize idx ii store (M.unitT None)
+              is_active_element p pred psize idx ii store (M.unitT ())
             in
             let ops = List.map op (Misc.interval 0 nelem) in
-            List.fold_right ( >>:: ) ops (M.unitT [])
+            List.fold_right M.seq_mem_list ops (M.unitT [])
             (* List.fold_right M.seq_mem_list ops (M.unitT [()]) *)
           in
           let ops = List.mapi ops rlist in
-          List.fold_right ( >>:: ) ops (M.unitT [])
-        in
-        let f avs macc =
-          let avs = List.filter_map Fun.id avs in
-          let g (addr, v) macc =
-            M.seq_mem_list
-              (write_mem sz aexp Access.VIR addr v ii)
-              macc
-          in
-          List.fold_right g avs macc
-        in
-        List.fold_right f results (M.unitT [()])
+          List.fold_right  M.seq_mem_list  ops (M.unitT [])
 
       let load_gather_predicated_elem_or_zero sz p ma mo rs e k ii =
         let r = List.hd rs in
@@ -3637,7 +3623,7 @@ module Make
         | I_ST3SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_ST4SP(var,rs,p,rA,MemExt.Imm (k,Idx)) ->
           check_sve inst;
-          !!!(let sz = tr_simd_variant var in
+          !!!!(let sz = tr_simd_variant var in
               let ma = get_ea_idx rA k ii in
                store_predicated_elem_or_merge_m sz p ma rs ii >>|
                M.unitT ())
@@ -3646,7 +3632,7 @@ module Make
         | I_ST3SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s))
         | I_ST4SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
           check_sve inst;
-          !!!(let sz = tr_simd_variant var in
+          !!!!(let sz = tr_simd_variant var in
               let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
                store_predicated_elem_or_merge_m sz p ma rs ii >>|
                M.unitT ())
