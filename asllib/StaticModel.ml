@@ -4,38 +4,6 @@ open Error
 
 exception NotSupported
 
-(*---------- Expression helpers - consider moving to AST.mli ----------*)
-
-module Expr = struct
-  let truth = literal (L_Bool true)
-  let from_int z = literal (L_Int z)
-  let zero = from_int Z.zero
-  let one = from_int Z.one
-
-  let from_rational q =
-    if Z.equal (Q.den q) Z.one then from_int (Q.num q)
-    else binop DIV (from_int (Q.num q)) (from_int (Q.den q))
-
-  let mul e1 e2 =
-    if e1 = one then e2 else if e2 = one then e1 else binop MUL e1 e2
-
-  let pow e = function
-    | 0 -> one
-    | 1 -> e
-    | 2 -> mul e e
-    | p -> binop POW e (expr_of_int p)
-
-  let div e z = if Z.equal z Z.one then e else binop DIV e (from_int z)
-
-  let add e1 (s, e2) =
-    if s = 0 then e1 else if s > 0 then binop PLUS e1 e2 else binop MINUS e1 e2
-
-  let conj e1 e2 =
-    if e1 = truth then e2 else if e2 = truth then e1 else binop BAND e1 e2
-
-  let cond e1 e2 e3 = E_Cond (e1, e2, e3) |> add_pos_from dummy_annotated
-end
-
 (*---------- Symbolic representation ----------*)
 
 module Monomial : sig
@@ -88,13 +56,13 @@ end = struct
     AtomMap.merge (fun _ -> divide_unitary) mono1 mono2
 
   let to_scaled_expr monos factor =
-    let start = Expr.from_int (Q.num factor) in
+    let start = expr_of_z (Q.num factor) in
     let numerator =
       AtomMap.fold
-        (fun atom exponent acc -> Expr.mul acc (Expr.pow (var_ atom) exponent))
+        (fun atom exponent acc -> mul_expr acc (pow_expr (var_ atom) exponent))
         monos start
     in
-    Expr.div numerator (Q.den factor)
+    div_expr numerator (Q.den factor)
 
   let pp_with_factor f (monos, factor) =
     let open Format in
@@ -195,11 +163,12 @@ end = struct
   let to_expr poly =
     List.fold_left
       (fun acc (m, c) ->
-        if acc = Expr.zero then Monomial.to_scaled_expr m c
+        if ASTUtils.expr_equal (fun _ _ -> false) acc zero_expr then
+          Monomial.to_scaled_expr m c
         else
           let e_m = Monomial.to_scaled_expr m (Q.abs c) in
-          Expr.add acc (Q.sign c, e_m))
-      Expr.zero
+          add_expr acc (Q.sign c, e_m))
+      zero_expr
       (MonomialMap.bindings poly |> List.rev)
 
   let pp f poly =
@@ -282,12 +251,12 @@ end = struct
   let to_expr =
     let one_to_expr poly eq =
       let c, p = Polynomial.extract_constant_term poly in
-      binop (eq_to_op eq) (Expr.from_rational (Q.neg c)) (Polynomial.to_expr p)
+      binop (eq_to_op eq) (expr_of_rational (Q.neg c)) (Polynomial.to_expr p)
     in
     Option.map (fun map ->
         PolynomialMap.fold
-          (fun p eq e -> Expr.conj (one_to_expr p eq) e)
-          map Expr.truth)
+          (fun p eq e -> conj_expr (one_to_expr p eq) e)
+          map (literal (L_Bool true)))
 
   let is_true p eq =
     match Polynomial.is_constant p with
@@ -379,17 +348,17 @@ end = struct
       ir
 
   let to_expr = function
-    | [] -> Expr.zero
+    | [] -> zero_expr
     | [ (cjs, p) ] ->
         assert (Conjunction.is_empty cjs);
         Polynomial.to_expr p
     | map ->
-        let cannot_happen_expr = Expr.zero in
+        let cannot_happen_expr = zero_expr in
         List.fold_left
           (fun e (cjs, p) ->
             match Conjunction.to_expr cjs with
             | None -> e
-            | Some condition -> Expr.cond condition (Polynomial.to_expr p) e)
+            | Some condition -> cond_expr condition (Polynomial.to_expr p) e)
           cannot_happen_expr (List.rev map)
 
   let reduce ir =
