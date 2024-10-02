@@ -202,7 +202,7 @@ and token = parse
     | real_lit as lxm          { REAL_LIT(Q.of_string lxm)        }
     | '"'                      { string_lit (Buffer.create 16) lexbuf }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
-    | '\'' (mask as lxm) '\''  { mask_lit lxm                     }
+    | '\'' (mask as lxm) '\''  { mask_lit lxm                     }  (* Warning: masks with no unknown 'x' characters will be lexed as bitvectors. *)
     | '!'                      { BNOT                             }
     | ','                      { COMMA                            }
     | '<'                      { LT                               }

@@ -191,6 +191,9 @@ val mask_length : mask -> int
 val mask_of_string : string -> mask
 (** Build a mask from its ASL representation. *)
 
+val mask_of_bitvector : t -> mask
+(** Build a mask that matches a bitvector. *)
+
 val matches : t -> mask -> bool
 (** [matches mask bv] is true iff [bv] matches [mask]. *)
 

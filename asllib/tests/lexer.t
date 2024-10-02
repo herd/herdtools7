@@ -80,3 +80,20 @@ C-Style comments
   ASL Error: Undefined identifier: 'b'
   [1]
 
+Some problems with bitvectors and bitmasks:
+  $ cat >masks0.asl <<EOF
+  > func main() => integer
+  > begin
+  >     var b = '';
+  >     let expr_a = '' IN '1';
+  >     let expr_b = '1' IN '';
+  >     let expr_c = '' IN '0';
+  >     let expr_d = '0' IN '0';
+  >     return 0;
+  > end
+  > EOF
+
+  $ aslref masks0.asl
+  File masks0.asl, line 4, characters 17 to 26:
+  ASL Typing error: a subtype of bits(1) was expected, provided bits(0).
+  [1]

@@ -594,6 +594,13 @@ let mask_of_string s =
     raise (Invalid_argument "Mask")
   else { length = length_set; set; unset; specified; initial_string = s }
 
+let mask_of_bitvector ((length, data) as bv) =
+  let set = data
+  and _, unset = lognot bv
+  and _, specified = ones length
+  and initial_string = to_string bv in
+  { length; set; unset; specified; initial_string }
+
 let matches bv mask =
   if length bv != mask.length then raise (Invalid_argument "mask_matches");
   equal
