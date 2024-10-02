@@ -2866,9 +2866,8 @@ module Make
         let esize = scalable_esize r in
         let nregs = List.length rlist in
         let>= results =
-          let<>= base = ma
-          and* pred = read_reg_predicate false p ii
-          in
+          let<>= base = ma in
+          let>= pred = read_reg_predicate false p ii in
           let ops i =
             let op idx =
               let load =
