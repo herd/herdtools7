@@ -330,7 +330,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 if O.outcomereads then
                   A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
                 else c.reads;
-              toofar =  c.toofar || (showtoofar && S.gone_toofar conc);
+              toofar =  c.toofar || S.gone_toofar conc;
             } in
           if not O.badexecs && is_bad flags then raise (Over r) ;
           let r = match O.nshow with
