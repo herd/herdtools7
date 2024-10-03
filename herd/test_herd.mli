@@ -40,6 +40,7 @@ type
      extra_data : MiscParser.extra_data ;
      access_size : MachSize.sz list ;
      proc_info : proc_info ;
+     too_far : bool ;
    }
 
 val simple_name :
@@ -82,6 +83,8 @@ module Make(A:Arch_herd.S) : sig
   val build : Name.t -> A.pseudo MiscParser.t -> result
 
   val find_our_constraint : result -> A.constr
+
+  val gone_toofar : result -> bool
 
   (* needed to interpret bell *)
   val empty_test : result

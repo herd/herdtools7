@@ -801,6 +801,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           condition = ConstrGen.ExistsState (ConstrGen.And []);
           locations = [];
           extra_data = MiscParser.empty_extra;
+          too_far=false;
         }
       in
       let name =

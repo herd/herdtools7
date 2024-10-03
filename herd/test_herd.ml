@@ -40,7 +40,8 @@ type
      extra_data : MiscParser.extra_data ;
      access_size : MachSize.sz list ;
      proc_info : proc_info ;
-    }
+     too_far:bool;
+   }
 
 (* Name and nothing else *)
 let simple_name test = test.name.Name.name
@@ -150,6 +151,7 @@ module Make(A:Arch_herd.S) =
            condition = final ;
            locations = locs ;
            extra_data = extra_data ;
+           too_far;
          } = t in
 
       let prog,starts,rets = Load.load nice_prog in
@@ -213,6 +215,7 @@ module Make(A:Arch_herd.S) =
        type_env;
        access_size = mem_access_size init nice_prog ;
        proc_info;
+       too_far;
      }
 
     let empty_test =
@@ -247,8 +250,11 @@ module Make(A:Arch_herd.S) =
        extra_data = MiscParser.empty_extra;
        access_size = [];
        proc_info = [];
+       too_far = false;
      }
 
     let find_our_constraint test = test.cond
+
+    let gone_toofar test = test.too_far
 
 end

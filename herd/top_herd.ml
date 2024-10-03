@@ -235,6 +235,7 @@ module Make(O:Config)(M:XXXMem.S) =
     let model_kont ochan test do_restrict cstr =
 
       let check = check_prop test in
+      let showtoofar = showtoofar || T.gone_toofar test in
 
       fun conc (st,flts) (set_pp,vbpp) flags c ->
         if not showtoofar && S.gone_toofar conc then

@@ -155,8 +155,11 @@ and inside_prog do_skip_comments = parse
 (* | "+" *) (* Had to erase this to handle C-code, why here ?? *)
 | "final"
 | "forall"
+| "forallN"
 | ('~' blank* "exists" )
+| ('~' blank* "existsN" )
 | "exists"
+| "existsN"
 | "cases" (* not sure if this line should still be here *)
 | "observed"|"Observed"
 | "locations"

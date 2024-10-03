@@ -63,8 +63,10 @@ rule token = parse
 | "false"     { FALSE }
 | "observed"|"Observed"   { OBSERVED }
 | "and" { TOKAND }
-| "exists"   { EXISTS }
-| "forall"   { FORALL }
+| "exists"   { EXISTS false }
+| "existsN"   { EXISTS true }
+| "forall"   { FORALL false }
+| "forallN"   { FORALL true }
 | "final"    { FINAL }
 | "with"     { WITH }
 | "locations" { LOCATIONS }

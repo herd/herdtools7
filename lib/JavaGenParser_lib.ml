@@ -50,8 +50,8 @@ module type S = sig
               Splitter.result ->  (* result from splitter *)
               pseudo MiscParser.t (* Result of generic parsing *)
 
-  val parse_string : string -> 
-              Splitter.result -> 
+  val parse_string : string ->
+              Splitter.result ->
               pseudo MiscParser.t
 end
 
@@ -81,7 +81,7 @@ end
 module Make
     (O:Config)
     (A:ArchBase.S)
-    (L: LexParse with type pseudo = A.pseudo) : S = 
+    (L: LexParse with type pseudo = A.pseudo) : S =
 struct
 
     type pseudo     = JavaBase.pseudo
@@ -127,15 +127,15 @@ struct
 
     module Do
          (I:sig
-      	    type src
-      	    val call_parser_loc :
+            type src
+            val call_parser_loc :
                 string ->             (* name of the section *)
                 src ->                (* input channel *)
                 Pos.pos2 ->           (* position of the section, see splitter's result *)
                 'a ->                 (* a lexer *)
                 ('a -> Lexing.lexbuf -> 'b) -> (* a parser *)
                 'b                    (* AST list *)
-          end) = 
+          end) =
     struct
 
     let parse chan (* input channel *)
@@ -148,7 +148,7 @@ struct
     (* Initial state specification. *)
     let init =
       I.call_parser_loc "init"
-		      chan init_loc SL.token StateParser.init in
+                      chan init_loc SL.token StateParser.init in
 
     (* Program *)
     let prog =
@@ -159,9 +159,9 @@ struct
       check_procs procs ;
 
     (* Condition to be checked after the run. *)
-    let (locs, filter, final, _quantifiers) =
+    let (locs, filter, (too_far,final), _quantifiers) =
       I.call_parser_loc "final"
-		      chan constr_loc SL.token StateParser.constraints in
+                      chan constr_loc SL.token StateParser.constraints in
 
     (* Check *)
       check_regs procs init locs final ;
@@ -180,7 +180,8 @@ struct
         filter = filter;
         condition = final;
         locations = locs;
-        extra_data = []
+        extra_data = [];
+        too_far;
       } in
 
     let name  = name.Name.name in
@@ -189,9 +190,9 @@ struct
       match O.check_cond name  with
       | None -> parsed
       | Some k ->
-         let cond = parse_cond (Lexing.from_string k) in
+         let too_far,cond = parse_cond (Lexing.from_string k) in
          { parsed with
-           MiscParser.condition = cond ;} in
+           MiscParser.condition = cond; too_far; } in
 
     let parsed =
       match O.check_kind name  with
@@ -201,12 +202,12 @@ struct
            MiscParser.condition =
              ConstrGen.set_kind k parsed.MiscParser.condition; } in
 
-    let parsed = 
+    let parsed =
       match MiscParser.get_hash parsed with
         | None ->
             let info = parsed.MiscParser.info in
             { parsed with MiscParser.info =
-	       ("Hash", D.digest info init prog all_locs)::info ; }
+               ("Hash", D.digest info init prog all_locs)::info ; }
         | Some _ -> parsed in
 
     parsed

@@ -177,7 +177,7 @@ module Make
       let prog = parsed_tr prog in
       let prog = transpose procs prog in
       let prog = expn_prog prog in
-      let (locs,filter,final,_quantifiers) =
+      let (locs,filter,(too_far,final),_quantifiers) =
         I.call_parser_loc "final"
           chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
@@ -188,15 +188,16 @@ module Make
          filter = filter;
          condition = final;
          locations = locs;
-         extra_data = extra_data ;
+         extra_data = extra_data;
+         too_far;
        } in
       let name  = name.Name.name in
       let parsed =
         match O.check_cond name  with
         | None -> parsed
         | Some k ->
-            let cond =
-              let cond = parse_cond (Lexing.from_string k) in
+            let too_far,cond =
+              let too_far,cond = parse_cond (Lexing.from_string k) in
               try (* Apply mapping as condition may be expressed with external
                      registers *)
                 let map = List.assoc OutMapping.key info in
@@ -226,10 +227,10 @@ module Make
                       end
                 in
                 if O.verbose > 0 then prerr_endline "Bingo" ;
-                ConstrGen.map_constr map_atom cond
-              with Not_found -> cond in
+                too_far,ConstrGen.map_constr map_atom cond
+              with Not_found -> too_far,cond in
             { parsed with
-              MiscParser.condition = cond ;} in
+              MiscParser.condition = cond; too_far; } in
       let parsed =
         match O.check_kind name  with
         | None -> parsed

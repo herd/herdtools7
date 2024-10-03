@@ -71,10 +71,12 @@ let mk_lab (p, l) = Label (p, l)
 %token <string> DOLLARNAME
 %token <string> NUM
 %token <string> VALUE
+%token <bool> EXISTS
+%token <bool> FORALL
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
-%token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES WITH FILTER
+%token FINAL OBSERVED TOKAND NOT AND OR IMPLIES WITH FILTER
 %token LOCATIONS FAULT STAR PLUS
 %token LBRK RBRK LPAR RPAR LCURLY RCURLY SEMI COLON AMPER COMMA
 %token ATOMIC
@@ -99,9 +101,9 @@ let mk_lab (p, l) = Label (p, l)
 %start init
 %type <MiscParser.location> main_location
 %start main_location
-%type < (MiscParser.location,MiscParser.maybev,MiscParser.fault_type) LocationsItem.t list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
+%type < (MiscParser.location,MiscParser.maybev,MiscParser.fault_type) LocationsItem.t list * MiscParser.prop option * (bool * MiscParser.constr) * (string * MiscParser.quantifier) list> constraints
 %start constraints
-%type  <MiscParser.constr> main_constr
+%type  <bool * MiscParser.constr> main_constr
 %start main_constr
 %type  <MiscParser.constr> skip_loc_constr
 %start skip_loc_constr
@@ -351,19 +353,19 @@ main_constr:
 | c = constr EOF { c }
 
 constr:
-|  { ConstrGen.constr_true }
+|  { false,ConstrGen.constr_true }
 | FORALL prop
-    {ForallStates $2}
+    { $1,ForallStates $2 }
 | EXISTS prop
-    {ExistsState $2}
+    { $1,ExistsState $2 }
 | NOT EXISTS prop
-        { NotExistsState $3 }
+    { $2,NotExistsState $3 }
 | FINAL prop
-        { ExistsState $2 }
+    { false,ExistsState $2 }
 | LPAR prop RPAR
-    {ExistsState $2}
+    { false,ExistsState $2 }
 | OBSERVED obs
-    { ExistsState (Or $2) }
+    { false,ExistsState (Or $2) }
 
 obs:
 |  obsone {  [ And $1 ] }
@@ -374,13 +376,13 @@ obsone:
 | atom_prop SEMI obsone { $1 :: $3 }
 
 main_loc_constr:
-| lc = loc_constr EOF { lc }
+| lc = loc_constr EOF { let locs,(_,c) = lc in locs,c }
 
 loc_constr:
 | locations constr { $1,$2 }
 
 skip_loc_constr:
-| locations constr EOF { $2 }
+| locations constr EOF { let _,c = $2 in c }
 
 lbl:
 | PROC { ($1,None) }

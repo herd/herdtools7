@@ -182,7 +182,7 @@ module Do
           code)
       prog ;
 *)
-    let (locs,filter,final,_quantifiers) =
+    let (locs,filter,(too_far,final),_quantifiers) =
       I.call_parser_loc "final"
 		      chan constr_loc SL.token StateParser.constraints in
     check_regs procs init locs final ;
@@ -194,15 +194,16 @@ module Do
         condition = final;
         locations = locs;
         extra_data = (MiscParser.CExtra params)::data_litmus;
+        too_far;
       } in
     let name  = name.Name.name in
     let parsed =
       match O.check_cond name  with
       | None -> parsed
       | Some k ->
-         let cond = parse_cond (Lexing.from_string k) in
+         let too_far,cond = parse_cond (Lexing.from_string k) in
          { parsed with
-           MiscParser.condition = cond ;} in
+           MiscParser.condition = cond; too_far;} in
     let parsed =
       match O.check_kind name  with
       | None -> parsed

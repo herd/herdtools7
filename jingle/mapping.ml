@@ -316,6 +316,7 @@ module Make(C:Config) = struct
       condition = condition;
       locations = locations;
       extra_data = src.extra_data;
+      too_far = src.too_far;
     }
 
 end

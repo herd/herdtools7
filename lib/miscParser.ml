@@ -191,6 +191,7 @@ type ('i, 'p, 'prop, 'loc, 'v, 'ftype) result =
       condition : 'prop ConstrGen.constr ;
       locations : ('loc,'v,'ftype) LocationsItem.t list ;
       extra_data : extra_data ;
+      too_far : bool ;
 }
 
 (* Easier to handle *)
