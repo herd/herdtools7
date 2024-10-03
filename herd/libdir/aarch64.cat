@@ -189,3 +189,10 @@ let CMODX-unordered-conflicts =
   CMODX-conflicts \ (CMODX-ordering | CMODX-ordering^-1)
 
 flag ~empty CMODX-unordered-conflicts as violates-CMODX-requirements
+
+(*** Liveness check, work in progres ***)
+
+let W-DSB = W & domain(po;[dsb.full])
+
+let fr-cutoff  = ([domain(fre;[W-DSB])];po;[CutOff])\((fre;[W-DSB];rfe)&po;po)
+empty fr-cutoff as liveness
