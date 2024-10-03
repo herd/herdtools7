@@ -189,3 +189,6 @@ let CMODX-unordered-conflicts =
   CMODX-conflicts \ (CMODX-ordering | CMODX-ordering^-1)
 
 flag ~empty CMODX-unordered-conflicts as violates-CMODX-requirements
+
+let fr-toofar = ([domain(fr)];po;[TooFar])\((fr;rf)&po;po)
+empty fr-toofar as liveness
