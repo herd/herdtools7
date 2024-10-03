@@ -58,7 +58,7 @@ module Make(O:Config)(M:XXXMem.S) =
 
     let memtag = O.variant Variant.MemTag
     let morello = O.variant Variant.Morello
-    let showtoofar = O.variant Variant.TooFar
+    let showcutoff = O.variant Variant.CutOff
     let kvm = O.variant Variant.VMSA
 
 (* Utilities *)
@@ -105,13 +105,13 @@ module Make(O:Config)(M:XXXMem.S) =
 (* registers that read memory *)
           reads : S.loc_set;
 (* Too much loop unrolling *)
-          toofar : bool;
+          cutoff : bool;
         }
 
     let start =
       { states = A.StateSet.empty; cfail=0; cands=0; pos=0; neg=0;
         flagged=Flag.Map.empty; shown=0;
-        reads = A.LocSet.empty; toofar=false; }
+        reads = A.LocSet.empty; cutoff=false; }
 
     let kfail c = { c with cfail=c.cfail+1; }
 
@@ -237,8 +237,8 @@ module Make(O:Config)(M:XXXMem.S) =
       let check = check_prop test in
 
       fun conc (st,flts) (set_pp,vbpp) flags c ->
-        if not showtoofar && S.gone_toofar conc then
-          { c with toofar = true; }
+        if not showcutoff && S.exists_cutoff conc then
+          { c with cutoff = true; }
         else if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
@@ -330,7 +330,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 if O.outcomereads then
                   A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
                 else c.reads;
-              toofar =  c.toofar || (showtoofar && S.gone_toofar conc);
+              cutoff =  c.cutoff || S.exists_cutoff conc;
             } in
           if not O.badexecs && is_bad flags then raise (Over r) ;
           let r = match O.nshow with
@@ -499,7 +499,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Condition result *)
         let ok = check_cond test c in
         printf "%s%s\n"
-          (if c.toofar then "Loop " else "")
+          (if c.cutoff then "Loop " else "")
           (if is_bad then "Undef" else if ok then "Ok" else "No") ;
         let pos,neg = check_wit test c in
         printf "Witnesses\n" ;
@@ -534,7 +534,7 @@ module Make(O:Config)(M:XXXMem.S) =
               printf "%s=%s\n" k v)
           test.Test_herd.info ;
         print_newline () ;
-        if c.toofar then
+        if c.cutoff then
           Warn.warn_always
             "File \"%s\", unrolling limit exceeded, legal outcomes may be missing."
             test.Test_herd.name.Name.file
