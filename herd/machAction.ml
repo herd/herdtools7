@@ -492,6 +492,9 @@ end = struct
           | Barrier b -> p b
           | _ -> false
           in tag,p) A.barrier_sets
+
+    and toofar_set = ("TooFar",is_toofar)
+
     and cmo_sets =
       List.map
         (fun (tag,p) ->
@@ -570,7 +573,8 @@ end = struct
           (fun (key,p) k -> (key,on_pteval p)::k) A.pteval_sets k
     else
       fun k -> k)
-      (bsets @ cmo_sets @ asets @ esets @ lsets @ aasets @ ifetch_sets @ fault_sets @ tlbi_sets)
+      (toofar_set::bsets @ cmo_sets @ asets @ esets
+       @ lsets @ aasets @ ifetch_sets @ fault_sets @ tlbi_sets)
 
   let arch_rels =
     if kvm then
