@@ -98,8 +98,8 @@ module type S = sig
   val is_commit : action -> bool
 
 (* Unrolling control *)
-  val toofar : string -> action
-  val is_toofar : action -> bool
+  val cutoff : string -> action
+  val is_cutoff : action -> bool
 
 (********************)
 (* Equation solving *)

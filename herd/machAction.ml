@@ -66,7 +66,7 @@ module Make (C:Config) (A : A) : sig
         A.inst_instance_id * A.location option * Dir.dirn
         * A.lannot * bool * A.I.FaultType.t option * string option
 (* Unrolling control *)
-    | TooFar of string
+    | CutOff of string
 (* TLB Invalidate event, operation (for print and level), address, if any.
    No adresss means complete invalidation at level *)
     | Inv of A.TLBI.op * A.location option
@@ -151,7 +151,7 @@ end = struct
     | Fault of
         A.inst_instance_id * A.location option
         * Dir.dirn * A.lannot * bool * A.I.FaultType.t option * string option
-    | TooFar of string
+    | CutOff of string
     | Inv of A.TLBI.op * A.location option
     | CMO of A.CMO.t * A.location option
     | NoAction
@@ -201,7 +201,7 @@ end = struct
         (A.pp_annot an)
         (Misc.pp_opt_arg A.I.FaultType.pp ftype)
         (Misc.pp_opt_arg (Printf.sprintf "type:%s") msg)
-  | TooFar msg -> Printf.sprintf "TooFar:%s" msg
+  | CutOff msg -> Printf.sprintf "CutOff:%s" msg
   | Inv (op,None) ->
       Printf.sprintf "TLBI(%s)" (A.TLBI.pp_op op)
   | Inv (op,Some loc) ->
@@ -215,7 +215,7 @@ end = struct
   let value_of a = match a with
   | Access (_,_ , v,_,_,_,_)
     -> Some v
-  | Barrier _|Commit _|Amo _|Fault _|TooFar _|Inv _|CMO _|NoAction
+  | Barrier _|Commit _|Amo _|Fault _|CutOff _|Inv _|CMO _|NoAction
     -> None
   | Arch a -> A.ArchAction.value_of a
 
@@ -225,7 +225,7 @@ end = struct
     -> Some v
   | Arch a -> A.ArchAction.read_of a
   | Access (W, _, _, _,_,_,_)|Barrier _|Commit _|Fault _
-  | TooFar _|Inv _|CMO _|NoAction
+  | CutOff _|Inv _|CMO _|NoAction
     -> None
 
   and written_of a = match a with
@@ -235,7 +235,7 @@ end = struct
   | Arch a -> A.ArchAction.written_of a
   | Access (R, _, _, _,_,_,_)
   | Barrier _|Commit _|Fault _
-  | TooFar _|Inv _|CMO _|NoAction
+  | CutOff _|Inv _|CMO _|NoAction
     -> None
 
   let location_of a = match a with
@@ -246,7 +246,7 @@ end = struct
   | CMO (_,Some l)
     -> Some l
   | Arch a -> A.ArchAction.location_of a
-  | Barrier _ |Commit _ | TooFar _ | Fault (_,None,_,_,_,_,_)
+  | Barrier _ |Commit _ | CutOff _ | Fault (_,None,_,_,_,_,_)
   | Inv (_,None) | CMO (_,None) | NoAction
     -> None
 
@@ -310,11 +310,11 @@ end = struct
   let is_tag = function
     | Access (_,_,_,_,_,_,Access.TAG) -> true
     | Access _|Barrier _|Commit _
-    | Amo _|Fault _|TooFar _|Inv _|CMO _|Arch _|NoAction-> false
+    | Amo _|Fault _|CutOff _|Inv _|CMO _|Arch _|NoAction-> false
 
   let is_inv = function
     | Inv _ -> true
-    | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar _|CMO _|Arch _|NoAction -> false
+    | Access _|Amo _|Commit _|Barrier _|Fault _|CutOff _|CMO _|Arch _|NoAction -> false
 
   let is_at_level lvl = function
     | Inv(op,_) -> A.TLBI.is_at_level lvl op
@@ -322,7 +322,7 @@ end = struct
 
   let is_fault = function
     | Fault _ -> true
-    | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
+    | Access _ | Amo _ | Commit _ | Barrier _ | CutOff _ | Inv _
     | CMO _ | Arch _ | NoAction
       -> false
 
@@ -340,7 +340,7 @@ end = struct
 
   let is_exc_entry = function
     | Fault (_,_,_,_,true,_,_) -> true
-    | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
+    | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | CutOff _ | Inv _
     | CMO _ | Arch _ | NoAction
       -> false
 
@@ -349,7 +349,7 @@ end = struct
        Some ((i.A.proc,i.A.labels),Some x,t,msg)
     | Fault (i,None,_,_,_,t,msg) ->
        Some ((i.A.proc,i.A.labels),None,t,msg)
-    | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
+    | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | CutOff _ | Inv _
     | CMO _ | Arch _ | NoAction
       -> None
 
@@ -415,12 +415,12 @@ end = struct
   | Access (W,_,_,_,_,_,_)|Amo _ -> true
   | Arch a -> A.ArchAction.is_load a
   | Access (R,_,_,_,_,_,_) | Barrier _ | Commit _
-  | Fault _ | TooFar _ | Inv _ | CMO _ | NoAction -> false
+  | Fault _ | CutOff _ | Inv _ | CMO _ | NoAction -> false
 
   let is_load a = match a with
   | Access (R,_,_,_,_,_,_) | Amo _ -> true
   | Arch a -> A.ArchAction.is_store a
-  | Access (W,_,_,_,_,_,_) | Barrier _ | Commit _ | Fault _ | TooFar _ | Inv _
+  | Access (W,_,_,_,_,_,_) | Barrier _ | Commit _ | Fault _ | CutOff _ | Inv _
   | CMO _ | NoAction -> false
 
 
@@ -476,10 +476,10 @@ end = struct
   | _ -> false
 
 (* Unroll control *)
-  let toofar msg = TooFar msg
+  let cutoff msg = CutOff msg
 
-  let is_toofar = function
-    | TooFar _ -> true
+  let is_cutoff = function
+    | CutOff _ -> true
     | _ -> false
 
 (* Architecture-specific sets *)
@@ -492,6 +492,9 @@ end = struct
           | Barrier b -> p b
           | _ -> false
           in tag,p) A.barrier_sets
+
+    and cutoff_set = ("CutOff",is_cutoff)
+
     and cmo_sets =
       List.map
         (fun (tag,p) ->
@@ -570,7 +573,8 @@ end = struct
           (fun (key,p) k -> (key,on_pteval p)::k) A.pteval_sets k
     else
       fun k -> k)
-      (bsets @ cmo_sets @ asets @ esets @ lsets @ aasets @ ifetch_sets @ fault_sets @ tlbi_sets)
+      (cutoff_set::bsets @ cmo_sets @ asets @ esets
+       @ lsets @ aasets @ ifetch_sets @ fault_sets @ tlbi_sets)
 
   let arch_rels =
     if kvm then
@@ -678,7 +682,7 @@ end = struct
           (V.undetermined_vars v1)
           (V.undetermined_vars v2)
     | Arch a -> A.ArchAction.undetermined_vars a
-    | Barrier _|Commit _|Fault _|TooFar _|Inv _ |CMO _|NoAction -> V.ValueSet.empty
+    | Barrier _|Commit _|Fault _|CutOff _|Inv _ |CMO _|NoAction -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -701,7 +705,7 @@ end = struct
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
         CMO (op,oloc)
     | Arch a -> Arch (A.ArchAction.simplify_vars soln a)
-    | Barrier _ | Commit _|TooFar _|NoAction -> a
+    | Barrier _ | Commit _|CutOff _|NoAction -> a
 
   let annot_in_list _str _ac = false
 

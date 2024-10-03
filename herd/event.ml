@@ -137,7 +137,7 @@ val same_instance : event -> event -> bool
   val is_commit : event -> bool
 
 (* Too much unrolling *)
-  val is_toofar : event -> bool
+  val is_cutoff : event -> bool
 
 (**************)
 (* Event sets *)
@@ -721,7 +721,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_commit e = Act.is_commit e.action
 
 (*  Unrolling control *)
-    let is_toofar e = Act.is_toofar e.action
+    let is_cutoff e = Act.is_cutoff e.action
 
 (******************************)
 (* Build structures of events *)
