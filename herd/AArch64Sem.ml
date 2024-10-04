@@ -2899,9 +2899,13 @@ module Make
           let<>= base = ma in
           let>= pred = read_reg_predicate false p ii in
           let ops i r =
+            let<>= v =
+              any_active p pred psize nelem ii
+              (read_reg_scalable true r ii)
+              mzero
+            in
             let op idx =
               let store =
-                let>= v = read_reg_scalable true r ii in
                 let offset = (idx * nregs + i) * MachSize.nbytes sz in
                 let>= addr = M.op1 (Op.AddK offset) base
                 and* v = scalable_getlane v idx esize >>= demote in
