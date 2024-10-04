@@ -237,9 +237,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let check = check_prop test in
 
       fun conc (st,flts) (set_pp,vbpp) flags c ->
-        if not showcutoff && S.exists_cutoff conc then
-          { c with cutoff = true; }
-        else if do_observed && not (all_observed test conc) then c
+        if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
           | None -> false
@@ -330,7 +328,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 if O.outcomereads then
                   A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
                 else c.reads;
-              cutoff =  c.cutoff || S.exists_cutoff conc;
+              cutoff =  c.cutoff;
             } in
           if not O.badexecs && is_bad flags then raise (Over r) ;
           let r = match O.nshow with
@@ -350,9 +348,10 @@ module Make(O:Config)(M:XXXMem.S) =
 
     (* Performed delayed checks and warnings *)
     let check_failed_model_kont
-          cs
+          cutoff cs
           ochan test do_restrict cstr
           conc (st,flts) (set_pp,vbpp) flags c  =
+
       let open S.M.VC in
       match cs with
       | Some (Failed e) ->
@@ -363,9 +362,11 @@ module Make(O:Config)(M:XXXMem.S) =
          Warn.warn_always "%s, legal outcomes may be missing" msg ;
          c
       | Some (Assign _)|None ->
-         model_kont 
-           ochan test do_restrict cstr
-           conc (st,flts) (set_pp,vbpp) flags c
+          if not showcutoff && cutoff then c
+          else
+            model_kont
+              ochan test do_restrict cstr
+              conc (st,flts) (set_pp,vbpp) flags c
 
     (* Driver *)
     let run start_time test =
@@ -419,13 +420,16 @@ module Make(O:Config)(M:XXXMem.S) =
       end else
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
-        let check_test =
-            M.check_event_structure test in
-        let call_model conc ofail =
-          check_test
-            conc kfail
-            (check_failed_model_kont
-               ofail ochan test final_state_restrict_locs cstr) in
+        let call_model conc ofail c =
+        let check_test = M.check_event_structure test in
+        (* Checked pruned executions before even calling model *)
+        let cutoff =  S.exists_cutoff conc in
+        let c = if cutoff then { c with cutoff = true; } else c in
+        (* Discard pruned executions if not explicitely required *)
+        check_test
+          conc kfail
+          (check_failed_model_kont cutoff
+             ofail ochan test final_state_restrict_locs cstr) c in
       let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
