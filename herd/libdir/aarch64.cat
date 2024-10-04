@@ -190,5 +190,9 @@ let CMODX-unordered-conflicts =
 
 flag ~empty CMODX-unordered-conflicts as violates-CMODX-requirements
 
-let fr-toofar = ([domain(fr)];po;[TooFar])\((fr;rf)&po;po)
+(*** Liveness check, work in progres ***)
+
+let W-DSB = W & domain(po;[dsb.full])
+
+let fr-toofar = ([domain(fr;[W-DSB])];po;[TooFar])\((fr;[W-DSB];rf)&po;po)
 empty fr-toofar as liveness
