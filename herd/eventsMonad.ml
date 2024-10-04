@@ -829,7 +829,7 @@ Monad type:
               (Evt.map fr ract) in
           (eiid, (un, None))
 
-(* Extract speculaive behaviout, base case is to speculate active branch *)
+(* Extract speculaive behaviour, base case is to speculate active branch *)
     let as_speculated (act,spec) = match spec with
     | Some spec -> spec
     | None -> do_speculates act
@@ -1710,6 +1710,18 @@ Monad type:
           op Op.Eq v1 v2 >>= fun v -> assign v V.zero
 
     let eqT : V.v -> V.v -> unit t = assign
+
+    let bitT : V.v -> V.v -> VC.atom t
+        = fun v1 v2 ->
+        op Op.ShiftRight v1 v2 >>= op Op.And V.one
+
+    let isBitSetT : V.v -> V.v -> unit t
+        = fun v1 v2 ->
+          bitT v1 v2 >>= eqT V.one
+
+    let isBitUnsetT : V.v -> V.v -> unit t
+        = fun v1 v2 ->
+          bitT v1 v2 >>= eqT V.zero
 
     let tooFar msg ii v =
       forceT v (mk_singleton_es (E.Act.toofar msg) ii)

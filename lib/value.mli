@@ -74,6 +74,7 @@ module type S =
 
 (* Build constant values, either numerical or symbolic *)
       val intToV  : int -> v
+      val int64ToV : int64 -> v
       val stringToV  : string -> v
       val nameToV  : string -> v
       val instructionToV : Cst.Instr.t -> v

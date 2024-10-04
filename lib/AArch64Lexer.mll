@@ -414,6 +414,7 @@ match name with
 | "stzg"|"STZG" -> STZG
 | "stz2g"|"STZ2G" -> STZ2G
 | "ldg"|"LDG" -> LDG
+| "irg"|"IRG" -> IRG
 (* Operations *)
 | "ubfm"|"UBFM" -> UBFM
 | "sbfm"|"SBFM" -> SBFM

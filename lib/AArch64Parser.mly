@@ -148,7 +148,7 @@ let check_op3 op e =
 %token MRS MSR TST RBIT ABS
 %token REV16 REV32 REV REV64
 %token EXTR
-%token STG STZG STZ2G LDG
+%token STG STZG STZ2G LDG IRG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
 %type <MiscParser.proc list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
@@ -1636,6 +1636,10 @@ instr:
     }
 | LDG xreg COMMA LBRK xreg k0 RBRK
    { I_LDG ($2,$5,$6) }
+| IRG xreg COMMA xreg
+   { I_IRG ($2,$4,ZR)}
+| IRG xreg COMMA xreg COMMA xreg
+   { I_IRG ($2,$4,$6)}
 
 /* Fetch and OP */
 | LDOP wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
