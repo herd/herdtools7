@@ -1,0 +1,11 @@
+Test A020 Required
+States 1
+ Fault(P1:L0,x,MMU:Translation);
+Loop Ok
+Witnesses
+Positive: 6 Negative: 0
+Flag Assuming-common-inner-shareable-domain
+Condition forall (fault(P1:L0,x,MMU:Translation))
+Observation A020 Always 6 0
+Hash=f914ca7a6bb4273336da2761313b6352
+
