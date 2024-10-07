@@ -46,6 +46,14 @@ let rec list_mapi2 f i l1 l2 =
       r :: list_mapi2 f (i + 1) l1 l2
   | _, _ -> invalid_arg "List.map2"
 
+let rec list_mapi3 f i l1 l2 l3 =
+  match (l1, l2, l3) with
+  | [], [], [] -> []
+  | a1 :: l1, a2 :: l2, a3 :: l3 ->
+      let r = f i a1 a2 a3 in
+      r :: list_mapi3 f (i + 1) l1 l2 l3
+  | _, _, _ -> invalid_arg "List.mapi3"
+
 (* Begin ReduceConstants *)
 let reduce_constants env e =
   let open StaticInterpreter in
@@ -2512,9 +2520,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let loc = to_pos le in
     let here d = add_pos_from loc d in
     (if false then (fun o ->
-       Format.eprintf "@[Setter@ @[%a@ = %a@]@ gave %a@.@]" PP.pp_lexpr le
-         PP.pp_expr e
-         (Format.pp_print_option PP.pp_stmt)
+       let none f () = Format.fprintf f "no reduction." in
+       Format.eprintf "@[<2>Setter@ @[%a@ = %a@]@ gave @[%a@]@.@]" PP.pp_lexpr
+         le PP.pp_expr e
+         (Format.pp_print_option ~none PP.pp_stmt)
          o;
        o)
      else Fun.id)
@@ -2571,11 +2580,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if List.for_all Option.is_none subs then None
             else
               let s0 = S_Decl (LDK_Let, ldi_x, Some e) |> here in
-              let produce_one i sub_le = function
-                | None -> S_Assign (sub_le, sub_e i, V1) |> here
+              let produce_one i sub_le t_sub_e_i = function
+                | None ->
+                    let sub_le' = annotate_lexpr env sub_le t_sub_e_i in
+                    S_Assign (sub_le', sub_e i, V1) |> here
                 | Some s -> s
               in
-              list_mapi2 produce_one 0 les subs
+              list_mapi3 produce_one 0 les t_es subs
               |> List.cons s0 |> stmt_from_list |> Option.some
         | _ -> None)
     | LE_Var x ->
