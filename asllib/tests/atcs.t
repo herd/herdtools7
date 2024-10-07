@@ -91,6 +91,6 @@ ATCs in types:
   > EOF
 
   $ aslref atcs8.asl
-  File atcs8.asl, line 1, characters 14 to 29:
+  File atcs8.asl, line 1, characters 9 to 30:
   ASL Typing error: unexpected ATC.
   [1]

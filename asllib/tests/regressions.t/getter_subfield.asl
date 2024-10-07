@@ -12,7 +12,8 @@ end
 
 func main () => integer
 begin
-  assert F.bitfield == '0';
+let res = F.bitfield; 
+  assert res == '0';
 
   return 0;
 end

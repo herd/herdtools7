@@ -7,6 +7,7 @@ open Asllib
 open AST
 open ASTUtils
 open QCheck2.Gen
+module SES = SideEffect.SES
 
 let _dbg = false
 let annot desc = ASTUtils.add_dummy_pos desc
@@ -471,7 +472,7 @@ module Typed (C : Config.S) = struct
     let e_call expr env ty n =
       let funcs =
         ASTUtils.IMap.fold
-          (fun name func_sig funcs ->
+          (fun name (func_sig, _) funcs ->
             match func_sig.return_type with
             | Some t ->
                 if
@@ -978,7 +979,8 @@ module Typed (C : Config.S) = struct
       let func_sig =
         { name; parameters; args; body; return_type; subprogram_type }
       in
-      (D_Func func_sig |> annot, StaticEnv.add_subprogram name func_sig env)
+      ( D_Func func_sig |> annot,
+        StaticEnv.add_subprogram name func_sig SES.empty env )
     in
     fun env n ->
       let () =

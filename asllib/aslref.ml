@@ -149,11 +149,13 @@ let parse_args () =
   args
 
 let or_exit f =
-  match Error.intercept f () with
-  | Ok res -> res
-  | Error e ->
-      Format.eprintf "%a@." Error.pp_error e;
-      exit 1
+  if false then f ()
+  else
+    match Error.intercept f () with
+    | Ok res -> res
+    | Error e ->
+        Format.eprintf "%a@." Error.pp_error e;
+        exit 1
 
 let () =
   let args = parse_args () in

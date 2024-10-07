@@ -317,7 +317,7 @@ let pp_subprogram_type f st = addb f (subprogram_type_to_string st)
 
 let pp_body f = function
   | SB_ASL s -> bprintf f "SB_ASL (%a)" pp_stmt s
-  | SB_Primitive -> addb f "SB_Primitive"
+  | SB_Primitive b -> bprintf f "SB_Primitive %B" b
 
 let pp_decl f d =
   match d.desc with

@@ -25,8 +25,10 @@ begin
   incr ();
   assert global_x == 3;
 
-  assert incr2 () == 3;
-  assert 2 + incr2 () * 4 == 18;
+  let i2 = incr2 ();
+  assert i2 == 3;
+  let i3 = incr2 ();
+  assert 2 + i3 * 4 == 18;
   // assert add (incr2 (), 3) == 8;
   assert global_x == 5;
 

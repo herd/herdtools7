@@ -14,7 +14,8 @@ begin
   
   let y: integer {1..12} = x;
 
-  assert x as integer {1..11} == x;
+  let x2 = x as integer {1..11};
+  assert x2 == x;
 
   return 0;
 end

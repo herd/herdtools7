@@ -21,8 +21,9 @@ end
 
 func set_e(b::MyBits, e::bits(1)) => MyBits
 begin
-  b.e = e;
-  return b;
+  var b2 = b;
+  b2.e = e;
+  return b2;
 end
 
 func main() => integer

@@ -189,7 +189,7 @@ Symbolic execution of bit vector widths expressions
   [1]
   $ aslref --no-exec TNegative10-1.asl
   File TNegative10-1.asl, line 28, characters 4 to 49:
-  ASL Typing error: a subtype of bits(tempC1) was expected,
+  ASL Typing error: a subtype of bits(tempC3A) was expected,
     provided bits(tempC3B).
   [1]
 

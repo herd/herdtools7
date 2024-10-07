@@ -117,20 +117,32 @@ begin
     end
   end
 
-  assert BitCount ('000') == 0;
-  assert BitCount ('101') == 2;
-  assert BitCount ('010') == 1;
-  assert BitCount ('') == 0;
+  let b_000 = BitCount ('000');
+  assert b_000 == 0;
+  let b_101 = BitCount ('101');
+  assert b_101 == 2;
+  let b_010 = BitCount ('010');
+  assert b_010 == 1;
+  let b_ = BitCount ('');
+  assert b_ == 0;
 
-  assert LowestSetBit ('000') == 3;
-  assert LowestSetBit ('101') == 0;
-  assert LowestSetBit ('010') == 1;
-  assert LowestSetBit ('') == 0;
+  let lowestsetbit_000 = LowestSetBit ('000');
+  assert lowestsetbit_000 == 3;
+  let lowestsetbit_101 = LowestSetBit ('101');
+  assert lowestsetbit_101 == 0;
+  let lowestsetbit_010 = LowestSetBit ('010');
+  assert lowestsetbit_010 == 1;
+  let lowestsetbit_ = LowestSetBit ('');
+  assert lowestsetbit_ == 0;
 
-  assert HighestSetBit ('000') == -1;
-  assert HighestSetBit ('101') == 2;
-  assert HighestSetBit ('010') == 1;
-  assert HighestSetBit ('') == -1;
+  let highestsetbit_000 = HighestSetBit ('000');
+  assert highestsetbit_000 == -1;
+  let highestsetbit_101 = HighestSetBit ('101');
+  assert highestsetbit_101 == 2;
+  let highestsetbit_010 = HighestSetBit ('010');
+  assert highestsetbit_010 == 1;
+  let highestsetbit_ = HighestSetBit ('');
+  assert highestsetbit_ == -1;
 
   return 0;
 end
