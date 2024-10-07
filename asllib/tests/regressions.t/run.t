@@ -392,6 +392,9 @@ Empty getters/setters
   [1]
   $ aslref setter_subfield.asl
   $ aslref setter_sub_tuple.asl
+  File setter_sub_tuple.asl, line 21, characters 15 to 16:
+  ASL Typing error: a subtype of integer {0} was expected, provided integer.
+  [1]
   $ aslref setter_subslice.asl
   $ aslref getter_subfield.asl
   $ aslref getter_sub_tuple.asl
