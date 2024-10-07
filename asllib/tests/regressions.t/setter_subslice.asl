@@ -12,7 +12,8 @@ end
 
 func main () => integer
 begin
-  assert F[5] == '0';
+  let res = F[5];
+  assert res == '0';
 
   return 0;
 end

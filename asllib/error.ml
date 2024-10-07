@@ -67,6 +67,7 @@ type error_desc =
   | BaseValueEmptyType of ty
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
+  | ConcurrentSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
 
 type error = error_desc annotated
@@ -264,6 +265,9 @@ module PPrint = struct
            corresponding@ getter@ of@ signature@ @[@[%a@]@ ->@ %a@]"
           func.name (pp_comma_list pp_ty) args pp_ty ret
     | UnexpectedATC -> pp_print_text f "ASL Typing error: unexpected ATC."
+    | ConcurrentSideEffects (s1, s2) ->
+        fprintf f "ASL Typing error: concurrent side effects %a and %a"
+          SideEffect.pp_print s1 SideEffect.pp_print s2
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
