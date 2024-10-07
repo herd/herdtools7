@@ -2113,8 +2113,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | LDI_Typed (ldi', t) ->
         let t' = annotate_type ~loc env t in
         let+ () = check_can_be_initialized_with loc env t' ty in
+        let t'' = match ldk with LDK_Constant -> ty | _ -> t' in
         let new_env, new_ldi' =
-          annotate_local_decl_item loc env t' ldk ?e ldi'
+          annotate_local_decl_item loc env t'' ldk ?e ldi'
         in
         (new_env, LDI_Typed (new_ldi', t')) |: TypingRule.LDTyped
     (* End *)

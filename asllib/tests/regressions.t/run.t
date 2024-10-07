@@ -33,6 +33,14 @@ Type-checking errors:
 
   $ aslref constant-zeros.asl
 
+  $ aslref refine-constant-types.asl
+  File refine-constant-types.asl, line 5, characters 27 to 34: All values in
+  constraints {(3 DIV 2)} would fail with op DIV, operation will always fail.
+  File refine-constant-types.asl, line 5, characters 27 to 34:
+  ASL Typing error: Illegal application of operator DIV on types integer {3}
+    and integer {2}
+  [1]
+
 Bad types:
   $ aslref overlapping-slices.asl
   File overlapping-slices.asl, line 1, character 0 to line 4, character 2:
