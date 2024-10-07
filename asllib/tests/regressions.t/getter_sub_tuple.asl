@@ -12,7 +12,8 @@ end;
 
 func main () => integer
 begin
-  assert (F(), 3).item0 == Zeros{8};
+  let res = (F(), 3).item0;
+  assert res == Zeros{8};
 
   return 0;
 end;
