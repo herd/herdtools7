@@ -355,6 +355,10 @@ Required tests:
   $ aslref declaration-primitive-local.asl
   $ aslref --no-type-check -0 typing-assign-v0.asl
   $ aslref constant-functions.asl
+  File constant-functions.asl, line 6, characters 0 to 45:
+  ASL Typing error: a pure expression was expected, found
+    double(32) as integer {0..1000}.
+  [1]
 
   $ aslref undeclared-variable.asl
   File undeclared-variable.asl, line 3, characters 2 to 5:
@@ -384,6 +388,10 @@ Getters/setters
   ASL Error: Undefined identifier: 'f1'
   [1]
   $ aslref setter_subfield.asl
+  $ aslref setter_subslice.asl
+  File setter_subslice.asl, line 15, characters 5 to 6:
+  ASL Error: Cannot parse.
+  [1]
   $ aslref getter_subfield.asl
   $ aslref getter_sub_tuple.asl
   $ aslref getter_subslice.asl
@@ -402,7 +410,7 @@ ASLRef Field getter extension
   $ aslref --use-field-getter-extension setter_bitfields.asl
   $ aslref --use-field-getter-extension pstate-exp.asl
   $ aslref atc-in-types.asl
-  File atc-in-types.asl, line 1, characters 14 to 29:
+  File atc-in-types.asl, line 1, characters 9 to 30:
   ASL Typing error: unexpected ATC.
   [1]
   $ aslref single-slice.asl

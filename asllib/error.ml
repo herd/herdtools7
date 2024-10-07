@@ -76,6 +76,7 @@ type error_desc =
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
+  | ConcurrentSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
   | UnreachableReached
   | LoopLimitReached
@@ -89,6 +90,7 @@ type error_desc =
       field2_absslices : string;
     }
   | BadPrintType of ty
+  | ConfigTimeBroken of expr
 
 type error = error_desc annotated
 
@@ -177,6 +179,8 @@ let error_label = function
   | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
   | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
   | BadPrintType _ -> "BadPrintType"
+  | ConcurrentSideEffects _ -> "ConcurrentSideEffects"
+  | ConfigTimeBroken _ -> "ConfigTimeBroken"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -405,6 +409,12 @@ module PPrint = struct
         pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->
         pp_print_text f "ASL Dynamic error: loop limit reached."
+    | ConcurrentSideEffects (s1, s2) ->
+        fprintf f "ASL Typing error: concurrent side effects %a and %a"
+          SideEffect.pp_print s1 SideEffect.pp_print s2
+    | ConfigTimeBroken e ->
+        fprintf f "ASL Typing error: expected config-time expression, got %a."
+          pp_expr e
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
