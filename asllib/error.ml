@@ -76,6 +76,7 @@ type error_desc =
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
+  | ConcurrentSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
   | UnreachableReached
   | LoopLimitReached
@@ -166,6 +167,7 @@ let error_label = function
   | LoopLimitReached -> "LoopLimitReached"
   | RecursionLimitReached -> "RecursionLimitReached"
   | EmptyConstraints -> "EmptyConstraints"
+  | ConcurrentSideEffects _ -> "ConcurrentSideEffects"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -394,6 +396,9 @@ module PPrint = struct
         pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->
         pp_print_text f "ASL Dynamic error: loop limit reached."
+    | ConcurrentSideEffects (s1, s2) ->
+        fprintf f "ASL Typing error: concurrent side effects %a and %a"
+          SideEffect.pp_print s1 SideEffect.pp_print s2
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

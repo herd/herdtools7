@@ -507,6 +507,9 @@ let normalize env e =
 let try_normalize env e =
   try normalize env e with Error.ASLException _ | NotSupported -> e
 
+let normalize_opt env e =
+  try Some (normalize env e) with Error.ASLException _ | NotSupported -> None
+
 let equal_in_env env e1 e2 =
   let dbg = false in
   let () =

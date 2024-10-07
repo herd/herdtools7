@@ -364,7 +364,10 @@ and catcher = identifier option * ty * stmt
 
 (** {2 Top-level declarations} *)
 
-type subprogram_body = SB_ASL of stmt | SB_Primitive
+(** Represents the different types of subprogram bodies. *)
+type subprogram_body =
+  | SB_ASL of stmt  (** A normal body of a subprogram *)
+  | SB_Primitive of bool  (** Whether or not this primitive is side-effecting *)
 
 type func = {
   name : identifier;
