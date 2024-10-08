@@ -60,7 +60,7 @@ module type S = sig
   val remove_local : identifier -> env -> env
   val assign : identifier -> v -> env -> env env_result
   val tick_push : env -> env
-  val tick_push_bis : env -> env
+  val tick_push_bis : env -> int -> env
   val tick_pop : env -> env
   val tick_decr : env -> bool * env
   val get_scope : env -> Scope.t
@@ -113,9 +113,9 @@ module RunTime (C : RunTimeConf) = struct
   (** [tick_push env] is [env] with [C.unroll] pushed on its unrolling stack. *)
   let tick_push env = set_unroll env (C.unroll :: env.local.unroll)
 
-  (** [tick_push_bis env] is [env] with [C.unroll -1] pushed on its unrolling
+  (** [tick_push_bis env k] is [env] with [C.unroll-k] pushed on its unrolling
       stack. *)
-  let tick_push_bis env = set_unroll env ((C.unroll - 1) :: env.local.unroll)
+  let tick_push_bis env k = set_unroll env ((C.unroll - k) :: env.local.unroll)
 
   (** [tick_pop env] is [env] with removed the unrolling stack first element. *)
   let tick_pop env =

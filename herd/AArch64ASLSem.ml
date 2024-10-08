@@ -57,18 +57,21 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         [ aarch64_iico_ctrl; aarch64_iico_data; aarch64_iico_order ]
 
     module ASLConf = struct
-      include TopConf.C
+      module C = struct
+        include TopConf.C
+        module PC = struct
+          include TopConf.C.PC
 
-      module PC = struct
-        include TopConf.C.PC
-
-        let doshow = aarch64_iico
-        let showevents = PrettyConf.AllEvents
-        let showpo = true
-        let showraw = aarch64_iico
+          let doshow = aarch64_iico
+          let showevents = PrettyConf.AllEvents
+          let showpo = true
+          let showraw = aarch64_iico
+        end
+        let variant = function Variant.ASL_AArch64 -> true | c -> variant c
       end
 
-      let variant = function Variant.ASL_AArch64 -> true | c -> variant c
+      let libfind = TopConf.C.libfind
+      let dirty = TopConf.dirty
     end
 
     module ASLS = ASLSem.Make (ASLConf)
@@ -79,7 +82,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     module ASLTH = Test_herd.Make (ASLS.A)
 
     module MCConf = struct
-      include ASLConf
+      include ASLConf.C
 
       let byte = SZ.byte
       let dirty = TopConf.dirty
@@ -1158,12 +1161,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
     let check_event_structure model =
       let module MemConfig = struct
-        include ASLConf
+        include ASLConf.C
 
         let model = model
         let bell_model_info = None
-        let debug = ASLConf.debug.Debug_herd.barrier
-        let debug_files = ASLConf.debug.Debug_herd.files
+        let debug = ASLConf.C.debug.Debug_herd.barrier
+        let debug_files = ASLConf.C.debug.Debug_herd.files
         let showsome = true
         let skipchecks = StringSet.empty
         let strictskip = true
@@ -1288,6 +1291,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           | [] -> Warn.fatal "No possible ASL execution."
           | h :: t -> List.fold_left M.altT h t)
 
-    let spurious_setaf _ = assert false
+    let spurious_setaf _ = M.unitT ()
   end
 end
