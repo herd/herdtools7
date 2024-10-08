@@ -18,8 +18,8 @@ begin
   else
     eventaccess = PHY_PTE;
   end;
-// No, we can write, physically.
-  write_memory_gen{N*8}(desc.paddress.address,value,accdesc,eventaccess);
+// Now, we can write, physically.
+  write_memory_gen{N*8}(desc.paddress.address, value,accdesc,eventaccess);
   return PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',

@@ -5,7 +5,8 @@
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
 (* Copyright 2015-present Institut National de Recherche en Informatique et *)
-(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
+(* en Automatique, ARM Ltd and the authoes
+   rs. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -870,7 +871,7 @@ module Make
         and hd = dirty.hd proc in
         let ha = ha || hd in (* As far as we know hd => ha *)
         let mfault (_,ipte) m =
-          let open FaultType.AArch64 in
+         let open FaultType.AArch64 in
           (is_zero ipte.valid_v) >>=
             (fun c ->
               M.choiceT c
