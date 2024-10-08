@@ -638,7 +638,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         if
           match C.dirty with
           | None -> false
-          | Some t -> t.DirtyBit.some_ha || t.DirtyBit.some_hd
+          | Some t ->
+              not asl && (t.DirtyBit.some_ha || t.DirtyBit.some_hd)
         then begin (* One spurious update per observed pte (final load) *)
             if C.variant Variant.PhantomOnLoad then
               let look_pt rloc k = match rloc with
