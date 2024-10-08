@@ -182,8 +182,16 @@ let do_op op c1 c2 =
         match c1 with
         | Constant.PteVal _ -> return c1
         | _ ->  set_slice positions c1 c2
-      end else
-        set_slice positions c1 c2
+      end else match c1,c2 with
+        |  Constant.PteVal pte,Constant.Concrete s2 ->
+            begin match positions with
+              | [10] ->
+                  let af = ASLScalar.bit_of_bv s2 in
+                  Constant.PteVal { pte with AArch64PteVal.af;} |> return
+              | _ ->
+                  set_slice positions c1 c2
+            end
+        | _ -> set_slice positions c1 c2
 
 let do_op1 op cst =
   match op with

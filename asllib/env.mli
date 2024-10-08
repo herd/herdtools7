@@ -121,9 +121,9 @@ module type S = sig
   (** Push a new unrolling counter on the stack. The associated loop will be
       unrolled [C.unroll] times. *)
 
-  val tick_push_bis : env -> env
+  val tick_push_bis : env -> int -> env
   (** Push a new unrolling counter on the stack. The associated loop will be
-      unrolled [C.unroll - 1] times. *)
+      unrolled [C.unroll - k] times. *)
 
   val tick_pop : env -> env
   (** Discards the last unrolling counter of the stack. *)
