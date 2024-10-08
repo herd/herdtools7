@@ -1,9 +1,9 @@
 // AArch64.S1Enabled()
 // ===================
 // Determine if stage 1 is enabled for the access type for this translation regime
-// Stage 1 is the onlt translation regime implemented
+// Stage 1 is the only translation regime implemented
 
-func AArch64_S1Enabled(regme : Regime,acctype : AccessType) => boolean
+func AArch64_S1Enabled(regime : Regime,acctype : AccessType) => boolean
 begin
   return TRUE;
 end
@@ -191,12 +191,23 @@ end
 // Perform HW update of table descriptor as an atomic operation
 // Modified -> disabled at the moment
 
+func No_AArch64_MemSwapTableDesc
+  (fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
+  ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
+=> (FaultRecord, bits(N))
+begin
+  __debug__('1111');
+  return (fault_in,new_desc);
+end
+
 func AArch64_MemSwapTableDesc
   (fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
 => (FaultRecord, bits(N))
 begin
-  return (fault_in,new_desc);
+   let addr = descpaddr.paddress.address;
+   WritePtePrimitive(addr,new_desc);
+   return (fault_in,new_desc);
 end
 
 // AArch64.DataAbort()
@@ -262,4 +273,43 @@ func
 begin
 //  assert FALSE;
   return;
+end
+
+//
+// Previous walkparams
+// {aie:'0',amec:'0',cmow:'0',d128:'0',dc:'0',dct:'0',disch:'0',ds:'0',
+// e0pd:'0',ee:'0',emec:'0',epan:'0',fng:'0',ha:'0',haft:'0',hd:'0',
+// hpd:'0',irgn:'01',
+// mair:'0000000000000000000000000000000000000000000000000000000000000000',
+// mair2:'0000000000000000000000000000000000000000000000000000000000000000',
+// mtx:'0',nfd:'0',ntlsmd:'1',nv1:'0',orgn:'01',pie:'0',pir:'',pire0:'',
+// pnch:'0',ps:'100',sh:'11',sif:'0',skl:'00',t0sz:'000',t1sz:'000',
+// tbi:'0',tbid:'0',tgx:2,txsz:'010000',uwxn:'0',wxn:'0',}
+
+
+// AArch64.GetS1TTWParams()
+// ========================
+// Returns stage 1 translation table walk parameters from respective controlling
+// System registers.
+// Luc: we assume EL10 regime, return minimal parameters
+func AArch64_GetS1TTWParams
+  (regime:Regime, ss:SecurityState, va:bits(64))
+  => S1TTWParams
+begin
+  var walkparams : S1TTWParams;
+  assert (regime == Regime_EL10);
+  walkparams.ha = GetHaPrimitive();
+//  __debug__(walkparams);
+  return walkparams;
+end
+
+
+// AArch64.S1TxSZFaults()
+// ======================
+// Detect whether configuration of stage 1 TxSZ field generates a fault
+// Luc: Override: does not occur, never.
+
+func AArch64_S1TxSZFaults (regime:Regime,walkparams:S1TTWParams) => boolean
+begin
+  return FALSE;
 end
