@@ -80,18 +80,20 @@ module ASTUtils = Asllib.ASTUtils
 open ASLBase
 
 module type Config = sig
-  include Sem.Config
-
+  module C : Sem.Config
+  val dirty : DirtyBit.t option
   val libfind : string -> string
 end
 
-module Make (C : Config) = struct
+module Make (Conf : Config) = struct
   module V = ASLValue.V
 
-  module ConfLoc = struct
-    include SemExtra.ConfigToArchConfig (C)
+  let variant = Conf.C.variant
 
-    let default_to_symb = C.variant Variant.ASL
+  module ConfLoc = struct
+    include SemExtra.ConfigToArchConfig (Conf.C)
+
+    let default_to_symb = variant Variant.ASL
   end
 
   module ASL64AH = struct
@@ -101,14 +103,14 @@ module Make (C : Config) = struct
     let opt_env = true
   end
 
-  module Act = ASLAction.Make (C.PC) (ASL64AH)
-  include SemExtra.Make (C) (ASL64AH) (Act)
+  module Act = ASLAction.Make (Conf.C.PC) (ASL64AH)
+  include SemExtra.Make (Conf.C) (ASL64AH) (Act)
 
   module TypeCheck = Asllib.Typing.Annotate (struct
     let check =
       let open Asllib.Typing in
-      if C.variant (Variant.ASLType `Warn) then Warn
-      else if C.variant (Variant.ASLType `TypeCheck) then TypeCheckNoWarn
+      if variant (Variant.ASLType `Warn) then Warn
+      else if variant (Variant.ASLType `TypeCheck) then TypeCheckNoWarn
       else Silence
 
     let output_format = Asllib.Error.HumanReadable
@@ -122,14 +124,15 @@ module Make (C : Config) = struct
 
   module ASLInterpreterConfig = struct
     let unroll =
-      match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
+      match Conf.C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
 
     let error_handling_time = Asllib.Error.Dynamic
 
     module Instr = Asllib.Instrumentation.SemanticsNoInstr
   end
 
-  let is_vmsa = C.variant Variant.VMSA
+  let is_vmsa = variant Variant.VMSA
+
   let barriers = []
   let isync = None
   let atomic_pair_allowed _ _ = true
@@ -620,6 +623,10 @@ module Make (C : Config) = struct
         (use_ii_with_poi ii poi)
       >>! []
 
+    let write_pte ii addr_m val_m =
+      do_write_memory ii addr_m (M.unitT (V.intToV 64)) val_m
+        aneutral (AArch64Explicit.(NExp AF)) apte
+
     let write_memory ii datasize_m addr_m value_m =
       do_write_memory ii addr_m datasize_m value_m aneutral aexp avir
 
@@ -659,6 +666,14 @@ module Make (C : Config) = struct
         | _ -> assert false
       and loc = A.Location_global loc in
       M.mk_singleton_es (Act.Fault (ii,loc,d,ft)) ii >>! []
+
+    let get_ha (ii,_) () =
+      let dirty =
+        match Conf.dirty with
+        | None -> DirtyBit.soft
+        | Some f -> f in
+      let ha = dirty.DirtyBit.ha ii.A.proc in
+      V.Val (Constant.Concrete (ASLScalar.bv_of_bool ha)) |> M.unitT
 
     (**************************************************************************)
     (* ASL environment                                                        *)
@@ -870,6 +885,9 @@ module Make (C : Config) = struct
         p3 ~side_effecting "DataAbortPrimitive"
           ("addr",bv_64) ("write",boolean) ("statuscode",integer)
           data_abort_fault;
+        p0r "GetHaPrimitive" ~returns:(bv_lit 1) get_ha;
+        p2 "WritePtePrimitive"
+          ("addr", bv_64)  ("data",bv_64) write_pte;
 (* Translations *)
          p1r "UInt"
           ~parameters:[ ("N", None) ]
@@ -906,7 +924,7 @@ module Make (C : Config) = struct
       in
       let build ?ast_type version fname =
         Filename.concat "asl-pseudocode" fname
-        |> C.libfind
+        |> Conf.libfind
         |> ASLBase.build_ast_from_file ?ast_type version
       in
       let patches =
@@ -979,7 +997,7 @@ module Make (C : Config) = struct
       in
       fun () ->
         Lazy.force
-        @@ if C.variant Variant.ASL_AArch64 then if_asl_aarch64 else otherwise
+        @@ if variant Variant.ASL_AArch64 then if_asl_aarch64 else otherwise
 
     (**************************************************************************)
     (* Execution                                                              *)
