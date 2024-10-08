@@ -83,6 +83,7 @@ let mk_tag_mask t =
 %token TOK_SS TOK_SSCAP TOK_SSVAL
 %token <string> INSTR
 %token <int * string> LABEL
+%token TOK_GICARG
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 %token TOK_PAR
@@ -241,7 +242,7 @@ intid_update_prop_head:
   { IntidUpdateVal.add_intid v tail }
 
 intid_update_val:
-| LPAR updateval=intid_update_prop_head RPAR { updateval }
+| TOK_GICARG COLON LPAR updateval=intid_update_prop_head RPAR { updateval }
 
 addrregval_update_tail:
 | { ParsedAddrReg.empty }
@@ -566,6 +567,10 @@ atom_prop:
   { Atom (LV (Loc loc, MiscParser.add_oa_if_none loc v)) }
 | loc=location equal v=addrregval
   { Atom (LV (Loc loc, AddrReg v)) }
+| loc=location equal v=intid_update_val
+  { Atom (LV (Loc loc, IntidUpdateVal v)) }
+| loc=loc_brk equal v=intid_update_val
+  { Atom (LV (Loc loc, IntidUpdateVal v)) }
 | loc=location equal v=intidval
   { Atom (LV (Loc loc, IntidVal v)) }
 | loc=loc_brk equal v=intidval

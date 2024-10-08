@@ -255,7 +255,7 @@ module Make (C: Config) (A : S) = struct
 
   let is_sysreg = function
     | Access (_, A.Location_reg (_,r), _, _, _) ->  A.is_sysreg r
-    | Access _|Barrier _|Branching _|CutOff _|NoAction
+    | Access _|Fault _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
   (* Store/Load to memory or register *)
