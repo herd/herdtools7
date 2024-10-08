@@ -594,11 +594,13 @@ let ones length =
 let zero = zeros 1
 let one = ones 1
 let empty = (0, "")
+let is_zero = equal zero
 
 let is_zeros bv =
   let _length, data = remask bv in
   string_for_all (( = ) char_0) data
 
+let is_one = equal one
 let is_ones bv = length bv |> ones |> equal bv
 
 type mask = {
