@@ -300,7 +300,6 @@ let to_caml_bool = function
 let as_bool sc = Some (to_caml_bool sc)
 let convert_to_bool sc = S_Bool (to_caml_bool sc)
 
-
 (** Convert to bitvector of known size *)
 let convert_to_bv sz = function
   | S_BitVector bv as v ->
@@ -364,6 +363,17 @@ let do_bv_of_bit = function
   | _ -> assert false
 
 let bv_of_bit b =  S_BitVector (do_bv_of_bit b)
+
+and bit_of_bv s =
+  let bv =
+    match s with
+    | S_BitVector bv -> bv
+    | S_Bool true -> BV.one
+    | S_Bool false -> BV.zero
+    | S_Int z -> if Z.equal Z.zero z then BV.zero else BV.one in
+                        if BV.is_zero bv then 0
+  else if BV.is_one bv then 1
+  else  Warn.fatal  "bit_of_bv on illegal input %s" (BV.to_string bv)
 
 let bv_of_bits bs =
   let bv = List.map do_bv_of_bit bs |> BV.concat in

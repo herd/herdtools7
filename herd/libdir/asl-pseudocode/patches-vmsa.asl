@@ -1,9 +1,9 @@
 // AArch64.S1Enabled()
 // ===================
 // Determine if stage 1 is enabled for the access type for this translation regime
-// Stage 1 is the onlt translation regime implemented
+// Stage 1 is the only translation regime implemented
 
-func AArch64_S1Enabled(regme : Regime,acctype : AccessType) => boolean
+func AArch64_S1Enabled(regime : Regime,acctype : AccessType) => boolean
 begin
   return TRUE;
 end;
@@ -191,16 +191,15 @@ end;
 // Perform HW update of table descriptor as an atomic operation
 // Modified -> disabled at the moment
 
-func No_AArch64_MemSwapTableDesc
+func AArch64_MemSwapTableDesc
   (fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
 => (FaultRecord, bits(N))
 begin
-  __debug__('1111');
-  return (fault_in,new_desc);
+   let addr = descpaddr.paddress.address;
+   WritePtePrimitive(addr,new_desc);
+   return (fault_in,new_desc);
 end;
-
-// Write only, AF Only...
 
 
 // AArch64.DataAbort()
