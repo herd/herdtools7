@@ -47,7 +47,7 @@ type t =
   | MemTag
   | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
   | FaultHandling of Fault.Handling.t (* Fault handling *)
-  | TooFar
+  | CutOff
   | Morello
   | Neon
   | SVE (* Specify SVE *)
@@ -115,7 +115,7 @@ let tags =
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "lkmmv1"; "lkmmv2"; "memtag";"vmsa";"kvm";]@
     Precision.tags @ Fault.Handling.tags @
-   ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
+   ["CutOff"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
     "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
     "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
@@ -140,7 +140,7 @@ let parse s = match Misc.lowercase s with
 | "lkmmv1" -> Some (LKMMVersion `lkmmv1)
 | "lkmmv2" -> Some (LKMMVersion `lkmmv2)
 | "tagmem"|"memtag"|"mte" -> Some MemTag
-| "toofar" -> Some TooFar
+| "cutoff" -> Some CutOff
 | "morello" -> Some Morello
 | "neon" -> Some Neon
 | "sve" -> Some SVE
@@ -238,7 +238,7 @@ let pp = function
   | MemTag -> "memtag"
   | MTEPrecision p -> Precision.pp p
   | FaultHandling p -> Fault.Handling.pp p
-  | TooFar -> "TooFar"
+  | CutOff -> "CutOff"
   | Morello -> "Morello"
   | Neon -> "Neon"
   | SVE -> "sve"

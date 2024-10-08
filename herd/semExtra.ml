@@ -192,7 +192,7 @@ type concrete =
   val tgt2tgt : A.inst_instance_id -> BranchTarget.t -> B.tgt
   val tgt2offset : A.inst_instance_id -> BranchTarget.t -> int
 
-  val gone_toofar : concrete -> bool
+  val exists_cutoff : concrete -> bool
 
 (************)
 (* Barriers *)
@@ -492,8 +492,8 @@ type concrete =
            with Not_found -> assert false in
          b-ii.A.addr
 
-    let gone_toofar { str; _ } =
-      try E.EventSet.exists E.is_toofar str.E.events
+    let exists_cutoff { str; _ } =
+      try E.EventSet.exists E.is_cutoff str.E.events
       with Exit -> false
 
 (************)

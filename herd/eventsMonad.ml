@@ -1711,8 +1711,8 @@ Monad type:
 
     let eqT : V.v -> V.v -> unit t = assign
 
-    let tooFar msg ii v =
-      forceT v (mk_singleton_es (E.Act.toofar msg) ii)
+    let cutoffT msg ii v =
+      forceT v (mk_singleton_es (E.Act.cutoff msg) ii)
 
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct

@@ -45,7 +45,7 @@ type t =
   | MemTag           (* Memory Tagging, synonym of MTE *)
   | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
   | FaultHandling of Fault.Handling.t (* Fault handling *)
-  | TooFar         (* Do not discard candidates with TooFar events *)
+  | CutOff
   | Morello
   | Neon
   | SVE (* Specify SVE *)

@@ -1,7 +1,7 @@
 Test A018 Required
 States 1
 0:X0=1;
-Ok
+Loop Ok
 Witnesses
 Positive: 1 Negative: 0
 Flag Assuming-common-inner-shareable-domain

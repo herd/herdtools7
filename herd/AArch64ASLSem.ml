@@ -936,7 +936,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | ASLS.Act.NoAction ->
            (* As long as aarch64.cat ignores "NoAction" effects *)
            None
-        | ASLS.Act.TooFar msg -> Some (Act.TooFar msg)
+        | ASLS.Act.CutOff msg -> Some (Act.CutOff msg)
 
       let tr_expr acc = function
         | ASLVC.Atom a -> (M.VC.Atom (tr_v a), acc)

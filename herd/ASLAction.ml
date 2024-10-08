@@ -48,7 +48,7 @@ module Make (A : S) = struct
     | Access of dirn * A.location * A.V.v * MachSize.sz * AArch64Annot.t
     | Barrier of A.barrier
     | Branching of string option
-    | TooFar of string
+    | CutOff of string
     | NoAction
 
   let mk_init_write loc sz v = Access (W, loc, v, sz, AArch64Annot.N)
@@ -65,12 +65,12 @@ module Make (A : S) = struct
     | Branching txt ->
        Printf.sprintf "Branching(%s)"
          (Misc.app_opt_def "" Misc.identity txt)
-    | TooFar msg -> Printf.sprintf "TooFar:%s" msg
+    | CutOff msg -> Printf.sprintf "CutOff:%s" msg
     | NoAction -> ""
 
   let is_local = function
     | Access (_, A.Location_reg (_, r), _, _, _) -> A.is_local r
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
   (** Write to PC *)
@@ -92,25 +92,25 @@ module Make (A : S) = struct
   let value_of =
     function
     | Access (_, _, v, _, _) -> Some v
-    | Barrier _|Branching _|TooFar _|NoAction
+    | Barrier _|Branching _|CutOff _|NoAction
       -> None
 
   let read_of =
     function
     | Access (R, _, v, _, _) -> Some v
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> None
 
   let written_of =
     function
     | Access (W, _, v, _, _) -> Some v
-    | Access _|Barrier _| Branching _|TooFar _|NoAction
+    | Access _|Barrier _| Branching _|CutOff _|NoAction
       -> None
 
   let location_of =
     function
     | Access (_, l, _, _, _) -> Some l
-    | Branching _|Barrier _|TooFar _|NoAction
+    | Branching _|Barrier _|CutOff _|NoAction
      -> None
 
   (************************)
@@ -120,112 +120,112 @@ module Make (A : S) = struct
   (* relative to memory *)
   let is_mem_store = function
     | Access (W, A.Location_global _, _, _, _) -> true
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   let is_mem_load = function
     | Access (R, A.Location_global _, _, _, _) -> true
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   let is_additional_mem_load = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   let is_mem = function
     | Access (_, A.Location_global _, _, _, _) -> true
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   let is_ifetch = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
   let is_tag = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
   let is_additional_mem  = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
   let is_atomic = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
   let is_fault = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   let to_fault = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> None
 
   let get_mem_dir = function
     | Access (d, A.Location_global _, _, _, _) -> d
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> assert false
 
   let get_mem_size = function
     | Access (_, A.Location_global _, _, sz, _) -> sz
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> assert false
 
   let is_pte_access = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   let is_explicit = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   let is_not_explicit = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   (* relative to the registers of the given proc *)
   let is_reg_store = function
     | Access (W, A.Location_reg (p, _), _, _, _) -> Proc.equal p
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       ->
        fun _ -> false
 
   let is_reg_load = function
     | Access (R, A.Location_reg (p, _), _, _, _) -> Proc.equal p
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       ->
        fun _ -> false
 
 
   let is_reg = function
     | Access (_, A.Location_reg (p, _), _, _, _) -> Proc.equal p
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> fun _ -> false
 
   (* Reg events, proc not specified *)
   let is_reg_store_any = function
     | Access (W, A.Location_reg _, _, _, _) -> true
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
   let is_reg_load_any = function
     | Access (R, A.Location_reg _, _, _, _) -> true
-      | Access _|Barrier _|Branching _|TooFar _|NoAction
+      | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
 
   let is_reg_any = function
     | Access (_, A.Location_reg _, _, _, _) -> true
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
   (* Store/Load to memory or register *)
   let is_store =
     function
     | Access (W, _, _, _, _) -> true
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
   let is_load =
     function
     | Access (R, _, _, _, _) -> true
-    | Access _|Barrier _|Branching _|TooFar _|NoAction
+    | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
   (* Compatible accesses *)
@@ -237,34 +237,34 @@ module Make (A : S) = struct
   (* Barriers *)
   let is_barrier = function
     | Barrier _  -> true
-    | Access _|Branching _|TooFar _|NoAction
+    | Access _|Branching _|CutOff _|NoAction
       -> false
 
   let barrier_of = function
     | Barrier b -> Some b
-    | Access _|Branching _|TooFar _|NoAction
+    | Access _|Branching _|CutOff _|NoAction
       -> None
 
   let same_barrier_id _a1 _a2 = assert false
 
   (* Commits *)
   let is_bcc  = function
-    | Access _| Branching _|Barrier _|TooFar _|NoAction
+    | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> false
 
   let is_pred ?(cond=None) = function
     | Branching cond0 ->
        Option.is_none cond || Option.equal String.equal cond cond0
-    | Access _|Barrier _|TooFar _|NoAction -> false
+    | Access _|Barrier _|CutOff _|NoAction -> false
 
   let is_commit = function
     | Branching _ -> true
-    | Access _|Barrier _|TooFar _|NoAction -> false
+    | Access _|Barrier _|CutOff _|NoAction -> false
 
   (* Unrolling control *)
-  let toofar msg = TooFar msg
-  let is_toofar = function
-    | TooFar _ -> true
+  let cutoff msg = CutOff msg
+  let is_cutoff = function
+    | CutOff _ -> true
     | Access _|Barrier _|Branching _|NoAction
       -> false
 
@@ -275,7 +275,7 @@ module Make (A : S) = struct
   let undetermined_vars_in_action = function
     | Access (_, l, v, _, _) ->
         V.ValueSet.union (A.undetermined_vars_in_loc l) (V.undetermined_vars v)
-    | Barrier _ | Branching _| TooFar _ | NoAction -> V.ValueSet.empty
+    | Barrier _ | Branching _| CutOff _ | NoAction -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -283,7 +283,7 @@ module Make (A : S) = struct
         Access
           (d, A.simplify_vars_in_loc soln l,
            V.simplify_var soln v, sz, a)
-    | Barrier _ | Branching _ | TooFar _ | NoAction -> a
+    | Barrier _ | Branching _ | CutOff _ | NoAction -> a
 end
 
 module FakeModuleForCheckingSignatures (A : S) : Action.S
