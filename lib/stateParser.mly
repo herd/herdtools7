@@ -92,6 +92,7 @@ let mk_lab (p, l) = Label (p, l)
 %token TOK_NOP
 %token <string> INSTR
 %token <int * string> LABEL
+%token TOK_GICARG
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 
@@ -204,7 +205,7 @@ intid_update_prop_head:
   { IntidUpdateVal.add_field "target" (string_of_int v) tail }
 
 intid_update_val:
-| LPAR updateval=intid_update_prop_head RPAR { updateval }
+| TOK_GICARG COLON LPAR updateval=intid_update_prop_head RPAR { updateval }
 
 maybev_notag:
 | NUM  { Concrete $1 }
@@ -471,8 +472,10 @@ atom_prop:
   { Atom (LV (Loc loc, MiscParser.add_oa_if_none loc v )) }
 | loc=loc_brk equal v=pteval
   { Atom (LV (Loc loc, MiscParser.add_oa_if_none loc v)) }
-| loc=location_reg equal v=intid_update_val
-   { Atom (LV (Loc loc, IntidUpdateVal v)) }
+| loc=location equal v=intid_update_val
+  { Atom (LV (Loc loc, IntidUpdateVal v)) }
+| loc=loc_brk equal v=intid_update_val
+  { Atom (LV (Loc loc, IntidUpdateVal v)) }
 | loc=location equal v=intidval
   { Atom (LV (Loc loc, IntidVal v)) }
 | loc=loc_brk equal v=intidval
