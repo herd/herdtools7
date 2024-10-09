@@ -266,12 +266,16 @@ Monad type:
     let (>>==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=$$=) s f
 
+    let data_output_union : 'a t -> ('a -> 'b t) -> ('b) t
+        = fun s f -> data_comp (E.data_output_union) s f
+
     let asl_data s f = data_comp E.data_po_seq s f
 
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
       = fun s f -> data_comp (=**=) s f
 
     let control_input_union s f = data_comp E.control_input_union s f
+    let control_input_next s f = data_comp E.control_input_next s f
 
     let (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=*$$=) s f
@@ -290,6 +294,8 @@ Monad type:
     let asl_ctrl s f = data_comp E.bind_ctrl_sequence_data_po s f
 
     let bind_data_to_minimals s f =  data_comp E.data_to_minimals s f
+
+    let bind_data_to_output s f = data_comp E.data_to_output s f
 
 (* Triple composition *)
     let comp_comp comp_str m1 m2 m3 eiid =
@@ -789,6 +795,9 @@ Monad type:
 (* Sequence memory events *)
     let seq_mem : 'a t -> 'b t -> ('a * 'b) t
       = fun  s1 s2 -> combi Misc.pair E.seq_mem s1 s2
+
+    let seq_mem_list : 'a t -> 'a list t -> 'a list t
+      = fun  s1 s2 -> combi Misc.cons E.seq_mem s1 s2
 
 (* Force monad value *)
     let forceT (v : 'a) : 'b t -> 'a t =
