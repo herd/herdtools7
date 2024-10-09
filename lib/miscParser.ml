@@ -227,6 +227,7 @@ and user_key = "user"
 and el0_key = "el0"
 and memory_type_key = "MemoryType"
 and mt_key = "MT"
+and unroll_key = "Unroll"
 
 let key_match k1 k2 =
   let len1 = String.length k1 in
