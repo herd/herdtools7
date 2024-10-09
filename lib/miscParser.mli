@@ -125,7 +125,7 @@ val user_key : string
 val el0_key : string
 val memory_type_key : string
 val mt_key : string
-
+val unroll_key : string
 val key_match : string -> string -> bool
 
 (* Meta-data included in digest ? *)
