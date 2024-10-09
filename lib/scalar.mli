@@ -22,10 +22,13 @@ module type S = sig
   val machsize : MachSize.sz
 
   val zero : t
+  val one : t
 
   (** zero is unique and here it is *)
   val unique_zero : bool
-  val one : t
+
+  (** Predicate that considers alternative "zero" constants *)     
+  val is_zero : t -> bool
 
   val of_string : string -> t
   val pp : bool -> t -> string

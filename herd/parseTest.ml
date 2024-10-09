@@ -50,6 +50,16 @@ module Top (TopConf:RunTest.Config) = struct
           end)
       (* Override *)
       include TopConf
+      let unroll =
+        Option.map
+          (fun s ->
+             try int_of_string s
+             with Failure _ ->
+               Warn.user_error "unroll exects an integer argument")
+          (MiscParser.get_info_on_info MiscParser.unroll_key
+             splitted.Splitter.info)
+        |>
+        (function | None -> unroll | Some _ as o -> o)
       let fault_handling = TestConf.fault_handling
       let mte_precision = TestConf.mte_precision
       let sve_vector_length = TestConf.sve_vector_length
