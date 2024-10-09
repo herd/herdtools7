@@ -45,8 +45,8 @@ catdep (* This option tells that the cat file computes dependencies *)
 
 include "aarch64util.cat"
 
-(* Local write successor *)
-let lws =
+(* Local write or MMU Fault successor *)
+let lwfs =
  [Exp & M | Imp & Tag & R]; (po & same-loc); [Exp & W]
  | [Exp & M]; (po & same-loc); [MMU & FAULT]
  | [Imp & TTD & R]; (po & same-loc); [Exp & W | HU]
@@ -70,7 +70,10 @@ let addr = [Exp & R]; (basic-dep; [ADDR]; iico_data+; [Exp & M | Imp & Tag & R |
 let ctrl = [Exp & R]; basic-dep; [BCC]; po
 
 (** Pick dependencies *)
-let pick-dtrm = (dtrm|iico_ctrl)+
+let rec pick-dtrm =
+  dtrm
+  | iico_ctrl
+  | pick-dtrm; pick-dtrm
 
 let pick-basic-dep =
    [Exp & R | Rreg];  pick-dtrm?

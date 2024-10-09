@@ -157,8 +157,8 @@ let rec lob =
  | po-scl-ob
  | DSB-ob
  | IFB-ob
- | lws
- | lws; sca-class
+ | lwfs
+ | lwfs; sca-class
  | dob
  | pob
  | aob

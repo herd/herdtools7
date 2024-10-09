@@ -125,7 +125,7 @@ let TTD-obs =
     [Imp & TTD]; rf | rf; [Imp & TTD]
     | TLBuncacheable-pred
     | HU-pred
-    | [HU]; co | co; [HU]
+    | [HU]; ca; [W] | [W]; ca; [HU]
     | TLBI-ca
 
 (** Instr-observed-by **)
