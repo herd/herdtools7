@@ -58,7 +58,7 @@ let f-ib =
 
 (* HW TTD Updates permitted only for the AF or DB *)
 let HU = Imp & TTD & W
-assert empty HU \ (AF | DB)
+assert empty HU \ (AF | DB) as HUisAForDB
 
 (* DSB-ordered-before *)
 let DSB-ob =
