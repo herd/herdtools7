@@ -399,10 +399,17 @@ let rec subst_expr env e = match e with
 | CmpExchange (e1,e2,e3,a) ->
     CmpExchange (subst_expr env e1,subst_expr env e2,subst_expr env e3,a)
 | Fetch (loc,op,e,mo) -> Fetch (subst_expr env loc,op,subst_expr env e,mo)
-| ECall (f,es) ->
-    let xs,e = find_macro f env.expr in
-    let frame = build_frame f (subst_expr env) xs es in
-    subst_expr { env with args = frame; } e
+| ECall (f,es) -> (
+    if StringMap.mem f env.expr then
+        let xs,e = find_macro f env.expr in
+        let frame = build_frame f (subst_expr env) xs es in
+        subst_expr { env with args = frame; } e
+    else
+        (* Legacy *)
+        match (f, es) with
+        | ("atomic_add_unless", x :: y :: z :: []) -> AtomicAddUnless(x,y,z,true,[""])
+        | _ -> Warn.user_error "Unknown macro %s" f
+    )
 | ECas (e1,e2,e3,mo1,mo2,strong) ->
     let e1 = subst_expr env e1
     and e2 = subst_expr env e2
