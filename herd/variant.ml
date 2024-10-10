@@ -96,6 +96,8 @@ type t =
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* Activate ASL experimental mode *)
   | ASLExperimental
+(* UDF control in AArch64 mode *)
+  | ASL_AArch64_UDF
 (* Signed Int128 types *)
   | S128
 (* Strict interpretation of variant, e.g. -variant asl,strict *)
@@ -119,7 +121,7 @@ let tags =
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
     "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
     "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
-    "ASL+Experimental"; "telechat"; "OldSolver"; "oota";]
+    "ASL+Experimental"; "ASL+AArch64+UDF"; "telechat"; "OldSolver"; "oota";]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -173,6 +175,7 @@ let parse s = match Misc.lowercase s with
 | "asltype+silence"-> Some (ASLType `Silence)
 | "asltype+check"  -> Some (ASLType `TypeCheck)
 | "asl+experimental"|"asl+exp" -> Some ASLExperimental
+| "asl+aarch64+udf" -> Some ASL_AArch64_UDF
 | "s128" -> Some S128
 | "strict" -> Some Strict
 | "warn" -> Some Warn
@@ -276,6 +279,7 @@ let pp = function
   | ASLType `Silence -> "ASLType+Silence"
   | ASLType `TypeCheck -> "ASLType+Check"
   | ASLExperimental -> "ASL+Experimental"
+  | ASL_AArch64_UDF -> "ASL+AArch64+UDF"
   | Telechat -> "telechat"
   | NV2 -> "NV2"
   | OldSolver -> "OldSolver"
@@ -332,4 +336,5 @@ let set_sme_length r = function
 
 let check_tag = function
 | ASLExperimental -> [ASL;ASLExperimental;]
+| ASL_AArch64_UDF -> [ASL;ASL_AArch64_UDF;]
 | tag -> [tag]
