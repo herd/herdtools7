@@ -1191,55 +1191,51 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
           in
-          let rfms_with_regs =
-            let solve_regs (_i, cs, es) = MC.solve_regs test es cs in
-            List.filter_map solve_regs rfms
-          in
-          let () =
-            if _dbg then
-              Printf.eprintf "With regs solved, still %d rfms.\n%!"
-                (List.length rfms_with_regs)
-          in
-          let conc_and_pp =
-            let check_rfm li (es, rfm, cs) =
-              let po = MU.po_iico es in
-              let pos =
-                let mem_evts = ASLE.mem_of es.ASLE.events in
-                ASLE.EventRel.of_pred mem_evts mem_evts (fun e1 e2 ->
-                    ASLE.same_location e1 e2 && ASLE.EventRel.mem (e1, e2) po)
-              in
-              let partial_po =
-                ASLE.EventTransRel.to_implicitely_transitive_rel
-                  es.ASLE.partial_po
-              in
-
-              let conc =
-                {
-                  ASLS.conc_zero with
-                  ASLS.str = es;
-                  ASLS.rfmap = rfm;
-                  ASLS.po;
-                  ASLS.partial_po;
-                  ASLS.pos;
-                }
-              in
-              let kfail li = li in
-              let ksuccess conc _fs (out_sets, out_show) _flags li =
-                (conc, cs, Lazy.force out_sets, Lazy.force out_show) :: li
-              in
-              check_event_structure test conc kfail ksuccess li
+          let solve_regs (_i, cs, es) =
+            let () =
+              if _dbg then (
+                Printf.eprintf "** Events **\n  ";
+                ASLE.EventSet.pp stderr "\n  " ASLE.debug_event es.ASLE.events;
+                Printf.eprintf "\n%!")
             in
-            List.fold_left check_rfm [] rfms_with_regs
+            MC.solve_regs test es cs
+          in
+          let build_conc es rfmap =
+            let open ASLE in
+            let po = MU.po_iico es in
+            let pos =
+              let mem_evts = mem_of es.events in
+              EventRel.of_pred mem_evts mem_evts @@ fun e1 e2 ->
+              same_location e1 e2 && EventRel.mem (e1, e2) po
+            in
+            let partial_po =
+              EventTransRel.to_implicitely_transitive_rel es.partial_po
+            in
+            ASLS.{ ASLS.conc_zero with str = es; rfmap; po; partial_po; pos }
+          in
+          let check_rfm li (es, rfm, cs) =
+            let conc = build_conc es rfm in
+            let kfail li = li in
+            let ksuccess conc _fs (out_sets, out_show) _flags li =
+              let () = if _dbg then prerr_endline "ASL cat, success" in
+              let c = (conc, cs, Lazy.force out_sets, Lazy.force out_show) in
+              Translator.tr_execution ii c :: li
+            in
+            check_event_structure test conc kfail ksuccess li
+          in
+          let monads =
+            List.fold_left
+              (fun li c ->
+                match solve_regs c with None -> li | Some c -> check_rfm li c)
+              [] rfms
           in
           let () =
             if _dbg then
-              Printf.eprintf "Got %d complete executions.\n%!"
-                (List.length conc_and_pp)
-          in
-          let monads = List.map (Translator.tr_execution ii) conc_and_pp in
-          let () =
-            if _dbg then
-              Printf.eprintf "End of ASL execution for %s.\n\n%!"
+              Printf.eprintf
+                "Got %d complete executions.\n\
+                 End of ASL execution for %s.\n\n\
+                 %!"
+                (List.length monads)
                 (A.pp_instruction PPMode.Ascii ii.A.inst)
           in
           match monads with
