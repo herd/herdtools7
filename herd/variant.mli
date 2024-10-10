@@ -97,6 +97,8 @@ type t =
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* Activate ASL experimental mode *)
   | ASLExperimental
+(* UDF control in ASL+AArch64 mode *)
+  | ASL_AArch64_UDF
 (* Signed Int128 types *)
   | S128
 (* Strict interpretation of variant, e.g. -variant asl,strict *)
