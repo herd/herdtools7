@@ -248,17 +248,9 @@ module Make (C : Config) = struct
       in
       an
 
-    let wrap_op1_symb_as_var op1 = function
-      | V.Val (Constant.Symbolic _) as v ->
-          let v' = V.fresh_var () in
-          M.restrict M.VC.[ Assign (v', Unop (op1, v)) ] >>! v'
-      | v -> M.op1 op1 v
-
-    let to_bv sz =
-      wrap_op1_symb_as_var
-        (Op.ArchOp1 (ASLOp.ToBV (MachSize.nbits sz)))
-    let to_int_unsigned = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntU)
-    let to_int_signed = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntS)
+    let to_bv sz = M.op1 (Op.ArchOp1 (ASLOp.ToBV (MachSize.nbits sz)))
+    let to_int_unsigned = M.op1 (Op.ArchOp1 ASLOp.ToIntU)
+    let to_int_signed = M.op1 (Op.ArchOp1 ASLOp.ToIntS)
 
     (**************************************************************************)
     (* Special monad interactions                                              *)
@@ -340,9 +332,9 @@ module Make (C : Config) = struct
     let unop op =
       let open AST in
       match op with
-      | BNOT -> wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.BoolNot)
+      | BNOT -> M.op1 (Op.ArchOp1 ASLOp.BoolNot)
       | NEG -> M.op Op.Sub V.zero
-      | NOT -> wrap_op1_symb_as_var Op.Inv
+      | NOT -> M.op1 Op.Inv
 
     let ternary = function
       | V.Val (Constant.Concrete (ASLScalar.S_Bool true)) -> fun m1 _ -> m1 ()
