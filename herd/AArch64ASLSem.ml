@@ -1214,7 +1214,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
           in
-          let rfms_with_regs =
+          let monads =
             let solve_regs (_i, cs, es) =
               let () =
                 if  _dbg then begin
@@ -1226,14 +1226,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                     es.ASLE.events
                 end in
               MC.solve_regs test es cs in
-            List.filter_map solve_regs rfms
-          in
-          let () =
-            if _dbg then
-              Printf.eprintf "With regs solved, still %d rfms.\n%!"
-                (List.length rfms_with_regs)
-          in
-          let conc_and_pp =
+
             let check_rfm li (es, rfm, cs) =
               let po = MU.po_iico es in
               let pos =
@@ -1263,24 +1256,23 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               let ksuccess conc _fs (out_sets, out_show) _flags li =
                 let () =
                   if _dbg then  prerr_endline "ASL cat, success" in
-                (conc, cs, Lazy.force out_sets, Lazy.force out_show) :: li
+                let c =
+                  conc, cs, Lazy.force out_sets, Lazy.force out_show in
+                Translator.tr_execution ii c::li
               in
               check_event_structure test conc kfail ksuccess li
             in
-            List.fold_left check_rfm [] rfms_with_regs
+            let check li c =
+              match solve_regs c with
+              | None -> li
+              | Some c -> check_rfm li c in
+            List.fold_left check [] rfms
           in
           let () =
             if  _dbg then
               Printf.eprintf "Got %d complete executions.\n%!"
-                (List.length conc_and_pp)
+                (List.length monads)
           in
-          let monads =
-            let tr c =
-              let () =
-                if _dbg then
-                  Printf.eprintf "** Translate **\n%!" in
-              Translator.tr_execution ii c in
-            List.map tr conc_and_pp in
           let () =
             if _dbg then
               Printf.eprintf "End of ASL execution for %s.\n\n%!"
