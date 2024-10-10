@@ -200,6 +200,7 @@ begin
   return (fault_in,new_desc);
 end
 
+// Write only, AF Only...
 func AArch64_MemSwapTableDesc
   (fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
@@ -312,4 +313,30 @@ end
 func AArch64_S1TxSZFaults (regime:Regime,walkparams:S1TTWParams) => boolean
 begin
   return FALSE;
+end
+
+// S1DecodeMemAttrs()
+// ==================
+// Decode MAIR-format memory attributes assigned in stage 1
+// Luc: for speed (?) handle the case of Mormal memory, untagged, WB, ISH
+
+func
+  S1DecodeMemAttrs
+  (attr_in:bits(8), sh:bits(2), s1aarch64:boolean,
+  walparams:S1TTWParams)
+  => MemoryAttributes
+begin
+  var memattrs : MemoryAttributes;
+  memattrs.memtype = MemType_Normal;
+  memattrs.outer.attrs     = MemAttr_WB;
+  memattrs.outer.hints     = MemHint_RWA;
+  memattrs.outer.transient = FALSE;
+  memattrs.inner.attrs     = MemAttr_WB;
+  memattrs.inner.hints     = MemHint_RWA;
+  memattrs.inner.transient = FALSE;
+  memattrs.xs              = '0';
+  memattrs.tags = MemTag_Untagged;
+  memattrs.notagaccess = FALSE;
+  memattrs.shareability = Shareability_ISH;
+  return memattrs;
 end
