@@ -272,11 +272,20 @@ module Make (C : Config) = struct
       | 6 -> PHY_PTE
       | i -> Warn.fatal "Bad access code from ASL: %d" i
 
+(* Why so ?
     let wrap_op1_symb_as_var op1 = function
       | V.Val (Constant.Symbolic _) as v ->
           let v' = V.fresh_var () in
           M.restrict M.VC.[ Assign (v', Unop (op1, v)) ] >>! v'
       | v -> M.op1 op1 v
+*)
+
+(* Can be more efficient, because symbols get transmited to ASL,
+ * resulting in more semantics time evaluation and, hopefull,
+ * less unresolved conditional statements.
+ *)
+
+    let wrap_op1_symb_as_var op1 = M.op1 op1
 
     let to_bv sz =
       wrap_op1_symb_as_var
