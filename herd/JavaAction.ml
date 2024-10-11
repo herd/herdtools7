@@ -192,6 +192,10 @@ end = struct
   let is_cutoff = function
     | CutOff _ -> true
     | _ -> false
+  let as_cutoff = function
+    | CutOff msg -> Some msg
+    | _ -> None
+
   let is_bcc _ = false
   let is_pred ?cond:_ _ = false
   let is_commit _ = false

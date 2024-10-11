@@ -267,6 +267,9 @@ end = struct
   let is_cutoff = function
     | CutOff _ -> true
     | _ -> false
+  let as_cutoff = function
+    | CutOff msg -> Some msg
+    | _ -> None
 
 (* RMWs *)
   let is_rmw a = match a with

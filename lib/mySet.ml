@@ -25,9 +25,13 @@ module type S = sig
   val iter2 : (elt -> elt -> unit) -> t -> t -> unit
   (* Exists on cartesian product *)
   val exists2 : (elt -> elt -> bool) -> t -> t -> bool
-  (* Like exists, but returns an elt that satisfy the predicate,
-     raises Not_found, if no such elt exists *)
+
   val find : (elt -> bool) -> t -> elt
+  (** Like exists, but returns an elt that satisfy the predicate,
+     raises Not_found, if no such elt exists *)
+
+  val find_opt : (elt -> bool) -> t -> elt option
+  (** Like find,  option version *)
 
   (* Check for a singleton *)
   val is_singleton : t -> bool
@@ -81,6 +85,14 @@ module Make(O:OrderedType) : S with type elt = O.t =
           set ;
         raise Not_found
       with Found e -> e
+
+    let find_opt pred set =
+      try
+        iter
+          (fun e -> if pred e then raise (Found e))
+          set ;
+        None
+      with Found e -> Some e
 
     let is_singleton rs =
       try

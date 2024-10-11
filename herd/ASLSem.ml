@@ -489,6 +489,8 @@ module Make (C : Config) = struct
      * an AArch64 barrier as argument.
      *)
 
+    let cutoffT (ii,poi) msg v = M.cutoffT msg (use_ii_with_poi ii poi) v
+
     let primitive_isb (ii, poi) () =
       create_barrier AArch64Base.ISB (use_ii_with_poi ii poi)
 
@@ -904,7 +906,7 @@ module Make (C : Config) = struct
         let choice = choice
         let delay m k = M.delay_kont "ASL" m k
         let return = M.unitT
-        let warnT = M.warnT
+        let cutoffT msg v = cutoffT ii_env msg v
         let on_write_identifier = on_write_identifier ii_env
         let on_read_identifier = on_read_identifier ii_env
         let binop = binop
