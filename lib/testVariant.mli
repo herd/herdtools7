@@ -22,6 +22,7 @@ module Make : functor
       val info : MiscParser.info
       val variant : Opt.t -> bool
       val mte_precision : Precision.t
+      val mte_store_only : bool
       val fault_handling : Fault.Handling.t
       val sve_vector_length : int
       val sme_vector_length : int
@@ -29,6 +30,7 @@ module Make : functor
       sig
         type t = Var.Opt.t
         val mte_precision : Precision.t
+        val mte_store_only : bool
         val fault_handling : Fault.Handling.t
         val sve_vector_length : int
         val sme_vector_length : int
