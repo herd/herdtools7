@@ -179,11 +179,16 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Unroll *)
   (* [bind_unroll "while" m f] executes [f] on [m] after having ticked the
      unrolling stack of [m] only if [m] is [Normal (Continuing _)] *)
-  let bind_unroll loop_name (m : stmt_eval_type) f : stmt_eval_type =
+  let bind_unroll (loop_name, loop_pos) (m : stmt_eval_type) f : stmt_eval_type
+      =
     bind_continue m @@ fun env ->
     let stop, env' = IEnv.tick_decr env in
     if stop then
-      B.warnT (loop_name ^ " unrolling reached limit") env >>= return_continue
+      let msg =
+        Printf.sprintf "%s at %s pruned" loop_name
+          (PP.pp_pos_str_no_char loop_pos)
+      in
+      B.cutoffT msg env >>= return_continue
     else f env'
 
   let bind_maybe_unroll loop_name undet =
@@ -1115,7 +1120,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Begin EvalLoop *)
   and eval_loop loc is_while env limit_opt e_cond body : stmt_eval_type =
     (* Name for warn messages. *)
-    let loop_name = if is_while then "While loop" else "Repeat loop" in
+    let loop_name = if is_while then "while loop" else "repeat loop" in
+    let loop_desc = (loop_name, loc) in
     (* Continuation in the positive case. *)
     let loop env =
       let* limit_opt' = tick_loop_limit loc limit_opt in
@@ -1129,7 +1135,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let cond_m = if is_while then cond_m else cond_m >>= B.unop BNOT in
     (* If needs be, we tick the unrolling stack before looping. *)
     B.delay cond_m @@ fun cond cond_m ->
-    let binder = bind_maybe_unroll loop_name (B.is_undetermined cond) in
+    let binder = bind_maybe_unroll loop_desc (B.is_undetermined cond) in
     (* Real logic: if condition is validated, we loop,
        otherwise we continue to the next statement. *)
     choice_with_branch_effect cond_m e_cond loop return_continue
@@ -1159,7 +1165,8 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Continuation in the positive case. *)
     let loop env =
-      bind_maybe_unroll "For loop" undet (eval_block env body) @@ fun env1 ->
+      let loop_desc = ("for loop", body) in
+      bind_maybe_unroll loop_desc undet (eval_block env body) @@ fun env1 ->
       let*| v_step, env2 = step env1 index_name v_start dir in
       eval_for loop_msg undet env2 index_name next_limit_opt v_step dir v_end
         body

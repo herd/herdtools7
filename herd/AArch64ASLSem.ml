@@ -760,6 +760,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
     let is_experimental = TopConf.C.variant Variant.ASLExperimental
+    let not_cutoff = not (TopConf.C.variant Variant.CutOff)
 
     let fake_test ii fname decode =
       let init = [] in
@@ -1170,7 +1171,33 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           (A.dump_instruction ii.A.inst);
       AArch64Mixed.build_semantics test ii
 
-    let build_semantics test ii =
+    let check_cutoff test =
+      if not_cutoff then Fun.const true
+      else
+        let flitmus = test.Test_herd.name.Name.file in
+        let tbl = Hashtbl.create 13 in
+        fun (_i, _cs, es) ->
+          let open ASLS.E in
+          match ASLS.find_cutoff es.events with
+          | None -> true
+          | Some msg ->
+              if Hashtbl.mem tbl msg then ()
+              else (
+                Hashtbl.add tbl msg true;
+                Warn.warn_always "%a: %s, some legal outcomes may be missing"
+                  Pos.pp_pos0 flitmus msg);
+              false
+
+    let solve_regs test (_i, cs, es) =
+      let () =
+        if _dbg then
+          Printf.eprintf "** Events **\n  %a\n%!"
+            (fun chan -> ASLE.EventSet.pp chan "\n  " ASLE.debug_event)
+            es.ASLE.events;
+      in
+      MC.solve_regs test es cs
+
+    let build_semantics test_aarch64 ii =
       let () =
         if _dbg then
           Printf.eprintf "\n\nExecuting %s by proc %s\n%!"
@@ -1178,27 +1205,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             (Proc.pp ii.A.proc)
       in
       match decode_inst ii with
-      | None -> check_strict test ii
-      | Some _ when AArch64.is_mixed -> check_strict test ii
+      | None -> check_strict test_aarch64 ii
+      | Some _ when AArch64.is_mixed -> check_strict test_aarch64 ii
       | Some (fname, args) -> (
-          let test = fake_test ii fname args in
+          let test_asl = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
           let check_event_structure = check_event_structure model in
-          let { MC.event_structures = rfms; _ }, test =
-            MC.glommed_event_structures test
+          let { MC.event_structures = rfms; _ }, test_asl =
+            MC.glommed_event_structures test_asl
           in
           let () =
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
-          in
-          let solve_regs (_i, cs, es) =
-            let () =
-              if _dbg then (
-                Printf.eprintf "** Events **\n  ";
-                ASLE.EventSet.pp stderr "\n  " ASLE.debug_event es.ASLE.events;
-                Printf.eprintf "\n%!")
-            in
-            MC.solve_regs test es cs
           in
           let build_conc es rfmap =
             let open ASLE in
@@ -1213,22 +1231,24 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             in
             ASLS.{ ASLS.conc_zero with str = es; rfmap; po; partial_po; pos }
           in
-          let check_rfm li (es, rfm, cs) =
-            let conc = build_conc es rfm in
-            let kfail li = li in
-            let ksuccess conc _fs (out_sets, out_show) _flags li =
+          let check_rfm_and_translate acc (es, rfm, cs) =
+            let kfail acc = acc in
+            let ksuccess conc _fs (out_sets, out_show) _flags acc =
               let () = if _dbg then prerr_endline "ASL cat, success" in
               let c = (conc, cs, Lazy.force out_sets, Lazy.force out_show) in
-              Translator.tr_execution ii c :: li
+              Translator.tr_execution ii c :: acc
             in
-            check_event_structure test conc kfail ksuccess li
+            let conc = build_conc es rfm in
+            check_event_structure test_asl conc kfail ksuccess acc
           in
-          let monads =
-            List.fold_left
-              (fun li c ->
-                match solve_regs c with None -> li | Some c -> check_rfm li c)
-              [] rfms
+          let check_and_translate acc c =
+            if check_cutoff test_asl c then
+              match solve_regs test_asl c with
+              | None -> acc
+              | Some c -> check_rfm_and_translate acc c
+            else acc
           in
+          let monads = List.fold_left check_and_translate [] rfms in
           let () =
             if _dbg then
               Printf.eprintf
