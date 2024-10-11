@@ -43,6 +43,7 @@ val variant : (Variant.t -> bool) ref
 module Refs : sig
   val fault_handling : Fault.Handling.t ref
   val mte_precision : Precision.t ref
+  val mte_store_only : bool ref
   val sve_vector_length : int ref
   val sme_vector_length : int ref
 end
