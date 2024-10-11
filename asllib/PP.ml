@@ -94,6 +94,7 @@ let binop_to_string : binop -> string = function
   | SHL -> "<<"
   | SHR -> ">>"
   | POW -> "^"
+  | COLON_COLON -> "::"
 
 let unop_to_string = function BNOT -> "!" | NEG -> "-" | NOT -> "NOT"
 

@@ -46,6 +46,7 @@ open AST
 open ASTUtils
 
 let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
+let zero = E_Literal (L_Int Z.zero) |> add_dummy_pos
 
 let make_ldi_vars (xs, ty) =
   let make_one x =
@@ -179,6 +180,10 @@ let     pared(x) == delimited(    LPAR, x, RPAR    )
 let    braced(x) == delimited(  LBRACE, x, RBRACE  )
 let bracketed(x) == delimited(LBRACKET, x, RBRACKET)
 
+let bracketed_or_pared(x) :=
+  | x=bracketed(x); { x }
+  | x=pared(x);     { x }
+
 (* Option handling *)
 (* [some] returns an option, but ensures it is there. *)
 let some(x) == ~ = x ; <Some>
@@ -256,29 +261,30 @@ let unop ==
 let unimplemented_binop(x) == x ; { PLUS }
 
 let binop ==
-  | AND   ; { AND    }
-  | BAND  ; { BAND   }
-  | BOR   ; { BOR    }
-  | BEQ   ; { EQ_OP  }
-  | DIV   ; { DIV    }
-  | DIVRM ; { DIVRM  }
-  | EOR   ; { EOR    }
-  | EQ_OP ; { EQ_OP  }
-  | NEQ   ; { NEQ    }
-  | GT    ; { GT     }
-  | GEQ   ; { GEQ    }
-  | IMPL  ; { IMPL   }
-  | LT    ; { LT     }
-  | LEQ   ; { LEQ    }
-  | PLUS  ; { PLUS   }
-  | MINUS ; { MINUS  }
-  | MOD   ; { MOD    }
-  | MUL   ; { MUL    }
-  | OR    ; { OR     }
-  | RDIV  ; { RDIV   }
-  | SHL   ; { SHL    }
-  | SHR   ; { SHR    }
-  | POW   ; { POW    }
+  | AND         ; { AND    }
+  | BAND        ; { BAND   }
+  | BOR         ; { BOR    }
+  | BEQ         ; { EQ_OP  }
+  | DIV         ; { DIV    }
+  | DIVRM       ; { DIVRM  }
+  | EOR         ; { EOR    }
+  | EQ_OP       ; { EQ_OP  }
+  | NEQ         ; { NEQ    }
+  | GT          ; { GT     }
+  | GEQ         ; { GEQ    }
+  | IMPL        ; { IMPL   }
+  | LT          ; { LT     }
+  | LEQ         ; { LEQ    }
+  | PLUS        ; { PLUS   }
+  | MINUS       ; { MINUS  }
+  | MOD         ; { MOD    }
+  | MUL         ; { MUL    }
+  | OR          ; { OR     }
+  | RDIV        ; { RDIV   }
+  | SHL         ; { SHL    }
+  | SHR         ; { SHR    }
+  | POW         ; { POW    }
+  | COLON_COLON ; { COLON_COLON }
   | unimplemented_binop(
     | CONCAT; <>
   )
@@ -314,8 +320,7 @@ let make_expr(sub_expr) ==
     | x=IDENTIFIER; args=plist(expr); ~=nargs;                    < E_Call               >
     | e=sub_expr; ~=slices;                                       < E_Slice              >
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
-    | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
-    | ~=bracketed(nclist(expr));                                  < E_Concat             >
+    | e=sub_expr; DOT; fs=pared(nclist(IDENTIFIER));              < E_GetFields          >
     | ~=sub_expr; AS; ~=ty;                                       < E_ATC              >
     | ~=sub_expr; AS; ~=implicit_t_int;                           < E_ATC              >
 
@@ -370,9 +375,10 @@ let fields_opt == { [] } | fields
 let named_slices == bracketed(nclist(slice))
 let slices == bracketed( clist(slice))
 let slice ==
-  | ~=expr;                       < Slice_Single  >
+  | ~=expr;  COLON;               < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
+  | COLON;   e=expr;              { Slice_Length(zero, e) }
   | e1=expr; STAR_COLON; e2=expr; < Slice_Star    >
 
 (* Bitfields *)
@@ -435,8 +441,8 @@ let lexpr_atom_desc :=
   | ~=IDENTIFIER ; <LE_Var>
   | le=lexpr_atom; ~=slices; <LE_Slice>
   | le=lexpr_atom; DOT; field=IDENTIFIER; <LE_SetField>
-  | le=lexpr_atom; DOT; li=bracketed(clist(IDENTIFIER)); { LE_SetFields (le, li, []) }
-  | les=bracketed(nclist(lexpr_atom)); { LE_Concat (les, None) }
+  | le=lexpr_atom; DOT; li=pared(clist(IDENTIFIER)); { LE_SetFields (le, li, []) }
+  | les=bracketed(nclist(lexpr_atom)); { LE_Concat (les, None) } (* TODO: use a reasonable form *)
 
 let lexpr_atom == annotated(lexpr_atom_desc)
 
