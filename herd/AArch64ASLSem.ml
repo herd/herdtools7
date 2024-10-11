@@ -806,6 +806,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let is_experimental = TopConf.C.variant Variant.ASLExperimental
     let not_cutoff = not (TopConf.C.variant Variant.CutOff)
     let is_vmsa = TopConf.C.variant Variant.VMSA
+
     let fake_test ii fname decode =
       profile "build fake test" @@ fun () ->
       let init = [] in
