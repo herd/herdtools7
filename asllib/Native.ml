@@ -98,6 +98,8 @@ module NativeBackend = struct
     Printf.eprintf "Warning: message %s found its way, something is wrong\n" msg;
     return v
 
+  let cutoffT msg v = warnT msg v
+
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind
