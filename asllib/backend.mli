@@ -73,6 +73,9 @@ module type S = sig
   val warnT : string -> 'a -> 'a m
   (** Add warning message *)
 
+  val cutoffT : string -> 'a -> 'a m
+  (** Flag loop unrolling pruning *)
+
   val bind_data : 'a m -> ('a -> 'b m) -> 'b m
   (** Monadic bind operation, used when data from the first operation is needed
       to compute the second operation. *)
