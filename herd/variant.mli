@@ -44,6 +44,7 @@ type t =
   | DontCheckMixed
   | MemTag           (* Memory Tagging, synonym of MTE *)
   | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
+  | MTEStoreOnly     (* Load instructions are Tag Unchecked *)
   | FaultHandling of Fault.Handling.t (* Fault handling *)
   | CutOff
   | Morello
@@ -135,6 +136,7 @@ val get_default :  Archs.t -> t -> bool
 val get_switch : Archs.t -> t -> (t -> bool) -> bool
 
 val set_mte_precision : Precision.t ref -> t -> bool
+val set_mte_store_only : bool ref -> t -> bool
 val set_fault_handling : Fault.Handling.t ref -> t -> bool
 
 val set_sve_length : int ref -> t -> t option
