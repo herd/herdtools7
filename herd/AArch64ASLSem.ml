@@ -770,6 +770,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
     let is_experimental = TopConf.C.variant Variant.ASLExperimental
     let is_vmsa = TopConf.C.variant Variant.VMSA
+    let is_cutoff = TopConf.C.variant Variant.CutOff
 
     let fake_test ii fname decode =
       let init = [] in
@@ -1262,10 +1263,15 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               in
               check_event_structure test conc kfail ksuccess li
             in
-            let check li c =
-              match solve_regs c with
-              | None -> li
-              | Some c -> check_rfm li c in
+            let check li  (_,_,cs as c) =
+              if
+                not is_cutoff &&
+                ASLS.E.EventSet.exists ASLS.E.is_cutoff cs.ASLS.E.events
+              then li
+              else
+                match solve_regs c with
+                | None -> li
+                | Some c -> check_rfm li c in
             List.fold_left check [] rfms
           in
           let () =
