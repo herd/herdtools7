@@ -405,6 +405,7 @@ end = struct
               let info = splitted.Splitter.info
               let variant = OT.variant
               let mte_precision = OT.mte_precision
+              let mte_store_only = false
               let fault_handling = OT.fault_handling
               let sve_vector_length = 0
               let sme_vector_length = 0
