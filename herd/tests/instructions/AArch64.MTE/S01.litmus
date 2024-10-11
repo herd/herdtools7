@@ -1,0 +1,9 @@
+AArch64 S01
+variant=memtag,sync,store-only
+{
+0:X9=x:red;
+}
+ P0             ;
+MOV W0,#1       ;
+CAS W0,WZR,[X9] ;
+exists ~fault(P0,x)

@@ -465,6 +465,7 @@ let () =
     let variant = !variant
     let fault_handling = !Refs.fault_handling
     let mte_precision = !Refs.mte_precision
+    let mte_store_only = !Refs.mte_store_only
     let sve_vector_length = !Refs.sve_vector_length
     let sme_vector_length = !Refs.sme_vector_length
   let byte = !byte

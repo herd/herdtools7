@@ -1,0 +1,10 @@
+Test S00 Required
+States 1
+ Fault(P0:L1,x:green,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L1,x))
+Observation S00 Always 1 0
+Hash=5229396c405f2016eb0680a632b41e0f
+

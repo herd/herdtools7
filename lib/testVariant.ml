@@ -23,6 +23,7 @@ module
       val info : MiscParser.info
       val variant : Opt.t -> bool
       val mte_precision : Precision.t
+      val mte_store_only : bool
       val fault_handling : Fault.Handling.t
       val sve_vector_length : int
       val sme_vector_length : int
@@ -33,6 +34,7 @@ module
       module Refs = struct
 
         let mte_precision = ref Var.mte_precision
+        let mte_store_only = ref Var.mte_store_only
         and fault_handling = ref Var.fault_handling
         and sve_vector_length = ref Var.sve_vector_length
         and sme_vector_length = ref Var.sme_vector_length
@@ -55,6 +57,7 @@ module
             with Arg.Bad msg ->  Warn.user_error "%s" msg
 
        let mte_precision = !Refs.mte_precision
+       let mte_store_only = !Refs.mte_store_only
        and fault_handling = !Refs.fault_handling
        and sve_vector_length = !Refs.sve_vector_length
        and sme_vector_length = !Refs.sme_vector_length

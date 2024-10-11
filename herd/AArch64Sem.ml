@@ -1590,11 +1590,17 @@ Arguments:
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA Dir.R false memtag
+        let checked = memtag && not C.mte_store_only in
+        let ma =
+          (* Extract location without a tag from an address *)
+          if memtag && C.mte_store_only then
+            ma >>= fun a -> loc_extract a
+          else ma in
+        lift_memop rA Dir.R false checked
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
-              memtag && (C.mte_precision = Synchronous ||
+              checked && (C.mte_precision = Synchronous ||
                          C.mte_precision = Asymmetric) in
             if memtag_sync || Access.is_physical ac || pac then
               M.bind_ctrldata ma (mop ac)
@@ -2083,24 +2089,63 @@ Arguments:
           (rmw_to_read rmw)
           ii
 
-      let do_cas_fail_no_wb sz an rn ma mv mop ii =
-        (* CAS does not generate an Explicit Write Effect          *)
-        (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
-        (*                                the dirty bit of the TTD *)
-        let proc = ii.AArch64.proc in
-        let tthm = dirty.DirtyBit.tthm proc
-        and hd = dirty.DirtyBit.hd proc in
-        let may_update_db = tthm && hd in
-        let action updatedb =
-          (* Dir.W would force check for dbm bit:                  *)
-          (* - if set then either update or not db bit per R_TXGHB *)
-          (* - if unset raise Permission fault                     *)
-          lift_memop rn Dir.W updatedb memtag mop (to_perms "rw" sz) ma mv an ii
+      let do_cas_fail do_wb sz an rn ma mv mop ii =
+        let action checked ma =
+          let do_action updatedb checked ma =
+              (* Dir.W would force check for dbm bit:                  *)
+              (* - if set then either update or not db bit per R_TXGHB *)
+              (* - if unset raise Permission fault                     *)
+              lift_memop rn Dir.W updatedb checked mop (to_perms "rw" sz) ma mv an ii
+          in
+          if do_wb then
+            do_action true checked ma
+          else begin
+            (* When there is no writeback, It is IMPLEMENTATION SPECIFIC *)
+            (* if there is an update to the dirty bit of the TTD *)
+            let proc = ii.AArch64.proc in
+            let tthm = dirty.DirtyBit.tthm proc
+            and hd = dirty.DirtyBit.hd proc in
+            let may_update_db = tthm && hd in
+            if may_update_db then
+              M.altT (do_action true checked ma) (do_action false checked ma)
+            else
+              do_action false checked ma
+          end
         in
-        if may_update_db then
-          M.altT (action true) (action false)
+
+        if memtag && C.mte_store_only then
+          (* If FEAT_MTE_STORE_ONLY is implemented it is              *)
+          (* CONSTRAINED UNPREDICTABLE whether the Tag Check          *)
+          (* operation is performed.                                  *)
+          M.altT (
+            (* No Tag Check *)
+            (* Extract location without a tag from an address *)
+            let ma = ma >>= fun a -> loc_extract a in
+            action false ma
+          )(
+            (* Tag Check *)
+            action true ma
+          )
         else
-          action false
+          action memtag ma
+
+      let do_cas_fail_with_wb = do_cas_fail true
+      let do_cas_fail_no_wb = do_cas_fail false
+
+      let do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii =
+        M.altT (
+          (* CAS succeeds and generates an Explicit Write Effect *)
+          (* there must be an update to the dirty bit of the TTD *)
+          lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz) ma mv an ii
+        )( (* CAS fails *)
+          M.altT (
+            (* CAS generates an Explicit Write Effect              *)
+            do_cas_fail_with_wb sz an rn ma mv mop_fail_with_wb ii
+          )(
+            (* CAS does not generate an Explicit Write Effect      *)
+            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb ii
+          )
+        )
 
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
@@ -2141,24 +2186,9 @@ Arguments:
           M.aarch64_cas_ok (Access.is_physical ac) ma read_rs read_rt write_rs
                                 read_mem write_mem branch M.eqT
         in
-        M.altT (
-          (* CAS succeeds and generates an Explicit Write Effect *)
-          (* there must be an update to the dirty bit of the TTD *)
-          lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz)
-            (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
-        )( (* CAS fails *)
-          M.altT (
-            (* CAS generates an Explicit Write Effect              *)
-            (* there must be an update to the dirty bit of the TTD *)
-            lift_memop rn Dir.W true memtag mop_fail_with_wb (to_perms "rw" sz)
-              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
-          )(
-            (* CAS does not generate an Explicit Write Effect          *)
-            let ma = read_reg_addr rn ii
-            and mv = read_reg_data_sz sz rt ii in
-            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb ii
-          )
-        )
+        let ma = read_reg_addr rn ii
+        and mv = read_reg_data_sz sz rt ii in
+        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii
 
       let casp sz rmw rs1 rs2 rt1 rt2 rn ii =
         let an = rmw_to_read rmw in
@@ -2217,28 +2247,9 @@ Arguments:
           M.aarch64_cas_ok (Access.is_physical ac) ma read_rs
               read_rt write_rs read_mem write_mem branch eqp
         in
-        M.altT (
-          (* CASP succeeds and generates Explicit Write Effects  *)
-          (* there must be an update to the dirty bit of the TTD *)
-          lift_memop rn Dir.W true memtag mop_success
-            (to_perms "rw" sz) (read_reg_addr rn ii)
-            (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
-            an ii
-        )( (* CASP fails *)
-          M.altT (
-            (* CASP generates Explicit Write Effects               *)
-            (* there must be an update to the dirty bit of the TTD *)
-            lift_memop rn Dir.W true memtag mop_fail_with_wb
-              (to_perms "rw" sz) (read_reg_addr rn ii)
-              (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
-              an ii
-          )(
-            (* CASP does not generate Explicit Write Effects           *)
-            let ma = read_reg_addr rn ii
-            and mv = read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii in
-            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb ii
-          )
-        )
+        let ma = read_reg_addr rn ii
+        and mv = read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii in
+        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii
 
       (* Temporary morello variation of CAS *)
       let cas_morello sz rmw rs rt rn ii =

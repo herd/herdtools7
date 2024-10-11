@@ -46,6 +46,7 @@ let variant = ref (fun _ -> false)
 module Refs = struct
   let fault_handling = ref Fault.Handling.default
   let mte_precision = ref Precision.default
+  let mte_store_only = ref false
   let sve_vector_length = ref 128
   let sme_vector_length = ref 128
 end

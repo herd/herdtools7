@@ -88,6 +88,7 @@ let set_fault_handling r = function
 | _ -> false
 
 let set_mte_precision _ _ = false
+let set_mte_store_only _ _ = false
 
 let set_sve_length _ _ = None
 let set_sme_length _ _ = None
