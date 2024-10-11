@@ -129,6 +129,9 @@ let make_ty_decl_subtype (x, s) =
 (* IF *)
 %nonassoc ELSE
 
+(* binop_concat *)
+%left COLON_COLON
+
 (* binop_boolean, checked_type_constraint *)
 %left BOR BAND IMPL BEQ AS
 
