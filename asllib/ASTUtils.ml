@@ -511,7 +511,17 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_Discard -> E_Var "-"
     | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
-    | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
+    | LE_Concat (les, _) ->
+        let rec go : lexpr list -> expr_desc = function
+          | [] -> E_Literal (L_BitVector Bitvector.empty)
+          | e :: es ->
+              let es = go es in
+              E_Binop
+                ( COLON_COLON,
+                  map_desc aux e,
+                  with_pos_from (to_pos e) (add_dummy_pos es) )
+        in
+        go les
   in
   map_desc aux
 
@@ -598,21 +608,21 @@ exception FailedConstraintOp
 let is_left_increasing = function
   | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> true
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
+  | RDIV | COLON_COLON ->
       raise FailedConstraintOp
 
 let is_right_increasing = function
   | MUL | SHL | SHR | POW | PLUS -> true
   | DIV | DIVRM | MOD | MINUS -> false
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
+  | RDIV | COLON_COLON ->
       raise FailedConstraintOp
 
 let is_right_decreasing = function
   | MINUS -> true
   | DIV | DIVRM | MUL | SHL | SHR | POW | PLUS | MOD -> false
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
+  | RDIV | COLON_COLON ->
       raise FailedConstraintOp
 
 (* Begin ConstraintBinop *)

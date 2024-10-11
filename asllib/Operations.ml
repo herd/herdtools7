@@ -88,6 +88,8 @@ let binop_values pos t op v1 v2 =
       L_BitVector
         Bitvector.(
           of_z (length b1) (Z.sub (to_z_unsigned b1) (to_z_unsigned b2)))
+  | COLON_COLON, L_BitVector b1, L_BitVector b2 ->
+      L_BitVector (Bitvector.concat [ b1; b2 ])
   (* bits -> integer -> bits *)
   | PLUS, L_BitVector b1, L_Int z2 ->
       L_BitVector Bitvector.(of_z (length b1) (Z.add (to_z_unsigned b1) z2))

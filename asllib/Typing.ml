@@ -622,7 +622,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | MUL | SHL | POW -> true
     | PLUS | DIV | MINUS | MOD | SHR | DIVRM -> false
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | COLON_COLON ->
         assert false
 
   (* Begin ExplodeIntervals *)
@@ -742,7 +742,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
     | MINUS | MUL | PLUS -> Fun.id
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | COLON_COLON ->
         assert false
   (* End *)
 
@@ -798,7 +798,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         annotated_cs
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | COLON_COLON ->
         assert false
   (* End *)
 
@@ -840,6 +840,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (check_type_satisfies' env t2 integer)
             in
             let w = get_bitvector_width' env t1 in
+            T_Bits (w, []) |> with_loc
+        | COLON_COLON ->
+            let w1 = get_bitvector_width' env t1 in
+            let w2 = get_bitvector_width' env t2 in
+            let w = width_plus env w1 w2 in
             T_Bits (w, []) |> with_loc
         | EQ_OP | NEQ ->
             (* Wrong! *)
