@@ -7,5 +7,5 @@ func signature_example{A}(
     bv3: bits(A+B),
     C: integer) => bits(A+B)
 begin
-    return [bv, Ones(B)];
+    return bv :: Ones(B);
 end
