@@ -2,7 +2,7 @@ func foo {N} (x: bits(N)) => bits(N)
 begin
   let y = Zeros(2 * ((N DIV 2) - 5));
   let z = Zeros(10);
-  return [y, z];
+  return y :: z;
 end
 
 func main () => integer

@@ -1,7 +1,7 @@
 func foo {N} (bv: bits(N)) => bits(N)
 begin
   let y = Ones (N DIV 2);
-  return [Zeros(N DIV 2), y];
+  return Zeros(N DIV 2) :: y;
 end
 
 func main () => integer
