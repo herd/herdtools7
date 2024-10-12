@@ -92,7 +92,7 @@ and slices_to_positions env slices =
     let interval top len = List.init len (( - ) top) in
     let top, len, pos =
       match slice with
-      | Slice_Single e ->
+      | Slice_Arg e | Slice_Single e ->
           let pos = eval_to_int e in
           (pos, 1, e)
       | Slice_Range (etop, ebot) ->

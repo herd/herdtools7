@@ -378,6 +378,7 @@ let fields_opt == { [] } | fields
 let named_slices == bracketed(nclist(slice))
 let slices == bracketed( clist(slice))
 let slice ==
+  | ~=expr;                       < Slice_Arg     >
   | ~=expr;  COLON;               < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >

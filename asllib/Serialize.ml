@@ -133,6 +133,7 @@ and pp_expr_list f = pp_list pp_expr f
 and pp_slice_list f = pp_list pp_slice f
 
 and pp_slice f = function
+  | Slice_Arg e -> bprintf f "Slice_Arg (%a)" pp_expr e
   | Slice_Single e -> bprintf f "Slice_Single (%a)" pp_expr e
   | Slice_Range (e1, e2) ->
       bprintf f "Slice_Range (%a, %a)" pp_expr e1 pp_expr e2

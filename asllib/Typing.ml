@@ -102,6 +102,7 @@ let slices_width env =
   let minus = binop MINUS in
   let one = !$1 in
   let slice_width = function
+    | Slice_Arg _ -> assert false
     | Slice_Single _ -> one
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
     | Slice_Range (e1, e2) -> plus one (minus e1 e2)
@@ -410,6 +411,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           else DI.Interval.make x y
         in
         match slice with
+        | Slice_Arg _ -> assert false
         | Slice_Single e ->
             let x = eval env e in
             make x x
@@ -447,6 +449,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let one slice k =
       match slice with
+      | Slice_Arg _ -> assert false
       | Slice_Single e -> e :: k
       | Slice_Length (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
@@ -1201,6 +1204,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           Format.eprintf "Annotating slice %a@." PP.pp_slice_list [ s ]
       in
       match s with
+      | Slice_Arg _ -> assert false
       | Slice_Single i ->
           (* LRM R_GXKG:
              The notation b[i] is syntactic sugar for b[i +: 1].
@@ -1704,9 +1708,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match e'.desc with
         | E_Var name
           when should_reduce_to_call env name ST_Getter
-               && List.for_all slice_is_single slices ->
+               && List.for_all slice_is_arg slices ->
             let args =
-              try List.map slice_as_single slices
+              try List.map slice_as_arg slices
               with Invalid_argument _ -> assert false
             in
             let name1, args1, eqs, ty =
@@ -1734,7 +1738,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (* Begin EGetArray *)
             | T_Array (size, ty') -> (
                 match slices with
-                | [ Slice_Single e_index ] ->
+                | [ Slice_Arg e_index ] ->
                     let t_index', e_index' =
                       annotate_expr_ ~forbid_atcs env e_index
                     in
@@ -1976,7 +1980,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let le2 = annotate_lexpr env le1 t_le1 in
             let+ () = check_type_satisfies le2 env t_e t in
             match slices with
-            | [ Slice_Single e_index ] ->
+            | [ Slice_Arg e_index ] ->
                 let t_index', e_index' = annotate_expr env e_index in
                 let wanted_t_index = type_of_array_length ~loc:le size in
                 let+ () =
@@ -2545,9 +2549,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match sub_le.desc with
         | LE_Var x
           when should_reduce_to_call env x ST_Setter
-               && List.for_all slice_is_single slices ->
+               && List.for_all slice_is_arg slices ->
             let args =
-              try List.map slice_as_single slices
+              try List.map slice_as_arg slices
               with Invalid_argument _ -> assert false
             in
             let typed_args = (t_e, e) :: List.map (annotate_expr env) args in

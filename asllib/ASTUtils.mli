@@ -255,8 +255,8 @@ val scope_compare : scope -> scope -> int
 val lid_of_lexpr : lexpr -> local_decl_item option
 val expr_of_lexpr : lexpr -> expr
 val case_to_conds : stmt -> stmt
-val slice_is_single : slice -> bool
-val slice_as_single : slice -> expr
+val slice_is_arg : slice -> bool
+val slice_as_arg : slice -> expr
 
 val patch : src:AST.t -> patches:AST.t -> AST.t
 (** [patch ~src ~patches] replaces in [src] the global identifiers defined by [patches]. *)
