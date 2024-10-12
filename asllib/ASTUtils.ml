@@ -204,7 +204,7 @@ and use_pattern = function
   | Pattern_Range (e1, e2) -> use_e e1 $ use_e e2
 
 and use_slice = function
-  | Slice_Single e -> use_e e
+  | Slice_Arg e | Slice_Single e -> use_e e
   | Slice_Star (e1, e2) | Slice_Length (e1, e2) | Slice_Range (e1, e2) ->
       use_e e1 $ use_e e2
 
@@ -573,11 +573,11 @@ let case_to_conds : stmt -> stmt =
       S_Seq (assign, cases_to_cond x cases)
   | _ -> raise (Invalid_argument "case_to_conds")
 
-let slice_is_single = function Slice_Single _ -> true | _ -> false
+let slice_is_arg = function Slice_Arg _ -> true | _ -> false
 
-let slice_as_single = function
-  | Slice_Single e -> e
-  | _ -> raise @@ Invalid_argument "slice_as_single"
+let slice_as_arg = function
+  | Slice_Arg e -> e
+  | _ -> raise @@ Invalid_argument "slice_as_arg"
 
 let default_t_bits = T_Bits (E_Var "-" |> add_dummy_pos, [])
 
@@ -760,8 +760,9 @@ let rename_locals map_name ast =
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices
   and map_slice = function
-    | Slice_Length (e1, e2) -> Slice_Length (map_e e1, map_e e2)
+    | Slice_Arg e -> Slice_Arg (map_e e)
     | Slice_Single e -> Slice_Single (map_e e)
+    | Slice_Length (e1, e2) -> Slice_Length (map_e e1, map_e e2)
     | Slice_Range (e1, e2) -> Slice_Range (map_e e1, map_e e2)
     | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)
   and map_t t =

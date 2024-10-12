@@ -139,7 +139,7 @@ let rec pp_expr f e =
 and pp_expr_list f = pp_comma_list pp_expr f
 
 and pp_slice f = function
-  | Slice_Single e -> pp_expr f e
+  | Slice_Arg e | Slice_Single e -> pp_expr f e
   | Slice_Range (e1, e2) -> fprintf f "@[<h>%a@,:%a@]" pp_expr e1 pp_expr e2
   | Slice_Length (e1, e2) -> fprintf f "@[<h>%a@,+:%a@]" pp_expr e1 pp_expr e2
   | Slice_Star (e1, e2) -> fprintf f "@[<h>%a@,*:%a@]" pp_expr e1 pp_expr e2
