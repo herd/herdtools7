@@ -100,7 +100,7 @@
   [1]
 
   $ cat >lca8.asl <<EOF
-  > type T1 of bits (3) { [2] b1 };
+  > type T1 of bits (3) { [2:] b1 };
   > func main () => integer
   > begin
   >   let x = if UNKNOWN: boolean then '101' as T1 else '101' as bits(3);
@@ -114,11 +114,11 @@
   [1]
 
   $ cat >lca9.asl <<EOF
-  > type T1 of bits (3) { [2] b1 };
+  > type T1 of bits (3) { [2:] b1 };
   > func main () => integer
   > begin
-  >   let x = if UNKNOWN: boolean then '101' as T1 else '101' as bits (3) { [2] b1 };
-  >   let -: bits(3) { [2] b1 } = x;
+  >   let x = if UNKNOWN: boolean then '101' as T1 else '101' as bits (3) { [2:] b1 };
+  >   let -: bits(3) { [2:] b1 } = x;
   >   let -: real = x;
   > end
   > EOF
