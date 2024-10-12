@@ -32,6 +32,7 @@ type error_desc =
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
   | BadSlice of slice
+  | UnexpectedSliceArg of expr
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
@@ -155,6 +156,11 @@ module PPrint = struct
           (error_handling_time_to_string t)
           length pp_slice_list slices
     | BadSlice slice -> fprintf f "ASL error: invalid slice %a." pp_slice slice
+    | UnexpectedSliceArg e ->
+        fprintf f
+          "ASL error:@ Unexpected slice argument %a, but a slice is expected.@ \
+           Hint: slice a single bit at position x with [x:] instead of [x]."
+          pp_expr e
     | TypeInferenceNeeded ->
         pp_print_text f
           "ASL Internal error: Interpreter blocked. Type inference needed."
