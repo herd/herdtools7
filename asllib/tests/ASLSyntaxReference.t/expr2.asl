@@ -10,7 +10,7 @@ end
 
 getter g1_bits[p: integer] => bits(4)
 begin
-  return '1000'[p, 2:0];
+  return '1000'[p:, 2:0];
 end
 
 type point of record{x: bits(4), y: bits(4)};
@@ -23,9 +23,9 @@ begin
   // E_GetField 1: reading a single field.
   var b0 = p.x;
   // E_GetFields 1: reading multiple fields.
-  var b8: bits(8)  = p.[x, y];
-  // E_Concat 1: [b0, b1] concatenates two bitvectors.
-  b8 = [b0, b0];
+  var b8: bits(8)  = p.(x, y);
+  // E_Concat 1: b0 :: b1 concatenates two bitvectors.
+  b8 = b0 :: b0;
   // E_Tuple 1: constructing a pair of two 4-bit bitvectors.
   var t2 = (b0, b0);
   // E_GetField 2: reading the first tuple item.
