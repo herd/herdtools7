@@ -22,7 +22,7 @@ begin
     let testD : bits(letWidthFoo3)   = Zeros(letWidthFoo2); // Both RHS and LHS have width letWidthFoo
 
     let letWidthFooSub               = letWidthFoo - 1;
-    let testE : bits(letWidthFoo)    = [Zeros(letWidthFooSub), '0']; // RHS evaluates to type bits(letWidthFoo)
+    let testE : bits(letWidthFoo)    = Zeros(letWidthFooSub) :: '0'; // RHS evaluates to type bits(letWidthFoo)
 
     let tempF1 : integer {0..7} = foo();
     let tempF2                  = tempF1;

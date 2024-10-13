@@ -12,7 +12,7 @@ begin
 
         when EQUALS_8 =>
             // Cannot concatenate if size != 8
-            result = [temp[63:56], Zeros(8*size - 8)];
+            result = temp[63:56] :: Zeros(8*size - 8);
 
         when LESS_THAN_8 =>
             // Runtime Error when size < 8

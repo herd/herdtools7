@@ -306,7 +306,7 @@ C Tests
     provided integer {(N + 1)}.
   [1]
   $ aslref --no-exec CNegative4.asl
-  File CNegative4.asl, line 5, character 4 to line 8, character 6:
+  File CNegative4.asl, line 5, character 4 to line 8, character 5:
   ASL Typing error: a subtype of bits(64) was expected, provided bits((N + 5)).
   [1]
   $ aslref --no-exec CNegative5.asl
