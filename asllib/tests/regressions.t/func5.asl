@@ -11,7 +11,7 @@ end
 
 func f(x : bits(3)) => boolean
 begin
-  return x[0] == '0';
+  return x[0:] == '0';
 end
 
 func main() => integer
