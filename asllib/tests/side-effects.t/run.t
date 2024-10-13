@@ -62,3 +62,29 @@
   $ aslref while-var-edits.asl
   $ aslref repeat-var-edits.asl
 
+  $ aslref config-uses-var.asl
+  File config-uses-var.asl, line 2, characters 0 to 13:
+  ASL Typing error: expected config-time expression, got X.
+  [1]
+  $ aslref config-uses-config.asl
+  $ aslref config-uses-let.asl
+  File config-uses-let.asl, line 2, characters 0 to 13:
+  ASL Typing error: expected config-time expression, got X.
+  [1]
+  $ aslref config-uses-constant.asl
+  $ aslref config-uses-local-var.asl
+  $ aslref config-uses-local-let.asl
+  $ aslref config-uses-local-constant.asl
+  $ aslref config-uses-var-through-func.asl
+  File config-uses-var-through-func.asl, line 8, characters 0 to 18:
+  ASL Typing error: expected config-time expression, got foo().
+  [1]
+  $ aslref config-uses-config-through-func.asl
+  $ aslref config-uses-let-through-func.asl
+  File config-uses-let-through-func.asl, line 8, characters 0 to 18:
+  ASL Typing error: expected config-time expression, got foo().
+  [1]
+  $ aslref config-uses-constant-through-func.asl
+  $ aslref config-uses-atc.asl
+  $ aslref config-uses-unknown.asl
+

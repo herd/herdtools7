@@ -587,11 +587,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | Some (_, (GDK_Constant | GDK_Config | GDK_Let)) -> true
         | Some (_, GDK_Var) -> false
         | None ->
-            if
-              IMap.mem s env.global.subprograms
-              || IMap.mem s env.global.declared_types
-            then false
-            else undefined_identifier loc s)
+            assert (is_undefined s env);
+            undefined_identifier loc s)
   (* End *)
 
   (* Begin CheckStaticallyEvaluable *)
@@ -603,6 +600,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if is_statically_evaluable ~loc:e env ses then ()
     else fatal_from e (Error.UnpureExpression e)
   (* End *)
+
+  let storage_is_config ~loc (env : env) s =
+    match IMap.find_opt s env.global.storage_types with
+    | Some (_, (GDK_Constant | GDK_Config)) -> true
+    | Some (_, (GDK_Let | GDK_Var)) -> false
+    | None -> (
+        match IMap.find_opt s env.local.storage_types with
+        | Some (_, LDK_Constant) -> true
+        | Some (_, (LDK_Var | LDK_Let)) -> false
+        | None ->
+            assert (is_undefined s env);
+            undefined_identifier loc s)
+
+  let is_config_time ~loc env ses =
+    SES.is_side_effect_free ses
+    && SES.for_all_reads (storage_is_config ~loc env) ses
+
+  let check_is_config_time ~loc (env : env) (_, e, ses_e) () =
+    if is_config_time ~loc:e env ses_e then ()
+    else fatal_from loc Error.(ConfigTimeBroken e)
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
@@ -3168,6 +3185,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | None -> env1)
       | (GDK_Constant | GDK_Let), None ->
           Error.fatal_from loc UnrespectedParserInvariant
+      | GDK_Config, Some typed_e ->
+          let+ () = check_is_config_time ~loc env typed_e in
+          env1
       | _ -> env1
     in
     let () = assert (env2.local == empty_local) in

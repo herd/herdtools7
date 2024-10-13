@@ -69,6 +69,7 @@ type error_desc =
   | SetterWithoutCorrespondingGetter of func
   | ConcurrentSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
+  | ConfigTimeBroken of expr
 
 type error = error_desc annotated
 
@@ -268,6 +269,9 @@ module PPrint = struct
     | ConcurrentSideEffects (s1, s2) ->
         fprintf f "ASL Typing error: concurrent side effects %a and %a"
           SideEffect.pp_print s1 SideEffect.pp_print s2
+    | ConfigTimeBroken e ->
+        fprintf f "ASL Typing error: expected config-time expression, got %a."
+          pp_expr e
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
