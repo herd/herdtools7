@@ -564,11 +564,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | Some (_, (GDK_Constant | GDK_Config | GDK_Let)) -> true
         | Some (_, GDK_Var) -> false
         | None ->
-            if
-              IMap.mem s env.global.subprograms
-              || IMap.mem s env.global.declared_types
-            then false
-            else undefined_identifier loc s)
+            assert (is_undefined s env);
+            undefined_identifier loc s)
   (* End *)
 
   (* Begin IsStaticallyEvaluable *)
@@ -584,6 +581,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       () |: TypingRule.CheckStaticallyEvaluable
     else fatal_from e (Error.ImpureExpression e)
   (* End *)
+
+  let storage_is_config ~loc (env : env) s =
+    match IMap.find_opt s env.global.storage_types with
+    | Some (_, (GDK_Constant | GDK_Config)) -> true
+    | Some (_, (GDK_Let | GDK_Var)) -> false
+    | None -> (
+        match IMap.find_opt s env.local.storage_types with
+        | Some (_, LDK_Constant) -> true
+        | Some (_, (LDK_Var | LDK_Let)) -> false
+        | None ->
+            assert (is_undefined s env);
+            undefined_identifier loc s)
+
+  let is_config_time ~loc env ses =
+    SES.is_side_effect_free ses
+    && SES.for_all_reads (storage_is_config ~loc env) ses
+
+  let check_is_config_time ~loc (env : env) (_, e, ses_e) () =
+    if is_config_time ~loc:e env ses_e then ()
+    else fatal_from loc Error.(ConfigTimeBroken e)
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
@@ -3225,26 +3242,27 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
     let+ () = check_var_not_in_genv loc genv name in
     let env = with_empty_local genv in
-    let initial_value', ty_opt', declared_t, ses_initial_value =
+    let typed_initial_value, ty_opt', declared_t =
       (* AnnotateTyOptInitialValue( *)
       match (ty_opt, initial_value) with
       | Some t, Some e ->
           let t' = annotate_type ~loc env t
-          and t_e, e', ses_e = annotate_expr env e in
+          and ((t_e, _, _) as typed_e) = annotate_expr env e in
           let+ () = check_type_satisfies loc env t_e t' in
-          (e', Some t', t', ses_e)
+          (typed_e, Some t', t')
       | Some t, None ->
           let t' = annotate_type ~loc env t in
           let e' = base_value ~loc env t' in
-          (e', Some t', t', SES.empty)
+          ((t', e', SES.empty), Some t', t')
       | None, Some e ->
-          let t_e, e', ses_e = annotate_expr env e in
-          (e', None, t_e, ses_e)
+          let ((t_e, _, _) as typed_e) = annotate_expr env e in
+          (typed_e, None, t_e)
       | None, None -> Error.fatal_from loc UnrespectedParserInvariant
       (* AnnotateTyOptInitialValue) *)
     in
     let genv1 = add_global_storage loc name keyword genv declared_t in
     let env1 = with_empty_local genv1 in
+    let _, initial_value', ses_initial_value = typed_initial_value in
     (* UpdateGlobalStorage( *)
     let env2 =
       match keyword with
@@ -3263,6 +3281,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match StaticModel.normalize_opt env1 initial_value' with
           | Some e' -> add_global_immutable_expr name e' env1
           | None -> env1)
+      | GDK_Config ->
+          let+ () = check_is_config_time ~loc env typed_initial_value in
+          env1
       | _ -> env1
       (* UpdateGlobalStorage) *)
     in

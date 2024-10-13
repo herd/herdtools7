@@ -82,6 +82,7 @@ type error_desc =
   | LoopLimitReached
   | RecursionLimitReached
   | EmptyConstraints
+  | ConfigTimeBroken of expr
 
 type error = error_desc annotated
 
@@ -168,6 +169,7 @@ let error_label = function
   | RecursionLimitReached -> "RecursionLimitReached"
   | EmptyConstraints -> "EmptyConstraints"
   | ConcurrentSideEffects _ -> "ConcurrentSideEffects"
+  | ConfigTimeBroken _ -> "ConfigTimeBroken"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -399,6 +401,9 @@ module PPrint = struct
     | ConcurrentSideEffects (s1, s2) ->
         fprintf f "ASL Typing error: concurrent side effects %a and %a"
           SideEffect.pp_print s1 SideEffect.pp_print s2
+    | ConfigTimeBroken e ->
+        fprintf f "ASL Typing error: expected config-time expression, got %a."
+          pp_expr e
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
