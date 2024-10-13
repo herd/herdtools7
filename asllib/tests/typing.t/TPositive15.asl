@@ -11,8 +11,8 @@ begin
     testF[x *: n]       = Zeros(n);           // Same rules apply to bit slices on LHS
 
     let testG           = 0xA55A1234[0 +: 0]; // Zero width bit slices permitted
-    let testH : bit     = 0xA55A1234[n];
+    let testH : bit     = 0xA55A1234[n:];
 
     // bit slices of bit vectors
-    let testI           = Zeros(2)[n];        // statically allowed, but may fail at runtime if n > 1
+    let testI           = Zeros(2)[n:];        // statically allowed, but may fail at runtime if n > 1
 end
