@@ -9,7 +9,7 @@ func test_sint {N} (bv: bits(N))
 begin
   for i = 0 to 1 << N  - 1 do
     assert SInt (i[N:0]) == i;
-    assert SInt (['1', i[N-1:0]]) == i - 1 << N;
+    assert SInt ('1' :: i[N-1:0]) == i - 1 << N;
   end
 end
 

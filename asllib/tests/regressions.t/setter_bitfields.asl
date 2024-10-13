@@ -1,4 +1,4 @@
-type MyBV of bits(8) { [5] bitfield };
+type MyBV of bits(8) { [5:] bitfield };
 
 getter F[] => MyBV
 begin

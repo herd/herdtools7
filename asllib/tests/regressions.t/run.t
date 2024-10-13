@@ -307,7 +307,7 @@ Required tests:
   $ aslref bitvectors.asl
   $ aslref case.asl
   $ aslref concat-empty.asl
-  File concat-empty.asl, line 3, characters 46 to 47:
+  File concat-empty.asl, line 3, characters 45 to 46:
   ASL Error: Cannot parse.
   [1]
   $ aslref concat01.asl

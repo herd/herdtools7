@@ -1,10 +1,10 @@
 
 type MyBitVector of bits (5) {
   [2:0] first_three,
-  [0  ] first,
+  [0: ] first,
   [4:0] everything,
-  [0, 1, 2, 3, 4] reversed,
-  [1:0, 2, 4:3] swapped,
+  [0:, 1:, 2:, 3:, 4:] reversed,
+  [1:0, 2:, 4:3] swapped,
 };
 
 func build_one() => MyBitVector

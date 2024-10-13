@@ -25,7 +25,7 @@ begin
 
   tmp      = addr;
   physical = tmp;
-  tmp      = ['0', tmp[30:0]];
+  tmp      = '0' :: tmp[30:0];
   addr = tmp;
 
   physical = raw_addr(addr);
