@@ -129,15 +129,14 @@ let make_ty_decl_subtype (x, s) =
 (* IF *)
 %nonassoc ELSE
 
-(* binop_concat *)
-%left COLON_COLON
-
 (* binop_boolean, checked_type_constraint *)
 %left BOR BAND IMPL BEQ AS
 
 (* binop_comparison *)
 %left EQ_OP NEQ
 %nonassoc GT GEQ LT LEQ
+
+%left COLON_COLON
 
 (* binop_add_sub_logic *)
 %left PLUS MINUS OR EOR AND
