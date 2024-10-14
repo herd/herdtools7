@@ -192,7 +192,7 @@ type concrete =
   val tgt2tgt : A.inst_instance_id -> BranchTarget.t -> B.tgt
   val tgt2offset : A.inst_instance_id -> BranchTarget.t -> int
 
-  val exists_cutoff : concrete -> bool
+  val find_cutoff : E.EventSet.t -> string option
 
 (************)
 (* Barriers *)
@@ -492,9 +492,8 @@ type concrete =
            with Not_found -> assert false in
          b-ii.A.addr
 
-    let exists_cutoff { str; _ } =
-      try E.EventSet.exists E.is_cutoff str.E.events
-      with Exit -> false
+    let find_cutoff es =
+      Option.bind (E.EventSet.find_opt E.is_cutoff es) E.as_cutoff
 
 (************)
 (* Barriers *)

@@ -100,6 +100,7 @@ module type S = sig
 (* Unrolling control *)
   val cutoff : string -> action
   val is_cutoff : action -> bool
+  val as_cutoff : action -> string option
 
 (********************)
 (* Equation solving *)
