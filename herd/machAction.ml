@@ -455,6 +455,11 @@ end = struct
   let is_cutoff = function
     | CutOff _ -> true
     | _ -> false
+  and as_cutoff = function
+    | CutOff msg -> Some msg
+    | NoAction|Access _|Barrier _|Commit _
+    | Amo _|Fault _|Inv _|CMO _|Arch _
+        -> None
 
 (* Architecture-specific sets *)
 
