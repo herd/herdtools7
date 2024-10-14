@@ -118,6 +118,10 @@ module Make (C : Config.S) = struct
   let t_named s = T_Named s |> annot
 
   let slices exprs : slice list enum =
+    let slice_arg =
+      let make_slice_arg e = Slice_Arg e in
+      exprs |> map make_slice_arg
+    in
     let slice_single =
       let make_slice_single e = Slice_Single e in
       exprs |> map make_slice_single
@@ -132,6 +136,7 @@ module Make (C : Config.S) = struct
       exprs ** exprs |> map make_slice_star
     in
     [
+      (if C.Syntax.slice_arg then Some slice_arg else None);
       (if C.Syntax.slice_single then Some slice_single else None);
       (if C.Syntax.slice_range then Some slice_range else None);
       (if C.Syntax.slice_length then Some slice_length else None);
