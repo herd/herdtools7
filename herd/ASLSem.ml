@@ -622,9 +622,26 @@ module Make (Conf : Config) = struct
         (use_ii_with_poi ii poi)
       >>! []
 
-    let write_pte ii addr_m val_m =
+    let write_pte (iinst,_ as ii) addr_m val_m write_m =
+      let* is_write = write_m in
+      let is_write =
+        let (>>=) = Option.bind in
+        V.as_scalar is_write >>= ASLScalar.as_bool |> Misc.as_some in
+      let open AArch64Explicit in
+      let open DirtyBit in
+      let d =
+        match Conf.dirty with
+        | None -> soft
+        | Some d -> d in
+      let nexp_nat =
+        if is_write then
+          if d.hd iinst.A.proc then AFDB
+          else if d.ha iinst.A.proc then AF
+          else Other
+        else if d.ha iinst.A.proc then AF
+        else Other in
       do_write_memory ii addr_m (M.unitT (V.intToV 64)) val_m
-        aneutral (AArch64Explicit.(NExp AF)) apte
+        aneutral (NExp nexp_nat) apte
 
     let write_memory ii datasize_m addr_m value_m =
       do_write_memory ii addr_m datasize_m value_m aneutral aexp avir
@@ -686,13 +703,16 @@ module Make (Conf : Config) = struct
       and loc = A.Location_global loc in
       M.mk_singleton_es (Act.Fault (ii,loc,d,ft)) ii >>! []
 
-    let get_ha (ii,_) () =
+    let get_ha_or_hd get (ii,_) () =
       let dirty =
         match Conf.dirty with
         | None -> DirtyBit.soft
         | Some f -> f in
-      let ha = dirty.DirtyBit.ha ii.A.proc in
-      V.Val (Constant.Concrete (ASLScalar.bv_of_bool ha)) |> M.unitT
+      let h = get dirty ii.A.proc in
+      V.Val (Constant.Concrete (ASLScalar.bv_of_bool h)) |> M.unitT
+
+    let get_ha  = get_ha_or_hd  (fun d p -> d.DirtyBit.ha p || d.DirtyBit.hd p)
+    and get_hd  = get_ha_or_hd  (fun d -> d.DirtyBit.hd)
 
     (**************************************************************************)
     (* ASL environment                                                        *)
@@ -914,8 +934,9 @@ module Make (Conf : Config) = struct
           ("addr",bv_64) ("write",boolean) ("statuscode",integer)
           data_abort_fault;
         p0r "GetHaPrimitive" ~returns:(bv_lit 1) get_ha;
-        p2 "WritePtePrimitive"
-          ("addr", bv_64)  ("data",bv_64) write_pte;
+        p0r "GetHdPrimitive" ~returns:(bv_lit 1) get_hd;
+        p3 "WritePtePrimitive"
+          ("addr", bv_64)  ("data",bv_64) ("is_write",boolean) write_pte;
 (* Translations *)
          p1r "UInt"
           ~parameters:[ ("N", None) ]
