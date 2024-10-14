@@ -51,3 +51,5 @@ edge-merging.ipi.MP			Forbid
 # edge-merging.LPI+gsb.ack		Forbid
 # edge-merging.ppi			Forbid
 # vmW-gic+R				Forbid
+
+gic.pri+gic.en				Forbid
