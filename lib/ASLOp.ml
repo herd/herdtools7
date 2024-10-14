@@ -188,6 +188,9 @@ let do_op op c1 c2 =
               | [10] ->
                   let af = ASLScalar.bit_of_bv s2 in
                   Constant.PteVal { pte with AArch64PteVal.af;} |> return
+              | [7] ->
+                  let db = 1-ASLScalar.bit_of_bv s2 in
+                  Constant.PteVal { pte with AArch64PteVal.db;} |> return
               | _ ->
                   set_slice positions c1 c2
             end
@@ -243,6 +246,9 @@ let do_op1 op cst =
             match positions with
             | [(54|53|50);] -> (* XPN/UXPN/GP, all disabled *)
                 Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [51;] -> (* dbm *)
+                let dbm = pte.AArch64PteVal.dbm in
+                Some (Constant.Concrete (ASLScalar.bv_of_bit dbm))
             | [11;] -> (* Res0 ? *)
                  Some (Constant.Concrete ASLScalar.zeros_size_one)
             | [10;] -> (* AF *)
