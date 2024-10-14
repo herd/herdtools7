@@ -20,7 +20,7 @@ module Make (A : Arch_herd.S) : sig
     | Access of Dir.dirn * A.location * A.V.v * AccessModes.t * MachSize.sz
     | Fence of AccessModes.t
     | RMW of A.location * A.V.v * A.V.v * AccessModes.t * MachSize.sz
-    | TooFar of string
+    | CutOff of string
 
   include Action.S with type action := action and module A = A
 
@@ -35,7 +35,7 @@ end = struct
     | Access of Dir.dirn * A.location * A.V.v * AccessModes.t * MachSize.sz
     | Fence of AccessModes.t
     | RMW of A.location * A.V.v * A.V.v * AccessModes.t * MachSize.sz
-    | TooFar of string
+    | CutOff of string
 
   
   let mk_init_write l sz v = Access (W, l, v, AccessModes.NA, sz)
@@ -61,7 +61,7 @@ end = struct
                 (A.pp_location l)
                 (V.pp_v v1)
                 (V.pp_v v2))
-    | TooFar m -> (sprintf "TooFar: %s" m)
+    | CutOff m -> (sprintf "CutOff: %s" m)
 
   let is_isync _ = raise Misc.NoIsync
   let pp_isync = "???"
@@ -188,9 +188,9 @@ end = struct
 
   let is_fault _ = false
   let is_tag _ = false
-  let toofar msg = TooFar msg
-  let is_toofar = function
-    | TooFar _ -> true
+  let cutoff msg = CutOff msg
+  let is_cutoff = function
+    | CutOff _ -> true
     | _ -> false
   let is_bcc _ = false
   let is_pred ?cond:_ _ = false
@@ -224,7 +224,7 @@ let undetermined_vars_in_action a =
           (V.undetermined_vars v2)
 
     | Fence _ -> V.ValueSet.empty
-    | TooFar _ -> assert false
+    | CutOff _ -> assert false
 
   let simplify_vars_in_action soln a =
     match a with
@@ -238,7 +238,7 @@ let undetermined_vars_in_action a =
         let v2' = V.simplify_var soln v2 in
         RMW(l',v1',v2',mo,sz)
     | Fence _ -> a
-    | TooFar _ -> assert false
+    | CutOff _ -> assert false
 
 
   let arch_sets = [

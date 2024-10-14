@@ -58,7 +58,7 @@ module Make(O:Config)(M:XXXMem.S) =
 
     let memtag = O.variant Variant.MemTag
     let morello = O.variant Variant.Morello
-    let showtoofar = O.variant Variant.TooFar
+    let showcutoff = O.variant Variant.CutOff
     let kvm = O.variant Variant.VMSA
 
 (* Utilities *)
@@ -105,13 +105,13 @@ module Make(O:Config)(M:XXXMem.S) =
 (* registers that read memory *)
           reads : S.loc_set;
 (* Too much loop unrolling *)
-          toofar : bool;
+          cutoff : bool;
         }
 
     let start =
       { states = A.StateSet.empty; cfail=0; cands=0; pos=0; neg=0;
         flagged=Flag.Map.empty; shown=0;
-        reads = A.LocSet.empty; toofar=false; }
+        reads = A.LocSet.empty; cutoff=false; }
 
     let kfail c = { c with cfail=c.cfail+1; }
 
@@ -237,9 +237,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let check = check_prop test in
 
       fun conc (st,flts) (set_pp,vbpp) flags c ->
-        if not showtoofar && S.gone_toofar conc then
-          { c with toofar = true; }
-        else if do_observed && not (all_observed test conc) then c
+        if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
           | None -> false
@@ -330,7 +328,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 if O.outcomereads then
                   A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
                 else c.reads;
-              toofar =  c.toofar || (showtoofar && S.gone_toofar conc);
+              cutoff =  c.cutoff;
             } in
           if not O.badexecs && is_bad flags then raise (Over r) ;
           let r = match O.nshow with
@@ -350,9 +348,10 @@ module Make(O:Config)(M:XXXMem.S) =
 
     (* Performed delayed checks and warnings *)
     let check_failed_model_kont
-          cs
+          cutoff cs
           ochan test do_restrict cstr
           conc (st,flts) (set_pp,vbpp) flags c  =
+
       let open S.M.VC in
       match cs with
       | Some (Failed e) ->
@@ -363,9 +362,11 @@ module Make(O:Config)(M:XXXMem.S) =
          Warn.warn_always "%s, legal outcomes may be missing" msg ;
          c
       | Some (Assign _)|None ->
-         model_kont 
-           ochan test do_restrict cstr
-           conc (st,flts) (set_pp,vbpp) flags c
+          if not showcutoff && cutoff then c
+          else
+            model_kont
+              ochan test do_restrict cstr
+              conc (st,flts) (set_pp,vbpp) flags c
 
     (* Driver *)
     let run start_time test =
@@ -419,13 +420,16 @@ module Make(O:Config)(M:XXXMem.S) =
       end else
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
-        let check_test =
-            M.check_event_structure test in
-        let call_model conc ofail =
-          check_test
-            conc kfail
-            (check_failed_model_kont
-               ofail ochan test final_state_restrict_locs cstr) in
+        let call_model conc ofail c =
+        let check_test = M.check_event_structure test in
+        (* Checked pruned executions before even calling model *)
+        let cutoff =  S.exists_cutoff conc in
+        let c = if cutoff then { c with cutoff = true; } else c in
+        (* Discard pruned executions if not explicitely required *)
+        check_test
+          conc kfail
+          (check_failed_model_kont cutoff
+             ofail ochan test final_state_restrict_locs cstr) c in
       let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
@@ -499,7 +503,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Condition result *)
         let ok = check_cond test c in
         printf "%s%s\n"
-          (if c.toofar then "Loop " else "")
+          (if c.cutoff then "Loop " else "")
           (if is_bad then "Undef" else if ok then "Ok" else "No") ;
         let pos,neg = check_wit test c in
         printf "Witnesses\n" ;
@@ -534,7 +538,7 @@ module Make(O:Config)(M:XXXMem.S) =
               printf "%s=%s\n" k v)
           test.Test_herd.info ;
         print_newline () ;
-        if c.toofar then
+        if c.cutoff then
           Warn.warn_always
             "File \"%s\", unrolling limit exceeded, legal outcomes may be missing."
             test.Test_herd.name.Name.file

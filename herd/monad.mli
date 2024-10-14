@@ -256,7 +256,7 @@ module type S =
 
     val altT : 'a t -> 'a t -> 'a t
 
-    val tooFar : string -> E.A.inst_instance_id -> 'v -> 'v t
+    val cutoffT : string -> E.A.inst_instance_id -> 'v -> 'v t
 
     val debugT : string -> 'a t -> 'a t
     (** [debugT str s] prints [str] followed by a string

@@ -546,7 +546,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             let m ii =
               EM.addT
                 (A.next_po_index ii.A.program_order_index)
-                (EM.tooFar (tgt2lbl tgt) ii (S.B.Next [])) in
+                (EM.cutoffT (tgt2lbl tgt) ii (S.B.Next [])) in
             wrap
               re_exec tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
         | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
