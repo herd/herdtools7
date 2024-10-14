@@ -381,8 +381,11 @@ and bit_of_bv s =
     | S_BitVector bv -> bv
     | S_Bool true -> BV.one
     | S_Bool false -> BV.zero
-    | S_Int z -> if Z.equal Z.zero z then BV.zero else BV.one in
-                        if BV.is_zero bv then 0
+    | S_Label _ as sc ->
+        Warn.fatal  "bit_of_bv on illegal input %s" (pp false sc)
+    | S_Int z ->
+        if Z.equal Z.zero z then BV.zero else BV.one in
+  if BV.is_zero bv then 0
   else if BV.is_one bv then 1
   else  Warn.fatal  "bit_of_bv on illegal input %s" (BV.to_string bv)
 
