@@ -6,7 +6,7 @@ type MyBits of bits(5) {
   [2:0] a,
   [3:1] b,
   [4:0] c,
-  [4  ] e,
+  [4: ] e,
 };
 
 func constructor(b:: bits(5)) => MyBits
