@@ -61,7 +61,7 @@ with IC-after from (all-IC-Imp_Instr_R-enums local-hw-reqs)
 
 (** Explicitly-hazard-ordered-before **)
 let Exp-haz-ob =
-  [Exp & R]; (po & same-loc); [Exp & R]; (ca & ext); [Exp & W]
+  [Exp & M & R]; (po & same-loc); [Exp & M & R]; (ca & ext); [Exp & M & W]
 
 (** TLBI-ordered-before **)
 
@@ -160,14 +160,14 @@ let rec ob =
 irreflexive ob as external
 
 (*** Internal visibility requirements ***)
-irreflexive [Exp & R]; ((po & same-loc) | rmw); [Exp & W]; rfi; [Exp & R] as coRW1-Exp
+irreflexive [Exp & M & R]; ((po & same-loc) | rmw); [Exp & M & W]; rfi; [Exp & M & R] as coRW1-Exp
 irreflexive [Imp & Tag & R]; (po & same-loc); [Exp & Tag & W]; rfi; [Imp & Tag & R] as coRW1-MTE
-irreflexive [Exp & W]; (po & same-loc); [Exp & W]; (ca & int); [Exp & W] as coWW-Exp
-irreflexive [Exp & W]; (po & same-loc); [Exp & R]; (ca & int); [Exp & W] as coWR-Exp
+irreflexive [Exp & M & W]; (po & same-loc); [Exp & M & W]; (ca & int); [Exp & M & W] as coWW-Exp
+irreflexive [Exp & M & W]; (po & same-loc); [Exp & M & R]; (ca & int); [Exp & M & W] as coWR-Exp
 irreflexive [Exp & Tag & W]; (po & same-loc); [Imp & Tag & R]; (ca & int) as coWR-MTE
 
 (*** Atomic: LDXR/STXR, AMO and HU constraint to forbid intervening writes. ***)
-empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
+empty (([M]; rmw; [M]) & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
 
 (*** Break Before Make ***)
 let BBM = ([TTDV]; ca; [TTDINV]; co; [TTDV])
