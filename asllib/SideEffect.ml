@@ -234,6 +234,14 @@ module SES = struct
       RecursiveCall (ISet.choose ses.recursive_calls)
     else raise Not_found
 
+  let filter_side_effects ses =
+    {
+      ses with
+      global_reads = ISet.empty;
+      local_reads = ISet.empty;
+      non_determinism = false;
+    }
+
   let get_concurrent_side_effects ses1 ses2 =
     let choose_inter s1 s2 = ISet.inter s1 s2 |> ISet.choose in
     if not (ISet.is_empty ses1.thrown_exceptions) then

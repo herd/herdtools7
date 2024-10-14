@@ -37,19 +37,23 @@
   $ aslref constant-func.asl
   $ aslref constant-func-read.asl
   File constant-func-read.asl, line 9, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found foo(4).
+  ASL Typing error: a pure expression was expected, found
+    foo(4), which produces the following side-effects: [WriteGlobal "X"].
   [1]
   $ aslref constant-func-write.asl
   File constant-func-write.asl, line 9, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found foo(4).
+  ASL Typing error: a pure expression was expected, found
+    foo(4), which produces the following side-effects: [WriteGlobal "X"].
   [1]
   $ aslref constant-func-unknown.asl
   File constant-func-unknown.asl, line 7, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found foo(4).
+  ASL Typing error: a pure expression was expected, found
+    foo(4), which produces the following side-effects: [NonDeterministic].
   [1]
   $ aslref constant-func-throw.asl
   File constant-func-throw.asl, line 8, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found foo(4).
+  ASL Typing error: a pure expression was expected, found
+    foo(4), which produces the following side-effects: [RaiseException "E"].
   [1]
   $ aslref constant-func-throw-caught.asl
   $ aslref constant-func-local-var.asl

@@ -54,7 +54,7 @@ type error_desc =
   | TooManyCallCandidates of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
-  | ImpureExpression of expr
+  | ImpureExpression of expr * SideEffect.SES.t
   | UnreconciliableTypes of ty * ty
   | AssignToImmutable of string
   | AlreadyDeclaredIdentifier of string
@@ -319,10 +319,11 @@ module PPrint = struct
           "ASL Evaluation error: circular definition of constants, including \
            %S."
           x
-    | ImpureExpression e ->
+    | ImpureExpression (e, ses) ->
         fprintf f
-          "ASL Typing error:@ a pure expression was expected,@ found@ %a."
-          pp_expr e
+          "ASL Typing error:@ a pure expression was expected,@ found@ %a, \
+           which produces the following side-effects:@ %a."
+          pp_expr e SideEffect.SES.pp_print ses
     | UnreconciliableTypes (t1, t2) ->
         fprintf f
           "ASL Typing error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ \
