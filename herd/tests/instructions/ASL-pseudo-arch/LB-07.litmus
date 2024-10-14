@@ -20,7 +20,7 @@ end
 func f(read::bits(64)) => bits(64)
 begin
   var t = read;
-  t[0] = '1';
+  t[0:] = '1';
   return t;
 end
 

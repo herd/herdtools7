@@ -7,7 +7,7 @@ ASL YL-01
 func main() => integer
 begin
   constant x : bits(1) = '0';
-  constant y : bit = x[0] XOR '0' XOR '1';
+  constant y : bit = x[0:] XOR '0' XOR '1';
   let res = UInt(y);
   return 0;
 end
