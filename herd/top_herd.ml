@@ -105,13 +105,13 @@ module Make(O:Config)(M:XXXMem.S) =
 (* registers that read memory *)
           reads : S.loc_set;
 (* Too much loop unrolling *)
-          cutoff : bool;
+          cutoff : string option;
         }
 
     let start =
       { states = A.StateSet.empty; cfail=0; cands=0; pos=0; neg=0;
         flagged=Flag.Map.empty; shown=0;
-        reads = A.LocSet.empty; cutoff=false; }
+        reads = A.LocSet.empty; cutoff=None; }
 
     let kfail c = { c with cfail=c.cfail+1; }
 
@@ -362,7 +362,7 @@ module Make(O:Config)(M:XXXMem.S) =
          Warn.warn_always "%s, legal outcomes may be missing" msg ;
          c
       | Some (Assign _)|None ->
-          if not showcutoff && cutoff then c
+          if not showcutoff && Misc.is_some cutoff then c
           else
             model_kont
               ochan test do_restrict cstr
@@ -423,8 +423,10 @@ module Make(O:Config)(M:XXXMem.S) =
         let call_model conc ofail c =
         let check_test = M.check_event_structure test in
         (* Checked pruned executions before even calling model *)
-        let cutoff =  S.exists_cutoff conc in
-        let c = if cutoff then { c with cutoff = true; } else c in
+        let cutoff =  S.find_cutoff conc.S.str.S.E.events in
+        let c =
+          if Misc.is_some cutoff then { c with cutoff = cutoff; }
+          else c in
         (* Discard pruned executions if not explicitely required *)
         check_test
           conc kfail
@@ -503,7 +505,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Condition result *)
         let ok = check_cond test c in
         printf "%s%s\n"
-          (if c.cutoff then "Loop " else "")
+          (if Misc.is_some c.cutoff then "Loop " else "")
           (if is_bad then "Undef" else if ok then "Ok" else "No") ;
         let pos,neg = check_wit test c in
         printf "Witnesses\n" ;
@@ -538,10 +540,15 @@ module Make(O:Config)(M:XXXMem.S) =
               printf "%s=%s\n" k v)
           test.Test_herd.info ;
         print_newline () ;
-        if c.cutoff then
-          Warn.warn_always
-            "File \"%s\", unrolling limit exceeded, legal outcomes may be missing."
-            test.Test_herd.name.Name.file
+        begin
+          match c.cutoff with
+          | Some msg ->
+              Warn.warn_always
+                "%a: unrolling limit exceeded at %s, legal outcomes may be missing."
+                Pos.pp_pos0   test.Test_herd.name.Name.file
+                msg
+          | None -> ()
+        end
       end with Exit -> () ;
       ()
   end
