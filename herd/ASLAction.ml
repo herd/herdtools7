@@ -290,6 +290,10 @@ module Make (C: Config) (A : S) = struct
     | CutOff _ -> true
     | Access _|Fault _|Barrier _|Branching _|NoAction
       -> false
+  and as_cutoff = function
+    | CutOff msg -> Some msg
+    | Access _|Fault _|Barrier _|Branching _|NoAction
+      -> None
 
   (********************)
   (* Equation solving *)
