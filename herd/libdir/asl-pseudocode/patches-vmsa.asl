@@ -189,19 +189,17 @@ end
 // AArch64.MemSwapTableDesc()
 // ==========================
 // Perform HW update of table descriptor as an atomic operation
-// Modified -> disabled at the moment
+// Modified -> write only
 
 func AArch64_MemSwapTableDesc
   (fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
-  ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
+   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
 => (FaultRecord, bits(N))
+begin
    let addr = descpaddr.paddress.address;
-   WritePtePrimitive(addr,new_desc);
+   WritePtePrimitive(addr,new_desc,descaccess.write);
    return (fault_in,new_desc);
 end
-
-// Write only, AF Only...
-
 
 // AArch64.DataAbort()
 // ===================
@@ -267,9 +265,6 @@ begin
 //  assert FALSE;
   return;
 end
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 5d7670896 ([herd,asl] Optimise ASL execution of AArch64 instructions)
 
 //
 // Previous walkparams
@@ -295,47 +290,7 @@ begin
   var walkparams : S1TTWParams;
   assert (regime == Regime_EL10);
   walkparams.ha = GetHaPrimitive();
-//  __debug__(walkparams);
-  return walkparams;
-end
-
-
-// AArch64.S1TxSZFaults()
-// ======================
-// Detect whether configuration of stage 1 TxSZ field generates a fault
-// Luc: Override: does not occur, never.
-
-func AArch64_S1TxSZFaults (regime:Regime,walkparams:S1TTWParams) => boolean
-begin
-  return FALSE;
-end
-=======
-
-//
-// Previous walkparams
-// {aie:'0',amec:'0',cmow:'0',d128:'0',dc:'0',dct:'0',disch:'0',ds:'0',
-// e0pd:'0',ee:'0',emec:'0',epan:'0',fng:'0',ha:'0',haft:'0',hd:'0',
-// hpd:'0',irgn:'01',
-// mair:'0000000000000000000000000000000000000000000000000000000000000000',
-// mair2:'0000000000000000000000000000000000000000000000000000000000000000',
-// mtx:'0',nfd:'0',ntlsmd:'1',nv1:'0',orgn:'01',pie:'0',pir:'',pire0:'',
-// pnch:'0',ps:'100',sh:'11',sif:'0',skl:'00',t0sz:'000',t1sz:'000',
-// tbi:'0',tbid:'0',tgx:2,txsz:'010000',uwxn:'0',wxn:'0',}
-
-
-// AArch64.GetS1TTWParams()
-// ========================
-// Returns stage 1 translation table walk parameters from respective controlling
-// System registers.
-// Luc: we assume EL10 regime, return minimal parameters
-func AArch64_GetS1TTWParams
-  (regime:Regime, ss:SecurityState, va:bits(64))
-  => S1TTWParams
-begin
-  var walkparams : S1TTWParams;
-  assert (regime == Regime_EL10);
-  walkparams.ha = GetHaPrimitive();
-//  __debug__(walkparams);
+  walkparams.hd = GetHdPrimitive();
   return walkparams;
 end
 
@@ -375,46 +330,3 @@ begin
   memattrs.shareability = Shareability_ISH;
   return memattrs;
 end
->>>>>>> 5d7670896 ([herd,asl] Optimise ASL execution of AArch64 instructions)
-||||||| parent of b97930970 ([herd,asl,vmsa] Hardware management of the access flag)
-=======
-
-//
-// Previous walkparams
-// {aie:'0',amec:'0',cmow:'0',d128:'0',dc:'0',dct:'0',disch:'0',ds:'0',
-// e0pd:'0',ee:'0',emec:'0',epan:'0',fng:'0',ha:'0',haft:'0',hd:'0',
-// hpd:'0',irgn:'01',
-// mair:'0000000000000000000000000000000000000000000000000000000000000000',
-// mair2:'0000000000000000000000000000000000000000000000000000000000000000',
-// mtx:'0',nfd:'0',ntlsmd:'1',nv1:'0',orgn:'01',pie:'0',pir:'',pire0:'',
-// pnch:'0',ps:'100',sh:'11',sif:'0',skl:'00',t0sz:'000',t1sz:'000',
-// tbi:'0',tbid:'0',tgx:2,txsz:'010000',uwxn:'0',wxn:'0',}
-
-
-// AArch64.GetS1TTWParams()
-// ========================
-// Returns stage 1 translation table walk parameters from respective controlling
-// System registers.
-// Luc: we assume EL10 regime, return minimal parameters
-func AArch64_GetS1TTWParams
-  (regime:Regime, ss:SecurityState, va:bits(64))
-  => S1TTWParams
-begin
-  var walkparams : S1TTWParams;
-  assert (regime == Regime_EL10);
-  walkparams.ha = GetHaPrimitive();
-//  __debug__(walkparams);
-  return walkparams;
-end
-
-
-// AArch64.S1TxSZFaults()
-// ======================
-// Detect whether configuration of stage 1 TxSZ field generates a fault
-// Luc: Override: does not occur, never.
-
-func AArch64_S1TxSZFaults (regime:Regime,walkparams:S1TTWParams) => boolean
-begin
-  return FALSE;
-end
->>>>>>> b97930970 ([herd,asl,vmsa] Hardware management of the access flag)
