@@ -53,14 +53,14 @@
     using, var, watch, when,
     where, while, with, ztype, _},
     keywordstyle=\color{red},
-    morecomment=[l]{//},
+    morecomment=[l][\color{blue}]{//},
     morecomment=[s][\color{blue}]{/*}{*/},
     morestring=[b][\color{cyan}]",
     morestring=[d][\color{cyan}]',
 }
 \lstset{
   language=ASL,
-  basicstyle=\small\ttfamily,
+  basicstyle=\ttfamily\scriptsize,
   showspaces=false,
   showstringspaces=false,
   backgroundcolor=\color{yellow!10}
@@ -167,11 +167,14 @@
 \newtheorem{definition}{Definition}
 \newtheorem{example}{Example}
 \newcommand\figref[1]{Figure.~\ref{fi:#1}}
+\newcommand\taref[1]{Table.~\ref{ta:#1}}
 \newcommand\defref[1]{Definition~\ref{def:#1}}
 \newcommand\secref[1]{Section~\ref{sec:#1}}
 \newcommand\chapref[1]{Chapter~\ref{chap:#1}}
 \newcommand\partref[1]{Part~\ref{part:#1}}
 \newcommand\appendixref[1]{Appenfix~\ref{appendix:#1}}
+\newcommand\secreflink[1]{\small\nameref{sec:#1}}
+\newcommand\prosesection[0]{\subsubsection{Prose}}
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
 \newcommand\wrappedline[0]{{\hyperlink{def-wrapline}{\color{red}\hookrightarrow}}}
@@ -418,7 +421,7 @@
 \newcommand\Nuntypeddeclitem[0]{\hyperlink{def-nuntypeddeclitem}{\nonterminal{untyped\_decl\_item}}}
 \newcommand\Nslice[0]{\hyperlink{def-nslice}{\nonterminal{slice}}}
 \newcommand\Nslices[0]{\hyperlink{def-nslices}{\nonterminal{slices}}}
-\newcommand\Nnslices[0]{\hyperlink{def-nnslice}{\nonterminal{nslices}}}
+\newcommand\Nnamedslices[0]{\hyperlink{def-nnslices}{\nonterminal{named\_slices}}}
 \newcommand\Nintconstraints[0]{\hyperlink{def-nintconstraints}{\nonterminal{int\_constraints}}}
 \newcommand\Nintconstraintsopt[0]{\hyperlink{def-nintconstraintsopt}{\nonterminal{int\_constraints\_opt}}}
 \newcommand\Nintconstraint[0]{\hyperlink{def-nintconstraint}{\nonterminal{int\_constraint}}}
@@ -709,7 +712,7 @@
 \newcommand\buildpattern[0]{\hyperlink{build-pattern}{\textfunc{build\_pattern}}}
 \newcommand\buildfields[0]{\hyperlink{build-fields}{\textfunc{build\_fields}}}
 \newcommand\buildfieldsopt[0]{\hyperlink{build-fieldsopt}{\textfunc{build\_fields\_opt}}}
-\newcommand\buildnslices[0]{\hyperlink{build-nslices}{\textfunc{build\_nslices}}}
+\newcommand\buildnamedslices[0]{\hyperlink{build-nslices}{\textfunc{build\_named\_slices}}}
 \newcommand\buildslices[0]{\hyperlink{build-slices}{\textfunc{build\_slices}}}
 \newcommand\buildslice[0]{\hyperlink{build-slice}{\textfunc{build\_slice}}}
 \newcommand\buildbitfields[0]{\hyperlink{build-bitfields}{\textfunc{build\_bitfields}}}
@@ -834,9 +837,9 @@
 \newcommand\aslto[0]{\longrightarrow}
 
 \newcommand\staticenvs[0]{\hyperlink{def-staticenvs}{\mathbb{SE}}}
-\newcommand\localstaticenvs[0]{\hyperlink{def-localstaticenvs}{\mathbb{L}}}
-\newcommand\globalstaticenvs[0]{\hyperlink{def-globalstaticenvs}{\mathbb{G}}}
-\newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\tenv}}}
+\newcommand\localstaticenvs[0]{\hyperlink{def-localstaticenvs}{\mathbb{LSE}}}
+\newcommand\globalstaticenvs[0]{\hyperlink{def-globalstaticenvs}{\mathbb{GSE}}}
+\newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\mathbb{SE}}}}
 \newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}}
 \newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}}
 \newcommand\typesat[0]{\hyperlink{def-typesatisfies}{\textfunc{type\_satisfies}}}
@@ -849,6 +852,7 @@
 \newcommand\subtypes[0]{\hyperlink{def-subtypes}{\textsf{subtypes}}}
 \newcommand\subprograms[0]{\hyperlink{def-subprograms}{\textsf{subprograms}}}
 \newcommand\subprogramrenamings[0]{\hyperlink{def-subprogramrenamings}{\textsf{subprogram\_renamings}}}
+\newcommand\exprequiv[0]{\hyperlink{def-exprequiv}{\textsf{expr\_equiv}}}
 \newcommand\parameters[0]{\hyperlink{def-parameters}{\textsf{parameters}}}
 
 \newcommand\unopliterals[0]{\hyperlink{def-unopliterals}{\textfunc{unop\_literals}}}
@@ -879,6 +883,8 @@
 \newcommand\evalarrow[0]{\xrightarrow{\evalrel}}
 \newcommand\envs[0]{\hyperlink{def-envs}{\mathbb{E}}}
 \newcommand\dynamicenvs[0]{\hyperlink{def-dynamicenvs}{\mathbb{DE}}}
+\newcommand\localdynamicenvs[0]{\hyperlink{def-localdynamicenvs}{\mathbb{LDE}}}
+\newcommand\globaldynamicenvs[0]{\hyperlink{def-globaldynamicenvs}{\mathbb{GDE}}}
 \newcommand\xgraph[0]{\textsf{g}}
 \newcommand\emptygraph[0]{{\hyperlink{def-emptygraph}{\emptyset_\xgraph}}}
 \newcommand\asldata[0]{\hyperlink{def-asldata}{\mathtt{asl\_data}}}
@@ -923,11 +929,13 @@
 \newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}(#1)}
 \newcommand\evallexpr[1]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}(#1)}
 \newcommand\evalexprlist[1]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}(#1)}
-\newcommand\evalexprlistm[1]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}(#1)}
+\newcommand\evalexprlistm[0]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}}
 \newcommand\evalpattern[1]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}(#1)}
 \newcommand\evallocaldecl[1]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}(#1)}
-\newcommand\evalslices[1]{\hyperlink{def-evalslices}{\textfunc{eval\_slices}}(#1)}
-\newcommand\evalslice[1]{\hyperlink{def-evalslice}{\textfunc{eval\_slice}}(#1)}
+\newcommand\ldituplefolder[0]{\hyperlink{def-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}}
+\newcommand\writefolder[0]{\hyperlink{def-writefolder}{\textfunc{write\_folder}}}
+\newcommand\evalslices[0]{\hyperlink{def-evalslices}{\textfunc{eval\_slices}}}
+\newcommand\evalslice[0]{\hyperlink{def-evalslice}{\textfunc{eval\_slice}}}
 \newcommand\evalstmt[1]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}(#1)}
 \newcommand\evalblock[1]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}(#1)}
 \newcommand\evalloop[1]{\hyperlink{def-evalloop}{\textfunc{eval\_loop}}(#1)}
@@ -936,7 +944,7 @@
 \newcommand\evalsubprogram[1]{\hyperlink{def-evalsubprogram}{\textfunc{eval\_subprogram}}(#1)}
 \newcommand\evalcall[1]{\hyperlink{def-evalcall}{\textfunc{eval\_call}}(#1)}
 \newcommand\evalprimitive[1]{\hyperlink{def-evalprimitive}{\textfunc{eval\_primitive}}(#1)}
-\newcommand\evalmultiassignment[1]{\hyperlink{def-evalmultiassign}{\textfunc{multi\_assign}}(#1)}
+\newcommand\evalmultiassignment[0]{\hyperlink{def-evalmultiassign}{\textfunc{multi\_assign}}}
 \newcommand\rethrowimplicit[0]{\hyperlink{def-rethrowimplicit}{\textfunc{rethrow\_implicit}}}
 \newcommand\assignargs[0]{\hyperlink{def-assignargs}{\textfunc{assign\_args}}}
 \newcommand\assignnamedargs[0]{\hyperlink{def-assignnamedargs}{\textfunc{assign\_named\_args}}}
@@ -944,7 +952,7 @@
 \newcommand\buildgenv[0]{\hyperlink{def-buildgenv}{\textfunc{build\_genv}}}
 \newcommand\topologicaldecls[0]{\hyperlink{def-topologicaldecls}{\textfunc{topological\_decls}}}
 \newcommand\evalglobals[0]{\hyperlink{def-evalglobals}{\textfunc{eval\_globals}}}
-\newcommand\evalspec[1]{\hyperlink{def-evalspec}{\textfunc{eval\_spec}}(#1)}
+\newcommand\evalspec[0]{\hyperlink{def-evalspec}{\textfunc{eval\_spec}}}
 \newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\textfunc{lexpr\_is\_var}}}
 \newcommand\casetoconds[0]{\hyperlink{def-casetoconds}{\textfunc{case\_to\_conds}}}
 \newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\textfunc{find\_catcher}}}
@@ -952,6 +960,7 @@
 \newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
 \newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
 \newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\textfunc{declare\_local\_identifier\_mm}}}
+%\newcommand\envfind[0]{\hyperlink{def-envfind}{\textfunc{env\_find}}}
 \newcommand\removelocal[0]{\hyperlink{def-removelocal}{\textfunc{remove\_local}}}
 \newcommand\readidentifier[0]{\hyperlink{def-readidentifier}{\textfunc{read\_identifier}}}
 \newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\textfunc{write\_identifier}}}
@@ -1073,6 +1082,7 @@
 \newcommand\addnewfunc[0]{\hyperlink{def-addnewfunc}{\textfunc{add\_new\_func}}}
 \newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
 \newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
+\newcommand\lookupimmutableexpr[0]{\hyperlink{def-lookupimmutableexpr}{\textfunc{lookup\_immutable\_expr}}}
 \newcommand\scanforparams[0]{\hyperlink{def-scanforparams}{\textfunc{scan\_for\_params}}}
 \newcommand\annotateparams[0]{\hyperlink{def-annotateparams}{\textfunc{annotate\_params}}}
 \newcommand\annotateoneparam[0]{\hyperlink{def-annotateoneparam}{\textfunc{annotate\_one\_param}}}
@@ -1162,8 +1172,65 @@
 % An expression that we do not statically evaluate.
 \newcommand\CannotBeTransformed[0]{\hyperlink{def-unsupportedexpression}{\top}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Primitive Operations macros
 \newcommand\unopsignatures[0]{\hyperlink{def-unopsignatures}{\textfunc{unop\_signatures}}}
 \newcommand\binopsignatures[0]{\hyperlink{def-binopsignatures}{\textfunc{binop\_signatures}}}
+
+\newcommand\notbool[0]{\hyperlink{def-notbool}{\text{not\_bool}}}
+\newcommand\andbool[0]{\hyperlink{def-andbool}{\text{and\_bool}}}
+\newcommand\orbool[0]{\hyperlink{def-orbool}{\text{or\_bool}}}
+\newcommand\eqbool[0]{\hyperlink{def-eqbool}{\text{eq\_bool}}}
+\newcommand\nebool[0]{\hyperlink{def-nebool}{\text{ne\_bool}}}
+\newcommand\impliesbool[0]{\hyperlink{def-impliesbool}{\text{implies\_bool}}}
+\newcommand\equivbool[0]{\hyperlink{def-equivbool}{\text{equiv\_bool}}}
+
+\newcommand\addbits[0]{\hyperlink{def-addbits}{\text{add\_bits}}}
+\newcommand\addbitsint[0]{\hyperlink{def-addbitsint}{\text{add\_bits\_int}}}
+\newcommand\subbits[0]{\hyperlink{def-subbits}{\text{sub\_bits}}}
+\newcommand\subbitsint[0]{\hyperlink{def-subbitsint}{\text{sub\_bits\_int}}}
+\newcommand\notbits[0]{\hyperlink{def-notbits}{\text{not\_bits}}}
+\newcommand\andbits[0]{\hyperlink{def-andbits}{\text{and\_bits}}}
+\newcommand\orbits[0]{\hyperlink{def-orbits}{\text{or\_bits}}}
+\newcommand\xorbits[0]{\hyperlink{def-xorbits}{\text{xor\_bits}}}
+\newcommand\eqbits[0]{\hyperlink{def-eqbits}{\text{eq\_bits}}}
+\newcommand\nebits[0]{\hyperlink{def-nebits}{\text{ne\_bits}}}
+
+\newcommand\negateint[0]{\hyperlink{def-negateint}{\text{negate\_int}}}
+\newcommand\addint[0]{\hyperlink{def-addint}{\text{add\_int}}}
+\newcommand\subint[0]{\hyperlink{def-subint}{\text{sub\_int}}}
+\newcommand\mulint[0]{\hyperlink{def-mulint}{\text{mul\_int}}}
+\newcommand\expint[0]{\hyperlink{def-expint}{\text{exp\_int}}}
+\newcommand\shiftleftint[0]{\hyperlink{def-shiftleftint}{\text{shiftleft\_int}}}
+\newcommand\shiftrightint[0]{\hyperlink{def-shiftrightint}{\text{shiftright\_int}}}
+\newcommand\divint[0]{\hyperlink{def-divint}{\text{div\_int}}}
+\newcommand\fdivint[0]{\hyperlink{def-fdivint}{\text{fdiv\_int}}}
+\newcommand\fremint[0]{\hyperlink{def-fremint}{\text{frem\_int}}}
+\newcommand\eqint[0]{\hyperlink{def-eqint}{\text{eq\_int}}}
+\newcommand\neint[0]{\hyperlink{def-neint}{\text{ne\_int}}}
+\newcommand\leint[0]{\hyperlink{def-leint}{\text{le\_int}}}
+\newcommand\ltint[0]{\hyperlink{def-ltint}{\text{lt\_int}}}
+\newcommand\gtint[0]{\hyperlink{def-gtint}{\text{gt\_int}}}
+\newcommand\geint[0]{\hyperlink{def-geint}{\text{ge\_int}}}
+
+\newcommand\negatereal[0]{\hyperlink{def-negatereal}{\text{negate\_real}}}
+\newcommand\addreal[0]{\hyperlink{def-addreal}{\text{add\_real}}}
+\newcommand\subreal[0]{\hyperlink{def-subreal}{\text{sub\_real}}}
+\newcommand\mulreal[0]{\hyperlink{def-mulreal}{\text{mul\_real}}}
+\newcommand\expreal[0]{\hyperlink{def-expreal}{\text{exp\_real}}}
+\newcommand\divreal[0]{\hyperlink{def-divreal}{\text{div\_real}}}
+\newcommand\eqreal[0]{\hyperlink{def-eqreal}{\text{eq\_real}}}
+\newcommand\nereal[0]{\hyperlink{def-nereal}{\text{ne\_real}}}
+\newcommand\lereal[0]{\hyperlink{def-lereal}{\text{le\_real}}}
+\newcommand\ltreal[0]{\hyperlink{def-ltreal}{\text{lt\_real}}}
+\newcommand\gtreal[0]{\hyperlink{def-gtreal}{\text{gt\_real}}}
+\newcommand\gereal[0]{\hyperlink{def-gereal}{\text{ge\_real}}}
+
+\newcommand\eqstring[0]{\hyperlink{def-eqstring}{\text{eq\_string}}}
+\newcommand\nestring[0]{\hyperlink{def-nestring}{\text{ne\_string}}}
+
+\newcommand\eqenum[0]{\hyperlink{def-eqenum}{\text{eq\_enum}}}
+\newcommand\neenum[0]{\hyperlink{def-neenum}{\text{ne\_enum}}}
 
 % AST abbreviations
 %\newcommand\ELInt[1]{\hyperlink{def-elint}{\texttt{ELInt}}(#1)}
@@ -1178,6 +1245,17 @@
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\scriptscriptstyle{\TArray(\ArrayLengthEnum)}}}}
 
 % Glossary
+\newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
+\newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
+\newcommand\optional[0]{\hyperlink{def-optional}{optional}}
+
+\newcommand\typedast[0]{\hyperlink{def-typedast}{typed AST}}
+\newcommand\untypedast[0]{\hyperlink{def-untypedast}{untyped AST}}
+\newcommand\anonymoustype[0]{\hyperlink{def-isanonymous}{anonymous type}}
+\newcommand\Anonymoustypes[0]{\hyperlink{def-isanonymous}{Anonymous types}}
+\newcommand\namedtype[0]{\hyperlink{def-isnamed}{named type}}
+\newcommand\namedtypes[0]{\hyperlink{def-isnamed}{named types}}
+
 \newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
 \newcommand\structuredtype[0]{\hyperlink{def-structuredtype}{structured type}}
 \newcommand\structure[0]{\hyperlink{def-structure}{structure}}
@@ -1200,8 +1278,22 @@
 \newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
 \newcommand\arrayaccess[0]{\hyperlink{def-arrayaccess}{array access}}
 \newcommand\symbolicallysimplifies[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
-\newcommand\nativevalue[0]{\hyperlink{def-nativevalue}{native values}}
+\newcommand\nativevalue[0]{\hyperlink{def-nativevalue}{native value}}
 \newcommand\nativevalues[0]{\hyperlink{def-nativevalues}{native values}}
+
+\newcommand\singleslice[0]{\hyperlink{def-singleslice}{single slice}}
+\newcommand\rangeslice[0]{\hyperlink{def-rangeslice}{range slice}}
+\newcommand\lengthslice[0]{\hyperlink{def-lengthslice}{length slice}}
+\newcommand\scaledslice[0]{\hyperlink{def-scaledslice}{scaled slice}}
+
+\newcommand\rhsexpression[0]{\hyperlink{def-rhsexpression}{right-hand-side expression}}
+\newcommand\rhsexpressions[0]{\hyperlink{def-rhsexpressions}{right-hand-side expressions}}
+\newcommand\assignableexpression[0]{\hyperlink{def-assignableexpression}{assignable expression}}
+\newcommand\assignableexpressions[0]{\hyperlink{def-assignableexpressions}{assignable expressions}}
+\newcommand\localdeclarationkeyword[0]{\hyperlink{def-localdeclarationkeyword}{local declaration keyword}}
+\newcommand\localdeclarationitem[0]{\hyperlink{def-localdeclarationitem}{local declaration item}}
+\newcommand\localdeclaration[0]{\hyperlink{def-localdeclaration}{local declaration}}
+\newcommand\localdeclarations[0]{\hyperlink{def-localdeclarations}{local declarations}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -1223,10 +1315,12 @@
 \newcommand\refineconstraints[0]{\hyperlink{def-refineconstraints}{\textfunc{refine\_constraints}}}
 \newcommand\filterreduceconstraintdiv[0]{\hyperlink{def-filterreduceconstraintdiv}{\textfunc{filter\_reduce\_constraint\_div}}}
 \newcommand\getliteraldivopt[0]{\hyperlink{def-getliteraldivopt}{\textfunc{get\_literal\_div\_opt}}}
-\newcommand\checkslicesinwidth[0]{\tododefine{check\_slices\_in\_width}}
-\newcommand\disjointslicestopositions[0]{\tododefine{disjoint\_slices\_to\_positions}}
-\newcommand\checkpositionsinwidth[0]{\tododefine{check\_positions\_in\_width}}
+\newcommand\checkslicesinwidth[0]{\hyperlink{def-checkslicesinwidth}{\textfunc{check\_slices\_in\_width}}}
+\newcommand\disjointslicestopositions[0]{\hyperlink{def-disjointslicestopositions}{\textfunc{disjoint\_slices\_to\_positions}}}
+\newcommand\bitfieldslicetopositions[0]{\hyperlink{bitfieldslicetopositions}{\textfunc{bitfield\_slice\_to\_positions}}}
+\newcommand\checkpositionsinwidth[0]{\hyperlink{def-checkpositionsinwidth}{\textfunc{check\_positions\_in\_width}}}
 \newcommand\shouldslicesreducetocall[0]{\tododefine{should\_slices\_reduce\_to\_call}}
+\newcommand\shouldreducetocall[0]{\tododefine{should\_reduce\_to\_call}}
 \newcommand\checkdisjointslices[0]{\tododefine{check\_disjoint\_slices}}
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\textfunc{annotate\_type}}(#1)}
 \newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\textfunc{annotate\_constraint}}}
@@ -1338,6 +1432,10 @@
 \newcommand\AssignmentToImmutable[0]{\hyperlink{def-aim}{\TypeErrorCode{AIM}}}
 \newcommand\MissingField[0]{\hyperlink{def-mf}{\TypeErrorCode{MF}}}
 \newcommand\DivIntIndivisible[0]{\hyperlink{def-dii}{\TypeErrorCode{DII}}}
+\newcommand\BitfieldsOutOfRange[0]{\hyperlink{def-bor}{\TypeErrorCode{BOT}}}
+\newcommand\BitfieldSlicesOverlap[0]{\hyperlink{def-bso}{\TypeErrorCode{BSO}}}
+\newcommand\BitfieldSliceReversed[0]{\hyperlink{def-bsr}{\TypeErrorCode{BSR}}}
+\newcommand\IntConstantExpected[0]{\hyperlink{def-icc}{\TypeErrorCode{ICC}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Semantics/Typing Shared macros
@@ -1347,11 +1445,6 @@
 \newcommand\aslsep[0]{\mathbf{,}}
 
 \newcommand\env[0]{\hyperlink{def-env}{\texttt{env}}}
-
-% Glossary
-\newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
-\newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
-\newcommand\optional[0]{\hyperlink{def-optional}{optional}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LRM Ident info
@@ -1589,17 +1682,20 @@
 \newcommand\matches[0]{\texttt{matches}}
 \newcommand\matchesone[0]{\texttt{matches1}}
 \newcommand\matchingrenamings[0]{\texttt{matching\_renamings}}
+\newcommand\maxpos[0]{\texttt{max\_pos}}
 \newcommand\mbv[0]{\texttt{m\_bv}}
 \newcommand\mcond[0]{\texttt{m\_cond}}
 \newcommand\mfactor[0]{\texttt{m\_factor}}
 \newcommand\mindex[0]{\texttt{m\_index}}
 \newcommand\minitopt[0]{\texttt{m\_init\_opt}}
+\newcommand\minpos[0]{\texttt{min\_pos}}
 \newcommand\mlength[0]{\texttt{m\_length}}
 \newcommand\monome[0]{\texttt{monome}}
 \newcommand\monoms[0]{\texttt{monoms}}
 \newcommand\monomsone[0]{\texttt{monoms1}}
 \newcommand\mpositions[0]{\texttt{m\_positions}}
 \newcommand\ms[0]{\texttt{ms}}
+\newcommand\msout[0]{\texttt{ms\_out}}
 \newcommand\mstart[0]{\texttt{m\_start}}
 \newcommand\mtop[0]{\texttt{m\_top}}
 \newcommand\name[0]{\texttt{name}}
@@ -1986,6 +2082,7 @@
 \newcommand\vmstwo[0]{\texttt{vms2}}
 \newcommand\vmtwo[0]{\texttt{m2}}
 \newcommand\vn[0]{\texttt{n}}
+\newcommand\vnamedslices[0]{\texttt{named\_slices}}
 \newcommand\vnames[0]{\texttt{name\_s}}
 \newcommand\vnamess[0]{\texttt{names\_s}}
 \newcommand\vnamest[0]{\texttt{names\_t}}
@@ -2031,6 +2128,7 @@
 \newcommand\vsliceasts[0]{\texttt{slice\_asts}}
 \newcommand\vsliceone[0]{\texttt{slice1}}
 \newcommand\vslices[0]{\texttt{slices}}
+\newcommand\vslicesone[0]{\texttt{slices1}}
 \newcommand\vsone[0]{\texttt{s1}}
 \newcommand\vsonep[0]{\texttt{s1'}}
 \newcommand\vsp[0]{\texttt{s'}}
@@ -2125,6 +2223,7 @@
 \newcommand\vwhereast[0]{\texttt{where\_ast}}
 \newcommand\vwhereopt[0]{\texttt{where\_opt}}
 \newcommand\vwidth[0]{\texttt{width}}
+\newcommand\vwidths[0]{\texttt{widths}}
 \newcommand\vwone[0]{\texttt{w1}}
 \newcommand\vwtwo[0]{\texttt{w2}}
 \newcommand\vwzero[0]{\texttt{w0}}
@@ -2149,6 +2248,5 @@
 \newcommand\ws[0]{\texttt{w\_s}}
 \newcommand\wt[0]{\texttt{w\_t}}
 \newcommand\xs[0]{\texttt{xs}}
-
 \newcommand\vEs[0]{\texttt{es}}
 \newcommand\vesone[0]{\texttt{es1}}

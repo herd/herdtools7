@@ -367,8 +367,8 @@ let fields == braced(tclist(typed_identifier))
 let fields_opt == { [] } | fields
 
 (* Slices *)
-let nslices == bracketed(nclist(slice))
-let  slices == bracketed( clist(slice))
+let named_slices == bracketed(nclist(slice))
+let slices == bracketed( clist(slice))
 let slice ==
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
@@ -379,9 +379,9 @@ let slice ==
 let bitfields_opt == loption(bitfields)
 let bitfields == braced(tclist(bitfield))
 let bitfield ==
-  | s=nslices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
-  | s=nslices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
-  | s=nslices ; x=IDENTIFIER ; ty=as_ty     ;  { BitField_Type   (x, s, ty) }
+  | s=named_slices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
+  | s=named_slices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
+  | s=named_slices ; x=IDENTIFIER ; ty=as_ty     ;  { BitField_Type   (x, s, ty) }
 
 (* Also called ty in grammar.bnf *)
 let ty :=

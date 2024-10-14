@@ -1,0 +1,210 @@
+\chapter{Global Declarations\label{chap:GlobalDeclarations}}
+Global declarations are grammatically derived from $\Ndecl$ and represented as ASTs by $\decl$.
+
+There are four kinds of global declarations:
+\begin{itemize}
+  \item Subprogram declarations, defined in \chapref{SubprogramDeclarations};
+  \item Type declarations, defined in \chapref{TypeDeclarations};
+  \item Global storage declarations, defined in \chapref{GlobalStorageDeclarations};
+  \item Global pragmas.
+\end{itemize}
+
+The typing of global declarations is defined in \secref{GlobalDeclarationsTyping}.
+The semantics of global declarations in defined in \secref{GlobalStorageDeclarationsSemantics}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Syntax}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Subprogram declarations:
+\begin{flalign*}
+\Ndecl  \derivesinline\ & \productionname{funcdecl}{func\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
+|\ & \productionname{proceduredecl}{procedure\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \productionname{getter}{getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
+|\ & \productionname{noarggetter}{no\_arg\_getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nreturntype \parsesep \Nfuncbody &\\
+|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
+    & \wrappedline\ \parsesep \Nfuncbody &\\
+|\ & \productionname{noargsetter}{no\_arg\_setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Teq \parsesep \Ntypedidentifier \parsesep \Nfuncbody&\\
+\end{flalign*}
+
+Type declarations:
+\begin{flalign*}
+\Ndecl  \derivesinline\ & \productionname{typedecl}{type\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&\\
+|\ & \productionname{subtypedecl}{subtype\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&\\
+\end{flalign*}
+
+Global storage declarations:
+\begin{flalign*}
+\Ndecl  \derivesinline\ & \productionname{globalstorage}{global\_storage}\ \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+    & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
+|\ & \productionname{globaluninitvar}{global\_uninit\_var}\ \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
+\end{flalign*}
+
+Pragmas:
+\begin{flalign*}
+\Ndecl  \derivesinline\ & \productionname{globalpragma}{global\_pragma}\ \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+\end{flalign*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Abstract Syntax}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{flalign*}
+\decl \derives\ & \DFunc(\func) & \\
+  |\ & \DGlobalStorage(\globaldecl) & \\
+  |\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &
+\end{flalign*}
+
+\subsubsection{ASTRule.GlobalDecl\label{sec:ASTRule.GlobalDecl}}
+\hypertarget{build-decl}{}
+The relation
+\[
+  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\hypertarget{build-globalpragma}{}
+\begin{mathpar}
+\inferrule[global\_pragma]{}
+{
+  \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\vx), \Clist{\Nexpr}, \Tsemicolon)}{\vparsednode}) \astarrow \overname{\tododefine{pragma\_node}}{\vastnode}
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Typing\label{sec:GlobalDeclarationsTyping}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hypertarget{def-typecheckdecl}{}
+The function
+\[
+  \typecheckdecl(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\decl}{\vd}
+  )
+  \aslto (\overname{\decl}{\newd} \times \overname{\staticenvs}{\newtenv})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a global declaration $\vd$ in the static environment $\tenv$,
+yielding an annotated global declaration $\newd$ and modified environment $\newtenv$.
+\ProseOtherwiseTypeError
+
+\subsubsection{TypingRule.TypecheckFunc \label{sec:TypingRule.TypecheckFunc}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
+  \item annotating and declaring the subprogram for $\vf$ in $\tenv$ as per \secref{TypingRule.AnnotateAndDeclareFunc}
+        yields the new environment $\newtenv$ and a subprogram definition $\vfone$\ProseOrTypeError;
+  \item annotating the subprogram definition $\vfone$ in $\tenv$ as per \nameref{sec:TypingRule.Subprogram} yields
+        the annotated subprogram definition $\vftwo$\ProseOrTypeError;
+  \item define $\newd$ as the subprogram AST node with $\vftwo$, that is, $\DFunc(\vftwo)$.
+\end{itemize}\CodeSubsection{\TypecheckFuncBegin}{\TypecheckFuncEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vf \eqname \{\text{body}: \SBASL, \ldots\}\\
+  \annotateanddeclarefunc(\tenv, \vf) \typearrow (\newtenv, \vfone) \OrTypeError\\\\
+  \annotatesubprogram{\newtenv, \vfone} \typearrow \vftwo \OrTypeError
+}{
+  \typecheckdecl(\tenv, \overname{\DFunc(\vf)}{\vd})
+  \typearrow (\overname{\DFunc(\vftwo)}{\newd}, \newtenv)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.Subprogram \label{sec:TypingRule.Subprogram}}
+\hypertarget{def-annotatesubprogram}{}
+The function
+\[
+  \annotatesubprogram{\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf}} \aslto \overname{\func}{\vfp}
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a subprogram $\vf$ in an environment $\tenv$, resulting in an annotated subprogram $\vfp$.
+\ProseOtherwiseTypeError
+
+Note that the return type in $\vf$ has already been annotated by $\annotatefuncsig$.
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vf$ is a $\func$ AST node subprogram body $\body$;
+  \item annotating the block $\body$ in $\tenv$ as per \secref{TypingRule.Block} yields $\newbody$\ProseOrTypeError;
+  \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$.
+\end{itemize}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+    \begin{array}{rrcl}
+  \vf \eqname \{ & \funcname            &:& \id,\\
+                 & \funcparameters      &:& \vp,\\
+                 & \funcargs            &:& \vargs,\\
+                 & \funcbody            &:& \SBASL(\body),\\
+                 & \funcreturntype      &:& \vt,\\
+                 & \funcsubprogramtype  &:& \subprogramtype \\
+              \} &&&
+    \end{array}
+  }\\
+  \annotateblock{\tenv, \body} \typearrow \newbody \OrTypeError\\\\
+  {
+    \begin{array}{rrcl}
+  \vfp \eqdef \{ & \funcname            &:& \id,\\
+                 & \funcparameters      &:& \vp,\\
+                 & \funcargs            &:& \vargs,\\
+                 & \funcbody            &:& \SBASL(\newbody),\\
+                 & \funcreturntype      &:& \vt,\\
+                 & \funcsubprogramtype  &:& \subprogramtype \\
+              \} &&&
+    \end{array}
+  }\\
+}{
+  \annotatesubprogram{\tenv, \vf} \typearrow \vfp
+}
+\end{mathpar}\lrmcomment{
+This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
+\identr{TJKQ}, \identi{LFJZ}, \identi{BZVB}, \identi{RQQB}.
+}
+\CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.TypecheckGlobalStorage \label{sec:TypingRule.TypecheckGlobalStorage}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vd$ is a global storage declaration with description $\gsd$, that is, \\ $\DGlobalStorage(\gsd)$;
+  \item declaring the global storage with description $\gsd$ in $\tenv$ yields the new environment
+        $\newtenv$ and new global storage description $\gsdp$\ProseOrTypeError;
+  \item define $\newd$ as the global storage declaration with description $\gsdp$, that is, \\ $\DGlobalStorage(\gsdp)$.
+\end{itemize}\CodeSubsection{\TypecheckGlobalStorageBegin}{\TypecheckGlobalStorageEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \declareglobalstorage(\tenv, \gsd) \typearrow (\newtenv, \gsdp) \OrTypeError
+}{
+  {
+    \begin{array}{r}
+  \typecheckdecl(\tenv, \overname{\DGlobalStorage(\gsd)}{\vd})
+  \typearrow \\ (\overname{\DGlobalStorage(\gsdp)}{\newd}, \newtenv)
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.TypecheckTypeDecl \label{sec:TypingRule.TypecheckTypeDecl}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vd$ is a type declaration with identifier $\vx$, type $\tty$,
+        and \optional\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
+  \item declaring the type described by $(\vx, \tty, \vs)$ in $\tenv$
+        as per \secref{TypingRule.DeclaredType} yields the modified environment $\newtenv$\ProseOrTypeError;
+  \item define $\newd$ as $\vd$.
+  \end{itemize}
+\CodeSubsection{\TypecheckTypeDeclBegin}{\TypecheckTypeDeclEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \declaretype(\tenv, \vx, \tty, \vs) \typearrow \newtenv \OrTypeError
+}{
+  \typecheckdecl(\tenv, \overname{\DTypeDecl(\vx, \tty, \vs)}{\vd}) \typearrow (\overname{\vd}{\newd}, \newtenv)
+}
+\end{mathpar}

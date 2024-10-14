@@ -1,0 +1,704 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Syntax\label{chap:Syntax}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This chapter defines the grammar of ASL. The grammar is presented via two extensions
+to context-free grammars --- \emph{inlined derivations} and \emph{parametric productions},
+inspired by the Menhir Parser Generator~\cite{MenhirManual} for the OCaml language.
+Those extensions can be viewed as macros over context-free grammars, which can be
+expanded to yield a standard context-free grammar.
+
+Our definition of the grammar and description of the parsing mechanism heavily relies
+on the theory of parsing via LR(1) grammars and LR(1) parser generators.
+%
+See ``Compilers: Principles, Techniques, and Tools''~\cite{ASU86} for a detailed
+definition of LR(1) grammars and parser construction.
+
+The expanded context-free grammar is an LR(1) grammar, modulo shift-reduce
+conflicts that are resolved via appropriate precedence definitions.
+That is, given a list of token, returned from $\aslscan$, it is possible to apply
+an LR(1) parser to obtain a parse tree if the list of tokens is in the formal language
+of the grammar and return a parse error otherwise.
+
+The outline of this chapter is as follows:
+\begin{itemize}
+  \item Definition of inlined derivations (see \secref{InlinedDerivations})
+  \item Definition of parametric productions (see \secref{ParametricProductions})
+  \item ASL Parametric Productions (see \secref{ASLParametricProductions})
+  \item Definition of the ASL grammar (see \secref{ASLGrammar})
+  \item Definition of parse trees (see \secref{ParseTrees})
+  \item Definition of priority and associativity of operators (see \secref{PriorityAndAssociativity})
+\end{itemize}
+
+\section{Inlined Derivations \label{sec:InlinedDerivations}}
+Context-free grammars consist of a list of \emph{derivations} $N \derives S^*$
+where $N$ is a non-terminal symbol and $S$ is a list of non-terminal symbols and terminal symbols,
+which correspond to tokens.
+We refer to a list of such symbols as a \emph{sentence}.
+A special form of a sentence is the \emph{empty sentence}, written $\emptysentence$.
+
+As commonly done, we aggregate all derivations associated with the same non-terminal symbol
+by writing $N \derives R_1 \;|\; \ldots \;|\; R_k$.
+We refer to the right-hand-side sentences $R_{1..k}$ as the \emph{alternatives} of $N$.
+
+Our grammar contains another form of derivation --- \emph{inlined derivation} ---
+written as $N \derivesinline R_1 \;|\; \ldots \;|\; R_k$.
+Expanding an inlined derivation consists of replacing each instance of $N$
+in a right-hand-side sentence of a derivation with each of $R_{1..k}$, thereby
+creating $k$ variations of it (and removing $N \derivesinline R_1 \;|\; \ldots \;|\; R_k$
+from the set of derivations).
+
+For example, consider the derivation
+\begin{flalign*}
+\Nexpr \derives\ & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &
+\end{flalign*}
+coupled with the derivation
+\begin{flalign*}
+\Nbinop \derives\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
+                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+\end{flalign*}
+
+A grammar containing these two derivations results in shift-reduce conflicts.
+Resolving these conflicts is done by associating priority levels to each of the binary operators
+and creating a version of the first derivation for each binary operator:
+\begin{flalign*}
+\Nexpr \derives\ & \Nexpr \parsesep \Tand \parsesep \Nexpr & \\
+              |\ & \Nexpr \parsesep \Tband \parsesep \Nexpr & \\
+              |\ & \Nexpr \parsesep \Tbor \parsesep \Nexpr & \\
+              \ldots \\
+              |\ & \Nexpr \parsesep \Tconcat \parsesep \Nexpr &
+\end{flalign*}
+
+By defining the derivations of $\Nbinop$ as inlined, we achieve the same effect more compactly:
+\begin{flalign*}
+\Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
+                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+\end{flalign*}
+
+Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
+all inlined derivations to obtain a context-free grammar without any inlined derivations.
+
+\section{Parametric Productions \label{sec:ParametricProductions}}
+A parametric production has the form
+$N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
+where $p_{1..m}$ are place holders for grammar symbols and may appear in any of the alternatives $R_{1..k}$.
+We refer to $N(p_{1..m})$ as a \emph{parametric non-terminal}.
+
+\newcommand\uniquesymb[1]{\textsf{unique}(#1)}
+Given sentences $S_{1..m}$, we can expand $N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
+by creating a unique symbols for $N(p_{1..m})$, denoted as $\uniquesymb{N(S_{1..m})}$, defining the
+derivations
+\[
+  \uniquesymb{N(S_{1..m})} \derives R_1[S_1/p_1,\ldots,S_m/p_m] \;|\; \ldots \;|\; R_k[S_1/p_1,\ldots,S_m/p_m]
+\]
+where for each $i= 1..k$, $R_i[S_1/p_1,\ldots,S_m/p_m]$ means replacing each instance of $p_j$ with $S_j$, for each $j=1..m$.
+Then, each instance of $S_{1..m}$ in the grammar is replaced by $\uniquesymb{N(S_{1..m})}$.
+If all instances of a parametric non-terminal are expanded this way, we can remove the derivations of the parametric
+non-terminal altogether.
+
+We note that a parametric production can be either a normal derivation or an inlined derivation.
+
+For example, the derivation for a list of ASL global declarations is as follows:
+\begin{flalign*}
+\Nast \derives\ & \maybeemptylist{\Ndecl} &
+\end{flalign*}
+It is defined via the parametric production for possibly-empty lists:
+\begin{flalign*}
+\maybeemptylist{x}   \derives\ & \emptysentence \;|\; x \parsesep \maybeemptylist{x} &\\
+\end{flalign*}
+
+\newcommand\Ndecllist[0]{\nonterminal{decl\_list}}
+Expanding $\maybeemptylist{\Ndecl}$ produces the following derivations for a new unique symbol.
+That is, a symbol that does not appear anywhere else in the grammar.
+In this example we will choose $\uniquesymb{\maybeemptylist{\Ndecl}}$ the be the symbol $\Ndecllist$.
+The result of the expansion is then:
+\begin{flalign*}
+\Ndecllist   \derives\ & \emptysentence \;|\; \Ndecl \parsesep \Ndecllist &\\
+\end{flalign*}
+The new symbol is substituted anywhere $\maybeemptylist{\Ndecl}$ appears in the original grammar,
+which results in the following derivation replacing the original derivation for $\Nast$:
+\begin{flalign*}
+\Nast \derives\ & \Ndecllist &
+\end{flalign*}
+
+% For example,
+% \[
+%   \option{x} \derives \emptysentence \;|\; x
+% \]
+% is useful for compactly defining derivations where part of a sentence may or may not appear.
+
+% Suppose we have
+% \[
+% B \derives a \parsesep \option{A \parsesep b}
+% \]
+% then expanding the instance $\option{A, b}$ produces
+% \[
+% \uniquesymb{\option{A \parsesep b}} \derives \emptysentence \;|\; A \parsesep b
+% \]
+% since $x[A \parsesep b/x]$ yields $A \parsesep b$ and $\emptysentence[A \parsesep b/x]$ yields $\emptysentence$,
+% and the derivations for $B$ are replaced by
+% \[
+% B \derives a \parsesep \uniquesymb{\option{A \parsesep b}}
+% \]
+
+Expanding all instances of parametric productions results in a grammar without any parametric productions.
+
+\section{ASL Parametric Productions \label{sec:ASLParametricProductions}}
+We define the following parametric productions for various types of lists and optional productions.
+
+\paragraph{Optional Symbol}
+\hypertarget{def-option}{}
+\begin{flalign*}
+\option{x}   \derives\ & \emptysentence \;|\; x &\\
+\end{flalign*}
+
+\paragraph{Possibly-empty List}
+\hypertarget{def-maybeemptylist}{}
+\begin{flalign*}
+\maybeemptylist{x}   \derives\ & \emptysentence \;|\; x \parsesep \maybeemptylist{x} &\\
+\end{flalign*}
+
+\paragraph{Non-empty List}
+\hypertarget{def-nonemptylist}{}
+\begin{flalign*}
+\nonemptylist{x}   \derives\ & x \;|\; x \parsesep \nonemptylist{x}&\\
+\end{flalign*}
+
+\paragraph{Non-empty Comma-separated List}
+\hypertarget{def-nclist}{}
+\begin{flalign*}
+\NClist{x}   \derives\ & x \;|\; x \parsesep \Tcomma \parsesep \NClist{x} &\\
+\end{flalign*}
+
+\paragraph{Possibly-empty Comma-separated List}
+\hypertarget{def-clist}{}
+\begin{flalign*}
+\Clist{x}   \derivesinline\ & \emptysentence \;|\; \NClist{x} &\\
+\end{flalign*}
+
+\paragraph{Comma-separated List With At Least Two Elements}
+\hypertarget{def-clisttwo}{}
+\begin{flalign*}
+\Clisttwo{x}   \derivesinline\ & x \parsesep \Tcomma \parsesep \NClist{x} &\\
+\end{flalign*}
+
+\paragraph{Possibly-empty Parenthesized, Comma-separated List}
+\hypertarget{def-plist}{}
+\begin{flalign*}
+\Plist{x}   \derivesinline\ & \Tlpar \parsesep \Clist{x} \parsesep \Trpar &\\
+\end{flalign*}
+
+\paragraph{Parenthesized Comma-separated List With At Least Two Elements}
+\hypertarget{def-plisttwo}{}
+\begin{flalign*}
+\Plisttwo{x}   \derivesinline\ & \Tlpar \parsesep x \parsesep \Tcomma \parsesep \NClist{x} \parsesep \Trpar &\\
+\end{flalign*}
+
+\paragraph{Non-empty Comma-separated Trailing List}
+\hypertarget{def-tclist}{}
+\begin{flalign*}
+\NTClist{x}   \derives\ & x \parsesep \option{\Tcomma} &\\
+                          |\  & x \parsesep \Tcomma \parsesep \NTClist{x}
+\end{flalign*}
+
+\paragraph{Comma-separated Trailing List}
+\hypertarget{def-tclist}{}
+\begin{flalign*}
+\TClist{x}   \derivesinline\ & \option{\NTClist{x}} &\\
+\end{flalign*}
+
+\section{ASL Grammar\label{sec:ASLGrammar}}
+We now present the list of derivations for the ASL Grammar where the start non-terminal is $\Nast$.
+%
+The derivations allow certain parse trees where lists may have invalid sizes.
+Those parse trees must be rejected in a later phase.
+
+Notice that two of the derivations (for $\Nexprpattern$ and for $\Nexpr$) end with \\
+$\precedence{\Tunops}$.
+This is a precedence annotation, which is not part of the right-hand-side sentence, and is explained in \secref{PriorityAndAssociativity}
+and can be ignored upon first reading.
+
+For brevity, tokens are presented via their label only, dropping their associated value.
+For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
+
+\hypertarget{def-nast}{}
+\begin{flalign*}
+\Nast   \derives\ & \productionname{ast}{ast}\ \maybeemptylist{\Ndecl} &
+\end{flalign*}
+
+\hypertarget{def-ndecl}{}
+\hypertarget{def-funcdecl}{}
+\begin{flalign*}
+\Ndecl  \derivesinline\ & \productionname{funcdecl}{func\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &
+\hypertarget{def-proceduredecl}{}\\
+|\ & \productionname{proceduredecl}{procedure\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &
+\hypertarget{def-getter}{}\\
+|\ & \productionname{getter}{getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Nreturntype \parsesep \Nfuncbody&
+\hypertarget{def-noarggetter}{}\\
+|\ & \productionname{noarggetter}{no\_arg\_getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nreturntype \parsesep \Nfuncbody &
+\hypertarget{def-setter}{}\\
+|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
+   & \wrappedline\ \parsesep \Nfuncbody &
+\hypertarget{def-noargsetter}{}\\
+|\ & \productionname{noargsetter}{no\_arg\_setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Teq \parsesep \Ntypedidentifier \parsesep \Nfuncbody&
+\hypertarget{def-typedecl}{}\\
+|\ & \productionname{typedecl}{type\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&
+\hypertarget{def-subtypedecl}{}\\
+|\ & \productionname{subtypedecl}{subtype\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&
+\hypertarget{def-globalstorage}{}\\
+|\ & \productionname{globalstorage}{global\_storage}\ \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+   & \wrappedline\ \Nexpr \parsesep \Tsemicolon &
+\hypertarget{def-globaluninitvar}{}\\
+|\ & \productionname{globaluninitvar}{global\_uninit\_var}\ \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&
+\hypertarget{def-globalpragma}{}\\
+|\ & \productionname{globalpragma}{global\_pragma}\ \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+\end{flalign*}
+
+\hypertarget{def-nsubtype}{}
+\begin{flalign*}
+\Nsubtype \derivesinline\ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
+          |\              & \Tsubtypes \parsesep \Tidentifier &\\
+\end{flalign*}
+
+\hypertarget{def-nsubtypeopt}{}
+\begin{flalign*}
+\Nsubtypeopt           \derivesinline\ & \option{\Nsubtype} &
+\end{flalign*}
+
+\hypertarget{def-ntypedidentifier}{}
+\begin{flalign*}
+\Ntypedidentifier \derivesinline\ & \Tidentifier \parsesep \Nasty &
+\end{flalign*}
+
+\hypertarget{def-nopttypeidentifier}{}
+\begin{flalign*}
+\Nopttypedidentifier \derivesinline\ & \Tidentifier \parsesep \option{\Nasty} &
+\end{flalign*}
+
+\hypertarget{def-nasty}{}
+\begin{flalign*}
+\Nasty \derivesinline\ & \Tcolon \parsesep \Nty &
+\end{flalign*}
+
+\hypertarget{def-nreturntype}{}
+\begin{flalign*}
+\Nreturntype        \derivesinline\ & \Tarrow \parsesep \Nty &
+\end{flalign*}
+
+\hypertarget{def-nparamsopt}{}
+\begin{flalign*}
+\Nparamsopt \derivesinline\ & \emptysentence &\\
+                   |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-naccessargs}{}
+\begin{flalign*}
+\Naccessargs        \derivesinline\ & \Tlbracket \parsesep \Clist{\Ntypedidentifier} \parsesep \Trbracket &
+\end{flalign*}
+
+\hypertarget{def-nfuncargs}{}
+\begin{flalign*}
+\Nfuncargs          \derivesinline\ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &
+\end{flalign*}
+
+\hypertarget{def-nmaybeemptystmtlist}{}
+\begin{flalign*}
+\Nmaybeemptystmtlist          \derivesinline\ & \emptysentence \;|\; \Nstmtlist &
+\end{flalign*}
+
+\hypertarget{def-nfuncbody}{}
+\begin{flalign*}
+\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend &
+\end{flalign*}
+
+\hypertarget{def-nignoredoridentifier}{}
+\begin{flalign*}
+\Nignoredoridentifier \derivesinline\ & \Tminus \;|\; \Tidentifier &
+\end{flalign*}
+
+\vspace*{-\baselineskip}
+\paragraph{Parsing note:} $\Tvar$ is not derived by $\Nlocaldeclkeyword$ to avoid an LR(1) conflict.
+\hypertarget{def-nlocaldeclkeyword}{}
+\begin{flalign*}
+\Nlocaldeclkeyword \derivesinline\ & \Tlet \;|\; \Tconstant&
+\end{flalign*}
+
+\hypertarget{def-nstoragekeyword}{}
+\begin{flalign*}
+\Nstoragekeyword \derivesinline\ & \Tlet \;|\; \Tconstant \;|\; \Tvar \;|\; \Tconfig&
+\end{flalign*}
+
+\hypertarget{def-ndirection}{}
+\begin{flalign*}
+\Ndirection \derivesinline\ & \Tto \;|\; \Tdownto &
+\end{flalign*}
+
+\hypertarget{def-nalt}{}
+\begin{flalign*}
+\Nalt       \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
+|\ & \Totherwise \parsesep \Nstmtlist &
+\end{flalign*}
+
+\hypertarget{def-notherwiseopt}{}
+\begin{flalign*}
+\Notherwiseopt     \derives\ & \option{\Totherwise \parsesep \Tarrow \parsesep \Nstmtlist} &
+\end{flalign*}
+
+\hypertarget{def-ncatcher}{}
+\begin{flalign*}
+\Ncatcher \derivesinline\ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+          |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\end{flalign*}
+
+\hypertarget{def-nstmt}{}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend &\\
+|\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \nonemptylist{\Nalt} \parsesep \Tend &\\
+|\ & \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+|\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
+                    \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+|\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend &\\
+|\ & \Tpass \parsesep \Tsemicolon &\\
+|\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
+|\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tthrow \parsesep \Tsemicolon &\\
+|\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon &
+\end{flalign*}
+
+\hypertarget{def-nstmtlist}{}
+\begin{flalign*}
+\Nstmtlist \derivesinline\ & \nonemptylist{\Nstmt} &
+\end{flalign*}
+
+\hypertarget{def-nselse}{}
+\begin{flalign*}
+\Nselse \derives\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse &\\
+|\ & \Tpass &\\
+|\ & \Telse \parsesep \Nstmtlist &
+\end{flalign*}
+
+\hypertarget{def-nlexpr}{}
+\begin{flalign*}
+\Nlexpr \derivesinline\ & \Nlexpratom &\\
+|\ & \Tminus &\\
+|\ & \Tlpar \parsesep \NClist{\Nlexpr} \parsesep \Trpar &
+\end{flalign*}
+
+\hypertarget{def-nlexpratom}{}
+\begin{flalign*}
+\Nlexpratom \derives\ & \Tidentifier &\\
+|\ & \Nlexpratom \parsesep \Nslices &\\
+|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier &\\
+|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &\\
+|\ & \Tlbracket \parsesep \NClist{{\Nlexpratom}} \parsesep \Trbracket &
+\end{flalign*}
+
+A $\Ndeclitem$ is another kind of left-hand-side expression,
+which appears only in declarations. It cannot have setter calls or set record fields,
+it must declare a new variable.
+\hypertarget{def-ndeclitem}{}
+\begin{flalign*}
+\Ndeclitem \derives\ & \Nuntypeddeclitem \parsesep \Nasty&\\
+|\ & \Nuntypeddeclitem  &
+\end{flalign*}
+
+\hypertarget{def-nuntypeddeclitem}{}
+\begin{flalign*}
+\Nuntypeddeclitem \derivesinline\ & \Tidentifier &\\
+|\ & \Tminus &\\
+|\ & \Plisttwo{\Ndeclitem} &
+\end{flalign*}
+
+\hypertarget{def-nintconstraintsopt}{}
+\begin{flalign*}
+\Nintconstraintsopt \derivesinline\ & \Nintconstraints \;|\; \emptysentence &
+\end{flalign*}
+
+\hypertarget{def-nintconstraints}{}
+\begin{flalign*}
+\Nintconstraints \derivesinline\ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-nintconstraint}{}
+\begin{flalign*}
+\Nintconstraint \derivesinline\ & \Nexpr &\\
+|\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
+\end{flalign*}
+
+Pattern expressions ($\Nexprpattern$), given by the following derivations, is similar to regular expressions  ($\Nexpr$),
+except they do not derive tuples, which are the last derivation for $\Nexpr$.
+
+\hypertarget{def-nexprpattern}{}
+\begin{flalign*}
+\Nexprpattern \derives\ & \Nvalue &\\
+                    |\  & \Tidentifier &\\
+                    |\  & \Nexprpattern \parsesep \Nbinop \parsesep \Nexpr &\\
+                    |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
+                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+                    |\  & \Tidentifier \parsesep \Plist{\Nexpr} &\\
+                    |\  & \Nexprpattern \parsesep \Nslices &\\
+                    |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tidentifier&\\
+                    |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
+                    |\  & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &\\
+                    |\  & \Nexprpattern \parsesep \Tas \parsesep \Nty &\\
+                    |\  & \Nexprpattern \parsesep \Tas \parsesep \Nintconstraints &\\
+                    |\  & \Nexprpattern \parsesep \Tin \parsesep \Npatternset &\\
+                    |\  & \Nexprpattern \parsesep \Tin \parsesep \Tmasklit &\\
+                    |\  & \Tunknown \parsesep \Tcolon \parsesep \Nty &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
+                    |\  & \Tlpar \parsesep \Nexprpattern \parsesep \Trpar &
+\end{flalign*}
+
+\hypertarget{def-npatternset}{}
+\begin{flalign*}
+\Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+                  |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-npatternlist}{}
+\begin{flalign*}
+\Npatternlist \derivesinline\ & \NClist{\Npattern} &
+\end{flalign*}
+
+\hypertarget{def-npattern}{}
+\begin{flalign*}
+\Npattern \derives\ & \Nexprpattern &\\
+                |\  & \Nexprpattern \parsesep \Tslicing \parsesep \Nexpr &\\
+                |\  & \Tminus &\\
+                |\  & \Tleq \parsesep \Nexpr &\\
+                |\  & \Tgeq \parsesep \Nexpr &\\
+                |\  & \Tmasklit &\\
+                |\  & \Plisttwo{\Npattern} &\\
+                |\  & \Npatternset &
+\end{flalign*}
+
+\hypertarget{def-nfields}{}
+\begin{flalign*}
+\Nfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Ntypedidentifier} \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-nfieldsopt}{}
+\begin{flalign*}
+\Nfieldsopt \derivesinline\ & \Nfields \;|\; \emptysentence &
+\end{flalign*}
+
+\hypertarget{def-nnslices}{}
+\begin{flalign*}
+\Nnamedslices \derivesinline\ & \Tlbracket \parsesep \NClist{\Nslice} \parsesep \Trbracket &
+\end{flalign*}
+
+\hypertarget{def-nslices}{}
+\begin{flalign*}
+\Nslices \derivesinline\ & \Tlbracket \parsesep \Clist{\Nslice} \parsesep \Trbracket &
+\end{flalign*}
+
+\hypertarget{def-nslice}{}
+\begin{flalign*}
+\Nslice \derivesinline\ & \Nexpr &\\
+              |\  & \Nexpr \parsesep \Tcolon \parsesep \Nexpr &\\
+              |\  & \Nexpr \parsesep \Tpluscolon \parsesep \Nexpr &\\
+              |\  & \Nexpr \parsesep \Tstarcolon \parsesep \Nexpr &
+\end{flalign*}
+
+\hypertarget{def-nbitfields}{}
+\begin{flalign*}
+\Nbitfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &
+\end{flalign*}
+
+\hypertarget{def-nbitfield}{}
+\begin{flalign*}
+\Nbitfield \derivesinline\ & \Nnamedslices \parsesep \Tidentifier &\\
+                  |\ & \Nnamedslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
+                  |\ & \Nnamedslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &
+\end{flalign*}
+
+\hypertarget{def-nty}{}
+\begin{flalign*}
+\Nty \derives\ & \Tinteger \parsesep \Nintconstraintsopt &\\
+            |\ & \Treal &\\
+            |\ & \Tstring &\\
+            |\ & \Tboolean &\\
+            |\ & \Tbit &\\
+            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \maybeemptylist{\Nbitfields} &\\
+            |\ & \Plist{\Nty} &\\
+            |\ & \Tidentifier &\\
+            |\ & \Tarray \parsesep \Tlbracket \parsesep \Nexpr \parsesep \Trbracket \parsesep \Tof \parsesep \Nty &
+\end{flalign*}
+
+\hypertarget{def-ntydecl}{}
+\begin{flalign*}
+\Ntydecl \derives\ & \Nty &\\
+            |\ & \Tenumeration \parsesep \Tlbrace \parsesep \NTClist{\Tidentifier} \parsesep \Trbrace &\\
+            |\ & \Trecord \parsesep \Nfieldsopt &\\
+            |\ & \Texception \parsesep \Nfieldsopt &
+\end{flalign*}
+
+\hypertarget{def-nfieldassign}{}
+\begin{flalign*}
+\Nfieldassign \derivesinline\ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
+\end{flalign*}
+
+\hypertarget{def-neelse}{}
+\begin{flalign*}
+\Neelse \derives\ & \Telse \parsesep \Nexpr &\\
+                     |\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &
+\end{flalign*}
+
+\hypertarget{def-nexpr}{}
+\begin{flalign*}
+\Nexpr \derives\  & \Nvalue &\\
+                    |\  & \Tidentifier &\\
+                    |\  & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &\\
+                    |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
+                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+                    |\  & \Tidentifier \parsesep \Plist{\Nexpr} &\\
+                    |\  & \Nexpr \parsesep \Nslices &\\
+                    |\  & \Nexpr \parsesep \Tdot \parsesep \Tidentifier&\\
+                    |\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
+                    |\  & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &\\
+                    |\  & \Nexpr \parsesep \Tas \parsesep \Nty &\\
+                    |\  & \Nexpr \parsesep \Tas \parsesep \Nintconstraints &\\
+                    |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
+                    |\  & \Nexpr \parsesep \Tin \parsesep \Tmasklit &\\
+                    |\  & \Tunknown \parsesep \Tcolon \parsesep \Nty &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
+                    |\  & \Tlpar \parsesep \Nexpr \parsesep \Trpar &\\
+                    |\  & \Plisttwo{\Nexpr} &
+\end{flalign*}
+
+\hypertarget{def-nvalue}{}
+\begin{flalign*}
+\Nvalue \derivesinline\ & \Tintlit &\\
+                     |\ & \Tboollit &\\
+                     |\ & \Treallit &\\
+                     |\ & \Tbitvectorlit &\\
+                     |\ & \Tstringlit &
+\end{flalign*}
+
+\hypertarget{def-nunop}{}
+\begin{flalign*}
+\Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &
+\end{flalign*}
+
+\hypertarget{def-nbinop}{}
+\begin{flalign*}
+\Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
+                     |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                     |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+\end{flalign*}
+
+\section{Parse Trees \label{sec:ParseTrees}}
+We now define \emph{parse trees} for the ASL expanded grammar. Those are later used for build Abstract Syntax Trees.
+
+\begin{definition}[Parse Trees]
+A \emph{parse tree} has one of the following forms:
+\begin{itemize}
+  \item A \emph{token node}, given by the token itself, for example, $\Tlexeme(\Tarrow)$ and $\Tidentifier(\id)$;
+  \item \hypertarget{def-epsilonnode}{} $\epsilonnode$, which represents the empty sentence --- $\emptysentence$.
+  \item A \emph{non-terminal node} of the form $N(n_{1..k})$ where $N$ is a non-terminal symbol,
+        which is said to label the node,
+        and $n_{1..k}$ are its children parse nodes,
+        for example,
+        $\Ndecl(\Tfunc, \Tidentifier(\id), \Nparamsopt, \Nfuncargs, \Nfuncbody)$
+        is labeled by $\Ndecl$ and has five children nodes.
+\end{itemize}
+\end{definition}
+(In the literature, parse trees are also referred to as \emph{derivation trees}.)
+
+\begin{definition}[Well-formed Parse Trees]
+A parse tree is \emph{well-formed} if its root is labelled by the start non-terminal ($\Nast$ for ASL)
+and each non-terminal node $N(n_{1..k})$ corresponds to a grammar derivation
+$N \derives l_{1..k}$ where $l_i$ is the label of node $n_i$ if it is a non-terminal node and $n_i$
+itself when it is a token.
+A non-terminal node $N(\epsilonnode)$ is well-formed if the grammar includes a derivation
+$N \derives \emptysentence$.
+\end{definition}
+
+\hypertarget{def-yield}{}
+\begin{definition}[Parse Tree Yield]
+The \emph{\yield} of a parse tree is the list of tokens
+given by an in-order walk of the tree:
+\[
+\yield(n) \triangleq \begin{cases}
+  [t] & n \text{ is a token }t\\
+  \emptylist & n = \epsilonnode\\
+  \yield(n_1) \concat \ldots \concat \yield(n_k) & n = N(n_{1..k})\\
+\end{cases}
+\]
+\end{definition}
+
+\hypertarget{def-parsenode}{}
+We denote the set of well-formed parse trees for a non-terminal symbol $S$ by $\parsenode{S}$.
+
+\hypertarget{def-aslparse}{}
+A parser is a function
+\[
+\aslparse : (\Token^* \setminus \{\Terror\}) \aslto \parsenode{\Nast} \cup \{\ParseError\}
+\]
+\hypertarget{def-parseerror}{}
+where $\ParseError$ stands for a \emph{parse error}.
+If $\aslparse(\ts) = n$ then $\yield(n)=\ts$
+and if $\aslparse(\ts) = \ParseError$ then there is no well-formed tree
+$n$ such that $\yield(n)=\ts$.
+(Notice that we do not define a parser if $\ts$ is lexically illegal.)
+
+The \emph{language of a grammar} $G$ is defined as follows:
+\[
+\Lang(G) = \{\yield(n) \;|\; n \text{ is a well-formed parse tree for }G\} \enspace.
+\]
+
+\section{Priority and Associativity \label{sec:PriorityAndAssociativity}}
+A context-free grammar $G$ is \emph{ambiguous} if there can be more than one parse tree for a given list of tokens
+$\ts \in \Lang(G)$.
+Indeed the expanded ASL grammar is ambiguous, for example, due to its definition of binary operation expressions.
+To allow assigning a unique parse tree to each sequence of tokens in the language of the ASL grammar,
+we utilize the standard technique of associating priority levels to productions and using them to resolve
+any shift-reduce conflicts in the LR(1) parser associated with our grammar (our grammar does not have any
+reduce-reduce conflicts).
+
+The priority of a grammar derivation is defined as the priority of its rightmost token.
+Derivations that do not contain tokens do not require a priority as they do not induce shift-reduce conflicts.
+
+The table below assigns priorities to tokens in increasing order, starting from the lowest priority (for $\Telse$)
+to the highest priority (for $\Tdot$).
+When a shift-reduce conflict arises during the LR(1) grammar construction
+it resolve in favor of the action (shift or reduce) associated with the derivation that has the higher priority.
+If two derivations have the same priority due to them both having the same rightmost token,
+the conflict is resolved based on the associativity associated with the token below:
+reduce for $\leftassoc$, shift for $\rightassoc$, and a parsing error for $\nonassoc$.
+
+The two rules involving a unary minus operation are not assigned the priority level of $\Tminus$,
+but rather then the priority level $\Tunops$, as denoted by the notation \\
+$\precedence{\Tunops}$
+appearing to their right. This is a standard way of dealing with a unary minus operation
+in many programming languages, which involves defining an artificial token $\Tunops$,
+which is never returned by the scanner.
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Terminals} & \textbf{Associativity}\\
+\hline
+\Telse & \nonassoc\\
+\Tbor, \Tband, \Timpl, \Tbeq, \Tas & \leftassoc\\
+\Teqop, \Tneq & \leftassoc\\
+\Tgt, \Tgeq, \Tlt, \Tleq & \nonassoc\\
+\Tplus, \Tminus, \Tor, \Txor, \Tand & \leftassoc\\
+\Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr & \leftassoc\\
+\Tpow, \Tconcat & \leftassoc\\
+$\Tunops$ & \nonassoc\\
+\Tin & \nonassoc\\
+\Tdot, \Tlbracket & \leftassoc
+\end{tabular}
+\end{center}

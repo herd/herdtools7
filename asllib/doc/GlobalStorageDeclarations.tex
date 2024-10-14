@@ -1,0 +1,756 @@
+\chapter{Global Storage Declarations\label{chap:GlobalStorageDeclarations}}
+
+Global storage declarations are grammatically derived from $\Ndecl$ via the subset of productions shown in
+\secref{GlobalStorageDeclarationsSyntax} and represented as ASTs via the production of $\decl$
+shown in \secref{GlobalStorageDeclarationsAbstractSyntax}.
+%
+Global storage declarations are typed by $\declareglobalstorage$, which is defined in \nameref{sec:TypingRule.DeclareGlobalStorage}.
+%
+The semantics of a list of global storage declarations is defined in \nameref{sec:SemanticsRule.EvalGlobals},
+where the list is ordered via \nameref{sec:SemanticsRule.BuildGlobalEnv}.
+The semantics of a single global storage declarations is defined in \nameref{sec:SemanticsRule.DeclareGlobal}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Syntax\label{sec:GlobalStorageDeclarationsSyntax}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{flalign*}
+\Ndecl  \derivesinline\ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+        & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
+        |\ & \productionname{globaluninitvar}{global\_uninit\_var}\ \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
+        |\ & \productionname{globalpragma}{global\_pragma}\ \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+\end{flalign*}
+
+\begin{flalign*}
+\Nstoragekeyword \derivesinline\ & \Tlet \;|\; \Tconstant \;|\; \Tvar \;|\; \Tconfig&\\
+\Nignoredoridentifier \derivesinline\ & \Tminus \;|\; \Tidentifier &
+\end{flalign*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Abstract Syntax\label{sec:GlobalStorageDeclarationsAbstractSyntax}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{flalign*}
+\decl \derives\ & \DGlobalStorage(\globaldecl) &\\
+\globaldecl \derives\ &
+{\left\{
+  \begin{array}{rcl}
+  \GDkeyword &:& \globaldeclkeyword, \\
+  \GDname &:& \identifier,\\
+  \GDty &:& \ty?,\\
+  \GDinitialvalue &:& \expr?
+  \end{array}
+  \right\}
+ } &\\
+ \globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
+\end{flalign*}
+
+\subsubsection{ASTRule.GlobalDecl}
+The relation
+\[
+  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\hypertarget{build-globalstorage}{}
+\begin{mathpar}
+\inferrule[global\_storage]{
+  \buildstoragekeyword(\keyword) \astarrow \astof{\keyword}\\
+  \buildoption[\buildasty](\tty) \astarrow \ttyp\\
+  \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
+}
+{
+  {
+      \builddecl\left(\overname{\Ndecl\left(
+      \begin{array}{r}
+      \namednode{\vkeyword}{\Nstoragekeyword}, \namednode{\name}{\Nignoredoridentifier},  \\
+  \wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
+      \end{array}
+  \right)}{\vparsednode}\right)
+  } \astarrow \\
+  {
+    \overname{
+  \DGlobalStorage\left(\left\{
+    \begin{array}{rcl}
+    \GDkeyword &:& \astof{\vkeyword},\\
+    \GDname &:& \astof{\name},\\
+    \GDty &:& \ttyp,\\
+    \GDinitialvalue &:& \astof{\vinitialvalue}
+  \end{array}
+  \right\}\right)
+  }{\vastnode}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-globaluninitvar}{}
+\begin{mathpar}
+\inferrule[global\_uninit\_var]{
+  \buildignoredoridentifier(\cname) \astarrow \name
+}
+{
+  {
+    \begin{array}{r}
+      \builddecl(\overname{\Ndecl(\Tvar, \namednode{\cname}{\Nignoredoridentifier}, \Nasty, \Tsemicolon)}{\vparsednode}) \astarrow
+    \end{array}
+  } \\
+  \overname{\DGlobalStorage(\{\GDkeyword: \GDKVar, \GDname: \name, \GDty: \langle\astof{\Nasty}\rangle, \GDinitialvalue: \None\})}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.StorageKeyword \label{sec:ASTRule.StorageKeyword}}
+\hypertarget{build-storagekeyword}{}
+The function
+\[
+\buildstoragekeyword(\overname{\parsenode{\Nstoragekeyword}}{\vparsednode}) \;\aslto\;
+  \overname{\globaldeclkeyword}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[let]{}{
+  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\GDKLet}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constant]{}{
+  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tconstant)}{\vparsednode}) \astarrow \overname{\GDKConstant}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[var]{}{
+  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tvar)}{\vparsednode}) \astarrow \overname{\GDKVar}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[config]{}{
+  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tconfig)}{\vparsednode}) \astarrow \overname{\GDKConfig}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.IgnoredOrIdentifier\label{sec:ASTRule.IgnoredOrIdentifier}}
+\hypertarget{build-ignoredoridentifier}{}
+The relation
+\[
+\buildfuncargs(\overname{\parsenode{\Nignoredoridentifier}}{\vparsednode}) \;\aslrel\;
+  \overname{\identifier}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[discard]{
+  \id \in \identifier \text{ is fresh}
+}{
+  \buildignoredoridentifier(\overname{\Nignoredoridentifier(\Tminus)}{\vparsednode}) \astarrow
+  \overname{\id}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[id]{}{
+  \buildignoredoridentifier(\overname{\Nignoredoridentifier(\Tidentifier(\id))}{\vparsednode}) \astarrow
+  \overname{\id}{\vastnode}
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Typing}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+We also define the following helper rules:
+\begin{itemize}
+  \item TypingRule.DeclareGlobalStorage (see \secref{TypingRule.DeclareGlobalStorage})
+  \item TypingRule.AnnotateTypeOpt (see \secref{TypingRule.AnnotateTypeOpt})
+  \item TypingRule.AnnotateExprOpt (see \secref{TypingRule.AnnotateExprOpt})
+  \item TypingRule.AnnotateInitType (see \secref{TypingRule.AnnotateInitType})
+  \item TypingRule.AddGlobalStorage (see \secref{TypingRule.AddGlobalStorage})
+\end{itemize}
+
+\subsubsection{TypingRule.DeclareGlobalStorage \label{sec:TypingRule.DeclareGlobalStorage}}
+\hypertarget{def-declareglobalstorage}{}
+The function
+\[
+  \declareglobalstorage(\overname{\staticenvs}{\tenv} \aslsep \overname{\globaldecl}{\gsd})
+  \aslto
+  \overname{\staticenvs}{\newtenv} \aslsep \overname{\globaldecl}{\newgsd}
+  \cup
+  \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates the global storage declaration $\gsd$ in the static environment $\tenv$,
+yielding a modified static environment $\newtenv$ and annotated global storage declaration $\newgsd$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\gsd$ is a global storage declaration with keyword $\keyword$, initial value \\ $\initialvalue$,
+        \optional\ type $\tyopt$, and name $\name$;
+  \item checking that $\name$ is not already declared in the global environment of $\tenv$ yields $\True$\ProseOrTypeError;
+  \item annotating the \optional\ type $\tyopt$ in $\tenv$ via $\annotatetypeopt$ yields \\
+        $\tyoptp$\ProseOrTypeError;
+  \item annotating the \optional\ expression $\initialvalue$ in $\tenv$ via $\annotateexpropt$ yields
+        $(\initialvaluetype, \initialvaluep)$\ProseOrTypeError;
+  \item choosing the correct type between $\initialvaluetype$ and $\tyoptp$ in $tenv$ via $\annotateinittype$ yields
+        $\declaredt$;
+  \item adding a global storage element with name $\name$, global declaration keyword \\ $\keyword$ and type $\declaredt$
+        to $\tenv$ via $\addglobalstorage$ yields $\tenvone$\ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{constant}):
+    \begin{itemize}
+      \item $\keyword$ is $\GDKConstant$ and therefore $\initialvalue$ is some expression $\ve$ (the ASL parser guarantees
+            that the expression exists);
+      \item symbolically simplifying $\ve$ in $\tenvone$ via $\reduceconstants$ yields the literal $\vv$\ProseOrTypeError;
+      \item $\tenvtwo$ is $\tenvone$ with its $\constantvalues$ component updated by binding $\name$ to $\vv$;
+      \item $\newgsd$ is $\gsd$ with its type component as $\tyoptp$;
+      \item $\newtenv$ is $\tenvtwo$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{non\_constant}):
+    \begin{itemize}
+      \item $\keyword$ is not $\GDKConstant$;
+      \item $\newtenv$ is $\tenvone$.
+    \end{itemize}
+  \end{itemize}
+  \item $\newgsd$ is $\gsd$ with its type component as $\tyoptp$ and $\initialvalue$ component as $\initialvaluep$;
+\end{itemize}
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[constant]{
+  \gsd \eqname \{
+    \GDkeyword : \keyword,
+    \GDinitialvalue : \initialvalue,
+    \GDty : \tyopt,
+    \GDname: \name
+  \}\\
+\checkvarnotingenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
+\annotatetypeopt(\tenv, \tyopt) \typearrow \tyoptp \OrTypeError\\\\
+{
+  \begin{array}{r}
+\annotateexpropt(\tenv, \initialvalue) \typearrow \\ (\initialvaluetype, \initialvaluep) \OrTypeError
+  \end{array}
+}\\
+\annotateinittype(\tenv, \initialvaluetype, \tyoptp) \typearrow \declaredt\\
+\addglobalstorage(\tenv, \name, \keyword, \declaredt) \typearrow \tenvone \OrTypeError\\\\
+\commonprefixline\\\\
+\keyword = \GDKConstant\\
+\initialvaluep \eqname \langle \ve \rangle\\
+\reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
+\tenvtwo \eqdef (G^\tenvone.\constantvalues[\name\mapsto\vv], L^\tenvone)\\
+{
+\newgsd \eqdef \left\{
+  \begin{array}{rcl}
+  \GDkeyword &:& \keyword, \\
+  \GDinitialvalue &:& \initialvalue, \\
+  \GDty &:& \tyoptp, \\
+  \GDname &:& \name
+  \end{array}
+\right\}
+}
+}{
+  \declareglobalstorage(\tenv, \gsd) \typearrow (\overname{\tenvtwo}{\newtenv}, \newgsd)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_constant]{
+  \gsd \eqname \{
+    \GDkeyword : \keyword,
+    \GDinitialvalue : \initialvalue,
+    \GDty : \tyopt,
+    \GDname: \name
+  \}\\
+\checkvarnotingenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
+\annotatetypeopt(\tenv, \tyopt) \typearrow \tyoptp \OrTypeError\\\\
+{
+  \begin{array}{r}
+\annotateexpropt(\tenv, \initialvalue) \typearrow \\ (\initialvaluetype, \initialvaluep) \OrTypeError
+  \end{array}
+}\\
+\annotateinittype(\tenv, \initialvaluetype, \tyoptp) \typearrow \declaredt\\
+\addglobalstorage(\tenv, \name, \keyword, \declaredt) \typearrow \tenvone \OrTypeError\\\\
+\commonprefixline\\\\
+\keyword \neq \GDKConstant\\
+{
+\newgsd \eqdef \left\{
+  \begin{array}{rcl}
+  \GDkeyword &:& \keyword, \\
+  \GDinitialvalue &:& \initialvalue, \\
+  \GDty &:& \tyoptp, \\
+  \GDname &:& \name
+  \end{array}
+\right\}
+}
+}{
+  \declareglobalstorage(\tenv, \gsd) \typearrow (\overname{\tenvone}{\newtenv}, \newgsd)
+}
+\end{mathpar}\lrmcomment{This relates to \identr{YSPM} and \identr{FWQM}.}
+\CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
+
+\subsubsection{TypingRuleAddGlobalStorage \label{sec:TypingRule.AddGlobalStorage}}
+\hypertarget{def-addglobalstorage}{}
+The function
+\[
+  \addglobalstorage(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\identifier}{\name} \aslsep
+    \overname{\GDkeyword}{\keyword} \aslsep
+    \overname{\ty}{\declaredt}
+  )
+  \aslto
+    \overname{\staticenvs}{\newtenv} \aslsep
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+modifies the static environment $\tenv$ by adding a global storage
+for the identifier $\name$ with global storage keyword $\keyword$ and type $\declaredtypes$,
+resulting in the environment $\newtenv$.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item checking that $\name$ is not declared in the global environment of $\tenv$ yields $\True$\ProseOrTypeError;
+  \item $\newtenv$ is $\tenv$ with its $\globalstoragetypes$ component updated by binding $\name$ to
+        $(\declaredt, \keyword)$.
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \checkvarnotingenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
+  \newtenv \eqdef (G^\tenv.\globalstoragetypes[\name \mapsto (\declaredt, \keyword)], L^\tenv)
+}
+{
+  \addglobalstorage(\tenv, \name, \keyword, \declaredt) \typearrow \newtenv
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.CheckVarNotInGEnv}
+\hypertarget{def-checkvarnotingenv}{}
+The function
+\[
+  \checkvarnotingenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
+  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether $\id$ is already declared in the global environment of $\tenv$.
+If it is, the result is a type error, and otherwise the result is $\True$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vb$ is $\True$ if and only if one of the following applies:
+  \begin{itemize}
+    \item $\id$ is declared as a global identifier in $\tenv$;
+    \item $\id$ is declared as a subprogram in $\tenv$;
+    \item $\id$ is declared as a type in $\tenv$.
+  \end{itemize}
+
+  \item checking whether $\vb$ is $\False$ yields $\True$ or a type error indicating
+        that $\id$ has already been declared, thereby short-circuiting the rule.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+{
+  \begin{array}{rl}
+  \vb \eqdef  & G^\tenv.\globalstoragetypes(\id) \neq \bot \lor\\
+              & G^\tenv.\subprograms(\id) \neq \bot\ \lor\\
+              & G^\tenv.\declaredtypes(\id) \neq \bot
+  \end{array}
+}\\
+\checktrans{\neg\vb}{IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
+}{
+  \checkvarnotingenv{\tenv, \id} \typearrow \True
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Semantics\label{sec:GlobalStorageDeclarationsSemantics}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+We now define the following relations:
+\begin{itemize}
+  \item SemanticsRule.DeclareGlobal \secref{SemanticsRule.DeclareGlobal};
+  \item SemanticsRule.BaseValue \secref{SemanticsRule.BaseValue};
+\end{itemize}
+
+\subsubsection{SemanticsRule.EvalGlobals \label{sec:SemanticsRule.EvalGlobals}}
+The relation
+\hypertarget{def-evalglobals}{}
+\[
+  \evalglobals(\overname{\decl^*}{\vdecls}, (\overname{\overname{\envs}{\env} \times \overname{\XGraphs}{\vgone}}{\envm}))
+  \;\aslrel\; \overname{(\envs \times \XGraphs)}{C} \cup \overname{\TError}{\ErrorConfig}
+\]
+updates the input environment and execution graph by initializing the global storage declarations,
+either from their initializing expression or from the base value defined for their type as per \secref{SemanticsRule.BaseValue}.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item there are no declarations of global variables;
+    \item the result is $\envm$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{with\_initial\_value}):
+  \begin{itemize}
+    \item $\vdecls$ has $\vd$ as its head and $\vdecls'$ as its tail;
+    \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,
+    name $\name$, and type $\vt$;
+    \item $\envm$ is the environment-execution graph pair $(\env, \vgone)$;
+    \item evaluating the side-effect-free expression $\ve$ in $\env$ as per \secref{SemanticsRule.ESideEffectFreeExpr} \\
+    is $(\vv, \vgtwo)$\ProseOrError;
+    \item declaring the global $\name$ with value $\vv$ in $\env$ gives $\envtwo$;
+    \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envtwo$ and the execution graph
+    that is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ label gives $C$;
+    \item the result of the entire evaluation is $C$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{no\_initial\_value}):
+  \begin{itemize}
+    \item $\vdecls$ has $\vd$ as its head and $\vdecls'$ as its tail;
+    \item $d$ is the AST node for declaring a global storage element with no initial value,
+    name $\name$, and type $\vt$;
+    \item $\envm$ is the environment-execution graph pair $(\env, \vgone)$;
+    \item the base value of type $\vt$ in $\env$ is $(\vv, \vgtwo)$\ProseOrError;
+    \item declaring the global $\name$ with value $\vv$ in $\env$ gives $\envtwo$;
+    \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envtwo$ and the execution graph
+    that is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ label gives $C$;
+    \item the result of the entire evaluation is $C$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Example}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{
+\vdecls \eqname \emptylist
+}{
+\evalglobals(\vdecls, \envm) \evalarrow \envm
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[with\_initial\_value]{
+\vdecls \eqname [\vd] \concat \vdecls'\\
+\vd \eqname \DGlobalStorage(\{ \text{initial\_value}=\langle\ve\rangle, \text{name}:\name, \text{ty}:\vt, \ldots \})\\
+\envm \eqname (\env, \vgone)\\
+\evalexprsef{\env, \ve} \evalarrow (\vv, \vgtwo) \OrDynError\\\\
+\declareglobal(\name, \vv, \env) \evalarrow \envtwo\\
+\evalglobals(\vdecls', (\envtwo, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C
+}{
+\evalglobals(\vdecls, \envm) \evalarrow C
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_initial\_value]{
+\vdecls \eqname [\vd] \concat \vdecls'\\
+\vd \eqname \DGlobalStorage(\{ \text{initial\_value}:\None, \text{name}:\name, \text{ty}:\vt, \ldots \})\\
+\envm \eqname (\env, \vgone)\\
+\basevalue(\env, \vt) \evalarrow (\vv, \vgtwo) \OrDynError\\\\
+\declareglobal(\name, \vv, \env) \evalarrow \envtwo\\
+\evalglobals(\vdecls', (\envtwo, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C
+}{
+\evalglobals(\vdecls, \envm) \evalarrow C
+}
+\end{mathpar}
+% \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.DeclareGlobal \label{sec:SemanticsRule.DeclareGlobal}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-declareglobal}{}
+\[
+  \declareglobal(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\envs}{\env}) \;\aslrel\; \overname{\envs}{\newenv}
+\]
+updates the environment $\env$ by mapping $\name$ to $\vv$ as a global storage element.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \env \eqname (\tenv, (G^\denv, L^\denv))\\
+    \newenv \eqdef (\tenv, (G^\denv[\name\mapsto \vv], L^\denv))
+  }
+  { \declareglobal(\name, \vv, \env) \evalarrow \newenv  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.BaseValue \label{sec:SemanticsRule.BaseValue}}
+The relation
+\hypertarget{def-basevalue}{}
+\[
+  \basevalue(\overname{(\overname{\staticenvs}{\tenv} \times \overname{\dynamicenvs}{\denv})}{\env} \aslsep \overname{\ty}{\vt}) \;\aslrel\;
+  (\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg}) \cup \overname{\TError}{\ErrorConfig}
+\]
+returns the \emph{base value} of a type.
+The result is an error configuration if a dynamic error is detected.
+
+\hypertarget{def-tstruct}{}
+\paragraph{Type Structure} To obtain the base value of a type, we first obtain its \emph{structure}, using the function
+\[
+  \tstruct(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+\hypertarget{def-typeerrorconfig}{}
+where $\TypeErrorConfig$ stands for a type error.
+
+The structure of a type is the type that can hold the same set of values, but does not itself
+contain any other type names.
+This is essentially done by recursively replacing type names by their definition
+(see \secref{TypingRule.structure}).
+%
+Since we assume the specification is well-typed (\secref{MeaningfulASLSpecifications}),
+$\tstruct$ returns a valid type.
+
+\subsubsection{Prose}
+The base value of the type $\vt$ in the environment $\env$ is $\vv$,
+as well as the execution graph $\vg$ that results
+from evaluating any of the side-effect-free expressions appearing in $\vt$,
+or an error, and one of the following applies:
+\begin{itemize}
+  \item all of the following apply (\textsc{boolean}):
+  \begin{itemize}
+    \item the structure of $\vt$ is the Boolean type;
+    \item $\vv$ is the native Boolean "true" value;
+    \item $\vg$ is the empty graph.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{real}):
+  \begin{itemize}
+    \item the structure of $\vt$ is the real type;
+    \item $\vv$ is the native real value $0$;
+    \item $\vg$ is the empty graph.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{string}):
+  \begin{itemize}
+    \item the structure of $\vt$ is the string type;
+    \item $\vv$ is the \nativevalue\  for the empty string;
+    \item $\vg$ is the empty graph.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{bitvector}):
+  \begin{itemize}
+    \item the structure of $\vt$ is the bitvector with the length expression $\ve$;;
+    \item evaluating the side-effect-free expression $\ve$ results in the \nativevalue\  $\length$
+    and execution graph $\vg$\ProseOrError;
+    \item $\vv$ is the bitvector of length $\length$ where all bits are $0$.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{enum}):
+  \begin{itemize}
+    \item the structure of $\vt$ is the enumeration type where the first identifier is $\id_1$;
+    \item $\vl$ is the literal associated with $\id_1$ in the static environment;
+    \item $\vv$ is the \nativevalue\  literal for $\vl$;
+    \item $\vg$ is the empty graph.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{unconstrained\_integer}):
+  \begin{itemize}
+    \item the structure of $\vt$ is that of the unconstrained integer;
+    \item $\vv$ is the \nativevalue\  integer $0$;
+    \item $\vg$ is the empty graph.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{well\_constrained\_integer}):
+  \begin{itemize}
+    \item the structure of $\vt$ is that of the well-constrained integer where the first constraint
+    is exact with the expression $\ve$;
+    \item $(\vv, \vg)$ is the result of evaluating the side-effect-free expression $\ve$.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{record}):
+  \begin{itemize}
+    \item the structure of $\vt$ is that of a record or an exception;
+    \item the base value of each field is obtained, and if any of the base values results in an error
+    then the entire rule short-circuits with that error;
+    \item $\vv$ is the \nativevalue\  record where each identifier in the record is mapped to its
+    respective base value;
+    \item $\vg$ is the parallel composition of the graphs resulting from the base value evaluation
+    of all the fields.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item the structure of $\vt$ is that of a tuple of types;
+    \item the base value of each type in the tuple is obtained, and if any of the base values results in an error
+    then the entire rule short-circuits with that error;
+    \item $\vv$ is the \nativevalue\  vector consisting of the base values in the order of the corresponding types
+    of the tuple;
+    \item $\vg$ is the parallel composition of the graphs resulting from the base value evaluation
+    of all the tuple types.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{array\_length\_global\_constant}):
+  \begin{itemize}
+    \item the structure of $\vt$ is that of an array with length expression $\elength$ and element type $\vvty$;
+    \item $\elength$ is the value of a declared constant;
+    \item $\elength$ is a variable expression with the variable name $\vx$;
+    \item the constant value for $\vx$ in the static environment is the literal integer for $n$;
+    \item the base value of $\vvty$ in $\env$ is $(\velem, \vg)$\ProseOrError;
+    \item $\vv$ is the \nativevalue\  vector of length $n$ where each element is $\velem$;
+  \end{itemize}
+
+  \item all of the following apply (\textsc{array\_length\_expression}):
+  \begin{itemize}
+    \item the structure of $\vt$ is that of an array with length expression $\elength$ and element type $\vvty$;
+    \item $\elength$ is not the value of a declared constant;
+    \item the base value of $\vvty$ in $\env$ is $(\velem, \vg)$\ProseOrError;
+    \item evaluating the side-effect-free expression $\elength$ in the environment $\env$
+          results in $(\vlength, \vgtwo)$\ProseOrError;
+    \item $\vlength$ is the \nativevalue\  integer for $n$;
+    \item $\vv$ is the \nativevalue\  vector of length $n$ where each element is $\velem$;
+    \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+Evaluating the inner expressions of the type $\vt$ is done via the relation\\
+$\evalexprsef$~\ref{sec:SemanticsRule.ESideEffectFreeExpr}.
+If evaluating an inner expression results in an error, there is no base value and an error configuration is returned.
+
+\begin{mathpar}
+\inferrule[bool]{
+  \tstruct(\tenv, \vt) \typearrow \TBool
+}{
+  \basevalue((\tenv, \denv), \vt) \evalarrow (\overname{\nvbool(\True)}{\vv}, \overname{\emptygraph}{\vg})
+}
+\and
+\inferrule[real]{
+  \tstruct(\tenv, \vt) \typearrow \TReal
+}{
+  \basevalue((\tenv, \denv), \vt) \evalarrow (\overname{\nvreal(0)}{\vv}, \overname{\emptygraph}{\vg})
+}
+\and
+\inferrule[string]{
+  \tstruct(\tenv, \vt) \typearrow \TString
+}{
+  \basevalue((\tenv, \denv), \vt) \evalarrow (\overname{\nvliteral{\lstring(\emptylist)}}{\vv}, \overname{\emptygraph}{\vg})
+}
+\end{mathpar}
+
+The base value of a bitvector is a bitvector \nativevalue\  consisting of a sequence of zeros
+of the length specified by the type (\ve). If the length is $0$, the bitvector consists of an
+empty sequence:
+\begin{mathpar}
+\inferrule[bitvector]{
+  \env \eqname (\tenv, \denv)\\
+  \tstruct(\tenv, \vt) \typearrow \TBits(\ve, \Ignore)\\
+  \evalexprsef{\env, \ve} \evalarrow (\nvint(\length), \vg) \OrDynError
+}{
+  \basevalue(\env, \vt) \evalarrow (\overname{\nvbitvector(\overbrace{0\ldots 0}^{\length})}{\vv}, \vg)
+}
+\end{mathpar}
+
+\hypertarget{def-constantvalues}{}
+The base value of an enumeration is obtained from its first declared literal.
+Accessing this literal is done via the \constantvalues map in the
+global component of the static environment:
+\begin{mathpar}
+\inferrule[enum]{
+  \tstruct(\vt) \typearrow \TEnum(\id_{1..k})\\
+  \env \eqname (\tenv, \denv)\\
+  \tenv \eqname (G^\tenv, L^\tenv)\\
+  G^\tenv.\constantvalues(\id_1) \eqname \vl
+}{
+  \basevalue(\env, \vt) \evalarrow (\overname{\nvliteral{\vl}}{\vv}, \overname{\emptygraph}{\vg})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[integer\_unconstrained]{
+  \tstruct(\tenv, \vt) \typearrow \TInt(\unconstrained)
+}{
+  \basevalue((\tenv, \denv), \vt) \evalarrow (\overname{\nvint(0)}{\vv}, \overname{\emptygraph}{\vg})
+}
+\and
+\inferrule[integer\_constraint\_exact]{
+  \env \eqname (\tenv, \denv)\\
+  \tstruct(\tenv, \vt) \typearrow \TInt(\wellconstrained([\constraintexact(\ve)] \concat \Ignore))\\
+  \evalexprsef{\env, \ve} \evalarrow C
+}{
+  \basevalue(\env, \vt) \evalarrow C
+}
+\and
+\and
+\inferrule[integer\_constraint\_range]{
+  \env \eqname (\tenv, \denv)\\
+  \tstruct(\tenv, \vt) \typearrow \TInt(\wellconstrained([\constraintrange(\ve, \Ignore)] \concat \Ignore))\\
+  \evalexprsef{\env, \ve} \evalarrow C
+}{
+  \basevalue(\env, \vt) \evalarrow C
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[record]{
+  \env \eqname (\tenv, \denv)\\
+  \tstruct(\tenv, \vt) \typearrow L([i=1..k: (\id_i, \vt_i)])\\
+  L \in \{\TRecord, \TException\}\\
+  i=1..k: \basevalue(\env, \vt_i) \evalarrow (\vv_i, \vg_i) \OrDynError
+}{
+  \basevalue(\env, \vt) \evalarrow
+  (\overname{\nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}}}{\vv}, \overname{\vg_1 \parallelcomp \ldots \parallelcomp \vg_k}{\vg})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \env \eqname (\tenv, \denv)\\
+  \tstruct(\tenv, \vt) \typearrow \TTuple([i=1..k: \vt_i])\\
+  i=1..k: \basevalue(\env, \vt_i) \evalarrow (\vv_i, \vg_i) \OrDynError
+}{
+  \basevalue(\env, \vt) \evalarrow (\overname{\nvvector{\vv_{1..k}}}{\vv}, \overname{\vg_1 \parallelcomp \ldots \parallelcomp \vg_k}{\vg})
+}
+\end{mathpar}
+
+\newcommand\isconstant[0]{\hyperlink{def-isconstant}{\texttt{is\_contant}}}
+\hypertarget{def-isconstant}{}
+The predicate $\isconstant$ checks whether the expression $\ve$ is a variable
+declared as a constant.
+\begin{mathpar}
+\inferrule[NotEVar]{
+  \env \eqname (\tenv, \denv)\\
+  \tenv \eqname (G^\tenv, L^\tenv)\\
+  \astlabel(\ve) \neq \EVar
+}{
+  \isconstant(\env, \ve) \rightarrow \False
+}
+\and
+\inferrule[EVar]{
+  \env \eqname (\tenv, \denv)\\
+  \tenv \eqname (G^\tenv, L^\tenv)\\
+  \astlabel(\ve) = \EVar\\
+  \ve\eqname\EVar(\vx)\\
+  \vb \eqdef G^\tenv.\constantvalues(\vx) \neq \bot
+}{
+  \isconstant(\env, \ve) \rightarrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[array\_length\_global\_constant]{
+  \env \eqname (\tenv, \denv)\\
+  \tstruct(\tenv, \vt) \typearrow \TArray(\elength, \vvty)\\
+  \basevalue(\env, \vvty) \evalarrow (\velem, \vg) \OrDynError\\\\
+  \isconstant(\env, \elength) \rightarrow \True\\
+  \elength \eqname \EVar(\vx)\\
+  \env \eqname (\tenv, \denv)\\
+  \tenv \eqname (G^\tenv, L^\tenv)\\
+  G^\tenv.\constantvalues(\vx) \eqname \lint(n)
+}{
+  \basevalue(\env, \vt) \evalarrow (\overname{\nvvector{i=1..n: \velem}}{\vv}, \vg)
+}
+\and
+\inferrule[array\_length\_expression]{
+  \env \eqname (\tenv, \denv)\\
+  \tstruct(\tenv, \vt) \typearrow \TArray(\elength, \vvty)\\
+  \basevalue(\env, \vvty) \evalarrow (\velem, \vgone) \OrDynError\\\\
+  \isconstant(\elength) \rightarrow \False\\
+  \evalexprsef{\env, \elength} \evalarrow (\vlength, \vgtwo) \OrDynError\\\\
+  \vlength \eqname \nvint(n)
+}{
+  \basevalue(\env, \vt) \evalarrow (\overname{\nvvector{i=1..n: \velem}}{\vv}, \overname{\ordered{\vgone}{\asldata}{\vgtwo}}{\vg})
+}
+\end{mathpar}

@@ -1,0 +1,2743 @@
+\section{Relations Over Types\label{sec:RelationsOnTypes}}
+This section defines the following relations over types and operators:
+\begin{itemize}
+  \item Subtype (\secref{TypingRule.Subtype})
+  \item Subtype Satisfaction (\secref{TypingRule.SubtypeSatisfaction})
+  \item Type Satisfaction (\secref{TypingRule.TypeSatisfaction})
+  \item Type Clash (\secref{TypingRule.TypeClash})
+  \item Lowest Common Ancestor (\secref{TypingRule.LowestCommonAncestor})
+  \item Checking adequacy of a unary operator for a type (\secref{TypingRule.CheckUnop})
+  \item Checking adequacy of a binary operator for a pair of types (\secref{TypingRule.CheckBinop})
+\end{itemize}
+
+Finally, we define the following helper functions:
+\begin{itemize}
+  \item TypingRule.AnnotateConstraintBinop (see \secref{TypingRule.AnnotateConstraintBinop})
+  \item TypingRule.BinopFilterRhs (see \secref{TypingRule.BinopFilterRhs})
+  \item TypingRule.RefineConstraintBySign (see \secref{TypingRule.RefineConstraintBySign})
+  \item TypingRule.ReduceToZOpt (see \secref{TypingRule.ReduceToZOpt})
+  \item TypingRule.RefineConstraints (see \secref{TypingRule.RefineConstraints})
+  \item TypingRule.FilterReduceConstraintDiv (see \secref{TypingRule.FilterReduceConstraintDiv})
+  \item TypingRule.GetLiteralDivOpt (see \secref{TypingRule.GetLiteralDivOpt})
+  \item TypingRule.ExplodeIntervals (see \secref{TypingRule.ExplodeIntervals})
+  \item TypingRule.ExplodeConstraint (see \secref{TypingRule.ExplodeConstraint})
+  \item TypingRule.IntervalTooLarge (see \secref{TypingRule.IntervalTooLarge})
+  \item TypingRule.BinopIsExploding (see \secref{TypingRule.BinopIsExploding})
+\end{itemize}
+
+We also define the helper rule TypingRule.FindNamedLCA (\secref{TypingRule.FindNamedLCA}).
+
+\subsection{TypingRule.Subtype\label{sec:TypingRule.Subtype}}
+The \emph{subtype} relation is a partial order over \underline{named types}.
+The \emph{supertype} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
+
+\hypertarget{def-subtypesrel}{}
+The predicate
+\[
+  \subtypesrel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo})
+  \aslto \overname{\Bool}{\vb}
+\]
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item all of the following apply (\textsc{reflexive}):
+  \begin{itemize}
+    \item $\vtone$ and $\vttwo$ are both the same named type;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{transitive}):
+  \begin{itemize}
+    \item $\vtone$ is a named type with name $\idone$, that is $\TNamed(\idone)$;
+    \item $\vttwo$ is a named type with name $\idtwo$, that is $\TNamed(\idtwo)$, such that $\idone$ is different from $\idtwo$;
+    \item the global static environment maintains that $\idone$ is a subtype of $\idthree$;
+    \item testing whether the type named $\idthree$ is a subtype of $\vttwo$ in the static environment $\tenv$
+    gives $\vb$.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{no\_supertype}):
+  \begin{itemize}
+    \item $\vtone$ is a named type with name $\idone$, that is $\TNamed(\idone)$;
+    \item $\vttwo$ is a named type with name $\idtwo$, that is $\TNamed(\idtwo)$, such that $\idone$ is different from $\idtwo$;
+    \item the global static environment maintains that $\idone$ does subtype any named type;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item all of the following apply (\textsc{not\_named}):
+  \begin{itemize}
+    \item at least one of $\vtone$ and $\vttwo$ is not a named type;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Example}
+In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
+\begin{verbatim}
+type superInt of integer;
+type subInt of integer subtypes superInt;
+\end{verbatim}
+
+\CodeSubsection{\SubtypeBegin}{\SubtypeEnd}{../types.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule[reflexive]{}{
+    \subtypesrel(\tenv, \TNamed(\id), \TNamed(\id)) \typearrow \True
+  }
+  \and
+  \inferrule[transitive]{
+    \idone \neq \idtwo\\
+    G^\tenv.\subtypes(\idone) = \idthree\\
+    \subtypesrel(\tenv, \TNamed(\idthree), \vttwo) \typearrow \vb
+  }{
+    \subtypesrel(\tenv, \TNamed(\idone), \TNamed(\idtwo)) \typearrow \vb
+  }
+  \and
+  \inferrule[no\_supertype]{
+    \idone \neq \idtwo\\
+    G^\tenv.\subtypes(\idone) = \bot
+  }{
+    \subtypesrel(\tenv, \TNamed(\idone), \TNamed(\idtwo)) \typearrow \False
+  }
+  \and
+  \inferrule[not\_named]{
+    (\astlabel(\vtone) \neq \TNamed \lor \astlabel(\vttwo) \neq \TNamed)
+  }{
+    \subtypesrel(\tenv, \vtone, \vttwo) \typearrow \False
+  }
+\end{mathpar}
+
+\isempty{\subsubsection{Comments}}
+\lrmcomment{This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.}
+
+\subsection{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
+\hypertarget{def-subtypesat}
+The predicate
+\[
+  \subtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
+returning the result $\vb$ or a type error, if one is detected.
+The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{Types}.
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+\item All of the following apply (\textsc{error1}):
+  \begin{itemize}
+  \item obtaining the \underlyingtype\ of $\vt$ gives a type error;
+  \item the rule results in a type error.
+  \end{itemize}
+
+\item All of the following apply (\textsc{error2}):
+  \begin{itemize}
+    \item obtaining the \underlyingtype\ of $\vt$ gives a type $\vttwo$;
+    \item obtaining the \underlyingtype\ of $\vs$ gives a type error;
+    \item the rule results in a type error.
+    \end{itemize}
+
+\item All of the following apply (\textsc{different\_labels}):
+  \begin{itemize}
+  \item the underlying types of $\vt$ and $\vs$ have different AST labels
+  (for example, \texttt{integer} and \texttt{real});
+  \item $\vb$ is $\False$.
+  \end{itemize}
+
+\item All of the following apply (\textsc{simple}):
+  \begin{itemize}
+  \item the \underlyingtype\ of $\vt$, $\vttwo$, is either \texttt{real}, \texttt{string}, or \texttt{bool};
+  \item the \underlyingtype\ of $\vs$, $\vstwo$, is either \texttt{real}, \texttt{string}, or \texttt{bool};
+  \item $\vb$ is $\True$ if and only if both $\vttwo$ and $\vstwo$ have the same ASL label.
+  \end{itemize}
+
+\item All of the following apply (\textsc{t\_int}):
+  \begin{itemize}
+  \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \texttt{integer} (any kind);
+  \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \texttt{integer} (any kind);
+  \item determining whether $\vs$ subsumes $\vt$ in $\tenv$ via symbolic reasoning results in $\vb$.
+  \end{itemize}
+
+\item All of the following apply (\textsc{t\_enum}):
+  \begin{itemize}
+  \item the \underlyingtype\ of $\vt$ is an enumeration type with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
+  \item the \underlyingtype\ of $\vs$ is is an enumeration type with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
+  \item $\vb$ is $\True$ if and only if $\vlit$ is equal to $\vlis$.
+  \end{itemize}
+
+\item All of the following apply (\textsc{t\_bits}):
+  \begin{itemize}
+  \item the \underlyingtype\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
+  \item the \underlyingtype\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
+  \item determining whether the bit fields $\bfss$ are included in the bit fields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether the \symbolicdomain{} of bitwidth $\ws$ subsumes the \symbolicdomain{} of bitwidth $\wt$ in $\tenv$ yields $\vb$.
+  \end{itemize}
+
+\item All of the following apply (\textsc{t\_array\_expr}):
+  \begin{itemize}
+  \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
+  \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
+  \item determining whether $\vtys$ and $\vtyt$ are equivalent in $\tenv$ is either $\True$
+  or $\False$, which short-circuits the entire rule with $\vb=\False$;
+  \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
+  \item $\vlengths$ is an array length expression with $\vlengthexprs$, that is \\ $\ArrayLengthExpr(\vlengthexprs)$;
+  \item $\vlengtht$ is an array length expression with $\vlengthexprt$, that is \\ $\ArrayLengthExpr(\vlengthexprt)$;
+  \item determining whether expressions $\vlengthexprs$ and $\vlengthexprt$ are equivalent gives $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_array\_enum}):
+  \begin{itemize}
+  \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
+  \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
+  \item determining whether $\vtys$ and $\vtyt$ are equivalent in $\tenv$ is either $\True$
+  or $\False$, which short-circuits the entire rule with $\vb=\False$;
+  \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
+  \item $\vlengths$ is an array with indices taken from the enumeration $\vnames$, that is $\ArrayLengthEnum(\vnames, \Ignore)$;
+  \item $\vlengtht$ is an array with indices taken from the enumeration $\vnamet$, that is $\ArrayLengthEnum(\vnamet, \Ignore)$;
+  \item $\vb$ is $\True$ if and only if $\vnames$ and $\vnamet$ are the same.
+  \end{itemize}
+
+\item All of the following apply (\textsc{t\_tuple}):
+  \begin{itemize}
+  \item $\vs$ has the \underlyingtype\ of a tuple with type list $\vlis$, that is $\TTuple(\vlis)$;
+  \item $\vt$ has the \underlyingtype\ of a tuple with type list $\vlit$, that is $\TTuple(\vlit)$;
+  \item equating the lengths of $\vlis$ and $\vlit$ is either $\True$ or $\False$, which short-circuits
+  the entire rule with $\vb=\False$;
+  \item checking at each index $\vi$ of the list $\vlis$ whether the type $\vlit[\vi]$ \typesatisfies\ the type $\vlis[\vi]$
+  yields $\vb_\vi$\ProseOrTypeError;
+  \item $\vb$ is $\True$ if and only if all $\vb_\vi$ are $\True$;
+  \end{itemize}
+
+\item All of the following apply (\textsc{structured}):
+  \begin{itemize}
+  \item $\vs$ has the \underlyingtype\ $L(\vfieldss)$, which is a \structuredtype;
+  \item $\vt$ has the \underlyingtype\ $L(\vfieldst)$, which is a \structuredtype;
+  \item since both underlying types have the same AST label they are either both record types or both exception types;
+  \item $\vb$ is $\True$ if and only if for each field in $\vfieldss$ with type $\vtys$
+  there exists a field in $\vfieldst$ with type $\vtyt$ such that both $\vtys$ and $\vtyt$
+  are determined to be \typeequivalent\ in $\tenv$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+  \inferrule[error1]{
+    \makeanonymous(\tenv, \vt) \typearrow \TypeErrorConfig
+  }
+  {
+    \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
+  }
+  \and
+  \inferrule[error2]{
+    \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
+    \makeanonymous(\tenv, \vs) \typearrow \TypeErrorConfig
+  }
+  {
+    \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
+  }
+  \and
+  \inferrule[different\_labels]{
+    \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
+    \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
+    \astlabel(\vttwo) \neq \astlabel(\vstwo)
+  }
+  {
+    \subtypesat(\tenv, \vt, \vs) \typearrow \False
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[simple]{
+    \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
+    \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
+    \astlabel(\vttwo) \in \{\TInt, \TReal, \TString, \TBool\}\\
+    \vb \eqdef \astlabel(\vstwo) = \astlabel(\vttwo)
+  }{
+    \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+  }
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int]{
+  \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
+  \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
+  \vsstruct = \TInt(\vc)\\
+  \symsubsumes(\tenv, \vsstruct, \vtstruct) \typearrow \vb
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_enum]{
+  \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vlit)\\
+  \makeanonymous(\tenv, \vs) \typearrow \TEnum(\vlis)\\
+  \vb \eqdef \vlit = \vlis
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits]{
+  \makeanonymous(\tenv, \vs) \typearrow \TBits(\ws, \bfss)\\
+  \makeanonymous(\tenv, \vt) \typearrow \TBits(\wt, \bfst)\\
+  \bitfieldsincluded(\tenv, \bfss, \bfst) \typearrow \True \OrTypeError \\
+  \symdomofwidth(\tenv, \ws) \typearrow \ds \\
+  \symdomofwidth(\tenv, \wt) \typearrow \dt \\
+  \symdomissubset(\tenv, \ds, \dt) \typearrow \vb
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array\_expr]{
+  \makeanonymous(\tenv, \vs) \typearrow \TArray(\vlengths,\vtys) \\
+  \makeanonymous(\tenv, \vt) \typearrow \TArray(\vlengtht,\vtyt) \\
+  \typeequal(\tenv, \vtys, \vtyt) \typearrow \True \terminateas \False\\
+  \booltrans{\astlabel(\vlengths) = \astlabel(\vlengtht)} \booltransarrow \True \terminateas \False\\
+  \vlengths \eqname \ArrayLengthExpr(\vlengthexprs)\\
+  \vlengtht \eqname \ArrayLengthExpr(\vlengthexprt)\\
+  \exprequal(\tenv, \vlengthexprs, \vlengthexprt) \typearrow \vb
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+}
+\and
+\inferrule[t\_array\_enum]{
+  \makeanonymous(\tenv, \vs) \typearrow \TArray(\vlengths,\vtys) \\
+  \makeanonymous(\tenv, \vt) \typearrow \TArray(\vlengtht,\vtyt) \\
+  \typeequal(\tenv, \vtys, \vtyt) \typearrow \True\\
+  \booltrans{\astlabel(\vlengths) = \astlabel(\vlengtht)} \typearrow \True\\
+  \vlengths \eqname \ArrayLengthEnum(\vnames, \Ignore)\\
+  \vlengtht \eqname \ArrayLengthEnum(\vnamet, \Ignore)\\
+  \vb \eqdef \vnames = \vnamet
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]
+{ \makeanonymous(\tenv, \vs) \typearrow\TTuple(\vlis)\\
+  \makeanonymous(\tenv, \vt) \typearrow\TTuple(\vlit)\\
+  \equallength(\vlis, \vlit) \typearrow\True \terminateas \False\\
+  \vi\in\listrange(\vlis): \typesat(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vb_i \terminateas \TTypeError\\
+  \vb \eqdef \bigwedge_{\vi=1}^k \vb_\vi
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\hypertarget{def-fieldnames}{}
+For a list of typed fields $\fields$, we define the set of its field identifiers as:
+\[
+  \fieldnames(\fields) \triangleq \{ \id \;|\; (\id, \vt) \in \fields\}
+\]
+\hypertarget{def-fieldtype}{}
+We define the type associated with the field name $\id$ in a list of typed fields $\fields$,
+if there is a unique one, as follows:
+\[
+  \fieldtype(\fields, \id) \triangleq
+  \begin{cases}
+  \vt  & \text{ if }\{ \vtp \;|\; (\id,\vtp) \in \fields\} = \{\vt\}\\
+  \bot & \text{ otherwise}
+  \end{cases}
+\]
+
+\begin{mathpar}
+\inferrule[structured]{
+  L \in \{\TRecord, \TException\}\\
+  \makeanonymous(\tenv, \vs)\typearrow L(\vfieldss) \\
+  \makeanonymous(\tenv, \vt)\typearrow L(\vfieldst) \\
+  \vnamess \eqdef \fieldnames(\vfieldss)\\
+  \vnamest \eqdef \fieldnames(\vfieldst)\\
+  \booltrans{\vnamess \subseteq \vnamest} \booltransarrow \True \terminateas \False\\
+  (\id,\vtys)\in\vfieldss: \typeequal(\tenv, \vtys, \fieldtype(\vfieldst, \id)) \typearrow \vb_\id\\
+  \vb \eqdef \bigwedge_{\id \in \vnamess} \vb_\id
+}{
+  \subtypesat(\tenv, \vs, \vt) \typearrow \vb
+}
+\end{mathpar}
+
+\isempty{\subsection{Comments}}
+\lrmcomment{This is related to \identd{TRVR}, \identi{SJDC}, \identi{MHYB}, \identi{TWTZ}, \identi{GYSK}, \identi{KXSD}, \identi{KNXJ}.}
+
+\isempty{\subsection{Example}}
+
+\CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
+
+\subsection{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
+\hypertarget{def-typesatisfies}{}
+The predicate
+\[
+  \typesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+tests whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ in environment $\tenv$,
+returning the result $\vb$ or a type error, if one is detected.
+
+\hypertarget{def-checktypesat}{}
+We also define
+\[
+  \checktypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+which is the same as $\typesat$, but yields a type error when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
+
+These functions assume that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
+
+\subsubsection{Prose}
+One of the following applies:
+ \begin{itemize}
+  \item All of the following apply (\textsc{subtypes}):
+    \begin{itemize}
+    \item $\vt$ subtypes $\vs$ in $\tenv$ ;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{anonymous}):
+  \begin{itemize}
+    \item $\vt$ does not subtype $\vs$ in $\tenv$;
+    \item at least one of $\vt$ and $\vs$ is an anonymous type in $\tenv$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_bits}):
+  \begin{itemize}
+    \item $\vt$ does not subtype $\vs$ in $\tenv$;
+    \item determining whether $\vt$ is anonymous yields $\vbone$;
+    \item determining whether $\vs$ is anonymous yields $\vbtwo$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
+    \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
+    \item $\vt$ is a bitvector type with width $\widtht$ and no bitfields;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a bitvector type with width \\
+          $\widths$\ProseOrTypeError;
+    \item determining whether $\widtht$ and $\widths$ are \bitwidthequivalent\ yields $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{otherwise1}):
+  \begin{itemize}
+    \item $\vt$ does not subtype $\vs$ in $\tenv$;
+    \item determining whether $\vt$ is anonymous yields $\vbone$;
+    \item determining whether $\vs$ is anonymous yields $\vbtwo$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
+    \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a $\vsstruct$\ProseOrTypeError;
+    \item at least one of $\vt$ and $\vsstruct$ is not a bitvector type;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{otherwise2}):
+  \begin{itemize}
+    \item $\vt$ does not subtype $\vs$ in $\tenv$;
+    \item determining whether $\vt$ is anonymous yields $\vbone$;
+    \item determining whether $\vs$ is anonymous yields $\vbtwo$;
+    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
+    \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a $\vsstruct$\ProseOrTypeError;
+    \item both $\vt$ and $\vsstruct$ are bitvector types;
+    \item the bitvector type $\vt$ has a non-empty list of bitfields;
+    \item $\vb$ is $\False$;
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction1.asl}
+\texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
+anonymous, non-primitive type \texttt{(integer, T1)}.
+
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction2.asl}
+\texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
+primitive type \texttt{(integer, integer)}.
+
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction3.asl}
+\texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
+non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
+type \texttt{pairT}.
+
+\CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[subtypes]{
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \True
+}{
+  \typesat(\tenv, \vt, \vs) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[anonymous]{
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vt) \typearrow \vbone\\
+  \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
+  \vbone \lor \vbtwo\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \True
+}{
+  \typesat(\tenv, \vt, \vs) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits]{
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vt) \typearrow \vbone\\
+  \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
+  \neg((\vbone \lor \vbtwo) \land \vbthree)\\
+  \vt \eqname \TBits(\widtht, \emptylist)\\
+  \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\\\
+  \bitwidthequal(\tenv, \widtht, \widths) \typearrow \vb
+}{
+  \typesat(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise1]{
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vt) \typearrow \vbone\\
+  \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
+  \neg((\vbone \lor \vbtwo) \land \vbthree)\\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct\\
+  \astlabel(\vt) \neq \TBits \lor \astlabel(\vsstruct) \neq \TBits
+}{
+  \typesat(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise2]{
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \isanonymous(\tenv, \vt) \typearrow \vbone\\
+  \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
+  \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
+  \neg((\vbone \lor \vbtwo) \land \vbthree)\\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct\\
+  \astlabel(\vt) = \TBits \land \astlabel(\vsstruct) = \TBits\\
+  \vt \eqname \TBits(\widtht, \bitfields)\\
+  \bitfields \neq \emptylist
+}{
+  \typesat(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+The rules for the checked type-satisfy predicate are:
+\begin{mathpar}
+\inferrule[true]{
+  \typesat(\tenv, \vt, \vs) \typearrow \True \OrTypeError\\
+}{
+  \checktypesat(\tenv, \vt, \vs) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \typesat(\tenv, \vt, \vs) \typearrow \False
+}{
+  \checktypesat(\tenv, \vt, \vs) \typearrow \TypeErrorVal{TypeConflict}
+}
+\end{mathpar}
+
+\subsubsection{Comments}
+Since the subtype relation is a partial order, it is reflexive. Therefore
+every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
+\typesatisfies\  itself.
+
+\lrmcomment{This is related to \identr{FMXK} and \identi{NLFD}.}
+
+\subsection{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
+\hypertarget{def-typeclashes}{}
+The predicate
+\[
+  \typeclashes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+tests whether a type $\vt$ \emph{type-clashes} with a type $\vs$ in environment $\tenv$,
+returning the result $\vb$ or a type error, if one is detected.
+
+\subsubsection{Prose}
+ One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{subtype}):
+  \begin{itemize}
+    \item either $\vs$ subtypes $\vt$ or $\vt$ subtypes $\vs$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{simple}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$\ProseOrTypeError;
+    \item both $\vtstruct$ and $\vsstruct$ are one of the following types: \\ \texttt{integer}, \texttt{real}, \texttt{string};
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_enum}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an enumeration type with labels $\vlit$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an enumeration type with labels $\vlis$;
+    \item $\vb$ is $\True$ if and only if $\vlis$ and $\vlit$ are equal.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_array}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an array type with element type $\vtyt$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an array type with element type $\vtys$;
+    \item $\vb$ is $\True$ if and only if $\vtyt$ and $\vtys$ type-clash.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_tuple}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a tuple type with element types $\vt_{1..k}$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a tuple type with element types $\vs_{1..n}$;
+    \item if $n \neq k$ the rule short-circuits with $\vb=\False$;
+    \item $\vb$ is $\True$ if and only if $\vt_i$ type-clashes with $\vs_i$, for all $i=1..k$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{otherwise\_different\_labels}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$;
+    \item $\vsstruct$ and $\vtstruct$ have different AST labels;
+    \item $\vb$ is $\False$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{otherwise\_structured}):
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$;
+    \item $\vsstruct$ and $\vtstruct$ have the same AST label;
+    \item $\vtstruct$ (and thus $\vsstruct$) is a \structuredtype;
+    \item $\vb$ is $\False$;
+  \end{itemize}
+\end{itemize}
+
+\isempty{\subsubsection{Example}}
+
+\CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[subtype]{
+  (\subtypesrel(\tenv, \vs, \vt) \typearrow \True) \lor (\subtypesrel(\tenv, \vt, \vs) \typearrow \True)
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[simple]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \\
+  \astlabel(\vtstruct)=\astlabel(\vsstruct)\\
+  \astlabel(\vtstruct) \in \{\TInt, \TReal, \TString, \TBits\}
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_enum]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \TEnum(\Ignore, \vlis) \\
+  \tstruct(\tenv, \vs) \typearrow \TEnum(\Ignore, \vlit)
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\vlis = \vlit}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \TArray(\Ignore, \vtyt) \\
+  \tstruct(\tenv, \vs) \typearrow \TArray(\Ignore, \vtys) \\
+  \typeclashes(\tenv, \vtyt, \vtys) \typearrow \vb
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \TTuple(\vt_{1..k}) \\
+  \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \\
+  \booltrans{n = k} \booltransarrow \True \terminateas \False\\
+  i=1..k: \typeclashes(\tenv, \vt_i, \vs_i) \typearrow \vb_i\\
+  \vb \eqdef \bigwedge_{\vi=1}^k \vb_i
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise\_different\_labels]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \\
+  \astlabel(\vtstruct) \neq \astlabel(\vsstruct)
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise\_structured]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \\
+  \astlabel(\vtstruct) = \astlabel(\vsstruct)\\
+  \vb \eqdef \astlabel(\vtstruct) \in \{\TRecord, \TException\}\\
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\subsubsection{Comments}
+Note that if $\vt$ subtype-satisfies $\vs$ then $\vt$ and $\vs$ type-clash, but not the other
+way around.
+
+Note that type-clashing is an equivalence relation. Therefore if $\vt$
+type-clashes with \texttt{A} and \texttt{B} then it is also the case that \texttt{A} and \texttt{B} type-clash.
+
+\lrmcomment{This is related to \identd{VPZZ}, \identi{PQCT} and \identi{WZKM}.}
+
+\subsection{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
+\hypertarget{def-lowestcommonancestor}{}
+Annotating a conditional expression (see \secref{TypingRule.ECond}),
+requires finding a single type that can be used to annotate the results of both subexpressions.
+The function
+\[
+  \lca(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\ty}{\tty} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns the \emph{lowest common ancestor} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
+The result is a type error if a lowest common ancestor does not exist or a type error is detected.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{type\_equal}):
+  \begin{itemize}
+    \item $\vt$ is \typeequal\ to $\vs$ in $\tenv$;
+    \item $\tty$ is $\vs$ (can as well be $\vt$).
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item $\vt$ is not \typeequal\ to $\vs$ in $\tenv$ and one of the following applies:
+
+    \item All of the following apply (\textsc{named\_subtype1}):
+    \begin{itemize}
+      \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
+      \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
+      \item there is no \namedlowestcommonancestor\ of $\namesubs$ and $\namesubt$ in $\tenv$;
+      \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+      \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+      \item obtaining the lowest common ancestor of $\vanons$ and $\vanont$ in $\tenv$ yields $\tty$\ProseOrTypeError.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{named\_subtype2}):
+    \begin{itemize}
+      \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
+      \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
+      \item the \namedlowestcommonancestor\ of $\namesubs$ and $\namesubt$ in $\tenv$ is \\
+            $\name$\ProseOrTypeError;
+      \item $\tty$ is the named type with identifier $\name$, that is, $\TNamed(\name)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{one\_named1}):
+    \begin{itemize}
+      \item only one of $\vt$ or $\vs$ is a named type;
+      \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+      \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+      \item $\vanont$ is \typeequal\ to $\vanons$;
+      \item $\tty$ is $\vt$ if it is a named type (that is, $\astlabel(\vt)=\TNamed$), and $\vs$ otherwise.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{one\_named2}):
+    \begin{itemize}
+      \item only one of $\vt$ or $\vs$ is a named type;
+      \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+      \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+      \item $\vanont$ is not \typeequal\ to $\vanons$;
+      \item the lowest common ancestor of $\vanont$ and $\vanons$ in $\tenv$ is $\tty$\ProseOrTypeError.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_int\_unconstrained}):
+    \begin{itemize}
+      \item both $\vt$ and $\vs$ are integer types;
+      \item at least one of $\vt$ or $\vs$ is an unconstrained integer type;
+      \item $\tty$ is the unconstrained integer type.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_int\_parameterized}):
+    \begin{itemize}
+      \item neither $\vt$ nor $\vs$ are the unconstrained integer type;
+      \item one of $\vt$ and $\vs$ is a \parameterizedintegertype;
+      \item the \wellconstrainedversion\ of $\vt$ is $\vtone$;
+      \item the \wellconstrainedversion\ of $\vs$ is $\vsone$;
+      \item $\tty$ the lowest common ancestor of $\vtone$ and $\vsone$ in $\tenv$ is $\tty$\ProseOrTypeError.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_int\_wellconstrained}):
+    \begin{itemize}
+      \item $\vt$ is a well-constrained integer type with constraints $\cst$;
+      \item $\vs$ is a well-constrained integer type with constraints $\css$;
+      \item $\tty$ is the well-constrained integer type with constraints $\cst \concat \css$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_bits}):
+    \begin{itemize}
+      \item $\vt$ is a bitvector type with with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
+      \item $\vs$ is a bitvector type with with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
+      \item applying $\typeequal$ to $\vt$ and $\vs$ in $\tenv$ yields $\False$;
+      \item applying $\exprequal$ to $\vet$ and $\ves$ in $\tenv$ yields $\vbequal$;
+      \item checking whether $\vbequal$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
+      \item $\tty$ is a bitvector type with length expression $\vet$ and an empty bitfield list, that is, $\TBits(\vet, \emptylist)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_array}):
+    \begin{itemize}
+      \item $\vt$ is an array type with width expression $\widtht$ and element type $\vtyt$;
+      \item $\vs$ is an array type with width expression $\widths$ and element type $\vtys$;
+      \item applying $\arraylengthequal$ to $\widtht$ and $\widths$ in $\tenv$ to equate the array lengths,
+            yields $\vbequallength$\ProseOrTypeError;
+      \item checking that $\vbequallength$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
+      \item the lowest common ancestor of $\vtyt$ and $\vtys$ is $\vtone$\ProseOrTypeError;
+      \item $\tty$ is an array type with width expression $\widths$ and element type $\vtone$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_tuple}):
+    \begin{itemize}
+      \item $\vt$ is a tuple type with type list $\vlit$;
+      \item $\vs$ is a tuple type with type list $\vlis$;
+      \item checking whether $\vlit$ and $\vlis$ have the same number of elements yields $\True$
+            or a type error, which short-circuits the entire rule (indicating that the number of elements in both tuples is expected
+            to be the same and thus there is no lowest common ancestor);
+      \item applying $\lca$ to $\vlit[\vi]$ and $\vlis[\vi]$ in $\tenv$, for every position of $\vlit$,
+            yields $\vt_\vi$\ProseOrTypeError;
+      \item define $\vli$ to be the list of types $\vt_\vi$, for every position of $\vlit$;
+      \item define $\tty$ as the tuple type with list of types $\vli$, that is, $\TTuple(\vli)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item either the AST labels of $\vt$ and $\vs$ are different, or one of them is $\TEnum$, $\TRecord$, or $\TException$;
+      \item the result is a type error indicating the lack of a lowest common ancestor.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\isempty{\subsubsection{Example}}
+
+\CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
+
+\subsubsection{Formally}
+Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is equivalence to \verb|integer {1..2}|),
+the lowest common ancestor is not unique.
+We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\ to the lowest common ancestor of $\vt$ and $\vs$.
+
+\begin{mathpar}
+\inferrule[type\_equal]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \True
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \overname{\vs}{\tty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[named\_subtype1]{
+  \vt = \TNamed(\namesubs)\\
+  \vs = \TNamed(\namesubt)\\
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \namedlca(\tenv, \namesubs, \namesubt) \typearrow \None \OrTypeError\\\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
+  \lca(\tenv, \vanont, \vanons) \typearrow \tty \OrTypeError
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \tty
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[named\_subtype2]{
+  \vt = \TNamed(\namesubs)\\
+  \vs = \TNamed(\namesubt)\\
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \namedlca(\tenv, \namesubs, \namesubt) \typearrow \langle\name\rangle \OrTypeError\\
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \overname{\TNamed(\name)}{\tty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[one\_named1]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  (\astlabel(\vt) = \TNamed \lor \astlabel(\vs) = \TNamed)\\
+  \astlabel(\vt) \neq \astlabel(\vs)\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
+  \typeequal(\tenv, \vanont, \vanons) \typearrow \True\\
+  \tty \eqdef \choice{\astlabel(\vt) = \TNamed}{\vt}{\vs}
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \tty
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[one\_named2]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  (\astlabel(\vt) = \TNamed \lor \astlabel(\vs) = \TNamed)\\
+  \astlabel(\vt) \neq \astlabel(\vs)\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
+  \typeequal(\tenv, \vanont, \vanons) \typearrow \False\\
+  \lca(\tenv, \vanont, \vanons) \typearrow \tty \OrTypeError
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \tty
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int\_unconstrained]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \astlabel(\vt) = \astlabel(\vs) = \TInt\\
+  \isunconstrainedinteger(\vt) \lor \isunconstrainedinteger(\vs)
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \overname{\unconstrainedinteger}{\tty}
+}
+\and
+\inferrule[t\_int\_parameterized]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \astlabel(\vt) = \astlabel(\vs) = \TInt\\
+  \neg\isunconstrainedinteger(\vt)\\
+  \neg\isunconstrainedinteger(\vs)\\
+  \isparameterizedinteger(\vt) \lor \isparameterizedinteger(\vs)\\
+  \towellconstrained(\tenv, \vt) \typearrow \vtone\\
+  \towellconstrained(\tenv, \vs) \typearrow \vsone\\
+  \lca(\tenv, \vtone, \vsone) \typearrow \tty \OrTypeError
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \tty
+}
+\and
+\inferrule[t\_int\_wellconstrained]
+{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \vt \eqname \TInt(\wellconstrained(\cst))\\
+  \vs \eqname \TInt(\wellconstrained(\css))
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \overname{\TInt(\wellconstrained(\cst \concat \css))}{\tty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \exprequal(\tenv, \vet, \ves) \typearrow \vbequal\\
+  \checktrans{\vbequal}{\NoLCA} \checktransarrow \True \OrTypeError
+}{
+  \lca(\tenv, \overname{\TBits(\vet, \Ignore)}{\vt}, \overname{\TBits(\ves, \Ignore)}{\vs}) \typearrow \overname{\TBits(\vet, \emptylist)}{\tty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \arraylengthequal(\tenv, \widtht, \widths) \typearrow \vbequallength \OrTypeError\\\\
+  \checktrans{\vbequallength}{\NoLCA} \checktransarrow \True \OrTypeError\\\\
+  \lca(\tenv, \vtyt, \vtys) \typearrow \vtone \OrTypeError
+}{
+  {
+  \begin{array}{r}
+  \lca(\tenv, \overname{\TArray(\widtht, \vtyt)}{\vt}, \overname{\TArray(\widths, \vtys)}{\vs}) \typearrow \\
+  \overname{\TArray(\widtht, \vtone)}{\tty}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  \equallength(\vlit, \vlis) \typearrow \vb\\
+  \checktrans{\vb}{\NoLCA} \typearrow \True \OrTypeError\\\\
+  {
+    \begin{array}{r}
+  \vi\in\listrange(\vlit): \lca(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \\
+   \vt_\vi \OrTypeError
+    \end{array}
+  }\\
+  \vli \eqdef [\vi\in\listrange(\vlit): \vt_\vi]
+}{
+  \lca(\tenv, \overname{\TTuple(\vlit)}{\vt}, \overname{\TTuple(\vlis)}{\vs}) \typearrow \overname{\TTuple(\vli)}{\tty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \typeequal(\tenv, \vt, \vs) \typearrow \False\\
+  (\astlabel(\vt) \neq \astlabel(\vs)) \lor
+  \astlabel(\vt) \in \{\TEnum, \TRecord, \TException\}
+}{
+  \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\NoLCA}
+}
+\end{mathpar}
+
+\isempty{\subsubsection{Comments}}
+\lrmcomment{This is related to \identr{YZHM}.}
+
+\subsection{TypingRule.CheckUnop \label{sec:TypingRule.CheckUnop}}
+\hypertarget{def-checkunop}{}
+The function
+\[
+  \CheckUnop(\overname{\staticenvs}{\tenv} \aslsep \overname{\unop}{\op} \aslsep \overname{\ty}{\vt})
+  \aslto \overname{\ty}{\vs} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+determines the result type of applying a unary operator when the type of its operand is known.
+Similarly, we determine the negation of integer constraints.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+\item All of the following apply (\textsc{bnot\_t\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\BNOT$;
+    \item determining whether $\vt$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+    \item $\vs$ is $\TBool$;
+  \end{itemize}
+
+\item All of the following apply (\textsc{neg\_error}):
+\begin{itemize}
+  \item $\op$ is $\NEG$;
+  \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\False$\ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\False$\ProseOrTypeError;
+  \item the result is a type error indicating the $\NEG$ is appropriate only for \texttt{real} and \texttt{integer} types;
+\end{itemize}
+
+\item All of the following apply (\textsc{neg\_t\_real}):
+\begin{itemize}
+  \item $\op$ is $\NEG$;
+  \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\True$;
+  \item $\vs$ is $\TReal$;
+\end{itemize}
+
+\item All of the following apply (\textsc{neg\_t\_int\_unconstrained}):
+\begin{itemize}
+  \item $\op$ is $\NEG$;
+  \item obtaining the \wellconstrainedstructure\ of $\vt$ yields $\unconstrainedinteger$\ProseOrTypeError;
+  \item $\vs$ is $\unconstrainedinteger$;
+\end{itemize}
+
+\item All of the following apply (\textsc{neg\_t\_int\_well\_constrained}):
+\begin{itemize}
+  \item $\op$ is $\NEG$;
+  \item obtaining the \wellconstrainedstructure\ of $\vt$ yields the well-constrained integer type with constraints $\vcs$\ProseOrTypeError;
+  \item negating the constraints in $\vcs$ (see $\negateconstraint$) yields $\vcsnew$;
+  \item $\vs$ is the well-constrained integer type with constraints $\vcsnew$, that is, \\
+  $\TInt(\wellconstrained(\vcsnew))$;
+\end{itemize}
+
+\item All of the following apply (\textsc{not\_t\_bits}):
+  \begin{itemize}
+  \item $\op$ is $\NOT$;
+  \item $\vt$ has the structure of a bitvector;
+  \item $\vs$ is $\vt$.
+  \end{itemize}
+\end{itemize}
+
+\isempty{\subsubsection{Example}}
+
+\CodeSubsection{\CheckUnopBegin}{\CheckUnopEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[bnot\_t\_bool]{
+  \checktypesat(\tenv, \vtone, \TBool) \typearrow \True \OrTypeError\\
+}{
+  \CheckUnop(\tenv, \BNOT, \vtone) \typearrow \TBool
+}
+\end{mathpar}
+
+\hypertarget{def-negateconstraint}{}
+We now define the helper function
+\[
+  \negateconstraint(\intconstraint) \aslto \intconstraint
+\]
+which takes an integer constraint and returns the constraint that corresponds to the negation of all
+the values it represents:
+
+\begin{mathpar}
+\inferrule{}
+{
+  \negateconstraint(\ConstraintExact(\ve)) \typearrow \ConstraintExact(\EUnop(\MINUS, \ve))
+}
+\and
+\inferrule{}
+{
+  \negateconstraint(\ConstraintRange(\vvtop, \vbot)) \typearrow \\
+  \ConstraintRange(\EUnop(\MINUS, \vbot), \EUnop(\MINUS, \vvtop))
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[neg\_error]{
+  \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\\\\
+  \typesat(\tenv, \vt, \TReal) \typearrow \False \OrTypeError\\
+}{
+  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \TypeErrorVal{InappropriateTypeForNeg}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[neg\_t\_real]{
+  \typesat(\tenv, \vt, \TReal) \typearrow \True
+}{
+  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TReal}{\vs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[neg\_t\_int\_unconstrained]{
+  \getwellconstrainedstructure(\tenv, \vt) \typearrow \unconstrainedinteger \OrTypeError
+}{
+  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\unconstrainedinteger}{\vs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[neg\_t\_int\_well\_constrained]{
+  \getwellconstrainedstructure(\tenv, \vt) \typearrow \TInt(\wellconstrained(\vcs))\\
+  \vc \in \vcs: \negateconstraint(\vc) \typearrow \vneg_\vc\\
+  \vcsnew \eqdef [\vc \in \vcs: \vneg_\vc]
+}{
+  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TInt(\wellconstrained(\vcsnew))}{\vs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[not\_t\_bits]{
+  \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError
+}{
+  \CheckUnop(\tenv, \overname{\NOT}{\op}, \vt) \typearrow \vt
+}
+\end{mathpar}
+
+\isempty{\subsubsection{Comments}}
+
+\subsection{TypingRule.CheckBinop \label{sec:TypingRule.CheckBinop}}
+\hypertarget{def-checkbinop}{}
+The function
+\[
+  \CheckBinop(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\ty}{\vtone}
+  \aslsep \overname{\ty}{\vttwo})
+  \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+determines the result type $\vt$ of applying the binary operator $\op$
+to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{boolean}):
+  \begin{itemize}
+    \item $\op$ is $\AND$, $\OR$, $\EQOP$ or $\IMPL$;
+    \item determining whether $\vtone$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item determining whether $\vttwo$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item $\vt$ is $\TBool$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bits\_bool}):
+  \begin{itemize}
+    \item $\op$ is $\AND$, $\OR$, or $\XOR$;
+    \item checking whether $\vtone$ and $\vttwo$ have the \structure\ of bitvector types
+          of the same width in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item the bitvector width of $\vtone$ in $\tenv$ is $\vw$;
+    \item $\vt$ is the bitvector type of width $\vw$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{plus\_minus\_error}):
+  \begin{itemize}
+    \item $\op$ is $\PLUS$ or $\MINUS$;
+    \item obtaining the \structure\ of $\vtone$ in $\tenv$ is $\vtonestruct$\ProseOrTypeError;
+    \item $\vtonestruct$ is neither a bitvector type nor an integer type;
+    \item the result is a type error indicating that the type of $\vtone$ is inappropriate for $\op$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{plus\_minus\_bits\_int}):
+  \begin{itemize}
+    \item $\op$ is $\PLUS$ or $\MINUS$;
+    \item obtaining the \structure\ of $\vtone$ in $\tenv$ is $\vtonestruct$\ProseOrTypeError;
+    \item $\vtonestruct$ is a bitvector type;
+    \item $\vttwo$ \typesatisfies\ the unconstrained integer type in $\tenv$;
+    \item obtaining the bitwidth of $\vtone$ in $\tenv$ yields $\vw$.
+    \item $\vt$ is the bitvector type of width $\vw$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{plus\_minus\_bits\_bits}):
+  \begin{itemize}
+    \item $\op$ is $\PLUS$ or $\MINUS$;
+    \item obtaining the \structure\ of $\vtone$ in $\tenv$ is a bitvector of width $\veone$, that is,\\ $\TBits(\veone, \Ignore)$;
+    \item $\vttwo$ does not \typesatisfy\ the unconstrained integer type in $\tenv$
+    \item obtaining the \structure\ of $\vttwo$ in $\tenv$ is $\vttwostruct$\ProseOrTypeError;
+    \item determining whether $\vttwostruct$ has a bitvector type yields $\True$\ProseOrTypeError;
+    \item $\vttwostruct$ is a bitvector of width $\vwtwo$, that is, $\TBits(\vwtwo, \Ignore)$;
+    \item determining whether $\vwone$ and $\vwtwo$ are equal bitwidths yields $\vb$;
+    \item $\vb$ is $\True$\ProseOrTypeError;
+    \item $\vt$ is the bitvector type of width $\vwone$ and empty list of bitfields, that is, \\ $\TBits(\vwone, \emptylist)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_neq\_error}):
+  \begin{itemize}
+    \item $\op$ is either $\EQOP$ or $\NEQ$;
+    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\vtoneanon$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\vttwoanon$\ProseOrTypeError;
+    \item the AST labels of $\vtoneanon$ and $\vttwoanon$ are different or one of them is not in
+          $\{\TInt, \TReal, \TBool, \TBits, \TEnum\}$;
+    \item the result is a type error indicating that the types of $\vtone$ and $\vttwo$ are inappropriate for $\op$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_neq\_bits}):
+  \begin{itemize}
+    \item $\op$ is either $\EQOP$ or $\NEQ$;
+    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\vtoneanon$\ProseOrTypeError;
+    \item $\vtoneanon$ is a bitvector type;
+    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\vttwoanon$\ProseOrTypeError;
+    \item $\vttwoanon$ is a bitvector type;
+    \item checking whether the bitwidth of $\vtoneanon$ and $\vttwoanon$ is the same yields $\True$\ProseOrTypeError;
+    \item $\vt$ is $\TBool$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_neq\_bool}):
+  \begin{itemize}
+    \item $\op$ is either $\EQOP$ or $\NEQ$;
+    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TBool$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TBool$\ProseOrTypeError;
+    \item checking whether $\vtoneanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+    \item checking whether $\vttwoanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+    \item $\vt$ is $\TBool$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_neq\_real}):
+  \begin{itemize}
+    \item $\op$ is either $\EQOP$ or $\NEQ$;
+    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TReal$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TReal$\ProseOrTypeError;
+    \item checking whether $\vtoneanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+    \item checking whether $\vttwoanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+    \item $\vt$ is $\TBool$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_neq\_string}):
+  \begin{itemize}
+    \item $\op$ is either $\EQOP$ or $\NEQ$;
+    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TString$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TString$\ProseOrTypeError;
+    \item checking whether $\vtoneanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+    \item checking whether $\vttwoanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+    \item $\vt$ is $\TBool$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_neq\_enum}):
+  \begin{itemize}
+    \item $\op$ is either $\EQOP$ or $\NEQ$;
+    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TEnum(\vlione)$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TEnum(\vlitwo)$\ProseOrTypeError;
+    \item checking whether $\vlione$ is equal to $\vlitwo$ yields $\True$\ProseOrTypeError;
+    \item $\vt$ is $\TBool$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{relational}):
+  \begin{itemize}
+    \item $\op$ is one of $\LT$, $\LEQ$, $\GT$, and $\GEQ$;
+    \item determining whether both $\vtone$ and $\vttwo$ \typesatisfy\ the unconstrained integer type in $\tenv$
+          or both $\vtone$ and $\vttwo$ \typesatisfy\ the \texttt{real} type in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item $\vt$ is $\TBool$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{arith\_error}):
+  \begin{itemize}
+    \item obtaining the \structure\ of $\vtone$ in $\tenv$ yields $\vtonestruct$\ProseOrTypeError;
+    \item obtaining the \structure\ of $\vttwo$ in $\tenv$ yields $\vttwostruct$\ProseOrTypeError;
+    \item the operator and the AST labels of $\vtonestruct$ and $\vttwostruct$ do not match any of the rows in the following table:
+
+    \begin{center}
+    \begin{tabular}{lll}
+      \op    & $\astlabel(\vtonestruct)$ & $\astlabel(\vttwostruct)$\\
+      \hline
+      \MUL   & \TInt  & \TInt\\
+      \DIV   & \TInt  & \TInt\\
+      \DIVRM & \TInt  & \TInt\\
+      \MOD   & \TInt  & \TInt\\
+      \SHL   & \TInt  & \TInt\\
+      \SHR   & \TInt  & \TInt\\
+      \POW   & \TInt  & \TInt\\
+      \PLUS  & \TInt  & \TInt\\
+      \MINUS & \TInt  & \TInt\\
+      \PLUS  & \TReal & \TReal\\
+      \MINUS & \TReal & \TReal\\
+      \MUL   & \TReal & \TReal\\
+      \RDIV  & \TReal & \TReal\\
+      \POW   & \TReal & \TInt\\
+    \end{tabular}
+  \end{center}
+    \item the result is a type error indicating that the types of $\vtone$ and $\vttwo$ are inappropriate for $\op$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{arith\_t\_int\_unconstrained1}, \\
+                                    \textsc{arith\_t\_int\_unconstrained2}):
+  \begin{itemize}
+    \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}$;
+    \item the \wellconstrainedstructure\ of $\vtone$ or $\vttwo$ in $\tenv$ is that of the unconstrained integer type;
+    \item $\vt$ is the unconstrained integer type;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{arith\_t\_int\_wellconstrained}):
+  \begin{itemize}
+    \item $\op$ is one of $\{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}$;
+    \item the \wellconstrainedstructure\ of $\vtone$ in $\tenv$ is that of a well-constrained integer type with
+          constraints $\vcsone$;
+    \item the \wellconstrainedstructure\ of $\vttwo$ in $\tenv$ is that of a well-constrained integer type with
+          constraints $\vcstwo$;
+    \item applying $\annotateconstraintbinop$ to $\op$, $\vcsone$, and $\vcstwo$ in $\tenv$ yields $\vcs$;
+    \item $\vt$ is the integer type with constraints $\vcs$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{plus\_minus\_mul\_real}):
+  \begin{itemize}
+    \item $\op$ is one of $\{\PLUS, \MINUS, \MUL\}$;
+    \item obtaining the \structure\ of $\vtone$ in $\tenv$ yields $\TReal$;
+    \item obtaining the \structure\ of $\vttwo$ in $\tenv$ yields $\TReal$;
+    \item $\vt$ is $\TReal$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{pow\_real\_int}):
+  \begin{itemize}
+    \item $\op$ is one of $\{\PLUS, \MINUS, \MUL\}$;
+    \item obtaining the \structure\ of $\vtone$ in $\tenv$ yields $\TReal$;
+    \item obtaining the \structure\ of $\vttwo$ in $\tenv$ yields an integer type;
+    \item $\vt$ is $\TReal$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{rdiv}):
+  \begin{itemize}
+    \item $\op$ is one of $\{\RDIV\}$;
+    \item determining whether $\vtone$ \typesatisfies\ $\TReal$ yields $\True$\ProseOrTypeError;
+    \item determining whether $\vttwo$ \typesatisfies\ $\TReal$ yields $\True$\ProseOrTypeError;
+    \item $\vt$ is $\TReal$.
+  \end{itemize}
+\end{itemize}
+
+\isempty{\subsubsection{Example}}
+
+\CodeSubsection{\CheckBinopBegin}{\CheckBinopEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[boolean]{
+  \op \in  \{\BAND, \BOR, \IMPL, \EQOP\}\\
+  \checktypesat(\tenv, \vt1, \TBool) \typearrow \True \OrTypeError\\\\
+  \checktypesat(\tenv, \vttwo, \TBool) \typearrow \True \OrTypeError
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bits\_bool]{
+  \op \in  \{\AND, \OR, \XOR\}\\
+  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError\\\\
+  \getbitvectorwidth(\tenv, \vtone) \typearrow \vw
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBits(\vw, \emptylist)}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[plus\_minus\_error]{
+  \op \in  \{\PLUS, \MINUS\}\\
+  \tstruct(\tenv, \vtone) \typearrow \vtonestruct \OrTypeError\\\\
+  \astlabel(\vtonestruct) \not\in \{\TBits,\TInt\}\\
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\InvalidOperandTypesForBinop}
+}
+\and
+\inferrule[plus\_minus\_bits\_int]{
+  \op \in  \{\PLUS, \MINUS\}\\
+  \tstruct(\tenv, \vtone) \typearrow \vtonestruct \OrTypeError\\\\
+  \astlabel(\vtonestruct) = \TBits\\
+  \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \True\\
+  \getbitvectorwidth(\tenv, \vtone) \typearrow \vw\\
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBits(\vw, \emptylist)}{\vt}
+}
+\and
+\inferrule[plus\_minus\_bits\_bits]{
+  \op \in  \{\PLUS, \MINUS\}\\
+  \tstruct(\tenv, \vtone) \typearrow \TBits(\vwone, \Ignore) \\
+  \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \False\\
+  \tstruct(\tenv, \vttwo) \typearrow \vttwostruct \OrTypeError\\\\
+  \checktrans{\astlabel(\vttwostruct)=\TBits}{\ExpectedBitvectorType} \checktransarrow \True \OrTypeError\\\\
+  \vttwostruct \eqname \TBits(\vwtwo, \Ignore)\\
+  \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb\\
+  \checktrans{\vb}{DifferentBitwidths} \checktransarrow \True \OrTypeError
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBits(\vwone, \emptylist)}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[eq\_neq\_error]
+{
+  \op \in  \{\EQOP, \NEQ\}\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  {
+    \left(\begin{array}{ll}
+  \astlabel(\vtoneanon) \neq \astlabel(\vttwoanon) & \lor \\
+  \astlabel(\vtoneanon) \not\in \{\TInt, \TReal, \TBool, \TBits, \TEnum\} &
+    \end{array}\right)
+  }
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\InvalidOperandTypesForBinop}
+}
+\and
+\inferrule[eq\_neq\_bits]{
+  \op \in  \{\EQOP, \NEQ\}\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  \astlabel(\vtoneanon) = \TBits\\
+  \astlabel(\vttwoanon) = \TBits\\
+  \checkbitsequalwidth(\tenv, \vtoneanon, \vttwoanon) \typearrow \True \OrTypeError
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+}
+\and
+\inferrule[eq\_neq\_bool]{
+  \op \in  \{\EQOP, \NEQ\}\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  \checktypesat(\tenv, \vtoneanon, \TBool) \typearrow \True \OrTypeError\\\\
+  \checktypesat(\tenv, \vttwoanon, \TBool) \typearrow \True \OrTypeError
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+}
+\and
+\inferrule[eq\_neq\_real]{
+  \op \in  \{\EQOP, \NEQ\}\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  \checktypesat(\tenv, \vtoneanon, \TReal) \typearrow \True \OrTypeError\\\\
+  \checktypesat(\tenv, \vttwoanon, \TReal) \typearrow \True \OrTypeError
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+}
+\and
+\inferrule[eq\_neq\_string]{
+  \op \in  \{\EQOP, \NEQ\}\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  \checktypesat(\tenv, \vtoneanon, \TString) \typearrow \True \OrTypeError\\\\
+  \checktypesat(\tenv, \vttwoanon, \TString) \typearrow \True \OrTypeError
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+}
+\and
+\inferrule[eq\_neq\_enum]{
+  \op \in  \{\EQOP, \NEQ\}\\
+  \makeanonymous(\tenv, \vtone) \typearrow \TEnum(\vlione)\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \TEnum(\vlitwo)\\
+  \checktrans{\vlione = \vlitwo}{DifferentEnumLabels} \checktransarrow \True \OrTypeError
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[relational]{
+  \op \in  \{\LT, \LEQ, \GT, \GEQ\}\\
+  \typesat(\tenv, \vtone, \unconstrainedinteger) \typearrow \vbone \OrTypeError\\\\
+  \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \vbtwo \OrTypeError\\\\
+  \typesat(\tenv, \vtone, \TReal) \typearrow \vbthree \OrTypeError\\\\
+  \typesat(\tenv, \vttwo, \TReal) \typearrow \vbfour \OrTypeError\\\\
+  \checktrans{\vbone \land \vbtwo \lor \vbthree \land \vbfour}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[arith\_error]{
+  \tstruct(\tenv, \vtone) \typearrow \vtonestruct \OrTypeError\\\\
+  \tstruct(\tenv, \vttwo) \typearrow \vttwostruct \OrTypeError\\\\
+  (\op, \astlabel(\vtonestruct), \astlabel(\vttwostruct)) \not\in
+  {
+    \left\{
+    \begin{array}{lclcl}
+      (\MUL   &,& \TInt  &,& \TInt)\\
+      (\DIV   &,& \TInt  &,& \TInt)\\
+      (\DIVRM &,& \TInt  &,& \TInt)\\
+      (\MOD   &,& \TInt  &,& \TInt)\\
+      (\SHL   &,& \TInt  &,& \TInt)\\
+      (\SHR   &,& \TInt  &,& \TInt)\\
+      (\POW   &,& \TInt  &,& \TInt)\\
+      (\PLUS  &,& \TInt  &,& \TInt)\\
+      (\MINUS &,& \TInt  &,& \TInt)\\
+      (\PLUS  &,& \TReal &,& \TReal)\\
+      (\MINUS &,& \TReal &,& \TReal)\\
+      (\MUL   &,& \TReal &,& \TReal)\\
+      (\RDIV  &,& \TReal &,& \TReal)\\
+      (\POW   &,& \TReal &,& \TInt)\\
+    \end{array}
+    \right\}
+  }
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\InvalidOperandTypesForBinop}
+}
+\end{mathpar}
+
+The following two rules are not mutually exclusive, but both yield the same result when they are both active.
+\begin{mathpar}
+\inferrule[arith\_t\_int\_unconstrained1]{
+  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
+  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \unconstrainedinteger\\
+  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\Ignore)\\
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \unconstrainedinteger
+}
+\and
+\inferrule[arith\_t\_int\_unconstrained2]{
+  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
+  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\Ignore)\\
+  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \unconstrainedinteger\\
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \unconstrainedinteger
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[arith\_t\_int\_wellconstrained]{
+  \op \in  \{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}\\
+  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
+  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
+  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\vcs)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[plus\_minus\_mul\_real]{
+  \op \in  \{\PLUS, \MINUS, \MUL\}\\
+  \tstruct(\tenv, \vtone) \typearrow \TReal\\
+  \tstruct(\tenv, \vttwo) \typearrow \TReal
+}{
+  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TReal
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pow\_real\_int]{
+  \tstruct(\tenv, \vtone) \typearrow \TReal\\
+  \astlabel(\tstruct(\tenv, \vttwo)) \typearrow \TInt
+}{
+  \CheckBinop(\tenv, \POW, \vtone, \vttwo) \typearrow \TReal
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[rdiv]{
+  \checktypesat(\tenv, \vtone, \TReal) \typearrow \True \OrTypeError\\\\
+  \checktypesat(\tenv, \vttwo, \TReal) \typearrow \True \OrTypeError\\
+}{
+  \CheckBinop(\tenv, \RDIV, \vtone, \vttwo) \typearrow \TReal
+}
+\end{mathpar}
+
+\isempty{\subsubsection{Comments}}
+\lrmcomment{
+  This is related to \identr{BKNT}, \identr{ZYWY}, \identr{BZKW},
+  \identr{KFYS}, \identr{KXMR}, \identr{SQXN}, \identr{MRHT}, \identr{JGWF},
+  \identr{TTGQ}, \identi{YHML}, \identi{YHRP}, \identi{VMZF}, \identi{YXSY},
+  \identi{LGHJ}, \identi{RXLG}.
+}
+
+\subsection{TypingRule.FindNamedLCA \label{sec:TypingRule.FindNamedLCA}}
+\hypertarget{def-namedlowestcommonancestor}{}
+The function
+\[
+  \namedlca(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\ty}{\tty} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns the lowest common named super type --- $\tty$ --- of the types $\vt$ and $\vs$ in $\tenv$.
+
+\newcommand\supers[0]{\texttt{supers}}
+The helper function
+\[
+  \supers(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt})
+  \aslto \pow{\ty}
+\]
+returns the set of \emph{named supertypes} given via the $\subtypes$ function of the global environment:
+\[
+  \supers(\tenv, \vt) \triangleq
+  \begin{cases}
+    \{\vt\} \cup \supers(\vs) & \text{ if }G^\tenv.\subtypes(\vt) = \vs\\
+    \{\vt\}  & \text{ otherwise } (\text{that is, }G^\tenv.\subtypes(\vt) = \bot)\\
+  \end{cases}
+\]
+
+\subsubsection{Prose}
+One of the following holds:
+\begin{itemize}
+  \item $\vtsupers$ is in the set of named supertypes of $\vt$;
+  \item All of the following hold (\textsc{found}):
+  \begin{itemize}
+    \item $\vs$ is in $\vtsupers$;
+    \item $\tty$ is $\vs$;
+  \end{itemize}
+
+  \item All of the following hold (\textsc{super}):
+  \begin{itemize}
+    \item $\vs$ is not in $\vtsupers$;
+    \item $\vs$ has a named super type in $\tenv$ --- $\vsp$;
+    \item $\tty$ is the lowest common named supertype of $\vt$ and $\vsp$ in $\tenv$.
+  \end{itemize}
+
+  \item All of the following hold (\textsc{none}):
+  \begin{itemize}
+    \item $\vs$ is not in $\vtsupers$;
+    \item $\vs$ has no named super type in $\tenv$;
+    \item $\tty$ is $\None$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[found]{
+  \supers(\tenv, \vt) \typearrow \vtsupers\\
+  \vs \in \vtsupers
+}{
+  \namedlca(\tenv, \vt, \vs) \typearrow \vs
+}
+\and
+\inferrule[super]{
+  \supers(\tenv, \vt) \typearrow \vtsupers\\
+  \vs \not\in \vtsupers\\
+  G^\tenv.\subtypes(\vs) = \vsp\\
+  \namedlca(\tenv, \vt, \vsp) \typearrow \tty
+}{
+  \namedlca(\tenv, \vt, \vs) \typearrow \tty
+}
+\and
+\inferrule[none]{
+  \supers(\tenv, \vt) \typearrow \vtsupers\\
+  \vs \not\in \vtsupers\\
+  G^\tenv.\subtypes(\vs) = \None
+}{
+  \namedlca(\tenv, \vt, \vs) \typearrow \None
+}
+\end{mathpar}
+
+\subsection{TypingRule.AnnotateConstraintBinop \label{sec:TypingRule.AnnotateConstraintBinop}}
+\hypertarget{def-annotateconstraintbinop}{}
+The function
+\[
+\begin{array}{r}
+\annotateconstraintbinop(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\binop}{\op} \aslsep
+  \overname{\intconstraint^*}{\csone} \aslsep
+  \overname{\intconstraint^*}{\cstwo}
+) \aslto \\
+\overname{\intconstraints}{\vics}
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the application of the binary operation $\op$ to the lists of integer constraints
+$\csone$ and $\cstwo$, yielding an integer constraints element $\vics$.
+\ProseOtherwiseTypeError\
+
+The operator $\op$ is assumed to be only one of the operators in the following set:
+$\{\SHL, \SHR, \POW, \MOD, \DIVRM, \MINUS, \MUL, \PLUS, \DIV\}$.
+
+Annotating the constraints involves applying symbolic reasoning and in particular filtering out values that
+will definitely result in a dynamic error.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item applying $\binopfilterrhs$ to $\op$ $\cstwo$ in $\tenv$, to filter out constraints that will definitely fail dynamically, yields $\cstwof$;
+  \item applying $\binopisexploding$ to $\op$ yields $\vbexploding$;
+  \item applying $\explodeintervals$ to $\csone$ in $\tenv$ yields $\csonee$;
+  \item applying $\explodeintervals$ to $\cstwo$ in $\tenv$ yields $\cstwo$;
+  \item define $(\csonearg, \cstwoarg)$ as $(\csonee, \cstwoe)$ if $\vbexploding$ is $\True$ and $(\csone, \cstwof)$, otherwise;
+  \item applying $\constraintbinop$ yo $\op$, $\csonearg$, and $\cstwoarg$ yields $\csvanilla$;
+  \item applying $\reduceconstraints$ to $\csvanilla$ in $\tenv$ yields $\cs$;
+  \item one of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{div\_wellconstrained}):
+    \begin{itemize}
+      \item $\op$ is $\DIV$ and $\cs$ is a $\wellconstrained$ constraint;
+      \item view $\cs$ as $\wellconstrained(\cslist)$;
+      \item applying $\refineconstraints$ to $\filterreduceconstraintdiv$ and \\
+            $\cslist$ yields $\cslistfiltered$;
+      \item applying $\reduceconstants$ to $\cslistfiltered$ yields $\vics$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{else}):
+    \begin{itemize}
+      \item either $\op$ is not $\DIV$ or $\cs$ is not a $\wellconstrained$ constraint;
+      \item $\vics$ is $\cs$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[div\_wellconstrained]{
+  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\
+  \binopisexploding(\op) \typearrow \vbexploding\\
+  \explodeintervals(\tenv, \csone) \typearrow \csonee\\
+  \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
+  (\csonearg, \cstwoarg) \eqdef \choice{\vbexploding}{(\csonee, \cstwoe)}{(\csone, \cstwof)}\\
+  \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
+  \reduceconstraints(\tenv, \csvanilla) \typearrow \cs\\\\
+  \commonprefixline\\\\
+  \op = \DIV \land \astlabel(\cs) = \wellconstrained\\
+  \cs \eqname \wellconstrained(\cslist)\\
+  {
+    \begin{array}{r}
+  \refineconstraints(\filterreduceconstraintdiv, \cslist) \typearrow \\
+    \cslistfiltered
+    \end{array}
+  }\\
+  \reduceconstraints(\cslistfiltered) \typearrow \vics
+}{
+  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \vics
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[else]{
+  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\
+  \binopisexploding(\op) \typearrow \vbexploding\\
+  \explodeintervals(\tenv, \csone) \typearrow \csonee\\
+  \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
+  (\csonearg, \cstwoarg) \eqdef \choice{\vbexploding}{(\csonee, \cstwoe)}{(\csone, \cstwof)}\\
+  \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
+  \reduceconstraints(\tenv, \csvanilla) \typearrow \cs\\\\
+  \commonprefixline\\\\
+  \neg(\op = \DIV \land \astlabel(\cs) = \wellconstrained)
+}{
+  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \overname{\cs}{\vics}
+}
+\end{mathpar}
+
+\subsection{TypingRule.BinopFilterRhs \label{sec:TypingRule.BinopFilterRhs}}
+\hypertarget{def-binopfilterrhs}{}
+The function
+\[
+\binopfilterrhs(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\intconstraint^*}{\cs})
+\aslto \overname{\intconstraint^*}{\newcs}
+\]
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{greater\_or\_equal}):
+  \begin{itemize}
+    \item $\op$ is one of $\SHL$, $\SHR$, and $\POW$;
+    \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
+          $\lambda x.\ x \geq 0$, which is $\True$ if and only if the tested number is greater or equal to $0$;
+    \item refining the list of constraints $\cs$ with $\vf$ via $\refineconstraints$ yields $\newcs$;
+    \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BinaryOperationFailsAllConstraints}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{greater\_than}):
+  \begin{itemize}
+    \item $\op$ is one of $\MOD$, $\DIV$, and $\DIVRM$;
+    \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
+          $\lambda x.\ x > 0$, which is $\True$ if and only if the tested number is greater than $0$;
+    \item refining the list of constraints $\cs$ with $\vf$ via $\refineconstraints$ yields $\newcs$;
+    \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BinaryOperationFailsAllConstraints}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{no\_filtering}):
+  \begin{itemize}
+    \item $\op$ is one of $\MINUS$, $\MUL$, and $\PLUS$;
+    \item $\newcs$ is $\cs$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[greater\_or\_equal]{
+  \op \in \{\SHL, \SHR, \POW\}\\\\
+  \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x \geq 0)\\
+  \refineconstraints(\cs, \vf) \typearrow \newcs\\
+  \checktrans{\newcs \neq \emptylist}{\BinaryOperationFailsAllConstraints} \typearrow \True\OrTypeError
+}{
+  \binopfilterrhs(\tenv, \op, \cs) \typearrow \newcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[greater\_than]{
+  \op \in \{\MOD, \DIV, \DIVRM\}\\\\
+  \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x > 0)\\
+  \refineconstraints(\cs, \vf) \typearrow \newcs\\
+  \checktrans{\newcs \neq \emptylist}{\BinaryOperationFailsAllConstraints} \typearrow \True\OrTypeError
+}{
+  \binopfilterrhs(\tenv, \op, \cs) \typearrow \newcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_filter]{
+  \op \in \{\MINUS, \MUL, \PLUS\}
+}{
+  \binopfilterrhs(\op, \cs) \typearrow \overname{\cs}{\newcs}
+}
+\end{mathpar}
+
+\subsection{TypingRule.RefineConstraintBySign \label{sec:TypingRule.RefineConstraintBySign}}
+\hypertarget{def-refineconstraintbysign}{}
+The function
+\[
+\refineconstraintbysign(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z\rightarrow \Bool}{\vp} \aslsep \overname{\intconstraint}{\vc})
+\aslto \overname{\langle\intconstraint\rangle}{\vcopt}
+\]
+takes a predicate $\vp$ that returns $\True$ based on the sign of its input.
+The function conservatively refines the constraint $\vc$ in $\tenv$ by applying symbolic reasoning to yield a new constraint
+(inside an optional)
+that represents the values that satisfy the $\vc$ and for which $\vp$ holds.
+In this context, conservatively means that the new constraint may represent a superset of the values that a more precise
+reasoning may yield.
+If the set of those values is empty the result is $\None$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact\_reduces\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
+          yields $\langle\vz\rangle$;
+    \item $\vcopt$ is $\langle\vc\rangle$ if $\vp$ holds for $\vz$ and $\None$ otherwise.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exact\_does\_not\_reduce\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
+          yields $\None$;
+    \item $\vcopt$ is $\langle\vc\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range\_both\_reduce\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
+          $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
+          yields $\langle\vzone\rangle$;
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
+          yields $\langle\vztwo\rangle$;
+    \item One of the following applies (defining $\vcopt$):
+    \begin{itemize}
+      \item if $\vp$ is $\True$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\False$ for $\vzone$ and $\True$ for $\vztwo$, define $\vcopt$ as the optional range constraint
+            where the bottom expression is the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $1$ otherwise,
+            and the top expression is $\vetwo$;
+      \item if $\vp$ is $\True$ for $\vzone$ and $\False$ for $\vztwo$, define $\vcopt$ as the optional range constraint
+            where the bottom expression is $\veone$ and the top expression is the literal expression for $0$ if $\vp$ holds for $0$
+            and the literal expression for $-1$ otherwise;
+      \item if $\vp$ is $\False$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\None$.
+    \end{itemize}
+  \end{itemize}
+
+  \item All of the following apply (\textsc{only\_e1\_reduces\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
+          $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
+          yields $\langle\vzone\rangle$;
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
+          yields $\None$;
+    \item One of the following applies (defining $\vcopt$):
+    \begin{itemize}
+      \item if $\vp$ is $\True$ for $\vzone$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\False$ for $\vzone$, define $\vcopt$ as the optional range constraint with the bottom expression
+            as the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $1$ otherwise,
+            and the top expression $\vetwo$.
+    \end{itemize}
+  \end{itemize}
+
+  \item All of the following apply (\textsc{only\_e2\_reduces\_to\_z}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
+          $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
+          yields $\None$;
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
+          yields $\langle\vztwo\rangle$;
+    \item One of the following applies (defining $\vcopt$):
+    \begin{itemize}
+      \item if $\vp$ is $\True$ for $\vztwo$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\False$ for $\vztwo$, define $\vcopt$ as the optional range constraint with the bottom expression
+            $\veone$ and the top expression the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $-1$ otherwise.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[exact\_reduces\_to\_z]{
+  \reducetozopt(\tenv, \ve) \typearrow \langle\vz\rangle\\
+  \vcopt \eqdef \choice{\vp(\vz)}{\langle\vc\rangle}{\None}
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vcopt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exact\_does\_not\_reduce\_to\_z]{
+  \reducetozopt(\tenv, \ve) \typearrow \None
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_both\_reduce\_to\_z]{
+  \reducetozopt(\tenv, \veone) \typearrow \langle\vzone\rangle\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vztwo\rangle\\
+  {
+    \begin{array}{c}
+  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+    \langle\vc\rangle& \text{if }\vp(\vzone) \land \vp(\vztwo)\\
+    \langle\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)\rangle& \text{if }\neg\vp(\vzone) \land \vp(\vztwo)\\
+    \langle\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})\rangle& \text{if }\vp(\vzone) \land \neg\vp(\vztwo)\\
+    \None& \text{if }\neg\vp(\vzone) \land \neg\vp(\vztwo)\\
+  \end{cases}
+\end{array}
+  }
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[only\_e1\_reduces\_to\_z]{
+  \reducetozopt(\tenv, \veone) \typearrow \langle\vzone\rangle\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \None\\
+  {
+    \begin{array}{c}
+  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+    \langle\vc\rangle& \text{if }\vp(\vzone)\\
+    \langle\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)\rangle& \text{else}\\
+  \end{cases}
+\end{array}
+  }
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[only\_e2\_reduces\_to\_z]{
+  \reducetozopt(\tenv, \veone) \typearrow \None\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vztwo\rangle\\
+  {
+    \begin{array}{c}
+  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+    \langle\vc\rangle& \text{if }\vp(\vztwo)\\
+    \langle\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})\rangle& \text{else}\\
+  \end{cases}
+\end{array}
+  }
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[none\_reduce\_to\_z]{
+  \reducetozopt(\tenv, \veone) \typearrow \None\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \None
+}{
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\vc}{\vcopt}
+}
+\end{mathpar}
+
+\subsection{TypingRule.ReduceToZOpt \label{sec:TypingRule.ReduceToZOpt}}
+\hypertarget{def-reducetozopt}{}
+The function
+\[
+\reducetozopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
+\aslto \overname{\langle\Z\rangle}{\vzopt}
+\]
+returns an integer inside an optional if $\ve$ can be symbolically simplified into an integer in $\tenv$
+and $\None$ otherwise.
+The expression $\ve$ is assumed to appear in a constraint for a type that has been successfully annotated,
+which means that applying $\normalize$ to it should not yield a type error.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{normalizes\_to\_z}):
+  \begin{itemize}
+    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields a literal expression for the integer $\vz$;
+    \item define $\vzopt$ as $\langle\vz\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{does\_not\_normalize\_to\_z}):
+  \begin{itemize}
+    \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields an expression that is not an integer literal;
+    \item define $\vzopt$ as $\None$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[normalizes\_to\_z]{
+  \normalize(\tenv, \ve) \typearrow \ELInt{\vz}
+}{
+  \reducetozopt(\tenv, \ve) \typearrow \overname{\langle\vz\rangle}{\vzopt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[does\_not\_normalize\_to\_z]{
+  \normalize(\tenv, \ve) \typearrow \vep\\
+  \forall \vz\in\Z.\ \vep \neq \ELInt{\vz}
+}{
+  \reducetozopt(\tenv, \ve) \typearrow \overname{\None}{\vzopt}
+}
+\end{mathpar}
+
+\subsection{TypingRule.RefineConstraints \label{sec:TypingRule.RefineConstraints}}
+\hypertarget{def-refineconstraints}{}
+The function
+\[
+\begin{array}{r}
+\refineconstraints(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint\rightarrow\langle\intconstraint\rangle}{\vf} \aslsep \overname{\intconstraint^*}{\cs})
+\aslto \\
+\overname{\intconstraint^*}{\newcs}
+\end{array}
+\]
+refines a list of constraints $\cs$ by applying the refinement function $\vf$ to each constraint and retaining the constraints
+that do not refine to $\None$. The resulting list of constraints is given in $\newcs$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\cs$ is the empty list;
+    \item $\newcs$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty\_none}):
+  \begin{itemize}
+    \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
+    \item applying $\vf$ to $\vc$ yields $\None$;
+    \item applying $\refineconstraints$ to $\vf$ and $\csone$ yields $\csonep$;
+    \item $\newcs$ is $\csonep$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty\_somee}):
+  \begin{itemize}
+    \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
+    \item applying $\vf$ to $\vc$ yields $\langle\vcp\rangle$;
+    \item applying $\refineconstraints$ to $\vf$ and $\csone$ yields $\csonep$;
+    \item $\newcs$ is the list with $\vcp$ as its \head\ and $\csonep$ as its \tail.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \refineconstraints(\tenv, \vf, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty\_none]{
+  \vf(\vc) \typearrow \None\\
+  \refineconstraints(\vf, \csone) \typearrow \csonep\\
+}{
+  \refineconstraints(\vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{\csonep}{\newcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty\_some]{
+  \vf(\vc) \typearrow \langle\vcp\rangle\\
+  \refineconstraints(\vf, \csone) \typearrow \csonep\\
+}{
+  \refineconstraints(\vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{[\vcp] \concat \csonep}{\newcs}
+}
+\end{mathpar}
+
+\subsection{TypingRule.FilterReduceConstraintDiv \label{sec:TypingRule.FilterReduceConstraintDiv}}
+\hypertarget{def-filterreduceconstraintdiv}{}
+The function
+\[
+\filterreduceconstraintdiv(\overname{\intconstraint}{\vc}) \aslto \overname{\langle\intconstraint\rangle}{\vcopt}
+\]
+returns $\None$ if $\vc$ is an exact constraint for a binary expression for dividing two integer literals
+where the denominator does not divide the numerator and an optional containing $\vc$.
+The result is returned in $\vcopt$.
+This is used to conservatively test whether $\vc$ would always fail dynamically.
+
+\subsubsection{Prose}
+If $\vc$ is an exact constraint for a binary expression for the division operation and two integer literal
+expressions for the integers $\vzone$ and $\vztwo$ such that $\vztwo$ does not divide $\vzone$ then
+$\vcopt$ is $\None$. Otherwise $\vcopt$ is $\langle\vc\rangle$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[exact\_div\_literals]{
+  \vc = \ConstraintExact(\ve)\\
+  \getliteraldivopt(\ve) \typearrow \None
+}{
+  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exact\_not\_div\_literals]{
+  \vc = \ConstraintExact(\ve)\\
+  \getliteraldivopt(\ve) \typearrow \langle(\vzone, \vztwo)\rangle
+  \vcopt \eqdef \choice{\frac{\vzone}{\vztwo} \in \Z}{\langle\vc\rangle}{\None}
+}{
+  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \vcopt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \astlabel(\vc) = \ConstraintRange
+}{
+  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+}
+\end{mathpar}
+
+\subsection{TypingRule.GetLiteralDivOpt \label{sec:TypingRule.GetLiteralDivOpt}}
+\hypertarget{def-getliteraldivopt}{}
+The function
+\[
+\getliteraldivopt(\overname{\expr}{\ve}) \aslto \overname{\langle\Z\cartimes\Z\rangle}{\rangeopt}
+\]
+matches the expression $\ve$ to a binary operation expression over the division operation and two literal integer expressions.
+If $\ve$ matches this pattern the result $\rangeopt$ is an optional containing the pair of integers appearing in the operand
+expressions. Otherwise, the result is $\None$.
+
+\subsubsection{Prose}
+The value $\rangeopt$ is $\langle(\vzone, \vztwo)\rangle$ if $\ve$ is a binary operation expression over the division operation
+and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $\None$ otherwise.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \rangeopt \eqdef \choice{\ve = \EBinop(\DIV, \ELInt{\vzone}, \ELInt{\vztwo})}{\langle(\vzone, \vztwo)\rangle}{\None}
+}{
+  \getliteraldivopt(\ve) \typearrow \rangeopt
+}
+\end{mathpar}
+
+\subsection{TypingRule.ExplodeIntervals \label{sec:TypingRule.ExplodeIntervals}}
+\hypertarget{def-explodeintervals}{}
+The function
+\[
+\explodeintervals(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\cs})
+\aslto \overname{\intconstraint^*}{\newcs}
+\]
+applies $\explodedinterval$ to each constraint of $\cs$ in $\tenv$ and concatenates the resulting
+list, yielding the result in $\newcs$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\cs$ is the empty list;
+    \item $\newcs$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
+    \item applying $\explodeconstraint$ to $\vc$ in $\tenv$ yields $\vcp$ (a list of constraints);
+    \item applying $\explodeintervals$ to $\csone$ in $\tenv$ yields $\csonep$;
+    \item $\newcs$ is the concatenation of $\vcp$ and $\csonep$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \explodeintervals(\tenv, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \explodeconstraint(\tenv, \vc) \typearrow \vcp\\
+  \explodeintervals(\tenv, \csone) \typearrow \csonep\\
+}{
+  \explodeintervals(\tenv, \overname{[\vc] \concat \csone}{\cs}) \typearrow \overname{\vcp \concat \csonep}{\newcs}
+}
+\end{mathpar}
+
+\subsection{TypingRule.ExplodeConstraint \label{sec:TypingRule.ExplodeConstraint}}
+\hypertarget{def-explodeconstraint}{}
+The function
+\[
+\explodeconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
+\aslto \overname{\intconstraint^*}{\vcs}
+\]
+expands the constraint $\vc$ into the equivalent list of exact constraints if
+$\vc$ matches a n ascending range constraint that is not too large in $\tenv$
+and the singleton list for $\vc$ otherwise.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\vc$ is an exact constraint;
+    \item $\vcs$ is the singleton list for $\vc$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range\_reduced}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\va$ and $\vb$;
+    \item applying $\reducetozopt$ to $\va$ in $\tenv$ yields $\langle\vza\rangle$;
+    \item applying $\reducetozopt$ to $\vb$ in $\tenv$ yields $\langle\vzb\rangle$;
+    \item define $\explodedinterval$ as the list of exact constraints for each integer literal in the range starting
+          at $\vza$ and ending at $\vzb$, inclusively, which is empty if $\vzb < \vza$;
+    \item applying $\intervaltoolarge$ to $\vza$ and $\vzb$ yields $\vbtoolarge$;
+    \item define $\vcs$ as the singleton list for $\vc$ if $\vbtoolarge$ is $\True$ and \\
+          $\explodedinterval$ otherwise.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range\_not\_reduced}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\va$ and $\vb$;
+    \item applying $\reducetozopt$ to $\va$ in $\tenv$ yields $\vzaopt$;
+    \item applying $\reducetozopt$ to $\vb$ in $\tenv$ yields $\vzbopt$;
+    \item at least one of $\vzaopt$ and $\vzbopt$ is $\None$;
+    \item $\vcs$ is the singleton list for $\vc$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{
+  \astlabel(\vc) = \ConstraintExact
+}{
+  \explodeconstraint(\tenv, \vc) \typearrow \overname{[\vc]}{\vcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_reduced]{
+  \vc = \ConstraintRange(\va, \vb)\\
+  \reducetozopt(\tenv, \va) \typearrow \langle\vza\rangle\\
+  \reducetozopt(\tenv, \vb) \typearrow \langle\vzb\rangle\\
+  \explodedinterval \eqdef [\vz \in \vza..\vzb: \ConstraintExact(\ELInt{\vz})]\\
+  \intervaltoolarge(\vza, \vzb) \typearrow \vbtoolarge\\
+  \vcs \eqdef \choice{\vbtoolarge}{[\vc]}{\explodedinterval}
+}{
+  \explodeconstraint(\tenv, \vc) \typearrow \vcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_not\_reduced]{
+  \vc = \ConstraintRange(\va, \vb)\\
+  \reducetozopt(\tenv, \va) \typearrow \vzaopt\\
+  \reducetozopt(\tenv, \vb) \typearrow \vzbopt\\
+  \vzaopt = \None \lor \vzbopt = \None
+}{
+  \explodeconstraint(\tenv, \vc) \typearrow \overname{[\vc]}{\vcs}
+}
+\end{mathpar}
+
+\subsection{TypingRule.IntervalTooLarge \label{sec:TypingRule.IntervalTooLarge}}
+\hypertarget{def-intervaltoolarge}{}
+The function
+\[
+\intervaltoolarge(\overname{\Z}{\vzone} \aslsep \overname{\Z}{\vztwo}) \aslto \overname{\Bool}{\vb}
+\]
+tests whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, contains more than $2^{14}$
+integers, yielding the result in $\vb$.
+
+\subsubsection{Prose}
+The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ is greater than $2^{14}$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \intervaltoolarge(\vzone, \vztwo) \typearrow \overname{|\vzone-\vztwo| > 2^{14}}{\vb}
+}
+\end{mathpar}
+
+\subsection{TypingRule.BinopIsExploding \label{sec:TypingRule.BinopIsExploding}}
+\hypertarget{def-binopisexploding}{}
+The function
+\[
+\binopisexploding(\overname{\binop}{\op}) \aslto \overname{\Bool}{\vb}
+\]
+determines whether the binary operation $\op$ should lead to applying $\explodeintervals$
+when the $\op$ is applied to a pair of constraint lists.
+It is assumed that $\op$ is one of $\MUL$, $\SHL$, $\POW$, $\PLUS$, $\DIV$, $\MINUS$, $\MOD$, $\SHR$,
+and $\DIVRM$.
+
+\subsubsection{Prose}
+The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\POW$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \binopisexploding(\op) \typearrow \overname{\op \in \{\MUL, \SHL, \POW\}}{\vb}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.BitFieldsIncluded}
+\hypertarget{def-bitfieldsincluded}{}
+The predicate
+\[
+  \bitfieldsincluded(\overname{\staticenvs}{\tenv}, \overname{\bitfield^*}{\bfsone} \aslsep \overname{\bitfield^*}{\bfstwo})
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,
+returning a type error, if one is detected.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item checking whether each field $\vbf$ in $\bfsone$ exists in $\bfstwo$ via $\membfs$ yields $\vb_\vbf$\ProseOrTypeError;
+  \item the result --- $\vb$ --- is the conjunction of $\vb_\vbf$ for all bitfields $\vbf$ in $\bfsone$.
+\end{itemize}
+
+\begin{mathpar}
+\inferrule{
+  \vbf \in \bfsone: \membfs(\bfstwo, \vbf) \typearrow \vb_\vbf \OrTypeError\\\\
+  \vbf \eqdef \bigwedge_{\bf \in \bfsone} \vb_\vbf
+}{
+  \bitfieldsincluded(\tenv, \bfsone, \bfstwo) \typearrow \vb
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.MemBfs}
+\hypertarget{def-membfs}{}
+The function
+\[
+  \membfs(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^+}{\bfstwo} \aslsep \overname{\bitfield}{\vbfone})
+  \aslto \overname{\Bool}{\vb}
+\]
+checks whether the bitfield $\vbf$ exists in $\bfstwo$ in the context of $\tenv$, returning the result in $\vb$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\None$;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{simple\_any}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a simple bitfield;
+    \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{nested\_simple}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a nested bitfield with name $\nametwo$, slices $\slicestwo$, and bitfields $\bfstwop$;
+    \item $\vbfone$ is a simple bitfield;
+    \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{nested\_nested}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a nested bitfield with name $\nametwo$, slices $\slicestwo$, and bitfields $\bfstwop$;
+    \item $\vbfone$ is a nested bitfield with name $\nameone$, slices $\sliceone$, and $\bfsone$;
+    \item $\vbone$ is true if and only if $\nameone$ is equal to $\nametwo$;
+    \item symbolically equating the slices $\slicesone$ and $\slicestwo$ in $\tenv$ yields $\vbtwo$;
+    \item checking $\bfsone$ is included in $\bfstwop$ in the context of $\tenv$ yields $\vbthree$;
+    \item $\vb$ is defined as the conjunction of $\vbone$, $\vbtwo$, and $\vbthree$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{nested\_typed}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a nested bitfield with name $\nametwo$, slices $\slicestwo$, and bitfields $\bfstwop$;
+    \item $\vbfone$ is a typed bitfield;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{typed\_simple}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a typed bitfield with name $\nametwo$, slices $\slicestwo$, and type $\ttytwo$;
+    \item $\vbfone$ is a simple bitfield;
+    \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{typed\_nested}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a typed bitfield with name $\nametwo$, slices $\slicestwo$, and type $\ttytwo$;
+    \item $\vbfone$ is a nested bitfield;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{typed\_typed}):
+  \begin{itemize}
+    \item the name associated with the bitfield $\vbfone$ is $\name$;
+    \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
+    \item $\vbftwo$ is a typed bitfield with name $\nametwo$, slices $\slicestwo$, and type $\ttytwo$;
+    \item $\vbfone$ is a typed bitfield with name $\nameone$, slices $\slicesone$, and type $\ttyone$;
+    \item $\vbone$ is true if and only if $\nameone$ is equal to $\nametwo$;
+    \item symbolically equating the slices $\slicesone$ and $\slicestwo$ in $\tenv$ yields $\vbtwo$;
+    \item checking whether $\ttyone$ subtypes $\ttytwo$ in $\tenv$ yields $\vbthree$;
+    \item $\vb$ is defined as the conjunction of $\vbone$, $\vbtwo$, and $\vbthree$.
+  \end{itemize}
+\end{itemize}
+
+\begin{mathpar}
+\inferrule[none]{
+  \bitfieldgetname(\vbfone) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \None
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \False
+}
+\and
+\inferrule[simple\_any]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \astlabel(\vbftwo) = \BitFieldSimple\\
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[nested\_simple]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
+  \vbfone = \BitFieldSimple(\Ignore)\\
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \overname{\False}{\vb}
+}
+\and
+\inferrule[nested\_nested]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
+  \vbfone = \BitFieldNested(\nameone, \slicesone, \bfsone)\\
+  \vbone \eqdef \nameone = \nametwo\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
+  \bitfieldsincluded(\tenv, \bfsone, \bfstwop) \typearrow \vbthree\\
+  \vb \eqdef \vbone \land \vbtwo \land \vbthree
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
+}
+\and
+\inferrule[nested\_typed]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
+  \astlabel(\vbfone) = \BitFieldType
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[typed\_simple]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
+  \vbfone = \BitFieldSimple(\Ignore)\\
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
+}
+\and
+\inferrule[typed\_nested]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
+  \astlabel(\vbfone) = \BitFieldNested
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \overname{\False}{\vb}
+}
+\and
+\inferrule[typed\_typed]{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
+  \vbfone = \BitFieldType(\nameone, \slicesone, \ttyone)\\
+  \vbone \eqdef \nameone = \nametwo\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
+  \subtypesat(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo \land \vbthree
+}{
+  \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
+}
+\end{mathpar}
+
+\hypertarget{def-checkstructurelabel}{}
+\subsubsection{TypingRule.CheckStructure \label{sec:TypingRule.CheckStructure}}
+The function
+\[
+  \checkstructurelabel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\astlabels}{\vl}) \aslto
+  \{\True\} \cup \TTypeError
+\]
+returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a type error otherwise.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
+    \item $\vtp$ has the label $\vl$;
+    \item the result is $\True$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
+    \item $\vtp$ does not have the label $\vl$;
+    \item the result is a type error indicating that $\vt$ was expected to have the \structure\ of a type with the AST label $\vl$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \tstruct(\vt) \typearrow \vtp \OrTypeError\\\\
+  \astlabel(\vtp) = \vl
+}
+{
+  \checkstructurelabel(\tenv, \vt, \vl) \typearrow \True
+}
+\and
+\inferrule[error]{
+  \tstruct(\vt) \typearrow \vtp\\
+  \astlabel(\vtp) \neq \vl
+}
+{
+  \checkstructurelabel(\tenv, \vt, \vl) \typearrow \TypeErrorVal{UnexpectedTypeStructure}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.ToWellConstrained}
+\hypertarget{def-towellconstrained}{}
+The function
+\[
+  \towellconstrained(\overname{\ty}{\vt}) \aslto \overname{\ty}{\vtp}
+\]
+returns the \wellconstrainedversion\ of a type $\vt$ --- $\vtp$, which is defined as follows.
+
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{t\_int\_parameterized}):
+  \begin{itemize}
+    \item $\vt$ is a \parameterizedintegertype\ for the variable $\vv$;
+    \item $\vtp$ is the well-constrained integer constrained by the variable expression for $\vv$,
+    that is, $\TInt(\wellconstrained(\constraintexact(\EVar(\vv))))$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{t\_int\_other, other}):
+  \begin{itemize}
+    \item $\vt$ is not a \parameterizedintegertype\ for the variable $\vv$;
+    \item $\vtp$ is $\vt$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[t\_int\_parameterized]{}
+{
+  \towellconstrained(\TInt(\parameterized(\vv))) \typearrow\\ \TInt(\wellconstrained(\constraintexact(\EVar(\vv))))
+}
+\and
+\inferrule[t\_int\_other]{
+  \astlabel(\vi) \neq \parameterized
+}{
+  \towellconstrained(\TInt(\vi)) \typearrow \vt
+}
+\and
+\inferrule[other]{
+  \astlabel(\vt) \neq \TInt
+}{
+  \towellconstrained(\vt) \typearrow \vt
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.GetWellConstrainedStructure}
+\hypertarget{def-getwellconstrainedstructure}{}
+The function
+\[
+  \getwellconstrainedstructure(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt})
+  \aslto \overname{\ty}{\vtp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns the \wellconstrainedstructure\ of a type $\vt$ in the static environment $\tenv$ --- $\vtp$, which is defined as follows.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item the \structure\ of $\vt$ in $\tenv$ is $\vtone$\ProseOrTypeError;
+  \item the well-constrained version of $\vtone$ is $\vtp$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError\\\\
+  \towellconstrained(\vtone) \typearrow \vtp
+}{
+  \getwellconstrainedstructure(\tenv, \vt) \typearrow \vtp
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.GetBitvectorWidth}
+\hypertarget{def-getbitvectorwidth}{}
+The function
+\[
+  \getbitvectorwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
+  \overname{\expr}{\ve} \cup \TTypeError
+\]
+returns the expression $\ve$, which represents the width of the bitvector type $\vt$,
+or a type error if $\vt$ is not a bitvector type or another type error is detected.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a bitvector type with width expression $\ve$,
+          that is, $\TBits(\ve, \Ignore)$\ProseOrTypeError;
+    \item the result is $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a type that is not a bitvector type;
+    \item the result is a type error indicating that a bitvector type was expected.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \tstruct(\tenv, \vt) \typearrow \TBits(\ve, \Ignore) \OrTypeError
+}{
+  \getbitvectorwidth(\tenv, \vt) \typearrow \ve
+}
+\and
+\inferrule[error]{
+  \tstruct(\tenv, \vt) \typearrow \vtp\\
+  \astlabel(\vtp) \neq \TBits
+}{
+  \getbitvectorwidth(\tenv, \vt) \typearrow \TypeErrorVal{\ExpectedBitvectorType}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.CheckBitsEqualWidth}
+\hypertarget{def-checkbitsequalwidth}{}
+The function
+\[
+  \checkbitsequalwidth(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\ty}{\vtone} \aslsep
+    \overname{\ty}{\vttwo}) \aslto
+  \{\True\} \cup \TTypeError
+\]
+tests whether the types $\vtone$ and $\vttwo$ are bitvector types of the same width.
+If the answer is positive, the result is $\True$. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item obtaining the width of $\vtone$ in $\tenv$ (via $\getbitvectorwidth$) yields the expression $\vn$\ProseOrTypeError;
+  \item obtaining the width of $\vttwo$ in $\tenv$ (via $\getbitvectorwidth$) yields the expression $\vm$\ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{true}):
+    \begin{itemize}
+      \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\True$;
+      \item the result is $\True$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\False$;
+      \item the result is a type error indicating that the bitwidths are different.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[true]{
+  \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\\\
+  \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\\\
+  \bitwidthequal(\tenv, \vn, \vm) \typearrow \True
+}{
+  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True
+}
+\and
+\inferrule[error]{
+  \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\\\
+  \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\\\
+  \bitwidthequal(\tenv, \vn, \vm) \typearrow \False
+}{
+  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{DifferentBitwidths}
+}
+\end{mathpar}

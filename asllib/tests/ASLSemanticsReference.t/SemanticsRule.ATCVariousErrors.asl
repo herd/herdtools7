@@ -4,7 +4,8 @@ begin
   var b: integer{4, 5, 6} = 2;                     // static error
   var c: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // dynamic error
   if FALSE then
-      var d: integer{4, 5, 6} = 2;                     // static error
-      var e: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // not a dynamic error as will never be evaluated
+      var d: integer{4, 5, 6} = 2; // static error.
+      // The following is not a dynamic error as will never be evaluated,
+      var e: integer{4, 5, 6} = 2 as integer{4, 5, 6};
   end
 end

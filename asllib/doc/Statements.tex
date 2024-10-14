@@ -1,0 +1,2648 @@
+\chapter{Statements\label{chap:Statements}}
+Statements update storage elements and determine the flow of control of a subprogram.
+
+Statements are grammatically derived from $\Nstmt$ and represented as ASTs by $\stmt$.
+
+\hypertarget{build-stmt}{}
+The function
+\[
+\buildstmt(\overname{\parsenode{\Nstmt}}{\vparsednode}) \;\aslto\; \overname{\stmt}{\vastnode}
+\]
+transforms a statement parse node $\vparsednode$ into a statement AST node $\vastnode$.
+
+\hypertarget{def-annotatestmt}{}
+The function
+\[
+  \annotatestmt(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}) \aslto
+  (\overname{\stmt}{\news}\aslsep \overname{\staticenvs}{\newtenv})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a statement $\vs$ in an environment $\tenv$, resulting in $\news$ ---
+the \typedast\ for $\vs$, which is also known as the \emph{annotated statement} ---
+and a modified environment $\newtenv$. \ProseOtherwiseTypeError
+
+The relation
+\hypertarget{def-evalstmt}{}
+\[
+  \evalstmt{\overname{\envs}{\env} \aslsep \overname{\stmt}{\vs}} \;\aslrel\;
+  \left(
+  \begin{array}{cl}
+  \overname{\TReturning}{\Returning((\vvs,\newg), \newenv)} & \cup\\
+  \overname{\TContinuing}{\Continuing(\newg,\newenv)} & \cup\\
+  \overname{\TThrowing}{\ThrowingConfig} & \cup \\
+  \overname{\TError}{\ErrorConfig} &
+  \end{array}
+  \right)
+\]
+evaluates a statement $\vs$ in an environment $\env$, resulting in one of four types of configurations
+(see more details in \secref{KindsOfSemanticConfigurations}):
+\begin{itemize}
+  \item returning configurations with values $\vvs$, execution graph $\newg$, and a modified environment $\newenv$;
+  \item continuing configurations with an execution graph $\newg$ and modified environment $\newenv$;
+  \item throwing configurations;
+  \item error configurations.
+\end{itemize}
+
+We now define the syntax, abstract syntax, typing, and semantics for the following kinds of statements:
+\begin{itemize}
+\item Pass statements (see \secref{PassStatements})
+\item Assignment statements (see \secref{AssignmentStatements})
+\item Declaration statements (see \secref{DeclarationStatements})
+\item Sequencing statements (see \secref{SeuqncingStatements})
+\item Call statements (see \secref{CallStatements})
+\item Conditional statements (see \secref{ConditionalStatements})
+\item Case statements (see \secref{CaseStatements})
+\item Assertion statements (see \secref{AssertionStatements})
+\item While statements (see \secref{WhileStatements})
+\item Repeat statements (see \secref{RepeatStatements})
+\item For statements (see \secref{ForStatements})
+\item Throw statements (see \secref{ThrowStatements})
+\item Try statements (see \secref{TryStatements})
+\item Return statements (see \secref{ReturnStatements})
+\item Print statements (see \secref{PrintStatements})
+\item Pragma statements (see \secref{PragmaStatements})
+\end{itemize}
+
+\section{Pass Statements\label{sec:PassStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tpass \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SPass &
+\end{flalign*}
+
+\subsubsection{ASTRule.SPass}
+\begin{mathpar}
+\inferrule{}{
+  \buildstmt(\overname{\Nstmt(\Tpass, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SPass}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SPass \label{sec:TypingRule.SPass}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a pass statement, that is, $\SPass$;
+  \item $\news$ is $\vs$;
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass,\tenv)}
+\end{mathpar}
+\CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SPass.asl}
+\texttt{pass;} does nothing.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vs$ is a \texttt{pass} statement, $\SPass$;
+\item $\newg$ is the empty graph;
+\item $\newenv$ is $\env$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \evalstmt{\env, \SPass} \evalarrow \Continuing(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
+}
+\end{mathpar}
+\CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
+
+\section{Assignment Statements\label{sec:AssignmentStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SAssign(\lexpr, \expr) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SAssign}
+\begin{mathpar}
+\inferrule{}{
+  \buildstmt(\overname{\Nstmt(\punnode{\Nlexpr}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SAssign(\astof{\vlexpr}, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SAssign \label{sec:TypingRule.SAssign}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is an assignment \texttt{le = re}, that is, $\SAssign(\vle, \vre)$;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{setter}):
+    \begin{itemize}
+      \item reducing $(\tenv, \vle, \vre)$ to a setter call via \\ $\inlinesetter$ yields the statement $\news$
+      (indicating that the assignment corresponds to setter)\ProseOrTypeError;
+      \item $\newtenv$ is $\tenv$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{non\_setter}):
+    \begin{itemize}
+      \item reducing $(\tenv, \vle, \vre)$ to a setter call via \\ $\inlinesetter$ yields $\None$
+            (indicating the assignment does not correspond to a setter);
+      \item annotating the right-hand-side expression $\vre$ in $\tenv$ yields $(\vtre, \vreone)$\ProseOrTypeError;
+      \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields $\vleone$\ProseOrTypeError;
+      \item $\news$ is the assignment \texttt{le1 = re1}, that is, $\SAssign(\vleone, \vreone)$;
+      \item $\newtenv$ is $\tenv$.
+    \end{itemize}
+
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[setter]{
+  \inlinesetter(\tenv, \vle, \vre) \typearrow \langle \news \rangle \OrTypeError\\
+}{
+  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow (\news,\overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\begin{mathpar}
+\inferrule[non\_setter]{
+  \inlinesetter(\tenv, \vle, \vre) \typearrow \None \OrTypeError\\\\
+  \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vle, \vtre} \typearrow \vleone \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow (\overname{\SAssign(\vleone, \vreone)}{\news},\overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssign.asl}
+\texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
+$\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is an assignment statement, $\SAssign(\vle, \vre)$;
+  \item $\vre$ is not a call expression;
+  \item evaluating the expression $\vre$ in $\env$ yields
+        $\Normal(\vm, \envone)$ (here, $\vm$ is a pair consisting of a value and an execution graph)\ProseOrAbnormal;
+  \item evaluating the \assignableexpression\ $\vle$ with $\vm$ in $\envone$,
+        as per \chapref{AssignableExpressions}, yields $\Normal(\newg, \newenv)$\ProseOrAbnormal.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \astlabel(\vre) \neq \ECall\\
+  \evalexpr{\env, \vre} \evalarrow \Normal(\vm, \envone) \OrAbnormal\\
+  \evallexpr{\envone, \vle, \vm} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+}{
+  \evalstmt{\env, \SAssign(\vle, \vre)} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalSAssignBegin}{\EvalSAssignEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+This rule covers all assignment statements, except the ones where the
+right-hand side expression is a function call, which is covered by
+\nameref{sec:SemanticsRule.SAssignCall}.  Although
+the sequential semantics of both statements is the same,
+SemanticsRule.SAssignCall generates a different execution graph.
+
+Notice that this rule first produces a value for the right-hand side expression
+and then completes the update via an appropriate rule for evaluating the
+\assignableexpression, which in turn handles variables, tuples, bitvectors,
+etc.
+
+\subsubsection{SemanticsRule.SAssignCall \label{sec:SemanticsRule.SAssignCall}}
+\subsubsection{Example}
+\VerbatimInput{\semanticstests/SemanticsRule.SAssignCall.asl}
+given that the function call \texttt{f(1)} returns a pair of values --- $\nvint(1)$ and $\nvint(2)$
+(each with its own associated execution graph),
+the statement \texttt{(a,b) = f(1)} assigns the value $\nvint(1)$ to the mutable variable \texttt{a}
+and the value $\nvint(2)$ to the mutable variable~\texttt{b}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ assigns a \assignableexpression\ list from a subprogram call, \\
+        $\SAssign(\LEDestructuring(\les),\ECall(\name, \args, \namedargs))$;
+  \item $\les$ is a list of \assignableexpressions, each of which is either \\ a variable ($\LEVar(\Ignore)$)
+        or a discarded variable (\LEDiscard);
+  \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
+        $\Normal(\vms, \envone)$\ProseOrAbnormal;
+  \item assigning each value in $\vms$ to the respective element of the tuple $\les$ is \\
+        $\Normal(\vgtwo, \newg)$\ProseOrAbnormal.
+\end{itemize}
+
+\subsubsection{Formally}
+\hypertarget{def-lexprisvar}{}
+We first define the syntactic predicate
+\[
+  \lexprisvar(\lexpr) \aslto \True
+\]
+which holds when a left-hand side expression
+represents a variable:
+\begin{mathpar}
+  \inferrule{}{ \lexprisvar(\LEVar(\Ignore)) \evalarrow \True}
+  \and
+  \inferrule{}{ \lexprisvar(\LEDiscard) \evalarrow \False}
+\end{mathpar}
+
+We now define the evaluation of assigning from a subprogram call:
+\begin{mathpar}
+\inferrule{
+  \vles \eqdef \vle_{1..k}\\
+  i=1..k: \lexprisvar(\vle_i) \evalarrow \True\\
+  \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\vms, \envone) \OrAbnormal\\\\
+  \evalmultiassignment(\envone, \vles, \vms) \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+}{
+  \evalstmt{\env, \SAssign(\LEDestructuring(\les),\ECall(\name, \args, \namedargs))} \\
+  \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalSAssignCallBegin}{\EvalSAssignCallEnd}{../Interpreter.ml}
+
+\section{Declaration Statements\label{sec:DeclarationStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SDecl(\localdeclkeyword, \localdeclitem, \expr?) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SDecl}
+\begin{mathpar}
+\inferrule[let\_constant]{}{
+  {
+  \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
+  \astarrow\\
+  \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \langle\astof{\vexpr}\rangle)}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[var]{
+  \buildoption[\buildexpr](\ve) \astarrow \astversion{\ve}
+}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow \\
+  \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\ve})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[multi\_var]{
+  \buildclist[\buildidentity](\vids) \astarrow \astversion{\vids}\\
+  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astof{\tty})]\\
+  \stmtfromlist(\vstmts) \astarrow \vastnode
+}{
+  \buildstmt(\overname{\Nstmt(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \Tcolon, \punnode{\Nty}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \vastnode
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SDecl\label{sec:TypingRule.SDecl}}
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{some}):
+  \begin{itemize}
+    \item $\vs$ is a declaration with local declaration keyword $\ldk$, local identifiers $\ldi$, and an expression $\ve$,
+          that is, $\SDecl(\ldk, \ldi, \langle\ve\rangle)$;
+    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep)$\ProseOrTypeError;
+    \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$ and type $\vte$ in $\tenv$
+          yields $(\tenvone, \ldip)$;
+    \item One of the following applies:
+    \begin{itemize}
+      \item All of the following apply (\textsc{constant}):
+      \begin{itemize}
+        \item $\ldk$ indicates a local constant declaration, that is, $\LDKConstant$;
+        \item symbolically simplifying $\ve$ in $\tenvone$ yields the literal $\vv$\ProseOrTypeError;
+        \item declaring a local constant of type $\vte$, literal $\vv$ and identifier $\ldi$ in $\tenvone$ yields $(\newtenv, \ldip)$;
+        \item $\news$ is a declaration with $\ldk$, $\ldip$ and an expression $\vep$.
+      \end{itemize}
+
+      \item All of the following apply (\textsc{non\_constant}):
+      \begin{itemize}
+        \item $\ldk$ indicates that this is not a local constant declaration, that is, $\ldk\neq\LDKConstant$;
+        \item declaring the local identifiers $\ldi$ of type $\vte$ with local declaration keyword $\ldk$ in $\tenv$
+              yields $(\newtenv, \ldip)$;
+        \item $\news$ is a declaration with $\ldk$, $\ldip$ and an expression $\vep$;
+        \item $\newtenv$ is $\tenvone$.
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+  \item $\vs$ is a local declaration statement with a variable keyword and local identifiers $\ldi$, and no initial expression,
+        that is, $\SDecl(\LDKVar, \ldi, \None)$ (local declarations of \texttt{let} variables and constants require
+        an initializing expression, otherwise they are rejected by an ASL parser);
+  \item annotating the uninitialised local declarations $\ldi$ in $\tenv$ yields \\
+        $(\newtenv, \ldip)$;
+  \item $\news$ is a local declaration statement with variable keyword, local identifiers $\ldip$, and no initial expression,
+        that is, $\SDecl(\LDKVar, \ldip, \None)$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[constant]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\tenvone, \ldip)\\\\
+  \commonprefixline\\\\
+  \ldk = \LDKConstant\\
+  \reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
+  \declarelocalconstant(\tenvone, \vv, \ldi) \typearrow \newtenv\\
+  \news \eqdef \SDecl(\LDKConstant, \ldip, \langle\vep\rangle)
+}{
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_constant]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\tenvone, \ldip)\\\\
+  \commonprefixline\\\\
+  \ldk \neq \LDKConstant\\
+  \news \eqdef \SDecl(\ldk, \ldip, \langle\vep\rangle)
+}{
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv})
+}
+\end{mathpar}
+\lrmcomment{This is related to \identr{YSPM}.}
+
+\begin{mathpar}
+\inferrule[none]{
+  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow (\newtenv, \ldip) \OrTypeError\\\\
+  \news \eqdef \SDecl(\LDKVar, \ldip, \None)
+}{
+  \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \None)}{\vs}) \typearrow (\news, \newtenv)
+}
+\end{mathpar}
+\CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.DeclareLocalConstant \label{sec:TypingRule.DeclareLocalConstant}}
+\hypertarget{def-declarelocalconstant}{}
+The helper function
+\[
+\declarelocalconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\literal}{\vv} \aslsep \overname{\localdeclitem}{\ldi})
+\typearrow \overname{\staticenvs}{\newtenv}
+\]
+adds the literal $\vv$ with the local declaration item $\ldi$ as a constant to the local component of the static environment $\tenv$,
+yielding the modified static environment $\newtenv$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{discard}):
+  \begin{itemize}
+    \item $\ldi$ corresponds to a discarding declaration, that is, $\LDIDiscard$;
+    \item $\newtenv$ is $\tenv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{var}):
+  \begin{itemize}
+    \item $\ldi$ corresponds to a variable declaration for $\vx$, that is, $\LDIVar(\vx)$;
+    \item define $\newtenv$ and the environment $\tenv$ with its global component updated by binding
+          $\vx$ to $\vv$ in its $\constantvalues$ map.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item $\ldi$ corresponds to a tuple declaration, that is, $\LDIVar(\Ignore)$;
+    \item this case is not yet implemented.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{typed}):
+  \begin{itemize}
+    \item $\ldi$ corresponds to a typed declaration of the local declaration item $\ldip$ and some type, that is, $\LDITyped(\ldip, \Ignore)$;
+    \item applying $\declarelocalconstant$ to $\vv$ and $\ldip$ in $\tenv$ yields $\newtenv$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[discard]{}{
+  \declarelocalconstant(\tenv, \vv, \overname{\LDIDiscard}{\ldi}) \typearrow \overname{\tenv}{\newtenv}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[var]{
+  \newtenv \eqdef (G^\tenv, L^\tenv.\constantvalues[\vx \mapsto \vv])
+}{
+  \declarelocalconstant(\tenv, \vv, \overname{\LDIVar(\vx)}{\ldi}) \typearrow \newtenv
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{}{
+  \declarelocalconstant(\tenv, \vv, \overname{\LDITuple(\Ignore)}{\ldi}) \typearrow \tododefine{not implemented yet}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[typed]{
+  \declarelocalconstant(\tenv, \vv, \ldip) \typearrow \newtenv
+}{
+  \declarelocalconstant(\tenv, \vv, \overname{\LDITyped(\ldip, \Ignore)}{\ldi}) \typearrow \newtenv
+}
+\end{mathpar}
+\CodeSubsection{\DeclareLocalConstantBegin}{\DeclareLocalConstantEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.AnnotateLocalDeclItemUninit \label{sec:TypingRule.AnnotateLocalDeclItemUninit}}
+\hypertarget{def-annotatelocaldeclitemuninit}{}
+The helper function
+\[
+\begin{array}{r}
+\annotatelocaldeclitemuninit(\overname{\staticenvs}{\tenv} \aslsep \overname{\localdeclitem}{\ldi})
+\typearrow \\
+(\overname{\staticenvs}{\newtenv} \times \overname{\localdeclitem}{\newldi})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the local declaration for a variable declaration without an initializing expressions in the static environment $\tenv$,
+yielding a pair consisting of the annotated local declaration item $\newldi$ and the modified static environment $\newtenv$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{discard}):
+  \begin{itemize}
+    \item $\ldi$ corresponds to a discarding declaration, that is, $\LDIDiscard$;
+    \item $\newtenv$ is $\tenv$ and $\newldi$ is $\ldi$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{typed}):
+  \begin{itemize}
+    \item $\ldi$ corresponds to a variable declaration via the local declaration item $\ldip$ and type annotation $\vt$,
+          that is, $\LDITyped(\ldip, \vt)$;
+    \item annotating $\vt$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
+    \item annotating the local declaration item $\ldip$ with the type $\vtp$ and local declaration keyword $\LDIVar$
+          yields $(\newtenv, \newldip)$\ProseOrTypeError;
+    \item define $\newldi$ as the typed local declaration item with local declaration item $\newldip$ and type $\vtp$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[discard]{}{
+  \annotatelocaldeclitemuninit(\tenv, \overname{\LDIDiscard}{\ldi}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\ldi}{\newldi})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[typed]{
+  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError\\\\
+  \newldi \eqdef \LDITyped(\newldip, \vtp)
+}{
+  \annotatelocaldeclitemuninit(\tenv, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow (\newtenv, \newldi)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \astlabel(\ldi) \in \{\LDIVar, \LDITuple\}
+}{
+  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow \TypeErrorVal{ExpectedTypedDeclaration}
+}
+\end{mathpar}
+\CodeSubsection{\AnnotateLocalDeclItemUninitBegin}{\AnnotateLocalDeclItemUninitEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SDeclSome\label{sec:SemanticsRule.SDeclSome}}
+\subsubsection{Example (Declaration With an Initializing Value)}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclSome.asl}
+\texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
+
+\subsubsection{Example (Declaration Without an Initializing Value)}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclNone.asl}
+\texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{some}):
+  \begin{itemize}
+    \item $\vs$ is a declaration with an initial value,
+    $\SDecl(\text{ldk}, \ldi, \langle\ve\rangle)$;
+    \item evaluating $\ve$ in $\env$ is $\Normal(\vm, \envone)$\ProseOrAbnormal;
+    \item evaluating the local declaration $\ldi$ with $\langle\vm\rangle$ as the initializing
+    value in $\envone$ as per \chapref{LocalStorageDeclarations} is $\Normal(\newg, \newenv)$;
+    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \None)$;
+    \item evaluating the local declaration $(\ldi, \None)$ as per \chapref{LocalStorageDeclarations}
+    is \\ $\Normal(\newg, \newenv)$;
+    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[some]{
+  \evalexpr{\env, \ve} \evalarrow \Normal(\vm, \envone) \OrAbnormal\\
+  \evallocaldecl{\envone, \ldi, \langle\vm\rangle} \evalarrow \Normal(\newg, \newenv)\\
+}{
+  \evalstmt{\env, \SDecl(\Ignore, \ldi, \langle\ve\rangle)} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[none]{
+  \evallocaldecl{\env, \vs, \ldi, \None} \evalarrow \Normal(\newg, \newenv)\\
+}{
+  \evalstmt{\env, \SDecl(\Ignore, \ldi, \None)} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
+
+\section{Sequencing Statements\label{sec:SeuqncingStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmtlist \derivesinline\ & \nonemptylist{\Nstmt} &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SSeq(\stmt, \stmt) &
+\end{flalign*}
+
+\subsubsection{ASTRule.StmtList \label{sec:ASTRule.StmtList}}
+\hypertarget{build-stmtlist}{}
+The function
+\[
+  \buildstmtlist(\overname{\parsenode{\Nstmtlist}}{\vparsednode}) \;\aslto\; \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildlist[\Nstmt](\vstmts) \astarrow \vstmtlist\\
+  \stmtfromlist(\vstmtlist) \astarrow \vastnode
+}{
+  \buildstmtlist(\Nstmtlist(\namednode{\vstmts}{\nonemptylist{\Nstmt}})) \astarrow \vastnode
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.StmtFromList \label{sec:ASTRule.StmtFromList}}
+\hypertarget{def-stmtfromlist}{}
+The helper function
+\[
+\stmtfromlist(\overname{\stmt^*}{\vstmts}) \aslto \overname{\stmt}{\news}
+\]
+builds a statement $\news$ from a possibly-empty list of statements $\vstmts$.
+
+\begin{mathpar}
+\inferrule[empty]{
+}{
+  \stmtfromlist(\overname{\emptylist}{\vstmts}) \astarrow \overname{\SPass}{\news}
+}
+\and
+\inferrule[non\_empty]{
+  \stmtfromlist(\vstmtsone) \astarrow \vsone\\
+  \sequencestmts(\vs, \vsone) \astarrow \news
+}{
+  \stmtfromlist(\overname{[\vs] \concat \vstmtsone}{\vstmts}) \astarrow \news
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.SequenceStmts \label{sec:ASTRule.SequenceStmts}}
+\hypertarget{def-sequencestmts}{}
+The helper function
+\[
+\sequencestmts(\overname{\stmt}{\vsone}, \overname{\stmt}{\vstwo}) \aslto \overname{\stmt}{\news}
+\]
+Combines the statement $\vsone$ with $\vstwo$ into the statement $\news$, while filtering away
+instances of $\SPass$.
+
+\begin{mathpar}
+\inferrule[s1\_spass]{}{
+  \sequencestmts(\overname{\SPass}{\vsone}, \vstwo) \astarrow \overname{\vstwo}{\news}
+}
+\and
+\inferrule[s2\_spass]{
+  \vsone \neq \SPass
+}{
+  \sequencestmts(\vsone, \overname{\SPass}{\vstwo}) \astarrow \overname{\vsone}{\news}
+}
+\and
+\inferrule[no\_spass]{
+  \vsone \neq \SPass\\
+  \vstwo \neq \SPass
+}{
+  \sequencestmts(\vsone, \vstwo) \astarrow \overname{\SSeq(\vsone, \vstwo)}{\news}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SSeq \label{sec:TypingRule.SSeq}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is the AST node for the sequence of statements $\vsone$ and $\vstwo$, that is, $\SSeq(\vsone, \vstwo)$;
+  \item annotating $\vsone$ in $\tenv$ yields $(\newsone, \tenvone)$\ProseOrTypeError;
+  \item annotating $\vstwo$ in $\tenvone$ yields $(\newstwo, \newtenv)$\ProseOrTypeError;
+  \item $\news$ is the AST node for the sequence of statements $\newsone$ and $\newstwo$, that is, $\SSeq(\newsone, \newstwo)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone) \OrTypeError\\\\
+  \annotatestmt(\tenvone, \vs2) \typearrow (\newstwo, \newtenv) \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow (\overname{\SSeq(\newsone, \newstwo)}{\news}, \newtenv)
+}
+\end{mathpar}
+\CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SSeq\label{sec:SemanticsRule.SSeq}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
+\texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \emph{sequencing statement} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
+  \item evaluating $\vsone$ in $\env$ is either $\Continuing(\vgone, \envone)$ in which case
+  the evaluation continues,
+  or a returning configuration ($\Returning((\vvs, \newg), \newenv)$)\ProseOrAbnormal;
+  \item evaluating $\vstwo$ in $\envone$ yields a non-abnormal configuration \\
+        (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
+  \item $\newg$ is the ordered composition of $\vgone$ and the execution graph of $C$ with the
+  $\aslpo$ edge;
+  \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\
+    \evalstmt{\envone, \vstwo} \evalarrow C \OrAbnormal\\
+    \newg \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
+    D \eqdef \withgraph{C}{\newg}
+  }
+  {
+    \evalstmt{\env, \SSeq(\vsone, \vstwo)} \evalarrow D
+  }
+\end{mathpar}
+\CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
+
+\section{Call Statements\label{sec:CallStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SCall}
+\begin{mathpar}
+\inferrule{
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+}{
+  \buildstmt(\overname{\Nstmt(\Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SCall(\vx, \astversion{\vargs})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SCall \label{sec:TypingRule.SCall}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a call to a subprogram named $\name$ with arguments $\vargs$;
+  \item annotating the call to $\name$ with arguments $\vargs$, as a procedure (that is, with $\STProcedure$),
+        as per \chapref{SubprogramCalls} (which makes sure that the call does not have a return type),
+        yields $(\newname, \newargs, \eqs, \None)$\ProseOrTypeError;
+  \item $\news$ is the call to a subprogram named $\newname$ with arguments
+        $\newargs$ and parameter assignments $\neweqs$;
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+    \begin{array}{r}
+      \annotatecall(\tenv, \name, \vargs, \STProcedure) \typearrow \\ (\newname, \newargs, \eqs, \None) \OrTypeError
+    \end{array}
+  }
+}{
+  {
+    \begin{array}{r}
+  \annotatestmt(\tenv, \overname{\SCall(\name, \vargs)}{\vs}) \typearrow \\
+  (\overname{\SCall(\newname, \newargs, \eqs)}{\news}, \tenv)
+    \end{array}
+  }
+}
+\end{mathpar}
+\CodeSubsection{\SCallBegin}{\SCallEnd}{../Typing.ml}
+
+\subsubsection{Comments}
+Notice that the input statement, which belongs to the untyped AST, has two children nodes ---
+$\name$ and $\vargs$, whereas the output statement, which belongs to the typed AST has the additional
+node $\neweqs$, which associates expressions with parameters.
+\lrmcomment{This is related to \identd{VXKM}.}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SCall \label{sec:SemanticsRule.SCall}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
+\texttt{Zeros(3)} evaluates to \texttt{'000'}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a call statement, $\SCall(\name, \args, \namedargs)$;
+  \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
+  \\ $\Normal(\newg, \newenv)$\ProseOrAbnormal;
+  \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+}{
+  \evalstmt{\env, \overname{\SCall(\name, \args, \namedargs)}{\vs}} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
+% \lrmcomment{This is related to \identd{KCYT}:}
+
+\section{Conditional Statements\label{sec:ConditionalStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend &\\
+\Nselse \derives\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse &\\
+        |\ & \Tpass &\\
+        |\ & \Telse \parsesep \Nstmtlist &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SCond(\expr, \stmt, \stmt)
+\end{flalign*}
+
+\subsubsection{ASTRule.SCond}
+\begin{mathpar}
+\inferrule{}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Tif, \punnode{\Nexpr}, \Tthen, \punnode{\Nstmtlist}, \punnode{\Nselse}, \Tend)}{\vparsednode})
+  \astarrow \\
+  \overname{\SCond(\astof{\vexpr}, \astof{\vstmtlist}, \astof{\velse})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.SElse \label{sec:ASTRule.SElse}}
+\hypertarget{build-selse}{}
+The function
+\[
+  \buildselse(\overname{\parsenode{\Nselse}}{\vparsednode}) \;\aslto\; \overname{\stmt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[elseif]{}{
+  {
+    \begin{array}{r}
+  \buildselse(\Nselse(\Telseif, \Nexpr, \Twhen, \Nstmtlist, \Nselse)) \astarrow \\
+  \overname{\SCond(\astof{\vexpr}, \astof{\vstmtlist}, \astof{\vselse})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pass]{}{
+  \buildselse(\Nselse(\Tpass)) \astarrow \overname{\SPass}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[else]{}{
+  \buildselse(\Nselse(\Telse, \punnode{\Nstmtlist})) \astarrow \overname{\astof{\vstmtlist}}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SCond \label{sec:TypingRule.SCond}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a condition $\ve$ with the statements $\vsone$ and $\vstwo$, that is, $\SCond(\ve, \vsone, \vstwo)$;
+  \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tcond, \econd)$\ProseOrTypeError;
+  \item checking that $\tcond$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+  \item annotating the statement $\vsone$ in $\tenv$ yields $\vsonep$\ProseOrTypeError;
+  \item annotating the statement $\vstwo$ in $\tenv$ yields $\vstwop$\ProseOrTypeError;
+  \item $\news$ is the condition $\econd$ with the statements $\vsonep$ and $\vstwop$, that is, \\ $\SCond(\econd, \vsonep, \vstwop)$;
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\tcond, \econd) \OrTypeError\\\\
+  \checktypesat(\tenv, \tcond, \TBool) \typearrow \True \OrTypeError\\\\
+  \annotateblock{\tenv, \vsone} \typearrow \vsonep \OrTypeError\\\\
+  \annotateblock{\tenv, \vstwo} \typearrow \vstwop \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \typearrow
+  (\overname{\SCond(\econd, \vsonep, \vstwop)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\CodeSubsection{\SCondBegin}{\SCondEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{NBDJ}.}
+
+\subsection{Semantics}
+subsubsection{SemanticsRule.SCond\label{sec:SemanticsRule.SCond}}
+\subsubsection{Examples}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
+does not result in any Assertion Error.
+
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond2.asl}
+
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond3.asl}
+
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond4.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vs$ is a condition statement, $\SCond(\ve, \vsone, \vstwo)$;
+\item evaluating $\ve$ in $\env$ is $\Normal(\vv, \vgone)$\ProseOrAbnormal;
+\item $\vv$ is a native Boolean for $\vb$;
+\item the statement $\vsp$ is $\vsone$ is $\vb$ is $\True$ and $\vstwo$ otherwise
+(so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
+$\vstwo$ will be evaluated);
+\item evaluating $\vsp$ in $\envone$ as per \chapref{Blocks} is a non-abnormal configuration
+      (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
+\item $\vg$ is the ordered composition of $\vgone$ and the execution graph of the configuration $C$;
+\item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envone) \OrAbnormal\\
+  \vv \eqname \nvbool(\vb)\\
+  \vsp \eqdef \choice{\vb}{\vsone}{\vstwo}\\
+  \evalblock{\envone, \vsp} \evalarrow C \OrAbnormal\\\\
+  \vg \eqdef \ordered{\vgone}{\aslctrl}{\graphof{C}}\\
+  D \eqdef \withgraph{C}{\vg}
+}{
+  \evalstmt{\env, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}} \evalarrow D
+}
+\end{mathpar}
+\CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
+
+\section{Case Statements\label{sec:CaseStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \nonemptylist{\Nalt} \parsesep \Tend &\\
+\Nalt \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
+      |\ & \Totherwise \parsesep \Nstmtlist &\\
+\Notherwiseopt \derives\ & \option{\Totherwise \parsesep \Tarrow \parsesep \Nstmtlist} &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SCase(\expr, \casealt^*) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SCase}
+\begin{mathpar}
+\inferrule{
+  \buildlist[\Nalt](\valtlist) \astarrow \valtlistast
+}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\valtlist}{\nonemptylist{\Nalt}}, \Tend)}{\vparsednode})
+  \astarrow \\
+  \overname{\SCase(\astof{\vexpr}, \valtlistast)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.Alt\label{sec:ASTRule.Alt}}
+\hypertarget{build-alt}{}
+The function
+\[
+\buildalt(\overname{\parsenode{\Nalt}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[when]{
+  \buildoption[\buildexpr](\vwhereopt) \astarrow \vwhereast
+}{
+  {
+    \begin{array}{r}
+  \buildalt\left(\overname{\Nalt\left(
+    \begin{array}{l}
+    \Twhen, \punnode{\Npatternlist}, \\
+    \wrappedline\ \namednode{\vwhereopt}{\option{\Twhere, \Nexpr}}, \Tarrow, \\
+    \wrappedline\ \namednode{\vstmts}{\Nstmtlist}
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow \\
+  \overname{\casealt(\CasePattern: \astof{\vpatternlist}, \CaseWhere: \vwhereast, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise]{}{
+  {
+    \begin{array}{r}
+  \buildalt(\overname{\Nalt(\Totherwise, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode})
+  \astarrow \\
+  \overname{\casealt(\CasePattern: \PatternAll, \CaseWhere: \None, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.OtherwiseOpt\label{sec:ASTRule.OtherwiseOpt}}
+\hypertarget{build-otherwiseopt}{}
+The function
+\[
+\buildotherwiseopt(\overname{\parsenode{\Notherwiseopt}}{\vparsednode}) \;\aslto\; \overname{\stmt?}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildoption[\buildstmtlist] (\vv)\astarrow \vastnode
+}{
+  {
+  \begin{array}{r}
+  \buildotherwiseopt(\overname{\Notherwiseopt(\namednode{\vv}{\option{\Totherwise, \Tarrow, \Nstmtlist}})}{\vparsednode})
+  \astarrow \\
+  \vastnode
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SCase \label{sec:TypingRule.SCase}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a case statement with expression $\ve$ and case clauses $\vcases$, that is, \\
+        $\SCase(\veone, \vcasesone)$;
+  \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte, \veone)$\ProseOrTypeError;
+  \item annotating each case clause as per \secref{TypingRule.CaseAlt} in $\vcases$ yields the annotated list of clauses $\vcasesone$\ProseOrTypeError;
+  \item $\news$ is a case statement with expression $\veone$ and case clauses $\vcasesone$;
+  \item $\newtenv$ is $\tenvone$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \veone) \OrTypeError\\\\
+  \vi\in\listrange(\vcases): \annotatecase{\tenv, \vcases[\vi]} \typearrow \vcase_\vi \OrTypeError\\\\
+  \vcasesone \eqdef [\vi\in\listrange(\vcases): \vcase_\vi]
+}{
+  \annotatestmt(\tenv, \overname{\SCase(\ve, \vcases)}{\vs}) \typearrow
+  (\overname{\SCase(\veone, \vcasesone)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{WGSY}.}
+
+\subsubsection{TypingRule.CaseAlt\label{sec:TypingRule.CaseAlt}}
+\hypertarget{def-annotatecase}{}
+The helper function
+\[
+  \annotatecase{
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\casealt}{\vcase} \aslsep
+    \overname{\ty}{\vte}
+  } \aslto
+  \overname{\casealt}{\vcaseone} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates the case clause $\vcase$ for an expression of type $\vte$ in $\tenv$,
+resulting in the annotated case clause $\vcaseone$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vcase$ is a case clause with pattern $\vpzero$, \optional\ \texttt{where} expression $\vwzero$,
+        and \texttt{otherwise} statement $\vszero$, that is,
+        $\{ \CasePattern: \vpzero, \CaseWhere: \vwzero, \CaseStmt: \vszero \}$;
+  \item annotating the pattern $\vpzero$ with type $\vte$ in $\tenv$ yields $\vpone$\ProseOrTypeError;
+  \item annotating the statement $\vszero$ as a block statement in $\tenv$ yields $\vsone$\ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{no\_where\_stmt}):
+    \begin{itemize}
+      \item $\vwzero$ is $\None$ (that is, no \texttt{where} expression);
+      \item $\vcaseone$ is $\{ \CasePattern: \vpone, \CaseWhere: \None, \CaseStmt: \vsone \}$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{where\_stmt}):
+    \begin{itemize}
+      \item $\vwzero$ is the singleton expression for $\vewzero$, that is, $\langle\vewzero\rangle$;
+      \item annotating the expression $\vewzero$ in $\tenv$ yields $(\vtwe, \vewone)$\ProseOrTypeError;
+      \item checking whether the structure of $\vtwe$ in $\tenv$ is that of the \texttt{boolean} type yields $\True$\ProseOrTypeError;
+      \item $\vcaseone$ is $\{ \CasePattern: \vpone, \CaseWhere: \langle\vewone\rangle, \CaseStmt: \vsone \}$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[no\_where\_stmt]{
+  \vcase = \{ \CasePattern: \vpzero, \CaseWhere: \None, \CaseStmt : \vszero \}\\
+  \annotatepattern(\tenv, \vte, \vpzero) \typearrow \vpone \OrTypeError\\\\
+  \annotateblock{\tenv, \vszero} \typearrow \vsone \OrTypeError\\
+}{
+  \annotatecase{\tenv, \vcase, \vte} \typearrow \overname{\{ \CasePattern: \vpone, \CaseWhere: \None, \CaseStmt : \vsone \}}{\vcaseone}
+}
+\and
+\inferrule[where\_stmt]{
+  \vcase = \{ \CasePattern: \vpzero, \CaseWhere: \langle\vewzero\rangle, \CaseStmt : \vszero \}\\
+  \annotatepattern(\tenv, \vte, \vpzero) \typearrow \vpone \OrTypeError\\\\
+  \annotateblock{\tenv, \vszero} \typearrow \vsone \OrTypeError\\\\
+  \annotateexpr{\tenv, \vewzero} \typearrow (\vtwe, \vewone) \OrTypeError\\\\
+  \checkstructurelabel(\tenv, \vtwe, \TBool) \typearrow \True \OrTypeError
+}{
+  \annotatecase{\tenv, \vcase, \vte} \typearrow \overname{\{ \CasePattern: \vpone, \CaseWhere: \langle\vewone\rangle, \CaseStmt : \vsone \}}{\vcaseone}
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SCase \label{sec:SemanticsRule.SCase}}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl}
+uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
+
+\subsubsection{Prose}
+Evaluation of the statement $\vs$ in an environment $\env$ is a configuration $C$,
+and all of the following apply:
+\begin{itemize}
+  \item $\vs$ is a case statement, $\SCase(\ve, \caselist)$;
+  \item desugaring $\vs$ gives a statement $\vsone$, which assigns $\ve$ to a fresh variable
+  and then matches its value against a list of patterns corresponding to $\caselist$ nested conditions.
+  In particular, this means that the cases are considered in order and only one of them is executed;
+  \item evaluating $\vsone$ in $\env$ results in the output configuration $C$.
+\end{itemize}
+
+\subsubsection{Formally}
+\hypertarget{def-casetoconds}{}
+A case statement is syntactic sugar for a condition ladder where each
+of the alternatives is a pattern.
+That is, a statement of the form
+\texttt{if e1 then s1; else if e2 then s2; else if e3 then s3; ... else pass;}
+
+We define the relation
+\[
+  \casetoconds(\expr, (\pattern \times \stmt)^*) \;\bigtimes\; \stmt
+\]
+which performs this AST-to-AST transformation, effectively desugaring
+the case statement.
+
+\begin{mathpar}
+\inferrule[var-empty]{}
+{
+  \casetoconds(\EVar(\vx), \emptylist) \evalarrow \SPass
+}
+\and
+\inferrule[var-non-empty]{
+  \casetoconds(\EVar(\vx), \caselist) \evalarrow \caselist'
+}{
+  \casetoconds(\EVar(\vx), [(\vp, \vs)] \concat \caselist) \evalarrow \\
+  \SCond(\EPattern(\EVar(\vx), \vp), \vs, \caselist')
+}
+\and
+\inferrule[non-var]{
+  \astlabel(\ve) \neq \EVar\\
+  \vy \in \Identifiers \text{ is fresh}\\
+  \vardecl \eqname \SDecl(\LDKLet, \LDITyped(\LDIVar(\vy), \TInt(\unconstrained)))\\
+  \casetoconds(\EVar(\vy), \caselist) \evalarrow \casecond
+}{
+  \casetoconds(\ve, \caselist) \evalarrow
+  \SSeq(\vardecl, \casecond)
+}
+\end{mathpar}
+
+We now define the semantics of a case statement in terms of the desugared statement:
+\begin{mathpar}
+\inferrule{
+  \casetoconds(\ve, \caselist) \evalarrow \vsone\\
+  \evalstmt{\env, \vsone} \evalarrow C
+}{
+  \evalstmt{\env, \SCase(\ve, \caselist)} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalSCaseBegin}{\EvalSCaseEnd}{../Interpreter.ml}
+
+\section{Assertion Statements\label{sec:AssertionStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SAssert(\expr) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SAssert}
+\begin{mathpar}
+\inferrule{}{
+  \buildstmt(\overname{\Nstmt(\Tassert, \Nexpr, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SAssert(\astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SAssert \label{sec:TypingRule.SAssert}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is an assert statement with expression $\ve$, that is, $\SAssert(\ve)$;
+  \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep)$\ProseOrTypeError;
+  \item checking that $\vtep$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item $\news$ is an assert statement with expression $\vep$, that is, $\SAssert(\vep)$;
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep) \OrTypeError\\\\
+  \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{JQYF}.}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertOk.asl}
+\texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
+
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertNo.asl}
+\texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is an assertion statement, $\SAssert(\ve)$;
+  \item one of the following holds:
+  \begin{itemize}
+    \item all of the following hold (\textsc{okay}):
+    \begin{itemize}
+      \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$\ProseOrAbnormal;
+      \item $\vv$ is a native Boolean value for $\True$;
+      \item the resulting configuration is $\Continuing(\newg, \newenv)$.
+    \end{itemize}
+
+    \item all of the following hold (\textsc{error}):
+    \begin{itemize}
+      \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$;
+      \item $\vv$ is a native Boolean value for $\False$;
+      \item an AssertionFailed error is returned.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \newg), \newenv) \OrAbnormal\\\\
+  \vv \eqname \nvbool(\True)
+}{
+  \evalstmt{\env, \SAssert(\ve)} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[error]{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \Ignore), \Ignore)\\
+  \vv \eqname \nvbool(\False)
+}{
+  \evalstmt{\env, \SAssert(\ve)} \evalarrow \ErrorVal{AssertionFailed}
+}
+\end{mathpar}
+\CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
+\lrmcomment{This is related to \identd{QJYV}:}
+\lrmcomment{This is related to \identr{WZSL}:}
+\lrmcomment{This is related to \identr{WQRN}:}
+
+\section{While Statements\label{sec:WhileStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SWhile}
+\begin{mathpar}
+\inferrule[no\_limit]{}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend)}{\vparsednode})
+  \astarrow\\
+  \overname{\SWhile(\astof{\vexpr}, \None, \astof{\vstmtlist})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[limit]{
+  \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}
+}{
+  {
+    \begin{array}{r}
+  \buildstmt\left(\overname{\Nstmt\left(
+    \begin{array}{r}
+    \Tlooplimit, \Tlpar, \namednode{\vlimitexpr}{\Nexpr}, \Trpar, \Twhile,  \\
+    \wrappedline\ \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow\\
+  \overname{\SWhile(\astof{\vexpr}, \langle\astversion{\vlimitexpr}\rangle, \astof{\vstmtlist})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SWhile \label{sec:TypingRule.SWhile}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+\item $\vs$ is a \texttt{while} statement with expression $\veone$, optional limit expression $\vlimitone$,
+      and statement block $\vsone$, that is, $\SWhile(\veone, \vsone)$;
+\item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo)$\ProseOrTypeError;
+\item annotating the optional limit expression $\vlimitone$ via $\annotatelooplimit$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
+\item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
+\item $\news$ is a \texttt{while} statement with expression $\vetwo$, optional limit expression $\vlimittwo$,
+      and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
+\item $\newtenv$ is $\tenv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
+  \annotatelooplimit(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
+  \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
+  \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SWhile(\veone, \vlimitone, \vsone)}{\vs}) \typearrow
+  (\overname{\SWhile(\vetwo, \vlimittwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{FTVN}.}
+
+\subsubsection{TypingRule.AnnotateLoopLimit\label{sec:TypingRule.AnnotateLoopLimit}}
+\hypertarget{def-annotatelooplimit}{}
+The function
+\[
+  \annotatelooplimit(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\langle\expr\rangle}{\ve} \aslsep
+  ) \aslto
+  \overname{\expr}{\vep} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates an optional expression $\ve$ serving as the limit of a loop in $\tenv$,
+yielding the optional loop expression $\vep$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item $\ve$ is $\None$;
+    \item $\vep$ is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some}):
+  \begin{itemize}
+    \item $\ve$ is $\langle\vlimit\rangle$;
+    \item annotating $\vlimit$ in $\tenv$ yields $(\vt, \vlimitp)$\ProseOrTypeError;
+    \item checking that $\vt$ is a constrained integer in $\tenv$ via \\
+          $\checkconstrainedinteger$ yields $\True$\ProseOrTypeError;
+    \item $\vep$ is $\langle\vlimitp\rangle$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[none]{}{
+  \annotatelooplimit(\tenv, \overname{\None}{\vlimit}) \typearrow \overname{\None}{\vlimitp}
+}
+\end{mathpar}
+\begin{mathpar}
+\inferrule[some]{
+  \annotateexpr{\tenv, \vlimit} \typearrow (\vt, \vlimitp) \OrTypeError\\\\
+  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError
+}{
+  \annotatelooplimit(\tenv, \overname{\langle\vlimit\rangle}{\vlimit}) \typearrow \overname{\langle\vlimitp\rangle}{\vlimitp}
+}
+\end{mathpar}
+\CodeSubsection{\AnnotateLoopLimitBegin}{\AnnotateLoopLimitEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SWhile \label{sec:SemanticsRule.SWhile}}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SWhile.asl}
+prints \texttt{0123}.
+
+\subsubsection{Prose}
+Evaluation of the statement $\vs$ in an environment $\env$ is
+the output configuration $C$ and all of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \Ignore, \vbody)$;
+  \item evaluating the loop as per \nameref{sec:SemanticsRule.Loop} in an environment $\env$,
+  with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\ve$, and $\vbody$
+  results in $C$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalloop{\env, \True, \ve, \vbody} \evalarrow C
+}{
+  \evalstmt{\env, \overname{\SWhile(\ve, \Ignore, \vbody)}{\vs}} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalSWhileBegin}{\EvalSWhileEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.Loop\label{sec:SemanticsRule.Loop}}
+The relation
+\hypertarget{def-evalloop}{}
+\[
+  \evalloop{\overname{\envs}{\env} \aslsep \overname{\Bool}{\iswhile} \aslsep \overname{\expr}{\econd} \aslsep \overname{\stmt}{\vbody}}
+  \;\aslrel\;
+  \left(
+    \begin{array}{cl}
+      \Continuing(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) & \cup \\
+      \overname{\TReturning}{\ReturningConfig} & \cup \\
+      \overname{\TThrowing}{\ThrowingConfig} & \cup \\
+      \overname{\TError}{\ErrorConfig} &
+    \end{array}
+  \right)
+\]
+to evaluate both \texttt{while} statements and \texttt{repeat} statements.
+
+More specifically, $\evalloop{\env, \iswhile, \econd, \vbody}$
+evaluates $\vbody$ in $\env$ as long as $\econd$ holds when $\iswhile$ is $\True$
+or until $\econd$ holds when $\iswhile$ is $\False$.
+The result is either the continuing configuration \\ $\Continuing(\newg,\newenv)$,
+an early return configuration, or an abnormal configuration.
+
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Loop.asl}
+does not result in any Assertion Error and the specification terminates with exit
+code $0$.
+
+\CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+\item all of the following apply (\textsc{exit}):
+  \begin{itemize}
+    \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \newenv)$\ProseOrAbnormal;
+    \item $\condm$ consists of a native Boolean for $\vb$ and an execution graph $\newg$;
+    \item $\vb$ is not equal to $\iswhile$;
+    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$
+    and the loop is exited.
+  \end{itemize}
+\item all of the following apply (\textsc{continue}):
+  \begin{itemize}
+    \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \envone)$;
+    \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
+    \item $\vb$ is equal to $\iswhile$;
+    \item evaluating $\vbody$ in $\envone$ as per \chapref{eval_block} is either \\
+    $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+    \item evaluating $(\iswhile, \econd, \vbody)$ in $\envtwo$ as a loop is \\
+    $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label
+    and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
+    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+The premise $\vb \neq \iswhile$ is $\True$ in the case of a \texttt{while} loop
+and the loop condition $\ve$ not holding, which is exactly when we want the
+loop to exit. The opposite holds for a \texttt{repeat} loop.
+The negation of the condition is used to decide whether to continue the loop iteration.
+
+\begin{mathpar}
+\inferrule[exit]{
+  \evalexpr{\env, \econd} \evalarrow \Normal(\condm, \newenv) \OrAbnormal\\
+  \condm \eqname (\nvbool(\vb), \newg)\\
+  \vb \neq \iswhile
+}{
+  \evalloop{\env, \iswhile, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[continue]{
+  \evalexpr{\env, \econd} \evalarrow \Normal(\condm, \envone)\\
+  \condm \eqname (\nvbool(\vb), \vgone)\\
+  \vb = \iswhile\\
+  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\
+  \evalloop{\envtwo, \iswhile, \econd, \vbody} \evalarrow \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\
+  \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
+}{
+  \evalloop{\env, \iswhile, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+\section{Repeat Statements\label{sec:RepeatStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SRepeat}
+\begin{mathpar}
+\inferrule[no\_limit]{}{
+  {
+    \begin{array}{r}
+  \buildstmt(\overname{\Nstmt(\Trepeat, \Nstmtlist, \Tuntil, \Nexpr, \Tsemicolon)}{\vparsednode})
+  \astarrow\\
+  \overname{\SRepeat(\astof{\vstmtlist}, \astof{\vexpr}, \None)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[limit]{
+  \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}
+}{
+  {
+    \begin{array}{r}
+  \buildstmt\left(\overname{\Nstmt\left(
+    \begin{array}{r}
+    \Tlooplimit, \Tlpar, \namednode{\vlimitexpr}{\Nexpr}, \Trpar, \Trepeat, \\
+    \wrappedline\ \Nstmtlist, \Tuntil, \Nexpr, \Tsemicolon
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow\\
+  \overname{\SRepeat(\astof{\vstmtlist}, \astof{\vexpr}, \langle\astversion{\vlimitexpr}\rangle)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SRepeat \label{sec:TypingRule.SRepeat}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
+        optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
+  \item annotating $\vsone$ as a block statement in $\tenv$ yields $\vstwo$\ProseOrTypeError;
+  \item annotating the optional limit expression $\vlimitone$ via $\annotatelooplimit$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
+  \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo)$\ProseOrTypeError;
+  \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item $\news$ is a \texttt{repeat} statement with statement block $\vstwo$, optional limit expression $\vlimittwo$,
+        and condition expression $\vetwo$ and , that is, $\SRepeat(\vstwo, \vetwo, \vlimittwo)$;
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError\\\\
+  \annotatelooplimit(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
+  \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SRepeat(\vsone, \veone, \vlimitone)}{\vs}) \typearrow
+  (\overname{\SRepeat(\vstwo, \vetwo, \vlimittwo)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{FTVN}.}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SRepeat \label{sec:SemanticsRule.SRepeat}}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SRepeat.asl}
+prints
+\begin{Verbatim}
+  0
+  1
+  2
+  3
+\end{Verbatim}
+
+\subsubsection{Prose}
+Evaluation of the statement $\vs$ in an environment $\env$ is
+either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ and all of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \Ignore)$;
+  \item evaluating $\vbody$ in $\env$ as per \chapref{Bloccks}
+        yields $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\ErrorConfig};
+  \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\envone$,
+        with the arguments $\False$ (which conveys that this is a \texttt{repeat} statement), $\ve$, and $\vbody$
+        results in $C$;
+  \item $\vgtwo$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge;
+  \item the output configuration $D$ is the output configuration $C$ with its execution graph
+        substituted with $\vgtwo$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\\\
+  \evalloop{\envone, \False, \ve, \vbody} \evalarrow C\\
+  \vgtwo \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
+  D \eqdef \withgraph{C}{\vgtwo}
+}{
+  \evalstmt{\env, \overname{\SRepeat(\ve, \vbody, \Ignore)}{\vs}} \evalarrow D
+}
+\end{mathpar}
+\CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
+
+\section{For Statements\label{sec:ForStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
+                    \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+\Ndirection \derivesinline\ & \Tto \;|\; \Tdownto &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\fordirection \derives\ & \UP \;|\; \DOWN &\\
+\stmt \derives\ & \SFor\left\{
+      \begin{array}{rcl}
+      \Forindexname  &:& \identifier,\\
+      \Forstarte     &:& \expr,\\
+      \Fordir        &:& \fordirection,\\
+      \Forende       &:& \expr,\\
+      \Forbody       &:& \stmt,\\
+      \Forlimit      &:& \expr?
+      \end{array}
+    \right\} &
+\end{flalign*}
+
+\subsubsection{ASTRule.SFor}
+\begin{mathpar}
+\inferrule{
+  \buildexpr(\vstarte) \astarrow \astversion{\vstarte}\\
+  \buildexpr(\vende) \astarrow \astversion{\vende}\\
+}{
+  {
+    \begin{array}{r}
+      \buildstmt\left(\overname{\Nstmt\left(
+        \begin{array}{l}
+        \Tfor, \Tidentifier(\vindexname), \Teq, \namednode{\vstarte}{\Nexpr}, \Ndirection, \\
+        \wrappedline\ \namednode{\vende}{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend
+        \end{array}
+        \right)}{\vparsednode}\right)
+      \astarrow \\
+        \overname{
+        \SFor\left(\left\{
+          \begin{array}{rcl}
+            \Forindexname &:& \vindexname\\
+            \Forstarte &:& \astversion{\vstarte}\\
+            \Forende &:& \astversion{\vende}\\
+            \Forbody &:& \astof{\vstmtlist}\\
+            \Forlimit &:& \None\\
+          \end{array}
+            \right\}\right)
+    }{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.Direction \label{sec:ASTRule.Direction}}
+\hypertarget{build-direction}{}
+The function
+\[
+\builddirection(\overname{\parsenode{\Ndirection}}{\vparsednode}) \;\aslto\; \overname{\fordirection}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[to]{}{
+  \builddirection(\overname{\Ndirection(\Tto)}{\vparsednode}) \astarrow \overname{\UP}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[downto]{}{
+  \builddirection(\overname{\Ndirection(\Tdownto)}{\vparsednode}) \astarrow \overname{\DOWN}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SFor \label{sec:TypingRule.SFor}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{for} statement with index $\vindexname$,
+        start expression $\vstarte$,
+        direction $\dir$,
+        end expression $\vende$,
+        body statement (block) $\vbody$,
+        and optional limit expression $\vlimit$,
+        that is, $\SFor\left\{\begin{array}{rcl}
+          \Forindexname &:& \vindexname\\
+          \Forstarte &:& \vstarte\\
+          \fordirection &:& \vdirection\\
+          \Forende &:& \vende\\
+          \Forbody &:& \vbody\\
+          \Forlimit &:& \vlimit
+        \end{array}\right\}$;
+  \item annotating the right-hand-side expression $\vstarte$ in $\tenv$ yields \\
+        $(\vstartt, \vstartep)$\ProseOrTypeError;
+  \item annotating the right-hand-side expression $\vende$ in $\tenv$ yields $(\vendt, \vendep)$\ProseOrTypeError;
+  \item annotating the optional loop limit expression $\vlimit$ via $\annotatelooplimit$ in $\tenv$
+        yields $\vlimitp$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vstartt$ in $\tenv$ yields $\vstartstruct$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vendt$ in $\tenv$ yields $\vendstruct$\ProseOrTypeError;
+  \item applying $\getforconstraints$ to $\vstartstruct$, $\vendstruct$,
+        $\vstartep$, $\vendep$, and $\dir$ in $\tenv$,
+        to obtain the constraints on the loop index $\vindexname$,
+        yields $\cs$\ProseOrTypeError;
+  \item $\tty$ is the integer type with constraints $\cs$;
+  \item checking that $\vindexname$ is not already declared in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item adding $\vindexname$ as a local immutable variable with type $\tty$ to $\tenv$ yields $\tenvp$;
+  \item annotating $\vbody$ as a block statement in $\tenvp$ yields $\vbodyp$\ProseOrTypeError;
+  \item $\news$ is the \texttt{for} statement with index $\vindexname$,
+        start expression $\vstartep$, direction $\dir$,
+        end expression $\vendep$,
+        body statement (block) $\vbodyp$, and
+        optional limit expression $\vlimit$;
+  \item $\newtenv$ is $\tenv$ (notice that this means $\vindexname$ is only declared for annotating $\vbodyp$ but then goes
+        out of scope).
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep) \OrTypeError\\\\
+  \annotatelooplimit(\tenv, \vlimit) \typearrow \vlimitp \OrTypeError\\\\
+  \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
+  {
+    \begin{array}{r}
+  \getforconstraints(\tenv, \vstartstruct, \vendstruct, \vstartep, \vendep, \dir) \typearrow \\
+    \cs \OrTypeError
+    \end{array}
+  }\\\\
+  \tty \eqdef \TInt(\cs)\\
+  \checkvarnotinenv{\tenv, \vindexname} \typearrow \True \OrTypeError\\\\
+  \addlocal(\tenv, \tty, \vindexname, \LDKLet) \typearrow \tenvp\\
+  \annotateblock{\tenvp, \vbody} \typearrow \vbodyp \OrTypeError
+}{
+  {
+    \begin{array}{r}
+  \annotatestmt\left(\tenv, \overname{\SFor\left\{\begin{array}{rcl}
+    \Forindexname &:& \vindexname\\
+    \Forstarte &:& \vstarte\\
+    \fordirection &:& \vdirection\\
+    \Forende &:& \vende\\
+    \Forbody &:& \vbody\\
+    \Forlimit &:& \vlimit
+  \end{array}\right\}}{\vs}\right) \typearrow \\
+  \left(\overname{\SFor\left\{\begin{array}{rcl}
+    \Forindexname &:& \vindexname\\
+    \Forstarte &:& \vstartep\\
+    \fordirection &:& \vdirection\\
+    \Forende &:& \vendep\\
+    \Forbody &:& \vbodyp\\
+    \Forlimit &:& \vlimitp
+  \end{array}\right\}}{\news}, \overname{\tenv}{\newtenv}\right)
+\end{array}
+  }
+}
+\end{mathpar}
+\CodeSubsection{\SForBegin}{\SForEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{SSBD}, \identr{ZSND}, \identr{VTJW}.}
+
+\subsubsection{TypingRule.SForConstraints\label{sec:TypingRule.SForConstraints}}
+\hypertarget{def-getforconstraints}{}
+The function
+\[
+  \getforconstraints(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\ty}{\structone} \aslsep
+    \overname{\ty}{\structtwo} \aslsep
+    \overname{\expr}{\veonep} \aslsep
+    \overname{\expr}{\vetwop} \aslsep
+    \overname{\dir}{\dir}
+  ) \aslto
+  \overname{\intconstraints}{\vis} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+infers the integer constraints for a \texttt{for} loop index variable from the following:
+\begin{itemize}
+  \item the \wellconstrainedversion\ of the type of the start expression --- $\structone$
+  \item the \wellconstrainedversion\ of the type of the end expression --- $\structtwo$
+  \item the annotated start expression --- $\veonep$
+  \item the annotated end expression --- $\vetwop$
+  \item the loop direction --- $\dir$
+\end{itemize}
+The result is $\vis$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{not\_integers}):
+  \begin{itemize}
+    \item at least one of $\structone$ and $\structtwo$ is not an integer type;
+    \item the result is a type error indicating that the start expression and end expression of \texttt{for} loops
+          must have the \structure\ of integer types.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{unconstrained}):
+  \begin{itemize}
+    \item both of $\structone$ and $\structtwo$ are integer types;
+    \item at least one of $\structone$ and $\structtwo$ is the unconstrained integer type;
+    \item define $\vis$ as $\unconstrained$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{well\_constrained}):
+  \begin{itemize}
+    \item both of $\structone$ and $\structtwo$ are integer types;
+    \item neither $\structone$ nor $\structtwo$ is the unconstrained integer type;
+    \item symbolically simplifying $\veonep$ in $\tenv$ yields $\eonen$\ProseOrTypeError;
+    \item symbolically simplifying $\vetwop$ in $\tenv$ yields $\etwon$\ProseOrTypeError;
+    \item define $\icsup$ as the single range constraint with expressions $\eonen$ and $\etwon$;
+    \item define $\icsdown$ as the single range constraint with expressions $\etwon$ and $\eonen$;
+    \item define $\vis$ as $\icsup$ if $\dir$ is $\UP$ and $\icsdown$ otherwise.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[not\_integers]{
+  \astlabel(\structone) \neq \TInt \lor \astlabel(\structtwo) \neq \TInt
+}{
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \TypeErrorVal{\RequireIntegerForLoopBounds}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[unconstrained]{
+  \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
+  \structone = \unconstrainedinteger \lor \structtwo = \unconstrainedinteger\\
+}{
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \overname{\unconstrained}{\vis}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[well\_constrained]{
+  \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
+  \structone \neq \unconstrainedinteger \land \structtwo \neq \unconstrainedinteger\\
+  \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\\\\
+  \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\\\\
+  \icsup \eqdef \wellconstrained([\ConstraintRange(\eonen, \etwon)])\\
+  \icsdown \eqdef \wellconstrained([\ConstraintRange(\etwon, \eonen)])\\
+  \vis \eqdef \choice{\dir=\UP}{\icsup}{\icsdown}
+}{
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \vis
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SFor\label{sec:SemanticsRule.SFor}}
+Evaluating a \texttt{for} statement involves introducing an index variable to the
+environment. The type system ensures, via TypingRule.SFor, that the index variable
+is not already declared in the scope of the subprogram containing the \texttt{for}
+statement.
+
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
+prints
+\begin{Verbatim}
+  0
+  1
+  2
+  3
+\end{Verbatim}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
+    \Forindexname &:& \vindexname\\
+    \Forstarte &:& \vstarte\\
+    \fordirection &:& \vdirection\\
+    \Forende &:& \vende\\
+    \Forbody &:& \vbody\\
+    \Forlimit &:& \Ignore
+  \end{array}\right\}$;
+  \item evaluating the side-effect-free expression $\veone$ in $\env$ is either
+  $\Normal(\vvone, \vgone)$\ProseOrError;
+  \item evaluating the side-effect-free expression $\vetwo$ in $\env$ is either
+  $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
+  \item declaring the local identifier $\vindexname$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
+  \item evaluating the \texttt{for} loop with arguments $(\vindexname, \veone, \dir, \vetwo, \vs)$ in $\envone$,
+  as per \nameref{sec:SemanticsRule.SFor} is $\Normal(\vgfour, \envtwo)$\ProseOrAbnormal;
+  \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
+  \item $\newg$ is formed as follows: taking the parallel composition of $\vgone$ and $\vgtwo$,
+  then taking the ordered composition of the result with the $\asldata$ edge,
+  and finally taking the ordered composition of the result with the $\aslpo$ edges;
+  \item $\newenv$ is $\envthree$.
+  \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+\end{itemize}
+\subsubsection{Formally}
+Recall that the expressions for the \texttt{for} loop range are side-effect-free,
+which is why they are evaluated via the rule for evaluating side-effect-free expressions.
+\begin{mathpar}
+\inferrule{
+  \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \terminateas \ErrorConfig\\
+  \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \terminateas \ErrorConfig\\
+  \declarelocalidentifier(\env, \vindexname, \vendv) \evalarrow (\vgthree,\envone)\\
+  \evalfor{\envone, \vindexname, \vstartv, \dir, \vendv, \vbody} \evalarrow \Normal(\vgfour, \envtwo) \OrAbnormal\\
+  \removelocal(\envtwo, \vindexname) \evalarrow \envthree\\
+  \newg \eqdef \ordered{(\vgone \parallelcomp \vgtwo)}{\asldata}{ \ordered{\vgthree}{\aslpo}{\vgfour}   }\\
+  \newenv \eqdef \envthree
+}{
+  {
+  \begin{array}{r}
+  \evalstmt{\env,
+  \overname{
+  \SFor\left\{\begin{array}{rcl}
+    \Forindexname &:& \vindexname\\
+    \Forstarte &:& \vstarte\\
+    \fordirection &:& \vdirection\\
+    \Forende &:& \vende\\
+    \Forbody &:& \vbody\\
+    \Forlimit &:& \Ignore\\
+  \end{array}\right\}}{\vs}} \evalarrow \\ \Continuing(\newg, \newenv)
+  \end{array}
+  }
+}
+\end{mathpar}
+\CodeSubsection{\EvalSForBegin}{\EvalSForEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.EvalFor\label{sec:SemanticsRule.EvalFor}}
+The relation
+\hypertarget{def-evalfor}{}
+\[
+  \evalfor{\overname{\envs}{\env} \aslsep \overname{\Identifiers}{\vindexname} \aslsep \overname{\tint}{\vstart}
+  \aslsep \overname{\{\UP, \DOWN\}}{\dir} \aslsep \overname{\tint}{\vend} \aslsep \overname{\stmt}{\vbody}}
+  \;\aslrel\;
+  \left(
+    \begin{array}{cl}
+    \overname{\TReturning}{\ReturningConfig} & \cup\\
+    \overname{\TContinuing}{\ContinuingConfig} & \cup\\
+    \overname{\TThrowing}{\ThrowingConfig} & \cup \\
+    \overname{\TError}{\ErrorConfig} &
+    \end{array}
+    \right)
+\]
+evaluates the \texttt{for} loop with the index variable $\vindexname$ starting from the value
+$\vstart$ going in the direction given by $\dir$ until the value given by $\vend$,
+executing $\vbody$ on each iteration.
+%
+The evaluation utilizes two helper relations: $\evalforstep$ and $\evalforloop$.
+
+The helper relation
+\[
+  \evalforstep(
+    \overname{\envs}{\env},
+    \overname{\Identifiers}{\vindexname},
+    \overname{\tint}{\vstart},
+    \overname{\{\UP,\DOWN\}}{\dir})
+    \;\aslrel\;
+    ((\overname{\tint}{\vstep} \times \overname{\envs}{\newenv}) \times \overname{\XGraphs}{\newg})
+\]
+either increments or decrements the index variable,
+returning the new value of the index variable, the modified environment,
+and the resulting execution graph.
+
+The helper relation
+\[
+  \evalforloop(\overname{
+    \envs}{\env},
+    \overname{\Identifiers}{\vindexname},
+    \overname{\tint}{\vstart},
+    \overname{\{\UP,\DOWN\}}{\dir},
+    \overname{\tint}{\vend},
+    \overname{\stmt}{\vbody}) \;\aslrel\;
+    \left(
+    \begin{array}{cl}
+      \overname{\TContinuing}{\Continuing(\newg, \newenv)} & \cup\\
+      \overname{\TReturning}{\ReturningConfig} & \cup\\
+    \overname{\TThrowing}{\ThrowingConfig} & \cup \\
+    \overname{\TError}{\ErrorConfig} &
+    \end{array}
+    \right)
+\]
+executes one iteration of the loop body and then uses $\texttt{eval\_for}$ to execute the remaining
+iterations.
+
+\subsection{Prose}
+\subsubsection{Stepping the Index Variable}
+All of the following apply:
+\begin{itemize}
+  \item $\opfordir$ is either $\PLUS$ when $\dir$ is $\UP$ or $\MINUS$ when $\dir$ is $\DOWN$;
+  \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
+  \item applying the binary operator $\opfordir$ to $\vstart$ and the native integer for $1$ is $\vstep$;
+  \item the execution graph for writing $\vstep$ into the identifier $\vindexname$ gives $\vgtwo$;
+  \item updating the local component of the dynamic environment of $\env$ by binding \\ $\vindexname$ to $\vstep$
+  gives $\newenv$;
+  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
+\end{itemize}
+
+\subsubsection{Running the Loop Body}
+All of the following apply:
+\begin{itemize}
+  \item evaluating $\vbody$ as a block statement (see \chapref{eval_block}) in $\env$
+  is \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+  \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
+  that is, $\evalforstep(\envone, \vindexname, \vstart, \dir)$ gives $((\vstep, \envtwo), \vgtwo)$;
+  \item evaluating the \texttt{for} loop with $(\vindexname, \vstep, \dir, \vend, \vbody)$
+  in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+  \item $\newg$ is the ordered composition of $\vgone$, $\vgtwo$, and $\vgthree$ with the $\aslpo$
+  edge.
+\end{itemize}
+
+\subsubsection{Overall Evaluation}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
+does not result in any assertion error, and the specification terminates with exit-code $0$.
+
+Evaluating $(\vindexname, \vstart, \dir, \vend, \vbody)$ in $\env$ is either
+a continuing configuration $\Continuing(\newg, \newenv)$ or a returning configuration
+(in case the body of the loop results in an early return)
+or an abnormal configuration,
+and All of the following apply:
+\begin{itemize}
+  \item $\compfordir$ is either $\LT$ when $\dir$ is $\UP$ or $\GT$ when $\dir$ is $\DOWN$;
+  \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
+  \item One of the following applies:
+    \begin{itemize}
+    \item All of the following apply (\textsc{return}):
+    \begin{itemize}
+      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\True$;
+      \item $\newg$ is $\vgone$;
+      \item $\newenv$ is $\env$;
+      \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+    \end{itemize}
+    \item All of the following apply (\textsc{continue}):
+    \begin{itemize}
+      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
+      \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vstart, \dir, \vend, \vbody)$
+      in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+      \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+Advancing the loop counter one step towards the end of its range is achieved via the following rule:
+\begin{mathpar}
+\inferrule{
+  \opfordir \eqdef \choice{\dir = \UP}{\PLUS}{\MINUS}\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
+  \binoprel(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
+  \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
+  \env \eqname (\tenv, \denv)\\
+  \newenv \eqdef (\tenv, (G^\denv, L^\denv[\vindexname\mapsto\vstep]))\\
+  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+}{
+  \evalforstep(\env, \vindexname, \vstart, \dir) \evalarrow ((\vstep, \newenv), \newg)
+}
+\end{mathpar}
+
+Running the loop body is achieved via the following rule:
+\begin{mathpar}
+\inferrule{
+  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\
+  \evalforstep(\envone, \vindexname, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
+  \evalfor{\envtwo, \vindexname, \vstep, \dir, \vend, \vbody} \evalarrow \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\
+  \newg \eqdef \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\vgthree}
+}{
+  \evalforloop(\env, \vindexname, \vstart, \dir, \vend, \vbody) \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+Finally, the rules for evaluating a \texttt{for} loop utilize both $\evalforstep$
+and $\evalforloop$ (the latter in a mutually recursive manner):
+\begin{mathpar}
+\inferrule[return]{
+  \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
+  \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvbool(\True)\\
+  \newg \eqdef \vgone\\
+  \newenv = \env
+}
+{
+  \evalfor{\env, \vindexname, \vstart, \dir, \vend, \vbody} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[continue]{
+  \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
+  \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
+  \evalforloop(\env, \vindexname, \vstart, \dir, \vend, \vbody) \evalarrow \\
+  \Continuing(\vgtwo, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\\\
+  \newg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
+}{
+  \evalfor{\env, \vindexname, \vstart, \dir, \vend, \vbody} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalForBegin}{\EvalForEnd}{../Interpreter.ml}
+
+\section{Throw Statements\label{sec:ThrowStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tthrow \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SThrow(\expr?) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SThrow}
+\begin{mathpar}
+\inferrule[throw\_some]{}{
+  \buildstmt(\overname{\Nstmt(\Tthrow, \Nexpr, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SThrow(\langle\astof{\vexpr}\rangle)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[throw\_none]{}{
+  \buildstmt(\overname{\Nstmt(\Tthrow, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SThrow(\None)}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SThrow\label{sec:TypingRule.SThrow}}
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item $\vs$ is a throw statement with no expression, that is, $\SThrow(\None)$;
+    \item $\news$ is $\vs$;
+    \item $\newtenv$ is $\tenv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some}):
+  \begin{itemize}
+    \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\langle\ve\rangle)$;
+    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
+    \item checking that $\vte$ has the structure of an exception type yields $\True$\ProseOrTypeError;
+    \item $\news$ is a throw statement with expression $\vep$ and type $\vte$, that is, \\
+          $\SThrow(\langle (\vep, \vte) \rangle)$;
+    \item $\newtenv$ is $\tenv$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[none]{}{
+  \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\lrmcomment{Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.}
+
+\begin{mathpar}
+\inferrule[some]{
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SThrow(\langle\ve\rangle)}{\vs}) \typearrow
+  (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\lrmcomment{This is related to \identr{NXRC}.}
+\CodeSubsection{\SThrowBegin}{\SThrowEnd}{../Typing.ml}
+
+\subsection{Semantics}
+subsubsection{SemanticsRule.SThrow\label{sec:SemanticsRule.SThrow}}
+\subsubsection{Example (Throwing Without an Exception)}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl}
+throws a \texttt{MyException} exception.
+
+\subsubsection{Example (Throwing a Typed Exception)}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowSomeTyped.asl}
+terminates successfully. That is, no dynamic error occurs.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+  \item $\vs$ is a \texttt{throw} statement that does not provide an expression, $\SThrow(\None)$;
+  \item $\newenv$ is $\env$;
+  \item $\vex$ is $\None$;
+  \item $\newg$ is the empty graph;
+  \item an exception is thrown with $\newenv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some}):
+  \begin{itemize}
+    \item $\vs$ is a \texttt{throw} statement that provides an expression and a type, \\
+          $\SThrow(\langle(\ve, \vt)\rangle)$;
+    \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+    \item $\name$ is a fresh identifier (which conceptually holds the exception value);
+    \item $\vgtwo$ is a Write Effect to $\name$;
+    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
+    \item $\vex$ consists of the exception value $\vv$, the name of the variable holding it ---
+          $\name$, and the type annotation for the exception --- $\vt$;
+    \item the result of the entire evaluation is $\Throwing((\vex, \newg), \env)$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[none]{}
+{
+  \evalstmt{\env, \SThrow(\None)} \evalarrow \Throwing((\None, \emptygraph), \env)
+}
+\end{mathpar}
+\begin{mathpar}
+\inferrule[some]{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\
+  \name\in\Identifiers \text{ is fresh}\\
+  \vgtwo \eqdef \WriteEffect(\name)\\
+  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
+  \vex \eqdef \langle(\valuereadfrom(\vv, \name),\vt)\rangle
+}{
+  \evalstmt{\env, \SThrow(\langle(\ve, \vt)\rangle)} \evalarrow
+  \Throwing((\vex, \newg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalSThrowBegin}{\EvalSThrowEnd}{../Interpreter.ml}
+
+\section{Try Statements\label{sec:TryStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.STry}
+\begin{mathpar}
+\inferrule{
+  \buildlist[\Ncatcher] \astarrow \astversion{\vcatcherlist}
+}{
+  {
+    \begin{array}{r}
+  \buildstmt\left(\overname{\Nstmt\left(
+    \begin{array}{r}
+    \Ttry, \Nstmtlist, \Tcatch,  \\
+    \wrappedline\ \namednode{\vcatcherlist}{\nonemptylist{\Ncatcher}}, \\
+    \wrappedline\ \Notherwiseopt, \Tend
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow \\
+  \overname{\STry(\astof{\vstmtlist}, \astversion{\vcatcherlist}, \astof{\votherwiseopt})}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.STry \label{sec:TypingRule.STry}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a try statement with statement $\vsp$, list of catchers $\catchers$ and an \optional\ \texttt{otherwise} block;
+  \item annotating the statement $\vsp$ as a block statement yields $\vspp$\ProseOrTypeError;
+  \item annotating each catcher $\catchers[\vi]$, for each $\vi$ in $\listrange(\catchers)$ in $\tenv$ yields $\vc\_\vi$\ProseOrTypeError;
+  \item $\catchersp$ is the list of annotated catchers $\vc\_\vi$ for each $\vi\in\listrange(\catchers)$;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{no\_otherwise}):
+    \begin{itemize}
+      \item there is no \texttt{otherwise} statement;
+      \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and no \texttt{otherwise} statement,
+            that is \\
+            $\STry(\vspp, \catchersp, \None)$;
+    \end{itemize}
+
+    \item All of the following apply (\textsc{otherwise}):
+    \begin{itemize}
+      \item there is an \texttt{otherwise} statement $\otherwise$;
+      \item annotating the statement $\otherwise$ as a block statement in $\tenv$ yields $\otherwisep$\ProseOrTypeError;
+      \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and \texttt{otherwise} statement
+            $\otherwisep$, that is \\
+            $\STry(\vspp, \catchersp, \langle\otherwisep\rangle)$;
+    \end{itemize}
+  \end{itemize}
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[no\_otherwise]{
+  \annotateblock{\tenv, \vsp} \typearrow \vspp \OrTypeError\\\\
+  \vi\in\listrange(\catchers): \annotatecatcher{\tenv, \catchers[\vi]} \typearrow \vc_\vi \OrTypeError\\\\
+  \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
+  \commonprefixline\\\\
+  \news \eqdef \STry(\vspp, \catchersp, \None)
+}{
+  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \None)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv})
+}
+\and
+\inferrule[otherwise]{
+  \annotateblock{\tenv, \vsp} \typearrow \vspp \OrTypeError\\\\
+  \vi\in\listrange(\catchers): \annotatecatcher{\tenv, \catchers[\vi]} \typearrow \vc_\vi \OrTypeError\\\\
+  \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
+  \commonprefixline\\\\
+  \annotateblock{\tenv, \otherwise} \typearrow \otherwisep \OrTypeError\\\\
+  \news \eqdef \STry(\vspp, \catchersp, \otherwise')
+}{
+  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \langle\otherwise\rangle)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{WVXS}.}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.STry \label{sec:SemanticsRule.STry}}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
+does not result in any Assertion error, and the specification terminates with the exit code $0$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \texttt{try} statement, $\STry(\vs, \catchers, \otherwiseopt)$;
+  \item evaluating $\vsone$ in $\env$ as per \chapref{Blocks}
+  is a non-abnormal (that is, either $\Normal$ or $\Continuing$) configuration $\sm$\ProseOrAbnormal;
+  \item evaluating $(\catchers, \otherwiseopt, \sm)$ as per \chapref{CatchingExceptions}
+  is $C$, which is the result of the entire evaluation.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalblock{\env, \vsone} \evalarrow \sm \OrAbnormal\\
+  \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow C
+}{
+  \evalstmt{\env, \STry(\vsone, \catchers, \otherwiseopt)} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
+
+\section{Return Statements\label{sec:ReturnStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+  \stmt \derives\ & \SReturn(\expr?) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SReturn}
+\begin{mathpar}
+\inferrule{
+  \buildoption[\Nexpr](\vexpr) \astarrow \astversion{\vexpr}
+}{
+  \buildstmt(\overname{\Nstmt(\Treturn, \namednode{\vexpr}{\option{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SReturn(\astversion{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsubsection{TypingRule.SReturn\label{sec:TypingRule.SReturn}}
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item $\vs$ is a \texttt{return} statement with an optional expression $\veopt$, that is, \\
+          $\SReturn(\veopt)$;
+    \item the condition that $\veopt$ is $\None$ if and only if the enclosing subprogram does not have a return type
+          (that is, $\returntype$ in the local static environment is $\None$) does not hold;
+    \item the result is an error indicating the mismatch between the declared (existence of the) return type
+          and the (existence of the) return expression.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item $\vs$ is a \texttt{return} statement with no expression, that is, $\SReturn(\None)$;
+    \item the enclosing subprogram does not have a \texttt{return} type (it is either a setter
+          or a procedure);
+    \item $\news$ is a \texttt{return} statement with no expression, that is, $\SReturn(\None)$;
+    \item $\newtenv$ is $\tenv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some}):
+  \begin{itemize}
+    \item $\vs$ is a \texttt{return} statement with an expression $\ve$, that is, $\SReturn(\langle \vep \rangle)$;
+    \item the enclosing subprogram has a return type $\vt$;
+    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep)$\ProseOrTypeError;
+    \item checking whether $\vtep$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item $\news$ is a \texttt{return} statement with value $\vep$, that is, $\SReturn(\langle \vep \rangle)$;
+    \item $\newtenv$ is $\tenv$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[error]{
+  L^\tenv.\returntype \neq \veopt
+}{
+  \annotatestmt(\tenv, \overname{\SReturn(\veopt)}{\vs}) \typearrow \TypeErrorVal{InvalidReturnStmt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[none]{
+  L^\tenv.\returntype = \None
+}{
+  \annotatestmt(\tenv, \overname{\SReturn(\None)}{\vs}) \typearrow (\overname{\SReturn(\None)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some]{
+  L^\tenv.\returntype = \langle \vt \rangle\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep) \OrTypeError\\\\
+  \checktypesat(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SReturn(\langle \ve \rangle)}{\vs}) \typearrow
+  (\overname{\SReturn(\langle \vep \rangle)}{\news}, \overname{\tenv}{\newtenv})
+}
+\end{mathpar}
+\CodeSubsection{\SReturn}{\SReturnEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{FTPK}.}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.SReturn\label{sec:SemanticsRule.SReturn}}
+\subsubsection{Example (No Return Value)}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
+exits the current procedure.
+
+\subsubsection{Example (Returning a Single Value)}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
+\texttt{return 3;} exits the current subprogram with value \texttt{3}.
+
+\subsubsection{Example (Returning Multiple Values)}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
+\texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item $\vs$ is a \texttt{return} statement, $\SReturn(\None)$;
+    \item $\vvs$ is the empty list, $\emptylist$;
+    \item $\newg$ is the empty graph;
+    \item $\newenv$ is $\env$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{one}):
+  \begin{itemize}
+    \item $\vs$ is a \texttt{return} statement;
+    \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\langle\ve\rangle)$;
+    \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+    \item $\vvs$ is $[\vv]$;
+    \item $\vgtwo$ is the result of adding a Write Effect for a fresh identifier and the value $\vv$;
+    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
+    \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
+    is \\ $\Normal(\ms, \newenv)$\ProseOrAbnormal;
+    \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
+  \end{itemize}
+\end{itemize}
+
+\begin{mathpar}
+\inferrule[none]{}
+{
+  \evalstmt{\env, \SReturn(\None)} \evalarrow \Returning((\emptylist, \emptygraph), \env)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[one]{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \wid \in \Identifiers\text{ is fresh}\\
+  \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
+  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+}{
+  \evalstmt{\env, \SReturn(\langle\ve\rangle)} \evalarrow \Returning(([\vv], \newg), \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \evalexprlistm(\env, \es) \evalarrow \Normal(\ms, \newenv) \OrAbnormal\\
+  \writefolder(\ms) \evalarrow (\vvs, \newg)
+}{
+  \evalstmt{\env, \SReturn(\langle\ETuple(\es)\rangle)} \evalarrow \Returning((\vvs, \newg), \newenv)
+}
+\end{mathpar}
+\CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.EExprListM \label{sec:SemanticsRule.EExprListM}}
+The helper relation
+\[
+  \evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
+          \Normal(\overname{(\vals\times\XGraphs)^* }{\vms} \aslsep \overname{\envs}{\newenv}) \cup
+          \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+\]
+evaluates a list of expressions $\vEs$ in left-to-right in the initial environment $\env$
+and returns the list of values associated with graphs $\vms$ and the new environment $\newenv$.
+If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vEs$ is an empty list;
+    \item $\vms$ is then empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vEs$ is a list with \head\ $\ve$ and \tail\ $\vesone$;
+    \item evaluating $\ve$ in $\env$ yields $\Normal(\vmone, \envone)$\ProseOrAbnormal;
+    \item evaluating $\vesone$ in $\envone$ via $\evalexprlistm$ yields \\
+          $\Normal(\vmsone, \newenv)$\ProseOrAbnormal;
+    \item the result is the normal configuration with the list consisting of $\vmone$ as its \head\ and $\vmsone$
+          as its \tail\ and $\newenv$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \evalexprlistm(\env, \overname{\emptylist}{\vEs}) \evalarrow \Normal(\overname{\emptylist}{\vms}, \overname{\env}{\newenv})
+}
+\end{mathpar}
+
+\subsubsection{Semantics}
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \vEs \eqname [\ve] \concat \vesone\\
+  \evalexpr{\env, \ve} \evalarrow \Normal(\vmone, \envone) \OrAbnormal\\
+  \evalexprlistm(\envone, \vesone) \evalarrow \Normal(\vmsone, \newenv) \OrAbnormal
+}{
+  \evalexprlistm(\env, \vEs) \evalarrow \Normal([\vmone]\concat\vmsone, \newenv)
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.WriteFolder\label{sec:SemanticsRule.WriteFolder}}
+\hypertarget{def-writefolder}{}
+The helper relation
+\[
+  \writefolder(\overname{(\vals\times\XGraphs)^*}{\vms}) \aslrel (\overname{\vals^*}{\vvs}, \overname{\XGraphs}{\newg}) \enspace,
+\]
+concatenates the input values in $\vms$ and generates an execution graph
+by composing the graphs in $\vms$ with Write Effects for the respective values.
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \writefolder(\emptylist) \evalarrow (\emptylist, \emptygraph)
+}
+\and
+\inferrule[nonempty]{
+  \vms \eqname [\vm] \concat \vmsone\\
+  \vm \eqdef (\vv, \vg)\\
+  \wid \in \Identifiers\text{ is fresh}\\
+  \writeidentifier(\wid, \vv) \evalarrow \vgone\\
+  \writefolder(\vmsone, \vgone) \evalarrow (\vvsone, \vgtwo)\\
+  \vvs \eqdef [\vv] \concat \vvsone\\
+  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+}{
+  \writefolder(\vms) \evalarrow (\vvs, \ordered{\vg}{\aslpo}{\newg})
+}
+\end{mathpar}
+
+\section{Print Statements\label{sec:PrintStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SPrint}
+\begin{mathpar}
+\inferrule{
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+}{
+  \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SPrint(\astversion{\vargs})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing}
+\subsection{Semantics}
+
+\section{Pragma Statements\label{sec:PragmaStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\subsection{Typing}
+\subsection{Semantics}

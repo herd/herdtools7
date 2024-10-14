@@ -372,10 +372,10 @@ module Make (B : Backend.S) (C : Config) = struct
   let rec eval_expr (env : env) (e : expr) : expr_eval_type =
     if false then Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_expr e;
     match e.desc with
-    (* Begin EvalEvalLit *)
-    | E_Literal l -> return_normal (B.v_of_literal l, env) |: SemanticsRule.Lit
+    (* Begin EvalELit *)
+    | E_Literal l -> return_normal (B.v_of_literal l, env) |: SemanticsRule.ELit
     (* End *)
-    (* Begin EvalEvalATC *)
+    (* Begin EvalATC *)
     | E_ATC (e1, t) ->
         let** v, new_env = eval_expr env e1 in
         let* b = is_val_of_type e1 env v t in
@@ -383,42 +383,37 @@ module Make (B : Backend.S) (C : Config) = struct
          else fatal_from e1 (Error.MismatchType (B.debug_value v, [ t.desc ])))
         |: SemanticsRule.ATC
     (* End *)
-    | E_Var x -> (
-        match IEnv.find x env with
-        (* Begin EvalEvalELocalVar *)
+    (* Begin EvalEVar *)
+    | E_Var x ->
+        (match IEnv.find x env with
         | Local v ->
             let* () = B.on_read_identifier x (IEnv.get_scope env) v in
-            return_normal (v, env) |: SemanticsRule.ELocalVar
-        (* End *)
-        (* Begin EvalEvalEGlobalVar *)
+            return_normal (v, env)
         | Global v ->
             let* () = B.on_read_identifier x (Scope_Global false) v in
-            return_normal (v, env) |: SemanticsRule.EGlobalVar
-        (* End *)
-        (* Begin EvalEvalEUndefIdent *)
-        | NotFound ->
-            fatal_from e @@ Error.UndefinedIdentifier x
-            |: SemanticsRule.EUndefIdent)
+            return_normal (v, env)
+        | NotFound -> fatal_from e @@ Error.UndefinedIdentifier x)
+        |: SemanticsRule.EVar
     (* End *)
-    (* Begin EvalEvalBinopAnd *)
+    (* Begin EvalBinopAnd *)
     | E_Binop (BAND, e1, e2) ->
         (* if e1 then e2 else false *)
         E_Cond (e1, e2, false')
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopAnd
     (* End *)
-    (* Begin EvalEvalBinopOr *)
+    (* Begin EvalBinopOr *)
     | E_Binop (BOR, e1, e2) ->
         (* if e1 then true else e2 *)
         E_Cond (e1, true', e2)
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopOr
     (* End *)
-    (* Begin EvalEvalBinopImpl *)
+    (* Begin EvalBinopImpl *)
     | E_Binop (IMPL, e1, e2) ->
         (* if e1 then e2 else true *)
         E_Cond (e1, e2, true')
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
     (* End *)
-    (* Begin EvalEvalBinop *)
+    (* Begin EvalBinop *)
     | E_Binop (op, e1, e2) ->
         let*^ m1, env1 = eval_expr env e1 in
         let*^ m2, new_env = eval_expr env1 e2 in
@@ -426,13 +421,13 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.binop op v1 v2 in
         return_normal (v, new_env) |: SemanticsRule.Binop
     (* End *)
-    (* Begin EvalEvalUnop *)
+    (* Begin EvalUnop *)
     | E_Unop (op, e1) ->
         let** v1, env1 = eval_expr env e1 in
         let* v = B.unop op v1 in
         return_normal (v, env1) |: SemanticsRule.Unop
     (* End *)
-    (* Begin EvalEvalECond *)
+    (* Begin EvalECond *)
     | E_Cond (e_cond, e1, e2) ->
         let*^ m_cond, env1 = eval_expr env e_cond in
         if is_simple_expr e1 && is_simple_expr e2 then
@@ -447,7 +442,7 @@ module Make (B : Backend.S) (C : Config) = struct
           choice_with_branch_effect m_cond e_cond e1 e2 (eval_expr env1)
           |: SemanticsRule.ECond
     (* End *)
-    (* Begin EvalEvalESlice *)
+    (* Begin EvalESlice *)
     | E_Slice (e_bv, slices) ->
         let*^ m_bv, env1 = eval_expr env e_bv in
         let*^ m_positions, new_env = eval_slices env1 slices in
@@ -455,7 +450,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.read_from_bitvector positions v_bv in
         return_normal (v, new_env) |: SemanticsRule.ESlice
     (* End *)
-    (* Begin EvalEvalECall *)
+    (* Begin EvalECall *)
     | E_Call (name, actual_args, params) ->
         let**| ms, new_env = eval_call (to_pos e) name env actual_args params in
         let* v =
@@ -467,7 +462,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         return_normal (v, new_env) |: SemanticsRule.ECall
     (* End *)
-    (* Begin EvalEvalEGetArray *)
+    (* Begin EvalEGetArray *)
     | E_GetArray (e_array, e_index) -> (
         let*^ m_array, env1 = eval_expr env e_array in
         let*^ m_index, new_env = eval_expr env1 e_index in
@@ -482,20 +477,20 @@ module Make (B : Backend.S) (C : Config) = struct
         let** v_tuple, new_env = eval_expr env e_tuple in
         let* v = B.get_index index v_tuple in
         return_normal (v, new_env)
-    (* Begin EvalEvalERecord *)
+    (* Begin EvalERecord *)
     | E_Record (_, e_fields) ->
         let names, fields = List.split e_fields in
         let** v_fields, new_env = eval_expr_list env fields in
         let* v = B.create_record (List.combine names v_fields) in
         return_normal (v, new_env) |: SemanticsRule.ERecord
     (* End *)
-    (* Begin EvalEvalEGetField *)
+    (* Begin EvalEGetField *)
     | E_GetField (e_record, field_name) ->
         let** v_record, new_env = eval_expr env e_record in
         let* v = B.get_field field_name v_record in
         return_normal (v, new_env) |: SemanticsRule.EGetBitField
     (* End *)
-    (* Begin EvalEvalEGetFields *)
+    (* Begin EvalEGetFields *)
     | E_GetFields (e_record, field_names) ->
         let** v_record, new_env = eval_expr env e_record in
         let* v_list =
@@ -507,13 +502,13 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.concat_bitvectors v_list in
         return_normal (v, new_env)
     (* End *)
-    (* Begin EvalEvalEConcat *)
+    (* Begin EvalEConcat *)
     | E_Concat e_list ->
         let** v_list, new_env = eval_expr_list env e_list in
         let* v = B.concat_bitvectors v_list in
         return_normal (v, new_env) |: SemanticsRule.EConcat
     (* End *)
-    (* Begin EvalEvalETuple *)
+    (* Begin EvalETuple *)
     | E_Tuple e_list ->
         let** v_list, new_env = eval_expr_list env e_list in
         let* v = B.create_vector v_list in
@@ -619,15 +614,13 @@ module Make (B : Backend.S) (C : Config) = struct
     | LE_Var x -> (
         let* v = m in
         match IEnv.assign x v env with
-        (* Begin EvalLELocalVar *)
+        (* Begin EvalLEVar *)
         | Local env ->
             let* () = B.on_write_identifier x (IEnv.get_scope env) v in
-            return_normal env |: SemanticsRule.LELocalVar
-        (* End *)
-        (* Begin EvalLEGlobalVar *)
+            return_normal env |: SemanticsRule.LEVar
         | Global env ->
             let* () = B.on_write_identifier x (Scope_Global false) v in
-            return_normal env |: SemanticsRule.LEGlobalVar
+            return_normal env |: SemanticsRule.LEVar
         (* End *)
         | NotFound -> (
             match ver with
@@ -683,7 +676,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalLEConcat *)
     | LE_Concat (les, Some widths) ->
-        let extract_one e_width (ms, e_start) =
+        let extract_slice e_width (ms, e_start) =
           let e_end = binop PLUS e_start e_width in
           let m' =
             let* v = m
@@ -693,9 +686,10 @@ module Make (B : Backend.S) (C : Config) = struct
           in
           (m' :: ms, e_end)
         in
-        let ms, _ = List.fold_right extract_one widths ([], expr_of_int 0) in
+        let ms, _ = List.fold_right extract_slice widths ([], expr_of_int 0) in
         multi_assign V1 env les ms
     (* End *)
+    (* Begin EvalLESetFields *)
     | LE_SetFields (le_record, fields, slices) ->
         let () =
           if List.compare_lengths fields slices != 0 then
@@ -711,6 +705,7 @@ module Make (B : Backend.S) (C : Config) = struct
             rm_record fields slices
         in
         eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetField
+    (* End *)
     | LE_Concat (_, None) ->
         let* () =
           let* v = m in
@@ -740,41 +735,32 @@ module Make (B : Backend.S) (C : Config) = struct
       [slices]. *)
   and eval_slices env :
       slice list -> ((B.value * B.value) list * env) maybe_exception m =
-    let eval_one env = function
-      (* Begin EvalSliceSingle *)
+    (* Begin EvalSlice *)
+    let eval_slice env = function
       | Slice_Single e ->
           let** v_start, new_env = eval_expr env e in
-          return_normal ((v_start, one), new_env) |: SemanticsRule.SliceSingle
-      (* End *)
-      (* Begin EvalSliceLength *)
+          return_normal ((v_start, one), new_env) |: SemanticsRule.Slice
       | Slice_Length (e_start, e_length) ->
           let*^ m_start, env1 = eval_expr env e_start in
           let*^ m_length, new_env = eval_expr env1 e_length in
           let* v_start = m_start and* v_length = m_length in
-          return_normal ((v_start, v_length), new_env)
-          |: SemanticsRule.SliceLength
-      (* End *)
-      (* Begin EvalSliceRange *)
+          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
       | Slice_Range (e_top, e_start) ->
           let*^ m_top, env1 = eval_expr env e_top in
           let*^ m_start, new_env = eval_expr env1 e_start in
           let* v_top = m_top and* v_start = m_start in
           let* v_length = B.binop MINUS v_top v_start >>= B.binop PLUS one in
-          return_normal ((v_start, v_length), new_env)
-          |: SemanticsRule.SliceRange
-      (* End *)
-      (* Begin EvalSliceStar *)
+          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
       | Slice_Star (e_factor, e_length) ->
           let*^ m_factor, env1 = eval_expr env e_factor in
           let*^ m_length, new_env = eval_expr env1 e_length in
           let* v_factor = m_factor and* v_length = m_length in
           let* v_start = B.binop MUL v_factor v_length in
-          return_normal ((v_start, v_length), new_env)
-          |: SemanticsRule.SliceStar
+          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
       (* End *)
     in
     (* Begin EvalSlices *)
-    fold_par_list eval_one env |: SemanticsRule.Slices
+    fold_par_list eval_slice env |: SemanticsRule.Slices
   (* End *)
 
   (* Evaluation of Patterns *)
@@ -864,12 +850,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalLDTyped *)
     | LDI_Typed (ldi1, _t), Some m ->
         eval_local_decl pos ldi1 env (Some m) |: SemanticsRule.LDTyped
-    (* End *)
-    (* Begin EvalLDUninitialisedTyped *)
     | LDI_Typed (ldi1, t), None ->
         let m = base_value env t in
-        eval_local_decl pos ldi1 env (Some m)
-        |: SemanticsRule.LDUninitialisedTyped
+        eval_local_decl pos ldi1 env (Some m) |: SemanticsRule.LDTyped
     (* End *)
     (* Begin EvalLDTuple *)
     | LDI_Tuple ldis, Some m ->
@@ -917,7 +900,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let**| new_env = eval_lexpr ver le env1 m in
         return_continue new_env |: SemanticsRule.SAssign
     (* End *)
-    (* Begin EvalSReturnSome *)
+    (* Begin EvalSReturn *)
     | S_Return (Some { desc = E_Tuple es; _ }) ->
         let**| ms, new_env = eval_expr_list_m env es in
         let scope = IEnv.get_scope new_env in
@@ -928,17 +911,14 @@ module Make (B : Backend.S) (C : Config) = struct
           return (i + 1, v :: vs)
         in
         let*| _i, vs = List.fold_left folder (return (0, [])) ms in
-        return_return new_env (List.rev vs) |: SemanticsRule.SReturnSome
-    (* End *)
-    (* Begin EvalSReturnOne *)
+        return_return new_env (List.rev vs) |: SemanticsRule.SReturn
     | S_Return (Some e) ->
         let** v, env1 = eval_expr env e in
         let* () =
           B.on_write_identifier (return_identifier 0) (IEnv.get_scope env1) v
         in
-        return_return env1 [ v ] |: SemanticsRule.SReturnOne
-    (* Begin EvalSReturnNone *)
-    | S_Return None -> return_return env [] |: SemanticsRule.SReturnNone
+        return_return env1 [ v ] |: SemanticsRule.SReturn
+    | S_Return None -> return_return env [] |: SemanticsRule.SReturn
     (* End *)
     (* Begin EvalSSeq *)
     | S_Seq (s1, s2) ->
@@ -999,36 +979,29 @@ module Make (B : Backend.S) (C : Config) = struct
         IEnv.remove_local index_name env4
         |> return_continue |: SemanticsRule.SFor
     (* End *)
-    (* Begin EvalSThrowNone *)
-    | S_Throw None -> return (Throwing (None, env)) |: SemanticsRule.SThrowNone
-    (* End *)
-    (* Begin EvalSThrowSomeTyped *)
+    (* Begin EvalSThrow *)
+    | S_Throw None -> return (Throwing (None, env)) |: SemanticsRule.SThrow
     | S_Throw (Some (e, Some t)) ->
         let** v, new_env = eval_expr env e in
         let name = throw_identifier () and scope = Scope_Global false in
         let* () = B.on_write_identifier name scope v in
         return (Throwing (Some ((v, name, scope), t), new_env))
-        |: SemanticsRule.SThrowSomeTyped
-    (* End *)
-    (* Begin EvalSThrowSome *)
-    | S_Throw (Some (_e, None)) ->
-        fatal_from s Error.TypeInferenceNeeded |: SemanticsRule.SThrowSome
+        |: SemanticsRule.SThrow
+    | S_Throw (Some (_e, None)) -> fatal_from s Error.TypeInferenceNeeded
     (* End *)
     (* Begin EvalSTry *)
     | S_Try (s1, catchers, otherwise_opt) ->
         let s_m = eval_block env s1 in
         eval_catchers env catchers otherwise_opt s_m |: SemanticsRule.STry
     (* End *)
-    (* Begin EvalSDeclSome *)
+    (* Begin EvalSDecl *)
     | S_Decl (_ldk, ldi, Some e) ->
         let*^ m, env1 = eval_expr env e in
         let**| new_env = eval_local_decl s ldi env1 (Some m) in
-        return_continue new_env |: SemanticsRule.SDeclSome
-    (* End *)
-    (* Begin EvalSDeclNone *)
+        return_continue new_env |: SemanticsRule.SDecl
     | S_Decl (_dlk, ldi, None) ->
         let**| new_env = eval_local_decl s ldi env None in
-        return_continue new_env |: SemanticsRule.SDeclNone
+        return_continue new_env |: SemanticsRule.SDecl
     (* End *)
     | S_Print { args; debug } ->
         let* vs = List.map (eval_expr_sef env) args |> sync_list in

@@ -1,0 +1,516 @@
+\chapter{Bitfields\label{chap:Bitfields}}
+
+Bitvector types allow defining bitslices of bitvectors, to be treated as named
+fields, which can be read or written. \lrmcomment{\identi{KGMC}}
+
+Individual bitfields are grammatically derived from $\Nbitfield$ and represented as ASTs by $\bitfield$.
+Bitfields are not associated with a semantic relation.
+
+\subsection{Example}
+The following code declares a global variable whose type is a bitvector with bitfields.
+\ASLExample{\definitiontests/Bitfields.asl}
+\begin{itemize}
+  \item The expression \texttt{myData.flag} evaluates to the value \texttt{myData[4]} of type \texttt{bits(1)};
+  \item The expression \texttt{myData.data} evaluates to the value \texttt{[myData[3:0], myData[8:5]]} of type \texttt{bits(8)};
+  \item There is no bitfield which accesses \texttt{myData[15:10]};
+  \item The value field overlaps with the other fields;
+  \item The slices \texttt{3:0} and \texttt{8:5} which define \texttt{data} do not overlap.
+\end{itemize}
+Note that in the \texttt{data} bitfield, bits \texttt{3:0} come before bits \texttt{8:5},
+which is a different order from their occurrence in \texttt{myData}.
+
+\hypertarget{def-singleslice}{}
+\hypertarget{def-rangeslice}{}
+\hypertarget{def-lengthslice}{}
+\hypertarget{def-scaledslice}{}
+We refer to a slice of the form \texttt{[$\ve$]} as a \singleslice,
+a slice of the form \texttt{[$\veone$:$\vetwo$]} as a \rangeslice,
+a slice of the form \texttt{[$\veone$+:$\vetwo$]} as a \lengthslice,
+and slice of the form \texttt{[$\veone$*:$\vetwo$]} as a \scaledslice.
+
+\section{Nested Bitfields}
+Bitfields may have nested bitfields. This can have several uses, one of which being being able to define two
+different views of a register.
+
+\subsection{Example}
+\ASLExample{\definitiontests/Bitfields_nested.asl}
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nbitfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &\\
+\Nbitfield \derivesinline\ & \Nnamedslices \parsesep \Tidentifier &\\
+                  |\ & \Nnamedslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
+                  |\ & \Nnamedslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
+\Nnamedslices \derivesinline\ & \Tlbracket \parsesep \NClist{\Nslice} \parsesep \Trbracket &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\bitfield \derives\ & \BitFieldSimple(\identifier, \slice^{*})
+  & \hypertarget{ast-bitfieldnested}{}\\
+  |\ & \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*})
+  & \hypertarget{ast-bitfieldtype}{}\\
+  |\ & \BitFieldType(\identifier, \slice^{*}, \ty) &
+\end{flalign*}
+
+\subsubsection{ASTRule.Bitfields\label{sec:ASTRule.Bitfields}}
+\hypertarget{build-bitfields}{}
+The function
+\[
+  \buildbitfields(\overname{\parsenode{\Nbitfields}}{\vparsednode}) \;\aslto\; \overname{\bitfield^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildtclist[\buildbitfield](\vbitfields) \astarrow \vbitfieldasts
+}{
+  \buildbitfields(\Nbitfields(\Tlbrace, \namednode{\vbitfields}{\TClist{\Nbitfield}}, \Trbrace)) \astarrow
+  \overname{\vbitfieldasts}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.Bitfield\label{sec:ASTRule.Bitfield}}
+\hypertarget{build-bitfield}{}
+The function
+\[
+  \buildbitfield(\overname{\parsenode{\Nbitfield}}{\vparsednode}) \;\aslto\; \overname{\bitfield}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[simple]{}{
+  \buildbitfields(\Nbitfield(\punnode{\Nnamedslices}, \Tidentifier(\vx))) \astarrow
+  \overname{\BitFieldSimple(\vx, \astof{\vnamedslices})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[nested]{}{
+  {
+    \begin{array}{r}
+      \buildbitfields(\Nbitfield(\punnode{\Nnamedslices}, \Tidentifier(\vx), \punnode{\Nbitfields})) \astarrow\\
+      \overname{\BitFieldNested(\vx, \astof{\vnamedslices}, \astof{\vbitfields})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[type]{}{
+  {
+    \begin{array}{r}
+      \buildbitfields(\Nbitfield(\punnode{\Nnamedslices}, \Tidentifier(\vx), \Tcolon, \punnode{\Nty})) \astarrow\\
+      \overname{\BitFieldType(\vx, \astof{\vnamedslices}, \astof{\tty})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.NamedSlices\label{sec:ASTRule.NamedSlices}}
+\hypertarget{build-namedslices}{}
+The function
+\[
+  \buildnamedslices(\overname{\parsenode{\Nnamedslices}}{\vparsednode}) \;\aslto\; \overname{\slice^+}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
+}{
+  \buildnamedslices(\Nnamedslices(\Tlbracket, \namednode{\vslices}{\NClist{\Nslice}}, \Trbracket)) \astarrow
+  \overname{\vsliceasts}{\vastnode}
+}
+\end{mathpar}
+
+\section{Typing Bitfields}
+\subsubsection{TypingRule.TBitFields\label{sec:TypingRule.TBitFields}}
+\hypertarget{def-annotatebitfields}{}
+The function
+\[
+  \annotatebitfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ewidth} \aslsep \overname{\bitfield^*}{\fields})
+  \aslto \overname{\bitfield^*}{\newfields} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a list of bitfields --- $\fields$ --- with an expression denoting the overall number of bits in the containing
+bitvector type --- $\ewidth$,
+in an environment $\tenv$,
+resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$\ProseOrTypeError;
+  \item symbolically simplifying $\ewidth$ in $\tenv$ via $\reduceconstants$ yields the literal integer for $\width$\ProseOrTypeError;
+  \item annotating each bitfield $\field$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding annotated
+  bitfield $\newfield$\ProseOrTypeError;
+  \item $\newfields$ is the list of annotated bitfields.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \names \eqdef [\field\in\fields: \bitfieldgetname(\field)]\\
+  \checknoduplicates(\names) \typearrow \True \OrTypeError\\\\
+  \reduceconstants(\tenv, \ewidth) \typearrow \lint(\width) \OrTypeError\\\\
+  \field\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow \newfield \OrTypeError\\\\
+  \newfields \eqdef [\field\in\fields: \newfield]
+}{
+  \annotatebitfields(\tenv, \ewidth, \fields) \typearrow \newfields
+}
+\end{mathpar}
+
+\CodeSubsection{\TBitFieldsBegin}{\TBitFieldsEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.BitFieldGetName \label{sec:TypingRule.BitFieldGetName}}
+\hypertarget{def-bitfieldgetname}{}
+The function
+\[
+  \bitfieldgetname : \overname{\bitfield}{\vbf} \aslto \overname{\identifier}{\name}
+\]
+returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item $\vb$ is a simple bitfield with name $\name$, that is, $\BitFieldSimple(\name, \Ignore)$;
+  \item $\vb$ is a nested bitfield with name $\name$, that is, $\BitFieldNested(\name, \Ignore, \Ignore)$;
+  \item $\vb$ is a typed bitfield with name $\name$, that is, $\BitFieldType(\name, \Ignore, \Ignore)$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule[simple]{}{
+    \bitfieldgetname(\BitFieldSimple(\name, \Ignore)) \typearrow \name
+  }
+  \and
+  \inferrule[nested]{}{
+    \bitfieldgetname(\BitFieldNested(\name, \Ignore, \Ignore)) \typearrow \name
+  }
+  \and
+  \inferrule[type]{}{
+    \bitfieldgetname(\BitFieldType(\name, \Ignore, \Ignore)) \typearrow \name
+  }
+\end{mathpar}
+
+\subsubsection{TypingRule.TBitField\label{sec:TypingRule.TBitField}}
+\hypertarget{def-annotatebitfield}{}
+The function
+\[
+  \annotatebitfield(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\width} \aslsep \overname{\bitfield}{\vfield})
+  \aslto \overname{\bitfield}{\newfield} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a bitfield --- $\vfield$ --- with an integer --- $\width$ --- indicating the number of bits in
+the bitvector type that contains $\field$,
+in an environment $\tenv$, resulting in an
+annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
+
+\subsubsection{Prose}
+\begin{itemize}
+  \item $\vfield$ is a bitfield with list of slices $\vslices$;
+  \item annotating the slices $\vslices$ yields $\slicesone$\ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{simple}):
+    \begin{itemize}
+      \item checking whether the range of positions in $\slicesone$ fits inside $0..\width-1$ yields $\True$\ProseOrTypeError;
+      \item $\newfield$ is a bitfield named $\name$ with list of slices $\slicesone$, that is, $\BitFieldSimple(\name, \slicesone)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{nested}):
+    \begin{itemize}
+      \item converting the $\slicesone$ into a list of positions with $\width$ and static environment $\tenv$
+      yields $\positions$\ProseOrTypeError;
+      \item checking that all positions in $\positions$ fit inside $0..\width$ yields \\
+            $\True$\ProseOrTypeError;
+      \item let $\widthp$ be the length of the list $\positions$;
+      \item annotating the bitfields $\bitfieldsp$ with $\widthp$ in static environment $\tenv$ yields $\bitfieldspp$\ProseOrTypeError;
+      \item $\newfields$ is the nested bitfield with $\slicesone$ and bitfields $\bitfieldspp$, that is, $\BitFieldNested(\slicesone, \bitfieldspp)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{type}):
+    \begin{itemize}
+      \item Annotating the type $\vt$ yields $\vtp$\ProseOrTypeError;
+      \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
+      \item converting the list of slices $\slicesone$ into a list of positions in $\tenv$ yields $\positions$\ProseOrTypeError;
+      \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
+      \item let $\widthp$ be the length of the list $\positions$;
+      \item checking whether the $\vt$ and the bitvector with $\widthp$ bits have the same width yields $\True$\ProseOrTypeError
+      \item $\newfield$ is the typed-bitfield with name $\name$, list of slices $\slicesone$ and type $\vtp$, that is, \BitFieldType(\name, \slicesone, \vtp).
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[simple]{
+  \annotateslices(\tenv, \vslices) \typearrow \slicesone \OrTypeError\\\\
+  \commonprefixline\\\\
+  \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError
+}{
+  \annotatebitfield(\tenv, \width, \BitFieldSimple(\name, \vslices)) \typearrow \\
+  \BitFieldSimple(\name, \slicesone)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[nested]{
+  \annotateslices(\tenv, \vslices) \typearrow \slicesone \OrTypeError\\\\
+  \commonprefixline\\\\
+  \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \checkpositionsinwidth(\tenv, \width, \positions) \typearrow \True \OrTypeError\\\\
+  \widthp \eqdef \listlen{\positions}\\
+  \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow \bitfieldspp \OrTypeError\\
+}{
+  \annotatebitfield(\tenv, \width, \BitFieldNested(\name, \vslices, \bitfieldsp)) \typearrow \\
+  \BitFieldNested(\slicesone, \bitfieldspp)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[type]{
+  \annotateslices(\tenv, \vslices) \typearrow \slicesone \OrTypeError\\\\
+  \commonprefixline\\\\
+  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\\\
+  \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \checkpositionsinwidth(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\\\
+  \widthp \eqdef \listlen{\positions}\\
+  \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError
+}{
+  \annotatebitfield(\tenv, \width, \BitFieldType(\name, \vslices, \vt)) \typearrow \\
+  \BitFieldType(\name, \slicesone, \vtp)
+}
+\end{mathpar}
+
+\subsubsection{Example}
+In the following example, all the uses of bitvector types with bitfields are well-typed:
+\ASLExample{\typingtests/TypingRule.TBitField.asl}
+
+\CodeSubsection{\TBitFieldBegin}{\TBitFieldEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.CheckSlicesInWidth\label{sec:TypingRule.CheckSlicesInWidth}}
+\hypertarget{def-checkslicesinwidth}{}
+The function
+\[
+  \checkslicesinwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\vwidth} \aslsep \overname{\slice^*}{\vslices})
+  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the slices in $\vslices$ fit within the bitvector width given by $\vwidth$ in $\tenv$,
+yielding $\True$. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+    \item applying $\disjointslicestopositions$ to $\vslices$ in $\tenv$ checks whether the
+    slices in $\vslices$ are disjoint and yields the set of their positions\ProseOrTypeError;
+    \item applying $\checkpositionsinwidth$ to $\vwidth$ and $\positions$ to check that
+    all of the positions fit with the width given by $\vwidth$ yields $\True$\ProseOrError.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \disjointslicestopositions(\tenv, \vslices) \typearrow \positions \OrTypeError\\\\
+    \checkpositionsinwidth(\vwidth, \positions) \typearrow \True \OrTypeError
+}{
+    \checkslicesinwidth(\tenv, \vwidth, \vslices) \typearrow \True
+}
+\end{mathpar}
+\CodeSubsection{\CheckSlicesInWidthBegin}{\CheckSlicesInWidthEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.CheckPositionsInWidth\label{sec:TypingRule.CheckPositionsInWidth}}
+\hypertarget{def-checkpositionsinwidth}{}
+The function
+\[
+  \checkpositionsinwidth(\overname{\Z}{\vwidth} \aslsep \overname{\pow{\Z}}{\positions})
+  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the set of positions in $\positions$ fit within the bitvector width given by $\vwidth$,
+yielding $\True$. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+    \item define $\minpos$ as the minimal position in $\positions$;
+    \item define $\maxpos$ as the maximal position in $\positions$;
+    \item checking that $\minpos$ is non-negative and that $\maxpos$ is less than or equal to $\vwidth$
+            yields $\True$\ProseTerminateAs{\BitfieldsOutOfRange}.
+    \item the result is $\True$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \minpos \eqdef \min(\positions)\\
+    \maxpos \eqdef \max(\positions)\\
+    \checktrans{0 \leq \minpos \land \maxpos \leq \vwidth}{\BitfieldsOutOfRange} \typearrow \True \OrTypeError
+}{
+    \checkpositionsinwidth(\vwidth, \positions) \typearrow \True
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.DisjointSlicesToPositions\label{sec:TypingRule.DisjointSlicesToPositions}}
+\hypertarget{def-disjointslicestopositions}{}
+The function
+\[
+  \disjointslicestopositions(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices})
+  \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns the set of integers defined by the list of slices in $\vslices$ in $\positions$.
+In particular, this rule checks that the bitfield slices do not overlap and that they are not defined in reverse
+(e.g., \texttt{0:1} rather than \texttt{1:0})
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vslices$ is the empty list;
+    \item $\positions$ is the empty set.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vslices$ is the list with $\vs$ as its \head\ and $\vslicesone$ as its \tail;
+    \item applying $\bitfieldslicetopositions$ to $\vs$ in $\tenv$ yields the set of positions \\
+          $\positionsone$\ProseOrTypeError;
+    \item applying $\disjointslicestopositions$ to $\vslicesone$ in $\tenv$ yields the set of positions $\positionsone$\ProseOrTypeError;
+    \item checking that $\positionsone$ is disjoint from $\positionstwo$ yields $\True$\ProseTerminateAs{\BitfieldSlicesOverlap}
+    \item $\positions$ is the union of $\positionsone$ and $\positionstwo$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \disjointslicestopositions(\tenv, \overname{\emptylist}{\vslices}) \typearrow \overname{\emptyset}{\positions}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \bitfieldslicetopositions(\tenv, \vs) \typearrow \positionsone \OrTypeError\\\\
+  \disjointslicestopositions(\tenv, \vslicesone) \typearrow \positionstwo \OrTypeError\\\\
+  \checktrans{\positionsone \cap \positionstwo = \emptyset}{\BitfieldSlicesOverlap} \checktransarrow \True \OrTypeError
+}{
+  \disjointslicestopositions(\tenv, \overname{\vs \concat \vslicesone}{\vslices}) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.BitfieldSliceToPositions\label{sec:TypingRule.BitfieldSliceToPositions}}
+\hypertarget{def-bitfieldslicetopositions}{}
+The function
+\[
+  \bitfieldslicetopositions(\overname{\staticenvs}{\tenv}, \overname{\vslice}{\vslices})
+  \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{single}):
+  \begin{itemize}
+    \item $\vslice$ is a \singleslice\ defined by the expression $\ve$, that is, $\SliceSingle(\ve)$;
+    \item applying $\reduceconstants$ to $\ve$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError;
+    \item checking that $\vl$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
+    \item $\vl$ is the integer literal for $\vx$;
+    \item $\positions$ is the singleton set for $\vx$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vslice$ is \rangeslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
+          $\SliceRange(\veone, \vetwo)$;
+    \item applying $\reduceconstants$ to $\veone$ in $\tenv$ yields the literal $\vlone$\ProseOrTypeError;
+    \item checking that $\vlone$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
+    \item $\vlone$ is the integer literal for $\vx$;
+    \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
+    \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
+    \item $\vltwo$ is the integer literal for $\vy$;
+    \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item $\positions$ is the set of integers between $\vx$ and $\vy$, inclusive.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{length}):
+  \begin{itemize}
+    \item $\vslice$ is \lengthslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
+          $\SliceLength(\veone, \vetwo)$;
+    \item applying $\reduceconstants$ to $\veone$ in $\tenv$ yields the literal $\vlone$\ProseOrTypeError;
+    \item checking that $\vlone$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
+    \item $\vlone$ is the integer literal for $\vx$;
+    \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
+    \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
+    \item $\vltwo$ is the integer literal for $\vy$;
+    \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item $\positions$ is the set of integers between $\vx$ and $\vx+\vy-1$, inclusive.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{scaled}):
+  \begin{itemize}
+    \item $\vslice$ is \scaledslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
+          $\SliceStar(\veone, \vetwo)$;
+    \item applying $\reduceconstants$ to $\veone$ in $\tenv$ yields the literal $\vlone$\ProseOrTypeError;
+    \item checking that $\vlone$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
+    \item $\vlone$ is the integer literal for $\vx$;
+    \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
+    \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
+    \item $\vltwo$ is the integer literal for $\vy$;
+    \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item $\positions$ is the set of integers between $\vx \times \vy$ and $\vx \times (\vy + 1) - 1$, inclusive.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[single]{
+  \reduceconstants(\tenv, \ve) \typearrow \vl \OrTypeError\\\\
+  \checktrans{\astlabel(\vl) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
+  \vl \eqname \lint(\vx)
+}{
+  \bitfieldslicetopositions(\tenv, \overname{\SliceSingle(\ve)}{\vslice}) \typearrow \overname{\{\vx\}}{\positions}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \reduceconstants(\tenv, \veone) \typearrow \vlone \OrTypeError\\\\
+  \checktrans{\astlabel(\vlone) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
+  \vlone \eqname \lint(\vx)\\
+  \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
+  \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
+  \vltwo \eqname \lint(\vy)\\
+  \checktrans{\vx \leq \vy}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+}{
+  \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow \overname{\{n \;|\; \vx \leq n \leq \vy\}}{\positions}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[length]{
+  \reduceconstants(\tenv, \veone) \typearrow \vlone \OrTypeError\\\\
+  \checktrans{\astlabel(\vlone) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
+  \vlone \eqname \lint(\vx)\\
+  \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
+  \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
+  \vltwo \eqname \lint(\vy)\\
+  \checktrans{\vx \leq \vy}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+}{
+  \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow \overname{\{n \;|\; \vx \leq n \leq \vx+\vy-1\}}{\positions}
+}
+\end{mathpar}
+\begin{mathpar}
+
+\inferrule[scaled]{
+  \reduceconstants(\tenv, \veone) \typearrow \vlone \OrTypeError\\\\
+  \checktrans{\astlabel(\vlone) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
+  \vlone \eqname \lint(\vx)\\
+  \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
+  \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
+  \vltwo \eqname \lint(\vy)\\
+  \checktrans{\vx \leq \vy}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+}{
+  \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow
+  \overname{\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}}{\positions}
+}
+\end{mathpar}

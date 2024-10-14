@@ -1,0 +1,115 @@
+\chapter{Introduction\label{chap:Introduction}}
+
+The increasing importance of the Arm architecture coupled with the increasing use of formal verification of both
+hardware and software make it important to have a readable, precise way of describing the majority of the Arm
+architecture. This reference defines Arm’s Architecture Specification Language (ASL), which is the language
+used in Arm’s architecture reference manuals to describe the Arm architecture.
+
+ASL is designed and used to specify architectures. As a formal
+specification language it is designed to be accessible, understandable, and unambiguous to programmers, hardware
+engineers, and hardware verification engineers, who collectively have quite a small intersection of languages they
+all understand. It can intentionally under specify behaviors in the architecture being described.
+
+ASL is:
+\begin{itemize}
+    \item a first-order language with strong static type-checking.
+    \item whitespace-insensitive.
+    \item imperative.
+\end{itemize}
+
+ASL has support for:
+\begin{itemize}
+    \item bitvectors:
+    \begin{itemize}
+        \item as a type.
+        \item as a literal constant.
+        \item bitvector concatenation.
+        \item bitvector constants with wildcards.
+        \item bitslices.
+        \item dependent types to support function overloading using bitvector lengths.
+        \item dependent types to reason about lengths of bitvectors.
+    \end{itemize}
+    \item unbounded arithmetic types “integer” and “real”.
+    \item exceptions.
+    \item enumerations.
+    \item arrays.
+    \item records.
+    \item call-by-value.
+    \item type inference.
+\end{itemize}
+
+ASL does not have support for:
+\begin{itemize}
+    \item references or pointers.
+    \item macros.
+    \item templates.
+    \item virtual functions.
+\end{itemize}
+
+A \emph{specification} consists of a self-contained collection of ASL code.
+\lrmcomment{\identd{GVBK}}
+More specifically, a specification is the set of declarations written in ASL code which describe an architecture.
+
+\section{Example Specification 1}
+\figref{spec1} shows a small example of a specification written in ASL. It consists of the following declarations:
+\begin{itemize}
+    \item Global bitvectors \texttt{R0}, \texttt{R1}, and \texttt{R2} representing the state of the system.
+    \item A function \texttt{MyOR} demonstrating a simple bit-wise OR function of 2 bitvectors.
+    \item Initialization of \texttt{R0} and \texttt{R1} bitvectors.
+    \item Assignment of bitvector \texttt{R2} with the result of a function call.
+\end{itemize}
+
+\begin{center}
+\lstinputlisting[caption=Example specification 1\label{fi:spec1}]{\definitiontests/spec1.asl}
+\end{center}
+
+\section{Example Specification 2}
+\figref{spec2} shows a small example of a specification written in ASL. It consists of the following declarations:
+\begin{itemize}
+\item A global variable \texttt{COUNT} representing the state of the system.
+\item A procedure \texttt{ColdReset} to initialize the state of the system when power is applied and the system is reset.
+    This interpretation of the function is a convention used in this particular specification. It is up to each
+    specification to decide the role of each function.
+\item A procedure \texttt{Step} to advance the state of the system. That is, it defines the \emph{transition relation} of the system.
+    Again, this interpretation is a convention used in this particular specification, not part of the ASL language
+    itself.
+\end{itemize}
+
+\begin{center}
+\lstinputlisting[caption=Example specification 2\label{fi:spec2}]{\definitiontests/spec2.asl}
+\end{center}
+
+\section{Example Specification 3}
+\figref{spec3} shows a small example of a specification in ASL. It consists of the following declarations:
+\begin{itemize}
+    \item A function \texttt{Dot8} which operates on 2 bitvectors a byte at a time.
+    \item A global variable \texttt{COUNT} to indicate the number of calls to the \texttt{Fib} function.
+    \item A function \texttt{Fib} demonstrating recursion.
+    \item Assignment of a global bitvector \texttt{X} with a call to the \texttt{Dot8} function.
+    \item Assignment of a variable from the result of a call to the recursive function \texttt{Fib}.
+    \item A function \texttt{main}.
+\end{itemize}
+
+\begin{center}
+\lstinputlisting[caption=Example specification 3\label{fi:spec3}]{\definitiontests/spec3.asl}
+\end{center}
+
+The ASL type system and its semantics are defined in terms of
+the the ASL abstract syntax (\chapref{AbstractSyntax}).
+Familiarity with the AST is \underline{required} to understand both.
+The mathematical background needed to understand the formalization
+of the ASL type system and ASL semantics appears in \chapref{FormalSystem},
+\chapref{TypeChecking}, and \chapref{Semantics}.
+
+% \section{The Language Pipeline}
+% \begin{description}
+% \item[Lexical Analysis] The text is first transformed into a list of \emph{tokens}.
+%         This stage is defined in \secref{lexicalanalysis};
+% \item[Parsing] The list of tokens is transformed into a \emph{parse tree}.
+%         This stage is defined in \secref{parsing};
+% \item[Abstraction] The parse tree is transformed into an abstract syntax tree. This is a conceptual stage. In actuality,
+%         the parsing stage transforms the list of tokens directly into an abstract syntax tree. However, it is useful to
+%         distinguish between the parsing state and the abstraction stage.
+%         ASL abstract syntax trees are defined in \chapref{ASLAbstractSyntax}.
+%         This stage is defined in \chapref{BuildingAbstractSyntaxTrees}.
+% \end{description}

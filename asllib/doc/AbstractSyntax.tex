@@ -1,0 +1,924 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Abstract Syntax\label{chap:AbstractSyntax}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+An abstract syntax is a form of context-free grammar over structured trees.
+Compilers and interpreters typically start by parsing the text of a program and producing an abstract syntax tree (AST, for short),
+and then continue to operate over that tree.
+%
+The reason for this is that abstract syntax trees abstract away details that are irrelevant to the semantics of the program,
+such as punctuation and scoping syntax, which are useful for readability and parsing.
+
+\hypertarget{def-typedast}{}
+\hypertarget{def-untypedast}{}
+\paragraph{Untyped AST vs. Typed AST:}
+Technically, there are two abstract syntaxes:
+an \emph{untyped abstract syntax} and a \emph{typed abstract syntax}.
+The first syntax results from parsing the text of an ASL specification.
+The type checker checks whether the untyped AST is valid and if so produces
+a typed AST where some nodes in the untyped AST have been transformed to
+more explicit representation. For example, the untyped AST may contain
+what looks like a slicing expression, which turns out to be a call to a getter.
+The typed AST represents that call directly, making it simpler for an interpreter
+to evaluate that expression.
+
+\paragraph{Outline:}
+The outline of this chapter is as follows,
+We first define the type of Abstract Syntax Trees used by ASL (\secref{AbstractSyntaxTrees}).
+We then define the notations for defining the AST grammar used by ASL (\secref{AbstractSyntaxGrammar})
+Finally, we define the AST grammar rules for the different ASL constructs along with examples:
+\begin{itemize}
+  \item Identifiers (\secref{Identifiers})
+  \item Literal values (\secref{ASTLiterals})
+  \item Basic Operations (\secref{BasicOperations})
+  \item Expressions (\secref{Expressions})
+  \item Patterns (\secref{Patterns})
+  \item Slices (\secref{Slices})
+  \item Types (\secref{Types})
+  \item Constraints (\secref{Constraints})
+  \item Bit Fields (\secref{BitFields})
+  \item Array Indices (\secref{ArrayIndices})
+  \item Fields and Typed Identifiers (\secref{FieldsAndTypedIdentifiers})
+  \item Left-hand Side Expressions (\secref{LeftHandSideExpressions})
+  \item Local Declarations (\secref{LocalDeclarations})
+  \item Statements (\secref{Statements})
+  \item Case Alternatives (\secref{CaseAlternatives})
+  \item Exception Catchers (\secref{ExceptionCatchers})
+  \item Subprograms (\secref{Subprograms})
+  \item Global Declarations (\secref{GlobalDeclarations})
+  \item Specifications (\secref{Specifications})
+\end{itemize}
+We then define the following:
+\begin{itemize}
+\item the grammar rules for the \untypedast\ (\secref{UntypedAbstractGrammar})
+\item the grammar rules for the \typedast\ (\secref{TypedAbstractSyntaxGrammar})
+\item how we use inference rules to define the transformation from a parse tree into an \untypedast\ (\secref{BuildingAbstractSyntaxTrees})
+\item rules for building ASTs from parameterized productions (\secref{BuildingParameterizedProductions})
+\item how \assignableexpressions\ can be viewed as corresponding right hand side expressions (\secref{LeftToRight})
+\item finally, we define some useful abbreviations for denoting abstract syntax trees in rules (\secref{AbstractSyntaxAbreviations})
+\end{itemize}
+
+\section{Abstract Syntax Trees\label{sec:AbstractSyntaxTrees}}
+
+In an ASL abstract syntax tree, a node is one the following data types:
+\begin{description}
+\item[Token Node.] A lexical token, denoted as in the lexical description of ASL;
+\item[Label Node.] A label
+\item[Unlabelled Tuple Node.] A tuple of children nodes, denoted as $(n_1,\ldots,n_k)$;
+\item[Labelled Tuple Node.] A tuple labelled~$L$, denoted as~$L(n_1,\ldots,n_k)$;
+\item[List Node.] A list of~$0$ or more children nodes, denoted as~$\emptylist$
+      when the list is empty and~$[n_1,\ldots,n_k]$ for non-empty lists;
+\item[Optional.] An optional node stands for a list of 0 or 1 occurrences of a sub-node $n$. We denote an empty optional by $\langle\rangle$ and the non-empty optional by $\langle n \rangle$;
+\item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where \\
+      $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
+\end{description}
+
+\section{Abstract Syntax Grammar\label{sec:AbstractSyntaxGrammar}}
+
+An abstract syntax is defined in terms of derivation rules containing variables (also referred to as non-terminals).
+%
+A \emph{derivation rule} has the form $v \derives \textit{rhs}$ where $v$ is a non-terminal variable and \textit{rhs} is a \emph{node type}. We write $n$, $n_1,\ldots,n_k$ to denote node types.
+%
+Node types are defined recursively as follows:
+\begin{description}
+\item[Non-terminal.] A non-terminal variable;
+\item[Terminal.] A lexical token $t$ or a label $L$;
+\item[Unlabelled Tuple.] A tuple of node types, denoted as~$(n_1,\ldots,n_k)$;
+\item[Labelled Tuple.] A tuple labelled~$L$, denoted as~$L(n_1,\ldots,n_k)$;
+\item[List.] A list node type, denoted as $n^{*}$;
+\item[Optional.] An optional node type, denoted as $n?$;
+\item[Record.] A record, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$ where $\text{name}_i$, which associates names with corresponding node types.
+\end{description}
+
+\newpage
+
+An abstract syntax consists of a set of derivation rules and a start non-terminal.
+
+\newcommand\ASTComment[1]{//\quad\textit{#1}\ }
+
+\section{Untyped Abstract Grammar\label{sec:UntypedAbstractGrammar}}
+
+The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\specification$.
+%
+Some extra details are given by using the notation $\overname{\textit{symbol}}{\text{detail}}$.
+
+\subsection{Identifiers \label{sec:Identifiers}}
+\hypertarget{ast-identifier}{}
+Identifiers in the AST, denoted $\identifier$ are simply strings representing ASL identifiers.
+Those are obtained directly from the values of identifier tokens, $\Tidentifier(s)$.
+
+\subsection{Literal Values \label{sec:ASTLiterals}}
+The following rules correspond to literal values of the following ASL data types:
+integers, Booleans, real numbers, bitvectors, and strings.
+
+\hypertarget{ast-literal}{} \hypertarget{ast-lint}{}
+\begin{flalign*}
+\literal \derives\ & \lint(\overname{n}{\Z})
+& \hypertarget{ast-lbool}{}
+\\
+ |\ & \lbool(\overname{b}{\{\True, \False\}})
+ & \hypertarget{ast-lreal}{}
+\\
+ |\ & \lreal(\overname{q}{\Q})
+ & \hypertarget{ast-lbitvector}{}
+\\
+ |\ & \lbitvector(\overname{B}{B \in \{0, 1\}^*})
+ & \hypertarget{ast-lstring}{}
+\\
+ |\ & \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}}) &
+\end{flalign*}
+
+\subsection{Basic Operations\label{sec:BasicOperations}}
+The following rules correspond to unary operations and binary operations that can be applied to expressions.
+
+\hypertarget{ast-unop}{} \hypertarget{ast-bnot}{} \hypertarget{ast-neg}{} \hypertarget{ast-not}{}
+\begin{flalign*}
+\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
+& \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
+\\
+\binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
+              \;|\; \overname{\BEQ}{\texttt{"<->"}}
+              & \hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
+\\
+        |\ & \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
+        \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
+        & \hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
+\\
+        |\ & \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
+        \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
+        & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
+\\
+        |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
+        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
+        & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{}
+\\
+        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}}
+        &
+\end{flalign*}
+
+\subsection{Expressions \label{sec:Expressions}}
+The following rules correspond to various types of expressions:
+literal expressions, variable expressions, typing assertions, binary operation expressions, unary operation expressions,
+call expressions, slicing expressions, conditional expressions, single-field access expressions, multiple-field access expressions,
+record and exception construction expressions, concatenation expressions, tuple expressions, unknown-value expressions,
+and pattern matching expressions.
+
+\hypertarget{ast-expr}{} \hypertarget{ast-eliteral}{}
+\begin{flalign*}
+\expr \derives\ & \ELiteral(\literal)
+& \hypertarget{ast-evar}{} \hypertarget{ast-identifier}{}\\
+	|\ & \EVar(\overtext{\identifier}{variable name})
+  &\hypertarget{ast-eatc}{}\\
+	|\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type})
+  &\hypertarget{ast-ebinop}{}\\
+	|\ & \EBinop(\binop, \expr, \expr)
+  &\hypertarget{ast-eunop}{}\\
+	|\ & \EUnop(\unop, \expr)
+  &\hypertarget{ast-ecall}{}\\
+	|\ & \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})
+  &\hypertarget{ast-eslice}{}\\
+	|\ & \ESlice(\expr, \slice^{*})
+  &\hypertarget{ast-econd}{}\\
+	|\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
+  &\hypertarget{ast-egetfield}{}\\
+	|\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})
+  &\hypertarget{ast-egetfields}{}\\
+	|\ & \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names})
+  &\hypertarget{ast-erecord}{}\\
+	|\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})
+  &\hypertarget{ast-econcat}{}\\
+	|\ & \EConcat(\expr^{+})
+  &\hypertarget{ast-etuple}{}\\
+	|\ & \ETuple(\expr^{+})
+  &\hypertarget{ast-eunknown}{}\\
+	|\ & \EUnknown(\ty)
+  &\hypertarget{ast-epattern}{}\\
+	|\ & \EPattern(\expr, \pattern)
+\end{flalign*}
+
+\figref{expr1} and \figref{expr2} exemplify the different kinds of expressions,
+as indicated by respective comments.
+\begin{figure}
+\ASLExample{\syntaxtests/expr1.asl}
+\caption{Examples of expressions \label{fi:expr1}}
+\end{figure}
+
+\begin{figure}
+\ASLExample{\syntaxtests/expr2.asl}
+\caption{Examples of expressions\label{fi:expr2}}
+\end{figure}
+
+\begin{itemize}
+  \item $\EVar(\vx)$ represents variables (\texttt{E\_Var 1})
+  as well as getters declared without a list of arguments (\texttt{E\_Var 2}).
+
+  \item $\EATC(\ve, \vt)$ represents typing assertions. For example: \texttt{x as integer}.
+  Here $\ve$ corresponds to \texttt{x} and $\vt$ corresponds to \texttt{integer}.
+
+  \item $\ESlice(\ve, \vslices)$ represents slices of bitvectors (\texttt{E\_Slice 1}),
+  slices of integers \\
+  (\texttt{E\_Slice 2}),
+  calls to getters (\texttt{E\_Slice 3} and \texttt{E\_Slice 4}),
+  and access to array elements (\texttt{E\_Slice 5}).
+
+  \item $\EGetField(\ve, \id)$ represents an access to a record (\texttt{E\_GetField 1})
+        or exception field
+        as well as an access to a tuple component (\texttt{E\_GetField 2}).
+
+  \item $\EGetFields(\ve, \ids)$ represents an access to multiple record fields (\texttt{E\_GetFields 1}).
+\end{itemize}
+
+\subsection{Patterns \label{sec:Patterns}}
+
+\hypertarget{ast-pattern}{} \hypertarget{ast-patternall}{}
+\begin{flalign*}
+\pattern \derives\ & \PatternAll
+  & \hypertarget{ast-patternany}{}\\
+  |\ & \PatternAny(\pattern^{*})
+  & \hypertarget{ast-patterngeq}{}\\
+  |\ & \PatternGeq(\expr)
+  & \hypertarget{ast-patternleq}{}\\
+  |\ & \PatternLeq(\expr)
+  & \hypertarget{ast-patternmask}{}\\
+  |\ & \PatternMask(\overtext{\{0,1,x\}^*}{mask constant})
+  & \hypertarget{ast-patternnot}{}\\
+  |\ & \PatternNot(\pattern)
+  & \hypertarget{ast-patternrange}{}\\
+  |\ & \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper})
+  & \hypertarget{ast-patternsingle}{}\\
+  |\ & \PatternSingle(\expr)
+  & \hypertarget{ast-patterntuple}{}\\
+  |\ & \PatternTuple(\pattern^{*}) &
+\end{flalign*}
+
+\subsection{Slices \label{sec:Slices}}
+
+\hypertarget{ast-slice}{} \hypertarget{ast-slicesingle}{}
+\begin{flalign*}
+% &&\ASTComment{Indexes an array or a bitvector.}\\
+% &&\ASTComment{All positions mentioned below are inclusive}\\
+\slice \derives\ & \SliceSingle(\overname{\expr}{\vi})
+  & \hypertarget{ast-slicerange}{}\\
+  % & & \ASTComment{the slice of length \texttt{1} at position \vi.}\\
+  |\ & \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi})
+  & \hypertarget{ast-slicelength}{}\\
+  % & & \ASTComment{the slice from \vi\ to \texttt{j - 1}.}\\
+  |\ & \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn})
+  & \hypertarget{ast-slicestar}{}\\
+  % & & \ASTComment{the slice starting at \vi\ of length \vn.}\\
+  |\ & \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &
+  % & & \ASTComment{the slice starting at \texttt{i*n} of length \vn}
+\end{flalign*}
+
+\subsection{Types \label{sec:Types}}
+
+\hypertarget{ast-ty}{} \hypertarget{ast-tint}{}
+\begin{flalign*}
+\ty \derives\ & \TInt(\intconstraints)
+\hypertarget{ast-treal}{}\\
+  |\ & \TReal
+  & \hypertarget{ast-tstring}{}\\
+  |\ & \TString
+  & \hypertarget{ast-tbool}{}\\
+  |\ & \TBool
+  & \hypertarget{ast-tbits}{}\\
+  |\ & \TBits(\overtext{\expr}{width}, \bitfield^{*})
+  & \hypertarget{ast-ttuple}{}\\
+  |\ & \TTuple(\ty^{*})
+  & \hypertarget{ast-tarray}{}\\
+  |\ & \TArray(\arrayindex, \ty)
+  & \hypertarget{ast-tnamed}{}\\
+  |\ & \TNamed(\overtext{\identifier}{type name}) &
+  & \hypertarget{ast-tenum}{}\\
+  |\ & \TEnum(\overtext{\identifier^{*}}{labels})\\
+  & \hypertarget{ast-trecord}{}\\
+  |\ & \TRecord(\Field^{*})
+  & \hypertarget{ast-texception}{}\\
+  |\ & \TException(\Field^{*})
+% &  & & \ASTComment{This is related to \identi{LDNP}}
+\end{flalign*}
+
+\subsection{Constraints \label{sec:Constraints}}
+
+\hypertarget{ast-intconstraints}{} \hypertarget{ast-unconstrained}{}
+\begin{flalign*}
+  % & & \ASTComment{Constraints that may be assigned to integer types.}  \\
+  \intconstraints \derives\ & \unconstrained
+  % & & \ASTComment{The unconstrained integer type.}
+  & \hypertarget{ast-wellconstrained}{}\\
+  |\ & \wellconstrained(\intconstraint^{+})
+  % & & \ASTComment{An integer type with explicit constraints.}
+  & \hypertarget{ast-parameterized}{}\\
+  |\ & \parameterized(\overtext{\identifier}{parameter}) &
+  % & & \ASTComment{Implicitly constrained integer from function declaration.} \\
+  % & & \ASTComment{Attributes are:} \\
+  % & & \ASTComment{- a unique integer identifier and the variable} \\
+  % & & \ASTComment{- the type was implicitly constructed from.} \\
+\end{flalign*}
+
+\hypertarget{ast-intconstraint}{} \hypertarget{ast-constraintexact}{}
+\begin{flalign*}
+% & & \ASTComment{A constraint on an integer part.}\\
+\intconstraint \derives\ & \ConstraintExact(\expr)
+  % & & \ASTComment{A single value, given by a statically evaluable expression.}
+  & \hypertarget{ast-constraintrange}{}\\
+  |\ & \ConstraintRange(\overtext{\expr}{start}, \overtext{\expr}{end})&
+  % & & \ASTComment{An interval between two statically evaluable expression.}\\
+\end{flalign*}
+
+\subsection{Bit Fields \label{sec:BitFields}}
+
+\hypertarget{ast-bitfield}{} \hypertarget{ast-bitfieldsimple}{}
+\begin{flalign*}
+% & & \ASTComment{Represent static slices on a given bitvector type.}\\
+\bitfield \derives\ & \BitFieldSimple(\identifier, \slice^{*})
+  % & & \ASTComment{A name and its corresponding slice.}
+  & \hypertarget{ast-bitfieldnested}{}\\
+  |\ & \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*})
+  % & & \ASTComment{A name, its corresponding slice and some nested bitfields.}
+  & \hypertarget{ast-bitfieldtype}{}\\
+  |\ & \BitFieldType(\identifier, \slice^{*}, \ty) &
+  % & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
+\end{flalign*}
+
+\subsection{Array Indices \label{sec:ArrayIndices}}
+
+\hypertarget{ast-arrayindex}{} \hypertarget{ast-arraylengthexpr}{}
+The type of array indices is given by the following AST type:
+\begin{flalign*}
+\arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
+\end{flalign*}
+
+% \[
+%   \begin{array}{rcl}
+%     & & \ASTComment{The type of indexes for an array.}  \\
+%     \hline
+%     \arrayindex & \derives
+%       & \ArrayLengthExpr(\overtext{\expr}{array length})
+%       \hypertarget{ast-arraylengthenum}{}\\
+%     &|& \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) \\
+%   \end{array}
+% \]
+
+\subsection{Fields and Typed Identifiers \label{sec:FieldsAndTypedIdentifiers}}
+
+The following rule corresponds to a field of a record-like structure:
+\hypertarget{ast-field}{}
+\begin{flalign*}
+\Field \derives\ & (\identifier, \ty) & \hypertarget{ast-typedidentifier}{}
+\end{flalign*}
+
+The following rule corresponds to an identifier with its associated type:
+\hypertarget{ast-typedidentifier}{}
+\begin{flalign*}
+\typedidentifier \derives\ & (\identifier, \ty) &
+\end{flalign*}
+
+\subsection{Left-hand Side Expressions \label{sec:LeftHandSideExpressions}}
+
+The following rules define the types of left-hand side of assignments:
+\hypertarget{ast-lexpr}{} \hypertarget{ast-lediscard}{}
+\begin{flalign*}
+\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} &\\
+  |\ & \LEVar(\identifier) & \hypertarget{ast-leslice}{}\\
+  |\ & \LESlice(\lexpr, \slice^*) & \hypertarget{ast-lesetarray}{}\\
+  |\ & \LESetArray(\lexpr, \expr) & \hypertarget{ast-lesetfield}{}\\
+  |\ & \LESetField(\lexpr, \identifier) & \hypertarget{ast-lesetfields}{}\\
+  |\ & \LESetFields(\lexpr, \identifier^*) & \hypertarget{ast-ledestructuring}{}\\
+  |\ & \LEDestructuring(\lexpr^*) & \hypertarget{ast-leconcat}{}\\
+  |\ & \LEConcat(\lexpr^+) &\\
+\end{flalign*}
+
+$\LEConcat(\texttt{les})$ represents the left-hand-side list of expressions for simultaneous assignments.
+
+\subsection{Local Declarations \label{sec:LocalDeclarations}}
+
+\hypertarget{ast-localdeclkeyword}{} \hypertarget{ast-ldkvar}{} \hypertarget{ast-ldkconstant}{} \hypertarget{ast-ldklet}{}
+\begin{flalign*}
+\localdeclkeyword \derives\ & \LDKVar \;|\; \LDKConstant \;|\; \LDKLet &
+\end{flalign*}
+
+A local declaration item is the left-hand side of a declaration statements.
+In the following example of a declaration statement:
+\begin{verbatim}
+let (x, -, z): (integer, integer, integer {0..32}) = (2, 3, 4);
+\end{verbatim}
+the local declaration item is
+\Verb|(x, -, z): (integer, integer, integer {0..32})|.
+
+\hypertarget{ast-localdeclitem}{} \hypertarget{ast-ldidiscard}{}
+\begin{flalign*}
+\localdeclitem \derives\ & \LDIDiscard
+  % & & \ASTComment{The ignored local declaration item, for example used in: \Verb!let - = 42;!.}
+  & \hypertarget{ast-ldivar}{}\\
+  |\ & \LDIVar(\identifier)
+  % & & \ASTComment{\texttt{LDI\_Var x} is the variable declaration of the variable \texttt{x}, used for example in:}\\
+  % & & \ASTComment{\texttt{let x = 42;}.}
+  & \hypertarget{ast-ldituple}{}\\
+  |\ & \LDITuple(\localdeclitem^*)
+  % & & \ASTComment{\texttt{LDI\_Tuple ldis} is the tuple declarations of the items in \texttt{ldis},}\\
+  % & & \ASTComment{used for example in: \texttt{let (x, y, -, z) = (1, 2, 3, 4);}}\\
+  % & & \ASTComment{Note that a the list here must be at least 2 items long.}
+  & \hypertarget{ast-ldityped}{}\\
+  |\ & \LDITyped(\localdeclitem, \ty) &
+  % & & \ASTComment{\texttt{LDI\_Typed (ldi, t)} declares the item \texttt{ldi} with type \texttt{t}, used for example in:} \\
+  % & & \ASTComment{\texttt{let x: integer = 4;}}
+\end{flalign*}
+
+\subsection{Statements \label{sec:Statements}}
+
+\hypertarget{ast-fordirection}{} \hypertarget{ast-up}{} \hypertarget{ast-down}{}
+\begin{flalign*}
+\fordirection \derives\ & \UP \;|\; \DOWN &\\
+\hypertarget{ast-stmt}{} \hypertarget{ast-spass}{}\\
+\stmt \derives\ & \SPass
+\hypertarget{ast-sseq}{} &\\
+  |\ & \SSeq(\stmt, \stmt)
+  \hypertarget{ast-sdecl}{} &\\
+  |\ & \SDecl(\localdeclkeyword, \localdeclitem, \expr?)
+  \hypertarget{ast-sassign}{} &\\
+  |\ & \SAssign(\lexpr, \expr)
+  \hypertarget{ast-scall}{} &\\
+  |\ & \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})
+  \hypertarget{ast-sreturn}{} &\\
+  |\ & \SReturn(\expr?)
+  \hypertarget{ast-scond}{} &\\
+  |\ & \SCond(\expr, \stmt, \stmt)
+  \hypertarget{ast-scase}{} &\\
+  |\ & \SCase(\expr, \casealt^*)
+  \hypertarget{ast-sassert}{} &\\
+  |\ & \SAssert(\expr)
+  \hypertarget{ast-sfor}{} &\\
+  |\ & \SFor\left\{
+    \begin{array}{rcl}
+    \Forindexname  &:& \identifier,\\
+    \Forstarte     &:& \expr,\\
+    \Fordir        &:& \fordirection,\\
+    \Forende       &:& \expr,\\
+    \Forbody       &:& \stmt,\\
+    \Forlimit      &:& \expr?
+    \end{array}
+  \right\}
+  \hypertarget{ast-swhile}{} &\\
+  |\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body})
+  \hypertarget{ast-srepeat}{} &\\
+  |\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit})
+  \hypertarget{ast-sthrow}{} &\\
+  & \ASTComment{The option represents an implicit throw: \texttt{throw;}.}\\
+  |\ & \SThrow(\expr?) &\\
+  \hypertarget{ast-stry}{} &\\
+  |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
+  \hypertarget{ast-sprint}{} &\\
+  |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
+\end{flalign*}
+
+\subsection{Case Alternatives \label{sec:CaseAlternatives}}
+
+\hypertarget{ast-casealt}{}
+\begin{flalign*}
+\casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
+\end{flalign*}
+
+\subsection{Exception Catchers \label{sec:ExceptionCatchers}}
+\hypertarget{ast-catcher}{}
+\begin{flalign*}
+\catcher \derives\ & (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
+\end{flalign*}
+
+\subsection{Subprograms \label{sec:Subprograms}}
+\hypertarget{ast-subprogramtype}{} \hypertarget{ast-stprocedure}{} \hypertarget{ast-stfunction}{}
+\begin{flalign*}
+\subprogramtype \derives\ & \STProcedure \;|\; \STFunction
+\hypertarget{ast-stgetter}{} \hypertarget{ast-stemptygetter}{} &\\
+                |\  & \STGetter \;|\; \STEmptyGetter
+                \hypertarget{ast-stsetter}{} \hypertarget{ast-stemptysetter}{} &\\
+                |\  & \STSetter \;|\; \STEmptySetter &
+\end{flalign*}
+
+\hypertarget{ast-subprogrambody}{} \hypertarget{ast-sbasl}{}
+\begin{flalign*}
+\subprogrambody \derives\ & \SBASL(\stmt) \hypertarget{ast-sbprimitive}{} \;|\; \SBPrimitive &
+\end{flalign*}
+
+\hypertarget{ast-func}{}
+\begin{flalign*}
+\func \derives\ &
+{
+\left\{
+  \begin{array}{rcl}
+ \funcname &:& \Strings, \\
+ \funcparameters &:& (\identifier, \ty?)^*,\\
+ \funcargs &:& \typedidentifier^*,\\
+ \funcbody &:& \subprogrambody,\\
+ \funcreturntype &:& \ty?,\\
+ \funcsubprogramtype &:& \subprogramtype
+\end{array}
+\right\}
+} &
+\end{flalign*}
+
+\subsection{Global Declarations \label{sec:GlobalDeclarations}}
+Declaration keyword for global storage elements:
+\hypertarget{ast-globaldeclkeyword}{} \hypertarget{ast-gdkconstant}{} \hypertarget{ast-gdkconfig}{} \hypertarget{ast-gdklet}{} \hypertarget{ast-gdkvar}{}
+\begin{flalign*}
+\globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
+\end{flalign*}
+
+\hypertarget{ast-globaldecl}{}
+\begin{flalign*}
+\globaldecl \derives\ &
+{\left\{
+  \begin{array}{rcl}
+  \GDkeyword &:& \globaldeclkeyword, \\
+  \GDname &:& \identifier,\\
+  \GDty &:& \ty?,\\
+  \GDinitialvalue &:& \expr?
+  \end{array}
+  \right\}
+ } &
+\end{flalign*}
+
+\hypertarget{ast-decl}{}
+\hypertarget{ast-dfunc}{}
+\begin{flalign*}
+\decl \derives\ & \DFunc(\func) & \hypertarget{ast-dglobalstorage}{}\\
+  |\ & \DGlobalStorage(\globaldecl) & \hypertarget{ast-dtypedecl}{}\\
+  |\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &
+\end{flalign*}
+
+\subsection{Specifications \label{sec:Specifications}}
+\hypertarget{ast-specification}{}
+\begin{flalign*}
+\specification \derives\ & \decl^* &
+\end{flalign*}
+
+\section{Typed Abstract Syntax Grammar\label{sec:TypedAbstractSyntaxGrammar}}
+
+The derivation rules for the typed abstract syntax are the same as the rules for the untyped abstract syntax,
+except for the following differences.
+
+The rules for expressions have the extra derivation rule:
+\hypertarget{ast-egetarray}{}
+\begin{flalign*}
+\expr \derives\ & \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) &
+\end{flalign*}
+
+The AST node for call expressions includes an extra component that explicitly associates expressions
+with parameters:
+\begin{flalign*}
+\expr \derives\ & \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) &
+\end{flalign*}
+
+The AST node for a left-hand-side tuple of expressions contains a second component $\vwidths$ whose elements
+are expressions corresponding to the lengths of the corresponding slices in $\vles$:
+\begin{flalign*}
+\lexpr \derives\ & \LEConcat(\overname{\lexpr^+}{\vles}, \overname{\expr^+}{\vwidths}) &
+\end{flalign*}
+
+The rules for statements refine the throw statement by annotating it with
+the type of the thrown exception.
+\begin{flalign*}
+\stmt \derives\ & \SThrow((\expr, \overtext{\ty}{exception type})?) &
+\end{flalign*}
+
+Similar to expressions, the AST node for call statements includes an extra component that explicitly associates expressions
+with parameters:
+\begin{flalign*}
+\stmt \derives\ & \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) &
+\end{flalign*}
+
+The rules for slices is replaced by the following:
+\begin{flalign*}
+\slice \derives\ & \SliceLength(\expr, \expr) &
+\end{flalign*}
+This reflects the fact that all other slicing constructs are syntactic sugar
+for \SliceLength.
+
+The following extra rule enables expressing array indices based on enumeration:
+\hypertarget{ast-arraylengthenum}{}
+\begin{flalign*}
+\arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) &
+\end{flalign*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Building Abstract Syntax Trees\label{sec:BuildingAbstractSyntaxTrees}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+We now define how to transform a parse tree into the corresponding AST
+via recursively traversing the parse tree and applying a \emph{builder} function
+for each non-terminal node.
+
+(Some of the builders are relations due to non-determinism induced by naming global variables
+for assignments whose left-hand-side variable is discarded ($\Tminus$).)
+
+For each non-terminal $N \derives R_1 \;|\; \ldots R_k$, we define a builder function
+$\textsf{build\_}N $ which takes a parse tree $\parsenode{N}$ and returns the corresponding
+AST. The builder function is defined in terms of one inference rule per alternative $R_i$.
+The input for the builder for an alternative $R = S_{1..m}$ is a parse node
+$N(S_{1..m})$. To allow the builder to refer to the children nodes of $N$,
+we use the notation $\namednode{n_i}{S_i}$, which names the child node $S_i$ as $n_i$.
+
+\subsection{Example}
+Consider the derivation for while loops:
+\[
+\Nstmt \derives \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend
+\]
+
+The parse node for a while statement has the form
+\[
+\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend)
+\]
+where $\ve$ names the node representing the condition of the loop and $\vstmtlist$ names
+the list of statements that form the body of the loop.
+
+To build the corresponding AST, we employ the builder function $\buildstmt$, since
+the non-terminal labelling the parse node is $\Nstmt$.
+
+We also employ the following rule:
+\begin{mathpar}
+\inferrule{
+  \buildexpr(\ve) \astarrow \astversion{\ve}\\
+  \buildstmtlist(\vstmtlist) \astarrow \astversion{\vstmtlist}
+}{
+{
+\begin{array}{r}
+  \buildstmt(\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend))
+  \astarrow\\
+  \SWhile(\astversion{\ve}, \None, \astversion{\vstmtlist})
+\end{array}
+}
+}
+\end{mathpar}
+That is, we apply the $\buildexpr$ to transform the condition parse node $\ve$ into the corresponding AST node,
+we apply $\buildstmtlist$ to transform the parse node $\vstmtlist$ for the body of the list into the corresponding AST node,
+and finally return the AST node for \texttt{while} loops --- $\SWhile$ --- with the two nodes as its children.
+
+We define some builders as relations rather than functions. This is due to the non-determinism
+in creating identifiers for auxiliary variables that stand in for instances of \texttt{-} on the left-hand-side
+of assignments and declarations.
+For example, \texttt{- = 5;} will effectively create some auxiliary variable, which will result in
+an AST node such as $\SAssign(\EVar(\texttt{aux-1}), \ELiteral(\lint(5)))$.
+Recall that hyphens are not legal characters in ASL identifiers, which avoids potential clashes with
+user-supplied identifiers. An implementation is free however to choose other naming schemes that
+avoid name clashes, for example, by employing counters.
+
+\subsection{Abbreviated Rule Notation for AST Builders}
+Notice that there is only one instance of $\Nexpr$ and one instance of $\Nstmtlist$ in this production.
+This is very common and we therefore use the following shorthand notation for such cases, as explained next.
+
+In a non-terminal $N$ appears only once in the right-hand-side of a derivation,
+we use the name $\texttt{N}$ to name the corresponding child parse node.
+For example, $\namednode{\vexpr}{\Nexpr}$ and $\namednode{\vstmtlist}{\Nstmtlist}$.
+In such cases, we always have the premise $\textsf{build\_}N(\texttt{N}) \astarrow \astversion{N}$
+to obtain the corresponding AST node.
+We therefore make this premise implicit, by dropping it entirely and using $\astof{N}$ to mean that
+the parse node $N$ is named $\texttt{N}$, the premise $\textsf{build\_}N(\texttt{N}) \astarrow \astversion{N}$
+is considered part of the rule and $\astversion{N}$ itself stands for $\astversion{N}$.
+
+In our example, this results in the abbreviated rule notation
+\begin{mathpar}
+\inferrule{}{
+{
+\begin{array}{r}
+  \buildstmt(\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend))
+  \astarrow\\
+  \SWhile(\astof{\vexpr}, \None, \astof{\vstmtlist})
+  \end{array}
+}
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Building Parameterized Productions\label{sec:BuildingParameterizedProductions}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This section defines builder relations for the
+subset of macro productions in \secref{ParametricProductions}
+that are not inlined:
+\begin{itemize}
+  \item ASTRule.List (see \secref{ASTRule.List})
+  \item ASTRule.CList (see \secref{ASTRule.CList})
+  \item ASTRule.NTCList (see \secref{ASTRule.NTCList})
+  \item ASTRule.Option (see \secref{ASTRule.Option})
+\end{itemize}
+
+We also define ASTRule.Identity (see \secref{ASTRule.Identity}),
+which can be used in conjunction with the rules above in application
+to terminals.
+
+\subsubsection{ASTRule.List \label{sec:ASTRule.List}}
+\hypertarget{build-list}{}
+The meta relation
+\[
+\buildlist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents a possibly-empty list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
+to each of them --- $\vsymasts$.
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildlist[b](\overname{\emptysentence}{\vsyms}) \astarrow \overname{\emptylist}{\vsymasts}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  b(\vv) \astarrow \astversion{\vv}\\
+  \buildlist[b](\vsymsone) \astarrow \vsymastsone
+}{
+  \buildlist[b](\overname{
+    \maybeemptylist{N}(\namednode{\vv}{E}, \namednode{\vsymsone}{\maybeemptylist{N}})
+    }{\vsyms}) \astarrow
+  \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.CList \label{sec:ASTRule.CList}}
+\hypertarget{build-clist}{}
+The meta relation
+\[
+\buildclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents a possibly-empty comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
+to each of them --- $\vsymasts$.
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildclist[b](\overname{\emptysentence}{\vsyms}) \astarrow \overname{\emptylist}{\vsymasts}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  b(\vv) \astarrow \astversion{\vv}\\
+  \buildclist[b](\vsymsone) \astarrow \vsymastsone
+}{
+  \buildclist[b](\overname{
+    \Clist{N}(\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\NClist{N}})
+    }{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.NTCList \label{sec:ASTRule.NTCList}}
+\hypertarget{build-ntclist}{}
+The meta relation
+\[
+\buildntclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents a non-empty comma-separated trailing list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
+to each of them --- $\vsymasts$.
+
+\begin{mathpar}
+\inferrule[empty]{
+  b(\vv) \astarrow \astversion{\vv}
+}{
+  \buildntclist[b](\overname{\vv \parsesep \option{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  b(\vv) \astarrow \astversion{\vv}\\
+  \buildntclist[b](\vsymsone) \astarrow \vsymastsone
+}{
+  \buildntclist[b](\overname{\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\NTClist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.Option \label{sec:ASTRule.Option}}
+\hypertarget{build-option}{}
+The meta relation
+\[
+\buildoption[b](\overname{N}{\vsym}) \;\aslrel\; \overname{\langle A \rangle}{\vsymast}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents an optional $E$ value --- $\vsym$ --- and returns the result of applying $b$
+to the value if it exists --- $\vsymasts$.
+
+\begin{mathpar}
+\inferrule[none]{}{
+  \buildoption[b](\overname{\emptysentence}{\vsym}) \astarrow \overname{\None}{\vsymast}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some]{
+  b(\vv) \astarrow \astversion{\vv}
+}{
+  \buildoption[b](\overname{\namednode{\vv}{E}}{\vsym}) \astarrow \overname{\langle\astversion{\vv}\rangle}{\vsymast}
+}
+\end{mathpar}
+
+When this relation is applied to a sentence consisting of a prefix of terminals $t_{1..k}$, ending with a non-terminal $\vv$,
+it ignore the terminals and returns the result for the non-terminal.
+\begin{mathpar}
+\inferrule[last]{
+  \buildoption[b](\vv) \astarrow \vsymast
+}{
+  \buildoption[b](t_{1..k}, \namednode{\vv}{E}) \astarrow \vsymast
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.Identity \label{sec:ASTRule.Identity}}
+\hypertarget{build-identity}{}
+The meta function
+\[
+\buildidentity(\overname{T}{x}) \aslto \overname{T}{x}
+\]
+is the identity function, which can be used as an argument to meta functions such as $\buildlist$ when they are applied
+to terminals.
+
+\begin{mathpar}
+\inferrule{}{
+  \buildidentity(x) \astarrow x
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Correspondence Between Left-hand-side Expressions and Right-hand-side Expressions
+\label{sec:LeftToRight}}
+
+The recursive function $\torexpr : \lexpr \rightarrow \expr$ transforms
+left-hand-side expressions to corresponding right-hand-side expressions,
+which is utilized both for the type system and semantics:
+\[
+\begin{array}{lcl}
+  \textbf{Left hand side expression} & & \textbf{Right hand side expression}\\
+  \hline
+  \torexpr(\LEVar(\vx)) &=& \EVar(\vx)\\
+  \torexpr(\LESlice(\vle, \vargs)) &=& \ESlice(\torexpr(\vle), \vargs)\\
+  \torexpr(\LESetArray(\vle, \ve)) &=& \EGetArray(\torexpr(\vle), \ve)\\
+  \torexpr(\LESetField(\vle, \vx)) &=& \EGetField(\torexpr(\vle), \vx)\\
+  \torexpr(\LESetFields(\vle, \vx)) &=& \EGetFields(\torexpr(\vle), \vx)\\
+  \torexpr(\LEDiscard) &=& \EVar(\texttt{-})\\
+  \torexpr(\LEDestructuring([\vle_{1..k}])) &=& \ETuple([i=1..k: \torexpr(\vle_i)])\\
+  \torexpr(\LEConcat([\vle_{1..k}], \Ignore)) &=& \EConcat([i=1..k: \torexpr(\vle_i)])\\
+\end{array}
+\]
+
+\section{Abstract Syntax Abbreviations\label{sec:AbstractSyntaxAbreviations}}
+We employ the following abbreviations for various AST nodes:
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Abbreviation} & \textbf{Meaning}
+\hypertarget{def-elint}{}\\
+\hline
+$\ELInt{n}$ & literal integer expression: $\ELiteral(\lint(n))$
+\hypertarget{def-abbrevconstraintexact}{}\\
+$\AbbrevConstraintExact{\ve}$ & $\ConstraintExact(\ve)$
+\hypertarget{def-abbrevconstraintrange}{}\\
+$\AbbrevConstraintRange{\veone}{\vetwo}$ & $\ConstraintRange(\veone, \vetwo)$ \hypertarget{def-abbrevebinop}{}\\
+$\AbbrevEBinop{\op}{\veone}{\vetwo}$ & $\EBinop(\op, \veone, \vetwo)$ \hypertarget{def-abbrevtarraylengthexpr}{}\\
+$\AbbrevTArray{\vi}{\vt}$ & $\TArray(\ArrayLengthExpr(\vi), \vt)$ \hypertarget{def-abbrevtarray}{}\\
+$\AbbrevTArrayLengthExpr{\ve}{\vt}$ & $\TArray(\ArrayLengthExpr(\ve), \vt)$ \hypertarget{def-abbrevtarraylengthenum}{}\\
+$\AbbrevTArrayLengthEnum{\ve}{\vs}{\vt}$ & $\TArray(\ArrayLengthEnum(\ve, \vs), \vt)$\\
+\hline
+\end{tabular}
+\end{center}
+
+% \subsection{AST Builder Functions and Relations}
+% We define the following rules for transforming the various non-terminal parse nodes into
+% the corresponding AST nodes:
+% \begin{itemize}
+%   \item ASTRule.AST (see \secref{ASTRule.AST})
+%   \item ASTRule.GlobalDecl (see \secref{ASTRule.GlobalDecl})
+%   \item ASTRule.Subtype (see \secref{ASTRule.Subtype})
+%   \item ASTRule.Subtypeopt (see \secref{ASTRule.Subtypeopt})
+%   \item ASTRule.TypedIdentifier (see \secref{ASTRule.TypedIdentifier})
+%   \item ASTRule.OptTypedIdentifier (see \secref{ASTRule.OptTypedIdentifier})
+%   \item ASTRule.ReturnType (see \secref{ASTRule.ReturnType})
+%   \item ASTRule.ParamsOpt (see \secref{ASTRule.ParamsOpt})
+%   \item ASTRule.AccessArgs (see \secref{ASTRule.AccessArgs})
+%   \item ASTRule.FuncArgs (see \secref{ASTRule.FuncArgs})
+%   \item ASTRule.MaybeEmptyStmtList (see \secref{ASTRule.MaybeEmptyStmtList})
+%   \item ASTRule.FuncBody (see \secref{ASTRule.FuncBody})
+%   \item ASTRule.IgnoredOrIdentifier (see \secref{ASTRule.IgnoredOrIdentifier})
+%   \item ASTRule.LocalDeclKeyword (see \secref{ASTRule.LocalDeclKeyword})
+%   \item ASTRule.StorageKeyword (see \secref{ASTRule.StorageKeyword})
+%   \item ASTRule.Direction (see \secref{ASTRule.Direction})
+%   \item ASTRule.Alt (see \secref{ASTRule.Alt})
+%   \item ASTRule.OtherwiseOpt (see \secref{ASTRule.OtherwiseOpt})
+%   \item ASTRule.Catcher (see \secref{ASTRule.Catcher})
+%   \item ASTRule.Stmt (see \secref{ASTRule.Stmt})
+%   \item ASTRule.StmtList (see \secref{ASTRule.StmtList})
+%   \item ASTRule.SElse (see \secref{ASTRule.SElse})
+%   \item ASTRule.LExpr (see \secref{ASTRule.LExpr})
+%   \item ASTRule.LExprAtom (see \secref{ASTRule.LExprAtom})
+%   \item ASTRule.DeclItem (see \secref{ASTRule.DeclItem})
+%   \item ASTRule.UntypedDeclItem (see \secref{ASTRule.UntypedDeclItem})
+%   \item ASTRule.ExprPattern (see \secref{ASTRule.ExprPattern})
+%   \item ASTRule.Pattern (see \secref{ASTRule.Pattern})
+%   \item ASTRule.Fields (see \secref{ASTRule.Fields})
+%   \item ASTRule.FieldsOpt (see \secref{ASTRule.FieldsOpt})
+%   \item ASTRule.Slices (see \secref{ASTRule.Slices})
+%   \item ASTRule.Slice (see \secref{ASTRule.Slice})
+%   \item ASTRule.TyDecl (see \secref{ASTRule.TyDecl})
+%   \item ASTRule.FieldAssign (see \secref{ASTRule.FieldAssign})
+% \end{itemize}
+
+% We also define the following helper functions:
+% \begin{itemize}
+% \item ASTRule.StmtFromList (see \secref{ASTRule.StmtFromList})
+% \item ASTRule.SequenceStmts (see \secref{ASTRule.SequenceStmts})
+% \end{itemize}

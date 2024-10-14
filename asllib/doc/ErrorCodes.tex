@@ -1,0 +1,179 @@
+\chapter{Error Codes}
+
+\section{Static Error Codes}
+\begin{description}
+\hypertarget{def-expectedbitvectortype}{}
+\item[$\ExpectedBitvectorType$]
+This error indicates that a bitvector type was expected where a non-bitvector type was given.
+See \typingrulecasename{CheckBinop}{plus\_minus\_bits\_bits} (\secref{TypingRule.CheckBinop}) for an example.
+
+\hypertarget{def-expectedenumerationtype}{}
+\item[$\ExpectedEnumerationType$]
+This error indicates that an enumeration type was expected where a \\
+non-enumeration type was given.
+See \secref{TypingRule.TArray} for an example.
+
+\hypertarget{def-expectedstructuredtype}{}
+\item[$\ExpectedStructuredType$]
+This error indicates that a \structuredtype\ was expected where a non-\structuredtype\ was given.
+See \secref{TypingRule.ERecord} for an example.
+
+\hypertarget{def-expectedtupletype}{}
+\item[$\ExpectedTupleType$]
+This error indicates that a tuple type was expected where a non-tuple type was given.
+See \secref{TypingRule.LEDestructuring} for an example.
+
+\hypertarget{def-setterwithoutgetter}{}
+\item[$\SetterWithoutGetter$:]
+ASL requires each setter for a given identifier to have a corresponding getter for the same
+identifier.
+The specification either does not contain a getter for the same identifier
+or a getter for the same identifier exists, but it does not have the expected
+signature (see \secref{TypingRule.CheckSetterHasGetter}).
+
+\hypertarget{def-undefinedidentifier}{}
+\item[$\UndefinedIdentifier$]
+An identifier that is missing a definition of the appropriate kind.
+See TypingRule.SubprogramForName (\secref{TypingRule.SubprogramForName}) for an example.
+
+\hypertarget{def-lengthsmismatch}{}
+\item[$\LengthsMismatch$]
+This error indicates that two lists that are expected to have the same length have different lengths.
+See \secref{TypingRule.LEDestructuring} for an example.
+
+\hypertarget{def-subprogramdeclaredmultipletimes}{}
+\item[$\SubrogramDeclaredMultipleTimes$]
+At least two subprograms in the specification clash.
+See \secref{TypingRule.AddNewFunc} for an example.
+
+\hypertarget{def-nocallcandidates}{}
+\item[$\NoCallCandidates$]
+A function call, given by its name and list of formal argument types, does not match any defined subprogram.
+See \secref{TypingRule.SubprogramForName} for an example.
+
+\hypertarget{def-toomanycandidates}{}
+\item[$\TooManyCandidates$]
+A function call, given by its name and list of formal argument types, matches more than one subprogram,
+which does not allow the type-checker to decide which subprogram the call refers to.
+See \secref{TypingRule.SubprogramForName} for an example.
+
+\hypertarget{def-parameterwithoutdecl}{}
+\item[$\ParameterWithoutDecl$]
+A subprogram includes a parameter that is not associated with any variable appearing in one of the arguments.
+See \secref{TypingRule.AnnotateParams} for an example.
+
+\hypertarget{def-nolca}{}
+\item[$\NoLCA$]
+A conditional expressions results in two types that have no common ancestor type that can represent both.
+See \secref{TypingRule.LowestCommonAncestor} for an example.
+
+\hypertarget{def-mrv}{}
+\item[$\MismatchedReturnValue$]
+A call to a function must result in a returned value,
+whereas a call to a procedure must not.
+This error occurs when a call to a function or a getter is inferred to refer to a procedure or a setter,
+or a call to a procedure or a setter is inferred to refer to a function or a getter.
+See \secref{TypingRule.AnnotateCallArgTyped} for an example.
+
+\hypertarget{def-cba}{}
+\item[$\CallBadArity$]
+A call to a subprogram must have the same number of arguments as the list of formal arguments
+declared for the subprogram.
+This error indicates that the number of arguments is different to the number of declared formal arguments.
+See \secref{TypingRule.AnnotateCallArgTyped} for an example.
+
+\hypertarget{def-brd}{}
+\item[$\BadRecursiveDecls$]
+Only subprogram declarations may be mutually recursive.
+This error indicates that at least one declaration in a given list of mutually recursive declarations
+is not a subprogram.
+See \secref{TypingRule.TypeCheckMutuallyRec} for an example.
+
+\hypertarget{def-lbi}{}
+\item[$\RequireIntegerForLoopBounds$]
+The expressions defining the bounds of a \texttt{for} loop are required to have the \structure\ of
+an integer type.
+This error indicates that at least one of the start expression and end expression violate this
+requirement.
+See \secref{TypingRule.TypeCheckMutuallyRec} for an example.
+
+\hypertarget{def-mfi}{}
+\item[$\MissingFieldInitializer$]
+This error indicates that an initialization of a \structuredtype\ is missing an expression to initialize
+one of its fields.
+See \secref{TypingRule.ERecord} for an example.
+
+\hypertarget{def-rsb}{}
+\item[$\RequireSameBitwidths$]
+This error indicates that two bitvector types are required to have the same bitwidths but the type-checker
+was not able to prove it.
+See \secref{BitvectorOperations} for an example.
+
+\hypertarget{def-taf}{}
+\item[$\TypeAsssertionFails$]
+This error indicates that a given at type assertion expression will always fail.
+See \secref{TypingRule.CheckATC} for an example.
+
+\hypertarget{def-ofc}{}
+\item[$\BinaryOperationFailsAllConstraints$]
+This error indicates that a binary expression appearing in a constraint will always fail dynamically.
+This means that the set of values that the type containing
+the constraint can take is empty.
+See \secref{TypingRule.BinopFilterRhs} for an example.
+
+\hypertarget{def-otb}{}
+\item[$\InvalidOperandTypesForBinop$]
+This error indicates that the operator of a binary expression cannot be applied to its operand expressions
+due to their types.
+See \secref{TypingRule.CheckBinop} for an example.
+
+\hypertarget{def-iaf}{}
+\item[$\AnnonymousFormNotAllowedHere$]
+This error indicates that an anonymous type is being used as a type annotation in a context
+where anonymous types are not allowed.
+See \secref{TypingRule.TNonDecl} for an example.
+
+\hypertarget{def-aim}{}
+\item[$\AssignmentToImmutable$]
+This error indicates that an assignment has a left-hand-side storage element that is immutable.
+See \secref{TypingRule.LEVar} for an example.
+
+\hypertarget{def-mf}{}
+\item[$\MissingField$]
+This error indicates that an access is made (for either reading or writing) to a field that is
+not declared by the respective \structuredtype\ or a bitfield that is not declared by the respective
+bitvector type.
+See \secref{TypingRule.LESetStructuredField} for an example.
+
+\hypertarget{def-dii}{}
+\item[$\DivIntIndivisible$]
+This error indicates that a \staticallyevaluable\ expression contain an integer division expression where
+the denominator does not divide the numerator.
+See \textsc{TypingRule.BinopLiterals.DIV\_INT} (\secref{TypingRule.BinopLiterals}) for an example.
+
+\hypertarget{def-bot}{}
+\item[$\BitfieldsOutOfRange$]
+This error indicates that at least one bitfield is declared with indices that go out of the range
+$[0, \vwidth]$ where $\vwidth$ is the width of the enclosing bitvector type.
+See \textsc{TypingRule.CheckPositionsInWidth} (\secref{TypingRule.CheckPositionsInWidth}).
+
+\hypertarget{def-bso}{}
+\item[$\BitfieldSlicesOverlap$]
+This error indicates that two bitfield slices defined for a bitvector type have overlapping ranges.
+This is checked by \nameref{sec:TypingRule.DisjointSlicesToPositions}.
+
+\hypertarget{def-bsr}{}
+\item[$\BitfieldSliceReversed$]
+This error indicates that a bitfield slice is defined such that its upper position is less than its lower position.
+This is checked by \nameref{sec:TypingRule.BitfieldSliceToPositions}.
+
+\hypertarget{def-icc}{}
+\item[$\IntConstantExpected$]
+This error indicates that a given expression was expected to statically evaluate
+to an integer-typed literal but either evaluated to a literal of a different type
+or could not be statically evaluated to a literal.
+This is checked by \nameref{sec:TypingRule.BitfieldSliceToPositions}.
+
+\end{description}
+
+\section{Dynamic Error Codes}

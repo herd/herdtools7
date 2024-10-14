@@ -98,11 +98,13 @@ module RunTime (C : RunTimeConf) = struct
 
   type 'a env_result = Local of 'a | Global of 'a | NotFound
 
+  (* Begin SemanticsRule.EnvFind *)
   let find x env =
     try Local (Storage.find x env.local.storage)
     with Not_found -> (
       try Global (Storage.find x env.global.storage)
       with Not_found -> NotFound)
+  (* End *)
 
   let mem x env =
     Storage.mem x env.local.storage || Storage.mem x env.global.storage

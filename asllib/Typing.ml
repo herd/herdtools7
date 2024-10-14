@@ -381,6 +381,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   open Property (C)
   module Fn = FunctionRenaming (C)
 
+  (* Begin ShouldReduceToCall *)
   let should_reduce_to_call env name st =
     match IMap.find_opt name env.global.subprogram_renamings with
     | None -> false
@@ -391,7 +392,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | None -> assert false
             | Some func_sig -> func_sig.subprogram_type = st)
           set
+        |: TypingRule.ShouldReduceToCall
+  (* End *)
 
+  (* Begin DisjointSlicesToPositions *)
   let disjoint_slices_to_diet loc env slices =
     let eval env e =
       match reduce_constants env e with
@@ -424,6 +428,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       else fatal_from loc Error.(OverlappingSlices slices)
     in
     List.fold_left (one_slice loc env) Diet.Int.empty slices
+    |: TypingRule.DisjointSlicesToPositions
+  (* End *)
 
   let check_disjoint_slices loc env slices =
     if List.length slices <= 1 then ok
@@ -993,15 +999,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> None
   (* End *)
 
+  (* Begin CheckPositionsInWidth *)
   let check_diet_in_width loc slices width diet () =
-    let x = Diet.Int.min_elt diet |> Diet.Int.Interval.x
-    and y = Diet.Int.max_elt diet |> Diet.Int.Interval.y in
-    if 0 <= x && y < width then ()
+    let min_pos = Diet.Int.min_elt diet |> Diet.Int.Interval.x
+    and max_pos = Diet.Int.max_elt diet |> Diet.Int.Interval.y in
+    if 0 <= min_pos && max_pos < width then
+      () |: TypingRule.CheckPositionsInWidth
     else fatal_from loc (BadSlices (Error.Static, slices, width))
+  (* End *)
 
+  (* Begin CheckSlicesInWidth *)
   let check_slices_in_width loc env width slices () =
     let diet = disjoint_slices_to_diet loc env slices in
     check_diet_in_width loc slices width diet ()
+    |: TypingRule.CheckSlicesInWidth
+  (* End *)
 
   (* Begin TBitField *)
   let rec annotate_bitfield ~loc env width bitfield : bitfield =
@@ -1100,14 +1112,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               | None ->
                   let e' = annotate_static_integer ~loc env e in
                   ArrayLength_Expr e')
-          | ArrayLength_Enum (s, i) -> (
-              let t_s = T_Named s |> here in
-              match (Types.make_anonymous env t_s).desc with
-              | T_Enum li when List.length li = i -> index
-              | _ -> conflict loc [ T_Enum [] ] t_s)
+          | ArrayLength_Enum (_, _) ->
+              assert (* Enumerated indices only exist in the typed AST. *)
+                     false
         in
         T_Array (index', t') |> here |: TypingRule.TArray
-    (* Begin TRecordExceptionDecl *)
+    (* Begin TStructuredDecl *)
     | (T_Record fields | T_Exception fields) when decl -> (
         let+ () =
           match get_first_duplicate fst fields with
@@ -1119,10 +1129,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           List.map (fun (x, ty) -> (x, annotate_type ~loc env ty)) fields
         in
         match ty.desc with
-        | T_Record _ ->
-            T_Record fields' |> here |: TypingRule.TRecordExceptionDecl
+        | T_Record _ -> T_Record fields' |> here |: TypingRule.TStructuredDecl
         | T_Exception _ ->
-            T_Exception fields' |> here |: TypingRule.TRecordExceptionDecl
+            T_Exception fields' |> here |: TypingRule.TStructuredDecl
         | _ -> assert false
         (* Begin TEnumDecl *))
     | T_Enum li when decl ->
@@ -1180,46 +1189,41 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
        - Rule WZCS: The width of a bitslice must be any non-negative,
          statically evaluable integer expression (including zero).
     *)
-    let rec tr_one s =
+    (* Begin Slice *)
+    let rec annotate_slice s =
       let () =
         if false then
           Format.eprintf "Annotating slice %a@." PP.pp_slice_list [ s ]
       in
       match s with
-      (* Begin SliceSingle *)
       | Slice_Single i ->
           (* LRM R_GXKG:
              The notation b[i] is syntactic sugar for b[i +: 1].
           *)
-          tr_one (Slice_Length (i, !$1)) |: TypingRule.SliceSingle
-      (* End *)
-      (* Begin SliceLength *)
+          annotate_slice (Slice_Length (i, !$1)) |: TypingRule.Slice
       | Slice_Length (offset, length) ->
           let t_offset, offset' = annotate_expr env offset
           and length' =
             annotate_static_constrained_integer ~loc:(to_pos length) env length
           in
           let+ () = check_structure_integer offset' env t_offset in
-          Slice_Length (offset', length') |: TypingRule.SliceLength
-      (* End *)
-      (* Begin SliceRange *)
+          Slice_Length (offset', length') |: TypingRule.Slice
       | Slice_Range (j, i) ->
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
           let pre_length = binop MINUS j i |> binop PLUS !$1 in
-          tr_one (Slice_Length (i, pre_length)) |: TypingRule.SliceRange
-      (* End *)
-      (* Begin SliceStar *)
+          annotate_slice (Slice_Length (i, pre_length)) |: TypingRule.Slice
       | Slice_Star (factor, pre_length) ->
           (* LRM R_GXQG:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
           let pre_offset = binop MUL factor pre_length in
-          tr_one (Slice_Length (pre_offset, pre_length)) |: TypingRule.SliceStar
+          annotate_slice (Slice_Length (pre_offset, pre_length))
+          |: TypingRule.Slice
       (* End *)
     in
-    List.map tr_one
+    List.map annotate_slice
 
   and annotate_pattern loc env t = function
     (* Begin PAll *)
@@ -1525,6 +1529,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          else (ty', E_ATC (e'', ty_struct) |> here))
         |: TypingRule.ATC
     (* End *)
+    (* Begin EVar *)
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
         if should_reduce_to_call env x ST_EmptyGetter then
@@ -1545,7 +1550,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           try
             match IMap.find x env.local.storage_types with
-            (* Begin ELocalVar *)
             | ty, LDK_Constant ->
                 let e =
                   try
@@ -1555,24 +1559,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 in
                 (ty, e)
             | ty, _ -> (ty, e) |: TypingRule.ELocalVar
-            (* End *)
           with Not_found -> (
             try
               match IMap.find x env.global.storage_types with
-              (* Begin EGlobalVarConstant *)
               | ty, GDK_Constant -> (
                   match IMap.find_opt x env.global.constant_values with
                   | Some v ->
                       (ty, E_Literal v |> here)
                       |: TypingRule.EGlobalVarConstantVal
-                  (* End *)
-                  (* Begin EGlobalVarConstantNoVal *)
                   | None -> (ty, e) |: TypingRule.EGlobalVarConstantNoVal)
-              (* End *)
-              (* Begin EGlobalVar *)
               | ty, _ -> (ty, e) |: TypingRule.EGlobalVar
-              (* End *)
-              (* Begin EUndefIdent *)
             with Not_found ->
               let () =
                 if false then
@@ -2260,6 +2256,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let () = assert (ty = None) in
         (S_Call (new_name, new_args, new_eqs) |> here, env) |: TypingRule.SCall
     (* End *)
+    (* Begin SReturn *)
     | S_Return e_opt ->
         (* Rule NYWH: A return statement appearing in a setter or procedure must
            have no return value expression. *)
@@ -2267,15 +2264,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            requires a return value expression that type-satisfies the return
            type of the subprogram. *)
         (match (env.local.return_type, e_opt) with
-        (* Begin SReturnOne *)
         | None, Some _ | Some _, None ->
             fatal_from loc (Error.BadReturnStmt env.local.return_type)
-            |: TypingRule.SReturnOne
-        (* End *)
-        (* Begin SReturnNone *)
-        | None, None -> (S_Return None |> here, env) |: TypingRule.SReturnNone
-        (* End *)
-        (* Begin SReturnSome *)
+            |: TypingRule.SReturn
+        | None, None -> (S_Return None |> here, env) |: TypingRule.SReturn
         | Some t, Some e ->
             let t_e', e' = annotate_expr env e in
             let () =
@@ -2286,7 +2278,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let+ () = check_type_satisfies s env t_e' t in
             (S_Return (Some e') |> here, env))
-        |: TypingRule.SReturnSome
+        |: TypingRule.SReturn
     (* End *)
     (* Begin SCond *)
     | S_Cond (e, s1, s2) ->
@@ -2407,16 +2399,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | (LDK_Constant | LDK_Let), None ->
             fatal_from s UnrespectedParserInvariant)
     (* End *)
-    (* Begin SThrowSome *)
+    (* Begin SThrow *)
     | S_Throw (Some (e, _)) ->
         let t_e, e' = annotate_expr env e in
         let+ () = check_structure_exception s env t_e in
-        (S_Throw (Some (e', Some t_e)) |> here, env) |: TypingRule.SThrowSome
-    (* End *)
-    (* Begin SThrowNone *)
+        (S_Throw (Some (e', Some t_e)) |> here, env) |: TypingRule.SThrow
     | S_Throw None ->
         (* TODO: verify that this is allowed? *)
-        (s, env) |: TypingRule.SThrowNone
+        (s, env) |: TypingRule.SThrow
     (* End *)
     (* Begin STry *)
     | S_Try (s', catchers, otherwise) ->
@@ -2425,9 +2415,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let catchers' = List.map (annotate_catcher loc env) catchers in
         (S_Try (s'', catchers', otherwise') |> here, env) |: TypingRule.STry
     (* End *)
+    (* Begin SPrint *)
     | S_Print { args; debug } ->
         let args' = List.map (fun e -> annotate_expr env e |> snd) args in
         (S_Print { args = args'; debug } |> here, env) |: TypingRule.SDebug
+  (* End *)
 
   (* Begin AnnotateLoopLimit *)
   and annotate_loop_limit ~loc env = function
@@ -2438,22 +2430,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Some limit' |: TypingRule.AnnotateLoopLimit
   (* End *)
 
+  (* Begin Catcher *)
   and annotate_catcher loc env (name_opt, ty, stmt) =
     let ty' = annotate_type ~loc env ty in
     let+ () = check_structure_exception ty' env ty' in
     let env' =
       match name_opt with
-      (* Begin CatcherNone *)
-      | None -> env |: TypingRule.CatcherNone
-      (* End *)
-      (* Begin CatcherSome *)
+      | None -> env
       | Some name ->
           let+ () = check_var_not_in_env stmt env name in
-          add_local name ty LDK_Let env |: TypingRule.CatcherSome
-      (* End *)
+          add_local name ty LDK_Let env
     in
     let new_stmt = try_annotate_block env' stmt in
-    (name_opt, ty, new_stmt)
+    (name_opt, ty, new_stmt) |: TypingRule.Catcher
+  (* End *)
 
   (* Begin Block *)
   and try_annotate_block env s =

@@ -1,0 +1,446 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Semantics Utility Rules\label{chap:SemanticsUtilityRules}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this chapter, we define helper relations for operating on \nativevalues,
+\hyperlink{def-envs}{environments}, and operations involving values and types.
+
+We now define the following relations:
+\begin{itemize}
+  \item SemanticsRule.RemoveLocal \secref{SemanticsRule.RemoveLocal};
+  \item SemanticsRule.ReadIdentifier \secref{SemanticsRule.ReadIdentifier};
+  \item SemanticsRule.WriteIdentifier \secref{SemanticsRule.WriteIdentifier};
+  \item SemanticsRule.CreateBitvector \secref{SemanticsRule.CreateBitvector};
+  \item SemanticsRule.ConcatBitvectors \secref{SemanticsRule.ConcatBitvectors};
+  \item SemanticsRule.ReadFromBitvector \secref{SemanticsRule.ReadFromBitvector};
+  \item SemanticsRule.WriteToBitvector \secref{SemanticsRule.WriteToBitvector};
+  \item SemanticsRule.GetIndex \secref{SemanticsRule.GetIndex};
+  \item SemanticsRule.SetIndex \secref{SemanticsRule.SetIndex};
+  \item SemanticsRule.GetField \secref{SemanticsRule.GetField};
+  \item SemanticsRule.SetField \secref{SemanticsRule.SetField};
+  \item SemanticsRule.DeclareLocalIdentifier \secref{SemanticsRule.DeclareLocalIdentifier};
+  \item SemanticsRule.DeclareLocalIdentifierM\secref{SemanticsRule.DeclareLocalIdentifierM};
+  \item SemanticsRule.DeclareLocalIdentifierMM \secref{SemanticsRule.DeclareLocalIdentifierMM};
+\end{itemize}
+
+\subsubsection{SemanticsRule.RemoveLocal \label{sec:SemanticsRule.RemoveLocal}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-removelocal}{}
+\[
+  \removelocal(\overname{\envs}{\env} \aslsep \overname{\Identifiers}{\name}) \;\aslrel\; \overname{\envs}{\newenv}
+\]
+removes the binding of the identifier $\name$ from the local storage of the environment $\env$.
+
+Removal of the identifier $\name$ from the local storage of the environment $\env$
+is the environment $\newenv$ and all of the following apply:
+\begin{itemize}
+  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
+  \item $\newenv$ consists of the static environment $\tenv$ and the dynamic environment
+  with the same global component as $\denv$ --- $G^\denv$, and local component $L^\denv$,
+  with the identifier $\name$ removed from its domain.
+\end{itemize}
+
+\subsubsection{Formally}
+(Recall that $[\name\mapsto\bot]$ means that $\name$ is not in the domain of the resulting function.)
+\begin{mathpar}
+  \inferrule{
+    \env \eqname (\tenv, (G^\denv, L^\denv))\\
+    \newenv \eqdef (\tenv, (G^\denv, L^\denv[\name \mapsto \bot]))
+  }
+  {
+    \removelocal(\env, \name) \evalarrow \newenv
+  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.ReadIdentifier \label{sec:SemanticsRule.ReadIdentifier}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-readidentifier}{}
+\[
+  \readidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; (\overname{\vals}{\vv} \times \XGraphs)
+\]
+reads a value $\vv$ into a storage element given by an identifier $\name$.
+The result is the value and an execution graph containing a single Read Effect,
+which denoting reading from $\name$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  {
+    \readidentifier(\name, \vv) \evalarrow (\vv, \ReadEffect(\name))
+  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.WriteIdentifier \label{sec:SemanticsRule.WriteIdentifier}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-writeidentifier}{}
+\[
+  \writeidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; \XGraphs
+\]
+writes the value $\vv$ into a storage element given by an identifier $\name$.
+The result is an execution graph containing a single Write Effect,
+which denotes writing into $\name$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  {
+    \writeidentifier(\name, \vv) \evalarrow \WriteEffect(\name)
+  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.CreateBitvector \label{sec:SemanticsRule.CreateBitvector}}
+\subsubsection{Prose}
+The relation
+\[
+  \createbitvector(\overname{\vals^*}{\vvs}) \;\aslrel\; \tbitvector
+\]
+creates a native vector value bitvector from a sequence of values $\vvs$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{}
+  {
+    \createbitvector(\vvs) \evalarrow \nvbitvector{\vvs}
+  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.ConcatBitvectors \label{sec:SemanticsRule.ConcatBitvectors}}
+\subsubsection{Prose}
+The relation
+\[
+  \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \tbitvector
+\]
+transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a single bitvector.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule[ConcatBitvector.Empty]{}
+  {
+    \concatbitvectors(\emptylist) \evalarrow \nvbitvector(\emptylist)
+  }
+  \and
+  \inferrule[ConcatBitvector.NonEmpty]{
+    \vvs \eqname [\vv] \concat \vvs'\\
+    \vv\eqname\nvbitvector(\bv)\\
+    \concatbitvectors(\vvs') \evalarrow \nvbitvector(\bv')\\
+    \vres \eqdef \bv \concat \bv'
+  }
+  {
+    \concatbitvectors(\vvs) \evalarrow \nvbitvector(\vres)
+  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.ReadFromBitvector \label{sec:SemanticsRule.ReadFromBitvector}}
+\hypertarget{def-readfrombitvector}{}
+The relation
+\[
+  \readfrombitvector(\overname{\tbitvector}{\bv} \aslsep \overname{(\tint\times\tint)^*}{\slices}) \;\aslrel\;
+  \overname{\tbitvector}{\vv} \cup \overname{\TError}{\ErrorConfig}
+\]
+reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices specified by the list of slices $\slices$,
+thereby concatenating their values.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item all indices are in range for $\bv$ and the returned bitvector consists of the concatenated bits specified
+  by the slices.
+  \item there exists an out-of-range index and an error is returned.
+\end{itemize}
+
+\subsubsection{Formally}
+We start by introducing a few helper relations.
+
+\hypertarget{def-positioninrange}{}
+The predicate $\positioninrange(\vs, \vl, n)$ checks whether the indices starting at index $\vs$ and
+up to $\vs + \vl$, inclusive, would refer to actual indices of a bitvector of length $n$:
+\[
+  \positioninrange(\vs, \vl, \vn) \triangleq (\vs \geq 0) \land (\vl \geq 0) \land (\vs + \vl < \vn) \enspace.
+\]
+
+The relation
+\hypertarget{def-slicestopositions}{}
+\[
+  \slicestopositions(\overname{\N}{\vn} \aslsep \overname{(\overname{\tint}{\vs_i}\times\overname{\tint}{\vl_i})^+}{\slices}) \;\aslrel\;
+  (\overname{\N^*}{\positions} \cup\ \TError)
+\]
+returns the list of positions (indices) specified by the slices $\slices$,
+unless an index would be out of range for a bitvector of length $\vn$, in which case it returns an error configuration.
+
+\begin{mathpar}
+  \inferrule[SlicesToPositionsOutOfRange]{
+    \slices \eqname [i=1..k: (\nvint(\vs_i), \nvint(\vl_i))]\\
+    j \in 1..k: \neg\positioninrange(\vs_j, \vl_j, \vn)
+  }
+  {
+    \slicestopositions(\vn, \slices) \evalarrow \ErrorVal{Slice\_PositionOutOfRange}
+  }
+  \and
+  \inferrule[SlicesToPositionsInRange]{
+    \slices \eqname [i=1..k: (\nvint(\vs_i), \nvint(\vl_i))]\\
+    i=1..k: \positioninrange(\vs_i, \vl_i, \vn)\\
+    \positions \eqdef [\vs_1,\ldots,\vs_1+\vl_1] \concat \ldots \concat [\vs_k,\ldots,\vs_k+\vl_k]\\
+  }
+  {
+    \slicestopositions(\vn, \slices) \evalarrow \positions
+  }
+\end{mathpar}
+
+\hypertarget{def-asbitvector}{}
+The function $\asbitvector : (\tbitvector\cup\tint) \rightarrow \{0,1\}^*$ transforms \nativevalue\  integers and \nativevalue\  bitvectors into
+a sequence of binary values:
+\begin{mathpar}
+  \inferrule[AsBitvectorBitvector]{}
+  {
+    \asbitvector(\nvbitvector(\bv)) \evalarrow \bv
+  }
+  \and
+  \inferrule[AsBitvectorInt]{
+    \bv \eqdef \text{ two's complement representation of }n
+  }
+  {
+    \asbitvector(\nvint(n)) \evalarrow \bv
+  }
+\end{mathpar}
+
+Finally, the rules below distinguish between empty bitvectors and non-empty bitvectors.
+\begin{mathpar}
+  \inferrule[ReadFromBitvector.Empty]{}
+  {
+    \readfrombitvector(\bv, \emptylist) \evalarrow \nvbitvector(\emptylist)
+  }
+  \and
+  \inferrule[ReadFromBitvector.NonEmpty]{
+    \asbitvector(\bv) \eqdef \vb_n \ldots \vb_1\\
+    \slicestopositions(n, \slices) \evalarrow [j_{1..m}] \OrDynError\\\\
+    \vv \eqdef \nvbitvector(\vb_{j_m + 1}\ldots\vb_{j_1 + 1})
+  }
+  {
+    \readfrombitvector(\bv, \slices) \evalarrow \vv
+  }
+\end{mathpar}
+Notice that the bits of a bitvector go from the least significant bit being on the right to the most significant bit being on the left,
+which is reflected by how the rules list the bits.
+The effect of placing the bits in sequence is that of concatenating the results
+from all of the given slices.
+Also notice that bitvector bits are numbered from 1 and onwards, which is why we add 1 to the indices specified
+by the slices when accessing a bit.
+
+\subsubsection{SemanticsRule.WriteToBitvector \label{sec:SemanticsRule.WriteToBitvector}}
+\subsubsection{Prose}
+The relation
+\[
+  \writetobitvector(\overname{(\tint\times\tint)^*}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
+  \;\bigtimes\; \overname{\tbitvector}{\vv} \cup \overname{\TError}{\ErrorConfig}
+\]
+overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$
+and one of the following applies:
+\begin{itemize}
+  \item all positions specified by $\slices$ are within range for $\dst$ and the modified version
+  of $\dst$ with the bits of $\src$ at the specified positions is returned;
+  \item there exists a position in $\slices$ that is not in range for $\dst$ and an error is returned.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule[WriteToBitvector.Empty]{}
+  {
+    \writetobitvector(\emptylist, \nvbitvector(\emptylist), \nvbitvector(\emptylist)) \evalarrow \nvbitvector(\emptylist)
+  }
+  \and
+  \inferrule[WriteToBitvector.NonEmpty]{
+    \vs_n \ldots \vs_1 \eqdef \asbitvector(\src)\\
+    \vd_n \ldots \vd_1 \eqdef \asbitvector(\dst)\\
+    \slicestopositions(n, \slices) \evalarrow \positions \OrDynError\\\\
+    {\mathit{bit} = \lambda i \in 1..n.\left\{ \begin{array}{ll}
+     \vs_i & i \in \positions\\
+     \vd_i & \text{otherwise}
+    \end{array} \right.}\\
+    \vv\eqdef\nvbitvector(\mathit{bit}(n-1)\ldots \mathit{bit}(0))\\
+  }
+  {
+    \writetobitvector(\slices, \src, \dst) \evalarrow \vv
+  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.GetIndex \label{sec:SemanticsRule.GetIndex}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-getindex}{}
+\[
+  \getindex(\overname{\N}{\vi} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\; \overname{\tvector}{\vv_{\vi}}
+\]
+reads the value $\vv_i$ from the vector of values $\vvec$ at the index $\vi$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vvec \eqname \vv_{0..k}\\
+    \vi \leq k\\
+  }
+  {
+    \getindex(\vi, \vvec) \evalarrow \vv_{\vi}
+  }
+\end{mathpar}
+Notice that there is no rule to handle the case where the index is out of range ---
+this is guaranteed by the type-checker not to happen. Specifically,
+\begin{itemize}
+  \item \texttt{TypingRule.EGetArray} ensures that an index is within the bounds of the array
+  being accessed via a check that the type of the index satisfies the type of the array size.
+  \item Typing rules \texttt{TypingRule.LEDestructuring}, \texttt{TypingRule.PTuple},
+  and \\ \texttt{TypingRule.LDTuple} use the same index sequences for the tuples
+  involved and the corresponding lists of expressions.
+\end{itemize}
+If the rules listed above do not hold the type checker fails.
+
+\subsubsection{SemanticsRule.SetIndex \label{sec:SemanticsRule.SetIndex}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-setindex}{}
+\[
+  \setindex(\overname{\N}{\vi} \aslsep \overname{\vals}{\vv} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\; \overname{\tvector}{\vres}
+\]
+overwrites the value at the given index $\vi$ in a vector of values $\vvec$ with the new value $\vv$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vvec \eqname \vu_{0..k}\\
+    \vi \leq k\\
+    \vres \eqname \vw_{0..k}\\
+    \vv \eqdef \vw_{\vi} \\
+    j \in \{0..k\} \setminus \{\vi\}.\ \vw_{j} = \vu_j\\
+  }
+  {
+    \setindex(\vi, \vv, \vvec) \evalarrow \vres
+  }
+\end{mathpar}
+Similar to $\getindex$, there is no need to handle the out-of-range index case.
+
+\subsubsection{SemanticsRule.GetField \label{sec:SemanticsRule.GetField}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-getfield}{}
+\[
+  \getfield(\overname{\Identifiers}{\name} \aslsep \overname{\trecord}{\record}) \;\aslrel\; \vals
+\]
+retrieves the value corresponding to the field name $\name$ from the record value $\record$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \record \eqname \nvrecord{\fieldmap}
+  }
+  {
+    \getfield(\name, \record) \evalarrow \fieldmap(\name)
+  }
+\end{mathpar}
+The type-checker ensures, via TypingRule.EGetRecordField, that the field $\name$ exists in $\record$.
+
+\subsubsection{SemanticsRule.SetField \label{sec:SemanticsRule.SetField}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-setfield}{}
+\[
+  \setfield(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\trecord}{\record}) \;\aslrel\; \trecord
+\]
+overwrites the value corresponding to the field name $\name$ in the record value $\record$ with the value $\vv$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \record \eqname \nvrecord{\fieldmap}\\
+    \fieldmap' \eqdef \fieldmap[\name\mapsto\vv]
+  }
+  {
+    \setfield(\name, \vv, \record) \evalarrow \nvrecord{\fieldmap'}
+  }
+\end{mathpar}
+The type-checker ensures that the field $\name$ exists in $\record$.
+
+\subsubsection{SemanticsRule.DeclareLocalIdentifier \label{sec:SemanticsRule.DeclareLocalIdentifier}}
+\subsubsection{Prose}
+The relation
+\hypertarget{def-declarelocalidentifier}{}
+\[
+  \declarelocalidentifier(\overname{\envs}{\env} \aslsep \overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv}) \;\aslrel\;
+  (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\vg})
+\]
+associates $\vv$ to $\name$ as a local storage element in the environment $\env$ and
+returns the updated environment $\newenv$ with the execution graph consisting of a Write Effect to $\name$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vg \eqdef \WriteEffect(\name)\\
+    \env \eqname (\tenv, (G^\denv, L^\denv))\\
+    \newenv \eqdef (\tenv, (G^\denv, L^\denv[\name\mapsto \vv]))
+  }
+  { \declarelocalidentifier(\env, \name, \vv) \evalarrow (\newenv, \vg)  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.DeclareLocalIdentifierM \label{sec:SemanticsRule.DeclareLocalIdentifierM}}
+\subsubsection{Prose}
+\hypertarget{def-declarelocalidentifierm}{}
+The relation
+\[
+  \declarelocalidentifierm(\overname{\envs}{\env} \aslsep
+   \overname{\Identifiers}{\vx} \aslsep
+   \overname{(\overname{\vals}{\vv}\times\overname{\XGraphs}{\vg})}{\vm}) \;\aslrel\;
+  (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
+\]
+declares the local identifier $\vx$ in the environment $\env$, in the context
+of the value-graph pair $(\vv, \vg)$, and all of the following apply:
+\begin{itemize}
+  \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
+  \item $\vgone$ is the execution graph resulting from the declaration of $\vx$;
+  \item $\vgtwo$ is the execution graph resulting from the ordered composition of $\vg$ and $\vgone$
+  with the $\asldata$ edge.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \vm \eqname (\vv, \vg)\\
+    \declarelocalidentifier(\env, \vx, \vv) \evalarrow (\newenv, \vgone)\\
+    \newg \eqdef \ordered{\vg}{\asldata}{\vgone}
+  }
+  {
+    \declarelocalidentifierm(\env, \vx, \vm) \evalarrow (\newenv, \newg)
+  }
+\end{mathpar}
+
+\subsubsection{SemanticsRule.DeclareLocalIdentifierMM \label{sec:SemanticsRule.DeclareLocalIdentifierMM}}
+\subsubsection{Prose}
+\hypertarget{def-declarelocalidentifermm}{}
+The relation
+\[
+  \declarelocalidentifiermm(\overname{\envs}{\env} \aslsep
+   \overname{\Identifiers}{\vx} \aslsep
+   \overname{(\overname{\vals}{\vv}\times\overname{\XGraphs}{\vg})}{\vm}) \;\aslrel\;
+  (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\vgtwo})
+\]
+declares the local identifier $\vx$ in the environment $\env$,
+in the context of the value-graph pair $(\vv, \vg)$,
+and all of the following apply:
+\begin{itemize}
+  \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
+  \item $\vgone$ is the execution graph resulting from the declaration of $\vx$;
+  \item $\vgtwo$ is the execution graph resulting from the ordered composition of $\vg$ and $\vgone$
+  with the $\aslpo$ edge.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+    \declarelocalidentifierm(\env, \vm) \evalarrow (\newenv, \vgone)\\
+    \vgtwo \eqdef \ordered{\vg}{\aslpo}{\vgone}
+  }
+  {
+    \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\newenv, \vgtwo)
+  }
+\end{mathpar}
+

@@ -22,7 +22,7 @@ control: control.tex $(CONTROLS)
 
 ASLReference.pdf: control\
 				ASLASTLines.tex ASLTypeSatisfactionLines.tex ASLStaticModelLines.tex ASLStaticInterpreterLines.tex\
-				ASLStaticEnvLines.tex ASLASTUtilsLines.tex\
+				ASLStaticEnvLines.tex ASLEnvLines.tex ASLASTUtilsLines.tex\
 				ASLTypingLines.tex ASLSemanticsLines.tex
 	$(LATEX) ASLReference.tex
 	$(BIBTEX) ASLReference
@@ -51,6 +51,9 @@ ASLStaticInterpreterLines.tex: ../StaticInterpreter.ml
 ASLStaticEnvLines.tex: ../StaticEnv.ml
 	$(BENTO) $< > $@
 
+ASLEnvLines.tex: ../env.ml
+	$(BENTO) $< > $@
+
 ASLASTUtilsLines.tex: ../ASTUtils.ml
 	$(BENTO) $< > $@
 
@@ -74,7 +77,7 @@ endif
 
 clean:
 	/bin/rm -f $(PDFS)
-	/bin/rm -f ASLSemanticsLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex ASLStaticModelLines.tex ASLStaticInterpreterLines.tex ASLStaticEnvLines.tex ASLASTUtilsLines.tex
+	/bin/rm -f *Lines.tex
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
 	/bin/rm -f $(CONTROLS)
 	/bin/rm -f comment.cut

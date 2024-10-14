@@ -24,15 +24,13 @@
 
 module SemanticsRule = struct
   type t =
-    | Lit
+    | ELit
     | Call
     | ATC
     | EExprList
     | EExprListM
     | ESideEffectFreeExpr
-    | ELocalVar
-    | EGlobalVar
-    | EUndefIdent
+    | EVar
     | Binop
     | BinopAnd
     | BinopOr
@@ -52,8 +50,7 @@ module SemanticsRule = struct
     | EUnknown
     | EPattern
     | LEDiscard
-    | LELocalVar
-    | LEGlobalVar
+    | LEVar
     | LEMultiAssign
     | LEUndefIdentV0
     | LEUndefIdentV1
@@ -63,10 +60,7 @@ module SemanticsRule = struct
     | LESetFields
     | LEDestructuring
     | Slices
-    | SliceSingle
-    | SliceLength
-    | SliceRange
-    | SliceStar
+    | Slice
     | PAll
     | PAny
     | PGeq
@@ -80,13 +74,10 @@ module SemanticsRule = struct
     | LDVar
     | LDTyped
     | LDTuple
-    | LDUninitialisedTyped
     | SPass
     | SAssignCall
     | SAssign
-    | SReturnOne
-    | SReturnSome
-    | SReturnNone
+    | SReturn
     | SSeq
     | SCall
     | SCond
@@ -95,12 +86,9 @@ module SemanticsRule = struct
     | SWhile
     | SRepeat
     | SFor
-    | SThrowNone
-    | SThrowSomeTyped
-    | SThrowSome
+    | SThrow
     | STry
-    | SDeclSome
-    | SDeclNone
+    | SDecl
     | SDebug
     | FUndefIdent
     | FPrimitive
@@ -121,14 +109,13 @@ module SemanticsRule = struct
     | BuildGlobalEnv
 
   let to_string : t -> string = function
-    | Lit -> "Lit"
+    | ELit -> "ELit"
     | Call -> "Call"
     | ATC -> "CTC"
     | EExprList -> "EExprList"
     | EExprListM -> "EExprListM"
     | ESideEffectFreeExpr -> "ESideEffectFreeExpr"
-    | ELocalVar -> "ELocalVar"
-    | EGlobalVar -> "EGlobalVar"
+    | EVar -> "EVar"
     | Binop -> "Binop"
     | BinopAnd -> "BinopAnd"
     | BinopOr -> "BinopOr"
@@ -142,15 +129,13 @@ module SemanticsRule = struct
     | EGetBitFields -> "EGetBitFields"
     | EConcat -> "EConcat"
     | ETuple -> "ETuple"
-    | EUndefIdent -> "EUndefIdent"
     | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
     | ESliceOrEGetArrayError -> "ESliceOrEGetArrayError"
     | EUnknown -> "EUnknown"
     | EPattern -> "EPattern"
     | LEDiscard -> "LEDiscard"
-    | LELocalVar -> "LELocalVar"
-    | LEGlobalVar -> "LEGlobalVar"
+    | LEVar -> "LEVar"
     | LEMultiAssign -> "LEMultiAssign"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
@@ -160,10 +145,7 @@ module SemanticsRule = struct
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
     | Slices -> "Slices"
-    | SliceSingle -> "SliceSingle"
-    | SliceLength -> "SliceLength"
-    | SliceRange -> "SliceRange"
-    | SliceStar -> "SliceStar"
+    | Slice -> "Slice"
     | PAll -> "PAll"
     | PAny -> "PAny"
     | PGeq -> "PGeq"
@@ -177,13 +159,10 @@ module SemanticsRule = struct
     | LDVar -> "LDVar"
     | LDTyped -> "LDTyped"
     | LDTuple -> "LDTuple"
-    | LDUninitialisedTyped -> "LDUninitialisedTyped"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
     | SAssign -> "SAssign"
-    | SReturnOne -> "SReturnOne"
-    | SReturnNone -> "SReturnNone"
-    | SReturnSome -> "SReturnSome"
+    | SReturn -> "SReturn"
     | SSeq -> "SThen"
     | SCall -> "SCall"
     | SCond -> "SCond"
@@ -192,12 +171,9 @@ module SemanticsRule = struct
     | SWhile -> "SWhile"
     | SRepeat -> "SRepeat"
     | SFor -> "SFor"
-    | SThrowNone -> "SThrowNone"
-    | SThrowSomeTyped -> "SThrowSomeTyped"
-    | SThrowSome -> "SThrowSome"
+    | SThrow -> "SThrow"
     | STry -> "STry"
-    | SDeclSome -> "SDeclSome"
-    | SDeclNone -> "SDeclNone"
+    | SDecl -> "SDecl"
     | SDebug -> "SDebug"
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
@@ -221,15 +197,13 @@ module SemanticsRule = struct
 
   let all =
     [
-      Lit;
+      ELit;
       Call;
       ATC;
       EExprList;
       EExprListM;
       ESideEffectFreeExpr;
-      ELocalVar;
-      EGlobalVar;
-      EUndefIdent;
+      EVar;
       Binop;
       BinopAnd;
       BinopOr;
@@ -249,8 +223,7 @@ module SemanticsRule = struct
       EUnknown;
       EPattern;
       LEDiscard;
-      LELocalVar;
-      LEGlobalVar;
+      LEVar;
       LEMultiAssign;
       LEUndefIdentV0;
       LEUndefIdentV1;
@@ -260,10 +233,7 @@ module SemanticsRule = struct
       LESetFields;
       LEDestructuring;
       Slices;
-      SliceSingle;
-      SliceLength;
-      SliceRange;
-      SliceStar;
+      Slice;
       PAll;
       PAny;
       PGeq;
@@ -277,13 +247,10 @@ module SemanticsRule = struct
       LDVar;
       LDTyped;
       LDTuple;
-      LDUninitialisedTyped;
       SPass;
       SAssignCall;
       SAssign;
-      SReturnOne;
-      SReturnSome;
-      SReturnNone;
+      SReturn;
       SSeq;
       SCall;
       SCond;
@@ -292,12 +259,9 @@ module SemanticsRule = struct
       SWhile;
       SRepeat;
       SFor;
-      SThrowNone;
-      SThrowSomeTyped;
-      SThrowSome;
+      SThrow;
       STry;
-      SDeclSome;
-      SDeclNone;
+      SDecl;
       SDebug;
       FUndefIdent;
       FPrimitive;
@@ -409,10 +373,7 @@ module TypingRule = struct
     | LESetBadField
     | LESetFields
     | LEConcat
-    | SliceSingle
-    | SliceLength
-    | SliceRange
-    | SliceStar
+    | Slice
     | PAll
     | PAny
     | PGeq
@@ -432,9 +393,7 @@ module TypingRule = struct
     | SPass
     | SAssignCall
     | SAssign
-    | SReturnOne
-    | SReturnSome
-    | SReturnNone
+    | SReturn
     | SSeq
     | SCall
     | SCond
@@ -443,9 +402,7 @@ module TypingRule = struct
     | SWhile
     | SRepeat
     | SFor
-    | SThrowNone
-    | SThrowSomeTyped
-    | SThrowSome
+    | SThrow
     | STry
     | SDeclSome
     | SDeclNone
@@ -459,8 +416,7 @@ module TypingRule = struct
     | Block
     | Loop
     | For
-    | CatcherNone
-    | CatcherSome
+    | Catcher
     | Subprogram
     | DeclareOneFunc
     | DeclareGlobalStorage
@@ -475,7 +431,7 @@ module TypingRule = struct
     | TTuple
     | TArray
     | TEnumDecl
-    | TRecordExceptionDecl
+    | TStructuredDecl
     | TNonDecl
     | TBitField
     | TBitFields
@@ -503,6 +459,10 @@ module TypingRule = struct
     | FoldEnvAndFs
     | AnnotateLoopLimit
     | CheckATC
+    | CheckSlicesInWidth
+    | DisjointSlicesToPositions
+    | CheckPositionsInWidth
+    | ShouldReduceToCall
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -569,10 +529,7 @@ module TypingRule = struct
     | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
-    | SliceSingle -> "SliceSingle"
-    | SliceLength -> "SliceLength"
-    | SliceRange -> "SliceRange"
-    | SliceStar -> "SliceStar"
+    | Slice -> "Slice"
     | PAll -> "PAll"
     | PAny -> "PAny"
     | PGeq -> "PGeq"
@@ -592,9 +549,7 @@ module TypingRule = struct
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
     | SAssign -> "SAssign"
-    | SReturnOne -> "SReturnOne"
-    | SReturnNone -> "SReturnNone"
-    | SReturnSome -> "SReturnSome"
+    | SReturn -> "SReturn"
     | SSeq -> "SThen"
     | SCall -> "SCall"
     | SCond -> "SCond"
@@ -603,9 +558,7 @@ module TypingRule = struct
     | SWhile -> "SWhile"
     | SRepeat -> "SRepeat"
     | SFor -> "SFor"
-    | SThrowNone -> "SThrowNone"
-    | SThrowSomeTyped -> "SThrowSomeTyped"
-    | SThrowSome -> "SThrowSome"
+    | SThrow -> "SThrow"
     | STry -> "STry"
     | SDeclSome -> "SDeclSome"
     | SDeclNone -> "SDeclNone"
@@ -619,8 +572,7 @@ module TypingRule = struct
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
-    | CatcherNone -> "CatcherNone"
-    | CatcherSome -> "CatcherSome"
+    | Catcher -> "Catcher"
     | Subprogram -> "Subprogram"
     | DeclareOneFunc -> "DeclareOneFunc"
     | DeclareGlobalStorage -> "DeclareGlobalStorage"
@@ -635,7 +587,7 @@ module TypingRule = struct
     | TTuple -> "TTuple"
     | TArray -> "TArray"
     | TEnumDecl -> "TEnumDecl"
-    | TRecordExceptionDecl -> "TRecordExceptionDecl"
+    | TStructuredDecl -> "TStructuredDecl"
     | TNonDecl -> "TNonDecl"
     | TBitField -> "TBitField"
     | TBitFields -> "TBitFields"
@@ -663,6 +615,10 @@ module TypingRule = struct
     | FoldEnvAndFs -> "FoldEnvAndFs"
     | AnnotateLoopLimit -> "AnnotateLoopLimit"
     | CheckATC -> "CheckATC"
+    | CheckSlicesInWidth -> "CheckSlicesInWidth"
+    | DisjointSlicesToPositions -> "DisjointSlicesToPositions"
+    | CheckPositionsInWidth -> "CheckPositionsInWidth"
+    | ShouldReduceToCall -> "ShouldReduceToCall"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -731,16 +687,11 @@ module TypingRule = struct
       LESetFields;
       LEDestructuring;
       LEConcat;
-      SliceLength;
-      SliceSingle;
-      SliceRange;
-      SliceStar;
+      Slice;
       SPass;
       SAssignCall;
       SAssign;
-      SReturnOne;
-      SReturnSome;
-      SReturnNone;
+      SReturn;
       SSeq;
       SCall;
       SCond;
@@ -749,9 +700,7 @@ module TypingRule = struct
       SWhile;
       SRepeat;
       SFor;
-      SThrowNone;
-      SThrowSomeTyped;
-      SThrowSome;
+      SThrow;
       STry;
       SDeclSome;
       SDeclNone;
@@ -765,8 +714,7 @@ module TypingRule = struct
       Block;
       Loop;
       For;
-      CatcherNone;
-      CatcherSome;
+      Catcher;
       Subprogram;
       TString;
       TReal;
@@ -777,7 +725,7 @@ module TypingRule = struct
       TTuple;
       TArray;
       TEnumDecl;
-      TRecordExceptionDecl;
+      TStructuredDecl;
       TNonDecl;
       TBitField;
       TBitFields;
@@ -805,6 +753,10 @@ module TypingRule = struct
       FoldEnvAndFs;
       AnnotateLoopLimit;
       CheckATC;
+      CheckSlicesInWidth;
+      DisjointSlicesToPositions;
+      CheckPositionsInWidth;
+      ShouldReduceToCall;
     ]
 
   let all_nb = List.length all

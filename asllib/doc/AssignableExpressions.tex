@@ -1,0 +1,1020 @@
+\chapter{Assignable Expressions\label{chap:AssignableExpressions}}
+
+\hypertarget{def-assignableexpression}{}
+\hypertarget{def-assignableexpressions}{}
+We refer to expressions that may appear on the left hand side of an assignment statement as \assignableexpressions.
+An \assignableexpression\ is grammatically derived from $\Nlexpr$ and is represented as an AST
+by $\lexpr$.
+
+We show the syntax relevant to \assignableexpressions\ in \secref{AssignableExpressionsSyntax} and
+the rules need to build the AST for \assignableexpressions\ in \secref{AssignableExpressionsAbstractSyntaxBuilders}.
+We then define the abstract syntax, typing, and semantics of the different kinds of \assignableexpressions:
+\begin{itemize}
+\item Discarding assignment expressions (see \secref{DiscardingAssignmentExpressions})
+\item Variable assignment expressions (see \secref{VariableAssignmentExpressions})
+\item Multi-assignment expressions (see \secref{MultiAssignmentExpressions})
+\item Array assignment expressions (see \secref{ArrayAssignmentExpressions})
+\item Bitvector slice assignment expressions (see \secref{BitvectorSliceAssignmentExpressions})
+\item Bitfield assignment expressions (see \secref{BitfieldAssignmentExpressions})
+\item Structured type field assignment Expressions (see \secref{StructuredTypeFieldAssignmentExpressions})
+\item Multi-slice assignment expressions (see \secref{MultiSliceAssignmentExpressions})
+\end{itemize}
+
+\hypertarget{def-annotatelexpr}{}
+The function
+\[
+  \annotatelexpr{
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\lexpr}{\vle} \aslsep
+    \overname{\ty}{\vte}} \aslto
+    \overname{\lexpr}{\newle} \cup \TTypeError
+\]
+annotates a left-hand side expression $\vle$ in an environment $\tenv$, assuming $\vte$
+to be the type of the corresponding right-hand-side expression,
+resulting in an annotated expression $\newle$.
+\ProseOtherwiseTypeError
+
+The relation
+\hypertarget{def-evallexpr}{}
+\[
+  \evallexpr{\overname{\envs}{\env} \aslsep \overname{\lexpr}{\vle} \aslsep (\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg})} \;\aslrel\;
+    \Normal(\overname{\XGraphs}{\newg},\overname{\envs}{\newenv}) \cup
+    \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+\]
+evaluates the assignment of a value $\vv$
+to the left-hand-side expression $\vle$ in an environment $\env$,
+resulting in either a configuration $\Normal(\newg, \env)$ or an abnormal configuration.
+
+\paragraph{Semantics Rules Naming Convention:}
+In this chapter, variables containing $\vm$ range over $\vals\times\XGraphs$
+while variables where the $\vm$ is replaced with $\vv$ correspond to their value component.
+For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vgone)$.
+
+\paragraph{Viewing Assignable Expressions as Right-hand-side Expressions:}
+Some of the typing rules and semantics rules require viewing \assignableexpressions\
+as \rhsexpressions.
+The correspondence is given by the function $\torexpr : \lexpr \rightarrow \expr$., defined in \secref{LeftToRight}.
+%
+For example, \hyperlink{SemanticsRule.LESetField}{SemanticsRule.LESetField}
+needs to evaluate the record subexpression $\rerecord$, which is an \assignableexpression.
+To achieve this, $\torexpr(\record)$ is used to obtain an \rhsexpression, which then allows
+using $\texttt{eval\_expr}$ to evaluate it.
+
+\section{Syntax\label{sec:AssignableExpressionsSyntax}}
+\begin{flalign*}
+\Nlexpr \derivesinline\ & \Nlexpratom &\\
+|\ & \Tminus &\\
+|\ & \Tlpar \parsesep \NClist{\Nlexpr} \parsesep \Trpar &\\
+\Nlexpratom \derives\ & \Tidentifier &\\
+|\ & \Nlexpratom \parsesep \Nslices &\\
+|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier{\field} &\\
+|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &\\
+|\ & \Tlbracket \parsesep \NClist{{\Nlexpratom}} \parsesep \Trbracket &
+\end{flalign*}
+
+\subsection{Abstract Syntax Builders\label{sec:AssignableExpressionsAbstractSyntaxBuilders}}
+\subsubsection{ASTRule.LExpr \label{sec:ASTRule.LExpr}}
+\hypertarget{build-lexpr}{}
+The function
+\[
+  \buildlexpr(\overname{\parsenode{\Nlexpr}}{\vparsednode}) \;\aslto\; \overname{\lexpr}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[lexpr\_atom]{}{
+  \buildlexpr(\Nlexpr(\punnode{\Nlexpratom})) \astarrow \overname{\astof{\vlexpratom}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[discard]{}{
+  \buildlexpr(\Nlexpr(\Tminus)) \astarrow \overname{\LEDiscard}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[multi\_lexpr]{
+  \buildclist[\Nlexpr](\vlexprs) \astarrow \vlexprasts
+}{
+  \buildlexpr(\Nlexpr(\Tlpar, \namednode{\vlexprs}{\NClist{\Nlexpr}}, \Trpar)) \astarrow
+  \overname{\LEDestructuring(\vlexprasts)}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.LExprAtom \label{sec:ASTRule.LExprAtom}}
+\hypertarget{build-lexpratom}{}
+The function
+\[
+  \buildlexpratom(\overname{\parsenode{\Nlexpratom}}{\vparsednode}) \;\aslto\; \overname{\lexpr}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[var]{}{
+  \buildlexpratom(\Nlexpr(\Tidentifier(\id))) \astarrow
+  \overname{\LEVar(\id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[slice]{}{
+  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \punnode{\Nslices})) \astarrow
+  \overname{\LESlice(\astof{\vlexpratom}, \astof{\vslices})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[set\_field]{}{
+  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tdot, \Tidentifier(\id))) \astarrow
+  \overname{\LESetField(\astof{\vlexpratom}, \id)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[set\_fields]{
+  \buildclist[\buildidentity](\vfields) \astarrow \vfieldasts
+}{
+  {
+  \begin{array}{r}
+  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tdot, \Tlbracket, \namednode{\vfields}{\Clist{\Tidentifier}}, \Trbracket)) \astarrow\\
+  \overname{\LESetFields(\astof{\vlexpratom}, \vfieldasts)}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[concat]{
+  \buildclist[\buildlexpratom](\vlexprs) \astarrow \vlexprasts
+}{
+  {
+    \begin{array}{r}
+  \buildlexpratom(\Nlexpr(\Tlbracket, \namednode{\vlexprs}{\NClist{{\Nlexpratom}}}, \Trbracket)) \astarrow\\
+  \overname{\LEConcat(\vlexprasts)}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\section{Discarding Assignment Expressions\label{sec:DiscardingAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LEDiscard\label{sec:TypingRule.LEDiscard}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes an expression that can be discarded, that is, $\LEDiscard$;
+  \item $\newle$ is $\vle$.
+\end{itemize}\CodeSubsection{\LEDiscardBegin}{\LEDiscardEnd}{../Typing.ml}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \annotatelexpr{\tenv, \overname{\LEDiscard}{\vle}, \vte} \typearrow \overname{\LEDiscard}{\newle}
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.LEDiscard\label{sec:SemanticsRule.LEDiscard}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDiscard.asl}
+\texttt{- = 42;} does not affect the environment.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ is a discarding expression, $\LEDiscard$;
+  \item $\newg$ is $\vg$;
+  \item $\newenv$ is $\env$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \newg\eqdef\vg\\
+  \newenv\eqdef\env
+}{
+  \evallexpr{\env, \LEDiscard, (\vv, \vg)} \evalarrow \Normal(\newg, \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalLEDiscardBegin}{\EvalLEDiscardEnd}{../Interpreter.ml}
+
+\section{Variable Assignment Expressions\label{sec:VariableAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \LEVar(\identifier) &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LEVar\label{sec:TypingRule.LEVar}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes a left-hand-side variable expression for $\vx$, that is, $\LEVar(\vx)$;
+  \item One of the following applies (\textsc{local}):
+  \begin{itemize}
+    \item $\vx$ is declared in $\tenv$ as a local storage element with type $\tty$ and local declaration keyword $k$;
+    \item checking that $k$ corresponds to a mutable variable, that is, $\LDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
+    \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item $\newle$ is $\vle$.
+  \end{itemize}
+
+  \item One of the following applies (\textsc{global}):
+  \begin{itemize}
+    \item $\vx$ is declared in $\tenv$ as a global storage element with type $\tty$ and global declaration keyword $k$;
+    \item checking that $k$ corresponds to a mutable variable, that is, $\GDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
+    \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item $\newle$ is $\vle$.
+  \end{itemize}
+
+  \item One of the following applies (\textsc{error\_undefined}):
+  \begin{itemize}
+    \item $\vx$ is not declared in $\tenv$ as a local storage element nor as a global storage element;
+    \item the result is a type error $\UndefinedIdentifier$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\localstoragetypes(\id) = (\tty, k)\\
+  \checktrans{k = \LDKVar}{\AssignmentToImmutable} \checktransarrow \True \OrTypeError\\\\
+  \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow \overname{\vle}{\newle}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global]{
+  L^\tenv.\globalstoragetypes(\id) = (\tty, k)\\
+  \checktrans{k = \GDKVar}{AssignToImmutable} \checktransarrow \True \OrTypeError\\\\
+  \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow \overname{\vle}{\newle}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error\_undefined]{
+  L^\tenv.\localstoragetypes(\id) = \bot\\
+  L^\tenv.\globalstoragetypes(\id) = \bot
+}{
+  \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow \TypeErrorVal{\UndefinedIdentifier}
+}
+\end{mathpar}\lrmcomment{
+  This is related to \identr{WDGQ}, \identr{GNTS}, \identi{MMKF},
+  \identi{DGWJ}, \identi{KKCC} and \identr{LXQZ}.
+}
+\CodeSubsection{\LEVarBegin}{\LEVarEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.LEVar\label{sec:SemanticsRule.LEVar}}
+\subsubsection{Example (Local Variable)}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LELocalVar.asl}
+SemanticsRule.LELocalVar is (only) used to assign the value $42$ to the left-hand-side expression
+\texttt{x} within \texttt{x = 42;}.
+
+\subsubsection{Example (Global Variable)}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl}
+SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the left-hand-side expression
+\texttt{x} within \texttt{x = 42;}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+    \item $\vle$ denotes a variable, $\LEVar(\vx)$;
+    \item One of the following applies:
+    \begin{itemize}
+        \item All of the following apply (\textsc{local}):
+        \begin{itemize}
+            \item $\vx$ is locally bound in $\env$;
+            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the local component of the environment.
+        \end{itemize}
+
+        \item All of the following apply (\textsc{global}):
+        \begin{itemize}
+            \item $\vx$ is globally bound in $\env$;
+            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the global component of the environment.
+        \end{itemize}
+    \end{itemize}
+    \item $\newg$ is the ordered composition of $\vg$ and a Write Effect for $\vx$ with the $\asldata$ edge;
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  \env \eqname (\tenv, \denv)\\
+  \vx \in \dom(L^\denv)\\
+  \newenv \eqdef (\tenv, (G^\denv, L^\denv[\vx \mapsto \vv]))\\
+  \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
+}{
+  \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \Normal(\newg,\newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global]{
+  \env \eqname (\tenv, \denv)\\
+  \vx \in \dom(G^\denv)\\
+  \newenv \eqdef(\tenv, (G^\denv[\vx \mapsto \vv], L^\denv))\\
+  \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
+}{
+  \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \Normal(\newg,\newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalLEVarBegin}{\EvalLEVarEnd}{../Interpreter.ml}
+
+\section{Multi-assignment Expressions\label{sec:MultiAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \LEDestructuring(\lexpr^*) &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LEDestructuring\label{sec:TypingRule.LEDestructuring}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes a tuple of left-hand-side expressions $\les$, that is, $\LEDestructuring(\les)$;
+  \item $\les$ is a list $\ve_{1..k}$;
+  \item checking whether $\vte$ is a tuple type yields $\True$\ProseTerminateAs{\ExpectedTupleType};
+  \item $\vte$ is a tuple type over the list of types $\tys$, that is, $\TTuple(\tys)$;
+  \item determining whether $\les$ and $\subtys$ have the same length yields $\True$\ProseTerminateAs{\LengthsMismatch};
+  \item $\subtys$ is the list of types $\vt_{1..k}$;
+  \item annotating the left-hand-side expression $\ve_i$ with the type $\vt_i$, for $i=1..k$, yields $\vep_i$\ProseOrTypeError;
+  \item the list of expressions $\lesp$ is $\vep_i$, for $i=1..k$;
+  \item $\newle$ is the list of left-hand-side expressions $\lesp$, that is, $\LEDestructuring(\lesp)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \les \eqname [\ve_{1..k}]\\
+  \checktrans{\astlabel(\vte) = \TTuple}{\ExpectedTupleType} \checktransarrow \True \OrTypeError\\\\
+  \vte \eqname \TTuple(\tys)\\
+  \equallength(\les, \tys) \typearrow \vb\\
+  \checktrans{\vb}{\LengthsMismatch} \checktransarrow \True \OrTypeError\\\\
+  \tys \eqname [\vt_{1..k}]\\
+  i=1..k: \annotatelexpr{\tenv, \ve_i,\vt_i} \typearrow \vep_i \OrTypeError\\\\
+  \lesp \eqname [i=1..k: \vep_i]
+}{
+  \annotatelexpr{\tenv, \overname{\LEDestructuring(\les)}{\vle}, \vte} \typearrow \overname{\LEDestructuring(\lesp)}{\newle}
+}
+\end{mathpar}
+\CodeSubsection{\LEDestructuringBegin}{\LEDestructuringEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.LEDestructuring\label{sec:SemanticsRule.LEDestructuring}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDestructuring.asl}
+\texttt{(x, y) = (3, 42)} binds \texttt{x} to $\nvint(3)$ and \texttt{y} to
+$\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and \texttt{y} is bound to $\nvint(3)$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes a list of left-hand-side expressions, $\LEDestructuring(\vlelist)$;
+  \item $\vlelist$ is the list of expressions $\vle_{1..k}$;
+  \item getting the values from the native vector $\vv$ at each index $i=1..k$
+  results in $\vv_{i=1..k}$;
+  \item $\nmonads$ is the list of pairs consisting of $\vv_i$ and $\vg$ for $i=1..k$;
+  \item evaluating the multi-assignment between $\vlelist$ and the list $\nmonads$
+  in $\env$ achieves the effects of assigning each value to the respective
+  subexpressions, resulting in the output configuration $C$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vlelist \eqname [\vle_{1..k}]\\
+  i=1..k: \getindex(i, \vv) \evalarrow \vv_i\\
+  \nmonads \eqdef [i=1..k: (\vv_i, \vg)]\\
+  \evalmultiassignment(\env, \vlelist, \nmonads) \evalarrow C
+}{
+  \evallexpr{\env, \LEDestructuring(\vlelist), (\vv, \vg)} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalLEDestructuringBegin}{\EvalLEDestructuringEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.LEMultiAssign\label{sec:SemanticsRuleLEMultiAssign}}
+\subsubsection{Prose}
+The helper relation
+\hypertarget{def-evalmultiassign}{}
+\[
+  \evalmultiassignment(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vlelist} \aslsep \overname{(\vals \times \XGraphs)^*}{\vmlist}) \;\aslrel\;
+  \Normal(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) \cup
+  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+\]
+evaluates multi-assignments.
+That is, the simultaneous assignment of the list of value-execution graph pairs $\vmlist$
+to the corresponding list of left-hand side expressions $\vlelist$, in the environment $\env$.
+The result is either the execution graph $\vg$ and new environment $\newenv$ or an abnormal configuration.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \evalmultiassignment(\env, \emptylist, \emptylist) \evalarrow \Normal(\emptygraph, \env)
+}
+\and
+\inferrule[nonempty]{
+  \vlelist \eqname [\vle] \concat \vlelistone\\
+  \vmlist \eqname [\vm] \concat \vmlistone\\
+  \evallexpr{\env, \vle, \vm} \evalarrow \Normal(\envone, \vgone) \OrAbnormal\\
+  \evalmultiassignment(\envone, \vlelistone, \vmlistone) \evalarrow \Normal(\newenv, \vgtwo) \OrAbnormal\\
+  \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
+}{
+  \evalmultiassignment(\env, \vlelist, \vmlist) \evalarrow \Normal(\newg, \newenv)
+}
+\end{mathpar}
+Notice that this rule is only defined when the lists $\vlelist$ and $\vmlist$ have the same length.
+To see this, notice that
+to form a derivation tree, we must employ the \textsc{nonempty} case, which ensures both lists
+have at least one element and shortens the lengths of both lists by one,
+until both lists become empty
+which is when the \textsc{empty} axiom case is used.
+
+\section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \LESetArray(\lexpr, \expr) &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LESetArray\label{sec:TypingRule.LESetArray}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$, that is, $\LESlice(\vleone, \slices)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields an array type of size $\size$ and element type $\vt$, that is, $\TArray(\size, \vt)$\ProseOrTypeError;
+  \item annotating the left-hand-side expression $\vleone$ with type $\vtleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
+  \item determining that $\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\slices$ is a single slice with index expression $\eindex$ yields $\True$\ProseOrTypeError;
+  \item annotating the index expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$\ProseOrTypeError;
+  \item determining the array length type of $\size$ in $\tenv$ (via $\typeofarraylength$) yields $\wantedtindex$;
+  \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields \\
+        $\True$\ProseOrTypeError;
+  \item $\newle$ is an access to array $\vletwo$ at index $\eindexp$, that is, \\ $\LESetArray(\vletwo, \eindexp)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TArray(\size, \vt) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktrans{\listlen{\slices} = 1}{ArraySliceShouldBeSingleIndex} \checktransarrow \True \OrTypeError\\\\
+  \slices \eqname [\vs]\\
+  \checktrans{\astlabel(\vs) = \SliceSingle}{ArraySliceShouldBeSingleIndex} \checktransarrow \True \OrTypeError\\\\
+  \vs \eqname \SliceSingle(\eindex)\\
+  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\\\
+  \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
+  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
+  \newle \eqdef \LESetArray(\vletwo, \eindexp)
+}{
+  \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
+}
+\end{mathpar}
+\CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.LESetArray\label{sec:SemanticsRule.LESetArray}}
+\subsubsection{Example}
+The specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetArray.asl}
+binds the third element of \texttt{my\_array} to the value \texttt{53}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes an array update expression, $\LESetArray(\rearray, \eindex)$;
+  \item evaluating the right-hand-side expression corresponding to $\rearray$ in $\env$
+  is \Normal(\rmarray, \envone)\ProseOrAbnormal;
+  \item evaluating $\eindex$ in $\envone$ is \Normal(\mindex, \envtwo)\ProseOrAbnormal;
+  \item $\mindex$ consists of the native integer $\vindex$ and the execution graph $\vgone$;
+  \item $\vindex$ is the native integer for $\vi$;
+  \item $\rmarray$ consists of the native vector $\rvarray$ and the execution graph $\vgtwo$;
+  \item setting the value $\vv$ at index $\vi$ of $\rvarray$ is the native vector $\vvone$;
+  \item $\vmone$ is the pair consisting of $\vvone$ and the parallel composition of $\vgone$ and $\vgtwo$;
+  \item the steps so far computed the updated array, but have not assigned it to the variable
+  bound to the array given by $\rearray$, which is achieved next.
+  Evaluating the left-hand-side expression $\rearray$ in an environment $\envtwo$ with $\vmone$
+  is the output configuration $C$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \torexpr(\rearray)} \evalarrow \Normal(\rmarray, \envone) \OrAbnormal\\
+  \evalexpr{\envone, \eindex} \evalarrow \Normal(\mindex, \envtwo) \OrAbnormal\\
+  \mindex \eqname (\vindex, \vgone)\\
+  \vindex \eqname \nvint(\vi)\\
+  \rmarray \eqname (\rvarray, \vgtwo)\\
+  \setindex(\vi, \vv, \rvarray) \evalarrow \vvone\\
+  \vmone \eqdef (\vvone, \vgone \parallelcomp \vgtwo)\\
+  \evallexpr{\envtwo, \rearray, \vmone} \evalarrow C
+}{
+  \evallexpr{\env, \LESetArray(\rearray, \eindex), (\vv, \vg)} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalLESetArrayBegin}{\EvalLESetArrayEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+\lrmcomment{This is related to \identr{WHRS}:}
+If the declared type of the \rhsexpression\ of a setter has the structure of a
+bitvector or a type with fields, then if a bitslice or field selection is
+applied to a setter invocation, then the assignment to that bitslice is
+implemented using the following Read-Modify-Write (RMW) behavior:
+\begin{itemize}
+\item invoking the getter of the same name as the setter, with the same actual
+arguments as the setter invocation
+\item performing the assignment to the bitslice or field of the result of the
+getter invocation
+\item invoking the setter to assign the resulting value
+\end{itemize}
+
+We note that the index is guaranteed by the type-checker to be within the array bounds
+via \secref{TypingRule.LESetArray}.
+
+\section{Bitvector Slice Assignment Expressions\label{sec:BitvectorSliceAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \LESlice(\lexpr, \slice^*) &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LESlice\label{sec:TypingRule.LESlice}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$, that is, $\LESlice(\vleone, \slices)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\
+        $(\vtleone, \Ignore)$\ProseOrTypeError;
+  \item $\vtleone$ is a bitvector type;
+  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
+  \item obtaining the width of the slices $\slices$ in $\tenv$ and simplifying them yields $\vwidth$;
+  \item $\vt$ is the bitvector type of width $\width$ and empty list of bitfields;
+  \item checking whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
+  \item annotating $\slices$ in $\tenv$ yields $\slicestwo$\ProseOrTypeError;
+  \item checking that the slices $\slicestwo$ are all disjoint yields $\True$\ProseOrTypeError;
+  \item $\newle$ is the slicing of $\vletwo$ by $\slicestwo$, that is, $\LESlice(\vletwo, \slicestwo)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore)\\
+  \tstruct(\tenv, \vtleone) \typearrow \structtleone \OrTypeError\\\\
+  \astlabel(\structtleone) = \TBits\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo\\
+  \sliceswidth(\tenv, \slices) \typearrow \widthp\\
+  \normalize(\tenv, \widthp) \typearrow \vwidth\\
+  \vt \eqdef \TBits(\vwidth, \emptylist)\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \annotateslices(\tenv, \slices) \typearrow \slicestwo \OrTypeError\\\\
+  \checkdisjointslices(\tenv, \slicestwo) \typearrow \True \OrTypeError\\\\
+  \newle \eqdef \LESlice(\vletwo, \slicestwo)
+}{
+  \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
+}
+\end{mathpar}
+\CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.LESlice\label{sec:SemanticsRule.LESlice}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESlice.asl}
+The assignment \texttt{x[3:0] = '0000'} binds \texttt{x} to $\nvbitvector(11110000)$
+via the rule SemanticsRule.LESlice.asl
+in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes a left-hand-side slicing expression, $\LESlice(\ebv, \slices)$;
+  \item evaluating the right-hand-side expression that corresponds to $\ebv$
+  (given by applying $\torexpr$ to $\ebv$) in $\env$
+    is $\Normal(\mbv,\envone)$\ProseOrAbnormal;
+  \item evaluating $\slices$ in $\envone$ is $\Normal(\mpositions, \envtwo)$\ProseOrAbnormal;
+  \item $\mpositions$ consists of the execution graph $\vgone$ and the list of indices $\positions$;
+  \item $\mbv$ consists of the native bitvector $\vbv$ and the execution graph $\vgtwo$;
+  \item writing to the bitvector $\vbv$ at indices $\positions$ using the values from $\vv$
+  results in the updated native bitvector $\vvone$\ProseOrError;
+  \item $\vgthree$ is the parallel composition of $\vg$, $\vgone$, and $\vgtwo$;
+  \item $\newmbv$ is a pair consisting of $\vvone$ and the execution graph $\vgthree$;
+  \item the steps so far computed the updated bitvector, but have not assigned it to the
+  variable bound to the bitvector given by $\ebv$, which is achieved next.
+  Evaluating the left-hand-side expression $\ebv$ with
+  $\newmbv$ in an environment $\envtwo$ is the output configuration $C$,
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \torexpr(\ebv)} \evalarrow \Normal(\mbv,\envone) \OrAbnormal\\
+  \evalslices(\envone, \slices) \evalarrow \Normal(\mpositions, \envtwo) \OrAbnormal\\
+  \mpositions \eqname (\positions, \vgone)\\
+  \mbv \eqname (\vbv, \vgtwo)\\\\
+  \writetobitvector(\positions, \vv, \vbv) \evalarrow \vvone \OrDynError\\\\
+  \vgthree \eqdef \vg \parallelcomp \vgone \parallelcomp \vgtwo\\
+  \newmbv \eqdef (\vvone, \vgthree)\\
+  \evallexpr{\envtwo, \ebv, \newmbv} \evalarrow C
+}{
+  \evallexpr{\envtwo, \LESlice(\ebv, \slices), (\vv, \vg)} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalLESliceBegin}{\EvalLESliceEnd}{../Interpreter.ml}
+\subsubsection{Comments}
+\lrmcomment{This is related to \identr{WHRS}:}
+
+If the declared type of the \rhsexpression\ of a setter has the structure of a
+bitvector or a type with fields, then if a bitslice or field selection is
+applied to a setter invocation, then the assignment to that bitslice is
+implemented using the following Read-Modify-Write (RMW) behavior:
+\begin{itemize}
+\item invoking the getter of the same name as the setter, with the same actual
+arguments as the setter invocation
+\item performing the assignment to the bitslice or field of the result of the
+getter invocation
+\item invoking the setter to assign the resulting value
+\end{itemize}
+
+\section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \LESetField(\lexpr, \identifier) & \\
+    |\ & \LESetFields(\lexpr, \identifier^*) &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LESetBadField\label{sec:TypingRule.LESetBadField}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$\ProseOrTypeError;
+  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a type $\vt$\ProseOrTypeError;
+  \item $\vt$ is neither a \structuredtype\ nor a bitvector type;
+  \item the result is an error indicating that the type of $\vle$ conflicts with the requirements of a field access expression.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \vt \OrTypeError\\\\
+  \astlabel(\vt) \not\in \{\TException, \TRecord, \TBits\}
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{TypeConflict}
+}
+\end{mathpar}
+\CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
+
+\section{Bitfield Assignment Expressions\label{sec:BitfieldAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \LESlice(\lexpr, \slice^*) &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LESetBitField\label{sec:TypingRule.LESetBitField}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$\ProseOrTypeError;
+  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a bitvector type with with bitfields $\bitfields$\ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following applies (\textsc{error\_missing\_field}):
+    \begin{itemize}
+      \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields $\None$, meaning the field is not declared
+            in $\vtleone$;
+      \item the result is a type error $\MissingField$.
+    \end{itemize}
+
+    \item All of the following applies (\textsc{field\_simple}):
+    \begin{itemize}
+      \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a bitfield with corresponding slices $\slices$,
+            that is, $\BitFieldSimple(\Ignore, \slices)$;
+      \item $\vw$ is the width of $\slices$;
+      \item $\vt$ is defined as the bitvector type of width $\vw$ and empty list of bitfields, that is, $\TBits(\vw, \emptylist)$;
+      \item checking whether$\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item $\vletwo$ is defined as the slicing of $\vleone$ by $\slices$, that is, \\ $\LESlice(\vleone, \slices)$;
+      \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields $\newle$\ProseOrTypeError.
+    \end{itemize}
+
+    \item All of the following applies (\textsc{field\_nested}):
+    \begin{itemize}
+      \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a nested bitfield with corresponding
+            slices $\slices$ and list of bitfields $\bitfieldsp$, that is, \\ $\BitFieldNested(\Ignore, \slices, \bitfieldsp)$;
+      \item $\vw$ is the width of $\slices$;
+      \item $\vt$ is defined as the bitvector type of width $\vw$ and list of bitfields $\bitfieldsp$, that is, $\TBits(\vw, \bitfieldsp)$;
+      \item checking whether$\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item $\vlethree$ is defined as the slicing of $\vleone$ by $\slices$, that is, \\ $\LESlice(\vleone, \slices)$;
+      \item annotating the left-hand-side expression $\vlethree$ in $\tenv$ yields $\newle$\ProseOrTypeError.
+    \end{itemize}
+
+    \item All of the following applies (\textsc{field\_typed}):
+    \begin{itemize}
+      \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a typed bitfield with corresponding
+            slices $\slices$ and a type $\vt$, that is, \\ $\BitFieldType(\Ignore, \vslices, \vt)$;
+      \item $\vw$ is the width of $\slices$;
+      \item $\vtp$ is defined as the bitvector type of width $\vw$ and an empty list of bitfields, that is, $\TBits(\vw , \emptylist)$;
+      \item checking whether $\vtp$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item checking whether$\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item $\vletwo$ is defined as the slicing of $\vleone$ by $\slices$, that is, \\ $\LESlice(\vleone, \slices)$;
+      \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields $\newle$\ProseOrTypeError.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[error\_missing\_field]{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \findbitfieldopt(\bitfields, \field) \typearrow \None\
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{\MissingField}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[field\_simple]{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \findbitfieldopt(\bitfields, \field) \typearrow \langle \BitFieldSimple(\Ignore, \slices) \rangle\\
+  \sliceswidth(\tenv, \vslices) \typearrow \vw\\
+  \vt \eqdef \TBits(\vw, \emptylist)\\\\
+  \commonsuffixline\\\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \vletwo \eqdef \LESlice(\vleone, \slices)\\
+  \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[field\_nested]{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \findbitfieldopt(\bitfields, \field) \typearrow \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp) \rangle\\
+  \sliceswidth(\tenv, \vslices) \typearrow \vw\\
+  \vt \eqdef \TBits(\vw, \bitfieldsp)\\\\
+  \commonsuffixline\\\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \vletwo \eqdef \LESlice(\vleone, \slices)\\
+  \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[field\_typed]{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \findbitfieldopt(\bitfields, \field) \typearrow \langle \BitFieldType(\Ignore, \vslices, \vt) \rangle\\
+  \sliceswidth(\tenv, \vslices) \typearrow \vw\\
+  \vtp \eqdef \TBits(\vw , \emptylist)\\
+  \checktypesat(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\\\
+  \commonsuffixline\\\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \vletwo \eqdef \LESlice(\vleone, \slices)\\
+  \annotatelexpr{\tenv, \vletwo, \vte} \typearrow \newle \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
+}
+\end{mathpar}
+
+\subsubsection{Semantics}
+The semantics for assigning to individual bitvector bitfields is covered by \nameref{sec:SemanticsRule.LESlice}
+as the type system transforms the \untypedast\ for assigning to an individual bitfield into an $\LESlice$ \typedast.
+
+\subsubsection{TypingRule.LESetStructuredField\label{sec:TypingRule.LESetStructuredField}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named \texttt{field} in $\vleone$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$\ProseOrTypeError;
+  \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields a \structuredtype\ with fields \\
+        $\fields$\ProseOrTypeError;
+  \item checking that there exists a type associated with the field $\field$ in $\fields$ $\True$ \ProseTerminateAs{\MissingField};
+  \item the type associated with the field $\field$ in $\fields$ is $\vt$;
+  \item determining whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
+  \item $\newle$ is the access to the field $\field$ in $\vletwo$, that is, $\LESetField(\vletwo, \field)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\\\
+  L \in \{\TException, \TRecord\}\\
+  \assocopt(\fields, \field) \typearrow \tyopt\\
+  \checktrans{\tyopt \neq \None}{\MissingField} \checktransarrow \True \OrTypeError\\\\
+  \tyopt \eqname \langle\vt\rangle\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \newle \eqdef \LESetField(\vletwo, \field)
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \newle
+}
+\end{mathpar}
+\CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
+
+\subsection{Semantics}
+\hypertarget{SemanticsRule.LESetField}{}
+\subsubsection{SemanticsRule.LESetField\label{sec:SemanticsRule.LESetField}}
+\subsubsection{Example}
+In the specification:
+\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetField.asl}
+\texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}} in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\}}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes a field update expression, $\LESetField(\rerecord, \fieldname)$;
+  \item evaluating the right-hand-side expression corresponding to $\rerecord$
+  in $\env$ is $\Normal(\rmrecord, \envone)$\ProseOrAbnormal;
+  \item $\rmrecord$ is a pair consisting of the native record $\rvrecord$ and
+  the execution graph $\vgone$;
+  \item setting the field $\fieldname$ in the native record $\rvrecord$ to $\vv$
+  is the updated native record $\vvone$;
+  \item $\vmone$ is the pair consisting of the native vector $\vvone$ and the
+  execution graph that is, the parallel composition of $\vg$ and $\vgone$;
+  \item the steps so far computed the updated record, but have not assigned it to
+  the variable holding the record given by $\record$, which is achieved next.
+  Evaluating the left-hand-side expression $\rerecord$ in an environment $\envone$ with $\vmone$
+  is the output configuration $C$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \evalexpr{\env, \torexpr(\rerecord)} \evalarrow \Normal(\rmrecord, \envone) \OrAbnormal\\
+    \rmrecord \eqname (\rvrecord, \vgone)\\
+    \setfield(\fieldname, \vv, \rvrecord) \evalarrow \vvone\\
+    \vmone \eqdef (\vvone, \vg \parallelcomp \vgone)\\
+    \evallexpr{\env1, \rerecord, \vmone} \evalarrow C
+}{
+    \evallexpr{\env, \LESetField(\rerecord, \fieldname), (\vv, \vg)} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalLESetFieldBegin}{\EvalLESetFieldEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+We note that the type-checker guarantees that $\fieldname$ exists in the record given by $\record$
+via \nameref{sec:TypingRule.LESetStructuredField}.
+
+\lrmcomment{This is related to \identr{WHRS}:}
+If the declared type of the \rhsexpression\ of a setter has the structure of a
+bitvector or a type with fields, then if a bitslice or field selection is
+applied to a setter invocation, then the assignment to that bitslice is
+implemented using the following Read-Modify-Write (RMW) behavior:
+\begin{itemize}
+    \item invoking the getter of the same name as the setter, with the same actual
+    arguments as the setter invocation
+    \item performing the assignment to the bitslice or field of the result of the
+    getter invocation
+    \item invoking the setter to assign the resulting value
+\end{itemize}
+
+\section{Multi-slice Assignment Expressions\label{sec:MultiSliceAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \LEConcat(\lexpr^+) &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LEConcat\label{sec:TypingRule.LEConcat}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes the concatenation of left-hand-side expressions $\les$, that is, \\ $\LEConcat(\les, \Ignore)$;
+  \item annotating the right-hand-side expression corresponding to $\vle$ in $\tenv$ yields \\ $(\vteeq, \Ignore)$\ProseOrTypeError;
+  \item checking whether the bitwidth of $\vteeq$ equals the bitwidth of $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item $\les$ is the list of left-hand-side expressions $\vle_i$, for $i=1..k$;
+  \item annotating each left-hand-side expression $\vle_i$ as a bitvector-typed expression (via $\annotatelebits$)
+        yields the annotated left-hand-side expression $\vleone_i$ and corresponding bitwidth $\width_i$, for $i=1..k$;
+  \item $\lesone$ is defined as the list $\vleone_{1..k}$;
+  \item $\widths$ is defined as the list $\width_{1..k}$;
+  \item $\newle$ is the concatenation of left-hand-side expressions $\lesone$ with corresponding list of widths $\widths$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vle \eqname \LEConcat(\les, \Ignore)\\
+  \annotateexpr{\tenv, \torexpr(\vle)} \typearrow (\vteeq, \Ignore) \OrTypeError\\\\
+  \checkbitsequalwidth(\tenv, \vteeq, \vte) \typearrow \True \OrTypeError\\\\
+  \les \eqname \vle_{1..k}\\
+  i=1..k: \annotatelebits(\tenv, \vle_i) \typearrow (\vleone_i, \width_i) \OrTypeError\\\\
+  \lesone \eqdef \vleone_{1..k}\\
+  \widths \eqdef \width_{1..k}
+}{
+  \annotatelexpr{\tenv, \vle, \vte} \typearrow \overname{\LEConcat(\lesone, \widths)}{\newle}
+}
+\end{mathpar}
+\CodeSubsection{\LEConcatBegin}{\LEConcatEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.LEBits\label{sec:TypingRule.LEBits}}
+\hypertarget{def-annotatelebits}{}
+The helper function
+\[
+  \annotatelebits(\overname{\staticenvs}{\tenv} \aslsep \overname{\lexpr}{\vle})
+  \aslto \overname{\lexpr}{\vleone} \times \overname{\N}{\width}
+\]
+annotates a left-hand-side expression $\vle$, which is checked to be of bitvector type
+with width $\width$,
+resulting in the annotated expression and $\width$, or a type error, if one is detected.
+
+All of the following apply:
+\begin{itemize}
+  \item annotating the right-hand-side expression corresponding to $\vle$ in $\tenv$ yields \\ $(\vteone, \Ignore)$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\vteone$ in $\tenv$ yields $\vteonestruct$\ProseOrTypeError;
+  \item checking whether $\vteonestruct$ is a bitvector type yields $\True$\ProseOrTypeError;
+  \item $\vteonestruct$ is a bitvector type with width $\ewidth$;
+  \item applying $\reduceconstants$ to $\ewidth$ yields the literal $\vl$\ProseOrTypeError;
+  \item checking whether $\vl$ is an integer literal yields $\True$\ProseOrTypeError;
+  \item $\vl$ is the integer literal for the integer $\width$;
+  \item $\vtetwo$ is defined as the bitvector type of width given by $\width$ and an empty list of bitfields, that is,
+        $\TBits(\ELInt{\width}, \emptylist)$;
+  \item annotating the left-hand-side expression $\vtetwo$ in $\tenv$ yields $\vleone$\ProseOrTypeError.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vteone, \Ignore) \OrTypeError\\\\
+  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
+  \checktrans{\astlabel(\vteonestruct) = \TBits}{BitvectorTypeExpected} \checktransarrow \True \OrTypeError\\\\
+  \vteonestruct \eqname \TBits(\ewidth, \Ignore)\\
+  \reduceconstants(\tenv, \ewidth) \typearrow \vl\\
+  \checktrans{\astlabel(\vl) = \lint}{IntegerLiteralExpected} \checktransarrow \True \OrTypeError\\\\
+  \vl \eqname \lint(\width)\\
+  \vtetwo \eqdef \TBits(\ELInt{\width}, \emptylist)\\
+  \annotatelexpr{\tenv, \vtetwo} \typearrow \vleone \OrTypeError
+}{
+  \annotatelebits(\tenv, \vle) \typearrow (\vleone, \width)
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.LEConcat\label{sec:emanticsRule.LEConcat}}
+\newcommand\extractslices[0]{\hyperlink{def-extractslices}{\textfunc{extract\_slices}}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+    \item applying $\extractslices$ to $\vwidths$, the literal expression for $0$, and $(\vv, \vg)$, in $\env$ to
+        extract a list of native bitvector values that correspond to the slices in $\vv$
+        yields $(\ms, \Ignore)$\ProseOrError;
+    \item applying $\evalmultiassignment$ to $\vles$ and $\ms$ in $\env$ to assign from the slices in
+          $\ms$ to the \assignableexpressions\ in $\vles$ yields the resulting configuration $C$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \extractslices(\env, \vwidths, \elint{0}, (\vv, \vg)) \evalarrow (\ms, \Ignore) \OrDynError\\\\
+    \evalmultiassignment(\env, \vles, \ms) \evalarrow C
+}{
+    \evallexpr{\env, \overname{\LEConcat(\vles, \vwidths)}{\vle}, (\vv, \vg)} \evalarrow C
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.ExtractSlices\label{sec:emanticsRule.ExtractSlices}}
+The helper relation
+\[
+    \extractslices(\overname{\dynamicenvs}{\env}, \overname{\expr^*}{\vwidths}, \overname{((\vals \times \XGraphs)^*)^*}{\ms}, \overname{(\vals \times \XGraphs)}{\vm})
+    \;\aslrel\;
+    \overname{((\vals \times \XGraphs)^*)^*}{\msout}
+    \cup \overname{\TError}{\ErrorConfig}
+\]
+
+\subsubsection{Prose}
+\subsubsection{Formally}
+
+% | LE_Concat (les, Some widths) ->
+% let extract_one e_width ms =
+%   let m' =
+%     let* v = m
+%     and* width = eval_expr_sef env e_width
+%     and* start = eval_expr_sef env e_start in
+%     B.read_from_bitvector [ (start, width) ] v
+%   in
+%   m' :: ms
+% in
+% let ms = List.fold_right extract_one widths [] in
+% multi_assign V1 env les ms
