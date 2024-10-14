@@ -108,6 +108,10 @@ module Untyped (C : Config.S) = struct
     |> protected_filter_oneof
 
   let slices expr =
+    let slice_arg n =
+      let+ e = expr n in
+      Slice_Arg e
+    in
     let slice_single n =
       let+ e = expr n in
       Slice_Single e
@@ -126,6 +130,7 @@ module Untyped (C : Config.S) = struct
     in
     let slice n =
       [
+        (if C.Syntax.slice_arg then Some (slice_arg n) else None);
         (if C.Syntax.slice_single then Some (slice_single n) else None);
         (if C.Syntax.slice_range then Some (slice_range n) else None);
         (if C.Syntax.slice_length then Some (slice_length n) else None);

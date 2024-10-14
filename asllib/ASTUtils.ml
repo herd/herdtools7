@@ -369,6 +369,7 @@ and slice_equal eq slice1 slice2 =
   slice1 == slice2
   ||
   match (slice1, slice2) with
+  | Slice_Arg e1, Slice_Arg e2 -> expr_equal eq e1 e2
   | Slice_Single e1, Slice_Single e2 -> expr_equal eq e1 e2
   | Slice_Range (e11, e21), Slice_Range (e12, e22)
   | Slice_Length (e11, e21), Slice_Length (e12, e22) ->

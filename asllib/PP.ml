@@ -36,6 +36,8 @@ let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf v =
 
 let pp_comma f () = fprintf f ",@ "
 let pp_comma_list pp_elt f = pp_print_list ~pp_sep:pp_comma pp_elt f
+let pp_colon_colon f () = fprintf f "::@ "
+let pp_colon_colon_list pp_elt f = pp_print_list ~pp_sep:pp_colon_colon pp_elt f
 
 let pp_pos f { pos_start; pos_end; _ } =
   let open Lexing in
@@ -126,12 +128,12 @@ let rec pp_expr f e =
         pp_expr e2 pp_expr e3
   | E_GetField (e, x) -> fprintf f "@[%a@,.%s@]" pp_expr e x
   | E_GetFields (e, xs) ->
-      fprintf f "@[%a@,.[@[%a@]]@]" pp_expr e (pp_comma_list pp_print_string) xs
+      fprintf f "@[%a@,.(@[%a@])@]" pp_expr e (pp_comma_list pp_print_string) xs
   | E_GetItem (e, i) -> fprintf f "@[%a@,.item%d@]" pp_expr e i
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
-  | E_Concat es -> fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
+  | E_Concat es -> fprintf f "@[<hv 2>%a@]" (pp_colon_colon_list pp_expr) es
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
   | E_Unknown ty -> fprintf f "@[<h>UNKNOWN :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
@@ -139,7 +141,8 @@ let rec pp_expr f e =
 and pp_expr_list f = pp_comma_list pp_expr f
 
 and pp_slice f = function
-  | Slice_Arg e | Slice_Single e -> pp_expr f e
+  | Slice_Arg e -> pp_expr f e
+  | Slice_Single e -> fprintf f "@[<h>%a:@]" pp_expr e
   | Slice_Range (e1, e2) -> fprintf f "@[<h>%a@,:%a@]" pp_expr e1 pp_expr e2
   | Slice_Length (e1, e2) -> fprintf f "@[<h>%a@,+:%a@]" pp_expr e1 pp_expr e2
   | Slice_Star (e1, e2) -> fprintf f "@[<h>%a@,*:%a@]" pp_expr e1 pp_expr e2
@@ -219,7 +222,7 @@ let rec pp_lexpr f le =
   | LE_SetArray (le, e) -> fprintf f "%a[%a]" pp_lexpr le pp_expr e
   | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
   | LE_SetFields (le, li, _) ->
-      fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le
+      fprintf f "@[%a@,.@[(%a)@]@]" pp_lexpr le
         (pp_comma_list pp_print_string)
         li
   | LE_Discard -> pp_print_string f "-"
