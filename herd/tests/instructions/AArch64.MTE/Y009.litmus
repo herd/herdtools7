@@ -1,0 +1,23 @@
+AArch64 Y009
+(* IRG GCR_EL1 RRND=0, RGSR_EL1 tag and seed update, with initial tag *)
+{
+  int x=100;
+  0:X0=x;
+  0:GCR_EL1=0;
+  0:RGSR_EL1=0x003A09; (* SEED=0x003A TAG=9 *)
+}
+
+P0        ;
+IRG X1,X0 ;
+
+(* Next seed calculation: *)
+(* SEED before | lfsr <5:0>      | top | SEED after *)
+(* 0x003A      | 1 _1 1 0 _1 0   | 0   | 0x001D     *)
+(* 0x001D      | 0 _1 1 1 _0 1   | 1   | 0x800E     *)
+(* 0x800E      | 0 _0 1 1 _1 0   | 0   | 0x4007     *)
+(* 0x4007      | 0 _0 0 1 _1 1   | 0   | 0x2003     *)
+
+(* After IRG, RGSR_EL1 TAG=0b1011, SEED=0x2003 *)
+
+forall (0:X1=x:t11 /\ 0:RGSR_EL1=0x20030B)
+

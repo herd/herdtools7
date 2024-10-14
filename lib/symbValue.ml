@@ -108,6 +108,7 @@ module
   | (Val _,Var _)|(Var _,Val _) -> false
 
   let intToV i  = Val (Cst.intToV i)
+  let int64ToV i = Val (Cst.int64ToV i)
   let stringToV i  = Val (Cst.stringToV i)
   and nameToV s = Val (Cst.nameToV s)
   and instructionToV i = Val (Constant.Instruction i)

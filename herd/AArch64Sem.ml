@@ -590,6 +590,38 @@ module Make
       let read_tag_mem a ii =
         M.op1 Op.TagLoc a >>= fun atag -> do_read_tag_nexp atag ii
 
+(* Extract value to OCaml values *)
+
+      (* fold actions based on bits being 0 or 1 *)
+      let fold_right_bits
+        (f_append : is_one:bool -> 'a -> 'a M.t)
+        (f_unit : 'a M.t)
+        (n_bits : int)
+        (v : global_loc) : 'a M.t =
+        let rec go = function
+          | 0 -> f_unit
+          | n ->
+              M.bitT v (V.intToV (n - 1)) >>= fun bit ->
+                go (n - 1) >>= fun rest ->
+                  M.choiceT
+                    bit
+                    (f_append ~is_one:true rest)
+                    (f_append ~is_one:false rest)
+        in
+        go n_bits
+
+      (* convert a bit represented value to int *)
+      let int_of_bits (n_bits : int) (v : global_loc) : int M.t =
+        let next_bit ~is_one (acc, cur) =
+          let acc = if is_one then acc + cur else acc in
+          M.unitT (acc, Int.shift_left cur 1)
+        in
+        if n_bits > Sys.int_size
+        then failwith "int_of_bits: too many bits for OCaml int"
+        else
+          fold_right_bits next_bit (M.unitT (0, 1)) n_bits v >>= fun (acc, _) ->
+            M.unitT acc
+
 (*******************)
 (* Memory accesses *)
 (*******************)
@@ -3159,6 +3191,137 @@ module Make
       let stzg = do_stzg Once
       and stz2g = do_stzg Twice
 
+      let irg (rd : AArch64Base.reg) rn rm ii =
+        let debug = false in
+        let ( let>* ) = M.bind_control_set_data_input_first in
+        let ( let>= ) = ( >>= ) in
+        let ( and* ) = ( >>| ) in
+        let reg_gcr_el1 = AArch64Base.(SysReg GCR_EL1) in
+        let reg_rgsr_el1 = AArch64Base.(SysReg RGSR_EL1) in
+        let>= vn = read_reg_ord rn ii
+        and* vm = read_reg_ord rm ii
+        and* gcr_el1 = read_reg_ord reg_gcr_el1 ii
+        in
+        let ffff = V.intToV 0xFFFF in
+        let>= exclude =
+          M.op Op.And gcr_el1 ffff >>= M.op Op.Or vm
+        in
+        let choose_random_non_excluded_tag exclude =
+          let do_irg n =
+            let>= () = M.isBitUnsetT exclude (V.intToV n) in
+            M.unitT n
+          in
+          match List.init 16 Fun.id with
+          | h::t ->
+              List.fold_right M.altT (List.map do_irg t) (do_irg h)
+          | _ -> (* impossible *) assert false
+        in
+        (* AArch64.NextRandomTagBit *)
+        let aarch64_next_random_tag_bit lfsr =
+          let bit i = Int.shift_right lfsr i |> Int.logand 1 in
+          let top =
+            Int.(logxor (logxor (logxor (bit 5) (bit 3)) (bit 2)) (bit 0))
+          in
+          let lfsr' = Int.shift_left top 15 + Int.shift_right lfsr 1 in
+          if debug then
+            Format.eprintf "lfsr: 0x%x, top: %d, lfsr': 0x%x\n" lfsr top lfsr';
+          (top, lfsr')
+        in
+        (* AArch64.RandomTag *)
+        let aarch64_random_tag seed =
+          let rec go (acc, cur, seed) = function
+            | 4 -> (acc, seed)
+            | n ->
+              let bit, seed = aarch64_next_random_tag_bit seed in
+              let acc = if bit = 1 then acc + cur else acc in
+              go (acc, Int.shift_left cur 1, seed) (n + 1)
+
+          in
+          go (0, 1, seed) 0
+        in
+        (* AArch64.ChooseNonExcludedTag *)
+        let aarch64_choose_non_excluded_tag tag_in offset_in exclude =
+          if debug then
+            Format.eprintf "tag_in: 0x%x, offset_in: 0x%x, exclude: 0x%x\n"
+              tag_in offset_in exclude;
+          if exclude = 0xFFFF
+          then 0
+          else
+            let bits4_inc n =
+              (n + 1) mod 0xF
+            in
+            let rec find_next_non_excluded n =
+              if (Int.shift_right exclude n) |> Int.logand 1 = 1
+              then find_next_non_excluded (bits4_inc n)
+              else n
+            in
+            let rec go tag = function
+              | 0 -> tag
+              | offset ->
+                if debug then Format.eprintf "tag: %d, offset: %d\n" tag offset;
+                let tag = find_next_non_excluded (bits4_inc tag) in
+                go tag (offset - 1)
+            in
+            if offset_in = 0
+            then find_next_non_excluded tag_in
+            else go tag_in offset_in
+        in
+        let set_rgsr_el1 ~seed ~tag rgsr_el1 =
+          let>= new_rgsr_el1 =
+            M.op Op.And rgsr_el1 (V.int64ToV 0xFFFF_FFFF_FF00_00F0L) >>=
+              M.op Op.Or (V.intToV tag) >>=
+                M.op Op.Or (V.intToV (Int.shift_left seed 8))
+          in
+          write_reg_dest reg_rgsr_el1 new_rgsr_el1 ii
+        in
+
+        let is_ones_16 bits = M.op Op.And bits ffff >>= M.op Op.Eq ffff in
+        (* TODO:
+          if AArch64.AllocationTagAccessIsEnabled(PSTATE.EL) then
+            [...]
+          else
+            rtag = '0000'
+         *)
+        (* if then else *)
+        let do_choice cond_name mcond m1 m2 =
+          let>= cond = mcond in
+          let>* () =
+            let text = Printf.sprintf "%s(%s)" cond_name (V.pp_v cond) in
+            commit_pred_txt (Some text) ii
+          in
+          M.choiceT cond m1 m2
+        in
+        let set_tag tag =
+          let tag = V.Val (Constant.Tag ("t" ^ string_of_int tag)) in
+          let>= v = M.op Op.SetTag vn tag in
+          write_reg_dest rd v ii
+        in
+        do_choice "GCR_EL1.RRND"
+          (M.bitT gcr_el1 (V.intToV 16))
+          (do_choice "(IsOnes(exclude))"
+             (is_ones_16 exclude)
+             (set_tag 0 >>= B.nextSetT rd)
+             (choose_random_non_excluded_tag exclude >>= set_tag >>= B.nextSetT rd))
+          begin
+            let>= rgsr_el1 = read_reg_ord reg_rgsr_el1 ii in
+            (* NOTE: reads & writes to RGSR_EL1 appear in program order, see
+               its system register configuration. Therefore, the value value
+               is lifted to OCaml to calculate the next seed and tag with one
+               read and one write. *)
+            let>= start_tag = M.op Op.And rgsr_el1 (V.intToV 0xF) >>= int_of_bits 4 in
+            let>= seed = M.op Op.ShiftRight rgsr_el1 (V.intToV 8) >>= int_of_bits 16 in
+            if debug then Format.eprintf "seed: 0x%x\n" seed;
+            let (offset, seed) = aarch64_random_tag seed in
+            if debug then Format.eprintf "offset: 0x%x, seed: 0x%x\n" offset seed;
+            let>= exclude = int_of_bits 16 exclude in
+            let rtag = aarch64_choose_non_excluded_tag start_tag offset exclude in
+            let>= rdv = set_tag rtag
+            and* new_rgsr_el1 = set_rgsr_el1 ~seed ~tag:rtag rgsr_el1
+            in
+            let bds = [(rd, rdv); (reg_rgsr_el1, new_rgsr_el1)] in
+            M.unitT (B.Next bds)
+          end
+
 (*********************)
 (* Instruction fetch *)
 (*********************)
@@ -3351,6 +3514,9 @@ module Make
         | I_LDG (rt,rn,k) ->
             check_memtag "LDG" ;
             ldg rt rn k ii
+        | I_IRG (rd,rn,rm) ->
+            check_memtag "IRG" ;
+            irg rd rn rm ii
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii
         | I_STXRBH(bh,t,rr,rs,rd) ->
