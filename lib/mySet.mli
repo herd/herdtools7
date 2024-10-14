@@ -27,9 +27,14 @@ module type S = sig
   val iter2 : (elt -> elt -> unit) -> t -> t -> unit
   (* Exists on cartesian product *)
   val exists2 : (elt -> elt -> bool) -> t -> t -> bool
-  (* Like exists, but returns an elt that satisfy the predicate,
-     raises Not_found, if no such elt exists *)
+
   val find : (elt -> bool) -> t -> elt
+  (** Like exists, but returns an elt that satisfy the predicate,
+     raises Not_found, if no such elt exists *)
+
+  val find_opt : (elt -> bool) -> t -> elt option
+  (** Like find,  option version *)
+
 
   (* Check for a singleton *)
   val is_singleton : t -> bool

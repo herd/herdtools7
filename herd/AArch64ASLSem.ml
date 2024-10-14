@@ -1199,6 +1199,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       AArch64Mixed.build_semantics test ii
 
     let build_semantics test ii =
+      let flitmus = test.Test_herd.name.Name.file in
       let () =
         if _dbg then
           Printf.eprintf "\n\nExecuting %s\n"
@@ -1218,7 +1219,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
           in
-          let monads =
+          let monads,_ =
             let solve_regs (_i, cs, es) =
               let () =
                 if  _dbg then begin
@@ -1266,19 +1267,32 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               in
               check_event_structure test conc kfail ksuccess li
             in
-            let check li  (_,_,cs as c) =
-              if
-                not is_cutoff &&
-                ASLS.E.EventSet.exists ASLS.E.is_cutoff cs.ASLS.E.events
-              then li
+            let check (li,seen)  (_,_,cs as c) =
+              let msg =
+                if is_cutoff then
+                  (* Keep all executions, included pruned ones. *)
+                  None
+                else ASLS.find_cutoff cs.ASLS.E.events in
+              let seen  =
+                match msg with
+                | Some msg ->
+                    if not (StringSet.mem msg seen) then begin
+                      Warn.warn_always
+                        "%a: %s, some legal outcomes may be missing"
+                        Pos.pp_pos0 flitmus
+                        msg;
+                      StringSet.add msg seen
+                    end else seen
+                | None -> seen in
+              if Misc.is_some msg then li,seen
               else
                 match solve_regs c with
-                | None -> li
-                | Some c -> check_rfm li c in
-            List.fold_left check [] rfms
+                | None -> li,seen
+                | Some c -> check_rfm li c,seen in
+            List.fold_left check ([],StringSet.empty) rfms
           in
           let () =
-            if  _dbg then
+            if _dbg then
               Printf.eprintf "Got %d complete executions.\n%!"
                 (List.length monads)
           in
