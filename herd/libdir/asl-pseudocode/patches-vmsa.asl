@@ -189,18 +189,17 @@ end;
 // AArch64.MemSwapTableDesc()
 // ==========================
 // Perform HW update of table descriptor as an atomic operation
-// Modified -> disabled at the moment
+// Modified -> write only
 
 func AArch64_MemSwapTableDesc
   (fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
-  ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
+   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
 => (FaultRecord, bits(N))
 begin
    let addr = descpaddr.paddress.address;
-   WritePtePrimitive(addr,new_desc);
+   WritePtePrimitive(addr,new_desc,descaccess.write);
    return (fault_in,new_desc);
 end;
-
 
 // AArch64.DataAbort()
 // ===================
@@ -291,7 +290,7 @@ begin
   var walkparams : S1TTWParams;
   assert (regime == Regime_EL10);
   walkparams.ha = GetHaPrimitive();
-//  __debug__(walkparams);
+  walkparams.hd = GetHdPrimitive();
   return walkparams;
 end;
 
