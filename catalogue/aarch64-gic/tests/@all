@@ -58,3 +58,4 @@ coWR-gic.dis.ack+gsb.sys.litmus
 # Not included
 #MP-fDI+ack-DI+gic.dis-R-gsb.sys-mR.litmus
 #MP-fDI+ack-DSB-DI+gic.dis-R-gsb.sys-mR.litmus
+gic.pri+gic.en.litmus
