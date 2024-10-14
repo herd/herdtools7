@@ -35,8 +35,8 @@ type global = {
       (** Maps an identifier s to its parent in the subtype relation. *)
   subprograms : AST.func IMap.t;
       (** Maps each subprogram runtime name to its signature. *)
-  subprogram_renamings : ISet.t IMap.t;
-      (** Maps each subprogram declared name to the equivalence class of all
+  overloaded_subprograms : ISet.t IMap.t;
+      (** Maps the name of each declared subprogram to the equivalence class of all
           the subprogram runtime names that were declared with this name. *)
   expr_equiv : expr IMap.t;
       (** Maps every expression to a reduced immutable form. *)

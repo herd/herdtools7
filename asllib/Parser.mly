@@ -337,8 +337,8 @@ let colon_for_type == COLON | COLON_COLON
 
 (* Constrained types helpers *)
 
-let int_constraints_opt == int_constraints | { UnConstrained }
-let int_constraints == ~=braced(nclist(int_constraint)); < WellConstrained >
+let int_constraints_opt == constraint_kind | { UnConstrained }
+let constraint_kind == ~=braced(nclist(int_constraint)); < WellConstrained >
 
 let int_constraint ==
   | ~=expr;                     < Constraint_Exact >
@@ -414,7 +414,7 @@ let typed_identifier == pair(IDENTIFIER, as_ty)
 (* End *)
 
 let ty_opt == ioption(as_ty)
-let implicit_t_int == annotated ( ~=int_constraints ; <T_Int> )
+let implicit_t_int == annotated ( ~=constraint_kind ; <T_Int> )
 
 
 (* ------------------------------------------------------------------------

@@ -50,7 +50,7 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
   \exprequiv            &\mapsto& \identifier \partialto \expr,\\
   \subtypes             &\mapsto& \identifier \partialto \identifier,\\
   \subprograms          &\mapsto& \identifier \partialto \func,\\
-  \subprogramrenamings  &\mapsto& \identifier \rightarrow \pow{\Strings}
+  \overloadedsubprograms  &\mapsto& \identifier \rightarrow \pow{\Strings}
 \end{array}
 \right]\\
 \hypertarget{def-localstaticenvs}{}\\
@@ -95,8 +95,8 @@ The intuitive meaning of each component is as follows:
   \hypertarget{def-subprograms}{}
   \item $\subprograms$ associates names of subprograms to the $\func$ AST node they were
   declared with;
-  \hypertarget{def-subprogramrenamings}{}
-  \item $\subprogramrenamings$ associates names of subprograms to the set of overloading
+  \hypertarget{def-overloadedsubprograms}{}
+  \item $\overloadedsubprograms$ associates names of subprograms to the set of overloading
   subprograms ---  $\func$ AST nodes that share the same name;
   \hypertarget{def-returntype}{}
   \item $\returntype$ contains the name of the type that a subprogram declares, if it is
@@ -117,7 +117,7 @@ The \emph{empty static environment}, \\ denoted as $\emptytenv$, is defined as f
   \exprequiv            &\mapsto& \emptyfunc,\\
   \subtypes             &\mapsto& \emptyfunc,\\
   \subprograms          &\mapsto& \emptyfunc,\\
-  \subprogramrenamings  &\mapsto& \emptyfunc
+  \overloadedsubprograms  &\mapsto& \emptyfunc
 \end{array}
 \right]}{\globalstaticenvs},
 \overname{

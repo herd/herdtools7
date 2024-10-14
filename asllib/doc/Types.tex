@@ -82,8 +82,8 @@ expressions and statements.
 
 \subsection{Abstract Syntax\label{sec:IntegerTypesAST}}
 \begin{flalign*}
-\ty \derives\ & \TInt(\intconstraints)\\
-\intconstraints \derives\ & \unconstrained
+\ty \derives\ & \TInt(\constraintkind)\\
+\constraintkind \derives\ & \unconstrained
 & \\
 |\ & \wellconstrained(\intconstraint^{+})
 & \\
@@ -105,7 +105,7 @@ expressions and statements.
 \hypertarget{build-intconstraintsopt}{}
 The function
 \[
-  \buildintconstraintsopt(\overname{\parsenode{\Nintconstraintsopt}}{\vparsednode}) \;\aslto\; \overname{\intconstraints}{\vastnode}
+  \buildintconstraintsopt(\overname{\parsenode{\Nintconstraintsopt}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -131,7 +131,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-intconstraints}{}
 The function
 \[
-  \buildintconstraints(\overname{\parsenode{\Nintconstraints}}{\vparsednode}) \;\aslto\; \overname{\intconstraints}{\vastnode}
+  \buildintconstraints(\overname{\parsenode{\Nintconstraints}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 

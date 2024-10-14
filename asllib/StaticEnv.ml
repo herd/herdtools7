@@ -29,7 +29,7 @@ type global = {
   storage_types : (ty * global_decl_keyword) IMap.t;
   subtypes : identifier IMap.t;
   subprograms : AST.func IMap.t;
-  subprogram_renamings : ISet.t IMap.t;
+  overloaded_subprograms : ISet.t IMap.t;
   expr_equiv : expr IMap.t;
 }
 
@@ -82,18 +82,18 @@ module PPEnv = struct
         declared_types;
         subtypes;
         subprograms;
-        subprogram_renamings;
+        overloaded_subprograms;
         expr_equiv;
       } =
     fprintf f
       "@[<v 2>Global with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
        @[types:@ %a@]@ - @[subtypes:@ %a@]@ - @[subprograms:@ %a@]@ - \
-       @[subprogram_renamings:@ %a@]@ - @[expr equiv:@ %a@]@]"
+       @[overloaded_subprograms:@ %a@]@ - @[expr equiv:@ %a@]@]"
       (pp_map PP.pp_literal) constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types (pp_map PP.pp_ty) declared_types (pp_map pp_print_string)
       subtypes (pp_map pp_subprogram) subprograms (pp_map pp_iset)
-      subprogram_renamings (pp_map PP.pp_expr) expr_equiv
+      overloaded_subprograms (pp_map PP.pp_expr) expr_equiv
 
   let pp_env f { global; local } =
     fprintf f "@[<v 2>Env with:@ - %a@ - %a@]" pp_local local pp_global global
@@ -111,7 +111,7 @@ let empty_global =
     storage_types = IMap.empty;
     subtypes = IMap.empty;
     subprograms = IMap.empty;
-    subprogram_renamings = IMap.empty;
+    overloaded_subprograms = IMap.empty;
     expr_equiv = IMap.empty;
   }
 
@@ -174,7 +174,8 @@ let set_renamings name set env =
     global =
       {
         env.global with
-        subprogram_renamings = IMap.add name set env.global.subprogram_renamings;
+        overloaded_subprograms =
+          IMap.add name set env.global.overloaded_subprograms;
       };
   }
 
