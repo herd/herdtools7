@@ -576,10 +576,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckStaticallyEvaluable *)
-  let check_statically_evaluable (env : env) e ses () =
+  let check_statically_evaluable env e ses () =
     if is_statically_evaluable ~loc:e env ses then
       () |: TypingRule.CheckStaticallyEvaluable
-    else fatal_from e (Error.ImpureExpression e)
+    else fatal_from e (Error.ImpureExpression (e, ses))
   (* End *)
 
   let storage_is_config ~loc (env : env) s =
@@ -955,12 +955,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let t, e', ses = annotate_expr env e in
     let+ () =
       check_true (SES.is_side_effect_free ses) @@ fun () ->
-      let () =
-        if false then
-          let se = SES.get_side_effect ses in
-          Format.eprintf "Found side effect:@ %a.@." SideEffect.pp_print se
-      in
-      fatal_from e Error.(ImpureExpression e)
+      let ses = SES.filter_side_effects ses in
+      fatal_from e Error.(ImpureExpression (e, ses))
     in
     (t, e')
 
@@ -2446,11 +2442,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and end_struct = Types.make_anonymous env end_t in
         let+ () =
           check_true (SES.is_side_effect_free ses_end) @@ fun _ ->
-          fatal_from loc Error.(ImpureExpression end_e)
+          fatal_from loc Error.(ImpureExpression (end_e, ses_end))
         in
         let+ () =
           check_true (SES.is_side_effect_free ses_start) @@ fun _ ->
-          fatal_from loc Error.(ImpureExpression start_e)
+          fatal_from loc Error.(ImpureExpression (start_e, ses_start))
         in
         let ses_cond = SES.union ses_start ses_end in
         (* TypingRule.ForConstraint( *)
@@ -2519,7 +2515,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               | LDK_Constant -> (
                   let+ () =
                     check_true (SES.is_empty ses) @@ fun _ ->
-                    fatal_from loc Error.(ImpureExpression e)
+                    fatal_from loc Error.(ImpureExpression (e, ses))
                   in
                   try
                     let v = StaticInterpreter.static_eval env1 e in
@@ -3269,12 +3265,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | GDK_Constant ->
           let+ () =
             check_true (SES.is_empty ses_initial_value) @@ fun () ->
-            let () =
-              if false then
-                let se = SES.get_side_effect ses_initial_value in
-                Format.eprintf "Got side effect:@ %a." SideEffect.pp_print se
-            in
-            fatal_from loc Error.(ImpureExpression initial_value')
+            fatal_from loc
+              Error.(ImpureExpression (initial_value', ses_initial_value))
           in
           try_add_global_constant name env1 initial_value'
       | GDK_Let when is_statically_evaluable ~loc env1 ses_initial_value -> (
