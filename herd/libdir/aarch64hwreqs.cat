@@ -49,6 +49,11 @@
  *)
 include "aarch64deps.cat"
 
+(*
+ * Include gicv5.cat with the ordering rules for GICv5.
+ *)
+include "gicv5.cat"
+
 (* Tag-Check-before *)
 (* Note: in asynchronous fault handling mode, instruction semantics for
          checked memory accesses does not feature the iico_ctrl edge to Exp & M
