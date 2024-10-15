@@ -260,10 +260,8 @@ module Domain = struct
     | FromSyntax _, Finite is2 ->
         let s2 = int_set_to_int_constraints is2 in
         int_set_raise_interval_op fop op is1 (FromSyntax s2)
-    | FromSyntax s1, FromSyntax s2 -> (
-        match constraint_binop op s1 s2 with
-        | WellConstrained s2 -> FromSyntax s2
-        | _ -> Top)
+    | FromSyntax s1, FromSyntax s2 -> FromSyntax (constraint_binop op s1 s2)
+
   (* End *)
 
   let monotone_interval_op op i1 i2 =
