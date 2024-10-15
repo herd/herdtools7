@@ -77,12 +77,12 @@ Unsupported divisions (caught at type-checking time):
   $ aslref --no-exec static-div-undiv-ter.asl
   File static-div-undiv-ter.asl, line 4, characters 10 to 17:
   Warning: Removing some values that would fail with op DIV from constraint set
-  {1, (3 DIV 2)} gave {1}. Continuing with this constraint set.
+  {(2 DIV 2), (3 DIV 2)} gave {(2 DIV 2)}. Continuing with this constraint set.
 
   $ aslref --no-exec static-div-intervals.asl
   File static-div-intervals.asl, line 5, characters 27 to 34:
   Warning: Removing some values that would fail with op DIV from constraint set
-  {(1 DIV 3)..(5 DIV 3)} gave {1}. Continuing with this constraint set.
+  {(2 DIV 6)..(5 DIV 3)} gave {1}. Continuing with this constraint set.
 
 For completeness, those operations are dynamic errors:
 

@@ -15,7 +15,8 @@ H Examples
   $ aslref --no-exec HExample15.asl
   File HExample15.asl, line 3, characters 10 to 17:
   Warning: Removing some values that would fail with op DIV from constraint set
-  {1, 2, (1 DIV 2)} gave {1, 2}. Continuing with this constraint set.
+  {(4 DIV 4), (4 DIV 8), (8 DIV 4), (8 DIV 8)} gave
+  {(4 DIV 4), (8 DIV 4), (8 DIV 8)}. Continuing with this constraint set.
   $ aslref --no-exec HExample16.asl
   File HExample16.asl, line 10, characters 19 to 33:
   ASL Typing error: a subtype of integer {1..a} was expected,

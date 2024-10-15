@@ -84,12 +84,36 @@ let list_remove_duplicates eq =
   in
   function [] -> [] | x :: li -> aux x [ x ] li
 
+let simplify_static_constraints =
+  let module DZ = Diet.Z in
+  let acc_diet (diet, non_static) = function
+    | Constraint_Exact e as c -> (
+        match e.desc with
+        | E_Literal (L_Int z) -> (DZ.(add Interval.(make z z) diet), non_static)
+        | _ -> (diet, c :: non_static))
+    | Constraint_Range (e1, e2) as c -> (
+        match (e1.desc, e2.desc) with
+        | E_Literal (L_Int z1), E_Literal (L_Int z2) when Z.leq z1 z2 ->
+            DZ.(add Interval.(make z1 z2) diet, non_static)
+        | _ -> (diet, c :: non_static))
+  in
+  let constraint_of_interval interval =
+    let x = DZ.Interval.x interval and y = DZ.Interval.y interval in
+    if Z.equal x y then Constraint_Exact (expr_of_z x)
+    else Constraint_Range (expr_of_z x, expr_of_z y)
+  in
+  fun constraints ->
+    let diet, non_static = List.fold_left acc_diet (DZ.empty, []) constraints in
+    DZ.fold
+      (fun interval acc -> constraint_of_interval interval :: acc)
+      diet non_static
+
 (* Begin ReduceConstraints *)
 let reduce_constraints env = function
   | (UnConstrained | Parameterized _) as c -> c
   | WellConstrained constraints ->
       List.map (reduce_constraint env) constraints
-      |> List.sort compare
+      |> simplify_static_constraints |> List.sort compare
       |> list_remove_duplicates
            (constraint_equal (StaticModel.equal_in_env env))
       |> fun constraints -> WellConstrained constraints
@@ -779,6 +803,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* End *)
 
+  let refine_constraint_for_div ~loc op cs =
+    match (op, cs) with
+    | DIV, WellConstrained cs_list ->
+        WellConstrained
+          (refine_constraints ~loc DIV filter_reduce_constraint_div cs_list)
+    | _ -> cs
+
   (* Begin AnnotateConstraintBinop *)
   let annotate_constraint_binop ~loc env op cs1 cs2 =
     match op with
@@ -796,16 +827,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2_f)
           else (cs1, cs2_f)
         in
-        let cs =
-          constraint_binop op cs1_arg cs2_arg |> reduce_constraints env
-        in
         let annotated_cs =
-          match (op, cs) with
-          | DIV, WellConstrained cs_list ->
-              WellConstrained
-                (refine_constraints ~loc DIV filter_reduce_constraint_div
-                   cs_list)
-          | _ -> cs
+          constraint_binop op cs1_arg cs2_arg
+          |> refine_constraint_for_div ~loc op
+          |> reduce_constraints env
         in
         let () =
           if false then
