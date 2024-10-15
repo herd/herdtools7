@@ -446,7 +446,7 @@ let lexpr_atom_desc :=
   | le=lexpr_atom; ~=slices; <LE_Slice>
   | le=lexpr_atom; DOT; field=IDENTIFIER; <LE_SetField>
   | le=lexpr_atom; DOT; li=pared(clist(IDENTIFIER)); { LE_SetFields (le, li, []) }
-  | les=bracketed(nclist(lexpr_atom)); { LE_Concat (les, None) } (* TODO: use a reasonable form *)
+  | les=bracketed(nclist(lexpr_atom)); { LE_Concat (les, None) }
 
 let lexpr_atom == annotated(lexpr_atom_desc)
 

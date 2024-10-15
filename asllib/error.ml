@@ -158,7 +158,7 @@ module PPrint = struct
     | BadSlice slice -> fprintf f "ASL error: invalid slice %a." pp_slice slice
     | UnexpectedSliceArg e ->
         fprintf f
-          "ASL error:@ Unexpected slice argument %a, but a slice is expected.@ \
+          "ASL error:@ Unexpected slice argument %a when a slice is expected.@ \
            Hint: slice a single bit at position x with [x:] instead of [x]."
           pp_expr e
     | TypeInferenceNeeded ->

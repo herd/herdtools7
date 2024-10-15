@@ -267,9 +267,9 @@ val subst_expr : (identifier * expr) list -> expr -> expr
 
     Warning: constants and statically-evaluated parts are not changed, for
     example:
-      [E_Slice (E_Var "y", [Slice_Single (E_Var "y")])]
+      [E_Slice (E_Var "y", [Slice_Length (E_Var "y", E_Literal (L_Int Z.one))])]
     will become after [subst_expr [("y", E_Var "x")]]:
-      [E_Slice (E_Var "x", [Slice_Single (E_Var "y")])]
+      [E_Slice (E_Var "x", [Slice_Length (E_Var "y", E_Literal (L_Int Z.one))])]
 *)
 
 val rename_locals : (identifier -> identifier) -> AST.t -> AST.t

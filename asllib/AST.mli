@@ -147,7 +147,7 @@ and pattern =
 (** Indexes an array, a bitvector, an argument to a getter/setter *)
 and slice =
   | Slice_Arg of expr
-      (** [Slice_Arg e] is an argument to a getter/setter call *)
+      (** [Slice_Arg e] is an argument to a getter/setter call or array index *)
   | Slice_Range of expr * expr
       (** [Slice_Range (j, i)] denotes the slice from [i] to [j - 1]. *)
   | Slice_Length of expr * expr
