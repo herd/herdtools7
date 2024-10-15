@@ -80,10 +80,9 @@ Unsupported divisions (caught at type-checking time):
   {1, (3 DIV 2)} gave {1}. Continuing with this constraint set.
 
   $ aslref --no-exec static-div-intervals.asl
-  File static-div-intervals.asl, line 5, characters 2 to 35:
-  ASL Typing error: a subtype of integer {0..10} was expected,
-    provided integer.
-  [1]
+  File static-div-intervals.asl, line 5, characters 27 to 34:
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {(1 DIV 3)..(5 DIV 3)} gave {1}. Continuing with this constraint set.
 
 For completeness, those operations are dynamic errors:
 

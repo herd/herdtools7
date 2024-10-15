@@ -746,12 +746,37 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     function
     | Constraint_Exact e as c -> (
         match get_literal_div_opt e with
-        | None -> Some c
-        | Some (z1, z2) -> if Z.divisible z1 z2 then Some c else None)
-    | Constraint_Range _ as c ->
-        (* No need to reduce those as they are not handled by
-           Asllib.constraint_binop *)
-        Some c
+        | Some (z1, z2) when Z.sign z2 != 0 ->
+            if Z.divisible z1 z2 then Some c else None
+        | _ -> Some c)
+    | Constraint_Range (e1, e2) as c -> (
+        let z1_opt =
+          match get_literal_div_opt e1 with
+          | Some (z1, z2) when Z.sign z2 != 0 ->
+              let zdiv, zmod = Z.ediv_rem z1 z2 in
+              let zres = if Z.sign zmod = 0 then zdiv else Z.succ zdiv in
+              Some zres
+          | _ -> None
+        and z2_opt =
+          match get_literal_div_opt e2 with
+          | Some (z1, z2) when Z.sign z2 != 0 -> Some (Z.ediv z1 z2)
+          | _ -> None
+        in
+        match (z1_opt, z2_opt) with
+        | Some z1, Some z2 ->
+            let () =
+              if false then
+                Format.eprintf "Reducing %a DIV %a@ got z1=%a and z2=%a@."
+                  PP.pp_expr e1 PP.pp_expr e2 Z.pp_print z1 Z.pp_print z2
+            in
+            if Z.equal z1 z2 then Some (Constraint_Exact (expr_of_z z1))
+            else if Z.leq z1 z2 then
+              Some (Constraint_Range (expr_of_z z1, expr_of_z z2))
+            else None
+        | Some z1, None -> Some (Constraint_Range (expr_of_z z1, e2))
+        | None, Some z2 -> Some (Constraint_Range (e1, expr_of_z z2))
+        | None, None -> Some c)
+
   (* End *)
 
   (* Begin AnnotateConstraintBinop *)
@@ -759,6 +784,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match op with
     | SHL | SHR | POW | MOD | DIVRM | MINUS | MUL | PLUS | DIV ->
         let cs2_f = binop_filter_rhs ~loc env op cs2 in
+        let () =
+          if false then
+            Format.eprintf
+              "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@."
+              (PP.binop_to_string op) PP.pp_int_constraints cs1
+              PP.pp_int_constraints cs2
+        in
         let cs1_arg, cs2_arg =
           if binop_is_exploding op then
             (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2_f)

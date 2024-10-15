@@ -612,8 +612,10 @@ let is_right_increasing = function
       raise FailedConstraintOp
 
 let is_right_decreasing = function
-  | MINUS -> true
-  | DIV | DIVRM | MUL | SHL | SHR | POW | PLUS | MOD -> false
+  | DIVRM | DIV | MINUS ->
+      true
+      (* DIV is here because its right-hand-side is always meant to be positive *)
+  | MUL | SHL | SHR | POW | PLUS | MOD -> false
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
   | RDIV ->
       raise FailedConstraintOp
