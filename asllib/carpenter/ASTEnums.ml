@@ -121,10 +121,6 @@ module Make (C : Config.S) = struct
     let slice_arg =
       let make_slice_arg e = Slice_Arg e in
       exprs |> map make_slice_arg
-    in
-    let slice_single =
-      let make_slice_single e = Slice_Single e in
-      exprs |> map make_slice_single
     and slice_range =
       let make_slice_range (e1, e2) = Slice_Range (e1, e2) in
       exprs ** exprs |> map make_slice_range
@@ -137,7 +133,6 @@ module Make (C : Config.S) = struct
     in
     [
       (if C.Syntax.slice_arg then Some slice_arg else None);
-      (if C.Syntax.slice_single then Some slice_single else None);
       (if C.Syntax.slice_range then Some slice_range else None);
       (if C.Syntax.slice_length then Some slice_length else None);
       (if C.Syntax.slice_star then Some slice_star else None);

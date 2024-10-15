@@ -511,17 +511,18 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_Discard -> E_Var "-"
     | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
-    | LE_Concat (les, _) ->
-        let rec go : lexpr list -> expr_desc = function
-          | [] -> E_Literal (L_BitVector Bitvector.empty)
-          | e :: es ->
-              let es = go es in
-              E_Binop
-                ( COLON_COLON,
-                  map_desc aux e,
-                  with_pos_from (to_pos e) (add_dummy_pos es) )
-        in
-        go les
+    | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
+    (* | LE_Concat (les, _) -> *)
+    (*     let rec go : lexpr list -> expr_desc = function *)
+    (*       | [] -> E_Literal (L_BitVector Bitvector.empty) *)
+    (*       | e :: es -> *)
+    (*           let es = go es in *)
+    (*           E_Binop *)
+    (*             ( COLON_COLON, *)
+    (*               map_desc aux e, *)
+    (*               with_pos_from (to_pos e) (add_dummy_pos es) ) *)
+    (*     in *)
+    (*     go les *)
   in
   map_desc aux
 

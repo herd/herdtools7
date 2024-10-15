@@ -111,10 +111,6 @@ module Untyped (C : Config.S) = struct
     let slice_arg n =
       let+ e = expr n in
       Slice_Arg e
-    in
-    let slice_single n =
-      let+ e = expr n in
-      Slice_Single e
     and slice_range n =
       let* n1, n2 = Nat.split2 n in
       let+ e1 = expr n1 and+ e2 = expr n2 in
@@ -131,7 +127,6 @@ module Untyped (C : Config.S) = struct
     let slice n =
       [
         (if C.Syntax.slice_arg then Some (slice_arg n) else None);
-        (if C.Syntax.slice_single then Some (slice_single n) else None);
         (if C.Syntax.slice_range then Some (slice_range n) else None);
         (if C.Syntax.slice_length then Some (slice_length n) else None);
         (if C.Syntax.slice_star then Some (slice_star n) else None);
@@ -140,7 +135,7 @@ module Untyped (C : Config.S) = struct
     in
     fun n ->
       if n >= 1 then Nat.list_sized slice (n - 1)
-      else slice_single n >|= fun x -> [ x ]
+      else slice_arg n >|= fun x -> [ x ]
 
   let expr : expr sgen =
     let e_literal = literal >|== fun l -> E_Literal l |> annot in
@@ -419,7 +414,7 @@ module Typed (C : Config.S) = struct
     let* n1, n2 = Nat.split2 n in
     let int n = expr (env, integer, n) in
     [
-      (if C.Syntax.slice_single then Some (int n >|= fun e -> Slice_Single e)
+      (if C.Syntax.slice_arg then Some (int n >|= fun e -> Slice_Arg e)
        else None);
       (if C.Syntax.slice_range then
          Some (pair (int n1) (int n2) >|= fun (e1, e2) -> Slice_Range (e1, e2))
@@ -526,7 +521,9 @@ module Typed (C : Config.S) = struct
             [| PLUS; MINUS; MUL |] |> oneofa |> map (fun op -> (op, real, real))
         | T_Bits _ ->
             [
-              [| AND; OR; EOR |] |> oneofa |> map (fun op -> (op, ty, ty));
+              [| AND; OR; EOR; BV_CONCAT |]
+              |> oneofa
+              |> map (fun op -> (op, ty, ty));
               [| PLUS; MINUS |] |> oneofa |> map (fun op -> (op, ty, integer));
             ]
             |> oneof
