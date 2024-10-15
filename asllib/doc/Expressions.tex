@@ -1819,7 +1819,7 @@ All of the following apply:
   \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
         will always fail yields $\True$\ProseOrTypeError;
   \item checking whether $\vt$ \subtypesatisfies\ $\ttyp$ in $\tenv$ yields $\vb$\ProseOrTypeError;
-  \item $\newe$ is $\EATC(\ttyp, \vepp)$ if $\vb$ is $\True$ and $\vepp$ otherwise;
+  \item $\newe$ is $\vepp$ if $\vb$ is $\True$ and $\EATC(\ttyp, \vepp)$ otherwise;
   \item $\vt$ is $\ttyp$.
 \end{itemize}
 \subsubsection{Formally}
@@ -1831,7 +1831,7 @@ All of the following apply:
   \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
   \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
   \subtypesat(\tenv, \vt, \ttyp) \typearrow \vb \OrTypeError\\\\
-  \newe \eqdef \choice{\vb}{\EATC(\ttyp, \vepp)}{\vepp}
+  \newe \eqdef \choice{\vb}{\vepp}{\EATC(\ttyp, \vepp)}
 }{
   \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \newe)
 }
@@ -1893,7 +1893,7 @@ One of the following applies:
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
     \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
-    \item the result is a type error indicating that the type assertion will always fail.
+    \item the result is a type error indicating that the type assertion will always fail ($\TypeAsssertionFails$).
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
@@ -1942,7 +1942,7 @@ One of the following applies:
   \astlabel(\vtone) = \astlabel(\vttwo)\\
   \astlabel(\vtone) \not\in \{\TInt, \TBits, \TTuple\}
 }{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAsssertionFails}
 }
 \end{mathpar}
 
