@@ -292,7 +292,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
 
   (* Begin AddNewFunc *)
   let add_new_func loc env name formals subpgm_type =
-    match IMap.find_opt name env.global.subprogram_renamings with
+    match IMap.find_opt name env.global.overloaded_subprograms with
     | None ->
         let new_env = set_renamings name (ISet.singleton name) env in
         (new_env, name)
@@ -334,7 +334,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
       if false then Format.eprintf "Trying to rename call to %S@." name
     in
     let renaming_set =
-      try IMap.find name env.global.subprogram_renamings
+      try IMap.find name env.global.overloaded_subprograms
       with Not_found -> undefined_identifier loc name
     in
     let get_func_sig name' =
@@ -383,7 +383,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin ShouldReduceToCall *)
   let should_reduce_to_call env name st =
-    match IMap.find_opt name env.global.subprogram_renamings with
+    match IMap.find_opt name env.global.overloaded_subprograms with
     | None -> false
     | Some set ->
         ISet.exists
@@ -2076,15 +2076,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let can_be_initialized_with env s t =
     (* Rules:
        - ZCVD: It is illegal for a storage element whose type has the
-         structure of the under-constrained integer to be initialized with a
-         value whose type has the structure of the under-constrained integer,
+         structure of the parameterized integer to be initialized with a
+         value whose type has the structure of the parameterized integer,
          unless the type is omitted from the declaration (and therefore the
          type can be unambiguously inferred) or the initialization expression
          is omitted (and therefore the type is not omitted from the
          declaration).
        - LXQZ: A storage element of type S, where S is
          any type that does not have the structure of
-         the under-constrained integer type, may only be
+         the parameterized integer type, may only be
          assigned or initialized with a value of type T
          if T type-satisfies S)
     *)

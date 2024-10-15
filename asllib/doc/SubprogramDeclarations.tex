@@ -1420,14 +1420,14 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{first\_name}):
   \begin{itemize}
-    \item the $\subprogramrenamings$ map in the global environment of $\tenv$ does not have a binding for $\name$;
-    \item $\newtenv$ is $\tenv$ with the $\subprogramrenamings$ updated by binding $\name$ to the singleton set containing
+    \item the $\overloadedsubprograms$ map in the global environment of $\tenv$ does not have a binding for $\name$;
+    \item $\newtenv$ is $\tenv$ with the $\overloadedsubprograms$ updated by binding $\name$ to the singleton set containing
           $\name$.
   \end{itemize}
 
   \item All of the following apply (\textsc{name\_exists}):
   \begin{itemize}
-    \item the $\subprogramrenamings$ map in the global environment of $\tenv$ binds $\name$ to the set of strings $\othernames$;
+    \item the $\overloadedsubprograms$ map in the global environment of $\tenv$ binds $\name$ to the set of strings $\othernames$;
     \item $\newname$ is the unique name that will be associated with the subprogram given by the identifier $\name$, list of formals $\formals$,
           and subprogram type $\subpgmtype$. It is constructed by concatenating a hyphen (\texttt{-}) to $\name$, followed
           by a string corresponding to the number of strings in $\othernames$.
@@ -1437,7 +1437,7 @@ One of the following applies:
     \item checking for each $\namep$ in $\othernames$ whether the subprogram associated with $\namep$ clashes
           with the subprogram type $\subpgmtype$ and list of types $\formaltypes$ yields $\False$
           or a type error that indicates there are multiply defined subprograms, which short-circuits the entire rule;
-    \item $\newtenv$ is $\tenv$ with the $\subprogramrenamings$ updated by binding $\name$ to the union of $\othernames$ and
+    \item $\newtenv$ is $\tenv$ with the $\overloadedsubprograms$ updated by binding $\name$ to the union of $\othernames$ and
           $\{\newname\}$.
   \end{itemize}
 \end{itemize}
@@ -1458,8 +1458,8 @@ to the corresponding string.
 
 \begin{mathpar}
 \inferrule[first\_name]{
-  G^\tenv.\subprogramrenamings(\name) = \bot\\
-  \newtenv \eqdef (G^\tenv.\subprogramrenamings[\name\mapsto\{\name\}],  L^\tenv)
+  G^\tenv.\overloadedsubprograms(\name) = \bot\\
+  \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto\{\name\}],  L^\tenv)
 }{
   \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
   (\newtenv, \overname{\name}{\newname})
@@ -1468,7 +1468,7 @@ to the corresponding string.
 
 \begin{mathpar}
 \inferrule[name\_exists]{
-  G^\tenv.\subprogramrenamings(\name) = \othernames\\
+  G^\tenv.\overloadedsubprograms(\name) = \othernames\\
   k \eqdef \cardinality{\othernames}\\
   \newname \eqdef \name\ \stringconcat\ \texttt{"-"}\ \stringconcat\ \stringofint(k)\\
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
@@ -1479,7 +1479,7 @@ to the corresponding string.
     \end{array}\right)
   }\\\\
   \namep \in \othernames: \checktrans{\neg\vb_{\namep}}{\SubrogramDeclaredMultipleTimes} \typearrow \True \OrTypeError\\\\
-  \newtenv \eqdef (G^\tenv.\subprogramrenamings[\name\mapsto \othernames \cup \{\newname\}],  L^\tenv)
+  \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup \{\newname\}],  L^\tenv)
 }{
   \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
   (\newtenv, \newname)

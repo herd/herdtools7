@@ -273,7 +273,7 @@ as indicated by respective comments.
 
 \hypertarget{ast-ty}{} \hypertarget{ast-tint}{}
 \begin{flalign*}
-\ty \derives\ & \TInt(\intconstraints)
+\ty \derives\ & \TInt(\constraintkind)
 \hypertarget{ast-treal}{}\\
   |\ & \TReal
   & \hypertarget{ast-tstring}{}\\
@@ -299,10 +299,10 @@ as indicated by respective comments.
 
 \subsection{Constraints \label{sec:Constraints}}
 
-\hypertarget{ast-intconstraints}{} \hypertarget{ast-unconstrained}{}
+\hypertarget{ast-constraintkind}{} \hypertarget{ast-unconstrained}{}
 \begin{flalign*}
   % & & \ASTComment{Constraints that may be assigned to integer types.}  \\
-  \intconstraints \derives\ & \unconstrained
+  \constraintkind \derives\ & \unconstrained
   % & & \ASTComment{The unconstrained integer type.}
   & \hypertarget{ast-wellconstrained}{}\\
   |\ & \wellconstrained(\intconstraint^{+})

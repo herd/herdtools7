@@ -167,7 +167,7 @@ and slice =
 (** Type descriptors.*)
 and type_desc =
   (* Begin Constrained *)
-  | T_Int of int_constraints
+  | T_Int of constraint_kind
   | T_Bits of expr * bitfield list
   (* End Constrained *)
   | T_Real
@@ -187,16 +187,16 @@ and int_constraint =
   | Constraint_Exact of expr
       (** Exactly this value, as given by a statically evaluable expression. *)
   | Constraint_Range of (expr * expr)
-      (** In the range of these two statically evaluable values.*)
+      (** In the inclusive range of these two statically evaluable values. *)
 
-(** The int_constraints constraints the integer type to a certain subset.*)
-and int_constraints =
+(** The constraint_kind constrains an integer type to a certain subset. *)
+and constraint_kind =
   | UnConstrained  (** The normal, unconstrained, integer type. *)
   | WellConstrained of int_constraint list
       (** An integer type constrained from ASL syntax: it is the union of each
           constraint in the list. *)
   | Parameterized of uid * identifier
-      (** An under-constrained integer, the default type for parameters of
+      (** A parameterized integer, the default type for parameters of
           function at compile time, with a unique identifier and the variable
           bearing its name. *)
 

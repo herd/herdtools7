@@ -1,7 +1,7 @@
 func bus {wid: integer} (arg0: bits(wid), arg1: bits(wid*2)) => bits(wid)
 begin
     // When type-checking the declaration of func bus
-// arg0 and arg1 are under-constrained width bitvectors
+// arg0 and arg1 are parameterized width bitvectors
 // of determined width `wid`
 // Since wid is not a formal, it takes its value in an invocation from
 // the width of one of the the corresponding actuals
@@ -10,7 +10,7 @@ end
 
 // ------------------------------------------------------------
 // Cases for invocation of function `bus`
-// which has an under-constrained width bitvector formal
+// which has a parameterized width bitvector formal
 func legal_fun_fixed_width_actual () => bits(8)
 begin
   let x: bits(8)  = Zeros(8);
@@ -25,11 +25,11 @@ end
 
 func legal_fun_underconstrained_actual (N: integer) => bits(N)
 begin
-  // N is a parameter, therefore it is an under-constrained integer
+  // N is a parameter, therefore it is a parameterized integer
   var x: bits(N);
   var y: bits(N*2);
   // bus's wid parameter takes its value from the width of x
-  // which is `N` which is an under-constrained integer
+  // which is `N` which is a parameterized integer
   // Therefore the type of arg0 with the invocation width `N` is
   // the under-constrained width bitvector of determined width `N`
   // which is type satisfied by x

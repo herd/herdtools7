@@ -1,6 +1,6 @@
 func assignBits {N:integer, M: integer} (someWid: integer {32,64}, argN: bits(N), argM: bits(M))
 begin
-  // argN and argM are immutable under-constrained width bitvectors
+  // argN and argM are immutable parameterized width bitvectors
   // assignments to them are illegal
   // legal since widths and domains match
   var eightBits: bits(8) = Zeros(8);
@@ -10,7 +10,7 @@ begin
   // declaration of someWid
   // var someBits: bits({32,64}) = Zeros(someWid);
 
-  // underconstrainedBits is a mutable under-constrained width bitvector
+  // underconstrainedBits is a mutable parameterized width bitvector
   // it can be assigned to
   var underconstrainedBits: bits(N);
 

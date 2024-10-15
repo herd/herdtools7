@@ -1125,14 +1125,14 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{undefined}):
   \begin{itemize}
-    \item $\tenv$ does not contain a binding for $\name$ in the $\subprogramrenamings$ map
-          ($G^\tenv.\subprogramrenamings$);
+    \item $\tenv$ does not contain a binding for $\name$ in the $\overloadedsubprograms$ map
+          ($G^\tenv.\overloadedsubprograms$);
     \item the result is a type error indicating that the identifier has not been declared (as a subprogram).
   \end{itemize}
 
   \item All of the following apply (\textsc{no\_candidates}):
   \begin{itemize}
-    \item $\tenv$ binds $\name$ via $\subprogramrenamings$ map to $\renamingset$;
+    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
           in $\tenv$ (see \secref{TypingRule.FilterCallCandidates}) yields an empty set\ProseOrTypeError;
     \item the result is a type error indicating that the call given by $\name$ and \\ $\callerargtypes$
@@ -1141,7 +1141,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{too\_many\_candidates}):
   \begin{itemize}
-    \item $\tenv$ binds $\name$ via $\subprogramrenamings$ map to $\renamingset$;
+    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
           in $\tenv$ (see \secref{TypingRule.FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains at least two elements;
@@ -1151,7 +1151,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{one\_candidate}):
   \begin{itemize}
-    \item $\tenv$ binds $\name$ via $\subprogramrenamings$ map to $\renamingset$;
+    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
           in $\tenv$ (see \secref{TypingRule.FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains a single element --- $(\matchedname, \funcsig)$;
@@ -1165,7 +1165,7 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[undefined]{
-  G^\tenv.\subprogramrenamings(\name) = \bot
+  G^\tenv.\overloadedsubprograms(\name) = \bot
 }{
   \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
@@ -1173,7 +1173,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[no\_candidates]{
-  G^\tenv.\subprogramrenamings(\name) = \renamingset\\
+  G^\tenv.\overloadedsubprograms(\name) = \renamingset\\
   {
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \emptyset \OrTypeError
@@ -1186,7 +1186,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[too\_many\_candidates]{
-  G^\tenv.\subprogramrenamings(\name) = \renamingset\\
+  G^\tenv.\overloadedsubprograms(\name) = \renamingset\\
   {
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \\ \matchingrenamings \OrTypeError
@@ -1200,7 +1200,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[one\_candidate]{
-  G^\tenv.\subprogramrenamings(\name) = \renamingset\\
+  G^\tenv.\overloadedsubprograms(\name) = \renamingset\\
   {
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \\ \matchingrenamings \OrTypeError
