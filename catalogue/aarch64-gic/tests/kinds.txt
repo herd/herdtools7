@@ -60,3 +60,6 @@ coWW-gic+di-ia+rcfg			Forbid
 coWR-gic+en-rcfg			Forbid
 coWR-gic+di-rcfg			Forbid
 coWR-gic+ia-rcfg			Forbid
+coRW-gic+rcfg-pri			Forbid
+coRW-gic+rcfg-ia			Forbid
+coRW-gic+rcfg-di			Forbid
