@@ -83,6 +83,14 @@ Unsupported divisions (caught at type-checking time):
   File static-div-intervals.asl, line 5, characters 27 to 34:
   Warning: Removing some values that would fail with op DIV from constraint set
   {(2 DIV 6)..(5 DIV 3)} gave {1}. Continuing with this constraint set.
+  File static-div-intervals.asl, line 9, characters 26 to 33:
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {(10 DIV 10)..(20 DIV 10)} gave {1..2}. Continuing with this constraint set.
+  File static-div-intervals.asl, line 10, characters 23 to 30:
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {(10 DIV 20)..(10 DIV 10)} gave {1}. Continuing with this constraint set.
+
+  $ aslref --no-exec static-mod-intervals.asl
 
 For completeness, those operations are dynamic errors:
 

@@ -109,14 +109,10 @@ let simplify_static_constraints =
       diet non_static
 
 (* Begin ReduceConstraints *)
-let reduce_constraints env = function
-  | (UnConstrained | Parameterized _) as c -> c
-  | WellConstrained constraints ->
-      List.map (reduce_constraint env) constraints
-      |> simplify_static_constraints |> List.sort compare
-      |> list_remove_duplicates
-           (constraint_equal (StaticModel.equal_in_env env))
-      |> fun constraints -> WellConstrained constraints
+let reduce_constraints env constraints =
+  List.map (reduce_constraint env) constraints
+  |> simplify_static_constraints |> List.sort compare
+  |> list_remove_duplicates (constraint_equal (StaticModel.equal_in_env env))
 (* End *)
 
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
@@ -803,12 +799,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* End *)
 
-  let refine_constraint_for_div ~loc op cs =
-    match (op, cs) with
-    | DIV, WellConstrained cs_list ->
-        WellConstrained
-          (refine_constraints ~loc DIV filter_reduce_constraint_div cs_list)
-    | _ -> cs
+  let refine_constraint_for_div ~loc = function
+    | DIV -> refine_constraints ~loc DIV filter_reduce_constraint_div
+    | _ -> Fun.id
 
   (* Begin AnnotateConstraintBinop *)
   let annotate_constraint_binop ~loc env op cs1 cs2 =
@@ -837,8 +830,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             Format.eprintf
               "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
               (PP.binop_to_string op) PP.pp_int_constraints cs1_arg
-              PP.pp_int_constraints cs2_arg PP.pp_ty
-              (T_Int annotated_cs |> add_dummy_pos)
+              PP.pp_int_constraints cs2_arg PP.pp_int_constraints annotated_cs
         in
         annotated_cs
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
@@ -889,14 +881,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let t1_well_constrained = Types.to_well_constrained t1
             and t2_well_constrained = Types.to_well_constrained t2 in
             check_binop loc env op t1_well_constrained t2_well_constrained
-        | WellConstrained cs1, WellConstrained cs2 ->
-            let cs =
-              best_effort UnConstrained @@ fun _ ->
-              try annotate_constraint_binop ~loc env op cs1 cs2
-              with TypingAssumptionFailed ->
-                fatal_from loc (Error.BadTypesForBinop (op, t1, t2))
-            in
-            T_Int cs |> with_loc)
+        | WellConstrained cs1, WellConstrained cs2 -> (
+            best_effort integer @@ fun _ ->
+            try
+              let cs = annotate_constraint_binop ~loc env op cs1 cs2 in
+              T_Int (WellConstrained cs) |> with_loc
+            with TypingAssumptionFailed ->
+              fatal_from loc (Error.BadTypesForBinop (op, t1, t2))))
     | (PLUS | MINUS | MUL), (T_Real, T_Real)
     | POW, (T_Real, T_Int _)
     | RDIV, (T_Real, T_Real) ->

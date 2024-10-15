@@ -190,9 +190,8 @@ module Domain = struct
   let eval (env : env) (e : expr) =
     let v =
       let open StaticInterpreter in
-      let open StaticModel in
       try static_eval env e
-      with StaticEvaluationUnknown -> raise_notrace StaticEvaluationTop
+      with StaticEvaluationUnknown -> raise StaticEvaluationTop
     in
     match v with
     | L_Int i -> i
@@ -260,10 +259,8 @@ module Domain = struct
     | FromSyntax _, Finite is2 ->
         let s2 = int_set_to_int_constraints is2 in
         int_set_raise_interval_op fop op is1 (FromSyntax s2)
-    | FromSyntax s1, FromSyntax s2 -> (
-        match constraint_binop op s1 s2 with
-        | WellConstrained s2 -> FromSyntax s2
-        | _ -> Top)
+    | FromSyntax s1, FromSyntax s2 -> FromSyntax (constraint_binop op s1 s2)
+
   (* End *)
 
   let monotone_interval_op op i1 i2 =
