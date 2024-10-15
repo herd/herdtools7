@@ -463,6 +463,8 @@ module TypingRule = struct
     | DisjointSlicesToPositions
     | CheckPositionsInWidth
     | ShouldReduceToCall
+    | IsStaticallyEvaluable
+    | CheckStaticallyEvaluable
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -619,6 +621,8 @@ module TypingRule = struct
     | DisjointSlicesToPositions -> "DisjointSlicesToPositions"
     | CheckPositionsInWidth -> "CheckPositionsInWidth"
     | ShouldReduceToCall -> "ShouldReduceToCall"
+    | IsStaticallyEvaluable -> "IsStaticallyEvaluable"
+    | CheckStaticallyEvaluable -> "CheckStaticallyEvaluable"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -757,6 +761,8 @@ module TypingRule = struct
       DisjointSlicesToPositions;
       CheckPositionsInWidth;
       ShouldReduceToCall;
+      IsStaticallyEvaluable;
+      CheckStaticallyEvaluable;
     ]
 
   let all_nb = List.length all

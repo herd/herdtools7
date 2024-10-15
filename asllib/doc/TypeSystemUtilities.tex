@@ -327,10 +327,11 @@ One of the following applies:
     \item $\vb$ is true if and only if $\vs$ is declared as a constant, a configuration variable, or an immutable variable.
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item All of the following apply (\textsc{subprogram\_or\_typename}):
   \begin{itemize}
-    \item $\vs$ is not defined in the environment as a storage element;
-    \item the result is a type error indicating that $\vs$ is not defined as a storage element.
+    \item $\vs$ is not a storage element;
+    \item checking whether $\vs$ is the name of a subprogram or the name of a declared type yields $\True$\ProseTerminateAs{\UndefinedIdentifier};
+    \item $\vb$ is $\False$.
   \end{itemize}
 \end{itemize}
 
@@ -341,31 +342,64 @@ One of the following applies:
 \inferrule[local]{
   L^\tenv.\localstoragetypes(\vs) = (\Ignore, \ldk)\\
   \vb \eqdef \ldk \in \{\LDKConstant, \LDKLet\}
-}
-{
+}{
   \storageispure(\tenv, \vs) \typearrow \vb
 }
-\and
-\inferrule[global]{
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[global]{
   L^\tenv.\localstoragetypes(\vs) = \bot\\
   G^\tenv.\globalstoragetypes(\vs) = (\Ignore, \gdk)\\
   \vb \eqdef \gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}
-}
-{
+}{
   \storageispure(\tenv, \vs) \typearrow \vb
 }
-\and
-\inferrule[error]{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[subprogram\_or\_typename]{
   L^\tenv.\localstoragetypes(\vs) = \bot\\
-  G^\tenv.\globalstoragetypes(\vs) = \bot
+  G^\tenv.\globalstoragetypes(\vs) = \bot\\
+  \checktrans{G^\tenv.\subprograms \lor G^\tenv.\declaredtypes}{\UndefinedIdentifier} \checktransarrow \True \OrTypeError
+}{
+  \storageispure(\tenv, \vs) \typearrow \overname{\False}{\vb}
 }
-{
-  \storageispure(\tenv, \vs) \typearrow \TypeErrorVal{UndefinedIdentifier}
+\end{mathpar}
+
+\hypertarget{def-isstaticallyevaluable}{}
+\hypertarget{def-staticallyevaluable}{}
+\subsubsection{TypingRule.IsStaticallyEvaluable\label{sec:TypingRule.IsStaticallyEvaluable}}
+The function
+\[
+  \isstaticallyevaluable(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \overname{\Bool}{\bv}
+\]
+returns in $\vb$ whether $\ve$ is a \staticallyevaluable\ expression in the static environment $\tenv$.
+
+\subsubsection{Prose}
+All of the following applies:
+\begin{itemize}
+  \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields $\veone$;
+  \item determining the set of used identifiers in $\veone$ yields $\useset$;
+  \item $\vb$ is true if and only if every identifier in $\useset$ is pure.
+\end{itemize}
+
+\CodeSubsection{\IsStaticallyEvaluableBegin}{\IsStaticallyEvaluableEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \normalize(\tenv, \ve) \typearrow \veone\\
+  \useexpr(\veone) \typearrow \useset\\
+  \id\in\useset: \storageispure(\tenv, \id) \typearrow \vb_\id\\
+  \vb \eqdef \bigwedge_{\id\in\useset} \vb_\id
+}{
+  \isstaticallyevaluable(\tenv, \ve) \typearrow \True
 }
 \end{mathpar}
 
 \hypertarget{def-checkstaticallyevaluable}{}
-\hypertarget{def-staticallyevaluable}{}
 \subsubsection{TypingRule.CheckStaticallyEvaluable \label{sec:TypingRule.CheckStaticallyEvaluable}}
 The function
 \[
@@ -377,9 +411,7 @@ returns $\True$ if $\ve$ is a \staticallyevaluable\ expression in the static env
 \subsubsection{Prose}
 All of the following applies:
 \begin{itemize}
-  \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields $\veone$;
-  \item determining the set of used identifiers in $\veone$ yields $\useset$;
-  \item $\vb$ is true if and only if every identifier in $\useset$ is pure;
+  \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\vb$;
   \item the result is $\True$ is $\vb$ is $\True$, otherwise it is a type error indicating that the expression
   is not statically evaluable.
 \end{itemize}
@@ -389,13 +421,9 @@ All of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \useexpr(\veone) \typearrow \useset\\
-  \id\in\useset: \storageispure(\tenv, \id) \typearrow \vb_\id\\
-  \vb \eqdef \bigwedge_{\id\in\useset} \vb_\id\\
+  \isstaticallyevaluable(\tenv, \ve) \typearrow \vb\\
   \checktrans{\vb}{NotStaticallyEvaluable} \checktransarrow \True \OrTypeError
-}
-{
+}{
   \checkstaticallyevaluable(\tenv, \ve) \typearrow \True
 }
 \end{mathpar}

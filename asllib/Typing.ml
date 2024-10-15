@@ -593,14 +593,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             else undefined_identifier loc s)
   (* End *)
 
-  (* Begin CheckStaticallyEvaluable *)
+  (* Begin IsStaticallyEvaluable *)
   let is_statically_evaluable ~loc env e =
     let use_set = use_e e ISet.empty in
     ISet.for_all (storage_is_pure ~loc env) use_set
+    |: TypingRule.IsStaticallyEvaluable
+  (* End *)
 
+  (* Begin CheckStaticallyEvaluable *)
   let check_statically_evaluable (env : env) e () =
-    if is_statically_evaluable ~loc:e env e then ()
-    else fatal_from e (Error.UnpureExpression e)
+    if is_statically_evaluable ~loc:e env e then
+      () |: TypingRule.CheckStaticallyEvaluable
+    else fatal_from e (Error.ImpureExpression e)
   (* End *)
 
   let check_bits_equal_width' env t1 t2 () =
