@@ -189,6 +189,17 @@ module SES = struct
   let performs_atc = set_atc_performed empty
   let non_deterministic = set_non_determinism empty
 
+  let mem se ses =
+    match se with
+    | ReadGlobal s -> ISet.mem s ses.global_reads
+    | WriteGlobal s -> ISet.mem s ses.global_writes
+    | ReadLocal s -> ISet.mem s ses.local_reads
+    | WriteLocal s -> ISet.mem s ses.local_writes
+    | RecursiveCall s -> ISet.mem s ses.recursive_calls
+    | ThrowException s -> ISet.mem s ses.thrown_exceptions
+    | NonDeterministic -> ses.non_determinism
+    | PerformsATC -> ses.atcs_performed
+
   let union ses1 ses2 =
     {
       local_reads = ISet.union ses1.local_reads ses2.local_reads;
@@ -320,6 +331,9 @@ module SES = struct
 
   let filter_thrown_exceptions f ses =
     { ses with thrown_exceptions = ISet.filter f ses.thrown_exceptions }
+
+  let filter_recursive_calls f ses =
+    { ses with recursive_calls = ISet.filter f ses.recursive_calls }
 
   let iter f ses =
     ISet.iter (fun s -> f (ReadLocal s)) ses.local_reads;

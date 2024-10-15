@@ -3325,6 +3325,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (new_d :: acc, new_genv)
 
   let propagate_sess (sess : (func * SES.t) list) : (func * SES.t) list =
+    let () =
+      if false then
+        let open Format in
+        let pp_sep f () = fprintf f ";@ " in
+        let pp f ((func_sig : func), ses) =
+          fprintf f "@[<h 2>%s:@ %a@]" func_sig.name SES.pp_print ses
+        in
+        eprintf "@[<v 2>Propagating side-effects from:@ @[<v 2>[%a]@]@]@."
+          (pp_print_list ~pp_sep pp) sess
+    in
     let map0 =
       List.map (fun ((f : func), ses) -> (f.name, ses)) sess |> IMap.of_list
     in
@@ -3342,17 +3352,43 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (process_one_recursive_call modified map1)
         caller_ses caller_ses
     in
-    let rec loop map =
+    let rec propagate map =
       let modified = ref false in
       let map' = IMap.map (update_one modified map) map in
-      if !modified then loop map' else map'
+      if !modified then propagate map' else map'
     in
-    let map3 = loop map0 in
-    List.map
-      (fun ((f : func), _ses) ->
-        let ses = try IMap.find f.name map3 with Not_found -> assert false in
-        (f, ses))
-      sess
+    let map3 = propagate map0 in
+    let is_in_cycle =
+      IMap.fold
+        (fun name ses self_calling ->
+          if SES.mem (SideEffect.RecursiveCall name) ses then
+            ISet.add name self_calling
+          else self_calling)
+        map3 ISet.empty
+    in
+    let res =
+      List.map
+        (fun ((f : func), _ses) ->
+          let ses =
+            try IMap.find f.name map3 with Not_found -> assert false
+          in
+          let ses =
+            SES.filter_recursive_calls (fun s -> ISet.mem s is_in_cycle) ses
+          in
+          (f, ses))
+        sess
+    in
+    let () =
+      if false then
+        let open Format in
+        let pp_sep f () = fprintf f ";@ " in
+        let pp f ((func_sig : func), ses) =
+          fprintf f "@[<h 2>%s:@ %a@]" func_sig.name SES.pp_print ses
+        in
+        eprintf "@[<v 2>Propagating side-effects from:@ @[<v 2>[%a]@]@]@."
+          (pp_print_list ~pp_sep pp) res
+    in
+    res
 
   (* Begin TypeCheckMutuallyRec *)
   let type_check_mutually_rec ds (acc, genv0) =
