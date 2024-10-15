@@ -82,6 +82,7 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
               @@ Error.MismatchType (PP.literal_to_string v_cond, [ T_Bool ])
         in
         if b then expr_ e1 else expr_ e2
+    | E_Unknown _ -> raise StaticEvaluationUnknown
     | _ -> unsupported_expr e
   in
   expr_ |: Instrumentation.TypingRule.StaticEval

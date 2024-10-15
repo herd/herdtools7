@@ -180,9 +180,9 @@ val is_global_ignored : identifier -> bool
 (** [is_global_ignored s] is true iff [s] has been created with [global_ignored ()]. *)
 
 val constraint_binop :
-  binop -> int_constraint list -> int_constraint list -> constraint_kind
+  binop -> int_constraint list -> int_constraint list -> int_constraint list
 (** [constraint_binop PLUS cs1 cs2] is the set of constraints given by the
-    element wise application of [PLUS]. *)
+    element wise application of [PLUS], if it can be computed. *)
 
 (** {1 Fields, masks and slices handling} *)
 
