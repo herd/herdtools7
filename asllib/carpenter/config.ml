@@ -60,7 +60,7 @@ module type Syntax = sig
   val pattern_range : bool
   val pattern_single : bool
   val pattern_tuple : bool
-  val slice_single : bool
+  val slice_arg : bool
   val slice_range : bool
   val slice_length : bool
   val slice_star : bool
@@ -182,7 +182,7 @@ module All : Syntax = struct
   let pattern_range = true
   let pattern_single = true
   let pattern_tuple = true
-  let slice_single = true
+  let slice_arg = true
   let slice_range = true
   let slice_length = true
   let slice_star = true
@@ -319,7 +319,7 @@ module Parse = struct
         ("pattern_range", true);
         ("pattern_single", true);
         ("pattern_tuple", true);
-        ("slice_single", true);
+        ("slice_arg", true);
         ("slice_range", true);
         ("slice_length", true);
         ("slice_star", true);
@@ -441,7 +441,7 @@ module Parse = struct
       let pattern_range = Tbl.find tbl "pattern_range"
       let pattern_single = Tbl.find tbl "pattern_single"
       let pattern_tuple = Tbl.find tbl "pattern_tuple"
-      let slice_single = Tbl.find tbl "slice_single"
+      let slice_arg = Tbl.find tbl "slice_arg"
       let slice_range = Tbl.find tbl "slice_range"
       let slice_length = Tbl.find tbl "slice_length"
       let slice_star = Tbl.find tbl "slice_star"
