@@ -3,7 +3,7 @@ States 3
 0:T0.0.s=0;
 0:T0.0.s=1;
 0:T0.0.s=3;
-Ok
+Loop Ok
 Witnesses
 Positive: 3 Negative: 0
 Condition forall (true)
