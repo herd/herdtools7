@@ -66,4 +66,7 @@ coWW-gic+di-ia+rcfg.litmus
 coWR-gic+en-rcfg.litmus
 coWR-gic+di-rcfg.litmus
 coWR-gic+ia-rcfg.litmus
+coRW-gic+rcfg-pri.litmus
+coRW-gic+rcfg-ia.litmus
+coRW-gic+rcfg-di.litmus
 
