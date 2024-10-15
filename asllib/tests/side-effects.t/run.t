@@ -10,6 +10,8 @@
   $ aslref binop-read-write-diff.asl
   $ aslref binop-write-write-diff.asl
 
+  $ aslref bool-binop-write-write.asl
+
   $ aslref binop-throw-read.asl
   E caught
   $ aslref binop-throw-write.asl

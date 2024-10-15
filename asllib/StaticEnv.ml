@@ -162,6 +162,11 @@ let mem_constants env x =
   IMap.mem x env.global.constant_values || IMap.mem x env.local.constant_values
 
 let add_subprogram name func_def ses env =
+  let () =
+    if false then
+      Format.eprintf "@[Adding func %s with side effects:@ @[%a]@]@." name
+        SideEffect.SES.pp_print ses
+  in
   {
     env with
     global =
