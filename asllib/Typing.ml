@@ -614,6 +614,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       fatal_from loc (Error.UnreconciliableTypes (t1, t2))
   (* End *)
 
+  let binop_is_ordered = function
+    | BAND | BOR | IMPL -> true
+    | AND | BEQ | DIV | DIVRM | EOR | EQ_OP | GT | GEQ | LT | LEQ | MOD | MINUS
+    | MUL | NEQ | OR | PLUS | POW | RDIV | SHL | SHR | BV_CONCAT ->
+        false
+
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc = function
     | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from loc
@@ -1501,8 +1507,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t2, e2', ses2 = annotate_expr env e2 in
         let t = apply_binop_types e env op t1 t2 in
         let ses =
-          SES.non_concurrent_union ses1 ses2
-            ~fail:(concurrent_side_effects ~loc)
+          if binop_is_ordered op then SES.union ses1 ses2
+          else
+            SES.non_concurrent_union ses1 ses2
+              ~fail:(concurrent_side_effects ~loc)
         in
         (t, E_Binop (op, e1', e2') |> here, ses) |: TypingRule.Binop
     (* End *)
