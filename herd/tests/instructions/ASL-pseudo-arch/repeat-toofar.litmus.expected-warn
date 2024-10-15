@@ -1,1 +1,2 @@
-Warning: File "./herd/tests/instructions/ASL-pseudo-arch/repeat-toofar.litmus", unrolling limit exceeded, legal outcomes may be missing.
+Warning: File "./herd/tests/instructions/ASL-pseudo-arch/repeat-toofar.litmus": unrolling limit exceeded at Repeat loop pruned, legal outcomes may be missing.
+
