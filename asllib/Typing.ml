@@ -647,6 +647,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let has_bitvector_structure env t =
     match (Types.get_structure env t).desc with T_Bits _ -> true | _ -> false
 
+  let binop_is_ordered = function
+    | BAND | BOR | IMPL -> true
+    | AND | BEQ | DIV | DIVRM | EOR | EQ_OP | GT | GEQ | LT | LEQ | MOD | MINUS
+    | MUL | NEQ | OR | PLUS | POW | RDIV | SHL | SHR ->
+        false
+
   let binop_is_exploding = function
     | MUL | SHL | POW -> true
     | PLUS | DIV | MINUS | MOD | SHR | DIVRM -> false
@@ -1647,8 +1653,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t2, e2', ses2 = annotate_expr env e2 in
         let t = check_binop e env op t1 t2 in
         let ses =
-          SES.non_concurrent_union ses1 ses2
-            ~fail:(concurrent_side_effects ~loc)
+          if binop_is_ordered op then SES.union ses1 ses2
+          else
+            SES.non_concurrent_union ses1 ses2
+              ~fail:(concurrent_side_effects ~loc)
         in
         (t, E_Binop (op, e1', e2') |> here, ses) |: TypingRule.Binop
     (* End *)
