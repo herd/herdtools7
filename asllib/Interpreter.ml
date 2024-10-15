@@ -737,12 +737,7 @@ module Make (B : Backend.S) (C : Config) = struct
       slice list -> ((B.value * B.value) list * env) maybe_exception m =
     (* Begin EvalSlice *)
     let eval_slice env = function
-      (* Begin EvalSliceArg *)
       | Slice_Arg _ -> assert false
-      (* End *)
-      | Slice_Single e ->
-          let** v_start, new_env = eval_expr env e in
-          return_normal ((v_start, one), new_env) |: SemanticsRule.Slice
       | Slice_Length (e_start, e_length) ->
           let*^ m_start, env1 = eval_expr env e_start in
           let*^ m_length, new_env = eval_expr env1 e_length in
