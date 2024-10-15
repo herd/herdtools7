@@ -204,7 +204,7 @@ and use_pattern = function
   | Pattern_Range (e1, e2) -> use_e e1 $ use_e e2
 
 and use_slice = function
-  | Slice_Arg e | Slice_Single e -> use_e e
+  | Slice_Arg e -> use_e e
   | Slice_Star (e1, e2) | Slice_Length (e1, e2) | Slice_Range (e1, e2) ->
       use_e e1 $ use_e e2
 
@@ -370,7 +370,6 @@ and slice_equal eq slice1 slice2 =
   ||
   match (slice1, slice2) with
   | Slice_Arg e1, Slice_Arg e2 -> expr_equal eq e1 e2
-  | Slice_Single e1, Slice_Single e2 -> expr_equal eq e1 e2
   | Slice_Range (e11, e21), Slice_Range (e12, e22)
   | Slice_Length (e11, e21), Slice_Length (e12, e22) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22
@@ -762,7 +761,6 @@ let rename_locals map_name ast =
   and map_slices slices = List.map map_slice slices
   and map_slice = function
     | Slice_Arg e -> Slice_Arg (map_e e)
-    | Slice_Single e -> Slice_Single (map_e e)
     | Slice_Length (e1, e2) -> Slice_Length (map_e e1, map_e e2)
     | Slice_Range (e1, e2) -> Slice_Range (map_e e1, map_e e2)
     | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)

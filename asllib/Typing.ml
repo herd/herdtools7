@@ -103,7 +103,6 @@ let slices_width env =
   let one = !$1 in
   let slice_width = function
     | Slice_Arg e -> Error.fatal_from e (Error.UnexpectedSliceArg e)
-    | Slice_Single _ -> one
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
     | Slice_Range (e1, e2) -> plus one (minus e1 e2)
   in
@@ -412,9 +411,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         match slice with
         | Slice_Arg e -> fatal_from e (Error.UnexpectedSliceArg e)
-        | Slice_Single e ->
-            let x = eval env e in
-            make x x
         | Slice_Range (e1, e2) ->
             let x = eval env e2 and y = eval env e1 in
             make x y
@@ -450,7 +446,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let one slice k =
       match slice with
       | Slice_Arg e -> fatal_from e (Error.UnexpectedSliceArg e)
-      | Slice_Single e -> e :: k
       | Slice_Length (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
           let rec do_rec n =
@@ -1204,12 +1199,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           Format.eprintf "Annotating slice %a@." PP.pp_slice_list [ s ]
       in
       match s with
-      | Slice_Arg e -> fatal_from e (Error.UnexpectedSliceArg e)
-      | Slice_Single i ->
-          (* LRM R_GXKG:
-             The notation b[i] is syntactic sugar for b[i +: 1].
-          *)
-          annotate_slice (Slice_Length (i, !$1)) |: TypingRule.Slice
+      | Slice_Arg i ->
+          let+ () =
+            (* For ASLv0 compatibility.
+               Only ASLv0 should emit [Slice_Arg] in bitvector slicing *)
+            check_true false @@ fun () ->
+            fatal_from i (Error.UnexpectedSliceArg i)
+          in
+          Slice_Length (i, !$1) |: TypingRule.Slice
       | Slice_Length (offset, length) ->
           let t_offset, offset' = annotate_expr env offset
           and length' =

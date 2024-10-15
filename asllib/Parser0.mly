@@ -363,7 +363,7 @@ let e_elseif == annotated ( ELSIF; c=expr; THEN; e=expr; <> )
 let e_else == ~=list(e_elseif); ELSE; ~=expr; < build_expr_conds >
 
 let slice ==
-  | ~=sexpr;                        < AST.Slice_Single >
+  | ~=sexpr;                        < AST.Slice_Arg >
   | e1=sexpr; COLON; e2=sexpr;      < AST.Slice_Range  >
   | e1=sexpr; PLUS_COLON; e2=sexpr; < AST.Slice_Length >
 

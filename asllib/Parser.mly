@@ -47,6 +47,7 @@ open ASTUtils
 
 let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
 let zero = E_Literal (L_Int Z.zero) |> add_dummy_pos
+let one = E_Literal (L_Int Z.one) |> add_dummy_pos
 
 let make_ldi_vars (xs, ty) =
   let make_one x =
@@ -378,7 +379,7 @@ let named_slices == bracketed(nclist(slice))
 let slices == bracketed( clist(slice))
 let slice ==
   | ~=expr;                       < Slice_Arg     >
-  | ~=expr;  COLON;               < Slice_Single  >
+  | e=expr;  COLON;               { Slice_Length(e, one) }
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
   | COLON;   e=expr;              { Slice_Length(zero, e) }

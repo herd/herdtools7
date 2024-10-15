@@ -148,8 +148,6 @@ and pattern =
 and slice =
   | Slice_Arg of expr
       (** [Slice_Arg e] is an argument to a getter/setter call *)
-  | Slice_Single of expr
-      (** [Slice_Single i] is the slice of length [1] at position [i]. *)
   | Slice_Range of expr * expr
       (** [Slice_Range (j, i)] denotes the slice from [i] to [j - 1]. *)
   | Slice_Length of expr * expr
