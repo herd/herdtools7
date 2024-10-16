@@ -37,7 +37,6 @@ let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf v =
 let pp_comma f () = fprintf f ",@ "
 let pp_comma_list pp_elt f = pp_print_list ~pp_sep:pp_comma pp_elt f
 let pp_colon_colon f () = fprintf f "::@ "
-let pp_colon_colon_list pp_elt f = pp_print_list ~pp_sep:pp_colon_colon pp_elt f
 
 let pp_pos f { pos_start; pos_end; _ } =
   let open Lexing in
@@ -96,7 +95,7 @@ let binop_to_string : binop -> string = function
   | SHL -> "<<"
   | SHR -> ">>"
   | POW -> "^"
-  | COLON_COLON -> "::"
+  | BV_CONCAT -> "::"
 
 let unop_to_string = function BNOT -> "!" | NEG -> "-" | NOT -> "NOT"
 
@@ -133,7 +132,8 @@ let rec pp_expr f e =
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
-  | E_Concat es -> fprintf f "@[<hv 2>%a@]" (pp_colon_colon_list pp_expr) es
+  | E_Concat es ->
+      fprintf f "@[<hv 2>%a@]" (pp_print_list ~pp_sep:pp_colon_colon pp_expr) es
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
   | E_Unknown ty -> fprintf f "@[<h>UNKNOWN :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p

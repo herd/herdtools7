@@ -79,7 +79,7 @@ type binop =
   | RDIV  (** Division for reals *)
   | SHL  (** Shift left for ints *)
   | SHR  (** Shift right for ints *)
-  | COLON_COLON  (** Bitvector concatenation *)
+  | BV_CONCAT  (** Bitvector concatenation *)
 
 (* -------------------------------------------------------------------------
 
