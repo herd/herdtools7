@@ -50,6 +50,12 @@
         match return_type with | Some _ -> ST_Function | None -> ST_Procedure
       and parameters = [] in
       D_Func { name; args; return_type; body; parameters; subprogram_type }
+
+    let make_bv_concats = function
+      | [] -> E_Literal (L_BitVector Bitvector.empty)
+      | [bv] -> bv |> desc
+      | bv :: bvs -> List.fold_left (binop BV_CONCAT) bv bvs |> desc
+
   end
 
   open Prelude
@@ -331,7 +337,7 @@ let expr :=
   | binop_expr(expr, binop)
   | annotated (
       e1=expr; COLON; e2=expr;
-          { AST.E_Concat [ e1; e2 ] }
+          { AST.(E_Binop (BV_CONCAT, e1, e2)) }
   )
 
 let binop_expr(e, b) ==
@@ -347,7 +353,7 @@ let binop_expr(e, b) ==
       | ~=e; DOT; ~=ident;                            < AST.E_GetField  >
       | ~=e; DOT; ~=bracketed(clist(ident));          < AST.E_GetFields >
       | ~=e; ~=bracketed(clist(slice));               < AST.E_Slice     >
-      | ~=bracketed(clist(expr));                     < AST.E_Concat    >
+      | ~=bracketed(clist(expr));                     < make_bv_concats >
       | ~=e; IN; ~=pattern;                           < AST.E_Pattern   >
       | ~=annotated(ty_non_tuple); UNKNOWN;           < AST.E_Unknown   >
       (*

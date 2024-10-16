@@ -177,9 +177,6 @@ module Make (C : Config.S) = struct
     and e_record =
       let make_record (name, fields) = E_Record (t_named name, fields) in
       names ** list (names ** exprs) |> map make_record
-    and e_concat =
-      let make_concat es = E_Concat es in
-      list1 exprs |> map make_concat
     and e_tuple =
       let make_tuple es = E_Tuple es in
       list2 exprs |> map make_tuple
@@ -200,7 +197,6 @@ module Make (C : Config.S) = struct
       (if C.Syntax.e_getfield then Some e_get_field else None);
       (if C.Syntax.e_getfields then Some e_get_fields else None);
       (if C.Syntax.e_record then Some e_record else None);
-      (if C.Syntax.e_concat then Some e_concat else None);
       (if C.Syntax.e_tuple then Some e_tuple else None);
       (if C.Syntax.e_unknown then Some e_unknown else None);
       (if C.Syntax.e_pattern then Some e_pattern else None);

@@ -603,10 +603,6 @@ module Typed (C : Config.S) = struct
       | [] -> None
       | li -> Some (oneof li)
     in
-    let e_concat expr env n : expr gen =
-      Nat.list_sized_non_empty (fun n -> t_bits >>= fun t -> expr (env, t, n)) n
-      >|= fun li -> E_Concat li |> annot
-    in
     let expr' =
       fix @@ fun expr (env, ty, n) ->
       let () =
@@ -633,9 +629,6 @@ module Typed (C : Config.S) = struct
         (if C.Syntax.e_tuple && n >= 1 then e_tuple expr env ty_anon n else None);
         (if C.Syntax.e_slice && n >= 1 && is_bits ty_anon then
            Some (e_slices expr env n)
-         else None);
-        (if C.Syntax.e_concat && n >= 2 && is_bits ty_anon then
-           Some (e_concat expr env n)
          else None);
         (if C.Syntax.e_ctc then e_ctc expr env ty ty_anon n else None);
         (if C.Syntax.e_record && n >= 2 then
