@@ -1640,19 +1640,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
     (* End *)
-    | E_Concat [] -> fatal_from loc UnrespectedParserInvariant
-    (* Begin EConcat *)
-    | E_Concat (_ :: _ as li) ->
-        let ts, es =
-          List.map (annotate_expr_ ~forbid_atcs env) li |> List.split
-        in
-        let w =
-          let widths = List.map (get_bitvector_width e env) ts in
-          let wh = List.hd widths and wts = List.tl widths in
-          List.fold_left (width_plus env) wh wts
-        in
-        (T_Bits (w, []) |> here, E_Concat es |> here) |: TypingRule.EConcat
-    (* End *)
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type

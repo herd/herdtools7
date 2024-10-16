@@ -126,7 +126,6 @@ type expr_desc =
   | E_GetItem of expr * int
   | E_Record of ty * (identifier * expr) list
       (** Represents a record or an exception construction expression. *)
-  | E_Concat of expr list
   | E_Tuple of expr list
   | E_Unknown of ty
   | E_Pattern of expr * pattern

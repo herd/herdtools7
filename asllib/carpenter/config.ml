@@ -47,7 +47,6 @@ module type Syntax = sig
   val e_getfield : bool
   val e_getfields : bool
   val e_record : bool
-  val e_concat : bool
   val e_tuple : bool
   val e_unknown : bool
   val e_pattern : bool
@@ -169,7 +168,6 @@ module All : Syntax = struct
   let e_getfield = true
   let e_getfields = true
   let e_record = true
-  let e_concat = true
   let e_tuple = true
   let e_unknown = true
   let e_pattern = true
@@ -306,7 +304,6 @@ module Parse = struct
         ("e_getfield", true);
         ("e_getfields", true);
         ("e_record", true);
-        ("e_concat", true);
         ("e_tuple", true);
         ("e_unknown", true);
         ("e_pattern", true);
@@ -428,7 +425,6 @@ module Parse = struct
       let e_getfield = Tbl.find tbl "e_getfield"
       let e_getfields = Tbl.find tbl "e_getfields"
       let e_record = Tbl.find tbl "e_record"
-      let e_concat = Tbl.find tbl "e_concat"
       let e_tuple = Tbl.find tbl "e_tuple"
       let e_unknown = Tbl.find tbl "e_unknown"
       let e_pattern = Tbl.find tbl "e_pattern"

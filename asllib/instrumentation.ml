@@ -45,7 +45,6 @@ module SemanticsRule = struct
     | ERecord
     | EGetBitField
     | EGetBitFields
-    | EConcat
     | ETuple
     | EUnknown
     | EPattern
@@ -127,7 +126,6 @@ module SemanticsRule = struct
     | ERecord -> "ERecord"
     | EGetBitField -> "EGetBitField"
     | EGetBitFields -> "EGetBitFields"
-    | EConcat -> "EConcat"
     | ETuple -> "ETuple"
     | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
@@ -218,7 +216,6 @@ module SemanticsRule = struct
       ERecord;
       EGetBitField;
       EGetBitFields;
-      EConcat;
       ETuple;
       EUnknown;
       EPattern;
@@ -356,7 +353,6 @@ module TypingRule = struct
     | EGetBitFieldTyped
     | EGetTupleItem
     | EGetBitFields
-    | EConcat
     | ETuple
     | EUnknown
     | EPattern
@@ -508,7 +504,6 @@ module TypingRule = struct
     | EGetBitFieldTyped -> "EGetBitFieldTyped"
     | EGetTupleItem -> "EGetTupleItem"
     | EGetBitFields -> "EGetBitFields"
-    | EConcat -> "EConcat"
     | ETuple -> "ETuple"
     | EUndefIdent -> "EUndefIdent"
     | ECondSimple -> "ECondSimple"
@@ -673,7 +668,6 @@ module TypingRule = struct
       ESliceOrEGetArrayError;
       ECondSimple;
       EUndefIdent;
-      EConcat;
       ETuple;
       LEDiscard;
       LEVar;

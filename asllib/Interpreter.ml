@@ -502,12 +502,6 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.concat_bitvectors v_list in
         return_normal (v, new_env)
     (* End *)
-    (* Begin EvalEConcat *)
-    | E_Concat e_list ->
-        let** v_list, new_env = eval_expr_list env e_list in
-        let* v = B.concat_bitvectors v_list in
-        return_normal (v, new_env) |: SemanticsRule.EConcat
-    (* End *)
     (* Begin EvalETuple *)
     | E_Tuple e_list ->
         let** v_list, new_env = eval_expr_list env e_list in

@@ -188,7 +188,6 @@ let rec use_e e =
   | E_GetField (e, _) -> use_e e
   | E_GetFields (e, _) -> use_e e
   | E_Record (ty, li) -> use_ty ty $ use_fields li
-  | E_Concat es -> use_es es
   | E_Tuple es -> use_es es
   | E_Unknown t -> use_ty t
   | E_Pattern (e, p) -> use_e e $ use_pattern p
@@ -329,8 +328,6 @@ let rec expr_equal eq e1 e2 =
       (* We can ignore parameters as they are deduced from arguments. *)
       String.equal x1 x2 && list_equal (expr_equal eq) args1 args2
   | E_Call _, _ | _, E_Call _ -> false
-  | E_Concat li1, E_Concat li2 -> list_equal (expr_equal eq) li1 li2
-  | E_Concat _, _ | _, E_Concat _ -> false
   | E_Cond (e11, e21, e31), E_Cond (e12, e22, e32) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22 && expr_equal eq e31 e32
   | E_Cond _, _ | _, E_Cond _ -> false
@@ -511,18 +508,17 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_Discard -> E_Var "-"
     | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
-    | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
-    (* | LE_Concat (les, _) -> *)
-    (*     let rec go : lexpr list -> expr_desc = function *)
-    (*       | [] -> E_Literal (L_BitVector Bitvector.empty) *)
-    (*       | e :: es -> *)
-    (*           let es = go es in *)
-    (*           E_Binop *)
-    (*             ( COLON_COLON, *)
-    (*               map_desc aux e, *)
-    (*               with_pos_from (to_pos e) (add_dummy_pos es) ) *)
-    (*     in *)
-    (*     go les *)
+    | LE_Concat (les, _) ->
+        let rec go : lexpr list -> expr_desc = function
+          | [] -> E_Literal (L_BitVector Bitvector.empty)
+          | e :: es ->
+              let es = go es in
+              E_Binop
+                ( BV_CONCAT,
+                  map_desc aux e,
+                  with_pos_from (to_pos e) (add_dummy_pos es) )
+        in
+        go les
   in
   map_desc aux
 
@@ -664,7 +660,6 @@ let rec subst_expr substs e =
   | E_Var s -> (
       match List.assoc_opt s substs with None -> e.desc | Some e' -> e'.desc)
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
-  | E_Concat es -> E_Concat (List.map tr es)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_Call (x, args, param_args) -> E_Call (x, List.map tr args, param_args)
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
@@ -709,7 +704,7 @@ let rec is_simple_expr e =
   | E_Unop (_, e)
   | E_Pattern (e, _) (* because pattern must be side-effect free. *) ->
       is_simple_expr e
-  | E_Tuple es | E_Concat es -> List.for_all is_simple_expr es
+  | E_Tuple es -> List.for_all is_simple_expr es
   | E_Cond (e1, e2, e3) ->
       is_simple_expr e1 && is_simple_expr e2 && is_simple_expr e3
   | E_Record (_, fields) ->
@@ -755,7 +750,6 @@ let rename_locals map_name ast =
     | E_GetFields (e', li) -> E_GetFields (map_e e', li)
     | E_GetItem (e', i) -> E_GetItem (map_e e', i)
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
-    | E_Concat li -> E_Concat (map_es li)
     | E_Tuple li -> E_Tuple (map_es li)
     | E_Pattern (_, _) -> failwith "Not yet implemented: offuscate patterns"
   and map_es li = List.map map_e li
