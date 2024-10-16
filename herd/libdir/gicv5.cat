@@ -46,6 +46,11 @@ let DI = try DI with emptyset
 let RCFG = try RCFG with emptyset
 let GICR = try GICR with emptyset
 
+(** GIC-hazard-ordered-before **)
+let GIC-haz-ob =
+  [Exp & INTID & R & RCFG]; po & loc; [INTID & R]; ca; [Exp & INTID & W]
+
+
 (*** Internal visibility requirements ***)
 irreflexive [INTID & R & RCFG]; po & loc; [INTID & W]; rf; [INTID & R & RCFG] as coRW-INTID
 
