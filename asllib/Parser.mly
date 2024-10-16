@@ -264,30 +264,30 @@ let unop ==
 let unimplemented_binop(x) == x ; { PLUS }
 
 let binop ==
-  | AND         ; { AND    }
-  | BAND        ; { BAND   }
-  | BOR         ; { BOR    }
-  | BEQ         ; { EQ_OP  }
-  | DIV         ; { DIV    }
-  | DIVRM       ; { DIVRM  }
-  | EOR         ; { EOR    }
-  | EQ_OP       ; { EQ_OP  }
-  | NEQ         ; { NEQ    }
-  | GT          ; { GT     }
-  | GEQ         ; { GEQ    }
-  | IMPL        ; { IMPL   }
-  | LT          ; { LT     }
-  | LEQ         ; { LEQ    }
-  | PLUS        ; { PLUS   }
-  | MINUS       ; { MINUS  }
-  | MOD         ; { MOD    }
-  | MUL         ; { MUL    }
-  | OR          ; { OR     }
-  | RDIV        ; { RDIV   }
-  | SHL         ; { SHL    }
-  | SHR         ; { SHR    }
-  | POW         ; { POW    }
-  | COLON_COLON ; { COLON_COLON }
+  | AND         ; { AND       }
+  | BAND        ; { BAND      }
+  | BOR         ; { BOR       }
+  | BEQ         ; { EQ_OP     }
+  | DIV         ; { DIV       }
+  | DIVRM       ; { DIVRM     }
+  | EOR         ; { EOR       }
+  | EQ_OP       ; { EQ_OP     }
+  | NEQ         ; { NEQ       }
+  | GT          ; { GT        }
+  | GEQ         ; { GEQ       }
+  | IMPL        ; { IMPL      }
+  | LT          ; { LT        }
+  | LEQ         ; { LEQ       }
+  | PLUS        ; { PLUS      }
+  | MINUS       ; { MINUS     }
+  | MOD         ; { MOD       }
+  | MUL         ; { MUL       }
+  | OR          ; { OR        }
+  | RDIV        ; { RDIV      }
+  | SHL         ; { SHL       }
+  | SHR         ; { SHR       }
+  | POW         ; { POW       }
+  | COLON_COLON ; { BV_CONCAT }
   | unimplemented_binop(
     | CONCAT; <>
   )

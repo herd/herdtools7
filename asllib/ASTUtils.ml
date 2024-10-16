@@ -609,21 +609,21 @@ exception FailedConstraintOp
 let is_left_increasing = function
   | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> true
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV | COLON_COLON ->
+  | RDIV | BV_CONCAT ->
       raise FailedConstraintOp
 
 let is_right_increasing = function
   | MUL | SHL | SHR | POW | PLUS -> true
   | DIV | DIVRM | MOD | MINUS -> false
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV | COLON_COLON ->
+  | RDIV | BV_CONCAT ->
       raise FailedConstraintOp
 
 let is_right_decreasing = function
   | MINUS -> true
   | DIV | DIVRM | MUL | SHL | SHR | POW | PLUS | MOD -> false
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV | COLON_COLON ->
+  | RDIV | BV_CONCAT ->
       raise FailedConstraintOp
 
 (* Begin ConstraintBinop *)
