@@ -11,6 +11,8 @@
   $ aslref binop-write-write-diff.asl
 
   $ aslref bool-binop-write-write.asl
+  Should print.
+  Should print.
 
   $ aslref binop-throw-read.asl
   E caught
@@ -35,6 +37,18 @@
   Caught E.
   $ aslref binop-write-unknown.asl
   $ aslref binop-unknown-unknown.asl
+
+  $ aslref binop-throw-atc.asl
+  File binop-throw-atc.asl, line 16, characters 12 to 41:
+  ASL Typing error: concurrent side effects RaiseException "E" and PerformsATC
+  [1]
+  $ aslref binop-write-atc.asl
+  File binop-write-atc.asl, line 5, characters 10 to 11:
+  ASL Execution error: Mismatch type:
+    value 1 does not belong to type integer {2}.
+  [1]
+// We don't need to decide about the following:
+// $ aslref binop-atc-atc.asl
 
   $ aslref constant-func.asl
   $ aslref constant-func-read.asl
