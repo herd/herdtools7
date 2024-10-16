@@ -83,11 +83,11 @@ let EXC-RET-IFB = if not "ExS" || "EOS" then EXC-RET else {}
 let IFB = ISB | EXC-ENTRY-IFB | EXC-RET-IFB
 
 let IFB-ob =
- [Exp & R]; ctrl; [IFB]; po
- | [Exp & R]; pick-ctrl-dep; [IFB]; po
- | [Exp & R]; addr; [Exp & M]; po; [IFB]; po
- | [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
- | [Exp & R]; pick-addr-dep; (tc-ib | tr-ib); [IFB]; po
+ [Exp & R | INTID & R]; ctrl; [IFB]; po
+ | [Exp & R | INTID & R]; pick-ctrl-dep; [IFB]; po
+ | [Exp & R | INTID & R]; addr; [Exp & M]; po; [IFB]; po
+ | [Exp & R | INTID & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
+ | [Exp & R | INTID & R]; pick-addr-dep; (tc-ib | tr-ib); [IFB]; po
  | DSB-ob; [IFB]; po
  | GSB-ob; [IFB]; po
  | [Imp & TTD & R]; tr-ib; [IFB]; po

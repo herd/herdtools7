@@ -66,9 +66,9 @@ let rec dtrm =
 
 (** Data, Address and Control dependencies *)
 
-let data = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_data; [Exp & W]
-let addr = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
-let ctrl = [Exp & R]; dtrm & po; [Rreg]; iico_data; [BCC]; po
+let data = [Exp & R | INTID & R]; dtrm & po; [Rreg]; iico_data & ii_data; [Exp & W]
+let addr = [Exp & R | INTID & R]; dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | INTID & R | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
+let ctrl = [Exp & R | INTID & R]; dtrm & po; [Rreg]; iico_data; [BCC]; po
 
 (** Pick dependencies *)
 let rec pick-dtrm =
@@ -77,14 +77,14 @@ let rec pick-dtrm =
   | pick-dtrm; pick-dtrm
 
 let pick-basic-dep =
-   [Exp & R]; pick-dtrm
+   [Exp & R | INTID & R]; pick-dtrm
 
 let pick-addr-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
+   [Exp & R | INTID & R]; pick-dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | INTID & R | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
 let pick-data-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; (iico_data | (iico_data; iico_ctrl)) & ii_data; [Exp & W]
+   [Exp & R | INTID & R]; pick-dtrm & po; [Rreg]; (iico_data | (iico_data; iico_ctrl)) & ii_data; [Exp & W]
 let pick-ctrl-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data; [BCC]; po
+   [Exp & R | INTID & R]; pick-dtrm & po; [Rreg]; iico_data; [BCC]; po
 
 let pick-dep =
    ( pick-basic-dep
@@ -94,4 +94,3 @@ let pick-dep =
    ) & ~same-instance
 
 include "aarch64show.cat"
-

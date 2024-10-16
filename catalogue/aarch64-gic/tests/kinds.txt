@@ -67,3 +67,5 @@ MP-fIPI-dTag+dsb.st+gsb.ack		Forbid
 coWR-gic+ia-gsb.ack-di			Forbid
 coWR-gic+dis-gsb.sys-ia			Forbid
 MP-gic+dis-gsb.sys+dsb.ld		Forbid
+MP-fIPI+dsb.st+addr			Allow
+MP-fIPI+dsb.st+ctrlisb			Forbid
