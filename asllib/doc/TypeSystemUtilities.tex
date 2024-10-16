@@ -493,7 +493,7 @@ $\vx$ is not bound to a local storage in $\tenv$.
 \hypertarget{def-lookupimmutableexpr}{}
 The function
 \[
-\lookupimmutableexpr(\overname{\staticenvs}{\tenv}, \overname{\identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
+\lookupimmutableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
 \]
 looks up the static environment $\tenv$ for an immutable expression associated with the identifier $\vx$,
 returning $\bot$ if there is none.
@@ -543,6 +543,75 @@ One of the following applies:
   G^\tenv.\exprequiv(\vx) = \bot\\
 }{
   \lookupimmutableexpr(\tenv, \vx) \typearrow \bot
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AddImmutableExpr\label{sec:TypingRule.AddImmutableExpr}}
+\hypertarget{def-addimmutableexpression}{}
+The function
+\[
+\addimmutableexpr(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\localdeclkeyword}{\ldk} \aslsep
+  \overname{\langle\expr\rangle}{\veopt}
+  \overname{\identifier}{\vx}) \aslto
+  \overname{\staticenvs}{\newtenv} \cup \TTypeError
+\]
+conditionally adds the information that the expression in $\veopt$ is statically evaluable
+and bound to $\vx$.
+More precisely, $\addimmutableexpr(\tenv, \ldk, \veopt, \vx)$
+associates an expression with the identifier $\vx$
+in the static environment $\tenv$, if one exists in $\veopt$ and it is \staticallyevaluable,
+along with the local declaration keyword $\ldk$. The result is the updated static environment $\newtenv$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{ok}):
+  \begin{itemize}
+    \item $\vep$ contains the expression $\ve$;
+    \item $\ldk$ is either $\LDKConstant$ or $\LDKLet$;
+    \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\True$;
+    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$\ProseOrTypeError;
+    \item define $\newtenv$ as the $\tenv$ where the $\exprequiv$ component of the local environment
+          of $\tenv$ binds $\vx$ to $\vep$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{fail}):
+  \begin{itemize}
+    \item One of the following applies:
+    \begin{itemize}
+      \item $\vep$ is $\None$;
+      \item $\ldk$ is neither $\LDKConstant$ nor $\LDKLet$;
+      \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\False$;
+    \end{itemize}
+    \item define $\newtenv$ as $\tenv$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[ok]{
+  \ldk \in \{\LDKConstant, \LDKLet\}\\
+  \isstaticallyevaluable(\tenv, \ve) \typearrow \True\\
+  \normalize(\tenv, \ve) \typearrow \vep \OrTypeError
+}{
+  \addimmutableexpr(\tenv, \ldk, \overname{\langle\ve\rangle}{\veopt}, \vx) \typearrow \overname{(G^\tenv, L^\tenv.\exprequiv[\vx \mapsto \vep])}{\newtenv}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[fail]{
+  {
+    \begin{array}{ll}
+      \ldk \not\in \{\LDKConstant, \LDKLet\} & \lor\\
+      \veopt = \None & \lor\\
+      \veopt = \langle\ve\rangle \land \isstaticallyevaluable(\tenv, \ve) \typearrow \False
+    \end{array}
+  }
+}{
+  \addimmutableexpr(\tenv, \ldk, \veopt, \vx) \typearrow \overname{\tenv}{\newtenv}
 }
 \end{mathpar}
 

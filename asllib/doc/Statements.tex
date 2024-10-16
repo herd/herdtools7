@@ -341,7 +341,8 @@ One of the following applies:
     \item $\vs$ is a declaration with local declaration keyword $\ldk$, local identifiers $\ldi$, and an expression $\ve$,
           that is, $\SDecl(\ldk, \ldi, \langle\ve\rangle)$;
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep)$\ProseOrTypeError;
-    \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$ and type $\vte$ in $\tenv$
+    \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$, the type $\vte$,
+          and the initializing expression $\vep$, in $\tenv$
           yields $(\tenvone, \ldip)$;
     \item One of the following applies:
     \begin{itemize}
@@ -379,7 +380,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\tenvone, \ldip)\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \vep, \ldi} \typearrow (\tenvone, \ldip)\\\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
   \reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
@@ -393,7 +394,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[non\_constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\tenvone, \ldip)\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \vep, \ldi} \typearrow (\tenvone, \ldip)\\\\
   \commonprefixline\\\\
   \ldk \neq \LDKConstant\\
   \news \eqdef \SDecl(\ldk, \ldip, \langle\vep\rangle)
@@ -526,7 +527,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[typed]{
   \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError\\\\
+  \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \None, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError\\\\
   \newldi \eqdef \LDITyped(\newldip, \vtp)
 }{
   \annotatelocaldeclitemuninit(\tenv, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow (\newtenv, \newldi)

@@ -2101,13 +2101,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if can_be_initialized_with env s t then () else conflict loc [ s.desc ] t
   (* End *)
 
-  let add_immutable_expressions ~loc env ldk e_opt x =
+  (* Begin AddImmutableExpr *)
+  let add_immutable_expr ~loc env ldk e_opt x =
     match (ldk, e_opt) with
     | (LDK_Constant | LDK_Let), Some e when is_statically_evaluable ~loc env e
       ->
         let e' = StaticModel.try_normalize env e in
-        add_local_immutable_expr x e' env
+        add_local_immutable_expr x e' env |: TypingRule.AddImmutableExpr
     | _ -> env
+  (* End *)
 
   let rec annotate_local_decl_item loc (env : env) ty ldk ?e ldi =
     let () =
@@ -2132,7 +2134,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            which is already in scope at the point of declaration. *)
         let+ () = check_var_not_in_env loc env x in
         let env2 = add_local x ty ldk env in
-        let new_env = add_immutable_expressions ~loc env2 ldk e x in
+        let new_env = add_immutable_expr ~loc env2 ldk e x in
         (new_env, LDI_Var x) |: TypingRule.LDVar
     (* End *)
     (* Begin LDTuple *)
@@ -2377,9 +2379,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           env )
         |: TypingRule.SFor
     (* End *)
+    (* Begin SDecl *)
     | S_Decl (ldk, ldi, e_opt) -> (
         match (ldk, e_opt) with
-        (* Begin SDeclSome *)
+        (* SDecl.Some( *)
         | _, Some e ->
             let t_e, e' = annotate_expr env e in
             let env1, ldi1 =
@@ -2395,13 +2398,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   with Error.(ASLException _) -> env1)
             in
             (S_Decl (ldk, ldi1, Some e') |> here, env2) |: TypingRule.SDeclSome
-        (* End *)
-        (* Begin SDeclNone *)
+        (* SDecl.Some) *)
+        (* SDecl.None( *)
         | LDK_Var, None ->
             let env', ldi' = annotate_local_decl_item_uninit loc env ldi in
             (S_Decl (LDK_Var, ldi', None) |> here, env') |: TypingRule.SDeclNone
         | (LDK_Constant | LDK_Let), None ->
             fatal_from s UnrespectedParserInvariant)
+    (* SDecl.None) *)
     (* End *)
     (* Begin SThrow *)
     | S_Throw (Some (e, _)) ->
@@ -2982,6 +2986,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let () = assert (env2.local == empty_local) in
     ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2.global)
+    |: TypingRule.DeclareGlobalStorage
   (* End *)
 
   let rename_primitive loc env (f : AST.func) =

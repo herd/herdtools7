@@ -498,10 +498,10 @@ module Domain = struct
         true
       with FalseFound -> false
 
-  (* SymIntSetSubset *)
+  (* Begin SymIntSetSubset *)
   let int_set_is_subset env is1 is2 =
     match (is1, is2) with
-    | _, Top -> true
+    | _, Top -> true |: TypingRule.SymIntSetSubset
     | Top, _ -> false
     | Finite is1, Finite is2 -> IntSet.(is_empty (diff is1 is2))
     | FromSyntax is1, FromSyntax is2 ->
@@ -517,13 +517,14 @@ module Domain = struct
         Iterators.constraints_for_all env is1 @@ function
         | L_Int z1 -> IntSet.mem z1 is2
         | _ -> false)
+  (* End *)
 
   (* Begin SyDomIsSubset *)
   let is_subset env d1 d2 =
     let () =
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
     in
-    int_set_is_subset env d1 d2
+    int_set_is_subset env d1 d2 |: TypingRule.SyDomIsSubset
   (* End *)
 end
 

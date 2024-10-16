@@ -465,6 +465,9 @@ module TypingRule = struct
     | ShouldReduceToCall
     | IsStaticallyEvaluable
     | CheckStaticallyEvaluable
+    | AddImmutableExpr
+    | SymIntSetSubset
+    | SyDomIsSubset
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -623,6 +626,9 @@ module TypingRule = struct
     | ShouldReduceToCall -> "ShouldReduceToCall"
     | IsStaticallyEvaluable -> "IsStaticallyEvaluable"
     | CheckStaticallyEvaluable -> "CheckStaticallyEvaluable"
+    | AddImmutableExpr -> "AddImmutableExpr"
+    | SymIntSetSubset -> "SymIntSetSubset"
+    | SyDomIsSubset -> "SyDomIsSubset"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -763,6 +769,9 @@ module TypingRule = struct
       ShouldReduceToCall;
       IsStaticallyEvaluable;
       CheckStaticallyEvaluable;
+      AddImmutableExpr;
+      SymIntSetSubset;
+      SyDomIsSubset;
     ]
 
   let all_nb = List.length all
