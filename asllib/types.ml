@@ -190,9 +190,8 @@ module Domain = struct
   let eval (env : env) (e : expr) =
     let v =
       let open StaticInterpreter in
-      let open StaticModel in
       try static_eval env e
-      with StaticEvaluationUnknown -> raise_notrace StaticEvaluationTop
+      with StaticEvaluationUnknown -> raise StaticEvaluationTop
     in
     match v with
     | L_Int i -> i
