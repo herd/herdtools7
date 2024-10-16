@@ -38,6 +38,18 @@
   $ aslref binop-write-unknown.asl
   $ aslref binop-unknown-unknown.asl
 
+  $ aslref binop-throw-atc.asl
+  File binop-throw-atc.asl, line 16, characters 12 to 41:
+  ASL Typing error: concurrent side effects RaiseException "E" and PerformsATC
+  [1]
+  $ aslref binop-write-atc.asl
+  File binop-write-atc.asl, line 5, characters 10 to 11:
+  ASL Execution error: Mismatch type:
+    value 1 does not belong to type integer {2}.
+  [1]
+// We don't need to decide about the following:
+// $ aslref binop-atc-atc.asl
+
   $ aslref constant-func.asl
   $ aslref constant-func-read.asl
   File constant-func-read.asl, line 9, characters 0 to 21:

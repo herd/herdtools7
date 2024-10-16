@@ -105,6 +105,7 @@ ATCs in types:
   > EOF
 
   $ aslref atcs9.asl
-  File atcs9.asl, line 1, characters 9 to 30:
-  ASL Typing error: unexpected ATC.
+  File atcs9.asl, line 1, characters 14 to 29:
+  ASL Typing error: a pure expression was expected, found
+    1 as integer {2}, which produces the following side-effects: [PerformsATC].
   [1]
