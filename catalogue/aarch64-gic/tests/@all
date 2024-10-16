@@ -23,6 +23,8 @@ MP+gsb.sys+dsb.ld.litmus
 #MP-LSPI+imp+addrpt.litmus Missing
 #MP-fSPI+dsb.st+gsb.ack.litmus
 MP-fIPI+dsb.st+gsb.ack.litmus
+MP-fIPI+dsb.st+addr.litmus
+MP-fIPI+dsb.st+ctrlisb.litmus
 MP-fDI+W-dsb-W+R-gsb-R.litmus
 MP-fDI+W-dsb-W+R-addrpt-R.litmus
 MP-fDI+W-dsb-W+R-ctrlisb-R.litmus
