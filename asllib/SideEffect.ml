@@ -219,6 +219,7 @@ module SES = struct
     is_empty ses.global_writes && is_empty ses.local_writes
     && is_empty ses.thrown_exceptions
     && is_empty ses.recursive_calls
+    && not ses.atcs_performed
 
   let is_atc_free ses = not ses.atcs_performed
 
@@ -243,6 +244,7 @@ module SES = struct
       ThrowException (ISet.choose ses.thrown_exceptions)
     else if not (ISet.is_empty ses.recursive_calls) then
       RecursiveCall (ISet.choose ses.recursive_calls)
+    else if ses.atcs_performed then PerformsATC
     else raise Not_found
 
   let filter_side_effects ses =
@@ -277,7 +279,7 @@ module SES = struct
     else if not (ISet.disjoint ses1.local_reads ses2.local_writes) then
       let s = choose_inter ses1.local_reads ses2.local_writes in
       (ReadLocal s, WriteLocal s)
-    else raise Not_found
+    else (get_side_effect ses1, get_side_effect ses2)
 
   let non_concurrent_union ~fail ses1 ses2 =
     if is_empty ses1 then ses2
