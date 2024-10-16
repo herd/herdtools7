@@ -799,9 +799,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* End *)
 
-  let refine_constraint_for_div ~loc = function
-    | DIV -> refine_constraints ~loc DIV filter_reduce_constraint_div
-    | _ -> Fun.id
+  let refine_constraint_for_div ~loc op cs =
+    match op with
+    | DIV -> (
+        let res = List.filter_map filter_reduce_constraint_div cs in
+        match res with
+        | [] ->
+            let () =
+              Format.eprintf
+                "@[%a:@ Division@ will@ result@ in@ empty@ constraint@ set,@ \
+                 so@ will@ always@ fail.@]@."
+                PP.pp_pos loc
+            in
+            assumption_failed ()
+        | _ -> res)
+    | _ -> cs
 
   (* Begin AnnotateConstraintBinop *)
   let annotate_constraint_binop ~loc env op cs1 cs2 =
