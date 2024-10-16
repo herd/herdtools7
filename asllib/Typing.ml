@@ -598,9 +598,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckStaticallyEvaluable *)
+  let is_immutable ~loc env ses =
+    SES.for_all_reads (storage_is_pure ~loc env) ses
+
   let is_statically_evaluable ~loc env ses =
-    SES.is_side_effect_free ses
-    && SES.for_all_reads (storage_is_pure ~loc env) ses
+    SES.is_side_effect_free ses && is_immutable ~loc env ses
 
   let check_statically_evaluable env e ses () =
     if is_statically_evaluable ~loc:e env ses then ()
@@ -2195,7 +2197,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let add_immutable_expressions ~loc env ldk typed_e_opt x =
     match (ldk, typed_e_opt) with
     | (LDK_Constant | LDK_Let), Some (_, e, ses_e)
-      when is_statically_evaluable ~loc env ses_e -> (
+      when is_immutable ~loc env ses_e -> (
         match StaticModel.normalize_opt env e with
         | Some e' -> add_local_immutable_expr x e' env
         | None -> env)
