@@ -89,7 +89,7 @@ let IC-ob = [Imp & Instr & R]; po; [Imp & Instr & R]; Instr-read-ordered-before
 
 (* Hazard-ordered-before *)
 let haz-ob =
-  Exp-haz-ob | TLBI-ob | IC-ob
+  Exp-haz-ob | TLBI-ob | IC-ob | GIC-haz-ob
 
 (*** Hardware-required-ordered-before ***)
 let hw-reqs = local-hw-reqs | haz-ob
