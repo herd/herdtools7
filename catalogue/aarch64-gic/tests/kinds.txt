@@ -9,6 +9,8 @@
  MP-fDI+ack-DI+gic.dis-R-gsb.sys-mR Allow
  MP-fDI+ack-DSB-DI+gic.dis-R-gsb.sys-mR Forbid
  MP-fIPI+dsb.st+gsb.ack Forbid
+MP-fIPI+dsb.st+addr                             Allow
+MP-fIPI+dsb.st+ctrlisb                          Forbid
  MP-fSPI+dsb.st+gsb.ack Forbid
  MP-fLPI+imp+gsb.ack Forbid
  MP-fLPI+imp+addrpt Forbid
