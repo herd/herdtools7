@@ -380,10 +380,10 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and \t
 All of the following apply:
 \begin{itemize}
   \item $\vle$ denotes a list of left-hand-side expressions, $\LEDestructuring(\vlelist)$;
-  \item $\vlelist$ is the list of expressions $\vle_{1..k}$;
-  \item getting the values from the native vector $\vv$ at each index $i=1..k$
-  results in $\vv_{i=1..k}$;
-  \item $\nmonads$ is the list of pairs consisting of $\vv_i$ and $\vg$ for $i=1..k$;
+  \item $\vlelist$ is the list of expressions $\vle_{1..n}$;
+  \item getting the values from the native vector $\vv$ at each index $i=1..n$
+  results in $\vv_{i=1..n}$;
+  \item $\nmonads$ is the list of pairs consisting of $\vv_i$ and $\vg$ for $i=1..n$;
   \item evaluating the multi-assignment between $\vlelist$ and the list $\nmonads$
   in $\env$ achieves the effects of assigning each value to the respective
   subexpressions, resulting in the output configuration $C$.
@@ -391,9 +391,9 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vlelist \eqname [\vle_{1..k}]\\
-  i=1..k: \getindex(i, \vv) \evalarrow \vv_i\\
-  \nmonads \eqdef [i=1..k: (\vv_i, \vg)]\\
+  \vlelist \eqname [\vle_{1..n}]\\
+  i=1..n: \getindex(i, \vv) \evalarrow \vv_i\\
+  \nmonads \eqdef [i=1..n: (\vv_i, \vg)]\\
   \evalmultiassignment(\env, \vlelist, \nmonads) \evalarrow C
 }{
   \evallexpr{\env, \LEDestructuring(\vlelist), (\vv, \vg)} \evalarrow C
@@ -909,7 +909,7 @@ All of the following apply:
   \item annotating the right-hand-side expression corresponding to $\vle$ in $\tenv$ yields \\ $(\vteeq, \Ignore)$\ProseOrTypeError;
   \item checking whether the bitwidth of $\vteeq$ equals the bitwidth of $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\les$ is the list of left-hand-side expressions $\vle_i$, for $i=1..k$;
-  \item annotating each left-hand-side expression $\vle_i$ as a bitvector-typed expression (via $\annotatelebits$)
+  \item annotating each left-hand-side expression $\vle_i$ as a bitvector-typed expression (via $\annotatelebitslice$)
         yields the annotated left-hand-side expression $\vleone_i$ and corresponding bitwidth $\width_i$, for $i=1..k$;
   \item $\lesone$ is defined as the list $\vleone_{1..k}$;
   \item $\widths$ is defined as the list $\width_{1..k}$;
@@ -922,7 +922,7 @@ All of the following apply:
   \annotateexpr{\tenv, \torexpr(\vle)} \typearrow (\vteeq, \Ignore) \OrTypeError\\\\
   \checkbitsequalwidth(\tenv, \vteeq, \vte) \typearrow \True \OrTypeError\\\\
   \les \eqname \vle_{1..k}\\
-  i=1..k: \annotatelebits(\tenv, \vle_i) \typearrow (\vleone_i, \width_i) \OrTypeError\\\\
+  i=1..k: \annotatelebitslice(\tenv, \vle_i) \typearrow (\vleone_i, \width_i) \OrTypeError\\\\
   \lesone \eqdef \vleone_{1..k}\\
   \widths \eqdef \width_{1..k}
 }{
@@ -931,11 +931,11 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\LEConcatBegin}{\LEConcatEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.LEBits\label{sec:TypingRule.LEBits}}
-\hypertarget{def-annotatelebits}{}
+\subsubsection{TypingRule.LEBitSlice\label{sec:TypingRule.LEBitSlice}}
+\hypertarget{def-annotatelebitsice}{}
 The helper function
 \[
-  \annotatelebits(\overname{\staticenvs}{\tenv} \aslsep \overname{\lexpr}{\vle})
+  \annotatelebitslice(\overname{\staticenvs}{\tenv} \aslsep \overname{\lexpr}{\vle})
   \aslto \overname{\lexpr}{\vleone} \times \overname{\N}{\width}
 \]
 annotates a left-hand-side expression $\vle$, which is checked to be of bitvector type
@@ -945,13 +945,8 @@ resulting in the annotated expression and $\width$, or a type error, if one is d
 All of the following apply:
 \begin{itemize}
   \item annotating the right-hand-side expression corresponding to $\vle$ in $\tenv$ yields \\ $(\vteone, \Ignore)$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vteone$ in $\tenv$ yields $\vteonestruct$\ProseOrTypeError;
-  \item checking whether $\vteonestruct$ is a bitvector type yields $\True$\ProseOrTypeError;
-  \item $\vteonestruct$ is a bitvector type with width $\ewidth$;
-  \item applying $\reduceconstants$ to $\ewidth$ yields the literal $\vl$\ProseOrTypeError;
-  \item checking whether $\vl$ is an integer literal yields $\True$\ProseOrTypeError;
-  \item $\vl$ is the integer literal for the integer $\width$;
-  \item $\vtetwo$ is defined as the bitvector type of width given by $\width$ and an empty list of bitfields, that is,
+  \item applying $\getbitvectorwidth$ to $\vteone$ in $\tenv$ yields $\vwidth$\ProseOrTypeError;
+  \item define $\vtetwo$ as the bitvector type of width given by $\width$ and an empty list of bitfields, that is,
         $\TBits(\ELInt{\width}, \emptylist)$;
   \item annotating the left-hand-side expression $\vtetwo$ in $\tenv$ yields $\vleone$\ProseOrTypeError.
 \end{itemize}
@@ -959,16 +954,11 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vteone, \Ignore) \OrTypeError\\\\
-  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
-  \checktrans{\astlabel(\vteonestruct) = \TBits}{BitvectorTypeExpected} \checktransarrow \True \OrTypeError\\\\
-  \vteonestruct \eqname \TBits(\ewidth, \Ignore)\\
-  \reduceconstants(\tenv, \ewidth) \typearrow \vl\\
-  \checktrans{\astlabel(\vl) = \lint}{IntegerLiteralExpected} \checktransarrow \True \OrTypeError\\\\
-  \vl \eqname \lint(\width)\\
+  \getbitvectorwidth(\tenv, \vteone) \typearrow \vwidth \OrTypeError\\\\
   \vtetwo \eqdef \TBits(\ELInt{\width}, \emptylist)\\
-  \annotatelexpr{\tenv, \vtetwo} \typearrow \vleone \OrTypeError
+  \annotatelexpr{\tenv, \vle, \vtetwo} \typearrow \vleone \OrTypeError
 }{
-  \annotatelebits(\tenv, \vle) \typearrow (\vleone, \width)
+  \annotatelebitslice(\tenv, \vle) \typearrow (\vleone, \width)
 }
 \end{mathpar}
 

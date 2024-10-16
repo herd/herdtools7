@@ -503,19 +503,19 @@ module Domain = struct
     match (is1, is2) with
     | _, Top -> true |: TypingRule.SymIntSetSubset
     | Top, _ -> false
-    | Finite is1, Finite is2 -> IntSet.(is_empty (diff is1 is2))
-    | FromSyntax is1, FromSyntax is2 ->
-        constraints_equal env is1 is2
-        || Iterators.constraints_for_all env is1 @@ fun l1 ->
-           Iterators.constraints_exists env is2 @@ fun l2 -> literal_equal l1 l2
-    | Finite is1, FromSyntax is2 -> (
-        int_set_for_all is1 @@ fun z1 ->
-        Iterators.constraints_exists env is2 @@ function
+    | Finite ints1, Finite ints2 -> IntSet.(is_empty (diff ints1 ints2))
+    | FromSyntax cs1, FromSyntax cs2 ->
+        constraints_equal env cs1 cs2
+        || Iterators.constraints_for_all env cs1 @@ fun l1 ->
+           Iterators.constraints_exists env cs2 @@ fun l2 -> literal_equal l1 l2
+    | Finite ints1, FromSyntax cs2 -> (
+        int_set_for_all ints1 @@ fun z1 ->
+        Iterators.constraints_exists env cs2 @@ function
         | L_Int z2 -> Z.equal z1 z2
         | _ -> false)
-    | FromSyntax is1, Finite is2 -> (
-        Iterators.constraints_for_all env is1 @@ function
-        | L_Int z1 -> IntSet.mem z1 is2
+    | FromSyntax cs1, Finite ints2 -> (
+        Iterators.constraints_for_all env cs1 @@ function
+        | L_Int z1 -> IntSet.mem z1 ints2
         | _ -> false)
   (* End *)
 
