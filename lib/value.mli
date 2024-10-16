@@ -123,6 +123,9 @@ module type S =
       val map_const : (Cst.v -> Cst.v) -> v -> v
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
       val map_csym : (csym -> v) -> v -> v
+
+(* Classify location values, will fail on non-address values *)
+      val access_of_value : v -> Access.t
     end
 
 module type AArch64 =

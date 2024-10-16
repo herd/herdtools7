@@ -21,10 +21,20 @@ let aarch64_iico_ctrl = "aarch64_iico_ctrl"
 let aarch64_iico_data = "aarch64_iico_data"
 let aarch64_iico_order = "aarch64_iico_order"
 
-let return_0 =
+let return_i i =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
-  S_Return (Some (expr_of_int 0)) |> add_dummy_pos
+  S_Return (Some (expr_of_int i)) |> add_dummy_pos
+
+let return_0 = return_i 0
+
+let catch_silent_exit body =
+  let open Asllib.AST in
+  let open Asllib.ASTUtils in
+  let exit_type : Asllib.AST.ty = T_Named "SilentExit" |> add_dummy_pos in
+  let catcher = (None,exit_type,return_0) in
+  S_Try (body,[catcher],None) |> add_dummy_pos
+
 
 module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
   AArch64Sig.Semantics with module A.V = V = struct
@@ -47,18 +57,21 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         [ aarch64_iico_ctrl; aarch64_iico_data; aarch64_iico_order ]
 
     module ASLConf = struct
-      include TopConf.C
+      module C = struct
+        include TopConf.C
+        module PC = struct
+          include TopConf.C.PC
 
-      module PC = struct
-        include TopConf.C.PC
-
-        let doshow = aarch64_iico
-        let showevents = PrettyConf.AllEvents
-        let showpo = true
-        let showraw = aarch64_iico
+          let doshow = aarch64_iico
+          let showevents = PrettyConf.AllEvents
+          let showpo = true
+          let showraw = aarch64_iico
+        end
+        let variant = function Variant.ASL_AArch64 -> true | c -> variant c
       end
 
-      let variant = function Variant.ASL_AArch64 -> true | c -> variant c
+      let libfind = TopConf.C.libfind
+      let dirty = TopConf.dirty
     end
 
     module ASLS = ASLSem.Make (ASLConf)
@@ -69,7 +82,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     module ASLTH = Test_herd.Make (ASLS.A)
 
     module MCConf = struct
-      include ASLConf
+      include ASLConf.C
 
       let byte = SZ.byte
       let dirty = TopConf.dirty
@@ -742,8 +755,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           None
 
     let tr_cst tr =
-      Constant.map tr
-        (fun _ -> Warn.fatal "Cannot translate PTE")
+      Constant.map tr Misc.identity
         (fun _ -> Warn.fatal "Cannot translate instruction")
 
     let aarch64_to_asl_bv = function
@@ -759,6 +771,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
     let is_experimental = TopConf.C.variant Variant.ASLExperimental
+    let is_vmsa = TopConf.C.variant Variant.VMSA
+    let is_cutoff = TopConf.C.variant Variant.CutOff
 
     let fake_test ii fname decode =
       let init = [] in
@@ -784,6 +798,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           match execute with
           | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
               let s = stmt_from_list [ decode; s; return_0 ] in
+              let s =
+                if is_vmsa then  catch_silent_exit s else s in
               D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false
         in
@@ -884,6 +900,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let tr_op1 =
         let open Op in
         function
+        | ArchOp1 ASLOp.OA ->
+          fun acc v ->
+            (M.VC.Unop (Op.ArchOp1 (AArch64Op.OA), tr_v v), acc)
         | ArchOp1 op -> tr_arch_op1 op
         | op ->
             let new_op =
@@ -922,15 +941,23 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             in
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
-      let tr_action is_bcc e ii =
-        let exp = AArch64.Exp in
-        function
-        | ASLS.Act.Access (dir, loc, v, sz, a) -> (
+      let tr_action is_bcc e ii act =
+        let () =
+          if  _dbg then
+            Printf.eprintf "tr_action %s\n%!"
+              (ASLS.Act.pp_action act) in
+        match act with
+        | ASLS.Act.Access (dir, loc, v, sz, (a, exp, acc)) -> (
             match tr_loc ii loc with
             | None -> None
             | Some loc ->
-                let ac = Act.access_of_location_std loc in
-                Some (Act.Access (dir, loc, tr_v v, a, exp, sz, ac)))
+               Some (Act.Access (dir, loc, tr_v v, a, exp, sz, acc)))
+        | ASLS.Act.Fault (_,loc,d,t) ->
+            Option.bind
+              (tr_loc ii loc)
+              (fun loc ->
+                 (Act.Fault (ii,Some loc,d,AArch64Annot.N,false,Some t,None))
+                 |> Misc.some)
         | ASLS.Act.Barrier b -> Some (Act.Barrier b)
         | ASLS.Act.Branching txt ->
            let ct = if is_bcc e then Act.Bcc else Act.Pred in
@@ -1047,7 +1074,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let one_event bds event =
             match event.ASLE.action with
             | ASLS.Act.Access
-                (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
+              (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
               ->
                let v = tr_v v in
                let () =
@@ -1097,7 +1124,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 finals None in
           match Misc.seq_opt A.V.as_int pc with
           | Some v -> B.Jump (B.Addr v,bds)
-          | None -> B.Next bds
+          | None ->
+              let is_fault =  List.exists ASLE.is_fault event_list in
+              if is_fault then B.Fault bds else B.Next bds
         in
         let () =
           if _dbg then
@@ -1131,12 +1160,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
     let check_event_structure model =
       let module MemConfig = struct
-        include ASLConf
+        include ASLConf.C
 
         let model = model
         let bell_model_info = None
-        let debug = ASLConf.debug.Debug_herd.barrier
-        let debug_files = ASLConf.debug.Debug_herd.files
+        let debug = ASLConf.C.debug.Debug_herd.barrier
+        let debug_files = ASLConf.C.debug.Debug_herd.files
         let showsome = true
         let skipchecks = StringSet.empty
         let strictskip = true
@@ -1169,6 +1198,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       AArch64Mixed.build_semantics test ii
 
     let build_semantics test ii =
+      let flitmus = test.Test_herd.name.Name.file in
       let () =
         if _dbg then
           Printf.eprintf "\n\nExecuting %s\n"
@@ -1188,16 +1218,19 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
           in
-          let rfms_with_regs =
-            let solve_regs (_i, cs, es) = MC.solve_regs test es cs in
-            List.filter_map solve_regs rfms
-          in
-          let () =
-            if _dbg then
-              Printf.eprintf "With regs solved, still %d rfms.\n%!"
-                (List.length rfms_with_regs)
-          in
-          let conc_and_pp =
+          let monads,_ =
+            let solve_regs (_i, cs, es) =
+              let () =
+                if  _dbg then begin
+                  Printf.eprintf "** Events **\n" ;
+                  ASLE.EventSet.iter
+                    (fun e ->
+                       Printf.eprintf "  %a\n"
+                         ASLE.debug_event e)
+                    es.ASLE.events
+                end in
+              MC.solve_regs test es cs in
+
             let check_rfm li (es, rfm, cs) =
               let po = MU.po_iico es in
               let pos =
@@ -1220,20 +1253,48 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   ASLS.pos;
                 }
               in
-              let kfail li = li in
+              let kfail li =
+                let () =
+                  if _dbg then prerr_endline "ASL cat, fail" in
+                li in
               let ksuccess conc _fs (out_sets, out_show) _flags li =
-                (conc, cs, Lazy.force out_sets, Lazy.force out_show) :: li
+                let () =
+                  if _dbg then  prerr_endline "ASL cat, success" in
+                let c =
+                  conc, cs, Lazy.force out_sets, Lazy.force out_show in
+                Translator.tr_execution ii c::li
               in
               check_event_structure test conc kfail ksuccess li
             in
-            List.fold_left check_rfm [] rfms_with_regs
+            let check (li,seen)  (_,_,cs as c) =
+              let msg =
+                if is_cutoff then
+                  (* Keep all executions, included pruned ones. *)
+                  None
+                else ASLS.find_cutoff cs.ASLS.E.events in
+              let seen  =
+                match msg with
+                | Some msg ->
+                    if not (StringSet.mem msg seen) then begin
+                      Warn.warn_always
+                        "%a: %s, some legal outcomes may be missing"
+                        Pos.pp_pos0 flitmus
+                        msg;
+                      StringSet.add msg seen
+                    end else seen
+                | None -> seen in
+              if Misc.is_some msg then li,seen
+              else
+                match solve_regs c with
+                | None -> li,seen
+                | Some c -> check_rfm li c,seen in
+            List.fold_left check ([],StringSet.empty) rfms
           in
           let () =
             if _dbg then
               Printf.eprintf "Got %d complete executions.\n%!"
-                (List.length conc_and_pp)
+                (List.length monads)
           in
-          let monads = List.map (Translator.tr_execution ii) conc_and_pp in
           let () =
             if _dbg then
               Printf.eprintf "End of ASL execution for %s.\n\n%!"
@@ -1243,6 +1304,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           | [] -> Warn.fatal "No possible ASL execution."
           | h :: t -> List.fold_left M.altT h t)
 
-    let spurious_setaf _ = assert false
+    let spurious_setaf _ = M.unitT ()
   end
 end

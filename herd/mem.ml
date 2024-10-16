@@ -638,7 +638,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         if
           match C.dirty with
           | None -> false
-          | Some t -> t.DirtyBit.some_ha || t.DirtyBit.some_hd
+          | Some t ->
+              not asl && (t.DirtyBit.some_ha || t.DirtyBit.some_hd)
         then begin (* One spurious update per observed pte (final load) *)
             if C.variant Variant.PhantomOnLoad then
               let look_pt rloc k = match rloc with
@@ -666,7 +667,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           W.warn "%i abstract event structures\n%!" i ;
           []
       | (vcl,es)::xs ->
-          let es = if C.debug.Debug_herd.monad then es else relabel es in
+        let es =
+          if true || C.debug.Debug_herd.monad then es
+          else relabel es in
           let es =
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in
@@ -823,7 +826,7 @@ let match_reg_events es =
       PP.show_es_rfm test es rfm ;
       ()
 
-    let solve_regs test es csn =
+    let do_solve_regs test es csn =
       let rfm = match_reg_events es in
       let csn =
         S.RFMap.fold
@@ -840,6 +843,8 @@ let match_reg_events es =
                   (A.pp_location loc)
                   (A.V.pp_v v_loaded)
                   (A.V.pp_v v_stored) ;
+                let module PP = Pretty.Make(S) in
+                PP.show_es_rfm test es rfm ;
                 assert false)
           rfm csn in
       if  C.debug.Debug_herd.solver then
@@ -854,6 +859,19 @@ let match_reg_events es =
             (E.simplify_vars_in_event_structure sol es,
              S.simplify_vars_in_rfmap sol rfm,
              csn)
+
+    let solve_regs test es csn =
+      match do_solve_regs test es csn with
+      | Some (es,rfm,cns) as r ->
+          if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+            let module PP = Pretty.Make(S) in
+            prerr_endline "Reg solved, direct" ;
+            Printf.eprintf "++++ Remaing equations:\n%s\n++++++\n%!"
+              (VC.pp_cnstrnts cns) ;
+            PP.show_es_rfm test es rfm
+          end ;
+          r
+      | None ->  None
 
 (**************************************)
 (* Step 2. Generate rfmap for memory  *)
@@ -2068,7 +2086,7 @@ Please use `-variant self` as an argument to herd7 to enable it."
       ) stores
 
     let calculate_rf_with_cnstrnts test owls es cs kont res =
-      match solve_regs test es cs with
+      match do_solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
           if C.debug.Debug_herd.solver && C.verbose > 0 then begin
