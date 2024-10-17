@@ -50,7 +50,7 @@ type error_desc =
   | TooManyCallCandidates of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
-  | UnpureExpression of expr
+  | UnpureExpression of expr * SideEffect.SES.t
   | UnreconciliableTypes of ty * ty
   | AssignToImmutable of string
   | AlreadyDeclaredIdentifier of string
@@ -67,7 +67,9 @@ type error_desc =
   | BaseValueEmptyType of ty
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
+  | ConcurrentSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
+  | ConfigTimeBroken of expr
 
 type error = error_desc annotated
 
@@ -203,10 +205,11 @@ module PPrint = struct
           "ASL Evaluation error: circular definition of constants, including \
            %S."
           x
-    | UnpureExpression e ->
+    | UnpureExpression (e, ses) ->
         fprintf f
-          "ASL Typing error:@ a pure expression was expected,@ found@ %a"
-          pp_expr e
+          "ASL Typing error:@ a pure expression was expected,@ found@ %a, \
+           which produces the following side-effects:@ %a."
+          pp_expr e SideEffect.SES.pp_print ses
     | UnreconciliableTypes (t1, t2) ->
         fprintf f
           "ASL Typing error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ \
@@ -264,6 +267,12 @@ module PPrint = struct
            corresponding@ getter@ of@ signature@ @[@[%a@]@ ->@ %a@]"
           func.name (pp_comma_list pp_ty) args pp_ty ret
     | UnexpectedATC -> pp_print_text f "ASL Typing error: unexpected ATC."
+    | ConcurrentSideEffects (s1, s2) ->
+        fprintf f "ASL Typing error: concurrent side effects %a and %a"
+          SideEffect.pp_print s1 SideEffect.pp_print s2
+    | ConfigTimeBroken e ->
+        fprintf f "ASL Typing error: expected config-time expression, got %a."
+          pp_expr e
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

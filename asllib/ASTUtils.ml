@@ -108,6 +108,12 @@ let list_concat_map f l =
   in
   aux f [] l
 
+let rec list_split3 = function
+  | [] -> ([], [], [])
+  | (x, y, z) :: l ->
+      let xs, ys, zs = list_split3 l in
+      (x :: xs, y :: ys, z :: zs)
+
 let list_is_empty = function [] -> true | _ -> false
 let pair x y = (x, y)
 let pair' y x = (x, y)
@@ -292,7 +298,7 @@ and use_decl d =
       use_named_list use_ty args
       $ use_option use_ty return_type
       $ use_named_list (use_option use_ty) parameters
-      $ match body with SB_ASL s -> use_s s | SB_Primitive -> Fun.id)
+      $ match body with SB_ASL s -> use_s s | SB_Primitive _ -> Fun.id)
 
 and use_subtypes (x, subfields) = ISet.add x $ use_named_list use_ty subfields
 
@@ -810,7 +816,7 @@ let rename_locals map_name ast =
     | LDI_Typed (ldi, t) -> LDI_Typed (map_ldi ldi, map_t t)
     | LDI_Tuple ldis -> LDI_Tuple (List.map map_ldi ldis)
   and map_body = function
-    | SB_Primitive as b -> b
+    | SB_Primitive _ as b -> b
     | SB_ASL s -> SB_ASL (map_s s)
   and map_func f =
     let map_args li = List.map (fun (name, t) -> (map_name name, map_t t)) li in

@@ -342,7 +342,10 @@ type subprogram_type =
       (** An empty setter is a special procedure called with a syntax similar
           to an assignment to a variable. *)
 
-type subprogram_body = SB_ASL of stmt | SB_Primitive
+(** Represents the different types of subprogram bodies. *)
+type subprogram_body =
+  | SB_ASL of stmt  (** A normal body of a subprogram *)
+  | SB_Primitive of bool  (** Whether or not this primitive is side-effecting *)
 
 type func = {
   name : identifier;
