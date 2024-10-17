@@ -1168,7 +1168,8 @@ Monad type:
       (* It is important to call V.fresh_var
          for every _complete_ call of read_loc *)
       let v = match iiid,loc with
-          | E.IdSome {A.env={A.regs=env;_}; _},A.Location_reg (_,r) ->
+          | E.IdSome {A.env={A.regs=env;_}; _},A.Location_reg (_,r) 
+            when not (A.is_non_sp_sysreg r) ->
              begin match A.look_reg r env with
              | Some v -> v
              | None -> V.fresh_var ()

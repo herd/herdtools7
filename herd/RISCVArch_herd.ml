@@ -44,6 +44,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     include Explicit.No
     include PteValSets.No
 
+    let is_sysdirect_annot _ = false
+
     let is_atomic = function
     | X _ -> true
     | P _ -> false
@@ -131,6 +133,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
           let fromto_of_instr _ = None
 
           let get_val _ v = v
+          let is_non_sp_sysreg = RISCVBase.is_non_sp_sysreg
 
           module FaultType=FaultType.No
         end)

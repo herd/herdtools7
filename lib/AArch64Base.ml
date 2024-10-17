@@ -101,6 +101,10 @@ type sysreg =
   ELR_EL1 | ESR_EL1 | SYS_NZCV |
   TFSR_ELx | VNCR_EL2
 
+let is_special_purpose = function
+  | ELR_EL1 -> true
+  | _ -> false
+
 let sysregs = [
     CTR_EL0, "CTR_EL0";
     DCIZ_EL0, "DCIZ_EL0";
@@ -594,6 +598,16 @@ let type_reg r =
   match r with
   | Vreg  (_,(n_elt,sz)) -> Array (TestType.tr_nbits sz,n_elt)
   | _ -> Base "int"
+
+let is_sysreg = function
+  | SysReg _ -> true
+  | _ -> false
+
+let is_spsysreg = function
+  | SysReg r -> is_special_purpose r
+  | _ -> false
+
+let is_non_sp_sysreg r = is_sysreg r && not (is_spsysreg r)
 
 (************)
 (* Barriers *)

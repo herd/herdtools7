@@ -32,6 +32,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     type lannot = Plain|Atomic|NonTemporal
     let get_machsize _ = V.Cst.Scalar.machsize
     let empty_annot = Plain
+    let is_sysdirect_annot _ = false
     let is_atomic = function
       | Atomic -> true
       | Plain|NonTemporal -> false
@@ -112,6 +113,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
                 let fromto_of_instr _ = None
 
                 let get_val _ v = v
+                let is_non_sp_sysreg = X86_64Base.is_non_sp_sysreg
 
                 module FaultType=FaultType.No
               end)

@@ -45,6 +45,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_atomic = AArch64Annot.is_atomic
 
+    let is_sysdirect_annot = AArch64Annot.is_sysdirect
+
     let is_explicit_annot = function
       | Exp -> true
       | NExp _ -> false
@@ -504,6 +506,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           let get_val reg v = match reg with
           | AArch64Base.Vreg(_,(nelem,esize)) -> neon_getvec nelem esize v
           | _ -> v
+
+          let is_non_sp_sysreg = AArch64Base.is_non_sp_sysreg
 
           module FaultType = FaultType.AArch64
         end)

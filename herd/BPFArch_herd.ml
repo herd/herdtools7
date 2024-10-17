@@ -34,6 +34,8 @@ struct
     | _ -> false
   ;;
 
+  let is_sysdirect_annot _ = false
+
   let is_atomic = function
     | X | SC -> true
     | _ -> false
@@ -81,6 +83,7 @@ struct
         let reg_compare = reg_compare
         let fromto_of_instr _ = None
         let get_val _ v = v
+        let is_non_sp_sysreg = BPFBase.is_non_sp_sysreg
 
         module FaultType = FaultType.No
       end)
