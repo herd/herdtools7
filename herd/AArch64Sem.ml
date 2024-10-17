@@ -881,6 +881,7 @@ module Make
         | L|XL -> XL
         | X|N  -> X
         | NoRet|S|NTA -> X (* Does it occur? *)
+        | RCFG -> assert false
 
       let an_pte =
         let open Annot in
@@ -890,6 +891,7 @@ module Make
         | L|XL -> L
         | X|N -> N
         | NoRet|S|NTA -> N
+        | RCFG -> assert false
 
       let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
@@ -3371,13 +3373,13 @@ module Make
         let (and*) = (>>|)
         let aimp = AArch64.NExp AArch64.Other
 
-        let read_intid a ?(ae=aexp) ii =
+        let read_intid a ?(an=Annot.N) ?(ae=aexp) ii =
           M.read_loc Port.No
-            (fun loc v -> Act.Access (Dir.R, loc, v, Annot.N, ae, quad, Access.INTID))
+            (fun loc v -> Act.Access (Dir.R, loc, v, an, ae, quad, Access.INTID))
             (A.Location_global a) ii
-        and write_intid a ?(ae=aexp) v ii =
+        and write_intid a ?(an=Annot.N) ?(ae=aexp) v ii =
           M.write_loc
-            (mk_write quad Annot.N ae Access.INTID v) (A.Location_global a) ii
+            (mk_write quad an ae Access.INTID v) (A.Location_global a) ii
 
         let extract_intid v = arch_op1 AArch64Op.GICGetIntid v
         let extract_update_val v f = arch_op1 (AArch64Op.GICGetField f) v
@@ -3457,7 +3459,7 @@ module Make
               let open AArch64Base in
               let* v = read_reg Port.AddrData r ii in
               let* intid = extract_intid v in
-              let* intid_val = read_intid intid ii in
+              let* intid_val = read_intid intid ~an:Annot.RCFG ii in
               let* () = write_reg (SysReg ICC_ICSR_EL1) intid_val ii in
               B.nextSetT (SysReg ICC_ICSR_EL1) intid_val
             | EOI -> begin
