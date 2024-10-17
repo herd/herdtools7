@@ -224,9 +224,14 @@ module SES = struct
   let is_atc_free ses = not ses.atcs_performed
 
   let is_non_concurrent ses1 ses2 =
-    if not (ISet.is_empty ses1.thrown_exceptions) then is_side_effect_free ses2
-    else if not (ISet.is_empty ses2.thrown_exceptions) then
-      is_side_effect_free ses1
+    if
+      (not (ISet.is_empty ses1.thrown_exceptions))
+      || not (ISet.is_empty ses1.recursive_calls)
+    then is_side_effect_free ses2
+    else if
+      (not (ISet.is_empty ses2.thrown_exceptions))
+      || not (ISet.is_empty ses2.recursive_calls)
+    then is_side_effect_free ses1
     else
       ISet.disjoint ses1.global_writes ses2.global_writes
       && ISet.disjoint ses1.global_writes ses2.global_reads
@@ -261,6 +266,10 @@ module SES = struct
       (ThrowException (ISet.choose ses1.thrown_exceptions), get_side_effect ses2)
     else if not (ISet.is_empty ses2.thrown_exceptions) then
       (get_side_effect ses1, ThrowException (ISet.choose ses2.thrown_exceptions))
+    else if not (ISet.is_empty ses1.recursive_calls) then
+      (RecursiveCall (ISet.choose ses1.recursive_calls), get_side_effect ses2)
+    else if not (ISet.is_empty ses2.recursive_calls) then
+      (get_side_effect ses1, RecursiveCall (ISet.choose ses2.recursive_calls))
     else if not (ISet.disjoint ses1.global_writes ses2.global_writes) then
       let s = choose_inter ses1.global_writes ses2.global_writes in
       (WriteGlobal s, WriteGlobal s)
