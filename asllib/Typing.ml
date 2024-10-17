@@ -3621,13 +3621,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* Begin TypecheckDecl *)
       | D_Func ({ body = SB_ASL _; _ } as f) ->
           let env1, f1 = annotate_and_declare_func ~loc f genv in
-          let f2, ses_f = try_annotate_subprogram env1 f1 in
-          let new_env = add_subprogram f2.name f2 ses_f env1
-          and new_d = D_Func f2 |> here in
+          let new_f, ses_f = try_annotate_subprogram env1 f1 in
+          let ses_f = SES.remove_recursive_calls ses_f in
+          (* TODO if recursive, check recursion annotation. *)
+          let new_d = D_Func new_f |> here
+          and new_env = StaticEnv.add_subprogram new_f.name new_f ses_f env1 in
           (new_d, new_env.global) |: TypingRule.TypecheckDecl
       | D_Func ({ body = SB_Primitive _; _ } as f) ->
-          let new_env, f2 = annotate_and_declare_func ~loc f genv in
-          let new_d = D_Func f2 |> here in
+          let new_env, new_f = annotate_and_declare_func ~loc f genv in
+          let new_d = D_Func new_f |> here in
           (new_d, new_env.global)
       | D_GlobalStorage gsd ->
           let gsd', new_genv = declare_global_storage loc gsd genv in
@@ -3686,24 +3688,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if !modified then propagate map' else map'
     in
     let map3 = propagate map0 in
-    let is_in_cycle =
-      IMap.fold
-        (fun name ses self_calling ->
-          if SES.mem (SideEffect.RecursiveCall name) ses then
-            ISet.add name self_calling
-          else self_calling)
-        map3 ISet.empty
-    in
     let res =
       List.map
         (fun ((f : func), _ses) ->
           let ses =
             try IMap.find f.name map3 with Not_found -> assert false
           in
-          let ses =
-            SES.filter_recursive_calls (fun s -> ISet.mem s is_in_cycle) ses
-          in
-          (f, ses))
+          let new_ses = SES.remove_recursive_calls ses in
+          (* TODO: check that cycles have annotations *)
+          (f, new_ses))
         sess
     in
     let () =
