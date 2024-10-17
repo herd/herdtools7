@@ -457,6 +457,7 @@ let expr_of_int i = literal (L_Int (Z.of_int i))
 let expr_of_z z = literal (L_Int z)
 let zero_expr = expr_of_z Z.zero
 let one_expr = expr_of_z Z.one
+let minus_one_expr = expr_of_z Z.minus_one
 
 let expr_of_rational q =
   if Z.equal (Q.den q) Z.one then expr_of_z (Q.num q)
@@ -593,54 +594,83 @@ let list_cross f li1 li2 =
     [] li1
   |> List.rev
 
-exception FailedConstraintOp
+let list_flat_cross f li1 li2 =
+  List.fold_left
+    (fun xys x ->
+      List.fold_left (fun xys' y -> List.rev_append (f x y) xys') xys li2)
+    [] li1
+  |> List.rev
 
 let is_left_increasing = function
-  | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> true
-  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
-      raise FailedConstraintOp
+  | MUL | SHL | SHR | POW | PLUS | MINUS -> true
+  | DIV | DIVRM | AND | BAND | BEQ | MOD | BOR | EOR | EQ_OP | GT | GEQ | IMPL
+  | LT | LEQ | NEQ | OR | RDIV ->
+      assert false
 
 let is_right_increasing = function
   | MUL | SHL | SHR | POW | PLUS -> true
-  | DIV | DIVRM | MOD | MINUS -> false
-  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
-      raise FailedConstraintOp
+  | MINUS -> false
+  | DIV | DIVRM | AND | BAND | MOD | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL
+  | LT | LEQ | NEQ | OR | RDIV ->
+      assert false
 
 let is_right_decreasing = function
-  | MINUS -> true
-  | DIV | DIVRM | MUL | SHL | SHR | POW | PLUS | MOD -> false
-  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
-      raise FailedConstraintOp
+  | MINUS ->
+      true
+      (* DIV is here because its right-hand-side is always meant to be positive *)
+  | MUL | SHL | SHR | POW | PLUS -> false
+  | DIVRM | DIV | MOD | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL
+  | LT | LEQ | NEQ | OR | RDIV ->
+      assert false
+
+let () =
+  if true then (
+    let all_binops_here = [ MINUS; MUL; SHL; SHR; POW; PLUS ] in
+    List.iter
+      (fun b -> assert (is_right_decreasing b || is_right_increasing b))
+      all_binops_here;
+    List.iter (fun b -> assert (is_left_increasing b)) all_binops_here)
 
 (* Begin ConstraintBinop *)
-let constraint_binop op =
-  let righ_inc = is_right_increasing op
-  and righ_dec = is_right_decreasing op
-  and left_inc = is_left_increasing op in
-  let constraint_binop_pair c1 c2 =
+let constraint_binop =
+  let exact e = Constraint_Exact e and range a b = Constraint_Range (a, b) in
+  let constraint_binop_pair op c1 c2 =
     match (c1, c2) with
-    | Constraint_Exact e1, Constraint_Exact e2 ->
-        Constraint_Exact (binop op e1 e2)
-    | Constraint_Exact e1, Constraint_Range (e21, e22) when righ_inc ->
-        Constraint_Range (binop op e1 e21, binop op e1 e22)
-    | Constraint_Exact e1, Constraint_Range (e21, e22) when righ_dec ->
-        Constraint_Range (binop op e1 e22, binop op e1 e21)
-    | Constraint_Range (e11, e12), Constraint_Exact e2 when left_inc ->
-        Constraint_Range (binop op e11 e2, binop op e12 e2)
-    | Constraint_Range (e11, e12), Constraint_Range (e21, e22)
-      when left_inc && righ_inc ->
-        Constraint_Range (binop op e11 e21, binop op e12 e22)
-    | Constraint_Range (e11, e12), Constraint_Range (e21, e22)
-      when left_inc && righ_dec ->
-        Constraint_Range (binop op e11 e22, binop op e12 e21)
-    | _ -> raise_notrace FailedConstraintOp
+    | Constraint_Exact e1, Constraint_Exact e2 -> exact (binop op e1 e2)
+    | Constraint_Exact e1, Constraint_Range (e21, e22) ->
+        if is_right_increasing op then range (binop op e1 e21) (binop op e1 e22)
+        else range (binop op e1 e22) (binop op e1 e21)
+    | Constraint_Range (e11, e12), Constraint_Exact e2 ->
+        range (binop op e11 e2) (binop op e12 e2)
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22) ->
+        if is_right_increasing op then
+          range (binop op e11 e21) (binop op e12 e22)
+        else range (binop op e11 e22) (binop op e12 e21)
   in
-  fun cs1 cs2 ->
-    try WellConstrained (list_cross constraint_binop_pair cs1 cs2)
-    with FailedConstraintOp -> UnConstrained
+  let constraint_mod = function
+    | Constraint_Exact e | Constraint_Range (_, e) -> range zero_expr e
+  in
+  let constraint_divisions op c1 c2 =
+    match (c1, c2) with
+    | Constraint_Exact e1, Constraint_Exact e2 -> [ exact (binop op e1 e2) ]
+    | Constraint_Range (e11, e12), Constraint_Exact e2 ->
+        [ range (binop op e11 e2) (binop op e12 e2) ]
+    | Constraint_Exact e1, Constraint_Range (_e21, e22) ->
+        (* {a} DIV {b..c} == {a .. (a DIV c), (a DIV c) .. a} *)
+        [ range e1 (binop op e1 e22); range (binop op e1 e22) e1 ]
+    | Constraint_Range (e11, e12), Constraint_Range (_e21, _e22) ->
+        (* {a..b} DIV {c..d} == {a..-1, 0, 1..b} *)
+        [ range e11 minus_one_expr; exact zero_expr; range one_expr e12 ]
+  in
+  fun op cs1 cs2 ->
+    match op with
+    | MOD -> List.map constraint_mod cs2
+    | DIV | DIVRM -> list_flat_cross (constraint_divisions op) cs1 cs2
+    | MUL | SHL | SHR | POW | PLUS | MINUS ->
+        list_cross (constraint_binop_pair op) cs1 cs2
+    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
+    | OR | RDIV ->
+        assert false
 (* End *)
 
 (* Begin SubstExpr *)
