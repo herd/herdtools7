@@ -649,10 +649,10 @@ let fold_tedges f r =
     if do_self && F.instr_atom != None then
       iter_ie
         (fun ie ->
-           add_lxm (sprintf "Iff%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Rf ie); } ;
-           add_lxm (sprintf "Irf%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Rf ie); } ;
-           add_lxm (sprintf "Fif%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Fr ie); } ;
-           add_lxm (sprintf "Ifr%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Fr ie); }) ;
+           add_lxm (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
+           add_lxm (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
+           add_lxm (sprintf "Fif%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); } ;
+           add_lxm (sprintf "Ifr%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); });
     ()
 
 
@@ -737,8 +737,8 @@ let fold_tedges f r =
   | _ -> false
 
   let is_fetch e = match e.edge with
-  | Rf _ -> is_ifetch e.a1
-  | Fr _ -> is_ifetch e.a2
+  | Rf _ -> is_ifetch e.a2
+  | Fr _ -> is_ifetch e.a1
   | _ -> is_ifetch e.a1 || ( loc_sd e = Same && is_ifetch e.a2)
 
   let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
@@ -883,6 +883,8 @@ let fold_tedges f r =
     let r =
       match a1,a2 with
       | None,None -> e1,e2
+      | None,Some a
+      | Some a,None when F.is_ifetch (Some a)-> e1, e2
       | None,Some _ -> set_a2 e1 a2,e2
       | Some _,None -> e1, set_a1 e2 a1
       | Some a1,Some a2 ->
