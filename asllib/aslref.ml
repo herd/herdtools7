@@ -34,6 +34,7 @@ type args = {
   show_rules : bool;
   strictness : Typing.strictness;
   output_format : Error.output_format;
+  log_parameters : bool;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -51,6 +52,7 @@ let parse_args () =
   let show_version = ref false in
   let push_file file_type s = target_files := (file_type, s) :: !target_files in
   let output_format = ref Error.HumanReadable in
+  let log_parameters = ref false in
 
   let speclist =
     [
@@ -97,6 +99,10 @@ let parse_args () =
         Arg.String (push_file NormalV1),
         "Use ASLv1 parser for this file. (default)" );
       ("--version", Arg.Set show_version, " Print version and exit.");
+      ( "--log-parameters",
+        Arg.Set log_parameters,
+        " Log parameter declarations and instantiations for proposed ASL1 \
+         changes." );
     ]
     |> Arg.align ?limit:None
   in
@@ -124,6 +130,7 @@ let parse_args () =
       strictness = !strictness;
       show_rules = !show_rules;
       output_format = !output_format;
+      log_parameters = !log_parameters;
     }
   in
 
@@ -157,6 +164,8 @@ let or_exit f =
 
 let () =
   let args = parse_args () in
+
+  let () = Logging.should_log := args.log_parameters in
 
   let extra_main =
     match args.opn with

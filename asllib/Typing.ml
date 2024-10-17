@@ -1210,6 +1210,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
+    let _ = Logging.log_parameter_instantiations ~env name callee eqs3 in
     (name1, args1, eqs3, ret_ty_opt) |: TypingRule.AnnotateCallArgTyped
   (* End *)
 
@@ -2554,6 +2555,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         ISet.fold folder potential_params (env3, parameters)
     in
+    let _ =
+      Logging.log_parameter_declarations ~loc ~env:env1 func_sig
+        (List.map fst parameters)
+    in
     let () =
       if false then
         let open Format in
@@ -3025,7 +3030,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       let ast_rev, env = fold_topo ast ([], env) in
       (List.rev ast_rev, env)
 
-  let type_check_ast ast = type_check_ast_in_env empty_global ast
+  let type_check_ast ast =
+    let res = type_check_ast_in_env empty_global ast in
+    Logging.print_parameter_declarations ();
+    Logging.print_parameter_instantiations ();
+    res
   (* End *)
 end
 
