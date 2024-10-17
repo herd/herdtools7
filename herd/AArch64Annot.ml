@@ -18,6 +18,7 @@
 type t =
   A | XA | L | XL | X | N | Q | XQ | NoRet | S
   | NTA (* Non-Temporal, avoid clash with NT in AArch64Base *)
+  | RCFG
 
 let is_speculated = function
   | S -> true
@@ -47,6 +48,10 @@ let is_release = function
   | L | XL -> true
   | _ -> false
 
+let is_rcfg = function
+  | RCFG -> true
+  | _ -> false
+
 let sets = [
     "X", is_atomic;
     "A",  is_acquire;
@@ -55,6 +60,7 @@ let sets = [
     "NoRet", is_noreturn;
     "S", is_speculated;
     "NT",is_non_temporal;
+    "RCFG", is_rcfg;
   ]
 
 let pp = function
@@ -69,3 +75,4 @@ let pp = function
   | NoRet -> "NoRet"
   | S -> "^s"
   | NTA -> "NT"
+  | RCFG -> "RCFG"
