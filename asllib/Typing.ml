@@ -627,7 +627,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let binop_is_exploding = function
     | MUL | SHL | POW -> true
-    | PLUS | DIV | MINUS | MOD | SHR | DIVRM -> false
+    | DIV | DIVRM -> (* general case loses too much precision *) true
+    | PLUS | MINUS | MOD | SHR -> false
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false
