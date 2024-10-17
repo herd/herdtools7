@@ -79,6 +79,7 @@ type binop =
   | RDIV  (** Division for reals *)
   | SHL  (** Shift left for ints *)
   | SHR  (** Shift right for ints *)
+  | BV_CONCAT  (** Bitvector concatenation *)
 
 (* -------------------------------------------------------------------------
 
@@ -125,7 +126,6 @@ type expr_desc =
   | E_GetItem of expr * int
   | E_Record of ty * (identifier * expr) list
       (** Represents a record or an exception construction expression. *)
-  | E_Concat of expr list
   | E_Tuple of expr list
   | E_Unknown of ty
   | E_Pattern of expr * pattern
@@ -143,10 +143,10 @@ and pattern =
   | Pattern_Single of expr
   | Pattern_Tuple of pattern list
 
-(** Indexes an array, a bitvector. *)
+(** Indexes an array, a bitvector, an argument to a getter/setter *)
 and slice =
-  | Slice_Single of expr
-      (** [Slice_Single i] is the slice of length [1] at position [i]. *)
+  | Slice_Arg of expr
+      (** [Slice_Arg e] is an argument to a getter/setter call or array index *)
   | Slice_Range of expr * expr
       (** [Slice_Range (j, i)] denotes the slice from [i] to [j - 1]. *)
   | Slice_Length of expr * expr

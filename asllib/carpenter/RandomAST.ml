@@ -108,9 +108,9 @@ module Untyped (C : Config.S) = struct
     |> protected_filter_oneof
 
   let slices expr =
-    let slice_single n =
+    let slice_arg n =
       let+ e = expr n in
-      Slice_Single e
+      Slice_Arg e
     and slice_range n =
       let* n1, n2 = Nat.split2 n in
       let+ e1 = expr n1 and+ e2 = expr n2 in
@@ -126,7 +126,7 @@ module Untyped (C : Config.S) = struct
     in
     let slice n =
       [
-        (if C.Syntax.slice_single then Some (slice_single n) else None);
+        (if C.Syntax.slice_arg then Some (slice_arg n) else None);
         (if C.Syntax.slice_range then Some (slice_range n) else None);
         (if C.Syntax.slice_length then Some (slice_length n) else None);
         (if C.Syntax.slice_star then Some (slice_star n) else None);
@@ -135,7 +135,7 @@ module Untyped (C : Config.S) = struct
     in
     fun n ->
       if n >= 1 then Nat.list_sized slice (n - 1)
-      else slice_single n >|= fun x -> [ x ]
+      else slice_arg n >|= fun x -> [ x ]
 
   let expr : expr sgen =
     let e_literal = literal >|== fun l -> E_Literal l |> annot in
@@ -414,7 +414,7 @@ module Typed (C : Config.S) = struct
     let* n1, n2 = Nat.split2 n in
     let int n = expr (env, integer, n) in
     [
-      (if C.Syntax.slice_single then Some (int n >|= fun e -> Slice_Single e)
+      (if C.Syntax.slice_arg then Some (int n >|= fun e -> Slice_Arg e)
        else None);
       (if C.Syntax.slice_range then
          Some (pair (int n1) (int n2) >|= fun (e1, e2) -> Slice_Range (e1, e2))
@@ -521,7 +521,9 @@ module Typed (C : Config.S) = struct
             [| PLUS; MINUS; MUL |] |> oneofa |> map (fun op -> (op, real, real))
         | T_Bits _ ->
             [
-              [| AND; OR; EOR |] |> oneofa |> map (fun op -> (op, ty, ty));
+              [| AND; OR; EOR; BV_CONCAT |]
+              |> oneofa
+              |> map (fun op -> (op, ty, ty));
               [| PLUS; MINUS |] |> oneofa |> map (fun op -> (op, ty, integer));
             ]
             |> oneof
@@ -601,10 +603,6 @@ module Typed (C : Config.S) = struct
       | [] -> None
       | li -> Some (oneof li)
     in
-    let e_concat expr env n : expr gen =
-      Nat.list_sized_non_empty (fun n -> t_bits >>= fun t -> expr (env, t, n)) n
-      >|= fun li -> E_Concat li |> annot
-    in
     let expr' =
       fix @@ fun expr (env, ty, n) ->
       let () =
@@ -631,9 +629,6 @@ module Typed (C : Config.S) = struct
         (if C.Syntax.e_tuple && n >= 1 then e_tuple expr env ty_anon n else None);
         (if C.Syntax.e_slice && n >= 1 && is_bits ty_anon then
            Some (e_slices expr env n)
-         else None);
-        (if C.Syntax.e_concat && n >= 2 && is_bits ty_anon then
-           Some (e_concat expr env n)
          else None);
         (if C.Syntax.e_ctc then e_ctc expr env ty ty_anon n else None);
         (if C.Syntax.e_record && n >= 2 then
