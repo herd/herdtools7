@@ -330,6 +330,7 @@ module SES = struct
     { ses with local_reads = ISet.empty; local_writes = ISet.empty }
 
   let remove_thrown_exceptions ses = { ses with thrown_exceptions = ISet.empty }
+  let remove_recursive_calls ses = { ses with recursive_calls = ISet.empty }
 
   let filter_thrown_exceptions f ses =
     { ses with thrown_exceptions = ISet.filter f ses.thrown_exceptions }
