@@ -1,76 +1,141 @@
 open AST
 open ASTUtils
 
-let is_left_increasing = function
-  | MUL | SHL | SHR | POW | PLUS | MINUS -> true
-  | DIV | DIVRM | AND | BAND | BEQ | MOD | BOR | EOR | EQ_OP | GT | GEQ | IMPL
-  | LT | LEQ | NEQ | OR | RDIV ->
-      assert false
-
-let is_right_increasing = function
-  | MUL | SHL | SHR | POW | PLUS -> true
-  | MINUS -> false
-  | DIV | DIVRM | AND | BAND | MOD | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL
-  | LT | LEQ | NEQ | OR | RDIV ->
-      assert false
-
-let is_right_decreasing = function
-  | MINUS -> true
-  | MUL | SHL | SHR | POW | PLUS -> false
-  | DIVRM | DIV | MOD | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL
-  | LT | LEQ | NEQ | OR | RDIV ->
-      assert false
-
-let () =
-  if true then (
-    let all_binops_here = [ MINUS; MUL; SHL; SHR; POW; PLUS ] in
-    List.iter
-      (fun b -> assert (is_right_decreasing b || is_right_increasing b))
-      all_binops_here;
-    List.iter (fun b -> assert (is_left_increasing b)) all_binops_here)
-
 let exact e = Constraint_Exact e
 let range a b = Constraint_Range (a, b)
 
+let constraint_plus c1 c2 =
+  let plus = binop PLUS in
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> exact (plus a c)
+  | Constraint_Exact a, Constraint_Range (c, d) -> range (plus a c) (plus a d)
+  | Constraint_Range (a, b), Constraint_Exact c -> range (plus a c) (plus b c)
+  | Constraint_Range (a, b), Constraint_Range (c, d) ->
+      range (plus a c) (plus b d)
+
+let constraint_minus c1 c2 =
+  let minus = binop MINUS in
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> exact (minus a c)
+  | Constraint_Exact a, Constraint_Range (c, d) -> range (minus a d) (minus a c)
+  | Constraint_Range (a, b), Constraint_Exact c -> range (minus a c) (minus b c)
+  | Constraint_Range (a, b), Constraint_Range (c, d) ->
+      range (minus a d) (minus b c)
+
+let constraint_mod = function
+  | Constraint_Exact e | Constraint_Range (_, e) -> range zero_expr e
+
+let constraint_divisions op c1 c2 =
+  let div = binop op in
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> [ exact (div a c) ]
+  | Constraint_Range (a, b), Constraint_Exact c -> [ range (div a c) (div b c) ]
+  | Constraint_Exact a, Constraint_Range (_c, d) ->
+      (* {a} DIV {b..c} == {a .. (a DIV c), (a DIV c) .. a} *)
+      [ range a (div a d); range (div a d) a ]
+  | Constraint_Range (a, b), Constraint_Range (_c, _d) ->
+      (* {a..b} DIV {c..d} == {a..-1, 0, 1..b} *)
+      [ range a minus_one_expr; exact zero_expr; range one_expr b ]
+
+let constraint_mult c1 c2 =
+  let mul = binop MUL in
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> [ exact (mul a c) ]
+  | Constraint_Range (a, b), Constraint_Exact c ->
+      (* {a..b} MUL c is {(a MUL c) .. (b MUL c), (b MUL c) .. (a MUL c)} *)
+      [ range (mul a c) (mul b c); range (mul b c) (mul a c) ]
+  | Constraint_Exact a, Constraint_Range (c, d) ->
+      (* a MUL {c..d} is {(a MUL c) .. (a MUL d), (a MUL d) .. (a MUL c)} *)
+      [ range (mul a c) (mul a d); range (mul a d) (mul a c) ]
+  | Constraint_Range (a, b), Constraint_Range (c, d) ->
+      let ac = mul a c and bd = mul b d and ad = mul a d and bc = mul b c in
+      (* {a..b} MUL {c..d} is { *)
+      [
+        (* (a MUL c) .. (b MUL d), *)
+        range ac bd;
+        (* (a MUL d) .. (b MUL c), *)
+        range ad bc;
+        (* (a MUL d) .. (b MUL d), *)
+        range ad bd;
+        (* (a MUL d) .. (a MUL c), *)
+        range ad ac;
+        (* (b MUL c) .. (a MUL d), *)
+        range bc ad;
+        (* (b MUL c) .. (b MUL d), *)
+        range bc bd;
+        (* (b MUL c) .. (a MUL c), *)
+        range bc ac;
+        (* (b MUL d) .. (a MUL c) *)
+        range bd ac;
+        (* } *)
+      ]
+
+let constraint_shr c1 c2 =
+  let shr = binop SHR in
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> [ exact (shr a c) ]
+  | Constraint_Range (a, b), Constraint_Exact c ->
+      (* {a..b} SHR c is {(a SHR c) .. (b SHR c)} *)
+      [ range (shr a c) (shr b c) ]
+  | Constraint_Exact a, Constraint_Range (_c, d) ->
+      (* a SHR {c..d} is {a .. (a SHR d), (a SHR d) .. a}. *)
+      [ range a (shr a d); range (shr a d) a ]
+  | Constraint_Range (a, b), Constraint_Range (_c, _d) ->
+      (* {a..b} SHR {c..d} is {a..0, 0..b} *)
+      [ range a zero_expr; range zero_expr b ]
+
+let constraint_shl c1 c2 =
+  let shl = binop SHL in
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> [ exact (shl a c) ]
+  | Constraint_Range (a, b), Constraint_Exact c ->
+      (* {a..b} SHL c is {(a SHL c) .. (b SHL c)}. *)
+      [ range (shl a c) (shl b c) ]
+  | Constraint_Exact a, Constraint_Range (c, d) ->
+      (* a SHL {c...d} is {(a SHL c) .. (a SHL d), (a SHL d) .. (a SHL c)} *)
+      let ac = shl a c and ad = shl a d in
+      [ range ac ad; range ad ac ]
+  | Constraint_Range (a, b), Constraint_Range (c, d) ->
+      (* {a..b} SHL {c..d} is {
+           (a SHL c) .. (b SHL d),
+            (a SHL d) .. (b SHL d),
+            (a SHL d) .. (b SHL c),
+         } *)
+      let ac = shl a c and bd = shl b d and ad = shl a d and bc = shl b c in
+      [ range ac bd; range ad bd; range ad bc ]
+
+let constraint_pow c1 c2 =
+  let pow = binop POW and neg = unop NEG in
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> [ exact (pow a c) ]
+  | Constraint_Range (a, b), Constraint_Exact c ->
+      (* {a..b} POW c is {0.. (b POW c), (- ((-a) POW c)) ..
+         ((-a) POW c)} *)
+      let mac = pow (neg a) c in
+      [ range zero_expr (pow b c); range (neg mac) mac ]
+  | Constraint_Exact a, Constraint_Range (c, d) ->
+      (* a POW {c..d} is {(a POW c) .. (a POW d), (-((-a) POW d)) .. ((-a) POW d)} *)
+      let mad = pow (neg a) d in
+      [ range (pow a c) (pow a d); range (neg mad) mad ]
+  | Constraint_Range (a, b), Constraint_Range (_c, d) ->
+      (* {a..b} POW {c..d} is {0.. (b POW d), (- ((-a) POW d)) .. ((-a) POW d)} *)
+      let mad = pow (neg a) d in
+      [ range zero_expr (pow b d); range (neg mad) mad ]
+
 (* Begin ConstraintBinop *)
-let constraint_binop =
-  let constraint_binop_pair op c1 c2 =
-    match (c1, c2) with
-    | Constraint_Exact e1, Constraint_Exact e2 -> exact (binop op e1 e2)
-    | Constraint_Exact e1, Constraint_Range (e21, e22) ->
-        if is_right_increasing op then range (binop op e1 e21) (binop op e1 e22)
-        else range (binop op e1 e22) (binop op e1 e21)
-    | Constraint_Range (e11, e12), Constraint_Exact e2 ->
-        range (binop op e11 e2) (binop op e12 e2)
-    | Constraint_Range (e11, e12), Constraint_Range (e21, e22) ->
-        if is_right_increasing op then
-          range (binop op e11 e21) (binop op e12 e22)
-        else range (binop op e11 e22) (binop op e12 e21)
-  in
-  let constraint_mod = function
-    | Constraint_Exact e | Constraint_Range (_, e) -> range zero_expr e
-  in
-  let constraint_divisions op c1 c2 =
-    match (c1, c2) with
-    | Constraint_Exact e1, Constraint_Exact e2 -> [ exact (binop op e1 e2) ]
-    | Constraint_Range (e11, e12), Constraint_Exact e2 ->
-        [ range (binop op e11 e2) (binop op e12 e2) ]
-    | Constraint_Exact e1, Constraint_Range (_e21, e22) ->
-        (* {a} DIV {b..c} == {a .. (a DIV c), (a DIV c) .. a} *)
-        [ range e1 (binop op e1 e22); range (binop op e1 e22) e1 ]
-    | Constraint_Range (e11, e12), Constraint_Range (_e21, _e22) ->
-        (* {a..b} DIV {c..d} == {a..-1, 0, 1..b} *)
-        [ range e11 minus_one_expr; exact zero_expr; range one_expr e12 ]
-  in
-  fun op cs1 cs2 ->
-    match op with
-    | MOD -> List.map constraint_mod cs2
-    | DIV | DIVRM -> list_flat_cross (constraint_divisions op) cs1 cs2
-    | MUL | SHL | SHR | POW | PLUS | MINUS ->
-        list_cross (constraint_binop_pair op) cs1 cs2
-    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
-        assert false
+let constraint_binop op cs1 cs2 =
+  match op with
+  | PLUS -> list_cross constraint_plus cs1 cs2
+  | MINUS -> list_cross constraint_minus cs1 cs2
+  | DIV | DIVRM -> list_flat_cross (constraint_divisions op) cs1 cs2
+  | MUL -> list_flat_cross constraint_mult cs1 cs2
+  | SHR -> list_flat_cross constraint_shr cs1 cs2
+  | MOD -> List.map constraint_mod cs2
+  | SHL -> list_flat_cross constraint_shl cs1 cs2
+  | POW -> list_flat_cross constraint_pow cs1 cs2
+  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | RDIV ->
+      assert false
 (* End *)
 
 type strictness = [ `Silence | `Warn | `TypeCheck ]
@@ -290,10 +355,11 @@ module Make (C : CONFIG) = struct
     |> list_remove_duplicates (constraint_equal (StaticModel.equal_in_env env))
   (* End *)
 
+  (** [binop_is_exploding op] returns [true] if [constraint_binop op] looses
+      precision on intervals. *)
   let binop_is_exploding = function
-    | MUL | SHL | POW -> true
-    | DIV | DIVRM -> (* general case loses too much precision *) true
-    | PLUS | MINUS | MOD | SHR -> false
+    | PLUS | MINUS -> false
+    | MUL | SHL | POW | DIV | DIVRM | MOD | SHR -> true
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false
