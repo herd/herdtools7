@@ -544,3 +544,10 @@ let normalize_to_bool_opt env e =
     then Some false
     else None
   with NotSupported -> None
+
+(* Begin ReduceToZOpt *)
+let reduce_to_z_opt env e =
+  match (try_normalize env e).desc with
+  | E_Literal (L_Int z) -> Some z
+  | _ -> None
+(* End *)

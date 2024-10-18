@@ -62,59 +62,6 @@ let reduce_constants env e =
     unsupported_expr e |: TypingRule.ReduceConstants
 (* End *)
 
-(* Begin ReduceToZOpt *)
-let reduce_to_z_opt env e =
-  match (StaticModel.try_normalize env e).desc with
-  | E_Literal (L_Int z) -> Some z
-  | _ -> None
-(* End *)
-
-(* Begin ReduceConstraint *)
-let reduce_constraint env = function
-  | Constraint_Exact e -> Constraint_Exact (StaticModel.try_normalize env e)
-  | Constraint_Range (e1, e2) ->
-      Constraint_Range
-        (StaticModel.try_normalize env e1, StaticModel.try_normalize env e2)
-(* End *)
-
-let list_remove_duplicates eq =
-  let rec aux prev acc = function
-    | [] -> List.rev acc
-    | x :: li -> if eq prev x then aux prev acc li else aux x (x :: acc) li
-  in
-  function [] -> [] | x :: li -> aux x [ x ] li
-
-let simplify_static_constraints =
-  let module DZ = Diet.Z in
-  let acc_diet (diet, non_static) = function
-    | Constraint_Exact e as c -> (
-        match e.desc with
-        | E_Literal (L_Int z) -> (DZ.(add Interval.(make z z) diet), non_static)
-        | _ -> (diet, c :: non_static))
-    | Constraint_Range (e1, e2) as c -> (
-        match (e1.desc, e2.desc) with
-        | E_Literal (L_Int z1), E_Literal (L_Int z2) when Z.leq z1 z2 ->
-            DZ.(add Interval.(make z1 z2) diet, non_static)
-        | _ -> (diet, c :: non_static))
-  in
-  let constraint_of_interval interval =
-    let x = DZ.Interval.x interval and y = DZ.Interval.y interval in
-    if Z.equal x y then Constraint_Exact (expr_of_z x)
-    else Constraint_Range (expr_of_z x, expr_of_z y)
-  in
-  fun constraints ->
-    let diet, non_static = List.fold_left acc_diet (DZ.empty, []) constraints in
-    DZ.fold
-      (fun interval acc -> constraint_of_interval interval :: acc)
-      diet non_static
-
-(* Begin ReduceConstraints *)
-let reduce_constraints env constraints =
-  List.map (reduce_constraint env) constraints
-  |> simplify_static_constraints |> List.sort compare
-  |> list_remove_duplicates (constraint_equal (StaticModel.equal_in_env env))
-(* End *)
-
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
 (* Begin SlicesWidth *)
@@ -387,6 +334,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   open Property (C)
   module Fn = FunctionRenaming (C)
 
+  module SOp = StaticOperations.Make (struct
+    include C
+
+    let fail () = assumption_failed ()
+  end)
+
   (* Begin ShouldReduceToCall *)
   let should_reduce_to_call env name st =
     match IMap.find_opt name env.global.overloaded_subprograms with
@@ -406,7 +359,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let module DI = Diet.Int in
     let exception NonStatic in
     let eval env e =
-      match reduce_to_z_opt env e with
+      match StaticModel.reduce_to_z_opt env e with
       | Some z -> Z.to_int z
       | None -> raise NonStatic
     in
@@ -625,232 +578,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       fatal_from loc (Error.UnreconciliableTypes (t1, t2))
   (* End *)
 
-  let binop_is_exploding = function
-    | MUL | SHL | POW -> true
-    | DIV | DIVRM -> (* general case loses too much precision *) true
-    | PLUS | MINUS | MOD | SHR -> false
-    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
-        assert false
-
-  (* Begin ExplodeIntervals *)
-  let explode_intervals =
-    let rec make_interval ~loc acc a b =
-      if Z.leq a b then
-        let eb = E_Literal (L_Int b) |> add_pos_from loc in
-        let acc' = Constraint_Exact eb :: acc in
-        make_interval ~loc acc' a (Z.pred b)
-      else acc
-    in
-    let[@warning "-44"] interval_too_large z1 z2 =
-      let open Z in
-      let max_interval_size = ~$1 lsl 14 in
-      Compare.(abs (z1 - z2) > max_interval_size)
-    in
-    let explode_constraint ~loc env = function
-      | Constraint_Exact _ as c -> [ c ]
-      | Constraint_Range (a, b) as c -> (
-          match (reduce_to_z_opt env a, reduce_to_z_opt env b) with
-          | Some za, Some zb ->
-              if interval_too_large za zb then
-                let () =
-                  EP.warn_from ~loc Error.(IntervalTooBigToBeExploded (za, zb))
-                in
-                [ c ]
-              else make_interval [] ~loc za zb
-          | _ -> [ c ])
-    in
-    fun ~loc env -> list_concat_map (explode_constraint ~loc env)
-  (* End *)
-
-  let e_zero = expr_of_int 0
-  let e_one = expr_of_int 1
-  let e_minus_one = expr_of_int ~-1
-  let c_range e1 e2 = Some (Constraint_Range (e1, e2))
-
-  let list_filter_map_modified f =
-    let rec aux (accu, flag) = function
-      | [] -> (List.rev accu, flag)
-      | x :: l -> (
-          match f x with
-          | None -> aux (accu, true) l
-          | Some v -> aux (v :: accu, v <> x || flag) l)
-    in
-    aux ([], false)
-
-  (* Begin RefineConstraintBySign *)
-  let refine_constraint_by_sign env sign_predicate = function
-    | Constraint_Exact e as c -> (
-        match reduce_to_z_opt env e with
-        | Some z when sign_predicate (Z.sign z) -> Some c
-        | Some _ -> None
-        | None -> Some c)
-    | Constraint_Range (e1, e2) as c -> (
-        match (reduce_to_z_opt env e1, reduce_to_z_opt env e2) with
-        | Some z1, Some z2 -> (
-            match (sign_predicate (Z.sign z1), sign_predicate (Z.sign z2)) with
-            | true, true -> Some c
-            | false, true ->
-                c_range (if sign_predicate 0 then e_zero else e_one) e2
-            | true, false ->
-                c_range e1 (if sign_predicate 0 then e_zero else e_minus_one)
-            | false, false -> None)
-        | None, Some z2 ->
-            if sign_predicate (Z.sign z2) then Some c
-            else c_range e1 (if sign_predicate 0 then e_zero else e_minus_one)
-        | Some z1, None ->
-            if sign_predicate (Z.sign z1) then Some c
-            else c_range (if sign_predicate 0 then e_zero else e_one) e2
-        | None, None -> Some c)
-  (* End *)
-
-  (* Begin RefineConstraints *)
-  let refine_constraints ~loc op filter constraints =
-    let pp_constraints f cs =
-      Format.fprintf f "@[<h>{%a}@]" PP.pp_int_constraints cs
-    in
-    let constraints', modified = list_filter_map_modified filter constraints in
-    match constraints' with
-    | [] ->
-        let () =
-          Format.eprintf
-            "@[%a:@ All@ values@ in@ constraints@ %a@ would@ fail@ with@ op \
-             %s,@ operation@ will@ always@ fail.@]@."
-            PP.pp_pos loc pp_constraints constraints
-            PP.(binop_to_string op)
-        in
-        assumption_failed ()
-    | _ ->
-        let () =
-          if modified then
-            EP.warn_from ~loc
-              Error.(
-                RemovingValuesFromConstraints
-                  { op; prev = constraints; after = constraints' })
-          else if false then
-            Format.eprintf "Unmodified for op %s: %a = %a@."
-              PP.(binop_to_string op)
-              pp_constraints constraints pp_constraints constraints'
-        in
-        constraints'
-  (* End *)
-
-  let filter_sign ~loc env op sign_predicate constraints =
-    refine_constraints ~loc op
-      (refine_constraint_by_sign env sign_predicate)
-      constraints
-
-  (* Begin BinopFilterRight *)
-
-  (** Filters out values from the right-hand-side operand of [op] that will definitely
-  result in a dynamic error. *)
-  let binop_filter_rhs ~loc env op =
-    match op with
-    | SHL | SHR | POW -> filter_sign ~loc env op @@ fun x -> x >= 0
-    | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
-    | MINUS | MUL | PLUS -> Fun.id
-    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
-        assert false
-  (* End *)
-
-  (* Begin FilterReduceConstraintDiv *)
-  let filter_reduce_constraint_div =
-    let get_literal_div_opt e =
-      match e.desc with
-      | E_Binop (DIV, a, b) -> (
-          match (a.desc, b.desc) with
-          | E_Literal (L_Int z1), E_Literal (L_Int z2) -> Some (z1, z2)
-          | _ -> None)
-      | _ -> None
-    in
-    function
-    | Constraint_Exact e as c -> (
-        match get_literal_div_opt e with
-        | Some (z1, z2) when Z.sign z2 != 0 ->
-            if Z.divisible z1 z2 then Some c else None
-        | _ -> Some c)
-    | Constraint_Range (e1, e2) as c -> (
-        let z1_opt =
-          match get_literal_div_opt e1 with
-          | Some (z1, z2) when Z.sign z2 != 0 ->
-              let zdiv, zmod = Z.ediv_rem z1 z2 in
-              let zres = if Z.sign zmod = 0 then zdiv else Z.succ zdiv in
-              Some zres
-          | _ -> None
-        and z2_opt =
-          match get_literal_div_opt e2 with
-          | Some (z1, z2) when Z.sign z2 != 0 -> Some (Z.ediv z1 z2)
-          | _ -> None
-        in
-        match (z1_opt, z2_opt) with
-        | Some z1, Some z2 ->
-            let () =
-              if false then
-                Format.eprintf "Reducing %a DIV %a@ got z1=%a and z2=%a@."
-                  PP.pp_expr e1 PP.pp_expr e2 Z.pp_print z1 Z.pp_print z2
-            in
-            if Z.equal z1 z2 then Some (Constraint_Exact (expr_of_z z1))
-            else if Z.leq z1 z2 then
-              Some (Constraint_Range (expr_of_z z1, expr_of_z z2))
-            else None
-        | Some z1, None -> Some (Constraint_Range (expr_of_z z1, e2))
-        | None, Some z2 -> Some (Constraint_Range (e1, expr_of_z z2))
-        | None, None -> Some c)
-
-  (* End *)
-
-  let refine_constraint_for_div ~loc op cs =
-    match op with
-    | DIV -> (
-        let res = List.filter_map filter_reduce_constraint_div cs in
-        match res with
-        | [] ->
-            let () =
-              Format.eprintf
-                "@[%a:@ Division@ will@ result@ in@ empty@ constraint@ set,@ \
-                 so@ will@ always@ fail.@]@."
-                PP.pp_pos loc
-            in
-            assumption_failed ()
-        | _ -> res)
-    | _ -> cs
-
-  (* Begin AnnotateConstraintBinop *)
-  let annotate_constraint_binop ~loc env op cs1 cs2 =
-    match op with
-    | SHL | SHR | POW | MOD | DIVRM | MINUS | MUL | PLUS | DIV ->
-        let cs2_f = binop_filter_rhs ~loc env op cs2 in
-        let () =
-          if false then
-            Format.eprintf
-              "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@."
-              (PP.binop_to_string op) PP.pp_int_constraints cs1
-              PP.pp_int_constraints cs2
-        in
-        let cs1_arg, cs2_arg =
-          if binop_is_exploding op then
-            (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2_f)
-          else (cs1, cs2_f)
-        in
-        let annotated_cs =
-          constraint_binop op cs1_arg cs2_arg
-          |> refine_constraint_for_div ~loc op
-          |> reduce_constraints env
-        in
-        let () =
-          if false then
-            Format.eprintf
-              "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
-              (PP.binop_to_string op) PP.pp_int_constraints cs1_arg
-              PP.pp_int_constraints cs2_arg PP.pp_int_constraints annotated_cs
-        in
-        annotated_cs
-    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
-        assert false
-  (* End *)
-
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc = function
     | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from loc
@@ -897,7 +624,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | WellConstrained cs1, WellConstrained cs2 -> (
             best_effort integer @@ fun _ ->
             try
-              let cs = annotate_constraint_binop ~loc env op cs1 cs2 in
+              let cs = SOp.annotate_constraint_binop ~loc env op cs1 cs2 in
               T_Int (WellConstrained cs) |> with_loc
             with TypingAssumptionFailed ->
               fatal_from loc (Error.BadTypesForBinop (op, t1, t2))))
@@ -1918,7 +1645,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let fatal_non_static e = fatal_from loc (Error.BaseValueNonStatic (t, e)) in
     let fatal_is_empty () = fatal_from loc (Error.BaseValueEmptyType t) in
     let reduce_to_z e =
-      match reduce_to_z_opt env e with
+      match StaticModel.reduce_to_z_opt env e with
       | None -> fatal_non_static e
       | Some i -> i
     in
@@ -2181,7 +1908,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |: TypingRule.LEBitSlice
         in
         let rev_les, rev_widths, _real_width =
-          List.fold_left annotate_lebitslice ([], [], e_zero) les
+          List.fold_left annotate_lebitslice ([], [], zero_expr) les
         in
         (* as the first check, we have _real_width == bv_length t_e *)
         let les1 = List.rev rev_les and widths = List.rev rev_widths in
