@@ -30,6 +30,8 @@ module type A = sig
   val pteval_sets : (string * (V.Cst.PteVal.t -> bool)) list
   val dirty_sets : (string * (DirtyBit.my_t -> V.Cst.PteVal.t -> bool)) list
 
+  val is_sysdirect_annot : lannot -> bool
+
   val is_atomic : lannot -> bool
   val is_isync : barrier -> bool
   val pp_isync : string
@@ -437,12 +439,50 @@ end = struct
   | Access (_,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
 
+  let is_sysreg_any a = match a with
+  | Access (_,A.Location_reg (_, r),_,_,_,_,_) -> A.is_sysreg r
+  | _ -> false
+
   let is_reg_store_any a = match a with
   | Access (W,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
 
+  let is_spsysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_,_) -> A.is_spsysreg r
+  | _ -> false
+
+  let is_non_sp_sysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_,_) -> A.is_non_sp_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_,_) -> not (A.is_sysreg r)
+  | _ -> false
+
   let is_reg_load_any a = match a with
   | Access (R,A.Location_reg _,_,_,_,_,_) -> true
+  | _ -> false
+
+  let is_spsysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_,_) -> A.is_spsysreg r
+  | _ -> false
+
+  let is_non_sp_sysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_,_) -> A.is_non_sp_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_,_) -> not (A.is_sysreg r)
+  | _ -> false
+
+  let is_sys_direct = function
+  | Access (_,A.Location_reg (_, r),_,annot,_,_,_)
+    when A.is_sysreg r -> A.is_sysdirect_annot annot
+  | _ -> false
+
+  let is_sys_indirect = function
+  | Access (_,A.Location_reg (_, r),_,annot,_,_,_)
+    when A.is_sysreg r -> not (A.is_sysdirect_annot annot)
   | _ -> false
 
 (* Barriers *)
@@ -565,6 +605,9 @@ end = struct
     ("T",is_tag)::
     ("TLBI",is_inv)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
+    ("SysReg", is_sysreg_any)::
+    ("SysDirect", is_sys_direct)::
+    ("SysIndirect", is_sys_indirect)::
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::

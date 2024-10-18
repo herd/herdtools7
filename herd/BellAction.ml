@@ -153,7 +153,6 @@ end = struct
   | Access (_,A.Location_reg (q,_),_,_,_,_) -> p = q
   | _ -> false
 
-
 (* Store/Load anywhere *)
   let is_store a = match a with
   | Access (W,_,_,_,_,_) -> true
@@ -167,12 +166,40 @@ end = struct
   | Access (_,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
 
+  let is_sysreg_any a = match a with
+  | Access (_,A.Location_reg (_, r),_,_,_,_) -> A.is_sysreg r
+  | _ -> false
+
   let is_reg_store_any a = match a with
   | Access (W,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
 
+  let is_spsysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_) -> A.is_spsysreg r
+  | _ -> false
+
+  let is_non_sp_sysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_) -> A.is_non_sp_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_) -> not (A.is_sysreg r)
+  | _ -> false
+
   let is_reg_load_any a = match a with
   | Access (R,A.Location_reg _,_,_,_,_) -> true
+  | _ -> false
+
+  let is_spsysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_) -> A.is_spsysreg r
+  | _ -> false
+
+  let is_non_sp_sysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_) -> A.is_non_sp_sysreg r
+  | _ -> false
+
+  let is_non_sysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_) -> not (A.is_sysreg r)
   | _ -> false
 
   let compatible_accesses a1 a2 =

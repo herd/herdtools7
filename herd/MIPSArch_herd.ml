@@ -29,6 +29,7 @@ module Make
     let get_machsize _ = V.Cst.Scalar.machsize
 
     let empty_annot = false
+    let is_sysdirect_annot _ = false
     let is_atomic annot = annot
 
     let ifetch_value_sets = []
@@ -69,6 +70,7 @@ module Make
           let fromto_of_instr _ = None
 
           let get_val _ v = v
+          let is_non_sp_sysreg = MIPSBase.is_non_sp_sysreg
 
           module FaultType=FaultType.No
 	end)

@@ -111,8 +111,15 @@ val same_instance : event -> event -> bool
 
 (* Reg events, proc not specified *)
   val is_reg_store_any : event -> bool
+  val is_spsysreg_store_any : event -> bool
+  val is_non_sp_sysreg_store_any : event -> bool
+  val is_non_sysreg_store_any : event -> bool
   val is_reg_load_any : event -> bool
+  val is_spsysreg_load_any : event -> bool
+  val is_non_sp_sysreg_load_any : event -> bool
+  val is_non_sysreg_load_any : event -> bool
   val is_reg_any : event -> bool
+  val is_sysreg_any : event -> bool
 
 (* Store/Load to memory or register *)
   val is_store : event -> bool
@@ -698,8 +705,15 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_store e = Act.is_store e.action
     let is_load e = Act.is_load e.action
     let is_reg_any e = Act.is_reg_any e.action
+    let is_sysreg_any e = Act.is_sysreg_any e.action
     let is_reg_store_any e = Act.is_reg_store_any e.action
+    let is_spsysreg_store_any e = Act.is_spsysreg_store_any e.action
+    let is_non_sp_sysreg_store_any e = Act.is_non_sp_sysreg_store_any e.action
+    let is_non_sysreg_store_any e = Act.is_non_sysreg_store_any e.action
     let is_reg_load_any e = Act.is_reg_load_any e.action
+    let is_spsysreg_load_any e = Act.is_spsysreg_load_any e.action
+    let is_non_sp_sysreg_load_any e = Act.is_non_sp_sysreg_load_any e.action
+    let is_non_sysreg_load_any e = Act.is_non_sysreg_load_any e.action
 
 (* Compatible events ie accesses of the same category *)
     let compatible_accesses e1 e2 =
