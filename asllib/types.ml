@@ -259,7 +259,8 @@ module Domain = struct
     | FromSyntax _, Finite is2 ->
         let s2 = int_set_to_int_constraints is2 in
         int_set_raise_interval_op fop op is1 (FromSyntax s2)
-    | FromSyntax s1, FromSyntax s2 -> FromSyntax (constraint_binop op s1 s2)
+    | FromSyntax s1, FromSyntax s2 ->
+        FromSyntax (StaticOperations.constraint_binop op s1 s2)
 
   (* End *)
 

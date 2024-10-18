@@ -148,6 +148,12 @@ val expr_of_z : Z.t -> expr
 val zero_expr : expr
 (** The integer literal for [0]. *)
 
+val one_expr : expr
+(** The integer literal for [1]. *)
+
+val minus_one_expr : expr
+(** The integer literal for [-1]. *)
+
 val expr_of_rational : Q.t -> expr
 (** [expr_of_rational q] is the rational literal for [q]. *)
 
@@ -178,11 +184,6 @@ val global_ignored : unit -> identifier
 
 val is_global_ignored : identifier -> bool
 (** [is_global_ignored s] is true iff [s] has been created with [global_ignored ()]. *)
-
-val constraint_binop :
-  binop -> int_constraint list -> int_constraint list -> int_constraint list
-(** [constraint_binop PLUS cs1 cs2] is the set of constraints given by the
-    element wise application of [PLUS], if it can be computed. *)
 
 (** {1 Fields, masks and slices handling} *)
 
@@ -313,6 +314,10 @@ val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
 val list_cross : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [list_cross f [a1; ... an] [b1; ... bm]] is the list of all [f ai bj] in a
     non-specified order. *)
+
+val list_flat_cross : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
+(** [list_flat_cross f [a1; ... an] [b1; ... bm]] is the concatenation of all
+    [f ai bj] in a non-specified order. *)
 
 val list_concat_map : ('a -> 'b list) -> 'a list -> 'b list
 (** [list_concat_map f l] gives the same result as
