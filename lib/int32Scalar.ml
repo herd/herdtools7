@@ -17,6 +17,7 @@
 include Int32
 
 let unique_zero = true
+let is_zero = equal 0l
 
 let printable c = c
 
