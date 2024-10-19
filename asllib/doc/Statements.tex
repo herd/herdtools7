@@ -436,8 +436,7 @@ One of the following applies:
   \item All of the following apply (\textsc{var}):
   \begin{itemize}
     \item $\ldi$ corresponds to a variable declaration for $\vx$, that is, $\LDIVar(\vx)$;
-    \item define $\newtenv$ and the environment $\tenv$ with its global component updated by binding
-          $\vx$ to $\vv$ in its $\constantvalues$ map.
+    \item applying $\addlocalconstant$ to $\vx$ and $\vv$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
   \item All of the following apply (\textsc{tuple}):
@@ -461,7 +460,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[var]{
-  \newtenv \eqdef (G^\tenv, L^\tenv.\constantvalues[\vx \mapsto \vv])
+  \addlocalconstant(\tenv, \vx, \vv) \typearrow \newtenv
 }{
   \declarelocalconstant(\tenv, \vv, \overname{\LDIVar(\vx)}{\ldi}) \typearrow \newtenv
 }

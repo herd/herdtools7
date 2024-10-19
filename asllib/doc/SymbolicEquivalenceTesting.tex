@@ -240,7 +240,6 @@ One of the following applies:
   \normalize(\tenv, \ve) \typearrow \overname{\ve}{\newe}
 }
 \end{mathpar}
-
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
 
 \subsection{TypingRule.ReduceConstants \label{sec:TypingRule.ReduceConstants}}
@@ -403,8 +402,6 @@ the special value $\CannotBeTransformed$ is returned.
 \subsubsection{Prose}
 Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
 
-\newcommand\ProseOrTypeErrorOrBot[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
-
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{literal\_int}):
@@ -432,7 +429,8 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields $\bot$;
-    \item looking up $\vs$ in $\tenv$ for an associated immutable expression via $\lookupimmutableexpr$ yields the expression $\vep$;
+    \item looking up $\vs$ in $\tenv$ for an associated immutable expression via \\
+          $\lookupimmutableexpr$ yields the expression $\vep$;
     \item applying $\toir$ to $\vep$ in $\tenv$ yields $\vp$.
   \end{itemize}
 
@@ -565,9 +563,15 @@ One of the following applies:
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{ATC}):
+  \begin{itemize}
+    \item $\ve$ is an asserting type conversion for the sub-expression $\vep$, that is, $\\EATC(\vep, \Ignore)$;
+    \item applying $\toir$ to $\vep$ yields $\vp$\ProseOrTypeErrorOrBot.
+  \end{itemize}
+
   \item All of the following apply (\textsc{other}):
   \begin{itemize}
-    \item $\ve$ is an expression with a label other than $\ELiteral$, $\EVar$, $\EBinop$, and $\EUnop$;
+    \item $\ve$ is an expression with a label other than $\ELiteral$, $\EVar$, $\EBinop$, $\EUnop$, and $\EATC$;
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 \end{itemize}
@@ -738,7 +742,9 @@ One of the following applies:
 }{
   \toir(\tenv, \overname{\EUnop(\NEG, \veone)}{\ve}) \typearrow \vp
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[eunop\_other]{
   \op \neq \NEG
 }{
@@ -747,12 +753,21 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[atc]{
+  \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+}{
+  \toir(\tenv, \overname{\EATC(\vep, \Ignore)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[other]{
-  \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EBinop, \EUnop\}
+  \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EBinop, \EUnop, \EATC\}
 }{
   \toir(\tenv, \ve) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
+\CodeSubsection{\ToIRBegin}{\ToIREnd}{../StaticModel.ml}
 
 \subsection{TypingRule.ExprEqualNorm \label{sec:TypingRule.ExprEqualNorm}}
 \hypertarget{def-exprequalnorm}{}
@@ -1243,8 +1258,6 @@ One of the following applies:
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
-
-%   | E_Pattern _, _ | E_Record _, _ -> assert false
 
 \subsection{TypingRule.TypeEqual \label{sec:TypingRule.TypeEqual}}
 \hypertarget{def-typeequal}{}

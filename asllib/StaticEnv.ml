@@ -22,6 +22,9 @@
 
 open AST
 open ASTUtils
+module TypingRule = Instrumentation.TypingRule
+
+let ( |: ) = Instrumentation.TypingNoInstr.use_with
 
 type global = {
   declared_types : ty IMap.t;
@@ -195,6 +198,7 @@ let add_type x ty env =
       };
   }
 
+(* Begin AddLocalConstant *)
 let add_local_constant name v env =
   {
     env with
@@ -204,9 +208,12 @@ let add_local_constant name v env =
         constant_values = IMap.add name v env.local.constant_values;
       };
   }
+(* End *)
 
+(* Begin AddGlobalConstant *)
 let add_global_constant name v (genv : global) =
   { genv with constant_values = IMap.add name v genv.constant_values }
+(* End *)
 
 let add_local x ty ldk env =
   let () =
@@ -221,6 +228,7 @@ let add_local x ty ldk env =
       };
   }
 
+(* Begin AddLocalImmutableExpr *)
 let add_local_immutable_expr x e env =
   let () =
     if false then Format.eprintf "Adding to env %S <- %a@." x PP.pp_expr e
@@ -229,7 +237,10 @@ let add_local_immutable_expr x e env =
     env with
     local = { env.local with expr_equiv = IMap.add x e env.local.expr_equiv };
   }
+  |: TypingRule.AddLocalImmutableExpr
+(* End *)
 
+(* Begin AddGlovalImmutableExpr *)
 let add_global_immutable_expr x e env =
   let () =
     if false then Format.eprintf "Adding to env %S <- %a@." x PP.pp_expr e
@@ -238,6 +249,8 @@ let add_global_immutable_expr x e env =
     env with
     global = { env.global with expr_equiv = IMap.add x e env.global.expr_equiv };
   }
+  |: TypingRule.AddGlobalImmutableExpr
+(* End *)
 
 let add_subtype s t env =
   {

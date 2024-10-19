@@ -232,7 +232,6 @@
 \newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{def-strings}{\mathbb{S}}}
 \newcommand\astlabels[0]{\hyperlink{def-astlabels}{\mathbb{L}}}
-\newcommand\literals[0]{\mathcal{L}}
 
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}(#1)}
@@ -1083,6 +1082,8 @@
 \newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
 \newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
 \newcommand\lookupimmutableexpr[0]{\hyperlink{def-lookupimmutableexpr}{\textfunc{lookup\_immutable\_expr}}}
+\newcommand\addglobalimmutableexpr[0]{\hyperlink{def-addglobalimmutableexpr}{\textfunc{add\_global\_immutable\_expr}}}
+\newcommand\addlocalimmutableexpr[0]{\hyperlink{def-addlocalimmutableexpr}{\textfunc{add\_local\_immutable\_expr}}}
 \newcommand\addimmutableexpr[0]{\hyperlink{def-addimmutableexpr}{\textfunc{add\_immutable\_expr}}}
 \newcommand\scanforparams[0]{\hyperlink{def-scanforparams}{\textfunc{scan\_for\_params}}}
 \newcommand\annotateparams[0]{\hyperlink{def-annotateparams}{\textfunc{annotate\_params}}}
@@ -1093,9 +1094,12 @@
 \newcommand\annotateexpropt[0]{\hyperlink{def-annotateexpropt}{\textfunc{annotate\_expr\_opt}}}
 \newcommand\annotateinittype[0]{\hyperlink{def-annotateinittype}{\textfunc{annotate\_init\_type}}}
 \newcommand\addglobalstorage[0]{\hyperlink{def-addglobalstorage}{\textfunc{add\_global\_storage}}}
+\newcommand\updateglobalstorage[0]{\hyperlink{def-updateglobalstorage}{\textfunc{update\_global\_storage}}}
 \newcommand\annotateextrafields[0]{\hyperlink{def-annotateextrafields}{\textfunc{annotate\_extra\_fields}}}
 \newcommand\declareenumlabels[0]{\hyperlink{def-annotateenumlabels}{\textfunc{declare\_enum\_labels}}}
 \newcommand\declareconst[0]{\hyperlink{def-declareconst}{\textfunc{declare\_const}}}
+\newcommand\addlocalconstant[0]{\hyperlink{def-addlocalconstant}{\textfunc{add\_local\_constant}}}
+\newcommand\addglobalconstant[0]{\hyperlink{def-addglobalconstant}{\textfunc{add\_global\_constant}}}
 \newcommand\annotateparamtype[0]{\hyperlink{def-annotateparamtype}{\textfunc{annotate\_param\_type}}}
 \newcommand\annotateargs[0]{\hyperlink{def-annotateargs}{\textfunc{annotate\_args}}}
 \newcommand\annotateonearg[0]{\hyperlink{def-annotateonearg}{\textfunc{annotate\_one\_arg}}}
@@ -1156,6 +1160,7 @@
 \newcommand\symsubsumes[0]{\hyperlink{def-symsubsumes}{\textfunc{sym\_subsumes}}}
 
 \newcommand\toir[0]{\hyperlink{def-toir}{\textfunc{to\_ir}}}
+\newcommand\ProseOrTypeErrorOrBot[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
 \newcommand\unitarymonomial[0]{\hyperlink{def-unitarymonomial}{\textsf{unitary\_monomial}}}
 \newcommand\monomial[0]{\hyperlink{def-monomial}{\textsf{monomial}}}
 \newcommand\polynomial[0]{\hyperlink{def-polynomial}{\textsf{polynomial}}}
@@ -1644,6 +1649,7 @@
 \newcommand\funcsigp[0]{\texttt{func\_sig'}}
 \newcommand\gdk[0]{\texttt{gdk}}
 \newcommand\genv[0]{\texttt{genv}}
+\newcommand\genvone[0]{\texttt{genv1}}
 \newcommand\gsd[0]{\texttt{gsd}}
 \newcommand\gsdp[0]{\texttt{gsd'}}
 \newcommand\icsdown[0]{\texttt{ics\_down}}

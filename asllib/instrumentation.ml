@@ -469,6 +469,10 @@ module TypingRule = struct
     | SymIntSetSubset
     | SyDomIsSubset
     | LEBitSlice
+    | AddLocalImmutableExpr
+    | AddGlobalImmutableExpr
+    | DeclareConst
+    | AddGlobalStorage
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -631,6 +635,10 @@ module TypingRule = struct
     | SymIntSetSubset -> "SymIntSetSubset"
     | SyDomIsSubset -> "SyDomIsSubset"
     | LEBitSlice -> "LEBitSlice"
+    | AddLocalImmutableExpr -> "AddLocalImmutableExpr"
+    | AddGlobalImmutableExpr -> "AddLocalImmutableExpr"
+    | DeclareConst -> "DeclareConst"
+    | AddGlobalStorage -> "AddGlobalStorage"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -775,6 +783,10 @@ module TypingRule = struct
       SymIntSetSubset;
       SyDomIsSubset;
       LEBitSlice;
+      AddLocalImmutableExpr;
+      AddGlobalImmutableExpr;
+      DeclareConst;
+      AddGlobalStorage;
     ]
 
   let all_nb = List.length all

@@ -412,6 +412,7 @@ let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
       | None -> fatal_from ty (Error.UndefinedIdentifier x))
   | _ -> ty
 
+(* Begin ToIR *)
 let rec to_ir env (e : expr) =
   let of_lit = function L_Int i -> IR.of_int i | _ -> raise NotSupported in
   match e.desc with
@@ -470,6 +471,7 @@ let rec to_ir env (e : expr) =
       IR.combine ir1' ir2'
   | E_ATC (e', _) -> to_ir env e'
   | _ -> raise NotSupported
+(* End *)
 
 and to_cond env (e : expr) : Conjunction.t list * Conjunction.t list =
   let ( ||| ) = ( @ ) and ( &&& ) = ASTUtils.list_cross Conjunction.conj in

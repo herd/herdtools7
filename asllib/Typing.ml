@@ -981,14 +981,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let var_in_env env x =
     IMap.mem x env.local.storage_types || var_in_genv env.global x
 
+  (* Begin CheckVarNotInEnv *)
   let check_var_not_in_env loc env x () =
     if var_in_env env x then fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
+  (* End *)
 
+  (* Begin CheckVarNotInGEnv *)
   let check_var_not_in_genv loc genv x () =
     if var_in_genv genv x then
       fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
+  (* End *)
 
   (* Begin GetVariableEnum *)
   let get_variable_enum' env e =
@@ -1329,7 +1333,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* End *))
 
   (* Begin AnnotateCall *)
-
   and annotate_call loc env name args eqs call_type =
     let () = assert (List.length eqs == 0) in
     let () =
@@ -2877,15 +2880,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     declare_one_func loc func_sig1 env1 |: TypingRule.AnnotateAndDeclareFunc
   (* End *)
 
+  (* Begin AddGlobalStorage *)
   let add_global_storage loc name keyword genv ty =
     if is_global_ignored name then genv
     else
       let+ () = check_var_not_in_genv loc genv name in
-      add_global_storage name ty keyword genv
+      add_global_storage name ty keyword genv |: TypingRule.AddGlobalStorage
+  (* End *)
 
+  (* Begin DeclareConst *)
   let declare_const loc name t v genv =
     add_global_storage loc name GDK_Constant genv t
-    |> add_global_constant name v
+    |> add_global_constant name v |: TypingRule.DeclareConst
+  (* End *)
 
   (* Begin DeclareType *)
   let declare_type loc name ty s genv =
@@ -2975,6 +2982,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let genv1 = add_global_storage loc name keyword genv declared_t in
     let env1 = with_empty_local genv1 in
+    (* UpdateGlobalStorage( *)
     let env2 =
       match (keyword, initial_value') with
       | GDK_Constant, Some e -> try_add_global_constant name env1 e
@@ -2984,6 +2992,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | (GDK_Constant | GDK_Let), None ->
           Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
+      (* UpdateGlobalStorage) *)
     in
     let () = assert (env2.local == empty_local) in
     ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2.global)

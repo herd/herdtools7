@@ -813,7 +813,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \checknoduplicates(\vli) \typearrow \True \OrTypeError\\\\
-  \vl \in \vli: \checkvarnotingenv{\tenv, \vl} \typearrow \True \OrTypeError
+  \vl \in \vli: \checkvarnotingenv{G^\tenv, \vl} \typearrow \True \OrTypeError
 }{
   \annotatetype{\True, \tenv, \TEnum(\vli)} \typearrow \TEnum(\vli)
 }
