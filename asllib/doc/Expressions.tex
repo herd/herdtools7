@@ -186,60 +186,71 @@ The identifier stands for either a storage element or the name of a getter with 
 \subsection{Typing}
 \subsubsection{TypingRule.EVar \label{sec:TypingRule.EVar}}
 \subsubsection{Prose}
-One of the following applies:
+All of the following apply:
 \begin{itemize}
-  \item All of the following apply (\textsc{local\_constant}):
+  \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+  \item One of the following applies:
   \begin{itemize}
-  \item $\ve$ denotes a local variable $\vx$;
-  \item $\vx$ is bound to a local constant $\vv$ of type $\vt$ in the local environment given by $\tenv$;
-  \item $\newe$ is the Literal $\vv$.
-  \end{itemize}
+    \item All of the following apply (\textsc{empty\_getter}):
+    \begin{itemize}
+    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item applying $\annotatecall$ to $\vx$, an empty list of arguments $\emptylist$, and \\
+          $\STEmptyGetter$ yields $(\name, \vargs, \eqs, \langle\vt\rangle)$\ProseOrTypeError;
+    \item define $\newe$ as the call expression for $\name$, list of arguemnts $\vargs$, and list of parameter equalities $\eqs$,
+          that is, $\ECall(\name, \vargs, \eqs)$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{local\_non\_constant}):
-  \begin{itemize}
-  \item $\ve$ denotes a local variable $\vx$;
-  \item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
-  \item $\vx$ has type $\vt$ in the local environment given by $\tenv$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+    \item All of the following apply (\textsc{local\_constant}):
+    \begin{itemize}
+    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+    \item $\vx$ is bound to the type $\vt$ and local declaration keyword $\LDKConstant$
+          via the $\localstoragetypes$ map of the local environment component of $\tenv$;
+    \item applying $\lookupconstants$ to $\vx$ in $\tenv$ yields $\vv$;
+    \item $\newe$ is the literal expression for $\vv$, that is $\eliteral{\vv}$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{global\_constant\_val}):
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is bound to a constant $\vv$ of type $\tty$ in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is the Literal for $\vv$.
-  \end{itemize}
+    \item All of the following apply (\textsc{local\_non\_constant}):
+    \begin{itemize}
+    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+    \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$
+          via the \\
+          $\localstoragetypes$ map of the local environment component of $\tenv$;
+    \item either $k$ is different from $\LDKConstant$ or applying $\lookupconstants$ to $\vx$ in $\tenv$ yields $\bot$;
+    \item define $\newe$ as $\ve$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{global\_constant\_no\_val}):
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is not bound to constant in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+    \item All of the following apply (\textsc{global\_constant}):
+    \begin{itemize}
+    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+    \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
+    \item $\vx$ is bound to $(\tty, \GDKConstant)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
+    \item $\vx$ is bound to $\vv$ via the $\constantvalues$ map of the global component of $\tenv$;
+    \item define $newe$ as the literal expression for $\vv$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{global\_var}):
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is not bound to a global constant;
-  \item $\vx$ has type $\tty$ in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+    \item All of the following apply (\textsc{global\_non\_constant}):
+    \begin{itemize}
+      \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+      \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
+      \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
+      \item either $\vx$ is not bound in the $\constantvalues$ map of the global component of $\tenv$ or $k$ is not $\GDKConstant$;
+      \item define $newe$ as $\ve$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{error\_undefined}):
-  \begin{itemize}
-  \item $\ve$ is a variable $\vx$;
-  \item $\vx$ is not bound to a type in $\tenv$;
-  \item the result is a type error indicating that $\vx$ is an undefined identifier.
+    \item All of the following apply (\textsc{error\_undefined}):
+    \begin{itemize}
+      \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+      \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
+      \item $\vx$ is not bound via the $\globalstoragetypes$ map of the local component of $\tenv$;
+      \item the result is a type error indicating that $\vx$ is an undefined identifier ($\UndefinedIdentifier$).
+    \end{itemize}
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty\_getter]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \True\\
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \True\OrTypeError\\\\
   \annotatecall(\tenv, \vx, \emptylist, \STEmptyGetter) \typearrow (\name, \vargs, \eqs, \langle\vt\rangle) \OrTypeError\\
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\ECall(\name, \vargs, \eqs)}{\newe})
@@ -249,8 +260,8 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[local\_constant]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
-  L^\tenv.\constantvalues(\vx) = \vv\\
-  L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)
+  L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)\\
+  \lookupconstants(\tenv, \vx) \typearrow \vv
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\eliteral{\vv}}{\newe})
 }
@@ -259,50 +270,40 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[local\_non\_constant]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
-  L^\tenv.\constantvalues(\vx) = \bot\\
   L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
-  k \in \{\LDKVar, \LDKLet\}
+  \lookupconstants(\tenv, \vx) \typearrow \bot \lor k \neq \LDKConstant
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe})
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[global\_constant\_val]{
+\inferrule[global\_constant]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
   G^\tenv.\constantvalues(\vx) = \vv
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\tty, \overname{\eliteral{\vv}}{\newe})
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[global\_constant\_no\_val]{
+\inferrule[global\_non\_constant]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
-  G^\tenv.\constantvalues(\vx) = \bot
+  G^\tenv.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[global\_var]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
-  G^\tenv.\constantvalues(\vx) = \bot\\
-  G^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
-  k \neq \GDKConstant
-}{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\tty, \overname{\EVar(\vx)}{\newe})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[error\_undefined]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
-  G^\tenv.\globalstoragetypes(\vx) = \bot\\
-  L^\tenv.\globalstoragetypes(\vx) = \bot\\
+  L^\tenv.\localstoragetypes(\vx) = \bot \\
+  G^\tenv.\globalstoragetypes(\vx) = \bot
 }{
   \annotateexpr{\tenv,\overname{\EVar(\vx)}{\ve}} \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
@@ -314,7 +315,7 @@ function calls) to global constant variables.
 \CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.EVar \label{sec:SemanticsRule.EVar}}
+\subsubsection{SemanticsRule.EVar\label{sec:SemanticsRule.EVar}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}

@@ -1078,6 +1078,7 @@
 \newcommand\annotatefuncsig[0]{\hyperlink{def-annotatefuncsig}{\textfunc{annotate\_func\_sig}}}
 \newcommand\declareonefunc[0]{\hyperlink{def-declareonefunc}{\textfunc{declare\_one\_func}}}
 \newcommand\checksetterhasgetter[0]{\hyperlink{def-checksetterhashgetter}{\textfunc{check\_setter\_has\_getter}}}
+\newcommand\withemptylocal[0]{\hyperlink{def-withemptylocal}{\textfunc{with\_empty\_local}}}
 \newcommand\addnewfunc[0]{\hyperlink{def-addnewfunc}{\textfunc{add\_new\_func}}}
 \newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
 \newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
@@ -1099,6 +1100,7 @@
 \newcommand\declareenumlabels[0]{\hyperlink{def-annotateenumlabels}{\textfunc{declare\_enum\_labels}}}
 \newcommand\declareconst[0]{\hyperlink{def-declareconst}{\textfunc{declare\_const}}}
 \newcommand\addlocalconstant[0]{\hyperlink{def-addlocalconstant}{\textfunc{add\_local\_constant}}}
+\newcommand\lookupconstants[0]{\hyperlink{def-lookupconstants}{\textfunc{lookup\_constants}}}
 \newcommand\addglobalconstant[0]{\hyperlink{def-addglobalconstant}{\textfunc{add\_global\_constant}}}
 \newcommand\annotateparamtype[0]{\hyperlink{def-annotateparamtype}{\textfunc{annotate\_param\_type}}}
 \newcommand\annotateargs[0]{\hyperlink{def-annotateargs}{\textfunc{annotate\_args}}}
@@ -1160,20 +1162,21 @@
 \newcommand\symsubsumes[0]{\hyperlink{def-symsubsumes}{\textfunc{sym\_subsumes}}}
 
 \newcommand\toir[0]{\hyperlink{def-toir}{\textfunc{to\_ir}}}
-\newcommand\ProseOrTypeErrorOrBot[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
+\newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
 \newcommand\unitarymonomial[0]{\hyperlink{def-unitarymonomial}{\textsf{unitary\_monomial}}}
 \newcommand\monomial[0]{\hyperlink{def-monomial}{\textsf{monomial}}}
 \newcommand\polynomial[0]{\hyperlink{def-polynomial}{\textsf{polynomial}}}
 \newcommand\addpolynomials[0]{\hyperlink{def-addpolynomials}{\textfunc{add\_polynomials}}}
 \newcommand\mulpolynomials[0]{\hyperlink{def-mulpolynomials}{\textfunc{mul\_polynomials}}}
 \newcommand\mulmonomials[0]{\hyperlink{def-mulmonomials}{\textfunc{mul\_monomials}}}
+\newcommand\polynomialdividebyterm[0]{\tododefine{polynomial\_divide\_by\_term}}
 
 \newcommand\declaredtype[0]{\hyperlink{def-declaredtype}{\textfunc{declared\_type}}}
 
 \newcommand\fieldnames[0]{\hyperlink{def-fieldnames}{\textfunc{field\_names}}}
 \newcommand\fieldtype[0]{\hyperlink{def-fieldtype}{\textfunc{field\_type}}}
 
-\newcommand\eliteral[1]{\textsf{E\_Literal}(#1)}
+\newcommand\eliteral[1]{\ELiteral(#1)}
 
 % An expression that we do not statically evaluate.
 \newcommand\CannotBeTransformed[0]{\hyperlink{def-unsupportedexpression}{\top}}
@@ -1954,6 +1957,7 @@
 \newcommand\vdeclitems[0]{\texttt{decls\_items}}
 \newcommand\vdecls[0]{\texttt{decls}}
 \newcommand\vdiff[0]{\texttt{v\_diff}}
+\newcommand\vdir[0]{\texttt{dir}}
 \newcommand\vdirection[0]{\texttt{direction}}
 \newcommand\vdone[0]{\texttt{d1}}
 \newcommand\vdtwo[0]{\texttt{d2}}
@@ -2084,6 +2088,7 @@
 \newcommand\vmlist[0]{\texttt{vm\_list}}
 \newcommand\vmlistone[0]{\texttt{vm\_list1}}
 \newcommand\vmone[0]{\texttt{m1}}
+\newcommand\vmono[0]{\texttt{mono}}
 \newcommand\vms[0]{\texttt{vms}}
 \newcommand\vmsone[0]{\texttt{vms1}}
 \newcommand\vmstwo[0]{\texttt{vms2}}

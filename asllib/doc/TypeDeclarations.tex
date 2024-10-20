@@ -218,7 +218,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[enum]{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
-  \tenv \eqdef (\genv, L^{\emptytenv})\\\\
+  \withemptylocal(\genv) \typearrow \tenv\\\\
   \commonprefixline\\\\
   \annotateextrafields(\tenv, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow \vttwo \OrTypeError\\\\
@@ -233,7 +233,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[not\_enum]{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
-  \tenv \eqdef (\genv, L^{\emptytenv})\\\\
+  \withemptylocal(\genv) \typearrow \tenv\\\\
   \commonprefixline\\\\
   \annotateextrafields(\tenv, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow \vttwo \OrTypeError\\\\

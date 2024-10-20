@@ -332,11 +332,7 @@ module TypingRule = struct
     | CheckBinop
     | ELit
     | ATC
-    | ELocalVar
-    | EGlobalVarConstantVal
-    | EGlobalVarConstantNoVal
-    | EGlobalVar
-    | EUndefIdent
+    | EVar
     | Binop
     | Unop
     | ECondSimple
@@ -473,6 +469,10 @@ module TypingRule = struct
     | AddGlobalImmutableExpr
     | DeclareConst
     | AddGlobalStorage
+    | LookupConstants
+    | TypeOf
+    | LookupImmutableExpr
+    | WithEmptyLocal
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -498,10 +498,7 @@ module TypingRule = struct
     | LowestCommonAncestor -> "LowestCommonAncestor"
     | ELit -> "ELit"
     | ATC -> "ATC"
-    | ELocalVar -> "ELocalVar"
-    | EGlobalVarConstantVal -> "EGlobalVarConstantVal"
-    | EGlobalVarConstantNoVal -> "EGlobalVarConstantNoVal"
-    | EGlobalVar -> "EGlobalVar"
+    | EVar -> "EVar"
     | Binop -> "Binop"
     | Unop -> "Unop"
     | ECond -> "ECond"
@@ -520,7 +517,6 @@ module TypingRule = struct
     | EGetBitFields -> "EGetBitFields"
     | EConcat -> "EConcat"
     | ETuple -> "ETuple"
-    | EUndefIdent -> "EUndefIdent"
     | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
     | ESliceOrEGetArrayError -> "ESliceOrEGetArrayError"
@@ -639,6 +635,10 @@ module TypingRule = struct
     | AddGlobalImmutableExpr -> "AddLocalImmutableExpr"
     | DeclareConst -> "DeclareConst"
     | AddGlobalStorage -> "AddGlobalStorage"
+    | LookupConstants -> "LookupConstants"
+    | TypeOf -> "TypeOf"
+    | LookupImmutableExpr -> "LookupImmutableExpr"
+    | WithEmptyLocal -> "WithEmptyLocal"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -667,10 +667,7 @@ module TypingRule = struct
       LowestCommonAncestor;
       ELit;
       ATC;
-      ELocalVar;
-      EGlobalVarConstantVal;
-      EGlobalVarConstantNoVal;
-      EGlobalVar;
+      EVar;
       Binop;
       Unop;
       ECond;
@@ -692,7 +689,6 @@ module TypingRule = struct
       EGetArray;
       ESliceOrEGetArrayError;
       ECondSimple;
-      EUndefIdent;
       EConcat;
       ETuple;
       LEDiscard;
@@ -787,6 +783,10 @@ module TypingRule = struct
       AddGlobalImmutableExpr;
       DeclareConst;
       AddGlobalStorage;
+      LookupConstants;
+      TypeOf;
+      LookupImmutableExpr;
+      WithEmptyLocal;
     ]
 
   let all_nb = List.length all

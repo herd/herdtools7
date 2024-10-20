@@ -472,7 +472,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \tenvone \eqdef (\genv, L^{\emptytenv})\\
+  \withemptylocal(\genv) \typearrow \tenvone\\
   \getundeclareddefining(\tenvone, \funcsig) \typearrow \potentialparams\\
   {
     \begin{array}{r}

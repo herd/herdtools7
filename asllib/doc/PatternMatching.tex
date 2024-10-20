@@ -134,8 +134,8 @@ All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern that matches the expression $\ve$, that is, $\PatternSingle(\ve)$;
   \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vte$ yields $\testruct$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vte$ yields $\testruct$\ProseOrTypeError;
   \item One of the following holds:
   \begin{itemize}
     \item All of the following apply (\textsc{t\_bool, t\_real, t\_int}):
@@ -171,8 +171,8 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt\}\\
   \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError
@@ -184,8 +184,8 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[t\_bits]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) = \TBits\\
   \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
@@ -199,8 +199,8 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[t\_enum]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \tstruct(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) = \TEnum\\
   \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
@@ -215,8 +215,8 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[error]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
   \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
   \astlabel(\vtstruct) \not\in \{\TBool, \TReal, \TInt, \TBits, \TEnum\}
@@ -288,7 +288,7 @@ All of the following apply:
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \veonep)$\ProseOrTypeError;
   \item annotating the expression $\vetwo$ in $\tenv$ yields $(\vtetwo, \vetwop)$\ProseOrTypeError;
   \item determining whether both $\veonep$ and $\vetwop$ are compile-time constant expressions yields $\True$\ProseOrTypeError;
-  \item obtaining the \structure\ for $\vt$, $\vteone$, and $\vtetwo$ yields
+  \item obtaining the \underlyingtype\ for $\vt$, $\vteone$, and $\vtetwo$ yields
         $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively\ProseOrTypeError;
   \item a check the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
         $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a type error, which short-circuits the entire rule.
@@ -301,9 +301,9 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \veonep) \OrTypeError\\\\
   \annotateexpr{\tenv, \vetwo} \typearrow (\vtetwo, \vetwop) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \tstruct(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
-  \tstruct(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\\\
   {
     \begin{array}{rl}
       \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vteonestruct) = \astlabel(\vtetwostruct)\ \land\\
@@ -384,8 +384,8 @@ All of the following apply:
 that is, $\PatternLeq(\ve)$;
 \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
 \item determining whether $\vep$ is a \staticallyevaluable\ expression yields $\True$\ProseOrTypeError;
-\item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-\item obtaining the \structure\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
+\item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+\item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
 \item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\LEQ$ operator),
@@ -397,8 +397,8 @@ which short-circuits the entire rule;
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
   \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   {
     \begin{array}{rl}
       \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\testruct)\ \land\\
@@ -469,8 +469,8 @@ All of the following apply:
 that is, $\PatternGeq(\ve)$;
 \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
 \item determining whether $\vep$ is a \staticallyevaluable\ expression yields $\True$\ProseOrTypeError;
-\item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-\item obtaining the \structure\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
+\item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+\item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
 \item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\GEQ$ operator),
@@ -482,8 +482,8 @@ which short-circuits the entire rule;
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
   \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \tstruct(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   {
     \begin{array}{rl}
       \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\testruct)\ \land\\

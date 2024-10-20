@@ -132,28 +132,39 @@ let empty_local_return_type return_type = { empty_local with return_type }
 (** An empty static env. *)
 let empty = { local = empty_local; global = empty_global }
 
-let with_empty_local global = { global; local = empty_local }
+(* Begin WithEmptyLocal *)
+let with_empty_local global =
+  { global; local = empty_local } |: TypingRule.WithEmptyLocal
+(* End *)
 
 (** [lookup x env] is the value of x as defined in environment.
 
+(* Begin LookupConstants *)
       @raise Not_found if it is not defined inside. *)
 let lookup_constants env x =
   try IMap.find x env.local.constant_values
-  with Not_found -> IMap.find x env.global.constant_values
+  with Not_found ->
+    IMap.find x env.global.constant_values |: TypingRule.LookupConstants
+(* End *)
 
 let lookup_constants_opt env x =
   try Some (lookup_constants env x) with Not_found -> None
 
+(* Begin TypeOf *)
+
 (** [type_of env "x"] is the type of ["x"] in the environment [env]. *)
 let type_of env x =
-  try IMap.find x env.local.storage_types |> fst
+  try IMap.find x env.local.storage_types |> fst |: TypingRule.TypeOf
   with Not_found -> IMap.find x env.global.storage_types |> fst
+(* End *)
 
 let type_of_opt env x = try Some (type_of env x) with Not_found -> None
 
+(* Begin LookupImmutableExpr *)
 let lookup_immutable_expr env x =
-  try IMap.find x env.local.expr_equiv
+  try IMap.find x env.local.expr_equiv |: TypingRule.LookupImmutableExpr
   with Not_found -> IMap.find x env.global.expr_equiv
+(* End *)
 
 let lookup_immutable_expr_opt env x =
   try Some (lookup_immutable_expr env x) with Not_found -> None
@@ -182,8 +193,11 @@ let set_renamings name set env =
       };
   }
 
+(* Begin AddGlobalStorage *)
 let add_global_storage x ty gdk (genv : global) =
   { genv with storage_types = IMap.add x (ty, gdk) genv.storage_types }
+  |: TypingRule.AddGlobalStorage
+(* End *)
 
 let add_type x ty env =
   let () =

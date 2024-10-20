@@ -425,6 +425,27 @@ One of the following applies:
 
 \section{Static Environment Utilities}
 
+\hypertarget{def-withemptylocal}{}
+\subsubsection{TypingRule.WithEmptyLocal}
+The function
+\[
+  \withemptylocal(\overname{\globalstaticenvs}{\genv})
+  \aslto \overname{\staticenvs}{\tenv}
+\]
+constructs a static environment from the global static environment $\genv$
+and the empty local static environment.
+
+\subsubsection{Prose}
+The result is a static environment where the global component is $\genv$ and the local component
+is the local static environment of $\emptytenv$.
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \withemptylocal(\genv) \typearrow (\genv, L^{\emptytenv})
+}
+\end{mathpar}
+\CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
+
 \hypertarget{def-checkvarnotinenv}{}
 \hypertarget{def-varinenv}{}
 \subsubsection{TypingRule.CheckVarNotInEnv}
@@ -541,6 +562,68 @@ $\vx$ is not bound to a local storage in $\tenv$.
 }
 \end{mathpar}
 
+\subsubsection{TypingRule.LookupConstants\label{sec:TypingRule.LookupConstants}}
+\hypertarget{def-lookupconstants}{}
+The function
+\[
+\lookupconstants(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\identifier}{\vx}) \typearrow
+  \overname{\literal}{\vv}
+  \cup \{\bot\}
+\]
+returns the literal $\vv$ associated with the identifier $\vx$ in the static environment $\tenv$,
+or $\bot$ if $\vx$ is not associated with a constant.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local}):
+  \begin{itemize}
+    \item the $\constantvalues$ map of the local component of $\tenv$ binds $\vx$ to $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item the $\constantvalues$ map of the local component of $\tenv$ does not bind $\vx$ to any literal;
+    \item the $\constantvalues$ map of the global component of $\tenv$ binds $\vx$ to $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_found}):
+  \begin{itemize}
+    \item the $\constantvalues$ map of the local component of $\tenv$ does not bind $\vx$ to any literal;
+    \item the $\constantvalues$ map of the global component of $\tenv$ does not bind $\vx$ to any literal;
+    \item the result is $\bot$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\constantvalues(\vx) = \vv
+}{
+  \lookupconstants(\tenv, \vx) \typearrow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global]{
+  L^\tenv.\constantvalues(\vx) = \bot\\
+  G^\tenv.\constantvalues(\vx) = \vv
+}{
+  \lookupconstants(\tenv, \vx) \typearrow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[not\_found]{
+  L^\tenv.\constantvalues(\vx) = \bot\\
+  G^\tenv.\constantvalues(\vx) = \bot
+}{
+  \lookupconstants(\tenv, \vx) \typearrow \bot
+}
+\end{mathpar}
+\CodeSubsection{\LookupConstantsBegin}{\LookupConstantsEnd}{../StaticEnv.ml}
+
 \subsubsection{TypingRule.AddGlobalConstant\label{sec:TypingRule.AddGlobalConstant}}
 \hypertarget{def-addglobalconstant}{}
 The function
@@ -643,6 +726,7 @@ One of the following applies:
   \lookupimmutableexpr(\tenv, \vx) \typearrow \bot
 }
 \end{mathpar}
+\CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../StaticEnv.ml}
 
 \subsubsection{TypingRule.AddGlobalImmutableExpr\label{sec:TypingRule.AddGlobalImmutableExpr}}
 \hypertarget{def-addglobalimmutableexpr}{}

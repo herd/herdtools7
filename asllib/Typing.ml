@@ -1565,23 +1565,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   with Not_found -> e
                 in
                 (ty, e)
-            | ty, _ -> (ty, e) |: TypingRule.ELocalVar
+            | ty, _ -> (ty, e) |: TypingRule.EVar
           with Not_found -> (
             try
               match IMap.find x env.global.storage_types with
               | ty, GDK_Constant -> (
                   match IMap.find_opt x env.global.constant_values with
-                  | Some v ->
-                      (ty, E_Literal v |> here)
-                      |: TypingRule.EGlobalVarConstantVal
-                  | None -> (ty, e) |: TypingRule.EGlobalVarConstantNoVal)
-              | ty, _ -> (ty, e) |: TypingRule.EGlobalVar
+                  | Some v -> (ty, E_Literal v |> here) |: TypingRule.EVar
+                  | None -> (ty, e) |: TypingRule.EVar)
+              | ty, _ -> (ty, e) |: TypingRule.EVar
             with Not_found ->
               let () =
                 if false then
                   Format.eprintf "@[Cannot find %s in env@ %a.@]@." x pp_env env
               in
-              undefined_identifier e x |: TypingRule.EUndefIdent))
+              undefined_identifier e x |: TypingRule.EVar))
     (* End *)
     (* Begin Binop *)
     | E_Binop (op, e1, e2) ->
@@ -2347,6 +2345,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and limit' = annotate_loop_limit ~loc env limit in
         let start_struct = Types.make_anonymous env start_t
         and struct2 = Types.make_anonymous env end_t in
+        (* TypingRule.ForConstraint( *)
         let cs =
           match (start_struct.desc, struct2.desc) with
           | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
@@ -2363,6 +2362,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Int _, _ -> conflict s [ integer' ] end_t
           | _, _ -> conflict s [ integer' ] start_t
           (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
+          (* TypingRule.ForConstraint) *)
         in
         let ty = T_Int cs |> here in
         let body' =
