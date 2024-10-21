@@ -112,15 +112,15 @@ let constraint_pow c1 c2 =
       (* {a..b} POW c is {0.. (b POW c), (- ((-a) POW c)) ..
          ((-a) POW c)} *)
       let mac = pow (neg a) c in
-      [ range zero_expr (pow b c); range (neg mac) mac ]
+      [ range zero_expr (pow b c); range (neg mac) mac; exact one_expr ]
   | Constraint_Exact a, Constraint_Range (c, d) ->
       (* a POW {c..d} is {(a POW c) .. (a POW d), (-((-a) POW d)) .. ((-a) POW d)} *)
       let mad = pow (neg a) d in
-      [ range (pow a c) (pow a d); range (neg mad) mad ]
+      [ range (pow a c) (pow a d); range (neg mad) mad; exact one_expr ]
   | Constraint_Range (a, b), Constraint_Range (_c, d) ->
       (* {a..b} POW {c..d} is {0.. (b POW d), (- ((-a) POW d)) .. ((-a) POW d)} *)
       let mad = pow (neg a) d in
-      [ range zero_expr (pow b d); range (neg mad) mad ]
+      [ range zero_expr (pow b d); range (neg mad) mad; exact one_expr ]
 
 (* Begin ConstraintBinop *)
 let constraint_binop op cs1 cs2 =
@@ -136,6 +136,50 @@ let constraint_binop op cs1 cs2 =
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
   | RDIV ->
       assert false
+(* End *)
+
+(* Begin FilterReduceConstraintDiv *)
+let filter_reduce_constraint_div =
+  let get_literal_div_opt e =
+    match e.desc with
+    | E_Binop (DIV, a, b) -> (
+        match (a.desc, b.desc) with
+        | E_Literal (L_Int z1), E_Literal (L_Int z2) -> Some (z1, z2)
+        | _ -> None)
+    | _ -> None
+  in
+  function
+  | Constraint_Exact e as c -> (
+      match get_literal_div_opt e with
+      | Some (z1, z2) when Z.sign z2 != 0 ->
+          if Z.divisible z1 z2 then Some c else None
+      | _ -> Some c)
+  | Constraint_Range (e1, e2) as c -> (
+      let z1_opt =
+        match get_literal_div_opt e1 with
+        | Some (z1, z2) when Z.sign z2 != 0 ->
+            let zdiv, zmod = Z.ediv_rem z1 z2 in
+            let zres = if Z.sign zmod = 0 then zdiv else Z.succ zdiv in
+            Some zres
+        | _ -> None
+      and z2_opt =
+        match get_literal_div_opt e2 with
+        | Some (z1, z2) when Z.sign z2 != 0 -> Some (Z.ediv z1 z2)
+        | _ -> None
+      in
+      match (z1_opt, z2_opt) with
+      | Some z1, Some z2 ->
+          let () =
+            if false then
+              Format.eprintf "Reducing %a DIV %a@ got z1=%a and z2=%a@."
+                PP.pp_expr e1 PP.pp_expr e2 Z.pp_print z1 Z.pp_print z2
+          in
+          if Z.equal z1 z2 then Some (exact (expr_of_z z1))
+          else if Z.leq z1 z2 then Some (range (expr_of_z z1) (expr_of_z z2))
+          else None
+      | Some z1, None -> Some (range (expr_of_z z1) e2)
+      | None, Some z2 -> Some (range e1 (expr_of_z z2))
+      | None, None -> Some c)
 (* End *)
 
 type strictness = [ `Silence | `Warn | `TypeCheck ]
@@ -243,51 +287,6 @@ module Make (C : CONFIG) = struct
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false
-  (* End *)
-
-  (* Begin FilterReduceConstraintDiv *)
-  let filter_reduce_constraint_div =
-    let get_literal_div_opt e =
-      match e.desc with
-      | E_Binop (DIV, a, b) -> (
-          match (a.desc, b.desc) with
-          | E_Literal (L_Int z1), E_Literal (L_Int z2) -> Some (z1, z2)
-          | _ -> None)
-      | _ -> None
-    in
-    function
-    | Constraint_Exact e as c -> (
-        match get_literal_div_opt e with
-        | Some (z1, z2) when Z.sign z2 != 0 ->
-            if Z.divisible z1 z2 then Some c else None
-        | _ -> Some c)
-    | Constraint_Range (e1, e2) as c -> (
-        let z1_opt =
-          match get_literal_div_opt e1 with
-          | Some (z1, z2) when Z.sign z2 != 0 ->
-              let zdiv, zmod = Z.ediv_rem z1 z2 in
-              let zres = if Z.sign zmod = 0 then zdiv else Z.succ zdiv in
-              Some zres
-          | _ -> None
-        and z2_opt =
-          match get_literal_div_opt e2 with
-          | Some (z1, z2) when Z.sign z2 != 0 -> Some (Z.ediv z1 z2)
-          | _ -> None
-        in
-        match (z1_opt, z2_opt) with
-        | Some z1, Some z2 ->
-            let () =
-              if false then
-                Format.eprintf "Reducing %a DIV %a@ got z1=%a and z2=%a@."
-                  PP.pp_expr e1 PP.pp_expr e2 Z.pp_print z1 Z.pp_print z2
-            in
-            if Z.equal z1 z2 then Some (exact (expr_of_z z1))
-            else if Z.leq z1 z2 then Some (range (expr_of_z z1) (expr_of_z z2))
-            else None
-        | Some z1, None -> Some (range (expr_of_z z1) e2)
-        | None, Some z2 -> Some (range e1 (expr_of_z z2))
-        | None, None -> Some c)
-
   (* End *)
 
   let refine_constraint_for_div ~loc op cs =

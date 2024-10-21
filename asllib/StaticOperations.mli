@@ -22,3 +22,7 @@ module Make : functor (C : CONFIG) -> sig
     int_constraint list ->
     int_constraint list
 end
+
+(* Used by asllib/tests/ConstraintBinops.ml *)
+
+val filter_reduce_constraint_div : int_constraint -> int_constraint option

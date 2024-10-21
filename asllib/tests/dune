@@ -1,9 +1,9 @@
-(test
- (name toposort)
+(tests
+ (names toposort ConstraintBinops)
  (modes native)
  (enabled_if %{lib-available:qcheck})
  (libraries asllib qcheck)
- (modules toposort))
+ (modules toposort ConstraintBinops))
 
 (tests
  (names static bitvector types)
