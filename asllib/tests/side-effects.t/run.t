@@ -81,6 +81,19 @@
   [1]
   $ aslref while-var-edits.asl
   $ aslref repeat-var-edits.asl
+  $ aslref for-read-throw.asl
+  File for-read-throw.asl, line 13, characters 15 to 26:
+  Unexpected side-effect: An exception of type E was thrown when evaluating throwing()
+  
+  [1]
+  $ aslref for-write-throw.asl
+  File for-write-throw.asl, line 13, character 2 to line 15, character 5:
+  ASL Typing error: concurrent side effects RaiseException "E" and WriteLocal "y"
+  [1]
+  $ aslref for-throw-throw.asl
+  File for-throw-throw.asl, line 13, character 2 to line 15, character 5:
+  ASL Typing error: concurrent side effects RaiseException "E" and RaiseException "E"
+  [1]
 
   $ aslref config-uses-var.asl
   File config-uses-var.asl, line 2, characters 0 to 13:
