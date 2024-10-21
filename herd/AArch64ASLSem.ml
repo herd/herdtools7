@@ -809,7 +809,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             Format.eprintf "@[<v>Executing main:@ %a@]@." Asllib.PP.pp_t
               [ main ]
         in
-        [ ((0, None, MiscParser.Main), [ ASLBase.Instruction [ main ] ]) ]
+        [ ((ii.A.proc, None, MiscParser.Main), [ ASLBase.Instruction [ main ] ]) ]
       in
       let t =
         {
@@ -1202,8 +1202,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let flitmus = test.Test_herd.name.Name.file in
       let () =
         if _dbg then
-          Printf.eprintf "\n\nExecuting %s\n"
+          Printf.eprintf "\n\nExecuting %s by proc %s\n%!"
             (A.pp_instruction PPMode.Ascii ii.A.inst)
+            (Proc.pp ii.A.proc)
       in
       match decode_inst ii with
       | None -> check_strict test ii
