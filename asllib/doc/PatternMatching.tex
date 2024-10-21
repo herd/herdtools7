@@ -962,24 +962,13 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[pattern\_set]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \punnode{\Npatternset})) \astarrow\\
-  \overname{\EPattern(\astof{\vexprpattern}, \astof{\vpatternset})}{\vastnode}
-\end{array}
-}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[pattern\_mask]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \Tmasklit(\vm))) \astarrow\\
-  \overname{\EPattern(\astof{\vexprpattern}, \PatternMask(\vm))}{\vastnode}
-\end{array}
-}
+\inferrule{}{
+  {
+  \begin{array}{r}
+    \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \punnode{\Npatternormask})) \astarrow\\
+    \overname{\EPattern(\astof{\vexprpattern}, \astof{\vpatternormask})}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 

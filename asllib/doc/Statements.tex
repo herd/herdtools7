@@ -949,10 +949,11 @@ $\vstwo$ will be evaluated);
 \section{Case Statements\label{sec:CaseStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \nonemptylist{\Nalt} \parsesep \Tend &\\
-\Nalt \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
-      |\ & \Totherwise \parsesep \Nstmtlist &\\
-\Notherwiseopt \derives\ & \option{\Totherwise \parsesep \Tarrow \parsesep \Nstmtlist} &
+\Nstmt \derivesinline\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend &\\
+\Ncasealtlist \derivesinline\ & \NClist{\Ncasealt} \parsesep &\\
+                           |\ & \NClist{\Ncasealt} \parsesep \Ncaseotherwise &\\
+\Ncasealt \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\Ncaseotherwise \derivesinline\ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -963,33 +964,69 @@ $\vstwo$ will be evaluated);
 \subsubsection{ASTRule.SCase}
 \begin{mathpar}
 \inferrule{
-  \buildlist[\Nalt](\valtlist) \astarrow \valtlistast
+  \buildlist[\Ncasealt](\vcasealtlist) \astarrow \vcasealtlistast
 }{
   {
     \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\valtlist}{\nonemptylist{\Nalt}}, \Tend)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\vcasealtlist}{\Ncasealtlist}, \Tend)}{\vparsednode})
   \astarrow \\
-  \overname{\SCase(\astof{\vexpr}, \valtlistast)}{\vastnode}
+  \overname{\SCase(\astof{\vexpr}, \vcasealtlistast)}{\vastnode}
     \end{array}
   }
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Alt\label{sec:ASTRule.Alt}}
-\hypertarget{build-alt}{}
+\subsubsection{ASTRule.CaseAltList\label{sec:ASTRule.CaseAltList}}
+\hypertarget{build-casealtlist}{}
 The function
 \[
-\buildalt(\overname{\parsenode{\Nalt}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
+\buildcasealtlist(\overname{\parsenode{\Ncasealtlist}}{\vparsednode}) \;\aslto\; \overname{\casealt^+}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule[when]{
+\inferrule[no\_otherwise]{
+  \buildclist[\buildcasealt](\vcases) \typearrow \vastnode
+}{
+  \buildcasealtlist(\overname{\Ncasealtlist(\vcases : \NClist{\Ncasealt})}{\vparsednode}) \astarrow \vastnode
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise]{
+  \buildclist[\buildcasealt](\vcases) \astarrow h\\
+  \buildcasealt(\votherwise) \astarrow t
+}{
+  {
+  \buildcasealtlist\left(\overname{
+      \Ncasealtlist\left(
+        \begin{array}{l}
+          \vcases : \NClist{\Ncasealt}, \\
+          \votherwise:\Ncaseotherwise
+        \end{array}
+    \right)
+    }{\vparsednode}\right) \astarrow
+  \overname{[h] \concat t}{\vastnode}
+  }
+}
+\end{mathpar}
+
+
+\subsubsection{ASTRule.CaseAlt\label{sec:ASTRule.CaseAlt}}
+\hypertarget{build-casealt}{}
+The function
+\[
+\buildcasealt(\overname{\parsenode{\Ncasealt}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
   \buildoption[\buildexpr](\vwhereopt) \astarrow \vwhereast
 }{
   {
     \begin{array}{r}
-  \buildalt\left(\overname{\Nalt\left(
+  \buildcasealt\left(\overname{\Ncasealt\left(
     \begin{array}{l}
     \Twhen, \punnode{\Npatternlist}, \\
     \wrappedline\ \namednode{\vwhereopt}{\option{\Twhere, \Nexpr}}, \Tarrow, \\
@@ -1003,11 +1040,19 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
+\subsubsection{ASTRule.CaseOtherwise\label{sec:ASTRule.CaseOtherwise}}
+\hypertarget{build-caseotherwise}{}
+The function
+\[
+\buildcaseotherwise(\overname{\parsenode{\Ncaseotherwise}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
 \begin{mathpar}
-\inferrule[otherwise]{}{
+\inferrule{}{
   {
     \begin{array}{r}
-  \buildalt(\overname{\Nalt(\Totherwise, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode})
+  \buildcaseotherwise(\overname{\Ncasealt(\Totherwise, \Tarrow, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode})
   \astarrow \\
   \overname{\casealt(\CasePattern: \PatternAll, \CaseWhere: \None, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
     \end{array}

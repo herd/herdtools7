@@ -62,9 +62,9 @@ using $\texttt{eval\_expr}$ to evaluate it.
 
 \section{Syntax\label{sec:AssignableExpressionsSyntax}}
 \begin{flalign*}
-\Nlexpr \derivesinline\ & \Nlexpratom &\\
+\Nlexpr \derives\ & \Nlexpratom &\\
 |\ & \Tminus &\\
-|\ & \Tlpar \parsesep \NClist{\Nlexpr} \parsesep \Trpar &\\
+|\ & \Tlpar \parsesep \Clisttwo{\Nlexpr} \parsesep \Trpar &\\
 \Nlexpratom \derives\ & \Tidentifier &\\
 |\ & \Nlexpratom \parsesep \Nslices &\\
 |\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier{\field} &\\
@@ -97,7 +97,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[multi\_lexpr]{
   \buildclist[\Nlexpr](\vlexprs) \astarrow \vlexprasts
 }{
-  \buildlexpr(\Nlexpr(\Tlpar, \namednode{\vlexprs}{\NClist{\Nlexpr}}, \Trpar)) \astarrow
+  \buildlexpr(\Nlexpr(\Tlpar, \namednode{\vlexprs}{\Clisttwo{\Nlexpr}}, \Trpar)) \astarrow
   \overname{\LEDestructuring(\vlexprasts)}{\vastnode}
 }
 \end{mathpar}

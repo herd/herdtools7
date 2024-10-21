@@ -2158,8 +2158,7 @@ Lists of patterns are also used in case statements.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
-                    |\  & \Nexpr \parsesep \Tin \parsesep \Tmasklit &\\
+\Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternormask &\\
 \Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
                   |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
 \Npatternlist \derivesinline\ & \NClist{\Npattern} &
@@ -2172,24 +2171,41 @@ Lists of patterns are also used in case statements.
 
 \subsubsection{ASTRule.EPattern}
 \begin{mathpar}
-\inferrule[pattern\_set]{}{
+\inferrule{}{
   {
     \begin{array}{r}
-      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternset})}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexpr}, \astof{\vpatternset})}{\vastnode}
+      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternormask})}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astof{\vexpr}, \astof{\vpatternormask})}{\vastnode}
     \end{array}
   }
 }
 \end{mathpar}
 
+\subsubsection{ASTRule.PatternOrMask}
+The function
+\[
+  \buildpatternormask(\overname{\Npatternormask}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a pattern or mask parse node $\vparsednode$ into a pattern AST node $\vastnode$.
+
 \begin{mathpar}
-\inferrule[pattern\_mask]{}{
-  {
-    \begin{array}{r}
-      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexpr}, \PatternMask(\vm))}{\vastnode}
-    \end{array}
-  }
+\inferrule[pattern\_set]{}{
+  \buildpatternormask(\overname{\Npatternormask(\Npatternset)}{\vparsednode}) \astarrow
+  \overname{\astof{\vpatternset}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitmask]{}{
+  \buildpatternormask(\overname{\Npatternormask(\Tmasklit(\vm))}{\vparsednode}) \astarrow
+  \overname{\PatternMask(\vm)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitvector\_lit]{}{
+  \buildpatternormask(\overname{\Npatternormask(\Tbitvectorlit(\vb))}{\vparsednode}) \astarrow
+  \overname{\PatternMask(\vb)}{\vastnode}
 }
 \end{mathpar}
 

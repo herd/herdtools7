@@ -410,7 +410,9 @@
 \newcommand\Nmaybeemptystmtlist[0]{\hyperlink{def-nmaybeemptystmtlist}{\nonterminal{maybe\_empty\_stmt\_list}}}
 \newcommand\Nlocaldeclkeyword[0]{\hyperlink{def-nlocaldeclkeyword}{\nonterminal{local\_decl\_keyword}}}
 \newcommand\Ndirection[0]{\hyperlink{def-ndirection}{\nonterminal{direction}}}
-\newcommand\Nalt[0]{\hyperlink{def-nalt}{\nonterminal{alt}}}
+\newcommand\Ncasealt[0]{\hyperlink{def-ncasealt}{\nonterminal{case\_alt}}}
+\newcommand\Ncaseotherwise[0]{\hyperlink{def-ncaseotherwise}{\nonterminal{case\_otherwise}}}
+\newcommand\Ncasealtlist[0]{\hyperlink{def-ncasealtlist}{\nonterminal{case\_alt\_list}}}
 \newcommand\Npatternlist[0]{\hyperlink{def-npatternlist}{\nonterminal{pattern\_list}}}
 \newcommand\Notherwiseopt[0]{\hyperlink{def-notherwiseopt}{\nonterminal{otherwise\_opt}}}
 \newcommand\Ncatcher[0]{\hyperlink{def-ncatcher}{\nonterminal{catcher}}}
@@ -427,6 +429,7 @@
 \newcommand\Nexprpattern[0]{\hyperlink{def-nexprpattern}{\nonterminal{expr\_pattern}}}
 \newcommand\Npatternset[0]{\hyperlink{def-npatternset}{\nonterminal{pattern\_set}}}
 \newcommand\Npattern[0]{\hyperlink{def-npattern}{\nonterminal{pattern}}}
+\newcommand\Npatternormask[0]{\hyperlink{def-npatternormask}{\nonterminal{pattern\_or\_mask}}}
 \newcommand\Nbitfields[0]{\hyperlink{def-nbitfields}{\nonterminal{bitfields}}}
 \newcommand\Nbitfield[0]{\hyperlink{def-nbitfield}{\nonterminal{bitfield}}}
 \newcommand\Nvalue[0]{\hyperlink{def-nvalue}{\nonterminal{value}}}
@@ -692,7 +695,9 @@
 \newcommand\buildsubtypeopt[0]{\hyperlink{build-subtypeopt}{\textfunc{build\_subtype\_opt}}}
 \newcommand\buildstoragekeyword[0]{\hyperlink{build-storagekeyword}{\textfunc{build\_storage\_keyword}}}
 \newcommand\builddirection[0]{\hyperlink{build-direction}{\textfunc{build\_direction}}}
-\newcommand\buildalt[0]{\hyperlink{build-alt}{\textfunc{build\_alt}}}
+\newcommand\buildcasealt[0]{\hyperlink{build-casealt}{\textfunc{build\_case\_alt}}}
+\newcommand\buildcasealtlist[0]{\hyperlink{build-casealtlist}{\textfunc{build\_case\_alt\_list}}}
+\newcommand\buildcaseotherwise[0]{\hyperlink{build-caseotherwise}{\textfunc{build\_case\_otherwise}}}
 \newcommand\buildotherwiseopt[0]{\hyperlink{build-otherwiseopt}{\textfunc{build\_otherwise\_opt}}}
 \newcommand\buildcatcher[0]{\hyperlink{build-catcher}{\textfunc{build\_catcher}}}
 \newcommand\buildasty[0]{\textfunc{build\_as\_ty}}
@@ -706,6 +711,7 @@
 \newcommand\buildintconstraint[0]{\hyperlink{build-intconstraint}{\textfunc{build\_int\_constraint}}}
 \newcommand\buildexprpattern[0]{\hyperlink{build-exprpattern}{\textfunc{build\_expr\_pattern}}}
 \newcommand\buildfieldassign[0]{\hyperlink{build-fieldassign}{\textfunc{build\_field\_assign}}}
+\newcommand\buildpatternormask[0]{\hyperlink{build-patternormask}{\textfunc{build\_pattern\_or\_mask}}}
 \newcommand\buildpatternset[0]{\hyperlink{build-patternset}{\textfunc{build\_pattern\_set}}}
 \newcommand\buildpatternlist[0]{\hyperlink{build-patternlist}{\textfunc{build\_pattern\_list}}}
 \newcommand\buildpattern[0]{\hyperlink{build-pattern}{\textfunc{build\_pattern}}}
@@ -1889,8 +1895,11 @@
 \newcommand\vaccessargs[0]{\texttt{access\_args}}
 \newcommand\vad[0]{\texttt{ad}}
 \newcommand\vadecls[0]{\texttt{adecls}}
-\newcommand\valtlist[0]{\texttt{alt\_list}}
-\newcommand\valtlistast[0]{\texttt{alt\_list\_ast}}
+\newcommand\vcases[0]{\texttt{cases}}
+\newcommand\vcasealtlist[0]{\texttt{case\_alt\_list}}
+\newcommand\vcasealtlistast[0]{\texttt{case\_alt\_list\_ast}}
+\newcommand\vcaseotherwise[0]{\texttt{case\_otherwise}}
+\newcommand\votherwise[0]{\texttt{otherwise}}
 \newcommand\vanons[0]{\texttt{anon\_s}}
 \newcommand\vanont[0]{\texttt{anon\_t}}
 \newcommand\vaoptfields[0]{\texttt{aopt\_fields}}
@@ -1933,7 +1942,6 @@
 \newcommand\vc[0]{\texttt{c}}
 \newcommand\vcase[0]{\texttt{case}}
 \newcommand\vcaseone[0]{\texttt{case1}}
-\newcommand\vcases[0]{\texttt{cases}}
 \newcommand\vcasesone[0]{\texttt{cases1}}
 \newcommand\vcatcherlist[0]{\texttt{catcher\_list}}
 \newcommand\vcds[0]{\texttt{vds}}
@@ -2117,6 +2125,7 @@
 \newcommand\vpatp[0]{\texttt{pat'}}
 \newcommand\vpatternasts[0]{\texttt{pattern\_asts}}
 \newcommand\vpatternlist[0]{\texttt{pattern\_list}}
+\newcommand\vpatternormask[0]{\texttt{pattern\_or\_mask}}
 \newcommand\vpatterns[0]{\texttt{patterns}}
 \newcommand\vpatternset[0]{\texttt{pattern\_set}}
 \newcommand\vpone[0]{\texttt{p1}}
