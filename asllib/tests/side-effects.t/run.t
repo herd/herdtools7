@@ -81,6 +81,24 @@
   [1]
   $ aslref while-var-edits.asl
   $ aslref repeat-var-edits.asl
+  $ aslref for-read-throw.asl
+  File for-read-throw.asl, line 13, character 2 to line 15, character 6:
+  ASL Typing error: a pure expression was expected, found
+    throwing(), which produces the following side-effects:
+    [RaiseException "E"].
+  [1]
+  $ aslref for-write-throw.asl
+  File for-write-throw.asl, line 13, character 2 to line 15, character 6:
+  ASL Typing error: a pure expression was expected, found
+    throwing(), which produces the following side-effects:
+    [RaiseException "E"].
+  [1]
+  $ aslref for-throw-throw.asl
+  File for-throw-throw.asl, line 13, character 2 to line 15, character 6:
+  ASL Typing error: a pure expression was expected, found
+    throwing(), which produces the following side-effects:
+    [RaiseException "E"].
+  [1]
 
   $ aslref config-uses-var.asl
   File config-uses-var.asl, line 2, characters 0 to 13:
