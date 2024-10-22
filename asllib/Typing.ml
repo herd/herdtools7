@@ -891,10 +891,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t_width, e_width', ses_width = annotate_expr env e_width in
         let+ () = check_statically_evaluable env e_width ses_width in
         let+ () = check_constrained_integer ~loc:e_width env t_width in
-        let+ () =
-          check_true (SES.is_atc_free ses_width) @@ fun () ->
-          fatal_from ty Error.UnexpectedATC
-        in
         let bitfields' =
           if bitfields = [] then bitfields
           else annotate_bitfields ~loc env e_width' bitfields
