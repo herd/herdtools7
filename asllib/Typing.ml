@@ -30,7 +30,7 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let invalid_expr e = fatal_from e (Error.InvalidExpr e)
-let unsupported_expr e = Error.fatal_from e Error.(UnsupportedExpr (Static, e))
+let unsupported_expr e = fatal_from e Error.(UnsupportedExpr (Static, e))
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
@@ -1904,6 +1904,79 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
 
+  let list_min_abs_z =
+    let min_abs acc z =
+      match Z.compare (Z.abs acc) (Z.abs z) with
+      | -1 -> acc
+      | 1 -> z
+      | 0 -> if Z.sign acc >= 0 then acc else z (* bias towards positive *)
+      | _ -> assert false
+    in
+    function
+    | [] -> raise (Invalid_argument "list_min_abs_z")
+    | h :: t -> List.fold_left min_abs h t
+
+  let rec base_value loc env t : expr =
+    let add_pos = add_pos_from loc in
+    let lit v = add_pos (E_Literal v) in
+    let var v = add_pos (E_Var v) in
+    let fatal_non_static e = fatal_from t (Error.BaseValueNonStatic (t, e)) in
+    let fatal_is_empty () = fatal_from t (Error.BaseValueEmptyType t) in
+    let reduce_to_z e =
+      match reduce_to_z_opt env e with
+      | None -> fatal_non_static e
+      | Some i -> i
+    in
+    let t_anon = Types.make_anonymous env t in
+    match t_anon.desc with
+    | T_Bool -> L_Bool false |> lit
+    | T_Bits (e, _) ->
+        let length = reduce_to_z e |> Z.to_int in
+        L_BitVector (Bitvector.zeros length) |> lit
+    | T_Enum [] -> assert false
+    | T_Enum (name :: _) -> (
+        try IMap.find name env.global.constant_values |> lit
+        with Not_found -> assert false)
+    | T_Int UnConstrained -> L_Int Z.zero |> lit
+    | T_Int (Parameterized (_, id)) -> fatal_non_static (var id)
+    | T_Int (WellConstrained []) -> assert false
+    | T_Int (WellConstrained cs) ->
+        let constraint_abs_min = function
+          | Constraint_Exact e -> Some (reduce_to_z e)
+          | Constraint_Range (e1, e2) ->
+              let v1 = reduce_to_z e1 in
+              let v2 = reduce_to_z e2 in
+              if v1 <= v2 then
+                match Z.(sign v1, sign v2) with
+                | -1, -1 -> (* v1 <= v2 < 0 *) Some v2
+                | -1, _ -> (* v1 < 0 <= v2 *) Some Z.zero
+                | _, _ -> (* 0 <= v1 <= v2 *) Some v1
+              else None
+        in
+        let z_min_list = List.filter_map constraint_abs_min cs in
+        if list_is_empty z_min_list then fatal_is_empty ()
+        else
+          let z_min = list_min_abs_z z_min_list in
+          L_Int z_min |> lit
+    | T_Named _ -> assert false
+    | T_Real -> L_Real Q.zero |> lit
+    | T_Exception fields | T_Record fields ->
+        let one_field (name, t_field) = (name, base_value loc env t_field) in
+        E_Record (t, List.map one_field fields) |> add_pos
+    | T_String -> L_String "" |> lit
+    | T_Tuple li ->
+        let exprs = List.map (base_value loc env) li in
+        E_Tuple exprs |> add_pos
+    | T_Array (length, ty) ->
+        let v = base_value loc env ty in
+        let length =
+          match length with
+          | ArrayLength_Enum (_, i) -> i
+          | ArrayLength_Expr e -> reduce_to_z e |> Z.to_int
+        in
+        let exprs = List.init length (Fun.const v) in
+        E_Tuple exprs |> add_pos
+
   let rec annotate_lexpr env le t_e =
     let () =
       if false then
@@ -2163,17 +2236,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let annotate_local_decl_item_uninit loc (env : env) ldi =
     (* Here implicitly ldk=LDK_Var *)
     match ldi with
-    | LDI_Discard -> (env, LDI_Discard)
-    | LDI_Var _ ->
+    | LDI_Discard | LDI_Tuple _ | LDI_Var _ ->
+        (* Here LDI_Tuple is never parsed containing any LDI_Typed, so we don't
+           need to care about decalarations in it. *)
         fatal_from loc (Error.BadLDI ldi) |: TypingRule.LDUninitialisedVar
-    | LDI_Tuple _ldis ->
-        fatal_from loc (Error.BadLDI ldi) |: TypingRule.LDUninitialisedTuple
     | LDI_Typed (ldi', t) ->
         let t' = annotate_type ~loc env t in
+        let e_init = base_value loc env t' in
         let new_env, new_ldi' =
           annotate_local_decl_item loc env t' LDK_Var ldi'
         in
-        (new_env, LDI_Typed (new_ldi', t')) |: TypingRule.LDUninitialisedTyped
+        (new_env, LDI_Typed (new_ldi', t'), e_init)
+        |: TypingRule.LDUninitialisedTyped
   (* End *)
 
   (* Begin DeclareLocalConstant *)
@@ -2413,8 +2487,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* SDecl.Some) *)
         (* SDecl.None( *)
         | LDK_Var, None ->
-            let new_env, ldi1 = annotate_local_decl_item_uninit loc env ldi in
-            (S_Decl (LDK_Var, ldi1, None) |> here, new_env)
+            let new_env, ldi1, e_init =
+              annotate_local_decl_item_uninit loc env ldi
+            in
+            (S_Decl (LDK_Var, ldi1, Some e_init) |> here, new_env)
             |: TypingRule.SDeclNone
         | (LDK_Constant | LDK_Let), None ->
             fatal_from s UnrespectedParserInvariant)
@@ -2962,48 +3038,37 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
     let+ () = check_var_not_in_genv loc genv name in
     let env = with_empty_local genv in
-    (* AnnotateTypeOpt( *)
-    let ty_opt' =
-      match ty_opt with
-      | Some t -> Some (annotate_type ~loc env t)
-      | None -> ty_opt
-    (* AnnotateTypeOpt) *)
-    (* AnnotateExprOpt( *)
-    and initial_value_type, initial_value' =
-      match initial_value with
-      | Some e ->
-          let t, e' = annotate_expr env e in
-          (Some t, Some e')
-      | None -> (None, None)
-      (* AnnotateExprOpt) *)
-    in
-    let declared_t =
-      match (initial_value_type, ty_opt') with
-      | Some t1, Some t2 ->
-          let+ () = check_type_satisfies loc env t1 t2 in
-          t2
-      | None, Some t2 -> t2
-      | Some t1, None -> t1
+    let initial_value', ty_opt', declared_t =
+      match (ty_opt, initial_value) with
+      | Some t, Some e ->
+          let t' = annotate_type ~loc env t and t_e, e' = annotate_expr env e in
+          let+ () = check_type_satisfies loc env t_e t' in
+          (e', Some t', t')
+      | Some t, None ->
+          let t' = annotate_type ~loc env t in
+          let e' = base_value loc env t' in
+          (e', Some t', t')
+      | None, Some e ->
+          let t_e, e' = annotate_expr env e in
+          (e', None, t_e)
       | None, None -> Error.fatal_from loc UnrespectedParserInvariant
     in
     let genv1 = add_global_storage loc name keyword genv declared_t in
     let env1 = with_empty_local genv1 in
     (* UpdateGlobalStorage( *)
     let env2 =
-      match (keyword, initial_value') with
-      | GDK_Constant, Some e -> try_add_global_constant name env1 e
-      | GDK_Let, Some e when is_statically_evaluable ~loc env1 e ->
-          let e' = StaticModel.try_normalize env1 e in
+      match keyword with
+      | GDK_Constant -> try_add_global_constant name env1 initial_value'
+      | GDK_Let when is_statically_evaluable ~loc env1 initial_value' ->
+          let e' = StaticModel.try_normalize env1 initial_value' in
           add_global_immutable_expr name e' env1
-      | (GDK_Constant | GDK_Let), None ->
-          Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
       (* UpdateGlobalStorage) *)
     in
     let () = assert (env2.local == empty_local) in
     (* If C.print_typed is specified pass [declared_t] to make sure the storage element is type-annotated. *)
     let ty_opt' = if C.print_typed then Some declared_t else ty_opt' in
-    ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2.global)
+    ({ gsd with ty = ty_opt'; initial_value = Some initial_value' }, env2.global)
     |: TypingRule.DeclareGlobalStorage
   (* End *)
 

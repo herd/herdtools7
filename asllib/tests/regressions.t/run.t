@@ -318,7 +318,13 @@ Required tests:
   $ aslref concat02.asl
   $ aslref concat03.asl
   $ aslref constrained-integer-types-example.asl
+  File constrained-integer-types-example.asl, line 59, characters 10 to 18:
+  ASL Typing error: base value of type bits(w1) containing non-static value w1
+  [1]
   $ aslref constrained-types-example.asl
+  File constrained-types-example.asl, line 8, characters 11 to 18:
+  ASL Typing error: base value of type bits(M) containing non-static value M
+  [1]
   $ aslref division.asl
   $ aslref exceptions.asl
   $ aslref func1.asl
@@ -332,9 +338,19 @@ Required tests:
   $ aslref global_vars-02.asl
   $ aslref lexpr-concat.asl
   $ aslref --no-exec lexpr-concat-2.asl
+  File lexpr-concat-2.asl, line 5, characters 13 to 25:
+  ASL Typing error: base value of type bits((4 * N)) containing non-static value (
+    4 * N)
+  [1]
   $ aslref masks.asl
   $ aslref more-assignments-examples.asl
+  File more-assignments-examples.asl, line 15, characters 28 to 35:
+  ASL Typing error: base value of type bits(N) containing non-static value N
+  [1]
   $ aslref more-invocation-examples.asl
+  File more-invocation-examples.asl, line 29, characters 9 to 16:
+  ASL Typing error: base value of type bits(N) containing non-static value N
+  [1]
   $ aslref named-types-example.asl
   $ aslref nested-bitfields.asl
   $ aslref operator_precedence.asl
@@ -357,12 +373,13 @@ Required tests:
 
 Base values
   $ aslref base_values.asl
-  base value of {2, -2} is 2
-  base value of {-2, 2} is -2
+  File base_values.asl, line 5, characters 9 to 27:
+  ASL Typing error: base value of type integer {N..M, 42} containing non-static value N
+  [1]
 
   $ aslref base_values_empty.asl
   File base_values_empty.asl, line 3, characters 9 to 23:
-  ASL Execution error: base value of empty type integer {N..M}
+  ASL Typing error: base value of type integer {N..M} containing non-static value N
   [1]
 
 Empty getters/setters

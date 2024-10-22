@@ -66,6 +66,7 @@ type error_desc =
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
   | BaseValueEmptyType of ty
+  | BaseValueNonStatic of ty * expr
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | UnexpectedATC
@@ -249,7 +250,12 @@ module PPrint = struct
            corresponding@ defining@ argument"
           s
     | BaseValueEmptyType t ->
-        fprintf f "ASL Execution error: base value of empty type %a" pp_ty t
+        fprintf f "ASL Typing error: base value of empty type %a" pp_ty t
+    | BaseValueNonStatic (t, e) ->
+        fprintf f
+          "ASL Typing error: base value of type %a containing non-static value \
+           %a"
+          pp_ty t pp_expr e
     | BadATC (t1, t2) ->
         fprintf f
           "ASL Typing error:@ cannot@ perform@ Asserted@ Type@ Conversion@ on@ \
