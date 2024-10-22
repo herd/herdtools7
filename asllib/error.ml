@@ -310,8 +310,8 @@ module PPrint = struct
           x
     | ImpureExpression (e, ses) ->
         fprintf f
-          "ASL Typing error:@ a pure expression was expected,@ found@ %a, \
-           which produces the following side-effects:@ %a."
+          "ASL Typing error:@ a pure expression was expected,@ found %a,@ \
+           which@ produces@ the@ following@ side-effects:@ %a."
           pp_expr e SideEffect.SES.pp_print ses
     | UnreconciliableTypes (t1, t2) ->
         fprintf f

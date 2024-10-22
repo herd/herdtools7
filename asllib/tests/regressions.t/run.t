@@ -357,9 +357,9 @@ Required tests:
   $ aslref --no-type-check -0 typing-assign-v0.asl
   $ aslref constant-functions.asl
   File constant-functions.asl, line 6, characters 0 to 45:
-  ASL Typing error: a pure expression was expected, found
-    double(32) as integer {0..1000}, which produces the following side-effects:
-    [PerformsATC].
+  ASL Typing error: a pure expression was expected,
+    found double(32) as integer {0..1000}, which produces the following
+    side-effects: [PerformsATC].
   [1]
 
   $ aslref undeclared-variable.asl
@@ -413,8 +413,8 @@ ASLRef Field getter extension
   $ aslref --use-field-getter-extension pstate-exp.asl
   $ aslref atc-in-types.asl
   File atc-in-types.asl, line 1, characters 14 to 29:
-  ASL Typing error: a pure expression was expected, found
-    1 as integer {2}, which produces the following side-effects: [PerformsATC].
+  ASL Typing error: a pure expression was expected, found 1 as integer {2},
+    which produces the following side-effects: [PerformsATC].
   [1]
   $ aslref single-slice.asl
 
