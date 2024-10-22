@@ -502,12 +502,6 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.concat_bitvectors v_list in
         return_normal (v, new_env)
     (* End *)
-    (* Begin EvalEConcat *)
-    | E_Concat e_list ->
-        let** v_list, new_env = eval_expr_list env e_list in
-        let* v = B.concat_bitvectors v_list in
-        return_normal (v, new_env) |: SemanticsRule.EConcat
-    (* End *)
     (* Begin EvalETuple *)
     | E_Tuple e_list ->
         let** v_list, new_env = eval_expr_list env e_list in
@@ -737,7 +731,9 @@ module Make (B : Backend.S) (C : Config) = struct
       slice list -> ((B.value * B.value) list * env) maybe_exception m =
     (* Begin EvalSlice *)
     let eval_slice env = function
-      | Slice_Single e ->
+      | Slice_Arg e ->
+          (* For ASLv0 compatability. In ASLv1, this should be rejected during
+             typing. *)
           let** v_start, new_env = eval_expr env e in
           return_normal ((v_start, one), new_env) |: SemanticsRule.Slice
       | Slice_Length (e_start, e_length) ->

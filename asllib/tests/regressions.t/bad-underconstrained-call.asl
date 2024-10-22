@@ -1,6 +1,6 @@
 func GetBitAt{N}(x: bits(N), i: integer {0..N-1}) => bits(1)
 begin
-  return x[i];
+  return x[i:];
 end
 
 func GetMiddleBit{M}(x: bits(M)) => bits(1)

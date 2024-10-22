@@ -2,5 +2,5 @@
 func positive1{N}(x: bits(N), offset: integer) => bit
 begin
     var y = offset MOD N;
-    return x[y];
+    return x[y:];
 end

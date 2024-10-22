@@ -1,4 +1,4 @@
-type MyBV of bits(8) { [5] bitfield };
+type MyBV of bits(8) { [5:] bitfield };
 
 getter F => MyBV
 begin
@@ -7,12 +7,12 @@ end
 
 setter F = v: MyBV
 begin
-  assert v[0] == '0';
+  assert v[0:] == '0';
 end
 
 func main () => integer
 begin
-  assert F[5] == '0';
+  assert F[5:] == '0';
 
   return 0;
 end

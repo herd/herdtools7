@@ -17,5 +17,5 @@ begin
     // let testD : bits(testC)              = Zeros(testC);
 
     let tempE                            = width + sizeInt;
-    let testE : bits(tempE)              = [Zeros(sizeInt), Zeros(width)];
+    let testE : bits(tempE)              = Zeros(sizeInt) :: Zeros(width);
 end

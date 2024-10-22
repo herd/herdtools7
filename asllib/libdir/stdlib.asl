@@ -139,7 +139,7 @@ func BitCount{N}(x: bits(N)) => integer{0..N}
 begin
   var result: integer = 0;
   for i = 0 to N-1 do
-    if x[i] == '1' then
+    if x[i:] == '1' then
       result = result + 1;
     end
   end
@@ -149,7 +149,7 @@ end
 func LowestSetBit{N}(x: bits(N)) => integer{0..N}
 begin
   for i = 0 to N-1 do
-    if x[i] == '1' then
+    if x[i:] == '1' then
       return i as integer{0..N};
     end
   end
@@ -159,7 +159,7 @@ end
 func HighestSetBit{N}(x: bits(N)) => integer{-1..N-1}
 begin
   for i = N-1 downto 0 do
-    if x[i] == '1' then
+    if x[i:] == '1' then
       return i as integer {-1..N-1};
     end
   end
@@ -189,13 +189,13 @@ end
 func SignExtend {M} (x: bits(M), N: integer) => bits(N)
 begin
   assert N >= M;
-  return [Replicate(x[M-1], N - M), x];
+  return Replicate(x[M-1:], N - M) :: x;
 end
 
 func ZeroExtend {M} (x: bits(M), N: integer) => bits(N)
 begin
   assert N >= M;
-  return [Zeros(N - M), x];
+  return Zeros(N - M) :: x;
 end
 
 func Extend {M} (x: bits(M), N: integer, unsigned: boolean) => bits(N)
@@ -218,7 +218,7 @@ end
 // Treating input as an integer, align down to nearest multiple of 2^y.
 func AlignDown{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
-    return [x[N-1:y], Zeros(y)];
+    return x[N-1:y] :: Zeros(y);
 end
 
 // Treating input as an integer, align up to nearest multiple of 2^y.
@@ -228,7 +228,7 @@ begin
   if IsZero(x[y-1:0]) then
     return x;
   else
-    return [x[N-1:y]+1, Zeros(y)];
+    return x[N-1:y]+1 :: Zeros(y);
   end
 end
 
@@ -241,7 +241,7 @@ begin
   assert shift >= 0;
   if shift < N then
     let bshift = shift as integer{0..N-1};
-    return [x[(N-bshift)-1:0], Zeros(bshift)];
+    return x[(N-bshift)-1:0] :: Zeros(bshift);
   else
     return Zeros(N);
   end
@@ -252,7 +252,7 @@ func LSL_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   if shift <= N then
-    return (LSL(x, shift), x[N-shift]);
+    return (LSL(x, shift), x[N-shift:]);
   else
     return (Zeros(N), '0');
   end
@@ -275,7 +275,7 @@ func LSR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   if shift <= N then
-    return (LSR(x, shift), x[shift-1]);
+    return (LSR(x, shift), x[shift-1:]);
   else
     return (Zeros(N), '0');
   end
@@ -293,7 +293,7 @@ end
 func ASR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
-  return (ASR(x, shift), x[Min(shift-1, N-1)]);
+  return (ASR(x, shift), x[Min(shift-1, N-1):]);
 end
 
 // Rotate right.
@@ -303,7 +303,7 @@ func ROR{N}(x: bits(N), shift: integer) => bits(N)
 begin
   assert shift >= 0;
   let cshift = (shift MOD N) as integer{0..N-1};
-  return [x[0+:cshift], x[N-1:cshift]];
+  return x[0+:cshift] :: x[N-1:cshift];
 end
 
 // Rotate right with carry out.
@@ -312,7 +312,7 @@ func ROR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   let cpos = (shift-1) MOD N;
-  return (ROR(x, shift), x[cpos]);
+  return (ROR(x, shift), x[cpos:]);
 end
 
 // Unreachable

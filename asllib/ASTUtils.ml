@@ -188,7 +188,6 @@ let rec use_e e =
   | E_GetField (e, _) -> use_e e
   | E_GetFields (e, _) -> use_e e
   | E_Record (ty, li) -> use_ty ty $ use_fields li
-  | E_Concat es -> use_es es
   | E_Tuple es -> use_es es
   | E_Unknown t -> use_ty t
   | E_Pattern (e, p) -> use_e e $ use_pattern p
@@ -204,7 +203,7 @@ and use_pattern = function
   | Pattern_Range (e1, e2) -> use_e e1 $ use_e e2
 
 and use_slice = function
-  | Slice_Single e -> use_e e
+  | Slice_Arg e -> use_e e
   | Slice_Star (e1, e2) | Slice_Length (e1, e2) | Slice_Range (e1, e2) ->
       use_e e1 $ use_e e2
 
@@ -329,8 +328,6 @@ let rec expr_equal eq e1 e2 =
       (* We can ignore parameters as they are deduced from arguments. *)
       String.equal x1 x2 && list_equal (expr_equal eq) args1 args2
   | E_Call _, _ | _, E_Call _ -> false
-  | E_Concat li1, E_Concat li2 -> list_equal (expr_equal eq) li1 li2
-  | E_Concat _, _ | _, E_Concat _ -> false
   | E_Cond (e11, e21, e31), E_Cond (e12, e22, e32) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22 && expr_equal eq e31 e32
   | E_Cond _, _ | _, E_Cond _ -> false
@@ -369,7 +366,7 @@ and slice_equal eq slice1 slice2 =
   slice1 == slice2
   ||
   match (slice1, slice2) with
-  | Slice_Single e1, Slice_Single e2 -> expr_equal eq e1 e2
+  | Slice_Arg e1, Slice_Arg e2 -> expr_equal eq e1 e2
   | Slice_Range (e11, e21), Slice_Range (e12, e22)
   | Slice_Length (e11, e21), Slice_Length (e12, e22) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22
@@ -511,7 +508,18 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_Discard -> E_Var "-"
     | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
-    | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
+    | LE_Concat (les, _) ->
+        let rec go : lexpr list -> expr_desc = function
+          | [] -> E_Literal (L_BitVector Bitvector.empty)
+          | [ e ] -> map_desc aux e |> desc
+          | e :: es ->
+              let es = go es in
+              E_Binop
+                ( BV_CONCAT,
+                  map_desc aux e,
+                  with_pos_from (to_pos e) (add_dummy_pos es) )
+        in
+        go les
   in
   map_desc aux
 
@@ -563,11 +571,11 @@ let case_to_conds : stmt -> stmt =
       S_Seq (assign, cases_to_cond x cases)
   | _ -> raise (Invalid_argument "case_to_conds")
 
-let slice_is_single = function Slice_Single _ -> true | _ -> false
+let slice_is_arg = function Slice_Arg _ -> true | _ -> false
 
-let slice_as_single = function
-  | Slice_Single e -> e
-  | _ -> raise @@ Invalid_argument "slice_as_single"
+let slice_as_arg = function
+  | Slice_Arg e -> e
+  | _ -> raise @@ Invalid_argument "slice_as_arg"
 
 let default_t_bits = T_Bits (E_Var "-" |> add_dummy_pos, [])
 
@@ -598,21 +606,21 @@ exception FailedConstraintOp
 let is_left_increasing = function
   | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> true
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
+  | RDIV | BV_CONCAT ->
       raise FailedConstraintOp
 
 let is_right_increasing = function
   | MUL | SHL | SHR | POW | PLUS -> true
   | DIV | DIVRM | MOD | MINUS -> false
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
+  | RDIV | BV_CONCAT ->
       raise FailedConstraintOp
 
 let is_right_decreasing = function
   | MINUS -> true
   | DIV | DIVRM | MUL | SHL | SHR | POW | PLUS | MOD -> false
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
+  | RDIV | BV_CONCAT ->
       raise FailedConstraintOp
 
 (* Begin ConstraintBinop *)
@@ -653,7 +661,6 @@ let rec subst_expr substs e =
   | E_Var s -> (
       match List.assoc_opt s substs with None -> e.desc | Some e' -> e'.desc)
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
-  | E_Concat es -> E_Concat (List.map tr es)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_Call (x, args, param_args) -> E_Call (x, List.map tr args, param_args)
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
@@ -698,7 +705,7 @@ let rec is_simple_expr e =
   | E_Unop (_, e)
   | E_Pattern (e, _) (* because pattern must be side-effect free. *) ->
       is_simple_expr e
-  | E_Tuple es | E_Concat es -> List.for_all is_simple_expr es
+  | E_Tuple es -> List.for_all is_simple_expr es
   | E_Cond (e1, e2, e3) ->
       is_simple_expr e1 && is_simple_expr e2 && is_simple_expr e3
   | E_Record (_, fields) ->
@@ -744,14 +751,13 @@ let rename_locals map_name ast =
     | E_GetFields (e', li) -> E_GetFields (map_e e', li)
     | E_GetItem (e', i) -> E_GetItem (map_e e', i)
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
-    | E_Concat li -> E_Concat (map_es li)
     | E_Tuple li -> E_Tuple (map_es li)
     | E_Pattern (_, _) -> failwith "Not yet implemented: offuscate patterns"
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices
   and map_slice = function
+    | Slice_Arg e -> Slice_Arg (map_e e)
     | Slice_Length (e1, e2) -> Slice_Length (map_e e1, map_e e2)
-    | Slice_Single e -> Slice_Single (map_e e)
     | Slice_Range (e1, e2) -> Slice_Range (map_e e1, map_e e2)
     | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)
   and map_t t =

@@ -102,7 +102,7 @@ let slices_width env =
   let minus = binop MINUS in
   let one = !$1 in
   let slice_width = function
-    | Slice_Single _ -> one
+    | Slice_Arg _ -> one
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
     | Slice_Range (e1, e2) -> plus one (minus e1 e2)
   in
@@ -241,6 +241,11 @@ module Property (C : ANNOTATE_CONFIG) = struct
   let check_true b fail () = if b then () else fail () [@@inline]
   let check_true' b = check_true b assumption_failed [@@inline]
   let check_all2 li1 li2 f () = List.iter2 (fun x1 x2 -> f x1 x2 ()) li1 li2
+
+  let fatal_from_if_not_silence e (error_desc : Error.error_desc) =
+    let fail () = fatal_from e error_desc in
+    let+ () = fail in
+    ()
 end
 
 (* -------------------------------------------------------------------------
@@ -410,7 +415,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           else DI.Interval.make x y
         in
         match slice with
-        | Slice_Single e ->
+        | Slice_Arg e ->
+            fatal_from_if_not_silence e (Error.UnexpectedSliceArg e);
             let x = eval env e in
             make x x
         | Slice_Range (e1, e2) ->
@@ -447,7 +453,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let one slice k =
       match slice with
-      | Slice_Single e -> e :: k
+      | Slice_Arg e ->
+          fatal_from_if_not_silence e (Error.UnexpectedSliceArg e);
+          e :: k
       | Slice_Length (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
           let rec do_rec n =
@@ -622,7 +630,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | MUL | SHL | POW -> true
     | PLUS | DIV | MINUS | MOD | SHR | DIVRM -> false
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | BV_CONCAT ->
         assert false
 
   (* Begin ExplodeIntervals *)
@@ -742,7 +750,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
     | MINUS | MUL | PLUS -> Fun.id
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | BV_CONCAT ->
         assert false
   (* End *)
 
@@ -798,7 +806,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         annotated_cs
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | BV_CONCAT ->
         assert false
   (* End *)
 
@@ -840,6 +848,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (check_type_satisfies' env t2 integer)
             in
             let w = get_bitvector_width' env t1 in
+            T_Bits (w, []) |> with_loc
+        | BV_CONCAT ->
+            let w1 = get_bitvector_width' env t1 in
+            let w2 = get_bitvector_width' env t2 in
+            let w = width_plus env w1 w2 in
             T_Bits (w, []) |> with_loc
         | EQ_OP | NEQ ->
             (* Wrong! *)
@@ -1196,11 +1209,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           Format.eprintf "Annotating slice %a@." PP.pp_slice_list [ s ]
       in
       match s with
-      | Slice_Single i ->
-          (* LRM R_GXKG:
-             The notation b[i] is syntactic sugar for b[i +: 1].
-          *)
-          annotate_slice (Slice_Length (i, !$1)) |: TypingRule.Slice
+      | Slice_Arg i ->
+          fatal_from_if_not_silence i (Error.UnexpectedSliceArg i);
+          Slice_Length (i, !$1) |: TypingRule.Slice
       | Slice_Length (offset, length) ->
           let t_offset, offset' = annotate_expr env offset
           and length' =
@@ -1625,19 +1636,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
     (* End *)
-    | E_Concat [] -> fatal_from loc UnrespectedParserInvariant
-    (* Begin EConcat *)
-    | E_Concat (_ :: _ as li) ->
-        let ts, es =
-          List.map (annotate_expr_ ~forbid_atcs env) li |> List.split
-        in
-        let w =
-          let widths = List.map (get_bitvector_width e env) ts in
-          let wh = List.hd widths and wts = List.tl widths in
-          List.fold_left (width_plus env) wh wts
-        in
-        (T_Bits (w, []) |> here, E_Concat es |> here) |: TypingRule.EConcat
-    (* End *)
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
@@ -1699,9 +1697,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match e'.desc with
         | E_Var name
           when should_reduce_to_call env name ST_Getter
-               && List.for_all slice_is_single slices ->
+               && List.for_all slice_is_arg slices ->
             let args =
-              try List.map slice_as_single slices
+              try List.map slice_as_arg slices
               with Invalid_argument _ -> assert false
             in
             let name1, args1, eqs, ty =
@@ -1729,7 +1727,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (* Begin EGetArray *)
             | T_Array (size, ty') -> (
                 match slices with
-                | [ Slice_Single e_index ] ->
+                | [ Slice_Arg e_index ] ->
                     let t_index', e_index' =
                       annotate_expr_ ~forbid_atcs env e_index
                     in
@@ -1971,7 +1969,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let le2 = annotate_lexpr env le1 t_le1 in
             let+ () = check_type_satisfies le2 env t_e t in
             match slices with
-            | [ Slice_Single e_index ] ->
+            | [ Slice_Arg e_index ] ->
                 let t_index', e_index' = annotate_expr env e_index in
                 let wanted_t_index = type_of_array_length ~loc:le size in
                 let+ () =
@@ -2540,9 +2538,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match sub_le.desc with
         | LE_Var x
           when should_reduce_to_call env x ST_Setter
-               && List.for_all slice_is_single slices ->
+               && List.for_all slice_is_arg slices ->
             let args =
-              try List.map slice_as_single slices
+              try List.map slice_as_arg slices
               with Invalid_argument _ -> assert false
             in
             let typed_args = (t_e, e) :: List.map (annotate_expr env) args in

@@ -3,7 +3,7 @@ func SignedZero(sign: bit, N : integer) => bits(N)
 begin
     let E = 5;
     let F = N - (E + 1);
-    return [sign, Zeros(E), Zeros(F)];
+    return sign :: Zeros(E) :: Zeros(F);
 end
 
 // Mixture here is fine - constrained + underconstrained - requires type equivalence

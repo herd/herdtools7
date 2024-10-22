@@ -255,8 +255,8 @@ val scope_compare : scope -> scope -> int
 val lid_of_lexpr : lexpr -> local_decl_item option
 val expr_of_lexpr : lexpr -> expr
 val case_to_conds : stmt -> stmt
-val slice_is_single : slice -> bool
-val slice_as_single : slice -> expr
+val slice_is_arg : slice -> bool
+val slice_as_arg : slice -> expr
 
 val patch : src:AST.t -> patches:AST.t -> AST.t
 (** [patch ~src ~patches] replaces in [src] the global identifiers defined by [patches]. *)
@@ -267,9 +267,9 @@ val subst_expr : (identifier * expr) list -> expr -> expr
 
     Warning: constants and statically-evaluated parts are not changed, for
     example:
-      [E_Slice (E_Var "y", [Slice_Single (E_Var "y")])]
+      [E_Slice (E_Var "y", [Slice_Length (E_Var "y", E_Literal (L_Int Z.one))])]
     will become after [subst_expr [("y", E_Var "x")]]:
-      [E_Slice (E_Var "x", [Slice_Single (E_Var "y")])]
+      [E_Slice (E_Var "x", [Slice_Length (E_Var "y", E_Literal (L_Int Z.one))])]
 *)
 
 val rename_locals : (identifier -> identifier) -> AST.t -> AST.t
