@@ -221,8 +221,6 @@ module SES = struct
     && is_empty ses.recursive_calls
     && not ses.atcs_performed
 
-  let is_atc_free ses = not ses.atcs_performed
-
   let is_non_concurrent ses1 ses2 =
     if
       (not (ISet.is_empty ses1.thrown_exceptions))
