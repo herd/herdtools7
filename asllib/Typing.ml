@@ -587,6 +587,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     else fatal_from e (Error.ImpureExpression (e, ses))
   (* End *)
 
+  let check_is_side_effect_free e ses () =
+    if SES.is_side_effect_free ses then ()
+    else
+      let ses = SES.filter_side_effects ses in
+      fatal_from e (Error.ImpureExpression (e, ses))
+
   let storage_is_config ~loc (env : env) s =
     match IMap.find_opt s env.global.storage_types with
     | Some (_, (GDK_Constant | GDK_Config)) -> true
@@ -1241,11 +1247,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   and annotate_sef_expr env e =
     let t, e', ses = annotate_expr env e in
-    let+ () =
-      check_true (SES.is_side_effect_free ses) @@ fun () ->
-      let ses = SES.filter_side_effects ses in
-      fatal_from e Error.(ImpureExpression (e, ses))
-    in
+    let+ () = check_is_side_effect_free e ses in
     (t, e')
 
   (* Begin AnnotateStaticInteger *)
@@ -2727,17 +2729,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let start_t, start_e', ses_start = annotate_expr env start_e
         and end_t, end_e', ses_end = annotate_expr env end_e
         and limit' = annotate_limit_expr ~warn:false ~loc env limit in
+        let+ () = check_is_side_effect_free start_e ses_start in
+        let+ () = check_is_side_effect_free end_e ses_end in
+        let ses_cond =
+          SES.non_concurrent_union ses_start ses_end
+            ~fail:(concurrent_side_effects ~loc)
+        in
         let start_struct = Types.make_anonymous env start_t
         and end_struct = Types.make_anonymous env end_t in
-        let+ () =
-          check_true (SES.is_side_effect_free ses_end) @@ fun _ ->
-          fatal_from loc Error.(ImpureExpression (end_e, ses_end))
-        in
-        let+ () =
-          check_true (SES.is_side_effect_free ses_start) @@ fun _ ->
-          fatal_from loc Error.(ImpureExpression (start_e, ses_start))
-        in
-        let ses_cond = SES.union ses_start ses_end in
         (* TypingRule.ForConstraint( *)
         let cs =
           match (start_struct.desc, end_struct.desc) with
