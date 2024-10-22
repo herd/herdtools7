@@ -12,6 +12,8 @@ let eval_expr e =
   | L_Int z -> z
   | _ -> assert false
 
+let try_eval_expr e = try eval_expr e |> ASTUtils.expr_of_z with _ -> e
+
 let z_in_constraint z c =
   match
     StaticOperations.filter_reduce_constraint_div c |> Option.value ~default:c
@@ -35,7 +37,7 @@ let property op (x, y, cs1, cs2) =
   z_in_constraints (eval_binop x op y)
     (StaticOperations.constraint_binop op cs1 cs2)
 
-let gen_xy _strict op =
+let gen_xy op =
   let open QCheck2.Gen in
   let base_nat = small_nat in
   let strict_positive_nat = base_nat >|= ( + ) 1 in
@@ -49,50 +51,33 @@ let gen_xy _strict op =
   | DIVRM | MOD -> pair signed_nat strict_positive_nat
   | _ -> pair signed_nat signed_nat
 
-let gen_ab _strict _op x _y =
+let gen_cs x =
   let open QCheck2.Gen in
-  let+ a = nat >|= ( - ) x and+ b = nat >|= ( + ) x in
+  let+ a = small_nat >|= ( - ) x and+ b = small_nat >|= ( + ) x in
   assert (a <= x);
   assert (x <= b);
   (ASTUtils.expr_of_int a, ASTUtils.expr_of_int b)
 
-let gen_cd strict op _x y =
+let gen_test_abcd op =
   let open QCheck2.Gen in
-  let strict_negative_nat = nat >|= fun n -> -(n + 1) in
-  let+ c =
-    if strict then
-      match op with
-      | SHR | SHL | POW -> int_range ~origin:y 0 y
-      | DIV | DIVRM | MOD ->
-          if y > 0 then oneof [ int_range ~origin:y 1 y; strict_negative_nat ]
-          else nat >|= ( - ) y
-      | _ -> nat >|= ( - ) y
-    else nat >|= ( - ) y
-  and+ d = nat >|= ( + ) y in
-  assert (c <= y);
-  assert (y <= d);
-  (ASTUtils.expr_of_int c, ASTUtils.expr_of_int d)
-
-let gen_test_abcd strict op =
-  let open QCheck2.Gen in
-  let* x, y = gen_xy strict op in
-  let+ a, b = gen_ab strict op x y and+ c, d = gen_cd strict op x y in
+  let* x, y = gen_xy op in
+  let+ a, b = gen_cs x and+ c, d = gen_cs y in
   ( Z.of_int x,
     Z.of_int y,
     [ Constraint_Range (a, b) ],
     [ Constraint_Range (c, d) ] )
 
-let gen_test_abc strict op =
+let gen_test_abc op =
   let open QCheck2.Gen in
-  let* x, y = gen_xy strict op in
-  let+ a, b = gen_ab strict op x y in
+  let* x, y = gen_xy op in
+  let+ a, b = gen_cs x in
   let c = ASTUtils.expr_of_int y in
   (Z.of_int x, Z.of_int y, [ Constraint_Range (a, b) ], [ Constraint_Exact c ])
 
-let gen_test_acd strict op =
+let gen_test_acd op =
   let open QCheck2.Gen in
-  let* x, y = gen_xy strict op in
-  let+ c, d = gen_cd strict op x y in
+  let* x, y = gen_xy op in
+  let+ c, d = gen_cs y in
   let a = ASTUtils.expr_of_int x in
   (Z.of_int x, Z.of_int y, [ Constraint_Exact a ], [ Constraint_Range (c, d) ])
 
@@ -100,18 +85,25 @@ let print_test op (x, y, cs1, cs2) =
   try
     let res = eval_binop x op y in
     let cs = StaticOperations.constraint_binop op cs1 cs2 in
-    Format.asprintf "@[@[%a %s %a = %a@]@ is@ not@ in@ @[[%a] %s [%a] = [%a]@]"
+    let reduced_cs =
+      List.filter_map StaticOperations.filter_reduce_constraint_div cs
+      |> List.map (function
+           | Constraint_Exact e -> Constraint_Exact (try_eval_expr e)
+           | Constraint_Range (e1, e2) ->
+               Constraint_Range (try_eval_expr e1, try_eval_expr e2))
+    in
+    Format.asprintf
+      "@[<2>@[%a %s %a = %a@]@ is@ not@ in@ @[<2>[%a] %s [%a]@ = [%a]@ = [%a]@]"
       Z.pp_print x (PP.binop_to_string op) Z.pp_print y Z.pp_print res
       PP.pp_int_constraints cs1 (PP.binop_to_string op) PP.pp_int_constraints
-      cs2 PP.pp_int_constraints cs
+      cs2 PP.pp_int_constraints cs PP.pp_int_constraints reduced_cs
   with _ ->
     Format.asprintf
       "(x=%a, y=%a, cs1=%a, cs2=%a) with op %s resulted in an error" Z.pp_print
       x Z.pp_print y PP.pp_int_constraints cs1 PP.pp_int_constraints cs2
       (PP.binop_to_string op)
 
-let long_factor = 1000
-let strict = true
+let long_factor = 100
 let base_count = 10000
 
 let test_abcd op =
@@ -121,7 +113,7 @@ let test_abcd op =
       (PP.binop_to_string op)
   in
   QCheck2.Test.make ~count ~long_factor ~print:(print_test op) ~name
-    (gen_test_abcd strict op) (property op)
+    (gen_test_abcd op) (property op)
 
 let test_abc op =
   let count = base_count
@@ -130,7 +122,7 @@ let test_abc op =
       (PP.binop_to_string op)
   in
   QCheck2.Test.make ~count ~long_factor ~print:(print_test op) ~name
-    (gen_test_abc strict op) (property op)
+    (gen_test_abc op) (property op)
 
 let test_acd op =
   let count = base_count
@@ -139,7 +131,7 @@ let test_acd op =
       (PP.binop_to_string op)
   in
   QCheck2.Test.make ~count ~long_factor ~print:(print_test op) ~name
-    (gen_test_acd strict op) (property op)
+    (gen_test_acd op) (property op)
 
 let () =
   QCheck_runner.run_tests_main

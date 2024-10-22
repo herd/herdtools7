@@ -92,17 +92,19 @@ let constraint_shl c1 c2 =
       (* {a..b} SHL c is {(a SHL c) .. (b SHL c)}. *)
       [ range (shl a c) (shl b c) ]
   | Constraint_Exact a, Constraint_Range (c, d) ->
-      (* a SHL {c...d} is {(a SHL c) .. (a SHL d), (a SHL d) .. (a SHL c)} *)
+      (* a SHL {c...d} is {
+         (a SHL c) .. (a SHL d), a..(a SHL d),
+         (a SHL d) .. (a SHL c), (a SHL d) ..a} *)
       let ac = shl a c and ad = shl a d in
-      [ range ac ad; range ad ac ]
+      [ range ac ad; range a ad; range ad ac; range ad a ]
   | Constraint_Range (a, b), Constraint_Range (c, d) ->
       (* {a..b} SHL {c..d} is {
-           (a SHL c) .. (b SHL d),
+           (a SHL c) .. (b SHL d), a .. (b SHL d),
             (a SHL d) .. (b SHL d),
-            (a SHL d) .. (b SHL c),
+            (a SHL d) .. (b SHL c), (a SHL d) ..b,
          } *)
       let ac = shl a c and bd = shl b d and ad = shl a d and bc = shl b c in
-      [ range ac bd; range ad bd; range ad bc ]
+      [ range ac bd; range a bd; range ad bd; range ad bc; range ad b ]
 
 let constraint_pow c1 c2 =
   let pow = binop POW and neg = unop NEG in
@@ -114,9 +116,14 @@ let constraint_pow c1 c2 =
       let mac = pow (neg a) c in
       [ range zero_expr (pow b c); range (neg mac) mac; exact one_expr ]
   | Constraint_Exact a, Constraint_Range (c, d) ->
-      (* a POW {c..d} is {(a POW c) .. (a POW d), (-((-a) POW d)) .. ((-a) POW d)} *)
-      let mad = pow (neg a) d in
-      [ range (pow a c) (pow a d); range (neg mad) mad; exact one_expr ]
+      (* a POW {c..d} is {(a POW c) .. (a POW d), 1.. (a POW d), (-((-a) POW d)) .. ((-a) POW d)} *)
+      let mad = pow (neg a) d and ad = pow a d in
+      [
+        range (pow a c) ad;
+        range one_expr ad;
+        range (neg mad) mad;
+        exact one_expr;
+      ]
   | Constraint_Range (a, b), Constraint_Range (_c, d) ->
       (* {a..b} POW {c..d} is {0.. (b POW d), (- ((-a) POW d)) .. ((-a) POW d)} *)
       let mad = pow (neg a) d in
@@ -151,20 +158,20 @@ let filter_reduce_constraint_div =
   function
   | Constraint_Exact e as c -> (
       match get_literal_div_opt e with
-      | Some (z1, z2) when Z.sign z2 != 0 ->
+      | Some (z1, z2) when Z.sign z2 > 0 ->
           if Z.divisible z1 z2 then Some c else None
       | _ -> Some c)
   | Constraint_Range (e1, e2) as c -> (
       let z1_opt =
         match get_literal_div_opt e1 with
-        | Some (z1, z2) when Z.sign z2 != 0 ->
+        | Some (z1, z2) when Z.sign z2 > 0 ->
             let zdiv, zmod = Z.ediv_rem z1 z2 in
             let zres = if Z.sign zmod = 0 then zdiv else Z.succ zdiv in
             Some zres
         | _ -> None
       and z2_opt =
         match get_literal_div_opt e2 with
-        | Some (z1, z2) when Z.sign z2 != 0 -> Some (Z.ediv z1 z2)
+        | Some (z1, z2) when Z.sign z2 > 0 -> Some (Z.ediv z1 z2)
         | _ -> None
       in
       match (z1_opt, z2_opt) with
