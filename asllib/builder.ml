@@ -114,11 +114,13 @@ let from_string ~filename ~ast_string version ast_type =
   lexbuf_set_filename lexbuf filename;
   from_lexbuf ast_type version lexbuf
 
-let obfuscate = ASTUtils.rename_locals (( ^ ) "__stdlib_local_")
+let obfuscate prefix = ASTUtils.rename_locals (( ^ ) prefix)
 
 let stdlib =
   let filename = "ASL Standard Library" and ast_string = Asl_stdlib.stdlib in
-  lazy (from_string ~filename ~ast_string `ASLv1 (Some `Ast) |> obfuscate)
+  lazy
+    (from_string ~filename ~ast_string `ASLv1 (Some `Ast)
+    |> obfuscate "__stdlib_local_")
 
 let with_stdlib ast = List.rev_append (Lazy.force stdlib) ast
 
@@ -146,4 +148,5 @@ let is_stdlib_name =
 
 let with_primitives ?(loc = ASTUtils.dummy_annotated) primitives =
   List.map AST.(fun (f, _) -> D_Func f |> ASTUtils.add_pos_from loc) primitives
+  |> obfuscate "__primitive_local_"
   |> List.rev_append

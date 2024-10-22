@@ -731,7 +731,8 @@ let rename_locals map_name ast =
   let map_names li = List.map (fun (name, x) -> (map_name name, x)) li in
   let rec map_e e =
     map_desc_st' e @@ function
-    | E_Literal _ | E_Unknown _ -> e.desc
+    | E_Literal _ -> e.desc
+    | E_Unknown t -> E_Unknown (map_t t)
     | E_Var x -> E_Var (map_name x)
     | E_ATC (e', t) -> E_ATC (map_e e', map_t t)
     | E_Binop (op, e1, e2) -> E_Binop (op, map_e e1, map_e e2)
@@ -746,7 +747,7 @@ let rename_locals map_name ast =
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
     | E_Concat li -> E_Concat (map_es li)
     | E_Tuple li -> E_Tuple (map_es li)
-    | E_Pattern (_, _) -> failwith "Not yet implemented: offuscate patterns"
+    | E_Pattern (_, _) -> failwith "Not yet implemented: obfuscate patterns"
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices
   and map_slice = function
@@ -756,13 +757,14 @@ let rename_locals map_name ast =
     | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)
   and map_t t =
     map_desc_st' t @@ function
-    | T_Real | T_String | T_Bool | T_Enum _ | T_Named _
-    | T_Int (UnConstrained | Parameterized _) ->
+    | T_Real | T_String | T_Bool | T_Enum _ | T_Named _ | T_Int UnConstrained ->
         t.desc
+    | T_Int (Parameterized _) ->
+        failwith "Not yet implemented: obfuscate parametrized types"
     | T_Int (WellConstrained cs) -> T_Int (WellConstrained (map_cs cs))
     | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)
     | T_Tuple li -> T_Tuple (List.map map_t li)
-    | T_Array (_, _) -> failwith "Not yet implemented: offuscate array types"
+    | T_Array (_, _) -> failwith "Not yet implemented: obfuscate array types"
     | T_Record li -> T_Record (List.map (fun (f, t) -> (f, map_t t)) li)
     | T_Exception li -> T_Exception (List.map (fun (f, t) -> (f, map_t t)) li)
   and map_cs cs = List.map map_c cs
@@ -778,7 +780,7 @@ let rename_locals map_name ast =
     | S_Call (name, args, nargs) -> S_Call (name, map_es args, map_names nargs)
     | S_Return e -> S_Return (Option.map map_e e)
     | S_Cond (e, s1, s2) -> S_Cond (map_e e, map_s s1, map_s s2)
-    | S_Case (_, _) -> failwith "Not yet implemented: offuscate cases"
+    | S_Case (_, _) -> failwith "Not yet implemented: obfuscate cases"
     | S_Assert e -> S_Assert (map_e e)
     | S_For { index_name; start_e; dir; end_e; body; limit } ->
         let index_name = map_name index_name
@@ -792,7 +794,7 @@ let rename_locals map_name ast =
         S_Repeat (map_s s, map_e e, Option.map map_e limit)
     | S_Throw (Some (e, t)) -> S_Throw (Some (map_e e, Option.map map_t t))
     | S_Throw None -> s.desc
-    | S_Try (_, _, _) -> failwith "Not yet implemented: offscate try"
+    | S_Try (_, _, _) -> failwith "Not yet implemented: obfuscate try"
     | S_Print { args; debug } -> S_Print { args = List.map map_e args; debug }
   and map_le le =
     map_desc_st' le @@ function
