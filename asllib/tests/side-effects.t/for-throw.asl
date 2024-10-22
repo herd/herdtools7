@@ -11,7 +11,7 @@ begin
   var y: integer = 0;
 
   for i = 0 to throwing () do
-    let - = y * y + x;
+    let - = y * y + x ;
   end;
 
   return 0;

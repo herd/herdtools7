@@ -53,23 +53,23 @@
   $ aslref constant-func.asl
   $ aslref constant-func-read.asl
   File constant-func-read.asl, line 9, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found
-    foo(4), which produces the following side-effects: [WriteGlobal "X"].
+  ASL Typing error: a pure expression was expected, found foo(4), which
+    produces the following side-effects: [WriteGlobal "X"].
   [1]
   $ aslref constant-func-write.asl
   File constant-func-write.asl, line 9, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found
-    foo(4), which produces the following side-effects: [WriteGlobal "X"].
+  ASL Typing error: a pure expression was expected, found foo(4), which
+    produces the following side-effects: [WriteGlobal "X"].
   [1]
   $ aslref constant-func-unknown.asl
   File constant-func-unknown.asl, line 7, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found
-    foo(4), which produces the following side-effects: [NonDeterministic].
+  ASL Typing error: a pure expression was expected, found foo(4), which
+    produces the following side-effects: [NonDeterministic].
   [1]
   $ aslref constant-func-throw.asl
   File constant-func-throw.asl, line 8, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found
-    foo(4), which produces the following side-effects: [RaiseException "E"].
+  ASL Typing error: a pure expression was expected, found foo(4), which
+    produces the following side-effects: [RaiseException "E"].
   [1]
   $ aslref constant-func-throw-caught.asl
   $ aslref constant-func-local-var.asl
@@ -81,23 +81,26 @@
   [1]
   $ aslref while-var-edits.asl
   $ aslref repeat-var-edits.asl
-  $ aslref for-read-throw.asl
-  File for-read-throw.asl, line 13, character 2 to line 15, character 6:
-  ASL Typing error: a pure expression was expected, found
-    throwing(), which produces the following side-effects:
-    [RaiseException "E"].
+
+  $ aslref for-write.asl
+  File for-write.asl, line 15, characters 15 to 25:
+  ASL Typing error: a pure expression was expected, found write_X(), which
+    produces the following side-effects: [WriteGlobal "X"].
   [1]
   $ aslref for-write-throw.asl
-  File for-write-throw.asl, line 13, character 2 to line 15, character 6:
-  ASL Typing error: a pure expression was expected, found
-    throwing(), which produces the following side-effects:
-    [RaiseException "E"].
+  File for-write-throw.asl, line 13, characters 15 to 26:
+  ASL Typing error: a pure expression was expected, found throwing(), which
+    produces the following side-effects: [RaiseException "E"].
   [1]
   $ aslref for-throw-throw.asl
-  File for-throw-throw.asl, line 13, character 2 to line 15, character 6:
-  ASL Typing error: a pure expression was expected, found
-    throwing(), which produces the following side-effects:
-    [RaiseException "E"].
+  File for-throw-throw.asl, line 13, characters 15 to 26:
+  ASL Typing error: a pure expression was expected, found throwing(), which
+    produces the following side-effects: [RaiseException "E"].
+  [1]
+  $ aslref for-throw.asl
+  File for-throw.asl, line 13, characters 15 to 26:
+  ASL Typing error: a pure expression was expected, found throwing(), which
+    produces the following side-effects: [RaiseException "E"].
   [1]
 
   $ aslref config-uses-var.asl
