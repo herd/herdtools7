@@ -1722,6 +1722,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             match struct_t_e'.desc with
             (* Begin ESlice *)
             | T_Int _ | T_Bits _ ->
+                let+ () =
+                  check_true (not (list_is_empty slices)) @@ fun () ->
+                  fatal_from loc Error.EmptySlice
+                in
                 let w = slices_width env slices in
                 (* TODO: check that:
                    - Rule SNQJ: An expression or subexpression which
@@ -1970,6 +1974,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let slices2 = best_effort slices (annotate_slices env) in
             let+ () = check_disjoint_slices le env slices2 in
+            let+ () =
+              check_true (not (list_is_empty slices)) @@ fun () ->
+              fatal_from le Error.EmptySlice
+            in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
         (* End *)
         (* Begin LESetArray *)
