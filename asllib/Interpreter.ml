@@ -160,8 +160,7 @@ module Make (B : Backend.S) (C : Config) = struct
   let bind_unroll loop_name (m : stmt_eval_type) f : stmt_eval_type =
     bind_continue m @@ fun env ->
     let stop, env' = IEnv.tick_decr env in
-    if stop then
-      B.warnT (loop_name ^ " unrolling reached limit") env >>= return_continue
+    if stop then B.cutoffT (loop_name ^ " pruned") env >>= return_continue
     else f env'
 
   let bind_maybe_unroll loop_name undet =
@@ -954,7 +953,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSRepeat *)
     | S_Repeat (body, e, _limit) ->
         let*> env1 = eval_block env body in
-        let env2 = IEnv.tick_push_bis env1 in
+        let env2 = IEnv.tick_push_bis env1 1 in
         eval_loop false env2 e body |: SemanticsRule.SRepeat
     (* End *)
     (* Begin EvalSFor *)
@@ -964,7 +963,7 @@ module Make (B : Backend.S) (C : Config) = struct
         (* By typing *)
         let undet = B.is_undetermined start_v || B.is_undetermined end_v in
         let*| env1 = declare_local_identifier env index_name start_v in
-        let env2 = if undet then IEnv.tick_push_bis env1 else env1 in
+        let env2 = if undet then IEnv.tick_push_bis env1 1 else env1 in
         let loop_msg =
           if undet then Printf.sprintf "for %s" index_name
           else
