@@ -611,6 +611,41 @@ Monad type:
           acts_rn (eiid,Evt.empty) in
       eiid,(acts, None)
 
+(* AArch64 failed cas that writes into memory nevertheless *)
+    let do_aarch64_cas_no_with_writeback
+        (is_physical:bool)
+        (read_rn:'loc t) (read_rs:'v t)
+        (write_rs:'v-> unit t)
+        (read_mem: 'loc -> 'v t) (write_mem: 'loc -> 'v -> unit t)
+        (branch: 'loc -> unit t)
+        (rne: 'v -> 'v -> unit t)
+        eiid =
+      let eiid,read_rn = read_rn eiid in
+      let eiid,read_rs = read_rs eiid in
+      let cv,cl_cv,es_rs = Evt.as_singleton_nospecul read_rs in
+      let acts_rn,spec = read_rn in
+      assert (Misc.is_none spec) ;
+      let eiid,acts =
+        Evt.fold
+          (fun (a,cl_a,es_rn) (eiid,acts) ->
+            let eiid,read_mem = read_mem a eiid in
+            let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem in
+            let eiid,write_mem = write_mem a ov eiid in
+            let (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
+            let eiid,write_rs = write_rs ov eiid in
+            let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+            let eiid,branch = branch a eiid in
+            let (),cl_br,es_br =  Evt.as_singleton_nospecul branch in
+            let eiid,nem = rne ov cv eiid in
+            let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
+            assert (E.is_empty_event_structure eseq) ;
+            let es =
+              E.aarch64_cas_ok is_physical `DataFromRx es_rn es_rs E.empty_event_structure es_wrs es_rm es_wm es_br in
+            let cls = cl_a@cl_cv@cl_rm@cl_wm@cl_wrs@cl_br@cl_ne  in
+            eiid,Evt.add ((),cls,es) acts)
+          acts_rn (eiid,Evt.empty) in
+      eiid,(acts, None)
+
 (* AArch64 successful cas *)
     let do_aarch64_cas_ok
         (is_physical:bool) (prov_data: [`DataFromRRs | `DataFromRx])
@@ -710,6 +745,12 @@ Monad type:
           read_mem branch rne
       in
       altT (do_ true) (do_ false)
+
+    let aarch64_cas_no_with_writeback (is_physical: bool) (read_rn: 'loc t)
+        (read_rs: 'v t) (write_rs: 'v -> unit t) (read_mem: 'loc -> 'v t)
+        (write_mem: 'loc -> 'v -> unit t) (branch: 'loc -> unit t) (rne: 'v -> 'v -> unit t) =
+      do_aarch64_cas_no_with_writeback is_physical read_rn read_rs
+          write_rs read_mem write_mem branch rne
 
     (* RISCV store conditional may always succeed? *)
     let riscv_store_conditional = aarch64_or_riscv_store_conditional false
