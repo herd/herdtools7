@@ -79,9 +79,14 @@
   File for-var-edits.asl, line 6, character 2 to line 8, character 6:
   ASL Typing error: concurrent side effects ReadLocal "x" and WriteLocal "x"
   [1]
+  $ aslref for-read-write-global.asl
+  File for-read-write-global.asl, line 14, character 2 to line 16, character 6:
+  ASL Typing error: concurrent side effects ReadGlobal "X" and WriteGlobal "X"
+  [1]
   $ aslref while-var-edits.asl
   $ aslref repeat-var-edits.asl
 
+  $ aslref for-read.asl
   $ aslref for-write.asl
   File for-write.asl, line 15, characters 15 to 25:
   ASL Typing error: a pure expression was expected, found write_X(), which
@@ -129,3 +134,58 @@
   $ aslref config-uses-atc.asl
   $ aslref config-uses-unknown.asl
 
+  $ aslref assert-read.asl
+  $ aslref assert-write.asl
+  File assert-write.asl, line 12, characters 9 to 24:
+  ASL Typing error: a pure expression was expected, found (write_X() == 0),
+    which produces the following side-effects: [WriteGlobal "X"].
+  [1]
+  $ aslref assert-throw.asl
+  File assert-throw.asl, line 10, characters 9 to 25:
+  ASL Typing error: a pure expression was expected, found (throwing() == 0),
+    which produces the following side-effects: [RaiseException "E"].
+  [1]
+  $ aslref assert-atc.asl
+  File assert-atc.asl, line 3, characters 9 to 30:
+  ASL Typing error: a pure expression was expected,
+    found (0 as integer {3} == 2), which produces the following side-effects:
+    [PerformsATC].
+  [1]
+
+  $ aslref type-read-config.asl
+  $ aslref type-read-constant.asl
+  $ aslref type-read-let.asl
+  $ aslref type-read-local.asl
+  File type-read-local.asl, line 5, characters 18 to 19:
+  ASL Typing error: a pure expression was expected, found x, which produces the
+    following side-effects: [ReadLocal "x"].
+  [1]
+  $ aslref type-read-local-let.asl
+  $ aslref type-read.asl
+  File type-read.asl, line 3, characters 19 to 20:
+  ASL Typing error: a pure expression was expected, found X, which produces the
+    following side-effects: [ReadGlobal "X"].
+  [1]
+  $ aslref type-write.asl
+  File type-write.asl, line 10, characters 19 to 29:
+  ASL Typing error: a pure expression was expected, found write_X(), which
+    produces the following side-effects: [ReadGlobal "X", WriteGlobal "X"].
+  [1]
+
+  $ aslref assert-atc.asl
+  File assert-atc.asl, line 3, characters 9 to 30:
+  ASL Typing error: a pure expression was expected,
+    found (0 as integer {3} == 2), which produces the following side-effects:
+    [PerformsATC].
+  [1]
+  $ aslref assert-read.asl
+  $ aslref assert-throw.asl
+  File assert-throw.asl, line 10, characters 9 to 25:
+  ASL Typing error: a pure expression was expected, found (throwing() == 0),
+    which produces the following side-effects: [RaiseException "E"].
+  [1]
+  $ aslref assert-write.asl
+  File assert-write.asl, line 12, characters 9 to 24:
+  ASL Typing error: a pure expression was expected, found (write_X() == 0),
+    which produces the following side-effects: [WriteGlobal "X"].
+  [1]
