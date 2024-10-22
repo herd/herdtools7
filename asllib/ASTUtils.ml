@@ -108,6 +108,16 @@ let list_concat_map f l =
   in
   aux f [] l
 
+let list_take =
+  let rec aux acc n li =
+    match (li, n) with
+    | [], _ | _, 0 -> List.rev acc
+    | h :: t, n -> aux (h :: acc) (n - 1) t
+  in
+  fun n li ->
+    if n < 0 then raise (Invalid_argument "list_take");
+    aux [] n li
+
 let list_is_empty = function [] -> true | _ -> false
 let pair x y = (x, y)
 let pair' y x = (x, y)
