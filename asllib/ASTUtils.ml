@@ -511,6 +511,7 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_Concat (les, _) ->
         let rec go : lexpr list -> expr_desc = function
           | [] -> E_Literal (L_BitVector Bitvector.empty)
+          | [ e ] -> map_desc aux e |> desc
           | e :: es ->
               let es = go es in
               E_Binop

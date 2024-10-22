@@ -241,6 +241,11 @@ module Property (C : ANNOTATE_CONFIG) = struct
   let check_true b fail () = if b then () else fail () [@@inline]
   let check_true' b = check_true b assumption_failed [@@inline]
   let check_all2 li1 li2 f () = List.iter2 (fun x1 x2 -> f x1 x2 ()) li1 li2
+
+  let fatal_from_if_not_silence e (error_desc : Error.error_desc) =
+    let fail () = fatal_from e error_desc in
+    let+ () = fail in
+    ()
 end
 
 (* -------------------------------------------------------------------------
@@ -411,10 +416,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         match slice with
         | Slice_Arg e ->
-            let+ () =
-              check_true false @@ fun () ->
-              fatal_from e (Error.UnexpectedSliceArg e)
-            in
+            fatal_from_if_not_silence e (Error.UnexpectedSliceArg e);
             let x = eval env e in
             make x x
         | Slice_Range (e1, e2) ->
@@ -452,10 +454,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let one slice k =
       match slice with
       | Slice_Arg e ->
-          let+ () =
-            check_true false @@ fun () ->
-            fatal_from e (Error.UnexpectedSliceArg e)
-          in
+          fatal_from_if_not_silence e (Error.UnexpectedSliceArg e);
           e :: k
       | Slice_Length (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
@@ -1211,10 +1210,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       match s with
       | Slice_Arg i ->
-          let+ () =
-            check_true false @@ fun () ->
-            fatal_from i (Error.UnexpectedSliceArg i)
-          in
+          fatal_from_if_not_silence i (Error.UnexpectedSliceArg i);
           Slice_Length (i, !$1) |: TypingRule.Slice
       | Slice_Length (offset, length) ->
           let t_offset, offset' = annotate_expr env offset

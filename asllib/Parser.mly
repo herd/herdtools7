@@ -183,10 +183,6 @@ let     pared(x) == delimited(    LPAR, x, RPAR    )
 let    braced(x) == delimited(  LBRACE, x, RBRACE  )
 let bracketed(x) == delimited(LBRACKET, x, RBRACKET)
 
-let bracketed_or_pared(x) :=
-  | x=bracketed(x); { x }
-  | x=pared(x);     { x }
-
 (* Option handling *)
 (* [some] returns an option, but ensures it is there. *)
 let some(x) == ~ = x ; <Some>
