@@ -341,7 +341,8 @@ One of the following applies:
     \item $\vs$ is a declaration with local declaration keyword $\ldk$, local identifiers $\ldi$, and an expression $\ve$,
           that is, $\SDecl(\ldk, \ldi, \langle\ve\rangle)$;
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep)$\ProseOrTypeError;
-    \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$ and type $\vte$ in $\tenv$
+    \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$, the type $\vte$,
+          and the initializing expression $\vep$, in $\tenv$
           yields $(\tenvone, \ldip)$;
     \item One of the following applies:
     \begin{itemize}
@@ -379,7 +380,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\tenvone, \ldip)\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \vep, \ldi} \typearrow (\tenvone, \ldip)\\\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
   \reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
@@ -393,7 +394,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[non\_constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \ldi} \typearrow (\tenvone, \ldip)\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \vep, \ldi} \typearrow (\tenvone, \ldip)\\\\
   \commonprefixline\\\\
   \ldk \neq \LDKConstant\\
   \news \eqdef \SDecl(\ldk, \ldip, \langle\vep\rangle)
@@ -435,8 +436,7 @@ One of the following applies:
   \item All of the following apply (\textsc{var}):
   \begin{itemize}
     \item $\ldi$ corresponds to a variable declaration for $\vx$, that is, $\LDIVar(\vx)$;
-    \item define $\newtenv$ and the environment $\tenv$ with its global component updated by binding
-          $\vx$ to $\vv$ in its $\constantvalues$ map.
+    \item applying $\addlocalconstant$ to $\vx$ and $\vv$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
   \item All of the following apply (\textsc{tuple}):
@@ -460,7 +460,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[var]{
-  \newtenv \eqdef (G^\tenv, L^\tenv.\constantvalues[\vx \mapsto \vv])
+  \addlocalconstant(\tenv, \vx, \vv) \typearrow \newtenv
 }{
   \declarelocalconstant(\tenv, \vv, \overname{\LDIVar(\vx)}{\ldi}) \typearrow \newtenv
 }
@@ -526,7 +526,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[typed]{
   \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError\\\\
+  \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \None, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError\\\\
   \newldi \eqdef \LDITyped(\newldip, \vtp)
 }{
   \annotatelocaldeclitemuninit(\tenv, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow (\newtenv, \newldi)
@@ -949,10 +949,11 @@ $\vstwo$ will be evaluated);
 \section{Case Statements\label{sec:CaseStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \nonemptylist{\Nalt} \parsesep \Tend &\\
-\Nalt \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
-      |\ & \Totherwise \parsesep \Nstmtlist &\\
-\Notherwiseopt \derives\ & \option{\Totherwise \parsesep \Tarrow \parsesep \Nstmtlist} &
+\Nstmt \derivesinline\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend &\\
+\Ncasealtlist \derivesinline\ & \NClist{\Ncasealt} \parsesep &\\
+                           |\ & \NClist{\Ncasealt} \parsesep \Ncaseotherwise &\\
+\Ncasealt \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\Ncaseotherwise \derivesinline\ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -963,33 +964,69 @@ $\vstwo$ will be evaluated);
 \subsubsection{ASTRule.SCase}
 \begin{mathpar}
 \inferrule{
-  \buildlist[\Nalt](\valtlist) \astarrow \valtlistast
+  \buildlist[\Ncasealt](\vcasealtlist) \astarrow \vcasealtlistast
 }{
   {
     \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\valtlist}{\nonemptylist{\Nalt}}, \Tend)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\vcasealtlist}{\Ncasealtlist}, \Tend)}{\vparsednode})
   \astarrow \\
-  \overname{\SCase(\astof{\vexpr}, \valtlistast)}{\vastnode}
+  \overname{\SCase(\astof{\vexpr}, \vcasealtlistast)}{\vastnode}
     \end{array}
   }
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Alt\label{sec:ASTRule.Alt}}
-\hypertarget{build-alt}{}
+\subsubsection{ASTRule.CaseAltList\label{sec:ASTRule.CaseAltList}}
+\hypertarget{build-casealtlist}{}
 The function
 \[
-\buildalt(\overname{\parsenode{\Nalt}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
+\buildcasealtlist(\overname{\parsenode{\Ncasealtlist}}{\vparsednode}) \;\aslto\; \overname{\casealt^+}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule[when]{
+\inferrule[no\_otherwise]{
+  \buildclist[\buildcasealt](\vcases) \typearrow \vastnode
+}{
+  \buildcasealtlist(\overname{\Ncasealtlist(\vcases : \NClist{\Ncasealt})}{\vparsednode}) \astarrow \vastnode
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise]{
+  \buildclist[\buildcasealt](\vcases) \astarrow h\\
+  \buildcasealt(\votherwise) \astarrow t
+}{
+  {
+  \buildcasealtlist\left(\overname{
+      \Ncasealtlist\left(
+        \begin{array}{l}
+          \vcases : \NClist{\Ncasealt}, \\
+          \votherwise:\Ncaseotherwise
+        \end{array}
+    \right)
+    }{\vparsednode}\right) \astarrow
+  \overname{[h] \concat t}{\vastnode}
+  }
+}
+\end{mathpar}
+
+
+\subsubsection{ASTRule.CaseAlt\label{sec:ASTRule.CaseAlt}}
+\hypertarget{build-casealt}{}
+The function
+\[
+\buildcasealt(\overname{\parsenode{\Ncasealt}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
   \buildoption[\buildexpr](\vwhereopt) \astarrow \vwhereast
 }{
   {
     \begin{array}{r}
-  \buildalt\left(\overname{\Nalt\left(
+  \buildcasealt\left(\overname{\Ncasealt\left(
     \begin{array}{l}
     \Twhen, \punnode{\Npatternlist}, \\
     \wrappedline\ \namednode{\vwhereopt}{\option{\Twhere, \Nexpr}}, \Tarrow, \\
@@ -1003,11 +1040,19 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
+\subsubsection{ASTRule.CaseOtherwise\label{sec:ASTRule.CaseOtherwise}}
+\hypertarget{build-caseotherwise}{}
+The function
+\[
+\buildcaseotherwise(\overname{\parsenode{\Ncaseotherwise}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
 \begin{mathpar}
-\inferrule[otherwise]{}{
+\inferrule{}{
   {
     \begin{array}{r}
-  \buildalt(\overname{\Nalt(\Totherwise, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode})
+  \buildcaseotherwise(\overname{\Ncasealt(\Totherwise, \Tarrow, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode})
   \astarrow \\
   \overname{\casealt(\CasePattern: \PatternAll, \CaseWhere: \None, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
     \end{array}
@@ -1725,7 +1770,7 @@ All of the following apply:
         that is, $\SFor\left\{\begin{array}{rcl}
           \Forindexname &:& \vindexname\\
           \Forstarte &:& \vstarte\\
-          \fordirection &:& \vdirection\\
+          \fordirection &:& \vdir\\
           \Forende &:& \vende\\
           \Forbody &:& \vbody\\
           \Forlimit &:& \vlimit
@@ -1777,7 +1822,7 @@ All of the following apply:
   \annotatestmt\left(\tenv, \overname{\SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
     \Forstarte &:& \vstarte\\
-    \fordirection &:& \vdirection\\
+    \fordirection &:& \vdir\\
     \Forende &:& \vende\\
     \Forbody &:& \vbody\\
     \Forlimit &:& \vlimit
@@ -1785,7 +1830,7 @@ All of the following apply:
   \left(\overname{\SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
     \Forstarte &:& \vstartep\\
-    \fordirection &:& \vdirection\\
+    \fordirection &:& \vdir\\
     \Forende &:& \vendep\\
     \Forbody &:& \vbodyp\\
     \Forlimit &:& \vlimitp
@@ -1907,7 +1952,7 @@ All of the following apply:
   \item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
     \Forstarte &:& \vstarte\\
-    \fordirection &:& \vdirection\\
+    \fordirection &:& \vdir\\
     \Forende &:& \vende\\
     \Forbody &:& \vbody\\
     \Forlimit &:& \Ignore
@@ -1946,7 +1991,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
   \SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
     \Forstarte &:& \vstarte\\
-    \fordirection &:& \vdirection\\
+    \fordirection &:& \vdir\\
     \Forende &:& \vende\\
     \Forbody &:& \vbody\\
     \Forlimit &:& \Ignore\\

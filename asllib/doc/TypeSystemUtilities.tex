@@ -111,96 +111,52 @@ One of the following applies:
 }
 \end{mathpar}
 
-\hypertarget{def-checkvarnotinenv}{}
-\hypertarget{def-varinenv}{}
-\subsubsection{TypingRule.CheckVarNotInEnv}
-The function
+\subsubsection{TypingRule.Sort\label{sec:sortinglists}}
+\hypertarget{def-sort}{}
+The parametric function
 \[
-  \varinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}}
-  \aslto \overname{\Bool}{\vb}
+\sort(\overname{T^*}{\vlone}, \overname{(T\times T)\rightarrow \{-1,0,1\}}{\compare}) \typearrow \overname{T^*}{\vltwo}
 \]
-determines whether an identifier $\id$ is declared in the static environment $\tenv$.
-
-The function
-\[
-  \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
-  \aslto \{\True\} \cup \TTypeError
-\]
-checks whether $\id$ is already declared in $\tenv$. If it is, the result is a type error,
-and otherwise the result is $\True$.
+sorts a list of elements of type $T$ --- $\vlone$ --- using the comparison function $\compare$,
+resulting in the sorted list $\vltwo$.
+$\compare(a, b)$ returns $1$ to mean that $a$ should be ordered before $b$,
+$0$ to mean that $a$ and $b$ can be ordered in any way,
+and $-1$ to mean that $b$ should be ordered before $a$.
 
 \subsubsection{Prose}
-$\varinenv{\tenv, \id}$ is true if and only if one of the following applies:
+One of the following applies:
 \begin{itemize}
-  \item $\id$ is declared as a local identifier in $\tenv$;
-  \item $\id$ is declared as a global identifier in $\tenv$;
-  \item $\id$ is declared as a subprogram in $\tenv$;
-  \item $\id$ is declared as a type in $\tenv$.
+  \item All of the following apply (\textsc{empty\_or\_single}):
+  \begin{itemize}
+    \item $\vlone$ is either empty or contains a single element;
+    \item $\vltwo$ is $\vlone$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{two\_or\_more}):
+  \begin{itemize}
+    \item $\vlone$ contains at least two elements;
+    \item $f$ is a permutation of $1..n$;
+    \item $\vltwo$ is the application of the permutation $f$ to $\vlone$;
+    \item applying $\compare$ to every pair of consecutive elements in $\vltwo$ yields either $0$ or $1$.
+  \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{
-  {
-    \begin{array}{rl}
-  \vb \eqdef & L^\tenv.\localstoragetypes(\id) \neq \bot\ \lor\\
-             & G^\tenv.\globalstoragetypes(\id) \neq \bot \lor\\
-             & G^\tenv.\subprograms(\id) \neq \bot\ \lor\\
-             & G^\tenv.\declaredtypes(\id) \neq \bot
-  \end{array}
-}
+\inferrule[empty\_or\_single]{
+  \listlen{\vlone} = n\\
+  n < 2
 }{
-  \varinenv{\tenv, \id} \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[okay]{
-  \varinenv{\tenv, \id} \typearrow \False
-}{
-  \checkvarnotinenv{\tenv, \id} \typearrow \True
+  \sort(\vlone, \compare) \typearrow \overname{\vlone}{\vltwo}
 }
 \and
-  \inferrule[error]{
-  \varinenv{\tenv, \id} \typearrow \True
+\inferrule[two\_or\_more]{
+  \listlen{\vlone} = n\\
+  f : 1..n \rightarrow 1..n \text{ is a bijection}\\
+  \vltwo \eqdef [\ i=1..n: \vlone[f(i)]\ ]\\
+  i=1..n-1: \compare(\vltwo[i], \vltwo[i+1]) \geq 0
 }{
-  \checkvarnotinenv{\tenv, \id} \typearrow \TypeErrorVal{AlreadyDeclared}
-}
-\end{mathpar}
-
-\hypertarget{def-addlocal}{}
-\subsubsection{TypingRule.AddLocal \label{sec:TypingRule.AddLocal}}
-The function
-\[
-  \addlocal(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\identifier}{\id} \aslsep
-    \overname{\ty}{\tty} \aslsep
-    \overname{\localdeclkeyword}{\ldk})
-  \aslto
-  \overname{\staticenvs}{\newtenv}
-\]
-adds the identifier $\id$ as a local storage element with type $\tty$ and local declaration keyword $\ldk$
-to the local environment of $\tenv$, resulting in the static environment $\newtenv$.
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item the map $\newlocalstoragetypes$ is defined by updating the map \\
-        $\localstoragetypes$ of $\tenv$
-        with the binding $\id$ to the type $\tty$ and local declaration keyword $\ldk$, that is, $(\tty,\ldk)$;
-  \item $\newtenv$ is defined by updating the local environment with the binding of \\
-        $\localstoragetypes$ to $\newlocalstoragetypes$.
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \newlocalstoragetypes \eqdef L^\tenv.\localstoragetypes[\id \mapsto (\tty, \ldk)]\\
-  \newtenv \eqdef (G^\tenv, L^\tenv[\localstoragetypes \mapsto \newlocalstoragetypes])
-}
-{
-  \addlocal(\tenv, \id, \tty, \ldk) \typearrow \newtenv
+  \sort(\vlone, \compare) \typearrow \vltwo
 }
 \end{mathpar}
 
@@ -327,10 +283,11 @@ One of the following applies:
     \item $\vb$ is true if and only if $\vs$ is declared as a constant, a configuration variable, or an immutable variable.
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item All of the following apply (\textsc{subprogram\_or\_typename}):
   \begin{itemize}
-    \item $\vs$ is not defined in the environment as a storage element;
-    \item the result is a type error indicating that $\vs$ is not defined as a storage element.
+    \item $\vs$ is not a storage element;
+    \item checking whether $\vs$ is the name of a subprogram or the name of a declared type yields $\True$\ProseTerminateAs{\UndefinedIdentifier};
+    \item $\vb$ is $\False$.
   \end{itemize}
 \end{itemize}
 
@@ -341,31 +298,64 @@ One of the following applies:
 \inferrule[local]{
   L^\tenv.\localstoragetypes(\vs) = (\Ignore, \ldk)\\
   \vb \eqdef \ldk \in \{\LDKConstant, \LDKLet\}
-}
-{
+}{
   \storageispure(\tenv, \vs) \typearrow \vb
 }
-\and
-\inferrule[global]{
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[global]{
   L^\tenv.\localstoragetypes(\vs) = \bot\\
   G^\tenv.\globalstoragetypes(\vs) = (\Ignore, \gdk)\\
   \vb \eqdef \gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}
-}
-{
+}{
   \storageispure(\tenv, \vs) \typearrow \vb
 }
-\and
-\inferrule[error]{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[subprogram\_or\_typename]{
   L^\tenv.\localstoragetypes(\vs) = \bot\\
-  G^\tenv.\globalstoragetypes(\vs) = \bot
+  G^\tenv.\globalstoragetypes(\vs) = \bot\\
+  \checktrans{G^\tenv.\subprograms \lor G^\tenv.\declaredtypes}{\UndefinedIdentifier} \checktransarrow \True \OrTypeError
+}{
+  \storageispure(\tenv, \vs) \typearrow \overname{\False}{\vb}
 }
-{
-  \storageispure(\tenv, \vs) \typearrow \TypeErrorVal{UndefinedIdentifier}
+\end{mathpar}
+
+\hypertarget{def-isstaticallyevaluable}{}
+\hypertarget{def-staticallyevaluable}{}
+\subsubsection{TypingRule.IsStaticallyEvaluable\label{sec:TypingRule.IsStaticallyEvaluable}}
+The function
+\[
+  \isstaticallyevaluable(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \overname{\Bool}{\bv}
+\]
+returns in $\vb$ whether $\ve$ is a \staticallyevaluable\ expression in the static environment $\tenv$.
+
+\subsubsection{Prose}
+All of the following applies:
+\begin{itemize}
+  \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields $\veone$;
+  \item determining the set of used identifiers in $\veone$ yields $\useset$;
+  \item $\vb$ is true if and only if every identifier in $\useset$ is pure.
+\end{itemize}
+
+\CodeSubsection{\IsStaticallyEvaluableBegin}{\IsStaticallyEvaluableEnd}{../Typing.ml}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \normalize(\tenv, \ve) \typearrow \veone\\
+  \useexpr(\veone) \typearrow \useset\\
+  \id\in\useset: \storageispure(\tenv, \id) \typearrow \vb_\id\\
+  \vb \eqdef \bigwedge_{\id\in\useset} \vb_\id
+}{
+  \isstaticallyevaluable(\tenv, \ve) \typearrow \True
 }
 \end{mathpar}
 
 \hypertarget{def-checkstaticallyevaluable}{}
-\hypertarget{def-staticallyevaluable}{}
 \subsubsection{TypingRule.CheckStaticallyEvaluable \label{sec:TypingRule.CheckStaticallyEvaluable}}
 The function
 \[
@@ -377,9 +367,7 @@ returns $\True$ if $\ve$ is a \staticallyevaluable\ expression in the static env
 \subsubsection{Prose}
 All of the following applies:
 \begin{itemize}
-  \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields $\veone$;
-  \item determining the set of used identifiers in $\veone$ yields $\useset$;
-  \item $\vb$ is true if and only if every identifier in $\useset$ is pure;
+  \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\vb$;
   \item the result is $\True$ is $\vb$ is $\True$, otherwise it is a type error indicating that the expression
   is not statically evaluable.
 \end{itemize}
@@ -389,13 +377,9 @@ All of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \useexpr(\veone) \typearrow \useset\\
-  \id\in\useset: \storageispure(\tenv, \id) \typearrow \vb_\id\\
-  \vb \eqdef \bigwedge_{\id\in\useset} \vb_\id\\
+  \isstaticallyevaluable(\tenv, \ve) \typearrow \vb\\
   \checktrans{\vb}{NotStaticallyEvaluable} \checktransarrow \True \OrTypeError
-}
-{
+}{
   \checkstaticallyevaluable(\tenv, \ve) \typearrow \True
 }
 \end{mathpar}
@@ -439,6 +423,123 @@ One of the following applies:
 }
 \end{mathpar}
 
+\section{Static Environment Utilities}
+
+\hypertarget{def-withemptylocal}{}
+\subsubsection{TypingRule.WithEmptyLocal}
+The function
+\[
+  \withemptylocal(\overname{\globalstaticenvs}{\genv})
+  \aslto \overname{\staticenvs}{\tenv}
+\]
+constructs a static environment from the global static environment $\genv$
+and the empty local static environment.
+
+\subsubsection{Prose}
+The result is a static environment where the global component is $\genv$ and the local component
+is the local static environment of $\emptytenv$.
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \withemptylocal(\genv) \typearrow (\genv, L^{\emptytenv})
+}
+\end{mathpar}
+\CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
+
+\hypertarget{def-checkvarnotinenv}{}
+\hypertarget{def-varinenv}{}
+\subsubsection{TypingRule.CheckVarNotInEnv}
+The function
+\[
+  \varinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}}
+  \aslto \overname{\Bool}{\vb}
+\]
+determines whether an identifier $\id$ is declared in the static environment $\tenv$.
+
+The function
+\[
+  \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
+  \aslto \{\True\} \cup \TTypeError
+\]
+checks whether $\id$ is already declared in $\tenv$. If it is, the result is a type error,
+and otherwise the result is $\True$.
+
+\subsubsection{Prose}
+$\varinenv{\tenv, \id}$ is true if and only if one of the following applies:
+\begin{itemize}
+  \item $\id$ is declared as a local identifier in $\tenv$;
+  \item $\id$ is declared as a global identifier in $\tenv$;
+  \item $\id$ is declared as a subprogram in $\tenv$;
+  \item $\id$ is declared as a type in $\tenv$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+    \begin{array}{rl}
+  \vb \eqdef & L^\tenv.\localstoragetypes(\id) \neq \bot\ \lor\\
+             & G^\tenv.\globalstoragetypes(\id) \neq \bot \lor\\
+             & G^\tenv.\subprograms(\id) \neq \bot\ \lor\\
+             & G^\tenv.\declaredtypes(\id) \neq \bot
+  \end{array}
+}
+}{
+  \varinenv{\tenv, \id} \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[okay]{
+  \varinenv{\tenv, \id} \typearrow \False
+}{
+  \checkvarnotinenv{\tenv, \id} \typearrow \True
+}
+\and
+  \inferrule[error]{
+  \varinenv{\tenv, \id} \typearrow \True
+}{
+  \checkvarnotinenv{\tenv, \id} \typearrow \TypeErrorVal{AlreadyDeclared}
+}
+\end{mathpar}
+\CodeSubsection{\CheckVarNotInEnvBegin}{\CheckVarNotInEnvEnd}{../types.ml}
+
+\hypertarget{def-addlocal}{}
+\subsubsection{TypingRule.AddLocal \label{sec:TypingRule.AddLocal}}
+The function
+\[
+  \addlocal(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\identifier}{\id} \aslsep
+    \overname{\ty}{\tty} \aslsep
+    \overname{\localdeclkeyword}{\ldk})
+  \aslto
+  \overname{\staticenvs}{\newtenv}
+\]
+adds the identifier $\id$ as a local storage element with type $\tty$ and local declaration keyword $\ldk$
+to the local environment of $\tenv$, resulting in the static environment $\newtenv$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item the map $\newlocalstoragetypes$ is defined by updating the map \\
+        $\localstoragetypes$ of $\tenv$
+        with the binding $\id$ to the type $\tty$ and local declaration keyword $\ldk$, that is, $(\tty,\ldk)$;
+  \item $\newtenv$ is defined by updating the local environment with the binding of \\
+        $\localstoragetypes$ to $\newlocalstoragetypes$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \newlocalstoragetypes \eqdef L^\tenv.\localstoragetypes[\id \mapsto (\tty, \ldk)]\\
+  \newtenv \eqdef (G^\tenv, L^\tenv[\localstoragetypes \mapsto \newlocalstoragetypes])
+}
+{
+  \addlocal(\tenv, \id, \tty, \ldk) \typearrow \newtenv
+}
+\end{mathpar}
+
 \subsubsection{TypingRule.IsUndefined \label{sec:TypingRule.IsUndefined}}
 \hypertarget{def-isundefined}{}
 The function
@@ -461,11 +562,119 @@ $\vx$ is not bound to a local storage in $\tenv$.
 }
 \end{mathpar}
 
+\subsubsection{TypingRule.LookupConstants\label{sec:TypingRule.LookupConstants}}
+\hypertarget{def-lookupconstants}{}
+The function
+\[
+\lookupconstants(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\identifier}{\vx}) \typearrow
+  \overname{\literal}{\vv}
+  \cup \{\bot\}
+\]
+returns the literal $\vv$ associated with the identifier $\vx$ in the static environment $\tenv$,
+or $\bot$ if $\vx$ is not associated with a constant.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{local}):
+  \begin{itemize}
+    \item the $\constantvalues$ map of the local component of $\tenv$ binds $\vx$ to $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global}):
+  \begin{itemize}
+    \item the $\constantvalues$ map of the local component of $\tenv$ does not bind $\vx$ to any literal;
+    \item the $\constantvalues$ map of the global component of $\tenv$ binds $\vx$ to $\vv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_found}):
+  \begin{itemize}
+    \item the $\constantvalues$ map of the local component of $\tenv$ does not bind $\vx$ to any literal;
+    \item the $\constantvalues$ map of the global component of $\tenv$ does not bind $\vx$ to any literal;
+    \item the result is $\bot$.
+  \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[local]{
+  L^\tenv.\constantvalues(\vx) = \vv
+}{
+  \lookupconstants(\tenv, \vx) \typearrow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global]{
+  L^\tenv.\constantvalues(\vx) = \bot\\
+  G^\tenv.\constantvalues(\vx) = \vv
+}{
+  \lookupconstants(\tenv, \vx) \typearrow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[not\_found]{
+  L^\tenv.\constantvalues(\vx) = \bot\\
+  G^\tenv.\constantvalues(\vx) = \bot
+}{
+  \lookupconstants(\tenv, \vx) \typearrow \bot
+}
+\end{mathpar}
+\CodeSubsection{\LookupConstantsBegin}{\LookupConstantsEnd}{../StaticEnv.ml}
+
+\subsubsection{TypingRule.AddGlobalConstant\label{sec:TypingRule.AddGlobalConstant}}
+\hypertarget{def-addglobalconstant}{}
+The function
+\[
+\addglobalconstant(
+  \overname{\globalstaticenvs}{\genv} \aslsep
+  \overname{\identifier}{\name} \aslsep
+  \overname{\literal}{\vv}) \typearrow
+  \overname{\globalstaticenvs}{\newgenv}
+\]
+binds the identifier $\name$ to the literal $\vv$ in the global static environment $\genv$,
+yielding the updated global static environment $\newgenv$.
+
+\subsubsection{Prose}
+Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\name$ to $\vv$.
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \addglobalconstant(\genv, \name, \vv) \typearrow \overname{\genv.\constantvalues[\name\mapsto\vv]}{\newgenv}
+}
+\end{mathpar}
+\CodeSubsection{\AddGlobalConstantBegin}{\AddGlobalConstantEnd}{../StaticEnv.ml}
+
+\subsubsection{TypingRule.AddLocalConstant\label{sec:TypingRule.AddLocalConstant}}
+\hypertarget{def-addlocalconstant}{}
+The function
+\[
+\addlocalconstant(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\identifier}{\name} \aslsep
+  \overname{\literal}{\vv}) \typearrow
+  \overname{\staticenvs}{\newtenv}
+\]
+binds the identifier $\name$ to the literal $\vv$ in the local static environment component of the static environment $\tenv$,
+yielding the updated static environment $\newtenv$.
+
+\subsubsection{Prose}
+Define $\newtenv$ as $\tenv$ with the global component updated such that its $\constantvalues$ map is updated to bind $\name$ to $\vv$.
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \addlocalconstant(\tenv, \name, \vv) \typearrow \overname{(G^\tenv.\constantvalues[\name\mapsto\vv], L^\tenv)}{\newtenv}
+}
+\end{mathpar}
+\CodeSubsection{\AddLocalConstantBegin}{\AddLocalConstantEnd}{../StaticEnv.ml}
+
 \subsubsection{TypingRule.LookupImmutableExpr\label{sec:TypingRule.LookupImmutableExpr}}
 \hypertarget{def-lookupimmutableexpr}{}
 The function
 \[
-\lookupimmutableexpr(\overname{\staticenvs}{\tenv}, \overname{\identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
+\lookupimmutableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
 \]
 looks up the static environment $\tenv$ for an immutable expression associated with the identifier $\vx$,
 returning $\bot$ if there is none.
@@ -517,52 +726,129 @@ One of the following applies:
   \lookupimmutableexpr(\tenv, \vx) \typearrow \bot
 }
 \end{mathpar}
+\CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.Sort\label{sec:sortinglists}}
-\hypertarget{def-sort}{}
-The parametric function
+\subsubsection{TypingRule.AddGlobalImmutableExpr\label{sec:TypingRule.AddGlobalImmutableExpr}}
+\hypertarget{def-addglobalimmutableexpr}{}
+The function
 \[
-\sort(\overname{T^*}{\vlone}, \overname{(T\times T)\rightarrow \{-1,0,1\}}{\compare}) \typearrow \overname{T^*}{\vltwo}
+\addglobalimmutableexpr(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\identifier}{\vx}
+  \aslsep \overname{\expr}{\ve}) \aslto \overname{\staticenvs}{\newtenv}
 \]
-sorts a list of elements of type $T$ --- $\vlone$ --- using the comparison function $\compare$,
-resulting in the sorted list $\vltwo$.
-$\compare(a, b)$ returns $1$ to mean that $a$ should be ordered before $b$,
-$0$ to mean that $a$ and $b$ can be ordered in any way,
-and $-1$ to mean that $b$ should be ordered before $a$.
+binds the identifier $\vx$, which is assumed to name a global storage element,
+to the expression $\ve$, which is assumed to be \staticallyevaluable,
+in the static environment $\tenv$,
+resulting in the updated environment $\newtenv$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item define $\newtenv$ as the static environment with the same local environment as $\tenv$ and a global environment
+        where $\exprequiv$ binds $\vx$ to $\ve$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \addglobalimmutableexpr(\tenv, \vx, \ve) \typearrow \overname{(G^\tenv.\exprequiv[\vx \mapsto \ve], L^\tenv)}{\newtenv}
+}
+\end{mathpar}
+\CodeSubsection{\AddGlobalImmutableExprBegin}{\AddGlobalImmutableExprEnd}{../StaticEnv.ml}
+
+\subsubsection{TypingRule.AddLocalImmutableExpr\label{sec:TypingRule.AddLocalImmutableExpr}}
+\hypertarget{def-addlocalimmutableexpr}{}
+The function
+\[
+\addlocalimmutableexpr(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\identifier}{\vx}
+  \aslsep \overname{\expr}{\ve}) \aslto \overname{\staticenvs}{\newtenv}
+\]
+binds the identifier $\vx$, which is assumed to name a local storage element,
+to the expression $\ve$, which is assumed to be \staticallyevaluable,
+in the static environment $\tenv$,
+resulting in the updated environment $\newtenv$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item define $\newtenv$ as the static environment with the same global environment as $\tenv$ and a local environment
+        where $\exprequiv$ binds $\vx$ to $\ve$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \addlocalimmutableexpr(\tenv, \vx, \ve) \typearrow \overname{(G^\tenv, L^\tenv.\exprequiv[\vx \mapsto \ve])}{\newtenv}
+}
+\end{mathpar}
+\CodeSubsection{\AddLocalImmutableExprBegin}{\AddLocalImmutableExprEnd}{../StaticEnv.ml}
+
+\subsubsection{TypingRule.AddImmutableExpr\label{sec:TypingRule.AddImmutableExpr}}
+\hypertarget{def-addimmutableexpression}{}
+The function
+\[
+\addimmutableexpr(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\localdeclkeyword}{\ldk} \aslsep
+  \overname{\langle\expr\rangle}{\veopt}
+  \overname{\identifier}{\vx}) \aslto
+  \overname{\staticenvs}{\newtenv} \cup \TTypeError
+\]
+conditionally adds the information that the expression in $\veopt$ is statically evaluable
+and bound to $\vx$.
+More precisely, $\addimmutableexpr(\tenv, \ldk, \veopt, \vx)$
+associates an expression with the identifier $\vx$
+in the static environment $\tenv$, if one exists in $\veopt$ and it is \staticallyevaluable,
+along with the local declaration keyword $\ldk$. The result is the updated static environment $\newtenv$.
+\ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty\_or\_single}):
+  \item All of the following apply (\textsc{ok}):
   \begin{itemize}
-    \item $\vlone$ is either empty or contains a single element;
-    \item $\vltwo$ is $\vlone$.
+    \item $\vep$ contains the expression $\ve$;
+    \item $\ldk$ is either $\LDKConstant$ or $\LDKLet$;
+    \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\True$;
+    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$\ProseOrTypeError;
+    \item applying $\addlocalimmutableexpr$ to $\vx$ and $\ve$ yields $\newtenv$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{two\_or\_more}):
+  \item All of the following apply (\textsc{fail}):
   \begin{itemize}
-    \item $\vlone$ contains at least two elements;
-    \item $f$ is a permutation of $1..n$;
-    \item $\vltwo$ is the application of the permutation $f$ to $\vlone$;
-    \item applying $\compare$ to every pair of consecutive elements in $\vltwo$ yields either $0$ or $1$.
+    \item One of the following applies:
+    \begin{itemize}
+      \item $\vep$ is $\None$;
+      \item $\ldk$ is neither $\LDKConstant$ nor $\LDKLet$;
+      \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\False$;
+    \end{itemize}
+    \item define $\newtenv$ as $\tenv$.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[empty\_or\_single]{
-  \listlen{\vlone} = n\\
-  n < 2
+\inferrule[ok]{
+  \ldk \in \{\LDKConstant, \LDKLet\}\\
+  \isstaticallyevaluable(\tenv, \ve) \typearrow \True\\
+  \normalize(\tenv, \ve) \typearrow \vep \OrTypeError\\\\
+  \addlocalimmutableexpr(\vx, \vep) \typearrow \newtenv
 }{
-  \sort(\vlone, \compare) \typearrow \overname{\vlone}{\vltwo}
+  \addimmutableexpr(\tenv, \ldk, \overname{\langle\ve\rangle}{\veopt}, \vx) \typearrow \newtenv
 }
-\and
-\inferrule[two\_or\_more]{
-  \listlen{\vlone} = n\\
-  f : 1..n \rightarrow 1..n \text{ is a bijection}\\
-  \vltwo \eqdef [\ i=1..n: \vlone[f(i)]\ ]\\
-  i=1..n-1: \compare(\vltwo[i], \vltwo[i+1]) \geq 0
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[fail]{
+  {
+    \begin{array}{ll}
+      \ldk \not\in \{\LDKConstant, \LDKLet\} & \lor\\
+      \veopt = \None & \lor\\
+      \veopt = \langle\ve\rangle \land \isstaticallyevaluable(\tenv, \ve) \typearrow \False
+    \end{array}
+  }
 }{
-  \sort(\vlone, \compare) \typearrow \vltwo
+  \addimmutableexpr(\tenv, \ldk, \veopt, \vx) \typearrow \overname{\tenv}{\newtenv}
 }
 \end{mathpar}

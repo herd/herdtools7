@@ -401,11 +401,11 @@ We also define the following helper rules:
 \hypertarget{def-annotateanddeclarefunc}{}
 The function
 \[
-  \annotateanddeclarefunc(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig})
+  \annotateanddeclarefunc(\overname{\globalstaticenvs}{\tenv}, \overname{\func}{\funcsig})
   \aslto (\overname{\staticenvs}{\tenv} \times \overname{\func}{\newfuncsig})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a subprogram definition $\funcsig$ in the static environment $\tenv$,
+annotates a subprogram definition $\funcsig$ in the global static environment $\genv$,
 yielding a new subprogram definition $\newfuncsig$ and modified static environment
 $\newtenv$.
 \ProseOtherwiseTypeError
@@ -413,7 +413,7 @@ $\newtenv$.
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item annotating the signature of $\funcsig$ in $\tenv$ as per
+  \item annotating the signature of $\funcsig$ in $\genv$ as per
         \secref{TypingRule.AnnotateFuncSig} yields
         the environment $\tenvone$ and subprogram definition $\funcsigone$\ProseOrTypeError;
   \item declaring the subprogram defined by $\funcsigone$ in $\tenvone$
@@ -425,22 +425,22 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatefuncsig(\tenv, \funcsig) \typearrow (\tenvone, \funcsigone) \OrTypeError\\\\
+  \annotatefuncsig(\genv, \funcsig) \typearrow (\tenvone, \funcsigone) \OrTypeError\\\\
   \declareonefunc(\tenvone, \funcsigone) \typearrow (\newtenv, \newfuncsig) \OrTypeError
 }{
-  \annotateanddeclarefunc(\tenv, \funcsig) \typearrow (\newtenv, \newfuncsig)
+  \annotateanddeclarefunc(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig)
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateFuncSig \label{sec:TypingRule.AnnotateFuncSig}}
+\subsubsection{TypingRule.AnnotateFuncSig\label{sec:TypingRule.AnnotateFuncSig}}
 \hypertarget{def-annotatefuncsig}{}
 The function
 \[
-  \annotatefuncsig(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig})
+  \annotatefuncsig(\overname{\globalstaticenvs}{\genv}, \overname{\func}{\funcsig})
   \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates the signature of a function definition $\funcsig$ in the static environment $\tenv$,
+annotates the signature of a function definition $\funcsig$ in the global static environment $\genv$,
 yielding a new function definition $\newfuncsig$ and modified static environment
 $\newtenv$.
 \ProseOtherwiseTypeError
@@ -448,7 +448,7 @@ $\newtenv$.
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\tenvone$ is the static environment comprised of the global environment of $\tenv$ and an empty local environment;
+  \item $\tenvone$ is the static environment comprised of the global static environment $\genv$ and an empty local environment;
   \item obtaining the variables appearing in the formal types in $\funcsig$ that may be parameter-defining
         in $\tenvone$ via $\getundeclareddefining$ yields \\ $\potentialparams$;
   \item annotating the parameters explicitly listed in $\funcsig$ ($\funcsig.\funcparameters)$ \\
@@ -472,7 +472,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \tenvone \eqdef (G^\tenv, L^{\emptytenv})\\
+  \withemptylocal(\genv) \typearrow \tenvone\\
   \getundeclareddefining(\tenvone, \funcsig) \typearrow \potentialparams\\
   {
     \begin{array}{r}
@@ -1301,7 +1301,7 @@ All of the following apply:
     }\\
   \addnewfunc(\tenv, \name, \vargs, \subprogramtype) \typearrow
   (\tenvone, \namep) \OrTypeError\\\\
-  \checkvarnotingenv{\tenvone, \namep} \typearrow \True \OrTypeError\\\\
+  \checkvarnotingenv{G^\tenvone, \namep} \typearrow \True \OrTypeError\\\\
   \checksetterhasgetter(\tenvone, \funcsig) \typearrow \True \OrTypeError\\\\
   {
   \begin{array}{rrcl}

@@ -186,60 +186,71 @@ The identifier stands for either a storage element or the name of a getter with 
 \subsection{Typing}
 \subsubsection{TypingRule.EVar \label{sec:TypingRule.EVar}}
 \subsubsection{Prose}
-One of the following applies:
+All of the following apply:
 \begin{itemize}
-  \item All of the following apply (\textsc{local\_constant}):
+  \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+  \item One of the following applies:
   \begin{itemize}
-  \item $\ve$ denotes a local variable $\vx$;
-  \item $\vx$ is bound to a local constant $\vv$ of type $\vt$ in the local environment given by $\tenv$;
-  \item $\newe$ is the Literal $\vv$.
-  \end{itemize}
+    \item All of the following apply (\textsc{empty\_getter}):
+    \begin{itemize}
+    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item applying $\annotatecall$ to $\vx$, an empty list of arguments $\emptylist$, and \\
+          $\STEmptyGetter$ yields $(\name, \vargs, \eqs, \langle\vt\rangle)$\ProseOrTypeError;
+    \item define $\newe$ as the call expression for $\name$, list of arguemnts $\vargs$, and list of parameter equalities $\eqs$,
+          that is, $\ECall(\name, \vargs, \eqs)$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{local\_non\_constant}):
-  \begin{itemize}
-  \item $\ve$ denotes a local variable $\vx$;
-  \item $\vx$ is not bound to a constant in the local environment given by $\tenv$;
-  \item $\vx$ has type $\vt$ in the local environment given by $\tenv$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+    \item All of the following apply (\textsc{local\_constant}):
+    \begin{itemize}
+    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+    \item $\vx$ is bound to the type $\vt$ and local declaration keyword $\LDKConstant$
+          via the $\localstoragetypes$ map of the local environment component of $\tenv$;
+    \item applying $\lookupconstants$ to $\vx$ in $\tenv$ yields $\vv$;
+    \item $\newe$ is the literal expression for $\vv$, that is $\eliteral{\vv}$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{global\_constant\_val}):
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is bound to a constant $\vv$ of type $\tty$ in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is the Literal for $\vv$.
-  \end{itemize}
+    \item All of the following apply (\textsc{local\_non\_constant}):
+    \begin{itemize}
+    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+    \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$
+          via the \\
+          $\localstoragetypes$ map of the local environment component of $\tenv$;
+    \item either $k$ is different from $\LDKConstant$ or applying $\lookupconstants$ to $\vx$ in $\tenv$ yields $\bot$;
+    \item define $\newe$ as $\ve$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{global\_constant\_no\_val}):
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is not bound to constant in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+    \item All of the following apply (\textsc{global\_constant}):
+    \begin{itemize}
+    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+    \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
+    \item $\vx$ is bound to $(\tty, \GDKConstant)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
+    \item $\vx$ is bound to $\vv$ via the $\constantvalues$ map of the global component of $\tenv$;
+    \item define $newe$ as the literal expression for $\vv$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{global\_var}):
-  \begin{itemize}
-  \item $\ve$ denotes a global variable $\vx$;
-  \item $\vx$ is not bound to a global constant;
-  \item $\vx$ has type $\tty$ in the global environment given by $\tenv$;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is $\ve$.
-  \end{itemize}
+    \item All of the following apply (\textsc{global\_non\_constant}):
+    \begin{itemize}
+      \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+      \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
+      \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
+      \item either $\vx$ is not bound in the $\constantvalues$ map of the global component of $\tenv$ or $k$ is not $\GDKConstant$;
+      \item define $newe$ as $\ve$.
+    \end{itemize}
 
-  \item All of the following apply (\textsc{error\_undefined}):
-  \begin{itemize}
-  \item $\ve$ is a variable $\vx$;
-  \item $\vx$ is not bound to a type in $\tenv$;
-  \item the result is a type error indicating that $\vx$ is an undefined identifier.
+    \item All of the following apply (\textsc{error\_undefined}):
+    \begin{itemize}
+      \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
+      \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
+      \item $\vx$ is not bound via the $\globalstoragetypes$ map of the local component of $\tenv$;
+      \item the result is a type error indicating that $\vx$ is an undefined identifier ($\UndefinedIdentifier$).
+    \end{itemize}
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty\_getter]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \True\\
+  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \True\OrTypeError\\\\
   \annotatecall(\tenv, \vx, \emptylist, \STEmptyGetter) \typearrow (\name, \vargs, \eqs, \langle\vt\rangle) \OrTypeError\\
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\ECall(\name, \vargs, \eqs)}{\newe})
@@ -249,8 +260,8 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[local\_constant]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
-  L^\tenv.\constantvalues(\vx) = \vv\\
-  L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)
+  L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)\\
+  \lookupconstants(\tenv, \vx) \typearrow \vv
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\eliteral{\vv}}{\newe})
 }
@@ -259,50 +270,40 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[local\_non\_constant]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
-  L^\tenv.\constantvalues(\vx) = \bot\\
   L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
-  k \in \{\LDKVar, \LDKLet\}
+  \lookupconstants(\tenv, \vx) \typearrow \bot \lor k \neq \LDKConstant
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe})
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[global\_constant\_val]{
+\inferrule[global\_constant]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
   G^\tenv.\constantvalues(\vx) = \vv
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \eliteral{\vv})
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\tty, \overname{\eliteral{\vv}}{\newe})
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[global\_constant\_no\_val]{
+\inferrule[global\_non\_constant]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
+  L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
-  G^\tenv.\constantvalues(\vx) = \bot
+  G^\tenv.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant
 }{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[global\_var]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
-  G^\tenv.\constantvalues(\vx) = \bot\\
-  G^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
-  k \neq \GDKConstant
-}{
-  \annotateexpr{\tenv, \EVar(\vx)} \typearrow (\tty, \EVar(\vx))
+  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\tty, \overname{\EVar(\vx)}{\newe})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[error\_undefined]{
   \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
-  G^\tenv.\globalstoragetypes(\vx) = \bot\\
-  L^\tenv.\globalstoragetypes(\vx) = \bot\\
+  L^\tenv.\localstoragetypes(\vx) = \bot \\
+  G^\tenv.\globalstoragetypes(\vx) = \bot
 }{
   \annotateexpr{\tenv,\overname{\EVar(\vx)}{\ve}} \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
@@ -314,7 +315,7 @@ function calls) to global constant variables.
 \CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.EVar \label{sec:SemanticsRule.EVar}}
+\subsubsection{SemanticsRule.EVar\label{sec:SemanticsRule.EVar}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1819,7 +1820,7 @@ All of the following apply:
   \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
         will always fail yields $\True$\ProseOrTypeError;
   \item checking whether $\vt$ \subtypesatisfies\ $\ttyp$ in $\tenv$ yields $\vb$\ProseOrTypeError;
-  \item $\newe$ is $\EATC(\ttyp, \vepp)$ if $\vb$ is $\True$ and $\vepp$ otherwise;
+  \item $\newe$ is $\vepp$ if $\vb$ is $\True$ and $\EATC(\ttyp, \vepp)$ otherwise;
   \item $\vt$ is $\ttyp$.
 \end{itemize}
 \subsubsection{Formally}
@@ -1831,7 +1832,7 @@ All of the following apply:
   \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
   \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
   \subtypesat(\tenv, \vt, \ttyp) \typearrow \vb \OrTypeError\\\\
-  \newe \eqdef \choice{\vb}{\EATC(\ttyp, \vepp)}{\vepp}
+  \newe \eqdef \choice{\vb}{\vepp}{\EATC(\ttyp, \vepp)}
 }{
   \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \newe)
 }
@@ -1893,7 +1894,7 @@ One of the following applies:
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
     \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
-    \item the result is a type error indicating that the type assertion will always fail.
+    \item the result is a type error indicating that the type assertion will always fail ($\TypeAsssertionFails$).
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
@@ -1942,7 +1943,7 @@ One of the following applies:
   \astlabel(\vtone) = \astlabel(\vttwo)\\
   \astlabel(\vtone) \not\in \{\TInt, \TBits, \TTuple\}
 }{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAsssertionFails}
 }
 \end{mathpar}
 
@@ -2157,8 +2158,7 @@ Lists of patterns are also used in case statements.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
-                    |\  & \Nexpr \parsesep \Tin \parsesep \Tmasklit &\\
+\Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternormask &\\
 \Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
                   |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
 \Npatternlist \derivesinline\ & \NClist{\Npattern} &
@@ -2171,24 +2171,41 @@ Lists of patterns are also used in case statements.
 
 \subsubsection{ASTRule.EPattern}
 \begin{mathpar}
-\inferrule[pattern\_set]{}{
+\inferrule{}{
   {
     \begin{array}{r}
-      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternset})}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexpr}, \astof{\vpatternset})}{\vastnode}
+      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternormask})}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astof{\vexpr}, \astof{\vpatternormask})}{\vastnode}
     \end{array}
   }
 }
 \end{mathpar}
 
+\subsubsection{ASTRule.PatternOrMask}
+The function
+\[
+  \buildpatternormask(\overname{\Npatternormask}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a pattern or mask parse node $\vparsednode$ into a pattern AST node $\vastnode$.
+
 \begin{mathpar}
-\inferrule[pattern\_mask]{}{
-  {
-    \begin{array}{r}
-      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexpr}, \PatternMask(\vm))}{\vastnode}
-    \end{array}
-  }
+\inferrule[pattern\_set]{}{
+  \buildpatternormask(\overname{\Npatternormask(\Npatternset)}{\vparsednode}) \astarrow
+  \overname{\astof{\vpatternset}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitmask]{}{
+  \buildpatternormask(\overname{\Npatternormask(\Tmasklit(\vm))}{\vparsednode}) \astarrow
+  \overname{\PatternMask(\vm)}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bitvector\_lit]{}{
+  \buildpatternormask(\overname{\Npatternormask(\Tbitvectorlit(\vb))}{\vparsednode}) \astarrow
+  \overname{\PatternMask(\vb)}{\vastnode}
 }
 \end{mathpar}
 

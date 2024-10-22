@@ -50,7 +50,7 @@ type error_desc =
   | TooManyCallCandidates of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
-  | UnpureExpression of expr
+  | ImpureExpression of expr
   | UnreconciliableTypes of ty * ty
   | AssignToImmutable of string
   | AlreadyDeclaredIdentifier of string
@@ -203,7 +203,7 @@ module PPrint = struct
           "ASL Evaluation error: circular definition of constants, including \
            %S."
           x
-    | UnpureExpression e ->
+    | ImpureExpression e ->
         fprintf f
           "ASL Typing error:@ a pure expression was expected,@ found@ %a"
           pp_expr e

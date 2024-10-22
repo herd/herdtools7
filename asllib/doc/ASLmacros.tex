@@ -232,7 +232,6 @@
 \newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{def-strings}{\mathbb{S}}}
 \newcommand\astlabels[0]{\hyperlink{def-astlabels}{\mathbb{L}}}
-\newcommand\literals[0]{\mathcal{L}}
 
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}(#1)}
@@ -411,7 +410,9 @@
 \newcommand\Nmaybeemptystmtlist[0]{\hyperlink{def-nmaybeemptystmtlist}{\nonterminal{maybe\_empty\_stmt\_list}}}
 \newcommand\Nlocaldeclkeyword[0]{\hyperlink{def-nlocaldeclkeyword}{\nonterminal{local\_decl\_keyword}}}
 \newcommand\Ndirection[0]{\hyperlink{def-ndirection}{\nonterminal{direction}}}
-\newcommand\Nalt[0]{\hyperlink{def-nalt}{\nonterminal{alt}}}
+\newcommand\Ncasealt[0]{\hyperlink{def-ncasealt}{\nonterminal{case\_alt}}}
+\newcommand\Ncaseotherwise[0]{\hyperlink{def-ncaseotherwise}{\nonterminal{case\_otherwise}}}
+\newcommand\Ncasealtlist[0]{\hyperlink{def-ncasealtlist}{\nonterminal{case\_alt\_list}}}
 \newcommand\Npatternlist[0]{\hyperlink{def-npatternlist}{\nonterminal{pattern\_list}}}
 \newcommand\Notherwiseopt[0]{\hyperlink{def-notherwiseopt}{\nonterminal{otherwise\_opt}}}
 \newcommand\Ncatcher[0]{\hyperlink{def-ncatcher}{\nonterminal{catcher}}}
@@ -428,6 +429,7 @@
 \newcommand\Nexprpattern[0]{\hyperlink{def-nexprpattern}{\nonterminal{expr\_pattern}}}
 \newcommand\Npatternset[0]{\hyperlink{def-npatternset}{\nonterminal{pattern\_set}}}
 \newcommand\Npattern[0]{\hyperlink{def-npattern}{\nonterminal{pattern}}}
+\newcommand\Npatternormask[0]{\hyperlink{def-npatternormask}{\nonterminal{pattern\_or\_mask}}}
 \newcommand\Nbitfields[0]{\hyperlink{def-nbitfields}{\nonterminal{bitfields}}}
 \newcommand\Nbitfield[0]{\hyperlink{def-nbitfield}{\nonterminal{bitfield}}}
 \newcommand\Nvalue[0]{\hyperlink{def-nvalue}{\nonterminal{value}}}
@@ -693,7 +695,9 @@
 \newcommand\buildsubtypeopt[0]{\hyperlink{build-subtypeopt}{\textfunc{build\_subtype\_opt}}}
 \newcommand\buildstoragekeyword[0]{\hyperlink{build-storagekeyword}{\textfunc{build\_storage\_keyword}}}
 \newcommand\builddirection[0]{\hyperlink{build-direction}{\textfunc{build\_direction}}}
-\newcommand\buildalt[0]{\hyperlink{build-alt}{\textfunc{build\_alt}}}
+\newcommand\buildcasealt[0]{\hyperlink{build-casealt}{\textfunc{build\_case\_alt}}}
+\newcommand\buildcasealtlist[0]{\hyperlink{build-casealtlist}{\textfunc{build\_case\_alt\_list}}}
+\newcommand\buildcaseotherwise[0]{\hyperlink{build-caseotherwise}{\textfunc{build\_case\_otherwise}}}
 \newcommand\buildotherwiseopt[0]{\hyperlink{build-otherwiseopt}{\textfunc{build\_otherwise\_opt}}}
 \newcommand\buildcatcher[0]{\hyperlink{build-catcher}{\textfunc{build\_catcher}}}
 \newcommand\buildasty[0]{\textfunc{build\_as\_ty}}
@@ -707,6 +711,7 @@
 \newcommand\buildintconstraint[0]{\hyperlink{build-intconstraint}{\textfunc{build\_int\_constraint}}}
 \newcommand\buildexprpattern[0]{\hyperlink{build-exprpattern}{\textfunc{build\_expr\_pattern}}}
 \newcommand\buildfieldassign[0]{\hyperlink{build-fieldassign}{\textfunc{build\_field\_assign}}}
+\newcommand\buildpatternormask[0]{\hyperlink{build-patternormask}{\textfunc{build\_pattern\_or\_mask}}}
 \newcommand\buildpatternset[0]{\hyperlink{build-patternset}{\textfunc{build\_pattern\_set}}}
 \newcommand\buildpatternlist[0]{\hyperlink{build-patternlist}{\textfunc{build\_pattern\_list}}}
 \newcommand\buildpattern[0]{\hyperlink{build-pattern}{\textfunc{build\_pattern}}}
@@ -1030,7 +1035,6 @@
 \newcommand\checkconstrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{\textfunc{check\_constrained\_integer}}}
 
 \newcommand\staticeval[0]{\hyperlink{def-staticeval}{\textfunc{static\_eval}}}
-\newcommand\isstaticallyevaluable[0]{\textfunc{check\_statically\_evaluable}}
 
 \newcommand\makeanonymous[0]{\hyperlink{def-makeanonymous}{\textfunc{make\_anonymous}}}
 \newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\textfunc{is\_subtype}}}
@@ -1062,12 +1066,13 @@
 \newcommand\slicewidth[0]{\hyperlink{def-slicewidth}{\textfunc{slice\_width}}}
 \newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\textfunc{check\_structure}}}
 \newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\textfunc{check\_structure\_integer}}}
+\newcommand\isstaticallyevaluable[0]{\hyperlink{def-isstaticallyevaluable}{\textfunc{is\_statically\_evaluable}}}
 \newcommand\checkstaticallyevaluable[0]{\hyperlink{def-checkstaticallyevaluable}{\textfunc{check\_statically\_evaluable}}}
 \newcommand\storageispure[0]{\hyperlink{def-storageispure}{\textfunc{storage\_is\_pure}}}
 \newcommand\negateconstraint[0]{\hyperlink{def-negateconstraint}{\textfunc{negate\_constraint}}}
 \newcommand\getwellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{\textfunc{get\_well\_constrained\_structure}}}
 \newcommand\towellconstrained[0]{\hyperlink{def-towellconstrained}{\textfunc{to\_well\_constrained}}}
-\newcommand\annotatelebits[0]{\hyperlink{def-annotatelebits}{\textfunc{annotate\_lebits}}}
+\newcommand\annotatelebitslice[0]{\hyperlink{def-annotatelebitsice}{\textfunc{annotate\_lebits}}}
 \newcommand\annotatecase[1]{\hyperlink{def-annotatecase}{\textfunc{annotate\_case}}(#1)}
 \newcommand\getforconstraints[0]{\hyperlink{def-getforconstraints}{\textfunc{for\_constraints}}}
 \newcommand\findbitfieldopt[0]{\hyperlink{def-findbitfieldopt}{\textfunc{find\_bitfield\_opt}}}
@@ -1079,10 +1084,14 @@
 \newcommand\annotatefuncsig[0]{\hyperlink{def-annotatefuncsig}{\textfunc{annotate\_func\_sig}}}
 \newcommand\declareonefunc[0]{\hyperlink{def-declareonefunc}{\textfunc{declare\_one\_func}}}
 \newcommand\checksetterhasgetter[0]{\hyperlink{def-checksetterhashgetter}{\textfunc{check\_setter\_has\_getter}}}
+\newcommand\withemptylocal[0]{\hyperlink{def-withemptylocal}{\textfunc{with\_empty\_local}}}
 \newcommand\addnewfunc[0]{\hyperlink{def-addnewfunc}{\textfunc{add\_new\_func}}}
 \newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
 \newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
 \newcommand\lookupimmutableexpr[0]{\hyperlink{def-lookupimmutableexpr}{\textfunc{lookup\_immutable\_expr}}}
+\newcommand\addglobalimmutableexpr[0]{\hyperlink{def-addglobalimmutableexpr}{\textfunc{add\_global\_immutable\_expr}}}
+\newcommand\addlocalimmutableexpr[0]{\hyperlink{def-addlocalimmutableexpr}{\textfunc{add\_local\_immutable\_expr}}}
+\newcommand\addimmutableexpr[0]{\hyperlink{def-addimmutableexpr}{\textfunc{add\_immutable\_expr}}}
 \newcommand\scanforparams[0]{\hyperlink{def-scanforparams}{\textfunc{scan\_for\_params}}}
 \newcommand\annotateparams[0]{\hyperlink{def-annotateparams}{\textfunc{annotate\_params}}}
 \newcommand\annotateoneparam[0]{\hyperlink{def-annotateoneparam}{\textfunc{annotate\_one\_param}}}
@@ -1092,9 +1101,13 @@
 \newcommand\annotateexpropt[0]{\hyperlink{def-annotateexpropt}{\textfunc{annotate\_expr\_opt}}}
 \newcommand\annotateinittype[0]{\hyperlink{def-annotateinittype}{\textfunc{annotate\_init\_type}}}
 \newcommand\addglobalstorage[0]{\hyperlink{def-addglobalstorage}{\textfunc{add\_global\_storage}}}
+\newcommand\updateglobalstorage[0]{\hyperlink{def-updateglobalstorage}{\textfunc{update\_global\_storage}}}
 \newcommand\annotateextrafields[0]{\hyperlink{def-annotateextrafields}{\textfunc{annotate\_extra\_fields}}}
 \newcommand\declareenumlabels[0]{\hyperlink{def-annotateenumlabels}{\textfunc{declare\_enum\_labels}}}
 \newcommand\declareconst[0]{\hyperlink{def-declareconst}{\textfunc{declare\_const}}}
+\newcommand\addlocalconstant[0]{\hyperlink{def-addlocalconstant}{\textfunc{add\_local\_constant}}}
+\newcommand\lookupconstants[0]{\hyperlink{def-lookupconstants}{\textfunc{lookup\_constants}}}
+\newcommand\addglobalconstant[0]{\hyperlink{def-addglobalconstant}{\textfunc{add\_global\_constant}}}
 \newcommand\annotateparamtype[0]{\hyperlink{def-annotateparamtype}{\textfunc{annotate\_param\_type}}}
 \newcommand\annotateargs[0]{\hyperlink{def-annotateargs}{\textfunc{annotate\_args}}}
 \newcommand\annotateonearg[0]{\hyperlink{def-annotateonearg}{\textfunc{annotate\_one\_arg}}}
@@ -1155,19 +1168,21 @@
 \newcommand\symsubsumes[0]{\hyperlink{def-symsubsumes}{\textfunc{sym\_subsumes}}}
 
 \newcommand\toir[0]{\hyperlink{def-toir}{\textfunc{to\_ir}}}
+\newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
 \newcommand\unitarymonomial[0]{\hyperlink{def-unitarymonomial}{\textsf{unitary\_monomial}}}
 \newcommand\monomial[0]{\hyperlink{def-monomial}{\textsf{monomial}}}
 \newcommand\polynomial[0]{\hyperlink{def-polynomial}{\textsf{polynomial}}}
 \newcommand\addpolynomials[0]{\hyperlink{def-addpolynomials}{\textfunc{add\_polynomials}}}
 \newcommand\mulpolynomials[0]{\hyperlink{def-mulpolynomials}{\textfunc{mul\_polynomials}}}
 \newcommand\mulmonomials[0]{\hyperlink{def-mulmonomials}{\textfunc{mul\_monomials}}}
+\newcommand\polynomialdividebyterm[0]{\tododefine{polynomial\_divide\_by\_term}}
 
 \newcommand\declaredtype[0]{\hyperlink{def-declaredtype}{\textfunc{declared\_type}}}
 
 \newcommand\fieldnames[0]{\hyperlink{def-fieldnames}{\textfunc{field\_names}}}
 \newcommand\fieldtype[0]{\hyperlink{def-fieldtype}{\textfunc{field\_type}}}
 
-\newcommand\eliteral[1]{\textsf{E\_Literal}(#1)}
+\newcommand\eliteral[1]{\ELiteral(#1)}
 
 % An expression that we do not statically evaluate.
 \newcommand\CannotBeTransformed[0]{\hyperlink{def-unsupportedexpression}{\top}}
@@ -1643,6 +1658,7 @@
 \newcommand\funcsigp[0]{\texttt{func\_sig'}}
 \newcommand\gdk[0]{\texttt{gdk}}
 \newcommand\genv[0]{\texttt{genv}}
+\newcommand\genvone[0]{\texttt{genv1}}
 \newcommand\gsd[0]{\texttt{gsd}}
 \newcommand\gsdp[0]{\texttt{gsd'}}
 \newcommand\icsdown[0]{\texttt{ics\_down}}
@@ -1879,8 +1895,11 @@
 \newcommand\vaccessargs[0]{\texttt{access\_args}}
 \newcommand\vad[0]{\texttt{ad}}
 \newcommand\vadecls[0]{\texttt{adecls}}
-\newcommand\valtlist[0]{\texttt{alt\_list}}
-\newcommand\valtlistast[0]{\texttt{alt\_list\_ast}}
+\newcommand\vcases[0]{\texttt{cases}}
+\newcommand\vcasealtlist[0]{\texttt{case\_alt\_list}}
+\newcommand\vcasealtlistast[0]{\texttt{case\_alt\_list\_ast}}
+\newcommand\vcaseotherwise[0]{\texttt{case\_otherwise}}
+\newcommand\votherwise[0]{\texttt{otherwise}}
 \newcommand\vanons[0]{\texttt{anon\_s}}
 \newcommand\vanont[0]{\texttt{anon\_t}}
 \newcommand\vaoptfields[0]{\texttt{aopt\_fields}}
@@ -1923,7 +1942,6 @@
 \newcommand\vc[0]{\texttt{c}}
 \newcommand\vcase[0]{\texttt{case}}
 \newcommand\vcaseone[0]{\texttt{case1}}
-\newcommand\vcases[0]{\texttt{cases}}
 \newcommand\vcasesone[0]{\texttt{cases1}}
 \newcommand\vcatcherlist[0]{\texttt{catcher\_list}}
 \newcommand\vcds[0]{\texttt{vds}}
@@ -1947,6 +1965,7 @@
 \newcommand\vdeclitems[0]{\texttt{decls\_items}}
 \newcommand\vdecls[0]{\texttt{decls}}
 \newcommand\vdiff[0]{\texttt{v\_diff}}
+\newcommand\vdir[0]{\texttt{dir}}
 \newcommand\vdirection[0]{\texttt{direction}}
 \newcommand\vdone[0]{\texttt{d1}}
 \newcommand\vdtwo[0]{\texttt{d2}}
@@ -2077,6 +2096,7 @@
 \newcommand\vmlist[0]{\texttt{vm\_list}}
 \newcommand\vmlistone[0]{\texttt{vm\_list1}}
 \newcommand\vmone[0]{\texttt{m1}}
+\newcommand\vmono[0]{\texttt{mono}}
 \newcommand\vms[0]{\texttt{vms}}
 \newcommand\vmsone[0]{\texttt{vms1}}
 \newcommand\vmstwo[0]{\texttt{vms2}}
@@ -2105,6 +2125,7 @@
 \newcommand\vpatp[0]{\texttt{pat'}}
 \newcommand\vpatternasts[0]{\texttt{pattern\_asts}}
 \newcommand\vpatternlist[0]{\texttt{pattern\_list}}
+\newcommand\vpatternormask[0]{\texttt{pattern\_or\_mask}}
 \newcommand\vpatterns[0]{\texttt{patterns}}
 \newcommand\vpatternset[0]{\texttt{pattern\_set}}
 \newcommand\vpone[0]{\texttt{p1}}

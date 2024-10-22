@@ -20,13 +20,14 @@ We then define the typing and semantics of the different kinds of local declarat
 \end{itemize}
 
 \hypertarget{def-annotatelocaldeclitem}{}
-The function
+\paragraph{Typing:} The function
 \[
   \begin{array}{c}
   \annotatelocaldeclitem{
-    \overname{\ty}{\tty} \aslsep
     \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\ty}{\tty} \aslsep
     \overname{\localdeclkeyword}{\ldk} \aslsep
+    \overname{\langle\expr\rangle}{\veopt} \aslsep
     \overname{\localdeclitem}{\ldi}
    } \aslto\\
   (\overname{\staticenvs}{\newtenv} \aslsep \overname{\localdeclitem}{\newldi})
@@ -34,11 +35,12 @@ The function
   \end{array}
 \]
 annotates a \localdeclarationitem\ $\ldi$ with a \localdeclarationkeyword\ $\ldk$, given a type $\tty$,
+and optional initializing expression $\veopt$,
 in a static environment $\tenv$ results in $(\newenv, \newldi)$ where $\newenv$ is the modified
 static environment and $\newldi$ is the annotated local declaration item.
 \ProseOtherwiseTypeError
 
-The relation
+\paragraph{Semantics:} The relation
 \hypertarget{def-evallocaldecl}{}
 \[
   \evallocaldecl{
@@ -51,15 +53,14 @@ The relation
 evaluates a \localdeclarationitem\ $\ldi$ in an environment
 $\env$ with an optional initialization value $\minitopt$.
 That is, the right-hand side of the declaration, if it exists,
-has already been evaluated, yielding $\minitopt$ (see, for example, SemanticsRule.SDeclSome in \secref{SemanticsRule.SDeclSome}).
+has already been evaluated, yielding $\minitopt$ (see, for example, \nameref{sec:SemanticsRule.SDeclSome}).
 Evaluation of the local variables $\ldi$
 in an environment $\env$ is either $\Normal(\vg, \newenv)$
 or an abnormal configuration.
 
 While there are three different categories of local storage elements ---
 constants, mutable variables (declared via \texttt{var}), and immutable variables (declared via \texttt{let}) ---
-from the perspective of the semantics of local storage elements (and local declarations statements
-in \chapref{eval_stmt}), they are all treated the same way.
+from the perspective of the semantics of local storage elements, they are all treated the same way.
 
 \section{Syntax\label{sec:LocalStorageDeclarationsSyntax}}
 Declaring a local storage element is done via the following grammar rules:
@@ -185,7 +186,7 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}{
-  \annotatelocaldeclitem{\tenv, \tty, \LDIDiscard(\None), \ldk} \typearrow (\tenv, \ldi)
+  \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDIDiscard(\None)}{\ldi}} \typearrow (\tenv, \ldi)
 }
 \end{mathpar}
 \CodeSubsection{\LDDiscardBegin}{\LDDiscardEnd}{../Typing.ml}
@@ -226,16 +227,19 @@ All of the following apply:
 \begin{itemize}
   \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
   \item determining whether $\vx$ is not declared in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\newenv$ is $\tenv$ modified so that $\vx$ is locally declared to have type $\tty$;
+  \item $\tenvtwo$ is $\tenv$ modified so that $\vx$ is locally declared to have type $\tty$;
+  \item applying $\addimmutableexpr$ to $\ldk$, $\veopt$, and $\vx$ in $\tenv$ (to conditionally
+        update $\tenvtwo$) yields $\newtenv$;
   \item $\newldi$ is the declaration of variable $\vx$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \checkvarnotinenv{\tenv, \vx} \typearrow \True \OrTypeError\\\\
-  \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \newtenv
+  \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
+  \addimmutableexpr(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
 }{
-  \annotatelocaldeclitem{\tenv, \tty, \LDIVar(\vx), \ldk} \typearrow (\newtenv, \LDIVar(\vx))
+  \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDIVar(\vx)}{\ldi}} \typearrow (\newtenv, \LDIVar(\vx))
 }
 \end{mathpar}
 \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
@@ -299,15 +303,15 @@ All of the following apply:
 \inferrule{
   \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
   \checkcanbeinitializedwith(\tenv, \vtp, \tty) \typearrow \True \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vtp, \ldip, \ldk} \typearrow (\newtenv, \newldip) \OrTypeError
+  \annotatelocaldeclitem{\tenv, \vtp, \ldk, \veopt, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError
 }{
-  \annotatelocaldeclitem{\tenv, \tty, \LDITyped(\ldip, \vt), \ldk} \typearrow \\
+  \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDITyped(\ldip, \vt)}{\ldi}} \typearrow \\
   (\newtenv, \LDITyped(\newldip, \vtp))
 }
 \end{mathpar}
 \CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.CheckCanBeInitializedWith \label{sec:TypingRule.CheckCanBeInitializedWith}}
+\subsubsection{TypingRule.CheckCanBeInitializedWith\label{sec:TypingRule.CheckCanBeInitializedWith}}
 \hypertarget{def-checkcanbeinitializedwith}{}
 The helper function
 \[
@@ -354,7 +358,7 @@ One of the following applies:
 \lrmcomment{This is related to \identr{ZCVD} and \identr{LXQZ}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.LDTyped \label{sec:SemanticsRule.LDTyped}}
+\subsubsection{SemanticsRule.LDTyped\label{sec:SemanticsRule.LDTyped}}
 \subsubsection{Example (Initialized)}
 In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTyped.asl}
@@ -439,20 +443,20 @@ All of the following apply:
   {
     \begin{array}{r}
   i=k..1:
-  \annotatelocaldeclitem{\newtenv_{i}, \vt_{i}, \ldi_{i}, \ldk} \typearrow \\
+  \annotatelocaldeclitem{\newtenv_{i}, \vt_{i}, \ldk, \None, \ldi_{i}} \typearrow \\
   (\newtenv_{i-1}, \ldip_i) \OrTypeError
     \end{array}
   }\\
   \newtenv = \newtenv_0
 }{
-  \annotatelocaldeclitem{\tenv, \tty, \LDITuple(\ldi_{1..k}), \ldk} \typearrow \\
+  \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDITuple(\ldi_{1..k})}{\ldi}} \typearrow \\
   (\newtenv, \LDITuple(\ldip_{1..k}))
 }
 \end{mathpar}
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.LDTuple \label{sec:SemanticsRule.LDTuple}}
+\subsubsection{SemanticsRule.LDTuple\label{sec:SemanticsRule.LDTuple}}
 \subsubsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTuple.asl}

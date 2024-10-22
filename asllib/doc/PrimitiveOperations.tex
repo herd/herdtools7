@@ -398,8 +398,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{def-unopliterals}{}
 The function
 \[
-  \unopliterals(\overname{\unop}{\op} \aslsep \overname{\literals}{\vl}) \aslto
-  \overname{\literals}{\vr} \cup \TTypeError
+  \unopliterals(\overname{\unop}{\op} \aslsep \overname{\literal}{\vl}) \aslto
+  \overname{\literal}{\vr} \cup \TTypeError
 \]
 statically evaluates a unary operator $\op$ (a terminal derived from the AST non-terminal for unary operators)
 over a literal $\vl$ and returns the resulting literal $\vr$.
@@ -496,8 +496,8 @@ One of the following applies:
 \hypertarget{def-binopliterals}{}
 The function
 \[
-  \binopliterals(\overname{\binop}{\op} \aslsep \overname{\literals}{\vvone} \aslsep \overname{\literals}{\vvtwo}) \aslto
-  \overname{\literals}{\vr} \cup \TTypeError
+  \binopliterals(\overname{\binop}{\op} \aslsep \overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \aslto
+  \overname{\literal}{\vr} \cup \TTypeError
 \]
 statically evaluates a binary operator $\op$ (a terminal derived from the AST non-terminal for binary operators)
 over a pair of literals $\vlone$ and $\vltwo$

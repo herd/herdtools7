@@ -91,12 +91,16 @@ val add_global_constant : identifier -> literal -> global -> global
 val add_local_constant : identifier -> literal -> env -> env
 
 val add_local_immutable_expr : identifier -> expr -> env -> env
-(** [add_local_immutable_expr x e env] binds [x] to [e] in [env], [e] is
-    supposed to be the oldest expression corresponding to [x].*)
+(** [add_local_immutable_expr x e env] binds [x] to [e] in [env].
+    [x] is assumed to name an immutable local storage element.
+    [e] is supposed to be the oldest expression corresponding to [x].
+*)
 
 val add_global_immutable_expr : identifier -> expr -> env -> env
-(** [add_global_immutable_expr x e env] binds [x] to [e] in [env], [e] is
-    supposed to be the oldest expression corresponding to [x].*)
+(** [add_global_immutable_expr x e env] binds [x] to [e] in [env].
+    [x] is assumed to name an immutable global storage element.
+    [e] is supposed to be the oldest expression corresponding to [x].
+*)
 
 val add_local : identifier -> ty -> local_decl_keyword -> env -> env
 val add_subtype : identifier -> identifier -> env -> env

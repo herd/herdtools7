@@ -240,7 +240,6 @@ One of the following applies:
   \normalize(\tenv, \ve) \typearrow \overname{\ve}{\newe}
 }
 \end{mathpar}
-
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
 
 \subsection{TypingRule.ReduceConstants \label{sec:TypingRule.ReduceConstants}}
@@ -403,8 +402,6 @@ the special value $\CannotBeTransformed$ is returned.
 \subsubsection{Prose}
 Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
 
-\newcommand\ProseOrTypeErrorOrBot[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
-
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{literal\_int}):
@@ -416,7 +413,7 @@ One of the following applies:
   \item All of the following apply (\textsc{literal\_other}):
   \begin{itemize}
     \item $\ve$ is a variable expression other than an integer literal;
-    \item $\vp$ is $\bot$.
+    \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
   \item All of the following apply (\textsc{evar\_int\_constant}):
@@ -432,7 +429,8 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields $\bot$;
-    \item looking up $\vs$ in $\tenv$ for an associated immutable expression via $\lookupimmutableexpr$ yields the expression $\vep$;
+    \item looking up $\vs$ in $\tenv$ for an associated immutable expression via \\
+          $\lookupimmutableexpr$ yields the expression $\vep$;
     \item applying $\toir$ to $\vep$ in $\tenv$ yields $\vp$.
   \end{itemize}
 
@@ -446,7 +444,7 @@ One of the following applies:
     \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
     \item checking whether $\ttyone$ is an integer type yields $\True$\ProseOrTypeError;
     \item $\ttyone$ is a well-constrained integer with the exact constraint $\ve$, that is, \\ $\TInt(\wellconstrained([\ConstraintExact(\ve)]))$;
-    \item converting $\ve$ to a symbolic expression yields $\vp$ (which may possibly be $\bot$).
+    \item converting $\ve$ to a symbolic expression yields $\vp$\ProseTerminateAs{\CannotBeTransformed}.
   \end{itemize}
 
   \item All of the following apply (\textsc{int\_var}):
@@ -463,8 +461,8 @@ One of the following applies:
   \item All of the following apply (\textsc{ebinop\_plus}):
   \begin{itemize}
     \item $\ve$ is a binary addition expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\PLUS, \veone, \vetwo)$;
-    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrBot;
-    \item converting $\vetwo$ to a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrBot;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
+    \item converting $\vetwo$ to a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrCannotBeTransformed;
     \item $\vp$ is the symbolic expression adding up $\irone$ and $\irtwo$.
   \end{itemize}
 
@@ -472,38 +470,68 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a binary subtraction expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\MINUS, \veone, \vetwo)$;
     \item $\vep$ is the addition expression with operands $\veone$ and the negation of $\vetwo$, that is, \\ $\EBinop(\PLUS, \veone, \EUnop(\MINUS, \vetwo))$;
-    \item converting $\vep$ into a symbolic expression in $\tenv$ yields $\vp$\ProseOrTypeErrorOrBot.
+    \item converting $\vep$ into a symbolic expression in $\tenv$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_mul\_div\_left}):
+  \begin{itemize}
+    \item $\ve$ is a binary multiplication expression where the left operand is a binary division expression over $\veone$ and $\vetwo$
+          and the right operand is $\vethree$, that is, \\ $\EBinop(\MUL, \EBinop(\DIV, \veone, \vetwo), \vethree)$;
+    \item converting the binary division expression where the left operand is the binary multiplication expression  over $\veone$
+          and $\vethree$ and the right operand is $\vetwo$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_mul\_div\_right}):
+  \begin{itemize}
+    \item $\ve$ is a binary multiplication expression where the left operand is $\veone$ and the right operand
+          is the division expression over $\vetwo$ and $\vethree$, that is, \\
+          $\EBinop(\MUL, \veone, \EBinop(\DIV, \vetwo, \vethree))$;
+    \item $\veone$ is not a binary division expression;
+    \item converting the binary division expression where the left operand is the binary multiplication expression  over $\veone$
+          and $\vetwo$ and the right operand is $\vethree$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_mul}):
   \begin{itemize}
     \item $\ve$ is a binary multiplication expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\MUL, \veone, \vetwo)$;
-    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrBot;
-    \item converting $\vetwo$ to a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrBot;
+    \item neither $\veone$ nor $\vetwo$ are binary vision expressions;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
+    \item converting $\vetwo$ to a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrCannotBeTransformed;
     \item $\vp$ is the symbolic expression multiplying $\irone$ and $\irtwo$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{ebinop\_div\_non\_int\_denominator}):
-  \begin{itemize}
-    \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
-    \item $\vetwo$ is not an integer literal expression;
-    \item $\vp$ is $\bot$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_div\_int\_denominator}):
   \begin{itemize}
     \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
     \item $\vetwo$ is an integer literal expression for $\vitwo$;
-    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrBot;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
     \item $\vftwo$ is $\frac{1}{\vitwo}$ (testing against $\vitwo = 0$ is done dynamically);
     \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $\vftwo$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_div\_monomial\_denominator}):
+  \begin{itemize}
+    \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
+    \item converting $\vetwo$ to a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrCannotBeTransformed;
+    \item $\irtwo$ consists of a single binding between the monomial $\vmono$ and the factor $\vfactor$;
+    \item applying $\polynomialdividebyterm$ to $\irone$, $\vfactor$, and $\vmono$ yields $\vp$\ProseTerminateAs{\CannotBeTransformed}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ebinop\_div\_non\_monomial\_denominator}):
+  \begin{itemize}
+    \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
+    \item converting $\vetwo$ to a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrCannotBeTransformed;
+    \item $\irtwo$ does not consist of a single binding;
+    \item the result is $\CannotBeTransformed$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_shl\_non\_lint\_exponent}):
   \begin{itemize}
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
     \item $\vetwo$ is not an integer literal expression;
-    \item $\vp$ is $\bot$.
+    \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_shl\_non\_neg\_shift}):
@@ -511,14 +539,14 @@ One of the following applies:
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
     \item $\vetwo$ is an integer literal expression for $\vitwo$;
     \item $\vitwo$ is negative;
-    \item $\vp$ is $\bot$.
+    \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_shl\_okay}):
   \begin{itemize}
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
     \item $\vetwo$ is an integer literal expression for $\vitwo$;
-    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrBot;
+    \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
     \item $\vitwo$ is non-negative;
     \item $\vftwo$ is $2^{\vitwo}$;
     \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $\vftwo$.
@@ -529,7 +557,7 @@ One of the following applies:
     \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
     \item at least one of $\veone$ and $\vetwo$ is not a literal expression;
-    \item $\vp$ is $\bot$.
+    \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_other\_literals\_non\_int\_result}):
@@ -539,7 +567,7 @@ One of the following applies:
     \item $\veone$ is the literal expression for literal $\vlone$;
     \item $\vetwo$ is the literal expression for literal $\vltwo$;
     \item statically applying $\op$ to $\vlone$ and $\vltwo$ yields the literal $\vl$, which is not an integer literal;
-    \item $\vp$ is $\bot$.
+    \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ebinop\_other\_literals\_int\_result}):
@@ -556,7 +584,7 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a unary expression with the negation operator $\NEG$ and operand $\veone$;
     \item converting the binary expression with operator $\MUL$ and left-hand-side operand for the integer literal $-1$ and
-    right-hand-side operand $\veone$ in $\tenv$ yields $\vp$\ProseOrTypeErrorOrBot.
+    right-hand-side operand $\veone$ in $\tenv$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
   \item All of the following apply (\textsc{eunop\_other}):
@@ -565,9 +593,16 @@ One of the following applies:
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{ATC}):
+  \begin{itemize}
+    \item $\ve$ is an asserting type conversion for the sub-expression $\vep$, that is, \\
+          $\EATC(\vep, \Ignore)$;
+    \item applying $\toir$ to $\vep$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
+  \end{itemize}
+
   \item All of the following apply (\textsc{other}):
   \begin{itemize}
-    \item $\ve$ is an expression with a label other than $\ELiteral$, $\EVar$, $\EBinop$, and $\EUnop$;
+    \item $\ve$ is an expression with a label other than $\ELiteral$, $\EVar$, $\EBinop$, $\EUnop$, and $\EATC$;
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 \end{itemize}
@@ -616,7 +651,7 @@ One of the following applies:
   \makeanonymous(\vt) \typearrow \ttyone \OrTypeError\\\\
   \checktrans{\astlabel(\ttyone) = \TInt}{ExpectedIntegerType} \typearrow \True \OrTypeError\\\\
   \ttyone = \TInt(\wellconstrained([\ConstraintExact(\ve)]))\\
-  \toir(\ve) \typearrow \vp
+  \toir(\ve) \typearrow \vp \terminateas \CannotBeTransformed
 }{
   \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
 }
@@ -655,7 +690,26 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[ebinop\_mul\_div\_left]{
+  \toir(\tenv, \EBinop(\DIV, \EBinop(\MUL, \veone, \vethree), \vetwo)) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+}{
+  \toir(\tenv, \overname{\EBinop(\MUL, \EBinop(\DIV, \veone, \vetwo), \vethree)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_mul\_div\_right]{
+  \veone \neq \EBinop(\DIV, \Ignore, \Ignore)\\
+  \toir(\tenv, \EBinop(\DIV, \EBinop(\MUL, \veone, \vetwo), \vethree)) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+}{
+  \toir(\tenv, \overname{\EBinop(\MUL, \veone, \EBinop(\DIV, \vetwo, \vethree))}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[ebinop\_mul]{
+  \veone \neq \EBinop(\DIV, \Ignore, \Ignore)\\
+  \vetwo \neq \EBinop(\DIV, \Ignore, \Ignore)\\
   \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
   \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
   \vp \eqdef \mulpolynomials(\irone, \irtwo)
@@ -665,12 +719,6 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[ebinop\_div\_non\_int\_denominator]{
-  \vetwo \neq \ELiteral(\lint(\Ignore))
-}{
-  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
-}
-\and
 \inferrule[ebinop\_div\_int\_denominator]{
   \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
   \vftwo \eqdef \frac{1}{\vitwo}\\
@@ -678,6 +726,26 @@ One of the following applies:
   \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
 }{
   \toir(\tenv, \overname{\EBinop(\DIV, \veone, \overname{\ELiteral(\lint(\vitwo))}{\vetwo})}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ebinop\_div\_monomial\_denominator]{
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
+  \irtwo = [\vmono \mapsto \vfactor]\\
+  \polynomialdividebyterm(\irone, \vfactor, \vmono) \typearrow \vp \terminateas \CannotBeTransformed
+}{
+  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+\begin{mathpar}
+\inferrule[ebinop\_div\_non\_monomial\_denominator]{
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
+  \irtwo \neq [\vmono \mapsto \vfactor]
+}{
+  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
 
@@ -738,7 +806,9 @@ One of the following applies:
 }{
   \toir(\tenv, \overname{\EUnop(\NEG, \veone)}{\ve}) \typearrow \vp
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[eunop\_other]{
   \op \neq \NEG
 }{
@@ -747,12 +817,21 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[atc]{
+  \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+}{
+  \toir(\tenv, \overname{\EATC(\vep, \Ignore)}{\ve}) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[other]{
-  \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EBinop, \EUnop\}
+  \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EBinop, \EUnop, \EATC\}
 }{
   \toir(\tenv, \ve) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
+\CodeSubsection{\ToIRBegin}{\ToIREnd}{../StaticModel.ml}
 
 \subsection{TypingRule.ExprEqualNorm \label{sec:TypingRule.ExprEqualNorm}}
 \hypertarget{def-exprequalnorm}{}
@@ -1243,8 +1322,6 @@ One of the following applies:
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
-
-%   | E_Pattern _, _ | E_Record _, _ -> assert false
 
 \subsection{TypingRule.TypeEqual \label{sec:TypingRule.TypeEqual}}
 \hypertarget{def-typeequal}{}
@@ -2429,3 +2506,4 @@ One of the following applies:
   \typeof(\tenv, \vs) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
+\CodeSubsection{\TypeOfBegin}{\TypeOfEnd}{../StaticModel.ml}

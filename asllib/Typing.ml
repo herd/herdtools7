@@ -593,14 +593,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             else undefined_identifier loc s)
   (* End *)
 
-  (* Begin CheckStaticallyEvaluable *)
+  (* Begin IsStaticallyEvaluable *)
   let is_statically_evaluable ~loc env e =
     let use_set = use_e e ISet.empty in
     ISet.for_all (storage_is_pure ~loc env) use_set
+    |: TypingRule.IsStaticallyEvaluable
+  (* End *)
 
+  (* Begin CheckStaticallyEvaluable *)
   let check_statically_evaluable (env : env) e () =
-    if is_statically_evaluable ~loc:e env e then ()
-    else fatal_from e (Error.UnpureExpression e)
+    if is_statically_evaluable ~loc:e env e then
+      () |: TypingRule.CheckStaticallyEvaluable
+    else fatal_from e (Error.ImpureExpression e)
   (* End *)
 
   let check_bits_equal_width' env t1 t2 () =
@@ -977,14 +981,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let var_in_env env x =
     IMap.mem x env.local.storage_types || var_in_genv env.global x
 
+  (* Begin CheckVarNotInEnv *)
   let check_var_not_in_env loc env x () =
     if var_in_env env x then fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
+  (* End *)
 
+  (* Begin CheckVarNotInGEnv *)
   let check_var_not_in_genv loc genv x () =
     if var_in_genv genv x then
       fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     else ()
+  (* End *)
 
   (* Begin GetVariableEnum *)
   let get_variable_enum' env e =
@@ -1325,7 +1333,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* End *))
 
   (* Begin AnnotateCall *)
-
   and annotate_call loc env name args eqs call_type =
     let () = assert (List.length eqs == 0) in
     let () =
@@ -1558,23 +1565,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   with Not_found -> e
                 in
                 (ty, e)
-            | ty, _ -> (ty, e) |: TypingRule.ELocalVar
+            | ty, _ -> (ty, e) |: TypingRule.EVar
           with Not_found -> (
             try
               match IMap.find x env.global.storage_types with
               | ty, GDK_Constant -> (
                   match IMap.find_opt x env.global.constant_values with
-                  | Some v ->
-                      (ty, E_Literal v |> here)
-                      |: TypingRule.EGlobalVarConstantVal
-                  | None -> (ty, e) |: TypingRule.EGlobalVarConstantNoVal)
-              | ty, _ -> (ty, e) |: TypingRule.EGlobalVar
+                  | Some v -> (ty, E_Literal v |> here) |: TypingRule.EVar
+                  | None -> (ty, e) |: TypingRule.EVar)
+              | ty, _ -> (ty, e) |: TypingRule.EVar
             with Not_found ->
               let () =
                 if false then
                   Format.eprintf "@[Cannot find %s in env@ %a.@]@." x pp_env env
               in
-              undefined_identifier e x |: TypingRule.EUndefIdent))
+              undefined_identifier e x |: TypingRule.EVar))
     (* End *)
     (* Begin Binop *)
     | E_Binop (op, e1, e2) ->
@@ -2056,16 +2061,17 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let e_eq = expr_of_lexpr le in
         let t_e_eq, _e_eq = annotate_expr env e_eq in
         let+ () = check_bits_equal_width le env t_e_eq t_e in
-        let annotate_one (les, widths, sum) le =
+        let annotate_lebitslice (les, widths, debug_sum) le =
           let e = expr_of_lexpr le in
           let t_e1, _e = annotate_expr env e in
           let width = get_bitvector_width le env t_e1 in
           let t_e2 = T_Bits (width, []) |> add_pos_from le in
           let le1 = annotate_lexpr env le t_e2 in
-          (le1 :: les, width :: widths, binop PLUS sum width)
+          (le1 :: les, width :: widths, binop PLUS debug_sum width)
+          |: TypingRule.LEBitSlice
         in
         let rev_les, rev_widths, _real_width =
-          List.fold_left annotate_one ([], [], e_zero) les
+          List.fold_left annotate_lebitslice ([], [], e_zero) les
         in
         (* as the first check, we have _real_width == bv_length t_e *)
         let les1 = List.rev rev_les and widths = List.rev rev_widths in
@@ -2097,13 +2103,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if can_be_initialized_with env s t then () else conflict loc [ s.desc ] t
   (* End *)
 
-  let add_immutable_expressions ~loc env ldk e_opt x =
+  (* Begin AddImmutableExpr *)
+  let add_immutable_expr ~loc env ldk e_opt x =
     match (ldk, e_opt) with
     | (LDK_Constant | LDK_Let), Some e when is_statically_evaluable ~loc env e
       ->
         let e' = StaticModel.try_normalize env e in
-        add_local_immutable_expr x e' env
+        add_local_immutable_expr x e' env |: TypingRule.AddImmutableExpr
     | _ -> env
+  (* End *)
 
   let rec annotate_local_decl_item loc (env : env) ty ldk ?e ldi =
     let () =
@@ -2128,7 +2136,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            which is already in scope at the point of declaration. *)
         let+ () = check_var_not_in_env loc env x in
         let env2 = add_local x ty ldk env in
-        let new_env = add_immutable_expressions ~loc env2 ldk e x in
+        let new_env = add_immutable_expr ~loc env2 ldk e x in
         (new_env, LDI_Var x) |: TypingRule.LDVar
     (* End *)
     (* Begin LDTuple *)
@@ -2337,6 +2345,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and limit' = annotate_loop_limit ~loc env limit in
         let start_struct = Types.make_anonymous env start_t
         and struct2 = Types.make_anonymous env end_t in
+        (* TypingRule.ForConstraint( *)
         let cs =
           match (start_struct.desc, struct2.desc) with
           | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
@@ -2353,6 +2362,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Int _, _ -> conflict s [ integer' ] end_t
           | _, _ -> conflict s [ integer' ] start_t
           (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
+          (* TypingRule.ForConstraint) *)
         in
         let ty = T_Int cs |> here in
         let body' =
@@ -2373,9 +2383,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           env )
         |: TypingRule.SFor
     (* End *)
+    (* Begin SDecl *)
     | S_Decl (ldk, ldi, e_opt) -> (
         match (ldk, e_opt) with
-        (* Begin SDeclSome *)
+        (* SDecl.Some( *)
         | _, Some e ->
             let t_e, e' = annotate_expr env e in
             let env1, ldi1 =
@@ -2391,13 +2402,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   with Error.(ASLException _) -> env1)
             in
             (S_Decl (ldk, ldi1, Some e') |> here, env2) |: TypingRule.SDeclSome
-        (* End *)
-        (* Begin SDeclNone *)
+        (* SDecl.Some) *)
+        (* SDecl.None( *)
         | LDK_Var, None ->
             let env', ldi' = annotate_local_decl_item_uninit loc env ldi in
             (S_Decl (LDK_Var, ldi', None) |> here, env') |: TypingRule.SDeclNone
         | (LDK_Constant | LDK_Let), None ->
             fatal_from s UnrespectedParserInvariant)
+    (* SDecl.None) *)
     (* End *)
     (* Begin SThrow *)
     | S_Throw (Some (e, _)) ->
@@ -2868,15 +2880,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     declare_one_func loc func_sig1 env1 |: TypingRule.AnnotateAndDeclareFunc
   (* End *)
 
+  (* Begin AddGlobalStorage *)
   let add_global_storage loc name keyword genv ty =
     if is_global_ignored name then genv
     else
       let+ () = check_var_not_in_genv loc genv name in
-      add_global_storage name ty keyword genv
+      add_global_storage name ty keyword genv |: TypingRule.AddGlobalStorage
+  (* End *)
 
+  (* Begin DeclareConst *)
   let declare_const loc name t v genv =
     add_global_storage loc name GDK_Constant genv t
-    |> add_global_constant name v
+    |> add_global_constant name v |: TypingRule.DeclareConst
+  (* End *)
 
   (* Begin DeclareType *)
   let declare_type loc name ty s genv =
@@ -2966,6 +2982,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let genv1 = add_global_storage loc name keyword genv declared_t in
     let env1 = with_empty_local genv1 in
+    (* UpdateGlobalStorage( *)
     let env2 =
       match (keyword, initial_value') with
       | GDK_Constant, Some e -> try_add_global_constant name env1 e
@@ -2975,9 +2992,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | (GDK_Constant | GDK_Let), None ->
           Error.fatal_from loc UnrespectedParserInvariant
       | _ -> env1
+      (* UpdateGlobalStorage) *)
     in
     let () = assert (env2.local == empty_local) in
     ({ gsd with ty = ty_opt'; initial_value = initial_value' }, env2.global)
+    |: TypingRule.DeclareGlobalStorage
   (* End *)
 
   let rename_primitive loc env (f : AST.func) =

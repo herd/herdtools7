@@ -170,14 +170,14 @@ We also define the following helper rules:
 \hypertarget{def-declareglobalstorage}{}
 The function
 \[
-  \declareglobalstorage(\overname{\staticenvs}{\tenv} \aslsep \overname{\globaldecl}{\gsd})
+  \declareglobalstorage(\overname{\globalstaticenvs}{\tenv} \aslsep \overname{\globaldecl}{\gsd})
   \aslto
-  \overname{\staticenvs}{\newtenv} \aslsep \overname{\globaldecl}{\newgsd}
+  \overname{\globalstaticenvs}{\newgenv} \aslsep \overname{\globaldecl}{\newgsd}
   \cup
   \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates the global storage declaration $\gsd$ in the static environment $\tenv$,
-yielding a modified static environment $\newtenv$ and annotated global storage declaration $\newgsd$.
+annotates the global storage declaration $\gsd$ in the global static environment $\genv$,
+yielding a modified global static environment $\newgenv$ and annotated global storage declaration $\newgsd$.
 \ProseOtherwiseTypeError
 
 \subsection{Prose}
@@ -185,7 +185,8 @@ All of the following apply:
 \begin{itemize}
   \item $\gsd$ is a global storage declaration with keyword $\keyword$, initial value \\ $\initialvalue$,
         \optional\ type $\tyopt$, and name $\name$;
-  \item checking that $\name$ is not already declared in the global environment of $\tenv$ yields $\True$\ProseOrTypeError;
+  \item checking that $\name$ is not already declared in $\genv$ yields $\True$\ProseOrTypeError;
+  \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
   \item annotating the \optional\ type $\tyopt$ in $\tenv$ via $\annotatetypeopt$ yields \\
         $\tyoptp$\ProseOrTypeError;
   \item annotating the \optional\ expression $\initialvalue$ in $\tenv$ via $\annotateexpropt$ yields
@@ -194,36 +195,24 @@ All of the following apply:
         $\declaredt$;
   \item adding a global storage element with name $\name$, global declaration keyword \\ $\keyword$ and type $\declaredt$
         to $\tenv$ via $\addglobalstorage$ yields $\tenvone$\ProseOrTypeError;
-  \item One of the following applies:
-  \begin{itemize}
-    \item All of the following apply (\textsc{constant}):
-    \begin{itemize}
-      \item $\keyword$ is $\GDKConstant$ and therefore $\initialvalue$ is some expression $\ve$ (the ASL parser guarantees
-            that the expression exists);
-      \item symbolically simplifying $\ve$ in $\tenvone$ via $\reduceconstants$ yields the literal $\vv$\ProseOrTypeError;
-      \item $\tenvtwo$ is $\tenvone$ with its $\constantvalues$ component updated by binding $\name$ to $\vv$;
-      \item $\newgsd$ is $\gsd$ with its type component as $\tyoptp$;
-      \item $\newtenv$ is $\tenvtwo$.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{non\_constant}):
-    \begin{itemize}
-      \item $\keyword$ is not $\GDKConstant$;
-      \item $\newtenv$ is $\tenvone$.
-    \end{itemize}
-  \end{itemize}
-  \item $\newgsd$ is $\gsd$ with its type component as $\tyoptp$ and $\initialvalue$ component as $\initialvaluep$;
+  \item applying $\withemptylocal$ to $\genvone$ yields $\tenvone$;
+  \item applying $\updateglobalstorage$ to$\name$, $\keyword$, and $\initialvaluep$ in $\tenvone$ \\
+        yields $\tenvtwo$\ProseOrTypeError;
+  \item define $\newgsd$ as $\gsd$ with its type component ($\GDty$) set to $\tyoptp$ and its initial value component
+        ($\GDinitialvalue$) set to $\initialvaluep$;
+  \item define $\newgenv$ as the global component of $\tenvtwo$.
 \end{itemize}
 \subsection{Formally}
 \begin{mathpar}
-\inferrule[constant]{
+\inferrule[let\_statically\_evaluable]{
   \gsd \eqname \{
     \GDkeyword : \keyword,
     \GDinitialvalue : \initialvalue,
     \GDty : \tyopt,
     \GDname: \name
   \}\\
-\checkvarnotingenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
+\checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
+\withemptylocal(\genv) \typearrow \tenv\\
 \annotatetypeopt(\tenv, \tyopt) \typearrow \tyoptp \OrTypeError\\\\
 {
   \begin{array}{r}
@@ -231,108 +220,122 @@ All of the following apply:
   \end{array}
 }\\
 \annotateinittype(\tenv, \initialvaluetype, \tyoptp) \typearrow \declaredt\\
-\addglobalstorage(\tenv, \name, \keyword, \declaredt) \typearrow \tenvone \OrTypeError\\\\
-\commonprefixline\\\\
-\keyword = \GDKConstant\\
-\initialvaluep \eqname \langle \ve \rangle\\
-\reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
-\tenvtwo \eqdef (G^\tenvone.\constantvalues[\name\mapsto\vv], L^\tenvone)\\
+\addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \genvone \OrTypeError\\\\
+\withemptylocal(\genvone) \typearrow \tenvone\\\\
+\updateglobalstorage(\tenvone, \name, \keyword, \initialvaluep) \typearrow \tenvtwo\OrTypeError\\\\
 {
 \newgsd \eqdef \left\{
   \begin{array}{rcl}
   \GDkeyword &:& \keyword, \\
-  \GDinitialvalue &:& \initialvalue, \\
+  \GDinitialvalue &:& \initialvaluep, \\
   \GDty &:& \tyoptp, \\
   \GDname &:& \name
   \end{array}
 \right\}
 }
 }{
-  \declareglobalstorage(\tenv, \gsd) \typearrow (\overname{\tenvtwo}{\newtenv}, \newgsd)
+  \declareglobalstorage(\genv, \gsd) \typearrow (\overname{G^\tenvtwo}{\newgenv}, \newgsd)
+}
+\end{mathpar}
+\CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
+\lrmcomment{This relates to \identr{YSPM} and \identr{FWQM}.}
+
+\subsubsection{TypingRule.UpdateGlobalStorage\label{sec:TypingRule.UpdateGlobalStorage}}
+\hypertarget{def-updateglobalstorage}{}
+The helper function
+\[
+\updateglobalstorage(\overname{\staticenvs}{\tenv} \aslsep
+    \overname{\identifier}{\name} \aslsep
+    \overname{\globaldeclkeyword}{\gdk} \aslsep
+    \overname{\langle\expr\rangle}{\veopt} \aslsep
+) \aslto \overname{\staticenvs}{\newtenv}
+\]
+updates the static environment $\tenv$ for the global storage element
+named $\name$ with global declaration keyword $\gdk$, and optional initializing value $\veopt$,
+resulting in the updated static environment $\newtenv$.
+\ProseOtherwiseTypeError
+This helper function is applied following $\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$
+is the type associated with $\name$.
+
+\subsubsection{Prose}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[constant]{
+  \addglobalconstant(\tenvtwo, \name, \ve) \typearrow \newtenv
+}{
+  \updateglobalstorage(\tenv, \name, \overname{\GDKConstant}{\gdk}, \overname{\langle\ve\rangle}{\veopt}) \typearrow \newtenv
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[non\_constant]{
-  \gsd \eqname \{
-    \GDkeyword : \keyword,
-    \GDinitialvalue : \initialvalue,
-    \GDty : \tyopt,
-    \GDname: \name
-  \}\\
-\checkvarnotingenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
-\annotatetypeopt(\tenv, \tyopt) \typearrow \tyoptp \OrTypeError\\\\
-{
-  \begin{array}{r}
-\annotateexpropt(\tenv, \initialvalue) \typearrow \\ (\initialvaluetype, \initialvaluep) \OrTypeError
-  \end{array}
-}\\
-\annotateinittype(\tenv, \initialvaluetype, \tyoptp) \typearrow \declaredt\\
-\addglobalstorage(\tenv, \name, \keyword, \declaredt) \typearrow \tenvone \OrTypeError\\\\
-\commonprefixline\\\\
-\keyword \neq \GDKConstant\\
-{
-\newgsd \eqdef \left\{
-  \begin{array}{rcl}
-  \GDkeyword &:& \keyword, \\
-  \GDinitialvalue &:& \initialvalue, \\
-  \GDty &:& \tyoptp, \\
-  \GDname &:& \name
-  \end{array}
-\right\}
-}
+\inferrule[let\_statically\_evaluable]{
+  \normalize(\tenvone, \ve) \typearrow \vep \OrTypeError\\\\
+  \addglobalimmutableexpr(\tenv, \vep) \typearrow \newtenv
 }{
-  \declareglobalstorage(\tenv, \gsd) \typearrow (\overname{\tenvone}{\newtenv}, \newgsd)
+  \updateglobalstorage(\tenv, \name, \overname{\GDKLet}{\gdk}, \overname{\langle\ve\rangle}{\veopt}) \typearrow \newtenv
 }
-\end{mathpar}\lrmcomment{This relates to \identr{YSPM} and \identr{FWQM}.}
-\CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
+\end{mathpar}
 
-\subsubsection{TypingRuleAddGlobalStorage \label{sec:TypingRule.AddGlobalStorage}}
+\begin{mathpar}
+\inferrule[other]{
+  {
+    \begin{array}{l}
+      \gdk \neq \GDKConstant\ \lor \\
+      \veopt = \None\ \lor \\
+      \gdk = \GDKLet \land \veopt = \langle\ve\rangle \land
+      \isstaticallyevaluable(\tenv, \ve) \typearrow \False
+    \end{array}
+  }
+}{
+  \updateglobalstorage(\tenv, \name, \gdk, \veopt) \typearrow \overname{\tenv}{\newtenv}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AddGlobalStorage\label{sec:TypingRule.AddGlobalStorage}}
 \hypertarget{def-addglobalstorage}{}
 The function
 \[
   \addglobalstorage(
-    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\globalstaticenvs}{\genv} \aslsep
     \overname{\identifier}{\name} \aslsep
-    \overname{\GDkeyword}{\keyword} \aslsep
+    \overname{\globaldeclkeyword}{\keyword} \aslsep
     \overname{\ty}{\declaredt}
   )
   \aslto
-    \overname{\staticenvs}{\newtenv} \aslsep
+    \overname{\globalstaticenvs}{\newgenv} \aslsep
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-modifies the static environment $\tenv$ by adding a global storage
-for the identifier $\name$ with global storage keyword $\keyword$ and type $\declaredtypes$,
-resulting in the environment $\newtenv$.
+returns a global static environment $\newgenv$ which is identical to the global static environment $\genv$,
+except that the identifier $\name$, which is assumed to name a global storage element,
+is bound to the global storage keyword $\keyword$ and type $\declaredt$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item checking that $\name$ is not declared in the global environment of $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\newtenv$ is $\tenv$ with its $\globalstoragetypes$ component updated by binding $\name$ to
+  \item $\newgenv$ is the global static environment of $\tenv$ with its $\globalstoragetypes$ component updated by binding $\name$ to
         $(\declaredt, \keyword)$.
 \end{itemize}
-
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checkvarnotingenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
-  \newtenv \eqdef (G^\tenv.\globalstoragetypes[\name \mapsto (\declaredt, \keyword)], L^\tenv)
-}
-{
-  \addglobalstorage(\tenv, \name, \keyword, \declaredt) \typearrow \newtenv
+  \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
+  \newgenv \eqdef \genv.\globalstoragetypes[\name \mapsto (\declaredt, \keyword)]
+}{
+  \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \newgenv
 }
 \end{mathpar}
+\CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
 
 \subsubsection{TypingRule.CheckVarNotInGEnv}
 \hypertarget{def-checkvarnotingenv}{}
 The function
 \[
-  \checkvarnotingenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
+  \checkvarnotingenv{\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Strings}{\id}}
   \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-checks whether $\id$ is already declared in the global environment of $\tenv$.
+checks whether $\id$ is already declared in the global static environment $\genv$.
 If it is, the result is a type error, and otherwise the result is $\True$.
 
 \subsubsection{Prose}
@@ -340,9 +343,9 @@ All of the following apply:
 \begin{itemize}
   \item $\vb$ is $\True$ if and only if one of the following applies:
   \begin{itemize}
-    \item $\id$ is declared as a global identifier in $\tenv$;
-    \item $\id$ is declared as a subprogram in $\tenv$;
-    \item $\id$ is declared as a type in $\tenv$.
+    \item $\id$ is declared as a global identifier in $\genv$ via the $\globalstoragetypes$ map;
+    \item $\id$ is declared as a subprogram in $\genv$ via the $\subprograms$ map;
+    \item $\id$ is declared as a type in $\genv$ via the $\declaredtypes$ map.
   \end{itemize}
 
   \item checking whether $\vb$ is $\False$ yields $\True$ or a type error indicating
@@ -354,16 +357,17 @@ All of the following apply:
 \inferrule{
 {
   \begin{array}{rl}
-  \vb \eqdef  & G^\tenv.\globalstoragetypes(\id) \neq \bot \lor\\
-              & G^\tenv.\subprograms(\id) \neq \bot\ \lor\\
-              & G^\tenv.\declaredtypes(\id) \neq \bot
+  \vb \eqdef  & \genv.\globalstoragetypes(\id) \neq \bot \lor\\
+              & \genv.\subprograms(\id) \neq \bot\ \lor\\
+              & \genv.\declaredtypes(\id) \neq \bot
   \end{array}
 }\\
 \checktrans{\neg\vb}{IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
 }{
-  \checkvarnotingenv{\tenv, \id} \typearrow \True
+  \checkvarnotingenv{\genv, \id} \typearrow \True
 }
 \end{mathpar}
+\CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Semantics\label{sec:GlobalStorageDeclarationsSemantics}}
