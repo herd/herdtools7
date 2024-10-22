@@ -92,6 +92,6 @@ ATCs in types:
 
   $ aslref atcs8.asl
   File atcs8.asl, line 1, characters 14 to 29:
-  ASL Typing error: a pure expression was expected, found
-    1 as integer {2}, which produces the following side-effects: [PerformsATC].
+  ASL Typing error: a pure expression was expected, found 1 as integer {2},
+    which produces the following side-effects: [PerformsATC].
   [1]
