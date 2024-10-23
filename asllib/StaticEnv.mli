@@ -104,4 +104,7 @@ val add_global_immutable_expr : identifier -> expr -> env -> env
 
 val add_local : identifier -> ty -> local_decl_keyword -> env -> env
 val add_subtype : identifier -> identifier -> env -> env
+val is_local_undefined : identifier -> local -> bool
+val is_global_undefined : identifier -> global -> bool
 val is_undefined : identifier -> env -> bool
+val is_subprogram : identifier -> env -> bool
