@@ -22,6 +22,7 @@
 
 open AST
 open ASTUtils
+module SES = SideEffect.SES
 module TypingRule = Instrumentation.TypingRule
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
@@ -31,7 +32,7 @@ type global = {
   constant_values : literal IMap.t;
   storage_types : (ty * global_decl_keyword) IMap.t;
   subtypes : identifier IMap.t;
-  subprograms : AST.func IMap.t;
+  subprograms : (AST.func * SES.t) IMap.t;
   overloaded_subprograms : ISet.t IMap.t;
   expr_equiv : expr IMap.t;
 }
@@ -95,8 +96,10 @@ module PPEnv = struct
       (pp_map PP.pp_literal) constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types (pp_map PP.pp_ty) declared_types (pp_map pp_print_string)
-      subtypes (pp_map pp_subprogram) subprograms (pp_map pp_iset)
-      overloaded_subprograms (pp_map PP.pp_expr) expr_equiv
+      subtypes
+      (pp_map (fun f (p, _ses) -> pp_subprogram f p))
+      subprograms (pp_map pp_iset) overloaded_subprograms (pp_map PP.pp_expr)
+      expr_equiv
 
   let pp_env f { global; local } =
     fprintf f "@[<v 2>Env with:@ - %a@ - %a@]" pp_local local pp_global global
@@ -172,13 +175,18 @@ let lookup_immutable_expr_opt env x =
 let mem_constants env x =
   IMap.mem x env.global.constant_values || IMap.mem x env.local.constant_values
 
-let add_subprogram name func_def env =
+let add_subprogram name func_def ses env =
+  let () =
+    if false then
+      Format.eprintf "@[Adding func %s with side effects:@ @[%a]@]@." name
+        SideEffect.SES.pp_print ses
+  in
   {
     env with
     global =
       {
         env.global with
-        subprograms = IMap.add name func_def env.global.subprograms;
+        subprograms = IMap.add name (func_def, ses) env.global.subprograms;
       };
   }
 

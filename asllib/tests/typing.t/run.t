@@ -90,11 +90,13 @@ Use of global vars in constraints
   [1]
   $ aslref --no-exec TNegative4.asl
   File TNegative4.asl, line 5, characters 25 to 41:
-  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS
+  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS,
+    which produces the following side-effects: [ReadGlobal "VAR_ALLOWED_NUMS"].
   [1]
   $ aslref --no-exec TNegative4-bis.asl
   File TNegative4-bis.asl, line 5, characters 25 to 41:
-  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS
+  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS,
+    which produces the following side-effects: [ReadGlobal "VAR_ALLOWED_NUMS"].
   [1]
 
 Asserted type conversions
@@ -126,9 +128,10 @@ Named types
 Loops
   $ aslref --no-exec TPositive8.asl
   $ aslref --no-exec TPositive8-1.asl
-  File TPositive8-1.asl, line 5, characters 8 to 40:
-  ASL Typing error: a subtype of integer {8..31} was expected,
-    provided integer {100..110}.
+  File TPositive8-1.asl, line 4, characters 12 to 33:
+  ASL Typing error: a pure expression was expected,
+    found 100 as integer {8, 16}, which produces the following side-effects:
+    [PerformsATC].
   [1]
   $ aslref --no-exec TNegative8-0.asl
   File TNegative8-0.asl, line 5, characters 8 to 40:
@@ -180,7 +183,8 @@ Symbolic execution of bit vector widths expressions
   $ aslref --no-exec TPositive10-1.asl
   $ aslref --no-exec TNegative10.asl
   File TNegative10.asl, line 8, characters 32 to 38:
-  ASL Typing error: a pure expression was expected, found widthN
+  ASL Typing error: a pure expression was expected, found widthN, which
+    produces the following side-effects: [ReadLocal "widthN"].
   [1]
   $ aslref --no-exec TNegative10-0.asl
   File TNegative10-0.asl, line 16, characters 4 to 53:
@@ -189,7 +193,7 @@ Symbolic execution of bit vector widths expressions
   [1]
   $ aslref --no-exec TNegative10-1.asl
   File TNegative10-1.asl, line 28, characters 4 to 49:
-  ASL Typing error: a subtype of bits(tempC1) was expected,
+  ASL Typing error: a subtype of bits(tempC3A) was expected,
     provided bits(tempC3B).
   [1]
 
