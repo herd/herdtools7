@@ -221,15 +221,18 @@ module SES = struct
     && is_empty ses.recursive_calls
     && not ses.atcs_performed
 
+  let is_side_effect_with_global_reads ses =
+    is_side_effect_free ses && ISet.is_empty ses.global_reads
+
   let is_non_concurrent ses1 ses2 =
-    if
-      (not (ISet.is_empty ses1.thrown_exceptions))
-      || not (ISet.is_empty ses1.recursive_calls)
-    then is_side_effect_free ses2
-    else if
-      (not (ISet.is_empty ses2.thrown_exceptions))
-      || not (ISet.is_empty ses2.recursive_calls)
-    then is_side_effect_free ses1
+    if not (ISet.is_empty ses1.recursive_calls) then
+      is_side_effect_with_global_reads ses2
+    else if not (ISet.is_empty ses2.recursive_calls) then
+      is_side_effect_with_global_reads ses1
+    else if not (ISet.is_empty ses1.thrown_exceptions) then
+      is_side_effect_free ses2
+    else if not (ISet.is_empty ses2.thrown_exceptions) then
+      is_side_effect_free ses1
     else
       ISet.disjoint ses1.global_writes ses2.global_writes
       && ISet.disjoint ses1.global_writes ses2.global_reads
@@ -250,6 +253,13 @@ module SES = struct
     else if ses.atcs_performed then PerformsATC
     else raise Not_found
 
+  let get_side_effect_with_global_reads ses =
+    try get_side_effect ses
+    with Not_found ->
+      if not (ISet.is_empty ses.global_reads) then
+        ReadGlobal (ISet.choose ses.global_reads)
+      else raise Not_found
+
   let filter_side_effects ses =
     {
       ses with
@@ -259,15 +269,18 @@ module SES = struct
     }
 
   let get_concurrent_side_effects ses1 ses2 =
+    let open ISet in
     let choose_inter s1 s2 = ISet.inter s1 s2 |> ISet.choose in
     if not (ISet.is_empty ses1.thrown_exceptions) then
       (ThrowException (ISet.choose ses1.thrown_exceptions), get_side_effect ses2)
     else if not (ISet.is_empty ses2.thrown_exceptions) then
       (get_side_effect ses1, ThrowException (ISet.choose ses2.thrown_exceptions))
     else if not (ISet.is_empty ses1.recursive_calls) then
-      (RecursiveCall (ISet.choose ses1.recursive_calls), get_side_effect ses2)
+      ( RecursiveCall (ISet.choose ses1.recursive_calls),
+        get_side_effect_with_global_reads ses2 )
     else if not (ISet.is_empty ses2.recursive_calls) then
-      (get_side_effect ses1, RecursiveCall (ISet.choose ses2.recursive_calls))
+      ( get_side_effect_with_global_reads ses1,
+        RecursiveCall (ISet.choose ses2.recursive_calls) )
     else if not (ISet.disjoint ses1.global_writes ses2.global_writes) then
       let s = choose_inter ses1.global_writes ses2.global_writes in
       (WriteGlobal s, WriteGlobal s)
