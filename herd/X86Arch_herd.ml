@@ -33,6 +33,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     type lannot = bool (* atomicity *)
     let get_machsize _ = V.Cst.Scalar.machsize
     let empty_annot = false
+    let is_sysdirect_annot _ = false
     let is_atomic annot = annot
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
@@ -78,6 +79,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
           let fromto_of_instr _ = None
 
           let get_val _ v = v
+          let is_non_sp_sysreg = X86Base.is_non_sp_sysreg
 
           module FaultType=FaultType.No
         end)
