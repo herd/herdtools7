@@ -110,6 +110,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             -> +1
         end)
     type vset = VSet.t
+    (* TODO add the fault check (location and address) here, or do we need to do with the value list? *)
     type fenv = (C.A.location * vset) list
     type eventmap = C.A.location C.C.EventMap.t
 
@@ -289,6 +290,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | [] -> ()
       | locs -> fprintf chan "locations [%s]\n" (String.concat " " locs)
 
+    (* TODO change to dump the fault *)
     let dump_final chan (f,flts) =
       let loc_flts =
         if do_kvm then

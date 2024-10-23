@@ -37,12 +37,16 @@ module type S = sig
 
   (* Some predicates, generic enough *)
   val same_oa : t -> t -> bool
+  (* TODO check if we actually need this set_oa function *)
+  val set_oa : t -> string -> t
 
   (* boolean arguments are AArch64 specific *)
   val writable : bool -> bool -> t -> bool
 
   (* Attributes *)
   val get_attrs : t -> string list
+  (* TODO check if we actually need this set_attr function *)
+  val set_attr : t -> string -> string -> t
 
   (* Litmus *)
   val fields : string list

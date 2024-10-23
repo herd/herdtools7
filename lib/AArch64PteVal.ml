@@ -57,6 +57,8 @@ let is_af {af; _} = af <> 0
 
 and same_oa {oa=oa1; _} {oa=oa2; _} = OutputAddress.eq oa1 oa2
 
+let set_oa pte new_oa = { pte with oa = OutputAddress.parse new_oa }
+
 (* *)
 let writable ha hd p =
   (p.af <> 0 || ha) && (* access allowed *)
@@ -131,7 +133,7 @@ let my_int_of_string s v =
     _ -> Warn.user_error "PTE field %s should be an integer" s
   in v
 
-let add_field k v p =
+let set_attr p k v =
   match k with
   | "af" -> { p with af = my_int_of_string k v }
   | "db" -> { p with db = my_int_of_string k v }
@@ -140,6 +142,8 @@ let add_field k v p =
   | "el0" -> { p with el0 = my_int_of_string k v }
   | _ ->
       Warn.user_error "Illegal AArch64 page table entry property %s" k
+
+let add_field k v p = set_attr p k v
 
 let tr p =
   let open ParsedPteVal in
