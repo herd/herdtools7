@@ -110,6 +110,7 @@ module Make (C : Config) = struct
       else `Silence
 
     let output_format = Asllib.Error.Silence
+    let print_typed = false
   end)
 
   module ASLInterpreterConfig = struct
