@@ -348,7 +348,7 @@ let binop_expr(e, b) ==
       | ~=e; DOT; ~=bracketed(clist(ident));          < AST.E_GetFields >
       | ~=e; ~=bracketed(clist(slice));               < AST.E_Slice     >
       | ~=bracketed(clist(expr));                     < AST.E_Concat    >
-      | ~=e; IN; ~=pattern;                           < AST.E_Pattern   >
+      | ~=e; IN; ~=bpattern;                           < AST.E_Pattern   >
       | ~=annotated(ty_non_tuple); UNKNOWN;           < AST.E_Unknown   >
       (*
       | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
@@ -645,6 +645,7 @@ let otherwise == annotated (OTHERWISE; possibly_empty_block)
 
 let pattern_list == ~=nclist(pattern); < AST.Pattern_Any >
 let pattern ==
+    | bpattern
     | MINUS; { AST.Pattern_All }
     | ~=MASK_LIT; < AST.Pattern_Mask >
 
@@ -653,8 +654,7 @@ let pattern ==
       | ~=qualident; < AST.E_Var >
     ); < AST.Pattern_Single >
 
-    | braced(apattern_list)
-
+let bpattern == braced(apattern_list)
 let apattern_list == ~=nclist(apattern); < AST.Pattern_Any >
 let apattern ==
   | ~=expr; < AST.Pattern_Single >
