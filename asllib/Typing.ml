@@ -570,7 +570,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckStaticallyEvaluable *)
   let is_immutable ~loc env ses =
-    SES.for_all_reads (storage_is_pure ~loc env) ses
+    SES.for_all_reads (storage_is_pure ~loc env) ses && not ses.non_determinism
 
   let is_statically_evaluable ~loc env ses =
     SES.is_side_effect_free ses
@@ -588,6 +588,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if SES.is_side_effect_free ses then ()
     else
       let ses = SES.filter_side_effects ses in
+      fatal_from e (Error.ImpureExpression (e, ses))
+
+  let check_is_deterministic e ses () =
+    if ses.SES.non_determinism then
       fatal_from e (Error.ImpureExpression (e, ses))
 
   let storage_is_config ~loc (env : env) s =
@@ -959,11 +963,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and annotate_static_expr env e =
     let t, e', ses = annotate_expr env e in
     let+ () = check_statically_evaluable env e ses in
-    (t, e')
-
-  and annotate_sef_expr env e =
-    let t, e', ses = annotate_expr env e in
-    let+ () = check_is_side_effect_free e ses in
     (t, e')
 
   (* Begin AnnotateStaticInteger *)
@@ -2419,7 +2418,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin SAssert *)
     | S_Assert e ->
-        let t_e', e' = annotate_sef_expr env e in
+        let t_e', e', ses = annotate_expr env e in
+        let+ () = check_is_side_effect_free e ses in
+        let+ () = check_is_deterministic e ses in
         let+ () = check_type_satisfies s env t_e' boolean in
         (S_Assert e' |> here, env, SES.empty) |: TypingRule.SAssert
     (* End *)
@@ -2447,11 +2448,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and end_t, end_e', ses_end = annotate_expr env end_e
         and limit' = annotate_limit_expr ~warn:false ~loc env limit in
         let+ () = check_is_side_effect_free start_e ses_start in
+        let+ () = check_is_deterministic start_e ses_start in
         let+ () = check_is_side_effect_free end_e ses_end in
-        let ses_cond =
-          SES.non_concurrent_union ses_start ses_end
-            ~fail:(concurrent_side_effects ~loc)
-        in
+        let+ () = check_is_deterministic end_e ses_end in
+        let ses_cond = SES.union ses_start ses_end in
         let start_struct = Types.make_anonymous env start_t
         and end_struct = Types.make_anonymous env end_t in
         (* TypingRule.ForConstraint( *)
