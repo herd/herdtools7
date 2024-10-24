@@ -221,7 +221,8 @@ let applies_atom (a,_) d = match a,d with
 | Rel _,W
 | Pte (Read|ReadAcq|ReadAcqPc),R
 | Pte (Set _|SetRel _),W
-| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _|Instr),(R|W)
+| Instr, R
+| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
   -> true
 | _ -> false
 
@@ -383,7 +384,11 @@ let is_ifetch a = match a with
         let r = f (Acq o) r in
         let r = f (AcqPc o) r in
         let r = f (Rel o) r in
-        let r = f Instr r in
+        let r = 
+          if do_self then
+            let r = f Instr r in
+            r
+          else r in
         r
 
    let fold_acc mixed f r =
