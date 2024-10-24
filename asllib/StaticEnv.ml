@@ -193,11 +193,8 @@ let set_renamings name set env =
       };
   }
 
-(* Begin AddGlobalStorage *)
 let add_global_storage x ty gdk (genv : global) =
   { genv with storage_types = IMap.add x (ty, gdk) genv.storage_types }
-  |: TypingRule.AddGlobalStorage
-(* End *)
 
 let add_type x ty env =
   let () =
