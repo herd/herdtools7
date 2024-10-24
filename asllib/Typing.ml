@@ -595,6 +595,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let check_is_deterministic e ses () =
     if ses.SES.non_determinism then
+      let ses = SES.non_deterministic in
       fatal_from e (Error.ImpureExpression (e, ses))
 
   let storage_is_config ~loc (env : env) s =
@@ -2317,8 +2318,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 List.map2 (annotate_lexpr env) les tys |> List.split
               in
               let ses =
-                SES.non_concurrent_unions sess
-                  ~fail:(concurrent_side_effects ~loc)
+                (* TODO left-hand-side concurrent union *)
+                SES.unions sess
               in
               (LE_Destructuring les' |> here, ses)
         | _ -> conflict le [ T_Tuple [] ] t_e)
@@ -2698,8 +2699,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin SAssert *)
     | S_Assert e ->
         let t_e', e', ses = annotate_expr env e in
-        let+ () = check_is_side_effect_free e ses in
-        let+ () = check_is_deterministic e ses in
+        let+ () = check_is_side_effect_free e (SES.remove_atcs ses) in
         let+ () = check_type_satisfies s env t_e' boolean in
         (S_Assert e' |> here, env, SES.empty) |: TypingRule.SAssert
     (* End *)
