@@ -114,8 +114,8 @@
   [1]
 
   $ aslref config-uses-var.asl
-  File config-uses-var.asl, line 2, characters 0 to 13:
-  ASL Typing error: expected config-time expression, got X.
+  File config-uses-var.asl, line 2, characters 0 to 17:
+  ASL Typing error: expected config-time expression, got (X + 3).
   [1]
   $ aslref config-uses-config.asl
   $ aslref config-uses-let.asl
@@ -137,6 +137,9 @@
   [1]
   $ aslref config-uses-constant-through-func.asl
   $ aslref config-uses-atc.asl
+  File config-uses-atc.asl, line 6, characters 0 to 18:
+  ASL Typing error: expected config-time expression, got foo().
+  [1]
   $ aslref config-uses-unknown.asl
 
   $ aslref assert-read.asl
@@ -151,10 +154,9 @@
     which produces the following side-effects: [RaiseException "E"].
   [1]
   $ aslref assert-atc.asl
-  File assert-atc.asl, line 3, characters 9 to 30:
-  ASL Typing error: a pure expression was expected,
-    found (0 as integer {3} == 2), which produces the following side-effects:
-    [PerformsATC].
+  File assert-atc.asl, line 3, characters 9 to 10:
+  ASL Execution error: Mismatch type:
+    value 0 does not belong to type integer {3}.
   [1]
 
   $ aslref type-read-config.asl
@@ -181,12 +183,27 @@
   ASL Typing error: a pure expression was expected, found unknown(), which
     produces the following side-effects: [NonDeterministic].
   [1]
+  $ aslref type-func-atc.asl
+  File type-func-atc.asl, line 3, characters 9 to 10:
+  ASL Execution error: Mismatch type:
+    value 0 does not belong to type integer {3}.
+  [1]
+  $ aslref type-func-local-var.asl
+  $ aslref type-local-var.asl
+  File type-local-var.asl, line 5, characters 15 to 16:
+  ASL Typing error: a pure expression was expected, found x, which produces the
+    following side-effects: [ReadLocal "x"].
+  [1]
+  $ aslref type-throw.asl
+  File type-throw.asl, line 8, characters 19 to 30:
+  ASL Typing error: a pure expression was expected, found throwing(), which
+    produces the following side-effects: [RaiseException "E"].
+  [1]
 
   $ aslref assert-atc.asl
-  File assert-atc.asl, line 3, characters 9 to 30:
-  ASL Typing error: a pure expression was expected,
-    found (0 as integer {3} == 2), which produces the following side-effects:
-    [PerformsATC].
+  File assert-atc.asl, line 3, characters 9 to 10:
+  ASL Execution error: Mismatch type:
+    value 0 does not belong to type integer {3}.
   [1]
   $ aslref assert-read.asl
   $ aslref assert-throw.asl
@@ -200,10 +217,6 @@
     which produces the following side-effects: [WriteGlobal "X"].
   [1]
   $ aslref assert-unknown.asl
-  File assert-unknown.asl, line 8, characters 9 to 24:
-  ASL Typing error: a pure expression was expected, found (unknown() == 0),
-    which produces the following side-effects: [NonDeterministic].
-  [1]
 
   $ aslref rec-assert-throw.asl
   File rec-assert-throw.asl, line 15, characters 9 to 37:
@@ -251,3 +264,13 @@
   ASL Typing error: a pure expression was expected, found foo(1), which
     produces the following side-effects: [RecursiveCall "foo"].
   [1]
+  $ aslref rec-local-type.asl
+  File rec-local-type.asl, line 12, characters 16 to 23:
+  ASL Typing error: a pure expression was expected, found foo(0), which
+    produces the following side-effects: [RecursiveCall "foo"].
+  [1]
+  $ aslref rec-binop-rec.asl
+  File rec-binop-rec.asl, line 9, characters 10 to 35:
+  ASL Typing error: concurrent side effects RecursiveCall "bar" and RecursiveCall "bar"
+  [1]
+
