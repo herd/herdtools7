@@ -1,6 +1,6 @@
 func foo () => integer
 begin
-  return UNKNOWN: integer {0..10};
+  return 0 as integer {10};
 end;
 
 config Y = foo ();

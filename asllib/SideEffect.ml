@@ -351,6 +351,7 @@ module SES = struct
 
   let remove_thrown_exceptions ses = { ses with thrown_exceptions = ISet.empty }
   let remove_recursive_calls ses = { ses with recursive_calls = ISet.empty }
+  let remove_atcs ses = { ses with atcs_performed = false }
 
   let filter_thrown_exceptions f ses =
     { ses with thrown_exceptions = ISet.filter f ses.thrown_exceptions }
