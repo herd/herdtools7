@@ -36,6 +36,13 @@ signature (see \secref{TypingRule.CheckSetterHasGetter}).
 An identifier that is missing a definition of the appropriate kind.
 See TypingRule.SubprogramForName (\secref{TypingRule.SubprogramForName}) for an example.
 
+\hypertarget{def-identifieralreadydeclared}{}
+\item[$\IdentifierAlreadyDeclared$]
+This error indicates an attempt to declare an identifier where it has already been declared.
+The context makes it clear whether this error relates to the local static environment or to the
+entire static environment.
+See \nameref{sec:TypingRule.CheckVarNotInEnv} and \nameref{sec:TypingRule.CheckVarNotInGEnv}.
+
 \hypertarget{def-lengthsmismatch}{}
 \item[$\LengthsMismatch$]
 This error indicates that two lists that are expected to have the same length have different lengths.
@@ -173,6 +180,13 @@ This error indicates that a given expression was expected to statically evaluate
 to an integer-typed literal but either evaluated to a literal of a different type
 or could not be statically evaluated to a literal.
 This is checked by \nameref{sec:TypingRule.BitfieldSliceToPositions}.
+
+\hypertarget{def-es}{}
+\item[$\EmptySlice$]
+This error indicates that an expression is either a slice with an empty list of slice sub-expressions
+or an incorrect way of invoking a getter or a setter with the wrong list of arguments, a missing
+list of arguments, or a list of arguments where the getter or setter are declared with no arguments.
+This is checked by \nameref{sec:TypingRule.ESlice}.
 
 \end{description}
 
