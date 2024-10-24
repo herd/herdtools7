@@ -349,6 +349,8 @@ let binop_expr(e, b) ==
       | ~=e; ~=bracketed(clist(slice));               < AST.E_Slice     >
       | ~=bracketed(clist(expr));                     < AST.E_Concat    >
       | ~=e; IN; ~=bpattern;                           < AST.E_Pattern   >
+      | e=e; EQ_EQ; m=MASK_LIT;                       { AST.(E_Pattern (e, Pattern_Mask (m))) }
+      | e=e; BANG_EQ; m=MASK_LIT;                     { AST.(E_Pattern (e, Pattern_Not (Pattern_Mask (m)))) }
       | ~=annotated(ty_non_tuple); UNKNOWN;           < AST.E_Unknown   >
       (*
       | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
