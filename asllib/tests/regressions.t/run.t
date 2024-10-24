@@ -301,6 +301,10 @@ Required tests:
   $ aslref array-with-enums.asl
   $ aslref array.asl
   $ aslref -0 assign-v0.asl
+  $ aslref -0 asl0-patterns.asl
+  File asl0-patterns.asl, line 7, characters 25 to 29:
+  ASL Error: Cannot parse.
+  [1]
   $ aslref assign1.asl
   $ aslref big-ints.asl
   $ aslref bitfields.asl
