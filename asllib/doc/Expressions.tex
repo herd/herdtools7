@@ -1072,6 +1072,7 @@ All of the following apply:
   \item annotating the expression $\vep$ in $\tenv$ yields $(\tep,\vepp)$\ProseOrTypeError;
   \item obtaining the \structure\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
   \item $\structtep$ is either a bitvector or an integer;
+  \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\EmptySlice};
   \item obtaining the width of $\slices$ in $\tenv$ via $\sliceswidth$ yields $\vw$\ProseOrTypeError;
   \item $\slicesp$ is the result of annotating $\slices$ in $\tenv$;
   \item $\vt$ is the bitvector type of width $\vw$, that is, $\TBits(\vw, \emptylist)$;
@@ -1085,6 +1086,7 @@ All of the following apply:
   \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
   \astlabel(\structtep) \in \{\TInt, \TBits\}\\
+  \checktrans{\slices \neq \emptylist}{\EmptySlice} \typearrow \True \OrTypeError\\\\
   \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
   \annotateslices(\tenv, \slices) \typearrow \slicesp \OrTypeError
 }{

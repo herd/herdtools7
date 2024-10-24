@@ -479,6 +479,7 @@ module TypingRule = struct
     | IsSubprogram
     | CheckVarNotInEnv
     | CheckVarNotInGEnv
+    | CheckDisjointSlices
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -651,6 +652,7 @@ module TypingRule = struct
     | IsSubprogram -> "IsSubprogram"
     | CheckVarNotInEnv -> "CheckVarNotInEnv"
     | CheckVarNotInGEnv -> "CheckVarNotInGEnv"
+    | CheckDisjointSlices -> "CheckDisjointSlices"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -805,6 +807,7 @@ module TypingRule = struct
       IsSubprogram;
       CheckVarNotInEnv;
       CheckVarNotInGEnv;
+      CheckDisjointSlices;
     ]
 
   let all_nb = List.length all

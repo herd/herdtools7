@@ -562,6 +562,7 @@ All of the following apply:
   \item checking whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
   \item annotating $\slices$ in $\tenv$ yields $\slicestwo$\ProseOrTypeError;
   \item checking that the slices $\slicestwo$ are all disjoint yields $\True$\ProseOrTypeError;
+  \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\EmptySlice};
   \item $\newle$ is the slicing of $\vletwo$ by $\slicestwo$, that is, $\LESlice(\vletwo, \slicestwo)$.
 \end{itemize}
 \subsubsection{Formally}
@@ -577,12 +578,39 @@ All of the following apply:
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \annotateslices(\tenv, \slices) \typearrow \slicestwo \OrTypeError\\\\
   \checkdisjointslices(\tenv, \slicestwo) \typearrow \True \OrTypeError\\\\
+  \checktrans{\slices \neq \emptylist}{\EmptySlice} \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESlice(\vletwo, \slicestwo)
 }{
   \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
 }
 \end{mathpar}
 \CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.CheckDisjointSlices\label{sec:}TypingRule.CheckDisjointSlices}
+\hypertarget{def-checkdisjointslices}{}
+The function
+\[
+\checkdisjointslices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slices})
+\aslto \True \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+tests whether the list of slices $\slices$ do not overlap in $\tenv$, yielding $\True$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item applying $\disjointslicestopositions$ to $\slices$ in $\tenv$ yields a set of positions\ProseOrTypeError.
+  \item the result is $\True$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \disjointslicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError
+}{
+  \checkdisjointslices(\tenv, \slices) \typearrow \True
+}
+\end{mathpar}
+\CodeSubsection{\CheckDisjointSlicesBegin}{\CheckDisjointSlicesEnd}{../Typing.ml}
 
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LESlice\label{sec:SemanticsRule.LESlice}}

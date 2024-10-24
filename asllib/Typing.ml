@@ -430,11 +430,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.DisjointSlicesToPositions
   (* End *)
 
+  (* Begin TypingRule.CheckDisjointSlices *)
   let check_disjoint_slices loc env slices =
     if List.length slices <= 1 then ok
     else fun () ->
       let _ = disjoint_slices_to_diet loc env slices in
-      ()
+      () |: TypingRule.CheckDisjointSlices
+  (* End *)
 
   exception NoSingleField
 
