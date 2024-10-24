@@ -1520,7 +1520,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           check_atc env t_struct ty_struct ~fail:(fun () ->
               fatal_from loc (BadATC (t, ty)))
         in
-        (if Types.subtype_satisfies env t ty' then (ty', e'')
+        (if Types.subtype_satisfies env t_struct ty_struct then (ty', e'')
          else if forbid_atcs then fatal_from loc Error.UnexpectedATC
          else (ty', E_ATC (e'', ty_struct) |> here))
         |: TypingRule.ATC

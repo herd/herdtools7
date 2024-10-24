@@ -85,12 +85,26 @@ ATCs on other types
 
   $ aslref atcs7.asl
 
-ATCs in types:
   $ cat > atcs8.asl <<EOF
-  > let bv : bits(1 as integer{2}) = Ones(1);
+  > type A of record{ a: integer};
+  > type B subtypes A;
+  > func main () => integer
+  > begin
+  >     let x: A = B { a = 0 };
+  >     var a: array[10] of B;
+  >     let b = a as array[10] of A;
+  >     return 0;
+  > end
   > EOF
 
   $ aslref atcs8.asl
-  File atcs8.asl, line 1, characters 14 to 29:
+
+ATCs in types:
+  $ cat > atcs9.asl <<EOF
+  > let bv : bits(1 as integer{2}) = Ones(1);
+  > EOF
+
+  $ aslref atcs9.asl
+  File atcs9.asl, line 1, characters 14 to 29:
   ASL Typing error: unexpected ATC.
   [1]
