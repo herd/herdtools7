@@ -36,6 +36,13 @@ signature (see \secref{TypingRule.CheckSetterHasGetter}).
 An identifier that is missing a definition of the appropriate kind.
 See TypingRule.SubprogramForName (\secref{TypingRule.SubprogramForName}) for an example.
 
+\hypertarget{def-identifieralreadydeclared}{}
+\item[$\IdentifierAlreadyDeclared$]
+This error indicates an attempt to declare an identifier where it has already been declared.
+The context makes it clear whether this error relates to the local static environment or to the
+entire static environment.
+See \nameref{sec:TypingRule.CheckVarNotInEnv} and \nameref{sec:TypingRule.CheckVarNotInGEnv}.
+
 \hypertarget{def-lengthsmismatch}{}
 \item[$\LengthsMismatch$]
 This error indicates that two lists that are expected to have the same length have different lengths.

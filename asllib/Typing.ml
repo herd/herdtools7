@@ -974,13 +974,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckVarNotInEnv *)
   let check_var_not_in_env loc env x () =
-    if is_undefined x env then ()
+    if is_undefined x env then () |: TypingRule.CheckVarNotInEnv
     else fatal_from loc (Error.AlreadyDeclaredIdentifier x)
   (* End *)
 
   (* Begin CheckVarNotInGEnv *)
   let check_var_not_in_genv loc genv x () =
-    if is_global_undefined x genv then ()
+    if is_global_undefined x genv then () |: TypingRule.CheckVarNotInGEnv
     else fatal_from loc (Error.AlreadyDeclaredIdentifier x)
   (* End *)
 

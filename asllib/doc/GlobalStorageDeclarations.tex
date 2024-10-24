@@ -326,48 +326,7 @@ All of the following apply:
   \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \newgenv
 }
 \end{mathpar}
-\CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
-
-\subsubsection{TypingRule.CheckVarNotInGEnv}
-\hypertarget{def-checkvarnotingenv}{}
-The function
-\[
-  \checkvarnotingenv{\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Strings}{\id}}
-  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-checks whether $\id$ is already declared in the global static environment $\genv$.
-If it is, the result is a type error, and otherwise the result is $\True$.
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\vb$ is $\True$ if and only if one of the following applies:
-  \begin{itemize}
-    \item $\id$ is declared as a global identifier in $\genv$ via the $\globalstoragetypes$ map;
-    \item $\id$ is declared as a subprogram in $\genv$ via the $\subprograms$ map;
-    \item $\id$ is declared as a type in $\genv$ via the $\declaredtypes$ map.
-  \end{itemize}
-
-  \item checking whether $\vb$ is $\False$ yields $\True$ or a type error indicating
-        that $\id$ has already been declared, thereby short-circuiting the rule.
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-{
-  \begin{array}{rl}
-  \vb \eqdef  & \genv.\globalstoragetypes(\id) \neq \bot \lor\\
-              & \genv.\subprograms(\id) \neq \bot\ \lor\\
-              & \genv.\declaredtypes(\id) \neq \bot
-  \end{array}
-}\\
-\checktrans{\neg\vb}{IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
-}{
-  \checkvarnotingenv{\genv, \id} \typearrow \True
-}
-\end{mathpar}
-\CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
+\CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../Interpreter.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Semantics\label{sec:GlobalStorageDeclarationsSemantics}}

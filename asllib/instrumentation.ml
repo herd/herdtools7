@@ -473,6 +473,12 @@ module TypingRule = struct
     | TypeOf
     | LookupImmutableExpr
     | WithEmptyLocal
+    | IsGlobalUndefined
+    | IsLocalUndefined
+    | IsUndefined
+    | IsSubprogram
+    | CheckVarNotInEnv
+    | CheckVarNotInGEnv
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -639,6 +645,12 @@ module TypingRule = struct
     | TypeOf -> "TypeOf"
     | LookupImmutableExpr -> "LookupImmutableExpr"
     | WithEmptyLocal -> "WithEmptyLocal"
+    | IsGlobalUndefined -> "IsGlobalUndefined"
+    | IsLocalUndefined -> "IsLocalUndefined"
+    | IsUndefined -> "IsUndefined"
+    | IsSubprogram -> "IsSubprogram"
+    | CheckVarNotInEnv -> "CheckVarNotInEnv"
+    | CheckVarNotInGEnv -> "CheckVarNotInGEnv"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -787,6 +799,12 @@ module TypingRule = struct
       TypeOf;
       LookupImmutableExpr;
       WithEmptyLocal;
+      IsGlobalUndefined;
+      IsLocalUndefined;
+      IsUndefined;
+      IsSubprogram;
+      CheckVarNotInEnv;
+      CheckVarNotInGEnv;
     ]
 
   let all_nb = List.length all

@@ -1087,7 +1087,10 @@
 \newcommand\withemptylocal[0]{\hyperlink{def-withemptylocal}{\textfunc{with\_empty\_local}}}
 \newcommand\addnewfunc[0]{\hyperlink{def-addnewfunc}{\textfunc{add\_new\_func}}}
 \newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
+\newcommand\isglobalundefined[0]{\hyperlink{def-isglobalundefined}{\textfunc{is\_global\_undefined}}}
+\newcommand\islocalundefined[0]{\hyperlink{def-islocalundefined}{\textfunc{is\_local\_undefined}}}
 \newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
+\newcommand\issubprogram[0]{\hyperlink{def-issubprogram}{\textfunc{is\_subprogram}}}
 \newcommand\lookupimmutableexpr[0]{\hyperlink{def-lookupimmutableexpr}{\textfunc{lookup\_immutable\_expr}}}
 \newcommand\addglobalimmutableexpr[0]{\hyperlink{def-addglobalimmutableexpr}{\textfunc{add\_global\_immutable\_expr}}}
 \newcommand\addlocalimmutableexpr[0]{\hyperlink{def-addlocalimmutableexpr}{\textfunc{add\_local\_immutable\_expr}}}
@@ -1363,7 +1366,6 @@
 \newcommand\annotatelocaldeclitemuninit[0]{\hyperlink{def-annotatelocaldeclitemuninit}{\textfunc{annotate\_local\_decl\_item\_uninit}}}
 \newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}(#1)}
 \newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
-\newcommand\varinenv[1]{\hyperlink{def-varinenv}{\textfunc{var\_in\_env}}(#1)}
 \newcommand\annotatesubprogram[1]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}(#1)}
 \newcommand\annotatedecl[1]{\hyperlink{def-annotatedecl}{\textfunc{annotate\_decl}}(#1)}
 \newcommand\declaredecl[1]{\hyperlink{def-declaredecl}{\textfunc{declare\_decl}}(#1)}
@@ -1423,6 +1425,7 @@
 %% Type Error Codes
 \newcommand\TypeErrorCode[1]{\texttt{TE\_#1}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
+\newcommand\IdentifierAlreadyDeclared[0]{\hyperlink{def-identifieralreadydeclared}{\TypeErrorCode{IAD}}}
 \newcommand\LengthsMismatch[0]{\hyperlink{def-lengthsmismatch}{\TypeErrorCode{LMM}}}
 \newcommand\SetterWithoutGetter[0]{\hyperlink{def-setterwithoutgetter}{\TypeErrorCode{SWG}}}
 \newcommand\ExpectedBitvectorType[0]{\hyperlink{def-expectedbitvectortype}{\TypeErrorCode{EBT}}}
