@@ -527,3 +527,10 @@ let equal_in_env env e1 e2 =
   with NotSupported ->
     let () = if dbg then Format.eprintf "Cannot answer this question yet." in
     false
+
+(* Begin ReduceToZOpt *)
+let reduce_to_z_opt env e =
+  match (try_normalize env e).desc with
+  | E_Literal (L_Int z) -> Some z
+  | _ -> None
+(* End *)

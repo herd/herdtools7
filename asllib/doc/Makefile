@@ -23,7 +23,7 @@ control: control.tex $(CONTROLS)
 ASLReference.pdf: control\
 				ASLASTLines.tex ASLTypeSatisfactionLines.tex ASLStaticModelLines.tex ASLStaticInterpreterLines.tex\
 				ASLStaticEnvLines.tex ASLEnvLines.tex ASLASTUtilsLines.tex\
-				ASLTypingLines.tex ASLSemanticsLines.tex
+				ASLTypingLines.tex ASLSemanticsLines.tex ASLStaticOperationsLines.tex
 	$(LATEX) ASLReference.tex
 	$(BIBTEX) ASLReference
 	$(LATEX) ASLReference.tex
@@ -33,28 +33,16 @@ ASLReference.pdf: control\
 ASLSemanticsLines.tex: ../Interpreter.ml
 	$(BENTO) $< > $@
 
-ASLTypingLines.tex: ../Typing.ml
-	$(BENTO) $< > $@
-
 ASLTypeSatisfactionLines.tex: ../types.ml
 	$(BENTO) $< > $@
 
 ASLASTLines.tex: ../AST.mli
 	$(BENTO) $< > $@
 
-ASLStaticModelLines.tex: ../StaticModel.ml
-	$(BENTO) $< > $@
-
-ASLStaticInterpreterLines.tex: ../StaticInterpreter.ml
-	$(BENTO) $< > $@
-
-ASLStaticEnvLines.tex: ../StaticEnv.ml
-	$(BENTO) $< > $@
-
 ASLEnvLines.tex: ../env.ml
 	$(BENTO) $< > $@
 
-ASLASTUtilsLines.tex: ../ASTUtils.ml
+ASL%Lines.tex: ../%.ml
 	$(BENTO) $< > $@
 
 .PHONY: force
