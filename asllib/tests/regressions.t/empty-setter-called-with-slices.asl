@@ -1,16 +1,16 @@
-getter f1 => integer
+getter f1 => bits(4)
 begin
-  return 4;
+  return '0000';
 end
 
-setter f1 = v: integer
+setter f1 = v: bits(4)
 begin
   pass;
 end
 
 func main () => integer
 begin
-  f1[] = 4;
+  f1[] = '';
   
   return 0;
 end

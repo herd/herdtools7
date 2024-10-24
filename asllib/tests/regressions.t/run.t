@@ -367,6 +367,10 @@ Base values
 
 Empty getters/setters
   $ aslref empty-getter-called-with-slices.asl
+  File empty-getter-called-with-slices.asl, line 8, characters 10 to 14:
+  ASL Static Error: cannot slice with empty slicing operator. This might also
+    be due to an incorrect getter/setter invocation.
+  [1]
   $ aslref empty-getter-called-with-slices-2.asl
   File empty-getter-called-with-slices-2.asl, line 8, characters 10 to 14:
   ASL Typing error: boolean does not subtype any of: integer, bits(-).
@@ -389,7 +393,8 @@ Empty getters/setters
   [1]
   $ aslref empty-setter-called-with-slices.asl
   File empty-setter-called-with-slices.asl, line 13, characters 2 to 6:
-  ASL Typing error: a subtype of bits(-) was expected, provided integer.
+  ASL Static Error: cannot slice with empty slicing operator. This might also
+    be due to an incorrect getter/setter invocation.
   [1]
   $ aslref nonempty-setter-called-without-slices.asl
   File nonempty-setter-called-without-slices.asl, line 13, characters 2 to 4:

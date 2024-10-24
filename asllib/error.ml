@@ -32,6 +32,7 @@ type error_desc =
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
   | BadSlice of slice
+  | EmptySlice
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
@@ -149,6 +150,10 @@ module PPrint = struct
           pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
+    | EmptySlice ->
+        pp_print_text f
+          "ASL Static Error: cannot slice with empty slicing operator. This \
+           might also be due to an incorrect getter/setter invocation."
     | BadSlices (t, slices, length) ->
         fprintf f
           "ASL %s error: Cannot extract from bitvector of length %d slice %a."
@@ -220,8 +225,8 @@ module PPrint = struct
           "ASL Typing error:@ cannot@ declare@ already@ declared@ element@ %S."
           x
     | BadReturnStmt None ->
-        fprintf f
-          "ASL Typing error:@ cannot@ return@ something@ from@ a@ procedure."
+        pp_print_text f
+          "ASL Typing error: cannot return something from a procedure."
     | UnexpectedSideEffect s -> fprintf f "Unexpected side-effect: %s" s
     | UncaughtException s -> fprintf f "Uncaught exception: %s" s
     | OverlappingSlices slices ->

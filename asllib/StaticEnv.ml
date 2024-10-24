@@ -272,7 +272,15 @@ let add_subtype s t env =
     global = { env.global with subtypes = IMap.add s t env.global.subtypes };
   }
 
-let is_undefined name env =
+let is_global_undefined x (genv : global) =
   not
-    (IMap.mem name env.local.storage_types
-    || IMap.mem name env.global.storage_types)
+    (IMap.mem x genv.storage_types
+    || IMap.mem x genv.subprograms
+    || IMap.mem x genv.declared_types)
+
+let is_local_undefined x (lenv : local) = not (IMap.mem x lenv.storage_types)
+
+let is_undefined x env =
+  is_global_undefined x env.global && is_local_undefined x env.local
+
+let is_subprogram x env = IMap.mem x env.global.subprograms

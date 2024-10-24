@@ -182,10 +182,8 @@ module type ANNOTATE_CONFIG = sig
 end
 
 module type S = sig
-  val type_check_ast : AST.t -> AST.t * StaticEnv.global
-
-  val type_check_ast_in_env :
-    StaticEnv.global -> AST.t -> AST.t * StaticEnv.global
+  val type_check_ast : AST.t -> AST.t * global
+  val type_check_ast_in_env : global -> AST.t -> AST.t * global
 end
 
 module Property (C : ANNOTATE_CONFIG) = struct
@@ -974,25 +972,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | _ -> fail |: TypingRule.CheckATC
   (* End *)
 
-  let var_in_genv (genv : StaticEnv.global) x =
-    IMap.mem x genv.storage_types
-    || IMap.mem x genv.subprograms
-    || IMap.mem x genv.declared_types
-
-  let var_in_env env x =
-    IMap.mem x env.local.storage_types || var_in_genv env.global x
-
   (* Begin CheckVarNotInEnv *)
   let check_var_not_in_env loc env x () =
-    if var_in_env env x then fatal_from loc (Error.AlreadyDeclaredIdentifier x)
-    else ()
+    if is_undefined x env then ()
+    else fatal_from loc (Error.AlreadyDeclaredIdentifier x)
   (* End *)
 
   (* Begin CheckVarNotInGEnv *)
   let check_var_not_in_genv loc genv x () =
-    if var_in_genv genv x then
-      fatal_from loc (Error.AlreadyDeclaredIdentifier x)
-    else ()
+    if is_global_undefined x genv then ()
+    else fatal_from loc (Error.AlreadyDeclaredIdentifier x)
   (* End *)
 
   (* Begin GetVariableEnum *)
@@ -1069,8 +1058,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and annotate_type ?(decl = false) ~(loc : 'a annotated) env ty : ty =
     let () =
       if false then
-        Format.eprintf "Annotating@ %a@ in env:@ %a@." PP.pp_ty ty
-          StaticEnv.pp_env env
+        Format.eprintf "Annotating@ %a@ in env:@ %a@." PP.pp_ty ty pp_env env
     in
     let here t = add_pos_from ty t in
     best_effort ty @@ fun _ ->
@@ -1722,6 +1710,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             match struct_t_e'.desc with
             (* Begin ESlice *)
             | T_Int _ | T_Bits _ ->
+                let+ () =
+                  check_true (not (list_is_empty slices)) @@ fun () ->
+                  fatal_from loc Error.EmptySlice
+                in
                 let w = slices_width env slices in
                 (* TODO: check that:
                    - Rule SNQJ: An expression or subexpression which
@@ -1970,6 +1962,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let slices2 = best_effort slices (annotate_slices env) in
             let+ () = check_disjoint_slices le env slices2 in
+            let+ () =
+              check_true (not (list_is_empty slices)) @@ fun () ->
+              fatal_from le Error.EmptySlice
+            in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
         (* End *)
         (* Begin LESetArray *)
@@ -2234,7 +2230,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                    | Some ldi ->
                        let rec undefined = function
                          | LDI_Discard -> true
-                         | LDI_Var x -> StaticEnv.is_undefined x env
+                         | LDI_Var x -> is_undefined x env
                          | LDI_Tuple ldis -> List.for_all undefined ldis
                          | LDI_Typed (ldi', _) -> undefined ldi'
                        in
@@ -2629,7 +2625,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let rec of_ty acc ty =
       match ty.desc with
       | T_Bits ({ desc = E_Var x; _ }, _) ->
-          if StaticEnv.is_undefined x env then ISet.add x acc else acc
+          if is_undefined x env then ISet.add x acc else acc
       | T_Tuple tys -> List.fold_left of_ty acc tys
       | _ -> acc
     in
@@ -2644,7 +2640,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     fold_types_func_sig (Fun.flip ASTUtils.use_ty) f ISet.empty
 
   (* Begin AnnotateFuncSig *)
-  let annotate_func_sig ~loc (genv : StaticEnv.global) (func_sig : AST.func) :
+  let annotate_func_sig ~loc (genv : global) (func_sig : AST.func) :
       env * AST.func =
     (* Build typing local environment. *)
     let env1 = with_empty_local genv in
@@ -2682,15 +2678,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let () =
       if false then
-        Format.eprintf "Explicit parameters added to env %a.@."
-          StaticEnv.pp_local env2.local
+        Format.eprintf "Explicit parameters added to env %a.@." pp_local
+          env2.local
     in
     (* Add arguments as parameters. *)
     let env3, arg_params =
       let used =
         use_func_sig func_sig
         |> ISet.filter (fun s ->
-               StaticEnv.is_undefined s env1 && not (IMap.mem s declared_params))
+               is_undefined s env1 && not (IMap.mem s declared_params))
       in
       let () =
         if false then
@@ -2725,7 +2721,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if C.check = `TypeCheck then (env3, parameters)
       else
         let folder x (env3', parameters) =
-          if var_in_env env3 x then (env3', parameters)
+          if not (is_undefined x env3) then (env3', parameters)
           else
             let t = Types.parameterized_ty x in
             (add_local x t LDK_Let env3', (x, Some t) :: parameters)
@@ -2742,8 +2738,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let () =
       if false then
-        Format.eprintf "@[<hov>Annotating arguments in env:@ %a@]@."
-          StaticEnv.pp_local env3.local
+        Format.eprintf "@[<hov>Annotating arguments in env:@ %a@]@." pp_local
+          env3.local
     in
     (* Add arguments. *)
     let env4, args =
@@ -2769,18 +2765,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let () =
             if false then
               Format.eprintf "@[<hov>Annotating return-type in env:@ %a@]@."
-                StaticEnv.pp_local env4.local
+                pp_local env4.local
           in
           (* Subtlety here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
           let ty' = annotate_type ~loc env3 ty in
           let return_type = Some ty' in
-          let env4' =
-            StaticEnv.{ env4 with local = { env4.local with return_type } }
-          in
+          let env4' = { env4 with local = { env4.local with return_type } } in
           let () =
             if false then
               Format.eprintf "@[<hov>Env after annotating return-type:@ %a@]@."
-                StaticEnv.pp_local env4'.local
+                pp_local env4'.local
           in
           (env4', return_type)
     in
@@ -2792,8 +2786,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let annotate_subprogram (env : env) (f : AST.func) : AST.func =
     let () =
       if false then
-        Format.eprintf "@[<hov>Annotating body in env:@ %a@]@." StaticEnv.pp_env
-          env
+        Format.eprintf "@[<hov>Annotating body in env:@ %a@]@." pp_env env
     in
     (* Annotate body *)
     let body =
@@ -3033,7 +3026,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       if false then
         Format.eprintf "@[<v>Typing with %s in env:@ %a@]@." strictness_string
-          StaticEnv.pp_global genv
+          pp_global genv
       else if false then Format.eprintf "@[Typing %a.@]@." PP.pp_t [ d ]
     in
     let new_d, new_genv =
@@ -3141,7 +3134,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       let ast_rev, env = fold_topo ast ([], env) in
       (List.rev ast_rev, env)
 
-  let type_check_ast ast = type_check_ast_in_env StaticEnv.empty_global ast
+  let type_check_ast ast = type_check_ast_in_env empty_global ast
   (* End *)
 end
 
