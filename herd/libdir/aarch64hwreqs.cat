@@ -89,6 +89,7 @@ let IFB-ob =
  | [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
  | [Exp & R]; pick-addr-dep; (tc-ib | tr-ib); [IFB]; po
  | DSB-ob; [IFB]; po
+ | GSB-ob; [IFB]; po
  | [Imp & TTD & R]; tr-ib; [IFB]; po
  | [Imp & Tag & R]; tc-ib; [IFB]; po
  | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [IFB]; po
@@ -168,6 +169,7 @@ let rec lob =
  | f-ob
  | po-scl-ob
  | DSB-ob
+ | GSB-ob
  | IFB-ob
  | lmws
  | lmws; sca-class

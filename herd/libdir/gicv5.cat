@@ -45,6 +45,13 @@
 let DI = try DI with emptyset
 let RCFG = try RCFG with emptyset
 let GICR = try GICR with emptyset
+let GSB.ACK = try GSB.ACK with emptyset
+let GSB.SYS = try GSB.SYS with emptyset
+
+(** GSB-ordered-before **)
+let GSB-ob =
+  [Imp & INTID & GICR]; po; [GSB.ACK]; po; [~(Imp & Instr & R)]
+  | [INTID]; po; [GSB.SYS]; po; [~(Imp & Instr & R)]
 
 (** GIC-hazard-ordered-before **)
 let GIC-haz-ob =
