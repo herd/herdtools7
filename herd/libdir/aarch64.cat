@@ -149,6 +149,7 @@ let obs =
     | Tag-obs; sca-class?
     | TTD-obs
     | Instr-obs
+    | GIC-obs
 
 (*** Ordered-before ***)
 let rec ob =

@@ -50,6 +50,11 @@ let GICR = try GICR with emptyset
 let GIC-haz-ob =
   [Exp & INTID & R & RCFG]; po & loc; [INTID & R]; ca; [Exp & INTID & W]
 
+(** GIC-observed-by **)
+let GIC-obs =
+   [INTID & W]; rf; [INTID & R]
+   | [Exp & INTID]; ca & ext; [Exp & INTID & W]
+
 
 (*** Internal visibility requirements ***)
 irreflexive [INTID & R & RCFG]; po & loc; [INTID & W]; rf; [INTID & R & RCFG] as coRW-INTID
