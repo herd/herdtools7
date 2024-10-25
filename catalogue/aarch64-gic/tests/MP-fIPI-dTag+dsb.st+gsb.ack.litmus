@@ -1,0 +1,14 @@
+AArch64 MP-fIPI-dTag+dsb.st+gsb.ack
+Variant=mte,sync
+{
+ [INTID(A)]=(enabled:1, pending:0, affinity:P1);
+ 0:X0=x:red; 0:X1=x;
+ 0:X2=gicval_t:(intid:A, pending:1);
+ 1:X1=x:green;
+}
+ P0             | P1               ;
+ STG X0, [X1]   | GICR X0, CDIA    ;
+ DSB ST         | GSB  ACK         ;
+ GIC CDPEND, X2 |L0:               ;
+                | LDR  W2, [X1]    ;
+exists(1:X0=gicval_t:(valid:1, intid:A) /\ ~fault(P1:L0,x,TagCheck))

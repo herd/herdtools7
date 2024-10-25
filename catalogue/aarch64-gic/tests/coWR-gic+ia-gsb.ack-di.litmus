@@ -1,0 +1,10 @@
+AArch64 coWR-gic+ia-gsb.ack-di
+{
+ [INTID(A)]=(pending:1,enabled:1,affinity:P0);
+ 0:X2=gicval_t:(intid:A);
+}
+ P0           ;
+ GICR X1,CDIA ;
+ GSB ACK      ;
+ GIC CDDI,X2  ;
+exists(0:X1=gicval_t:(valid:1,intid:A) /\ [INTID(A)]=(active:1))
