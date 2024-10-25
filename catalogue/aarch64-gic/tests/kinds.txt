@@ -66,3 +66,6 @@ coWR-gic+ia-rcfg                                        Forbid
 coRW-gic+rcfg-pri                                       Forbid
 coRW-gic+rcfg-ia                                        Forbid
 coRW-gic+rcfg-di                                        Forbid
+MP-fIPI-dTag+dsb.st+gsb.ack                             Forbid
+coWR-gic+ia-gsb.ack-di                                  Forbid
+coWR-gic+dis-gsb.sys-ia                                 Forbid
