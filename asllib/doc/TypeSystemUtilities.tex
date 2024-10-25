@@ -447,15 +447,7 @@ is the local static environment of $\emptytenv$.
 \CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
 
 \hypertarget{def-checkvarnotinenv}{}
-\hypertarget{def-varinenv}{}
-\subsubsection{TypingRule.CheckVarNotInEnv}
-The function
-\[
-  \varinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}}
-  \aslto \overname{\Bool}{\vb}
-\]
-determines whether an identifier $\id$ is declared in the static environment $\tenv$.
-
+\subsubsection{TypingRule.CheckVarNotInEnv\label{sec:TypingRule.CheckVarNotInEnv}}
 The function
 \[
   \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
@@ -465,44 +457,50 @@ checks whether $\id$ is already declared in $\tenv$. If it is, the result is a t
 and otherwise the result is $\True$.
 
 \subsubsection{Prose}
-$\varinenv{\tenv, \id}$ is true if and only if one of the following applies:
+\subsubsection{Prose}
+All of the following apply:
 \begin{itemize}
-  \item $\id$ is declared as a local identifier in $\tenv$;
-  \item $\id$ is declared as a global identifier in $\tenv$;
-  \item $\id$ is declared as a subprogram in $\tenv$;
-  \item $\id$ is declared as a type in $\tenv$.
+  \item applying $\isundefined$ to $\vx$ in $\genv$ yields $\vb$;
+  \item checking whether $\vb$ is $\True$ yields $\True$\ProseTerminateAs{\IdentifierAlreadyDeclared}.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \isundefined(\tenv, \id) \typearrow \vb\\
+  \checktrans{\vb}{\IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
+}{
+  \checkvarnotinenv{\tenv, \id} \typearrow \True
+}
+\end{mathpar}
+\CodeSubsection{\CheckVarNotInEnvBegin}{\CheckVarNotInEnvEnd}{../types.ml}
+
+\subsubsection{TypingRule.CheckVarNotInGEnv\label{sec:TypingRule.CheckVarNotInGEnv}}
+\hypertarget{def-checkvarnotingenv}{}
+The function
+\[
+  \checkvarnotingenv{\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Strings}{\vx}}
+  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether $\id$ is already declared in the global static environment $\genv$.
+If it is, the result is a type error, and otherwise the result is $\True$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item applying $\isglobalundefined$ to $\vx$ in $\genv$ yields $\vb$;
+  \item checking whether $\vb$ is $\True$ yields $\True$\ProseTerminateAs{\IdentifierAlreadyDeclared}.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  {
-    \begin{array}{rl}
-  \vb \eqdef & L^\tenv.\localstoragetypes(\id) \neq \bot\ \lor\\
-             & G^\tenv.\globalstoragetypes(\id) \neq \bot \lor\\
-             & G^\tenv.\subprograms(\id) \neq \bot\ \lor\\
-             & G^\tenv.\declaredtypes(\id) \neq \bot
-  \end{array}
-}
+  \isglobalundefined(\genv, \id) \typearrow \vb\\
+  \checktrans{\vb}{\IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
 }{
-  \varinenv{\tenv, \id} \typearrow \vb
+  \checkvarnotingenv{\genv, \id} \typearrow \True
 }
 \end{mathpar}
-
-\begin{mathpar}
-\inferrule[okay]{
-  \varinenv{\tenv, \id} \typearrow \False
-}{
-  \checkvarnotinenv{\tenv, \id} \typearrow \True
-}
-\and
-  \inferrule[error]{
-  \varinenv{\tenv, \id} \typearrow \True
-}{
-  \checkvarnotinenv{\tenv, \id} \typearrow \TypeErrorVal{AlreadyDeclared}
-}
-\end{mathpar}
-\CodeSubsection{\CheckVarNotInEnvBegin}{\CheckVarNotInEnvEnd}{../types.ml}
+\CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
 
 \hypertarget{def-addlocal}{}
 \subsubsection{TypingRule.AddLocal \label{sec:TypingRule.AddLocal}}
@@ -540,7 +538,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.IsUndefined \label{sec:TypingRule.IsUndefined}}
+\subsubsection{TypingRule.IsUndefined\label{sec:TypingRule.IsUndefined}}
 \hypertarget{def-isundefined}{}
 The function
 \[
@@ -550,17 +548,85 @@ The function
 checks whether the identifier $\vx$ is defined as a storage element in the static environment $\tenv$.
 
 \subsubsection{Prose}
-$\vb$ is $\True$ if and only if $\vx$ is not bound in to a global storage in $\tenv$ and
-$\vx$ is not bound to a local storage in $\tenv$.
+$\vb$ is $\True$ if and only if $\vx$ is both undefined in the global static environment of $\tenv$
+(see $\isglobalundefined$) and undefined in the local static environment of $\tenv$ (see $\islocalundefined$).
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vb \eqdef G^\tenv.\globalstoragetypes(\vx) = \bot \land L^\tenv.\localstoragetypes(\vx) = \bot
+  \isglobalundefined(G^\tenv, \vx) \typearrow \vbone\\
+  \islocalundefined(L^\tenv, \vx) \typearrow \vbtwo\\
 }{
-  \isundefined(\tenv, \vx) \typearrow \vb
+  \isundefined(\tenv, \vx) \typearrow \overname{\vbone \land \vbtwo}{\vb}
 }
 \end{mathpar}
+\CodeSubsection{\IsUndefinedBegin}{\IsUndefinedEnd}{../StaticEnv.ml}
+
+\subsubsection{TypingRule.IsGlobalUndefined\label{sec:TypingRule.IsGlobalUndefined}}
+\hypertarget{def-isglobalundefined}{}
+The function
+\[
+\isglobalundefined(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\Bool}{\vb}
+\]
+checks whether the identifier $\vx$ is defined in the global static environment $\genv$, yielding the result in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if $\vx$ is not bound in any of the following maps of $\genv$:
+$\globalstoragetypes$, $\subprograms$, and $\declaredtypes$.
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+  \begin{array}{llcl}
+    \vb \eqdef & \genv.\globalstoragetypes(\vx) &=& \bot\ \land\\
+              & \genv.\subprograms(\vx) &=& \bot\ \land\\
+              & \genv.\declaredtypes(\vx) &=& \bot
+  \end{array}
+  }
+}{
+  \isglobalundefined(\genv, \vx) \typearrow \vb
+}
+\end{mathpar}
+\CodeSubsection{\IsGlobalUndefinedBegin}{\IsGlobalUndefinedEnd}{../StaticEnv.ml}
+
+\subsubsection{TypingRule.IsLocalUndefined\label{sec:TypingRule.IsLocalUndefined}}
+\hypertarget{def-islocalundefined}{}
+The function
+\[
+\islocalundefined(\overname{\localstaticenvs}{\lenv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\Bool}{\vb}
+\]
+checks whether $\vx$ is declared as a local storage element in the static local environment $\lenv$, yielding the result in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if $\vx$ is not bound in the $\localstoragetypes$ of the static local environment $\lenv$.
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \islocalundefined(\lenv, \vx) \typearrow \overname{L^\tenv.\localstoragetypes = \bot}{\vb}
+}
+\end{mathpar}
+\CodeSubsection{\IsLocalUndefinedBegin}{\IsLocalUndefinedEnd}{../StaticEnv.ml}
+
+\subsubsection{TypingRule.IsSubprogram\label{sec:TypingRule.IsSubprogram}}
+\hypertarget{def-issubprogram}{}
+The function
+\[
+\issubprogram(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{vx}) \aslto \overname{\Bool}{\vb}
+\]
+checks whether the identifier $\vx$ has been declared as a subprogram in the static environment $\tenv$,
+yielding an answer in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if $\vx$ is bound in the $\subprograms$ map in the global static
+environment of $\tenv$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \issubprogram(\tenv, \vx) \typearrow \overname{G^\tenv.\subprograms[\vx] \neq \bot}{\vb}
+}
+\end{mathpar}
+\CodeSubsection{\IsSubprogramBegin}{\IsSubprogramEnd}{../StaticEnv.ml}
 
 \subsubsection{TypingRule.LookupConstants\label{sec:TypingRule.LookupConstants}}
 \hypertarget{def-lookupconstants}{}
