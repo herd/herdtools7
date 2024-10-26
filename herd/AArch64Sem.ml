@@ -3660,9 +3660,9 @@ Arguments:
             | DI ->
               let* v = read_reg Port.AddrData r ii in
               let* intid = extract_intid v in
-              let* old_v = read_intid intid ii in
+              let* old_v = read_intid intid ~an:Annot.DI ii in
               let* new_v = set_active false old_v in
-              let* () = write_intid intid new_v ii in
+              let* () = write_intid intid new_v ~an:Annot.DI ii in
               B.nextT
             | PEND ->
               let* v = read_reg Port.AddrData r ii in
