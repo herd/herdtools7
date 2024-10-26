@@ -876,7 +876,7 @@ module Make
         | L|XL -> XL
         | X|N  -> X
         | NoRet|S|NTA -> X (* Does it occur? *)
-        | RCFG -> assert false
+        | RCFG | DI -> assert false
 
       let an_pte =
         let open Annot in
@@ -886,7 +886,7 @@ module Make
         | L|XL -> L
         | X|N -> N
         | NoRet|S|NTA -> N
-        | RCFG -> assert false
+        | RCFG | DI -> assert false
 
       let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
@@ -3403,9 +3403,9 @@ module Make
             | DI ->
               let* v = read_reg false r ii in
               let* intid = extract_intid v in
-              let* old_v = read_intid intid ii in
+              let* old_v = read_intid intid ~an:Annot.DI ii in
               let* new_v = set_active false old_v in
-              let* () = write_intid intid new_v ii in
+              let* () = write_intid intid new_v ~an:Annot.DI ii in
               B.nextT
             | PEND ->
               let* v = read_reg false r ii in

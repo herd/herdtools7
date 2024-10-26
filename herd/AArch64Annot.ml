@@ -18,7 +18,7 @@
 type t =
   A | XA | L | XL | X | N | Q | XQ | NoRet | S
   | NTA (* Non-Temporal, avoid clash with NT in AArch64Base *)
-  | RCFG
+  | RCFG | DI
 
 let is_speculated = function
   | S -> true
@@ -52,6 +52,10 @@ let is_rcfg = function
   | RCFG -> true
   | _ -> false
 
+let is_di = function
+  | DI -> true
+  | _ -> false
+
 let sets = [
     "X", is_atomic;
     "A",  is_acquire;
@@ -61,6 +65,7 @@ let sets = [
     "S", is_speculated;
     "NT",is_non_temporal;
     "RCFG", is_rcfg;
+    "DI", is_di;
   ]
 
 let pp = function
@@ -76,3 +81,4 @@ let pp = function
   | S -> "^s"
   | NTA -> "NT"
   | RCFG -> "RCFG"
+  | DI -> "DI"
