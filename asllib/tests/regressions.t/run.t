@@ -340,6 +340,7 @@ Required tests:
   $ aslref operator_precedence.asl
   $ aslref pass.asl
   $ aslref patterns.asl
+  $ aslref pattern-string.asl
   $ aslref records-2.asl
   $ aslref records.asl
   $ aslref static.asl

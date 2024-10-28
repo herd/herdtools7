@@ -1247,7 +1247,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let t_struct = Types.make_anonymous env t
           and t_e_struct = Types.make_anonymous env t_e in
           match (t_struct.desc, t_e_struct.desc) with
-          | T_Bool, T_Bool | T_Real, T_Real | T_Int _, T_Int _ -> ()
+          | T_Bool, T_Bool
+          | T_Real, T_Real
+          | T_Int _, T_Int _
+          | T_String, T_String ->
+              ()
           | T_Bits _, T_Bits _ ->
               check_bits_equal_width loc env t_struct t_e_struct ()
           | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
