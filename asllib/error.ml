@@ -63,6 +63,7 @@ type error_desc =
   | BadRecursiveDecls of identifier list
   | UnrespectedParserInvariant
   | BadATC of ty * ty  (** asserting, asserted *)
+  | BadPattern of pattern * ty
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
   | BaseValueEmptyType of ty
@@ -275,6 +276,11 @@ module PPrint = struct
            corresponding@ getter@ of@ signature@ @[@[%a@]@ ->@ %a@]."
           func.name (pp_comma_list pp_ty) args pp_ty ret
     | UnexpectedATC -> pp_print_text f "ASL Typing error: unexpected ATC."
+    | BadPattern (p, t) ->
+        fprintf f
+          "ASL Typing error:@ Erroneous@ pattern@ %a@ for@ expression@ of@ \
+           type@ %a."
+          pp_pattern p pp_ty t
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

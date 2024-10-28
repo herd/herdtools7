@@ -76,6 +76,9 @@ val pp_int_constraints : int_constraint list printer
 val pp_local_decl_item : local_decl_item printer
 (** Pretty-print a local declaration item. *)
 
+val pp_pattern : pattern printer
+(** Pretty-print a pattern. *)
+
 val pp_t : t printer
 (** Print an AST from printer for a literal *)
 
