@@ -384,12 +384,9 @@ let is_ifetch a = match a with
         let r = f (Acq o) r in
         let r = f (AcqPc o) r in
         let r = f (Rel o) r in
-        let r = 
-          if do_self then
-            let r = f Instr r in
-            r
-          else r in
         r
+
+      let fold_self f r = if do_self then f Instr r else r
 
    let fold_acc mixed f r =
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
@@ -399,6 +396,7 @@ let is_ifetch a = match a with
      let r = fold_sve f r in
      let r = fold_sme f r in
      let r = fold_pair f r in
+     let r = fold_self f r in
      let r = fold_acc_opt None f r in
      let r =
        if do_morello then
