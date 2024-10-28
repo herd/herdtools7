@@ -1078,8 +1078,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           [ D_Func callee |> add_dummy_annotation ]
     in
     let+ () =
-      check_true (callee.subprogram_type = call_type) @@ fun () ->
-      fatal_from loc (MismatchedReturnValue name)
+      check_true
+        (callee.subprogram_type = call_type
+        (* Getters are syntactically identical to functions in V1 - so what
+           looks like a function call may really be a getter call *)
+        || loc.version = V1
+           && callee.subprogram_type = ST_Getter
+           && call_type = ST_Function)
+      @@ fun () -> fatal_from loc (MismatchedReturnValue name)
     in
     let () =
       if false then
@@ -1264,11 +1270,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if false then
               Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
           in
+          let call_type = ST_EmptyGetter in
           let name, args, eqs, ty =
-            annotate_call (to_pos e) env x [] [] ST_EmptyGetter
+            annotate_call (to_pos e) env x [] [] call_type
           in
           let ty = match ty with Some ty -> ty | None -> assert false in
-          (ty, E_Call (name, args, eqs) |> here)
+          (ty, E_Call { name; args; params = eqs; call_type } |> here)
         else
           let () =
             if false then
@@ -1315,7 +1322,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (t, E_Unop (op, e'') |> here) |: TypingRule.Unop
     (* End *)
     (* Begin ECall *)
-    | E_Call (name, args, eqs) ->
+    | E_Call { name; args; params = eqs; call_type } ->
         let () =
           if List.length eqs == 0 then ()
           else (
@@ -1323,10 +1330,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             assert false)
         in
         let name', args', eqs', ty_opt =
-          annotate_call (to_pos e) env name args [] ST_Function
+          annotate_call (to_pos e) env name args [] call_type
         in
         let t = match ty_opt with Some ty -> ty | None -> assert false in
-        (t, E_Call (name', args', eqs') |> here) |: TypingRule.ECall
+        ( t,
+          E_Call { name = name'; args = args'; params = eqs'; call_type }
+          |> here )
+        |: TypingRule.ECall
     (* End *)
     (* Begin ECond *)
     | E_Cond (e_cond, e_true, e_false) ->
@@ -1431,12 +1441,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               try List.map slice_as_single slices
               with Invalid_argument _ -> assert false
             in
+            let call_type = ST_Getter in
             let name1, args1, eqs, ty =
-              annotate_call (to_pos e) env name args [] ST_Getter
+              annotate_call (to_pos e) env name args [] call_type
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
-            (ty, E_Call (name1, args1, eqs) |> here) |: TypingRule.ESetter
-            (* End *)
+            ( ty,
+              E_Call { name = name1; args = args1; params = eqs; call_type }
+              |> here )
+            |: TypingRule.ESetter
         | _ -> (
             let t_e', e'' = annotate_expr_ ~forbid_atcs env e' in
             let struct_t_e' = Types.make_anonymous env t_e' in
@@ -1485,11 +1498,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         match reduced with
         | Some (name, args) ->
+            let call_type = ST_Getter in
             let name, args, eqs, ty =
-              annotate_call (to_pos e) env name args [] ST_Getter
+              annotate_call (to_pos e) env name args [] call_type
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
-            (ty, E_Call (name, args, eqs) |> here)
+            (ty, E_Call { name; args; params = eqs; call_type } |> here)
         | None -> (
             let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
             match (Types.make_anonymous env t_e2).desc with
@@ -1563,11 +1577,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         match reduced with
         | Some (name, args) ->
+            let call_type = ST_Getter in
             let name, args, eqs, ty =
-              annotate_call (to_pos e) env name args [] ST_Getter
+              annotate_call (to_pos e) env name args [] call_type
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
-            (ty, E_Call (name, args, eqs) |> here)
+            (ty, E_Call { name; args; params = eqs; call_type } |> here)
         | None -> (
             let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
             match (Types.make_anonymous env t_e2).desc with
@@ -1735,7 +1750,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ ->
         base_value_v1 ~loc env t
     | T_Bits (width, _) ->
-        E_Call ("Zeros", [ width ], []) |> add_pos |> annotate_expr env |> snd
+        E_Call
+          {
+            name = "Zeros";
+            args = [ width ];
+            params = [];
+            call_type = ST_Function;
+          }
+        |> add_pos |> annotate_expr env |> snd
     | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos
     | T_Int (WellConstrained []) -> assert false
     | T_Int
@@ -2124,13 +2146,17 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.SAssign
     (* End *)
     (* Begin SCall *)
-    | S_Call (name, args, eqs) ->
+    | S_Call { name; args; params = eqs; call_type } ->
         let () = assert (List.length eqs == 0) in
         let new_name, new_args, new_eqs, ty =
-          annotate_call loc env name args eqs ST_Procedure
+          annotate_call loc env name args eqs call_type
         in
         let () = assert (ty = None) in
-        (S_Call (new_name, new_args, new_eqs) |> here, env) |: TypingRule.SCall
+        ( S_Call
+            { name = new_name; args = new_args; params = new_eqs; call_type }
+          |> here,
+          env )
+        |: TypingRule.SCall
     (* End *)
     (* Begin SReturn *)
     | S_Return e_opt ->
@@ -2357,11 +2383,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let ty = Types.make_anonymous env ty in
     let* name, args = should_fields_reduce_to_call env x ty fields in
     let args = (t_e, e) :: List.map (annotate_expr env) args in
+    let call_type = ST_Setter in
     let name, args, eqs, ret_ty =
-      annotate_call_arg_typed loc env name args ST_Setter
+      annotate_call_arg_typed loc env name args call_type
     in
     let () = assert (ret_ty = None) in
-    Some (S_Call (name, args, eqs) |> add_pos_from loc)
+    Some (S_Call { name; args; params = eqs; call_type } |> add_pos_from loc)
 
   and setter_should_reduce_to_call_recurse ~loc env (t_e, e) make_old_le sub_le
       =
@@ -2433,11 +2460,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               with Invalid_argument _ -> assert false
             in
             let typed_args = (t_e, e) :: List.map (annotate_expr env) args in
+            let call_type = ST_Setter in
             let name, args, eqs, ret_ty =
-              annotate_call_arg_typed loc env x typed_args ST_Setter
+              annotate_call_arg_typed loc env x typed_args call_type
             in
             let () = assert (ret_ty = None) in
-            Some (S_Call (name, args, eqs) |> here)
+            Some (S_Call { name; args; params = eqs; call_type } |> here)
         | _ ->
             let old_le le' = LE_Slice (le', slices) |> here in
             setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
@@ -2474,7 +2502,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             annotate_call_arg_typed loc env x args st
           in
           let () = assert (ret_ty = None) in
-          Some (S_Call (name, args, eqs) |> here)
+          Some (S_Call { name; args; params = eqs; call_type = st } |> here)
         else None
     | LE_Concat (_les, _) -> None
     | LE_SetArray _ -> assert false

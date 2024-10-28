@@ -260,7 +260,8 @@ let make_expr(sub_expr) ==
     | e1=sub_expr; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
-    | x=IDENTIFIER; args=plist(expr); ~=nargs;                    < E_Call               >
+    | name=IDENTIFIER; args=plist(expr); params=nargs;
+      { E_Call { name; args; params; call_type = ST_Function } }
     | e=sub_expr; ~=slices;                                       < E_Slice              >
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
@@ -461,7 +462,8 @@ let stmt ==
     | terminated_by(SEMI_COLON,
       | PASS; pass
       | RETURN; ~=ioption(expr);                             < S_Return >
-      | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
+      | name=IDENTIFIER; args=plist(expr); params=nargs;
+        { S_Call { name; args; params; call_type = ST_Procedure } }
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >

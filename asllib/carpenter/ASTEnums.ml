@@ -163,7 +163,9 @@ module Make (C : Config.S) = struct
       let make_slices (e, slices) = E_Slice (e, slices) in
       exprs ** slices exprs |> map make_slices
     and e_call =
-      let make_e_call (name, args) = E_Call (name, args, []) in
+      let make_e_call (name, args) =
+        E_Call { name; args; params = []; call_type = ST_Function }
+      in
       names ** list exprs |> map make_e_call
     and e_get_array =
       let make_e_get_array (e1, e2) = E_GetArray (e1, e2) in
@@ -355,7 +357,9 @@ module Make (C : Config.S) = struct
       let make_assert e = S_Assert e in
       exprs |> map make_assert
     and s_call =
-      let make_s_call (name, args) = S_Call (name, args, []) in
+      let make_s_call (name, args) =
+        S_Call { name; args; params = []; call_type = ST_Procedure }
+      in
       names ** list exprs |> map make_s_call
     and s_return =
       let make_s_return expr = S_Return expr in
