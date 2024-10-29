@@ -1621,7 +1621,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
     (* End *)
-    | E_Concat [] -> fatal_from loc UnrespectedParserInvariant
+    | E_Array _ | E_Concat [] -> fatal_from loc UnrespectedParserInvariant
     (* Begin EConcat *)
     | E_Concat (_ :: _ as li) ->
         let ts, es =
@@ -1968,14 +1968,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let exprs = List.map (base_value loc env) li in
         E_Tuple exprs |> add_pos
     | T_Array (length, ty) ->
-        let v = base_value loc env ty in
+        let value = base_value loc env ty in
         let length =
           match length with
-          | ArrayLength_Enum (_, i) -> i
-          | ArrayLength_Expr e -> reduce_to_z e |> Z.to_int
+          | ArrayLength_Enum (_, i) -> expr_of_int i
+          | ArrayLength_Expr e -> e
         in
-        let exprs = List.init length (Fun.const v) in
-        E_Tuple exprs |> add_pos
+        E_Array { length; value } |> add_pos
 
   let rec annotate_lexpr env le t_e =
     let () =

@@ -514,6 +514,16 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.create_vector v_list in
         return_normal (v, new_env) |: SemanticsRule.ETuple
     (* End *)
+    (* Begin EvalArray *)
+    | E_Array { length = e_length; value = e_value } -> (
+        let** v_value, new_env = eval_expr env e_value in
+        let* v_length = eval_expr_sef env e_length in
+        match B.v_to_int v_length with
+        | Some n_length ->
+            let* v = B.create_vector (List.init n_length (Fun.const v_value)) in
+            return_normal (v, new_env)
+        | None -> unsupported_expr e_length)
+    (* End *)
     (* Begin EvalEUnknown *)
     | E_Unknown t ->
         let* v = B.v_unknown_of_type ~eval_expr_sef:(eval_expr_sef env) t in

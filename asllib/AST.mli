@@ -127,6 +127,13 @@ type expr_desc =
       (** Represents a record or an exception construction expression. *)
   | E_Concat of expr list
   | E_Tuple of expr list
+  | E_Array of { length : expr; value : expr }
+      (** Initial value for an array of size [length] and of content [value] at
+          each array cell.
+
+          This expression constructor is only part of the typed AST, i.e. it is
+          only built by the type-checker, not any parser.
+      *)
   | E_Unknown of ty
   | E_Pattern of expr * pattern
 

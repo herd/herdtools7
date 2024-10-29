@@ -190,6 +190,7 @@ let rec use_e e =
   | E_Record (ty, li) -> use_ty ty $ use_fields li
   | E_Concat es -> use_es es
   | E_Tuple es -> use_es es
+  | E_Array { length; value } -> use_e length $ use_e value
   | E_Unknown t -> use_ty t
   | E_Pattern (e, p) -> use_e e $ use_pattern p
 
@@ -354,6 +355,9 @@ let rec expr_equal eq e1 e2 =
   | E_Literal _, _ | _, E_Literal _ -> false
   | E_Tuple li1, E_Tuple li2 -> list_equal (expr_equal eq) li1 li2
   | E_Tuple _, _ | _, E_Tuple _ -> false
+  | E_Array { length = l1; value = v1 }, E_Array { length = l2; value = v2 } ->
+      expr_equal eq l1 l2 && expr_equal eq v1 v2
+  | E_Array _, _ | _, E_Array _ -> false
   | E_ATC (e1, t1), E_ATC (e2, t2) -> expr_equal eq e1 e2 && type_equal eq t1 t2
   | E_ATC _, _ | _, E_ATC _ -> false
   | E_Unop (o1, e1), E_Unop (o2, e2) -> o1 = o2 && expr_equal eq e1 e2
@@ -666,6 +670,8 @@ let rec subst_expr substs e =
       E_Record (t, List.map (fun (x, e) -> (x, tr e)) fields)
   | E_Slice (e, slices) -> E_Slice (tr e, slices)
   | E_Tuple es -> E_Tuple (List.map tr es)
+  | E_Array { length; value } ->
+      E_Array { length = tr length; value = tr value }
   | E_ATC (e, t) -> E_ATC (tr e, t)
   | E_Unknown _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
@@ -689,7 +695,9 @@ let scope_compare s1 s2 =
 let rec is_simple_expr e =
   match e.desc with
   | E_Var _ | E_Literal _ | E_Unknown _ -> true
-  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) ->
+  | E_Array { length = e1; value = e2 }
+  | E_GetArray (e1, e2)
+  | E_Binop (_, e1, e2) ->
       is_simple_expr e1 && is_simple_expr e2
   | E_ATC (e, _)
   | E_GetFields (e, _)
@@ -747,6 +755,8 @@ let rename_locals map_name ast =
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
     | E_Concat li -> E_Concat (map_es li)
     | E_Tuple li -> E_Tuple (map_es li)
+    | E_Array { length; value } ->
+        E_Array { length = map_e length; value = map_e value }
     | E_Pattern (_, _) -> failwith "Not yet implemented: obfuscate patterns"
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices

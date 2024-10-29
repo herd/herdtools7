@@ -29,9 +29,6 @@ H Examples
   ASL Typing error: base value of type bits(N) containing non-static value N
   [1]
   $ aslref --no-exec HExample8.asl
-  File HExample8.asl, line 11, characters 12 to 31:
-  ASL Typing error: base value of type array [x] of integer containing non-static value x
-  [1]
   $ aslref --no-exec HExample9.asl
   $ aslref --no-exec HExample10.asl
   $ aslref --no-exec HExample11.asl
