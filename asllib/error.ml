@@ -167,12 +167,12 @@ module PPrint = struct
     | UndefinedIdentifier s ->
         fprintf f "ASL Error: Undefined identifier:@ '%s'" s
     | MismatchedReturnValue s ->
-        fprintf f "ASL Error: Mismatched use of return value from call to '%s'"
+        fprintf f "ASL Error: Mismatched use of return value from call to '%s'."
           s
     | BadArity (name, expected, provided) ->
         fprintf f
           "ASL Error: Arity error while calling '%s':@ %d arguments expected \
-           and %d provided"
+           and %d provided."
           name expected provided
     | NotYetImplemented s ->
         pp_print_text f @@ "ASL Internal error: Not yet implemented: " ^ s
@@ -186,23 +186,23 @@ module PPrint = struct
           (pp_comma_list pp_type_desc)
           expected
     | AssertionFailed e ->
-        fprintf f "ASL Execution error: Assertion failed:@ %a" pp_expr e
+        fprintf f "ASL Execution error: Assertion failed:@ %a." pp_expr e
     | CannotParse -> pp_print_string f "ASL Error: Cannot parse."
     | UnknownSymbol -> pp_print_string f "ASL Error: Unknown symbol."
     | NoCallCandidate (name, types) ->
         fprintf f
           "ASL Typing error: No subprogram declaration matches the \
-           invocation:@ %s(%a)"
+           invocation:@ %s(%a)."
           name (pp_comma_list pp_ty) types
     | TooManyCallCandidates (name, types) ->
         fprintf f
           "ASL Typing error: Too many subprogram declaration match the \
-           invocation:@ %s(%a)"
+           invocation:@ %s(%a)."
           name (pp_comma_list pp_ty) types
     | BadTypesForBinop (op, t1, t2) ->
         fprintf f
           "ASL Typing error: Illegal application of operator %s on types@ %a@ \
-           and %a"
+           and %a."
           (binop_to_string op) pp_ty t1 pp_ty t2
     | CircularDeclarations x ->
         fprintf f
@@ -211,7 +211,7 @@ module PPrint = struct
           x
     | ImpureExpression e ->
         fprintf f
-          "ASL Typing error:@ a pure expression was expected,@ found@ %a"
+          "ASL Typing error:@ a pure expression was expected,@ found@ %a."
           pp_expr e
     | UnreconciliableTypes (t1, t2) ->
         fprintf f
@@ -228,33 +228,33 @@ module PPrint = struct
     | BadReturnStmt None ->
         pp_print_text f
           "ASL Typing error: cannot return something from a procedure."
-    | UnexpectedSideEffect s -> fprintf f "Unexpected side-effect: %s" s
-    | UncaughtException s -> fprintf f "Uncaught exception: %s" s
+    | UnexpectedSideEffect s -> fprintf f "Unexpected side-effect: %s." s
+    | UncaughtException s -> fprintf f "Uncaught exception: %s." s
     | OverlappingSlices slices ->
         fprintf f "ASL Typing error:@ overlapping slices@ @[%a@]." pp_slice_list
           slices
     | BadLDI ldi ->
         fprintf f "Unsupported declaration:@ @[%a@]." pp_local_decl_item ldi
     | BadRecursiveDecls decls ->
-        fprintf f "ASL Typing error:@ multiple recursive declarations:@ @[%a@]"
+        fprintf f "ASL Typing error:@ multiple recursive declarations:@ @[%a@]."
           (pp_comma_list (fun f -> fprintf f "%S"))
           decls
     | UnrespectedParserInvariant -> fprintf f "Parser invariant broke."
     | ConstrainedIntegerExpected t ->
         fprintf f
-          "ASL Typing error:@ constrained@ integer@ expected,@ provided@ %a"
+          "ASL Typing error:@ constrained@ integer@ expected,@ provided@ %a."
           pp_ty t
     | ParameterWithoutDecl s ->
         fprintf f
           "ASL Typing error:@ explicit@ parameter@ %S@ does@ not@ have@ a@ \
-           corresponding@ defining@ argument"
+           corresponding@ defining@ argument."
           s
     | BaseValueEmptyType t ->
-        fprintf f "ASL Typing error: base value of empty type %a" pp_ty t
+        fprintf f "ASL Typing error: base value of empty type %a." pp_ty t
     | BaseValueNonStatic (t, e) ->
         fprintf f
-          "ASL Typing error: base value of type %a containing non-static value \
-           %a"
+          "ASL Typing error:@ base@ value@ of@ type@ %a@ cannot@ be@ \
+           statically@ determined@ since@ it@ consists@ of@ %a."
           pp_ty t pp_expr e
     | BadATC (t1, t2) ->
         fprintf f
@@ -262,7 +262,7 @@ module PPrint = struct
            %a@ by@ %a."
           pp_ty t1 pp_ty t2
     | SettingIntersectingSlices bitfields ->
-        fprintf f "ASL Typing error:@ setting@ intersecting@ bitfields@ [%a]"
+        fprintf f "ASL Typing error:@ setting@ intersecting@ bitfields@ [%a]."
           pp_bitfields bitfields
     | SetterWithoutCorrespondingGetter func ->
         let ret, args =
@@ -272,7 +272,7 @@ module PPrint = struct
         in
         fprintf f
           "ASL Typing error:@ setter@ \"%s\"@ does@ not@ have@ a@ \
-           corresponding@ getter@ of@ signature@ @[@[%a@]@ ->@ %a@]"
+           corresponding@ getter@ of@ signature@ @[@[%a@]@ ->@ %a@]."
           func.name (pp_comma_list pp_ty) args pp_ty ret
     | UnexpectedATC -> pp_print_text f "ASL Typing error: unexpected ATC."
     | BadReturnStmt (Some t) ->

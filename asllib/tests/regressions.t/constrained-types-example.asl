@@ -5,8 +5,8 @@ end
 
 func test(M: integer {8,16,32}, L: integer {8,16})
 begin
-  var myM: bits(M);
-  var myL: bits(L);
+  var myM = Zeros (M);
+  var myL = Zeros (L);
 
   if (M != L) then
     return;

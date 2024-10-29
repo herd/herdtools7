@@ -24,6 +24,6 @@
   $ aslref printer2.asl
   File printer2.asl, line 2, characters 16 to 24:
   ASL Typing error: Illegal application of operator + on types integer {2}
-    and real
+    and real.
   [1]
 

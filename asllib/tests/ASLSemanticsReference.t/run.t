@@ -22,7 +22,7 @@ ASL Semantics Reference:
   File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
     characters 10 to 17:
   ASL Typing error: Illegal application of operator DIV on types integer {3}
-    and integer {0}
+    and integer {0}.
   [1]
   $ aslref --no-type-check SemanticsRule.EBinopDIVBackendDefinedError.asl
   File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
@@ -35,7 +35,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.ECondFALSE.asl
   $ aslref SemanticsRule.ECondUNKNOWN3or42.asl
   File SemanticsRule.ECondUNKNOWN3or42.asl, line 10, characters 9 to 13:
-  ASL Execution error: Assertion failed: (x == 3)
+  ASL Execution error: Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.ESlice.asl
   $ aslref SemanticsRule.ECall.asl
@@ -50,13 +50,13 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.EUnknownInteger0.asl
   $ aslref SemanticsRule.EUnknownInteger3.asl
   File SemanticsRule.EUnknownInteger3.asl, line 5, characters 9 to 13:
-  ASL Execution error: Assertion failed: (x == 3)
+  ASL Execution error: Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.EUnknownIntegerRange3-42-3.asl
   $ aslref SemanticsRule.EUnknownIntegerRange3-42-42.asl
   File SemanticsRule.EUnknownIntegerRange3-42-42.asl, line 5,
     characters 9 to 14:
-  ASL Execution error: Assertion failed: (x == 42)
+  ASL Execution error: Assertion failed: (x == 42).
   [1]
   $ aslref SemanticsRule.EPatternFALSE.asl
   $ aslref SemanticsRule.EPatternTRUE.asl
@@ -157,7 +157,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.SAssertOk.asl
   $ aslref SemanticsRule.SAssertNo.asl
   File SemanticsRule.SAssertNo.asl, line 4, characters 10 to 17:
-  ASL Execution error: Assertion failed: (42 == 3)
+  ASL Execution error: Assertion failed: (42 == 3).
   [1]
   $ aslref SemanticsRule.LEDiscard.asl
   $ aslref SemanticsRule.LDDiscard.asl

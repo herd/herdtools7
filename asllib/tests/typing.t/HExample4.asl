@@ -3,7 +3,7 @@ type LargeBitvectorSize of integer{0..LargeConfigurableBitVectorSize};
 
 func CreateBigVector(bytes: LargeBitvectorSize) => bits(8*bytes)
 begin
-    var value : bits(8*bytes);
+    var value = Zeros (8*bytes);
     value = Ones(8*bytes);
     return value;
 end

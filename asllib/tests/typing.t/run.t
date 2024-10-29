@@ -1,44 +1,16 @@
 H Examples
   $ aslref --no-exec HExample1.asl
-  File HExample1.asl, line 19, characters 4 to 30:
-  ASL Typing error: base value of type bits((8 * size)) containing non-static value (
-    8 * size)
-  [1]
   $ aslref --no-exec HExample2.asl
   $ aslref --no-exec HExample3.asl
-  File HExample3.asl, line 6, characters 4 to 30:
-  ASL Typing error: base value of type bits((8 * size)) containing non-static value (
-    8 * size)
-  [1]
   $ aslref --no-exec HExample4.asl
-  File HExample4.asl, line 6, characters 4 to 30:
-  ASL Typing error: base value of type bits((8 * bytes)) containing non-static value (
-    8 * bytes)
-  [1]
   $ aslref --no-exec HExample5.asl
-  File HExample5.asl, line 24, characters 4 to 37:
-  ASL Typing error: base value of type bits((4 * size)) containing non-static value (
-    4 * size)
-  [1]
   $ aslref --no-exec HExample6.asl
-  File HExample6.asl, line 5, characters 4 to 26:
-  ASL Typing error: base value of type bits(p2bits) containing non-static value p2bits
-  [1]
   $ aslref --no-exec HExample7.asl
-  File HExample7.asl, line 4, characters 4 to 25:
-  ASL Typing error: base value of type bits(N) containing non-static value N
-  [1]
   $ aslref --no-exec HExample8.asl
   $ aslref --no-exec HExample9.asl
   $ aslref --no-exec HExample10.asl
   $ aslref --no-exec HExample11.asl
-  File HExample11.asl, line 7, characters 4 to 20:
-  ASL Typing error: base value of type bits(N) containing non-static value N
-  [1]
   $ aslref --no-exec HExample12.asl
-  File HExample12.asl, line 22, characters 4 to 20:
-  ASL Typing error: base value of type bits(x) containing non-static value x
-  [1]
   $ aslref --no-exec HExample13.asl
   $ aslref --no-exec HExample15.asl
   File HExample15.asl, line 3, characters 10 to 17:
@@ -118,11 +90,11 @@ Use of global vars in constraints
   [1]
   $ aslref --no-exec TNegative4.asl
   File TNegative4.asl, line 5, characters 25 to 41:
-  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS
+  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS.
   [1]
   $ aslref --no-exec TNegative4-bis.asl
   File TNegative4-bis.asl, line 5, characters 25 to 41:
-  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS
+  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS.
   [1]
 
 Asserted type conversions
@@ -195,7 +167,7 @@ Bit vector widths defined by constrained integers
   [1]
   $ aslref --no-exec TNegative9-3.asl
   File TNegative9-3.asl, line 3, characters 26 to 34:
-  ASL Typing error: constrained integer expected, provided integer
+  ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative9-4.asl
   File TNegative9-4.asl, line 3, characters 4 to 35:
@@ -208,7 +180,7 @@ Symbolic execution of bit vector widths expressions
   $ aslref --no-exec TPositive10-1.asl
   $ aslref --no-exec TNegative10.asl
   File TNegative10.asl, line 8, characters 32 to 38:
-  ASL Typing error: a pure expression was expected, found widthN
+  ASL Typing error: a pure expression was expected, found widthN.
   [1]
   $ aslref --no-exec TNegative10-0.asl
   File TNegative10-0.asl, line 16, characters 4 to 53:
@@ -278,19 +250,19 @@ Bit slice expressions
   $ aslref --no-exec TPositive15.asl
   $ aslref --no-exec TReconsider15.asl
   $ aslref --no-exec TNegative15-0.asl
-  ASL Typing error: constrained integer expected, provided integer
+  ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative15-1.asl
   File TNegative15-1.asl, line 6, characters 36 to 37:
-  ASL Typing error: constrained integer expected, provided integer
+  ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative15-2.asl
   File TNegative15-2.asl, line 6, characters 36 to 37:
-  ASL Typing error: constrained integer expected, provided integer
+  ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative15-3.asl
   File TNegative15-3.asl, line 7, characters 20 to 28:
-  ASL Typing error: constrained integer expected, provided integer
+  ASL Typing error: constrained integer expected, provided integer.
   [1]
 
 C Tests
@@ -307,9 +279,6 @@ C Tests
   [1]
   $ aslref --no-exec CPositive4.asl
   $ aslref --no-exec CPositive5.asl
-  File CPositive5.asl, line 4, characters 4 to 26:
-  ASL Typing error: base value of type integer {0..N} containing non-static value N
-  [1]
   $ aslref --no-exec CPositive6.asl
   $ aslref --no-exec CPositive7.asl
   File CPositive7.asl, line 4, characters 4 to 31:
@@ -356,16 +325,19 @@ C Tests
     provided integer {M}.
   [1]
   $ aslref --no-exec CNegative8.asl
-  File CNegative8.asl, line 4, characters 4 to 26:
-  ASL Typing error: base value of type integer {0..N} containing non-static value N
+  File CNegative8.asl, line 7, characters 4 to 5:
+  ASL Typing error: a subtype of integer {0..N} was expected,
+    provided integer {0..M}.
   [1]
   $ aslref --no-exec CNegative10.asl
-  File CNegative10.asl, line 4, characters 4 to 26:
-  ASL Typing error: base value of type integer {0..N} containing non-static value N
+  File CNegative10.asl, line 7, characters 8 to 9:
+  ASL Typing error: a subtype of integer {0..N} was expected,
+    provided integer {0..M}.
   [1]
   $ aslref --no-exec CNegative11.asl
-  File CNegative11.asl, line 4, characters 4 to 25:
-  ASL Typing error: base value of type integer {0..N} containing non-static value N
+  File CNegative11.asl, line 5, characters 4 to 5:
+  ASL Typing error: a subtype of integer {0..N} was expected,
+    provided integer {M}.
   [1]
   $ aslref --no-exec CNegative12.asl
   File CNegative12.asl, line 2, characters 56 to 57:

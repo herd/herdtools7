@@ -2018,6 +2018,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t
 
+  (** [base_value ~loc env e] is [base_value_v1 ~loc env e] if running for ASLv1.
+
+      Otherwise, it tries a more accepting algorithm with [base_value_v0 ~loc env e].
+  *)
   let base_value ~loc env e =
     try base_value_v1 ~loc env e
     with Error.ASLException _ as error ->

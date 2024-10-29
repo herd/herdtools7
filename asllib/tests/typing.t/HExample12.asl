@@ -19,5 +19,5 @@ begin
     var l : myconstraint;
     l = (N+5) as myconstraint;
     let x = l;
-    var y : bits(x);
+    var y = Zeros (x);
 end

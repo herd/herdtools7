@@ -12,7 +12,7 @@ begin
 
   // underconstrainedBits is a mutable parameterized width bitvector
   // it can be assigned to
-  var underconstrainedBits: bits(N);
+  var underconstrainedBits = Zeros (N);
 
   // underconstrainedBits has determined width `N`, so RHS must have same width
   underconstrainedBits = argN;      // legal since widths match

@@ -4,5 +4,5 @@ begin
     var minimum = Min(highest, 7) as integer{0..7};
 
     let size = minimum;
-    var x : bits(N);
+    var x = Zeros (N);
 end
