@@ -28,11 +28,6 @@ let fatal_from pos = Error.fatal_from pos
 
 (* A bit more informative than assert false *)
 
-let fail a msg = failwith (Printf.sprintf "%s: %s" (PP.pp_pos_str a) msg)
-
-let fail_initialise a id =
-  fail a (Printf.sprintf "Cannot initialise variable %s" id)
-
 let _warn = false
 let _dbg = false
 
@@ -200,23 +195,22 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Global env *)
   (* ---------- *)
 
-  let build_global_storage env0 eval_expr base_value =
+  let build_global_storage env0 eval_expr =
     let names =
       List.fold_left (fun k (name, _) -> ISet.add name k) ISet.empty env0
     in
     let process_one_decl d =
       match d.desc with
-      | D_GlobalStorage { initial_value; name; ty; _ } ->
+      | D_GlobalStorage { initial_value; name; _ } ->
           let scope = Scope_Global true in
           fun env_m ->
             if ISet.mem name names then env_m
             else
               let*| env = env_m in
               let* v =
-                match (initial_value, ty) with
-                | Some e, _ -> eval_expr env e
-                | None, None -> fail_initialise d name
-                | None, Some t -> base_value env t
+                match initial_value with
+                | Some e -> eval_expr env e
+                | None -> fatal_from d TypeInferenceNeeded
               in
               let* () = B.on_write_identifier name scope v in
               IEnv.declare_global name v env |> return
@@ -232,8 +226,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
-  let build_genv env0 eval_expr base_value (static_env : StaticEnv.global)
-      (ast : AST.t) =
+  let build_genv env0 eval_expr (static_env : StaticEnv.global) (ast : AST.t) =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then
@@ -250,9 +243,7 @@ module Make (B : Backend.S) (C : Config) = struct
         (fun env (name, v) -> IEnv.declare_global name v env)
         env env0
     in
-    let*| env =
-      build_global_storage env0 eval_expr base_value ast (return env)
-    in
+    let*| env = build_global_storage env0 eval_expr ast (return env) in
     return env.global |: SemanticsRule.BuildGlobalEnv
   (* End *)
 
@@ -297,10 +288,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (* ----- *)
   let v_false = L_Bool false |> B.v_of_literal
   let v_true = L_Bool true |> B.v_of_literal
-  let v_zero = L_Int Z.zero |> B.v_of_literal
   let m_false = return v_false
   let m_true = return v_true
-  let m_zero = return v_zero
 
   let sync_list ms =
     let folder m vsm =
@@ -843,42 +832,36 @@ module Make (B : Backend.S) (C : Config) = struct
   (* End *)
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
-  and eval_local_decl pos ldi env m_init_opt : env maybe_exception m =
+  and eval_local_decl pos ldi env m_init : env maybe_exception m =
     let () =
       if false then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
     in
-    match (ldi, m_init_opt) with
+    match ldi with
     (* Begin EvalLDDiscard *)
-    | LDI_Discard, _ -> return_normal env |: SemanticsRule.LDDiscard
+    | LDI_Discard -> return_normal env |: SemanticsRule.LDDiscard
     (* End *)
     (* Begin EvalLDVar *)
-    | LDI_Var x, Some m ->
-        m
+    | LDI_Var x ->
+        m_init
         >>= declare_local_identifier env x
         >>= return_normal |: SemanticsRule.LDVar
     (* End *)
     (* Begin EvalLDTyped *)
-    | LDI_Typed (ldi1, _t), Some m ->
-        eval_local_decl pos ldi1 env (Some m) |: SemanticsRule.LDTyped
-    | LDI_Typed (ldi1, t), None ->
-        let m = base_value env t in
-        eval_local_decl pos ldi1 env (Some m) |: SemanticsRule.LDTyped
+    | LDI_Typed (ldi1, _t) ->
+        eval_local_decl pos ldi1 env m_init |: SemanticsRule.LDTyped
     (* End *)
     (* Begin EvalLDTuple *)
-    | LDI_Tuple ldis, Some m ->
+    | LDI_Tuple ldis ->
         let n = List.length ldis in
-        let* vm = m in
+        let* vm = m_init in
         let liv = List.init n (fun i -> B.return vm >>= B.get_index i) in
         let folder envm ldi1 vm =
           let**| env = envm in
-          eval_local_decl pos ldi1 env (Some vm)
+          eval_local_decl pos ldi1 env vm
         in
         List.fold_left2 folder (return_normal env) ldis liv
         |: SemanticsRule.LDTuple
-    (* End *)
-    | LDI_Var _, None | LDI_Tuple _, None ->
-        (* Should not happen in V1 because of TypingRule.LDUninitialisedTuple *)
-        fatal_from pos Error.TypeInferenceNeeded
+  (* End *)
 
   (* Evaluation of Statements *)
   (* ------------------------ *)
@@ -1005,13 +988,11 @@ module Make (B : Backend.S) (C : Config) = struct
         eval_catchers env catchers otherwise_opt s_m |: SemanticsRule.STry
     (* End *)
     (* Begin EvalSDecl *)
-    | S_Decl (_ldk, ldi, Some e) ->
-        let*^ m, env1 = eval_expr env e in
-        let**| new_env = eval_local_decl s ldi env1 (Some m) in
+    | S_Decl (_ldk, ldi, Some e_init) ->
+        let*^ m_init, env1 = eval_expr env e_init in
+        let**| new_env = eval_local_decl s ldi env1 m_init in
         return_continue new_env |: SemanticsRule.SDecl
-    | S_Decl (_dlk, ldi, None) ->
-        let**| new_env = eval_local_decl s ldi env None in
-        return_continue new_env |: SemanticsRule.SDecl
+    | S_Decl (_dlk, _ldi, None) -> fatal_from s TypeInferenceNeeded
     (* End *)
     | S_Print { args; debug } ->
         let* vs = List.map (eval_expr_sef env) args |> sync_list in
@@ -1290,97 +1271,10 @@ module Make (B : Backend.S) (C : Config) = struct
            ("tuple construction", List.length les, List.length monads)
     else multi_assign ver env les monads
 
-  (* Base Value *)
-  (* ---------- *)
-  and base_value env t =
-    let t_struct = Types.get_structure (IEnv.to_static env) t in
-    let lit v = B.v_of_literal v |> return in
-    match t_struct.desc with
-    | T_Bool -> L_Bool false |> lit
-    | T_Bits (e, _) ->
-        let* v = eval_expr_sef env e in
-        let length =
-          match B.v_to_int v with None -> unsupported_expr e | Some i -> i
-        in
-        L_BitVector (Bitvector.zeros length) |> lit
-    | T_Enum li -> (
-        try IMap.find (List.hd li) env.global.static.constant_values |> lit
-        with Not_found -> fatal_from t Error.TypeInferenceNeeded)
-    | T_Int UnConstrained -> m_zero
-    | T_Int (Parameterized _) ->
-        failwith "Cannot request the base value of a parameterized integer."
-    | T_Int (WellConstrained []) ->
-        failwith
-          "A well constrained integer cannot have an empty list of constraints."
-    | T_Int (WellConstrained cs) -> (
-        let leq x y = choice (B.binop LEQ x y) true false in
-        let is_neg v = leq v v_zero in
-        let abs v =
-          let* b = is_neg v in
-          if b then B.unop NEG v else return v
-        in
-        let m_none = return None in
-        let abs_min v1 v2 =
-          match (v1, v2) with
-          | None, v | v, None -> return v
-          | Some v1, Some v2 ->
-              let* abs_v1 = abs v1 and* abs_v2 = abs v2 in
-              let* v = choice (B.binop LEQ abs_v1 abs_v2) v1 v2 in
-              return (Some v)
-        in
-        let big_abs_min = big_op m_none abs_min in
-        let one_c = function
-          | Constraint_Exact e ->
-              let* v = eval_expr_sef env e in
-              return (Some v)
-          | Constraint_Range (e1, e2) -> (
-              let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
-              let* b = leq v1 v2 in
-              if not b then m_none
-              else
-                let* b1 = is_neg v1 and* b2 = is_neg v2 in
-                match (b1, b2) with
-                | true, false -> return (Some v_zero)
-                | false, true ->
-                    assert false (* caught by the [if not b] earlier *)
-                | true, true -> return (Some v2)
-                | false, false -> return (Some v1))
-        in
-        let* v = List.map one_c cs |> big_abs_min in
-        match v with
-        | None -> fatal_from t (Error.BaseValueEmptyType t)
-        | Some v -> return v)
-    | T_Named _ -> assert false
-    | T_Real -> L_Real Q.zero |> lit
-    | T_Exception fields | T_Record fields ->
-        List.map
-          (fun (name, t_field) ->
-            let* v = base_value env t_field in
-            return (name, v))
-          fields
-        |> sync_list >>= B.create_record
-    | T_String -> L_String "" |> lit
-    | T_Tuple li ->
-        List.map (base_value env) li |> sync_list >>= B.create_vector
-    | T_Array (length, ty) ->
-        let* v = base_value env ty in
-        let* i_length =
-          match length with
-          | ArrayLength_Enum (_, i) ->
-              assert (i >= 0);
-              return i
-          | ArrayLength_Expr e -> (
-              let* length = eval_expr_sef env e in
-              match B.v_to_int length with
-              | Some i when i >= 0 -> return i
-              | Some _ | None -> unsupported_expr e)
-        in
-        List.init i_length (Fun.const v) |> B.create_vector
-
   (* Begin EvalTopLevel *)
   let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
       B.value m =
-    let*| env = build_genv env eval_expr_sef base_value static_env ast in
+    let*| env = build_genv env eval_expr_sef static_env ast in
     let*| res = eval_subprogram env "main" dummy_annotated [] [] in
     (match res with
     | Normal ([ v ], _genv) -> read_value_from v
