@@ -766,7 +766,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.SymDomIsSubset \label{sec:TypingRule.SymDomIsSubset}}
+\subsection{TypingRule.SymDomIsSubset\label{sec:TypingRule.SymDomIsSubset}}
 \hypertarget{def-symdomissubset}{}
 The function
 \[
@@ -788,19 +788,22 @@ All of the following apply:
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[int]{
+\inferrule{
   \symintsetsubset(\tenv, \vdone, \vdtwo) \typearrow \vb
 }{
   \symdomissubset(\tenv, \vdone, \vdtwo) \typearrow \vb
 }
 \end{mathpar}
+\CodeSubsection{\SyDomIsSubsetBegin}{\SyDomIsSubsetEnd}{../types.ml}
 
-\subsection{TypingRule.SymIntSetSubset \label{sec:TypingRule.SymIntSetSubset}}
+\subsection{TypingRule.SymIntSetSubset\label{sec:TypingRule.SymIntSetSubset}}
 \hypertarget{def-symintsetsubset}{}
 The function
 \[
 \symintsetsubset(\overname{\staticenvs}{\tenv} \aslsep \overname{\symdom}{\visone} \aslsep \overname{\symdom}{\vistwo}) \aslto \overname{\Bool}{\vb}
 \]
+conservatively tests whether the symbolic integer set $\visone$ is a subset of the symbolic integer set $\vistwo$,
+yielding the result in $\vb$.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -818,14 +821,14 @@ One of the following applies:
     \item define $\vb$ as $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{finite}):
+  \item All of the following apply (\textsc{finite\_finite}):
   \begin{itemize}
     \item $\visone$ is a finite set of integers for $\vsone$, that is, $\Finite(\vsone)$;
     \item $\vistwo$ is a finite set of integers for $\vstwo$, that is, $\Finite(\vstwo)$;
     \item define $\vb$ as $\True$ if and only if $\vsone$ is a subset of $\vstwo$ or both sets are equal.
   \end{itemize}
 
-  \item All of the following apply (\textsc{syntax}):
+  \item All of the following apply (\textsc{syntax\_synax}):
   \begin{itemize}
     \item $\visone$ is a set of integers given by the list of constraints $\csone$, that is, \\ $\FromSyntax(\vsone)$;
     \item $\vistwo$ is a set of integers given by the list of constraints $\cstwo$, that is, \\ $\FromSyntax(\vstwo)$;
@@ -856,13 +859,26 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[finite]{}{
+\inferrule[finite\_finite]{}{
   \symintsetsubset(\tenv, \overname{\Finite(\vsone)}{\visone}, \overname{\Finite(\vstwo)}{\vistwo}) \typearrow \overname{\vsone \subseteq \vstwo}{\vb}
 }
 \end{mathpar}
 
+% | FromSyntax cs1, FromSyntax cs2 ->
+% constraints_equal env cs1 cs2
+% || Iterators.constraints_for_all env cs1 @@ fun l1 ->
+%    Iterators.constraints_exists env cs2 @@ fun l2 -> literal_equal l1 l2
+% | Finite ints1, FromSyntax cs2 -> (
+% int_set_for_all ints1 @@ fun z1 ->
+% Iterators.constraints_exists env cs2 @@ function
+% | L_Int z2 -> Z.equal z1 z2
+% | _ -> false)
+% | FromSyntax cs1, Finite ints2 -> (
+% Iterators.constraints_for_all env cs1 @@ function
+% | L_Int z1 -> IntSet.mem z1 ints2
+% | _ -> false)
 \begin{mathpar}
-\inferrule[syntax]{
+\inferrule[syntax\_syntax]{
   \constraintsequal(\tenv, \csone, \cstwo) \typearrow \vb
 }{
   \symintsetsubset(\tenv, \overname{\FromSyntax(\csone)}{\visone}, \overname{\FromSyntax(\cstwo)}{\vistwo}) \typearrow \vb
@@ -877,6 +893,7 @@ One of the following applies:
   \symintsetsubset(\tenv, \visone, \vistwo) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
+\CodeSubsection{\SymIntSetSubsetBegin}{\SymIntSetSubsetEnd}{../types.ml}
 
 \subsection{TypingRule.ConstraintBinop \label{sec:TypingRule.ConstraintBinop}}
 \hypertarget{def-constraintbinop}{}
