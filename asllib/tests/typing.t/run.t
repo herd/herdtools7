@@ -1,42 +1,42 @@
 H Examples
   $ aslref --no-exec HExample1.asl
-  File HExample1.asl, line 19, characters 17 to 29:
+  File HExample1.asl, line 19, characters 4 to 30:
   ASL Typing error: base value of type bits((8 * size)) containing non-static value (
     8 * size)
   [1]
   $ aslref --no-exec HExample2.asl
   $ aslref --no-exec HExample3.asl
-  File HExample3.asl, line 6, characters 17 to 29:
+  File HExample3.asl, line 6, characters 4 to 30:
   ASL Typing error: base value of type bits((8 * size)) containing non-static value (
     8 * size)
   [1]
   $ aslref --no-exec HExample4.asl
-  File HExample4.asl, line 6, characters 16 to 29:
+  File HExample4.asl, line 6, characters 4 to 30:
   ASL Typing error: base value of type bits((8 * bytes)) containing non-static value (
     8 * bytes)
   [1]
   $ aslref --no-exec HExample5.asl
-  File HExample5.asl, line 24, characters 18 to 36:
+  File HExample5.asl, line 24, characters 4 to 37:
   ASL Typing error: base value of type bits((4 * size)) containing non-static value (
     4 * size)
   [1]
   $ aslref --no-exec HExample6.asl
-  File HExample6.asl, line 5, characters 13 to 25:
+  File HExample6.asl, line 5, characters 4 to 26:
   ASL Typing error: base value of type bits(p2bits) containing non-static value p2bits
   [1]
   $ aslref --no-exec HExample7.asl
-  File HExample7.asl, line 4, characters 17 to 24:
+  File HExample7.asl, line 4, characters 4 to 25:
   ASL Typing error: base value of type bits(N) containing non-static value N
   [1]
   $ aslref --no-exec HExample8.asl
   $ aslref --no-exec HExample9.asl
   $ aslref --no-exec HExample10.asl
   $ aslref --no-exec HExample11.asl
-  File HExample11.asl, line 7, characters 12 to 19:
+  File HExample11.asl, line 7, characters 4 to 20:
   ASL Typing error: base value of type bits(N) containing non-static value N
   [1]
   $ aslref --no-exec HExample12.asl
-  File HExample12.asl, line 22, characters 12 to 19:
+  File HExample12.asl, line 22, characters 4 to 20:
   ASL Typing error: base value of type bits(x) containing non-static value x
   [1]
   $ aslref --no-exec HExample13.asl
@@ -307,7 +307,7 @@ C Tests
   [1]
   $ aslref --no-exec CPositive4.asl
   $ aslref --no-exec CPositive5.asl
-  File CPositive5.asl, line 4, characters 12 to 25:
+  File CPositive5.asl, line 4, characters 4 to 26:
   ASL Typing error: base value of type integer {0..N} containing non-static value N
   [1]
   $ aslref --no-exec CPositive6.asl
@@ -356,15 +356,15 @@ C Tests
     provided integer {M}.
   [1]
   $ aslref --no-exec CNegative8.asl
-  File CNegative8.asl, line 4, characters 12 to 25:
+  File CNegative8.asl, line 4, characters 4 to 26:
   ASL Typing error: base value of type integer {0..N} containing non-static value N
   [1]
   $ aslref --no-exec CNegative10.asl
-  File CNegative10.asl, line 4, characters 12 to 25:
+  File CNegative10.asl, line 4, characters 4 to 26:
   ASL Typing error: base value of type integer {0..N} containing non-static value N
   [1]
   $ aslref --no-exec CNegative11.asl
-  File CNegative11.asl, line 4, characters 11 to 24:
+  File CNegative11.asl, line 4, characters 4 to 25:
   ASL Typing error: base value of type integer {0..N} containing non-static value N
   [1]
   $ aslref --no-exec CNegative12.asl

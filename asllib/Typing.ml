@@ -1916,12 +1916,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | [] -> raise (Invalid_argument "list_min_abs_z")
     | h :: t -> List.fold_left min_abs h t
 
-  let rec base_value loc env t : expr =
+  (** [base_value_v1 ~loc env t] returns an expression building the base value
+      of the type [t] in [env].
+
+      The base value expression can be used to initialize variables of type [t]
+      in [env].
+      This expression is side-effect free, and is a literal for singular types.
+      If a base value cannot be statically determined (e.g. for parameterized
+      integer types), a type error is thrown, at the location [loc].
+  *)
+  let rec base_value_v1 ~loc env t : expr =
     let add_pos = add_pos_from loc in
     let lit v = add_pos (E_Literal v) in
-    let var v = add_pos (E_Var v) in
-    let fatal_non_static e = fatal_from t (Error.BaseValueNonStatic (t, e)) in
-    let fatal_is_empty () = fatal_from t (Error.BaseValueEmptyType t) in
+    let fatal_non_static e = fatal_from loc (Error.BaseValueNonStatic (t, e)) in
+    let fatal_is_empty () = fatal_from loc (Error.BaseValueEmptyType t) in
     let reduce_to_z e =
       match reduce_to_z_opt env e with
       | None -> fatal_non_static e
@@ -1938,8 +1946,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         try IMap.find name env.global.constant_values |> lit
         with Not_found -> assert false)
     | T_Int UnConstrained -> L_Int Z.zero |> lit
-    | T_Int (Parameterized (_, id)) -> fatal_non_static (var id)
-    | T_Int (WellConstrained []) -> assert false
+    | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos |> fatal_non_static
     | T_Int (WellConstrained cs) ->
         let constraint_abs_min = function
           | Constraint_Exact e -> Some (reduce_to_z e)
@@ -1961,20 +1968,61 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Named _ -> assert false
     | T_Real -> L_Real Q.zero |> lit
     | T_Exception fields | T_Record fields ->
-        let one_field (name, t_field) = (name, base_value loc env t_field) in
+        let one_field (name, t_field) =
+          (name, base_value_v1 ~loc env t_field)
+        in
         E_Record (t, List.map one_field fields) |> add_pos
     | T_String -> L_String "" |> lit
     | T_Tuple li ->
-        let exprs = List.map (base_value loc env) li in
+        let exprs = List.map (base_value_v1 ~loc env) li in
         E_Tuple exprs |> add_pos
     | T_Array (length, ty) ->
-        let value = base_value loc env ty in
+        let value = base_value_v1 ~loc env ty in
         let length =
           match length with
           | ArrayLength_Enum (_, i) -> expr_of_int i
           | ArrayLength_Expr e -> e
         in
         E_Array { length; value } |> add_pos
+
+  let rec base_value_v0 ~loc env t : expr =
+    let add_pos = add_pos_from loc in
+    match t.desc with
+    | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ ->
+        base_value_v1 ~loc env t
+    | T_Bits (width, _) ->
+        E_Call ("Zeros", [ width ], []) |> add_pos |> annotate_expr env |> snd
+    | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos
+    | T_Int (WellConstrained []) -> assert false
+    | T_Int
+        (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
+      ->
+        e
+    | T_Tuple li -> E_Tuple (List.map (base_value_v0 ~loc env) li) |> add_pos
+    | T_Exception fields | T_Record fields ->
+        let fields =
+          List.map
+            (fun (name, t_field) -> (name, base_value_v0 ~loc env t_field))
+            fields
+        in
+        E_Record (t, fields) |> add_pos
+    | T_Array (length, ty) ->
+        let value = base_value_v0 ~loc env ty in
+        let length =
+          match length with
+          | ArrayLength_Enum (_, i) -> expr_of_int i
+          | ArrayLength_Expr e -> e
+        in
+        E_Array { length; value } |> add_pos
+    | T_Named _id ->
+        let t = Types.make_anonymous env t in
+        base_value_v0 ~loc env t
+
+  let base_value ~loc env e =
+    try base_value_v1 ~loc env e
+    with Error.ASLException _ as error ->
+      let+ () = fun () -> raise error in
+      base_value_v0 ~loc env e
 
   let rec annotate_lexpr env le t_e =
     let () =
@@ -2241,7 +2289,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         fatal_from loc (Error.BadLDI ldi) |: TypingRule.LDUninitialisedVar
     | LDI_Typed (ldi', t) ->
         let t' = annotate_type ~loc env t in
-        let e_init = base_value loc env t' in
+        let e_init = base_value ~loc env t' in
         let new_env, new_ldi' =
           annotate_local_decl_item loc env t' LDK_Var ldi'
         in
@@ -3045,7 +3093,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (e', Some t', t')
       | Some t, None ->
           let t' = annotate_type ~loc env t in
-          let e' = base_value loc env t' in
+          let e' = base_value ~loc env t' in
           (e', Some t', t')
       | None, Some e ->
           let t_e, e' = annotate_expr env e in
