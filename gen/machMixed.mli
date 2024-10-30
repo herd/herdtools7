@@ -54,7 +54,7 @@ module Vals :
 
 (** Utilities for atoms supplemented with mixed accesses *)
 module Util : functor
-  (I:sig type at val plain : at end) ->
+  (I:sig type at val plain : at val is_ifetch : at -> bool end) ->
 sig
   val get_access_atom : (I.at * t option) option -> t option
   val set_access_atom : (I.at * t option) option -> t -> (I.at * t option) option

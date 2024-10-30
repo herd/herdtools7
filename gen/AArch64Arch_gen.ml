@@ -226,8 +226,12 @@ let applies_atom (a,_) d = match a,d with
   -> true
 | _ -> false
 
+let do_is_ifetch = function
+  | Instr -> true
+  | _ -> false
+
 let is_ifetch a = match a with
-| Some (Instr,_) -> true
+| Some (a,_) -> do_is_ifetch a
 | _ -> false
 
    let pp_plain = "P"
@@ -304,6 +308,7 @@ let is_ifetch a = match a with
        (struct
          type at = atom_acc
          let plain = plain
+         let is_ifetch = do_is_ifetch
        end)
 
    let fold_mixed f r =

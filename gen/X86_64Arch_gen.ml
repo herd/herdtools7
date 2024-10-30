@@ -54,7 +54,8 @@ module Make
       | (((Plain|NonTemporal),_),(Code.W|Code.R)) -> true
       | ((Atomic,_),Code.R)
       | (_,Code.J)-> false
-    let is_ifetch _ = false
+
+      let is_ifetch _ = false
 
       let compare_atom = compare
 
@@ -63,6 +64,7 @@ module Make
           (struct
             type at = atom_acc
             let plain = Plain
+            let is_ifetch = is_ifetch
           end)
 
       let pp_plain = Code.plain

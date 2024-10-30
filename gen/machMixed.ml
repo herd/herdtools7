@@ -117,7 +117,7 @@ end
 
 (** Utilities for atoms supplemented with mixed accesses *)
 
-module Util(I:sig type at val plain : at end) =
+module Util(I:sig type at val plain : at val is_ifetch : at -> bool end) =
   struct
     let get_access_atom = function
       | None -> None
@@ -126,8 +126,12 @@ module Util(I:sig type at val plain : at end) =
    let set_access_atom a acc =
      Some
        (match a with
-        | None -> (I.plain,Some acc)
-        | Some (a,_) -> (a,Some acc))
+        | Some (a,_) ->
+            if I.is_ifetch a then
+              Warn.fatal "mixed-size and self mode are not compatible (yet)" ;
+            (a,Some acc)
+        | None -> (I.plain,Some acc))             
+
   end
 
 module No =
