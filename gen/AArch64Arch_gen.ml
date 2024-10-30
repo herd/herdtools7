@@ -432,6 +432,10 @@ let is_ifetch a = match a with
    let varatom_dir _d f r = f None r
 
    let merge_atoms a1 a2 = match a1,a2 with
+(* Plain and Instr do not merge *)
+   | ((Plain _,_),(Instr,_))
+   | ((Instr,_),(Plain _,_)) ->
+       None
 (* Eat Plain *)
    | ((Plain None,None),a)
    | (a,(Plain None,None)) ->
