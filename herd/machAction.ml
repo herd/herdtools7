@@ -208,7 +208,7 @@ end = struct
       Printf.sprintf "TLBI(%s,%s)" (A.TLBI.pp_op op) (A.pp_location loc)
   | CMO (cmo,loc) ->
      A.CMO.pp cmo (Option.map A.pp_location loc)
-  | NoAction -> ""
+  | NoAction -> "Empty"
   | Arch a -> A.ArchAction.pp a
 
 (* Utility functions to pick out components *)
