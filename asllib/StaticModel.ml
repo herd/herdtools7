@@ -494,7 +494,13 @@ and to_cond env (e : expr) : Conjunction.t list * Conjunction.t list =
       and cjs2, neg_cjs2 = to_cond env e2 in
       ( cjs_cond &&& cjs1 ||| (neg_cjs_cond &&& cjs2),
         neg_cjs_cond ||| neg_cjs1 &&& (cjs_cond ||| neg_cjs2) )
-  | _ -> raise NotSupported
+  | _ -> (
+      try
+        match StaticInterpreter.static_eval env e with
+        | L_Bool b ->
+            ([ Conjunction.of_bool b ], [ Conjunction.of_bool (not b) ])
+        | _ -> raise NotSupported
+      with _ -> raise NotSupported)
 
 (*---------- Solving in the symbolic representation  ----------*)
 
@@ -527,3 +533,14 @@ let equal_in_env env e1 e2 =
   with NotSupported ->
     let () = if dbg then Format.eprintf "Cannot answer this question yet." in
     false
+
+let normalize_to_bool_opt env e =
+  try
+    let cond, _ncond = to_cond env e in
+    if List.exists (fun c -> Conjunction.get_triviality c = TriviallyTrue) cond
+    then Some true
+    else if
+      List.for_all (fun c -> Conjunction.get_triviality c = TriviallyFalse) cond
+    then Some false
+    else None
+  with NotSupported -> None

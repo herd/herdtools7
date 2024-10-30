@@ -2322,7 +2322,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     fun env v ldi -> add_constants v env ldi
   (* End *)
 
-  let rec annotate_stmt env s =
+  let rec annotate_stmt env s : stmt * env =
     let () =
       if false then
         match s.desc with
@@ -2903,6 +2903,75 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.AnnotateFuncSig
   (* End *)
 
+  module ControlFlow : sig
+    val check_stmt_returns_or_throws :
+      identifier -> env -> stmt_desc annotated -> prop
+    (** [check_stmt_interrupts name env body] checks that the function named
+        [name] with the statement body [body] returns a value or throws an
+        exception. *)
+  end = struct
+    (** Possible Control-Flow actions of a statement. *)
+    type t =
+      | Interrupt  (** Throwing an exception or returning a value. *)
+      | AssertedNotInterrupt
+          (** Assert that this control-flow path is unused. *)
+      | MayNotInterrupt
+          (** Among all control-flow path in a statement, there is one that
+              will not throw an exception nor return a value. *)
+
+    (** Sequencial combination of two control flows. *)
+    let seq t1 t2 = if t1 = MayNotInterrupt then t2 else t1
+
+    (** [guard env e t1 t2] correspond to the conditional combination of [t1]
+        and [t2], guarded by [e] symbolically interpreted in [env].
+
+        This roughly corresponds to the pseudocode [if e then {t1} else {t2}].
+    *)
+    let guard env e t1 t2 =
+      match StaticModel.normalize_to_bool_opt env e with
+      | Some true -> t1
+      | Some false -> t2
+      | None -> (
+          match (t1, t2) with
+          | MayNotInterrupt, _ | _, MayNotInterrupt -> MayNotInterrupt
+          | AssertedNotInterrupt, t | t, AssertedNotInterrupt ->
+              t (* Assertion that the condition always holds *)
+          | Interrupt, Interrupt -> Interrupt)
+
+    (** [get_from_stmt env s] builds the control-flow analysis on [s] in [env].
+    *)
+    let rec from_stmt env s =
+      match s.desc with
+      | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Call _ | S_Print _ ->
+          MayNotInterrupt
+      | S_Unreachable -> AssertedNotInterrupt
+      | S_Return _ | S_Throw _ -> Interrupt
+      | S_Seq (s1, s2) -> seq (from_stmt env s1) (from_stmt env s2)
+      | S_Cond (e, s1, s2) -> guard env e (from_stmt env s1) (from_stmt env s2)
+      | S_While (e, _, body) -> guard env e (from_stmt env body) MayNotInterrupt
+      | S_Repeat (body, _, _) -> from_stmt env body
+      | S_Try (body, _, _) -> from_stmt env body
+      | S_For { dir; start_e; end_e; body } ->
+          let cond =
+            match dir with
+            | Up -> binop LEQ start_e end_e
+            | Down -> binop GEQ start_e end_e
+          in
+          guard env cond (from_stmt env body) MayNotInterrupt
+      | S_Case (_, _) ->
+          (* Should be unsugared, so only for v0 *) AssertedNotInterrupt
+
+    (** [guard env e t1 t2] correspond to the conditional combination of [t1]
+        and [t2], guarded by [e] symbolically interpreted in [env].
+
+        This roughly corresponds to the pseudocode [if e then {t1} else {t2}].
+    *)
+    let check_stmt_returns_or_throws name env s () =
+      match from_stmt env s with
+      | AssertedNotInterrupt | Interrupt -> ()
+      | MayNotInterrupt -> fatal_from s (Error.NonReturningFunction name)
+  end
+
   (* Begin Subprogram *)
   let annotate_subprogram (env : env) (f : AST.func) : AST.func =
     let () =
@@ -2914,6 +2983,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match f.body with SB_ASL body -> body | SB_Primitive -> assert false
     in
     let new_body = try_annotate_block env body in
+    let+ () =
+      match f.return_type with
+      | None -> ok
+      | Some _ -> ControlFlow.check_stmt_returns_or_throws f.name env new_body
+    in
     { f with body = SB_ASL new_body } |: TypingRule.Subprogram
   (* End *)
 

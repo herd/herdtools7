@@ -70,6 +70,7 @@ type error_desc =
   | BaseValueNonStatic of ty * expr
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
+  | NonReturningFunction of identifier
   | UnexpectedATC
   | UnreachableReached
 
@@ -284,6 +285,9 @@ module PPrint = struct
           pp_pattern p pp_ty t
     | UnreachableReached ->
         pp_print_text f "ASL Dynamic error: Unreachable reached."
+    | NonReturningFunction name ->
+        fprintf f "ASL Typing error:@ function %S@ does@ not@ return@ anything."
+          name
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
