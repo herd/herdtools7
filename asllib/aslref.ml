@@ -35,6 +35,7 @@ type args = {
   show_rules : bool;
   strictness : strictness;
   output_format : Error.output_format;
+  use_field_getter_extension : bool;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -52,6 +53,7 @@ let parse_args () =
   let show_version = ref false in
   let push_file file_type s = target_files := (file_type, s) :: !target_files in
   let output_format = ref Error.HumanReadable in
+  let use_field_getter_extension = ref false in
 
   let speclist =
     [
@@ -88,6 +90,9 @@ let parse_args () =
         Arg.Unit (set_strictness TypeCheckNoWarn),
         " Perform type-checking, fatal on any type-checking error, but don't \
          show any warnings." );
+      ( "--use-field-getter-extension",
+        Arg.Set use_field_getter_extension,
+        " Instruct the type-checker to use the field getter extension." );
       ( "--show-rules",
         Arg.Set show_rules,
         " Instrument the interpreter and log to std rules used." );
@@ -129,6 +134,7 @@ let parse_args () =
       strictness = !strictness;
       show_rules = !show_rules;
       output_format = !output_format;
+      use_field_getter_extension = !use_field_getter_extension;
     }
   in
 
@@ -214,6 +220,7 @@ let () =
       let output_format = args.output_format
       let check = args.strictness
       let print_typed = args.print_typed
+      let use_field_getter_extension = args.use_field_getter_extension
     end in
     let module T = Annotate (C) in
     or_exit @@ fun () -> T.type_check_ast ast

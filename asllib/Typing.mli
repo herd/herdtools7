@@ -32,6 +32,7 @@ module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
   val print_typed : bool
+  val use_field_getter_extension : bool
 end
 
 module type S = sig

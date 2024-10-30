@@ -415,10 +415,12 @@ Empty getters/setters
   $ aslref getter_sub_tuple.asl
   $ aslref getter_subslice.asl
   $ aslref getter_subfields.asl
-  $ aslref setter_bitfields.asl
-  $ aslref pstate-exp.asl --type-check-warn
 
   $ aslref bad-pattern.asl
   File bad-pattern.asl, line 4, characters 7 to 12:
   ASL Typing error: Erroneous pattern '101' for expression of type integer {3}.
   [1]
+
+ASLRef Field getter extension
+  $ aslref --use-field-getter-extension setter_bitfields.asl
+  $ aslref --use-field-getter-extension pstate-exp.asl

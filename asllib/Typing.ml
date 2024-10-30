@@ -145,6 +145,7 @@ module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
   val print_typed : bool
+  val use_field_getter_extension : bool
 end
 
 module type S = sig
@@ -458,12 +459,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | Some bitfield -> to_singles env (slices_of_bitfield bitfield)
     | None -> raise NoSingleField
 
-  (** Checks that all bitfields listed in [fields] are delcared in the bitvector type
-    [ty]. If so, retrieves a list of [Slice_Single] slices for each bit position of each
-    bitfield slice of each bitfield in [fields].
-    [name] is passed along, if the result is not [None] for convenience of use.
+  (** Checks that all bitfields listed in [fields] are delcared in the
+      bitvector type [ty]. If so, retrieves a list of [Slice_Single] slices for
+      each bit position of each bitfield slice of each bitfield in [fields].
+      [name] is passed along, if the result is not [None] for convenience of
+      use.
+
+      It is an ASLRef extension, guarded by [C.use_field_getter_extension].
   *)
   let should_fields_reduce_to_call env name ty fields =
+    assert C.use_field_getter_extension;
     match (Types.make_anonymous env ty).desc with
     | T_Bits (_, bf) -> (
         try Some (name, list_concat_map (field_to_single env bf) fields)
@@ -1470,7 +1475,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (* End *)))
     | E_GetField (e1, field_name) -> (
         let reduced =
-          reduce_getfields_to_slices env e1 [ field_name ] ~forbid_atcs
+          if C.use_field_getter_extension then
+            reduce_getfields_to_slices env e1 [ field_name ] ~forbid_atcs
+          else None
         in
         match reduced with
         | Some (name, args) ->
@@ -1545,7 +1552,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 |: TypingRule.EGetBadField)
         (* End *))
     | E_GetFields (e1, fields) -> (
-        let reduced = reduce_getfields_to_slices env e1 fields ~forbid_atcs in
+        let reduced =
+          if C.use_field_getter_extension then
+            reduce_getfields_to_slices env e1 fields ~forbid_atcs
+          else None
+        in
         match reduced with
         | Some (name, args) ->
             let name, args, eqs, ty =
@@ -1614,12 +1625,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
 
-  (** For an expression of the form [e1.[f1,...,fn]],
-    if [e1] represents a call to a getter then this function returns
-    a list of slices needed to read the bitfields [f1...fn].
-    Otherwise, the result is [None].
+  (** For an expression of the form [e1.[f1,...,fn]], if [e1] represents a call
+      to a getter then this function returns a list of slices needed to read
+      the bitfields [f1...fn]. Otherwise, the result is [None].
+
+      It is an ASLRef extension, guarded by [C.use_field_getter_extension].
   *)
   and reduce_getfields_to_slices env e1 fields ~forbid_atcs =
+    assert C.use_field_getter_extension;
     match e1.desc with
     | E_Var name when should_reduce_to_call env name ST_Getter ->
         let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
@@ -2320,11 +2333,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and try_annotate_stmt env s =
     best_effort (s, env) (fun _ -> annotate_stmt env s)
 
+  (* ASLRef extension that allows reduction of a form
+     [MyGetter.[fieldA, fieldB] to [MyGetter([sliceA], [sliceB])]].
+
+     It is guarded by [C.use_getter_field_extension]. *)
   and set_fields_should_reduce_to_call ~loc env x fields (t_e, e) =
     (*
      * Field indices are extracted from the return type
      * of "associated" getter.
      *)
+    assert C.use_field_getter_extension;
     let ( let* ) = Option.bind in
     let _, _, callee =
       try Fn.try_subprogram_for_name loc env x []
@@ -2380,7 +2398,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | LE_Discard -> None
     | LE_SetField (sub_le, field) -> (
         match sub_le.desc with
-        | LE_Var x when should_reduce_to_call env x ST_Setter ->
+        | LE_Var x
+          when C.use_field_getter_extension
+               && should_reduce_to_call env x ST_Setter ->
             set_fields_should_reduce_to_call env ~loc x [ field ] (t_e, e)
         | _ ->
             let old_le le' = LE_SetField (le', field) |> here in
@@ -2388,7 +2408,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         )
     | LE_SetFields (sub_le, fields, slices) -> (
         match sub_le.desc with
-        | LE_Var x when should_reduce_to_call env x ST_Setter ->
+        | LE_Var x
+          when C.use_field_getter_extension
+               && should_reduce_to_call env x ST_Setter ->
             set_fields_should_reduce_to_call env ~loc x fields (t_e, e)
         | _ ->
             let old_le le' = LE_SetFields (le', fields, slices) |> here in
@@ -3050,4 +3072,5 @@ module TypeCheckDefault = Annotate (struct
   let check = TypeCheck
   let output_format = Error.HumanReadable
   let print_typed = false
+  let use_field_getter_extension = false
 end)
