@@ -16,7 +16,7 @@ end
 
 func MemRead(address : integer, size : integer) => bits(8*size)
 begin
-    var result : bits(8*size);
+    var result : bits(8*size) = Zeros(8*size);
     // Address of a special register
     if address == 0x800000000 then
         // Assuming input is integer{1, 2, 4, 8, 16}

@@ -8,7 +8,7 @@ Division by zero:
   constraints {0} would fail with op DIV, operation will always fail.
   File static-div-zero.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator DIV on types integer {6}
-    and integer {0}
+    and integer {0}.
   [1]
 
   $ aslref static-divrm-zero.asl
@@ -16,7 +16,7 @@ Division by zero:
   constraints {0} would fail with op DIVRM, operation will always fail.
   File static-divrm-zero.asl, line 3, characters 19 to 28:
   ASL Typing error: Illegal application of operator DIVRM on types integer {6}
-    and integer {0}
+    and integer {0}.
   [1]
 
   $ aslref static-mod-zero.asl
@@ -24,7 +24,7 @@ Division by zero:
   constraints {0} would fail with op MOD, operation will always fail.
   File static-mod-zero.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator MOD on types integer {6}
-    and integer {0}
+    and integer {0}.
   [1]
 
 Unsupported divisions (caught at type-checking time):
@@ -34,7 +34,7 @@ Unsupported divisions (caught at type-checking time):
   constraints {(- 3)} would fail with op DIV, operation will always fail.
   File static-div-neg.asl, line 3, characters 19 to 27:
   ASL Typing error: Illegal application of operator DIV on types integer {6}
-    and integer {(- 3)}
+    and integer {(- 3)}.
   [1]
 
   $ aslref static-divrm-neg.asl
@@ -42,7 +42,7 @@ Unsupported divisions (caught at type-checking time):
   constraints {(- 3)} would fail with op DIVRM, operation will always fail.
   File static-divrm-neg.asl, line 3, characters 19 to 29:
   ASL Typing error: Illegal application of operator DIVRM on types integer {6}
-    and integer {(- 3)}
+    and integer {(- 3)}.
   [1]
 
   $ aslref static-mod-neg.asl
@@ -50,7 +50,7 @@ Unsupported divisions (caught at type-checking time):
   constraints {(- 3)} would fail with op MOD, operation will always fail.
   File static-mod-neg.asl, line 3, characters 19 to 27:
   ASL Typing error: Illegal application of operator MOD on types integer {6}
-    and integer {(- 3)}
+    and integer {(- 3)}.
   [1]
 
   $ aslref --no-exec static-div-undiv.asl
@@ -58,21 +58,21 @@ Unsupported divisions (caught at type-checking time):
   constraints {(5 DIV 3)} would fail with op DIV, operation will always fail.
   File static-div-undiv.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator DIV on types integer {5}
-    and integer {3}
+    and integer {3}.
   [1]
   $ aslref --no-exec static-div-undiv-bis.asl
   File static-div-undiv-bis.asl, line 3, characters 11 to 18: All values in
   constraints {(1 DIV 2)} would fail with op DIV, operation will always fail.
   File static-div-undiv-bis.asl, line 3, characters 11 to 18:
   ASL Typing error: Illegal application of operator DIV on types integer {1}
-    and integer {2}
+    and integer {2}.
   [1]
   $ aslref static-div-undiv-bis.asl
   File static-div-undiv-bis.asl, line 3, characters 11 to 18: All values in
   constraints {(1 DIV 2)} would fail with op DIV, operation will always fail.
   File static-div-undiv-bis.asl, line 3, characters 11 to 18:
   ASL Typing error: Illegal application of operator DIV on types integer {1}
-    and integer {2}
+    and integer {2}.
   [1]
   $ aslref --no-exec static-div-undiv-ter.asl
   File static-div-undiv-ter.asl, line 4, characters 10 to 17:
@@ -155,7 +155,7 @@ Other polynomial equations:
   $ aslref rat-poly-00.asl
   File rat-poly-00.asl, line 15, characters 9 to 19:
   ASL Typing error: Illegal application of operator == on types bits((7 DIV 2))
-    and bits(3)
+    and bits(3).
   [1]
 
   $ aslref rat-poly-01.asl

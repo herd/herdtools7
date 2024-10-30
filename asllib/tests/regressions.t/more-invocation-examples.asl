@@ -26,8 +26,8 @@ end
 func legal_fun_underconstrained_actual (N: integer) => bits(N)
 begin
   // N is a parameter, therefore it is a parameterized integer
-  var x: bits(N);
-  var y: bits(N*2);
+  var x = Zeros (N);
+  var y = Zeros (N*2);
   // bus's wid parameter takes its value from the width of x
   // which is `N` which is a parameterized integer
   // Therefore the type of arg0 with the invocation width `N` is
@@ -48,8 +48,8 @@ end
 
 // func illegal_fun_parameter_mismatch (N: integer{32,64}, M: integer{64,128})
 // begin
-  // var argN: bits(N);
-  // var argM: bits(M);
+  // var argN = Zeros (N);
+  // var argM = Zeros (M);
 
   // Illegal invocation:
   // Either bus's wid takes its value from argN

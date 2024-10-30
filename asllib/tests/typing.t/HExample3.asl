@@ -3,7 +3,7 @@ type RuntimeType of enumeration {BIGGER_THAN_8, LESS_THAN_8, EQUALS_8};
 func Runtime(size : integer, error: RuntimeType) => bits(8*size)
 begin
     var temp = Zeros(64);
-    var result : bits(8*size);
+    var result = Zeros(8*size);
     case error of
         when BIGGER_THAN_8 =>
             // Runtime Error when size > 8

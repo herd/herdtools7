@@ -49,7 +49,7 @@ Global ignored:
   $ aslref global_ignored.asl
   File global_ignored.asl, line 1, characters 8 to 13:
   ASL Typing error: Illegal application of operator / on types integer {3}
-    and integer {0}
+    and integer {0}.
   [1]
 
 Constrained-type satisfaction:
@@ -208,7 +208,7 @@ Parameterized integers:
 
   $ aslref unreachable.asl
   File ASL Standard Library, line 321, characters 9 to 14:
-  ASL Execution error: Assertion failed: FALSE
+  ASL Execution error: Assertion failed: FALSE.
   [1]
 
   $ aslref assign-to-global-immutable.asl
@@ -220,13 +220,13 @@ Parameterized integers:
   $ aslref bad-equality.asl
   File bad-equality.asl, line 3, characters 8 to 23:
   ASL Typing error: Illegal application of operator == on types
-    (integer {1}, integer {2}) and (integer {1}, integer {2})
+    (integer {1}, integer {2}) and (integer {1}, integer {2}).
   [1]
 
   $ aslref setter_without_getter.asl
   File setter_without_getter.asl, line 1, character 0 to line 4, character 3:
   ASL Typing error: setter "f" does not have a corresponding getter of
-    signature integer -> integer
+    signature integer -> integer.
   [1]
 
   $ aslref tuple_items.asl
@@ -242,7 +242,7 @@ Parameterized integers:
 
   $ aslref rdiv_checks.asl
   File rdiv_checks.asl, line 3, characters 12 to 25:
-  ASL Typing error: Illegal application of operator / on types real and string
+  ASL Typing error: Illegal application of operator / on types real and string.
   [1]
 
   $ aslref record-getfields.asl
@@ -265,19 +265,19 @@ Arrays indexed by enumerations
 Parameters bugs:
   $ aslref bug1.asl
   File bug1.asl, line 5, characters 21 to 29:
-  ASL Typing error: constrained integer expected, provided integer
+  ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref bug2.asl
-  ASL Typing error: constrained integer expected, provided integer
+  ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref bug3.asl
   File bug3.asl, line 4, characters 10 to 18:
-  ASL Typing error: constrained integer expected, provided integer
+  ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref bug4.asl
   File bug4.asl, line 5, characters 11 to 31:
   ASL Typing error: Illegal application of operator OR on types bits(3)
-    and bits(4)
+    and bits(4).
   [1]
   $ aslref arg-as-param-call.asl
   File arg-as-param-call.asl, line 8, characters 4 to 21:
@@ -357,12 +357,15 @@ Required tests:
 
 Base values
   $ aslref base_values.asl
-  base value of {2, -2} is 2
-  base value of {-2, 2} is -2
+  File base_values.asl, line 5, characters 2 to 28:
+  ASL Typing error: base value of type integer {N..M, 42} cannot be statically
+    determined since it consists of N.
+  [1]
 
   $ aslref base_values_empty.asl
-  File base_values_empty.asl, line 3, characters 9 to 23:
-  ASL Execution error: base value of empty type integer {N..M}
+  File base_values_empty.asl, line 3, characters 2 to 24:
+  ASL Typing error: base value of type integer {N..M} cannot be statically
+    determined since it consists of N.
   [1]
 
 Empty getters/setters
@@ -383,13 +386,13 @@ Empty getters/setters
   File empty-setter-nonempty-getter.asl, line 6, character 0 to line 9,
     character 3:
   ASL Typing error: setter "f1" does not have a corresponding getter of
-    signature  -> integer
+    signature  -> integer.
   [1]
   $ aslref nonempty-setter-empty-getter.asl
   File nonempty-setter-empty-getter.asl, line 6, character 0 to line 9,
     character 3:
   ASL Typing error: setter "f1" does not have a corresponding getter of
-    signature  -> integer
+    signature  -> integer.
   [1]
   $ aslref empty-setter-called-with-slices.asl
   File empty-setter-called-with-slices.asl, line 13, characters 2 to 6:
