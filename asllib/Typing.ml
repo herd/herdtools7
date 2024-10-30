@@ -410,19 +410,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   exception NoSingleField
 
+  (** [to_singles env slices] is a list of [Slice_Single] slices
+      for each bit position of each bitfield slice in [slices]. *)
   let to_singles env =
     let eval e =
       match reduce_constants env e with
       | L_Int z -> Z.to_int z
       | _ -> raise NoSingleField
     in
-    let one slice k =
+    let one slice acc =
       match slice with
-      | Slice_Single e -> e :: k
+      | Slice_Single e -> e :: acc
       | Slice_Length (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
           let rec do_rec n =
-            if n >= i2 then k
+            if n >= i2 then acc
             else
               let e = E_Literal (L_Int (Z.of_int (i1 + n))) |> add_dummy_pos in
               e :: do_rec (n + 1)
@@ -431,7 +433,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Slice_Range (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
           let rec do_rec i =
-            if i > i1 then k
+            if i > i1 then acc
             else
               let e = E_Literal (L_Int (Z.of_int i)) |> add_dummy_pos in
               e :: do_rec (i + 1)
@@ -441,18 +443,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     fun slices -> List.fold_right one slices []
 
+  (** Retrieves the slices associated with the given bitfield
+      without recursing into nested bitfields. *)
   let slices_of_bitfield = function
     | BitField_Simple (_, slices)
     | BitField_Nested (_, slices, _)
     | BitField_Type (_, slices, _) ->
         slices
 
+  (** Retrieves the slice of [Slice_Single] slices for each position
+      of the bitfield [field], if it is found in [bf]. *)
   let field_to_single env bf field =
     match find_bitfield_opt field bf with
     | Some bitfield -> to_singles env (slices_of_bitfield bitfield)
     | None -> raise NoSingleField
 
-  (* Begin ShoulFieldsReduceToCall *)
+  (** Checks that all bitfields listed in [fields] are delcared in the bitvector type
+    [ty]. If so, retrieves a list of [Slice_Single] slices for each bit position of each
+    bitfield slice of each bitfield in [fields].
+    [name] is passed along, if the result is not [None] for convenience of use.
+  *)
   let should_fields_reduce_to_call env name ty fields =
     match (Types.make_anonymous env ty).desc with
     | T_Bits (_, bf) -> (
@@ -460,9 +470,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         with NoSingleField -> None)
     | _ -> None
   (* End *)
-
-  let should_field_reduce_to_call env name ty field =
-    should_fields_reduce_to_call env name ty [ field ]
 
   (* -------------------------------------------------------------------------
 
@@ -1463,12 +1470,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (* End *)))
     | E_GetField (e1, field_name) -> (
         let reduced =
-          match e1.desc with
-          | E_Var name when should_reduce_to_call env name ST_Getter ->
-              let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-              let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
-              should_field_reduce_to_call env name ty field_name
-          | _ -> None
+          reduce_getfields_to_slices env e1 [ field_name ] ~forbid_atcs
         in
         match reduced with
         | Some (name, args) ->
@@ -1543,14 +1545,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 |: TypingRule.EGetBadField)
         (* End *))
     | E_GetFields (e1, fields) -> (
-        let reduced =
-          match e1.desc with
-          | E_Var name when should_reduce_to_call env name ST_Getter ->
-              let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-              let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
-              should_fields_reduce_to_call env name ty fields
-          | _ -> None
-        in
+        let reduced = reduce_getfields_to_slices env e1 fields ~forbid_atcs in
         match reduced with
         | Some (name, args) ->
             let name, args, eqs, ty =
@@ -1618,6 +1613,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
+
+  (** For an expression of the form [e1.[f1,...,fn]],
+    if [e1] represents a call to a getter then this function returns
+    a list of slices needed to read the bitfields [f1...fn].
+    Otherwise, the result is [None].
+  *)
+  and reduce_getfields_to_slices env e1 fields ~forbid_atcs =
+    match e1.desc with
+    | E_Var name when should_reduce_to_call env name ST_Getter ->
+        let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
+        let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
+        should_fields_reduce_to_call env name ty fields
+    | _ -> None
 
   (* ListMinAbs( *)
   let list_min_abs_z =
