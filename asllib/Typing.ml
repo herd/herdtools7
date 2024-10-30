@@ -139,7 +139,7 @@ let set_filter_map f set =
 
    ---------------------------------------------------------------------------*)
 
-type strictness = [ `Silence | `Warn | `TypeCheck ]
+type strictness = Silence | Warn | TypeCheck | TypeCheckNoWarn
 
 module type ANNOTATE_CONFIG = sig
   val check : strictness
@@ -162,27 +162,33 @@ module Property (C : ANNOTATE_CONFIG) = struct
 
   let strictness_string =
     match C.check with
-    | `TypeCheck -> "type-checking-strict"
-    | `Warn -> "type-checking-warn"
-    | `Silence -> "type-inference"
+    | TypeCheck -> "type-checking-strict"
+    | TypeCheckNoWarn -> "type-checking-strict-no-warn"
+    | Warn -> "type-checking-warn"
+    | Silence -> "type-inference"
 
   let check : prop -> prop =
     match C.check with
-    | `TypeCheck -> fun f () -> f ()
-    | `Warn -> (
+    | TypeCheckNoWarn | TypeCheck -> fun f () -> f ()
+    | Warn -> (
         fun f () -> try f () with Error.ASLException e -> EP.eprintln e)
-    | `Silence -> fun _f () -> ()
+    | Silence -> fun _f () -> ()
 
   let best_effort' : ('a, 'a) property -> ('a, 'a) property =
     match C.check with
-    | `TypeCheck -> fun f x -> f x
-    | `Warn -> (
+    | TypeCheckNoWarn | TypeCheck -> fun f x -> f x
+    | Warn -> (
         fun f x ->
           try f x
           with Error.ASLException e ->
             EP.eprintln e;
             x)
-    | `Silence -> ( fun f x -> try f x with Error.ASLException _ -> x)
+    | Silence -> ( fun f x -> try f x with Error.ASLException _ -> x)
+
+  let warn_from =
+    match C.check with
+    | TypeCheckNoWarn | Silence -> fun ~loc:_ _ -> ()
+    | TypeCheck | Warn -> EP.warn_from
 
   let best_effort : 'a -> ('a, 'a) property -> 'a = fun x f -> best_effort' f x
   let[@inline] ( let+ ) m f = check m () |> f
@@ -308,8 +314,8 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
 
   let try_subprogram_for_name =
     match C.check with
-    | `TypeCheck -> subprogram_for_name
-    | `Warn | `Silence -> (
+    | TypeCheckNoWarn | TypeCheck -> subprogram_for_name
+    | Warn | Silence -> (
         fun loc env name caller_arg_types ->
           try subprogram_for_name loc env name caller_arg_types
           with Error.ASLException _ as error -> (
@@ -335,9 +341,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   module Fn = FunctionRenaming (C)
 
   module SOp = StaticOperations.Make (struct
-    include C
-
-    let fail () = assumption_failed ()
+    let fail = assumption_failed
+    let warn_from = warn_from
   end)
 
   (* Begin ShouldReduceToCall *)
@@ -1112,8 +1117,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> acc
       in
       match C.check with
-      | `TypeCheck -> eqs1
-      | `Warn | `Silence ->
+      | TypeCheckNoWarn | TypeCheck -> eqs1
+      | Warn | Silence ->
           List.fold_left2 folder eqs1 callee.args caller_args_typed
     in
     (* AnnotateParameterDefining( *)
@@ -2544,15 +2549,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let env3, parameters =
       (* Do not transliterate, only for v0: promote potential params as params. *)
-      if C.check = `TypeCheck then (env3, parameters)
-      else
-        let folder x (env3', parameters) =
-          if not (is_undefined x env3) then (env3', parameters)
-          else
-            let t = Types.parameterized_ty x in
-            (add_local x t LDK_Let env3', (x, Some t) :: parameters)
-        in
-        ISet.fold folder potential_params (env3, parameters)
+      match C.check with
+      | TypeCheck | TypeCheckNoWarn -> (env3, parameters)
+      | Warn | Silence ->
+          let folder x (env3', parameters) =
+            if not (is_undefined x env3) then (env3', parameters)
+            else
+              let t = Types.parameterized_ty x in
+              (add_local x t LDK_Let env3', (x, Some t) :: parameters)
+          in
+          ISet.fold folder potential_params (env3, parameters)
     in
     let () =
       if false then
@@ -3033,7 +3039,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 end
 
 module TypeCheckDefault = Annotate (struct
-  let check = `TypeCheck
+  let check = TypeCheck
   let output_format = Error.HumanReadable
   let print_typed = false
 end)

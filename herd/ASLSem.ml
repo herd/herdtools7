@@ -104,12 +104,13 @@ module Make (C : Config) = struct
   include SemExtra.Make (C) (ASL64AH) (Act)
 
   module TypeCheck = Asllib.Typing.Annotate (struct
-    let check : Asllib.Typing.strictness =
-      if C.variant (Variant.ASLType `Warn) then `Warn
-      else if C.variant (Variant.ASLType `TypeCheck) then `TypeCheck
-      else `Silence
+    let check =
+      let open Asllib.Typing in
+      if C.variant (Variant.ASLType `Warn) then Warn
+      else if C.variant (Variant.ASLType `TypeCheck) then TypeCheckNoWarn
+      else Silence
 
-    let output_format = Asllib.Error.Silence
+    let output_format = Asllib.Error.HumanReadable
     let print_typed = false
   end)
 
