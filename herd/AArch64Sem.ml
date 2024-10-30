@@ -3623,11 +3623,11 @@ Arguments:
         let (and*) = (>>|)
         let aimp = AArch64Explicit.(NExp Other)
 
-        let read_intid a ?(an=Annot.N) ?(ae=aexp) ii =
+        let read_intid a ?(an=Annot.X) ?(ae=aexp) ii =
           M.read_loc Port.No
             (fun loc v -> Act.Access (Dir.R, loc, v, an, ae, quad, Access.INTID))
             (A.Location_global a) ii
-        and write_intid a ?(an=Annot.N) ?(ae=aexp) v ii =
+        and write_intid a ?(an=Annot.X) ?(ae=aexp) v ii =
           M.write_loc
             (mk_write quad an ae Access.INTID v) (A.Location_global a) ii
 
