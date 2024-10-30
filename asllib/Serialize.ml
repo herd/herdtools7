@@ -289,6 +289,7 @@ let rec pp_stmt =
     | S_Print { args; debug } ->
         bprintf f "S_Print { args = %a; debug = %B }" (pp_list pp_expr) args
           debug
+    | S_Unreachable -> addb f "S_Unreachable"
   in
   fun f s -> pp_annotated pp_desc f s
 

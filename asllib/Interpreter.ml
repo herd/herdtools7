@@ -1015,6 +1015,7 @@ module Make (B : Backend.S) (C : Config) = struct
             print_newline ())
         in
         return_continue env |: SemanticsRule.SDebug
+    | S_Unreachable -> fatal_from s Error.UnreachableReached
 
   (* Evaluation of Blocks *)
   (* -------------------- *)

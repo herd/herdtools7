@@ -2573,7 +2573,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_Print { args; debug } ->
         let args' = List.map (fun e -> annotate_expr env e |> snd) args in
         (S_Print { args = args'; debug } |> here, env) |: TypingRule.SDebug
-  (* End *)
+    (* End *)
+    | S_Unreachable -> (s, env)
 
   (* Begin AnnotateLoopLimit *)
   and annotate_loop_limit ~loc env = function

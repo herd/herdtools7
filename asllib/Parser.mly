@@ -73,7 +73,7 @@ let make_ty_decl_subtype (x, s) =
 %token LT MINUS MOD MUL NEQ NOT OF OR OTHERWISE PASS PLUS PLUS_COLON POW PRAGMA
 %token PRINT RBRACE RBRACKET RDIV REAL RECORD REPEAT RETURN RPAR STAR_COLON
 %token SEMI_COLON SETTER SHL SHR SLICING STRING SUBTYPES THEN THROW TO TRY TYPE
-%token UNKNOWN UNTIL VAR WHEN WHERE WHILE WITH
+%token UNKNOWN UNREACHABLE UNTIL VAR WHEN WHERE WHILE WITH
 
 %token ARROBASE_LOOPLIMIT
 %token <string> IDENTIFIER STRING_LIT
@@ -510,6 +510,7 @@ let stmt ==
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
       | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }
       | DEBUG; args=plist(expr);                             { S_Print { args; debug = true } }
+      | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
       | ARROBASE_LOOPLIMIT; looplimit=pared(expr); REPEAT; body=stmt_list; UNTIL; cond=expr;
           { S_Repeat (body, cond, Some looplimit) }

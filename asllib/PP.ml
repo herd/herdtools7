@@ -316,6 +316,7 @@ let rec pp_stmt f s =
       fprintf f "@[<2>print(%a);@]" (pp_comma_list pp_expr) args
   | S_Print { args; debug = true } ->
       fprintf f "@[<2>DEBUG@ %a;@]" (pp_comma_list pp_expr) args
+  | S_Unreachable -> fprintf f "Unreachable();"
 
 and pp_catcher f (name, ty, s) =
   match name with

@@ -259,6 +259,7 @@ let rec use_s s =
   | S_Try (s, catchers, s') ->
       use_s s $ use_option use_s s' $ use_catchers catchers
   | S_Print { args; debug = _ } -> use_es args
+  | S_Unreachable -> Fun.id
 
 and use_ldi = function
   | LDI_Discard | LDI_Var _ -> Fun.id
@@ -806,6 +807,7 @@ let rename_locals map_name ast =
     | S_Throw None -> s.desc
     | S_Try (_, _, _) -> failwith "Not yet implemented: obfuscate try"
     | S_Print { args; debug } -> S_Print { args = List.map map_e args; debug }
+    | S_Unreachable -> S_Unreachable
   and map_le le =
     map_desc_st' le @@ function
     | LE_Discard -> le.desc

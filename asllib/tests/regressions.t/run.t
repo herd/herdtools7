@@ -207,8 +207,8 @@ Parameterized integers:
   '00000'
 
   $ aslref unreachable.asl
-  File ASL Standard Library, line 321, characters 9 to 14:
-  ASL Execution error: Assertion failed: FALSE.
+  File unreachable.asl, line 3, characters 2 to 17:
+  ASL Dynamic error: Unreachable reached.
   [1]
 
   $ aslref assign-to-global-immutable.asl

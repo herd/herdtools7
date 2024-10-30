@@ -71,6 +71,7 @@ type error_desc =
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | UnexpectedATC
+  | UnreachableReached
 
 type error = error_desc annotated
 
@@ -281,6 +282,8 @@ module PPrint = struct
           "ASL Typing error:@ Erroneous@ pattern@ %a@ for@ expression@ of@ \
            type@ %a."
           pp_pattern p pp_ty t
+    | UnreachableReached ->
+        pp_print_text f "ASL Dynamic error: Unreachable reached."
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

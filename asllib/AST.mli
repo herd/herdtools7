@@ -312,6 +312,9 @@ type stmt_desc =
   | S_Print of { args : expr list; debug : bool }
       (** A call to print, as an explicit node as it does not require
           type-checking. *)
+  | S_Unreachable
+      (** The unreachable statement, as an explicit node as it has a specific
+          control-flow behaviour. *)
 
 and stmt = stmt_desc annotated
 and case_alt_desc = { pattern : pattern; where : expr option; stmt : stmt }
