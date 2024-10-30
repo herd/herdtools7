@@ -402,7 +402,7 @@ One of the following applies:
 \hypertarget{def-bitfieldslicetopositions}{}
 The function
 \[
-  \bitfieldslicetopositions(\overname{\staticenvs}{\tenv}, \overname{\vslice}{\vslices})
+  \bitfieldslicetopositions(\overname{\staticenvs}{\tenv}, \overname{\slice}{\vslice})
   \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$. \ProseOtherwiseTypeError
@@ -425,10 +425,10 @@ One of the following applies:
           $\SliceRange(\veone, \vetwo)$;
     \item applying $\reduceconstants$ to $\veone$ in $\tenv$ yields the literal $\vlone$\ProseOrTypeError;
     \item checking that $\vlone$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vlone$ is the integer literal for $\vx$;
+    \item $\vlone$ is the integer literal for $\vy$;
     \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
     \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vltwo$ is the integer literal for $\vy$;
+    \item $\vltwo$ is the integer literal for $\vx$;
     \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
     \item $\positions$ is the set of integers between $\vx$ and $\vy$, inclusive.
   \end{itemize}
@@ -443,7 +443,7 @@ One of the following applies:
     \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
     \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
     \item $\vltwo$ is the integer literal for $\vy$;
-    \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item checking that $\vx \leq \vx+\vy-1$ holds yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
     \item $\positions$ is the set of integers between $\vx$ and $\vx+\vy-1$, inclusive.
   \end{itemize}
 
@@ -457,7 +457,7 @@ One of the following applies:
     \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
     \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
     \item $\vltwo$ is the integer literal for $\vy$;
-    \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item checking that $\vx \times \vy \leq \vx \times (\vy + 1) - 1$ holds yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
     \item $\positions$ is the set of integers between $\vx \times \vy$ and $\vx \times (\vy + 1) - 1$, inclusive.
   \end{itemize}
 \end{itemize}
@@ -476,10 +476,10 @@ One of the following applies:
 \inferrule[range]{
   \reduceconstants(\tenv, \veone) \typearrow \vlone \OrTypeError\\\\
   \checktrans{\astlabel(\vlone) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vlone \eqname \lint(\vx)\\
+  \vlone \eqname \lint(\vy)\\
   \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
   \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vltwo \eqname \lint(\vy)\\
+  \vltwo \eqname \lint(\vx)\\
   \checktrans{\vx \leq \vy}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow \overname{\{n \;|\; \vx \leq n \leq \vy\}}{\positions}
@@ -494,7 +494,7 @@ One of the following applies:
   \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
   \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
   \vltwo \eqname \lint(\vy)\\
-  \checktrans{\vx \leq \vy}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vx \leq \vx+\vy-1}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow \overname{\{n \;|\; \vx \leq n \leq \vx+\vy-1\}}{\positions}
 }
@@ -508,7 +508,7 @@ One of the following applies:
   \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
   \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
   \vltwo \eqname \lint(\vy)\\
-  \checktrans{\vx \leq \vy}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vx \times \vy \leq \vx \times (\vy + 1) - 1}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow
   \overname{\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}}{\positions}

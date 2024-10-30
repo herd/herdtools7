@@ -246,7 +246,7 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{
+\inferrule[range]{
   \binopliterals(\MINUS, \vi, \vi) \typearrow \prelengthp\\
   \binopliterals(\PLUS, \prelengthp, \eliteral{1}) \typearrow \prelength\\
   \annotateslice(\SliceLength(\vi, \prelength)) \typearrow \vsp \OrTypeError

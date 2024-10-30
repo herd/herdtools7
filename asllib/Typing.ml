@@ -396,13 +396,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin DisjointSlicesToPositions *)
   let disjoint_slices_to_diet loc env slices =
-    let eval env e =
-      match reduce_constants env e with
-      | L_Int z -> Z.to_int z
-      | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
-    in
     let module DI = Diet.Int in
-    let one_slice loc env diet slice =
+    let bitfield_slice_to_positions loc env diet slice =
+      let eval env e =
+        match reduce_constants env e with
+        | L_Int z -> Z.to_int z
+        | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
+      in
       let interval =
         let make x y =
           if x > y then fatal_from loc @@ Error.OverlappingSlices [ slice ]
@@ -411,22 +411,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match slice with
         | Slice_Single e ->
             let x = eval env e in
-            make x x
+            make x x |: TypingRule.BitfieldSliceToPositions
         | Slice_Range (e1, e2) ->
             let x = eval env e2 and y = eval env e1 in
-            make x y
+            make x y |: TypingRule.BitfieldSliceToPositions
         | Slice_Length (e1, e2) ->
             let x = eval env e1 and y = eval env e2 in
-            make x (x + y - 1)
+            make x (x + y - 1) |: TypingRule.BitfieldSliceToPositions
         | Slice_Star (e1, e2) ->
             let x = eval env e1 and y = eval env e2 in
             make (x * y) ((x * (y + 1)) - 1)
+            |: TypingRule.BitfieldSliceToPositions
       in
       let new_diet = DI.add interval DI.empty in
       if DI.is_empty (Diet.Int.inter new_diet diet) then DI.add interval diet
       else fatal_from loc Error.(OverlappingSlices slices)
     in
-    List.fold_left (one_slice loc env) Diet.Int.empty slices
+    List.fold_left (bitfield_slice_to_positions loc env) Diet.Int.empty slices
     |: TypingRule.DisjointSlicesToPositions
   (* End *)
 
