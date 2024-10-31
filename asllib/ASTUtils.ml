@@ -262,7 +262,7 @@ let rec use_s s =
   | S_Pass | S_Return None -> Fun.id
   | S_Seq (s1, s2) -> use_s s1 $ use_s s2
   | S_Assert e | S_Return (Some e) -> use_e e
-  | S_Assign (le, e, _) -> use_e e $ use_le le
+  | S_Assign (le, e) -> use_e e $ use_le le
   | S_Call (x, args, named_args) ->
       ISet.add x $ use_fields named_args $ use_es args
   | S_Cond (e, s1, s2) -> use_s s1 $ use_s s2 $ use_e e
@@ -764,7 +764,7 @@ let rename_locals map_name ast =
     | S_Pass -> s.desc
     | S_Seq (s1, s2) -> S_Seq (map_s s1, map_s s2)
     | S_Decl (ldk, ldi, e) -> S_Decl (ldk, map_ldi ldi, Option.map map_e e)
-    | S_Assign (le, e, v) -> S_Assign (map_le le, map_e e, v)
+    | S_Assign (le, e) -> S_Assign (map_le le, map_e e)
     | S_Call (name, args, nargs) -> S_Call (name, map_es args, map_names nargs)
     | S_Return e -> S_Return (Option.map map_e e)
     | S_Cond (e, s1, s2) -> S_Cond (map_e e, map_s s1, map_s s2)

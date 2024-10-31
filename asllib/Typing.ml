@@ -2072,7 +2072,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let new_s2, env2 = try_annotate_stmt env1 s2 in
         (S_Seq (new_s1, new_s2) |> here, env2) |: TypingRule.SSeq
     (* Begin SAssign *)
-    | S_Assign (le, re, ver) ->
+    | S_Assign (le, re) ->
         (let () =
            if false then
              Format.eprintf "@[<3>Annotating assignment@ @[%a@]@]@." PP.pp_stmt
@@ -2084,7 +2084,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          | Some new_s -> (new_s, env)
          | None ->
              let env1 =
-               match ver with
+               match s.version with
                | V1 -> env
                | V0 -> (
                    (*
@@ -2118,7 +2118,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                        else env)
              in
              let le1 = annotate_lexpr env1 le t_re in
-             (S_Assign (le1, re1, ver) |> here, env1))
+             (S_Assign (le1, re1) |> here, env1))
         |: TypingRule.SAssign
     (* End *)
     (* Begin SCall *)
@@ -2372,7 +2372,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let s2 =
       let old_le = make_old_le (LE_Var x |> here) in
       let old_le' = annotate_lexpr env1 old_le t_e in
-      S_Assign (old_le', e, V1) |> here
+      S_Assign (old_le', e) |> here
     in
     let typed_e_x = annotate_expr env1 (E_Var x |> here) in
     match setter_should_reduce_to_call_s env1 sub_le typed_e_x with
@@ -2455,7 +2455,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               let produce_one i sub_le t_sub_e_i = function
                 | None ->
                     let sub_le' = annotate_lexpr env sub_le t_sub_e_i in
-                    S_Assign (sub_le', sub_e i, V1) |> here
+                    S_Assign (sub_le', sub_e i) |> here
                 | Some s -> s
               in
               list_mapi3 produce_one 0 les t_es subs

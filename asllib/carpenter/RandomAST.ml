@@ -320,7 +320,7 @@ module Untyped (C : Config.S) = struct
     let s_assign n =
       let* n1, n2 = Nat.split2 n in
       let+ le = lexpr n1 and+ e = expr n2 in
-      S_Assign (le, e, V1) |> annot
+      S_Assign (le, e) |> annot
     in
     fix @@ fun stmt n ->
     let n = pay n in
@@ -885,7 +885,7 @@ module Typed (C : Config.S) = struct
       let* n2 = min -- (n - min) in
       let n3 = n - n1 - n2 in
       let+ le = lexpr env ty n2 and+ e = expr env ty n3 in
-      (S_Assign (le, e, V1) |> annot, env)
+      (S_Assign (le, e) |> annot, env)
     in
     let s_decl env n =
       let* n1, n2 = Nat.split2 n in

@@ -156,7 +156,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let ( ^= ) x e = S_Decl (LDK_Let, LDI_Var x, Some e) |> with_pos in
       let ( ^^= ) x e =
         let le_x = LE_Var x |> with_pos in
-        S_Assign (le_x, e, V1) |> with_pos in
+        S_Assign (le_x, e) |> with_pos in
       let lit v = E_Literal v |> with_pos in
       let liti i = lit (L_Int (Z.of_int i)) in
       let litb b = lit (L_Bool b) in

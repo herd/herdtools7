@@ -483,7 +483,7 @@ let storage_keyword ==
   | CONFIG    ; { GDK_Config   }
 
 let pass == { S_Pass }
-let assign(x, y) == ~=x ; EQ ; ~=y ; { S_Assign (x,y,V1) }
+let assign(x, y) == ~=x ; EQ ; ~=y ; < S_Assign >
 let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
 let case_alt ==
@@ -521,7 +521,7 @@ let stmt ==
       | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
-      | le=lexpr; EQ; e=expr;                                { S_Assign (le, e, V1)     }
+      | le=lexpr; EQ; e=expr;                                < S_Assign >
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
       | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }

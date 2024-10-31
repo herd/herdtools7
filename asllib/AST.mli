@@ -293,7 +293,7 @@ type stmt_desc =
   | S_Pass
   | S_Seq of stmt * stmt
   | S_Decl of local_decl_keyword * local_decl_item * expr option
-  | S_Assign of lexpr * expr * version
+  | S_Assign of lexpr * expr
   | S_Call of identifier * expr list * (identifier * expr) list
   | S_Return of expr option
   | S_Cond of expr * stmt * stmt
