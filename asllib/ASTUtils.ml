@@ -49,10 +49,16 @@ module IMap = struct
 end
 
 let dummy_pos = Lexing.dummy_pos
+let default_version = V1
 let desc v = v.desc
-let annotated desc pos_start pos_end = { desc; pos_start; pos_end }
-let add_dummy_pos desc = annotated desc dummy_pos dummy_pos
-let dummy_annotated = add_dummy_pos ()
+
+let annotated desc pos_start pos_end version =
+  { desc; pos_start; pos_end; version }
+
+let add_dummy_annotation ?(version = default_version) desc =
+  annotated desc dummy_pos dummy_pos version
+
+let dummy_annotated = add_dummy_annotation ()
 let to_pos pos = { pos with desc = () }
 
 let add_pos_from_st pos desc =
@@ -71,6 +77,7 @@ let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
     desc;
     pos_start = { common with pos_cnum = cnum };
     pos_end = { common with pos_cnum = enum };
+    version = default_version (* used only in testing *);
   }
 
 let list_equal equal li1 li2 =
@@ -127,17 +134,18 @@ let map2_desc f thing1 thing2 =
     desc = f thing1 thing2;
     pos_start = thing1.pos_start;
     pos_end = thing2.pos_end;
+    version = thing1.version;
   }
 
-let s_pass = add_dummy_pos S_Pass
+let s_pass = add_dummy_annotation S_Pass
 let s_then = map2_desc (fun s1 s2 -> S_Seq (s1, s2))
-let boolean = T_Bool |> add_dummy_pos
+let boolean = T_Bool |> add_dummy_annotation
 let integer' = T_Int UnConstrained
-let integer = integer' |> add_dummy_pos
+let integer = integer' |> add_dummy_annotation
 let integer_exact' e = T_Int (WellConstrained [ Constraint_Exact e ])
-let integer_exact e = integer_exact' e |> add_dummy_pos
-let string = T_String |> add_dummy_pos
-let real = T_Real |> add_dummy_pos
+let integer_exact e = integer_exact' e |> add_dummy_annotation
+let string = T_String |> add_dummy_annotation
+let real = T_Real |> add_dummy_annotation
 
 let stmt_from_list : stmt list -> stmt =
   let is_not_s_pass = function { desc = S_Pass; _ } -> false | _ -> true in
@@ -464,10 +472,10 @@ and bitfield_equal eq bf1 bf2 =
   | BitField_Type _, BitField_Simple _ ->
       false
 
-let var_ x = E_Var x |> add_dummy_pos
+let var_ x = E_Var x |> add_dummy_annotation
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
 let unop op = map_desc (fun e -> E_Unop (op, e))
-let literal v = E_Literal v |> add_dummy_pos
+let literal v = E_Literal v |> add_dummy_annotation
 let expr_of_int i = literal (L_Int (Z.of_int i))
 let expr_of_z z = literal (L_Int z)
 let zero_expr = expr_of_z Z.zero
@@ -586,7 +594,7 @@ let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"
 
-let default_t_bits = T_Bits (E_Var "-" |> add_dummy_pos, [])
+let default_t_bits = T_Bits (E_Var "-" |> add_dummy_annotation, [])
 
 let identifier_of_decl d =
   match d.desc with

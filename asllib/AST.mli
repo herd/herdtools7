@@ -30,8 +30,15 @@
 
 (** {2 Utils} *)
 
+type version = V0 | V1
 type position = Lexing.position
-type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
+
+type 'a annotated = {
+  desc : 'a;
+  pos_start : position;
+  pos_end : position;
+  version : version;
+}
 
 type identifier = string
 (** Type of local identifiers in the AST. *)
@@ -281,8 +288,6 @@ type local_decl_item =
 
 (** Statements. Parametric on the type of literals in expressions. *)
 type for_direction = Up | Down
-
-type version = V0 | V1
 
 type stmt_desc =
   | S_Pass

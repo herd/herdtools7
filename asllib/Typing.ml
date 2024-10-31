@@ -427,7 +427,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let rec do_rec n =
             if n >= i2 then acc
             else
-              let e = E_Literal (L_Int (Z.of_int (i1 + n))) |> add_dummy_pos in
+              let e =
+                E_Literal (L_Int (Z.of_int (i1 + n))) |> add_dummy_annotation
+              in
               e :: do_rec (n + 1)
           in
           do_rec 0
@@ -436,7 +438,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let rec do_rec i =
             if i > i1 then acc
             else
-              let e = E_Literal (L_Int (Z.of_int i)) |> add_dummy_pos in
+              let e = E_Literal (L_Int (Z.of_int i)) |> add_dummy_annotation in
               e :: do_rec (i + 1)
           in
           do_rec i2
@@ -759,7 +761,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let+ () = check_diet_in_width loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let+ () =
-          t_bits_bitwidth width' |> add_dummy_pos
+          t_bits_bitwidth width' |> add_dummy_annotation
           |> check_bits_equal_width loc env ty
         in
         BitField_Type (name, slices1, ty') |: TypingRule.TBitField
@@ -1073,7 +1075,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       if false then
         Format.eprintf "@[Found candidate decl:@ @[%a@]@]@." PP.pp_t
-          [ D_Func callee |> add_dummy_pos ]
+          [ D_Func callee |> add_dummy_annotation ]
     in
     let+ () =
       check_true (callee.subprogram_type = call_type) @@ fun () ->

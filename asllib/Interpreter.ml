@@ -84,8 +84,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (*****************************************************************************)
 
   let one = B.v_of_int 1
-  let true' = E_Literal (L_Bool true) |> add_dummy_pos
-  let false' = E_Literal (L_Bool false) |> add_dummy_pos
+  let true' = E_Literal (L_Bool true) |> add_dummy_annotation
+  let false' = E_Literal (L_Bool false) |> add_dummy_annotation
 
   (* Return *)
   (* ------ *)
@@ -272,7 +272,7 @@ module Make (B : Backend.S) (C : Config) = struct
     |> Hashtbl.of_seq
 
   let primitive_decls =
-    List.map (fun (f, _) -> D_Func f |> add_dummy_pos) B.primitives
+    List.map (fun (f, _) -> D_Func f |> add_dummy_annotation) B.primitives
 
   let () =
     if false then

@@ -11,7 +11,7 @@ module Make (C : Config.S) = struct
   open Feat
   open Enum
 
-  let annot desc = ASTUtils.add_dummy_pos desc
+  let annot desc = ASTUtils.add_dummy_annotation desc
 
   (* Util not to forget to pay ==> make payment mandatory on recursion. *)
   let fix f = Fix.Memoize.Int.fix (fun blah -> f (pay blah))

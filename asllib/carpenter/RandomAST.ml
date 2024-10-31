@@ -9,7 +9,7 @@ open ASTUtils
 open QCheck2.Gen
 
 let _dbg = false
-let annot desc = ASTUtils.add_dummy_pos desc
+let annot desc = ASTUtils.add_dummy_annotation desc
 
 type 'a gen = 'a QCheck2.Gen.t
 type 'a sgen = 'a QCheck2.Gen.sized

@@ -26,6 +26,8 @@
     open AST
     open ASTUtils
 
+    let version = V0
+
     let build_expr_conds =
       let make_cond { desc = c, e_then; _ } e_else =
         E_Cond (c, e_then, e_else)
@@ -37,11 +39,14 @@
       let folder { desc = c, s_then; _ } s_else = S_Cond (c, s_then, s_else) in
       List.fold_right (map2_desc folder) s_elsifs s_else
 
-    let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
+    let t_bit =
+      T_Bits (E_Literal (L_Int Z.one) |> add_dummy_annotation ~version, [])
+
 
     let make_ldi_vars (ty, xs) =
       let make_one x =
-        S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None) |> add_dummy_pos
+        S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None)
+        |> add_dummy_annotation ~version
       in
       List.map make_one xs |> stmt_from_list |> desc
 
@@ -234,7 +239,7 @@ let decl ==
   | setter_decl
   | type_decl
 
-let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos }}
+let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos; version }}
 
 let unimplemented_decl(x) == x; { None }
 let unimplemented_ty(x) == x; { AST.(T_Bits (ASTUtils.expr_of_int 0, [])) }
@@ -406,7 +411,8 @@ let variable_decl ==
           { AST.(D_GlobalStorage {
             keyword = GDK_Var;
             name = x;
-            ty = Some (T_Array (ArrayLength_Expr e, ty) |> ASTUtils.add_dummy_pos);
+            ty = Some (T_Array (ArrayLength_Expr e, ty)
+                       |> ASTUtils.add_dummy_annotation ~version);
             initial_value = None;
           })}
       )))

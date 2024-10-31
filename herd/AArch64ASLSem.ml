@@ -24,7 +24,7 @@ let aarch64_iico_order = "aarch64_iico_order"
 let return_0 =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
-  S_Return (Some (expr_of_int 0)) |> add_dummy_pos
+  add_dummy_annotation (S_Return (Some (expr_of_int 0)))
 
 module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
   AArch64Sig.Semantics with module A.V = V = struct
@@ -152,7 +152,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let decode_inst ii =
       let ii = unalias ii in
       let open Asllib.AST in
-      let with_pos desc = Asllib.ASTUtils.add_dummy_pos desc in
+      let with_pos desc = Asllib.ASTUtils.add_dummy_annotation ~version:V0 desc in
       let ( ^= ) x e = S_Decl (LDK_Let, LDI_Var x, Some e) |> with_pos in
       let ( ^^= ) x e =
         let le_x = LE_Var x |> with_pos in

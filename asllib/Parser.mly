@@ -45,11 +45,15 @@
 open AST
 open ASTUtils
 
-let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
+let version = V1
+
+let t_bit =
+  T_Bits (E_Literal (L_Int Z.one) |> add_dummy_annotation ~version, [])
 
 let make_ldi_vars (xs, ty) =
   let make_one x =
-    S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None) |> add_dummy_pos
+    S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None)
+    |> add_dummy_annotation ~version
   in
   List.map make_one xs |> stmt_from_list |> desc
 
@@ -188,7 +192,7 @@ let some(x) == ~ = x ; <Some>
 let terminated_by(x, y) == terminated(y, x)
 
 (* Position annotation *)
-let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endpos } }
+let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endpos; version } }
 
 (* ------------------------------------------------------------------------- *)
 (* List handling *)
