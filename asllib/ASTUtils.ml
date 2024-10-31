@@ -124,6 +124,10 @@ let list_take =
     if n < 0 then raise (Invalid_argument "list_take");
     aux [] n li
 
+let uniq l =
+  List.fold_left (fun acc x -> if List.mem x acc then acc else x :: acc) [] l
+  |> List.rev
+
 let list_is_empty = function [] -> true | _ -> false
 let pair x y = (x, y)
 let pair' y x = (x, y)

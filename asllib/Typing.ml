@@ -2518,182 +2518,185 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | LE_Concat (_les, _) -> None
     | LE_SetArray _ -> assert false
 
-  let fold_types_func_sig folder f init =
-    let from_args =
-      List.fold_left (fun acc (_x, t) -> folder acc t) init f.args
+  (** [func_sig_types f] returns a list of the types in the signature [f].
+      The return type is first, followed by the argument types in order. *)
+  let func_sig_types func_sig =
+    let arg_types = List.map snd func_sig.args in
+    let return_type =
+      match func_sig.return_type with None -> [] | Some ty -> [ ty ]
     in
-    match f.return_type with None -> from_args | Some t -> folder from_args t
+    return_type @ arg_types
 
-  (* Begin GetUndeclaredDefining *)
+  (** The parameters in a function signature, in order. *)
+  let extract_parameters ~env func_sig =
+    let rec parameters_of_expr ~env e =
+      match e.desc with
+      | E_Var x -> if is_undefined x env then [ x ] else []
+      | E_Binop (_, e1, e2) ->
+          parameters_of_expr ~env e1 @ parameters_of_expr ~env e2
+      | E_Unop (_, e) -> parameters_of_expr ~env e
+      | E_Literal _ -> []
+      | _ -> Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
+    in
+    let parameters_of_constraint ~env c =
+      match c with
+      | Constraint_Exact e -> parameters_of_expr ~env e
+      | Constraint_Range (e1, e2) ->
+          parameters_of_expr ~env e1 @ parameters_of_expr ~env e2
+    in
+    let rec parameters_of_ty ~env ty =
+      match ty.desc with
+      | T_Bits (e, _) -> parameters_of_expr ~env e
+      | T_Tuple tys -> list_concat_map (parameters_of_ty ~env) tys
+      | T_Int (WellConstrained cs) ->
+          list_concat_map (parameters_of_constraint ~env) cs
+      | T_Int UnConstrained | T_Real | T_String | T_Bool | T_Array _ | T_Named _
+        ->
+          []
+      | _ -> Error.fatal_from (to_pos ty) (Error.UnsupportedTy (Static, ty))
+    in
+    let types = func_sig_types func_sig in
+    let all_parameters = list_concat_map (parameters_of_ty ~env) types in
+    uniq all_parameters
 
-  (** Returns the set of variables that are parameter defining, without the
-      ones previously declared in the environment. *)
-  let get_undeclared_defining env =
-    let rec of_ty acc ty =
+  (** The set of variables which could define a parameter in a function signature. *)
+  let extract_parameter_defining ~env f =
+    let rec defining_of_ty ~env acc ty =
       match ty.desc with
       | T_Bits ({ desc = E_Var x; _ }, _) ->
           if is_undefined x env then ISet.add x acc else acc
-      | T_Tuple tys -> List.fold_left of_ty acc tys
+      | T_Tuple tys -> List.fold_left (defining_of_ty ~env) acc tys
       | _ -> acc
     in
-    fun f ->
-      fold_types_func_sig of_ty f ISet.empty |: TypingRule.GetUndeclaredDefining
-  (* End *)
+    let types = func_sig_types f in
+    List.fold_left (defining_of_ty ~env)
+      (ISet.of_list (List.map fst f.args))
+      types
 
-  (** [use_func_sig f] returns the set of identifiers appearing in the
-      types of arguments of [f] and in the return type of [f], if there is one.
-  *)
-  let use_func_sig f =
-    fold_types_func_sig (Fun.flip ASTUtils.use_ty) f ISet.empty
-
-  (* Begin AnnotateFuncSig *)
-  let annotate_func_sig ~loc (genv : global) (func_sig : AST.func) :
-      env * AST.func =
-    (* Build typing local environment. *)
-    let env1 = with_empty_local genv in
-    let () =
-      if false then
-        Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name pp_env env1
-    in
+  let annotate_func_sig_v1 ~loc genv func_sig =
+    let env = with_empty_local genv in
     (* Check recursion limit *)
     let recurse_limit =
-      annotate_loop_limit ~warn:false ~loc env1 func_sig.recurse_limit
+      annotate_loop_limit ~warn:false ~loc env func_sig.recurse_limit
     in
-    (* Parameters handling *)
-    let potential_params = get_undeclared_defining env1 func_sig in
-    (* Add explicit parameters *)
-    let env2, declared_params =
-      let () =
-        if false then
-          Format.eprintf "Defined potential parameters: %a@." ISet.pp_print
-            potential_params
+    (* Check parameters are declared correctly - in order and unique *)
+    let+ () =
+      let inferred_parameters = extract_parameters ~env func_sig in
+      let declared_parameters = List.map fst func_sig.parameters in
+      let all_parameters_declared =
+        list_equal String.equal inferred_parameters declared_parameters
       in
-      let folder (env1', acc) (x, ty_opt) =
-        let+ () = check_var_not_in_env loc env1' x in
-        let+ () =
-          check_true (ISet.mem x potential_params) @@ fun () ->
-          fatal_from loc (Error.ParameterWithoutDecl x)
-        in
-        let t =
+      check_true all_parameters_declared @@ fun () ->
+      fatal_from loc
+        (BadParameterDecl
+           (func_sig.name, inferred_parameters, declared_parameters))
+    in
+    (* Annotate and declare parameters *)
+    let env_with_params, parameters =
+      let declare_parameter new_env (x, ty_opt) =
+        let ty =
           match ty_opt with
           | None | Some { desc = T_Int UnConstrained; _ } ->
               Types.parameterized_ty x
-          | Some t1 -> annotate_type ~loc env1 t1
-          (* Type should be valid in the env with no param declared. *)
+          | Some ty ->
+              (* valid in environment which has no parameters declared *)
+              annotate_type ~loc env ty
         in
-        let+ () = check_constrained_integer ~loc env1 t in
-        (add_local x t LDK_Let env1', IMap.add x t acc)
-        |: TypingRule.AnnotateOneParam
+        let+ () = check_constrained_integer ~loc env ty in
+        let+ () = check_var_not_in_env loc new_env x in
+        (add_local x ty LDK_Let new_env, (x, Some ty))
       in
-      List.fold_left folder (env1, IMap.empty) func_sig.parameters
-      |: TypingRule.AnnotateParams
+      list_fold_left_map declare_parameter env func_sig.parameters
     in
-    let () =
-      if false then
-        Format.eprintf "Explicit parameters added to env %a.@." pp_local
-          env2.local
-    in
-    (* Add arguments as parameters. *)
-    let env3, arg_params =
-      let used =
-        use_func_sig func_sig
-        |> ISet.filter (fun s ->
-               is_undefined s env1 && not (IMap.mem s declared_params))
+    (* Annotate and declare arguments *)
+    let env_with_args, args =
+      let declare_argument new_env (x, ty) =
+        (* valid in environment with only parameters declared *)
+        let ty = annotate_type ~loc env_with_params ty in
+        let+ () = check_var_not_in_env loc new_env x in
+        let new_env = add_local x ty LDK_Let new_env in
+        (new_env, (x, ty))
       in
-      let () =
-        if false then
-          Format.eprintf "Undefined used in func sig: %a@." ISet.pp_print used
-      in
-      let folder (env2', acc) (x, ty) =
-        (* ArgAsParam( *)
-        if ISet.mem x used then
-          let+ () = check_var_not_in_env loc env2' x in
-          (* AnnotateParamType( *)
-          let t =
-            match ty.desc with
-            | T_Int UnConstrained -> Types.parameterized_ty x
-            | _ -> annotate_type ~loc env2 ty
-            (* Type sould be valid in env with explicit parameters added, but no implicit parameter from args added. *)
-            (* AnnotateParamType) *)
-          in
-          let+ () = check_constrained_integer ~loc env2 t in
-          (add_local x t LDK_Let env2', IMap.add x t acc)
-        else (env2', acc)
-        (* ArgAsParam) *)
-      in
-      List.fold_left folder (env2, IMap.empty) func_sig.args
-      |: TypingRule.ArgsAsParams
+      list_fold_left_map declare_argument env_with_params func_sig.args
     in
-    let parameters =
-      List.append (IMap.bindings declared_params) (IMap.bindings arg_params)
-      |> List.map (fun (x, t) -> (x, Some t))
-    in
-    let env3, parameters =
-      (* Do not transliterate, only for v0: promote potential params as params. *)
-      match C.check with
-      | TypeCheck | TypeCheckNoWarn -> (env3, parameters)
-      | Warn | Silence ->
-          let folder x (env3', parameters) =
-            if not (is_undefined x env3) then (env3', parameters)
-            else
-              let t = Types.parameterized_ty x in
-              (add_local x t LDK_Let env3', (x, Some t) :: parameters)
-          in
-          ISet.fold folder potential_params (env3, parameters)
-    in
-    let () =
-      if false then
-        let open Format in
-        eprintf "@[Parameters identified for func %s:@ @[%a@]@]@." func_sig.name
-          (pp_print_list ~pp_sep:pp_print_space (fun f (s, ty_opt) ->
-               fprintf f "%s:%a" s (pp_print_option PP.pp_ty) ty_opt))
-          parameters
-    in
-    let () =
-      if false then
-        Format.eprintf "@[<hov>Annotating arguments in env:@ %a@]@." pp_local
-          env3.local
-    in
-    (* Add arguments. *)
-    let env4, args =
-      let one_arg env3' (x, ty) =
-        if IMap.mem x arg_params then
-          let ty' = annotate_type ~loc env2 ty in
-          (env3', (x, ty'))
-        else
-          let () = if false then Format.eprintf "Adding argument %s.@." x in
-          let+ () = check_var_not_in_env loc env3' x in
-          (* Subtlety here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
-          let ty' = annotate_type ~loc env3 ty in
-          let env3'' = add_local x ty' LDK_Let env3' in
-          (env3'', (x, ty'))
-      in
-      list_fold_left_map one_arg env3 func_sig.args |: TypingRule.AnnotateArgs
-    in
-    (* Check return type. *)
-    let env5, return_type =
+    (* Annotate return type *)
+    let env_with_return, return_type =
       match func_sig.return_type with
-      | None -> (env4, func_sig.return_type)
+      | None -> (env_with_args, None)
       | Some ty ->
-          let () =
-            if false then
-              Format.eprintf "@[<hov>Annotating return-type in env:@ %a@]@."
-                pp_local env4.local
-          in
-          (* Subtlety here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
-          let ty' = annotate_type ~loc env3 ty in
-          let return_type = Some ty' in
-          let env4' = { env4 with local = { env4.local with return_type } } in
-          let () =
-            if false then
-              Format.eprintf "@[<hov>Env after annotating return-type:@ %a@]@."
-                pp_local env4'.local
-          in
-          (env4', return_type)
+          (* valid in environment with parameters declared *)
+          let return_type = Some (annotate_type ~loc env_with_params ty) in
+          let local_env = { env_with_args.local with return_type } in
+          ({ env_with_args with local = local_env }, return_type)
     in
-    (env5, { func_sig with parameters; args; return_type; recurse_limit })
-    |: TypingRule.AnnotateFuncSig
-  (* End *)
+    ( env_with_return,
+      { func_sig with parameters; args; return_type; recurse_limit } )
+
+  let annotate_func_sig_v0 ~loc genv func_sig =
+    let env = with_empty_local genv in
+    (* Check recursion limit *)
+    let recurse_limit =
+      annotate_loop_limit ~warn:false ~loc env func_sig.recurse_limit
+    in
+    (* Check parameters have defining arguments *)
+    let inferred_parameters = extract_parameters ~env func_sig in
+    let+ () =
+      let defining = extract_parameter_defining ~env func_sig in
+      let undefined_parameters =
+        List.filter (fun x -> not (ISet.mem x defining)) inferred_parameters
+      in
+      check_true (list_is_empty undefined_parameters) @@ fun () ->
+      fatal_from loc (ParameterWithoutDecl (List.hd undefined_parameters))
+    in
+    (* Annotate and declare parameters from arguments *)
+    let env_with_params, typed_parameters =
+      let declare_parameter new_env x =
+        let ty =
+          match List.assoc_opt x func_sig.args with
+          | None | Some { desc = T_Int UnConstrained } ->
+              Types.parameterized_ty x
+          | Some ty ->
+              (* valid in environment which has no parameters declared *)
+              annotate_type ~loc env ty
+        in
+        let+ () = check_constrained_integer ~loc env ty in
+        let+ () = check_var_not_in_env loc new_env x in
+        (add_local x ty LDK_Let new_env, (x, ty))
+      in
+      list_fold_left_map declare_parameter env inferred_parameters
+    in
+    let parameters = List.map (fun (x, ty) -> (x, Some ty)) typed_parameters in
+    (* Annotate and declare remaining arguments *)
+    let env_with_args, args =
+      let declare_argument new_env (x, ty) =
+        match List.assoc_opt x typed_parameters with
+        | Some ({ desc = T_Int (Parameterized _) } as ty) ->
+            (new_env, (x, T_Int UnConstrained |> add_pos_from ty))
+        | Some ty -> (new_env, (x, ty))
+        | None ->
+            let ty = annotate_type ~loc env_with_params ty in
+            let+ () = check_var_not_in_env loc new_env x in
+            (add_local x ty LDK_Let new_env, (x, ty))
+      in
+      list_fold_left_map declare_argument env_with_params func_sig.args
+    in
+    (* Annotate return type *)
+    let env_with_return, return_type =
+      match func_sig.return_type with
+      | None -> (env_with_args, None)
+      | Some ty ->
+          (* valid in environment with parameters declared *)
+          let return_type = Some (annotate_type ~loc env_with_params ty) in
+          let local_env = { env_with_args.local with return_type } in
+          ({ env_with_args with local = local_env }, return_type)
+    in
+    ( env_with_return,
+      { func_sig with parameters; args; return_type; recurse_limit } )
+
+  let annotate_func_sig ~loc genv func_sig =
+    match loc.version with
+    | V0 -> annotate_func_sig_v0 ~loc genv func_sig
+    | V1 -> annotate_func_sig_v1 ~loc genv func_sig
 
   module ControlFlow : sig
     val check_stmt_returns_or_throws : identifier -> stmt_desc annotated -> prop
