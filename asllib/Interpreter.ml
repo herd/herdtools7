@@ -352,6 +352,31 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     function [] -> default | x :: li -> List.fold_left folder x li
 
+  let check_non_overlapping_slices slices positions =
+    let two_slices (s1, l1) m (s2, l2) =
+      let* () = m in
+      let cond =
+        let* s1l1s2 =
+          let* s1l1 = B.binop PLUS s1 l1 in
+          B.binop LEQ s1l1 s2
+        and* s2l2s1 =
+          let* s2l2 = B.binop PLUS s2 l2 in
+          B.binop LEQ s2l2 s1
+        in
+        B.binop BOR s1l1s2 s2l2s1
+      in
+      let* b = choice cond true false in
+      if b then return ()
+      else Error.(fatal_unknown_pos (OverlappingSlices (slices, Dynamic)))
+    in
+    let one_slice past_slices slice =
+      let* past_slices = past_slices in
+      let* () = List.fold_left (two_slices slice) (return ()) past_slices in
+      return (slice :: past_slices)
+    in
+    let* _ = List.fold_left one_slice (return []) positions in
+    return ()
+
   (* Evaluation of Expressions *)
   (* ------------------------- *)
 
@@ -645,6 +670,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_positions, env2 = eval_slices env1 slices in
         let new_m_bv =
           let* v = m and* positions = m_positions and* v_bv = m_bv in
+          let* () = check_non_overlapping_slices slices positions in
           B.write_to_bitvector positions v v_bv
         in
         eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice

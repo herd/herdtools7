@@ -43,7 +43,8 @@ Two maybe intersecting slices...
   > EOF
 
   $ aslref intersecting_slices3.asl
-  '0000'
+  ASL Dynamic error: overlapping slices i+:1, j+:1.
+  [1]
 
 Two intersecting bitfields
   $ cat >intersecting_slices4.asl <<EOF
