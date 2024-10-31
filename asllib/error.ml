@@ -103,6 +103,58 @@ type warning_desc =
 
 type warning = warning_desc annotated
 
+let error_label = function
+  | ReservedIdentifier _ -> "ReservedIdentifier"
+  | BadField _ -> "BadField"
+  | BadPattern _ -> "BadPattern"
+  | MissingField _ -> "MissingField"
+  | BadSlices _ -> "BadSlices"
+  | BadSlice _ -> "BadSlice"
+  | EmptySlice -> "EmptySlice"
+  | TypeInferenceNeeded -> "TypeInferenceNeeded"
+  | UndefinedIdentifier _ -> "UndefinedIdentifier"
+  | MismatchedReturnValue _ -> "MismatchedReturnValue"
+  | BadArity _ -> "BadArity"
+  | UnsupportedBinop _ -> "UnsupportedBinop"
+  | UnsupportedUnop _ -> "UnsupportedUnop"
+  | UnsupportedExpr _ -> "UnsupportedExpr"
+  | InvalidExpr _ -> "InvalidExpr"
+  | MismatchType _ -> "MismatchType"
+  | NotYetImplemented _ -> "NotYetImplemented"
+  | ConflictingTypes _ -> "ConflictingTypes"
+  | AssertionFailed _ -> "AssertionFailed"
+  | CannotParse -> "CannotParse"
+  | UnknownSymbol -> "UnknownSymbol"
+  | NoCallCandidate _ -> "NoCallCandidate"
+  | TooManyCallCandidates _ -> "TooManyCallCandidates"
+  | BadTypesForBinop _ -> "BadTypesForBinop"
+  | CircularDeclarations _ -> "CircularDeclarations"
+  | ImpureExpression _ -> "ImpureExpression"
+  | UnreconciliableTypes _ -> "UnreconciliableTypes"
+  | AssignToImmutable _ -> "AssignToImmutable"
+  | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"
+  | BadReturnStmt _ -> "BadReturnStmt"
+  | UnexpectedSideEffect _ -> "UnexpectedSideEffect"
+  | UncaughtException _ -> "UncaughtException"
+  | OverlappingSlices _ -> "OverlappingSlices"
+  | BadLDI _ -> "BadLDI"
+  | BadRecursiveDecls _ -> "BadRecursiveDecls"
+  | UnrespectedParserInvariant -> "UnrespectedParserInvariant"
+  | BadATC _ -> "BadATC"
+  | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
+  | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
+  | BaseValueEmptyType _ -> "BaseValueEmptyType"
+  | BaseValueNonStatic _ -> "BaseValueNonStatic"
+  | SettingIntersectingSlices _ -> "SettingIntersectingSlices"
+  | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
+  | NonReturningFunction _ -> "NonReturningFunction"
+  | UnexpectedATC -> "UnexpectedATC"
+  | UnreachableReached -> "UnreachableReached"
+
+let warning_label = function
+  | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
+  | RemovingValuesFromConstraints _ -> "RemovingValuesFromConstraints"
+
 module PPrint = struct
   open Format
   open PP
@@ -342,18 +394,18 @@ let escape s =
     s;
   Buffer.contents b
 
-let pp_csv pp_desc =
+let pp_csv pp_desc label =
   let pos_in_line pos = Lexing.(pos.pos_cnum - pos.pos_bol) in
   fun f pos ->
-    Printf.fprintf f "\"%s\",%d,%d,%d,%d,\"%s\""
+    Printf.fprintf f "\"%s\",%d,%d,%d,%d,%s,\"%s\""
       (escape pos.pos_start.pos_fname)
       pos.pos_start.pos_lnum
       (pos_in_line pos.pos_start)
-      pos.pos_end.pos_lnum (pos_in_line pos.pos_end)
+      pos.pos_end.pos_lnum (pos_in_line pos.pos_end) (label pos.desc)
       (desc_to_string_inf pp_desc pos |> escape)
 
-let pp_error_csv f e = pp_csv pp_error_desc f e
-let pp_warning_csv f w = pp_csv pp_warning_desc f w
+let pp_error_csv f e = pp_csv pp_error_desc error_label f e
+let pp_warning_csv f w = pp_csv pp_warning_desc warning_label f w
 
 type output_format = HumanReadable | CSV | Silence
 

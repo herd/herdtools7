@@ -199,7 +199,7 @@ let () =
     match args.output_format with
     | Error.CSV ->
         Printf.eprintf
-          {|"File","Start line","Start col","End line","End col","Exception"
+          {|"File","Start line","Start col","End line","End col","Exception label","Exception"
 |}
     | Error.(HumanReadable | Silence) -> ()
   in
