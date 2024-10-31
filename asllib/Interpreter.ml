@@ -776,63 +776,65 @@ module Make (B : Backend.S) (C : Config) = struct
     let false_ = B.v_of_literal (L_Bool false) |> return in
     let disjunction = big_op false_ (B.binop BOR)
     and conjunction = big_op true_ (B.binop BAND) in
-    function
-    (* Begin EvalPAll *)
-    | Pattern_All -> true_ |: SemanticsRule.PAll
-    (* End *)
-    (* Begin EvalPAny *)
-    | Pattern_Any ps ->
-        let bs = List.map (eval_pattern env pos v) ps in
-        disjunction bs |: SemanticsRule.PAny
-    (* End *)
-    (* Begin EvalPGeq *)
-    | Pattern_Geq e ->
-        let* v1 = eval_expr_sef env e in
-        B.binop GEQ v v1 |: SemanticsRule.PGeq
-    (* End *)
-    (* Begin EvalPLeq *)
-    | Pattern_Leq e ->
-        let* v1 = eval_expr_sef env e in
-        B.binop LEQ v v1 |: SemanticsRule.PLeq
-    (* End *)
-    (* Begin EvalPNot *)
-    | Pattern_Not p1 ->
-        let* b1 = eval_pattern env pos v p1 in
-        B.unop BNOT b1 |: SemanticsRule.PNot
-    (* End *)
-    (* Begin EvalPRange *)
-    | Pattern_Range (e1, e2) ->
-        let* b1 =
-          let* v1 = eval_expr_sef env e1 in
-          B.binop GEQ v v1
-        and* b2 =
-          let* v2 = eval_expr_sef env e2 in
-          B.binop LEQ v v2
-        in
-        B.binop BAND b1 b2 |: SemanticsRule.PRange
-    (* End *)
-    (* Begin EvalPSingle *)
-    | Pattern_Single e ->
-        let* v1 = eval_expr_sef env e in
-        B.binop EQ_OP v v1 |: SemanticsRule.PSingle
-    (* End *)
-    (* Begin EvalPMask *)
-    | Pattern_Mask m ->
-        let bv bv = L_BitVector bv |> B.v_of_literal in
-        let m_set = Bitvector.mask_set m and m_unset = Bitvector.mask_unset m in
-        let m_specified = Bitvector.logor m_set m_unset in
-        let* nv = B.unop NOT v in
-        let* v_set = B.binop AND (bv m_set) v
-        and* v_unset = B.binop AND (bv m_unset) nv in
-        let* v_set_or_unset = B.binop OR v_set v_unset in
-        B.binop EQ_OP v_set_or_unset (bv m_specified) |: SemanticsRule.PMask
-    (* End *)
-    (* Begin EvalPTuple *)
-    | Pattern_Tuple ps ->
-        let n = List.length ps in
-        let* vs = List.init n (fun i -> B.get_index i v) |> sync_list in
-        let bs = List.map2 (eval_pattern env pos) vs ps in
-        conjunction bs |: SemanticsRule.PTuple
+    fun p ->
+      match p.desc with
+      (* Begin EvalPAll *)
+      | Pattern_All -> true_ |: SemanticsRule.PAll
+      (* End *)
+      (* Begin EvalPAny *)
+      | Pattern_Any ps ->
+          let bs = List.map (eval_pattern env pos v) ps in
+          disjunction bs |: SemanticsRule.PAny
+      (* End *)
+      (* Begin EvalPGeq *)
+      | Pattern_Geq e ->
+          let* v1 = eval_expr_sef env e in
+          B.binop GEQ v v1 |: SemanticsRule.PGeq
+      (* End *)
+      (* Begin EvalPLeq *)
+      | Pattern_Leq e ->
+          let* v1 = eval_expr_sef env e in
+          B.binop LEQ v v1 |: SemanticsRule.PLeq
+      (* End *)
+      (* Begin EvalPNot *)
+      | Pattern_Not p1 ->
+          let* b1 = eval_pattern env pos v p1 in
+          B.unop BNOT b1 |: SemanticsRule.PNot
+      (* End *)
+      (* Begin EvalPRange *)
+      | Pattern_Range (e1, e2) ->
+          let* b1 =
+            let* v1 = eval_expr_sef env e1 in
+            B.binop GEQ v v1
+          and* b2 =
+            let* v2 = eval_expr_sef env e2 in
+            B.binop LEQ v v2
+          in
+          B.binop BAND b1 b2 |: SemanticsRule.PRange
+      (* End *)
+      (* Begin EvalPSingle *)
+      | Pattern_Single e ->
+          let* v1 = eval_expr_sef env e in
+          B.binop EQ_OP v v1 |: SemanticsRule.PSingle
+      (* End *)
+      (* Begin EvalPMask *)
+      | Pattern_Mask m ->
+          let bv bv = L_BitVector bv |> B.v_of_literal in
+          let m_set = Bitvector.mask_set m
+          and m_unset = Bitvector.mask_unset m in
+          let m_specified = Bitvector.logor m_set m_unset in
+          let* nv = B.unop NOT v in
+          let* v_set = B.binop AND (bv m_set) v
+          and* v_unset = B.binop AND (bv m_unset) nv in
+          let* v_set_or_unset = B.binop OR v_set v_unset in
+          B.binop EQ_OP v_set_or_unset (bv m_specified) |: SemanticsRule.PMask
+      (* End *)
+      (* Begin EvalPTuple *)
+      | Pattern_Tuple ps ->
+          let n = List.length ps in
+          let* vs = List.init n (fun i -> B.get_index i v) |> sync_list in
+          let bs = List.map2 (eval_pattern env pos) vs ps in
+          conjunction bs |: SemanticsRule.PTuple
 
   (* End *)
   (* Evaluation of Local Declarations *)

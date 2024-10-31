@@ -197,7 +197,8 @@ let rec use_e e =
 and use_es es acc = use_list use_e es acc
 and use_fields fields acc = use_named_list use_e fields acc
 
-and use_pattern = function
+and use_pattern p =
+  match p.desc with
   | Pattern_Mask _ | Pattern_All -> Fun.id
   | Pattern_Tuple li | Pattern_Any li -> use_list use_pattern li
   | Pattern_Single e | Pattern_Geq e | Pattern_Leq e -> use_e e

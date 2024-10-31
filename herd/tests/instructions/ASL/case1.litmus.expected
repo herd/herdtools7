@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:main.0.a=1 /\ 0:main.0.b=0)
 Observation case1 Always 1 0
-Hash=9398617ba80f74937d2dfc8a6bed4746
+Hash=2a78855478b57cc7cf966b2de395e742
 

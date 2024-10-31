@@ -345,23 +345,32 @@ let int_constraint ==
   | e1=expr; SLICING; e2=expr;  < Constraint_Range >
 
 let expr_pattern := make_expr (expr_pattern)
+
 let pattern_set ==
-  | BNOT; ~=braced(pattern_list); < Pattern_Not >
+  | annotated (
+      BNOT; ~=braced(pattern_list); < Pattern_Not >
+    )
   | braced(pattern_list)
-let pattern_list == ~=nclist(pattern); < Pattern_Any >
+
+let pattern_list == annotated(~=nclist(pattern); < Pattern_Any >)
 let pattern :=
-  | ~=expr_pattern; < Pattern_Single >
-  | e1=expr_pattern; SLICING; e2=expr; < Pattern_Range >
-  | MINUS; { Pattern_All }
-  | LEQ; ~=expr; < Pattern_Leq >
-  | GEQ; ~=expr; < Pattern_Geq >
-  | ~=MASK_LIT; < Pattern_Mask >
-  | ~=plist2(pattern); < Pattern_Tuple >
+  annotated (
+    | ~=expr_pattern; < Pattern_Single >
+    | e1=expr_pattern; SLICING; e2=expr; < Pattern_Range >
+    | MINUS; { Pattern_All }
+    | LEQ; ~=expr; < Pattern_Leq >
+    | GEQ; ~=expr; < Pattern_Geq >
+    | ~=MASK_LIT; < Pattern_Mask >
+    | ~=plist2(pattern); < Pattern_Tuple >
+  )
   | pattern_set
+
 let pattern_or_mask ==
   | pattern_set
-  | ~=MASK_LIT; < Pattern_Mask >
-  | b=BITVECTOR_LIT; { Pattern_Mask (Bitvector.mask_of_bitvector b) }
+  | annotated(
+    | ~=MASK_LIT; < Pattern_Mask >
+    | b=BITVECTOR_LIT; { Pattern_Mask (Bitvector.mask_of_bitvector b) }
+  )
 
 let fields == braced(tclist(typed_identifier))
 let fields_opt == { [] } | fields
@@ -476,8 +485,11 @@ let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 let case_alt ==
   WHEN; pattern=pattern_list; where=ioption(WHERE; expr); ARROW; stmt=stmt_list;
       { { pattern; where; stmt } }
+
 let case_otherwise ==
-  OTHERWISE; ARROW; stmt=stmt_list; { { pattern=Pattern_All; where=None; stmt } }
+  loc=annotated(OTHERWISE); ARROW; stmt=stmt_list;
+  { { pattern = add_pos_from loc Pattern_All; where = None; stmt } }
+
 let case_alt_list ==
   nlist_opt_terminated(annotated(case_alt), annotated(case_otherwise))
 

@@ -139,7 +139,7 @@ type expr_desc =
 
 and expr = expr_desc annotated
 
-and pattern =
+and pattern_desc =
   | Pattern_All
   | Pattern_Any of pattern list
   | Pattern_Geq of expr
@@ -149,6 +149,8 @@ and pattern =
   | Pattern_Range of expr * expr (* lower -> upper, included *)
   | Pattern_Single of expr
   | Pattern_Tuple of pattern list
+
+and pattern = pattern_desc annotated
 
 (** Indexes an array, a bitvector. *)
 and slice =

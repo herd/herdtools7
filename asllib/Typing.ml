@@ -1225,22 +1225,24 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     List.map annotate_slice
 
-  and annotate_pattern loc env t = function
+  and annotate_pattern loc env t p =
+    let here = add_pos_from p in
+    match p.desc with
     (* Begin PAll *)
-    | Pattern_All as p -> p |: TypingRule.PAll
+    | Pattern_All -> p |: TypingRule.PAll
     (* End *)
     (* Begin PAny *)
     | Pattern_Any li ->
         let new_li = List.map (annotate_pattern loc env t) li in
-        Pattern_Any new_li |: TypingRule.PAny
+        Pattern_Any new_li |> here |: TypingRule.PAny
     (* End *)
     (* Begin PNot *)
     | Pattern_Not q ->
         let new_q = annotate_pattern loc env t q in
-        Pattern_Not new_q |: TypingRule.PNot
+        Pattern_Not new_q |> here |: TypingRule.PNot
     (* End *)
     (* Begin PSingle *)
-    | Pattern_Single e as p ->
+    | Pattern_Single e ->
         let t_e, e' = annotate_expr env e in
         let+ () =
          fun () ->
@@ -1257,10 +1259,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
           | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
-        Pattern_Single e' |: TypingRule.PSingle
+        Pattern_Single e' |> here |: TypingRule.PSingle
     (* End *)
     (* Begin PGeq *)
-    | Pattern_Geq e as p ->
+    | Pattern_Geq e ->
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
@@ -1271,10 +1273,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Real, T_Real | T_Int _, T_Int _ -> ()
           | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
-        Pattern_Geq e' |: TypingRule.PGeq
+        Pattern_Geq e' |> here |: TypingRule.PGeq
     (* End *)
     (* Begin PLeq *)
-    | Pattern_Leq e as p ->
+    | Pattern_Leq e ->
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
@@ -1285,10 +1287,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Real, T_Real | T_Int _, T_Int _ -> ()
           | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
-        Pattern_Leq e' |: TypingRule.PLeq
+        Pattern_Leq e' |> here |: TypingRule.PLeq
     (* End *)
     (* Begin PRange *)
-    | Pattern_Range (e1, e2) as p ->
+    | Pattern_Range (e1, e2) ->
         let t_e1, e1' = annotate_expr env e1
         and t_e2, e2' = annotate_expr env e2 in
         let+ () =
@@ -1300,10 +1302,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Real, T_Real, T_Real | T_Int _, T_Int _, T_Int _ -> ()
           | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
-        Pattern_Range (e1', e2') |: TypingRule.PRange
+        Pattern_Range (e1', e2') |> here |: TypingRule.PRange
     (* End *)
     (* Begin PMask *)
-    | Pattern_Mask m as p ->
+    | Pattern_Mask m ->
         let+ () = check_structure_bits loc env t in
         let+ () =
           let n = !$(Bitvector.mask_length m) in
@@ -1322,7 +1324,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                  ("pattern matching on tuples", List.length li, List.length ts))
         | T_Tuple ts ->
             let new_li = List.map2 (annotate_pattern loc env) ts li in
-            Pattern_Tuple new_li |: TypingRule.PTuple
+            Pattern_Tuple new_li |> here |: TypingRule.PTuple
         | _ -> conflict loc [ T_Tuple [] ] t
         (* End *))
 

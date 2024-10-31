@@ -145,13 +145,14 @@ and pp_slice f = function
   | Slice_Length (e1, e2) -> fprintf f "@[<h>%a@,+:%a@]" pp_expr e1 pp_expr e2
   | Slice_Star (e1, e2) -> fprintf f "@[<h>%a@,*:%a@]" pp_expr e1 pp_expr e2
 
-and pp_pattern f = function
+and pp_pattern f p =
+  match p.desc with
   | Pattern_All -> pp_print_string f "-"
   | Pattern_Any li -> fprintf f "@[{%a}@]" (pp_comma_list pp_pattern) li
   | Pattern_Geq e -> fprintf f "@[>= %a@]" pp_expr e
   | Pattern_Leq e -> fprintf f "@[<= %a@]" pp_expr e
   | Pattern_Mask m -> fprintf f "'%s'" (Bitvector.mask_to_string m)
-  | Pattern_Not (Pattern_Any li) ->
+  | Pattern_Not { desc = Pattern_Any li; _ } ->
       fprintf f "@[!{%a}@]" (pp_comma_list pp_pattern) li
   | Pattern_Not p -> fprintf f "@[!{%a}@]" pp_pattern p
   | Pattern_Range (e1, e2) -> fprintf f "@[%a .. %a@]" pp_expr e1 pp_expr e2
@@ -270,7 +271,7 @@ let rec pp_stmt f s =
         | Some e -> fprintf f "where %a@ " pp_expr e
       in
       let pp_case_alt f { desc = { pattern; where; stmt }; _ } =
-        match (pattern, where) with
+        match (pattern.desc, where) with
         | Pattern_All, None ->
             fprintf f "@[<hv 2>otherwise@ => @[<hv>%a@]@]" pp_stmt stmt
         | Pattern_Any li, _ ->
