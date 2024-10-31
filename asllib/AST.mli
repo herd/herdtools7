@@ -195,7 +195,7 @@ and slice =
 
 and call = {
   name : identifier;
-  params : (identifier * expr) list;
+  params : expr list;
   args : expr list;
   call_type : subprogram_type;
 }

@@ -23,7 +23,10 @@
 open AST
 
 val desugar_setter :
-  (identifier * expr list) annotated -> identifier list -> expr -> stmt_desc
+  (identifier * expr list * expr list) annotated ->
+  identifier list ->
+  expr ->
+  stmt_desc
 (**
   Desugar a setter call, in particular:
   {[

@@ -485,8 +485,9 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, new_env) |: SemanticsRule.ESlice
     (* End *)
     (* Begin EvalECall *)
-    | E_Call { name; args; params } ->
-        let**| ms, new_env = eval_call (to_pos e) name env args params in
+    | E_Call { name; params; args } ->
+        (* pass [params] and [args] as labelled arguments to avoid confusion *)
+        let**| ms, new_env = eval_call (to_pos e) name env ~params ~args in
         let* v =
           match ms with
           | [ m ] -> m
@@ -933,9 +934,10 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSAssignCall *)
     | S_Assign
         ( { desc = LE_Destructuring les; _ },
-          { desc = E_Call { name; args; params }; _ } )
+          { desc = E_Call { name; params; args }; _ } )
       when List.for_all lexpr_is_var les ->
-        let**| vms, env1 = eval_call (to_pos s) name env args params in
+        (* pass [params] and [args] as labelled arguments to avoid confusion *)
+        let**| vms, env1 = eval_call (to_pos s) name env ~params ~args in
         let**| new_env = protected_multi_assign s.version env1 s les vms in
         return_continue new_env |: SemanticsRule.SAssignCall
     (* End *)
@@ -971,8 +973,9 @@ module Make (B : Backend.S) (C : Config) = struct
         eval_stmt env1 s2 |: SemanticsRule.SSeq
     (* End *)
     (* Begin EvalSCall *)
-    | S_Call { name; args; params } ->
-        let**| returned, env' = eval_call (to_pos s) name env args params in
+    | S_Call { name; params; args } ->
+        (* pass [params] and [args] as labelled arguments to avoid confusion *)
+        let**| returned, env' = eval_call (to_pos s) name env ~params ~args in
         let () = assert (returned = []) in
         return_continue env' |: SemanticsRule.SCall
     (* End *)
@@ -1240,17 +1243,16 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Function Calls *)
   (* ---------------------------- *)
 
-  (** [eval_call pos name env args named_args] evaluate the call to function
-      [name] with arguments [args] and parameters [named_args] *)
+  (** [eval_call pos name env ~params ~args] evaluates the call to function
+      [name] with arguments [args] and parameters [params].
+      The arguments/parameters are labelled to avoid confusion. *)
   (* Begin EvalCall *)
-  and eval_call pos name env args named_args =
-    let names, nargs1 = List.split named_args in
+  and eval_call pos name env ~params ~args =
     let*^ vargs, env1 = eval_expr_list_m env args in
-    let*^ nargs2, env2 = eval_expr_list_m env1 nargs1 in
-    let* vargs = vargs and* nargs2 = nargs2 in
-    let nargs3 = List.combine names nargs2 in
+    let*^ vparams, env2 = eval_expr_list_m env1 params in
+    let* vargs = vargs and* vparams = vparams in
     let genv = IEnv.incr_stack_size name env2.global in
-    let res = eval_subprogram genv name pos vargs nargs3 in
+    let res = eval_subprogram genv name pos ~params:vparams ~args:vargs in
     B.bind_seq res @@ function
     | Throwing (v, env_throw) ->
         let genv2 = IEnv.decr_stack_size name env_throw.global in
@@ -1266,11 +1268,12 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Subprograms *)
   (* ----------------------- *)
 
-  (** [eval_subprogram genv name pos actual_args params] evaluate the function named [name]
-      in the global environment [genv], with [actual_args] the actual arguments, and
-      [params] the parameters deduced by type equality. *)
-  and eval_subprogram (genv : IEnv.global) name pos
-      (actual_args : B.value m list) params : func_eval_type =
+  (** [eval_subprogram genv name pos ~params ~args] evaluates the function named [name]
+      in the global environment [genv], with [args] the actual arguments, and
+      [params] the positional parameters.
+      The arguments/parmeters are labelled to avoid confusion. *)
+  and eval_subprogram (genv : IEnv.global) name pos ~params
+      ~(args : B.value m list) : func_eval_type =
     match IMap.find_opt name genv.static.subprograms with
     (* Begin EvalFUndefIdent *)
     | None ->
@@ -1281,7 +1284,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some { body = SB_Primitive; _ } ->
         let scope = B.Scope.new_local name in
         let body = Hashtbl.find primitive_runtimes name in
-        let* ms = body actual_args in
+        let* ms = body args in
         let _, vsm =
           List.fold_right
             (fun m (i, acc) ->
@@ -1302,28 +1305,34 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (vs, genv) |: SemanticsRule.FPrimitive
     (* End *)
     (* Begin EvalFBadArity *)
-    | Some { args = arg_decls; _ }
-      when List.compare_lengths actual_args arg_decls <> 0 ->
+    | Some { args = arg_decls; _ } when List.compare_lengths args arg_decls <> 0
+      ->
         fatal_from pos
-        @@ Error.BadArity (name, List.length arg_decls, List.length actual_args)
+        @@ Error.BadArity (name, List.length arg_decls, List.length args)
         |: SemanticsRule.FBadArity
     (* End *)
+    | Some { parameters = parameter_decls; _ }
+      when List.compare_lengths params parameter_decls <> 0 ->
+        fatal_from pos
+        @@ Error.BadParameterArity
+             (Dynamic, V1, name, List.length parameter_decls, List.length params)
+        |: SemanticsRule.FBadArity
     (* Begin EvalFCall *)
-    | Some { body = SB_ASL body; args = arg_decls; recurse_limit; _ } ->
+    | Some
+        {
+          body = SB_ASL body;
+          args = arg_decls;
+          parameters = param_decls;
+          recurse_limit;
+          _;
+        } ->
         (let () = if false then Format.eprintf "Evaluating %s.@." name in
          let scope = B.Scope.new_local name in
          let env1 = IEnv.{ global = genv; local = local_empty_scoped scope } in
          let* () = check_recurse_limit pos name env1 recurse_limit in
          let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
-         let env2 =
-           List.fold_left2 one_arg (return env1) arg_decls actual_args
-         in
-         let one_narg envm (x, m) =
-           let*| env = envm in
-           if IEnv.mem x env then return env
-           else declare_local_identifier_m env x m
-         in
-         let*| env3 = List.fold_left one_narg env2 params in
+         let env2 = List.fold_left2 one_arg (return env1) arg_decls args in
+         let*| env3 = List.fold_left2 one_arg env2 param_decls params in
          let**| res = eval_stmt env3 body in
          let () =
            if false then Format.eprintf "Finished evaluating %s.@." name
@@ -1363,7 +1372,9 @@ module Make (B : Backend.S) (C : Config) = struct
   let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
       B.value m =
     let*| env = build_genv env eval_expr_sef static_env ast in
-    let*| res = eval_subprogram env "main" dummy_annotated [] [] in
+    let*| res =
+      eval_subprogram env "main" dummy_annotated ~params:[] ~args:[]
+    in
     (match res with
     | Normal ([ v ], _genv) -> read_value_from v
     | Normal _ -> Error.(fatal_unknown_pos (MismatchedReturnValue "main"))

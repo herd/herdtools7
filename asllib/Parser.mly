@@ -240,7 +240,6 @@ let binop ==
   ------------------------------------------------------------------------- *)
 
 let field_assign == separated_pair(IDENTIFIER, EQ, expr)
-let nargs == { [] }
 
 let e_else :=
   | ELSE; expr
@@ -261,7 +260,7 @@ let make_expr(sub_expr) ==
     | e1=sub_expr; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
-    | name=IDENTIFIER; args=plist(expr); params=nargs;
+    | name=IDENTIFIER; params=call_params; args=plist(expr);
       { E_Call { name; args; params; call_type = ST_Function } }
     | e=sub_expr; ~=slices;                                       < E_Slice              >
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
@@ -463,16 +462,17 @@ let stmt ==
     | terminated_by(SEMI_COLON,
       | PASS; pass
       | RETURN; ~=ioption(expr);                             < S_Return >
-      | name=IDENTIFIER; args=plist(expr); params=nargs;
+      | name=IDENTIFIER; params=call_params; args=plist(expr);
         { S_Call { name; args; params; call_type = ST_Procedure } }
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
-      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); EQ; rhs=expr;
+      | call=annotated(~=IDENTIFIER; ~=call_params; ~=plist(expr); <>); EQ; rhs=expr;
         { desugar_setter call [] rhs }
-      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); DOT; fld=IDENTIFIER; EQ; rhs=expr;
+      | call=annotated(~=IDENTIFIER; ~=call_params; ~=plist(expr); <>); DOT;
+        fld=IDENTIFIER; EQ; rhs=expr;
         { desugar_setter call [fld] rhs }
-      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); DOT;
+      | call=annotated(~=IDENTIFIER; ~=call_params; ~=plist(expr); <>); DOT;
         flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
         { desugar_setter call flds rhs }
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
@@ -511,6 +511,7 @@ let subtype_opt == option(subtype)
 let opt_typed_identifier == pair(IDENTIFIER, ty_opt)
 let return_type == ARROW; ty
 let params_opt == { [] } | braced(clist(opt_typed_identifier))
+let call_params == { [] } | braced(clist(expr))
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
 let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)

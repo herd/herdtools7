@@ -37,6 +37,7 @@ type error_desc =
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
   | BadArity of identifier * int * int
+  | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
   | UnsupportedExpr of error_handling_time * expr
@@ -123,6 +124,7 @@ let error_label = function
   | UndefinedIdentifier _ -> "UndefinedIdentifier"
   | MismatchedReturnValue _ -> "MismatchedReturnValue"
   | BadArity _ -> "BadArity"
+  | BadParameterArity _ -> "BadParameterArity"
   | UnsupportedBinop _ -> "UnsupportedBinop"
   | UnsupportedUnop _ -> "UnsupportedUnop"
   | UnsupportedExpr _ -> "UnsupportedExpr"
@@ -250,6 +252,20 @@ module PPrint = struct
           "ASL Error: Arity error while calling '%s':@ %d arguments expected \
            and %d provided."
           name expected provided
+    | BadParameterArity (t, version, name, expected, provided) -> (
+        match (t, version) with
+        | Static, V0 ->
+            fprintf f
+              "ASL %s Error: Could not infer all parameters while calling \
+               '%s':@ %d parameters expected and %d inferred"
+              (error_handling_time_to_string t)
+              name expected provided
+        | _ ->
+            fprintf f
+              "ASL %s Error: Arity error while calling '%s':@ %d parameters \
+               expected and %d provided"
+              (error_handling_time_to_string t)
+              name expected provided)
     | NotYetImplemented s ->
         pp_print_text f @@ "ASL Internal error: Not yet implemented: " ^ s
     | ObsoleteSyntax s ->
