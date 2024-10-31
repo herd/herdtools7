@@ -221,7 +221,8 @@ let applies_atom (a,_) d = match a,d with
 | Rel _,W
 | Pte (Read|ReadAcq|ReadAcqPc),R
 | Pte (Set _|SetRel _),W
-| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _|Instr),(R|W)
+| Instr, R
+| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
   -> true
 | _ -> false
 
@@ -383,8 +384,9 @@ let is_ifetch a = match a with
         let r = f (Acq o) r in
         let r = f (AcqPc o) r in
         let r = f (Rel o) r in
-        let r = f Instr r in
         r
+
+   let fold_self f r = if do_self then f Instr r else r
 
    let fold_acc mixed f r =
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
@@ -395,6 +397,7 @@ let is_ifetch a = match a with
      let r = fold_sme f r in
      let r = fold_pair f r in
      let r = fold_acc_opt None f r in
+     let r = fold_self f r in
      let r =
        if do_morello then
          let r = f (Plain (Some Capability)) r in
@@ -429,6 +432,10 @@ let is_ifetch a = match a with
    let varatom_dir _d f r = f None r
 
    let merge_atoms a1 a2 = match a1,a2 with
+(* Plain and Instr do not merge *)
+   | ((Plain _,_),(Instr,_))
+   | ((Instr,_),(Plain _,_)) ->
+       None
 (* Eat Plain *)
    | ((Plain None,None),a)
    | (a,(Plain None,None)) ->
