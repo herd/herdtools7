@@ -58,7 +58,7 @@ type error_desc =
   | BadReturnStmt of ty option
   | UnexpectedSideEffect of string
   | UncaughtException of string
-  | OverlappingSlices of slice list
+  | OverlappingSlices of slice list * error_handling_time
   | BadLDI of AST.local_decl_item
   | BadRecursiveDecls of identifier list
   | UnrespectedParserInvariant
@@ -215,7 +215,8 @@ module PPrint = struct
           "ASL %s error: Cannot extract from bitvector of length %d slice %a."
           (error_handling_time_to_string t)
           length pp_slice_list slices
-    | BadSlice slice -> fprintf f "ASL error: invalid slice %a." pp_slice slice
+    | BadSlice slice ->
+        fprintf f "ASL Static error: invalid slice %a." pp_slice slice
     | TypeInferenceNeeded ->
         pp_print_text f
           "ASL Internal error: Interpreter blocked. Type inference needed."
@@ -285,9 +286,10 @@ module PPrint = struct
           "ASL Typing error: cannot return something from a procedure."
     | UnexpectedSideEffect s -> fprintf f "Unexpected side-effect: %s." s
     | UncaughtException s -> fprintf f "Uncaught exception: %s." s
-    | OverlappingSlices slices ->
-        fprintf f "ASL Typing error:@ overlapping slices@ @[%a@]." pp_slice_list
-          slices
+    | OverlappingSlices (slices, t) ->
+        fprintf f "ASL %s error:@ overlapping slices@ @[%a@]."
+          (error_handling_time_to_string t)
+          pp_slice_list slices
     | BadLDI ldi ->
         fprintf f "Unsupported declaration:@ @[%a@]." pp_local_decl_item ldi
     | BadRecursiveDecls decls ->

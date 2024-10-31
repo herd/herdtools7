@@ -34,7 +34,7 @@ Overlapping slices
 
   $ aslref bad-types3.asl
   File bad-types3.asl, line 1, character 0 to line 4, character 2:
-  ASL Typing error: overlapping slices 0+:11, 3+:2.
+  ASL Static error: overlapping slices 0+:11, 3+:2.
   [1]
 
 Bad slices
