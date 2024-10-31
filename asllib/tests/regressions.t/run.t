@@ -443,6 +443,6 @@ Empty getters/setters
   ASL Static Error: Unsupported expression n.
 
   $ aslref bad-pattern.asl
-  File bad-pattern.asl, line 3, characters 7 to 8:
+  File bad-pattern.asl, line 4, characters 7 to 12:
   ASL Typing error: Erroneous pattern '101' for expression of type integer {3}.
   [1]

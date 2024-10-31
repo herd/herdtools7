@@ -543,31 +543,28 @@ let global_ignored () = fresh_var global_ignored_prefix
 let is_global_ignored s = string_starts_with ~prefix:global_ignored_prefix s
 
 let case_to_conds : stmt -> stmt =
-  let rec cases_to_cond x = function
-    | [] -> s_pass
-    | case :: t -> map_desc (one_case x t) case
-  and one_case x t case =
+  let case_to_cond e0 case tail =
     let { pattern; where; stmt } = case.desc in
-    let e_pattern = E_Pattern (var_ x, pattern) |> add_pos_from case in
+    let e_pattern = E_Pattern (e0, pattern) |> add_pos_from pattern in
     let cond =
       match where with
       | None -> e_pattern
       | Some e_where -> binop BAND e_pattern e_where
     in
-    S_Cond (cond, stmt, cases_to_cond x t)
+    S_Cond (cond, stmt, tail) |> add_pos_from case
   in
-  map_desc @@ fun s ->
-  match s.desc with
-  | S_Case ({ desc = E_Var y; _ }, cases) -> (cases_to_cond y cases).desc
-  | S_Case (e, cases) ->
-      let x = fresh_var "case" in
-      let assign =
-        let pos = e.pos_start in
-        let le = LDI_Typed (LDI_Var x, integer) in
-        annotated (S_Decl (LDK_Let, le, Some e)) pos e.pos_end
-      in
-      S_Seq (assign, cases_to_cond x cases)
-  | _ -> raise (Invalid_argument "case_to_conds")
+  let cases_to_cond ~loc e0 cases =
+    List.fold_right (case_to_cond e0) cases (add_pos_from loc S_Unreachable)
+  in
+  fun s ->
+    match s.desc with
+    | S_Case (({ desc = E_Var _; _ } as e0), cases) ->
+        cases_to_cond ~loc:s e0 cases
+    | S_Case (e, cases) ->
+        let x = fresh_var "__case__linearisation" in
+        let decl_x = S_Decl (LDK_Let, LDI_Var x, Some e) |> add_pos_from e in
+        S_Seq (decl_x, cases_to_cond ~loc:s (var_ x) cases) |> add_pos_from s
+    | _ -> raise (Invalid_argument "case_to_conds")
 
 let slice_is_single = function Slice_Single _ -> true | _ -> false
 

@@ -2430,24 +2430,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (S_Cond (e_cond, s1', s2') |> here, env) |: TypingRule.SCond
     (* End *)
     (* Begin SCase *)
-    | S_Case (e, cases) ->
-        let t_e, e1 = annotate_expr env e in
-        let annotate_case case =
-          let { pattern = p0; where = w0; stmt = s0 } = case.desc in
-          let p1 = annotate_pattern e1 env t_e p0
-          and s1 = try_annotate_block env s0
-          and w1 =
-            match w0 with
-            | None -> None
-            | Some e_w0 ->
-                let twe, e_w1 = (annotate_expr env) e_w0 in
-                let+ () = check_structure_boolean e_w0 env twe in
-                Some e_w1
-          in
-          add_pos_from_st case { pattern = p1; where = w1; stmt = s1 }
-        in
-        let cases1 = List.map annotate_case cases in
-        (S_Case (e1, cases1) |> here, env) |: TypingRule.SCase
+    | S_Case _ -> case_to_conds s |> annotate_stmt env |: TypingRule.SCase
     (* End *)
     (* Begin SAssert *)
     | S_Assert e ->
