@@ -257,16 +257,9 @@ let get_fence n =
               begin match o with
               | None   -> finals (* Code write *)
               | Some r -> (* fetch! *)
-                  match n.C.prev.C.edge.E.edge, n.C.edge.E.edge with
-                  | E.Rf _, _ when E.is_ifetch n.C.prev.C.edge.E.a2 ->
-                      F.add_final (A.get_friends st) p o n finals
-                  | _, E.Po _ | _, E.Fr _ when E.is_ifetch n.C.edge.E.a1 ->
-                      F.add_final (A.get_friends st) p o n finals
-                  | _, _-> begin
                   let m,fenv =  finals in
                   m,F.add_final_v p r (IntSet.singleton (U.fetch_val n))
                     fenv
-                    end
               end),
           st
       end
