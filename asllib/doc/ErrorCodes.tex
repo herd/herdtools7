@@ -188,6 +188,20 @@ or an incorrect way of invoking a getter or a setter with the wrong list of argu
 list of arguments, or a list of arguments where the getter or setter are declared with no arguments.
 This is checked by \nameref{sec:TypingRule.ESlice}.
 
+\hypertarget{def-bvns}{}
+\item[$\BaseValueNonStatic$]
+This error indicates that a storage element without a supplied initializing expression cannot be
+assigned a \basevalueterm\ expression, since one cannot be statically inferred from the type of the
+storage element.
+This is produced by \nameref{sec:TypingRule.BaseValue}.
+
+\hypertarget{def-bvet}{}
+\item[$\BaseValueEmptyType$]
+This error indicates that a storage element without a supplied initializing expression cannot be
+assigned a \basevalueterm\ expression, since the static domain of the type of the storage element
+is empty.
+This is produced by \nameref{sec:TypingRule.BaseValue}.
+
 \end{description}
 
 \section{Dynamic Error Codes}

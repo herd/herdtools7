@@ -574,6 +574,16 @@ One of the following applies:
     \item define $\newe$ as the tuple expression of expressions $\vesp$, that is, $\ETuple(\vesp)$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{e\_array}):
+  \begin{itemize}
+    \item $\ve$ is an array construction expression with length expression $\length$ and value expression $\vvalue$, that is,
+          $\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}$;
+    \item applying $\substexpr$ to $\substs$ and $\length$ in $\tenv$ yields $\lengthp$;
+    \item applying $\substexpr$ to $\substs$ and $\vvalue$ in $\tenv$ yields $\vvaluep$;
+    \item define $\newe$ as the array construction expression with length expression $\lengthp$ and value expression $\vvaluep$, that is,
+    $\EArray\{\EArrayLength: \lengthp, \EArrayValue: \vvaluep\}$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{e\_atc}):
   \begin{itemize}
     \item $\ve$ is the type assertion of expression $\veone$ and type $\vt$, that is, $\EATC(\veone, \vt)$;
@@ -718,6 +728,20 @@ One of the following applies:
   \vesp \eqdef [\vi\in\listrange(\ves): \newe_\vi]
 }{
   \substexpr(\tenv, \substs, \overname{\ETuple(\ves)}{\ve}) \typearrow \overname{\ETuple(\vesp)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_array]{
+  \substexpr(\tenv, \substs, \length) \typearrow \lengthp\\
+  \substexpr(\tenv, \substs, \vvalue) \typearrow \vvaluep
+}{
+  {
+    \begin{array}{r}
+  \substexpr(\tenv, \substs, \overname{\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}}{\ve}) \typearrow\\
+  \overname{\EArray\{\EArrayLength: \length, \EArrayValue: \vvaluep\}}{\newe}
+    \end{array}
+  }
 }
 \end{mathpar}
 

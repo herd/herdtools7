@@ -556,11 +556,21 @@ Declaration keyword for global storage elements:
 The derivation rules for the typed abstract syntax are the same as the rules for the untyped abstract syntax,
 except for the following differences.
 
-The rules for expressions have the extra derivation rule:
+The rules for expressions have the following extra derivation rules:
 \hypertarget{ast-egetarray}{}
 \begin{flalign*}
-\expr \derives\ & \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) &
+\expr \derives\ & \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) &\hypertarget{ast-earray}{}\\
+|\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\}
 \end{flalign*}
+
+\begin{itemize}
+  \item $\EGetArray(\veone, \vetwo)$ stands for an expression accessing the array given by the expression $\veone$
+        at the index given by integer-typed expression $\vetwo$.
+        This expression is the result of the type-checker inferring an array access expression from a slicing expression
+        (\nameref{sec:TypingRule.EGetArray}).
+  \item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to construct an array value
+        in order to initialize an array-typed variable.
+\end{itemize}
 
 The AST node for call expressions includes an extra component that explicitly associates expressions
 with parameters:
@@ -598,6 +608,10 @@ The following extra rule enables expressing array indices based on enumeration:
 \begin{flalign*}
 \arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) &
 \end{flalign*}
+
+In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of the form $\DGlobalStorage(\globaldecl)$
+contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field
+always contains an expression (that is, it is never $\None$).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Building Abstract Syntax Trees\label{sec:BuildingAbstractSyntaxTrees}}

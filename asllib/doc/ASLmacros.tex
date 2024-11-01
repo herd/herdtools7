@@ -551,6 +551,7 @@
 \newcommand\EGetFields[0]{\hyperlink{ast-getfields}{\textsf{E\_GetFields}}}
 \newcommand\ERecord[0]{\hyperlink{ast-erecord}{\textsf{E\_Record}}}
 \newcommand\EConcat[0]{\hyperlink{ast-econcat}{\textsf{E\_Concat}}}
+\newcommand\EArray[0]{\hyperlink{ast-earray}{\textsf{E\_Array}}}
 \newcommand\ETuple[0]{\hyperlink{ast-etuple}{\textsf{E\_Tuple}}}
 \newcommand\EUnknown[0]{\hyperlink{ast-eunknown}{\textsf{E\_Unknown}}}
 \newcommand\EPattern[0]{\hyperlink{ast-epattern}{\textsf{E\_Pattern}}}
@@ -822,6 +823,8 @@
 \newcommand\Forende[0]{\text{end\_e}}
 \newcommand\Forbody[0]{\text{body}}
 \newcommand\Forlimit[0]{\text{limit}}
+\newcommand\EArrayLength[0]{\text{length}}
+\newcommand\EArrayValue[0]{\text{value}}
 
 \newcommand\True[0]{\hyperlink{def-true}{\texttt{TRUE}}}
 \newcommand\False[0]{\hyperlink{def-false}{\texttt{FALSE}}}
@@ -981,6 +984,8 @@
 \newcommand\setfield[0]{\hyperlink{def-setfield}{\textfunc{set\_field}}}
 \newcommand\declareglobal[0]{\hyperlink{def-declareglobal}{\textfunc{declare\_global}}}
 \newcommand\basevalue[0]{\hyperlink{def-basevalue}{\textfunc{base\_value}}}
+\newcommand\constraintabsmin[0]{\hyperlink{def-constraintabsmin}{\textfunc{constraint\_abs\_min}}}
+\newcommand\listminabs[0]{\hyperlink{def-listminabs}{\textfunc{list\_min\_abs}}}
 \newcommand\isvaloftype[0]{\hyperlink{def-isvaloftype}{\textfunc{is\_val\_of\_type}}}
 \newcommand\positioninrange[0]{\hyperlink{def-positioninrange}{\textfunc{position\_in\_range}}}
 \newcommand\integerconstraintsatisfied[0]{\hyperlink{def-integerconstraintsatisfied}{\textfunc{int\_constraint\_sat}}}
@@ -1104,6 +1109,7 @@
 \newcommand\annotateexpropt[0]{\hyperlink{def-annotateexpropt}{\textfunc{annotate\_expr\_opt}}}
 \newcommand\annotateinittype[0]{\hyperlink{def-annotateinittype}{\textfunc{annotate\_init\_type}}}
 \newcommand\addglobalstorage[0]{\hyperlink{def-addglobalstorage}{\textfunc{add\_global\_storage}}}
+\newcommand\annotatetyoptinitialvalue[0]{\hyperlink{def-annotatetyoptinitialvalue}{\textfunc{annotate\_ty\_opt\_initial\_value}}}
 \newcommand\updateglobalstorage[0]{\hyperlink{def-updateglobalstorage}{\textfunc{update\_global\_storage}}}
 \newcommand\annotateextrafields[0]{\hyperlink{def-annotateextrafields}{\textfunc{annotate\_extra\_fields}}}
 \newcommand\declareenumlabels[0]{\hyperlink{def-annotateenumlabels}{\textfunc{declare\_enum\_labels}}}
@@ -1274,7 +1280,9 @@
 \newcommand\namedtype[0]{\hyperlink{def-isnamed}{named type}}
 \newcommand\namedtypes[0]{\hyperlink{def-isnamed}{named types}}
 
+\newcommand\unconstrainedintegertype[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer type}}
 \newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
+\newcommand\wellconstrainedintegertype[0]{\hyperlink{def-wellconstrainedintegertype}{well-constrained integer type}}
 \newcommand\structuredtype[0]{\hyperlink{def-structuredtype}{structured type}}
 \newcommand\structure[0]{\hyperlink{def-structure}{structure}}
 \newcommand\underlyingtype[0]{\hyperlink{def-underlyingtype}{underlying type}}
@@ -1312,6 +1320,8 @@
 \newcommand\localdeclarationitem[0]{\hyperlink{def-localdeclarationitem}{local declaration item}}
 \newcommand\localdeclaration[0]{\hyperlink{def-localdeclaration}{local declaration}}
 \newcommand\localdeclarations[0]{\hyperlink{def-localdeclarations}{local declarations}}
+
+\newcommand\basevalueterm[0]{\hyperlink{def-basevalueterm}{base value}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -1457,6 +1467,8 @@
 \newcommand\BitfieldSliceReversed[0]{\hyperlink{def-bsr}{\TypeErrorCode{BSR}}}
 \newcommand\IntConstantExpected[0]{\hyperlink{def-icc}{\TypeErrorCode{ICC}}}
 \newcommand\EmptySlice[0]{\hyperlink{def-es}{\TypeErrorCode{ES}}}
+\newcommand\BaseValueNonStatic[0]{\hyperlink{def-bvns}{\TypeErrorCode{BVNS}}}
+\newcommand\BaseValueEmptyType[0]{\hyperlink{def-bvet}{\TypeErrorCode{BVET}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Semantics/Typing Shared macros
@@ -1633,8 +1645,10 @@
 \newcommand\etruep[0]{\texttt{e\_true'}}
 \newcommand\etwon[0]{\texttt{e2\_n}}
 \newcommand\ety[0]{\texttt{e\_ty}}
+\newcommand\etuple[0]{\texttt{e\_tuple}}
 \newcommand\evalforloop[0]{\texttt{eval\_for\_loop}}
 \newcommand\evalforstep[0]{\texttt{eval\_for\_step}}
+\newcommand\evalue[0]{\texttt{e\_value}}
 \newcommand\ewidth[0]{\texttt{e\_width}}
 \newcommand\ewidthp[0]{\texttt{e\_width'}}
 \newcommand\explodedinterval[0]{\texttt{exploded\_interval}}
@@ -1694,6 +1708,7 @@
 \newcommand\ldis[0]{\texttt{ldis}}
 \newcommand\ldk[0]{\texttt{ldk}}
 \newcommand\length[0]{\texttt{length}}
+\newcommand\lengthp[0]{\texttt{length'}}
 \newcommand\lenv[0]{\texttt{lenv}}
 \newcommand\les[0]{\texttt{les}}
 \newcommand\lesone[0]{\texttt{les1}}
@@ -1781,7 +1796,9 @@
 \newcommand\newtenv[0]{\texttt{new\_tenv}}
 \newcommand\newty[0]{\texttt{new\_ty}}
 \newcommand\newtys[0]{\texttt{new\_tys}}
+\newcommand\nlength[0]{\texttt{n\_length}}
 \newcommand\nmonads[0]{\texttt{nmonads}}
+\newcommand\num[0]{\textit{num}}
 \newcommand\op[0]{\texttt{op}}
 \newcommand\opfordir[0]{\texttt{op\_for\_dir}}
 \newcommand\opone[0]{\texttt{op1}}
@@ -1976,6 +1993,7 @@
 \newcommand\vdone[0]{\texttt{d1}}
 \newcommand\vdtwo[0]{\texttt{d2}}
 \newcommand\ve[0]{\texttt{e}}
+\newcommand\veinit[0]{\texttt{e\_init}}
 \newcommand\veelse[0]{\texttt{e\_else}}
 \newcommand\vefive[0]{\texttt{e5}}
 \newcommand\vefour[0]{\texttt{e4}}
@@ -2197,6 +2215,7 @@
 \newcommand\vtestruct[0]{\texttt{t\_e\_struct}}
 \newcommand\vtethree[0]{\texttt{t\_e3}}
 \newcommand\vtetwo[0]{\texttt{t\_e2}}
+\newcommand\vtefield[0]{\texttt{t\_field}}
 \newcommand\vtetwostruct[0]{\texttt{t\_e2\_struct}}
 \newcommand\vthenexpr[0]{\texttt{then\_expr}}
 \newcommand\vtleone[0]{\texttt{t\_le1}}
@@ -2231,6 +2250,7 @@
 \newcommand\vusedone[0]{\texttt{used1}}
 \newcommand\vv[0]{\texttt{v}}
 \newcommand\vvalue[0]{\texttt{value}}
+\newcommand\vvaluep[0]{\texttt{value'}}
 \newcommand\vvargs[0]{\texttt{vargs}}
 \newcommand\vvec[0]{\texttt{vec}}
 \newcommand\vvfields[0]{\texttt{v\_fields}}
@@ -2245,6 +2265,7 @@
 \newcommand\vvsubtop[0]{\texttt{v\_top}}
 \newcommand\vvtop[0]{\texttt{top}}
 \newcommand\vvtwo[0]{\texttt{v2}}
+\newcommand\vvtuple[0]{\texttt{v\_tuple}}
 \newcommand\vvty[0]{\texttt{v\_ty}}
 \newcommand\vw[0]{\texttt{w}}
 \newcommand\vwhereast[0]{\texttt{where\_ast}}
@@ -2257,12 +2278,17 @@
 \newcommand\vx[0]{\texttt{x}}
 \newcommand\vy[0]{\texttt{y}}
 \newcommand\vz[0]{\texttt{z}}
+\newcommand\vzminlist[0]{\texttt{z\_min\_list}}
+\newcommand\vzmin[0]{\texttt{z\_min}}
 \newcommand\vza[0]{\texttt{za}}
 \newcommand\vzaopt[0]{\texttt{za\_opt}}
 \newcommand\vzb[0]{\texttt{zb}}
 \newcommand\vzbopt[0]{\texttt{zb\_opt}}
 \newcommand\vzone[0]{\texttt{z1}}
 \newcommand\vzopt[0]{\texttt{z\_opt}}
+\newcommand\vzoptone[0]{\texttt{z\_opt1}}
+\newcommand\vzopttwo[0]{\texttt{z\_opt2}}
+\newcommand\vzs[0]{\texttt{zs}}
 \newcommand\vztwo[0]{\texttt{z2}}
 \newcommand\wantedtindex[0]{\texttt{wanted\_t\_index}}
 \newcommand\watendgettertype[0]{\texttt{wanted\_getter\_type}}

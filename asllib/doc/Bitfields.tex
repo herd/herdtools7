@@ -443,7 +443,7 @@ One of the following applies:
     \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
     \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
     \item $\vltwo$ is the integer literal for $\vy$;
-    \item checking that $\vx \leq \vx+\vy-1$ holds yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item checking that $\vy > 0$ holds (which implies that $\vx \leq \vx+\vy-1$ holds) yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
     \item $\positions$ is the set of integers between $\vx$ and $\vx+\vy-1$, inclusive.
   \end{itemize}
 
@@ -457,7 +457,7 @@ One of the following applies:
     \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
     \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
     \item $\vltwo$ is the integer literal for $\vy$;
-    \item checking that $\vx \times \vy \leq \vx \times (\vy + 1) - 1$ holds yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item checking that $\vx > 0$ holds (which implies that $\vx \times \vy \leq \vx \times (\vy + 1) - 1$ holds) yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
     \item $\positions$ is the set of integers between $\vx \times \vy$ and $\vx \times (\vy + 1) - 1$, inclusive.
   \end{itemize}
 \end{itemize}
@@ -476,11 +476,11 @@ One of the following applies:
 \inferrule[range]{
   \reduceconstants(\tenv, \veone) \typearrow \vlone \OrTypeError\\\\
   \checktrans{\astlabel(\vlone) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vlone \eqname \lint(\vy)\\
+  \vlone \eqname \lint(\vx)\\
   \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
   \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vltwo \eqname \lint(\vx)\\
-  \checktrans{\vx \leq \vy}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+  \vltwo \eqname \lint(\vy)\\
+  \checktrans{\vy \leq \vx}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow \overname{\{n \;|\; \vx \leq n \leq \vy\}}{\positions}
 }
@@ -494,7 +494,7 @@ One of the following applies:
   \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
   \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
   \vltwo \eqname \lint(\vy)\\
-  \checktrans{\vx \leq \vx+\vy-1}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vy > 0}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow \overname{\{n \;|\; \vx \leq n \leq \vx+\vy-1\}}{\positions}
 }
@@ -508,7 +508,7 @@ One of the following applies:
   \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
   \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
   \vltwo \eqname \lint(\vy)\\
-  \checktrans{\vx \times \vy \leq \vx \times (\vy + 1) - 1}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vx > 0}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow
   \overname{\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}}{\positions}

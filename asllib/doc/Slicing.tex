@@ -333,7 +333,7 @@ The helper function
   \slicewidth(\overname{\slice}{\vslice}) \aslto
   \overname{\expr}{\vwidth}
 \]
-returns an expression $\vslices$ that represents the width of the slices given by $\vslice$.
+returns an expression $\vwidth$ that represents the width of the slices given by $\vslice$.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -344,15 +344,15 @@ One of the following applies:
     \item $\vwidth$ is the literal integer expression for $1$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{star}, \text{length}):
+  \item All of the following apply (\textsc{star, length}):
   \begin{itemize}
-    \item $\vslice$ is either a slice of the form \texttt{\_:*$\ve$} or \texttt{\_:+$\ve$};
+    \item $\vslice$ is either a slice of the form \texttt{\_*:$\ve$} or \texttt{\_+:$\ve$};
     \item $\vwidth$ is $\ve$;
   \end{itemize}
 
   \item All of the following apply (\textsc{range}):
   \begin{itemize}
-    \item $\vslice$ is a slice of the form \texttt{$\veone$..$\vetwo$};
+    \item $\vslice$ is a slice of the form \texttt{$\veone$:$\vetwo$};
     \item $\vwidth$ is the expression for $1 + (\veone - \vetwo)$.
   \end{itemize}
 \end{itemize}

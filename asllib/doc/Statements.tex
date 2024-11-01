@@ -369,9 +369,9 @@ One of the following applies:
         that is, $\SDecl(\LDKVar, \ldi, \None)$ (local declarations of \texttt{let} variables and constants require
         an initializing expression, otherwise they are rejected by an ASL parser);
   \item annotating the uninitialised local declarations $\ldi$ in $\tenv$ yields \\
-        $(\newtenv, \ldione)$;
-  \item $\news$ is a local declaration statement with variable keyword, local identifiers $\ldione$, and no initial expression,
-        that is, $\SDecl(\LDKVar, \ldione, \None)$.
+        $(\newtenv, \ldione, \veinit)$;
+  \item $\news$ is a local declaration statement with variable keyword, local identifiers $\ldione$, and the initializing expression $\veinit$,
+        that is, $\SDecl(\LDKVar, \ldione, \langle\veinit\rangle)$.
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
@@ -404,8 +404,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[none]{
-  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow (\newtenv, \ldione) \OrTypeError\\\\
-  \news \eqdef \SDecl(\LDKVar, \ldione, \None)
+  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow (\newtenv, \ldione, \veinit) \OrTypeError\\\\
+  \news \eqdef \SDecl(\LDKVar, \ldione, \langle\veinit\rangle)
 }{
   \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \None)}{\vs}) \typearrow (\news, \newtenv)
 }
@@ -486,46 +486,49 @@ The helper function
 \begin{array}{r}
 \annotatelocaldeclitemuninit(\overname{\staticenvs}{\tenv} \aslsep \overname{\localdeclitem}{\ldi})
 \typearrow \\
-(\overname{\staticenvs}{\newtenv} \times \overname{\localdeclitem}{\newldi})
+(\overname{\staticenvs}{\newtenv} \times \overname{\localdeclitem}{\newldi} \times \overname{\expr}{\veinit})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the local declaration for a variable declaration without an initializing expressions in the static environment $\tenv$,
-yielding a pair consisting of the annotated local declaration item $\newldi$ and the modified static environment $\newtenv$.
+yielding a triple consisting of the annotated local declaration item $\newldi$, the modified static environment $\newtenv$,
+and an initializing expression $\veinit$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{discard}):
-  \begin{itemize}
-    \item $\ldi$ corresponds to a discarding declaration, that is, $\LDIDiscard$;
-    \item $\newtenv$ is $\tenv$ and $\newldi$ is $\ldi$.
-  \end{itemize}
-
   \item All of the following apply (\textsc{typed}):
   \begin{itemize}
     \item $\ldi$ corresponds to a variable declaration via the local declaration item $\ldip$ and type annotation $\vt$,
           that is, $\LDITyped(\ldip, \vt)$;
+    \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
     \item annotating $\vt$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
     \item annotating the local declaration item $\ldip$ with the type $\vtp$ and local declaration keyword $\LDIVar$
           yields $(\newtenv, \newldip)$\ProseOrTypeError;
-    \item define $\newldi$ as the typed local declaration item with local declaration item $\newldip$ and type $\vtp$.
+    \item define $\newldi$ as the typed local declaration item with local declaration item $\newldip$, type $\vtp$, and
+          $\veinit$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item $\ldi$ does not correspond to a typed declaration item;
+    \item the result is a type error indicating that an initializing expression was expected.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[discard]{}{
-  \annotatelocaldeclitemuninit(\tenv, \overname{\LDIDiscard}{\ldi}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\ldi}{\newldi})
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[typed]{
   \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \None, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError\\\\
-  \newldi \eqdef \LDITyped(\newldip, \vtp)
+  \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
+  {
+    \begin{array}{r}
+      \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \None, \ldip} \typearrow \\
+      (\newtenv, \newldip) \OrTypeError
+    \end{array}
+  }\\
+  \newldi \eqdef \LDITyped(\newldip, \vtp, \veinit)
 }{
   \annotatelocaldeclitemuninit(\tenv, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow (\newtenv, \newldi)
 }
@@ -533,9 +536,9 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[error]{
-  \astlabel(\ldi) \in \{\LDIVar, \LDITuple\}
+  \astlabel(\ldi) \in \{\LDIDiscard, \LDIVar, \LDITuple\}
 }{
-  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow \TypeErrorVal{ExpectedTypedDeclaration}
+  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow \TypeErrorVal{ExpectedInitializingExpression}
 }
 \end{mathpar}
 \CodeSubsection{\AnnotateLocalDeclItemUninitBegin}{\AnnotateLocalDeclItemUninitEnd}{../Typing.ml}
