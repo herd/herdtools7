@@ -6,7 +6,7 @@ begin
 
   if size == '01' then
     esize = 16; elements = 4;
-  end
+  end;
 
 return 0;
-end
+end;

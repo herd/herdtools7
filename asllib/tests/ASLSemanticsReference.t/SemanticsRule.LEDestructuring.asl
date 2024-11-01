@@ -9,4 +9,4 @@ begin
   assert x == 3 && y == 42;
 
   return 0;
-end
+end;

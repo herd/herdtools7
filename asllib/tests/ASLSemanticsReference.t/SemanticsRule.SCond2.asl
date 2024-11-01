@@ -10,6 +10,6 @@ var y:integer;
       return -1;
   else
       return 0;
-  end
+  end;
 
-end
+end;

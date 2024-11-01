@@ -6,5 +6,5 @@ begin
     let testC : integer {0,2,4,6}    = size * 2;
     let testD : integer {1,2,4,8}    = size2 DIV 8;
     let testE : integer {7,15,31,63} = size2 - 1;
-end
+end;
 

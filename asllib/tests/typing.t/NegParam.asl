@@ -1,7 +1,7 @@
 func test(N: integer, bv: bits(N+1))
 begin
   let x: integer {0..N} = 0;
-end
+end;
 
 func main () => integer
 begin
@@ -9,4 +9,4 @@ begin
   test(-1, '');
 
   return 0;
-end
+end;

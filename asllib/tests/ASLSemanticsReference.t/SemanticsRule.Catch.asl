@@ -11,7 +11,7 @@ begin
         assert TRUE;
       otherwise =>
         assert FALSE;
-    end
+    end;
 
   return 0;
-end
+end;

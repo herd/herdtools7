@@ -3,7 +3,7 @@ type MyT of integer;
 func foo (t: MyT) => integer
 begin
   return t as integer;
-end
+end;
 
 func main () => integer
 begin
@@ -14,4 +14,4 @@ begin
   assert foo (z) == 0;
 
   return 0;
-end
+end;

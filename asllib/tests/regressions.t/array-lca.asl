@@ -6,5 +6,5 @@ begin
     var c : array[5] of A;
     var x = if (b) then a else c;
     return 0;
-end
+end;
 

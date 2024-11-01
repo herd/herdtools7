@@ -2,20 +2,20 @@ func halfsize0(op1 : bits(N DIV 2), op2 : bits(N DIV 2), N : integer) => bits(N)
 begin
     var value1 : bits(N) = [op1, Zeros(N DIV 2)];
     return value1;
-end
+end;
 
 func halfsize1{N}(op : bits(N)) => bits(N DIV 2)
 begin
     var result = Zeros (N);
     let halfsize = N DIV 2;
     return result[(2*halfsize)-1:halfsize];
-end
+end;
 
 func halfsize2{N}(op1 : bits(N) , op2 : bits(N)) => bits(N)
 begin
     var result = Zeros (2*N);
     return result[2*N-1:N];
-end
+end;
 
 func halfsize3(size : integer) => bits(size*8)
 begin
@@ -28,9 +28,9 @@ begin
     value = [highhalf, lowhalf];
 
     return value;
-end
+end;
 
 func returnOnes(size : integer) => bits(8*size)
 begin
     return Ones(8*size);
-end
+end;

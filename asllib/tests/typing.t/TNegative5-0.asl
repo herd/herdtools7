@@ -5,5 +5,5 @@ begin
     let testA : integer {0..3} = temp; // illegal as value of type integer {8,16} can't be assigned to var of type integer {0..3}.
                                        // Even though temp is guaranteed to be within the range 0..3 because it comes from size
 
-end
+end;
 

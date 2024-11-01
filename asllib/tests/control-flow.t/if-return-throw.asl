@@ -4,8 +4,8 @@ func foo (x: integer) => integer
 begin
   if x >= 0 then return x;
   else throw E {};
-  end
-end
+  end;
+end;
 
 func main () => integer
 begin
@@ -13,5 +13,4 @@ begin
   assert foo (3) == 3;
 
   return 0;
-end
-
+end;

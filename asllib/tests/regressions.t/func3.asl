@@ -1,43 +1,43 @@
 getter f1[] => integer
 begin
   return 3;
-end
+end;
 
 setter f1[] = v : integer
 begin
   assert v == 3;
-end
+end;
 
 getter f1b => integer
 begin
   return 4;
-end
+end;
 
 setter f1b = v : integer
 begin
   assert v == 4;
-end
+end;
 
 getter f2[x:integer] => integer
 begin
   return f1b + x;
-end
+end;
 
 setter f2[x:integer] = v : integer
 begin
   f1b = 4 * (v - x);
-end
+end;
 
 getter f3[x:integer] => integer
 begin
   return 0;
-end
+end;
 
 setter f3[x:integer] = v : integer
 begin
   assert x == 12;
   assert v == 13;
-end
+end;
 
 func main() => integer
 begin
@@ -57,7 +57,7 @@ begin
   f3[12] = 13;
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

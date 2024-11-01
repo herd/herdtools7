@@ -6,7 +6,7 @@ begin
     // apply is implementation defined.
     let temp               = UInt(a) * UInt(b);
     let testA : bits(temp) = Zeros(temp);
-end
+end;
 
 func main() => integer
 begin
@@ -14,4 +14,4 @@ begin
   // WARNING: aslref freezes
   // degraded13(Zeros(64) + 12345, Zeros(64) + 54321);
   return 0;
-end
+end;

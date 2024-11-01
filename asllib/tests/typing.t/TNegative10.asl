@@ -7,4 +7,4 @@ begin
     // <some code>
     let testA : bits(N) = Zeros(widthN);
 
-end
+end;

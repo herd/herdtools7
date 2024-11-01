@@ -15,4 +15,4 @@ begin
   assert -5 MOD 3 == 1;
 
   return 0;
-end
+end;

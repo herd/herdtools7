@@ -3,7 +3,7 @@
 func f() => (integer, integer, integer)
 begin
   return (3, 4, 5);
-end
+end;
 
 func multiple_return_values ()
 begin
@@ -11,7 +11,7 @@ begin
   assert a == 3;
   assert b == 4;
   assert c == 5;
-end
+end;
 
 func other_tuple_usages ()
 begin
@@ -20,7 +20,7 @@ begin
   assert a == 3;
   assert b == 4;
   assert c == 5;
-end
+end;
 
 func with_var ()
 begin
@@ -29,7 +29,7 @@ begin
   assert a == 3;
   assert b == 4;
   assert c == 5;
-end
+end;
 
 func main() => integer
 begin
@@ -38,7 +38,7 @@ begin
   with_var ();
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

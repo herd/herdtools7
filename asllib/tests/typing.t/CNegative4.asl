@@ -6,4 +6,4 @@ begin
         Ones(5),
         x
     ];
-end
+end;

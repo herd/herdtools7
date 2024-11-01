@@ -5,4 +5,4 @@ begin
   assert match_me == TRUE;
 
   return 0;
-end
+end;

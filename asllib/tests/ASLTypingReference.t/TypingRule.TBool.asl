@@ -3,7 +3,7 @@ type MyType of boolean;
 func foo (x: boolean) => boolean
 begin
   return FALSE --> x;
-end
+end;
 
 func main () => integer
 begin
@@ -17,4 +17,4 @@ begin
   assert x as boolean == x;
 
   return 0;
-end
+end;

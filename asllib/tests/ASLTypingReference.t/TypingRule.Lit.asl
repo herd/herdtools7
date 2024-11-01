@@ -12,4 +12,4 @@ begin
   var bv1 = '11 01'; // type: bits(4)
   var bv2 = ''; // type: bits(0)
   return 0;
-end
+end;

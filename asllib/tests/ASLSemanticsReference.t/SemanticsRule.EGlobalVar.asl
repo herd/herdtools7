@@ -6,4 +6,4 @@ func main () => integer
     assert global_x == 3;
     return 0;
 
-  end
+  end;

@@ -21,7 +21,7 @@ begin
   pair = (1, dataT2);
   // illegal since right hand side has anonymous, non-primitive type (integer, T2)
   // which does not subtype-satisfy named type pairT
-end
+end;
 
 func main () => integer
 begin
@@ -29,5 +29,5 @@ begin
   tsub01();
 
   return 0;
-end
+end;
 

@@ -9,14 +9,14 @@ begin
     catch
       when MyExceptionType => throw;
       otherwise => assert FALSE;
-    end
+    end;
     assert FALSE;
 
   catch
     when exn: MyExceptionType =>
       assert exn.a == 42; 
     otherwise => assert FALSE;
-  end
+  end;
 
   return 0;
-end
+end;

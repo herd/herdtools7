@@ -5,7 +5,7 @@ var global_a: a;
 func get_2(local_a: a) => integer
 begin
   return local_a[2];
-end
+end;
 
 func main () => integer
 begin
@@ -17,5 +17,5 @@ begin
   assert get_2(local_a) == 5;
 
   return 0;
-end
+end;
 

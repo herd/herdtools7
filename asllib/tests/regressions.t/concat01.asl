@@ -18,4 +18,4 @@ begin
   let p14 = [o6,o8];
   assert o14 == p14;
 return 0;
-end
+end;

@@ -1,9 +1,9 @@
 func sign (n: integer) => integer
 begin
   if n <= 0 then return -1;
-  else if n >= 0 then return 1; end
-  end
-end
+  else if n >= 0 then return 1; end;
+  end;
+end;
 
 func main () => integer
 begin
@@ -12,5 +12,4 @@ begin
   assert (sign (2) == 1);
 
   return 0;
-end
-
+end;

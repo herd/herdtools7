@@ -52,7 +52,7 @@ begin
   // Must be written as:
   let p_eq_eq_A1 = (a == b) == g;
   // Note: 'a == (b == g)' is not valid as it does not type satisfy.
-end
+end;
 
 func main() => integer
 begin
@@ -64,12 +64,12 @@ begin
             for n = 0 to 3 do
               operator_precedence (i, j, k, l[7:0], m[7:0], n[7:0], TRUE);
               operator_precedence (i, j, k, l[7:0], m[7:0], n[7:0], FALSE);
-            end
-          end
-        end
-      end
-    end
-  end
+            end;
+          end;
+        end;
+      end;
+    end;
+  end;
 
   return 0;
-end
+end;

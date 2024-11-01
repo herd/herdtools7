@@ -4,19 +4,19 @@ var global_x : integer = 0;
 func incr ()
 begin
   global_x = global_x + 1;
-end
+end;
 
 func incr2 () => integer
 begin
   let y = global_x;
   global_x = y + 1;
   return y;
-end
+end;
 
 func add (x : integer, y: integer) => integer
 begin
   return x + y;
-end
+end;
 
 func main () => integer
 begin
@@ -31,7 +31,7 @@ begin
   assert global_x == 5;
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

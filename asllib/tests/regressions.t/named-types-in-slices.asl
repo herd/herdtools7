@@ -5,11 +5,11 @@ var ones = Ones(64);
 func f(sz:pagros) => bits(sz)
 begin
   return ones[sz-1:0];
-end
+end;
 
 func main() => integer
 begin
   let x = f(8);
   print(x);
   return 0;
-end
+end;

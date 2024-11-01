@@ -5,5 +5,5 @@ begin
     var b = 0 as integer{0..M};
     if N == M then
         a = b; // illegal; only the static type is considered for type-checking
-    end
-end
+    end;
+end;

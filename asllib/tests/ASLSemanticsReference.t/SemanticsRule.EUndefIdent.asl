@@ -5,5 +5,5 @@ begin
   assert y;
 
   return 0;
-end  
+end;  
 

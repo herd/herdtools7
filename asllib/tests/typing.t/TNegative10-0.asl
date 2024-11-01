@@ -15,4 +15,4 @@ begin
     let letWidthN2               = widthN;
     let testB : bits(letWidthN1) = Zeros(letWidthN2); // illegal as type bits(letWidthN1) is different from bits(letWidthN2).
 
-end
+end;

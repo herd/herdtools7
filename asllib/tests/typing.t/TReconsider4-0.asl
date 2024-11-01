@@ -12,4 +12,4 @@ begin
     // to make the following legal.
     let testA : integer {CONST_ALLOWED_NUMS}     = 16;
     let testB : integer {0..CONST_ALLOWED_NUMS}  = 10;
-end
+end;

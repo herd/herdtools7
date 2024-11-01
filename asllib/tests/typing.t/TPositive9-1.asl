@@ -9,5 +9,5 @@ begin
     let testG : bits(M)   = Zeros(N) as bits(M);
     for i = 0 to 7 do
         let testH : bits(i) = Zeros(i); // i is both immutable and a constrained integer, so can be used as a bit width
-    end
-end
+    end;
+end;

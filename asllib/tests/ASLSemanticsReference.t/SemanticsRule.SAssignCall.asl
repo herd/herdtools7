@@ -1,7 +1,7 @@
 func f(x:integer) => (integer, integer)
 begin
   return (x,x+1);
-end
+end;
 
 func main() => integer
 begin
@@ -11,4 +11,4 @@ begin
 
   assert (a+b == 3);
   return 0;
-end
+end;

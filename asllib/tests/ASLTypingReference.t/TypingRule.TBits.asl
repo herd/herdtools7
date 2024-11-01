@@ -3,7 +3,7 @@ type MyType of bits(4);
 func foo (x: bits(4)) => bits(4)
 begin
   return NOT x;
-end
+end;
 
 func main () => integer
 begin
@@ -17,5 +17,5 @@ begin
   assert x as bits(4) == x;
 
   return 0;
-end
+end;
 

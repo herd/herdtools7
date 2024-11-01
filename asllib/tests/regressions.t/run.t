@@ -17,7 +17,7 @@ Type-checking errors:
   [1]
 
   $ aslref duplicate_function_args.asl
-  File duplicate_function_args.asl, line 1, character 0 to line 4, character 3:
+  File duplicate_function_args.asl, line 1, character 0 to line 4, character 4:
   ASL Typing error: cannot declare already declared element "i".
   [1]
 
@@ -43,7 +43,7 @@ Global ignored:
   $ cat >global_ignored.asl <<EOF
   > var - = 3 / 0;
   > func main () => integer
-  > begin return 0; end
+  > begin return 0; end;
   > EOF
 
   $ aslref global_ignored.asl
@@ -59,7 +59,7 @@ Constrained-type satisfaction:
   >   var x: integer { 8, 16 };
   >   var y: integer { 8, 16, 32};
   >   x = y; // illegal as domain of x is not a subset of domain of y
-  > end
+  > end;
   > EOF
 
   $ aslref type-sat1.asl
@@ -74,7 +74,7 @@ Constrained-type satisfaction:
   >   var x: integer { 8 , 16 };
   >   var y: integer;
   >   x = y; // illegal
-  > end
+  > end;
   > EOF
 
   $ aslref type-sat2.asl
@@ -101,7 +101,7 @@ Constrained-type satisfaction:
   >   // N is under-constrained integer
   >   var x: integer { 2, 4} = N;
   >    return;
-  > end
+  > end;
   > EOF
 
   $ aslref type-sat3.asl
@@ -116,7 +116,7 @@ Constrained-type satisfaction:
   >   // N is under-constrained integer
   >   var x: integer { 2, 4} = N;
   >   return;
-  > end
+  > end;
   > EOF
 
   $ aslref type-sat4.asl
@@ -131,7 +131,7 @@ Runtime checks:
   > begin
   >   let x: integer {1} = 2 as integer {1};
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref runtime-type-sat1.asl
@@ -143,12 +143,12 @@ Runtime checks:
   $ cat >runtime-type-sat2.asl <<EOF
   > func test(size: integer {3, 4}) begin
   >   let - = Zeros(4) as bits(size);
-  > end
+  > end;
   > func main () => integer begin
   >   test(4);
   >   test(3);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref runtime-type-sat2.asl
@@ -224,7 +224,7 @@ Parameterized integers:
   [1]
 
   $ aslref setter_without_getter.asl
-  File setter_without_getter.asl, line 1, character 0 to line 4, character 3:
+  File setter_without_getter.asl, line 1, character 0 to line 4, character 4:
   ASL Typing error: setter "f" does not have a corresponding getter of
     signature integer -> integer.
   [1]
@@ -390,13 +390,13 @@ Empty getters/setters
   [1]
   $ aslref empty-setter-nonempty-getter.asl
   File empty-setter-nonempty-getter.asl, line 6, character 0 to line 9,
-    character 3:
+    character 4:
   ASL Typing error: setter "f1" does not have a corresponding getter of
     signature  -> integer.
   [1]
   $ aslref nonempty-setter-empty-getter.asl
   File nonempty-setter-empty-getter.asl, line 6, character 0 to line 9,
-    character 3:
+    character 4:
   ASL Typing error: setter "f1" does not have a corresponding getter of
     signature  -> integer.
   [1]

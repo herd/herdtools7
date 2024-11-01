@@ -18,4 +18,4 @@ begin
   t2[CZ] = o.z;
 
   return 0;
-end
+end;

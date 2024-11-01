@@ -6,4 +6,4 @@ begin
   let - = '101010';
 
   return 0;
-end
+end;

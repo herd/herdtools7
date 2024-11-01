@@ -5,4 +5,4 @@ begin
     var b = 0 as integer{0..M};
 
     a = b; // illegal, would require ATC
-end
+end;

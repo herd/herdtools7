@@ -4,7 +4,7 @@ func foo {N, M} (bv: bits(N), bv2: bits(M)) => integer {N..M, 42}
 begin
   var x: integer {N..M, 42};
   return x;
-end
+end;
 
 func main () => integer
 begin
@@ -63,4 +63,4 @@ begin
   assert c == MyEnum1;
 
   return 0;
-end
+end;

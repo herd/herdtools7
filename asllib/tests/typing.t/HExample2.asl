@@ -24,12 +24,12 @@ begin
                 register[31:0] = Ones(32);
             else
                 register = ZeroExtend('0', 8*size);
-            end
+            end;
             return register;
-    end
-end
+    end;
+end;
 
 func register_read(size : integer) => bits(8*size)
 begin
     return Ones(8*size);
-end
+end;

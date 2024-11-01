@@ -4,7 +4,7 @@ func foo (x: (integer, boolean)) => (integer, boolean)
 begin
   let (z, y): (integer, boolean) = x;
   return (z + 1, FALSE --> y);
-end
+end;
 
 func main () => integer
 begin
@@ -19,4 +19,4 @@ begin
   assert x0 == 4 && x1 == TRUE;
 
   return 0;
-end
+end;

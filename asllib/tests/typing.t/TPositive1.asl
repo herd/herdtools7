@@ -14,4 +14,4 @@ begin
     // and the assignment to testD is legal
     let temp                    = testC;
     let testD : integer {-8..7} = temp;
-end
+end;

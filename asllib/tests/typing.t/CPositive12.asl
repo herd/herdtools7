@@ -9,7 +9,7 @@ getter X[n : Rnum_X, width : ElementSize] => bits(width)
 begin
     assert width IN {8,16,32,64};
     return n[width-1:0];
-end
+end;
 
 func ExtendReg(reg : Rnum_X, exttype : ExtendType, shift : integer{0..4}, N : ElementSize) => bits(N)
 begin
@@ -27,13 +27,13 @@ begin
         when ExtendType_UXTH => unsigned = TRUE;  len = 16;
         when ExtendType_UXTW => unsigned = TRUE;  len = 32;
         when ExtendType_UXTX => unsigned = TRUE;  len = 64;
-    end
+    end;
 
     let nbits = Min(len, N - shift) as integer{0..N};
     return Extend([val[0+:nbits] , Zeros(shift)], N, unsigned);
-end
+end;
 
 func CPositive12() => bits(8)
 begin
     return ExtendReg(0, ExtendType_SXTH, 2, 8);
-end
+end;

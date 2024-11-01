@@ -1,17 +1,17 @@
 func f0 {N} (x: bits(N)) => bits(N)
 begin
   return x;
-end
+end;
 
 func f1 {M} (x: bits(M)) => integer {0..M}
 begin
   return Len(x) as integer {0..M};
-end
+end;
 
 func f2 (L: integer) => bits(L)
 begin
   return Zeros(L);
-end
+end;
 
 func main() => integer
 begin
@@ -20,7 +20,7 @@ begin
   let z: bits(6) = f2 (6);
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

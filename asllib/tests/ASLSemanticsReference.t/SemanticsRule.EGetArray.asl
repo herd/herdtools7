@@ -9,4 +9,4 @@ begin
   assert my_array[2]==42;
 
   return 0;
-end 
+end; 

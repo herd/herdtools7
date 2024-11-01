@@ -5,5 +5,5 @@ begin
   assert x[3*:2] == '11';
 
   return 0;
-end
+end;
 

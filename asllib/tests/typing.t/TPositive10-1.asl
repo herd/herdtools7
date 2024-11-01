@@ -12,4 +12,4 @@ begin
   let width8b = global_width8b;
   let testB: bits(global_width8) = Zeros(width8b);
 
-end
+end;

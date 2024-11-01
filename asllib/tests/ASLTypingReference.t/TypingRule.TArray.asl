@@ -10,7 +10,7 @@ begin
   var y = x;
   y[3] = 2;
   return y;
-end
+end;
 
 func main () => integer
 begin
@@ -20,4 +20,4 @@ begin
   x = foo (x as array [4] of integer);
   let y: array [4] of integer = x;
   return 0;
-end
+end;

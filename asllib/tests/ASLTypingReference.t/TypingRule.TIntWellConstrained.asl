@@ -3,7 +3,7 @@ type MyType of integer {1..12};
 func foo (x: integer {1..12}) => integer {1..12}
 begin
   return x;
-end
+end;
 
 func main () => integer
 begin
@@ -17,5 +17,5 @@ begin
   assert x as integer {1..11} == x;
 
   return 0;
-end
+end;
 

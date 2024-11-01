@@ -6,5 +6,5 @@ begin
 
   assert x == 5 && y;
   return 0;
-end
+end;
 

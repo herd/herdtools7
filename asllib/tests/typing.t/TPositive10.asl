@@ -1,4 +1,4 @@
-func foo() => integer {0..7} begin return UNKNOWN: integer {0..7}; end
+func foo() => integer {0..7} begin return UNKNOWN: integer {0..7}; end;
 
 func positive10(N : integer {8,16}, M : integer {8,16}, O : integer {8})
 begin
@@ -40,4 +40,4 @@ begin
                                                                    // common point.
 
     let testH : bits(8) = Zeros(O); // as "O" only has a single allowed value, Zeros(O) evaluates to type bits(8). See R_QZJS
-end
+end;

@@ -16,4 +16,4 @@ begin
   // non-primitive type (integer, T2)
   // which does not subtype-satisfy named type pairT
   return 0;
-end
+end;

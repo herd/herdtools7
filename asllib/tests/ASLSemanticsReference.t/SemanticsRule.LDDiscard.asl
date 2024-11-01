@@ -5,4 +5,4 @@ begin
   assert TRUE;
 
   return 0;
-end
+end;

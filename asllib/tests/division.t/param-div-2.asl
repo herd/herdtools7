@@ -2,7 +2,7 @@ func foo {N} (bv: bits(N)) => bits(N)
 begin
   let y = Ones (N DIV 2);
   return [Zeros(N DIV 2), y];
-end
+end;
 
 func main () => integer
 begin
@@ -13,4 +13,4 @@ begin
   let - = foo ('101');
 
   return 0;
-end
+end;

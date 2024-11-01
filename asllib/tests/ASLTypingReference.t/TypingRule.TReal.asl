@@ -3,7 +3,7 @@ type MyType of real;
 func foo (x: real) => real
 begin
   return x + 1.0;
-end
+end;
 
 func main () => integer
 begin
@@ -17,5 +17,5 @@ begin
   assert x as real == x;
 
   return 0;
-end
+end;
 

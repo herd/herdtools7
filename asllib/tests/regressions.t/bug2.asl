@@ -5,4 +5,4 @@ begin
   let t = y[x: 0];
 
   return 0;
-end
+end;

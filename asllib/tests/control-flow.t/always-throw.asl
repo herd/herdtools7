@@ -3,7 +3,7 @@ type E of exception {};
 func always_throws () => integer
 begin
   throw E {};
-end
+end;
 
 func main () => integer
 begin
@@ -12,10 +12,9 @@ begin
     let x = always_throws ();
   catch
     when E => y = 42;
-  end
+  end;
 
   assert y == 42;
 
   return 0;
-end
-
+end;

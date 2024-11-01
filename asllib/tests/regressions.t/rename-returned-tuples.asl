@@ -1,13 +1,13 @@
 func foo (M: integer) => (bits (M), boolean)
 begin
   return (Zeros(M), TRUE);
-end
+end;
 
 func bar {A} (bv: bits(A), B: integer) => bits (B)
 begin
   let (result, b) = foo (B);
   return result;
-end
+end;
 
 func main () => integer
 begin
@@ -15,4 +15,4 @@ begin
   let y = bar ('0101', 4);
 
   return 0;
-end
+end;

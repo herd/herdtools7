@@ -4,7 +4,7 @@ func foo (x: bits(4) { [3:2] A, [1] B }) =>
   bits(4) { [3:2] A, [1] B }
 begin
   return x;
-end
+end;
 
 func main () => integer
 begin
@@ -18,4 +18,4 @@ begin
   assert x as bits(4) { [3:2] A, [1] B } == x;
 
   return 0;
-end
+end;

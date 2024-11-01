@@ -4,5 +4,5 @@ begin
   let y: integer = 0;
   let z = x DIVRM y;
   return 0;
-end
+end;
 

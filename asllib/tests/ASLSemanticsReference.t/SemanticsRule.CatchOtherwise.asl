@@ -12,7 +12,7 @@ begin
          assert FALSE;
        otherwise =>
          print("Otherwise");
-     end
+     end;
 
   return 0;
-end
+end;

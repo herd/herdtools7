@@ -51,4 +51,4 @@ begin
   let TTA_bis: bit = if E2H_bis == '0' then CPTR_bis.E2H0.TTA else CPTR_bis.E2H1.TTA;
 
   return 0;
-end
+end;

@@ -1,7 +1,7 @@
 func invokeMe {N: integer {8,16,32}} (x: bits(N))
 begin
   return;
-end
+end;
 
 func test(M: integer {8,16,32}, L: integer {8,16})
 begin
@@ -10,7 +10,7 @@ begin
 
   if (M != L) then
     return;
-  end
+  end;
   // Note the type-checker does not do full program analysis
   // So it does not know that M==L after this statement
 
@@ -30,7 +30,7 @@ begin
   // which complies with the declaration of parameter 'N'
   // The rules for subtype-satisfaction are satisfied since
   // the formal 'x' and the actual 'myL' are of the same determined width.
-end
+end;
 
 func main() => integer
 begin
@@ -39,7 +39,7 @@ begin
   test (32, 8);
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

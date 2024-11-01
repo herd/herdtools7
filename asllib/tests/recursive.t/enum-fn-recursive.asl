@@ -6,11 +6,11 @@ begin
   var f = D;
 
   return x;
-end
+end;
 
 type MyEnum2 of enumeration { D, E, F };
 
 func main () => integer
 begin
   return foo(0);
-end
+end;

@@ -1,7 +1,7 @@
 func Return42() => integer 
 begin
   return 42;
-end
+end;
 
 func main () => integer
 begin
@@ -11,4 +11,4 @@ begin
   assert y == 42;
 
   return 0;
-end 
+end; 

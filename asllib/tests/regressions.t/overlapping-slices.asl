@@ -6,4 +6,4 @@ type t of bits(64) {
 func main () => integer
 begin
   return 0;
-end
+end;

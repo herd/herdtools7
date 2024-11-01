@@ -7,7 +7,7 @@ begin
     throw Not_found {};
   else
     throw SyntaxException { message="syntax" };
-  end
+  end;
 
   return 0;
-end
+end;

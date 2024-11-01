@@ -7,4 +7,4 @@ begin
   let z4 : bits(4) = '0000';
   let o2 : bits(2) = '11';
   return 0;
-end
+end;

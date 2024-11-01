@@ -15,4 +15,4 @@ begin
   // legal since the right-hand-side has anonymous, 
   // primitive type (integer, integer)
   return 0;
-end
+end;

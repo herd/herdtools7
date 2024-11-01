@@ -5,4 +5,4 @@ begin
   assert z == '000000000000000';
 
   return 0;
-end
+end;

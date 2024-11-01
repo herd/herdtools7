@@ -4,4 +4,4 @@ begin
   let y = x[-20:4];
 
   return 0;
-end
+end;

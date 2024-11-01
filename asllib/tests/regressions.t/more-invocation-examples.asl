@@ -6,7 +6,7 @@ begin
 // Since wid is not a formal, it takes its value in an invocation from
 // the width of one of the the corresponding actuals
 return arg0;
-end
+end;
 
 // ------------------------------------------------------------
 // Cases for invocation of function `bus`
@@ -21,7 +21,7 @@ begin
   // The invocation width of bus's arg1 is therefore `8*2`
   // y type satisfies arg0: bits(16)
   return bus(x, y);
-end
+end;
 
 func legal_fun_underconstrained_actual (N: integer) => bits(N)
 begin
@@ -34,7 +34,7 @@ begin
   // the under-constrained width bitvector of determined width `N`
   // which is type satisfied by x
   return bus(x, y);
-end
+end;
 
 // func legal_fun_constrained_actual (arg: bits({32,64})) => bits(32)
 // begin
@@ -44,7 +44,7 @@ end
   // undetermined width bitvector
   // return bus(arg, [arg,arg])[31:0];
   // return Zeros(32);
-// end
+// end;
 
 // func illegal_fun_parameter_mismatch (N: integer{32,64}, M: integer{64,128})
 // begin
@@ -60,7 +60,7 @@ end
 
   // A checked type conversion might be useful...
   // let legal = bus(argN, argM as bits(N*2));
-// end
+// end;
 
 func main () => integer
 begin
@@ -71,7 +71,7 @@ begin
   // illegal_fun_parameter_mismatch (32, 64);
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

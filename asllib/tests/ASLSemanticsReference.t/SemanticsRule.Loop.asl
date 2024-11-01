@@ -6,7 +6,7 @@ begin
   while i <= 3 do
     assert i <= 3;
     i = i + 1;
-  end
+  end;
 
   return 0;
-end
+end;

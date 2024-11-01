@@ -3,8 +3,8 @@
       if TRUE then
          let i = 3;
          print (DecStr (i));
-      end
+      end;
       let i = "Some text";
       print (i);
-      return 0; 
-    end
+      return 0;
+    end;

@@ -527,7 +527,7 @@ let loop_limit == { None }
 
 let stmt ==
   annotated (
-    | terminated_by(END,
+    | terminated_by(END; SEMI_COLON,
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
       | CASE; ~=expr; OF; alt=case_alt_list;          <S_Case>
       | WHILE; ~=expr; ~=loop_limit; DO; ~=stmt_list; <S_While>
@@ -584,7 +584,7 @@ let params_opt == { [] } | braced(clist(opt_typed_identifier))
 let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
-let func_body == delimited(BEGIN, maybe_empty_stmt_list, END)
+let func_body == delimited(BEGIN, maybe_empty_stmt_list, END; SEMI_COLON)
 let ignored_or_identifier ==
   | MINUS; { global_ignored () }
   | IDENTIFIER

@@ -4,5 +4,5 @@ begin
   print("Hello, world!");
 
   return 0;
-end
+end;
 

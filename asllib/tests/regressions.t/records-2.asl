@@ -18,7 +18,7 @@ begin
     x.flag == y.flag &&
     x.count == y.count &&
     x.data == y.data;
-end
+end;
 
 func main() => integer
 begin
@@ -36,7 +36,7 @@ begin
   assert equal_a_record_ty (a, aa);
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

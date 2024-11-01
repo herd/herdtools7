@@ -4,4 +4,4 @@ begin
      foo ();
 
   return 0;
-end
+end;

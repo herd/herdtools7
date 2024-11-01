@@ -4,4 +4,4 @@ begin
   pass;
 
   return 0;
-end
+end;

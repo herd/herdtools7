@@ -5,8 +5,8 @@ begin
     x = x + 1;
     assert x == 1; // Only the first loop is executed
     return 3;
-  end
-end
+  end;
+end;
 
 func main () => integer
 begin
@@ -14,5 +14,5 @@ begin
   assert f () == 3;
 
   return 0;
-end
+end;
 

@@ -2,7 +2,7 @@ type MyType of integer;
 func foo (x: integer) => integer
 begin
   return x;
-end
+end;
 
 func main () => integer
 begin
@@ -16,5 +16,5 @@ begin
   assert x as integer == x;
 
   return 0;
-end
+end;
 

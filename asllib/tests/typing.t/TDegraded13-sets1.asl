@@ -7,4 +7,4 @@ begin
   // K*(K-1) is the second highest number that z can take.
   // The distance between K*K and K*(K-1) is K, so (K*K)-1 is not a value reachable by z.
   z = (K*K)-1; // Is this legal?
-end
+end;

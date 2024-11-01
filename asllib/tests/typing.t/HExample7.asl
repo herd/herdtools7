@@ -7,8 +7,8 @@ begin
     for i = 0 to 1 do
         for j = 0 to 1 do
             e = Ones(esize);
-        end
+        end;
         result[(2*i) *: esize] = e;
-    end
+    end;
     return result;
-end
+end;

@@ -12,5 +12,5 @@ begin
     // Combinations of both of the above are also legal
     let testE : integer {0,1,2,3,4}      = size;
     let testF : integer {0..128}         = size2;
-end
+end;
 

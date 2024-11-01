@@ -11,12 +11,12 @@ begin
   // x may be used as the expression in the return statement
   // since the return type is type satisfied by the type of x
   return x;
-end
+end;
 
 func raw_physical_addr(x: PHYSICAL_ADDR) => bits(32)
 begin
     return x;
-end
+end;
 
 func addresses()
 begin
@@ -32,7 +32,7 @@ begin
   addr     = raw_physical_addr(physical);
   physical = addr[31:0]; // a bitslice is of type bits(N)
   addr     = physical[31:0];
-end
+end;
 
 type Char of integer{0..255};
 type Byte of integer{0..255};
@@ -48,14 +48,14 @@ begin
   // global_c = 210;  // legal: c has the structure of integer and can be assigned an integer
   // global_c = K;    // legal: K has type Char and can be assigned to a Char
   // global_b = K;    // illegal: a Char cannot be directly assigned to a Byte
-end
+end;
 
 func main() => integer
 begin
   pass;
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

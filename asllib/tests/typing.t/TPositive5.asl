@@ -13,4 +13,4 @@ begin
     // The domain of the output of the ATC is the domain of the ATC, and this domain is used for type inference
     let temp                   = size as integer {0..1}; // temp has type integer {0..1}
     let testF : integer {0..1} = temp;
-end
+end;

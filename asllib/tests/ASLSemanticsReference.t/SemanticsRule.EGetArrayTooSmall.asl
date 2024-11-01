@@ -6,4 +6,4 @@ func main () => integer
 begin
   print(my_array[3]);
   return 0;
-end
+end;

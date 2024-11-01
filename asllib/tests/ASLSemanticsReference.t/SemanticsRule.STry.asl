@@ -9,7 +9,7 @@ begin
   catch 
     when MyExceptionType => assert TRUE;
     otherwise => assert FALSE;
-  end
+  end;
 
   return 0;
-end
+end;

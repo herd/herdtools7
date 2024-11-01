@@ -11,4 +11,4 @@ begin
   var pair: pairT = (1, dataT1);
   // legal since the right hand side has anonymous, non-primitive type (integer, T1)
 return 0;
-end
+end;

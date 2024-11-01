@@ -12,7 +12,7 @@ begin
   // Rounding
   assert(5 DIVRM 2 == 2);
   assert(11 DIVRM 3 == 3);
-end
+end;
 
 func check_mod()
 begin
@@ -20,7 +20,7 @@ begin
   assert(4 MOD 2 == 0);
   assert(3 MOD 2 == 1);
   assert(3 MOD 3 == 0);
-end
+end;
 
 func main () => integer
 begin
@@ -42,4 +42,4 @@ begin
   assert (-5) MOD 3 == 1;
 
   return 0;
-end
+end;

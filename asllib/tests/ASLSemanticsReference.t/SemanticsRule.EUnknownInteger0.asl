@@ -5,4 +5,4 @@ begin
   assert x == 0;
 
   return 0;
-end 
+end; 

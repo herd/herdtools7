@@ -7,5 +7,5 @@ begin
     let testC : bits(32) = Zeros(N)  as bits(32);
     let testD : bits(N)  = Zeros(32) as bits(N);
     let testE : bits(8)  = Zeros(32) as bits(8);
-end
+end;
 

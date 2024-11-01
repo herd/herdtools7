@@ -2,16 +2,16 @@ func test_uint {N} (bv: bits(N))
 begin
   for i = 0 to 1 << N do
     assert UInt (i[N:0]) == i;
-  end
-end
+  end;
+end;
 
 func test_sint {N} (bv: bits(N))
 begin
   for i = 0 to 1 << N  - 1 do
     assert SInt (i[N:0]) == i;
     assert SInt (['1', i[N-1:0]]) == i - 1 << N;
-  end
-end
+  end;
+end;
 
 // Extra main
 func main() => integer
@@ -81,7 +81,7 @@ begin
 
   for n = 0 to 25 do
     assert Log2(2 ^ n) == n;
-  end
+  end;
 
   assert ((1 << 1)  == 2);
   assert ((1 << 0)  == 1);
@@ -93,20 +93,20 @@ begin
     assert RoundUp (q) == m;
     assert RoundDown (q) == m;
     assert RoundTowardsZero (q) == m;
-  end
+  end;
 
   for m = -100 to 100 do
     let q = Real (m) / 3.0;
     assert RoundDown (q) == m DIVRM 3;
-  end
+  end;
 
   for a = -100 to 100 do
     for b = 1 to 5 do
       assert a MOD b + (a DIVRM b) * b == a;
       assert (b * a) DIV b == a;
-      if a MOD b == 0 then assert b * (a DIV b) == a; end
-    end
-  end
+      if a MOD b == 0 then assert b * (a DIV b) == a; end;
+    end;
+  end;
 
   for i = 1 to 10 do
     for p = 1 to 10 do
@@ -114,8 +114,8 @@ begin
       let (res, inexact) = SqrtRoundDown(x, p);
       assert Abs(res * res - x) <= 1.0 / 2.0 ^ p;
       assert inexact || res * res == x;
-    end
-  end
+    end;
+  end;
 
   assert BitCount ('000') == 0;
   assert BitCount ('101') == 2;
@@ -133,7 +133,7 @@ begin
   assert HighestSetBit ('') == -1;
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

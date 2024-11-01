@@ -1,12 +1,12 @@
 func foo {N} (x: bits(N)) => integer
 begin
   return N;
-end
+end;
 
 func bar (N: integer) => bits(N)
 begin
   return Zeros(N);
-end
+end;
 
 func main() => integer
 begin
@@ -14,5 +14,5 @@ begin
   assert bar(3) == '000';
 
   return 0;
-end
+end;
 

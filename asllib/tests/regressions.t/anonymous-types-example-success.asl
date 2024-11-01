@@ -21,7 +21,7 @@ begin
   // pair = (1, dataT2);
   // illegal since right hand side has anonymous, non-primitive type (integer, T2)
   // which does not subtype-satisfy named type pairT
-end
+end;
 
 func main () => integer
 begin
@@ -29,7 +29,7 @@ begin
   tsub01();
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

@@ -11,10 +11,10 @@ begin
      catch
        when MyExceptionType2 =>
          assert FALSE;
-     end
+     end;
   catch MyExceptionType1;
     assert TRUE; 
-  end
+  end;
 
   return 0;
-end
+end;

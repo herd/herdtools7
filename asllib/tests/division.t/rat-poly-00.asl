@@ -1,7 +1,7 @@
 func FirstHalf {N} (bv: bits(N)) => bits (N DIV 2)
 begin
   return bv[0+:N DIV 2];
-end
+end;
 
 func main () => integer
 begin
@@ -15,4 +15,4 @@ begin
   assert c == '000';
   
   return 0;
-end
+end;
