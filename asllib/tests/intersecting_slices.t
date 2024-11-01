@@ -46,6 +46,26 @@ Two maybe intersecting slices...
   ASL Dynamic error: overlapping slices i+:1, j+:1.
   [1]
 
+  $ cat>intersecting_slices3b.asl <<EOF
+  > func set_unset{N}(bv: bits(N), x: integer, y: integer) => bits(N)
+  >   begin
+  >   var bv2 = bv;
+  >   bv2[x,y] = '10'; // Should fail dynamically for x == y
+  >   return bv2;
+  > end
+  > func main () => integer
+  > begin
+  >   print (set_unset('1111', 2, 3));
+  >   print (set_unset('1111', 2, 2));
+  >   return 0;
+  > end
+  > EOF
+
+  $ aslref intersecting_slices3b.asl
+  '0111'
+  ASL Dynamic error: overlapping slices x+:1, y+:1.
+  [1]
+
 Two intersecting bitfields
   $ cat >intersecting_slices4.asl <<EOF
   > type myty of bits (4) { [0] f1, [0] f2 };
