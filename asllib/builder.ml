@@ -153,7 +153,18 @@ let stdlib =
     |> obfuscate "__stdlib_local_"
     |> List.map make_builtin)
 
-let with_stdlib ast = List.rev_append (Lazy.force stdlib) ast
+let stdlib0 =
+  let filename = "ASL Standard Library (V0 compatibility)"
+  and ast_string = Asl_stdlib.stdlib0 in
+  lazy
+    (from_string ~filename ~ast_string `ASLv0 (Some `Ast) default_parser_config
+    |> obfuscate "__stdlib_local_"
+    |> List.map make_builtin)
+
+let with_stdlib ast =
+  ast
+  |> List.rev_append (Lazy.force stdlib)
+  |> List.rev_append (Lazy.force stdlib0)
 
 let extract_name k d =
   let open AST in
