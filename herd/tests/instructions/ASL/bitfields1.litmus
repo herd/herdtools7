@@ -12,18 +12,18 @@ type MyBits of bits(5) {
 func constructor(b:: bits(5)) => MyBits
 begin
   return b;
-end
+end;
 
 func get_b(b::MyBits) => bits(3)
 begin
   return b.b;
-end
+end;
 
 func set_e(b::MyBits, e::bits(1)) => MyBits
 begin
   b.e = e;
   return b;
-end
+end;
 
 func main() => integer
 begin
@@ -35,7 +35,7 @@ begin
   let e = if c.c == '00101' then 1 else 0;
 
   return 0;
-end
+end;
 
 forall (
      0: main.0.b = 1

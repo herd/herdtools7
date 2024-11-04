@@ -10,6 +10,6 @@ begin
   constant y : bit = x[0] XOR '0' XOR '1';
   let res = UInt(y);
   return 0;
-end
+end;
 
 forall (0: main.0.res = 1)

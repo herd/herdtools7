@@ -28,7 +28,7 @@ begin
   let al = if CondAL == '1110' then 1 else 0;
 
   return 0;
-end
+end;
 
 forall (
      0: main.0.eq = 1

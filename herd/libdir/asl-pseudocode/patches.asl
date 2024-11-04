@@ -38,7 +38,7 @@ func GenMPAMatEL(acctype:: AccessType, el::bits(2)) => MPAMinfo
 begin
   var x : MPAMinfo;
   return x;
-end
+end;
 
 // =============================================================================
 
@@ -51,12 +51,12 @@ end
 func IsAligned(x :: bits(N), y::integer) => boolean
 begin
   return TRUE;
-end
+end;
 
 func IsAligned(x::integer, y::integer) => boolean
 begin
   return TRUE;
-end
+end;
 
 // =============================================================================
 
@@ -69,7 +69,7 @@ end
 func BigEndian(acctype:: AccessType) => boolean
 begin
   return FALSE;
-end
+end;
 
 // =============================================================================
 
@@ -83,7 +83,7 @@ end
 func IsFault(addrdesc:: AddressDescriptor) => boolean
 begin
   return FALSE;
-end
+end;
 
 // =============================================================================
 
@@ -98,7 +98,7 @@ func AArch64_TranslateAddress(address::bits(64), accdesc::AccessDescriptor, alig
 begin
   var full_addr : FullAddress;
   return CreateAddressDescriptor(address, full_addr, NormalNCMemAttr());
-end
+end;
 
 // =============================================================================
 
@@ -115,7 +115,7 @@ end
 func ELStateUsingAArch32K(el::bits(2), secure::boolean) => (boolean, boolean)
 begin
     return (TRUE, FALSE);
-end
+end;
 
 // =============================================================================
 
@@ -183,7 +183,7 @@ var PSTATE : ProcState;
 func GenerateAddress(base:bits(64), offset:bits(64), accdesc:AccessDescriptor) => bits(64)
 begin
   return base + offset;
-end
+end;
 
 // =============================================================================
 
@@ -199,7 +199,7 @@ func AArch64_BranchAddr
   (vaddress:bits(64), el:bits(2)) => bits(64)
 begin
   return vaddress;
-end
+end;
 
 // =============================================================================
 
@@ -218,9 +218,9 @@ begin
    if IsFeatureImplemented(FEAT_SPE) then
      SPEBranch
        (UNKNOWN:bits(64), branchtype, branch_conditional, branchtaken);
-    end
+    end;
     return;
-end
+end;
 
 // =============================================================================
 
@@ -232,7 +232,7 @@ end
 func UsingAArch32() => boolean
 begin
   return FALSE;
-end
+end;
 
 // AltDecodeBitMasks()
 // ===================
@@ -247,4 +247,4 @@ func AltDecodeBitMasks(immN:bit,imms:bits(6), immr:bits(6),
 => (bits(M), bits(M))
 begin
   throw NotImplemented {};
-end
+end;

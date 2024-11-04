@@ -9,6 +9,6 @@ begin
   write_memory(address, 64, data);
 
   return 0;
-end
+end;
 
 forall (x = 3)

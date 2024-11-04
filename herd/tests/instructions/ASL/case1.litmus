@@ -7,8 +7,8 @@ begin
   case i of 
     when 0 => return 1;
     when 1 => return 0;
-  end
-end
+  end;
+end;
 
 func main() => integer
 begin
@@ -16,6 +16,6 @@ begin
   let b = inv(1);
 
   return 0;
-end
+end;
 
 forall (0: main.0.a = 1 /\ 0: main.0.b = 0)

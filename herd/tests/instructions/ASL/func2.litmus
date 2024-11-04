@@ -6,13 +6,13 @@ ASL func02
 getter X[i::integer] => integer
 begin
     return i;
-end
+end;
 
 setter X[i::integer] = v::integer
 begin
     let internal_i = i;
     let internal_v = v;
-end
+end;
 
 func main() => integer
 begin
@@ -20,7 +20,7 @@ begin
     let x = X[4];
 
     return 0;
-end
+end;
 
 forall (
      0: main.0.x = 4

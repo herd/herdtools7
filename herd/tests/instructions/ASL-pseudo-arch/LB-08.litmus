@@ -15,7 +15,7 @@ begin
   let x0 = UInt(read);
   let data = one OR (read XOR read);
   write_memory(y, 64, data);
-end
+end;
 
 func T1(x::bits(64), y:: bits(64))
 begin
@@ -23,7 +23,7 @@ begin
   let x1 = UInt(read);
   let data = if read == one then one else one;
   write_memory(x, 64, data);
-end
+end;
 
 func main() => integer
 begin
@@ -34,6 +34,6 @@ begin
   T1(x, y);
 
   return 0;
-end
+end;
 
 exists (0: T0.0.x0 = 1 /\ 0: T1.0.x1 = 1)

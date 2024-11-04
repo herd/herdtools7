@@ -6,12 +6,12 @@ func f(x::integer) => integer
 begin
   let y = x;
   return 3;
-end
+end;
 
 func main() => integer
 begin
   let a = f (3);
 
   return 0;
-end
+end;
 

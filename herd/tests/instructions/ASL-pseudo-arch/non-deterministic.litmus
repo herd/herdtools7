@@ -8,14 +8,14 @@ begin
   let b = SomeBoolean();
   if b then
     return 1;
-  end
+  end;
   return 2;
-end
+end;
 
 func main() => integer
 begin
   let z = g();
   return 0;
-end
+end;
 
 locations [0:main.0.z;]
