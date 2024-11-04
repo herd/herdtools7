@@ -94,7 +94,6 @@ let e_binop (e1, op, e2) =
   E_Binop (op, e1, e2)
 
 %}
-
 (* ------------------------------------------------------------------------- *)
 
 %type <AST.t> ast
@@ -444,7 +443,7 @@ let case_alt_list ==
 let otherwise == OTHERWISE; ARROW; stmt_list
 let otherwise_opt == ioption(otherwise)
 let catcher == WHEN; ~=ioption(terminated(IDENTIFIER, COLON)); ~=ty; ARROW; ~=stmt_list; <>
-let loop_limit == { None }
+let loop_limit == ioption(LOOPLIMIT; expr)
 
 let stmt ==
   annotated (

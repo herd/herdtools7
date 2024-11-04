@@ -72,9 +72,7 @@ let tr_name s = match s with
 | "IN"            -> IN
 | "integer"       -> INTEGER
 | "let"           -> LET
-(*
-| "limit"         -> LIMIT
- *)
+| "looplimit"     -> LOOPLIMIT
 | "MOD"           -> MOD
 | "NOT"           -> NOT
 | "of"            -> OF
