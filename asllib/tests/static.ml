@@ -32,6 +32,7 @@ let build_consts () =
         parameters = [];
         return_type = Some integer;
         subprogram_type = ST_Function;
+        builtin = false;
       }
     |> __POS_OF__ |> add_pos_from_pos_of
   in

@@ -376,6 +376,9 @@ type func = {
   return_type : ty option;
   subprogram_type : subprogram_type;
   recurse_limit : expr option;
+  builtin : bool;
+      (** Builtin functions are treated specially when checking parameters at
+          call sites - see [Typing.insert_stdlib_param]. *)
 }
 (** Function types in the AST. For the moment, they represent getters, setters,
     functions, procedures and primitives. *)

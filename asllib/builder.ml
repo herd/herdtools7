@@ -135,11 +135,23 @@ let from_string ~filename ~ast_string version ast_type parser_config =
 
 let obfuscate prefix = ASTUtils.rename_locals (( ^ ) prefix)
 
+let make_builtin d =
+  let open AST in
+  match d.desc with
+  | D_Func f -> D_Func { f with builtin = true } |> ASTUtils.add_pos_from d
+  | D_TypeDecl _ ->
+      prerr_string "Type declaration cannot be builtin";
+      exit 1
+  | D_GlobalStorage _ ->
+      prerr_string "Storage declaration cannot be builtin";
+      exit 1
+
 let stdlib =
   let filename = "ASL Standard Library" and ast_string = Asl_stdlib.stdlib in
   lazy
     (from_string ~filename ~ast_string `ASLv1 (Some `Ast) default_parser_config
-    |> obfuscate "__stdlib_local_")
+    |> obfuscate "__stdlib_local_"
+    |> List.map make_builtin)
 
 let with_stdlib ast = List.rev_append (Lazy.force stdlib) ast
 
@@ -166,6 +178,10 @@ let is_stdlib_name =
   fun name -> ISet.mem name (Lazy.force set)
 
 let with_primitives ?(loc = ASTUtils.dummy_annotated) primitives =
-  List.map AST.(fun (f, _) -> D_Func f |> ASTUtils.add_pos_from loc) primitives
+  List.map
+    AST.(
+      fun (f, _) ->
+        D_Func { f with builtin = true } |> ASTUtils.add_pos_from loc)
+    primitives
   |> obfuscate "__primitive_local_"
   |> List.rev_append

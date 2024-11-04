@@ -533,6 +533,7 @@ let decl ==
             return_type = Some return_type;
             subprogram_type = ST_Function;
             recurse_limit;
+            builtin = false;
           }
         }
     (* End *)
@@ -547,6 +548,7 @@ let decl ==
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            builtin = false;
           }
         }
     (* End *)
@@ -563,6 +565,7 @@ let decl ==
               body = SB_ASL func_body;
               subprogram_type = ST_Getter;
               recurse_limit = None;
+              builtin = false;
             }
         }
     (* End *)
@@ -579,6 +582,7 @@ let decl ==
               body = SB_ASL func_body;
               subprogram_type = ST_Setter;
               recurse_limit = None;
+              builtin = false;
             }
         }
     (* End *)
@@ -621,6 +625,7 @@ let opn := body=stmt; EOF;
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            builtin = false;
           }
         |> ASTUtils.add_pos_from body
       ]

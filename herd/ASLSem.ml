@@ -607,7 +607,7 @@ module Make (C : Config) = struct
       and body = SB_Primitive
       and recurse_limit = None;
       and return_type = returns in
-      ( { name; args; body; return_type; parameters; subprogram_type; recurse_limit }
+      ( { name; args; body; return_type; parameters; subprogram_type; recurse_limit; builtin = true }
         [@warning "-40-42"],
         f )
 

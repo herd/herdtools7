@@ -97,6 +97,20 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
   rename |: TypingRule.RenameTyEqs
 (* End *)
 
+(** Special treatment to infer the single parameter [N] of a stdlib/primitive
+      function with a single argument of type [bits(N)]. *)
+let insert_stdlib_param func_sig ~params ~arg_types =
+  match (func_sig.parameters, func_sig.args, arg_types) with
+  (* Check for a standard library declaration name{n}(bits(n)), called with no
+     parameters and a single argument of type bits(e) *)
+  | ( [ (n, _) ],
+      [ (_, { desc = T_Bits ({ desc = E_Var n' }, _) }) ],
+      [ { desc = T_Bits (e, _) } ] )
+    when func_sig.builtin && String.equal n n' && List.is_empty params ->
+      (* insert e into parameter list *)
+      [ (T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from e, e) ]
+  | _ -> params
+
 (* Begin Lit *)
 let annotate_literal = function
   | L_Int _ as v -> integer_exact' (literal v)
@@ -1079,6 +1093,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         || (func_sig.subprogram_type = ST_Getter && call_type = ST_Function))
       @@ fun () -> fatal_from loc (MismatchedReturnValue name)
     in
+    (* Insert omitted parameter for standard library call *)
+    let params = insert_stdlib_param func_sig ~params ~arg_types in
     (* Check correct number of parameters/arguments supplied *)
     let () =
       if List.compare_lengths func_sig.parameters params != 0 then
