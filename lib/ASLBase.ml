@@ -224,6 +224,9 @@ let stmts_from_string s =
   let module Parser = Parser.Make(struct
     let allow_no_end_semicolon = false
   end) in
+  let module Lexer = Lexer.Make(struct
+    let allow_double_underscore = false
+  end) in
   try Parser.stmts Lexer.token lexbuf
   with e ->
     Warn.fatal "Internal parsing of \"%s\" failed with %s" s

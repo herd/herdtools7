@@ -27,7 +27,16 @@ let _debug = false
 type token = Tokens.token
 type ast_type = [ `Opn | `Ast ]
 type version = [ `ASLv0 | `ASLv1 ]
+
+type parser_config = {
+  allow_no_end_semicolon : bool;
+  allow_double_underscore : bool;
+}
+
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
+
+let default_parser_config =
+  { allow_no_end_semicolon = false; allow_double_underscore = false }
 
 let select_type ~opn ~ast = function
   | Some `Opn -> opn
@@ -40,7 +49,7 @@ let lexbuf_set_filename lexbuf pos_fname =
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname };
   lexbuf.lex_start_p <- { lexbuf.lex_start_p with pos_fname }
 
-let from_lexbuf ast_type allow_no_end_semicolon version (lexbuf : lexbuf) =
+let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
   let open Error in
   let () =
     if _debug then
@@ -57,7 +66,10 @@ let from_lexbuf ast_type allow_no_end_semicolon version (lexbuf : lexbuf) =
   match version with
   | `ASLv1 -> (
       let module Parser = Parser.Make (struct
-        let allow_no_end_semicolon = allow_no_end_semicolon
+        let allow_no_end_semicolon = parser_config.allow_no_end_semicolon
+      end) in
+      let module Lexer = Lexer.Make (struct
+        let allow_double_underscore = parser_config.allow_double_underscore
       end) in
       let parse = select_type ~opn:Parser.opn ~ast:Parser.ast ast_type in
       try parse Lexer.token lexbuf with
@@ -68,8 +80,8 @@ let from_lexbuf ast_type allow_no_end_semicolon version (lexbuf : lexbuf) =
       and lexer0 = Lexer0.token () in
       try parse lexer0 lexbuf with Parser0.Error -> cannot_parse lexbuf)
 
-let from_lexbuf' ast_type allow_no_end_semicolon version lexbuf () =
-  from_lexbuf ast_type allow_no_end_semicolon version lexbuf
+let from_lexbuf' ast_type parser_config version lexbuf () =
+  from_lexbuf ast_type parser_config version lexbuf
 
 let close_after chan f =
   try
@@ -86,28 +98,24 @@ let open_file filename =
   lexbuf_set_filename lexbuf filename;
   (lexbuf, chan)
 
-let from_file ?ast_type ?(allow_no_end_semicolon = false) version f =
+let from_file ?ast_type ?(parser_config = default_parser_config) version f =
   let lexbuf, chan = open_file f in
-  close_after chan
-  @@ from_lexbuf' ast_type allow_no_end_semicolon version lexbuf
+  close_after chan @@ from_lexbuf' ast_type parser_config version lexbuf
 
-let from_file_result ?ast_type ?(allow_no_end_semicolon = false) version f =
+let from_file_result ?ast_type ?(parser_config = default_parser_config) version
+    f =
   let lexbuf, chan = open_file f in
   close_after chan @@ Error.intercept
-  @@ from_lexbuf' ast_type allow_no_end_semicolon version lexbuf
+  @@ from_lexbuf' ast_type parser_config version lexbuf
 
-let from_lexer_lexbuf ?ast_type ?(allow_no_end_semicolon = false) version _lexer
-    lexbuf =
-  Error.intercept
-    (from_lexbuf' ast_type allow_no_end_semicolon version lexbuf)
-    ()
+let from_lexer_lexbuf ?ast_type ?(parser_config = default_parser_config) version
+    _lexer lexbuf =
+  Error.intercept (from_lexbuf' ast_type parser_config version lexbuf) ()
 
-let from_file_multi_version ?ast_type ?allow_no_end_semicolon = function
+let from_file_multi_version ?ast_type ?parser_config = function
   | `Any -> (
       fun fname ->
-        match
-          from_file_result ?ast_type ?allow_no_end_semicolon `ASLv0 fname
-        with
+        match from_file_result ?ast_type ?parser_config `ASLv0 fname with
         | Error e ->
             let () =
               Format.eprintf
@@ -115,22 +123,22 @@ let from_file_multi_version ?ast_type ?allow_no_end_semicolon = function
                  ...@]@."
                 Error.pp_error e
             in
-            from_file_result ?ast_type ?allow_no_end_semicolon `ASLv1 fname
+            from_file_result ?ast_type ?parser_config `ASLv1 fname
         | Ok ast -> Ok ast)
   | (`ASLv0 | `ASLv1) as version ->
-      from_file_result ?ast_type ?allow_no_end_semicolon version
+      from_file_result ?ast_type ?parser_config version
 
-let from_string ~filename ~ast_string version ast_type allow_no_end_semicolon =
+let from_string ~filename ~ast_string version ast_type parser_config =
   let lexbuf = Lexing.from_string ~with_positions:true ast_string in
   lexbuf_set_filename lexbuf filename;
-  from_lexbuf ast_type allow_no_end_semicolon version lexbuf
+  from_lexbuf ast_type parser_config version lexbuf
 
 let obfuscate prefix = ASTUtils.rename_locals (( ^ ) prefix)
 
 let stdlib =
   let filename = "ASL Standard Library" and ast_string = Asl_stdlib.stdlib in
   lazy
-    (from_string ~filename ~ast_string `ASLv1 (Some `Ast) false
+    (from_string ~filename ~ast_string `ASLv1 (Some `Ast) default_parser_config
     |> obfuscate "__stdlib_local_")
 
 let with_stdlib ast = List.rev_append (Lazy.force stdlib) ast

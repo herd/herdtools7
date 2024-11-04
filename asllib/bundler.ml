@@ -54,6 +54,9 @@ let build_ast_from_file ?(is_opn = false) f =
   let module Parser = Parser.Make (struct
     let allow_no_end_semicolon = false
   end) in
+  let module Lexer = Lexer.Make (struct
+    let allow_double_underscore = false
+  end) in
   let parse = if is_opn then Parser.opn else Parser.ast in
   let chan = open_in f in
   let lexbuf = Lexing.from_channel chan in

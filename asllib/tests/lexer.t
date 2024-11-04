@@ -98,3 +98,25 @@ Some problems with bitvectors and bitmasks:
   ASL Typing error: cannot find a common ancestor to those two types bits(0)
     and bits(1).
   [1]
+
+Check that variables starting with `__` are reserved:
+  $ cat >reserved0.asl <<EOF
+  > var pattern: bits(4) = '0001';
+  > var _okay: integer = 1;
+  > var __reserved: integer = 2;
+  > func main() => integer
+  > begin
+  >   print(pattern);
+  >   print(_okay);
+  >   print(__reserved);
+  >   return 0;
+  > end;
+  > EOF
+
+  $ aslref reserved0.asl
+  ASL Lexical error: "__reserved" is a reserved keyword.
+  [1]
+  $ aslref --allow-double-underscore reserved0.asl
+  '0001'
+  1
+  2

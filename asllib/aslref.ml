@@ -30,6 +30,7 @@ type args = {
   files : (file_type * string) list;
   opn : string option;
   allow_no_end_semicolon : bool;
+  allow_double_underscore : bool;
   print_ast : bool;
   print_serialized : bool;
   print_typed : bool;
@@ -46,6 +47,7 @@ let parse_args () =
   let target_files = ref [] in
   let exec = ref true in
   let allow_no_end_semicolon = ref false in
+  let allow_double_underscore = ref false in
   let print_ast = ref false in
   let print_serialized = ref false in
   let print_typed = ref false in
@@ -64,6 +66,10 @@ let parse_args () =
       ( "--allow-no-end-semicolon",
         Arg.Set allow_no_end_semicolon,
         " Allow block statements to terminate with 'end' instead of 'end;'." );
+      ( "--allow-double-underscore",
+        Arg.Set allow_double_underscore,
+        " Allow the usage of variables beginning with double underscores \
+         ('__')." );
       ( "--print",
         Arg.Set print_ast,
         " Print the parsed AST to stdout before executing it." );
@@ -134,6 +140,7 @@ let parse_args () =
       files = !target_files;
       opn = (match !opn with "" -> None | s -> Some s);
       allow_no_end_semicolon = !allow_no_end_semicolon;
+      allow_double_underscore = !allow_double_underscore;
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
@@ -175,13 +182,19 @@ let or_exit f =
 let () =
   let args = parse_args () in
 
+  let parser_config =
+    let allow_no_end_semicolon = args.allow_no_end_semicolon in
+    let allow_double_underscore = args.allow_double_underscore in
+    let open Builder in
+    { allow_no_end_semicolon; allow_double_underscore }
+  in
+
   let extra_main =
     match args.opn with
     | None -> []
     | Some fname ->
         or_exit @@ fun () ->
-        Builder.from_file ~ast_type:`Opn
-          ~allow_no_end_semicolon:args.allow_no_end_semicolon `ASLv1 fname
+        Builder.from_file ~ast_type:`Opn ~parser_config `ASLv1 fname
   in
 
   let ast =
@@ -191,10 +204,7 @@ let () =
         | NormalV0 | PatchV0 -> `ASLv0
         | NormalV1 | PatchV1 -> `ASLv1
       in
-      let this_ast =
-        Builder.from_file ~allow_no_end_semicolon:args.allow_no_end_semicolon
-          version fname
-      in
+      let this_ast = Builder.from_file ~parser_config version fname in
       match ft with
       | NormalV0 | NormalV1 -> List.rev_append this_ast ast
       | PatchV1 | PatchV0 -> ASTUtils.patch ~src:ast ~patches:this_ast

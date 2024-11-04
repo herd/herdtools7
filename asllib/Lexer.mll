@@ -22,15 +22,23 @@
 
 {
 
-exception LexerError
-
 open Tokens
 
 open Error
 
+module type CONFIG = sig
+    (** Allow variables starting with a double underscore (__) *)
+    val allow_double_underscore : bool
+end
+
+module Make (Config : CONFIG) = struct
+
+exception LexerError
+
 let new_line lexbuf = Lexing.new_line lexbuf; lexbuf
 let bitvector_lit lxm = BITVECTOR_LIT (Bitvector.of_string lxm)
 let mask_lit lxm = MASK_LIT (Bitvector.mask_of_string lxm)
+let reserved_err s = Error.fatal_unknown_pos @@ (Error.ReservedIdentifier s)
 
 let tr_name s = match s with
 | "AND"           -> AND
@@ -98,37 +106,36 @@ let tr_name s = match s with
 | "with"          -> WITH
 (* Reserved identifiers *)
 | "SAMPLE" | "UNSTABLE"
-| "_" | "access" | "advice" | "after"
-| "any" | "aspect"
-| "assume" | "assumes" | "before"
+| "_" | "any"
+| "assume" | "assumes"
 | "call" | "cast"
 | "class" | "dict"
 | "endcase" | "endcatch" | "endclass"
 | "endevent" | "endfor" | "endfunc" | "endgetter"
 | "endif" | "endmodule" | "endnamespace" | "endpackage"
 | "endproperty" | "endrule" | "endsetter" | "endtemplate"
-| "endtry" | "endwhile" | "entry"
-| "event" | "export" | "expression"
+| "endtry" | "endwhile"
+| "event" | "export"
 | "extends" | "extern" | "feature"
-| "get" | "gives"
+| "gives"
 | "iff" | "implies" | "import"
 | "intersect" | "intrinsic"
-| "invariant" | "is" | "list"
+| "invariant" | "list"
 | "map" | "module" | "namespace" | "newevent"
 | "newmap" | "original"
-| "package" | "parallel" (* | "pattern" *)
-| "pointcut" | "port" | "private"
+| "package" | "parallel"
+| "port" | "private"
 | "profile" | "property" | "protected" | "public"
-| "replace"
 | "requires" | "rethrow" | "rule"
-| "set" | "shared" | "signal"
-| "statements" | "template"
+| "shared" | "signal"
+| "template"
 | "typeof" | "union"
-| "using" | "watch"
-| "ztype" -> Error.fatal_unknown_pos @@ (Error.ReservedIdentifier s)
+| "using"
+| "ztype" -> reserved_err s
+| x when not Config.allow_double_underscore
+         && ASTUtils.string_starts_with ~prefix:"__" x -> reserved_err x
 (* End of reserved identifiers *)
 | x               -> IDENTIFIER x
-
 }
 
 let digit = ['0'-'9']
@@ -243,3 +250,6 @@ and token = parse
     | identifier as lxm        { tr_name lxm                      }
     | eof                      { EOF                              }
     | ""                       { raise LexerError                 }
+{
+end
+}

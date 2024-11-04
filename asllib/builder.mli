@@ -22,34 +22,41 @@
 
 open Lexing
 
-(**
-   Builds an {!AST.t} from some files.
-
-   In this file the optional argument allow_no_end_semicolon - defaults to false
-   *)
+(** Builds an {!AST.t} from some files. *)
 
 type token = Tokens.token
 type ast_type = [ `Opn | `Ast ]
 type version = [ `ASLv0 | `ASLv1 ]
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
 
+type parser_config = {
+  allow_no_end_semicolon : bool;
+  allow_double_underscore : bool;
+}
+
+val default_parser_config : parser_config
+(** The default parser configuration. It sets the following:
+        allow_no_end_semicolon = false
+        allow_double_underscore = false
+    *)
+
 val from_file_result :
   ?ast_type:ast_type ->
-  ?allow_no_end_semicolon:bool ->
+  ?parser_config:parser_config ->
   version ->
   string ->
   AST.t Error.result
 
 val from_file :
   ?ast_type:ast_type ->
-  ?allow_no_end_semicolon:bool ->
+  ?parser_config:parser_config ->
   version ->
   string ->
   AST.t
 
 val from_lexer_lexbuf :
   ?ast_type:ast_type ->
-  ?allow_no_end_semicolon:bool ->
+  ?parser_config:parser_config ->
   version ->
   'a ->
   lexbuf ->
@@ -57,7 +64,7 @@ val from_lexer_lexbuf :
 
 val from_file_multi_version :
   ?ast_type:ast_type ->
-  ?allow_no_end_semicolon:bool ->
+  ?parser_config:parser_config ->
   version_selector ->
   string ->
   AST.t Error.result
