@@ -1240,23 +1240,27 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Pattern_Not new_q |: TypingRule.PNot
     (* End *)
     (* Begin PSingle *)
-    | Pattern_Single e ->
+    | Pattern_Single e as p ->
         let t_e, e' = annotate_expr env e in
         let+ () =
          fun () ->
           let t_struct = Types.make_anonymous env t
           and t_e_struct = Types.make_anonymous env t_e in
           match (t_struct.desc, t_e_struct.desc) with
-          | T_Bool, T_Bool | T_Real, T_Real | T_Int _, T_Int _ -> ()
+          | T_Bool, T_Bool
+          | T_Real, T_Real
+          | T_Int _, T_Int _
+          | T_String, T_String ->
+              ()
           | T_Bits _, T_Bits _ ->
               check_bits_equal_width loc env t_struct t_e_struct ()
           | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
-          | _ -> fatal_from loc (Error.BadTypesForBinop (EQ_OP, t, t_e))
+          | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
         Pattern_Single e' |: TypingRule.PSingle
     (* End *)
     (* Begin PGeq *)
-    | Pattern_Geq e ->
+    | Pattern_Geq e as p ->
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
@@ -1265,12 +1269,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and t_e_struct = Types.get_structure env t_e in
           match (t_struct.desc, t_e_struct.desc) with
           | T_Real, T_Real | T_Int _, T_Int _ -> ()
-          | _ -> fatal_from loc (Error.BadTypesForBinop (GEQ, t, t_e))
+          | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
         Pattern_Geq e' |: TypingRule.PGeq
     (* End *)
     (* Begin PLeq *)
-    | Pattern_Leq e ->
+    | Pattern_Leq e as p ->
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
@@ -1279,12 +1283,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and t_e_anon = Types.make_anonymous env t_e in
           match (t_anon.desc, t_e_anon.desc) with
           | T_Real, T_Real | T_Int _, T_Int _ -> ()
-          | _ -> fatal_from loc (Error.BadTypesForBinop (LEQ, t, t_e))
+          | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
         Pattern_Leq e' |: TypingRule.PLeq
     (* End *)
     (* Begin PRange *)
-    | Pattern_Range (e1, e2) ->
+    | Pattern_Range (e1, e2) as p ->
         let t_e1, e1' = annotate_expr env e1
         and t_e2, e2' = annotate_expr env e2 in
         let+ () =
@@ -1294,9 +1298,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and t_e2_anon = Types.make_anonymous env t_e2 in
           match (t_anon.desc, t_e1_anon.desc, t_e2_anon.desc) with
           | T_Real, T_Real, T_Real | T_Int _, T_Int _, T_Int _ -> ()
-          | _, T_Int _, T_Int _ | _, T_Real, T_Real ->
-              fatal_from loc (Error.BadTypesForBinop (GEQ, t, t_e1))
-          | _ -> fatal_from loc (Error.BadTypesForBinop (GEQ, t_e1, t_e2))
+          | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
         Pattern_Range (e1', e2') |: TypingRule.PRange
     (* End *)
