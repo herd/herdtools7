@@ -3,15 +3,15 @@ begin
   return N;
 end;
 
-func bar (N: integer) => bits(N)
+func bar{N}() => bits(N)
 begin
-  return Zeros(N);
+  return Zeros{N};
 end;
 
 func main() => integer
 begin
-  assert 3 == foo ('101');
-  assert bar(3) == '000';
+  assert 3 == foo{3}('101');
+  assert bar{3} == '000';
 
   return 0;
 end;

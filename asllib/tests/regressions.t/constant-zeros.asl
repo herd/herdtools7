@@ -1,4 +1,4 @@
-constant z = Zeros(15);
+constant z = Zeros{15};
 
 func main () => integer
 begin

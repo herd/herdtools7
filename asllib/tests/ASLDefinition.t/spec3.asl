@@ -23,7 +23,7 @@ end;
 
 func main() => integer
 begin
-    X = Dot8(X, X);
+    X = Dot8{16}(X, X);
     var fib10 = Fib(10);
     return 0;
 end;

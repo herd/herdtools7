@@ -10,5 +10,5 @@ begin
 end;
 func negative5() => integer
 begin
-  printLengths (3, Zeros(12)); // illegal
+  printLengths{12}(3, Zeros{12}); // illegal
 end;

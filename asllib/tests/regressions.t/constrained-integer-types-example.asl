@@ -56,8 +56,8 @@ begin
   // RHS is not statically evaluable so w2==>w2
   // The set of possible widths of a bitvector must be statically evaluable.
   // All of the following are:
-  var b1 = Zeros (w1); // type is bits(w1 as {2,4,8,16})
-  var b2 = Zeros (w2); // type is bits(w2 as {4,8,16})
+  var b1 = Zeros {w1}; // type is bits(w1 as {2,4,8,16})
+  var b2 = Zeros {w2}; // type is bits(w2 as {4,8,16})
   // b1 = b2; // Type check fail
 
   // Type checker cannot determine w1==w2

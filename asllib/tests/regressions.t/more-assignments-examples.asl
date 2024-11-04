@@ -3,16 +3,16 @@ begin
   // argN and argM are immutable parameterized width bitvectors
   // assignments to them are illegal
   // legal since widths and domains match
-  var eightBits: bits(8) = Zeros(8);
+  var eightBits: bits(8) = Zeros{8};
 
   // legal: someBits has undetermined width so we require RHS to be a
   // bitvector whose domain is a subset of {32,64} which it is by the
   // declaration of someWid
-  // var someBits: bits({32,64}) = Zeros(someWid);
+  // var someBits: bits({32,64}) = Zeros{someWid};
 
   // underconstrainedBits is a mutable parameterized width bitvector
   // it can be assigned to
-  var underconstrainedBits = Zeros (N);
+  var underconstrainedBits = Zeros {N};
 
   // underconstrainedBits has determined width `N`, so RHS must have same width
   underconstrainedBits = argN;      // legal since widths match
@@ -30,7 +30,7 @@ end;
 
 func main () => integer
 begin
-  assignBits (32, '111', '0000');
+  assignBits{3,4}(32, '111', '0000');
 
   return 0;
 end;

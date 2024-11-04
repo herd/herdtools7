@@ -2,7 +2,7 @@ type MyBV of bits(8) { [5] bitfield };
 
 getter F() => MyBV
 begin
-  return Ones(8) as MyBV;
+  return Ones{8} as MyBV;
 end;
 
 setter F() = v: MyBV

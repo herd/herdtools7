@@ -5,13 +5,13 @@ begin
     // would be useful if tools issued warnings if the behaviour is degraded like this. The threshold for when degraded behaviour starts to
     // apply is implementation defined.
     let temp               = UInt(a) * UInt(b);
-    let testA : bits(temp) = Zeros(temp);
+    let testA : bits(temp) = Zeros{temp};
 end;
 
 func main() => integer
 begin
-  degraded13(Zeros(64) + 1234, Zeros(64) + 4321);
+  degraded13(Zeros{64} + 1234, Zeros{64} + 4321);
   // WARNING: aslref freezes
-  // degraded13(Zeros(64) + 12345, Zeros(64) + 54321);
+  // degraded13(Zeros{64} + 12345, Zeros{64} + 54321);
   return 0;
 end;

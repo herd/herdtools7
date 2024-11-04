@@ -7,7 +7,7 @@ begin
     // to be immutable.
     var widthN          = N;
     // <some code>
-    // let testA : bits(N) = Zeros(widthN);
+    // let testA : bits(N) = Zeros{widthN};
 
     // Symbolic evaluation doesn't propagate back to a common point because it doesn't handle var's.
     // This is because we don't want the type system to have to analyse any arbitary complexity code
@@ -15,7 +15,7 @@ begin
     let letWidthN1               = widthN;
     // <arbitrary code>
     let letWidthN2               = widthN;
-    // let testB : bits(letWidthN1) = Zeros(letWidthN2); // illegal as type bits(letWidthN1) is different from bits(letWidthN2).
+    // let testB : bits(letWidthN1) = Zeros{letWidthN2}; // illegal as type bits(letWidthN1) is different from bits(letWidthN2).
 
     // Even though the widths used in both LHS and RHS are immutable constrained integers (tempC3A and tempC3B), and they are both
     // derived from a common immutable constrained integer (tempC1). The following is illegal as the chain of immutability is broken
@@ -25,5 +25,5 @@ begin
     var tempC2B                 = tempC1;
     let tempC3A                 = tempC2A;
     let tempC3B                 = tempC2B;
-    let testC : bits(tempC3A)   = Zeros(tempC3B); // illegal, type bits(tempC1) != bits(tempC3B)
+    let testC : bits(tempC3A)   = Zeros{tempC3B}; // illegal, type bits(tempC1) != bits(tempC3B)
 end;

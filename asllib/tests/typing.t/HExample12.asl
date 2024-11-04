@@ -1,13 +1,13 @@
 // Symbolic equivalence - mixture 'N' underconstrained 'E' well-constrained
-func SignedZero(sign: bit, N : integer) => bits(N)
+func SignedZero{N}(sign: bit) => bits(N)
 begin
     let E = 5;
     let F = N - (E + 1);
-    return [sign, Zeros(E), Zeros(F)];
+    return [sign, Zeros{E}, Zeros{F}];
 end;
 
 // Mixture here is fine - constrained + underconstrained - requires type equivalence
-func Extract(offset : integer{0..32}, size: integer, reg_value : bits(128)) => bits(size * 8)
+func Extract{size}(offset : integer{0..32}, reg_value : bits(128)) => bits(size * 8)
 begin
     return reg_value[(offset+size) * 8 - 1:(offset) * 8];
 end;
@@ -19,5 +19,5 @@ begin
     var l : myconstraint;
     l = (N+5) as myconstraint;
     let x = l;
-    var y = Zeros (x);
+    var y = Zeros {x};
 end;

@@ -5,16 +5,16 @@ type ExtendType of enumeration
   {ExtendType_SXTB, ExtendType_SXTH, ExtendType_SXTW, ExtendType_SXTX,
   ExtendType_UXTB, ExtendType_UXTH, ExtendType_UXTW, ExtendType_UXTX};
 
-getter X(n : Rnum_X, width : ElementSize) => bits(width)
+getter X{width : ElementSize}(n : Rnum_X) => bits(width)
 begin
     assert width IN {8,16,32,64};
     return n[width-1:0];
 end;
 
-func ExtendReg(reg : Rnum_X, exttype : ExtendType, shift : integer{0..4}, N : ElementSize) => bits(N)
+func ExtendReg{N : ElementSize}(reg : Rnum_X, exttype : ExtendType, shift : integer{0..4}) => bits(N)
 begin
     assert shift >= 0 && shift <= 4;
-    let val : bits(N) = X(reg, N);
+    let val : bits(N) = X{}(reg);
     var unsigned : boolean;
     var len : ElementSize;
 
@@ -30,10 +30,10 @@ begin
     end;
 
     let nbits = Min(len, N - shift) as integer{0..N};
-    return Extend([val[0+:nbits] , Zeros(shift)], N, unsigned);
+    return Extend{N,nbits+shift}([val[0+:nbits] , Zeros{shift}], unsigned);
 end;
 
 func CPositive12() => bits(8)
 begin
-    return ExtendReg(0, ExtendType_SXTH, 2, 8);
+    return ExtendReg{8}(0, ExtendType_SXTH, 2);
 end;

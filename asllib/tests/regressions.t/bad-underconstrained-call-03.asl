@@ -5,12 +5,12 @@ end;
 
 func bar {M} (x: bits(M))
 begin
-  foo (x, M + 1);
+  foo{M}(x, M + 1);
 end;
 
 func main () => integer
 begin
-  bar ('101010');
+  bar{6}('101010');
   return 0;
 end;
 

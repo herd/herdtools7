@@ -2,7 +2,7 @@ One slice cannot intersect itself:
   $ cat >intersecting_slices1.asl <<EOF
   > func main () => integer
   > begin
-  >   var x = Zeros(4);
+  >   var x = Zeros{4};
   >   var i: integer;
   >   x[i] = '1';
   >   print (x);
@@ -16,7 +16,7 @@ Two intersecting slices...
   $ cat >intersecting_slices2.asl <<EOF
   > func main () => integer
   > begin
-  >   var x = Zeros(4);
+  >   var x = Zeros{4};
   >   let i = 0; let j = 0;
   >   x[i, j] = '10';
   >   print (x);
@@ -33,7 +33,7 @@ Two maybe intersecting slices...
   $ cat >intersecting_slices3.asl <<EOF
   > func main () => integer
   > begin
-  >   var x = Zeros(4);
+  >   var x = Zeros{4};
   >   let i = 0;
   >   var j: integer;
   >   x[i, j] = '10';
@@ -55,8 +55,8 @@ Two maybe intersecting slices...
   > end;
   > func main () => integer
   > begin
-  >   print (set_unset('1111', 2, 3));
-  >   print (set_unset('1111', 2, 2));
+  >   print (set_unset{4}('1111', 2, 3));
+  >   print (set_unset{4}('1111', 2, 2));
   >   return 0;
   > end;
   > EOF
@@ -71,7 +71,7 @@ Two intersecting bitfields
   > type myty of bits (4) { [0] f1, [0] f2 };
   > func main () => integer
   > begin
-  >   var x = Zeros(4) as myty;
+  >   var x = Zeros{4} as myty;
   >   x.[f1, f2] = '10';
   >   print (x);
   >   return 0;

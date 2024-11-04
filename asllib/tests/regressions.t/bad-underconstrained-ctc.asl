@@ -5,6 +5,6 @@ end;
 
 func main () => integer
 begin
-  let - = GetLastBit ('1111');
+  let - = GetLastBit{4}('1111');
   return 0;
 end;

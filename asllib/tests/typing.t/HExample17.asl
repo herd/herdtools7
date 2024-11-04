@@ -1,12 +1,12 @@
 func Reverse{N}(word : bits(N), M : integer{1..N}) => bits(N)
 begin
-    return Zeros(N);
+    return Zeros{N};
 end;
 
 func HExemple17 (a: integer {8, 16, 32, 64})
 begin
   if a != 64 then Unreachable(); end;
   let b = 32;
-  let bv = Zeros(a);
-  let -: bits(a) = Reverse(bv, b);
+  let bv = Zeros{a};
+  let -: bits(a) = Reverse{}(bv, b);
 end;

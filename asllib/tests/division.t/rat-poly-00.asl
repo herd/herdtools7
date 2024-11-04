@@ -5,13 +5,13 @@ end;
 
 func main () => integer
 begin
-  let a = FirstHalf(Ones(4));
+  let a = FirstHalf{4}(Ones{4});
   assert a == '11';
 
-  let b = FirstHalf(Zeros(0));
+  let b = FirstHalf{0}(Zeros{0});
   assert b == '';
 
-  let c = FirstHalf(Zeros(7));
+  let c = FirstHalf{7}(Zeros{7});
   assert c == '000';
   
   return 0;

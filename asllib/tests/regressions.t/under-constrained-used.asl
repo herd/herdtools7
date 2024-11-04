@@ -5,7 +5,7 @@ end;
 
 func main () => integer
 begin
-  assert foo ('100') == 3;
+  assert foo{3}('100') == 3;
 
   return 0;
 end;

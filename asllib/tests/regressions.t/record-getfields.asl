@@ -8,7 +8,7 @@ func main () => integer
 begin 
   var x = R {
     a = 32,
-    b = Zeros(3),
+    b = Zeros{3},
     c = '1010'
   };
 

@@ -8,16 +8,16 @@ begin
   return Len(x) as integer {0..M};
 end;
 
-func f2 (L: integer) => bits(L)
+func f2 {L}() => bits(L)
 begin
-  return Zeros(L);
+  return Zeros{L};
 end;
 
 func main() => integer
 begin
-  let x: bits(4) = f0 ('0000');
-  let y: integer {0..5} = f1 ('11111');
-  let z: bits(6) = f2 (6);
+  let x: bits(4) = f0{}('0000');
+  let y: integer {0..5} = f1{5}('11111');
+  let z: bits(6) = f2 {6};
 
   return 0;
 end;

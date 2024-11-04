@@ -5,6 +5,6 @@ begin
     // to be immutable.
     var widthN          = N;
     // <some code>
-    let testA : bits(N) = Zeros(widthN);
+    let testA : bits(N) = Zeros{widthN};
 
 end;

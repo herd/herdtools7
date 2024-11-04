@@ -1,6 +1,6 @@
 func foo(x: integer {0..10}, y: integer {0..10})
 begin
-  let z = Zeros(64);
+  let z = Zeros{64};
   print(z[x:y]);
 end;
 
