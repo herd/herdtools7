@@ -357,8 +357,19 @@ module NativeBackend (C : Config) = struct
         let subprogram_type =
           match returns with None -> ST_Procedure | _ -> ST_Function
         in
-        let body = SB_Primitive and return_type = returns in
-        ({ name; parameters; args; body; return_type; subprogram_type }, f)
+        let body = SB_Primitive
+        and return_type = returns
+        and recurse_limit = None in
+        ( {
+            name;
+            parameters;
+            args;
+            body;
+            return_type;
+            subprogram_type;
+            recurse_limit;
+          },
+          f )
       in
       [
         (let two_pow_n_minus_one = minus_one (pow_2 (e_var "N")) in

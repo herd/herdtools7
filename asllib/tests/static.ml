@@ -28,6 +28,7 @@ let build_consts () =
         name = "main";
         body = SB_ASL !!(S_Return (Some !$0));
         args = [];
+        recurse_limit = None;
         parameters = [];
         return_type = Some integer;
         subprogram_type = ST_Function;

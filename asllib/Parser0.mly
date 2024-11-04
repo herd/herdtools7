@@ -53,8 +53,18 @@
     let make_func name args return_type body =
       let subprogram_type =
         match return_type with | Some _ -> ST_Function | None -> ST_Procedure
-      and parameters = [] in
-      D_Func { name; args; return_type; body; parameters; subprogram_type }
+      and parameters = []
+      and recurse_limit = None 
+      in
+      D_Func {
+        name;
+        args;
+        return_type;
+        body;
+        parameters;
+        subprogram_type;
+        recurse_limit
+      }
   end
 
   open Prelude
@@ -227,6 +237,7 @@ let opn := list(EOL); body=list(stmts); EOF;
           body = SB_ASL body;
           return_type = None;
           subprogram_type = ST_Procedure;
+          recurse_limit = None;
         } |> ASTUtils.add_pos_from body
       ]
     }
@@ -439,8 +450,9 @@ let getter_decl ==
         and args = []
         and body = SB_ASL body
         and subprogram_type = ST_EmptyGetter
+        and recurse_limit = None
         and parameters = [] in
-        D_Func { name; args; return_type; body; parameters; subprogram_type }
+        D_Func { name; args; return_type; body; parameters; subprogram_type; recurse_limit }
       }
     | ~=ty; name=qualident; body=opt_indented_block; SEMICOLON; EOL;
       {
@@ -448,18 +460,20 @@ let getter_decl ==
         let return_type = Some ty
         and args = []
         and body = SB_ASL body
+        and recurse_limit = None
         and subprogram_type = ST_EmptyGetter
         and parameters = [] in
-        D_Func { name; args; return_type; body; parameters; subprogram_type }
+        D_Func { name; args; return_type; body; parameters; subprogram_type; recurse_limit }
       }
     | ~=ty; name=qualident; args=bracketed(clist(formal)); body=indented_block;
       {
         let open AST in
         let return_type = Some ty
         and subprogram_type = ST_Getter
+        and recurse_limit = None
         and body = SB_ASL body
         and parameters = [] in
-        D_Func { name; args; return_type; body; parameters; subprogram_type }
+        D_Func { name; args; return_type; body; parameters; subprogram_type; recurse_limit }
       }
   ))
   | unimplemented_decl (
@@ -476,8 +490,9 @@ let setter_decl ==
         and parameters = []
         and body = SB_ASL body
         and subprogram_type = ST_EmptySetter
+        and recurse_limit = None
         and args = [ (ident, ty) ] in
-        D_Func { name; args; return_type; body; parameters; subprogram_type }
+        D_Func { name; args; return_type; body; parameters; subprogram_type; recurse_limit }
       }
     | name=qualident; args=setter_args; EQ; ~=ty; ~=ident; body=indented_block;
       {
@@ -486,8 +501,9 @@ let setter_decl ==
         and parameters = []
         and body = SB_ASL body
         and subprogram_type = ST_Setter
+        and recurse_limit = None
         and args = (ident, ty) :: args in
-        D_Func { name; args; return_type; body; parameters; subprogram_type }
+        D_Func { name; args; return_type; body; parameters; subprogram_type; recurse_limit }
       }
   ))
   | unimplemented_decl (
@@ -502,8 +518,9 @@ let procedure_decl ==
           let return_type = None
           and parameters = []
           and body = SB_ASL body
+          and recurse_limit = None
           and subprogram_type = ST_Procedure in
-          D_Func { name; args; return_type; body; parameters; subprogram_type }
+          D_Func { name; args; return_type; body; parameters; subprogram_type; recurse_limit }
         }
     ))
   | unimplemented_decl (

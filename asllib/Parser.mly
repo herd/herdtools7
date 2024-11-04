@@ -94,6 +94,7 @@ let e_binop (e1, op, e2) =
   E_Binop (op, e1, e2)
 
 %}
+
 (* ------------------------------------------------------------------------- *)
 
 %type <AST.t> ast
@@ -505,6 +506,7 @@ let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
 let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
+let recurse_limit == ioption(RECURSELIMIT; expr)
 let ignored_or_identifier ==
   | MINUS; { global_ignored () }
   | IDENTIFIER
@@ -512,7 +514,7 @@ let ignored_or_identifier ==
 let decl ==
   annotated (
     (* Begin func_decl *)
-    | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; body=func_body;
+    | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
         {
           D_Func {
             name;
@@ -521,6 +523,7 @@ let decl ==
             body = SB_ASL body;
             return_type = Some return_type;
             subprogram_type = ST_Function;
+            recurse_limit;
           }
         }
     (* End *)
@@ -534,6 +537,7 @@ let decl ==
             body = SB_ASL body;
             return_type = None;
             subprogram_type = ST_Procedure;
+            recurse_limit = None;
           }
         }
     (* End *)
@@ -549,6 +553,7 @@ let decl ==
               return_type = Some return_type;
               body = SB_ASL func_body;
               subprogram_type = ST_Getter;
+              recurse_limit = None;
             }
         }
     (* End *)
@@ -563,6 +568,7 @@ let decl ==
               return_type = Some ret;
               body = SB_ASL func_body;
               subprogram_type = ST_EmptyGetter;
+              recurse_limit = None;
             }
         }
     (* End *)
@@ -578,6 +584,7 @@ let decl ==
               return_type = None;
               body = SB_ASL func_body;
               subprogram_type = ST_Setter;
+              recurse_limit = None;
             }
         }
     (* End *)
@@ -592,6 +599,7 @@ let decl ==
               return_type = None;
               body = SB_ASL func_body;
               subprogram_type = ST_EmptySetter;
+              recurse_limit = None;
             }
         }
     (* End *)
@@ -633,6 +641,7 @@ let opn := body=stmt; EOF;
             body = SB_ASL body;
             return_type = None;
             subprogram_type = ST_Procedure;
+            recurse_limit = None;
           }
         |> ASTUtils.add_pos_from body
       ]

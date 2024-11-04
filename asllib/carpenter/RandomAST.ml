@@ -350,13 +350,22 @@ module Untyped (C : Config.S) = struct
       D_GlobalStorage { name; keyword; ty; initial_value } |> annot
     and func n =
       let* n1, n2, n3 = Nat.split3 n in
-      let parameters = [] in
+      let parameters = [] and recurse_limit = None in
       let+ name = names
       and+ args = Nat.list_sized (fun n -> pair names (ty n)) n1
       and+ body = stmt n2 >|= fun s -> SB_ASL s
       and+ return_type = ty n3 |> option
       and+ subprogram_type = subprogram_type in
-      D_Func { name; parameters; args; body; return_type; subprogram_type }
+      D_Func
+        {
+          name;
+          parameters;
+          args;
+          body;
+          return_type;
+          subprogram_type;
+          recurse_limit;
+        }
       |> annot
     in
     fun n ->
@@ -948,7 +957,7 @@ module Typed (C : Config.S) = struct
       let* n2 = int_bound ((n / 2) + 1) in
       let* n3 = int_bound ((n / 4) + 1) in
       let n1 = n - n2 - n3 in
-      let parameters = [] in
+      let parameters = [] and recurse_limit = None in
       let* return_type = ty false env n3 |> option in
       let env' =
         StaticEnv.
@@ -976,7 +985,15 @@ module Typed (C : Config.S) = struct
             else pure ST_Procedure
       in
       let func_sig =
-        { name; parameters; args; body; return_type; subprogram_type }
+        {
+          name;
+          parameters;
+          args;
+          body;
+          return_type;
+          subprogram_type;
+          recurse_limit;
+        }
       in
       (D_Func func_sig |> annot, StaticEnv.add_subprogram name func_sig env)
     in
@@ -995,6 +1012,7 @@ module Typed (C : Config.S) = struct
     and args = []
     and return_type = Some integer
     and subprogram_type = ST_Procedure
+    and recurse_limit = None
     and name = "main" in
     fun env n ->
       let n = pay n in
@@ -1004,7 +1022,15 @@ module Typed (C : Config.S) = struct
       in
       let+ body = stmt env' n >|= fun (s, _env') -> SB_ASL s in
       let func_sig =
-        { name; parameters; args; body; return_type; subprogram_type }
+        {
+          name;
+          parameters;
+          args;
+          body;
+          return_type;
+          subprogram_type;
+          recurse_limit;
+        }
       in
       D_Func func_sig |> annot
 
