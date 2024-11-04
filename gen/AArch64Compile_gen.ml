@@ -2762,11 +2762,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let n2 = C.find_non_pseudo n in
         let loc = match n2.C.evt.C.loc with
         | Data loc -> loc
-        | Code _ -> Warn.fatal "Can't create address dependency for a code location" in
+        | Code lab -> match f with
+          | CMO (_,Next) -> lab
+          | _ -> Warn.fatal "Address dependency to code location must be directly followed by DC.CVAUn or IC.IVAUn" in
+        (try ignore (C.find_node
+          (fun m -> match m.C.edge.E.edge with
+            | E.Insert (CMO (_,Prev)) when (loc_eq m.C.evt.C.loc n.C.evt.C.loc) ->
+              Warn.fatal "Address dependency to code location cannot have IC.IVAUp or DC.CVAUp"
+            | _ -> false )
+          n)
+        with Not_found -> ());
         let r2,st = next_reg st in
         let cs0,st =  calc0_gen csel st vdep r2 r1 in
         let rB,init,st = U.next_init st p init loc in
-        let r,st = tempo1 st in
+        let r,st = match f with
+          | CMO _ -> rB,st
+          | _ -> tempo1 st in
         let cs2 = (if do_morello then
           [do_addcapa rB r r2]
         else
