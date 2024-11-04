@@ -54,27 +54,28 @@ let z63 = Z.shift_left Z.one (MachSize.nbits machsize-1)
 let z64 = Z.shift_left Z.one (MachSize.nbits machsize)
 
 let norm_unsigned z = if Z.sign z < 0 then Z.add z z64 else z
+
 let norm_signed z =
   let z = Z.erem z z64 in
-  if Z.geq z z63 then Z.sub z z64
-  else z
+  if Z.geq z z63 then Z.sub z z64 else z
+
+let z_format_hexa z = "0x" ^ Z.format "%x" z
 
 let pp hexa = function
-  | S_Int i ->
-     if hexa then norm_unsigned i |> Z.format "%x"
-     else Z.format "%d" i
+  | S_Int i -> if hexa then z_format_hexa (norm_unsigned i) else Z.format "%d" i
   | S_Bool true -> "TRUE"
   | S_Bool false -> "FALSE"
-  | S_BitVector bv -> BV.to_string bv
+  | S_BitVector bv ->
+      if hexa then z_format_hexa (BV.to_z_unsigned bv) else BV.to_string bv
 
 let pp_unsigned hexa = function
   | S_Int i ->
-     let i = norm_unsigned i in
-     if hexa then "0x" ^ Z.format "%x" i else Z.format "%d" i
+      let i = norm_unsigned i in
+      if hexa then z_format_hexa i else Z.format "%d" i
   | S_Bool true -> "TRUE"
   | S_Bool false -> "FALSE"
-  | S_BitVector bv -> BV.to_string bv
-
+  | S_BitVector bv ->
+      if hexa then z_format_hexa (BV.to_z_unsigned bv) else BV.to_string bv
 
 let of_string s =
   try S_Int (Z.of_string s)

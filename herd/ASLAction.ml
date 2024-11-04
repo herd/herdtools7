@@ -33,6 +33,10 @@
 
 open Dir
 
+module type Config = sig
+  val hexa: bool
+end
+
 module type S = sig
   include Arch_herd.S
 
@@ -40,7 +44,7 @@ module type S = sig
   val is_pc : reg -> bool
 end
 
-module Make (A : S) = struct
+module Make (C: Config) (A : S) = struct
   module A = A
   module V = A.V
 
@@ -56,7 +60,7 @@ module Make (A : S) = struct
   let pp_action = function
     | Access (d, l, v, _sz,a) ->
         Printf.sprintf "%s%s=%s%s"
-          (pp_dirn d) (A.pp_location l) (V.pp false v)
+          (pp_dirn d) (A.pp_location l) (V.pp C.hexa v)
           (let open AArch64Annot in
            match a with
            | N -> ""
@@ -286,5 +290,5 @@ module Make (A : S) = struct
     | Barrier _ | Branching _ | CutOff _ | NoAction -> a
 end
 
-module FakeModuleForCheckingSignatures (A : S) : Action.S
-       with module A = A =  Make (A)
+module FakeModuleForCheckingSignatures (C: Config) (A : S) : Action.S
+       with module A = A =  Make (C) (A)
