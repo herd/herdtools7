@@ -57,3 +57,16 @@ let desugar_setter call fields rhs =
         |> here
       in
       S_Seq (s_then read modify, write)
+
+let desugar_elided_parameter ldk lhs (call : call annotated) =
+  let bits_e =
+    match lhs with
+    | LDI_Typed (_, { desc = T_Bits (bits_e, []) }) -> bits_e
+    | _ ->
+        (* For example, let x = foo{,M}(args); cannot be desugared as there is
+           no bits(_) annotation on the left-hand side *)
+        Error.fatal_from (to_pos call) CannotParse
+  in
+  let params = bits_e :: call.desc.params in
+  let rhs = E_Call { call.desc with params } |> add_pos_from call in
+  S_Decl (ldk, lhs, Some rhs)

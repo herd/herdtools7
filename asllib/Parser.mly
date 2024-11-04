@@ -474,8 +474,12 @@ let stmt ==
         { desugar_setter call [fld] rhs }
       | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
         { desugar_setter call flds rhs }
+      | ldk=local_decl_keyword; lhs=decl_item; EQ; call=annotated(elided_param_call);
+        { desugar_elided_parameter ldk lhs call}
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
+      | VAR; lhs=decl_item; EQ; call=annotated(elided_param_call);
+        { desugar_elided_parameter LDK_Var lhs call}
       | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }
       | DEBUG; args=plist(expr);                             { S_Print { args; debug = true } }
       | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
@@ -515,6 +519,11 @@ let call ==
   | name=IDENTIFIER; args=plist(expr);
     { { name; params=[]; args; call_type = ST_Function } }
   | name=IDENTIFIER; params=braced(nclist(expr)); args=loption(plist(expr));
+    { { name; params; args; call_type = ST_Function } }
+let elided_param_call ==
+  | name=IDENTIFIER; LBRACE; RBRACE; args=plist(expr);
+    { { name; params=[]; args; call_type = ST_Function } }
+  | name=IDENTIFIER; LBRACE; COMMA; params=nclist(expr); RBRACE; args=loption(plist(expr));
     { { name; params; args; call_type = ST_Function } }
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })

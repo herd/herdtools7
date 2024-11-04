@@ -35,3 +35,14 @@ val desugar_setter : call annotated -> identifier list -> expr -> stmt_desc
                                             Setter(temp, args);
   ]}
 *)
+
+val desugar_elided_parameter :
+  local_decl_keyword -> local_decl_item -> call annotated -> stmt_desc
+(**
+  Desugar an elided parameter, in particular:
+  {[
+  let x : bits(e) = MyFunc{}(args)     --> ... = MyFunc{e}(args)
+  let x : bits(e) = MyFunc{,e1}(args)  --> ... = MyFunc{e,e1}(args)
+  ]}
+  Similarly for [var] and [constant].
+*)
