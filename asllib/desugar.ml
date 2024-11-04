@@ -24,7 +24,7 @@ open AST
 open ASTUtils
 
 let desugar_setter call fields rhs =
-  let loc = to_pos call and { desc = name, params, args } = call in
+  let loc = to_pos call and { desc = { name; params; args } } = call in
   let () = assert (loc.version = V1) in
   let here desc = add_pos_from loc desc in
   match fields with
