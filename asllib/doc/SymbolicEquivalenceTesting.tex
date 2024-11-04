@@ -1089,6 +1089,17 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vlone$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{e\_array}):
+  \begin{itemize}
+    \item $\veone$ is an array construction expression with length expression $\vlone$ and value expression $\vvone$,
+          that is, $\EArray\{\EArrayLength: \vlone, \EArrayValue: \vvone\}$;
+    \item $\vetwo$ is an array construction expression with length expression $\vltwo$ and value expression $\vvtwo$,
+          that is, $\EArray\{\EArrayLength: \vltwo, \EArrayValue: \vvtwo\}$;
+    \item applying $\exprequal$ to $\vlone$ and $\vltwo$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item applying $\exprequal$ to $\vvone$ and $\vvtwo$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{e\_unop}):
   \begin{itemize}
     \item $\veone$ is a unary operator expression with operator $\opone$ and operand expressions $\veoneone$,
@@ -1135,8 +1146,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_binop]{
-  \veone \eqname \EBinop(\opone, \veoneone, \veonetwo)\\
-  \vetwo \eqname \EBinop(\optwo, \vetwoone, \vetwotwo)\\
+  \veone = \EBinop(\opone, \veoneone, \veonetwo)\\
+  \vetwo = \EBinop(\optwo, \vetwoone, \vetwotwo)\\
   \exprequal(\veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \exprequal(\veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef (\opone = \optwo) \land \vbone \land \vbtwo
@@ -1148,8 +1159,8 @@ One of the following applies:
 (Recall that a conjunction over an empty set equals $\True$.)
 \begin{mathpar}
 \inferrule[e\_call]{
-  \veone \eqname \ECall(\nameone, \vargsone, \Ignore)\\
-  \vetwo \eqname \ECall(\nametwo, \vargstwo, \Ignore)\\\\
+  \veone = \ECall(\nameone, \vargsone, \Ignore)\\
+  \vetwo = \ECall(\nametwo, \vargstwo, \Ignore)\\\\
   \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False\\\\
   \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
   i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i \OrTypeError\\\\
@@ -1161,8 +1172,8 @@ One of the following applies:
 
 \begin{mathpar}
   \inferrule[e\_concat]{
-  \veone \eqname \EConcat(\vlone)\\
-  \vetwo \eqname \EConcat(\vltwo)\\\\
+  \veone = \EConcat(\vlone)\\
+  \vetwo = \EConcat(\vltwo)\\\\
   \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
   i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i \OrTypeError\\\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
@@ -1173,8 +1184,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_cond]{
-  \veone \eqname \ECond(\veoneone, \veonetwo, \veonethree)\\
-  \vetwo \eqname \ECond(\vetwoone, \vetwotwo, \vetwothree)\\\\
+  \veone = \ECond(\veoneone, \veonetwo, \veonethree)\\
+  \vetwo = \ECond(\vetwoone, \vetwotwo, \vetwothree)\\\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
   \exprequal(\tenv, \veonethree, \vetwothree) \typearrow \vbthree \OrTypeError\\\\
@@ -1186,8 +1197,8 @@ One of the following applies:
 
 \begin{mathpar}
   \inferrule[e\_slice]{
-  \veone \eqname \ESlice(\veoneone, \slicesone)\\
-  \vetwo \eqname \ESlice(\vetwoone, \slicestwo)\\\\
+  \veone = \ESlice(\veoneone, \slicesone)\\
+  \vetwo = \ESlice(\vetwoone, \slicestwo)\\\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -1198,8 +1209,8 @@ One of the following applies:
 
 \begin{mathpar}
   \inferrule[e\_getarray]{
-  \veone \eqname \EGetArray(\veoneone, \veonetwo)\\
-  \vetwo \eqname \EGetArray(\vetwoone, \vetwotwo)\\\\
+  \veone = \EGetArray(\veoneone, \veonetwo)\\
+  \vetwo = \EGetArray(\vetwoone, \vetwotwo)\\\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -1210,8 +1221,8 @@ One of the following applies:
 
 \begin{mathpar}
   \inferrule[e\_getfield]{
-  \veone \eqname \EGetField(\veoneone, \vfieldone)\\
-  \vetwo \eqname \EGetField(\vetwoone, \vfieldtwo)\\\\
+  \veone = \EGetField(\veoneone, \vfieldone)\\
+  \vetwo = \EGetField(\vetwoone, \vfieldtwo)\\\\
   \vbone \eqdef \vfieldone = \vfieldtwo\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -1222,8 +1233,8 @@ One of the following applies:
 
 \begin{mathpar}
   \inferrule[e\_getfields]{
-  \veone \eqname \EGetFields(\veoneone, \vfieldsone)\\
-  \vetwo \eqname \EGetFields(\vetwoone, \vfieldstwo)\\\\
+  \veone = \EGetFields(\veoneone, \vfieldsone)\\
+  \vetwo = \EGetFields(\vetwoone, \vfieldstwo)\\\\
   \vbone \eqdef \vfieldsone = \vfieldstwo\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -1234,8 +1245,8 @@ One of the following applies:
 
 \begin{mathpar}
   \inferrule[e\_getitem]{
-  \veone \eqname \EGetItem(\veoneone, \vione)\\
-  \vetwo \eqname \EGetItem(\vetwoone, \vitwo)\\\\
+  \veone = \EGetItem(\veoneone, \vione)\\
+  \vetwo = \EGetItem(\vetwoone, \vitwo)\\\\
   \vbone \eqdef \vione = \vitwo\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -1246,8 +1257,8 @@ One of the following applies:
 
 \begin{mathpar}
   \inferrule[e\_literal]{
-  \veone \eqname \ELiteral(\vvone)\\
-  \vetwo \eqname \ELiteral(\vvtwo)\\\\
+  \veone = \ELiteral(\vvone)\\
+  \vetwo = \ELiteral(\vvtwo)\\\\
   \literalequal(\vvone, \vvtwo) \typearrow \vb
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1272,8 +1283,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_tuple]{
-  \veone \eqname \ETuple(\vlone)\\
-  \vetwo \eqname \ETuple(\vltwo)\\
+  \veone = \ETuple(\vlone)\\
+  \vetwo = \ETuple(\vltwo)\\
   \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
   i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i \OrTypeError\\\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
@@ -1283,10 +1294,22 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[e\_array]{
+  \veone = \EArray\{\EArrayLength: \vlone, \EArrayValue: \vvone\}\\
+  \vetwo = \EArray\{\EArrayLength: \vltwo, \EArrayValue: \vvtwo\}\\
+  \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone \OrTypeError\\\\
+  \exprequal(\tenv, \vvone, \vvtwo) \typearrow \vbone \OrTypeError\\\\
+  \vb \eqdef \vbone \land \vbtwo
+}{
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[e\_unop]{
-  \veone \eqname \EUnop(\opone, \veoneone)\\
-  \vetwo \eqname \EUnop(\optwo, \vetwoone)\\\\
-  \exprequal(\veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \veone = \EUnop(\opone, \veoneone)\\
+  \vetwo = \EUnop(\optwo, \vetwoone)\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \vb \eqdef (\opone = \optwo) \land \vbone
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1303,8 +1326,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_atc]{
-  \veone \eqname \EATC(\veoneone, \vtone)\\
-  \vetwo \eqname \EATC(\vetwoone, \vttwo)\\
+  \veone = \EATC(\veoneone, \vtone)\\
+  \vetwo = \EATC(\vetwoone, \vttwo)\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -1315,8 +1338,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[e\_var]{
-  \veone \eqname \EVar(\nameone)\\
-  \vetwo \eqname \EVar(\nametwo)\\\\
+  \veone = \EVar(\nameone)\\
+  \vetwo = \EVar(\nametwo)\\\\
   \vb \eqdef \nameone = \nametwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1651,8 +1674,8 @@ One of the following applies:
 }
 \and
 \inferrule[bitfield\_simple]{
-  \bfone \eqname \BitFieldSimple(\nameone, \slicesone)\\
-  \bftwo \eqname \BitFieldSimple(\nametwo, \slicestwo)\\
+  \bfone = \BitFieldSimple(\nameone, \slicesone)\\
+  \bftwo = \BitFieldSimple(\nametwo, \slicestwo)\\
   \booltrans{\nameone = \nametwo} \booltransarrow \vbone\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -1661,8 +1684,8 @@ One of the following applies:
 }
 \and
 \inferrule[bitfield\_nested]{
-  \bfone \eqname \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
-  \bftwo \eqname \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
+  \bfone = \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
+  \bftwo = \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
   \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False\\\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \terminateas \TypeErrorConfig,\\\\
   \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vbtwo
@@ -1671,8 +1694,8 @@ One of the following applies:
 }
 \and
 \inferrule[bitfield\_typed]{
-  \bfone \eqname \BitFieldType(\nameone, \slicesone, \vtone)\\
-  \bftwo \eqname \BitFieldType(\nametwo, \slicestwo, \vttwo)\\
+  \bfone = \BitFieldType(\nameone, \slicesone, \vtone)\\
+  \bftwo = \BitFieldType(\nametwo, \slicestwo, \vttwo)\\
   \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False \\\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \OrTypeError\\\\
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
@@ -1758,16 +1781,16 @@ One of the following applies:
 }
 \and
 \inferrule[constraint\_exact]{
-  \vcone \eqname \ConstraintExact(\veone)\\
-  \vctwo \eqname \ConstraintExact(\vetwo)\\
+  \vcone = \ConstraintExact(\veone)\\
+  \vctwo = \ConstraintExact(\vetwo)\\
   \exprequal(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
 }{
   \constraintequal(\tenv, \vcone, \vctwo) \typearrow \vb
 }
 \and
 \inferrule[constraint\_range]{
-  \bfone \eqname \ConstraintRange(\veoneone, \veonetwo)\\
-  \bftwo \eqname \ConstraintRange(\vetwoone, \vetwotwo)\\
+  \bfone = \ConstraintRange(\veoneone, \veonetwo)\\
+  \bftwo = \ConstraintRange(\vetwoone, \vetwotwo)\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo

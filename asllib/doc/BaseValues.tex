@@ -1,0 +1,368 @@
+\section{Base Values\label{sec:BaseValues}}
+
+\hypertarget{def-basevalueterm}{}
+Each type has a \basevalueterm, which is used to initialize storage elements (either local of global)
+if an initializer is not supplied.
+
+\hypertarget{def-basevalue}{}
+The function
+\[
+\basevalue(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
+\overname{\expr}{\veinit} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns the expression $\veinit$ which can be used to initialize a storage element
+of type $\vt$ in the static environment $\tenv$.
+\ProseOtherwiseTypeError
+
+\subsubsection{TypingRule.BaseValue\label{sec:TypingRule.BaseValue}}
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+    \item All of the following apply (\textsc{t\_bool}):
+    \begin{itemize}
+        \item $\vt$ is the Boolean type;
+        \item $\veinit$ is the literal expression for $\False$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_bits}):
+    \begin{itemize}
+        \item $\vt$ is the bitvector type with width expression $\ve$;
+        \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields $\vzopt$;
+        \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\BaseValueNonStatic};
+        \item view $\vzopt$ as the singleton integer $\length$;
+        \item $\veinit$ is the literal expression for a bitvector made of a sequence of $\length$ values of $0$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_enum}):
+    \begin{itemize}
+        \item $\vt$ is the enumeration type with a list of labels where $\name$ as its \head;
+        \item $\name$ is bound to the literal $\vl$ by the $\constantvalues$ in the global static environment of $\tenv$;
+        \item $\veinit$ is the literal expression for $\vl$, that is, $\eliteral{\vl}$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_int\_unconstrained}):
+    \begin{itemize}
+        \item $\vt$ is the \unconstrainedintegertype;
+        \item $\veinit$ is the literal expression for $0$, that is, $\ELiteral(\lint(0))$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_int\_parameterized}):
+    \begin{itemize}
+        \item $\vt$ is the \parameterizedintegertype;
+        \item the result is a type error indicating the lack of a statically known base value.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_int\_wellconstrained}):
+    \begin{itemize}
+        \item $\vt$ is the \wellconstrainedintegertype\ with a list of constraints $\cs$;
+        \item define $\vzminlist$ as the concatenation of lists obtained for each
+              constraint $\cs[\vi]$ in $\tenv$, for each $\vi\in\listrange(\cs)$, via $\constraintabsmin$;
+        \item checking whether $\vzminlist$ is empty yields $\True$\ProseOrTypeError{\BaseValueEmptyType};
+        \item determining the minimal absolute integer in $\vzminlist$ via $\listminabs$ yields $\vzmin$;
+        \item $\veinit$ is the integer literal expression for $\vzmin$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_named}):
+    \begin{itemize}
+        \item $\vt$ is the \namedtype\ for $\id$;
+        \item obtaining the \underlyingtype\ for $\id$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
+        \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_real}):
+    \begin{itemize}
+        \item $\vt$ is the real type;
+        \item $\veinit$ is the real literal expression for $0$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{structured}):
+    \begin{itemize}
+        \item $\vt$ is a \structuredtype\ with list of fields $\fields$;
+        \item applying $\basevalue$ to $\vtefield$ in $\tenv$ for each $(\name, \vtefield)$ in $\fields$
+              yields $\ve_\name$\ProseOrTypeError;
+        \item $\veinit$ is the record construction expression assigning each field $\name$
+              where $(\name, \vtefield)$ is an element of $\fields$ to $\vtefield$, that is, \\
+              $\ERecord((\name, \vtefield) \in \fields: (\name, \ve_\name))$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_string}):
+    \begin{itemize}
+        \item $\vt$ is the string type;
+        \item $\veinit$ is the string literal expression for the empty list of characters.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_tuple}):
+    \begin{itemize}
+        \item $\vt$ is the tuple type over the list of types $\vt_{1..k}$, that is, $\TTuple(\vt_{1..k})$;
+        \item applying $\basevalue$ to each type $\vt_\vi$ in $\tenv$ for $\vi=1..k$; yields the list of expressions $\ve_{1..k}$;
+        \item $\veinit$ is the tuple expression $\ETuple(\ve_{1..k})$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_array\_enum}):
+    \begin{itemize}
+        \item $\vt$ is the array type over an enumerated index of $\vi$ labels and element type $\tty$, that is,
+              $\TArray(\ArrayLengthEnum(\Ignore, \vi), \tty)$ ;
+        \item applying $\basevalue$ to $\tty$ in $\tenv$ yields the expression $\vvalue$\ProseOrTypeError;
+        \item define $\vlength$ as the literal integer expression for $\vi$;
+        \item $\veinit$ is the array construction expression with length expression $\vlength$ and value expression $\vvalue$,
+              that is, $\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{t\_array\_expr}):
+    \begin{itemize}
+        \item $\vt$ is the array type over an integer index expression $\vlength$ and element type $\tty$, that is,
+              $\TArray(\ArrayLengthExpr(\vlength), \tty)$ ;
+        \item applying $\basevalue$ to $\tty$ in $\tenv$ yields the expression $\vvalue$\ProseOrTypeError;
+        \item $\veinit$ is the array construction expression with length expression $\vlength$ and value expression $\vvalue$,
+              that is, $\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}$.
+    \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[t\_bool]{}{
+    \basevalue(\tenv, \overname{\TBool}{\vt}) \typearrow \overname{\ELiteral(\lbool(\False))}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits]{
+    \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
+    \checktrans{\vzopt \neq \None}{\BaseValueNonStatic} \checktransarrow \True\OrTypeError\\\\
+    \vzopt \eqname \langle\length\rangle\\
+}{
+    \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\lbitvector(i=1..\length: 0))}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_enum]{
+    G^\tenv.\constantvalues(\name) = \vl
+}{
+    \basevalue(\tenv, \overname{\TEnum(\name \concat \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\vl)}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int\_unconstrained]{}{
+    \basevalue(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow \overname{\ELiteral(\lint(0))}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int\_parameterized]{}{
+    \basevalue(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \TypeErrorVal{\BaseValueNonStatic}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int\_wellconstrained]{
+    \cs \eqname \vc_{1..k}\\
+    \vzminlist \eqdef \constraintabsmin(\tenv, \vc_1) \concat \ldots \concat \constraintabsmin(\tenv, \vc_k)\\
+    \checktrans{\vzminlist \neq \emptyset}{\BaseValueEmptyType} \typearrow \True \OrTypeError\\\\
+    \listminabs(\vzminlist) \typearrow \vzmin
+}{
+    \basevalue(\tenv, \overname{\TInt(\wellconstrained(\cs))}{\vt}) \typearrow \overname{\ELiteral(\lint(\vzmin))}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_named]{
+    \makeanonymous(\tenv, \TNamed(\id)) \typearrow \vtp \OrTypeError\\\\
+    \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError
+}{
+    \basevalue(\tenv, \overname{\TNamed(\id)}{\vt}) \typearrow \veinit
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_real]{}{
+    \basevalue(\tenv, \overname{\TReal}{\vt}) \typearrow \overname{\ELiteral(\lreal(0))}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[structured]{
+    \isstructured(\vt) \typearrow \True\\
+    \vt \eqname L(\fields)\\
+    (\name, \vtefield) \in \fields: \basevalue(\tenv, \vtefield) \typearrow \ve_\name \OrTypeError
+}{
+    \basevalue(\tenv, \vt) \typearrow \overname{\ERecord((\name, \vtefield) \in \fields: (\name, \ve_\name))}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_string]{}{
+    \basevalue(\tenv, \overname{\TString}{\vt}) \typearrow \overname{\ELiteral(\lstring(\emptylist))}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]{
+    \vi=1..k: \basevalue(\tenv, \vt_\vi) \typearrow \ve_\vi \OrTypeError
+}{
+    \basevalue(\tenv, \overname{\TTuple}{\vt_{1..k}}) \typearrow \overname{\ETuple(\ve_{1..k})}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array\_enum]{
+    \basevalue(\tenv, \tty) \typearrow \vvalue \OrTypeError\\\\
+    \length \eqdef \elint{\vi}
+}{
+    {
+        \begin{array}{r}
+            \basevalue(\tenv, \overname{\TArray(\ArrayLengthEnum(\Ignore, \vi), \tty)}{\vt}) \typearrow \\
+            \overname{\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}}{\veinit}
+        \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array\_expr]{
+    \basevalue(\tenv, \tty) \typearrow \vvalue \OrTypeError
+}{
+    {
+        \begin{array}{r}
+            \basevalue(\tenv, \overname{\TArray(\ArrayLengthExpr(\length), \tty)}{\vt}) \typearrow\\
+            \overname{\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}}{\veinit}
+        \end{array}
+    }
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.ConstraintAbsMin\label{sec:TypingRule.ConstraintAbsMin}}
+\subsubsection{Prose}
+\hypertarget{def-constraintabsmin}{}
+The function
+\[
+    \constraintabsmin(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc}) \aslto
+    \overname{\Z^*}{\vzs}
+    \cup \overname{\TTypeError}{\TypeErrorVal{\BaseValueNonStatic}}
+\]
+returns a single element list containing the integer closest to $0$ that satisfies the constraint $\vc$ in $\tenv$, if one exists,
+and an empty list if the constraint represents an empty set.
+Otherwise, the result is $\TypeErrorVal{\BaseValueNonStatic}$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+    \item All of the following apply (\textsc{exact}):
+    \begin{itemize}
+        \item $\vc$ is the constraint given by the expression $\ve$, that is, $\ConstraintExact(\ve)$;
+        \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields the optional integer $\vzopt$;
+        \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\BaseValueNonStatic};
+        \item view $\vzopt$ as the singleton set for the integer $\vz$;
+        \item define $\vzs$ as the single element list containing $\vz$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{range}):
+    \begin{itemize}
+        \item $\vc$ is the constraint given by the expression $\veone$ and $\vetwo$, that is, \\
+                $\ConstraintRange(\veone, \vetwo)$;
+        \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the optional integer $\vzoptone$;
+        \item checking that $\vzoptone$ is not $\None$ yields $\True$\ProseTerminateAs{\BaseValueNonStatic};
+        \item view $\vzoptone$ as the singleton set for $\vvone$;
+        \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the optional integer $\vzopttwo$;
+        \item checking that $\vzopttwo$ is not $\None$ yields $\True$\ProseTerminateAs{\BaseValueNonStatic};
+        \item view $\vzopttwo$ as the singleton set for $\vvtwo$;
+        \item define $\vzs$ as based on the following cases for $\vvone$ and $\vvtwo$:
+        \begin{itemize}
+            \item the empty list, if $\vvone$ is greater than $\vvtwo$ (since there are no integers satisfying the constraint);
+            \item the single element list for $\vvtwo$, if $\vvone$ is less than $\vvtwo$ and both are negative;
+            \item the single element list for $0$, if $\vvone$ is negative and $\vvtwo$ is non-negative;
+            \item the single element list for $\vvone$, if $\vvone$ is non-negative and $\vvtwo$ is greater or equal to $\vvone$.
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{
+    \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
+    \checktrans{\vzopt \neq \None}{\BaseValueNonStatic} \checktransarrow \True \OrTypeError\\\\
+    \vzopt \eqname \langle\vz\rangle
+}{
+    \constraintabsmin(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{[\vz]}{\vzs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+    \reducetozopt(\tenv, \veone) \typearrow \vzoptone\\
+    \checktrans{\vzoptone \neq \None}{\BaseValueNonStatic} \checktransarrow \True \OrTypeError\\\\
+    \vzoptone \eqname \langle\vvone\rangle\\
+    \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\\
+    \checktrans{\vzopttwo \neq \None}{\BaseValueNonStatic} \checktransarrow \True \OrTypeError\\\\
+    \vzopttwo \eqname \langle\vvtwo\rangle\\
+    \vzs \eqdef {
+        \begin{cases}
+           \emptylist & \vvone > \vvtwo\\
+           [\vvtwo] & \vvone \leq \vvtwo < 0\\
+           [0] & \vvone < 0 \leq \vvtwo < 0\\
+           [\vvone] & 0 \leq \vvone \leq \vvtwo\\
+        \end{cases}
+    }
+}{
+    \constraintabsmin(\overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vzs
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.ListMinAbs\label{sec:TypingRule.ListMinAbs}}
+\subsubsection{Prose}
+\hypertarget{def-listminabs}{}
+The function
+\[
+\listminabs(\overname{\Z^*}{\vl}) \aslto \overname{\Z}{\vz}
+\]
+returns $\vz$ --- the integer closest to $0$ among the list
+of integers in the list $\vl$. The result is biased towards positive integers. That is,
+if two integers $x$ and $y$ have the same absolute value and $x$ is positive and $y$ is negative
+then $x$ is considered closer to $0$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+    \item All of the following apply (\textsc{one}):
+    \begin{itemize}
+        \item $\vl$ is the single element list for $\vz$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{more\_than\_one}):
+    \begin{itemize}
+        \item $\vl$ is the list where $\vzone$ is its \head\ and $\vltwo$ is its \tail;
+        \item $\vltwo$ is not the empty list;
+        \item applying $\listminabs$ to $\vltwo$ yields $\vztwo$;
+        \item define $\vz$ based on $\vzone$ and $\vztwo$ by the following cases:
+        \begin{itemize}
+            \item $\vzone$ if the absolute value of $\vzone$ is less than the absolute value of $\vztwo$;
+            \item $\vztwo$ if the absolute value of $\vzone$ is greater than the absolute value of $\vztwo$;
+            \item $\vzone$ if $\vzone$ is equal to $\vztwo$;
+            \item the absolute value of $\vzone$ if the absolute value of $\vzone$ is equal to the absolute value of $\vztwo$
+                    and $\vzone$ is not equal to $\vztwo$;
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[one]{}{
+    \listminabs(\overname{[\vz]}{\vl}) \typearrow \vz
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[more\_than\_one]{
+    \vlone \neq \emptylist\\
+    \listminabs(\vltwo) = \vztwo\\
+    {
+        \vz \eqdef \begin{cases}
+            \vzone & |\vzone| < |\vztwo|\\
+            \vztwo & |\vzone| > |\vztwo|\\
+            \vzone & \vzone = \vztwo\\
+            |\vzone| & |\vzone| = |\vztwo| \land \vzone \neq \vztwo
+        \end{cases}
+    }
+}{
+    \listminabs(\overname{[\vzone] \concat \vltwo}{\vl}) \typearrow \vz
+}
+\end{mathpar}

@@ -462,10 +462,12 @@ module Make (B : Backend.S) (C : Config) = struct
             let* v = B.get_index i v_array in
             return_normal (v, new_env) |: SemanticsRule.EGetArray)
     (* End *)
+    (* Begin EvalEGetTupleItem *)
     | E_GetItem (e_tuple, index) ->
         let** v_tuple, new_env = eval_expr env e_tuple in
         let* v = B.get_index index v_tuple in
-        return_normal (v, new_env)
+        return_normal (v, new_env) |: SemanticsRule.EGetTupleItem
+    (* End *)
     (* Begin EvalERecord *)
     | E_Record (_, e_fields) ->
         let names, fields = List.split e_fields in
@@ -503,15 +505,18 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.create_vector v_list in
         return_normal (v, new_env) |: SemanticsRule.ETuple
     (* End *)
-    (* Begin EvalArray *)
-    | E_Array { length = e_length; value = e_value } -> (
-        let** v_value, new_env = eval_expr env e_value in
-        let* v_length = eval_expr_sef env e_length in
-        match B.v_to_int v_length with
-        | Some n_length ->
-            let* v = B.create_vector (List.init n_length (Fun.const v_value)) in
-            return_normal (v, new_env)
-        | None -> unsupported_expr e_length)
+    (* Begin EvalEArray *)
+    | E_Array { length = e_length; value = e_value } ->
+        (let** v_value, new_env = eval_expr env e_value in
+         let* v_length = eval_expr_sef env e_length in
+         match B.v_to_int v_length with
+         | Some n_length ->
+             let* v =
+               B.create_vector (List.init n_length (Fun.const v_value))
+             in
+             return_normal (v, new_env)
+         | None -> unsupported_expr e_length)
+        |: SemanticsRule.EArray
     (* End *)
     (* Begin EvalEUnknown *)
     | E_Unknown t ->

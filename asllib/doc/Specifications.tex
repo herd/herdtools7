@@ -938,6 +938,13 @@ One of the following applies:
     \item define $\ids$ as the union of applying of $\useexpr$ to each expression in $\ves$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{e\_array}):
+  \begin{itemize}
+    \item $\ve$ is the array construction expression for the length expression $\veone$ and value expression $\vetwo$,
+          that is, $\EArray\{\EArrayLength:\veone, \EArrayValue:\vetwo\}$;
+    \item define $\ids$ as the union of applying of $\useexpr$ to each of $\veone$ and $\vetwo$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{e\_unknown}):
   \begin{itemize}
     \item $\ve$ is the unknown expression with type $\vt$;
@@ -1046,7 +1053,15 @@ One of the following applies:
 \inferrule[e\_tuple]{}{
   \useexpr(\overname{\EConcat(\ves)}{\ve}) \typearrow \overname{\bigcup_{\veone\in\ves}\useexpr(\veone)}{\ids}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_array]{}{
+  \useexpr(\overname{\EArray\{\EArrayLength:\veone, \EArrayValue:\vetwo\}}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[e\_unknown]{}{
   \useexpr(\overname{\EUnknown(\vt)}{\ve}) \typearrow \overname{\usety(\vt)}{\ids}
 }
@@ -1770,7 +1785,7 @@ the corresponding premise in the rule above does not hold, and the semantics
 is undefined. Indeed, the ASL semantics is only defined for well-typed specifications.
 
 
-\subsubsection{SemanticsRule.BuildGlobalEnv \label{sec:SemanticsRule.BuildGlobalEnv}}
+\subsubsection{SemanticsRule.BuildGlobalEnv\label{sec:SemanticsRule.BuildGlobalEnv}}
 The helper relation
 \hypertarget{def-buildgenv}{}
 \[
@@ -1795,8 +1810,6 @@ All of the following apply:
 \end{itemize}
 \subsubsection{Example}
 
-\CodeSubsection{\EvalBuildGlobalEnvBegin}{\EvalBuildGlobalEnvEnd}{../Interpreter.ml}
-
 \subsubsection{Formally}
 \hypertarget{def-topologicaldecls}{}
 The helper relation $\topologicaldecls(\overname{\decl^*}{\parsedspec}, \overname{\decl^*}{\parsedstd})$
@@ -1811,3 +1824,4 @@ dependency order.
   \buildgenv(\env, \typedspec) \evalarrow (\newenv, \newg)
 }
 \end{mathpar}
+\CodeSubsection{\EvalBuildGlobalEnvBegin}{\EvalBuildGlobalEnvEnd}{../Interpreter.ml}

@@ -45,8 +45,10 @@ module SemanticsRule = struct
     | ERecord
     | EGetBitField
     | EGetBitFields
+    | EGetTupleItem
     | EConcat
     | ETuple
+    | EArray
     | EUnknown
     | EPattern
     | LEDiscard
@@ -127,8 +129,10 @@ module SemanticsRule = struct
     | ERecord -> "ERecord"
     | EGetBitField -> "EGetBitField"
     | EGetBitFields -> "EGetBitFields"
+    | EGetTupleItem -> "EGetTupleItem"
     | EConcat -> "EConcat"
     | ETuple -> "ETuple"
+    | EArray -> "EArray"
     | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
     | ESliceOrEGetArrayError -> "ESliceOrEGetArrayError"
@@ -218,8 +222,10 @@ module SemanticsRule = struct
       ERecord;
       EGetBitField;
       EGetBitFields;
+      EGetTupleItem;
       EConcat;
       ETuple;
+      EArray;
       EUnknown;
       EPattern;
       LEDiscard;
@@ -400,8 +406,7 @@ module TypingRule = struct
     | SFor
     | SThrow
     | STry
-    | SDeclSome
-    | SDeclNone
+    | SDecl
     | SDebug
     | FUndefIdent
     | FPrimitive
@@ -457,6 +462,7 @@ module TypingRule = struct
     | CheckATC
     | CheckSlicesInWidth
     | DisjointSlicesToPositions
+    | BitfieldSliceToPositions
     | CheckPositionsInWidth
     | ShouldReduceToCall
     | IsStaticallyEvaluable
@@ -480,7 +486,6 @@ module TypingRule = struct
     | CheckVarNotInEnv
     | CheckVarNotInGEnv
     | CheckDisjointSlices
-    | BitfieldSliceToPositions
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -574,8 +579,7 @@ module TypingRule = struct
     | SFor -> "SFor"
     | SThrow -> "SThrow"
     | STry -> "STry"
-    | SDeclSome -> "SDeclSome"
-    | SDeclNone -> "SDeclNone"
+    | SDecl -> "SDecl"
     | SDebug -> "SDebug"
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
@@ -631,6 +635,7 @@ module TypingRule = struct
     | CheckATC -> "CheckATC"
     | CheckSlicesInWidth -> "CheckSlicesInWidth"
     | DisjointSlicesToPositions -> "DisjointSlicesToPositions"
+    | BitfieldSliceToPositions -> "BitfieldSliceToPositions"
     | CheckPositionsInWidth -> "CheckPositionsInWidth"
     | ShouldReduceToCall -> "ShouldReduceToCall"
     | IsStaticallyEvaluable -> "IsStaticallyEvaluable"
@@ -654,7 +659,6 @@ module TypingRule = struct
     | CheckVarNotInEnv -> "CheckVarNotInEnv"
     | CheckVarNotInGEnv -> "CheckVarNotInGEnv"
     | CheckDisjointSlices -> "CheckDisjointSlices"
-    | BitfieldSliceToPositions -> "BitfieldSliceToPositions"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -734,8 +738,7 @@ module TypingRule = struct
       SFor;
       SThrow;
       STry;
-      SDeclSome;
-      SDeclNone;
+      SDecl;
       SDebug;
       FUndefIdent;
       FPrimitive;
@@ -787,6 +790,7 @@ module TypingRule = struct
       CheckATC;
       CheckSlicesInWidth;
       DisjointSlicesToPositions;
+      BitfieldSliceToPositions;
       CheckPositionsInWidth;
       ShouldReduceToCall;
       IsStaticallyEvaluable;

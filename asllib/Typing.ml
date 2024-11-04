@@ -395,14 +395,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin DisjointSlicesToPositions *)
-  let disjoint_slices_to_diet loc env slices =
+  let disjoint_slices_to_positions loc env slices =
+    let eval env e =
+      match reduce_constants env e with
+      | L_Int z -> Z.to_int z
+      | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
+    in
     let module DI = Diet.Int in
     let bitfield_slice_to_positions loc env diet slice =
-      let eval env e =
-        match reduce_constants env e with
-        | L_Int z -> Z.to_int z
-        | _ -> fatal_from e Error.(UnsupportedExpr (Static, e))
-      in
       let interval =
         let make x y =
           if x > y then fatal_from loc @@ Error.OverlappingSlices [ slice ]
@@ -413,8 +413,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let x = eval env e in
             make x x |: TypingRule.BitfieldSliceToPositions
         | Slice_Range (e1, e2) ->
-            let x = eval env e2 and y = eval env e1 in
-            make x y |: TypingRule.BitfieldSliceToPositions
+            let x = eval env e1 and y = eval env e2 in
+            make y x |: TypingRule.BitfieldSliceToPositions
         | Slice_Length (e1, e2) ->
             let x = eval env e1 and y = eval env e2 in
             make x (x + y - 1) |: TypingRule.BitfieldSliceToPositions
@@ -435,7 +435,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_disjoint_slices loc env slices =
     if List.length slices <= 1 then ok
     else fun () ->
-      let _ = disjoint_slices_to_diet loc env slices in
+      let _ = disjoint_slices_to_positions loc env slices in
       () |: TypingRule.CheckDisjointSlices
   (* End *)
 
@@ -1011,7 +1011,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckSlicesInWidth *)
   let check_slices_in_width loc env width slices () =
-    let diet = disjoint_slices_to_diet loc env slices in
+    let diet = disjoint_slices_to_positions loc env slices in
     check_diet_in_width loc slices width diet ()
     |: TypingRule.CheckSlicesInWidth
   (* End *)
@@ -1025,7 +1025,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         BitField_Simple (name, slices1) |: TypingRule.TBitField
     | BitField_Nested (name, slices, bitfields') ->
         let slices1 = annotate_slices env slices in
-        let diet = disjoint_slices_to_diet loc env slices1 in
+        let diet = disjoint_slices_to_positions loc env slices1 in
         let+ () = check_diet_in_width loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let bitfields'' = annotate_bitfields ~loc env width' bitfields' in
@@ -1033,7 +1033,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | BitField_Type (name, slices, ty) ->
         let ty' = annotate_type ~loc env ty in
         let slices1 = annotate_slices env slices in
-        let diet = disjoint_slices_to_diet loc env slices1 in
+        let diet = disjoint_slices_to_positions loc env slices1 in
         let+ () = check_diet_in_width loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let+ () =
@@ -1905,6 +1905,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
 
+  (* ListMinAbs( *)
   let list_min_abs_z =
     let min_abs acc z =
       match Z.compare (Z.abs acc) (Z.abs z) with
@@ -1916,6 +1917,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     function
     | [] -> raise (Invalid_argument "list_min_abs_z")
     | h :: t -> List.fold_left min_abs h t
+  (* ListMinAbs) *)
+
+  (* Begin BaseValue *)
 
   (** [base_value_v1 ~loc env t] returns an expression building the base value
       of the type [t] in [env].
@@ -1936,8 +1940,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | None -> fatal_non_static e
       | Some i -> i
     in
-    let t_anon = Types.make_anonymous env t in
-    match t_anon.desc with
+    match t.desc with
     | T_Bool -> L_Bool false |> lit
     | T_Bits (e, _) ->
         let length = reduce_to_z e |> Z.to_int in
@@ -1966,7 +1969,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         else
           let z_min = list_min_abs_z z_min_list in
           L_Int z_min |> lit
-    | T_Named _ -> assert false
+    | T_Named _ -> Types.make_anonymous env t |> base_value_v1 ~loc env
     | T_Real -> L_Real Q.zero |> lit
     | T_Exception fields | T_Record fields ->
         let one_field (name, t_field) =
@@ -1985,6 +1988,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | ArrayLength_Expr e -> e
         in
         E_Array { length; value } |> add_pos
+  (* End *)
 
   let rec base_value_v0 ~loc env t : expr =
     let add_pos = add_pos_from loc in
@@ -2534,8 +2538,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     declare_local_constant env1 v ldi1
                   with Error.(ASLException _) -> env1)
             in
-            (S_Decl (ldk, ldi1, Some e') |> here, new_env)
-            |: TypingRule.SDeclSome
+            (S_Decl (ldk, ldi1, Some e') |> here, new_env) |: TypingRule.SDecl
         (* SDecl.Some) *)
         (* SDecl.None( *)
         | LDK_Var, None ->
@@ -2543,7 +2546,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               annotate_local_decl_item_uninit loc env ldi
             in
             (S_Decl (LDK_Var, ldi1, Some e_init) |> here, new_env)
-            |: TypingRule.SDeclNone
+            |: TypingRule.SDecl
         | (LDK_Constant | LDK_Let), None ->
             fatal_from s UnrespectedParserInvariant)
     (* SDecl.None) *)
@@ -3091,6 +3094,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let+ () = check_var_not_in_genv loc genv name in
     let env = with_empty_local genv in
     let initial_value', ty_opt', declared_t =
+      (* AnnotateTyOptInitialValue( *)
       match (ty_opt, initial_value) with
       | Some t, Some e ->
           let t' = annotate_type ~loc env t and t_e, e' = annotate_expr env e in
@@ -3104,6 +3108,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let t_e, e' = annotate_expr env e in
           (e', None, t_e)
       | None, None -> Error.fatal_from loc UnrespectedParserInvariant
+      (* AnnotateTyOptInitialValue) *)
     in
     let genv1 = add_global_storage loc name keyword genv declared_t in
     let env1 = with_empty_local genv1 in

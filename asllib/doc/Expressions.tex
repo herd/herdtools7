@@ -94,6 +94,7 @@ We now define the syntax, abstract syntax, typing, and semantics of the followin
   \item Structured type construction expressions (see \secref{StructuredTypeConstructionExpressions})
   \item Tuple expressions (see \secref{TupleExpressions})
   \item Parenthesized expressions (see \secref{ParenthesizedExpressions})
+  \item Array construction expressions (see \secref{ArrayConstructionExpressions})
 \end{itemize}
 
 Finally, we define side-effect-free expressions (see \secref{SideEffectFreeExpressions})
@@ -1125,7 +1126,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\ESliceOrEGetArrayErrorBegin}{\ESliceOrEGetArrayErrorEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.EGetArray \label{sec:TypingRule.EGetArray}}
+\subsubsection{TypingRule.EGetArray\label{sec:TypingRule.EGetArray}}
 \hypertarget{def-arrayaccess}{}
 \begin{definition}[Array Access]
 We refer to a right-hand-side expression of the form $b[i]$,
@@ -1265,7 +1266,7 @@ One of the following applies:
 \CodeSubsection{\ReduceSlicesToCallBegin}{\ReduceSlicesToCallEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.ESlice \label{sec:SemanticsRule.ESlice}}
+\subsubsection{SemanticsRule.ESlice\label{sec:SemanticsRule.ESlice}}
 \subsubsection{Example}
 In the specification:
 \ASLExample{\semanticstests/SemanticsRule.ESlice.asl}
@@ -1299,7 +1300,7 @@ resulting bitvector --- and the execution graph $\vgone$;
 \end{mathpar}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.EGetArray \label{sec:SemanticsRule.EGetArray}}
+\subsubsection{SemanticsRule.EGetArray\label{sec:SemanticsRule.EGetArray}}
 \subsubsection{Example}
 In the specification:
 \ASLExample{\semanticstests/SemanticsRule.EGetArray.asl}
@@ -1561,9 +1562,9 @@ All of the following apply:
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
   \item $\vtetwo$ is tuple type with list of types $\tys$, that is, $\TTuple(\tys)$;
-  \item $\fieldname$ is an identifier with the prefix \texttt{item} and the constant $\vindex$;
+  \item $\fieldname$ is an identifier with the prefix \texttt{item} and the suffix $\num$;
+  \item $\num$ is lexically an integer token with the integer value $\vindex$;
   \item determining whether $\vindex$ is between $0$ and the number of types in $\tys$, inclusive, yields $\True$\ProseOrTypeError;
   \item $\vt$ is the type at position $\vindex$ of $\tys$;
   \item $\newe$ is the expression for obtaining the item at index $\vindex$ from the expression $\vetwo$, that is, $\EGetItem(\vetwo, \vindex)$.
@@ -1573,9 +1574,10 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TTuple(\tys)\\
-  \fieldname \eqname \texttt{"item<index>"}\\
+  \fieldname \eqname \texttt{"item"}\num\\
+  \num \in \Lang(\REintlit)\\
+  \decimaltolit(\num) = \Tintlit(\vindex)\\
   \checktrans{0 \leq \vindex \leq \listlen{\tys}}{IndexOutOfRange} \checktransarrow \True \OrTypeError\\\\
   \vt \eqdef \tys[\vindex]\\
   \newe \eqdef \EGetItem(\vetwo, \vindex)
@@ -1633,6 +1635,31 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.EGetItem\label{sec:SemanticsRule.EGetItem}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ is an expression for accessing the component given by the index $\vindex$ of the tuple
+        given by the expression $\etuple$, that is, $\EGetItem(\etuple, \vindex)$;
+  \item evaluating the expression $\etuple$ yields $\Normal((\vvtuple, \vg), \newenv)$\ProseOrAbnormal;
+  \item accessing the native tuple value $\vvtuple$ at index $\vindex$ via $\getindex$, yields
+        the native value $\vv$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \etuple} \evalarrow \Normal((\vvtuple, \vg), \newenv) \OrAbnormal\\\\
+  \getindex(\vvtuple, \vindex) \evalarrow \vv
+}{
+  \evalexpr{\env, \overname{\EGetItem(\etuple, \vindex)}{\ve}} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+% | E_GetItem (e_tuple, index) ->
+% let** v_tuple, new_env = eval_expr env e_tuple in
+% let* v = B.get_index index v_tuple in
+% return_normal (v, new_env) |: SemanticsRule.EGetTupleItem
+\CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
 
 \section{Bitvector Concatenation Expressions\label{sec:BitvectorConcatenationExpressions}}
 \subsection{Syntax}
@@ -1727,7 +1754,7 @@ All of the following apply:
 \subsubsection{Comments}
 \lrmcomment{This is related to \identr{BRCM}:}
 
-\subsubsection{SemanticsRule.EExprList \label{sec:SemanticsRule.EExprList}}
+\subsubsection{SemanticsRule.EExprList\label{sec:SemanticsRule.EExprList}}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-evalexprlist}{}
@@ -2306,7 +2333,7 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \newenv)  \OrAbnormal\\
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \newenv) \OrAbnormal\\
   \evalpattern{\env, \vvone, \vp} \evalarrow \Normal(\vv, \vgtwo)\\
   \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
@@ -2634,7 +2661,7 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv)  \OrAbnormal\\
+  \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv) \OrAbnormal\\
   \vv \eqdef \nvvector{\vlist}
 }{
   \evalexpr{\env, \ETuple(\elist)} \evalarrow \Normal((\vv, \vg), \newenv)
@@ -2660,10 +2687,50 @@ Parenthesizing an expression can be used to improve readability and enforce an o
 }
 \end{mathpar}
 
+\section{Array Construction Expressions\label{sec:ArrayConstructionExpressions}}
+Array construction expression are used by the type system to express the initialization
+of array-typed variables. Since there is no syntax to initialize arrays, there are also
+no rules for building the AST for such expressions nor rules for type-checking them.
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EArray\{\EArrayLength: \expr, \EArrayValue: \expr\} &
+\end{flalign*}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.EvalEArray}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ is an array construction expression with length expression $\elength$ and value expression $\evalue$,
+        that is, $\EArray\{\EArrayLength: \elength, \EArrayValue: \evalue\}$;
+  \item evaluating the expression $\evalue$ in $\env$ yields $\Normal((\vvalue, \vgone), \newenv)$\ProseOrAbnormal;
+  \item evaluating the side-effect-free expression $\elength$ in $\env$ yields \\
+        $\Normal((\vlength, \vgtwo))$\ProseOrError;
+  \item $\vlength$ is a native integer value for $\nlength$;
+  \item define $\vv$ as the native vector of length $\nlength$ where each position has the value $\vvalue$;
+  \item define $\vg$ as the parallel composition of $\vgone$ and $\vgtwo$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \evalue} \evalarrow \Normal((\vvalue, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexprsef{\env, \elength} \evalarrow \Normal((\vlength, \vgtwo)) \OrDynError\\\\
+  \vlength \eqname \nvint(\nlength)\\
+  \vv \eqdef \nvvector{i=1..\nlength: \vvalue}\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalexpr{\env, \overname{\EArray\{\EArrayLength: \elength, \EArrayValue: \evalue\}}{\ve}} \evalarrow
+  \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Typing.ml}
+
 \section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
 \subsection{Typing}
 \subsection{Semantics}
-\subsubsection{SemanticsRule.ESideEffectFreeExpr \label{sec:SemanticsRule.ESideEffectFreeExpr}}
+\subsubsection{SemanticsRule.ESideEffectFreeExpr\label{sec:SemanticsRule.ESideEffectFreeExpr}}
 \subsubsection{Prose}
 The helper relation
 \hypertarget{def-evalexprsef}{}
@@ -2677,12 +2744,11 @@ by omitting throwing configurations as possible output configurations.
 
 \subsubsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \evalexpr{\env, \ve} \evalarrow \Normal((\vv,\vg), \env) \OrDynError
-  }
-  {
-    \evalexprsef{\env, \ve} \evalarrow \Normal(\vv, \vg)
-  }
+\inferrule{
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vv,\vg), \env) \OrDynError
+}{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\vv, \vg)
+}
 \end{mathpar}
 Notice that the output configuration does not contain an environment,
 since side-effect-free expressions do not modify the environment.
