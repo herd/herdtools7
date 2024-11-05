@@ -1,0 +1,10 @@
+AArch64 gicr.cdnmia
+{
+ [INTID(A)]=(pending:1,enabled:1,affinity:P0,active:0,priority:0);
+ [INTID(B)]=(pending:1,enabled:1,affinity:P0,active:0,priority:1);
+ [INTID(C)]=(pending:1,enabled:1,affinity:P0,active:0,priority:2);
+ [INTID(D)]=(pending:0,enabled:1,affinity:P0,active:0,priority:1);
+}
+ P0              ;
+ GICR X1, CDNMIA ;
+exists(0:X1=gicval_t:(valid:1,intid:B) \/ 0:X1=gicval_t:(valid:1,intid:C) \/ 0:X1=gicval_t:(valid:1,intid:D))

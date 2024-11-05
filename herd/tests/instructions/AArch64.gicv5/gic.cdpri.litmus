@@ -1,0 +1,8 @@
+AArch64 gic.cdpri
+{
+ [INTID(A)]=(priority:1);
+ 0:X0=gicval_t:(intid:A,priority:2);
+}
+ P0             ;
+ GIC CDPRI, X0  ;
+exists([INTID(A)]=(priority:1))
