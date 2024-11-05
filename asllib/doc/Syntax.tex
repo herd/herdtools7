@@ -310,7 +310,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nfuncbody}{}
 \begin{flalign*}
-\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend &
+\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &
 \end{flalign*}
 
 \hypertarget{def-nignoredoridentifier}{}
@@ -364,13 +364,13 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nstmt}{}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend &\\
-|\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend &\\
-|\ & \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
-|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
+\Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
+|\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+|\ & \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
-                    \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend &\\
-|\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend &\\
+                    \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+|\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tpass \parsesep \Tsemicolon &\\
 |\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\

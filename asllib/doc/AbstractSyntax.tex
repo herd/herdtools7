@@ -642,12 +642,12 @@ we use the notation $\namednode{n_i}{S_i}$, which names the child node $S_i$ as 
 \subsection{Example}
 Consider the derivation for while loops:
 \[
-\Nstmt \derives \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend
+\Nstmt \derives \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon
 \]
 
 The parse node for a while statement has the form
 \[
-\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend)
+\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend, \Tsemicolon)
 \]
 where $\ve$ names the node representing the condition of the loop and $\vstmtlist$ names
 the list of statements that form the body of the loop.
@@ -663,7 +663,7 @@ We also employ the following rule:
 }{
 {
 \begin{array}{r}
-  \buildstmt(\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend))
+  \buildstmt(\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend, \Tsemicolon))
   \astarrow\\
   \SWhile(\astversion{\ve}, \None, \astversion{\vstmtlist})
 \end{array}
@@ -701,7 +701,7 @@ In our example, this results in the abbreviated rule notation
 \inferrule{}{
 {
 \begin{array}{r}
-  \buildstmt(\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend))
+  \buildstmt(\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend, \Tsemicolon))
   \astarrow\\
   \SWhile(\astof{\vexpr}, \None, \astof{\vstmtlist})
   \end{array}
