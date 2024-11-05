@@ -2408,8 +2408,8 @@ All of the following apply:
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{\env \eqname (\tenv, \denv)\\
-  \vv \in \dynamicdomain(\tenv, \env, \vt)
+\inferrule{
+  \vv \in \dynamicdomain(\env, \vt)
 }{
   \evalexpr{\env, \overname{\EUnknown(\vt)}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }

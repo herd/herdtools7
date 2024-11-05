@@ -138,9 +138,9 @@ All of the following apply:
   \item obtaining the \underlyingtype\ of $\vte$ yields $\testruct$\ProseOrTypeError;
   \item One of the following holds:
   \begin{itemize}
-    \item All of the following apply (\textsc{t\_bool, t\_real, t\_int}):
+    \item All of the following apply (\textsc{t\_bool, t\_real, t\_int, t\_string}):
     \begin{itemize}
-      \item the AST label of $\vtstruct$ is one of $\TBool$, $\TReal$, or $\TInt$;
+      \item the AST label of $\vtstruct$ is one of $\TBool$, $\TReal$, $\TInt$, or $\TString$;
       \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
     \end{itemize}
 
@@ -169,12 +169,12 @@ All of the following apply:
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[t\_bool, t\_real, t\_int]{
+\inferrule[t\_bool, t\_real, t\_int, t\_string]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
-  \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt\}\\
+  \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt, \TString\}\\
   \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \overname{\PatternSingle(\vep)}{\newp}
