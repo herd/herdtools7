@@ -1259,7 +1259,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin EVar *)
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
-        if should_reduce_to_call env x ST_EmptyGetter then
+        if e.version = V0 && should_reduce_to_call env x ST_EmptyGetter then
           let () =
             if false then
               Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
@@ -1424,7 +1424,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* Begin ReduceSlicesToCall *)
         match e'.desc with
         | E_Var name
-          when should_reduce_to_call env name ST_Getter
+          when e'.version = V0
+               && should_reduce_to_call env name ST_Getter
                && List.for_all slice_is_single slices ->
             let args =
               try List.map slice_as_single slices
@@ -1478,7 +1479,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (* End *)))
     | E_GetField (e1, field_name) -> (
         let reduced =
-          if C.use_field_getter_extension then
+          if e1.version = V0 && C.use_field_getter_extension then
             reduce_getfields_to_slices env e1 [ field_name ] ~forbid_atcs
           else None
         in
@@ -1556,7 +1557,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* End *))
     | E_GetFields (e1, fields) -> (
         let reduced =
-          if C.use_field_getter_extension then
+          if e1.version = V0 && C.use_field_getter_extension then
             reduce_getfields_to_slices env e1 fields ~forbid_atcs
           else None
         in
@@ -1635,7 +1636,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       It is an ASLRef extension, guarded by [C.use_field_getter_extension].
   *)
   and reduce_getfields_to_slices env e1 fields ~forbid_atcs =
-    assert C.use_field_getter_extension;
+    assert (e1.version = V0 && C.use_field_getter_extension);
     match e1.desc with
     | E_Var name when should_reduce_to_call env name ST_Getter ->
         let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
@@ -2078,14 +2079,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                s
          in
          let t_re, re1 = annotate_expr env re in
-         let reduced = setter_should_reduce_to_call_s env le (t_re, re1) in
-         match reduced with
-         | Some new_s -> (new_s, env)
-         | None ->
-             let env1 =
-               match s.version with
-               | V1 -> env
-               | V0 -> (
+         match s.version with
+         | V1 ->
+             let le1 = annotate_lexpr env le t_re in
+             (S_Assign (le1, re1) |> here, env)
+         | V0 -> (
+             let reduced = setter_should_reduce_to_call_s env le (t_re, re1) in
+             match reduced with
+             | Some new_s -> (new_s, env)
+             | None ->
+                 let env1 =
                    (*
                     * In version V0, variable declaration is optional,
                     * As a result typing will be partial and some
@@ -2114,10 +2117,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                            annotate_local_decl_item loc env t_re ldk ldi
                          in
                          env2
-                       else env)
-             in
-             let le1 = annotate_lexpr env1 le t_re in
-             (S_Assign (le1, re1) |> here, env1))
+                       else env
+                 in
+                 let le1 = annotate_lexpr env1 le t_re in
+                 (S_Assign (le1, re1) |> here, env1)))
         |: TypingRule.SAssign
     (* End *)
     (* Begin SCall *)
@@ -2344,7 +2347,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
      * Field indices are extracted from the return type
      * of "associated" getter.
      *)
-    assert C.use_field_getter_extension;
+    assert (loc.version = V0 && C.use_field_getter_extension);
     let ( let* ) = Option.bind in
     let _, _, callee =
       try Fn.try_subprogram_for_name loc env x []
@@ -2362,6 +2365,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   and setter_should_reduce_to_call_recurse ~loc env (t_e, e) make_old_le sub_le
       =
+    let () = assert (loc.version = V0) in
     let x = fresh_var "__setter_setfield" in
     let here le = add_pos_from loc le in
     let t_sub_re, sub_re = expr_of_lexpr sub_le |> annotate_expr env in
@@ -2380,6 +2384,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | Some s -> Some (s_then (s_then s1 s2) s)
 
   and setter_should_reduce_to_call_s env le (t_e, e) : stmt option =
+    let () = assert (le.version = V0) in
     let () =
       if false then
         Format.eprintf "@[<2>setter_..._s@ @[%a@]@ @[%a@]@]@." PP.pp_lexpr le

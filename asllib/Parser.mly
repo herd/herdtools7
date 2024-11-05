@@ -557,21 +557,6 @@ let decl ==
             }
         }
     (* End *)
-    (* Begin no_arg_getter *)
-    | GETTER; name=IDENTIFIER; ret=return_type; ~=func_body;
-        {
-          D_Func
-            {
-              name;
-              parameters = [];
-              args = [];
-              return_type = Some ret;
-              body = SB_ASL func_body;
-              subprogram_type = ST_EmptyGetter;
-              recurse_limit = None;
-            }
-        }
-    (* End *)
     (* Begin setter *)
     | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; EQ; v=typed_identifier;
         ~=func_body;
@@ -584,21 +569,6 @@ let decl ==
               return_type = None;
               body = SB_ASL func_body;
               subprogram_type = ST_Setter;
-              recurse_limit = None;
-            }
-        }
-    (* End *)
-    (* Begin no_arg_setter *)
-    | SETTER; name=IDENTIFIER; EQ; v=typed_identifier; ~=func_body;
-        {
-          D_Func
-            {
-              name;
-              parameters = [];
-              args = [ v ];
-              return_type = None;
-              body = SB_ASL func_body;
-              subprogram_type = ST_EmptySetter;
               recurse_limit = None;
             }
         }
