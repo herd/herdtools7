@@ -1599,18 +1599,13 @@ module Make
              O.fii "else if (_p->%s == cflush) cache_flush((void *)%s);"
                (pctag (proc,addr)) addr)
           addrs ;
-        let mem_map =
-          let open BellInfo in
-          match test.T.bellinfo with
-          | None|Some { regions=None;_} -> []
-          | Some { regions=Some map;_} -> map in
-        begin match pte_init,mem_map with
-        | [],[] -> ()
-        | bds,_ ->
+        begin match pte_init with
+        | [] -> ()
+        | bds ->
             O.oii "barrier_wait(_b);" ;
             List.iter
               (fun x ->
-                let ok1 = try
+                try
                   begin match Misc.Simple.assoc x bds with
                   | P phy ->
                       O.fii
@@ -1628,24 +1623,15 @@ module Make
                           x x (PU.dump_pteval_flags arg pteval);
                         List.iter
                           (fun attr ->
-                            let attr = sprintf "attr_%s" (MyName.name_as_symbol attr) in
                             O.fii "litmus_set_pte_attribute(_vars->pte_%s, %s);"
                               x attr)
-                          (A.V.PteVal.get_attrs pteval)
+                          (A.V.PteVal.attrs_as_kvm_symbols pteval)
                       end
                   end ;
-                  true
-                with Not_found ->false in
-                let ok2 = try
-                  let rs = Misc.Simple.assoc x mem_map in
-                  List.iter
-                    (fun r ->
-                      let r = sprintf "attr_%s" (MyName.name_as_symbol r) in
-                      O.fii "litmus_set_pte_attribute(%s,%s);" (OutUtils.fmt_pte_kvm x) r)
-                    rs ;
-                  true
-                with Not_found -> false in
-                if ok1 || ok2 then O.fii "litmus_flush_tlb((void *)%s);" x)
+                  O.fii "litmus_flush_tlb((void *)%s);" x
+                with Not_found ->
+                  ()
+              )
               inits
         end ;
         (* Synchronise *)
