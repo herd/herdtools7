@@ -51,6 +51,7 @@
 
 open AST
 open ASTUtils
+open Desugar
 
 let version = V1
 
@@ -467,6 +468,13 @@ let stmt ==
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
+      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); EQ; rhs=expr;
+        { desugar_setter call [] rhs }
+      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); DOT; fld=IDENTIFIER; EQ; rhs=expr;
+        { desugar_setter call [fld] rhs }
+      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); DOT;
+        flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
+        { desugar_setter call flds rhs }
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
       | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }
