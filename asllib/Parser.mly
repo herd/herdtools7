@@ -324,8 +324,7 @@ let fields == braced(tclist(typed_identifier))
 let fields_opt == { [] } | fields
 
 (* Slices *)
-let named_slices == bracketed(nclist(slice))
-let slices == bracketed( clist(slice))
+let slices == bracketed(nclist(slice))
 let slice ==
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
@@ -336,9 +335,9 @@ let slice ==
 let bitfields_opt == loption(bitfields)
 let bitfields == braced(tclist(bitfield))
 let bitfield ==
-  | s=named_slices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
-  | s=named_slices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
-  | s=named_slices ; x=IDENTIFIER ; ty=as_ty     ;  { BitField_Type   (x, s, ty) }
+  | s=slices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
+  | s=slices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
+  | s=slices ; x=IDENTIFIER ; ty=as_ty     ;  { BitField_Type   (x, s, ty) }
 
 (* Also called ty in grammar.bnf *)
 let ty :=
@@ -502,7 +501,6 @@ let subtype_opt == option(subtype)
 let opt_typed_identifier == pair(IDENTIFIER, ty_opt)
 let return_type == ARROW; ty
 let params_opt == { [] } | braced(clist(opt_typed_identifier))
-let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
 let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
@@ -542,14 +540,14 @@ let decl ==
         }
     (* End *)
     (* Begin getter *)
-    | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; ~=return_type;
+    | GETTER; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type;
         ~=func_body;
         {
           D_Func
             {
               name;
               parameters = params_opt;
-              args = access_args;
+              args = func_args;
               return_type = Some return_type;
               body = SB_ASL func_body;
               subprogram_type = ST_Getter;
@@ -558,14 +556,14 @@ let decl ==
         }
     (* End *)
     (* Begin setter *)
-    | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; EQ; v=typed_identifier;
+    | SETTER; name=IDENTIFIER; ~=params_opt; ~=func_args; EQ; v=typed_identifier;
         ~=func_body;
         {
           D_Func
             {
               name;
               parameters = params_opt;
-              args = v :: access_args;
+              args = v :: func_args;
               return_type = None;
               body = SB_ASL func_body;
               subprogram_type = ST_Setter;
