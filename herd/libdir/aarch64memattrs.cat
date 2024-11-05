@@ -41,100 +41,61 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
+let TTD = PTE
+
+procedure conflict(attr, set) =
+  let diff = attr & (set \ attr)
+  assert empty diff as Invalid-Attribute
+end
+
 (*** Device Memory ***)
 
 (* Device Memory Types *)
-let PTEDevice-GRE = try PTEDevice-GRE with emptyset
-let PTEDevice-nGRE = try PTEDevice-nGRE with emptyset
-let PTEDevice-nGnRE = try PTEDevice-nGnRE with emptyset
-let PTEDevice-nGnRnE = try PTEDevice-nGnRnE with emptyset
+let Device-GRE = try PTEDevice-GRE with emptyset
+let Device-nGRE = try PTEDevice-nGRE with emptyset
+let Device-nGnRE = try PTEDevice-nGnRE with emptyset
+let Device-nGnRnE = try PTEDevice-nGnRnE with emptyset
+let Device = Device-GRE | Device-nGRE | Device-nGnRE | Device-nGnRnE
 
-(* A PTE can only have one of the above Device memory types  *)
-let DeviceMemoryType-conflict = (PTEDevice-GRE & PTEDevice-nGRE)
-                              | (PTEDevice-GRE & PTEDevice-nGnRE)
-                              | (PTEDevice-GRE & PTEDevice-nGnRnE)
-                              | (PTEDevice-nGRE & PTEDevice-nGnRE)
-                              | (PTEDevice-nGRE & PTEDevice-nGnRnE)
-                              | (PTEDevice-nGnRE & PTEDevice-nGnRnE)
-assert empty DeviceMemoryType-conflict as Invalid-Device-Memory-Type
-
-let PTEDevice = try PTEDevice with emptyset
-let PTEDevice = PTEDevice
-              | PTEDevice-GRE | PTEDevice-nGRE | PTEDevice-nGnRE | PTEDevice-nGnRnE
+call conflict(Device-GRE, Device)
+call conflict(Device-nGRE, Device)
+call conflict(Device-nGnRE, Device)
+call conflict(Device-nGnRnE, Device)
 
 (*** Normal Memory ***)
 
-let PTENon-shareable = try PTENon-shareable with emptyset
-let PTEInner-shareable = try PTEInner-shareable with emptyset
-let PTEOuter-shareable = try PTEOuter-shareable with emptyset
+let NSH = try PTENSH with emptyset
+let ISH = try PTEISH with emptyset
+let OSH = try PTEOSH with emptyset
+let Shareability = NSH | ISH | OSH
 
 (* Memory cannot have more than one Shareability Attribute *)
-let Shareability-conflict = (PTENon-shareable & PTEInner-shareable)
-                          | (PTEInner-shareable & PTEOuter-shareable)
-                          | (PTENon-shareable & PTEOuter-shareable)
-assert empty Shareability-conflict as Invalid-Shareability
+call conflict(NSH, Shareability)
+call conflict(ISH, Shareability)
+call conflict(OSH, Shareability)
 
-let PTEInner-write-back = try PTEInner-write-back with emptyset
-let PTEInner-write-through = try PTEInner-write-through with emptyset
-let PTEInner-non-cacheable = try PTEInner-non-cacheable with emptyset
+let iWB = try PTEiWB with emptyset
+let iWT = try PTEiWT with emptyset
+let iNC = try PTEiNC with emptyset
+let InnerCacheability = iWB | iWT | iNC
 
 (* Memory cannot have more than one Inner Cacheability Attribute *)
-let InnerCacheability-conflict = (PTEInner-write-back & PTEInner-write-through)
-                               | (PTEInner-write-through & PTEInner-non-cacheable)
-                               | (PTEInner-non-cacheable & PTEInner-write-back)
-assert empty InnerCacheability-conflict as Invalid-Inner-Cacheability
+call conflict(iWB, InnerCacheability)
+call conflict(iWT, InnerCacheability)
+call conflict(iNC, InnerCacheability)
 
-let PTEOuter-write-back = try PTEOuter-write-back with emptyset
-let PTEOuter-write-through = try PTEOuter-write-through with emptyset
-let PTEOuter-non-cacheable = try PTEOuter-non-cacheable with emptyset
+let oWB = try PTEoWB with emptyset
+let oWT = try PTEoWT with emptyset
+let oNC = try PTEoNC with emptyset
+let OuterCacheability = oWB | oWT | oNC
 
-(* Memory cannot have more than one Outer Cacheability Attribute *)
-let OuterCacheability-conflict = (PTEOuter-write-back & PTEOuter-write-through)
-                               | (PTEOuter-write-through & PTEOuter-non-cacheable)
-                               | (PTEOuter-non-cacheable & PTEOuter-write-back)
-assert empty OuterCacheability-conflict as Invalid-Outer-Cacheability
+(* Memory cannot have more than one Inner Cacheability Attribute *)
+call conflict(oWB, OuterCacheability)
+call conflict(oWT, OuterCacheability)
+call conflict(oNC, OuterCacheability)
 
-let PTENormal = try PTENormal with emptyset
-let PTETaggedNormal = try PTETaggedNormal with emptyset
+let TaggedNormal = try PTETaggedNormal with emptyset
+let Normal = try PTENormal with emptyset
 
 (*** Common attributes ***)
 let PTEXS = try PTEXS with emptyset
-
-(*** Sanity checks ***)
-
-(* Memory cannot be of type Normal and Device at the same time *)
-let MemoryType-conflict = PTENormal & PTEDevice
-assert empty MemoryType-conflict as Invalid-Memory-Type
-
-(* No other memory attribute is allowed *)
-let PTEMemAttr = try PTEMemAttr with emptyset
-let PTEAll-Valid-Mem-Attr = PTENormal | PTETaggedNormal
-                    | PTENon-shareable | PTEInner-shareable | PTEOuter-shareable
-                    | PTEInner-write-back | PTEInner-write-through | PTEInner-non-cacheable
-                    | PTEOuter-write-back | PTEOuter-write-through | PTEOuter-non-cacheable
-                    | PTEDevice
-                    | PTEDevice-GRE | PTEDevice-nGRE | PTEDevice-nGnRE | PTEDevice-nGnRnE | PTEXS
-let Invalid-Memory-Attr = PTEMemAttr \ (PTEAll-Valid-Mem-Attr)
-assert empty Invalid-Memory-Attr as Invalid-Memory-Attribute
-
-(* Default Shareability *)
-let PTEInner-shareable = PTEInner-shareable
-                       | (PTE \ (PTEDevice | PTENon-shareable | PTEOuter-shareable))
-
-(* Default Inner Cacheability *)
-let PTEInner-write-back = PTEInner-write-back
-                        | (PTE \ (PTEDevice | PTEInner-write-through | PTEInner-non-cacheable))
-
-(* Default Outer Cacheability *)
-let PTEOuter-write-back = PTEOuter-write-back
-                        | (PTE \ (PTEDevice | PTEOuter-write-through | PTEOuter-non-cacheable))
-
-let ISH-WB = PTEInner-shareable & PTEInner-write-back & PTEOuter-write-back
-
-(* Default Memory Type *)
-let PTETaggedNormal = PTETaggedNormal | (if "memtag" then ISH-WB else 0)
-let PTENormal = PTENormal
-              | PTENon-shareable | PTEInner-shareable | PTEOuter-shareable
-              | PTEInner-write-back | PTEInner-write-through | PTEInner-non-cacheable
-              | PTEOuter-write-back | PTEOuter-write-through | PTEOuter-non-cacheable
-let PTENormal = if "memtag" then PTENormal \ ISH-WB else PTENormal

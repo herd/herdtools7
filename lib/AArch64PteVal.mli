@@ -24,7 +24,8 @@ module Attrs : sig
   val pp : t -> string
   val as_list : t -> string list
   val of_list : string list -> t
-  val mem : string -> t -> bool
+  val is_tagged : t -> bool
+  val as_kvm_symbols : t -> string list
 end
 
 type t = {
@@ -72,3 +73,4 @@ val norm : string StringMap.t -> string StringMap.t
 val dump_pack : (string -> string) -> t -> string
 val as_physical : t -> string option
 val as_flags : t -> string option
+val attrs_as_kvm_symbols : t -> string list

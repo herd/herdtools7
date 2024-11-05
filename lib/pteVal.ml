@@ -49,6 +49,7 @@ module type S = sig
   val dump_pack : (string -> string) -> t -> string
   val as_physical : t -> string option
   val as_flags : t -> string option
+  val attrs_as_kvm_symbols : t -> string list
 end
 
 module No = struct
@@ -77,6 +78,7 @@ module No = struct
     let dump_pack _ _ = "()"
     let as_physical _ = None
     let as_flags _ = None
+    let attrs_as_kvm_symbols _ = assert false
 end
 
 module ASL = No
