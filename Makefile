@@ -597,6 +597,16 @@ test.vmsa+mte:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
 
+
+test.gicv5:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.gicv5 \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 GICv5 instructions tests: OK"
+
 test:: diy-test
 test-local:: diy-test
 

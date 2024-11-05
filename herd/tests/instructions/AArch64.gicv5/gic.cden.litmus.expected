@@ -1,0 +1,10 @@
+Test gic.cden Allowed
+States 1
+[INTID(A)]=(affinity:P0);
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists ([INTID(A)]=(enabled:0, affinity:P0))
+Observation gic.cden Never 0 1
+Hash=1caf3e7bd7ed7a5b9d2c47ce7b83c4a6
+
