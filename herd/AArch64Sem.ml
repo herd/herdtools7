@@ -3738,7 +3738,7 @@ Arguments:
             let* () =
               let* v = set_pending false v in
               let* v = set_active true v in
-              write_intid a v ~ae:aimp ii
+              write_intid a ~an:Annot.GICR ~ae:aimp v ii
             and* () =
               let* v = gic_setintid a in
               write_reg r v ii in
@@ -3746,7 +3746,7 @@ Arguments:
           let intids = A.V.ValueSet.elements (get_exported_intids test) in
           let m =
             let* vs = List.fold_right (>>::)
-                (List.map (fun a -> read_intid a ~ae:aimp ii) intids)
+                (List.map (fun a -> read_intid a ~an:Annot.GICR ~ae:aimp ii) intids)
                 (M.unitT []) in
             let rec choose vl al =
               match (vl, al) with

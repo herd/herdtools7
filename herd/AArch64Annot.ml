@@ -21,6 +21,7 @@ type t =
   | EX | EXA | EXL (* Exclusives *)
   | RCFG
   | DI
+  | GICR
 
 let is_speculated = function
   | S -> true
@@ -31,7 +32,7 @@ let is_non_temporal = function
   | _ -> false
 
 let is_atomic = function
-  | XA | XQ | XL | X | NoRet | DI -> true
+  | XA | XQ | XL | X | NoRet | DI | GICR -> true
   | _ -> false
 
 let is_noreturn = function
@@ -62,6 +63,10 @@ let is_di = function
   | DI -> true
   | _ -> false
 
+let is_gicr = function
+  | GICR -> true
+  | _ -> false
+
 let sets = [
     "X", is_atomic;
     "A",  is_acquire;
@@ -73,6 +78,7 @@ let sets = [
     "EX", is_exclusive;
     "RCFG", is_rcfg;
     "DI", is_di;
+    "GICR", is_gicr;
   ]
 
 let pp = function
@@ -92,3 +98,4 @@ let pp = function
   | EXL -> "RelEx"
   | RCFG -> "RCFG"
   | DI -> "DI"
+  | GICR -> "GICR"
