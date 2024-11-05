@@ -1,0 +1,8 @@
+AArch64 gic.cdaff
+{
+ [INTID(A)]=(affinity:P0);
+ 0:X0=gicval_t:(intid:A, affinity:P1);
+}
+ P0            ;
+ GIC CDAFF, X0 ;
+exists(INTID(A)=(affinity:P0))
