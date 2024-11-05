@@ -352,8 +352,14 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     function [] -> default | x :: li -> List.fold_left folder x li
 
-  let check_non_overlapping_slices slices positions =
-    let two_slices (s1, l1) m (s2, l2) =
+  (** [check_non_overlapping_slices slices value_ranges] checks that the
+      slice ranges [value_ranges] are non-overlapping.
+
+      [value_ranges] are given by a list of couples [(start, length)].
+      If they are overlapping, an error [OverlappingSlices (slices, Dynamic)]
+      is thrown. *)
+  let check_non_overlapping_slices slices value_ranges =
+    let check_two_ranges_are_non_overlapping (s1, l1) m (s2, l2) =
       let* () = m in
       let cond =
         let* s1l1s2 =
@@ -369,12 +375,19 @@ module Make (B : Backend.S) (C : Config) = struct
       if b then return ()
       else Error.(fatal_unknown_pos (OverlappingSlices (slices, Dynamic)))
     in
-    let one_slice past_slices slice =
-      let* past_slices = past_slices in
-      let* () = List.fold_left (two_slices slice) (return ()) past_slices in
-      return (slice :: past_slices)
+    let check_range_does_not_overlap_previous_ranges past_ranges range =
+      let* past_ranges = past_ranges in
+      let* () =
+        List.fold_left
+          (check_two_ranges_are_non_overlapping range)
+          (return ()) past_ranges
+      in
+      return (range :: past_ranges)
     in
-    let* _ = List.fold_left one_slice (return []) positions in
+    let* _ =
+      List.fold_left check_range_does_not_overlap_previous_ranges (return [])
+        value_ranges
+    in
     return ()
 
   (* Evaluation of Expressions *)
@@ -667,11 +680,11 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalLESlice *)
     | LE_Slice (e_bv, slices) ->
         let*^ m_bv, env1 = expr_of_lexpr e_bv |> eval_expr env in
-        let*^ m_positions, env2 = eval_slices env1 slices in
+        let*^ m_slice_ranges, env2 = eval_slices env1 slices in
         let new_m_bv =
-          let* v = m and* positions = m_positions and* v_bv = m_bv in
-          let* () = check_non_overlapping_slices slices positions in
-          B.write_to_bitvector positions v v_bv
+          let* v = m and* slice_ranges = m_slice_ranges and* v_bv = m_bv in
+          let* () = check_non_overlapping_slices slices slice_ranges in
+          B.write_to_bitvector slice_ranges v v_bv
         in
         eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
     (* End *)
@@ -764,7 +777,7 @@ module Make (B : Backend.S) (C : Config) = struct
       corresponds to the start (included) and the length of each slice in
       [slices]. *)
   and eval_slices env :
-      slice list -> ((B.value * B.value) list * env) maybe_exception m =
+      slice list -> (B.value_range list * env) maybe_exception m =
     (* Begin EvalSlice *)
     let eval_slice env = function
       | Slice_Single e ->

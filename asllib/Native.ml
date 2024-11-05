@@ -69,6 +69,7 @@ let mismatch_type v types =
 module NativeBackend = struct
   type 'a m = 'a
   type value = native_value
+  type value_range = value * value
   type primitive = value m list -> value list m
   type scope = AST.identifier * int
 

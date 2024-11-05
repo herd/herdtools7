@@ -838,6 +838,7 @@ module Make (C : Config) = struct
       let ii_env = (ii, ref ii.A.program_order_index) in
       let module ASLBackend = struct
         type value = V.v
+        type value_range = value * value
         type 'a m = 'a M.t
         type primitive = primitive_t
 
