@@ -881,7 +881,7 @@ module Make
         | L|XL -> XL
         | X|N  -> X
         | NoRet|S|NTA -> X (* Does it occur? *)
-        | RCFG | DI -> assert false
+        | RCFG | DI | GICR -> assert false
 
       let an_pte =
         let open Annot in
@@ -891,7 +891,7 @@ module Make
         | L|XL -> L
         | X|N -> N
         | NoRet|S|NTA -> N
-        | RCFG | DI -> assert false
+        | RCFG | DI | GICR -> assert false
 
       let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
@@ -3488,7 +3488,7 @@ module Make
             let* () =
               let* v = set_pending false v in
               let* v = set_active true v in
-              write_intid a v ~ae:aimp ii
+              write_intid a ~an:Annot.GICR ~ae:aimp v ii
             and* () =
               let* v = gic_setintid a in
               write_reg r v ii in
@@ -3496,7 +3496,7 @@ module Make
           let intids = A.V.ValueSet.elements (get_exported_intids test) in
           let m =
             let* vs = List.fold_right (>>::)
-                (List.map (fun a -> read_intid a ~ae:aimp ii) intids)
+                (List.map (fun a -> read_intid a ~an:Annot.GICR ~ae:aimp ii) intids)
                 (M.unitT []) in
             let rec choose vl al =
               match (vl, al) with
