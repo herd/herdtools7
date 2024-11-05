@@ -1638,10 +1638,9 @@ module Make
                           x x (PU.dump_pteval_flags arg pteval);
                         List.iter
                           (fun attr ->
-                            let attr = sprintf "attr_%s" (MyName.name_as_symbol attr) in
                             O.fii "litmus_set_pte_attribute(_vars->pte_%s, %s);"
                               x attr)
-                          (A.V.PteVal.get_attrs pteval)
+                          (A.V.PteVal.attrs_as_kvm_symbols pteval)
                       end
                   end ;
                   true
