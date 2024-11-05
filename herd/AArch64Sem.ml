@@ -3503,12 +3503,13 @@ module Make
               | v::vl, a::al ->
                 let proc = A.V.intToV ii.A.proc in
                 let is_hppi = is_cHPPI proc v in
-                let* cond = match cmd with
-                  | IA -> is_hppi
+                let* cond =
+                  let* prio = get_priority v in
+                  match cmd with
+                  | IA ->
+                    m_op Op.And is_hppi (is_not_zero prio)
                   | NMIA ->
-                    let* prio = get_priority v in
-                    let is_nmi = is_zero prio in
-                    m_op Op.And is_hppi is_nmi
+                    m_op Op.And is_hppi (is_zero prio)
                 in
                 M.altT
                   (M.assertT cond (ack a v))
