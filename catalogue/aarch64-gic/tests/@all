@@ -74,4 +74,6 @@ coRW-gic+rcfg-di.litmus
 MP-fIPI-dTag+dsb.st+gsb.ack.litmus
 coWR-gic+ia-gsb.ack-di.litmus
 coWR-gic+dis-gsb.sys-ia.litmus
+coWWR-gic+pri-di-nmia.litmus
+coWWR-gic+pri-pend1-nmia.litmus
 
