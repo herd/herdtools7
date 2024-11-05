@@ -2297,8 +2297,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and annotate_loop_limit ~loc env = function
     | None -> None
     | Some limit ->
-        let t, limit' = annotate_expr_ env ~forbid_atcs:true limit in
-        let+ () = check_constrained_integer ~loc env t in
+        let limit' = annotate_static_constrained_integer ~loc env limit in
         Some limit' |: TypingRule.AnnotateLoopLimit
   (* End *)
 
@@ -2510,6 +2509,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if false then
         Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name pp_env env1
     in
+    (* Check recursion limit *)
+    let recurse_limit = annotate_loop_limit ~loc env1 func_sig.recurse_limit in
+    (* Parameters handling *)
     let potential_params = get_undeclared_defining env1 func_sig in
     (* Add explicit parameters *)
     let env2, declared_params =
@@ -2641,7 +2643,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           (env4', return_type)
     in
-    (env5, { func_sig with parameters; args; return_type })
+    (env5, { func_sig with parameters; args; return_type; recurse_limit })
     |: TypingRule.AnnotateFuncSig
   (* End *)
 
