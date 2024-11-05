@@ -69,3 +69,5 @@ coWR-gic+dis-gsb.sys-ia			Forbid
 MP-gic+dis-gsb.sys+dsb.ld		Forbid
 MP-fIPI+dsb.st+addr			Allow
 MP-fIPI+dsb.st+ctrlisb			Forbid
+coWWR-gic+pri-di-nmia			Allow
+coWWR-gic+pri-pend1-nmia		Forbid
