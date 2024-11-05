@@ -1,6 +1,6 @@
 AArch64  MP-fLPI+imp+gsb.ack
 {
- [INTID(A)]=(enabled:1,affinity:P1,priority:0,pending:0);
+ [INTID(A)]=(enabled:1,affinity:P1,priority:1,pending:0);
  [PTE(x)]=(oa:PA(x),attrs:(device-nGRE)); // PERIP
  0:X3=x;
  1:X1=x;
