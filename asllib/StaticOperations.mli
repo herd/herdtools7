@@ -2,8 +2,12 @@ open AST
 
 val constraint_binop :
   binop -> int_constraint list -> int_constraint list -> int_constraint list
-(** [constraint_binop PLUS cs1 cs2] is the set of constraints given by the
-    element wise application of [PLUS]. *)
+(** [constraint_binop op cs1 cs2] is the set of constraints given by the
+    element wise application of [op].
+
+    Supported [op]s: [DIV], [DIVRM], [MUL], [PLUS], [MINUS], [SHR], [SHL],
+    [MOD], [POW].
+*)
 
 type strictness = [ `Silence | `Warn | `TypeCheck ]
 

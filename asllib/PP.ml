@@ -210,7 +210,14 @@ and pp_int_constraint f = function
   | Constraint_Exact x -> pp_expr f x
   | Constraint_Range (x, y) -> fprintf f "@[<h>%a..%a@]" pp_expr x pp_expr y
 
-and pp_int_constraints f = fprintf f "@[%a@]" (pp_comma_list pp_int_constraint)
+and pp_int_constraints f li =
+  let pp_max_int_constraint_list = 10 in
+  if List.length li < pp_max_int_constraint_list then
+    fprintf f "@[%a@]" (pp_comma_list pp_int_constraint) li
+  else
+    fprintf f "@[%a,@ ...@]"
+      (pp_comma_list pp_int_constraint)
+      (ASTUtils.list_take pp_max_int_constraint_list li)
 
 let pp_typed_identifier f (name, ty) = fprintf f "@[%s:@ %a@]" name pp_ty ty
 

@@ -585,7 +585,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckBinop *)
-  let rec check_binop loc env op t1 t2 : ty =
+  let rec apply_binop_types loc env op t1 t2 : ty =
     let () =
       if false then
         Format.eprintf "Checking binop %s between %a and %a@."
@@ -596,7 +596,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _, (T_Named _, _) | _, (_, T_Named _) ->
         let t1_anon = Types.make_anonymous env t1
         and t2_anon = Types.make_anonymous env t2 in
-        check_binop loc env op t1_anon t2_anon
+        apply_binop_types loc env op t1_anon t2_anon
     | (BAND | BOR | BEQ | IMPL), (T_Bool, T_Bool) -> T_Bool |> with_loc
     | (AND | OR | EOR | PLUS | MINUS), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
@@ -620,7 +620,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | Parameterized _, _ | _, Parameterized _ ->
             let t1_well_constrained = Types.to_well_constrained t1
             and t2_well_constrained = Types.to_well_constrained t2 in
-            check_binop loc env op t1_well_constrained t2_well_constrained
+            apply_binop_types loc env op t1_well_constrained t2_well_constrained
         | WellConstrained cs1, WellConstrained cs2 -> (
             best_effort integer @@ fun _ ->
             try
@@ -1286,7 +1286,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_Binop (op, e1, e2) ->
         let t1, e1' = annotate_expr_ ~forbid_atcs env e1 in
         let t2, e2' = annotate_expr_ ~forbid_atcs env e2 in
-        let t = check_binop e env op t1 t2 in
+        let t = apply_binop_types e env op t1 t2 in
         (t, E_Binop (op, e1', e2') |> here) |: TypingRule.Binop
     (* End *)
     (* Begin Unop *)

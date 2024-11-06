@@ -1,76 +1,157 @@
 open AST
 open ASTUtils
 
-let is_left_increasing = function
-  | MUL | SHL | SHR | POW | PLUS | MINUS -> true
-  | DIV | DIVRM | AND | BAND | BEQ | MOD | BOR | EOR | EQ_OP | GT | GEQ | IMPL
-  | LT | LEQ | NEQ | OR | RDIV ->
-      assert false
-
-let is_right_increasing = function
-  | MUL | SHL | SHR | POW | PLUS -> true
-  | MINUS -> false
-  | DIV | DIVRM | AND | BAND | MOD | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL
-  | LT | LEQ | NEQ | OR | RDIV ->
-      assert false
-
-let is_right_decreasing = function
-  | MINUS -> true
-  | MUL | SHL | SHR | POW | PLUS -> false
-  | DIVRM | DIV | MOD | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL
-  | LT | LEQ | NEQ | OR | RDIV ->
-      assert false
-
-let () =
-  if true then (
-    let all_binops_here = [ MINUS; MUL; SHL; SHR; POW; PLUS ] in
-    List.iter
-      (fun b -> assert (is_right_decreasing b || is_right_increasing b))
-      all_binops_here;
-    List.iter (fun b -> assert (is_left_increasing b)) all_binops_here)
-
 let exact e = Constraint_Exact e
 let range a b = Constraint_Range (a, b)
 
+let constraint_mod = function
+  | Constraint_Exact e | Constraint_Range (_, e) -> range zero_expr e
+
+(** [possible_extremities_left op a b] is given a range [a..b] the set of
+    needed extremities of intervals for the left-hand-side of an operation
+    [op]. *)
+let possible_extremities_left op a b =
+  match op with
+  (* MUL is not left-increasing: if c is negative, then the following is not
+     true: if x < y then x op c < y op c This is why we have to add the
+     reversed intervals. We also have to add the intervals (a, a) and (b, b)
+     for the case where a < 0 < b and c < 0 < d. *)
+  | MUL -> [ (a, a); (a, b); (b, a); (b, b) ]
+  (* All the following operations are left-increasing:
+     for any operation op among those, if x < y, and c a valid value for the
+     right-hand side of op, x op c < y op c *)
+  | DIV | DIVRM | SHR | SHL | PLUS | MINUS -> [ (a, b) ]
+  | _ -> assert false
+
+(** [possible_extremities_left op a b] is given a range [a..b] the set of
+    needed extremities of intervals for the right-hand-side of an operation
+    [op]. *)
+let possible_extremities_right op c d =
+  match op with
+  (* PLUS is right-increasing. *)
+  | PLUS -> [ (c, d) ]
+  (* MINUS simply reverse the intervals. *)
+  | MINUS -> [ (d, c) ]
+  (* We need:
+      - the normal interval if the left-hand-side value is positive
+      - the reversed interval if the right-hand-side value is negative
+      - the singletons at bounds for the case where a < 0 < b and c < 0 < d. *)
+  | MUL -> [ (c, c); (c, d); (d, c); (d, d) ]
+  (* For SHR and SHL, we can replace [c] by [0] because this handle the case where c is
+     negative, that will need to be treated anyway. Then if the right-hand side
+     is negative, we need to reverse the intervals. *)
+  | SHL | SHR -> [ (d, zero_expr); (zero_expr, d) ]
+  (* Same as SHR/SHL, but with [1] for divisions. *)
+  | DIV | DIVRM -> [ (one_expr, d); (d, one_expr) ]
+  | _ -> assert false
+
+(** [apply_binop_extremities op c1 c2] applies [op] to the slices [c1] and [c2].
+
+    It produces a list of all possible slices, by using the functions
+    [possible_extremities_left/right], and taking the cartesian product of
+    their results. *)
+let apply_binop_extremities op c1 c2 =
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> [ exact (binop op a c) ]
+  | Constraint_Range (a, b), Constraint_Exact c ->
+      List.map
+        (fun (a', b') -> range (binop op a' c) (binop op b' c))
+        (possible_extremities_left op a b)
+  | Constraint_Exact a, Constraint_Range (c, d) ->
+      List.map
+        (fun (c', d') -> range (binop op a c') (binop op a d'))
+        (possible_extremities_right op c d)
+  | Constraint_Range (a, b), Constraint_Range (c, d) ->
+      list_cross
+        (fun (a', b') (c', d') -> range (binop op a' c') (binop op b' d'))
+        (possible_extremities_left op a b)
+        (possible_extremities_right op c d)
+
+(** [constraint_pow c1 c2] applies [POW] to [c1] and [c2]. *)
+let constraint_pow c1 c2 =
+  let pow = binop POW and neg = unop NEG in
+  match (c1, c2) with
+  | Constraint_Exact a, Constraint_Exact c -> [ exact (pow a c) ]
+  | Constraint_Range (a, b), Constraint_Exact c ->
+      (* We need:
+         - 1 for 0 POW 0 that can be included everywhere and is the only time that POW is very unpredictable
+         - the case a positive is included in the case a negative.
+         - 0..b POW c for the positive values
+         - (- ((-a) POW c)) .. ((-a) POW c) for the negative values
+      *)
+      let mac = pow (neg a) c in
+      [ range zero_expr (pow b c); range (neg mac) mac; exact one_expr ]
+  | Constraint_Exact a, Constraint_Range (_c, d) ->
+      (* We need here:
+         - 1 for 0 POW 0 that can be included everywhere and is the only time that POW is very unpredictable
+         - (- ((-a) POW d)) .. ((-a) POW d) for the negative values
+         - 0 .. ad for the positive values
+      *)
+      let mad = pow (neg a) d and ad = pow a d in
+      [ range zero_expr ad; range (neg mad) mad; exact one_expr ]
+  | Constraint_Range (a, b), Constraint_Range (_c, d) ->
+      (* We need here:
+         - 1 for 0 POW 0 that can be included everywhere and is the only time that POW is very unpredictable
+         - (- ((-a) POW d)) .. ((-a) POW d) for the negative values
+         - 0 .. bd for the positive values
+      *)
+      let mad = pow (neg a) d in
+      [ range zero_expr (pow b d); range (neg mad) mad; exact one_expr ]
+
 (* Begin ConstraintBinop *)
-let constraint_binop =
-  let constraint_binop_pair op c1 c2 =
-    match (c1, c2) with
-    | Constraint_Exact e1, Constraint_Exact e2 -> exact (binop op e1 e2)
-    | Constraint_Exact e1, Constraint_Range (e21, e22) ->
-        if is_right_increasing op then range (binop op e1 e21) (binop op e1 e22)
-        else range (binop op e1 e22) (binop op e1 e21)
-    | Constraint_Range (e11, e12), Constraint_Exact e2 ->
-        range (binop op e11 e2) (binop op e12 e2)
-    | Constraint_Range (e11, e12), Constraint_Range (e21, e22) ->
-        if is_right_increasing op then
-          range (binop op e11 e21) (binop op e12 e22)
-        else range (binop op e11 e22) (binop op e12 e21)
+let constraint_binop op cs1 cs2 =
+  match op with
+  | DIV | DIVRM | MUL | PLUS | MINUS | SHR | SHL ->
+      list_flat_cross (apply_binop_extremities op) cs1 cs2
+  | MOD -> List.map constraint_mod cs2
+  | POW -> list_flat_cross constraint_pow cs1 cs2
+  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | RDIV ->
+      assert false
+(* End *)
+
+(* Begin FilterReduceConstraintDiv *)
+let filter_reduce_constraint_div =
+  let get_literal_div_opt e =
+    match e.desc with
+    | E_Binop (DIV, a, b) -> (
+        match (a.desc, b.desc) with
+        | E_Literal (L_Int z1), E_Literal (L_Int z2) -> Some (z1, z2)
+        | _ -> None)
+    | _ -> None
   in
-  let constraint_mod = function
-    | Constraint_Exact e | Constraint_Range (_, e) -> range zero_expr e
-  in
-  let constraint_divisions op c1 c2 =
-    match (c1, c2) with
-    | Constraint_Exact e1, Constraint_Exact e2 -> [ exact (binop op e1 e2) ]
-    | Constraint_Range (e11, e12), Constraint_Exact e2 ->
-        [ range (binop op e11 e2) (binop op e12 e2) ]
-    | Constraint_Exact e1, Constraint_Range (_e21, e22) ->
-        (* {a} DIV {b..c} == {a .. (a DIV c), (a DIV c) .. a} *)
-        [ range e1 (binop op e1 e22); range (binop op e1 e22) e1 ]
-    | Constraint_Range (e11, e12), Constraint_Range (_e21, _e22) ->
-        (* {a..b} DIV {c..d} == {a..-1, 0, 1..b} *)
-        [ range e11 minus_one_expr; exact zero_expr; range one_expr e12 ]
-  in
-  fun op cs1 cs2 ->
-    match op with
-    | MOD -> List.map constraint_mod cs2
-    | DIV | DIVRM -> list_flat_cross (constraint_divisions op) cs1 cs2
-    | MUL | SHL | SHR | POW | PLUS | MINUS ->
-        list_cross (constraint_binop_pair op) cs1 cs2
-    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
-        assert false
+  function
+  | Constraint_Exact e as c -> (
+      match get_literal_div_opt e with
+      | Some (z1, z2) when Z.sign z2 > 0 ->
+          if Z.divisible z1 z2 then Some c else None
+      | _ -> Some c)
+  | Constraint_Range (e1, e2) as c -> (
+      let z1_opt =
+        match get_literal_div_opt e1 with
+        | Some (z1, z2) when Z.sign z2 > 0 ->
+            let zdiv, zmod = Z.ediv_rem z1 z2 in
+            let zres = if Z.sign zmod = 0 then zdiv else Z.succ zdiv in
+            Some zres
+        | _ -> None
+      and z2_opt =
+        match get_literal_div_opt e2 with
+        | Some (z1, z2) when Z.sign z2 > 0 -> Some (Z.ediv z1 z2)
+        | _ -> None
+      in
+      match (z1_opt, z2_opt) with
+      | Some z1, Some z2 ->
+          let () =
+            if false then
+              Format.eprintf "Reducing %a DIV %a@ got z1=%a and z2=%a@."
+                PP.pp_expr e1 PP.pp_expr e2 Z.pp_print z1 Z.pp_print z2
+          in
+          if Z.equal z1 z2 then Some (exact (expr_of_z z1))
+          else if Z.leq z1 z2 then Some (range (expr_of_z z1) (expr_of_z z2))
+          else None
+      | Some z1, None -> Some (range (expr_of_z z1) e2)
+      | None, Some z2 -> Some (range e1 (expr_of_z z2))
+      | None, None -> Some c)
 (* End *)
 
 type strictness = [ `Silence | `Warn | `TypeCheck ]
@@ -180,51 +261,6 @@ module Make (C : CONFIG) = struct
         assert false
   (* End *)
 
-  (* Begin FilterReduceConstraintDiv *)
-  let filter_reduce_constraint_div =
-    let get_literal_div_opt e =
-      match e.desc with
-      | E_Binop (DIV, a, b) -> (
-          match (a.desc, b.desc) with
-          | E_Literal (L_Int z1), E_Literal (L_Int z2) -> Some (z1, z2)
-          | _ -> None)
-      | _ -> None
-    in
-    function
-    | Constraint_Exact e as c -> (
-        match get_literal_div_opt e with
-        | Some (z1, z2) when Z.sign z2 != 0 ->
-            if Z.divisible z1 z2 then Some c else None
-        | _ -> Some c)
-    | Constraint_Range (e1, e2) as c -> (
-        let z1_opt =
-          match get_literal_div_opt e1 with
-          | Some (z1, z2) when Z.sign z2 != 0 ->
-              let zdiv, zmod = Z.ediv_rem z1 z2 in
-              let zres = if Z.sign zmod = 0 then zdiv else Z.succ zdiv in
-              Some zres
-          | _ -> None
-        and z2_opt =
-          match get_literal_div_opt e2 with
-          | Some (z1, z2) when Z.sign z2 != 0 -> Some (Z.ediv z1 z2)
-          | _ -> None
-        in
-        match (z1_opt, z2_opt) with
-        | Some z1, Some z2 ->
-            let () =
-              if false then
-                Format.eprintf "Reducing %a DIV %a@ got z1=%a and z2=%a@."
-                  PP.pp_expr e1 PP.pp_expr e2 Z.pp_print z1 Z.pp_print z2
-            in
-            if Z.equal z1 z2 then Some (exact (expr_of_z z1))
-            else if Z.leq z1 z2 then Some (range (expr_of_z z1) (expr_of_z z2))
-            else None
-        | Some z1, None -> Some (range (expr_of_z z1) e2)
-        | None, Some z2 -> Some (range e1 (expr_of_z z2))
-        | None, None -> Some c)
-
-  (* End *)
-
   let refine_constraint_for_div ~loc op cs =
     match op with
     | DIV -> (
@@ -290,10 +326,11 @@ module Make (C : CONFIG) = struct
     |> list_remove_duplicates (constraint_equal (StaticModel.equal_in_env env))
   (* End *)
 
+  (** [binop_is_exploding op] returns [true] if [constraint_binop op] looses
+      precision on intervals. *)
   let binop_is_exploding = function
-    | MUL | SHL | POW -> true
-    | DIV | DIVRM -> (* general case loses too much precision *) true
-    | PLUS | MINUS | MOD | SHR -> false
+    | PLUS | MINUS -> false
+    | MUL | SHL | POW | DIV | DIVRM | MOD | SHR -> true
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV ->
         assert false

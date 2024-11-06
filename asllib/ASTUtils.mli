@@ -315,6 +315,11 @@ val list_cross : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [list_cross f [a1; ... an] [b1; ... bm]] is the list of all [f ai bj] in a
     non-specified order. *)
 
+val list_take : int -> 'a list -> 'a list
+(** [list_take n li] is the list of the first [n] elements of [li].
+
+    If [li] has less than [n] elements, [list_take n li] is [li]. *)
+
 val list_flat_cross : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 (** [list_flat_cross f [a1; ... an] [b1; ... bm]] is the concatenation of all
     [f ai bj] in a non-specified order. *)
