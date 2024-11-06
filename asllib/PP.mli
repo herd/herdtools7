@@ -70,6 +70,9 @@ val pp_slice : slice printer
 val pp_slice_list : slice list printer
 (** Pretty-print a list of slices. *)
 
+val pp_int_constraint : int_constraint printer
+(** Pretty-print an int constraint. *)
+
 val pp_int_constraints : int_constraint list printer
 (** Pretty-print a list of int constraints. *)
 

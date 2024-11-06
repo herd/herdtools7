@@ -97,8 +97,4 @@ let testsuite =
     test 40000 10;
   ]
 
-let () =
-  let errcode =
-    QCheck_base_runner.run_tests (* ~long:true ~verbose:true *) testsuite
-  in
-  exit errcode
+let () = QCheck_runner.run_tests_main testsuite

@@ -54,36 +54,31 @@ Unsupported divisions (caught at type-checking time):
   [1]
 
   $ aslref --no-exec static-div-undiv.asl
-  File static-div-undiv.asl, line 3, characters 19 to 26: All values in
-  constraints {(5 DIV 3)} would fail with op DIV, operation will always fail.
+  File static-div-undiv.asl, line 3, characters 19 to 26: Division will result
+  in empty constraint set, so will always fail.
   File static-div-undiv.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator DIV on types integer {5}
     and integer {3}.
   [1]
   $ aslref --no-exec static-div-undiv-bis.asl
-  File static-div-undiv-bis.asl, line 3, characters 11 to 18: All values in
-  constraints {(1 DIV 2)} would fail with op DIV, operation will always fail.
+  File static-div-undiv-bis.asl, line 3, characters 11 to 18: Division will
+  result in empty constraint set, so will always fail.
   File static-div-undiv-bis.asl, line 3, characters 11 to 18:
   ASL Typing error: Illegal application of operator DIV on types integer {1}
     and integer {2}.
   [1]
   $ aslref static-div-undiv-bis.asl
-  File static-div-undiv-bis.asl, line 3, characters 11 to 18: All values in
-  constraints {(1 DIV 2)} would fail with op DIV, operation will always fail.
+  File static-div-undiv-bis.asl, line 3, characters 11 to 18: Division will
+  result in empty constraint set, so will always fail.
   File static-div-undiv-bis.asl, line 3, characters 11 to 18:
   ASL Typing error: Illegal application of operator DIV on types integer {1}
     and integer {2}.
   [1]
   $ aslref --no-exec static-div-undiv-ter.asl
-  File static-div-undiv-ter.asl, line 4, characters 10 to 17:
-  Warning: Removing some values that would fail with op DIV from constraint set
-  {1, (3 DIV 2)} gave {1}. Continuing with this constraint set.
 
   $ aslref --no-exec static-div-intervals.asl
-  File static-div-intervals.asl, line 5, characters 2 to 35:
-  ASL Typing error: a subtype of integer {0..10} was expected,
-    provided integer.
-  [1]
+
+  $ aslref --no-exec static-mod-intervals.asl
 
 For completeness, those operations are dynamic errors:
 
