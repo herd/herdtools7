@@ -31,6 +31,18 @@ let fatal_from pos = Error.fatal_from pos
 let _warn = false
 let _dbg = false
 
+let rec subtypes_names env s1 s2 =
+  if String.equal s1 s2 then true
+  else
+    match IMap.find_opt s1 StaticEnv.(env.global.subtypes) with
+    | None -> false
+    | Some s1' -> subtypes_names env s1' s2
+
+let subtypes env t1 t2 =
+  (match (t1.desc, t2.desc) with
+  | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
+  | _ -> false)
+
 module type S = sig
   module B : Backend.S
 
@@ -1152,7 +1164,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let catcher_matches =
       let static_env = { StaticEnv.empty with global = env.global.static } in
       fun v_ty (_e_name, e_ty, _stmt) ->
-        Types.type_satisfies static_env v_ty e_ty |: SemanticsRule.FindCatcher
+        subtypes static_env v_ty e_ty |: SemanticsRule.FindCatcher
       (* End *)
     in
     (* Main logic: *)
