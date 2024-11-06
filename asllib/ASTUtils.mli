@@ -148,6 +148,9 @@ val expr_of_z : Z.t -> expr
 val zero_expr : expr
 (** The integer literal for [0]. *)
 
+val one_expr : expr
+(** The integer literal for [1]. *)
+
 val expr_of_rational : Q.t -> expr
 (** [expr_of_rational q] is the rational literal for [q]. *)
 

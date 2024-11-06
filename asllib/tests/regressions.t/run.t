@@ -36,7 +36,7 @@ Type-checking errors:
 Bad types:
   $ aslref overlapping-slices.asl
   File overlapping-slices.asl, line 1, character 0 to line 4, character 2:
-  ASL Typing error: overlapping slices 0+:11, 3+:2.
+  ASL Static error: overlapping slices 0+:11, 3+:2.
   [1]
 
 Global ignored:
@@ -417,30 +417,6 @@ Empty getters/setters
   $ aslref getter_subfields.asl
   $ aslref setter_bitfields.asl
   $ aslref pstate-exp.asl --type-check-warn
-  File pstate-exp.asl, line 60, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 60, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 62, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 62, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 78, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 78, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 80, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 80, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 96, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 96, characters 10 to 11:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 98, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
-  File pstate-exp.asl, line 98, characters 12 to 13:
-  ASL Static Error: Unsupported expression n.
 
   $ aslref bad-pattern.asl
   File bad-pattern.asl, line 4, characters 7 to 12:

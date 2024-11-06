@@ -145,11 +145,15 @@ module type S = sig
   (** [on_write_identifier] is called when a value is read from the local
       environment.*)
 
-  val read_from_bitvector : (value * value) list -> value -> value m
-  (** Read a slice (represented by a list of positions) from a bitvector. *)
+  type value_range = value * value
+  (** Represents a range by its first accessed index and its length. *)
 
-  val write_to_bitvector : (value * value) list -> value -> value -> value m
-  (** [write_to_bitvector positions w v] writes the bits of [w] into [v] at the specified positions. *)
+  val read_from_bitvector : value_range list -> value -> value m
+  (** Read a slice (represented by a list of value ranges) from a bitvector. *)
+
+  val write_to_bitvector : value_range list -> value -> value -> value m
+  (** [write_to_bitvector value_ranges w v] writes the bits of [w] into [v] at
+      the positions specified by [value_range]. *)
 
   val concat_bitvectors : value list -> value m
   (** Similar to Bitvector.concat, but monadic style obviously. *)
