@@ -315,8 +315,3 @@ begin
   return (ROR(x, shift), x[cpos]);
 end
 
-// Unreachable
-func Unreachable()
-begin
-  assert FALSE;
-end

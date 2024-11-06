@@ -1225,22 +1225,24 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     List.map annotate_slice
 
-  and annotate_pattern loc env t = function
+  and annotate_pattern loc env t p =
+    let here = add_pos_from p in
+    match p.desc with
     (* Begin PAll *)
-    | Pattern_All as p -> p |: TypingRule.PAll
+    | Pattern_All -> p |: TypingRule.PAll
     (* End *)
     (* Begin PAny *)
     | Pattern_Any li ->
         let new_li = List.map (annotate_pattern loc env t) li in
-        Pattern_Any new_li |: TypingRule.PAny
+        Pattern_Any new_li |> here |: TypingRule.PAny
     (* End *)
     (* Begin PNot *)
     | Pattern_Not q ->
         let new_q = annotate_pattern loc env t q in
-        Pattern_Not new_q |: TypingRule.PNot
+        Pattern_Not new_q |> here |: TypingRule.PNot
     (* End *)
     (* Begin PSingle *)
-    | Pattern_Single e as p ->
+    | Pattern_Single e ->
         let t_e, e' = annotate_expr env e in
         let+ () =
          fun () ->
@@ -1257,10 +1259,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
           | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
-        Pattern_Single e' |: TypingRule.PSingle
+        Pattern_Single e' |> here |: TypingRule.PSingle
     (* End *)
     (* Begin PGeq *)
-    | Pattern_Geq e as p ->
+    | Pattern_Geq e ->
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
@@ -1271,10 +1273,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Real, T_Real | T_Int _, T_Int _ -> ()
           | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
-        Pattern_Geq e' |: TypingRule.PGeq
+        Pattern_Geq e' |> here |: TypingRule.PGeq
     (* End *)
     (* Begin PLeq *)
-    | Pattern_Leq e as p ->
+    | Pattern_Leq e ->
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
@@ -1285,10 +1287,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Real, T_Real | T_Int _, T_Int _ -> ()
           | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
-        Pattern_Leq e' |: TypingRule.PLeq
+        Pattern_Leq e' |> here |: TypingRule.PLeq
     (* End *)
     (* Begin PRange *)
-    | Pattern_Range (e1, e2) as p ->
+    | Pattern_Range (e1, e2) ->
         let t_e1, e1' = annotate_expr env e1
         and t_e2, e2' = annotate_expr env e2 in
         let+ () =
@@ -1300,10 +1302,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Real, T_Real, T_Real | T_Int _, T_Int _, T_Int _ -> ()
           | _ -> fatal_from loc (Error.BadPattern (p, t))
         in
-        Pattern_Range (e1', e2') |: TypingRule.PRange
+        Pattern_Range (e1', e2') |> here |: TypingRule.PRange
     (* End *)
     (* Begin PMask *)
-    | Pattern_Mask m as p ->
+    | Pattern_Mask m ->
         let+ () = check_structure_bits loc env t in
         let+ () =
           let n = !$(Bitvector.mask_length m) in
@@ -1322,7 +1324,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                  ("pattern matching on tuples", List.length li, List.length ts))
         | T_Tuple ts ->
             let new_li = List.map2 (annotate_pattern loc env) ts li in
-            Pattern_Tuple new_li |: TypingRule.PTuple
+            Pattern_Tuple new_li |> here |: TypingRule.PTuple
         | _ -> conflict loc [ T_Tuple [] ] t
         (* End *))
 
@@ -2320,7 +2322,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     fun env v ldi -> add_constants v env ldi
   (* End *)
 
-  let rec annotate_stmt env s =
+  let rec annotate_stmt env s : stmt * env =
     let () =
       if false then
         match s.desc with
@@ -2428,24 +2430,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (S_Cond (e_cond, s1', s2') |> here, env) |: TypingRule.SCond
     (* End *)
     (* Begin SCase *)
-    | S_Case (e, cases) ->
-        let t_e, e1 = annotate_expr env e in
-        let annotate_case case =
-          let { pattern = p0; where = w0; stmt = s0 } = case.desc in
-          let p1 = annotate_pattern e1 env t_e p0
-          and s1 = try_annotate_block env s0
-          and w1 =
-            match w0 with
-            | None -> None
-            | Some e_w0 ->
-                let twe, e_w1 = (annotate_expr env) e_w0 in
-                let+ () = check_structure_boolean e_w0 env twe in
-                Some e_w1
-          in
-          add_pos_from_st case { pattern = p1; where = w1; stmt = s1 }
-        in
-        let cases1 = List.map annotate_case cases in
-        (S_Case (e1, cases1) |> here, env) |: TypingRule.SCase
+    | S_Case _ -> case_to_conds s |> annotate_stmt env |: TypingRule.SCase
     (* End *)
     (* Begin SAssert *)
     | S_Assert e ->
@@ -2573,7 +2558,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_Print { args; debug } ->
         let args' = List.map (fun e -> annotate_expr env e |> snd) args in
         (S_Print { args = args'; debug } |> here, env) |: TypingRule.SDebug
-  (* End *)
+    (* End *)
+    | S_Unreachable -> (s, env)
 
   (* Begin AnnotateLoopLimit *)
   and annotate_loop_limit ~loc env = function
@@ -2917,6 +2903,75 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.AnnotateFuncSig
   (* End *)
 
+  module ControlFlow : sig
+    val check_stmt_returns_or_throws :
+      identifier -> env -> stmt_desc annotated -> prop
+    (** [check_stmt_interrupts name env body] checks that the function named
+        [name] with the statement body [body] returns a value or throws an
+        exception. *)
+  end = struct
+    (** Possible Control-Flow actions of a statement. *)
+    type t =
+      | Interrupt  (** Throwing an exception or returning a value. *)
+      | AssertedNotInterrupt
+          (** Assert that this control-flow path is unused. *)
+      | MayNotInterrupt
+          (** Among all control-flow path in a statement, there is one that
+              will not throw an exception nor return a value. *)
+
+    (** Sequencial combination of two control flows. *)
+    let seq t1 t2 = if t1 = MayNotInterrupt then t2 else t1
+
+    (** [guard env e t1 t2] correspond to the conditional combination of [t1]
+        and [t2], guarded by [e] symbolically interpreted in [env].
+
+        This roughly corresponds to the pseudocode [if e then {t1} else {t2}].
+    *)
+    let guard env e t1 t2 =
+      match StaticModel.normalize_to_bool_opt env e with
+      | Some true -> t1
+      | Some false -> t2
+      | None -> (
+          match (t1, t2) with
+          | MayNotInterrupt, _ | _, MayNotInterrupt -> MayNotInterrupt
+          | AssertedNotInterrupt, t | t, AssertedNotInterrupt ->
+              t (* Assertion that the condition always holds *)
+          | Interrupt, Interrupt -> Interrupt)
+
+    (** [get_from_stmt env s] builds the control-flow analysis on [s] in [env].
+    *)
+    let rec from_stmt env s =
+      match s.desc with
+      | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Call _ | S_Print _ ->
+          MayNotInterrupt
+      | S_Unreachable -> AssertedNotInterrupt
+      | S_Return _ | S_Throw _ -> Interrupt
+      | S_Seq (s1, s2) -> seq (from_stmt env s1) (from_stmt env s2)
+      | S_Cond (e, s1, s2) -> guard env e (from_stmt env s1) (from_stmt env s2)
+      | S_While (e, _, body) -> guard env e (from_stmt env body) MayNotInterrupt
+      | S_Repeat (body, _, _) -> from_stmt env body
+      | S_Try (body, _, _) -> from_stmt env body
+      | S_For { dir; start_e; end_e; body } ->
+          let cond =
+            match dir with
+            | Up -> binop LEQ start_e end_e
+            | Down -> binop GEQ start_e end_e
+          in
+          guard env cond (from_stmt env body) MayNotInterrupt
+      | S_Case (_, _) ->
+          (* Should be unsugared, so only for v0 *) AssertedNotInterrupt
+
+    (** [guard env e t1 t2] correspond to the conditional combination of [t1]
+        and [t2], guarded by [e] symbolically interpreted in [env].
+
+        This roughly corresponds to the pseudocode [if e then {t1} else {t2}].
+    *)
+    let check_stmt_returns_or_throws name env s () =
+      match from_stmt env s with
+      | AssertedNotInterrupt | Interrupt -> ()
+      | MayNotInterrupt -> fatal_from s (Error.NonReturningFunction name)
+  end
+
   (* Begin Subprogram *)
   let annotate_subprogram (env : env) (f : AST.func) : AST.func =
     let () =
@@ -2928,6 +2983,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match f.body with SB_ASL body -> body | SB_Primitive -> assert false
     in
     let new_body = try_annotate_block env body in
+    let+ () =
+      match f.return_type with
+      | None -> ok
+      | Some _ -> ControlFlow.check_stmt_returns_or_throws f.name env new_body
+    in
     { f with body = SB_ASL new_body } |: TypingRule.Subprogram
   (* End *)
 

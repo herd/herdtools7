@@ -89,6 +89,7 @@ let tr_name s = match s with
 | "TRUE"          -> BOOL_LIT true
 | "type"          -> TYPE
 | "UNKNOWN"       -> UNKNOWN
+| "Unreachable"   -> UNREACHABLE
 | "until"         -> UNTIL
 | "var"           -> VAR
 | "when"          -> WHEN

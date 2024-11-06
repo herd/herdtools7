@@ -142,23 +142,26 @@ and pp_slice f = function
       bprintf f "Slice_Length (%a, %a)" pp_expr e1 pp_expr e2
   | Slice_Star (e1, e2) -> bprintf f "Slice_Star (%a, %a)" pp_expr e1 pp_expr e2
 
-and pp_pattern f = function
-  | Pattern_All -> addb f "Pattern_All"
-  | Pattern_Any li ->
-      addb f "Pattern_Any ";
-      pp_list pp_pattern f li
-  | Pattern_Geq e -> bprintf f "Pattern_Geq (%a)" pp_expr e
-  | Pattern_Leq e -> bprintf f "Pattern_Leq (%a)" pp_expr e
-  | Pattern_Mask m ->
-      bprintf f "Pattern_Mask (Bitvector.mask_of_string \"%S\")"
-        (Bitvector.mask_to_canonical_string m)
-  | Pattern_Not p -> bprintf f "Pattern_Not (%a)" pp_pattern p
-  | Pattern_Range (e1, e2) ->
-      bprintf f "Pattern_Range (%a, %a)" pp_expr e1 pp_expr e2
-  | Pattern_Single e -> bprintf f "Pattern_Single (%a)" pp_expr e
-  | Pattern_Tuple li ->
-      addb f "Pattern_Tuple ";
-      pp_list pp_pattern f li
+and pp_pattern =
+  let pp_desc f = function
+    | Pattern_All -> addb f "Pattern_All"
+    | Pattern_Any li ->
+        addb f "Pattern_Any ";
+        pp_list pp_pattern f li
+    | Pattern_Geq e -> bprintf f "Pattern_Geq (%a)" pp_expr e
+    | Pattern_Leq e -> bprintf f "Pattern_Leq (%a)" pp_expr e
+    | Pattern_Mask m ->
+        bprintf f "Pattern_Mask (Bitvector.mask_of_string \"%S\")"
+          (Bitvector.mask_to_canonical_string m)
+    | Pattern_Not p -> bprintf f "Pattern_Not (%a)" pp_pattern p
+    | Pattern_Range (e1, e2) ->
+        bprintf f "Pattern_Range (%a, %a)" pp_expr e1 pp_expr e2
+    | Pattern_Single e -> bprintf f "Pattern_Single (%a)" pp_expr e
+    | Pattern_Tuple li ->
+        addb f "Pattern_Tuple ";
+        pp_list pp_pattern f li
+  in
+  fun f p -> pp_annotated pp_desc f p
 
 and pp_ty =
   let pp_desc f = function
@@ -289,6 +292,7 @@ let rec pp_stmt =
     | S_Print { args; debug } ->
         bprintf f "S_Print { args = %a; debug = %B }" (pp_list pp_expr) args
           debug
+    | S_Unreachable -> addb f "S_Unreachable"
   in
   fun f s -> pp_annotated pp_desc f s
 

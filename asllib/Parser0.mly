@@ -348,9 +348,9 @@ let binop_expr(e, b) ==
       | ~=e; DOT; ~=bracketed(clist(ident));          < AST.E_GetFields >
       | ~=e; ~=bracketed(clist(slice));               < AST.E_Slice     >
       | ~=bracketed(clist(expr));                     < AST.E_Concat    >
-      | ~=e; IN; ~=bpattern;                           < AST.E_Pattern   >
-      | e=e; EQ_EQ; m=MASK_LIT;                       { AST.(E_Pattern (e, Pattern_Mask (m))) }
-      | e=e; BANG_EQ; m=MASK_LIT;                     { AST.(E_Pattern (e, Pattern_Not (Pattern_Mask (m)))) }
+      | ~=e; IN; ~=bpattern;                          < AST.E_Pattern   >
+      | ~=e; EQ_EQ; ~=pattern_mask;                   < AST.E_Pattern   >
+      | ~=e; ~=annotated(BANG_EQ; pm=pattern_mask; < AST.Pattern_Not >); < AST.E_Pattern >
       | ~=annotated(ty_non_tuple); UNKNOWN;           < AST.E_Unknown   >
       (*
       | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
@@ -635,8 +635,8 @@ let alt ==
         { AST.{ pattern; where; stmt } }
     | WHEN; pattern=pattern_list; where=opt_where; stmt=simple_if_stmt;
         { AST.{ pattern; where; stmt } }
-    | OTHERWISE; stmt=possibly_empty_block;
-        { AST.{ pattern = Pattern_All; where = None; stmt } }
+    | loc=annotated(OTHERWISE); stmt=possibly_empty_block;
+        { AST.{ pattern = ASTUtils.add_pos_from loc Pattern_All; where = None; stmt } }
   )
 
 let opt_where ==
@@ -645,24 +645,27 @@ let opt_where ==
 
 let otherwise == annotated (OTHERWISE; possibly_empty_block)
 
-let pattern_list == ~=nclist(pattern); < AST.Pattern_Any >
+let pattern_mask == annotated(~=MASK_LIT; <AST.Pattern_Mask>)
+let pattern_all == annotated(MINUS; { AST.Pattern_All })
+let pattern_list == annotated(~=nclist(pattern); < AST.Pattern_Any >)
 let pattern ==
     | bpattern
-    | MINUS; { AST.Pattern_All }
-    | ~=MASK_LIT; < AST.Pattern_Mask >
-
-    | ~=annotated (
-      | ~=literal_expression; < AST.E_Literal >
-      | ~=qualident; < AST.E_Var >
-    ); < AST.Pattern_Single >
-
-let bpattern == braced(apattern_list)
-let apattern_list == ~=nclist(apattern); < AST.Pattern_Any >
+    | pattern_mask
+    | pattern_all
+    | annotated (
+      | ~=annotated (
+        | ~=literal_expression; < AST.E_Literal >
+        | ~=qualident; < AST.E_Var >
+      ); < AST.Pattern_Single >
+    )
+let bpattern == annotated(braced(~=nclist(apattern); < AST.Pattern_Any >))
 let apattern ==
-  | ~=expr; < AST.Pattern_Single >
-  | e1=expr; DOT_DOT; e2=expr; < AST.Pattern_Range >
-  | MINUS; { AST.Pattern_All }
-  | ~=MASK_LIT; < AST.Pattern_Mask >
+  | annotated (
+    | ~=expr; < AST.Pattern_Single >
+    | e1=expr; DOT_DOT; e2=expr; < AST.Pattern_Range >
+  )
+  | pattern_all
+  | pattern_mask
 
 let repetitive_stmt ==
   | FOR; index_name=ident; EQ; start_e=expr; dir=direction; end_e=expr;
