@@ -793,7 +793,9 @@ module Make (C : Config) = struct
               | _ -> d :: k)
             patches []
         else patches
-      and custom_implems = build `ASLv1 "implementations.asl"
+      and custom_implems =
+        List.append (build `ASLv1 "implementations.asl")
+                    (build `ASLv0 "implementations0.asl")
       and shared = build `ASLv0 "shared_pseudocode.asl" in
       let shared =
         (*

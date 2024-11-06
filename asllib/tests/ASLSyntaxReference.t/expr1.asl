@@ -1,8 +1,6 @@
-getter g_no_args => integer begin return 0; end;
+getter g0_bits() => bits(4) begin return '1000'; end;
 
-getter g0_bits[] => bits(4) begin return '1000'; end;
-
-getter g1_bits[p: integer] => bits(4)
+getter g1_bits(p: integer) => bits(4)
 begin
   return '1000'[p, 2:0];
 end;
@@ -13,16 +11,15 @@ type except of exception;
 func main() => integer
 begin
   var v: integer = 4;
-  // E_Var 1: v is a variable expression.
-  // E_Var 2: g_no_args is a call to a getter with no arguments.
-  var - = v + g_no_args;
+  // E_Var: v is a variable expression.
+  var - = v;
 
   var b0 = '1111 1000'[3:1, 0]; // E_Slice 1: a bitvector slice.
   var b1 = 0xF8[3:1, 0]; // E_Slice 2: an integer slice.
-  // E_Slice 3: g0_bits[] is a call to a getter.
-  assert b0 == g0_bits[];
-  // E_Slice 4: g1_bits[3] is a call to a getter.
-  assert b0 == g1_bits[3];
+  // E_Slice 3: g0_bits() is a call to a getter.
+  assert b0 == g0_bits();
+  // E_Slice 4: g1_bits(3) is a call to a getter.
+  assert b0 == g1_bits(3);
   var bits_arr : array [1] of bits(4);
   // E_Binop 1: b0 == b1 is a binary expression for ==.
   // E_Cond 1: the right-hand side of the assignment is

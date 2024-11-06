@@ -8,17 +8,17 @@ begin
   return 0 <= n && n < 4 ;
 end;
 
-getter PSTATE[] => ProcState
+getter PSTATE() => ProcState
 begin
  return _PSTATE;
 end;
 
-setter PSTATE[] = v : ProcState
+setter PSTATE() = v : ProcState
 begin
   _PSTATE = v;
 end;
 
-getter PSTATE[n:integer] => bits(1)
+getter PSTATE(n:integer) => bits(1)
 begin
   if isNZCV(n) then
     return _NZCV[n];
@@ -27,7 +27,7 @@ begin
   end;
 end;
 
-setter PSTATE[n:integer] = v : bits(1)
+setter PSTATE(n:integer) = v : bits(1)
 begin
   if isNZCV(n) then
     _NZCV[n] = v;
@@ -37,7 +37,7 @@ begin
 end;
 
 
-getter PSTATE[n:integer,m:integer] => bits(2)
+getter PSTATE(n:integer,m:integer) => bits(2)
 begin
   if isNZCV(n) && isNZCV(m) then
     return _NZCV[n,m];
@@ -46,7 +46,7 @@ begin
   end;
 end;
 
-setter PSTATE[n:integer,m:integer] = v : bits(2)
+setter PSTATE(n:integer,m:integer) = v : bits(2)
 begin
   if isNZCV(n) && isNZCV(m) then
     _NZCV[n,m] = v;
@@ -55,7 +55,7 @@ begin
   end;
 end;
 
-getter PSTATE[n:integer,m:integer,o:integer] => bits(3)
+getter PSTATE(n:integer,m:integer,o:integer) => bits(3)
 begin
   if isNZCV(n) && isNZCV(m) && isNZCV(o) then
     return _NZCV[n,m,o];
@@ -64,7 +64,7 @@ begin
   end;
 end;
 
-setter PSTATE[n:integer,m:integer,o:integer] = v : bits(3)
+setter PSTATE(n:integer,m:integer,o:integer) = v : bits(3)
 begin
   if isNZCV(n) && isNZCV(m) && isNZCV(o) then
     _NZCV[n,m,o] = v;
@@ -73,7 +73,7 @@ begin
   end;
 end;
 
-getter PSTATE[n:integer,m:integer,o:integer,p:integer] => bits(4)
+getter PSTATE(n:integer,m:integer,o:integer,p:integer) => bits(4)
 begin
   if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
     return _NZCV[n,m,o,p];
@@ -82,7 +82,7 @@ begin
   end;
 end;
 
-setter PSTATE[n:integer,m:integer,o:integer,p:integer] = v : bits(4)
+setter PSTATE(n:integer,m:integer,o:integer,p:integer) = v : bits(4)
 begin
   if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
     _NZCV[n,m,o,p] = v;

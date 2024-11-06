@@ -7,5 +7,5 @@ Witnesses
 Positive: 9 Negative: 0
 Condition forall (0:z=2 /\ 0:t=2 /\ (0:g.0.a=0 /\ 0:main.0.y=0 \/ 0:g.0.a=1 /\ 0:main.0.y=1))
 Observation throw-propagate Always 9 0
-Hash=7e431a79fe279db315abc4c8b9396bf5
+Hash=a1e75215aac570a9f163f434e5959eab
 

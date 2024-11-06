@@ -1,4 +1,4 @@
-getter ReadMem[address : integer, size : integer, unknown : boolean] => bits(size*8)
+getter ReadMem(address : integer, size : integer, unknown : boolean) => bits(size*8)
 begin
     var value : bits(size*8) = Zeros(size*8);
     value = Read(address, size, unknown);
