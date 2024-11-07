@@ -155,7 +155,7 @@ match name with
 | "ld1h" | "LD1H" -> LD1H
 | "ld1w" | "LD1W" -> LD1W
 | "ld1d" | "LD1D" -> LD1D
-| "ld1Q" | "LD1Q" -> LD1Q
+| "ld1q" | "LD1Q" -> LD1Q
 | "ld2b" | "LD2B" -> LD2B
 | "ld2h" | "LD2H" -> LD2H
 | "ld2w" | "LD2W" -> LD2W
