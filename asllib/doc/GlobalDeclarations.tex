@@ -125,48 +125,360 @@ annotates a subprogram $\vf$ in an environment $\tenv$, resulting in an annotate
 Note that the return type in $\vf$ has already been annotated by $\annotatefuncsig$.
 
 \subsection{Prose}
-All of the following apply:
+One of the following applies:
 \begin{itemize}
-  \item $\vf$ is a $\func$ AST node subprogram body $\body$;
-  \item annotating the block $\body$ in $\tenv$ as per \secref{TypingRule.Block} yields $\newbody$\ProseOrTypeError;
-  \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$.
+  \item All of the following apply (\textsc{procedure}):
+  \begin{itemize}
+    \item $\vf$ is a $\func$ AST node subprogram body $\body$;
+    \item annotating the block $\body$ in $\tenv$ as per \secref{TypingRule.Block} yields $\newbody$\ProseOrTypeError;
+    \item $\vf.\funcreturntype$ is $\None$;
+    \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{function}):
+  \begin{itemize}
+    \item $\vf$ is a $\func$ AST node subprogram body $\body$;
+    \item annotating the block $\body$ in $\tenv$ as per \secref{TypingRule.Block} yields $\newbody$\ProseOrTypeError;
+    \item applying $\checkstmtreturnsorthrows$ to $\newbody$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$.
+  \end{itemize}
 \end{itemize}
+
 \subsection{Formally}
 \begin{mathpar}
-\inferrule{
-  {
-    \begin{array}{rrcl}
-  \vf \eqname \{ & \funcname            &:& \id,\\
-                 & \funcparameters      &:& \vp,\\
-                 & \funcargs            &:& \vargs,\\
-                 & \funcbody            &:& \SBASL(\body),\\
-                 & \funcreturntype      &:& \vt,\\
-                 & \funcsubprogramtype  &:& \subprogramtype \\
-              \} &&&
-    \end{array}
-  }\\
+\inferrule[procedure]{
   \annotateblock{\tenv, \body} \typearrow \newbody \OrTypeError\\\\
-  {
-    \begin{array}{rrcl}
-  \vfp \eqdef \{ & \funcname            &:& \id,\\
-                 & \funcparameters      &:& \vp,\\
-                 & \funcargs            &:& \vargs,\\
-                 & \funcbody            &:& \SBASL(\newbody),\\
-                 & \funcreturntype      &:& \vt,\\
-                 & \funcsubprogramtype  &:& \subprogramtype \\
-              \} &&&
-    \end{array}
-  }\\
+  \vf.\funcreturntype = \None\\
+  \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))
 }{
   \annotatesubprogram{\tenv, \vf} \typearrow \vfp
 }
-\end{mathpar}\lrmcomment{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[function]{
+  \annotateblock{\tenv, \body} \typearrow \newbody \OrTypeError\\\\
+  \vf.\funcreturntype \neq \None\\
+  \checkstmtreturnsorthrows(\tenv, \newbody) \typearrow \True \OrTypeError\\\\
+  \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))
+}{
+  \annotatesubprogram{\tenv, \vf} \typearrow \vfp
+}
+\end{mathpar}
+
+\lrmcomment{
 This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 \identr{TJKQ}, \identi{LFJZ}, \identi{BZVB}, \identi{RQQB}.
 }
 \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.TypecheckGlobalStorage \label{sec:TypingRule.TypecheckGlobalStorage}}
+\subsubsection{TypingRule.CheckStmtReturnsOrThrows\label{sec:TypingRule.CheckStmtReturnsOrThrows}}
+\hypertarget{def-checkstmtreturnsorthrows}{}
+The helper function
+\[
+  \checkstmtreturnsorthrows(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs})
+  \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether all control-flow paths defined by the statement $\vs$ in $\tenv$ terminate by either
+a statement returning a value, a \texttt{throw} statement, or the \texttt{Unreachable()} statement.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item applying $\controlflowfromstmt$ to $\vs$ in $\tenv$ yields a \controlflowsymbolterm\ $\vctrlflow$;
+  \item checking that $\vctrlflow$ is different from $\maynotinterrupt$ yields $\True$\ProseTerminateAs{\NonReturningFunction};
+  \item the result is $\True$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \controlflowfromstmt(\tenv, \vs) \typearrow \vctrlflow\\
+  \checktrans{\vctrlflow \neq \maynotinterrupt}{\NonReturningFunction} \typearrow \True \OrTypeError
+}{
+  \checkstmtreturnsorthrows(\tenv, \vs) \typearrow \True
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.ControlFlowFromStmt\label{sec:TypingRule.ControlFlowFromStmt}}
+\hypertarget{def-controlflowsymbolterm}{}
+We define \controlflowsymbolterm\ as follows:
+\[
+  \controlflowstate \eqdef \{\assertednotinterrupt, \interrupt, \maynotinterrupt\}
+\]
+
+\hypertarget{def-controlflowfromstmt}{}
+The helper function
+\[
+  \controlflowfromstmt(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs})
+  \typearrow \overname{\controlflowstate}{\vctrlflow}
+\]
+statically analyzes the statement $\vs$ in the context of the static environment $\tenv$
+and determines the \controlflowsymbolterm\ $\vctrlflow$ to be one of the following:
+\begin{description}
+  \item[$\assertednotinterrupt$] evaluating $\vs$ in any environment will evaluate \texttt{Unreachable()};
+  \item[$\interrupt$] evaluating $\vs$ in any environment will end by either evaluating a return statement with an expression,
+      or evaluating a \texttt{throw} statement;
+  \item[$\maynotinterrupt$] evaluating $\vs$ in any environment may not end by evaluating either of the above mentioned statements.
+\end{description}
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{falls\_through}):
+  \begin{itemize}
+    \item the AST label of $\vs$ is $\SPass$, $\SDecl$, $\SAssign$, $\SAssert$, $\SCall$, or $\SPrint$;
+    \item $\vctrlflow$ is $\maynotinterrupt$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{unreachable}):
+  \begin{itemize}
+    \item $\vs$ is $\SUnreachable$;
+    \item $\vctrlflow$ is $\assertednotinterrupt$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{return\_throw}):
+  \begin{itemize}
+    \item the AST label of $\vs$ is either $\SReturn$ or $\SThrow$;
+    \item $\vctrlflow$ is $\interrupt$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{s\_seq}):
+  \begin{itemize}
+    \item $\vs$ is the sequence statement for $\vsone$ and $\vstwo$;
+    \item applying $\controlflowfromstmt$ to $\vsone$ in $\tenv$ yields $\vctrlflowone$;
+    \item applying $\controlflowfromstmt$ to $\vstwo$ in $\tenv$ yields $\vctrlflowtwo$;
+    \item applying $\controlflowseq$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{s\_cond}):
+  \begin{itemize}
+    \item $\vs$ is the condition statement for the expression $\ve$ and statements $\vsone$ and $\vstwo$;
+    \item applying $\controlflowfromstmt$ to $\vsone$ in $\tenv$ yields $\vctrlflowone$;
+    \item applying $\controlflowfromstmt$ to $\vstwo$ in $\tenv$ yields $\vctrlflowtwo$;
+    \item applying $\controlflowguard$ to $\ve$, $\vctrlflowone$ and $\vctrlflowtwo$ in $\tenv$ yields $\vctrlflow$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{s\_while}):
+  \begin{itemize}
+    \item $\vs$ is the \texttt{while} statement for the expression $\ve$ and statement $\vbody$;
+    \item applying $\controlflowfromstmt$ to $\vbody$ in $\tenv$ yields $\vctrlflowone$;
+    \item applying $\controlflowguard$ to $\ve$, $\vctrlflowone$ and $\maynotinterrupt$ in $\tenv$ yields $\vctrlflow$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{s\_repeat}):
+  \begin{itemize}
+    \item $\vs$ is the \texttt{repeat} statement for the statement $\vbody$;
+    \item applying $\controlflowfromstmt$ to $\vbody$ in $\tenv$ yields $\vctrlflow$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{s\_try}):
+  \begin{itemize}
+    \item $\vs$ is the \texttt{try} statement for the statement $\vbody$;
+    \item applying $\controlflowfromstmt$ to $\vbody$ in $\tenv$ yields $\vctrlflow$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{s\_for}):
+  \begin{itemize}
+    \item $\vs$ is the \texttt{for} statement for the direction $\dir$, start expression $\vstarte$,
+          end $\vende$ and body statement $\vbody$;
+    \item define the expression $\vcond$ as follows:
+    \begin{itemize}
+      \item the binary expression testing whether $\vstarte$ is less then or equal to $\vende$, if $\dir$ is $\UP$;
+      \item the binary expression testing whether $\vstarte$ is greater or equal to $\vende$, if $\dir$ is $\DOWN$;
+    \end{itemize}
+    \item applying $\controlflowfromstmt$ to $\vbody$ in $\tenv$ yields $\vctrlflowone$;
+    \item applying $\controlflowguard$ to $\vcond$, $\vctrlflowone$, and $\maynotinterrupt$ in $\tenv$ yields $\vctrlflow$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[falls\_through]{
+  \astlabel(\vs) \in \{\SPass, \SDecl, \SAssign, \SAssert, \SCall, \SPrint\}
+}{
+  \controlflowfromstmt(\tenv, \vs) \typearrow \overname{\maynotinterrupt}{\vctrlflow}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[unreachable]{}{
+  \controlflowfromstmt(\tenv, \overname{\SUnreachable}{\vs}) \typearrow \overname{\assertednotinterrupt}{\vctrlflow}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[return\_throw]{
+  \astlabel(\vs) \in \{\SReturn, \SThrow\}
+}{
+  \controlflowfromstmt(\tenv, \overname{\SUnreachable}{\vs}) \typearrow \overname{\interrupt}{\vctrlflow}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_seq]{
+  \controlflowfromstmt(\tenv, \vsone) \typearrow \vctrlflowone\\
+  \controlflowfromstmt(\tenv, \vstwo) \typearrow \vctrlflowtwo\\
+  \controlflowseq(\vctrlflowone, \vctrlflowtwo) \typearrow \vctrlflow
+}{
+  \controlflowfromstmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow \vctrlflow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_cond]{
+  \controlflowfromstmt(\tenv, \vsone) \typearrow \vctrlflowone\\
+  \controlflowfromstmt(\tenv, \vstwo) \typearrow \vctrlflowtwo\\
+  \controlflowguard(\tenv, \ve, \vctrlflowone, \vctrlflowtwo) \typearrow \vctrlflow
+}{
+  \controlflowfromstmt(\tenv, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \typearrow \vctrlflow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_while]{
+  \controlflowfromstmt(\tenv, \vbody) \typearrow \vctrlflowone\\
+  \controlflowguard(\tenv, \ve, \vctrlflowone, \maynotinterrupt) \typearrow \vctrlflow
+}{
+  \controlflowfromstmt(\tenv, \overname{\SWhile(\ve, \Ignore, \vbody)}{\vs}) \typearrow \vctrlflow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_repeat]{
+  \controlflowfromstmt(\tenv, \vbody) \typearrow \vctrlflow
+}{
+  \controlflowfromstmt(\tenv, \overname{\SRepeat(\vbody, \Ignore, \Ignore)}{\vs}) \typearrow \vctrlflow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_try]{
+  \controlflowfromstmt(\tenv, \vbody) \typearrow \vctrlflow
+}{
+  \controlflowfromstmt(\tenv, \overname{\STry(\vbody, \Ignore, \Ignore)}{\vs}) \typearrow \vctrlflow
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_for]{
+  \vcond \eqdef \choice{\dir = \UP}{\EBinop(\LEQ, \vstarte, \vende)}{\EBinop(\GEQ, \vstarte, \vende)}\\
+  \controlflowfromstmt(\tenv, \vbody) \typearrow \vctrlflowone\\
+  \controlflowguard(\tenv, \vcond, \vctrlflowone, \maynotinterrupt) \typearrow \vctrlflow
+}{
+  {
+  \controlflowfromstmt\left(\tenv, \overname{
+    \SFor\left\{
+    \begin{array}{rcl}
+    \Forindexname  &:& \Ignore,\\
+    \Forstarte     &:& \vstarte,\\
+    \Fordir        &:& \dir,\\
+    \Forende       &:& \vende,\\
+    \Forbody       &:& \vbody,\\
+    \Forlimit      &:& \Ignore
+    \end{array}\right\}
+  }{\vs}\right) \typearrow \vctrlflow
+  }
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.ControlFlowSeq\label{sec:TypingRule.ControlFlowSeq}}
+\hypertarget{def-controlflowseq}{}
+The helper function
+\[
+\controlflowseq(\overname{\controlflowstate}{\vtone} \aslsep \overname{\controlflowstate}{\vttwo})
+\aslto \overname{\controlflowstate}{\vctrlflow}
+\]
+combines two \controlflowsymbolterm{s} considering them as part of a control flow path where the analysis of the
+path prefix yields $\vtone$ and the analysis of the path suffix yields $\vttwo$,
+into a single \controlflowsymbolterm\ $\vctrlflow$.
+
+\subsubsection{Prose}
+Define $\vctrlflow$ as $\vttwo$ if $\vtone$ is $\maynotinterrupt$ and $\vttwo$, otherwise.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vctrlflow \eqdef \choice{\vtone = \maynotinterrupt}{\vttwo}{\vtone}
+}{
+  \controlflowseq(\vtone, \vttwo) \typearrow \vctrlflow
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.ControlFlowGuard\label{sec:TypingRule.ControlFlowGuard}}
+\hypertarget{def-controlflowguard}{}
+The helper function
+\[
+\controlflowguard(\overname{\staticenvs}{\tenv} \aslsep
+                \overname{\expr}{\ve} \aslsep
+                \overname{\controlflowstate}{\vtone} \aslsep
+                \overname{\controlflowstate}{\vttwo})
+\aslto \overname{\controlflowstate}{\vctrlflow}
+\]
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{true}):
+  \begin{itemize}
+    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields the literal $\True$\ProseOrTypeError;
+    \item define $\vctrlflow$ as $\vtone$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{false}):
+  \begin{itemize}
+    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields the literal $\False$\ProseOrTypeError;
+    \item define $\vctrlflow$ as $\vttwo$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_literal}):
+  \begin{itemize}
+    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$\ProseOrTypeError;
+    \item define $\vctrlflow$ according to the following cases:
+    \begin{itemize}
+      \item $\maynotinterrupt$ if either $\vtone$ or $\vttwo$ are $\maynotinterrupt$;
+      \item $\vttwo$ if $\vtone$ is $\assertednotinterrupt$ and $\vttwo$ is not $\maynotinterrupt$;
+      \item $\vtone$ if $\vtone$ is not $\maynotinterrupt$ and $\vttwo$ is $\assertednotinterrupt$;
+      \item $\interrupt$ if both $\vtone$ and $\vttwo$ are $\interrupt$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[true]{
+  \staticeval(\tenv, \ve) \typearrow \lbool(\True) \OrTypeError
+}{
+  \controlflowguard(\tenv, \ve, \vtone, \vttwo) \typearrow \overname{\vtone}{\vctrlflow}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[false]{
+  \staticeval(\tenv, \ve) \typearrow \lbool(\False) \OrTypeError
+}{
+  \controlflowguard(\tenv, \ve, \vtone, \vttwo) \typearrow \overname{\vttwo}{\vctrlflow}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_literal]{
+  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed \OrTypeError\\\\
+  {
+    \vctrlflow \eqdef
+    \begin{cases}
+      \maynotinterrupt & \vtone = \maynotinterrupt \lor \vttwo = \maynotinterrupt\\
+      \vttwo & \vtone = \assertednotinterrupt \land \vttwo \neq \maynotinterrupt\\
+      \vtone & \vtone \neq \maynotinterrupt \land \vttwo = \assertednotinterrupt\\
+      \interrupt & \vtone = \vttwo = \interrupt
+    \end{cases}
+  }
+}{
+  \controlflowguard(\tenv, \ve, \vtone, \vttwo) \typearrow \vctrlflow
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.TypecheckGlobalStorage\label{sec:TypingRule.TypecheckGlobalStorage}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}

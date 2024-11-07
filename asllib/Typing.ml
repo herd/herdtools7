@@ -2135,7 +2135,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (S_Cond (e_cond, s1', s2') |> here, env) |: TypingRule.SCond
     (* End *)
     (* Begin SCase *)
-    | S_Case _ -> case_to_conds s |> annotate_stmt env |: TypingRule.SCase
+    | S_Case _ -> desugar_case_stmt s |> annotate_stmt env |: TypingRule.SCase
     (* End *)
     (* Begin SAssert *)
     | S_Assert e ->
@@ -2643,12 +2643,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               t (* Assertion that the condition always holds *)
           | Interrupt, Interrupt -> Interrupt)
 
+    (* Begin ControlFlowFromStmt *)
+
     (** [get_from_stmt env s] builds the control-flow analysis on [s] in [env].
     *)
     let rec from_stmt env s =
       match s.desc with
       | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Call _ | S_Print _ ->
-          MayNotInterrupt
+          MayNotInterrupt |: TypingRule.ControlFlowFromStmt
       | S_Unreachable -> AssertedNotInterrupt
       | S_Return _ | S_Throw _ -> Interrupt
       | S_Seq (s1, s2) -> seq (from_stmt env s1) (from_stmt env s2)
@@ -2665,6 +2667,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           guard env cond (from_stmt env body) MayNotInterrupt
       | S_Case (_, _) ->
           (* Should be unsugared, so only for v0 *) AssertedNotInterrupt
+    (* End *)
 
     (** [guard env e t1 t2] correspond to the conditional combination of [t1]
         and [t2], guarded by [e] symbolically interpreted in [env].

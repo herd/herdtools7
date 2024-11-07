@@ -60,6 +60,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \item Try statements (see \secref{TryStatements})
 \item Return statements (see \secref{ReturnStatements})
 \item Print statements (see \secref{PrintStatements})
+\item Unreachable statements (see \secref{UnreachableStatement})
 \item Pragma statements (see \secref{PragmaStatements})
 \end{itemize}
 
@@ -948,6 +949,9 @@ $\vstwo$ will be evaluated);
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
 \section{Case Statements\label{sec:CaseStatements}}
+Case statements are considered syntactic sugar for compound condition statements,
+as defined by \nameref{sec:TypingRule.DesugarCaseStmt}.
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derivesinline\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend &\\
@@ -1011,7 +1015,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   }
 }
 \end{mathpar}
-
 
 \subsubsection{ASTRule.CaseAlt\label{sec:ASTRule.CaseAlt}}
 \hypertarget{build-casealt}{}
@@ -1084,159 +1087,164 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SCase \label{sec:TypingRule.SCase}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\vs$ is a case statement with expression $\ve$ and case clauses $\vcases$, that is, \\
-        $\SCase(\veone, \vcasesone)$;
-  \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte, \veone)$\ProseOrTypeError;
-  \item annotating each case clause as per \secref{TypingRule.CaseAlt} in $\vcases$ yields the annotated list of clauses $\vcasesone$\ProseOrTypeError;
-  \item $\news$ is a case statement with expression $\veone$ and case clauses $\vcasesone$;
-  \item $\newtenv$ is $\tenvone$.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \veone) \OrTypeError\\\\
-  \vi\in\listrange(\vcases): \annotatecase{\tenv, \vcases[\vi]} \typearrow \vcase_\vi \OrTypeError\\\\
-  \vcasesone \eqdef [\vi\in\listrange(\vcases): \vcase_\vi]
-}{
-  \annotatestmt(\tenv, \overname{\SCase(\ve, \vcases)}{\vs}) \typearrow
-  (\overname{\SCase(\veone, \vcasesone)}{\news}, \overname{\tenv}{\newtenv})
-}
-\end{mathpar}
-\CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{WGSY}.}
-
-\subsubsection{TypingRule.CaseAlt\label{sec:TypingRule.CaseAlt}}
-\hypertarget{def-annotatecase}{}
-The helper function
+\subsubsection{TypingRule.DesugarCaseStmt\label{sec:TypingRule.DesugarCaseStmt}}
+\hypertarget{def-desugarcasestmt}{}
+The relation
 \[
-  \annotatecase{
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\casealt}{\vcase} \aslsep
-    \overname{\ty}{\vte}
-  } \aslto
-  \overname{\casealt}{\vcaseone} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\desugarcasestmt(\overname{\stmt}{\vs}) \;\aslrel\; \overname{\stmt}{\news}
 \]
-annotates the case clause $\vcase$ for an expression of type $\vte$ in $\tenv$,
-resulting in the annotated case clause $\vcaseone$.
-\ProseOtherwiseTypeError
+transforms a case statement $\vs$ into a conditional statement $\news$.
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vcase$ is a case clause with pattern $\vpzero$, \optional\ \texttt{where} expression $\vwzero$,
-        and \texttt{otherwise} statement $\vszero$, that is,
-        $\{ \CasePattern: \vpzero, \CaseWhere: \vwzero, \CaseStmt: \vszero \}$;
-  \item annotating the pattern $\vpzero$ with type $\vte$ in $\tenv$ yields $\vpone$\ProseOrTypeError;
-  \item annotating the statement $\vszero$ as a block statement in $\tenv$ yields $\vsone$\ProseOrTypeError;
+  \item $\vs$ is a \texttt{case} statement with expression $\ve$ and list of cases $\vcases$, that is, $\SCase(\ve, \vcases)$;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{no\_where\_stmt}):
+    \item All of the following apply (\textsc{var}):
     \begin{itemize}
-      \item $\vwzero$ is $\None$ (that is, no \texttt{where} expression);
-      \item $\vcaseone$ is $\{ \CasePattern: \vpone, \CaseWhere: \None, \CaseStmt: \vsone \}$.
+      \item $\ve$ is a variable expression;
+      \item applying $\casestocond$ to $\ve$ and $\vcases$ yields $\news$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{where\_stmt}):
+    \item All of the following apply (\textsc{non\_var}):
     \begin{itemize}
-      \item $\vwzero$ is the singleton expression for $\vewzero$, that is, $\langle\vewzero\rangle$;
-      \item annotating the expression $\vewzero$ in $\tenv$ yields $(\vtwe, \vewone)$\ProseOrTypeError;
-      \item checking whether the structure of $\vtwe$ in $\tenv$ is that of the \texttt{boolean} type yields $\True$\ProseOrTypeError;
-      \item $\vcaseone$ is $\{ \CasePattern: \vpone, \CaseWhere: \langle\vewone\rangle, \CaseStmt: \vsone \}$.
+      \item $\ve$ is not a variable expression;
+      \item let $\vx$ be a fresh identifier;
+      \item define $\vdeclx$ the statement declaring $\vx$ as an immutable variable initialized by $\ve$;
+      \item applying $\casestocond$ to the variable expression for $\vx$ ($\EVar(\vx)$) and $\vcases$ yields
+            the condition statement $\vscond$;
+      \item define $\news$ as the sequence statement for $\vdeclx$ and $\vscond$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[no\_where\_stmt]{
-  \vcase = \{ \CasePattern: \vpzero, \CaseWhere: \None, \CaseStmt : \vszero \}\\
-  \annotatepattern(\tenv, \vte, \vpzero) \typearrow \vpone \OrTypeError\\\\
-  \annotateblock{\tenv, \vszero} \typearrow \vsone \OrTypeError\\
+\inferrule[var]{
+  \astlabel(\ve) = \EVar\\
+  \casestocond(\ve, \vcases) \typearrow \news
 }{
-  \annotatecase{\tenv, \vcase, \vte} \typearrow \overname{\{ \CasePattern: \vpone, \CaseWhere: \None, \CaseStmt : \vsone \}}{\vcaseone}
-}
-\and
-\inferrule[where\_stmt]{
-  \vcase = \{ \CasePattern: \vpzero, \CaseWhere: \langle\vewzero\rangle, \CaseStmt : \vszero \}\\
-  \annotatepattern(\tenv, \vte, \vpzero) \typearrow \vpone \OrTypeError\\\\
-  \annotateblock{\tenv, \vszero} \typearrow \vsone \OrTypeError\\\\
-  \annotateexpr{\tenv, \vewzero} \typearrow (\vtwe, \vewone) \OrTypeError\\\\
-  \checkstructurelabel(\tenv, \vtwe, \TBool) \typearrow \True \OrTypeError
-}{
-  \annotatecase{\tenv, \vcase, \vte} \typearrow \overname{\{ \CasePattern: \vpone, \CaseWhere: \langle\vewone\rangle, \CaseStmt : \vsone \}}{\vcaseone}
+  \desugarcasestmt(\overname{\SCase(\ve, \vcases)}{\vs}) \typearrow \news
 }
 \end{mathpar}
 
-\subsection{Semantics}
-\subsubsection{SemanticsRule.SCase \label{sec:SemanticsRule.SCase}}
-\subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl}
-uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
+\begin{mathpar}
+\inferrule[non\_var]{
+  \astlabel(\ve) \neq \EVar\\
+  \vx \in \Identifiers \text{ is fresh}\\
+  \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \langle\ve\rangle)\\
+  \casestocond(\EVar(\vx), \vcases) \typearrow \vscond
+}{
+  \desugarcasestmt(\overname{\SCase(\ve, \vcases)}{\vs}) \typearrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.CasesToCond\label{sec:TypingRule.CasesToCond}}
+\hypertarget{def-casestocond}{}
+The function
+\[
+\casestocond(\overname{\expr}{\ve} \aslsep \overname{\casealt^*}{\vcases})
+\;\aslrel\; \overname{\stmt}{\news}
+\]
+transforms an expression $\ve$ and a list of \texttt{case} alternatives $\vcases$
+into a statement $\news$.
 
 \subsubsection{Prose}
-Evaluation of the statement $\vs$ in an environment $\env$ is a configuration $C$,
-and all of the following apply:
+One of the following applies:
 \begin{itemize}
-  \item $\vs$ is a case statement, $\SCase(\ve, \caselist)$;
-  \item desugaring $\vs$ gives a statement $\vsone$, which assigns $\ve$ to a fresh variable
-  and then matches its value against a list of patterns corresponding to $\caselist$ nested conditions.
-  In particular, this means that the cases are considered in order and only one of them is executed;
-  \item evaluating $\vsone$ in $\env$ results in the output configuration $C$.
+  \item All of the following apply (\textsc{last}):
+  \begin{itemize}
+    \item $\vcases$ is the list consisting of just $\vcase$;
+    \item applying $\casetocond$ to $\ve$, $\vcase$, and $\SUnreachable$ yields $\news$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_last}):
+  \begin{itemize}
+    \item $\vcases$ is the list with $\vcase$ as its \head\ and a non-empty list $\vcasesone$ as its \tail;
+    \item applying $\casestocond$ to $\ve$ and $\vcasesone$ yields $\vsone$;
+    \item applying $\casetocond$ to $\ve$, $\vcase$, and $\vsone$ yields $\news$.
+  \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
-\hypertarget{def-casetoconds}{}
-A case statement is syntactic sugar for a condition ladder where each
-of the alternatives is a pattern.
-That is, a statement of the form
-\texttt{if e1 then s1; else if e2 then s2; else if e3 then s3; ... else pass;}
-
-We define the relation
-\[
-  \casetoconds(\expr, (\pattern \times \stmt)^*) \;\bigtimes\; \stmt
-\]
-which performs this AST-to-AST transformation, effectively desugaring
-the case statement.
-
 \begin{mathpar}
-\inferrule[var-empty]{}
-{
-  \casetoconds(\EVar(\vx), \emptylist) \evalarrow \SPass
-}
-\and
-\inferrule[var-non-empty]{
-  \casetoconds(\EVar(\vx), \caselist) \evalarrow \caselist'
+\inferrule[last]{
+  \casetocond(\ve, \vcase, \SUnreachable) \typearrow \news
 }{
-  \casetoconds(\EVar(\vx), [(\vp, \vs)] \concat \caselist) \evalarrow \\
-  \SCond(\EPattern(\EVar(\vx), \vp), \vs, \caselist')
-}
-\and
-\inferrule[non-var]{
-  \astlabel(\ve) \neq \EVar\\
-  \vy \in \Identifiers \text{ is fresh}\\
-  \vardecl \eqname \SDecl(\LDKLet, \LDITyped(\LDIVar(\vy), \TInt(\unconstrained)))\\
-  \casetoconds(\EVar(\vy), \caselist) \evalarrow \casecond
-}{
-  \casetoconds(\ve, \caselist) \evalarrow
-  \SSeq(\vardecl, \casecond)
+  \casestocond(\ve, \overname{[\vcase]}{\vcases}) \typearrow \news
 }
 \end{mathpar}
 
-We now define the semantics of a case statement in terms of the desugared statement:
+\begin{mathpar}
+\inferrule[not\_last]{
+  \vcasesone \neq \emptylist\\
+  \casestocond(\ve, \vcasesone) \typearrow \vsone\\
+  \casetocond(\ve, \vcase, \vsone) \typearrow \news
+}{
+  \casestocond(\ve, \overname{[\vcase] \concat \vcasesone}{\vcases}) \typearrow
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.CaseToCond\label{sec:TypingRule.CaseToCond}}
+\hypertarget{def-casetocond}{}
+The function
+\[
+\casetocond(\overname{\expr}{\vezero} \aslsep \overname{\casealt}{\vcase} \aslsep \overname{\stmt}{\vtail})
+\;\aslrel\; \overname{\stmt}{\news}
+\]
+transforms an expression $\vezero$ (the condition used for a \texttt{case} statement),
+a single \texttt{case} alternative $\vcase$, and a statement $\vtail$, which represents
+a list of \texttt{case} alternatives already converted to conditionals, into a condition statement $\news$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item view $\vcase$ as the \texttt{case} alternative with pattern $\vpattern$, optional \texttt{where} clause $\vwhere$,
+        and statement $\vstmt$;
+  \item define $\vepattern$ as the pattern expression for expression $\vezero$ and the pattern \\
+        $\vpattern$;
+  \item define $\vcond$ as the binary expression with operator $\BAND$ and expressions \\
+        $\vepattern$ and $\vewhere$
+        if $\vwhere$ is the expression $\vewhere$ and $\vepattern$, otherwise;
+  \item define $\news$ as the condition statement with the condition expression $\vcond$ and statements $\vstmt$ and $\vtail$.
+\end{itemize}
+
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \casetoconds(\ve, \caselist) \evalarrow \vsone\\
-  \evalstmt{\env, \vsone} \evalarrow C
+  \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
+  \vepattern \eqdef \EPattern(\vezero, \vpattern)\\
+  \vcond \eqdef \choice{\vwhere = \langle\vewhere\rangle}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
 }{
-  \evalstmt{\env, \SCase(\ve, \caselist)} \evalarrow C
+  \casetocond(\vezero, \vcase, \vtail) \typearrow \overname{\SCond(\vcond, \vstmt, \vtail)}{\news}
 }
 \end{mathpar}
-\CodeSubsection{\EvalSCaseBegin}{\EvalSCaseEnd}{../Interpreter.ml}
+
+\subsubsection{TypingRule.SCase\label{sec:TypingRule.SCase}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a case statement;
+  \item applying $\desugarcasestmt$ to $\vs$ transforms $\vs$ to a conditional statement $\vsp$;
+  \item annotating $\vsp$ in $\tenv$ yields $(\news, \newtenv)$\ProseOrTypeError.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \astlabel(\vs) = \SCase\\
+  \desugarcasestmt(\vs) \typearrow \vsp\\
+  \annotatestmt(\tenv, \vsp) \typearrow (\news, \newtenv) \OrTypeError
+}{
+  \annotatestmt(\tenv,\vs) \typearrow (\news, \newtenv)
+}
+\end{mathpar}
+\CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{WGSY}.}
+
+\subsection{Semantics}
+Since case statements are transformed into conditional statements,
+they do not appear in the typed AST and thus are not associated with a semantics.
 
 \section{Assertion Statements\label{sec:AssertionStatements}}
 \subsection{Syntax}
@@ -2682,6 +2690,48 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 
 \subsection{Typing}
 \subsection{Semantics}
+
+\section{The Unreachable Statement\label{sec:UnreachableStatement}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\stmt \derives\ & \SUnreachable &
+\end{flalign*}
+
+\subsubsection{ASTRule.SUnreachable}
+\begin{mathpar}
+\inferrule{}{
+  \buildstmt(\overname{\Nstmt(\Tunreachable, \Tlpar, \Trpar, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SUnreachable}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SUnreachable}
+\subsubsection{TypingRule.SUnreachable\label{sec:TypingRule.SUnreachable}}
+\subsubsection{Prose}
+Annotating $\SUnreachable$ in the static environment $\tenv$ yields $(\SUnreachable, \tenv)$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \annotatestmt(\tenv, \SUnreachable) \typearrow (\SUnreachable, \tenv)
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.SUnreachable\label{sec:SemanticsRule.SUnreachable}}
+\subsubsection{Prose}
+Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error indicating this ($\UnreachableError$).
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \evalstmt{\env, \SUnreachable} \evalarrow \DynamicErrorVal{\UnreachableError}
+}
+\end{mathpar}
 
 \section{Pragma Statements\label{sec:PragmaStatements}}
 \subsection{Syntax}

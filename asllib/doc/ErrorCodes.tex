@@ -202,6 +202,17 @@ assigned a \basevalueterm\ expression, since the static domain of the type of th
 is empty.
 This is produced by \nameref{sec:TypingRule.BaseValue}.
 
+\hypertarget{def-nrf}{}
+\item[$\NonReturningFunction$]
+This error indicates that a function contains a control-flow path that may not terminate by
+either returning a value, throwing an exception, or executing \texttt{Unreachable()}
+(see \nameref{sec:TypingRule.CheckStmtReturnsOrThrows}).
+
 \end{description}
 
 \section{Dynamic Error Codes}
+\begin{description}
+\hypertarget{def-unr}{}
+\item[$\UnreachableError$]
+This error results from evaluating an \texttt{Unreachable()} statement (see \nameref{sec:SemanticsRule.SUnreachable}).
+\end{description}

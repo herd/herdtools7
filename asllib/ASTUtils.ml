@@ -553,7 +553,7 @@ let global_ignored_prefix = "__global_ignored"
 let global_ignored () = fresh_var global_ignored_prefix
 let is_global_ignored s = string_starts_with ~prefix:global_ignored_prefix s
 
-let case_to_conds : stmt -> stmt =
+let desugar_case_stmt : stmt -> stmt =
   let case_to_cond e0 case tail =
     let { pattern; where; stmt } = case.desc in
     let e_pattern = E_Pattern (e0, pattern) |> add_pos_from pattern in
@@ -564,9 +564,12 @@ let case_to_conds : stmt -> stmt =
     in
     S_Cond (cond, stmt, tail) |> add_pos_from case
   in
+  (* Begin CasesToCond *)
   let cases_to_cond ~loc e0 cases =
     List.fold_right (case_to_cond e0) cases (add_pos_from loc S_Unreachable)
+    (* End *)
   in
+  (* Begin DesugarCaseStmt *)
   fun s ->
     match s.desc with
     | S_Case (({ desc = E_Var _; _ } as e0), cases) ->
@@ -575,7 +578,8 @@ let case_to_conds : stmt -> stmt =
         let x = fresh_var "__case__linearisation" in
         let decl_x = S_Decl (LDK_Let, LDI_Var x, Some e) |> add_pos_from e in
         S_Seq (decl_x, cases_to_cond ~loc:s (var_ x) cases) |> add_pos_from s
-    | _ -> raise (Invalid_argument "case_to_conds")
+    | _ -> raise (Invalid_argument "desugar_case_stmt")
+(* End *)
 
 let slice_is_single = function Slice_Single _ -> true | _ -> false
 
