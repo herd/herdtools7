@@ -37,17 +37,17 @@ module SB = Native.StaticBackend
 module SI = Interpreter.Make (Native.StaticBackend) (InterpConf)
 
 let static_eval (senv : SEnv.env) (e : expr) : literal =
-  let global_storage =
-    Storage.map SB.v_of_literal senv.SEnv.global.constant_values
-  and local_storage =
-    Storage.map SB.v_of_literal senv.SEnv.local.constant_values
-  in
   let env =
     let open SI.IEnv in
-    {
-      global = { static = senv.global; storage = global_storage };
-      local = empty_scoped ~storage:local_storage (SB.Scope.global ~init:true);
-    }
+    let global =
+      global_from_static senv.global
+        ~storage:(Storage.map SB.v_of_literal senv.SEnv.global.constant_values)
+    and local =
+      local_empty_scoped
+        (SB.Scope.global ~init:true)
+        ~storage:(Storage.map SB.v_of_literal senv.SEnv.local.constant_values)
+    in
+    { global; local }
   in
   let res =
     try SI.eval_expr env e with

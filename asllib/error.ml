@@ -75,6 +75,7 @@ type error_desc =
   | UnexpectedATC
   | UnreachableReached
   | LoopLimitReached
+  | RecursionLimitReached
 
 type error = error_desc annotated
 
@@ -154,6 +155,7 @@ let error_label = function
   | UnexpectedATC -> "UnexpectedATC"
   | UnreachableReached -> "UnreachableReached"
   | LoopLimitReached -> "LoopLimitReached"
+  | RecursionLimitReached -> "RecursionLimitReached"
 
 let warning_label = function
   | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
@@ -348,8 +350,10 @@ module PPrint = struct
     | NonReturningFunction name ->
         fprintf f "ASL Typing error:@ function %S@ does@ not@ return@ anything."
           name
+    | RecursionLimitReached ->
+        pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->
-        pp_print_text f "ASL Dynamix error: loop limit reached."
+        pp_print_text f "ASL Dynamic error: loop limit reached."
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

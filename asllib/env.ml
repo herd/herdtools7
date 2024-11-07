@@ -36,12 +36,18 @@ module type S = sig
 
   module Scope : Backend.SCOPE
 
-  type global = { static : StaticEnv.global; storage : v Storage.t }
+  type global = {
+    static : StaticEnv.global;
+    storage : v Storage.t;
+    stack_size : int IMap.t;
+  }
+
   type local
   type env = { global : global; local : local }
 
   val to_static : env -> StaticEnv.env
-  val empty_scoped : ?storage:v Storage.t -> Scope.t -> local
+  val local_empty_scoped : ?storage:v Storage.t -> Scope.t -> local
+  val global_from_static : ?storage:v Storage.t -> StaticEnv.global -> global
 
   type 'a env_result = Local of 'a | Global of 'a | NotFound
 
@@ -60,13 +66,22 @@ module type S = sig
   val get_scope : env -> Scope.t
   val push_scope : env -> env
   val pop_scope : env -> env -> env
+  val get_stack_size : identifier -> env -> int
+  val incr_stack_size : identifier -> global -> global
+  val decr_stack_size : identifier -> global -> global
 end
 
 module RunTime (C : RunTimeConf) = struct
   module Scope = C.Scope
 
   type v = C.v
-  type global = { static : StaticEnv.global; storage : C.v Storage.t }
+
+  type global = {
+    static : StaticEnv.global;
+    storage : C.v Storage.t;
+    stack_size : int IMap.t;
+  }
+
   type int_stack = int list
 
   type local = {
@@ -78,8 +93,11 @@ module RunTime (C : RunTimeConf) = struct
 
   type env = { global : global; local : local }
 
-  let empty_scoped ?(storage = Storage.empty) scope =
+  let local_empty_scoped ?(storage = Storage.empty) scope =
     { scope; storage; unroll = []; declared = [] }
+
+  let global_from_static ?(storage = Storage.empty) static =
+    { static; storage; stack_size = IMap.empty }
 
   let get_scope env = env.local.scope
 
@@ -192,4 +210,22 @@ module RunTime (C : RunTimeConf) = struct
         child.local.declared
     in
     { child with local = { parent.local with storage = local_storage } }
+
+  let get_stack_size name env =
+    try IMap.find name env.global.stack_size with Not_found -> 0
+
+  let set_stack_size name value global =
+    let stack_size = IMap.add name value global.stack_size in
+    { global with stack_size }
+
+  let incr_stack_size name global =
+    let prev = try IMap.find name global.stack_size with Not_found -> 0 in
+    set_stack_size name (prev + 1) global
+
+  let decr_stack_size name global =
+    let prev =
+      try IMap.find name global.stack_size with Not_found -> assert false
+    in
+    assert (prev > 0);
+    set_stack_size name (prev - 1) global
 end
