@@ -998,15 +998,18 @@ module Make (B : Backend.S) (C : Config) = struct
         else fatal_from e @@ Error.AssertionFailed e |: SemanticsRule.SAssert
     (* End *)
     (* Begin EvalSWhile *)
-    | S_While (e, _limit, body) ->
+    | S_While (e, e_limit_opt, body) ->
+        let* limit_opt = eval_loop_limit env e_limit_opt in
         let env = IEnv.tick_push env in
-        eval_loop true env e body |: SemanticsRule.SWhile
+        eval_loop s true env limit_opt e body |: SemanticsRule.SWhile
     (* End *)
     (* Begin EvalSRepeat *)
-    | S_Repeat (body, e, _limit) ->
+    | S_Repeat (body, e, e_limit_opt) ->
+        let* limit_opt1 = eval_loop_limit env e_limit_opt in
+        let* limit_opt2 = tick_loop_limit s limit_opt1 in
         let*> env1 = eval_block env body in
         let env2 = IEnv.tick_push_bis env1 in
-        eval_loop false env2 e body |: SemanticsRule.SRepeat
+        eval_loop s false env2 limit_opt2 e body |: SemanticsRule.SRepeat
     (* End *)
     (* Begin EvalSFor *)
     | S_For { index_name; start_e; dir; end_e; body; limit = _limit } ->
@@ -1081,14 +1084,35 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of while and repeat loops *)
   (* ------------------------------------ *)
+
+  (* Evaluation of loop limits *)
+  and eval_loop_limit env e_limit_opt =
+    match e_limit_opt with
+    | None -> return None
+    | Some e_limit -> (
+        let* v_limit = eval_expr_sef env e_limit in
+        match B.v_to_int v_limit with
+        | Some limit -> return (Some limit)
+        | None ->
+            fatal_from e_limit
+              (Error.MismatchType (B.debug_value v_limit, [ integer' ])))
+
+  and tick_loop_limit loc limit_opt =
+    match limit_opt with
+    | None -> return None
+    | Some limit ->
+        if limit >= 1 then return (Some (limit - 1))
+        else fatal_from loc Error.LoopLimitReached
+
   (* Begin EvalLoop *)
-  and eval_loop is_while env e_cond body : stmt_eval_type =
+  and eval_loop loc is_while env limit_opt e_cond body : stmt_eval_type =
     (* Name for warn messages. *)
     let loop_name = if is_while then "While loop" else "Repeat loop" in
     (* Continuation in the positive case. *)
     let loop env =
+      let* limit_opt' = tick_loop_limit loc limit_opt in
       let*> env1 = eval_block env body in
-      eval_loop is_while env1 e_cond body
+      eval_loop loc is_while env1 limit_opt' e_cond body
     in
     (* First we evaluate the condition *)
     let*^ cond_m, env = eval_expr env e_cond in
