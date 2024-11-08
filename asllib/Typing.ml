@@ -139,12 +139,13 @@ let set_filter_map f set =
 
    ---------------------------------------------------------------------------*)
 
-type strictness = [ `Silence | `Warn | `TypeCheck ]
+type strictness = Silence | Warn | TypeCheck | TypeCheckNoWarn
 
 module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
   val print_typed : bool
+  val use_field_getter_extension : bool
 end
 
 module type S = sig
@@ -162,27 +163,33 @@ module Property (C : ANNOTATE_CONFIG) = struct
 
   let strictness_string =
     match C.check with
-    | `TypeCheck -> "type-checking-strict"
-    | `Warn -> "type-checking-warn"
-    | `Silence -> "type-inference"
+    | TypeCheck -> "type-checking-strict"
+    | TypeCheckNoWarn -> "type-checking-strict-no-warn"
+    | Warn -> "type-checking-warn"
+    | Silence -> "type-inference"
 
   let check : prop -> prop =
     match C.check with
-    | `TypeCheck -> fun f () -> f ()
-    | `Warn -> (
+    | TypeCheckNoWarn | TypeCheck -> fun f () -> f ()
+    | Warn -> (
         fun f () -> try f () with Error.ASLException e -> EP.eprintln e)
-    | `Silence -> fun _f () -> ()
+    | Silence -> fun _f () -> ()
 
   let best_effort' : ('a, 'a) property -> ('a, 'a) property =
     match C.check with
-    | `TypeCheck -> fun f x -> f x
-    | `Warn -> (
+    | TypeCheckNoWarn | TypeCheck -> fun f x -> f x
+    | Warn -> (
         fun f x ->
           try f x
           with Error.ASLException e ->
             EP.eprintln e;
             x)
-    | `Silence -> ( fun f x -> try f x with Error.ASLException _ -> x)
+    | Silence -> ( fun f x -> try f x with Error.ASLException _ -> x)
+
+  let warn_from =
+    match C.check with
+    | TypeCheckNoWarn | Silence -> fun ~loc:_ _ -> ()
+    | TypeCheck | Warn -> EP.warn_from
 
   let best_effort : 'a -> ('a, 'a) property -> 'a = fun x f -> best_effort' f x
   let[@inline] ( let+ ) m f = check m () |> f
@@ -308,8 +315,8 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
 
   let try_subprogram_for_name =
     match C.check with
-    | `TypeCheck -> subprogram_for_name
-    | `Warn | `Silence -> (
+    | TypeCheckNoWarn | TypeCheck -> subprogram_for_name
+    | Warn | Silence -> (
         fun loc env name caller_arg_types ->
           try subprogram_for_name loc env name caller_arg_types
           with Error.ASLException _ as error -> (
@@ -335,9 +342,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   module Fn = FunctionRenaming (C)
 
   module SOp = StaticOperations.Make (struct
-    include C
-
-    let fail () = assumption_failed ()
+    let fail = assumption_failed
+    let warn_from = warn_from
   end)
 
   (* Begin ShouldReduceToCall *)
@@ -405,19 +411,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   exception NoSingleField
 
+  (** [to_singles env slices] is a list of [Slice_Single] slices
+      for each bit position of each bitfield slice in [slices]. *)
   let to_singles env =
     let eval e =
       match reduce_constants env e with
       | L_Int z -> Z.to_int z
       | _ -> raise NoSingleField
     in
-    let one slice k =
+    let one slice acc =
       match slice with
-      | Slice_Single e -> e :: k
+      | Slice_Single e -> e :: acc
       | Slice_Length (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
           let rec do_rec n =
-            if n >= i2 then k
+            if n >= i2 then acc
             else
               let e = E_Literal (L_Int (Z.of_int (i1 + n))) |> add_dummy_pos in
               e :: do_rec (n + 1)
@@ -426,7 +434,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Slice_Range (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
           let rec do_rec i =
-            if i > i1 then k
+            if i > i1 then acc
             else
               let e = E_Literal (L_Int (Z.of_int i)) |> add_dummy_pos in
               e :: do_rec (i + 1)
@@ -436,28 +444,37 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     fun slices -> List.fold_right one slices []
 
+  (** Retrieves the slices associated with the given bitfield
+      without recursing into nested bitfields. *)
   let slices_of_bitfield = function
     | BitField_Simple (_, slices)
     | BitField_Nested (_, slices, _)
     | BitField_Type (_, slices, _) ->
         slices
 
+  (** Retrieves the slice of [Slice_Single] slices for each position
+      of the bitfield [field], if it is found in [bf]. *)
   let field_to_single env bf field =
     match find_bitfield_opt field bf with
     | Some bitfield -> to_singles env (slices_of_bitfield bitfield)
     | None -> raise NoSingleField
 
-  (* Begin ShoulFieldsReduceToCall *)
+  (** Checks that all bitfields listed in [fields] are delcared in the
+      bitvector type [ty]. If so, retrieves a list of [Slice_Single] slices for
+      each bit position of each bitfield slice of each bitfield in [fields].
+      [name] is passed along, if the result is not [None] for convenience of
+      use.
+
+      It is an ASLRef extension, guarded by [C.use_field_getter_extension].
+  *)
   let should_fields_reduce_to_call env name ty fields =
+    assert C.use_field_getter_extension;
     match (Types.make_anonymous env ty).desc with
     | T_Bits (_, bf) -> (
         try Some (name, list_concat_map (field_to_single env bf) fields)
         with NoSingleField -> None)
     | _ -> None
   (* End *)
-
-  let should_field_reduce_to_call env name ty field =
-    should_fields_reduce_to_call env name ty [ field ]
 
   (* -------------------------------------------------------------------------
 
@@ -1112,8 +1129,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> acc
       in
       match C.check with
-      | `TypeCheck -> eqs1
-      | `Warn | `Silence ->
+      | TypeCheckNoWarn | TypeCheck -> eqs1
+      | Warn | Silence ->
           List.fold_left2 folder eqs1 callee.args caller_args_typed
     in
     (* AnnotateParameterDefining( *)
@@ -1458,12 +1475,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (* End *)))
     | E_GetField (e1, field_name) -> (
         let reduced =
-          match e1.desc with
-          | E_Var name when should_reduce_to_call env name ST_Getter ->
-              let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-              let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
-              should_field_reduce_to_call env name ty field_name
-          | _ -> None
+          if C.use_field_getter_extension then
+            reduce_getfields_to_slices env e1 [ field_name ] ~forbid_atcs
+          else None
         in
         match reduced with
         | Some (name, args) ->
@@ -1539,12 +1553,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* End *))
     | E_GetFields (e1, fields) -> (
         let reduced =
-          match e1.desc with
-          | E_Var name when should_reduce_to_call env name ST_Getter ->
-              let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-              let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
-              should_fields_reduce_to_call env name ty fields
-          | _ -> None
+          if C.use_field_getter_extension then
+            reduce_getfields_to_slices env e1 fields ~forbid_atcs
+          else None
         in
         match reduced with
         | Some (name, args) ->
@@ -1613,6 +1624,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     | E_GetItem _ -> assert false
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
+
+  (** For an expression of the form [e1.[f1,...,fn]], if [e1] represents a call
+      to a getter then this function returns a list of slices needed to read
+      the bitfields [f1...fn]. Otherwise, the result is [None].
+
+      It is an ASLRef extension, guarded by [C.use_field_getter_extension].
+  *)
+  and reduce_getfields_to_slices env e1 fields ~forbid_atcs =
+    assert C.use_field_getter_extension;
+    match e1.desc with
+    | E_Var name when should_reduce_to_call env name ST_Getter ->
+        let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
+        let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
+        should_fields_reduce_to_call env name ty fields
+    | _ -> None
 
   (* ListMinAbs( *)
   let list_min_abs_z =
@@ -2307,11 +2333,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and try_annotate_stmt env s =
     best_effort (s, env) (fun _ -> annotate_stmt env s)
 
+  (* ASLRef extension that allows reduction of a form
+     [MyGetter.[fieldA, fieldB] to [MyGetter([sliceA], [sliceB])]].
+
+     It is guarded by [C.use_getter_field_extension]. *)
   and set_fields_should_reduce_to_call ~loc env x fields (t_e, e) =
     (*
      * Field indices are extracted from the return type
      * of "associated" getter.
      *)
+    assert C.use_field_getter_extension;
     let ( let* ) = Option.bind in
     let _, _, callee =
       try Fn.try_subprogram_for_name loc env x []
@@ -2367,7 +2398,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | LE_Discard -> None
     | LE_SetField (sub_le, field) -> (
         match sub_le.desc with
-        | LE_Var x when should_reduce_to_call env x ST_Setter ->
+        | LE_Var x
+          when C.use_field_getter_extension
+               && should_reduce_to_call env x ST_Setter ->
             set_fields_should_reduce_to_call env ~loc x [ field ] (t_e, e)
         | _ ->
             let old_le le' = LE_SetField (le', field) |> here in
@@ -2375,7 +2408,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         )
     | LE_SetFields (sub_le, fields, slices) -> (
         match sub_le.desc with
-        | LE_Var x when should_reduce_to_call env x ST_Setter ->
+        | LE_Var x
+          when C.use_field_getter_extension
+               && should_reduce_to_call env x ST_Setter ->
             set_fields_should_reduce_to_call env ~loc x fields (t_e, e)
         | _ ->
             let old_le le' = LE_SetFields (le', fields, slices) |> here in
@@ -2544,15 +2579,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let env3, parameters =
       (* Do not transliterate, only for v0: promote potential params as params. *)
-      if C.check = `TypeCheck then (env3, parameters)
-      else
-        let folder x (env3', parameters) =
-          if not (is_undefined x env3) then (env3', parameters)
-          else
-            let t = Types.parameterized_ty x in
-            (add_local x t LDK_Let env3', (x, Some t) :: parameters)
-        in
-        ISet.fold folder potential_params (env3, parameters)
+      match C.check with
+      | TypeCheck | TypeCheckNoWarn -> (env3, parameters)
+      | Warn | Silence ->
+          let folder x (env3', parameters) =
+            if not (is_undefined x env3) then (env3', parameters)
+            else
+              let t = Types.parameterized_ty x in
+              (add_local x t LDK_Let env3', (x, Some t) :: parameters)
+          in
+          ISet.fold folder potential_params (env3, parameters)
     in
     let () =
       if false then
@@ -3033,7 +3069,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 end
 
 module TypeCheckDefault = Annotate (struct
-  let check = `TypeCheck
+  let check = TypeCheck
   let output_format = Error.HumanReadable
   let print_typed = false
+  let use_field_getter_extension = false
 end)

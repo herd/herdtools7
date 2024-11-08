@@ -9,12 +9,9 @@ val constraint_binop :
     [MOD], [POW].
 *)
 
-type strictness = [ `Silence | `Warn | `TypeCheck ]
-
 module type CONFIG = sig
   val fail : unit -> 'a
-  val check : strictness
-  val output_format : Error.output_format
+  val warn_from : loc:'a annotated -> Error.warning_desc -> unit
 end
 
 module Make : functor (C : CONFIG) -> sig

@@ -21,6 +21,7 @@
 (******************************************************************************)
 
 open Asllib
+open Typing
 
 type file_type = NormalV1 | NormalV0 | PatchV1 | PatchV0
 
@@ -32,8 +33,9 @@ type args = {
   print_serialized : bool;
   print_typed : bool;
   show_rules : bool;
-  strictness : Typing.strictness;
+  strictness : strictness;
   output_format : Error.output_format;
+  use_field_getter_extension : bool;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -46,11 +48,12 @@ let parse_args () =
   let print_serialized = ref false in
   let print_typed = ref false in
   let opn = ref "" in
-  let strictness : Typing.strictness ref = ref `TypeCheck in
+  let strictness : strictness ref = ref TypeCheck in
   let set_strictness s () = strictness := s in
   let show_version = ref false in
   let push_file file_type s = target_files := (file_type, s) :: !target_files in
   let output_format = ref Error.HumanReadable in
+  let use_field_getter_extension = ref false in
 
   let speclist =
     [
@@ -72,17 +75,24 @@ let parse_args () =
         Arg.Set_string opn,
         "OPN_FILE Parse the following opn file as main." );
       ( "--no-type-check",
-        Arg.Unit (set_strictness `Silence),
+        Arg.Unit (set_strictness Silence),
         " Do not type-check, only perform minimal type-inference. Default for \
          v0." );
       ( "--type-check-warn",
-        Arg.Unit (set_strictness `Warn),
+        Arg.Unit (set_strictness Warn),
         " Do not type-check, only perform minimal type-inference. Log typing \
          errors on stderr." );
       ( "--type-check-strict",
-        Arg.Unit (set_strictness `TypeCheck),
+        Arg.Unit (set_strictness TypeCheck),
         " Perform type-checking, Fatal on any type-checking error. Default for \
          v1." );
+      ( "--type-check-no-warn",
+        Arg.Unit (set_strictness TypeCheckNoWarn),
+        " Perform type-checking, fatal on any type-checking error, but don't \
+         show any warnings." );
+      ( "--use-field-getter-extension",
+        Arg.Set use_field_getter_extension,
+        " Instruct the type-checker to use the field getter extension." );
       ( "--show-rules",
         Arg.Set show_rules,
         " Instrument the interpreter and log to std rules used." );
@@ -124,6 +134,7 @@ let parse_args () =
       strictness = !strictness;
       show_rules = !show_rules;
       output_format = !output_format;
+      use_field_getter_extension = !use_field_getter_extension;
     }
   in
 
@@ -201,7 +212,7 @@ let () =
         Printf.eprintf
           {|"File","Start line","Start col","End line","End col","Exception label","Exception"
 |}
-    | Error.(HumanReadable | Silence) -> ()
+    | Error.HumanReadable -> ()
   in
 
   let typed_ast, static_env =
@@ -209,8 +220,9 @@ let () =
       let output_format = args.output_format
       let check = args.strictness
       let print_typed = args.print_typed
+      let use_field_getter_extension = args.use_field_getter_extension
     end in
-    let module T = Typing.Annotate (C) in
+    let module T = Annotate (C) in
     or_exit @@ fun () -> T.type_check_ast ast
   in
 

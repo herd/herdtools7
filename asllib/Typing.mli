@@ -25,13 +25,14 @@
     It should provide enough information to disambiguate any type-dependent
     behaviour. *)
 
-type strictness = [ `Silence | `Warn | `TypeCheck ]
 (** Possible strictness of type-checking. *)
+type strictness = Silence | Warn | TypeCheck | TypeCheckNoWarn
 
 module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
   val print_typed : bool
+  val use_field_getter_extension : bool
 end
 
 module type S = sig

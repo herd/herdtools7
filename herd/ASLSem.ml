@@ -103,14 +103,18 @@ module Make (C : Config) = struct
   module Act = ASLAction.Make (ASL64AH)
   include SemExtra.Make (C) (ASL64AH) (Act)
 
-  module TypeCheck = Asllib.Typing.Annotate (struct
-    let check : Asllib.Typing.strictness =
-      if C.variant (Variant.ASLType `Warn) then `Warn
-      else if C.variant (Variant.ASLType `TypeCheck) then `TypeCheck
-      else `Silence
+  let is_experimental = C.variant Variant.ASLExperimental
 
-    let output_format = Asllib.Error.Silence
+  module TypeCheck = Asllib.Typing.Annotate (struct
+    let check =
+      let open Asllib.Typing in
+      if C.variant (Variant.ASLType `Warn) then Warn
+      else if C.variant (Variant.ASLType `TypeCheck) then TypeCheckNoWarn
+      else Silence
+
+    let output_format = Asllib.Error.HumanReadable
     let print_typed = false
+    let use_field_getter_extension = is_experimental
   end)
 
   module ASLInterpreterConfig = struct
@@ -120,7 +124,6 @@ module Make (C : Config) = struct
     module Instr = Asllib.Instrumentation.SemanticsNoInstr
   end
 
-  let is_experimental = C.variant Variant.ASLExperimental
   let barriers = []
   let isync = None
   let atomic_pair_allowed _ _ = true

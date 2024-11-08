@@ -154,17 +154,12 @@ let filter_reduce_constraint_div =
       | None, None -> Some c)
 (* End *)
 
-type strictness = [ `Silence | `Warn | `TypeCheck ]
-
 module type CONFIG = sig
   val fail : unit -> 'a
-  val check : strictness
-  val output_format : Error.output_format
+  val warn_from : loc:'a annotated -> Error.warning_desc -> unit
 end
 
 module Make (C : CONFIG) = struct
-  module EP = Error.ErrorPrinter (C)
-
   let list_filter_map_modified f =
     let rec aux (accu, flag) = function
       | [] -> (List.rev accu, flag)
@@ -230,7 +225,7 @@ module Make (C : CONFIG) = struct
     | _ ->
         let () =
           if modified then
-            EP.warn_from ~loc
+            C.warn_from ~loc
               Error.(
                 RemovingValuesFromConstraints
                   { op; prev = constraints; after = constraints' })
@@ -359,7 +354,7 @@ module Make (C : CONFIG) = struct
           | Some za, Some zb ->
               if interval_too_large za zb then
                 let () =
-                  EP.warn_from ~loc Error.(IntervalTooBigToBeExploded (za, zb))
+                  C.warn_from ~loc Error.(IntervalTooBigToBeExploded (za, zb))
                 in
                 [ c ]
               else make_interval [] ~loc za zb
