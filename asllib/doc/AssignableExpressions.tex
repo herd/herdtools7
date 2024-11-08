@@ -39,7 +39,7 @@ The relation
 \[
   \evallexpr{\overname{\envs}{\env} \aslsep \overname{\lexpr}{\vle} \aslsep (\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg})} \;\aslrel\;
     \Normal(\overname{\XGraphs}{\newg},\overname{\envs}{\newenv}) \cup
-    \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+    \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 evaluates the assignment of a value $\vv$
 to the left-hand-side expression $\vle$ in an environment $\env$,
@@ -408,7 +408,7 @@ The helper relation
 \[
   \evalmultiassignment(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vlelist} \aslsep \overname{(\vals \times \XGraphs)^*}{\vmlist}) \;\aslrel\;
   \Normal(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) \cup
-  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 evaluates multi-assignments.
 That is, the simultaneous assignment of the list of value-execution graph pairs $\vmlist$
@@ -628,10 +628,12 @@ All of the following apply:
   \item evaluating the right-hand-side expression that corresponds to $\ebv$
   (given by applying $\torexpr$ to $\ebv$) in $\env$
     is $\Normal(\mbv,\envone)$\ProseOrAbnormal;
-  \item evaluating $\slices$ in $\envone$ is $\Normal(\mpositions, \envtwo)$\ProseOrAbnormal;
-  \item $\mpositions$ consists of the execution graph $\vgone$ and the list of indices $\positions$;
+  \item evaluating $\slices$ in $\envone$ is $\Normal(\msliceranges, \envtwo)$\ProseOrAbnormal;
+  \item $\msliceranges$ consists of the execution graph $\vgone$ and the list of indices\\
+         $\sliceranges$;
+  \item applying $\checknonoverlappingslices$ to $\sliceranges$ yields $\True$\ProseOrError;
   \item $\mbv$ consists of the native bitvector $\vbv$ and the execution graph $\vgtwo$;
-  \item writing to the bitvector $\vbv$ at indices $\positions$ using the values from $\vv$
+  \item writing to the bitvector $\vbv$ at indices $\sliceranges$ using the values from $\vv$
   results in the updated native bitvector $\vvone$\ProseOrError;
   \item $\vgthree$ is the parallel composition of $\vg$, $\vgone$, and $\vgtwo$;
   \item $\newmbv$ is a pair consisting of $\vvone$ and the execution graph $\vgthree$;
@@ -644,10 +646,11 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \evalexpr{\env, \torexpr(\ebv)} \evalarrow \Normal(\mbv,\envone) \OrAbnormal\\
-  \evalslices(\envone, \slices) \evalarrow \Normal(\mpositions, \envtwo) \OrAbnormal\\
-  \mpositions \eqname (\positions, \vgone)\\
+  \evalslices(\envone, \slices) \evalarrow \Normal(\msliceranges, \envtwo) \OrAbnormal\\
+  \msliceranges \eqname (\sliceranges, \vgone)\\
   \mbv \eqname (\vbv, \vgtwo)\\\\
-  \writetobitvector(\positions, \vv, \vbv) \evalarrow \vvone \OrDynError\\\\
+  \checknonoverlappingslices(\sliceranges) \evalarrow \True \OrDynError\\\\
+  \writetobitvector(\sliceranges, \vv, \vbv) \evalarrow \vvone \OrDynError\\\\
   \vgthree \eqdef \vg \parallelcomp \vgone \parallelcomp \vgtwo\\
   \newmbv \eqdef (\vvone, \vgthree)\\
   \evallexpr{\envtwo, \ebv, \newmbv} \evalarrow C
@@ -670,6 +673,85 @@ arguments as the setter invocation
 getter invocation
 \item invoking the setter to assign the resulting value
 \end{itemize}
+
+\subsubsection{SemanticsRule.CheckNonOverlappingSlices\label{sec:SemanticsRule.CheckNonOverlappingSlices}}
+\hypertarget{def-checknonoverlappingslices}{}
+The helper function
+\[
+  \checknonoverlappingslices(
+    \overname{(\tint\times\tint)^*}{\valueranges}
+  ) \evalarrow \{\True\} \cup \overname{\TDynError}{\DynErrorConfig}
+\]
+checks whether the sets of integers represented by the list of ranges $\valueranges$
+overlap, yielding $\True$.
+\ProseOrError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item view $\valueranges$ as the list $\vrange_{1..k}$;
+  \item for every pair of indices $\vi$ and $\vj$ such that $1 \leq \vi < \vj \leq k$,
+        applying \\
+        $\checktworangesnonoverlapping$ to $\vrange_\vi$ and $\vrange_\vj$
+        yields $\True$\ProseOrError;
+  \item the result is $\True$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+    \begin{array}{r}
+ 1 \leq \vi < \vj \leq k:
+ \checktworangesnonoverlapping(\vrange_\vi, \vrange_\vj) \evalarrow \\
+ \True \OrDynError
+    \end{array}
+  }
+}{
+  \checknonoverlappingslices(\overname{\vrange_{1,,k}}{\valueranges}) \evalarrow \True
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.CheckTwoRangesNonOverlapping\label{sec:SemanticsRule.CheckTwoRangesNonOverlapping}}
+\hypertarget{def-checktworangesnonoverlapping}{}
+The helper function
+\[
+\begin{array}{r}
+  \checktworangesnonoverlapping(
+    (\overname{\tint}{\vsone}\times\overname{\tint}{\vlone}) \aslsep
+    (\overname{\tint}{\vstwo}\times\overname{\tint}{\vltwo}) \aslsep
+  ) \evalarrow \\
+  \{\True\} \cup \overname{\TDynError}{\DynErrorConfig}
+\end{array}
+\]
+checks whether two sets of integers represented by the
+ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\True$.
+\ProseOrError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item evaluating $\PLUS$ for $\vsone$ and $\vlone$ via $\binoprel$ yields $\vsonelone$;
+  \item evaluating $\LEQ$ for $\vsonelone$ and $\vstwo$ yields $\vsonelonestwo$;
+  \item evaluating $\PLUS$ for $\vstwo$ and $\vltwo$ yields $\vstwoltwo$;
+  \item evaluating $\LEQ$ for $\vstwoltwo$ and $\vsone$ yields $\vstwoltwosone$;
+  \item evaluating $\BOR$ for $\vsonelonestwo$ and $\vstwoltwosone$ yields $\nvbool(\vb)$;
+  \item checking whether $\vb$ is $\True$ yields $\True$\ProseTerminateAs{OverlappingSlices};
+  \item the result is $\True$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \binoprel(\PLUS, \vsone, \vlone) \evalarrow \vsonelone\\
+  \binoprel(\LEQ, \vsonelone, \vstwo) \evalarrow \vsonelonestwo\\
+  \binoprel(\PLUS, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
+  \binoprel(\LEQ, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
+  \binoprel(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
+  \checktrans{\vb}{OverlappingSlices} \checktransarrow \True\OrDynError
+}{
+  \checktworangesnonoverlapping((\vsone, \vlone), (\vstwo, \vltwo)) \evalarrow \True
+}
+\end{mathpar}
 
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
@@ -1018,7 +1100,7 @@ The helper relation
     \extractslices(\overname{\dynamicenvs}{\env}, \overname{\expr^*}{\vwidths}, \overname{((\vals \times \XGraphs)^*)^*}{\ms}, \overname{(\vals \times \XGraphs)}{\vm})
     \;\aslrel\;
     \overname{((\vals \times \XGraphs)^*)^*}{\msout}
-    \cup \overname{\TError}{\ErrorConfig}
+    \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 
 \subsubsection{Prose}

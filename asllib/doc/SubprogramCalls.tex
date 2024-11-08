@@ -1486,7 +1486,7 @@ The relation
     \overbracket{\expr^*}^{\texttt{args}} \aslsep
     \overbracket{(\overname{\Identifiers}{\id_i}\times\overname{\expr}{\ve_i})^*}^{\texttt{named\_args}}} \;\aslrel\; \\
     \Normal(\overbracket{(\vals\times\XGraphs)^*}^{\vmstwo}, \overname{\envs}{\newenv}) \cup
-    \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+    \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
   \end{array}
 \]
 evaluates a call to the subprogram named $\name$ in the environment $\env$,
@@ -1510,7 +1510,7 @@ The relation
     \overname{(\Identifiers\times\vals)^*}{\params}} \aslrel \\
     \Normal(\overname{(\vals^* \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) \cup
     \overname{\TThrowing}{\ThrowingConfig} \cup
-    \overname{\TError}{\ErrorConfig}
+    \overname{\TDynError}{\DynErrorConfig}
   \end{array}
 \]
 evaluates the subprogram named $\name$ in the environment $\env$, with
@@ -1627,7 +1627,7 @@ The following rule utilizes the transition relation
 \hypertarget{def-evalprimitive}{}
 \[
   \evalprimitive{\overname{\Identifiers}{\name} \aslsep \overname{(\vals\times\XGraphs)^*}{\actualargs}} \bigtimes
-  \Normal(\overname{(\vals\times\XGraphs)^*}{\vms} \aslsep \overname{\XGraphs}{\vgone}) \cup \overname{\TError}{\ErrorConfig} \enspace,
+  \Normal(\overname{(\vals\times\XGraphs)^*}{\vms} \aslsep \overname{\XGraphs}{\vgone}) \cup \overname{\TDynError}{\DynErrorConfig} \enspace,
 \]
 which parameterizes the ASL semantics and allows evaluating primitive subprograms.
 That is, it is not a part of $\evalarrow$ but rather a separate transition relation denoted $\evalprimitivearrow$.

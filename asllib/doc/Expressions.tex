@@ -41,7 +41,7 @@ The relation
 \[
   \evalexpr{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
             \Normal((\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg}) \aslsep \overname{\envs}{\newenv}) \cup
-            \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+            \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 evaluates the expression $\ve$ in an environment $\env$ and one of the following applies:
 \begin{itemize}
@@ -1761,7 +1761,7 @@ The relation
 \[
   \evalexprlist{\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vle}} \;\aslrel\;
   \Normal((\overname{\vals^*}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) \cup
-  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 evaluates the list of expressions $\vle$ in left-to-right order in the initial environment $\env$
 and returns the resulting value $\vv$, the parallel composition of the execution graphs
@@ -2005,7 +2005,7 @@ All of the following apply:
 \begin{itemize}
 \item $\ve$ denotes an asserted type conversion expression, $\EATC(\veone, \vt)$;
 \item evaluating $\veone$ in $\env$ results in $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
-\item evaluating whether $\vv$ has type $\vt$ in $\env$ results in $(\vb, \vgtwo)$\ProseTerminateAs{\ErrorConfig};
+\item evaluating whether $\vv$ has type $\vt$ in $\env$ results in $(\vb, \vgtwo)$\ProseTerminateAs{\DynErrorConfig};
 \item one of the following applies:
       \begin{itemize}
       \item all of the following apply (\textsc{okay}):
@@ -2047,7 +2047,7 @@ All of the following apply:
 The relation
 \[
   \isvaloftype(\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\ty}{\vt}) \;\aslrel\;
-  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg}) \cup \overname{\TError}{\ErrorConfig}
+  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg}) \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 checks whether the value $\vv$ can be stored in a variable of type $\vt$ in the environment $\env$,
 resulting in a Boolean value $\vb$ and execution graph $\vg$ or a dynamic error.
@@ -2737,7 +2737,7 @@ The helper relation
 \[
   \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
   \Normal(\overname{\vals}{\vv}\aslsep\overname{\XGraphs}{\vg}) \cup
-  \overname{\TError}{\ErrorConfig}
+  \overname{\TDynError}{\DynErrorConfig}
 \]
 specializes the expression evaluation relation for side-effect-free expressions
 by omitting throwing configurations as possible output configurations.

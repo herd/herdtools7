@@ -374,9 +374,12 @@ One of the following applies:
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
     \item $\vslices$ is the list with $\vs$ as its \head\ and $\vslicesone$ as its \tail;
-    \item applying $\bitfieldslicetopositions$ to $\vs$ in $\tenv$ yields the set of positions \\
-          $\positionsone$\ProseOrTypeError;
-    \item applying $\disjointslicestopositions$ to $\vslicesone$ in $\tenv$ yields the set of positions $\positionsone$\ProseOrTypeError;
+    \item applying $\bitfieldslicetopositions$ to $\vs$ in $\tenv$ yields the optional set of positions \\
+          $\positionsoneopt$\ProseOrTypeError;
+    \item define $\positionsone$ as $\vsone$ if $\positionsoneopt$ is $\langle\vsone\rangle$ and the empty set, otherwise;
+    \item applying $\disjointslicestopositions$ to $\vslicesone$ in $\tenv$ yields the optional set of positions
+          $\positionstwoopt$\ProseOrTypeError;
+    \item define $\positionstwo$ as $\vsone$ if $\positionstwoopt$ is $\langle\vstwo\rangle$ and the empty set, otherwise;
     \item checking that $\positionsone$ is disjoint from $\positionstwo$ yields $\True$\ProseTerminateAs{\BitfieldSlicesOverlap}
     \item $\positions$ is the union of $\positionsone$ and $\positionstwo$.
   \end{itemize}
@@ -390,8 +393,10 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \bitfieldslicetopositions(\tenv, \vs) \typearrow \positionsone \OrTypeError\\\\
-  \disjointslicestopositions(\tenv, \vslicesone) \typearrow \positionstwo \OrTypeError\\\\
+  \bitfieldslicetopositions(\tenv, \vs) \typearrow \positionsoneopt \OrTypeError\\\\
+  \positionsone \eqdef \choice{\positionsoneopt = \langle\vsone\rangle}{\vsone}{\emptyset}\\
+  \disjointslicestopositions(\tenv, \vslicesone) \typearrow \positionstwoopt \OrTypeError\\\\
+  \positionstwo \eqdef \choice{\positionstwoopt = \langle\vstwo\rangle}{\vstwo}{\emptyset}\\
   \checktrans{\positionsone \cap \positionstwo = \emptyset}{\BitfieldSlicesOverlap} \checktransarrow \True \OrTypeError
 }{
   \disjointslicestopositions(\tenv, \overname{\vs \concat \vslicesone}{\vslices}) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
@@ -403,9 +408,12 @@ One of the following applies:
 The function
 \[
   \bitfieldslicetopositions(\overname{\staticenvs}{\tenv}, \overname{\slice}{\vslice})
-  \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\langle\powfin{\Z}\rangle}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$. \ProseOtherwiseTypeError
+\hypertarget{def-nonstatic}{}
+returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$,
+if they can be statically evaluated, or $\None$ if they cannot be statically evaluated.
+\ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 One of the following applies:
@@ -413,9 +421,7 @@ One of the following applies:
   \item All of the following apply (\textsc{single}):
   \begin{itemize}
     \item $\vslice$ is a \singleslice\ defined by the expression $\ve$, that is, $\SliceSingle(\ve)$;
-    \item applying $\reduceconstants$ to $\ve$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError;
-    \item checking that $\vl$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vl$ is the integer literal for $\vx$;
+    \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
     \item $\positions$ is the singleton set for $\vx$.
   \end{itemize}
 
@@ -423,12 +429,8 @@ One of the following applies:
   \begin{itemize}
     \item $\vslice$ is \rangeslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceRange(\veone, \vetwo)$;
-    \item applying $\reduceconstants$ to $\veone$ in $\tenv$ yields the literal $\vlone$\ProseOrTypeError;
-    \item checking that $\vlone$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vlone$ is the integer literal for $\vy$;
-    \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
-    \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vltwo$ is the integer literal for $\vx$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the integer literal for $\vy$\ProseTerminateAs{\None};
     \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
     \item $\positions$ is the set of integers between $\vx$ and $\vy$, inclusive.
   \end{itemize}
@@ -437,12 +439,8 @@ One of the following applies:
   \begin{itemize}
     \item $\vslice$ is \lengthslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceLength(\veone, \vetwo)$;
-    \item applying $\reduceconstants$ to $\veone$ in $\tenv$ yields the literal $\vlone$\ProseOrTypeError;
-    \item checking that $\vlone$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vlone$ is the integer literal for $\vx$;
-    \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
-    \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vltwo$ is the integer literal for $\vy$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the integer literal for $\vy$\ProseTerminateAs{\None};
     \item checking that $\vy > 0$ holds (which implies that $\vx \leq \vx+\vy-1$ holds) yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
     \item $\positions$ is the set of integers between $\vx$ and $\vx+\vy-1$, inclusive.
   \end{itemize}
@@ -451,66 +449,50 @@ One of the following applies:
   \begin{itemize}
     \item $\vslice$ is \scaledslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceStar(\veone, \vetwo)$;
-    \item applying $\reduceconstants$ to $\veone$ in $\tenv$ yields the literal $\vlone$\ProseOrTypeError;
-    \item checking that $\vlone$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vlone$ is the integer literal for $\vx$;
-    \item applying $\reduceconstants$ to $\vetwo$ in $\tenv$ yields the literal $\vltwo$\ProseOrTypeError;
-    \item checking that $\vltwo$ is an integer literal yields $\True$\ProseTerminateAs{\IntConstantExpected};
-    \item $\vltwo$ is the integer literal for $\vy$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the integer literal for $\vy$\ProseTerminateAs{\None};
     \item checking that $\vx > 0$ holds (which implies that $\vx \times \vy \leq \vx \times (\vy + 1) - 1$ holds) yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
     \item $\positions$ is the set of integers between $\vx \times \vy$ and $\vx \times (\vy + 1) - 1$, inclusive.
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[single]{
-  \reduceconstants(\tenv, \ve) \typearrow \vl \OrTypeError\\\\
-  \checktrans{\astlabel(\vl) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vl \eqname \lint(\vx)
+\inferrule[single\_static]{
+  \reducetozopt(\tenv, \ve) \typearrow \langle\vx\rangle \terminateas\None
 }{
-  \bitfieldslicetopositions(\tenv, \overname{\SliceSingle(\ve)}{\vslice}) \typearrow \overname{\{\vx\}}{\positions}
+  \bitfieldslicetopositions(\tenv, \overname{\SliceSingle(\ve)}{\vslice}) \typearrow \overname{\langle\{\vx\}\rangle}{\positions}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range]{
-  \reduceconstants(\tenv, \veone) \typearrow \vlone \OrTypeError\\\\
-  \checktrans{\astlabel(\vlone) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vlone \eqname \lint(\vx)\\
-  \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
-  \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vltwo \eqname \lint(\vy)\\
+  \reducetozopt(\tenv, \veone) \typearrow \langle\vx\rangle \terminateas\None\\\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
   \checktrans{\vy \leq \vx}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
-  \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow \overname{\{n \;|\; \vx \leq n \leq \vy\}}{\positions}
+  \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow
+  \overname{\langle\{n \;|\; \vx \leq n \leq \vy\}\rangle}{\positions}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[length]{
-  \reduceconstants(\tenv, \veone) \typearrow \vlone \OrTypeError\\\\
-  \checktrans{\astlabel(\vlone) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vlone \eqname \lint(\vx)\\
-  \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
-  \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vltwo \eqname \lint(\vy)\\
+  \reducetozopt(\tenv, \veone) \typearrow \langle\vx\rangle \terminateas\None\\\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
   \checktrans{\vy > 0}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
-  \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow \overname{\{n \;|\; \vx \leq n \leq \vx+\vy-1\}}{\positions}
+  \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow
+  \overname{\langle\{n \;|\; \vx \leq n \leq \vx+\vy-1\}\rangle}{\positions}
 }
 \end{mathpar}
 \begin{mathpar}
 
 \inferrule[scaled]{
-  \reduceconstants(\tenv, \veone) \typearrow \vlone \OrTypeError\\\\
-  \checktrans{\astlabel(\vlone) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vlone \eqname \lint(\vx)\\
-  \reduceconstants(\tenv, \vetwo) \typearrow \vltwo \OrTypeError\\\\
-  \checktrans{\astlabel(\vltwo) = \lint}{\IntConstantExpected} \checktransarrow \True \OrTypeError\\\\
-  \vltwo \eqname \lint(\vy)\\
+  \reducetozopt(\tenv, \veone) \typearrow \langle\vx\rangle \terminateas\None\\\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
   \checktrans{\vx > 0}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow
-  \overname{\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}}{\positions}
+  \overname{\langle\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}\rangle}{\positions}
 }
 \end{mathpar}

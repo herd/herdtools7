@@ -921,13 +921,13 @@
 \newcommand\ContinuingConfig[0]{\hyperlink{def-continuingconfig}{\texttt{\#C}}}
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
-\newcommand\ErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
-\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \ErrorConfig}
-\newcommand\OrDynError[0]{\;\terminateas \ErrorConfig}
-\newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \ErrorConfig}}
-\newcommand\ProseOrError[0]{\ProseTerminateAs{\ErrorConfig}}
+\newcommand\DynErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
+\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig}
+\newcommand\OrDynError[0]{\;\terminateas \DynErrorConfig}
+\newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig}}
+\newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
-\newcommand\TError[0]{\hyperlink{def-terror}{\textsf{TDynError}}}
+\newcommand\TDynError[0]{\hyperlink{def-terror}{\textsf{TDynError}}}
 \newcommand\TThrowing[0]{\hyperlink{def-tthrowing}{\textsf{TThrowing}}}
 \newcommand\TContinuing[0]{\hyperlink{def-tcontinuing}{\textsf{TContinuing}}}
 \newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
@@ -964,6 +964,8 @@
 \newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\textfunc{lexpr\_is\_var}}}
 \newcommand\casetoconds[0]{\hyperlink{def-casetoconds}{\textfunc{case\_to\_conds}}}
 \newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\textfunc{find\_catcher}}}
+\newcommand\checknonoverlappingslices[0]{\hyperlink{def-checknonoverlappingslices}{\textfunc{check\_non\_overlapping\_slices}}}
+\newcommand\checktworangesnonoverlapping[0]{\hyperlink{def-checktworangesnonoverlapping}{\textfunc{check\_two\_ranges\_non\_overlapping}}}
 
 \newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
 \newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
@@ -1731,6 +1733,7 @@
 \newcommand\monoms[0]{\texttt{monoms}}
 \newcommand\monomsone[0]{\texttt{monoms1}}
 \newcommand\mpositions[0]{\texttt{m\_positions}}
+\newcommand\msliceranges[0]{\texttt{m\_sliceranges}}
 \newcommand\ms[0]{\texttt{ms}}
 \newcommand\msout[0]{\texttt{ms\_out}}
 \newcommand\mstart[0]{\texttt{m\_start}}
@@ -1819,8 +1822,11 @@
 \newcommand\parsedspec[0]{\texttt{parsed\_spec}}
 \newcommand\parsedstd[0]{\texttt{parsed\_std}}
 \newcommand\positions[0]{\texttt{positions}}
+\newcommand\sliceranges[0]{\texttt{slice\_ranges}}
 \newcommand\positionsone[0]{\texttt{positions1}}
 \newcommand\positionstwo[0]{\texttt{positions2}}
+\newcommand\positionsoneopt[0]{\texttt{positions1\_opt}}
+\newcommand\positionstwoopt[0]{\texttt{positions2\_opt}}
 \newcommand\posmax[0]{\texttt{pos\_max}}
 \newcommand\potentialparams[0]{\texttt{potential\_params}}
 \newcommand\prelength[0]{\texttt{pre\_length}}
@@ -2176,6 +2182,10 @@
 \newcommand\vslicesone[0]{\texttt{slices1}}
 \newcommand\vsone[0]{\texttt{s1}}
 \newcommand\vsonep[0]{\texttt{s1'}}
+\newcommand\vsonelone[0]{\texttt{s1l1}}
+\newcommand\vsonelonestwo[0]{\texttt{s1l1s2}}
+\newcommand\vstwoltwo[0]{\texttt{s2l2}}
+\newcommand\vstwoltwosone[0]{\texttt{s2l2s1}}
 \newcommand\vsp[0]{\texttt{s'}}
 \newcommand\vspp[0]{\texttt{s''}}
 \newcommand\vsstruct[0]{\texttt{s\_struct}}
@@ -2303,3 +2313,5 @@
 \newcommand\xs[0]{\texttt{xs}}
 \newcommand\vEs[0]{\texttt{es}}
 \newcommand\vesone[0]{\texttt{es1}}
+\newcommand\valueranges[0]{\texttt{value\_ranges}}
+\newcommand\vrange[0]{\texttt{range}}

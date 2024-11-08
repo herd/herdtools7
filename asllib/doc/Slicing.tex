@@ -66,7 +66,7 @@ The relation
   \begin{array}{rl}
   \evalslices(\overname{\envs}{\env} \aslsep \overname{\slice^*}{\slices}) \;\aslrel &
     \Normal((\overname{(\vals \times \vals)^*}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv})\ \cup \\
-    & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+    & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
   \end{array}
 \]
 evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
@@ -416,7 +416,7 @@ The relation
   \begin{array}{rl}
   \evalslice{\overname{\envs}{\env} \aslsep \overname{\slice}{\vs}} \;\aslrel &
     \Normal(((\overname{\tint}{\vstart} \times \overname{\tint}{\vlength}) \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv})\ \cup \\
-    & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+    & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
   \end{array}
 \]
 evaluates an individual slice $\vs$ in an environment $\env$ is,

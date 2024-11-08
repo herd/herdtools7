@@ -138,7 +138,7 @@ transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a sin
 The relation
 \[
   \readfrombitvector(\overname{\tbitvector}{\bv} \aslsep \overname{(\tint\times\tint)^*}{\slices}) \;\aslrel\;
-  \overname{\tbitvector}{\vv} \cup \overname{\TError}{\ErrorConfig}
+  \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices specified by the list of slices $\slices$,
 thereby concatenating their values.
@@ -165,7 +165,7 @@ The relation
 \hypertarget{def-slicestopositions}{}
 \[
   \slicestopositions(\overname{\N}{\vn} \aslsep \overname{(\overname{\tint}{\vs_i}\times\overname{\tint}{\vl_i})^+}{\slices}) \;\aslrel\;
-  (\overname{\N^*}{\positions} \cup\ \TError)
+  (\overname{\N^*}{\positions} \cup\ \TDynError)
 \]
 returns the list of positions (indices) specified by the slices $\slices$,
 unless an index would be out of range for a bitvector of length $\vn$, in which case it returns an error configuration.
@@ -234,7 +234,7 @@ by the slices when accessing a bit.
 The relation
 \[
   \writetobitvector(\overname{(\tint\times\tint)^*}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
-  \;\bigtimes\; \overname{\tbitvector}{\vv} \cup \overname{\TError}{\ErrorConfig}
+  \;\bigtimes\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$
 and one of the following applies:
@@ -443,4 +443,3 @@ and all of the following apply:
     \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\newenv, \vgtwo)
   }
 \end{mathpar}
-
