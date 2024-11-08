@@ -59,7 +59,6 @@ let add_pos_from_st pos desc =
   if pos.desc == desc then pos else { pos with desc }
 
 let add_pos_from pos desc = { pos with desc }
-let with_pos_from pos { desc; _ } = add_pos_from pos desc
 let map_desc f thing = f thing |> add_pos_from thing
 let map_desc_st' thing f = f thing.desc |> add_pos_from thing
 

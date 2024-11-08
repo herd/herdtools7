@@ -506,7 +506,8 @@ and to_cond env (e : expr) : Conjunction.t list * Conjunction.t list =
 
 (* Begin Normalize *)
 let normalize env e =
-  e |> to_ir env |> IR.reduce |> IR.to_expr |> with_pos_from e
+  let { desc } = e |> to_ir env |> IR.reduce |> IR.to_expr in
+  add_pos_from e desc
 (* End *)
 
 let try_normalize env e =

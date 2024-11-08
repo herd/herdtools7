@@ -70,9 +70,6 @@ val add_pos_from_pos_of : (string * int * int * int) * 'a -> 'a annotated
 (** [add_pos_from_pos_of (__POS_OF__ e)] is [annotated s s' e] where [s] and
       [s'] correspond to [e]'s position in the ocaml file. *)
 
-val with_pos_from : 'a annotated -> 'b annotated -> 'b annotated
-(** [add_pos_from loc v] is [v] with the location data from [loc]. *)
-
 val add_pos_from : 'a annotated -> 'b -> 'b annotated
 (** [add_pos_from loc v] is [v] with the location data from [loc]. *)
 
