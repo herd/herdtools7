@@ -1506,6 +1506,12 @@ One of the following applies:
     \item $\vs$ is a print statement with list of expressions $\vargs$;
     \item define $\ids$ as the union of applying $\useexpr$ to each expression in $\vargs$.
   \end{itemize}
+
+  \item All of the following apply (\textsc{s\_unreachable}):
+  \begin{itemize}
+    \item $\vs$ is an \texttt{Unreachable()};
+    \item define $\ids$ as the empty set.
+  \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
@@ -1602,6 +1608,12 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[s\_print]{}{
   \usestmt(\overname{\SPrint(\vargs)}{\vs}) \typearrow \overname{\bigcup_{\ve\in\vargs}\useexpr(\ve)}{\ids}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_unreachable]{}{
+  \usestmt(\overname{\SUnreachable}{\vs}) \typearrow \overname{\emptyset}{\ids}
 }
 \end{mathpar}
 

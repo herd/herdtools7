@@ -486,6 +486,7 @@ module TypingRule = struct
     | CheckVarNotInEnv
     | CheckVarNotInGEnv
     | CheckDisjointSlices
+    | ControlFlowFromStmt
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -659,6 +660,7 @@ module TypingRule = struct
     | CheckVarNotInEnv -> "CheckVarNotInEnv"
     | CheckVarNotInGEnv -> "CheckVarNotInGEnv"
     | CheckDisjointSlices -> "CheckDisjointSlices"
+    | ControlFlowFromStmt -> "ControlFlowFromStmt"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -815,6 +817,7 @@ module TypingRule = struct
       CheckVarNotInGEnv;
       CheckDisjointSlices;
       BitfieldSliceToPositions;
+      ControlFlowFromStmt;
     ]
 
   let all_nb = List.length all

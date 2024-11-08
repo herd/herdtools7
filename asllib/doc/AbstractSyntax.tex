@@ -72,6 +72,10 @@ In an ASL abstract syntax tree, a node is one the following data types:
       $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
 \end{description}
 
+\hypertarget{def-substrecordfield}{}
+The function $\substrecordfield(r, f, n)$ takes a record AST node $r$, a field name $f$ and an AST node $n$
+and returns an AST record node $r'$ where the $f$ field is bound to $n$.
+
 \section{Abstract Syntax Grammar\label{sec:AbstractSyntaxGrammar}}
 
 An abstract syntax is defined in terms of derivation rules containing variables (also referred to as non-terminals).
@@ -469,6 +473,8 @@ the local declaration item is
   |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
   \hypertarget{ast-sprint}{} &\\
   |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
+  \hypertarget{ast-sunreachable}{} &\\
+  |\ & \SUnreachable
 \end{flalign*}
 
 \subsection{Case Alternatives \label{sec:CaseAlternatives}}
@@ -583,6 +589,9 @@ are expressions corresponding to the lengths of the corresponding slices in $\vl
 \begin{flalign*}
 \lexpr \derives\ & \LEConcat(\overname{\lexpr^+}{\vles}, \overname{\expr^+}{\vwidths}) &
 \end{flalign*}
+
+The rules for statements exclude \texttt{case} statements, since those are transformed into
+conditional statements (see \nameref{sec:TypingRule.DesugarCaseStmt}).
 
 The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.

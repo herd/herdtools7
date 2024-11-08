@@ -273,6 +273,8 @@
 \newcommand\epsilonnode[0]{\hyperlink{def-epsilonnode}{\textsf{epsilon\_node}}}
 \newcommand\yield[0]{\hyperlink{def-yield}{\textsf{yield}}}
 
+\newcommand\substrecordfield[0]{\hyperlink{def-substrecordfield}{\textfunc{subst\_record\_field}}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for terminal tokens
 \newcommand\Tlooplimit[0]{\verbatimterminal{LOOP\_LIMIT}{@looplimit}}
@@ -340,6 +342,7 @@
 \newcommand\Tpow[0]{\verbatimterminal{POW}{\^{}}}
 \newcommand\Tpragma[0]{\verbatimterminal{PRAGMA}{pragma}}
 \newcommand\Tprint[0]{\verbatimterminal{PRINT}{print}}
+\newcommand\Tunreachable[0]{\verbatimterminal{UNREACHABLE}{Unreachable}}
 \newcommand\Trbrace[0]{\verbatimterminal{RBRACE}{\}}}
 \newcommand\Trbracket[0]{\verbatimterminal{RBRACKET}{]}}
 \newcommand\Trdiv[0]{\verbatimterminal{RDIV}{RDIV}}
@@ -582,6 +585,7 @@
 \newcommand\SThrow[0]{\hyperlink{ast-sthrow}{\textsf{S\_Throw}}}
 \newcommand\STry[0]{\hyperlink{ast-stry}{\textsf{S\_Try}}}
 \newcommand\SPrint[0]{\hyperlink{ast-sprint}{\textsf{S\_Print}}}
+\newcommand\SUnreachable[0]{\hyperlink{ast-sunreachable}{\textsf{S\_Unreachable}}}
 
 % Literal labels
 \newcommand\lint[0]{\hyperlink{ast-lint}{\textsf{L\_Int}}}
@@ -962,7 +966,9 @@
 \newcommand\evalglobals[0]{\hyperlink{def-evalglobals}{\textfunc{eval\_globals}}}
 \newcommand\evalspec[0]{\hyperlink{def-evalspec}{\textfunc{eval\_spec}}}
 \newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\textfunc{lexpr\_is\_var}}}
-\newcommand\casetoconds[0]{\hyperlink{def-casetoconds}{\textfunc{case\_to\_conds}}}
+\newcommand\desugarcasestmt[0]{\hyperlink{def-desugarcasestmt}{\textfunc{desugar\_case\_stmt}}}
+\newcommand\casestocond[0]{\hyperlink{def-casestocond}{\textfunc{cases\_to\_cond}}}
+\newcommand\casetocond[0]{\hyperlink{def-casetocond}{\textfunc{case\_to\_cond}}}
 \newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\textfunc{find\_catcher}}}
 
 \newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
@@ -1007,7 +1013,7 @@
 \newcommand\ErrorVal[1]{\Error(\texttt{"ERROR[#1]"})}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ASL Typing Reference macros
+% Typing macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\typingrulecasename[2]{TypingRule.{#1}.\textsc{#2}}
 
@@ -1322,6 +1328,7 @@
 \newcommand\localdeclarations[0]{\hyperlink{def-localdeclarations}{local declarations}}
 
 \newcommand\basevalueterm[0]{\hyperlink{def-basevalueterm}{base value}}
+\newcommand\controlflowsymbolterm[0]{\hyperlink{def-controlflowsymbolterm}{control flow state}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -1377,6 +1384,16 @@
 \newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}(#1)}
 \newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
 \newcommand\annotatesubprogram[1]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}(#1)}
+\newcommand\checkstmtreturnsorthrows[0]{\hyperlink{def-checkstmtreturnsorthrows}{\textfunc{check\_stmt\_returns\_or\_throws}}}
+
+\newcommand\controlflowfromstmt[0]{\hyperlink{def-controlflowfromstmt}{\textfunc{control\_flow\_from\_stmt}}}
+\newcommand\controlflowseq[0]{\hyperlink{def-controlflowseq}{\textfunc{control\_flow\_seq}}}
+\newcommand\controlflowguard[0]{\hyperlink{def-controlflowguard}{\textfunc{control\_flow\_guard}}}
+\newcommand\assertednotinterrupt[0]{\hyperlink{def-assertednotinterrupt}{\textsf{AssertedNotInterrupt}}}
+\newcommand\interrupt[0]{\hyperlink{def-interrupt}{\textsf{Interrupt}}}
+\newcommand\maynotinterrupt[0]{\hyperlink{def-maynotinterrupt}{\textsf{MayNotInterrupt}}}
+\newcommand\controlflowstate[0]{\hyperlink{def-controlflowstate}{\textsf{ControlFlow}}}
+
 \newcommand\annotatedecl[1]{\hyperlink{def-annotatedecl}{\textfunc{annotate\_decl}}(#1)}
 \newcommand\declaredecl[1]{\hyperlink{def-declaredecl}{\textfunc{declare\_decl}}(#1)}
 \newcommand\typecheckast[0]{\hyperlink{def-typecheckast}{\textfunc{type\_check\_ast}}}
@@ -1469,6 +1486,11 @@
 \newcommand\EmptySlice[0]{\hyperlink{def-es}{\TypeErrorCode{ES}}}
 \newcommand\BaseValueNonStatic[0]{\hyperlink{def-bvns}{\TypeErrorCode{BVNS}}}
 \newcommand\BaseValueEmptyType[0]{\hyperlink{def-bvet}{\TypeErrorCode{BVET}}}
+\newcommand\NonReturningFunction[0]{\hyperlink{def-nrf}{\TypeErrorCode{NRF}}}
+
+\newcommand\DynamicErrorVal[1]{\Error(\texttt{#1})}
+\newcommand\DynamicErrorCode[1]{\texttt{DE\_#1}}
+\newcommand\UnreachableError[0]{\hyperlink{def-unr}{\DynamicErrorCode{UNR}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Semantics/Typing Shared macros
@@ -1917,7 +1939,12 @@
 \newcommand\vacc[0]{\texttt{acc}}
 \newcommand\vaccessargs[0]{\texttt{access\_args}}
 \newcommand\vad[0]{\texttt{ad}}
+\newcommand\vdeclx[0]{\texttt{decl\_x}}
 \newcommand\vadecls[0]{\texttt{adecls}}
+\newcommand\vctrlflow[0]{\texttt{ctrl\_flow}}
+\newcommand\vctrlflowone[0]{\texttt{ctrl\_flow1}}
+\newcommand\vctrlflowtwo[0]{\texttt{ctrl\_flow2}}
+\newcommand\vcasevarid[0]{\texttt{case\_var\_id}}
 \newcommand\vcases[0]{\texttt{cases}}
 \newcommand\vcasealtlist[0]{\texttt{case\_alt\_list}}
 \newcommand\vcasealtlistast[0]{\texttt{case\_alt\_list\_ast}}
@@ -2007,6 +2034,7 @@
 \newcommand\vendstruct[0]{\texttt{end\_struct}}
 \newcommand\vendt[0]{\texttt{end\_t}}
 \newcommand\vendv[0]{\texttt{end\_v}}
+\newcommand\vezero[0]{\texttt{e0}}
 \newcommand\veone[0]{\texttt{e1}}
 \newcommand\veoneone[0]{\texttt{e1\_1}}
 \newcommand\veonep[0]{\texttt{e1'}}
@@ -2015,6 +2043,7 @@
 \newcommand\veopt[0]{\texttt{e\_opt}}
 \newcommand\vep[0]{\texttt{e'}}
 \newcommand\vepp[0]{\texttt{e''}}
+\newcommand\vepattern[0]{\texttt{e\_pattern}}
 \newcommand\veq[0]{\texttt{eq}}
 \newcommand\ves[0]{\texttt{e\_s}}
 \newcommand\vesp[0]{\texttt{es'}}
@@ -2027,6 +2056,7 @@
 \newcommand\vetwothree[0]{\texttt{e2\_3}}
 \newcommand\vetwotwo[0]{\texttt{e2\_2}}
 \newcommand\vewone[0]{\texttt{e\_w1}}
+\newcommand\vewhere[0]{\texttt{e\_where}}
 \newcommand\vewzero[0]{\texttt{e\_w0}}
 \newcommand\vex[0]{\texttt{ex}}
 \newcommand\vexpr[0]{\texttt{expr}}
@@ -2139,6 +2169,7 @@
 \newcommand\voptfields[0]{\texttt{opt\_fields}}
 \newcommand\votherwiseopt[0]{\texttt{otherwise\_opt}}
 \newcommand\vp[0]{\texttt{p}}
+\newcommand\vprefixcases[0]{\texttt{prefix\_cases}}
 \newcommand\vparam[0]{\texttt{param}}
 \newcommand\vparameters[0]{\texttt{parameters}}
 \newcommand\vparametersone[0]{\texttt{parameters1}}
@@ -2147,6 +2178,7 @@
 \newcommand\vparsednode[0]{\texttt{parsed\_node}}
 \newcommand\vpat[0]{\texttt{pat}}
 \newcommand\vpatp[0]{\texttt{pat'}}
+\newcommand\vpattern[0]{\texttt{pattern}}
 \newcommand\vpatternasts[0]{\texttt{pattern\_asts}}
 \newcommand\vpatternlist[0]{\texttt{pattern\_list}}
 \newcommand\vpatternormask[0]{\texttt{pattern\_or\_mask}}
@@ -2168,6 +2200,7 @@
 \newcommand\vret[0]{\texttt{ret}}
 \newcommand\vreturntype[0]{\texttt{return\_type}}
 \newcommand\vs[0]{\texttt{s}}
+\newcommand\vscond[0]{\texttt{s\_cond}}
 \newcommand\vselse[0]{\texttt{s\_else}}
 \newcommand\vslice[0]{\texttt{slice}}
 \newcommand\vsliceasts[0]{\texttt{slice\_asts}}
@@ -2205,6 +2238,7 @@
 \newcommand\vsymsone[0]{\texttt{syms1}}
 \newcommand\vszero[0]{\texttt{s0}}
 \newcommand\vt[0]{\texttt{t}}
+\newcommand\vtail[0]{\texttt{tail}}
 \newcommand\vte[0]{\texttt{t\_e}}
 \newcommand\vteeq[0]{\texttt{t\_e\_eq}}
 \newcommand\vtefive[0]{\texttt{t\_e5}}
@@ -2268,6 +2302,7 @@
 \newcommand\vvtuple[0]{\texttt{v\_tuple}}
 \newcommand\vvty[0]{\texttt{v\_ty}}
 \newcommand\vw[0]{\texttt{w}}
+\newcommand\vwhere[0]{\texttt{where}}
 \newcommand\vwhereast[0]{\texttt{where\_ast}}
 \newcommand\vwhereopt[0]{\texttt{where\_opt}}
 \newcommand\vwidth[0]{\texttt{width}}
