@@ -730,7 +730,7 @@ This time, not simplified:
     \evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv) \OrAbnormal \\\\
     \vmone \eqname (\vvone, \vgone) \\
     \vmtwo \eqname (\vvtwo, \vgtwo) \\
-    \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \terminateas \ErrorConfig\\\\
+    \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \terminateas \DynErrorConfig\\\\
     \vg \eqdef \vgone \parallelcomp \vgtwo
   }
   {
@@ -739,9 +739,9 @@ This time, not simplified:
   }
 \end{mathpar}
 
-In this rule, $\ThrowingConfig$ and $\ErrorConfig$ are just shorthand notations for
+In this rule, $\ThrowingConfig$ and $\DynErrorConfig$ are just shorthand notations for
 actual configurations, which are properly defined in the semantics reference.
-Intuitively, the alternative configurations $\ThrowingConfig$ and $\ErrorConfig$
+Intuitively, the alternative configurations $\ThrowingConfig$ and $\DynErrorConfig$
 represent situations where a transition may result in a raised exception and a dynamic error,
 respectively.
 
@@ -769,17 +769,17 @@ Similarly, if the first transition assertion results in a dynamic error, the out
 the conclusion is that dynamic error, which corresponds to the following rule in the expansion:
 \begin{mathpar}
   \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
-    \evalexpr{ \env, \veone} \evalarrow \ErrorConfig
+    \evalexpr{ \env, \veone} \evalarrow \DynErrorConfig
   }
   {
     \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
-    \ErrorConfig
+    \DynErrorConfig
   }
 \end{mathpar}
 
 The following rules correspond to the cases where the first transition results in \\
 $\Normal(\vmone, \envone)$, but the second transition assertion results in either
-$\ThrowingConfig$ or $\ErrorConfig$, respectively:
+$\ThrowingConfig$ or $\DynErrorConfig$, respectively:
 \begin{mathpar}
   \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
     \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \\\\
@@ -794,11 +794,11 @@ $\ThrowingConfig$ or $\ErrorConfig$, respectively:
 \begin{mathpar}
   \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
     \evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone) \\\\
-    \evalexpr{ \envone, \vetwo } \evalarrow \ErrorConfig
+    \evalexpr{ \envone, \vetwo } \evalarrow \DynErrorConfig
   }
   {
     \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
-    \ErrorConfig
+    \DynErrorConfig
   }
 \end{mathpar}
 
@@ -809,11 +809,11 @@ Expanding the last transition assertion, gives us the case:
     \evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv) \\\\
     \vmone \eqname (\vvone, \vgone) \\
     \vmtwo \eqname (\vvtwo, \vgtwo) \\
-    \binoprel(\op, \vvone, \vvtwo) \evalarrow \ErrorConfig
+    \binoprel(\op, \vvone, \vvtwo) \evalarrow \DynErrorConfig
   }
   {
     \evalexpr{ \env, \EBinop(\op, \veone, \vetwo) } \evalarrow
-    \ErrorConfig
+    \DynErrorConfig
   }
 \end{mathpar}
 

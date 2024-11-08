@@ -49,7 +49,7 @@ The relation
   \overname{\TContinuing}{\Continuing(\newg, \newenv)} \cup
   \overname{\TReturning}{\ReturningConfig} \cup
   \overname{\TThrowing}{\ThrowingConfig} \cup
-  \overname{\TError}{\ErrorConfig}
+  \overname{\TDynError}{\DynErrorConfig}
 \]
 evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in a fresh local environment,
 which drops back to the original local environment of $\env$ when the evaluation terminates.
@@ -83,7 +83,7 @@ All of the following apply:
 \inferrule{
   \env \eqname (\tenv,\denv)\\
   \blockenv \eqdef (\tenv, (G^\denv, \emptyfunc))\\
-  \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\\\
+  \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\\\
   \blockenvone\eqname(\tenv, \denvone)\\
   \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
 }{

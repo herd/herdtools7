@@ -30,7 +30,7 @@ The relation
   \overname{\TReturning}{\Returning((\vvs,\newg), \newenv)} & \cup\\
   \overname{\TContinuing}{\Continuing(\newg,\newenv)} & \cup\\
   \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-  \overname{\TError}{\ErrorConfig} &
+  \overname{\TDynError}{\DynErrorConfig} &
   \end{array}
   \right)
 \]
@@ -718,7 +718,7 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
   \inferrule{
-    \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\
+    \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\
     \evalstmt{\envone, \vstwo} \evalarrow C \OrAbnormal\\
     \newg \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
     D \eqdef \withgraph{C}{\newg}
@@ -1503,7 +1503,7 @@ The relation
       \Continuing(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) & \cup \\
       \overname{\TReturning}{\ReturningConfig} & \cup \\
       \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-      \overname{\TError}{\ErrorConfig} &
+      \overname{\TDynError}{\DynErrorConfig} &
     \end{array}
   \right)
 \]
@@ -1539,9 +1539,9 @@ One of the following applies:
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
     \item evaluating $\vbody$ in $\envone$ as per \chapref{eval_block} is either \\
-    $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+    $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
     \item evaluating $(\iswhile, \econd, \vbody)$ in $\envtwo$ as a loop is \\
-    $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+    $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label
     and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
@@ -1569,8 +1569,8 @@ The negation of the condition is used to decide whether to continue the loop ite
   \evalexpr{\env, \econd} \evalarrow \Normal(\condm, \envone)\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\\
-  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\
-  \evalloop{\envtwo, \iswhile, \econd, \vbody} \evalarrow \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\
+  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
+  \evalloop{\envtwo, \iswhile, \econd, \vbody} \evalarrow \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{
   \evalloop{\env, \iswhile, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
@@ -1670,7 +1670,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \Ignore)$;
   \item evaluating $\vbody$ in $\env$ as per \chapref{Bloccks}
-        yields $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\ErrorConfig};
+        yields $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig};
   \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\envone$,
         with the arguments $\False$ (which conveys that this is a \texttt{repeat} statement), $\ve$, and $\vbody$
         results in $C$;
@@ -1681,7 +1681,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\ErrorConfig\\\\
+  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\\\
   \evalloop{\envone, \False, \ve, \vbody} \evalarrow C\\
   \vgtwo \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\vgtwo}
@@ -1985,8 +1985,8 @@ Recall that the expressions for the \texttt{for} loop range are side-effect-free
 which is why they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \terminateas \ErrorConfig\\
-  \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \terminateas \ErrorConfig\\
+  \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \terminateas \DynErrorConfig\\
+  \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \terminateas \DynErrorConfig\\
   \declarelocalidentifier(\env, \vindexname, \vendv) \evalarrow (\vgthree,\envone)\\
   \evalfor{\envone, \vindexname, \vstartv, \dir, \vendv, \vbody} \evalarrow \Normal(\vgfour, \envtwo) \OrAbnormal\\
   \removelocal(\envtwo, \vindexname) \evalarrow \envthree\\
@@ -2023,7 +2023,7 @@ The relation
     \overname{\TReturning}{\ReturningConfig} & \cup\\
     \overname{\TContinuing}{\ContinuingConfig} & \cup\\
     \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-    \overname{\TError}{\ErrorConfig} &
+    \overname{\TDynError}{\DynErrorConfig} &
     \end{array}
     \right)
 \]
@@ -2061,7 +2061,7 @@ The helper relation
       \overname{\TContinuing}{\Continuing(\newg, \newenv)} & \cup\\
       \overname{\TReturning}{\ReturningConfig} & \cup\\
     \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-    \overname{\TError}{\ErrorConfig} &
+    \overname{\TDynError}{\DynErrorConfig} &
     \end{array}
     \right)
 \]
@@ -2085,11 +2085,11 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item evaluating $\vbody$ as a block statement (see \chapref{eval_block}) in $\env$
-  is \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+  is \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
   that is, $\evalforstep(\envone, \vindexname, \vstart, \dir)$ gives $((\vstep, \envtwo), \vgtwo)$;
   \item evaluating the \texttt{for} loop with $(\vindexname, \vstep, \dir, \vend, \vbody)$
-  in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+  in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item $\newg$ is the ordered composition of $\vgone$, $\vgtwo$, and $\vgthree$ with the $\aslpo$
   edge.
 \end{itemize}
@@ -2121,7 +2121,7 @@ and All of the following apply:
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
       \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vstart, \dir, \vend, \vbody)$
-      in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \ErrorConfig};
+      in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
       \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
     \end{itemize}
   \end{itemize}
@@ -2146,9 +2146,9 @@ Advancing the loop counter one step towards the end of its range is achieved via
 Running the loop body is achieved via the following rule:
 \begin{mathpar}
 \inferrule{
-  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\
+  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
   \evalforstep(\envone, \vindexname, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
-  \evalfor{\envtwo, \vindexname, \vstep, \dir, \vend, \vbody} \evalarrow \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\
+  \evalfor{\envtwo, \vindexname, \vstep, \dir, \vend, \vbody} \evalarrow \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\vgthree}
 }{
   \evalforloop(\env, \vindexname, \vstart, \dir, \vend, \vbody) \evalarrow \Continuing(\newg, \newenv)
@@ -2176,7 +2176,7 @@ and $\evalforloop$ (the latter in a mutually recursive manner):
   \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
   \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
   \evalforloop(\env, \vindexname, \vstart, \dir, \vend, \vbody) \evalarrow \\
-  \Continuing(\vgtwo, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \ErrorConfig\\\\
+  \Continuing(\vgtwo, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\\\
   \newg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   \evalfor{\env, \vindexname, \vstart, \dir, \vend, \vbody} \evalarrow \Continuing(\newg, \newenv)
@@ -2594,7 +2594,7 @@ The helper relation
 \[
   \evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
           \Normal(\overname{(\vals\times\XGraphs)^* }{\vms} \aslsep \overname{\envs}{\newenv}) \cup
-          \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TError}{\ErrorConfig}
+          \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 evaluates a list of expressions $\vEs$ in left-to-right in the initial environment $\env$
 and returns the list of values associated with graphs $\vms$ and the new environment $\newenv$.

@@ -40,13 +40,13 @@ In those cases, we simply refer to their \emph{domain}.
 Associating a set of values to a type is done by evaluating any expression appearing
 in the type definitions. Evaluation is defined by the relation $\evalexprsef$.
 which evaluates side-effect-free expressions and either returns
-a configuration of the form $\Normal(\vv,\vg)$ or a dynamic error configuration $\ErrorConfig$.
+a configuration of the form $\Normal(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
 In the first case, $\vv$ is a \nativevalue\ and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
 and can be ignored in the context of defining dynamic domains.
 In the latter case (which can occur if, for example, an expression attempts to divide
 \texttt{8} by \texttt{0}), a dynamic error configuration, for which we use the notation
-$\ErrorConfig$, is returned.
+$\DynErrorConfig$, is returned.
 %
 The dynamic domain is empty in cases where evaluating side-effect-free expressions
 results in a dynamic error.
@@ -262,7 +262,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 }
 \and
 \inferrule[constraint\_exact\_dynamic\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+  \evalexprsef{\env, \ve} \evalarrow \DynErrorConfig
 }{
   \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\emptyset}{\vd}
 }
@@ -277,14 +277,14 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 }
 \and
 \inferrule[constraint\_range\_dynamic\_error1]{
-  \evalexprsef{\env, \veone} \evalarrow \ErrorConfig
+  \evalexprsef{\env, \veone} \evalarrow \DynErrorConfig
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[constraint\_range\_dynamic\_error2]{
   \evalexprsef{\env, \veone} \evalarrow \Normal(\Ignore, \Ignore)\\
-  \evalexprsef{\env, \vetwo} \evalarrow \ErrorConfig
+  \evalexprsef{\env, \vetwo} \evalarrow \DynErrorConfig
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
@@ -302,7 +302,7 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_bits\_dynamic\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+  \evalexprsef{\env, \ve} \evalarrow \DynErrorConfig
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
@@ -339,7 +339,7 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_array\_dynamic\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \ErrorConfig
+  \evalexprsef{\env, \ve} \evalarrow \DynErrorConfig
 }{
   \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) = \overname{\emptyset}{\vd}
 }

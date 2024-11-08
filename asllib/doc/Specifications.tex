@@ -1727,7 +1727,7 @@ The relation
 \hypertarget{def-evalspec}{}
 \[
   \evalspec(\overname{\spec}{\parsedast}, \overname{\spec}{\parsedstd}) \;\aslrel\;
-   ((\overname{\vals}{\vv}\times \overname{\XGraphs}{\vg}) \cup \overname{\TError}{\ErrorConfig})
+   ((\overname{\vals}{\vv}\times \overname{\XGraphs}{\vg}) \cup \overname{\TDynError}{\DynErrorConfig})
 \]
 evaluates the \texttt{main} function in a given specification and standard library.
 
@@ -1802,7 +1802,7 @@ The helper relation
 \hypertarget{def-buildgenv}{}
 \[
   \buildgenv(\overname{\envs}{\env}, \overname{\spec}{\typedspec}) \;\aslrel\;
-  (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\newg}) \cup \overname{\TError}{\ErrorConfig}
+  (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\newg}) \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 populates the environment and output execution graph with the global
 storage declarations.

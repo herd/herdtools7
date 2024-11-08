@@ -385,7 +385,7 @@ We define the following shorthands for types of output semantic configurations:
     \TThrowing        & \triangleq & \Throwing(\langle\vals \times \ty\rangle \times \XGraphs, \envs)\\
     \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs)\\
     \TReturning       & \triangleq & \Returning((\vals^* \times \XGraphs), \envs)\\
-    \TError           & \triangleq & \Error(\Strings)\\
+    \TDynError           & \triangleq & \Error(\Strings)\\
   \end{array}
 \]
 
@@ -407,7 +407,7 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 \hypertarget{def-throwingconfig}{}
 \item $\ThrowingConfig \triangleq \Throwing((\vv, \vg), \newenv)$.
 \hypertarget{def-errorconfig}{}
-\item $\ErrorConfig \triangleq \Error(\vs)$.
+\item $\DynErrorConfig \triangleq \Error(\vs)$.
 \hypertarget{def-returningconfig}{}
 \item $\ReturningConfig \triangleq \Returning((\vvs,\newg), \newenv)$
 is an early return semantic configuration.
