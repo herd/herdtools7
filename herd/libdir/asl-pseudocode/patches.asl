@@ -48,7 +48,7 @@ end;
 // From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-common?lang=en#impl-shared.IsAligned.2
 // We disable alignment checks.
 
-func IsAligned(x :: bits(N), y::integer) => boolean
+func IsAligned{N}(x :: bits(N), y::integer) => boolean
 begin
   return TRUE;
 end;
@@ -216,7 +216,7 @@ begin
     _PC() = _PC()+4;
    let branchtaken = FALSE;
    if IsFeatureImplemented(FEAT_SPE) then
-     SPEBranch
+     SPEBranch{64}
        (UNKNOWN:bits(64), branchtype, branch_conditional, branchtaken);
     end;
     return;
@@ -234,17 +234,3 @@ begin
   return FALSE;
 end;
 
-// AltDecodeBitMasks()
-// ===================
-// Alternative but logically equivalent implementation of DecodeBitMasks() that
-// uses simpler primitives to compute tmask and wmask.
-// Luc: Overridden for avoiding a warning, not called anyway
-
-type NotImplemented of exception;
-
-func AltDecodeBitMasks(immN:bit,imms:bits(6), immr:bits(6),
-                  immediate:boolean, M:integer)
-=> (bits(M), bits(M))
-begin
-  throw NotImplemented {};
-end;

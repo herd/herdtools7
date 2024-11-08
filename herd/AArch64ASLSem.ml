@@ -370,7 +370,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                let s = UInt(imms);\n\
                var wmask : bits(datasize);\n\
                var tmask : bits(datasize) ;\n\
-               (wmask,tmask) = DecodeBitMasks(N, imms, immr, FALSE, datasize);"
+               (wmask,tmask) = DecodeBitMasks{datasize}(N, imms, immr, FALSE, datasize);"
           in
           let fname =
             if extend then "integer/bitfield/SBFM_32M_bitfield.opn"
