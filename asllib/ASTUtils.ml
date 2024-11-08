@@ -49,17 +49,22 @@ module IMap = struct
 end
 
 let dummy_pos = Lexing.dummy_pos
+let default_version = V1
 let desc v = v.desc
-let annotated desc pos_start pos_end = { desc; pos_start; pos_end }
-let add_dummy_pos desc = annotated desc dummy_pos dummy_pos
-let dummy_annotated = add_dummy_pos ()
+
+let annotated desc pos_start pos_end version =
+  { desc; pos_start; pos_end; version }
+
+let add_dummy_annotation ?(version = default_version) desc =
+  annotated desc dummy_pos dummy_pos version
+
+let dummy_annotated = add_dummy_annotation ()
 let to_pos pos = { pos with desc = () }
 
 let add_pos_from_st pos desc =
   if pos.desc == desc then pos else { pos with desc }
 
 let add_pos_from pos desc = { pos with desc }
-let with_pos_from pos { desc; _ } = add_pos_from pos desc
 let map_desc f thing = f thing |> add_pos_from thing
 let map_desc_st' thing f = f thing.desc |> add_pos_from thing
 
@@ -72,6 +77,7 @@ let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
     desc;
     pos_start = { common with pos_cnum = cnum };
     pos_end = { common with pos_cnum = enum };
+    version = default_version (* used only in testing *);
   }
 
 let list_equal equal li1 li2 =
@@ -128,17 +134,18 @@ let map2_desc f thing1 thing2 =
     desc = f thing1 thing2;
     pos_start = thing1.pos_start;
     pos_end = thing2.pos_end;
+    version = thing1.version;
   }
 
-let s_pass = add_dummy_pos S_Pass
+let s_pass = add_dummy_annotation S_Pass
 let s_then = map2_desc (fun s1 s2 -> S_Seq (s1, s2))
-let boolean = T_Bool |> add_dummy_pos
+let boolean = T_Bool |> add_dummy_annotation
 let integer' = T_Int UnConstrained
-let integer = integer' |> add_dummy_pos
+let integer = integer' |> add_dummy_annotation
 let integer_exact' e = T_Int (WellConstrained [ Constraint_Exact e ])
-let integer_exact e = integer_exact' e |> add_dummy_pos
-let string = T_String |> add_dummy_pos
-let real = T_Real |> add_dummy_pos
+let integer_exact e = integer_exact' e |> add_dummy_annotation
+let string = T_String |> add_dummy_annotation
+let real = T_Real |> add_dummy_annotation
 
 let stmt_from_list : stmt list -> stmt =
   let is_not_s_pass = function { desc = S_Pass; _ } -> false | _ -> true in
@@ -255,7 +262,7 @@ let rec use_s s =
   | S_Pass | S_Return None -> Fun.id
   | S_Seq (s1, s2) -> use_s s1 $ use_s s2
   | S_Assert e | S_Return (Some e) -> use_e e
-  | S_Assign (le, e, _) -> use_e e $ use_le le
+  | S_Assign (le, e) -> use_e e $ use_le le
   | S_Call (x, args, named_args) ->
       ISet.add x $ use_fields named_args $ use_es args
   | S_Cond (e, s1, s2) -> use_s s1 $ use_s s2 $ use_e e
@@ -465,10 +472,10 @@ and bitfield_equal eq bf1 bf2 =
   | BitField_Type _, BitField_Simple _ ->
       false
 
-let var_ x = E_Var x |> add_dummy_pos
+let var_ x = E_Var x |> add_dummy_annotation
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
 let unop op = map_desc (fun e -> E_Unop (op, e))
-let literal v = E_Literal v |> add_dummy_pos
+let literal v = E_Literal v |> add_dummy_annotation
 let expr_of_int i = literal (L_Int (Z.of_int i))
 let expr_of_z z = literal (L_Int z)
 let zero_expr = expr_of_z Z.zero
@@ -587,7 +594,7 @@ let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"
 
-let default_t_bits = T_Bits (E_Var "-" |> add_dummy_pos, [])
+let default_t_bits = T_Bits (E_Var "-" |> add_dummy_annotation, [])
 
 let identifier_of_decl d =
   match d.desc with
@@ -757,7 +764,7 @@ let rename_locals map_name ast =
     | S_Pass -> s.desc
     | S_Seq (s1, s2) -> S_Seq (map_s s1, map_s s2)
     | S_Decl (ldk, ldi, e) -> S_Decl (ldk, map_ldi ldi, Option.map map_e e)
-    | S_Assign (le, e, v) -> S_Assign (map_le le, map_e e, v)
+    | S_Assign (le, e) -> S_Assign (map_le le, map_e e)
     | S_Call (name, args, nargs) -> S_Call (name, map_es args, map_names nargs)
     | S_Return e -> S_Return (Option.map map_e e)
     | S_Cond (e, s1, s2) -> S_Cond (map_e e, map_s s1, map_s s2)

@@ -11,7 +11,7 @@ module Make (C : Config.S) = struct
   open Feat
   open Enum
 
-  let annot desc = ASTUtils.add_dummy_pos desc
+  let annot desc = ASTUtils.add_dummy_annotation desc
 
   (* Util not to forget to pay ==> make payment mandatory on recursion. *)
   let fix f = Fix.Memoize.Int.fix (fun blah -> f (pay blah))
@@ -336,7 +336,7 @@ module Make (C : Config.S) = struct
     fix @@ fun stmts ->
     let block = stmt_lists stmts in
     let s_assigns =
-      let make_assign (le, e) = S_Assign (le, e, V1) in
+      let make_assign (le, e) = S_Assign (le, e) in
       lexprs ** exprs |> map make_assign
     and s_conds =
       let make_cond (e, (s1, s2)) = S_Cond (e, s1, s2) in

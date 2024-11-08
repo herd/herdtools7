@@ -687,7 +687,7 @@ module Make (C : Config) = struct
     (* Primitives *)
     let extra_funcs =
       let open AST in
-      let with_pos = Asllib.ASTUtils.add_dummy_pos in
+      let with_pos e = Asllib.ASTUtils.add_dummy_annotation ~version:V0 e in
       let integer = Asllib.ASTUtils.integer in
       let int_ctnt e1 e2 =
         T_Int (WellConstrained [ Constraint_Range (e1, e2) ]) |> with_pos

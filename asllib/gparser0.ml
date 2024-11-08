@@ -115,7 +115,7 @@ let rec loop lexer_state (p1, p2) : 'a I.checkpoint -> AST.t = function
           Format.eprintf "@[<3>Reading token %s@ at position@ @[<h>%a@]@]@."
             (SimpleLexer0.string_of_token tok)
             PP.pp_pos
-            (ASTUtils.annotated () p1 p2)
+            (ASTUtils.annotated () p1 p2 V0)
       in
       let continue = continue cpt (p1, p2) in
       match tok with
@@ -125,7 +125,7 @@ let rec loop lexer_state (p1, p2) : 'a I.checkpoint -> AST.t = function
           let () =
             if false then
               Format.eprintf "Seen pos %a@ " PP.pp_pos
-                (ASTUtils.annotated () p1 p2)
+                (ASTUtils.annotated () p1 p2 V0)
           in
           continue lexer_state tok
       | tok -> continue lexer_state tok)
@@ -140,7 +140,7 @@ let rec loop lexer_state (p1, p2) : 'a I.checkpoint -> AST.t = function
               if false && p.pos_lnum < p1.pos_lnum then (
                 Hashtbl.add _max_lines p1.pos_fname p1;
                 Format.eprintf "@[%a:@ Found error.@]@." PP.pp_pos
-                  (ASTUtils.annotated () p1 p2))
+                  (ASTUtils.annotated () p1 p2 V0))
       in
       Error.fatal_here p1 p2 Error.CannotParse
   | I.Accepted ast -> ast

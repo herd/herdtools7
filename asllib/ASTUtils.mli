@@ -50,18 +50,21 @@ end
 val dummy_pos : Lexing.position
 (** A dummy position. *)
 
-val annotated : 'a -> position -> position -> 'a annotated
-(** [annotated v start end] is [v] with location specified as from [start] to
-    [end]. *)
+val default_version : version
+(** The default version, [V1]. *)
+
+val annotated : 'a -> position -> position -> version -> 'a annotated
+(** [annotated v start end version] is [v] with location specified as from
+    [start] to [end] and version specified by [version]. *)
 
 val desc : 'a annotated -> 'a
 (** [desc v] is [v.desc] *)
 
-val add_dummy_pos : 'a -> 'a annotated
-(** Add a dummy location annotation to a value. *)
+val add_dummy_annotation : ?version:version -> 'a -> 'a annotated
+(** Add a dummy annotation to a value. The default version is [default_version]. *)
 
 val dummy_annotated : unit annotated
-(** A dummy location *)
+(** A dummy annotation *)
 
 val to_pos : 'a annotated -> unit annotated
 (** Removes the value from an annotated record. *)
@@ -69,9 +72,6 @@ val to_pos : 'a annotated -> unit annotated
 val add_pos_from_pos_of : (string * int * int * int) * 'a -> 'a annotated
 (** [add_pos_from_pos_of (__POS_OF__ e)] is [annotated s s' e] where [s] and
       [s'] correspond to [e]'s position in the ocaml file. *)
-
-val with_pos_from : 'a annotated -> 'b annotated -> 'b annotated
-(** [add_pos_from loc v] is [v] with the location data from [loc]. *)
 
 val add_pos_from : 'a annotated -> 'b -> 'b annotated
 (** [add_pos_from loc v] is [v] with the location data from [loc]. *)

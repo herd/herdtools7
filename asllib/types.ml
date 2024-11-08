@@ -151,7 +151,7 @@ let parameterized_constraints =
     Parameterized (uid, var)
 
 let parameterized_ty var =
-  T_Int (parameterized_constraints var) |> add_dummy_pos
+  T_Int (parameterized_constraints var) |> add_dummy_annotation
 
 let to_well_constrained ty =
   match ty.desc with
@@ -785,7 +785,7 @@ let rec lowest_common_ancestor env s t =
       (* If S and T are both named types: the (unique) common supertype of S
          and T that is a subtype of all other common supertypes of S and T. *)
       match find_named_lowest_common_supertype env name_s name_t with
-      | Some name -> Some (T_Named name |> add_dummy_pos)
+      | Some name -> Some (T_Named name |> add_dummy_annotation)
       | None ->
           let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
           lowest_common_ancestor env anon_s anon_t)
@@ -806,14 +806,14 @@ let rec lowest_common_ancestor env s t =
          domains of S and T. *)
       (* TODO: simplify domains ? If domains use a form of diets,
          this could be more efficient. *)
-      Some (add_dummy_pos (T_Int (WellConstrained (cs_s @ cs_t))))
+      Some (add_dummy_annotation (T_Int (WellConstrained (cs_s @ cs_t))))
   | T_Bits (e_s, _), T_Bits (e_t, _) when expr_equal env e_s e_t ->
       (* We forget the bitfields if they are not equal. *)
-      Some (T_Bits (e_s, []) |> add_dummy_pos)
+      Some (T_Bits (e_s, []) |> add_dummy_annotation)
   | T_Array (width_s, ty_s), T_Array (width_t, ty_t)
     when array_length_equal env width_s width_t ->
       let+ t = lowest_common_ancestor env ty_s ty_t in
-      T_Array (width_s, t) |> add_dummy_pos
+      T_Array (width_s, t) |> add_dummy_annotation
   | T_Tuple li_s, T_Tuple li_t when List.compare_lengths li_s li_t = 0 ->
       (* If S and T both are tuple types with the same number of elements:
          the tuple type with the type of each element the lowest common ancestor
@@ -821,7 +821,7 @@ let rec lowest_common_ancestor env s t =
       let+ li =
         List.map2 (lowest_common_ancestor env) li_s li_t |> unpack_options
       in
-      add_dummy_pos (T_Tuple li)
+      add_dummy_annotation (T_Tuple li)
   | _ -> None)
   |: TypingRule.LowestCommonAncestor
 (* End *)

@@ -427,7 +427,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let rec do_rec n =
             if n >= i2 then acc
             else
-              let e = E_Literal (L_Int (Z.of_int (i1 + n))) |> add_dummy_pos in
+              let e =
+                E_Literal (L_Int (Z.of_int (i1 + n))) |> add_dummy_annotation
+              in
               e :: do_rec (n + 1)
           in
           do_rec 0
@@ -436,7 +438,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let rec do_rec i =
             if i > i1 then acc
             else
-              let e = E_Literal (L_Int (Z.of_int i)) |> add_dummy_pos in
+              let e = E_Literal (L_Int (Z.of_int i)) |> add_dummy_annotation in
               e :: do_rec (i + 1)
           in
           do_rec i2
@@ -759,7 +761,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let+ () = check_diet_in_width loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let+ () =
-          t_bits_bitwidth width' |> add_dummy_pos
+          t_bits_bitwidth width' |> add_dummy_annotation
           |> check_bits_equal_width loc env ty
         in
         BitField_Type (name, slices1, ty') |: TypingRule.TBitField
@@ -1073,7 +1075,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       if false then
         Format.eprintf "@[Found candidate decl:@ @[%a@]@]@." PP.pp_t
-          [ D_Func callee |> add_dummy_pos ]
+          [ D_Func callee |> add_dummy_annotation ]
     in
     let+ () =
       check_true (callee.subprogram_type = call_type) @@ fun () ->
@@ -1758,15 +1760,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t
 
-  (** [base_value ~loc env e] is [base_value_v1 ~loc env e] if running for ASLv1.
-
-      Otherwise, it tries a more accepting algorithm with [base_value_v0 ~loc env e].
+  (** [base_value ~loc env e] is [base_value_v1 ~loc env e] if running for ASLv1,
+      or [base_value_v0 ~loc env e] if running for ASLv0.
   *)
   let base_value ~loc env e =
-    try base_value_v1 ~loc env e
-    with Error.ASLException _ as error ->
-      let+ () = fun () -> raise error in
-      base_value_v0 ~loc env e
+    match loc.version with
+    | V0 -> base_value_v0 ~loc env e
+    | V1 -> base_value_v1 ~loc env e
 
   let rec annotate_lexpr env le t_e =
     let () =
@@ -2070,7 +2070,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let new_s2, env2 = try_annotate_stmt env1 s2 in
         (S_Seq (new_s1, new_s2) |> here, env2) |: TypingRule.SSeq
     (* Begin SAssign *)
-    | S_Assign (le, re, ver) ->
+    | S_Assign (le, re) ->
         (let () =
            if false then
              Format.eprintf "@[<3>Annotating assignment@ @[%a@]@]@." PP.pp_stmt
@@ -2082,7 +2082,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          | Some new_s -> (new_s, env)
          | None ->
              let env1 =
-               match ver with
+               match s.version with
                | V1 -> env
                | V0 -> (
                    (*
@@ -2116,7 +2116,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                        else env)
              in
              let le1 = annotate_lexpr env1 le t_re in
-             (S_Assign (le1, re1, ver) |> here, env1))
+             (S_Assign (le1, re1) |> here, env1))
         |: TypingRule.SAssign
     (* End *)
     (* Begin SCall *)
@@ -2370,7 +2370,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let s2 =
       let old_le = make_old_le (LE_Var x |> here) in
       let old_le' = annotate_lexpr env1 old_le t_e in
-      S_Assign (old_le', e, V1) |> here
+      S_Assign (old_le', e) |> here
     in
     let typed_e_x = annotate_expr env1 (E_Var x |> here) in
     match setter_should_reduce_to_call_s env1 sub_le typed_e_x with
@@ -2453,7 +2453,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               let produce_one i sub_le t_sub_e_i = function
                 | None ->
                     let sub_le' = annotate_lexpr env sub_le t_sub_e_i in
-                    S_Assign (sub_le', sub_e i, V1) |> here
+                    S_Assign (sub_le', sub_e i) |> here
                 | Some s -> s
               in
               list_mapi3 produce_one 0 les t_es subs

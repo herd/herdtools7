@@ -84,8 +84,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (*****************************************************************************)
 
   let one = B.v_of_int 1
-  let true' = E_Literal (L_Bool true) |> add_dummy_pos
-  let false' = E_Literal (L_Bool false) |> add_dummy_pos
+  let true' = E_Literal (L_Bool true) |> add_dummy_annotation
+  let false' = E_Literal (L_Bool false) |> add_dummy_annotation
 
   (* Return *)
   (* ------ *)
@@ -272,7 +272,7 @@ module Make (B : Backend.S) (C : Config) = struct
     |> Hashtbl.of_seq
 
   let primitive_decls =
-    List.map (fun (f, _) -> D_Func f |> add_dummy_pos) B.primitives
+    List.map (fun (f, _) -> D_Func f |> add_dummy_annotation) B.primitives
 
   let () =
     if false then
@@ -926,17 +926,16 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSAssignCall *)
     | S_Assign
         ( { desc = LE_Destructuring les; _ },
-          { desc = E_Call (name, args, named_args); _ },
-          ver )
+          { desc = E_Call (name, args, named_args); _ } )
       when List.for_all lexpr_is_var les ->
         let**| vms, env1 = eval_call (to_pos s) name env args named_args in
-        let**| new_env = protected_multi_assign ver env1 s les vms in
+        let**| new_env = protected_multi_assign s.version env1 s les vms in
         return_continue new_env |: SemanticsRule.SAssignCall
     (* End *)
     (* Begin EvalSAssign *)
-    | S_Assign (le, re, ver) ->
+    | S_Assign (le, re) ->
         let*^ m, env1 = eval_expr env re in
-        let**| new_env = eval_lexpr ver le env1 m in
+        let**| new_env = eval_lexpr s.version le env1 m in
         return_continue new_env |: SemanticsRule.SAssign
     (* End *)
     (* Begin EvalSReturn *)

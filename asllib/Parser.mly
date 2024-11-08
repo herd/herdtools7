@@ -45,11 +45,15 @@
 open AST
 open ASTUtils
 
-let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
+let version = V1
+
+let t_bit =
+  T_Bits (E_Literal (L_Int Z.one) |> add_dummy_annotation ~version, [])
 
 let make_ldi_vars (xs, ty) =
   let make_one x =
-    S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None) |> add_dummy_pos
+    S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None)
+    |> add_dummy_annotation ~version
   in
   List.map make_one xs |> stmt_from_list |> desc
 
@@ -188,7 +192,7 @@ let some(x) == ~ = x ; <Some>
 let terminated_by(x, y) == terminated(y, x)
 
 (* Position annotation *)
-let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endpos } }
+let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endpos; version } }
 
 (* ------------------------------------------------------------------------- *)
 (* List handling *)
@@ -479,7 +483,7 @@ let storage_keyword ==
   | CONFIG    ; { GDK_Config   }
 
 let pass == { S_Pass }
-let assign(x, y) == ~=x ; EQ ; ~=y ; { S_Assign (x,y,V1) }
+let assign(x, y) == ~=x ; EQ ; ~=y ; < S_Assign >
 let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
 let case_alt ==
@@ -517,7 +521,7 @@ let stmt ==
       | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
-      | le=lexpr; EQ; e=expr;                                { S_Assign (le, e, V1)     }
+      | le=lexpr; EQ; e=expr;                                < S_Assign >
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
       | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }

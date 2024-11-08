@@ -84,9 +84,9 @@ let fatal e = raise (ASLException e)
 let fatal_from pos e = fatal (ASTUtils.add_pos_from pos e)
 
 let fatal_here pos_start pos_end e =
-  fatal (ASTUtils.annotated e pos_start pos_end)
+  fatal (ASTUtils.annotated e pos_start pos_end ASTUtils.default_version)
 
-let fatal_unknown_pos e = fatal (ASTUtils.add_dummy_pos e)
+let fatal_unknown_pos e = fatal (ASTUtils.add_dummy_annotation e)
 let intercept f () = try Ok (f ()) with ASLException e -> Error e
 
 let error_handling_time_to_string = function
@@ -162,7 +162,7 @@ module PPrint = struct
   let pp_comma_list pp_elt f li =
     pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") pp_elt f li
 
-  let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty)
+  let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_annotation ty)
 
   let pp_error_desc f e =
     pp_open_hovbox f 2;

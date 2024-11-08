@@ -4,7 +4,7 @@ module Infix = struct
   open AST
   include ASTUtils.Infix
 
-  let ( !! ) e = ASTUtils.add_dummy_pos e
+  let ( !! ) e = ASTUtils.add_dummy_annotation e
   let ( !% ) x = !!(E_Var x)
 end
 

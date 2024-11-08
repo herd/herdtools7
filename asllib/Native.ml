@@ -231,15 +231,15 @@ module NativeBackend = struct
             [
               T_Bits
                 ( E_ATC
-                    ( E_Var "-" |> add_dummy_pos,
+                    ( E_Var "-" |> add_dummy_annotation,
                       T_Int
                         (WellConstrained
                            [
                              Constraint_Range
                                (expr_of_int 0, expr_of_int max_pos);
                            ])
-                      |> add_dummy_pos )
-                  |> add_dummy_pos,
+                      |> add_dummy_annotation )
+                  |> add_dummy_annotation,
                   [] );
             ]
     in
@@ -403,17 +403,18 @@ module NativeBackend = struct
     let round_towards_zero = wrap_real_to_int "RoundTowardsZero" truncate
 
     let primitives =
-      let e_var x = E_Var x |> add_dummy_pos in
+      let e_var x = E_Var x |> add_dummy_annotation in
       let eoi i = expr_of_int i in
       let binop = ASTUtils.binop in
       let minus_one e = binop MINUS e (eoi 1) in
       let pow_2 = binop POW (eoi 2) in
       let neg e = E_Unop (NEG, e) |> add_pos_from e in
       (* [t_bits "N"] is the bitvector type of length [N]. *)
-      let t_bits x = T_Bits (e_var x, []) |> add_dummy_pos in
+      let t_bits x = T_Bits (e_var x, []) |> add_dummy_annotation in
       (* [t_int_ctnt e1 e2] is [integer {e1..e2}] *)
       let t_int_ctnt e1 e2 =
-        T_Int (WellConstrained [ Constraint_Range (e1, e2) ]) |> add_dummy_pos
+        T_Int (WellConstrained [ Constraint_Range (e1, e2) ])
+        |> add_dummy_annotation
       in
       (* [p ~parameters ~args ~returns name f] declares a primtive named [name]
          with body [f], and signature specified by [parameters] [args] and
