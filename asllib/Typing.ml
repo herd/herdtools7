@@ -1343,6 +1343,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         (t, E_Cond (e_cond', e_true', e_false') |> here) |: TypingRule.ECond
     (* End *)
+    | E_Tuple [ e ] -> annotate_expr_ ~forbid_atcs env e
     (* Begin ETuple *)
     | E_Tuple li ->
         let ts, es =
@@ -1445,13 +1446,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   check_true (not (list_is_empty slices)) @@ fun () ->
                   fatal_from loc Error.EmptySlice
                 in
-                let w = slices_width env slices in
                 (* TODO: check that:
                    - Rule SNQJ: An expression or subexpression which
                      may result in a zero-length bitvector must not be
                      side-effecting.
                 *)
                 let slices' = best_effort slices (annotate_slices env) in
+                let w = slices_width env slices' in
                 (T_Bits (w, []) |> here, E_Slice (e'', slices') |> here)
                 |: TypingRule.ESlice
             (* End *)

@@ -6,7 +6,7 @@ begin
     var z = N;
     // some algorithm with an undeterminable loop count
     while x*x + y*y <= 2.0*2.0 do
-        let xtemp = x*x - y*y + x0;
+        let xtemp = (x*x - y*y) + x0;
         y = 2.0*x*y + y0;
         x = xtemp;
         z = z + 1; // should be illegal without ATC

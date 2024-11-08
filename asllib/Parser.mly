@@ -62,6 +62,30 @@ let make_ty_decl_subtype (x, s) =
   let ty = ASTUtils.add_pos_from s (T_Named name) in
   D_TypeDecl (x, ty, Some s.desc)
 
+let prec =
+  let open AST in
+  function
+  | BOR | BAND | IMPL | BEQ -> 1
+  | EQ_OP | NEQ -> 2
+  | PLUS | MINUS | OR | EOR | AND -> 3
+  | MUL | DIV | DIVRM | RDIV | MOD | SHL | SHR -> 4
+  | POW -> 5
+  | _ -> 0 (* Non assoc *)
+
+let check_not_same_prec loc op op' =
+  if prec op = prec op' then Error.(fatal_from loc CannotParse)
+
+let check_not_binop_same_prec op e =
+  match e.desc with
+  | E_Binop (op', _, _) when op != op' -> check_not_same_prec e op op'
+  | _ -> ()
+
+let e_binop (e1, op, e2) =
+  let () = check_not_binop_same_prec op e1
+  and () = check_not_binop_same_prec op e2
+  in
+  E_Binop (op, e1, e2)
+
 %}
 
 (* ------------------------------------------------------------------------
@@ -312,7 +336,7 @@ let make_expr(sub_expr) ==
        bexpr, expr_term, expr_atom *)
     | ~=value ;                                                   < E_Literal            >
     | ~=IDENTIFIER ;                                              < E_Var                >
-    | e1=sub_expr; op=binop; e2=expr;                             { E_Binop (op, e1, e2) }
+    | e1=sub_expr; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
     | x=IDENTIFIER; args=plist(expr); ~=nargs;                    < E_Call               >
@@ -325,11 +349,11 @@ let make_expr(sub_expr) ==
 
     | ~=sub_expr; IN; ~=pattern_or_mask;                          < E_Pattern            >
     | UNKNOWN; colon_for_type; ~=ty;                              < E_Unknown            >
+    | e=pared(sub_expr);                                          { E_Tuple [ e ]        }
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
   )
-  | pared(sub_expr)
 
 (* ------------------------------------------------------------------------
 
