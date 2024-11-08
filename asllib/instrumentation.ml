@@ -334,8 +334,8 @@ module TypingRule = struct
     | TypeSatisfaction
     | TypeClash
     | LowestCommonAncestor
-    | CheckUnop
-    | CheckBinop
+    | ApplyUnopType
+    | ApplyBinopTypes
     | ELit
     | ATC
     | EVar
@@ -487,6 +487,13 @@ module TypingRule = struct
     | CheckVarNotInGEnv
     | CheckDisjointSlices
     | ControlFlowFromStmt
+    | AnnotateConstraintBinop
+    | ConstraintBinop
+    | ConstraintMod
+    | ConstraintPow
+    | ApplyBinopExtremities
+    | PossibleExtremitiesLeft
+    | PossibleExtremitiesRight
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -507,8 +514,8 @@ module TypingRule = struct
     | SubtypeSatisfaction -> "SubtypeSatisfaction"
     | TypeSatisfaction -> "TypeSatisfaction"
     | TypeClash -> "TypeClash"
-    | CheckUnop -> "CheckUnop"
-    | CheckBinop -> "CheckBinop"
+    | ApplyUnopType -> "ApplyUnopType"
+    | ApplyBinopTypes -> "ApplyBinopTypes"
     | LowestCommonAncestor -> "LowestCommonAncestor"
     | ELit -> "ELit"
     | ATC -> "ATC"
@@ -661,6 +668,13 @@ module TypingRule = struct
     | CheckVarNotInGEnv -> "CheckVarNotInGEnv"
     | CheckDisjointSlices -> "CheckDisjointSlices"
     | ControlFlowFromStmt -> "ControlFlowFromStmt"
+    | AnnotateConstraintBinop -> "AnnotateConstraintBinop"
+    | ConstraintBinop -> "ConstraintBinop"
+    | ConstraintMod -> "ConstraintMod"
+    | ConstraintPow -> "ConstraintPow"
+    | ApplyBinopExtremities -> "ApplyBinopExtremities"
+    | PossibleExtremitiesLeft -> "PossibleExtremitiesLeft"
+    | PossibleExtremitiesRight -> "PossibleExtremitiesRight"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -684,8 +698,8 @@ module TypingRule = struct
       SubtypeSatisfaction;
       TypeSatisfaction;
       TypeClash;
-      CheckUnop;
-      CheckBinop;
+      ApplyUnopType;
+      ApplyBinopTypes;
       LowestCommonAncestor;
       ELit;
       ATC;
@@ -818,6 +832,12 @@ module TypingRule = struct
       CheckDisjointSlices;
       BitfieldSliceToPositions;
       ControlFlowFromStmt;
+      AnnotateConstraintBinop;
+      ConstraintBinop;
+      ConstraintPow;
+      ApplyBinopExtremities;
+      PossibleExtremitiesLeft;
+      PossibleExtremitiesRight;
     ]
 
   let all_nb = List.length all

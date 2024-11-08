@@ -436,14 +436,6 @@ One of the following applies:
           a list of constraints $\vcs$;
     \item define $\vis$ as the symbolic constrained integer domain for $\vcs$.
   \end{itemize}
-
-  \item All of the following apply (\textsc{syntax\_syntax\_top}):
-  \begin{itemize}
-    \item $\visone$ is the symbolic constrained integer domain for $\csone$;
-    \item $\vistwo$ is the symbolic constrained integer domain for $\cstwo$;
-    \item applying $\constraintbinop$ to $\op$, $\csone$, and $\cstwo$ yields $\top$;
-    \item define $\vis$ as $\Top$.
-  \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
@@ -484,14 +476,6 @@ One of the following applies:
   \constraintbinop(\op, \vcsone, \vcstwo) \typearrow \wellconstrained(\vcs)
 }{
   \intsetop(\op, \overname{\FromSyntax(\vcsone)}{\visone}, \overname{\FromSyntax(\vcstwo)}{\vistwo}) \typearrow \overname{\FromSyntax(\vcs)}{\vis}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[syntax\_syntax\_top]{
-  \constraintbinop(\op, \vcsone, \vcstwo) \typearrow \top
-}{
-  \intsetop(\op, \overname{\FromSyntax(\vcsone)}{\visone}, \overname{\FromSyntax(\vcstwo)}{\vistwo}) \typearrow \overname{\Top}{\vis}
 }
 \end{mathpar}
 
@@ -878,7 +862,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ConstraintBinop \label{sec:TypingRule.ConstraintBinop}}
+\subsection{TypingRule.ConstraintBinop\label{sec:TypingRule.ConstraintBinop}}
 \hypertarget{def-constraintbinop}{}
 The function
 \[
@@ -887,7 +871,7 @@ The function
   \overname{\intconstraint^*}{\csone} \aslsep
   \overname{\intconstraint^*}{\cstwo}
 )
-\aslto \overname{\constraintkind}{\vics}
+\aslto \overname{\constraintkind}{\newcs}
 \]
 symbolically applies the binary operation $\op$ to the lists of integer constraints $\csone$ and $\cstwo$,
 yielding the integer constraints $\vics$.
@@ -895,147 +879,398 @@ yielding the integer constraints $\vics$.
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{well\_constrained}):
+  \item All of the following apply (\textsc{extremities}):
   \begin{itemize}
-    \item for every $\vi$ in $\listrange(\csone)$ and every $\vj$ in $\listrange(\cstwo)$,
-          applying \\
-          $\constraintbinoppair$ to $\op$, $\csone[\vi]$, and $\cstwo[\vj]$,
-          yields the constraint $\vc_{(\vi,\vj)}$;
-    \item define $\cs$ as the list consisting of constraints $\vc_{(\vi,\vj)}$,
-          for every $\vi$ in $\listrange(\csone)$ and every $\vj$ in $\listrange(\cstwo)$;
-    \item $\vics$ is the well-constrained list of constrains $\cs$.
+    \item $\op$ is either $\DIV$, $\DIVRM$, $\MUL$, $\PLUS$, $\MINUS$, $\SHR$, or $\SHL$;
+    \item applying $\applybinopextremities$ to every pair of constraints $\csone[\vi]$ and $\cstwo[\vj]$
+          where $\vi\in\listrange(\csone)$ and $\vj\in\listrange(\cstwo)$, yields $\vc_{\vi,\vj}$;
+    \item define $\newcs$ as the list of constraints $\vc_{\vi,\vj}$, for every
+          $\vi\in\listrange(\csone)$ and $\vj\in\listrange(\cstwo)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{unconstrained}):
+  \item All of the following apply (\textsc{mod}):
   \begin{itemize}
-    \item there exist $\vi$ in $\listrange(\csone)$ and $\vj$ in $\listrange(\cstwo)$,
-          such that applying
-          $\constraintbinoppair$ to $\op$, $\csone[\vi]$, and $\cstwo[\vj]$,
-          yields $\top$;
-    \item $\vics$ is $\unconstrained$.
+    \item $\op$ is $\MOD$;
+    \item applying $\constraintmod$ to $\cstwo[\vj]$, for every $\vj\in\listrange(\cstwo)$, yields $\vc_\vj$;
+    \item define $\newcs$ as $\vc_\vj$, for every $\vj\in\listrange(\cstwo)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{pow}):
+  \begin{itemize}
+    \item $\op$ is $\POW$;
+    \item applying $\constraintpow$ to every pair of constraints $\csone[\vi]$ and $\cstwo[\vj]$
+          where $\vi\in\listrange(\csone)$ and $\vj\in\listrange(\cstwo)$, yields $\vc_{\vi,\vj}$;
+    \item define $\newcs$ as the list of constraints $\vc_{\vi,\vj}$, for every
+          $\vi\in\listrange(\csone)$ and $\vj\in\listrange(\cstwo)$.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[well\_constrained]{
+\inferrule[extremities]{
+  \op \in \{\DIV, \DIVRM, \MUL, \PLUS, \MINUS, \SHR, \SHL\}\\
   {
-    \begin{array}{l}
-  \vi\in\listrange(\csone), \vj\in\listrange(\cstwo): \\
-  \constraintbinoppair(\op, \csone[\vi], \cstwo[\vj]) \typearrow \vc_{(\vi,\vj)}
+    \begin{array}{r}
+      \vi\in\listrange(\csone): \vj\in\listrange(\cstwo): \\
+      \applybinopextremities(\csone[\vi], \cstwo[\vj]) \typearrow \vc_{\vi,\vj}
     \end{array}
   }\\
-  \cs \eqdef [\vi\in\listrange(\csone), \vj\in\listrange(\cstwo): \vc_{(\vi,\vj)}]
+  \newcs \eqdef [\vi\in\listrange(\csone): \vj\in\listrange(\cstwo): \vc_{\vi,\vj}]
 }{
-  \constraintbinop(\op, \csone, \cstwo) \typearrow \overname{\wellconstrained(\cs)}{\vics}
+  \constraintbinop(\op, \csone, \cstwo) \typearrow \newcs
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[unconstrained]{
-  {
-    \begin{array}{l}
-  \exists \vi\in\listrange(\csone).\ \exists \vj\in\listrange(\cstwo).\ \\
-  \constraintbinoppair(\op, \csone[\vi], \cstwo[\vj]) \typearrow \top
-    \end{array}
-  }
+\inferrule[mod]{
+  \op = \MOD\\
+  \vj\in\listrange(\cstwo): \constraintmod(\cstwo[\vj]) \typearrow \vc_\vj\\
+  \newcs = [\vj\in\listrange(\cstwo): \vc_\vj]
 }{
-  \constraintbinop(\op, \csone, \cstwo) \typearrow \overname{\unconstrained}{\vics}
+  \constraintbinop(\op, \csone, \cstwo) \typearrow \newcs
 }
 \end{mathpar}
 
-\subsection{TypingRule.ConstraintBinopPair \label{sec:TypingRule.ConstraintBinopPair}}
-\hypertarget{def-constraintbinoppair}{}
+\begin{mathpar}
+\inferrule[pow]{
+  \op = \POW\\
+  {
+    \begin{array}{r}
+      \vi\in\listrange(\csone): \vj\in\listrange(\cstwo): \\
+      \constraintpow(\csone[\vi], \cstwo[\vj]) \typearrow \vc_{\vi,\vj}
+    \end{array}
+  }\\
+  \newcs \eqdef [\vi\in\listrange(\csone): \vj\in\listrange(\cstwo): \vc_{\vi,\vj}]
+}{
+  \constraintbinop(\op, \csone, \cstwo) \typearrow \newcs
+}
+\end{mathpar}
+\CodeSubsection{\ConstraintBinopBegin}{\ConstraintBinopEnd}{../Typing.ml}
+
+\subsection{TypingRule.ApplyBinopExtremities\label{sec:TypingRule.ApplyBinopExtremities}}
+\hypertarget{def-applybinopextremities}{}
 The function
 \[
-\constraintbinoppair(
+\applybinopextremities(
   \overname{\binop}{\op} \aslsep
-  \overname{\intconstraint}{\vcone} \aslsep
-  \overname{\intconstraint}{\vctwo}
-)
-\aslto \overname{\overname{\intconstraint}{\vc} \cup \{\top\}}{\vres}
+  \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}
+) \aslto \overname{\intconstraint^*}{\newcs}
 \]
-symbolically applies the binary operation $\op$ to the pair of integer constraints $\vcone$ and $\vctwo$,
-yielding $\vres$ which is an integer constraint $\vc$ or
-$\top$, which indicates a failure in representing the result as an integer constraint.
+yields a list of constraints $\newcs$ for the constraints $\vcone$ and $\vctwo$, which are needed to include
+range constraints for cases where the binary operation $\op$ yields a dynamic error.
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact\_exact}):
   \begin{itemize}
-    \item $\vcone$ is an exact constraint for the expression $\veone$, that is, \ConstraintExact(\veone);
-    \item $\vctwo$ is an exact constraint for the expression $\vetwo$, that is, \ConstraintExact(\vetwo);
-    \item define $\vc$ as the exact constraint for the binary operation expression with $\op$, $\veone$, and $\vetwo$,
-          that is, $\ConstraintExact(\EBinop(\op, \veone, \vetwo))$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{exact\_range}):
-  \begin{itemize}
-    \item $\vcone$ is an exact constraint for the expression $\veone$, that is, $\ConstraintExact(\veone)$;
-    \item $\vctwo$ is an range constraint for the expressions $\vetwoone$ and $\vetwotwo$, that is, \\ $\ConstraintRange(\vetwoone, \vetwotwo)$;
-    \item One of the following applies:
-    \begin{itemize}
-      \item All of the following apply:
-      \begin{itemize}
-          \item applying $\isrightincreasing$ to $\op$ yields $\True$;
-          \item define $\vc$ as the range constraint for the following two expressions:
-          the binary operation expression for $\op$ $\veone$ and $\vetwoone$, and
-          the binary operation expression for $\op$ $\veone$ and $\vetwotwo$;
-      \end{itemize}
-
-      \item All of the following apply:
-      \begin{itemize}
-          \item applying $\isrightdecreasing$ to $\op$ yields $\True$;
-          \item define $\vc$ as the range constraint for the following two expressions:
-          the binary operation expression for $\op$ $\veone$ and $\vetwotwo$, and
-          the binary operation expression for $\op$ $\veone$ and $\vetwoone$;
-      \end{itemize}
-
-      \item Otherwise, the result is $\Top$;
-    \end{itemize}
+    \item $\vcone$ is a constraint for the expression $\va$;
+    \item $\vctwo$ is a constraint for the expression $\vc$;
+    \item define $\newcs$ as the list containing the constraint for the binary expression $\AbbrevEBinop{\op}{\va}{\vc}$.
   \end{itemize}
 
   \item All of the following apply (\textsc{range\_exact}):
   \begin{itemize}
-    \item $\vcone$ is an range constraint for the expressions $\veoneone$ and $\veonetwo$, that is, \\ $\ConstraintRange(\veoneone, \veonetwo)$;
-    \item $\vctwo$ is an exact constraint for the expression $\vetwo$, that is, $\ConstraintExact(\vetwo)$;
-    \item One of the following applies:
+    \item $\vcone$ is a range constraint for the expressions $\va$ and $\vb$;
+    \item $\vctwo$ is a constraint for the expression $\vc$;
+    \item applying $\possibleextremitiesleft$ to $\op$, $\va$, and $\vb$ yields $\extpairs$;
+    \item define $\newcs$ as the list containing a constraint $\AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vc}}{\AbbrevEBinop{\op}{\vbp}{\vc}}$
+          for each pair of expressions $(\vap, \vbp)$ in $\extpairs$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exact\_range}):
+  \begin{itemize}
+    \item $\vcone$ is a constraint for the expression $\va$;
+    \item $\vctwo$ is a range constraint for the expressions $\vc$ and $\vd$;
+    \item applying $\possibleextremitiesright$ to $\op$, $\vc$, and $\vd$ yields $\extpairs$;
+    \item define $\newcs$ as the list containing a constraint $\AbbrevConstraintRange{\AbbrevEBinop{\op}{\va}{\vcp}}{\AbbrevEBinop{\op}{\va}{\vdp}}$
+          for each pair of expressions $(\vcp, \vdp)$ in $\extpairs$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range\_range}):
+  \begin{itemize}
+    \item $\vcone$ is a range constraint for the expressions $\va$ and $\vb$;
+    \item $\vctwo$ is a range constraint for the expressions $\vc$ and $\vd$;
+    \item applying $\possibleextremitiesright$ to $\op$, $\va$, and $\vb$ yields $\extpairsab$;
+    \item applying $\possibleextremitiesright$ to $\op$, $\vc$, and $\vd$ yields $\extpairscd$;
+    \item define $\newcs$ as the list containing a constraint $\AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vcp}}{\AbbrevEBinop{\op}{\vbp}{\vdp}}$
+          for each pair of expressions
+          $(\vap, \vbp)$ in $\extpairsab$
+          and each pair of expressions
+          $(\vcp, \vdp)$ in $\extpairscd$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[exact\_exact]{}{
+  {
+    \begin{array}{r}
+  \applybinopextremities(\op, \overname{\ConstraintExact(\va)}{\vcone}, \overname{\ConstraintExact(\vc)}{\vctwo}) \typearrow \\
+  \overname{[ \ConstraintExact(\AbbrevEBinop{\op}{\va}{\vc}) ]}{\newcs}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_exact]{
+  \possibleextremitiesleft(\op, \va, \vb) \typearrow \extpairs\\
+  \newcs \eqdef [(\vap, \vbp) \in \extpairs: \AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vc}}{\AbbrevEBinop{\op}{\vbp}{\vc}}]
+}{
+  \applybinopextremities(\op, \overname{\ConstraintRange(\va, \vb)}{\vcone}, \overname{\ConstraintExact(\vc)}{\vctwo}) \typearrow
+  \newcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exact\_range]{
+  \possibleextremitiesright(\op, \vc, \vd) \typearrow \extpairs\\
+  \newcs \eqdef [(\vcp, \vdp) \in \extpairs: \AbbrevConstraintRange{\AbbrevEBinop{\op}{\va}{\vcp}}{\AbbrevEBinop{\op}{\va}{\vdp}}]
+}{
+  \applybinopextremities(\op, \overname{\ConstraintExact(\va)}{\vcone}, \overname{\ConstraintRange(\vc, \vd)}{\vctwo}) \typearrow
+  \newcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_range]{
+  \possibleextremitiesleft(\op, \va, \vb) \typearrow \extpairsab\\
+  \possibleextremitiesright(\op, \vc, \vd) \typearrow \extpairscd\\
+  \newcs \eqdef [(\vap, \vbp) \in \extpairsab, (\vcp, \vdp) \in \extpairscd:
+  \AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vcp}}{\AbbrevEBinop{\op}{\vbp}{\vdp}}]
+}{
+  \applybinopextremities(\op, \overname{\ConstraintRange(\va, \vb)}{\vcone}, \overname{\ConstraintRange(\vc, \vd)}{\vctwo}) \typearrow
+  \newcs
+}
+\end{mathpar}
+
+\subsection{TypingRule.PossibleExtremitiesLeft\label{sec:TypingRule.PossibleExtremitiesLeft}}
+\hypertarget{def-possibleextremitiesleft}{}
+The function
+\[
+\possibleextremitiesleft(
+  \overname{\binop}{\op} \aslsep
+  \overname{\expr}{\va} \aslsep \overname{\expr}{\vb}
+) \aslto \overname{(\expr\times\expr)^*}{\extpairs}
+\]
+yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
+and pair of expressions $\va$ and $\vb$, which are needed to form constraints
+for cases where applying $\op$ to $\va$ and $\vb$ would lead to a dynamic error.
+
+\subsubsection{Prose}
+\begin{itemize}
+  \item All of the following apply (\textsc{mul}):
+  \begin{itemize}
+    \item $\op$ is $\MUL$;
+    \item define $\extpairs$ as the list consisting of $(\va, \va)$, $(\va, \vb)$, $(\vb, \va)$, and $(\vb, \vb)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other}):
+  \begin{itemize}
+    \item $\op$ is either $\DIV$, $\DIVRM$, $\SHR$, $\SHL$, $\PLUS$, or $\MINUS$;
+    \item define $\extpairs$ as the list consisting of $(\va, \vb)$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[mul]{}{
+  \possibleextremitiesleft(\overname{\MUL}{\op}, \va, \vb) \typearrow \overname{[(\va, \va), (\va, \vb), (\vb, \va), (\vb, \vb)]}{\extpairs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other]{
+  \op \in \{\DIV, \DIVRM, \SHR, \SHL, \PLUS, \MINUS\}
+}{
+  \possibleextremitiesleft(\op, \va, \vb) \typearrow \overname{[(\va, \vb)]}{\extpairs}
+}
+\end{mathpar}
+
+\subsection{TypingRule.PossibleExtremitiesRight\label{sec:TypingRule.PossibleExtremitiesRight}}
+\hypertarget{def-possibleextremitiesright}{}
+The function
+\[
+\possibleextremitiesright(
+  \overname{\binop}{\op} \aslsep
+  \overname{\expr}{\vc} \aslsep \overname{\expr}{\vd}
+) \aslto \overname{(\expr\times\expr)^*}{\extpairs}
+\]
+yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
+and pair of expressions $\vc$ and $\vd$, which are needed to form constraints
+for cases where applying $\op$ to $\vc$ and $\vd$ would lead to a dynamic error.
+
+\subsubsection{Prose}
+\begin{itemize}
+  \item All of the following apply (\textsc{plus}):
+  \begin{itemize}
+    \item $\op$ is $\PLUS$;
+    \item define $\extpairs$ as the list consisting of $(\vc, \vd)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{minus}):
+  \begin{itemize}
+    \item $\op$ is $\MINUS$;
+    \item define $\extpairs$ as the list consisting of $(\vd, \vc)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{mul}):
+  \begin{itemize}
+    \item $\op$ is $\MUL$;
+    \item define $\extpairs$ as the list consisting of $(\vc, \vc)$, $(\vc, \vd)$, $(\vd, \vc)$, and $(\vd, \vd)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{shl\_shr}):
+  \begin{itemize}
+    \item $\op$ is either $\SHL$ or $\SHR$;
+    \item define $\extpairs$ as the list consisting of $(\vd, \ELInt{0})$ and $(\ELInt{0}, \vd)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{div\_divrm}):
+  \begin{itemize}
+    \item $\op$ is either $\DIV$ or $\DIVRM$;
+    \item define $\extpairs$ as the list consisting of $(\vd, \ELInt{1})$ and $(\ELInt{1}, \vd)$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[plus]{}{
+  \possibleextremitiesright(\overname{\PLUS}{\op}, \vc, \vd) \typearrow \overname{[(\vc, \vd)]}{\extpairs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[minus]{}{
+  \possibleextremitiesright(\overname{\MINUS}{\op}, \vc, \vd) \typearrow \overname{[(\vd, \vc)]}{\extpairs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[mul]{}{
+  \possibleextremitiesright(\overname{\MUL}{\op}, \vc, \vd) \typearrow \overname{[(\vc, \vc), (\vc, \vd), (\vd, \vc), (\vd, \vd)]}{\extpairs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[shl\_shr]{
+  \op \in \{\SHL, \SHR\}
+}{
+  \possibleextremitiesright(\op, \vc, \vd) \typearrow \overname{[(\vd, \ELInt{0}), (\ELInt{0}, \vd)]}{\extpairs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[div\_divrm]{
+  \op \in \{\DIV, \DIVRM\}
+}{
+  \possibleextremitiesright(\op, \vc, \vd) \typearrow \overname{[(\vd, \ELInt{1}), (\ELInt{1}, \vd)]}{\extpairs}
+}
+\end{mathpar}
+
+\subsection{TypingRule.ConstraintMod\label{sec:TypingRule.ConstraintMod}}
+\hypertarget{def-constraintmod}{}
+The function
+\[
+\constraintmod(\overname{\intconstraint}{\vc}) \aslto \overname{\intconstraint}{\newc}
+\]
+yields a range constraint $\newc$ from $0$ to the expression in $\vc$ that is maximal.
+This is needed to apply the modulus operation to a pair of constraints.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\vc$ is a constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item $\newc$ is a constraint for the range from the literal expression for $0$ to $\ve$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for some start expression and end expression $\ve$, that is, $\ConstraintRange(\Ignore, \ve)$;
+    \item $\newc$ is a constraint for the range from the literal expression for $0$ to $\ve$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[exact]{}{
+  \constraintmod(\overname{\ConstraintExact(\ve)}{\vc})
+  \typearrow
+  \overname{\ConstraintRange(\ELInt{0}, \ve)}{\newc}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{}{
+  \constraintmod(\overname{\ConstraintRange(\Ignore, \ve)}{\vc})
+  \typearrow
+  \overname{\ConstraintRange(\ELInt{0}, \ve)}{\newc}
+}
+\end{mathpar}
+\CodeSubsection{\ConstraintModBegin}{\ConstraintModEnd}{../Typing.ml}
+
+\subsection{TypingRule.ConstraintPow\label{sec:TypingRule.ConstraintPow}}
+\hypertarget{def-constraintpow}{}
+The function
+\[
+\constraintpow(\overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}) \aslto \overname{\intconstraint^+}{\newcs}
+\]
+yields a list of range constraints $\newcs$ that are needed to calculate the result of
+applying a $\POW$ operation to the constraints $\vcone$ and $\vctwo$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact\_exact}):
+  \begin{itemize}
+    \item $\vcone$ is the constraint for the expression $\va$;
+    \item $\vcone$ is the constraint for the expression $\vc$;
+    \item define $\newcs$ as the list containing the constraint
+    for the expression \\ $\EBinop(\POW, \va, \vc)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range\_exact}):
+  \begin{itemize}
+    \item $\vcone$ is the range constraint for the expressions $\va$ and $\vb$;
+    \item $\vctwo$ is the constraint for the expression $\vc$;
+    \item define $\vmac$ as the expression $\EBinop(\POW, \EUnop(\NEG, \va), \vc)$;
+    \item define $\newcs$ as the list of the following constraints:
     \begin{itemize}
-      \item All of the following apply:
-      \begin{itemize}
-        \item applying $\isleftincreasing$ to $\op$ yields $\True$;
-        \item define $\vc$ as the range constraint for the following two expressions:
-              the binary operation expression for $\op$ $\veoneone$ and $\vetwo$, and
-              the binary operation expression for $\op$ $\veonetwo$ and $\vetwo$;
-      \end{itemize}
-      \item Otherwise, the result is $\Top$.
+      \item the range constraint for the literal integer expression for $0$ and the expression
+            $\EBinop(\POW, \vb, \vc)$;
+      \item the range constraint for the expression $\EUnop(\NEG, \vmac)$ and $\vmac$;
+      \item the constraint for the literal integer expression for $1$.
+    \end{itemize}
+  \end{itemize}
+
+  \item All of the following apply (\textsc{exact\_range}):
+  \begin{itemize}
+    \item $\vcone$ is the constraint for the expression $\va$;
+    \item $\vctwo$ is the range constraint for the expressions $\Ignore$ and $\vd$;
+    \item define $\vmad$ as the expression $\EBinop(\POW, \EUnop(\NEG, \va), \vd)$;
+    \item define $\newcs$ as the list of the following constraints:
+    \begin{itemize}
+      \item the range constraint for the literal integer expression for $0$ and the expression
+            $\EBinop(\POW, \va, \vd)$;
+      \item the range constraint for the expression $\EUnop(\NEG, \vmad)$ and $\vmad$;
+      \item the constraint for the literal integer expression for $1$.
     \end{itemize}
   \end{itemize}
 
   \item All of the following apply (\textsc{range\_range}):
   \begin{itemize}
-    \item $\vcone$ is an range constraint for the expressions $\veoneone$ and $\veonetwo$, that is, \\ $\ConstraintRange(\veoneone, \veonetwo)$;
-    \item $\vctwo$ is an range constraint for the expressions $\vetwoone$ and $\vetwotwo$, that is, \\ $\ConstraintRange(\vetwoone, \vetwotwo)$;
-    \item One of the following applies:
+    \item $\vcone$ is the range constraint for the expressions $\va$ and $\vb$;
+    \item $\vctwo$ is the range constraint for the expressions $\Ignore$ and $\vd$;
+    \item define $\vmad$ as the expression $\EBinop(\POW, \EUnop(\NEG, \va), \vd)$;
+    \item define $\newcs$ as the list of the following constraints:
     \begin{itemize}
-      \item All of the following apply:
-      \begin{itemize}
-        \item applying $\isleftincreasing$ to $\op$ yields $\True$;
-        \item applying $\isrightincreasing$ to $\op$ yields $\True$;
-        \item define $\vc$ as the range constraint for the following two expressions:
-              the binary operation expression for $\op$ $\veoneone$ and $\vetwoone$, and
-              the binary operation expression for $\op$ $\veonetwo$ and $\vetwotwo$;
-      \end{itemize}
-      \item All of the following apply:
-      \begin{itemize}
-        \item applying $\isleftincreasing$ to $\op$ yields $\True$;
-        \item applying $\isrightdecreasing$ to $\op$ yields $\True$;
-        \item define $\vc$ as the range constraint for the following two expressions:
-              the binary operation expression for $\op$ $\veoneone$ and $\vetwotwo$, and
-              the binary operation expression for $\op$ $\veonetwo$ and $\vetwoone$;
-      \end{itemize}
-      \item Otherwise, the result is $\Top$.
+      \item the range constraint for the literal integer expression for $0$ and the expression
+            $\EBinop(\POW, \vb, \vd)$;
+      \item the range constraint for the expression $\EUnop(\NEG, \vmad)$ and $\vmad$;
+      \item the constraint for the literal integer expression for $1$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -1043,212 +1278,63 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[exact\_exact]{}{
-  \constraintbinoppair(\op, \overname{\AbbrevConstraintExact{\veone}}{\vcone}, \overname{\AbbrevConstraintExact{\vetwo}}{\vctwo}) \typearrow
-  \overname{\AbbrevConstraintExact{\AbbrevEBinop{\op}{\veone}{\vetwo}}}{\vc}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[exact\_range]{
-  \vres \eqdef
   {
-    \begin{cases}
-      % 2
-      \AbbrevConstraintRange{\AbbrevEBinop{\op}{\veone}{\vetwoone}}{\AbbrevEBinop{\op}{\veone}{\vetwotwo}} & \textbf{if }
-      (\isrightincreasing(\op) \typearrow \True) \\
-      % 3
-      \AbbrevConstraintRange{\AbbrevEBinop{\op}{\veone}{\vetwotwo}}{\AbbrevEBinop{\op}{\veone}{\vetwoone}} & \textbf{if }
-      (\isrightdecreasing(\op) \typearrow \True) \\
-      %
-      \Top & \textbf{else}
-    \end{cases}
+    \begin{array}{r}
+  \constraintpow(\overname{\ConstraintExact(\va)}{\vcone}, \overname{\ConstraintExact(\vc)}{\vctwo}) \typearrow \\
+  \overname{[\ \ConstraintExact(\EBinop(\POW, \va, \vc))\ ]}{\newcs}
+    \end{array}
   }
-}{
-  \constraintbinoppair(\op, \overname{\AbbrevConstraintExact{\veone}}{\vcone}, \overname{\AbbrevConstraintRange{\vetwoone}{\vetwotwo}}{\vctwo}) \typearrow \vres
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range\_exact]{
-  \vres \eqdef
-  {
-    \begin{cases}
-      % 4
-      \AbbrevConstraintRange{\AbbrevEBinop{\op}{\veoneone}{\vetwo}}{\AbbrevEBinop{\op}{\veonetwo}{\vetwo}} & \textbf{if }
-      (\isleftincreasing(\op) \typearrow \True)\\
-      %
-      \Top & \textbf{else}
-    \end{cases}
-  }
+  \vmac \eqdef \EBinop(\POW, \EUnop(\NEG, \va), \vc)
 }{
-  \constraintbinoppair(\op, \overname{\AbbrevConstraintRange{\veoneone}{\veonetwo}}{\vcone}, \overname{\AbbrevConstraintExact{\vetwo}}{\vctwo}) \typearrow \vres
+  {
+    \begin{array}{r}
+  \constraintpow(\overname{\ConstraintRange(\va, \vb)}{\vcone}, \overname{\ConstraintExact(\vc)}{\vctwo}) \typearrow \\
+  \overname{[
+  \AbbrevConstraintRange{\ELInt{0}}{\AbbrevEBinop{\POW}{\vb}{\vc}},\
+  \AbbrevConstraintRange{\EUnop(\NEG, \vmac)}{\vmac},\
+  \AbbrevConstraintExact{\ELInt{1}}
+  ]}{\newcs}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exact\_range]{
+  \vmad \eqdef \EBinop(\POW, \EUnop(\NEG, \va), \vd)
+}{
+  {
+    \begin{array}{r}
+  \constraintpow(\overname{\ConstraintExact(\va)}{\vcone}, \overname{\ConstraintRange(\Ignore, \vd)}{\vctwo}) \typearrow \\
+  \overname{[
+  \AbbrevConstraintRange{\ELInt{0}}{\AbbrevEBinop{\POW}{\va}{\vd}},\
+  \AbbrevConstraintRange{\EUnop(\NEG, \vmad)}{\vmad},\
+  \AbbrevConstraintExact{\ELInt{1}}
+  ]}{\newcs}
+    \end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range\_range]{
-  \vres \eqdef
+  \vmad \eqdef \EBinop(\POW, \EUnop(\NEG, \va), \vd)
+}{
   {
-    \begin{cases}
-      % 5
-      \AbbrevConstraintRange{\AbbrevEBinop{\op}{\veoneone}{\vetwoone}}{\AbbrevEBinop{\op}{\veonetwo}{\vetwotwo}} & \textbf{if }
-      \left(\begin{array}{ll}
-      \isleftincreasing(\op) \typearrow \True\ \land\\
-      \isrightincreasing(\op) \typearrow \True\\
-      \end{array}\right)\\
-      % 6
-      \AbbrevConstraintRange{\AbbrevEBinop{\op}{\veoneone}{\vetwotwo}}{\AbbrevEBinop{\op}{\veonetwo}{\vetwoone}} & \textbf{if }
-      \left(\begin{array}{ll}
-      \isleftincreasing(\op) \typearrow \True\ \land\\
-      \isrightdecreasing(\op) \typearrow \True
-      \end{array}\right)\\
-      %
-      \Top & \textbf{else}
-    \end{cases}
+    \begin{array}{r}
+  \constraintpow(\overname{\ConstraintRange(\va, \vb)}{\vcone}, \overname{\ConstraintRange(\Ignore, \vd)}{\vctwo}) \typearrow \\
+  \overname{[
+  \AbbrevConstraintRange{\ELInt{0}}{\AbbrevEBinop{\POW}{\vb}{\vd}},\
+  \AbbrevConstraintRange{\EUnop(\NEG, \vmad)}{\vmad},\
+  \AbbrevConstraintExact{\ELInt{1}}
+  ]}{\newcs}
+    \end{array}
   }
-}{
-  \constraintbinoppair(\op, \overname{\AbbrevConstraintRange{\veoneone}{\veonetwo}}{\vcone}, \overname{\AbbrevConstraintRange{\vetwoone}{\vetwotwo}}{\vctwo}) \typearrow \vres
 }
 \end{mathpar}
-
-\subsection{TypingRule.IsRightIncreasing \label{sec:TypingRule.IsRightIncreasing}}
-\hypertarget{def-isrightincreasing}{}
-The function
-\[
-\isrightincreasing(\overname{\binop}{\op}) \aslto \overname{\Bool}{\vb} \cup \{\top\}
-\]
-tests whether the value of binary operation $\op$ increases along with its right-hand-side operand,
-yielding the result in $\vb$.
-Otherwise, the result is $\top$, which indicates that the answer is not always $\True$ or $\False$.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following (\textsc{true}):
-  \begin{itemize}
-    \item $\op$ is one of $\MUL, \SHL, \SHR, \POW, \PLUS$;
-    \item define $\vb$ as $\True$.
-  \end{itemize}
-
-  \item All of the following (\textsc{false}):
-  \begin{itemize}
-    \item $\op$ is one of $\DIV, \DIVRM, \MOD, \MINUS$;
-    \item define $\vb$ as $\False$.
-  \end{itemize}
-
-  \item All of the following (\textsc{top}):
-  \begin{itemize}
-    \item $\op$ is $\RDIV$;
-    \item define $\vb$ as $\top$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[true]{
-  \op \in \{\MUL, \SHL, \SHR, \POW, \PLUS\}
-}{
-  \isrightincreasing(\op) \typearrow \overname{\True}{\vb}
-}
-\and
-\inferrule[false]{
-  \op \in \{\DIV, \DIVRM, \MOD, \MINUS\}
-}{
-  \isrightincreasing(\op) \typearrow \overname{\False}{\vb}
-}
-\and
-\inferrule[top]{}{
-  \isrightincreasing(\overname{\RDIV}{\op}) \typearrow \top
-}
-\end{mathpar}
-
-\subsection{TypingRule.IsRightDecreasing \label{sec:TypingRule.IsRightDecreasing}}
-\hypertarget{def-isrightdecreasing}{}
-The function
-\[
-\isrightdecreasing(\overname{\binop}{\op}) \aslto \overname{\Bool}{\vb} \cup \{\top\}
-\]
-tests whether the value of binary operation $\op$ decreases along with its right-hand-side operand,
-yielding the result in $\vb$.
-Otherwise, the result is $\top$, which indicates that the answer is not always $\True$ or $\False$.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following (\textsc{true}):
-  \begin{itemize}
-    \item $\op$ is $\MINUS$;
-    \item define $\vb$ as $\True$.
-  \end{itemize}
-
-  \item All of the following (\textsc{false}):
-  \begin{itemize}
-    \item $\op$ is one of $\DIV, \DIVRM, \MUL, \SHL, \SHR, \POW, \PLUS, \MOD$;
-    \item define $\vb$ as $\False$.
-  \end{itemize}
-
-  \item All of the following (\textsc{top}):
-  \begin{itemize}
-    \item $\op$ is one of $\AND ,\BAND ,\BEQ ,\BOR ,\XOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV$;
-    \item define $\vb$ as $\top$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[true]{}{
-  \isrightdecreasing(\overname{\MINUS}{\op}) \typearrow \overname{\True}{\vb}
-}
-\and
-\inferrule[false]{
-  \op \in \{\DIV, \DIVRM, \MUL, \SHL, \SHR, \POW, \PLUS, \MOD\}
-}{
-  \isrightdecreasing(\op) \typearrow \overname{\False}{\vb}
-}
-\and
-\inferrule[top]{
-  \op \in \{\AND ,\BAND ,\BEQ ,\BOR ,\XOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV\}
-}{
-  \isrightdecreasing(\op) \typearrow \top
-}
-\end{mathpar}
-
-\subsection{TypingRule.IsLeftIncreasing \label{sec:TypingRule.IsLeftIncreasing}}
-\hypertarget{def-isleftincreasing}{}
-The function
-\[
-\isleftincreasing(\overname{\binop}{\op}) \aslto \overname{\Bool}{\vb} \cup \{\top\}
-\]
-tests whether the value of binary operation $\op$ increases along with its left-hand-side operand,
-yielding $\True$ or $\top$, which indicates that the answer is not always $\True$ or $\False$.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following (\textsc{true}):
-  \begin{itemize}
-    \item $\op$ is one of $\MUL, \DIV, \DIVRM, \MOD, \SHL, \SHR, \POW, \PLUS, \MINUS$;
-    \item define $\vb$ as $\True$.
-  \end{itemize}
-
-  \item All of the following (\textsc{top}):
-  \begin{itemize}
-    \item $\op$ is one of $\AND ,\BAND ,\BEQ ,\BOR ,\XOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV$;
-    \item define $\vb$ as $\top$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[true]{
-  \op \in \{\MUL, \DIV, \DIVRM, \MOD, \SHL, \SHR, \POW, \PLUS, \MINUS\}
-}{
-  \isleftincreasing(\op) \typearrow \overname{\True}{\vb}
-}
-\and
-\inferrule[top]{
-  \op \in \{\AND ,\BAND ,\BEQ ,\BOR ,\XOR ,\EQOP ,\GT ,\GEQ ,\IMPL ,\LT ,\LEQ ,\NEQ ,\OR, \RDIV\}
-}{
-  \isleftincreasing(\op) \typearrow \top
-}
-\end{mathpar}
+\CodeSubsection{\ConstraintPowBegin}{\ConstraintPowEnd}{../Typing.ml}

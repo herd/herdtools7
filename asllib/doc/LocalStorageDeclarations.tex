@@ -342,7 +342,7 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[okay]{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
+  \typesat(\tenv, \vt, \vs) \typearrow \True
 }{
   \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \True
 }
@@ -350,7 +350,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[error]{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \False
+  \typesat(\tenv, \vt, \vs) \typearrow \False
 }{
   \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{CannotBeInitializedWith}
 }

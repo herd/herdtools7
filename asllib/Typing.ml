@@ -603,7 +603,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | ArrayLength_Expr _ -> integer |: TypingRule.TypeOfArrayLength
   (* End *)
 
-  (* Begin CheckBinop *)
+  (* Begin ApplyBinopTypes *)
   let rec apply_binop_types loc env op t1 t2 : ty =
     let () =
       if false then
@@ -652,11 +652,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | RDIV, (T_Real, T_Real) ->
         T_Real |> with_loc
     | _ -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
-    |: TypingRule.CheckBinop
+    |: TypingRule.ApplyBinopTypes
   (* End *)
 
-  (* Begin CheckUnop *)
-  let check_unop loc env op t =
+  (* Begin ApplyUnopType *)
+  let apply_unop_type loc env op t =
     match op with
     | BNOT ->
         let+ () = check_type_satisfies loc env t boolean in
@@ -684,7 +684,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> (* fail case *) t)
     | NOT ->
         let+ () = check_structure_bits loc env t in
-        t |: TypingRule.CheckUnop
+        t |: TypingRule.ApplyUnopType
   (* End *)
 
   (* Begin CheckATC *)
@@ -1311,7 +1311,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin Unop *)
     | E_Unop (op, e') ->
         let t'', e'' = annotate_expr_ ~forbid_atcs env e' in
-        let t = check_unop e env op t'' in
+        let t = apply_unop_type e env op t'' in
         (t, E_Unop (op, e'') |> here) |: TypingRule.Unop
     (* End *)
     (* Begin ECall *)

@@ -412,7 +412,7 @@ All of the following apply:
   \item $\ve$ denotes a binary operation $\op$ over two expressions $\veone$ and $\vetwo$, that is, \\ $\EBinop(\op, \veone, \vetwo)$;
   \item the result of annotating $\veone$ in $\tenv$ is $(\vtone, \veonep)$\ProseOrTypeError;
   \item the result of annotating $\vetwo$ in $\tenv$ is $(\vttwo, \vetwop)$\ProseOrTypeError;
-  \item the result of checking compatibility of $\op$ with $\vtone$ and $\vttwo$ as per \secref{TypingRule.CheckBinop}
+  \item the result of checking compatibility of $\op$ with $\vtone$ and $\vttwo$ as per \secref{TypingRule.ApplyBinopTypes}
   is $\vt$\ProseOrTypeError;
   \item $\newenv$ denotes $\op$ over $\veonep$ and $\vetwop$.
 \end{itemize}
@@ -421,7 +421,7 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veone') \OrTypeError\\\\
   \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwo') \OrTypeError\\\\
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError
 }{
   \annotateexpr{\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}} \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe})
 }
@@ -716,14 +716,14 @@ All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a unary operation $\op$ over an expression $\vep$, that is $\EUnop(\op, \vep)$;
   \item annotating $\vep$ in $\tenv$ yields $(\vtpp, \vepp)$\ProseOrTypeError;
-  \item checking compatibility of $\op$ with $\vtpp$ as per \secref{TypingRule.CheckUnop} yields $\vt$\ProseOrTypeError;
+  \item checking compatibility of $\op$ with $\vtpp$ as per \secref{TypingRule.ApplyUnopType} yields $\vt$\ProseOrTypeError;
   \item $\newe$ denotes $\op$ over $\vepp$, that is, $\EUnop(\op, \vepp)$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \vep} \typearrow (\vtpp, \vepp) \OrTypeError\\\\
-  \CheckUnop(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
+  \applyunoptype(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
 }{
   \annotateexpr{\tenv, \EUnop(\op, \vep)} \typearrow (\vt, \EUnop(\op, \vepp))
 }
