@@ -82,6 +82,12 @@ type error_desc =
   | RecursionLimitReached
   | EmptyConstraints
   | UnexpectedPendingConstrained
+  | BitfieldsDontAlign of {
+      field1_absname : string;
+      field2_absname : string;
+      field1_absslices : string;
+      field2_absslices : string;
+    }
 
 type error = error_desc annotated
 
@@ -168,6 +174,7 @@ let error_label = function
   | RecursionLimitReached -> "RecursionLimitReached"
   | EmptyConstraints -> "EmptyConstraints"
   | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
+  | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -407,7 +414,15 @@ module PPrint = struct
            empty@ constraints."
     | UnexpectedPendingConstrained ->
         pp_print_text f
-          "ASL Typing error: a pending constrained integer is illegal here.");
+          "ASL Typing error: a pending constrained integer is illegal here."
+    | BitfieldsDontAlign
+        { field1_absname; field2_absname; field1_absslices; field2_absslices }
+      ->
+        fprintf f
+          "ASL Typing error:@ bitfields `%s` and `%s` are in the same scope \
+           but define different slices of the containing bitvector type: %s \
+           and %s, respectively."
+          field1_absname field2_absname field1_absslices field2_absslices);
     pp_close_box f ()
 
   let pp_warning_desc f w =

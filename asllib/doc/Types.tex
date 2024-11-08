@@ -478,8 +478,10 @@ All of the following apply:
 \begin{itemize}
   \item $\tty$ is the bit-vector type with width given by the expression
     $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
-  \item annotating the \staticallyevaluable\  integer expression $\ewidth$ yields $\ewidthp$\ProseOrTypeError;
+  \item annotating the \staticallyevaluable\ integer expression $\ewidth$ yields $\ewidthp$\ProseOrTypeError;
   \item annotating the bitfields $\bitfields$ yields $\bitfieldsp$\ProseOrTypeError;
+  \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
+  \item \Prosecheckcommonbitfieldsalign{$\tenv$}{$\bitfieldsp$}{$\vwidth$}\ProseOrTypeError;
   \item $\newty$ is the bit-vector type with width given by the expression
     $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, $\TBits(\ewidthp, \bitfieldsp)$
 \end{itemize}
@@ -488,7 +490,9 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotatestaticconstrainedinteger(\tenv, \ewidth) \typearrow \ewidthp \OrTypeError\\\\
-  \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \bitfieldsp \OrTypeError
+  \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \bitfieldsp \OrTypeError\\\\
+  \staticeval(\tenv, \ewidthp) \typearrow \lint(\vwidth)\\
+  \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError
 }{
   {
     \begin{array}{r}

@@ -31,3 +31,8 @@ val static_eval : StaticEnv.env -> AST.expr -> AST.literal
         [E_Slice], or [E_Cond].
     @raise UnsupportedExpr if the given expression cannot evaluate to a literal.
 *)
+
+val static_eval_to_int : StaticEnv.env -> AST.expr -> int
+(** [static_eval_to_int env e] statically evaluates an integer-typed expression
+    [e] in [env] and returns the corresponding integer.
+*)

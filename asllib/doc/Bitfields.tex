@@ -32,7 +32,44 @@ and slice of the form \texttt{[$\veone$*:$\vetwo$]} as a \scaledslice.
 Bitfields may have nested bitfields. This can have several uses, one of which being being able to define two
 different views of a register.
 
+We now define several properties of bitfields, illustrated by the example below.
+These are used to define \nameref{sec:Requirement.BitifledAlignment}.
+
+The \hypertarget{def-absolutename}{\absolutename} of a (possibly-nested) bitfield is the list of identifiers starting from the
+name of the top-level bitfield containing it and following with the names of the nested bitfields,
+until the name of the bitfield at hand. We denote an absolute name by separating the names with a
+period, similar to the expression used to refer to it.
+%
+The \hypertarget{def-absoluteslice}{\absoluteslice} of a bitfield are the slices it defines with respected to its containing
+bitvector type.
+%
+The \hypertarget{def-absolutebitfield}{\absolutebitfield} of a given bitfield consists of bits absolute name and its
+absolute slices.
+
+Further, the \hypertarget{def-bitfieldscope}{\bitfieldscope} of a bitfield is its \absolutename, with the last
+identifier (the bitfield's name) removed.
+For example, the \bitfieldscope\ of a bitfield with the absolute name \texttt{fmt0.later1.remainder.moving}
+is \texttt{fmt0.later1.remainder} and the \bitfieldscope\ of a bitfield with the absolute name
+\texttt{fmt0} is the empty list.
+
+We say that two bitfields exist in the same \bitfieldscope\ if the \bitfieldscope\ of one is a prefix
+of the \bitfieldscope\ of the other. For example, consider two bitfields whose corresponding \absolutenames\ are
+\texttt{fmt0.later1.remainder} and \\
+\texttt{fmt0.later1.remainder.moving}, respectively.
+They exist in the same scope, since \texttt{fmt0.later1} is a prefix of
+\texttt{fmt0.later1.remainder}.
+In contrast, a pair of bitfields with \absolutenames\ \texttt{fmt0.common}
+and \texttt{fmt1.common}, since neither of \texttt{fmt0} and \texttt{fmt1} is a prefix of the other.
+
+\subsubsection{Requirement.BitifledAlignment\label{sec:Requirement.BitifledAlignment}}
+For every two bitfields of a given bitvector type,
+if they share the same name and exist in the same \bitfieldscope\ then their \absoluteslices\ must be
+equal.
+This is formalized in \nameref{sec:TypingRule.CheckCommonBitfieldsAlign}.
+
 \subsection{Example}
+The following example shows a bitvector type with nested bitfields, along with the absolute bitfield
+defined for each bitfield.
 \ASLExample{\definitiontests/Bitfields_nested.asl}
 
 \subsection{Syntax}
@@ -144,7 +181,7 @@ All of the following apply:
 
 \CodeSubsection{\TBitFieldsBegin}{\TBitFieldsEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.BitFieldGetName \label{sec:TypingRule.BitFieldGetName}}
+\subsubsection{TypingRule.BitFieldGetName\label{sec:TypingRule.BitFieldGetName}}
 \hypertarget{def-bitfieldgetname}{}
 The function
 \[
@@ -155,24 +192,92 @@ returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item $\vb$ is a simple bitfield with name $\name$, that is, $\BitFieldSimple(\name, \Ignore)$;
-  \item $\vb$ is a nested bitfield with name $\name$, that is, $\BitFieldNested(\name, \Ignore, \Ignore)$;
-  \item $\vb$ is a typed bitfield with name $\name$, that is, $\BitFieldType(\name, \Ignore, \Ignore)$.
+  \item $\vbf$ is a simple bitfield with name $\name$, that is, $\BitFieldSimple(\name, \Ignore)$;
+  \item $\vbf$ is a nested bitfield with name $\name$, that is, $\BitFieldNested(\name, \Ignore, \Ignore)$;
+  \item $\vbf$ is a typed bitfield with name $\name$, that is, $\BitFieldType(\name, \Ignore, \Ignore)$.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
   \inferrule[simple]{}{
-    \bitfieldgetname(\BitFieldSimple(\name, \Ignore)) \typearrow \name
+    \bitfieldgetname(\overname{\BitFieldSimple(\name, \Ignore)}{\vbf}) \typearrow \name
   }
   \and
   \inferrule[nested]{}{
-    \bitfieldgetname(\BitFieldNested(\name, \Ignore, \Ignore)) \typearrow \name
+    \bitfieldgetname(\overname{\BitFieldNested(\name, \Ignore, \Ignore)}{\vbf}) \typearrow \name
   }
   \and
   \inferrule[type]{}{
-    \bitfieldgetname(\BitFieldType(\name, \Ignore, \Ignore)) \typearrow \name
+    \bitfieldgetname(\overname{\BitFieldType(\name, \Ignore, \Ignore)}{\vbf}) \typearrow \name
   }
+\end{mathpar}
+
+\subsubsection{TypingRule.BitFieldGetSlices\label{sec:TypingRule.BitFieldGetSlices}}
+\hypertarget{def-bitfieldgetslices}{}
+The function
+\[
+  \bitfieldgetslices : \overname{\bitfield}{\vbf} \aslto \overname{\slice^*}{\vslices}
+\]
+returns the list of slices $\vslices$ associated with the bitfield $\vbf$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item $\vbf$ is a simple bitfield with list of slices $\vslices$, that is, $\BitFieldSimple(\Ignore, \vslices)$;
+  \item $\vbf$ is a nested bitfield with list of slices $\vslices$, that is, $\BitFieldNested(\Ignore, \vslices, \Ignore)$;
+  \item $\vbf$ is a typed bitfield with list of slices $\vslices$, that is, $\BitFieldType(\Ignore, \vslices, \Ignore)$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[simple]{}{
+  \bitfieldgetslices(\overname{\BitFieldSimple(\Ignore, \vslices)}{\vbf}) \typearrow \vslices
+}
+\and
+\inferrule[nested]{}{
+  \bitfieldgetslices(\overname{\BitFieldNested(\Ignore, \vslices, \Ignore)}{\vbf}) \typearrow \vslices
+}
+\and
+\inferrule[type]{}{
+  \bitfieldgetslices(\overname{\BitFieldType(\Ignore, \vslices, \Ignore)}{\vbf}) \typearrow \vslices
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.BitFieldGetNested\label{sec:TypingRule.BitFieldGetNested}}
+\hypertarget{def-bitfieldgetnested}{}
+The function
+\[
+  \bitfieldgetnested : \overname{\bitfield}{\vbf} \aslto \overname{\bitfield^*}{\vnested}
+\]
+returns the list of bitfields $\vnested$ nested within the bitfield $\vbf$, if there are any,
+and an empty list if there are none.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{simple\_type}):
+  \begin{itemize}
+    \item $\vbf$ does not have nested bitfields;
+    \item $\vnested$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{nested}):
+  \begin{itemize}
+    \item $\vbf$ is bitfields with nested bitfields $\vnested$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[simple\_typed]{
+  \astlabel(\vbf) \neq \BitFieldNested
+}{
+  \bitfieldgetname(\vbf) \typearrow \emptylist
+}
+\and
+\inferrule[nested]{}{
+  \bitfieldgetname(\overname{\BitFieldNested(\Ignore, \Ignore, \vnested)}{\vbf}) \typearrow \vnested
+}
 \end{mathpar}
 
 \subsubsection{TypingRule.TBitField\label{sec:TypingRule.TBitField}}
@@ -478,3 +583,258 @@ One of the following applies:
   \overname{\langle\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}\rangle}{\positions}
 }
 \end{mathpar}
+
+\subsubsection{TypingRule.CheckCommonBitfieldsAlign\label{sec:TypingRule.CheckCommonBitfieldsAlign}}
+\hypertarget{def-checkcommonbitfieldsalign}{}
+The function
+\[
+\checkcommonbitfieldsalign(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\bitfield^*}{\vbitfields} \aslsep
+  \overname{\N}{\vwidth}
+) \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks \nameref{sec:Requirement.BitifledAlignment}
+for every pair of bitfields in $\vbitfields$, contained in a
+bitvector type of width $\vwidth$ in the static environment $\tenv$.
+\ProseOtherwiseTypeError
+
+\hypertarget{def-tabsfield}{}
+We represent \absolutebitfields\ by the type
+$\TAbsField \eqdef (\overname{\identifier^*}{\name}, \overname{\N^*}{\vslice})$,
+where the component $\name$ is a list of identifiers corresponding to the \absolutename,
+and the component $\vslice$ corresponds to an \absoluteslice\ by listing the indices
+into the containing bitvector type.\footnote{An implementation of the type system may compactly represent the list of indices
+via a list of intervals, each represented by its limits.}
+
+Premises in \nameref{sec:TypingRule.TBits} guarantee that $\vwidth > 0$ holds.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vbitfields$ is the empty list;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vbitfields$ is not the empty list;
+    \item define $\vlastindex$ as $\vwidth - 1$;
+    \item define $\vtopabsolute$ as an \absolutebitfield\ with the empty list
+          for a name and a the interval $0..\vlastindex$ (that is, the entire range
+          of indices for the containing bitvector type),
+          as an artificial top-level \absolutebitfield\ for the entire bitvector type;
+    \item \Prosebitfieldstoabsolute{$\tenv$}{$\vbitfields$}{$\vtopabsolute$}{$\vfs$};
+    \item checking that \absolutebitfields\ $\vfone$ and $\vftwo$ align via
+          $\absolutefieldsalign$ in $\tenv$, for every $\vfone$ and $\vftwo$ in $\vfs$,
+          yields $\True$\ProseTerminateAs{\BitfieldsNotAligned};
+    \item the result is $\True$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{
+  \vbitfields = \emptylist
+}{
+  \checkcommonbitfieldsalign(\tenv, \vbitfields, \overname{0}{\vwidth}) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \vbitfields \neq \emptylist\\
+  \vlastindex \eqdef \vwidth - 1\\
+  \vtopabsolute \eqdef (\emptylist, 0..\vlastindex)\\
+  \bitfieldstoabsolute(\tenv, \vbitfields, \vtopabsolute) \typearrow \vfs\\
+  \checktrans{\forall \vfone, \vftwo \in \vfs: \absolutefieldsalign(\vfone, \vftwo)}{\BitfieldsNotAligned} \typearrow \True \OrTypeError
+}{
+  \checkcommonbitfieldsalign(\tenv, \vbitfields, \vwidth) \typearrow \True
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.BitfieldsToAbsolute\label{sec:TypingRule.BitfieldsToAbsolute}}
+\hypertarget{def-bitfieldstoabsolute}{}
+The function
+\[
+\bitfieldstoabsolute(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\bitfield^+}{\vbitfields} \aslsep
+  \overname{\TAbsField}{\vabsoluteparent}
+) \aslto \overname{\pow{\TAbsField}}{\vabsbitfields}
+\]
+returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the list
+of bitfields $\vbitfields$, whose \bitfieldscope\ and \absoluteslice\ is given by
+$\vabsoluteparent$, in the static environment $\tenv$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item applying $\bitfieldtoabsolute$ to each field $\vf$ in $\vbitfields$ with $\vabsoluteparent$ in $\tenv$,
+        yields $\va_\vf$;
+  \item define $\vabsbitfields$ as the union of the sets $\va_\vf$, for every $\vf$ in $\vbitfields$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vf\in\vbitfields: \bitfieldtoabsolute(\tenv, \vf, \vabsoluteparent) \typearrow \va_\vf\\
+  \vabsbitfields \eqdef \bigcup_{\vf\in\vbitfields} \va_\vf
+}{
+  \bitfieldstoabsolute(\tenv, \vbitfields, \vabsoluteparent) \typearrow \vabsbitfields
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.BitfieldToAbsolute\label{sec:TypingRule.BitfieldToAbsolute}}
+\hypertarget{def-bitfieldtoabsolute}{}
+The function
+\[
+\bitfieldstoabsolute(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\bitfield}{\vbf} \aslsep
+  \overname{\TAbsField}{\vabsoluteparent}
+) \aslto \overname{\pow{\TAbsField}}{\vabsbitfields}
+\]
+returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the
+bitfields nested in $\vbf$, including itself, where the \bitfieldscope\ and \absoluteslice\
+of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the static environment $\tenv$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item obtaining the name of the bitfield $\vbf$ via $\bitfieldgetname$ yields $\name$;
+  \item define the \absolutename\ of $\vbfname$ for $\vbf$ by appending $\name$ to $\vabsname$;
+  \item obtaining the list of slices for $\vbf$ via $\bitfieldgetslices$ yields $\vslices$;
+  \item \Proseslicetoindices{$\tenv$}{$\vs$}{$\indices_\vs$};
+  \item define $\vslicesasindices$ as the concatenation of the sequences $\indices_\vs$,
+        for each slice $\vs$ in $\vslices$, in their order of appearance in $\vslices$;
+  \item \Prosesliceindicesbyslices{$\vabsslices$}{$\vslicesasindices$}{$\vbfindices$};
+  \item define $\vbfabsolute$ as the \absolutebitfield\ with \absolutename\ $\vbfname$
+        and \absoluteslices\ $\vbfindices$;
+  \item obtaining the bitfields nested in $\vbf$ via $\bitfieldgetnested$ yields $\vnested$;
+  \item \Prosebitfieldstoabsolute{$\tenv$}{$\vnested$}{$\vbfabsolute$}{$\vabsbitfieldsone$};
+  \item define $\vabsbitfields$ as the set containing $\vbfabsolute$ and the \absolutebitfields\
+        of $\vabsbitfieldsone$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \bitfieldgetname(\vbf) \typearrow \name\\
+  \vbfname \eqdef \vabsname \concat [\name]\\
+  \bitfieldgetslices(\vbf) \typearrow \vslices\\
+  \vs \in \vslices: \slicetoindices(\tenv, \vs) \typearrow \indices_\vs\\
+  \vslicesasindices \eqdef [\vs \in \vslices: \indices_\vs]\\
+  \sliceindicesbyslices(\vabsslices, \vslicesasindices) \typearrow \vbfindices\\
+  \vbfabsolute \eqdef (\vbfname, \vbfindices)\\
+  \bitfieldgetnested(\vbf) \typearrow \vnested\\
+  \bitfieldstoabsolute(\tenv, \vnested, \vbfabsolute) \typearrow \vabsbitfieldsone
+}{
+  {
+    \begin{array}{r}
+      \bitfieldtoabsolute(\tenv, \overname{(\vabsname, \vabsslices)}{\vbf}, \vabsoluteparent) \typearrow \\
+      \overname{\{\vbfabsolute\} \cup \vabsbitfieldsone}{\vabsbitfields}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SliceIndicesBySlices\label{sec:TypingRule.SliceIndicesBySlices}}
+\hypertarget{def-sliceindicesbyslices}{}
+The function
+\[
+\sliceindicesbyslices(\overname{\N^+}{\indices}, \overname{\N^+}{\sliceindices})
+\aslto \overname{\N^*}{\vabsslice}
+\]
+considers the list $\indices$ as a list of indices into a bitvector type (essentially, a slice of it),
+and the list $\sliceindices$ as a list of indices into $\indices$ (essentially a slice of a slice),
+and returns the sub-list of $\indices$ indicated by the indices in $\sliceindices$.
+% The reference abstract away the implementation, which represents sequence of indices via intervals.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item view $\sliceindices$ as the list $S_{1..m}$;
+  \item define $\vabsslice$ as the list $\indices[S_i]$ for $i=1..m$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \sliceindicesbyslices(\indices, \overname{S_{1..m}}{\sliceindices}) \typearrow \overname{i=1..m: \indices[S_i]}{\vabsslice}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AbsoluteFieldsAlign\label{sec:TypingRule.AbsoluteFieldsAlign}}
+\hypertarget{def-absolutefieldsalign}{}
+The function
+\[
+\absolutefieldsalign(\overname{\TAbsField}{\vf}, \overname{\TAbsField}{\vg})
+\aslto \overname{\Bool}{\vb}
+\]
+tests whether the \absolutebitfields\ $\vfone$ and $\vftwo$ share the same name
+and exist in the same scope. If they do, $\vb$ indicates whether their \absoluteslices\
+are equal. Otherwise, the result if $\True$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vf$ is an \absolutebitfield\ with \absolutename\ $\vf_{1..k}$ and \absoluteslice\ $\vsliceone$;
+  \item $\vg$ is an \absolutebitfield\ with \absolutename\ $\vg_{1..n}$ and \absoluteslice\ $\vslicetwo$;
+  \item define $\nameone$ to be the name of the bitfield corresponding to $\vf$, that is, $\vf_k$;
+  \item define $\nametwo$ to be the name of the bitfield corresponding to $\vg$, that is, $\vg_n$;
+  \item define $\vscopeone$ to be the \bitfieldscope\ of $\vf$, that is, $\vf_{1..k-1}$;
+  \item define $\vscopetwo$ to be the \bitfieldscope\ of $\vg$, that is, $\vg_{1..n-1}$;
+  \item define $\vsamescope$ as $\True$ if and only if $\vscopeone$ is a \listprefixterm\ of $\vscopetwo$ or vice versa;
+  \item define $\vb$ as $\True$ if and only if $\nameone$ and $\nametwo$ are equal and $\vsamescope$ is $\True$ implies
+        that $\vsliceone$ is equal to $\vslicetwo$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \nameone \eqdef \vf_k\\
+  \nametwo \eqdef \vg_n\\
+  \vscopeone \eqdef \vf_{1..k-1}\\
+  \vscopetwo \eqdef \vg_{1..n-1}\\
+  \vsamescope \eqdef \listprefix(\vscopeone, \vscopetwo) \lor \listprefix(\vscopetwo, \vscopeone)\\
+  \vb \eqdef (\nameone = \nametwo\ \land\ \vsamescope) \Longrightarrow (\vsliceone = \vslicetwo)
+}{
+  \absolutefieldsalign(\overname{(\vf_{1..k}, \vsliceone)}{\vf}, \overname{(\vg_{1..n}, \vslicetwo)}{\vf})
+  \typearrow \vb
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SliceToIndices\label{sec:TypingRule.SliceToIndices}}
+\hypertarget{def-slicetoindices}{}
+The function
+\[
+\slicetoindices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto \overname{\N^*}{\indices}
+\]
+returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the static environment $\tenv$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a \lengthslice\ for the expressions $\vi$ and $\vw$;
+  \item \Prosestaticeval{$\tenv$}{$\vi$}{the literal for the integer $\vz_\vi$};
+  \item \Prosestaticeval{$\tenv$}{$\vw$}{the literal for the integer $\vz_\vw$};
+  \item define $\vstart$ as $\vz_\vi$;
+  \item define $\vend$ as $\vz_\vi + \vz_\vw - 1$;
+  \item define $\indices$ as the list of integers greater or equal to $\vstart$ and less than or equal to $\vend$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+  \inferrule{
+  \staticeval(\tenv, \vi) \typearrow \lint(\vz_\vi)\\
+  \staticeval(\tenv, \vw) \typearrow \lint(\vz_\vw)\\
+  \vstart \eqdef \vz_\vi\\
+  \vend \eqdef \vz_\vi + \vz_\vw - 1\\
+}{
+  \slicetoindices(\tenv, \overname{\SliceLength(\vi, \vw)}{\vs}) \typearrow \overname{\vstart..\vend}{\indices}
+}
+\end{mathpar}
+

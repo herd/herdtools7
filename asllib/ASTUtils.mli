@@ -210,6 +210,10 @@ val bitfield_get_name : bitfield -> string
 val bitfield_get_slices : bitfield -> slice list
 (** Returns the slices corresponding to this bitfield. *)
 
+val bitfield_get_nested : bitfield -> bitfield list
+(** Returns the list of bitfields listed in the given bitfield and an empty list if
+    it is not a nested bitfield. *)
+
 val find_bitfield_opt : string -> bitfield list -> bitfield option
 (** [bitfield_find_opt name bfs] is [Some (bf)] if there exists [bf] in [bfs]
     with [name], [None] otherwise. *)

@@ -64,3 +64,6 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
   | SI.Normal _ | SI.Throwing _ ->
       Error.fatal_from e (UnsupportedExpr (Static, e))
 (* End *)
+
+let static_eval_to_int env e =
+  match static_eval env e with L_Int z -> Z.to_int z | _ -> assert false

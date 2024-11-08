@@ -228,8 +228,15 @@ in the standard library
 
 \hypertarget{def-upc}{}
 \item[$\UnexpectedPendingConstrained$]
-This error indicates that a \pendingconstrainedintegertype{} has been encountered where one is not permitted.
+This error indicates that a \pendingconstrainedintegertype{} has been encountered where one is not permitted
 (see \nameref{sec:TypingRule.TInt}).
+
+\hypertarget{def-bitfieldsnotaligned}{}
+\item[$\BitfieldsNotAligned$]
+This error indicates that a pair of bitfields defined for a bitvector type exist in the same
+scope, share the same name, but the slices they define for the containing bitvector type are
+different
+(see \nameref{sec:TypingRule.CheckCommonBitfieldsAlign}).
 
 \end{description}
 

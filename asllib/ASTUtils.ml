@@ -609,11 +609,10 @@ let default_array_ty =
 
 let identifier_of_decl d =
   match d.desc with
-  | D_Func { name; _ }
-  | D_GlobalStorage { name; _ }
-  | D_TypeDecl (name, _, _)
-  | D_Pragma (name, _) ->
+  | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
+    ->
       name
+  | D_Pragma _ -> assert false
 
 let patch ~src ~patches =
   (* Size considerations:
@@ -706,6 +705,10 @@ let bitfield_get_slices = function
   | BitField_Nested (_, slices, _)
   | BitField_Type (_, slices, _) ->
       slices
+
+let bitfield_get_nested = function
+  | BitField_Simple _ | BitField_Type _ -> []
+  | BitField_Nested (_, _, nested_fields) -> nested_fields
 
 let has_name name bf = bitfield_get_name bf |> String.equal name
 

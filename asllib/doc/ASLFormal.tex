@@ -245,7 +245,6 @@ The parametric function $\concat : T^* \cartimes T^* \rightarrow T^*$ concatenat
     \end{array}
 \]
 \end{definition}
-%Prepending an element $v$ to a list $L$ is defined as $v \prepend L \triangleq [v] \concat L$.
 
 \hypertarget{def-equallength}{}
 \begin{definition}[Equating List Lengths]
@@ -256,6 +255,15 @@ The parametric function
 compares the length of two lists:
 \[
 \equallength(a, b) \triangleq \listlen{a}=\listlen{b} \enspace.
+\]
+\end{definition}
+
+\hypertarget{def-listprefix}{}
+\begin{definition}[List Prefix]
+The parametric function $\listprefix : \overname{T^*}{\vlone} \cartimes \overname{T^*}{\vltwo} \rightarrow \Bool$ checks whether
+the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
+\[
+\listprefix(\vlone, \vltwo) \triangleq \exists \vlthree.\ \vltwo = \vlone \concat \vlthree \enspace.
 \]
 \end{definition}
 
