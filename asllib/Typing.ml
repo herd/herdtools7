@@ -2190,7 +2190,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_For { index_name; start_e; end_e; dir; body; limit } ->
         let start_t, start_e' = annotate_expr env start_e
         and end_t, end_e' = annotate_expr env end_e
-        and limit' = annotate_loop_limit ~loc env limit in
+        and limit' = annotate_loop_limit ~warn:false ~loc env limit in
         let start_struct = Types.make_anonymous env start_t
         and struct2 = Types.make_anonymous env end_t in
         (* TypingRule.ForConstraint( *)
@@ -2294,8 +2294,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_Unreachable -> (s, env)
 
   (* Begin AnnotateLoopLimit *)
-  and annotate_loop_limit ~loc env = function
-    | None -> None
+  and annotate_loop_limit ?(warn = true) ~loc env = function
+    | None ->
+        let () = if warn then warn_from ~loc Error.NoLoopLimit in
+        None
     | Some limit ->
         let limit' = annotate_static_constrained_integer ~loc env limit in
         Some limit' |: TypingRule.AnnotateLoopLimit
@@ -2510,7 +2512,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name pp_env env1
     in
     (* Check recursion limit *)
-    let recurse_limit = annotate_loop_limit ~loc env1 func_sig.recurse_limit in
+    let recurse_limit =
+      annotate_loop_limit ~warn:false ~loc env1 func_sig.recurse_limit
+    in
     (* Parameters handling *)
     let potential_params = get_undeclared_defining env1 func_sig in
     (* Add explicit parameters *)

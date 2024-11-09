@@ -298,6 +298,8 @@ C Tests
     provided integer {3}.
   [1]
   $ aslref --no-exec CNegative3.asl
+  File CNegative3.asl, line 8, character 4 to line 13, character 8:
+  ASL Warning: Loop does not have a limit.
   File CNegative3.asl, line 12, characters 8 to 9:
   ASL Typing error: a subtype of integer {N} was expected,
     provided integer {(N + 1)}.

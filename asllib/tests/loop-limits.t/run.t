@@ -23,6 +23,8 @@ While loops:
   [1]
 
   $ aslref while-no-limit.asl
+  File while-no-limit.asl, line 4, character 2 to line 6, character 6:
+  ASL Warning: Loop does not have a limit.
 
 Repeat loops:
 
@@ -46,6 +48,8 @@ Repeat loops:
   [1]
 
   $ aslref repeat-no-limit.asl
+  File repeat-no-limit.asl, line 4, character 2 to line 6, character 18:
+  ASL Warning: Loop does not have a limit.
 
 Double loops
   $ aslref double-while-correct-correct.asl

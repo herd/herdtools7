@@ -97,6 +97,7 @@ let error_handling_time_to_string = function
   | Dynamic -> "Dynamic"
 
 type warning_desc =
+  | NoLoopLimit
   | IntervalTooBigToBeExploded of Z.t * Z.t
   | RemovingValuesFromConstraints of {
       op : binop;
@@ -158,6 +159,7 @@ let error_label = function
   | RecursionLimitReached -> "RecursionLimitReached"
 
 let warning_label = function
+  | NoLoopLimit -> "NoLoopLimit"
   | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
   | RemovingValuesFromConstraints _ -> "RemovingValuesFromConstraints"
 
@@ -363,6 +365,9 @@ module PPrint = struct
 
   let pp_warning_desc f w =
     match w.desc with
+    | NoLoopLimit ->
+        fprintf f "@[%a@]" pp_print_text
+          "ASL Warning: Loop does not have a limit."
     | IntervalTooBigToBeExploded (za, zb) ->
         fprintf f
           "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as an \
