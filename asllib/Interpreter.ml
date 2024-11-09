@@ -23,7 +23,6 @@
 open AST
 open ASTUtils
 
-let unsupported_expr e = Error.(fatal_from e (UnsupportedExpr (Dynamic, e)))
 let fatal_from pos = Error.fatal_from pos
 
 (* A bit more informative than assert false *)
@@ -39,12 +38,22 @@ let rec subtypes_names env s1 s2 =
     | Some s1' -> subtypes_names env s1' s2
 
 let subtypes env t1 t2 =
-  (match (t1.desc, t2.desc) with
+  match (t1.desc, t2.desc) with
   | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
-  | _ -> false)
+  | _ -> false
 
 module type S = sig
   module B : Backend.S
+  module IEnv : Env.S with type v = B.value
+
+  type value_read_from = B.value * AST.identifier * AST.scope
+
+  type 'a maybe_exception =
+    | Normal of 'a
+    | Throwing of (value_read_from * AST.ty) option * IEnv.env
+
+  val eval_expr :
+    IEnv.env -> AST.expr -> (B.value * IEnv.env) maybe_exception B.m
 
   val run_typed_env :
     (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
@@ -56,6 +65,7 @@ module type Config = sig
   module Instr : Instrumentation.SEMINSTR
 
   val unroll : int
+  val error_handling_time : Error.error_handling_time
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -88,6 +98,9 @@ module Make (B : Backend.S) (C : Config) = struct
   type expr_eval_type = (B.value * env) maybe_exception m
   type stmt_eval_type = control_flow_state maybe_exception m
   type func_eval_type = (value_read_from list * IEnv.global) maybe_exception m
+
+  let unsupported_expr e =
+    fatal_from e Error.(UnsupportedExpr (C.error_handling_time, e))
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -385,7 +398,9 @@ module Make (B : Backend.S) (C : Config) = struct
       in
       let* b = choice cond true false in
       if b then return ()
-      else Error.(fatal_unknown_pos (OverlappingSlices (slices, Dynamic)))
+      else
+        Error.(
+          fatal_unknown_pos (OverlappingSlices (slices, C.error_handling_time)))
     in
     let check_range_does_not_overlap_previous_ranges past_ranges range =
       let* past_ranges = past_ranges in

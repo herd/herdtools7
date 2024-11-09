@@ -212,7 +212,7 @@ let () =
 
   let ast =
     let open Builder in
-    with_primitives Native.NativeBackend.primitives ast |> with_stdlib
+    with_primitives Native.DeterministicBackend.primitives ast |> with_stdlib
   in
 
   let () = if false then Format.eprintf "%a@." PP.pp_t ast in

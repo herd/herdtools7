@@ -22,7 +22,7 @@
 
 (** Static Interpretation of Expressions. *)
 
-exception StaticEvaluationUnknown
+module SB = Native.StaticBackend
 
 val static_eval : StaticEnv.env -> AST.expr -> AST.literal
 (** [static_eval env e] statically evaluates [e] in [env] into a literal.
@@ -30,9 +30,4 @@ val static_eval : StaticEnv.env -> AST.expr -> AST.literal
         not one of the following: [E_Literal], [E_Var], [E_Binop], [E_Unop],
         [E_Slice], or [E_Cond].
     @raise UnsupportedExpr if the given expression cannot evaluate to a literal.
-*)
-
-val slices_to_positions : StaticEnv.env -> AST.slice list -> int list
-(** [slices_to_positions slices] statically evaluates [slices] and, unless a type error
-    is detected, returns a list of indices represented by them.
 *)

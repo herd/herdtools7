@@ -355,6 +355,7 @@ Required tests:
   $ aslref tuples.asl
   $ aslref declaration-primitive-local.asl
   $ aslref --no-type-check -0 typing-assign-v0.asl
+  $ aslref constant-functions.asl
 
   $ aslref undeclared-variable.asl
   File undeclared-variable.asl, line 3, characters 2 to 5:

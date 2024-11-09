@@ -27,17 +27,20 @@ type native_value =
   | NV_Vector of native_value list
   | NV_Record of native_value ASTUtils.IMap.t
 
-module NativeBackend :
+module StaticBackend : sig
+  include Backend.S with type value = native_value and type 'a m = 'a
+
+  exception StaticEvaluationUnknown
+end
+
+module DeterministicBackend :
   Backend.S with type value = native_value and type 'a m = 'a
 
-module NativeInterpreter (C : Interpreter.Config) :
-  Interpreter.S with module B = NativeBackend
+module DeterministicInterpreter (C : Interpreter.Config) :
+  Interpreter.S with module B = DeterministicBackend
 
 val interprete :
   ?instrumentation:bool ->
   StaticEnv.global ->
   AST.t ->
   int * Instrumentation.semantics_rule list
-
-val type_and_run :
-  ?instrumentation:bool -> AST.t -> int * Instrumentation.semantics_rule list

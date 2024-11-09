@@ -58,7 +58,7 @@ let rec list_mapi3 f i l1 l2 l3 =
 let reduce_constants env e =
   let open StaticInterpreter in
   try static_eval env e
-  with StaticEvaluationUnknown ->
+  with SB.StaticEvaluationUnknown ->
     unsupported_expr e |: TypingRule.ReduceConstants
 (* End *)
 
@@ -3075,3 +3075,11 @@ module TypeCheckDefault = Annotate (struct
   let print_typed = false
   let use_field_getter_extension = false
 end)
+
+let type_and_run ?instrumentation ast =
+  let ast, static_env =
+    Builder.with_stdlib ast
+    |> Builder.with_primitives Native.DeterministicBackend.primitives
+    |> TypeCheckDefault.type_check_ast
+  in
+  Native.interprete ?instrumentation static_env ast

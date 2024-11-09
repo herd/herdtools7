@@ -33,8 +33,11 @@ module type RunTimeConf = sig
   (** [unroll] is the number of time a loop can be unrolled. *)
 end
 
-module RunTime (C : RunTimeConf) : sig
+module type S = sig
   (** Internal representation for subprograms. *)
+
+  type v
+  (** Stored elements of the environment. *)
 
   (* -------------------------------------------------------------------------*)
   (** {2 Types and constructors.} *)
@@ -44,7 +47,7 @@ module RunTime (C : RunTimeConf) : sig
 
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
-    storage : C.v Storage.t;  (** Binds global variables to their names. *)
+    storage : v Storage.t;  (** Binds global variables to their names. *)
     funcs : func IMap.t;
         (** Declared subprograms, maps called identifier to their code. *)
   }
@@ -58,6 +61,10 @@ module RunTime (C : RunTimeConf) : sig
 
   val empty_local : local
   (** An empty local environment. *)
+
+  val local_of_v_map : v IMap.t -> local
+  (** [local_of_v_map map] is a local environment with the storage set to the
+      bindings in map. *)
 
   val to_static : env -> StaticEnv.env
   (** Builds a static environment, with an empty local part. *)
@@ -75,33 +82,33 @@ module RunTime (C : RunTimeConf) : sig
     | NotFound
         (** Indicates if the value returned was bound in the global or local namespace. *)
 
-  val find : identifier -> env -> C.v env_result
+  val find : identifier -> env -> v env_result
   (** Fetches an identifier from the environment. *)
 
   val mem : identifier -> env -> bool
   (** [mem x env] is true iff [x] is bound in [env]. *)
 
-  val declare_local : identifier -> C.v -> env -> env
+  val declare_local : identifier -> v -> env -> env
   (** [declare_local x v env] is [env] where [x] is now bound to [v]. This
       binding will be discarded by the call to [pop_scope] corresponding to the
       last call to [push_scope] before this declaration. *)
 
-  val assign_local : identifier -> C.v -> env -> env
+  val assign_local : identifier -> v -> env -> env
   (** [assign_local x v env] is [env] where [x] is now bound to [v]. It is
       assumed to be already bound in [env]. *)
 
-  val declare_global : identifier -> C.v -> env -> env
+  val declare_global : identifier -> v -> env -> env
   (** [declare_global x v env] is [env] where [x] is now bound to [v]. It is
       supposed that [x] is not bound in [env]. *)
 
-  val assign_global : identifier -> C.v -> env -> env
+  val assign_global : identifier -> v -> env -> env
   (** [assign_global x v env] is [env] where [x] is now bound to [v]. It is
       assumed to be already bound in [env]. *)
 
   val remove_local : identifier -> env -> env
   (** [remove_local x env] is [env] where [x] is not bound. *)
 
-  val assign : identifier -> C.v -> env -> env env_result
+  val assign : identifier -> v -> env -> env env_result
   (** [assign x v env] assigns [x] to [v] in [env], and returns if [x] was
       declared as a local or global identifier. *)
 
@@ -144,3 +151,5 @@ module RunTime (C : RunTimeConf) : sig
   (** [pop_scope old new] restores the variable bindings of [old], with the
       updated values of [new]. *)
 end
+
+module RunTime (C : RunTimeConf) : S with type v = C.v

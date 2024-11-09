@@ -26,7 +26,15 @@ let _runtime_assertions = true
 
 type pointer = int
 
-module PMap = Map.Make (Int)
+module PMap = struct
+  module PM = Map.Make (Int)
+
+  let[@warning "-32"] of_list li =
+    List.fold_left (fun acc (key, value) -> PM.add key value acc) PM.empty li
+
+  include PM
+end
+
 module PSet = Set.Make (Int)
 
 type 'v t = { env : pointer IMap.t; mem : 'v PMap.t }
@@ -55,6 +63,19 @@ let declare x v t =
   in
   let p = alloc () in
   { env = IMap.add x p t.env; mem = PMap.add p v t.mem }
+
+let of_v_map map =
+  let mem_list = ref [] in
+  let env =
+    IMap.map
+      (fun v ->
+        let p = alloc () in
+        mem_list := (p, v) :: !mem_list;
+        p)
+      map
+  in
+  let mem = PMap.of_list !mem_list in
+  { env; mem }
 
 let add x v t = try assign x v t with Not_found -> declare x v t
 

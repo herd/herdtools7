@@ -14,7 +14,7 @@ let debug f = Logs.debug ~src:_log_src f
 let get_ref_result ast =
   let open Asllib in
   try
-    match Native.type_and_run ast with
+    match Typing.type_and_run ast with
     | 0, _ -> Ok ()
     | i, _ -> Error ("Bad return code: " ^ string_of_int i)
   with
@@ -32,15 +32,18 @@ let get_ref_result_instr =
   let module B = Instrumentation.SemanticsSingleSetBuffer in
   let module C : Interpreter.Config = struct
     let unroll = 0
+    let error_handling_time = Error.Dynamic
 
     module Instr = Instrumentation.SemMake (B)
   end in
-  let module I = NativeInterpreter (C) in
+  let module I = DeterministicInterpreter (C) in
   fun ast ->
     B.reset ();
     let res =
       try
-        let ast = Builder.with_primitives Native.NativeBackend.primitives ast in
+        let ast =
+          Builder.with_primitives Native.DeterministicBackend.primitives ast
+        in
         let ast, static_env = Typing.TypeCheckDefault.type_check_ast ast in
         match I.run_typed static_env ast with
         | NV_Literal (L_Int z) when Z.equal z Z.zero -> Ok ()

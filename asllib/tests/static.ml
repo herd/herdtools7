@@ -35,7 +35,7 @@ let build_consts () =
     |> __POS_OF__ |> add_pos_from_pos_of
   in
   let ast = main :: consts in
-  let _ = Native.type_and_run ast in
+  let _ = Typing.type_and_run ast in
   ()
 
 let normalize () =

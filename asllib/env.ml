@@ -29,7 +29,46 @@ module type RunTimeConf = sig
   val unroll : int
 end
 
+module type S = sig
+  type v
+  type func = int ref * AST.func
+
+  type global = {
+    static : StaticEnv.global;
+    storage : v Storage.t;
+    funcs : func IMap.t;
+  }
+
+  type local
+  type env = { global : global; local : local }
+
+  val empty_local : local
+  val local_of_v_map : v IMap.t -> local
+  val to_static : env -> StaticEnv.env
+  val empty_scoped : scope -> local
+
+  type 'a env_result = Local of 'a | Global of 'a | NotFound
+
+  val find : identifier -> env -> v env_result
+  val mem : identifier -> env -> bool
+  val declare_local : identifier -> v -> env -> env
+  val assign_local : identifier -> v -> env -> env
+  val declare_global : identifier -> v -> env -> env
+  val assign_global : identifier -> v -> env -> env
+  val remove_local : identifier -> env -> env
+  val assign : identifier -> v -> env -> env env_result
+  val tick_push : env -> env
+  val tick_push_bis : env -> env
+  val tick_pop : env -> env
+  val tick_decr : env -> bool * env
+  val get_scope : env -> scope
+  val same_scope : env -> env -> bool
+  val push_scope : env -> env
+  val pop_scope : env -> env -> env
+end
+
 module RunTime (C : RunTimeConf) = struct
+  type v = C.v
   type func = int ref * AST.func
 
   type global = {
@@ -52,6 +91,14 @@ module RunTime (C : RunTimeConf) = struct
   let empty_local =
     {
       storage = Storage.empty;
+      scope = Scope_Local ("", 0);
+      unroll = [];
+      declared = [];
+    }
+
+  let local_of_v_map map =
+    {
+      storage = Storage.of_v_map map;
       scope = Scope_Local ("", 0);
       unroll = [];
       declared = [];

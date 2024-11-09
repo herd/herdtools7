@@ -183,3 +183,9 @@ val patch_mem : t_env:'a t -> t_mem:'a t -> identifier list -> 'a t
 (** [patch_mem ~t_env ~t_mem to_avoid] is the storage formed with the bindings
     of [t_env], the memory of [t_mem] except for the cells bound to the
     variables in [to_avoid]. *)
+
+val of_v_map : 'a ASTUtils.IMap.t -> 'a t
+(** [of_v_map map] declare all elements of map.
+
+    Equivalent of [IMap.fold declare map empty].
+*)
