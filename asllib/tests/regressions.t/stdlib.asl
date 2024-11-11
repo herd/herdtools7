@@ -131,6 +131,44 @@ begin
   assert HighestSetBit ('010') == 1;
   assert HighestSetBit ('') == -1;
 
+  assert AlignDown('110111', 1) == '110110';
+  assert AlignDown('110111', 2) == '110100';
+  assert AlignDown('110111', 3) == '110000';
+  assert AlignDown('110111', 4) == '110000';
+  assert AlignDown('110111', 5) == '100000';
+  assert AlignDown('110111', 6) == '000000';
+  assert AlignDown('001000', 1) == '001000';
+  assert AlignDown('001000', 2) == '001000';
+  assert AlignDown('001000', 3) == '001000';
+  assert AlignDown('001000', 4) == '000000';
+  assert AlignDown('001000', 5) == '000000';
+  assert AlignDown('001000', 6) == '000000';
+  assert AlignUp('110111', 1) == '111000';
+  assert AlignUp('110111', 2) == '111000';
+  assert AlignUp('110111', 3) == '111000';
+  assert AlignUp('110111', 4) == '000000';
+  assert AlignUp('110111', 5) == '000000';
+  assert AlignUp('110111', 6) == '000000';
+  assert AlignUp('001000', 1) == '001000';
+  assert AlignUp('001000', 2) == '001000';
+  assert AlignUp('001000', 3) == '001000';
+  assert AlignUp('001000', 4) == '010000';
+  assert AlignUp('001000', 5) == '100000';
+  assert AlignUp('001000', 6) == '000000';
+
+  for N = 0 to 5 do
+    let pN = 2 ^ N;
+    for x = -pN to pN do
+      for y = 1 to N do
+        assert AlignUp(x[0+:N], y) == AlignUp(x, y)[0+:N];
+        assert AlignDown(x[0+:N], y) == AlignDown(x, y)[0+:N];
+
+        assert AlignUp(x, y) IN {x..x+2^y};
+        assert AlignDown(x, y) IN {(x - 2^y)..x};
+      end;
+    end;
+  end;
+
   return 0;
 end;
 

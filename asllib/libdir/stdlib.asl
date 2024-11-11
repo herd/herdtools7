@@ -219,17 +219,41 @@ end;
 // Treating input as an integer, align down to nearest multiple of 2^y.
 func AlignDown{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
+  if (y == N) then
+    return Zeros{N};
+  else
     return x[N-1:y] :: Zeros{y};
+  end;
+end;
+
+func AlignDown(x: integer, y: integer) => integer
+begin
+  assert y >= 0;
+  return x - (x MOD (2 ^ y));
 end;
 
 // Treating input as an integer, align up to nearest multiple of 2^y.
 // Returns zero if the result is not representable in N bits.
 func AlignUp{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
-  if IsZero(x[y-1:0]) then
+  if (y == N) then
+    return Zeros{N};
+  elsif IsZero(x[y-1:0]) then
     return x;
   else
     return x[N-1:y]+1 :: Zeros{y};
+  end;
+end;
+
+func AlignUp(x: integer, y: integer) => integer
+begin
+  assert y >= 0;
+  let p = 2 ^ y;
+  let rem = x MOD p;
+  if rem == 0 then
+    return x;
+  else
+    return (x + p) - rem;
   end;
 end;
 
