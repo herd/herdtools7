@@ -33,8 +33,8 @@ begin
   assert IsOdd (1);
   assert IsOdd (-1);
 
-  assert Replicate{3,2}('01') == '010101';
-  assert Replicate{3,0}('') == '';
+  assert Replicate{3}('01') == '010101';
+  assert Replicate{3}('') == '';
 
   assert Zeros{0} == '';
   assert Zeros{3} == '000';
@@ -50,10 +50,10 @@ begin
   assert ! IsOnes(Zeros{3});
   assert ! IsZero ('101');
 
-  assert SignExtend{5,3}('100') == '11100';
-  assert ZeroExtend{5,3}('100') == '00100';
-  assert Extend{5,3}('100', TRUE) == '00100';
-  assert Extend{5,3}('100', FALSE) == '11100';
+  assert SignExtend{5}('100') == '11100';
+  assert ZeroExtend{5}('100') == '00100';
+  assert Extend{5}('100', TRUE) == '00100';
+  assert Extend{5}('100', FALSE) == '11100';
 
   assert Len('') == 0;
   assert Len('1010') == 4;

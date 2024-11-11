@@ -8,7 +8,7 @@ begin
         when BIGGER_THAN_8 =>
             // Runtime Error when size > 8
             result = temp[0+:8*size];
-            temp = ZeroExtend{64,8*size}(result);
+            temp = ZeroExtend{64}(result);
 
         when EQUALS_8 =>
             // Cannot concatenate if size != 8
@@ -16,12 +16,12 @@ begin
 
         when LESS_THAN_8 =>
             // Runtime Error when size < 8
-            result = ZeroExtend{8*size,64}(temp);
+            result = ZeroExtend{8*size}(temp);
             // Selecting values from result that do not exist
             result[95:0] = Zeros{96};
             // Passing a value down to another function type-checks
             // but causes a runtime error
-            function{size}(ZeroExtend{8*size,64}(temp));
+            function{size}(ZeroExtend{8*size}(temp));
 
     end;
     return result;

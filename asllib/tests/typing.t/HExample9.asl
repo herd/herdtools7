@@ -51,7 +51,7 @@ end;
 func NPlusM{M,N}(op1 : bits(M), op2 : bits(N)) => bits(M+N)
 begin
     var result = Zeros{M+N};
-    var result0 : bits(M+N) = ZeroExtend{,N}(op2);
+    var result0 : bits(M+N) = ZeroExtend{}(op2);
     for i =0 to M-1 do
         result[i] = '1';
     end;

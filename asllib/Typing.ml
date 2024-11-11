@@ -97,20 +97,6 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
   rename |: TypingRule.RenameTyEqs
 (* End *)
 
-(** Special treatment to infer the single parameter [N] of a stdlib/primitive
-      function with a single argument of type [bits(N)]. *)
-let insert_stdlib_param func_sig ~params ~arg_types =
-  match (func_sig.parameters, func_sig.args, arg_types) with
-  (* Check for a standard library declaration name{n}(bits(n)), called with no
-     parameters and a single argument of type bits(e) *)
-  | ( [ (n, _) ],
-      [ (_, { desc = T_Bits ({ desc = E_Var n' }, _) }) ],
-      [ { desc = T_Bits (e, _) } ] )
-    when func_sig.builtin && String.equal n n' && List.is_empty params ->
-      (* insert e into parameter list *)
-      [ (T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from e, e) ]
-  | _ -> params
-
 (* Begin Lit *)
 let annotate_literal = function
   | L_Int _ as v -> integer_exact' (literal v)
@@ -746,6 +732,39 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.CheckSlicesInWidth
   (* End *)
 
+  (** Check for a standard library declaration name{n}(bits(n), ...) or
+    name{m,n}(bits(n), ...). *)
+  let can_omit_stdlib_param func_sig =
+    func_sig.builtin
+    &&
+    let declared_param =
+      (* parameter N, declared as {N} or {M,N} *)
+      match func_sig.parameters with
+      | [ (n, _) ] | [ _; (n, _) ] -> Some n
+      | _ -> None
+    and declared_first_arg_width =
+      (* first argument, declared as bits(N') *)
+      match func_sig.args with
+      | (_, { desc = T_Bits ({ desc = E_Var n' }, _) }) :: _ -> Some n'
+      | _ -> None
+    in
+    match (declared_param, declared_first_arg_width) with
+    | Some n, Some n' -> String.equal n n'
+    | _ -> false
+
+  (** Special treatment to infer the single input parameter [N] of a
+    stdlib/primitive function with a first argument of type [bits(N)]. *)
+  let insert_stdlib_param ~loc env func_sig ~params ~arg_types =
+    if
+      can_omit_stdlib_param func_sig
+      && List.compare_lengths params func_sig.parameters < 0
+      && not (list_is_empty arg_types)
+    then
+      let width = get_bitvector_width loc env (List.hd arg_types) in
+      let param_type = integer_exact' width |> add_pos_from width in
+      params @ [ (param_type, width) ]
+    else params
+
   (* Begin TBitField *)
   let rec annotate_bitfield ~loc env width bitfield : bitfield =
     match bitfield with
@@ -1094,7 +1113,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       @@ fun () -> fatal_from loc (MismatchedReturnValue name)
     in
     (* Insert omitted parameter for standard library call *)
-    let params = insert_stdlib_param func_sig ~params ~arg_types in
+    let params = insert_stdlib_param ~loc env func_sig ~params ~arg_types in
     (* Check correct number of parameters/arguments supplied *)
     let () =
       if List.compare_lengths func_sig.parameters params != 0 then

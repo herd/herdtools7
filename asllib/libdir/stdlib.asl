@@ -189,7 +189,7 @@ end;
 func SignExtend {N,M} (x: bits(M)) => bits(N)
 begin
   assert N >= M;
-  return [Replicate{N-M, 1}(x[M-1]), x];
+  return [Replicate{N-M}(x[M-1]), x];
 end;
 
 func ZeroExtend {N,M} (x: bits(M)) => bits(N)
@@ -200,7 +200,7 @@ end;
 
 func Extend {N,M} (x: bits(M), unsigned: boolean) => bits(N)
 begin
-  return if unsigned then ZeroExtend{N,M}(x) else SignExtend{N,M}(x);
+  return if unsigned then ZeroExtend{N}(x) else SignExtend{N}(x);
 end;
 
 func CountLeadingZeroBits{N}(x: bits(N)) => integer {0..N}
@@ -264,7 +264,7 @@ begin
   assert shift >= 0;
   if shift < N then
     let bshift = shift as integer{0..N-1};
-    return ZeroExtend{N,N - bshift}(x[N-1:bshift]);
+    return ZeroExtend{N}(x[N-1:bshift]);
   else
     return Zeros{N};
   end;
@@ -286,7 +286,7 @@ func ASR{N}(x: bits(N), shift: integer) => bits(N)
 begin
   assert shift >= 0;
   let bshift = Min(shift, N-1) as integer{0..N-1};
-  return SignExtend{N, N - bshift}(x[N-1:bshift]);
+  return SignExtend{N}(x[N-1:bshift]);
 end;
 
 // Arithmetic right shift with carry out.

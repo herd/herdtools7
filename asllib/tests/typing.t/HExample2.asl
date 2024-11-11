@@ -23,7 +23,7 @@ begin
             if size == 32 then
                 register[31:0] = Ones{32};
             else
-                register = ZeroExtend{8*size,1}('0');
+                register = ZeroExtend{8*size}('0');
             end;
             return register;
     end;
