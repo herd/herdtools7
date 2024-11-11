@@ -368,6 +368,9 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Teq \parsesep \Nexpr &\\
+|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr &\\
+|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 |\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
