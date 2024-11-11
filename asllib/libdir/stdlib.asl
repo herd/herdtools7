@@ -34,6 +34,11 @@ end;
 
 // Log2
 
+func IsPowerOfTwo(x: integer) => boolean
+begin
+  return x > 0 && x == 2 ^ Log2 (x);
+end;
+
 // Return true if integer is even (0 modulo 2).
 func IsEven(a: integer) => boolean
 begin
@@ -44,6 +49,30 @@ end;
 func IsOdd(a: integer) => boolean
 begin
     return (a MOD 2) == 1;
+end;
+
+func AlignUpP2(x: integer, y: integer) => integer
+begin
+  assert y >= 0;
+  return AlignUpSize(x, 2 ^ y);
+end;
+
+func AlignDownP2(x: integer, y: integer) => integer
+begin
+  assert y >= 0;
+  return AlignDownSize(x, 2 ^ y);
+end;
+
+func AlignDownSize(x: integer, y: integer) => integer
+begin
+  assert IsPowerOfTwo(y);
+  return x - (x MOD y);
+end;
+
+func AlignUpSize(x: integer, y: integer) => integer
+begin
+  assert IsPowerOfTwo(y);
+  return AlignDownSize (x + (y - 1), y);
 end;
 
 //------------------------------------------------------------------------------
@@ -217,7 +246,7 @@ begin
 end;
 
 // Treating input as an integer, align down to nearest multiple of 2^y.
-func AlignDown{N}(x: bits(N), y: integer{1..N}) => bits(N)
+func AlignDownP2{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
   if (y == N) then
     return Zeros{N};
@@ -226,15 +255,15 @@ begin
   end;
 end;
 
-func AlignDown(x: integer, y: integer) => integer
+func AlignDownSize{N}(x: bits(N), y: integer {1..2^N}) => bits(N)
 begin
-  assert y >= 0;
-  return x - (x MOD (2 ^ y));
+  assert IsPowerOfTwo(y);
+  return x AND ((2^N - y)[0+:N]);
 end;
 
 // Treating input as an integer, align up to nearest multiple of 2^y.
 // Returns zero if the result is not representable in N bits.
-func AlignUp{N}(x: bits(N), y: integer{1..N}) => bits(N)
+func AlignUpP2{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
   if (y == N) then
     return Zeros{N};
@@ -245,16 +274,10 @@ begin
   end;
 end;
 
-func AlignUp(x: integer, y: integer) => integer
+func AlignUpSize{N}(x: bits(N), y: integer{1..2^N}) => bits(N)
 begin
-  assert y >= 0;
-  let p = 2 ^ y;
-  let rem = x MOD p;
-  if rem == 0 then
-    return x;
-  else
-    return (x + p) - rem;
-  end;
+  assert IsPowerOfTwo(y);
+  return AlignDownSize (x + (y - 1), y);
 end;
 
 // The shift functions LSL, LSR, ASR and ROR accept a non-negative shift amount.
@@ -339,3 +362,15 @@ begin
   let cpos = (shift-1) MOD N;
   return (ROR{N}(x, shift), x[cpos]);
 end;
+
+// Deprecated
+func AlignUp{N}(x: bits(N), y: integer {1..N}) => bits(N)
+begin
+  return AlignUpP2(x, y);
+end;
+
+func AlignDown{N}(x: bits(N), y: integer {1..N}) => bits(N)
+begin
+  return AlignDownP2(x, y);
+end;
+
