@@ -20,7 +20,7 @@ The relation $\evalslices$ (see \nameref{sec:SemanticsRule.Slices}) evaluates a 
 \hypertarget{build-slices}{}
 The function
 \[
-  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\slice^*}{\vastnode}
+  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\slice^+}{\vastnode}
 \]
 transforms a parse node for a list of slices $\vparsednode$ into an AST node for a list of slices $\vastnode$.
 
@@ -28,7 +28,7 @@ transforms a parse node for a list of slices $\vparsednode$ into an AST node for
 \inferrule{
   \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
 }{
-  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\Clist{\Nslice}}, \Trbracket)) \astarrow
+  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\NClist{\Nslice}}, \Trbracket)) \astarrow
   \overname{\vsliceasts}{\vastnode}
 }
 \end{mathpar}

@@ -1431,7 +1431,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (ty1, E_Unknown ty2 |> here) |: TypingRule.EUnknown
     (* End *)
     | E_Slice (e', slices) -> (
-        (* Begin ReduceSlicesToCall *)
         match e'.desc with
         | E_Var name
           when e'.version = V0
@@ -1449,7 +1448,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             ( ty,
               E_Call { name = name1; args = args1; params = eqs; call_type }
               |> here )
-            |: TypingRule.ESetter
         | _ -> (
             let t_e', e'' = annotate_expr_ ~forbid_atcs env e' in
             let struct_t_e' = Types.make_anonymous env t_e' in

@@ -148,38 +148,14 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assignment \texttt{le = re}, that is, $\SAssign(\vle, \vre)$;
-  \item One of the following applies:
-  \begin{itemize}
-    \item All of the following apply (\textsc{setter}):
-    \begin{itemize}
-      \item reducing $(\tenv, \vle, \vre)$ to a setter call via \\ $\inlinesetter$ yields the statement $\news$
-      (indicating that the assignment corresponds to setter)\ProseOrTypeError;
-      \item $\newtenv$ is $\tenv$.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{non\_setter}):
-    \begin{itemize}
-      \item reducing $(\tenv, \vle, \vre)$ to a setter call via \\ $\inlinesetter$ yields $\None$
-            (indicating the assignment does not correspond to a setter);
-      \item annotating the right-hand-side expression $\vre$ in $\tenv$ yields $(\vtre, \vreone)$\ProseOrTypeError;
-      \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields $\vleone$\ProseOrTypeError;
-      \item $\news$ is the assignment \texttt{le1 = re1}, that is, $\SAssign(\vleone, \vreone)$;
-      \item $\newtenv$ is $\tenv$.
-    \end{itemize}
-
-  \end{itemize}
+  \item annotating the right-hand-side expression $\vre$ in $\tenv$ yields $(\vtre, \vreone)$\ProseOrTypeError;
+  \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields $\vleone$\ProseOrTypeError;
+  \item $\news$ is the assignment \texttt{le1 = re1}, that is, $\SAssign(\vleone, \vreone)$;
+  \item $\newtenv$ is $\tenv$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[setter]{
-  \inlinesetter(\tenv, \vle, \vre) \typearrow \langle \news \rangle \OrTypeError\\
-}{
-  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow (\news,\overname{\tenv}{\newtenv})
-}
-\end{mathpar}
-\begin{mathpar}
-\inferrule[non\_setter]{
-  \inlinesetter(\tenv, \vle, \vre) \typearrow \None \OrTypeError\\\\
+\inferrule{
   \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone) \OrTypeError\\\\
   \annotatelexpr{\tenv, \vle, \vtre} \typearrow \vleone \OrTypeError
 }{

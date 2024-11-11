@@ -1050,7 +1050,7 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{function\_or\_getter}):
   \begin{itemize}
-    \item $\calltype$ is one of $\STFunction$, $\STGetter$, or $\STEmptyGetter$;
+    \item $\calltype$ is one of $\STFunction$ or $\STGetter$;
     \item $\calleerettyopt$ is $\langle\tty\rangle$;
     \item applying $\renametyeqs$ to $\eqsthree$ and $\tty$ yields $\ttyone$\ProseOrTypeError;
     \item $\rettyopt$ is $\langle\ttyone\rangle$.
@@ -1058,15 +1058,14 @@ One of the following applies:
 
   \item All of the following apply (\textsc{procedure\_or\_setter}):
   \begin{itemize}
-    \item $\calltype$ is one of $\STProcedure$, $\STSetter$, or $\STEmptySetter$;
+    \item $\calltype$ is one of $\STProcedure$ or $\STSetter$;
     \item $\calleerettyopt$ is $\None$;
     \item define $\rettyopt$ as $\None$.
   \end{itemize}
 
   \item All of the following apply (\textsc{ret\_type\_mismatch}):
   \begin{itemize}
-    \item the condition that $\calltype$ is one of $\STProcedure$, $\STSetter$, or \\
-          $\STEmptySetter$
+    \item the condition that $\calltype$ is one of $\STProcedure$ or $\STSetter$
           if and only if $\calleerettyopt$ is $\None$ does not hold;
     \item the result is a type error indicating the mismatch.
   \end{itemize}
@@ -1075,7 +1074,7 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[function\_or\_getter]{
-  \calltype \in \{\STFunction, \STGetter, \STEmptyGetter\}\\
+  \calltype \in \{\STFunction, \STGetter\}\\
   \renametyeqs(\eqsthree, \tty) \typearrow \ttyone \OrTypeError
 }{
   \annotateretty(\tenv, \calltype, \overname{\langle\tty\rangle}{\calleerettyopt}, \eqsthree) \typearrow
@@ -1085,7 +1084,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[procedure\_or\_setter]{
-  \calltype \in \{\STProcedure, \STSetter, \STEmptySetter\}\\
+  \calltype \in \{\STProcedure, \STSetter\}\\
 }{
   \annotateretty(\tenv, \calltype, \overname{\None}{\calleerettyopt}, \eqsthree) \typearrow
   \overname{\None}{\rettyopt}
@@ -1096,7 +1095,7 @@ One of the following applies:
 \inferrule[ret\_type\_mismatch]{
   {
   \neg\left(
-    \begin{array}{c}\calltype \in \{\STProcedure, \STSetter, \STEmptySetter\} \leftrightarrow \\
+    \begin{array}{c}\calltype \in \{\STProcedure, \STSetter\} \leftrightarrow \\
       \calleerettyopt=\None
     \end{array}
   \right)

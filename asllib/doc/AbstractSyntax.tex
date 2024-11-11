@@ -16,10 +16,7 @@ an \emph{untyped abstract syntax} and a \emph{typed abstract syntax}.
 The first syntax results from parsing the text of an ASL specification.
 The type checker checks whether the untyped AST is valid and if so produces
 a typed AST where some nodes in the untyped AST have been transformed to
-more explicit representation. For example, the untyped AST may contain
-what looks like a slicing expression, which turns out to be a call to a getter.
-The typed AST represents that call directly, making it simpler for an interpreter
-to evaluate that expression.
+more explicit representation.
 
 \paragraph{Outline:}
 The outline of this chapter is as follows,
@@ -212,8 +209,7 @@ as indicated by respective comments.
 \end{figure}
 
 \begin{itemize}
-  \item $\EVar(\vx)$ represents variables (\texttt{E\_Var 1})
-  as well as getters declared without a list of arguments (\texttt{E\_Var 2}).
+  \item $\EVar(\vx)$ represents variables (\texttt{E\_Var}).
 
   \item $\EATC(\ve, \vt)$ represents typing assertions. For example: \texttt{x as integer}.
   Here $\ve$ corresponds to \texttt{x} and $\vt$ corresponds to \texttt{integer}.
@@ -221,8 +217,7 @@ as indicated by respective comments.
   \item $\ESlice(\ve, \vslices)$ represents slices of bitvectors (\texttt{E\_Slice 1}),
   slices of integers \\
   (\texttt{E\_Slice 2}),
-  calls to getters (\texttt{E\_Slice 3} and \texttt{E\_Slice 4}),
-  and access to array elements (\texttt{E\_Slice 5}).
+  and access to array elements (\texttt{E\_Slice 3}).
 
   \item $\EGetField(\ve, \id)$ represents an access to a record (\texttt{E\_GetField 1})
         or exception field
@@ -494,10 +489,8 @@ the local declaration item is
 \hypertarget{ast-subprogramtype}{} \hypertarget{ast-stprocedure}{} \hypertarget{ast-stfunction}{}
 \begin{flalign*}
 \subprogramtype \derives\ & \STProcedure \;|\; \STFunction
-\hypertarget{ast-stgetter}{} \hypertarget{ast-stemptygetter}{} &\\
-                |\  & \STGetter \;|\; \STEmptyGetter
-                \hypertarget{ast-stsetter}{} \hypertarget{ast-stemptysetter}{} &\\
-                |\  & \STSetter \;|\; \STEmptySetter &
+\hypertarget{ast-stgetter}{} \hypertarget{ast-stsetter}{} &\\
+                |\  & \STGetter \;|\; \STSetter &
 \end{flalign*}
 
 \hypertarget{ast-subprogrambody}{} \hypertarget{ast-sbasl}{}

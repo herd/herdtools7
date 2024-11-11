@@ -192,18 +192,8 @@ All of the following apply:
   \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{empty\_getter}):
-    \begin{itemize}
-    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item applying $\annotatecall$ to $\vx$, an empty list of arguments $\emptylist$, and \\
-          $\STEmptyGetter$ yields $(\name, \vargs, \eqs, \langle\vt\rangle)$\ProseOrTypeError;
-    \item define $\newe$ as the call expression for $\name$, list of arguemnts $\vargs$, and list of parameter equalities $\eqs$,
-          that is, $\ECall(\name, \vargs, \eqs)$.
-    \end{itemize}
-
     \item All of the following apply (\textsc{local\_constant}):
     \begin{itemize}
-    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $\LDKConstant$
           via the $\localstoragetypes$ map of the local environment component of $\tenv$;
     \item applying $\lookupconstants$ to $\vx$ in $\tenv$ yields $\vv$;
@@ -212,7 +202,6 @@ All of the following apply:
 
     \item All of the following apply (\textsc{local\_non\_constant}):
     \begin{itemize}
-    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$
           via the \\
           $\localstoragetypes$ map of the local environment component of $\tenv$;
@@ -222,7 +211,6 @@ All of the following apply:
 
     \item All of the following apply (\textsc{global\_constant}):
     \begin{itemize}
-    \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
     \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
     \item $\vx$ is bound to $(\tty, \GDKConstant)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
     \item $\vx$ is bound to $\vv$ via the $\constantvalues$ map of the global component of $\tenv$;
@@ -231,7 +219,6 @@ All of the following apply:
 
     \item All of the following apply (\textsc{global\_non\_constant}):
     \begin{itemize}
-      \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
       \item either $\vx$ is not bound in the $\constantvalues$ map of the global component of $\tenv$ or $k$ is not $\GDKConstant$;
@@ -240,7 +227,6 @@ All of the following apply:
 
     \item All of the following apply (\textsc{error\_undefined}):
     \begin{itemize}
-      \item applying $\shouldreducetocall$ to $\vx$ and $\STEmptyGetter$ in $\tenv$ yields $\False$;
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is not bound via the $\globalstoragetypes$ map of the local component of $\tenv$;
       \item the result is a type error indicating that $\vx$ is an undefined identifier ($\UndefinedIdentifier$).
@@ -250,17 +236,7 @@ All of the following apply:
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[empty\_getter]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \True\OrTypeError\\\\
-  \annotatecall(\tenv, \vx, \emptylist, \STEmptyGetter) \typearrow (\name, \vargs, \eqs, \langle\vt\rangle) \OrTypeError\\
-}{
-  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\ECall(\name, \vargs, \eqs)}{\newe})
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[local\_constant]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
   L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)\\
   \lookupconstants(\tenv, \vx) \typearrow \vv
 }{
@@ -270,7 +246,6 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[local\_non\_constant]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
   L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
   \lookupconstants(\tenv, \vx) \typearrow \bot \lor k \neq \LDKConstant
 }{
@@ -280,7 +255,6 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[global\_constant]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
   L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
   G^\tenv.\constantvalues(\vx) = \vv
@@ -291,7 +265,6 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[global\_non\_constant]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
   L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
   G^\tenv.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant
@@ -302,7 +275,6 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[error\_undefined]{
-  \shouldreducetocall(\tenv, \vx, \STEmptyGetter) \typearrow \False\\
   L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = \bot
 }{
@@ -1038,38 +1010,12 @@ The details of the various types of bitvector slices is deferred to \chapref{Bit
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.ESetter \label{sec:TypingRule.ESetter}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
-  $\ESlice(\vep, \slices)$;
-  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
-  in $\tenv$ via $\reduceslicestocall$ yields a positive answer --- $\langle (\name, \vargs)\rangle$\ProseOrTypeError;
-  \item applying $\annotatecall$ to annotate the call with $(\tenv, \name, \vargs, \STSetter)$
-        yields $(\nameone, \vargsone, \eqs, \langle\tty\rangle)$\ProseOrTypeError;
-  \item $\vt$ is $\tty$;
-  \item $\newe$ is the call expression $\ECall(\nameone, \vargsone, \eqs)$.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \langle(\name, \vargs)\rangle \OrTypeError\\\\
-  \annotatecall(\tenv, \name, \vargs, \STSetter) \typearrow (\nameone, \vargsone, \eqs, \langle\tty\rangle) \OrTypeError\\
-}{
-  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow (\overname{\tty}{\vt}, \overname{\ECall(\nameone, \vargsone, \eqs)}{\newe})
-}
-\end{mathpar}
-\CodeSubsection{\ReduceSlicesToCallBegin}{\ReduceSlicesToCallEnd}{../Typing.ml}
-
 \subsubsection{TypingRule.ESlice \label{sec:TypingRule.ESlice}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
   $\ESlice(\vep, \slices)$;
-  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
-  in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$\ProseOrTypeError;
   \item annotating the expression $\vep$ in $\tenv$ yields $(\tep,\vepp)$\ProseOrTypeError;
   \item obtaining the \structure\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
   \item $\structtep$ is either a bitvector or an integer;
@@ -1083,7 +1029,6 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
   \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
   \astlabel(\structtep) \in \{\TInt, \TBits\}\\
@@ -1106,8 +1051,6 @@ initializer expression.
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
-  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
-  in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$\ProseOrTypeError;
   \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
   \item $\tep$ has the structure $\vtp$;
   \item $\vtp$ is neither an integer type, a bitvector type, or an array type;
@@ -1116,7 +1059,6 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
   \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \vtp\\
   \astlabel(\vtp) \not\in \{\TInt, \TBits, \TArray\}
@@ -1144,8 +1086,6 @@ $\EGetArray(\vbase, \vindex)$
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
-  \item determining whether $\vep$ together with $\slices$ corresponds to a subprogram call
-        in $\tenv$ via $\reduceslicestocall$ yields a negative answer --- $\None$\ProseOrTypeError;
   \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
   \item $\tep$ has the structure of an array with index $\size$ and element type $\tty$';
   \item One of the following applies:
@@ -1173,7 +1113,6 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[okay]{
-  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
   \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
   \commonprefixline\\\\
@@ -1186,7 +1125,6 @@ All of the following apply:
 }
 \and
 \inferrule[error]{
-  \reduceslicestocall(\tenv, \vep, \slices) \typearrow \None \OrTypeError\\\\
   \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
   \commonprefixline\\\\
@@ -1196,74 +1134,6 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
-
-\subsubsection{TypingRule.ReduceSlicesToCall \label{sec:TypingRule.ReduceSlicesToCall}}
-\hypertarget{def-reduceslicestocall}{}
-The helper function
-\[
-  \reduceslicestocall(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve} \aslsep \overname{\slice^*}{\slices})
-  \aslto
-  \langle (\overname{\identifier}{\name} \times \overname{\expr^*}{\vargs})\rangle
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-checks whether the expression $\ve$ together with the list of slices $\slices$ constitute
-a call to a subprogram in $\tenv$.
-If so, it returns a pair consisting of the name of the called subprogram --- $\name$ ---
-and the list of actual arguments --- $\vargs$. Otherwise, it returns $\None$.
-\ProseOtherwiseTypeError
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{yes}):
-  \begin{itemize}
-    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-    \item determining whether $\vx$ is a subprogram name with $\slices$ as its actual arguments
-    via $\shouldslicesreducetocall$
-    yields a list of actual argument expressions $\vargs$\ProseOrTypeError;
-    \item the result is $\langle (\vx, \vargs)\rangle$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{no}):
-  \begin{itemize}
-    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-    \item determining whether $\vx$ is a subprogram name with $\slices$ as its actual arguments
-    via $\shouldslicesreducetocall$
-    yields $\None$;
-    \item the result is $\None$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{non\_var}):
-  \begin{itemize}
-    \item $\ve$ is not a variable expression;
-    \item the result is $\None$.
-  \end{itemize}
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[yes]{
-  \shouldslicesreducetocall(\tenv, \vx, \slices) \typearrow \langle \vargs \rangle\\
-}{
-  \reduceslicestocall(\tenv, \EVar(\vx), \slices) \typearrow \langle (\vx, \vargs)\rangle
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[no]{
-  \shouldslicesreducetocall(\tenv, \vx, \slices) \typearrow \None
-}{
-  \reduceslicestocall(\tenv, \EVar(\vx), \slices) \typearrow \None
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_var]{
-  \astlabel(\ve) \neq \EVar
-}{
-  \reduceslicestocall(\tenv, \ve, \slices) \typearrow \None
-}
-\end{mathpar}
-\CodeSubsection{\ReduceSlicesToCallBegin}{\ReduceSlicesToCallEnd}{../Typing.ml}
 
 \subsection{Semantics}
 \subsubsection{SemanticsRule.ESlice\label{sec:SemanticsRule.ESlice}}
@@ -1394,7 +1264,6 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \langle \vt\rangle
@@ -1421,7 +1290,6 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \None
@@ -1447,7 +1315,6 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
 }{
@@ -1474,7 +1341,6 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldSimple(\Ignore, \slices)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
@@ -1506,7 +1372,6 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
   {
     \begin{array}{r}
@@ -1543,7 +1408,6 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldType(\Ignore, \slices, \vt)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
@@ -1603,7 +1467,6 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  % \tododefine{reduce\_field\_to\_call}(\tenv, \vtetwo, \fieldname) \typearrow \None \OrTypeError\\\\
   \astlabel(\vtetwo) \not\in \{\TRecord, \TException, \TBits, \TTuple\}
 }{
   \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{ConflictingTypes}

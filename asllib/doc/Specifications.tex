@@ -406,13 +406,13 @@ All of the following apply:
   {
   \setters \eqdef \left[ \begin{array}{r|l}
     (\lenv,\vd) & (\lenv, \DFunc(\vf)) \in \envandfs\ \land \\
-                & \astlabel(\vf) \in \{\STSetter, \STEmptySetter\}
+                & \astlabel(\vf) = \STSetter
   \end{array}\right]
   }\\
   {
   \others \eqdef \left[ \begin{array}{r|l}
     (\lenv,\vd) & (\lenv, \DFunc(\vf)) \in \envandfs\ \land \\
-                & \astlabel(\vf) \not\in \{\STSetter, \STEmptySetter\}
+                & \astlabel(\vf) \neq \STSetter
   \end{array}\right]
   }\\
   \envandfsone \eqdef \others \concat \setters\\

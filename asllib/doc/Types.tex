@@ -414,10 +414,9 @@ In the following example, all the uses of \texttt{boolean} are well-typed:
 \Nty \derives\ & \Tbit &\\
             |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \maybeemptylist{\Nbitfields} &\\
 \Nbitfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &\\
-\Nbitfield \derivesinline\ & \Nnamedslices \parsesep \Tidentifier &\\
-                  |\ & \Nnamedslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
-                  |\ & \Nnamedslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
-\Nnamedslices \derivesinline\ & \Tlbracket \parsesep \NClist{\Nslice} \parsesep \Trbracket &
+\Nbitfield \derivesinline\ & \Nslices \parsesep \Tidentifier &\\
+                  |\ & \Nslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
+                  |\ & \Nslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
