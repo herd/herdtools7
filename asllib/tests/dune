@@ -12,7 +12,7 @@
   (:standard ../libdir/stdlib.asl))
  (libraries asllib zarith)
  (modules
-  (:standard \ toposort))
+  (:standard \ toposort ConstraintBinops))
  (flags
   (:standard -w -40-42))
  (action
