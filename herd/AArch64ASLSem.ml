@@ -1310,6 +1310,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           | [] -> Warn.fatal "No possible ASL execution."
           | h :: t -> List.fold_left M.altT h t)
 
-    let spurious_setaf _ = M.unitT ()
+    let spurious_setaf v = AArch64Mixed.spurious_setaf v
   end
 end
