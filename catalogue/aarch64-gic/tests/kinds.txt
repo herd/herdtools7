@@ -53,3 +53,10 @@ edge-merging.ipi.MP			Forbid
 # vmW-gic+R				Forbid
 
 gic.pri+gic.en				Forbid
+coWW-gic+di-pend1			Allow
+coWW-gic+dis-ia				Allow
+coWW-gic+di-pri+rcfg			Allow
+coWW-gic+di-ia+rcfg			Forbid
+coWR-gic+en-rcfg			Forbid
+coWR-gic+di-rcfg			Forbid
+coWR-gic+ia-rcfg			Forbid

@@ -1,0 +1,11 @@
+AArch64 coWW-gic+di-ia+rcfg
+{
+ [INTID(A)]=(pending:1,enabled:1,affinity:P0);
+ 0:X0=gicval_t:(intid:A);
+ 1:X0=gicval_t:(intid:A);
+}
+ P0            | P1                  ;
+ GIC CDDI,X0   | GIC CDRCFG,X0       ;
+ GICR X1,CDIA  | ISB                 ;
+               | MRS X2,ICC_ICSR_EL1 ;
+exists(0:X1=gicval_t:(valid:1,intid:A) /\ 1:X2=intval_t:(pending:0,active:0,enabled:1))
