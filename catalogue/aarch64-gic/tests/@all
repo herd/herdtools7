@@ -59,3 +59,11 @@ coWR-gic.dis.ack+gsb.sys.litmus
 #MP-fDI+ack-DI+gic.dis-R-gsb.sys-mR.litmus
 #MP-fDI+ack-DSB-DI+gic.dis-R-gsb.sys-mR.litmus
 gic.pri+gic.en.litmus
+coWW-gic+di-pend1.litmus
+coWW-gic+dis-ia.litmus
+coWW-gic+di-pri+rcfg.litmus
+coWW-gic+di-ia+rcfg.litmus
+coWR-gic+en-rcfg.litmus
+coWR-gic+di-rcfg.litmus
+coWR-gic+ia-rcfg.litmus
+
