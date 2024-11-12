@@ -425,6 +425,10 @@ Empty getters/setters
   File bad-pattern.asl, line 4, characters 7 to 12:
   ASL Typing error: Erroneous pattern '101' for expression of type integer {3}.
   [1]
+  $ aslref pattern-masks-no-braces.asl
+  File pattern-masks-no-braces.asl, line 4, characters 19 to 24:
+  ASL Error: Cannot parse.
+  [1]
 
 ASLRef Field getter extension
   $ aslref --use-field-getter-extension setter_bitfields.asl

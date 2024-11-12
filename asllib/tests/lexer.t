@@ -85,15 +85,16 @@ Some problems with bitvectors and bitmasks:
   > func main() => integer
   > begin
   >     var b = '';
-  >     let expr_a = '' IN '1';
-  >     let expr_b = '1' IN '';
-  >     let expr_c = '' IN '0';
-  >     let expr_d = '0' IN '0';
+  >     let expr_a = '' IN {'1'};
+  >     let expr_b = '1' IN {''};
+  >     let expr_c = '' IN {'0'};
+  >     let expr_d = '0' IN {''};
   >     return 0;
   > end
   > EOF
 
   $ aslref masks0.asl
-  File masks0.asl, line 4, characters 17 to 26:
-  ASL Typing error: a subtype of bits(1) was expected, provided bits(0).
+  File masks0.asl, line 4, characters 17 to 28:
+  ASL Typing error: cannot find a common ancestor to those two types bits(0)
+    and bits(1).
   [1]

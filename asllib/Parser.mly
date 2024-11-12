@@ -344,10 +344,14 @@ let make_expr(sub_expr) ==
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
     | ~=bracketed(nclist(expr));                                  < E_Concat             >
-    | ~=sub_expr; AS; ~=ty;                                       < E_ATC              >
-    | ~=sub_expr; AS; ~=implicit_t_int;                           < E_ATC              >
 
-    | ~=sub_expr; IN; ~=pattern_or_mask;                          < E_Pattern            >
+    | ~=sub_expr; AS; ~=ty;                                       < E_ATC                >
+    | ~=sub_expr; AS; ~=implicit_t_int;                           < E_ATC                >
+
+    | ~=sub_expr; IN; ~=pattern_set;                              < E_Pattern            >
+    | ~=sub_expr; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
+    | e=sub_expr; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
+
     | UNKNOWN; colon_for_type; ~=ty;                              < E_Unknown            >
     | e=pared(sub_expr);                                          { E_Tuple [ e ]        }
 
@@ -372,15 +376,11 @@ let int_constraint ==
   | ~=expr;                     < Constraint_Exact >
   | e1=expr; SLICING; e2=expr;  < Constraint_Range >
 
+
 let expr_pattern := make_expr (expr_pattern)
-
-let pattern_set ==
-  | annotated (
-      BNOT; ~=braced(pattern_list); < Pattern_Not >
-    )
-  | braced(pattern_list)
-
+let pattern_mask == annotated(~=MASK_LIT; < Pattern_Mask >)
 let pattern_list == annotated(~=nclist(pattern); < Pattern_Any >)
+
 let pattern :=
   annotated (
     | ~=expr_pattern; < Pattern_Single >
@@ -388,17 +388,16 @@ let pattern :=
     | MINUS; { Pattern_All }
     | LEQ; ~=expr; < Pattern_Leq >
     | GEQ; ~=expr; < Pattern_Geq >
-    | ~=MASK_LIT; < Pattern_Mask >
     | ~=plist2(pattern); < Pattern_Tuple >
   )
+  | pattern_mask
   | pattern_set
 
-let pattern_or_mask ==
-  | pattern_set
-  | annotated(
-    | ~=MASK_LIT; < Pattern_Mask >
-    | b=BITVECTOR_LIT; { Pattern_Mask (Bitvector.mask_of_bitvector b) }
-  )
+let pattern_set ==
+  | braced(pattern_list)
+  | annotated (
+      BNOT; ~=braced(pattern_list); < Pattern_Not >
+    )
 
 let fields == braced(tclist(typed_identifier))
 let fields_opt == { [] } | fields

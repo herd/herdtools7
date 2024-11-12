@@ -1,8 +1,9 @@
 func main () => integer
 begin
   assert ('111' IN {'1xx'}) == TRUE;
-  assert ('111' IN '1xx') == TRUE;
+  assert ('111' == '1xx') == TRUE;
   assert ('111' IN {'0xx'}) == FALSE;
+  assert ('111' == '0xx') == FALSE;
   assert (3 IN {2,3,4}) == TRUE;
   assert (1 IN {2,3,4}) == FALSE;
   assert (3 IN {1..10}) == TRUE;
