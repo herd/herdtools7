@@ -1191,17 +1191,13 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     | Throwing (Some (v, v_ty), env_throw) -> (
         (* We compute the environment in which to compute the catch statements. *)
-        let env1 =
-          if IEnv.same_scope env env_throw then env_throw
-          else { local = env.local; global = env_throw.global }
-        in
         match List.find_opt (catcher_matches v_ty) catchers with
         (* If any catcher matches the exception type: *)
         | Some catcher -> (
             (* Begin EvalCatch *)
             match catcher with
             | None, _e_ty, s ->
-                eval_block env1 s
+                eval_block env_throw s
                 |> rethrow_implicit (v, v_ty)
                 |: SemanticsRule.Catch
             (* Begin EvalCatchNamed *)
@@ -1209,7 +1205,7 @@ module Make (B : Backend.S) (C : Config) = struct
                 (* If the exception is declared to be used in the
                    catcher, we update the environment before executing [s]. *)
                 let*| env2 =
-                  read_value_from v |> declare_local_identifier_m env1 name
+                  read_value_from v |> declare_local_identifier_m env_throw name
                 in
                 (let*> env3 = eval_block env2 s in
                  IEnv.remove_local name env3 |> return_continue)
@@ -1222,7 +1218,7 @@ module Make (B : Backend.S) (C : Config) = struct
             match otherwise_opt with
             (* Begin EvalCatchOtherwise *)
             | Some s ->
-                eval_block env1 s
+                eval_block env_throw s
                 |> rethrow_implicit (v, v_ty)
                 |: SemanticsRule.CatchOtherwise
             (* Begin EvalCatchNone *)
@@ -1240,9 +1236,15 @@ module Make (B : Backend.S) (C : Config) = struct
     let*^ nargs2, env2 = eval_expr_list_m env1 nargs1 in
     let* vargs = vargs and* nargs2 = nargs2 in
     let nargs3 = List.combine names nargs2 in
-    let**| ms, global = eval_subprogram env2.global name pos vargs nargs3 in
-    let ms2 = List.map read_value_from ms and new_env = { env2 with global } in
-    return_normal (ms2, new_env) |: SemanticsRule.Call
+    let res = eval_subprogram env2.global name pos vargs nargs3 in
+    B.bind_seq res @@ function
+    | Throwing (v, env_throw) ->
+        let new_env = IEnv.{ local = env2.local; global = env_throw.global } in
+        return (Throwing (v, new_env))
+    | Normal (ms, global) ->
+        let ms2 = List.map read_value_from ms
+        and new_env = IEnv.{ local = env2.local; global } in
+        return_normal (ms2, new_env) |: SemanticsRule.Call
   (* End *)
 
   (* Evaluation of Subprograms *)

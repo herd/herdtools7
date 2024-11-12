@@ -62,7 +62,6 @@ module type S = sig
   val tick_pop : env -> env
   val tick_decr : env -> bool * env
   val get_scope : env -> scope
-  val same_scope : env -> env -> bool
   val push_scope : env -> env
   val pop_scope : env -> env -> env
 end
@@ -106,7 +105,6 @@ module RunTime (C : RunTimeConf) = struct
 
   let empty_scoped scope = { empty_local with scope }
   let get_scope env = env.local.scope
-  let same_scope env1 env2 = scope_equal env1.local.scope env2.local.scope
 
   let to_static env =
     let global = env.global.static in

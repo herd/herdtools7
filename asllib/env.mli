@@ -140,9 +140,6 @@ module type S = sig
   val get_scope : env -> scope
   (** Returns the local scope of that environment. *)
 
-  val same_scope : env -> env -> bool
-  (** [same_scope env1 env2] is [true] iff [env1]'s scope and [env2]'scope are equal. *)
-
   val push_scope : env -> env
   (** Push a new scope on the declaration stack. Variables declared here will
       be stored until the corresponding [pop_scope]. *)
