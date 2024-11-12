@@ -20,51 +20,8 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-open Lexing
-
-(**
-   Builds an {!AST.t} from some files.
-
-   In this file the optional argument allow_no_end_semicolon - defaults to false
-   *)
-
-type token = Tokens.token
-type ast_type = [ `Opn | `Ast ]
-type version = [ `ASLv0 | `ASLv1 ]
-type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
-
-val from_file_result :
-  ?ast_type:ast_type ->
-  ?allow_no_end_semicolon:bool ->
-  version ->
-  string ->
-  AST.t Error.result
-
-val from_file :
-  ?ast_type:ast_type ->
-  ?allow_no_end_semicolon:bool ->
-  version ->
-  string ->
-  AST.t
-
-val from_lexer_lexbuf :
-  ?ast_type:ast_type ->
-  ?allow_no_end_semicolon:bool ->
-  version ->
-  'a ->
-  lexbuf ->
-  AST.t Error.result
-
-val from_file_multi_version :
-  ?ast_type:ast_type ->
-  ?allow_no_end_semicolon:bool ->
-  version_selector ->
-  string ->
-  AST.t Error.result
-
-val stdlib : AST.t Lazy.t
-val with_stdlib : AST.t -> AST.t
-val is_stdlib_name : AST.identifier -> bool
-
-val with_primitives :
-  ?loc:unit AST.annotated -> (AST.func * 'a) list -> AST.t -> AST.t
+(** The CONFIG module signature for the ASL1 Parser *)
+module type CONFIG = sig
+  val allow_no_end_semicolon : bool
+  (** Allow no semicolon after [end]. *)
+end

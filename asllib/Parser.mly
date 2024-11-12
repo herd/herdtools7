@@ -36,6 +36,13 @@
 
 (* ------------------------------------------------------------------------
 
+                               Parser Config
+
+  ------------------------------------------------------------------------- *)
+%parameter<Config : ParserConfig.CONFIG>
+
+(* ------------------------------------------------------------------------
+
                                    Helpers
 
   ------------------------------------------------------------------------- *)
@@ -88,99 +95,6 @@ let e_binop (e1, op, e2) =
 
 %}
 
-(* ------------------------------------------------------------------------
-
-                                   Tokens
-
-  ------------------------------------------------------------------------- *)
-
-%token AND ARRAY ARROW AS ASSERT BAND BEGIN BEQ BIT BITS BNOT BOOLEAN BOR CASE
-%token CATCH COLON COLON_COLON COMMA CONCAT CONFIG CONSTANT DEBUG DIV DIVRM DO
-%token DOT DOWNTO ELSE ELSIF END ENUMERATION EOF EOR EQ EQ_OP EXCEPTION FOR
-%token FUNC GEQ GETTER GT IF IMPL IN INTEGER LBRACE LBRACKET LEQ LET (* LIMIT *) LPAR
-%token LT MINUS MOD MUL NEQ NOT OF OR OTHERWISE PASS PLUS PLUS_COLON POW PRAGMA
-%token PRINT RBRACE RBRACKET RDIV REAL RECORD REPEAT RETURN RPAR STAR_COLON
-%token SEMI_COLON SETTER SHL SHR SLICING STRING SUBTYPES THEN THROW TO TRY TYPE
-%token UNKNOWN UNREACHABLE UNTIL VAR WHEN WHERE WHILE WITH
-
-%token ARROBASE_LOOPLIMIT
-%token <string> IDENTIFIER STRING_LIT
-%token <Bitvector.mask> MASK_LIT
-%token <Bitvector.t> BITVECTOR_LIT
-%token <Z.t> INT_LIT
-%token <Q.t> REAL_LIT
-%token <bool> BOOL_LIT
-
-
-(* ------------------------------------------------------------------------
-
-                           Associativity and priority
-
-  ------------------------------------------------------------------------- *)
-
-(*
-   This section on associativity uses menhir associativity and priority
-   features. Internally, it is used by menhir to resolve some conflicts that
-   could arrise from different conflicting expressions, e.g. [3 + 4 + 5].
-
-   For a quick intro, menhir assigns a priority level to tokens that have a
-   [left], [right], or [nonassoc] declaration in the order in which they are
-   declared. For example, here [PLUS]'s associativity is declared before [MUL]
-   so [3 + 4 * 5] will be parsed as [3 + (4 * 5)].
-
-   Associativity is straigh-forward.
-
-   Priority declarations that follow are created because of the fusion of
-   multiple recursive bnf rules into one, e.g. [expr] is the fusion of [expr]
-   and many others such as [cexpr].
-   The rule tree that I am translating here into priority rules is the
-   following:
-
-     expr <-----------------------|IF|----------------------< cexpr
-     cexpr <----|binop_boolean, checked_type_constraint|---<  cexpr_cmp
-     cexpr_cmp <-----------|binop_comparison|---------------< cexpr_add_sub
-     cexpr_add_sub <------|binop_add_sub_logic|-------------< cexpr_mul_div
-     cexpr_mul_div <------|binop_mul_div_shift|-------------< cexpr_pow
-     cepxr_pow <---------------|binop_pow|------------------< bexpr
-     bexpr <---------------------|unop|---------------------< expr_term
-     expr_term <------------------|IN|----------------------< expr_atom
-     expr_atom <-----------|DOT, brackets, ...|-------------< expr
-
-
-  Note that the token MINUS has two different precedence: one for when it is a
-  binary operator, in that case it has the same precedence as PLUS, and one for
-  when it is a unary operator, in which case it has the same precendence as
-  NOT.
-*)
-
-(* IF *)
-%nonassoc ELSE
-
-(* binop_boolean, checked_type_constraint *)
-%left BOR BAND IMPL BEQ AS
-
-(* binop_comparison *)
-%left EQ_OP NEQ
-%nonassoc GT GEQ LT LEQ
-
-(* binop_add_sub_logic *)
-%left PLUS MINUS OR EOR AND
-
-(* binop_mul_div_shift *)
-%left MUL DIV DIVRM RDIV MOD SHL SHR
-
-(* binop_pow *)
-%left POW CONCAT
-
-(* unop: NOT, BNOT, MINUS *)
-%nonassoc UNOPS
-
-(* IN *)
-%nonassoc IN
-
-(* DOT, brackets, etc. *)
-%left DOT LBRACKET
-
 (* ------------------------------------------------------------------------- *)
 
 %type <AST.t> ast
@@ -193,6 +107,7 @@ let e_binop (e1, op, e2) =
 (* Parse statements, as one *)
 %type <AST.stmt> stmts
 %start stmts
+
 %%
 
 (* ------------------------------------------------------------------------
@@ -262,6 +177,12 @@ let nlist_opt_terminated(x, y) :=
   | ~=x; { [ x ] }
   | ~=x; ~=y; { [ x; y ] }
   | ~=x; l=nlist_opt_terminated(x, y); { x :: l }
+
+let end_semicolon := END; opt=option(SEMI_COLON); {
+      if Option.is_none opt && not Config.allow_no_end_semicolon then
+          Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Missing ';' after 'end' keyword.";
+  }
+
 
 (* ------------------------------------------------------------------------
 
@@ -527,7 +448,7 @@ let loop_limit == { None }
 
 let stmt ==
   annotated (
-    | terminated_by(END; SEMI_COLON,
+    | terminated_by(end_semicolon,
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
       | CASE; ~=expr; OF; alt=case_alt_list;          <S_Case>
       | WHILE; ~=expr; ~=loop_limit; DO; ~=stmt_list; <S_While>
@@ -584,7 +505,7 @@ let params_opt == { [] } | braced(clist(opt_typed_identifier))
 let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
-let func_body == delimited(BEGIN, maybe_empty_stmt_list, END; SEMI_COLON)
+let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
 let ignored_or_identifier ==
   | MINUS; { global_ignored () }
   | IDENTIFIER
@@ -702,7 +623,7 @@ let decl ==
 let ast := terminated(list(decl), EOF)
 (* End *)
 
-let opn := body=stmt;
+let opn := body=stmt; EOF;
     {
       [
         D_Func

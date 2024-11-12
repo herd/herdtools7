@@ -8,7 +8,13 @@
 (ocamllex splitasl)
 
 (menhir
- (modules Parser))
+ (modules Tokens)
+ (flags --only-tokens))
+
+(menhir
+ (modules Tokens Parser)
+ (merge_into Parser)
+ (flags --external-tokens Tokens))
 
 (menhir
  (modules Parser0)
@@ -31,7 +37,7 @@
   (:standard \ aslref bundler))
  (public_name herdtools7.asllib)
  (private_modules Parser0 Gparser0 Lexer0 SimpleLexer0 RepeatableLexer)
- (modules_without_implementation Backend AST)
+ (modules_without_implementation Backend AST ParserConfig)
  (flags
   (:standard -w -40-42-48))
  (libraries menhirLib zarith))

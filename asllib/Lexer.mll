@@ -24,7 +24,7 @@
 
 exception LexerError
 
-open Parser
+open Tokens
 
 open Error
 
