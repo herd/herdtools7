@@ -3235,6 +3235,11 @@ let is_valid i =
     -> is_granule_offset k
   | I_STG _ | I_STZG _ | I_STZ2G _
     -> false
+  | I_LDAP1 ([Vreg(_,(0,64))],_,_,_)
+  | I_STL1 ([Vreg(_,(0,64))],_,_,_)
+    -> true
+  | I_LDAP1 _ | I_STL1 _
+    -> false
   | I_OP3_SIMD (EOR,Vreg(_,(8,8)),Vreg(_,(8,8)),Vreg(_,(8,8)))
   | I_OP3_SIMD (EOR,Vreg(_,(16,8)),Vreg(_,(16,8)),Vreg(_,(16,8)))
      -> true
@@ -3244,6 +3249,114 @@ let is_valid i =
      -> true
   | I_OP3_SV _
      -> false
+  | I_INDEX_SI (Zreg(_,64),V64,_,_)
+  | I_INDEX_SI (Zreg(_,32),V32,_,_)
+  | I_INDEX_SI (Zreg(_,16),V32,_,_)
+  | I_INDEX_SI (Zreg(_,8),V32,_,_)
+  | I_INDEX_IS (Zreg(_,64),V64,_,_)
+  | I_INDEX_IS (Zreg(_,32),V32,_,_)
+  | I_INDEX_IS (Zreg(_,16),V32,_,_)
+  | I_INDEX_IS (Zreg(_,8),V32,_,_)
+  | I_INDEX_SS (Zreg(_,64),V64,_,_)
+  | I_INDEX_SS (Zreg(_,32),V32,_,_)
+  | I_INDEX_SS (Zreg(_,16),V32,_,_)
+  | I_INDEX_SS (Zreg(_,8),V32,_,_)
+     -> true
+  | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _
+     -> false
+  | I_ST1SP (v,_,_,_,ext) 
+  | I_LD1SP (v,_,_,_,ext) ->
+     let open MemExt in
+     begin match (v,ext) with
+     | (_,Imm (_,Idx))
+     | (VSIMD8,Reg (V64,_,LSL, 0))
+     | (VSIMD8,ZReg (_,LSL, 0))
+     | (VSIMD8,ZReg (_,UXTW, 0))
+     | (VSIMD8,ZReg (_,SXTW, 0))
+     | (VSIMD16,Reg (V64,_,LSL, 1))
+     | (VSIMD16,ZReg (_,LSL, 0))
+     | (VSIMD16,ZReg (_,UXTW, 0))
+     | (VSIMD16,ZReg (_,SXTW, 0))
+     | (VSIMD16,ZReg (_,LSL, 1))
+     | (VSIMD16,ZReg (_,UXTW, 1))
+     | (VSIMD16,ZReg (_,SXTW, 1))
+     | (VSIMD32,Reg (V64,_,LSL, 2))
+     | (VSIMD32,ZReg (_,LSL, 0))
+     | (VSIMD32,ZReg (_,UXTW, 0))
+     | (VSIMD32,ZReg (_,SXTW, 0))
+     | (VSIMD32,ZReg (_,LSL, 2))
+     | (VSIMD32,ZReg (_,UXTW, 2))
+     | (VSIMD32,ZReg (_,SXTW, 2))
+     | (VSIMD64,Reg (V64,_,LSL, 3))
+     | (VSIMD64,ZReg (_,LSL, 0))
+     | (VSIMD64,ZReg (_,UXTW, 0))
+     | (VSIMD64,ZReg (_,SXTW, 0))
+     | (VSIMD64,ZReg (_,LSL, 3))
+     | (VSIMD64,ZReg (_,UXTW, 3))
+     | (VSIMD64,ZReg (_,SXTW, 3))
+      -> true
+     | _ -> false
+    end
+  | I_ST2SP (v,_,_,_,ext)
+  | I_LD2SP (v,_,_,_,ext)
+  | I_ST3SP (v,_,_,_,ext)
+  | I_LD3SP (v,_,_,_,ext)
+  | I_ST4SP (v,_,_,_,ext)
+  | I_LD4SP (v,_,_,_,ext) ->
+    let open MemExt in
+    begin match (v,ext) with
+    | (_,Imm (_,Idx))
+    | (VSIMD8,Reg (V64,_,LSL, 0))
+    | (VSIMD16,Reg (V64,_,LSL, 1))
+    | (VSIMD32,Reg (V64,_,LSL, 2))
+    | (VSIMD64,Reg (V64,_,LSL, 3))
+     -> true
+    | _ -> false
+    end
+  | I_ST1SPT (v,reg,index,offset,_,_,ext)
+  | I_LD1SPT (v,reg,index,offset,_,_,ext) ->
+    let open MemExt in
+    let is_slice =
+      let is_index =
+        match index with
+        | Ireg R12 | Ireg R13 | Ireg R14 | Ireg R15
+          -> true
+        | _ -> false in
+      let is_offset =
+        match v with
+        | VSIMD8 when 0 <= offset && offset <= 15 -> true
+        | VSIMD16 when 0 <= offset && offset <= 7 -> true
+        | VSIMD32 when 0 <= offset && offset <= 3 -> true
+        | VSIMD64 when 0 <= offset && offset <= 1 -> true
+        | VSIMD128 when offset == 0 -> true
+        | _ -> false in
+      let is_tile tile =
+        match v with
+        | VSIMD8 when tile == 0 -> true
+        | VSIMD16 when 0 <= tile && tile <= 1 -> true
+        | VSIMD32 when 0 <= tile && tile <= 3 -> true
+        | VSIMD64 when 0 <= tile && tile <= 7 -> true
+        | VSIMD128 when 0 <= tile && tile <= 15 -> true
+        | _ -> false in
+      match reg with
+      | ZAreg (tile,Some _,_)
+        -> (is_tile tile) && is_offset && is_index
+      | _ -> false
+    in
+    begin match (v,ext) with
+    | (_,Imm (0,Idx))
+    | (VSIMD8,Reg (V64,_,LSL, 0))
+    | (VSIMD16,Reg (V64,_,LSL, 1))
+    | (VSIMD32,Reg (V64,_,LSL, 2))
+    | (VSIMD64,Reg (V64,_,LSL, 3))
+    | (VSIMD128,Reg (V64,_,LSL, 4))
+     -> is_slice
+    | _ -> false
+    end
+  | I_ADDA (_,ZAreg (_,None,_),_,_,_)
+    -> true
+  | I_ADDA _
+    -> false
   | _ -> true
 
 module PseudoI = struct

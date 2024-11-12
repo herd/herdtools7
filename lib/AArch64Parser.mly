@@ -353,106 +353,48 @@ pattern:
 | COMMA pattern_not_empty { $2 }
 
 zabreg:
-| ARCH_ZABREG
-  { match $1 with
-    | ZAreg (tile,_,_) when tile <= 0
-      -> $1
-    | _ -> assert false }
+| ARCH_ZABREG { $1 }
 
 zahreg:
-| ARCH_ZAHREG
-  { match $1 with
-    | ZAreg (tile,_,_) when tile <= 1
-      -> $1
-    | _ -> assert false }
+| ARCH_ZAHREG { $1 }
 
 zasreg:
-| ARCH_ZASREG
-  { match $1 with
-    | ZAreg (tile,_,_) when tile <= 3
-      -> $1
-    | _ -> assert false }
+| ARCH_ZASREG { $1 }
 
 zadreg:
-| ARCH_ZADREG
-  { match $1 with
-    | ZAreg (tile,_,_) when tile <= 7
-      -> $1
-    | _ -> assert false }
+| ARCH_ZADREG { $1 }
 
 zaqreg:
-| ARCH_ZAQREG
-  { match $1 with
-    | ZAreg (tile,_,_) when tile <= 15
-      -> $1
-    | _ -> assert false }
+| ARCH_ZAQREG { $1 }
 
 slice :
 | LBRK wreg COMMA NUM RBRK
-  { if ( $4 >= 0) then
-      ($2,$4)
-    else
-      assert false}
+  { ($2,$4) }
 
 zab_slice:
 | zabreg slice
   { let (index,offset) = $2 in
-    if (offset <= 15) then
-      match $1 with
-      | ZAreg (_,Some _,_)
-        -> ($1,(index,MetaConst.Int offset))
-      | _ -> assert false
-    else
-      assert false
-  }
+    ($1,(index,MetaConst.Int offset)) }
 
 zah_slice:
 | zahreg slice
   { let (index,offset) = $2 in
-    if (offset <= 7) then
-      match $1 with
-      | ZAreg (_,Some _,_)
-        -> ($1,(index,MetaConst.Int offset))
-      | _ -> assert false
-    else
-      assert false
-  }
+    ($1,(index,MetaConst.Int offset)) }
 
 zas_slice:
 | zasreg slice
   { let (index,offset) = $2 in
-    if (offset <= 3) then
-      match $1 with
-      | ZAreg (_,Some _,_)
-        -> ($1,(index,MetaConst.Int offset))
-      | _ -> assert false
-    else
-      assert false
-  }
+    ($1,(index,MetaConst.Int offset)) }
 
 zad_slice:
 | zadreg slice
   { let (index,offset) = $2 in
-    if (offset <= 1) then
-      match $1 with
-      | ZAreg (_,Some _,_)
-        -> ($1,(index,MetaConst.Int offset))
-      | _ -> assert false
-    else
-      assert false
-  }
+    ($1,(index,MetaConst.Int offset)) }
 
 zaq_slice:
 | zaqreg slice
   { let (index,offset) = $2 in
-    if (offset <= 0) then
-      match $1 with
-      | ZAreg (_,Some _,_)
-        -> ($1,(index,MetaConst.Int offset))
-      | _ -> assert false
-    else
-      assert false
-  }
+    ($1,(index,MetaConst.Int offset)) }
 
 smopt:
 | { None }
@@ -833,10 +775,7 @@ instr:
 | LD1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
   { I_LD1 ($2, $3, $6, $8) }
 | LDAP1 vregs1 INDEX COMMA LBRK xreg RBRK
-  { match List.hd $2 with
-    | Vreg(_,(0,64)) -> I_LDAP1 ($2, $3, $6, K (MetaConst.zero))
-    | _ -> assert false
-  }
+  { I_LDAP1 ($2, $3, $6, K (MetaConst.zero)) }
 | LD1 vregs COMMA LBRK xreg RBRK kx0_no_shift
   { I_LD1M ($2, $5, $7) }
 | LD1R vregs1 COMMA LBRK xreg RBRK kx0_no_shift
@@ -862,10 +801,7 @@ instr:
 | ST1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
    { I_ST1 ($2, $3, $6, $8) }
 | STL1 vregs1 INDEX COMMA LBRK xreg RBRK
-  { match List.hd $2 with
-    | Vreg(_,(0,64)) -> I_STL1 ($2, $3, $6,  K (MetaConst.zero))
-    | _ -> assert false
-  }
+  { I_STL1 ($2, $3, $6,  K (MetaConst.zero)) }
 | ST1 vregs COMMA LBRK xreg RBRK kx0_no_shift
    { I_ST1M ($2, $5, $7) }
 | ST2 vregs2 INDEX COMMA LBRK xreg RBRK kx0_no_shift
@@ -973,332 +909,131 @@ instr:
 | LD1B zregs1 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-    | ZReg (_,LSL,MetaConst.Int 0)
-    | ZReg (_,UXTW,MetaConst.Int 0)
-    | ZReg (_,SXTW,MetaConst.Int 0)
-      -> I_LD1SP (VSIMD8,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD1SP (VSIMD8,$2,$4,ra,ext) }
 | LD1H zregs1 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-    | ZReg (_,LSL,MetaConst.Int 0)
-    | ZReg (_,UXTW,MetaConst.Int 0)
-    | ZReg (_,SXTW,MetaConst.Int 0)
-    | ZReg (_,LSL,MetaConst.Int 1)
-    | ZReg (_,UXTW,MetaConst.Int 1)
-    | ZReg (_,SXTW,MetaConst.Int 1)
-      -> I_LD1SP (VSIMD16,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD1SP (VSIMD16,$2,$4,ra,ext) }
 | LD1W zregs1 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-    | ZReg (_,LSL,MetaConst.Int 0)
-    | ZReg (_,UXTW,MetaConst.Int 0)
-    | ZReg (_,SXTW,MetaConst.Int 0)
-    | ZReg (_,LSL,MetaConst.Int 2)
-    | ZReg (_,UXTW,MetaConst.Int 2)
-    | ZReg (_,SXTW,MetaConst.Int 2)
-      -> I_LD1SP (VSIMD32,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD1SP (VSIMD32,$2,$4,ra,ext) }
 | LD1D zregs1 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-    | ZReg (_,LSL,MetaConst.Int 0)
-    | ZReg (_,UXTW,MetaConst.Int 0)
-    | ZReg (_,SXTW,MetaConst.Int 0)
-    | ZReg (_,LSL,MetaConst.Int 3)
-    | ZReg (_,UXTW,MetaConst.Int 3)
-    | ZReg (_,SXTW,MetaConst.Int 3)
-      -> I_LD1SP (VSIMD64,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD1SP (VSIMD64,$2,$4,ra,ext) }
 | LD2B zregs2 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-      -> I_LD2SP (VSIMD8,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD2SP (VSIMD8,$2,$4,ra,ext) }
 | LD2H zregs2 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-      -> I_LD2SP (VSIMD16,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD2SP (VSIMD16,$2,$4,ra,ext) }
 | LD2W zregs2 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2) -> I_LD2SP (VSIMD32,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD2SP (VSIMD32,$2,$4,ra,ext) }
 | LD2D zregs2 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-      -> I_LD2SP (VSIMD64,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD2SP (VSIMD64,$2,$4,ra,ext) }
 | LD3B zregs3 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-      -> I_LD3SP (VSIMD8,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD3SP (VSIMD8,$2,$4,ra,ext) }
 | LD3H zregs3 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-      -> I_LD3SP (VSIMD16,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD3SP (VSIMD16,$2,$4,ra,ext) }
 | LD3W zregs3 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-      -> I_LD3SP (VSIMD32,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD3SP (VSIMD32,$2,$4,ra,ext) }
 | LD3D zregs3 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-      -> I_LD3SP (VSIMD64,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD3SP (VSIMD64,$2,$4,ra,ext) }
 | LD4B zregs4 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-      -> I_LD4SP (VSIMD8,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD4SP (VSIMD8,$2,$4,ra,ext) }
 | LD4H zregs4 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-      -> I_LD4SP (VSIMD16,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD4SP (VSIMD16,$2,$4,ra,ext) }
 | LD4W zregs4 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-      -> I_LD4SP (VSIMD32,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD4SP (VSIMD32,$2,$4,ra,ext) }
 | LD4D zregs4 COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-      -> I_LD4SP (VSIMD64,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_LD4SP (VSIMD64,$2,$4,ra,ext) }
 | ST1B zregs1 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-    | ZReg (_,LSL,MetaConst.Int 0)
-    | ZReg (_,UXTW,MetaConst.Int 0)
-    | ZReg (_,SXTW,MetaConst.Int 0)
-      -> I_ST1SP (VSIMD8,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST1SP (VSIMD8,$2,$4,ra,ext) }
 | ST1H zregs1 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-    | ZReg (_,LSL,MetaConst.Int 0)
-    | ZReg (_,UXTW,MetaConst.Int 0)
-    | ZReg (_,SXTW,MetaConst.Int 0)
-    | ZReg (_,LSL,MetaConst.Int 1)
-    | ZReg (_,UXTW,MetaConst.Int 1)
-    | ZReg (_,SXTW,MetaConst.Int 1)
-      -> I_ST1SP (VSIMD16,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST1SP (VSIMD16,$2,$4,ra,ext) }
 | ST1W zregs1 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-    | ZReg (_,LSL,MetaConst.Int 0)
-    | ZReg (_,UXTW,MetaConst.Int 0)
-    | ZReg (_,SXTW,MetaConst.Int 0)
-    | ZReg (_,LSL,MetaConst.Int 2)
-    | ZReg (_,UXTW,MetaConst.Int 2)
-    | ZReg (_,SXTW,MetaConst.Int 2)
-      -> I_ST1SP (VSIMD32,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST1SP (VSIMD32,$2,$4,ra,ext) }
 | ST1D zregs1 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-    | ZReg (_,LSL,MetaConst.Int 0)
-    | ZReg (_,UXTW,MetaConst.Int 0)
-    | ZReg (_,SXTW,MetaConst.Int 0)
-    | ZReg (_,LSL,MetaConst.Int 3)
-    | ZReg (_,UXTW,MetaConst.Int 3)
-    | ZReg (_,SXTW,MetaConst.Int 3)
-      -> I_ST1SP (VSIMD64,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST1SP (VSIMD64,$2,$4,ra,ext) }
 | ST2B zregs2 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-      -> I_ST2SP (VSIMD8,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST2SP (VSIMD8,$2,$4,ra,ext) }
 | ST2H zregs2 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-      -> I_ST2SP (VSIMD16,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST2SP (VSIMD16,$2,$4,ra,ext) }
 | ST2W zregs2 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-      -> I_ST2SP (VSIMD32,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST2SP (VSIMD32,$2,$4,ra,ext) }
 | ST2D zregs2 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-      -> I_ST2SP (VSIMD64,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST2SP (VSIMD64,$2,$4,ra,ext) }
 | ST3B zregs3 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-      -> I_ST3SP (VSIMD8,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST3SP (VSIMD8,$2,$4,ra,ext) }
 | ST3H zregs3 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-      -> I_ST3SP (VSIMD16,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST3SP (VSIMD16,$2,$4,ra,ext) }
 | ST3W zregs3 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-      -> I_ST3SP (VSIMD32,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST3SP (VSIMD32,$2,$4,ra,ext) }
 | ST3D zregs3 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-      -> I_ST3SP (VSIMD64,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST3SP (VSIMD64,$2,$4,ra,ext) }
 | ST4B zregs4 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-      -> I_ST4SP (VSIMD8,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST4SP (VSIMD8,$2,$4,ra,ext) }
 | ST4H zregs4 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-      -> I_ST4SP (VSIMD16,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST4SP (VSIMD16,$2,$4,ra,ext) }
 | ST4W zregs4 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-      -> I_ST4SP (VSIMD32,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST4SP (VSIMD32,$2,$4,ra,ext) }
 | ST4D zregs4 COMMA preg COMMA mem_ea
   { let open MemExt in
     let (ra,ext) = $6 in
-    match ext with
-    | Imm (_,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-      -> I_ST4SP (VSIMD64,$2,$4,ra,ext)
-    | _ -> assert false
-  }
+    I_ST4SP (VSIMD64,$2,$4,ra,ext) }
 | MOV zreg COMMA k
   { I_MOV_SV ($2, $4, S_NOEXT) }
 | MOV zreg COMMA k COMMA shift
@@ -1310,36 +1045,16 @@ instr:
   { I_ADD_SV ($2,$4,$6) }
 | OP ARCH_ZDREG COMMA ARCH_ZDREG COMMA ARCH_ZDREG
   { I_OP3_SV ($1,$2,$4,$6) }
-| TOK_INDEX zreg COMMA xreg COMMA k
-  { match $2 with
-    | Zreg(_,64) -> I_INDEX_SI ($2,V64,$4,$6)
-    | _ -> assert false }
-| TOK_INDEX zreg COMMA wreg COMMA k
-  { match $2 with
-    | Zreg(_,8)
-    | Zreg(_,16)
-    | Zreg(_,32) -> I_INDEX_SI ($2,V32,$4,$6)
-    | _ -> assert false }
-| TOK_INDEX zreg COMMA k COMMA xreg
-  { match $6 with
-    | Zreg(_,64) -> I_INDEX_IS ($2,V64,$4,$6)
-    | _ -> assert false }
-| TOK_INDEX zreg COMMA k COMMA wreg
-  { match $6 with
-    | Zreg(_,8)
-    | Zreg(_,16)
-    | Zreg(_,32) -> I_INDEX_IS ($2,V32,$4,$6)
-    | _ -> assert false }
+| TOK_INDEX zreg COMMA wxreg COMMA k
+  { let v,r = $4 in 
+    I_INDEX_SI ($2,v,r,$6) }
+| TOK_INDEX zreg COMMA k COMMA wxreg
+  { let v,r = $6 in
+    I_INDEX_IS ($2,v,$4,r)}
 | TOK_INDEX zreg COMMA xreg COMMA xreg
-  { match $2 with
-    | Zreg(_,64) -> I_INDEX_SS ($2,V64,$4,$6)
-    | _ -> assert false }
+  { I_INDEX_SS ($2,V64,$4,$6) }
 | TOK_INDEX zreg COMMA wreg COMMA wreg
-  { match $2 with
-    | Zreg(_,8)
-    | Zreg(_,16)
-    | Zreg(_,32) -> I_INDEX_SS ($2,V32,$4,$6)
-    | _ -> assert false }
+  { I_INDEX_SS ($2,V32,$4,$6) }
 | RDVL xreg COMMA k
    { I_RDVL ($2,$4) }
 | ADDVL xreg COMMA xreg COMMA k
@@ -1365,102 +1080,52 @@ instr:
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-      -> I_LD1SPT (VSIMD8,zareg,index,offset,$6,ra,ext)
-    | _ ->  assert false
-  }
+    I_LD1SPT (VSIMD8,zareg,index,offset,$6,ra,ext) }
 | LD1H LCRL zah_slice RCRL COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-      -> I_LD1SPT (VSIMD16,zareg,index,offset,$6,ra,ext)
-    | _ -> assert false
-  }
+    I_LD1SPT (VSIMD16,zareg,index,offset,$6,ra,ext) }
 | LD1W LCRL zas_slice RCRL COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-      -> I_LD1SPT (VSIMD32,zareg,index,offset,$6,ra,ext)
-    | _ -> assert false
-  }
+    I_LD1SPT (VSIMD32,zareg,index,offset,$6,ra,ext) }
 | LD1D LCRL zad_slice RCRL COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-      -> I_LD1SPT (VSIMD64,zareg,index,offset,$6,ra,ext)
-    | _ -> assert false
-  }
+    I_LD1SPT (VSIMD64,zareg,index,offset,$6,ra,ext) }
 | LD1Q LCRL zaq_slice RCRL COMMA pmreg_z COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 4)
-      -> I_LD1SPT (VSIMD128,zareg,index,offset,$6,ra,ext)
-    | _ -> assert false
-  }
+    I_LD1SPT (VSIMD128,zareg,index,offset,$6,ra,ext) }
 | ST1B LCRL zab_slice RCRL COMMA preg COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 0)
-      -> I_ST1SPT (VSIMD8,zareg,index,offset,$6,ra,ext)
-    | _ ->  assert false
-  }
+    I_ST1SPT (VSIMD8,zareg,index,offset,$6,ra,ext) }
 | ST1H LCRL zah_slice RCRL COMMA preg COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 1)
-      -> I_ST1SPT (VSIMD16,zareg,index,offset,$6,ra,ext)
-    | _ -> assert false
-  }
+    I_ST1SPT (VSIMD16,zareg,index,offset,$6,ra,ext) }
 | ST1W LCRL zas_slice RCRL COMMA preg COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 2)
-      -> I_ST1SPT (VSIMD32,zareg,index,offset,$6,ra,ext)
-    | _ -> assert false
-  }
+    I_ST1SPT (VSIMD32,zareg,index,offset,$6,ra,ext) }
 | ST1D LCRL zad_slice RCRL COMMA preg COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 3)
-      -> I_ST1SPT (VSIMD64,zareg,index,offset,$6,ra,ext)
-    | _ -> assert false
-  }
+    I_ST1SPT (VSIMD64,zareg,index,offset,$6,ra,ext) }
 | ST1Q LCRL zaq_slice RCRL COMMA preg COMMA mem_ea
   { let open MemExt in
     let (zareg,(index, offset)) = $3 in
     let (ra,ext) = $8 in
-    match ext with
-    | Imm (MetaConst.Int 0,Idx)
-    | Reg (V64,_,LSL,MetaConst.Int 4)
-      -> I_ST1SPT (VSIMD128,zareg,index,offset,$6,ra,ext)
-    | _ -> assert false
-  }
+    I_ST1SPT (VSIMD128,zareg,index,offset,$6,ra,ext) }
 | MOVA zab_slice COMMA pmreg COMMA zbreg
   {
     let (zareg,(index, offset)) = $2 in
@@ -1512,10 +1177,7 @@ instr:
     I_MOVA_TV ($2,$4,zareg,index,offset)
   }
 | ADDA zasreg COMMA pmreg COMMA pmreg COMMA zsreg
-  { match $2 with
-    | ZAreg (_,None,_)
-      -> I_ADDA ($1,$2,$4,$6,$8)
-    | _ -> assert false; }
+  { I_ADDA ($1,$2,$4,$6,$8) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_CAS (V32,RMW_P,$2,$4,$7) }
