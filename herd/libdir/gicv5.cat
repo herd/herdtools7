@@ -41,5 +41,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
+(* Protection against running tests of other architecture *)
+let DI = try DI with emptyset
+let RCFG = try RCFG with emptyset
+let GICR = try GICR with emptyset
+
+(*** Internal visibility requirements ***)
+irreflexive [Imp & INTID & W & GICR]; po & loc; [INTID & R]; ca; [Imp & INTID & W & GICR] as coWR-INTID-GICR
+irreflexive [Imp & INTID & W & DI]; po & loc; [INTID & R & (RCFG | GICR)]; ca; [Imp & INTID & W & DI] as coWR-INTID-DI
+irreflexive [Exp & INTID & W]; po & loc; [Exp & INTID & R]; ca; [Exp & INTID & W] as coWR-INTID-GIC
+
 (*** Atomic: for the GIC and GICR instructions implemented with rmw semantics forbid intervening writes. ***)
 empty ([INTID & R]; rmw; [INTID & W]) & (ca; [INTID & W]; ca) as atomic-INTID
