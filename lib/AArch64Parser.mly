@@ -946,9 +946,7 @@ instr:
 | MOVI dreg COMMA k
   { I_MOVI_S ( VSIMD64, $2, $4) }
 | OP vreg COMMA vreg COMMA vreg
-  { match $1 with
-    | EOR -> I_EOR_SIMD ($2,$4,$6)
-    | _ -> assert false}
+  { I_OP3_SIMD ($1,$2,$4,$6) }
 | TOK_ADD vreg COMMA vreg COMMA vreg
   { I_ADD_SIMD ($2,$4,$6) }
 | TOK_ADD dreg COMMA dreg COMMA dreg
@@ -1311,9 +1309,7 @@ instr:
 | TOK_ADD zreg COMMA zreg COMMA zreg
   { I_ADD_SV ($2,$4,$6) }
 | OP ARCH_ZDREG COMMA ARCH_ZDREG COMMA ARCH_ZDREG
-  { match $1 with
-    | EOR -> I_EOR_SV ($2,$4,$6)
-    | _ -> assert false}
+  { I_OP3_SV ($1,$2,$4,$6) }
 | TOK_INDEX zreg COMMA xreg COMMA k
   { match $2 with
     | Zreg(_,64) -> I_INDEX_SI ($2,V64,$4,$6)

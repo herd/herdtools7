@@ -93,7 +93,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_ADD_SIMD _| I_ADD_SIMD_S _| I_ADR _| I_ALIGND _| I_ALIGNU _| I_BC _
     | I_BLR _| I_BR _| I_BUILD _| I_CAS _| I_CASBH _| I_CASP _| I_CHKEQ _| I_CHKSLD _
     | I_CHKTGD _| I_CLRTAG _| I_CPYTYPE _| I_CPYVALUE _| I_CSEAL _| I_CSEL _| I_DC _
-    | I_EOR_SIMD _| I_ERET| I_FENCE _| I_GC _| I_IC _| I_LD1 _| I_LD1M _| I_LD1R _ | I_LDAP1 _
+    | I_OP3_SIMD _| I_ERET| I_FENCE _| I_GC _| I_IC _| I_LD1 _| I_LD1M _| I_LD1R _ | I_LDAP1 _
     | I_LD2 _| I_LD2M _| I_LD2R _| I_LD3 _| I_LD3M _| I_LD3R _| I_LD4 _| I_LD4M _
     | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
     | I_LDP _| I_LDP_SIMD _| I_LDPSW _| I_LDR _
@@ -118,7 +118,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
     | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
     | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
-    | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
+    | I_NEG_SV _ | I_OP3_SV _ | I_MOVPRFX _
     | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
     | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
       -> true
@@ -313,12 +313,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_TLBI (_,_)
       | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
       | I_MOVI_S _ | I_MOVI_V _ | I_ADDV _ | I_DUP _ |  I_FMOV_TG _
-      | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
+      | I_OP3_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
       | I_UDF _ | I_ADDSUBEXT _ | I_MOPL _ | I_MOP _
       | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
       | I_UADDV _
       | I_MOV_SV _ | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
-      | I_NEG_SV _ | I_MOVPRFX _ | I_EOR_SV _
+      | I_NEG_SV _ | I_MOVPRFX _ | I_OP3_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
       | I_SMSTART _ | I_SMSTOP _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
@@ -395,7 +395,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_UADDV (_,r,_,_)
       | I_MOV_SV (r,_,_)
       | I_DUP_SV (r,_,_) | I_ADD_SV (r,_,_) | I_PTRUE (r,_)
-      | I_NEG_SV (r,_,_) | I_MOVPRFX (r,_,_) | I_EOR_SV (r,_,_)
+      | I_NEG_SV (r,_,_) | I_MOVPRFX (r,_,_) | I_OP3_SV (_,r,_,_)
       | I_INDEX_SI (r,_,_,_) | I_INDEX_IS (r,_,_,_) | I_INDEX_SS (r,_,_,_) | I_INDEX_II (r,_,_)
       | I_RDVL (r,_) | I_ADDVL (r,_,_) | I_CNT_INC_SVE (_,r,_,_)
       | I_LD1SPT (_,r,_,_,_,_,_) | I_MOVA_TV (r,_,_,_,_) | I_MOVA_VT (r,_,_,_,_)
@@ -425,7 +425,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_VE _
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
-      | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
+      | I_OP3_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
       | I_ALIGND _|I_ALIGNU _
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
@@ -456,7 +456,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_ADDV _| I_DUP _ | I_FMOV_TG _
-      | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
+      | I_OP3_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
       | I_LDP _|I_LDPSW _|I_STP _
       | I_STR _|I_STLR _|I_ALIGND _|I_ALIGNU _
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
@@ -477,7 +477,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
       | I_ADD_SV _ | I_PTRUE _
-      | I_NEG_SV _ | I_MOVPRFX _ | I_EOR_SV _
+      | I_NEG_SV _ | I_MOVPRFX _ | I_OP3_SV _
       | I_MOV_SV _ | I_DUP_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _

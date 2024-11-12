@@ -76,7 +76,7 @@ module Make(V:Constant.S)(C:Config) =
     (* Accept P/M register so assume partial update of register *)
     | I_NEG_SV (r,_,_)
     | I_MOVPRFX (r,_,_)
-    | I_EOR_SV (r,_,_)
+    | I_OP3_SV (_,r,_,_)
       -> A.RegSet.of_list [r]
     (* Reserve slice index *)
     | I_LD1SPT (_,_,r,_,_,_,_)
@@ -1820,7 +1820,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_MOVI_S (v,r,k1) -> movi_s v r k1::k
     | I_MOVI_V (r,kr,s) -> movi_v r kr s::k
     | I_MOV_S (v,r1,r2,i) -> mov_simd_s v r1 r2 i::k
-    | I_EOR_SIMD (r1,r2,r3) -> eor_simd r1 r2 r3::k
+    | I_OP3_SIMD (EOR,r1,r2,r3) -> eor_simd r1 r2 r3::k
+    | I_OP3_SIMD _ -> assert false
     | I_ADD_SIMD (r1,r2,r3) -> add_simd r1 r2 r3::k
     | I_ADD_SIMD_S (r1,r2,r3) -> add_simd_s r1 r2 r3::k
 (* Scalable Vector Extension *)
@@ -1847,7 +1848,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_PTRUE (pred,pat) -> ptrue pred pat::k
     | I_NEG_SV (r1,r2,r3) -> neg_sv r1 r2 r3::k
     | I_MOVPRFX (r1,r2,r3) -> movprfx r1 r2 r3::k
-    | I_EOR_SV (r1,r2,r3) -> eor_sv r1 r2 r3::k
+    | I_OP3_SV (EOR,r1,r2,r3) -> eor_sv r1 r2 r3::k
+    | I_OP3_SV _ -> assert false
     | I_RDVL (r1,k1) -> rdvl r1 k1::k
     | I_ADDVL (r1,r2,k1) -> addvl r1 r2 k1::k
     | I_CNT_INC_SVE  (op,rd,pat,k1) -> cnt_inc_sve op rd pat k1::k
