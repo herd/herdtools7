@@ -1290,7 +1290,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             try
               match IMap.find x env.global.storage_types with
               | ty, GDK_Constant -> (
-                  match IMap.find_opt x env.global.constant_values with
+                  match Storage.find_opt x env.global.constant_values with
                   | Some v -> (ty, E_Literal v |> here) |: TypingRule.EVar
                   | None -> (ty, e) |: TypingRule.EVar)
               | ty, _ -> (ty, e) |: TypingRule.EVar
@@ -1685,7 +1685,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> (
-        try IMap.find name env.global.constant_values |> lit
+        try Storage.find name env.global.constant_values |> lit
         with Not_found -> assert false)
     | T_Int UnConstrained -> L_Int Z.zero |> lit
     | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos |> fatal_non_static
@@ -2795,7 +2795,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin DeclareOneFunc *)
-  let declare_one_func loc (func_sig : func) env =
+  let declare_one_func loc (func_sig : AST.func) env =
     let env1, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
       Fn.add_new_func loc env func_sig.name func_sig.args

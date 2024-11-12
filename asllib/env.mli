@@ -26,6 +26,10 @@ open ASTUtils
 (** The runtime environment used by {!Interpreter}. *)
 
 module type RunTimeConf = sig
+  module Scope : Backend.SCOPE
+  (** Scopes for interpretation: make local storage identifiers unique accross
+      function calls, if needed. *)
+
   type v
   (** Stored elements of the environment. *)
 
@@ -39,16 +43,17 @@ module type S = sig
   type v
   (** Stored elements of the environment. *)
 
+  module Scope : Backend.SCOPE
+  (** Scopes for interpretation: make local storage identifiers unique accross
+      function calls, if needed. *)
+
   (* -------------------------------------------------------------------------*)
   (** {2 Types and constructors.} *)
-
-  type func = int ref * AST.func
-  (** A function has an index that keeps a unique calling index. *)
 
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
     storage : v Storage.t;  (** Binds global variables to their names. *)
-    funcs : func IMap.t;
+    funcs : AST.func IMap.t;
         (** Declared subprograms, maps called identifier to their code. *)
   }
   (** The global part of an environment. *)
@@ -59,17 +64,10 @@ module type S = sig
   type env = { global : global; local : local }
   (** The environment type. *)
 
-  val empty_local : local
-  (** An empty local environment. *)
-
-  val local_of_v_map : v IMap.t -> local
-  (** [local_of_v_map map] is a local environment with the storage set to the
-      bindings in map. *)
-
   val to_static : env -> StaticEnv.env
   (** Builds a static environment, with an empty local part. *)
 
-  val empty_scoped : scope -> local
+  val empty_scoped : ?storage:v Storage.t -> Scope.t -> local
   (** [empty_scoped scope] is an empty local environment in the scope [scope].
   *)
 
@@ -137,7 +135,7 @@ module type S = sig
   (* -------------------------------------------------------------------------*)
   (** {2 Scope handling} *)
 
-  val get_scope : env -> scope
+  val get_scope : env -> Scope.t
   (** Returns the local scope of that environment. *)
 
   val push_scope : env -> env
@@ -149,4 +147,5 @@ module type S = sig
       updated values of [new]. *)
 end
 
-module RunTime (C : RunTimeConf) : S with type v = C.v
+module RunTime (C : RunTimeConf) :
+  S with type v = C.v and module Scope = C.Scope

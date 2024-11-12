@@ -70,20 +70,18 @@ module type Config = sig
   val error_handling_time : Error.error_handling_time
 end
 
+module NoScope : Backend.SCOPE with type t = unit = struct
+  type t = unit
+
+  let global ~init:_ = ()
+  let new_local _ = ()
+end
+
 module NativeBackend (C : Config) = struct
   type 'a m = 'a
   type value = native_value
   type value_range = value * value
   type primitive = value m list -> value list m
-  type scope = AST.identifier * int
-
-  module ScopedIdentifiers = struct
-    type t = identifier * scope
-
-    let compare = compare
-  end
-
-  module SIMap = Map.Make (ScopedIdentifiers)
 
   let is_undetermined _ = false
   let v_of_int i = L_Int (Z.of_int i) |> nv_literal
@@ -139,16 +137,10 @@ module NativeBackend (C : Config) = struct
         |> nv_literal
     | _ -> mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
 
-  let on_write_identifier x scope value =
-    if _log then
-      Format.eprintf "Writing %a to %s in %a.@." pp_native_value value x
-        PP.pp_scope scope
+  module Scope = NoScope
 
-  let on_read_identifier x scope value =
-    if _log then
-      Format.eprintf "Reading %a from %s in %a.@." pp_native_value value x
-        PP.pp_scope scope
-
+  let on_write_identifier _ () _ = ()
+  let on_read_identifier _ () _ = ()
   let v_tuple li = return (NV_Vector li)
   let v_record li = return (NV_Record (IMap.of_list li))
   let v_exception li = v_record li

@@ -27,14 +27,23 @@ type native_value =
   | NV_Vector of native_value list
   | NV_Record of native_value ASTUtils.IMap.t
 
+module NoScope : Backend.SCOPE with type t = unit
+
 module StaticBackend : sig
-  include Backend.S with type value = native_value and type 'a m = 'a
+  include
+    Backend.S
+      with type value = native_value
+       and type 'a m = 'a
+       and module Scope = NoScope
 
   exception StaticEvaluationUnknown
 end
 
 module DeterministicBackend :
-  Backend.S with type value = native_value and type 'a m = 'a
+  Backend.S
+    with type value = native_value
+     and type 'a m = 'a
+     and module Scope = NoScope
 
 module DeterministicInterpreter (C : Interpreter.Config) :
   Interpreter.S with module B = DeterministicBackend

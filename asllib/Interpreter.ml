@@ -44,9 +44,9 @@ let subtypes env t1 t2 =
 
 module type S = sig
   module B : Backend.S
-  module IEnv : Env.S with type v = B.value
+  module IEnv : Env.S with type v = B.value and module Scope = B.Scope
 
-  type value_read_from = B.value * AST.identifier * AST.scope
+  type value_read_from = B.value * AST.identifier * B.Scope.t
 
   type 'a maybe_exception =
     | Normal of 'a
@@ -75,6 +75,8 @@ module Make (B : Backend.S) (C : Config) = struct
   type 'a m = 'a B.m
 
   module EnvConf = struct
+    module Scope = B.Scope
+
     type v = B.value
 
     let unroll = C.unroll
@@ -83,7 +85,7 @@ module Make (B : Backend.S) (C : Config) = struct
   module IEnv = Env.RunTime (EnvConf)
 
   type env = IEnv.env
-  type value_read_from = B.value * identifier * scope
+  type value_read_from = B.value * identifier * B.Scope.t
 
   type 'a maybe_exception =
     | Normal of 'a
@@ -209,12 +211,10 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_funcs] initialize the unique calling reference for each function
       and builds the subprogram sub-env. *)
-  let build_funcs ast (funcs : IEnv.func IMap.t) =
+  let build_funcs ast (funcs : func IMap.t) =
     List.to_seq ast
     |> Seq.filter_map (fun d ->
-           match d.desc with
-           | D_Func func -> Some (func.name, (ref 0, func))
-           | _ -> None)
+           match d.desc with D_Func func -> Some (func.name, func) | _ -> None)
     |> Fun.flip IMap.add_seq funcs
 
   (* Global env *)
@@ -227,7 +227,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let process_one_decl d =
       match d.desc with
       | D_GlobalStorage { initial_value; name; _ } ->
-          let scope = Scope_Global true in
+          let scope = B.Scope.global ~init:true in
           fun env_m ->
             if ISet.mem name names then env_m
             else
@@ -261,7 +261,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let env =
       let open IEnv in
       let global = { static = static_env; storage = Storage.empty; funcs } in
-      { global; local = empty_scoped (Scope_Global true) }
+      { global; local = empty_scoped (B.Scope.global ~init:true) }
     in
     let env =
       List.fold_left
@@ -444,7 +444,7 @@ module Make (B : Backend.S) (C : Config) = struct
             let* () = B.on_read_identifier x (IEnv.get_scope env) v in
             return_normal (v, env)
         | Global v ->
-            let* () = B.on_read_identifier x (Scope_Global false) v in
+            let* () = B.on_read_identifier x (B.Scope.global ~init:false) v in
             return_normal (v, env)
         | NotFound -> fatal_from e @@ Error.UndefinedIdentifier x)
         |: SemanticsRule.EVar
@@ -688,7 +688,7 @@ module Make (B : Backend.S) (C : Config) = struct
             let* () = B.on_write_identifier x (IEnv.get_scope env) v in
             return_normal env |: SemanticsRule.LEVar
         | Global env ->
-            let* () = B.on_write_identifier x (Scope_Global false) v in
+            let* () = B.on_write_identifier x (B.Scope.global ~init:false) v in
             return_normal env |: SemanticsRule.LEVar
         (* End *)
         | NotFound -> (
@@ -1046,7 +1046,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Throw None -> return (Throwing (None, env)) |: SemanticsRule.SThrow
     | S_Throw (Some (e, Some t)) ->
         let** v, new_env = eval_expr env e in
-        let name = throw_identifier () and scope = Scope_Global false in
+        let name = throw_identifier () and scope = B.Scope.global ~init:false in
         let* () = B.on_write_identifier name scope v in
         return (Throwing (Some ((v, name, scope), t), new_env))
         |: SemanticsRule.SThrow
@@ -1262,9 +1262,8 @@ module Make (B : Backend.S) (C : Config) = struct
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin EvalFPrimitive *)
-    | Some (r, { body = SB_Primitive; _ }) ->
-        let scope = Scope_Local (name, !r) in
-        let () = incr r in
+    | Some { body = SB_Primitive; _ } ->
+        let scope = B.Scope.new_local name in
         let body = Hashtbl.find primitive_runtimes name in
         let* ms = body actual_args in
         let _, vsm =
@@ -1287,17 +1286,16 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (vs, genv) |: SemanticsRule.FPrimitive
     (* End *)
     (* Begin EvalFBadArity *)
-    | Some (_, { args = arg_decls; _ })
+    | Some { args = arg_decls; _ }
       when List.compare_lengths actual_args arg_decls <> 0 ->
         fatal_from pos
         @@ Error.BadArity (name, List.length arg_decls, List.length actual_args)
         |: SemanticsRule.FBadArity
     (* End *)
     (* Begin EvalFCall *)
-    | Some (r, { body = SB_ASL body; args = arg_decls; _ }) ->
+    | Some { body = SB_ASL body; args = arg_decls; _ } ->
         (let () = if false then Format.eprintf "Evaluating %s.@." name in
-         let scope = Scope_Local (name, !r) in
-         let () = incr r in
+         let scope = B.Scope.new_local name in
          let env1 = IEnv.{ global = genv; local = empty_scoped scope } in
          let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
          let env2 =

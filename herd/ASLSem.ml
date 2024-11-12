@@ -77,6 +77,7 @@
 
 module AST = Asllib.AST
 module ASTUtils = Asllib.ASTUtils
+open ASLBase
 
 module type Config = sig
   include Sem.Config
@@ -356,16 +357,16 @@ module Make (C : Config) = struct
       if is_experimental then
         fun x scope ->
           match (x, scope) with
-          | "_NZCV", AST.Scope_Global false -> true
+          | "_NZCV", Scope.Global false -> true
           | _ -> false
       else
         fun x scope ->
           match (x, scope) with
-          | "PSTATE", AST.Scope_Global false -> true
+          | "PSTATE", Scope.Global false -> true
           | _ -> false
 
     let is_resaddr x scope =
-      match (x, scope) with "RESADDR", AST.Scope_Global false -> true | _ -> false
+      match (x, scope) with "RESADDR", Scope.Global false -> true | _ -> false
 
     let loc_of_scoped_id ii x scope =
       if is_nzcv x scope then
@@ -842,6 +843,8 @@ module Make (C : Config) = struct
     let build_semantics t ii =
       let ii_env = (ii, ref ii.A.program_order_index) in
       let module ASLBackend = struct
+        module Scope = Scope
+
         type value = V.v
         type value_range = value * value
         type 'a m = 'a M.t
@@ -896,9 +899,8 @@ module Make (C : Config) = struct
       let env =
         A.state_fold
           (fun loc v env ->
-            let open ASLBase in
             match loc with
-            | A.Location_reg (_, ASLLocalId (AST.Scope_Global _, name)) ->
+            | A.Location_reg (_, ASLLocalId (Scope.Global _, name)) ->
                 (name, v) :: env
             | _ -> env)
           t.Test_herd.init_state []

@@ -83,7 +83,7 @@ let find x t =
   let p = IMap.find x t.env in
   PMap.find p t.mem
 
-let find_opt x t = try find x t with Not_found -> None
+let find_opt x t = try Some (find x t) with Not_found -> None
 
 let remove x t =
   try
@@ -109,3 +109,16 @@ let patch_mem ~t_env ~t_mem to_avoid =
       assert false
   in
   { env; mem }
+
+let to_seq t =
+  IMap.to_seq t.env
+  |> Seq.map (fun (name, pointer) -> (name, PMap.find pointer t.mem))
+
+let pp_print pp_elt =
+  let open Format in
+  let pp_sep f () = fprintf f ",@ " in
+  let pp_one f (key, elt) = fprintf f "@[<h 2>%s |-> @[%a@]@]" key pp_elt elt in
+  fun f t ->
+    fprintf f "@[<hv 2>{@ %a}@]" (PP.pp_print_seq ~pp_sep pp_one) (to_seq t)
+
+let map f t = { t with mem = PMap.map f t.mem }

@@ -24,6 +24,8 @@ open AST
 open ASTUtils
 
 module type RunTimeConf = sig
+  module Scope : Backend.SCOPE
+
   type v
 
   val unroll : int
@@ -31,7 +33,8 @@ end
 
 module type S = sig
   type v
-  type func = int ref * AST.func
+
+  module Scope : Backend.SCOPE
 
   type global = {
     static : StaticEnv.global;
@@ -42,10 +45,8 @@ module type S = sig
   type local
   type env = { global : global; local : local }
 
-  val empty_local : local
-  val local_of_v_map : v IMap.t -> local
   val to_static : env -> StaticEnv.env
-  val empty_scoped : scope -> local
+  val empty_scoped : ?storage:v Storage.t -> Scope.t -> local
 
   type 'a env_result = Local of 'a | Global of 'a | NotFound
 
@@ -61,49 +62,36 @@ module type S = sig
   val tick_push_bis : env -> env
   val tick_pop : env -> env
   val tick_decr : env -> bool * env
-  val get_scope : env -> scope
+  val get_scope : env -> Scope.t
   val push_scope : env -> env
   val pop_scope : env -> env -> env
 end
 
 module RunTime (C : RunTimeConf) = struct
+  module Scope = C.Scope
+
   type v = C.v
-  type func = int ref * AST.func
 
   type global = {
     static : StaticEnv.global;
     storage : C.v Storage.t;
-    funcs : func IMap.t;
+    funcs : AST.func IMap.t;
   }
 
   type int_stack = int list
 
   type local = {
     storage : C.v Storage.t;
-    scope : AST.scope;
+    scope : Scope.t;
     unroll : int_stack;
     declared : identifier list;
   }
 
   type env = { global : global; local : local }
 
-  let empty_local =
-    {
-      storage = Storage.empty;
-      scope = Scope_Local ("", 0);
-      unroll = [];
-      declared = [];
-    }
+  let empty_scoped ?(storage = Storage.empty) scope =
+    { scope; storage; unroll = []; declared = [] }
 
-  let local_of_v_map map =
-    {
-      storage = Storage.of_v_map map;
-      scope = Scope_Local ("", 0);
-      unroll = [];
-      declared = [];
-    }
-
-  let empty_scoped scope = { empty_local with scope }
   let get_scope env = env.local.scope
 
   let to_static env =

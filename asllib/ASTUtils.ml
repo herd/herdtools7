@@ -655,21 +655,6 @@ let rec subst_expr substs e =
   | E_Unop (op, e) -> E_Unop (op, tr e)
 (* End *)
 
-let scope_equal s1 s2 =
-  match (s1, s2) with
-  | Scope_Global _, Scope_Global _ -> true
-  | Scope_Global _, _ | _, Scope_Global _ -> false
-  | Scope_Local (n1, i1), Scope_Local (n2, i2) -> i1 == i2 && String.equal n1 n2
-
-let scope_compare s1 s2 =
-  match (s1, s2) with
-  | Scope_Global _, Scope_Global _ -> 0
-  | Scope_Global _, _ -> -1
-  | _, Scope_Global _ -> 1
-  | Scope_Local (n1, i1), Scope_Local (n2, i2) ->
-      let n = Int.compare i1 i2 in
-      if n != 0 then n else String.compare n1 n2
-
 let rec is_simple_expr e =
   match e.desc with
   | E_Var _ | E_Literal _ | E_Unknown _ -> true

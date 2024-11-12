@@ -22,6 +22,18 @@
 
 (** Signature module of the backend of {!Interpreter}. *)
 
+module type SCOPE = sig
+  type t
+  (** Data making a subprogram call unique, if needed. *)
+
+  val global : init:bool -> t
+  (** The global scope during runtime or init, depending on [init] flag. *)
+
+  val new_local : AST.identifier -> t
+  (** [new_local_scope subprogram_name] returns a new identifier for the call
+      to the function named [subprogram_name]. *)
+end
+
 (** This module is the signature of any backend of the ASL interpreter. *)
 module type S = sig
   (* Value constructors *)
@@ -137,11 +149,13 @@ module type S = sig
   val ternary : value -> (unit -> value m) -> (unit -> value m) -> value m
   (** [ternary v w1 w2] is w1 if v is true and w2 if v is false *)
 
-  val on_read_identifier : AST.identifier -> AST.scope -> value -> unit m
+  module Scope : SCOPE
+
+  val on_read_identifier : AST.identifier -> Scope.t -> value -> unit m
   (** [on_read_identifier] is called when a value is read from the local
       environment.*)
 
-  val on_write_identifier : AST.identifier -> AST.scope -> value -> unit m
+  val on_write_identifier : AST.identifier -> Scope.t -> value -> unit m
   (** [on_write_identifier] is called when a value is read from the local
       environment.*)
 

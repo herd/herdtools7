@@ -172,7 +172,7 @@ val find : identifier -> 'a t -> 'a
 (** [find x t] is [v] if [x] is bound to [v] in [t], raising [Not_found]
     otherwise. *)
 
-val find_opt : identifier -> 'a option t -> 'a option
+val find_opt : identifier -> 'a t -> 'a option
 (** [find_opt x t] is [Some v] if [x] is bound to [v] in [t], [None] otherwise.
 *)
 
@@ -189,3 +189,10 @@ val of_v_map : 'a ASTUtils.IMap.t -> 'a t
 
     Equivalent of [IMap.fold declare map empty].
 *)
+
+val pp_print :
+  (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+(** [pp_print pp_elt f t] pretty-print [t] with [pp_elt] on the formatter [f]. *)
+
+val map : ('a -> 'b) -> 'a t -> 'b t
+(** [map f t] binds [s] to [f x] for all [s] bound to [x] in [t]. *)

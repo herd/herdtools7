@@ -24,9 +24,9 @@
 
 module type S = sig
   module B : Backend.S
-  module IEnv : Env.S with type v = B.value
+  module IEnv : Env.S with type v = B.value and module Scope = B.Scope
 
-  type value_read_from = B.value * AST.identifier * AST.scope
+  type value_read_from = B.value * AST.identifier * B.Scope.t
 
   type 'a maybe_exception =
     | Normal of 'a
