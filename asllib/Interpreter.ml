@@ -23,7 +23,6 @@
 open AST
 open ASTUtils
 
-let unsupported_expr e = Error.(fatal_from e (UnsupportedExpr (Dynamic, e)))
 let fatal_from pos = Error.fatal_from pos
 
 (* A bit more informative than assert false *)
@@ -31,8 +30,30 @@ let fatal_from pos = Error.fatal_from pos
 let _warn = false
 let _dbg = false
 
+let rec subtypes_names env s1 s2 =
+  if String.equal s1 s2 then true
+  else
+    match IMap.find_opt s1 StaticEnv.(env.global.subtypes) with
+    | None -> false
+    | Some s1' -> subtypes_names env s1' s2
+
+let subtypes env t1 t2 =
+  match (t1.desc, t2.desc) with
+  | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
+  | _ -> false
+
 module type S = sig
   module B : Backend.S
+  module IEnv : Env.S with type v = B.value and module Scope = B.Scope
+
+  type value_read_from = B.value * AST.identifier * B.Scope.t
+
+  type 'a maybe_exception =
+    | Normal of 'a
+    | Throwing of (value_read_from * AST.ty) option * IEnv.env
+
+  val eval_expr :
+    IEnv.env -> AST.expr -> (B.value * IEnv.env) maybe_exception B.m
 
   val run_typed_env :
     (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
@@ -44,6 +65,7 @@ module type Config = sig
   module Instr : Instrumentation.SEMINSTR
 
   val unroll : int
+  val error_handling_time : Error.error_handling_time
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -53,6 +75,8 @@ module Make (B : Backend.S) (C : Config) = struct
   type 'a m = 'a B.m
 
   module EnvConf = struct
+    module Scope = B.Scope
+
     type v = B.value
 
     let unroll = C.unroll
@@ -61,7 +85,7 @@ module Make (B : Backend.S) (C : Config) = struct
   module IEnv = Env.RunTime (EnvConf)
 
   type env = IEnv.env
-  type value_read_from = B.value * identifier * scope
+  type value_read_from = B.value * identifier * B.Scope.t
 
   type 'a maybe_exception =
     | Normal of 'a
@@ -76,6 +100,9 @@ module Make (B : Backend.S) (C : Config) = struct
   type expr_eval_type = (B.value * env) maybe_exception m
   type stmt_eval_type = control_flow_state maybe_exception m
   type func_eval_type = (value_read_from list * IEnv.global) maybe_exception m
+
+  let unsupported_expr e =
+    fatal_from e Error.(UnsupportedExpr (C.error_handling_time, e))
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -179,19 +206,6 @@ module Make (B : Backend.S) (C : Config) = struct
   (*                                                                           *)
   (*****************************************************************************)
 
-  (* Functions *)
-  (* --------- *)
-
-  (** [build_funcs] initialize the unique calling reference for each function
-      and builds the subprogram sub-env. *)
-  let build_funcs ast (funcs : IEnv.func IMap.t) =
-    List.to_seq ast
-    |> Seq.filter_map (fun d ->
-           match d.desc with
-           | D_Func func -> Some (func.name, (ref 0, func))
-           | _ -> None)
-    |> Fun.flip IMap.add_seq funcs
-
   (* Global env *)
   (* ---------- *)
 
@@ -202,7 +216,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let process_one_decl d =
       match d.desc with
       | D_GlobalStorage { initial_value; name; _ } ->
-          let scope = Scope_Global true in
+          let scope = B.Scope.global ~init:true in
           fun env_m ->
             if ISet.mem name names then env_m
             else
@@ -227,7 +241,6 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
   let build_genv env0 eval_expr (static_env : StaticEnv.global) (ast : AST.t) =
-    let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then
         Format.eprintf "@[<v 2>Executing in env:@ %a@.]" StaticEnv.pp_global
@@ -235,8 +248,8 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     let env =
       let open IEnv in
-      let global = { static = static_env; storage = Storage.empty; funcs } in
-      { global; local = empty_scoped (Scope_Global true) }
+      let global = { static = static_env; storage = Storage.empty } in
+      { global; local = empty_scoped (B.Scope.global ~init:true) }
     in
     let env =
       List.fold_left
@@ -373,7 +386,9 @@ module Make (B : Backend.S) (C : Config) = struct
       in
       let* b = choice cond true false in
       if b then return ()
-      else Error.(fatal_unknown_pos (OverlappingSlices (slices, Dynamic)))
+      else
+        Error.(
+          fatal_unknown_pos (OverlappingSlices (slices, C.error_handling_time)))
     in
     let check_range_does_not_overlap_previous_ranges past_ranges range =
       let* past_ranges = past_ranges in
@@ -417,7 +432,7 @@ module Make (B : Backend.S) (C : Config) = struct
             let* () = B.on_read_identifier x (IEnv.get_scope env) v in
             return_normal (v, env)
         | Global v ->
-            let* () = B.on_read_identifier x (Scope_Global false) v in
+            let* () = B.on_read_identifier x (B.Scope.global ~init:false) v in
             return_normal (v, env)
         | NotFound -> fatal_from e @@ Error.UndefinedIdentifier x)
         |: SemanticsRule.EVar
@@ -661,7 +676,7 @@ module Make (B : Backend.S) (C : Config) = struct
             let* () = B.on_write_identifier x (IEnv.get_scope env) v in
             return_normal env |: SemanticsRule.LEVar
         | Global env ->
-            let* () = B.on_write_identifier x (Scope_Global false) v in
+            let* () = B.on_write_identifier x (B.Scope.global ~init:false) v in
             return_normal env |: SemanticsRule.LEVar
         (* End *)
         | NotFound -> (
@@ -1019,7 +1034,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Throw None -> return (Throwing (None, env)) |: SemanticsRule.SThrow
     | S_Throw (Some (e, Some t)) ->
         let** v, new_env = eval_expr env e in
-        let name = throw_identifier () and scope = Scope_Global false in
+        let name = throw_identifier () and scope = B.Scope.global ~init:false in
         let* () = B.on_write_identifier name scope v in
         return (Throwing (Some ((v, name, scope), t), new_env))
         |: SemanticsRule.SThrow
@@ -1152,7 +1167,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let catcher_matches =
       let static_env = { StaticEnv.empty with global = env.global.static } in
       fun v_ty (_e_name, e_ty, _stmt) ->
-        Types.type_satisfies static_env v_ty e_ty |: SemanticsRule.FindCatcher
+        subtypes static_env v_ty e_ty |: SemanticsRule.FindCatcher
       (* End *)
     in
     (* Main logic: *)
@@ -1164,17 +1179,13 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     | Throwing (Some (v, v_ty), env_throw) -> (
         (* We compute the environment in which to compute the catch statements. *)
-        let env1 =
-          if IEnv.same_scope env env_throw then env_throw
-          else { local = env.local; global = env_throw.global }
-        in
         match List.find_opt (catcher_matches v_ty) catchers with
         (* If any catcher matches the exception type: *)
         | Some catcher -> (
             (* Begin EvalCatch *)
             match catcher with
             | None, _e_ty, s ->
-                eval_block env1 s
+                eval_block env_throw s
                 |> rethrow_implicit (v, v_ty)
                 |: SemanticsRule.Catch
             (* Begin EvalCatchNamed *)
@@ -1182,7 +1193,7 @@ module Make (B : Backend.S) (C : Config) = struct
                 (* If the exception is declared to be used in the
                    catcher, we update the environment before executing [s]. *)
                 let*| env2 =
-                  read_value_from v |> declare_local_identifier_m env1 name
+                  read_value_from v |> declare_local_identifier_m env_throw name
                 in
                 (let*> env3 = eval_block env2 s in
                  IEnv.remove_local name env3 |> return_continue)
@@ -1195,7 +1206,7 @@ module Make (B : Backend.S) (C : Config) = struct
             match otherwise_opt with
             (* Begin EvalCatchOtherwise *)
             | Some s ->
-                eval_block env1 s
+                eval_block env_throw s
                 |> rethrow_implicit (v, v_ty)
                 |: SemanticsRule.CatchOtherwise
             (* Begin EvalCatchNone *)
@@ -1213,9 +1224,15 @@ module Make (B : Backend.S) (C : Config) = struct
     let*^ nargs2, env2 = eval_expr_list_m env1 nargs1 in
     let* vargs = vargs and* nargs2 = nargs2 in
     let nargs3 = List.combine names nargs2 in
-    let**| ms, global = eval_subprogram env2.global name pos vargs nargs3 in
-    let ms2 = List.map read_value_from ms and new_env = { env2 with global } in
-    return_normal (ms2, new_env) |: SemanticsRule.Call
+    let res = eval_subprogram env2.global name pos vargs nargs3 in
+    B.bind_seq res @@ function
+    | Throwing (v, env_throw) ->
+        let new_env = IEnv.{ local = env2.local; global = env_throw.global } in
+        return (Throwing (v, new_env))
+    | Normal (ms, global) ->
+        let ms2 = List.map read_value_from ms
+        and new_env = IEnv.{ local = env2.local; global } in
+        return_normal (ms2, new_env) |: SemanticsRule.Call
   (* End *)
 
   (* Evaluation of Subprograms *)
@@ -1226,16 +1243,15 @@ module Make (B : Backend.S) (C : Config) = struct
       [params] the parameters deduced by type equality. *)
   and eval_subprogram (genv : IEnv.global) name pos
       (actual_args : B.value m list) params : func_eval_type =
-    match IMap.find_opt name genv.funcs with
+    match IMap.find_opt name genv.static.subprograms with
     (* Begin EvalFUndefIdent *)
     | None ->
         fatal_from pos @@ Error.UndefinedIdentifier name
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin EvalFPrimitive *)
-    | Some (r, { body = SB_Primitive; _ }) ->
-        let scope = Scope_Local (name, !r) in
-        let () = incr r in
+    | Some { body = SB_Primitive; _ } ->
+        let scope = B.Scope.new_local name in
         let body = Hashtbl.find primitive_runtimes name in
         let* ms = body actual_args in
         let _, vsm =
@@ -1258,17 +1274,16 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (vs, genv) |: SemanticsRule.FPrimitive
     (* End *)
     (* Begin EvalFBadArity *)
-    | Some (_, { args = arg_decls; _ })
+    | Some { args = arg_decls; _ }
       when List.compare_lengths actual_args arg_decls <> 0 ->
         fatal_from pos
         @@ Error.BadArity (name, List.length arg_decls, List.length actual_args)
         |: SemanticsRule.FBadArity
     (* End *)
     (* Begin EvalFCall *)
-    | Some (r, { body = SB_ASL body; args = arg_decls; _ }) ->
+    | Some { body = SB_ASL body; args = arg_decls; _ } ->
         (let () = if false then Format.eprintf "Evaluating %s.@." name in
-         let scope = Scope_Local (name, !r) in
-         let () = incr r in
+         let scope = B.Scope.new_local name in
          let env1 = IEnv.{ global = genv; local = empty_scoped scope } in
          let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
          let env2 =

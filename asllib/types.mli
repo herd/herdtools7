@@ -114,6 +114,9 @@ end
 
 (** {2 Orders on types} *)
 
+val subtypes : env -> ty -> ty -> bool
+(** Subtypes definition as per declarations in the AST. *)
+
 val subtype_satisfies : env -> ty -> ty -> bool
 (** Subtype-satisfation as per Definition TRVR. *)
 

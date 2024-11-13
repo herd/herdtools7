@@ -44,3 +44,6 @@ end
 
 module Annotate : functor (C : ANNOTATE_CONFIG) -> S
 module TypeCheckDefault : S
+
+val type_and_run :
+  ?instrumentation:bool -> AST.t -> int * Instrumentation.semantics_rule list

@@ -24,42 +24,64 @@ open AST
 open ASTUtils
 
 module type RunTimeConf = sig
+  module Scope : Backend.SCOPE
+
   type v
 
   val unroll : int
 end
 
+module type S = sig
+  type v
+
+  module Scope : Backend.SCOPE
+
+  type global = { static : StaticEnv.global; storage : v Storage.t }
+  type local
+  type env = { global : global; local : local }
+
+  val to_static : env -> StaticEnv.env
+  val empty_scoped : ?storage:v Storage.t -> Scope.t -> local
+
+  type 'a env_result = Local of 'a | Global of 'a | NotFound
+
+  val find : identifier -> env -> v env_result
+  val mem : identifier -> env -> bool
+  val declare_local : identifier -> v -> env -> env
+  val assign_local : identifier -> v -> env -> env
+  val declare_global : identifier -> v -> env -> env
+  val assign_global : identifier -> v -> env -> env
+  val remove_local : identifier -> env -> env
+  val assign : identifier -> v -> env -> env env_result
+  val tick_push : env -> env
+  val tick_push_bis : env -> env
+  val tick_pop : env -> env
+  val tick_decr : env -> bool * env
+  val get_scope : env -> Scope.t
+  val push_scope : env -> env
+  val pop_scope : env -> env -> env
+end
+
 module RunTime (C : RunTimeConf) = struct
-  type func = int ref * AST.func
+  module Scope = C.Scope
 
-  type global = {
-    static : StaticEnv.global;
-    storage : C.v Storage.t;
-    funcs : func IMap.t;
-  }
-
+  type v = C.v
+  type global = { static : StaticEnv.global; storage : C.v Storage.t }
   type int_stack = int list
 
   type local = {
     storage : C.v Storage.t;
-    scope : AST.scope;
+    scope : Scope.t;
     unroll : int_stack;
     declared : identifier list;
   }
 
   type env = { global : global; local : local }
 
-  let empty_local =
-    {
-      storage = Storage.empty;
-      scope = Scope_Local ("", 0);
-      unroll = [];
-      declared = [];
-    }
+  let empty_scoped ?(storage = Storage.empty) scope =
+    { scope; storage; unroll = []; declared = [] }
 
-  let empty_scoped scope = { empty_local with scope }
   let get_scope env = env.local.scope
-  let same_scope env1 env2 = scope_equal env1.local.scope env2.local.scope
 
   let to_static env =
     let global = env.global.static in

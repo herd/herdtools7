@@ -24,6 +24,16 @@
 
 module type S = sig
   module B : Backend.S
+  module IEnv : Env.S with type v = B.value and module Scope = B.Scope
+
+  type value_read_from = B.value * AST.identifier * B.Scope.t
+
+  type 'a maybe_exception =
+    | Normal of 'a
+    | Throwing of (value_read_from * AST.ty) option * IEnv.env
+
+  val eval_expr :
+    IEnv.env -> AST.expr -> (B.value * IEnv.env) maybe_exception B.m
 
   val run_typed_env :
     (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
@@ -42,6 +52,9 @@ module type Config = sig
 
   val unroll : int
   (** Loop unrolling threshold *)
+
+  val error_handling_time : Error.error_handling_time
+  (** When are error filed. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

@@ -66,20 +66,22 @@ let native_value_to_string = Format.asprintf "%a" pp_native_value
 let mismatch_type v types =
   Error.fatal_unknown_pos (Error.MismatchType (native_value_to_string v, types))
 
-module NativeBackend = struct
+module type Config = sig
+  val error_handling_time : Error.error_handling_time
+end
+
+module NoScope : Backend.SCOPE with type t = unit = struct
+  type t = unit
+
+  let global ~init:_ = ()
+  let new_local _ = ()
+end
+
+module NativeBackend (C : Config) = struct
   type 'a m = 'a
   type value = native_value
   type value_range = value * value
   type primitive = value m list -> value list m
-  type scope = AST.identifier * int
-
-  module ScopedIdentifiers = struct
-    type t = identifier * scope
-
-    let compare = compare
-  end
-
-  module SIMap = Map.Make (ScopedIdentifiers)
 
   let is_undetermined _ = false
   let v_of_int i = L_Int (Z.of_int i) |> nv_literal
@@ -118,7 +120,7 @@ module NativeBackend = struct
   let binop op v1 v2 =
     match (v1, v2) with
     | NV_Literal v1, NV_Literal v2 ->
-        Operations.binop_values dummy_annotated Error.Dynamic op v1 v2
+        Operations.binop_values dummy_annotated C.error_handling_time op v1 v2
         |> nv_literal
     | NV_Literal _, v | v, _ ->
         mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
@@ -131,19 +133,14 @@ module NativeBackend = struct
   let unop op v =
     match v with
     | NV_Literal v ->
-        Operations.unop_values dummy_annotated Error.Dynamic op v |> nv_literal
+        Operations.unop_values dummy_annotated C.error_handling_time op v
+        |> nv_literal
     | _ -> mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
 
-  let on_write_identifier x scope value =
-    if _log then
-      Format.eprintf "Writing %a to %s in %a.@." pp_native_value value x
-        PP.pp_scope scope
+  module Scope = NoScope
 
-  let on_read_identifier x scope value =
-    if _log then
-      Format.eprintf "Reading %a from %s in %a.@." pp_native_value value x
-        PP.pp_scope scope
-
+  let on_write_identifier _ () _ = ()
+  let on_read_identifier _ () _ = ()
   let v_tuple li = return (NV_Vector li)
   let v_record li = return (NV_Record (IMap.of_list li))
   let v_exception li = v_record li
@@ -203,7 +200,7 @@ module NativeBackend = struct
           Slice_Length (expr_of_int start, expr_of_int length))
         positions
     in
-    Error.(fatal_unknown_pos (BadSlices (Dynamic, slices, 0)))
+    Error.(fatal_unknown_pos (BadSlices (C.error_handling_time, slices, 0)))
 
   let slices_to_positions positions =
     List.map
@@ -259,69 +256,6 @@ module NativeBackend = struct
   let bitvector_length bv =
     let bv = as_bitvector bv in
     Bitvector.length bv |> v_of_int
-
-  let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
-    let unknown_of_type =
-      unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef
-    in
-    match ty.desc with
-    | T_Real | T_String | T_Bool | T_Bits _ | T_Int _ ->
-        unknown_of_singular_type ~eval_expr_sef ty
-    | T_Array (length, t) ->
-        let n =
-          match length with
-          | ArrayLength_Enum (_, i) ->
-              assert (i >= 0);
-              i
-          | ArrayLength_Expr e -> (
-              match eval_expr_sef e with
-              | NV_Literal (L_Int n) ->
-                  let n = Z.to_int n in
-                  if n >= 0 then n
-                  else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e)))
-              | _ -> (* Bad types *) assert false)
-        in
-        NV_Vector (List.init n (fun _ -> unknown_of_type t))
-    | T_Record fields | T_Exception fields ->
-        fields
-        |> List.map (fun (field_name, t) -> (field_name, unknown_of_type t))
-        |> IMap.of_list
-        |> fun record -> NV_Record record
-    | T_Enum li ->
-        let n = List.length li |> expr_of_int in
-        let range = Constraint_Range (expr_of_int 0, n) in
-        let t = T_Int (WellConstrained [ range ]) |> add_pos_from ty in
-        unknown_of_singular_type ~eval_expr_sef t
-    | T_Tuple types -> NV_Vector (List.map (fun t -> unknown_of_type t) types)
-    | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
-
-  let deterministic_unknown_of_singular_type ~eval_expr_sef ty =
-    match ty.desc with
-    | T_Bool -> NV_Literal (L_Bool false)
-    | T_String -> NV_Literal (L_String "")
-    | T_Real -> NV_Literal (L_Real Q.zero)
-    | T_Int UnConstrained -> NV_Literal (L_Int Z.zero)
-    | T_Int
-        (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
-      ->
-        eval_expr_sef e
-    | T_Int (Parameterized (_, x)) -> eval_expr_sef (E_Var x |> add_pos_from ty)
-    | T_Int (WellConstrained []) -> assert false
-    | T_Bits (e, _) -> (
-        match eval_expr_sef e with
-        | NV_Literal (L_Int n) ->
-            NV_Literal (L_BitVector (Bitvector.zeros (Z.to_int n)))
-        | _ -> (* Bad types *) assert false)
-    | T_Enum _ | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ | T_Named _
-      ->
-        assert false
-
-  let deterministic_unknown_of_type ~eval_expr_sef =
-    unknown_of_aggregate_type deterministic_unknown_of_singular_type
-      ~eval_expr_sef
-
-  let v_unknown_of_type ~eval_expr_sef ty =
-    deterministic_unknown_of_type ~eval_expr_sef ty
 
   module Primitives = struct
     let return_one v = return [ return v ]
@@ -459,8 +393,87 @@ module NativeBackend = struct
   let primitives = Primitives.primitives
 end
 
-module NativeInterpreter (C : Interpreter.Config) =
-  Interpreter.Make (NativeBackend) (C)
+module StaticBackend = struct
+  include NativeBackend (struct
+    let error_handling_time = Error.Static
+  end)
+
+  exception StaticEvaluationUnknown
+
+  let v_unknown_of_type ~eval_expr_sef:_ _ty = raise StaticEvaluationUnknown
+end
+
+let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
+  let unknown_of_type =
+    unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef
+  in
+  match ty.desc with
+  | T_Real | T_String | T_Bool | T_Bits _ | T_Int _ ->
+      unknown_of_singular_type ~eval_expr_sef ty
+  | T_Array (length, t) ->
+      let n =
+        match length with
+        | ArrayLength_Enum (_, i) ->
+            assert (i >= 0);
+            i
+        | ArrayLength_Expr e -> (
+            match eval_expr_sef e with
+            | NV_Literal (L_Int n) ->
+                let n = Z.to_int n in
+                if n >= 0 then n
+                else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e)))
+            | _ -> (* Bad types *) assert false)
+      in
+      NV_Vector (List.init n (fun _ -> unknown_of_type t))
+  | T_Record fields | T_Exception fields ->
+      fields
+      |> List.map (fun (field_name, t) -> (field_name, unknown_of_type t))
+      |> IMap.of_list
+      |> fun record -> NV_Record record
+  | T_Enum li ->
+      let n = List.length li |> expr_of_int in
+      let range = Constraint_Range (expr_of_int 0, n) in
+      let t = T_Int (WellConstrained [ range ]) |> add_pos_from ty in
+      unknown_of_singular_type ~eval_expr_sef t
+  | T_Tuple types -> NV_Vector (List.map (fun t -> unknown_of_type t) types)
+  | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
+
+module DeterministicBackend = struct
+  include NativeBackend (struct
+    let error_handling_time = Error.Dynamic
+  end)
+
+  let deterministic_unknown_of_singular_type ~eval_expr_sef ty =
+    match ty.desc with
+    | T_Bool -> NV_Literal (L_Bool false)
+    | T_String -> NV_Literal (L_String "")
+    | T_Real -> NV_Literal (L_Real Q.zero)
+    | T_Int UnConstrained -> NV_Literal (L_Int Z.zero)
+    | T_Int
+        (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
+      ->
+        eval_expr_sef e
+    | T_Int (Parameterized (_, x)) -> eval_expr_sef (E_Var x |> add_pos_from ty)
+    | T_Int (WellConstrained []) -> assert false
+    | T_Bits (e, _) -> (
+        match eval_expr_sef e with
+        | NV_Literal (L_Int n) ->
+            NV_Literal (L_BitVector (Bitvector.zeros (Z.to_int n)))
+        | _ -> (* Bad types *) assert false)
+    | T_Enum _ | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ | T_Named _
+      ->
+        assert false
+
+  let deterministic_unknown_of_type ~eval_expr_sef =
+    unknown_of_aggregate_type deterministic_unknown_of_singular_type
+      ~eval_expr_sef
+
+  let v_unknown_of_type ~eval_expr_sef ty =
+    deterministic_unknown_of_type ~eval_expr_sef ty
+end
+
+module DeterministicInterpreter (C : Interpreter.Config) =
+  Interpreter.Make (DeterministicBackend) (C)
 
 let exit_value = function
   | NV_Literal (L_Int i) -> i |> Z.to_int
@@ -477,18 +490,11 @@ let interprete ?instrumentation static_env ast =
   let module B = (val instrumentation_buffer instrumentation) in
   let module CI : Interpreter.Config = struct
     let unroll = 0
+    let error_handling_time = Error.Dynamic
 
     module Instr = Instrumentation.SemMake (B)
   end in
-  let module I = NativeInterpreter (CI) in
+  let module I = DeterministicInterpreter (CI) in
   B.reset ();
   let res = I.run_typed static_env ast in
   (exit_value res, B.get ())
-
-let type_and_run ?instrumentation ast =
-  let ast, static_env =
-    Builder.with_stdlib ast
-    |> Builder.with_primitives NativeBackend.primitives
-    |> Typing.TypeCheckDefault.type_check_ast
-  in
-  interprete ?instrumentation static_env ast

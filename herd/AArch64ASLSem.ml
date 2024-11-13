@@ -812,7 +812,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let init =
         let global_loc name =
           ASLS.A.Location_reg
-            (ii.A.proc, ASLBase.ASLLocalId (Asllib.AST.Scope_Global true, name))
+            (ii.A.proc, ASLBase.(ASLLocalId (Scope.Global true, name)))
         in
         let st =
           List.fold_left

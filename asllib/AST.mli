@@ -393,16 +393,3 @@ type decl = decl_desc annotated
 
 type t = decl list
 (** Main AST type. *)
-
-(* -------------------------------------------------------------------------
-
-                              Miscellaneous
-
-   ------------------------------------------------------------------------- *)
-
-(** A scope is an unique identifier of the calling site. *)
-type scope =
-  | Scope_Local of identifier * uid
-      (** Local scope of a function given by its name and an uid of the call *)
-  | Scope_Global of bool
-      (** Global runtime scope, with whether it was during initialization or not *)

@@ -58,7 +58,7 @@ let rec list_mapi3 f i l1 l2 l3 =
 let reduce_constants env e =
   let open StaticInterpreter in
   try static_eval env e
-  with StaticEvaluationUnknown ->
+  with SB.StaticEvaluationUnknown ->
     unsupported_expr e |: TypingRule.ReduceConstants
 (* End *)
 
@@ -1290,7 +1290,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             try
               match IMap.find x env.global.storage_types with
               | ty, GDK_Constant -> (
-                  match IMap.find_opt x env.global.constant_values with
+                  match Storage.find_opt x env.global.constant_values with
                   | Some v -> (ty, E_Literal v |> here) |: TypingRule.EVar
                   | None -> (ty, e) |: TypingRule.EVar)
               | ty, _ -> (ty, e) |: TypingRule.EVar
@@ -1685,7 +1685,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> (
-        try IMap.find name env.global.constant_values |> lit
+        try Storage.find name env.global.constant_values |> lit
         with Not_found -> assert false)
     | T_Int UnConstrained -> L_Int Z.zero |> lit
     | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos |> fatal_non_static
@@ -2795,7 +2795,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin DeclareOneFunc *)
-  let declare_one_func loc (func_sig : func) env =
+  let declare_one_func loc (func_sig : AST.func) env =
     let env1, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
       Fn.add_new_func loc env func_sig.name func_sig.args
@@ -2936,16 +2936,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.DeclareGlobalStorage
   (* End *)
 
-  let rename_primitive loc env (f : AST.func) =
-    let name =
-      best_effort f.name @@ fun _ ->
-      let _, name, _ =
-        Fn.subprogram_for_name loc env f.name (List.map snd f.args)
-      in
-      name
-    in
-    { f with name }
-
   (******************************************************************************)
   (*                                                                            *)
   (*                                Entry point                                 *)
@@ -2964,13 +2954,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match d.desc with
       (* Begin TypecheckFunc *)
       | D_Func ({ body = SB_ASL _; _ } as f) ->
-          let new_env, f1 = annotate_and_declare_func ~loc f genv in
-          let new_d = D_Func (try_annotate_subprogram new_env f1) |> here in
+          let env1, f1 = annotate_and_declare_func ~loc f genv in
+          let f2 = try_annotate_subprogram env1 f1 in
+          let new_env = add_subprogram f2.name f2 env1
+          and new_d = D_Func f2 |> here in
           (new_d, new_env.global) |: TypingRule.TypecheckFunc
       (* End *)
       | D_Func ({ body = SB_Primitive; _ } as f) ->
-          let new_env, f1 = annotate_and_declare_func ~loc f genv in
-          let new_d = D_Func f1 |> here in
+          let new_env, f2 = annotate_and_declare_func ~loc f genv in
+          let new_d = D_Func f2 |> here in
           (new_d, new_env.global)
       (* Begin TypecheckGlobalStorage *)
       | D_GlobalStorage gsd ->
@@ -3021,7 +3013,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       List.rev_append setters others
     in
-    let genv, env_and_fs2 =
+    let genv2, env_and_fs2 =
       list_fold_left_map
         (fun genv (lenv, f, loc) ->
           let env = { global = genv; local = lenv } in
@@ -3030,21 +3022,27 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         genv env_and_fs1
       |: TypingRule.FoldEnvAndFs
     in
-    let ds =
+    let fs3 =
       List.map
-        (fun (lenv, f, loc) ->
-          let here = add_pos_from loc in
-          let env' = { local = lenv; global = genv } in
+        (fun (lenv2, f, loc) ->
+          let env2 = { local = lenv2; global = genv2 } in
           match f.body with
           | SB_ASL _ ->
               let () =
                 if false then Format.eprintf "@[Analysing decl %s.@]@." f.name
               in
-              D_Func (try_annotate_subprogram env' f) |> here
-          | SB_Primitive -> D_Func (rename_primitive loc env' f) |> here)
+              (try_annotate_subprogram env2 f, loc)
+          | SB_Primitive -> (f, loc))
         env_and_fs2
     in
-    (List.rev_append ds acc, genv) |: TypingRule.TypeCheckMutuallyRec
+    let env3, ds =
+      list_fold_left_map
+        (fun env2 ((f : func), loc) ->
+          (add_subprogram f.name f env2, D_Func f |> add_pos_from loc))
+        { local = empty_local; global = genv2 }
+        fs3
+    in
+    (List.rev_append ds acc, env3.global) |: TypingRule.TypeCheckMutuallyRec
   (* End *)
 
   (* Begin TypeCheckAST *)
@@ -3075,3 +3073,11 @@ module TypeCheckDefault = Annotate (struct
   let print_typed = false
   let use_field_getter_extension = false
 end)
+
+let type_and_run ?instrumentation ast =
+  let ast, static_env =
+    Builder.with_stdlib ast
+    |> Builder.with_primitives Native.DeterministicBackend.primitives
+    |> TypeCheckDefault.type_check_ast
+  in
+  Native.interprete ?instrumentation static_env ast

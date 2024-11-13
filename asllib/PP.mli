@@ -88,9 +88,6 @@ val pp_t : t printer
 val pp_version : [ `ASLv0 | `ASLv1 | `Any ] printer
 (** Print the ASL version. *)
 
-val pp_scope : scope printer
-(** Print a scope. *)
-
 (** {1 Pretty-print to strings} *)
 
 val literal_to_string : literal -> string

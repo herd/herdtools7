@@ -248,8 +248,6 @@ val array_length_equal :
 
 val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
 val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool
-val scope_equal : scope -> scope -> bool
-val scope_compare : scope -> scope -> int
 
 (** {1 Transformers} *)
 

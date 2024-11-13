@@ -38,14 +38,43 @@ module A64B = AArch64Base
 (*                                                                           *)
 (*****************************************************************************)
 
-type scope = Asllib.AST.scope
+module Scope = struct
+  type t =
+    | Local of Asllib.AST.identifier * Asllib.AST.uid
+        (** Local scope of a function given by its name and an uid of the call *)
+    | Global of bool
+        (** Global runtime scope, with whether it was during initialization or not *)
 
-let pp_scope =
-  let open Asllib.AST in
-  function
-  | Scope_Global _ ->  ""
-  | Scope_Local (enclosure, call_nb) ->
-      Printf.sprintf "%s.%d." enclosure call_nb
+  let equal s1 s2 =
+    match (s1, s2) with
+    | Global _, Global _ -> true
+    | Global _, _ | _, Global _ -> false
+    | Local (n1, i1), Local (n2, i2) -> i1 == i2 && String.equal n1 n2
+
+  let compare s1 s2 =
+    match (s1, s2) with
+    | Global _, Global _ -> 0
+    | Global _, _ -> -1
+    | _, Global _ -> 1
+    | Local (n1, i1), Local (n2, i2) ->
+        let n = Int.compare i1 i2 in
+        if n != 0 then n else String.compare n1 n2
+
+  let to_string = function
+    | Global _ -> ""
+    | Local (enclosure, call_nb) -> Printf.sprintf "%s.%d." enclosure call_nb
+
+  let main = ("main", 0)
+  let global ~init = Global init
+  let default = Global false
+
+  let new_local =
+    let tbl = Hashtbl.create 64 in
+    fun name ->
+      let index = try Hashtbl.find tbl name with Not_found -> 0 in
+      Hashtbl.replace tbl name (index + 1);
+      Local (name, index)
+end
 
 let arch_reg_to_int =
   let rec index_of elt pos li =
@@ -71,17 +100,16 @@ let endian = A64B.endian
 (* Basic arch types and their basic operations *)
 (***********************************************)
 
-type reg = ASLLocalId of scope * Asllib.AST.identifier | ArchReg of A64B.reg
+type reg = ASLLocalId of Scope.t * Asllib.AST.identifier | ArchReg of A64B.reg
 
 let pp_reg = function
-  | ASLLocalId (scope, x) -> pp_scope scope ^ x
+  | ASLLocalId (scope, x) -> Scope.to_string scope ^ x
   | ArchReg r -> A64B.pp_reg r
 
 let is_local = function ASLLocalId _ -> true | _ -> false
 let is_pc = function ArchReg A64B.PC -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
 let to_reg r = ArchReg r
-let main_scope = ("main", 0)
 
 let parse_local_id =
   let ( let* ) = Option.bind in
@@ -94,12 +122,11 @@ let parse_local_id =
   let regexp =
     Str.regexp {|\([A-Za-z0-9_-]+\)\.\([0-9]+\)\.\([A-Za-z0-9_-]+\)|}
   in
-  let default_scope = Asllib.AST.Scope_Global true in
   fun s ->
     if Str.string_match regexp s 0 then
       let* x1 = find_opt 1 s and* x2 = find_opt 2 s and* x3 = find_opt 3 s in
-      Some (ASLLocalId (Asllib.AST.Scope_Local (x1, int_of_string x2), x3))
-    else Some (ASLLocalId (default_scope, s))
+      Some (ASLLocalId (Scope.Local (x1, int_of_string x2), x3))
+    else Some (ASLLocalId (Scope.default, s))
 
 let parse_reg s =
   match (A64B.parse_reg s, s) with
@@ -114,8 +141,7 @@ let reg_compare r1 r2 =
   match (r1, r2) with
   | ArchReg r1, ArchReg r2 -> A64B.reg_compare r1 r2
   | ASLLocalId (s1, x1), ASLLocalId (s2, x2) ->
-      if String.equal x1 x2 then Asllib.ASTUtils.scope_compare s1 s2
-      else String.compare x1 x2
+      if String.equal x1 x2 then Scope.compare s1 s2 else String.compare x1 x2
   | ArchReg _, ASLLocalId _ -> 1
   | ASLLocalId _, ArchReg _ -> -1
 

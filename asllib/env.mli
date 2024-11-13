@@ -26,6 +26,10 @@ open ASTUtils
 (** The runtime environment used by {!Interpreter}. *)
 
 module type RunTimeConf = sig
+  module Scope : Backend.SCOPE
+  (** Scopes for interpretation: make local storage identifiers unique accross
+      function calls, if needed. *)
+
   type v
   (** Stored elements of the environment. *)
 
@@ -33,20 +37,22 @@ module type RunTimeConf = sig
   (** [unroll] is the number of time a loop can be unrolled. *)
 end
 
-module RunTime (C : RunTimeConf) : sig
+module type S = sig
   (** Internal representation for subprograms. *)
+
+  type v
+  (** Stored elements of the environment. *)
+
+  module Scope : Backend.SCOPE
+  (** Scopes for interpretation: make local storage identifiers unique accross
+      function calls, if needed. *)
 
   (* -------------------------------------------------------------------------*)
   (** {2 Types and constructors.} *)
 
-  type func = int ref * AST.func
-  (** A function has an index that keeps a unique calling index. *)
-
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
-    storage : C.v Storage.t;  (** Binds global variables to their names. *)
-    funcs : func IMap.t;
-        (** Declared subprograms, maps called identifier to their code. *)
+    storage : v Storage.t;  (** Binds global variables to their names. *)
   }
   (** The global part of an environment. *)
 
@@ -56,13 +62,10 @@ module RunTime (C : RunTimeConf) : sig
   type env = { global : global; local : local }
   (** The environment type. *)
 
-  val empty_local : local
-  (** An empty local environment. *)
-
   val to_static : env -> StaticEnv.env
   (** Builds a static environment, with an empty local part. *)
 
-  val empty_scoped : scope -> local
+  val empty_scoped : ?storage:v Storage.t -> Scope.t -> local
   (** [empty_scoped scope] is an empty local environment in the scope [scope].
   *)
 
@@ -75,33 +78,33 @@ module RunTime (C : RunTimeConf) : sig
     | NotFound
         (** Indicates if the value returned was bound in the global or local namespace. *)
 
-  val find : identifier -> env -> C.v env_result
+  val find : identifier -> env -> v env_result
   (** Fetches an identifier from the environment. *)
 
   val mem : identifier -> env -> bool
   (** [mem x env] is true iff [x] is bound in [env]. *)
 
-  val declare_local : identifier -> C.v -> env -> env
+  val declare_local : identifier -> v -> env -> env
   (** [declare_local x v env] is [env] where [x] is now bound to [v]. This
       binding will be discarded by the call to [pop_scope] corresponding to the
       last call to [push_scope] before this declaration. *)
 
-  val assign_local : identifier -> C.v -> env -> env
+  val assign_local : identifier -> v -> env -> env
   (** [assign_local x v env] is [env] where [x] is now bound to [v]. It is
       assumed to be already bound in [env]. *)
 
-  val declare_global : identifier -> C.v -> env -> env
+  val declare_global : identifier -> v -> env -> env
   (** [declare_global x v env] is [env] where [x] is now bound to [v]. It is
       supposed that [x] is not bound in [env]. *)
 
-  val assign_global : identifier -> C.v -> env -> env
+  val assign_global : identifier -> v -> env -> env
   (** [assign_global x v env] is [env] where [x] is now bound to [v]. It is
       assumed to be already bound in [env]. *)
 
   val remove_local : identifier -> env -> env
   (** [remove_local x env] is [env] where [x] is not bound. *)
 
-  val assign : identifier -> C.v -> env -> env env_result
+  val assign : identifier -> v -> env -> env env_result
   (** [assign x v env] assigns [x] to [v] in [env], and returns if [x] was
       declared as a local or global identifier. *)
 
@@ -130,11 +133,8 @@ module RunTime (C : RunTimeConf) : sig
   (* -------------------------------------------------------------------------*)
   (** {2 Scope handling} *)
 
-  val get_scope : env -> scope
+  val get_scope : env -> Scope.t
   (** Returns the local scope of that environment. *)
-
-  val same_scope : env -> env -> bool
-  (** [same_scope env1 env2] is [true] iff [env1]'s scope and [env2]'scope are equal. *)
 
   val push_scope : env -> env
   (** Push a new scope on the declaration stack. Variables declared here will
@@ -144,3 +144,6 @@ module RunTime (C : RunTimeConf) : sig
   (** [pop_scope old new] restores the variable bindings of [old], with the
       updated values of [new]. *)
 end
+
+module RunTime (C : RunTimeConf) :
+  S with type v = C.v and module Scope = C.Scope
