@@ -182,6 +182,9 @@ val fresh_var : string -> identifier
 val global_ignored : unit -> identifier
 (** Creates a fresh dummy variable for a global ignored variable. *)
 
+val string_starts_with : prefix:string -> string -> bool
+(** A copy of String.starts_with out of stdlib 4.12 *)
+
 val is_global_ignored : identifier -> bool
 (** [is_global_ignored s] is true iff [s] has been created with [global_ignored ()]. *)
 

@@ -40,7 +40,11 @@ module Make (Conf : RunTest.Config) (ModelConfig : MemCat.Config) = struct
     type instruction = ASLA.parsedPseudo
     type token = Asllib.Tokens.token
 
-    let lexer = Asllib.Lexer.token
+    let lexer =
+        let module Lexer = Asllib.Lexer.Make(struct
+          let allow_double_underscore = false
+        end) in
+        Lexer.token
 
     let parser =
       let version =
