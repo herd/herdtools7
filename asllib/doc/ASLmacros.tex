@@ -390,6 +390,7 @@
 \newcommand\Nast[0]{\hyperlink{def-nast}{\nonterminal{ast}}}
 \newcommand\Ndecl[0]{\hyperlink{def-ndecl}{\nonterminal{decl}}}
 \newcommand\Nparamsopt[0]{\hyperlink{def-nparamsopt}{\nonterminal{params\_opt}}}
+\newcommand\Ncall[0]{\hyperlink{def-ncall}{\nonterminal{call}}}
 \newcommand\Nfuncargs[0]{\hyperlink{def-nfuncargs}{\nonterminal{func\_args}}}
 \newcommand\Nreturntype[0]{\hyperlink{def-nreturntype}{\nonterminal{return\_type}}}
 \newcommand\Nfuncbody[0]{\hyperlink{def-nfuncbody}{\nonterminal{func\_body}}}
@@ -533,6 +534,7 @@
 \newcommand\subprogrambody[0]{\hyperlink{ast-subprogrambody}{\textsf{sub\_program\_body}}}
 \newcommand\func[0]{\hyperlink{ast-func}{\textsf{func}}}
 \newcommand\Field[0]{\hyperlink{ast-field}{\textsf{field}}}
+\newcommand\call[0]{\hyperlink{ast-call}{\textsf{call}}}
 
 % Expression labels
 \newcommand\ELiteral[0]{\hyperlink{ast-eliteral}{\textsf{E\_Literal}}}
@@ -684,6 +686,7 @@
 \newcommand\builddecl[0]{\hyperlink{build-decl}{\textfunc{build\_decl}}}
 \newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}}
 \newcommand\builduntypeddeclitem[0]{\hyperlink{build-untypeddeclitem}{\textfunc{build\_untyped\_decl\_item}}}
+\newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}}
 \newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}}
 \newcommand\buildstmt[0]{\hyperlink{build-stmt}{\textfunc{build\_stmt}}}
 \newcommand\buildexpr[0]{\hyperlink{build-expr}{\textfunc{build\_expr}}}
@@ -691,6 +694,8 @@
 \newcommand\buildlexpratom[0]{\hyperlink{build-lexpratom}{\textfunc{build\_lexpr\_atom}}}
 \newcommand\buildparamsopt[0]{\hyperlink{build-paramsopt}{\textfunc{build\_params\_opt}}}
 \newcommand\buildfuncargs[0]{\hyperlink{build-funcargs}{\textfunc{build\_func\_args}}}
+\newcommand\buildcall[0]{\hyperlink{build-call}{\textfunc{build\_call}}}
+\newcommand\setcalltype[0]{\hyperlink{def-setcalltype}{\textfunc{set\_call\_type}}}
 \newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textfunc{build\_return\_type}}}
 \newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}}
 \newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textfunc{build\_typed\_identifier}}}
@@ -831,6 +836,10 @@
 \newcommand\Forlimit[0]{\text{limit}}
 \newcommand\EArrayLength[0]{\text{length}}
 \newcommand\EArrayValue[0]{\text{value}}
+\newcommand\callname[0]{\text{name}}
+\newcommand\callparams[0]{\text{params}}
+\newcommand\callargs[0]{\text{args}}
+\newcommand\callcalltype[0]{\text{call\_type}}
 
 \newcommand\True[0]{\hyperlink{def-true}{\texttt{TRUE}}}
 \newcommand\False[0]{\hyperlink{def-false}{\texttt{FALSE}}}
@@ -1981,6 +1990,7 @@
 \newcommand\vaoptfields[0]{\texttt{aopt\_fields}}
 \newcommand\vardecl[0]{\texttt{vardecl}}
 \newcommand\varg[0]{\texttt{arg}}
+\newcommand\vargasts[0]{\texttt{arg\_asts}}
 \newcommand\vargone[0]{\texttt{arg1}}
 \newcommand\vargs[0]{\texttt{args}}
 \newcommand\vargsm[0]{\texttt{vargs\_m}}
@@ -2018,6 +2028,9 @@
 \newcommand\vbv[0]{\texttt{v\_bv}}
 \newcommand\vc[0]{\texttt{c}}
 \newcommand\vcp[0]{\texttt{c'}}
+\newcommand\vcall[0]{\texttt{call}}
+\newcommand\vcallp[0]{\texttt{call'}}
+\newcommand\vcallpp[0]{\texttt{call''}}
 \newcommand\vcase[0]{\texttt{case}}
 \newcommand\vcaseone[0]{\texttt{case1}}
 \newcommand\vcasesone[0]{\texttt{cases1}}

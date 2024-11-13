@@ -220,7 +220,7 @@ and the value $\nvint(2)$ to the mutable variable~\texttt{b}.
 All of the following apply:
 \begin{itemize}
   \item $\vs$ assigns a \assignableexpression\ list from a subprogram call, \\
-        $\SAssign(\LEDestructuring(\les),\ECall(\name, \args, \namedargs))$;
+        $\SAssign(\LEDestructuring(\les),\ECall(\vcall))$;
   \item $\les$ is a list of \assignableexpressions, each of which is either \\ a variable ($\LEVar(\Ignore)$)
         or a discarded variable (\LEDiscard);
   \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
@@ -248,10 +248,10 @@ We now define the evaluation of assigning from a subprogram call:
 \inferrule{
   \vles \eqdef \vle_{1..k}\\
   i=1..k: \lexprisvar(\vle_i) \evalarrow \True\\
-  \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\vms, \envone) \OrAbnormal\\\\
+  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \Normal(\vms, \envone) \OrAbnormal\\\\
   \evalmultiassignment(\envone, \vles, \vms) \evalarrow \Normal(\newg, \newenv) \OrAbnormal
 }{
-  \evalstmt{\env, \SAssign(\LEDestructuring(\les),\ECall(\name, \args, \namedargs))} \\
+  \evalstmt{\env, \SAssign(\LEDestructuring(\les),\ECall(\vcall))} \\
   \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
@@ -261,30 +261,54 @@ We now define the evaluation of assigning from a subprogram call:
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derivesinline\
-   & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+   & \Ncall \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Ncall \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 \end{flalign*}
+
+\subsubsection{ASTRule.MakeSetter}
+\hypertarget{def-makesetter}{}
+The helper function
+\[
+\makesetter(
+  \overname{\call}{\vcall} \aslsep
+  \overname{\expr}{\varg}) \aslto \overname{\call}{\vcallp}
+\]
+constructs a setter call $\vcallp$ using a base call $\vcall$ and right-hand side $\varg$.
+
+\begin{mathpar}
+\inferrule{}{
+  \makesetter(\vcall, \varg) \aslto
+    \overname{\left\{
+      \begin{array}{rcl}
+        \callname &:& \vcall.\callname,\\
+        \callparams &:& \vcall.\callparams,\\
+        \callargs &:& [\varg]\concat\vcall.\callargs,\\
+        \callcalltype &:& \STSetter
+      \end{array}
+    \right\}}{\vcallp}
+}
+\end{mathpar}
 
 \subsubsection{ASTRule.DesugarSetter}
 \hypertarget{def-desugarsetter}{}
 The helper function
 \[
 \desugarsetter(
-  \overname{\identifier}{\name} \aslsep
-  \overname{\expr^*}{\args} \aslsep
+  \overname{\call}{\vcall} \aslsep
   \overname{\identifier^*}{\fields} \aslsep
   \overname{\expr}{\rhs}) \aslto \overname{\stmt}{\news}
 \]
-builds a statement $\news$ from an assignment of expression $\rhs$ to a setter $\name$, called with arguments $\args$ and field accesses $\fields$.
+builds a statement $\news$ from an assignment of expression $\rhs$ to a setter invocation $\vcall$$\name$ with field accesses $\fields$.
 
 \begin{mathpar}
 \inferrule[empty]{
-  \fields \eqname \emptylist
+  \fields \eqname \emptylist \\
+  \makesetter(\vcall, \rhs) \aslto \vcallp
 }{
-  \desugarsetter(\name, \args, \fields, \rhs)
+  \desugarsetter(\vcall, \fields, \rhs)
   \astarrow
-  \SCall(\name, [\rhs] \concat \args)
+  \SCall(\vcallp)
 }
 \end{mathpar}
 
@@ -292,13 +316,14 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter $
 \inferrule[singleton]{
   \fields \eqname [\field] \\
   \vx \in \Identifiers \text{ is fresh} \\\\
-  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \langle\ECall(\name, \args)\rangle) \\\\
+  \setcalltype(\vcall, \STGetter) \aslto \texttt{getter} \\\\
+  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \langle\texttt{getter}\rangle) \\\\
   \texttt{modify} \eqdef \SAssign(\LESetField(\LEVar(\vx), \field), \rhs) \\\\
-  \texttt{write} \eqdef \SCall(\name, [\EVar(\vx)] \concat \args)
+  \makesetter(\vcall, \EVar(\vx)) \aslto \texttt{setter}
 }{
-  \desugarsetter(\name, \args, \fields, \rhs)
+  \desugarsetter(\vcall, \fields, \rhs)
   \astarrow
-  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \texttt{write})
+  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \SCall(\texttt{setter}))
 }
 \end{mathpar}
 
@@ -306,53 +331,48 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter $
 \inferrule[multiple]{
   \listlen{\fields} > 1 \\
   \vx \in \Identifiers \text{ is fresh} \\\\
-  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \langle\ECall(\name, \args)\rangle) \\\\
+  \setcalltype(\vcall, \STGetter) \aslto \texttt{getter} \\\\
+  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \langle\texttt{getter}\rangle) \\\\
   \texttt{modify} \eqdef \SAssign(\LESetFields(\LEVar(\vx), \fields), \rhs) \\\\
-  \texttt{write} \eqdef \SCall(\name, [\EVar(\vx)] \concat \args)
+  \makesetter(\vcall, \EVar(\vx)) \aslto \texttt{setter}
 }{
-  \desugarsetter(\name, \args, \fields, \rhs)
+  \desugarsetter(\vcall, \fields, \rhs)
   \astarrow
-  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \texttt{write})
+  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \SCall(\texttt{setter}))
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.SSetterAssign}
+\subsubsection{ASTRule.SetterAssign}
 \begin{mathpar}
 \inferrule{
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+  \desugarsetter(\astof{\vcall}, \emptylist, \astof{\vexpr}) \astarrow \vastnode
 }{
-  \buildstmt(\overname{\Nstmt(
-    \Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Teq, \punnode{\Nexpr}, \Tsemicolon
+  \buildstmt(\overname{\Nstmt(\punnode{\call}, \Teq, \punnode{\Nexpr}, \Tsemicolon
   )}{\vparsednode})
-  \\ \astarrow
-  \overname{\desugarsetter(\vx, \astversion{\vargs}, [], \astof{\vexpr})}{\vastnode}
+  \astarrow \vastnode
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule{
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+  \desugarsetter(\astof{\vcall}, [\vfield], \astof{\vexpr}) \astarrow \vastnode
 }{
-  \buildstmt(\overname{\Nstmt(
-    \Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Tdot,
+  \buildstmt(\overname{\Nstmt(\punnode{\call}, \Tdot,
     \Tidentifier(\vfield), \Teq, \punnode{\Nexpr}, \Tsemicolon
   )}{\vparsednode})
-  \\ \astarrow
-  \overname{\desugarsetter(\vx, \astversion{\vargs}, [\vfield], \astof{\vexpr})}{\vastnode}
+  \astarrow \vastnode
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule{
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
-  \buildclist[\buildidentity](\vfields) \astarrow \vfieldasts
+  \buildclist[\buildidentity](\vfields) \astarrow \vfieldasts \\
+  \desugarsetter(\astof{\vcall}, \vfieldasts, \astof{\vexpr}) \astarrow \vastnode
 }{
-  \buildstmt(\overname{\Nstmt(
-    \Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Tdot,
+  \buildstmt(\overname{\Nstmt(\punnode{\call}, \Tdot,
     \Tlbracket, \namednode{\vfields}{\Clisttwo{\Tidentifier}}, \Trbracket, \Teq, \punnode{\Nexpr}, \Tsemicolon
   )}{\vparsednode})
-  \\ \astarrow
-  \overname{\desugarsetter(\vx, \astversion{\vargs}, \vfieldasts, \astof{\vexpr})}{\vastnode}
+  \astarrow \vastnode
 }
 \end{mathpar}
 
@@ -811,22 +831,24 @@ All of the following apply:
 \section{Call Statements\label{sec:CallStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &
+\Nstmt \derivesinline\ & \Ncall \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\stmt \derives\ & \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}) &
+\stmt \derives\ & \SCall(\call) &
 \end{flalign*}
 
 \subsubsection{ASTRule.SCall}
 \begin{mathpar}
 \inferrule{
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+  \buildcall(\vcall) \astarrow \astversion{\vcall} \\
+  \setcalltype(\astversion{\vcall}) \aslto \vcallp
 }{
-  \buildstmt(\overname{\Nstmt(\Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(
+  \overname{\Nstmt(\namednode{\vcall}{\Ncall}, \Tsemicolon)}{\vparsednode})
   \astarrow
-  \overname{\SCall(\vx, \astversion{\vargs})}{\vastnode}
+  \overname{\SCall(\vcallp)}{\vastnode}
 }
 \end{mathpar}
 
@@ -835,12 +857,10 @@ All of the following apply:
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vs$ is a call to a subprogram named $\name$ with arguments $\vargs$;
-  \item annotating the call to $\name$ with arguments $\vargs$, as a procedure (that is, with $\STProcedure$),
-        as per \chapref{SubprogramCalls} (which makes sure that the call does not have a return type),
-        yields $(\newname, \newargs, \eqs, \None)$\ProseOrTypeError;
-  \item $\news$ is the call to a subprogram named $\newname$ with arguments
-        $\newargs$ and parameter assignments $\neweqs$;
+  \item $\vs$ is a call to a subprogram, that is, $\SCall(\vcall)$;
+  \item annotating the subprogram call $\vcall$ as per \chapref{SubprogramCalls}
+        yields $(\vcallp, \None)$\ProseOrTypeError;
+  \item $\news$ is the call using $\vcallp$, that is, $\SCall(\vcallp)$;
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
 \subsubsection{Formally}
@@ -848,14 +868,14 @@ All of the following apply:
 \inferrule{
   {
     \begin{array}{r}
-      \annotatecall(\tenv, \name, \vargs, \STProcedure) \typearrow \\ (\newname, \newargs, \eqs, \None) \OrTypeError
+      \annotatecall(\vcall) \typearrow (\vcallp, \None) \OrTypeError
     \end{array}
   }
 }{
   {
     \begin{array}{r}
-  \annotatestmt(\tenv, \overname{\SCall(\name, \vargs)}{\vs}) \typearrow \\
-  (\overname{\SCall(\newname, \newargs, \eqs)}{\news}, \tenv)
+  \annotatestmt(\tenv, \overname{\SCall(\vcall)}{\vs}) \typearrow
+  (\overname{\SCall(\vcallp)}{\news}, \tenv)
     \end{array}
   }
 }
@@ -878,7 +898,7 @@ In the specification:
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vs$ is a call statement, $\SCall(\name, \args, \namedargs)$;
+  \item $\vs$ is a call statement, $\SCall(\vcall)$;
   \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
   \\ $\Normal(\newg, \newenv)$\ProseOrAbnormal;
   \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
@@ -887,9 +907,9 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
 }{
-  \evalstmt{\env, \overname{\SCall(\name, \args, \namedargs)}{\vs}} \evalarrow \Continuing(\newg, \newenv)
+  \evalstmt{\env, \overname{\SCall(\vcall)}{\vs}} \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
