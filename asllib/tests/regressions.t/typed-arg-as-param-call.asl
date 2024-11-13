@@ -1,10 +1,10 @@
 func test(N: integer{5..10}, a: bits(N))
 begin
     pass;
-end
+end;
 
 func main() => integer
 begin
     test(2, '11');
     return 0;
-end
+end;

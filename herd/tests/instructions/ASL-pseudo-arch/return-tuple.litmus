@@ -7,13 +7,13 @@ ASL return-tuple
 func f() => (integer, integer)
 begin
   return (1,2);
-end
+end;
 
 func main() => integer
 begin
   let (a,b) = f();
   let c = a+b;
   return 0;
-end
+end;
 
 forall 0:main.0.c=3

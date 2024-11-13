@@ -10,18 +10,18 @@ begin
     let b = SomeBoolean();
     if b then
       throw Coucou {};
-    end
+    end;
     return a+1;
   catch
     when Coucou =>
       return a+3;
-  end
+  end;
 
-end
+end;
 func main() => integer
 begin
   let  x = g(0);
   return 0;
-end
+end;
 
 locations [0:main.0.x;]

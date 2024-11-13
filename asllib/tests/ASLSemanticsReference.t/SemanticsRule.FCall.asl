@@ -3,14 +3,14 @@ begin
 
   return x + 1;
 
-end
+end;
 
 func bar (x : integer) 
 begin
 
   assert x == 3; 
 
-end
+end;
 
 func main () => integer
 begin
@@ -19,4 +19,4 @@ begin
   bar(3);
 
   return 0;
-end
+end;

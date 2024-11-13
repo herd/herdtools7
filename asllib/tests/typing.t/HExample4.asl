@@ -6,4 +6,4 @@ begin
     var value = Zeros (8*bytes);
     value = Ones(8*bytes);
     return value;
-end
+end;

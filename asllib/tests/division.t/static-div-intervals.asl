@@ -8,4 +8,4 @@ begin
   let e : integer {10..20} = 10;
   let f: integer {1..2} = e DIV d;
   let g: integer {1} = d DIV e;
-end
+end;

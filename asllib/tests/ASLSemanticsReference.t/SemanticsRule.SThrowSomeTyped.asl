@@ -9,7 +9,7 @@ begin
     when exn: MyExceptionType =>
       assert exn.a == 42;
     otherwise => assert FALSE;
-  end
+  end;
 
   return 0;
-end
+end;

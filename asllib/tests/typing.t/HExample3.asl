@@ -23,11 +23,11 @@ begin
             // but causes a runtime error
             function(ZeroExtend(temp, 8*size), size);
 
-    end
+    end;
     return result;
-end
+end;
 
 func function(x : bits(8*size), size : integer)
 begin
     pass;
-end
+end;

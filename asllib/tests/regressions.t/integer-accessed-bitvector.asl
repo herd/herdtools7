@@ -4,4 +4,4 @@ begin
   x[0] = '1';
 
   return 0;
-end
+end;

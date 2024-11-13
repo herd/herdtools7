@@ -10,24 +10,24 @@ type MyBitVector of bits (5) {
 func build_one() => MyBitVector
 begin
   return '10111';
-end
+end;
 
 func set_first(bv:MyBitVector, b:bits(1)) => MyBitVector
 begin
   var bv_bis = bv;
   bv_bis.first = b;
   return bv_bis;
-end
+end;
 
 func get_first_three(bv:MyBitVector) => bits(3)
 begin
   return bv.first_three;
-end
+end;
 
 func as_MyBitVector(x:bits(5)) => MyBitVector
 begin
   return x;
-end
+end;
 
 func main () => integer
 begin
@@ -44,7 +44,7 @@ begin
   assert as_MyBitVector('11010').swapped == '10011';
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

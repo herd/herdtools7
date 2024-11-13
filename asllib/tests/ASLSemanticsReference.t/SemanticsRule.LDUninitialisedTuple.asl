@@ -6,4 +6,4 @@ begin
   assert x == 0 && y == TRUE;
 
   return 0;
-end
+end;

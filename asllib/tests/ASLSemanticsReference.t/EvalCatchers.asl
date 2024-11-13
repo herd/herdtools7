@@ -6,7 +6,7 @@ begin
     var x = 5;
     g = 1;
     throw MyExceptionType{};
-end
+end;
 
 func main() => integer
 begin
@@ -16,6 +16,6 @@ begin
      catch
        when MyExceptionType =>
          print(x, g);
-     end
+     end;
   return 0;
-end
+end;

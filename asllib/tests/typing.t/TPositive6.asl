@@ -4,7 +4,7 @@
 func foo() => integer {8, 16}
 begin
   return UNKNOWN : integer {8, 16};
-end
+end;
 
 func positive6(size : integer {0..3})
 begin
@@ -27,5 +27,5 @@ begin
         when 32 => // Unreachable but legal code
             pass;
             // <some code>
-    end
-end
+    end;
+end;

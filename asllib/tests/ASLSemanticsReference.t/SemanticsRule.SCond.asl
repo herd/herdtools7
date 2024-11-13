@@ -4,7 +4,7 @@ begin
   if TRUE 
     then assert TRUE; 
     else assert FALSE; 
-  end
+  end;
 
   return 0;
-end
+end;

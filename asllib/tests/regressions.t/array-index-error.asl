@@ -9,5 +9,5 @@ begin
   let x = arr[14];
 
   return 1;
-end
+end;
   

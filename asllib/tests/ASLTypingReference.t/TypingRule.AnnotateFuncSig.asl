@@ -8,4 +8,4 @@ func signature_example{A}(
     C: integer) => bits(A+B)
 begin
     return [bv, Ones(B)];
-end
+end;

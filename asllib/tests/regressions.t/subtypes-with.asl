@@ -30,4 +30,4 @@ begin
   assert b.c == 5;
 
   return 0;
-end
+end;

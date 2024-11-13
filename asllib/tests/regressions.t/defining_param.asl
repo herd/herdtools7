@@ -11,4 +11,4 @@ begin
     // declaration would be illegal.
     // None of the other formals are parameter-defining.
     return;
-end
+end;

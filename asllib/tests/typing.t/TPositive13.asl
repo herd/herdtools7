@@ -12,10 +12,10 @@ begin
     let testD = testA[63:0];
     let testE = testB[63:0];
     let testF = testC[63:0];
-end
+end;
 
 func main() => integer
 begin
   positive13(Zeros(64) + 123456789, Zeros(64) + 987654321, Zeros(64) + 987654321);
   return 0;
-end
+end;

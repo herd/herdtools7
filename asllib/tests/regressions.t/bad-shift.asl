@@ -4,4 +4,4 @@ begin
   let b = LSL(a,10);
   print(b);
   return 0;
-end
+end;

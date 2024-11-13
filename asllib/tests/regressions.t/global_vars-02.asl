@@ -7,4 +7,4 @@ begin
     assert y == 5;
 
     return 0;
-end
+end;

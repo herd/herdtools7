@@ -6,5 +6,4 @@ begin
 
   let d: integer {0..20} = c MOD a;
   let e: integer {0..a} = c MOD b;
-end
-
+end;

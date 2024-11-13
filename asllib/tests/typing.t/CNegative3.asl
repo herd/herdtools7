@@ -10,8 +10,8 @@ begin
         y = 2.0*x*y + y0;
         x = xtemp;
         z = z + 1; // should be illegal without ATC
-    end
+    end;
     let W = z;
     var bv: bits(W) = Ones(W);
     return BitCount(bv);
-end
+end;

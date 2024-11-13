@@ -15,4 +15,4 @@ begin
 
     // bit slices of bit vectors
     let testI           = Zeros(2)[n];        // statically allowed, but may fail at runtime if n > 1
-end
+end;

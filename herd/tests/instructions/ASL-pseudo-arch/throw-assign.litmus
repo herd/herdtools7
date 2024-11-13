@@ -16,7 +16,7 @@ func f() => integer
 begin
   z = 2;
   throw Coucou {};
-end
+end;
 
 func main() => integer
 begin
@@ -24,7 +24,7 @@ begin
     z = f();
   catch
     when Coucou => return 0;
-  end
-end
+  end;
+end;
 
 forall 0:z=2

@@ -5,4 +5,4 @@ ASL no-main
 func blablabla() => integer
 begin
   return 3;
-end
+end;

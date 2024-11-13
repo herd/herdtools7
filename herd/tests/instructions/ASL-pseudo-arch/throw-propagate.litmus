@@ -20,8 +20,8 @@ begin
     throw Coucou {};
   else
     return 1;
-  end
-end
+  end;
+end;
 
 func g() => integer
 begin
@@ -29,16 +29,16 @@ begin
   let b = SomeBoolean();
   try
     a = f();
-    if b then throw Coucou {}; end
+    if b then throw Coucou {}; end;
     t = 2;
-    if SomeBoolean() then throw Bonga {}; end
+    if SomeBoolean() then throw Bonga {}; end;
     return a;
   catch
-    when Coucou => if SomeBoolean() then a = 0; throw Coucou {}; end
-    when Bonga => if SomeBoolean() then a=0; throw Coucou {}; end
-  end
+    when Coucou => if SomeBoolean() then a = 0; throw Coucou {}; end;
+    when Bonga => if SomeBoolean() then a=0; throw Coucou {}; end;
+  end;
   return a;
-end
+end;
 
 func main() => integer
 begin
@@ -48,8 +48,8 @@ begin
     return 0;
   catch
     when Coucou => return 0;
-  end
-end
+  end;
+end;
 
 locations [0:main.0.y;]
 forall 0:z=2 /\ 0:t=2 /\

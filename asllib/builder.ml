@@ -24,7 +24,7 @@ open Lexing
 
 let _debug = false
 
-type token = Parser.token
+type token = Tokens.token
 type ast_type = [ `Opn | `Ast ]
 type version = [ `ASLv0 | `ASLv1 ]
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
@@ -40,7 +40,7 @@ let lexbuf_set_filename lexbuf pos_fname =
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname };
   lexbuf.lex_start_p <- { lexbuf.lex_start_p with pos_fname }
 
-let from_lexbuf ast_type version (lexbuf : lexbuf) =
+let from_lexbuf ast_type allow_no_end_semicolon version (lexbuf : lexbuf) =
   let open Error in
   let () =
     if _debug then
@@ -56,6 +56,9 @@ let from_lexbuf ast_type version (lexbuf : lexbuf) =
   in
   match version with
   | `ASLv1 -> (
+      let module Parser = Parser.Make (struct
+        let allow_no_end_semicolon = allow_no_end_semicolon
+      end) in
       let parse = select_type ~opn:Parser.opn ~ast:Parser.ast ast_type in
       try parse Lexer.token lexbuf with
       | Parser.Error -> cannot_parse lexbuf
@@ -65,8 +68,8 @@ let from_lexbuf ast_type version (lexbuf : lexbuf) =
       and lexer0 = Lexer0.token () in
       try parse lexer0 lexbuf with Parser0.Error -> cannot_parse lexbuf)
 
-let from_lexbuf' ast_type version lexbuf () =
-  from_lexbuf ast_type version lexbuf
+let from_lexbuf' ast_type allow_no_end_semicolon version lexbuf () =
+  from_lexbuf ast_type allow_no_end_semicolon version lexbuf
 
 let close_after chan f =
   try
@@ -83,21 +86,28 @@ let open_file filename =
   lexbuf_set_filename lexbuf filename;
   (lexbuf, chan)
 
-let from_file ?ast_type version f =
+let from_file ?ast_type ?(allow_no_end_semicolon = false) version f =
   let lexbuf, chan = open_file f in
-  close_after chan @@ from_lexbuf' ast_type version lexbuf
+  close_after chan
+  @@ from_lexbuf' ast_type allow_no_end_semicolon version lexbuf
 
-let from_file_result ?ast_type version f =
+let from_file_result ?ast_type ?(allow_no_end_semicolon = false) version f =
   let lexbuf, chan = open_file f in
-  close_after chan @@ Error.intercept @@ from_lexbuf' ast_type version lexbuf
+  close_after chan @@ Error.intercept
+  @@ from_lexbuf' ast_type allow_no_end_semicolon version lexbuf
 
-let from_lexer_lexbuf ?ast_type version _lexer lexbuf =
-  Error.intercept (from_lexbuf' ast_type version lexbuf) ()
+let from_lexer_lexbuf ?ast_type ?(allow_no_end_semicolon = false) version _lexer
+    lexbuf =
+  Error.intercept
+    (from_lexbuf' ast_type allow_no_end_semicolon version lexbuf)
+    ()
 
-let from_file_multi_version ?ast_type = function
+let from_file_multi_version ?ast_type ?allow_no_end_semicolon = function
   | `Any -> (
       fun fname ->
-        match from_file_result ?ast_type `ASLv0 fname with
+        match
+          from_file_result ?ast_type ?allow_no_end_semicolon `ASLv0 fname
+        with
         | Error e ->
             let () =
               Format.eprintf
@@ -105,21 +115,22 @@ let from_file_multi_version ?ast_type = function
                  ...@]@."
                 Error.pp_error e
             in
-            from_file_result ?ast_type `ASLv1 fname
+            from_file_result ?ast_type ?allow_no_end_semicolon `ASLv1 fname
         | Ok ast -> Ok ast)
-  | (`ASLv0 | `ASLv1) as version -> from_file_result ?ast_type version
+  | (`ASLv0 | `ASLv1) as version ->
+      from_file_result ?ast_type ?allow_no_end_semicolon version
 
-let from_string ~filename ~ast_string version ast_type =
+let from_string ~filename ~ast_string version ast_type allow_no_end_semicolon =
   let lexbuf = Lexing.from_string ~with_positions:true ast_string in
   lexbuf_set_filename lexbuf filename;
-  from_lexbuf ast_type version lexbuf
+  from_lexbuf ast_type allow_no_end_semicolon version lexbuf
 
 let obfuscate prefix = ASTUtils.rename_locals (( ^ ) prefix)
 
 let stdlib =
   let filename = "ASL Standard Library" and ast_string = Asl_stdlib.stdlib in
   lazy
-    (from_string ~filename ~ast_string `ASLv1 (Some `Ast)
+    (from_string ~filename ~ast_string `ASLv1 (Some `Ast) false
     |> obfuscate "__stdlib_local_")
 
 let with_stdlib ast = List.rev_append (Lazy.force stdlib) ast

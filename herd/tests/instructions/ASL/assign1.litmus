@@ -7,7 +7,7 @@ begin
     let x = 3;
 
     return 0;
-end
+end;
 
 forall (
     0: main.0.x = 3

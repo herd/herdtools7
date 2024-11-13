@@ -7,7 +7,7 @@ begin
     when 1 => assert FALSE;
     when 0 where 1 + 1 == 2 => assert TRUE;
     otherwise => assert FALSE;
-  end
+  end;
 
   return 0;
-end
+end;

@@ -17,11 +17,11 @@ begin
     when Bonga =>
       let coucou = 11 ;
       print(coucou);
-  end
+  end;
   return 0;
-end
+end;
 
 func main() => integer
 begin  
   return g();
-end
+end;

@@ -2,4 +2,4 @@
 func negative2{N}(x: bits(N)) => integer {N}
 begin
   return 3; // illegal
-end
+end;

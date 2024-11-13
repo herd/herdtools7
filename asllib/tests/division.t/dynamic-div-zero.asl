@@ -4,5 +4,5 @@ begin
   let y: integer = 0;
   let z = x DIV y;
   return 0;
-end
+end;
 

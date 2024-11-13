@@ -5,4 +5,4 @@ begin
   let c = [a,b];
   assert c == '11110000101';
   return 0;
-end
+end;

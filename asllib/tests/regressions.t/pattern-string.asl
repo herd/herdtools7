@@ -5,8 +5,8 @@ begin
            print("helloworld\n");
         otherwise =>
            return;
-    end
-end
+    end;
+end;
 
 func main () => integer
 begin
@@ -14,4 +14,4 @@ begin
   myfunction ("helloworld\n");
 
   return 0;
-end
+end;

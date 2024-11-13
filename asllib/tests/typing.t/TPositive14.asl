@@ -10,4 +10,4 @@ begin
     let testC : integer {8,16} = w1;
     let testD : NamedTypeB     = testC;
     let tempE : NamedTypeB     = w1 as integer {8,16}; // Combined version of testC/D. Using ATC to erase named type.
-end
+end;

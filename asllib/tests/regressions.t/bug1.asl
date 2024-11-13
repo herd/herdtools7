@@ -5,4 +5,4 @@ begin
   let foo: bits(x) = Zeros(y);
 
   return 0;
-end
+end;

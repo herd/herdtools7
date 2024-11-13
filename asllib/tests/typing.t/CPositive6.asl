@@ -2,4 +2,4 @@
 func positive6{N}(x: bits(N))
 begin
     var R : integer = N;
-end
+end;

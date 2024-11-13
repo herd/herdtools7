@@ -6,4 +6,4 @@ begin
   assert my_array[3] == 53;
 
   return 0;
-end
+end;

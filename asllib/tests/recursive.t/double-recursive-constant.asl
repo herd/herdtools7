@@ -4,5 +4,5 @@ constant y = x + 2;
 func main () => integer
 begin
   return 0;
-end
+end;
 

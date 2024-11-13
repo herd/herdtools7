@@ -5,4 +5,4 @@ begin
         Ones(5),
         x
     ] as bits(64); // has static width of bits(64)
-end
+end;

@@ -5,7 +5,7 @@
 func foo() => integer {8, 16}
 begin
   return UNKNOWN : integer {8, 16};
-end
+end;
 
 func negative6()
 begin
@@ -18,5 +18,5 @@ begin
             when 64 =>
                 pass;
                 // <some code>
-    end
-end
+    end;
+end;

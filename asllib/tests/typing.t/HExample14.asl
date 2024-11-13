@@ -1,7 +1,7 @@
 func Reverse{N}(word : bits(N), M : integer{1..N}) => bits(N)
 begin
     return Zeros(N);
-end
+end;
 
 func main () => integer
 begin
@@ -10,6 +10,6 @@ begin
   let res = Reverse(bv, 8);
 
   return 0;
-end
+end;
 
 

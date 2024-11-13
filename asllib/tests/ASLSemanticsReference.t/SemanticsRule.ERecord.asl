@@ -7,4 +7,4 @@ begin
   assert my_record.a == 3;
 
   return 0;
-end 
+end; 

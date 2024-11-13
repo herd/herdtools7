@@ -3,7 +3,7 @@ Deferred to execution ATCs
   > func main () => integer begin
   >   let x = (3 as integer {42});
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref atcs1.asl
@@ -17,7 +17,7 @@ Bad structure ATCs
   > func main () => integer begin
   >   let x = (3 as boolean);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref atcs2.asl
@@ -31,7 +31,7 @@ ATCs on other types
   > func main () => integer begin
   >   let x = ("a string" as string);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref atcs3.asl
@@ -41,7 +41,7 @@ ATCs on other types
   > func main () => integer begin
   >   let x = (myty { a = 4, b = Zeros(4) }) as myty;
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref atcs4.asl
@@ -53,7 +53,7 @@ ATCs on other types
   >   let x = (myty { a = 4, b = Zeros(4) }) as myty;
   >   let y = x as myty2;
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref atcs5.asl
@@ -66,7 +66,7 @@ ATCs on other types
   > func main () => integer begin
   >   let x = ((42, Zeros(4)) as myty);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref atcs6.asl
@@ -80,7 +80,7 @@ ATCs on other types
   > func main () => integer begin
   >   let x = ((42, Zeros(4)) as myty);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref atcs7.asl
@@ -94,7 +94,7 @@ ATCs on other types
   >     var a: array[10] of B;
   >     let b = a as array[10] of A;
   >     return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref atcs8.asl

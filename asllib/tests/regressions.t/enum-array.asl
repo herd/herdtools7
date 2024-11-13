@@ -16,5 +16,5 @@ begin
   assert (my_array[C] == 3);
 
   return 0;
-end
+end;
 

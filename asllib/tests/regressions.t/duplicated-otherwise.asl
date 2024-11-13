@@ -6,6 +6,6 @@ begin
         otherwise => print("otherwise");
         when 0.0 => print("2.0");
         otherwise => print("otherwise");
-    end
+    end;
     return 0;
-end
+end;

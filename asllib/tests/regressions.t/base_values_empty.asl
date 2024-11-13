@@ -2,7 +2,7 @@ func foo {N, M} (bv: bits(N), bv2: bits(M)) => integer {N..M}
 begin
   var x: integer {N..M};
   return x;
-end
+end;
 
 func main () => integer
 begin
@@ -14,4 +14,4 @@ begin
 
   let x2 = foo ('00', '0');
   assert FALSE; // Should have failed earlier!
-end
+end;

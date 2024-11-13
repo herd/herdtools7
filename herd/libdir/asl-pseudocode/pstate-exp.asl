@@ -6,17 +6,17 @@ var _NZCV : ProcState;
 func isNZCV(n:integer) => boolean
 begin
   return 0 <= n && n < 4 ;
-end
+end;
 
 getter PSTATE[] => ProcState
 begin
  return _PSTATE;
-end
+end;
 
 setter PSTATE[] = v : ProcState
 begin
   _PSTATE = v;
-end
+end;
 
 getter PSTATE[n:integer] => bits(1)
 begin
@@ -24,8 +24,8 @@ begin
     return _NZCV[n];
   else
     return _PSTATE[n];
-  end
-end
+  end;
+end;
 
 setter PSTATE[n:integer] = v : bits(1)
 begin
@@ -33,8 +33,8 @@ begin
     _NZCV[n] = v;
   else
     _PSTATE[n] = v;
-  end
-end
+  end;
+end;
 
 
 getter PSTATE[n:integer,m:integer] => bits(2)
@@ -43,8 +43,8 @@ begin
     return _NZCV[n,m];
   else
     return _PSTATE[n,m];
-  end
-end
+  end;
+end;
 
 setter PSTATE[n:integer,m:integer] = v : bits(2)
 begin
@@ -52,8 +52,8 @@ begin
     _NZCV[n,m] = v;
   else
     _PSTATE[n,m] = v;
-  end
-end
+  end;
+end;
 
 getter PSTATE[n:integer,m:integer,o:integer] => bits(3)
 begin
@@ -61,8 +61,8 @@ begin
     return _NZCV[n,m,o];
   else
     return _PSTATE[n,m,o];
-  end
-end
+  end;
+end;
 
 setter PSTATE[n:integer,m:integer,o:integer] = v : bits(3)
 begin
@@ -70,8 +70,8 @@ begin
     _NZCV[n,m,o] = v;
   else
     _PSTATE[n,m,o] = v;
-  end
-end
+  end;
+end;
 
 getter PSTATE[n:integer,m:integer,o:integer,p:integer] => bits(4)
 begin
@@ -79,8 +79,8 @@ begin
     return _NZCV[n,m,o,p];
   else
     return _PSTATE[n,m,o,p];
-  end
-end
+  end;
+end;
 
 setter PSTATE[n:integer,m:integer,o:integer,p:integer] = v : bits(4)
 begin
@@ -88,6 +88,6 @@ begin
     _NZCV[n,m,o,p] = v;
   else
     _PSTATE[n,m,o,p] = v;
-  end
-end
+  end;
+end;
 

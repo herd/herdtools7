@@ -5,5 +5,5 @@ begin
   assert my_ctc == 3;
 
   return 0;
-end
+end;
 

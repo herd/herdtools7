@@ -21,5 +21,5 @@ begin
   assert z == '1111100';
 
   return 0;
-end
+end;
 

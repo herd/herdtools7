@@ -10,7 +10,7 @@ begin
         assert exn.msg == 42;
     otherwise =>
       assert FALSE;
-    end
+    end;
 
   return 0;
-end
+end;

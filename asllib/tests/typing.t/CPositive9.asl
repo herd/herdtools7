@@ -4,4 +4,4 @@ begin
     let y: bits(N) = Zeros(N);
     let z: bits(N DIV 2) = Zeros(N DIV 2);
     return [y, z];
-end
+end;

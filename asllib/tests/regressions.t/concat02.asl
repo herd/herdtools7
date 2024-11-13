@@ -11,4 +11,4 @@ begin
   let y20 = [b5,a15];
   assert x20 == y20;
   return 0;
-end
+end;

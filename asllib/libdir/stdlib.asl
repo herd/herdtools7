@@ -20,17 +20,17 @@
 func Min(a: integer, b: integer) => integer
 begin
   return if a < b then a else b;
-end
+end;
 
 func Max(a: integer, b: integer) => integer
 begin
   return if a > b then a else b;
-end
+end;
 
 func Abs(x: integer) => integer
 begin
   return if x < 0 then -x else x;
-end
+end;
 
 // Log2
 
@@ -38,13 +38,13 @@ end
 func IsEven(a: integer) => boolean
 begin
     return (a MOD 2) == 0;
-end
+end;
 
 // Return true if integer is odd (1 modulo 2).
 func IsOdd(a: integer) => boolean
 begin
     return (a MOD 2) == 1;
-end
+end;
 
 //------------------------------------------------------------------------------
 // Functions on reals
@@ -65,19 +65,19 @@ end
 func Abs(x: real) => real
 begin
   return if x >= 0.0 then x else -x;
-end
+end;
 
 // Maximum of reals.
 func Max(a: real, b: real) => real
 begin
   return if a>b then a else b;
-end
+end;
 
 // Minimum of reals.
 func Min(a: real, b: real) => real
 begin
   return if a<b then a else b;
-end
+end;
 
 // Calculate the square root of x to sf binary digits.
 // The second tuple element of the return value is TRUE if the result is
@@ -96,13 +96,13 @@ begin
   var xn: real = x0;
   while Abs(x - xn * xn) > precision do
     xn = (xn + x / xn) / 2.0 ;
-  end
+  end;
   let root = xn;
 
   let inexact = x != root * root;
 
   return (root, inexact);
-end
+end;
 
 //------------------------------------------------------------------------------
 // Standard bitvector functions and procedures
@@ -115,7 +115,7 @@ end
 func ReplicateBit(isZero: boolean, N: integer) => bits(N)
 begin
   return if isZero then Zeros(N) else Ones(N);
-end
+end;
 
 func Replicate{M}(x: bits(M), N: integer) => bits(M*N)
 begin
@@ -125,15 +125,15 @@ begin
     var r: bits(M*N) = Zeros(M*N);
     for i=0 to N-1 do
       r[i*:M] = x;
-    end
+    end;
     return r;
-  end
-end
+  end;
+end;
 
 func Len{N}(x: bits(N)) => integer {N}
 begin
   return N;
-end
+end;
 
 func BitCount{N}(x: bits(N)) => integer{0..N}
 begin
@@ -141,85 +141,85 @@ begin
   for i = 0 to N-1 do
     if x[i] == '1' then
       result = result + 1;
-    end
-  end
+    end;
+  end;
   return result as integer {0..N};
-end
+end;
 
 func LowestSetBit{N}(x: bits(N)) => integer{0..N}
 begin
   for i = 0 to N-1 do
     if x[i] == '1' then
       return i as integer{0..N};
-    end
-  end
+    end;
+  end;
   return N as integer {0..N};
-end
+end;
 
 func HighestSetBit{N}(x: bits(N)) => integer{-1..N-1}
 begin
   for i = N-1 downto 0 do
     if x[i] == '1' then
       return i as integer {-1..N-1};
-    end
-  end
+    end;
+  end;
   return -1 as {-1..N-1};
-end
+end;
 
 func Zeros(N: integer) => bits(N)
 begin
   return 0[N-1:0];
-end
+end;
 
 func Ones(N: integer) => bits(N)
 begin
   return NOT Zeros(N);
-end
+end;
 
 func IsZero{N}(x: bits(N)) => boolean
 begin
   return x == Zeros(N);
-end
+end;
 
 func IsOnes{N}(x: bits(N)) => boolean
 begin
   return x == Ones(N);
-end
+end;
 
 func SignExtend {M} (x: bits(M), N: integer) => bits(N)
 begin
   assert N >= M;
   return [Replicate(x[M-1], N - M), x];
-end
+end;
 
 func ZeroExtend {M} (x: bits(M), N: integer) => bits(N)
 begin
   assert N >= M;
   return [Zeros(N - M), x];
-end
+end;
 
 func Extend {M} (x: bits(M), N: integer, unsigned: boolean) => bits(N)
 begin
   return if unsigned then ZeroExtend(x, N) else SignExtend(x, N);
-end
+end;
 
 func CountLeadingZeroBits{N}(x: bits(N)) => integer {0..N}
 begin
   return N - 1 - HighestSetBit(x);
-end
+end;
 
 // Leading sign bits in a bitvector. Count the number of consecutive
 // bits following the leading bit, that are equal to it.
 func CountLeadingSignBits{N}(x: bits(N)) => integer{0..N-1}
 begin
   return CountLeadingZeroBits(x[N-1:1] XOR x[N-2:0]);
-end
+end;
 
 // Treating input as an integer, align down to nearest multiple of 2^y.
 func AlignDown{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
     return [x[N-1:y], Zeros(y)];
-end
+end;
 
 // Treating input as an integer, align up to nearest multiple of 2^y.
 // Returns zero if the result is not representable in N bits.
@@ -229,8 +229,8 @@ begin
     return x;
   else
     return [x[N-1:y]+1, Zeros(y)];
-  end
-end
+  end;
+end;
 
 // The shift functions LSL, LSR, ASR and ROR accept a non-negative shift amount.
 // The shift functions LSL_C, LSR_C, ASR_C and ROR_C accept a non-zero positive shift amount.
@@ -244,8 +244,8 @@ begin
     return [x[(N-bshift)-1:0], Zeros(bshift)];
   else
     return Zeros(N);
-  end
-end
+  end;
+end;
 
 // Logical left shift with carry out.
 func LSL_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
@@ -255,8 +255,8 @@ begin
     return (LSL(x, shift), x[N-shift]);
   else
     return (Zeros(N), '0');
-  end
-end
+  end;
+end;
 
 // Logical right shift, shifting zeroes into higher bits.
 func LSR{N}(x: bits(N), shift: integer) => bits(N)
@@ -267,8 +267,8 @@ begin
     return ZeroExtend(x[N-1:bshift], N);
   else
     return Zeros(N);
-  end
-end
+  end;
+end;
 
 // Logical right shift with carry out.
 func LSR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
@@ -278,8 +278,8 @@ begin
     return (LSR(x, shift), x[shift-1]);
   else
     return (Zeros(N), '0');
-  end
-end
+  end;
+end;
 
 // Arithmetic right shift, shifting sign bits into higher bits.
 func ASR{N}(x: bits(N), shift: integer) => bits(N)
@@ -287,14 +287,14 @@ begin
   assert shift >= 0;
   let bshift = Min(shift, N-1) as integer{0..N-1};
   return SignExtend(x[N-1:bshift], N);
-end
+end;
 
 // Arithmetic right shift with carry out.
 func ASR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   return (ASR(x, shift), x[Min(shift-1, N-1)]);
-end
+end;
 
 // Rotate right.
 // This function shifts by [shift] bits to the right, the bits deleted are
@@ -304,7 +304,7 @@ begin
   assert shift >= 0;
   let cshift = (shift MOD N) as integer{0..N-1};
   return [x[0+:cshift], x[N-1:cshift]];
-end
+end;
 
 // Rotate right with carry out.
 // As ROR, the function effectively operates modulo N.
@@ -313,5 +313,4 @@ begin
   assert shift > 0;
   let cpos = (shift-1) MOD N;
   return (ROR(x, shift), x[cpos]);
-end
-
+end;

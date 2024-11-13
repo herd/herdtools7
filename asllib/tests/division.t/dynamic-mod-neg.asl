@@ -4,5 +4,5 @@ begin
   let y: integer = -3;
   let z = x MOD y;
   return 0;
-end
+end;
 

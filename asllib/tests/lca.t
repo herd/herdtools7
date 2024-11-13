@@ -5,7 +5,7 @@
   >   let -: integer = x;
   >   let -: integer {2, 3} = x;
   >   let -: real = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca1.asl
@@ -19,7 +19,7 @@
   >   let x = if UNKNOWN: boolean then 2 as integer else 3;
   >   let -: integer = x;
   >   let -: integer {2, 3} = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca2.asl
@@ -33,7 +33,7 @@
   >   let x = if UNKNOWN: boolean then N else 3;
   >   let -: integer = x;
   >   let -: integer {N} = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca3.asl
@@ -47,7 +47,7 @@
   > begin
   >   let x = if UNKNOWN: boolean then 3 as integer {0..N} else 3;
   >   let -: real = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca4.asl
@@ -59,7 +59,7 @@
   > func main () => integer
   > begin
   >   let x = if UNKNOWN: boolean then TRUE else 3;
-  > end
+  > end;
   > EOF
 
   $ aslref lca5.asl
@@ -76,7 +76,7 @@
   > begin
   >   let x = if UNKNOWN: boolean then 3 as T3 else 2 as T2;
   >   let -: real = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca6.asl
@@ -90,7 +90,7 @@
   > func main () => integer
   > begin
   >   let - = if UNKNOWN: boolean then 3 as T1 else 2 as T2;
-  > end
+  > end;
   > EOF
 
   $ aslref lca7.asl
@@ -105,7 +105,7 @@
   > begin
   >   let x = if UNKNOWN: boolean then '101' as T1 else '101' as bits(3);
   >   let -: real = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca8.asl
@@ -120,7 +120,7 @@
   >   let x = if UNKNOWN: boolean then '101' as T1 else '101' as bits (3) { [2] b1 };
   >   let -: bits(3) { [2] b1 } = x;
   >   let -: real = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca9.asl
@@ -136,7 +136,7 @@
   >   let x = if UNKNOWN: boolean then 3 as T1 else 2 as T2;
   >   let -: integer = x;
   >   let -: real = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca10.asl
@@ -151,7 +151,7 @@
   >   let x = if UNKNOWN: boolean then 3 as T1 else 2 as integer;
   >   let -: T1 = x;
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref lca11.asl
@@ -163,7 +163,7 @@
   >   let x = if UNKNOWN: boolean then (3 as integer, 2 as T1) else (3 as T1, 2 as integer);
   >   let -: (T1, T1) = x;
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref lca12.asl
@@ -173,7 +173,7 @@
   > begin
   >   let v : (integer{3,1}, integer{2,4}) = if UNKNOWN: boolean then (3, 2) else (1, 4);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref lca13.asl
@@ -186,7 +186,7 @@
   >   var b: array[4] of T1;
   >   let x = if UNKNOWN: boolean then a else b;
   >   let -: real = x;
-  > end
+  > end;
   > EOF
 
   $ aslref lca14.asl

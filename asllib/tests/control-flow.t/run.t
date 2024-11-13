@@ -14,7 +14,7 @@
   [1]
 
   $ aslref if-return.asl
-  File if-return.asl, line 3, characters 2 to 30:
+  File if-return.asl, line 3, characters 2 to 31:
   ASL Typing error: function "sign" does not return anything.
   [1]
 
@@ -23,7 +23,6 @@
   $ aslref if-return-throw.asl
 
   $ aslref if-return-if.asl
-  File if-return-if.asl, line 3, character 2 to line 5, character 5:
+  File if-return-if.asl, line 3, character 2 to line 5, character 6:
   ASL Typing error: function "sign" does not return anything.
   [1]
-

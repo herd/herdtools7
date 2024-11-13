@@ -7,5 +7,5 @@ begin
       var d: integer{4, 5, 6} = 2; // static error.
       // The following is not a dynamic error as will never be evaluated,
       var e: integer{4, 5, 6} = 2 as integer{4, 5, 6};
-  end
-end
+  end;
+end;

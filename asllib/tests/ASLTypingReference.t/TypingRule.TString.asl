@@ -3,7 +3,7 @@ type MyType of string;
 func foo (x: string) => string
 begin
   return x;
-end
+end;
 
 func main () => integer
 begin
@@ -17,4 +17,4 @@ begin
   assert x as string == x;
 
   return 0;
-end
+end;

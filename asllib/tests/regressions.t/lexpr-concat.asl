@@ -8,8 +8,8 @@ begin
     assert [a, b, c, d] == to_test;
     [a, [c, b], d] = to_test;
     assert [a, c, b, d] == to_test;
-  end
+  end;
 
   return 0;
-end
+end;
 

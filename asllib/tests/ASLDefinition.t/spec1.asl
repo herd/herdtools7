@@ -5,9 +5,9 @@ var R2: bits(4);
 func MyOR{M}(x: bits(M), y: bits(M)) => bits(M)
 begin
     return x OR y;
-end
+end;
 
 func reset()
 begin
     R2 = MyOR(R0, R1);
-end
+end;

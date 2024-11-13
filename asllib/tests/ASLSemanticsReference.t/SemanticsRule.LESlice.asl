@@ -6,4 +6,4 @@ begin
   assert x == '11110000';
 
   return 0;
-end
+end;

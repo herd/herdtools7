@@ -1,11 +1,11 @@
-getter g_no_args => integer begin return 0; end
+getter g_no_args => integer begin return 0; end;
 
-getter g0_bits[] => bits(4) begin return '1000'; end
+getter g0_bits[] => bits(4) begin return '1000'; end;
 
 getter g1_bits[p: integer] => bits(4)
 begin
   return '1000'[p, 2:0];
-end
+end;
 
 type point of record{x: bits(4), y: bits(4)};
 type except of exception;
@@ -39,4 +39,4 @@ begin
   var b8 = [b0, b1];
   b8 = (NOT b8) AND UNKNOWN: bits(8);
   return 0;
-end
+end;

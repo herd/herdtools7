@@ -30,4 +30,4 @@ begin
     assert common == common_fmt0;
     assert common == common_fmt1;
     return 0;
-end
+end;

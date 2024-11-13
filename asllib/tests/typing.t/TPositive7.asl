@@ -13,4 +13,4 @@ begin
     let testF : MyOtherSizes      = size as MyOtherSizes; // ATC's can be used between named types of the same structure
     let testG : MyByteSizes       = size as MyByteSizes;  // As per positive5 and ASL-313, ATC's can be used even if the domains are disjoint. This
                                                           // must be valid statically but will fail at runtime if the line is reached.
-end
+end;

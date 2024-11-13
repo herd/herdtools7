@@ -7,8 +7,8 @@ begin
   print(" == ");
   print(DecStr(Len(bv)));
   print("\n");
-end
+end;
 func negative5() => integer
 begin
   printLengths (3, Zeros(12)); // illegal
-end
+end;

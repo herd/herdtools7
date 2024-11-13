@@ -3,7 +3,7 @@ begin
   let y = Zeros(2 * ((N DIV 2) - 5));
   let z = Zeros(10);
   return [y, z];
-end
+end;
 
 func main () => integer
 begin
@@ -13,4 +13,4 @@ begin
   let d = foo(Zeros(9));
 
   return 0;
-end
+end;

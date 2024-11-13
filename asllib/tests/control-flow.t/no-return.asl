@@ -1,3 +1,3 @@
 func main () => integer
 begin
-end
+end;

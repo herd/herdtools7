@@ -4,4 +4,4 @@ func main () => integer
 begin
   assert (RED != BLACK);
   return 0;
-end
+end;

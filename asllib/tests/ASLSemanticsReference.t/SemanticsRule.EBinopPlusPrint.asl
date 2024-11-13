@@ -5,4 +5,4 @@ begin
   print(x);
 
   return 0;
-end 
+end; 

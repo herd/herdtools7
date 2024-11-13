@@ -4,4 +4,4 @@ begin
   let b = A[UInt('1')*2+:2];
 
   return 0;
-end
+end;

@@ -12,4 +12,4 @@ begin
   x = x+UInt(b);
   assert (x == 6);  
   return 0 ;
-end
+end;

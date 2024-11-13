@@ -7,7 +7,7 @@ One slice cannot intersect itself:
   >   x[i] = '1';
   >   print (x);
   >   return 0;
-  > end
+  > end;
   > EOF
   $ aslref intersecting_slices1.asl
   '0001'
@@ -21,7 +21,7 @@ Two intersecting slices...
   >   x[i, j] = '10';
   >   print (x);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref intersecting_slices2.asl
@@ -39,7 +39,7 @@ Two maybe intersecting slices...
   >   x[i, j] = '10';
   >   print (x);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref intersecting_slices3.asl
@@ -52,13 +52,13 @@ Two maybe intersecting slices...
   >   var bv2 = bv;
   >   bv2[x,y] = '10'; // Should fail dynamically for x == y
   >   return bv2;
-  > end
+  > end;
   > func main () => integer
   > begin
   >   print (set_unset('1111', 2, 3));
   >   print (set_unset('1111', 2, 2));
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref intersecting_slices3b.asl
@@ -75,7 +75,7 @@ Two intersecting bitfields
   >   x.[f1, f2] = '10';
   >   print (x);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref intersecting_slices4.asl

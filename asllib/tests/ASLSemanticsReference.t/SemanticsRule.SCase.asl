@@ -5,7 +5,7 @@ begin
     when 42 => assert FALSE;
     when <= 42 => assert TRUE;
     otherwise => assert FALSE;
-  end
+  end;
 
   return 0;
-end
+end;

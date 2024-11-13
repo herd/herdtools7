@@ -22,26 +22,26 @@ begin
     },
     fieldC = 5
   };
-end
+end;
 
 func access_subfieldA(obj:MyRecord) => boolean
 begin
   return obj.fieldB.subfieldA;
-end
+end;
 
 func incr_subfieldB(obj:MyRecord) => MyRecord
 begin
   var obj2 = obj;
   obj2.fieldB.subfieldB = obj2.fieldB.subfieldB + 1;
   return obj2;
-end
+end;
 
 func set_fieldC(obj:MyRecord, val:integer) => MyRecord
 begin
   var obj2 = obj;
   obj2.fieldC = val;
   return obj2;
-end
+end;
 
 func build_and_access()
 begin
@@ -54,7 +54,7 @@ begin
     fieldC = 5
   };
   assert obj.fieldB.subfieldA;
-end
+end;
 
 func build_access()
 begin
@@ -66,7 +66,7 @@ begin
     },
     fieldC = 5
   }.fieldB.subfieldA;
-end
+end;
 
 func main() => integer
 begin
@@ -84,7 +84,7 @@ begin
   build_access ();
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

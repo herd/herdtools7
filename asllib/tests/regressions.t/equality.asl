@@ -20,5 +20,5 @@ begin
   assert (1 as myty) != (2 as integer);
 
   return 0;
-end
+end;
 

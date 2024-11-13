@@ -4,7 +4,7 @@
   >   print ("no type-checking");
   >   print (32);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref printer1.asl
@@ -18,7 +18,7 @@
   >   print ("no type-checking");
   >   print (32);
   >   return 0;
-  > end
+  > end;
   > EOF
 
   $ aslref printer2.asl

@@ -10,7 +10,7 @@ begin
     reason="Undefined",
     opcode = opcode
   };
-end
+end;
 
 func try_opcode() => integer
 begin
@@ -23,8 +23,8 @@ begin
       assert e.opcode == opcode;
       return 0;
     otherwise => return 3;
-  end
-end
+  end;
+end;
 
 var opcode_counter: integer = 0;
 
@@ -34,9 +34,9 @@ begin
   catch
     when BAD_OPCODE => assert FALSE;
     when UNDEFINED_OPCODE => opcode_counter = opcode_counter + 1; throw;
-  end
+  end;
   assert FALSE;
-end
+end;
 
 func try_rethrow ()
 begin
@@ -45,8 +45,8 @@ begin
   catch
     when e: UNDEFINED_OPCODE => assert e.opcode == opcode; assert opcode_counter == 1;
     otherwise => assert FALSE;
-  end
-end
+  end;
+end;
 
 type COUNTING of exception { counter: integer };
 
@@ -57,7 +57,7 @@ begin
   let x = counter;
   counter = x + 1;
   throw COUNTING { counter = x };
-end
+end;
 
 func throw_imbricated()
 begin
@@ -72,11 +72,11 @@ begin
       catch
         when COUNTING => assert FALSE;
         otherwise => assert FALSE;
-      end
+      end;
       assert FALSE;
-  end
+  end;
   assert FALSE;
-end
+end;
 
 func try_imbricated()
 begin
@@ -87,9 +87,9 @@ begin
       assert e.counter == 0;
       counter = counter + 1;
     otherwise => assert FALSE;
-  end
+  end;
   assert counter == 2;
-end
+end;
 
 func try_with_local_variable ()
 begin
@@ -100,15 +100,15 @@ begin
       when UNDEFINED_OPCODE =>
         local_counter = local_counter + 1;
         throw;
-    end
+    end;
     assert FALSE;
   catch
     when UNDEFINED_OPCODE =>
       local_counter = local_counter + 1;
     otherwise => assert FALSE;
-  end
+  end;
   assert local_counter == 2;
-end
+end;
 
 func main () => integer
 begin
@@ -118,7 +118,7 @@ begin
   try_with_local_variable ();
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

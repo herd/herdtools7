@@ -5,5 +5,5 @@ begin
   assert x[2+:3] == '111';
 
   return 0;
-end
+end;
 

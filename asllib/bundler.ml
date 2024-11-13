@@ -50,6 +50,10 @@ let build_ast_from_file ?(is_opn = false) f =
       pos.pos_lnum
       (pos.pos_cnum - pos.pos_bol)
   in
+  (* For now expect the ASL input to adhere to the spec. *)
+  let module Parser = Parser.Make (struct
+    let allow_no_end_semicolon = false
+  end) in
   let parse = if is_opn then Parser.opn else Parser.ast in
   let chan = open_in f in
   let lexbuf = Lexing.from_channel chan in

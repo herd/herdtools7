@@ -6,5 +6,5 @@ begin
   let z = x DIV y;
 
   return 0;
-end
+end;
 

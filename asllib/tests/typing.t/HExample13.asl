@@ -8,4 +8,4 @@ begin
   let bv2: bits(x) = Replicate(bv, x DIV y);
 
   return 0;
-end
+end;

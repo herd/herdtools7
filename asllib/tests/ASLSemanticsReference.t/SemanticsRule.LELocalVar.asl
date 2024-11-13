@@ -6,4 +6,4 @@ begin
   assert x == 42;
 
   return 0;
-end
+end;

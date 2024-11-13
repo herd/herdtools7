@@ -5,4 +5,4 @@ begin
 
     let size = minimum;
     var x = Zeros (N);
-end
+end;

@@ -13,15 +13,15 @@ begin
   while i > 0 do
     s = s + i;
     i = i-1;
-  end
-end
+  end;
+end;
 
 func T1(x::bits(32))
 begin
   for k = 1 to 3 do
     write_memory(x,32,k[2:0]);
-  end
-end
+  end;
+end;
 
 func main() => integer
 begin
@@ -31,6 +31,6 @@ begin
   T1(x);
 
   return 0;
-end
+end;
 
 locations [0:T0.0.s;]

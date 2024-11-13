@@ -6,4 +6,4 @@ type o of array[10] of n subtypes m;
 func main () => integer
 begin
   return 0;
-end
+end;

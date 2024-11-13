@@ -6,4 +6,4 @@ begin
   assert x[4:2] == '111';
 
   return 0;
-end
+end;

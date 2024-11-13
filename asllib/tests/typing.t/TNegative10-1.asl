@@ -1,4 +1,4 @@
-func foo() => integer {0..7} begin return UNKNOWN: integer {0..7}; end
+func foo() => integer {0..7} begin return UNKNOWN: integer {0..7}; end;
 
 func negative10(N : integer {8,16}, M : integer {8,16})
 begin
@@ -26,4 +26,4 @@ begin
     let tempC3A                 = tempC2A;
     let tempC3B                 = tempC2B;
     let testC : bits(tempC3A)   = Zeros(tempC3B); // illegal, type bits(tempC1) != bits(tempC3B)
-end
+end;

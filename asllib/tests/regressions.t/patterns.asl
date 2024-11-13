@@ -15,14 +15,14 @@ begin
   let expr_G = 3 IN !{1,2,4};                       //  TRUE
   assert expr_G;
 
-end
+end;
 
 func main () => integer
 begin
   example_5_3 ();
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

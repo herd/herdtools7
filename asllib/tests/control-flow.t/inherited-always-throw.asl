@@ -3,12 +3,12 @@ type E of exception {};
 func always_throws () => integer
 begin
   throw E {};
-end
+end;
 
 func inherited_always_throws () => integer
 begin
   let - = always_throws ();
-end
+end;
 
 func main () => integer
 begin
@@ -17,11 +17,9 @@ begin
     let x = inherited_always_throws ();
   catch
     when E => y = 42;
-  end
+  end;
 
   assert y == 42;
 
   return 0;
-end
-
-
+end;

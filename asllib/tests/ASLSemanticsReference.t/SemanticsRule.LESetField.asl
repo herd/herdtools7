@@ -8,4 +8,4 @@ begin
   assert my_record.a == 42 && my_record.b == 100;
 
   return 0;
-end
+end;

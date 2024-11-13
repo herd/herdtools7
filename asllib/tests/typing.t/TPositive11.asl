@@ -1,7 +1,7 @@
 func ZerosBytes(N : integer {1,2,4,8}) => bits(N*8)
 begin
     return Zeros(N*8);
-end
+end;
 
 func positive11(size : bits(2), width : integer {1..3})
 begin
@@ -18,4 +18,4 @@ begin
 
     let tempE                            = width + sizeInt;
     let testE : bits(tempE)              = [Zeros(sizeInt), Zeros(width)];
-end
+end;

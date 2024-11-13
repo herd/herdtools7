@@ -36,7 +36,7 @@ begin
     // so it cannot be assigned to any named type
     // Illegal: mySuperInt = myUniqueInt;
     // Illegal: mySubInt = myUniqueInt;
-end
+end;
 
 type aNumberOfThings of integer;
 type ShapeSides      of aNumberOfThings;
@@ -51,7 +51,7 @@ begin
     var  centipedeLegs: InsectLegs = 100;           // legal
     var  animalLegs   : AnimalLegs = centipedeLegs; // legal
     // var  insectLegs   : InsectLegs = animalLegs;    // illegal: subtype is wrong way
-end
+end;
 
 func main () => integer
 begin
@@ -59,7 +59,7 @@ begin
   subtyping ();
 
   return 0;
-end
+end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

@@ -27,7 +27,7 @@ Subprogram declarations have no associated semantics.
 \Nopttypedidentifier \derivesinline\ & \Tidentifier \parsesep \option{\Nasty} &\\
 \Nfuncargs          \derivesinline\ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &\\
 \Nreturntype        \derivesinline\ & \Tarrow \parsesep \Nty &\\
-\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend &\\
+\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \Naccessargs        \derivesinline\ & \Tlbracket \parsesep \Clist{\Ntypedidentifier} \parsesep \Trbracket &\\
 \Nmaybeemptystmtlist \derivesinline\ & \emptysentence \;|\; \Nstmtlist &
 \end{flalign*}
@@ -364,7 +364,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule{}{
   {
   \begin{array}{r}
-  \buildfuncbody(\overname{\Nfuncbody(\Tbegin, \namednode{\vstmts}{\Nmaybeemptystmtlist}, \Tend)}{\vparsednode}) \astarrow \\
+  \buildfuncbody(\overname{\Nfuncbody(\Tbegin, \namednode{\vstmts}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon)}{\vparsednode}) \astarrow \\
   \overname{\astof{\vmaybeemptystmtlist}}{\vastnode}
   \end{array}
   }

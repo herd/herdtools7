@@ -43,6 +43,7 @@ type error_desc =
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | NotYetImplemented of string
+  | ObsoleteSyntax of string
   | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
   | CannotParse
@@ -121,6 +122,7 @@ let error_label = function
   | InvalidExpr _ -> "InvalidExpr"
   | MismatchType _ -> "MismatchType"
   | NotYetImplemented _ -> "NotYetImplemented"
+  | ObsoleteSyntax _ -> "ObsoleteSyntax"
   | ConflictingTypes _ -> "ConflictingTypes"
   | AssertionFailed _ -> "AssertionFailed"
   | CannotParse -> "CannotParse"
@@ -232,6 +234,8 @@ module PPrint = struct
           name expected provided
     | NotYetImplemented s ->
         pp_print_text f @@ "ASL Internal error: Not yet implemented: " ^ s
+    | ObsoleteSyntax s ->
+        fprintf f "%a@ %s" pp_print_text "ASL Grammar error: Obsolete syntax:" s
     | ConflictingTypes ([ expected ], provided) ->
         fprintf f
           "ASL Typing error:@ a subtype of@ %a@ was expected,@ provided %a."

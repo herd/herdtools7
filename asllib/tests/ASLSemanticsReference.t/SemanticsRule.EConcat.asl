@@ -5,4 +5,4 @@ begin
   assert x=='1011';
 
   return 0;
-end 
+end; 

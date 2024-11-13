@@ -315,7 +315,7 @@ func MarkExclusiveGlobal
   size :: integer)
 begin
   return;
-end
+end;
 
 // =============================================================================
 
@@ -330,7 +330,7 @@ func MarkExclusiveLocal
   size :: integer)
 begin
   return;
-end
+end;
 
 // =============================================================================
 
@@ -345,7 +345,7 @@ func AArch64_MarkExclusiveVA
 (address :: bits(64), processorid :: integer, size :: integer)
 begin
   RESADDR = address;
-end
+end;
 
 // =============================================================================
 
@@ -370,9 +370,9 @@ begin
   // Read RESADDR localy because we want a read event in all cases.
   let reserved = RESADDR;
   // If write succeeds then effective address and reservation coincide.
-  if SuccessVA then CheckProp(address == reserved); end
+  if SuccessVA then CheckProp(address == reserved); end;
   return SuccessVA;
-end
+end;
 
 // =============================================================================
 
@@ -386,7 +386,7 @@ end
 func ExclusiveMonitorsStatus() => bit
 begin
   return if SuccessVA then '0' else '1';
-end
+end;
 
 // =============================================================================
 
@@ -399,7 +399,7 @@ func IsExclusiveLocal
 (paddress :: FullAddres, processorid :: integer, size :: integer) => boolean
 begin
   return TRUE;
-end
+end;
 
 // =============================================================================
 
@@ -412,7 +412,7 @@ func IsExclusiveGlobal
 (paddress :: FullAddres, processorid :: integer, size :: integer) => boolean
 begin
   return TRUE;
-end
+end;
 
 // =============================================================================
 
@@ -424,14 +424,14 @@ end
 func ClearExclusiveLocal(processorid :: integer)
 begin
   return;
-end
+end;
 
 // =============================================================================
 
 func ConstrainUnpredictableBool(which:Unpredictable) => boolean
 begin
   return FALSE;
-end
+end;
 
 // =============================================================================
 
@@ -440,7 +440,7 @@ end
 func IsFeatureImplemented(f :: Feature) => boolean
 begin
     return FALSE;
-end
+end;
 
 // =============================================================================
 
@@ -458,7 +458,7 @@ begin
     merrorstate = ErrorState_CE,  // ??
     store64bstatus = Zeros(64)
   };
-end
+end;
 
 // =============================================================================
 
@@ -477,21 +477,21 @@ begin
     store64bstatus = Zeros(64)
   };
   return (ret_status, value);
-end
+end;
 
 // =============================================================================
 
 func HaveAArch32() => boolean
 begin
   return FALSE;
-end
+end;
 
 // =============================================================================
 
 func HaveAArch64() => boolean
 begin
   return TRUE;
-end
+end;
 
 // =============================================================================
 
@@ -505,8 +505,8 @@ begin
         return TRUE;                             // EL1 and EL0 must exist
     else
         return FALSE; // boolean IMPLEMENTATION_DEFINED;
-    end
-end
+    end;
+end;
 
 // =============================================================================
 
@@ -520,36 +520,36 @@ end
 func ClearExclusiveByAddress(paddress :: FullAddress, processorid :: integer, size :: integer)
 begin
   pass;
-end
+end;
 
 // =============================================================================
 
 getter _PC => bits(64)
 begin
   return read_pc();
-end
+end;
 
 setter _PC = value :: bits(64)
 begin
   write_pc(value);
-end
+end;
 
 getter _R [n :: integer] => bits(64)
 begin
   return read_register(n);
-end
+end;
 
 setter _R [n :: integer] = value :: bits(64)
 begin
   write_register(n, value);
-end
+end;
 
 // =============================================================================
 
 getter SCTLR_EL1[] => SCTLRType
 begin
   return Zeros(64);
-end
+end;
 
 // =============================================================================
 
@@ -558,7 +558,7 @@ end
 func InstructionSynchronizationBarrier()
 begin
   primitive_isb();
-end
+end;
 
 // =============================================================================
 
@@ -575,8 +575,8 @@ begin
     when MBReqDomain_InnerShareable => return 1;
     when MBReqDomain_OuterShareable => return 2;
     when MBReqDomain_FullSystem => return 3;
-  end
-end
+  end;
+end;
 
 func MBReqTypesToInteger(types : MBReqTypes) => integer
 begin
@@ -584,13 +584,13 @@ begin
     when MBReqTypes_Reads => return 0;
     when MBReqTypes_Writes => return 1;
     when MBReqTypes_All => return 2;
-  end
-end
+  end;
+end;
 
 func DataMemoryBarrier(domain : MBReqDomain, types : MBReqTypes)
 begin
   primitive_dmb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
-end
+end;
 
 // DataSynchronizationBarrier()
 // ============================
@@ -601,7 +601,7 @@ func DataSynchronizationBarrier
    nXS : boolean)
 begin
   primitive_dsb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
-end
+end;
 
 // =============================================================================
 
@@ -613,4 +613,4 @@ end
 func Hint_Branch(hint : BranchType)
 begin
   return;
-end
+end;

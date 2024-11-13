@@ -7,4 +7,4 @@ begin
 
   assert (b && x == 42);
   return 0;
-end
+end;

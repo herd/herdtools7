@@ -6,5 +6,5 @@ begin
     let testA = Zeros(2)[8];
     // Similar issue with negative width bit vectors
     let testB = Zeros(8)[0 +: -1];
-end
+end;
 
