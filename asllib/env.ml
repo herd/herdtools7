@@ -36,12 +36,7 @@ module type S = sig
 
   module Scope : Backend.SCOPE
 
-  type global = {
-    static : StaticEnv.global;
-    storage : v Storage.t;
-    funcs : func IMap.t;
-  }
-
+  type global = { static : StaticEnv.global; storage : v Storage.t }
   type local
   type env = { global : global; local : local }
 
@@ -71,13 +66,7 @@ module RunTime (C : RunTimeConf) = struct
   module Scope = C.Scope
 
   type v = C.v
-
-  type global = {
-    static : StaticEnv.global;
-    storage : C.v Storage.t;
-    funcs : AST.func IMap.t;
-  }
-
+  type global = { static : StaticEnv.global; storage : C.v Storage.t }
   type int_stack = int list
 
   type local = {

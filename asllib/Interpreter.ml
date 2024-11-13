@@ -206,17 +206,6 @@ module Make (B : Backend.S) (C : Config) = struct
   (*                                                                           *)
   (*****************************************************************************)
 
-  (* Functions *)
-  (* --------- *)
-
-  (** [build_funcs] initialize the unique calling reference for each function
-      and builds the subprogram sub-env. *)
-  let build_funcs ast (funcs : func IMap.t) =
-    List.to_seq ast
-    |> Seq.filter_map (fun d ->
-           match d.desc with D_Func func -> Some (func.name, func) | _ -> None)
-    |> Fun.flip IMap.add_seq funcs
-
   (* Global env *)
   (* ---------- *)
 
@@ -252,7 +241,6 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
   let build_genv env0 eval_expr (static_env : StaticEnv.global) (ast : AST.t) =
-    let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then
         Format.eprintf "@[<v 2>Executing in env:@ %a@.]" StaticEnv.pp_global
@@ -260,7 +248,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     let env =
       let open IEnv in
-      let global = { static = static_env; storage = Storage.empty; funcs } in
+      let global = { static = static_env; storage = Storage.empty } in
       { global; local = empty_scoped (B.Scope.global ~init:true) }
     in
     let env =
@@ -1255,7 +1243,7 @@ module Make (B : Backend.S) (C : Config) = struct
       [params] the parameters deduced by type equality. *)
   and eval_subprogram (genv : IEnv.global) name pos
       (actual_args : B.value m list) params : func_eval_type =
-    match IMap.find_opt name genv.funcs with
+    match IMap.find_opt name genv.static.subprograms with
     (* Begin EvalFUndefIdent *)
     | None ->
         fatal_from pos @@ Error.UndefinedIdentifier name

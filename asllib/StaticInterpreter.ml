@@ -45,12 +45,7 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
   let env =
     let open SI.IEnv in
     {
-      global =
-        {
-          static = senv.global;
-          funcs = senv.global.subprograms;
-          storage = global_storage;
-        };
+      global = { static = senv.global; storage = global_storage };
       local = empty_scoped ~storage:local_storage (SB.Scope.global ~init:true);
     }
   in

@@ -53,8 +53,6 @@ module type S = sig
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
     storage : v Storage.t;  (** Binds global variables to their names. *)
-    funcs : AST.func IMap.t;
-        (** Declared subprograms, maps called identifier to their code. *)
   }
   (** The global part of an environment. *)
 
