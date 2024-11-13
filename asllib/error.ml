@@ -74,6 +74,8 @@ type error_desc =
   | NonReturningFunction of identifier
   | UnexpectedATC
   | UnreachableReached
+  | LoopLimitReached
+  | RecursionLimitReached
 
 type error = error_desc annotated
 
@@ -95,6 +97,7 @@ let error_handling_time_to_string = function
   | Dynamic -> "Dynamic"
 
 type warning_desc =
+  | NoLoopLimit
   | IntervalTooBigToBeExploded of Z.t * Z.t
   | RemovingValuesFromConstraints of {
       op : binop;
@@ -152,8 +155,11 @@ let error_label = function
   | NonReturningFunction _ -> "NonReturningFunction"
   | UnexpectedATC -> "UnexpectedATC"
   | UnreachableReached -> "UnreachableReached"
+  | LoopLimitReached -> "LoopLimitReached"
+  | RecursionLimitReached -> "RecursionLimitReached"
 
 let warning_label = function
+  | NoLoopLimit -> "NoLoopLimit"
   | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
   | RemovingValuesFromConstraints _ -> "RemovingValuesFromConstraints"
 
@@ -346,6 +352,10 @@ module PPrint = struct
     | NonReturningFunction name ->
         fprintf f "ASL Typing error:@ function %S@ does@ not@ return@ anything."
           name
+    | RecursionLimitReached ->
+        pp_print_text f "ASL Dynamic error: recursion limit reached."
+    | LoopLimitReached ->
+        pp_print_text f "ASL Dynamic error: loop limit reached."
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
@@ -355,6 +365,9 @@ module PPrint = struct
 
   let pp_warning_desc f w =
     match w.desc with
+    | NoLoopLimit ->
+        fprintf f "@[%a@]" pp_print_text
+          "ASL Warning: Loop does not have a limit."
     | IntervalTooBigToBeExploded (za, zb) ->
         fprintf f
           "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as an \

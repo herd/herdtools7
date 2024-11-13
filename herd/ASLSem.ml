@@ -605,8 +605,9 @@ module Make (C : Config) = struct
       let subprogram_type =
         match returns with None -> ST_Procedure | _ -> ST_Function
       and body = SB_Primitive
+      and recurse_limit = None;
       and return_type = returns in
-      ( { name; args; body; return_type; parameters; subprogram_type }
+      ( { name; args; body; return_type; parameters; subprogram_type; recurse_limit }
         [@warning "-40-42"],
         f )
 

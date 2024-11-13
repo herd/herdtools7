@@ -53,7 +53,8 @@ let tr_name s = match s with
 | "catch"         -> CATCH
 | "config"        -> CONFIG
 | "constant"      -> CONSTANT
-| "__debug__"|"__DEBUG__" -> DEBUG
+| "__debug__"
+| "__DEBUG__"     -> DEBUG
 | "DIV"           -> DIV
 | "DIVRM"         -> DIVRM
 | "do"            -> DO
@@ -72,9 +73,7 @@ let tr_name s = match s with
 | "IN"            -> IN
 | "integer"       -> INTEGER
 | "let"           -> LET
-(*
-| "limit"         -> LIMIT
- *)
+| "looplimit"     -> LOOPLIMIT
 | "MOD"           -> MOD
 | "NOT"           -> NOT
 | "of"            -> OF
@@ -85,6 +84,7 @@ let tr_name s = match s with
 | "print"         -> PRINT
 | "real"          -> REAL
 | "record"        -> RECORD
+| "recurselimit"  -> RECURSELIMIT
 | "repeat"        -> REPEAT
 | "return"        -> RETURN
 | "setter"        -> SETTER

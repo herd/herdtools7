@@ -209,54 +209,46 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Global env *)
   (* ---------- *)
 
-  let build_global_storage env0 eval_expr =
-    let names =
-      List.fold_left (fun k (name, _) -> ISet.add name k) ISet.empty env0
-    in
-    let process_one_decl d =
-      match d.desc with
-      | D_GlobalStorage { initial_value; name; _ } ->
-          let scope = B.Scope.global ~init:true in
-          fun env_m ->
-            if ISet.mem name names then env_m
-            else
-              let*| env = env_m in
-              let* v =
-                match initial_value with
-                | Some e -> eval_expr env e
-                | None -> fatal_from d TypeInferenceNeeded
-              in
-              let* () = B.on_write_identifier name scope v in
-              IEnv.declare_global name v env |> return
-      | _ -> Fun.id
-    in
-    let fold = function
-      | TopoSort.ASTFold.Single d -> process_one_decl d
-      | TopoSort.ASTFold.Recursive ds -> List.fold_right process_one_decl ds
-    in
-    fun ast -> TopoSort.ASTFold.fold fold ast
+  let eval_global_decl env0 eval_expr d env_m =
+    let*| env = env_m in
+    match d.desc with
+    | D_GlobalStorage { initial_value; name; _ } -> (
+        let scope = B.Scope.global ~init:true in
+        match IMap.find_opt name env0 with
+        | Some v -> IEnv.declare_global name v env |> return
+        | None ->
+            let* v =
+              match initial_value with
+              | Some e -> eval_expr env e
+              | None -> fatal_from d TypeInferenceNeeded
+            in
+            let* () = B.on_write_identifier name scope v in
+            IEnv.declare_global name v env |> return)
+    | _ -> return env
 
   (* Begin EvalBuildGlobalEnv *)
 
-  (** [build_genv static_env ast primitives] is the global environment before
-      the start of the evaluation of [ast]. *)
+  (** [build_genv penv static_env ast primitives] is the global environment before
+      the start of the evaluation of [ast], with predefined values in [penv]. *)
   let build_genv env0 eval_expr (static_env : StaticEnv.global) (ast : AST.t) =
     let () =
       if _dbg then
         Format.eprintf "@[<v 2>Executing in env:@ %a@.]" StaticEnv.pp_global
           static_env
     in
+    let env0 = IMap.of_list env0 in
+    let global_decl_folder = function
+      | TopoSort.ASTFold.Single d -> eval_global_decl env0 eval_expr d
+      | TopoSort.ASTFold.Recursive ds ->
+          List.fold_right (eval_global_decl env0 eval_expr) ds
+    in
     let env =
       let open IEnv in
-      let global = { static = static_env; storage = Storage.empty } in
-      { global; local = empty_scoped (B.Scope.global ~init:true) }
+      let global = global_from_static static_env
+      and local = local_empty_scoped (B.Scope.global ~init:true) in
+      { global; local }
     in
-    let env =
-      List.fold_left
-        (fun env (name, v) -> IEnv.declare_global name v env)
-        env env0
-    in
-    let*| env = build_global_storage env0 eval_expr ast (return env) in
+    let*| env = TopoSort.ASTFold.fold global_decl_folder ast (return env) in
     return env.global |: SemanticsRule.BuildGlobalEnv
   (* End *)
 
@@ -998,15 +990,18 @@ module Make (B : Backend.S) (C : Config) = struct
         else fatal_from e @@ Error.AssertionFailed e |: SemanticsRule.SAssert
     (* End *)
     (* Begin EvalSWhile *)
-    | S_While (e, _limit, body) ->
+    | S_While (e, e_limit_opt, body) ->
+        let* limit_opt = eval_limit env e_limit_opt in
         let env = IEnv.tick_push env in
-        eval_loop true env e body |: SemanticsRule.SWhile
+        eval_loop s true env limit_opt e body |: SemanticsRule.SWhile
     (* End *)
     (* Begin EvalSRepeat *)
-    | S_Repeat (body, e, _limit) ->
+    | S_Repeat (body, e, e_limit_opt) ->
+        let* limit_opt1 = eval_limit env e_limit_opt in
+        let* limit_opt2 = tick_loop_limit s limit_opt1 in
         let*> env1 = eval_block env body in
         let env2 = IEnv.tick_push_bis env1 in
-        eval_loop false env2 e body |: SemanticsRule.SRepeat
+        eval_loop s false env2 limit_opt2 e body |: SemanticsRule.SRepeat
     (* End *)
     (* Begin EvalSFor *)
     | S_For { index_name; start_e; dir; end_e; body; limit = _limit } ->
@@ -1081,14 +1076,44 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of while and repeat loops *)
   (* ------------------------------------ *)
+
+  (* Evaluation of loop limits *)
+  and eval_limit env e_limit_opt =
+    match e_limit_opt with
+    | None -> return None
+    | Some e_limit -> (
+        let* v_limit = eval_expr_sef env e_limit in
+        match B.v_to_int v_limit with
+        | Some limit -> return (Some limit)
+        | None ->
+            fatal_from e_limit
+              (Error.MismatchType (B.debug_value v_limit, [ integer' ])))
+
+  and check_recurse_limit pos name env e_limit_opt =
+    let* limit_opt = eval_limit env e_limit_opt in
+    match limit_opt with
+    | None -> return ()
+    | Some limit ->
+        let stack_size = IEnv.get_stack_size name env in
+        if limit < stack_size then fatal_from pos Error.RecursionLimitReached
+        else return ()
+
+  and tick_loop_limit loc limit_opt =
+    match limit_opt with
+    | None -> return None
+    | Some limit ->
+        if limit >= 1 then return (Some (limit - 1))
+        else fatal_from loc Error.LoopLimitReached
+
   (* Begin EvalLoop *)
-  and eval_loop is_while env e_cond body : stmt_eval_type =
+  and eval_loop loc is_while env limit_opt e_cond body : stmt_eval_type =
     (* Name for warn messages. *)
     let loop_name = if is_while then "While loop" else "Repeat loop" in
     (* Continuation in the positive case. *)
     let loop env =
+      let* limit_opt' = tick_loop_limit loc limit_opt in
       let*> env1 = eval_block env body in
-      eval_loop is_while env1 e_cond body
+      eval_loop loc is_while env1 limit_opt' e_cond body
     in
     (* First we evaluate the condition *)
     let*^ cond_m, env = eval_expr env e_cond in
@@ -1224,14 +1249,17 @@ module Make (B : Backend.S) (C : Config) = struct
     let*^ nargs2, env2 = eval_expr_list_m env1 nargs1 in
     let* vargs = vargs and* nargs2 = nargs2 in
     let nargs3 = List.combine names nargs2 in
-    let res = eval_subprogram env2.global name pos vargs nargs3 in
+    let genv = IEnv.incr_stack_size name env2.global in
+    let res = eval_subprogram genv name pos vargs nargs3 in
     B.bind_seq res @@ function
     | Throwing (v, env_throw) ->
-        let new_env = IEnv.{ local = env2.local; global = env_throw.global } in
+        let genv2 = IEnv.decr_stack_size name env_throw.global in
+        let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return (Throwing (v, new_env))
     | Normal (ms, global) ->
-        let ms2 = List.map read_value_from ms
-        and new_env = IEnv.{ local = env2.local; global } in
+        let ms2 = List.map read_value_from ms in
+        let genv2 = IEnv.decr_stack_size name global in
+        let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return_normal (ms2, new_env) |: SemanticsRule.Call
   (* End *)
 
@@ -1281,10 +1309,11 @@ module Make (B : Backend.S) (C : Config) = struct
         |: SemanticsRule.FBadArity
     (* End *)
     (* Begin EvalFCall *)
-    | Some { body = SB_ASL body; args = arg_decls; _ } ->
+    | Some { body = SB_ASL body; args = arg_decls; recurse_limit; _ } ->
         (let () = if false then Format.eprintf "Evaluating %s.@." name in
          let scope = B.Scope.new_local name in
-         let env1 = IEnv.{ global = genv; local = empty_scoped scope } in
+         let env1 = IEnv.{ global = genv; local = local_empty_scoped scope } in
+         let* () = check_recurse_limit pos name env1 recurse_limit in
          let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
          let env2 =
            List.fold_left2 one_arg (return env1) arg_decls actual_args

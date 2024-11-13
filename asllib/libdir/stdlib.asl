@@ -94,7 +94,7 @@ begin
   let precision = 1.0 / (2.0 ^ sf);
 
   var xn: real = x0;
-  while Abs(x - xn * xn) > precision do
+  while Abs(x - xn * xn) > precision looplimit 1000 do
     xn = (xn + x / xn) / 2.0 ;
   end;
   let root = xn;

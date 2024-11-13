@@ -3,7 +3,7 @@ begin
 
   var i: integer = 0;
 
-  while i <= 3 do
+  while i <= 3 looplimit 4 do
     assert i <= 3;
     i = i + 1;
   end;

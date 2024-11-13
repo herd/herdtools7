@@ -368,6 +368,7 @@ type func = {
   body : subprogram_body;
   return_type : ty option;
   subprogram_type : subprogram_type;
+  recurse_limit : expr option;
 }
 (** Function types in the AST. For the moment, they represent getters, setters,
     functions, procedures and primitives. *)

@@ -324,9 +324,19 @@ module Make (C : Config.S) = struct
       and parameters = []
       and subprogram_type = ST_Function
       and body = SB_ASL stmt
+      and recurse_limit = None
       and return_type = Some ASTUtils.integer in
       [
-        D_Func { body; name; args; parameters; return_type; subprogram_type }
+        D_Func
+          {
+            body;
+            name;
+            args;
+            parameters;
+            return_type;
+            subprogram_type;
+            recurse_limit;
+          }
         |> annot;
       ]
     in
@@ -398,8 +408,17 @@ module Make (C : Config.S) = struct
   let decls =
     let d_func =
       let make_func (name, (body, (return_type, (args, subprogram_type)))) =
-        let parameters = [] and body = SB_ASL body in
-        D_Func { name; parameters; args; body; return_type; subprogram_type }
+        let parameters = [] and body = SB_ASL body and recurse_limit = None in
+        D_Func
+          {
+            name;
+            parameters;
+            args;
+            body;
+            return_type;
+            subprogram_type;
+            recurse_limit;
+          }
       in
       let args = vars ** tys in
       let subpgm_types =
