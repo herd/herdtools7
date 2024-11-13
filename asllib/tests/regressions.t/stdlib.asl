@@ -33,8 +33,7 @@ begin
   assert IsOdd (1);
   assert IsOdd (-1);
 
-  assert Replicate{3}('01') == '010101';
-  assert Replicate{3}('') == '';
+  assert Replicate{6}('01') == '010101';
 
   assert Zeros{0} == '';
   assert Zeros{3} == '000';

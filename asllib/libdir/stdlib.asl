@@ -117,13 +117,14 @@ begin
   return if isZero then Zeros{N} else Ones{N};
 end;
 
-func Replicate{N,M}(x: bits(M)) => bits(N*M)
+func Replicate{N,M}(x: bits(M)) => bits(N)
 begin
-  if M == 1 then
-    return ReplicateBit{N*M}(IsZero(x));
+  assert (N MOD M == 0);
+  if N == 1 then
+    return ReplicateBit{N}(IsZero(x));
   else
-    var r: bits(N*M) = Zeros{}();
-    for i=0 to N-1 do
+    var r: bits(N) = Zeros{}();
+    for i=0 to (N DIV M)-1 do
       r[i*:M] = x;
     end;
     return r;
