@@ -6,8 +6,8 @@ This section defines the following relations over types and operators:
   \item Type Satisfaction (\secref{TypingRule.TypeSatisfaction})
   \item Type Clash (\secref{TypingRule.TypeClash})
   \item Lowest Common Ancestor (\secref{TypingRule.LowestCommonAncestor})
-  \item Checking adequacy of a unary operator for a type (\secref{TypingRule.CheckUnop})
-  \item Checking adequacy of a binary operator for a pair of types (\secref{TypingRule.CheckBinop})
+  \item Applying a unary operator to a type (\secref{TypingRule.ApplyUnopType})
+  \item Applying a binary operator to a pair of types (\secref{TypingRule.ApplyBinopTypes})
 \end{itemize}
 
 Finally, we define the following helper functions:
@@ -107,7 +107,6 @@ type subInt of integer subtypes superInt;
   }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.}
 
 \subsection{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
@@ -250,7 +249,7 @@ One of the following applies:
   \inferrule[simple]{
     \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
     \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
-    \astlabel(\vttwo) \in \{\TInt, \TReal, \TString, \TBool\}\\
+    \astlabel(\vttwo) \in \{\TReal, \TString, \TBool\}\\
     \vb \eqdef \astlabel(\vstwo) = \astlabel(\vttwo)
   }{
     \subtypesat(\tenv, \vt, \vs) \typearrow \vb
@@ -261,8 +260,8 @@ One of the following applies:
 \inferrule[t\_int]{
   \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
   \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
-  \vsstruct = \TInt(\vc)\\
-  \symsubsumes(\tenv, \vsstruct, \vtstruct) \typearrow \vb
+  \astlabel(\vttwo) = \astlabel(\vstwo) = \TInt\\
+  \symsubsumes(\tenv, \vs, \vt) \typearrow \vb
 }{
   \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
@@ -626,7 +625,7 @@ returning the result $\vb$ or a type error, if one is detected.
   \end{itemize}
 \end{itemize}
 
-\isempty{\subsubsection{Example}}
+
 
 \CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
@@ -849,9 +848,6 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 \end{itemize}
-
-\isempty{\subsubsection{Example}}
-
 \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
 \subsubsection{Formally}
@@ -1005,14 +1001,13 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identr{YZHM}.}
 
-\subsection{TypingRule.CheckUnop \label{sec:TypingRule.CheckUnop}}
-\hypertarget{def-checkunop}{}
+\subsection{TypingRule.ApplyUnopType \label{sec:TypingRule.ApplyUnopType}}
+\hypertarget{def-applyunoptype}{}
 The function
 \[
-  \CheckUnop(\overname{\staticenvs}{\tenv} \aslsep \overname{\unop}{\op} \aslsep \overname{\ty}{\vt})
+  \applyunoptype(\overname{\staticenvs}{\tenv} \aslsep \overname{\unop}{\op} \aslsep \overname{\ty}{\vt})
   \aslto \overname{\ty}{\vs} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 determines the result type of applying a unary operator when the type of its operand is known.
@@ -1068,18 +1063,15 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\isempty{\subsubsection{Example}}
-
-\CodeSubsection{\CheckUnopBegin}{\CheckUnopEnd}{../Typing.ml}
-
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[bnot\_t\_bool]{
   \checktypesat(\tenv, \vtone, \TBool) \typearrow \True \OrTypeError\\
 }{
-  \CheckUnop(\tenv, \BNOT, \vtone) \typearrow \TBool
+  \applyunoptype(\tenv, \BNOT, \vtone) \typearrow \TBool
 }
 \end{mathpar}
+\CodeSubsection{\ApplyUnopTypeBegin}{\ApplyUnopTypeEnd}{../Typing.ml}
 
 \hypertarget{def-negateconstraint}{}
 We now define the helper function
@@ -1107,7 +1099,7 @@ the values it represents:
   \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\\\\
   \typesat(\tenv, \vt, \TReal) \typearrow \False \OrTypeError\\
 }{
-  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \TypeErrorVal{InappropriateTypeForNeg}
+  \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \TypeErrorVal{InappropriateTypeForNeg}
 }
 \end{mathpar}
 
@@ -1115,7 +1107,7 @@ the values it represents:
 \inferrule[neg\_t\_real]{
   \typesat(\tenv, \vt, \TReal) \typearrow \True
 }{
-  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TReal}{\vs}
+  \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TReal}{\vs}
 }
 \end{mathpar}
 
@@ -1123,7 +1115,7 @@ the values it represents:
 \inferrule[neg\_t\_int\_unconstrained]{
   \getwellconstrainedstructure(\tenv, \vt) \typearrow \unconstrainedinteger \OrTypeError
 }{
-  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\unconstrainedinteger}{\vs}
+  \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\unconstrainedinteger}{\vs}
 }
 \end{mathpar}
 
@@ -1133,7 +1125,7 @@ the values it represents:
   \vc \in \vcs: \negateconstraint(\vc) \typearrow \vneg_\vc\\
   \vcsnew \eqdef [\vc \in \vcs: \vneg_\vc]
 }{
-  \CheckUnop(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TInt(\wellconstrained(\vcsnew))}{\vs}
+  \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TInt(\wellconstrained(\vcsnew))}{\vs}
 }
 \end{mathpar}
 
@@ -1141,17 +1133,15 @@ the values it represents:
 \inferrule[not\_t\_bits]{
   \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError
 }{
-  \CheckUnop(\tenv, \overname{\NOT}{\op}, \vt) \typearrow \vt
+  \applyunoptype(\tenv, \overname{\NOT}{\op}, \vt) \typearrow \vt
 }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
-
-\subsection{TypingRule.CheckBinop \label{sec:TypingRule.CheckBinop}}
-\hypertarget{def-checkbinop}{}
+\subsection{TypingRule.ApplyBinopTypes\label{sec:TypingRule.ApplyBinopTypes}}
+\hypertarget{def-applybinoptypes}{}
 The function
 \[
-  \CheckBinop(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\ty}{\vtone}
+  \applybinoptypes(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\ty}{\vtone}
   \aslsep \overname{\ty}{\vttwo})
   \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
@@ -1162,341 +1152,372 @@ to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
+  \item All of the following apply (\textsc{named}):
+  \begin{itemize}
+    \item at least one of $\vtone$ and $\vttwo$ is a \namedtype;
+    \item determining the \underlyingtype\ if $\vtone$ yields $\vtoneanon$\ProseOrTypeError;
+    \item determining the \underlyingtype\ if $\vttwo$ yields $\vttwoanon$\ProseOrTypeError;
+    \item applying $\applybinoptypes$ to $\vtoneanon$ and $\vttwoanon$ in $\tenv$ yields $\vt$\ProseOrTypeError.
+  \end{itemize}
+
   \item All of the following apply (\textsc{boolean}):
   \begin{itemize}
     \item $\op$ is $\AND$, $\OR$, $\EQOP$ or $\IMPL$;
-    \item determining whether $\vtone$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item determining whether $\vttwo$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item both $\vtone$ and $\vttwo$ are $\TBool$;
     \item $\vt$ is $\TBool$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{bits\_bool}):
+  \item All of the following apply (\textsc{bits\_arith}):
   \begin{itemize}
-    \item $\op$ is $\AND$, $\OR$, or $\XOR$;
+    \item $\op$ is one of $\AND$, $\OR$, $\XOR$, $\PLUS$, and $\MINUS$;
+    \item $\vtone$ is a bitvector type with width expression $\vwone$;
+    \item $\vttwo$ is a bitvector type with width expression $\vwtwo$;
     \item checking whether $\vtone$ and $\vttwo$ have the \structure\ of bitvector types
           of the same width in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item the bitvector width of $\vtone$ in $\tenv$ is $\vw$;
-    \item $\vt$ is the bitvector type of width $\vw$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{plus\_minus\_error}):
-  \begin{itemize}
-    \item $\op$ is $\PLUS$ or $\MINUS$;
-    \item obtaining the \structure\ of $\vtone$ in $\tenv$ is $\vtonestruct$\ProseOrTypeError;
-    \item $\vtonestruct$ is neither a bitvector type nor an integer type;
-    \item the result is a type error indicating that the type of $\vtone$ is inappropriate for $\op$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{plus\_minus\_bits\_int}):
-  \begin{itemize}
-    \item $\op$ is $\PLUS$ or $\MINUS$;
-    \item obtaining the \structure\ of $\vtone$ in $\tenv$ is $\vtonestruct$\ProseOrTypeError;
-    \item $\vtonestruct$ is a bitvector type;
-    \item $\vttwo$ \typesatisfies\ the unconstrained integer type in $\tenv$;
-    \item obtaining the bitwidth of $\vtone$ in $\tenv$ yields $\vw$.
-    \item $\vt$ is the bitvector type of width $\vw$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{plus\_minus\_bits\_bits}):
-  \begin{itemize}
-    \item $\op$ is $\PLUS$ or $\MINUS$;
-    \item obtaining the \structure\ of $\vtone$ in $\tenv$ is a bitvector of width $\veone$, that is,\\ $\TBits(\veone, \Ignore)$;
-    \item $\vttwo$ does not \typesatisfy\ the unconstrained integer type in $\tenv$
-    \item obtaining the \structure\ of $\vttwo$ in $\tenv$ is $\vttwostruct$\ProseOrTypeError;
-    \item determining whether $\vttwostruct$ has a bitvector type yields $\True$\ProseOrTypeError;
-    \item $\vttwostruct$ is a bitvector of width $\vwtwo$, that is, $\TBits(\vwtwo, \Ignore)$;
-    \item determining whether $\vwone$ and $\vwtwo$ are equal bitwidths yields $\vb$;
-    \item $\vb$ is $\True$\ProseOrTypeError;
     \item $\vt$ is the bitvector type of width $\vwone$ and empty list of bitfields, that is, \\ $\TBits(\vwone, \emptylist)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eq\_neq\_error}):
+  \item All of the following apply (\textsc{bits\_int}):
   \begin{itemize}
-    \item $\op$ is either $\EQOP$ or $\NEQ$;
-    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\vtoneanon$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\vttwoanon$\ProseOrTypeError;
-    \item the AST labels of $\vtoneanon$ and $\vttwoanon$ are different or one of them is not in
-          $\{\TInt, \TReal, \TBool, \TBits, \TEnum\}$;
-    \item the result is a type error indicating that the types of $\vtone$ and $\vttwo$ are inappropriate for $\op$.
+    \item $\op$ is either $\PLUS$ or $\MINUS$;
+    \item $\vtone$ is a bitvector type with width expression $\vw$;
+    \item $\vttwo$ is an integer type;
+    \item $\vt$ is the bitvector type of width $\vw$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{rel}):
+  \begin{itemize}
+    \item the operator $\op$ and types of $\vtone$ and $\vttwo$ match one of the rows in the following table:
+    \[
+    \begin{array}{lll}
+      \mathbf{\op} & \mathbf{\vtone} & \mathbf{\vttwo} \\
+      \hline
+      \LEQ  & \TInt    & \TInt\\
+      \GEQ  & \TInt    & \TInt\\
+      \GT   & \TInt    & \TInt\\
+      \LT   & \TInt    & \TInt\\
+      \LEQ  & \TReal   & \TReal\\
+      \GEQ  & \TReal   & \TReal\\
+      \GT   & \TReal   & \TReal\\
+      \LT   & \TReal   & \TReal\\
+      \EQOP & \TInt    & \TInt\\
+      \NEQ  & \TInt    & \TInt\\
+      \EQOP & \TBool   & \TBool\\
+      \NEQ  & \TBool   & \TBool\\
+      \EQOP & \TReal   & \TReal\\
+      \NEQ  & \TReal   & \TReal\\
+      \EQOP & \TString & \TString\\
+      \NEQ  & \TString & \TString
+    \end{array}
+    \]
+    \item $\vt$ is $\TBool$.
   \end{itemize}
 
   \item All of the following apply (\textsc{eq\_neq\_bits}):
   \begin{itemize}
     \item $\op$ is either $\EQOP$ or $\NEQ$;
-    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\vtoneanon$\ProseOrTypeError;
-    \item $\vtoneanon$ is a bitvector type;
-    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\vttwoanon$\ProseOrTypeError;
-    \item $\vttwoanon$ is a bitvector type;
+    \item $\vtone$ is a bitvector type with width expression $\vwone$;
+    \item $\vttwo$ is a bitvector type with width expression $\vwtwo$;
     \item checking whether the bitwidth of $\vtoneanon$ and $\vttwoanon$ is the same yields $\True$\ProseOrTypeError;
-    \item $\vt$ is $\TBool$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{eq\_neq\_bool}):
-  \begin{itemize}
-    \item $\op$ is either $\EQOP$ or $\NEQ$;
-    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TBool$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TBool$\ProseOrTypeError;
-    \item checking whether $\vtoneanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
-    \item checking whether $\vttwoanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
-    \item $\vt$ is $\TBool$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{eq\_neq\_real}):
-  \begin{itemize}
-    \item $\op$ is either $\EQOP$ or $\NEQ$;
-    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TReal$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TReal$\ProseOrTypeError;
-    \item checking whether $\vtoneanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
-    \item checking whether $\vttwoanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
-    \item $\vt$ is $\TBool$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{eq\_neq\_string}):
-  \begin{itemize}
-    \item $\op$ is either $\EQOP$ or $\NEQ$;
-    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TString$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TString$\ProseOrTypeError;
-    \item checking whether $\vtoneanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
-    \item checking whether $\vttwoanon$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
     \item $\vt$ is $\TBool$.
   \end{itemize}
 
   \item All of the following apply (\textsc{eq\_neq\_enum}):
   \begin{itemize}
     \item $\op$ is either $\EQOP$ or $\NEQ$;
-    \item the \underlyingtype\ of $\vtone$ in $\tenv$ is $\TEnum(\vlione)$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vttwo$ in $\tenv$ is $\TEnum(\vlitwo)$\ProseOrTypeError;
+    \item $\vtone$ is $\TEnum(\vlione)$;
+    \item $\vttwo$ is $\TEnum(\vlitwo)$;
     \item checking whether $\vlione$ is equal to $\vlitwo$ yields $\True$\ProseOrTypeError;
     \item $\vt$ is $\TBool$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{relational}):
-  \begin{itemize}
-    \item $\op$ is one of $\LT$, $\LEQ$, $\GT$, and $\GEQ$;
-    \item determining whether both $\vtone$ and $\vttwo$ \typesatisfy\ the unconstrained integer type in $\tenv$
-          or both $\vtone$ and $\vttwo$ \typesatisfy\ the \texttt{real} type in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item $\vt$ is $\TBool$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{arith\_error}):
-  \begin{itemize}
-    \item obtaining the \structure\ of $\vtone$ in $\tenv$ yields $\vtonestruct$\ProseOrTypeError;
-    \item obtaining the \structure\ of $\vttwo$ in $\tenv$ yields $\vttwostruct$\ProseOrTypeError;
-    \item the operator and the AST labels of $\vtonestruct$ and $\vttwostruct$ do not match any of the rows in the following table:
-
-    \begin{center}
-    \begin{tabular}{lll}
-      \op    & $\astlabel(\vtonestruct)$ & $\astlabel(\vttwostruct)$\\
-      \hline
-      \MUL   & \TInt  & \TInt\\
-      \DIV   & \TInt  & \TInt\\
-      \DIVRM & \TInt  & \TInt\\
-      \MOD   & \TInt  & \TInt\\
-      \SHL   & \TInt  & \TInt\\
-      \SHR   & \TInt  & \TInt\\
-      \POW   & \TInt  & \TInt\\
-      \PLUS  & \TInt  & \TInt\\
-      \MINUS & \TInt  & \TInt\\
-      \PLUS  & \TReal & \TReal\\
-      \MINUS & \TReal & \TReal\\
-      \MUL   & \TReal & \TReal\\
-      \RDIV  & \TReal & \TReal\\
-      \POW   & \TReal & \TInt\\
-    \end{tabular}
-  \end{center}
-    \item the result is a type error indicating that the types of $\vtone$ and $\vttwo$ are inappropriate for $\op$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{arith\_t\_int\_unconstrained1}, \\
-                                    \textsc{arith\_t\_int\_unconstrained2}):
+  \item All of the following apply (\textsc{arith\_t\_int\_unconstrained}):
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}$;
-    \item the \wellconstrainedstructure\ of $\vtone$ or $\vttwo$ in $\tenv$ is that of the unconstrained integer type;
+    \item both $\vtone$ and $\vttwo$ are integer types and at least one them is the unconstrained integer type;
     \item $\vt$ is the unconstrained integer type;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{arith\_t\_int\_parameterized}):
+  \begin{itemize}
+    \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}$;
+    \item both $\vtone$ and $\vttwo$ are integer types and at least one them is a \parameterizedintegertype;
+    \item applying $\towellconstrained$ to $\vtone$ yields $\vtonewellconstrained$;
+    \item applying $\towellconstrained$ to $\vttwo$ yields $\vttwowellconstrained$;
+    \item applying $\applybinoptypes$ to $\vtonewellconstrained$ and \\
+          $\vttwowellconstrained$ in $\tenv$ yields $\vt$.
   \end{itemize}
 
   \item All of the following apply (\textsc{arith\_t\_int\_wellconstrained}):
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}$;
-    \item the \wellconstrainedstructure\ of $\vtone$ in $\tenv$ is that of a well-constrained integer type with
-          constraints $\vcsone$;
-    \item the \wellconstrainedstructure\ of $\vttwo$ in $\tenv$ is that of a well-constrained integer type with
-          constraints $\vcstwo$;
-    \item applying $\annotateconstraintbinop$ to $\op$, $\vcsone$, and $\vcstwo$ in $\tenv$ yields $\vcs$;
-    \item $\vt$ is the integer type with constraints $\vcs$;
+    \item $\vtone$ is the well-constrained integer type with constraints $\csone$;
+    \item $\vttwo$ is the well-constrained integer type with constraints $\cstwo$;
+    \item applying $\annotateconstraintbinop$ to $\op$, $\csone$, and $\cstwo$ in $\tenv$ yields $\vc$;
+    \item $\vt$ is the integer type with constraint kind $\vc$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{plus\_minus\_mul\_real}):
+  \item All of the following apply (\textsc{arith\_real}):
   \begin{itemize}
-    \item $\op$ is one of $\{\PLUS, \MINUS, \MUL\}$;
-    \item obtaining the \structure\ of $\vtone$ in $\tenv$ yields $\TReal$;
-    \item obtaining the \structure\ of $\vttwo$ in $\tenv$ yields $\TReal$;
+    \item the operator $\op$ and types of $\vtone$ and $\vttwo$ match one of the rows in the following table:
+    \[
+    \begin{array}{lll}
+      \mathbf{\op} & \mathbf{\vtone} & \mathbf{\vttwo} \\
+      \hline
+      \PLUS  & \TReal    & \TReal\\
+      \MINUS & \TReal    & \TReal\\
+      \MUL   & \TReal    & \TReal\\
+      \POW   & \TReal    & \TInt\\
+      \RDIV  & \TReal    & \TReal
+    \end{array}
+    \]
     \item $\vt$ is $\TReal$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{pow\_real\_int}):
+  \item All of the following apply (\textsc{error}):
   \begin{itemize}
-    \item $\op$ is one of $\{\PLUS, \MINUS, \MUL\}$;
-    \item obtaining the \structure\ of $\vtone$ in $\tenv$ yields $\TReal$;
-    \item obtaining the \structure\ of $\vttwo$ in $\tenv$ yields an integer type;
-    \item $\vt$ is $\TReal$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{rdiv}):
-  \begin{itemize}
-    \item $\op$ is one of $\{\RDIV\}$;
-    \item determining whether $\vtone$ \typesatisfies\ $\TReal$ yields $\True$\ProseOrTypeError;
-    \item determining whether $\vttwo$ \typesatisfies\ $\TReal$ yields $\True$\ProseOrTypeError;
-    \item $\vt$ is $\TReal$.
+    \item obtaining the \underlyingtype\ of $\vtone$ in $\tenv$ yields $\vtoneanon$\ProseOrTypeError;
+    \item obtaining the \underlyingtype\ of $\vttwo$ in $\tenv$ yields $\vttwoanon$\ProseOrTypeError;
+    \item the operator and the AST labels of $\vtoneanon$ and $\vttwoanon$ do not match any of the rows in the following table:
+    \[
+    \begin{array}{lll}
+      \hline
+      \mathbf{\op} & \mathbf{\astlabel(\vtoneanon)} & \mathbf{\astlabel(\vttwoanon)} \\
+      \hline
+      \AND     & \TBool  & \TBool\\
+      \OR      & \TBool  & \TBool\\
+      \EQOP    & \TBool  & \TBool\\
+      \IMPL    & \TBool  & \TBool\\
+      %
+      \AND     & \TBits  & \TBits\\
+      \OR      & \TBits  & \TBits\\
+      \XOR     & \TBits  & \TBits\\
+      \PLUS    & \TBits  & \TBits\\
+      \MINUS   & \TBits  & \TBits\\
+      %
+      \PLUS    & \TBits  & \TInt\\
+      \MINUS   & \TBits  & \TInt\\
+      %
+      \LEQ     & \TInt     & \TInt\\
+      \GEQ     & \TInt     & \TInt\\
+      \GT      & \TInt     & \TInt\\
+      \LT      & \TInt     & \TInt\\
+      \LEQ     & \TReal    & \TReal\\
+      \GEQ     & \TReal    & \TReal\\
+      \GT      & \TReal    & \TReal\\
+      \LT      & \TReal    & \TReal\\
+      \EQOP    & \TInt     & \TInt\\
+      \NEQ     & \TInt     & \TInt\\
+      \EQOP    & \TBool    & \TBool\\
+      \NEQ     & \TBool    & \TBool\\
+      \EQOP    & \TReal    & \TReal\\
+      \NEQ     & \TReal    & \TReal\\
+      \EQOP    & \TString  & \TString\\
+      \NEQ     & \TString  & \TString\\
+      %
+      \MUL     & \TInt  & \TInt\\
+      \DIV     & \TInt  & \TInt\\
+      \DIVRM   & \TInt  & \TInt\\
+      \MOD     & \TInt  & \TInt\\
+      \SHL     & \TInt  & \TInt\\
+      \SHR     & \TInt  & \TInt\\
+      \POW     & \TInt  & \TInt\\
+      \PLUS    & \TInt  & \TInt\\
+      \MINUS   & \TInt  & \TInt\\
+      \PLUS    & \TReal & \TReal\\
+      \MINUS   & \TReal & \TReal\\
+      \MUL     & \TReal & \TReal\\
+      \RDIV    & \TReal & \TReal\\
+      \POW     & \TReal & \TInt\\
+      %
+      \PLUS    & \TReal & \TReal\\
+      \MINUS   & \TReal & \TReal\\
+      \MUL     & \TReal & \TReal\\
+      \POW     & \TReal & \TInt\\
+      \RDIV    & \TReal & \TReal\\
+      \hline
+    \end{array}
+    \]
   \end{itemize}
 \end{itemize}
 
-\isempty{\subsubsection{Example}}
-
-\CodeSubsection{\CheckBinopBegin}{\CheckBinopEnd}{../Typing.ml}
-
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[boolean]{
-  \op \in  \{\BAND, \BOR, \IMPL, \EQOP\}\\
-  \checktypesat(\tenv, \vt1, \TBool) \typearrow \True \OrTypeError\\\\
-  \checktypesat(\tenv, \vttwo, \TBool) \typearrow \True \OrTypeError
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bits\_bool]{
-  \op \in  \{\AND, \OR, \XOR\}\\
-  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError\\\\
-  \getbitvectorwidth(\tenv, \vtone) \typearrow \vw
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBits(\vw, \emptylist)}{\vt}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[plus\_minus\_error]{
-  \op \in  \{\PLUS, \MINUS\}\\
-  \tstruct(\tenv, \vtone) \typearrow \vtonestruct \OrTypeError\\\\
-  \astlabel(\vtonestruct) \not\in \{\TBits,\TInt\}\\
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\InvalidOperandTypesForBinop}
-}
-\and
-\inferrule[plus\_minus\_bits\_int]{
-  \op \in  \{\PLUS, \MINUS\}\\
-  \tstruct(\tenv, \vtone) \typearrow \vtonestruct \OrTypeError\\\\
-  \astlabel(\vtonestruct) = \TBits\\
-  \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \True\\
-  \getbitvectorwidth(\tenv, \vtone) \typearrow \vw\\
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBits(\vw, \emptylist)}{\vt}
-}
-\and
-\inferrule[plus\_minus\_bits\_bits]{
-  \op \in  \{\PLUS, \MINUS\}\\
-  \tstruct(\tenv, \vtone) \typearrow \TBits(\vwone, \Ignore) \\
-  \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \False\\
-  \tstruct(\tenv, \vttwo) \typearrow \vttwostruct \OrTypeError\\\\
-  \checktrans{\astlabel(\vttwostruct)=\TBits}{\ExpectedBitvectorType} \checktransarrow \True \OrTypeError\\\\
-  \vttwostruct \eqname \TBits(\vwtwo, \Ignore)\\
-  \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb\\
-  \checktrans{\vb}{DifferentBitwidths} \checktransarrow \True \OrTypeError
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBits(\vwone, \emptylist)}{\vt}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[eq\_neq\_error]
-{
-  \op \in  \{\EQOP, \NEQ\}\\
+\inferrule[named]{
+  \astlabel(\vtone) = \TNamed \lor \astlabel(\vttwo) = \TNamed\\
   \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
   \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  \applybinoptypes(\tenv, \vtoneanon, \vttwoanon) \typearrow \vt \OrTypeError
+}{
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[boolean]{
+  \op \in  \{\BAND, \BOR, \IMPL, \EQOP\}
+}{
+  \applybinoptypes(\tenv, \op, \overname{\TBool}{\vtone}, \overname{\TBool}{\vttwo}) \typearrow \overname{\TBool}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bits\_arith]{
+  \op \in  \{\AND, \OR, \XOR, \PLUS, \MINUS\}\\
+  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
+}{
+  \applybinoptypes(\tenv, \op, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo})
+  \typearrow \overname{\TBits(\vwone, \emptylist)}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bits\_int]{
+  \op \in  \{\PLUS, \MINUS\}}{
+  \applybinoptypes(\tenv, \op, \overname{\TBits(\vw, \Ignore)}{\vtone}, \overname{\TInt(\Ignore)}{\vttwo}) \typearrow
+  \overname{\TBits(\vw, \emptylist)}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[rel]{
   {
-    \left(\begin{array}{ll}
-  \astlabel(\vtoneanon) \neq \astlabel(\vttwoanon) & \lor \\
-  \astlabel(\vtoneanon) \not\in \{\TInt, \TReal, \TBool, \TBits, \TEnum\} &
-    \end{array}\right)
+    (\op, \vtone, \vttwo) \in \left\{
+      \begin{array}{lclcl}
+        (\LEQ     &,& \TInt     &,& \TInt)\\
+        (\GEQ     &,& \TInt     &,& \TInt)\\
+        (\GT      &,& \TInt     &,& \TInt)\\
+        (\LT      &,& \TInt     &,& \TInt)\\
+        (\LEQ     &,& \TReal    &,& \TReal)\\
+        (\GEQ     &,& \TReal    &,& \TReal)\\
+        (\GT      &,& \TReal    &,& \TReal)\\
+        (\LT      &,& \TReal    &,& \TReal)\\
+        (\EQOP    &,& \TInt     &,& \TInt)\\
+        (\NEQ     &,& \TInt     &,& \TInt)\\
+        (\EQOP    &,& \TBool    &,& \TBool)\\
+        (\NEQ     &,& \TBool    &,& \TBool)\\
+        (\EQOP    &,& \TReal    &,& \TReal)\\
+        (\NEQ     &,& \TReal    &,& \TReal)\\
+        (\EQOP    &,& \TString  &,& \TString)\\
+        (\NEQ     &,& \TString  &,& \TString)\\
+      \end{array}
+      \right\}
   }
 }{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\InvalidOperandTypesForBinop}
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[eq\_neq\_bits]{
   \op \in  \{\EQOP, \NEQ\}\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
-  \astlabel(\vtoneanon) = \TBits\\
-  \astlabel(\vttwoanon) = \TBits\\
   \checkbitsequalwidth(\tenv, \vtoneanon, \vttwoanon) \typearrow \True \OrTypeError
 }{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+  \applybinoptypes(\tenv, \op, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo}) \typearrow \overname{\TBool}{\vt}
 }
-\and
-\inferrule[eq\_neq\_bool]{
-  \op \in  \{\EQOP, \NEQ\}\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
-  \checktypesat(\tenv, \vtoneanon, \TBool) \typearrow \True \OrTypeError\\\\
-  \checktypesat(\tenv, \vttwoanon, \TBool) \typearrow \True \OrTypeError
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
-}
-\and
-\inferrule[eq\_neq\_real]{
-  \op \in  \{\EQOP, \NEQ\}\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
-  \checktypesat(\tenv, \vtoneanon, \TReal) \typearrow \True \OrTypeError\\\\
-  \checktypesat(\tenv, \vttwoanon, \TReal) \typearrow \True \OrTypeError
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
-}
-\and
-\inferrule[eq\_neq\_string]{
-  \op \in  \{\EQOP, \NEQ\}\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
-  \checktypesat(\tenv, \vtoneanon, \TString) \typearrow \True \OrTypeError\\\\
-  \checktypesat(\tenv, \vttwoanon, \TString) \typearrow \True \OrTypeError
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
-}
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[eq\_neq\_enum]{
   \op \in  \{\EQOP, \NEQ\}\\
-  \makeanonymous(\tenv, \vtone) \typearrow \TEnum(\vlione)\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \TEnum(\vlitwo)\\
   \checktrans{\vlione = \vlitwo}{DifferentEnumLabels} \checktransarrow \True \OrTypeError
 }{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+  \applybinoptypes(\tenv, \op, \overname{\TEnum(\vlione)}{\vtone}, \overname{\TEnum(\vlitwo)}{\vttwo}) \typearrow \overname{\TBool}{\vt}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[relational]{
-  \op \in  \{\LT, \LEQ, \GT, \GEQ\}\\
-  \typesat(\tenv, \vtone, \unconstrainedinteger) \typearrow \vbone \OrTypeError\\\\
-  \typesat(\tenv, \vttwo, \unconstrainedinteger) \typearrow \vbtwo \OrTypeError\\\\
-  \typesat(\tenv, \vtone, \TReal) \typearrow \vbthree \OrTypeError\\\\
-  \typesat(\tenv, \vttwo, \TReal) \typearrow \vbfour \OrTypeError\\\\
-  \checktrans{\vbone \land \vbtwo \lor \vbthree \land \vbfour}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError
+\inferrule[arith\_t\_int\_unconstrained]{
+  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
+  \vcone = \unconstrained \lor \vctwo = \unconstrained
 }{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TBool}{\vt}
+  \applybinoptypes(\tenv, \op, \overname{\TInt(\vcone)}{\vtone}, \overname{\TInt(\vctwo)}{\vttwo}) \typearrow \unconstrainedinteger
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[arith\_error]{
-  \tstruct(\tenv, \vtone) \typearrow \vtonestruct \OrTypeError\\\\
-  \tstruct(\tenv, \vttwo) \typearrow \vttwostruct \OrTypeError\\\\
-  (\op, \astlabel(\vtonestruct), \astlabel(\vttwostruct)) \not\in
+\inferrule[arith\_t\_int\_parameterized]{
+  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
+  \astlabel(\vcone) = \parameterized \lor \astlabel(\vctwo) = \parameterized\\
+  \towellconstrained(\vtone) \typearrow \vtonewellconstrained\\
+  \towellconstrained(\vttwo) \typearrow \vttwowellconstrained\\
+  \applybinoptypes(\tenv, \vtonewellconstrained, \vttwowellconstrained) \typearrow \vt \OrTypeError
+}{
+  \applybinoptypes(\tenv, \op, \overname{\TInt(\vcone)}{\vtone}, \overname{\TInt(\vctwo)}{\vttwo}) \typearrow \unconstrainedinteger
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[arith\_t\_int\_wellconstrained]{
+  \op \in  \{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}\\
+  \vcone = \wellconstrained(\cstwo)\\
+  \vctwo = \wellconstrained(\csone)\\
+  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \cs \OrTypeError
+}{
+      \applybinoptypes(\tenv, \op, \overname{\TInt(\vcone)}{\vtone},
+        \overname{\TInt(\vctwo)}{\vttwo}) \typearrow
+        \overname{\TInt(\wellconstrained(\cs))}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[arith\_real]{
+  (\op, \vtone, \vttwo) \not\in
   {
     \left\{
     \begin{array}{lclcl}
+      (\PLUS  &,& \TReal &,& \TReal)\\
+      (\MINUS &,& \TReal &,& \TReal)\\
+      (\MUL   &,& \TReal &,& \TReal)\\
+      (\POW   &,& \TReal &,& \TInt)\\
+      (\RDIV  &,& \TReal &,& \TReal)
+    \end{array}
+    \right\}
+  }
+}{
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \overname{\TReal}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  (\op, \astlabel(\vtoneanon), \astlabel(\vttwoanon)) \not\in
+  {
+    \left\{
+    \begin{array}{lclcl}
+      (\AND     &,& \TBool  &,& \TBool)\\
+      (\OR      &,& \TBool  &,& \TBool)\\
+      (\EQOP    &,& \TBool  &,& \TBool)\\
+      (\IMPL    &,& \TBool  &,& \TBool)\\
+      %
+      (\AND     &,& \TBits  &,& \TBits)\\
+      (\OR      &,& \TBits  &,& \TBits)\\
+      (\XOR     &,& \TBits  &,& \TBits)\\
+      (\PLUS    &,& \TBits  &,& \TBits)\\
+      (\MINUS   &,& \TBits  &,& \TBits)\\
+      %
+      (\PLUS    &,& \TBits  &,& \TInt)\\
+      (\MINUS   &,& \TBits  &,& \TInt)\\
+      %
+      (\LEQ     &,& \TInt     &,& \TInt)\\
+      (\GEQ     &,& \TInt     &,& \TInt)\\
+      (\GT      &,& \TInt     &,& \TInt)\\
+      (\LT      &,& \TInt     &,& \TInt)\\
+      (\LEQ     &,& \TReal    &,& \TReal)\\
+      (\GEQ     &,& \TReal    &,& \TReal)\\
+      (\GT      &,& \TReal    &,& \TReal)\\
+      (\LT      &,& \TReal    &,& \TReal)\\
+      (\EQOP    &,& \TInt     &,& \TInt)\\
+      (\NEQ     &,& \TInt     &,& \TInt)\\
+      (\EQOP    &,& \TBool    &,& \TBool)\\
+      (\NEQ     &,& \TBool    &,& \TBool)\\
+      (\EQOP    &,& \TReal    &,& \TReal)\\
+      (\NEQ     &,& \TReal    &,& \TReal)\\
+      (\EQOP    &,& \TString  &,& \TString)\\
+      (\NEQ     &,& \TString  &,& \TString)\\
+      %
       (\MUL   &,& \TInt  &,& \TInt)\\
       (\DIV   &,& \TInt  &,& \TInt)\\
       (\DIVRM &,& \TInt  &,& \TInt)\\
@@ -1511,73 +1532,21 @@ One of the following applies:
       (\MUL   &,& \TReal &,& \TReal)\\
       (\RDIV  &,& \TReal &,& \TReal)\\
       (\POW   &,& \TReal &,& \TInt)\\
+      %
+      (\PLUS  &,& \TReal &,& \TReal)\\
+      (\MINUS &,& \TReal &,& \TReal)\\
+      (\MUL   &,& \TReal &,& \TReal)\\
+      (\POW   &,& \TReal &,& \TInt)\\
+      (\RDIV  &,& \TReal &,& \TReal)
     \end{array}
     \right\}
   }
 }{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\InvalidOperandTypesForBinop}
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\InvalidOperandTypesForBinop}
 }
 \end{mathpar}
+\CodeSubsection{\applybinoptypesBegin}{\applybinoptypesEnd}{../Typing.ml}
 
-The following two rules are not mutually exclusive, but both yield the same result when they are both active.
-\begin{mathpar}
-\inferrule[arith\_t\_int\_unconstrained1]{
-  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
-  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \unconstrainedinteger\\
-  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\Ignore)\\
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \unconstrainedinteger
-}
-\and
-\inferrule[arith\_t\_int\_unconstrained2]{
-  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
-  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\Ignore)\\
-  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \unconstrainedinteger\\
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \unconstrainedinteger
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[arith\_t\_int\_wellconstrained]{
-  \op \in  \{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}\\
-  \getwellconstrainedstructure(\tenv, \vtone) \typearrow \TInt(\wellconstrained(\vcsone))\\
-  \getwellconstrainedstructure(\tenv, \vttwo) \typearrow \TInt(\wellconstrained(\vcstwo))\\
-  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow \vcs
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TInt(\vcs)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[plus\_minus\_mul\_real]{
-  \op \in  \{\PLUS, \MINUS, \MUL\}\\
-  \tstruct(\tenv, \vtone) \typearrow \TReal\\
-  \tstruct(\tenv, \vttwo) \typearrow \TReal
-}{
-  \CheckBinop(\tenv, \op, \vtone, \vttwo) \typearrow \TReal
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pow\_real\_int]{
-  \tstruct(\tenv, \vtone) \typearrow \TReal\\
-  \astlabel(\tstruct(\tenv, \vttwo)) \typearrow \TInt
-}{
-  \CheckBinop(\tenv, \POW, \vtone, \vttwo) \typearrow \TReal
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[rdiv]{
-  \checktypesat(\tenv, \vtone, \TReal) \typearrow \True \OrTypeError\\\\
-  \checktypesat(\tenv, \vttwo, \TReal) \typearrow \True \OrTypeError\\
-}{
-  \CheckBinop(\tenv, \RDIV, \vtone, \vttwo) \typearrow \TReal
-}
-\end{mathpar}
-
-\isempty{\subsubsection{Comments}}
 \lrmcomment{
   This is related to \identr{BKNT}, \identr{ZYWY}, \identr{BZKW},
   \identr{KFYS}, \identr{KXMR}, \identr{SQXN}, \identr{MRHT}, \identr{JGWF},
@@ -1661,7 +1630,7 @@ One of the following holds:
 }
 \end{mathpar}
 
-\subsection{TypingRule.AnnotateConstraintBinop \label{sec:TypingRule.AnnotateConstraintBinop}}
+\subsection{TypingRule.AnnotateConstraintBinop\label{sec:TypingRule.AnnotateConstraintBinop}}
 \hypertarget{def-annotateconstraintbinop}{}
 The function
 \[
@@ -1672,12 +1641,12 @@ The function
   \overname{\intconstraint^*}{\csone} \aslsep
   \overname{\intconstraint^*}{\cstwo}
 ) \aslto \\
-\overname{\constraintkind}{\vics}
+\overname{\intconstraint^*}{\annotatedcs}
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the application of the binary operation $\op$ to the lists of integer constraints
-$\csone$ and $\cstwo$, yielding an element of $\constraintkind$ --- $\vics$.
+$\csone$ and $\cstwo$, yielding a list of constraints --- $\annotatedcs$.
 \ProseOtherwiseTypeError\
 
 The operator $\op$ is assumed to be only one of the operators in the following set:
@@ -1691,7 +1660,7 @@ $\{\AbbrevConstraintExact{\ELInt{2}}\}$ results in
 $\{\AbbrevConstraintRange{\ELInt{4}}{\ELInt{6}}\}$,
 while applying $\MUL$ to the same lists of constraints results in
 $\{\AbbrevConstraintExact{\ELInt{4}}, \AbbrevConstraintExact{\ELInt{6}}, \AbbrevConstraintExact{\ELInt{8}}\}$,
-which is why $\binopisexploding(\MUL) \typearrow \False$.
+which is why $\binopisexploding(\MUL) \typearrow \True$.
 
 Annotating the constraints involves applying symbolic reasoning and in particular filtering out values that
 will definitely result in a dynamic error.
@@ -1705,68 +1674,26 @@ All of the following apply:
   \item applying $\explodeintervals$ to $\cstwo$ in $\tenv$ yields $\cstwo$;
   \item define $(\csonearg, \cstwoarg)$ as $(\csonee, \cstwoe)$ if $\vbexploding$ is $\True$ and $(\csone, \cstwof)$, otherwise;
   \item applying $\constraintbinop$ yo $\op$, $\csonearg$, and $\cstwoarg$ yields $\csvanilla$;
-  \item applying $\reduceconstraints$ to $\csvanilla$ in $\tenv$ yields $\cs$;
-  \item one of the following applies:
-  \begin{itemize}
-    \item All of the following apply (\textsc{div\_wellconstrained}):
-    \begin{itemize}
-      \item $\op$ is $\DIV$ and $\cs$ is a $\wellconstrained$ constraint;
-      \item view $\cs$ as $\wellconstrained(\cslist)$;
-      \item applying $\refineconstraints$ to $\filterreduceconstraintdiv$ and \\
-            $\cslist$ yields $\cslistfiltered$;
-      \item applying $\reduceconstants$ to $\cslistfiltered$ yields $\vics$.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{else}):
-    \begin{itemize}
-      \item either $\op$ is not $\DIV$ or $\cs$ is not a $\wellconstrained$ constraint;
-      \item $\vics$ is $\cs$.
-    \end{itemize}
-  \end{itemize}
+  \item applying $\refineconstraintfordiv$ to $\op$ and $\csvanilla$ yields $\refinedcs$\ProseOrTypeError;
+  \item applying $\reduceconstraints$ to $\refinedcs$ in $\tenv$ yields $\annotatedcs$.
 \end{itemize}
-
-\CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../StaticOperations.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[div\_wellconstrained]{
+\inferrule{
   \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\
   \binopisexploding(\op) \typearrow \vbexploding\\
   \explodeintervals(\tenv, \csone) \typearrow \csonee\\
   \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
   (\csonearg, \cstwoarg) \eqdef \choice{\vbexploding}{(\csonee, \cstwoe)}{(\csone, \cstwof)}\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
-  \reduceconstraints(\tenv, \csvanilla) \typearrow \cs\\\\
-  \commonprefixline\\\\
-  \op = \DIV \land \astlabel(\cs) = \wellconstrained\\
-  \cs \eqname \wellconstrained(\cslist)\\
-  {
-    \begin{array}{r}
-  \refineconstraints(\filterreduceconstraintdiv, \cslist) \typearrow \\
-    \cslistfiltered
-    \end{array}
-  }\\
-  \reduceconstraints(\cslistfiltered) \typearrow \vics
+  \refineconstraintfordiv(\op, \csvanilla) \typearrow \refinedcs \OrTypeError\\\\
+  \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
 }{
-  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \vics
+  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
 }
 \end{mathpar}
-
-\begin{mathpar}
-\inferrule[else]{
-  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\
-  \binopisexploding(\op) \typearrow \vbexploding\\
-  \explodeintervals(\tenv, \csone) \typearrow \csonee\\
-  \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
-  (\csonearg, \cstwoarg) \eqdef \choice{\vbexploding}{(\csonee, \cstwoe)}{(\csone, \cstwof)}\\
-  \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
-  \reduceconstraints(\tenv, \csvanilla) \typearrow \cs\\\\
-  \commonprefixline\\\\
-  \neg(\op = \DIV \land \astlabel(\cs) = \wellconstrained)
-}{
-  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \overname{\cs}{\vics}
-}
-\end{mathpar}
+\CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../StaticOperations.ml}
 
 \subsection{TypingRule.BinopFilterRhs \label{sec:TypingRule.BinopFilterRhs}}
 \hypertarget{def-binopfilterrhs}{}
@@ -2113,6 +2040,59 @@ One of the following applies:
 }
 \end{mathpar}
 
+\subsection{TypingRule.RefineConstraintForDiv \label{sec:TypingRule.RefineConstraintForDiv}}
+\hypertarget{def-refineconstraintfordiv}{}
+The function
+\[
+\refineconstraintfordiv(\overname{\binop}{\op} \aslsep \overname{\intconstraint^*}{\cs}) \aslto \overname{\intconstraint^*}{\vres}
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+filters the list of constraints $\cs$ for $\op$,
+removing constraints that represents a division operation that will definitely fail
+when $\op$ is the division operation.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{div}):
+  \begin{itemize}
+    \item $\op$ is $\DIV$;
+    \item applying $\filterreduceconstraintdiv$ to each constraint $\cs[\vi]$, for each $\vi$ in $\listrange(\cs)$,
+          yields the optional constraint $\vcopt_\vi$\ProseOrTypeError;
+    \item define $\vres$ as the list made of constraints $\vcp_\vi$, for each $\vi$ in $\listrange(\cs)$
+          such that $\vcopt_\vi = \langle\vcp_\vi\rangle$;
+    \item checking that $\vres$ is not the empty list yields $\True$\ProseTerminateAs{\BinaryOperationFailsAllConstraints}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_div}):
+  \begin{itemize}
+    \item $\op$ is not $\DIV$;
+    \item define $\vres$ as $\cs$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[div]{
+  \op = \DIV\\
+  \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
+  \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \langle\vcp_\vi\rangle}{\vcp}{\epsilon}]\\
+  \checktrans{\vres \neq \emptylist}{\BinaryOperationFailsAllConstraints} \checktransarrow \True \OrTypeError
+}{
+  \refineconstraintfordiv(\op, \cs) \typearrow \vres
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_div]{
+  \op \neq \DIV
+}{
+  \refineconstraintfordiv(\op, \cs) \typearrow \overname{\cs}{\vres}
+}
+\end{mathpar}
+\CodeSubsection{\RefineConstraintForDIVBegin}{\RefineConstraintForDIVEnd}{../types.ml}
+
 \subsection{TypingRule.FilterReduceConstraintDiv \label{sec:TypingRule.FilterReduceConstraintDiv}}
 \hypertarget{def-filterreduceconstraintdiv}{}
 The function
@@ -2125,35 +2105,93 @@ The result is returned in $\vcopt$.
 This is used to conservatively test whether $\vc$ would always fail dynamically.
 
 \subsubsection{Prose}
-If $\vc$ is an exact constraint for a binary expression for the division operation and two integer literal
-expressions for the integers $\vzone$ and $\vztwo$ such that $\vztwo$ does not divide $\vzone$ then
-$\vcopt$ is $\None$. Otherwise $\vcopt$ is $\langle\vc\rangle$.
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{exact}):
+  \begin{itemize}
+    \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
+    \item applying $\getliteraldivopt$ to $\ve$ yields $\langle(\vzone, \vztwo)\rangle$\ProseTerminateAs{\None};
+    \item define $\vcopt$ as follows:
+    \begin{itemize}
+      \item $\langle\vc\rangle$, if $\vztwo$ is positive and $\vztwo$ divides $\vzone$;
+      \item $\None$, otherwise.
+    \end{itemize}
+  \end{itemize}
+
+  \item All of the following apply (\textsc{range}):
+  \begin{itemize}
+    \item $\vc$ is a range constraint for $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\getliteraldivopt$ to $\veone$ yields $\veoneopt$;
+    \item define $\vzoneopt$ as follows:
+    \begin{itemize}
+      \item $\vzone$ divided by $\vztwo$ and rounded up, if $\veoneopt$ is $(\vzone, \vztwo)$ and $\vztwo$ is positive;
+      \item $\None$, otherwise.
+    \end{itemize}
+    \item applying $\getliteraldivopt$ to $\vetwo$ yields $\vetwoopt$;
+    \item define $\vztwoopt$ as follows:
+    \begin{itemize}
+      \item $\vzthree$ divided by $\vzfour$ and rounded down, if $\vetwoopt$ is $(\vzthree, \vzfour)$ and $\vzfour$ is positive;
+      \item $\None$, otherwise.
+    \end{itemize}
+    \item define $\vcopt$ as follows:
+    \begin{itemize}
+      \item the exact constraint for the literal integer $\vzfive$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\langle\vzsix\rangle$ and $\vzfive$ is equal to $\vzsix$;
+      \item the range constraint for the literal integer $\vzfive$ and $\vzsix$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\langle\vzsix\rangle$ and $\vzfive$ is less than $\vzsix$;
+      \item $\None$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\langle\vzsix\rangle$ and $\vzfive$ is greater than $\vzsix$;
+      \item the range constraint for the literal integer $\vzfive$ and $\vetwo$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\None$;
+      \item the range constraint for $\veone$ and the literal integer $\vzsix$, if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\langle\vzsix\rangle$;
+      \item $\vc$ if if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\None$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[exact\_div\_literals]{
-  \vc = \ConstraintExact(\ve)\\
-  \getliteraldivopt(\ve) \typearrow \None
+\inferrule[exact]{
+  \getliteraldivopt(\ve) \typearrow \langle(\vzone, \vztwo)\rangle \terminateas \None\\\\
+  {
+    \vcopt \eqdef
+    \begin{cases}
+      \langle\vc\rangle & \text{if }\vztwo > 0 \land \frac{\vzone}{\vztwo} \in \Z\\
+      \None & \text{else}
+    \end{cases}
+  }
 }{
-  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \overname{\langle\vc\rangle}{\vcopt}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[exact\_not\_div\_literals]{
-  \vc = \ConstraintExact(\ve)\\
-  \getliteraldivopt(\ve) \typearrow \langle(\vzone, \vztwo)\rangle
-  \vcopt \eqdef \choice{\frac{\vzone}{\vztwo} \in \Z}{\langle\vc\rangle}{\None}
-}{
-  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \vcopt
+  \filterreduceconstraintdiv(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vcopt
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range]{
-  \astlabel(\vc) = \ConstraintRange
+  \getliteraldivopt(\veone) \typearrow \veoneopt\\
+  {
+    \vzoneopt \eqdef
+    \begin{cases}
+      \left\lceil\frac{\vzone}{\vztwo}\right\rceil & \text{if }\veoneopt = \langle(\vzone, \vztwo)\rangle \land \vztwo > 0\\
+      \None & \text{else}
+    \end{cases}
+  }\\
+  \getliteraldivopt(\vetwo) \typearrow \vetwoopt\\
+  {
+    \vztwoopt \eqdef
+    \begin{cases}
+      \left\lfloor\frac{\vzthree}{\vzfour}\right\rfloor & \text{if }\vetwoopt = \langle(\vzthree, \vzfour)\rangle \land \vzfour > 0\\
+      \None & \text{else}
+    \end{cases}
+  }\\
+  {
+    \vcopt \eqdef
+    \begin{cases}
+     \langle\AbbrevConstraintExact{\ELInt{\vzfive}}\rangle & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \langle\vzsix\rangle \land \vzfive=\vzsix\\
+     \langle\AbbrevConstraintRange{\ELInt{\vzfive}}{\ELInt{\vzsix}}\rangle & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \langle\vzsix\rangle \land \vzfive<\vzsix\\
+     \None & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \langle\vzsix\rangle \land \vzfive>\vzsix\\
+     \langle\AbbrevConstraintRange{\ELInt{\vzfive}}{\vetwo}\rangle & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \None\\
+     \langle\AbbrevConstraintRange{\veone}{\ELInt{\vzsix}}\rangle & \text{if }\vzoneopt = \None \land \vztwoopt = \langle\vzsix\rangle\\
+     \langle\ConstraintRange(\veone, \vetwo)\rangle & \text{if }\vzoneopt = \None \land \vztwoopt = \None\\
+    \end{cases}
+  }
 }{
-  \filterreduceconstraintdiv(\tenv, \vc) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+  \filterreduceconstraintdiv(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\langle\vc\rangle}{\vcopt}
 }
 \end{mathpar}
 
@@ -2318,7 +2356,7 @@ The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ 
 }
 \end{mathpar}
 
-\subsection{TypingRule.BinopIsExploding \label{sec:TypingRule.BinopIsExploding}}
+\subsection{TypingRule.BinopIsExploding\label{sec:TypingRule.BinopIsExploding}}
 \hypertarget{def-binopisexploding}{}
 The function
 \[
@@ -2335,7 +2373,7 @@ The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}{
-  \binopisexploding(\op) \typearrow \overname{\op \in \{\MUL, \SHL, \POW\}}{\vb}
+  \binopisexploding(\op) \typearrow \overname{\op \in \{\MUL, \SHL, \POW, \DIV, \DIVRM, \MOD, \SHR\}}{\vb}
 }
 \end{mathpar}
 

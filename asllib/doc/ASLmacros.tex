@@ -12,7 +12,7 @@
     colorlinks=true,
     linkcolor=blue,
     filecolor=magenta,
-    urlcolor=cyan,
+    urlcolor=cyan
 }
 
 \usepackage{listings}
@@ -1261,16 +1261,17 @@
 \newcommand\neenum[0]{\hyperlink{def-neenum}{\text{ne\_enum}}}
 
 % AST abbreviations
+\newcommand\abbrevfont[1]{\scriptscriptstyle{\textsf{#1}}}
 %\newcommand\ELInt[1]{\hyperlink{def-elint}{\texttt{ELInt}}(#1)}
 \newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\lint)}}}
-\newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\scriptscriptstyle{\ConstraintExact}}}}
-\newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\scriptscriptstyle{\ConstraintRange}}}}
-\newcommand\AbbrevEBinop[3]{\overbracket{#2\ #1\ #3}^{\hyperlink{def-abbrevebinop}{\scriptscriptstyle{\EBinop}}}}
-\newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-tarrayshort}{\scriptscriptstyle{\TArray}}}}
+\newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
+\newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
+\newcommand\AbbrevEBinop[3]{\overbracket{#2\ #1\ #3}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
+\newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-tarrayshort}{\abbrevfont{T\_Array}}}}
 % \newcommand\AbbrevArrayLengthExpr[1]{\overbracket{#1}^{\hyperlink{def-arraylengthexpr}{\scriptscriptstyle{\ArrayLengthExpr}}}}
 % \newcommand\AbbrevArrayLengthEnum[2]{\overbracket{\texttt{enum }#1 |#2|}^{\hyperlink{def-arraylengthenum}{\scriptscriptstyle{\ArrayLengthEnum}}}}
-\newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\scriptscriptstyle{\TArray(\ArrayLengthExpr)}}}}
-\newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\scriptscriptstyle{\TArray(\ArrayLengthEnum)}}}}
+\newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
+\newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 
 % Glossary
 \newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
@@ -1330,9 +1331,14 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
-\newcommand\CheckUnop[0]{\hyperlink{def-checkunop}{\textfunc{check\_unop}}}
-\newcommand\CheckBinop[0]{\hyperlink{def-checkbinop}{\textfunc{check\_binop}}}
+\newcommand\applyunoptype[0]{\hyperlink{def-applyunoptype}{\textfunc{apply\_unop\_type}}}
+\newcommand\applybinoptypes[0]{\hyperlink{def-applybinoptypes}{\textfunc{apply\_binop\_types}}}
 \newcommand\constraintbinop[0]{\hyperlink{def-constraintbinop}{\textfunc{constraint\_binop}}}
+\newcommand\applybinopextremities[0]{\hyperlink{def-applybinopextremities}{\textfunc{apply\_binop\_extremities}}}
+\newcommand\possibleextremitiesleft[0]{\hyperlink{def-possibleextremitiesleft}{\textfunc{possible\_extremities\_left}}}
+\newcommand\possibleextremitiesright[0]{\hyperlink{def-possibleextremitiesright}{\textfunc{possible\_extremities\_right}}}
+\newcommand\constraintmod[0]{\hyperlink{def-constraintmod}{\textfunc{constraint\_mod}}}
+\newcommand\constraintpow[0]{\hyperlink{def-constraintpow}{\textfunc{constraint\_pow}}}
 \newcommand\constraintbinoppair[0]{\hyperlink{def-constraintbinoppair}{\textfunc{constraint\_binop\_pair}}}
 \newcommand\isrightincreasing[0]{\hyperlink{def-isrightincreasing}{\textfunc{is\_right\_increasing}}}
 \newcommand\isrightdecreasing[0]{\hyperlink{def-isrightdecreasing}{\textfunc{is\_right\_decreasing}}}
@@ -1347,6 +1353,7 @@
 \newcommand\reducetozopt[0]{\hyperlink{def-reducetozopt}{\textfunc{reduce\_to\_z\_opt}}}
 \newcommand\refineconstraints[0]{\hyperlink{def-refineconstraints}{\textfunc{refine\_constraints}}}
 \newcommand\filterreduceconstraintdiv[0]{\hyperlink{def-filterreduceconstraintdiv}{\textfunc{filter\_reduce\_constraint\_div}}}
+\newcommand\refineconstraintfordiv[0]{\hyperlink{def-refineconstraintfordiv}{\textfunc{refine\_constraint\_for\_div}}}
 \newcommand\getliteraldivopt[0]{\hyperlink{def-getliteraldivopt}{\textfunc{get\_literal\_div\_opt}}}
 \newcommand\checkslicesinwidth[0]{\hyperlink{def-checkslicesinwidth}{\textfunc{check\_slices\_in\_width}}}
 \newcommand\disjointslicestopositions[0]{\hyperlink{def-disjointslicestopositions}{\textfunc{disjoint\_slices\_to\_positions}}}
@@ -1935,6 +1942,7 @@
 \newcommand\tysp[0]{\texttt{tys'}}
 \newcommand\useset[0]{\texttt{use\_set}}
 \newcommand\va[0]{\texttt{a}}
+\newcommand\vap[0]{\texttt{a'}}
 \newcommand\vacc[0]{\texttt{acc}}
 \newcommand\vad[0]{\texttt{ad}}
 \newcommand\vdeclx[0]{\texttt{decl\_x}}
@@ -1966,6 +1974,7 @@
 \newcommand\vasty[0]{\texttt{as\_ty}}
 \newcommand\vastyopt[0]{\texttt{as\_ty\_opt}}
 \newcommand\vb[0]{\texttt{b}}
+\newcommand\vbp[0]{\texttt{b'}}
 \newcommand\vbase[0]{\texttt{base}}
 \newcommand\vbequal[0]{\texttt{b\_equal}}
 \newcommand\vbequallength[0]{\texttt{b\_equal\_length}}
@@ -1988,6 +1997,7 @@
 \newcommand\vbtwo[0]{\texttt{b2}}
 \newcommand\vbv[0]{\texttt{v\_bv}}
 \newcommand\vc[0]{\texttt{c}}
+\newcommand\vcp[0]{\texttt{c'}}
 \newcommand\vcase[0]{\texttt{case}}
 \newcommand\vcaseone[0]{\texttt{case1}}
 \newcommand\vcasesone[0]{\texttt{cases1}}
@@ -1999,13 +2009,13 @@
 \newcommand\vconstraintasts[0]{\texttt{constraint\_asts}}
 \newcommand\vconstraints[0]{\texttt{constraints}}
 \newcommand\vcopt[0]{\texttt{c\_opt}}
-\newcommand\vcp[0]{\texttt{c'}}
 \newcommand\vcs[0]{\texttt{vcs}}
 \newcommand\vcsnew[0]{\texttt{cs\_new}}
 \newcommand\vcsone[0]{\texttt{cs1}}
 \newcommand\vcstwo[0]{\texttt{cs2}}
 \newcommand\vctwo[0]{\texttt{c2}}
 \newcommand\vd[0]{\texttt{d}}
+\newcommand\vdp[0]{\texttt{d'}}
 \newcommand\vdebug[0]{\texttt{debug}}
 \newcommand\vdecl[0]{\texttt{decl}}
 \newcommand\vdeclitem[0]{\texttt{decl\_item}}
@@ -2034,6 +2044,10 @@
 \newcommand\vendv[0]{\texttt{end\_v}}
 \newcommand\vezero[0]{\texttt{e0}}
 \newcommand\veone[0]{\texttt{e1}}
+\newcommand\veoneopt[0]{\texttt{e1\_opt}}
+\newcommand\vetwoopt[0]{\texttt{e2\_opt}}
+\newcommand\vzoneopt[0]{\texttt{z1\_opt}}
+\newcommand\vztwoopt[0]{\texttt{z2\_opt}}
 \newcommand\veoneone[0]{\texttt{e1\_1}}
 \newcommand\veonep[0]{\texttt{e1'}}
 \newcommand\veonethree[0]{\texttt{e1\_3}}
@@ -2090,6 +2104,8 @@
 \newcommand\vgthree[0]{\texttt{g3}}
 \newcommand\vgtwo[0]{\texttt{g2}}
 \newcommand\vi[0]{\texttt{i}}
+\newcommand\annotatedcs[0]{\texttt{annotated\_cs}}
+\newcommand\refinedcs[0]{\texttt{refined\_cs}}
 \newcommand\vics[0]{\texttt{ics}}
 \newcommand\vidasts[0]{\texttt{id\_asts}}
 \newcommand\vidopt[0]{\texttt{id\_opt}}
@@ -2144,6 +2160,11 @@
 \newcommand\vlt[0]{\texttt{l\_t}}
 \newcommand\vltwo[0]{\texttt{l2}}
 \newcommand\vm[0]{\texttt{m}}
+\newcommand\extpairs[0]{\texttt{extpairs}}
+\newcommand\extpairsab[0]{\texttt{extpairs\_a\_b}}
+\newcommand\extpairscd[0]{\texttt{extpairs\_c\_d}}
+\newcommand\vmac[0]{\texttt{mac}}
+\newcommand\vmad[0]{\texttt{mad}}
 \newcommand\vmaybeemptystmtlist[0]{\texttt{maybe\_empty\_stmt\_list}}
 \newcommand\vmlist[0]{\texttt{vm\_list}}
 \newcommand\vmlistone[0]{\texttt{vm\_list1}}
@@ -2257,6 +2278,8 @@
 \newcommand\vtleonestruct[0]{\texttt{t\_le1\_struct}}
 \newcommand\vtoexpr[0]{\texttt{to\_expr}}
 \newcommand\vtone[0]{\texttt{t1}}
+\newcommand\vtonewellconstrained[0]{\texttt{t1\_well\_constrained}}
+\newcommand\vttwowellconstrained[0]{\texttt{t2\_well\_constrained}}
 \newcommand\vtoneanon[0]{\texttt{t1\_anon}}
 \newcommand\vtonestruct[0]{\texttt{t1\_struct}}
 \newcommand\vtp[0]{\texttt{t'}}
@@ -2325,6 +2348,10 @@
 \newcommand\vzoptone[0]{\texttt{z\_opt1}}
 \newcommand\vzopttwo[0]{\texttt{z\_opt2}}
 \newcommand\vzs[0]{\texttt{zs}}
+\newcommand\vzthree[0]{\texttt{z3}}
+\newcommand\vzfour[0]{\texttt{z4}}
+\newcommand\vzfive[0]{\texttt{z5}}
+\newcommand\vzsix[0]{\texttt{z6}}
 \newcommand\vztwo[0]{\texttt{z2}}
 \newcommand\wantedtindex[0]{\texttt{wanted\_t\_index}}
 \newcommand\wid[0]{\texttt{wid}}

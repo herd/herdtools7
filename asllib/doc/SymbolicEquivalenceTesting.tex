@@ -343,48 +343,29 @@ The function
 \[
 \reduceconstraints(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\constraintkind}{\vc}
+  \overname{\intconstraint^*}{\cs}
 ) \aslto
-\overname{\constraintkind}{\newc}
+\overname{\intconstraint^*}{\newcs}
 \]
-\symbolicallysimplifies\ an integer constraints AST node $\vc$, yielding the integer constraints AST node $\newc$
+\symbolicallysimplifies\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
 
 \subsubsection{Prose}
-One of the following applies:
+All of the following apply:
 \begin{itemize}
-  \item All of the following apply (\textsc{unconstrained\_parameterized}):
-  \begin{itemize}
-    \item the AST label of $\vc$ is either $\unconstrained$ or $\parameterized$;
-    \item define $\newc$ as $\vc$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{well\_constrained}):
-  \begin{itemize}
-    \item $\vc$ is a list of constraints, that is, $\wellconstrained(\cs)$;
-    \item applying $\reduceconstraint$ to every constraint $\cs[\vi]$ in $\tenv$ for every $\vi$ in $\listrange(\cs)$
-          yields $\vc_\vi$;
-    \item define $\newcs$ as the list containing $\vc_\vi$ for every $\vi$ in $\listrange(\cs)$;
-    \item $\newc$ is $\wellconstrained(\newcs)$.
-  \end{itemize}
+  \item applying $\reduceconstraint$ to every constraint $\cs[\vi]$ in $\tenv$ for every $\vi$ in \\
+        $\listrange(\cs)$ yields $\vc_\vi$;
+  \item define $\newcs$ as the list containing $\vc_\vi$ for every $\vi$ in $\listrange(\cs)$.
 \end{itemize}
 
 \CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[unconstrained\_parameterized]{
-  \astlabel(\vc) \in \{\unconstrained, \parameterized\}
-}{
-  \reduceconstraints(\tenv, \vc) \typearrow \overname{\vc}{\newc}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[well\_constrained]{
+\inferrule{
   \vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi]) \typearrow \vc_\vi\\
   \newcs \eqdef [\vi\in\listrange(\cs): \vc_\vi]
 }{
-  \reduceconstraints(\tenv, \overname{\wellconstrained(\cs)}{\vc}) \typearrow \overname{\wellconstrained(\newcs)}{\newc}
+  \reduceconstraints(\tenv, \cs) \typearrow \newcs
 }
 \end{mathpar}
 

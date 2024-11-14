@@ -15,7 +15,7 @@ ASL Typing Reference:
   3
   Some text
 //  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
-  $ aslref TypingRule.CheckBinOp.asl
+  $ aslref TypingRule.ApplyBinopTypes.asl
   $ aslref TypingRule.LDDiscard.asl
   $ aslref TypingRule.LDVar.asl
   $ aslref TypingRule.LDTyped.asl

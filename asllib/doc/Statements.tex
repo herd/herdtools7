@@ -423,7 +423,7 @@ One of the following applies:
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep)$\ProseOrTypeError;
     \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$, the type $\vte$,
           and the initializing expression $\vep$, in $\tenv$
-          yields $(\tenvone, \ldione)$;
+          yields $(\tenvone, \ldione)$\ProseOrTypeError;
     \item One of the following applies:
     \begin{itemize}
       \item All of the following apply (\textsc{constant}):
@@ -458,7 +458,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione)\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione) \OrTypeError\\\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
   \reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
@@ -472,7 +472,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[non\_constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione)\\\\
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione) \OrTypeError\\\\
   \commonprefixline\\\\
   \ldk \neq \LDKConstant\\
   \news \eqdef \SDecl(\ldk, \ldione, \langle\vep\rangle)
@@ -1419,9 +1419,7 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
-\lrmcomment{This is related to \identd{QJYV}:}
-\lrmcomment{This is related to \identr{WZSL}:}
-\lrmcomment{This is related to \identr{WQRN}:}
+\lrmcomment{This is related to \identd{QJYV}, \identr{WZSL}, \identr{WQRN}.}
 
 \section{While Statements\label{sec:WhileStatements}}
 \subsection{Syntax}
