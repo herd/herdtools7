@@ -2,6 +2,11 @@
 
 \section{Static Error Codes}
 \begin{description}
+\hypertarget{def-binopprecedence}{}
+\item[$\BinopPrecedence$]
+This error indicates that a compound binary expression consists of two associative binary
+operators of the same precedence, without the use of parenthesis (see \nameref{sec:ASTRule.CheckNotSamePrec}).
+
 \hypertarget{def-expectedbitvectortype}{}
 \item[$\ExpectedBitvectorType$]
 This error indicates that a bitvector type was expected where a non-bitvector type was given.
