@@ -206,9 +206,7 @@ module Domain = struct
   (* Begin IntSetOfIntConstraints *)
   let int_set_of_int_constraints env constraints =
     match constraints with
-    | [] ->
-        failwith
-          "A well-constrained integer cannot have an empty list of constraints."
+    | [] -> Error.fatal_from ASTUtils.dummy_annotated Error.EmptyConstraints
     | _ -> (
         try
           Finite

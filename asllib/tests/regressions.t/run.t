@@ -407,3 +407,23 @@ ASLRef Field getter extension
   ASL Typing error: unexpected ATC.
   [1]
   $ aslref single-slice.asl
+
+Inherit integer constraints on left-hand sides
+  $ aslref inherit-integer-constraints.asl
+  $ aslref inherit-integer-constraints-bad-basic.asl
+  File inherit-integer-constraints-bad-basic.asl, line 4, characters 2 to 11:
+  ASL Typing error: a subtype of integer {43} was expected,
+    provided integer {42}.
+  [1]
+
+  $ aslref inherit-integer-constraints-bad-tuple.asl
+  File inherit-integer-constraints-bad-tuple.asl, line 4, characters 2 to 28:
+  ASL Typing error: a subtype of (integer {42}, integer {0}) was expected,
+    provided (integer {42}, integer {43}).
+  [1]
+
+  $ aslref inherit-integer-constraints-bad-type.asl
+  File inherit-integer-constraints-bad-type.asl, line 1, character 0 to line 4,
+    character 2:
+  ASL Typing error: a well-constrained integer cannot have empty constraints.
+  [1]
