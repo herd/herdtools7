@@ -42,6 +42,8 @@ let check_name = function
   | "lock"             -> LOCK
   | "goto"             -> GOTO
   | "if"               -> IF
+  | "load_acquire"     -> LDAQ
+  | "store_release"    -> STRL
   | name -> parse_reg name
 
 }

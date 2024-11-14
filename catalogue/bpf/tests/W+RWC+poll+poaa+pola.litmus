@@ -1,0 +1,11 @@
+BPF W+RWC+poll+poaa+pola
+{
+0:r1=x; 0:r2=y; 0:r8=1;
+1:r2=y; 1:r3=z;
+2:r3=z; 2:r1=x; 2:r8=1;
+}
+ P0                                 | P1                                  | P2                                   ;
+ store_release((u32 *)(r1 + 0), r8) | r0 = load_acquire((u32 *)(r2 + 0))  | store_release((u32* )(r3 + 0), r8)   ;
+ store_release((u32 *)(r2 + 0), r8) | r4 = load_acquire((u32 *)(r3 + 0))  | r2 = load_acquire((u32* )(r1 + 0))   ;
+exists
+(1:r0=1 /\ 1:r4=0 /\ 2:r2=0)

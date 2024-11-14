@@ -26,6 +26,11 @@ let po_amo_fetch = ([M];po;RMW) | (RMW;po;[M]) | ([M];po;[domain(SRMW)]) | ([ran
 
 show po_amo_fetch as atomicfetch
 
+(* Release Consistency processor consistent (RCpc) *)
+let load_acquire = ([AQ];po;[M])
+let store_release = ([M];po;[RL])
+let rcpc = load_acquire | store_release
+
 (****************)
 (* Dependencies *)
 (****************)
@@ -38,13 +43,17 @@ show addr_dep as addr
 show data_dep as data
 show ctrl_dep as ctrl
 
-(*************)
-(* ppo rules *)
-(*************)
+(**********************)
+(* ppo and prop rules *)
+(**********************)
+
+(* Compute coherence relation *)
+include "cos-opt.cat"
+let com = co | rf | fr
 
 let ppo =
 (* Explicit synchronization *)
- po_amo_fetch
+ po_amo_fetch | rcpc
 (* Syntactic Dependencies *)
 | addr_dep
 | data_dep
@@ -52,13 +61,12 @@ let ppo =
 (* Pipeline Dependencies *)
 | [M];(addr|data);[W];rfi;[R]
 | [M];addr;[M];po;[W]
-(* Successful cmpxchg R -(M)> W *)
-| rmw
+(* Overlapping-address ordering *)
+| (coi | fri)
 
-(* Compute coherence relation *)
-include "cos-opt.cat"
-
-let com = co | rf | fr
+(* Propagation ordering from SC and release operations *)
+let A-cumul = rfe? ; (po_amo_fetch | store_release)
+let prop = (coe | fre)? ; A-cumul* ; rfe?
 
 (**********)
 (* Axioms *)
@@ -67,17 +75,13 @@ let com = co | rf | fr
 (* Sc per location *)
 acyclic com | po-loc as Coherence
 
-(* No thin air *)
-let hb = (ppo | rfe)+
-acyclic hb
+(* No-Thin-Air and Observation *)
+let hb = ppo | rfe | ((prop \ id) & int)
+acyclic hb as Happens-before
 
 (* Propagation *)
-let A-cumul = rfe;po_amo_fetch
-let prop = (po_amo_fetch | A-cumul);hb*
-acyclic prop | co
-
-(* Observation *)
-irreflexive fre;prop
+let pb = prop ; po_amo_fetch ; hb*
+acyclic pb as Propagation
 
 (* Atomicity *)
 empty rmw & (fre;coe) as Atomic

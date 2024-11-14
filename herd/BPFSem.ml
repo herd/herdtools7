@@ -92,11 +92,18 @@ struct
 
     let read_mem sz a ii = do_read_mem sz BPF.N a ii
     let read_mem_sc sz a ii = do_read_mem sz BPF.SC a ii
+    let read_mem_acq sz a ii = do_read_mem sz BPF.A a ii
 
     let write_reg r v ii =
       M.mk_singleton_es
         (Act.Access
            (Dir.W, A.Location_reg (ii.A.proc, r), v, BPF.N, (), nat_sz, Access.REG))
+        ii
+    ;;
+
+    let write_mem_rel sz a v ii =
+      M.mk_singleton_es
+        (Act.Access (Dir.W, A.Location_global a, v, BPF.R, (), sz, Access.VIR))
         ii
     ;;
 
@@ -192,11 +199,24 @@ struct
            >>= (fun ea -> read_mem sz ea ii)
            >>= (fun v -> write_reg r1 v ii)
            >>= B.next1T
+         | BPF.LDAQ (w, r1, r2, k) ->
+           let sz = tr_sz w in
+           read_reg_ord r2 ii
+           >>= (fun a -> M.add a (imm16ToV k))
+           >>= (fun ea -> read_mem_acq sz ea ii)
+           >>= (fun v -> write_reg r1 v ii)
+           >>= B.next1T
          | BPF.STORE (sz, r1, k, r2) ->
            read_reg_ord r1 ii
            >>| read_reg_data r2 ii
            >>= (fun (a, d) ->
                  M.add a (imm16ToV k) >>= fun ea -> write_mem (tr_sz sz) ea d ii)
+           >>= B.next1T
+         | BPF.STRL (sz, r1, k, r2) ->
+           read_reg_ord r1 ii
+           >>| read_reg_data r2 ii
+           >>= (fun (a, d) ->
+                 M.add a (imm16ToV k) >>= fun ea -> write_mem_rel (tr_sz sz) ea d ii)
            >>= B.next1T
          | BPF.STOREI (sz, r1, k1, k2) ->
            read_reg_ord r1 ii

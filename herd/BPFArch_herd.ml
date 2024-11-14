@@ -39,10 +39,20 @@ struct
     | _ -> false
   ;;
 
+  let is_acquire = function
+    | A -> true
+    | _ -> false
+  ;;
+
+  let is_release = function
+    | R -> true
+    | _ -> false
+  ;;
+
   let ifetch_value_sets = []
   let barrier_sets = []
   let cmo_sets = []
-  let annot_sets = [ "X", is_atomic; "SC", is_sc ]
+  let annot_sets = [ "X", is_atomic; "SC", is_sc; "AQ", is_acquire; "RL", is_release; ]
 
   include Explicit.No
   include PteValSets.No
@@ -54,6 +64,8 @@ struct
     | X -> "*"
     | SC -> "SC"
     | N -> ""
+    | A -> "AQ"
+    | R -> "RL"
   ;;
 
   module V = V
