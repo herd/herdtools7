@@ -47,7 +47,7 @@ install:
 uninstall:
 	sh ./dune-uninstall.sh $(PREFIX)
 
-clean: dune-clean clean-asl-pseudocode
+clean: dune-clean clean-asl-pseudocode clean-asldoc
 	rm -f Version.ml
 
 dune-clean:
@@ -689,6 +689,9 @@ clean-asl-pseudocode:
 
 asldoc: $(BENTO)
 	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc all
+
+clean-asldoc:
+	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc clean
 
 RUN_TESTS?=false
 $(V).SILENT:

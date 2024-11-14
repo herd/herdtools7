@@ -999,8 +999,12 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[sub\_expr]{}{
-  \buildexprpattern(\Nexprpattern(\Tlpar, \punnode{\Nexprpattern}, \Trpar)) \astarrow
-  \overname{\astof{\vexprpattern}}{\vastnode}
+\inferrule[sub\_expr]{}{
+  {
+    \begin{array}{r}
+      \buildexprpattern(\Nexprpattern(\Tlpar, \punnode{\Nexprpattern}, \Trpar)) \astarrow\\
+      \overname{\ETuple([\ \astof{\vexprpattern}\ ])}{\vastnode}
+    \end{array}
+  }
 }
 \end{mathpar}

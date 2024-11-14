@@ -447,7 +447,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for generic parsing symbols and parsing functions
-% \newcommand\derives[0]{\texttt{::=}}
 \newcommand\derives[0]{\longrightarrow}
 \newcommand\derivesinline[0]{\xlongrightarrow{\textsf{inline}}}
 \newcommand\parsesep[0]{\ } % separates symbols in a single production
@@ -462,7 +461,6 @@
 \newcommand\NTClist[1]{\hyperlink{def-ntclist}{\textsf{ntclist}}(#1)}
 \newcommand\TClist[1]{\hyperlink{def-tclist}{\textsf{tclist}^{*}}(#1)}
 \newcommand\option[1]{\hyperlink{def-option}{\textsf{option}}(#1)}
-%\newcommand\option[1]{(#1)\hyperlink{def-option}{?}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% AST macros with hyperlinks
@@ -662,6 +660,13 @@
 
 \newcommand\specification[0]{\hyperlink{ast-specification}{\texttt{specification}}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros for AST builders
+\newcommand\BuildErrorConfig[0]{\hyperlink{def-builderrorconfig}{\texttt{\#BE}}}
+\newcommand\TBuildError[0]{\hyperlink{def-tbuilderror}{\textsf{TBuildError}}}
+\newcommand\BuildError[0]{\hyperlink{def-builderror}{\textsf{BuildError}}}
+\newcommand\BuildErrorVal[1]{\BuildError(\texttt{#1})}
+\newcommand\ProseOtherwiseBuildError[0]{Otherwise, the result is a build error.}
+\newcommand\OrBuildError[0]{\;\terminateas \BuildErrorConfig}
 
 \newcommand\astarrow[0]{\xrightarrow{\textsf{ast}}}
 \newcommand\scanarrow[0]{\xrightarrow{\textsf{scan}}}
@@ -728,6 +733,9 @@
 \newcommand\buildvalue[0]{\hyperlink{build-value}{\textfunc{build\_value}}}
 \newcommand\buildunop[0]{\hyperlink{build-unop}{\textfunc{build\_unop}}}
 \newcommand\buildbinop[0]{\hyperlink{build-binop}{\textfunc{build\_binop}}}
+
+\newcommand\binopprec[0]{\hyperlink{build-binopprec}{\textfunc{binop\_prec}}}
+\newcommand\checknotsameprec[0]{\hyperlink{build-checknotsameprec}{\textfunc{check\_not\_same\_prec}}}
 
 \newcommand\stmtfromlist[0]{\hyperlink{def-stmtfromlist}{\textfunc{stmt\_from\_list}}}
 \newcommand\sequencestmts[0]{\hyperlink{def-sequencestmts}{\textfunc{sequence\_stmts}}}
@@ -1452,6 +1460,10 @@
 \newcommand\intsetop[0]{\hyperlink{def-intsetop}{\textfunc{intset\_op}}}
 \newcommand\intsettointconstraints[0]{\hyperlink{def-intsettointconstraints}{\textfunc{int\_set\_to\_int\_constraints}}}
 
+%% BUild Error Codes
+\newcommand\BuildErrorCode[1]{\texttt{BE\_#1}}
+\newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
+
 %% Type Error Codes
 \newcommand\TypeErrorCode[1]{\texttt{TE\_#1}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
@@ -1489,6 +1501,7 @@
 \newcommand\BaseValueEmptyType[0]{\hyperlink{def-bvet}{\TypeErrorCode{BVET}}}
 \newcommand\NonReturningFunction[0]{\hyperlink{def-nrf}{\TypeErrorCode{NRF}}}
 
+%% Dynamic Error Codes
 \newcommand\DynamicErrorVal[1]{\Error(\texttt{#1})}
 \newcommand\DynamicErrorCode[1]{\texttt{DE\_#1}}
 \newcommand\UnreachableError[0]{\hyperlink{def-unr}{\DynamicErrorCode{UNR}}}
@@ -1824,6 +1837,7 @@
 \newcommand\nmonads[0]{\texttt{nmonads}}
 \newcommand\num[0]{\textit{num}}
 \newcommand\op[0]{\texttt{op}}
+\newcommand\opp[0]{\texttt{op'}}
 \newcommand\opfordir[0]{\texttt{op\_for\_dir}}
 \newcommand\opone[0]{\texttt{op1}}
 \newcommand\optwo[0]{\texttt{op2}}

@@ -12,8 +12,10 @@ from \assignableexpressions, which are defined in \chapref{AssignableExpressions
 The function
 \[
   \buildexpr(\overname{\parsenode{\Nexpr}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
 transforms an expression parse node $\vparsednode$ into an expression AST node $\vastnode$.
+\ProseOtherwiseBuildError
 
 All expressions have a unique type (which can be a tuple type).
 \hypertarget{def-annotateexpr}{}
@@ -362,10 +364,15 @@ uses the rule \\ SemanticsRule.EVar.GLOBAL.
 \end{flalign*}
 
 \subsubsection{ASTRule.Binop}
+The following rule constructs a binary expression AST
+when a property on \emph{associative operators} holds (see \nameref{sec:ASTRule.CheckNotSamePrec}).
+
 \begin{mathpar}
   \inferrule{
-    \buildexpr(\veone) \astarrow \astversion{\veone}\\
-    \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
+    \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\\\\
+    \buildexpr(\vetwo) \astarrow \astversion{\vetwo} \OrBuildError\\\\
+    \checknotsameprec(\astof{\vbinop}, \astversion{\veone}) \astarrow \True \OrBuildError\\\\
+    \checknotsameprec(\astof{\vbinop}, \astversion{\vetwo}) \astarrow \True \OrBuildError
   }{
     {
       \begin{array}{r}
@@ -373,6 +380,100 @@ uses the rule \\ SemanticsRule.EVar.GLOBAL.
   \overname{\EBinop(\astversion{\veone}, \astof{\vbinop}, \astversion{\vetwo})}{\vastnode}
       \end{array}
     }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.CheckNotSamePrec\label{sec:ASTRule.CheckNotSamePrec}}
+The set of \emph{associative binary operators} consists of the following:
+$\BOR$,
+$\BAND$,
+$\IMPL$,
+$\BEQ$,
+$\EQOP$,
+$\NEQ$,
+$\PLUS$,
+$\MINUS$,
+$\OR$,
+$\XOR$,
+$\AND$,
+$\MUL$,
+$\DIV$,
+$\DIVRM$,
+$\RDIV$,
+$\MOD$,
+$\SHL$,
+$\SHR$,
+$\POW$.
+
+\hypertarget{build-binopprec}{}
+We define the helper function
+\[
+  \binopprec(\overname{\binop}{\op}) \aslto \N
+\]
+which assigns a precedence level to an associative binary operator $\op$,
+as defined below:
+\begin{mathpar}
+\inferrule{}{
+  {
+  \binopprec(\op) \astarrow
+  \begin{cases}
+    5 & \text{if }\op = \POW\\
+    4 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
+    3 & \text{if }\op \in \{\PLUS, \MINUS, \OR, \XOR, \AND\}\\
+    2 & \text{if }\op \in \{\EQOP, \NEQ\}\\
+    1 & \text{if }\op \in \{\BOR, \BAND, \IMPL, \BEQ \}\\
+    0 & \text{else}
+  \end{cases}
+  }
+}
+\end{mathpar}
+
+\hypertarget{build-checknotsameprec}{}
+The helper function
+\[
+\checknotsameprec(\overname{\binop}{\op} \aslsep \overname{\expr}{\ve})
+\aslto \{\True\} \cup \overname{\TBuildError}{\BuildErrorConfig}
+\]
+checks whether the expression AST node $\ve$ is a binary operator of the same
+\emph{precedence} as that of the binary operator $\op$. If so, it is considered
+an error. Surrounding $\ve$ by parenthesis fixes the error.
+
+For example, \texttt{a + b + c} is considered legal, since the same binary operator (\texttt{+})
+is used, whereas \texttt{a + b - c} is considered illegal, since $\PLUS$ and $\MINUS$ have the
+same precedence ($3$). To fix this, we can surround one of the sub-expressions by parenthesis,
+for example: \texttt{(a + b) - c}.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{not\_binop}):
+  \begin{itemize}
+    \item $\ve$ is not a binary operation expression;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{binop}):
+  \begin{itemize}
+    \item $\ve$ is a binary operation expression for the operator $\opp$;
+    \item checking whether $\op$ is different from $\opp$ implies that $\op$ and $\opp$ have different precedence levels
+          yields $\True$\ProseTerminateAs{\BinopPrecedence}.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[not\_binop]{
+  \astlabel(\ve) \neq \EBinop
+}{
+  \checknotsameprec(\op, \ve) \astarrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[binop]{
+  \checktrans{\op \neq \opp \Longrightarrow \binopprec(\op) \neq \binopprec(\opp)}{\BinopPrecedence} \checktransarrow \True \OrBuildError
+}{
+  \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
 }
 \end{mathpar}
 
@@ -675,9 +776,11 @@ order does not affect the result of an expression, including any side-effects.
 
 \subsubsection{ASTRule.Unop}
 \begin{mathpar}
-  \inferrule{}{
-  \buildexpr(\overname{\Nexpr(\punnode{\Nunop}, \punnode{\Nexpr})}{\vparsednode}) \astarrow
-  \overname{\EUnop(\astof{\vunop}, \astof{\vexpr})}{\vastnode}
+  \inferrule{
+    \buildexpr(\vexpr) \astarrow \astversion{\vexpr} \OrBuildError
+  }{
+  \buildexpr(\overname{\Nexpr(\punnode{\Nunop}, \vexpr : \Nexpr)}{\vparsednode}) \astarrow
+  \overname{\EUnop(\astof{\vunop}, \astversion{\vexpr})}{\vastnode}
 }
 \end{mathpar}
 
@@ -746,18 +849,19 @@ All of the following apply:
 \subsubsection{ASTRule.ECond}
 \begin{mathpar}
   \inferrule{
-    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
-    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr} \OrBuildError\\\\
+    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr} \OrBuildError\\\\
+    \buildeelse(\veelse) \astarrow \astversion{\veelse} \OrBuildError\\\\
   }{
     {
       \begin{array}{r}
   \buildexpr\left(\overname{\Nexpr\left(
     \begin{array}{l}
     \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
-    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
+    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \veelse: \Neelse
     \end{array}
     \right)}{\vparsednode}\right) \astarrow\\
-  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astversion{\veelse})}{\vastnode}
       \end{array}
     }
 }
@@ -780,8 +884,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[else\_if]{
-  \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
-  \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+  \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr} \OrBuildError\\\\
+  \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr} \OrBuildError
 }{
   {
     \begin{array}{r}
@@ -895,7 +999,7 @@ conditional expression evaluates to the \texttt{else} expression.
 \subsubsection{ASTRule.ECall}
 \begin{mathpar}
 \inferrule{
-  \buildplist[\buildexpr](\vargs) \astarrow \vexprasts
+  \buildplist[\buildexpr](\vargs) \astarrow \vexprasts \OrBuildError
 }{
   \buildexpr(\overname{\Nexpr(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})}{\vparsednode}) \astarrow
   \overname{\ECall(\id, \vexprasts)}{\vastnode}
@@ -1003,9 +1107,12 @@ The details of the various types of bitvector slices is deferred to \chapref{Bit
 
 \subsubsection{ASTRule.ESlice}
 \begin{mathpar}
-\inferrule{}{
-  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \punnode{\Nslice})}{\vparsednode}) \astarrow
-  \overname{\ESlice(\astof{\vexpr}, \astof{\vslice})}{\vastnode}
+\inferrule{
+  \buildexpr(\vexpr) \astarrow \astversion{\vexpr} \OrBuildError\\\\
+  \buildslice(\vslice) \astarrow \astversion{\vslice} \OrBuildError
+}{
+  \buildexpr(\overname{\Nexpr(\vexpr: \Nexpr, \vslice: \Nslice)}{\vparsednode}) \astarrow
+  \overname{\ESlice(\astversion{\vexpr}, \astversion{\vslice})}{\vastnode}
 }
 \end{mathpar}
 
@@ -1020,8 +1127,8 @@ All of the following apply:
   \item obtaining the \structure\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
   \item $\structtep$ is either a bitvector or an integer;
   \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\EmptySlice};
-  \item obtaining the width of $\slices$ in $\tenv$ via $\sliceswidth$ yields $\vw$\ProseOrTypeError;
   \item $\slicesp$ is the result of annotating $\slices$ in $\tenv$;
+  \item obtaining the width of $\slices$ in $\tenv$ via $\sliceswidth$ yields $\vw$\ProseOrTypeError;
   \item $\vt$ is the bitvector type of width $\vw$, that is, $\TBits(\vw, \emptylist)$;
   \item $\newe$ is the slicing of expression $\vepp$ by the slices $\slicesp$, that is, \\
   $\ESlice(\vepp, \slicesp)$.
@@ -1033,8 +1140,8 @@ All of the following apply:
   \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
   \astlabel(\structtep) \in \{\TInt, \TBits\}\\
   \checktrans{\slices \neq \emptylist}{\EmptySlice} \typearrow \True \OrTypeError\\\\
-  \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
-  \annotateslices(\tenv, \slices) \typearrow \slicesp \OrTypeError
+  \annotateslices(\tenv, \slices) \typearrow \slicesp \OrTypeError\\\\
+  \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError
 }{
   \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow (\overname{\TBits(\vw, \emptylist)}{\vt}, \overname{\ESlice(\vepp, \slicesp)}{\newe})
 }
@@ -1220,27 +1327,30 @@ All of the following apply:
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\expr \derives\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})
+\expr \derives\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})\\
     |\ & \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names}) &
 \end{flalign*}
 
 \subsubsection{ASTRule.EGetField}
 \begin{mathpar}
-  \inferrule{}{
-  \buildexpr(\overname{\Nexpr(\Nexpr, \Tdot, \Tidentifier(\id))}{\vparsednode}) \astarrow
-  \overname{\EGetField(\astof{\vexpr}, \id)}{\vastnode}
+  \inferrule{
+    \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError
+  }{
+  \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tdot, \Tidentifier(\id))}{\vparsednode}) \astarrow
+  \overname{\EGetField(\astversion{\ve}, \id)}{\vastnode}
 }
 \end{mathpar}
 
 \subsubsection{ASTRule.EGetFields}
 \begin{mathpar}
   \inferrule{
-    \buildclist[\buildidentity](\vids) \astarrow \vidasts
+    \buildclist[\buildidentity](\vids) \astarrow \vidasts\\
+    \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError
   }{
     {
       \begin{array}{r}
-  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)}{\vparsednode}) \astarrow\\
-  \overname{\EGetFields(\astof{\vexpr}, \vidasts)}{\vastnode}
+  \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)}{\vparsednode}) \astarrow\\
+  \overname{\EGetFields(\astversion{\ve}, \vidasts)}{\vastnode}
       \end{array}
     }
 }
@@ -1541,7 +1651,7 @@ surrounded with square brackets.
 \subsubsection{ASTRule.EConcat}
 \begin{mathpar}
   \inferrule{
-    \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts
+    \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts \OrBuildError
   }{
   \buildexpr(\overname{\Nexpr(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)}{\vparsednode}) \astarrow
   \overname{\EConcat(\vexprasts)}{\vastnode}
@@ -1682,18 +1792,24 @@ is a dynamic error.
 
 \subsubsection{ASTRule.ATC}
 \begin{mathpar}
-\inferrule[type]{}{
-  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nty})}{\vparsednode}) \astarrow
-  \overname{\EATC(\astof{\vexpr}, \astof{\tty})}{\vastnode}
+\inferrule[type]{
+  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
+  \buildty(\vt) \astarrow \astversion{\vt} \OrBuildError
+}{
+  \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tas, \vt : \Nty)}{\vparsednode}) \astarrow
+  \overname{\EATC(\astversion{\ve}, \astversion{\vt})}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[int\_constraints]{}{
+\inferrule[int\_constraints]{
+  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
+  \buildintconstraints(\vics) \astarrow \astversion{\vics} \OrBuildError
+}{
   {
     \begin{array}{r}
-      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tas, \punnode{\Nintconstraints})}{\vparsednode}) \astarrow\\
-      \overname{\EATC(\astof{\vexpr}, \TInt(\astof{\vintconstraints}))}{\vastnode}
+      \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tas, \vics : \Nintconstraints)}{\vparsednode}) \astarrow\\
+      \overname{\EATC(\astversion{\ve}, \TInt(\astversion{\vics}))}{\vastnode}
     \end{array}
   }
 }
@@ -2063,11 +2179,14 @@ Lists of patterns are also used in case statements.
 
 \subsubsection{ASTRule.EPattern}
 \begin{mathpar}
-\inferrule{}{
+\inferrule{
+  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
+  \buildpatternormask(\vp) \astarrow \astversion{\vp} \OrBuildError
+}{
   {
     \begin{array}{r}
-      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tin, \punnode{\Npatternormask})}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexpr}, \astof{\vpatternormask})}{\vastnode}
+      \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tin, \vp : \Npatternormask)}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astversion{\ve}, \astversion{\vp})}{\vastnode}
     \end{array}
   }
 }
@@ -2221,9 +2340,11 @@ domain of \texttt{ty}.
 
 \subsubsection{ASTRule.EUnknown}
 \begin{mathpar}
-  \inferrule{}{
-  \buildexpr(\overname{\Nexpr(\Tunknown, \Tcolon, \punnode{\Nty})}{\vparsednode}) \astarrow
-  \overname{\EUnknown(\astof{\tty})}{\vastnode}
+\inferrule{
+  \buildty(\vt) \astarrow \astversion{\vt} \OrBuildError
+}{
+  \buildexpr(\overname{\Nexpr(\Tunknown, \Tcolon, \vt : \Nty)}{\vparsednode}) \astarrow
+  \overname{\EUnknown(\astversion{\vt})}{\vastnode}
 }
 \end{mathpar}
 
@@ -2490,19 +2611,40 @@ All of the following apply:
 \subsection{Typing}
 \subsubsection{TypingRule.ETuple \label{sec:TypingRule.ETuple}}
 \subsubsection{Prose}
-All of the following apply:
+One of the following applies:
 \begin{itemize}
-  \item $\ve$ denotes a tuple expression with list of expressions $\vli$, that is, $ \ETuple(\vli)$;
-  \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields $(\vt_i, \ve_i$)\ProseOrTypeError;
-  \item $\vt$ is the tuple type with list of types $\vt_i$, for $i=1..k$;
-  \item $\newe$ is tuple expression over list of expressions $\ve_i$, for $i=1..k$.
+  \item All of the following apply (\textsc{parenthesized}):
+  \begin{itemize}
+    \item $\ve$ denotes a tuple expression with list of expressions consisting solely of $\vep$, that is, $\ETuple([\vep])$,
+          meaning it represents a parenthesized expression (see \nameref{sec:ASTRule.ParenExpr});
+    \item annotating $\vep$ in $\tenv$ yields $(\vt, \newe)$\ProseOrTypeError.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{list}):
+  \begin{itemize}
+    \item $\ve$ denotes a tuple expression with list of expressions $\vli$, that is, $ \ETuple(\vli)$;
+    \item $\vli$ consists of at least two expressions;
+    \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields $(\vt_i, \ve_i$)\ProseOrTypeError;
+    \item $\vt$ is the tuple type with list of types $\vt_i$, for $i=1..k$;
+    \item $\newe$ is tuple expression over list of expressions $\ve_i$, for $i=1..k$.
+  \end{itemize}
 \end{itemize}
+
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[parenthesized]{
+  \annotateexpr{\tenv, \vep} \typearrow (\vt, \newe) \OrTypeError
+}{
+  \annotateexpr{\tenv, \overname{\ETuple(\vep)}{\ve}} \typearrow (\vt, \newe)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[list]{
+  |\vli| > 1\\
   i=1..k: \annotateexpr{\tenv, \vle[i]} \typearrow (\vt_i, \ve_i) \OrTypeError
 }{
-  \annotateexpr{\tenv, \ETuple(\vli)} \typearrow (\TTuple(\vt_{1..k}), \ETuple(\ve_{1..k}))
+  \annotateexpr{\tenv, \overname{\ETuple(\vli)}{\ve}} \typearrow (\overname{\TTuple(\vt_{1..k})}{\vt}, \overname{\ETuple(\ve_{1..k})}{\newe})
 }
 \end{mathpar}
 \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
@@ -2533,8 +2675,10 @@ All of the following apply:
 \CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
 
 \section{Parenthesized Expressions\label{sec:ParenthesizedExpressions}}
-A single expression inside parentheses is not a tuple.
-Parenthesizing an expression can be used to improve readability and enforce an order of evaluation.
+A single expression inside parentheses is not considered to be a tuple, but rather the element
+inside the parenthesis.
+Parenthesizing an expression can be used to improve readability, enforce an order of evaluation,
+and avoid binary operator precedence errors (see \nameref{sec:ASTRule.CheckNotSamePrec}).
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -2542,11 +2686,16 @@ Parenthesizing an expression can be used to improve readability and enforce an o
 \end{flalign*}
 
 \subsection{Abstract Syntax}
-\subsubsection{ASTRule.Expr \label{sec:ASTRule.Expr}}
+We represent a parenthesized expression as a single element tuple for the technical
+reason of enabling \nameref{sec:ASTRule.CheckNotSamePrec} by distinguishing parenthesized
+expressions from non-parenthesized expressions. However, upon typing such expressions,
+we ignore the parenthesis (see \nameref{sec:TypingRule.ETuple}.\textsc{PARENTHESIZED}).
+
+\subsubsection{ASTRule.ParenExpr\label{sec:ASTRule.ParenExpr}}
 \begin{mathpar}
   \inferrule[sub\_expr]{}{
   \buildexpr(\overname{\Nexpr(\Tlpar, \punnode{\Nexpr}, \Trpar)}{\vparsednode}) \astarrow
-  \overname{\astof{\vexpr}}{\vastnode}
+  \overname{\ETuple([\ \astof{\vexpr}\ ])}{\vastnode}
 }
 \end{mathpar}
 
