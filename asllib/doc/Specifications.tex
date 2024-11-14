@@ -71,6 +71,7 @@ We define the following helper rules:
   \item TypingRule.UseLDI (see \secref{TypingRule.UseLDI})
   \item TypingRule.UseCase (see \secref{TypingRule.UseCase})
   \item TypingRule.UseCatcher (see \secref{TypingRule.UseCatcher})
+  \item TypingRule.SetBuiltin (see \secref{TypingRule.SetBuiltin})
 \end{itemize}
 
 \subsubsection{TypingRule.TypeCheckAST\label{sec:TypingRule.TypeCheckAST}}
@@ -1771,6 +1772,35 @@ All of the following apply:
 }
 \end{mathpar}
 
+\subsubsection{TypingRule.SetBuiltin\label{sec:TypingRule.SetBuiltin}}
+The helper function
+\hypertarget{def-setbuiltin}{}
+\[
+  \setbuiltin(\overname{\decl}{\vdecl}) \aslto
+  \overname{\decl}{\vdeclp}
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \secref{TypingRule.InsertStdlibParam}.
+It produces a type error when given a top-level declaration which is not a function.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item view $\vdecl$ as a function, that is, $\DFunc(\funcsig)$\ProseOrTypeError;
+  \item define $\funcsigp$ as $\funcsig$ with its $\funcbuiltin$ flag set to $\True$;
+  \item $\vdeclp$ is $\DFunc(\funcsigp)$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vdecl \eqname \DFunc(\funcsig) \OrTypeError \\
+  \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
+}{
+  \setbuiltin(\vdecl) \typearrow \DFunc(\funcsigp)
+}
+\end{mathpar}
+
 \section{Semantics}
 The rule SemanticsRule.TopLevel (see \secref{SemanticsRule.TopLevel})
 evaluates entire specifications with the help of the following rules:
@@ -1795,8 +1825,9 @@ environment.
 \subsubsection{Prose}
   All of the following apply:
   \begin{itemize}
+    \item define $\parsedstdp$ by applying $\setbuiltin$ to each top-level declaration in the AST for the parsed standard library $\parsedstdp$\ProseOrTypeError;
     \item the AST for the parsed specification, $\parsedspec$, and AST for the parsed standard library,
-    $\parsedstd$, are concatenated to give $\parsedast$;
+    $\parsedstdp$, are concatenated to give $\parsedast$;
     \item applying the type-checker to $\parsedast$ with an empty static environment yields
     $(\typedspec, \tenv)$;
     \item populating the environment with the declarations of the global storage elements
@@ -1827,7 +1858,8 @@ environment.
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[normal]{
-  \parsedast \eqdef \parsedspec \concat \parsedstd\\
+  \vi \in \listrange(\parsedstd): \setbuiltin(\parsedstd_i) \typearrow \parsedstdp_i \OrTypeError\\
+  \parsedast \eqdef \parsedspec \concat \parsedstdp\\
   \typecheckast(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
   \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone) \OrDynError\\\\
   \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
@@ -1840,7 +1872,8 @@ environment.
 
 \begin{mathpar}
 \inferrule[throwing]{
-  \parsedast \eqdef \parsedspec \concat \parsedstd\\
+  \vi \in \listrange(\parsedstd): \setbuiltin(\parsedstd_i) \typearrow \parsedstdp_i \OrTypeError\\
+  \parsedast \eqdef \parsedspec \concat \parsedstdp\\
   \typecheckast(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
   \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone)\\
   \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\texttt{v\_opt}, \Ignore)

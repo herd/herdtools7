@@ -1310,13 +1310,13 @@ module Make (B : Backend.S) (C : Config) = struct
         fatal_from pos
         @@ Error.BadArity (name, List.length arg_decls, List.length args)
         |: SemanticsRule.FBadArity
-    (* End *)
     | Some { parameters = parameter_decls; _ }
       when List.compare_lengths params parameter_decls <> 0 ->
         fatal_from pos
         @@ Error.BadParameterArity
              (Dynamic, V1, name, List.length parameter_decls, List.length params)
         |: SemanticsRule.FBadArity
+    (* End *)
     (* Begin EvalFCall *)
     | Some
         {

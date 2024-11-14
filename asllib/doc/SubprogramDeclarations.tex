@@ -46,7 +46,8 @@ Subprogram declarations have no associated semantics.
  \funcargs &:& \typedidentifier^*,\\
  \funcbody &:& \subprogrambody,\\
  \funcreturntype &:& \ty?,\\
- \funcsubprogramtype &:& \subprogramtype
+ \funcsubprogramtype &:& \subprogramtype,\\
+ \funcbuiltin &:& \Bool
 \end{array}
 \right\}
 } &\\
@@ -80,7 +81,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcargs &:& \astof{\vfuncargs},\\
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \langle \astof{\vreturntype} \rangle,\\
-            \funcsubprogramtype &:& \STFunction
+            \funcsubprogramtype &:& \STFunction,\\
+            \funcbuiltin &:& \False
     \end{array}
   \right\}\right)}{\vastnode}
   }
@@ -103,7 +105,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcargs &:& \astof{\vfuncargs},\\
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \None,\\
-            \funcsubprogramtype &:& \STProcedure
+            \funcsubprogramtype &:& \STProcedure,\\
+            \funcbuiltin &:& \False
     \end{array}
   \right\}\right)
     }{\vastnode}
@@ -131,7 +134,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcargs &:& \astof{\vfuncargs},\\
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
-            \funcsubprogramtype &:& \STGetter
+            \funcsubprogramtype &:& \STGetter,\\
+            \funcbuiltin &:& \False
     \end{array}
   \right\}\right)
   }{\vastnode}
@@ -161,7 +165,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcargs &:& [\vv] \concat \astof{\vfuncargs},\\
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \None,\\
-            \funcsubprogramtype &:& \STSetter
+            \funcsubprogramtype &:& \STSetter,\\
+            \funcbuiltin &:& \False
     \end{array}
   \right\}\right)
     }{\vastnode}
@@ -440,7 +445,8 @@ All of the following apply:
                       & \funcargs            &:& \vargs,\\
                       & \funcbody            &:& \funcsig.\funcbody,\\
                       & \funcreturntype      &:& \vreturntype,\\
-                      & \funcsubprogramtype  &:&  \funcsig.\subprogramtype \\
+                      & \funcsubprogramtype  &:& \funcsig.\subprogramtype, \\
+                      & \funcbuiltin         &:& \funcsig.\funcbuiltin \\
                   \}  &  &&
         \end{array}
   }
@@ -1204,7 +1210,8 @@ All of the following apply:
                       & \funcargs            &:& \vargs,\\
                       & \funcbody            &:& \SBASL(\bd),\\
                       & \funcreturntype      &:& \vt,\\
-                      & \funcsubprogramtype  &:& \subprogramtype \\
+                      & \funcsubprogramtype  &:& \subprogramtype, \\
+                      & \funcbuiltin         &:& \vb \\
                   \}  & ; &&
         \end{array}
   \]
@@ -1229,7 +1236,8 @@ All of the following apply:
                     & \funcargs            &:& \vargs,\\
                     & \funcbody            &:& \SBASL(\bd),\\
                     & \funcreturntype      &:& \vt,\\
-                    & \funcsubprogramtype  &:& \subprogramtype \\
+                    & \funcsubprogramtype  &:& \subprogramtype, \\
+                    & \funcbuiltin         &:& \vb \\
                 \} &&&
       \end{array}
     }\\
@@ -1245,7 +1253,8 @@ All of the following apply:
                     & \funcargs            &:& \vargs,\\
                     & \funcbody            &:& \SBASL(\bd),\\
                     & \funcreturntype      &:& \vt,\\
-                    & \funcsubprogramtype  &:& \subprogramtype \\
+                    & \funcsubprogramtype  &:& \subprogramtype, \\
+                    & \funcbuiltin         &:& \vb \\
                 \} &&&
       \end{array}
     }\\
