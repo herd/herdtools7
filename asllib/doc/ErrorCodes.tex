@@ -69,10 +69,10 @@ A function call, given by its name and list of formal argument types, matches mo
 which does not allow the type-checker to decide which subprogram the call refers to.
 See \secref{TypingRule.SubprogramForName} for an example.
 
-\hypertarget{def-parameterwithoutdecl}{}
-\item[$\ParameterWithoutDecl$]
-A subprogram includes a parameter that is not associated with any variable appearing in one of the arguments.
-See \secref{TypingRule.AnnotateParams} for an example.
+\hypertarget{def-badparameterdecl}{}
+\item[$\BadParameterDecl$]
+A subprogram has an invalid declaration of its parameters.
+See \nameref{sec:TypingRule.CheckParamDecls} for an example.
 
 \hypertarget{def-nolca}{}
 \item[$\NoLCA$]

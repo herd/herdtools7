@@ -303,6 +303,28 @@ transforms a list of pairs into the corresponding pair of lists:
 \]
 \end{definition}
 
+\hypertarget{def-uniquelist}{}
+\hypertarget{def-uniquep}{}
+\begin{definition}[Finding unique elements of a list]
+The parametric function
+\[
+\uniquelist : \overname{T^*}{l} \rightarrow T^*
+\]
+retains only the first occurence of each element of the list $l$.
+It relies on the helper function $\uniquep$:
+\[
+\begin{array}{rcl}
+\uniquelist(l) &\triangleq& \uniquep(l, \emptylist)\\\\
+\uniquep(\emptylist, \acc) &\triangleq& \acc\\
+\uniquep([h] \concat t, \acc) &\triangleq&
+  \begin{cases}
+    \uniquep(t, \acc) & \text{if }h \in t\\
+    \uniquep(t, \acc \concat [h]) & \text{otherwise}\\
+  \end{cases}
+\end{array}
+\]
+\end{definition}
+
 \subsection{OCaml-style Notations}
 We use the following notations, which are in the style of the OCaml programming language,
 to facilitate correspondence with our

@@ -207,14 +207,16 @@
 
 \newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
-\newcommand\equal[0]{\hyperlink{def-equal}{\texttt{equal}}}
+\newcommand\equal[0]{\hyperlink{def-equal}{\textfunc{equal}}}
 \newcommand\equalarrow[0]{\rightarrow}
-\newcommand\equallength[0]{\hyperlink{def-equallength}{\texttt{equal\_length}}}
-\newcommand\listrange[0]{\hyperlink{def-listrange}{\texttt{indices}}}
+\newcommand\equallength[0]{\hyperlink{def-equallength}{\textfunc{equal\_length}}}
+\newcommand\listrange[0]{\hyperlink{def-listrange}{\textfunc{indices}}}
 \newcommand\listlen[1]{\hyperlink{def-listlen}{|}#1\hyperlink{def-listlen}{|}}
 \newcommand\cardinality[1]{\hyperlink{def-cardinality}{|}#1\hyperlink{def-cardinality}{|}}
-\newcommand\filterlist[0]{\hyperlink{def-filterlist}{\texttt{filter\_list}}}
-\newcommand\unziplist[0]{\hyperlink{def-unziplist}{\texttt{unzip}}}
+\newcommand\filterlist[0]{\hyperlink{def-filterlist}{\textfunc{filter\_list}}}
+\newcommand\unziplist[0]{\hyperlink{def-unziplist}{\textfunc{unzip}}}
+\newcommand\uniquep[0]{\hyperlink{def-uniquep}{\textfunc{unique'}}}
+\newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
 \newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
@@ -1109,6 +1111,11 @@
 \newcommand\annotateanddeclarefunc[0]{\hyperlink{def-annotateanddeclarefunc}{\textfunc{annotate\_and\_declare\_func}}}
 \newcommand\declareglobalstorage[0]{\hyperlink{def-declareglobalstorage}{\textfunc{declare\_global\_storage}}}
 \newcommand\annotatefuncsig[0]{\hyperlink{def-annotatefuncsig}{\textfunc{annotate\_func\_sig}}}
+\newcommand\checkparamdecls[0]{\hyperlink{def-checkparamdecls}{\textfunc{check\_param\_decls}}}
+\newcommand\typesinfuncsig[0]{\hyperlink{def-typesinfuncsig}{\textfunc{types\_in\_func\_sig}}}
+\newcommand\paramsofty[0]{\hyperlink{def-paramsofty}{\textfunc{parameters\_of\_ty}}}
+\newcommand\paramsofexpr[0]{\hyperlink{def-paramsofexpr}{\textfunc{parameters\_of\_expr}}}
+\newcommand\paramsofconstraint[0]{\hyperlink{def-paramsofconstraint}{\textfunc{parameters\_of\_constraint}}}
 \newcommand\declareonefunc[0]{\hyperlink{def-declareonefunc}{\textfunc{declare\_one\_func}}}
 \newcommand\checksetterhasgetter[0]{\hyperlink{def-checksetterhashgetter}{\textfunc{check\_setter\_has\_getter}}}
 \newcommand\withemptylocal[0]{\hyperlink{def-withemptylocal}{\textfunc{with\_empty\_local}}}
@@ -1122,11 +1129,8 @@
 \newcommand\addglobalimmutableexpr[0]{\hyperlink{def-addglobalimmutableexpr}{\textfunc{add\_global\_immutable\_expr}}}
 \newcommand\addlocalimmutableexpr[0]{\hyperlink{def-addlocalimmutableexpr}{\textfunc{add\_local\_immutable\_expr}}}
 \newcommand\addimmutableexpr[0]{\hyperlink{def-addimmutableexpr}{\textfunc{add\_immutable\_expr}}}
-\newcommand\scanforparams[0]{\hyperlink{def-scanforparams}{\textfunc{scan\_for\_params}}}
 \newcommand\annotateparams[0]{\hyperlink{def-annotateparams}{\textfunc{annotate\_params}}}
 \newcommand\annotateoneparam[0]{\hyperlink{def-annotateoneparam}{\textfunc{annotate\_one\_param}}}
-\newcommand\argsasparams[0]{\hyperlink{def-argsasparams}{\textfunc{args\_as\_params}}}
-\newcommand\argasparam[0]{\hyperlink{def-argasparam}{\textfunc{arg\_as\_param}}}
 \newcommand\annotatetypeopt[0]{\hyperlink{def-annotatetypeopt}{\textfunc{annotate\_type\_opt}}}
 \newcommand\annotateexpropt[0]{\hyperlink{def-annotateexpropt}{\textfunc{annotate\_expr\_opt}}}
 \newcommand\annotateinittype[0]{\hyperlink{def-annotateinittype}{\textfunc{annotate\_init\_type}}}
@@ -1138,7 +1142,6 @@
 \newcommand\declareconst[0]{\hyperlink{def-declareconst}{\textfunc{declare\_const}}}
 \newcommand\addlocalconstant[0]{\hyperlink{def-addlocalconstant}{\textfunc{add\_local\_constant}}}
 \newcommand\addglobalconstant[0]{\hyperlink{def-addglobalconstant}{\textfunc{add\_global\_constant}}}
-\newcommand\annotateparamtype[0]{\hyperlink{def-annotateparamtype}{\textfunc{annotate\_param\_type}}}
 \newcommand\annotateargs[0]{\hyperlink{def-annotateargs}{\textfunc{annotate\_args}}}
 \newcommand\annotateonearg[0]{\hyperlink{def-annotateonearg}{\textfunc{annotate\_one\_arg}}}
 \newcommand\annotatereturntype[0]{\hyperlink{def-annotatereturntype}{\textfunc{annotate\_return\_type}}}
@@ -1175,7 +1178,6 @@
 \newcommand\useldi[0]{\hyperlink{def-useldi}{\textfunc{use\_ldi}}}
 \newcommand\usecase[0]{\hyperlink{def-usecase}{\textfunc{use\_case}}}
 \newcommand\usecatcher[0]{\hyperlink{def-usecatcher}{\textfunc{use\_catcher}}}
-\newcommand\usefuncsig[0]{\hyperlink{def-usefuncsig}{\textfunc{use\_func\_sig}}}
 \newcommand\builddependencies[0]{\hyperlink{def-builddependencies}{\textfunc{build\_dependencies}}}
 \newcommand\decldependencies[0]{\hyperlink{def-decldependencies}{\textfunc{decl\_dependencies}}}
 
@@ -1446,7 +1448,6 @@
 \newcommand\subprogramforname[0]{\hyperlink{def-subprogramforname}{\textfunc{subprogram\_for\_name}}}
 \newcommand\hasargclash[0]{\hyperlink{def-hasargclash}{\textfunc{has\_arg\_clash}}}
 \newcommand\filtercallcandidates[0]{\hyperlink{def-filtercandidates}{\textfunc{filter\_call\_candidates}}}
-\newcommand\getundeclareddefining[0]{\hyperlink{def-getundeclareddefining}{\textfunc{get\_undeclared\_defining}}}
 \newcommand\bintounsigned[0]{\hyperlink{def-bintounsigned}{\textsf{binary\_to\_unsigned}}}
 \newcommand\inttobits[0]{\hyperlink{def-inttobits}{\textfunc{int\_to\_bits}}}
 
@@ -1484,7 +1485,7 @@
 \newcommand\SubrogramDeclaredMultipleTimes[0]{\hyperlink{def-subprogramdeclaredmultipletimes}{\TypeErrorCode{SDM}}}
 \newcommand\NoCallCandidates[0]{\hyperlink{def-nocallcandidates}{\TypeErrorCode{NCC}}}
 \newcommand\TooManyCandidates[0]{\hyperlink{def-toomanycandidates}{\TypeErrorCode{TMC}}}
-\newcommand\ParameterWithoutDecl[0]{\hyperlink{def-parameterwithoutdecl}{\TypeErrorCode{PWD}}}
+\newcommand\BadParameterDecl[0]{\hyperlink{def-bpd}{\TypeErrorCode{BPD}}}
 \newcommand\NoLCA[0]{\hyperlink{def-nolca}{\TypeErrorCode{LCA}}}
 \newcommand\MismatchedReturnValue[0]{\hyperlink{def-mrv}{\TypeErrorCode{MRV}}}
 \newcommand\CallBadArity[0]{\hyperlink{def-cba}{\TypeErrorCode{CBA}}}
@@ -1855,6 +1856,7 @@
 \newcommand\newstmtp[0]{\texttt{new\_stmt'}}
 \newcommand\newstwo[0]{\texttt{new\_s2}}
 \newcommand\newtenv[0]{\texttt{new\_tenv}}
+\newcommand\newtenvp[0]{\texttt{new\_tenv'}}
 \newcommand\newty[0]{\texttt{new\_ty}}
 \newcommand\newtys[0]{\texttt{new\_tys}}
 \newcommand\nlength[0]{\texttt{n\_length}}
@@ -1878,6 +1880,7 @@
 \newcommand\paramdecls[0]{\texttt{param\_decls}}
 \newcommand\paramname[0]{\texttt{param\_name}}
 \newcommand\params[0]{\texttt{params}}
+\newcommand\paramsp[0]{\texttt{params'}}
 \newcommand\paramsone[0]{\texttt{params1}}
 \newcommand\parsedast[0]{\texttt{parsed\_ast}}
 \newcommand\parsedspec[0]{\texttt{parsed\_spec}}
@@ -1951,6 +1954,9 @@
 \newcommand\tenvtwo[0]{\texttt{tenv2}}
 \newcommand\tenvtwop[0]{\texttt{tenv2'}}
 \newcommand\tenvtwopp[0]{\texttt{tenv2''}}
+\newcommand\vtenv[0]{\texttt{tenv}}
+\newcommand\tenvwithparams[0]{\texttt{tenv\_with\_params}}
+\newcommand\tenvwithargs[0]{\texttt{tenv\_with\_args}}
 \newcommand\tep[0]{\texttt{t\_e'}}
 \newcommand\testruct[0]{\texttt{t\_e\_struct}}
 \newcommand\tfalse[0]{\texttt{t\_false}}
