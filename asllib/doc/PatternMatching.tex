@@ -954,7 +954,7 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
   \inferrule[atc\_int\_constraints]{}{
     {
       \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nintconstraints})) \astarrow\\
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nconstraintkind})) \astarrow\\
   \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vintconstraints}))}{\vastnode}
 \end{array}
 }
@@ -962,12 +962,34 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[pattern\_in]{}{
   {
   \begin{array}{r}
-    \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \punnode{\Npatternormask})) \astarrow\\
-    \overname{\EPattern(\astof{\vexprpattern}, \astof{\vpatternormask})}{\vastnode}
+    \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \punnode{\Npatternset})) \astarrow\\
+    \overname{\EPattern(\astof{\vexprpattern}, \astof{\vpatternset})}{\vastnode}
   \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pattern\_eq]{}{
+  {
+    \begin{array}{r}
+      \buildexprpattern(\overname{\Nexprpattern(\punnode{\Nexprpattern}, \Teq, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astof{\vexprpattern}, \PatternMask(\vm))}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pattern\_neq]{}{
+  {
+    \begin{array}{r}
+      \buildexprpattern(\overname{\Nexprpattern(\punnode{\Nexprpattern}, \Tneq, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astof{\vexprpattern}, \PatternNot(\PatternMask(\vm)))}{\vastnode}
+    \end{array}
   }
 }
 \end{mathpar}

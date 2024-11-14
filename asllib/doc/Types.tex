@@ -75,9 +75,9 @@ expressions and statements.
 
 \subsection{Syntax\label{sec:IntegerTypesSyntax}}
 \begin{flalign*}
-\Nty \derives\ & \Tinteger \parsesep \Nintconstraintsopt &\\
-\Nintconstraintsopt \derivesinline\ & \Nintconstraints \;|\; \emptysentence &\\
-\Nintconstraints \derivesinline\ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &\\
+\Nty \derives\ & \Tinteger \parsesep \Nconstraintkindopt &\\
+\Nconstraintkindopt \derivesinline\ & \Nconstraintkind \;|\; \emptysentence &\\
+\Nconstraintkind \derivesinline\ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &\\
 \Nintconstraint \derivesinline\ & \Nexpr &\\
 |\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
 \end{flalign*}
@@ -98,16 +98,16 @@ expressions and statements.
 \subsubsection{ASTRule.Ty.TInt\label{sec:ASTRule.Ty.TInt}}
 \begin{mathpar}
 \inferrule[integer]{}{
-  \buildty(\Nty(\Tinteger, \punnode{\Nintconstraintsopt})) \astarrow
+  \buildty(\Nty(\Tinteger, \punnode{\Nconstraintkindopt})) \astarrow
   \overname{\TInt(\astof{\vintconstraintsopt})}{\vastnode}
 }
 \end{mathpar}
 
 \subsubsection{ASTRule.IntConstraintsOpt\label{sec:ASTRule.IntConstraintsOpt}}
-\hypertarget{build-intconstraintsopt}{}
+\hypertarget{build-constraintkindopt}{}
 The function
 \[
-  \buildintconstraintsopt(\overname{\parsenode{\Nintconstraintsopt}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
+  \buildconstraintkindopt(\overname{\parsenode{\Nconstraintkindopt}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -115,7 +115,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[constrained]{}{
   {
     \begin{array}{r}
-  \buildintconstraintsopt(\Nintconstraintsopt(\punnode{\Nintconstraints})) \astarrow \\
+  \buildconstraintkindopt(\Nconstraintkindopt(\punnode{\Nconstraintkind})) \astarrow \\
   \overname{\astof{\vintconstraints}}{\vastnode}
     \end{array}
   }
@@ -124,16 +124,16 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[unconstrained]{}{
-  \buildintconstraintsopt(\Nintconstraintsopt(\emptysentence)) \astarrow
+  \buildconstraintkindopt(\Nconstraintkindopt(\emptysentence)) \astarrow
   \overname{\unconstrained}{\vastnode}
 }
 \end{mathpar}
 
 \subsection{ASTRule.IntConstraints\label{sec:ASTRule.IntConstraints}}
-\hypertarget{build-intconstraints}{}
+\hypertarget{build-constraintkind}{}
 The function
 \[
-  \buildintconstraints(\overname{\parsenode{\Nintconstraints}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
+  \buildconstraintkind(\overname{\parsenode{\Nconstraintkind}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -143,7 +143,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }{
   {
     \begin{array}{r}
-  \buildintconstraints(\Nintconstraints(\Tlbrace, \namednode{\vconstraints}{\NClist{\Nintconstraint}}, \Trbrace)) \astarrow\\
+  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\vconstraints}{\NClist{\Nintconstraint}}, \Trbrace)) \astarrow\\
   \overname{\wellconstrained(\vconstraintasts)}{\vastnode}
     \end{array}
   }

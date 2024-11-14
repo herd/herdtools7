@@ -428,12 +428,12 @@ it must declare a new variable.
 
 \hypertarget{def-nintconstraintsopt}{}
 \begin{flalign*}
-\Nintconstraintsopt \derivesinline\ & \Nintconstraints \;|\; \emptysentence &
+\Nconstraintkindopt \derivesinline\ & \Nconstraintkind \;|\; \emptysentence &
 \end{flalign*}
 
 \hypertarget{def-nintconstraints}{}
 \begin{flalign*}
-\Nintconstraints \derivesinline\ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &
+\Nconstraintkind \derivesinline\ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-nintconstraint}{}
@@ -458,8 +458,10 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
                     |\  & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &\\
                     |\  & \Nexprpattern \parsesep \Tas \parsesep \Nty &\\
-                    |\  & \Nexprpattern \parsesep \Tas \parsesep \Nintconstraints &\\
-                    |\  & \Nexprpattern \parsesep \Tin \parsesep \Npatternormask &\\
+                    |\  & \Nexprpattern \parsesep \Tas \parsesep \Nconstraintkind &\\
+                    |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
+                    |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
+                    |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tunknown \parsesep \Tcolon \parsesep \Nty &\\
                     |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexprpattern \parsesep \Trpar &
@@ -470,17 +472,6 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
                   |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &
 \end{flalign*}
-
-\hypertarget{def-npatternormask}{}
-\begin{flalign*}
-\Npatternormask \derivesinline\  & \Npatternset &\\
-                |\ & \Tmasklit &\\
-                |\ & \Tbitvectorlit &
-\end{flalign*}
-% let pattern_or_mask ==
-%   | pattern_set
-%   | ~=MASK_LIT; < Pattern_Mask >
-%   | b=BITVECTOR_LIT; { Pattern_Mask (Bitvector.mask_of_bitvector b) }
 
 \hypertarget{def-npatternlist}{}
 \begin{flalign*}
@@ -536,7 +527,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nty}{}
 \begin{flalign*}
-\Nty \derives\ & \Tinteger \parsesep \Nintconstraintsopt &\\
+\Nty \derives\ & \Tinteger \parsesep \Nconstraintkindopt &\\
             |\ & \Treal &\\
             |\ & \Tstring &\\
             |\ & \Tboolean &\\
@@ -579,8 +570,10 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
                     |\  & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &\\
                     |\  & \Nexpr \parsesep \Tas \parsesep \Nty &\\
-                    |\  & \Nexpr \parsesep \Tas \parsesep \Nintconstraints &\\
-                    |\  & \Nexpr \parsesep \Tin \parsesep \Npatternormask &\\
+                    |\  & \Nexpr \parsesep \Tas \parsesep \Nconstraintkind &\\
+                    |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
+                    |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
+                    |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tunknown \parsesep \Tcolon \parsesep \Nty &\\
                     |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexpr \parsesep \Trpar &\\
