@@ -115,7 +115,7 @@ let rec pp_expr f e =
       fprintf f "(@[<hov 2>%a@ %s %a@])" pp_expr e1 (binop_to_string b) pp_expr
         e2
   | E_Unop (u, e) -> fprintf f "(%s %a)" (unop_to_string u) pp_expr e
-  | E_Call (name, args, _) ->
+  | E_Call { name; args } ->
       fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
   | E_Slice (e, args) ->
       fprintf f "@[<hov 2>%a[%a]@]" pp_expr e pp_slice_list args
@@ -260,7 +260,7 @@ let rec pp_stmt f s =
   | S_Pass -> pp_print_string f "pass;"
   | S_Seq (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
   | S_Assign (le, e) -> fprintf f "@[<h 2>%a =@ %a;@]" pp_lexpr le pp_expr e
-  | S_Call (name, args, _) ->
+  | S_Call { name; args } ->
       fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
   | S_Return (Some e) -> fprintf f "return %a;" pp_expr e
   | S_Return None -> fprintf f "return;"

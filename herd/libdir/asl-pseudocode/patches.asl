@@ -213,7 +213,7 @@ end;
 
 func BranchNotTaken(branchtype:BranchType, branch_conditional:boolean)
 begin
-    _PC = _PC+4;
+    _PC() = _PC()+4;
    let branchtaken = FALSE;
    if IsFeatureImplemented(FEAT_SPE) then
      SPEBranch

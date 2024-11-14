@@ -1,19 +1,19 @@
-setter f[x: integer] = v: integer
+setter f(x: integer) = v: integer
 begin
   pass;
 end;
 
-getter f[] => integer
+getter f() => integer
 begin
   return 0;
 end;
 
-getter f[x: integer, y: integer] => integer
+getter f(x: integer, y: integer) => integer
 begin
   return 0;
 end;
 
-getter f[x: boolean] => integer
+getter f(x: boolean) => integer
 begin
   return 0;
 end;

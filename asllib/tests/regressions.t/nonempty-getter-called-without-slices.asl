@@ -1,4 +1,4 @@
-getter f1[] => integer
+getter f1() => integer
 begin
   return 4;
 end;

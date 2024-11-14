@@ -94,6 +94,16 @@ let pp_literal f = function
       bprintf f "V_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
   | L_String s -> bprintf f "V_String %S" s
 
+let subprogram_type_to_string = function
+  | ST_Function -> "ST_Function"
+  | ST_Procedure -> "ST_Procedure"
+  | ST_Setter -> "ST_Setter"
+  | ST_Getter -> "ST_Getter"
+  | ST_EmptyGetter -> "ST_EmptyGetter"
+  | ST_EmptySetter -> "ST_EmptySetter"
+
+let pp_subprogram_type f st = addb f (subprogram_type_to_string st)
+
 let rec pp_expr =
   let pp_desc f = function
     | E_Literal v -> bprintf f "E_Literal (%a)" pp_literal v
@@ -102,9 +112,10 @@ let rec pp_expr =
     | E_Binop (op, e1, e2) ->
         bprintf f "E_Binop (%s, %a, %a)" (pp_binop op) pp_expr e1 pp_expr e2
     | E_Unop (op, e) -> bprintf f "E_Unop (%s, %a)" (pp_unop op) pp_expr e
-    | E_Call (name, args, named_args) ->
-        bprintf f "E_Call (%S, %a, %a)" name pp_expr_list args
-          (pp_id_assoc pp_expr) named_args
+    | E_Call { name; args; params; call_type } ->
+        bprintf f "E_Call {name=%S; args=%a; params=%a; call_type=%a}" name
+          pp_expr_list args (pp_id_assoc pp_expr) params pp_subprogram_type
+          call_type
     | E_Slice (e, args) ->
         bprintf f "E_Slice (%a, %a)" pp_expr e pp_slice_list args
     | E_Cond (e1, e2, e3) ->
@@ -254,9 +265,10 @@ let rec pp_stmt =
     | S_Pass -> addb f "SPass"
     | S_Seq (s1, s2) -> bprintf f "S_Seq (%a, %a)" pp_stmt s1 pp_stmt s2
     | S_Assign (le, e) -> bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
-    | S_Call (name, args, named_args) ->
-        bprintf f "S_Call (%S, %a, %a)" name pp_expr_list args
-          (pp_id_assoc pp_expr) named_args
+    | S_Call { name; args; params; call_type } ->
+        bprintf f "S_Call {name=%S; args=%a; params=%a; call_type=%a}" name
+          pp_expr_list args (pp_id_assoc pp_expr) params pp_subprogram_type
+          call_type
     | S_Cond (e, s1, s2) ->
         bprintf f "S_Cond (%a, %a, %a)" pp_expr e pp_stmt s1 pp_stmt s2
     | S_Return e -> bprintf f "S_Return (%a)" (pp_option pp_expr) e
@@ -310,16 +322,6 @@ let pp_gdk f gdk =
   | GDK_Constant -> "GDK_Constant"
   | GDK_Let -> "GDK_Let"
   | GDK_Var -> "GDK_Var"
-
-let subprogram_type_to_string = function
-  | ST_Function -> "ST_Function"
-  | ST_Procedure -> "ST_Procedure"
-  | ST_Setter -> "ST_Setter"
-  | ST_Getter -> "ST_Getter"
-  | ST_EmptyGetter -> "ST_EmptyGetter"
-  | ST_EmptySetter -> "ST_EmptySetter"
-
-let pp_subprogram_type f st = addb f (subprogram_type_to_string st)
 
 let pp_body f = function
   | SB_ASL s -> bprintf f "SB_ASL (%a)" pp_stmt s

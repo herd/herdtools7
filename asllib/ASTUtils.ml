@@ -197,8 +197,8 @@ let rec use_e e =
   | E_Var x -> ISet.add x
   | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e e1 $ use_e e2
   | E_Unop (_op, e) -> use_e e
-  | E_Call (x, args, named_args) ->
-      ISet.add x $ use_fields named_args $ use_es args
+  | E_Call { name; args; params } ->
+      ISet.add name $ use_fields params $ use_es args
   | E_Slice (e, slices) -> use_e e $ use_slices slices
   | E_Cond (e1, e2, e3) -> use_e e1 $ use_e e2 $ use_e e3
   | E_GetItem (e, _) -> use_e e
@@ -263,8 +263,8 @@ let rec use_s s =
   | S_Seq (s1, s2) -> use_s s1 $ use_s s2
   | S_Assert e | S_Return (Some e) -> use_e e
   | S_Assign (le, e) -> use_e e $ use_le le
-  | S_Call (x, args, named_args) ->
-      ISet.add x $ use_fields named_args $ use_es args
+  | S_Call { name; args; params } ->
+      ISet.add name $ use_fields params $ use_es args
   | S_Cond (e, s1, s2) -> use_s s1 $ use_s s2 $ use_e e
   | S_Case (e, cases) -> use_e e $ use_cases cases
   | S_For { start_e; end_e; body; index_name = _; dir = _; limit } ->
@@ -345,7 +345,7 @@ let rec expr_equal eq e1 e2 =
   | E_Binop (o1, e11, e21), E_Binop (o2, e12, e22) ->
       o1 = o2 && expr_equal eq e11 e12 && expr_equal eq e21 e22
   | E_Binop _, _ | _, E_Binop _ -> false
-  | E_Call (x1, args1, _), E_Call (x2, args2, _) ->
+  | E_Call { name = x1; args = args1 }, E_Call { name = x2; args = args2 } ->
       (* We can ignore parameters as they are deduced from arguments. *)
       String.equal x1 x2 && list_equal (expr_equal eq) args1 args2
   | E_Call _, _ | _, E_Call _ -> false
@@ -637,7 +637,8 @@ let rec subst_expr substs e =
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
   | E_Concat es -> E_Concat (List.map tr es)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
-  | E_Call (x, args, param_args) -> E_Call (x, List.map tr args, param_args)
+  | E_Call { name; args; params; call_type } ->
+      E_Call { name; args = List.map tr args; params; call_type }
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
@@ -708,7 +709,9 @@ let rename_locals map_name ast =
     | E_ATC (e', t) -> E_ATC (map_e e', map_t t)
     | E_Binop (op, e1, e2) -> E_Binop (op, map_e e1, map_e e2)
     | E_Unop (op, e') -> E_Unop (op, map_e e')
-    | E_Call (name, args, nargs) -> E_Call (name, map_es args, map_names nargs)
+    | E_Call { name; args; params; call_type } ->
+        E_Call
+          { name; args = map_es args; params = map_names params; call_type }
     | E_Slice (e', slices) -> E_Slice (map_e e', map_slices slices)
     | E_Cond (e1, e2, e3) -> E_Cond (map_e e1, map_e e2, map_e e3)
     | E_GetArray (e1, e2) -> E_GetArray (map_e e1, map_e e2)
@@ -750,7 +753,9 @@ let rename_locals map_name ast =
     | S_Seq (s1, s2) -> S_Seq (map_s s1, map_s s2)
     | S_Decl (ldk, ldi, e) -> S_Decl (ldk, map_ldi ldi, Option.map map_e e)
     | S_Assign (le, e) -> S_Assign (map_le le, map_e e)
-    | S_Call (name, args, nargs) -> S_Call (name, map_es args, map_names nargs)
+    | S_Call { name; args; params; call_type } ->
+        S_Call
+          { name; args = map_es args; params = map_names params; call_type }
     | S_Return e -> S_Return (Option.map map_e e)
     | S_Cond (e, s1, s2) -> S_Cond (map_e e, map_s s1, map_s s2)
     | S_Case (_, _) -> failwith "Not yet implemented: obfuscate cases"

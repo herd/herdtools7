@@ -524,29 +524,19 @@ end;
 
 // =============================================================================
 
-getter _PC => bits(64)
-begin
-  return read_pc();
-end;
-
-setter _PC = value :: bits(64)
-begin
-  write_pc(value);
-end;
-
-getter _R [n :: integer] => bits(64)
+getter _R (n :: integer) => bits(64)
 begin
   return read_register(n);
 end;
 
-setter _R [n :: integer] = value :: bits(64)
+setter _R (n :: integer) = value :: bits(64)
 begin
   write_register(n, value);
 end;
 
 // =============================================================================
 
-getter SCTLR_EL1[] => SCTLRType
+getter SCTLR_EL1() => SCTLRType
 begin
   return Zeros(64);
 end;

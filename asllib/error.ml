@@ -215,6 +215,7 @@ module PPrint = struct
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
     | EmptySlice ->
+        assert (e.version = V0);
         pp_print_text f
           "ASL Static Error: cannot slice with empty slicing operator. This \
            might also be due to an incorrect getter/setter invocation."

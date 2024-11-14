@@ -5,7 +5,7 @@ type ExtendType of enumeration
   {ExtendType_SXTB, ExtendType_SXTH, ExtendType_SXTW, ExtendType_SXTX,
   ExtendType_UXTB, ExtendType_UXTH, ExtendType_UXTW, ExtendType_UXTX};
 
-getter X[n : Rnum_X, width : ElementSize] => bits(width)
+getter X(n : Rnum_X, width : ElementSize) => bits(width)
 begin
     assert width IN {8,16,32,64};
     return n[width-1:0];
@@ -14,7 +14,7 @@ end;
 func ExtendReg(reg : Rnum_X, exttype : ExtendType, shift : integer{0..4}, N : ElementSize) => bits(N)
 begin
     assert shift >= 0 && shift <= 4;
-    let val : bits(N) = X[reg, N];
+    let val : bits(N) = X(reg, N);
     var unsigned : boolean;
     var len : ElementSize;
 

@@ -497,7 +497,7 @@ module Typed (C : Config.S) = struct
           List.map2 (fun (_, ty) n -> expr (env, ty, n)) func_sig.args arg_sizes
           |> flatten_l
         in
-        E_Call (name, args, []) |> annot
+        E_Call { name; args; params = []; call_type = ST_Function } |> annot
       in
       protected_oneofl funcs |> Option.map (bind one_func)
     in

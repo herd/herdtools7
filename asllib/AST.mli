@@ -116,6 +116,26 @@ type literal =
 
 (** {2 Expressions} *)
 
+type subprogram_type =
+  | ST_Procedure
+      (** A procedure is a subprogram without return type, called from a
+          statement. *)
+  | ST_Function
+      (** A function is a subprogram with a return type, called from an
+          expression. *)
+  | ST_Getter
+      (** A getter is a special function called with a syntax similar to
+          slices. *)
+  | ST_EmptyGetter
+      (** An empty getter is a special function called with a syntax similar to
+          a variable. *)
+  | ST_Setter
+      (** A setter is a special procedure called with a syntax similar to slice
+          assignment. *)
+  | ST_EmptySetter
+      (** An empty setter is a special procedure called with a syntax similar
+          to an assignment to a variable. *)
+
 (** Expressions. Parametric on the type of literals. *)
 type expr_desc =
   | E_Literal of literal
@@ -123,7 +143,7 @@ type expr_desc =
   | E_ATC of expr * ty  (** Asserted type conversion *)
   | E_Binop of binop * expr * expr
   | E_Unop of unop * expr
-  | E_Call of identifier * expr list * (identifier * expr) list
+  | E_Call of call
   | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
   | E_GetArray of expr * expr
@@ -172,6 +192,13 @@ and slice =
       (** [Slice_Start (factor, length)] denotes the slice starting at [factor
           * length] of length [n]. *)
 (** All position mentionned above are included. *)
+
+and call = {
+  name : identifier;
+  params : (identifier * expr) list;
+  args : expr list;
+  call_type : subprogram_type;
+}
 (* -------------------------------------------------------------------------
 
                                   Types
@@ -294,7 +321,7 @@ type stmt_desc =
   | S_Seq of stmt * stmt
   | S_Decl of local_decl_keyword * local_decl_item * expr option
   | S_Assign of lexpr * expr
-  | S_Call of identifier * expr list * (identifier * expr) list
+  | S_Call of call
   | S_Return of expr option
   | S_Cond of expr * stmt * stmt
   | S_Case of expr * case_alt list
@@ -338,26 +365,6 @@ and catcher = identifier option * ty * stmt
    ------------------------------------------------------------------------- *)
 
 (** {2 Top-level declarations} *)
-
-type subprogram_type =
-  | ST_Procedure
-      (** A procedure is a subprogram without return type, called from a
-          statement. *)
-  | ST_Function
-      (** A function is a subprogram with a return type, called from an
-          expression. *)
-  | ST_Getter
-      (** A getter is a special function called with a syntax similar to
-          slices. *)
-  | ST_EmptyGetter
-      (** An empty getter is a special function called with a syntax similar to
-          a variable. *)
-  | ST_Setter
-      (** A setter is a special procedure called with a syntax similar to slice
-          assignment. *)
-  | ST_EmptySetter
-      (** An empty setter is a special procedure called with a syntax similar
-          to an assignment to a variable. *)
 
 type subprogram_body = SB_ASL of stmt | SB_Primitive
 

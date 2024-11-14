@@ -51,6 +51,7 @@
 
 open AST
 open ASTUtils
+open Desugar
 
 let version = V1
 
@@ -260,7 +261,8 @@ let make_expr(sub_expr) ==
     | e1=sub_expr; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
-    | x=IDENTIFIER; args=plist(expr); ~=nargs;                    < E_Call               >
+    | name=IDENTIFIER; args=plist(expr); params=nargs;
+      { E_Call { name; args; params; call_type = ST_Function } }
     | e=sub_expr; ~=slices;                                       < E_Slice              >
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
@@ -324,8 +326,7 @@ let fields == braced(tclist(typed_identifier))
 let fields_opt == { [] } | fields
 
 (* Slices *)
-let named_slices == bracketed(nclist(slice))
-let slices == bracketed( clist(slice))
+let slices == bracketed(nclist(slice))
 let slice ==
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
@@ -336,9 +337,9 @@ let slice ==
 let bitfields_opt == loption(bitfields)
 let bitfields == braced(tclist(bitfield))
 let bitfield ==
-  | s=named_slices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
-  | s=named_slices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
-  | s=named_slices ; x=IDENTIFIER ; ty=as_ty     ;  { BitField_Type   (x, s, ty) }
+  | s=slices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
+  | s=slices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
+  | s=slices ; x=IDENTIFIER ; ty=as_ty     ;  { BitField_Type   (x, s, ty) }
 
 (* Also called ty in grammar.bnf *)
 let ty :=
@@ -462,10 +463,18 @@ let stmt ==
     | terminated_by(SEMI_COLON,
       | PASS; pass
       | RETURN; ~=ioption(expr);                             < S_Return >
-      | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
+      | name=IDENTIFIER; args=plist(expr); params=nargs;
+        { S_Call { name; args; params; call_type = ST_Procedure } }
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
+      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); EQ; rhs=expr;
+        { desugar_setter call [] rhs }
+      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); DOT; fld=IDENTIFIER; EQ; rhs=expr;
+        { desugar_setter call [fld] rhs }
+      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); DOT;
+        flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
+        { desugar_setter call flds rhs }
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
       | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }
@@ -502,7 +511,6 @@ let subtype_opt == option(subtype)
 let opt_typed_identifier == pair(IDENTIFIER, ty_opt)
 let return_type == ARROW; ty
 let params_opt == { [] } | braced(clist(opt_typed_identifier))
-let access_args == bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
 let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
@@ -542,14 +550,14 @@ let decl ==
         }
     (* End *)
     (* Begin getter *)
-    | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; ~=return_type;
+    | GETTER; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type;
         ~=func_body;
         {
           D_Func
             {
               name;
               parameters = params_opt;
-              args = access_args;
+              args = func_args;
               return_type = Some return_type;
               body = SB_ASL func_body;
               subprogram_type = ST_Getter;
@@ -557,48 +565,18 @@ let decl ==
             }
         }
     (* End *)
-    (* Begin no_arg_getter *)
-    | GETTER; name=IDENTIFIER; ret=return_type; ~=func_body;
-        {
-          D_Func
-            {
-              name;
-              parameters = [];
-              args = [];
-              return_type = Some ret;
-              body = SB_ASL func_body;
-              subprogram_type = ST_EmptyGetter;
-              recurse_limit = None;
-            }
-        }
-    (* End *)
     (* Begin setter *)
-    | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args; EQ; v=typed_identifier;
+    | SETTER; name=IDENTIFIER; ~=params_opt; ~=func_args; EQ; v=typed_identifier;
         ~=func_body;
         {
           D_Func
             {
               name;
               parameters = params_opt;
-              args = v :: access_args;
+              args = v :: func_args;
               return_type = None;
               body = SB_ASL func_body;
               subprogram_type = ST_Setter;
-              recurse_limit = None;
-            }
-        }
-    (* End *)
-    (* Begin no_arg_setter *)
-    | SETTER; name=IDENTIFIER; EQ; v=typed_identifier; ~=func_body;
-        {
-          D_Func
-            {
-              name;
-              parameters = [];
-              args = [ v ];
-              return_type = None;
-              body = SB_ASL func_body;
-              subprogram_type = ST_EmptySetter;
               recurse_limit = None;
             }
         }

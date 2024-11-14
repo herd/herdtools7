@@ -47,6 +47,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \begin{itemize}
 \item Pass statements (see \secref{PassStatements})
 \item Assignment statements (see \secref{AssignmentStatements})
+\item Setter assignment statements (see \secref{SetterAssignmentStatements})
 \item Declaration statements (see \secref{DeclarationStatements})
 \item Sequencing statements (see \secref{SeuqncingStatements})
 \item Call statements (see \secref{CallStatements})
@@ -148,38 +149,14 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assignment \texttt{le = re}, that is, $\SAssign(\vle, \vre)$;
-  \item One of the following applies:
-  \begin{itemize}
-    \item All of the following apply (\textsc{setter}):
-    \begin{itemize}
-      \item reducing $(\tenv, \vle, \vre)$ to a setter call via \\ $\inlinesetter$ yields the statement $\news$
-      (indicating that the assignment corresponds to setter)\ProseOrTypeError;
-      \item $\newtenv$ is $\tenv$.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{non\_setter}):
-    \begin{itemize}
-      \item reducing $(\tenv, \vle, \vre)$ to a setter call via \\ $\inlinesetter$ yields $\None$
-            (indicating the assignment does not correspond to a setter);
-      \item annotating the right-hand-side expression $\vre$ in $\tenv$ yields $(\vtre, \vreone)$\ProseOrTypeError;
-      \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields $\vleone$\ProseOrTypeError;
-      \item $\news$ is the assignment \texttt{le1 = re1}, that is, $\SAssign(\vleone, \vreone)$;
-      \item $\newtenv$ is $\tenv$.
-    \end{itemize}
-
-  \end{itemize}
+  \item annotating the right-hand-side expression $\vre$ in $\tenv$ yields $(\vtre, \vreone)$\ProseOrTypeError;
+  \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields $\vleone$\ProseOrTypeError;
+  \item $\news$ is the assignment \texttt{le1 = re1}, that is, $\SAssign(\vleone, \vreone)$;
+  \item $\newtenv$ is $\tenv$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[setter]{
-  \inlinesetter(\tenv, \vle, \vre) \typearrow \langle \news \rangle \OrTypeError\\
-}{
-  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow (\news,\overname{\tenv}{\newtenv})
-}
-\end{mathpar}
-\begin{mathpar}
-\inferrule[non\_setter]{
-  \inlinesetter(\tenv, \vle, \vre) \typearrow \None \OrTypeError\\\\
+\inferrule{
   \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone) \OrTypeError\\\\
   \annotatelexpr{\tenv, \vle, \vtre} \typearrow \vleone \OrTypeError
 }{
@@ -279,6 +256,108 @@ We now define the evaluation of assigning from a subprogram call:
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssignCallBegin}{\EvalSAssignCallEnd}{../Interpreter.ml}
+
+\section{Setter Assignment Statements\label{sec:SetterAssignmentStatements}}
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\
+   & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tidentifier \parsesep \Plist{\Nexpr} \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+\end{flalign*}
+
+\subsubsection{ASTRule.DesugarSetter}
+\hypertarget{def-desugarsetter}{}
+The helper function
+\[
+\desugarsetter(
+  \overname{\identifier}{\name} \aslsep
+  \overname{\expr^*}{\args} \aslsep
+  \overname{\identifier^*}{\fields} \aslsep
+  \overname{\expr}{\rhs}) \aslto \overname{\stmt}{\news}
+\]
+builds a statement $\news$ from an assignment of expression $\rhs$ to a setter $\name$, called with arguments $\args$ and field accesses $\fields$.
+
+\begin{mathpar}
+\inferrule[empty]{
+  \fields \eqname \emptylist
+}{
+  \desugarsetter(\name, \args, \fields, \rhs)
+  \astarrow
+  \SCall(\name, [\rhs] \concat \args)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[singleton]{
+  \fields \eqname [\field] \\
+  \vx \in \Identifiers \text{ is fresh} \\\\
+  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \langle\ECall(\name, \args)\rangle) \\\\
+  \texttt{modify} \eqdef \SAssign(\LESetField(\LEVar(\vx), \field), \rhs) \\\\
+  \texttt{write} \eqdef \SCall(\name, [\EVar(\vx)] \concat \args)
+}{
+  \desugarsetter(\name, \args, \fields, \rhs)
+  \astarrow
+  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \texttt{write})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[multiple]{
+  \listlen{\fields} > 1 \\
+  \vx \in \Identifiers \text{ is fresh} \\\\
+  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \langle\ECall(\name, \args)\rangle) \\\\
+  \texttt{modify} \eqdef \SAssign(\LESetFields(\LEVar(\vx), \fields), \rhs) \\\\
+  \texttt{write} \eqdef \SCall(\name, [\EVar(\vx)] \concat \args)
+}{
+  \desugarsetter(\name, \args, \fields, \rhs)
+  \astarrow
+  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \texttt{write})
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.SSetterAssign}
+\begin{mathpar}
+\inferrule{
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+}{
+  \buildstmt(\overname{\Nstmt(
+    \Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Teq, \punnode{\Nexpr}, \Tsemicolon
+  )}{\vparsednode})
+  \\ \astarrow
+  \overname{\desugarsetter(\vx, \astversion{\vargs}, [], \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+}{
+  \buildstmt(\overname{\Nstmt(
+    \Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Tdot,
+    \Tidentifier(\vfield), \Teq, \punnode{\Nexpr}, \Tsemicolon
+  )}{\vparsednode})
+  \\ \astarrow
+  \overname{\desugarsetter(\vx, \astversion{\vargs}, [\vfield], \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \buildclist[\buildidentity](\vfields) \astarrow \vfieldasts
+}{
+  \buildstmt(\overname{\Nstmt(
+    \Tidentifier(\vx), \namednode{\vargs}{\Plist{\Nexpr}}, \Tdot,
+    \Tlbracket, \namednode{\vfields}{\Clisttwo{\Tidentifier}}, \Trbracket, \Teq, \punnode{\Nexpr}, \Tsemicolon
+  )}{\vparsednode})
+  \\ \astarrow
+  \overname{\desugarsetter(\vx, \astversion{\vargs}, \vfieldasts, \astof{\vexpr})}{\vastnode}
+}
+\end{mathpar}
+
+\subsection{Typing and semantics}
+As given by the applying the relevant rules to the desugared AST.
 
 \section{Declaration Statements\label{sec:DeclarationStatements}}
 \subsection{Syntax}

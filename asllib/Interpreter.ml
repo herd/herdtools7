@@ -485,8 +485,8 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, new_env) |: SemanticsRule.ESlice
     (* End *)
     (* Begin EvalECall *)
-    | E_Call (name, actual_args, params) ->
-        let**| ms, new_env = eval_call (to_pos e) name env actual_args params in
+    | E_Call { name; args; params } ->
+        let**| ms, new_env = eval_call (to_pos e) name env args params in
         let* v =
           match ms with
           | [ m ] -> m
@@ -933,9 +933,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSAssignCall *)
     | S_Assign
         ( { desc = LE_Destructuring les; _ },
-          { desc = E_Call (name, args, named_args); _ } )
+          { desc = E_Call { name; args; params }; _ } )
       when List.for_all lexpr_is_var les ->
-        let**| vms, env1 = eval_call (to_pos s) name env args named_args in
+        let**| vms, env1 = eval_call (to_pos s) name env args params in
         let**| new_env = protected_multi_assign s.version env1 s les vms in
         return_continue new_env |: SemanticsRule.SAssignCall
     (* End *)
@@ -971,8 +971,8 @@ module Make (B : Backend.S) (C : Config) = struct
         eval_stmt env1 s2 |: SemanticsRule.SSeq
     (* End *)
     (* Begin EvalSCall *)
-    | S_Call (name, args, named_args) ->
-        let**| returned, env' = eval_call (to_pos s) name env args named_args in
+    | S_Call { name; args; params } ->
+        let**| returned, env' = eval_call (to_pos s) name env args params in
         let () = assert (returned = []) in
         return_continue env' |: SemanticsRule.SCall
     (* End *)

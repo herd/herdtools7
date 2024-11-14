@@ -38,10 +38,9 @@ different views of a register.
 \subsection{Syntax}
 \begin{flalign*}
 \Nbitfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &\\
-\Nbitfield \derivesinline\ & \Nnamedslices \parsesep \Tidentifier &\\
-                  |\ & \Nnamedslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
-                  |\ & \Nnamedslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
-\Nnamedslices \derivesinline\ & \Tlbracket \parsesep \NClist{\Nslice} \parsesep \Trbracket &
+\Nbitfield \derivesinline\ & \Nslices \parsesep \Tidentifier &\\
+                  |\ & \Nslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
+                  |\ & \Nslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -80,8 +79,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[simple]{}{
-  \buildbitfields(\Nbitfield(\punnode{\Nnamedslices}, \Tidentifier(\vx))) \astarrow
-  \overname{\BitFieldSimple(\vx, \astof{\vnamedslices})}{\vastnode}
+  \buildbitfields(\Nbitfield(\punnode{\Nslices}, \Tidentifier(\vx))) \astarrow
+  \overname{\BitFieldSimple(\vx, \astof{\vslices})}{\vastnode}
 }
 \end{mathpar}
 
@@ -89,8 +88,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[nested]{}{
   {
     \begin{array}{r}
-      \buildbitfields(\Nbitfield(\punnode{\Nnamedslices}, \Tidentifier(\vx), \punnode{\Nbitfields})) \astarrow\\
-      \overname{\BitFieldNested(\vx, \astof{\vnamedslices}, \astof{\vbitfields})}{\vastnode}
+      \buildbitfields(\Nbitfield(\punnode{\Nslices}, \Tidentifier(\vx), \punnode{\Nbitfields})) \astarrow\\
+      \overname{\BitFieldNested(\vx, \astof{\vslices}, \astof{\vbitfields})}{\vastnode}
     \end{array}
   }
 }
@@ -100,27 +99,10 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[type]{}{
   {
     \begin{array}{r}
-      \buildbitfields(\Nbitfield(\punnode{\Nnamedslices}, \Tidentifier(\vx), \Tcolon, \punnode{\Nty})) \astarrow\\
-      \overname{\BitFieldType(\vx, \astof{\vnamedslices}, \astof{\tty})}{\vastnode}
+      \buildbitfields(\Nbitfield(\punnode{\Nslices}, \Tidentifier(\vx), \Tcolon, \punnode{\Nty})) \astarrow\\
+      \overname{\BitFieldType(\vx, \astof{\vslices}, \astof{\tty})}{\vastnode}
     \end{array}
   }
-}
-\end{mathpar}
-
-\subsubsection{ASTRule.NamedSlices\label{sec:ASTRule.NamedSlices}}
-\hypertarget{build-namedslices}{}
-The function
-\[
-  \buildnamedslices(\overname{\parsenode{\Nnamedslices}}{\vparsednode}) \;\aslto\; \overname{\slice^+}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule{
-  \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
-}{
-  \buildnamedslices(\Nnamedslices(\Tlbracket, \namednode{\vslices}{\NClist{\Nslice}}, \Trbracket)) \astarrow
-  \overname{\vsliceasts}{\vastnode}
 }
 \end{mathpar}
 

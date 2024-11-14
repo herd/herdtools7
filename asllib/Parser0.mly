@@ -355,7 +355,8 @@ let binop_expr(e, b) ==
   | annotated (
       | ~=literal_expression;                         < AST.E_Literal   >
       | ~=qualident;                                  < AST.E_Var       >
-      | ~=qualident; ~=pared(clist(expr)); ~=nargs;   < AST.E_Call      >
+      | name=qualident; args=pared(clist(expr)); params=nargs;
+        { AST.E_Call { name; args; params; call_type = ST_Function } }
       | ~=unop; ~=e;                                  < AST.E_Unop      >
       | e1=e; op=b; e2=e;                             { AST.E_Binop (op, e1, e2) }
       | ~=pared(nnclist(expr));                       < AST.E_Tuple     >
@@ -563,7 +564,8 @@ let simple_stmt_list == ~=nlist(simple_stmt); < ASTUtils.stmt_from_list >
 let simple_stmt ==
   | assignment_stmt
   | annotated ( terminated_by (SEMICOLON,
-    | ~=qualident; ~=pared(clist(expr)); ~=nargs; < AST.S_Call >
+    | name=qualident; args=pared(clist(expr)); params=nargs;
+      { AST.S_Call { name; args; params ; call_type = ST_Procedure } }
     | RETURN; ~=ioption(expr);                    < AST.S_Return >
     | ASSERT; ~=expr;                             < AST.S_Assert >
     | DEBUG; e=expr;                              { AST.S_Print { args = [ e ]; debug = true } }

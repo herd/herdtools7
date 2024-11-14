@@ -1,14 +1,9 @@
-getter g_no_args => integer
-begin
-  return 0;
-end;
-
-getter g0_bits[] => bits(4)
+getter g0_bits() => bits(4)
 begin
   return '1000';
 end;
 
-getter g1_bits[p: integer] => bits(4)
+getter g1_bits(p: integer) => bits(4)
 begin
   return '1000'[p, 2:0];
 end;

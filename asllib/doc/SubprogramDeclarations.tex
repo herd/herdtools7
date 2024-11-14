@@ -14,11 +14,9 @@ Subprogram declarations have no associated semantics.
 \begin{flalign*}
 \Ndecl  \derivesinline\ & \productionname{funcdecl}{func\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
 |\ & \productionname{proceduredecl}{procedure\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \productionname{getter}{getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
-|\ & \productionname{noarggetter}{no\_arg\_getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nreturntype \parsesep \Nfuncbody &\\
-|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Naccessargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
+|\ & \productionname{getter}{getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
+|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
     & \wrappedline\ \parsesep \Nfuncbody &\\
-|\ & \productionname{noargsetter}{no\_arg\_setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Teq \parsesep \Ntypedidentifier \parsesep \Nfuncbody&\\
 \end{flalign*}
 
 \begin{flalign*}
@@ -28,7 +26,6 @@ Subprogram declarations have no associated semantics.
 \Nfuncargs          \derivesinline\ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &\\
 \Nreturntype        \derivesinline\ & \Tarrow \parsesep \Nty &\\
 \Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-\Naccessargs        \derivesinline\ & \Tlbracket \parsesep \Clist{\Ntypedidentifier} \parsesep \Trbracket &\\
 \Nmaybeemptystmtlist \derivesinline\ & \emptysentence \;|\; \Nstmtlist &
 \end{flalign*}
 
@@ -56,8 +53,7 @@ Subprogram declarations have no associated semantics.
 \typedidentifier \derives\ & (\identifier, \ty) &\\
 \subprogrambody \derives\ & \SBASL(\stmt) \;|\; \SBPrimitive &\\
 \subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
-                |\  & \STGetter \;|\; \STEmptyGetter &\\
-                |\  & \STSetter \;|\; \STEmptySetter &
+                |\  & \STGetter \;|\; \STSetter &
 \end{flalign*}
 
 \subsubsection{ASTRule.GlobalDecl}
@@ -122,7 +118,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
     \begin{array}{r}
   \builddecl\left(\overname{\Ndecl\left(
     \begin{array}{l}
-      \Tgetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Naccessargs}, \\
+      \Tgetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \\
       \wrappedline\ \punnode{\Nreturntype}, \punnode{\Nfuncbody}
     \end{array}
       \right)}{\vparsednode}\right)
@@ -132,7 +128,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
     \begin{array}{rcl}
             \funcname &:& \name,\\
             \funcparameters &:& \astof{\vparamsopt},\\
-            \funcargs &:& \astof{\vaccessargs},\\
+            \funcargs &:& \astof{\vfuncargs},\\
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
             \funcsubprogramtype &:& \STGetter
@@ -144,35 +140,13 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\hypertarget{build-noarggetter}{}
-\begin{mathpar}
-\inferrule[no\_arg\_getter]{}{
-  \builddecl(\overname{\Ndecl(\Tgetter, \Tidentifier(\name), \punnode{\Nreturntype}, \punnode{\Nfuncbody})}{\vparsednode})
-  \astarrow \\
-  {
-    \overname{
-  \DFunc\left(\left\{
-    \begin{array}{rcl}
-            \funcname &:& \name,\\
-            \funcparameters &:& \emptylist,\\
-            \funcargs &:& \emptylist,\\
-            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
-            \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
-            \funcsubprogramtype &:& \STEmptyGetter
-    \end{array}
-  \right\}\right)
-    }{\vastnode}
-  }
-}
-\end{mathpar}
-
 \hypertarget{build-setter}{}
 \begin{mathpar}
 \inferrule[setter]{}{
   {
       \builddecl\left(\overname{\Ndecl\left(
         \begin{array}{r}
-          \Tsetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Naccessargs}, \Teq, \\
+          \Tsetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \Teq, \\
    \wrappedline\ \namednode{\vv}{\Ntypedidentifier}, \punnode{\Nfuncbody}
         \end{array}
    \right)}{\vparsednode}\right)
@@ -184,32 +158,10 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
     \begin{array}{rcl}
             \funcname &:& \name,\\
             \funcparameters &:& \astof{\vparamsopt},\\
-            \funcargs &:& [\vv] \concat \astof{\vaccessargs},\\
+            \funcargs &:& [\vv] \concat \astof{\vfuncargs},\\
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \None,\\
             \funcsubprogramtype &:& \STSetter
-    \end{array}
-  \right\}\right)
-    }{\vastnode}
-  }
-}
-\end{mathpar}
-
-\hypertarget{build-noargsetter}{}
-\begin{mathpar}
-\inferrule[no\_arg\_setter]{}{
-  \builddecl(\overname{\Ndecl(\Tsetter, \Tidentifier(\name), \Teq, \namednode{\vv}{\Ntypedidentifier}, \punnode{\Nfuncbody})}{\vparsednode})
-  \astarrow \\
-  {
-    \overname{
-  \DFunc\left(\left\{
-    \begin{array}{rcl}
-            \funcname &:& \name,\\
-            \funcparameters &:& \emptylist,\\
-            \funcargs &:& [\vv],\\
-            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
-            \funcreturntype &:& \None,\\
-            \funcsubprogramtype &:& \STEmptySetter
     \end{array}
   \right\}\right)
     }{\vastnode}
@@ -288,24 +240,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \buildclist[\Nopttypedidentifier](\ids) \astarrow \astversion{\ids}
 }{
   \buildparamsopt(\overname{\Nparamsopt(\Tlbrace, \namednode{\ids}{\Clist{\Nopttypedidentifier}}, \Trbrace)}{\vparsednode}) \astarrow
-  \overname{\astversion{\ids}}{\vastnode}
-}
-\end{mathpar}
-
-\subsubsection{ASTRule.AccessArgs \label{sec:ASTRule.AccessArgs}}
-\hypertarget{build-accessargs}{}
-The function
-\[
-\buildaccessargs(\overname{\parsenode{\Naccessargs}}{\vparsednode}) \aslto
-  \overname{(\identifier\times\ty)^*}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule{
-  \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
-}{
-  \buildaccessargs(\overname{\Naccessargs(\Tlbracket, \namednode{\ids}{\Clist{\Ntypedidentifier}}, \Trbracket)}{\vparsednode}) \astarrow
   \overname{\astversion{\ids}}{\vastnode}
 }
 \end{mathpar}
@@ -1501,8 +1435,7 @@ returning $\True$ if this condition holds and a type error otherwise.
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item checking that the subprogram type of $\funcsig$ is one of $\STSetter$ and \\ $\STEmptySetter$
-        has one of two outcomes:
+  \item checking that the subprogram type of $\funcsig$ is $\STSetter$ has one of two outcomes:
         $\False$, which satisfies the premise;
         or $\True$, which short-circuits the entire rule
         (since the subprogram is not any kind of setter and no getter is required);
@@ -1511,9 +1444,7 @@ All of the following apply:
         the \tail\ is a list with arguments that have the types $\argtypes$;
   \item applying $\subprogramforname$ to look up $\tenv$ for a subprogram with the name given by $\funcsig$ (that is, $\funcsig.\funcname$)
         yields a subprogram definition AST node $\funcsigp$\ProseOrTypeError;
-  \item define $\watendgettertype$ as $\STGetter$ if $\funcsig.\subprogramtype$ is \\ $\STSetter$ and
-        $\STEmptyGetter$ otherwise (meaning, $\funcsig.\subprogramtype$ is $\STEmptySetter$);
-  \item checking that $\watendgettertype$ is the same as $\funcsigp.\funcsubprogramtype$ \\ yields $\True$\ProseOrTypeError;
+  \item checking that $\funcsigp.\funcsubprogramtype$ is $\STGetter$ yields $\True$\ProseOrTypeError;
   \item define $\argtypesp$ as the list of types appearing in the signature of $\funcsigp$ (that is, in $\funcsigp.\funcargs$);
   \item checking, for each index $\vi$ in the indices for $\argtypes$, that the type at $\argtypes[\vi]$ and the type at $\argtypesp[\vi]$
         are \typeequivalent\ yields $\True$\ProseOrTypeError;
@@ -1524,22 +1455,14 @@ All of the following apply:
 \CodeSubsection{\CheckSetterHasGetterBegin}{\CheckSetterHasGetterEnd}{../Typing.ml}
 
 \subsection{Formally}
-We define the helper function
-\newcommand\matchsettertype[0]{\hyperlink{def-matchsettertype}{\texttt{match\_setter\_type}}}
-\hypertarget{def-matchsettertype}{}
-\[
-  \matchsettertype \triangleq [\STSetter \mapsto \STGetter, \STEmptySetter \mapsto \STEmptyGetter] \enspace.
-\]
-
 \begin{mathpar}
 \inferrule{
-  \issetter \eqdef \funcsig.\subprogramtype \in \{ \STSetter, \STEmptySetter\}\\
+  \issetter \eqdef \funcsig.\subprogramtype = \STSetter\\
   \booltrans{\issetter} \booltransarrow \False \terminateas \True\\\\
   \funcsig.\funcargs \eqname (\Ignore, \rettype) \concat \vargs\\
   \argtypes \eqdef [(\Ignore, \vt) \in \vargs: \vt]\\
   \subprogramforname(\tenv, \funcsig.\funcname, \argtypes) \typearrow (\Ignore, \Ignore, \funcsigp) \OrTypeError\\\\
-  \matchsettertype(\funcsig.\funcsubprogramtype) \typearrow \watendgettertype\\
-  \checktrans{\watendgettertype = \funcsigp.\funcsubprogramtype}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\
+  \checktrans{\funcsigp.\funcsubprogramtype = \STGetter}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\
   \argtypesp \eqdef [(\Ignore, \vt) \in \funcsigp.\funcargs : \vt]\\
   \vi\in\listrange(\argtypes): \typeequal(\argtypes[\vi], \argtypesp[\vi]) \typearrow \vb_\vi \OrTypeError\\\\
   \vi\in\listrange(\argtypes): \checktrans{\vb_\vi}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\

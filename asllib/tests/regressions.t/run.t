@@ -253,7 +253,7 @@ Parameterized integers:
   $ aslref record-getfields.asl
 
   $ aslref integer-accessed-bitvector.asl
-  File integer-accessed-bitvector.asl, line 4, characters 2 to 6:
+  File integer-accessed-bitvector.asl, line 4, characters 2 to 3:
   ASL Typing error: a subtype of bits(-) was expected, provided integer.
   [1]
 
@@ -375,48 +375,16 @@ Base values
     determined since it consists of N.
   [1]
 
-Empty getters/setters
-  $ aslref empty-getter-called-with-slices.asl
-  File empty-getter-called-with-slices.asl, line 8, characters 10 to 14:
-  ASL Static Error: cannot slice with empty slicing operator. This might also
-    be due to an incorrect getter/setter invocation.
-  [1]
-  $ aslref empty-getter-called-with-slices-2.asl
-  File empty-getter-called-with-slices-2.asl, line 8, characters 10 to 14:
-  ASL Typing error: boolean does not subtype any of: integer, bits(-).
-  [1]
+Getters/setters
   $ aslref nonempty-getter-called-without-slices.asl
   File nonempty-getter-called-without-slices.asl, line 8, characters 10 to 12:
   ASL Error: Undefined identifier: 'f1'
-  [1]
-  $ aslref empty-setter-nonempty-getter.asl
-  File empty-setter-nonempty-getter.asl, line 6, character 0 to line 9,
-    character 4:
-  ASL Typing error: setter "f1" does not have a corresponding getter of
-    signature  -> integer.
-  [1]
-  $ aslref nonempty-setter-empty-getter.asl
-  File nonempty-setter-empty-getter.asl, line 6, character 0 to line 9,
-    character 4:
-  ASL Typing error: setter "f1" does not have a corresponding getter of
-    signature  -> integer.
-  [1]
-  $ aslref empty-setter-called-with-slices.asl
-  File empty-setter-called-with-slices.asl, line 13, characters 2 to 6:
-  ASL Static Error: cannot slice with empty slicing operator. This might also
-    be due to an incorrect getter/setter invocation.
   [1]
   $ aslref nonempty-setter-called-without-slices.asl
   File nonempty-setter-called-without-slices.asl, line 13, characters 2 to 4:
   ASL Error: Undefined identifier: 'f1'
   [1]
   $ aslref setter_subfield.asl
-  $ aslref setter_sub_tuple.asl
-  File setter_sub_tuple.asl, line 21, characters 15 to 16:
-  ASL Typing error: a subtype of integer {0} was expected, provided integer.
-  [1]
-  $ aslref setter_sub_tuple_02.asl
-  $ aslref setter_subslice.asl
   $ aslref getter_subfield.asl
   $ aslref getter_sub_tuple.asl
   $ aslref getter_subslice.asl

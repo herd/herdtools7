@@ -393,7 +393,6 @@
 \newcommand\Nfuncargs[0]{\hyperlink{def-nfuncargs}{\nonterminal{func\_args}}}
 \newcommand\Nreturntype[0]{\hyperlink{def-nreturntype}{\nonterminal{return\_type}}}
 \newcommand\Nfuncbody[0]{\hyperlink{def-nfuncbody}{\nonterminal{func\_body}}}
-\newcommand\Naccessargs[0]{\hyperlink{def-naccessargs}{\nonterminal{access\_args}}}
 \newcommand\Ntypedidentifier[0]{\hyperlink{def-ntypedidentifier}{\nonterminal{typed\_identifier}}}
 \newcommand\Nasty[0]{\hyperlink{def-nasty}{\nonterminal{as\_ty}}}
 \newcommand\Ntydecl[0]{\hyperlink{def-ntydecl}{\nonterminal{ty\_decl}}}
@@ -425,7 +424,6 @@
 \newcommand\Nuntypeddeclitem[0]{\hyperlink{def-nuntypeddeclitem}{\nonterminal{untyped\_decl\_item}}}
 \newcommand\Nslice[0]{\hyperlink{def-nslice}{\nonterminal{slice}}}
 \newcommand\Nslices[0]{\hyperlink{def-nslices}{\nonterminal{slices}}}
-\newcommand\Nnamedslices[0]{\hyperlink{def-nnslices}{\nonterminal{named\_slices}}}
 \newcommand\Nintconstraints[0]{\hyperlink{def-nintconstraints}{\nonterminal{int\_constraints}}}
 \newcommand\Nintconstraintsopt[0]{\hyperlink{def-nintconstraintsopt}{\nonterminal{int\_constraints\_opt}}}
 \newcommand\Nintconstraint[0]{\hyperlink{def-nintconstraint}{\nonterminal{int\_constraint}}}
@@ -655,9 +653,7 @@
 
 \newcommand\STFunction[0]{\hyperlink{ast-stfunction}{\texttt{ST\_Function}}}
 \newcommand\STGetter[0]{\hyperlink{ast-stgetter}{\texttt{ST\_Getter}}}
-\newcommand\STEmptyGetter[0]{\hyperlink{ast-stemptygetter}{\texttt{ST\_EmptyGetter}}}
 \newcommand\STSetter[0]{\hyperlink{ast-stsetter}{\texttt{ST\_Setter}}}
-\newcommand\STEmptySetter[0]{\hyperlink{ast-stemptysetter}{\texttt{ST\_EmptySetter}}}
 \newcommand\STProcedure[0]{\hyperlink{ast-stprocedure}{\texttt{ST\_Procedure}}}
 
 \newcommand\DFunc[0]{\hyperlink{ast-dfunc}{\texttt{D\_Func}}}
@@ -684,12 +680,12 @@
 \newcommand\builddecl[0]{\hyperlink{build-decl}{\textfunc{build\_decl}}}
 \newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}}
 \newcommand\builduntypeddeclitem[0]{\hyperlink{build-untypeddeclitem}{\textfunc{build\_untyped\_decl\_item}}}
+\newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}}
 \newcommand\buildstmt[0]{\hyperlink{build-stmt}{\textfunc{build\_stmt}}}
 \newcommand\buildexpr[0]{\hyperlink{build-expr}{\textfunc{build\_expr}}}
 \newcommand\buildlexpr[0]{\hyperlink{build-lexpr}{\textfunc{build\_lexpr}}}
 \newcommand\buildlexpratom[0]{\hyperlink{build-lexpratom}{\textfunc{build\_lexpr\_atom}}}
 \newcommand\buildparamsopt[0]{\hyperlink{build-paramsopt}{\textfunc{build\_params\_opt}}}
-\newcommand\buildaccessargs[0]{\hyperlink{build-accessargs}{\textfunc{build\_access\_args}}}
 \newcommand\buildfuncargs[0]{\hyperlink{build-funcargs}{\textfunc{build\_func\_args}}}
 \newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textfunc{build\_return\_type}}}
 \newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}}
@@ -1356,8 +1352,6 @@
 \newcommand\disjointslicestopositions[0]{\hyperlink{def-disjointslicestopositions}{\textfunc{disjoint\_slices\_to\_positions}}}
 \newcommand\bitfieldslicetopositions[0]{\hyperlink{def-bitfieldslicetopositions}{\textfunc{bitfield\_slice\_to\_positions}}}
 \newcommand\checkpositionsinwidth[0]{\hyperlink{def-checkpositionsinwidth}{\textfunc{check\_positions\_in\_width}}}
-\newcommand\shouldslicesreducetocall[0]{\tododefine{should\_slices\_reduce\_to\_call}}
-\newcommand\shouldreducetocall[0]{\tododefine{should\_reduce\_to\_call}}
 \newcommand\checkdisjointslices[0]{\hyperlink{def-checkdisjointslices}{\textfunc{check\_disjoint\_slices}}}
 \newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\textfunc{annotate\_type}}(#1)}
 \newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\textfunc{annotate\_constraint}}}
@@ -1373,7 +1367,6 @@
 \newcommand\annotatelocaldeclitem[1]{\hyperlink{def-annotatelocaldeclitem}{\textfunc{annotate\_local\_decl\_item}}(#1)}
 \newcommand\annotatestmt[0]{\hyperlink{def-annotatestmt}{\textfunc{annotate\_stmt}}}
 \newcommand\annotateblock[1]{\hyperlink{def-annotateblock}{\textfunc{annotate\_block}}(#1)}
-\newcommand\inlinesetter[0]{\tododefine{setter\_should\_reduce\_to\_call\_s}}
 \newcommand\annotatecall[0]{\hyperlink{def-annotatecall}{\textfunc{annotate\_call}}}
 \newcommand\annotatecallargtyped[0]{\hyperlink{def-annotatecallargtyped}{\textfunc{annotate\_call\_arg\_typed}}}
 \newcommand\annotateparameterdefining[0]{\hyperlink{def-annotateparameterdefining}{\textfunc{annotate\_parameter\_defining}}}
@@ -1420,7 +1413,6 @@
 \newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\textfunc{annotate\_bitfield}}}
 \newcommand\annotatebitfields[0]{\hyperlink{def-annotatebitfields}{\textfunc{annotate\_bitfields}}}
 \newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\textfunc{check\_no\_duplicates}}}
-\newcommand\reduceslicestocall[0]{\hyperlink{def-reduceslicestocall}{\textfunc{reduce\_slices\_to\_call}}}
 \newcommand\typeofarraylength[0]{\hyperlink{def-typeofarraylength}{\textfunc{type\_of\_array\_length}}}
 \newcommand\addlocal[0]{\hyperlink{def-addlocal}{\textfunc{add\_local}}}
 \newcommand\declaretype[0]{\hyperlink{def-declaretype}{\textfunc{declare\_type}}}
@@ -1869,6 +1861,7 @@
 \newcommand\rettyone[0]{\texttt{ret\_ty1}}
 \newcommand\rettyopt[0]{\texttt{ret\_ty\_opt}}
 \newcommand\rettype[0]{\texttt{ret\_type}}
+\newcommand\rhs[0]{\texttt{rhs}}
 \newcommand\rid[0]{\texttt{rid}}
 \newcommand\rmarray[0]{\texttt{rm\_array}}
 \newcommand\rmrecord[0]{\texttt{rm\_record}}
@@ -1943,7 +1936,6 @@
 \newcommand\useset[0]{\texttt{use\_set}}
 \newcommand\va[0]{\texttt{a}}
 \newcommand\vacc[0]{\texttt{acc}}
-\newcommand\vaccessargs[0]{\texttt{access\_args}}
 \newcommand\vad[0]{\texttt{ad}}
 \newcommand\vdeclx[0]{\texttt{decl\_x}}
 \newcommand\vadecls[0]{\texttt{adecls}}
@@ -2162,7 +2154,6 @@
 \newcommand\vmstwo[0]{\texttt{vms2}}
 \newcommand\vmtwo[0]{\texttt{m2}}
 \newcommand\vn[0]{\texttt{n}}
-\newcommand\vnamedslices[0]{\texttt{named\_slices}}
 \newcommand\vnames[0]{\texttt{name\_s}}
 \newcommand\vnamess[0]{\texttt{names\_s}}
 \newcommand\vnamest[0]{\texttt{names\_t}}
@@ -2336,7 +2327,6 @@
 \newcommand\vzs[0]{\texttt{zs}}
 \newcommand\vztwo[0]{\texttt{z2}}
 \newcommand\wantedtindex[0]{\texttt{wanted\_t\_index}}
-\newcommand\watendgettertype[0]{\texttt{wanted\_getter\_type}}
 \newcommand\wid[0]{\texttt{wid}}
 \newcommand\width[0]{\texttt{width}}
 \newcommand\widthp[0]{\texttt{width'}}
