@@ -49,6 +49,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \item Assignment statements (see \secref{AssignmentStatements})
 \item Setter assignment statements (see \secref{SetterAssignmentStatements})
 \item Declaration statements (see \secref{DeclarationStatements})
+\item Declaration statements with an elided parameter (see \secref{DeclarationStatementsElidedParameter})
 \item Sequencing statements (see \secref{SeuqncingStatements})
 \item Call statements (see \secref{CallStatements})
 \item Conditional statements (see \secref{ConditionalStatements})
@@ -377,7 +378,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \end{mathpar}
 
 \subsection{Typing and semantics}
-As given by the applying the relevant rules to the desugared AST.
+As given by applying the relevant rules to the desugared AST.
 
 \section{Declaration Statements\label{sec:DeclarationStatements}}
 \subsection{Syntax}
@@ -694,6 +695,133 @@ One of the following applies:
 }
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
+
+\section{Declaration statements with an elided parameter \label{DeclarationStatementsElidedParameter}}
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nstmt \derivesinline\
+   & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+\end{flalign*}
+
+\begin{flalign*}
+\Nelidedparamcall \derivesinline\
+     & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \Plist{\Nexpr} &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr}&
+\end{flalign*}
+
+\subsubsection{ASTRule.ElidedParamCall}
+\hypertarget{build-elided-param-call}{}
+The helper function $\buildelidedparamcall$ builds a $\call$ from a parsed $\Nelidedparamcall$.
+
+\begin{mathpar}
+\inferrule{
+  \buildcall(\Ncall(\Tidentifier(\id), \vargs))
+  \astarrow \vastnode
+}{
+  {
+    \begin{array}{l}
+      \buildelidedparamcall(\Nelidedparamcall \\
+        \qquad \qquad (\Tidentifier(\id), \Tlbrace, \Trbrace, \namednode{\vargs}{\Plist{\Nexpr}}))
+      \astarrow \vastnode
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \buildcall(\Ncall(\Tidentifier(\id), \Tlbrace, \vparams, \Trbrace))
+  \astarrow \vastnode
+}{
+  {
+    \begin{array}{l}
+      \buildelidedparamcall(\Nelidedparamcall \\
+        \qquad \qquad (\Tidentifier(\id), \Tlbrace, \Tcomma, \namednode{\vparams}{\NClist{\Nexpr}}, \Trbrace))
+        \astarrow \vastnode
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \buildcall(\Ncall(\Tidentifier(\id), \Tlbrace, \vparams, \Trbrace, \vargs))
+  \astarrow \vastnode
+}{
+  {
+    \begin{array}{l}
+    \buildelidedparamcall (\Nelidedparamcall \\
+      \qquad \qquad (\Tidentifier(\id), \Tlbrace, \Tcomma, \namednode{\vparams}{\NClist{\Nexpr}}, \Trbrace, \namednode{\vargs}{\Plist{\Nexpr}}))
+      \astarrow \vastnode
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.DesugarElidedParameter}
+\hypertarget{def-desugarelidedparameter}{}
+The helper function
+\[
+\desugarelidedparameter(
+  \overname{\localdeclkeyword}{\ldk} \aslsep
+  \overname{\localdeclitem}{\ldi} \aslsep
+  \overname{\call}{\vcall})
+\aslto \overname{\stmt}{\news}
+\cup\ \{\ParseError\}
+\]
+builds a declaration statement $\news$ from an assignment of the call $\vcall$ to the left-hand side $\ldi$ with keyword $\ldk$, where the call has an elided parameter.
+Otherwise, the result is a parse error.
+
+\begin{mathpar}
+\inferrule{
+  \ldi \eqname \LDITyped(\Ignore, \TBits(\ve, \Ignore)) \;\terminateas \ParseError \\
+  \vcallp \eqdef \vcall[\callparams\mapsto [\ve] \concat \vcall.\callparams ]
+}{
+  \desugarelidedparameter(\ldk, \ldi, \vcall)
+  \astarrow
+  \SDecl(\ldk, \ldi, \ECall(\vcallp))
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.ElidedParamDecl}
+\begin{mathpar}
+\inferrule{
+  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
+  \desugarelidedparameter(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vcall}) \astarrow \vastnode
+}{
+  {
+    \begin{array}{l}
+    \buildstmt(\Nstmt \\
+    \qquad (\punnode{\Nlocaldeclkeyword}, \punnode{\Ndeclitem}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow \vastnode
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
+  \desugarelidedparameter(\LDKVar, \astof{\vdeclitem}, \astversion{\vcall}) \astarrow \vastnode
+}{
+  {
+    \begin{array}{l}
+    \buildstmt(\Nstmt \\
+    \qquad (\Tvar, \punnode{\Ndeclitem}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow \vastnode
+    \end{array}
+  }
+}
+\end{mathpar}
+
+
+% \Nstmt \derivesinline\
+%    & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+% |\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+
+\subsection{Typing and semantics}
+As given by the applying the relevant rules to the desugared AST (see \secref{DeclarationStatements}).
 
 \section{Sequencing Statements\label{sec:SeuqncingStatements}}
 \subsection{Syntax}
