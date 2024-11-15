@@ -409,9 +409,9 @@ module StaticBackend = struct
     let error_handling_time = Error.Static
   end)
 
-  exception StaticEvaluationUnknown
-
-  let v_unknown_of_type ~eval_expr_sef:_ _ty = raise StaticEvaluationUnknown
+  let v_unknown_of_type ~eval_expr_sef:_ _ty =
+    Printf.eprintf "Cannot evaluate statically UNKNOWN.\n%!";
+    assert false
 end
 
 let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =

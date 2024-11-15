@@ -30,7 +30,6 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let invalid_expr e = fatal_from e (Error.InvalidExpr e)
-let unsupported_expr e = fatal_from e Error.(UnsupportedExpr (Static, e))
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
@@ -53,14 +52,6 @@ let rec list_mapi3 f i l1 l2 l3 =
       let r = f i a1 a2 a3 in
       r :: list_mapi3 f (i + 1) l1 l2 l3
   | _, _, _ -> invalid_arg "List.mapi3"
-
-(* Begin ReduceConstants *)
-let reduce_constants env e =
-  let open StaticInterpreter in
-  try static_eval env e
-  with SB.StaticEvaluationUnknown ->
-    unsupported_expr e |: TypingRule.ReduceConstants
-(* End *)
 
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
@@ -415,7 +406,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       for each bit position of each bitfield slice in [slices]. *)
   let to_singles env =
     let eval e =
-      match reduce_constants env e with
+      match StaticInterpreter.static_eval env e with
       | L_Int z -> Z.to_int z
       | _ -> raise NoSingleField
     in
@@ -495,7 +486,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let get_bitvector_const_width loc env t =
     let e_width = get_bitvector_width loc env t in
-    match reduce_constants env e_width with
+    match StaticInterpreter.static_eval env e_width with
     | L_Int z -> Z.to_int z
     | _ -> assert false
 
@@ -775,7 +766,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Some x -> fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
     in
     let width =
-      let v = reduce_constants env e_width in
+      let v = StaticInterpreter.static_eval env e_width in
       match v with L_Int i -> Z.to_int i | _ -> assert false
     in
     List.map (annotate_bitfield ~loc env width) bitfields
@@ -2280,7 +2271,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               | LDK_Let | LDK_Var -> env1
               | LDK_Constant -> (
                   try
-                    let v = reduce_constants env1 e in
+                    let v = StaticInterpreter.static_eval env1 e in
                     declare_local_constant env1 v ldi1
                   with Error.(ASLException _) -> env1)
             in
@@ -2912,7 +2903,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let try_add_global_constant name env e =
     try
-      let v = reduce_constants env e in
+      let v = StaticInterpreter.static_eval env e in
       { env with global = add_global_constant name v env.global }
     with Error.(ASLException { desc = UnsupportedExpr _; _ }) -> env
 

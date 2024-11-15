@@ -188,17 +188,9 @@ module Domain = struct
 
   (* Begin NormalizeToInt *)
   let eval (env : env) (e : expr) =
-    let v =
-      try StaticInterpreter.static_eval env e
-      with Native.StaticBackend.StaticEvaluationUnknown ->
-        raise StaticEvaluationTop
-    in
-    match v with
-    | L_Int i -> i
-    | _ ->
-        failwith
-          "Type error? Cannot use an expression that is not an int in a \
-           constraint."
+    match StaticModel.reduce_to_z_opt env e with
+    | None -> raise StaticEvaluationTop
+    | Some i -> i
   (* End *)
 
   (* Begin ConstraintToIntSet *)

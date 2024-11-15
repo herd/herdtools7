@@ -36,6 +36,14 @@ end
 module SB = Native.StaticBackend
 module SI = Interpreter.Make (Native.StaticBackend) (InterpConf)
 
+let eval_from ~loc env e =
+  try SI.eval_expr env e
+  with
+  | Error.(ASLException { pos_start; pos_end; desc; _ })
+  when pos_start == dummy_pos && pos_end == dummy_pos
+  ->
+    Error.fatal_from loc desc
+
 let static_eval (senv : SEnv.env) (e : expr) : literal =
   let env =
     let open SI.IEnv in
@@ -49,16 +57,7 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
     in
     { global; local }
   in
-  let res =
-    try SI.eval_expr env e with
-    | Error.(ASLException { desc = UndefinedIdentifier x; _ })
-      when not (SEnv.is_undefined x senv) ->
-        raise SB.StaticEvaluationUnknown
-    | Error.(ASLException { pos_start; pos_end; desc; _ })
-      when pos_start == dummy_pos && pos_end == dummy_pos ->
-        Error.fatal_from e desc
-  in
-  match res with
+  match eval_from ~loc:e env e with
   | SI.Normal (Native.NV_Literal l, _env) ->
       l |: Instrumentation.TypingRule.StaticEval
   | SI.Normal _ | SI.Throwing _ ->
