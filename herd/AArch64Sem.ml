@@ -152,9 +152,16 @@ module Make
 
       let mk_fault a dir annot ii ft msg =
         let fh = has_handler ii in
+        let is_sync_exc_entry = match ft with
+          | Some FaultType.AArch64.TagCheck ->
+            (C.variant Variant.MemTag)
+            && ((dir = Dir.R && (C.mte_precision = Precision.Synchronous
+                || C.mte_precision = Precision.Asymmetric))
+              || (dir = Dir.W && C.mte_precision = Precision.Synchronous))
+          | _ -> true in
         let loc = Misc.map_opt (fun a -> A.Location_global a) a in
         M.mk_singleton_es
-          (Act.Fault (ii,loc,dir,annot,fh,ft,msg)) ii
+          (Act.Fault (ii,loc,dir,annot,fh || is_sync_exc_entry,ft,msg)) ii
 
       let read_reg is_data r ii = match r with
       | AArch64.ZR -> M.unitT V.zero
