@@ -169,3 +169,5 @@ C-LB-LRR+R-A+R-A+OB-O+OB-OB-BPF Forbidden
 C-LB-LWR+R-A+OB-OB-BPF Forbidden
 2+2W+release+fence Allowed
 Z6.3+fence+fence+acquire Forbidden
+amo-sequence-1 Forbidden
+amo-sequence-2 Forbidden
