@@ -203,6 +203,7 @@ let () =
       let sharelocks = !sharelocks
       let delay = !delay
       let carch = !carch
+      let variant _ = false (* No variant for kernel tests *)
 (* tar stuff *)
       let tarname = KOption.get_tar ()
     end in

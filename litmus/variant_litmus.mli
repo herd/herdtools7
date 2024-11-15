@@ -23,6 +23,7 @@ type t =
   | Telechat (* Telechat idiosyncrasies *)
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
+  | NoInit (* Do not initialise variables *)
 
 val tags : string list
 val parse : string -> t option

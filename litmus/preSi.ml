@@ -68,11 +68,17 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
 
-    module Insert =
+(* Non valid mode for presi *)  
+  let () =
+    if Cfg.variant Variant_litmus.NoInit then
+      Warn.user_error "Switches `-variant NoInit` and `-mode (presi|kvm)` are not compatible"
+        
+  module Insert =
       ObjUtil.Insert
         (struct
           let sysarch = Cfg.sysarch
         end)
+
 (* MacOS has no affinity control *)
     let do_affinity =
       match Cfg.affinity with

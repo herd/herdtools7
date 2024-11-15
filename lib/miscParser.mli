@@ -70,6 +70,10 @@ val dump_state_atom :
   ('loc -> bool) ->
   ('loc -> string) -> ('v -> string) -> ('loc * (TestType.t * 'v)) -> string
 
+val dump_state_atom_no_init :
+  ('loc -> bool) ->
+  ('loc -> string) -> ('v -> string) -> ('loc * (TestType.t * 'v)) -> string
+
 (* Packed result *)
 type info = (string * string) list
 
