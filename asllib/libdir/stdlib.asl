@@ -190,13 +190,13 @@ end;
 func SignExtend {N,M} (x: bits(M)) => bits(N)
 begin
   assert N >= M;
-  return [Replicate{N-M}(x[M-1]), x];
+  return Replicate{N-M}(x[M-1]) :: x;
 end;
 
 func ZeroExtend {N,M} (x: bits(M)) => bits(N)
 begin
   assert N >= M;
-  return [Zeros{N - M}, x];
+  return Zeros{N - M} :: x;
 end;
 
 func Extend {N,M} (x: bits(M), unsigned: boolean) => bits(N)
@@ -219,7 +219,7 @@ end;
 // Treating input as an integer, align down to nearest multiple of 2^y.
 func AlignDown{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
-    return [x[N-1:y], Zeros{y}];
+    return x[N-1:y] :: Zeros{y};
 end;
 
 // Treating input as an integer, align up to nearest multiple of 2^y.
@@ -229,7 +229,7 @@ begin
   if IsZero(x[y-1:0]) then
     return x;
   else
-    return [x[N-1:y]+1, Zeros{y}];
+    return x[N-1:y]+1 :: Zeros{y};
   end;
 end;
 
@@ -242,7 +242,7 @@ begin
   assert shift >= 0;
   if shift < N then
     let bshift = shift as integer{0..N-1};
-    return [x[(N-bshift)-1:0], Zeros{bshift}];
+    return x[(N-bshift)-1:0] :: Zeros{bshift};
   else
     return Zeros{N};
   end;
@@ -304,7 +304,7 @@ func ROR{N}(x: bits(N), shift: integer) => bits(N)
 begin
   assert shift >= 0;
   let cshift = (shift MOD N) as integer{0..N-1};
-  return [x[0+:cshift], x[N-1:cshift]];
+  return x[0+:cshift] :: x[N-1:cshift];
 end;
 
 // Rotate right with carry out.
