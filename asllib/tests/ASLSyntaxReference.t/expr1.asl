@@ -19,10 +19,10 @@ begin
   // E_Unop 1: (NOT b8) negates the bits of b8.
   // E_Binop 2: the right-hand side of the assignment is
   //            a binay AND expression.
-  // E_Concat 1: [b0, b1] concatenates two bitvectors.
+  // E_Concat 1: b0 :: b1 concatenates two bitvectors.
   // E_Unknown 1: UNKNOWN: bits(8) represents an arbitrary
   //              8-bits bitvector
-  var b8 = [b0, b1];
+  var b8 = b0 :: b1;
   b8 = (NOT b8) AND UNKNOWN: bits(8);
   return 0;
 end;

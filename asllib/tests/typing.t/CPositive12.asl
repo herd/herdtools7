@@ -30,7 +30,7 @@ begin
     end;
 
     let nbits = Min(len, N - shift) as integer{0..N};
-    return Extend{N,nbits+shift}([val[0+:nbits] , Zeros{shift}], unsigned);
+    return Extend{N}(val[0+:nbits] :: Zeros{shift}, unsigned);
 end;
 
 func CPositive12() => bits(8)
