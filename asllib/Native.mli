@@ -29,15 +29,11 @@ type native_value =
 
 module NoScope : Backend.SCOPE with type t = unit
 
-module StaticBackend : sig
-  include
-    Backend.S
-      with type value = native_value
-       and type 'a m = 'a
-       and module Scope = NoScope
-
-  exception StaticEvaluationUnknown
-end
+module StaticBackend :
+  Backend.S
+    with type value = native_value
+     and type 'a m = 'a
+     and module Scope = NoScope
 
 module DeterministicBackend :
   Backend.S

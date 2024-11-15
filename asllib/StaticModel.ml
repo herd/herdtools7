@@ -494,13 +494,7 @@ and to_cond env (e : expr) : Conjunction.t list * Conjunction.t list =
       and cjs2, neg_cjs2 = to_cond env e2 in
       ( cjs_cond &&& cjs1 ||| (neg_cjs_cond &&& cjs2),
         neg_cjs_cond ||| neg_cjs1 &&& (cjs_cond ||| neg_cjs2) )
-  | _ -> (
-      try
-        match StaticInterpreter.static_eval env e with
-        | L_Bool b ->
-            ([ Conjunction.of_bool b ], [ Conjunction.of_bool (not b) ])
-        | _ -> raise NotSupported
-      with _ -> raise NotSupported)
+  | _ -> raise NotSupported
 
 (*---------- Solving in the symbolic representation  ----------*)
 
