@@ -1540,7 +1540,7 @@ We also define the following helper rules:
   \item SemanticsRule.MatchFuncRes (see \secref{SemanticsRule.MatchFuncRes})
 \end{itemize}
 
-\subsubsection{SemanticsRule.Call \label{sec:SemanticsRule.Call}}
+\subsubsection{SemanticsRule.Call\label{sec:SemanticsRule.Call}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1559,24 +1559,39 @@ All of the following apply:
   consisting of the static environment $\tenv$ and the dynamic environment with the global component
   of $\denvtwo$ and an empty local component (intuitively, this is because the called subprogram does not have access
   to the local environment of the caller);
-  \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\nargsthree$ in
-  $\denvtwo'$ is $\Normal(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
-  of the callee)\ProseOrAbnormal;
-  \item the list $\vms$ consists of value-identifier pairs $(\vv_j, \rid_j)$, for $i=1..n$;
-  \item applying the helper relation $\readvaluefrom$ to each $(\vv_j, \rid_j)$
-  results in $\vmstwo_j$, for $i=1..n$;
-  \item $\vmstwo$ is defined as the list of $\vmstwo_j$, for $i=1..n$;
-  \item $\newenv$ consists of the static environment $\tenv$ and the dynamic environment consisting
-  of $\vglobal$ as the global component and the local component of $\denvtwo$ (that is, we restore
-  the local environment to that of the caller and drop the local environment of the callee).
-  \item the entire evaluation results in $\Normal(\vmstwo, \newenv)$.
-\end{itemize}
+  \item one of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{normal}):
+    \begin{itemize}
+      \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\nargsthree$ in
+            $\denvtwo'$ is $\Normal(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
+            of the callee)\ProseOrError;
+      \item the list $\vms$ consists of value-identifier pairs $(\vv_j, \rid_j)$, for $i=1..n$;
+      \item applying the helper relation $\readvaluefrom$ to each $(\vv_j, \rid_j)$
+            results in $\vmstwo_j$, for $i=1..n$;
+      \item $\vmstwo$ is defined as the list of $\vmstwo_j$, for $i=1..n$;
+      \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consisting
+            of $\vglobal$ as the global component and the local component of $\denvtwo$ (that is, we restore
+            the local environment to that of the caller and drop the local environment of the callee).
+      \item the entire evaluation results in $\Normal(\vmstwo, \newenv)$.
+    \end{itemize}
 
-\CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
+    \item All of the following apply (\textsc{throwing}):
+    \begin{itemize}
+      \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\nargsthree$ in
+            $\denvtwo'$ is $\Throwing(\vv, \envthrow)$\ProseOrError;
+      \item view $\envthrow$ as $(\tenv, \denvthrow)$;
+      \item define $\newenv$ as the environment where the static environment is $\tenv$
+            and the global dynamic environment is the global dynamic environment of $\denvthrow$ and the
+            local dynamic environment is the local dynamic environment of $\denvtwo$;
+      \item the entire evaluation results in $\Throwing(\vv, \newenv)$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[normal]{
   \namedargs \eqname [i=1..k: (\id_i, \ve_i)]\\
   \names \eqdef [i=1..k: \id_i]\\
   \nargsone \eqdef [i=1..k: \ve_i]\\
@@ -1586,7 +1601,8 @@ All of the following apply:
   \nargsthree \eqdef [i=1...k: (\id_i, \vm_i)]\\
   \envtwo \eqname (\tenv, \denvtwo)\\
   \envtwo' \eqdef (\tenv,(G^\denvtwo,\emptyfunc))\\\\
-  \evalsubprogram{\envtwo', \name, \vvargs, \nargsthree} \evalarrow \Normal(\vms, (\vglobal, \Ignore)) \OrAbnormal\\\\
+  \commonprefixline\\\\
+  \evalsubprogram{\envtwo', \name, \vvargs, \nargsthree} \evalarrow \Normal(\vms, (\vglobal, \Ignore)) \OrDynError\\\\
   \vms \eqname [j=1..n: (\vv_j, \rid_j)]\\
   j=1..n: \readvaluefrom(\vv_j, \rid_j) \evalarrow \vmstwo_j\\
   \vmstwo \eqdef [j=1..n: \vmstwo_j]\\
@@ -1595,6 +1611,27 @@ All of the following apply:
   \evalcall{\env, \name, \args, \namedargs} \evalarrow \Normal(\vmstwo, \newenv)
 }
 \end{mathpar}
+
+\begin{mathpar}
+\inferrule[throwing]{
+  \namedargs \eqname [i=1..k: (\id_i, \ve_i)]\\
+  \names \eqdef [i=1..k: \id_i]\\
+  \nargsone \eqdef [i=1..k: \ve_i]\\
+  \evalexprlistm(\env, \args) \evalarrow \Normal(\vvargs, \envone)\OrAbnormal\\
+  \evalexprlistm(\envone, \nargs1) \evalarrow \Normal(\nargstwo, \envtwo)\OrAbnormal\\
+  \nargstwo \eqname [i=1..k: \vm_i]\\
+  \nargsthree \eqdef [i=1...k: (\id_i, \vm_i)]\\
+  \envtwo \eqname (\tenv, \denvtwo)\\
+  \envtwo' \eqdef (\tenv,(G^\denvtwo,\emptyfunc))\\\\
+  \commonprefixline\\\\
+  \evalsubprogram{\envtwo', \name, \vvargs, \nargsthree} \evalarrow \Throwing(\vv, \envthrow) \OrDynError\\\\
+  \envthrow \eqname (\tenv, \denvthrow)\\
+  \newenv \eqdef (\tenv, (G^\denvthrow, L^{\denvtwo}))
+}{
+  \evalcall{\env, \name, \args, \namedargs} \evalarrow \Throwing(\vv, \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
 
 \subsubsection{SemanticsRule.FPrimitive \label{sec:SemanticsRule.FPrimitive}}
 \subsubsection{Prose}
@@ -1634,7 +1671,7 @@ That is, it is not a part of $\evalarrow$ but rather a separate transition relat
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv, (\genv, \emptyfunc))\\
-  \findfunc(\tenv, \name) = \{ \body = \SBPrimitive \ldots \}\\
+  G^\tenv.\subprograms(\name) = \{ \body = \SBPrimitive \ldots \}\\
   \evalprimitive{\name, \actualargs} \evalprimitivearrow \Normal(\vms, \vgone) \OrDynError\\\\
   \writeretvals(\vms) \evalarrow \vvsm\\
   \vvsm \eqname (\vvs, \vgtwo)\\
@@ -1651,7 +1688,8 @@ All of the following apply:
 \begin{itemize}
   \item $\env$ consists of the static environment $\tenv$ and the dynamic environment with the global
         component $\genv$ and an empty local component;
-  \item finding the function named $\name$ in $\tenv$ gives the AST $\func$ node with body
+  \item finding the function named $\name$ in $\tenv$ (via the $\subprograms$ component of the static global environment of $\tenv$)
+        gives the AST $\func$ node with body
         $\SBASL(\vbody)$ and arguments $\argdecls$;
   \item $\envone$ is the environment consisting of the static environment $\tenv$ and the dynamic1
         environment consisting of the dynamic component from $\denv$ and an empty local component;
@@ -1680,7 +1718,7 @@ calls the function \texttt{foo} and the procedure \texttt{bar}.
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv, \denv)\\
-  \findfunc(\tenv, \name) \eqname \{ \body: \SBASL(\vbody), \args: \argdecls, \ldots \}\\
+    G^\tenv.\subprograms(\name) \eqname \{ \body: \SBASL(\vbody), \args: \argdecls, \ldots \}\\
     \envone \eqdef (\tenv, (G^\denv, \emptyfunc))\\
     \assignargs((\envone, \emptygraph), \argdecls, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
     \assignnamedargs((\envtwo, \vgtwo), \params) \evalarrow (\envthree, \vgthree)\\

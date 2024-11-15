@@ -628,67 +628,65 @@ environment of $\tenv$.
 \end{mathpar}
 \CodeSubsection{\IsSubprogramBegin}{\IsSubprogramEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.LookupConstants\label{sec:TypingRule.LookupConstants}}
-\hypertarget{def-lookupconstants}{}
+\subsubsection{TypingRule.LookupConstant}
+\hypertarget{def-lookupconstant}{}
 The function
 \[
-\lookupconstants(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\identifier}{\vx}) \typearrow
-  \overname{\literal}{\vv}
-  \cup \{\bot\}
+  \lookupconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs})
+  \;\aslto\; \overname{\literal}{\vv}\ \cup\ \{\bot\}
 \]
-returns the literal $\vv$ associated with the identifier $\vx$ in the static environment $\tenv$,
-or $\bot$ if $\vx$ is not associated with a constant.
+looks up the environment $\tenv$ for a constant $\vv$ associated with an identifier
+$\vs$. The result is $\bot$ if $\vs$ is not associated with any constant.
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{local}):
   \begin{itemize}
-    \item the $\constantvalues$ map of the local component of $\tenv$ binds $\vx$ to $\vv$.
+    \item $\vs$ is associated with a constant $\vv$ in the local environment of $\tenv$;
   \end{itemize}
 
   \item All of the following apply (\textsc{global}):
   \begin{itemize}
-    \item the $\constantvalues$ map of the local component of $\tenv$ does not bind $\vx$ to any literal;
-    \item the $\constantvalues$ map of the global component of $\tenv$ binds $\vx$ to $\vv$.
+    \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
+    \item $\vs$ is associated with a constant $\vv$ in the global environment of $\tenv$;
   \end{itemize}
 
   \item All of the following apply (\textsc{not\_found}):
   \begin{itemize}
-    \item the $\constantvalues$ map of the local component of $\tenv$ does not bind $\vx$ to any literal;
-    \item the $\constantvalues$ map of the global component of $\tenv$ does not bind $\vx$ to any literal;
+    \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
+    \item $\vs$ is not associated with a constant in the global environment of $\tenv$;
     \item the result is $\bot$.
   \end{itemize}
 \end{itemize}
+
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[local]{
-  L^\tenv.\constantvalues(\vx) = \vv
+  L^\tenv.\constantvalues(\vs) = \vv
 }{
-  \lookupconstants(\tenv, \vx) \typearrow
+  \lookupconstant(\tenv, \vs) \typearrow \vv
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[global]{
-  L^\tenv.\constantvalues(\vx) = \bot\\
-  G^\tenv.\constantvalues(\vx) = \vv
+  L^\tenv.\constantvalues(\vs) = \bot\\
+  G^\tenv.\constantvalues(\vs) = \vv
 }{
-  \lookupconstants(\tenv, \vx) \typearrow
+  \lookupconstant(\tenv, \vs) \typearrow \vv
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[not\_found]{
-  L^\tenv.\constantvalues(\vx) = \bot\\
-  G^\tenv.\constantvalues(\vx) = \bot
+  L^\tenv.\constantvalues(\vs) = \bot\\
+  G^\tenv.\constantvalues(\vs) = \bot
 }{
-  \lookupconstants(\tenv, \vx) \typearrow \bot
+  \lookupconstant(\tenv, \vs) \typearrow \bot
 }
 \end{mathpar}
-\CodeSubsection{\LookupConstantsBegin}{\LookupConstantsEnd}{../StaticEnv.ml}
+\CodeSubsection{\LookupConstantBegin}{\LookupConstantEnd}{../StaticEnv.ml}
 
 \subsubsection{TypingRule.AddGlobalConstant\label{sec:TypingRule.AddGlobalConstant}}
 \hypertarget{def-addglobalconstant}{}

@@ -475,7 +475,7 @@ module TypingRule = struct
     | AddGlobalImmutableExpr
     | DeclareConst
     | AddGlobalStorage
-    | LookupConstants
+    | LookupConstant
     | TypeOf
     | LookupImmutableExpr
     | WithEmptyLocal
@@ -656,7 +656,7 @@ module TypingRule = struct
     | AddGlobalImmutableExpr -> "AddLocalImmutableExpr"
     | DeclareConst -> "DeclareConst"
     | AddGlobalStorage -> "AddGlobalStorage"
-    | LookupConstants -> "LookupConstants"
+    | LookupConstant -> "LookupConstant"
     | TypeOf -> "TypeOf"
     | LookupImmutableExpr -> "LookupImmutableExpr"
     | WithEmptyLocal -> "WithEmptyLocal"
@@ -819,7 +819,7 @@ module TypingRule = struct
       AddGlobalImmutableExpr;
       DeclareConst;
       AddGlobalStorage;
-      LookupConstants;
+      LookupConstant;
       TypeOf;
       LookupImmutableExpr;
       WithEmptyLocal;

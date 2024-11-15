@@ -1,484 +1,510 @@
 \chapter{Static Evaluation\label{chap:staticevaluation}}
 
-In this chapter, we define how to statically evaluate a subset of expressions
-via TypingRule.StaticEval (see \secref{TypingRule.StaticEval}) and
-the primitive operations defined in \chapref{PrimitiveOperations}.
-We also define the following helper rules:
-\begin{itemize}
-  \item TypingRule.SlicesToPositions (see \secref{TypingRule.SlicesToPositions})
-  \item TypingRule.SliceToPositions (see \secref{TypingRule.SliceToPositions})
-  \item TypingRule.EvalToInt (see \secref{TypingRule.EvalToInt})
-  \item TypingRule.ExtractSlice (see \secref{TypingRule.ExtractSlice})
-\end{itemize}
+In this chapter, we define how to statically evaluate an expression
+to yield a literal value.
 
+%(see \secref{TypingRule.StaticEval}) and
+%the primitive operations defined in \chapref{PrimitiveOperations}.
+% We also define the following helper rules:
+% \begin{itemize}
+%   \item TypingRule.SlicesToPositions (see \secref{TypingRule.SlicesToPositions})
+%   \item TypingRule.SliceToPositions (see \secref{TypingRule.SliceToPositions})
+%   \item TypingRule.EvalToInt (see \secref{TypingRule.EvalToInt})
+%   \item TypingRule.ExtractSlice (see \secref{TypingRule.ExtractSlice})
+% \end{itemize}
+
+% TODO: probably move to SymbolicSubsumptionTesting.
 \hypertarget{def-unsupportedexpression}
-In this chapter, as well as \chapref{SymbolicSubsumptionTesting} and
+In this chapter, as well as in \chapref{SymbolicSubsumptionTesting} and
 \chapref{SymbolicEquivalenceTesting}, we use the special value $\CannotBeTransformed$
 to represent a failure in transforming an expression into a desired form (the specific
 desired form varies according to the functions utilizing this value).
 
 \hypertarget{def-staticeval}{}
-\subsection{TypingRule.StaticEval \label{sec:TypingRule.StaticEval}}
+\subsection{TypingRule.StaticEval\label{sec:TypingRule.StaticEval}}
 The function
 \[
   \staticeval(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \;\aslto\;
   \overname{\literal}{\vv} \cup
-  \{\CannotBeTransformed\} \cup
+  % \{\CannotBeTransformed\} \cup
   \overname{\TTypeError}{\TypeErrorConfig}
 \]
-evaluates an expression $\ve$, from a restricted subset of all expressions,
+evaluates an expression $\ve$
 in the static environment $\tenv$, returning a literal $\vv$.
-If $\ve$ is not in the restricted set of expressions or cannot be statically evaluated to a compile-time
-constant, the result is $\CannotBeTransformed$.
-\ProseOtherwiseTypeError
+If the evaluation terminates by a thrown exception of a value that is not a literal
+(for example, a record value), the result is a type error.
+%$\CannotBeTransformed$.
+%\ProseOtherwiseTypeError
 
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{e\_literal}):
-  \begin{itemize}
-    \item $\ve$ is the literal expression for the literal $\vv$, that is, $\ELiteral(\vv)$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_var\_constant}):
-  \begin{itemize}
-    \item $\ve$ is a variable expression with the identifier $\vx$, that is, $\EVar(\vx)$;
-    \item determining whether $\vx$ is bound to a constant in $\tenv$ via $\lookupconstant$ yields the literal $\vv$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_var\_non\_constant}):
-  \begin{itemize}
-    \item $\ve$ is a variable expression with the identifier $\vx$, that is, $\EVar(\vx)$;
-    \item determining whether $\vx$ is bound to a constant in $\tenv$ via $\lookupconstant$ yields $\bot$
-          (that is, $\vx$ is not bound to a constant);
-    \item checking whether $\vx$ is defined in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item the result is $\CannotBeTransformed$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_binop}):
-  \begin{itemize}
-    \item $\ve$ is a binary operation expression with operator $\op$ and operand expressions $\veone$ and $\vetwo$,
-          that is, $\EBinop(\op, \veone, \vetwo)$;
-    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the literal $\vvone$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
-    \item applying $\staticeval$ to $\vetwo$ in $\tenv$ yields the literal $\vvtwo$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
-    \item applying $\op$ to $\vvone$ and $\vvtwo$ via $\binopliterals$ yields $\vv$\ProseOrTypeError.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_unop}):
-  \begin{itemize}
-    \item $\ve$ is a unary operation expression with operator $\op$ and operand expression $\veone$,
-          that is, $\EUnop(\op, \veone)$;
-    \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the literal $\vvone$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
-    \item applying $\op$ to $\vvone$ via $\unopliterals$ yields $\vv$\ProseOrTypeError.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_slice\_int}):
-  \begin{itemize}
-    \item $\ve$ is a slicing expression of the integer literal for $\vi$ and slice list $\vslices$, that is,
-          $\ESlice(\lint(\vi), \vslices)$;
-    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\typingslicestopositions$
-          yields $\positions$\ProseOrTypeError;
-    \item $\posmax$ is the maximum index in $\positions$;
-    \item converting the first $\posmax+1$ digits of the binary representation of $\vi$ into a bitvector
-          via $\inttobits$ yields $\bvone$;
-    \item extracting the slice of $\bvone$ given by $\positions$ yields $\bvtwo$\ProseOrTypeError;
-    \item $\vv$ is the bitvector literal for $\bvtwo$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_slice\_bitvector}):
-  \begin{itemize}
-    \item $\ve$ is a slicing expression of the bitvector literal for $\bv$ and slice list $\vslices$, that is,
-          $\ESlice(\lbitvector(\bv), \vslices)$;
-    \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\typingslicestopositions$
-          yields $\positions$\ProseOrTypeError;
-    \item $\posmax$ is the maximum index in $\positions$;
-    \item checking that the length of $\bv$ is greater than $\posmax$ (which is $0$-based) yields $\True$\ProseOrTypeError;
-    \item extracting the slice of $\bv$ given by $\positions$ yields $\bvtwo$\ProseOrTypeError;
-    \item $\vv$ is the bitvector literal for $\bvtwo$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_slice\_type\_error}):
-  \begin{itemize}
-    \item $\ve$ is a slicing expression of subexpression $\veone$ and slice list $\vslices$, that is, $\ESlice(\veone, \vslices)$;
-    \item $\veone$ is neither an integer literal nor a bitvector literal;
-    \item the result is a type error indicating that either an integer literal or a bitvector literal were expected.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_cond}):
-  \begin{itemize}
-    \item $\ve$ is a conditional expression with condition subexpression $\econd$ and subexpressions $\veone$ (true case)
-          and $\vetwo$ (false case), that is, $\ECond(\econd, \veone, \vetwo)$;
-    \item evaluating $\econd$ in $\tenv$ either yields a Boolean literal $\vb$ or a type error or $\CannotBeTransformed$,
-          either of which short-circuits the rule;
-    \item $\vep$ is $\veone$ if $\vb$ is $\True$ and $\vetwo$ otherwise;
-    \item the result is given by applying $\staticeval$ to $\vep$ in $\tenv$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{e\_unknown}):
-  \begin{itemize}
-    \item $\ve$ is an arbitrary value expression, that is, $\EUnknown(\Ignore)$;
-    \item the result is $\CannotBeTransformed$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{unsupported}):
-  \begin{itemize}
-    \item $\ve$ is an expression that is not one of the following: a literal, a variable, a binary operation expression,
-          a unary operation expression, a slice expression, and a conditional expression;
-    \item the result is a type error indicating that $\ve$ is not an expression that is supported
-          for static evaluation.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[e\_literal]{}
-{
-  \staticeval(\tenv, \overname{\ELiteral(\vv)}{\ve}) \typearrow \vv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_var\_constant]{
-  \lookupconstant(\tenv, \vx) \typearrow \vv
-}{
-  \staticeval(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \vv
-}
-\and
-\inferrule[e\_var\_non\_constant]{
-  \lookupconstant(\tenv, \vx) \typearrow \bot\\
-  \isundefined(\tenv, \vx) \typearrow \vb\\
-  \checktrans{\neg\vb}{\UndefinedIdentifier} \typearrow \True \OrTypeError
-}{
-  \staticeval(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \CannotBeTransformed
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_binop]{
-  \staticeval(\tenv, \veone) \typearrow \vvone \terminateas \TypeErrorConfig, \CannotBeTransformed\\\\
-  \staticeval(\tenv, \vetwo) \typearrow \vvtwo \terminateas \TypeErrorConfig, \CannotBeTransformed\\\\
-  \binopliterals(\op, \vvone, \vvtwo) \typearrow \vv \OrTypeError
-}{
-  \staticeval(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \vv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_unop]{
-  \staticeval(\tenv, \veone) \typearrow \vvone \terminateas \TypeErrorConfig, \CannotBeTransformed\\\\
-  \unopliterals(\op, \vvone) \typearrow \vv \OrTypeError
-}{
-  \staticeval(\tenv, \overname{\EUnop(\op, \veone)}{\ve}) \typearrow \vv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_slice\_int]{
-  \typingslicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
-  \posmax \eqdef \max(\positions)\\
-  \bvone \eqdef \inttobits(\vi, \posmax + 1)\\
-  \extractslice(\bvone, \positions) \typearrow \bvtwo \OrTypeError
-}{
-  \staticeval(\tenv, \overname{\ESlice(\lint(\vi), \slices)}{\ve}) \typearrow \overname{\lbitvector(\bvtwo)}{\vv}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_slice\_bitvector]{
-  \typingslicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
-  \posmax \eqdef \max(\positions)\\
-  \checktrans{\listlen{\bv} > \posmax}{SliceOutOfRange} \checktransarrow \True \OrTypeError\\\\
-  \extractslice(\bv, \positions) \typearrow \bvtwo \OrTypeError
-}{
-  \staticeval(\tenv, \overname{\ESlice(\lbitvector(\bv), \slices)}{\ve}) \typearrow \overname{\lbitvector(\bvtwo)}{\vv}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_slice\_type\_error]{
-  \astlabel(\veone) \not\in \{\lint, \lbitvector\}
-}{
-  \staticeval(\tenv, \overname{\ESlice(\veone, \slices)}{\ve}) \typearrow \TypeErrorVal{TypeMismatch}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_cond]{
-  \staticeval(\tenv, \econd) \typearrow \vcond \terminateas \TypeErrorConfig, \CannotBeTransformed\\\\
-  \vcond \eqname \lbool(\vb)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\
-  \staticeval(\tenv, \vep) \typearrow \vv \terminateas \TypeErrorConfig, \CannotBeTransformed
-}{
-  \staticeval(\tenv, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \typearrow \vv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_unknown]{}{
-  \staticeval(\tenv, \overname{\EUnknown(\Ignore)}{\ve}) \typearrow \CannotBeTransformed
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unsupported]{
-  \astlabel(\ve) \not\in \{ \ELiteral, \EVar, \EBinop, \EUnop, \ESlice, \ECond\}
-}{
-  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{UnsupportedExpression}
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.LookupConstant}
-\hypertarget{def-lookupconstant}{}
-The function
-\[
-  \lookupconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs})
-  \;\aslto\; \overname{\literal}{\vv}\ \cup\ \{\bot\}
-\]
-looks up the environment $\tenv$ for a constant $\vv$ associated with an identifier
-$\vs$. The result is $\bot$ if $\vs$ is not associated with any constant.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{local}):
-  \begin{itemize}
-    \item $\vs$ is associated with a constant $\vv$ in the local environment of $\tenv$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{global}):
-  \begin{itemize}
-    \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
-    \item $\vs$ is associated with a constant $\vv$ in the global environment of $\tenv$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{none}):
-  \begin{itemize}
-    \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
-    \item $\vs$ is not associated with a constant in the global environment of $\tenv$;
-    \item the result is $\bot$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[local]{
-  L^\tenv.\constantvalues(\vs) = \vv
-}{
-  \lookupconstant(\tenv, \vs) \typearrow \vv
-}
-\and
-\inferrule[global]{
-  L^\tenv.\constantvalues(\vs) = \bot\\
-  G^\tenv.\constantvalues(\vs) = \vv
-}{
-  \lookupconstant(\tenv, \vs) \typearrow \vv
-}
-\and
-\inferrule[none]{
-  L^\tenv.\constantvalues(\vs) = \bot\\
-  G^\tenv.\constantvalues(\vs) = \bot
-}{
-  \lookupconstant(\tenv, \vs) \typearrow \bot
-}
-\end{mathpar}
-
-\subsection{TypingRule.SlicesToPositions \label{sec:TypingRule.SlicesToPositions}}
-\hypertarget{def-typingslicestopositions}{}
-The function
-\[
-  \typingslicestopositions(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slices}) \aslto
-  \overname{\Z^*}{\positions} \cup \{\CannotBeTransformed\} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-transforms the list of slices $\slices$ in $\tenv$ into a list of indices $\positions$.
-The result is $\CannotBeTransformed$ if $\slices$ cannot be statically evaluated to
-a list of positions.
-\ProseOtherwiseTypeError
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{empty}):
-  \begin{itemize}
-    \item $\slices$ is the empty list;
-    \item $\positions$ is the empty list.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{non\_empty}):
-  \begin{itemize}
-    \item \view\ $\slices$ as the list with $\vs$ as its \head\ and $\slicesone$ as its \tail;
-    \item applying $\slicetopositions$ to $\vs$ in $\tenv$ yields the list of positions \\
-          $\positionsone$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
-    \item transforming $\slicesone$ to a list of positions in $\tenv$ via $\typingslicestopositions$ yields
-          $\positionstwo$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
-    \item $\positions$ is the concatenation of $\positionsone$ and $\positionstwo$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[empty]{}
-{
-  \typingslicestopositions(\tenv, \overname{\emptylist}{\slices}) \typearrow \overname{\emptylist}{\positions}
-}
-\and
-\inferrule[non\_empty]{
-  \slicetopositions(\tenv, \vs) \typearrow \positionsone \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  \typingslicestopositions(\tenv, \slicesone) \typearrow \positionstwo \terminateas \CannotBeTransformed,\TypeErrorConfig
-}{
-  \typingslicestopositions(\tenv, \overname{[\vs] \concat \slicesone}{\slices}) \typearrow \overname{\positionsone \concat \positionstwo}{\positions}
-}
-\end{mathpar}
-
-\subsection{TypingRule.SliceToPositions \label{sec:TypingRule.SliceToPositions}}
-\hypertarget{def-slicetopositions}{}
-The function
-\[
-  \slicetopositions(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto
-  \overname{\Z^+}{\positions} \cup \{\CannotBeTransformed\} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-transforms a slice $\vs$ in $\tenv$ into a list of indices $\positions$.
-The result is $\CannotBeTransformed$ if $\slices$ cannot be statically evaluated to
-a list of positions.
-\ProseOtherwiseTypeError
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{single}):
-  \begin{itemize}
-    \item $\vs$ is a slice for a single position given by the expression $\ve$, that is, \\ $\SliceSingle(\ve)$;
-    \item applying $\evaltoint$ to $\ve$ in $\tenv$ yields the integer $n$\ProseOrTypeError;
-    \item checking that $n$ is non-negative yields $\True$\ProseOrTypeError;
-    \item $\positions$ is the list containing the single element $n$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{range}):
-  \begin{itemize}
-    \item $\vs$ is a slice for a range given by the expression $\etop$
-          for the top position and $\ebot$ for the bottom position, that is, \\ $\SliceRange(\etop, \ebot)$;
-    \item applying $\evaltoint$ to $\ebot$ in $\tenv$ yields the integer $b$\ProseOrTypeError;
-    \item applying $\evaltoint$ to $\etop$ in $\tenv$ yields the integer $t$\ProseOrTypeError;
-    \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$\ProseOrTypeError;
-    \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{length}):
-  \begin{itemize}
-    \item $\vs$ is a slice for a length slice given by the expression $\ebot$
-          for the bottom position and $\elength$ for the length of the slice, that is, \\ $\SliceLength(\ebot, \elength)$;
-    \item applying $\evaltoint$ to $\ebot$ in $\tenv$ to an integer yields the integer $b$\ProseOrTypeError;
-    \item applying $\evaltoint$ to $\elength$ in $\tenv$ to an integer yields the integer $l$\ProseOrTypeError;
-    \item $t$ is $b + l - 1$;
-    \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$\ProseOrTypeError;
-    \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{star}):
-  \begin{itemize}
-    \item $\vs$ is a slice for a scaled slice given by the expression $\efactor$
-          for the factor and $\elength$ for the length of the slice (\texttt{$\elength$*:$\efactor$}),
-          that is, \\ $\SliceStar(\efactor, \elength)$;
-    \item applying $\evaltoint$ to $\efactor$ in $\tenv$ to an integer yields the integer $f$\ProseOrTypeError;
-    \item applying $\evaltoint$ to $\elength$ in $\tenv$ to an integer yields the integer $l$\ProseOrTypeError;
-    \item $t$ is $(f \times l) + l - 1$;
-    \item $b$ is $t - l + 1$;
-    \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$\ProseOrTypeError;
-    \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-
-\begin{mathpar}
-\inferrule[single]{
-  \evaltoint(\tenv, \ve) \typearrow n \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  \checktrans{n \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
-}{
-  \slicetopositions(\tenv, \overname{\SliceSingle(\ve)}{\vs}) \typearrow [ n ]
-}
-\and
-\inferrule[range]{
-  \evaltoint(\tenv, \ebot) \typearrow b \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  \evaltoint(\tenv, \etop) \typearrow t \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
-}{
-  \slicetopositions(\tenv, \overname{\SliceRange(\etop, \ebot)}{\vs}) \typearrow [ t..b ]
-}
-\and
-\inferrule[length]{
-  \evaltoint(\tenv, \ebot) \typearrow b \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  \evaltoint(\tenv, \elength) \typearrow l \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  t \eqdef b + l - 1\\
-  \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
-}{
-  \slicetopositions(\tenv, \overname{\SliceLength(\ebot, \elength)}{\vs}) \typearrow [ t..b ]
-}
-\and
-\inferrule[star]{
-  \evaltoint(\tenv, \efactor) \typearrow f \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  \evaltoint(\tenv, \elength) \typearrow l \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
-  t \eqdef (f \times l) + l - 1\\
-  b \eqdef t - l\\
-  \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
-}{
-  \slicetopositions(\tenv, \overname{\SliceStar(\efactor, \elength)}{\vs}) \typearrow [ t..b ]
-}
-\end{mathpar}
-
-\subsection{TypingRule.EvalToInt \label{sec:TypingRule.EvalToInt}}
-\hypertarget{def-evaltoint}{}
-The function
-\[
-\evaltoint(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
-\aslto \overname{\Z}{n} \cup \{\CannotBeTransformed\} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-statically evaluates the expression $\ve$ to the integer $n$.
-The result is $\CannotBeTransformed$ if $\ve$ cannot be statically evaluated
-to an integer.
-\ProseOtherwiseTypeError
+Static evaluation employs the dynamic semantics to evaluate $\ve$ and inspects the result to extract
+a literal. The evaluation should be able to access global constants as well as local constants that
+are bound in $\tenv$. Therefore, a dynamic environment is constructed from
+$G^\tenv.\constantvalues$ and $L^\tenv.\constantvalues$, respectively.
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item applying $\staticeval$ to $\ve$ in $\tenv$ has one of three outcomes:
+  \item define the global dynamic environment $\vglobal$ as the map that bind
+        each $\id$ in the domain of $G^\tenv.\constantvalues$ to $\nvliteral{\vl}$
+        if $G^\tenv.\constantvalues(\id) = \vl$;
+  \item define the local dynamic environment $\vlocal$ as the map that bind
+        each $\id$ in the domain of $L^\tenv.\constantvalues$ to $\nvliteral{\vl}$
+        if $L^\tenv.\constantvalues(\id) = \vl$;
+  \item define the environment $\env$ to have the static component $\tenv$ and the dynamic
+        environment $(\vglobal, \vlocal)$;
+  \item One of the following applies:
   \begin{itemize}
-  \item a literal $\vl$, which satisfies the premise;
-  \item $\CannotBeTransformed$ (which means the expression could not be evaluated to a literal),
-  which short-circuits the entire rule;
-  or
-  \item $\TypeErrorConfig$ (indicating a type error was detected), which short-circuits the entire rule;
+    \item All of the following apply (\textsc{normal\_literal}):
+    \begin{itemize}
+      \item evaluating $\ve$ in $\env$ yields $\Normal(\nvliteral{\vv}, \Ignore)$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{normal\_non\_literal}):
+    \begin{itemize}
+      \item evaluating $\ve$ in $\env$ yields $\Normal(vx, \Ignore)$
+            where $\vx$ is not a native value for a literal;
+      \item the result is a type error indicating that $\ve$ cannot be statically evaluated to a literal.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{abnormal}):
+    \begin{itemize}
+      \item evaluating $\ve$ in $\env$ yields an abnormal configuration;
+      \item the result is a type error indicating that $\ve$ cannot be statically evaluated to a literal.
+    \end{itemize}
   \end{itemize}
-  \item checking that $\vl$ is an integer literal yields $\True$\ProseOrTypeError;
-  \item define $\vl$ as the literal integer for $n$.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{
-  \staticeval(\tenv, \ve) \typearrow \vl \terminateas \CannotBeTransformed, \TypeErrorConfig\\\\
-  \checktrans{\astlabel(\vl) = \lint}{ExpectedIntegerType} \checktransarrow \True \OrTypeError\\\\
-  \vl \eqname \lint(n)
+\inferrule[normal\_literal]{
+  \vglobal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
+  \vlocal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; L^\tenv.\constantvalues(\id) = \vl]\\
+  \env \eqdef (\tenv, (\vglobal, \vlocal))\\\\
+  \commonprefixline\\\\
+  \evalexpr{\env, \ve} \evalarrow \Normal(\nvliteral{\vv}, \Ignore)
 }{
-  \evaltoint(\tenv, \ve) \typearrow n
+  \staticeval(\tenv, \ve) \typearrow \vv
 }
 \end{mathpar}
 
-\subsection{TypingRule.ExtractSlice \label{sec:TypingRule.ExtractSlice}}
-\hypertarget{def-extractslice}{}
-The function
-\[
-  \extractslice(\overname{\{0,1\}^*}{\bits} \aslsep \overname{\Z^*}{\positions}) \aslto
-  \overname{\{0,1\}^*}{\vr} \cup\ \TTypeError
-\]
-extracts from the list of bits $\bits$ the sublist $\vr$ of bits appearing at the positions given by $\positions$.
-\ProseOtherwiseTypeError
-
-\subsubsection{Prose}
-Define $\vr$ the sublist of $\bits$ given by taking $\bits[\vi]$, for every value given in $\positions$ (in the order they appear).
-
-\subsubsection{Formally}
 \begin{mathpar}
-\inferrule{}{
-  \extractslice(\tenv, \bits, \positions) \typearrow \overname{[ \vi\in\positions: \bits[\vi] ]}{\vr}
+\inferrule[normal\_non\_literal]{
+  \vglobal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
+  \vlocal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; L^\tenv.\constantvalues(\id) = \vl]\\
+  \env \eqdef (\tenv, (\vglobal, \vlocal))\\\\
+  \commonprefixline\\\\
+  \evalexpr{\env, \ve} \evalarrow \Normal(\vx, \Ignore)\\
+  \vx \neq \nvliteral{\Ignore}
+}{
+  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{StaticEvaluationFailure}
 }
 \end{mathpar}
+
+\begin{mathpar}
+\inferrule[abnormal]{
+  \vglobal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
+  \vlocal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; L^\tenv.\constantvalues(\id) = \vl]\\
+  \env \eqdef (\tenv, (\vglobal, \vlocal))\\\\
+  \commonprefixline\\\\
+  \evalexpr{\env, \ve} \evalarrow C\\
+  \configdomain{C} \in \{\Throwing, \Error\}
+}{
+  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{StaticEvaluationFailure}
+}
+\end{mathpar}
+\CodeSubsection{\StaticEvalBegin}{\StaticEvalEnd}{../StaticInterpreter.ml}
+
+% One of the following applies:
+% \begin{itemize}
+%   \item All of the following apply (\textsc{e\_literal}):
+%   \begin{itemize}
+%     \item $\ve$ is the literal expression for the literal $\vv$, that is, $\ELiteral(\vv)$.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_var\_constant}):
+%   \begin{itemize}
+%     \item $\ve$ is a variable expression with the identifier $\vx$, that is, $\EVar(\vx)$;
+%     \item determining whether $\vx$ is bound to a constant in $\tenv$ via $\lookupconstant$ yields the literal $\vv$.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_var\_non\_constant}):
+%   \begin{itemize}
+%     \item $\ve$ is a variable expression with the identifier $\vx$, that is, $\EVar(\vx)$;
+%     \item determining whether $\vx$ is bound to a constant in $\tenv$ via $\lookupconstant$ yields $\bot$
+%           (that is, $\vx$ is not bound to a constant);
+%     \item checking whether $\vx$ is defined in $\tenv$ yields $\True$\ProseOrTypeError;
+%     \item the result is $\CannotBeTransformed$.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_binop}):
+%   \begin{itemize}
+%     \item $\ve$ is a binary operation expression with operator $\op$ and operand expressions $\veone$ and $\vetwo$,
+%           that is, $\EBinop(\op, \veone, \vetwo)$;
+%     \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the literal $\vvone$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
+%     \item applying $\staticeval$ to $\vetwo$ in $\tenv$ yields the literal $\vvtwo$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
+%     \item applying $\op$ to $\vvone$ and $\vvtwo$ via $\binopliterals$ yields $\vv$\ProseOrTypeError.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_unop}):
+%   \begin{itemize}
+%     \item $\ve$ is a unary operation expression with operator $\op$ and operand expression $\veone$,
+%           that is, $\EUnop(\op, \veone)$;
+%     \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the literal $\vvone$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
+%     \item applying $\op$ to $\vvone$ via $\unopliterals$ yields $\vv$\ProseOrTypeError.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_slice\_int}):
+%   \begin{itemize}
+%     \item $\ve$ is a slicing expression of the integer literal for $\vi$ and slice list $\vslices$, that is,
+%           $\ESlice(\lint(\vi), \vslices)$;
+%     \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\typingslicestopositions$
+%           yields $\positions$\ProseOrTypeError;
+%     \item $\posmax$ is the maximum index in $\positions$;
+%     \item converting the first $\posmax+1$ digits of the binary representation of $\vi$ into a bitvector
+%           via $\inttobits$ yields $\bvone$;
+%     \item extracting the slice of $\bvone$ given by $\positions$ yields $\bvtwo$\ProseOrTypeError;
+%     \item $\vv$ is the bitvector literal for $\bvtwo$.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_slice\_bitvector}):
+%   \begin{itemize}
+%     \item $\ve$ is a slicing expression of the bitvector literal for $\bv$ and slice list $\vslices$, that is,
+%           $\ESlice(\lbitvector(\bv), \vslices)$;
+%     \item obtaining the indices of the slice list $\vslices$ in $\tenv$ via $\typingslicestopositions$
+%           yields $\positions$\ProseOrTypeError;
+%     \item $\posmax$ is the maximum index in $\positions$;
+%     \item checking that the length of $\bv$ is greater than $\posmax$ (which is $0$-based) yields $\True$\ProseOrTypeError;
+%     \item extracting the slice of $\bv$ given by $\positions$ yields $\bvtwo$\ProseOrTypeError;
+%     \item $\vv$ is the bitvector literal for $\bvtwo$.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_slice\_type\_error}):
+%   \begin{itemize}
+%     \item $\ve$ is a slicing expression of subexpression $\veone$ and slice list $\vslices$, that is, $\ESlice(\veone, \vslices)$;
+%     \item $\veone$ is neither an integer literal nor a bitvector literal;
+%     \item the result is a type error indicating that either an integer literal or a bitvector literal were expected.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_cond}):
+%   \begin{itemize}
+%     \item $\ve$ is a conditional expression with condition subexpression $\econd$ and subexpressions $\veone$ (true case)
+%           and $\vetwo$ (false case), that is, $\ECond(\econd, \veone, \vetwo)$;
+%     \item evaluating $\econd$ in $\tenv$ either yields a Boolean literal $\vb$ or a type error or $\CannotBeTransformed$,
+%           either of which short-circuits the rule;
+%     \item $\vep$ is $\veone$ if $\vb$ is $\True$ and $\vetwo$ otherwise;
+%     \item the result is given by applying $\staticeval$ to $\vep$ in $\tenv$.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{e\_unknown}):
+%   \begin{itemize}
+%     \item $\ve$ is an arbitrary value expression, that is, $\EUnknown(\Ignore)$;
+%     \item the result is $\CannotBeTransformed$.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{unsupported}):
+%   \begin{itemize}
+%     \item $\ve$ is an expression that is not one of the following: a literal, a variable, a binary operation expression,
+%           a unary operation expression, a slice expression, and a conditional expression;
+%     \item the result is a type error indicating that $\ve$ is not an expression that is supported
+%           for static evaluation.
+%   \end{itemize}
+% \end{itemize}
+
+% \subsubsection{Formally}
+% \begin{mathpar}
+% \inferrule[e\_literal]{}
+% {
+%   \staticeval(\tenv, \overname{\ELiteral(\vv)}{\ve}) \typearrow \vv
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[e\_var\_constant]{
+%   \lookupconstant(\tenv, \vx) \typearrow \vv
+% }{
+%   \staticeval(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \vv
+% }
+% \and
+% \inferrule[e\_var\_non\_constant]{
+%   \lookupconstant(\tenv, \vx) \typearrow \bot\\
+%   \isundefined(\tenv, \vx) \typearrow \vb\\
+%   \checktrans{\neg\vb}{\UndefinedIdentifier} \typearrow \True \OrTypeError
+% }{
+%   \staticeval(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \CannotBeTransformed
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[e\_binop]{
+%   \staticeval(\tenv, \veone) \typearrow \vvone \terminateas \TypeErrorConfig, \CannotBeTransformed\\\\
+%   \staticeval(\tenv, \vetwo) \typearrow \vvtwo \terminateas \TypeErrorConfig, \CannotBeTransformed\\\\
+%   \binopliterals(\op, \vvone, \vvtwo) \typearrow \vv \OrTypeError
+% }{
+%   \staticeval(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \vv
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[e\_unop]{
+%   \staticeval(\tenv, \veone) \typearrow \vvone \terminateas \TypeErrorConfig, \CannotBeTransformed\\\\
+%   \unopliterals(\op, \vvone) \typearrow \vv \OrTypeError
+% }{
+%   \staticeval(\tenv, \overname{\EUnop(\op, \veone)}{\ve}) \typearrow \vv
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[e\_slice\_int]{
+%   \typingslicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
+%   \posmax \eqdef \max(\positions)\\
+%   \bvone \eqdef \inttobits(\vi, \posmax + 1)\\
+%   \extractslice(\bvone, \positions) \typearrow \bvtwo \OrTypeError
+% }{
+%   \staticeval(\tenv, \overname{\ESlice(\lint(\vi), \slices)}{\ve}) \typearrow \overname{\lbitvector(\bvtwo)}{\vv}
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[e\_slice\_bitvector]{
+%   \typingslicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError\\\\
+%   \posmax \eqdef \max(\positions)\\
+%   \checktrans{\listlen{\bv} > \posmax}{SliceOutOfRange} \checktransarrow \True \OrTypeError\\\\
+%   \extractslice(\bv, \positions) \typearrow \bvtwo \OrTypeError
+% }{
+%   \staticeval(\tenv, \overname{\ESlice(\lbitvector(\bv), \slices)}{\ve}) \typearrow \overname{\lbitvector(\bvtwo)}{\vv}
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[e\_slice\_type\_error]{
+%   \astlabel(\veone) \not\in \{\lint, \lbitvector\}
+% }{
+%   \staticeval(\tenv, \overname{\ESlice(\veone, \slices)}{\ve}) \typearrow \TypeErrorVal{TypeMismatch}
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[e\_cond]{
+%   \staticeval(\tenv, \econd) \typearrow \vcond \terminateas \TypeErrorConfig, \CannotBeTransformed\\\\
+%   \vcond \eqname \lbool(\vb)\\
+%   \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\
+%   \staticeval(\tenv, \vep) \typearrow \vv \terminateas \TypeErrorConfig, \CannotBeTransformed
+% }{
+%   \staticeval(\tenv, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \typearrow \vv
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[e\_unknown]{}{
+%   \staticeval(\tenv, \overname{\EUnknown(\Ignore)}{\ve}) \typearrow \CannotBeTransformed
+% }
+% \end{mathpar}
+
+% \begin{mathpar}
+% \inferrule[unsupported]{
+%   \astlabel(\ve) \not\in \{ \ELiteral, \EVar, \EBinop, \EUnop, \ESlice, \ECond\}
+% }{
+%   \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{UnsupportedExpression}
+% }
+% \end{mathpar}
+
+% \subsection{TypingRule.SlicesToPositions \label{sec:TypingRule.SlicesToPositions}}
+% \hypertarget{def-typingslicestopositions}{}
+% The function
+% \[
+%   \typingslicestopositions(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slices}) \aslto
+%   \overname{\Z^*}{\positions} \cup \{\CannotBeTransformed\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+% \]
+% transforms the list of slices $\slices$ in $\tenv$ into a list of indices $\positions$.
+% The result is $\CannotBeTransformed$ if $\slices$ cannot be statically evaluated to
+% a list of positions.
+% \ProseOtherwiseTypeError
+
+% \subsubsection{Prose}
+% One of the following applies:
+% \begin{itemize}
+%   \item All of the following apply (\textsc{empty}):
+%   \begin{itemize}
+%     \item $\slices$ is the empty list;
+%     \item $\positions$ is the empty list.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{non\_empty}):
+%   \begin{itemize}
+%     \item \view\ $\slices$ as the list with $\vs$ as its \head\ and $\slicesone$ as its \tail;
+%     \item applying $\slicetopositions$ to $\vs$ in $\tenv$ yields the list of positions \\
+%           $\positionsone$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
+%     \item transforming $\slicesone$ to a list of positions in $\tenv$ via $\typingslicestopositions$ yields
+%           $\positionstwo$\ProseTerminateAs{\CannotBeTransformed, \TypeErrorConfig};
+%     \item $\positions$ is the concatenation of $\positionsone$ and $\positionstwo$.
+%   \end{itemize}
+% \end{itemize}
+
+% \subsubsection{Formally}
+% \begin{mathpar}
+% \inferrule[empty]{}
+% {
+%   \typingslicestopositions(\tenv, \overname{\emptylist}{\slices}) \typearrow \overname{\emptylist}{\positions}
+% }
+% \and
+% \inferrule[non\_empty]{
+%   \slicetopositions(\tenv, \vs) \typearrow \positionsone \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
+%   \typingslicestopositions(\tenv, \slicesone) \typearrow \positionstwo \terminateas \CannotBeTransformed,\TypeErrorConfig
+% }{
+%   \typingslicestopositions(\tenv, \overname{[\vs] \concat \slicesone}{\slices}) \typearrow \overname{\positionsone \concat \positionstwo}{\positions}
+% }
+% \end{mathpar}
+
+% \subsection{TypingRule.SliceToPositions \label{sec:TypingRule.SliceToPositions}}
+% \hypertarget{def-slicetopositions}{}
+% The function
+% \[
+%   \slicetopositions(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto
+%   \overname{\Z^+}{\positions} \cup \{\CannotBeTransformed\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+% \]
+% transforms a slice $\vs$ in $\tenv$ into a list of indices $\positions$.
+% The result is $\CannotBeTransformed$ if $\slices$ cannot be statically evaluated to
+% a list of positions.
+% \ProseOtherwiseTypeError
+
+% \subsubsection{Prose}
+% One of the following applies:
+% \begin{itemize}
+%   \item All of the following apply (\textsc{single}):
+%   \begin{itemize}
+%     \item $\vs$ is a slice for a single position given by the expression $\ve$, that is, \\ $\SliceSingle(\ve)$;
+%     \item applying $\evaltoint$ to $\ve$ in $\tenv$ yields the integer $n$\ProseOrTypeError;
+%     \item checking that $n$ is non-negative yields $\True$\ProseOrTypeError;
+%     \item $\positions$ is the list containing the single element $n$.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{range}):
+%   \begin{itemize}
+%     \item $\vs$ is a slice for a range given by the expression $\etop$
+%           for the top position and $\ebot$ for the bottom position, that is, \\ $\SliceRange(\etop, \ebot)$;
+%     \item applying $\evaltoint$ to $\ebot$ in $\tenv$ yields the integer $b$\ProseOrTypeError;
+%     \item applying $\evaltoint$ to $\etop$ in $\tenv$ yields the integer $t$\ProseOrTypeError;
+%     \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$\ProseOrTypeError;
+%     \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{length}):
+%   \begin{itemize}
+%     \item $\vs$ is a slice for a length slice given by the expression $\ebot$
+%           for the bottom position and $\elength$ for the length of the slice, that is, \\ $\SliceLength(\ebot, \elength)$;
+%     \item applying $\evaltoint$ to $\ebot$ in $\tenv$ to an integer yields the integer $b$\ProseOrTypeError;
+%     \item applying $\evaltoint$ to $\elength$ in $\tenv$ to an integer yields the integer $l$\ProseOrTypeError;
+%     \item $t$ is $b + l - 1$;
+%     \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$\ProseOrTypeError;
+%     \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
+%   \end{itemize}
+
+%   \item All of the following apply (\textsc{star}):
+%   \begin{itemize}
+%     \item $\vs$ is a slice for a scaled slice given by the expression $\efactor$
+%           for the factor and $\elength$ for the length of the slice (\texttt{$\elength$*:$\efactor$}),
+%           that is, \\ $\SliceStar(\efactor, \elength)$;
+%     \item applying $\evaltoint$ to $\efactor$ in $\tenv$ to an integer yields the integer $f$\ProseOrTypeError;
+%     \item applying $\evaltoint$ to $\elength$ in $\tenv$ to an integer yields the integer $l$\ProseOrTypeError;
+%     \item $t$ is $(f \times l) + l - 1$;
+%     \item $b$ is $t - l + 1$;
+%     \item checking that $t$ is greater or equal to $b$ and that $b$ is greater or equal to $0$ yields $\True$\ProseOrTypeError;
+%     \item $\positions$ is the list of integers from $t$ down to $b$, inclusive.
+%   \end{itemize}
+% \end{itemize}
+
+% \subsubsection{Formally}
+
+% \begin{mathpar}
+% \inferrule[single]{
+%   \evaltoint(\tenv, \ve) \typearrow n \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
+%   \checktrans{n \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
+% }{
+%   \slicetopositions(\tenv, \overname{\SliceSingle(\ve)}{\vs}) \typearrow [ n ]
+% }
+% \and
+% \inferrule[range]{
+%   \evaltoint(\tenv, \ebot) \typearrow b \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
+%   \evaltoint(\tenv, \etop) \typearrow t \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
+%   \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
+% }{
+%   \slicetopositions(\tenv, \overname{\SliceRange(\etop, \ebot)}{\vs}) \typearrow [ t..b ]
+% }
+% \and
+% \inferrule[length]{
+%   \evaltoint(\tenv, \ebot) \typearrow b \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
+%   \evaltoint(\tenv, \elength) \typearrow l \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
+%   t \eqdef b + l - 1\\
+%   \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
+% }{
+%   \slicetopositions(\tenv, \overname{\SliceLength(\ebot, \elength)}{\vs}) \typearrow [ t..b ]
+% }
+% \and
+% \inferrule[star]{
+%   \evaltoint(\tenv, \efactor) \typearrow f \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
+%   \evaltoint(\tenv, \elength) \typearrow l \terminateas \CannotBeTransformed,\TypeErrorConfig\\\\
+%   t \eqdef (f \times l) + l - 1\\
+%   b \eqdef t - l\\
+%   \checktrans{t \geq b \geq 0}{BadSlice} \checktransarrow \True \OrTypeError
+% }{
+%   \slicetopositions(\tenv, \overname{\SliceStar(\efactor, \elength)}{\vs}) \typearrow [ t..b ]
+% }
+% \end{mathpar}
+
+% \subsection{TypingRule.EvalToInt \label{sec:TypingRule.EvalToInt}}
+% \hypertarget{def-evaltoint}{}
+% The function
+% \[
+% \evaltoint(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
+% \aslto \overname{\Z}{n} \cup \{\CannotBeTransformed\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+% \]
+% statically evaluates the expression $\ve$ to the integer $n$.
+% The result is $\CannotBeTransformed$ if $\ve$ cannot be statically evaluated
+% to an integer.
+% \ProseOtherwiseTypeError
+
+% \subsubsection{Prose}
+% All of the following apply:
+% \begin{itemize}
+%   \item applying $\staticeval$ to $\ve$ in $\tenv$ has one of three outcomes:
+%   \begin{itemize}
+%   \item a literal $\vl$, which satisfies the premise;
+%   \item $\CannotBeTransformed$ (which means the expression could not be evaluated to a literal),
+%   which short-circuits the entire rule;
+%   or
+%   \item $\TypeErrorConfig$ (indicating a type error was detected), which short-circuits the entire rule;
+%   \end{itemize}
+%   \item checking that $\vl$ is an integer literal yields $\True$\ProseOrTypeError;
+%   \item define $\vl$ as the literal integer for $n$.
+% \end{itemize}
+
+% \subsubsection{Formally}
+% \begin{mathpar}
+% \inferrule{
+%   \staticeval(\tenv, \ve) \typearrow \vl \terminateas \CannotBeTransformed, \TypeErrorConfig\\\\
+%   \checktrans{\astlabel(\vl) = \lint}{ExpectedIntegerType} \checktransarrow \True \OrTypeError\\\\
+%   \vl \eqname \lint(n)
+% }{
+%   \evaltoint(\tenv, \ve) \typearrow n
+% }
+% \end{mathpar}
+
+% \subsection{TypingRule.ExtractSlice \label{sec:TypingRule.ExtractSlice}}
+% \hypertarget{def-extractslice}{}
+% The function
+% \[
+%   \extractslice(\overname{\{0,1\}^*}{\bits} \aslsep \overname{\Z^*}{\positions}) \aslto
+%   \overname{\{0,1\}^*}{\vr} \cup\ \TTypeError
+% \]
+% extracts from the list of bits $\bits$ the sublist $\vr$ of bits appearing at the positions given by $\positions$.
+% \ProseOtherwiseTypeError
+
+% \subsubsection{Prose}
+% Define $\vr$ the sublist of $\bits$ given by taking $\bits[\vi]$, for every value given in $\positions$ (in the order they appear).
+
+% \subsubsection{Formally}
+% \begin{mathpar}
+% \inferrule{}{
+%   \extractslice(\tenv, \bits, \positions) \typearrow \overname{[ \vi\in\positions: \bits[\vi] ]}{\vr}
+% }
+% \end{mathpar}

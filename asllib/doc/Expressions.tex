@@ -198,7 +198,7 @@ All of the following apply:
     \begin{itemize}
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $\LDKConstant$
           via the $\localstoragetypes$ map of the local environment component of $\tenv$;
-    \item applying $\lookupconstants$ to $\vx$ in $\tenv$ yields $\vv$;
+    \item applying $\lookupconstant$ to $\vx$ in $\tenv$ yields $\vv$;
     \item $\newe$ is the literal expression for $\vv$, that is $\eliteral{\vv}$.
     \end{itemize}
 
@@ -207,7 +207,7 @@ All of the following apply:
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$
           via the \\
           $\localstoragetypes$ map of the local environment component of $\tenv$;
-    \item either $k$ is different from $\LDKConstant$ or applying $\lookupconstants$ to $\vx$ in $\tenv$ yields $\bot$;
+    \item either $k$ is different from $\LDKConstant$ or applying $\lookupconstant$ to $\vx$ in $\tenv$ yields $\bot$;
     \item define $\newe$ as $\ve$.
     \end{itemize}
 
@@ -240,7 +240,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[local\_constant]{
   L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)\\
-  \lookupconstants(\tenv, \vx) \typearrow \vv
+  \lookupconstant(\tenv, \vx) \typearrow \vv
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\eliteral{\vv}}{\newe})
 }
@@ -249,7 +249,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[local\_non\_constant]{
   L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
-  \lookupconstants(\tenv, \vx) \typearrow \bot \lor k \neq \LDKConstant
+  \lookupconstant(\tenv, \vx) \typearrow \bot \lor k \neq \LDKConstant
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe})
 }
