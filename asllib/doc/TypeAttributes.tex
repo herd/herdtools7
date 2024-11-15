@@ -12,13 +12,15 @@ functions that inspect the structure of types:
   \item Anonymous types (\secref{TypingRule.AnonymousType})
   \item Singular types (\secref{TypingRule.SingularType})
   \item Aggregate types (\secref{TypingRule.AggregateType})
+  \item Structured types (\secref{TypingRule.StructuredType})
   \item Non-primitive types (\secref{TypingRule.NonPrimitiveType})
   \item Primitive types (\secref{TypingRule.PrimitiveType})
   \item The structure of a type (\secref{TypingRule.structure})
   \item The underlying type of a type (\secref{anonymize})
   \item Checked constrained integers (\secref{TypingRule.CheckConstrainedInteger})
-  \item Constrained types (\secref{ConstrainedTypes})
 \end{itemize}
+
+Finally, constrained types are defined in \secref{ConstrainedTypes}.
 
 \subsection{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
 \hypertarget{def-isbuiltinsingular}{}
@@ -304,7 +306,7 @@ type C of B;
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identr{GVZK}.}
 
-\subsection{TypingRule.StructuredType \label{sec:TypingRule.StructuredType}}
+\subsection{TypingRule.StructuredType\label{sec:TypingRule.StructuredType}}
 \hypertarget{def-isstructured}{}
 \hypertarget{def-structuredtype}{}
 A \emph{\structuredtype} is any type that consists of a list of field identifiers
