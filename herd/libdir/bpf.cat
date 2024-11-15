@@ -66,7 +66,8 @@ let ppo =
 
 (* Propagation ordering from SC and release operations *)
 let A-cumul = rfe? ; (po_amo_fetch | store_release)
-let prop = (coe | fre)? ; A-cumul* ; rfe?
+let amo-sequence = (rf ; ([R & W] | amo))*
+let prop = (coe | fre)? ; (A-cumul ; amo-sequence)* ; rfe?
 
 (**********)
 (* Axioms *)
