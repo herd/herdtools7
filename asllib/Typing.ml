@@ -612,6 +612,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | (AND | OR | EOR | PLUS | MINUS), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bits (w1, []) |> with_loc
+    | BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
+        T_Bits (width_plus env w1 w2, []) |> with_loc
     | (PLUS | MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> with_loc
     | (LEQ | GEQ | GT | LT), (T_Int _, T_Int _ | T_Real, T_Real)
     | ( (EQ_OP | NEQ),
@@ -1467,19 +1469,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
     (* End *)
-    | E_Array _ | E_Concat [] -> fatal_from loc UnrespectedParserInvariant
-    (* Begin EConcat *)
-    | E_Concat (_ :: _ as li) ->
-        let ts, es =
-          List.map (annotate_expr_ ~forbid_atcs env) li |> List.split
-        in
-        let w =
-          let widths = List.map (get_bitvector_width e env) ts in
-          let wh = List.hd widths and wts = List.tl widths in
-          List.fold_left (width_plus env) wh wts
-        in
-        (T_Bits (w, []) |> here, E_Concat es |> here) |: TypingRule.EConcat
-    (* End *)
+    | E_Array _ -> fatal_from loc UnrespectedParserInvariant
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type

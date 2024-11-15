@@ -30,6 +30,7 @@ module type Syntax = sig
   val rdiv : bool
   val shl : bool
   val shr : bool
+  val bv_concat : bool
   val l_int : bool
   val l_bool : bool
   val l_real : bool
@@ -47,7 +48,6 @@ module type Syntax = sig
   val e_getfield : bool
   val e_getfields : bool
   val e_record : bool
-  val e_concat : bool
   val e_tuple : bool
   val e_unknown : bool
   val e_pattern : bool
@@ -151,6 +151,7 @@ module All : Syntax = struct
   let rdiv = true
   let shl = true
   let shr = true
+  let bv_concat = true
   let l_int = true
   let l_bool = true
   let l_real = true
@@ -168,7 +169,6 @@ module All : Syntax = struct
   let e_getfield = true
   let e_getfields = true
   let e_record = true
-  let e_concat = true
   let e_tuple = true
   let e_unknown = true
   let e_pattern = true
@@ -287,6 +287,7 @@ module Parse = struct
         ("rdiv", true);
         ("shl", true);
         ("shr", true);
+        ("bv_concat", true);
         ("l_int", true);
         ("l_bool", true);
         ("l_real", true);
@@ -304,7 +305,6 @@ module Parse = struct
         ("e_getfield", true);
         ("e_getfields", true);
         ("e_record", true);
-        ("e_concat", true);
         ("e_tuple", true);
         ("e_unknown", true);
         ("e_pattern", true);
@@ -408,6 +408,7 @@ module Parse = struct
       let rdiv = Tbl.find tbl "rdiv"
       let shl = Tbl.find tbl "shl"
       let shr = Tbl.find tbl "shr"
+      let bv_concat = Tbl.find tbl "bv_concat"
       let l_int = Tbl.find tbl "l_int"
       let l_bool = Tbl.find tbl "l_bool"
       let l_real = Tbl.find tbl "l_real"
@@ -425,7 +426,6 @@ module Parse = struct
       let e_getfield = Tbl.find tbl "e_getfield"
       let e_getfields = Tbl.find tbl "e_getfields"
       let e_record = Tbl.find tbl "e_record"
-      let e_concat = Tbl.find tbl "e_concat"
       let e_tuple = Tbl.find tbl "e_tuple"
       let e_unknown = Tbl.find tbl "e_unknown"
       let e_pattern = Tbl.find tbl "e_pattern"

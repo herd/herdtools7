@@ -66,6 +66,13 @@
         recurse_limit;
         builtin = false;
       }
+
+    let make_concat es =
+      match es with
+      | [] -> E_Literal (L_BitVector Bitvector.empty)
+      | [ bv ] -> bv |> desc
+      | bv :: bvs -> List.fold_left (binop BV_CONCAT) bv bvs |> desc
+
   end
 
   open Prelude
@@ -349,7 +356,7 @@ let expr :=
   | binop_expr(expr, binop)
   | annotated (
       e1=expr; COLON; e2=expr;
-          { AST.E_Concat [ e1; e2 ] }
+          { AST.E_Binop (BV_CONCAT, e1, e2) }
   )
 
 let binop_expr(e, b) ==
@@ -366,7 +373,7 @@ let binop_expr(e, b) ==
       | ~=e; DOT; ~=ident;                            < AST.E_GetField  >
       | ~=e; DOT; ~=bracketed(clist(ident));          < AST.E_GetFields >
       | ~=e; ~=bracketed(clist(slice));               < AST.E_Slice     >
-      | ~=bracketed(clist(expr));                     < AST.E_Concat    >
+      | ~=bracketed(clist(expr));                     < make_concat     >
       | ~=e; IN; ~=bpattern;                          < AST.E_Pattern   >
       | ~=e; EQ_EQ; ~=pattern_mask;                   < AST.E_Pattern   >
       | ~=e; ~=annotated(BANG_EQ; pm=pattern_mask; < AST.Pattern_Not >); < AST.E_Pattern >

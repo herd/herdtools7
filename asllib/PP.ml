@@ -94,6 +94,7 @@ let binop_to_string : binop -> string = function
   | SHL -> "<<"
   | SHR -> ">>"
   | POW -> "^"
+  | BV_CONCAT -> "::"
 
 let unop_to_string = function BNOT -> "!" | NEG -> "-" | NOT -> "NOT"
 
@@ -133,7 +134,6 @@ let rec pp_expr f e =
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
-  | E_Concat es -> fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
   | E_Array { length; value } ->
       fprintf f "@[<hv 2>array[%a] of %a@]" pp_expr length pp_expr value

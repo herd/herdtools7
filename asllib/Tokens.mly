@@ -96,7 +96,7 @@
 %nonassoc GT GEQ LT LEQ
 
 (* binop_add_sub_logic *)
-%left PLUS MINUS OR EOR AND
+%left PLUS MINUS OR EOR AND COLON_COLON
 
 (* binop_mul_div_shift *)
 %left MUL DIV DIVRM RDIV MOD SHL SHR

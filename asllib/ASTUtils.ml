@@ -208,7 +208,6 @@ let rec use_e e =
   | E_GetField (e, _) -> use_e e
   | E_GetFields (e, _) -> use_e e
   | E_Record (ty, li) -> use_ty ty $ use_fields li
-  | E_Concat es -> use_es es
   | E_Tuple es -> use_es es
   | E_Array { length; value } -> use_e length $ use_e value
   | E_Unknown t -> use_ty t
@@ -357,8 +356,6 @@ let rec expr_equal eq e1 e2 =
         && list_equal (expr_equal eq) params1 params2
         && list_equal (expr_equal eq) args1 args2
   | E_Call _, _ | _, E_Call _ -> false
-  | E_Concat li1, E_Concat li2 -> list_equal (expr_equal eq) li1 li2
-  | E_Concat _, _ | _, E_Concat _ -> false
   | E_Cond (e11, e21, e31), E_Cond (e12, e22, e32) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22 && expr_equal eq e31 e32
   | E_Cond _, _ | _, E_Cond _ -> false
@@ -642,7 +639,6 @@ let rec subst_expr substs e =
   | E_Var s -> (
       match List.assoc_opt s substs with None -> e.desc | Some e' -> e'.desc)
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
-  | E_Concat es -> E_Concat (List.map tr es)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_Call { name; args; params; call_type } ->
       E_Call
@@ -683,7 +679,7 @@ let rec is_simple_expr e =
   | E_Unop (_, e)
   | E_Pattern (e, _) (* because pattern must be side-effect free. *) ->
       is_simple_expr e
-  | E_Tuple es | E_Concat es -> List.for_all is_simple_expr es
+  | E_Tuple es -> List.for_all is_simple_expr es
   | E_Cond (e1, e2, e3) ->
       is_simple_expr e1 && is_simple_expr e2 && is_simple_expr e3
   | E_Record (_, fields) ->
@@ -730,7 +726,6 @@ let rename_locals map_name ast =
     | E_GetFields (e', li) -> E_GetFields (map_e e', li)
     | E_GetItem (e', i) -> E_GetItem (map_e e', i)
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
-    | E_Concat li -> E_Concat (map_es li)
     | E_Tuple li -> E_Tuple (map_es li)
     | E_Array { length; value } ->
         E_Array { length = map_e length; value = map_e value }

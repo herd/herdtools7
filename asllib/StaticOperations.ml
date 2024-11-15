@@ -127,7 +127,7 @@ let constraint_binop op cs1 cs2 =
   | MOD -> List.map constraint_mod cs2
   | POW -> list_flat_cross constraint_pow cs1 cs2
   | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV ->
+  | RDIV | BV_CONCAT ->
       assert false
 (* End *)
 
@@ -273,7 +273,7 @@ module Make (C : CONFIG) = struct
     | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
     | MINUS | MUL | PLUS -> Fun.id
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | BV_CONCAT ->
         assert false
   (* End *)
 
@@ -350,7 +350,7 @@ module Make (C : CONFIG) = struct
     | PLUS | MINUS -> false
     | MUL | SHL | POW | DIV | DIVRM | MOD | SHR -> true
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | BV_CONCAT ->
         assert false
 
   (* Begin ExplodeIntervals *)
@@ -417,7 +417,7 @@ module Make (C : CONFIG) = struct
         in
         annotated_cs |: TypingRule.AnnotateConstraintBinop
     | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV ->
+    | OR | RDIV | BV_CONCAT ->
         assert false
   (* End *)
 end
