@@ -1071,7 +1071,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Tuple ts when List.compare_lengths li ts != 0 ->
             Error.fatal_from loc
               (Error.BadArity
-                 ("pattern matching on tuples", List.length li, List.length ts))
+                 ( Static,
+                   "pattern matching on tuples",
+                   List.length li,
+                   List.length ts ))
         | T_Tuple ts ->
             let new_li = List.map2 (annotate_pattern loc env) ts li in
             Pattern_Tuple new_li |> here |: TypingRule.PTuple
@@ -1126,7 +1129,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                List.length params )
       else if List.compare_lengths func_sig.args args != 0 then
         fatal_from loc
-        @@ Error.BadArity (name, List.length func_sig.args, List.length args)
+        @@ Error.BadArity
+             (Static, name, List.length func_sig.args, List.length args)
     in
     (* Check that call parameters are statically evaluable and type-satisfy the
        declaration parameters *)
@@ -1213,7 +1217,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       if List.compare_lengths callee.args args1 != 0 then
         fatal_from loc
-        @@ Error.BadArity (name, List.length callee.args, List.length args1)
+        @@ Error.BadArity
+             (Static, name, List.length callee.args, List.length args1)
     in
     let eqs2 =
       let folder acc (_x, ty) (t_e, _e) =
@@ -1928,7 +1933,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if List.compare_lengths tys les != 0 then
               Error.fatal_from le
                 (Error.BadArity
-                   ("LEDestructuring", List.length tys, List.length les))
+                   (Static, "LEDestructuring", List.length tys, List.length les))
             else
               let les' = List.map2 (annotate_lexpr env) les tys in
               LE_Destructuring les' |> here
@@ -2109,7 +2114,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         if List.compare_lengths lhs_tys rhs_tys != 0 then
           fatal_from loc
             (Error.BadArity
-               ("tuple initialization", List.length rhs_tys, List.length lhs_tys))
+               ( Static,
+                 "tuple initialization",
+                 List.length rhs_tys,
+                 List.length lhs_tys ))
         else
           let lhs_tys' =
             List.map2
@@ -2155,7 +2163,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Tuple tys ->
               fatal_from loc
                 (Error.BadArity
-                   ("tuple initialization", List.length tys, List.length ldis))
+                   ( Static,
+                     "tuple initialization",
+                     List.length tys,
+                     List.length ldis ))
           | _ -> conflict loc [ T_Tuple [] ] ty
         in
         let new_env, new_ldis =

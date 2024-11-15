@@ -1308,7 +1308,8 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some { args = arg_decls; _ } when List.compare_lengths args arg_decls <> 0
       ->
         fatal_from pos
-        @@ Error.BadArity (name, List.length arg_decls, List.length args)
+        @@ Error.BadArity
+             (Dynamic, name, List.length arg_decls, List.length args)
         |: SemanticsRule.FBadArity
     | Some { parameters = parameter_decls; _ }
       when List.compare_lengths params parameter_decls <> 0 ->
@@ -1365,7 +1366,7 @@ module Make (B : Backend.S) (C : Config) = struct
     if List.compare_lengths les monads != 0 then
       fatal_from pos
       @@ Error.BadArity
-           ("tuple construction", List.length les, List.length monads)
+           (Dynamic, "tuple construction", List.length les, List.length monads)
     else multi_assign ver env les monads
 
   (* Begin EvalTopLevel *)

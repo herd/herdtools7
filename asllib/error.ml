@@ -36,7 +36,7 @@ type error_desc =
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
-  | BadArity of identifier * int * int
+  | BadArity of error_handling_time * identifier * int * int
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
@@ -247,10 +247,11 @@ module PPrint = struct
     | MismatchedReturnValue s ->
         fprintf f "ASL Error: Mismatched use of return value from call to '%s'."
           s
-    | BadArity (name, expected, provided) ->
+    | BadArity (t, name, expected, provided) ->
         fprintf f
-          "ASL Error: Arity error while calling '%s':@ %d arguments expected \
-           and %d provided."
+          "ASL %s Error: Arity error while calling '%s':@ %d arguments \
+           expected and %d provided."
+          (error_handling_time_to_string t)
           name expected provided
     | BadParameterArity (t, version, name, expected, provided) -> (
         match (t, version) with

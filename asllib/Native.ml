@@ -265,28 +265,32 @@ module NativeBackend (C : Config) = struct
           L_Int (Bitvector.to_z_unsigned bv) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
-          Error.fatal_unknown_pos @@ Error.BadArity ("UInt", 1, List.length li)
+          Error.fatal_unknown_pos
+          @@ Error.BadArity (Dynamic, "UInt", 1, List.length li)
 
     let sint = function
       | [ NV_Literal (L_BitVector bv) ] ->
           L_Int (Bitvector.to_z_signed bv) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ default_t_bits ]
       | li ->
-          Error.fatal_unknown_pos @@ Error.BadArity ("SInt", 1, List.length li)
+          Error.fatal_unknown_pos
+          @@ Error.BadArity (Dynamic, "SInt", 1, List.length li)
 
     let dec_str = function
       | [ NV_Literal (L_Int i) ] ->
           L_String (Z.to_string i) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
-          Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+          Error.fatal_unknown_pos
+          @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
 
     let hex_str = function
       | [ NV_Literal (L_Int i) ] ->
           L_String (Printf.sprintf "%a" Z.sprint i) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
-          Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+          Error.fatal_unknown_pos
+          @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
 
     let ascii_range = Constraint_Range (!$0, !$127)
     let ascii_integer = T_Int (WellConstrained [ ascii_range ])
@@ -299,21 +303,24 @@ module NativeBackend (C : Config) = struct
           |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ ascii_integer ]
       | li ->
-          Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+          Error.fatal_unknown_pos
+          @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
 
     let log2 = function
       | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero ->
           [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
-          Error.fatal_unknown_pos @@ Error.BadArity ("Log2", 1, List.length li)
+          Error.fatal_unknown_pos
+          @@ Error.BadArity (Dynamic, "Log2", 1, List.length li)
 
     let int_to_real = function
       | [ NV_Literal (L_Int i) ] ->
           L_Real (Q.of_bigint i) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
-          Error.fatal_unknown_pos @@ Error.BadArity ("Real", 1, List.length li)
+          Error.fatal_unknown_pos
+          @@ Error.BadArity (Dynamic, "Real", 1, List.length li)
 
     let truncate q = Q.to_bigint q
 
@@ -330,7 +337,9 @@ module NativeBackend (C : Config) = struct
     let wrap_real_to_int name f = function
       | [ NV_Literal (L_Real q) ] -> L_Int (f q) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ T_Real ]
-      | li -> Error.fatal_unknown_pos @@ Error.BadArity (name, 1, List.length li)
+      | li ->
+          Error.fatal_unknown_pos
+          @@ Error.BadArity (Dynamic, name, 1, List.length li)
 
     let round_down = wrap_real_to_int "RoundDown" floor
     let round_up = wrap_real_to_int "RoundUp" ceiling
