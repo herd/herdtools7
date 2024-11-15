@@ -240,8 +240,6 @@ let rec pp_lexpr =
     | LE_Destructuring les ->
         addb f "LE_Destructuring ";
         pp_list pp_lexpr f les
-    | LE_Concat (les, _) ->
-        bprintf f "LE_Concat (%a, None)" (pp_list pp_lexpr) les
   in
   fun f le -> pp_annotated pp_desc f le
 

@@ -725,21 +725,6 @@ module Make (B : Backend.S) (C : Config) = struct
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
         multi_assign ver env le_list nmonads |: SemanticsRule.LEDestructuring
     (* End *)
-    (* Begin EvalLEConcat *)
-    | LE_Concat (les, Some widths) ->
-        let extract_slice e_width (ms, e_start) =
-          let e_end = binop PLUS e_start e_width in
-          let m' =
-            let* v = m
-            and* width = eval_expr_sef env e_width
-            and* start = eval_expr_sef env e_start in
-            B.read_from_bitvector [ (start, width) ] v
-          in
-          (m' :: ms, e_end)
-        in
-        let ms, _ = List.fold_right extract_slice widths ([], expr_of_int 0) in
-        multi_assign V1 env les ms
-    (* End *)
     (* Begin EvalLESetFields *)
     | LE_SetFields (le_record, fields, slices) ->
         let () =
@@ -756,15 +741,7 @@ module Make (B : Backend.S) (C : Config) = struct
             rm_record fields slices
         in
         eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetField
-    (* End *)
-    | LE_Concat (_, None) ->
-        let* () =
-          let* v = m in
-          Format.eprintf "@[<2>Failing on @[%a@]@ <-@ %s@]@." PP.pp_lexpr le
-            (B.debug_value v);
-          B.return ()
-        in
-        fatal_from le Error.TypeInferenceNeeded
+  (* End *)
 
   (* Evaluation of Expression Lists *)
   (* ------------------------------ *)

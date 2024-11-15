@@ -262,9 +262,6 @@ module Make (C : Config.S) = struct
       let make_var s = LE_Var s in
       vars |> map make_var
     and le_ignore = just LE_Discard
-    and le_concat =
-      let make_le_concat les = LE_Concat (les, None) in
-      list1 lexprs |> map make_le_concat
     and le_fields =
       let make_le_field (le, s) = LE_SetFields (le, s, []) in
       lexprs ** list2 names |> map make_le_field
@@ -284,7 +281,6 @@ module Make (C : Config.S) = struct
     [
       (if C.Syntax.le_var then Some le_vars else None);
       (if C.Syntax.le_discard then Some le_ignore else None);
-      (if C.Syntax.le_concat then Some le_concat else None);
       (if C.Syntax.le_setfield then Some le_field else None);
       (if C.Syntax.le_setfields then Some le_fields else None);
       (if C.Syntax.le_destructuring then Some le_destructuring else None);

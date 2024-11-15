@@ -236,7 +236,6 @@ let rec pp_lexpr f le =
         li
   | LE_Discard -> pp_print_string f "-"
   | LE_Destructuring les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
-  | LE_Concat (les, _) -> fprintf f "@[[%a]@]" (pp_comma_list pp_lexpr) les
 
 let pp_loop_limit =
   pp_print_option @@ fun f e -> fprintf f "@ @[<h 2>limit@ %a@]" pp_expr e

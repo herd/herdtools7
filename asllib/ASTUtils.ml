@@ -294,7 +294,7 @@ and use_cases cases = use_list use_case cases
 and use_le le =
   match le.desc with
   | LE_Var x -> ISet.add x
-  | LE_Destructuring les | LE_Concat (les, _) -> List.fold_right use_le les
+  | LE_Destructuring les -> List.fold_right use_le les
   | LE_Discard -> Fun.id
   | LE_SetArray (le, e) -> use_le le $ use_e e
   | LE_SetField (le, _) | LE_SetFields (le, _, _) -> use_le le
@@ -543,7 +543,6 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_Discard -> E_Var "-"
     | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
-    | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
   in
   map_desc aux
 
@@ -789,7 +788,6 @@ let rename_locals map_name ast =
   and map_le le =
     map_desc_st' le @@ function
     | LE_Discard -> le.desc
-    | LE_Concat (les, t) -> LE_Concat (List.map map_le les, t)
     | LE_Var x -> LE_Var (map_name x)
     | LE_Slice (le, slices) -> LE_Slice (map_le le, map_slices slices)
     | LE_SetArray (le, i) -> LE_SetArray (map_le le, map_e i)

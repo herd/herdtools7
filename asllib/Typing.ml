@@ -2048,27 +2048,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> conflict le [ default_t_bits ] t_le')
     | LE_SetArray _ -> assert false
     | LE_SetFields (_, _, _ :: _) -> assert false
-    (* Begin LEConcat *)
-    | LE_Concat (les, _) ->
-        let e_eq = expr_of_lexpr le in
-        let t_e_eq, _e_eq = annotate_expr env e_eq in
-        let+ () = check_bits_equal_width le env t_e_eq t_e in
-        let annotate_lebitslice (les, widths, debug_sum) le =
-          let e = expr_of_lexpr le in
-          let t_e1, _e = annotate_expr env e in
-          let width = get_bitvector_width le env t_e1 in
-          let t_e2 = T_Bits (width, []) |> add_pos_from le in
-          let le1 = annotate_lexpr env le t_e2 in
-          (le1 :: les, width :: widths, binop PLUS debug_sum width)
-          |: TypingRule.LEBitSlice
-        in
-        let rev_les, rev_widths, _real_width =
-          List.fold_left annotate_lebitslice ([], [], zero_expr) les
-        in
-        (* as the first check, we have _real_width == bv_length t_e *)
-        let les1 = List.rev rev_les and widths = List.rev rev_widths in
-        LE_Concat (les1, Some widths) |> add_pos_from le |: TypingRule.LEConcat
-  (* End *)
 
   (* Begin CheckCanBeInitializedWith *)
   let can_be_initialized_with env s t =
@@ -2623,7 +2602,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let () = assert (ret_ty = None) in
           Some (S_Call call |> here)
         else None
-    | LE_Concat (_les, _) -> None
     | LE_SetArray _ -> assert false
 
   (** [func_sig_types f] returns a list of the types in the signature [f].

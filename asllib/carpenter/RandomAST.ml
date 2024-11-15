@@ -826,15 +826,6 @@ module Typed (C : Config.S) = struct
         IMap.fold type_folder env.StaticEnv.global.declared_types [] |> function
         | [] -> None
         | li -> Some (oneof li)
-      and le_concat lexpr env ty n =
-        match ty.desc with
-        | T_Bits _ ->
-            Some
-              ( Nat.list_sized_non_empty
-                  (fun n -> t_bits >>= fun t -> lexpr (env, t, n))
-                  n
-              >|= fun li -> LE_Concat (li, None) |> annot )
-        | _ -> None
       and le_slices lexpr env ty n =
         match ty.desc with
         | T_Bits _ ->
@@ -854,10 +845,9 @@ module Typed (C : Config.S) = struct
       [
         (if C.Syntax.le_discard then Some le_discard else None);
         (if C.Syntax.le_var then le_var env ty_anon else None);
-        (if C.Syntax.le_concat then le_tuple lexpr env ty_anon n else None);
-        (if C.Syntax.le_setfield && n >= 1 then le_set_field lexpr env ty_anon n
+        (if C.Syntax.le_destructuring then le_tuple lexpr env ty_anon n
          else None);
-        (if C.Syntax.le_concat && n >= 1 then le_concat lexpr env ty_anon n
+        (if C.Syntax.le_setfield && n >= 1 then le_set_field lexpr env ty_anon n
          else None);
         (if C.Syntax.le_slice && n >= 1 then le_slices lexpr env ty_anon n
          else None);

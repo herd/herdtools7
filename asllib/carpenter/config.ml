@@ -90,7 +90,6 @@ module type Syntax = sig
   val le_setfield : bool
   val le_setfields : bool
   val le_destructuring : bool
-  val le_concat : bool
   val ldk_var : bool
   val ldk_let : bool
   val ldk_constant : bool
@@ -212,7 +211,6 @@ module All : Syntax = struct
   let le_setfield = true
   let le_setfields = true
   let le_destructuring = true
-  let le_concat = true
   let ldk_var = true
   let ldk_let = true
   let ldk_constant = true
@@ -349,7 +347,6 @@ module Parse = struct
         ("le_setfield", true);
         ("le_setfields", true);
         ("le_destructuring", true);
-        ("le_concat", true);
         ("ldk_var", true);
         ("ldk_let", true);
         ("ldk_constant", true);
@@ -471,7 +468,6 @@ module Parse = struct
       let le_setfield = Tbl.find tbl "le_setfield"
       let le_setfields = Tbl.find tbl "le_setfields"
       let le_destructuring = Tbl.find tbl "le_destructuring"
-      let le_concat = Tbl.find tbl "le_concat"
       let ldk_var = Tbl.find tbl "ldk_var"
       let ldk_let = Tbl.find tbl "ldk_let"
       let ldk_constant = Tbl.find tbl "ldk_constant"
