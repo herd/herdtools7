@@ -292,7 +292,7 @@ let colon_for_type == COLON | COLON_COLON
 
 (* Constrained types helpers *)
 
-let int_constraints_opt == constraint_kind | { UnConstrained }
+let constraint_kind_opt == constraint_kind | { UnConstrained }
 let constraint_kind == ~=braced(nclist(int_constraint)); < WellConstrained >
 
 let int_constraint ==
@@ -344,7 +344,7 @@ let bitfield ==
 (* Also called ty in grammar.bnf *)
 let ty :=
   annotated (
-    | INTEGER; c = int_constraints_opt;                 < T_Int       >
+    | INTEGER; c = constraint_kind_opt;                 < T_Int       >
     | REAL;                                             { T_Real      }
     | BOOLEAN;                                          { T_Bool      }
     | STRING;                                           { T_String    }

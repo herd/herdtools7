@@ -1782,7 +1782,7 @@ is a dynamic error.
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Nexpr \parsesep \Tas \parsesep \Nty &\\
-                    |\  & \Nexpr \parsesep \Tas \parsesep \Nintconstraints &
+                    |\  & \Nexpr \parsesep \Tas \parsesep \Nconstraintkind &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1804,11 +1804,11 @@ is a dynamic error.
 \begin{mathpar}
 \inferrule[int\_constraints]{
   \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
-  \buildintconstraints(\vics) \astarrow \astversion{\vics} \OrBuildError
+  \buildconstraintkind(\vics) \astarrow \astversion{\vics} \OrBuildError
 }{
   {
     \begin{array}{r}
-      \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tas, \vics : \Nintconstraints)}{\vparsednode}) \astarrow\\
+      \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tas, \vics : \Nconstraintkind)}{\vparsednode}) \astarrow\\
       \overname{\EATC(\astversion{\ve}, \TInt(\astversion{\vics}))}{\vastnode}
     \end{array}
   }
@@ -2160,13 +2160,16 @@ cannot appear as a type, since ASL syntax does not allow the following:
 
 \section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.
+Patterns can also be used to test whether an expression matches a bitmask (via $\Teq$) or does not match a bitmask (via $\Tneq$).
 Lists of patterns are also used in case statements.
 %
 \chapref{PatternMatching} goes into the details of the various types of patterns that can be matched against.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternormask &\\
+\Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
+              |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
+              |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
 \Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
                   |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
 \Npatternlist \derivesinline\ & \NClist{\Npattern} &
@@ -2181,42 +2184,32 @@ Lists of patterns are also used in case statements.
 \begin{mathpar}
 \inferrule{
   \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
-  \buildpatternormask(\vp) \astarrow \astversion{\vp} \OrBuildError
+  \buildpatternset(\vps) \astarrow \astversion{\vps} \OrBuildError
 }{
   {
     \begin{array}{r}
-      \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tin, \vp : \Npatternormask)}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astversion{\ve}, \astversion{\vp})}{\vastnode}
+      \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tin, \vps : \Npatternset)}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astversion{\ve}, \astversion{\vps})}{\vastnode}
     \end{array}
   }
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.PatternOrMask}
-The function
-\[
-  \buildpatternormask(\overname{\Npatternormask}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a pattern or mask parse node $\vparsednode$ into a pattern AST node $\vastnode$.
-
 \begin{mathpar}
-\inferrule[pattern\_set]{}{
-  \buildpatternormask(\overname{\Npatternormask(\Npatternset)}{\vparsednode}) \astarrow
-  \overname{\astof{\vpatternset}}{\vastnode}
+\inferrule[eq]{}{
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Teq, \Tmasklit(\vm))}{\vparsednode}) \astarrow
+  \overname{\EPattern(\astof{\vexpr}, \PatternMask(\vm))}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[bitmask]{}{
-  \buildpatternormask(\overname{\Npatternormask(\Tmasklit(\vm))}{\vparsednode}) \astarrow
-  \overname{\PatternMask(\vm)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bitvector\_lit]{}{
-  \buildpatternormask(\overname{\Npatternormask(\Tbitvectorlit(\vb))}{\vparsednode}) \astarrow
-  \overname{\PatternMask(\vb)}{\vastnode}
+\inferrule[neq]{}{
+  {
+    \begin{array}{r}
+      \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tneq, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
+      \overname{\EPattern(\astof{\vexpr}, \PatternNot(\PatternMask(\vm)))}{\vastnode}
+    \end{array}
+  }
 }
 \end{mathpar}
 
