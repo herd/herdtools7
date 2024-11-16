@@ -729,7 +729,7 @@ let rename_locals map_name ast =
     | E_Tuple li -> E_Tuple (map_es li)
     | E_Array { length; value } ->
         E_Array { length = map_e length; value = map_e value }
-    | E_Pattern (_, _) -> failwith "Not yet implemented: obfuscate patterns"
+    | E_Pattern (e, p) -> E_Pattern (map_e e, map_pattern p)
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices
   and map_slice = function
@@ -737,6 +737,17 @@ let rename_locals map_name ast =
     | Slice_Single e -> Slice_Single (map_e e)
     | Slice_Range (e1, e2) -> Slice_Range (map_e e1, map_e e2)
     | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)
+  and map_pattern p =
+    map_desc_st' p @@ function
+    | Pattern_All -> Pattern_All
+    | Pattern_Any ps -> Pattern_Any (List.map map_pattern ps)
+    | Pattern_Not p -> Pattern_Not (map_pattern p)
+    | Pattern_Geq e -> Pattern_Geq (map_e e)
+    | Pattern_Leq e -> Pattern_Leq (map_e e)
+    | Pattern_Single e -> Pattern_Single (map_e e)
+    | Pattern_Tuple ps -> Pattern_Tuple (List.map map_pattern ps)
+    | Pattern_Mask m -> Pattern_Mask m
+    | Pattern_Range (e1, e2) -> Pattern_Range (map_e e1, map_e e2)
   and map_t t =
     map_desc_st' t @@ function
     | T_Real | T_String | T_Bool | T_Enum _ | T_Named _ | T_Int UnConstrained ->

@@ -36,7 +36,21 @@ end;
 
 func IsPowerOfTwo(x: integer) => boolean
 begin
-  return x > 0 && x == 2 ^ Log2 (x);
+  if x <= 0 then return FALSE;
+  else
+    var y = x;
+
+    // Check that all the bits of x are 0, except the most significant one.
+    while (y > 1) looplimit 1_000_000 do
+      if y MOD 2 == 1 then
+        return FALSE;
+      else
+        y = y DIV 2;
+      end;
+    end;
+
+    return TRUE;
+  end;
 end;
 
 // Return true if integer is even (0 modulo 2).
