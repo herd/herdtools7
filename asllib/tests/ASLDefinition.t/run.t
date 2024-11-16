@@ -4,3 +4,4 @@ Examples used in ASL High-level Definition:
   $ aslref spec3.asl
 
   $ aslref --no-exec Bitfields.asl
+  $ aslref Bitfields_nested.asl
