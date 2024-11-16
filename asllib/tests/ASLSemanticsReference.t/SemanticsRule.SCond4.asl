@@ -5,8 +5,9 @@ begin
   var elements:integer;
 
   if size == '01' then
-    esize = 16; elements = 4;
+    esize = 16;
+    elements = 4;
   end;
 
-return 0;
+  return 0;
 end;

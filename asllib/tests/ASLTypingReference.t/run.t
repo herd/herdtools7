@@ -41,3 +41,8 @@ ASL Typing Reference / annotating types:
   [1]
   $ aslref TypingRule.TBitField.asl
   $ aslref --no-exec TypingRule.AnnotateFuncSig.asl
+  $ aslref TypingRule.BuiltinAggregateTypes.asl
+  $ aslref --no-exec TypingRule.BuiltinExceptionType.asl
+  $ aslref TypingRule.BuiltinSingularTypes.asl
+  $ aslref TypingRule.EnumerationType.asl
+  $ aslref TypingRule.TString.asl

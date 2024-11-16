@@ -161,3 +161,22 @@ ASL Semantics Reference:
   [1]
   $ aslref SemanticsRule.LEDiscard.asl
   $ aslref SemanticsRule.LDDiscard.asl
+
+  $ aslref EvalCatchers.asl
+  2 1
+  $ aslref SemanticsRule.ATCNotDynamicErrorIfFalse.asl
+  $ aslref SemanticsRule.ATCVariousErrors.asl
+  File SemanticsRule.ATCVariousErrors.asl, line 4, characters 2 to 30:
+  ASL Typing error: a subtype of integer {4, 5, 6} was expected,
+    provided integer {2}.
+  [1]
+  $ aslref SemanticsRule.CatchNoThrow.asl
+  $ aslref SemanticsRule.EConcat2.asl
+  $ aslref SemanticsRule.LEGlobalVar.asl
+  $ aslref SemanticsRule.SCond2.asl
+  $ aslref SemanticsRule.SCond3.asl
+  File SemanticsRule.SCond3.asl, line 4, characters 0 to 3:
+  ASL Grammar error: Obsolete syntax: Missing ';' after 'end' keyword.
+  [1]
+  $ aslref SemanticsRule.SCond4.asl
+  $ aslref SemanticsRule.STry.asl
