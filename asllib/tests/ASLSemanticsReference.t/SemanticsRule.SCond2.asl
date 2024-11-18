@@ -1,8 +1,7 @@
 func main () => integer
-
 begin
-var x:integer; 
-var y:integer;
+  var x: integer;
+  var y: integer;
 
   if x > y then
       return 1;
@@ -11,5 +10,4 @@ var y:integer;
   else
       return 0;
   end;
-
 end;

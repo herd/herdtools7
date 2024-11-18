@@ -79,6 +79,11 @@ dune-test:
 	@ echo
 	dune runtest --profile=$(DUNE_PROFILE)
 
+.PHONY: dune-no-missing-file-in-runt
+test:: dune-no-missing-file-in-runt
+dune-no-missing-file-in-runt:
+	asllib/tests/check-no-missing-file-in-run.sh ./
+
 test:: test.aarch64
 test-local:: test.aarch64
 test.aarch64:

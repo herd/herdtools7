@@ -12,6 +12,7 @@ H Examples
   $ aslref --no-exec HExample11.asl
   $ aslref --no-exec HExample12.asl
   $ aslref --no-exec HExample13.asl
+  $ aslref --no-exec HExample14.asl
   $ aslref --no-exec HExample15.asl
   $ aslref --no-exec HExample16.asl
   File HExample16.asl, line 10, characters 19 to 33:
