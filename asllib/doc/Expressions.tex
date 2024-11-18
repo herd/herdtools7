@@ -89,7 +89,6 @@ We now define the syntax, abstract syntax, typing, and semantics of the followin
   \item Call expressions (see \secref{CallExpressions})
   \item Slicing expressions, which include array access expressions (see \secref{SlicingExpressions})
   \item Field reading expressions (see \secref{FieldReadingExpressions})
-  \item Bitvector concatenation expressions (see \secref{BitvectorConcatenationExpressions})
   \item Asserting type conversion expressions (see \secref{AssertingTypeConversionExpressions})
   \item Pattern matching expressions (see \secref{PatternMatchingExpressions})
   \item Arbitrary value expressions (see \secref{ArbitraryValueExpressions})
@@ -1713,99 +1712,6 @@ All of the following apply:
 % let* v = B.get_index index v_tuple in
 % return_normal (v, new_env) |: SemanticsRule.EGetTupleItem
 \CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
-
-\section{Bitvector Concatenation Expressions\label{sec:BitvectorConcatenationExpressions}}
-\subsection{Syntax}
-Concatenation of multiple bitvectors is done using a comma separated list
-surrounded with square brackets.
-
-\begin{flalign*}
-\Nexpr \derives\ & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &
-\end{flalign*}
-
-\subsection{Abstract Syntax}
-\begin{flalign*}
-\expr \derives\ & \EConcat(\expr^{+}) &
-\end{flalign*}
-
-\subsubsection{ASTRule.EConcat}
-\begin{mathpar}
-  \inferrule{
-    \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts \OrBuildError
-  }{
-  \buildexpr(\overname{\Nexpr(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)}{\vparsednode}) \astarrow
-  \overname{\EConcat(\vexprasts)}{\vastnode}
-}
-\end{mathpar}
-
-\subsection{Typing}
-\subsubsection{TypingRule.EConcat \label{sec:TypingRule.EConcat}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\ve$ denotes the concatenation of a non-empty list of expressions $\vli$, that is, \\ $\EConcat(\vli)$;
-  \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields $(\vt_i, \ve_i$)\ProseOrTypeError;
-  \item $\ves$ is the list of expressions $\ve_i$, for $i=1..k$;
-  \item obtaining the bitvector width of $\vt_i$ in $\tenv$ (which also checks that $\vt_i$ is a bitvector type),
-        for $i=1..k$, yields $\vw_i$\ProseOrTypeError;
-  \item to obtain the (symbolic) width of the resulting bitvector, first define $\widthsum_1$ to be $\vw_1$;
-  \item then define $\widthsum_i$, for $i=2..k$, to be obtained by reducing the expression that sums \\ $\widthsum_{i-1}$ with the width $\vw_i$;
-  \item $\vt$ is the bitvector of length $\widthsum_k$ and the empty bitfield list, that is, \\ $\TBits(\widthsum_k, \emptylist)$;
-  \item $\newe$ is the concatenation expression for $\ves$, that is, $\EConcat(\ves)$.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  i=1..k: \annotateexpr{\tenv, \vli[i]} \typearrow (\vt_i, \ve_i) \OrTypeError\\\\
-  \vts \eqdef [i=1..k: \vt_i]\\
-  \ves \eqdef [i=1..k: \ve_i]\\
-  i=1..k: \getbitvectorwidth(\tenv, \vt_i) \typearrow \vw_i \OrTypeError\\\\
-  \widthsum_1 \eqdef \vw_1\\
-  i=2..k: \normalize(\tenv, \EBinop(\PLUS, \widthsum_{i-1}, \vw_i)) \typearrow \widthsum_i
-}{
-  \annotateexpr{\tenv, \EConcat(\vli)} \typearrow (\TBits(\widthsum_k, \emptylist), \EConcat(\ves))
-}
-\end{mathpar}
-\CodeSubsection{\EConcatBegin}{\EConcatEnd}{../Typing.ml}
-
-\subsubsection{Comments}
-The sum of the widths of the bitvector types~\texttt{ts} might be a symbolic
-expression that is unresolvable to an integer. For example:
-\ASLExample{\typingtests/TypingRule.EConcatUnresolvableToInteger.asl}
-\lrmcomment{This is related to \identr{NYNK} and \identr{KCZS}.}
-
-\subsection{Semantics}
-\subsubsection{SemanticsRule.EConcat\label{sec:SemanticsRule.EConcat}}
-\subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EConcat.asl}
-the expression \texttt{['10', '11']} evaluates to the value \texttt{'1011'}.
-
-\subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EConcat2.asl}
-the expression \texttt{['1111', '0000']} evaluates to the value \texttt{'11110000'}.
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-\item $\ve$ denotes a concatenation of bitvector expressions, $\EConcat(\elist)$;
-\item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
-\item $\vv$ is the bitvector constructed from the concatenation of $\vlist$.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv)  \OrAbnormal\\
-  \concatbitvectors(\vlist) \evalarrow \vv
-}{
-  \evalexpr{\env, \EConcat(\elist)} \evalarrow \Normal((\vv, \vg), \newenv)
-}
-\end{mathpar}
-\CodeSubsection{\EvalEConcatBegin}{\EvalEConcatEnd}{../Interpreter.ml}
-
-\subsubsection{Comments}
-\lrmcomment{This is related to \identr{BRCM}:}
 
 \subsubsection{SemanticsRule.EExprList\label{sec:SemanticsRule.EExprList}}
 \subsubsection{Prose}

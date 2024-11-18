@@ -161,7 +161,7 @@ The following rules correspond to unary operations and binary operations that ca
 The following rules correspond to various types of expressions:
 literal expressions, variable expressions, typing assertions, binary operation expressions, unary operation expressions,
 call expressions, slicing expressions, conditional expressions, single-field access expressions, multiple-field access expressions,
-record and exception construction expressions, concatenation expressions, tuple expressions, unknown-value expressions,
+record and exception construction expressions, tuple expressions, unknown-value expressions,
 and pattern matching expressions.
 
 \hypertarget{ast-expr}{} \hypertarget{ast-eliteral}{}
@@ -187,8 +187,6 @@ and pattern matching expressions.
 	|\ & \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names})
   &\hypertarget{ast-erecord}{}\\
 	|\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})
-  &\hypertarget{ast-econcat}{}\\
-	|\ & \EConcat(\expr^{+})
   &\hypertarget{ast-etuple}{}\\
 	|\ & \ETuple(\expr^{+})
   &\hypertarget{ast-eunknown}{}\\
@@ -401,10 +399,7 @@ The following rules define the types of left-hand side of assignments:
   |\ & \LESetField(\lexpr, \identifier) & \hypertarget{ast-lesetfields}{}\\
   |\ & \LESetFields(\lexpr, \identifier^*) & \hypertarget{ast-ledestructuring}{}\\
   |\ & \LEDestructuring(\lexpr^*) & \hypertarget{ast-leconcat}{}\\
-  |\ & \LEConcat(\lexpr^+) &\\
 \end{flalign*}
-
-$\LEConcat(\texttt{les})$ represents the left-hand-side list of expressions for simultaneous assignments.
 
 \subsection{Local Declarations \label{sec:LocalDeclarations}}
 
@@ -588,12 +583,6 @@ The rules for expressions have the following extra derivation rules:
   \item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to construct an array value
         in order to initialize an array-typed variable.
 \end{itemize}
-
-The AST node for a left-hand-side tuple of expressions contains a second component $\vwidths$ whose elements
-are expressions corresponding to the lengths of the corresponding slices in $\vles$:
-\begin{flalign*}
-\lexpr \derives\ & \LEConcat(\overname{\lexpr^+}{\vles}, \overname{\expr^+}{\vwidths}) &
-\end{flalign*}
 
 The rules for statements exclude \texttt{case} statements, since those are transformed into
 conditional statements (see \nameref{sec:TypingRule.DesugarCaseStmt}).
@@ -874,7 +863,6 @@ which is utilized both for the type system and semantics:
   \torexpr(\LESetFields(\vle, \vx)) &=& \EGetFields(\torexpr(\vle), \vx)\\
   \torexpr(\LEDiscard) &=& \EVar(\texttt{-})\\
   \torexpr(\LEDestructuring([\vle_{1..k}])) &=& \ETuple([i=1..k: \torexpr(\vle_i)])\\
-  \torexpr(\LEConcat([\vle_{1..k}], \Ignore)) &=& \EConcat([i=1..k: \torexpr(\vle_i)])\\
 \end{array}
 \]
 
