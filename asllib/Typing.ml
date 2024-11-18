@@ -797,6 +797,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TInt *)
     | T_Int constraints ->
         (match constraints with
+        | WellConstrained [] -> fatal_from loc Error.EmptyConstraints
         | WellConstrained constraints ->
             let new_constraints =
               List.map (annotate_constraint ~loc env) constraints
@@ -1989,6 +1990,25 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> env
   (* End *)
 
+  let rec inherit_constrained_types ~loc lhs_ty rhs_ty =
+    match (lhs_ty.desc, rhs_ty.desc) with
+    | T_Int (WellConstrained []), T_Int (WellConstrained _) -> rhs_ty
+    | T_Int (WellConstrained []), _ ->
+        fatal_from loc (Error.ConstrainedIntegerExpected rhs_ty)
+    | T_Tuple lhs_tys, T_Tuple rhs_tys ->
+        if List.compare_lengths lhs_tys rhs_tys != 0 then
+          fatal_from loc
+            (Error.BadArity
+               ("tuple initialization", List.length rhs_tys, List.length lhs_tys))
+        else
+          let lhs_tys' =
+            List.map2
+              (inherit_constrained_types ~loc:(to_pos lhs_ty))
+              lhs_tys rhs_tys
+          in
+          T_Tuple lhs_tys' |> add_pos_from lhs_ty
+    | _ -> lhs_ty
+
   let rec annotate_local_decl_item loc (env : env) ty ldk ?e ldi =
     let () =
       if false then Format.eprintf "Annotating %a.@." PP.pp_local_decl_item ldi
@@ -1999,6 +2019,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin LDTyped *)
     | LDI_Typed (ldi', t) ->
+        let ty' = Types.get_structure env ty in
+        let t = inherit_constrained_types ~loc t ty' in
         let t' = annotate_type ~loc env t in
         let+ () = check_can_be_initialized_with loc env t' ty in
         let new_env, new_ldi' =

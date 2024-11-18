@@ -190,10 +190,15 @@ One of the following applies:
       \item $\tty$ is an integer type that is not well-constrained;
       \item $\newty$ is the unconstrained integer type.
     \end{itemize}
+  \item All of the following apply (\textsc{well\_constrained\_empty}):
+    \begin{itemize}
+      \item $\tty$ is the well-constrained integer type with no constraints;
+      \item the result is a type error.
+    \end{itemize}
   \item All of the following apply (\textsc{well\_constrained}):
     \begin{itemize}
       \item $\tty$ is the well-constrained integer type constrained by
-        constraints $\vc_i$, for $u=1..k$;
+        non-empty constraints $\vc_i$, for $u=1..k$;
       \item annotating each constraint $\vc_i$, for $i=1..k$,
       yields $\newc_i$\ProseOrTypeError;
       \item $\newconstraints$ is the list of annotated constraints $\newc_i$,
@@ -222,7 +227,21 @@ In the following examples, all the uses of integer types are well-typed:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[well\_constrained\_empty]{
+  \constraints \eqname \emptylist
+}{
+  {
+    \begin{array}{r}
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\wellconstrained(\emptylist))}{\tty}} \typearrow
+  \TypeErrorConfig
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[well\_constrained]{
+  \listlen{\constraints} > 0\\
   \constraints \eqname \vc_{1..k}\\
   i=1..k: \annotateconstraint(\vc_i) \typearrow\newc_i \OrTypeError\\\\
   \newconstraints \eqdef \newc_{1..k}

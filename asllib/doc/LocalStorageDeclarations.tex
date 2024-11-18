@@ -291,25 +291,93 @@ All of the following apply:
 \begin{itemize}
   \item $\ldi$ denotes a local declaration item $\ldip$ with local declaration keyword $\ldk$
   and a type $\vt$, that is $\LDITyped(\ldip, \vt)$;
-  \item annotating the type $\vt$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
-  \item determining whether $\vtp$ can be initialized with $\tty$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining the \structure{} of right-hand side type $\tty$ in $\tenv$ yields $\ttyp$;
+  \item propagating integer constraints from $\ttyp$ to $\vt$ using $\inheritintegerconstraints$ yields $\vtone$;
+  \item annotating the type $\vtone$ in $\tenv$ yields $\vttwo$\ProseOrTypeError;
+  \item determining whether $\vttwo$ can be initialized with $\tty$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item annotating the local declaration item $\ldip$ with the local declaration keyword $\ldk$, given
-  the type $\vt$, in the environment $\tenv$, yields $(\newtenv,\newldip)$;
+  the type $\vttwo$, in the environment $\tenv$, yields $(\newtenv,\newldip)$;
   \item $\newldi$ is the local declaration denoting $\newldip$ and the type $\vtp$, that is, \\
-  $\LDITyped(\newldip, \vtp)$.
+  $\LDITyped(\newldip, \vttwo)$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \checkcanbeinitializedwith(\tenv, \vtp, \tty) \typearrow \True \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vtp, \ldk, \veopt, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError
+  \tstruct(\tenv, \tty) \typearrow \ttyp \\
+  \inheritintegerconstraints(\vt, \ttyp) \typearrow \vtone \OrTypeError \\
+  \annotatetype{\tenv, \vtone} \typearrow \vttwo \OrTypeError\\\\
+  \checkcanbeinitializedwith(\tenv, \vttwo, \tty) \typearrow \True \OrTypeError\\\\
+  \annotatelocaldeclitem{\tenv, \vttwo, \ldk, \veopt, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError
 }{
   \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDITyped(\ldip, \vt)}{\ldi}} \typearrow \\
-  (\newtenv, \LDITyped(\newldip, \vtp))
+  (\newtenv, \LDITyped(\newldip, \vttwo))
 }
 \end{mathpar}
 \CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.InheritIntegerConstraints\label{sec:TypingRule.InheritIntegerConstraints}}
+\hypertarget{def-inheritintegerconstraints}{}
+The helper function
+\[
+\inheritintegerconstraints(\overname{\ty}{\lhs} \aslsep \overname{\ty}{\rhs})
+\typearrow \lhsp \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
+It can fail with a type error.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{int}):
+  \begin{itemize}
+    \item $\lhs$ is a \wellconstrainedintegertype{} with no constraints;
+    \item $\rhs$ is a \wellconstrainedintegertype{}\ProseOrTypeError;
+    \item $\lhsp$ is $\rhs$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item $\lhs$ is a tuple of types \texttt{lhs\_tys};
+    \item $\rhs$ is a tuple of types \texttt{rhs\_tys};
+    \item the lengths of \texttt{lhs\_tys} and \texttt{rhs\_tys} are equal\ProseOrTypeError;
+    \item define \texttt{lhs\_tys'} by applying $\inheritintegerconstraints$ to each element of \texttt{lhs\_tys} and \texttt{rhs\_tys}\ProseOrTypeError;
+    \item $\lhsp$ is $\TTuple(\texttt{lhs\_tys'})$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other}):
+  \begin{itemize}
+    \item $\lhs$ is not a \wellconstrainedintegertype{} with no constraints, or one of $\lhs$ and $\rhs$ is not a tuple type;
+    \item $\lhsp$ is $\lhs$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[int]{
+  \rhs \eqname \TInt(\wellconstrained(\Ignore)) \OrTypeError
+}{
+  \inheritintegerconstraints(\overname{\TInt(\wellconstrained(\emptylist))}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \lhs \eqname \TTuple(\texttt{lhs\_tys}) \\
+  \rhs \eqname \TTuple(\texttt{rhs\_tys}) \\\\
+  \equallength(\texttt{lhs\_tys}, \texttt{rhs\_tys}) \typearrow \True \OrTypeError \\
+  \vi \in \listrange(\lhs): \inheritintegerconstraints(\texttt{lhs\_tys}_i, \texttt{rhs\_tys}_i) \typearrow \texttt{lhs\_tys'}_i \OrTypeError \\
+}{
+  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\TTuple(\texttt{lhs\_tys'})}{\lhsp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other]{
+  \lhs \neq \TInt(\wellconstrained(\Ignore)) \;\lor\; \astlabel(\lhs) \neq \TTuple \;\lor\; \astlabel(\rhs) \neq \TTuple
+}{
+  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
+}
+\end{mathpar}
 
 \subsubsection{TypingRule.CheckCanBeInitializedWith\label{sec:TypingRule.CheckCanBeInitializedWith}}
 \hypertarget{def-checkcanbeinitializedwith}{}
