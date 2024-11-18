@@ -130,6 +130,7 @@ as well as a unique name.
 \hypertarget{def-xorbits}{}
 \hypertarget{def-eqbits}{}
 \hypertarget{def-nebits}{}
+\hypertarget{def-concatbits}{}
 \begin{tabular}{lllll}
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
@@ -144,6 +145,7 @@ as well as a unique name.
 \Txor   & \lbitvector & \lbitvector & \lbitvector & \xorbits\\
 \Teqop  & \lbitvector & \lbitvector & \lbool & \eqbits\\
 \Tneq   & \lbitvector & \lbitvector & \lbool & \nebits\\
+\Tcoloncolon & \lbitvector & \lbitvector & \lbitvector & \concatbits\\
 \hline
 \end{tabular}
 \end{table}
@@ -187,7 +189,7 @@ as well as a unique name.
 \Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat \;|\; \Tcoloncolon
 \end{flalign*}
 
 \section{Abstract Syntax}
@@ -211,7 +213,7 @@ as well as a unique name.
         \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
         & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{}
 \\
-        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}}
+        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\BVCONCAT}{\texttt{"::"}}
         &
 \end{flalign*}
 
@@ -393,6 +395,12 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
+\begin{mathpar}
+\inferrule[]{}{
+  \buildbinop(\Nbinop(\Tcoloncolon)) \astarrow \overname{\BVCONCAT}{\vastnode}
+}
+\end{mathpar}
+
 \section{Typing}
 \subsection{TypingRule.UnopLiterals \label{sec:TypingRule.UnopLiterals}}
 \hypertarget{def-unopliterals}{}
@@ -550,6 +558,7 @@ argument types for a given binary operator:
   (\XOR       &,& \lbitvector &,& \lbitvector)&,\\
   (\MINUS     &,& \lbitvector &,& \lbitvector)&,\\
   (\PLUS      &,& \lbitvector &,& \lbitvector)&,\\
+  (\BVCONCAT  &,& \lbitvector &,& \lbitvector)&,\\
   (\MINUS     &,& \lbitvector &,& \lint)&,\\
   (\PLUS      &,& \lbitvector &,& \lint)&\\
 \end{array}
@@ -855,6 +864,14 @@ One of the following applies:
     \item define $b$ as the natural number represented by $b_{1..k}$;
     \item define $c$ as the two's complement little endian representation of $a-b$ in $k$ bits;
     \item define $\vr$ as the bitvector literal for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{concat\_bits}):
+  \begin{itemize}
+    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{1..l}$;
+    \item $\op$ is $\BVCONCAT$;
+    \item define $\vr$ as the bitvector literal for $a_{1..k}b_{1..l}$.
   \end{itemize}
 
   \item All of the following apply (\textsc{add\_bits\_int}):
@@ -1204,6 +1221,13 @@ of \texttt{width} bits.
   \binopliterals(\overname{\MINUS}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..k})}{\vvtwo}) \typearrow \overname{\lbitvector(c)}{\vr}
 }
 \end{mathpar}
+
+\begin{mathpar}
+\inferrule[concat\_bits]{}{
+  \binopliterals(\overname{\BVCONCAT}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..l})}{\vvtwo}) \typearrow \overname{\lbitvector(a_{1..k})\lbitvector(b_{1..l})}{\vr}
+}
+\end{mathpar}
+
 
 \begin{mathpar}
 \inferrule[add\_bits\_int]{

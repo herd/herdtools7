@@ -1168,6 +1168,16 @@ One of the following applies:
     \item $\vt$ is the bitvector type of width $\vw$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{bits\_concat}):
+  \begin{itemize}
+    \item $\op$ is $\BVCONCAT$;
+    \item $\vtone$ is a bitvector type with width expression $\vwone$;
+    \item $\vttwo$ is a bitvector type with width expression $\vwtwo$;
+    \item define $\vw$ as the addition of $\vwone$ and $\vwtwo$;
+    \item applying \normalize{} to $\vw$ in $\tenv$ yields $\wp$;
+    \item $\vt$ is the bitvector type of width $\wp$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{rel}):
   \begin{itemize}
     \item the operator $\op$ and types of $\vtone$ and $\vttwo$ match one of the rows in the following table:
@@ -1277,6 +1287,7 @@ One of the following applies:
       \XOR     & \TBits  & \TBits\\
       \PLUS    & \TBits  & \TBits\\
       \MINUS   & \TBits  & \TBits\\
+      \BVCONCAT & \TBits  & \TBits\\
       %
       \PLUS    & \TBits  & \TInt\\
       \MINUS   & \TBits  & \TInt\\
@@ -1359,6 +1370,16 @@ One of the following applies:
   \op \in  \{\PLUS, \MINUS\}}{
   \applybinoptypes(\tenv, \op, \overname{\TBits(\vw, \Ignore)}{\vtone}, \overname{\TInt(\Ignore)}{\vttwo}) \typearrow
   \overname{\TBits(\vw, \emptylist)}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[bits\_concat]{
+  \vw \eqdef \EBinop(\PLUS, \vwone, \vwtwo) \\
+  \normalize(\tenv, \vw) \typearrow \wp
+}{
+  \applybinoptypes(\tenv, \BVCONCAT, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo}) \typearrow
+  \overname{\TBits(\wp, \emptylist)}{\vt}
 }
 \end{mathpar}
 
@@ -1480,6 +1501,7 @@ One of the following applies:
       (\XOR     &,& \TBits  &,& \TBits)\\
       (\PLUS    &,& \TBits  &,& \TBits)\\
       (\MINUS   &,& \TBits  &,& \TBits)\\
+      (\BVCONCAT &,& \TBits  &,& \TBits)\\
       %
       (\PLUS    &,& \TBits  &,& \TInt)\\
       (\MINUS   &,& \TBits  &,& \TInt)\\
