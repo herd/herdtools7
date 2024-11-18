@@ -1,9 +1,9 @@
 type Nested_Type of bits(32) {
-    [31:15] fmt0 {
+    [31:16] fmt0 {
         [15] common,
         [14] moving
     },
-    [31:15] fmt1 {
+    [31:16] fmt1 {
         [15] common,
         [0]  moving
     },
