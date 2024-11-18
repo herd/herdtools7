@@ -41,7 +41,7 @@ module SemanticsRule = struct
     | ESlice
     | ECall
     | EGetArray
-    | ESliceOrEGetArrayError
+    | ESliceError
     | ERecord
     | EGetBitField
     | EGetBitFields

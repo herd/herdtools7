@@ -160,7 +160,7 @@ The following rules correspond to unary operations and binary operations that ca
 \subsection{Expressions \label{sec:Expressions}}
 The following rules correspond to various types of expressions:
 literal expressions, variable expressions, typing assertions, binary operation expressions, unary operation expressions,
-call expressions, slicing expressions, conditional expressions, single-field access expressions, multiple-field access expressions,
+call expressions, slicing expressions, conditional expressions, array access expressions, single-field access expressions, multiple-field access expressions,
 record and exception construction expressions, tuple expressions, unknown-value expressions,
 and pattern matching expressions.
 
@@ -181,6 +181,8 @@ and pattern matching expressions.
 	|\ & \ESlice(\expr, \slice^{*})
   &\hypertarget{ast-econd}{}\\
 	|\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
+  &\hypertarget{ast-egetarray}{}\\
+  |\ & \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index})
   &\hypertarget{ast-egetfield}{}\\
 	|\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})
   &\hypertarget{ast-egetfields}{}\\
@@ -569,21 +571,14 @@ Declaration keyword for global storage elements:
 The derivation rules for the typed abstract syntax are the same as the rules for the untyped abstract syntax,
 except for the following differences.
 
-The rules for expressions have the following extra derivation rules:
-\hypertarget{ast-egetarray}{}
+The rules for expressions have the following extra derivation rule:
+\hypertarget{ast-earray}{}
 \begin{flalign*}
-\expr \derives\ & \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index}) &\hypertarget{ast-earray}{}\\
-|\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\}
+\expr \derives\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} &
 \end{flalign*}
 
-\begin{itemize}
-  \item $\EGetArray(\veone, \vetwo)$ stands for an expression accessing the array given by the expression $\veone$
-        at the index given by integer-typed expression $\vetwo$.
-        This expression is the result of the type-checker inferring an array access expression from a slicing expression
-        (\nameref{sec:TypingRule.EGetArray}).
-  \item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to construct an array value
-        in order to initialize an array-typed variable.
-\end{itemize}
+$\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to construct an array value
+in order to initialize an array-typed variable.
 
 The rules for statements exclude \texttt{case} statements, since those are transformed into
 conditional statements (see \nameref{sec:TypingRule.DesugarCaseStmt}).

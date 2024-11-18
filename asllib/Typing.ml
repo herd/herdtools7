@@ -1568,10 +1568,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     annotate_get_array ~forbid_atcs ~loc env (size, ty')
                       (e'', e_index)
                 | _ -> conflict loc [ integer'; default_t_bits ] t_e')
-            (* Begin ESliceOrEGetArrayError *)
+            (* Begin ESliceError *)
             | _ ->
                 conflict e [ integer'; default_t_bits ] t_e'
-                |: TypingRule.ESliceOrEGetArrayError
+                |: TypingRule.ESliceError
             (* End *)))
     | E_GetField (e1, field_name) -> (
         let reduced =
