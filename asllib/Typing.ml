@@ -3027,6 +3027,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       List.rev_append setters others
     in
+    (* DeclareSubprograms( *)
     let genv2, env_and_fs2 =
       list_fold_left_map
         (fun genv (lenv, f, loc) ->
@@ -3034,7 +3035,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let env1, f1 = declare_one_func loc f env in
           (env1.global, (env1.local, f1, loc)))
         genv env_and_fs1
-      |: TypingRule.FoldEnvAndFs
+      |: TypingRule.DeclareSubprograms
+      (* DeclareSubprograms) *)
     in
     let fs3 =
       List.map
@@ -3049,12 +3051,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | SB_Primitive -> (f, loc))
         env_and_fs2
     in
+    (* AddSubprogramDecls( *)
     let env3, ds =
       list_fold_left_map
         (fun env2 ((f : func), loc) ->
           (add_subprogram f.name f env2, D_Func f |> add_pos_from loc))
         { local = empty_local; global = genv2 }
         fs3
+      (* AddSubprogramDecls) *)
     in
     (List.rev_append ds acc, env3.global) |: TypingRule.TypeCheckMutuallyRec
   (* End *)
@@ -3078,8 +3082,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (List.rev ast_rev, env)
 
   let type_check_ast ast = type_check_ast_in_env empty_global ast
-  (* End *)
 end
+(* End *)
 
 module TypeCheckDefault = Annotate (struct
   let check = TypeCheck

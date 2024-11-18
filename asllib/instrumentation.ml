@@ -457,7 +457,7 @@ module TypingRule = struct
     | Normalize
     | RenameTyEqs
     | TypeCheckMutuallyRec
-    | FoldEnvAndFs
+    | DeclareSubprograms
     | AnnotateLoopLimit
     | CheckATC
     | CheckSlicesInWidth
@@ -638,7 +638,7 @@ module TypingRule = struct
     | Normalize -> "Normalize"
     | RenameTyEqs -> "RenameTyEqs"
     | TypeCheckMutuallyRec -> "TypeCheckMutuallyRec"
-    | FoldEnvAndFs -> "FoldEnvAndFs"
+    | DeclareSubprograms -> "DeclareSubprograms"
     | AnnotateLoopLimit -> "AnnotateLoopLimit"
     | CheckATC -> "CheckATC"
     | CheckSlicesInWidth -> "CheckSlicesInWidth"
@@ -801,7 +801,7 @@ module TypingRule = struct
       Normalize;
       RenameTyEqs;
       TypeCheckMutuallyRec;
-      FoldEnvAndFs;
+      DeclareSubprograms;
       AnnotateLoopLimit;
       CheckATC;
       CheckSlicesInWidth;

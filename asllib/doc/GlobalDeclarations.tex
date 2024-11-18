@@ -85,15 +85,16 @@ annotates a global declaration $\vd$ in the global static environment $\genv$,
 yielding an annotated global declaration $\newd$ and modified global static environment $\newgenv$.
 \ProseOtherwiseTypeError
 
-\subsubsection{TypingRule.TypecheckFunc \label{sec:TypingRule.TypecheckFunc}}
+\subsubsection{TypingRule.TypecheckFunc\label{sec:TypingRule.TypecheckFunc}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
   \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \secref{TypingRule.AnnotateAndDeclareFunc}
-        yields the new environment $\newtenv$ and a subprogram definition $\vfone$\ProseOrTypeError;
+        yields the environment $\tenvone$ and a subprogram definition $\vfone$\ProseOrTypeError;
   \item annotating the subprogram definition $\vfone$ in $\tenv$ as per \nameref{sec:TypingRule.Subprogram} yields
         the annotated subprogram definition $\vftwo$\ProseOrTypeError;
+  \item applying $\addsubprogram$ to bind $\vftwo.\funcname$ to $\vftwo$ in $\tenvone$ yields $\newtenv$;
   \item define $\newd$ as the subprogram AST node with $\vftwo$, that is, $\DFunc(\vftwo)$;
   \item define $\newgenv$ as the global component of $\newtenv$.
 \end{itemize}\CodeSubsection{\TypecheckFuncBegin}{\TypecheckFuncEnd}{../Typing.ml}
@@ -102,8 +103,9 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \vf \eqname \{\text{body}: \SBASL, \ldots\}\\
-  \annotateanddeclarefunc(\genv, \vf) \typearrow (\newtenv, \vfone) \OrTypeError\\\\
-  \annotatesubprogram{\newtenv, \vfone} \typearrow \vftwo \OrTypeError
+  \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
+  \annotatesubprogram{\tenvone, \vfone} \typearrow \vftwo \OrTypeError\\\\
+  \addsubprogram(\tenvone, \vftwo.\funcname, \vftwo) \typearrow \newtenv
 }{
   \typecheckdecl(\genv, \overname{\DFunc(\vf)}{\vd})
   \typearrow (\overname{\DFunc(\vftwo)}{\newd}, \overname{G^\newtenv}{\newgenv})
