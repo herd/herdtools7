@@ -12,14 +12,17 @@ Subprogram declarations have no associated semantics.
 \section{Syntax\label{sec:SubprogramDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derivesinline\ & \productionname{funcdecl}{func\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
-|\ & \productionname{proceduredecl}{procedure\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \productionname{getter}{getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
-|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
+\Ndecl  \derivesinline\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \\
+& \wrappedline\ \parsesep \Nfuncbody &\\
+|\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
+|\ & \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
     & \wrappedline\ \parsesep \Nfuncbody &\\
 \end{flalign*}
 
 \begin{flalign*}
+\Nrecurselimit   \derivesinline\ & \Trecurselimit \parsesep \Nexpr &\\
+|\              & \emptysentence &\\
 \Nparamsopt \derivesinline\ & \emptysentence &\\
                    |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &\\
 \Nopttypedidentifier \derivesinline\ & \Tidentifier \parsesep \option{\Nasty} &\\
@@ -47,6 +50,7 @@ Subprogram declarations have no associated semantics.
  \funcbody &:& \subprogrambody,\\
  \funcreturntype &:& \ty?,\\
  \funcsubprogramtype &:& \subprogramtype,\\
+ \funcrecurselimit    &:& \expr?\\
  \funcbuiltin &:& \Bool
 \end{array}
 \right\}
@@ -67,12 +71,15 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-funcdecl}{}
 \begin{mathpar}
 \inferrule[func\_decl]{}{
-    \builddecl(
-      \overname{\Ndecl(
-      \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \punnode{\Nfuncbody}
-    )}{\vparsednode})
-  \astarrow \\
-  {
+  \builddecl\left(
+    \overname{\Ndecl\left(
+      \begin{array}{l}
+    \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \\
+    \wrappedline\ \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
+      \end{array}
+  \right)}{\vparsednode}\right)
+\astarrow \\
+{
     \overname{
   \DFunc\left(\left\{
     \begin{array}{rcl}
@@ -82,6 +89,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \langle \astof{\vreturntype} \rangle,\\
             \funcsubprogramtype &:& \STFunction,\\
+            \funcrecurselimit   &:& \langle\astof{\vrecurselimit}\rangle\\
             \funcbuiltin &:& \False
     \end{array}
   \right\}\right)}{\vastnode}
@@ -106,6 +114,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \None,\\
             \funcsubprogramtype &:& \STProcedure,\\
+            \funcrecurselimit   &:& \None\\
             \funcbuiltin &:& \False
     \end{array}
   \right\}\right)
@@ -135,6 +144,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
             \funcsubprogramtype &:& \STGetter,\\
+            \funcrecurselimit   &:& \None\\
             \funcbuiltin &:& \False
     \end{array}
   \right\}\right)
@@ -166,11 +176,36 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
             \funcreturntype &:& \None,\\
             \funcsubprogramtype &:& \STSetter,\\
+            \funcrecurselimit   &:& \None\\
             \funcbuiltin &:& \False
     \end{array}
   \right\}\right)
     }{\vastnode}
   }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.RecurseLimit}
+\hypertarget{build-recurselimit}{}
+The function
+\[
+\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\langle\expr\rangle}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[limit]{}{
+  \buildrecurselimit\left(\overname{\Nrecurselimit(\Trecurselimit, \punnode{\Nexpr})}{\vparsednode}\right)
+  \astarrow
+  \overname{\langle\astof{\vexpr}\rangle}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_limit]{}{
+  \buildrecurselimit\left(\overname{\Nrecurselimit(\emptysentence)}{\vparsednode}\right)
+  \astarrow
+  \overname{\None}{\vastnode}
 }
 \end{mathpar}
 
@@ -386,22 +421,26 @@ $\newtenv$.
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vtenv$ is the static environment comprised of the global static environment $\genv$ and an empty local environment;
+  \item $\tenv$ is the static environment comprised of the global static environment $\genv$ and an empty local environment;
+  \item applying $\annotatelimitexpr$ to $\funcsig.\funcrecurselimit$ in $\tenvone$ yields \\
+        $\vrecurselimit$\ProseOrTypeError;
   \item checking that the parameters $\funcsig.\funcparameters$ are declared correctly using $\checkparamdecls$ yields $\True$\ProseOrTypeError;
-  \item annotating and declaring the parameters $\funcsig.\funcparameters$ in $\vtenv$ using \\ $\annotateparams$ yields environment $\tenvwithparams$ and the list of annotated parameters $\params$\ProseOrTypeError;
+  \item annotating and declaring the parameters $\funcsig.\funcparameters$ in $\tenv$ using \\ $\annotateparams$ yields environment $\tenvwithparams$ and the list of annotated parameters $\params$\ProseOrTypeError;
   \item annotating and declaring the arguments $\funcsig.\funcargs$ in $\tenvwithparams$ using $\annotateargs$ yields environment $\tenvwithargs$ and the list of annotated arguments $\vargs$\ProseOrTypeError;
   \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ yields the result environment $\newenv$ and the annotated return type $\vreturntype$\ProseOrTypeError;
-  \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, and annotated return type $\vreturntype$.
+  \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
+        and $\vrecurselimit$ as its recursion limit.
 \end{itemize}\CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
 
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \withemptylocal(\genv) \typearrow \vtenv\\
+  \withemptylocal(\genv) \typearrow \tenv\\
+  \annotatelimitexpr(\tenvone, \funcsig.\funcrecurselimit) \typearrow \vrecurselimit \OrTypeError\\\\
   \checkparamdecls(\tenv, \funcsig) \typearrow \True \OrTypeError \\
   {
     \begin{array}{r}
-    \annotateparams(\vtenv, \funcsig.\funcparameters, (\vtenv, \emptylist)) \typearrow \\
+    \annotateparams(\tenv, \funcsig.\funcparameters, (\tenv, \emptylist)) \typearrow \\
     (\tenvwithparams, \params) \OrTypeError
     \end{array}
   }\\
@@ -427,12 +466,13 @@ All of the following apply:
       \funcbody            &:& \funcsig.\funcbody,\\
       \funcreturntype      &:& \vreturntype,\\
       \funcsubprogramtype  &:& \funcsig.\funcsubprogramtype,\\
+      \funcrecurselimit    &:& \vrecurselimit\\
       \funcbuiltin         &:& \funcsig.\funcbuiltin
     \end{array}
     \right\}
   }
 }{
-  \annotatefuncsig(\vtenv, \funcsig) \typearrow (\newtenv, \newfuncsig, \argparams)
+  \annotatefuncsig(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \argparams)
 }
 \end{mathpar}
 
@@ -457,12 +497,12 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \typesinfuncsig(\funcsig) \typearrow \tys \\
-  \vi \in \listrange(\tys): \paramsofty(\vtenv, \tty_i) \typearrow \params_i \\
+  \vi \in \listrange(\tys): \paramsofty(\tenv, \tty_i) \typearrow \params_i \\
   \params \eqdef \texttt{inferred\_params} \concat \ldots \concat \params_{\listlen{\tys}} \\
   \paramsone \eqdef \uniquelist(\params) \\\\
   \checktrans{\texttt{inferred\_params} = \funcsig.\funcparameters}{\BadParameterDecl} \checktransarrow \vb \OrTypeError
 }{
-  \checkparamdecls(\vtenv, \funcsig) \typearrow \vb
+  \checkparamdecls(\tenv, \funcsig) \typearrow \vb
 }
 \end{mathpar}
 
@@ -500,7 +540,7 @@ Define $\tys$ as the return type (if any) concatenated with the argument types.
 \hypertarget{def-paramsofty}{}
 The function
 \[
-\paramsofty(\overname{\staticenvs}{\vtenv}, \overname{\ty}{\tty}) \typearrow \overname{\identifier^*}{\ids}
+\paramsofty(\overname{\staticenvs}{\tenv}, \overname{\ty}{\tty}) \typearrow \overname{\identifier^*}{\ids}
 \]
 finds the list of parameters in the type $\tty$.
 It assumes that $\tty$ appears in a function signature.
@@ -512,7 +552,7 @@ One of the following applies:
   \item All of the following apply (\textsc{tbits}):
     \begin{itemize}
       \item $\tty$ is a bitvector type, that is, $\TBits(\ve, \Ignore)$;
-      \item applying $\paramsofexpr$ to $\ve$ in $\vtenv$ yields $\ids$.
+      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\ids$.
     \end{itemize}
 
   \item All of the following apply (\textsc{ttuple}):
@@ -539,27 +579,27 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[tbits]{
-  \paramsofexpr(\vtenv, \ve) \typearrow \ids
+  \paramsofexpr(\tenv, \ve) \typearrow \ids
 }{
-  \paramsofty(\vtenv, \TBits(\ve, \Ignore)) \typearrow \ids
+  \paramsofty(\tenv, \TBits(\ve, \Ignore)) \typearrow \ids
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[ttuple]{
-  \tty_i \in \tys: \paramsofty(\vtenv, \tty_i) \typearrow \ids_i \\
+  \tty_i \in \tys: \paramsofty(\tenv, \tty_i) \typearrow \ids_i \\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
-  \paramsofty(\vtenv, \TTuple(\tys)) \typearrow \ids
+  \paramsofty(\tenv, \TTuple(\tys)) \typearrow \ids
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[tint\_constrained]{
-  \vc_i \in \cs: \paramsofconstraint(\vtenv, \vc_i) \typearrow \ids_i \\
+  \vc_i \in \cs: \paramsofconstraint(\tenv, \vc_i) \typearrow \ids_i \\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
-  \paramsofty(\vtenv, \TInt(\wellconstrained(\cs)) \typearrow \ids
+  \paramsofty(\tenv, \TInt(\wellconstrained(\cs)) \typearrow \ids
 }
 \end{mathpar}
 
@@ -568,7 +608,7 @@ One of the following applies:
   \astlabel(\tty) \notin \{ \TBits, \TTuple \} \\
   \tty \neq \TInt(\wellconstrained(\Ignore))
 }{
-  \paramsofty(\vtenv, \tty) \typearrow \overname{\emptylist}{\ids}
+  \paramsofty(\tenv, \tty) \typearrow \overname{\emptylist}{\ids}
 }
 \end{mathpar}
 
@@ -577,7 +617,7 @@ One of the following applies:
 \hypertarget{def-paramsofexpr}{}
 The function
 \[
-\paramsofexpr(\overname{\staticenvs}{\vtenv}, \overname{\expr}{\ve}) \typearrow \overname{\identifier^*}{\ids}
+\paramsofexpr(\overname{\staticenvs}{\tenv}, \overname{\expr}{\ve}) \typearrow \overname{\identifier^*}{\ids}
 \]
 finds the list of parameters in the expression $\ve$.
 It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
@@ -589,20 +629,20 @@ One of the following applies:
   \item All of the following apply (\textsc{eval}):
     \begin{itemize}
       \item $\ve$ is a variable, that is, $\EVar(\vx)$;
-      \item if $\vx$ is undefined in $\vtenv$ then $\ids$ is $[\vx]$, otherwise $\ids$ is $\emptylist$.
+      \item if $\vx$ is undefined in $\tenv$ then $\ids$ is $[\vx]$, otherwise $\ids$ is $\emptylist$.
     \end{itemize}
 
   \item All of the following apply (\textsc{eunop}):
     \begin{itemize}
       \item $\ve$ is a unary operation, that is, $\EUnop(\Ignore, \ve)$;
-      \item applying $\paramsofexpr$ to $\veone$ in $\vtenv$ yields $\ids$.
+      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\ids$.
     \end{itemize}
 
   \item All of the following apply (\textsc{ebinop}):
     \begin{itemize}
       \item $\ve$ is a binary operation, that is, $\EBinop(\Ignore, \veone, \vetwo)$;
-      \item applying $\paramsofexpr$ to $\veone$ in $\vtenv$ yields $\idsone$;
-      \item applying $\paramsofexpr$ to $\vetwo$ in $\vtenv$ yields $\idstwo$;
+      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$;
+      \item applying $\paramsofexpr$ to $\vetwo$ in $\tenv$ yields $\idstwo$;
       \item define $\ids$ as the concatenation of $\idsone$ and $\idstwo$.
     \end{itemize}
 
@@ -616,27 +656,27 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[eval]{
-  \isundefined(\vtenv, \vx) \typearrow \vb\\
+  \isundefined(\tenv, \vx) \typearrow \vb\\
   \ids \eqdef \choice{\vb}{[\vx]}{\emptylist}
 }{
-  \paramsofexpr(\vtenv, \EVar(\vx)) \typearrow \ids
+  \paramsofexpr(\tenv, \EVar(\vx)) \typearrow \ids
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[eunop]{
-  \paramsofexpr(\vtenv, \veone) \typearrow \ids
+  \paramsofexpr(\tenv, \veone) \typearrow \ids
 }{
-  \paramsofexpr(\vtenv, \EUnop(\Ignore, \veone)) \typearrow \ids
+  \paramsofexpr(\tenv, \EUnop(\Ignore, \veone)) \typearrow \ids
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[ebinop]{
-  \paramsofexpr(\vtenv, \veone) \typearrow \idsone \\
-  \paramsofexpr(\vtenv, \vetwo) \typearrow \idstwo
+  \paramsofexpr(\tenv, \veone) \typearrow \idsone \\
+  \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo
 }{
-  \paramsofexpr(\vtenv, \EBinop(\Ignore, \veone, \vetwo)) \typearrow \overname{\idsone \concat \idstwo}{\ids}
+  \paramsofexpr(\tenv, \EBinop(\Ignore, \veone, \vetwo)) \typearrow \overname{\idsone \concat \idstwo}{\ids}
 }
 \end{mathpar}
 
@@ -644,7 +684,7 @@ One of the following applies:
 \inferrule[other]{
   \astlabel(\ve) \notin \{ \EVar, \EUnop, \EBinop \}
 }{
-  \paramsofexpr(\vtenv, \ve) \typearrow \overname{\emptylist}{\ids}
+  \paramsofexpr(\tenv, \ve) \typearrow \overname{\emptylist}{\ids}
 }
 \end{mathpar}
 
@@ -652,7 +692,7 @@ One of the following applies:
 \hypertarget{def-paramsofconstraint}{}
 The function
 \[
-\paramsofconstraint(\overname{\staticenvs}{\vtenv}, \overname{\intconstraint}{\vc}) \typearrow \overname{\identifier^*}{\ids}
+\paramsofconstraint(\overname{\staticenvs}{\tenv}, \overname{\intconstraint}{\vc}) \typearrow \overname{\identifier^*}{\ids}
 \]
 finds the list of parameters in the constraint $\vc$.
 It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
@@ -664,14 +704,14 @@ One of the following applies:
   \item All of the following apply (\textsc{exact}):
     \begin{itemize}
       \item $\vc$ is an exact constraint, that is, $\ConstraintExact(\ve)$;
-      \item applying $\paramsofexpr$ to $\ve$ in $\vtenv$ yields $ids$.
+      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $ids$.
     \end{itemize}
 
   \item All of the following apply (\textsc{range}):
     \begin{itemize}
       \item $\vc$ is an range constraint, that is, $\ConstraintRange(\veone, \vetwo)$;
-      \item applying $\paramsofexpr$ to $\veone$ in $\vtenv$ yields $\idsone$;
-      \item applying $\paramsofexpr$ to $\vetwo$ in $\vtenv$ yields $\idstwo$;
+      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$;
+      \item applying $\paramsofexpr$ to $\vetwo$ in $\tenv$ yields $\idstwo$;
       \item $\ids$ is the concatenation of $\idsone$ and $\idstwo$.
     \end{itemize}
 \end{itemize}
@@ -679,18 +719,18 @@ One of the following applies:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[exact]{
-  \paramsofexpr(\vtenv, \ve) \typearrow \ids
+  \paramsofexpr(\tenv, \ve) \typearrow \ids
 }{
-  \paramsofconstraint(\vtenv, \ConstraintExact(\ve)) \typearrow \ids
+  \paramsofconstraint(\tenv, \ConstraintExact(\ve)) \typearrow \ids
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range]{
-  \paramsofexpr(\vtenv, \veone) \typearrow \idsone \\
-  \paramsofexpr(\vtenv, \vetwo) \typearrow \idstwo \\
+  \paramsofexpr(\tenv, \veone) \typearrow \idsone \\
+  \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \\
 }{
-  \paramsofconstraint(\vtenv, \ConstraintRange(\veone, \vetwo)) \typearrow \overname{\idsone \concat \idstwo}{\ids}
+  \paramsofconstraint(\tenv, \ConstraintRange(\veone, \vetwo)) \typearrow \overname{\idsone \concat \idstwo}{\ids}
 }
 \end{mathpar}
 
@@ -725,7 +765,7 @@ The function
 \[
 \begin{array}{r}
 \annotateparams(
-  \overname{\staticenvs}{\vtenv} \aslsep
+  \overname{\staticenvs}{\tenv} \aslsep
   \overname{(\identifier \times \langle\ty\rangle)^*}{\params} \aslsep\
   (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc})
 ) \aslto \\
@@ -733,7 +773,7 @@ The function
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates each parameter in $\params$ with respect to $\vtenv$,
+annotates each parameter in $\params$ with respect to $\tenv$,
 and declares it in environment $\newtenv$.
 It returns the updated environment $\tenvwithparams$ and the annotated parameters $\paramsone$, together with any annotated parameters already in the accumulator $\acc$.
 \ProseOtherwiseTypeError
@@ -758,26 +798,26 @@ One of the following applies:
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
     \item $\params$ is a list with $(\vx, \tyopt)$ as its \head\ and $\paramsp$ as its \tail;
-    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ with $\vtenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\tty$\ProseOrTypeError;
+    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ with $\tenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\tty$\ProseOrTypeError;
     \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \tty)$;
-    \item applying $\annotateparams$ to $\paramsp$ with $\vtenv$, $\newtenvp$, and $\accp$ yields $\tenvwithparams$ and $\paramsone$.
+    \item applying $\annotateparams$ to $\paramsp$ with $\tenv$, $\newtenvp$, and $\accp$ yields $\tenvwithparams$ and $\paramsone$.
   \end{itemize}
 \end{itemize}
 
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
-  \annotateparams(\vtenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
+  \annotateparams(\tenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
   (\overname{\newtenv}{\tenvwithparams}, \overname{\acc}{\paramsone})
 }
 \and
 \inferrule[non\_empty]{
   \params \eqname [(\vx,\tyopt)] \concat \paramsp\\\\
-  \annotateoneparam(\vtenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \\\\
+  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \\\\
   \accp \eqdef \acc \concat [(\vx, \tty)] \\\\
-  \annotateparams(\vtenv, \paramsp, (\newtenvp, \accp)) \typearrow (\tenvwithparams, \paramsone) \OrTypeError
+  \annotateparams(\tenv, \paramsp, (\newtenvp, \accp)) \typearrow (\tenvwithparams, \paramsone) \OrTypeError
 }{
-  \annotateparams(\vtenv, \params, (\newtenv, \acc)) \typearrow (\tenvwithparams, \paramsone)
+  \annotateparams(\tenv, \params, (\newtenv, \acc)) \typearrow (\tenvwithparams, \paramsone)
 }
 \end{mathpar}
 
@@ -787,7 +827,7 @@ The function
 \[
 \begin{array}{r}
 \annotateoneparam(
-  \overname{\staticenvs}{\vtenv} \aslsep
+  \overname{\staticenvs}{\tenv} \aslsep
   \overname{\staticenvs}{\newtenv} \aslsep
   (\overname{\identifier}{\vx} \times \overname{\langle\ty\rangle}{\tyopt})
 ) \aslto
@@ -796,7 +836,7 @@ The function
 \end{array}
 \]
 annotates the parameter given by $\vx$ and the \optional\ type $\tyopt$
-with respect to $\vtenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
+with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
 The updated environment $\newtenvp$ and annotated parameter type $\tty$ are returned.
 \ProseOtherwiseTypeError
 
@@ -814,7 +854,7 @@ All of the following apply:
     \item All of the following apply (\textsc{type\_annotated}):
     \begin{itemize}
       \item $\tyopt$ is the type $\langle\ttyp\rangle$, which is not the unconstrained integer type;
-      \item annotating $\ttyp$ in $\vtenv$ yields $\tty$\ProseOrTypeError.
+      \item annotating $\ttyp$ in $\tenv$ yields $\tty$\ProseOrTypeError.
     \end{itemize}
   \end{itemize}
   \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
@@ -833,17 +873,17 @@ All of the following apply:
   \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
   \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
 }{
-  \annotateoneparam(\vtenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty)
+  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty)
 }
 \and
 \inferrule[type\_annotated]{
   \ttyp \neq \unconstrainedinteger\\
-  \annotatetype{\False, \vtenv, \ttyp} \typearrow \tty \OrTypeError\\\\
+  \annotatetype{\False, \tenv, \ttyp} \typearrow \tty \OrTypeError\\\\
   \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
   \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
 }{
-  \annotateoneparam(\vtenv, \newtenv, (\vx, \langle\ttyp\rangle)) \typearrow (\newtenvp, \tty)
+  \annotateoneparam(\tenv, \newtenv, (\vx, \langle\ttyp\rangle)) \typearrow (\newtenvp, \tty)
 }
 \end{mathpar}
 
@@ -853,7 +893,7 @@ The function
 \[
 \begin{array}{r}
 \annotateargs(
-  \overname{\staticenvs}{\vtenv} \aslsep
+  \overname{\staticenvs}{\tenv} \aslsep
   \overname{(\identifier \times \ty)^*}{\args} \aslsep\
   (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc})
 ) \aslto \\
@@ -861,7 +901,7 @@ The function
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates each argument in $\args$ with respect to $\vtenv$,
+annotates each argument in $\args$ with respect to $\tenv$,
 and declares it in environment $\newtenv$.
 It returns the updated environment $\tenvwithargs$ and the annotated arguments $\vnewargs$, together with any annotated arguments already in the accumulator $\acc$.
 \ProseOtherwiseTypeError
@@ -879,9 +919,9 @@ One of the following applies:
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
     \item $\args$ is a list with $(\vx, \tty)$ as its \head\ and $\vargsp$ as its \tail;
-    \item applying $\annotateonearg$ to the argument $(\vx, \tty)$ with $\vtenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\ttyp$\ProseOrTypeError;
+    \item applying $\annotateonearg$ to the argument $(\vx, \tty)$ with $\tenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\ttyp$\ProseOrTypeError;
     \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \ttyp)$;
-    \item applying $\annotateargs$ to $\vargsp$ with $\vtenv$, $\newtenvp$, and $\accp$ yields $\tenvwithargs$ and $\vnewargs$.
+    \item applying $\annotateargs$ to $\vargsp$ with $\tenv$, $\newtenvp$, and $\accp$ yields $\tenvwithargs$ and $\vnewargs$.
   \end{itemize}
 \end{itemize}
 
@@ -894,17 +934,17 @@ In the following specification, the annotated arguments are
 \subsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
-  \annotateargs(\vtenv, \overname{\emptylist}{\args}, (\newtenv, \acc)) \typearrow
+  \annotateargs(\tenv, \overname{\emptylist}{\args}, (\newtenv, \acc)) \typearrow
   (\overname{\newtenv}{\tenvwithargs}, \overname{\acc}{\newargs})
 }
 \and
 \inferrule[non\_empty]{
   \vargs \eqname [(\vx,\tty)] \concat \vargsp\\\\
-  \annotateonearg(\vtenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp) \OrTypeError \\\\
+  \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp) \OrTypeError \\\\
   \accp \eqdef \acc \concat [(\vx, \ttyp)] \\\\
-  \annotateargs(\vtenv, \vargsp, (\newtenvp, \accp)) \typearrow (\tenvwithargs, \newargs) \OrTypeError
+  \annotateargs(\tenv, \vargsp, (\newtenvp, \accp)) \typearrow (\tenvwithargs, \newargs) \OrTypeError
 }{
-  \annotateargs(\vtenv, \args, (\newtenv, \acc)) \typearrow (\tenvwithargs, \newargs)
+  \annotateargs(\tenv, \args, (\newtenv, \acc)) \typearrow (\tenvwithargs, \newargs)
 }
 \end{mathpar}
 
@@ -913,7 +953,7 @@ In the following specification, the annotated arguments are
 The function
 \[
 \annotateonearg(
-  \overname{\staticenvs}{\vtenv} \aslsep
+  \overname{\staticenvs}{\tenv} \aslsep
   \overname{\staticenvs}{\newtenv} \aslsep
   (\overname{\identifier}{\vx} \times \overname{\ty}{\tty})
 ) \aslto
@@ -921,14 +961,14 @@ The function
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates the argument given by the identifier $\vx$ and the type $\tty$
-with respect to $\vtenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
+with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
 The updated environment $\newtenvp$ and annotated argument type $\ttyp$ are returned.
 \ProseOtherwiseTypeError
 
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item annotating the type $\tty$ in $\vtenv$ yields $\ttyp$\ProseOrTypeError;
+  \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$\ProseOrTypeError;
   \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
   \item adding the local storage element given by the identifier $\vx$, type $\ttyp$, and local declaration keyword
         $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
@@ -937,7 +977,7 @@ All of the following apply:
 \subsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\vtenv, \tty} \typearrow \ttyp \OrTypeError \\
+  \annotatetype{\tenv, \tty} \typearrow \ttyp \OrTypeError \\
   \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\
   \addlocal(\newtenv, \vx, \ttyp, \LDKLet) \typearrow \newtenvp
 }{

@@ -16,8 +16,8 @@ The semantics of a single global storage declarations is defined in \nameref{sec
 \begin{flalign*}
 \Ndecl  \derivesinline\ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
         & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
-        |\ & \productionname{globaluninitvar}{global\_uninit\_var}\ \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
-        |\ & \productionname{globalpragma}{global\_pragma}\ \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+        |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
+        |\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
 \begin{flalign*}
@@ -479,13 +479,14 @@ The relation
 \[
   \declareglobal(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\envs}{\env}) \;\aslrel\; \overname{\envs}{\newenv}
 \]
-updates the environment $\env$ by mapping $\name$ to $\vv$ as a global storage element.
+updates the environment $\env$ by mapping $\name$ to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
 
 \subsubsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \env \eqname (\tenv, (G^\denv, L^\denv))\\
-    \newenv \eqdef (\tenv, (G^\denv[\name\mapsto \vv], L^\denv))
-  }
-  { \declareglobal(\name, \vv, \env) \evalarrow \newenv  }
+\inferrule{
+  \env \eqname (\tenv, (G^\denv, L^\denv))\\
+  \newenv \eqdef (\tenv, (G^\denv.\storage[\name\mapsto \vv], L^\denv))
+}{
+  \declareglobal(\name, \vv, \env) \evalarrow \newenv
+}
 \end{mathpar}

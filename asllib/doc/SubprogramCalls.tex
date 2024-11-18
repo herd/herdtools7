@@ -1308,9 +1308,10 @@ All of the following apply:
   \item evaluating each expression in $\params$ separately in $\env$ as per \secref{SemanticsRule.EExprListM}
   is \\ $\Normal(\vvparams, \envtwo)$\ProseOrAbnormal;
   \item $\envtwo$ consists of the static environment $\tenv$ and the dynamic environment $\denvtwo$;
+  \item applying $\incrstacksize$ to $G^\denvtwo$ and $\name$ yields $\genv$;
   \item the environment $\envtwo'$ is defined as the environment
   consisting of the static environment $\tenv$ and the dynamic environment with the global component
-  of $\denvtwo$ and an empty local component (intuitively, this is because the called subprogram does not have access
+  $\genv$ and an empty local component (intuitively, this is because the called subprogram does not have access
   to the local environment of the caller);
   \item one of the following applies:
   \begin{itemize}
@@ -1319,13 +1320,11 @@ All of the following apply:
       \item evaluating the subprogram named $\name$ with parameters $\vvparams$ and arguments $\vvargs$ in
       $\denvtwo'$ is $\Normal(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
       of the callee)\ProseOrError;
-      \item the list $\vms$ consists of value-identifier pairs $(\vv_j, \rid_j)$, for $i=1..n$;
-      \item applying the helper relation $\readvaluefrom$ to each $(\vv_j, \rid_j)$
-      results in $\vmstwo_j$, for $i=1..n$;
-      \item $\vmstwo$ is defined as the list of $\vmstwo_j$, for $i=1..n$;
-      \item define $\newenv$ as the environment where the static environment $\tenv$ and the dynamic environment consists
-      of $\vglobal$ as the global component and the local component of $\denvtwo$ (that is, we restore
-      the local environment to that of the caller and drop the local environment of the callee).
+      \item applying the helper relation $\readvaluefrom$ to $\vms$ yields $\vmstwo$;
+      \item applying $\decrstacksize$ to $\vglobal$ and $\name$ yields $\genvtwo$;
+      \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consists
+            of the dynamic global environment $\genvtwo$ and the dynamic local environment is taken from $\denvtwo$
+            (that is, we restore the local environment to that of the caller and drop the local environment of the callee).
       \item the entire evaluation results in $\Normal(\vmstwo, \newenv)$.
     \end{itemize}
 
@@ -1333,11 +1332,12 @@ All of the following apply:
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\vvparams$ in
             $\denvtwo'$ is $\Throwing(\vv, \envthrow)$\ProseOrError;
-      \item view $\envthrow$ as $(\tenv, \denvthrow)$;
-      \item define $\newenv$ as the environment where the static environment is $\tenv$
-            and the global dynamic environment is the global dynamic environment of $\denvthrow$ and the
-            local dynamic environment is the local dynamic environment of $\denvtwo$;
-      \item the entire evaluation results in $\Throwing(\vv, \newenv)$.
+      \item applying the helper relation $\readvaluefrom$ to $\vms$ yields $\vmstwo$;
+      \item applying $\decrstacksize$ to $\vglobal$ and $\name$ yields $\genvtwo$;
+      \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consists
+            of the dynamic global environment $\genvtwo$ and the dynamic local environment is taken from $\denvtwo$
+            (that is, we restore the local environment to that of the caller and drop the local environment of the callee).
+      \item the entire evaluation results in $\Normal(\vmstwo, \newenv)$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -1348,12 +1348,12 @@ All of the following apply:
   \evalexprlistm(\env, \args) \evalarrow \Normal(\vvargs, \envone)\OrAbnormal\\
   \evalexprlistm(\envone, \params) \evalarrow \Normal(\vvparams, \envtwo)\OrAbnormal\\
   \envtwo \eqname (\tenv, \denvtwo)\\
-  \envtwo' \eqdef (\tenv,(G^\denvtwo,\emptyfunc))\\\\
+  \incrstacksize(G^\denvtwo, \name) \evalarrow \genv\\\\
+  \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
   \evalsubprogram{\envtwo', \name, \vvparams, \vvargs} \evalarrow \Normal(\vms, (\vglobal, \Ignore)) \OrDynError\\\\
-  \vms \eqname [j=1..n: (\vv_j, \rid_j)]\\
-  j=1..n: \readvaluefrom(\vv_j, \rid_j) \evalarrow \vmstwo_j\\
-  \vmstwo \eqdef [j=1..n: \vmstwo_j]\\
+  \readvaluefrom(\vms) \evalarrow \vmstwo\\
+  \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\vglobal, L^{\denvtwo}))
 }{
   \evalcall{\env, \name, \params, \args} \evalarrow \Normal(\vmstwo, \newenv)
@@ -1365,11 +1365,13 @@ All of the following apply:
   \evalexprlistm(\env, \args) \evalarrow \Normal(\vvargs, \envone)\OrAbnormal\\
   \evalexprlistm(\envone, \params) \evalarrow \Normal(\vvparams, \envtwo)\OrAbnormal\\
   \envtwo \eqname (\tenv, \denvtwo)\\
-  \envtwo' \eqdef (\tenv,(G^\denvtwo,\emptyfunc))\\\\
+  \incrstacksize(G^\denvtwo, \name) \evalarrow \genv\\\\
+  \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
   \evalsubprogram{\envtwo', \name, \vvparams, \vvargs} \evalarrow \Throwing(\vv, \envthrow) \OrDynError\\\\
   \envthrow \eqname (\tenv, \denvthrow)\\
-  \newenv \eqdef (\tenv, (G^\denvthrow, L^{\denvtwo}))
+  \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
+  \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
   \evalcall{\env, \name, \params, \args} \evalarrow \Throwing(\vv, \newenv)
 }
@@ -1433,9 +1435,10 @@ All of the following apply:
         component $\genv$ and an empty local component;
   \item finding the function named $\name$ in $\tenv$ (via the $\subprograms$ component of the static global environment of $\tenv$)
         gives the AST $\func$ node with body
-        $\SBASL(\vbody)$, parameters $\paramdecls$, and arguments $\argdecls$;
+        $\SBASL(\vbody)$, parameters $\paramdecls$, arguments $\argdecls$, and optional recursion limit expression $\vrecurselimit$;
   \item $\envone$ is the environment consisting of the static environment $\tenv$ and the dynamic
         environment consisting of the dynamic component from $\denv$ and an empty local component;
+  \item applying $\checkrecurselimit$ to $\name$ and $\vrecurselimit$ in $\envone$ yields $\vgone$\ProseOrError;
   \item assigning the actual arguments with $((\envone, \emptygraph), \argdecls, \args)$
         as per \secref{SemanticsRule.AssignArgs} gives $(\envtwo, \vgtwo)$ and ensures that each
         formal argument in $\argdecls$ is
@@ -1448,7 +1451,7 @@ All of the following apply:
         is $\vres$\ProseOrAbnormal;
   \item matching the result $\vres$ to obtain a normal configuration as per \secref{SemanticsRule.MatchFuncRes}
         gives $C$;
-  \item $\newg$ is the ordered composition of $\vgtwo$ and $\vgthree$ with the $\aslpo$ edge;
+  \item $\newg$ is the ordered composition of $\vgone$ with the $\asldata$ and $\vgtwo$ and $\vgthree$ with the $\aslpo$ edge;
   \item the result is $C$ with its graph substituted for $\newg$.
 \end{itemize}
 
@@ -1463,13 +1466,23 @@ calls the function \texttt{foo} and the procedure \texttt{bar}.
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv, \denv)\\
-    G^\tenv.\subprograms(\name) \eqname \{ \body: \SBASL(\vbody), \args: \argdecls, \ldots \}\\
-    \envone \eqdef (\tenv, (G^\denv, \emptyfunc))\\
-    \assignargs((\envone, \emptygraph), \argdecls, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
-    \assignnamedargs((\envtwo, \vgtwo), \params) \evalarrow (\envthree, \vgthree)\\
-    \evalstmt{\envthree, \vbody} \evalarrow \vres \OrAbnormal\\
-    \matchfuncres(\vres) \evalarrow C\\
-    \newg \eqdef \ordered{\vgtwo}{\aslpo}{\vgthree}\\
+  {
+    G^\tenv.\subprograms(\name) \eqname \left\{
+      \begin{array}{rcl}
+      \funcbody &:& \SBASL(\vbody),\\
+      \funcargs &:& \argdecls,\\
+      \funcrecurselimit &:& \vrecurselimit, \\
+      &&\ldots
+      \end{array}
+      \right\}
+  }\\
+  \envone \eqdef (\tenv, (G^\denv, \emptyfunc))\\
+  \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynError\\\\
+  \assignargs((\envone, \emptygraph), \argdecls, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
+  \assignnamedargs((\envtwo, \vgtwo), \params) \evalarrow (\envthree, \vgthree)\\
+  \evalstmt{\envthree, \vbody} \evalarrow \vres \OrAbnormal\\
+  \matchfuncres(\vres) \evalarrow C\\
+  \newg \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\vgthree}}\\
 }{
   \evalsubprogram{\env, \name, \actualargs, \params} \evalarrow \withgraph{C}{\newg}
 }
@@ -1479,6 +1492,75 @@ calls the function \texttt{foo} and the procedure \texttt{bar}.
 \lrmcomment{This is related to \identr{DFWZ}:}
 It is not an error for execution of a procedure or setter to end without a
 return statement.
+
+\subsubsection{SemanticsRule.CheckRecurseLimit\label{sec:SemanticsRule.CheckRecurseLimit}}
+\hypertarget{def-checkrecurselimit}{}
+The helper relation
+\[
+  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\identifier}{\name} \aslsep \overname{\expr?}{\velimitopt}) \aslto
+  \overname{\XGraphs}{\vg} \cup \overname{\TDynError}{\DynErrorConfig}
+\]
+checks whether the value in the optional expression $\velimitopt$ has reached the limit associated with $\name$
+in $\env$, yielding the execution graph resulting from evaluating the optional expression in $\vg$.
+Otherwise, the result is a dynamic error indicating that the recursion limit has been reached.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\None, \vg)$\ProseOrError;
+    \item define $\vg$ as the empty graph.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some\_ok}):
+  \begin{itemize}
+    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
+    \item view $\env$ as $(\tenv, \denv)$;
+    \item applying $\getstacksize$ to $\name$ in $\denv$ yields $\vstacksize$;
+    \item $\vlimit$ is less than $\vstacksize$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some\_error}):
+  \begin{itemize}
+    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
+    \item view $\env$ as $(\tenv, \denv)$;
+    \item applying $\getstacksize$ to $\name$ in $\denv$ yields $\vstacksize$;
+    \item $\vlimit$ is greater or equal to $\vstacksize$;
+    \item the result is a dynamic
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[none]{
+  \evallimit(\env, \velimitopt) \evalarrow (\None, \vg) \OrDynError
+}{
+  \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \overname{\emptygraph}{\vg}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_ok]{
+  \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynError\\\\
+  \env \eqname (\tenv, \denv)\\
+  \getstacksize(\denv, \name) \evalarrow \vstacksize\\
+  \vlimit < \vstacksize
+}{
+  \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \vg
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_ok]{
+  \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynError\\\\
+  \env \eqname (\tenv, \denv)\\
+  \getstacksize(\denv, \name) \evalarrow \vstacksize\\
+  \vlimit \geq \vstacksize
+}{
+  \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \DynamicErrorVal{RecursionLimitReached}
+}
+\end{mathpar}
 
 \subsubsection{SemanticsRule.ReadValueFrom \label{sec:SemanticsRule.ReadValueFrom}}
 \hypertarget{def-readvaluefrom}{}

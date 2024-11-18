@@ -12,7 +12,7 @@ The semantics of specifications in given by the relation $\evalspec$, which is d
 \section{Syntax}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Nast   \derives\ & \productionname{ast}{ast}\ \maybeemptylist{\Ndecl} &
+\Nast   \derives\ & \maybeemptylist{\Ndecl} &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1809,7 +1809,8 @@ environment.
     \item applying the type-checker to $\parsedast$ with an empty static environment yields
     $(\typedspec, \tenv)$;
     \item populating the environment with the declarations of the global storage elements
-    is $(\env, \vgone)$\ProseOrError;
+          by applying $\buildgenv$ to $\typedspec$ and the environment where the static environment is $\tenv$
+          and the dynamic environment is the empty environment ($\emptydenv$) yields $(\env, \vgone)$\ProseOrError;
     \item One of the following applies:
     \begin{itemize}
       \item All of the following apply (\textsc{normal}):
@@ -1839,7 +1840,7 @@ environment.
   \vi \in \listrange(\parsedstd): \setbuiltin(\parsedstd_i) \typearrow \parsedstdp_i \OrTypeError\\
   \parsedast \eqdef \parsedspec \concat \parsedstdp\\
   \typecheckast(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
-  \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone) \OrDynError\\\\
+  \buildgenv(\typedspec, (\tenv, \emptydenv)) \evalarrow (\env, \vgone) \OrDynError\\\\
   \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
   \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }
@@ -1853,7 +1854,7 @@ environment.
   \vi \in \listrange(\parsedstd): \setbuiltin(\parsedstd_i) \typearrow \parsedstdp_i \OrTypeError\\
   \parsedast \eqdef \parsedspec \concat \parsedstdp\\
   \typecheckast(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
-  \buildgenv(\typedspec, (\tenv, (\emptyfunc, \emptyfunc))) \evalarrow (\env, \vgone)\\
+  \buildgenv(\typedspec, (\tenv, \emptydenv)) \evalarrow (\env, \vgone)\\
   \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\texttt{v\_opt}, \Ignore)
 }
 {
