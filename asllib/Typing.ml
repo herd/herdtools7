@@ -2688,20 +2688,27 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (** Among all control-flow path in a statement, there is one that
               will not throw an exception nor return a value. *)
 
+    (* Begin ControlFlowSeq *)
+
     (** Sequencial combination of two control flows. *)
-    let seq t1 t2 = if t1 = MayNotInterrupt then t2 else t1
+    let seq t1 t2 =
+      if t1 = MayNotInterrupt then t2 else t1 |: TypingRule.ControlFlowSeq
+    (* End *)
 
-    (** [join t1 t2] correspond to the conditional combination of [t1]
-        and [t2], guarded by [e] symbolically interpreted in [env].
+    (* Begin ControlFlowJoin *)
 
-        This roughly corresponds to the pseudocode [if e then {t1} else {t2}].
+    (** [join t1 t2] corresponds to the parallel combination of [t1] and [t2].
+    More precisely, it is the maximal element in the ordering
+    AssertedNotInterrupt < Interrupt < MayNotInterrupt
     *)
     let join t1 t2 =
       match (t1, t2) with
-      | MayNotInterrupt, _ | _, MayNotInterrupt -> MayNotInterrupt
+      | MayNotInterrupt, _ | _, MayNotInterrupt ->
+          MayNotInterrupt |: TypingRule.ControlFlowJoin
       | AssertedNotInterrupt, t | t, AssertedNotInterrupt ->
           t (* Assertion that the condition always holds *)
       | Interrupt, Interrupt -> Interrupt
+    (* End *)
 
     (* Begin ControlFlowFromStmt *)
 

@@ -461,7 +461,7 @@ One of the following applies:
   \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione) \OrTypeError\\\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
-  \reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
+  \staticeval(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
   \declarelocalconstant(\tenvone, \vv, \ldione) \typearrow \newtenv\\
   \news \eqdef \SDecl(\LDKConstant, \ldione, \langle\vep\rangle)
 }{

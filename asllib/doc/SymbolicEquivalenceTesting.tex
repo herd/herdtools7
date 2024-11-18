@@ -182,7 +182,6 @@ multiplies two polynomials.
 We employ the following rules:
 \begin{itemize}
   \item TypingRule.Normalize (see \secref{TypingRule.Normalize})
-  \item TypingRule.ReduceConstants (see \secref{TypingRule.ReduceConstants})
   \item TypingRule.ReduceConstraint (see \secref{TypingRule.ReduceConstraint})
   \item TypingRule.ReduceConstraints (see \secref{TypingRule.ReduceConstraints})
   \item TypingRule.ToIR (see \secref{TypingRule.ToIR})
@@ -246,50 +245,6 @@ One of the following applies:
 }
 \end{mathpar}
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
-
-\subsection{TypingRule.ReduceConstants \label{sec:TypingRule.ReduceConstants}}
-\hypertarget{def-reduceconstants}{}
-The function
-\[
-\reduceconstants(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
-\aslto
-\overname{\literal}{\vl} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-\symbolicallysimplifies\ an expression $\ve$ into the literal $\vl$.
-\ProseOtherwiseTypeError
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{eval\_literal}):
-  \begin{itemize}
-    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{eval\_failure}):
-  \begin{itemize}
-    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
-    \item the result is a type error indicating that $\ve$ cannot be reduced to a constant in $\tenv$.
-  \end{itemize}
-\end{itemize}
-
-\CodeSubsection{\ReduceConstantsBegin}{\ReduceConstantsEnd}{../Typing.ml}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[eval\_literal]{
-  \staticeval(\tenv, \ve) \typearrow \vl \OrTypeError\\\\
-  \vl \neq \CannotBeTransformed
-}{
-  \reduceconstants(\tenv, \ve) \typearrow \vl
-}
-\and
-\inferrule[eval\_failure]{
-  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed
-}{
-  \reduceconstants(\tenv, \ve) \typearrow \TypeErrorVal{CannotBeReducedToAConstant}
-}
-\end{mathpar}
 
 \subsection{TypingRule.ReduceConstraint \label{sec:TypingRule.ReduceConstraint}}
 \hypertarget{def-reduceconstraint}{}
