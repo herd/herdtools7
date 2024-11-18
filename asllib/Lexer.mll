@@ -219,6 +219,7 @@ and token = parse
     | "-->"                    { IMPL                             }
     | "<<"                     { SHL                              }
     | ']'                      { RBRACKET                         }
+    | "]]"                     { RRBRACKET                        }
     | ')'                      { RPAR                             }
     | ".."                     { SLICING                          }
     | '='                      { EQ                               }
@@ -227,6 +228,7 @@ and token = parse
     | '-'                      { MINUS                            }
     | "<->"                    { BEQ                              }
     | '['                      { LBRACKET                         }
+    | "[["                     { LLBRACKET                        }
     | '('                      { LPAR                             }
     | '.'                      { DOT                              }
     | "<="                     { LEQ                              }

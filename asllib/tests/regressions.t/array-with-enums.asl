@@ -10,13 +10,13 @@ var myArray : MyArray;
 
 func main () => integer
 begin
-  myArray[MyEnumA] = 3;
-  assert myArray[MyEnumA] == 3;
+  myArray[[MyEnumA]] = 3;
+  assert myArray[[MyEnumA]] == 3;
 
 
-  myArray[MyEnumB] = 4;
-  assert myArray[MyEnumA] == 3;
-  assert myArray[MyEnumB] == 4;
+  myArray[[MyEnumB]] = 4;
+  assert myArray[[MyEnumA]] == 3;
+  assert myArray[[MyEnumB]] == 4;
 
   return 0;
 end;

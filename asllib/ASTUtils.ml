@@ -600,6 +600,11 @@ let slice_as_single = function
 
 let default_t_bits = T_Bits (E_Var "-" |> add_dummy_annotation, [])
 
+let default_array_ty =
+  let len = ArrayLength_Expr (E_Var "-" |> add_dummy_annotation) in
+  let ty = T_Named "-" |> add_dummy_annotation in
+  T_Array (len, ty)
+
 let identifier_of_decl d =
   match d.desc with
   | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)

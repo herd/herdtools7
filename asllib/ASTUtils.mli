@@ -114,6 +114,7 @@ val real : ty
 (** The ASL real type. *)
 
 val default_t_bits : type_desc
+val default_array_ty : type_desc
 
 (** {1 Constructor helpers} *)
 (*--------------------------*)

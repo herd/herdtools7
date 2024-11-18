@@ -268,6 +268,7 @@ let make_expr(sub_expr) ==
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
     | ~=call;                                                     < e_call               >
     | e=sub_expr; ~=slices;                                       < E_Slice              >
+    | e1=sub_expr; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
 
@@ -396,6 +397,7 @@ let lexpr :=
 let lexpr_atom_desc :=
   | ~=IDENTIFIER ; <LE_Var>
   | le=lexpr_atom; ~=slices; <LE_Slice>
+  | le=lexpr_atom; LLBRACKET; ~=expr; RRBRACKET; <LE_SetArray>
   | le=lexpr_atom; DOT; field=IDENTIFIER; <LE_SetField>
   | le=lexpr_atom; DOT; li=bracketed(clist(IDENTIFIER)); { LE_SetFields (le, li, []) }
 

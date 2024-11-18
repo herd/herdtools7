@@ -13,9 +13,9 @@ begin
   // E_Binop 1: b0 == b1 is a binary expression for ==.
   // E_Cond 1: the right-hand side of the assignment is
   //           a conditional expression.
-  bits_arr[0] = if (b0 == b1) then '1000' else '0000';
+  bits_arr[[0]] = if (b0 == b1) then '1000' else '0000';
   // E_Slice 3: bits_arr[0] stands for an array access
-  assert b0 == bits_arr[0];
+  assert b0 == bits_arr[[0]];
   // E_Unop 1: (NOT b8) negates the bits of b8.
   // E_Binop 2: the right-hand side of the assignment is
   //            a binay AND expression.
