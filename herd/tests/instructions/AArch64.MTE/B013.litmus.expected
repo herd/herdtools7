@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:X2=x:green /\ 0:X3=x:red)
 Observation B013 Always 1 0
-Hash=61e3ccc9a6795411106ff0b5f9ca313a
+Hash=ff1d49fd5f406a9bad36312fd738487f
 

@@ -5,7 +5,7 @@ int x[8]={1,2,3,4,5,6,7,8};
 0:X0=x:green; 0:X1=x:red;
 }
 P0                ;
-STG X1,[X0,#1]    ;
+STG X1,[X0,#16]   ;
 DSB SY            ;
 MOV W2,#9         ;
 STR W2,[X1,#16]    ;

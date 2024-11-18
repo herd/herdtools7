@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64.MTE/B014.litmus": Illegal instruction 'STG X1,[X0,#1]' (User error)
