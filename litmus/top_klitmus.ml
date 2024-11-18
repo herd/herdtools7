@@ -41,6 +41,7 @@ module type Config = sig
   val sharelocks : int option
   val delay : int
   val carch : Archs.System.t
+  val variant : Variant_litmus.t -> bool
 end
 
 module Top(O:Config)(Tar:Tar.S) = struct

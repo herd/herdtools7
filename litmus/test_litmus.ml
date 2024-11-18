@@ -16,6 +16,7 @@
 
 module type Cfg = sig
   val hexa : bool
+  val variant : Variant_litmus.t -> bool
 end
 
 module type S = sig
@@ -149,7 +150,12 @@ struct
             let dump_v = A.V.pp Cfg.hexa
 
             let dump_state_atom =
-              MiscParser.dump_state_atom A.is_global A.pp_location dump_v
+              let do_dump =
+                if Cfg.variant Variant_litmus.NoInit then
+                  MiscParser.dump_state_atom_no_init
+                else
+                  MiscParser.dump_state_atom in
+              do_dump A.is_global A.pp_location dump_v
 
             type state = A.fullstate
 

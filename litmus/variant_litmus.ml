@@ -23,12 +23,16 @@ type t =
   | Telechat (* Telechat idiosyncrasies *)
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
+  | NoInit (* Do not initialise variables *)
 
 let compare = compare
 
-let tags = "s128"::"self"::"mixed"::"vmsa"::"telechat"::Fault.Handling.tags
+let tags =
+  "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"
+  ::Fault.Handling.tags
 
 let parse s = match Misc.lowercase s with
+| "noinit" -> Some NoInit
 | "s128" -> Some S128
 | "self" -> Some Self
 | "mixed" -> Some Mixed
@@ -56,6 +60,7 @@ let parse s = match Misc.lowercase s with
     else None
 
 let pp = function
+  | NoInit -> "noinit"
   | Self -> "self"
   | Mixed -> "mixed"
   | S128 -> "s128"
@@ -78,4 +83,3 @@ let set_mte_precision _ _ = false
 let set_sve_length _ _ = None
 let set_sme_length _ _ = None
 let check_tag tag = [tag]
-

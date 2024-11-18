@@ -149,26 +149,37 @@ let check_env_for_dups env =
           (LocSet.pp_str "," dump_location bad)
   end
 
-let dump_state_atom is_global dump_loc dump_val (loc,(t,v)) =
+let dump_loc_typed is_global  dump_loc loc t =
   let open TestType in
   match t with
   | TyDef ->
-     if is_global loc then
-       sprintf "[%s]=%s" (dump_loc loc) (dump_val v)
-     else
-      sprintf "%s=%s" (dump_loc loc) (dump_val v)
+      if is_global loc then
+        sprintf "[%s]" (dump_loc loc)
+      else
+        sprintf "%s" (dump_loc loc)
   | TyDefPointer ->
-      sprintf "*%s=%s" (dump_loc loc) (dump_val v)
+      sprintf "*%s" (dump_loc loc)
   | Ty "pteval_t" when is_global loc ->
-      sprintf "[%s]=%s" (dump_loc loc) (dump_val v)
+      sprintf "[%s]" (dump_loc loc)
   | Ty t ->
-      sprintf "%s %s=%s" t (dump_loc loc) (dump_val v)
+      sprintf "%s %s" t (dump_loc loc)
   | Atomic t ->
-      sprintf "_Atomic %s %s=%s" t (dump_loc loc) (dump_val v)
+      sprintf "_Atomic %s %s" t (dump_loc loc)
   | Pointer t ->
-      sprintf "%s *%s=%s" t (dump_loc loc) (dump_val v)
+      sprintf "%s *%s" t (dump_loc loc)
   | TyArray (t,sz) ->
-      sprintf "%s %s[%i]=%s" t (dump_loc loc) sz (dump_val v)
+      sprintf "%s %s[%i]" t (dump_loc loc) sz
+
+let dump_state_atom is_global dump_loc dump_val (loc,(t,v)) =
+  sprintf "%s=%s"
+    (dump_loc_typed is_global  dump_loc loc t)
+    (dump_val v)
+
+let dump_state_atom_no_init  is_global dump_loc dump_val (loc,(t,_) as bd) =
+  if is_global loc then
+    dump_loc_typed is_global  dump_loc loc t
+  else
+    dump_state_atom is_global dump_loc dump_val bd
 
 (* Packed result *)
 type info = (string * string) list

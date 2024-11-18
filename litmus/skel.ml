@@ -119,13 +119,20 @@ module Make
       let do_speedcheck = match Cfg.speedcheck  with
       | NoSpeed -> false
       | SomeSpeed|AllSpeed -> true
-      let do_safer = match Cfg.safer with
-      | Safer.No -> false
-      | Safer.All|Safer.Write -> true
 
-      let do_safer_write = match Cfg.safer with
-      | Safer.No -> false
-      | Safer.All|Safer.Write -> true
+      let do_init = not (Cfg.variant Variant_litmus.NoInit)
+
+      let do_safer =
+        do_init &&
+        match Cfg.safer with
+        | Safer.No -> false
+        | Safer.All|Safer.Write -> true
+
+      let do_safer_write =
+        do_init &&
+        match Cfg.safer with
+        | Safer.No -> false
+        | Safer.All|Safer.Write -> true
 
       open Preload
       let do_randompl =
@@ -162,8 +169,7 @@ module Make
       let do_verbose_barrier = Cfg.verbose_barrier
       let do_verbose_barrier_local =
         do_verbose_barrier && do_collect_local && not do_collect_after
-
-      let do_check_globals = do_collect_after && (do_safer || do_randompl)
+      let do_check_globals = do_init && do_collect_after && (do_safer || do_randompl)
 
 
       let do_sync_macro = match Cfg.syncmacro with
@@ -1600,7 +1606,7 @@ module Make
         iter_all_outs
           (fun proc (reg,_) -> nop_or_free indent (A.Out.dump_out_reg proc reg))
           test ;
-        if do_safer && do_collect_after then  begin
+        if do_check_globals then  begin
           pb_free "fst_barrier" ;
           let locs = U.get_stabilized test in
           if not (StringSet.is_empty locs) then begin
@@ -1648,77 +1654,79 @@ module Make
 (* Re-initialization, called once per run *)
         O.o "static void reinit(ctx_t *_a) {" ;
         begin match memory with
-        | Indirect ->
-            O.oi "if (_a->_p->do_shuffle) shuffle(_a);"
-        | Direct -> ()
+          | Indirect ->
+              O.oi "if (_a->_p->do_shuffle) shuffle(_a);"
+          | Direct -> ()
         end ;
         loop_test_prelude indent "_a->_p->" ;
-        if do_self then begin
-          List.iteri
-            (fun n _ ->
-              O.fii "ins_t *_dst%i = &_a->code%i[_i*_a->code%i_sz], *_src%i=(ins_t *)code%i;" n n n n n ;
-              O.fii "for (int _k = _a->code%i_sz-1 ; _k >= 0 ; _k--) _dst%i[_k] = _src%i[_k];" n n n)
-            test.T.code
-        end ;
-        List.iter
-          (fun (a,t) ->
-            let v = A.find_in_state (A.location_of_addr a) test.T.init in
-            if Cfg.cautious then O.oii "mcautious();" ;
-            try
-              let ins =
-                let tag = match memory with
-                | Indirect -> sprintf "_a->mem_%s[_i]"
-                | Direct ->  dump_a_leftval in
-                begin match t with
-                | Base "mtx_t" -> raise Exit
-                | CType.Array (_,sz) ->
-                    let pp_a = tag a
-                    and pp_v = dump_a_v v in
-                    O.fii "%s %s_values = %s;" (SkelUtil.type_name a) a pp_v;
-                    let ins =
-                      U.do_store t
-                        (sprintf "(%s)[_j]" pp_a) (sprintf "%s_values[_j]" a) in
-                    sprintf "for (int _j = 0 ; _j < %i; _j++) %s" sz ins
-                | _ ->
-                    if U.is_aligned a env then
-                      let tp = sprintf "_%s_ptr" a in
-                      let pp_t = CType.dump t in
-                      sprintf "%s *%s = (%s *)%s; *%s = (%s)%s"
-                        pp_t tp pp_t (dump_a_addr a) tp pp_t (dump_a_v v)
-                    else
-                      U.do_store t
-                        (dump_a_leftval a) (dump_a_v v)
-                end in
-              O.fii "%s;" ins
-            with Exit -> ())
-          test.T.globals ;
-        begin if do_safer && do_collect_after then
+        if do_init then begin
+          if do_self then begin
+            List.iteri
+              (fun n _ ->
+                 O.fii "ins_t *_dst%i = &_a->code%i[_i*_a->code%i_sz], *_src%i=(ins_t *)code%i;" n n n n n ;
+                 O.fii "for (int _k = _a->code%i_sz-1 ; _k >= 0 ; _k--) _dst%i[_k] = _src%i[_k];" n n n)
+              test.T.code
+          end ;
           List.iter
-            (fun (proc,(_,(outs,_))) ->
+            (fun (a,t) ->
+               let v = A.find_in_state (A.location_of_addr a) test.T.init in
+               if Cfg.cautious then O.oii "mcautious();" ;
+               try
+                 let ins =
+                   let tag = match memory with
+                     | Indirect -> sprintf "_a->mem_%s[_i]"
+                     | Direct ->  dump_a_leftval in
+                   begin match t with
+                     | Base "mtx_t" -> raise Exit
+                     | CType.Array (_,sz) ->
+                         let pp_a = tag a
+                         and pp_v = dump_a_v v in
+                         O.fii "%s %s_values = %s;" (SkelUtil.type_name a) a pp_v;
+                         let ins =
+                           U.do_store t
+                             (sprintf "(%s)[_j]" pp_a) (sprintf "%s_values[_j]" a) in
+                         sprintf "for (int _j = 0 ; _j < %i; _j++) %s" sz ins
+                     | _ ->
+                         if U.is_aligned a env then
+                           let tp = sprintf "_%s_ptr" a in
+                           let pp_t = CType.dump t in
+                           sprintf "%s *%s = (%s *)%s; *%s = (%s)%s"
+                             pp_t tp pp_t (dump_a_addr a) tp pp_t (dump_a_v v)
+                         else
+                           U.do_store t
+                             (dump_a_leftval a) (dump_a_v v)
+                   end in
+                 O.fii "%s;" ins
+               with Exit -> ())
+            test.T.globals ;
+          begin if do_safer && do_collect_after then
               List.iter
-                (fun (reg,t) ->
-                  if Cfg.cautious then O.oii "mcautious();" ;
-                  match t with
-                  | Array (_,sz) ->
-                    O.fii "for (int _j = 0; _j < %s; _j++) _a->%s[_i][_j] = %s;"
-                      (string_of_int sz)
-                      (A.Out.dump_out_reg proc reg)
-                      (match CType.is_ptr t with
-                      | false -> sentinel_of t
-                      | true -> "NULL")
-                  | _ ->
-                    O.fii "_a->%s[_i] = %s;"
-                      (A.Out.dump_out_reg proc reg)
-                      (match CType.is_ptr t with
-                      | false -> sentinel_of t
-                      | true -> "NULL"))
-                outs)
-            test.T.code ;
+                (fun (proc,(_,(outs,_))) ->
+                   List.iter
+                     (fun (reg,t) ->
+                        if Cfg.cautious then O.oii "mcautious();" ;
+                        match t with
+                        | Array (_,sz) ->
+                            O.fii "for (int _j = 0; _j < %s; _j++) _a->%s[_i][_j] = %s;"
+                              (string_of_int sz)
+                              (A.Out.dump_out_reg proc reg)
+                              (match CType.is_ptr t with
+                               | false -> sentinel_of t
+                               | true -> "NULL")
+                        | _ ->
+                            O.fii "_a->%s[_i] = %s;"
+                              (A.Out.dump_out_reg proc reg)
+                              (match CType.is_ptr t with
+                               | false -> sentinel_of t
+                               | true -> "NULL"))
+                     outs)
+                test.T.code ;
+          end ;
         end ;
         begin match barrier with
-        | User|UserFence|UserFence2 ->
-            O.oii "_a->barrier[_i] = 0;"
-        | Pthread|NoBarrier|User2|TimeBase -> ()
+          | User|UserFence|UserFence2 ->
+              O.oii "_a->barrier[_i] = 0;"
+          | Pthread|NoBarrier|User2|TimeBase -> ()
         end ;
         O.oi "}" ;
         if Cfg.cautious then O.oi "mcautious();" ;
