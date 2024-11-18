@@ -44,6 +44,7 @@ let eval_from ~loc env e =
   ->
     Error.fatal_from loc desc
 
+(* Begin StaticEval *)
 let static_eval (senv : SEnv.env) (e : expr) : literal =
   let env =
     let open SI.IEnv in
@@ -62,3 +63,4 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
       l |: Instrumentation.TypingRule.StaticEval
   | SI.Normal _ | SI.Throwing _ ->
       Error.fatal_from e (UnsupportedExpr (Static, e))
+(* End *)

@@ -1050,6 +1050,7 @@
 \newcommand\checkconstrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{\textfunc{check\_constrained\_integer}}}
 
 \newcommand\staticeval[0]{\hyperlink{def-staticeval}{\textfunc{static\_eval}}}
+\newcommand\staticenvtoenv[0]{\hyperlink{def-staticenvtoenv}{\textfunc{static\_env\_to\_env}}}
 
 \newcommand\makeanonymous[0]{\hyperlink{def-makeanonymous}{\textfunc{make\_anonymous}}}
 \newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\textfunc{is\_subtype}}}
@@ -1125,7 +1126,6 @@
 \newcommand\declareenumlabels[0]{\hyperlink{def-annotateenumlabels}{\textfunc{declare\_enum\_labels}}}
 \newcommand\declareconst[0]{\hyperlink{def-declareconst}{\textfunc{declare\_const}}}
 \newcommand\addlocalconstant[0]{\hyperlink{def-addlocalconstant}{\textfunc{add\_local\_constant}}}
-\newcommand\lookupconstants[0]{\hyperlink{def-lookupconstants}{\textfunc{lookup\_constants}}}
 \newcommand\addglobalconstant[0]{\hyperlink{def-addglobalconstant}{\textfunc{add\_global\_constant}}}
 \newcommand\annotateparamtype[0]{\hyperlink{def-annotateparamtype}{\textfunc{annotate\_param\_type}}}
 \newcommand\annotateargs[0]{\hyperlink{def-annotateargs}{\textfunc{annotate\_args}}}
@@ -1146,7 +1146,8 @@
 \newcommand\substexprnormalize[0]{\hyperlink{def-substexprnormalize}{\textfunc{subst\_expr\_normalize}}}
 \newcommand\substconstraint[0]{\hyperlink{def-substconstraint}{\textfunc{subst\_constraint}}}
 \newcommand\typecheckmutuallyrec[0]{\hyperlink{def-typecheckmutuallyrec}{\textfunc{type\_check\_mutually\_rec}}}
-\newcommand\foldenvandfs[0]{\hyperlink{def-foldenvandfs}{\textfunc{fold\_env\_and\_fs}}}
+\newcommand\declaresubprograms[0]{\hyperlink{def-declaresubprograms}{\textfunc{declare\_subprograms}}}
+\newcommand\addsubprogramdecls[0]{\hyperlink{def-addsubprogramdecls}{\textfunc{add\_subprogram\_decls}}}
 \newcommand\defdecl[0]{\hyperlink{def-defdecl}{\textfunc{def\_decl}}}
 \newcommand\defenumlabels[0]{\hyperlink{def-defenumlabels}{\textfunc{def\_enum\_labels}}}
 \newcommand\usedecl[0]{\hyperlink{def-usedecl}{\textfunc{use\_decl}}}
@@ -1290,6 +1291,8 @@
 \newcommand\Anonymoustypes[0]{\hyperlink{def-isanonymous}{Anonymous types}}
 \newcommand\namedtype[0]{\hyperlink{def-isnamed}{named type}}
 \newcommand\namedtypes[0]{\hyperlink{def-isnamed}{named types}}
+\newcommand\subtypesterm[0]{\hyperlink{def-subtypes}{subtypes}}
+\newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
 
 \newcommand\unconstrainedintegertype[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer type}}
 \newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
@@ -1384,7 +1387,6 @@
 \newcommand\annotatecallargtyped[0]{\hyperlink{def-annotatecallargtyped}{\textfunc{annotate\_call\_arg\_typed}}}
 \newcommand\annotateparameterdefining[0]{\hyperlink{def-annotateparameterdefining}{\textfunc{annotate\_parameter\_defining}}}
 \newcommand\annotatecatcher[1]{\hyperlink{def-annotatecatcher}{\textfunc{annotate\_catcher}}(#1)}
-\newcommand\reduceconstants[0]{\hyperlink{def-reduceconstants}{\textfunc{reduce\_constants}}}
 \newcommand\reduceconstraint[0]{\hyperlink{def-reduceconstraint}{\textfunc{reduce\_constraint}}}
 \newcommand\reduceconstraints[0]{\hyperlink{def-reduceconstraints}{\textfunc{reduce\_constraints}}}
 \newcommand\declarelocalconstant[0]{\hyperlink{def-declarelocalconstant}{\textfunc{declare\_local\_constant}}}
@@ -1396,7 +1398,7 @@
 
 \newcommand\controlflowfromstmt[0]{\hyperlink{def-controlflowfromstmt}{\textfunc{control\_flow\_from\_stmt}}}
 \newcommand\controlflowseq[0]{\hyperlink{def-controlflowseq}{\textfunc{control\_flow\_seq}}}
-\newcommand\controlflowguard[0]{\hyperlink{def-controlflowguard}{\textfunc{control\_flow\_guard}}}
+\newcommand\controlflowjoin[0]{\hyperlink{def-controlflowjoin}{\textfunc{control\_flow\_join}}}
 \newcommand\assertednotinterrupt[0]{\hyperlink{def-assertednotinterrupt}{\textsf{AssertedNotInterrupt}}}
 \newcommand\interrupt[0]{\hyperlink{def-interrupt}{\textsf{Interrupt}}}
 \newcommand\maynotinterrupt[0]{\hyperlink{def-maynotinterrupt}{\textsf{MayNotInterrupt}}}
@@ -1713,6 +1715,8 @@
 \newcommand\gdk[0]{\texttt{gdk}}
 \newcommand\genv[0]{\texttt{genv}}
 \newcommand\genvone[0]{\texttt{genv1}}
+\newcommand\genvtwo[0]{\texttt{genv2}}
+\newcommand\genvthree[0]{\texttt{genv3}}
 \newcommand\gsd[0]{\texttt{gsd}}
 \newcommand\gsdp[0]{\texttt{gsd'}}
 \newcommand\icsdown[0]{\texttt{ics\_down}}
@@ -1744,6 +1748,7 @@
 \newcommand\length[0]{\texttt{length}}
 \newcommand\lengthp[0]{\texttt{length'}}
 \newcommand\lenv[0]{\texttt{lenv}}
+\newcommand\lenvtwo[0]{\texttt{lenv2}}
 \newcommand\les[0]{\texttt{les}}
 \newcommand\lesone[0]{\texttt{les1}}
 \newcommand\lesp[0]{\texttt{les'}}
@@ -2034,6 +2039,7 @@
 \newcommand\vdeclitemasts[0]{\texttt{decls\_item\_asts}}
 \newcommand\vdeclitems[0]{\texttt{decls\_items}}
 \newcommand\vdecls[0]{\texttt{decls}}
+\newcommand\vdeclsone[0]{\texttt{decls1}}
 \newcommand\vdiff[0]{\texttt{v\_diff}}
 \newcommand\vdir[0]{\texttt{dir}}
 \newcommand\vdirection[0]{\texttt{direction}}
@@ -2088,6 +2094,7 @@
 \newcommand\vexprpattern[0]{\texttt{expr\_pattern}}
 \newcommand\vexprs[0]{\texttt{exprs}}
 \newcommand\vf[0]{\texttt{f}}
+\newcommand\vfsthree[0]{\texttt{fs3}}
 \newcommand\vfactor[0]{\texttt{v\_factor}}
 \newcommand\vfield[0]{\texttt{field}}
 \newcommand\vfieldassignasts[0]{\texttt{field\_assign\_asts}}
@@ -2106,10 +2113,14 @@
 \newcommand\vfp[0]{\texttt{f'}}
 \newcommand\vfromexpr[0]{\texttt{from\_expr}}
 \newcommand\vftwo[0]{\texttt{f2}}
+\newcommand\vfunc[0]{\texttt{func}}
+\newcommand\vfuncs[0]{\texttt{funcs}}
+\newcommand\vfuncsone[0]{\texttt{funcs1}}
 \newcommand\vfuncargs[0]{\texttt{func\_args}}
 \newcommand\vfuncbody[0]{\texttt{func\_body}}
 \newcommand\vg[0]{\texttt{g}}
 \newcommand\vgfour[0]{\texttt{g4}}
+\newcommand\vlocal[0]{\texttt{local}}
 \newcommand\vglobal[0]{\texttt{global}}
 \newcommand\vgone[0]{\texttt{g1}}
 \newcommand\vgp[0]{\texttt{g'}}

@@ -1255,7 +1255,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | Throwing (v, env_throw) ->
         let genv2 = IEnv.decr_stack_size name env_throw.global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
-        return (Throwing (v, new_env))
+        return (Throwing (v, new_env)) |: SemanticsRule.Call
     | Normal (ms, global) ->
         let ms2 = List.map read_value_from ms in
         let genv2 = IEnv.decr_stack_size name global in

@@ -123,7 +123,7 @@ resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$. \Prose
 All of the following apply:
 \begin{itemize}
   \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$\ProseOrTypeError;
-  \item symbolically simplifying $\ewidth$ in $\tenv$ via $\reduceconstants$ yields the literal integer for $\width$\ProseOrTypeError;
+  \item symbolically simplifying $\ewidth$ in $\tenv$ via $\staticeval$ yields the literal integer for $\width$\ProseOrTypeError;
   \item annotating each bitfield $\field$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding annotated
   bitfield $\newfield$\ProseOrTypeError;
   \item $\newfields$ is the list of annotated bitfields.
@@ -134,7 +134,7 @@ All of the following apply:
 \inferrule{
   \names \eqdef [\field\in\fields: \bitfieldgetname(\field)]\\
   \checknoduplicates(\names) \typearrow \True \OrTypeError\\\\
-  \reduceconstants(\tenv, \ewidth) \typearrow \lint(\width) \OrTypeError\\\\
+  \staticeval(\tenv, \ewidth) \typearrow \lint(\width) \OrTypeError\\\\
   \field\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow \newfield \OrTypeError\\\\
   \newfields \eqdef [\field\in\fields: \newfield]
 }{

@@ -54,7 +54,8 @@ We define the following helper rules:
   \item TypingRule.BuildDependencies (see \secref{TypingRule.BuildDependencies})
   \item TypingRule.DeclDependencies (see \secref{TypingRule.DeclDependencies})
   \item TypingRule.TypeCheckMutuallyRec (see \secref{TypingRule.TypeCheckMutuallyRec})
-  \item TypingRule.FoldEnvAndFs (see \secref{TypingRule.FoldEnvAndFs})
+  \item TypingRule.DeclareSubprograms (see \secref{TypingRule.DeclareSubprograms})
+  \item TypingRule.AddSubprogramDecls (see \secref{TypingRule.AddSubprogramDecls})
   \item TypingRule.DefDecl (see \secref{TypingRule.DefDecl})
   \item TypingRule.DefEnumLabels (see \secref{TypingRule.DefEnumLabels})
   \item TypingRule.UseDecl (see \secref{TypingRule.UseDecl})
@@ -72,18 +73,18 @@ We define the following helper rules:
   \item TypingRule.UseCatcher (see \secref{TypingRule.UseCatcher})
 \end{itemize}
 
-\subsubsection{TypingRule.TypeCheckAST \label{sec:TypingRule.TypeCheckAST}}
+\subsubsection{TypingRule.TypeCheckAST\label{sec:TypingRule.TypeCheckAST}}
 \hypertarget{def-typecheckast}{}
 The relation
 \[
 \typecheckast(
-  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\globalstaticenvs}{\genv} \aslsep
   \overname{\decl^*}{\decls}
 ) \aslrel
 (\overname{\decl^*}{\newdecls} \times \overname{\staticenvs}{\newtenv})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a list of declarations $\decls$ in an input static environment $\tenv$,
+annotates a list of declarations $\decls$ in an input global static environment $\genv$,
 yielding an output static environment $\newtenv$ and annotated list of declarations $\newdecls$.
 \ProseOtherwiseTypeError
 
@@ -129,7 +130,7 @@ All of the following apply:
   \item $\compstwo$ is an ordering of $\comps$ that respects the topological ordering induced by $\dependencies$;
   \item $\compdecls$ applies $\declsofcomp$ to each component $\vc$ in $\compstwo$ to transform it into a list,
         yielding a list of lists where each sublist corresponds to one strongly connected component;
-  \item applying $\annotatedeclcomps$ to $\compdecls$ in $\tenv$ yields \\
+  \item applying $\annotatedeclcomps$ to $\compdecls$ in $\genv$ yields \\
         $(\newdecls, \newtenv)$\ProseOrTypeError.
 \end{itemize}
 \CodeSubsection{\TypeCheckASTBegin}{\TypeCheckASTEnd}{../Typing.ml}
@@ -141,9 +142,9 @@ All of the following apply:
   \SCC(\defs, \dependencies) = \compsone\\
   \compstwo \in \topologicalordering(\compsone, \dependencies)\\
   \compdecls \eqdef [ \vc\in\compstwo: \declsofcomp(\vc, \decls) ]\\
-  \annotatedeclcomps(\tenv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError
+  \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError
 }{
-  \typecheckast(\tenv, \decls) \typearrow (\newdecls, \newtenv)
+  \typecheckast(\genv, \decls) \typearrow (\newdecls, \newtenv)
 }
 \end{mathpar}
 
@@ -207,18 +208,18 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateDeclComps \label{sec:TypingRule.AnnotateDeclComps}}
+\subsubsection{TypingRule.AnnotateDeclComps\label{sec:TypingRule.AnnotateDeclComps}}
 \hypertarget{def-annotatedeclcomps}{}
 The function
 \[
-\annotatedeclcomps(\overname{\staticenvs}{\tenv} \aslsep \overname{(\decl^*)^*}{\comps})
+\annotatedeclcomps(\overname{\globalstaticenvs}{\genv} \aslsep \overname{(\decl^*)^*}{\comps})
 \aslto
-(\overname{\staticenvs}{\newtenv} \times \overname{\decl^*}{\newdecls})
+(\overname{\globalstaticenvs}{\newgenv} \times \overname{\decl^*}{\newdecls})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a list of declaration components $\comps$
-(a list of lists) in the static environment $\tenv$,
-yielding the annotated list of declarations $\newdecls$ and modified environment $\newtenv$.
+(a list of lists) in the global static environment $\genv$,
+yielding the annotated list of declarations $\newdecls$ and modified global static environment $\newgenv$.
 \ProseOtherwiseTypeError
 
 We note that a strongly-connected component containing just a single declaration may contain
@@ -235,7 +236,7 @@ One of the following applies:
   \item All of the following apply (\textsc{empty}):
   \begin{itemize}
     \item $\comps$ is the empty list;
-    \item define $\newtenv$ as $\tenv$;
+    \item define $\newgenv$ as $\tenv$;
     \item define $\newdecls$ as the empty list.
   \end{itemize}
 
@@ -243,8 +244,8 @@ One of the following applies:
   \begin{itemize}
     \item $\comps$ is a list with \head\ $\comp$ and \tail\ $\compsone$;
     \item $\comp$ is a single declaration $\vd$;
-    \item applying $\typecheckdecl$ to $\vd$ in $\tenv$ yields $(\vdone, \tenvone)$\ProseOrTypeError;
-    \item applying $\annotatedeclcomps$ to $\compsone$ in $\tenvone$ yields \\ $(\newtenv, \declsone)$\ProseOrTypeError;
+    \item applying $\typecheckdecl$ to $\vd$ in $\genv$ yields $(\vdone, \genvone)$\ProseOrTypeError;
+    \item applying $\annotatedeclcomps$ to $\compsone$ in $\genvone$ yields \\ $(\newgenv, \declsone)$\ProseOrTypeError;
     \item define $\newdecls$ as the list with \head\ $\vdone$ and \tail\ $\declsone$.
   \end{itemize}
 
@@ -253,8 +254,8 @@ One of the following applies:
     \item $\comps$ is a list with \head\ $\comp$ and \tail\ $\compsone$;
     \item $\comp$ is a list with more than one declaration (which together represent a mutually-recursive
           list of declarations);
-    \item applying $\typecheckmutuallyrec$ to $\comp$ in $\tenv$ yields \\ $(\declsone, \tenvone)$\ProseOrTypeError;
-    \item applying $\annotatedeclcomps$ to $\compsone$ in $\tenvone$ yields \\ $(\newtenv, \declstwo)$\ProseOrTypeError;
+    \item applying $\typecheckmutuallyrec$ to $\comp$ in $\genv$ yields \\ $(\declsone, \genvone)$\ProseOrTypeError;
+    \item applying $\annotatedeclcomps$ to $\compsone$ in $\genvone$ yields \\ $(\newgenv, \declstwo)$\ProseOrTypeError;
     \item define $\newdecls$ as the concatenation of $\declsone$ and $\declstwo$.
   \end{itemize}
 \end{itemize}
@@ -262,25 +263,25 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
-  \annotatedeclcomps(\tenv, \overname{\emptylist}{\comps}) \aslto (\overname{\tenv}{\newtenv}, \overname{\emptylist}{\newdecls})
+  \annotatedeclcomps(\genv, \overname{\emptylist}{\comps}) \aslto (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newdecls})
 }
 \and
 \inferrule[single]{
   \comp = [\vd]\\
-  \typecheckdecl(\tenv, \vd) \typearrow (\vdone, \tenvone) \OrTypeError\\\\
-  \annotatedeclcomps(\tenvone, \compsone) \typearrow (\newtenv, \declsone) \OrTypeError
+  \typecheckdecl(\genv, \vd) \typearrow (\vdone, \genvone) \OrTypeError\\\\
+  \annotatedeclcomps(\genvone, \compsone) \typearrow (\newgenv, \declsone) \OrTypeError
 }{
-  \annotatedeclcomps(\tenv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
-  (\newtenv, \overname{[\vdone] \concat \declsone}{\newdecls})
+  \annotatedeclcomps(\genv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
+  (\newgenv, \overname{[\vdone] \concat \declsone}{\newdecls})
 }
 \and
 \inferrule[mutually\_recursive]{
   |\comp| > 1\\
-  \typecheckmutuallyrec(\tenv, \comp) \typearrow (\declsone, \tenvone) \OrTypeError\\\\
-  \annotatedeclcomps(\tenvone, \compsone) \typearrow (\newtenv, \declstwo) \OrTypeError
+  \typecheckmutuallyrec(\genv, \comp) \typearrow (\declsone, \genvone) \OrTypeError\\\\
+  \annotatedeclcomps(\genvone, \compsone) \typearrow (\newgenv, \declstwo) \OrTypeError
 }{
-  \annotatedeclcomps(\tenv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
-  (\newtenv, \overname{\declsone \concat \declstwo}{\newdecls})
+  \annotatedeclcomps(\genv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
+  (\newgenv, \overname{\declsone \concat \declstwo}{\newdecls})
 }
 \end{mathpar}
 
@@ -350,25 +351,25 @@ Define $\dependencies$ as the union of the following two sets:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TypeCheckMutuallyRec \label{sec:TypingRule.TypeCheckMutuallyRec}}
+\subsubsection{TypingRule.TypeCheckMutuallyRec\label{sec:TypingRule.TypeCheckMutuallyRec}}
 \hypertarget{def-typecheckmutuallyrec}{}
 The function
 \[
   \typecheckmutuallyrec(
-    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\globalstaticenvs}{\genv} \aslsep
     \overname{\decl^*}{\decls}
   )
   \aslto
   (
     \overname{\decl^*}{\newdecls} \times
-    \overname{\staticenvs}{\newtenv}
+    \overname{\globalstaticenvs}{\newgenv}
   )
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a list of mutually recursive declarations
-$\decls$ in the static environment $\tenv$,
+$\decls$ in the global static environment $\genv$,
 yielding the annotated list of subprogram declarations $\newdecls$
-and modified environment $\newtenv$.
+and modified global static environment $\newgenv$.
 
 One of the requirements from an ASL specification is that each setter has a corresponding getter.
 To facilitate checking this requirement, the type-system annotates the declarations of all subprograms
@@ -380,28 +381,31 @@ easy to check this requirement.
 All of the following apply:
 \begin{itemize}
   \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseOrTypeError;
-  \item applying $\annotatefuncsig$ to each node $\vf$ in $\tenv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
+  \item applying $\annotatefuncsig$ to each node $\vf$ in $\genv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
         yields $(\tenv_\vf, \vd_\vf)$\ProseOrTypeError;
   \item define $\envandfs$ as the list of pairs, each consisting of the local environment component of $\tenv_\vf$
         and the annotated subprogram $\vd_\vf$, for each subprogram declaration $\DFunc(\vf)$ in $\decls$;
   \item splitting $\envandfs$ into two sublists by testing each pair to check whether the subprogram declaration
         component is that of a setter (or an empty setter) yields $\setters$ and $\others$, respectively;
   \item define $\envandfsone$ as the concatenation of $\others$ and $\setters$;
-  \item applying $\foldenvandfs$ to the global component of $\tenv$ and $\envandfsone$ yields $(\genv, \envandfstwo)$\ProseOrTypeError;
-  \item for each pair consisting of a local static environment and subprogram declaration $(\lenv, \DFunc(\vf))$,
-        applying $\annotatesubprogram$ to the static environment $(\genv, \lenv)$ and $\vf$ yields $\newd_\vf$\ProseOrTypeError;
-  \item define $\newdecls$ as the list of subprogram declarations $\DFunc(\newd_\vf)$, for each pair $(\Ignore, \DFunc(\vf))$ in
+  \item applying $\declaresubprograms$ to $\genv$ and $\envandfsone$ yields \\
+        $(\genvtwo, \envandfstwo)$\ProseOrTypeError;
+  \item for each pair consisting of a local static environment and an element of $\func$, $(\lenvtwo, \vf)$,
+        applying $\annotatesubprogram$ to the static environment \\
+        $(\genvtwo, \lenvtwo)$ and $\vf$ yields $\vfunc_\vf$\ProseOrTypeError;
+  \item define $\vfsthree$ as the list of elements $\vfunc_\vf$, for each pair $(\Ignore, \vf)$ in
         $\envandfstwo$;
-  \item define $\newtenv$ as the static environment $(\genv, L^\tenv)$.
+  \item define $\tenvtwo$ as the environment with $\genvtwo$ as its static global environment
+        and an empty static local environment;
+  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vfsthree$ yields $(\tenvthree, \newdecls)$;
+  \item define $\newtenv$ as the global static environment of $\tenvthree$.
 \end{itemize}
-
-\CodeSubsection{\TypeCheckMutuallyRecBegin}{\TypeCheckMutuallyRecEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadRecursiveDecls} \typearrow \True\OrTypeError\\\\
-  \DFunc(\vf)\in\decls: \annotatefuncsig(\tenv, \vf) \typearrow (\tenv_\vf, \vd_\vf)\OrTypeError\\\\
+  \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf)\OrTypeError\\\\
   \envandfs \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf)]\\
   {
   \setters \eqdef \left[ \begin{array}{r|l}
@@ -416,23 +420,26 @@ All of the following apply:
   \end{array}\right]
   }\\
   \envandfsone \eqdef \others \concat \setters\\
-  \foldenvandfs(G^\tenv, \envandfsone) \typearrow (\genv, \envandfstwo) \OrTypeError\\\\
+  \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
   {
     \begin{array}{r}
-  (\lenv, \DFunc(\vf))\in\envandfstwo: \annotatesubprogram{(\genv, \lenv), \vf} \typearrow \\ \newd_\vf \OrTypeError
+  (\lenvtwo, \vf)\in\envandfstwo: \annotatesubprogram{(\genvtwo, \lenvtwo), \vf} \typearrow \\ \vfunc_\vf \OrTypeError
     \end{array}
   }\\\\
-  \newdecls \eqdef [(\Ignore, \DFunc(\vf))\in\envandfstwo: \DFunc(\newd_\vf)]
+  \vfsthree \eqdef [(\Ignore, \vf)\in\envandfstwo: \vfunc_\vf]\\
+  \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
+  \addsubprogramdecls(\tenvtwo, \vfsthree) \typearrow (\tenvthree, \newdecls)
 }{
-  \typecheckmutuallyrec(\tenv, \decls) \typearrow (\newdecls, \overname{(\genv, L^\tenv)}{\newtenv})
+  \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{G^\tenvthree}{\newgenv})
 }
 \end{mathpar}
+\CodeSubsection{\TypeCheckMutuallyRecBegin}{\TypeCheckMutuallyRecEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.FoldEnvAndFs \label{sec:TypingRule.FoldEnvAndFs}}
-\hypertarget{def-foldenvandfs}{}
+\subsubsection{TypingRule.DeclareSubprograms\label{sec:TypingRule.DeclareSubprograms}}
+\hypertarget{def-declaresubprograms}{}
 The function
 \[
-  \foldenvandfs(
+  \declaresubprograms(
     \overname{\globalstaticenvs}{\genv} \aslsep
     \overname{(\localstaticenvs\times\func)^*}{\envandfs}
   ) \aslto
@@ -441,7 +448,9 @@ The function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 processes a list of pairs, each consisting of a local static environment and a subprogram declaration, $\envandfs$,
-in the context of a global static environment $\genv$.
+in the context of a global static environment $\genv$,
+declaring each subprogram in the environment consisting of $\genv$ and the static local environment associated with
+each subprogram.
 The result is a modified global static environment $\newgenv$ and list of pairs $\newenvandfs$.
 
 \subsubsection{Prose}
@@ -459,7 +468,7 @@ One of the following applies:
     \item $\envandfs$ is the list with \head\ $(\lenv, \vf)$ and \tail\ $\envandfsone$;
     \item define $\tenv$ as the environment where the global environment component is $\genv$ and the local environment component is $\lenv$;
     \item applying $\declareonefunc$ to $\vf$ in $\tenv$ yields $(\tenvone, \vfone)$\ProseOrTypeError;
-    \item applying $\foldenvandfs$ to the global environment of $\tenvone$ and \\
+    \item applying $\declaresubprograms$ to the global environment of $\tenvone$ and \\
           $\envandfsone$ yields $(\newgenv, \envandfstwo)$\ProseOrTypeError;
     \item define $\newenvandfs$ as the list with \head\ $(\lenv, \vfone)$ and \tail\ $\envandfstwo$.
   \end{itemize}
@@ -468,20 +477,68 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
-  \foldenvandfs(\genv, \overname{\emptylist}{\envandfs}) \typearrow (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newenvandfs})
+  \declaresubprograms(\genv, \overname{\emptylist}{\envandfs}) \typearrow (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newenvandfs})
 }
 \and
 \inferrule[non\_empty]{
   \tenv \eqdef (\genv, \lenv)\\
   \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
-  \foldenvandfs(G^\tenvone, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
+  \declaresubprograms(G^\tenvone, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
   \newenvandfs \eqdef [(\lenv, \vfone)] \concat \envandfstwo
 }{
-  \foldenvandfs(\genv, \overname{[(\lenv, \vf)]\concat\envandfsone}{\envandfs}) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
+  \declaresubprograms(\genv, \overname{[(\lenv, \vf)]\concat\envandfsone}{\envandfs}) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.DefDecl \label{sec:TypingRule.DefDecl}}
+\subsubsection{TypingRule.AddSubprogramDecls\label{sec:TypingRule.AddSubprogramDecls}}
+\hypertarget{def-addsubprogramdecls}{}
+The function
+\[
+  \addsubprogramdecls(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\func^*}{\vfuncs}
+  ) \aslto
+  (\overname{\staticenvs}{\newtenv} \times \overname{\decl^*}{\decls})
+\]
+adds each $\func$ element in $\vfuncs$ to the $\subprograms$ map of $G^\tenv$, yielding $\newtenv$
+and a list of declarations $\vdecls$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vfuncs$ is the empty list;
+    \item $\newtenv$ is $\tenv$ and $\vdecls$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vfuncs$ is the list with \head\ $\vf$ and \tail\ $\vfuncsone$;
+    \item applying $\addsubprogram$ to $vf.\funcname$ and $\vf$ in $\tenv$ yields $\tenvone$;
+    \item applying $\addsubprogramdecls$ to $\tenvone$ and $\vfuncsone$ yields $(\newtenv, \vdeclsone)$;
+    \item define $\decls$ as the list with $\DFunc(\vf)$ as its \head\ and $\vdeclsone$ as its tail.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \addsubprogramdecls(\tenv, \overname{\emptylist}{\vfuncs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\emptylist}{\vdecls})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \addsubprogram(\tenv, \vf.\funcname, \vf) \typearrow \tenvone\\
+  \addsubprogramdecls(\tenvone, \vfuncsone) \typearrow (\newtenv, \vdeclsone)
+}{
+  \addsubprogramdecls(\tenv, \overname{\vf \concat \vfuncsone}{\vfuncs}) \typearrow
+  (\newtenv, \overname{[\DFunc(\vf)] \concat \vdeclsone}{\decls})
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.DefDecl\label{sec:TypingRule.DefDecl}}
 \hypertarget{def-defdecl}{}
 The function
 \[

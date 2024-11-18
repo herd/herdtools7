@@ -30,16 +30,16 @@ ASLReference.pdf: control\
 	$(BIBTEX) ASLReference
 	$(LATEX) ASLReference.tex
 
-ASLSemanticsLines.tex: ../Interpreter.ml
+ASLASTLines.tex: ../AST.mli
 	$(BENTO) $< > $@
 
 ASLTypeSatisfactionLines.tex: ../types.ml
 	$(BENTO) $< > $@
 
-ASLASTLines.tex: ../AST.mli
+ASLEnvLines.tex: ../env.ml
 	$(BENTO) $< > $@
 
-ASLEnvLines.tex: ../env.ml
+ASLSemanticsLines.tex: ../Interpreter.ml
 	$(BENTO) $< > $@
 
 ASL%Lines.tex: ../%.ml

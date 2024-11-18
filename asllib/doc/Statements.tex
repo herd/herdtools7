@@ -461,7 +461,7 @@ One of the following applies:
   \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione) \OrTypeError\\\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
-  \reduceconstants(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
+  \staticeval(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
   \declarelocalconstant(\tenvone, \vv, \ldione) \typearrow \newtenv\\
   \news \eqdef \SDecl(\LDKConstant, \ldione, \langle\vep\rangle)
 }{
@@ -869,7 +869,7 @@ node $\neweqs$, which associates expressions with parameters.
 \lrmcomment{This is related to \identd{VXKM}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SCall \label{sec:SemanticsRule.SCall}}
+\subsubsection{SemanticsRule.SCall\label{sec:SemanticsRule.SCall}}
 \subsubsection{Example}
 In the specification:
 \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
@@ -1615,7 +1615,7 @@ One of the following applies:
     \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \envone)$;
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
-    \item evaluating $\vbody$ in $\envone$ as per \chapref{eval_block} is either \\
+    \item evaluating $\vbody$ in $\envone$ as per \nameref{sec:SemanticsRule.Block} is either \\
     $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
     \item evaluating $(\iswhile, \econd, \vbody)$ in $\envtwo$ as a loop is \\
     $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
@@ -2161,7 +2161,7 @@ All of the following apply:
 \subsubsection{Running the Loop Body}
 All of the following apply:
 \begin{itemize}
-  \item evaluating $\vbody$ as a block statement (see \chapref{eval_block}) in $\env$
+  \item evaluating $\vbody$ as a block statement (see \nameref{sec:SemanticsRule.Block}) in $\env$
   is \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
   that is, $\evalforstep(\envone, \vindexname, \vstart, \dir)$ gives $((\vstep, \envtwo), \vgtwo)$;

@@ -20,6 +20,11 @@ In proof-theoretic terms, we can say that our equivalence tests are \emph{sound}
 
 Notice that for a conservative test, it is always correct to return $\False$.
 
+\hypertarget{def-unsupportedexpression}
+In this chapter, we use the special value $\CannotBeTransformed$
+to represent a failure in transforming an expression into a desired form (the specific
+desired form varies according to the functions utilizing this value).
+
 We first define symbolic expressions and operations over symbolic expressions in \secref{symbolicexpressions}
 and then define the rules for symbolic reduction and equivalence testing in \secref{SymbolicReductionAndEquivalenceTestingRules}.
 
@@ -177,12 +182,11 @@ multiplies two polynomials.
 We employ the following rules:
 \begin{itemize}
   \item TypingRule.Normalize (see \secref{TypingRule.Normalize})
-  \item TypingRule.ReduceConstants (see \secref{TypingRule.ReduceConstants})
   \item TypingRule.ReduceConstraint (see \secref{TypingRule.ReduceConstraint})
   \item TypingRule.ReduceConstraints (see \secref{TypingRule.ReduceConstraints})
   \item TypingRule.ToIR (see \secref{TypingRule.ToIR})
-  \item TypingRule.ExprEqualNorm (see \secref{TypingRule.ExprEqualNorm})
   \item TypingRule.ExprEqual (see \secref{TypingRule.ExprEqual})
+  \item TypingRule.ExprEqualNorm (see \secref{TypingRule.ExprEqualNorm})
   \item TypingRule.ExprEqualCase (see \secref{TypingRule.ExprEqualCase})
   \item TypingRule.TypeEqual (see \secref{TypingRule.TypeEqual})
   \item TypingRule.BitwidthEqual (see \secref{TypingRule.BitwidthEqual})
@@ -241,50 +245,6 @@ One of the following applies:
 }
 \end{mathpar}
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
-
-\subsection{TypingRule.ReduceConstants \label{sec:TypingRule.ReduceConstants}}
-\hypertarget{def-reduceconstants}{}
-The function
-\[
-\reduceconstants(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
-\aslto
-\overname{\literal}{\vl} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-\symbolicallysimplifies\ an expression $\ve$ into the literal $\vl$.
-\ProseOtherwiseTypeError
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{eval\_literal}):
-  \begin{itemize}
-    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields the literal $\vl$\ProseOrTypeError.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{eval\_failure}):
-  \begin{itemize}
-    \item applying $\staticeval$ to $\ve$ in $\tenv$ yields $\CannotBeTransformed$;
-    \item the result is a type error indicating that $\ve$ cannot be reduced to a constant in $\tenv$.
-  \end{itemize}
-\end{itemize}
-
-\CodeSubsection{\ReduceConstantsBegin}{\ReduceConstantsEnd}{../Typing.ml}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[eval\_literal]{
-  \staticeval(\tenv, \ve) \typearrow \vl \OrTypeError\\\\
-  \vl \neq \CannotBeTransformed
-}{
-  \reduceconstants(\tenv, \ve) \typearrow \vl
-}
-\and
-\inferrule[eval\_failure]{
-  \staticeval(\tenv, \ve) \typearrow \CannotBeTransformed
-}{
-  \reduceconstants(\tenv, \ve) \typearrow \TypeErrorVal{CannotBeReducedToAConstant}
-}
-\end{mathpar}
 
 \subsection{TypingRule.ReduceConstraint \label{sec:TypingRule.ReduceConstraint}}
 \hypertarget{def-reduceconstraint}{}
@@ -814,9 +774,51 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\ToIRBegin}{\ToIREnd}{../StaticModel.ml}
 
+\subsection{TypingRule.ExprEqual \label{sec:TypingRule.ExprEqual}}
+\hypertarget{def-exprequal}{}
+The function
+\[
+  \exprequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \aslto
+  \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
+The result is given in $\vb$ or a type error, if one is detected.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{norm\_true}):
+  \begin{itemize}
+    \item comparing $\veone$ to $\vetwo$ in $\tenv$ via $\exprequalnorm$ yields $\True$\ProseOrTypeError;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{norm\_false}):
+  \begin{itemize}
+    \item comparing $\veone$ to $\vetwo$ in $\tenv$ via $\exprequalnorm$ yields $\False$;
+    \item comparing $\veone$ to $\vetwo$ by case analysis via $\exprequalcase$ yields $\vb$\ProseOrTypeError.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[norm\_true]{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \True \OrTypeError
+}{
+  \exprequal(\tenv, \veone, \vetwo) \typearrow \True
+}
+\and
+\inferrule[norm\_false]{
+  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False\\
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
+}{
+  \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
+}
+\end{mathpar}
+
 \subsection{TypingRule.ExprEqualNorm \label{sec:TypingRule.ExprEqualNorm}}
 \hypertarget{def-exprequalnorm}{}
-The function
+The helper function
 \[
   \exprequalnorm(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
@@ -873,51 +875,9 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ExprEqual \label{sec:TypingRule.ExprEqual}}
-\hypertarget{def-exprequal}{}
-The function
-\[
-  \exprequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \aslto
-  \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
-The result is given in $\vb$ or a type error, if one is detected.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{norm\_true}):
-  \begin{itemize}
-    \item comparing $\veone$ to $\vetwo$ in $\tenv$ via $\exprequalnorm$ yields $\True$\ProseOrTypeError;
-    \item $\vb$ is $\True$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{norm\_false}):
-  \begin{itemize}
-    \item comparing $\veone$ to $\vetwo$ in $\tenv$ via $\exprequalnorm$ yields $\False$;
-    \item comparing $\veone$ to $\vetwo$ by case analysis via $\exprequalcase$ yields $\vb$\ProseOrTypeError.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[norm\_true]{
-  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \True \OrTypeError
-}{
-  \exprequal(\tenv, \veone, \vetwo) \typearrow \True
-}
-\and
-\inferrule[norm\_false]{
-  \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False\\
-  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
-}{
-  \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
-}
-\end{mathpar}
-
 \subsection{TypingRule.ExprEqualCase \label{sec:TypingRule.ExprEqualCase}}
 \hypertarget{def-exprequalcase}{}
-The function
+The helper function
 \[
   \exprequalcase(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
   \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}

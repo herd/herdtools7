@@ -141,12 +141,12 @@ let with_empty_local global =
 
 (** [lookup x env] is the value of x as defined in environment.
 
-(* Begin LookupConstants *)
+(* Begin LookupConstant *)
       @raise Not_found if it is not defined inside. *)
 let lookup_constants env x =
   try Storage.find x env.local.constant_values
   with Not_found ->
-    Storage.find x env.global.constant_values |: TypingRule.LookupConstants
+    Storage.find x env.global.constant_values |: TypingRule.LookupConstant
 (* End *)
 
 let lookup_constants_opt env x =

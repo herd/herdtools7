@@ -5,27 +5,10 @@ This section defines the following relations over types and operators:
   \item Subtype Satisfaction (\secref{TypingRule.SubtypeSatisfaction})
   \item Type Satisfaction (\secref{TypingRule.TypeSatisfaction})
   \item Type Clash (\secref{TypingRule.TypeClash})
-  \item Lowest Common Ancestor (\secref{TypingRule.LowestCommonAncestor})
+  \item The Lowest Common Ancestor of two types (\secref{TypingRule.LowestCommonAncestor})
   \item Applying a unary operator to a type (\secref{TypingRule.ApplyUnopType})
   \item Applying a binary operator to a pair of types (\secref{TypingRule.ApplyBinopTypes})
 \end{itemize}
-
-Finally, we define the following helper functions:
-\begin{itemize}
-  \item TypingRule.AnnotateConstraintBinop (see \secref{TypingRule.AnnotateConstraintBinop})
-  \item TypingRule.BinopFilterRhs (see \secref{TypingRule.BinopFilterRhs})
-  \item TypingRule.RefineConstraintBySign (see \secref{TypingRule.RefineConstraintBySign})
-  \item TypingRule.ReduceToZOpt (see \secref{TypingRule.ReduceToZOpt})
-  \item TypingRule.RefineConstraints (see \secref{TypingRule.RefineConstraints})
-  \item TypingRule.FilterReduceConstraintDiv (see \secref{TypingRule.FilterReduceConstraintDiv})
-  \item TypingRule.GetLiteralDivOpt (see \secref{TypingRule.GetLiteralDivOpt})
-  \item TypingRule.ExplodeIntervals (see \secref{TypingRule.ExplodeIntervals})
-  \item TypingRule.ExplodeConstraint (see \secref{TypingRule.ExplodeConstraint})
-  \item TypingRule.IntervalTooLarge (see \secref{TypingRule.IntervalTooLarge})
-  \item TypingRule.BinopIsExploding (see \secref{TypingRule.BinopIsExploding})
-\end{itemize}
-
-We also define the helper rule TypingRule.FindNamedLCA (\secref{TypingRule.FindNamedLCA}).
 
 \subsection{TypingRule.Subtype\label{sec:TypingRule.Subtype}}
 The \emph{subtype} relation is a partial order over \underline{named types}.
@@ -120,7 +103,7 @@ tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment 
 returning the result $\vb$ or a type error, if one is detected.
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{Types}.
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
 \item All of the following apply (\textsc{error1}):
@@ -218,7 +201,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
   \inferrule[error1]{
     \makeanonymous(\tenv, \vt) \typearrow \TypeErrorConfig
@@ -851,7 +834,7 @@ One of the following applies:
 \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
 \subsubsection{Formally}
-Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is equivalence to \verb|integer {1..2}|),
+Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is equivalent to \verb|integer {1..2}|),
 the lowest common ancestor is not unique.
 We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\ to the lowest common ancestor of $\vt$ and $\vs$.
 

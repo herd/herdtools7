@@ -1,24 +1,8 @@
-% \documentclass{book}
-% \input{ASLmacros}
-
-% \author{Arm Architecture Technology Group}
-% \title{ASL Reference Progress \\
-%        DDI 0623}
-% \begin{document}
-% \maketitle
-
-% \tableofcontents{}
-
-% \include{notice.tex}
-
-% \include{disclaimer.tex}
-
-% ------------------------------------------------------------------------------
 \chapter{Not Implemented by ASLRef\label{appendix:UnimplementedInASLRef}}
 % ------------------------------------------------------------------------------
 
 This chapter describes what is not yet present in the executable version of ASLRef
-(Build \#215 from Feb 22, 2024).
+(Build \#215 from Nov 14, 2024).
 
 % ------------------------------------------------------------------------------
 \section{Syntax}
@@ -70,34 +54,6 @@ They are not yet implemented in ASLRef.
 
 \lrmcomment{This relates to \identr{WGSY}.}
 
-\subsection{Catching Operator Precedence Errors}
-ASLRef does not yet catch the following types of errors nor are they defined in the syntax reference.
-
-Operator precedence is used to disambiguate binary expressions.
-
-Given two binary operators op1 and op2, an expression of the form x op1 y op2 z, is interpreted as (x op1 y) op2 z
-if op1 has higher precedence than op2 or as x op1 (y op2 z) if op1 has lower precedence than op2 . If op1 is
-associative and op1 = op2 then the expression may be interpreted as either (x op1 y) op2 z or as x op1 (y op2 z)
-since there is no difference. Otherwise it is a static operator precedence error.
-
-The following operators are associative: \texttt{+} \texttt{*} \texttt{\&\&} \texttt{||} \texttt{AND} \texttt{OR} \texttt{X}OR
-
-\begin{center}
-\begin{tabular}{lll}
-  \hline
-Precedence Class Operators\\
-\hline
-1 (Highest) & Membership & \texttt{IN}\\
-2 & Unary & \texttt{-} \texttt{!} \texttt{NOT}\\
-3 & Power & \textasciicircum\\
-4 & Mul-Div-Shift & \texttt{*} \texttt{/} \texttt{DIV} \texttt{DIVRM} \texttt{MOD} \texttt{<<} \texttt{>>}\\
-5 & Add-Sub-Logic & \texttt{+} \texttt{-} \texttt{AND} \texttt{OR} \texttt{XOR}\\
-6 & Comparison & \texttt{==} \texttt{!=} \texttt{>} \texttt{>=} \texttt{<} \texttt{<=}\\
-7 & (Lowest) Boolean & \&\& \texttt{||} \texttt{-->} \texttt{<->}\\
-\hline
-\end{tabular}
-\end{center}
-
 % ------------------------------------------------------------------------------
 \section{Semantics}
 
@@ -124,32 +80,6 @@ but it currently fails.
 
     return 0;
   end
-\end{verbatim}
-
-\subsection{Checking that All Paths in a Function Return a Value}
-The following function currently passes type-checking even though
-it does not return a value when \texttt{a <= 7}.
-\begin{verbatim}
-func foo(a : integer) => integer
-begin
-  if (a > 7) then
-    return 0;
-  end
-end
-\end{verbatim}
-This requires a control-flow analysis.
-
-A call to \texttt{Unreachable} needs to indicate to the control-flow
-analysis that it is okay for the \texttt{else} path to not return a value.
-\begin{verbatim}
-func foo(a : integer) => integer
-begin
-  if (a > 7) then
-    return 0;
-  else
-    Unreachable();
-  end
-end
 \end{verbatim}
 
 \subsection{Side-effect-free Subprograms}
@@ -197,21 +127,6 @@ For example, the following will not raise a type-error:
 \chapter{Issues Not Yet Addressed by the Reference\label{appendix:MissingTransliteration}}
 % ------------------------------------------------------------------------------
 \section{Semantics}
-
-% \subsection{Base values of types}
-
-% Finding the base value of a type is not transliterated.
-
-% \lrmcomment{This is related to \identr{NJDZ}, \identr{CFTD}, \identr{QGGH}, \identi{WVQZ},
-% \identr{GYCG}, \identr{WKCY}, \identr{LCCN}, \identr{CPCK}, \identr{ZVPT},
-% \identi{QFZH}, \identr{ZGVR}, \identi{PGSS}, \identr{QWSQ}, \identr{HMRK},
-% \identr{MBRM}, \identr{SVJB}.}
-
-% \subsection{Operations}
-% Operations are not transliterated from ASLRef.
-
-% \lrmcomment{This is related to \identr{NCWM}, \identr{VGZF}, \identr{THSV}, \identr{CRQJ},
-% \identr{ZTJN}, \identr{SVMM}, \identr{WWTV}, \identr{GHXR}, \identi{NBCT}.}
 
 \subsection{Standard Library and Primitives}
 
@@ -281,21 +196,6 @@ In terms of abstract syntax, this corresponds to the translation between a
 
 % ------------------------------------------------------------------------------
 \section{Semantics}
-
-% \subsection{Base values of types}
-
-% Finding the base value of a type is not transliterated.
-
-% \lrmcomment{This is related to \identr{NJDZ}, \identr{CFTD}, \identr{QGGH}, \identi{WVQZ},
-% \identr{GYCG}, \identr{WKCY}, \identr{LCCN}, \identr{CPCK}, \identr{ZVPT},
-% \identi{QFZH}, \identr{ZGVR}, \identi{PGSS}, \identr{QWSQ}, \identr{HMRK},
-% \identr{MBRM}, \identr{SVJB}.}
-
-% \subsection{Operations}
-% Operations are not transliterated from ASLRef.
-
-% \lrmcomment{This is related to \identr{NCWM}, \identr{VGZF}, \identr{THSV}, \identr{CRQJ},
-% \identr{ZTJN}, \identr{SVMM}, \identr{WWTV}, \identr{GHXR}, \identi{NBCT}.}
 
 \subsection{Standard Library and Primitives}
 

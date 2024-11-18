@@ -457,7 +457,7 @@ module TypingRule = struct
     | Normalize
     | RenameTyEqs
     | TypeCheckMutuallyRec
-    | FoldEnvAndFs
+    | DeclareSubprograms
     | AnnotateLoopLimit
     | CheckATC
     | CheckSlicesInWidth
@@ -475,7 +475,7 @@ module TypingRule = struct
     | AddGlobalImmutableExpr
     | DeclareConst
     | AddGlobalStorage
-    | LookupConstants
+    | LookupConstant
     | TypeOf
     | LookupImmutableExpr
     | WithEmptyLocal
@@ -494,6 +494,8 @@ module TypingRule = struct
     | ApplyBinopExtremities
     | PossibleExtremitiesLeft
     | PossibleExtremitiesRight
+    | ControlFlowSeq
+    | ControlFlowJoin
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -638,7 +640,7 @@ module TypingRule = struct
     | Normalize -> "Normalize"
     | RenameTyEqs -> "RenameTyEqs"
     | TypeCheckMutuallyRec -> "TypeCheckMutuallyRec"
-    | FoldEnvAndFs -> "FoldEnvAndFs"
+    | DeclareSubprograms -> "DeclareSubprograms"
     | AnnotateLoopLimit -> "AnnotateLoopLimit"
     | CheckATC -> "CheckATC"
     | CheckSlicesInWidth -> "CheckSlicesInWidth"
@@ -656,7 +658,7 @@ module TypingRule = struct
     | AddGlobalImmutableExpr -> "AddLocalImmutableExpr"
     | DeclareConst -> "DeclareConst"
     | AddGlobalStorage -> "AddGlobalStorage"
-    | LookupConstants -> "LookupConstants"
+    | LookupConstant -> "LookupConstant"
     | TypeOf -> "TypeOf"
     | LookupImmutableExpr -> "LookupImmutableExpr"
     | WithEmptyLocal -> "WithEmptyLocal"
@@ -675,6 +677,8 @@ module TypingRule = struct
     | ApplyBinopExtremities -> "ApplyBinopExtremities"
     | PossibleExtremitiesLeft -> "PossibleExtremitiesLeft"
     | PossibleExtremitiesRight -> "PossibleExtremitiesRight"
+    | ControlFlowSeq -> "ControlFlowSeq"
+    | ControlFlowJoin -> "ControlFlowJoin"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -801,7 +805,7 @@ module TypingRule = struct
       Normalize;
       RenameTyEqs;
       TypeCheckMutuallyRec;
-      FoldEnvAndFs;
+      DeclareSubprograms;
       AnnotateLoopLimit;
       CheckATC;
       CheckSlicesInWidth;
@@ -819,7 +823,7 @@ module TypingRule = struct
       AddGlobalImmutableExpr;
       DeclareConst;
       AddGlobalStorage;
-      LookupConstants;
+      LookupConstant;
       TypeOf;
       LookupImmutableExpr;
       WithEmptyLocal;
@@ -838,6 +842,8 @@ module TypingRule = struct
       ApplyBinopExtremities;
       PossibleExtremitiesLeft;
       PossibleExtremitiesRight;
+      ControlFlowSeq;
+      ControlFlowJoin;
     ]
 
   let all_nb = List.length all
