@@ -31,12 +31,7 @@ $\ve$ in \tenv\ is the pair $(\vt, \newe)$, where $\vt$ is the type inferred
 for $\ve$ and
 $\newe$ is the \typedast\ for $\ve$, also known as the \emph{annotated expression}. \ProseOtherwiseTypeError
 
-The annotation rewrites the input expression in the following cases, making the annotation of statements simpler:
-\begin{itemize}
-  \item Variables with constant values are substituted by their constant values.
-  \item Slicing expressions that correspond to calling a getter are replaced with respective call expressions.
-  \item Slicing expressions that correspond to \arrayaccess\ expressions are replaced by \arrayaccess\ expressions.
-\end{itemize}
+The annotation rewrites the input expression in the following case, making the annotation of statements simpler: variables with constant values are substituted by their constant values.
 
 The relation
 \hypertarget{def-evalexpr}{}
@@ -87,7 +82,8 @@ We now define the syntax, abstract syntax, typing, and semantics of the followin
   \item Unary expressions (see \secref{UnaryExpressions})
   \item Conditional expressions (see \secref{ConditionalExpressions})
   \item Call expressions (see \secref{CallExpressions})
-  \item Slicing expressions, which include array access expressions (see \secref{SlicingExpressions})
+  \item Slicing expressions (see \secref{SlicingExpressions})
+  \item Array access expressions (see \secref{ArrayAccessExpressions})
   \item Field reading expressions (see \secref{FieldReadingExpressions})
   \item Asserting type conversion expressions (see \secref{AssertingTypeConversionExpressions})
   \item Pattern matching expressions (see \secref{PatternMatchingExpressions})
@@ -1164,15 +1160,8 @@ All of the following apply:
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
 \section{Slicing Expressions\label{sec:SlicingExpressions}}
-Slicing expressions stand for one of the following:
-\begin{itemize}
-  \item A call to a setter subprogram;
-  \item A bitvector slice; or
-  \item A read access to an array index.
-\end{itemize}
 This section details the high-level form of the syntax and abstract syntax of slicing expressions,
-explains how the type system differentiates between the different types of slicing expressions,
-and defines the semantics of bitvector slices and array access.
+and defines the semantics of bitvector slices.
 The details of the various types of bitvector slices is deferred to \chapref{BitvectorSlicing}.
 
 \subsection{Syntax}
@@ -1233,14 +1222,14 @@ widths references a \texttt{let} identifier with a non-compile-time-constant
 initializer expression.
 \lrmcomment{This is related to \identi{MJWM}.}
 
-\subsubsection{TypingRule.ESliceOrEGetArrayError\label{sec:TypingRule.ESliceOrEGetArrayError}}
+\subsubsection{TypingRule.ESliceError\label{sec:TypingRule.ESliceError}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
   \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
   \item $\tep$ has the structure $\vtp$;
-  \item $\vtp$ is neither an integer type, a bitvector type, or an array type;
+  \item $\vtp$ is neither an integer type or a bitvector type;
   \item the result is an error indicating that the type of $\vep$ is inappropriate for slicing.
 \end{itemize}
 \subsubsection{Formally}
@@ -1248,79 +1237,12 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \vtp\\
-  \astlabel(\vtp) \not\in \{\TInt, \TBits, \TArray\}
+  \astlabel(\vtp) \not\in \{\TInt, \TBits\}
 }{
   \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow \TypeErrorVal{IllegalSliceType}
 }
 \end{mathpar}
-\CodeSubsection{\ESliceOrEGetArrayErrorBegin}{\ESliceOrEGetArrayErrorEnd}{../Typing.ml}
-
-\subsubsection{TypingRule.EGetArray\label{sec:TypingRule.EGetArray}}
-\hypertarget{def-arrayaccess}{}
-\begin{definition}[Array Access]
-We refer to a right-hand-side expression of the form $b[i]$,
-where $b, i$ are subexpressions, as an \arrayaccess\ expression.
-We refer to $b$ and $i$ as the \emph{base}
-and the $\emph{index}$ subexpressions, respectively.
-
-In the untyped AST, an \arrayaccess\ expression is represented by \\
-$\ESlice(\vbase, [\vindex])$, whereas in the typed AST,
-it is represented by \\
-$\EGetArray(\vbase, \vindex)$
-\end{definition}
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
-  \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
-  \item $\tep$ has the structure of an array with index $\size$ and element type $\tty$';
-  \item One of the following applies:
-  \begin{itemize}
-    \item All of the following apply (\textsc{okay}):
-    \begin{itemize}
-      \item $\slices$ is a list containing a single slice for an expression $\eindex$, that is, $[\SliceSingle(\eindex)]$;
-      \item annotating the expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$\ProseOrTypeError;
-      \item determining the type of the array index for $\size$ in $\tenv$ via \\ $\typeofarraylength$
-            yields $\wantedtindex$;
-      \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ yields \\
-            $\True$\ProseOrTypeError;
-      \item $\vt$ is $\ttyp$;
-      \item $\newe$ is the \arrayaccess\ expression for $\vepp$ and index $\eindexp$, that is, $\EGetArray(\vepp, \eindexp)$.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{error}):
-    \begin{itemize}
-      \item $\slices$ is not a list containing a single slice for an expression $\eindex$;
-      \item the result is a type error indicating that an array must be accessed with a slice corresponding
-            to a single index expression.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[okay]{
-  \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
-  \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
-  \commonprefixline\\\\
-  \slices = [ \SliceSingle(\eindex) ]\\
-  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\\\
-  \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
-  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\
-}{
-  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \overname{\EGetArray(\vepp, \eindexp)}{\newe})
-}
-\and
-\inferrule[error]{
-  \annotateexpr{\tenv, \ve} \typearrow (\tep, \vepp) \OrTypeError\\\\
-  \tstruct(\tenv, \tep) \typearrow \TArray(\size, \ttyp) \OrTypeError\\\\
-  \commonprefixline\\\\
-  \slices \neq [ \SliceSingle(\Ignore) ]\\
-}{
-  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow \TypeErrorVal{IllegalArraySlice}
-}
-\end{mathpar}
-\CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
+\CodeSubsection{\ESliceError}{\ESliceErrorEnd}{../Typing.ml}
 
 \subsection{Semantics}
 \subsubsection{SemanticsRule.ESlice\label{sec:SemanticsRule.ESlice}}
@@ -1356,6 +1278,68 @@ resulting bitvector --- and the execution graph $\vgone$;
 }
 \end{mathpar}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
+
+\section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
+This section details the syntax, abstract syntax, semantics, and typing of array access expressions.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\ & \Nexpr \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EGetArray(\expr, \expr) &
+\end{flalign*}
+
+\subsubsection{ASTRule.EGetArray}
+\begin{mathpar}
+\inferrule{
+  \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\\\\
+  \buildexpr(\vetwo) \astarrow \astversion{\vetwo} \OrBuildError
+}{
+  \buildexpr(\overname{\Nexpr(\namednode{\veone}{\Nexpr}, \Tllbracket, \namednode{\vetwo}{\Nexpr}, \Trrbracket)}{\vparsednode}) \astarrow
+  \overname{\EGetArray(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.EGetArray\label{sec:TypingRule.EGetArray}}
+\hypertarget{def-arrayaccess}{}
+\begin{definition}[Array Access]
+We refer to a right-hand-side expression of the form \texttt{b[[i]]},
+where $b, i$ are subexpressions, as an \arrayaccess\ expression.
+We refer to $b$ and $i$ as the \emph{base}
+and the $\emph{index}$ subexpressions, respectively.
+\end{definition}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes the \arrayaccess{} expression with base $\ebase$ and index $\eindex$;
+  \item $(\tbase,\ebasep)$ is the result of annotating the expression $\ebase$ in $\tenv$\ProseOrTypeError;
+  \item $\tbase$ has the structure of an array with index $\size$ and element type $\telem$\ProseOrTypeError;
+  \item annotating the expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$\ProseOrTypeError;
+  \item determining the type of the array index for $\size$ in $\tenv$ via \\ $\typeofarraylength$
+        yields $\wantedtindex$;
+  \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ yields \\
+        $\True$\ProseOrTypeError;
+  \item $\vt$ is $\telem$;
+  \item $\newe$ is the \arrayaccess\ expression for $\ebasep$ and index $\eindexp$, that is, $\EGetArray(\ebasep, \eindexp)$.
+\end{itemize}
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ebase} \typearrow (\tbase, \ebasep) \OrTypeError\\\\
+  \tstruct(\tenv, \tbase) \typearrow \TArray(\size, \telem) \OrTypeError\\\\
+  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\\\
+  \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
+  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\
+}{
+  \annotateexpr{\tenv, \overname{\EGetArray(\ebase, \eindex)}{\ve}} \typearrow (\overname{\telem}{\vt}, \overname{\EGetArray(\ebasep, \eindexp)}{\newe})
+}
+\end{mathpar}
+\CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
+
 
 \subsubsection{SemanticsRule.EGetArray\label{sec:SemanticsRule.EGetArray}}
 \subsubsection{Example}

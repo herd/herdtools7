@@ -66,14 +66,14 @@ getter X{N}(regno: integer) => bits(N)
 begin
   assert N == 64;
   assert 0 <= regno && regno <= 31;
-  return _R[regno][0+:N];
+  return _R[[regno]][0+:N];
 end;
 
 setter X{N}(regno: integer) = value : bits(N)
 begin
   assert N == 64;
   assert 0 <= regno && regno <= 31;
-  _R[regno] = value as bits(64);
+  _R[[regno]] = value as bits(64);
 end;
 
 func good()

@@ -66,6 +66,7 @@ using $\texttt{eval\_expr}$ to evaluate it.
 |\ & \Tlpar \parsesep \Clisttwo{\Nlexpr} \parsesep \Trpar &\\
 \Nlexpratom \derives\ & \Tidentifier &\\
 |\ & \Nlexpratom \parsesep \Nslices &\\
+|\ & \Nlexpratom \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
 |\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier{\field} &\\
 |\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &
 \end{flalign*}
@@ -119,6 +120,13 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[slice]{}{
   \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \punnode{\Nslices})) \astarrow
   \overname{\LESlice(\astof{\vlexpratom}, \astof{\vslices})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[array]{}{
+  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tllbracket, \punnode{\Nexpr}, \Trrbracket)) \astarrow
+  \overname{\LESetArray(\astof{\vlexpratom}, \astof{\vexpr})}{\vastnode}
 }
 \end{mathpar}
 
@@ -436,35 +444,30 @@ which is when the \textsc{empty} axiom case is used.
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vle$ denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$, that is, $\LESlice(\vleone, \slices)$;
-  \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore)$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vtleone$ in $\tenv$ yields an array type of size $\size$ and element type $\vt$, that is, $\TArray(\size, \vt)$\ProseOrTypeError;
-  \item annotating the left-hand-side expression $\vleone$ with type $\vtleone$ in $\tenv$ yields $\vletwo$\ProseOrTypeError;
-  \item determining that $\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item determining whether $\slices$ is a single slice with index expression $\eindex$ yields $\True$\ProseOrTypeError;
+  \item $\vle$ denotes the array access of a left-hand-side expression $\ebase$ by the index $\eindex$, that is, $\LESetArray(\ebase, \eindex)$;
+  \item annotating the right-hand-side expression corresponding to $\ebase$ in $\tenv$ yields \\ $(\tbase, \Ignore)$\ProseOrTypeError;
+  \item obtaining the \structure\ of $\tbase$ in $\tenv$ yields an array type of size $\size$ and element type $\telem$, that is, $\TArray(\size, \telem)$\ProseOrTypeError;
+  \item annotating the left-hand-side expression $\ebase$ with type $\tbase$ in $\tenv$ yields $\ebasep$\ProseOrTypeError;
+  \item determining that $\telem$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item annotating the index expression $\eindex$ in $\tenv$ yields $(\tindexp, \eindexp)$\ProseOrTypeError;
   \item determining the array length type of $\size$ in $\tenv$ (via $\typeofarraylength$) yields $\wantedtindex$;
   \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields \\
         $\True$\ProseOrTypeError;
-  \item $\newle$ is an access to array $\vletwo$ at index $\eindexp$, that is, \\ $\LESetArray(\vletwo, \eindexp)$.
+  \item $\newle$ is an access to array $\ebasep$ at index $\eindexp$, that is, \\ $\LESetArray(\ebasep, \eindexp)$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TArray(\size, \vt) \OrTypeError\\\\
-  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow \vletwo \OrTypeError\\\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
-  \checktrans{\listlen{\slices} = 1}{ArraySliceShouldBeSingleIndex} \checktransarrow \True \OrTypeError\\\\
-  \slices \eqname [\vs]\\
-  \checktrans{\astlabel(\vs) = \SliceSingle}{ArraySliceShouldBeSingleIndex} \checktransarrow \True \OrTypeError\\\\
-  \vs \eqname \SliceSingle(\eindex)\\
+  \annotateexpr{\tenv, \torexpr(\ebase)} \typearrow (\tbase, \Ignore) \OrTypeError\\\\
+  \tstruct(\tenv, \tbase) \typearrow \TArray(\size, \telem) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \ebase, \tbase} \typearrow \ebasep \OrTypeError\\\\
+  \checktypesat(\tenv, \telem, \vt) \typearrow \True \OrTypeError\\\\
   \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp) \OrTypeError\\\\
   \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
-  \newle \eqdef \LESetArray(\vletwo, \eindexp)
+  \newle \eqdef \LESetArray(\ebasep, \eindexp)
 }{
-  \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow \newle
+  \annotatelexpr{\tenv, \overname{\LESetArray(\ebase, \eindex)}{\vle}, \vte} \typearrow \newle
 }
 \end{mathpar}
 \CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Typing.ml}

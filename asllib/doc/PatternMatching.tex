@@ -911,6 +911,17 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \end{mathpar}
 
 \begin{mathpar}
+  \inferrule[set\_array]{}{
+    {
+      \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tllbracket, \punnode{\Nexpr}, \Trrbracket)) \astarrow\\
+  \overname{\LESetArray(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\begin{mathpar}
   \inferrule[get\_field]{}{
   \buildexprpattern(\Nexprpattern(\Nexprpattern, \Tdot, \Tidentifier(\id))) \astarrow
   \overname{\EGetField(\astof{\vexpr}, \id)}{\vastnode}

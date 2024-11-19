@@ -1562,25 +1562,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (T_Bits (w, []) |> here, E_Slice (e'', slices') |> here)
                 |: TypingRule.ESlice
             (* End *)
-            (* Begin EGetArray *)
-            | T_Array (size, ty') -> (
+            | T_Array (size, ty') when e'.version = V0 -> (
                 match slices with
                 | [ Slice_Single e_index ] ->
-                    let t_index', e_index' =
-                      annotate_expr_ ~forbid_atcs env e_index
-                    in
-                    let wanted_t_index = type_of_array_length ~loc:e size in
-                    let+ () =
-                      check_type_satisfies e env t_index' wanted_t_index
-                    in
-                    (ty', E_GetArray (e'', e_index') |> here)
-                    |: TypingRule.EGetArray
-                | _ -> conflict e [ integer'; default_t_bits ] t_e')
-            (* End *)
-            (* Begin ESliceOrEGetArrayError *)
+                    annotate_get_array ~forbid_atcs ~loc env (size, ty')
+                      (e'', e_index)
+                | _ -> conflict loc [ integer'; default_t_bits ] t_e')
+            (* Begin ESliceError *)
             | _ ->
                 conflict e [ integer'; default_t_bits ] t_e'
-                |: TypingRule.ESliceOrEGetArrayError
+                |: TypingRule.ESliceError
             (* End *)))
     | E_GetField (e1, field_name) -> (
         let reduced =
@@ -1735,8 +1726,24 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let pat' = best_effort pat (annotate_pattern e env t_e2) in
         (T_Bool |> here, E_Pattern (e2, pat') |> here) |: TypingRule.EPattern
     (* End *)
+    (* Begin EGetArray *)
+    | E_GetArray (e_base, e_index) -> (
+        let t_base, e_base' = annotate_expr_ ~forbid_atcs env e_base in
+        let t_anon_base = Types.make_anonymous env t_base in
+        match t_anon_base.desc with
+        | T_Array (size, t_elem) ->
+            annotate_get_array ~forbid_atcs ~loc env (size, t_elem)
+              (e_base', e_index)
+        | _ -> conflict loc [ default_array_ty ] t_base |: TypingRule.EGetArray)
+    (* End *)
     | E_GetItem _ -> assert false
-    | E_GetArray _ -> assert false |: TypingRule.EGetArray
+
+  and annotate_get_array ~forbid_atcs ~loc env (size, t_elem) (e_base, e_index)
+      =
+    let t_index', e_index' = annotate_expr_ ~forbid_atcs env e_index in
+    let wanted_t_index = type_of_array_length ~loc size in
+    let+ () = check_type_satisfies loc env t_index' wanted_t_index in
+    (t_elem, E_GetArray (e_base, e_index') |> add_pos_from loc)
 
   (** For an expression of the form [e1.[f1,...,fn]], if [e1] represents a call
       to a getter then this function returns a list of slices needed to read
@@ -1887,6 +1894,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | V0 -> base_value_v0 ~loc env e
     | V1 -> base_value_v1 ~loc env e
 
+  let annotate_set_array ~loc env (size, t_elem) rhs_ty (e_base, e_index) =
+    let+ () = check_type_satisfies loc env rhs_ty t_elem in
+    let t_index', e_index' = annotate_expr env e_index in
+    let wanted_t_index = type_of_array_length ~loc:e_base size in
+    let+ () = check_type_satisfies e_base env t_index' wanted_t_index in
+    LE_SetArray (e_base, e_index') |> add_pos_from loc
+
   let rec annotate_lexpr env le t_e =
     let () =
       if false then
@@ -1953,19 +1967,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
         (* End *)
-        (* Begin LESetArray *)
-        | T_Array (size, t) -> (
-            let le2 = annotate_lexpr env le1 t_le1 in
-            let+ () = check_type_satisfies le2 env t_e t in
+        | T_Array (size, t) when le.version = V0 -> (
             match slices with
             | [ Slice_Single e_index ] ->
-                let t_index', e_index' = annotate_expr env e_index in
-                let wanted_t_index = type_of_array_length ~loc:le size in
-                let+ () =
-                  check_type_satisfies le2 env t_index' wanted_t_index
-                in
-                LE_SetArray (le2, e_index') |> here |: TypingRule.LESetArray
-            (* End *)
+                let le2 = annotate_lexpr env le1 t_le1 in
+                annotate_set_array ~loc:le env (size, t) t_e (le2, e_index)
             | _ -> invalid_expr (expr_of_lexpr le1))
         | _ -> conflict le1 [ default_t_bits ] t_le1)
     | LE_SetField (le1, field) ->
@@ -2036,7 +2042,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let+ () = check_type_satisfies le env t_e t in
             LE_SetFields (le', fields, slices) |> here
         | _ -> conflict le [ default_t_bits ] t_le')
-    | LE_SetArray _ -> assert false
+    (* Begin LESetArray *)
+    | LE_SetArray (e_base, e_index) -> (
+        let t_base, _ = expr_of_lexpr e_base |> annotate_expr env in
+        let t_anon_base = Types.make_anonymous env t_base in
+        match t_anon_base.desc with
+        | T_Array (size, t_elem) ->
+            let e_base' = annotate_lexpr env e_base t_base in
+            annotate_set_array ~loc:le env (size, t_elem) t_e (e_base', e_index)
+        | _ -> conflict le [ default_array_ty ] t_base)
+    (* End *)
     | LE_SetFields (_, _, _ :: _) -> assert false
 
   (* Begin CheckCanBeInitializedWith *)

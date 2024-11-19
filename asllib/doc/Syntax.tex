@@ -440,6 +440,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \begin{flalign*}
 \Nlexpratom \derives\ & \Tidentifier &\\
 |\ & \Nlexpratom \parsesep \Nslices &\\
+|\ & \Nlexpratom \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
 |\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier &\\
 |\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &
 \end{flalign*}
@@ -488,6 +489,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
                     |\  & \Ncall &\\
                     |\  & \Nexprpattern \parsesep \Nslices &\\
+                    |\  & \Nexprpattern \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
                     |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tidentifier&\\
                     |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
                     |\  & \Nexprpattern \parsesep \Tas \parsesep \Nty &\\
@@ -600,6 +602,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
                     |\  & \Ncall &\\
                     |\  & \Nexpr \parsesep \Nslices &\\
+                    |\  & \Nexpr \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
                     |\  & \Nexpr \parsesep \Tdot \parsesep \Tidentifier&\\
                     |\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
                     |\  & \Nexpr \parsesep \Tas \parsesep \Nty &\\
@@ -734,6 +737,6 @@ which is never returned by the scanner.
 \Tpow, \Tconcat & \leftassoc\\
 $\Tunops$ & \nonassoc\\
 \Tin & \nonassoc\\
-\Tdot, \Tlbracket & \leftassoc
+\Tdot, \Tlbracket, \Tllbracket & \leftassoc
 \end{tabular}
 \end{center}
