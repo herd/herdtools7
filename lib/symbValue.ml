@@ -302,8 +302,7 @@ module
     | (Val (Symbolic _),Val (Symbolic _))
     | (Val (Label _),Val (Label _))
     | (Val (PteVal _),Val (PteVal _))
-    | (Val (Instruction _),Val (Instruction _))
-      ->
+    | (Val (Instruction _),Val (Instruction _)) ->
         Val (Concrete (Cst.Scalar.of_int (compare  v1 v2)))
     (* 0 is sometime used as invalid PTE, no orpat because warning 57
        cannot be disabled in some versions ?  *)
@@ -679,6 +678,56 @@ module
   let cap_unseal c =
     cap_set_object_type c Cst.Scalar.zero
 
+  (* Add a PAC field to a virtual address, this function can only add a PAC
+     field if the input pointer is canonical, otherwise it raise an error, it is
+     used to model the `pac*` instruction without the variant const-pac-field *)
+  let addOnePAC key pointer modifier =
+    match pointer, modifier with
+    | Val (Symbolic (Virtual {pac})), Val _
+      when not (PAC.is_canonical pac) ->
+        Warn.user_error "addPAC: %s already contain a PAC field" (pp_v pointer)
+    | Val (Symbolic (Virtual ({pac; offset} as v))), Val m ->
+      let modifier = Cst.pp true m in
+      let pac = PAC.add key modifier offset pac in
+      Val (Symbolic (Virtual {v with pac}))
+    | Val _, Val _ ->
+        Warn.user_error "addPAC: %s is not a valid virtual address" (pp_v pointer)
+    | _, _ -> raise Undetermined
+
+  (* Add a PAC field to a virtual address, this function can add a PAC field if
+    the input pointer already contain a PAC field, in this case it use the XOR
+    of the two pac fields, it is use in the `auth*` function and in the
+    `pac*` instruction in presence of the variant const-pac-field *)
+  let addPAC key pointer modifier =
+    match pointer, modifier with
+    | Val (Symbolic (Virtual ({pac; offset} as v))), Val m ->
+      let modifier = Cst.pp true m in
+      let pac = PAC.add key modifier offset pac in
+      Val (Symbolic (Virtual {v with pac}))
+    | Val _, Val _ ->
+        Warn.user_error "addPAC: %s is not a valid virtual address" (pp_v pointer)
+    | _, _ -> raise Undetermined
+
+
+  (* Check that the PAC field of a virtual address is canonical *)
+  let checkCanonical = function
+    | Val (Symbolic (Virtual {pac})) ->
+        if PAC.is_canonical pac then
+          Val (Concrete Cst.Scalar.one)
+        else
+          Val (Concrete Cst.Scalar.zero)
+    | Val cst ->
+        Warn.user_error "checkCanonical: %s is not a valid virtual address" (Cst.pp_v cst)
+    | Var _ -> raise Undetermined
+
+  (* Remove the PAC field of a virtual address *)
+  let setCanonical = function
+    | Val (Symbolic (Virtual v)) ->
+        Val (Symbolic (Virtual {v with pac= PAC.canonical}))
+    | Val cst ->
+        Warn.user_error "setCanonical: %s is not a valid virtual address" (Cst.pp_v cst)
+    | Var _ -> raise Undetermined
+
   let alignd c k =
     check_immediate k 6; (* Check user input *)
     let align = ones (Cst.Scalar.to_int k) in
@@ -899,9 +948,13 @@ module
                      (ArchOp.pp_op1 true op) (pp_v v)
                | Some c -> Val c
              end)
+    | CheckCanonical -> checkCanonical
+    | SetCanonical -> setCanonical
 
   let op op = match op with
   | Add -> add
+  | AddPAC (true, key) -> addOnePAC key
+  | AddPAC (false, key) -> addPAC key
   | Alignd -> binop op alignd
   | Alignu -> binop op alignu
   | CapaAdd -> capaadd

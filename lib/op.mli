@@ -19,7 +19,6 @@
 (**********)
 (* Binary *)
 (**********)
-
 type 'aop op =
   | Add | Sub | Mul | Div | Rem
   | And | Or | Xor | Nor
@@ -45,6 +44,11 @@ type 'aop op =
  *)
   | ToInteger
   | ArchOp of 'aop
+(* PAC specific operations *)
+(* Apply the exclusive OR between the current PAC field of a virtual address
+ * and the PAC signature of this address, and a modifier for a given key.
+ *)
+  | AddPAC of bool * PAC.key
 
 val pp_op : 'aop op -> ('aop -> string)-> string
 
@@ -88,6 +92,8 @@ type 'aop op1 =
   | Promote (* Promote to higher precision *)
   | Demote  (* Demote to lower precision *)
   | ArchOp1 of 'aop
+  | CheckCanonical (* Check if a virtual address is canonical *)
+  | SetCanonical (* Remove the PAC field of a virtual address *)
 
 val pp_op1 : bool -> (bool -> 'aop -> string) -> 'aop op1 -> string
 
