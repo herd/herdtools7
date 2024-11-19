@@ -421,7 +421,7 @@ $\newtenv$.
 \subsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\tenv$ is the static environment comprised of the global static environment $\genv$ and an empty local environment;
+  \item $\tenv$ is the static environment which comprises of the global static environment $\genv$ and an empty local environment;
   \item applying $\annotatelimitexpr$ to $\funcsig.\funcrecurselimit$ in $\tenvone$ yields \\
         $\vrecurselimit$\ProseOrTypeError;
   \item checking that the parameters $\funcsig.\funcparameters$ are declared correctly using $\checkparamdecls$ yields $\True$\ProseOrTypeError;
@@ -477,7 +477,7 @@ All of the following apply:
 \end{mathpar}
 
 
-\subsubsection{TypingRule.CheckParamDecls \label{TypingRule.CheckParamDecls}}
+\subsubsection{TypingRule.CheckParamDecls \label{sec:TypingRule.CheckParamDecls}}
 The function
 \[
 \checkparamdecls(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
@@ -506,7 +506,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TypesInFuncSig \label{TypingRule.TypesInFuncSig}}
+\subsubsection{TypingRule.TypesInFuncSig \label{sec:TypingRule.TypesInFuncSig}}
 \hypertarget{def-typesinfuncsig}{}
 The function
 \[
@@ -536,7 +536,7 @@ Define $\tys$ as the return type (if any) concatenated with the argument types.
 \end{mathpar}
 
 
-\subsubsection{TypingRule.ParametersOfTy \label{TypingRule.ParametersOfTy}}
+\subsubsection{TypingRule.ParametersOfTy \label{sec:TypingRule.ParametersOfTy}}
 \hypertarget{def-paramsofty}{}
 The function
 \[
@@ -613,7 +613,7 @@ One of the following applies:
 \end{mathpar}
 
 
-\subsubsection{TypingRule.ParametersOfExpr \label{TypingRule.ParametersOfExpr}}
+\subsubsection{TypingRule.ParametersOfExpr \label{sec:TypingRule.ParametersOfExpr}}
 \hypertarget{def-paramsofexpr}{}
 The function
 \[
@@ -688,7 +688,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ParametersOfConstraint \label{TypingRule.ParametersOfConstraint}}
+\subsubsection{TypingRule.ParametersOfConstraint \label{sec:TypingRule.ParametersOfConstraint}}
 \hypertarget{def-paramsofconstraint}{}
 The function
 \[

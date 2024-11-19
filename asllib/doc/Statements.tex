@@ -696,7 +696,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
-\section{Declaration statements with an elided parameter \label{DeclarationStatementsElidedParameter}}
+\section{Declaration statements with an elided parameter \label{sec:DeclarationStatementsElidedParameter}}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -1157,7 +1157,7 @@ All of the following apply:
 \item the statement $\vsp$ is $\vsone$ is $\vb$ is $\True$ and $\vstwo$ otherwise
 (so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
 $\vstwo$ will be evaluated);
-\item evaluating $\vsp$ in $\envone$ as per \chapref{Blocks} is a non-abnormal configuration
+\item evaluating $\vsp$ in $\envone$ as per \chapref{BlockStatements} is a non-abnormal configuration
       (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
 \item $\vg$ is the ordered composition of $\vgone$ and the execution graph of the configuration $C$;
 \item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
@@ -2770,7 +2770,7 @@ does not result in any Assertion error, and the specification terminates with th
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{try} statement, $\STry(\vs, \catchers, \otherwiseopt)$;
-  \item evaluating $\vsone$ in $\env$ as per \chapref{Blocks}
+  \item evaluating $\vsone$ in $\env$ as per \chapref{BlockStatements}
   is a non-abnormal (that is, either $\Normal$ or $\Continuing$) configuration $\sm$\ProseOrAbnormal;
   \item evaluating $(\catchers, \otherwiseopt, \sm)$ as per \chapref{CatchingExceptions}
   is $C$, which is the result of the entire evaluation.

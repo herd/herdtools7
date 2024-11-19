@@ -85,21 +85,21 @@ A call to a function must result in a returned value,
 whereas a call to a procedure must not.
 This error occurs when a call to a function or a getter is inferred to refer to a procedure or a setter,
 or a call to a procedure or a setter is inferred to refer to a function or a getter.
-See \secref{TypingRule.AnnotateCallArgTyped} for an example.
+See \secref{TypingRule.AnnotateCallActualsTyped} for an example.
 
 \hypertarget{def-cba}{}
 \item[$\CallBadArity$]
 A call to a subprogram must have the same number of arguments as the list of formal arguments
 declared for the subprogram.
 This error indicates that the number of arguments is different to the number of declared formal arguments.
-See \secref{TypingRule.AnnotateCallArgTyped} for an example.
+See \secref{TypingRule.AnnotateCallActualsTyped} for an example.
 
 \hypertarget{def-cbpa}{}
 \item[$\CallBadParameterArity$]
 A call to a subprogram must have the same number of parameters as the list of formal parameters
 declared for the subprogram.
 This error indicates that the number of parameters is different to the number of declared formal parameters.
-See \secref{TypingRule.AnnotateCallArgTyped} for an example.
+See \secref{TypingRule.AnnotateCallActualsTyped} for an example.
 
 \hypertarget{def-brd}{}
 \item[$\BadRecursiveDecls$]
