@@ -29,6 +29,7 @@ type t = {
   mixed : bool ;
   files : bool ;
   timeout : bool ;
+  pac : bool ;
   profile_cat: bool ;
   profile_asl: bool ;
   exc : bool ;  }

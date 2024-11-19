@@ -31,4 +31,5 @@ module Make : functor
      and module Cst.Scalar = Cst.Scalar
      and type arch_extra_op1 = ArchOp.extra_op1
      and type 'a arch_constr_op1 = 'a ArchOp.constr_op1
-     and type arch_op = ArchOp.op
+     and type arch_extra_op = ArchOp.extra_op
+     and type 'a arch_constr_op = 'a ArchOp.constr_op
