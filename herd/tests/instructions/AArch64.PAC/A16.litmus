@@ -1,0 +1,9 @@
+AArch64 A16
+Variant=pac,fpac,const-pac-field
+
+{ 0:x0=x; int64_t x=42; int64_t 0:x1=43 }
+
+P0            ;
+  str x1,[x0] ;
+forall
+  ( ~Fault(P0, MMU:Translation) /\ [x]=43 )

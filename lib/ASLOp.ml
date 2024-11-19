@@ -31,12 +31,17 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-type op =
+(* No extra binary operation *)
+type extra_op
+
+type 'a constr_op =
   | Divrm
   | SetIndex of int
   | SetField of string
   | Concat
   | BVSliceSet of int list
+
+type op = extra_op constr_op
 
 (* No extra operation *)
 type extra_op1

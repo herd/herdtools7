@@ -25,7 +25,7 @@ val chop_litmus : string -> string
 val outname : string -> string -> string
 
 (* Open litmus own files *)
-val open_lib : string -> string * in_channel
+val open_lib : ?sub:string -> string -> string * in_channel
 
 (* Get litmus own file complete name *)
 val name_lib : string -> string

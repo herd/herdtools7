@@ -19,7 +19,6 @@
 (**********)
 (* Binary *)
 (**********)
-
 type 'aop op =
   | Add | Sub | Mul | Div | Rem
   | And | Or | Xor | Nor

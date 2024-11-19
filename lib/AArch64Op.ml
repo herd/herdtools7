@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type 'op1 t =
+type 'op1 unop =
   | AF (* get AF from PTE entry *)
   | SetAF (* set AF to 1 in PTE entry *)
   | DB (* get DB from PTE entry *)
@@ -24,26 +24,41 @@ type 'op1 t =
   | EL0 (* get EL0 bit from PTE entry *)
   | OA (* get OA from PTE entry *)
   | Tagged (* get Tag attribute from PTE entry *)
-  | Extra of 'op1
+  | CheckCanonical (* Check is a virtual address is canonical *)
+  | MakeCanonical (* Make a virtual address canonical *)
+  | Extra1 of 'op1
+
+type 'op binop =
+  | Extra of 'op
+  | AddPAC of bool * PAC.key
 
 module
    Make
      (S:Scalar.S)
      (Extra:ArchOp.S with type scalar = S.t) : ArchOp.S
-   with type op = Extra.op
-    and type extra_op1 = Extra.op1
-    and type 'a constr_op1 = 'a t
+   with type extra_op1 = Extra.op1
+    and type 'a constr_op1 = 'a unop
+    and type extra_op = Extra.op
+    and type 'a constr_op = 'a binop
     and type scalar = S.t
     and type pteval = AArch64PteVal.t
     and type instr = AArch64Base.instruction
   = struct
 
-    type op = Extra.op
+    type extra_op = Extra.op
+    type 'a constr_op = 'a binop
+    type op = Extra.op binop
     type extra_op1 = Extra.op1
-    type 'a constr_op1 = 'a t
+    type 'a constr_op1 = 'a unop
     type op1 = extra_op1 constr_op1
 
-    let pp_op = Extra.pp_op
+    let pp_op = function
+      | Extra extra -> Extra.pp_op extra
+      | AddPAC (uniq, key) ->
+          if uniq then
+            Printf.sprintf "AddOnePac:%s" (PAC.pp_upper_key key)
+          else
+            Printf.sprintf "AddPAC:%s" (PAC.pp_upper_key key)
 
     let pp_op1 hexa = function
       | AF -> "AF"
@@ -55,13 +70,21 @@ module
       | EL0 -> "EL0"
       | OA -> "OA"
       | Tagged -> "Tagged"
-      | Extra op1 -> Extra.pp_op1 hexa op1
+      | CheckCanonical -> "CheckCanonical"
+      | MakeCanonical -> "MakeCanonical"
+      | Extra1 op1 -> Extra.pp_op1 hexa op1
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
     type instr = AArch64Base.instruction
     type cst = (scalar,pteval,instr) Constant.t
 
+    let pp_cst hexa v =
+      let module InstrPP = AArch64Base.MakePP(struct
+        let is_morello = true
+      end) in
+      Constant.pp (S.pp hexa) (AArch64PteVal.pp hexa)
+      (InstrPP.dump_instruction) v
 
     open AArch64PteVal
 
@@ -82,6 +105,20 @@ module
       match v with
       | PteVal p -> Some (PteVal (op p))
       | _ -> None
+
+    (* Check that the PAC field of a virtual address is canonical *)
+    let checkCanonical =
+      let open Constant in function
+      | Symbolic (Virtual {pac}) ->
+          Some (boolToCst (PAC.is_canonical pac))
+      | _ ->
+          None
+
+    (* Remove the PAC field of a virtual address *)
+    let makeCanonical cst =
+      if Constant.is_virtual cst
+      then Some (Constant.make_canonical cst)
+      else None
 
     let getaf = op_get_pteval (fun p -> p.af <> 0)
     let setaf = op_set_pteval (fun p -> { p with af=1; })
@@ -107,12 +144,43 @@ module
     let toExtra cst = Constant.map Misc.identity exit exit cst
     and fromExtra cst = Constant.map Misc.identity exit exit cst
 
-    let do_op op c1 c2 =
-      try
-        match Extra.do_op op (toExtra c1) (toExtra c2) with
-        | None -> None
-        | Some cst -> Some (fromExtra cst)
-      with Exit -> None
+    (* Add a PAC field to a virtual address, this function can only add a PAC
+       field if the input pointer is canonical, otherwise it raise an error, it is
+       used to model the `pac*` instruction without the variant const-pac-field *)
+    let addOnePAC key pointer modifier =
+      let open Constant in
+      match pointer with
+      | Symbolic (Virtual {pac}) when not (PAC.is_canonical pac) ->
+          None
+      | Symbolic (Virtual ({pac; offset} as v)) ->
+        let modifier = pp_cst true modifier in
+        let pac = PAC.add key modifier offset pac in
+        Some (Symbolic (Virtual {v with pac}))
+      | _ ->
+          None
+
+    (* Add a PAC field to a virtual address, this function can add a PAC field if
+      the input pointer already contain a PAC field, in this case it use the XOR
+      of the two pac fields, it is use in the `auth*` function and in the
+      `pac*` instruction in presence of the variant const-pac-field *)
+    let addPAC key pointer modifier =
+      let open Constant in
+      match pointer with
+      | Symbolic (Virtual ({pac; offset} as v)) ->
+        let modifier = pp_cst true modifier in
+        let pac = PAC.add key modifier offset pac in
+        Some (Symbolic (Virtual {v with pac}))
+      | _ -> None
+
+    let do_op = function
+      | AddPAC (true, key) -> addOnePAC key
+      | AddPAC (false, key) -> addPAC key
+      | Extra op -> fun c1 c2 ->
+          try
+            match Extra.do_op op (toExtra c1) (toExtra c2) with
+            | None -> None
+            | Some cst -> Some (fromExtra cst)
+          with Exit -> None
 
 
     let do_op1 = function
@@ -125,7 +193,9 @@ module
       | EL0 -> getel0
       | OA -> getoa
       | Tagged -> gettagged
-      | Extra op1 ->
+      | CheckCanonical -> checkCanonical
+      | MakeCanonical -> makeCanonical
+      | Extra1 op1 ->
          fun cst ->
            try
              match Extra.do_op1 op1 (toExtra cst) with

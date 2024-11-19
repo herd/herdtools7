@@ -113,6 +113,13 @@ type t =
   | OldSolver
 (* Accept cyclic equation sets as being solvable *)
   | OOTA
+(* Pointer authentication code, represent the activation of the keys that we can
+   find in the system register `SCTLR_EL1.En*` *)
+  | Pac
+(* Fault generation with Pointer authentication code *)
+  | FPac
+(* Allow to use pac(pac(...)) using the XOR of two pac fields *)
+  | ConstPacField
 
 
 val compare : t -> t -> int

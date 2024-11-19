@@ -1,0 +1,10 @@
+Test A19 Required
+States 1
+0:X1=42; 0:X2=0; [x]=42;  ~Fault(P0,MMU:Translation);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (not (fault(P0,MMU:Translation)) /\ [x]=42 /\ 0:X1=42 /\ 0:X2=0)
+Observation A19 Always 2 0
+Hash=8864b6cac41de226f37db2b6700f1e2c
+

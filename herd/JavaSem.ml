@@ -19,7 +19,10 @@
 module
   Make
     (Conf:Sem.Config)
-    (V:Value.S with type Cst.Instr.t = JavaBase.instruction and type arch_op = JavaBase.arch_op) = struct
+    (V:Value.S with
+      type Cst.Instr.t = JavaBase.instruction
+      and type arch_extra_op = JavaBase.arch_extra_op
+      and type 'a arch_constr_op = 'a JavaBase.arch_constr_op) = struct
 
 	module Java = JavaArch_herd.Make(SemExtra.ConfigToArchConfig(Conf))(V)
 	module Act = JavaAction.Make(Java)
@@ -109,7 +112,7 @@ module
                 ((build_semantics_expr true dest ii) >>= fun v_dest ->
                     (M.mk_singleton_es
                     (Act.RMW (A.Location_global loc_vh,
-                      v_expect, v_dest, 
+                      v_expect, v_dest,
                             (match read_am , write_am with
                               | AccessModes.Acquire, AccessModes.Plain -> read_am
                               | AccessModes.Plain, AccessModes.Release -> write_am
@@ -172,7 +175,7 @@ module
             let ii = {ii with A.inst = hd; } in
             (build_semantics test ii) >>> fun (prog_order, _branch) ->
                 build_semantics_list test tl {ii with A.program_order_index = prog_order;}
-    
+
     let spurious_setaf _ = assert false
 
     end

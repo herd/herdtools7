@@ -41,7 +41,10 @@ let envlib =
   try Some (Sys.getenv "LITMUSDIR") with Not_found ->
   try Some (Sys.getenv "LITMUSLIB") with Not_found -> None
 
-let open_lib name =
+let open_lib ?sub name =
+  let name = match sub with
+    | Some sub -> Filename.concat sub name
+    | None -> name in
   try try_open "." name
   with Exit -> try match envlib with
   | Some lib -> try_open lib name

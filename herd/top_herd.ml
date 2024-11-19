@@ -244,6 +244,13 @@ module Make(O:Config)(M:XXXMem.S) =
           | Some flag -> not (Flag.Set.mem (Flag.Flag flag) flags)
         then c
         else
+          let flts =
+            if O.debug.Debug_herd.pac then flts
+            else A.FaultSet.map
+              (A.map_fault (A.V.map_const Constant.make_canonical)) flts in
+          let st =
+            if O.debug.Debug_herd.pac then st
+            else A.map_state (A.V.map_const Constant.make_canonical) st in
           let st = A.map_state A.V.printable st in
           let fsc = st,flts in
           let ok = check fsc in

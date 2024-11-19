@@ -1,0 +1,12 @@
+AArch64 A13
+Variant=pac
+
+{ 0:x0=x }
+
+P0             ;
+  pacdza x0    ;
+  add x0,x0,#4 ;
+  autdza x0    ;
+  sub x0,x0,#4 ;
+  ldr x1,[x0]  ;
+forall (Fault(P0))

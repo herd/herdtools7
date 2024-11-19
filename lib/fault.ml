@@ -67,6 +67,7 @@ module type S = sig
     fault_type option * string option
 
   val pp_fault : fault -> string
+  val map_fault : (loc_global -> loc_global) -> fault -> fault
   module FaultSet : MySet.S with type elt = fault
 
   type fatom = (loc_global,fault_type) atom
@@ -85,6 +86,11 @@ module Make(A:I) =
     type fault =
       (Proc.t * Label.Set.t) * loc_global option
       * fault_type option * string option
+
+    (* Map over the loc_global in a fault *)
+    let map_fault f = function
+      | (lbl,Some x,ftype,msg) -> (lbl,Some (f x),ftype,msg)
+      | fault -> fault
 
     let pp_lbl (p,lbl) = match Label.Set.as_small 1 lbl with
     | Some [] ->  Proc.pp p
