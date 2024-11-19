@@ -78,6 +78,12 @@ module
   let pp_v =  do_pp Cst.pp_v
   let pp_v_old =  do_pp Cst.pp_v_old
 
+  type arch_pred = ArchOp.predicate
+  exception Constraint of arch_pred * v
+  let compare_predicate = ArchOp.compare_predicate
+  let inverse_predicate = ArchOp.inverse_predicate
+  let pp_predicate = ArchOp.pp_predicate
+
 (* Basic utilities *)
 
   let as_constant = function
@@ -90,12 +96,6 @@ module
     | Val (c) ->
        Val (Constant.map_scalar Cst.Scalar.printable c)
     | v -> v
-
-  let equalityPossible v1 v2 =
-    match (v1,v2) with
-    | Val x1,Val x2 -> Cst.compare x1 x2 = 0
-    | (Var _,_)
-    | (_,Var _) -> true  (* WARNING: May want to optimize later *)
 
   let compare v1 v2 =
     match v1,v2 with
@@ -304,7 +304,8 @@ module
     | (Val (Symbolic _),Val (Symbolic _))
     | (Val (Label _),Val (Label _))
     | (Val (PteVal _),Val (PteVal _))
-    | (Val (Instruction _),Val (Instruction _)) ->
+    | (Val (Instruction _),Val (Instruction _))
+      ->
         Val (Concrete (Cst.Scalar.of_int (compare  v1 v2)))
     (* 0 is sometime used as invalid PTE, no orpat because warning 57
        cannot be disabled in some versions ?  *)
@@ -891,15 +892,21 @@ module
     | Demote -> unop op Cst.Scalar.demote
     | ArchOp1 op ->
         (function
-         | Var _ -> raise Undetermined
-         | Val c as v ->
-             begin
-               match ArchOp.do_op1 op c with
-               | None ->
-                   Warn.user_error "Illegal operation %s on %s"
-                     (ArchOp.pp_op1 true op) (pp_v v)
-               | Some c -> Val c
-             end)
+          | Var _ -> raise Undetermined
+          | Val c as v ->
+              begin
+                try
+                  match ArchOp.do_op1 op c with
+                  | None ->
+                       Warn.user_error "Illegal operation %s on %s"
+                        (ArchOp.pp_op1 true op) (pp_v v)
+                  | Some c -> Val c
+                with
+                | ArchOp.Constraint (pred,cst1) ->
+                    raise (Constraint (pred,Val cst1))
+                | exn ->
+                    raise exn
+              end)
 
   let op op = match op with
   | Add -> add
@@ -961,11 +968,17 @@ module
         match (v1, v2) with
         | Var _, _ | _, Var _ -> raise Undetermined
         | Val c1, Val c2 -> (
-            match ArchOp.do_op o c1 c2 with
-            | Some c -> Val c
-            | None ->
-                Warn.user_error "Illegal operation %s on %s and %s"
-                  (ArchOp.pp_op o) (pp_v v1) (pp_v v2)))
+            try
+              match ArchOp.do_op o c1 c2 with
+              | Some c -> Val c
+              | None ->
+                  Warn.user_error "Illegal operation %s on %s and %s"
+                    (ArchOp.pp_op o) (pp_v v1) (pp_v v2)
+            with
+            | ArchOp.Constraint (pred,cst1) ->
+                raise (Constraint (pred,Val cst1))
+            | exn ->
+                raise exn))
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
@@ -1016,13 +1029,10 @@ module
 
   (* Convenience *)
 
-
   let map_const f v =
     match v with
     | Var _ -> v
     | Val c -> Val (f c)
 
   let map_scalar f = map_const (Constant.map_scalar f)
-
-
 end

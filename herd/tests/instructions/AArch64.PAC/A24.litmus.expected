@@ -1,0 +1,10 @@
+Test A24 Required
+States 2
+0:X2=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (0:X2=1)
+Observation A24 Always 2 0
+Hash=c3e87fb8200e9b6605c53e3cb06857df
+

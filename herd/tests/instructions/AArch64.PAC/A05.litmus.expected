@@ -1,10 +1,10 @@
 Test A05 Required
 States 1
- Fault(P0,PacCheck:DB);
+0:X1=42;  ~Fault(P0);
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (fault(P0,PacCheck:DB))
+Condition forall (0:X1=42 /\ not (fault(P0)))
 Observation A05 Always 1 0
-Hash=efa569ed78eba108ea8f24f8428c8a0c
+Hash=47f7e5c8d18b0fe9f89aedba7dd330bc
 

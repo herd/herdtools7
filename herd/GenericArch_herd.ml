@@ -36,6 +36,14 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
   let reject_mixed = false
   let mem_access_size _ = None
 
+  let eq_satisfiable _ _ = None
+  type solver_state = unit
+  let empty_solver = ()
+  let pp_solver_state _ = ""
+  let add_predicate _ _ = Some ()
+  let normalize cst _ = cst
+  let compare_solver_state _ _ = 0
+
   include
     ArchExtra_herd.Make
       (C)
@@ -50,6 +58,10 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
         let reg_compare = reg_compare
         let fromto_of_instr _ = None
         let get_val _ v = v
+
+        type solver_state = unit
+        let pp_solver_state () = ""
+        let compare_solver_state () () = 0
       end)
 
   module MemType = MemoryType.No

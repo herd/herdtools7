@@ -49,6 +49,10 @@ module Make
 
         let get_val _ v = v
 
+        type solver_state = unit
+        let pp_solver_state () = ""
+        let compare_solver_state () () = 0
+
         module FaultType=FaultType.No
       end)
 
@@ -57,4 +61,18 @@ module Make
     module Barrier = AllBarrier.No(struct type a = barrier end)
 
     module CMO = Cmo.No
+
+    let eq_satisfiable _ _ = None
+
+    type solver_state = unit
+
+    let empty_solver = ()
+
+    let pp_solver_state _ = ""
+
+    let add_predicate _ _ = Some ()
+
+    let normalize cst _ = cst
+
+    let compare_solver_state _ _ = 0
 end

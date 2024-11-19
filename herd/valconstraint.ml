@@ -38,6 +38,7 @@ module type S = sig
   type state
   type arch_op
   type arch_op1
+  type arch_pred
 
   type expr =
     | Atom of atom
@@ -46,10 +47,10 @@ module type S = sig
     | Binop of (arch_op Op.op) * atom * atom
     | Terop of Op.op3 * atom * atom * atom
 
-
   type rvalue = expr
 
   type cnstrnt =
+    | Predicate of arch_pred
     | Assign of atom * rvalue
     | Failed of exn (* Delay exceptions *)
     | Warn of string
@@ -58,17 +59,26 @@ module type S = sig
   val pp_eq : cnstrnt -> string
   val pp_cnstrnts : cnstrnt list -> string
 
+  type solver_state
+
   type solution
 
+  (* The answer contains for each solution
+   * - The variable assignation
+   * - The unsolved constraints + the predicates added to the solver state
+   * - the final solver state *)
   type answer =
     | NoSolns
-    | Maybe of solution *  cnstrnts
+    | Maybe of solution * cnstrnts * solver_state
 
   val pp_answer : answer -> string
 
 (* Extract delayed exception, if present, or warning, if present. *)
   val get_failed :  cnstrnts -> cnstrnt option
 
+  (* Solve doesn't take a solver state as argument, instead is rebuild the
+   * solver state using the predicates in the input constraints, but it return
+   * the solver state such that it can be propagated to `constraints.ml` *)
   val solve : cnstrnt list -> answer
 end
 
@@ -86,9 +96,10 @@ and type arch_op = A.V.arch_op
 and type arch_op1 = A.V.arch_op1
 and type solution = A.V.solution
 and type location = A.location
+and type solver_state = A.solver_state
+and type arch_pred = A.V.arch_pred
 and type state = A.state =
   struct
-
     let debug_solver = C.debug.Debug_herd.solver
 
     open Printf
@@ -100,6 +111,8 @@ and type state = A.state =
     type state = A.state
     type arch_op = V.arch_op
     type arch_op1 = V.arch_op1
+    type arch_pred = V.arch_pred
+    type solver_state = A.solver_state
 
     type expr =
       | Atom of atom
@@ -118,6 +131,7 @@ and type state = A.state =
     type rvalue = expr
 
     type cnstrnt =
+      | Predicate of arch_pred
       | Assign of V.v * rvalue
       | Failed of exn
       | Warn of string
@@ -146,6 +160,7 @@ and type state = A.state =
     let pp_rvalue e = pp_expr e
 
     let pp_cnstrnt cnstr =  match cnstr  with
+      | Predicate pred -> V.pp_predicate pred
       | Assign (v,rval) ->
           (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
       | Failed e  -> sprintf "Failed %s" (Printexc.to_string e)
@@ -161,9 +176,23 @@ and type state = A.state =
 
     type answer =
       | NoSolns
-      | Maybe of solution * cnstrnts
+      | Maybe of solution * cnstrnts * solver_state
 
+    (* Solve all the architecture specific constraints *)
+    let solve_predicates cns =
+      let rec do_rec solver = function
+        | Predicate pred::cns -> begin
+          match A.add_predicate pred solver with
+          | Some solver -> do_rec solver cns
+          | None -> None
+        end
+        | _ :: cns -> do_rec solver cns
+        | [] -> Some solver
+      in
+      do_rec A.empty_solver cns
 
+    (* This function doesn't pretty-print the solver state because all the
+       internal constraints of the solver are present in the unsolved constraints *)
     let pp_answer =
 
       let pp_cns cns = match cns with
@@ -174,7 +203,7 @@ and type state = A.state =
 
       fun soln -> match soln with
       | NoSolns -> "No solutions"
-      | Maybe (sol,cns) ->
+      | Maybe (sol,cns,_) ->
           let sol_pped =
             let bds =
               V.Solution.fold
@@ -228,7 +257,7 @@ and type state = A.state =
     let add_vars_cn t cn = match cn with
     | Assign (v,e) ->
         add_var v t |> add_vars_expr e
-    | Failed _ | Warn _ -> t
+    | Failed _ | Warn _ | Predicate _ -> t
 
     let add_vars_cns cns = List.fold_left add_vars_cn (Part.create ()) cns
 
@@ -261,7 +290,7 @@ and type state = A.state =
         let v = subst_atom m v
         and e = subst_expr m e in
         Assign (v,e)::k
-    | Failed _ | Warn _ -> cn::k
+    | Failed _ | Warn _ | Predicate _ -> cn::k
 
     let subst_cns soln cns = List.fold_right (subst_cn soln) cns []
 
@@ -310,6 +339,18 @@ and type state = A.state =
       | A.LocUndetermined
       | V.Undetermined -> e
 
+    let check_equality v w k =
+      match v,w with
+      | V.Val c1,V.Val c2 -> begin
+        match A.eq_satisfiable c1 c2 with
+        | Some pred ->
+            Predicate pred::k
+        | None ->
+            if V.compare v w = 0 then k
+            else raise Contradiction
+      end
+      | _,_ ->
+          Assign (v,Atom w)::k
 
     let check_true_false cn k = match cn with
     | Assign (v,e) ->
@@ -318,16 +359,16 @@ and type state = A.state =
            let e = mk_atom_from_expr e in
            begin match e with
            | Atom w ->
-              if V.is_var_determined v && V.is_var_determined w then
-                if V.compare v w = 0 then k
-                else raise Contradiction
-              else
-                Assign (v,e)::k
+               check_equality v w k
            | ReadInit _| Unop _|Binop _|Terop _ ->
               Assign (v,e)::k
            end
-         (* Delay failure to preserve potential contradiction *)
          with
+         (* Add an architecture specific constraint *)
+         | V.Constraint (pred,w) ->
+            let k = check_equality v w k in
+            Predicate pred::k
+         (* Delay failure to preserve potential contradiction *)
          | Contradiction|Misc.Timeout as e -> raise e
          | e ->
             if C.debug.Debug_herd.exc then raise e
@@ -341,7 +382,7 @@ and type state = A.state =
                 end in
               Failed e :: k
        end
-    | Failed _ | Warn _ -> cn::k
+    | Failed _ | Warn _ | Predicate _ -> cn::k
 
     let check_true_false_constraints cns =
       List.fold_right check_true_false cns []
@@ -363,7 +404,7 @@ and type state = A.state =
           let v = simplify_vars_in_atom soln v in
           let rval = simplify_vars_in_expr soln rval in
           Assign (v,rval)
-      | Failed _ | Warn _ -> cn
+      | Failed _ | Warn _ | Predicate _ -> cn
 
     let simplify_vars_in_cnstrnts soln cs =
       List.map (simplify_vars_in_cnstrnt soln) cs
@@ -383,23 +424,29 @@ and type state = A.state =
     | Assign (V.Var _,Atom (V.Var _))
     (* can occur in spite of variable normalization (ternary if) *)
     | Assign (_,(Unop _|Binop _|Terop _|ReadInit _)) -> empty
-    | Failed _ | Warn _ -> empty
+    | Failed _ | Warn _ | Predicate _ -> empty
 
 (* merge of solutions, with consistency check *)
-    let add_sol x cst sol =
+    let add_sol x cst (sol,cns) =
       try
         let cst' = V.Solution.find x sol in
-        if V.Cst.eq cst cst' then sol
-        else raise Contradiction
+        (* Check if the equality of the two assignation imply an architecture
+           specific constraint *)
+        match A.eq_satisfiable cst cst' with
+        | Some pred ->
+            sol,Predicate pred::cns
+        | None ->
+            if V.Cst.eq cst cst' then sol,cns
+            else raise Contradiction
       with
-      | Not_found -> V.Solution.add x cst sol
+      | Not_found -> (V.Solution.add x cst sol,cns)
 
     let merge sol1 sol2 = V.Solution.fold add_sol sol1 sol2
 
-    let solve_cnstrnts =
+    let solve_cnstrnts cns =
       List.fold_left
         (fun solns cnstr -> merge (solve_cnstrnt cnstr) solns)
-        V.Solution.empty
+        (V.Solution.empty,cns) cns
 
 (************************)
 (* Raise exceptions now *)
@@ -411,7 +458,7 @@ let get_failed cns =
       match cn,r with
       | Failed _,_ -> Some cn
       | Warn _,None -> Some cn
-      | (Assign _,_)|(Warn _,Some _) -> r)
+      | (Assign _,_)|(Warn _,Some _)|(Predicate _,_) -> r)
     None cns
 
 (*******************************)
@@ -425,7 +472,7 @@ let get_failed cns =
       (* Phase 1, check individual constraint validity *)
       let cns = check_true_false_constraints cns in
       (* Phase 2, orient constraints S := cst / cst := S *)
-      let solns = solve_cnstrnts cns in
+      let solns,cns = solve_cnstrnts cns in
       if V.Solution.is_empty solns then begin
         solns_final,cns
       end else
@@ -455,7 +502,9 @@ let get_failed cns =
         try
           let solns,lst = solve_step lst V.Solution.empty in
           let solns = add_vars_solns m solns in
-          Maybe (solns,lst)
+          match solve_predicates lst with
+          | Some solver -> Maybe (solns,lst,solver)
+          | None -> NoSolns
         with Contradiction -> NoSolns in
       if debug_solver then begin
         eprintf "Solutions: %s\n" (pp_answer sol) ; flush stderr
@@ -509,6 +558,8 @@ let get_failed cns =
           -> 1
 
       let compare c1 c2 = match c1,c2 with
+        | Predicate p1,Predicate p2 ->
+            V.compare_predicate p1 p2
         | Assign (v1,e1),Assign (v2,e2) ->
            Misc.pair_compare
              atom_compare
@@ -518,9 +569,11 @@ let get_failed cns =
            Misc.polymorphic_compare exn1 exn2
         | Warn w1,Warn w2 ->
            String.compare w1 w2
+        | (Predicate _,(Assign _|Failed _| Warn _))
         | (Assign _,(Failed _|Warn _))
         | (Failed _,Warn _)
           -> -1
+        | ((Assign _|Failed _|Warn _), Predicate _)
         | ((Failed _|Warn _),Assign _)
           | (Warn _,Failed _)
           -> 1
@@ -545,7 +598,7 @@ let get_failed cns =
         (fun m c ->
           match c with
           | Assign (V.Var csym,_) -> env_add csym c m
-          | Assign (V.Val _,_)|Warn _|Failed _ -> m)
+          | Assign (V.Val _,_)|Warn _|Failed _| Predicate _ -> m)
        VarEnv.empty cs
 
     module EqRel = InnerRel.Make(OrderedEq)
@@ -579,7 +632,7 @@ let get_failed cns =
           (fun rel c ->
             match c with
             | Assign (_,e)  -> add_rels c e rel
-            | Warn _|Failed _ -> rel)
+            | Warn _|Failed _|Predicate _ -> rel)
           EqRel.empty cs in
       let cs = EqSet.of_list cs in
       cs,rel
@@ -593,7 +646,7 @@ let get_failed cns =
      *)
     let do_solve_one c sol =
       match c with
-      | Warn _|Failed _ -> sol,[c]
+      | Warn _|Failed _|Predicate _ -> sol,[c]
       | Assign (v0,e) ->
          begin
            try
@@ -601,14 +654,22 @@ let get_failed cns =
              and e = simplify_vars_in_expr sol e |> mk_atom_from_expr in
              match v,e with
              | V.Var x,Atom (V.Val atom) ->
-                add_sol x atom sol,[]
-             | V.Val c1,Atom (V.Val c2) ->
-                if V.Cst.eq c1 c2 then sol,[]
-                else raise Contradiction
+                add_sol x atom (sol,[])
+             | _,Atom w ->
+                 sol,check_equality v w []
              (* Last case below can occur when called on a
                 strongly connected component. *)
              | _,_ -> sol,[Assign (v,e)]
            with
+           | V.Constraint (pred,w) -> begin
+              let eqs = [Predicate pred] in
+               let v = simplify_vars_in_atom sol v0 in
+                match v,w with
+                | V.Var x, V.Val atom ->
+                    add_sol x atom (sol,eqs)
+                | _,_ ->
+                    sol,check_equality v w eqs
+           end
            | Contradiction|Misc.Timeout as exn -> raise exn
            | exn ->
               if C.debug.Debug_herd.exc then raise exn ;
@@ -681,7 +742,7 @@ let get_failed cns =
             List.fold_left
               (fun cs c ->
                 match c with
-                | Warn _|Failed _ -> c::cs
+                | Warn _|Failed _|Predicate _ -> c::cs
                 | Assign(v,e) ->
                     let v = simplify_vars_in_atom sol v in
                     match v,e with
@@ -692,7 +753,9 @@ let get_failed cns =
               [] cs in
           (* Add solutions of the form x := y *)
           let sol = add_vars_solns m sol in
-          Maybe (sol,cs)
+          match solve_predicates cs with
+          | Some solver -> Maybe (sol,cs,solver)
+          | None -> NoSolns
         with
         | Contradiction -> NoSolns in
       if debug_solver then begin
@@ -705,5 +768,4 @@ let get_failed cns =
         solve_std cs
       else
         solve_topo cs
-
   end
