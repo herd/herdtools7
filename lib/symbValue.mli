@@ -33,3 +33,5 @@ module Make : functor
      and type 'a arch_constr_op1 = 'a ArchOp.constr_op1
      and type arch_extra_op = ArchOp.extra_op
      and type 'a arch_constr_op = 'a ArchOp.constr_op
+     and type arch_pred = ArchOp.predicate
+     and type solver_state = unit

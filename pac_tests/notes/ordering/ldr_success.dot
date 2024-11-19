@@ -1,0 +1,14 @@
+digraph G {
+    eiid1 [label="ix:W[pointer]=value", shape="none", fixedsize="false", height="0.194444", width="1.361111"];
+    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
+        eiid0 [label="a: R[pointer]q=value", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
+        eiid2 [label="c: R0:X0q=pointer", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
+        eiid3 [label="d: Branching(pred)(pac)", shape="none", fixedsize="false", height="0.194444", width="3.888889"];
+        eiid4 [label="e: W0:X1q=value", shape="none", fixedsize="false", height="0.194444", width="1.750000"];
+    }
+    eiid0 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
+    eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+    eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+    eiid1 -> eiid0 [label="rf", color="red", fontcolor="red"];
+    eiid3 -> eiid0 [label="iico_ctrl", color="grey", fontcolor="grey"];
+}

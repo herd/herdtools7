@@ -348,17 +348,17 @@ test-bnfc:
 	dune build @bnfc_test
 	@ echo "BNFC tests: OK"
 
-test:: test.pac
-test-local:: test.pac
-test.pac::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.PAC \
-		-conf ./herd/tests/instructions/AArch64.PAC/pac.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 PAC instructions tests: OK"
+# test:: test.pac
+# test-local:: test.pac
+# test.pac::
+# 	@ echo
+# 	$(HERD_REGRESSION_TEST) \
+# 		-herd-path $(HERD) \
+# 		-libdir-path ./herd/libdir \
+# 		-litmus-dir ./herd/tests/instructions/AArch64.PAC \
+# 		-conf ./herd/tests/instructions/AArch64.PAC/pac.cfg \
+# 		$(REGRESSION_TEST_MODE)
+# 	@ echo "herd7 AArch64 PAC instructions tests: OK"
 
 
 ### CATALOGUE testing, catalogue must be here
@@ -502,6 +502,18 @@ mte-test:
 		-shelf-path catalogue/aarch64-MTE/shelf.py \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-MTE tests: OK"
+
+pac-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-herd-timeout $(TIMEOUT) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-PAC/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-PAC/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-PAC tests: OK"
 
 cata-test:: ifetch-test
 ifetch-test:

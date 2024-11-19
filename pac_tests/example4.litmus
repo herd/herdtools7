@@ -1,0 +1,16 @@
+AArch64 example.litmus
+Use a false dependency to show that PACIA introduce a register dependency
+between it's source register and it's destination register
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0          | P1          ;
+ MOV W0,#1   | LDR W0,[X1] ;
+             | PACDA X3,X0 ;
+ STR W0,[X1] | LDR W2,[X3] ;
+ MOV W2,#1   |             ;
+ DMB SY      |             ;
+ STR W2,[X3] |             ;
+exists
+(1:X0=1 /\ 1:X2=0)

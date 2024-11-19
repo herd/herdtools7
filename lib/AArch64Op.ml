@@ -32,6 +32,8 @@ type 'op binop =
   | Extra of 'op
   | AddPAC of bool * PAC.key
 
+type predicate = Eq of PAC.t * PAC.t
+
 module
    Make
      (S:Scalar.S)
@@ -43,6 +45,7 @@ module
     and type scalar = S.t
     and type pteval = AArch64PteVal.t
     and type instr = AArch64Base.instruction
+    and type predicate = predicate
   = struct
 
     type extra_op = Extra.op
@@ -79,12 +82,33 @@ module
     type instr = AArch64Base.instruction
     type cst = (scalar,pteval,instr) Constant.t
 
+    type nonrec predicate = predicate
+    exception Constraint of predicate * cst * cst
+
+    let compare_predicate eq1 eq2 =
+      match eq1,eq2 with
+      | Eq (p1,p2), Eq (p3,p4) -> begin
+        match PAC.compare p1 p3 with
+        | 0 -> PAC.compare p2 p4
+        | r -> r
+      end
+
+    let pp_predicate _ = ""
+
+    let eq_satisfiable c1 c2 =
+      match Constant.collision c1 c2 with
+      | Some (p1,p2) -> Some (Eq (p1,p2))
+      | None -> None
+
     let pp_cst hexa v =
       let module InstrPP = AArch64Base.MakePP(struct
         let is_morello = true
       end) in
-      Constant.pp (S.pp hexa) (AArch64PteVal.pp hexa)
-      (InstrPP.dump_instruction) v
+      Constant.pp
+        (S.pp hexa)
+        (AArch64PteVal.pp hexa)
+        (InstrPP.dump_instruction)
+        v
 
     open AArch64PteVal
 
@@ -108,9 +132,14 @@ module
 
     (* Check that the PAC field of a virtual address is canonical *)
     let checkCanonical =
-      let open Constant in function
+      let open Constant in
+      let zero = Concrete S.zero
+      and one = Concrete S.one in
+      function
       | Symbolic (Virtual {pac}) ->
-          Some (boolToCst (PAC.is_canonical pac))
+          if PAC.is_canonical pac
+          then Some one
+          else raise (Constraint (Eq (pac,PAC.canonical),one,zero))
       | _ ->
           None
 
@@ -152,9 +181,9 @@ module
       match pointer with
       | Symbolic (Virtual {pac}) when not (PAC.is_canonical pac) ->
           None
-      | Symbolic (Virtual ({pac; offset} as v)) ->
+      | Symbolic (Virtual ({name; pac; offset} as v)) ->
         let modifier = pp_cst true modifier in
-        let pac = PAC.add key modifier offset pac in
+        let pac = PAC.add name key modifier offset pac in
         Some (Symbolic (Virtual {v with pac}))
       | _ ->
           None
@@ -166,9 +195,9 @@ module
     let addPAC key pointer modifier =
       let open Constant in
       match pointer with
-      | Symbolic (Virtual ({pac; offset} as v)) ->
+      | Symbolic (Virtual ({name; pac; offset} as v)) ->
         let modifier = pp_cst true modifier in
-        let pac = PAC.add key modifier offset pac in
+        let pac = PAC.add name key modifier offset pac in
         Some (Symbolic (Virtual {v with pac}))
       | _ -> None
 

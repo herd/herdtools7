@@ -1,0 +1,13 @@
+AArch64 Sub bug 2
+
+{
+  0:x0=y;
+  0:x1=x;
+}
+
+ P0                  ;
+  cmp x0, x1         ;
+  b.le finish        ;
+  mov x2,#1          ;
+finish:              ;
+exists ( 0:X2=1 )

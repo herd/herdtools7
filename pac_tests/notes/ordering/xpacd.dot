@@ -1,0 +1,8 @@
+digraph G {
+    eiid0 [label="ix:W[pointer]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
+    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
+        eiid1 [label="b: R0:X0q=pacda(pointer, modifier)", shape="none", fixedsize="false", height="0.194444", width="5.055556"];
+        eiid2 [label="c: W0:X0q=pointer", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
+    }
+    eiid1 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
+}

@@ -1,0 +1,26 @@
+digraph G {
+
+
+/* legend */
+label="Test PAuth2, Generic[withcatdep](Unknown)";
+
+
+/* init events */
+eiid0 [label="ix:W[pointer]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
+
+/* the unlocked events */
+subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
+eiid3 [label="d: R0:X0q=pacda(pointer, modifier)", shape="none", fixedsize="false", height="0.194444", width="3.888889"];
+eiid4 [label="e: Branching(pred)", shape="none", fixedsize="false", height="0.194444", width="2.916667"];
+eiid5 [label="f: W0:ELR_EL1q=10004", shape="none", fixedsize="false", height="0.194444", width="3.305556"];
+eiid6 [label="g: ExcEntry(W,loc:pacda(pointer, modifier),MMU:Translation)", shape="none", fixedsize="false", height="0.194444", width="8.750000"];
+}
+
+/* the intra_causality_data edges */
+
+eiid3 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
+
+/* the intra_causality_control edges */
+eiid4 -> eiid5 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid4 -> eiid6 [label="iico_ctrl", color="grey", fontcolor="grey"];
+}

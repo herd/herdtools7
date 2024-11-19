@@ -211,7 +211,7 @@ module type S = sig
   val rstate_filter : (rlocation -> bool) -> rstate -> rstate
   val debug_rstate : rstate -> string
 
-  type final_state = rstate * FaultSet.t
+  type final_state = rstate * FaultSet.t * I.V.solver_state
   val do_dump_final_state :
     type_env -> FaultAtomSet.t ->
     (string -> string) -> final_state -> string
@@ -857,7 +857,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
 
-      type final_state = rstate * FaultSet.t
+      type final_state = rstate * FaultSet.t * I.V.solver_state
 
       let pp_nice_rstate st delim pp_bd =
         let bds =
@@ -911,9 +911,12 @@ module Make(C:Config) (I:I) : S with module I = I
             ConstrGen.dump_rloc (dump_loc tr) l ^
               "=" ^ pp_typed t v ^";")
 
-      let do_dump_final_state tenv fobs tr (st,flts) =
+      let do_dump_final_state tenv fobs tr (st,flts,solver) =
         let pp_st = do_dump_rstate tenv tr st in
-        if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs then pp_st
+        let pp_solver = I.V.pp_solver_state solver in
+        if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs
+        then
+          pp_st ^ pp_solver
         else
           let noflts =
             FaultAtomSet.fold
@@ -937,16 +940,21 @@ module Make(C:Config) (I:I) : S with module I = I
                 flts in
           pp_st ^ " " ^
           FaultSet.pp_str " "  (fun f -> pp_fault f ^ ";")  flts ^
-          String.concat "" noflts
+          String.concat "" noflts ^
+          pp_solver
 
       module StateSet =
         MySet.Make
           (struct
             type t = final_state
 
-            let compare (st1,flt1) (st2,flt2) =
+            let compare (st1,flt1,solver1) (st2,flt2,solver2) =
               match RState.compare I.V.compare st1 st2 with
-              | 0 -> FaultSet.compare flt1 flt2
+              | 0 -> begin
+                match FaultSet.compare flt1 flt2 with
+                | 0 -> I.V.compare_solver_state solver1 solver2
+                | r -> r
+              end
               | r -> r
           end)
 

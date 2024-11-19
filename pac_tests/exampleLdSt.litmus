@@ -1,0 +1,15 @@
+AArch64 Demo
+
+{
+ int64_t x=0;
+ int64_t y=0;
+ 0:X0=x; 0:X1=y; int64_t 0:X2=1;
+ 1:X0=x; 1:X1=y; int64_t 1:X2=0; int64_t 1:X3=2;
+}
+ P0          | P1          ;
+ STR X2,[X0] | LDR X2,[X1] ;
+ DMB SY      |             ;
+ STR X2,[X1] |             ;
+             | STR X3,[X0] ;
+
+exists (1:X2=1 /\ [x]=1)

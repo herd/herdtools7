@@ -1,0 +1,25 @@
+digraph G {
+
+
+/* legend */
+label="Test UDF, Generic[withcatdep](Unknown)";
+
+
+/* the unlocked events */
+subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
+eiid0 [label="a: W0:X0q=x\lproc:P0 poi:0\lAUTDA X0,X1", shape="box", color="blue"];
+eiid1 [label="b: Branching(pred)(SCTLR_EL1.EnDA=1)\lproc:P0 poi:0\lAUTDA X0,X1", shape="box", color="blue"];
+eiid2 [label="c: R0:X1q=42\lproc:P0 poi:0\lAUTDA X0,X1", shape="box", color="blue"];
+eiid3 [label="d: R0:X0q=pacda(x,42)\lproc:P0 poi:0\lAUTDA X0,X1", shape="box", color="blue"];
+}
+
+/* the intra_causality_data edges */
+
+eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+eiid3 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+eiid3 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+
+/* the intra_causality_control edges */
+eiid1 -> eiid0 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid3 -> eiid0 [label="iico_order", color="darkgrey", fontcolor="darkgrey"];
+}

@@ -98,6 +98,9 @@ let symbolic_data_collision s1 s2 =
   then Some (s1.pac, s2.pac)
   else None
 
+let symbolic_data_normalize s solver =
+  {s with pac = PAC.normalize s.pac solver}
+
 type syskind = PTE|PTE2|TLB
 type tagkind = PHY|VIR
 
@@ -304,6 +307,12 @@ let collision s1 s2 = match s1,s2 with
       symbolic_data_collision v1 v2
   | _, _ ->
       None
+
+let normalize s solver =
+  match s with
+  | Symbolic (Virtual v) ->
+      Symbolic (Virtual (symbolic_data_normalize v solver))
+  | _ -> s
 
 let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr = function
   | Concrete i -> pp_scalar i

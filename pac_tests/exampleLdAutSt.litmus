@@ -1,0 +1,13 @@
+AArch64 example
+Variant=pac,fpac
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y; 1:x2=2; 1:x5=z;
+}
+P0          | P1               ;
+str x2,[x0] | ldr x3,[x1]      ;
+dmb sy      | eor x4,x3,x3     ;
+str x2,[x1] | pacdza x5        ;
+            | autda x5,x4      ;
+            | str x2,[x0]      ;
+exists (1:x3=1 /\ [x]=1)

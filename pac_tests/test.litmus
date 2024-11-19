@@ -1,0 +1,16 @@
+AArch64 MP+dmb.st+pacdb.v2
+Variant=
+{
+  0:X1=x; 0:X3=y; int64_t 0:X0=1; int64_t 0:X2=1;
+  1:X1=x; 1:X3=y; int64_t 1:X0=0; int64_t 1:X2=0;
+}
+P0          | P1          ;
+STR X0,[X1] | MOV X4,#1   ;
+DMB ISHST   | PACDB X1,X4 ;
+STR X2,[X3] | LDR X2,[X3] ;
+            | AUTDA X1,X2 ;
+            | XPACD X1    ;
+            | LDR X0,[X1] ;
+exists 1:X2=1 /\ 1:X0=0 /\ ~Fault(P1)
+(* Kind: when SCTLR_ELx.EnDB=1, Forbidden *)
+(*       when SCTLR_ELx.EnDB=0, Allowed   *)

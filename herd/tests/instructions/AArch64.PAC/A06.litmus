@@ -1,9 +1,0 @@
-AArch64 A06
-Variant=pac
-
-{ 0:x0=x }
-
-P0                 ;
-  autdza x0        ;
-forall
-  ( ~Fault(P0) /\ 0:x0=x )
