@@ -1676,6 +1676,9 @@ Monad type:
       | V.Undetermined ->
          (* Not ready yet add equation *)
          delay_op mk_c
+      | V.Constraint _ ->
+          (* Delay the resolution of the architecture specific constraints *)
+          delay_op mk_c
       | exn ->
          if C.debug.Debug_herd.exc then raise exn
          (* Delay failure *)

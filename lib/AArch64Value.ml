@@ -13,7 +13,6 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-
 module Make (C : sig
   val is_morello : bool
 end) : Value.AArch64 = struct
@@ -21,6 +20,8 @@ end) : Value.AArch64 = struct
   module AArch64Cst = SymbConstant.Make (Int64Scalar) (AArch64PteVal) (AArch64I)
   module NoCst = SymbConstant.Make (Int64Scalar) (PteVal.No) (AArch64I)
   module NoArchOp = ArchOp.No(NoCst)
+  module AArch64Op' = AArch64Op
   module AArch64Op = AArch64Op.Make(Int64Scalar)(NoArchOp)
-  include SymbValue.Make (AArch64Cst) (AArch64Op)
+  module AArch64Value = SymbValue.Make (AArch64Cst) (AArch64Op)
+  include AArch64Solver.Make(AArch64Value)
 end

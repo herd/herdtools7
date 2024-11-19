@@ -66,11 +66,15 @@ module type S = sig
     (Proc.t * Label.Set.t) * loc_global option *
     fault_type option * string option
 
+  val map_fault : (loc_global -> loc_global) -> fault -> fault
+
   val pp_fault : fault -> string
   val map_fault : (loc_global -> loc_global) -> fault -> fault
   module FaultSet : MySet.S with type elt = fault
 
   type fatom = (loc_global,fault_type) atom
+
+  val map_fatom : (loc_global -> loc_global) -> fatom -> fatom
 
   val pp_fatom : fatom -> string
   val check_one_fatom : fault -> fatom -> bool
@@ -88,9 +92,7 @@ module Make(A:I) =
       * fault_type option * string option
 
     (* Map over the loc_global in a fault *)
-    let map_fault f = function
-      | (lbl,Some x,ftype,msg) -> (lbl,Some (f x),ftype,msg)
-      | fault -> fault
+    let map_fault f (x,opt_v,y,z) = (x,Misc.map_opt f opt_v,y,z)
 
     let pp_lbl (p,lbl) = match Label.Set.as_small 1 lbl with
     | Some [] ->  Proc.pp p
@@ -131,6 +133,8 @@ module Make(A:I) =
         end)
 
     type fatom = (loc_global,fault_type) atom
+
+    let map_fatom = map_value
 
     let pp_fatom = pp_fatom A.pp_global A.pp_fault_type
 

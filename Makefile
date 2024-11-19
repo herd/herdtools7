@@ -520,6 +520,18 @@ mte-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-MTE tests: OK"
 
+pac-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-herd-timeout $(TIMEOUT) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-PAC/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-PAC/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-PAC tests: OK"
+
 cata-test:: ifetch-test
 ifetch-test:
 	@ echo
