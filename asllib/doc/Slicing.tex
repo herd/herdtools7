@@ -131,7 +131,8 @@ the function $\annotateslice$ (see \nameref{sec:TypingRule.Slice}) annotates a s
 \Nslice \derivesinline\ & \Nexpr &\\
             |\  & \Nexpr \parsesep \Tcolon \parsesep \Nexpr &\\
             |\  & \Nexpr \parsesep \Tpluscolon \parsesep \Nexpr &\\
-            |\  & \Nexpr \parsesep \Tstarcolon \parsesep \Nexpr &
+            |\  & \Nexpr \parsesep \Tstarcolon \parsesep \Nexpr &\\
+            |\  & \Tcolon \parsesep \Nexpr &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -141,6 +142,8 @@ the function $\annotateslice$ (see \nameref{sec:TypingRule.Slice}) annotates a s
   |\ & \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &\\
   |\ & \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &
 \end{flalign*}
+
+Note that the syntax \texttt{[:width]} is a shorthand for \texttt{x[0:width]}.
 
 \subsubsection{ASTRule.Slice\label{sec:ASTRule.Slice}}
 \hypertarget{build-slice}{}
@@ -184,6 +187,13 @@ transforms a parse node for a slice $\vparsednode$ into an AST node for a slice 
 }{
   \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tstarcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
   \overname{\SliceStar(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[width]{}{
+  \buildslices(\Nslice(\Tcolon, \punnode{\Nexpr})) \astarrow
+  \overname{\SliceLength(\ELiteral(\lint(0)), \astof{\vexpr})}{\vastnode}
 }
 \end{mathpar}
 

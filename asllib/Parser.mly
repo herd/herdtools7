@@ -58,6 +58,8 @@ let version = V1
 let t_bit =
   T_Bits (E_Literal (L_Int Z.one) |> add_dummy_annotation ~version, [])
 
+let zero = E_Literal (L_Int Z.zero) |> add_dummy_annotation ~version
+
 let make_ldi_vars (xs, ty) =
   let make_one x =
     S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None)
@@ -332,6 +334,7 @@ let slice ==
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
+  | COLON; e=expr;                { Slice_Length(zero, e) }
   | e1=expr; STAR_COLON; e2=expr; < Slice_Star    >
 
 (* Bitfields *)

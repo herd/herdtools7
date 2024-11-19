@@ -257,6 +257,8 @@ Parameterized integers:
   ASL Typing error: a subtype of bits(-) was expected, provided integer.
   [1]
 
+  $ aslref slice-width-shorthand.asl
+
 Arrays indexed by enumerations
   $ aslref enum-array.asl
   [0, 0, 0]
