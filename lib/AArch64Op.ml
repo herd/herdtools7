@@ -26,13 +26,24 @@ type 'op1 unop =
   | SetOA (* store OA into PAR_EL1 *)
   | SetF (* set F to 1 in PAR_EL1 *)
   | Tagged (* get Tag attribute from PTE entry *)
-  | CheckCanonical (* Check is a virtual address is canonical *)
   | MakeCanonical (* Make a virtual address canonical *)
+  | AddErrorCode of PAC.key (* Add a PAC error code in a virtual address *)
   | Extra1 of 'op1
 
 type 'op binop =
   | Extra of 'op
+  (* Add a PAC field to a virtual address using a modifier and a key *)
   | AddPAC of bool * PAC.key
+  (* Test if two variabels may be equals modulo the equality of two PAC fields *)
+  | CollisionPossible
+  (* Assume the presence of a hash collision *)
+  | AssumeCollision
+  (* Assume the abscence of a hash collision *)
+  | AssumeNoCollision
+
+type predicate
+  = Eq of PAC.t * PAC.t
+  | Ne of PAC.t * PAC.t
 
 module
    Make
@@ -46,6 +57,7 @@ module
     and type pteval = AArch64PteVal.t
     and type addrreg = AArch64AddrReg.t
     and type instr = AArch64Base.instruction
+    and type predicate = predicate
   = struct
 
     type extra_op = Extra.op
@@ -62,6 +74,9 @@ module
             Printf.sprintf "AddOnePac:%s" (PAC.pp_upper_key key)
           else
             Printf.sprintf "AddPAC:%s" (PAC.pp_upper_key key)
+      | CollisionPossible -> "CollisionPossible"
+      | AssumeCollision -> "AssumeCollision"
+      | AssumeNoCollision -> "AssumeNoCollision"
 
     let pp_op1 hexa = function
       | AF -> "AF"
@@ -75,9 +90,9 @@ module
       | SetOA -> "SetOA"
       | SetF -> "SetF"
       | Tagged -> "Tagged"
-      | CheckCanonical -> "CheckCanonical"
       | MakeCanonical -> "MakeCanonical"
       | Extra1 op1 -> Extra.pp_op1 hexa op1 |> Printf.sprintf "Extra:%s"
+      | AddErrorCode k -> Printf.sprintf "ErrorCode:%s" (PAC.pp_upper_key k)
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
@@ -85,12 +100,55 @@ module
     type instr = AArch64Base.instruction
     type cst = (scalar,pteval,addrreg,instr) Constant.t
 
+    type nonrec predicate = predicate
+    exception Constraint of predicate * cst
+
+    let compare_predicate eq1 eq2 =
+      match eq1,eq2 with
+      | Eq (p1,p2), Eq (p3,p4)
+      | Ne (p1,p2), Ne (p3,p4) -> begin
+        match PAC.compare p1 p3 with
+        | 0 -> PAC.compare p2 p4
+        | r -> r
+      end
+      | Eq _, Ne _ -> -1
+      | Ne _, Eq _ -> 1
+
+    let pp_predicate = function
+      | Eq (p1,p2) -> begin
+        match PAC.get_name p1,PAC.get_name p2 with
+        | Some name, _ | _, Some name ->
+            Printf.sprintf "%s == %s" (PAC.pp p1 name 0) (PAC.pp p2 name 0)
+        | _, _ ->
+            "true"
+      end
+      | Ne (p1,p2) -> begin
+        match PAC.get_name p1,PAC.get_name p2 with
+        | Some name, _ | _, Some name ->
+            Printf.sprintf "%s != %s" (PAC.pp p1 name 0) (PAC.pp p2 name 0)
+        | _, _ ->
+            "false"
+      end
+
+    let inverse_predicate = function
+      | Eq (p1,p2) -> Ne (p1,p2)
+      | Ne (p1,p2) -> Ne (p1,p2)
+
+    let eq_satisfiable c1 c2 =
+      match Constant.collision c1 c2 with
+      | Some (p1,p2) -> Some (Eq (p1,p2))
+      | None -> None
+
     let pp_cst hexa v =
       let module InstrPP = AArch64Base.MakePP(struct
         let is_morello = true
       end) in
-      Constant.pp (S.pp hexa) (AArch64PteVal.pp hexa) (AArch64AddrReg.pp hexa)
-      (InstrPP.dump_instruction) v
+      Constant.pp
+        (S.pp hexa)
+        (AArch64PteVal.pp hexa)
+        (AArch64AddrReg.pp hexa)
+        (InstrPP.dump_instruction)
+        v
 
     open AArch64PteVal
 
@@ -112,11 +170,45 @@ module
       | PteVal p -> Some (PteVal (op p))
       | _ -> None
 
-    (* Check that the PAC field of a virtual address is canonical *)
-    let checkCanonical =
-      let open Constant in function
+    let assumeContradiction () =
+      let open Constant in
+      let one = Concrete S.one in
+      raise (Constraint (Ne (PAC.canonical,PAC.canonical),one))
+
+    let assumeNoCollision c1 c2 =
+      let open Constant in
+      let one = Concrete S.one in
+      match collision c1 c2 with
+      | Some (p1,p2) ->
+          raise (Constraint (Ne (p1,p2),one))
+      | None ->
+          let instr_eq i1 i2 = Misc.polymorphic_compare i1 i2 = 0 in
+          if Constant.eq S.equal AArch64PteVal.eq AArch64AddrReg.eq instr_eq c1 c2
+          then assumeContradiction ()
+          else Some one
+
+    let assumeCollision c1 c2 =
+      let open Constant in
+      let one = Concrete S.one in
+      match collision c1 c2 with
+      | Some (p1,p2) ->
+          raise (Constraint (Eq (p1,p2),one))
+      | _ ->
+          let instr_eq i1 i2 = Misc.polymorphic_compare i1 i2 = 0 in
+          if Constant.eq S.equal AArch64PteVal.eq AArch64AddrReg.eq instr_eq c1 c2
+          then Some one
+          else assumeContradiction ()
+
+    let addErrorCode key =
+      let open Constant in
+      let open Constant.Symbol in function
       | Symbolic (Virtual a) ->
-          Some (boolToCst (PAC.is_canonical a.pac))
+          let name =
+            match a.name with
+            | Data s -> s
+            | Label (_, lbl) -> lbl in
+          let pac = PAC.error name key in
+          Some (Symbolic (Virtual {a with pac}))
       | _ ->
           None
 
@@ -172,12 +264,17 @@ module
        used to model the `pac*` instruction without the variant const-pac-field *)
     let addOnePAC key pointer modifier =
       let open Constant in
+      let open Constant.Symbol in
       match pointer with
       | Symbolic (Virtual a) when not (PAC.is_canonical a.pac) ->
           None
-      | Symbolic (Virtual ({pac; offset; _} as v)) ->
+      | Symbolic (Virtual ({name; offset; pac; _} as v)) ->
         let modifier = pp_cst true modifier in
-        let pac = PAC.add key modifier offset pac in
+        let name =
+            match name with
+            | Data s -> s
+            | Label (_, lbl) -> lbl in
+        let pac = PAC.add name key modifier offset pac in
         Some (Symbolic (Virtual {v with pac}))
       | _ ->
           None
@@ -187,17 +284,37 @@ module
       of the two pac fields, it is use in the `auth*` function and in the
       `pac*` instruction in presence of the variant const-pac-field *)
     let addPAC key pointer modifier =
-      let open Constant in
+       let open Constant in
+      let open Constant.Symbol in
       match pointer with
-      | Symbolic (Virtual ({pac; offset; _} as v)) ->
+      | Symbolic (Virtual ({name; offset; pac; _} as v)) ->
         let modifier = pp_cst true modifier in
-        let pac = PAC.add key modifier offset pac in
+        let name =
+            match name with
+            | Data s -> s
+            | Label (_, lbl) -> lbl in
+        let pac = PAC.add name key modifier offset pac in
         Some (Symbolic (Virtual {v with pac}))
       | _ -> None
 
+    (* Return if a hahs collision between two different PAC field is possible,
+       reutrn zero if the PAC fields are syntactically differents *)
+    let collisionPossible (c1:cst) (c2:cst) =
+      let open Constant in
+      let zero = Concrete S.zero
+      and one = Concrete S.one in
+      match Constant.collision c1 c2 with
+      | Some _ ->
+          Some one
+      | None ->
+          Some zero
+
     let do_op = function
       | AddPAC (true, key) -> addOnePAC key
+      | CollisionPossible -> collisionPossible
       | AddPAC (false, key) -> addPAC key
+      | AssumeCollision -> assumeCollision
+      | AssumeNoCollision -> assumeNoCollision
       | Extra op -> fun c1 c2 ->
         try
           match Extra.do_op op (trToExtra c1) (trToExtra c2) with
@@ -219,8 +336,8 @@ module
       | SetOA -> setoa
       | SetF -> setf
       | Tagged -> gettagged
-      | CheckCanonical -> checkCanonical
       | MakeCanonical -> makeCanonical
+      | AddErrorCode k -> addErrorCode k
       | Extra1 op1 ->
           fun cst ->
            try

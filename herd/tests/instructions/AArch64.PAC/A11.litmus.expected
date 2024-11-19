@@ -1,10 +1,11 @@
-Test A11 Required
-States 1
-0:X1=53;
+Test A08 Allowed
+States 2
+0:X1=42;  ~Fault(P0);
+0:X1=53; Fault(P0,x,MMU:Translation);
 Ok
 Witnesses
-Positive: 1 Negative: 0
-Condition forall (0:X1=53)
-Observation A11 Always 1 0
-Hash=402d1491077203c22dcbfa120090300a
+Positive: 1 Negative: 1
+Condition exists (0:X1=42 /\ not (fault(P0)))
+Observation A08 Sometimes 1 1
+Hash=b6dcf2dc87f83bdc12af63534408d55a
 

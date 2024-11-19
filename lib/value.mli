@@ -67,9 +67,6 @@ module type S =
       val as_symbol : v -> string
       val freeze : csym -> Cst.v
 
-(* Equality (for constraint solver) is possible *)
-      val equalityPossible : v -> v -> bool
-
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
       val equal : v -> v -> bool
@@ -97,7 +94,6 @@ module type S =
          type v are not determined enough to yield a result *)
 
       exception Undetermined
-
 
 (* Bit-Twiddling Ops *)
       val bit_at: int -> v -> v
@@ -133,6 +129,13 @@ module type S =
 
 (* Classify location values, will fail on non-address values *)
       val access_of_value : v -> Access.t
+
+(* Architecture specific predicate *)
+      type arch_pred
+      exception Constraint of arch_pred * v
+      val compare_predicate : arch_pred -> arch_pred -> int
+      val inverse_predicate : arch_pred -> arch_pred
+      val pp_predicate : arch_pred -> string
     end
 
 module type AArch64 =
@@ -143,6 +146,7 @@ module type AArch64 =
   and type Cst.Instr.t = AArch64Base.instruction
   and type 'a arch_constr_op1 = 'a AArch64Op.unop
   and type 'a arch_constr_op = 'a AArch64Op.binop
+  and type arch_pred = AArch64Op.predicate
 
 module type AArch64ASL =
   AArch64
