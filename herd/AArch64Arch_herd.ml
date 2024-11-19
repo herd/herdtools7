@@ -522,6 +522,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           | AArch64Base.Vreg(_,(nelem,esize)) -> neon_getvec nelem esize v
           | _ -> v
 
+          type solver_state = PAC.solver_state
+          let pp_solver_state = PAC.pp_solver
+          let compare_solver_state = PAC.compare_solver_state
+
           module FaultType = FaultType.AArch64
         end)
 
@@ -556,5 +560,78 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       then
         Warn.user_error
           "Array location and STZG instruction without -variant mixed"
+
+    type arch_pred =
+      | AssumeCollision of V.v * V.v (* equality is satisfied only via a PAC collision *)
+      | AssumeNoCollision of V.v * V.v (* rules out a PAC collision between two values *)
+
+    let compare_predicate p1 p2 =
+      match p1, p2 with
+      | AssumeCollision (v1,v2), AssumeCollision (w1,w2)
+      | AssumeNoCollision (v1,v2), AssumeNoCollision (w1,w2) ->
+          Misc.pair_compare V.compare V.compare (v1,v2) (w1,w2)
+      | AssumeCollision _, AssumeNoCollision _ -> -1
+      | AssumeNoCollision _, AssumeCollision _ -> 1
+
+    let pp_predicate = function
+      | AssumeCollision (v1,v2) ->
+          Printf.sprintf "AssumeCollision(%s,%s)" (V.pp_v v1) (V.pp_v v2)
+      | AssumeNoCollision (v1,v2) ->
+          Printf.sprintf "AssumeNoCollision(%s,%s)" (V.pp_v v1) (V.pp_v v2)
+
+    let enforce_no_collision = function
+      | AssumeCollision (v1,v2) -> AssumeNoCollision (v1,v2)
+      | AssumeNoCollision (v1,v2) -> AssumeNoCollision (v1,v2)
+
+    let fold_predicate_vars f pred acc =
+      match pred with
+      | AssumeCollision (v1,v2)
+      | AssumeNoCollision (v1,v2) -> f v1 (f v2 acc)
+
+    let map_predicate f pred =
+      match pred with
+      | AssumeCollision (v1,v2) -> AssumeCollision (f v1, f v2)
+      | AssumeNoCollision (v1,v2) -> AssumeNoCollision (f v1, f v2)
+
+    let eq_satisfiable c1 c2 =
+      match Constant.collision c1 c2 with
+      | Some _ -> Some (AssumeCollision (V.Val c1, V.Val c2))
+      | None -> None
+
+    let pred_assume_collision v1 v2 = AssumeCollision (v1, v2)
+    let pred_assume_no_collision v1 v2 = AssumeNoCollision (v1, v2)
+
+    type solver_state = PAC.solver_state
+
+    let empty_solver = PAC.empty_solver
+
+    let pp_solver_state st = PAC.pp_solver st
+
+    let normalize cst st = Constant.normalize cst st
+
+    let compare_solver_state s1 s2 =
+    (* Comparison is only used to group the final states before pretty printing so
+     * we only compare the equalities of the internal collision solvers *)
+      PAC.compare_solver_state s1 s2
+
+    let add_predicate pred st =
+      let add_assume b v1 v2 =
+        match v1, v2 with
+        | V.Val c1, V.Val c2 -> begin
+            match Constant.collision c1 c2 with
+            | Some (p1,p2) ->
+                if b then PAC.add_equality p1 p2 st
+                else PAC.add_inequality p1 p2 st
+            | None ->
+                if V.equal v1 v2 then
+                  if b then Some st else None
+                else
+                  if b then None else Some st
+          end
+        | _, _ -> Some st
+      in
+      match pred with
+      | AssumeCollision (v1, v2) -> add_assume true v1 v2
+      | AssumeNoCollision (v1, v2) -> add_assume false v1 v2
 
   end

@@ -37,8 +37,60 @@ module type S =
     (* Those register are to be initialised to the default value explicitly *)
     val reg_defaults : reg list
 
+(* Architecture-specific predicate type and helpers. *)
+    type arch_pred
+
+(* Return if an equality of two syntactically different constants may be equals
+ * modulo a predicate. This may represent a hash or random generator collision *)
+    val eq_satisfiable : V.Cst.v -> V.Cst.v -> arch_pred option
+    val compare_predicate : arch_pred -> arch_pred -> int
+    val enforce_no_collision : arch_pred -> arch_pred
+    val pp_predicate : arch_pred -> string
+
+    val fold_predicate_vars : (V.v -> 'a -> 'a) -> arch_pred -> 'a -> 'a
+    val map_predicate : (V.v -> V.v) -> arch_pred -> arch_pred
+    val pred_assume_collision : V.v -> V.v -> arch_pred
+    val pred_assume_no_collision : V.v -> V.v -> arch_pred
+
+(* Functions to interact with a constraint solver, this constraint solver must
+ * support at least the computation of equalities/inequalities (modulo the
+ * theory represented by the solver), plus the resolution of a set of predicates
+ * given by the architecture. As example for AArch64, the solver must sopport
+ * the equalities/disequalities of Pointer Authentication Codes (hash
+ * collisions).
+ *
+ * The `add_predicate` function return the new solver state if the new
+ * constraint is satisfiable in the current environment. And `None` otherwise.
+ *
+ * In addition the compare function must only compare the part of the solver
+ * state we print in `pp_solver_state`, as example the PAC solver of `AArch64`
+ * only show it's equalities.
+ *)
+    type solver_state
+    val empty_solver : solver_state
+
+    val add_predicate : arch_pred -> solver_state -> solver_state option
+
+    (* Some constraint solvers may support normalisation, for example if the
+     * solver contain an Union-Find data structure, then it's possible to
+     * normalize the elements of an equivalence class using the representant
+     * of their class... *)
+    val normalize : V.Cst.v -> solver_state -> V.Cst.v
+
+    (* Pretty print the current solver state, must verify
+     * `pp_solver_state empty_solver = ""` otherwise the final result may be
+     * invalid if "-debug pred-solver" is not set *)
+    val pp_solver_state : solver_state -> string
+
+    (* The comparison is used to store the final state in a Map before pretty
+     * printing, but not before doing any resolution of predicates. So the
+     * `compare` function may be imprecise. As example if we don't show the
+     * inequalities at pretty-printing, then the comparison may return that
+     * two solver are equals even if they contains different inequalities. *)
+    val compare_solver_state : solver_state -> solver_state -> int
 
     include ArchExtra_herd.S with module I.V = V
+    and type I.solver_state = solver_state
     and type I.arch_reg = reg
     and type I.instr = instruction
 
@@ -63,5 +115,4 @@ module type S =
     module Barrier:AllBarrier.S with type a = barrier
 
     module CMO:Cmo.S
-
   end

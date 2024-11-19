@@ -31,7 +31,7 @@ module type S =
     module E : Event.S
     with module Act.A = A
 
-    module VC    : Valconstraint.S
+    module VC : Valconstraint.S with type solver_state = A.solver_state
     with type atom = A.V.v
     and type cst = A.V.Cst.v
     and type solution = A.V.solution
@@ -361,6 +361,8 @@ module type S =
     val op : A.V.op_t -> A.V.v -> A.V.v -> A.V.v t
     val op3 : Op.op3 -> A.V.v -> A.V.v -> A.V.v -> A.V.v t
     val add : A.V.v -> A.V.v -> A.V.v t
+    val assume_collision : A.V.v -> A.V.v -> unit t
+    val assume_no_collision : A.V.v -> A.V.v -> unit t
 
 (* Equality *)
     val assign : A.V.v -> A.V.v -> unit t

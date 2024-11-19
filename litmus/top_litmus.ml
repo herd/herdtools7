@@ -269,7 +269,8 @@ end = struct
                 let compiled = compile doc allocated in
                 let src = MyName.outname name ".c" in
                 let flags =
-                  { Flags.pac = O.variant Variant_litmus.Pac;
+                  { Flags.pac = O.variant (Variant_litmus.PacVersion `PAuth1) ||
+                                O.variant (Variant_litmus.PacVersion `PAuth2);
                     Flags.self = O.variant Variant_litmus.Self;
                     Flags.memtag = O.variant Variant_litmus.MemTag } in
                 dump src doc compiled;
