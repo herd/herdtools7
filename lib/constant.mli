@@ -20,6 +20,28 @@ type tag = string option
 type cap = Int64.t
 type offset = int
 
+(* Symbolic implementation of `FEAT_Pauth2` and `FEAT_CONSTPACFIELD`
+ * Allow to manipulate the PAC field of a virtual address assumming that `pac`
+ * is a one way function (this implementation ignore collisions).
+ *)
+module PAC : sig
+  (* Symbolic type for Pointer Authentication Codes *)
+  type t
+
+  (* Generate a canonical PAC field *)
+  val canonical : t
+
+  (* Check if a virtual address is canonical *)
+  val is_canonical : t -> bool
+
+  (* Symbolically add a new pac field to a pointer with an exclusive OR using
+   * the key, the modifier and the current offset of the pointer.
+   * If `x` is a canonical virtual address and `p` is a PAC field:
+   *     `add modifier key offset p = pac(x+offset, key, modifier) eor p`
+   *)
+  val add : string -> string -> int -> t -> t
+end
+
 (* Symbolic location metadata*)
 (* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
 type symbolic_data =
@@ -28,6 +50,7 @@ type symbolic_data =
    tag : tag ;
    cap : cap ;
    offset : offset ;
+   pac : PAC.t ;
   }
 
 val default_symbolic_data : symbolic_data
@@ -43,7 +66,7 @@ type syskind =
   | PTE2 (* Page table entry of page table entry (non-writable) *)
   | TLB  (* TLB key *)
 
-(* 
+(*
  * Tag location are based upon physical or virtual addresses.
  * In effect the two kinds of tag locations cannot co-exists,
  * as teh formet is for VMSA mode and the latter for

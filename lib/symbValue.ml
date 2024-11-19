@@ -667,6 +667,38 @@ module
   let cap_unseal c =
     cap_set_object_type c Cst.Scalar.zero
 
+  (* Set the PAC field to a scalar *)
+  (* Add a PAC field to a symbolic virtual address *)
+  (* Implement `FEAT_Pauth2`with `FEAT_CONSTPACFIELD` *)
+  let addPAC key pointer modifier =
+    match pointer, modifier with
+    | Val (Symbolic (Virtual ({pac; offset} as v))), Val m ->
+      let modifier = Cst.pp true m in
+      let pac = Constant.PAC.add key modifier offset pac in
+      Val (Symbolic (Virtual {v with pac}))
+    | Val _, _ ->
+        Warn.user_error "%s is not a valid virtual address" (pp_v pointer)
+    | _, _ -> raise Undetermined
+
+  (* Check that the PAC field of a virtual address is canonical *)
+  let checkCanonical = function
+    | Val (Symbolic (Virtual {pac})) ->
+        if Constant.PAC.is_canonical pac then
+          Val (Concrete Cst.Scalar.one)
+        else
+          Val (Concrete Cst.Scalar.zero)
+    | Val cst ->
+        Warn.user_error "%s is not a valid virtual address" (Cst.pp_v cst)
+    | Var _ -> raise Undetermined
+
+  (* Remove the PAC field of a virtual address *)
+  let setCanonical = function
+    | Val (Symbolic (Virtual v)) ->
+        Val (Symbolic (Virtual {v with pac= Constant.PAC.canonical}))
+    | Val cst ->
+        Warn.user_error "%s is not a valid virtual address" (Cst.pp_v cst)
+    | Var _ -> raise Undetermined
+
   let alignd c k =
     check_immediate k 6; (* Check user input *)
     let align = ones (Cst.Scalar.to_int k) in
@@ -884,9 +916,12 @@ module
                      (ArchOp.pp_op1 true op) (pp_v v)
                | Some c -> Val c
              end)
+    | CheckCanonical -> checkCanonical
+    | SetCanonical -> setCanonical
 
   let op op = match op with
   | Add -> add
+  | AddPAC key -> addPAC key
   | Alignd -> binop op alignd
   | Alignu -> binop op alignu
   | CapaAdd -> capaadd

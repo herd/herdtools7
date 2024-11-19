@@ -28,15 +28,74 @@ type offset = int
 
 let compare_tag = Misc.opt_compare String.compare
 
+module PAC = struct
+
+  (* A vritual address must have a PAC field represented in the most significant
+     bits of the pointer, this PAC field may contani multiple PAC signatures using
+     the XOR off all the signatures *)
+  type signature =
+    {
+      (* "ia", "da", "ib" or "db" *)
+      key : string ;
+      (* modifier: a string used as a "salt" added to the hash *)
+      modifier : string ;
+      (* the offset of the pointer at the time we compute the PAC field *)
+      offset : int ;
+    }
+
+  let pp_signature p =
+    sprintf ":pac(%s, %s, %d)" p.key p.modifier p.offset
+
+  let compare_signature p1 p2 =
+    match String.compare p1.key p2.key with
+    | 0 ->
+        begin match String.compare p1.modifier p2.modifier with
+        | 0 -> Int.compare p1.offset p2.offset
+        | r -> r
+        end
+    | r -> r
+
+  module PACSet = Set.Make (struct
+    type t = signature
+    let compare = compare_signature
+  end)
+
+  type t = PACSet.t
+
+  let canonical = PACSet.empty
+
+  let is_canonical pac =
+    PACSet.is_empty pac
+
+  (* add a PAC signature in a PAC field using an exclusive OR *)
+  let add key modifier offset pac =
+    if PACSet.mem {modifier; key; offset} pac then
+      PACSet.remove {modifier; key; offset} pac
+    else
+      PACSet.add {modifier; key; offset} pac
+
+  let compare = PACSet.compare
+
+  let equal = PACSet.equal
+
+  let pp pac =
+    let rec aux = function
+      | x :: xs -> sprintf "%s%s" (pp_signature x) (aux xs)
+      | [] -> ""
+    in
+    aux (PACSet.to_list pac)
+end
+
+
 (* Symbolic location metadata*)
 (* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
-
 type symbolic_data =
   {
    name : string ;
    tag : tag ;
    cap : cap ;
    offset : offset ;
+   pac : PAC.t ;
   }
 
 let default_symbolic_data =
@@ -45,12 +104,16 @@ let default_symbolic_data =
    tag = None ;
    cap = 0x0L ;
    offset = 0 ;
+   pac = PAC.canonical ;
   }
 
 let capa_low c = Int64.shift_left (Int64.logand c 0x1ffffffffL)  3
 and capa_high c = Int64.shift_right_logical c 33
-let pp_symbolic_data {name=s; tag=t; cap=c; _} = match t,c with
-  | None, 0L -> s
+let pp_symbolic_data {name=s; tag=t; cap=c; pac=p; _} = match t,c with
+  | None, 0L ->
+      begin
+        sprintf "%s%s" s (PAC.pp p)
+      end
   | None, _ ->
      sprintf "%#Lx:%s:%Li" (capa_low c) s (capa_high c)
 
@@ -64,7 +127,11 @@ let compare_symbolic_data s1 s2 =
       begin match compare_tag s1.tag s2.tag with
       | 0 ->
           begin match Int64.compare s1.cap s2.cap with
-          | 0 -> Misc.int_compare s1.offset s2.offset
+          | 0 ->
+              begin match Misc.int_compare s1.offset s2.offset with
+              | 0 -> PAC.compare s1.pac s2.pac
+              | r -> r
+              end
           | r -> r
           end
       | r -> r
@@ -77,6 +144,7 @@ let symbolic_data_eq s1 s2 =
   && Misc.opt_eq Misc.string_eq s1.tag s2.tag
   && Int64.equal s1.cap s2.cap
   && Misc.int_eq s1.offset s2.offset
+  && PAC.equal s1.pac s2.pac
 
 type syskind = PTE|PTE2|TLB
 type tagkind = PHY|VIR

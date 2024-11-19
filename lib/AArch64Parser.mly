@@ -80,6 +80,13 @@ let check_op3 op e =
 /* Variable shift's */
 %token TOK_LSLV TOK_LSRV TOK_ASRV TOK_RORV
 
+/* Pointer Authentication Code Extension */
+%token PACIA PACIASP PACIA1716 PACIAZ PACIZA PACDA PACDZA
+%token PACIB PACIBSP PACIB1716 PACIBZ PACIZB PACDB PACDZB
+%token AUTIA AUTIASP AUTIA1716 AUTIAZ AUTIZA AUTDA AUTDZA
+%token AUTIB AUTIBSP AUTIB1716 AUTIBZ AUTIZB AUTDB AUTDZB
+%token XPACI XPACD
+
 /* Instructions */
 %token NOP HINT HLT
 %token TOK_B BR CBZ CBNZ TBZ TBNZ
@@ -1885,6 +1892,38 @@ instr:
   { I_TLBI ($2, ZR) }
 | TLBI TLBI_OP COMMA xreg
   { I_TLBI ($2, $4) }
+
+/* Pointer Authentication Code Extension */
+| PACIA1716 { I_PAC_IA (Ireg R17, Ireg R16) }
+| PACIASP { I_PAC_IA (Ireg R30, SP) }
+| PACIAZ { I_PAC_IA (Ireg R30, ZR) }
+| PACIA xreg COMMA xreg { I_PAC_IA ($2, $4) }
+| PACIZA xreg COMMA xreg { I_PAC_IA ($2, $4) }
+| PACDA xreg COMMA xreg { I_PAC_DA ($2, $4) }
+| PACDZA xreg COMMA xreg { I_PAC_DA ($2, $4) }
+| PACIB1716 { I_PAC_IB (Ireg R17, Ireg R16) }
+| PACIBSP { I_PAC_IB (Ireg R30, SP) }
+| PACIBZ { I_PAC_IB (Ireg R30, ZR) }
+| PACIB xreg COMMA xreg { I_PAC_IB ($2, $4) }
+| PACIZB xreg COMMA xreg { I_PAC_IB ($2, $4) }
+| PACDB xreg COMMA xreg { I_PAC_DB ($2, $4) }
+| PACDZB xreg COMMA xreg { I_PAC_DB ($2, $4) }
+| AUTIA1716 { I_AUT_IA (Ireg R17, Ireg R16) }
+| AUTIASP { I_AUT_IA (Ireg R30, SP) }
+| AUTIAZ { I_AUT_IA (Ireg R30, ZR) }
+| AUTIA xreg COMMA xreg { I_AUT_IA ($2, $4) }
+| AUTIZA xreg COMMA xreg { I_AUT_IA ($2, $4) }
+| AUTDA xreg COMMA xreg { I_AUT_DA ($2, $4) }
+| AUTDZA xreg COMMA xreg { I_AUT_DA ($2, $4) }
+| AUTIB1716 { I_AUT_IB (Ireg R17, Ireg R16) }
+| AUTIBSP { I_AUT_IB (Ireg R30, SP) }
+| AUTIBZ { I_AUT_IB (Ireg R30, ZR) }
+| AUTIB xreg COMMA xreg { I_AUT_IB ($2, $4) }
+| AUTIZB xreg COMMA xreg { I_AUT_IB ($2, $4) }
+| AUTDB xreg COMMA xreg { I_AUT_DB ($2, $4) }
+| AUTDZB xreg COMMA xreg { I_AUT_DB ($2, $4) }
+| XPACI xreg { I_XPACI $2 }
+| XPACD xreg { I_XPACD $2 }
 
 /* System register */
 | MRS xreg COMMA SYSREG

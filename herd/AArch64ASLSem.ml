@@ -918,6 +918,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               | IsInstr -> IsInstr
               | Promote -> Promote
               | Demote -> Demote
+              | CheckCanonical | SetCanonical
               | ArchOp1 _ -> assert false
             in
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)

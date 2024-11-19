@@ -1,0 +1,14 @@
+AArch64 example.litmus
+Show that loading from a non-canonical virtual address will produce a
+translation fault error
+{ 0:X0=pac(pac(x, da, 43), da, 42); 0:X1=42 }
+ P0          ;
+
+ MOV X3,#42  ;
+ MOV X4,#43  ;
+ PACDA X0,X3 ;
+ AUTDA X0,X4 ;
+
+ STR X1,[X0] ;
+ LDR X2,[X0] ;
+ exists (0:X2=42) (* /\ Fault(P0, MMU:Translation)) *)

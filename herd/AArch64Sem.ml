@@ -635,6 +635,12 @@ module Make
         M.op Op.Ne x V.zero >>= fun cond ->
         M.choiceT cond (mfault ma mzero) (mok ma mv)
 
+      (* PAC checking *)
+      let check_pac_canonical a ma mok mfault =
+        M.op1 Op.CheckCanonical a >>= fun cond ->
+        M.choiceT cond (mok ma) (mfault ma)
+
+
  (* Semantics has changed, no ctrl-dep on mv *)
       let check_morello_perms a ma mv perms mok mfault =
         M.delay_kont "morello_perms"
@@ -1387,6 +1393,25 @@ module Make
                (lift_fault_memtag
                   (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
+      (* Check a pointer authentication code and perform the memory operation
+         only if the check fail, otherwise return a memory traslation fault *)
+      let lift_pac_virt mop ma dir an ii =
+        M.delay_kont "pac" ma
+          (fun a_virt ma ->
+            let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
+            let mfault ma =
+              do_insert_commit ma
+                (fun a ->
+                  mk_fault (Some a) dir an ii
+                    (Some (FaultType.AArch64.MMU FaultType.AArch64.Translation))
+                    None)
+                ii >>! B.Exit
+            in
+
+            check_pac_canonical a_virt ma mok mfault
+          )
+
+
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
           let ft = None in (* FIXME *)
@@ -1451,7 +1476,7 @@ module Make
           else if checked then
             lift_memtag_virt mop ma dir an ii
           else
-            mop Access.VIR ma >>= M.ignore >>= B.next1T
+            lift_pac_virt mop ma dir an ii
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
@@ -4249,6 +4274,35 @@ module Make
            let m_fault = mk_fault None Dir.R Annot.N ii ft None in
            let lbl_v = get_instr_label ii in
            m_fault >>| set_elr_el1 lbl_v ii >>! B.Fault [AArch64Base.elr_el1, lbl_v]
+(* Pointer Anthentication Code `FEAT_Pauth2` without `FEAT_FPAC`, AUT* and PAC*
+ have the same semantic *)
+        | I_PAC_DA (rd, rn) | I_AUT_DA (rd, rn)
+        | I_PAC_DB (rd, rn) | I_AUT_DB (rd, rn)
+        | I_PAC_IA (rd, rn) | I_AUT_IA (rd, rn)
+        | I_PAC_IB (rd, rn) | I_AUT_IB (rd, rn)
+        ->
+            begin
+              let key = match inst with
+                | I_PAC_IA _ | I_AUT_IA _ -> "ia"
+                | I_PAC_IB _ | I_AUT_IB _ -> "ib"
+                | I_PAC_DA _ | I_AUT_DA _ -> "da"
+                | I_PAC_DB _ | I_AUT_DB _ -> "db"
+                | _ -> assert false
+              in
+              read_reg_ord rd ii >>|
+              read_reg_ord rn ii >>= fun (addr, modifier) ->
+              M.op (Op.AddPAC key) addr modifier >>= fun v ->
+              write_reg_dest rd v ii >>= fun v ->
+              B.nextSetT rd v
+            end
+        | I_XPACI r | I_XPACD r
+        ->
+          begin
+            read_reg_ord r ii >>= fun v ->
+            M.op1 Op.SetCanonical v >>= fun v ->
+            write_reg_dest r v ii >>= fun v ->
+            B.nextSetT r v
+          end
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _

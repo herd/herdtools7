@@ -1,0 +1,13 @@
+AArch64 example.litmus
+Show that PACIA behave like an identity function at the moment
+{
+  0:X1=x;
+}
+ P0             ;
+ ADD X1,X1,#8   ;
+
+ MOV X2,#42     ;
+ STR X2,[X1]    ;
+ LDR X3,[X1]    ;
+exists
+(0:X3=42)
