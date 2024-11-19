@@ -25,26 +25,6 @@ The same line does parse and correctly handled inside a subprogram.
 
 \lrmcomment{This is related to \identr{QDQD}.}
 
-\subsection{Annotations}
-ASLRef does not yet support annotations in general.
-Loop limit annotations are supported, but recursion limit annotations are not yet supported.
-
-\subsection{Recursion Limits}
-ASLRef does not yet parse and support \texttt{@recurselimit(<LIMIT>)} annotations.
-
-\subsection{Concatenation Declarations}
-Declarations of multiple bitvectors via concatenation as in the program
-\begin{Verbatim}
-func main() => integer
-begin
-    var [ a[7:0], b, c[3:0] ] = Zeros(13);
-    return 0;
-end
-\end{Verbatim}
-do not currently parse.
-
-\lrmcomment{This is related to \identr{KKDF}.}
-
 \subsection{Guards}
 
 Guards are used on \texttt{case} and \texttt{catch} statements, to restrict
@@ -56,9 +36,6 @@ They are not yet implemented in ASLRef.
 
 % ------------------------------------------------------------------------------
 \section{Semantics}
-
-\subsection{Enforcing Loop Limits}
-\verb|@looplimit| annotations are type-checked but not enforced for \texttt{while} and \texttt{repeat} loops.
 
 \subsection{Non-\texttt{main} Entry Point}
 Currently ASLRef only supports \texttt{main} as an entry point.
@@ -146,48 +123,6 @@ Allowing side-effect-free calls is being considered.
 Enumeration labels are not yet treated as first-class literals, but rather as integer literals.
 The domain of an enumeration type should be a set of enumeration labels.
 
-% \subsection{Global storage declarations}
-% Global storage declarations are transliterated.
-% The formal rules need a bit more refinement (e.g., defining \texttt{declare\_const} and \texttt{reduce\_constants}).
-% \lrmcomment{This is related to \identr{FWQM}.}
-
-% \subsection{Statically evaluable expressions}
-
-% The part of statically evaluable expressions that has been implemented in
-% ASLRef (see Section~\ref{sec:nyi:statically-evaluable-subprograms}) has not
-% been transliterated.
-
-% Equivalence of statically evaluable expressions has been implemented in a
-% restricted setting (see
-% Section~\ref{sec:nyi:statically-evaluable-subprograms}).
-% %
-% Mainly, expressions that reduce to polynomials can be checked for equivalence.
-% %
-% This has not been transliterated either.
-
-% \lrmcomment{This is related to \identr{PKXK}, \identd{YYDW}, \identd{CWVH}, \identd{HLQC},
-% and \identi{LHLR}, \identr{RFQP}, \identr{VNKT}.}
-
-% \subsection{Polymorphism}
-
-% Polymorphism in ASL is the ability to have multiple subprograms with the same
-% name that do not have the same signature.
-
-% Although polymorphism is implemented in ASLRef, it has not yet been
-% transliterated.
-
-% \lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{FCTB}, \identi{PFGQ},
-% \identr{PGFC}, \identi{BTMT}.}
-
-\subsection{Calls to Setters and Getters}
-The replacement of implicit calls to getters and setters (written for example as
-slices) to explicit calls to subprograms has not been defined.
-%
-In terms of abstract syntax, this corresponds to the translation between a
-\texttt{E\_Slice} and a \texttt{E\_Call}.
-
-\lrmcomment{This is related to \identi{YYQX}, \identi{LJLW}, \identi{MFBC}.}
-
 % \subsection{Type inference from literals}
 % Finding the type of a literal value, or a compile-time constant expression, is
 % not yet transliterated.
@@ -207,11 +142,3 @@ The standard library is not yet defined by the reference.
 \section{Side-Effects}
 
 Side-Effects are not yet defined by the reference.
-
-% \section{In scope for BET1}
-
-% Need to populate - for example Side-Effects should be there, as well as some
-% work on constraints.
-% Generally we need to review this Progress document and update it.
-
-%\end{document}
