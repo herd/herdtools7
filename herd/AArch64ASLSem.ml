@@ -1387,6 +1387,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             let assign v1 v2 = M.VC.Assign (v1, M.VC.Unop (bnot, v2)) in
             let la = tr_v la and la' = tr_v la' in
             assign la la' :: assign la' la :: acc
+        | ASLVC.Predicate _ -> assert false (* ASLOp.predicate is empty *)
         | ASLVC.Assign (la, ex) ->
             let expr, acc = tr_expr acc ex in
             M.VC.Assign (tr_v la, expr) :: acc

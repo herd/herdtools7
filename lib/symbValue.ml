@@ -92,12 +92,6 @@ module
        Val (Constant.map_scalar Cst.Scalar.printable c)
     | v -> v
 
-  let equalityPossible v1 v2 =
-    match (v1,v2) with
-    | Val x1,Val x2 -> Cst.compare x1 x2 = 0
-    | (Var _,_)
-    | (_,Var _) -> true  (* WARNING: May want to optimize later *)
-
   let compare v1 v2 =
     match v1,v2 with
     | Val i1,Val i2 -> Cst.compare i1 i2

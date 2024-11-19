@@ -825,7 +825,7 @@ module Make (M:Cfg)
     let mykont test model_kont es cs = (fun e res ->
         let ncs = (List.append cs (make_cnstrnts e)) in
         M.solve_mem test es e.rfm ncs
-          (fun es0 rfm0 cs0 res0 ->
+          (fun es0 rfm0 cs0 solver res0 ->
             match cs0 with
             | [] ->
                if S.A.reject_mixed then M.check_sizes test es0;
@@ -869,7 +869,7 @@ module Make (M:Cfg)
                else begin
                    res0
                  end
-            | _ -> M.when_unsolved test es0 rfm0 cs0 (fun c -> c) res0) res)
+            | _ -> M.when_unsolved test es0 rfm0 cs0 solver (fun c -> c) res0) res)
 
     let real e = fence e || E.is_mem e
 

@@ -1,0 +1,11 @@
+Test A32 Allowed
+States 2
+0:X0=y; [x]=y;
+0:X0=y; [x]=z; pacda(y,0x0)=y;
+Ok
+Witnesses
+Positive: 2 Negative: 2
+Condition exists ([x]=z /\ 0:X0=y)
+Observation A32 Sometimes 2 2
+Hash=30b58afdda286a4cb35011cc5fb7c8d0
+

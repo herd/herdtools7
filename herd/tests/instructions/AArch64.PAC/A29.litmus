@@ -1,0 +1,9 @@
+AArch64 A29
+Variant=pauth1
+{
+  int64_t x=42;
+  0:x0=x; int64_t 0:x1=0;
+}
+P0;
+pacdza x0;
+pacdzb x0;

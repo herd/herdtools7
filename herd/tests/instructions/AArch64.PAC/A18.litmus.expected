@@ -1,10 +1,10 @@
 Test A18 Required
 States 1
-0:X1=42; 0:X2=0; [x]=0;  ~Fault(P0,MMU:Translation);
+0:X2=0;
 Ok
 Witnesses
-Positive: 2 Negative: 0
-Condition forall (not (fault(P0,MMU:Translation)) /\ [x]=0 /\ 0:X1=42 /\ 0:X2=0)
-Observation A18 Always 2 0
-Hash=dbf06243b88a0f72983f9d347b6ab39c
+Positive: 1 Negative: 0
+Condition forall (0:X2=0)
+Observation A18 Always 1 0
+Hash=30933ee421a121daa0e2634cffc45fa6
 

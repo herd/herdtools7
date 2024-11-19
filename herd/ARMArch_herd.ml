@@ -123,12 +123,15 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     include NoLevelNorTLBI
 
+    module CS = ConstraintSolver.No(V)
+
     include ArchExtra_herd.Make(C)
         (struct
 
           let arch = arch
 
           module V = V
+          module CS = CS
 
           type instr = instruction
 

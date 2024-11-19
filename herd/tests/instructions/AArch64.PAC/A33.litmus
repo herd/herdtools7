@@ -1,0 +1,11 @@
+AArch64 A33
+Variant=pauth2
+{
+ int64_t x[2]={y,z};
+ 0:X0=y; 0:X3=z; 0:X1=z; 0:X2=x;
+}
+ P0                    ;
+ PACDA X0, XZR         ;
+ CASP X0,X3,X1,X4,[X2] ;
+
+exists (x={z,0} /\ 0:X0=y)

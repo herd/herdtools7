@@ -25,13 +25,14 @@ module type S =
     include ArchBase.S
 
     module V : Value.S with type Cst.Instr.exec = instruction
+    module CS : ConstraintSolver.S with module V = V
 
     val is_amo : instruction -> bool
     val pp_barrier_short : barrier -> string
     val reject_mixed : bool (* perform a check that rejects mixed-size tests *)
     val mem_access_size : instruction -> MachSize.sz option
 
-    val opt_env : bool (* environemnt optimisation is available *)
+    val opt_env : bool (* environment optimisation is available *)
     val killed : instruction -> reg list
     val get_lx_sz : instruction -> MachSize.lr_sc
     (* Those register are to be initialised to the default value explicitly *)
@@ -39,6 +40,7 @@ module type S =
 
 
     include ArchExtra_herd.S with module I.V = V
+    and module I.CS = CS
     and type I.arch_reg = reg
     and type I.instr = instruction
 

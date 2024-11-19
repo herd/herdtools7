@@ -57,6 +57,8 @@ module Make
 
     include NoLevelNorTLBI
 
+    module CS = ConstraintSolver.No(V)
+
     include ArchExtra_herd.Make(C)
 	(struct
 
@@ -65,6 +67,7 @@ module Make
           type instr = instruction
 
 	  module V = V
+	  module CS = CS
 
           let endian = endian
 
