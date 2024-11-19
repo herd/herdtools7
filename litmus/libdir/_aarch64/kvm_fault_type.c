@@ -3,6 +3,10 @@
 enum fault_type_t {
   FaultUndefinedInstruction,
   FaultSupervisorCall,
+  FaultPacCheckIA,
+  FaultPacCheckIB,
+  FaultPacCheckDA,
+  FaultPacCheckDB,
   FaultMMUAddressSize,
   FaultMMUTranslation,
   FaultMMUAccessFlag,
@@ -16,6 +20,10 @@ enum fault_type_t {
 static const char *fault_type_names[] = {
   "UndefinedInstruction",
   "SupervisorCall",
+  "PacCheck:IA",
+  "PacCheck:IB",
+  "PacCheck:DA",
+  "PacCheck:DB",
   "MMU:AddressSize",
   "MMU:Translation",
   "MMU:AccessFlag",
@@ -23,6 +31,8 @@ static const char *fault_type_names[] = {
   "TagCheck",
   "Unsupported",
 };
+
+#define ESR_EL1_EC_PAC 0b011100
 
 static enum fault_type_t get_fault_type(unsigned long esr)
 {
@@ -35,6 +45,8 @@ static enum fault_type_t get_fault_type(unsigned long esr)
     return FaultUndefinedInstruction;
   } else if (ec == ESR_EL1_EC_SVC64) {
     return FaultSupervisorCall;
+  } else if (ec == ESR_EL1_EC_PAC) {
+    return FaultPacCheckIA + (esr & 0x3U);
   } else {
     dfsc = esr & 0x3fU;
     fault_type = (dfsc >> 2) + FaultMMUAddressSize;

@@ -50,10 +50,13 @@ module Make(O:Config)(Tar:Tar.S)(D:CoreDumper.S) =
           | Mode.PreSi | Mode.Kvm ->
              Warn.fatal "No direct execution in %s mode"
                (Mode.pp O.mode) in
-          let utils =
+          let k =
             match O.affinity with
             | Affinity.No -> "utils.c"::k
             | _ ->  "utils.c"::"affinity.c"::k in
+          let utils =
+            if O.variant Variant_litmus.Pac
+            then "auth.c"::k else k in
           String.concat " " (List.map Tar.outname utils) in
         let com = sprintf "%s -o %s %s %s" gcc sX utils source in
         exec_stdout com
