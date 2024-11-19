@@ -88,9 +88,10 @@ static int th_faults_info_compare(th_faults_info_t *th_flts1, th_faults_info_t *
 
 static void pp_fault(int proc, int instr_symb, int data_symb, int ftype)
 {
-  printf("fault(P%d", proc);
   if (instr_symb != INSTR_SYMB_ID_UNKNOWN)
-    printf(":%s", instr_symb_name[instr_symb]);
+    printf("fault(P%s", instr_symb_name[instr_symb]);
+  else
+    printf("fault(P%d", proc);
   if (data_symb != DATA_SYMB_ID_UNKNOWN)
     printf(",%s", data_symb_name[data_symb]);
   if (ftype != FaultUnknown)
