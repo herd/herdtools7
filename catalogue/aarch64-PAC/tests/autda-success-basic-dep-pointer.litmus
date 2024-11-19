@@ -1,0 +1,17 @@
+AArch64 autda-success-basic-dep-pointer
+Variant=pauth2
+{
+    int64_t x=0;
+    int64_t y=0;
+    0:X0=x; 0:X1=y; int64_t 0:X2=1;
+    1:X0=x; 1:X1=y; int64_t 1:X2=0; int64_t 1:X3=0;
+
+}
+P0          | P1           ;
+STR X2,[X0] | PACDZA X0    ; (* Write pacda(x) in 1:X0 *)
+DMB SY      | LDR X2,[X1]  ;
+STR X2,[X1] | EOR X3,X2,X2 ; (* Write 0 in 1:X3 *)
+            | ADD X0,X0,X3 ; (* Write pacda(x) in 1:X0 *)
+            | AUTDZA X0    ; (* Write x in 1:X0 *)
+            | LDR X4,[X0]  ;
+exists ( 1:X2=1 /\ 1:X4=0 )

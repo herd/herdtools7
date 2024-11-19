@@ -55,6 +55,8 @@ module type S = sig
 
   type fatom = (loc_global,fault_type) atom
 
+  val map_fatom : (loc_global -> loc_global) -> fatom -> fatom
+
   val pp_fatom : fatom -> string
   val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool

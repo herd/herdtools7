@@ -1,0 +1,10 @@
+AArch64 A23
+Variant=pauth2
+{
+  int64_t x=42;
+  0:x0=x; int64_t 0:x1=0;
+}
+P0;
+autdza x0;
+ldr x1,[x0];
+exists (0:x1=42 /\ ~Fault(P0,MMU:Translation))

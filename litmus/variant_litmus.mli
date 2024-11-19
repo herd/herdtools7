@@ -24,7 +24,8 @@ type t =
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
   | NoInit (* Do not initialise variables *)
-  | Pac (* Pointer authentication instructions *)
+  | PacVersion of [`PAuth1|`PAuth2] (* Pointer authentication instructions *)
+  | NoPacKey of PAC.key
   | FPac (* Fault on pointer authentication *)
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
 

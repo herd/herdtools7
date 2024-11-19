@@ -1,10 +1,13 @@
 Test A16 Required
-States 1
-[x]=43;  ~Fault(P0,MMU:Translation);
+States 4
+0:X4=0;  ~Fault(P2,MMU:Translation); ~Fault(P1,MMU:Translation);
+0:X4=1; Fault(P1,x,MMU:Translation); ~Fault(P2,MMU:Translation);
+0:X4=1; Fault(P1,x,MMU:Translation); Fault(P2,x,MMU:Translation);
+0:X4=1; Fault(P2,x,MMU:Translation); ~Fault(P1,MMU:Translation);
 Ok
 Witnesses
-Positive: 1 Negative: 0
-Condition forall (not (fault(P0,MMU:Translation)) /\ [x]=43)
-Observation A16 Always 1 0
-Hash=17016a7da33e9b766baa2bed6b5ec3f0
+Positive: 4 Negative: 0
+Condition forall (0:X4=1 \/ not (fault(P1,MMU:Translation)) \/ not (fault(P2,MMU:Translation)))
+Observation A16 Always 4 0
+Hash=88d6ea5a672fd8547d1af9535f3ab2e0
 

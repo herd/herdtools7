@@ -519,6 +519,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           | AArch64Base.Vreg(_,(nelem,esize)) -> neon_getvec nelem esize v
           | _ -> v
 
+          type solver_state = PAC.solver_state
+          let pp_solver_state = PAC.pp_solver
+          let compare_solver_state = PAC.compare_solver_state
+
           module FaultType = FaultType.AArch64
         end)
 
@@ -553,5 +557,30 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       then
         Warn.user_error
           "Array location and STZG instruction without -variant mixed"
+
+    let eq_satisfiable c1 c2 =
+      match Constant.collision c1 c2 with
+      | Some (p1,p2) -> Some (AArch64Op.Eq (p1,p2))
+      | None -> None
+
+    type solver_state = PAC.solver_state
+
+    let empty_solver = PAC.empty_solver
+
+    let pp_solver_state st = PAC.pp_solver st
+
+    let normalize cst st = Constant.normalize cst st
+
+    let compare_solver_state s1 s2 =
+    (* Comparison is only used to group the final states before pretty printing so
+     * we only compare the equalities of the internal collision solvers *)
+      PAC.compare_solver_state s1 s2
+
+    let add_predicate pred st =
+      match pred with
+      | AArch64Op.Eq (p1,p2) ->
+          PAC.add_equality p1 p2 st
+      | AArch64Op.Ne (p1,p2) ->
+          PAC.add_inequality p1 p2 st
 
   end

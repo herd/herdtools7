@@ -61,16 +61,16 @@ static void write_sctlr_el1(uint64_t x) {
 }
 
 // Initialize pointer authentication
-void init_pauth(void) {
-  uint64_t enIA = 1ULL << 31;
-  uint64_t enIB = 1ULL << 30;
-  uint64_t enDA = 1ULL << 27;
-  uint64_t enDB = 1ULL << 13;
+void init_pauth(int enable_da, int enable_db, int enable_ia, int enable_ib) {
+  uint64_t enDA = enable_da ? 1ULL << 27 : 0;
+  uint64_t enDB = enable_db ? 1ULL << 13 : 0;
+  uint64_t enIA = enable_ia ? 1ULL << 31 : 0;
+  uint64_t enIB = enable_ib ? 1ULL << 30 : 0;
   write_sctlr_el1(enIA | enIB | enDA | enDB | read_sctlr_el1());
-  init_pauth_key_ia();
-  init_pauth_key_ib();
-  init_pauth_key_da();
-  init_pauth_key_db();
+  if (enable_da) init_pauth_key_da();
+  if (enable_db) init_pauth_key_db();
+  if (enable_ia) init_pauth_key_ia();
+  if (enable_ib) init_pauth_key_ib();
 }
 
 /*
@@ -96,17 +96,38 @@ static uint64_t get_isar1_apia(void) {
   return  isar1_api|isar1_apa ;
 }
 
+// Check if `FEAT_Pauth` is implemented without `FEAT_Pauth2`
+int check_pauth1_variant(char* tname) {
+  uint64_t isar1_apia = get_isar1_apia();
+
+  switch (isar1_apia) {
+    case 0b0001:
+    case 0b0010:
+      return 1;
+    case 0b0100:
+    case 0b0011:
+    case 0b0101:
+      printf(
+        "Test %s: PAC is only available with FEAT_PAuth2 on this system\n",
+        tname);
+      return 0;
+    default:
+      printf("Test %s, PAC not available on this system\n", tname);
+      return 0;
+  }
+}
+
 // Check if `FEAT_Pauth2` is implemented
-int check_pac_variant(char* tname) {
+int check_pauth2_variant(char* tname) {
   uint64_t isar1_apia = get_isar1_apia();
 
   switch (isar1_apia) {
     case 0b0001:
     case 0b0010:
       printf(
-        "Warning %s: PAC is only available without FEAT_PAuth2 on this system\n",
+        "Test %s: PAC is only available without FEAT_PAuth2 on this system\n",
         tname);
-      return 1;
+      return 0;
     case 0b0100:
     case 0b0011:
     case 0b0101:

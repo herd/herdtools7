@@ -1,0 +1,16 @@
+AArch64 pacda-basic-dep-pointer
+Variant=pauth2
+{
+  int64_t x=0;
+  int64_t y=0;
+  0:X0=x; 0:X1=y; int64_t 0:X2=1;
+  1:X0=x; 1:X1=y; int64_t 1:X2=0; int64_t 1:X3=0; int64_t 1:X4=0;
+}
+P0          | P1           ;
+STR X2,[X0] | LDR X2,[X1]  ;
+            | EOR X4,X2,x2 ;
+DMB SY      | ADD X0,X0,X4 ;
+STR X2,[X1] | PACDZA X0    ;
+            | XPACD X0     ;
+            | LDR X3,[X0]  ;
+exists ( 1:X2=1 /\ 1:X3=0 )

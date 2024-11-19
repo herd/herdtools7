@@ -1060,6 +1060,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let tr_cnstrnt acc = function
         | ASLVC.Warn s -> M.VC.Warn s :: acc
         | ASLVC.Failed e -> M.VC.Failed e :: acc
+        | ASLVC.Predicate _ -> assert false (* ASLOp.predicate is empty *)
         | ASLVC.Assign (la, ex) ->
             let expr, acc = tr_expr acc ex in
             M.VC.Assign (tr_v la, expr) :: acc

@@ -1,0 +1,11 @@
+Test A22 Allowed
+States 2
+  ~Fault(P0,MMU:Translation);
+ Fault(P0,x,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (fault(P0,MMU:Translation))
+Observation A22 Sometimes 1 1
+Hash=c544854e54eadbd11b5f08937ca7c57e
+

@@ -1,0 +1,17 @@
+AArch64 A31
+Variant=pauth2,fpac
+{
+  0:x0=x;
+  0:x1=x;
+  0:x2=x;
+  int64_t 0:x3=0;
+}
+P0       ;
+L0:      ;
+autdza x0;
+pacdza x1;
+cmp x1,x2;
+b.ne end ;
+mov x3,#1;
+end:     ;
+forall (0:x3=1 \/ Fault(P0:L0,PacCheck:DA))

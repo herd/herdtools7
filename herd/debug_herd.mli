@@ -18,6 +18,7 @@
 
 type t = {
   solver : bool ;
+  pred_solver : bool ;
   lexer : bool ;
   top : bool ;
   mem : bool ;

@@ -1,0 +1,11 @@
+Test A31 Required
+States 2
+0:X3=0; Fault(P0:L0,PacCheck:DA);
+0:X3=1;  ~Fault(P0:L0,PacCheck:DA);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (0:X3=1 \/ fault(P0:L0,PacCheck:DA))
+Observation A31 Always 2 0
+Hash=5e846fb11176acb34cf63dfaf08be649
+

@@ -523,7 +523,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let memtag = C.variant Variant.MemTag
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
-    let pac = C.variant Variant.Pac
+    let pauth1 = C.variant (Variant.PacVersion `PAuth1)
+    let pauth2 = C.variant (Variant.PacVersion `PAuth2)
+    let pac = pauth1 || pauth2
     let is_po_partial = A.arch = `ASL
     type eiid = int
     type subid = int

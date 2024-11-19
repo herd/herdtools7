@@ -270,7 +270,9 @@ end = struct
                 let allocated = allocate parsed in
                 let compiled = compile doc allocated in
                 let source = MyName.outname name ".c" in
-                let pac = O.variant Variant_litmus.Pac in
+                let pac =
+                    O.variant (Variant_litmus.PacVersion `PAuth1) ||
+                    O.variant (Variant_litmus.PacVersion `PAuth2) in
                 dump source doc compiled;
                 if not OT.is_out then begin
                     let _utils =
