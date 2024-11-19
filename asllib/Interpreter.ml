@@ -978,9 +978,10 @@ module Make (B : Backend.S) (C : Config) = struct
         eval_loop s false env2 limit_opt2 e body |: SemanticsRule.SRepeat
     (* End *)
     (* Begin EvalSFor *)
-    | S_For { index_name; start_e; dir; end_e; body; limit = _limit } ->
+    | S_For { index_name; start_e; dir; end_e; body; limit = e_limit_opt } ->
         let* start_v = eval_expr_sef env start_e
-        and* end_v = eval_expr_sef env end_e in
+        and* end_v = eval_expr_sef env end_e
+        and* limit_opt = eval_limit env e_limit_opt in
         (* By typing *)
         let undet = B.is_undetermined start_v || B.is_undetermined end_v in
         let*| env1 = declare_local_identifier env index_name start_v in
@@ -993,7 +994,8 @@ module Make (B : Backend.S) (C : Config) = struct
               (B.debug_value end_v)
         in
         let*> env3 =
-          eval_for loop_msg undet env2 index_name start_v dir end_v body
+          eval_for loop_msg undet env2 index_name limit_opt start_v dir end_v
+            body
         in
         let env4 = if undet then IEnv.tick_pop env3 else env3 in
         IEnv.remove_local index_name env4
@@ -1107,9 +1109,10 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of for loops *)
   (* ----------------------- *)
   (* Begin EvalFor *)
-  and eval_for loop_msg undet (env : env) index_name v_start dir v_end body :
+  and eval_for loop_msg undet env index_name limit_opt v_start dir v_end body :
       stmt_eval_type =
     (* Evaluate the condition: "Is the for loop terminated?" *)
+    let* next_limit_opt = tick_loop_limit body limit_opt in
     let cond_m =
       let comp_for_dir = match dir with Up -> LT | Down -> GT in
       let* () = B.on_read_identifier index_name (IEnv.get_scope env) v_start in
@@ -1127,7 +1130,8 @@ module Make (B : Backend.S) (C : Config) = struct
     let loop env =
       bind_maybe_unroll "For loop" undet (eval_block env body) @@ fun env1 ->
       let*| v_step, env2 = step env1 index_name v_start dir in
-      eval_for loop_msg undet env2 index_name v_step dir v_end body
+      eval_for loop_msg undet env2 index_name next_limit_opt v_step dir v_end
+        body
     in
     (* Real logic: if condition is validated, we continue to the next
        statement, otherwise we loop. *)
