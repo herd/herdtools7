@@ -20,7 +20,9 @@ module type S =
     sig
 (* Constants, notice that they include symbolic "rigid" constants *)
       module Cst : Constant.S
-      type arch_op
+      type arch_extra_op
+      type 'a arch_constr_op
+      type arch_op = arch_extra_op arch_constr_op
       type arch_extra_op1
       type 'a arch_constr_op1 (* Arch specific operations *)
       type arch_op1 = arch_extra_op1 arch_constr_op1
@@ -133,10 +135,12 @@ module type AArch64 =
   S
   with type Cst.PteVal.t = AArch64PteVal.t
   and type Cst.Instr.t = AArch64Base.instruction
-  and type 'a arch_constr_op1 = 'a AArch64Op.t
+  and type 'a arch_constr_op1 = 'a AArch64Op.unop
+  and type 'a arch_constr_op = 'a AArch64Op.binop
 
 module type AArch64ASL =
   AArch64
   with type Cst.Scalar.t = ASLScalar.t
-  and type arch_op = ASLOp.op
+  (*and type arch_op = ASLOp.op AArch64Op.binop*)
+  and type arch_extra_op = ASLOp.op
   and type arch_extra_op1 = ASLOp.op1
