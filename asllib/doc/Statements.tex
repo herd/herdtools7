@@ -696,7 +696,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
-\section{Declaration statements with an elided parameter \label{DeclarationStatementsElidedParameter}}
+\section{Declaration statements with an elided parameter \label{sec:DeclarationStatementsElidedParameter}}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -1157,7 +1157,7 @@ All of the following apply:
 \item the statement $\vsp$ is $\vsone$ is $\vb$ is $\True$ and $\vstwo$ otherwise
 (so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
 $\vstwo$ will be evaluated);
-\item evaluating $\vsp$ in $\envone$ as per \chapref{Blocks} is a non-abnormal configuration
+\item evaluating $\vsp$ in $\envone$ as per \chapref{BlockStatements} is a non-abnormal configuration
       (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
 \item $\vg$ is the ordered composition of $\vgone$ and the execution graph of the configuration $C$;
 \item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
@@ -1575,8 +1575,7 @@ All of the following apply:
 \section{While Statements\label{sec:WhileStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+\Nstmt \derivesinline\ & \Twhile \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1586,33 +1585,46 @@ All of the following apply:
 
 \subsubsection{ASTRule.SWhile}
 \begin{mathpar}
-\inferrule[no\_limit]{}{
-  {
-    \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend, \Tsemicolon)}{\vparsednode})
-  \astarrow\\
-  \overname{\SWhile(\astof{\vexpr}, \None, \astof{\vstmtlist})}{\vastnode}
-\end{array}
-}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[limit]{
-  \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}
+\inferrule{
+  \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}\\
+  \buildlooplimit(\voptlimit) \astarrow \astversion{\voptlimit}
 }{
   {
     \begin{array}{r}
   \buildstmt\left(\overname{\Nstmt\left(
     \begin{array}{r}
-    \Tlooplimit, \Tlpar, \namednode{\vlimitexpr}{\Nexpr}, \Trpar, \Twhile,  \\
-    \wrappedline\ \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend, \Tsemicolon
+    \Twhile, \econd: \Nexpr, \voptlimit : \Nlooplimit, \Tdo, \\
+    \wrappedline\ \punnode{\Nstmtlist}, \Tend, \Tsemicolon
     \end{array}
     \right)}{\vparsednode}\right)
   \astarrow\\
-  \overname{\SWhile(\astof{\vexpr}, \langle\astversion{\vlimitexpr}\rangle, \astof{\vstmtlist})}{\vastnode}
+  \overname{\SWhile(\astof{\vexpr}, \astversion{\voptlimit}, \astof{\vstmtlist})}{\vastnode}
 \end{array}
 }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.LoopLimit}
+\hypertarget{build-looplimit}{}
+The function
+\[
+\buildlooplimit(\overname{\parsenode{\Nlooplimit}}{\vparsednode}) \aslto \overname{\langle\expr\rangle}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[limit]{}{
+  \buildlooplimit\left(\overname{\Nlooplimit(\Tlooplimit, \punnode{\Nexpr})}{\vparsednode}\right)
+  \astarrow
+  \overname{\langle\astof{\vexpr}\rangle}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_limit]{}{
+  \buildlooplimit\left(\overname{\Nlooplimit(\emptysentence)}{\vparsednode}\right)
+  \astarrow
+  \overname{\None}{\vastnode}
 }
 \end{mathpar}
 
@@ -1624,7 +1636,7 @@ All of the following apply:
 \item $\vs$ is a \texttt{while} statement with expression $\veone$, optional limit expression $\vlimitone$,
       and statement block $\vsone$, that is, $\SWhile(\veone, \vsone)$;
 \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo)$\ProseOrTypeError;
-\item annotating the optional limit expression $\vlimitone$ via $\annotatelooplimit$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
+\item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
 \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
 \item $\news$ is a \texttt{while} statement with expression $\vetwo$, optional limit expression $\vlimittwo$,
       and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
@@ -1634,7 +1646,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
-  \annotatelooplimit(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
+  \annotatelimitexpr(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
   \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
   \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError
 }{
@@ -1645,18 +1657,18 @@ All of the following apply:
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
 \lrmcomment{This is related to \identr{FTVN}.}
 
-\subsubsection{TypingRule.AnnotateLoopLimit\label{sec:TypingRule.AnnotateLoopLimit}}
-\hypertarget{def-annotatelooplimit}{}
+\subsubsection{TypingRule.AnnotateLimitExpr\label{sec:TypingRule.AnnotateLimitExpr}}
+\hypertarget{def-annotatelimitexpr}{}
 The function
 \[
-  \annotatelooplimit(
+  \annotatelimitexpr(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\langle\expr\rangle}{\ve} \aslsep
   ) \aslto
   \overname{\expr}{\vep} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates an optional expression $\ve$ serving as the limit of a loop in $\tenv$,
-yielding the optional loop expression $\vep$.
+annotates an optional expression $\ve$ serving as the limit of a loop or a recursive subprogram in $\tenv$,
+yielding the optional expression $\vep$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
@@ -1671,9 +1683,8 @@ One of the following applies:
   \item All of the following apply (\textsc{some}):
   \begin{itemize}
     \item $\ve$ is $\langle\vlimit\rangle$;
-    \item annotating $\vlimit$ in $\tenv$ yields $(\vt, \vlimitp)$\ProseOrTypeError;
-    \item checking that $\vt$ is a constrained integer in $\tenv$ via \\
-          $\checkconstrainedinteger$ yields $\True$\ProseOrTypeError;
+    \item applying $\annotatestaticconstrainedinteger$ to $\vlimit$ in $\tenv$ yields \\
+          $\vlimitp$\ProseOrTypeError;
     \item $\vep$ is $\langle\vlimitp\rangle$.
   \end{itemize}
 \end{itemize}
@@ -1681,18 +1692,17 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[none]{}{
-  \annotatelooplimit(\tenv, \overname{\None}{\vlimit}) \typearrow \overname{\None}{\vlimitp}
+  \annotatelimitexpr(\tenv, \overname{\None}{\ve}) \typearrow \overname{\None}{\vep}
 }
 \end{mathpar}
 \begin{mathpar}
 \inferrule[some]{
-  \annotateexpr{\tenv, \vlimit} \typearrow (\vt, \vlimitp) \OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError
+  \annotatestaticconstrainedinteger(\tenv, \vlimit) \typearrow \vlimitp \OrTypeError
 }{
-  \annotatelooplimit(\tenv, \overname{\langle\vlimit\rangle}{\vlimit}) \typearrow \overname{\langle\vlimitp\rangle}{\vlimitp}
+  \annotatelimitexpr(\tenv, \overname{\langle\vlimit\rangle}{\ve}) \typearrow \overname{\langle\vlimitp\rangle}{\vep}
 }
 \end{mathpar}
-\CodeSubsection{\AnnotateLoopLimitBegin}{\AnnotateLoopLimitEnd}{../Typing.ml}
+\CodeSubsection{\AnnotateLimitExprBegin}{\AnnotateLimitExprEnd}{../Typing.ml}
 
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SWhile \label{sec:SemanticsRule.SWhile}}
@@ -1705,17 +1715,25 @@ prints \texttt{0123}.
 Evaluation of the statement $\vs$ in an environment $\env$ is
 the output configuration $C$ and all of the following apply:
 \begin{itemize}
-  \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \Ignore, \vbody)$;
+  \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \velimitopt, \vbody)$;
+  \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
+        yields $(\vlimitopt, \vgone)$\ProseOrError;
   \item evaluating the loop as per \nameref{sec:SemanticsRule.Loop} in an environment $\env$,
-  with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\ve$, and $\vbody$
-  results in $C$.
+  with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\vlimitopt$, $\ve$, and $\vbody$
+  yields the (non-error configuration) $C$\ProseOrError;
+  \item $\vgtwo$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
+  \item the output configuration $D$ is the output configuration $C$ with its execution graph
+        substituted with $\vgtwo$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \evalloop{\env, \True, \ve, \vbody} \evalarrow C
+  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynError\\\\
+  \evalloop{\env, \True, \vlimitopt, \ve, \vbody} \evalarrow C \OrDynError\\\\
+  \vgtwo \eqdef \ordered{\vgone}{\asldata}{\graphof{C}}\\
+  D \eqdef \withgraph{C}{\vgtwo}
 }{
-  \evalstmt{\env, \overname{\SWhile(\ve, \Ignore, \vbody)}{\vs}} \evalarrow C
+  \evalstmt{\env, \overname{\SWhile(\ve, \velimitopt, \vbody)}{\vs}} \evalarrow D
 }
 \end{mathpar}
 \CodeSubsection{\EvalSWhileBegin}{\EvalSWhileEnd}{../Interpreter.ml}
@@ -1724,7 +1742,12 @@ the output configuration $C$ and all of the following apply:
 The relation
 \hypertarget{def-evalloop}{}
 \[
-  \evalloop{\overname{\envs}{\env} \aslsep \overname{\Bool}{\iswhile} \aslsep \overname{\expr}{\econd} \aslsep \overname{\stmt}{\vbody}}
+  \evalloop{
+    \overname{\envs}{\env} \aslsep
+    \overname{\Bool}{\iswhile} \aslsep
+    \overname{\N?}{\vlimitopt} \aslsep
+    \overname{\expr}{\econd} \aslsep
+    \overname{\stmt}{\vbody}}
   \;\aslrel\;
   \left(
     \begin{array}{cl}
@@ -1737,9 +1760,11 @@ The relation
 \]
 to evaluate both \texttt{while} statements and \texttt{repeat} statements.
 
-More specifically, $\evalloop{\env, \iswhile, \econd, \vbody}$
+More specifically, $\evalloop{\env, \iswhile, \velimitopt, \econd, \vbody}$
 evaluates $\vbody$ in $\env$ as long as $\econd$ holds when $\iswhile$ is $\True$
 or until $\econd$ holds when $\iswhile$ is $\False$.
+If the number of iterations exceeds the optional value specified by $\vlimitopt$,
+the result is a dynamic error.
 The result is either the continuing configuration \\ $\Continuing(\newg,\newenv)$,
 an early return configuration, or an abnormal configuration.
 
@@ -1766,9 +1791,10 @@ One of the following applies:
     \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \envone)$;
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
+    \item applying $\ticklooplimit$ to $\vlimitopt$ yields $\vlimitoptp$\ProseOrError;
     \item evaluating $\vbody$ in $\envone$ as per \nameref{sec:SemanticsRule.Block} is either \\
     $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
-    \item evaluating $(\iswhile, \econd, \vbody)$ in $\envtwo$ as a loop is \\
+    \item evaluating $(\iswhile, \vlimitoptp, \econd, \vbody)$ in $\envtwo$ as a loop is \\
     $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label
     and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
@@ -1788,7 +1814,7 @@ The negation of the condition is used to decide whether to continue the loop ite
   \condm \eqname (\nvbool(\vb), \newg)\\
   \vb \neq \iswhile
 }{
-  \evalloop{\env, \iswhile, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+  \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 
@@ -1797,19 +1823,124 @@ The negation of the condition is used to decide whether to continue the loop ite
   \evalexpr{\env, \econd} \evalarrow \Normal(\condm, \envone)\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\\
+  \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp \OrDynError\\\\
   \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
-  \evalloop{\envtwo, \iswhile, \econd, \vbody} \evalarrow \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
+  {
+    \begin{array}{r}
+      \evalloop{\envtwo, \iswhile, \vlimitoptp, \econd, \vbody} \evalarrow \\
+      \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
+    \end{array}
+  }\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{
-  \evalloop{\env, \iswhile, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+  \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.EvalLimit\label{sec:SemanticsRule.EvalLimit}}
+The relation
+\hypertarget{def-evallimit}{}
+\[
+\evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\expr?})
+\aslto (\overname{\langle\N\rangle}{\vvopt}, \overname{\vg}{\XGraphs})
+\cup \overname{\TDynError}{\DynErrorConfig}
+\]
+evaluates the optional expression $\velimitopt$ in the environment $\env$, yielding
+the optional integer value $\vvopt$ and execution graph $\vg$.
+\ProseOrError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item $\velimitopt$ is $\None$;
+    \item $\vvopt$ is $\None$;
+    \item $\vg$ is the empty execution graph.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some}):
+  \begin{itemize}
+    \item $\velimitopt$ is the expression $\velimit$;
+    \item evaluating the side-effect-free expression $\velimitopt$ in $denv$ yields the native integer for $\vv$ and
+          the execution graph $\vg$;
+    \item $\vvopt$ is $\langle\vv\rangle$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[none]{}{
+  \evallimit(\env, \overname{\None}{\velimitopt}) \evalarrow (\overname{\None}{\vvopt}, \overname{\emptygraph}{\vg})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some]{
+  \evalexprsef{\env, \velimit} \evalarrow (\nvint(\vv), \vg) \OrDynError
+}{
+  \evallimit(\env, \overname{\langle\velimit\rangle}{\velimitopt}) \evalarrow (\overname{\langle\vv\rangle}{\vvopt}, \vg)
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.TickLoopLimit\label{sec:SemanticsRule.TickLoopLimit}}
+The relation
+\hypertarget{def-ticklooplimit}{}
+\[
+\ticklooplimit(\overname{\vvopt}{\N?}) \aslto \overname{\langle\vvoptp\rangle}{\N?}
+\cup \overname{\TDynError}{\DynErrorConfig}
+\]
+decrements the optional integer $\vvopt$, yielding
+the optional integer value $\vvopt$.
+If the value is $0$, the result is a dynamic error.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{none}):
+  \begin{itemize}
+    \item $\vvopt$ is $\None$;
+    \item $\vvoptp$ is $\None$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some\_ok}):
+  \begin{itemize}
+    \item $\vvopt$ is the positive integer $\vv$;
+    \item $\vvoptp$ is $\langle\vv-1\rangle$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{some\_error}):
+  \begin{itemize}
+    \item $\vvopt$ is the integer $0$;
+    \item the result is a dynamic error indicating that a limit has been reached
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[none]{}{
+  \ticklooplimit(\overname{\None}{\vvopt}) \evalarrow \overname{\None}{\vvoptp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_ok]{
+  \vv > 0
+}{
+  \ticklooplimit(\overname{\langle\vv\rangle}{\vvopt}) \evalarrow \overname{\langle\vv-1\rangle}{\vvoptp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_error]{}{
+  \ticklooplimit(\overname{\langle 0 \rangle}{\vvopt}) \evalarrow \DynamicErrorVal{LimitReached}
 }
 \end{mathpar}
 
 \section{Repeat Statements\label{sec:RepeatStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &
+\Nstmt \derivesinline\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1819,19 +1950,7 @@ The negation of the condition is used to decide whether to continue the loop ite
 
 \subsubsection{ASTRule.SRepeat}
 \begin{mathpar}
-\inferrule[no\_limit]{}{
-  {
-    \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Trepeat, \Nstmtlist, \Tuntil, \Nexpr, \Tsemicolon)}{\vparsednode})
-  \astarrow\\
-  \overname{\SRepeat(\astof{\vstmtlist}, \astof{\vexpr}, \None)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[limit]{
+\inferrule{
   \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}
 }{
   {
@@ -1839,11 +1958,11 @@ The negation of the condition is used to decide whether to continue the loop ite
   \buildstmt\left(\overname{\Nstmt\left(
     \begin{array}{r}
     \Tlooplimit, \Tlpar, \namednode{\vlimitexpr}{\Nexpr}, \Trpar, \Trepeat, \\
-    \wrappedline\ \Nstmtlist, \Tuntil, \Nexpr, \Tsemicolon
+    \wrappedline\ \Nstmtlist, \Tuntil, \punnode{\Nexpr}, \punnode{\Nlooplimit}, \Tsemicolon
     \end{array}
     \right)}{\vparsednode}\right)
   \astarrow\\
-  \overname{\SRepeat(\astof{\vstmtlist}, \astof{\vexpr}, \langle\astversion{\vlimitexpr}\rangle)}{\vastnode}
+  \overname{\SRepeat(\astof{\vstmtlist}, \astof{\vexpr}, \astof{\vlooplimit})}{\vastnode}
     \end{array}
   }
 }
@@ -1857,7 +1976,7 @@ All of the following apply:
   \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
         optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
   \item annotating $\vsone$ as a block statement in $\tenv$ yields $\vstwo$\ProseOrTypeError;
-  \item annotating the optional limit expression $\vlimitone$ via $\annotatelooplimit$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
+  \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
   \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo)$\ProseOrTypeError;
   \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\news$ is a \texttt{repeat} statement with statement block $\vstwo$, optional limit expression $\vlimittwo$,
@@ -1868,7 +1987,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError\\\\
-  \annotatelooplimit(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
+  \annotatelimitexpr(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
   \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
   \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError
 }{
@@ -1896,25 +2015,34 @@ prints
 Evaluation of the statement $\vs$ in an environment $\env$ is
 either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ and all of the following apply:
 \begin{itemize}
-  \item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \Ignore)$;
-  \item evaluating $\vbody$ in $\env$ as per \chapref{Bloccks}
-        yields $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig};
+  \item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \velimitopt)$;
+  \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
+        yields $(\vlimitopt, \vgone)$\ProseOrError;
+  \item applying $\ticklooplimit$ to $\vlimitoptone$ yields $\vlimitopttwo$\ProseOrError;
+  \item evaluating $\vbody$ in $\env$ as per \chapref{BlockStatements}
+        yields $\Continuing(\vgtwo, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig};
   \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\envone$,
-        with the arguments $\False$ (which conveys that this is a \texttt{repeat} statement), $\ve$, and $\vbody$
+        with the arguments $\False$ (which conveys that this is a \texttt{repeat} statement),
+        $\vlimitopttwo$,
+        $\ve$,
+        and $\vbody$
         results in $C$;
-  \item $\vgtwo$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge;
+  \item $\vgthree$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ and the graph of $C$
+        with the $\aslpo$ edge;
   \item the output configuration $D$ is the output configuration $C$ with its execution graph
-        substituted with $\vgtwo$.
+        substituted with $\vgthree$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\\\
-  \evalloop{\envone, \False, \ve, \vbody} \evalarrow C\\
-  \vgtwo \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
-  D \eqdef \withgraph{C}{\vgtwo}
+  \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynError\\\\
+  \ticklooplimit(\vlimitoptone) \evalarrow \vlimitopttwo \OrDynError\\\\
+  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgtwo, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\\\
+  \evalloop{\envone, \False, \vlimitopttwo, \ve, \vbody} \evalarrow C\\
+  \vgthree \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\graphof{C}}}\\
+  D \eqdef \withgraph{C}{\vgthree}
 }{
-  \evalstmt{\env, \overname{\SRepeat(\ve, \vbody, \Ignore)}{\vs}} \evalarrow D
+  \evalstmt{\env, \overname{\SRepeat(\ve, \vbody, \velimitopt)}{\vs}} \evalarrow D
 }
 \end{mathpar}
 \CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
@@ -1923,7 +2051,8 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derivesinline\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
-                    \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+                    \Nexpr \parsesep \Nlooplimit \parsesep \Tdo &\\
+                        & \wrappedline\ \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \Ndirection \derivesinline\ & \Tto \;|\; \Tdownto &
 \end{flalign*}
 
@@ -1952,8 +2081,9 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
     \begin{array}{r}
       \buildstmt\left(\overname{\Nstmt\left(
         \begin{array}{l}
-        \Tfor, \Tidentifier(\vindexname), \Teq, \namednode{\vstarte}{\Nexpr}, \Ndirection, \\
-        \wrappedline\ \namednode{\vende}{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend, \Tsemicolon
+        \Tfor, \Tidentifier(\vindexname), \Teq, \namednode{\vstarte}{\Nexpr},  \\
+        \wrappedline\ \Ndirection, \namednode{\vende}{\Nexpr}, \punnode{\Nlooplimit}, \Tdo, \\
+        \wrappedline\ \punnode{\Nstmtlist}, \Tend, \Tsemicolon
         \end{array}
         \right)}{\vparsednode}\right)
       \astarrow \\
@@ -1964,7 +2094,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
             \Forstarte &:& \astversion{\vstarte}\\
             \Forende &:& \astversion{\vende}\\
             \Forbody &:& \astof{\vstmtlist}\\
-            \Forlimit &:& \None\\
+            \Forlimit &:& \astof{\vlooplimit}\\
           \end{array}
             \right\}\right)
     }{\vastnode}
@@ -2015,7 +2145,7 @@ All of the following apply:
   \item annotating the right-hand-side expression $\vstarte$ in $\tenv$ yields \\
         $(\vstartt, \vstartep)$\ProseOrTypeError;
   \item annotating the right-hand-side expression $\vende$ in $\tenv$ yields $(\vendt, \vendep)$\ProseOrTypeError;
-  \item annotating the optional loop limit expression $\vlimit$ via $\annotatelooplimit$ in $\tenv$
+  \item annotating the optional loop limit expression $\vlimit$ via $\annotatelimitexpr$ in $\tenv$
         yields $\vlimitp$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vstartt$ in $\tenv$ yields $\vstartstruct$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vendt$ in $\tenv$ yields $\vendstruct$\ProseOrTypeError;
@@ -2040,7 +2170,7 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep) \OrTypeError\\\\
   \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep) \OrTypeError\\\\
-  \annotatelooplimit(\tenv, \vlimit) \typearrow \vlimitp \OrTypeError\\\\
+  \annotatelimitexpr(\tenv, \vlimit) \typearrow \vlimitp \OrTypeError\\\\
   \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
   {
@@ -2640,7 +2770,7 @@ does not result in any Assertion error, and the specification terminates with th
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{try} statement, $\STry(\vs, \catchers, \otherwiseopt)$;
-  \item evaluating $\vsone$ in $\env$ as per \chapref{Blocks}
+  \item evaluating $\vsone$ in $\env$ as per \chapref{BlockStatements}
   is a non-abnormal (that is, either $\Normal$ or $\Continuing$) configuration $\sm$\ProseOrAbnormal;
   \item evaluating $(\catchers, \otherwiseopt, \sm)$ as per \chapref{CatchingExceptions}
   is $C$, which is the result of the entire evaluation.

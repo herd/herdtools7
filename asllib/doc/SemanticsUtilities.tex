@@ -7,6 +7,10 @@ In this chapter, we define helper relations for operating on \nativevalues,
 
 We now define the following relations:
 \begin{itemize}
+  \item SemanticsRule.GetStackSize (see \secref{SemanticsRule.GetStackSize})
+  \item SemanticsRule.SetStackSize (see \secref{SemanticsRule.SetStackSize})
+  \item SemanticsRule.IncrStackSize (see \secref{SemanticsRule.IncrStackSize})
+  \item SemanticsRule.DecrStackSize (see \secref{SemanticsRule.DecrStackSize})
   \item SemanticsRule.RemoveLocal \secref{SemanticsRule.RemoveLocal};
   \item SemanticsRule.ReadIdentifier \secref{SemanticsRule.ReadIdentifier};
   \item SemanticsRule.WriteIdentifier \secref{SemanticsRule.WriteIdentifier};
@@ -22,6 +26,99 @@ We now define the following relations:
   \item SemanticsRule.DeclareLocalIdentifierM\secref{SemanticsRule.DeclareLocalIdentifierM};
   \item SemanticsRule.DeclareLocalIdentifierMM \secref{SemanticsRule.DeclareLocalIdentifierMM};
 \end{itemize}
+
+\subsubsection{SemanticsRule.GetStackSize\label{sec:SemanticsRule.GetStackSize}}
+\hypertarget{def-getstacksize}{}
+The function
+\[
+\getstacksize(\overname{\denv}{\dynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto \overname{\vs}{\N}
+\]
+retrieves the value associated with $\name$ in $\denv.\stacksize$ or $0$ if no value is associated with it.
+
+\subsubsection{Prose}
+define $\vs$ is $0$ if no value is associated with $\name$ in $\denv.\stacksize$ and the value bound to
+$\name$ in $\denv.\stacksize$ otherwise.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vs \eqdef \choice{\name \in \dom(\denv.\stacksize)}{\denv.\stacksize(\name)}{0}
+}{
+  \getstacksize(\denv, \name) \evalarrow \vs
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.SetStackSize\label{sec:SemanticsRule.SetStackSize}}
+\hypertarget{def-setstacksize}{}
+The function
+\[
+\setstacksize(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier} \aslsep \overname{\vv}{\N}) \aslto
+\overname{\newgenv}{\dynamicenvs}
+\]
+updates the value bound to $\name$ in $\genv.\storage$ to $\vv$, yielding the new global dynamic environment $\newgenv$.
+
+\subsubsection{Prose}
+define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\stacksize$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \setstacksize(\genv, \name, \vv) \evalarrow \overname{\genv.\stacksize[\name\mapsto\vv]}{\newgenv}
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.IncrStackSize\label{sec:SemanticsRule.IncrStackSize}}
+\hypertarget{def-incrstacksize}{}
+The function
+\[
+\incrstacksize(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto
+\overname{\newgenv}{\globaldynamicenvs}
+\]
+increments the value associated with $\name$ in $\genv.\stacksize$, yielding the updated global dynamic environment $\newgenv$.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item applying $\getstacksize$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
+  \item applying $\setstacksize$ to $\name$ and $\vprev + 1$ in $\genv$ yields $\newgenv$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \getstacksize((\genv, \emptyfunc)v, \name) \evalarrow \vprev\\
+  \setstacksize(\genv, \name, \vprev + 1) \evalarrow \newgenv
+}{
+  \incrstacksize(\genv, \name) \evalarrow \newgenv
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.DecrStackSize\label{sec:SemanticsRule.DecrStackSize}}
+\hypertarget{def-decrstacksize}{}
+The function
+\[
+\decrstacksize(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto
+\overname{\newgenv}{\globaldynamicenvs} \cup \overname{\newdenv}{\dynamicenvs}
+\]
+decrements the value associated with $\name$ in $\genv.\stacksize$, yielding the updated global dynamic environment $\newgenv$.
+It is assumed that $\getstacksize((\genv, \emptyfunc), \name)$ yields a positive value.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item applying $\getstacksize$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
+  \item applying $\setstacksize$ to $\name$ and $\vprev - 1$ in $\genv$ yields $\newgenv$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \getstacksize((\genv, \emptyfunc), \name) \evalarrow \vprev\\
+  \setstacksize(\genv, \name, \vprev - 1) \evalarrow \newgenv
+}{
+  \decrstacksize(\genv, \name) \evalarrow \newgenv
+}
+\end{mathpar}
 
 \subsubsection{SemanticsRule.RemoveLocal \label{sec:SemanticsRule.RemoveLocal}}
 \subsubsection{Prose}

@@ -165,20 +165,27 @@ We define the following types of \nativevalues:
 
 \hypertarget{def-dynamicenvs}{}
 \begin{definition}[Dynamic Environments\label{def:dynamicenvironments}]
-A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}, for short, is a structure which,
-associates \nativevalues\ to variables.
-Formally, a sequential environment $\denv \in \dynamicenvs$ is a pair consisting of a partial function
-(see \defref{PartialFunction}) from global
-variable names to their \nativevalue, and a partial function from local variable names to their
-\nativevalues:
+A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}
+$\denv \in \dynamicenvs$
+consists of a \emph{dynamic global environment} and a \emph{dynamic local environment}.
+In turn, a dynamic global environment maps identifiers corresponding to global storage elements to \nativevalues\
+via the $\storage$ map and identifiers corresponding to subprograms to natural numbers corresponding
+to the number of calls being evaluated for those subprograms.
+The dynamic local environment maps identifiers corresponding to local storage elements to \nativevalues:
 \[
 \begin{array}{rcl}
 \dynamicenvs        &\triangleq&  \globaldynamicenvs \times \localdynamicenvs \\
-\globaldynamicenvs  &\triangleq&  (\Identifiers \partialto \vals) \\
+\globaldynamicenvs  &\triangleq&  [\storage \mapsto (\Identifiers \partialto \vals),\; \stacksize \mapsto (\Identifiers \partialto \N)]\\
 \localdynamicenvs   &\triangleq&  (\Identifiers \partialto \vals) \\
 \end{array}
 \]
 \end{definition}
+
+\hypertarget{def-emptydenv}{}
+An empty dynamic environment $\emptydenv$ is defined as follows:
+\[
+\emptydenv \triangleq ([\storage \mapsto \emptyfunc, \stacksize \mapsto \emptyfunc], \emptyfunc) \enspace.
+\]
 
 \paragraph{Static Environments}
 A \emph{static environment} (see \secref{StaticEnvironments}) $\tenv \in \staticenvs$ (also referred to as a \emph{type environment})
@@ -519,7 +526,7 @@ to an output semantic configuration with the value resulting from the calculatio
 We annotate subexpressions to allow referring to them.
 
 \hypertarget{def-emptyenv}{}
-We write $\emptyenv$ to stand for a trivial environment (that is, one where all functions are empty).
+We define the empty environment $\emptyenv$ as $(\emptydenv, \emptytenv)$.
 
 Notice that, we have dropped the execution graph component and simplified pairs of the form $(\vv,\vg)$,
 where $\vv$ is a \nativevalue\  and $\vg$ is an execution graph, to just $\vv$.
@@ -534,8 +541,8 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \begin{mathpar}
   \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-    \inferrule*[right=\ref{sec:SemanticsRule.Lit}]{}{ \evalexpr{\emptyenv, \veone} \evalarrow \Normal(\nvint(1), \emptyenv) } \\\\
-    \inferrule*[right=\ref{sec:SemanticsRule.Lit}]{}{ \evalexpr{\emptyenv, \vetwo} \evalarrow \Normal(\nvint(2), \emptyenv) } \\\\
+    \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \veone} \evalarrow \Normal(\nvint(1), \emptyenv) } \\\\
+    \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vetwo} \evalarrow \Normal(\nvint(2), \emptyenv) } \\\\
     \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
   }
   {
@@ -546,8 +553,8 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \begin{mathpar}
   \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-    \inferrule*[right=\ref{sec:SemanticsRule.Lit}]{}{ \evalexpr{\emptyenv, \vefour} \evalarrow \Normal(\nvint(4), \emptyenv) } \\\\
-    \inferrule*[right=\ref{sec:SemanticsRule.Lit}]{}{ \evalexpr{\emptyenv, \vefive} \evalarrow \Normal(\nvint(5), \emptyenv) } \\\\
+    \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vefour} \evalarrow \Normal(\nvint(4), \emptyenv) } \\\\
+    \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vefive} \evalarrow \Normal(\nvint(5), \emptyenv) } \\\\
     \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
   }
   {

@@ -274,18 +274,19 @@ SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the left-ha
 All of the following apply:
 \begin{itemize}
     \item $\vle$ denotes a variable, $\LEVar(\vx)$;
+    \item view $\env$ as an environment where $\tenv$ is the static environment and $\denv$ is the dynamic environment;
     \item One of the following applies:
     \begin{itemize}
         \item All of the following apply (\textsc{local}):
         \begin{itemize}
-            \item $\vx$ is locally bound in $\env$;
-            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the local component of the environment.
+            \item $\vx$ is in the local dynamic environment ($L^\denv$);
+            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the local dynamic environment ($L^\denv$).
         \end{itemize}
 
         \item All of the following apply (\textsc{global}):
         \begin{itemize}
-            \item $\vx$ is globally bound in $\env$;
-            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the global component of the environment.
+            \item $\vx$ is bound in the global dynamic environment ($G^\denv.\storage$);
+            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
         \end{itemize}
     \end{itemize}
     \item $\newg$ is the ordered composition of $\vg$ and a Write Effect for $\vx$ with the $\asldata$ edge;
@@ -306,8 +307,8 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[global]{
   \env \eqname (\tenv, \denv)\\
-  \vx \in \dom(G^\denv)\\
-  \newenv \eqdef(\tenv, (G^\denv[\vx \mapsto \vv], L^\denv))\\
+  \vx \in \dom(G^\denv.\storage)\\
+  \newenv \eqdef(\tenv, (G^\denv.\storage[\vx \mapsto \vv], L^\denv))\\
   \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
 }{
   \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \Normal(\newg,\newenv)

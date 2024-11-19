@@ -11,8 +11,8 @@ Type declarations have no associated semantics.
 \section{Syntax\label{sec:TypeDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derivesinline\ & \productionname{typedecl}{type\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&\\
-|\ & \productionname{subtypedecl}{subtype\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&\\
+\Ndecl  \derivesinline\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&\\
+|\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&\\
 \Nsubtypeopt           \derivesinline\ & \option{\Nsubtype} &\\
 \Nsubtype \derivesinline\ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
             |\              & \Tsubtypes \parsesep \Tidentifier &\\

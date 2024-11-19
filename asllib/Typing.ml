@@ -2296,7 +2296,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin SWhile *)
     | S_While (e1, limit1, s1) ->
         let t, e2 = annotate_expr env e1 in
-        let limit2 = annotate_loop_limit ~loc env limit1 in
+        let limit2 = annotate_limit_expr ~loc env limit1 in
         let+ () = check_type_satisfies e2 env t boolean in
         let s2 = try_annotate_block env s1 in
         (S_While (e2, limit2, s2) |> here, env) |: TypingRule.SWhile
@@ -2304,7 +2304,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin SRepeat *)
     | S_Repeat (s1, e1, limit1) ->
         let s2 = try_annotate_block env s1 in
-        let limit2 = annotate_loop_limit ~loc env limit1 in
+        let limit2 = annotate_limit_expr ~loc env limit1 in
         let t, e2 = annotate_expr env e1 in
         let+ () = check_type_satisfies e2 env t boolean in
         (S_Repeat (s2, e2, limit2) |> here, env) |: TypingRule.SRepeat
@@ -2313,7 +2313,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_For { index_name; start_e; end_e; dir; body; limit } ->
         let start_t, start_e' = annotate_expr env start_e
         and end_t, end_e' = annotate_expr env end_e
-        and limit' = annotate_loop_limit ~warn:false ~loc env limit in
+        and limit' = annotate_limit_expr ~warn:false ~loc env limit in
         let start_struct = Types.make_anonymous env start_t
         and struct2 = Types.make_anonymous env end_t in
         (* TypingRule.ForConstraint( *)
@@ -2416,14 +2416,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     | S_Unreachable -> (s, env)
 
-  (* Begin AnnotateLoopLimit *)
-  and annotate_loop_limit ?(warn = true) ~loc env = function
+  (* Begin AnnotateLimitExpr *)
+  and annotate_limit_expr ?(warn = true) ~loc env = function
     | None ->
         let () = if warn then warn_from ~loc Error.NoLoopLimit in
         None
     | Some limit ->
         let limit' = annotate_static_constrained_integer ~loc env limit in
-        Some limit' |: TypingRule.AnnotateLoopLimit
+        Some limit' |: TypingRule.AnnotateLimitExpr
   (* End *)
 
   (* Begin Catcher *)
@@ -2653,7 +2653,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env = with_empty_local genv in
     (* Check recursion limit *)
     let recurse_limit =
-      annotate_loop_limit ~warn:false ~loc env func_sig.recurse_limit
+      annotate_limit_expr ~warn:false ~loc env func_sig.recurse_limit
     in
     (* Check parameters are declared correctly - in order and unique *)
     let+ () =
@@ -2712,7 +2712,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env = with_empty_local genv in
     (* Check recursion limit *)
     let recurse_limit =
-      annotate_loop_limit ~warn:false ~loc env func_sig.recurse_limit
+      annotate_limit_expr ~warn:false ~loc env func_sig.recurse_limit
     in
     (* Check parameters have defining arguments *)
     let inferred_parameters = extract_parameters ~env func_sig in

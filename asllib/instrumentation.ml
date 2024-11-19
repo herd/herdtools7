@@ -458,7 +458,7 @@ module TypingRule = struct
     | RenameTyEqs
     | TypeCheckMutuallyRec
     | DeclareSubprograms
-    | AnnotateLoopLimit
+    | AnnotateLimitExpr
     | CheckATC
     | CheckSlicesInWidth
     | DisjointSlicesToPositions
@@ -641,7 +641,7 @@ module TypingRule = struct
     | RenameTyEqs -> "RenameTyEqs"
     | TypeCheckMutuallyRec -> "TypeCheckMutuallyRec"
     | DeclareSubprograms -> "DeclareSubprograms"
-    | AnnotateLoopLimit -> "AnnotateLoopLimit"
+    | AnnotateLimitExpr -> "AnnotateLimitExpr"
     | CheckATC -> "CheckATC"
     | CheckSlicesInWidth -> "CheckSlicesInWidth"
     | DisjointSlicesToPositions -> "DisjointSlicesToPositions"
@@ -806,7 +806,7 @@ module TypingRule = struct
       RenameTyEqs;
       TypeCheckMutuallyRec;
       DeclareSubprograms;
-      AnnotateLoopLimit;
+      AnnotateLimitExpr;
       CheckATC;
       CheckSlicesInWidth;
       DisjointSlicesToPositions;

@@ -225,31 +225,37 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nast}{}
 \begin{flalign*}
-\Nast   \derives\ & \productionname{ast}{ast}\ \maybeemptylist{\Ndecl} &
+\Nast   \derives\ & \maybeemptylist{\Ndecl} &
+\end{flalign*}
+
+\hypertarget{def-nrecurselimit}{}
+\begin{flalign*}
+\Nrecurselimit   \derivesinline\ & \Trecurselimit \parsesep \Nexpr &\\
+|\              & \emptysentence &\\
 \end{flalign*}
 
 \hypertarget{def-ndecl}{}
 \hypertarget{def-funcdecl}{}
 \begin{flalign*}
-\Ndecl  \derivesinline\ & \productionname{funcdecl}{func\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &
+\Ndecl  \derivesinline\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep \Nfuncbody &
 \hypertarget{def-proceduredecl}{}\\
-|\ & \productionname{proceduredecl}{procedure\_decl}\ \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &
+|\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &
 \hypertarget{def-getter}{}\\
-|\ & \productionname{getter}{getter}\ \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&
+|\ & \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&
 \hypertarget{def-setter}{}\\
-|\ & \productionname{setter}{setter}\ \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
+|\ & \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
    & \wrappedline\ \parsesep \Nfuncbody &
 \hypertarget{def-typedecl}{}\\
-|\ & \productionname{typedecl}{type\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&
+|\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&
 \hypertarget{def-subtypedecl}{}\\
-|\ & \productionname{subtypedecl}{subtype\_decl}\ \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&
+|\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&
 \hypertarget{def-globalstorage}{}\\
-|\ & \productionname{globalstorage}{global\_storage}\ \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+|\ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
    & \wrappedline\ \Nexpr \parsesep \Tsemicolon &
 \hypertarget{def-globaluninitvar}{}\\
-|\ & \productionname{globaluninitvar}{global\_uninit\_var}\ \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&
+|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&
 \hypertarget{def-globalpragma}{}\\
-|\ & \productionname{globalpragma}{global\_pragma}\ \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+|\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
 \hypertarget{def-nsubtype}{}
@@ -369,14 +375,26 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
           |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
 \end{flalign*}
 
+\hypertarget{def-nloo}{}
+\begin{flalign*}
+\Ncatcher \derivesinline\ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+          |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\end{flalign*}
+
+\hypertarget{def-nlooplimit}{}
+\begin{flalign*}
+\Nlooplimit \derivesinline\ & \Tlooplimit \parsesep \Nexpr &\\
+          |\              & \emptysentence &\\
+\end{flalign*}
+
 \hypertarget{def-nstmt}{}
 \begin{flalign*}
 \Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-|\ & \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Twhile \parsesep \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+|\ & \Twhile \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
-                    \Nexpr \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+                    \Nexpr \parsesep \Nlooplimit \parsesep \Tdo &\\
+                    & \wrappedline\ \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tpass \parsesep \Tsemicolon &\\
 |\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &\\
@@ -393,8 +411,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &\\
-|\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tlooplimit \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &\\
 |\ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tthrow \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon &

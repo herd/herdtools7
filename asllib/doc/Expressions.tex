@@ -294,6 +294,7 @@ function calls) to global constant variables.
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a variable expression, that is, $\EVar(\vx)$;
+  \item view $\env$ as an environment where $\denv$ is the dynamic environment;
   \item One of the following applies:
   \begin{itemize}
     \item All of the following apply (\textsc{local}):
@@ -304,7 +305,7 @@ All of the following apply:
 
     \item All of the following apply (\textsc{global}):
     \begin{itemize}
-      \item $\vx$ is bound globally in $\env$;
+      \item $\vx$ is bound in the storage map of $\denv$;
       \item $\vv$ is the value of $\vx$ in the global component of $\env$;
     \end{itemize}
   \end{itemize}
@@ -325,9 +326,9 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[global]{
   \env \eqname (\Ignore, \denv)\\
-  \vx \in \dom(G^\denv)
+  \vx \in \dom(G^\denv.\storage)
 }{
-  \evalexpr{\env, \EVar(\vx)} \evalarrow \Normal((\overname{G^\denv(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
+  \evalexpr{\env, \EVar(\vx)} \evalarrow \Normal((\overname{G^\denv.\storage(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 \CodeSubsection{\EvalEVarBegin}{\EvalEVarEnd}{../Interpreter.ml}

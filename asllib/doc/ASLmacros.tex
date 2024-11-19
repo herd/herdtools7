@@ -172,7 +172,7 @@
 \newcommand\secref[1]{Section~\ref{sec:#1}}
 \newcommand\chapref[1]{Chapter~\ref{chap:#1}}
 \newcommand\partref[1]{Part~\ref{part:#1}}
-\newcommand\appendixref[1]{Appenfix~\ref{appendix:#1}}
+\newcommand\appendixref[1]{Appendix~\ref{appendix:#1}}
 \newcommand\secreflink[1]{\small\nameref{sec:#1}}
 \newcommand\prosesection[0]{\subsubsection{Prose}}
 \newcommand\ie{i.\,e.}
@@ -279,7 +279,8 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for terminal tokens
-\newcommand\Tlooplimit[0]{\verbatimterminal{LOOP\_LIMIT}{@looplimit}}
+\newcommand\Tlooplimit[0]{\verbatimterminal{LOOPLIMIT}{looplimit}}
+\newcommand\Trecurselimit[0]{\verbatimterminal{RECURSELIMIT}{recurselimit}}
 \newcommand\Tand[0]{\verbatimterminal{AND}{AND}}
 \newcommand\Tarray[0]{\verbatimterminal{ARRAY}{array}}
 \newcommand\Tarrow[0]{\verbatimterminal{ARROW}{=>}}
@@ -441,6 +442,8 @@
 \newcommand\Nunop[0]{\hyperlink{def-nunop}{\nonterminal{unop}}}
 \newcommand\Neelse[0]{\hyperlink{def-neelse}{\nonterminal{e\_else}}}
 \newcommand\Nfieldassign[0]{\hyperlink{def-nfieldassign}{\nonterminal{field\_assign}}}
+\newcommand\Nlooplimit[0]{\hyperlink{def-nlooplimit}{\nonterminal{loop\_limit}}}
+\newcommand\Nrecurselimit[0]{\hyperlink{def-nrecurselimit}{\nonterminal{recurse\_limit}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for defining associativity
@@ -673,8 +676,6 @@
 
 \newcommand\astarrow[0]{\xrightarrow{\textsf{ast}}}
 \newcommand\scanarrow[0]{\xrightarrow{\textsf{scan}}}
-%\newcommand\productionname[2]{[\hyperlink{build-#1}{\textsc{#2}}]}
-\newcommand\productionname[2]{}
 
 \newcommand\buildidentity[0]{\hyperlink{build-identity}{\textfunc{build\_identity}}}
 \newcommand\buildlist[0]{\hyperlink{build-list}{\textfunc{build\_list}}}
@@ -690,6 +691,8 @@
 \newcommand\builduntypeddeclitem[0]{\hyperlink{build-untypeddeclitem}{\textfunc{build\_untyped\_decl\_item}}}
 \newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}}
 \newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}}
+\newcommand\buildlooplimit[0]{\hyperlink{build-looplimit}{\textfunc{build\_looplimit}}}
+\newcommand\buildrecurselimit[0]{\hyperlink{build-recurselimit}{\textfunc{build\_recurselimit}}}
 \newcommand\desugarelidedparameter[0]{\hyperlink{def-desugarelidedparameter}{\textfunc{desugar\_elided\_parameter}}}
 \newcommand\buildstmt[0]{\hyperlink{build-stmt}{\textfunc{build\_stmt}}}
 \newcommand\buildexpr[0]{\hyperlink{build-expr}{\textfunc{build\_expr}}}
@@ -825,6 +828,7 @@
 \newcommand\funcbody[0]{\text{body}}
 \newcommand\funcreturntype[0]{\text{return\_type}}
 \newcommand\funcsubprogramtype[0]{\text{subprogram\_type}}
+\newcommand\funcrecurselimit[0]{\text{recurse\_limit}}
 \newcommand\funcbuiltin[0]{\text{builtin}}
 \newcommand\GDkeyword[0]{\text{keyword}}
 \newcommand\GDname[0]{\text{name}}
@@ -913,6 +917,9 @@
 \newcommand\dynamicenvs[0]{\hyperlink{def-dynamicenvs}{\mathbb{DE}}}
 \newcommand\localdynamicenvs[0]{\hyperlink{def-localdynamicenvs}{\mathbb{LDE}}}
 \newcommand\globaldynamicenvs[0]{\hyperlink{def-globaldynamicenvs}{\mathbb{GDE}}}
+\newcommand\emptydenv[0]{\hyperlink{def-emptydenv}{\emptyset_{\mathbb{DE}}}}
+\newcommand\storage[0]{\hyperlink{def-storage}{\textsf{storage}}}
+\newcommand\stacksize[0]{\hyperlink{def-stacksize}{\textsf{stack\_size}}}
 \newcommand\xgraph[0]{\textsf{g}}
 \newcommand\emptygraph[0]{{\hyperlink{def-emptygraph}{\emptyset_\xgraph}}}
 \newcommand\asldata[0]{\hyperlink{def-asldata}{\mathtt{asl\_data}}}
@@ -927,7 +934,7 @@
 \newcommand\WriteEffect[0]{\hyperlink{def-writeeffect}{\textsf{WriteEffect}}}
 \newcommand\ReadEffect[0]{\hyperlink{def-writeeffect}{\textsf{ReadEffect}}}
 
-\newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\emptyset_{\env}}}
+\newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\emptyset_{\mathbb{E}}}}
 \newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\parallel}}
 
@@ -989,7 +996,14 @@
 \newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\textfunc{find\_catcher}}}
 \newcommand\checknonoverlappingslices[0]{\hyperlink{def-checknonoverlappingslices}{\textfunc{check\_non\_overlapping\_slices}}}
 \newcommand\checktworangesnonoverlapping[0]{\hyperlink{def-checktworangesnonoverlapping}{\textfunc{check\_two\_ranges\_non\_overlapping}}}
+\newcommand\evallimit[0]{\hyperlink{def-evallimit}{\textfunc{eval\_limit}}}
+\newcommand\checkrecurselimit[0]{\hyperlink{def-checkrecurse}{\textfunc{check\_recurse\_limit}}}
+\newcommand\ticklooplimit[0]{\hyperlink{def-ticklooplimit}{\textfunc{tick\_loop\_limit}}}
 
+\newcommand\getstacksize[0]{\hyperlink{def-getstacksize}{\textfunc{get\_statck\_size}}}
+\newcommand\setstacksize[0]{\hyperlink{def-setstacksize}{\textfunc{set\_statck\_size}}}
+\newcommand\incrstacksize[0]{\hyperlink{def-incrstacksize}{\textfunc{incr\_statck\_size}}}
+\newcommand\decrstacksize[0]{\hyperlink{def-decrstacksize}{\textfunc{decr\_statck\_size}}}
 \newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
 \newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
 \newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\textfunc{declare\_local\_identifier\_mm}}}
@@ -1297,6 +1311,7 @@
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 
 % Glossary
+\newcommand\partialfunctionterm[0]{\hyperlink{def-partialfunctionterm}{partial function}}
 \newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
 \newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
 \newcommand\optional[0]{\hyperlink{def-optional}{optional}}
@@ -1390,7 +1405,7 @@
 \newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\textfunc{get\_variable\_enum}}}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\textfunc{annotate\_expr}}(#1)}
 \newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\textfunc{annotate\_exprs}}}
-\newcommand\annotatelooplimit[0]{\hyperlink{def-annotatelooplimit}{\textfunc{annotate\_loop\_limit}}}
+\newcommand\annotatelimitexpr[0]{\hyperlink{def-annotatelimitexpr}{\textfunc{annotate\_limit\_expr}}}
 \newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}(#1)}
 \newcommand\annotatearrayindex[0]{\textfunc{annotate\_array\_index}}
 \newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\textfunc{annotate\_slice}}}
@@ -1827,6 +1842,7 @@
 \newcommand\newcs[0]{\texttt{new\_cs}}
 \newcommand\newd[0]{\texttt{new\_d}}
 \newcommand\newdecls[0]{\texttt{new\_decls}}
+\newcommand\newdenv[0]{\texttt{new\_denv}}
 \newcommand\newe[0]{\texttt{new\_e}}
 \newcommand\newenv[0]{\texttt{new\_env}}
 \newcommand\newenvandfs[0]{\texttt{new\_env\_and\_fs}}
@@ -2095,6 +2111,8 @@
 \newcommand\vefour[0]{\texttt{e4}}
 \newcommand\vefourfive[0]{\texttt{e45}}
 \newcommand\velem[0]{\texttt{v\_elem}}
+\newcommand\velimit[0]{\texttt{e\_limit}}
+\newcommand\velimitopt[0]{\texttt{e\_limit\_opt}}
 \newcommand\velse[0]{\texttt{else}}
 \newcommand\velseexpr[0]{\texttt{else\_expr}}
 \newcommand\vend[0]{\texttt{v\_end}}
@@ -2164,6 +2182,7 @@
 \newcommand\vg[0]{\texttt{g}}
 \newcommand\vgfour[0]{\texttt{g4}}
 \newcommand\vlocal[0]{\texttt{local}}
+\newcommand\vlooplimit[0]{\texttt{looplimit}}
 \newcommand\vglobal[0]{\texttt{global}}
 \newcommand\vgone[0]{\texttt{g1}}
 \newcommand\vgp[0]{\texttt{g'}}
@@ -2209,6 +2228,10 @@
 \newcommand\vlexprs[0]{\texttt{lexprs}}
 \newcommand\vli[0]{\texttt{li}}
 \newcommand\vlimit[0]{\texttt{limit}}
+\newcommand\vlimitopt[0]{\texttt{limit\_opt}}
+\newcommand\vlimitoptp[0]{\texttt{limit\_opt'}}
+\newcommand\vlimitoptone[0]{\texttt{limit\_opt1}}
+\newcommand\vlimitopttwo[0]{\texttt{limit\_opt2}}
 \newcommand\vlimitexpr[0]{\texttt{limit\_expr}}
 \newcommand\vlimitone[0]{\texttt{limit1}}
 \newcommand\vlimitp[0]{\texttt{limit'}}
@@ -2251,9 +2274,11 @@
 \newcommand\vnonspassstmts[0]{\texttt{non\_spass\_stmts}}
 \newcommand\vo[0]{\texttt{o}}
 \newcommand\voptfields[0]{\texttt{opt\_fields}}
+\newcommand\voptlimit[0]{\texttt{opt\_limit}}
 \newcommand\votherwiseopt[0]{\texttt{otherwise\_opt}}
 \newcommand\vp[0]{\texttt{p}}
 \newcommand\vprefixcases[0]{\texttt{prefix\_cases}}
+\newcommand\vprev[0]{\texttt{prev}}
 \newcommand\vparam[0]{\texttt{param}}
 \newcommand\vparameters[0]{\texttt{parameters}}
 \newcommand\vparametersone[0]{\texttt{parameters1}}
@@ -2278,6 +2303,7 @@
 \newcommand\vr[0]{\texttt{r}}
 \newcommand\vre[0]{\texttt{re}}
 \newcommand\vrecord[0]{\texttt{v\_record}}
+\newcommand\vrecurselimit[0]{\texttt{recurse\_limit}}
 \newcommand\vreone[0]{\texttt{re1}}
 \newcommand\vres[0]{\texttt{res}}
 \newcommand\vret[0]{\texttt{ret}}
@@ -2299,6 +2325,7 @@
 \newcommand\vsp[0]{\texttt{s'}}
 \newcommand\vspp[0]{\texttt{s''}}
 \newcommand\vsstruct[0]{\texttt{s\_struct}}
+\newcommand\vstacksize[0]{\texttt{stack\_size}}
 \newcommand\vstart[0]{\texttt{v\_start}}
 \newcommand\vstarte[0]{\texttt{start\_e}}
 \newcommand\vstartep[0]{\texttt{start\_e'}}
@@ -2378,6 +2405,8 @@
 \newcommand\vvec[0]{\texttt{vec}}
 \newcommand\vvfields[0]{\texttt{v\_fields}}
 \newcommand\vvl[0]{\texttt{vl}}
+\newcommand\vvopt[0]{\texttt{v\_opt}}
+\newcommand\vvoptp[0]{\texttt{v\_opt'}}
 \newcommand\vvone[0]{\texttt{v1}}
 \newcommand\vvp[0]{\texttt{v'}}
 \newcommand\vvparams[0]{\texttt{vparams}}

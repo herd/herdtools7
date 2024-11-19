@@ -42,7 +42,6 @@ $A$ $B$                               & $A$ followed by $B$\\
 \texttt{$A$ - $B$}                    & $A$ but not $B$\\
 $A*$                                  & Zero or more repetitions of A\\
 $A+$                                  & One or more repetitions of A\\
-%\texttt{["a\_string"]}    & Any character in \texttt{a\_string}\\
 \texttt{"a\_string"}  & The string \texttt{a\_string} verbatim\\
 \texttt{<}r\texttt{>}     & The lexical regular expression defined for \texttt{<}r\texttt{>}\\
 \hline
@@ -456,7 +455,6 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{'['}, \texttt{'('}, \texttt{'.'}, \texttt{"<="}, \texttt{'\textasciicircum'}, \texttt{'*'}, \texttt{'/'}                          & $\actiontoken(\tokenid)$  \\
 \texttt{"=="}, \texttt{"||"}, \texttt{'+'}, \texttt{':'}, \texttt{"=>"},                          & $\actiontoken(\tokenid)$  \\
 \texttt{'\}'}, \texttt{"++"}, \texttt{'>'}, \texttt{"+:"}, \texttt{"*:"}, \texttt{';'}, \texttt{">="}                         & $\actiontoken(\tokenid)$  \\
-\texttt{"@looplimit"}                 & $\actiontoken(\tokenid)$  \\
 \hline
 \end{tabular}
 \end{center}
@@ -476,13 +474,12 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"for"}, \texttt{"func"}          & $\actiontoken(\tokenid)$ \\
 \texttt{"getter"}        & $\actiontoken(\tokenid)$ \\
 \texttt{"if"}, \texttt{"IN"}, \texttt{"integer"}       & $\actiontoken(\tokenid)$ \\
-\texttt{"let"}           & $\actiontoken(\tokenid)$ \\
-%"limit"}         & LIMIT \\
+\texttt{"let"}, \texttt{"looplimit"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"MOD"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"NOT"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"of"},      \texttt{"OR"},      \texttt{"otherwise"}                  & $\actiontoken(\tokenid)$ \\
 \texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}                      & $\actiontoken(\tokenid)$ \\
-\texttt{"real"},    \texttt{"record"},  \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
+\texttt{"real"},    \texttt{"record"},  \texttt{"recurselimit"}, \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
 \texttt{"setter"},  \texttt{"string"},  \texttt{"subtypes"}                   & $\actiontoken(\tokenid)$ \\
 \texttt{"then"},    \texttt{"throw"},   \texttt{"to"}, \texttt{"try"}         & $\actiontoken(\tokenid)$ \\
 \texttt{"TRUE"}          & $\actiontoken(\truetolit)$ \\
