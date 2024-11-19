@@ -1,8 +1,15 @@
 AArch64 A08
 Variant=pac
 
+<<<<<<< HEAD
 { 0:x0=x; int64_t 0:x1=42 }
 
 P0            ;
   pacda x0,x1 ;
   pacda x0,x1 ;
+=======
+{ 0:x0=pacda(x,42); int64_t 0:x1=42 }
+
+P0            ;
+  pacda x0,x1 ;
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)

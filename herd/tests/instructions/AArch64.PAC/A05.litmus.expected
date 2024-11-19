@@ -6,5 +6,9 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (fault(P0,PacCheck:DB))
 Observation A05 Always 1 0
+<<<<<<< HEAD
 Hash=efa569ed78eba108ea8f24f8428c8a0c
+=======
+Hash=ae39602e4ed36188a925d402f836408d
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)
 

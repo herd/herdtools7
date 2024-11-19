@@ -1,0 +1,11 @@
+AArch64 L035
+Variant=fpac
+{
+  0:x0=pacda(x, 42)
+}
+P0;
+  mov x1,x0;
+  autdza x0;
+
+locations[0:x1;]
+exists (~Fault(P0))

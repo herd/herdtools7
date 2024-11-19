@@ -1,0 +1,13 @@
+AArch64 check that a load has the correct event graph
+{
+  0:X0=pac(x, da, 0);
+  0:X1=pac(x, db, 0);
+  0:x10=x;
+  0:x11=y;
+}
+P0              ;
+   sub x0,x0,x1 ;
+   sub x10,x11,x10 ;
+
+exists
+(0:X0=0 /\ 0:x10=1)

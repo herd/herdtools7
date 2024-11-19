@@ -32,10 +32,13 @@ int check_fpac_variant(char* tname, int present);
 // Check if `FEAT_CONSTPACFIELD` is implemented
 int check_const_pac_field_variant(char* tname);
 
+<<<<<<< HEAD
 // Remove the PAC field in an instruction pointer
 void* strip_pauth_instruction(void* ptr);
 
 // Remove the PAC field in a data pointer
 void* strip_pauth_data(void* ptr);
 
+=======
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)
 #endif

@@ -1,0 +1,9 @@
+AArch64 test
+Variant=pac,fpac
+{0:x0=pacda(x,0)}
+
+P0;
+  mov x1,x0;
+  autdzb x0;
+
+exists ( (0:x1=x \/ 0:x0=pacdb(x,0)) /\ ~Fault(P0) )

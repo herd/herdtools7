@@ -2,7 +2,10 @@
 
 enum fault_type_t {
   FaultUndefinedInstruction,
+<<<<<<< HEAD
   FaultSupervisorCall,
+=======
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)
   FaultPacCheckIA,
   FaultPacCheckIB,
   FaultPacCheckDA,
@@ -19,7 +22,10 @@ enum fault_type_t {
 
 static const char *fault_type_names[] = {
   "UndefinedInstruction",
+<<<<<<< HEAD
   "SupervisorCall",
+=======
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)
   "PacCheck:IA",
   "PacCheck:IB",
   "PacCheck:DA",
@@ -43,8 +49,11 @@ static enum fault_type_t get_fault_type(unsigned long esr)
   ec = esr >> ESR_EL1_EC_SHIFT;
   if (ec == ESR_EL1_EC_UNKNOWN) {
     return FaultUndefinedInstruction;
+<<<<<<< HEAD
   } else if (ec == ESR_EL1_EC_SVC64) {
     return FaultSupervisorCall;
+=======
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)
   } else if (ec == ESR_EL1_EC_PAC) {
     return FaultPacCheckIA + (esr & 0x3U);
   } else {

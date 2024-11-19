@@ -62,6 +62,17 @@ type pteval = PteVal.ASL.t
 type instr = ASLBase.Instr.t
 type cst = (scalar, pteval, instr) Constant.t
 
+type predicate = ArchOp.no_predicate
+exception Constraint of predicate * cst * cst
+
+module ASLScalar = struct
+  include ASLScalar
+  let printable c = c
+end
+module Cst = SymbConstant.Make (ASLScalar) (PteVal.ASL) (ASLBase.Instr)
+
+let eq_cst = Cst.eq
+
 let pp_op = function
   | Divrm -> "DIVRM"
   | SetIndex i -> Printf.sprintf "Set[%d]" i

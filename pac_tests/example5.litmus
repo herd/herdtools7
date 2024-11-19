@@ -1,0 +1,16 @@
+AArch64 example.litmus
+Check that stores must wait the validation of aut*
+{
+0:X1=x; 0:X3=y; 0:X5=z;
+1:X1=y; 1:X3=x;
+}
+ P0          | P1          ;
+ MOV W0,#1   | LDR W0,[X1] ;
+             | DMB SY      ;
+ STR W0,[X1] | LDR W2,[X3] ;
+ PACDZA X5   |             ;
+ AUTDZA X5   |             ;
+ MOV W2,#1   |             ;
+ STR W2,[X3] |             ;
+exists
+(1:X0=1 /\ 1:X2=0)

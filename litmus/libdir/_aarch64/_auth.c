@@ -149,6 +149,7 @@ int check_const_pac_field_variant(char* tname) {
       return 0;
   }
 }
+<<<<<<< HEAD
 
 // Remove the PAC field in an instruction pointer
 void* strip_pauth_instruction(void* ptr) {
@@ -161,3 +162,5 @@ void* strip_pauth_data(void* ptr) {
   asm volatile("xpacd %[ptr]": [ptr] "+r" (ptr));
   return ptr;
 }
+=======
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)

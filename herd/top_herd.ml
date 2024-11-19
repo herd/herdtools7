@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Collision = CollisionSolver
+
 (** Top level loop : execute test according to model *)
 
 module type CommonConfig = sig
@@ -52,6 +54,7 @@ module Make(O:Config)(M:XXXMem.S) =
     module C = S.Cons
     module A = S.A
     module AM = A.Mixed(O)
+    module VC = S.M.VC
 
     module T = Test_herd.Make(A)
     module W = Warn.Make(O)
@@ -74,12 +77,12 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Cond checking *)
     module CM = C.Mixed(O)
 
-    let check_prop test =
+    let check_prop solver test =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
       let senv = S.size_env test
       and tenv = S.type_env test in
-      fun st -> CM.check_prop p tenv senv st
+      fun st -> CM.check_prop solver p tenv senv st
 
     let count_prop test =
       let c = T.find_our_constraint test in
@@ -232,9 +235,9 @@ module Make(O:Config)(M:XXXMem.S) =
       S.E.EventSet.subset loads obs
 
 (* Called by model simulator in case of success *)
-    let model_kont ochan test do_restrict cstr =
+    let model_kont solver ochan test do_restrict cstr =
 
-      let check = check_prop test in
+      let check = check_prop solver test in
 
       fun conc (st,flts) (set_pp,vbpp) flags c ->
         if do_observed && not (all_observed test conc) then c
@@ -253,109 +256,113 @@ module Make(O:Config)(M:XXXMem.S) =
             else A.map_state (A.V.map_const Constant.make_canonical) st in
           let st = A.map_state A.V.printable st in
           let fsc = st,flts in
-          let ok = check fsc in
-          let show_exec =
-            let open PrettyConf in
-            match O.show with
-            | ShowProp -> ok
-            | ShowNeg -> not ok
-            | ShowCond ->
-                begin
-                  match cstr with
-                  | ExistsState _|ForallStates _-> ok
-                  | NotExistsState _ -> not ok
-                end
-            | ShowWit ->
-                begin
-                  match cstr with
-                  | ExistsState _|NotExistsState _ -> ok
-                  | ForallStates _  -> not ok
-                end
-            | ShowAll -> true
-            | ShowNone -> false
-            | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
+          (* Fold over all the possible results of hash collisions *)
+          List.fold_right (fun (ok, solver) c ->
+            let st = A.map_state
+                (A.V.map_const (fun v -> S.M.VC.normalize v solver)) st in
+            let show_exec =
+              let open PrettyConf in
+              match O.show with
+              | ShowProp -> ok
+              | ShowNeg -> not ok
+              | ShowCond ->
+                  begin
+                    match cstr with
+                    | ExistsState _|ForallStates _-> ok
+                    | NotExistsState _ -> not ok
+                  end
+              | ShowWit ->
+                  begin
+                    match cstr with
+                    | ExistsState _|NotExistsState _ -> ok
+                    | ForallStates _  -> not ok
+                  end
+              | ShowAll -> true
+              | ShowNone -> false
+              | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
 
-          begin match ochan with
-          | Some (chan,_) when show_exec ->
-              let legend =
-                let pp_flag = match O.show with
-                | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
-                | _ -> "" in
-                let name = Test_herd.readable_name test in
-                let pp_model = sprintf "%s" (Model.pp M.model) in
-                if O.shortlegend then name
-                else if O.showkind then
-                  if PC.texmacros then
-                    sprintf
-                      "\\mylegendkind{%s}{%s}{%s}"
-                      name
-                      (C.dump_as_kind cstr)
-                      pp_model
-                  else
-                    sprintf "Test %s%s%s%s"
-                      name
-                      (sprintf ": %s" (C.dump_as_kind cstr))
-                      (match pp_model with
-                      | "" -> ""
-                      | _ -> sprintf " (%s)" pp_model)
-                      pp_flag
-                else begin
-                  if PC.texmacros then
-                    sprintf
-                      "\\mylegend{%s}{%s}"
-                      name
-                      pp_model
-                  else
-                    sprintf "Test %s%s%s" name
-                      (match pp_model with
-                      | "" -> ""
-                      | _ -> sprintf ", %s" pp_model)
-                      pp_flag
-                end in
-              let module PP = Pretty.Make(S) in
-              PP.dump_legend chan test legend conc
-                ~sets:(Lazy.force set_pp) (Lazy.force vbpp)
-          | _ -> ()
-          end ;
-          let fsc = do_restrict test fsc in
-          let r =
-            { cands = c.cands+1;
-              cfail = c.cfail;
-              states = A.StateSet.add fsc c.states;
-              pos = if ok then c.pos+1 else c.pos;
-              neg = if ok then c.neg else c.neg+1;
-              flagged = begin
-                let add flag k =
-                  let old = Flag.Map.safe_find [] flag k in
-                  Flag.Map.add flag (c.cands::old) k in
-                Flag.Set.fold add flags c.flagged;
-              end;
-              shown = if show_exec then c.shown+1 else c.shown;
-              reads =
-                if O.outcomereads then
-                  A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
-                else c.reads;
-              cutoff =  c.cutoff;
-            } in
-          if not O.badexecs && is_bad flags then raise (Over r) ;
-          let r = match O.nshow with
-          | None -> r
-          | Some m ->
-              if r.shown >= m then raise (Over r)
-              else r in
-          let stop_now =
-            match O.speedcheck  with
-            | Speed.True|Speed.False -> false
-            | Speed.Fast ->
-                begin match cstr with
-                | ExistsState _|NotExistsState _ -> ok
-                | ForallStates _ -> not ok
-                end in
-          if stop_now then raise (Over r) else r
+            begin match ochan with
+            | Some (chan,_) when show_exec ->
+                let legend =
+                  let pp_flag = match O.show with
+                  | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
+                  | _ -> "" in
+                  let name = Test_herd.readable_name test in
+                  let pp_model = sprintf "%s" (Model.pp M.model) in
+                  if O.shortlegend then name
+                  else if O.showkind then
+                    if PC.texmacros then
+                      sprintf
+                        "\\mylegendkind{%s}{%s}{%s}"
+                        name
+                        (C.dump_as_kind cstr)
+                        pp_model
+                    else
+                      sprintf "Test %s%s%s%s"
+                        name
+                        (sprintf ": %s" (C.dump_as_kind cstr))
+                        (match pp_model with
+                        | "" -> ""
+                        | _ -> sprintf " (%s)" pp_model)
+                        pp_flag
+                  else begin
+                    if PC.texmacros then
+                      sprintf
+                        "\\mylegend{%s}{%s}"
+                        name
+                        pp_model
+                    else
+                      sprintf "Test %s%s%s" name
+                        (match pp_model with
+                        | "" -> ""
+                        | _ -> sprintf ", %s" pp_model)
+                        pp_flag
+                  end in
+                let module PP = Pretty.Make(S) in
+                PP.dump_legend chan test legend conc
+                  ~sets:(Lazy.force set_pp) (Lazy.force vbpp)
+            | _ -> ()
+            end ;
+            let fsc = do_restrict test (st,flts,solver) in
+            let r =
+              { cands = c.cands+1;
+                cfail = c.cfail;
+                states = A.StateSet.add fsc c.states;
+                pos = if ok then c.pos+1 else c.pos;
+                neg = if ok then c.neg else c.neg+1;
+                flagged = begin
+                  let add flag k =
+                    let old = Flag.Map.safe_find [] flag k in
+                    Flag.Map.add flag (c.cands::old) k in
+                  Flag.Set.fold add flags c.flagged;
+                end;
+                shown = if show_exec then c.shown+1 else c.shown;
+                reads =
+                  if O.outcomereads then
+                    A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
+                  else c.reads;
+                cutoff =  c.cutoff;
+              } in
+            if not O.badexecs && is_bad flags then raise (Over r) ;
+            let r = match O.nshow with
+            | None -> r
+            | Some m ->
+                if r.shown >= m then raise (Over r)
+                else r in
+            let stop_now =
+              match O.speedcheck  with
+              | Speed.True|Speed.False -> false
+              | Speed.Fast ->
+                  begin match cstr with
+                  | ExistsState _|NotExistsState _ -> ok
+                  | ForallStates _ -> not ok
+                  end in
+            if stop_now then raise (Over r) else r
+        ) (check fsc) c
 
     (* Performed delayed checks and warnings *)
     let check_failed_model_kont
-          cutoff cs
+          cutoff cs solver
           ochan test do_restrict cstr
           conc (st,flts) (set_pp,vbpp) flags c  =
 
@@ -371,7 +378,7 @@ module Make(O:Config)(M:XXXMem.S) =
       | Some (Assign _)|None ->
           if not showcutoff && Misc.is_some cutoff then c
           else
-            model_kont
+            model_kont solver
               ochan test do_restrict cstr
               conc (st,flts) (set_pp,vbpp) flags c
 
@@ -400,9 +407,10 @@ module Make(O:Config)(M:XXXMem.S) =
         let dlocs = S.displayed_rlocations test
         and senv = S.size_env test
         and tenv = S.type_env test in
-        let fsc,flts = fsc in
+        let fsc,flts,solver = fsc in
         AM.state_restrict_locs O.outcomereads dlocs tenv senv fsc,
-        restrict_faults flts in
+        restrict_faults flts,
+        solver in
 
 (* Open *)
       let ochan = open_dot test in
@@ -427,7 +435,7 @@ module Make(O:Config)(M:XXXMem.S) =
       end else
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
-        let call_model conc ofail c =
+        let call_model conc ofail solver c =
         let check_test = M.check_event_structure test in
         (* Checked pruned executions before even calling model *)
         let cutoff =  S.find_cutoff conc.S.str.S.E.events in
@@ -438,12 +446,12 @@ module Make(O:Config)(M:XXXMem.S) =
         check_test
           conc kfail
           (check_failed_model_kont cutoff
-             ofail ochan test final_state_restrict_locs cstr) c in
+             ofail solver ochan test final_state_restrict_locs cstr) c in
       let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
              SL.check_event_structure test rfms kfail (fun _ c -> c)
-          (model_kont ochan test final_state_restrict_locs cstr) start
+          (model_kont S.M.VC.init_solver ochan test final_state_restrict_locs cstr) start
         else
         try iter_rfms test rfms owls call_model start
         with
@@ -468,7 +476,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Reduce final states, so as to show relevant locations only *)
       let finals =
         if O.outcomereads then
-          let do_restrict (st,flts) =
+          let do_restrict (st,flts,solver) =
             let st =
               A.rstate_filter
                 (fun rloc ->
@@ -477,7 +485,7 @@ module Make(O:Config)(M:XXXMem.S) =
                   | A.Location_global _ -> true
                   | A.Location_reg _ -> A.LocSet.mem loc c.reads)
                 st in
-                st,flts in
+                st,flts,solver in
           A.StateSet.map do_restrict c.states
         else c.states in
       let nfinals = A.StateSet.cardinal finals in

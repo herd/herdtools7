@@ -1,0 +1,14 @@
+AArch64 MP+dmb.st+pacdb.v2
+Variant=pac
+{
+  0:X1=x; 0:X3=y; 1:X1=x; 1:X3=y;
+}
+P0          | P1          ;
+MOV X0,#1   | LDR X2,[X3] ;
+STR X0,[X1] | PACDB X1,X2 ;
+DMB ST      |              ;
+MOV X2,#1   |              ;
+STR X2,[X3] | LDR X0,[X1] ;
+exists 1:X2=1 /\ 1:X0=0 /\ ~Fault(P1)
+(* Kind: when SCTLR_ELx.EnDB=1, Forbidden *)
+(*       when SCTLR_ELx.EnDB=0, Allowed   *)

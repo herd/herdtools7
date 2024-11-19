@@ -1,0 +1,13 @@
+AArch64 str failure
+{
+  0:x0=pacda(x,0);
+  uint64_t x = 0;
+}
+P0;
+  autdza x0;
+  mov x1,#4;
+  add x0,x0,x1;
+  pacdzb x0;
+  sub x0,x0,x1;
+exists
+( 0:x0=x )

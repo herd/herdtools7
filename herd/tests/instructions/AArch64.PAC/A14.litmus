@@ -5,5 +5,10 @@ Variant=pac
 
 P0            ;
   autdza x0   ;
+<<<<<<< HEAD
   ldr x1,[x0] ;
 forall (Fault(P0))
+=======
+forall
+  ( 0:x0=pacda(x, 0) )
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)

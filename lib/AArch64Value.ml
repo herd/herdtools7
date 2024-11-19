@@ -13,7 +13,6 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-
 module Make (C : sig
   val is_morello : bool
 end) : Value.AArch64 = struct
@@ -21,6 +20,18 @@ end) : Value.AArch64 = struct
   module AArch64Cst = SymbConstant.Make (Int64Scalar) (AArch64PteVal) (AArch64I)
   module NoCst = SymbConstant.Make (Int64Scalar) (PteVal.No) (AArch64I)
   module NoArchOp = ArchOp.No(NoCst)
+  module AArch64Op' = AArch64Op
   module AArch64Op = AArch64Op.Make(Int64Scalar)(NoArchOp)
   include SymbValue.Make (AArch64Cst) (AArch64Op)
+
+  let add_predicate b pred st =
+    let add_pred =
+      if b then PAC.add_equality else PAC.add_inequality in
+    match pred with
+    | AArch64Op'.Eq (p1,p2) ->
+        begin
+          match add_pred p1 p2 st.solver with
+          | Some solver -> Some {st with solver}
+          | None -> None
+        end
 end

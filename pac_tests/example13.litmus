@@ -1,0 +1,6 @@
+AArch64 cas instruction
+{ 0:x0=x; 0:x1=1; int x = 1; 0:x2=1 }
+
+P0               ;
+  cas x1,x2,[x0] ;
+forall ( [x]=1 /\ 0:x1=1 )

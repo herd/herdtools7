@@ -1,5 +1,6 @@
 Test A14 Required
 States 1
+<<<<<<< HEAD
  Fault(P0,x,MMU:Translation);
 Ok
 Witnesses
@@ -7,4 +8,13 @@ Positive: 1 Negative: 0
 Condition forall (fault(P0))
 Observation A14 Always 1 0
 Hash=8c780e41c667f762524255b6e643b85e
+=======
+0:X0=pacda(x, 0x0, 0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=pacda(x, 0x0, 0))
+Observation A14 Always 1 0
+Hash=44a5d20520bdadd90a158d8352318da5
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)
 

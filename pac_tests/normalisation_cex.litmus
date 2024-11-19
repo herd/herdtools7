@@ -1,0 +1,8 @@
+AArch64 normalisation_cex
+Variant=pac,fpac
+{ 0:x0=x; }
+
+P0;
+  nop;
+
+exists (0:x0=pacda(x,0))

@@ -40,7 +40,7 @@ and type evt_struct = E.event_structure) =
     module E = E
     module V = A.V
     module VC =
-      Valconstraint.Make
+      CollisionSolver.Make
         (struct
           let hexa = C.hexa
           let debug = C.debug
@@ -1730,6 +1730,12 @@ Monad type:
       | V.Undetermined ->
          (* Not ready yet add equation *)
          delay_op mk_c
+      | V.CollisionPAC _ ->
+         (* Solve PAC collisions in the solver *)
+         delay_op mk_c
+      | V.Constraint _ ->
+          (* Delay the resolution of the architecture specific constraints *)
+          delay_op mk_c
       | exn ->
          if C.debug.Debug_herd.exc then raise exn
          (* Delay failure *)

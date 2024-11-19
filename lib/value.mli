@@ -50,6 +50,9 @@ module type S =
       val pp : bool (* hexa *) -> v -> string
       val pp_unsigned : bool (* hexa *) -> v -> string
 
+      type predicate
+      exception Constraint of predicate * v * v
+
 (* Extracting constants and scalars *)
       val as_constant : v -> Cst.v option
       val as_scalar : v -> Cst.Scalar.t option
@@ -68,7 +71,7 @@ module type S =
       val freeze : csym -> Cst.v
 
 (* Equality (for constraint solver) is possible *)
-      val equalityPossible : v -> v -> bool
+      (* val equalityPossible : v -> v -> bool *)
 
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
@@ -97,6 +100,10 @@ module type S =
 
       exception Undetermined
 
+      (* The equality tests may raise an CollisionPAC execption to info the
+         solver that the result depend of the presence of a hash collision
+         between two PAC fields *)
+      exception CollisionPAC of PAC.t * PAC.t * v * v
 
 (* Bit-Twiddling Ops *)
       val bit_at: int -> v -> v
@@ -129,6 +136,18 @@ module type S =
       val map_const : (Cst.v -> Cst.v) -> v -> v
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
       val map_csym : (csym -> v) -> v -> v
+
+(* Functions to interact with a constraint solver *)
+      type solver_state =
+            { solver: PAC.solver_state (* Collision solver *)
+            ; solution: Cst.v Solution.t} (* Current variable assignation to constants *)
+      val add_equality : Cst.v -> Cst.v -> solver_state -> solver_state option
+      val add_inequality : Cst.v -> Cst.v -> solver_state -> solver_state option
+      val add_predicate : bool -> predicate -> solver_state -> solver_state option
+      val normalize : Cst.v -> solver_state -> Cst.v
+      val pp_solver_state : solver_state -> string
+      val compare_solver_state : solver_state -> solver_state -> int
+      val empty_solver : solver_state
     end
 
 module type AArch64 =
@@ -137,6 +156,7 @@ module type AArch64 =
   and type Cst.Instr.t = AArch64Base.instruction
   and type 'a arch_constr_op1 = 'a AArch64Op.unop
   and type 'a arch_constr_op = 'a AArch64Op.binop
+  and type predicate = AArch64Op.predicate
 
 module type AArch64ASL =
   AArch64

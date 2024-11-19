@@ -1,0 +1,9 @@
+AArch64 a
+Variant=vmsa,mte,async
+{
+  0:X1=x:green;
+  TTD(x)=(oa:PA(x),attributes:TaggedNormal);
+}
+P0         ;
+STR W0,[X1];
+

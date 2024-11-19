@@ -3,6 +3,7 @@ Variant=pac
 
 { 0:x0=x }
 
+<<<<<<< HEAD
 P0             ;
   pacdza x0    ;
   add x0,x0,#4 ;
@@ -10,3 +11,9 @@ P0             ;
   sub x0,x0,#4 ;
   ldr x1,[x0]  ;
 forall (Fault(P0))
+=======
+P0            ;
+  pacdza x0   ;
+forall
+  ( 0:x0=pacda(x, 0) )
+>>>>>>> ed519a87 (Add PAC to herd and litmus with collisions)

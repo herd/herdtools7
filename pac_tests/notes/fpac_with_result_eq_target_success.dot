@@ -1,0 +1,46 @@
+digraph G {
+
+
+/* legend */
+label="Test UDF, Generic[withcatdep](Unknown)";
+
+
+/* the unlocked events */
+subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
+eiid0 [label="a: W0:X0q=305419896\lproc:P0 poi:0\lUDF #1", shape="box", color="blue"];
+eiid1 [label="b: Branching(pred)((result[bottom_PAC_bit+:16]
+   != Replicate{1, (64 - bottom_PAC_bit)}(result[55+:1],
+        (64 - bottom_PAC_bit))))\lproc:P0 poi:0\lUDF #1", shape="box", color="blue"];
+eiid2 [label="c: Branching(pred)((__stdlib_local_x[0+:1] == '1'))\lproc:P0 poi:0\lUDF #1", shape="box", color="blue"];
+eiid3 [label="d: Branching(pred)((__stdlib_local_x[0+:1] == '1'))\lproc:P0 poi:0\lUDF #1", shape="box", color="blue"];
+eiid4 [label="e: R0:X1q=4294967295\lproc:P0 poi:0\lUDF #1", shape="box", color="blue"];
+eiid5 [label="f: R0:X0q=305419896\lproc:P0 poi:0\lUDF #1", shape="box", color="blue"];
+}
+
+/* the intra_causality_data edges */
+
+eiid4 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+eiid4 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
+eiid5 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+eiid5 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+eiid5 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
+eiid5 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+
+/* the intra_causality_control edges */
+eiid1 -> eiid0 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid2 -> eiid0 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid2 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid3 -> eiid0 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid3 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid3 -> eiid2 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid5 -> eiid0 [label="iico_order", color="darkgrey", fontcolor="darkgrey"];
+
+/* the poi edges */
+/* the rfmap edges */
+
+
+/* The viewed-before edges */
+eiid1 -> eiid0 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid2 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid3 -> eiid2 [label="iico_ctrl", color="grey", fontcolor="grey"];
+}
