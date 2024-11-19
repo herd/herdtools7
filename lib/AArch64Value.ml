@@ -13,7 +13,6 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-
 module Make (C : sig
   val is_morello : bool
 end) : Value.AArch64 = struct

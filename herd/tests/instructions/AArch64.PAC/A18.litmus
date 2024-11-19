@@ -1,9 +1,16 @@
 AArch64 A18
-Variant=pac,fpac,const-pac-field
+Variant=pauth1
+{
+  0:x0=x;
+  0:x1=y;
+  int64_t 0:x2=0;
+}
 
-{ 0:x0=x; int64_t x=42; int64_t 0:x1=42; int64_t 0:x2=0 }
-
-P0               ;
-  cas x1,x2,[x0] ;
-forall
-  ( ~Fault(P0, MMU:Translation) /\ [x]=0 /\ 0:x1=42 /\ 0:x2=0 )
+P0;
+pacdza x0;
+pacdza x1;
+cmp x0,x1;
+b.ne end;
+mov x2,#1;
+end:;
+forall(0:x2=0)

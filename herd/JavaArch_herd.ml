@@ -17,7 +17,7 @@
 (** Define Java architecture *)
 
 module Make (C:Arch_herd.Config) (V:Value.S) = struct
-  
+
   include JavaBase
 
   let is_amo _            = false
@@ -29,6 +29,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   module V = V
 
+  module CS = ConstraintSolver.No(V)
+
   include NoLevelNorTLBI
 
   include ArchExtra_herd.Make(C)
@@ -36,6 +38,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
         let arch = arch
         type instr = instruction
         module V = V
+        module CS = CS
         let endian            = endian
         type arch_reg         = reg
         let pp_reg            = pp_reg
@@ -49,4 +52,5 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
   module MemType=MemoryType.No
   module Barrier = AllBarrier.No(struct type a = barrier end)
   module CMO = Cmo.No
+
 end

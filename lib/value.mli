@@ -67,9 +67,6 @@ module type S =
       val as_symbol : v -> string
       val freeze : csym -> Cst.v
 
-(* Equality (for constraint solver) is possible *)
-      val equalityPossible : v -> v -> bool
-
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
       val equal : v -> v -> bool
@@ -97,7 +94,6 @@ module type S =
          type v are not determined enough to yield a result *)
 
       exception Undetermined
-
 
 (* Bit-Twiddling Ops *)
       val bit_at: int -> v -> v
@@ -133,6 +129,7 @@ module type S =
 
 (* Classify location values, will fail on non-address values *)
       val access_of_value : v -> Access.t
+
     end
 
 module type AArch64 =
