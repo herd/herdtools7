@@ -56,7 +56,7 @@ coupled with the derivation
 \begin{flalign*}
 \Nbinop \derives\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat \;|\; \Tcoloncolon
 \end{flalign*}
 
 A grammar containing these two derivations results in shift-reduce conflicts.
@@ -74,7 +74,7 @@ By defining the derivations of $\Nbinop$ as inlined, we achieve the same effect 
 \begin{flalign*}
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat \;|\;\Tcoloncolon
 \end{flalign*}
 
 Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
@@ -424,8 +424,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \Nlexpratom \derives\ & \Tidentifier &\\
 |\ & \Nlexpratom \parsesep \Nslices &\\
 |\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier &\\
-|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &\\
-|\ & \Tlbracket \parsesep \NClist{{\Nlexpratom}} \parsesep \Trbracket &
+|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &
 \end{flalign*}
 
 A $\Ndeclitem$ is another kind of left-hand-side expression,
@@ -474,7 +473,6 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexprpattern \parsesep \Nslices &\\
                     |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tidentifier&\\
                     |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
-                    |\  & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &\\
                     |\  & \Nexprpattern \parsesep \Tas \parsesep \Nty &\\
                     |\  & \Nexprpattern \parsesep \Tas \parsesep \Nconstraintkind &\\
                     |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
@@ -586,7 +584,6 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Nslices &\\
                     |\  & \Nexpr \parsesep \Tdot \parsesep \Tidentifier&\\
                     |\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
-                    |\  & \Tlbracket \parsesep \NClist{\Nexpr} \parsesep \Trbracket &\\
                     |\  & \Nexpr \parsesep \Tas \parsesep \Nty &\\
                     |\  & \Nexpr \parsesep \Tas \parsesep \Nconstraintkind &\\
                     |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
@@ -616,7 +613,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \begin{flalign*}
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                     |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat
+                     |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat \;|\; \Tcoloncolon
 \end{flalign*}
 
 \section{Parse Trees \label{sec:ParseTrees}}
@@ -714,7 +711,7 @@ which is never returned by the scanner.
 \Tbor, \Tband, \Timpl, \Tbeq, \Tas & \leftassoc\\
 \Teqop, \Tneq & \leftassoc\\
 \Tgt, \Tgeq, \Tlt, \Tleq & \nonassoc\\
-\Tplus, \Tminus, \Tor, \Txor, \Tand & \leftassoc\\
+\Tplus, \Tminus, \Tor, \Txor, \Tand, \Tcoloncolon & \leftassoc\\
 \Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr & \leftassoc\\
 \Tpow, \Tconcat & \leftassoc\\
 $\Tunops$ & \nonassoc\\

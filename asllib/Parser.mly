@@ -209,29 +209,30 @@ let unop ==
 let unimplemented_binop(x) == x ; { PLUS }
 
 let binop ==
-  | AND   ; { AND    }
-  | BAND  ; { BAND   }
-  | BOR   ; { BOR    }
-  | BEQ   ; { EQ_OP  }
-  | DIV   ; { DIV    }
-  | DIVRM ; { DIVRM  }
-  | EOR   ; { EOR    }
-  | EQ_OP ; { EQ_OP  }
-  | NEQ   ; { NEQ    }
-  | GT    ; { GT     }
-  | GEQ   ; { GEQ    }
-  | IMPL  ; { IMPL   }
-  | LT    ; { LT     }
-  | LEQ   ; { LEQ    }
-  | PLUS  ; { PLUS   }
-  | MINUS ; { MINUS  }
-  | MOD   ; { MOD    }
-  | MUL   ; { MUL    }
-  | OR    ; { OR     }
-  | RDIV  ; { RDIV   }
-  | SHL   ; { SHL    }
-  | SHR   ; { SHR    }
-  | POW   ; { POW    }
+  | AND         ; { AND    }
+  | BAND        ; { BAND   }
+  | BOR         ; { BOR    }
+  | BEQ         ; { EQ_OP  }
+  | DIV         ; { DIV    }
+  | DIVRM       ; { DIVRM  }
+  | EOR         ; { EOR    }
+  | EQ_OP       ; { EQ_OP  }
+  | NEQ         ; { NEQ    }
+  | GT          ; { GT     }
+  | GEQ         ; { GEQ    }
+  | IMPL        ; { IMPL   }
+  | LT          ; { LT     }
+  | LEQ         ; { LEQ    }
+  | PLUS        ; { PLUS   }
+  | MINUS       ; { MINUS  }
+  | MOD         ; { MOD    }
+  | MUL         ; { MUL    }
+  | OR          ; { OR     }
+  | RDIV        ; { RDIV   }
+  | SHL         ; { SHL    }
+  | SHR         ; { SHR    }
+  | POW         ; { POW    }
+  | COLON_COLON ; { BV_CONCAT }
   | unimplemented_binop(
     | CONCAT; <>
   )
@@ -267,7 +268,6 @@ let make_expr(sub_expr) ==
     | e=sub_expr; ~=slices;                                       < E_Slice              >
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
-    | ~=bracketed(nclist(expr));                                  < E_Concat             >
 
     | ~=sub_expr; AS; ~=ty;                                       < E_ATC                >
     | ~=sub_expr; AS; ~=implicit_t_int;                           < E_ATC                >
@@ -395,7 +395,6 @@ let lexpr_atom_desc :=
   | le=lexpr_atom; ~=slices; <LE_Slice>
   | le=lexpr_atom; DOT; field=IDENTIFIER; <LE_SetField>
   | le=lexpr_atom; DOT; li=bracketed(clist(IDENTIFIER)); { LE_SetFields (le, li, []) }
-  | les=bracketed(nclist(lexpr_atom)); { LE_Concat (les, None) }
 
 let lexpr_atom == annotated(lexpr_atom_desc)
 

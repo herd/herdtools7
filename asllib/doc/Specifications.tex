@@ -984,12 +984,6 @@ One of the following applies:
     \item define $\ids$ as the union of applying of $\usety$ to $\tty$ and applying $\usety$ to each field type in $\vli$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_concat}):
-  \begin{itemize}
-    \item $\ve$ is the concatenation of expression $\ves$;
-    \item define $\ids$ as the union of applying of $\useexpr$ to each expression in $\ves$.
-  \end{itemize}
-
   \item All of the following apply (\textsc{e\_tuple}):
   \begin{itemize}
     \item $\ve$ is the tuple construction expression for the expressions $\ves$;
@@ -1102,14 +1096,8 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[e\_concat]{}{
-  \useexpr(\overname{\EConcat(\ves)}{\ve}) \typearrow \overname{\bigcup_{\veone\in\ves}\useexpr(\veone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[e\_tuple]{}{
-  \useexpr(\overname{\EConcat(\ves)}{\ve}) \typearrow \overname{\bigcup_{\veone\in\ves}\useexpr(\veone)}{\ids}
+  \useexpr(\overname{\ETuple(\ves)}{\ve}) \typearrow \overname{\bigcup_{\veone\in\ves}\useexpr(\veone)}{\ids}
 }
 \end{mathpar}
 
@@ -1155,12 +1143,6 @@ One of the following applies:
     \item define $\ids$ as the union of applying $\uselexpr$ to each expression in $\vles$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_concat}):
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side concatenation of the list of expressions $\vles$;
-    \item define $\ids$ as the union of applying $\uselexpr$ to each expression in $\vles$.
-  \end{itemize}
-
   \item All of the following apply (\textsc{le\_discard}):
   \begin{itemize}
     \item $\vle$ is a left-hand-side discard expression;
@@ -1200,10 +1182,6 @@ One of the following applies:
 \and
 \inferrule[le\_destructuring]{}{
   \uselexpr(\overname{\LEDestructuring(\vles)}{\vle}) \typearrow \overname{\bigcup_{\ve\in\vles}\uselexpr(\ve)}{\ids}
-}
-\and
-\inferrule[le\_concat]{}{
-  \uselexpr(\overname{\LEConcat(\vles)}{\vle}) \typearrow \overname{\bigcup_{\ve\in\vles}\uselexpr(\ve)}{\ids}
 }
 \and
 \inferrule[le\_discard]{}{

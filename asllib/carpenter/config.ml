@@ -30,6 +30,7 @@ module type Syntax = sig
   val rdiv : bool
   val shl : bool
   val shr : bool
+  val bv_concat : bool
   val l_int : bool
   val l_bool : bool
   val l_real : bool
@@ -47,7 +48,6 @@ module type Syntax = sig
   val e_getfield : bool
   val e_getfields : bool
   val e_record : bool
-  val e_concat : bool
   val e_tuple : bool
   val e_unknown : bool
   val e_pattern : bool
@@ -90,7 +90,6 @@ module type Syntax = sig
   val le_setfield : bool
   val le_setfields : bool
   val le_destructuring : bool
-  val le_concat : bool
   val ldk_var : bool
   val ldk_let : bool
   val ldk_constant : bool
@@ -152,6 +151,7 @@ module All : Syntax = struct
   let rdiv = true
   let shl = true
   let shr = true
+  let bv_concat = true
   let l_int = true
   let l_bool = true
   let l_real = true
@@ -169,7 +169,6 @@ module All : Syntax = struct
   let e_getfield = true
   let e_getfields = true
   let e_record = true
-  let e_concat = true
   let e_tuple = true
   let e_unknown = true
   let e_pattern = true
@@ -212,7 +211,6 @@ module All : Syntax = struct
   let le_setfield = true
   let le_setfields = true
   let le_destructuring = true
-  let le_concat = true
   let ldk_var = true
   let ldk_let = true
   let ldk_constant = true
@@ -289,6 +287,7 @@ module Parse = struct
         ("rdiv", true);
         ("shl", true);
         ("shr", true);
+        ("bv_concat", true);
         ("l_int", true);
         ("l_bool", true);
         ("l_real", true);
@@ -306,7 +305,6 @@ module Parse = struct
         ("e_getfield", true);
         ("e_getfields", true);
         ("e_record", true);
-        ("e_concat", true);
         ("e_tuple", true);
         ("e_unknown", true);
         ("e_pattern", true);
@@ -349,7 +347,6 @@ module Parse = struct
         ("le_setfield", true);
         ("le_setfields", true);
         ("le_destructuring", true);
-        ("le_concat", true);
         ("ldk_var", true);
         ("ldk_let", true);
         ("ldk_constant", true);
@@ -411,6 +408,7 @@ module Parse = struct
       let rdiv = Tbl.find tbl "rdiv"
       let shl = Tbl.find tbl "shl"
       let shr = Tbl.find tbl "shr"
+      let bv_concat = Tbl.find tbl "bv_concat"
       let l_int = Tbl.find tbl "l_int"
       let l_bool = Tbl.find tbl "l_bool"
       let l_real = Tbl.find tbl "l_real"
@@ -428,7 +426,6 @@ module Parse = struct
       let e_getfield = Tbl.find tbl "e_getfield"
       let e_getfields = Tbl.find tbl "e_getfields"
       let e_record = Tbl.find tbl "e_record"
-      let e_concat = Tbl.find tbl "e_concat"
       let e_tuple = Tbl.find tbl "e_tuple"
       let e_unknown = Tbl.find tbl "e_unknown"
       let e_pattern = Tbl.find tbl "e_pattern"
@@ -471,7 +468,6 @@ module Parse = struct
       let le_setfield = Tbl.find tbl "le_setfield"
       let le_setfields = Tbl.find tbl "le_setfields"
       let le_destructuring = Tbl.find tbl "le_destructuring"
-      let le_concat = Tbl.find tbl "le_concat"
       let ldk_var = Tbl.find tbl "ldk_var"
       let ldk_let = Tbl.find tbl "ldk_let"
       let ldk_constant = Tbl.find tbl "ldk_constant"

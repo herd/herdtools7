@@ -316,7 +316,7 @@ Required tests:
   $ aslref bitvectors.asl
   $ aslref case.asl
   $ aslref concat-empty.asl
-  File concat-empty.asl, line 3, characters 46 to 47:
+  File concat-empty.asl, line 3, characters 45 to 46:
   ASL Error: Cannot parse.
   [1]
   $ aslref concat01.asl
@@ -335,8 +335,6 @@ Required tests:
   $ aslref func7.asl
   $ aslref global_vars.asl
   $ aslref global_vars-02.asl
-  $ aslref lexpr-concat.asl
-  $ aslref --no-exec lexpr-concat-2.asl
   $ aslref masks.asl
   $ aslref more-assignments-examples.asl
   $ aslref more-invocation-examples.asl

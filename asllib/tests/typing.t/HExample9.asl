@@ -45,7 +45,7 @@ end;
 
 func AmmendZero{N}(op : bits(N)) => bits(N)
 begin
-    return ['0', op[N-2:0]];
+    return '0' :: op[N-2:0];
 end;
 
 func NPlusM{M,N}(op1 : bits(M), op2 : bits(N)) => bits(M+N)

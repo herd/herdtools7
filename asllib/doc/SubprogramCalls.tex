@@ -504,15 +504,6 @@ One of the following applies:
     \item define $\newe$ as the conditional expression for expressions $\veonep$, $\vetwop$, and $\vethreep$, that is, $\ECond(\veonep, \vetwop, \vethreep)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_concat}):
-  \begin{itemize}
-    \item $\ve$ is the concatenation of expressions $\ves$, that is, $\EConcat(\ves)$;
-    \item applying $\substexpr$ to $\substs$ and every expression $\ves[\vi]$, for $\vi$ in \\
-          $\listrange(\ves)$ yields $\newes_\vi$;
-    \item define $\vesp$ as the list of expressions $\newes_\vi$, for $\vi$ in $\listrange(\ves)$;
-    \item define $\newe$ as the concatenation of expressions $\vesp$, that is, $\EConcat(\vesp)$.
-  \end{itemize}
-
   \item All of the following apply (\textsc{e\_call}):
   \begin{itemize}
     \item $\ve$ is the call expression for subprogram $\vx$ with arguments $\vargs$ and parameter expressions $\paramargs$,
@@ -657,15 +648,6 @@ One of the following applies:
   \substexpr(\tenv, \substs, \vethreep) \typearrow \vethreep\\
 }{
   \substexpr(\tenv, \substs, \overname{\ECond(\veone, \vetwo, \vethree)}{\ve}) \typearrow \overname{\ECond(\veonep, \vetwop, \vethreep)}{\newe}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_concat]{
-  \vi\in\listrange(\ves): \substexpr(\tenv, \substs, \ves[\vi]) \typearrow \newes_\vi\\
-  \vesp \eqdef [\vi\in\listrange(\ves): \newes_\vi]
-}{
-  \substexpr(\tenv, \substs, \overname{\EConcat(\ves)}{\ve}) \typearrow \overname{\EConcat(\vesp)}{\newe}
 }
 \end{mathpar}
 

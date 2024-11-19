@@ -920,17 +920,6 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vargsone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_concat}):
-  \begin{itemize}
-    \item $\veone$ is a concatenation expression with $\vlone$, that is, $\EConcat(\vlone)$;
-    \item $\vetwo$ is a concatenation expression with $\vltwo$, that is, $\EConcat(\vltwo)$;
-    \item checking whether the lists of expressions $\vlone$ and $\vltwo$ have the same length yields
-          $\True$ or $\False$, which short-circuits the entire rule;
-    \item for each index $i$ in the list of indices for $\vlone$, testing whether $\vlone[i]$ is equivalent to $\vltwo[i]$
-          in $\tenv$ yields $\vb_i$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vlone$.
-  \end{itemize}
-
   \item All of the following apply (\textsc{e\_cond}):
   \begin{itemize}
     \item $\veone$ is a conditional expression with expressions $\veoneone$, $\veonetwo$, and $\veonethree$,
@@ -1106,18 +1095,6 @@ One of the following applies:
   \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
   i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i \OrTypeError\\\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
-}{
-  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[e\_concat]{
-  \veone = \EConcat(\vlone)\\
-  \vetwo = \EConcat(\vltwo)\\\\
-  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
-  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i \OrTypeError\\\\
-  \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }

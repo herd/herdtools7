@@ -477,6 +477,7 @@
 \newcommand\BAND[0]{\hyperlink{ast-band}{\texttt{BAND}}} % Boolean and
 \newcommand\BEQ[0]{\hyperlink{ast-beq}{\texttt{BEQ}}} % Boolean equivalence
 \newcommand\BOR[0]{\hyperlink{ast-bor}{\texttt{BOR}}} % Boolean or
+\newcommand\BVCONCAT[0]{\hyperlink{ast-bvconcat}{\texttt{BV\_CONCAT}}} % Concatenation for bit vectors
 \newcommand\DIV[0]{\hyperlink{ast-div}{\texttt{DIV}}} % Integer division
 \newcommand\DIVRM[0]{\hyperlink{ast-divrm}{\texttt{DIVRM}}} % Inexact integer division, with rounding towards negative infinity.
 \newcommand\XOR[0]{\hyperlink{ast-xor}{\texttt{XOR}}} % Bitvector bitwise exclusive or
@@ -553,14 +554,12 @@
 \newcommand\EGetItem[0]{\hyperlink{ast-egetitem}{\textsf{E\_GetItem}}}
 \newcommand\EGetFields[0]{\hyperlink{ast-getfields}{\textsf{E\_GetFields}}}
 \newcommand\ERecord[0]{\hyperlink{ast-erecord}{\textsf{E\_Record}}}
-\newcommand\EConcat[0]{\hyperlink{ast-econcat}{\textsf{E\_Concat}}}
 \newcommand\EArray[0]{\hyperlink{ast-earray}{\textsf{E\_Array}}}
 \newcommand\ETuple[0]{\hyperlink{ast-etuple}{\textsf{E\_Tuple}}}
 \newcommand\EUnknown[0]{\hyperlink{ast-eunknown}{\textsf{E\_Unknown}}}
 \newcommand\EPattern[0]{\hyperlink{ast-epattern}{\textsf{E\_Pattern}}}
 
 % Left-hand-side expression labels
-\newcommand\LEConcat[0]{\hyperlink{ast-leconcat}{\textsf{LE\_Concat}}}
 \newcommand\LEDiscard[0]{\hyperlink{ast-lediscard}{\textsf{LE\_Discard}}}
 \newcommand\LEVar[0]{\hyperlink{ast-levar}{\textsf{LE\_Var}}}
 \newcommand\LESlice{\hyperlink{ast-leslice}{\textsf{LE\_Slice}}}
@@ -1246,6 +1245,7 @@
 \newcommand\xorbits[0]{\hyperlink{def-xorbits}{\text{xor\_bits}}}
 \newcommand\eqbits[0]{\hyperlink{def-eqbits}{\text{eq\_bits}}}
 \newcommand\nebits[0]{\hyperlink{def-nebits}{\text{ne\_bits}}}
+\newcommand\concatbits[0]{\hyperlink{def-concatbits}{\text{concat\_bits}}}
 
 \newcommand\negateint[0]{\hyperlink{def-negateint}{\text{negate\_int}}}
 \newcommand\addint[0]{\hyperlink{def-addint}{\text{add\_int}}}
@@ -2398,6 +2398,7 @@
 \newcommand\vwidth[0]{\texttt{width}}
 \newcommand\vwidths[0]{\texttt{widths}}
 \newcommand\vwone[0]{\texttt{w1}}
+\newcommand\vwp[0]{\texttt{w'}}
 \newcommand\vwtwo[0]{\texttt{w2}}
 \newcommand\vwzero[0]{\texttt{w0}}
 \newcommand\vx[0]{\texttt{x}}

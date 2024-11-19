@@ -121,10 +121,16 @@ let do_op op c1 c2 =
         Some (Constant.ConcreteRecord record')
       else None
   | Concat ->
-      let* s1 = as_concrete c1 in
-      let* s2 = as_concrete c2 in
-      let* s = ASLScalar.try_concat s1 s2 in
-      return_concrete s
+      let is_empty s = s = ASLScalar.S_BitVector Asllib.Bitvector.empty in
+      (match (as_concrete c1, as_concrete c2) with
+      | (Some s, _) when is_empty s ->
+          Some c2
+      | (_, Some s) when is_empty s ->
+          Some c1
+      | (Some s1, Some s2) ->
+        let* s = ASLScalar.try_concat s1 s2 in
+        return_concrete s
+      | _ -> None)
   | BVSliceSet positions ->
       let* s1 = as_concrete c1 in
       let* s2 = as_concrete c2 in

@@ -931,15 +931,6 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[concat]{
-    \buildclist[\buildexpr](\vexprs) \astarrow \vexprasts
-  }{
-  \buildexprpattern(\Nexprpattern(\Tlbracket, \namednode{\vexprs}{\NClist{\Nexpr}}, \Trbracket)) \astarrow
-  \overname{\EConcat(\vexprasts)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
   \inferrule[atc]{}{
     {
       \begin{array}{r}

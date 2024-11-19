@@ -68,6 +68,7 @@ module Untyped (C : Config.S) = struct
       (if C.Syntax.rdiv then Some RDIV else None);
       (if C.Syntax.shl then Some SHL else None);
       (if C.Syntax.shr then Some SHR else None);
+      (if C.Syntax.bv_concat then Some BV_CONCAT else None);
     ]
     |> protected_filter_oneofl
 
@@ -531,7 +532,9 @@ module Typed (C : Config.S) = struct
             [| PLUS; MINUS; MUL |] |> oneofa |> map (fun op -> (op, real, real))
         | T_Bits _ ->
             [
-              [| AND; OR; EOR |] |> oneofa |> map (fun op -> (op, ty, ty));
+              [| AND; OR; EOR; BV_CONCAT |]
+              |> oneofa
+              |> map (fun op -> (op, ty, ty));
               [| PLUS; MINUS |] |> oneofa |> map (fun op -> (op, ty, integer));
             ]
             |> oneof
@@ -611,10 +614,6 @@ module Typed (C : Config.S) = struct
       | [] -> None
       | li -> Some (oneof li)
     in
-    let e_concat expr env n : expr gen =
-      Nat.list_sized_non_empty (fun n -> t_bits >>= fun t -> expr (env, t, n)) n
-      >|= fun li -> E_Concat li |> annot
-    in
     let expr' =
       fix @@ fun expr (env, ty, n) ->
       let () =
@@ -641,9 +640,6 @@ module Typed (C : Config.S) = struct
         (if C.Syntax.e_tuple && n >= 1 then e_tuple expr env ty_anon n else None);
         (if C.Syntax.e_slice && n >= 1 && is_bits ty_anon then
            Some (e_slices expr env n)
-         else None);
-        (if C.Syntax.e_concat && n >= 2 && is_bits ty_anon then
-           Some (e_concat expr env n)
          else None);
         (if C.Syntax.e_ctc then e_ctc expr env ty ty_anon n else None);
         (if C.Syntax.e_record && n >= 2 then
@@ -826,15 +822,6 @@ module Typed (C : Config.S) = struct
         IMap.fold type_folder env.StaticEnv.global.declared_types [] |> function
         | [] -> None
         | li -> Some (oneof li)
-      and le_concat lexpr env ty n =
-        match ty.desc with
-        | T_Bits _ ->
-            Some
-              ( Nat.list_sized_non_empty
-                  (fun n -> t_bits >>= fun t -> lexpr (env, t, n))
-                  n
-              >|= fun li -> LE_Concat (li, None) |> annot )
-        | _ -> None
       and le_slices lexpr env ty n =
         match ty.desc with
         | T_Bits _ ->
@@ -854,10 +841,9 @@ module Typed (C : Config.S) = struct
       [
         (if C.Syntax.le_discard then Some le_discard else None);
         (if C.Syntax.le_var then le_var env ty_anon else None);
-        (if C.Syntax.le_concat then le_tuple lexpr env ty_anon n else None);
-        (if C.Syntax.le_setfield && n >= 1 then le_set_field lexpr env ty_anon n
+        (if C.Syntax.le_destructuring then le_tuple lexpr env ty_anon n
          else None);
-        (if C.Syntax.le_concat && n >= 1 then le_concat lexpr env ty_anon n
+        (if C.Syntax.le_setfield && n >= 1 then le_set_field lexpr env ty_anon n
          else None);
         (if C.Syntax.le_slice && n >= 1 then le_slices lexpr env ty_anon n
          else None);

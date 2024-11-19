@@ -86,6 +86,7 @@ type binop =
   | RDIV  (** Division for reals *)
   | SHL  (** Shift left for ints *)
   | SHR  (** Shift right for ints *)
+  | BV_CONCAT  (** Bit vector concatenation *)
 
 (* -------------------------------------------------------------------------
 
@@ -152,7 +153,6 @@ type expr_desc =
   | E_GetItem of expr * int
   | E_Record of ty * (identifier * expr) list
       (** Represents a record or an exception construction expression. *)
-  | E_Concat of expr list
   | E_Tuple of expr list
   | E_Array of { length : expr; value : expr }
       (** Initial value for an array of size [length] and of content [value] at
@@ -283,8 +283,6 @@ type lexpr_desc =
   | LE_SetFields of lexpr * identifier list * (int * int) list
       (** LE_SetFields (le, fields, _) unpacks the various fields. Third argument is a type annotation. *)
   | LE_Destructuring of lexpr list
-  | LE_Concat of lexpr list * expr list option
-      (** LE_Concat (les, _) unpacks the various lexpr. Second argument is a type annotation. *)
 
 and lexpr = lexpr_desc annotated
 

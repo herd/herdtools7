@@ -384,8 +384,7 @@ module Domain = struct
       | E_Record _ | E_Tuple _ ->
           (* Not supported: aggregate types. *)
           assert_under approx acc
-      | E_ATC (_, _) | E_Slice (_, _) | E_Pattern (_, _) | E_Call _ | E_Concat _
-        ->
+      | E_ATC (_, _) | E_Slice (_, _) | E_Pattern (_, _) | E_Call _ ->
           (* Not yet implemented *)
           assert_under approx acc
 

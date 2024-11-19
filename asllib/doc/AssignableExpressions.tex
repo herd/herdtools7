@@ -17,7 +17,6 @@ We then define the abstract syntax, typing, and semantics of the different kinds
 \item Bitvector slice assignment expressions (see \secref{BitvectorSliceAssignmentExpressions})
 \item Bitfield assignment expressions (see \secref{BitfieldAssignmentExpressions})
 \item Structured type field assignment Expressions (see \secref{StructuredTypeFieldAssignmentExpressions})
-\item Multi-slice assignment expressions (see \secref{MultiSliceAssignmentExpressions})
 \end{itemize}
 
 \hypertarget{def-annotatelexpr}{}
@@ -68,8 +67,7 @@ using $\texttt{eval\_expr}$ to evaluate it.
 \Nlexpratom \derives\ & \Tidentifier &\\
 |\ & \Nlexpratom \parsesep \Nslices &\\
 |\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier{\field} &\\
-|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &\\
-|\ & \Tlbracket \parsesep \NClist{{\Nlexpratom}} \parsesep \Trbracket &
+|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &
 \end{flalign*}
 
 \subsection{Abstract Syntax Builders\label{sec:AssignableExpressionsAbstractSyntaxBuilders}}
@@ -140,19 +138,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tdot, \Tlbracket, \namednode{\vfields}{\Clist{\Tidentifier}}, \Trbracket)) \astarrow\\
   \overname{\LESetFields(\astof{\vlexpratom}, \vfieldasts)}{\vastnode}
   \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[concat]{
-  \buildclist[\buildlexpratom](\vlexprs) \astarrow \vlexprasts
-}{
-  {
-    \begin{array}{r}
-  \buildlexpratom(\Nlexpr(\Tlbracket, \namednode{\vlexprs}{\NClist{{\Nlexpratom}}}, \Trbracket)) \astarrow\\
-  \overname{\LEConcat(\vlexprasts)}{\vastnode}
-    \end{array}
   }
 }
 \end{mathpar}
@@ -1003,118 +988,3 @@ implemented using the following Read-Modify-Write (RMW) behavior:
     getter invocation
     \item invoking the setter to assign the resulting value
 \end{itemize}
-
-\section{Multi-slice Assignment Expressions\label{sec:MultiSliceAssignmentExpressions}}
-\subsection{Abstract Syntax}
-\begin{flalign*}
-\lexpr \derives\ & \LEConcat(\lexpr^+) &
-\end{flalign*}
-
-\subsection{Typing}
-\subsubsection{TypingRule.LEConcat\label{sec:TypingRule.LEConcat}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\vle$ denotes the concatenation of left-hand-side expressions $\les$, that is, \\ $\LEConcat(\les, \Ignore)$;
-  \item annotating the right-hand-side expression corresponding to $\vle$ in $\tenv$ yields \\ $(\vteeq, \Ignore)$\ProseOrTypeError;
-  \item checking whether the bitwidth of $\vteeq$ equals the bitwidth of $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\les$ is the list of left-hand-side expressions $\vle_i$, for $i=1..k$;
-  \item annotating each left-hand-side expression $\vle_i$ as a bitvector-typed expression (via $\annotatelebitslice$)
-        yields the annotated left-hand-side expression $\vleone_i$ and corresponding bitwidth $\width_i$, for $i=1..k$;
-  \item $\lesone$ is defined as the list $\vleone_{1..k}$;
-  \item $\widths$ is defined as the list $\width_{1..k}$;
-  \item $\newle$ is the concatenation of left-hand-side expressions $\lesone$ with corresponding list of widths $\widths$.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \vle \eqname \LEConcat(\les, \Ignore)\\
-  \annotateexpr{\tenv, \torexpr(\vle)} \typearrow (\vteeq, \Ignore) \OrTypeError\\\\
-  \checkbitsequalwidth(\tenv, \vteeq, \vte) \typearrow \True \OrTypeError\\\\
-  \les \eqname \vle_{1..k}\\
-  i=1..k: \annotatelebitslice(\tenv, \vle_i) \typearrow (\vleone_i, \width_i) \OrTypeError\\\\
-  \lesone \eqdef \vleone_{1..k}\\
-  \widths \eqdef \width_{1..k}
-}{
-  \annotatelexpr{\tenv, \vle, \vte} \typearrow \overname{\LEConcat(\lesone, \widths)}{\newle}
-}
-\end{mathpar}
-\CodeSubsection{\LEConcatBegin}{\LEConcatEnd}{../Typing.ml}
-
-\subsubsection{TypingRule.LEBitSlice\label{sec:TypingRule.LEBitSlice}}
-\hypertarget{def-annotatelebitsice}{}
-The helper function
-\[
-  \annotatelebitslice(\overname{\staticenvs}{\tenv} \aslsep \overname{\lexpr}{\vle})
-  \aslto \overname{\lexpr}{\vleone} \times \overname{\N}{\width}
-\]
-annotates a left-hand-side expression $\vle$, which is checked to be of bitvector type
-with width $\width$,
-resulting in the annotated expression and $\width$, or a type error, if one is detected.
-
-All of the following apply:
-\begin{itemize}
-  \item annotating the right-hand-side expression corresponding to $\vle$ in $\tenv$ yields \\ $(\vteone, \Ignore)$\ProseOrTypeError;
-  \item applying $\getbitvectorwidth$ to $\vteone$ in $\tenv$ yields $\vwidth$\ProseOrTypeError;
-  \item define $\vtetwo$ as the bitvector type of width given by $\width$ and an empty list of bitfields, that is,
-        $\TBits(\ELInt{\width}, \emptylist)$;
-  \item annotating the left-hand-side expression $\vtetwo$ in $\tenv$ yields $\vleone$\ProseOrTypeError.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vteone, \Ignore) \OrTypeError\\\\
-  \getbitvectorwidth(\tenv, \vteone) \typearrow \vwidth \OrTypeError\\\\
-  \vtetwo \eqdef \TBits(\ELInt{\width}, \emptylist)\\
-  \annotatelexpr{\tenv, \vle, \vtetwo} \typearrow \vleone \OrTypeError
-}{
-  \annotatelebitslice(\tenv, \vle) \typearrow (\vleone, \width)
-}
-\end{mathpar}
-
-\subsection{Semantics}
-\subsubsection{SemanticsRule.LEConcat\label{sec:emanticsRule.LEConcat}}
-\newcommand\extractslices[0]{\hyperlink{def-extractslices}{\textfunc{extract\_slices}}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-    \item applying $\extractslices$ to $\vwidths$, the literal expression for $0$, and $(\vv, \vg)$, in $\env$ to
-        extract a list of native bitvector values that correspond to the slices in $\vv$
-        yields $(\ms, \Ignore)$\ProseOrError;
-    \item applying $\evalmultiassignment$ to $\vles$ and $\ms$ in $\env$ to assign from the slices in
-          $\ms$ to the \assignableexpressions\ in $\vles$ yields the resulting configuration $C$.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-    \extractslices(\env, \vwidths, \elint{0}, (\vv, \vg)) \evalarrow (\ms, \Ignore) \OrDynError\\\\
-    \evalmultiassignment(\env, \vles, \ms) \evalarrow C
-}{
-    \evallexpr{\env, \overname{\LEConcat(\vles, \vwidths)}{\vle}, (\vv, \vg)} \evalarrow C
-}
-\end{mathpar}
-
-\subsubsection{SemanticsRule.ExtractSlices\label{sec:emanticsRule.ExtractSlices}}
-The helper relation
-\[
-    \extractslices(\overname{\dynamicenvs}{\env}, \overname{\expr^*}{\vwidths}, \overname{((\vals \times \XGraphs)^*)^*}{\ms}, \overname{(\vals \times \XGraphs)}{\vm})
-    \;\aslrel\;
-    \overname{((\vals \times \XGraphs)^*)^*}{\msout}
-    \cup \overname{\TDynError}{\DynErrorConfig}
-\]
-
-\subsubsection{Prose}
-\subsubsection{Formally}
-
-% | LE_Concat (les, Some widths) ->
-% let extract_one e_width ms =
-%   let m' =
-%     let* v = m
-%     and* width = eval_expr_sef env e_width
-%     and* start = eval_expr_sef env e_start in
-%     B.read_from_bitvector [ (start, width) ] v
-%   in
-%   m' :: ms
-% in
-% let ms = List.fold_right extract_one widths [] in
-% multi_assign V1 env les ms
