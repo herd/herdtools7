@@ -28,6 +28,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   include NoLevelNorTLBI
 
+  module CS = ConstraintSolver.No(V)
+
   include ArchExtra_herd.Make(C)
       (struct
 
@@ -36,6 +38,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
         type instr = instruction
 
         module V = V
+        module CS = CS
 
         let endian = endian
 
@@ -55,4 +58,5 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
     module Barrier = AllBarrier.No(struct type a = barrier end)
 
     module CMO = Cmo.No
+
 end

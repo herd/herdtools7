@@ -66,6 +66,8 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     include NoLevelNorTLBI
 
+    module CS = ConstraintSolver.No(V)
+
     include ArchExtra_herd.Make
         (C)(struct
 
@@ -74,6 +76,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
           type instr = instruction
 
           module V = V
+          module CS = CS
 
           let endian = endian
 
@@ -117,4 +120,5 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     end
 
     module CMO = Cmo.No
+
   end

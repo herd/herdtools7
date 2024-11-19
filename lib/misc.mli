@@ -106,6 +106,7 @@ val find_opt : ('a -> bool) -> 'a list -> 'a option
 val find_map : ('a -> 'b option) -> 'a list -> 'b option
 val split_on_char : char -> string -> string list
 val filter_map : ('a -> 'b option) -> 'a list -> 'b list
+val concat_map : ('a -> 'b list) -> 'a list -> 'b list
 (* Float pair (position) parsint *)
 val pos_of_string : string -> (float * float) option
 

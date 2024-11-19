@@ -22,6 +22,7 @@ module Symbol : sig
   val compare : t -> t -> int
   val equal : t -> t -> bool
   val pp : t -> string
+  val extract_name : t -> string
   val map : (string -> string) -> t -> t
   val of_string : string -> t
   val is_data : t -> bool
@@ -127,6 +128,9 @@ val collision :
   ('scalar, 'pte, 'addrreg, 'instr) t ->
     ('scalar, 'pte, 'addrreg, 'instr) t ->
       (PAC.t * PAC.t) option
+
+val normalize : ('scalar, 'pte, 'addrreg, 'instr) t ->
+  PAC.solver_state -> ('scalar, 'pte, 'addrreg, 'instr) t
 
 (* New style: PTE(s), PHY(s), etc. *)
 val pp :
