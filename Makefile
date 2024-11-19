@@ -343,6 +343,19 @@ diy-test-aarch64:
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
 
+test:: test.pac
+test-local:: test.pac
+test.pac::
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.PAC \
+		-conf ./herd/tests/instructions/AArch64.PAC/pac.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 PAC instructions tests: OK"
+
+
 ### CATALOGUE testing, catalogue must be here
 CATATEST := $(shell if test -d catalogue; then echo cata-test; fi)
 

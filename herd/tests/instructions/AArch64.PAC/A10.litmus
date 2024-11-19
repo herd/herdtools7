@@ -1,0 +1,9 @@
+AArch64 A10
+Variant=pac,const-pac-field
+
+{ 0:x0=pacda(x,42) }
+
+P0            ;
+  pacdzb x0   ;
+forall
+  ( 0:x0=pacda(pacdb(x,0),42) )

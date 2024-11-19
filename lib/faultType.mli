@@ -34,6 +34,7 @@ module type AArch64Sig = sig
     | MMU of mmu_t
     | TagCheck
     | UndefinedInstruction
+    | PacCheck of PAC.key
 
   include S with type t := t
 end

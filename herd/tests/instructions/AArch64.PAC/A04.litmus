@@ -1,0 +1,9 @@
+AArch64 A04
+Variant=pac,fpac,const-pac-field
+
+{ 0:x0=pacda(x,0); int64_t 0:x1=0; int64_t x=0; int64_t 0:x2=42 }
+
+P0                 ;
+  cas x1, x2, [x0] ;
+forall
+  ( Fault(P0, MMU:Translation) )

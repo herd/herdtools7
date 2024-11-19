@@ -111,6 +111,12 @@ type t =
   | OldSolver
   (* Accept cyclic equation sets as being solvable *)
   | OOTA
+(* Pointer Authentication Code *)
+  | Pac
+(* Fault generation with Pointer authentication code *)
+  | FPac
+(* Allow to use pac(pac(...)) using the XOR of two pac fields *)
+  | ConstPacField
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -183,6 +189,9 @@ let parse s = match Misc.lowercase s with
 | "nv2" | "NV2" -> Some NV2
 | "oldsolver" -> Some OldSolver
 | "oota" -> Some OOTA
+| "pac" -> Some Pac
+| "const-pac-field" -> Some ConstPacField
+| "fpac" -> Some FPac
 | s ->
   let (>>=) o f = match o with
     | Some _ -> o
@@ -284,6 +293,9 @@ let pp = function
   | NV2 -> "NV2"
   | OldSolver -> "OldSolver"
   | OOTA -> "oota"
+  | Pac -> "pac"
+  | ConstPacField -> "const-pac-field"
+  | FPac -> "fpac"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0

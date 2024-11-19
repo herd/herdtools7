@@ -68,11 +68,19 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
 
-(* Non valid mode for presi *)  
+(* Non valid mode for presi *)
   let () =
     if Cfg.variant Variant_litmus.NoInit then
       Warn.user_error "Switches `-variant NoInit` and `-mode (presi|kvm)` are not compatible"
-        
+
+  let () =
+    if Cfg.variant Variant_litmus.FPac && not (Cfg.variant Variant_litmus.Pac) then
+      Warn.user_error "\"fpac\" variant require \"pac\" variant"
+
+  let () =
+    if Cfg.variant Variant_litmus.ConstPacField && not (Cfg.variant Variant_litmus.Pac) then
+      Warn.user_error "\"const-pac-field\" variant require \"pac\" variant"
+
   module Insert =
       ObjUtil.Insert
         (struct
@@ -257,6 +265,11 @@ module Make
             end
           end
         end ;
+        if Cfg.variant Variant_litmus.Pac then begin
+          Insert.insert O.o "kvm_auth.c" ;
+          if Cfg.variant Variant_litmus.ConstPacField then
+            Insert.insert O.o "kvm_constpacfield.c"
+        end;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
         O.o "#define PCTR PRIu32" ;
@@ -1007,6 +1020,9 @@ module Make
                 A.GetInstr.dump_instr (T.C.V.pp O.hexa) v
 
               let dump_value loc v = match v with
+              | Constant.Symbolic (Constant.Virtual {Constant.pac})
+                when not (PAC.is_canonical pac) ->
+                  Warn.user_error "PAC not supported in post-conditions in litmus"
               | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                  A.V.PteVal.dump_pack SkelUtil.data_symb_id p
@@ -1540,6 +1556,9 @@ module Make
                   Warn.fatal "Vector used as scalar"
               | ConcreteRecord _ ->
                   Warn.fatal "Record used as scalar"
+              | Symbolic (Virtual {pac})
+                when not (PAC.is_canonical pac) ->
+                  Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
               | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
                   sprintf "(%s)_vars->%s" (CType.dump at) s
               | Label (p,lbl) ->
@@ -2002,7 +2021,6 @@ module Make
         O.o "}" ;
         O.o ""
 
-
       let dump_zyva_def tname env test db procs_user =
         O.o "/*******************/" ;
         O.o "/* Forked function */" ;
@@ -2016,6 +2034,8 @@ module Make
         O.o "" ;
         O.f "static void %szyva(void *_a) {" (if Cfg.is_kvm then "" else "*") ;
         if Cfg.is_kvm then begin
+            if Cfg.variant Variant_litmus.Pac then
+              O.oi "init_pauth();" ;
             O.oi "int id = smp_processor_id();" ;
             O.oi "if (id >= AVAIL) return;" ;
             O.oi "zyva_t *a = (zyva_t*)_a + id;" ;
@@ -2175,6 +2195,14 @@ module Make
         O.o "static int feature_check(void) {" ;
         if do_self then
           O.oi "cache_line_size = getcachelinesize();" ;
+        if Cfg.variant Variant_litmus.Pac then begin
+          O.fi "if (!check_pac_variant(%S)) return 0;" doc.Name.name;
+          let expect_fpac =
+            if Cfg.variant Variant_litmus.FPac then "1" else "0" in
+          O.fi "if (!check_fpac_variant(%S,%s)) return 0;" doc.Name.name expect_fpac
+        end ;
+        if Cfg.variant Variant_litmus.ConstPacField then
+          O.fi "if (!check_const_pac_field_variant(%S)) return 0;" doc.Name.name;
         if Cfg.is_kvm then begin
           match db with
           | None ->

@@ -1,0 +1,9 @@
+AArch64 A13
+Variant=pac
+
+{ 0:x0=x }
+
+P0            ;
+  pacdza x0   ;
+forall
+  ( 0:x0=pacda(x, 0) )

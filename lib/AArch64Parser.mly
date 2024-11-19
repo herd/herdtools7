@@ -80,6 +80,13 @@ let check_op3 op e =
 /* Variable shift's */
 %token TOK_LSLV TOK_LSRV TOK_ASRV TOK_RORV
 
+/* Pointer Authentication Code Extension */
+%token PACIA PACIASP PACIA1716 PACIAZ PACIZA PACDA PACDZA
+%token PACIB PACIBSP PACIB1716 PACIBZ PACIZB PACDB PACDZB
+%token AUTIA AUTIASP AUTIA1716 AUTIAZ AUTIZA AUTDA AUTDZA
+%token AUTIB AUTIBSP AUTIB1716 AUTIBZ AUTIZB AUTDB AUTDZB
+%token XPACI XPACD
+
 /* Instructions */
 %token NOP HINT HLT
 %token TOK_B BR CBZ CBNZ TBZ TBNZ
@@ -1885,6 +1892,38 @@ instr:
   { I_TLBI ($2, ZR) }
 | TLBI TLBI_OP COMMA xreg
   { I_TLBI ($2, $4) }
+
+/* Pointer Authentication Code Extension */
+| PACIA1716 { I_PAC (PAC.IA, Ireg R17, Ireg R16) }
+| PACIASP { I_PAC (PAC.IA, Ireg R30, SP) }
+| PACIAZ { I_PAC (PAC.IA, Ireg R30, ZR) }
+| PACIA xreg COMMA xreg { I_PAC (PAC.IA, $2, $4) }
+| PACIZA xreg { I_PAC (PAC.IA, $2, ZR) }
+| PACDA xreg COMMA xreg { I_PAC (PAC.DA, $2, $4) }
+| PACDZA xreg { I_PAC (PAC.DA, $2, ZR) }
+| PACIB1716 { I_PAC (PAC.IB, Ireg R17, Ireg R16) }
+| PACIBSP { I_PAC (PAC.IB, Ireg R30, SP) }
+| PACIBZ { I_PAC (PAC.IB, Ireg R30, ZR) }
+| PACIB xreg COMMA xreg { I_PAC (PAC.IB, $2, $4) }
+| PACIZB xreg { I_PAC (PAC.IB, $2, ZR) }
+| PACDB xreg COMMA xreg { I_PAC (PAC.DB, $2, $4) }
+| PACDZB xreg { I_PAC (PAC.DB, $2, ZR) }
+| AUTIA1716 { I_AUT (PAC.IA, Ireg R17, Ireg R16) }
+| AUTIASP { I_AUT (PAC.IA, Ireg R30, SP) }
+| AUTIAZ { I_AUT (PAC.IA, Ireg R30, ZR) }
+| AUTIA xreg COMMA xreg { I_AUT (PAC.IA, $2, $4) }
+| AUTIZA xreg { I_AUT (PAC.IA, $2, ZR) }
+| AUTDA xreg COMMA xreg { I_AUT (PAC.DA, $2, $4) }
+| AUTDZA xreg { I_AUT (PAC.DA, $2, ZR) }
+| AUTIB1716 { I_AUT (PAC.IB, Ireg R17, Ireg R16) }
+| AUTIBSP { I_AUT (PAC.IB, Ireg R30, SP) }
+| AUTIBZ { I_AUT (PAC.IB, Ireg R30, ZR) }
+| AUTIB xreg COMMA xreg { I_AUT (PAC.IB, $2, $4) }
+| AUTIZB xreg { I_AUT (PAC.IB, $2, ZR) }
+| AUTDB xreg COMMA xreg { I_AUT (PAC.DB, $2, $4) }
+| AUTDZB xreg { I_AUT (PAC.DB, $2, ZR) }
+| XPACI xreg { I_XPACI $2 }
+| XPACD xreg { I_XPACD $2 }
 
 /* System register */
 | MRS xreg COMMA SYSREG

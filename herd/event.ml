@@ -527,6 +527,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let memtag = C.variant Variant.MemTag
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
+    let pac = C.variant Variant.Pac
     let is_po_partial = A.arch = `ASL
     type eiid = int
     type subid = int
@@ -1837,7 +1838,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              [rloc.intra_causality_control;
               rmem.intra_causality_control;rreg.intra_causality_control;
               wmem.intra_causality_control;wreg.intra_causality_control;];
-           if memtag || (physical && is_branching) then
+           if memtag || pac || (physical && is_branching) then
  (* Notice similarity with data composition.  *)
              EventRel.cartesian
                (get_ctrl_output_commits rloc)
@@ -2356,7 +2357,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              (EventRel.cartesian (get_output rs) input_br)
           );
         intra_causality_control =
-          (if is_branching && is_phy then
+          (if pac || (is_branching && is_phy) then
              EventRel.union
                (EventRel.cartesian (get_ctrl_output_commits rn) input_rm)
            else Misc.identity)
@@ -2451,7 +2452,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               wm.intra_causality_control])
           (let output_br = get_ctrl_output br in
            EventRel.union4
-             (if is_branching && is_phy then
+             (if pac || (is_branching && is_phy) then
                 EventRel.cartesian (get_ctrl_output_commits rn)
                   (EventSet.union input_rm input_wm)
               else EventRel.empty)

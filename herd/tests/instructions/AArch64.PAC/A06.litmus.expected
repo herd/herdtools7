@@ -1,0 +1,10 @@
+Test A06 Required
+States 1
+0:X0=pacda(pacdb(x, 0x0, 0), 0x2a, 0);  ~Fault(P0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (not (fault(P0)) /\ 0:X0=pacda(pacdb(x, 0x0, 0), 0x2a, 0))
+Observation A06 Always 1 0
+Hash=7b4fe4a08e4980fd8352502acc995539
+

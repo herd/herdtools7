@@ -121,6 +121,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
     | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
     | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
+    | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
       -> true
 
     let is_cmodx_restricted_value =
@@ -322,6 +323,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
       | I_SMSTART _ | I_SMSTOP _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
+      | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
           -> None
 
     let all_regs =
@@ -434,7 +436,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CASP _
         ->
          all_regs (* safe approximation *)
- 
+      | I_PAC (_, r, _) | I_AUT (_, r, _) | I_XPACI r | I_XPACD r
+        ->
+          [r]
+
     let get_lx_sz = function
       | I_LDAR (var,(XX|AX),_,_)|I_LDXP (var,_,_,_,_) -> MachSize.Ld (tr_variant var)
       | I_LDARBH (bh,(XX|AX),_,_) -> MachSize.Ld (bh_to_sz bh)
@@ -484,6 +489,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_SMSTART _ | I_SMSTOP _
       | I_LD1SPT _ | I_ST1SPT _
       | I_MOVA_TV _| I_MOVA_VT _ | I_ADDA _
+      | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
         -> MachSize.No
 
     let reg_defaults =

@@ -1383,7 +1383,7 @@ module Make(V:Constant.S)(C:Config) =
         }
       | _ -> assert false
 
-    let pp_sm_op = function 
+    let pp_sm_op = function
     | None -> ""
     | Some r -> " " ^ (pp_sm r |> Misc.lowercase)
 
@@ -1960,6 +1960,55 @@ module Make(V:Constant.S)(C:Config) =
             (dump_instruction ins)
     | I_UDF _ ->
         { empty_ins with memo = ".word 0"; }::k
+    | I_XPACD rD ->
+        let rD,fD = do_arg1o V64 rD 0 in
+        { empty_ins with
+          memo = sprintf "xpacd %s" fD;
+          inputs = rD;
+          outputs = rD;
+          reg_env = add_v V64 rD
+        }::k
+    | I_XPACI rD ->
+        let rD,fD = do_arg1o V64 rD 0 in
+        { empty_ins with
+          memo = sprintf "xpaci %s" fD;
+          inputs = rD;
+          outputs = rD;
+          reg_env = add_v V64 rD
+        }::k
+    | I_PAC (key, rD, ZR) | I_AUT (key, rD, ZR) ->
+        let op = match ins with
+          | I_PAC _ -> "pac"
+          | I_AUT _ -> "aut"
+          | _ -> assert false
+        and key = match key with
+          | PAC.IA -> "iza"
+          | PAC.DA -> "dza"
+          | PAC.IB -> "izb"
+          | PAC.DB -> "dzb"
+        in
+
+        let rD,fD = do_arg1i V64 rD 0 in
+        { empty_ins with
+          memo = sprintf "%s%s %s" op key fD;
+          inputs = rD;
+          outputs = rD;
+          reg_env = add_v V64 rD
+        }::k
+    | I_PAC (key, rD, rN) | I_AUT (key, rD, rN) ->
+        let op = match ins with
+          | I_PAC _ -> "pac"
+          | I_AUT _ -> "aut"
+          | _ -> assert false
+        and key = PAC.pp_lower_key key in
+
+        let rD,fD,rN,fN = args2i V64 rD rN in
+        { empty_ins with
+          memo = sprintf "%s%s %s,%s" op key fD fN;
+          inputs = rD@rN;
+          outputs = rD;
+          reg_env = add_v V64 (rD@rN)
+        }::k
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k

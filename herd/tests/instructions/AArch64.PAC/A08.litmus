@@ -1,0 +1,7 @@
+AArch64 A08
+Variant=pac
+
+{ 0:x0=pacda(x,42); int64_t 0:x1=42 }
+
+P0            ;
+  pacda x0,x1 ;

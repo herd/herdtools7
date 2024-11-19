@@ -34,6 +34,7 @@ module type AArch64Sig = sig
     | MMU of mmu_t
     | TagCheck
     | UndefinedInstruction
+    | PacCheck of PAC.key
 
   include S with type t := t
 end
@@ -53,6 +54,7 @@ module AArch64 = struct
     | MMU of mmu_t
     | TagCheck
     | UndefinedInstruction
+    | PacCheck of PAC.key
 
   let sets = [
       "MMU", [MMU Translation;
@@ -62,6 +64,10 @@ module AArch64 = struct
       "AccessFlag", [MMU AccessFlag];
       "Permission", [MMU Permission];
       "TagCheck", [TagCheck];
+      "PacCheck", [PacCheck PAC.DA;
+                   PacCheck PAC.DB;
+                   PacCheck PAC.IA;
+                   PacCheck PAC.IB];
       "UndefinedInstruction",[UndefinedInstruction];
     ]
 
@@ -69,12 +75,17 @@ module AArch64 = struct
     | MMU m -> Printf.sprintf "MMU:%s" (pp_mmu_t m)
     | TagCheck -> "TagCheck"
     | UndefinedInstruction -> "UndefinedInstruction"
+    | PacCheck k -> Printf.sprintf "PacCheck:%s" (PAC.pp_upper_key k)
 
   let parse = function
     | "MMU:Translation" -> MMU Translation
     | "MMU:AccessFlag" -> MMU AccessFlag
     | "MMU:Permission" -> MMU Permission
     | "TagCheck" -> TagCheck
+    | "PacCheck:DA" -> PacCheck PAC.DA
+    | "PacCheck:DB" -> PacCheck PAC.DB
+    | "PacCheck:IA" -> PacCheck PAC.IA
+    | "PacCheck:IB" -> PacCheck PAC.IB
     | "UndefinedInstruction" -> UndefinedInstruction
     | _ as s -> Warn.user_error "%s not a valid fault type" s
 

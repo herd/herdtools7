@@ -1,0 +1,10 @@
+Test A04 Required
+States 1
+ Fault(P0,pacda(x, 0x0, 0),MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0,MMU:Translation))
+Observation A04 Always 1 0
+Hash=257edf7829567040b4cac6f282a78e82
+

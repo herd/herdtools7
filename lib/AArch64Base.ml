@@ -1708,6 +1708,64 @@ type 'k kinstruction =
   | I_STZ2G of reg * reg * 'k idx
   | I_LDG of reg * reg * 'k
   | I_UDF of 'k
+(* Pointer Authentication Code: Basic instruction only
+   See C3.1.10 for the complete list of instructions
+    - First part: Add PAC to a register or SP, and and return the value in a
+    general purpose register
+*)
+  (* see C6.2.266
+   * PACIA <Xd>, <Xn|Sp>
+   * PACIZA <Xd>, <X31>
+   * PACIASP <X30>, <Sp>
+   * PACIAZ <X30>, <X31>
+   * PACIA1716 <X17>, <X16>
+   *
+   * see C6.2.267
+   * PACIB <Xd>, <Xn|Sp>
+   * PACIZA <Xd>, <X31>
+   * PACIBSP <X30>, <Sp>
+   * PACIBZ <X30>, <X31>
+   * PACIB1716 <X17>, <X16>
+   *
+   * see C6.2.263
+   * PACDA <Xd>, <Xn|Sp>
+   * PACDZA <Xd>, <X31>
+   *
+   * see C6.2.264
+   * PACDB <Xd>, <Xn|Sp>
+   * PACDZB <Xd>, <X31>
+   *)
+  | I_PAC of PAC.key * reg * reg     (* detination <- AddPACIA(source) *)
+
+(*  - Second part: check the PAC of a register *)
+  (* see C6.2.23
+   * AUTIA <Xd>, <Xn|Sp>
+   * AUTIZA <Xd>, <X31>
+   * AUTIASP <X30>, <Sp>
+   * AUTIAZ <X30>, <X31>
+   * AUTIA1716 <X17>, <X16>
+   *
+   * see C6.2.24
+   * AUTIB <Xd>, <Xn|Sp>
+   * AUTIZB <Xd>, <X31>
+   * AUTIBSP <X30>, <Sp>
+   * AUTIBZ <X30>, <X31>
+   * AUTIB1716 <X17>, <X16>
+   *
+   * see C6.2.21
+   * AUTDA <Xd>, <Xn|Sp>
+   * AUTDZA <Xd>, <X31>
+   *
+   * see C6.2.22
+   * AUTDB <Xd>, <Xn|Sp>
+   * AUTDZB <Xd>, <X31>
+   *)
+  | I_AUT of PAC.key * reg * reg (* destination <- AuthIA(source) *)
+
+(*  - Third part: strip the PAC of a register *)
+  (* | I_XPACLRI (* strip a PAC from LR *) *)
+  | I_XPACI of reg (* strip an instruction address PAC *)
+  | I_XPACD of reg (* strip a data address PAC *)
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -2409,6 +2467,15 @@ let do_pp_instruction m =
       pp_mem "LDG" V64 rt rn (K k)
   | I_UDF k ->
       sprintf "UDF %s" (m.pp_k k)
+  (* Pointer Authentication Code *)
+  | I_PAC (key, r1, r2) ->
+      sprintf "PAC%s %s, %s" (PAC.pp_upper_key key) (pp_reg r1) (pp_reg r2)
+  | I_AUT (key, r1, r2) ->
+      sprintf "AUT%s %s, %s" (PAC.pp_upper_key key) (pp_reg r1) (pp_reg r2)
+  | I_XPACI r ->
+      sprintf "XPACI %s" (pp_reg r)
+  | I_XPACD r ->
+      sprintf "XPACD %s" (pp_reg r)
 
 let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
@@ -2585,6 +2652,11 @@ let fold_regs (f_regs,f_sregs) =
   | I_LD1SPT (_,r1,r2,_,r3,r4,idx)
   | I_ST1SPT (_,r1,r2,_,r3,r4,idx)
     -> fold_reg r1 (fold_reg r2 ( fold_reg r3 (fold_reg r4 (fold_idx idx c))))
+  | I_PAC (_, src, dst)
+  | I_AUT (_, src, dst)
+    -> fold_reg src (fold_reg dst c)
+  | I_XPACI r -> fold_reg r c
+  | I_XPACD r -> fold_reg r c
 
 let map_regs f_reg f_symb =
 
@@ -2831,7 +2903,7 @@ let map_regs f_reg f_symb =
       I_MOVA_TV (map_reg r1,map_reg r2,map_reg r3,map_reg r4,k)
   | I_ADDA (s,r1,r2,r3,r4) ->
       I_ADDA (s,map_reg r1,map_reg r2,map_reg r3,map_reg r4)
-  | I_SMSTART (Some(r)) -> 
+  | I_SMSTART (Some(r)) ->
       I_SMSTART (Some(map_reg r))
   | I_SMSTOP (Some(r)) ->
       I_SMSTOP (Some(map_reg r))
@@ -2956,6 +3028,15 @@ let map_regs f_reg f_symb =
       I_STZ2G (map_reg r1,map_reg r2,k)
   | I_LDG (r1,r2,k) ->
       I_LDG (map_reg r1,map_reg r2, k)
+  (* Pointer Authentication code *)
+  | I_PAC (key, r1, r2) ->
+      I_PAC (key, map_reg r1, map_reg r2)
+  | I_AUT (key, r1, r2) ->
+      I_AUT (key, map_reg r1, map_reg r2)
+  | I_XPACI r ->
+      I_XPACI (map_reg r)
+  | I_XPACD r ->
+      I_XPACD (map_reg r)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -3061,6 +3142,8 @@ let get_next =
   | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
   | I_LD1SPT _  | I_ST1SPT _ | I_SMSTART _ | I_SMSTOP _
   | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
+  | I_PAC _ | I_AUT _
+  | I_XPACI _ | I_XPACD _
     -> [Label.Next;]
 
 (* Check instruction validity, beyond parsing *)
@@ -3323,6 +3406,8 @@ module PseudoI = struct
         | I_ADD_SV _ | I_INDEX_SS _
         | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
         | I_SMSTART _ | I_SMSTOP _ | I_ADDA _
+        | I_PAC _ | I_AUT _
+        | I_XPACI _ | I_XPACD _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -3441,6 +3526,8 @@ module PseudoI = struct
         | I_LDUR_SIMD _ | I_LDAPUR_SIMD _
         | I_STUR_SIMD _ | I_STLUR_SIMD _
         | I_TLBI (_,_)
+        | I_XPACI _
+        | I_XPACD _
           -> 1
         | I_LDP _|I_LDPSW _|I_STP _|I_LDXP _|I_STXP _
         | I_CAS _ | I_CASBH _
@@ -3451,6 +3538,8 @@ module PseudoI = struct
         | I_LDP_SIMD _ | I_STP_SIMD _
         | I_LD2 _ | I_LD2R _
         | I_ST2 _
+        | I_PAC _
+        | I_AUT _
           -> 2
         | I_LD3 _ | I_LD3R _
         | I_ST3 _

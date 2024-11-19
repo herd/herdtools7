@@ -651,6 +651,21 @@ include Arch.MakeArch(struct
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         I_STCT(r1,r2)
+    (* Pointer Authentication Core extension *)
+    | I_PAC (k, r1, r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_PAC (k, r1, r2)
+    | I_AUT (k, r1, r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_AUT (k, r1, r2)
+    | I_XPACI r ->
+        conv_reg r >! fun r ->
+        I_XPACI(r)
+    | I_XPACD r ->
+        conv_reg r >! fun r ->
+        I_XPACD(r)
     (* Neon Extension *)
     | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LDAP1 _
     | I_LD2 _ | I_LD2M _ | I_LD2R _

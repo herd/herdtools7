@@ -36,6 +36,7 @@ type 'aop op =
   | CheckPerms of string
   | ToInteger
   | ArchOp of 'aop
+  | AddPAC of bool * PAC.key
 
 let pp_op o pp_aop =
   match o with
@@ -82,6 +83,11 @@ let pp_op o pp_aop =
   | CheckPerms perms -> sprintf "checkcapa:%s" perms
   | ToInteger -> "ToInteger"
   | ArchOp aop -> pp_aop aop
+  | AddPAC (uniq, key) ->
+      if uniq then
+        sprintf "AddOnePac:%s" (PAC.pp_upper_key key)
+      else
+        sprintf "AddPAC:%s" (PAC.pp_upper_key key)
 
 let is_infix = function
   | Add|Sub|Mul|Div|Rem|And|Or|Xor|ShiftLeft
@@ -92,6 +98,7 @@ let is_infix = function
   | CapaSub|CapaSubs|CapaSetTag|Unseal
   | Max|Min|UMax|UMin|SetTag|SquashMutable
   | CheckPerms _| ToInteger| ArchOp _
+  | AddPAC _
     -> false
 
 let pp_ptx_cmp_op = function
@@ -136,8 +143,8 @@ type 'aop op1 =
   | Promote (* Promote to higher precision *)
   | Demote  (* Demote to lower precision *)
   | ArchOp1 of 'aop
-
-
+  | CheckCanonical (* Check that the PAC field of a virtual address is canonical *)
+  | SetCanonical (* Remove the PAC field of a virtual address *)
 
 let pp_op1 hexa pp_aop o = match o with
 | Not -> "!"
@@ -172,6 +179,8 @@ let pp_op1 hexa pp_aop o = match o with
 | Promote -> "promote"
 | Demote -> "demote"
 | ArchOp1 aop -> pp_aop hexa aop
+| CheckCanonical -> "CheckCanonical"
+| SetCanonical -> "SetCanonical"
 
 (***********)
 
