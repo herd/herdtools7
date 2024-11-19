@@ -1,0 +1,10 @@
+Test A20 Required
+States 1
+0:X1=42;  ~Fault(P0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (not (fault(P0)) /\ 0:X1=42)
+Observation A20 Always 1 0
+Hash=47d994c37a95a262b3a9c0d25841ee8c
+
