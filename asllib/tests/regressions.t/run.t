@@ -142,7 +142,7 @@ Runtime checks:
 
   $ cat >runtime-type-sat2.asl <<EOF
   > func test(size: integer {3, 4}) begin
-  >   let - = Zeros(4) as bits(size);
+  >   let - = Zeros{4} as bits(size);
   > end;
   > func main () => integer begin
   >   test(4);
@@ -161,17 +161,17 @@ Runtime checks:
 
 Parameterized integers:
   $ aslref bad-underconstrained-call.asl
-  File bad-underconstrained-call.asl, line 9, characters 9 to 23:
+  File bad-underconstrained-call.asl, line 9, characters 9 to 26:
   ASL Typing error: a subtype of integer {0..(M - 1)} was expected,
     provided integer {M}.
   [1]
   $ aslref bad-underconstrained-call-02.asl
-  File bad-underconstrained-call-02.asl, line 8, characters 2 to 13:
+  File bad-underconstrained-call-02.asl, line 8, characters 2 to 15:
   ASL Typing error: a subtype of integer {M} was expected,
     provided integer {3}.
   [1]
   $ aslref bad-underconstrained-call-03.asl
-  File bad-underconstrained-call-03.asl, line 8, characters 2 to 17:
+  File bad-underconstrained-call-03.asl, line 8, characters 2 to 19:
   ASL Typing error: a subtype of integer {M} was expected,
     provided integer {(M + 1)}.
   [1]
@@ -289,7 +289,7 @@ Parameters bugs:
   ASL Typing error: a subtype of bits(10) was expected, provided bits(4).
   [1]
   $ aslref typed-param-call.asl
-  File typed-param-call.asl, line 8, characters 4 to 15:
+  File typed-param-call.asl, line 8, characters 4 to 18:
   ASL Typing error: a subtype of integer {5..10} was expected,
     provided integer {2}.
   [1]

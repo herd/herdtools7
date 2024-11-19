@@ -6,11 +6,11 @@ end;
 func GetMiddleBit{M}(x: bits(M)) => bits(1)
 begin
   // return GetBitAt(x, M DIVRM 2);
-  return GetBitAt(x, M); 
+  return GetBitAt{M}(x, M);
 end;
 
 func main() => integer
 begin
-  let - = GetMiddleBit('11110000');
+  let - = GetMiddleBit{8}('11110000');
   return 0;
 end;

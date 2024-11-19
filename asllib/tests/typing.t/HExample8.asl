@@ -3,7 +3,7 @@
 func ArrayExample{M,N}(vector1 : bits(M), vector0 : bits(N)) => bits(M)
 begin
     let E = N DIVRM 8;
-    return FunctWithConstraint(vector1, E as integer{1, 2, 3, 4});
+    return FunctWithConstraint{M}(vector1, E as integer{1, 2, 3, 4});
 end;
 
 func FunctWithConstraint{M}(result : bits(M), x : integer{1,2,3,4}) => bits(M)

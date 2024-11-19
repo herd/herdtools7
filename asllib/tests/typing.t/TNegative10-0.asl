@@ -5,7 +5,7 @@ begin
     // to be immutable.
     var widthN          = N;
     // <some code>
-    // let testA : bits(N) = Zeros(widthN);
+    // let testA : bits(N) = Zeros{widthN};
 
     // Symbolic evaluation doesn't propagate back to a common point because it doesn't handle var's.
     // This is because we don't want the type system to have to analyse any arbitary complexity code
@@ -13,6 +13,6 @@ begin
     let letWidthN1               = widthN;
     // <arbitrary code>
     let letWidthN2               = widthN;
-    let testB : bits(letWidthN1) = Zeros(letWidthN2); // illegal as type bits(letWidthN1) is different from bits(letWidthN2).
+    let testB : bits(letWidthN1) = Zeros{letWidthN2}; // illegal as type bits(letWidthN1) is different from bits(letWidthN2).
 
 end;

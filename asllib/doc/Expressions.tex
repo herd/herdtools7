@@ -988,21 +988,103 @@ conditional expression evaluates to the \texttt{else} expression.
 \section{Call Expressions\label{sec:CallExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Tidentifier \parsesep \Plist{\Nexpr} &
+\Nexpr \derives\  & \Ncall &
+\end{flalign*}
+
+\begin{flalign*}
+\Ncall \derivesinline\
+     & \Tidentifier \parsesep \Plist{\Nexpr} &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\expr \derives\ & \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}) &
+\expr \derives\ & \ECall(\call) &
 \end{flalign*}
+
+\begin{flalign*}
+\call \derives\ &
+{
+\left\{
+  \begin{array}{rcl}
+ \callname &:& \Strings, \\
+ \callparams &:& \expr, \\
+ \callargs &:& \expr, \\
+ \callcalltype &:& \subprogramtype
+\end{array}
+\right\}
+} &
+\end{flalign*}
+
+\subsubsection{ASTRule.Call}
+\hypertarget{build-call}{}
+\begin{mathpar}
+\inferrule{
+  \buildplist[\buildexpr](\vargs) \astarrow \vargasts
+}{
+  \buildcall(\overname{\Ncall(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})}{\vparsednode}) \astarrow \\
+  { \overname{\left\{
+      \begin{array}{rcl}
+        \callname &:& \id,\\
+        \callparams &:& \emptylist,\\
+        \callargs &:& \vargasts,\\
+        \callcalltype &:& \STFunction
+      \end{array}
+    \right\}}{\vastnode} }
+}
+\and
+\inferrule{
+  \buildlist[\buildexpr](\vparams) \astarrow \astversion{\vparams} \\
+}{
+  \buildcall(\overname{\Ncall(\Tidentifier(\id), \Tlbrace, \namednode{\vparams}{\NClist{\Nexpr}}, \Trbrace)}{\vparsednode}) \astarrow \\
+  { \overname{\left\{
+      \begin{array}{rcl}
+              \callname &:& \id,\\
+              \callparams &:& \astversion{\vparams},\\
+              \callargs &:& \emptylist,\\
+              \callcalltype &:& \STFunction
+      \end{array}
+    \right\}}{\vastnode} }
+}
+\and
+\inferrule{
+  \buildplist[\buildexpr](\vargs) \astarrow \vargasts \\
+  \buildlist[\buildexpr](\vparams) \astarrow \astversion{\vparams} \\
+}{
+  \buildcall(\overname{\Ncall(\Tidentifier(\id), \Tlbrace, \namednode{\vparams}{\NClist{\Nexpr}}, \Trbrace, \namednode{\vargs}{\Plist{\Nexpr}})}{\vparsednode}) \astarrow \\
+  { \overname{\left\{
+      \begin{array}{rcl}
+              \callname &:& \id,\\
+              \callparams &:& \astversion{\vparams},\\
+              \callargs &:& \vargasts,\\
+              \callcalltype &:& \STFunction
+      \end{array}
+    \right\}}{\vastnode} }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.SetCallType}
+\hypertarget{def-setcalltype}{}
+Above, $\STFunction$ is inserted as a default call type for any parsed $\call$.
+The helper function
+\[
+  \setcalltype(\overname{\call}{\vcall} \aslsep \overname{\subprogramtype}{\texttt{call\_type}}) \aslto \overname{\call}{\vcallp}
+\]
+changes the call type of $\vcall$ to $\texttt{call\_type}$.
+
+\begin{mathpar}
+\inferrule{}{
+  \setcalltype(\vcall, \texttt{call\_type}) \aslto
+  \overname{\vcall[\callcalltype\mapsto\texttt{call\_type}]}{\vcallp}
+}
+\end{mathpar}
 
 \subsubsection{ASTRule.ECall}
 \begin{mathpar}
-\inferrule{
-  \buildplist[\buildexpr](\vargs) \astarrow \vexprasts \OrBuildError
-}{
-  \buildexpr(\overname{\Nexpr(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})}{\vparsednode}) \astarrow
-  \overname{\ECall(\id, \vexprasts)}{\vastnode}
+\inferrule{}{
+  \buildexpr(\overname{\Nexpr(\punnode{\Ncall})}{\vparsednode}) \astarrow
+  \overname{\ECall(\astof{\vcall})}{\vastnode}
 }
 \end{mathpar}
 
@@ -1011,20 +1093,18 @@ conditional expression evaluates to the \texttt{else} expression.
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ve$ denotes a call to a subprogram named $\name$ with arguments $\vargs$, that is, \\ $\ECall(\name, \vargs)$;
-  \item applying $\annotatecall$ to $\name$, $\vargs$, and $\STFunction$ in $\tenv$
-        annotates the call of that subprogram in $\tenv$ as a function (annotating calls is defined in Chapter~\ref{chap:TypingSubprogramCalls})
-        and yields $(\namep, \vargsp, \eqsp, \langle \vt \rangle)$\ProseOrTypeError.
-        Notice that passing $\STFunction$ to $\annotatecall$ checks that $\name$ is not a procedure and that a value is indeed returned;
-  \item $\newe$ is the call to the subprogram named $\namep$ with arguments $\vargsp$
-    and parameters $\eqsp$, that is, $\ECall(\namep, \vargsp, \eqsp)$.
+  \item $\ve$ denotes a call to a subprogram, that is, $\ECall(\vcall)$;
+  \item applying $\annotatecall$ to $\vcall$ and in $\tenv$
+        annotates the call of the subprogram in $\tenv$ as a function (annotating calls is defined in Chapter~\ref{chap:SubprogramCalls})
+        and yields $(\vcallp, \langle \vt \rangle)$\ProseOrTypeError.
+  \item $\newe$ is the call using $\vcallp$, that is, $\ECall(\vcallp)$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatecall(\tenv, \name, \vargs, \STFunction) \typearrow (\namep, \vargsp, \eqsp, \langle \vt \rangle) \OrTypeError
+  \annotatecall(\vcall) \typearrow (\vcallp, \langle \vt \rangle) \OrTypeError
 }{
-  \annotateexpr{\tenv, \overname{\ECall(\name, \vargs)}{\ve}} \typearrow (\vt, \overname{\ECall(\namep, \vargsp, \eqsp)}{\newe})
+  \annotateexpr{\tenv, \overname{\ECall(\vcall)}{\ve}} \typearrow (\vt, \overname{\ECall(\vcallp)}{\newe})
 }
 \end{mathpar}
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
@@ -1040,7 +1120,7 @@ subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 \subsubsection{SemanticsRule.ECall \label{sec:SemanticsRule.ECall}}
 All of the following apply:
 \begin{itemize}
-  \item $\ve$ denotes a subprogram call, $\ECall(\name, \actualargs, \params)$;
+  \item $\ve$ denotes a subprogram call, $\ECall(\vcall)$;
   \item the evaluation of that subprogram call in $\env$ is either
   $\Normal(\vms, \newenv)$\ProseOrAbnormal;
   \item one of the following applies:
@@ -1064,21 +1144,21 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[single\_returned\_value]{
-  \evalcall{\env, \name, \actualargs, \params} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
+  \evalcall{\env, \vcall.\name, \vcall.\params, \vcall.\args} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
   \vms \eqname [(\vv, \vg)]
 }{
-  \evalexpr{\env, \ECall(\name, \actualargs, \params)} \evalarrow \Normal((\vv, \vg), \newenv)
+  \evalexpr{\env, \ECall(\vcall)} \evalarrow \Normal((\vv, \vg), \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[multiple\_returned\_values]{
-  \evalcall{\env, \name, \actualargs, \params} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
+  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
   \vms \eqname [i=1..k: (\vv_i, \vg_i)]\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
   \vv \eqdef \nvvector{\vv_{1..k}}
 }{
-  \evalexpr{\env, \ECall(\name, \actualargs, \params)} \evalarrow \Normal((\vv, \vg), \newenv)
+  \evalexpr{\env, \ECall(\vcall)} \evalarrow \Normal((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}

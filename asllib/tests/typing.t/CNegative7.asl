@@ -5,5 +5,5 @@ begin
 end;
 func negative7{M}(x: bits(M)) => bits(1)
 begin
-  return GetBitAt(x, M); // illegal
+  return GetBitAt{M}(x, M); // illegal
 end;

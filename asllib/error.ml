@@ -36,10 +36,12 @@ type error_desc =
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
-  | BadArity of identifier * int * int
+  | BadArity of error_handling_time * identifier * int * int
+  | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
   | UnsupportedExpr of error_handling_time * expr
+  | UnsupportedTy of error_handling_time * ty
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | NotYetImplemented of string
@@ -67,6 +69,8 @@ type error_desc =
   | BadPattern of pattern * ty
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
+  | BadParameterDecl of identifier * identifier list * identifier list
+      (** name, expected, actual *)
   | BaseValueEmptyType of ty
   | BaseValueNonStatic of ty * expr
   | SettingIntersectingSlices of bitfield list
@@ -120,9 +124,11 @@ let error_label = function
   | UndefinedIdentifier _ -> "UndefinedIdentifier"
   | MismatchedReturnValue _ -> "MismatchedReturnValue"
   | BadArity _ -> "BadArity"
+  | BadParameterArity _ -> "BadParameterArity"
   | UnsupportedBinop _ -> "UnsupportedBinop"
   | UnsupportedUnop _ -> "UnsupportedUnop"
   | UnsupportedExpr _ -> "UnsupportedExpr"
+  | UnsupportedTy _ -> "UnsupportedTy"
   | InvalidExpr _ -> "InvalidExpr"
   | MismatchType _ -> "MismatchType"
   | NotYetImplemented _ -> "NotYetImplemented"
@@ -149,6 +155,7 @@ let error_label = function
   | BadATC _ -> "BadATC"
   | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
   | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
+  | BadParameterDecl _ -> "BadParameterDecl"
   | BaseValueEmptyType _ -> "BaseValueEmptyType"
   | BaseValueNonStatic _ -> "BaseValueNonStatic"
   | SettingIntersectingSlices _ -> "SettingIntersectingSlices"
@@ -194,6 +201,10 @@ module PPrint = struct
         fprintf f "ASL %s Error: Unsupported expression %a."
           (error_handling_time_to_string t)
           pp_expr e
+    | UnsupportedTy (t, ty) ->
+        fprintf f "ASL %s Error: Unsupported type %a."
+          (error_handling_time_to_string t)
+          pp_ty ty
     | InvalidExpr e -> fprintf f "ASL Error: invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         fprintf f
@@ -236,11 +247,26 @@ module PPrint = struct
     | MismatchedReturnValue s ->
         fprintf f "ASL Error: Mismatched use of return value from call to '%s'."
           s
-    | BadArity (name, expected, provided) ->
+    | BadArity (t, name, expected, provided) ->
         fprintf f
-          "ASL Error: Arity error while calling '%s':@ %d arguments expected \
-           and %d provided."
+          "ASL %s Error: Arity error while calling '%s':@ %d arguments \
+           expected and %d provided."
+          (error_handling_time_to_string t)
           name expected provided
+    | BadParameterArity (t, version, name, expected, provided) -> (
+        match (t, version) with
+        | Static, V0 ->
+            fprintf f
+              "ASL %s Error: Could not infer all parameters while calling \
+               '%s':@ %d parameters expected and %d inferred"
+              (error_handling_time_to_string t)
+              name expected provided
+        | _ ->
+            fprintf f
+              "ASL %s Error: Arity error while calling '%s':@ %d parameters \
+               expected and %d provided"
+              (error_handling_time_to_string t)
+              name expected provided)
     | NotYetImplemented s ->
         pp_print_text f @@ "ASL Internal error: Not yet implemented: " ^ s
     | ObsoleteSyntax s ->
@@ -319,6 +345,15 @@ module PPrint = struct
           "ASL Typing error:@ explicit@ parameter@ %S@ does@ not@ have@ a@ \
            corresponding@ defining@ argument."
           s
+    | BadParameterDecl (name, expected, actual) ->
+        fprintf f
+          "ASL Typing error:@ incorrect@ parameter@ declaration@ for@ %S,@ \
+           expected@ @[{%a}@]@ but@ @[{%a}@]@ provided"
+          name
+          (pp_comma_list pp_print_string)
+          expected
+          (pp_comma_list pp_print_string)
+          actual
     | BaseValueEmptyType t ->
         fprintf f "ASL Typing error: base value of empty type %a." pp_ty t
     | BaseValueNonStatic (t, e) ->

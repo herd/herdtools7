@@ -24,19 +24,19 @@ open AST
 open ASTUtils
 
 let desugar_setter call fields rhs =
-  let loc = to_pos call and { desc = name, args } = call in
+  let loc = to_pos call and { desc = { name; params; args } } = call in
   let () = assert (loc.version = V1) in
   let here desc = add_pos_from loc desc in
   match fields with
   | [] ->
-      S_Call { name; args = rhs :: args; params = []; call_type = ST_Setter }
       (* Setter(rhs, ...); *)
+      S_Call { name; args = rhs :: args; params; call_type = ST_Setter }
   | _ ->
       let temp = fresh_var "__setter_v1_temporary" in
       (* temp = Getter(...); *)
       let read =
         let getter_call =
-          E_Call { name; args; params = []; call_type = ST_Getter } |> here
+          E_Call { name; args; params; call_type = ST_Getter } |> here
         in
         S_Decl (LDK_Var, LDI_Var temp, Some getter_call) |> here
       in
@@ -53,8 +53,20 @@ let desugar_setter call fields rhs =
       (* Setter(rhs, ...); *)
       let write =
         let temp_e = E_Var temp |> here in
-        S_Call
-          { name; args = temp_e :: args; params = []; call_type = ST_Setter }
+        S_Call { name; args = temp_e :: args; params; call_type = ST_Setter }
         |> here
       in
       S_Seq (s_then read modify, write)
+
+let desugar_elided_parameter ldk lhs (call : call annotated) =
+  let bits_e =
+    match lhs with
+    | LDI_Typed (_, { desc = T_Bits (bits_e, []) }) -> bits_e
+    | _ ->
+        (* For example, let x = foo{,M}(args); cannot be desugared as there is
+           no bits(_) annotation on the left-hand side *)
+        Error.fatal_from (to_pos call) CannotParse
+  in
+  let params = bits_e :: call.desc.params in
+  let rhs = E_Call { call.desc with params } |> add_pos_from call in
+  S_Decl (ldk, lhs, Some rhs)

@@ -16,6 +16,6 @@ end;
 
 func main() => integer
 begin
-  positive13(Zeros(64) + 123456789, Zeros(64) + 987654321, Zeros(64) + 987654321);
+  positive13(Zeros{64} + 123456789, Zeros{64} + 987654321, Zeros{64} + 987654321);
   return 0;
 end;

@@ -112,18 +112,19 @@ end;
 
 // Externals
 
-func ReplicateBit(isZero: boolean, N: integer) => bits(N)
+func ReplicateBit{N}(isZero: boolean) => bits(N)
 begin
-  return if isZero then Zeros(N) else Ones(N);
+  return if isZero then Zeros{N} else Ones{N};
 end;
 
-func Replicate{M}(x: bits(M), N: integer) => bits(M*N)
+func Replicate{N,M}(x: bits(M)) => bits(N)
 begin
-  if M == 1 then
-    return ReplicateBit(IsZero(x),M*N);
+  assert (N MOD M == 0);
+  if N == 1 then
+    return ReplicateBit{N}(IsZero(x));
   else
-    var r: bits(M*N) = Zeros(M*N);
-    for i=0 to N-1 do
+    var r: bits(N) = Zeros{}();
+    for i=0 to (N DIV M)-1 do
       r[i*:M] = x;
     end;
     return r;
@@ -166,41 +167,41 @@ begin
   return -1 as {-1..N-1};
 end;
 
-func Zeros(N: integer) => bits(N)
+func Zeros{N}() => bits(N)
 begin
   return 0[N-1:0];
 end;
 
-func Ones(N: integer) => bits(N)
+func Ones{N}() => bits(N)
 begin
-  return NOT Zeros(N);
+  return NOT Zeros{N};
 end;
 
 func IsZero{N}(x: bits(N)) => boolean
 begin
-  return x == Zeros(N);
+  return x == Zeros{N};
 end;
 
 func IsOnes{N}(x: bits(N)) => boolean
 begin
-  return x == Ones(N);
+  return x == Ones{N};
 end;
 
-func SignExtend {M} (x: bits(M), N: integer) => bits(N)
+func SignExtend {N,M} (x: bits(M)) => bits(N)
 begin
   assert N >= M;
-  return [Replicate(x[M-1], N - M), x];
+  return [Replicate{N-M}(x[M-1]), x];
 end;
 
-func ZeroExtend {M} (x: bits(M), N: integer) => bits(N)
+func ZeroExtend {N,M} (x: bits(M)) => bits(N)
 begin
   assert N >= M;
-  return [Zeros(N - M), x];
+  return [Zeros{N - M}, x];
 end;
 
-func Extend {M} (x: bits(M), N: integer, unsigned: boolean) => bits(N)
+func Extend {N,M} (x: bits(M), unsigned: boolean) => bits(N)
 begin
-  return if unsigned then ZeroExtend(x, N) else SignExtend(x, N);
+  return if unsigned then ZeroExtend{N}(x) else SignExtend{N}(x);
 end;
 
 func CountLeadingZeroBits{N}(x: bits(N)) => integer {0..N}
@@ -218,7 +219,7 @@ end;
 // Treating input as an integer, align down to nearest multiple of 2^y.
 func AlignDown{N}(x: bits(N), y: integer{1..N}) => bits(N)
 begin
-    return [x[N-1:y], Zeros(y)];
+    return [x[N-1:y], Zeros{y}];
 end;
 
 // Treating input as an integer, align up to nearest multiple of 2^y.
@@ -228,7 +229,7 @@ begin
   if IsZero(x[y-1:0]) then
     return x;
   else
-    return [x[N-1:y]+1, Zeros(y)];
+    return [x[N-1:y]+1, Zeros{y}];
   end;
 end;
 
@@ -241,9 +242,9 @@ begin
   assert shift >= 0;
   if shift < N then
     let bshift = shift as integer{0..N-1};
-    return [x[(N-bshift)-1:0], Zeros(bshift)];
+    return [x[(N-bshift)-1:0], Zeros{bshift}];
   else
-    return Zeros(N);
+    return Zeros{N};
   end;
 end;
 
@@ -252,9 +253,9 @@ func LSL_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   if shift <= N then
-    return (LSL(x, shift), x[N-shift]);
+    return (LSL{N}(x, shift), x[N-shift]);
   else
-    return (Zeros(N), '0');
+    return (Zeros{N}, '0');
   end;
 end;
 
@@ -264,9 +265,9 @@ begin
   assert shift >= 0;
   if shift < N then
     let bshift = shift as integer{0..N-1};
-    return ZeroExtend(x[N-1:bshift], N);
+    return ZeroExtend{N}(x[N-1:bshift]);
   else
-    return Zeros(N);
+    return Zeros{N};
   end;
 end;
 
@@ -275,9 +276,9 @@ func LSR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   if shift <= N then
-    return (LSR(x, shift), x[shift-1]);
+    return (LSR{N}(x, shift), x[shift-1]);
   else
-    return (Zeros(N), '0');
+    return (Zeros{N}, '0');
   end;
 end;
 
@@ -286,14 +287,14 @@ func ASR{N}(x: bits(N), shift: integer) => bits(N)
 begin
   assert shift >= 0;
   let bshift = Min(shift, N-1) as integer{0..N-1};
-  return SignExtend(x[N-1:bshift], N);
+  return SignExtend{N}(x[N-1:bshift]);
 end;
 
 // Arithmetic right shift with carry out.
 func ASR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
-  return (ASR(x, shift), x[Min(shift-1, N-1)]);
+  return (ASR{N}(x, shift), x[Min(shift-1, N-1)]);
 end;
 
 // Rotate right.
@@ -312,5 +313,5 @@ func ROR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
   let cpos = (shift-1) MOD N;
-  return (ROR(x, shift), x[cpos]);
+  return (ROR{N}(x, shift), x[cpos]);
 end;

@@ -22,8 +22,7 @@
 
 open AST
 
-val desugar_setter :
-  (identifier * expr list) annotated -> identifier list -> expr -> stmt_desc
+val desugar_setter : call annotated -> identifier list -> expr -> stmt_desc
 (**
   Desugar a setter call, in particular:
   {[
@@ -35,4 +34,15 @@ val desugar_setter :
                                             temp.[fld1,fld2] = rhs;
                                             Setter(temp, args);
   ]}
+*)
+
+val desugar_elided_parameter :
+  local_decl_keyword -> local_decl_item -> call annotated -> stmt_desc
+(**
+  Desugar an elided parameter, in particular:
+  {[
+  let x : bits(e) = MyFunc{}(args)     --> ... = MyFunc{e}(args)
+  let x : bits(e) = MyFunc{,e1}(args)  --> ... = MyFunc{e,e1}(args)
+  ]}
+  Similarly for [var] and [constant].
 *)

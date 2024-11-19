@@ -69,10 +69,10 @@ A function call, given by its name and list of formal argument types, matches mo
 which does not allow the type-checker to decide which subprogram the call refers to.
 See \secref{TypingRule.SubprogramForName} for an example.
 
-\hypertarget{def-parameterwithoutdecl}{}
-\item[$\ParameterWithoutDecl$]
-A subprogram includes a parameter that is not associated with any variable appearing in one of the arguments.
-See \secref{TypingRule.AnnotateParams} for an example.
+\hypertarget{def-badparameterdecl}{}
+\item[$\BadParameterDecl$]
+A subprogram has an invalid declaration of its parameters.
+See \nameref{sec:TypingRule.CheckParamDecls} for an example.
 
 \hypertarget{def-nolca}{}
 \item[$\NoLCA$]
@@ -92,6 +92,13 @@ See \secref{TypingRule.AnnotateCallArgTyped} for an example.
 A call to a subprogram must have the same number of arguments as the list of formal arguments
 declared for the subprogram.
 This error indicates that the number of arguments is different to the number of declared formal arguments.
+See \secref{TypingRule.AnnotateCallArgTyped} for an example.
+
+\hypertarget{def-cbpa}{}
+\item[$\CallBadParameterArity$]
+A call to a subprogram must have the same number of parameters as the list of formal parameters
+declared for the subprogram.
+This error indicates that the number of parameters is different to the number of declared formal parameters.
 See \secref{TypingRule.AnnotateCallArgTyped} for an example.
 
 \hypertarget{def-brd}{}

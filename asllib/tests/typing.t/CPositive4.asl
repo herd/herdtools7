@@ -5,6 +5,6 @@ begin
 end;
 func positive4(w: integer{1, 2, 3})
 begin
-    sub(Zeros(12));
-    sub(Zeros(w));
+    sub{12}(Zeros{12});
+    sub{w}(Zeros{w});
 end;

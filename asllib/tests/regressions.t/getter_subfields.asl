@@ -2,7 +2,7 @@ type MyBV of bits(8) { [5] b1, [4] b2 };
 
 getter F() => MyBV
 begin
-  return Zeros(8) as MyBV;
+  return Zeros{8} as MyBV;
 end;
 
 setter F() = v: MyBV

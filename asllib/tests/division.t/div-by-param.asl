@@ -5,8 +5,8 @@ end;
 
 func main () => integer
 begin
-  foo ('1');
-  foo ('');
+  foo {1}('1');
+  foo {0}('');
   return 0;
 end;
 

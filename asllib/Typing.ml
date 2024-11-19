@@ -280,7 +280,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
   (* End *)
 
   (* Begin SubprogramForName *)
-  let subprogram_for_name loc env name caller_arg_types =
+  let subprogram_for_name loc env version name caller_arg_types =
     let () =
       if false then Format.eprintf "Trying to rename call to %S@." name
     in
@@ -296,9 +296,10 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     in
     let matching_renamings = set_filter_map get_func_sig renaming_set in
     match matching_renamings with
-    | [ (name', func_sig) ] ->
-        (deduce_eqs env caller_arg_types func_sig.args, name', func_sig)
-        |: TypingRule.SubprogramForName
+    | [ (name', func_sig) ] -> (
+        match version with
+        | V0 -> (deduce_eqs env caller_arg_types func_sig.args, name', func_sig)
+        | V1 -> ([], name', func_sig) |: TypingRule.SubprogramForName)
     | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
     | _ :: _ ->
         fatal_from loc (Error.TooManyCallCandidates (name, caller_arg_types))
@@ -308,8 +309,8 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     match C.check with
     | TypeCheckNoWarn | TypeCheck -> subprogram_for_name
     | Warn | Silence -> (
-        fun loc env name caller_arg_types ->
-          try subprogram_for_name loc env name caller_arg_types
+        fun loc env version name caller_arg_types ->
+          try subprogram_for_name loc env version name caller_arg_types
           with Error.ASLException _ as error -> (
             try
               match IMap.find_opt name env.global.subprograms with
@@ -731,6 +732,39 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.CheckSlicesInWidth
   (* End *)
 
+  (** Check for a standard library declaration name{n}(bits(n), ...) or
+    name{m,n}(bits(n), ...). *)
+  let can_omit_stdlib_param func_sig =
+    func_sig.builtin
+    &&
+    let declared_param =
+      (* parameter N, declared as {N} or {M,N} *)
+      match func_sig.parameters with
+      | [ (n, _) ] | [ _; (n, _) ] -> Some n
+      | _ -> None
+    and declared_first_arg_width =
+      (* first argument, declared as bits(N') *)
+      match func_sig.args with
+      | (_, { desc = T_Bits ({ desc = E_Var n' }, _) }) :: _ -> Some n'
+      | _ -> None
+    in
+    match (declared_param, declared_first_arg_width) with
+    | Some n, Some n' -> String.equal n n'
+    | _ -> false
+
+  (** Special treatment to infer the single input parameter [N] of a
+    stdlib/primitive function with a first argument of type [bits(N)]. *)
+  let insert_stdlib_param ~loc env func_sig ~params ~arg_types =
+    if
+      can_omit_stdlib_param func_sig
+      && List.compare_lengths params func_sig.parameters < 0
+      && not (list_is_empty arg_types)
+    then
+      let width = get_bitvector_width loc env (List.hd arg_types) in
+      let param_type = integer_exact' width |> add_pos_from width in
+      params @ [ (param_type, width) ]
+    else params
+
   (* Begin TBitField *)
   let rec annotate_bitfield ~loc env width bitfield : bitfield =
     match bitfield with
@@ -1037,7 +1071,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Tuple ts when List.compare_lengths li ts != 0 ->
             Error.fatal_from loc
               (Error.BadArity
-                 ("pattern matching on tuples", List.length li, List.length ts))
+                 ( Static,
+                   "pattern matching on tuples",
+                   List.length li,
+                   List.length ts ))
         | T_Tuple ts ->
             let new_li = List.map2 (annotate_pattern loc env) ts li in
             Pattern_Tuple new_li |> here |: TypingRule.PTuple
@@ -1045,24 +1082,107 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* End *))
 
   (* Begin AnnotateCall *)
-  and annotate_call loc env name args eqs call_type =
-    let () = assert (List.length eqs == 0) in
+  and annotate_call ~loc env (call_info : call) =
     let () =
       if false then
-        Format.eprintf "Annotating call to %S (%s) at %a.@." name
-          (Serialize.subprogram_type_to_string call_type)
+        Format.eprintf "Annotating call to %S (%s) at %a.@." call_info.name
+          (Serialize.subprogram_type_to_string call_info.call_type)
           PP.pp_pos loc
     in
-    let caller_arg_typed = List.map (annotate_expr env) args in
-    annotate_call_arg_typed loc env name caller_arg_typed call_type
-    |: TypingRule.AnnotateCall
+    let args = List.map (annotate_expr env) call_info.args in
+    match loc.version with
+    | V0 ->
+        let () = assert (List.length call_info.params = 0) in
+        annotate_call_v0 ~loc env call_info.name args call_info.call_type
+    | V1 ->
+        let params = List.map (annotate_expr env) call_info.params in
+        annotate_call_v1 ~loc env call_info.name ~params ~args
+          ~call_type:call_info.call_type
+        |: TypingRule.AnnotateCall
   (* End *)
 
-  (* Begin AnnotateCallArgTyped *)
-  and annotate_call_arg_typed loc env name caller_args_typed call_type =
+  and annotate_call_v1 ~loc env name ~params ~args ~call_type =
+    let arg_types, args = List.split args in
+    let _, name, func_sig =
+      Fn.try_subprogram_for_name loc env V1 name arg_types
+    in
+    (* Check call and subprogram types match *)
+    let+ () =
+      check_true
+        (func_sig.subprogram_type = call_type
+        (* Getters are syntactically identical to functions in V1 - so what
+           looks like a function call may really be a getter call *)
+        || (func_sig.subprogram_type = ST_Getter && call_type = ST_Function))
+      @@ fun () -> fatal_from loc (MismatchedReturnValue name)
+    in
+    (* Insert omitted parameter for standard library call *)
+    let params = insert_stdlib_param ~loc env func_sig ~params ~arg_types in
+    (* Check correct number of parameters/arguments supplied *)
+    let () =
+      if List.compare_lengths func_sig.parameters params != 0 then
+        fatal_from loc
+        @@ Error.BadParameterArity
+             ( Static,
+               V1,
+               name,
+               List.length func_sig.parameters,
+               List.length params )
+      else if List.compare_lengths func_sig.args args != 0 then
+        fatal_from loc
+        @@ Error.BadArity
+             (Static, name, List.length func_sig.args, List.length args)
+    in
+    (* Check that call parameters are statically evaluable and type-satisfy the
+       declaration parameters *)
+    let () =
+      List.iter2
+        (fun (name, ty_declared_opt) (ty_actual, e_actual) ->
+          let+ () = check_statically_evaluable env e_actual in
+          let+ () = check_constrained_integer ~loc env ty_actual in
+          match ty_declared_opt with
+          | None ->
+              (* declared parameters have already been elaborated *)
+              assert false
+          | Some { desc = T_Int (Parameterized (_, name')) }
+            when String.equal name name' ->
+              ()
+          | Some ty_declared ->
+              let+ () = check_type_satisfies loc env ty_actual ty_declared in
+              ())
+        func_sig.parameters params
+    in
+    (* Check that call arguments type-satisfy the declared arguments *)
+    let eqs =
+      List.map2 (fun (name, _) (_, e) -> (name, e)) func_sig.parameters params
+    in
+    let () =
+      List.iter2
+        (fun (_, declared_ty) actual_ty ->
+          let expected_ty = rename_ty_eqs env eqs declared_ty in
+          let+ () = check_type_satisfies loc env actual_ty expected_ty in
+          ())
+        func_sig.args arg_types
+    in
+    (* Check the function returns as expected, and substitute parameters into
+       the return type *)
+    let return_type =
+      match (call_type, func_sig.return_type) with
+      | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs env eqs ty)
+      | (ST_Procedure | ST_Setter), None -> None
+      | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
+    in
+    ( {
+        name;
+        args;
+        params = List.map snd params;
+        call_type = func_sig.subprogram_type;
+      },
+      return_type )
+
+  and annotate_call_v0 ~loc env name caller_args_typed call_type =
     let caller_arg_types, args1 = List.split caller_args_typed in
     let eqs1, name1, callee =
-      Fn.try_subprogram_for_name loc env name caller_arg_types
+      Fn.try_subprogram_for_name loc env V0 name caller_arg_types
     in
     let () =
       if false then
@@ -1070,14 +1190,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           [ D_Func callee |> add_dummy_annotation ]
     in
     let+ () =
-      check_true
-        (callee.subprogram_type = call_type
-        (* Getters are syntactically identical to functions in V1 - so what
-           looks like a function call may really be a getter call *)
-        || loc.version = V1
-           && callee.subprogram_type = ST_Getter
-           && call_type = ST_Function)
-      @@ fun () -> fatal_from loc (MismatchedReturnValue name)
+      check_true (callee.subprogram_type = call_type) @@ fun () ->
+      fatal_from loc (MismatchedReturnValue name)
     in
     let () =
       if false then
@@ -1103,7 +1217,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       if List.compare_lengths callee.args args1 != 0 then
         fatal_from loc
-        @@ Error.BadArity (name, List.length callee.args, List.length args1)
+        @@ Error.BadArity
+             (Static, name, List.length callee.args, List.length args1)
     in
     let eqs2 =
       let folder acc (_x, ty) (t_e, _e) =
@@ -1133,7 +1248,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Warn | Silence ->
           List.fold_left2 folder eqs1 callee.args caller_args_typed
     in
-    (* AnnotateParameterDefining( *)
     let eqs3 =
       (* Checking that all parameter-defining arguments are static constrained integers. *)
       List.fold_left2
@@ -1149,7 +1263,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (callee_x, caller_e) :: eqs
           else eqs)
         eqs2 callee.args caller_args_typed
-      (* AnnotateParameterDefining) *)
     in
     let () =
       if false then
@@ -1227,8 +1340,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
-    (name1, args1, eqs3, ret_ty_opt) |: TypingRule.AnnotateCallArgTyped
-  (* End *)
+    let params =
+      List.filter_map
+        (fun (name, _) -> List.assoc_opt name eqs3)
+        callee.parameters
+    in
+    let+ () =
+      check_true (List.length params = List.length callee.parameters)
+      @@ fun () ->
+      fatal_from loc
+        (Error.BadParameterArity
+           (Static, V0, name, List.length callee.parameters, List.length params))
+    in
+    ( { name = name1; args = args1; params; call_type = callee.subprogram_type },
+      ret_ty_opt )
 
   and annotate_expr env e : ty * expr = annotate_expr_ env ~forbid_atcs:false e
 
@@ -1262,12 +1387,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if false then
               Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
           in
-          let call_type = ST_EmptyGetter in
-          let name, args, eqs, ty =
-            annotate_call (to_pos e) env x [] [] call_type
+          let call, ty =
+            annotate_call ~loc:(to_pos e) env
+              { name = x; params = []; args = []; call_type = ST_EmptyGetter }
           in
           let ty = match ty with Some ty -> ty | None -> assert false in
-          (ty, E_Call { name; args; params = eqs; call_type } |> here)
+          (ty, E_Call call |> here)
         else
           let () =
             if false then
@@ -1314,21 +1439,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (t, E_Unop (op, e'') |> here) |: TypingRule.Unop
     (* End *)
     (* Begin ECall *)
-    | E_Call { name; args; params = eqs; call_type } ->
-        let () =
-          if List.length eqs == 0 then ()
-          else (
-            Format.eprintf "Re-annotating expression %a@." PP.pp_expr e;
-            assert false)
-        in
-        let name', args', eqs', ty_opt =
-          annotate_call (to_pos e) env name args [] call_type
-        in
-        let t = match ty_opt with Some ty -> ty | None -> assert false in
-        ( t,
-          E_Call { name = name'; args = args'; params = eqs'; call_type }
-          |> here )
-        |: TypingRule.ECall
+    | E_Call call ->
+        let call, ret_ty_opt = annotate_call ~loc:(to_pos e) env call in
+        let t = match ret_ty_opt with Some ty -> ty | None -> assert false in
+        (t, E_Call call |> here) |: TypingRule.ECall
     (* End *)
     (* Begin ECond *)
     | E_Cond (e_cond, e_true, e_false) ->
@@ -1432,14 +1546,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               try List.map slice_as_single slices
               with Invalid_argument _ -> assert false
             in
-            let call_type = ST_Getter in
-            let name1, args1, eqs, ty =
-              annotate_call (to_pos e) env name args [] call_type
+            let call, ty =
+              annotate_call ~loc:(to_pos e) env
+                { name; params = []; args; call_type = ST_Getter }
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
-            ( ty,
-              E_Call { name = name1; args = args1; params = eqs; call_type }
-              |> here )
+            (ty, E_Call call |> here)
         | _ -> (
             let t_e', e'' = annotate_expr_ ~forbid_atcs env e' in
             let struct_t_e' = Types.make_anonymous env t_e' in
@@ -1488,12 +1600,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         match reduced with
         | Some (name, args) ->
-            let call_type = ST_Getter in
-            let name, args, eqs, ty =
-              annotate_call (to_pos e) env name args [] call_type
+            let call, ty =
+              annotate_call ~loc:(to_pos e) env
+                { name; params = []; args; call_type = ST_Getter }
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
-            (ty, E_Call { name; args; params = eqs; call_type } |> here)
+            (ty, E_Call call |> here)
         | None -> (
             let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
             match (Types.make_anonymous env t_e2).desc with
@@ -1567,12 +1679,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         match reduced with
         | Some (name, args) ->
-            let call_type = ST_Getter in
-            let name, args, eqs, ty =
-              annotate_call (to_pos e) env name args [] call_type
+            let call, ret_ty_opt =
+              annotate_call ~loc:(to_pos e) env
+                { name; params = []; args; call_type = ST_Getter }
             in
-            let ty = match ty with Some ty -> ty | None -> assert false in
-            (ty, E_Call { name; args; params = eqs; call_type } |> here)
+            let ty =
+              match ret_ty_opt with Some ty -> ty | None -> assert false
+            in
+            (ty, E_Call call |> here)
         | None -> (
             let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
             match (Types.make_anonymous env t_e2).desc with
@@ -1735,6 +1849,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   let rec base_value_v0 ~loc env t : expr =
+    assert (loc.version = V0);
     let add_pos = add_pos_from loc in
     match t.desc with
     | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ ->
@@ -1743,8 +1858,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         E_Call
           {
             name = "Zeros";
-            args = [ width ];
             params = [];
+            args = [ width ];
             call_type = ST_Function;
           }
         |> add_pos |> annotate_expr env |> snd
@@ -1818,7 +1933,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if List.compare_lengths tys les != 0 then
               Error.fatal_from le
                 (Error.BadArity
-                   ("LEDestructuring", List.length tys, List.length les))
+                   (Static, "LEDestructuring", List.length tys, List.length les))
             else
               let les' = List.map2 (annotate_lexpr env) les tys in
               LE_Destructuring les' |> here
@@ -1999,7 +2114,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         if List.compare_lengths lhs_tys rhs_tys != 0 then
           fatal_from loc
             (Error.BadArity
-               ("tuple initialization", List.length rhs_tys, List.length lhs_tys))
+               ( Static,
+                 "tuple initialization",
+                 List.length rhs_tys,
+                 List.length lhs_tys ))
         else
           let lhs_tys' =
             List.map2
@@ -2045,7 +2163,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Tuple tys ->
               fatal_from loc
                 (Error.BadArity
-                   ("tuple initialization", List.length tys, List.length ldis))
+                   ( Static,
+                     "tuple initialization",
+                     List.length tys,
+                     List.length ldis ))
           | _ -> conflict loc [ T_Tuple [] ] ty
         in
         let new_env, new_ldis =
@@ -2157,17 +2278,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.SAssign
     (* End *)
     (* Begin SCall *)
-    | S_Call { name; args; params = eqs; call_type } ->
-        let () = assert (List.length eqs == 0) in
-        let new_name, new_args, new_eqs, ty =
-          annotate_call loc env name args eqs call_type
-        in
+    | S_Call call ->
+        let call, ty = annotate_call ~loc env call in
         let () = assert (ty = None) in
-        ( S_Call
-            { name = new_name; args = new_args; params = new_eqs; call_type }
-          |> here,
-          env )
-        |: TypingRule.SCall
+        (S_Call call |> here, env) |: TypingRule.SCall
     (* End *)
     (* Begin SReturn *)
     | S_Return e_opt ->
@@ -2387,19 +2501,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     assert (loc.version = V0 && C.use_field_getter_extension);
     let ( let* ) = Option.bind in
     let _, _, callee =
-      try Fn.try_subprogram_for_name loc env x []
+      try Fn.try_subprogram_for_name loc env V0 x []
       with Error.ASLException _ -> assert false
     in
     let* ty = callee.return_type in
     let ty = Types.make_anonymous env ty in
     let* name, args = should_fields_reduce_to_call env x ty fields in
-    let args = (t_e, e) :: List.map (annotate_expr env) args in
-    let call_type = ST_Setter in
-    let name, args, eqs, ret_ty =
-      annotate_call_arg_typed loc env name args call_type
-    in
+    let typed_args = (t_e, e) :: List.map (annotate_expr env) args in
+    let call, ret_ty = annotate_call_v0 ~loc env name typed_args ST_Setter in
     let () = assert (ret_ty = None) in
-    Some (S_Call { name; args; params = eqs; call_type } |> add_pos_from loc)
+    Some (S_Call call |> add_pos_from loc)
 
   and setter_should_reduce_to_call_recurse ~loc env (t_e, e) make_old_le sub_le
       =
@@ -2471,12 +2582,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               with Invalid_argument _ -> assert false
             in
             let typed_args = (t_e, e) :: List.map (annotate_expr env) args in
-            let call_type = ST_Setter in
-            let name, args, eqs, ret_ty =
-              annotate_call_arg_typed loc env x typed_args call_type
+            let call, ret_ty =
+              annotate_call_v0 ~loc env x typed_args ST_Setter
             in
             let () = assert (ret_ty = None) in
-            Some (S_Call { name; args; params = eqs; call_type } |> here)
+            Some (S_Call call |> here)
         | _ ->
             let old_le le' = LE_Slice (le', slices) |> here in
             setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
@@ -2509,191 +2619,192 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let st = ST_EmptySetter in
         if should_reduce_to_call env x st then
           let args = [ (t_e, e) ] in
-          let name, args, eqs, ret_ty =
-            annotate_call_arg_typed loc env x args st
-          in
+          let call, ret_ty = annotate_call_v0 ~loc env x args st in
           let () = assert (ret_ty = None) in
-          Some (S_Call { name; args; params = eqs; call_type = st } |> here)
+          Some (S_Call call |> here)
         else None
     | LE_Concat (_les, _) -> None
     | LE_SetArray _ -> assert false
 
-  let fold_types_func_sig folder f init =
-    let from_args =
-      List.fold_left (fun acc (_x, t) -> folder acc t) init f.args
+  (** [func_sig_types f] returns a list of the types in the signature [f].
+      The return type is first, followed by the argument types in order. *)
+  let func_sig_types func_sig =
+    let arg_types = List.map snd func_sig.args in
+    let return_type =
+      match func_sig.return_type with None -> [] | Some ty -> [ ty ]
     in
-    match f.return_type with None -> from_args | Some t -> folder from_args t
+    return_type @ arg_types
 
-  (* Begin GetUndeclaredDefining *)
+  (** The parameters in a function signature, in order. *)
+  let extract_parameters ~env func_sig =
+    let rec parameters_of_expr ~env e =
+      match e.desc with
+      | E_Var x -> if is_undefined x env then [ x ] else []
+      | E_Binop (_, e1, e2) ->
+          parameters_of_expr ~env e1 @ parameters_of_expr ~env e2
+      | E_Unop (_, e) -> parameters_of_expr ~env e
+      | E_Literal _ -> []
+      | _ -> Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
+    in
+    let parameters_of_constraint ~env c =
+      match c with
+      | Constraint_Exact e -> parameters_of_expr ~env e
+      | Constraint_Range (e1, e2) ->
+          parameters_of_expr ~env e1 @ parameters_of_expr ~env e2
+    in
+    let rec parameters_of_ty ~env ty =
+      match ty.desc with
+      | T_Bits (e, _) -> parameters_of_expr ~env e
+      | T_Tuple tys -> list_concat_map (parameters_of_ty ~env) tys
+      | T_Int (WellConstrained cs) ->
+          list_concat_map (parameters_of_constraint ~env) cs
+      | T_Int UnConstrained | T_Real | T_String | T_Bool | T_Array _ | T_Named _
+        ->
+          []
+      | _ -> Error.fatal_from (to_pos ty) (Error.UnsupportedTy (Static, ty))
+    in
+    let types = func_sig_types func_sig in
+    let all_parameters = list_concat_map (parameters_of_ty ~env) types in
+    uniq all_parameters
 
-  (** Returns the set of variables that are parameter defining, without the
-      ones previously declared in the environment. *)
-  let get_undeclared_defining env =
-    let rec of_ty acc ty =
+  (** The set of variables which could define a parameter in a function signature. *)
+  let extract_parameter_defining ~env f =
+    let rec defining_of_ty ~env acc ty =
       match ty.desc with
       | T_Bits ({ desc = E_Var x; _ }, _) ->
           if is_undefined x env then ISet.add x acc else acc
-      | T_Tuple tys -> List.fold_left of_ty acc tys
+      | T_Tuple tys -> List.fold_left (defining_of_ty ~env) acc tys
       | _ -> acc
     in
-    fun f ->
-      fold_types_func_sig of_ty f ISet.empty |: TypingRule.GetUndeclaredDefining
-  (* End *)
+    let types = func_sig_types f in
+    List.fold_left (defining_of_ty ~env)
+      (ISet.of_list (List.map fst f.args))
+      types
 
-  (** [use_func_sig f] returns the set of identifiers appearing in the
-      types of arguments of [f] and in the return type of [f], if there is one.
-  *)
-  let use_func_sig f =
-    fold_types_func_sig (Fun.flip ASTUtils.use_ty) f ISet.empty
-
-  (* Begin AnnotateFuncSig *)
-  let annotate_func_sig ~loc (genv : global) (func_sig : AST.func) :
-      env * AST.func =
-    (* Build typing local environment. *)
-    let env1 = with_empty_local genv in
-    let () =
-      if false then
-        Format.eprintf "Annotating %s in env:@ %a.@." func_sig.name pp_env env1
-    in
+  let annotate_func_sig_v1 ~loc genv func_sig =
+    let env = with_empty_local genv in
     (* Check recursion limit *)
     let recurse_limit =
-      annotate_loop_limit ~warn:false ~loc env1 func_sig.recurse_limit
+      annotate_loop_limit ~warn:false ~loc env func_sig.recurse_limit
     in
-    (* Parameters handling *)
-    let potential_params = get_undeclared_defining env1 func_sig in
-    (* Add explicit parameters *)
-    let env2, declared_params =
-      let () =
-        if false then
-          Format.eprintf "Defined potential parameters: %a@." ISet.pp_print
-            potential_params
+    (* Check parameters are declared correctly - in order and unique *)
+    let+ () =
+      let inferred_parameters = extract_parameters ~env func_sig in
+      let declared_parameters = List.map fst func_sig.parameters in
+      let all_parameters_declared =
+        list_equal String.equal inferred_parameters declared_parameters
       in
-      let folder (env1', acc) (x, ty_opt) =
-        let+ () = check_var_not_in_env loc env1' x in
-        let+ () =
-          check_true (ISet.mem x potential_params) @@ fun () ->
-          fatal_from loc (Error.ParameterWithoutDecl x)
-        in
-        let t =
+      check_true all_parameters_declared @@ fun () ->
+      fatal_from loc
+        (BadParameterDecl
+           (func_sig.name, inferred_parameters, declared_parameters))
+    in
+    (* Annotate and declare parameters *)
+    let env_with_params, parameters =
+      let declare_parameter new_env (x, ty_opt) =
+        let ty =
           match ty_opt with
           | None | Some { desc = T_Int UnConstrained; _ } ->
               Types.parameterized_ty x
-          | Some t1 -> annotate_type ~loc env1 t1
-          (* Type should be valid in the env with no param declared. *)
+          | Some ty ->
+              (* valid in environment which has no parameters declared *)
+              annotate_type ~loc env ty
         in
-        let+ () = check_constrained_integer ~loc env1 t in
-        (add_local x t LDK_Let env1', IMap.add x t acc)
-        |: TypingRule.AnnotateOneParam
+        let+ () = check_constrained_integer ~loc env ty in
+        let+ () = check_var_not_in_env loc new_env x in
+        (add_local x ty LDK_Let new_env, (x, Some ty))
       in
-      List.fold_left folder (env1, IMap.empty) func_sig.parameters
-      |: TypingRule.AnnotateParams
+      list_fold_left_map declare_parameter env func_sig.parameters
     in
-    let () =
-      if false then
-        Format.eprintf "Explicit parameters added to env %a.@." pp_local
-          env2.local
-    in
-    (* Add arguments as parameters. *)
-    let env3, arg_params =
-      let used =
-        use_func_sig func_sig
-        |> ISet.filter (fun s ->
-               is_undefined s env1 && not (IMap.mem s declared_params))
+    (* Annotate and declare arguments *)
+    let env_with_args, args =
+      let declare_argument new_env (x, ty) =
+        (* valid in environment with only parameters declared *)
+        let ty = annotate_type ~loc env_with_params ty in
+        let+ () = check_var_not_in_env loc new_env x in
+        let new_env = add_local x ty LDK_Let new_env in
+        (new_env, (x, ty))
       in
-      let () =
-        if false then
-          Format.eprintf "Undefined used in func sig: %a@." ISet.pp_print used
-      in
-      let folder (env2', acc) (x, ty) =
-        (* ArgAsParam( *)
-        if ISet.mem x used then
-          let+ () = check_var_not_in_env loc env2' x in
-          (* AnnotateParamType( *)
-          let t =
-            match ty.desc with
-            | T_Int UnConstrained -> Types.parameterized_ty x
-            | _ -> annotate_type ~loc env2 ty
-            (* Type sould be valid in env with explicit parameters added, but no implicit parameter from args added. *)
-            (* AnnotateParamType) *)
-          in
-          let+ () = check_constrained_integer ~loc env2 t in
-          (add_local x t LDK_Let env2', IMap.add x t acc)
-        else (env2', acc)
-        (* ArgAsParam) *)
-      in
-      List.fold_left folder (env2, IMap.empty) func_sig.args
-      |: TypingRule.ArgsAsParams
+      list_fold_left_map declare_argument env_with_params func_sig.args
     in
-    let parameters =
-      List.append (IMap.bindings declared_params) (IMap.bindings arg_params)
-      |> List.map (fun (x, t) -> (x, Some t))
-    in
-    let env3, parameters =
-      (* Do not transliterate, only for v0: promote potential params as params. *)
-      match C.check with
-      | TypeCheck | TypeCheckNoWarn -> (env3, parameters)
-      | Warn | Silence ->
-          let folder x (env3', parameters) =
-            if not (is_undefined x env3) then (env3', parameters)
-            else
-              let t = Types.parameterized_ty x in
-              (add_local x t LDK_Let env3', (x, Some t) :: parameters)
-          in
-          ISet.fold folder potential_params (env3, parameters)
-    in
-    let () =
-      if false then
-        let open Format in
-        eprintf "@[Parameters identified for func %s:@ @[%a@]@]@." func_sig.name
-          (pp_print_list ~pp_sep:pp_print_space (fun f (s, ty_opt) ->
-               fprintf f "%s:%a" s (pp_print_option PP.pp_ty) ty_opt))
-          parameters
-    in
-    let () =
-      if false then
-        Format.eprintf "@[<hov>Annotating arguments in env:@ %a@]@." pp_local
-          env3.local
-    in
-    (* Add arguments. *)
-    let env4, args =
-      let one_arg env3' (x, ty) =
-        if IMap.mem x arg_params then
-          let ty' = annotate_type ~loc env2 ty in
-          (env3', (x, ty'))
-        else
-          let () = if false then Format.eprintf "Adding argument %s.@." x in
-          let+ () = check_var_not_in_env loc env3' x in
-          (* Subtlety here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
-          let ty' = annotate_type ~loc env3 ty in
-          let env3'' = add_local x ty' LDK_Let env3' in
-          (env3'', (x, ty'))
-      in
-      list_fold_left_map one_arg env3 func_sig.args |: TypingRule.AnnotateArgs
-    in
-    (* Check return type. *)
-    let env5, return_type =
+    (* Annotate return type *)
+    let env_with_return, return_type =
       match func_sig.return_type with
-      | None -> (env4, func_sig.return_type)
+      | None -> (env_with_args, None)
       | Some ty ->
-          let () =
-            if false then
-              Format.eprintf "@[<hov>Annotating return-type in env:@ %a@]@."
-                pp_local env4.local
-          in
-          (* Subtlety here: the type should be valid in the env with parameters declared, i.e. [env3]. *)
-          let ty' = annotate_type ~loc env3 ty in
-          let return_type = Some ty' in
-          let env4' = { env4 with local = { env4.local with return_type } } in
-          let () =
-            if false then
-              Format.eprintf "@[<hov>Env after annotating return-type:@ %a@]@."
-                pp_local env4'.local
-          in
-          (env4', return_type)
+          (* valid in environment with parameters declared *)
+          let return_type = Some (annotate_type ~loc env_with_params ty) in
+          let local_env = { env_with_args.local with return_type } in
+          ({ env_with_args with local = local_env }, return_type)
     in
-    (env5, { func_sig with parameters; args; return_type; recurse_limit })
-    |: TypingRule.AnnotateFuncSig
-  (* End *)
+    ( env_with_return,
+      { func_sig with parameters; args; return_type; recurse_limit } )
+
+  let annotate_func_sig_v0 ~loc genv func_sig =
+    let env = with_empty_local genv in
+    (* Check recursion limit *)
+    let recurse_limit =
+      annotate_loop_limit ~warn:false ~loc env func_sig.recurse_limit
+    in
+    (* Check parameters have defining arguments *)
+    let inferred_parameters = extract_parameters ~env func_sig in
+    let+ () =
+      let defining = extract_parameter_defining ~env func_sig in
+      let undefined_parameters =
+        List.filter (fun x -> not (ISet.mem x defining)) inferred_parameters
+      in
+      check_true (list_is_empty undefined_parameters) @@ fun () ->
+      fatal_from loc (ParameterWithoutDecl (List.hd undefined_parameters))
+    in
+    (* Annotate and declare parameters from arguments *)
+    let env_with_params, typed_parameters =
+      let declare_parameter new_env x =
+        let ty =
+          match List.assoc_opt x func_sig.args with
+          | None | Some { desc = T_Int UnConstrained } ->
+              Types.parameterized_ty x
+          | Some ty ->
+              (* valid in environment which has no parameters declared *)
+              annotate_type ~loc env ty
+        in
+        let+ () = check_constrained_integer ~loc env ty in
+        let+ () = check_var_not_in_env loc new_env x in
+        (add_local x ty LDK_Let new_env, (x, ty))
+      in
+      list_fold_left_map declare_parameter env inferred_parameters
+    in
+    let parameters = List.map (fun (x, ty) -> (x, Some ty)) typed_parameters in
+    (* Annotate and declare remaining arguments *)
+    let env_with_args, args =
+      let declare_argument new_env (x, ty) =
+        match List.assoc_opt x typed_parameters with
+        | Some ({ desc = T_Int (Parameterized _) } as ty) ->
+            (new_env, (x, T_Int UnConstrained |> add_pos_from ty))
+        | Some ty -> (new_env, (x, ty))
+        | None ->
+            let ty = annotate_type ~loc env_with_params ty in
+            let+ () = check_var_not_in_env loc new_env x in
+            (add_local x ty LDK_Let new_env, (x, ty))
+      in
+      list_fold_left_map declare_argument env_with_params func_sig.args
+    in
+    (* Annotate return type *)
+    let env_with_return, return_type =
+      match func_sig.return_type with
+      | None -> (env_with_args, None)
+      | Some ty ->
+          (* valid in environment with parameters declared *)
+          let return_type = Some (annotate_type ~loc env_with_params ty) in
+          let local_env = { env_with_args.local with return_type } in
+          ({ env_with_args with local = local_env }, return_type)
+    in
+    ( env_with_return,
+      { func_sig with parameters; args; return_type; recurse_limit } )
+
+  let annotate_func_sig ~loc genv func_sig =
+    match loc.version with
+    | V0 -> annotate_func_sig_v0 ~loc genv func_sig
+    | V1 -> annotate_func_sig_v1 ~loc genv func_sig
 
   module ControlFlow : sig
     val check_stmt_returns_or_throws : identifier -> stmt_desc annotated -> prop
@@ -2802,7 +2913,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | (_, ret_type) :: args -> (ret_type, List.map snd args)
         in
         let _, _, func_sig' =
-          try Fn.subprogram_for_name loc env func_sig.name arg_types
+          try Fn.subprogram_for_name loc env V1 func_sig.name arg_types
           with
           | Error.(
               ASLException

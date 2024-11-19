@@ -94,6 +94,9 @@ let e_binop (e1, op, e2) =
   in
   E_Binop (op, e1, e2)
 
+let e_call call = E_Call { call with call_type = ST_Function }
+let s_call call = S_Call { call with call_type = ST_Procedure }
+
 %}
 
 (* ------------------------------------------------------------------------- *)
@@ -240,7 +243,6 @@ let binop ==
   ------------------------------------------------------------------------- *)
 
 let field_assign == separated_pair(IDENTIFIER, EQ, expr)
-let nargs == { [] }
 
 let e_else :=
   | ELSE; expr
@@ -261,8 +263,7 @@ let make_expr(sub_expr) ==
     | e1=sub_expr; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
-    | name=IDENTIFIER; args=plist(expr); params=nargs;
-      { E_Call { name; args; params; call_type = ST_Function } }
+    | ~=call;                                                     < e_call               >
     | e=sub_expr; ~=slices;                                       < E_Slice              >
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
@@ -463,20 +464,22 @@ let stmt ==
     | terminated_by(SEMI_COLON,
       | PASS; pass
       | RETURN; ~=ioption(expr);                             < S_Return >
-      | name=IDENTIFIER; args=plist(expr); params=nargs;
-        { S_Call { name; args; params; call_type = ST_Procedure } }
+      | ~=call;                                              < s_call >
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
-      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); EQ; rhs=expr;
+      | call=annotated(call); EQ; rhs=expr;
         { desugar_setter call [] rhs }
-      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); DOT; fld=IDENTIFIER; EQ; rhs=expr;
+      | call=annotated(call); DOT; fld=IDENTIFIER; EQ; rhs=expr;
         { desugar_setter call [fld] rhs }
-      | call=annotated(~=IDENTIFIER; ~=plist(expr); <>); DOT;
-        flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
+      | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
         { desugar_setter call flds rhs }
+      | ldk=local_decl_keyword; lhs=decl_item; EQ; call=annotated(elided_param_call);
+        { desugar_elided_parameter ldk lhs call}
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
+      | VAR; lhs=decl_item; EQ; call=annotated(elided_param_call);
+        { desugar_elided_parameter LDK_Var lhs call}
       | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }
       | DEBUG; args=plist(expr);                             { S_Print { args; debug = true } }
       | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
@@ -510,7 +513,18 @@ let subtype_opt == option(subtype)
 
 let opt_typed_identifier == pair(IDENTIFIER, ty_opt)
 let return_type == ARROW; ty
-let params_opt == { [] } | braced(clist(opt_typed_identifier))
+let params_opt == loption(braced(nclist(opt_typed_identifier)))
+(* Uses a dummy call_type, overriden when used above *)
+let call ==
+  | name=IDENTIFIER; args=plist(expr);
+    { { name; params=[]; args; call_type = ST_Function } }
+  | name=IDENTIFIER; params=braced(nclist(expr)); args=loption(plist(expr));
+    { { name; params; args; call_type = ST_Function } }
+let elided_param_call ==
+  | name=IDENTIFIER; LBRACE; RBRACE; args=plist(expr);
+    { { name; params=[]; args; call_type = ST_Function } }
+  | name=IDENTIFIER; LBRACE; COMMA; params=nclist(expr); RBRACE; args=loption(plist(expr));
+    { { name; params; args; call_type = ST_Function } }
 let func_args == plist(typed_identifier)
 let maybe_empty_stmt_list == stmt_list | annotated({ S_Pass })
 let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
@@ -532,6 +546,7 @@ let decl ==
             return_type = Some return_type;
             subprogram_type = ST_Function;
             recurse_limit;
+            builtin = false;
           }
         }
     (* End *)
@@ -546,6 +561,7 @@ let decl ==
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            builtin = false;
           }
         }
     (* End *)
@@ -562,6 +578,7 @@ let decl ==
               body = SB_ASL func_body;
               subprogram_type = ST_Getter;
               recurse_limit = None;
+              builtin = false;
             }
         }
     (* End *)
@@ -578,6 +595,7 @@ let decl ==
               body = SB_ASL func_body;
               subprogram_type = ST_Setter;
               recurse_limit = None;
+              builtin = false;
             }
         }
     (* End *)
@@ -620,6 +638,7 @@ let opn := body=stmt; EOF;
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            builtin = false;
           }
         |> ASTUtils.add_pos_from body
       ]

@@ -39,7 +39,7 @@ ATCs on other types
   $ cat >atcs4.asl <<EOF
   > type myty of record { a: integer, b: bits(4)};
   > func main () => integer begin
-  >   let x = (myty { a = 4, b = Zeros(4) }) as myty;
+  >   let x = (myty { a = 4, b = Zeros{4} }) as myty;
   >   return 0;
   > end;
   > EOF
@@ -50,7 +50,7 @@ ATCs on other types
   > type myty of record { a: integer, b: bits(4)};
   > type myty2 of record { a: integer { 0..10 }, b: bits(4)};
   > func main () => integer begin
-  >   let x = (myty { a = 4, b = Zeros(4) }) as myty;
+  >   let x = (myty { a = 4, b = Zeros{4} }) as myty;
   >   let y = x as myty2;
   >   return 0;
   > end;
@@ -64,7 +64,7 @@ ATCs on other types
   $ cat > atcs6.asl <<EOF
   > type myty of (integer {0..10}, bits(4));
   > func main () => integer begin
-  >   let x = ((42, Zeros(4)) as myty);
+  >   let x = ((42, Zeros{4}) as myty);
   >   return 0;
   > end;
   > EOF
@@ -78,7 +78,7 @@ ATCs on other types
   $ cat > atcs7.asl <<EOF
   > type myty of (integer {42}, bits(4));
   > func main () => integer begin
-  >   let x = ((42, Zeros(4)) as myty);
+  >   let x = ((42, Zeros{4}) as myty);
   >   return 0;
   > end;
   > EOF

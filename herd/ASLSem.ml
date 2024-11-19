@@ -607,7 +607,7 @@ module Make (C : Config) = struct
       and body = SB_Primitive
       and recurse_limit = None;
       and return_type = returns in
-      ( { name; args; body; return_type; parameters; subprogram_type; recurse_limit }
+      ( { name; args; body; return_type; parameters; subprogram_type; recurse_limit; builtin = true }
         [@warning "-40-42"],
         f )
 
@@ -708,6 +708,8 @@ module Make (C : Config) = struct
       let minus_one e = binop MINUS e (lit 1) in
       let pow_2 = binop POW (lit 2) in
       let t_named x = T_Named x |> with_pos in
+      let int_exact x =
+          T_Int (WellConstrained [ Constraint_Exact (var x) ]) |> with_pos in
       let uint_returns =
         int_ctnt (lit 0) (minus_one (pow_2 (var "N")))
       and sint_returns =
@@ -732,12 +734,14 @@ module Make (C : Config) = struct
         p3r "read_memory_gen" ("addr", bv_64) ("size", integer)
           ("accdesc", t_named "AccessDescriptor")
           ~returns:bv_64 read_memory_gen;
-        p3 "write_memory" ("addr", bv_64) ("size", integer)
-          ("data", bv_var "size")
+        p3 "write_memory"
+          ~parameters:[ ("size", None) ]
+          ("addr", bv_64) ("sz", int_exact "size") ("data", bv_var "size")
           write_memory;
-        p4 "write_memory_gen" ("addr", bv_64) ("size", integer)
-          ("data", bv_var "size")
-          ("accdesc", t_named "AccessDescriptor")
+        p4 "write_memory_gen"
+          ~parameters:[ ("size", None) ]
+          ("addr", bv_64) ("sz", int_exact "size")
+          ("data", bv_var "size") ("accdesc", t_named "AccessDescriptor")
           write_memory_gen;
         (* Translations *)
         p1r "UInt"

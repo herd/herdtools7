@@ -33,27 +33,26 @@ begin
   assert IsOdd (1);
   assert IsOdd (-1);
 
-  assert Replicate('01',3) == '010101';
-  assert Replicate('',3) == '';
+  assert Replicate{6}('01') == '010101';
 
-  assert Zeros(0) == '';
-  assert Zeros(3) == '000';
-  assert Zeros(8) == '00000000';
+  assert Zeros{0} == '';
+  assert Zeros{3} == '000';
+  assert Zeros{8} == '00000000';
 
-  assert Ones(0) == '';
-  assert Ones(3) == '111';
-  assert Ones(8) == '11111111';
+  assert Ones{0} == '';
+  assert Ones{3} == '111';
+  assert Ones{8} == '11111111';
 
-  assert IsZero(Zeros(2));
-  assert IsOnes(Ones(3));
-  assert ! IsZero(Ones(3));
-  assert ! IsOnes(Zeros(3));
+  assert IsZero(Zeros{2});
+  assert IsOnes(Ones{3});
+  assert ! IsZero(Ones{3});
+  assert ! IsOnes(Zeros{3});
   assert ! IsZero ('101');
 
-  assert SignExtend('100', 5) == '11100';
-  assert ZeroExtend('100', 5) == '00100';
-  assert Extend('100', 5, TRUE) == '00100';
-  assert Extend('100', 5, FALSE) == '11100';
+  assert SignExtend{5}('100') == '11100';
+  assert ZeroExtend{5}('100') == '00100';
+  assert Extend{5}('100', TRUE) == '00100';
+  assert Extend{5}('100', FALSE) == '11100';
 
   assert Len('') == 0;
   assert Len('1010') == 4;
@@ -69,15 +68,15 @@ begin
   assert SInt('0') == 0;
   assert SInt('1') == -1;
 
-  test_uint (Zeros(0));
-  test_uint (Zeros(1));
-  test_uint (Zeros(2));
-  test_uint (Zeros(3));
+  test_uint{0}(Zeros{0});
+  test_uint{1}(Zeros{1});
+  test_uint{2}(Zeros{2});
+  test_uint{3}(Zeros{3});
 
-  test_sint (Zeros(0));
-  test_sint (Zeros(1));
-  test_sint (Zeros(2));
-  test_sint (Zeros(3));
+  test_sint{0}(Zeros{0});
+  test_sint{1}(Zeros{1});
+  test_sint{2}(Zeros{2});
+  test_sint{3}(Zeros{3});
 
   for n = 0 to 25 do
     assert Log2(2 ^ n) == n;

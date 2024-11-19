@@ -2,7 +2,7 @@
 func positive11b{N: integer {0..64}} (x: bits(N)) => bits(64)
 begin
     return [
-        Ones(5),
+        Ones{5},
         x
     ] as bits(64); // has static width of bits(64)
 end;

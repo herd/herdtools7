@@ -30,6 +30,7 @@ Finally, we define the AST grammar rules for the different ASL constructs along 
   \item Expressions (\secref{Expressions})
   \item Patterns (\secref{Patterns})
   \item Slices (\secref{Slices})
+  \item Subprogram calls (\secref{SubprogramCalls})
   \item Types (\secref{Types})
   \item Constraints (\secref{Constraints})
   \item Bit Fields (\secref{BitFields})
@@ -175,7 +176,7 @@ and pattern matching expressions.
   &\hypertarget{ast-eunop}{}\\
 	|\ & \EUnop(\unop, \expr)
   &\hypertarget{ast-ecall}{}\\
-	|\ & \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})
+	|\ & \ECall(\call)
   &\hypertarget{ast-eslice}{}\\
 	|\ & \ESlice(\expr, \slice^{*})
   &\hypertarget{ast-econd}{}\\
@@ -266,6 +267,22 @@ as indicated by respective comments.
   % & & \ASTComment{the slice starting at \vi\ of length \vn.}\\
   |\ & \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &
   % & & \ASTComment{the slice starting at \texttt{i*n} of length \vn}
+\end{flalign*}
+
+\subsection{Subprogram calls \label{sec:SubprogramCalls}}
+\hypertarget{ast-call}{}
+\begin{flalign*}
+\call \derives\ &
+{
+\left\{
+  \begin{array}{rcl}
+ \callname &:& \Strings, \\
+ \callparams &:& \expr, \\
+ \callargs &:& \expr, \\
+ \callcalltype &:& \subprogramtype
+\end{array}
+\right\}
+} &
 \end{flalign*}
 
 \subsection{Types \label{sec:Types}}
@@ -437,7 +454,7 @@ the local declaration item is
   \hypertarget{ast-sassign}{} &\\
   |\ & \SAssign(\lexpr, \expr)
   \hypertarget{ast-scall}{} &\\
-  |\ & \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments})
+  |\ & \SCall(\call)
   \hypertarget{ast-sreturn}{} &\\
   |\ & \SReturn(\expr?)
   \hypertarget{ast-scond}{} &\\
@@ -509,7 +526,8 @@ the local declaration item is
  \funcargs &:& \typedidentifier^*,\\
  \funcbody &:& \subprogrambody,\\
  \funcreturntype &:& \ty?,\\
- \funcsubprogramtype &:& \subprogramtype
+ \funcsubprogramtype &:& \subprogramtype,\\
+ \funcbuiltin &:& \Bool
 \end{array}
 \right\}
 } &
@@ -571,12 +589,6 @@ The rules for expressions have the following extra derivation rules:
         in order to initialize an array-typed variable.
 \end{itemize}
 
-The AST node for call expressions includes an extra component that explicitly associates expressions
-with parameters:
-\begin{flalign*}
-\expr \derives\ & \ECall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) &
-\end{flalign*}
-
 The AST node for a left-hand-side tuple of expressions contains a second component $\vwidths$ whose elements
 are expressions corresponding to the lengths of the corresponding slices in $\vles$:
 \begin{flalign*}
@@ -590,12 +602,6 @@ The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
 \begin{flalign*}
 \stmt \derives\ & \SThrow((\expr, \overtext{\ty}{exception type})?) &
-\end{flalign*}
-
-Similar to expressions, the AST node for call statements includes an extra component that explicitly associates expressions
-with parameters:
-\begin{flalign*}
-\stmt \derives\ & \SCall(\overtext{\identifier}{subprogram name}, \overtext{\expr^{*}}{actual arguments}, \overtext{(\identifier, \expr)^{*}}{parameters with initializers}) &
 \end{flalign*}
 
 The rules for slices is replaced by the following:

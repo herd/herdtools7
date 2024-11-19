@@ -365,6 +365,7 @@ module Untyped (C : Config.S) = struct
           return_type;
           subprogram_type;
           recurse_limit;
+          builtin = false;
         }
       |> annot
     in
@@ -993,6 +994,7 @@ module Typed (C : Config.S) = struct
           return_type;
           subprogram_type;
           recurse_limit;
+          builtin = false;
         }
       in
       (D_Func func_sig |> annot, StaticEnv.add_subprogram name func_sig env)
@@ -1030,6 +1032,7 @@ module Typed (C : Config.S) = struct
           return_type;
           subprogram_type;
           recurse_limit;
+          builtin = false;
         }
       in
       D_Func func_sig |> annot

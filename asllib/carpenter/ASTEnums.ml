@@ -338,6 +338,7 @@ module Make (C : Config.S) = struct
             return_type;
             subprogram_type;
             recurse_limit;
+            builtin = false;
           }
         |> annot;
       ]
@@ -422,6 +423,7 @@ module Make (C : Config.S) = struct
             return_type;
             subprogram_type;
             recurse_limit;
+            builtin = false;
           }
       in
       let args = vars ** tys in

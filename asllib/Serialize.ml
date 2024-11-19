@@ -114,8 +114,7 @@ let rec pp_expr =
     | E_Unop (op, e) -> bprintf f "E_Unop (%s, %a)" (pp_unop op) pp_expr e
     | E_Call { name; args; params; call_type } ->
         bprintf f "E_Call {name=%S; args=%a; params=%a; call_type=%a}" name
-          pp_expr_list args (pp_id_assoc pp_expr) params pp_subprogram_type
-          call_type
+          pp_expr_list args pp_expr_list params pp_subprogram_type call_type
     | E_Slice (e, args) ->
         bprintf f "E_Slice (%a, %a)" pp_expr e pp_slice_list args
     | E_Cond (e1, e2, e3) ->
@@ -267,8 +266,7 @@ let rec pp_stmt =
     | S_Assign (le, e) -> bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
     | S_Call { name; args; params; call_type } ->
         bprintf f "S_Call {name=%S; args=%a; params=%a; call_type=%a}" name
-          pp_expr_list args (pp_id_assoc pp_expr) params pp_subprogram_type
-          call_type
+          pp_expr_list args pp_expr_list params pp_subprogram_type call_type
     | S_Cond (e, s1, s2) ->
         bprintf f "S_Cond (%a, %a, %a)" pp_expr e pp_stmt s1 pp_stmt s2
     | S_Return e -> bprintf f "S_Return (%a)" (pp_option pp_expr) e

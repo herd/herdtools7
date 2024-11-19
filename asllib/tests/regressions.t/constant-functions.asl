@@ -5,7 +5,7 @@ end;
 
 constant A = double(32) as integer {0..1000};
 constant C = double(double(16)) as integer {0..1000};
-constant D: bits(A) = Zeros(C);
+constant D: bits(A) = Zeros{C};
 
 func main () => integer
 begin

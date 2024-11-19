@@ -5,6 +5,6 @@ end;
 
 func main() => integer
 begin
-    test('11');
+    test{2}('11');
     return 0;
 end;

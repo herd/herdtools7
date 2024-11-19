@@ -12,6 +12,6 @@ begin
         z = z + 1; // should be illegal without ATC
     end;
     let W = z;
-    var bv: bits(W) = Ones(W);
+    var bv: bits(W) = Ones{W};
     return BitCount(bv);
 end;

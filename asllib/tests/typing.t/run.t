@@ -15,17 +15,17 @@ H Examples
   $ aslref --no-exec HExample14.asl
   $ aslref --no-exec HExample15.asl
   $ aslref --no-exec HExample16.asl
-  File HExample16.asl, line 10, characters 19 to 33:
+  File HExample16.asl, line 10, characters 19 to 35:
   ASL Typing error: a subtype of integer {1..a} was expected,
     provided integer {8, 16, 32, 64}.
   [1]
   $ aslref --no-exec HExample17.asl
-  File HExample17.asl, line 11, characters 19 to 33:
+  File HExample17.asl, line 11, characters 19 to 35:
   ASL Typing error: a subtype of integer {1..a} was expected,
     provided integer {32}.
   [1]
   $ aslref --no-exec HExample18.asl
-  File HExample18.asl, line 12, characters 20 to 35:
+  File HExample18.asl, line 12, characters 20 to 37:
   ASL Typing error: a subtype of integer {1..a2} was expected,
     provided integer {8, 16, 32, 64}.
   [1]
@@ -310,7 +310,7 @@ C Tests
   ASL Typing error: a subtype of bits(64) was expected, provided bits((N + 5)).
   [1]
   $ aslref --no-exec CNegative5.asl
-  File CNegative5.asl, line 13, characters 2 to 30:
+  File CNegative5.asl, line 13, characters 2 to 33:
   ASL Typing error: a subtype of integer {12} was expected,
     provided integer {3}.
   [1]
@@ -320,7 +320,7 @@ C Tests
     provided integer {(N + 1)}.
   [1]
   $ aslref --no-exec CNegative7.asl
-  File CNegative7.asl, line 8, characters 9 to 23:
+  File CNegative7.asl, line 8, characters 9 to 26:
   ASL Typing error: a subtype of integer {0..(M - 1)} was expected,
     provided integer {M}.
   [1]

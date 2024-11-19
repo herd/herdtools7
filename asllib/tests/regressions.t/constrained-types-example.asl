@@ -5,8 +5,8 @@ end;
 
 func test(M: integer {8,16,32}, L: integer {8,16})
 begin
-  var myM = Zeros (M);
-  var myL = Zeros (L);
+  var myM = Zeros {M};
+  var myL = Zeros {L};
 
   if (M != L) then
     return;
@@ -24,7 +24,7 @@ begin
   // The author explicitly claimed that myL has the width of myM
   // An execution-time check of (M==L) is required
 
-  invokeMe(myL); // Legal
+  invokeMe{L}(myL); // Legal
   // The parameter N is taken to be the value which corresponds
   // with the width of myL and the width of myL is an integer {8,16}
   // which complies with the declaration of parameter 'N'

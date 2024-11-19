@@ -9,5 +9,5 @@ end;
 
 func reset()
 begin
-    R2 = MyOR(R0, R1);
+    R2 = MyOR{4}(R0, R1);
 end;

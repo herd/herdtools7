@@ -894,8 +894,8 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
   \inferrule[call]{
     \buildplist[\buildexpr](\vargs) \astarrow \vexprasts
   }{
-  \buildexprpattern(\Nexprpattern(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})) \astarrow
-  \overname{\ECall(\id, \vexprasts)}{\vastnode}
+  \buildexprpattern(\Nexprpattern(\punnode{\Ncall})) \astarrow
+  \overname{\ECall(\astof{\vcall})}{\vastnode}
 }
 \end{mathpar}
 
