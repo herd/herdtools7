@@ -676,8 +676,8 @@ module
       let modifier = Cst.pp true m in
       let pac = Constant.PAC.add key modifier offset pac in
       Val (Symbolic (Virtual {v with pac}))
-    | Val _, _ ->
-        Warn.user_error "%s is not a valid virtual address" (pp_v pointer)
+    | Val _, Val _ ->
+        Warn.user_error "addPAC: %s is not a valid virtual address" (pp_v pointer)
     | _, _ -> raise Undetermined
 
   (* Check that the PAC field of a virtual address is canonical *)
@@ -688,7 +688,7 @@ module
         else
           Val (Concrete Cst.Scalar.zero)
     | Val cst ->
-        Warn.user_error "%s is not a valid virtual address" (Cst.pp_v cst)
+        Warn.user_error "checkCanonical: %s is not a valid virtual address" (Cst.pp_v cst)
     | Var _ -> raise Undetermined
 
   (* Remove the PAC field of a virtual address *)
@@ -696,7 +696,7 @@ module
     | Val (Symbolic (Virtual v)) ->
         Val (Symbolic (Virtual {v with pac= Constant.PAC.canonical}))
     | Val cst ->
-        Warn.user_error "%s is not a valid virtual address" (Cst.pp_v cst)
+        Warn.user_error "setCanonical: %s is not a valid virtual address" (Cst.pp_v cst)
     | Var _ -> raise Undetermined
 
   let alignd c k =

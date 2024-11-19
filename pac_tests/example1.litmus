@@ -7,8 +7,7 @@ between it's source register and it's destination register
 }
  P0          | P1          ;
  MOV W0,#1   | LDR W0,[X1] ;
-             | EOR X4,X0,X0;
-             | ADD X5,X3,X4;
+             | PACDA X3,X5 ;
  STR W0,[X1] | LDR W2,[X3] ;
  MOV W2,#1   |             ;
  DMB SY      |             ;

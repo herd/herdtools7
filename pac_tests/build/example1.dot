@@ -3,8 +3,8 @@ digraph G {
 
 
 /* init events */
-eiid4 [label="iy:W[y]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
-eiid5 [label="ix:W[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
+eiid3 [label="iy:W[y]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
+eiid4 [label="ix:W[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
 
 /* the unlocked events */
 subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
@@ -13,7 +13,6 @@ eiid1 [label="b: W[y]=1", shape="none", fixedsize="false", height="0.194444", wi
 }
 subgraph cluster_proc1 { rank=sink; label = "Thread 1"; color=magenta; shape=box;
 eiid2 [label="c: R[y]=1", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
-eiid3 [label="d: R[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
 }
 
 /* the intra_causality_data edges */
@@ -22,15 +21,12 @@ eiid3 [label="d: R[x]=0", shape="none", fixedsize="false", height="0.194444", wi
 /* the intra_causality_control edges */
 
 /* the poi edges */
-eiid2 -> eiid3 [label="po", color="black", fontcolor="black"];
 /* the rfmap edges */
 
 
 /* The viewed-before edges */
 eiid1 -> eiid2 [label="rf", color="red", fontcolor="red"];
-eiid5 -> eiid3 [label="rf", color="red", fontcolor="red"];
 eiid0 -> eiid1 [label="dmb.sy", color="darkgreen", fontcolor="darkgreen"];
-eiid3 -> eiid0 [label="ca", color="blue", fontcolor="blue"];
-eiid4 -> eiid1 [label="ca", color="blue", fontcolor="blue"];
-eiid5 -> eiid0 [label="ca", color="blue", fontcolor="blue"];
+eiid3 -> eiid1 [label="ca", color="blue", fontcolor="blue"];
+eiid4 -> eiid0 [label="ca", color="blue", fontcolor="blue"];
 }
