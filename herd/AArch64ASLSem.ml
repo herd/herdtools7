@@ -1190,19 +1190,15 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let is_warn = C.variant Variant.Warn && not is_strict
 
     let check_strict test ii =
-      match ii.A.inst with
-      | AArch64Base.(I_IC _|I_DC _|I_TLBI _) -> (* Always execute *)
-          AArch64Mixed.build_semantics test ii
-      | _ ->
-          if is_strict then
-            Warn.fatal "No ASL implemention for instruction %s"
-              (A.dump_instruction ii.A.inst);
-          if is_warn then
-            Warn.warn_always "No ASL implemention for instruction %s"
-              (A.dump_instruction ii.A.inst);
-          AArch64Mixed.build_semantics test ii
+      if is_strict then
+        Warn.fatal "No ASL implemention for instruction %s"
+          (A.dump_instruction ii.A.inst);
+      if is_warn then
+        Warn.warn_always "No ASL implemention for instruction %s"
+          (A.dump_instruction ii.A.inst);
+      AArch64Mixed.build_semantics test ii
 
-    let build_semantics test ii =
+    let asl_build_semantics test ii =
       let flitmus = test.Test_herd.name.Name.file in
       let () =
         if _dbg then
@@ -1309,6 +1305,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           match monads with
           | [] -> Warn.fatal "No possible ASL execution."
           | h :: t -> List.fold_left M.altT h t)
+
+    let build_semantics test ii =
+      let open AArch64Base in
+      match ii.A.inst with
+      | I_OP3 (V64,LSR,_,_,OpExt.Imm (12,0)) (* Specific -> get TLBI key *)
+      | I_DC _|I_IC _ | I_TLBI _ ->
+          AArch64Mixed.build_semantics test ii
+      | _ -> asl_build_semantics test ii
 
     let spurious_setaf v = AArch64Mixed.spurious_setaf v
   end
