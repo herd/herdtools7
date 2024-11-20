@@ -129,7 +129,7 @@ Loops
   File TPositive8-1.asl, line 4, characters 12 to 33:
   ASL Typing error: a pure expression was expected,
     found 100 as integer {8, 16}, which produces the following side-effects:
-    [PerformsATC].
+    [PerformsAssertions].
   [1]
   $ aslref --no-exec TNegative8-0.asl
   File TNegative8-0.asl, line 5, characters 8 to 40:
