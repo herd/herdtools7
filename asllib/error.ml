@@ -76,13 +76,14 @@ type error_desc =
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
-  | ConcurrentSideEffects of SideEffect.t * SideEffect.t
+  | ConflictingSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
   | UnreachableReached
   | LoopLimitReached
   | RecursionLimitReached
   | EmptyConstraints
-  | ConfigTimeBroken of expr
+  | ConfigTimeBroken of expr * SideEffect.SES.t
+  | ConstantTimeBroken of expr * SideEffect.SES.t
 
 type error = error_desc annotated
 
@@ -168,8 +169,9 @@ let error_label = function
   | LoopLimitReached -> "LoopLimitReached"
   | RecursionLimitReached -> "RecursionLimitReached"
   | EmptyConstraints -> "EmptyConstraints"
-  | ConcurrentSideEffects _ -> "ConcurrentSideEffects"
+  | ConflictingSideEffects _ -> "ConflictingSideEffects"
   | ConfigTimeBroken _ -> "ConfigTimeBroken"
+  | ConstantTimeBroken _ -> "ConstantTimeBroken"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -399,12 +401,19 @@ module PPrint = struct
         pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->
         pp_print_text f "ASL Dynamic error: loop limit reached."
-    | ConcurrentSideEffects (s1, s2) ->
-        fprintf f "ASL Typing error: concurrent side effects %a and %a"
+    | ConflictingSideEffects (s1, s2) ->
+        fprintf f "ASL Typing error: conflicting side effects %a and %a"
           SideEffect.pp_print s1 SideEffect.pp_print s2
-    | ConfigTimeBroken e ->
-        fprintf f "ASL Typing error: expected config-time expression, got %a."
-          pp_expr e
+    | ConfigTimeBroken (e, ses) ->
+        fprintf f
+          "ASL Typing error:@ expected@ config-time@ expression,@ got@ %a,@ \
+           which@ produces@ the@ following@ side-effects:@ %a."
+          pp_expr e SideEffect.SES.pp_print ses
+    | ConstantTimeBroken (e, ses) ->
+        fprintf f
+          "ASL Typing error:@ expected@ constant-time@ expression,@ got@ %a,@ \
+           which@ produces@ the@ following@ side-effects:@ %a."
+          pp_expr e SideEffect.SES.pp_print ses
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

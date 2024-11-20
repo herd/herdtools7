@@ -26,14 +26,15 @@ open Infix
 open StaticEnv
 module TypingRule = Instrumentation.TypingRule
 module SES = SideEffect.SES
+module TimeFrame = SideEffect.TimeFrame
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let invalid_expr e = fatal_from e (Error.InvalidExpr e)
 
-let concurrent_side_effects ~loc (s1, s2) =
-  fatal_from loc Error.(ConcurrentSideEffects (s1, s2))
+let conflicting_side_effects ~loc (s1, s2) =
+  fatal_from loc Error.(ConflictingSideEffects (s1, s2))
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
@@ -551,7 +552,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin StorageIsPure *)
-  let storage_is_pure ~loc (env : env) s =
+  let storage_is_immutable ~loc (env : env) s =
     (* Definition DDYW:
        Any expression consisting solely of an immutable storage element or a
        literal value is a statically evaluable expression.
@@ -570,11 +571,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckStaticallyEvaluable *)
   let is_immutable ~loc env ses =
-    SES.for_all_reads (storage_is_pure ~loc env) ses && not ses.non_determinism
+    SES.for_all_reads (storage_is_immutable ~loc env) ses
 
   let is_statically_evaluable ~loc env ses =
-    SES.is_side_effect_free ses
-    && is_immutable ~loc env ses |: TypingRule.IsStaticallyEvaluable
+    (SES.is_pure ses && is_immutable ~loc env ses)
+    |: TypingRule.IsStaticallyEvaluable
   (* End *)
 
   (* Begin CheckStaticallyEvaluable *)
@@ -584,36 +585,28 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     else fatal_from e (Error.ImpureExpression (e, ses))
   (* End *)
 
-  let check_is_side_effect_free e ses () =
-    if SES.is_side_effect_free ses then ()
-    else
-      let ses = SES.filter_side_effects ses in
-      fatal_from e (Error.ImpureExpression (e, ses))
+  let check_is_pure ?(allow_assertions = false) ?(allow_non_determinism = false)
+      e ses () =
+    let ses = if allow_assertions then SES.remove_assertions ses else ses in
+    let ses =
+      if allow_non_determinism then SES.remove_non_determinism ses else ses
+    in
+    if SES.is_pure ses then ()
+    else fatal_from e (Error.ImpureExpression (e, SES.remove_pure ses))
 
-  let check_is_deterministic e ses () =
-    if ses.SES.non_determinism then
-      let ses = SES.non_deterministic in
-      fatal_from e (Error.ImpureExpression (e, ses))
+  let is_config_time ses =
+    TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Config
 
-  let storage_is_config ~loc (env : env) s =
-    match IMap.find_opt s env.global.storage_types with
-    | Some (_, (GDK_Constant | GDK_Config)) -> true
-    | Some (_, (GDK_Let | GDK_Var)) -> false
-    | None -> (
-        match IMap.find_opt s env.local.storage_types with
-        | Some (_, LDK_Constant) -> true
-        | Some (_, (LDK_Var | LDK_Let)) -> false
-        | None ->
-            assert (is_undefined s env);
-            undefined_identifier loc s)
+  let check_is_config_time ~loc (_, e, ses_e) () =
+    if is_config_time ses_e then ()
+    else fatal_from loc Error.(ConfigTimeBroken (e, ses_e))
 
-  let is_config_time ~loc env ses =
-    SES.is_side_effect_free ses
-    && SES.for_all_reads (storage_is_config ~loc env) ses
+  let is_constant_time ses =
+    TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Constant
 
-  let check_is_config_time ~loc (env : env) (_, e, ses_e) () =
-    if is_config_time ~loc:e env ses_e then ()
-    else fatal_from loc Error.(ConfigTimeBroken e)
+  let check_is_constant_time ~loc (_, e, ses_e) () =
+    if is_constant_time ses_e then ()
+    else fatal_from loc Error.(ConstantTimeBroken (e, ses_e))
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
@@ -1033,7 +1026,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     fun ~loc slices ->
       let slices, sess = List.map annotate_slice slices |> List.split in
       let ses =
-        SES.non_concurrent_unions sess ~fail:(concurrent_side_effects ~loc)
+        SES.non_conflicting_unions sess ~fail:(conflicting_side_effects ~loc)
       in
       (slices, ses)
 
@@ -1167,7 +1160,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and annotate_call_v1 ~loc env name ~params ~args ~call_type =
     let arg_types, args, sess_args = list_split3 args in
     let ses_args =
-      SES.non_concurrent_unions sess_args ~fail:(concurrent_side_effects ~loc)
+      SES.non_conflicting_unions sess_args ~fail:(conflicting_side_effects ~loc)
     in
     let _, name, func_sig, ses_call =
       Fn.try_subprogram_for_name loc env V1 name arg_types
@@ -1252,7 +1245,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and annotate_call_v0 ~loc env name caller_args_typed call_type =
     let caller_arg_types, args1, sess = list_split3 caller_args_typed in
     let ses1 =
-      SES.non_concurrent_unions sess ~fail:(concurrent_side_effects ~loc)
+      SES.non_conflicting_unions sess ~fail:(conflicting_side_effects ~loc)
     in
     let eqs1, name1, callee, ses2 =
       Fn.try_subprogram_for_name loc env V0 name caller_arg_types
@@ -1448,7 +1441,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           check_atc env t_struct ty_struct ~fail:(fun () ->
               fatal_from loc (BadATC (t, ty)))
         in
-        let ses' = SES.set_atc_performed ses in
+        let ses' = SES.set_assertions_performed ses in
         (if Types.subtype_satisfies env t_struct ty_struct then (ty', e'', ses)
          else (ty', E_ATC (e'', ty_struct) |> here, ses'))
         |: TypingRule.ATC
@@ -1476,24 +1469,22 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           try
             match IMap.find x env.local.storage_types with
-            | ty, LDK_Constant ->
-                let e =
-                  try
-                    let v = lookup_constants env x in
-                    E_Literal v |> here
-                  with Not_found -> e
-                in
-                (ty, e, SES.empty)
-            | ty, _ -> (ty, e, SES.read_local x) |: TypingRule.EVar
+            | ty, LDK_Constant when Storage.mem x env.local.constant_values ->
+                let v = Storage.find x env.local.constant_values in
+                (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
+            | ty, ldk ->
+                let ses = SES.read_local x (TimeFrame.of_ldk ldk) in
+                (ty, e, ses) |: TypingRule.EVar
           with Not_found -> (
             try
               match IMap.find x env.global.storage_types with
-              | ty, GDK_Constant -> (
-                  match Storage.find_opt x env.global.constant_values with
-                  | Some v ->
-                      (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
-                  | None -> (ty, e, SES.empty) |: TypingRule.EVar)
-              | ty, _ -> (ty, e, SES.read_global x) |: TypingRule.EVar
+              | ty, GDK_Constant when Storage.mem x env.global.constant_values
+                ->
+                  let v = Storage.find x env.global.constant_values in
+                  (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
+              | ty, gdk ->
+                  let ses = SES.read_global x (TimeFrame.of_gdk gdk) in
+                  (ty, e, ses) |: TypingRule.EVar
             with Not_found ->
               let () =
                 if false then
@@ -1509,8 +1500,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ses =
           if binop_is_ordered op then SES.union ses1 ses2
           else
-            SES.non_concurrent_union ses1 ses2
-              ~fail:(concurrent_side_effects ~loc)
+            SES.non_conflicting_union ses1 ses2
+              ~fail:(conflicting_side_effects ~loc)
         in
         (t, E_Binop (op, e1', e2') |> here, ses) |: TypingRule.Binop
     (* End *)
@@ -1548,7 +1539,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_Tuple li ->
         let ts, es, sess = List.map (annotate_expr env) li |> list_split3 in
         let ses =
-          SES.non_concurrent_unions sess ~fail:(concurrent_side_effects ~loc)
+          SES.non_conflicting_unions sess ~fail:(conflicting_side_effects ~loc)
         in
         (T_Tuple ts |> here, E_Tuple es |> here, ses) |: TypingRule.ETuple
     (* End *)
@@ -1600,7 +1591,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         let fields', sess = List.map one_field fields |> List.split in
         let ses =
-          SES.non_concurrent_unions sess ~fail:(concurrent_side_effects ~loc)
+          SES.non_conflicting_unions sess ~fail:(conflicting_side_effects ~loc)
         in
         (ty, E_Record (ty, fields') |> here, ses) |: TypingRule.ERecord
     (* End *)
@@ -1831,8 +1822,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let wanted_t_index = type_of_array_length ~loc size in
     let+ () = check_type_satisfies loc env t_index' wanted_t_index in
     let ses =
-      SES.non_concurrent_union ses_index ses_base
-        ~fail:(concurrent_side_effects ~loc)
+      SES.non_conflicting_union ses_index ses_base
+        ~fail:(conflicting_side_effects ~loc)
     in
     (t_elem, E_GetArray (e_base, e_index') |> add_pos_from loc, ses)
 
@@ -1995,8 +1986,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let wanted_t_index = type_of_array_length ~loc:e_base size in
     let+ () = check_type_satisfies e_base env t_index' wanted_t_index in
     let ses =
-      SES.non_concurrent_union ses_base ses_index
-        ~fail:(concurrent_side_effects ~loc)
+      SES.non_conflicting_union ses_base ses_index
+        ~fail:(conflicting_side_effects ~loc)
     in
     (LE_SetArray (e_base, e_index') |> add_pos_from loc, ses)
 
@@ -2039,7 +2030,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 List.map2 (annotate_lexpr env) les tys |> List.split
               in
               let ses =
-                (* TODO left-hand-side concurrent union *)
+                (* TODO left-hand-side conflicting union *)
                 SES.unions sess
               in
               (LE_Destructuring les' |> here, ses)
@@ -2420,9 +2411,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin SAssert *)
     | S_Assert e ->
         let t_e', e', ses = annotate_expr env e in
-        let+ () = check_is_side_effect_free e (SES.remove_atcs ses) in
+        let+ () =
+          check_is_pure e ~allow_assertions:true ~allow_non_determinism:true ses
+        in
         let+ () = check_type_satisfies s env t_e' boolean in
-        (S_Assert e' |> here, env, SES.empty) |: TypingRule.SAssert
+        let ses = SES.set_assertions_performed ses in
+        (S_Assert e' |> here, env, ses) |: TypingRule.SAssert
     (* End *)
     (* Begin SWhile *)
     | S_While (e1, limit1, s1) ->
@@ -2447,10 +2441,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let start_t, start_e', ses_start = annotate_expr env start_e
         and end_t, end_e', ses_end = annotate_expr env end_e
         and limit' = annotate_limit_expr ~warn:false ~loc env limit in
-        let+ () = check_is_side_effect_free start_e ses_start in
-        let+ () = check_is_deterministic start_e ses_start in
-        let+ () = check_is_side_effect_free end_e ses_end in
-        let+ () = check_is_deterministic end_e ses_end in
+        let+ () = check_is_pure start_e ses_start in
+        let+ () = check_is_pure end_e ses_end in
         let ses_cond = SES.union ses_start ses_end in
         let start_struct = Types.make_anonymous env start_t
         and end_struct = Types.make_anonymous env end_t in
@@ -2480,8 +2472,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           try_annotate_block env' body
         in
         let ses =
-          SES.non_concurrent_union ses_cond ses_block
-            ~fail:(concurrent_side_effects ~loc)
+          SES.non_conflicting_union ses_cond ses_block
+            ~fail:(conflicting_side_effects ~loc)
         in
         ( S_For
             {
@@ -2581,7 +2573,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_Print { args; debug } ->
         let _, args', sess = List.map (annotate_expr env) args |> list_split3 in
         let ses =
-          SES.non_concurrent_unions sess ~fail:(concurrent_side_effects ~loc)
+          SES.non_conflicting_unions sess ~fail:(conflicting_side_effects ~loc)
         in
         (S_Print { args = args'; debug } |> here, env, ses) |: TypingRule.SDebug
     (* End *)
@@ -2665,8 +2657,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let _, _, sess_args = list_split3 typed_args in
     let ses =
       SES.union ses_call
-      @@ SES.non_concurrent_unions sess_args
-           ~fail:(concurrent_side_effects ~loc)
+      @@ SES.non_conflicting_unions sess_args
+           ~fail:(conflicting_side_effects ~loc)
     in
     let () = assert (ret_ty = None) in
     Some (S_Call call |> add_pos_from loc, ses)
@@ -2752,8 +2744,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let _, _, sess_args = list_split3 typed_args in
             let ses =
               SES.union ses_call
-              @@ SES.non_concurrent_unions sess_args
-                   ~fail:(concurrent_side_effects ~loc)
+              @@ SES.non_conflicting_unions sess_args
+                   ~fail:(conflicting_side_effects ~loc)
             in
             let () = assert (ret_ty = None) in
             Some (S_Call call |> here, ses)
@@ -3268,18 +3260,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env2 =
       match keyword with
       | GDK_Constant ->
-          let+ () =
-            check_true (SES.is_empty ses_initial_value) @@ fun () ->
-            fatal_from loc
-              Error.(ImpureExpression (initial_value', ses_initial_value))
-          in
+          let+ () = check_is_constant_time ~loc typed_initial_value in
           try_add_global_constant name env1 initial_value'
       | GDK_Let when is_statically_evaluable ~loc env1 ses_initial_value -> (
           match StaticModel.normalize_opt env1 initial_value' with
           | Some e' -> add_global_immutable_expr name e' env1
           | None -> env1)
       | GDK_Config ->
-          let+ () = check_is_config_time ~loc env typed_initial_value in
+          let+ () = check_is_config_time ~loc typed_initial_value in
           env1
       | _ -> env1
       (* UpdateGlobalStorage) *)
@@ -3349,8 +3337,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       try
         let callee_ses = IMap.find callee_name map1 in
         let res = SES.union caller_ses callee_ses in
-        if not (Int.equal (SES.cardinal caller_ses) (SES.cardinal res)) then
-          modified := true;
+        if not (SES.equal caller_ses res) then modified := true;
         res
       with Not_found -> caller_ses
     in

@@ -1,11 +1,11 @@
   $ aslref binop-read-read.asl
   $ aslref binop-read-write.asl
   File binop-read-write.asl, line 11, characters 10 to 31:
-  ASL Typing error: concurrent side effects WriteGlobal "X" and ReadGlobal "X"
+  ASL Typing error: conflicting side effects WriteGlobal "X" and ReadGlobal "X"
   [1]
   $ aslref binop-write-write.asl
   File binop-write-write.asl, line 11, characters 10 to 47:
-  ASL Typing error: concurrent side effects WriteGlobal "X" and WriteGlobal "X"
+  ASL Typing error: conflicting side effects WriteGlobal "X" and WriteGlobal "X"
   [1]
   $ aslref binop-read-write-diff.asl
   $ aslref binop-write-write-diff.asl
@@ -18,17 +18,17 @@
   E caught
   $ aslref binop-throw-write.asl
   File binop-throw-write.asl, line 18, characters 12 to 43:
-  ASL Typing error: concurrent side effects RaiseException "E" and WriteGlobal "X"
+  ASL Typing error: conflicting side effects RaiseException "E" and WriteGlobal "X"
   [1]
   $ aslref binop-throw-throw.asl
   File binop-throw-throw.asl, line 11, characters 12 to 37:
-  ASL Typing error: concurrent side effects RaiseException "E" and RaiseException "E"
+  ASL Typing error: conflicting side effects RaiseException "E" and RaiseException "E"
   [1]
   $ aslref binop-throw-caught.asl
   E caught
   $ aslref binop-throw-not-caught.asl
   File binop-throw-not-caught.asl, line 21, characters 12 to 37:
-  ASL Typing error: concurrent side effects RaiseException "E" and RaiseException "E"
+  ASL Typing error: conflicting side effects RaiseException "E" and RaiseException "E"
   [1]
   $ aslref binop-throw-otherwised.asl
   E caught
@@ -40,7 +40,7 @@
 
   $ aslref binop-throw-atc.asl
   File binop-throw-atc.asl, line 16, characters 12 to 41:
-  ASL Typing error: concurrent side effects RaiseException "E" and PerformsATC
+  ASL Typing error: conflicting side effects RaiseException "E" and PerformsAssertions
   [1]
   $ aslref binop-write-atc.asl
   File binop-write-atc.asl, line 5, characters 10 to 11:
@@ -53,22 +53,22 @@
   $ aslref constant-func.asl
   $ aslref constant-func-read.asl
   File constant-func-read.asl, line 9, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found foo(4), which
+  ASL Typing error: expected constant-time expression, got foo(4), which
     produces the following side-effects: [WriteGlobal "X"].
   [1]
   $ aslref constant-func-write.asl
   File constant-func-write.asl, line 9, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found foo(4), which
+  ASL Typing error: expected constant-time expression, got foo(4), which
     produces the following side-effects: [WriteGlobal "X"].
   [1]
   $ aslref constant-func-unknown.asl
   File constant-func-unknown.asl, line 7, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found foo(4), which
+  ASL Typing error: expected constant-time expression, got foo(4), which
     produces the following side-effects: [NonDeterministic].
   [1]
   $ aslref constant-func-throw.asl
   File constant-func-throw.asl, line 8, characters 0 to 21:
-  ASL Typing error: a pure expression was expected, found foo(4), which
+  ASL Typing error: expected constant-time expression, got foo(4), which
     produces the following side-effects: [RaiseException "E"].
   [1]
   $ aslref constant-func-throw-caught.asl
@@ -77,11 +77,11 @@
   $ aslref for-var-no-edit.asl
   $ aslref for-var-edits.asl
   File for-var-edits.asl, line 6, character 2 to line 8, character 6:
-  ASL Typing error: concurrent side effects ReadLocal "x" and WriteLocal "x"
+  ASL Typing error: conflicting side effects ReadLocal "x" and WriteLocal "x"
   [1]
   $ aslref for-read-write-global.asl
   File for-read-write-global.asl, line 14, character 2 to line 16, character 6:
-  ASL Typing error: concurrent side effects ReadGlobal "X" and WriteGlobal "X"
+  ASL Typing error: conflicting side effects ReadGlobal "X" and WriteGlobal "X"
   [1]
   $ aslref while-var-edits.asl
   $ aslref repeat-var-edits.asl
@@ -115,12 +115,14 @@
 
   $ aslref config-uses-var.asl
   File config-uses-var.asl, line 2, characters 0 to 17:
-  ASL Typing error: expected config-time expression, got (X + 3).
+  ASL Typing error: expected config-time expression, got (X + 3), which
+    produces the following side-effects: [ReadGlobal "X"].
   [1]
   $ aslref config-uses-config.asl
   $ aslref config-uses-let.asl
   File config-uses-let.asl, line 2, characters 0 to 13:
-  ASL Typing error: expected config-time expression, got X.
+  ASL Typing error: expected config-time expression, got X, which produces the
+    following side-effects: [ReadGlobal "X"].
   [1]
   $ aslref config-uses-constant.asl
   $ aslref config-uses-local-var.asl
@@ -128,19 +130,26 @@
   $ aslref config-uses-local-constant.asl
   $ aslref config-uses-var-through-func.asl
   File config-uses-var-through-func.asl, line 8, characters 0 to 18:
-  ASL Typing error: expected config-time expression, got foo().
+  ASL Typing error: expected config-time expression, got foo(), which produces
+    the following side-effects: [ReadGlobal "X"].
   [1]
   $ aslref config-uses-config-through-func.asl
   $ aslref config-uses-let-through-func.asl
   File config-uses-let-through-func.asl, line 8, characters 0 to 18:
-  ASL Typing error: expected config-time expression, got foo().
+  ASL Typing error: expected config-time expression, got foo(), which produces
+    the following side-effects: [ReadGlobal "X"].
   [1]
   $ aslref config-uses-constant-through-func.asl
   $ aslref config-uses-atc.asl
-  File config-uses-atc.asl, line 6, characters 0 to 18:
-  ASL Typing error: expected config-time expression, got foo().
+  File config-uses-atc.asl, line 3, characters 9 to 10:
+  ASL Execution error: Mismatch type:
+    value 0 does not belong to type integer {10}.
   [1]
   $ aslref config-uses-unknown.asl
+  File config-uses-unknown.asl, line 6, characters 0 to 18:
+  ASL Typing error: expected config-time expression, got foo(), which produces
+    the following side-effects: [NonDeterministic].
+  [1]
 
   $ aslref assert-read.asl
   $ aslref assert-write.asl
@@ -226,37 +235,37 @@
   [1]
   $ aslref rec-binop-atc-throw.asl
   File rec-binop-atc-throw.asl, line 15, characters 10 to 54:
-  ASL Typing error: concurrent side effects RecursiveCall "throwing" and PerformsATC
+  ASL Typing error: conflicting side effects RecursiveCall "throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-read-throw.asl
   File rec-binop-read-throw.asl, line 22, characters 10 to 45:
-  ASL Typing error: concurrent side effects RecursiveCall "throwing" and ReadGlobal "X"
+  ASL Typing error: conflicting side effects RecursiveCall "throwing" and ReadGlobal "X"
   [1]
   $ aslref rec-binop-unknown.asl
   $ aslref rec-binop-read.asl
   File rec-binop-read.asl, line 17, characters 10 to 42:
-  ASL Typing error: concurrent side effects RecursiveCall "not_throwing" and ReadGlobal "X"
+  ASL Typing error: conflicting side effects RecursiveCall "not_throwing" and ReadGlobal "X"
   [1]
   $ aslref rec-binop-read-local.asl
   $ aslref rec-binop-write.asl
   File rec-binop-write.asl, line 18, characters 10 to 43:
-  ASL Typing error: concurrent side effects RecursiveCall "not_throwing" and WriteGlobal "X"
+  ASL Typing error: conflicting side effects RecursiveCall "not_throwing" and WriteGlobal "X"
   [1]
   $ aslref rec-assert.asl
   File rec-assert.asl, line 9, characters 10 to 51:
-  ASL Typing error: concurrent side effects RecursiveCall "not_throwing" and PerformsATC
+  ASL Typing error: conflicting side effects RecursiveCall "not_throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-atc.asl
   File rec-binop-atc.asl, line 9, characters 10 to 51:
-  ASL Typing error: concurrent side effects RecursiveCall "not_throwing" and PerformsATC
+  ASL Typing error: conflicting side effects RecursiveCall "not_throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-read-write.asl
   File rec-binop-read-write.asl, line 17, characters 10 to 42:
-  ASL Typing error: concurrent side effects RecursiveCall "not_throwing" and ReadGlobal "X"
+  ASL Typing error: conflicting side effects RecursiveCall "not_throwing" and ReadGlobal "X"
   [1]
   $ aslref rec-binop-write-throw.asl
   File rec-binop-write-throw.asl, line 23, characters 10 to 46:
-  ASL Typing error: concurrent side effects RecursiveCall "throwing" and WriteGlobal "X"
+  ASL Typing error: conflicting side effects RecursiveCall "throwing" and WriteGlobal "X"
   [1]
   $ aslref rec-constant.asl
   $ aslref constant-rec.asl
@@ -271,6 +280,6 @@
   [1]
   $ aslref rec-binop-rec.asl
   File rec-binop-rec.asl, line 9, characters 10 to 35:
-  ASL Typing error: concurrent side effects RecursiveCall "bar" and RecursiveCall "bar"
+  ASL Typing error: conflicting side effects RecursiveCall "bar" and RecursiveCall "bar"
   [1]
 
