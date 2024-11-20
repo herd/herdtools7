@@ -1,0 +1,10 @@
+Test A09 Required
+States 1
+0:X0=x;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=x)
+Observation A09 Always 1 0
+Hash=7b995344e10682ee8572acba9ae44b79
+

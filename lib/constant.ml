@@ -43,8 +43,8 @@ module PAC = struct
       offset : int ;
     }
 
-  let pp_signature p =
-    sprintf ":pac(%s, %s, %d)" p.key p.modifier p.offset
+  let pp_signature p s =
+    sprintf "pac(%s, %s, %s, %d)" s p.key p.modifier p.offset
 
   let compare_signature p1 p2 =
     match String.compare p1.key p2.key with
@@ -78,10 +78,10 @@ module PAC = struct
 
   let equal = PACSet.equal
 
-  let pp pac =
+  let pp pac s =
     let rec aux = function
-      | x :: xs -> sprintf "%s%s" (pp_signature x) (aux xs)
-      | [] -> ""
+      | x :: xs -> pp_signature x (aux xs)
+      | [] -> s
     in
     aux (PACSet.to_list pac)
 end
@@ -111,9 +111,7 @@ let capa_low c = Int64.shift_left (Int64.logand c 0x1ffffffffL)  3
 and capa_high c = Int64.shift_right_logical c 33
 let pp_symbolic_data {name=s; tag=t; cap=c; pac=p; _} = match t,c with
   | None, 0L ->
-      begin
-        sprintf "%s%s" s (PAC.pp p)
-      end
+      PAC.pp p s
   | None, _ ->
      sprintf "%#Lx:%s:%Li" (capa_low c) s (capa_high c)
 

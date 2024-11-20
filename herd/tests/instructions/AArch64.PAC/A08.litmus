@@ -1,0 +1,7 @@
+AArch64 A08
+Check that we can remove a D-PAC field using XPACD instruction
+{ 0:X0=pac(pac(x, db, 43, 7), da, 42) }
+ P0            ;
+L0:            ;
+ XPACD X0      ;
+forall (0:X0=x)

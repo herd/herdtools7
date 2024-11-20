@@ -143,7 +143,7 @@ name_pac_plus:
     let modifier =
       Printf.sprintf "0x%x" (int_of_string $7)
     in
-    let keys = ["da"; "db"] in
+    let keys = ["da"; "db"; "ia"; "ib"] in
     if List.mem key keys then
       begin match $3 with
       | Symbolic (Virtual v) ->
@@ -153,7 +153,26 @@ name_pac_plus:
       | _ -> Warn.user_error "pac field only exists for virtual address"
       end
     else
-      Warn.user_error "PAC: the key \"%s\" is not in {da, db}" key
+      Warn.user_error "PAC: the key \"%s\" is not in {da, db, ia, ib}" key
+  }
+| TOK_PAC LPAR name_pac_plus COMMA NAME COMMA NUM COMMA NUM RPAR
+  {
+    (* Pointer Authentication Code parsing: restricted to integer modifiers *)
+    let key = $5 in
+    let modifier =
+      Printf.sprintf "0x%x" (int_of_string $7)
+    in
+    let keys = ["da"; "db"; "ia"; "ib"] in
+    if List.mem key keys then
+      begin match $3 with
+      | Symbolic (Virtual v) ->
+        Symbolic (Virtual {
+          v with pac = Constant.PAC.add key modifier (int_of_string $9) v.pac
+        })
+      | _ -> Warn.user_error "pac field only exists for virtual address"
+      end
+    else
+      Warn.user_error "PAC: the key \"%s\" is not in {da, db, ia, ib}" key
   }
 
 name_or_num:

@@ -1,0 +1,10 @@
+Test A03 Required
+States 1
+0:X0=pac(x, da, 0x0, 0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=pac(x, da, 0x0, 0))
+Observation A03 Always 1 0
+Hash=932fa4990899411a21615e7a765b82be
+

@@ -1,0 +1,11 @@
+AArch64 A10
+Check that offsets work correctly
+{ 0:X0=x; 0:X1=42 }
+ P0            ;
+L0:            ;
+ PACDZA X0,XZR ;
+ ADD X0,X0,X1  ;
+ PACDZA X0,XZR ;
+ SUB X0,X0,X1  ;
+ PACDZA X0,XZR ;
+forall (0:X0=pac(x, da, 0, 42))

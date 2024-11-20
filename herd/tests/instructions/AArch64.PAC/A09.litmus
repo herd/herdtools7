@@ -1,0 +1,7 @@
+AArch64 A09
+Check that we can remove a I-PAC field using XPACD instruction
+{ 0:X0=pac(pac(x, ib, 43, 7), ia, 42) }
+ P0            ;
+L0:            ;
+ XPACD X0      ;
+forall (0:X0=x)

@@ -1,0 +1,7 @@
+AArch64 A02
+check that a load from a non-canonical pointer return a translation fault
+{ 0:X0=pac(x, da, 42) }
+ P0          ;
+L0:          ;
+ LDR X1,[X0] ;
+forall (Fault(P0:L0, MMU:Translation))
