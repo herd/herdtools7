@@ -479,11 +479,10 @@ One of the following applies:
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a binary operation $\op$ over two expressions $\veone$ and $\vetwo$, that is, \\ $\EBinop(\op, \veone, \vetwo)$;
-  \item the result of annotating $\veone$ in $\tenv$ is $(\vtone, \veonep)$\ProseOrTypeError;
-  \item the result of annotating $\vetwo$ in $\tenv$ is $(\vttwo, \vetwop)$\ProseOrTypeError;
-  \item the result of checking compatibility of $\op$ with $\vtone$ and $\vttwo$ as per \secref{TypingRule.ApplyBinopTypes}
-  is $\vt$\ProseOrTypeError;
-  \item $\newenv$ denotes $\op$ over $\veonep$ and $\vetwop$.
+  \item \Proseannotateexpr{$\veone$}{$\tenv$}{$(\vtone, \veonep)$\ProseOrTypeError};
+  \item \Proseannotateexpr{$\vetwo$}{$\tenv$}{$(\vttwo, \vetwop)$\ProseOrTypeError};
+  \item \Proseapplybinoptypes{$\tenv$}{\op}{\vtone}{\vttwo}{$\vt$\ProseOrTypeError};
+  \item define $\newe$ as the binary expression $\op$ over $\veonep$ and $\vetwop$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -1269,7 +1268,7 @@ resulting bitvector --- and the execution graph $\vgone$;
 \inferrule{
   \evalexpr{\env, \ebv} \evalarrow \Normal(\mbv, \envone)  \OrAbnormal\\\\
   \mbv \eqname (\vbv,\vgone) \\
-  \evalslices{\envone, \slices} \evalarrow \Normal(\mpositions, \newenv)  \OrAbnormal \\
+  \evalslices(\envone, \slices) \evalarrow \Normal(\mpositions, \newenv)  \OrAbnormal \\
   \mpositions \eqname (\positions, \vgtwo) \\
   \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo

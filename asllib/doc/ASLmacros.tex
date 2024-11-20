@@ -3,9 +3,6 @@
 \usepackage{mathtools}  % Additional math package
 \usepackage{amssymb}  % Classic math package
 \usepackage{mathtools}  % Additional math package
-\usepackage{graphicx}  % For figures
-\usepackage{caption}  % For figure captions
-\usepackage{subcaption}  % For subfigure captions
 \usepackage{url}  % Automatically escapes urls
 \usepackage{hyperref}  % Insert links inside pdfs
 \hypersetup{
@@ -93,7 +90,6 @@
   % To visualize:
   % showframe
 ]{geometry}
-%\usepackage{stmaryrd} % for \llbracket and \rrbracket
 \input{ifempty}
 \input{ifcode}
 \input{control}
@@ -196,8 +192,6 @@
 \newcommand\cartimes[0]{\hyperlink{def-cartimes}{\times}}
 
 \newcommand\view[0]{\hyperlink{def-deconstruction}{view}}
-%\newcommand\defpoint[1]{\underline{#1}}
-\newcommand\defpoint[1]{#1}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbrace{#1}^{#2}}
@@ -264,11 +258,9 @@
 % These are used by the AST reference, typing reference, and semantics reference.
 \newcommand\nonterminal[1]{\texttt{#1}}
 \newcommand\terminal[1]{\mathtt{\mathbf{#1}}}
-%\newcommand\verbatimterminal[2]{\mathtt{\mathbf{#1}}}
 \newcommand\verbatimterminal[2]{\texttt{"}\texttt{#2}\texttt{"}} % Grammar terminals
 \newcommand\emptysentence[0]{\hyperlink{def-emptysentence}{\epsilon}}
 \newcommand\astof[1]{\overline{{#1}}}
-%\newcommand\parsenode[1]{\hyperlink{def-parsenode}{\textsf{Parse}}[#1]}
 \newcommand\parsenode[1]{\hyperlink{def-parsenode}{\mathbb{P}\mathbb{A}\mathbb{R}\mathbb{S}\mathbb{E}}[#1]}
 \newcommand\namednode[2]{#1:#2} % #1 is a free variable, #2 is the grammar symbol
 \newcommand\punnode[1]{#1}
@@ -1019,7 +1011,7 @@
 \newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\textfunc{write\_identifier}}}
 \newcommand\createbitvector[0]{\hyperlink{def-createbitvector}{\textfunc{create\_bitvector}}}
 \newcommand\concatbitvectors[0]{\hyperlink{def-concatbitvector}{\textfunc{concat\_bitvectors}}}
-\newcommand\readfrombitvector[0]{\hyperlink{def-readfrinbitvector}{\textfunc{read\_from\_bitvector}}}
+\newcommand\readfrombitvector[0]{\hyperlink{def-readfrombitvector}{\textfunc{read\_from\_bitvector}}}
 \newcommand\writetobitvector[0]{\hyperlink{def-writetobitvector}{\textfunc{write\_to\_bitvector}}}
 \newcommand\asbitvector[0]{\hyperlink{def-asbitvector}{\textfunc{as\_bitvector}}}
 \newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\textfunc{slices\_to\_positions}}}
@@ -1379,6 +1371,7 @@
 %% Type functions
 \newcommand\applyunoptype[0]{\hyperlink{def-applyunoptype}{\textfunc{apply\_unop\_type}}}
 \newcommand\applybinoptypes[0]{\hyperlink{def-applybinoptypes}{\textfunc{apply\_binop\_types}}}
+\newcommand\Proseapplybinoptypes[5]{\hyperlink{def-applybinoptypes}{applying} #2 to the type #3 and type #4 in the static environment #1 yields the type #5}
 \newcommand\constraintbinop[0]{\hyperlink{def-constraintbinop}{\textfunc{constraint\_binop}}}
 \newcommand\applybinopextremities[0]{\hyperlink{def-applybinopextremities}{\textfunc{apply\_binop\_extremities}}}
 \newcommand\possibleextremitiesleft[0]{\hyperlink{def-possibleextremitiesleft}{\textfunc{possible\_extremities\_left}}}
@@ -1410,6 +1403,7 @@
 \newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\textfunc{annotate\_constraint}}}
 \newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\textfunc{get\_variable\_enum}}}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\textfunc{annotate\_expr}}(#1)}
+\newcommand\Proseannotateexpr[3]{\hyperlink{def-annotateexpr}{annotating} the expression #1 in the static environment #2 yields #3}
 \newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\textfunc{annotate\_exprs}}}
 \newcommand\annotatelimitexpr[0]{\hyperlink{def-annotatelimitexpr}{\textfunc{annotate\_limit\_expr}}}
 \newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}(#1)}

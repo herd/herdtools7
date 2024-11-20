@@ -1140,7 +1140,7 @@ One of the following applies:
     \item at least one of $\vtone$ and $\vttwo$ is a \namedtype;
     \item determining the \underlyingtype\ if $\vtone$ yields $\vtoneanon$\ProseOrTypeError;
     \item determining the \underlyingtype\ if $\vttwo$ yields $\vttwoanon$\ProseOrTypeError;
-    \item applying $\applybinoptypes$ to $\vtoneanon$ and $\vttwoanon$ in $\tenv$ yields $\vt$\ProseOrTypeError.
+    \item \Proseapplybinoptypes{$\tenv$}{$\op$}{$\vtoneanon$}{$\vttwoanon$}{$\vt$\ProseOrTypeError}.
   \end{itemize}
 
   \item All of the following apply (\textsc{boolean}):
@@ -1237,8 +1237,7 @@ One of the following applies:
     \item both $\vtone$ and $\vttwo$ are integer types and at least one them is a \parameterizedintegertype;
     \item applying $\towellconstrained$ to $\vtone$ yields $\vtonewellconstrained$;
     \item applying $\towellconstrained$ to $\vttwo$ yields $\vttwowellconstrained$;
-    \item applying $\applybinoptypes$ to $\vtonewellconstrained$ and \\
-          $\vttwowellconstrained$ in $\tenv$ yields $\vt$.
+    \item \Proseapplybinoptypes{$\tenv$}{$\op$}{$\vtonewellconstrained$}{$\vttwowellconstrained$}{$\vt$}.
   \end{itemize}
 
   \item All of the following apply (\textsc{arith\_t\_int\_wellconstrained}):
@@ -1341,7 +1340,7 @@ One of the following applies:
   \astlabel(\vtone) = \TNamed \lor \astlabel(\vttwo) = \TNamed\\
   \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
   \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
-  \applybinoptypes(\tenv, \vtoneanon, \vttwoanon) \typearrow \vt \OrTypeError
+  \applybinoptypes(\tenv, \op, \vtoneanon, \vttwoanon) \typearrow \vt \OrTypeError
 }{
   \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt
 }
