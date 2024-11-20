@@ -1409,6 +1409,16 @@ Monad type:
         | V.Val (Symbolic (System (PTE,_))) -> true
         | _ -> false
 
+      let is_instrloc a =
+        match a with
+        | V.Val c -> Constant.is_label c
+        | _ -> false
+
+      let is_intid a =
+        match a with
+        | V.Val c -> Constant.is_intid c
+        | _ -> false
+
 (*
  * Add init writes for tag addresses.
  * A symbolic location has its own tag address, hence
@@ -1440,7 +1450,7 @@ Monad type:
         let glob_set = V.ValueSet.of_list glob in
         let glob_set =
           V.ValueSet.filter
-            (fun a ->  not (is_pteloc a))
+            (fun a ->  not (is_pteloc a || is_instrloc a || is_intid a))
             glob_set in
         let s = V.ValueSet.map (fun a -> V.op1 Op.TagLoc a) glob_set in
         let env =
