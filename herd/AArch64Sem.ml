@@ -3486,8 +3486,12 @@ module Make
           and ack a v =
             let*= () = commit_pred_txt (Some "HPPI") ii in
             let* () =
-              let* v = set_pending false v in
-              let* v = set_active true v in
+              match cmd with
+              | None ->
+                M.unitT ()
+              | Some _ ->
+                let* v = set_pending false v in
+                let* v = set_active true v in
               write_intid a ~an:Annot.GICR ~ae:aimp v ii
             and* () =
               let* v = gic_setintid a in
@@ -3506,9 +3510,9 @@ module Make
                 let* cond =
                   let* prio = get_priority v in
                   match cmd with
-                  | IA ->
+                  | Some IA | None ->
                     m_op Op.And is_hppi (is_not_zero prio)
-                  | NMIA ->
+                  | Some NMIA ->
                     m_op Op.And is_hppi (is_zero prio)
                 in
                 M.altT
@@ -4685,7 +4689,7 @@ module Make
                >>= fun v -> write_reg_dest xt v ii
                >>= nextSet (SysReg sreg)
             | ICC_HPPIR_EL1 ->
-              nextSet (SysReg sreg) A.V.zero
+              GICSem.gicr_instr None None xt ii test
             | _ -> begin
               let sz = MachSize.Quad in
               let off = AArch64.sysreg_nv2off sreg in
@@ -4718,7 +4722,7 @@ module Make
         | I_GIC (AArch64Base.GIC.({domain; cmd;}), r) ->
             GICSem.gic_instr domain cmd r ii
         | I_GICR (r, AArch64Base.GICR.({domain; cmd})) ->
-            GICSem.gicr_instr domain cmd r ii test
+            GICSem.gicr_instr domain (Some cmd) r ii test
         (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _
