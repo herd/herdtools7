@@ -208,7 +208,7 @@ let do_op1 op cst =
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_signed s |> return_concrete
-      | Constant.Symbolic _ -> Some cst
+      | Constant.(Symbolic _|PteVal _) -> Some cst
       | _ -> None)
   | ToAArch64 -> (
       match cst with
@@ -220,13 +220,13 @@ let do_op1 op cst =
       match cst with
       | Constant.Concrete s ->
           ASLScalar.as_bv s |> return_concrete
-      | Constant.Symbolic _|Constant.PteVal _ -> Some cst
+      | Constant.(Symbolic _|PteVal _) -> Some cst
       | _ -> None)
   | ToIntU -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_unsigned s |> return_concrete
-      | Constant.Symbolic _ -> Some cst
+      | Constant.(Symbolic _|PteVal _) -> Some cst
       | _ -> None)
   | ToBV sz -> (
       match cst with
