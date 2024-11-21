@@ -1320,6 +1320,7 @@ type 'k kinstruction =
   | I_BL of lbl | I_BLR of reg
   | I_RET of reg option
   | I_ERET
+  | I_SVC of 'k
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k MemExt.ext
   | I_LDRSW of reg * reg * 'k MemExt.ext
@@ -2016,6 +2017,8 @@ let do_pp_instruction m =
       sprintf "RET %s" (pp_xreg r)
   | I_ERET ->
      "ERET"
+  | I_SVC k ->
+    sprintf "SVC %s" (m.pp_k k)
 
 (* Load and Store *)
   | I_LDR (v,r1,r2,idx) ->
@@ -2481,8 +2484,8 @@ let fold_regs (f_regs,f_sregs) =
     | Reg (r,_) -> fold_reg r c in
 
   fun c ins -> match ins with
-  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_UDF _
-  | I_SMSTART (None) | I_SMSTOP (None)
+  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_SVC _
+  | I_UDF _ |  I_SMSTART (None) | I_SMSTOP (None)
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOVZ (_,r,_,_) | I_MOVN (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -2626,6 +2629,7 @@ let map_regs f_reg f_symb =
   | I_BL _
   | I_RET None
   | I_ERET
+  | I_SVC _
   | I_UDF _
     -> ins
   | I_CBZ (v,r,lbl) ->
@@ -3051,7 +3055,7 @@ let get_next =
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
   | I_OP3_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
-  | I_LDXP _|I_STXP _|I_UDF _
+  | I_LDXP _|I_STXP _|I_SVC _ | I_UDF _
   | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
   | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
   | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
@@ -3510,6 +3514,7 @@ module PseudoI = struct
         | I_OP3_SIMD (op,r1,r2,r3) -> I_OP3_SIMD (op,r1,r2,r3)
         | I_ADD_SIMD (r1,r2,r3) -> I_ADD_SIMD (r1,r2,r3)
         | I_ADD_SIMD_S (r1,r2,r3) -> I_ADD_SIMD_S (r1,r2,r3)
+        | I_SVC k -> I_SVC (k_tr k)
         | I_UDF k -> I_UDF (k_tr k)
         | I_MOV_SV (r,k,s) -> I_MOV_SV (r,k_tr k,ap_shift k_tr s)
         | I_LD1SP (v,r1,r2,r3,idx) -> I_LD1SP (v,r1,r2,r3,ext_tr idx)
@@ -3585,6 +3590,7 @@ module PseudoI = struct
         | I_BL _ | I_BLR _
         | I_RET _
         | I_ERET
+        | I_SVC _
         | I_BC _
         | I_CBZ _
         | I_CBNZ _

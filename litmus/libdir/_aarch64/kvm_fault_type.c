@@ -2,6 +2,7 @@
 
 enum fault_type_t {
   FaultUndefinedInstruction,
+  FaultSupervisorCall,
   FaultMMUAddressSize,
   FaultMMUTranslation,
   FaultMMUAccessFlag,
@@ -14,6 +15,7 @@ enum fault_type_t {
 
 static const char *fault_type_names[] = {
   "UndefinedInstruction",
+  "SupervisorCall",
   "MMU:AddressSize",
   "MMU:Translation",
   "MMU:AccessFlag",
@@ -31,6 +33,8 @@ static enum fault_type_t get_fault_type(unsigned long esr)
   ec = esr >> ESR_EL1_EC_SHIFT;
   if (ec == ESR_EL1_EC_UNKNOWN) {
     return FaultUndefinedInstruction;
+  } else if (ec == ESR_EL1_EC_SVC64) {
+    return FaultSupervisorCall;
   } else {
     dfsc = esr & 0x3fU;
     fault_type = (dfsc >> 2) + FaultMMUAddressSize;
