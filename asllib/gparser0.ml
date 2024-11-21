@@ -164,12 +164,12 @@ let parse_repeatable parse lexer_state lexbuf : AST.t =
 let ast_chunk lexbuf =
   let lexer = Lexer0.token () in
   let lexer_state = RL.of_lexer_lexbuf is_eof lexer lexbuf in
-  let r = parse_repeatable Parser0.Incremental.ast lexer_state lexbuf in
+  let r = parse_repeatable Parser0.Incremental.spec lexer_state lexbuf in
   if false then Printf.eprintf "Chunk of size %d\n" (List.length r);
   r
 
 (** The main entry-point for this module. Should be usable as a drop-in
-    replacement for [Parser0.ast]. *)
+    replacement for [Parser0.spec]. *)
 
 (* Set [as_chunks] to false parsing ASL files as a whole *)
 
@@ -197,7 +197,7 @@ let ast (lexer : lexbuf -> token) (lexbuf : lexbuf) : AST.t =
     List.concat (List.rev asts)
   else
     let lexer_state = RL.of_lexer_lexbuf is_eof lexer lexbuf in
-    parse_repeatable Parser0.Incremental.ast lexer_state lexbuf
+    parse_repeatable Parser0.Incremental.spec lexer_state lexbuf
 
 let opn (lexer : lexbuf -> token) (lexbuf : lexbuf) : AST.t =
   let () =

@@ -11,7 +11,7 @@ var X: bits(16) = '1010 1111 0101 0000';
 
 var COUNT: integer = 0;
 
-func Fib(n: integer) => integer
+func Fib(n: integer) => integer recurselimit 1000
 begin
     COUNT = COUNT + 1;
     if n < 2 then

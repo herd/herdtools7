@@ -102,7 +102,7 @@ We note that a parametric production can be either a normal derivation or an inl
 
 For example, the derivation for a list of ASL global declarations is as follows:
 \begin{flalign*}
-\Nast \derives\ & \maybeemptylist{\Ndecl} &
+\Nspec \derives\ & \maybeemptylist{\Ndecl} &
 \end{flalign*}
 It is defined via the parametric production for possibly-empty lists:
 \begin{flalign*}
@@ -118,9 +118,9 @@ The result of the expansion is then:
 \Ndecllist   \derives\ & \emptysentence \;|\; \Ndecl \parsesep \Ndecllist &\\
 \end{flalign*}
 The new symbol is substituted anywhere $\maybeemptylist{\Ndecl}$ appears in the original grammar,
-which results in the following derivation replacing the original derivation for $\Nast$:
+which results in the following derivation replacing the original derivation for $\Nspec$:
 \begin{flalign*}
-\Nast \derives\ & \Ndecllist &
+\Nspec \derives\ & \Ndecllist &
 \end{flalign*}
 
 % For example,
@@ -210,7 +210,7 @@ We define the following parametric productions for various types of lists and op
 \end{flalign*}
 
 \section{ASL Grammar\label{sec:ASLGrammar}}
-We now present the list of derivations for the ASL Grammar where the start non-terminal is $\Nast$.
+We now present the list of derivations for the ASL Grammar where the start non-terminal is $\Nspec$.
 %
 The derivations allow certain parse trees where lists may have invalid sizes.
 Those parse trees must be rejected in a later phase.
@@ -223,21 +223,16 @@ and can be ignored upon first reading.
 For brevity, tokens are presented via their label only, dropping their associated value.
 For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
-\hypertarget{def-nast}{}
+\hypertarget{def-nspec}{}
 \begin{flalign*}
-\Nast   \derives\ & \maybeemptylist{\Ndecl} &
-\end{flalign*}
-
-\hypertarget{def-nrecurselimit}{}
-\begin{flalign*}
-\Nrecurselimit   \derivesinline\ & \Trecurselimit \parsesep \Nexpr &\\
-|\              & \emptysentence &\\
+\Nspec   \derives\ & \maybeemptylist{\Ndecl} &
 \end{flalign*}
 
 \hypertarget{def-ndecl}{}
 \hypertarget{def-funcdecl}{}
 \begin{flalign*}
-\Ndecl  \derivesinline\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep \Nfuncbody &
+\Ndecl  \derivesinline\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
+                        & \wrappedline\ \Nfuncbody
 \hypertarget{def-proceduredecl}{}\\
 |\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &
 \hypertarget{def-getter}{}\\
@@ -256,6 +251,12 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&
 \hypertarget{def-globalpragma}{}\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+\end{flalign*}
+
+\hypertarget{def-nrecurselimit}{}
+\begin{flalign*}
+\Nrecurselimit   \derivesinline\ & \Trecurselimit \parsesep \Nexpr &\\
+|\              & \emptysentence &\\
 \end{flalign*}
 
 \hypertarget{def-nsubtype}{}
@@ -656,7 +657,7 @@ A \emph{parse tree} has one of the following forms:
 (In the literature, parse trees are also referred to as \emph{derivation trees}.)
 
 \begin{definition}[Well-formed Parse Trees]
-A parse tree is \emph{well-formed} if its root is labelled by the start non-terminal ($\Nast$ for ASL)
+A parse tree is \emph{well-formed} if its root is labelled by the start non-terminal ($\Nspec$ for ASL)
 and each non-terminal node $N(n_{1..k})$ corresponds to a grammar derivation
 $N \derives l_{1..k}$ where $l_i$ is the label of node $n_i$ if it is a non-terminal node and $n_i$
 itself when it is a token.
@@ -683,7 +684,7 @@ We denote the set of well-formed parse trees for a non-terminal symbol $S$ by $\
 \hypertarget{def-aslparse}{}
 A parser is a function
 \[
-\aslparse : (\Token^* \setminus \{\Terror\}) \aslto \parsenode{\Nast} \cup \{\ParseError\}
+\aslparse : (\Token^* \setminus \{\Terror\}) \aslto \parsenode{\Nspec} \cup \{\ParseError\}
 \]
 \hypertarget{def-parseerror}{}
 where $\ParseError$ stands for a \emph{parse error}.

@@ -217,8 +217,14 @@ This is produced by \nameref{sec:TypingRule.BaseValue}.
 \hypertarget{def-nrf}{}
 \item[$\NonReturningFunction$]
 This error indicates that a function contains a control-flow path that may not terminate by
-either returning a value, throwing an exception, or executing \texttt{Unreachable()}
-(see \nameref{sec:TypingRule.CheckStmtReturnsOrThrows}).
+either returning a value, throwing an exception, or executing \\
+\texttt{Unreachable()} (see \nameref{sec:TypingRule.CheckStmtReturnsOrThrows}).
+
+\hypertarget{def-bef}{}
+\item[$\BuiltinExpectedToBeFunction$]
+This error indicates an attempt to list a top-level declaration that is not a function
+in the standard library
+(see \nameref{sec:TypingRule.SetBuiltin}).
 
 \end{description}
 

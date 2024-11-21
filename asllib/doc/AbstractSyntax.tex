@@ -99,7 +99,7 @@ An abstract syntax consists of a set of derivation rules and a start non-termina
 
 \section{Untyped Abstract Grammar\label{sec:UntypedAbstractGrammar}}
 
-The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\specification$.
+The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\spec$.
 %
 Some extra details are given by using the notation $\overname{\textit{symbol}}{\text{detail}}$.
 
@@ -561,9 +561,9 @@ Declaration keyword for global storage elements:
 \end{flalign*}
 
 \subsection{Specifications \label{sec:Specifications}}
-\hypertarget{ast-specification}{}
+\hypertarget{ast-spec}{}
 \begin{flalign*}
-\specification \derives\ & \decl^* &
+\spec \derives\ & \decl^* &
 \end{flalign*}
 
 \section{Typed Abstract Syntax Grammar\label{sec:TypedAbstractSyntaxGrammar}}
@@ -622,6 +622,9 @@ AST. The builder function is defined in terms of one inference rule per alternat
 The input for the builder for an alternative $R = S_{1..m}$ is a parse node
 $N(S_{1..m})$. To allow the builder to refer to the children nodes of $N$,
 we use the notation $\namednode{n_i}{S_i}$, which names the child node $S_i$ as $n_i$.
+
+The set of builder relations is defined in the respective chapters for their constructs
+(for example, the builder for expressions is defined in \chapref{Expressions}).
 
 \subsection{Example}
 Consider the derivation for while loops:

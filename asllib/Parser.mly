@@ -103,8 +103,8 @@ let s_call call = S_Call { call with call_type = ST_Procedure }
 
 (* ------------------------------------------------------------------------- *)
 
-%type <AST.t> ast
-%start ast
+%type <AST.t> spec
+%start spec
 
 (* This start-point is for .opn files in arm-pseudocodes for instructions. *)
 %type <AST.t> opn
@@ -627,7 +627,7 @@ let decl ==
   )
 
 (* Begin AST *)
-let ast := terminated(list(decl), EOF)
+let spec := terminated(list(decl), EOF)
 (* End *)
 
 let opn := body=stmt; EOF;

@@ -71,7 +71,7 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
       let module Lexer = Lexer.Make (struct
         let allow_double_underscore = parser_config.allow_double_underscore
       end) in
-      let parse = select_type ~opn:Parser.opn ~ast:Parser.ast ast_type in
+      let parse = select_type ~opn:Parser.opn ~ast:Parser.spec ast_type in
       try parse Lexer.token lexbuf with
       | Parser.Error -> cannot_parse lexbuf
       | Lexer.LexerError -> unknown_symbol lexbuf)

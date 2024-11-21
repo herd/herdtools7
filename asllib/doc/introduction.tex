@@ -1,12 +1,10 @@
 \chapter{Introduction\label{chap:Introduction}}
 
-The increasing importance of the Arm architecture coupled with the increasing use of formal verification of both
-hardware and software make it important to have a readable, precise way of describing the majority of the Arm
-architecture. This reference defines Arm’s Architecture Specification Language (ASL), which is the language
+This reference defines Arm’s Architecture Specification Language (ASL), which is the language
 used in Arm’s architecture reference manuals to describe the Arm architecture.
 
-ASL is designed and used to specify architectures. As a formal
-specification language it is designed to be accessible, understandable, and unambiguous to programmers, hardware
+ASL is designed and used to specify architectures. As a specification language, it is designed to be accessible,
+understandable, and unambiguous to programmers, hardware
 engineers, and hardware verification engineers, who collectively have quite a small intersection of languages they
 all understand. It can intentionally under specify behaviors in the architecture being described.
 
@@ -84,7 +82,7 @@ More specifically, a specification is the set of declarations written in ASL cod
 \begin{itemize}
     \item A function \texttt{Dot8} which operates on 2 bitvectors a byte at a time.
     \item A global variable \texttt{COUNT} to indicate the number of calls to the \texttt{Fib} function.
-    \item A function \texttt{Fib} demonstrating recursion.
+    \item A function \texttt{Fib} demonstrating recursion with a bound of 1000 on its depth.
     \item Assignment of a global bitvector \texttt{X} with a call to the \texttt{Dot8} function.
     \item Assignment of a variable from the result of a call to the recursive function \texttt{Fib}.
     \item A function \texttt{main}.

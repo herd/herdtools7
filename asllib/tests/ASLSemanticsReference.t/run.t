@@ -171,6 +171,7 @@ ASL Semantics Reference:
     provided integer {2}.
   [1]
   $ aslref SemanticsRule.CatchNoThrow.asl
+  No exception raised
   $ aslref SemanticsRule.EConcat2.asl
   $ aslref SemanticsRule.LEGlobalVar.asl
   $ aslref SemanticsRule.SCond2.asl

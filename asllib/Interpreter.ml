@@ -1344,7 +1344,7 @@ module Make (B : Backend.S) (C : Config) = struct
            (Dynamic, "tuple construction", List.length les, List.length monads)
     else multi_assign ver env les monads
 
-  (* Begin EvalTopLevel *)
+  (* Begin EvalSpec *)
   let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
       B.value m =
     let*| env = build_genv env eval_expr_sef static_env ast in
@@ -1362,8 +1362,8 @@ module Make (B : Backend.S) (C : Config) = struct
               Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v)
         in
         Error.fatal_unknown_pos (Error.UncaughtException msg))
-    |: SemanticsRule.TopLevel
+    |: SemanticsRule.Spec
 
   let run_typed env ast = run_typed_env [] env ast
-  (* End TopLevel *)
+  (* End *)
 end
