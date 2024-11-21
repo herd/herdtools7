@@ -1310,6 +1310,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let open AArch64Base in
       match ii.A.inst with
       | I_OP3 (V64,LSR,_,_,OpExt.Imm (12,0)) (* Specific -> get TLBI key *)
+      | I_OP3 (V64,SUBS,ZR,_,
+               OpExt.(Imm (0,0)|Reg(_,LSL 0))) (* Register or zero comparison *)
       | I_DC _|I_IC _ | I_TLBI _ ->
           AArch64Mixed.build_semantics test ii
       | _ -> asl_build_semantics test ii
