@@ -1383,7 +1383,7 @@ module Make(V:Constant.S)(C:Config) =
         }
       | _ -> assert false
 
-    let pp_sm_op = function 
+    let pp_sm_op = function
     | None -> ""
     | Some r -> " " ^ (pp_sm r |> Misc.lowercase)
 
@@ -1960,6 +1960,13 @@ module Make(V:Constant.S)(C:Config) =
             (dump_instruction ins)
     | I_UDF _ ->
         { empty_ins with memo = ".word 0"; }::k
+    | I_XPACD rd | I_XPACI rd ->
+        { empty_ins with
+          memo = sprintf "xpacd %s" (pp_reg rd);
+          inputs = [rd];
+          outputs = [rd];
+          reg_env = [rd,voidstar]
+        }::k
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k

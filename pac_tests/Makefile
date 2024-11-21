@@ -1,4 +1,4 @@
-NAME = example4
+NAME = example3
 
 all: my_herd
 	touch build/example.svg
@@ -16,3 +16,21 @@ herd:
 		-show prop -doshow prop \
 		-conf graph.cfg -gv $(NAME).litmus -o build \
 		-cat aarch64.cat
+
+litmus:
+	../_build/install/default/bin/litmus7 \
+		-os mac -set-libdir ../litmus/libdir \
+		$(NAME).litmus
+
+
+litmus_kvm:
+	../_build/install/default/bin/litmus7 \
+		-set-libdir ../litmus/libdir \
+		$(NAME).litmus \
+		-mach kvm-m1 -variant fatal \
+		-o build/$(NAME).tar
+	mkdir -p build/$(NAME)
+	tar xmf build/$(NAME).tar -C build/$(NAME)
+
+clean:
+	rm -rf build/*
