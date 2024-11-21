@@ -482,6 +482,8 @@ the local declaration item is
   |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
   \hypertarget{ast-sprint}{} &\\
   |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
+  \hypertarget{ast-spragma}{} &\\
+  |\ & \SPragma(\Tidentifier, overtext{\expr^*}{args})
   \hypertarget{ast-sunreachable}{} &\\
   |\ & \SUnreachable
 \end{flalign*}
@@ -557,7 +559,8 @@ Declaration keyword for global storage elements:
 \begin{flalign*}
 \decl \derives\ & \DFunc(\func) & \hypertarget{ast-dglobalstorage}{}\\
   |\ & \DGlobalStorage(\globaldecl) & \hypertarget{ast-dtypedecl}{}\\
-  |\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &
+  |\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) & \hypertarget{ast-dpragma}{}\\
+  |\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args})
 \end{flalign*}
 
 \subsection{Specifications \label{sec:Specifications}}
@@ -583,6 +586,9 @@ in order to initialize an array-typed variable.
 The rules for statements exclude \texttt{case} statements, since those are transformed into
 conditional statements (see \nameref{sec:TypingRule.DesugarCaseStmt}).
 
+The rules for statements exclude \texttt{pragma} statements, since those are transformed into
+\texttt{pass} statements (see \nameref{sec:TypingRule.SPragma}).
+
 The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
 \begin{flalign*}
@@ -605,6 +611,8 @@ The following extra rule enables expressing array indices based on enumeration:
 In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of the form $\DGlobalStorage(\globaldecl)$
 contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field
 always contains an expression (that is, it is never $\None$).
+
+Global pragma declarations $\DPragma$ are removed from the \untypedast once their expressions have been type checked and do not appear in the \typedast.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Building Abstract Syntax Trees\label{sec:BuildingAbstractSyntaxTrees}}

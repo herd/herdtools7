@@ -145,6 +145,9 @@ let make_builtin d =
   | D_GlobalStorage _ ->
       prerr_string "Storage declaration cannot be builtin";
       exit 1
+  | D_Pragma _ ->
+      prerr_string "Pragma declaration cannot be builtin";
+      exit 1
 
 let stdlib =
   let filename = "ASL Standard Library" and ast_string = Asl_stdlib.stdlib in
@@ -175,6 +178,9 @@ let extract_name k d =
       exit 1
   | D_GlobalStorage _ ->
       prerr_string "Storage declaration in stdlib.asl";
+      exit 1
+  | D_Pragma _ ->
+      prerr_string "Pragma declaration in stdlib.asl";
       exit 1
 
 let is_stdlib_name =

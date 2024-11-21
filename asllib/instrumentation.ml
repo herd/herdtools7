@@ -408,6 +408,7 @@ module TypingRule = struct
     | STry
     | SDecl
     | SDebug
+    | SPragma
     | FUndefIdent
     | FPrimitive
     | FBadArity
@@ -439,6 +440,7 @@ module TypingRule = struct
     | ReduceSlicesToCall
     | TypeOfArrayLength
     | TypecheckDecl
+    | CheckGlobalPragma
     | AnnotateAndDeclareFunc
     | AnnotateFuncSig
     | CheckSetterHasGetter
@@ -589,6 +591,7 @@ module TypingRule = struct
     | STry -> "STry"
     | SDecl -> "SDecl"
     | SDebug -> "SDebug"
+    | SPragma -> "SPragma"
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
@@ -620,6 +623,7 @@ module TypingRule = struct
     | ReduceSlicesToCall -> "ReduceSlicesToCall"
     | TypeOfArrayLength -> "TypeOfArrayLength"
     | TypecheckDecl -> "TypecheckDecl"
+    | CheckGlobalPragma -> "CheckGlobalPragmas"
     | AnnotateAndDeclareFunc -> "AnnotateAndDeclareFunc"
     | AnnotateFuncSig -> "AnnotateFuncSig"
     | CheckSetterHasGetter -> "CheckSetterHasGetter"
@@ -756,6 +760,7 @@ module TypingRule = struct
       STry;
       SDecl;
       SDebug;
+      SPragma;
       FUndefIdent;
       FPrimitive;
       FBadArity;
@@ -783,6 +788,7 @@ module TypingRule = struct
       ReduceSlicesToCall;
       TypeOfArrayLength;
       TypecheckDecl;
+      CheckGlobalPragma;
       AnnotateAndDeclareFunc;
       AnnotateFuncSig;
       CheckSetterHasGetter;

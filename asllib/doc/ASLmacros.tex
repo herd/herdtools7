@@ -640,6 +640,7 @@
 \newcommand\SThrow[0]{\hyperlink{ast-sthrow}{\textsf{S\_Throw}}}
 \newcommand\STry[0]{\hyperlink{ast-stry}{\textsf{S\_Try}}}
 \newcommand\SPrint[0]{\hyperlink{ast-sprint}{\textsf{S\_Print}}}
+\newcommand\SPragma[0]{\hyperlink{ast-spragma}{\textsf{S\_Pragma}}}
 \newcommand\SUnreachable[0]{\hyperlink{ast-sunreachable}{\textsf{S\_Unreachable}}}
 
 % Literal labels
@@ -716,6 +717,7 @@
 \newcommand\DFunc[0]{\hyperlink{ast-dfunc}{\texttt{D\_Func}}}
 \newcommand\DGlobalStorage[0]{\hyperlink{ast-dglobalstorage}{\texttt{D\_GlobalStorage}}}
 \newcommand\DTypeDecl[0]{\hyperlink{ast-dtypedecl}{\texttt{D\_TypeDecl}}}
+\newcommand\DPragma[0]{\hyperlink{ast-dpragma}{\texttt{D\_Pragma}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for AST builders
@@ -1184,6 +1186,8 @@
 \newcommand\lookupconstant[0]{\hyperlink{def-lookupconstant}{\textfunc{lookup\_constant}}}
 \newcommand\typeof[0]{\hyperlink{def-typeof}{\textfunc{type\_of}}}
 \newcommand\typecheckdecl[0]{\hyperlink{def-typecheckdecl}{\textfunc{typecheck\_decl}}}
+\newcommand\Prosecheckglobalpragma[2]{\hyperlink{def-checkglobalpragma}{checking} the global pragma #2 for correctness in the static environment #1 yields $\True$}
+\newcommand\checkglobalpragma[0]{\hyperlink{def-checkglobalpragma}{\textfunc{check\_global\_pragma}}}
 \newcommand\annotateanddeclarefunc[0]{\hyperlink{def-annotateanddeclarefunc}{\textfunc{annotate\_and\_declare\_func}}}
 \newcommand\declareglobalstorage[0]{\hyperlink{def-declareglobalstorage}{\textfunc{declare\_global\_storage}}}
 \newcommand\annotatefuncsig[0]{\hyperlink{def-annotatefuncsig}{\textfunc{annotate\_func\_sig}}}
@@ -2021,6 +2025,7 @@
 \newcommand\rvarray[0]{\texttt{rv\_array}}
 \newcommand\rvrecord[0]{\texttt{rv\_record}}
 \newcommand\setters[0]{\texttt{setters}}
+\newcommand\pragmas[0]{\texttt{pragmas}}
 \newcommand\sg[0]{\texttt{s\_g}}
 \newcommand\size[0]{\texttt{size}}
 \newcommand\sliceone[0]{\texttt{slice1}}

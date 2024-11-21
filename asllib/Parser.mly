@@ -492,8 +492,7 @@ let stmt ==
           { S_Repeat (body, cond, Some looplimit) }
       | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
       | THROW;                                               { S_Throw None             }
-      | loc=annotated(PRAGMA; IDENTIFIER; clist(expr); <>);
-          { Error.fatal_from loc @@ Error.NotYetImplemented "Pragmas in statements" }
+      | PRAGMA; x=IDENTIFIER; e=clist(expr);                 < S_Pragma >
     )
   )
 
@@ -620,8 +619,7 @@ let decl ==
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
       (* End *)
       (* Begin global_pragma *)
-      | loc=annotated(PRAGMA; IDENTIFIER; clist(expr); <>);
-        { Error.fatal_from loc @@ Error.NotYetImplemented "Pragma in declarations"}
+      | PRAGMA; x=IDENTIFIER; e=clist(expr); < D_Pragma >
       (* End *)
     )
   )

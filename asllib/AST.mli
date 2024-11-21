@@ -347,6 +347,9 @@ type stmt_desc =
   | S_Unreachable
       (** The unreachable statement, as an explicit node as it has a specific
           control-flow behaviour. *)
+  | S_Pragma of identifier * expr list
+      (** A pragma statement, as an explicit node to be used by tools which need
+          AST level hints. *)
 
 and stmt = stmt_desc annotated
 and case_alt_desc = { pattern : pattern; where : expr option; stmt : stmt }
@@ -397,6 +400,9 @@ type decl_desc =
   | D_Func of func
   | D_GlobalStorage of global_decl
   | D_TypeDecl of identifier * ty * (identifier * field list) option
+  | D_Pragma of identifier * expr list
+      (** A global pragma, as an explicit node to be used by tools which need
+          AST level hints. *)
 
 type decl = decl_desc annotated
 

@@ -84,7 +84,9 @@ yielding an output static environment $\newtenv$ and annotated list of declarati
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item \Prosebuilddependencies{\decls}{$(\defs, \dependencies)$};
+  \item splitting $\decls$ into two sublists by testing each declaration to check whether
+        it is that of a pragma yields $\pragmas$ and $\others$, respectively;
+  \item \Prosebuilddependencies{\others}{$(\defs, \dependencies)$};
   \item define $\reverseddependencies$ as the relation $\dependencies$ with its elements in reversed order.
         That is, if $(a,b)$ is in $\dependencies$ then $\reverseddependencies$ contains $(b, a)$.
         The reversal is necessary, since we want to check a declaration $b$ before any declaration $a$
@@ -94,18 +96,27 @@ All of the following apply:
   \item $\compdecls$ applies $\declsofcomp$ to each component $\vc$ in $\orderedcomps$ to transform it into a list,
         yielding a list of lists where each sublist corresponds to one strongly connected component;
   \item \Proseannotatedeclcomps{$\genv$}{$\compdecls$}{$\newdecls$}{$\newtenv$\ProseOrTypeError}.
+  \item for each $\vd$ in $\pragmas$, \Prosecheckglobalpragma{$\newtenv$}{$\vd$}\ProseOrTypeError;
+  \item $\pragmas$ is ignored;
 \end{itemize}
 \CodeSubsection{\TypeCheckASTBegin}{\TypeCheckASTEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \builddependencies(\decls) \typearrow (\defs, \dependencies)\\
+  \pragmas \eqdef [\ \vd \;|\; \vd \in \decls\ \land \astlabel(\vd) = \DPragma\ ]\\
+  {
+  \others \eqdef \left[ \begin{array}{r|l}
+    \vd & \vd \in \decls\ \land \astlabel(\vd) \neq \DPragma
+  \end{array}\right]
+  }\\
+  \builddependencies(\others) \typearrow (\defs, \dependencies)\\
   \reverseddependencies \eqdef [(a,b) \in \dependencies: (b,a)]\\
   \SCC(\defs, \reverseddependencies) = \comps\\
   \orderedcomps \in \topologicalorderingcomps(\comps, \reverseddependencies)\\
   \compdecls \eqdef [ \vc\in\orderedcomps: \declsofcomp(\vc, \decls) ]\\
-  \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError
+  \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError \\\\
+  \vd\in\pragmas: \checkglobalpragma(\newtenv, \vd) \typearrow \True \OrTypeError
 }{
   \typecheckast(\genv, \decls) \typearrow (\newdecls, \newtenv)
 }
@@ -274,6 +285,44 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\TypeCheckMutuallyRecBegin}{\TypeCheckMutuallyRecEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.CheckGlobalPragma\label{sec:TypingRule.CheckGlobalPragma}}
+\hypertarget{def-checkglobalpragma}{}
+The function
+\[
+  \checkglobalpragma(
+    \overname{\globalstaticenvs}{\genv} \aslsep
+    \overname{\decl}{\vd}
+  )
+  \aslto
+  \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+type-checks a global pragma declaration $\vd$ in the global static environment $\genv$,
+yielding $\True$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+
+All of the following apply:
+\begin{itemize}
+  \item $\vd$ is a global pragma declaration with any identifier and expression list $\vargs$. that is, $\DPragma(\Ignore, \vargs)$;
+  \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
+  \item applying $\annotateexprlist$ to $\vargs$ in $\tenv$ yields $\vargsp$ \ProseOrTypeError;
+  \item $\vargsp$ is ignored;
+\end{itemize}
+
+\subsubsection{Formally}
+
+\begin{mathpar}
+\inferrule{
+  \withemptylocal(\genv) \typearrow \tenv \\
+  \annotateexprlist(\tenv, \vargs) \typearrow \vargsp \OrTypeError \\
+}{
+  \checkglobalpragma(\genv, \overtext{\DPragma(\Ignore, \vargs)}{\vd}) \typearrow \True
+}
+\end{mathpar}
+
+\CodeSubsection{\CheckGlobalPragmaBegin}{\CheckGlobalPragmaEnd}{../Typing.ml}
 
 \subsubsection{TypingRule.DeclareSubprograms\label{sec:TypingRule.DeclareSubprograms}}
 \hypertarget{def-declaresubprograms}{}

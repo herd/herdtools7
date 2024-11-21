@@ -3141,5 +3141,41 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 \end{flalign*}
 
 \subsection{Abstract Syntax}
-\subsection{Typing}
+\begin{flalign*}
+\stmt \derives\ & \SPragma(\Tidentifier, \overtext{\expr^*}{args}) &
+\end{flalign*}
+
+\subsubsection{ASTRule.SPragma}
+\begin{mathpar}
+\inferrule{
+  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+}{
+    \buildstmt(\overname{\Nstmt(\Tpragma, \Tidentifier(\id), \namednode{\vargs}{\Clist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+    \overname{\SPragma(\id, \astversion{\vargs})}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SPragma\label{sec:TypingRule.SPragma}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
+  \item applying $\annotateexprlist$ to annotate the expression list $\vargs$ in $\tenv$ yields \\
+        $\vargsp$\ProseOrTypeError;
+  \item define $\news$ as the \texttt{pass} statement, that is, $\SPass$
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexprlist(\tenv, \vargs) \typearrow \vargsp \OrTypeError
+}{
+  \annotatestmt(\tenv, \overname{\SPragma(\id, \vargs)}{\vs}) \typearrow (\overname{\SPass}{\news}, \tenv)
+}
+\end{mathpar}
+\CodeSubsection{\SPragmaBegin}{\SPragmaEnd}{../Typing.ml}
+
 \subsection{Semantics}
+Pragmas are not associated with semantics.
