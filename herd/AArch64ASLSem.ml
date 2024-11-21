@@ -1412,7 +1412,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       in
       MC.solve_regs test es cs
 
-    let build_semantics test_aarch64 ii =
+    let asl_build_semantics test_aarch64 ii =
       let () =
         if _dbg then
           Printf.eprintf "\n\nExecuting %s by proc %s\n%!"
@@ -1479,6 +1479,16 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           match monads with
           | [] -> Warn.fatal "No possible ASL execution."
           | h :: t -> List.fold_left M.altT h t)
+
+    let build_semantics test ii =
+      let open AArch64Base in
+      match ii.A.inst with
+      | I_OP3 (V64,LSR,_,_,OpExt.Imm (12,0)) (* Specific -> get TLBI key *)
+      | I_OP3 (V64,SUBS,ZR,_,
+               OpExt.(Imm (0,0)|Reg(_,LSL 0))) (* Register or zero comparison *)
+      | I_DC _|I_IC _ | I_TLBI _ ->
+          AArch64Mixed.build_semantics test ii
+      | _ -> asl_build_semantics test ii
 
     let spurious_setaf v = AArch64Mixed.spurious_setaf v
   end
