@@ -50,6 +50,7 @@ Here is the table that represent my understanding of the `FEAT_Pauth` extension
 (without `FEAT_EPAC`, `FEAT_Pauth2` or address tagging...):
 
 |       | x               | x:non-canonical  | x:pac(da)        | x:pac(ia)        |
+|:------|:----------------|:-----------------|:-----------------|:-----------------|
 | LDR   | mem[x]          | TranslationFault | TranslationFault | TranslationFault |
 | PACDA | x:pad(da)       | x:non-canonical  | x:non-canonical  | x:non-canonical  |
 | AUTDA | x:non-canonical | x:non-canonical  | x                | x:non-canonical  |
@@ -123,6 +124,7 @@ exception if `FEAT_FPAC` is implemented.
 We can write the same table:
 
 |       | x               | x:pac(da)        | x:pac(ia)          |
+|:------|:----------------|:-----------------|:-------------------|
 | LDR   | mem[x]          | TranslationFault | TranslationFault   |
 | PACDA | x:pad(da)       | x                | x:pac(da):pac(ia)  |
 | AUTDA | x:pad(da)       | x                | x:pac(da):pac(ia)  |
