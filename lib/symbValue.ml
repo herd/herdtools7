@@ -356,9 +356,19 @@ module
   and xor v1 v2 =
     if equal v1 v2 && Cst.Scalar.unique_zero then zero else
     match v1,v2 with
-    | (Val (Symbolic id1),Val (Symbolic id2))
-      when Constant.symbol_eq id1 id2
-        -> zero
+      (* Scalar constants `Concrete _` an their compositions
+       * as vectors or records, cannot be checked below
+       * when several zero's exist, because the value of c1 ^ c2
+       * depends on scalar type. In that case one should perform
+       * the exclusive or operation. See PR #970.
+       *)
+    | (Val (Symbolic _ as c1),Val (Symbolic _ as c2))
+    | (Val (PteVal _ as c1),Val (PteVal _ as c2))
+    | (Val (Instruction _ as c1),Val (Instruction _ as c2))
+    | (Val (Label _ as c1),Val (Label _ as c2))
+    | (Val (Tag _ as c1),Val (Tag _ as c2))
+      when Cst.eq c1 c2
+      -> zero
     | _ -> binop Op.Xor Cst.Scalar.logxor v1 v2
 
   and maskop op sz v = match v,sz with
