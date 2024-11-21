@@ -1,0 +1,9 @@
+AArch64 A259
+Variant=fatal
+{
+}
+ P0         ;
+L0:         ;
+    SVC #0  ;
+L1:         ;
+forall(Fault(P0:L0,SupervisorCall))
