@@ -407,6 +407,8 @@ match name with
 | "stuminlh"|"STUMINLH" -> STOPBH (A.H,A.A_UMIN,A.W_L)
 | "stuminb"|"STUMINB" -> STOPBH (A.B,A.A_UMIN,A.W_P)
 | "stuminlb"|"STUMINLB" -> STOPBH (A.B,A.A_UMIN,A.W_L)
+(* SupervisorCall *)
+| "svc"|"SVC" -> SVC
 (* Undefined *)
 | "udf"|"UDF" -> UDF
 (* Memory Tagging *)
