@@ -401,7 +401,7 @@ var SuccessVA : boolean ;
 func AArch64_IsExclusiveVA
 (address : bits(64), processorid : integer, size : integer) => boolean
 begin
-  // Try both possibilties: write or not write
+  // Try both possibilities: write or not write
   SuccessVA = SomeBoolean();
   // Read RESADDR localy because we want a read event in all cases.
   let reserved = RESADDR;
