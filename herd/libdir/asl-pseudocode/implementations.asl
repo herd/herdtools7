@@ -377,6 +377,7 @@ func AArch64_MarkExclusiveVA
 (address : bits(64), processorid : integer, size : integer)
 begin
   RESADDR = address;
+  on_write_resaddr(address);
 end;
 
 // =============================================================================
@@ -401,6 +402,7 @@ begin
   SuccessVA = SomeBoolean();
   // Read RESADDR localy because we want a read event in all cases.
   let reserved = RESADDR;
+  on_read_resaddr(reserved);
   // If write succeeds then effective address and reservation coincide.
   if SuccessVA then CheckProp(address == reserved); end;
   return SuccessVA;
