@@ -416,12 +416,13 @@ module Make (Conf : Config) = struct
 
     let tr_regval = M.op1 (Op.ArchOp1 ASLOp.ToIntU)
 
-    let on_access_identifier dir (ii, poi) x scope v =
+    let mk_std_access (ii,poi) dir loc v =
+      let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
+      M.mk_singleton_es action (use_ii_with_poi ii poi)
+
+    let on_access_identifier dir (ii,_ as ii_poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
-      let m v =
-        let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
-        M.mk_singleton_es action (use_ii_with_poi ii poi)
-      in
+      let m = mk_std_access ii_poi dir loc in
       if is_aarch64_reg loc then tr_regval v >>= m
       else m v
 
@@ -866,10 +867,10 @@ module Make (Conf : Config) = struct
         p2 "primitive_dsb" ~side_effecting ("d", integer) ("t", integer)
           primitive_dsb;
         (* Registers *)
-        p1r "read_register" ~side_effecting ("reg", reg) ~returns:bv_64
-          read_register;
-        p2 "write_register" ~side_effecting ("data", bv_64) ("reg", reg)
-          write_register;
+        p1r "read_register" ~side_effecting
+          ("reg", reg) ~returns:bv_64 read_register;
+        p2 "write_register" ~side_effecting
+          ("data", bv_64) ("reg", reg) write_register;
         p0r "read_pc" ~side_effecting ~returns:bv_64 read_pc;
         p1 "write_pc" ~side_effecting ("data", bv_64) write_pc;
         (* Memory *)
