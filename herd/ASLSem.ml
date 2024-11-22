@@ -414,29 +414,25 @@ module Make (Conf : Config) = struct
           | "PSTATE", Scope.Global false -> true
           | _ -> false
 
-    let is_resaddr x scope =
-      match (x, scope) with "RESADDR", Scope.Global false -> true | _ -> false
-
     let loc_of_scoped_id ii x scope =
       if is_nzcv x scope then
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV)
-      else if is_resaddr x scope then
-        A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr)
       else A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
 
-    (* AArch64 registers hold integers, not bitvectors *) 
+    (* AArch64 registers hold integers, not bitvectors *)
     let is_aarch64_reg = function
       | A.Location_reg (_, ASLBase.ArchReg _) -> true
       | _ -> false
 
     let tr_regval = M.op1 (Op.ArchOp1 ASLOp.ToIntU)
 
-    let on_access_identifier dir (ii, poi) x scope v =
+    let mk_std_access (ii,poi) dir loc v =
+      let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
+      M.mk_singleton_es action (use_ii_with_poi ii poi)
+
+    let on_access_identifier dir (ii,_ as ii_poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
-      let m v =
-        let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
-        M.mk_singleton_es action (use_ii_with_poi ii poi)
-      in
+      let m = mk_std_access ii_poi dir loc in
       if is_aarch64_reg loc then tr_regval v >>= m
       else m v
 
@@ -606,6 +602,15 @@ module Make (Conf : Config) = struct
       let* v = v_m >>= to_aarch64_val in
       write_loc MachSize.Quad (loc_pc ii)
         v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
+
+    let on_access_resaddr dir (ii,_ as ii_poi) v_m =
+      let* v = v_m >>= to_aarch64_val in
+      let loc =
+        A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr) in
+      mk_std_access ii_poi dir loc v >>! []
+
+    let on_read_resaddr = on_access_resaddr Dir.R
+    and on_write_resaddr = on_access_resaddr Dir.W
 
     let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = addr_m and* datasize = datasize_m in
@@ -903,12 +908,16 @@ module Make (Conf : Config) = struct
         p2 "primitive_dsb" ~side_effecting ("d", integer) ("t", integer)
           primitive_dsb;
         (* Registers *)
-        p1r "read_register" ~side_effecting ("reg", reg) ~returns:bv_64
-          read_register;
-        p2 "write_register" ~side_effecting ("data", bv_64) ("reg", reg)
-          write_register;
+        p1r "read_register" ~side_effecting
+          ("reg", reg) ~returns:bv_64 read_register;
+        p2 "write_register" ~side_effecting
+          ("data", bv_64) ("reg", reg) write_register;
         p0r "read_pc" ~side_effecting ~returns:bv_64 read_pc;
         p1 "write_pc" ~side_effecting ("data", bv_64) write_pc;
+        p1 "on_read_resaddr" ~side_effecting
+          ("data", bv_64) on_read_resaddr;
+        p1 "on_write_resaddr" ~side_effecting
+          ("data", bv_64) on_write_resaddr;
         p0r "SP_EL0" ~side_effecting ~returns:bv_64 read_sp;
         p1 "SP_EL0" ~side_effecting ("data", bv_64) write_sp;
         (* Memory *)
