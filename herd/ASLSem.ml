@@ -410,23 +410,20 @@ module Make (Conf : Config) = struct
           | "PSTATE", Scope.Global false -> true
           | _ -> false
 
-    let is_resaddr x scope =
-      match (x, scope) with "RESADDR", Scope.Global false -> true | _ -> false
-
     let loc_of_scoped_id ii x scope =
       if is_nzcv x scope then
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV)
-      else if is_resaddr x scope then
-        A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr)
       else A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
 
-    let on_access_identifier dir (ii, poi) x scope v =
+    let mk_std_access (ii,poi) dir loc v =
+      let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
+      M.mk_singleton_es action (use_ii_with_poi ii poi)
+
+    let on_access_identifier dir (ii,_ as ii_poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
-      let m v =
-        let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
-        M.mk_singleton_es action (use_ii_with_poi ii poi)
-      in
-      if is_nzcv x scope then M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m else m v
+      let m v =  mk_std_access ii_poi dir loc v in
+      if is_nzcv x scope then M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m
+      else m v
 
     let on_write_identifier = on_access_identifier Dir.W
     and on_read_identifier = on_access_identifier Dir.R
@@ -594,6 +591,15 @@ module Make (Conf : Config) = struct
       let* v = v_m >>= to_aarch64_val in
       write_loc MachSize.Quad (loc_pc ii)
         v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
+
+    let on_access_resaddr dir (ii,_ as ii_poi) v_m =
+      let* v = v_m >>= to_aarch64_val in
+      let loc =
+        A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr) in
+      mk_std_access ii_poi dir loc v >>! []
+
+    let on_read_resaddr = on_access_resaddr Dir.R
+    and on_write_resaddr = on_access_resaddr Dir.W
 
     let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = addr_m and* datasize = datasize_m in
@@ -879,6 +885,8 @@ module Make (Conf : Config) = struct
         p2 "write_register" ("data", bv_64) ("reg", reg) write_register;
         p0r "read_pc" ~returns:bv_64 read_pc;
         p1 "write_pc" ("data", bv_64) write_pc;
+        p1 "on_read_resaddr" ("data", bv_64) on_read_resaddr;
+        p1 "on_write_resaddr" ("data", bv_64) on_write_resaddr;
         p0r "SP_EL0" ~returns:bv_64 read_sp;
         p1 "SP_EL0" ("data", bv_64) write_sp;
         (* Memory *)
