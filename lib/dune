@@ -4,6 +4,7 @@
  BPFLexer
  BellLexer
  CLexer
+ dotLexer
  lexHint
  lexOutMapping
  lexRename
@@ -35,6 +36,10 @@
 (menhir
  (modules BPFParser)
  (flags --fixed-exception --strict))
+
+(menhir
+ (modules dotParser)
+ (flags --fixed-exception))
 
 (menhir
  (modules MIPSParser)
