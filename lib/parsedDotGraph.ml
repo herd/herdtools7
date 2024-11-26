@@ -14,7 +14,28 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Attr = struct
+  type t = {
+    name: string;
+    value: string;
+  }
+
+  let pp attr =
+    Printf.sprintf "%s=\"%s\"" attr.name attr.value
+end
+
+module Stmt = struct
+  type t = Attr of Attr.t
+
+  let pp = function
+  | Attr a -> Printf.sprintf "%s;" (Attr.pp a)
+end
+
 type t = {
   name: string;
-  content : string
+  stmts: Stmt.t list
 }
+
+let pp g =
+  let printed_stmts = String.concat "\n" (List.map Stmt.pp g.stmts) in
+  Printf.sprintf "digraph %s {\n%s\n}" g.name printed_stmts  

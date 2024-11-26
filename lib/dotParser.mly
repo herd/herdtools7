@@ -20,13 +20,18 @@ open ParsedDotGraph
 
 %token EOF
 %token <string> NAME
+%token <string> QUOTED_STRING
 
+%token SEMI EQUAL
 %token LCURLY RCURLY
 %token GRAPH
 
 %type <ParsedDotGraph.t> graph
 %type <ParsedDotGraph.t list> graph_list
 %type <ParsedDotGraph.t list> main
+%type <ParsedDotGraph.Stmt.t> stmt
+%type <ParsedDotGraph.Stmt.t list> stmt_list
+%type <ParsedDotGraph.Attr.t> attr
 %start main
 %%
 
@@ -38,4 +43,15 @@ graph_list:
 | graph graph_list { $1 :: $2 }
 
 graph:
-| GRAPH name=NAME LCURLY content=NAME RCURLY { { name=name; content=content; } }
+| GRAPH name=NAME LCURLY stmts=stmt_list RCURLY { { name=name; stmts=stmts } }
+
+stmt_list:
+| { [] }
+| stmt stmt_list { $1 :: $2 }
+
+stmt:
+| attr SEMI { Stmt.Attr $1 }
+
+attr:
+| name=NAME EQUAL text=QUOTED_STRING { { Attr.name=name; Attr.value=text; } }
+| name=NAME EQUAL text=NAME { { Attr.name=name; Attr.value=text } }
