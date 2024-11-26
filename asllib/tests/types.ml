@@ -65,8 +65,9 @@ let structure_example () =
   let t2_def = !!(T_Tuple [ integer; t1 ]) in
   let t2 = !!(T_Named "T2") in
   let env =
+    let tf = SideEffect.TimeFrame.Constant in
     let open StaticEnv in
-    add_type "T1" integer empty |> add_type "T2" t2_def
+    add_type "T1" integer tf empty |> add_type "T2" t2_def tf
   in
   (* the named type `T1` whose structure is integer *)
   assert (is_named t1);

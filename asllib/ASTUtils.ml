@@ -134,6 +134,17 @@ let rec list_split3 = function
       let xs, ys, zs = list_split3 l in
       (x :: xs, y :: ys, z :: zs)
 
+let rec list_map_split f = function
+  | [] -> ([], [])
+  | [ a ] ->
+      let x, y = f a in
+      ([ x ], [ y ])
+  | a1 :: a2 :: l ->
+      let x1, y1 = f a1 in
+      let x2, y2 = f a2 in
+      let xs, ys = list_map_split f l in
+      (x1 :: x2 :: xs, y1 :: y2 :: ys)
+
 let list_is_empty = function [] -> true | _ -> false
 let pair x y = (x, y)
 let pair' y x = (x, y)

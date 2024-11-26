@@ -601,7 +601,7 @@ module Typed (C : Config.S) = struct
           :: acc
         else acc
       in
-      let type_folder name ty' acc : expr gen list =
+      let type_folder name (ty', _) acc : expr gen list =
         let ty' = Types.make_anonymous env ty' in
         match ty'.desc with
         | T_Record fields | T_Exception fields ->
@@ -736,7 +736,7 @@ module Typed (C : Config.S) = struct
       let+ names = list_repeat n names in
       T_Enum names |> annot
     and t_named env max =
-      let folder name ty' prevs =
+      let folder name (ty', _) prevs =
         let ty = T_Named name |> annot in
         match max with
         | None -> ty :: prevs
@@ -810,7 +810,7 @@ module Typed (C : Config.S) = struct
             :: acc
           else acc
         in
-        let type_folder name ty' acc : lexpr gen list =
+        let type_folder name (ty', _) acc : lexpr gen list =
           let ty' = Types.make_anonymous env ty' in
           match ty'.desc with
           | T_Record fields | T_Exception fields ->
@@ -928,7 +928,8 @@ module Typed (C : Config.S) = struct
   let decl : env -> (decl * env) sgen =
     let type_decl env n : (decl * env) gen =
       let+ ty = ty true env n and+ name = fresh_name env in
-      (D_TypeDecl (name, ty, None) |> annot, StaticEnv.add_type name ty env)
+      ( D_TypeDecl (name, ty, None) |> annot,
+        StaticEnv.add_type name ty SideEffect.TimeFrame.Constant env )
     and global_decl env n : (decl * env) gen =
       let* n1, n2 = Nat.split2 n in
       let* ty = ty false env ~max:n2 n1 in

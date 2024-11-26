@@ -22,13 +22,14 @@
 
 open AST
 open ASTUtils
+module TimeFrame = SideEffect.TimeFrame
 module SES = SideEffect.SES
 module TypingRule = Instrumentation.TypingRule
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 
 type global = {
-  declared_types : ty IMap.t;
+  declared_types : (ty * TimeFrame.t) IMap.t;
   constant_values : literal Storage.t;
   storage_types : (ty * global_decl_keyword) IMap.t;
   subtypes : identifier IMap.t;
@@ -48,6 +49,8 @@ type env = { global : global; local : local }
 
 module PPEnv = struct
   open Format
+
+  let pp_fst pp_elt f (x, _) = pp_elt f x
 
   let pp_map pp_elt f m =
     let pp_sep f () = fprintf f ",@ " in
@@ -97,8 +100,9 @@ module PPEnv = struct
       (Storage.pp_print PP.pp_literal)
       constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
-      storage_types (pp_map PP.pp_ty) declared_types (pp_map pp_print_string)
-      subtypes
+      storage_types
+      (pp_map (pp_fst PP.pp_ty))
+      declared_types (pp_map pp_print_string) subtypes
       (pp_map (fun f (p, _ses) -> pp_subprogram f p))
       subprograms (pp_map pp_iset) overloaded_subprograms (pp_map PP.pp_expr)
       expr_equiv
@@ -207,7 +211,7 @@ let set_renamings name set env =
 let add_global_storage x ty gdk (genv : global) =
   { genv with storage_types = IMap.add x (ty, gdk) genv.storage_types }
 
-let add_type x ty env =
+let add_type x ty time_frame env =
   let () =
     if false then Format.eprintf "Adding type %s as %a.@." x PP.pp_ty ty
   in
@@ -216,7 +220,7 @@ let add_type x ty env =
     global =
       {
         env.global with
-        declared_types = IMap.add x ty env.global.declared_types;
+        declared_types = IMap.add x (ty, time_frame) env.global.declared_types;
       };
   }
 
