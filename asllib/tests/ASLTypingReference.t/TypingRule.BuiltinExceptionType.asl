@@ -3,7 +3,7 @@ type SyntaxException of exception { message:string };
 
 func main () => integer
 begin
-  if UNKNOWN : boolean then
+  if ARBITRARY : boolean then
     throw Not_found {};
   else
     throw SyntaxException { message="syntax" };

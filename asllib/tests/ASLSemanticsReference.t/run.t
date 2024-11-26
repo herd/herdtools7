@@ -33,8 +33,8 @@ ASL Semantics Reference:
   [1]
   $ aslref SemanticsRule.EUnopAssert.asl
   $ aslref SemanticsRule.ECondFALSE.asl
-  $ aslref SemanticsRule.ECondUNKNOWN3or42.asl
-  File SemanticsRule.ECondUNKNOWN3or42.asl, line 10, characters 9 to 13:
+  $ aslref SemanticsRule.ECondARBITRARY3or42.asl
+  File SemanticsRule.ECondARBITRARY3or42.asl, line 10, characters 9 to 13:
   ASL Execution error: Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.ESlice.asl
@@ -47,14 +47,14 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.ERecord.asl
   $ aslref SemanticsRule.EConcat.asl
   $ aslref SemanticsRule.ETuple.asl
-  $ aslref SemanticsRule.EUnknownInteger0.asl
-  $ aslref SemanticsRule.EUnknownInteger3.asl
-  File SemanticsRule.EUnknownInteger3.asl, line 5, characters 9 to 13:
+  $ aslref SemanticsRule.EArbitraryInteger0.asl
+  $ aslref SemanticsRule.EArbitraryInteger3.asl
+  File SemanticsRule.EArbitraryInteger3.asl, line 5, characters 9 to 13:
   ASL Execution error: Assertion failed: (x == 3).
   [1]
-  $ aslref SemanticsRule.EUnknownIntegerRange3-42-3.asl
-  $ aslref SemanticsRule.EUnknownIntegerRange3-42-42.asl
-  File SemanticsRule.EUnknownIntegerRange3-42-42.asl, line 5,
+  $ aslref SemanticsRule.EArbitraryIntegerRange3-42-3.asl
+  $ aslref SemanticsRule.EArbitraryIntegerRange3-42-42.asl
+  File SemanticsRule.EArbitraryIntegerRange3-42-42.asl, line 5,
     characters 9 to 14:
   ASL Execution error: Assertion failed: (x == 42).
   [1]

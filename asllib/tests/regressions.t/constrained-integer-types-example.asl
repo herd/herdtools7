@@ -2,8 +2,8 @@ type Ity of integer {2,4,8};
 
 func tsub02()
 begin
-  var A = UNKNOWN: integer {2,4,8};
-  var B = UNKNOWN: integer {2,4};
+  var A = ARBITRARY: integer {2,4,8};
+  var B = ARBITRARY: integer {2,4};
   // A and B have anonymous types
 
   A = B; // legal: FMXK clause 2

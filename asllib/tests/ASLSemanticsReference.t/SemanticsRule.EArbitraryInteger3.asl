@@ -1,7 +1,7 @@
 func main () => integer
 begin
 
-  let x = UNKNOWN:integer {3, 42};
+  let x = ARBITRARY:integer;
   assert x==3;
 
   return 0;

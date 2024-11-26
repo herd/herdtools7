@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 func foo() => integer {8, 16}
 begin
-  return UNKNOWN : integer {8, 16};
+  return ARBITRARY : integer {8, 16};
 end;
 
 func positive6(size : integer {0..3})

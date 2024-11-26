@@ -1,4 +1,4 @@
-func foo() => integer {0..7} begin return UNKNOWN: integer {0..7}; end;
+func foo() => integer {0..7} begin return ARBITRARY: integer {0..7}; end;
 
 func positive10(N : integer {8,16}, M : integer {8,16}, O : integer {8})
 begin
