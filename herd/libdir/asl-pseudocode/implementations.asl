@@ -444,6 +444,41 @@ end;
 
 // =============================================================================
 
+func PhysMemWriteV1{N}(
+  desc::AddressDescriptor,
+  accdesc::AccessDescriptor,
+  value::bits(8*N)
+) => PhysMemRetStatus
+begin
+  write_memory_gen {N*8}(desc.vaddress, N*8, value,accdesc);
+  return PhysMemRetStatus {
+    statuscode = Fault_None,
+    extflag = '0',
+    merrorstate = ErrorState_CE,  // ??
+    store64bstatus = Zeros{64}
+  };
+end;
+
+// =============================================================================
+
+func PhysMemReadV1{N}(
+  desc::AddressDescriptor,
+  accdesc::AccessDescriptor
+) => (PhysMemRetStatus, bits(8*N))
+begin
+  let value =
+    read_memory_gen (desc.vaddress,N*8,accdesc)[8*N-1:0];
+  let ret_status = PhysMemRetStatus {
+    statuscode = Fault_None,
+    extflag = '0',
+    merrorstate = ErrorState_CE,  // ??
+    store64bstatus = Zeros{64}
+  };
+  return (ret_status, value);
+end;
+
+// =============================================================================
+
 func HaveAArch32() => boolean
 begin
   return FALSE;
