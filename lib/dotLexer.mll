@@ -34,8 +34,11 @@ rule token = parse
 | [' ''\t''\r'] { token lexbuf }
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "/*"      { LU.skip_c_comment lexbuf ; token lexbuf }
+| '"'('\\''"'|[^'"'])*'"' as s { QUOTED_STRING (String.sub s 1 (String.length s - 2)) }
+| ';' { SEMI }
 | '{' { LCURLY }
 | '}' { RCURLY }
+| "=" { EQUAL }
 | "digraph" { GRAPH }
 | name as name { NAME name }
 | eof { EOF }
