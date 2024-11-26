@@ -137,7 +137,7 @@ let rec pp_expr f e =
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
   | E_Array { length; value } ->
       fprintf f "@[<hv 2>array[%a] of %a@]" pp_expr length pp_expr value
-  | E_Unknown ty -> fprintf f "@[<h>UNKNOWN :@ %a@]" pp_ty ty
+  | E_Arbitrary ty -> fprintf f "@[<h>ARBITRARY :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
 
 and pp_expr_list f = pp_comma_list pp_expr f

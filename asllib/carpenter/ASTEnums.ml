@@ -183,9 +183,9 @@ module Make (C : Config.S) = struct
     and e_tuple =
       let make_tuple es = E_Tuple es in
       list2 exprs |> map make_tuple
-    and e_unknown =
-      let make_unknown name = E_Unknown (t_named name) in
-      names |> map make_unknown
+    and e_arbitrary =
+      let make_arbitrary name = E_Arbitrary (t_named name) in
+      names |> map make_arbitrary
     and e_pattern = empty (* TODO *) in
     [
       (if C.Syntax.e_unop then Some e_unops else None);
@@ -201,7 +201,7 @@ module Make (C : Config.S) = struct
       (if C.Syntax.e_getfields then Some e_get_fields else None);
       (if C.Syntax.e_record then Some e_record else None);
       (if C.Syntax.e_tuple then Some e_tuple else None);
-      (if C.Syntax.e_unknown then Some e_unknown else None);
+      (if C.Syntax.e_arbitrary then Some e_arbitrary else None);
       (if C.Syntax.e_pattern then Some e_pattern else None);
     ]
     |> filter_none |> oneof |> map annot

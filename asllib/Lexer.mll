@@ -96,7 +96,7 @@ let tr_name s = match s with
 | "try"           -> TRY
 | "TRUE"          -> BOOL_LIT true
 | "type"          -> TYPE
-| "UNKNOWN"       -> UNKNOWN
+| "ARBITRARY"     -> ARBITRARY
 | "Unreachable"   -> UNREACHABLE
 | "until"         -> UNTIL
 | "var"           -> VAR

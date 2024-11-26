@@ -210,7 +210,7 @@ let rec use_e e =
   | E_Record (ty, li) -> use_ty ty $ use_fields li
   | E_Tuple es -> use_es es
   | E_Array { length; value } -> use_e length $ use_e value
-  | E_Unknown t -> use_ty t
+  | E_Arbitrary t -> use_ty t
   | E_Pattern (e, p) -> use_e e $ use_pattern p
 
 and use_es es acc = use_list use_e es acc
@@ -386,7 +386,7 @@ let rec expr_equal eq e1 e2 =
   | E_ATC _, _ | _, E_ATC _ -> false
   | E_Unop (o1, e1), E_Unop (o2, e2) -> o1 = o2 && expr_equal eq e1 e2
   | E_Unop _, _ | _, E_Unop _ -> false
-  | E_Unknown _, _ | _, E_Unknown _ -> false
+  | E_Arbitrary _, _ | _, E_Arbitrary _ -> false
   | E_Var s1, E_Var s2 -> String.equal s1 s2
   | E_Var _, _ (* | _, E_Var _ *) -> false
 
@@ -666,13 +666,13 @@ let rec subst_expr substs e =
   | E_Array { length; value } ->
       E_Array { length = tr length; value = tr value }
   | E_ATC (e, t) -> E_ATC (tr e, t)
-  | E_Unknown _ -> e.desc
+  | E_Arbitrary _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
 (* End *)
 
 let rec is_simple_expr e =
   match e.desc with
-  | E_Var _ | E_Literal _ | E_Unknown _ -> true
+  | E_Var _ | E_Literal _ | E_Arbitrary _ -> true
   | E_Array { length = e1; value = e2 }
   | E_GetArray (e1, e2)
   | E_Binop (_, e1, e2) ->
@@ -717,7 +717,7 @@ let rename_locals map_name ast =
   let rec map_e e =
     map_desc_st' e @@ function
     | E_Literal _ -> e.desc
-    | E_Unknown t -> E_Unknown (map_t t)
+    | E_Arbitrary t -> E_Arbitrary (map_t t)
     | E_Var x -> E_Var (map_name x)
     | E_ATC (e', t) -> E_ATC (map_e e', map_t t)
     | E_Binop (op, e1, e2) -> E_Binop (op, map_e e1, map_e e2)

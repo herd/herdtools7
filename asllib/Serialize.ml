@@ -134,7 +134,7 @@ let rec pp_expr =
     | E_Array { length; value } ->
         bprintf f "E_Array { length=(%a); value=(%a) }" pp_expr length pp_expr
           value
-    | E_Unknown ty -> bprintf f "E_Unknown (%a)" pp_ty ty
+    | E_Arbitrary ty -> bprintf f "E_Arbitrary (%a)" pp_ty ty
     | E_Pattern (e, p) -> bprintf f "E_Pattern (%a, %a)" pp_expr e pp_pattern p
   in
   fun f e -> pp_annotated pp_desc f e
