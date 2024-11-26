@@ -323,14 +323,15 @@ The helper function
 \typearrow \lhsp \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
-It can fail with a type error.
+In particular, each occurence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
+If the corresponding right-hand side type is not a \wellconstrainedintegertype{} (including if it is an \unconstrainedintegertype{}), the result is a type error.
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{int}):
   \begin{itemize}
-    \item $\lhs$ is a \wellconstrainedintegertype{} with no constraints;
+    \item $\lhs$ is a \pendingconstrainedintegertype{};
     \item $\rhs$ is a \wellconstrainedintegertype{}\ProseOrTypeError;
     \item $\lhsp$ is $\rhs$.
   \end{itemize}
@@ -346,7 +347,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{other}):
   \begin{itemize}
-    \item $\lhs$ is not a \wellconstrainedintegertype{} with no constraints, or one of $\lhs$ and $\rhs$ is not a tuple type;
+    \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a tuple type;
     \item $\lhsp$ is $\lhs$.
   \end{itemize}
 \end{itemize}
@@ -356,7 +357,7 @@ One of the following applies:
 \inferrule[int]{
   \rhs \eqname \TInt(\wellconstrained(\Ignore)) \OrTypeError
 }{
-  \inheritintegerconstraints(\overname{\TInt(\wellconstrained(\emptylist))}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
+  \inheritintegerconstraints(\overname{\TInt(\pendingconstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
 }
 \end{mathpar}
 
@@ -373,7 +374,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[other]{
-  \lhs \neq \TInt(\wellconstrained(\Ignore)) \;\lor\; \astlabel(\lhs) \neq \TTuple \;\lor\; \astlabel(\rhs) \neq \TTuple
+  \lhs \neq \TInt(\pendingconstrained) \;\lor\; \astlabel(\lhs) \neq \TTuple \;\lor\; \astlabel(\rhs) \neq \TTuple
 }{
   \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
 }
