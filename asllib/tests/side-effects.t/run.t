@@ -73,6 +73,17 @@
   [1]
   $ aslref constant-func-throw-caught.asl
   $ aslref constant-func-local-var.asl
+  $ aslref constant-func-local-type-global-let.asl
+  File constant-func-local-type-global-let.asl, line 12, characters 0 to 21:
+  ASL Typing error: expected constant-time expression, got foo(8), which
+    produces the following side-effects: [ReadGlobal "K", PerformsAssertions].
+  [1]
+  $ aslref constant-func-local-type-local-let.asl
+  $ aslref constant-func-sig-let.asl
+  File constant-func-sig-let.asl, line 8, characters 0 to 20:
+  ASL Typing error: expected constant-time expression, got foo(3), which
+    produces the following side-effects: [ReadGlobal "K"].
+  [1]
 
   $ aslref for-var-no-edit.asl
   $ aslref for-var-edits.asl
@@ -270,7 +281,7 @@
   $ aslref rec-constant.asl
   $ aslref constant-rec.asl
   File constant-rec.asl, line 12, characters 2 to 23:
-  ASL Typing error: a pure expression was expected, found foo(1), which
+  ASL Typing error: expected constant-time expression, got foo(1), which
     produces the following side-effects: [RecursiveCall "foo"].
   [1]
   $ aslref rec-local-type.asl
