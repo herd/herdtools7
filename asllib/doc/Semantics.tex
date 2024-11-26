@@ -24,7 +24,7 @@ a type error.
 Specifications that are not well-typed have no defined semantics.
 In the rest of this reference, we assume well-typed specifications.
 
-ASL admits non-determinism, for example via the \texttt{UNKNOWN} expression.
+ASL admits non-determinism, for example via the \texttt{ARBITRARY} expression.
 This means that a given specification might have (potentially infinitely) many
 \hyperlink{def-derivationtree}{derivation trees}.
 
@@ -485,7 +485,7 @@ like $C$ where the environment component, if one exists, is substituted with $\e
 \hypertarget{def-primitiverel}{}
 The semantics of ASL is given by the relations\footnote{The reason that relations, rather than functions, are used is due to the
 potential non-determinism in the primitive subprograms
-and the non-determinism inherent in the \texttt{UNKNOWN} expression.}
+and the non-determinism inherent in the \texttt{ARBITRARY} expression.}
 \evalrel\ and \primitiverel.
 The relation \evalrel\ is defined as the disjoint union of the relations defined in this reference.
 The relation \primitiverel\ provides the semantics of primitive subprograms and is not otherwise defined

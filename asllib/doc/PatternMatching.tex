@@ -997,9 +997,9 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[unknown]{}{
-  \buildexprpattern(\Nexprpattern(\Tunknown, \Tcolon, \punnode{\Nty})) \astarrow
-  \overname{\EUnknown(\astof{\tty})}{\vastnode}
+  \inferrule[arbitrary]{}{
+  \buildexprpattern(\Nexprpattern(\Tarbitrary, \Tcolon, \punnode{\Nty})) \astarrow
+  \overname{\EArbitrary(\astof{\tty})}{\vastnode}
 }
 \end{mathpar}
 

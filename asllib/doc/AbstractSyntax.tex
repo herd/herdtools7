@@ -161,7 +161,7 @@ The following rules correspond to unary operations and binary operations that ca
 The following rules correspond to various types of expressions:
 literal expressions, variable expressions, typing assertions, binary operation expressions, unary operation expressions,
 call expressions, slicing expressions, conditional expressions, array access expressions, single-field access expressions, multiple-field access expressions,
-record and exception construction expressions, tuple expressions, unknown-value expressions,
+record and exception construction expressions, tuple expressions, arbitrary-value expressions,
 and pattern matching expressions.
 
 \hypertarget{ast-expr}{} \hypertarget{ast-eliteral}{}
@@ -191,8 +191,8 @@ and pattern matching expressions.
 	|\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})
   &\hypertarget{ast-etuple}{}\\
 	|\ & \ETuple(\expr^{+})
-  &\hypertarget{ast-eunknown}{}\\
-	|\ & \EUnknown(\ty)
+  &\hypertarget{ast-earbitrary}{}\\
+	|\ & \EArbitrary(\ty)
   &\hypertarget{ast-epattern}{}\\
 	|\ & \EPattern(\expr, \pattern)
 \end{flalign*}

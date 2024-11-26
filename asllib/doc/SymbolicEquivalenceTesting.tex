@@ -1040,9 +1040,9 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if $\opone$ is equal to $\optwo$ and $\vbone$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_unknown}):
+  \item All of the following apply (\textsc{e\_arbitrary}):
   \begin{itemize}
-    \item both $\veone$ and $\vetwo$ are $\UNKNOWN$ expressions;
+    \item both $\veone$ and $\vetwo$ are $\ARBITRARY$ expressions;
     \item $\vb$ is $\False$.
   \end{itemize}
 
@@ -1235,8 +1235,8 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[e\_unknown]{
-  (\astlabel(\veone) = \EUnknown \land \astlabel(\vetwo) = \EUnknown)
+\inferrule[e\_arbitrary]{
+  (\astlabel(\veone) = \EArbitrary \land \astlabel(\vetwo) = \EArbitrary)
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \False
 }

@@ -913,9 +913,9 @@ One of the following applies:
     \item define $\ids$ as the union of applying of $\useexpr$ to each of $\veone$ and $\vetwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_unknown}):
+  \item All of the following apply (\textsc{e\_arbitrary}):
   \begin{itemize}
-    \item $\ve$ is the unknown expression with type $\vt$;
+    \item $\ve$ is the arbitrary expression with type $\vt$;
     \item define $\ids$ as the application of $\usety$ to $\vt$.
   \end{itemize}
 
@@ -1024,8 +1024,8 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[e\_unknown]{}{
-  \useexpr(\overname{\EUnknown(\vt)}{\ve}) \typearrow \overname{\usety(\vt)}{\ids}
+\inferrule[e\_arbitrary]{}{
+  \useexpr(\overname{\EArbitrary(\vt)}{\ve}) \typearrow \overname{\usety(\vt)}{\ids}
 }
 \end{mathpar}
 

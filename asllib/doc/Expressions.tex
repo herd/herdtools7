@@ -935,10 +935,10 @@ the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \
 
 \subsubsection{Example}
 In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ECondUNKNOWN3or42.asl}
-the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will
+\ASLExample{\semanticstests/SemanticsRule.ECondARBITRARY3or42.asl}
+the expression \texttt{if ARBITRARY: boolean then 3 else Return42()} will
 evaluate either \texttt{3} or \texttt{Return42()} depending on how
-\texttt{UNKNOWN} is implemented.
+\texttt{ARBITRARY} is implemented.
 
 \subsubsection{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
 \subsubsection{Prose}
@@ -2288,39 +2288,39 @@ All of the following apply:
 \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
 
 \section{Arbitrary Value Expressions\label{sec:ArbitraryValueExpressions}}
-An expression of the form \texttt{UNKNOWN: ty} evaluates to an arbitrary value in the
+An expression of the form \texttt{ARBITRARY: ty} evaluates to an arbitrary value in the
 domain of \texttt{ty}.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Tunknown \parsesep \Tcolon \parsesep \Nty &
+\Nexpr \derives\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\expr \derives\ & \EUnknown(\ty) &
+\expr \derives\ & \EArbitrary(\ty) &
 \end{flalign*}
 
-\subsubsection{ASTRule.EUnknown}
+\subsubsection{ASTRule.EArbitrary}
 \begin{mathpar}
 \inferrule{
   \buildty(\vt) \astarrow \astversion{\vt} \OrBuildError
 }{
-  \buildexpr(\overname{\Nexpr(\Tunknown, \Tcolon, \vt : \Nty)}{\vparsednode}) \astarrow
-  \overname{\EUnknown(\astversion{\vt})}{\vastnode}
+  \buildexpr(\overname{\Nexpr(\Tarbitrary, \Tcolon, \vt : \Nty)}{\vparsednode}) \astarrow
+  \overname{\EArbitrary(\astversion{\vt})}{\vastnode}
 }
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.EUnknown \label{sec:TypingRule.EUnknown}}
+\subsubsection{TypingRule.EArbitrary \label{sec:TypingRule.EArbitrary}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ve$ denotes an expression \UNKNOWN\ of type $\tty$, that is, $\EUnknown(\tty)$;
+  \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$, that is, $\EArbitrary(\tty)$;
   \item annotating the type $\tty$ in $\tenv$ yields $\ttyone$\ProseOrTypeError;
   \item obtaining the \structure\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
   \item $\vt$ is $\ttyone$;
-  \item $\newe$ is an expression \UNKNOWN\ of type $\ttytwo$, that is, $\EUnknown(\ttytwo)$.
+  \item $\newe$ is an expression \ARBITRARY\ of type $\ttytwo$, that is, $\EArbitrary(\ttytwo)$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -2328,27 +2328,27 @@ All of the following apply:
   \annotatetype{\tenv, \tty} \typearrow \ttyone \OrTypeError\\\\
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError
 }{
-  \annotateexpr{\tenv, \EUnknown(\tty)} \typearrow (\ttyone, \EUnknown(\ttytwo))
+  \annotateexpr{\tenv, \EArbitrary(\tty)} \typearrow (\ttyone, \EArbitrary(\ttytwo))
 }
 \end{mathpar}
-\CodeSubsection{\EUnknownBegin}{\EUnknownEnd}{../Typing.ml}
+\CodeSubsection{\EArbitraryBegin}{\EArbitraryEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.EUnknown\label{sec:SemanticsRule.EUnknown}}
+\subsubsection{SemanticsRule.EArbitrary\label{sec:SemanticsRule.EArbitrary}}
 \subsubsection{Example}
 In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EUnknownInteger3.asl}
-the expression \texttt{[UNKNOWN : integer]} evaluates to an integer value.
+\ASLExample{\semanticstests/SemanticsRule.EArbitraryInteger3.asl}
+the expression \texttt{[ARBITRARY : integer]} evaluates to an integer value.
 
 \subsubsection{Example}
 In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EUnknownIntegerRange3-42-3.asl}
-the expression \verb|UNKNOWN : integer {3, 42}| evaluates to either $\nvint(3)$ or $\nvint(42)$.
+\ASLExample{\semanticstests/SemanticsRule.EArbitraryIntegerRange3-42-3.asl}
+the expression \verb|ARBITRARY : integer {3, 42}| evaluates to either $\nvint(3)$ or $\nvint(42)$.
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ve$ denotes the \texttt{UNKNOWN} expression annotated with type $\vt$;
+  \item $\ve$ denotes the \texttt{ARBITRARY} expression annotated with type $\vt$;
   \item $\vv$ is an arbitrary value in the domain of $\vt$ in $\env$ (see \secref{DynDomain});
   \item $\newenv$ is $\env$.
   \item $\vg$ is the empty execution graph.
@@ -2358,10 +2358,10 @@ All of the following apply:
 \inferrule{
   \vv \in \dynamicdomain(\env, \vt)
 }{
-  \evalexpr{\env, \overname{\EUnknown(\vt)}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
+  \evalexpr{\env, \overname{\EArbitrary (\vt)}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
-\CodeSubsection{\EvalEUnknownBegin}{\EvalEUnknownEnd}{../Interpreter.ml}
+\CodeSubsection{\EvalEArbitraryBegin}{\EvalEArbitraryEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
 Notice that this rule introduces non-determinism.
