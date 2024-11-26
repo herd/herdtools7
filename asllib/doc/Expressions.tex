@@ -2290,6 +2290,16 @@ All of the following apply:
 \section{Arbitrary Value Expressions\label{sec:ArbitraryValueExpressions}}
 An expression of the form \texttt{ARBITRARY: ty} evaluates to an arbitrary value in the
 domain of \texttt{ty}.
+Each evaluation can produce a different arbitrary value, but (as always) once a particular expression is evaluated, its arbitrary value cannot change.
+This is because evaluation produces native values, and \ARBITRARY{} is not a valid native value---so once evaluated, it becomes an unchanging native value like any other.
+
+Note that there are two important consequences of producing an arbitrary value when evaluating expressions of the form \texttt{ARBITRARY: ty}:
+\begin{enumerate}
+  \item The arbitrary value depends only on \texttt{ty}, and no other ASL storage elements.
+  \item The only guarantee of the resulting value is that it is a valid member of \texttt{ty}.
+    In particular, the language does not define which valid member it is, and ASL specifications must not rely on the value (for example, there is no way to test whether a value was produced by evaluating \ARBITRARY{}).
+\end{enumerate}
+
 
 \subsection{Syntax}
 \begin{flalign*}
