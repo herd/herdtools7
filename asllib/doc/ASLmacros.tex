@@ -3,9 +3,6 @@
 \usepackage{mathtools}  % Additional math package
 \usepackage{amssymb}  % Classic math package
 \usepackage{mathtools}  % Additional math package
-\usepackage{graphicx}  % For figures
-\usepackage{caption}  % For figure captions
-\usepackage{subcaption}  % For subfigure captions
 \usepackage{url}  % Automatically escapes urls
 \usepackage{hyperref}  % Insert links inside pdfs
 \hypersetup{
@@ -18,40 +15,96 @@
 \usepackage{listings}
 \lstdefinelanguage{ASL}
 {
-    morekeywords={AND, DIV, DIVRM, EOR,
-    IN, MOD, NOT, OR,
-    SAMPLE, UNKNOWN, UNSTABLE, XOR,
-    access, advice, after,
-    any, array, as, aspect,
-    assert, assume, assumes, before,
-    begin, bit, bits, boolean,
-    call, case, cast, catch,
-    class, config, constant, dict,
-    do, downto, else, elsif,
-    end, endcase, endcatch, endclass,
-    endevent, endfor, endfunc, endgetter,
-    endif, endmodule, endnamespace, endpackage,
-    endproperty, endrule, endsetter, endtemplate,
-    endtry, endwhile, entry, enumeration,
-    event, exception, export, expression,
-    extends, extern, feature, for,
-    func, get, getter, gives,
-    if, iff, implies, import,
-    in, integer, intersect, intrinsic,
-    invariant, is, let, list,
-    map, module, namespace, newevent,
-    newmap, of, original, otherwise,
-    package, parallel, pass, pattern,
-    pointcut, port, pragma, private,
-    profile, property, protected, public,
-    real, record, repeat, replace,
-    requires, rethrow, return, rule,
-    set, setter, shared, signal,
-    statements, string, subtypes, template,
-    then, throw, to, try,
-    type, typeof, union, until,
-    using, var, watch, when,
-    where, while, with, ztype, _},
+    morekeywords={
+      AND,
+      array,
+      as,
+      assert,
+      begin,
+      bit,
+      bits,
+      boolean,
+      case,
+      catch,
+      config,
+      constant,
+      DIV,
+      DIVRM,
+      do,
+      downto,
+      else,
+      elsif,
+      end,
+      enumeration,
+      XOR,
+      exception,
+      FALSE,
+      for,
+      func,
+      getter,
+      if,
+      IN,
+      integer,
+      let,
+      looplimit,
+      MOD,
+      NOT,
+      of,
+      OR,
+      otherwise,
+      pass,
+      pragma,
+      print,
+      real,
+      record,
+      recurselimit,
+      repeat,
+      return,
+      setter,
+      string,
+      subtypes,
+      then,
+      throw,
+      to,
+      try,
+      TRUE,
+      type,
+      UNKNOWN,
+      Unreachable,
+      until,
+      var,
+      when,
+      where,
+      while,
+      with,
+      SAMPLE, UNSTABLE,
+      _, any,
+      assume, assumes,
+      call, cast,
+      class, dict,
+      endcase, endcatch, endclass,
+      ,endevent, endfor, endfunc, endgetter,
+      endif, endmodule, endnamespace, endpackage,
+      endproperty, endrule, endsetter, endtemplate,
+      endtry, endwhile,
+      event, export,
+      extends, extern, feature,
+      gives,
+      iff, implies, import,
+      intersect, intrinsic,
+      invariant, list,
+      map, module, namespace, newevent,
+      newmap, original,
+      package, parallel,
+      port, private,
+      profile, property, protected, public,
+      requires, rethrow, rule,
+      shared, signal,
+      template,
+      typeof, union,
+      using,
+      ztype
+    },
     keywordstyle=\color{red},
     morecomment=[l][\color{blue}]{//},
     morecomment=[s][\color{blue}]{/*}{*/},
@@ -93,7 +146,6 @@
   % To visualize:
   % showframe
 ]{geometry}
-%\usepackage{stmaryrd} % for \llbracket and \rrbracket
 \input{ifempty}
 \input{ifcode}
 \input{control}
@@ -196,8 +248,6 @@
 \newcommand\cartimes[0]{\hyperlink{def-cartimes}{\times}}
 
 \newcommand\view[0]{\hyperlink{def-deconstruction}{view}}
-%\newcommand\defpoint[1]{\underline{#1}}
-\newcommand\defpoint[1]{#1}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbrace{#1}^{#2}}
@@ -219,6 +269,7 @@
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
+\newcommand\reverselist[0]{\hyperlink{def-reverselist}{\textfunc{reverse}}}
 \newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
 \newcommand\setcomprehension[2]{\{#1 : #2\}} % #1 is a set element predicate, #2 is the output set element.
 
@@ -242,6 +293,7 @@
 \newcommand\funcgraph[0]{\hyperlink{def-funcgraph}{\texttt{func\_graph}}}
 \DeclareMathOperator{\dom}{\hyperlink{def-dom}{dom}}
 \newcommand\sign[0]{\hyperlink{def-sign}{\texttt{sign}}}
+\newcommand\graphtransitive[1]{#1^{\hyperlink{def-graphtransitive}{*}}}
 
 \newcommand\configdomain[1]{\hyperlink{def-configdomain}{\texttt{config\_domain}}({#1})}
 
@@ -250,6 +302,7 @@
 \newcommand\booltrans[1]{\hyperlink{def-booltrans}{\textfunc{bool\_transition}}(#1)}
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\checktrans[2]{\hyperlink{def-checktrans}{\textfunc{check}}(#1, \texttt{#2})}
+\newcommand\Prosechecktrans[2]{\hyperlink{def-checktrans}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
 \newcommand\checktransarrow[0]{\longrightarrow}
 
 \newcommand\termx[0]{\mathit{tx}}
@@ -264,11 +317,9 @@
 % These are used by the AST reference, typing reference, and semantics reference.
 \newcommand\nonterminal[1]{\texttt{#1}}
 \newcommand\terminal[1]{\mathtt{\mathbf{#1}}}
-%\newcommand\verbatimterminal[2]{\mathtt{\mathbf{#1}}}
 \newcommand\verbatimterminal[2]{\texttt{"}\texttt{#2}\texttt{"}} % Grammar terminals
 \newcommand\emptysentence[0]{\hyperlink{def-emptysentence}{\epsilon}}
 \newcommand\astof[1]{\overline{{#1}}}
-%\newcommand\parsenode[1]{\hyperlink{def-parsenode}{\textsf{Parse}}[#1]}
 \newcommand\parsenode[1]{\hyperlink{def-parsenode}{\mathbb{P}\mathbb{A}\mathbb{R}\mathbb{S}\mathbb{E}}[#1]}
 \newcommand\namednode[2]{#1:#2} % #1 is a free variable, #2 is the grammar symbol
 \newcommand\punnode[1]{#1}
@@ -392,7 +443,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for non-terminals
-\newcommand\Nast[0]{\hyperlink{def-nast}{\nonterminal{ast}}}
+\newcommand\Nspec[0]{\hyperlink{def-nspec}{\nonterminal{spec}}}
 \newcommand\Ndecl[0]{\hyperlink{def-ndecl}{\nonterminal{decl}}}
 \newcommand\Nparamsopt[0]{\hyperlink{def-nparamsopt}{\nonterminal{params\_opt}}}
 \newcommand\Ncall[0]{\hyperlink{def-ncall}{\nonterminal{call}}}
@@ -666,7 +717,6 @@
 \newcommand\DGlobalStorage[0]{\hyperlink{ast-dglobalstorage}{\texttt{D\_GlobalStorage}}}
 \newcommand\DTypeDecl[0]{\hyperlink{ast-dtypedecl}{\texttt{D\_TypeDecl}}}
 
-\newcommand\specification[0]{\hyperlink{ast-specification}{\texttt{specification}}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for AST builders
 \newcommand\BuildErrorConfig[0]{\hyperlink{def-builderrorconfig}{\texttt{\#BE}}}
@@ -677,7 +727,7 @@
 \newcommand\OrBuildError[0]{\;\terminateas \BuildErrorConfig}
 
 \newcommand\astarrow[0]{\xrightarrow{\textsf{ast}}}
-\newcommand\scanarrow[0]{\xrightarrow{\textsf{scan}}}
+\newcommand\scanarrow[0]{\xrightarrow{\hyperlink{def-aslscan}{\textsf{scan}}}}
 
 \newcommand\buildidentity[0]{\hyperlink{build-identity}{\textfunc{build\_identity}}}
 \newcommand\buildlist[0]{\hyperlink{build-list}{\textfunc{build\_list}}}
@@ -687,6 +737,7 @@
 \newcommand\buildtclist[0]{\hyperlink{build-tclist}{\textfunc{build\_tclist}}}
 \newcommand\buildoption[0]{\hyperlink{build-option}{\textfunc{build\_option}}}
 
+\newcommand\Prosebuildast[2]{\hyperlink{build-ast}{building} an untyped AST from the parse tree #1 yields #2}
 \newcommand\buildast[0]{\hyperlink{build-ast}{\textfunc{build\_ast}}}
 \newcommand\builddecl[0]{\hyperlink{build-decl}{\textfunc{build\_decl}}}
 \newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}}
@@ -772,14 +823,17 @@
 \newcommand\REidentifier[0]{\hyperlink{def-reidentifier}{\texttt{<}\textsf{identifier}\texttt{>}}}
 \newcommand\RElinecomment[0]{\hyperlink{def-relinecomment}{\texttt{<}\textsf{line\_comment}\texttt{>}}}
 
+\newcommand\parsearrow[0]{\xrightarrow{\hyperlink{def-aslparse}{\textsf{parse}}}}
 \newcommand\aslparse[0]{\hyperlink{def-aslparse}{\textfunc{asl\_parse}}}
+\newcommand\Proseaslparse[2]{\hyperlink{def-aslparse}{parsing} the list of tokens #1 yields the parse tree #2}
 \newcommand\aslscan[0]{\hyperlink{def-aslscan}{\textfunc{scan}}}
+\newcommand\Proseaslscan[3]{\hyperlink{def-aslscan}{applying lexical analysis} to #1 with the lexical specification #2 yields the list of tokens #3}
 \newcommand\maxmatches[0]{\hyperlink{def-maxmatch}{\textfunc{max\_matches}}}
 \newcommand\remaxmatch[0]{\hyperlink{def-rematch}{\textfunc{re\_max\_match}}}
 \newcommand\munch[0]{\hyperlink{def-munch}{\textfunc{munch}}}
 \newcommand\Token[0]{\hyperlink{def-token}{\mathbb{T}\mathbb{O}\mathbb{K}\mathbb{E}\mathbb{N}}}
-\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\textsf{\#LE}}}
-\newcommand\ParseError[0]{\hyperlink{def-parseerror}{\textsf{\#PE}}}
+\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\texttt{\#LE}}}
+\newcommand\ParseError[0]{\hyperlink{def-parseerror}{\texttt{\#PE}}}
 \newcommand\discard[0]{\hyperlink{def-discard}{\textfunc{discard}}}
 \newcommand\booltolit[0]{\hyperlink{def-booltolit}{\textfunc{bool\_to\_lit}}}
 \newcommand\decimaltolit[0]{\hyperlink{def-decimaltolit}{\textfunc{dec\_to\_lit}}}
@@ -953,6 +1007,7 @@
 \newcommand\DynErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
 \newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig}
 \newcommand\OrDynError[0]{\;\terminateas \DynErrorConfig}
+\newcommand\ProseOtherwiseDynamicError[0]{Otherwise, the result is a dynamic error.}
 \newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig}}
 \newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
@@ -988,10 +1043,10 @@
 \newcommand\assignargs[0]{\hyperlink{def-assignargs}{\textfunc{assign\_args}}}
 \newcommand\assignnamedargs[0]{\hyperlink{def-assignnamedargs}{\textfunc{assign\_named\_args}}}
 \newcommand\matchfuncres[0]{\hyperlink{def-matchfuncres}{\textfunc{match\_func\_res}}}
+\newcommand\Prosebuildgenv[4]{\hyperlink{def-buildgenv}{building} an environment from the static environment #1 and specification #2 yields #3 and the execution graph #4}
 \newcommand\buildgenv[0]{\hyperlink{def-buildgenv}{\textfunc{build\_genv}}}
-\newcommand\setbuiltin[0]{\hyperlink{def-setbuiltin}{\textfunc{set\_builtin}}}
-\newcommand\topologicaldecls[0]{\hyperlink{def-topologicaldecls}{\textfunc{topological\_decls}}}
 \newcommand\evalglobals[0]{\hyperlink{def-evalglobals}{\textfunc{eval\_globals}}}
+\newcommand\Proseevalspec[3]{\hyperlink{def-evalspec}{evaluating} the typed AST #1 in the static environment #2 yields #3}
 \newcommand\evalspec[0]{\hyperlink{def-evalspec}{\textfunc{eval\_spec}}}
 \newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\textfunc{lexpr\_is\_var}}}
 \newcommand\desugarcasestmt[0]{\hyperlink{def-desugarcasestmt}{\textfunc{desugar\_case\_stmt}}}
@@ -1013,13 +1068,12 @@
 \newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
 \newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
 \newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\textfunc{declare\_local\_identifier\_mm}}}
-%\newcommand\envfind[0]{\hyperlink{def-envfind}{\textfunc{env\_find}}}
 \newcommand\removelocal[0]{\hyperlink{def-removelocal}{\textfunc{remove\_local}}}
 \newcommand\readidentifier[0]{\hyperlink{def-readidentifier}{\textfunc{read\_identifier}}}
 \newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\textfunc{write\_identifier}}}
 \newcommand\createbitvector[0]{\hyperlink{def-createbitvector}{\textfunc{create\_bitvector}}}
 \newcommand\concatbitvectors[0]{\hyperlink{def-concatbitvector}{\textfunc{concat\_bitvectors}}}
-\newcommand\readfrombitvector[0]{\hyperlink{def-readfrinbitvector}{\textfunc{read\_from\_bitvector}}}
+\newcommand\readfrombitvector[0]{\hyperlink{def-readfrombitvector}{\textfunc{read\_from\_bitvector}}}
 \newcommand\writetobitvector[0]{\hyperlink{def-writetobitvector}{\textfunc{write\_to\_bitvector}}}
 \newcommand\asbitvector[0]{\hyperlink{def-asbitvector}{\textfunc{as\_bitvector}}}
 \newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\textfunc{slices\_to\_positions}}}
@@ -1201,6 +1255,7 @@
 \newcommand\usecase[0]{\hyperlink{def-usecase}{\textfunc{use\_case}}}
 \newcommand\usecatcher[0]{\hyperlink{def-usecatcher}{\textfunc{use\_catcher}}}
 \newcommand\builddependencies[0]{\hyperlink{def-builddependencies}{\textfunc{build\_dependencies}}}
+\newcommand\Prosebuilddependencies[2]{\hyperlink{def-builddependencies}{building} the \dependencygraphterm\ of #1 yields #2}
 \newcommand\decldependencies[0]{\hyperlink{def-decldependencies}{\textfunc{decl\_dependencies}}}
 
 % Symbolic equivalence testing macros
@@ -1316,7 +1371,15 @@
 \newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 
-% Glossary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Top level macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\checkandinterpret[0]{\hyperlink{def-checkandinterpret}{\textfunc{check\_and\_interpret}}}
+\newcommand\setbuiltin[0]{\hyperlink{def-setbuiltin}{\textfunc{set\_builtin}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Glossary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\partialfunctionterm[0]{\hyperlink{def-partialfunctionterm}{partial function}}
 \newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
 \newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
@@ -1375,10 +1438,15 @@
 \newcommand\basevalueterm[0]{\hyperlink{def-basevalueterm}{base value}}
 \newcommand\controlflowsymbolterm[0]{\hyperlink{def-controlflowsymbolterm}{control flow state}}
 
+\newcommand\defusedependencyterm[0]{\hyperlink{def-builddependencies}{def-use dependency}}
+\newcommand\defusedependenciesterm[0]{\hyperlink{def-builddependencies}{def-use dependencies}}
+\newcommand\dependencygraphterm[0]{\hyperlink{def-builddependencies}{def-use dependency graph}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
 \newcommand\applyunoptype[0]{\hyperlink{def-applyunoptype}{\textfunc{apply\_unop\_type}}}
 \newcommand\applybinoptypes[0]{\hyperlink{def-applybinoptypes}{\textfunc{apply\_binop\_types}}}
+\newcommand\Proseapplybinoptypes[5]{\hyperlink{def-applybinoptypes}{applying} #2 to the type #3 and type #4 in the static environment #1 yields the type #5}
 \newcommand\constraintbinop[0]{\hyperlink{def-constraintbinop}{\textfunc{constraint\_binop}}}
 \newcommand\applybinopextremities[0]{\hyperlink{def-applybinopextremities}{\textfunc{apply\_binop\_extremities}}}
 \newcommand\possibleextremitiesleft[0]{\hyperlink{def-possibleextremitiesleft}{\textfunc{possible\_extremities\_left}}}
@@ -1410,6 +1478,7 @@
 \newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\textfunc{annotate\_constraint}}}
 \newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\textfunc{get\_variable\_enum}}}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\textfunc{annotate\_expr}}(#1)}
+\newcommand\Proseannotateexpr[3]{\hyperlink{def-annotateexpr}{annotating} the expression #1 in the static environment #2 yields #3}
 \newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\textfunc{annotate\_exprs}}}
 \newcommand\annotatelimitexpr[0]{\hyperlink{def-annotatelimitexpr}{\textfunc{annotate\_limit\_expr}}}
 \newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}(#1)}
@@ -1430,7 +1499,8 @@
 \newcommand\annotatelocaldeclitemuninit[0]{\hyperlink{def-annotatelocaldeclitemuninit}{\textfunc{annotate\_local\_decl\_item\_uninit}}}
 \newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}(#1)}
 \newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
-\newcommand\annotatesubprogram[1]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}(#1)}
+\newcommand\annotatesubprogram[0]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}}
+\newcommand\Proseannotatesubprogram[3]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #1 in the static environment #2 yields the subprogram definition #3}
 \newcommand\checkstmtreturnsorthrows[0]{\hyperlink{def-checkstmtreturnsorthrows}{\textfunc{check\_stmt\_returns\_or\_throws}}}
 
 \newcommand\controlflowfromstmt[0]{\hyperlink{def-controlflowfromstmt}{\textfunc{control\_flow\_from\_stmt}}}
@@ -1443,12 +1513,16 @@
 
 \newcommand\annotatedecl[1]{\hyperlink{def-annotatedecl}{\textfunc{annotate\_decl}}(#1)}
 \newcommand\declaredecl[1]{\hyperlink{def-declaredecl}{\textfunc{declare\_decl}}(#1)}
+\newcommand\Prosetypecheckast[4]{\hyperlink{def-typecheckast}{type-checking} #1 in #2 yields the typed AST #3 and static environment #4}
 \newcommand\typecheckast[0]{\hyperlink{def-typecheckast}{\textfunc{type\_check\_ast}}}
+\newcommand\ProseSCC[3]{\hyperlink{def-scc}{partitioning} the set of declarations #1 with the set of edges #2 yields the list of strongly-connected components #3}
 \newcommand\SCC[0]{\hyperlink{def-scc}{\textfunc{SCC}}}
-\newcommand\topologicalordering[0]{\hyperlink{def-topologicalordering}{\textfunc{topological\_ordering}}}
+\newcommand\topologicalorderingcomps[0]{\hyperlink{def-topologicalorderingcomps}{\textfunc{topological\_ordering\_comps}}}
+\newcommand\Prosetopologicalorderingcomps[3]{\hyperlink{def-topologicalorderingcomps}{ordering} the set of strongly-connected components #1, with respect to #2, yields the list of strongly-connected components #3}
 \newcommand\declsofcomp[0]{\hyperlink{def-declsofcomp}{\textfunc{decls\_of\_comp}}}
 \newcommand\sortcomponents[0]{\hyperlink{def-sortcomponents}{\textfunc{sort\_components}}}
 \newcommand\annotatedeclcomps[0]{\hyperlink{def-annotatedeclcomps}{\textfunc{annotate\_decl\_comps}}}
+\newcommand\Proseannotatedeclcomps[4]{\hyperlink{def-annotatedeclcomps}{annotating} the list of declaration components #2 in the global static environment #1 yields the list of annotated declarations #3 and new global static environment #4}
 \newcommand\evalconstraint[1]{\textfunc{eval\_constraint}(#1)}
 \newcommand\annotateliteral[1]{\hyperlink{def-annotateliteral}{\textfunc{annotate\_literal}}(#1)}
 \newcommand\exprequalcase[0]{\hyperlink{def-exprequalcase}{\textfunc{expr\_equal\_case}}}
@@ -1495,7 +1569,7 @@
 \newcommand\intsetop[0]{\hyperlink{def-intsetop}{\textfunc{intset\_op}}}
 \newcommand\intsettointconstraints[0]{\hyperlink{def-intsettointconstraints}{\textfunc{int\_set\_to\_int\_constraints}}}
 
-%% BUild Error Codes
+%% Build Error Codes
 \newcommand\BuildErrorCode[1]{\texttt{BE\_#1}}
 \newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
 
@@ -1536,6 +1610,7 @@
 \newcommand\BaseValueNonStatic[0]{\hyperlink{def-bvns}{\TypeErrorCode{BVNS}}}
 \newcommand\BaseValueEmptyType[0]{\hyperlink{def-bvet}{\TypeErrorCode{BVET}}}
 \newcommand\NonReturningFunction[0]{\hyperlink{def-nrf}{\TypeErrorCode{NRF}}}
+\newcommand\BuiltinExpectedToBeFunction[0]{\hyperlink{def-bef}{\TypeErrorCode{BEF}}}
 
 %% Dynamic Error Codes
 \newcommand\DynamicErrorVal[1]{\Error(\texttt{#1})}
@@ -1636,6 +1711,7 @@
 \newcommand\compare[0]{\texttt{compare}}
 \newcommand\compdecls[0]{\texttt{comp\_decls}}
 \newcommand\compfordir[0]{\texttt{comp\_for\_dir}}
+\newcommand\orderedcomps[0]{\texttt{orderedcomps}}
 \newcommand\comps[0]{\texttt{comps}}
 \newcommand\compsone[0]{\texttt{comps1}}
 \newcommand\compstwo[0]{\texttt{comps2}}
@@ -1670,6 +1746,7 @@
 \newcommand\denvthrow[0]{\texttt{denv\_throw}}
 \newcommand\denvtwo[0]{\textsf{denv2}}
 \newcommand\dependencies[0]{\texttt{depends}}
+\newcommand\reverseddependencies[0]{\texttt{rev\_deps}}
 \newcommand\dir[0]{\texttt{dir}}
 \newcommand\ds[0]{\texttt{ds}}
 \newcommand\dst[0]{\texttt{dst}}
@@ -2333,6 +2410,17 @@
 \newcommand\vstwoltwo[0]{\texttt{s2l2}}
 \newcommand\vstwoltwosone[0]{\texttt{s2l2s1}}
 \newcommand\vsp[0]{\texttt{s'}}
+\newcommand\vspec[0]{\texttt{spec}}
+\newcommand\vspectext[0]{\texttt{spec\_text}}
+\newcommand\vstdtext[0]{\texttt{std\_text}}
+\newcommand\vspectokens[0]{\texttt{spec\_tokens}}
+\newcommand\vstdtokens[0]{\texttt{std\_tokens}}
+\newcommand\vspecparse[0]{\texttt{spec\_parse}}
+\newcommand\vstdparse[0]{\texttt{std\_parse}}
+\newcommand\vspecast[0]{\texttt{spec\_ast}}
+\newcommand\vstdast[0]{\texttt{std\_ast}}
+\newcommand\vstddeclast[0]{\texttt{std\_decl\_ast}}
+\newcommand\vstdasbuiltin[0]{\texttt{std\_as\_builtin}}
 \newcommand\vspp[0]{\texttt{s''}}
 \newcommand\vsstruct[0]{\texttt{s\_struct}}
 \newcommand\vstacksize[0]{\texttt{stack\_size}}
@@ -2398,6 +2486,7 @@
 \newcommand\vttwoanon[0]{\texttt{t2\_anon}}
 \newcommand\vttwostruct[0]{\texttt{t2\_struct}}
 \newcommand\vtwe[0]{\texttt{twe}}
+\newcommand\vtypedast[0]{\texttt{typed\_ast}}
 \newcommand\vtypeasts[0]{\texttt{type\_asts}}
 \newcommand\vtypes[0]{\texttt{types}}
 \newcommand\vtys[0]{\texttt{ty\_s}}
@@ -2405,6 +2494,7 @@
 \newcommand\vtyt[0]{\texttt{ty\_t}}
 \newcommand\vu[0]{\texttt{u}}
 \newcommand\vunop[0]{\texttt{unop}}
+\newcommand\vuntypedast[0]{\texttt{untyped\_ast}}
 \newcommand\vuntypedlocaldeclitem[0]{\texttt{untyped\_local\_decl\_item}}
 \newcommand\vused[0]{\texttt{used}}
 \newcommand\vusedone[0]{\texttt{used1}}

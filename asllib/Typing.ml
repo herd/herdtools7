@@ -3089,28 +3089,24 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let new_d, new_genv =
       match d.desc with
-      (* Begin TypecheckFunc *)
+      (* Begin TypecheckDecl *)
       | D_Func ({ body = SB_ASL _; _ } as f) ->
           let env1, f1 = annotate_and_declare_func ~loc f genv in
           let f2 = try_annotate_subprogram env1 f1 in
           let new_env = add_subprogram f2.name f2 env1
           and new_d = D_Func f2 |> here in
-          (new_d, new_env.global) |: TypingRule.TypecheckFunc
-      (* End *)
+          (new_d, new_env.global) |: TypingRule.TypecheckDecl
       | D_Func ({ body = SB_Primitive; _ } as f) ->
           let new_env, f2 = annotate_and_declare_func ~loc f genv in
           let new_d = D_Func f2 |> here in
           (new_d, new_env.global)
-      (* Begin TypecheckGlobalStorage *)
       | D_GlobalStorage gsd ->
           let gsd', new_genv = declare_global_storage loc gsd genv in
           let new_d = D_GlobalStorage gsd' |> here in
-          (new_d, new_genv) |: TypingRule.TypecheckGlobalStorage
-      (* End *)
-      (* Begin TypecheckTypeDecl *)
+          (new_d, new_genv) |: TypingRule.TypecheckDecl
       | D_TypeDecl (x, ty, s) ->
           let new_genv = declare_type loc x ty s genv in
-          (d, new_genv) |: TypingRule.TypecheckTypeDecl
+          (d, new_genv) |: TypingRule.TypecheckDecl
       (* End *)
     in
     (new_d :: acc, new_genv)

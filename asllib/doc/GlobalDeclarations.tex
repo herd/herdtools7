@@ -69,7 +69,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Typing\label{sec:GlobalDeclarationsTyping}}
+\section{Typing Global Declarations\label{sec:GlobalDeclarationsTyping}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \hypertarget{def-typecheckdecl}{}
 The function
@@ -85,26 +85,45 @@ annotates a global declaration $\vd$ in the global static environment $\genv$,
 yielding an annotated global declaration $\newd$ and modified global static environment $\newgenv$.
 \ProseOtherwiseTypeError
 
-\subsubsection{TypingRule.TypecheckFunc\label{sec:TypingRule.TypecheckFunc}}
+\subsubsection{TypingRule.TypecheckDecl\label{sec:TypingRule.TypecheckDecl}}
 \subsubsection{Prose}
-All of the following apply:
+One of the following applies:
 \begin{itemize}
-  \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
-  \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \secref{TypingRule.AnnotateAndDeclareFunc}
-        yields the environment $\tenvone$ and a subprogram definition $\vfone$\ProseOrTypeError;
-  \item annotating the subprogram definition $\vfone$ in $\tenv$ as per \nameref{sec:TypingRule.Subprogram} yields
-        the annotated subprogram definition $\vftwo$\ProseOrTypeError;
-  \item applying $\addsubprogram$ to bind $\vftwo.\funcname$ to $\vftwo$ in $\tenvone$ yields $\newtenv$;
-  \item define $\newd$ as the subprogram AST node with $\vftwo$, that is, $\DFunc(\vftwo)$;
-  \item define $\newgenv$ as the global component of $\newtenv$.
-\end{itemize}\CodeSubsection{\TypecheckFuncBegin}{\TypecheckFuncEnd}{../Typing.ml}
+  \item All of the following apply (\textsc{func}):
+  \begin{itemize}
+    \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
+    \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \secref{TypingRule.AnnotateAndDeclareFunc}
+          yields the environment $\tenvone$ and a subprogram definition $\vfone$\ProseOrTypeError;
+    \item \Proseannotatesubprogram{$\vfone$}{$\tenv$}{$\vftwo$\ProseOrTypeError};
+    \item applying $\addsubprogram$ to bind $\vftwo.\funcname$ to $\vftwo$ in $\tenvone$ yields $\newtenv$;
+    \item define $\newd$ as the subprogram AST node with $\vftwo$, that is, $\DFunc(\vftwo)$;
+    \item define $\newgenv$ as the global component of $\newtenv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{global\_storage}):
+  \begin{itemize}
+    \item $\vd$ is a global storage declaration with description $\gsd$, that is, \\ $\DGlobalStorage(\gsd)$;
+    \item declaring the global storage with description $\gsd$ in $\genv$ yields the new environment
+          $\newgenv$ and new global storage description $\gsdp$\ProseOrTypeError;
+    \item define $\newd$ as the global storage declaration with description $\gsdp$, that is, \\ $\DGlobalStorage(\gsdp)$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{type}):
+  \begin{itemize}
+    \item $\vd$ is a type declaration with identifier $\vx$, type $\tty$,
+          and \optional\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
+    \item declaring the type described by $(\vx, \tty, \vs)$ in $\genv$
+          as per \secref{TypingRule.DeclaredType} yields the modified global static environment $\newgenv$\ProseOrTypeError;
+    \item define $\newd$ as $\vd$.
+  \end{itemize}
+\end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[func]{
   \vf \eqname \{\text{body}: \SBASL, \ldots\}\\
   \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
-  \annotatesubprogram{\tenvone, \vfone} \typearrow \vftwo \OrTypeError\\\\
+  \annotatesubprogram(\tenvone, \vfone) \typearrow \vftwo \OrTypeError\\\\
   \addsubprogram(\tenvone, \vftwo.\funcname, \vftwo) \typearrow \newtenv
 }{
   \typecheckdecl(\genv, \overname{\DFunc(\vf)}{\vd})
@@ -112,11 +131,33 @@ All of the following apply:
 }
 \end{mathpar}
 
+\begin{mathpar}
+\inferrule[global\_storage]{
+  \declareglobalstorage(\genv, \gsd) \typearrow (\newgenv, \gsdp) \OrTypeError
+}{
+  {
+    \begin{array}{r}
+  \typecheckdecl(\genv, \overname{\DGlobalStorage(\gsd)}{\vd})
+  \typearrow \\ (\overname{\DGlobalStorage(\gsdp)}{\newd}, \newgenv)
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[type]{
+  \declaretype(\genv, \vx, \tty, \vs) \typearrow \newgenv \OrTypeError
+}{
+  \typecheckdecl(\genv, \overname{\DTypeDecl(\vx, \tty, \vs)}{\vd}) \typearrow (\overname{\vd}{\newd}, \newgenv)
+}
+\end{mathpar}
+\CodeSubsection{\TypecheckDeclBegin}{\TypecheckDeclEnd}{../Typing.ml}
+
 \subsubsection{TypingRule.Subprogram \label{sec:TypingRule.Subprogram}}
 \hypertarget{def-annotatesubprogram}{}
 The function
 \[
-  \annotatesubprogram{\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf}} \aslto \overname{\func}{\vfp}
+  \annotatesubprogram(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf}) \aslto \overname{\func}{\vfp}
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a subprogram $\vf$ in an environment $\tenv$, resulting in an annotated subprogram $\vfp$.
@@ -151,7 +192,7 @@ One of the following applies:
   \vf.\funcreturntype = \None\\
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))
 }{
-  \annotatesubprogram{\tenv, \vf} \typearrow \vfp
+  \annotatesubprogram(\tenv, \vf) \typearrow \vfp
 }
 \end{mathpar}
 
@@ -162,7 +203,7 @@ One of the following applies:
   \checkstmtreturnsorthrows(\newbody) \typearrow \True \OrTypeError\\\\
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))
 }{
-  \annotatesubprogram{\tenv, \vf} \typearrow \vfp
+  \annotatesubprogram(\tenv, \vf) \typearrow \vfp
 }
 \end{mathpar}
 
@@ -383,48 +424,3 @@ returns in $\vctrlflow$ the maximal element of $\vtone$ and $\vttwo$ in the foll
 \[
   \assertednotinterrupt\ \sqsubset \interrupt \sqsubset \maynotinterrupt \enspace.
 \]
-
-\subsubsection{TypingRule.TypecheckGlobalStorage\label{sec:TypingRule.TypecheckGlobalStorage}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\vd$ is a global storage declaration with description $\gsd$, that is, \\ $\DGlobalStorage(\gsd)$;
-  \item declaring the global storage with description $\gsd$ in $\genv$ yields the new environment
-        $\newgenv$ and new global storage description $\gsdp$\ProseOrTypeError;
-  \item define $\newd$ as the global storage declaration with description $\gsdp$, that is, \\ $\DGlobalStorage(\gsdp)$.
-\end{itemize}\CodeSubsection{\TypecheckGlobalStorageBegin}{\TypecheckGlobalStorageEnd}{../Typing.ml}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \declareglobalstorage(\genv, \gsd) \typearrow (\newgenv, \gsdp) \OrTypeError
-}{
-  {
-    \begin{array}{r}
-  \typecheckdecl(\genv, \overname{\DGlobalStorage(\gsd)}{\vd})
-  \typearrow \\ (\overname{\DGlobalStorage(\gsdp)}{\newd}, \newgenv)
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.TypecheckTypeDecl\label{sec:TypingRule.TypecheckTypeDecl}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\vd$ is a type declaration with identifier $\vx$, type $\tty$,
-        and \optional\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
-  \item declaring the type described by $(\vx, \tty, \vs)$ in $\genv$
-        as per \secref{TypingRule.DeclaredType} yields the modified global static environment $\newgenv$\ProseOrTypeError;
-  \item define $\newd$ as $\vd$.
-  \end{itemize}
-\CodeSubsection{\TypecheckTypeDeclBegin}{\TypecheckTypeDeclEnd}{../Typing.ml}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \declaretype(\genv, \vx, \tty, \vs) \typearrow \newgenv \OrTypeError
-}{
-  \typecheckdecl(\genv, \overname{\DTypeDecl(\vx, \tty, \vs)}{\vd}) \typearrow (\overname{\vd}{\newd}, \newgenv)
-}
-\end{mathpar}

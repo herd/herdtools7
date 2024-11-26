@@ -1,0 +1,106 @@
+\chapter{Top Level\label{chap:TopLevel}}
+In previous chapters, we defined the following components:
+\begin{itemize}
+    \item Lexical analysis (\chapref{LexicalStructure}),
+    \item Parsing (\chapref{Syntax}),
+    \item AST building (\secref{BuildingAbstractSyntaxTrees}),
+    \item Type checking (\secref{TypingSpecifications}), and
+    \item Semantic evaluation (\secref{SemanticsOfSpecifications}).
+\end{itemize}
+
+In this chapter, we show how these components can be combined to form an interpreter
+for an ASL standard library and a given ASL specification.
+%
+We emphasize that this is only an example usage of the components listed above.
+One can think of other combinations where, for example, semantic evaluation is
+replaced with a translation to a hardware description language.
+
+\hypertarget{def-checkandinterpret}{}
+The relation
+\[
+\checkandinterpret(\overname{\Strings}{\vspectext}, \overname{\Strings}{\vstdtext}) \aslrel
+\left(
+    \begin{array}{cc}
+        (\overname{\tint}{\vret} \times \overname{\XGraphs}{\vg})   & \cup\\
+        \{\ \LexicalError, \ParseError, \BuildErrorConfig\ \}    & \cup\\
+        \overname{\TTypeError}{\TypeErrorConfig}    & \cup\\
+        \overname{\TDynError}{\DynErrorConfig}      &
+    \end{array}
+\right)
+\]
+accepts a textual description of a specification in $\vspectext$ and a textual description of the standard library in $\vstdtext$.
+The descriptions are statically checked for validity.
+If found invalid, an error configuration corresponding to the phase where the error
+exists is returned --- scanning, parsing, or AST building.
+If found valid, an AST is built and semantically evaluated, yielding an integer return code $\vret$ and an execution graph $\vg$,
+or a dynamic error.
+
+\subsubsection{TopLevelRule.CheckAndInterpret}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+    \item \Proseaslscan{$\vstdtext$}{$\spectoken$}{$\vstdtokens$\ProseTerminateAs{\LexicalError}};
+    \item \Proseaslparse{$\vstdtokens$}{$\vstdparse$\ProseTerminateAs{\ParseError}};
+    \item \Prosebuildast{$\vstdparse$}{$\vstdast$\ProseTerminateAs{\BuildErrorConfig}};
+    \item define $\vstdasbuiltin$ by applying $\setbuiltin$ to each top-level declaration in\\
+          $\vstdast$\ProseOrTypeError;
+    %%%%%
+    \item \Proseaslscan{$\vspectext$}{$\spectoken$}{$\vspectokens$\ProseTerminateAs{\LexicalError}};
+    \item \Proseaslparse{$\vspectokens$}{$\vspecparse$\ProseTerminateAs{\ParseError}};
+    \item \Prosebuildast{$\vspecparse$}{$\vspecast$\ProseTerminateAs{\BuildErrorConfig}};
+    %%%%%
+    \item define $\vuntypedast$ as the concatenation of the AST $\vstdasbuiltin$ and
+          the AST $\vspecast$ (both are lists of $\decl$);
+    \item \Prosetypecheckast{$\vuntypedast$}{empty static global environment}{$\vtypedast$}{$\tenv$\ProseOrTypeError};
+    \item \Proseevalspec{$\vtypedast$}{$\tenv$}{the integer $\vret$ and the execution graph $\vg$\ProseOrError}.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \terminateas \LexicalError\\\\
+    \aslparse(\vstdtokens) \parsearrow \vstdparse \terminateas \ParseError\\\\
+    \buildast(\vstdparse) \astarrow \vstdast \terminateas \BuildErrorConfig\\\\
+    \vi \in \listrange(\vstdast): \setbuiltin(\vstdast_i) \typearrow \vstddeclast_i \OrTypeError\\\\
+    \vstdasbuiltin \eqdef [\vi \in \listrange(\vstdast): \vstddeclast_i]\\
+    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \terminateas \LexicalError\\\\
+    \aslparse(\vspectokens) \parsearrow \vspecparse \terminateas \ParseError\\\\
+    \buildast(\vspecparse) \astarrow \vspecast \terminateas \BuildErrorConfig\\\\
+    \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\\
+    \typecheckast(G^{\emptytenv}, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
+    \evalspec(\tenv, \vtypedast) \evalarrow (\nvint(\vret), \vg) \OrDynError
+}{
+    \checkandinterpret(\vspectext, \vstdtext) \longrightarrow (\nvint(\vret), \vg)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SetBuiltin\label{sec:TypingRule.SetBuiltin}}
+The helper function
+\hypertarget{def-setbuiltin}{}
+\[
+  \setbuiltin(\overname{\decl}{\vdecl}) \aslto
+  \overname{\decl}{\vdeclp}
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \secref{TypingRule.InsertStdlibParam}.
+It produces a type error when given a top-level declaration which is not a function.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item \Prosechecktrans{that $\vdecl$ is a function}{\BuiltinExpectedToBeFunction};
+  \item view $\vdecl$ as $\DFunc(\funcsig)$;
+  \item define $\funcsigp$ as $\funcsig$ with its $\funcbuiltin$ flag set to $\True$;
+  \item define $\vdeclp$ as $\DFunc(\funcsigp)$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \checktrans{\astlabel(\vdecl) = \DFunc}{\BuiltinExpectedToBeFunction} \typearrow \True \OrTypeError\\\\
+  \vdecl \eqname \DFunc(\funcsig)\\
+  \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
+}{
+  \setbuiltin(\vdecl) \typearrow \DFunc(\funcsigp)
+}
+\end{mathpar}

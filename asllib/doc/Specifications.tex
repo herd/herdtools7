@@ -1,34 +1,34 @@
 \chapter{Specifications\label{chap:Specifications}}
 
-Specifications are grammatically derived from $\Nast$ and represented as ASTs by \\
-$\specification$.
+Specifications are grammatically derived from $\Nspec$ and represented as ASTs by \\
+$\spec$.
 %
 Typing specifications is done by the relation $\typecheckast$, which is defined in
 \nameref{sec:TypingRule.TypeCheckAST}.
 %
-The semantics of specifications in given by the relation $\evalspec$, which is defined in \nameref{sec:SemanticsRule.TopLevel}.
+The semantics of specifications in given by the relation $\evalspec$, which is defined in \nameref{sec:SemanticsRule.EvalSpec}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Nast   \derives\ & \maybeemptylist{\Ndecl} &
+\Nspec   \derives\ & \maybeemptylist{\Ndecl} &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Abstract Syntax}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\specification \derives\ & \decl^* &
+\spec \derives\ & \decl^* &
 \end{flalign*}
 
 \subsubsection{ASTRule.AST \label{sec:ASTRule.AST}}
 \hypertarget{build-ast}{}
 The relation
 \[
-  \buildast : \overname{\parsenode{\Nast}}{\vparsednode} \;\aslrel\; \overname{\specification}{\vastnode}
+  \buildast : \overname{\parsenode{\Nspec}}{\vparsednode} \;\aslrel\; \overname{\spec}{\vastnode}
 \]
-transforms an $\Nast$ node $\vparsednode$ into an AST specification node $\vastnode$.
+transforms an $\Nspec$ node $\vparsednode$ into an AST specification node $\vastnode$.
 
 We define this function for subprogram declarations, type declarations, and global storage declarations in the corresponding chapters.
 
@@ -36,43 +36,35 @@ We define this function for subprogram declarations, type declarations, and glob
 \inferrule[ast]{
     \buildlist[\builddecl](\vdecls) \astarrow \vadecls
 }{
-    \buildast(\overname{\Nast(\namednode{\vdecls}{\maybeemptylist{\Ndecl}})}{\vparsednode}) \astarrow \overname{\vadecls}{\vastnode}
+    \buildast(\overname{\Nspec(\namednode{\vdecls}{\maybeemptylist{\Ndecl}})}{\vparsednode}) \astarrow \overname{\vadecls}{\vastnode}
 }
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Typing}
+\section{Typing Specifications\label{sec:TypingSpecifications}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The untyped AST of an ASL specification consists of a list of declarations.
-Type-checking the untyped AST succeeds if all declarations can be successfully annotated.
-This is achieved via \nameref{sec:TypingRule.TypeCheckAST}.
+The untyped AST of an ASL specification consists of a list of global declarations.
+Type-checking the untyped AST succeeds if all declarations can be successfully annotated,
+which is achieved via \nameref{sec:TypingRule.TypeCheckAST}. Otherwise, the result is a
+type error.
 
-We define the following helper rules:
-\begin{itemize}
-  \item TypingRule.AnnotateDeclComps (see \secref{TypingRule.AnnotateDeclComps})
-  \item TypingRule.BuildDependencies (see \secref{TypingRule.BuildDependencies})
-  \item TypingRule.DeclDependencies (see \secref{TypingRule.DeclDependencies})
-  \item TypingRule.TypeCheckMutuallyRec (see \secref{TypingRule.TypeCheckMutuallyRec})
-  \item TypingRule.DeclareSubprograms (see \secref{TypingRule.DeclareSubprograms})
-  \item TypingRule.AddSubprogramDecls (see \secref{TypingRule.AddSubprogramDecls})
-  \item TypingRule.DefDecl (see \secref{TypingRule.DefDecl})
-  \item TypingRule.DefEnumLabels (see \secref{TypingRule.DefEnumLabels})
-  \item TypingRule.UseDecl (see \secref{TypingRule.UseDecl})
-  \item TypingRule.UseTy (see \secref{TypingRule.UseTy})
-  \item TypingRule.UseSubtypes (see \secref{TypingRule.UseSubtypes})
-  \item TypingRule.UseExpr (see \secref{TypingRule.UseExpr})
-  \item TypingRule.UseLexpr (see \secref{TypingRule.UseLexpr})
-  \item TypingRule.UsePattern (see \secref{TypingRule.UsePattern})
-  \item TypingRule.UseSlice (see \secref{TypingRule.UseSlice})
-  \item TypingRule.UseBitfield (see \secref{TypingRule.UseBitfield})
-  \item TypingRule.UseConstraint (see \secref{TypingRule.UseConstraint})
-  \item TypingRule.UseStmt (see \secref{TypingRule.UseStmt})
-  \item TypingRule.UseLDI (see \secref{TypingRule.UseLDI})
-  \item TypingRule.UseCase (see \secref{TypingRule.UseCase})
-  \item TypingRule.UseCatcher (see \secref{TypingRule.UseCatcher})
-  \item TypingRule.SetBuiltin (see \secref{TypingRule.SetBuiltin})
-\end{itemize}
+We note that whether type-checking a specification succeeds or fails with a type
+error, does not depend on the order in which the declarations appear in the specification.
+That is, if type-checking a specification with one ordering of its declarations leads to
+a type error, then type-checking that specification with any other ordering of its
+declarations also leads to a type error, but the type errors may not be the same
+(since there may be two erroneous declarations and the type error returned
+depends on which declaration is processed first).
+
+When type-checking declarations, it is important to process them in a certain order,
+to avoid false type errors resulting from type-checking a declaration that uses an identifier
+before a declaration that defines it.
+This order relies on the notion of \defusedependencyterm, which we formally define in
+\secref{Dependencies}.
+\secref{TopologicalOrdering} formally defines how to use the inferred \defusedependenciesterm\ to
+order the declarations such that false type errors are avoided.
+\lrmcomment{This relates to \identi{LWQQ}.}
 
 \subsubsection{TypingRule.TypeCheckAST\label{sec:TypingRule.TypeCheckAST}}
 \hypertarget{def-typecheckast}{}
@@ -89,50 +81,19 @@ annotates a list of declarations $\decls$ in an input global static environment 
 yielding an output static environment $\newtenv$ and annotated list of declarations $\newdecls$.
 \ProseOtherwiseTypeError
 
-\begin{definition}[Strongly Connected Components]
-\hypertarget{def-scc}{}
-Given a graph $G=(V, E)$, a \\ subset of its nodes $C \subseteq V$ is called
-a \emph{strongly connected component} of $G$ if
-every pair of nodes $u,v \in C$ reachable from one another.
-
-The \emph{strongly connected components} of a graph $(V, E)$ uniquely partitions its set of
-nodes $V$ into a set of strongly connected components:
-\[
-\SCC(V, E) \triangleq \{ C \subseteq V \;|\; \forall u,v\in C.\ (u,v), (v,u) \in E^* \} \enspace.
-\]
-
-We write $E^*$ to denote the reflexive-transitive closure of $E$.
-\end{definition}
-
-\begin{definition}[Topological Ordering]
-For a graph $G=(V, E)$ and its \\
-strongly connected components $\comps \triangleq \SCC(V, E)$,
-we say that $C_1\in\comps$ is ordered before $C_2\in\comps$, denoted $C_1 < C_2$,
-if the following condition holds:
-\[
-C_1 < C_2 \Leftrightarrow \exists c_1\in C_1.\ c_2\in C_2.\ (c_1,c_2) \in E^* \enspace.
-\]
-This ordering is not total. That is, there may exist strongly connected components
-$A,B\in\comps$ such that $A \not< B$ and $B \not< A$.
-
-\hypertarget{def-topologicalordering}{}
-We say that a list of subsets of $V$ --- $\compstwo$ --- respects the topological ordering of $\comps$
-if each element of $\compstwo$ is a member of $\comps$ and for every $C_1,C_2\in\comps$ such that
-$C_1 < C_2$ we have that $C_1$ appears before $C_2$ in $\compstwo$.
-We denote this as $\compstwo \in \topologicalordering(V, E, \comps)$.
-\end{definition}
-
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item applying $\builddependencies$ to $\decls$ yields the dependency graph \\ $(\defs, \dependencies)$;
-  \item partitioning the nodes of the dependency graph $(\defs, \dependencies)$ into strongly connected components
-        yields $\comps$;
-  \item $\compstwo$ is an ordering of $\comps$ that respects the topological ordering induced by $\dependencies$;
-  \item $\compdecls$ applies $\declsofcomp$ to each component $\vc$ in $\compstwo$ to transform it into a list,
+  \item \Prosebuilddependencies{\decls}{$(\defs, \dependencies)$};
+  \item define $\reverseddependencies$ as the relation $\dependencies$ with its elements in reversed order.
+        That is, if $(a,b)$ is in $\dependencies$ then $\reverseddependencies$ contains $(b, a)$.
+        The reversal is necessary, since we want to check a declaration $b$ before any declaration $a$
+        that depends on it;
+  \item \ProseSCC{$\defs$}{$\reverseddependencies$}{$\comps$};
+  \item \Prosetopologicalorderingcomps{$\comps$}{$\reverseddependencies$}{$\orderedcomps$};
+  \item $\compdecls$ applies $\declsofcomp$ to each component $\vc$ in $\orderedcomps$ to transform it into a list,
         yielding a list of lists where each sublist corresponds to one strongly connected component;
-  \item applying $\annotatedeclcomps$ to $\compdecls$ in $\genv$ yields \\
-        $(\newdecls, \newtenv)$\ProseOrTypeError.
+  \item \Proseannotatedeclcomps{$\genv$}{$\compdecls$}{$\newdecls$}{$\newtenv$\ProseOrTypeError}.
 \end{itemize}
 \CodeSubsection{\TypeCheckASTBegin}{\TypeCheckASTEnd}{../Typing.ml}
 
@@ -140,72 +101,13 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \builddependencies(\decls) \typearrow (\defs, \dependencies)\\
-  \SCC(\defs, \dependencies) = \compsone\\
-  \compstwo \in \topologicalordering(\compsone, \dependencies)\\
-  \compdecls \eqdef [ \vc\in\compstwo: \declsofcomp(\vc, \decls) ]\\
+  \reverseddependencies \eqdef [(a,b) \in \dependencies: (b,a)]\\
+  \SCC(\defs, \reverseddependencies) = \comps\\
+  \orderedcomps \in \topologicalorderingcomps(\comps, \reverseddependencies)\\
+  \compdecls \eqdef [ \vc\in\orderedcomps: \declsofcomp(\vc, \decls) ]\\
   \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError
 }{
   \typecheckast(\genv, \decls) \typearrow (\newdecls, \newtenv)
-}
-\end{mathpar}
-
-\subsubsection{Comments}
-It is crucial to process the strongly connected components obtained from the dependency graph
-according to the topological ordering of the components. Otherwise, the type-system could
-falsely result in a type error indicating that some identifier is not defined.
-However, a topological ordering is not unique, which is why $\typecheckast$ is a relation rather than
-a function.
-It is possible to obtain a deterministic ordering by ordering components so as to respect
-the order of declarations in $\decls$, that is,
-the order in which declarations appear in the specification.
-Similarly, any ordering of the declarations within a single strongly connected component is correct,
-but it is possible to order the declarations according to their order of appearance in $\decls$,
-as demonstrated in TypingRule.DeclsOfComp.
-
-\lrmcomment{This relates to \identi{LWQQ}.}
-
-\subsubsection{TypingRule.DeclsOfComp \label{sec:TypingRule.DeclsOfComp}}
-\hypertarget{def-declsofcomp}{}
-The helper function
-\[
-\declsofcomp(
-  \overname{\pow{\identifier}}{\comp} \aslsep
-  \overname{\decl^*}{\decls}
-) \aslto \overname{\decl^*}{\compdecls}
-\]
-lists the sublist of declarations in $\decls$ corresponding to the identifiers in $\comp$
-yielding $\compdecls$
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{empty}):
-  \begin{itemize}
-    \item $\decls$ is the empty list;
-    \item define $\compdecls$ as the empty list.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{non\_empty}):
-  \begin{itemize}
-    \item $\decls$ is the list with \head\ $\vd$ and \tail\ $declsone$;
-    \item define $\declstwo$ as the singleton list for $\vd$ if applying $\defdecl$ to $\vd$ yields an identifier
-          that is a member of $\comp$ and the empty list, otherwise;
-    \item applying $\declsofcomp$ to $\comp$ and $\declsone$ yields $\declsthree$;
-    \item define $\compdecls$ as the concatenation of $\declstwo$ and $\declsthree$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[empty]{}{
-  \declsofcomp(\comp, \overname{\emptylist}{\decls}) \typearrow \overname{\emptylist}{\compdecls}
-}
-\and
-\inferrule[non\_empty]{
-  \declstwo \eqdef \choice{\defdecl(\vd) \in \comp}{[\vd]}{\emptylist}\\
-  \declsofcomp(\comp, \declsone) \typearrow \declsthree
-}{
-  \declsofcomp(\comp, \overname{[\vd]\concat\declsone}{\decls}) \typearrow \overname{\declstwo\concat\declsthree}{\compdecls}
 }
 \end{mathpar}
 
@@ -253,8 +155,7 @@ One of the following applies:
   \item All of the following apply (\textsc{mutually\_recursive}):
   \begin{itemize}
     \item $\comps$ is a list with \head\ $\comp$ and \tail\ $\compsone$;
-    \item $\comp$ is a list with more than one declaration (which together represent a mutually-recursive
-          list of declarations);
+    \item $\comp$ is a list with more than one declaration (that is, a list of mutually-recursive declarations);
     \item applying $\typecheckmutuallyrec$ to $\comp$ in $\genv$ yields \\ $(\declsone, \genvone)$\ProseOrTypeError;
     \item applying $\annotatedeclcomps$ to $\compsone$ in $\genvone$ yields \\ $(\newgenv, \declstwo)$\ProseOrTypeError;
     \item define $\newdecls$ as the concatenation of $\declsone$ and $\declstwo$.
@@ -266,7 +167,9 @@ One of the following applies:
 \inferrule[empty]{}{
   \annotatedeclcomps(\genv, \overname{\emptylist}{\comps}) \aslto (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newdecls})
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[single]{
   \comp = [\vd]\\
   \typecheckdecl(\genv, \vd) \typearrow (\vdone, \genvone) \OrTypeError\\\\
@@ -275,7 +178,9 @@ One of the following applies:
   \annotatedeclcomps(\genv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
   (\newgenv, \overname{[\vdone] \concat \declsone}{\newdecls})
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[mutually\_recursive]{
   |\comp| > 1\\
   \typecheckmutuallyrec(\genv, \comp) \typearrow (\declsone, \genvone) \OrTypeError\\\\
@@ -283,72 +188,6 @@ One of the following applies:
 }{
   \annotatedeclcomps(\genv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
   (\newgenv, \overname{\declsone \concat \declstwo}{\newdecls})
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.BuildDependencies \label{sec:TypingRule.BuildDependencies}}
-\hypertarget{def-builddependencies}{}
-The function
-\[
-\builddependencies(\overname{\decl^*}{\decls})
-\aslto
-(\overname{\identifier^*}{\defs}, \overname{(\identifier\times\identifier)^*}{\dependencies})
-\]
-takes a set of declarations $\decls$ and
-returns a graph whose set of nodes are the identifiers that are used to name declarations
-and whose set of edges $\dependencies$ consists of pairs $(a,b)$
-where the declaration of $a$ uses an identifier defined by $b$.
-We refer to this graph as the \emph{dependency graph} (of $\decls$).
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item define $\defs$ as the union of two sets:
-  \begin{enumerate}
-  \item the set of identifiers obtained by applying $\defdecl$ to each declaration in $\decls$;
-  \item the union of applying $\defenumlabels$ to each declaration in $\decls$.
-  \end{enumerate}
-  \item define $\dependencies$ as the union of applying $\decldependencies$ to each declaration in $\decls$.
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \defs \eqdef \{ \defdecl(\vd) \;|\; \vd \in \decls\} \cup \bigcup_{\vd\in\decls} \defenumlabels(\vd)\\
-  \dependencies \eqdef \bigcup_{\vd \in \decls} \decldependencies(\vd)
-}{
-  \builddependencies(\decls) \typearrow (\ids, \dependencies)
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.DeclDependencies \label{sec:TypingRule.DeclDependencies}}
-\hypertarget{def-decldependencies}{}
-The function
-\[
-\decldependencies(\overname{\decl}{\vd}) \aslto \overname{(\identifier\times\identifier)^*}{\dependencies}
-\]
-returns the set of dependent pairs of identifiers $\dependencies$ induced by the declaration $\vd$.
-
-\subsubsection{Prose}
-Define $\dependencies$ as the union of the following two sets:
-\begin{enumerate}
-  \item a pair $(\idone, \idtwo)$ where $\idone$ is the result of applying $\defdecl$ to $\vd$
-        and $\idtwo$ included in the result of applying $\defenumlabels$ to $\vd$; and
-  \item a pair $(\idone, \idtwo)$ where $\idone$ is the result of applying $\defdecl$ to $\vd$
-        and $\idtwo$ included in the result of applying $\usedecl$ to $\vd$; and
-\end{enumerate}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  {
-    \begin{array}{rcll}
-  \dependencies & \eqdef  & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd) \land \idtwo \in \defenumlabels(\vd) \} & \cup\\
-                &         & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd) \land \idtwo \in \usedecl(\vd) \}  &
-    \end{array}
-  }
-}{
-  \decldependencies(\vd) \typearrow \dependencies
 }
 \end{mathpar}
 
@@ -424,7 +263,7 @@ All of the following apply:
   \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
   {
     \begin{array}{r}
-  (\lenvtwo, \vf)\in\envandfstwo: \annotatesubprogram{(\genvtwo, \lenvtwo), \vf} \typearrow \\ \vfunc_\vf \OrTypeError
+  (\lenvtwo, \vf)\in\envandfstwo: \annotatesubprogram(\genvtwo, \lenvtwo), \vf) \typearrow \\ \vfunc_\vf \OrTypeError
     \end{array}
   }\\\\
   \vfsthree \eqdef [(\Ignore, \vf)\in\envandfstwo: \vfunc_\vf]\\
@@ -517,7 +356,8 @@ One of the following applies:
   \begin{itemize}
     \item $\vfuncs$ is the list with \head\ $\vf$ and \tail\ $\vfuncsone$;
     \item applying $\addsubprogram$ to $vf.\funcname$ and $\vf$ in $\tenv$ yields $\tenvone$;
-    \item applying $\addsubprogramdecls$ to $\tenvone$ and $\vfuncsone$ yields $(\newtenv, \vdeclsone)$;
+    \item applying $\addsubprogramdecls$ to $\tenvone$ and $\vfuncsone$ yields \\
+          $(\newtenv, \vdeclsone)$;
     \item define $\decls$ as the list with $\DFunc(\vf)$ as its \head\ and $\vdeclsone$ as its tail.
   \end{itemize}
 \end{itemize}
@@ -536,6 +376,82 @@ One of the following applies:
 }{
   \addsubprogramdecls(\tenv, \overname{\vf \concat \vfuncsone}{\vfuncs}) \typearrow
   (\newtenv, \overname{[\DFunc(\vf)] \concat \vdeclsone}{\decls})
+}
+\end{mathpar}
+
+\section{Establishing Def-Use Dependencies Between Global Declarations\label{sec:TopologicalOrdering}}
+We now define how to construct a graph of \defusedependenciesterm\ between the identifiers associated
+with global declarations.
+This is achieved by associating, for each declaration $d$, the set identifiers \emph{used} by $d$,
+which is formally defined by $\usedecl$, and the identifier \emph{defined} by $d$,
+which is formally defined by $\defdecl$.
+%
+The set of \defusedependenciesterm\ associated with a declaration $\vd$ is given by
+$\decldependencies(\vd)$ (see \nameref{sec:TypingRule.DeclDependencies}).
+
+\subsubsection{TypingRule.BuildDependencies \label{sec:TypingRule.BuildDependencies}}
+\hypertarget{def-builddependencies}{}
+The function
+\[
+\builddependencies(\overname{\decl^*}{\decls})
+\aslto
+(\overname{\identifier^*}{\defs}, \overname{(\identifier\times\identifier)^*}{\dependencies})
+\]
+takes a set of declarations $\decls$ and
+returns a graph whose set of nodes --- $\defs$ --- consists of the identifiers that are used to name declarations
+and whose set of edges $\dependencies$ consists of pairs $(a,b)$
+where the declaration of $a$ uses an identifier defined by the declaration of $b$.
+We refer to this graph as the \emph{\dependencygraphterm} (of $\decls$).
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item define $\defs$ as the union of two sets:
+  \begin{enumerate}
+  \item the set of identifiers obtained by applying $\defdecl$ to each declaration in $\decls$;
+  \item the union of applying $\defenumlabels$ to each declaration in $\decls$.
+  \end{enumerate}
+  \item define $\dependencies$ as the union of applying $\decldependencies$ to each declaration in $\decls$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \defs \eqdef \{ \defdecl(\vd) \;|\; \vd \in \decls\} \cup \bigcup_{\vd\in\decls} \defenumlabels(\vd)\\
+  \dependencies \eqdef \bigcup_{\vd \in \decls} \decldependencies(\vd)
+}{
+  \builddependencies(\decls) \typearrow (\defs, \dependencies)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.DeclDependencies \label{sec:TypingRule.DeclDependencies}}
+\hypertarget{def-decldependencies}{}
+The function
+\[
+\decldependencies(\overname{\decl}{\vd}) \aslto \overname{(\identifier\times\identifier)^*}{\dependencies}
+\]
+returns the set of dependent pairs of identifiers $\dependencies$ induced by the declaration $\vd$.
+
+\subsubsection{Prose}
+Define $\dependencies$ as the union of the following two sets of pairs:
+\begin{enumerate}
+  \item a pair $(\idone, \idtwo)$, where $\idone$ is the result of applying $\defdecl$ to $\vd$
+        and $\idtwo$ included in the result of applying $\defenumlabels$ to $\vd$; and
+  \item a pair $(\idone, \idtwo)$ ,where $\idone$ is the result of applying $\defdecl$ to $\vd$
+        and $\idtwo$ included in the result of applying $\usedecl$ to $\vd$.
+\end{enumerate}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  {
+    \begin{array}{rcll}
+  \dependencies & \eqdef  & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd) \land \idtwo \in \defenumlabels(\vd) \} & \cup\\
+                &         & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd) \land \idtwo \in \usedecl(\vd) \}  &
+    \end{array}
+  }
+}{
+  \decldependencies(\vd) \typearrow \dependencies
 }
 \end{mathpar}
 
@@ -1750,159 +1666,174 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SetBuiltin\label{sec:TypingRule.SetBuiltin}}
-The helper function
-\hypertarget{def-setbuiltin}{}
+\section{Ordering Global Declarations via Def-Use Dependencies\label{sec:Dependencies}}
+
+\hypertarget{def-graphtransitive}{}
+We denote the reflexive-transitive closure of a relation $E$ as $\graphtransitive{E}$.
+
+\begin{definition}[Strongly Connected Components]
+\hypertarget{def-scc}{}
+Given a graph $G=(V, E)$, a \\ subset of its nodes $C \subseteq V$ is called
+a \emph{strongly connected component} of $G$ if
+every pair of nodes $u,v \in C$ reachable from one another.
+
+The \emph{strongly connected components} of a graph $(V, E)$ uniquely partitions its set of
+nodes $V$ into a set of strongly connected components:
 \[
-  \setbuiltin(\overname{\decl}{\vdecl}) \aslto
-  \overname{\decl}{\vdeclp}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\SCC(V, E) \triangleq \{ C \subseteq V \;|\; \forall u,v\in C.\ (u,v), (v,u) \in E^* \} \enspace.
 \]
-sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \secref{TypingRule.InsertStdlibParam}.
-It produces a type error when given a top-level declaration which is not a function.
+\end{definition}
+
+\hypertarget{def-topologicalorderingcomps}{}
+\begin{definition}[Topological Ordering of Components]
+For a non-empty graph \\
+$G=(V, E)$ and its strongly connected components $\comps \triangleq \SCC(V, E)$,
+a listing of $\comps$ ---
+$C_{1..k}$ --- is a \emph{topological ordering of components},
+denoted \\
+$C_{1..k} \in \topologicalorderingcomps(\comps, E)$, if the following condition holds:
+\[
+  \forall 1 \leq i \leq j \leq k.\ \exists c_i\in C_i.\ c_j\in C_j.\ (c_i,c_j) \in \graphtransitive{E} \;\;\Longrightarrow\;\;
+  i \leq j \enspace .
+\]
+\end{definition}
+
+\subsubsection{TypingRule.DeclsOfComp \label{sec:TypingRule.DeclsOfComp}}
+\hypertarget{def-declsofcomp}{}
+The helper function
+\[
+\declsofcomp(
+  \overname{\pow{\identifier}}{\comp} \aslsep
+  \overname{\decl^*}{\decls}
+) \aslto \overname{\decl^*}{\compdecls}
+\]
+filters $\decls$ in order to retain the declarations whose identifiers are members of $\comp$,
+yielding $\compdecls$
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\decls$ is the empty list;
+    \item define $\compdecls$ as the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\decls$ is the list with \head\ $\vd$ and \tail\ $declsone$;
+    \item define $\declstwo$ as the singleton list for $\vd$ if applying $\defdecl$ to $\vd$ yields an identifier
+          that is a member of $\comp$ and the empty list, otherwise;
+    \item applying $\declsofcomp$ to $\comp$ and $\declsone$ yields $\declsthree$;
+    \item define $\compdecls$ as the concatenation of $\declstwo$ and $\declsthree$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \declsofcomp(\comp, \overname{\emptylist}{\decls}) \typearrow \overname{\emptylist}{\compdecls}
+}
+\and
+\inferrule[non\_empty]{
+  \declstwo \eqdef \choice{\defdecl(\vd) \in \comp}{[\vd]}{\emptylist}\\
+  \declsofcomp(\comp, \declsone) \typearrow \declsthree
+}{
+  \declsofcomp(\comp, \overname{[\vd]\concat\declsone}{\decls}) \typearrow \overname{\declstwo\concat\declsthree}{\compdecls}
+}
+\end{mathpar}
+
+\section{Semantics of Specifications\label{sec:SemanticsOfSpecifications}}
+The semantics of specifications is defined via the relation $\evalspec$, which is defined next.
+
+\subsubsection{SemanticsRule.EvalSpec\label{sec:SemanticsRule.EvalSpec}}
+The relation
+\hypertarget{def-evalspec}{}
+\[
+  \evalspec(\overname{\staticenvs}{\tenv} \aslsep \overname{\spec}{\vspec}) \;\aslrel\;
+   ((\overname{\tint}{\vv}\times \overname{\XGraphs}{\vg}) \cup \overname{\TDynError}{\DynErrorConfig})
+\]
+evaluates the specification $\vspec$ with the static environment $\tenv$,
+yielding the native integer value $\vv$ and execution graph $\vg$.
+Otherwise, the result is a dynamic error.
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item view $\vdecl$ as a function, that is, $\DFunc(\funcsig)$\ProseOrTypeError;
-  \item define $\funcsigp$ as $\funcsig$ with its $\funcbuiltin$ flag set to $\True$;
-  \item $\vdeclp$ is $\DFunc(\funcsigp)$.
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \vdecl \eqname \DFunc(\funcsig) \OrTypeError \\
-  \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
-}{
-  \setbuiltin(\vdecl) \typearrow \DFunc(\funcsigp)
-}
-\end{mathpar}
-
-\section{Semantics}
-The rule SemanticsRule.TopLevel (see \secref{SemanticsRule.TopLevel})
-evaluates entire specifications with the help of the following rules:
-\begin{itemize}
-  \item SemanticsRule.EvalGlobals (see \secref{SemanticsRule.EvalGlobals});
-  \item SemanticsRule.BuildGlobalEnv (see \secref{SemanticsRule.BuildGlobalEnv}).
-\end{itemize}
-
-\subsubsection{SemanticsRule.TopLevel \label{sec:SemanticsRule.TopLevel}}
-The relation
-\hypertarget{def-evalspec}{}
-\[
-  \evalspec(\overname{\spec}{\parsedast}, \overname{\spec}{\parsedstd}) \;\aslrel\;
-   ((\overname{\vals}{\vv}\times \overname{\XGraphs}{\vg}) \cup \overname{\TDynError}{\DynErrorConfig})
-\]
-evaluates the \texttt{main} function in a given specification and standard library.
-
-The function $\typecheckast$ (see \secref{TypingRule.TypeCheckAST})
-takes an initial typing environment and a untyped AST and returns a corresponding typed AST and typing
-environment.
-
-\subsubsection{Prose}
-  All of the following apply:
+  \item \Prosebuildgenv{$\tenv$}{$\spec$}{$\env$}{$\vg$}\ProseOrError;
+  \item One of the following applies:
   \begin{itemize}
-    \item define $\parsedstdp$ by applying $\setbuiltin$ to each top-level declaration in the AST for the parsed standard library $\parsedstdp$\ProseOrTypeError;
-    \item the AST for the parsed specification, $\parsedspec$, and AST for the parsed standard library,
-    $\parsedstdp$, are concatenated to give $\parsedast$;
-    \item applying the type-checker to $\parsedast$ with an empty static environment yields
-    $(\typedspec, \tenv)$;
-    \item populating the environment with the declarations of the global storage elements
-          by applying $\buildgenv$ to $\typedspec$ and the environment where the static environment is $\tenv$
-          and the dynamic environment is the empty environment ($\emptydenv$) yields $(\env, \vgone)$\ProseOrError;
-    \item One of the following applies:
+    \item All of the following apply (\textsc{normal}):
     \begin{itemize}
-      \item All of the following apply (\textsc{normal}):
-      \begin{itemize}
-        \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
-        in $\env$ is $\Normal([(\vv, \vgtwo)], \Ignore)$\ProseOrError;
-        \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge;
-        \item the result of the entire evaluation is $(\vv, \newg)$.
-      \end{itemize}
+      \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
+      in $\env$ yields $\Normal([(\vv, \vgtwo)], \Ignore)$\ProseOrError;
+      \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge;
+      \item the result of the entire evaluation is $(\vv, \vg)$.
+    \end{itemize}
 
-      \item All of the following apply (\textsc{throwing}):
-      \begin{itemize}
-        \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
-        in $\env$ is $\Throwing(\texttt{v\_opt}, \Ignore)$, which is an uncaught exception;
-        \item the result of the entire evaluation is an error indicating that an exception was not caught.
-      \end{itemize}
+    \item All of the following apply (\textsc{throwing}):
+    \begin{itemize}
+      \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
+      in $\env$ yields $\Throwing(\vvopt, \Ignore)$, which is an uncaught exception;
+      \item the result of the entire evaluation is an error indicating that an exception was not caught.
     \end{itemize}
   \end{itemize}
-
-  \subsubsection{Example}
-
-  \CodeSubsection{\EvalTopLevelBegin}{\EvalTopLevelEnd}{../Interpreter.ml}
+\end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[normal]{
-  \vi \in \listrange(\parsedstd): \setbuiltin(\parsedstd_i) \typearrow \parsedstdp_i \OrTypeError\\
-  \parsedast \eqdef \parsedspec \concat \parsedstdp\\
-  \typecheckast(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
-  \buildgenv(\typedspec, (\tenv, \emptydenv)) \evalarrow (\env, \vgone) \OrDynError\\\\
+  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
   \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
-  \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
-}
-{
-  \evalspec(\parsedast, \parsedstd) \evalarrow (\vv, \newg)
+  \vg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
+}{
+  \evalspec(\tenv, \vspec) \evalarrow (\vv, \vg)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[throwing]{
-  \vi \in \listrange(\parsedstd): \setbuiltin(\parsedstd_i) \typearrow \parsedstdp_i \OrTypeError\\
-  \parsedast \eqdef \parsedspec \concat \parsedstdp\\
-  \typecheckast(\emptytenv, \parsedast) \typearrow (\typedspec,\tenv)\\
-  \buildgenv(\typedspec, (\tenv, \emptydenv)) \evalarrow (\env, \vgone)\\
-  \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\texttt{v\_opt}, \Ignore)
-}
-{
-  \evalspec(\parsedspec, \parsedstd) \evalarrow \ErrorVal{UncaughtException}
+  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
+  \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\vvopt, \Ignore)
+}{
+  \evalspec(\tenv, \vspec) \evalarrow \ErrorVal{UncaughtException}
 }
 \end{mathpar}
-Notice that when the type-checker fails due to a type error in the given specification,
-the corresponding premise in the rule above does not hold, and the semantics
-is undefined. Indeed, the ASL semantics is only defined for well-typed specifications.
-
+\CodeSubsection{\EvalSpecBegin}{\EvalSpecEnd}{../Interpreter.ml}
 
 \subsubsection{SemanticsRule.BuildGlobalEnv\label{sec:SemanticsRule.BuildGlobalEnv}}
 The helper relation
 \hypertarget{def-buildgenv}{}
 \[
-  \buildgenv(\overname{\envs}{\env}, \overname{\spec}{\typedspec}) \;\aslrel\;
+  \buildgenv(\overname{\staticenvs}{\tenv}, \overname{\spec}{\typedspec}) \;\aslrel\;
   (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\newg}) \cup \overname{\TDynError}{\DynErrorConfig}
 \]
-populates the environment and output execution graph with the global
-storage declarations.
-This works by traversing the global storage declarations in \emph{dependency order}
-and updating the environment accordingly. By dependency order, we mean that if
-a declaration $b$ refers to an identifier declared in $a$ then $a$ is evaluated
-before $b$.
+populates the environment $\env$ and output execution graph $\newg$ with the global
+storage declarations in $\typedspec$, starting from the static environment $\tenv$.
+This works by traversing the global storage declarations
+and updating the environment accordingly.
+\ProseOtherwiseDynamicError
+
+It is assumed that $\typedspec$ lists the declarations in reverse order with respect
+to the \defusedependencyterm\ order
+(see \nameref{sec:TypingRule.TypeCheckAST}).
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item sorting the declarations of the global storage elements in topological order with respect to the dependency order
-  gives $\vdecls$;
-  \item evaluating the global storage declarations in $\vdecls$ in $\env$ with the empty execution graph
-  is $(\newenv, \newg)$\ProseOrError.
+  \item define the environment $\env$ as consisting of the static environment $\tenv$ and the empty dynamic environment $\emptydenv$;
+  \item evaluating the global storage declarations in $\typedspec$ in $\env$ with the empty execution graph
+        is $(\newenv, \newg)$\ProseOrError.
   \item the result of the entire evaluation is $(\newenv, \newg)$.
 \end{itemize}
-\subsubsection{Example}
 
 \subsubsection{Formally}
-\hypertarget{def-topologicaldecls}{}
-The helper relation $\topologicaldecls(\overname{\decl^*}{\parsedspec}, \overname{\decl^*}{\parsedstd})$
-accepts a specification and returns the subset of global storage declarations ordered by
-dependency order.
-
 \begin{mathpar}
 \inferrule{
-  \topologicaldecls(\typedspec) \evalarrow \vdecls\\
-  \evalglobals(\vdecls, (\env, \emptygraph)) \evalarrow (\newenv, \newg) \OrDynError
+  \env \eqdef (\tenv, \emptydenv)\\
+  \evalglobals(\typedspec, (\env, \emptygraph)) \evalarrow (\newenv, \newg) \OrDynError
 }{
-  \buildgenv(\env, \typedspec) \evalarrow (\newenv, \newg)
+  \buildgenv(\tenv, \typedspec) \evalarrow (\newenv, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalBuildGlobalEnvBegin}{\EvalBuildGlobalEnvEnd}{../Interpreter.ml}

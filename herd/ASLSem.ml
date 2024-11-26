@@ -256,7 +256,7 @@ module Make (C : Config) = struct
     let to_int_signed = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntS)
 
     (**************************************************************************)
-    (* Special monad interations                                              *)
+    (* Special monad interactions                                              *)
     (**************************************************************************)
 
     let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii >>! []

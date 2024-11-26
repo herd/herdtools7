@@ -104,7 +104,7 @@ module SemanticsRule = struct
     | CatchOtherwise
     | CatchNone
     | CatchNoThrow
-    | TopLevel
+    | Spec
     | FindCatcher
     | RethrowImplicit
     | ReadValueFrom
@@ -191,7 +191,7 @@ module SemanticsRule = struct
     | CatchOtherwise -> "CatchOtherwise"
     | CatchNone -> "CatchNone"
     | CatchNoThrow -> "CatchNoThrow"
-    | TopLevel -> "TopLevel"
+    | Spec -> "Spec"
     | FindCatcher -> "FindCatcher"
     | RethrowImplicit -> "RethrowImplicit"
     | ReadValueFrom -> "ReadValueFrom"
@@ -281,7 +281,7 @@ module SemanticsRule = struct
       CatchOtherwise;
       CatchNone;
       CatchNoThrow;
-      TopLevel;
+      Spec;
       FindCatcher;
       RethrowImplicit;
       ReadValueFrom;
@@ -438,9 +438,7 @@ module TypingRule = struct
     | TBitFields
     | ReduceSlicesToCall
     | TypeOfArrayLength
-    | TypecheckFunc
-    | TypecheckGlobalStorage
-    | TypecheckTypeDecl
+    | TypecheckDecl
     | AnnotateAndDeclareFunc
     | AnnotateFuncSig
     | CheckSetterHasGetter
@@ -621,9 +619,7 @@ module TypingRule = struct
     | TBitFields -> "TBitFields"
     | ReduceSlicesToCall -> "ReduceSlicesToCall"
     | TypeOfArrayLength -> "TypeOfArrayLength"
-    | TypecheckFunc -> "TypecheckFunc"
-    | TypecheckGlobalStorage -> "TypecheckFunc"
-    | TypecheckTypeDecl -> "TypecheckTypeDecl"
+    | TypecheckDecl -> "TypecheckDecl"
     | AnnotateAndDeclareFunc -> "AnnotateAndDeclareFunc"
     | AnnotateFuncSig -> "AnnotateFuncSig"
     | CheckSetterHasGetter -> "CheckSetterHasGetter"
@@ -786,9 +782,7 @@ module TypingRule = struct
       TBitFields;
       ReduceSlicesToCall;
       TypeOfArrayLength;
-      TypecheckFunc;
-      TypecheckGlobalStorage;
-      TypecheckTypeDecl;
+      TypecheckDecl;
       AnnotateAndDeclareFunc;
       AnnotateFuncSig;
       CheckSetterHasGetter;

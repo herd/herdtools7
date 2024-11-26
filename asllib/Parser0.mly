@@ -210,9 +210,9 @@
 %type <AST.stmt> simple_stmts
 %type <AST.stmt> simple_stmt_list
 %type <AST.stmt> stmts
-%type <AST.t> ast
+%type <AST.t> spec
 %type <AST.t> opn
-%start ast
+%start spec
 %start opn
 
 %nonassoc ELSE
@@ -232,7 +232,7 @@
 let filter(x) == ~=x; { List.filter_map Fun.id x }
 let some(x) == ~=x; < Some >
 
-let ast := list(EOL); terminated (filter(list(decl)), EOF)
+let spec := list(EOL); terminated (filter(list(decl)), EOF)
 
 let opn := list(EOL); body=list(stmts); EOF;
     {
