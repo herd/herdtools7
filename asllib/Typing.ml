@@ -1092,11 +1092,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           PP.pp_pos loc
     in
     let args = List.map (annotate_expr env) call_info.args in
-    match loc.version with
-    | V0 ->
+    match (loc.version, call_info.params) with
+    | V0, [] ->
         let () = assert (List.length call_info.params = 0) in
         annotate_call_v0 ~loc env call_info.name args call_info.call_type
-    | V1 ->
+    | (V1 | V0), _ ->
         let params = List.map (annotate_expr env) call_info.params in
         annotate_call_v1 ~loc env call_info.name ~params ~args
           ~call_type:call_info.call_type
