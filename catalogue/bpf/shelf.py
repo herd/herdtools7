@@ -4,6 +4,10 @@ cats = [
     "cats/bpf.cat",
     ]
 
+cfgs = [
+    "cfgs/new-web.cfg"
+    ]
+
 illustrative_tests = [
 	"tests/CoRR+poonceonce+Once.litmus",
 	"tests/CoRW+poonceonce+Once.litmus",
