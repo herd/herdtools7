@@ -316,6 +316,7 @@ module Domain = struct
         FromSyntax [ Constraint_Exact (var_ var) ]
     | T_Int (WellConstrained constraints) ->
         int_set_of_int_constraints env constraints
+    | T_Int PendingConstrained -> assert false
     | T_Bool | T_String | T_Real ->
         failwith "Unimplemented: domain of primitive type"
     | T_Bits _ | T_Enum _ | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _
@@ -395,6 +396,7 @@ module Domain = struct
       match t.desc with
       | T_Real | T_String | T_Int (UnConstrained | Parameterized _) ->
           assert_under approx acc (* We can't iterate on all of those. *)
+      | T_Int PendingConstrained -> assert false
       | T_Int (WellConstrained cs) -> constraints_fold approx env f cs acc
       | T_Bool -> acc |> f (L_Bool true) |> f (L_Bool false)
       | T_Bits (e_len, _) ->

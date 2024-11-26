@@ -425,5 +425,5 @@ Inherit integer constraints on left-hand sides
   $ aslref inherit-integer-constraints-bad-type.asl
   File inherit-integer-constraints-bad-type.asl, line 1, character 0 to line 4,
     character 2:
-  ASL Typing error: a well-constrained integer cannot have empty constraints.
+  ASL Typing error: a pending constrained integer is illegal here.
   [1]

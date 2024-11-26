@@ -238,6 +238,8 @@ and constraint_kind =
   | WellConstrained of int_constraint list
       (** An integer type constrained from ASL syntax: it is the union of each
           constraint in the list. *)
+  | PendingConstrained
+      (** An integer type whose constraint will be inferred during type-checking. *)
   | Parameterized of uid * identifier
       (** A parameterized integer, the default type for parameters of
           function at compile time, with a unique identifier and the variable

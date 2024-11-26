@@ -222,6 +222,7 @@ and pp_int_constraints f = function
   | WellConstrained cs ->
       addb f "WellConstrained ";
       pp_list pp_int_constraint f cs
+  | PendingConstrained -> addb f "PendingConstrained"
   | Parameterized (i, x) -> bprintf f "Parameterized (%d, %S)" i x
 
 let rec pp_lexpr =
