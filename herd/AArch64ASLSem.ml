@@ -748,7 +748,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
     let aarch64_to_asl_bv = function
       | V.Var v -> ASLS.A.V.Var v
-      | V.Val cst -> ASLS.A.V.Val (tr_cst ASLScalar.convert_to_bv cst)
+      | V.Val cst ->
+          ASLS.A.V.Val (tr_cst ASLScalar.as_bv cst)
 
     let aarch64_to_asl = function
       | V.Var v -> ASLS.A.V.Var v

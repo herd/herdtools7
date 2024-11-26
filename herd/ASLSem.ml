@@ -217,7 +217,9 @@ module Make (C : Config) = struct
       | 32 -> MachSize.Word
       | 64 -> MachSize.Quad
       | 128 -> MachSize.S128
-      | _ -> Warn.fatal "Cannot access a register with size %s" (V.pp_v v)
+      | _ ->
+          Warn.fatal
+            "Cannot access a register or memory with size %s" (V.pp_v v)
 
     let access_bool_field v f map =
       try StringMap.find f map |> v_as_bool
@@ -251,7 +253,9 @@ module Make (C : Config) = struct
           M.restrict M.VC.[ Assign (v', Unop (op1, v)) ] >>! v'
       | v -> M.op1 op1 v
 
-    let to_bv = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToBV)
+    let to_bv sz =
+      wrap_op1_symb_as_var
+        (Op.ArchOp1 (ASLOp.ToBV (MachSize.nbits sz)))
     let to_int_unsigned = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntU)
     let to_int_signed = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntS)
 
@@ -276,7 +280,7 @@ module Make (C : Config) = struct
     let read_loc sz loc a ii =
       let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, a) in
       let* v = M.read_loc false mk_action loc ii in
-      resize_from_quad sz v >>= to_bv
+      resize_from_quad sz v >>= to_bv sz
 
     (**************************************************************************)
     (* ASL-Backend implementation                                             *)
@@ -296,7 +300,6 @@ module Make (C : Config) = struct
     let binop =
       let open AST in
       let to_bool op v1 v2 = op v1 v2 >>= M.op1 (Op.ArchOp1 ASLOp.ToBool) in
-      let to_bv op v1 v2 = op v1 v2 >>= to_bv in
       let or_ v1 v2 =
         match (v1, v2) with
         | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
@@ -305,17 +308,17 @@ module Make (C : Config) = struct
         | v, V.Val (Constant.Concrete (ASLScalar.S_BitVector bv))
           when Asllib.Bitvector.is_zeros bv ->
             return v
-        | _ -> to_bv (M.op Op.Or) v1 v2
+        | _ -> M.op Op.Or v1 v2
       in
       function
-      | AND -> M.op Op.And |> to_bv
+      | AND -> M.op Op.And
       | BAND -> M.op Op.And
       | BEQ -> M.op Op.Eq |> to_bool
       | BOR -> M.op Op.Or
       | DIV -> M.op Op.Div
       | MOD -> M.op Op.Rem
       | DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
-      | EOR -> M.op Op.Xor |> to_bv
+      | EOR -> M.op Op.Xor
       | EQ_OP -> M.op Op.Eq |> to_bool
       | GT -> M.op Op.Gt |> to_bool
       | GEQ -> M.op Op.Ge |> to_bool
@@ -449,7 +452,7 @@ module Make (C : Config) = struct
     (* Primitives and helpers                                                 *)
     (**************************************************************************)
 
-    type primitive_t = V.v M.t list -> V.v M.t list M.t
+    type primitive_t = V.v M.t list -> V.v M.t list -> V.v M.t list M.t
 
     let vbool b = V.Val (Constant.Concrete (ASLScalar.S_Bool b))
 
@@ -552,10 +555,10 @@ module Make (C : Config) = struct
       let sz = datasize_to_machsize datasize in
       read_loc sz (A.Location_global addr) an (use_ii_with_poi ii poi)
 
-    let read_memory ii addr_m datasize_m =
+    let read_memory ii datasize_m addr_m =
       do_read_memory ii addr_m datasize_m aneutral
 
-    let read_memory_gen ii addr_m datasize_m accdesc_m =
+    let read_memory_gen ii datasize_m addr_m accdesc_m =
       let* accdesc = accdesc_m in
       do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc)
 
@@ -566,10 +569,10 @@ module Make (C : Config) = struct
       write_loc sz (A.Location_global addr) value an (use_ii_with_poi ii poi)
       >>! []
 
-    let write_memory ii addr_m datasize_m value_m =
+    let write_memory ii datasize_m addr_m value_m =
       do_write_memory ii addr_m datasize_m value_m AArch64Annot.N
 
-    let write_memory_gen ii addr_m datasize_m value_m accdesc_m =
+    let write_memory_gen ii datasize_m addr_m value_m accdesc_m =
       let* accdesc = accdesc_m in
       do_write_memory ii addr_m datasize_m value_m
         (accdesc_to_annot false accdesc)
@@ -612,12 +615,25 @@ module Make (C : Config) = struct
         [@warning "-40-42"],
         f )
 
-    (* The function [pX] is building primitives with arity X and no return value *)
-    (* The function [pXr] is building primitives with arity X and a return value *)
+    (*
+     * Functions that build primitives from underlying OCaml functions.
+     *
+     * The function [pX] is building primitives with arity X
+     * and no return value.
+     * The function [pXr] is building primitives with arity X
+     * and a return value.
+     * All those conveniently ignore the parameters,
+     * which can thus be of any type in any number.
+     *
+     * A few primitive builder pass parameters to the
+     * underlying OCaml function: for instance,
+     * `p1a3` accepts one parameter, three arguments
+     * and returns no value.
+     *)
 
     (** Build a primitive with arity 0 and no return value. *)
     let p0 name ?parameters f =
-      let f ii_env = function
+      let f ii_env _ = function
         | [] -> f ii_env ()
         | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
@@ -625,7 +641,7 @@ module Make (C : Config) = struct
 
     (** Build a primitive with arity 0 and a return value. *)
     let p0r name ~returns f =
-      let f ii_env = function
+      let f ii_env _ = function
         | [] -> return [ f ii_env () ]
         | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
@@ -633,7 +649,7 @@ module Make (C : Config) = struct
 
     (** Build a primitive with arity 1 and no return value. *)
     let p1 name arg ?parameters f =
-      let f ii_env = function
+      let f ii_env _ = function
         | [ v ] -> f ii_env v
         | [] | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
@@ -641,15 +657,15 @@ module Make (C : Config) = struct
 
     (** Build a primitive with arity 1 and a return value. *)
     let p1r name arg ~returns ?parameters f =
-      let f ii_env = function
+      let f ii_env _ = function
         | [ v ] -> return [ f ii_env v ]
-        | [] | _ :: _ -> Warn.fatal "Arity error for function %s." name
+        | [] | _::_::_ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ?returns:(Some returns) ~args:[ arg ] ?parameters name f
 
     (** Build a primitive with arity 2 and no return value. *)
     let p2 name arg1 arg2 ?parameters f =
-      let f ii_env = function
+      let f ii_env _ = function
         | [ v1; v2 ] -> f ii_env v1 v2
         | _ -> Warn.fatal "Arity error for function %s." name
       in
@@ -657,37 +673,50 @@ module Make (C : Config) = struct
 
     (** Build a primitive with arity 2 and a return value. *)
     let p2r name arg1 arg2 ~returns ?parameters f =
-      let f ii_env = function
+      let f ii_env _ = function
         | [ v1; v2 ] -> return [ f ii_env v1 v2 ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ?returns:(Some returns) ~args:[ arg1; arg2 ] ?parameters
         name f
 
-    (** Build a primitive with arity 3 and no return value. *)
-    let p3 name arg1 arg2 arg3 ?parameters f =
-      let f ii_env = function
-        | [ v1; v2; v3 ] -> f ii_env v1 v2 v3
-        | _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ~args:[ arg1; arg2; arg3 ] ?parameters name f
+    (** Build various primitives with 1 parameter. *)
 
-    (** Build a primitive with arity 3 and a return value. *)
-    let p3r name arg1 arg2 arg3 ~returns ?parameters f =
-      let f ii_env = function
-        | [ v1; v2; v3 ] -> return [ f ii_env v1 v2 v3 ]
+    let p1a1r name param1 arg1 ~returns  f =
+      let f ii_env params args =
+        match params,args with
+        | [ v1; ], [ v2; ] -> return [ f ii_env v1 v2; ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ?returns:(Some returns) ~args:[ arg1; arg2; arg3 ]
-        ?parameters name f
+      build_primitive
+        ?returns:(Some returns) ~args:[ arg1; ] ~parameters:[param1]
+        name f
 
-    (** Build a primitive with arity 4 and no return value. *)
-    let p4 name arg1 arg2 arg3 arg4 ?parameters f =
-      let f ii_env = function
-        | [ v1; v2; v3; v4 ] -> f ii_env v1 v2 v3 v4
+    let p1a2 name param1 arg1 arg2 f =
+      let f ii_env params args =
+        match params,args with
+        | [v1],[v2; v3; ] -> f ii_env v1 v2 v3
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ~args:[ arg1; arg2; arg3; arg4 ] ?parameters name f
+      build_primitive ~args:[ arg1; arg2; ] ~parameters:[param1;] name f
+
+    let p1a2r name param1 arg1 arg2 ~returns  f =
+      let f ii_env params args =
+        match params,args with
+        | [ v1; ], [ v2; v3; ] -> return [ f ii_env v1 v2 v3; ]
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ?returns:(Some returns)
+        ~args:[ arg1; arg2; ] ~parameters:[param1;]
+        name f
+
+    let p1a3 name param1 arg1 arg2 arg3 f =
+      let f ii_env params args =
+        match params,args with
+        | [v1],[v2; v3; v4; ] -> f ii_env v1 v2 v3 v4
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ~args:[ arg1; arg2; arg3; ] ~parameters:[param1;] name f
 
     (* Primitives *)
     let extra_funcs =
@@ -709,8 +738,6 @@ module Make (C : Config) = struct
       let minus_one e = binop MINUS e (lit 1) in
       let pow_2 = binop POW (lit 2) in
       let t_named x = T_Named x |> with_pos in
-      let int_exact x =
-          T_Int (WellConstrained [ Constraint_Exact (var x) ]) |> with_pos in
       let uint_returns =
         int_ctnt (lit 0) (minus_one (pow_2 (var "N")))
       and sint_returns =
@@ -730,18 +757,19 @@ module Make (C : Config) = struct
         p0r "SP_EL0" ~returns:bv_64 read_sp;
         p1 "SP_EL0" ("data", bv_64) write_sp;
         (* Memory *)
-        p2r "read_memory" ("addr", bv_64) ("size", integer) ~returns:bv_64
+        p1a1r "read_memory"  ("N", None) ("addr", bv_64)
+          ~returns:(bv_var "N")
           read_memory;
-        p3r "read_memory_gen" ("addr", bv_64) ("size", integer)
+        p1a2r "read_memory_gen"  ("N", None) ("addr", bv_64)
           ("accdesc", t_named "AccessDescriptor")
-          ~returns:bv_64 read_memory_gen;
-        p3 "write_memory"
-          ~parameters:[ ("size", None) ]
-          ("addr", bv_64) ("sz", int_exact "size") ("data", bv_var "size")
+          ~returns:(bv_var "N") read_memory_gen;
+        p1a2 "write_memory"
+          ("size", None)
+          ("addr", bv_64) ("data", bv_var "size")
           write_memory;
-        p4 "write_memory_gen"
-          ~parameters:[ ("size", None) ]
-          ("addr", bv_64) ("sz", int_exact "size")
+        p1a3 "write_memory_gen"
+          ("size", None)
+          ("addr", bv_64)
           ("data", bv_var "size") ("accdesc", t_named "AccessDescriptor")
           write_memory_gen;
         (* Translations *)

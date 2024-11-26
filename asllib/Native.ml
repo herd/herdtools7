@@ -81,7 +81,7 @@ module NativeBackend (C : Config) = struct
   type 'a m = 'a
   type value = native_value
   type value_range = value * value
-  type primitive = value m list -> value list m
+  type primitive = value m list -> value m list -> value list m
 
   let is_undetermined _ = false
   let v_of_int i = L_Int (Z.of_int i) |> nv_literal
@@ -260,10 +260,11 @@ module NativeBackend (C : Config) = struct
   module Primitives = struct
     let return_one v = return [ return v ]
 
+    (* All primitives ignore their parameters *)
     let uint = function
       | [ NV_Literal (L_BitVector bv) ] ->
           L_Int (Bitvector.to_z_unsigned bv) |> nv_literal |> return_one
-      | [ v ] -> mismatch_type v [ integer' ]
+      | [ v ] -> mismatch_type v [ default_t_bits ]
       | li ->
           Error.fatal_unknown_pos
           @@ Error.BadArity (Dynamic, "UInt", 1, List.length li)
@@ -379,7 +380,8 @@ module NativeBackend (C : Config) = struct
             recurse_limit;
             builtin = true;
           },
-          f )
+          (* All native primitives ignore parameters *)
+          fun _params args -> f args )
       in
       [
         (let two_pow_n_minus_one = minus_one (pow_2 (e_var "N")) in

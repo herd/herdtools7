@@ -412,6 +412,12 @@ let copy_bit dst src pos_src pos_dst =
   let new_char_dst = set_bit (pos_src mod 8) (pos_dst mod 8) c_src c_dst in
   Bytes.set dst (pos_dst / 8) new_char_dst
 
+let prefix (len, s) dst_len =
+  assert (dst_len <= len);
+  let sz8 = (dst_len + 7) / 8 in
+  let dst_s = String.sub s 0 sz8 in
+  (dst_len, dst_s)
+
 let extract_slice (_length_src, data_src) positions =
   try
     let length = List.length positions in

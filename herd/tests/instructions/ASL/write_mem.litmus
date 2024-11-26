@@ -6,7 +6,7 @@ func main() => integer
 begin
   let address = read_register (1);
   let data = read_register (2);
-  write_memory(address, 64, data);
+  write_memory{64}(address, data);
 
   return 0;
 end;

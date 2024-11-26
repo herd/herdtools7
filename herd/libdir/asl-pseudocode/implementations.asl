@@ -450,7 +450,7 @@ func PhysMemWrite{N}(
   value::bits(8*N)
 ) => PhysMemRetStatus
 begin
-  write_memory_gen {N*8}(desc.vaddress, N*8, value,accdesc);
+  write_memory_gen {N*8}(desc.vaddress, value,accdesc);
   return PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
@@ -466,8 +466,7 @@ func PhysMemRead{N}(
   accdesc::AccessDescriptor
 ) => (PhysMemRetStatus, bits(8*N))
 begin
-  let value =
-    read_memory_gen (desc.vaddress,N*8,accdesc)[8*N-1:0];
+  let value = read_memory_gen {N*8}(desc.vaddress,accdesc);
   let ret_status = PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',

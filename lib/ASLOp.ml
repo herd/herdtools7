@@ -48,7 +48,7 @@ type 'a constr_op1 =
   | ToIntU
   | ToIntS
   | ToBool
-  | ToBV
+  | ToBV of int
   | BoolNot
   | BVLength
 
@@ -77,7 +77,7 @@ let pp_op1 _hexa = function
   | ToIntU -> "ToIntU"
   | ToIntS -> "ToIntS"
   | ToBool -> "ToBool"
-  | ToBV -> "ToBV"
+  | ToBV sz -> Printf.sprintf "ToBV%d" sz
   | BoolNot -> "BoolNot"
   | BVLength -> "BVLength"
 
@@ -157,9 +157,9 @@ let do_op1 op cst =
           ASLScalar.convert_to_int_unsigned s |> return_concrete
       | Constant.Symbolic _ -> Some cst
       | _ -> None)
-  | ToBV -> (
+  | ToBV sz -> (
       match cst with
-      | Constant.Concrete s -> ASLScalar.convert_to_bv s |> return_concrete
+      | Constant.Concrete s -> ASLScalar.convert_to_bv sz s |> return_concrete
       | Constant.Symbolic _ -> Some cst
       | _ -> None)
   | ToBool ->

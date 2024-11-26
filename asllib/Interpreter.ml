@@ -1260,7 +1260,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some { body = SB_Primitive; _ } ->
         let scope = B.Scope.new_local name in
         let body = Hashtbl.find primitive_runtimes name in
-        let* ms = body args in
+        let* ms = body params args in
         let _, vsm =
           List.fold_right
             (fun m (i, acc) ->
