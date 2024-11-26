@@ -1791,7 +1791,7 @@ One of the following applies:
     \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \envone)$;
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
-    \item applying $\ticklooplimit$ to $\vlimitopt$ yields $\vlimitoptp$\ProseOrError;
+    \item \Proseticklooplimit{$\vlimitopt$}{$\vlimitoptp$}\ProseOrError;
     \item evaluating $\vbody$ in $\envone$ as per \nameref{sec:SemanticsRule.Block} is either \\
     $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
     \item evaluating $(\iswhile, \vlimitoptp, \econd, \vbody)$ in $\envtwo$ as a loop is \\
@@ -2018,7 +2018,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
   \item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \velimitopt)$;
   \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
         yields $(\vlimitopt, \vgone)$\ProseOrError;
-  \item applying $\ticklooplimit$ to $\vlimitoptone$ yields $\vlimitopttwo$\ProseOrError;
+  \item \Proseticklooplimit{$\vlimitoptone$}{$\vlimitopttwo$}\ProseOrError;
   \item evaluating $\vbody$ in $\env$ as per \chapref{BlockStatements}
         yields $\Continuing(\vgtwo, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig};
   \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\envone$,
@@ -2298,7 +2298,7 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SFor\label{sec:SemanticsRule.SFor}}
 Evaluating a \texttt{for} statement involves introducing an index variable to the
-environment. The type system ensures, via TypingRule.SFor, that the index variable
+environment. The type system ensures, via \nameref{sec:TypingRule.SFor}, that the index variable
 is not already declared in the scope of the subprogram containing the \texttt{for}
 statement.
 
@@ -2324,17 +2324,18 @@ All of the following apply:
     \Forbody &:& \vbody\\
     \Forlimit &:& \Ignore
   \end{array}\right\}$;
-  \item evaluating the side-effect-free expression $\veone$ in $\env$ is either
-  $\Normal(\vvone, \vgone)$\ProseOrError;
-  \item evaluating the side-effect-free expression $\vetwo$ in $\env$ is either
-  $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
+  \item evaluating the side-effect-free expression $\veone$ in $\env$ yields
+        $\Normal(\vvone, \vgone)$\ProseOrError;
+  \item evaluating the side-effect-free expression $\vetwo$ in $\env$ yields
+        $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
+  \item \Proseevallimit{$\env$}{$\velimitopt$}{$\Normal(\vlimitopt, \vgthree)$}\ProseOrError;
   \item declaring the local identifier $\vindexname$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
-  \item evaluating the \texttt{for} loop with arguments $(\vindexname, \veone, \dir, \vetwo, \vs)$ in $\envone$,
-  as per \nameref{sec:SemanticsRule.SFor} is $\Normal(\vgfour, \envtwo)$\ProseOrAbnormal;
+  \item evaluating the \texttt{for} loop with arguments $(\vindexname, \velimitopt, \veone, \dir, \vetwo, \vs)$ in $\envone$,
+        as per \nameref{sec:SemanticsRule.SFor} yields $\Normal(\vgfour, \envtwo)$\ProseOrAbnormal;
   \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
   \item $\newg$ is formed as follows: taking the parallel composition of $\vgone$ and $\vgtwo$,
-  then taking the ordered composition of the result with the $\asldata$ edge,
-  and finally taking the ordered composition of the result with the $\aslpo$ edges;
+        then taking the ordered composition of the result with the $\asldata$ edge,
+        and finally taking the ordered composition of the result with the $\aslpo$ edges;
   \item $\newenv$ is $\envthree$.
   \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
@@ -2343,12 +2344,18 @@ Recall that the expressions for the \texttt{for} loop range are side-effect-free
 which is why they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \terminateas \DynErrorConfig\\
-  \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \terminateas \DynErrorConfig\\
-  \declarelocalidentifier(\env, \vindexname, \vendv) \evalarrow (\vgthree,\envone)\\
-  \evalfor{\envone, \vindexname, \vstartv, \dir, \vendv, \vbody} \evalarrow \Normal(\vgfour, \envtwo) \OrAbnormal\\
+  \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \OrDynError\\\\
+  \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \OrDynError\\\\
+  \evallimit(\env, \velimitopt) \evalarrow \Normal(\vlimitopt, \vgthree) \OrDynError\\\\
+  \declarelocalidentifier(\env, \vindexname, \vendv) \evalarrow (\vgfour,\envone)\\
+  {
+    \begin{array}{r}
+      \evalfor(\envone, \vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody) \evalarrow \\
+      \Normal(\vgfive, \envtwo) \OrAbnormal
+    \end{array}
+  }\\
   \removelocal(\envtwo, \vindexname) \evalarrow \envthree\\
-  \newg \eqdef \ordered{(\vgone \parallelcomp \vgtwo)}{\asldata}{ \ordered{\vgthree}{\aslpo}{\vgfour}   }\\
+  \newg \eqdef \ordered{(\vgone \parallelcomp \vgtwo \parallelcomp \vgthree)}{\asldata}{ \ordered{\vgfour}{\aslpo}{\vgfive}   }\\
   \newenv \eqdef \envthree
 }{
   {
@@ -2361,7 +2368,7 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
     \fordirection &:& \vdir\\
     \Forende &:& \vende\\
     \Forbody &:& \vbody\\
-    \Forlimit &:& \Ignore\\
+    \Forlimit &:& \velimitopt\\
   \end{array}\right\}}{\vs}} \evalarrow \\ \Continuing(\newg, \newenv)
   \end{array}
   }
@@ -2373,29 +2380,39 @@ which is why they are evaluated via the rule for evaluating side-effect-free exp
 The relation
 \hypertarget{def-evalfor}{}
 \[
-  \evalfor{\overname{\envs}{\env} \aslsep \overname{\Identifiers}{\vindexname} \aslsep \overname{\tint}{\vstart}
-  \aslsep \overname{\{\UP, \DOWN\}}{\dir} \aslsep \overname{\tint}{\vend} \aslsep \overname{\stmt}{\vbody}}
+  \evalfor(
+    \overname{\envs}{\env} \aslsep
+    \overname{\Identifiers}{\vindexname} \aslsep
+    \overname{\langle\tint\rangle}{\vlimitopt} \aslsep
+    \overname{\tint}{\vstart} \aslsep
+    \overname{\{\UP, \DOWN\}}{\dir} \aslsep
+    \overname{\tint}{\vend} \aslsep
+    \overname{\stmt}{\vbody})
   \;\aslrel\;
   \left(
     \begin{array}{cl}
     \overname{\TReturning}{\ReturningConfig} & \cup\\
     \overname{\TContinuing}{\ContinuingConfig} & \cup\\
-    \overname{\TThrowing}{\ThrowingConfig} & \cup \\
+    \overname{\TThrowing}{\ThrowingConfig} & \cup\\
     \overname{\TDynError}{\DynErrorConfig} &
     \end{array}
     \right)
 \]
-evaluates the \texttt{for} loop with the index variable $\vindexname$ starting from the value
+evaluates the \texttt{for} loop with the index variable $\vindexname$,
+optional limit value $\vlimitopt$,
+starting from the value
 $\vstart$ going in the direction given by $\dir$ until the value given by $\vend$,
 executing $\vbody$ on each iteration.
 %
 The evaluation utilizes two helper relations: $\evalforstep$ and $\evalforloop$.
 
+\hypertarget{def-evalforstep}{}
 The helper relation
 \[
   \evalforstep(
     \overname{\envs}{\env},
     \overname{\Identifiers}{\vindexname},
+    \overname{\langle\tint\rangle}{\vlimitopt} \aslsep
     \overname{\tint}{\vstart},
     \overname{\{\UP,\DOWN\}}{\dir})
     \;\aslrel\;
@@ -2405,11 +2422,13 @@ either increments or decrements the index variable,
 returning the new value of the index variable, the modified environment,
 and the resulting execution graph.
 
+\hypertarget{def-evalforloop}{}
 The helper relation
 \[
   \evalforloop(\overname{
     \envs}{\env},
     \overname{\Identifiers}{\vindexname},
+    \overname{\langle\tint\rangle}{\vlimitopt},
     \overname{\tint}{\vstart},
     \overname{\{\UP,\DOWN\}}{\dir},
     \overname{\tint}{\vend},
@@ -2443,13 +2462,14 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item evaluating $\vbody$ as a block statement (see \nameref{sec:SemanticsRule.Block}) in $\env$
-  is \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
+        yields \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
-  that is, $\evalforstep(\envone, \vindexname, \vstart, \dir)$ gives $((\vstep, \envtwo), \vgtwo)$;
-  \item evaluating the \texttt{for} loop with $(\vindexname, \vstep, \dir, \vend, \vbody)$
-  in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
+        that is, $\evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir)$ yields \\
+        $((\vstep, \envtwo), \vgtwo)$;
+  \item evaluating the \texttt{for} loop with $(\vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody)$
+        in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item $\newg$ is the ordered composition of $\vgone$, $\vgtwo$, and $\vgthree$ with the $\aslpo$
-  edge.
+        edge.
 \end{itemize}
 
 \subsubsection{Overall Evaluation}
@@ -2464,6 +2484,7 @@ a continuing configuration $\Continuing(\newg, \newenv)$ or a returning configur
 or an abnormal configuration,
 and All of the following apply:
 \begin{itemize}
+  \item \Proseticklooplimit{$\vlimitopt$}{$\vnextlimitopt$}\ProseOrError;
   \item $\compfordir$ is either $\LT$ when $\dir$ is $\UP$ or $\GT$ when $\dir$ is $\DOWN$;
   \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
   \item One of the following applies:
@@ -2478,7 +2499,7 @@ and All of the following apply:
     \item All of the following apply (\textsc{continue}):
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
-      \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vstart, \dir, \vend, \vbody)$
+      \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody)$
       in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
       \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
     \end{itemize}
@@ -2497,7 +2518,12 @@ Advancing the loop counter one step towards the end of its range is achieved via
   \newenv \eqdef (\tenv, (G^\denv, L^\denv[\vindexname\mapsto\vstep]))\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
-  \evalforstep(\env, \vindexname, \vstart, \dir) \evalarrow ((\vstep, \newenv), \newg)
+  {
+    \begin{array}{r}
+      \evalforstep(\env, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow \\
+      ((\vstep, \newenv), \newg)
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -2505,39 +2531,61 @@ Running the loop body is achieved via the following rule:
 \begin{mathpar}
 \inferrule{
   \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
-  \evalforstep(\envone, \vindexname, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
-  \evalfor{\envtwo, \vindexname, \vstep, \dir, \vend, \vbody} \evalarrow \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
+  \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
+  {
+    \begin{array}{r}
+      \evalfor(\envtwo, \vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody) \evalarrow \\
+      \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig
+    \end{array}
+  }\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\vgthree}
 }{
-  \evalforloop(\env, \vindexname, \vstart, \dir, \vend, \vbody) \evalarrow \Continuing(\newg, \newenv)
+  {
+    \begin{array}{r}
+      \evalforloop(\env, \vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
+      \Continuing(\newg, \newenv)
+    \end{array}
+  }
 }
 \end{mathpar}
 
 Finally, the rules for evaluating a \texttt{for} loop utilize both $\evalforstep$
-and $\evalforloop$ (the latter in a mutually recursive manner):
+and \\
+$\evalforloop$ (the latter in a mutually recursive manner):
 \begin{mathpar}
 \inferrule[return]{
+  \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\\\\
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
-  \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvbool(\True)\\
-  \newg \eqdef \vgone\\
-  \newenv = \env
-}
-{
-  \evalfor{\env, \vindexname, \vstart, \dir, \vend, \vbody} \evalarrow \Continuing(\newg, \newenv)
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
+  \commonprefixline\\\\
+  \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvbool(\True)
+}{
+  {
+    \begin{array}{r}
+      \evalfor(\env, \vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
+      \Continuing(\overname{\vgone}{\newg}, \overname{\env}{\newenv})
+    \end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[continue]{
+  \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\\\\
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
+  \commonprefixline\\\\
   \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
-  \evalforloop(\env, \vindexname, \vstart, \dir, \vend, \vbody) \evalarrow \\
+  \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
   \Continuing(\vgtwo, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\\\
   \newg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
-  \evalfor{\env, \vindexname, \vstart, \dir, \vend, \vbody} \evalarrow \Continuing(\newg, \newenv)
+  {
+    \begin{array}{r}
+      \evalfor(\env, \vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
+      \Continuing(\newg, \newenv)
+    \end{array}
+  }
 }
 \end{mathpar}
 \CodeSubsection{\EvalForBegin}{\EvalForEnd}{../Interpreter.ml}

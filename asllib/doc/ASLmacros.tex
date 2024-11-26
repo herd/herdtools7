@@ -976,7 +976,9 @@
 \newcommand\evalstmt[1]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}(#1)}
 \newcommand\evalblock[1]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}(#1)}
 \newcommand\evalloop[1]{\hyperlink{def-evalloop}{\textfunc{eval\_loop}}(#1)}
-\newcommand\evalfor[1]{\hyperlink{def-evalfor}{\textfunc{eval\_for}}(#1)}
+\newcommand\evalfor[0]{\hyperlink{def-evalfor}{\textfunc{eval\_for}}}
+\newcommand\evalforloop[0]{\hyperlink{def-evalforloop}{\textfunc{eval\_for\_loop}}}
+\newcommand\evalforstep[0]{\hyperlink{def-evalforstep}{\textfunc{eval\_for\_step}}}
 \newcommand\evalcatchers[1]{\hyperlink{def-evalcatchers}{\textfunc{eval\_catchers}}(#1)}
 \newcommand\evalsubprogram[1]{\hyperlink{def-evalsubprogram}{\textfunc{eval\_subprogram}}(#1)}
 \newcommand\evalcall[1]{\hyperlink{def-evalcall}{\textfunc{eval\_call}}(#1)}
@@ -999,7 +1001,9 @@
 \newcommand\checknonoverlappingslices[0]{\hyperlink{def-checknonoverlappingslices}{\textfunc{check\_non\_overlapping\_slices}}}
 \newcommand\checktworangesnonoverlapping[0]{\hyperlink{def-checktworangesnonoverlapping}{\textfunc{check\_two\_ranges\_non\_overlapping}}}
 \newcommand\evallimit[0]{\hyperlink{def-evallimit}{\textfunc{eval\_limit}}}
+\newcommand\Proseevallimit[3]{\hyperlink{def-evallimit}{evaluating the limit expression} #2 in the static environment #1 yields #3}
 \newcommand\checkrecurselimit[0]{\hyperlink{def-checkrecurse}{\textfunc{check\_recurse\_limit}}}
+\newcommand\Proseticklooplimit[2]{\hyperlink{def-ticklooplimit}{decrementing} the optional loop limit value #1 yields the updated optional limit value #2}
 \newcommand\ticklooplimit[0]{\hyperlink{def-ticklooplimit}{\textfunc{tick\_loop\_limit}}}
 
 \newcommand\getstacksize[0]{\hyperlink{def-getstacksize}{\textfunc{get\_statck\_size}}}
@@ -1719,8 +1723,6 @@
 \newcommand\etwon[0]{\texttt{e2\_n}}
 \newcommand\ety[0]{\texttt{e\_ty}}
 \newcommand\etuple[0]{\texttt{e\_tuple}}
-\newcommand\evalforloop[0]{\texttt{eval\_for\_loop}}
-\newcommand\evalforstep[0]{\texttt{eval\_for\_step}}
 \newcommand\evalue[0]{\texttt{e\_value}}
 \newcommand\ewidth[0]{\texttt{e\_width}}
 \newcommand\ewidthp[0]{\texttt{e\_width'}}
@@ -2187,6 +2189,7 @@
 \newcommand\vfuncbody[0]{\texttt{func\_body}}
 \newcommand\vg[0]{\texttt{g}}
 \newcommand\vgfour[0]{\texttt{g4}}
+\newcommand\vgfive[0]{\texttt{g5}}
 \newcommand\vlocal[0]{\texttt{local}}
 \newcommand\vlooplimit[0]{\texttt{looplimit}}
 \newcommand\vglobal[0]{\texttt{global}}
@@ -2275,6 +2278,7 @@
 \newcommand\vnamest[0]{\texttt{names\_t}}
 \newcommand\vnamet[0]{\texttt{name\_t}}
 \newcommand\vneg[0]{\texttt{neg}}
+\newcommand\vnextlimitopt[0]{\texttt{next\_limit\_opt}}
 \newcommand\vnewarg[0]{\texttt{new\_arg}}
 \newcommand\vnewargs[0]{\texttt{new\_args}}
 \newcommand\vnonspassstmts[0]{\texttt{non\_spass\_stmts}}

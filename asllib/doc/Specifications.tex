@@ -381,7 +381,7 @@ easy to check this requirement.
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseOrTypeError;
+  \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadRecursiveDecls};
   \item applying $\annotatefuncsig$ to each node $\vf$ in $\genv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
         yields $(\tenv_\vf, \vd_\vf)$\ProseOrTypeError;
   \item define $\envandfs$ as the list of pairs, each consisting of the local environment component of $\tenv_\vf$

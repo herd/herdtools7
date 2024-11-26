@@ -1111,7 +1111,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Begin EvalFor *)
   and eval_for loop_msg undet env index_name limit_opt v_start dir v_end body :
       stmt_eval_type =
-    (* Evaluate the condition: "Is the for loop terminated?" *)
+    (* Evaluate the condition: "has the for loop terminated?" *)
     let* next_limit_opt = tick_loop_limit body limit_opt in
     let cond_m =
       let comp_for_dir = match dir with Up -> LT | Down -> GT in
@@ -1133,8 +1133,8 @@ module Make (B : Backend.S) (C : Config) = struct
       eval_for loop_msg undet env2 index_name next_limit_opt v_step dir v_end
         body
     in
-    (* Real logic: if condition is validated, we continue to the next
-       statement, otherwise we loop. *)
+    (* Real logic: if the condition holds, we continue to the next
+       loop iteration, otherwise we loop. *)
     choice_with_branch_effect_msg cond_m loop_msg return_continue loop
       (fun kont -> kont env)
     |: SemanticsRule.For
