@@ -179,7 +179,7 @@ let parse_args () =
   args
 
 let or_exit f =
-  if false then f ()
+  if Printexc.backtrace_status () then f ()
   else
     match Error.intercept f () with
     | Ok res -> res
