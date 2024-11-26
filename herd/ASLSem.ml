@@ -101,7 +101,7 @@ module Make (C : Config) = struct
     let opt_env = true
   end
 
-  module Act = ASLAction.Make (ASL64AH)
+  module Act = ASLAction.Make (C.PC) (ASL64AH)
   include SemExtra.Make (C) (ASL64AH) (Act)
 
   let is_experimental = C.variant Variant.ASLExperimental
