@@ -345,3 +345,6 @@ val list_is_empty : 'a list -> bool
 
 val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 (** Generalisation of [List.split] for 3-uples. *)
+
+val list_map_split : ('a -> 'b * 'c) -> 'a list -> 'b list * 'c list
+(** Composition of [List.map] and [List.split]. *)

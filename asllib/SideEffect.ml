@@ -28,6 +28,8 @@ module TimeFrame = struct
     | GDK_Constant -> Constant
     | GDK_Config -> Config
     | GDK_Var | GDK_Let -> Execution
+
+  let maxs = List.fold_left max Constant
 end
 
 type t =
@@ -169,7 +171,7 @@ module SES = struct
     assertions_performed : bool;
     non_determinism : bool;
     (* Invariants kept *)
-    max_time_frame : TimeFrame.t;
+    max_local_read_time_frame : TimeFrame.t;
     max_global_read_time_frame : TimeFrame.t;
   }
 
@@ -183,21 +185,20 @@ module SES = struct
       recursive_calls = ISet.empty;
       assertions_performed = false;
       non_determinism = false;
-      max_time_frame = TimeFrame.Constant;
+      max_local_read_time_frame = TimeFrame.Constant;
       max_global_read_time_frame = TimeFrame.Constant;
     }
 
-  let is_empty ses =
-    ISet.is_empty ses.local_reads
-    && ISet.is_empty ses.local_writes
-    && ISet.is_empty ses.global_writes
-    && ISet.is_empty ses.global_reads
-    && ISet.is_empty ses.thrown_exceptions
-    && ISet.is_empty ses.recursive_calls
-    && (not ses.assertions_performed)
-    && not ses.non_determinism
-
-  let max_time_frame ses = ses.max_time_frame
+  let max_time_frame ses =
+    if
+      ISet.is_empty ses.local_writes
+      && ISet.is_empty ses.global_writes
+      && ISet.is_empty ses.thrown_exceptions
+      && ISet.is_empty ses.recursive_calls
+      && not ses.non_determinism
+    then
+      TimeFrame.max ses.max_global_read_time_frame ses.max_local_read_time_frame
+    else TimeFrame.Execution
 
   let is_pure ses =
     ISet.is_empty ses.local_writes
@@ -211,49 +212,32 @@ module SES = struct
     {
       ses with
       local_reads = ISet.add s ses.local_reads;
-      max_time_frame = TimeFrame.max time_frame ses.max_time_frame;
+      max_local_read_time_frame =
+        TimeFrame.max time_frame ses.max_local_read_time_frame;
     }
 
   let add_local_write s ses =
-    {
-      ses with
-      local_writes = ISet.add s ses.local_writes;
-      max_time_frame = TimeFrame.Execution;
-    }
+    { ses with local_writes = ISet.add s ses.local_writes }
 
   let add_global_read s time_frame ses =
     {
       ses with
       global_reads = ISet.add s ses.global_reads;
-      max_time_frame = TimeFrame.max time_frame ses.max_time_frame;
-      max_global_read_time_frame = TimeFrame.max time_frame ses.max_time_frame;
+      max_global_read_time_frame =
+        TimeFrame.max time_frame ses.max_global_read_time_frame;
     }
 
   let add_global_write s ses =
-    {
-      ses with
-      global_writes = ISet.add s ses.global_writes;
-      max_time_frame = TimeFrame.Execution;
-    }
+    { ses with global_writes = ISet.add s ses.global_writes }
 
   let add_thrown_exception s ses =
-    {
-      ses with
-      thrown_exceptions = ISet.add s ses.thrown_exceptions;
-      max_time_frame = TimeFrame.Execution;
-    }
+    { ses with thrown_exceptions = ISet.add s ses.thrown_exceptions }
 
   let add_recursive_call s ses =
-    {
-      ses with
-      recursive_calls = ISet.add s ses.thrown_exceptions;
-      max_time_frame = TimeFrame.Execution;
-    }
+    { ses with recursive_calls = ISet.add s ses.thrown_exceptions }
 
   let set_assertions_performed ses = { ses with assertions_performed = true }
-
-  let set_non_determinism ses =
-    { ses with non_determinism = true; max_time_frame = TimeFrame.Execution }
+  let set_non_determinism ses = { ses with non_determinism = true }
 
   let add_side_effect se ses =
     match se with
@@ -310,7 +294,9 @@ module SES = struct
       assertions_performed =
         ses1.assertions_performed || ses2.assertions_performed;
       non_determinism = ses1.non_determinism || ses2.non_determinism;
-      max_time_frame = TimeFrame.max ses1.max_time_frame ses2.max_time_frame;
+      max_local_read_time_frame =
+        TimeFrame.max ses1.max_local_read_time_frame
+          ses2.max_local_read_time_frame;
       max_global_read_time_frame =
         TimeFrame.max ses1.max_global_read_time_frame
           ses2.max_global_read_time_frame;
@@ -405,8 +391,8 @@ module SES = struct
     else (get_side_effect ses1, get_side_effect ses2)
 
   let non_conflicting_union ~fail ses1 ses2 =
-    if is_empty ses1 then ses2
-    else if is_empty ses2 then ses1
+    if ses1 == empty then ses2
+    else if ses2 == empty then ses1
     else if are_non_conflicting ses1 ses2 then union ses1 ses2
     else get_conflicting_side_effects ses1 ses2 |> fail
 
@@ -450,20 +436,11 @@ module SES = struct
     ISet.for_all f ses.global_reads && ISet.for_all f ses.local_reads
 
   let remove_locals ses =
-    let max_time_frame =
-      if
-        ses.non_determinism
-        || (not (ISet.is_empty ses.global_writes))
-        || not (ISet.is_empty ses.thrown_exceptions)
-        (* !! Ignores recursive calls!! *)
-      then TimeFrame.Execution
-      else ses.max_global_read_time_frame
-    in
     {
       ses with
       local_reads = ISet.empty;
       local_writes = ISet.empty;
-      max_time_frame;
+      max_local_read_time_frame = TimeFrame.Constant;
     }
 
   let remove_thrown_exceptions ses = { ses with thrown_exceptions = ISet.empty }

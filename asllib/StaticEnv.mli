@@ -26,7 +26,8 @@ open ASTUtils
 (** Static Environment used for type-checking (cf {!Typing}. *)
 
 type global = {
-  declared_types : ty IMap.t;  (** Maps a type name t to its declaration. *)
+  declared_types : (ty * SideEffect.TimeFrame.t) IMap.t;
+      (** Maps a type name t to its declaration and its time-frame. *)
   constant_values : literal Storage.t;
       (** Maps a global constant name to its value. *)
   storage_types : (ty * global_decl_keyword) IMap.t;
@@ -87,7 +88,7 @@ val set_renamings : identifier -> ISet.t -> env -> env
 val add_global_storage :
   identifier -> ty -> global_decl_keyword -> global -> global
 
-val add_type : identifier -> ty -> env -> env
+val add_type : identifier -> ty -> SideEffect.TimeFrame.t -> env -> env
 val add_global_constant : identifier -> literal -> global -> global
 val add_local_constant : identifier -> literal -> env -> env
 
