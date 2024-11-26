@@ -7,7 +7,7 @@ RUNNING ALL TESTS
   with command 'sh run.sh'. Test result on standard output.
 
 RUNNING ONE TEST
-  Tests are .exe files, for instance A.exe, run it by './A.exe'
+  Tests are .exe files, for instance example1.exe, run it by './example1.exe'
 
 RUNNING OPTIONS
   Main options to the run.sh script and to .exe files:
@@ -16,5 +16,5 @@ RUNNING OPTIONS
   -s <n> one run operates on arrays of size <n>, default 5000.
   -r <n> number of runs, default 200.
 
-  For more options see for instance './A.exe -help' and litmus documentation
+  For more options see for instance './example1.exe -help' and litmus documentation
   <http://diy.inria.fr/doc/litmus.html>

@@ -1,4 +1,4 @@
-NAME = example3
+NAME = example1
 
 all: my_herd
 	touch build/example.svg
@@ -29,8 +29,10 @@ litmus_kvm:
 		$(NAME).litmus \
 		-mach kvm-m1 -variant fatal \
 		-o build/$(NAME).tar
-	mkdir -p build/$(NAME)
-	tar xmf build/$(NAME).tar -C build/$(NAME)
+	#mkdir -p build/$(NAME)
+	#tar xmf build/$(NAME).tar -C build/$(NAME)
+	mkdir -p kvm-unit-tests/$(NAME)
+	tar xmf build/$(NAME).tar -C kvm-unit-tests/$(NAME)
 
 clean:
 	rm -rf build/*

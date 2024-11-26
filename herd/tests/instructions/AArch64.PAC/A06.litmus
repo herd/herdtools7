@@ -4,5 +4,5 @@ XOR of the two PAC fields
 { 0:X0=pac(x, da, 42) }
  P0            ;
 L0:            ;
- AUTDZA X0,XZR ;
+ AUTDZA X0     ;
 forall (0:X0=pac(pac(x, da, 42), da, 0))

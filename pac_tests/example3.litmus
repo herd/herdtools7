@@ -4,6 +4,7 @@ AArch64 example.litmus
 }
  P0             ;
  STR X1,[X0]    ;
+ PACDZA X0,XZR  ;
  XPACD X0       ;
  LDR X2,[X0]    ;
 exists

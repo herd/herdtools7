@@ -12,9 +12,9 @@
 #define SIZE_OF_TEST 5000
 #define NUMBER_OF_RUN 200
 #define AVAIL 4
-#define N 1
-#define NVARS 1
-#define NEXE 4
+#define N 2
+#define NVARS 2
+#define NEXE 2
 #define NTHREADS 4
 #define NOCCS 1
 /* Includes */
@@ -192,17 +192,17 @@ static void barrier_wait(sense_t *p) {
 */
 
 static const int inst[] = {
-// [[0]]
-3, 2, 1, 0,
+// [[0],[1]]
+1, 1, 0, 0,
 };
 
 static const int role[] = {
-// [[0]]
-0, 0, 0, 0,
+// [[0],[1]]
+1, 0, 1, 0,
 };
 
 static const char *group[] = {
-"[[0]]",
+"[[0],[1]]",
 };
 
 #define SCANSZ 1
@@ -217,25 +217,28 @@ typedef struct {
 /************/
 #define SOME_VARS 1
 typedef struct {
-  intmax_t *x;
-  pteval_t *pte_x,saved_pte_x;
+  intmax_t *y,*x;
+  pteval_t *pte_y,saved_pte_y,*pte_x,saved_pte_x;
   labels_t labels;
 } vars_t;
 
 
 typedef struct {
-  int out_0_x2;
+  int out_1_x0;
+  int out_1_x2;
 } log_t;
 
 /* Dump of outcome */
 static void pp_log(FILE *chan,log_t *p) {
-  printf("0:X2=%d;",p->out_0_x2);
+  printf("1:X0=%d;",p->out_1_x0);
+  printf(" 1:X2=%d;",p->out_1_x2);
 }
 
 /* Equality of outcomes */
 static int eq_log(log_t *p,log_t *q) {
   return
-    p->out_0_x2 == q->out_0_x2 &&
+    p->out_1_x0 == q->out_1_x0 &&
+    p->out_1_x2 == q->out_1_x2 &&
     1;
 }
 
@@ -337,9 +340,14 @@ static void exceptions_init_test(void *p) {
 static void set_fault_vector(int role) { }
 
 inline static int final_cond(log_t *p) {
-  switch (p->out_0_x2) {
-  case 42:
-    return 1;
+  switch (p->out_1_x0) {
+  case 1:
+    switch (p->out_1_x2) {
+    case 0:
+      return 1;
+    default:
+      return 0;
+    }
   default:
     return 0;
   }
@@ -358,32 +366,35 @@ typedef enum { cignore, cflush, ctouch, cmax, } dir_t;
 
 typedef struct {
   int part;
-  int c_0_x;
+  int c_0_x,c_0_y,c_1_x,c_1_y;
 } param_t;
 
-static param_t param = {-1, -1,};
+static param_t param = {-1, -1, -1, -1, -1,};
 
 static int id(int x) { return x; }
 
 static parse_param_t parse[] = {
   {"part",&param.part,id,SCANSZ},
   {"c_0_x",&param.c_0_x,id,cmax},
+  {"c_0_y",&param.c_0_y,id,cmax},
+  {"c_1_x",&param.c_1_x,id,cmax},
+  {"c_1_y",&param.c_1_y,id,cmax},
 };
 
 #define PARSESZ (sizeof(parse)/sizeof(parse[0]))
 
 static void pp_param(FILE *out,param_t *p) {
-  printf("{part=%d, c_0_x=%d}",p->part,p->c_0_x);
+  printf("{part=%d, c_0_x=%d, c_0_y=%d, c_1_x=%d, c_1_y=%d}",p->part,p->c_0_x,p->c_0_y,p->c_1_x,p->c_1_y);
 }
 
 typedef struct {
   count_t groups[SCANSZ];
   count_t vars;
   count_t delays;
-  count_t dirs[cmax];
+  count_t dirs[cmax][cmax][cmax][cmax];
 } stats_t;
 
-#define HASHSZ 7
+#define HASHSZ 19
 
 
 /* Notice: this file contains public domain code by Bob Jenkins */
@@ -564,28 +575,55 @@ static void set_feature(int _role) { }
 /* Test code */
 /*************/
 
-typedef void (*code0_t)(int *x,int *out_0_x2);
+typedef void (*code0_t)(int *x,int *y);
 
-noinline static void code0(int *x,int *out_0_x2) {
-  int* trashed_x0;
+noinline static void code0(int *x,int *y) {
+  int trashed_x0;
+  int trashed_x2;
 asm __volatile__ (
 "\n"
 "#START _litmus_P0\n"
 "#_litmus_P0_0\n\t"
 "nop\n"
 "#_litmus_P0_1\n\t"
-"str %[x1],[%[x0]]\n"
+"mov %w[x0],#1\n"
 "#_litmus_P0_2\n\t"
-"pacdza %[x0],xzr\n"
+"str %w[x0],[%[x1]]\n"
 "#_litmus_P0_3\n\t"
-"xpacd %[x0]\n"
+"mov %w[x2],#1\n"
 "#_litmus_P0_4\n\t"
-"ldr %[x2],[%[x0]]\n"
+"dmb sy\n"
 "#_litmus_P0_5\n\t"
+"str %w[x2],[%[x3]]\n"
+"#_litmus_P0_6\n\t"
 "nop\n"
 "#END _litmus_P0\n"
-:[x2] "=&r" (*out_0_x2),[x0] "=&r" (trashed_x0)
-:"[x0]" (x),[x1] "r" ((int64_t)(42)),"[x2]" ((int64_t)(0))
+:[x2] "=&r" (trashed_x2),[x0] "=&r" (trashed_x0)
+:[x1] "r" (x),[x3] "r" (y)
+:"cc","memory"
+);
+}
+
+typedef void (*code1_t)(int *x,int *y,int *out_1_x0,int *out_1_x2);
+
+noinline static void code1(int *x,int *y,int *out_1_x0,int *out_1_x2) {
+  int* trashed_x3;
+asm __volatile__ (
+"\n"
+"#START _litmus_P1\n"
+"#_litmus_P1_0\n\t"
+"nop\n"
+"#_litmus_P1_1\n\t"
+"ldr %w[x0],[%[x1]]\n"
+"#_litmus_P1_2\n\t"
+"pacda %[x3],%[x3]\n"
+"#_litmus_P1_3\n\t"
+"ldr %w[x2],[%[x3]]\n"
+"#_litmus_P1_4\n\t"
+"nop\n"
+"#END _litmus_P1\n"
+:[x2] "=&r" (*out_1_x2),[x0] "=&r" (*out_1_x0),[x3] "=&r" (trashed_x3)
+:"[x0]" ((int)(0)),[x1] "r" (y),"[x2]" ((int)(0)),"[x3]" (x),[x5] "r" ((int64_t)(0))
 :"cc","memory"
 );
 }
@@ -601,6 +639,10 @@ static void vars_init(vars_t *_vars,intmax_t *_mem) {
   const size_t _sz = LINE/sizeof(intmax_t);
   pteval_t *_p;
 
+  _vars->y = _mem;
+  _vars->pte_y = _p = litmus_tr_pte((void *)_mem);
+  _vars->saved_pte_y = *_p;
+  _mem += _sz ;
   _vars->x = _mem;
   _vars->pte_x = _p = litmus_tr_pte((void *)_mem);
   _vars->saved_pte_x = *_p;
@@ -613,6 +655,7 @@ static void vars_free(vars_t *_vars) {
 static void labels_init(vars_t *_vars) {
   labels_t *lbls = &_vars->labels;
   lbls->ret[0] = ((ins_t *)code0)+find_ins(nop,(ins_t *)code0,1);
+  lbls->ret[1] = ((ins_t *)code1)+find_ins(nop,(ins_t *)code1,1);
 }
 
 
@@ -825,20 +868,23 @@ inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {
   sense_t *_b = &_ctx->b;
   log_t *_log = &_ctx->out;
   vars_t *_vars = &_ctx->v;
+  int *y = (int *)_vars->y;
   int *x = (int *)_vars->x;
   barrier_wait(_b);
   switch (_role) {
   case 0: {
-    *x = 0;
-    litmus_flush_tlb((void *)x);
+    *y = 0;
+    litmus_flush_tlb((void *)y);
     barrier_wait(_b);
     if (_p->c_0_x == ctouch) cache_touch((void *)x);
     else if (_p->c_0_x == cflush) cache_flush((void *)x);
+    if (_p->c_0_y == ctouch) cache_touch((void *)y);
+    else if (_p->c_0_y == cflush) cache_flush((void *)y);
     barrier_wait(_b);
-    code0(x,&_log->out_0_x2);
+    code0(x,y);
     barrier_wait(_b);
-    (void)litmus_set_pte_safe(x,_vars->pte_x,_vars->saved_pte_x);
-    litmus_flush_tlb((void *)x);
+    (void)litmus_set_pte_safe(y,_vars->pte_y,_vars->saved_pte_y);
+    litmus_flush_tlb((void *)y);
     int _cond = final_ok(final_cond(_log));
     int _added = hash_add(&_ctx->t,_log,_p,1,_cond);
     if (!_added && _g->hash_ok) _g->hash_ok = 0; // Avoid writing too much.
@@ -846,6 +892,20 @@ inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {
       _ok = 1;
       (void)__sync_add_and_fetch(&_g->stats.groups[_p->part],1);
     }
+    break; }
+  case 1: {
+    *x = 0;
+    litmus_flush_tlb((void *)x);
+    barrier_wait(_b);
+    if (_p->c_1_x == ctouch) cache_touch((void *)x);
+    else if (_p->c_1_x == cflush) cache_flush((void *)x);
+    if (_p->c_1_y == ctouch) cache_touch((void *)y);
+    else if (_p->c_1_y == cflush) cache_flush((void *)y);
+    barrier_wait(_b);
+    code1(x,y,&_log->out_1_x0,&_log->out_1_x2);
+    barrier_wait(_b);
+    (void)litmus_set_pte_safe(x,_vars->pte_x,_vars->saved_pte_x);
+    litmus_flush_tlb((void *)x);
     break; }
   }
   return _ok;
@@ -870,8 +930,13 @@ static void choose_params(global_t *g,thread_ctx_t *c,int part) {
     barrier_wait(&ctx->b);
     switch (_role) {
     case 0:
-      ctx->p.part = part;
       ctx->p.c_0_x = comp_param(&c->seed,&q->c_0_x,cmax,1);
+      ctx->p.c_1_x = comp_param(&c->seed,&q->c_1_x,cmax,1);
+      break;
+    case 1:
+      ctx->p.part = part;
+      ctx->p.c_0_y = comp_param(&c->seed,&q->c_0_y,cmax,1);
+      ctx->p.c_1_y = comp_param(&c->seed,&q->c_1_y,cmax,1);
       break;
     }
     int ok = do_run(c,&ctx->p,g);
@@ -946,11 +1011,11 @@ static void postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t 
   puts("\nWitnesses\n");
   printf("Positive: %" PCTR ", Negative: %" PCTR "\n",p_true,p_false);
   puts("Condition ");
-  puts("exists (0:X2=42)");
+  puts("exists (1:X0=1 /\\ 1:X2=0)");
   puts(" is ");
   puts(cond ? "" : "NOT ");
   puts("validated\n");
-  puts("Hash=70a9ffc3772074cd18b5eda5b1caa7fe\n");
+  puts("Hash=f1229bb17a52cdde9077454f5cb11fa9\n");
   count_t cond_true = p_true;
   count_t cond_false = p_false;
   printf("Observation example %s %" PCTR " %" PCTR "\n",!cond_true ? "Never" : !cond_false ? "Always" : "Sometimes",cond_true,cond_false);

@@ -68,11 +68,11 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
 
-(* Non valid mode for presi *)  
+(* Non valid mode for presi *)
   let () =
     if Cfg.variant Variant_litmus.NoInit then
       Warn.user_error "Switches `-variant NoInit` and `-mode (presi|kvm)` are not compatible"
-        
+
   module Insert =
       ObjUtil.Insert
         (struct
@@ -2002,13 +2002,37 @@ module Make
         O.o "}" ;
         O.o ""
 
+      let dump_init_pauth_def env test =
+        dump_choose_def env test ;
+        O.o "// read the SCTLR_EL1 status register" ;
+        O.o "unsigned long long read_sctlr_el1() {" ;
+        O.oi "unsigned long long ret;" ;
+        O.oi "asm __volatile__(\"mrs %[ret], SCTLR_EL1\": [ret] \"=r\" (ret));" ;
+        O.oi "return ret;" ;
+        O.o "}" ;
+        O.o "" ;
+        O.o "// update the SCTLR_EL1 status register" ;
+        O.o "void write_sctlr_el1(unsigned long long x) {" ;
+        O.oi "asm __volatile__(\"msr SCTLR_EL1, %[x]\":: [x] \"r\" (x));" ;
+        O.o "}" ;
+        O.o "" ;
+        O.o "// Initialize pointer authentication" ;
+        O.o "void init_pauth() {" ;
+        O.oi "unsigned long long enIA = 1ULL << 31;" ;
+        O.oi "unsigned long long enIB = 1ULL << 30;" ;
+        O.oi "unsigned long long enDA = 1ULL << 27;" ;
+        O.oi "unsigned long long enDB = 1ULL << 13;" ;
+        O.oi "write_sctlr_el1(enIA | enIB | enDA | enDB | read_sctlr_el1());" ;
+        O.o "}" ;
+        O.o ""
+
 
       let dump_zyva_def tname env test db procs_user =
         O.o "/*******************/" ;
         O.o "/* Forked function */" ;
         O.o "/*******************/" ;
         O.o "" ;
-        dump_choose_def env test ;
+        dump_init_pauth_def env test ;
         O.o "typedef struct {" ;
         O.oi "int id;" ;
         O.oi "global_t *g;" ;
@@ -2016,6 +2040,7 @@ module Make
         O.o "" ;
         O.f "static void %szyva(void *_a) {" (if Cfg.is_kvm then "" else "*") ;
         if Cfg.is_kvm then begin
+            O.oi "init_pauth();" ;
             O.oi "int id = smp_processor_id();" ;
             O.oi "if (id >= AVAIL) return;" ;
             O.oi "zyva_t *a = (zyva_t*)_a + id;" ;
@@ -2046,6 +2071,9 @@ module Make
               O.o "/* Fault handlers installation depends on user stacks */"
             end ;
             O.oi "install_fault_handler(id);" ;
+            O.oi "// install PAC exception handler here because KVM-unit-tests" ;
+            O.oi "// doesn't support `aut*` failure exception code 0b0001100" ;
+            O.oi "install_exception_handler(EL1H_SYNC, 0b011100, fault_handler);" ;
             if not (T.has_asmhandler test) then begin
               (* Set vector table once for all, as it does not depend on role *)
               O.oi "extern ins_t vector_table;" ;

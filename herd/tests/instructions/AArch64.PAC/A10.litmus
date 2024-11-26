@@ -3,9 +3,9 @@ Check that offsets work correctly
 { 0:X0=x; 0:X1=42 }
  P0            ;
 L0:            ;
- PACDZA X0,XZR ;
+ PACDZA X0     ;
  ADD X0,X0,X1  ;
- PACDZA X0,XZR ;
+ PACDZA X0     ;
  SUB X0,X0,X1  ;
- PACDZA X0,XZR ;
+ PACDZA X0     ;
 forall (0:X0=pac(x, da, 0, 42))

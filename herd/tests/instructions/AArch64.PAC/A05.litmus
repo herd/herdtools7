@@ -4,5 +4,5 @@ original PAC field
 { 0:X0=pac(x, da, 42); 0:X1=42 }
  P0            ;
 L0:            ;
- PACDZA X0,X1  ;
+ PACDA X0,X1  ;
 forall (0:X0=x)

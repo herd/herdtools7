@@ -1898,30 +1898,30 @@ instr:
 | PACIASP { I_PAC_IA (Ireg R30, SP) }
 | PACIAZ { I_PAC_IA (Ireg R30, ZR) }
 | PACIA xreg COMMA xreg { I_PAC_IA ($2, $4) }
-| PACIZA xreg COMMA xreg { I_PAC_IA ($2, $4) }
+| PACIZA xreg { I_PAC_IA ($2, ZR) }
 | PACDA xreg COMMA xreg { I_PAC_DA ($2, $4) }
-| PACDZA xreg COMMA xreg { I_PAC_DA ($2, $4) }
+| PACDZA xreg { I_PAC_DA ($2, ZR) }
 | PACIB1716 { I_PAC_IB (Ireg R17, Ireg R16) }
 | PACIBSP { I_PAC_IB (Ireg R30, SP) }
 | PACIBZ { I_PAC_IB (Ireg R30, ZR) }
 | PACIB xreg COMMA xreg { I_PAC_IB ($2, $4) }
-| PACIZB xreg COMMA xreg { I_PAC_IB ($2, $4) }
+| PACIZB xreg { I_PAC_IB ($2, ZR) }
 | PACDB xreg COMMA xreg { I_PAC_DB ($2, $4) }
-| PACDZB xreg COMMA xreg { I_PAC_DB ($2, $4) }
+| PACDZB xreg { I_PAC_DB ($2, ZR) }
 | AUTIA1716 { I_AUT_IA (Ireg R17, Ireg R16) }
 | AUTIASP { I_AUT_IA (Ireg R30, SP) }
 | AUTIAZ { I_AUT_IA (Ireg R30, ZR) }
 | AUTIA xreg COMMA xreg { I_AUT_IA ($2, $4) }
-| AUTIZA xreg COMMA xreg { I_AUT_IA ($2, $4) }
+| AUTIZA xreg { I_AUT_IA ($2, ZR) }
 | AUTDA xreg COMMA xreg { I_AUT_DA ($2, $4) }
-| AUTDZA xreg COMMA xreg { I_AUT_DA ($2, $4) }
+| AUTDZA xreg { I_AUT_DA ($2, ZR) }
 | AUTIB1716 { I_AUT_IB (Ireg R17, Ireg R16) }
 | AUTIBSP { I_AUT_IB (Ireg R30, SP) }
 | AUTIBZ { I_AUT_IB (Ireg R30, ZR) }
 | AUTIB xreg COMMA xreg { I_AUT_IB ($2, $4) }
-| AUTIZB xreg COMMA xreg { I_AUT_IB ($2, $4) }
+| AUTIZB xreg { I_AUT_IB ($2, ZR) }
 | AUTDB xreg COMMA xreg { I_AUT_DB ($2, $4) }
-| AUTDZB xreg COMMA xreg { I_AUT_DB ($2, $4) }
+| AUTDZB xreg { I_AUT_DB ($2, ZR) }
 | XPACI xreg { I_XPACI $2 }
 | XPACD xreg { I_XPACD $2 }
 

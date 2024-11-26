@@ -4,5 +4,5 @@ zsh:1: command not found: qa
 { 0:X0=pac(x, da, 42) }
  P0            ;
 L0:            ;
- PACDZA X0,XZR ;
+ PACDZA X0     ;
 forall (0:X0=pac(pac(x, da, 42), da, 0))

@@ -4274,19 +4274,18 @@ module Make
            let m_fault = mk_fault None Dir.R Annot.N ii ft None in
            let lbl_v = get_instr_label ii in
            m_fault >>| set_elr_el1 lbl_v ii >>! B.Fault [AArch64Base.elr_el1, lbl_v]
-(* Pointer Anthentication Code `FEAT_Pauth2` without `FEAT_FPAC`, AUT* and PAC*
- have the same semantic *)
-        | I_PAC_DA (rd, rn) | I_AUT_DA (rd, rn)
-        | I_PAC_DB (rd, rn) | I_AUT_DB (rd, rn)
-        | I_PAC_IA (rd, rn) | I_AUT_IA (rd, rn)
-        | I_PAC_IB (rd, rn) | I_AUT_IB (rd, rn)
+(* Pointer Anthentication Code `FEAT_Pauth2` with `FEAT_FPAC` *)
+        | I_PAC_DA (rd, rn)
+        | I_PAC_DB (rd, rn)
+        | I_PAC_IA (rd, rn)
+        | I_PAC_IB (rd, rn)
         ->
             begin
               let key = match inst with
-                | I_PAC_IA _ | I_AUT_IA _ -> "ia"
-                | I_PAC_IB _ | I_AUT_IB _ -> "ib"
-                | I_PAC_DA _ | I_AUT_DA _ -> "da"
-                | I_PAC_DB _ | I_AUT_DB _ -> "db"
+                | I_PAC_IA _ -> "ia"
+                | I_PAC_IB _ -> "ib"
+                | I_PAC_DA _ -> "da"
+                | I_PAC_DB _ -> "db"
                 | _ -> assert false
               in
               read_reg_ord rd ii >>|
@@ -4294,6 +4293,47 @@ module Make
               M.op (Op.AddPAC key) addr modifier >>= fun v ->
               write_reg_dest rd v ii >>= fun v ->
               B.nextSetT rd v
+            end
+        | I_AUT_DA (rd, rn)
+        | I_AUT_DB (rd, rn)
+        | I_AUT_IA (rd, rn)
+        | I_AUT_IB (rd, rn)
+        ->
+            begin
+              let (>>!) = M.(>>!) in
+              let key = match inst with
+                | I_AUT_IA _ -> "ia"
+                | I_AUT_IB _ -> "ib"
+                | I_AUT_DA _ -> "da"
+                | I_AUT_DB _ -> "db"
+                | _ -> assert false
+              in
+
+              let mfault ma =
+                do_insert_commit ma
+                  (fun a ->
+                    mk_fault (Some a) Dir.R Annot.N ii
+                      (Some FaultType.AArch64.PacCheck)
+                      None)
+                  ii >>! B.Exit
+              in
+
+              let mop ma =
+                ma >>= fun v ->
+                write_reg_dest rd v ii >>= fun v ->
+                B.nextSetT rd v
+              in
+
+              let ma =
+                read_reg_ord rd ii >>|
+                read_reg_ord rn ii >>= fun (addr, modifier) ->
+                M.op (Op.AddPAC key) addr modifier
+              in
+
+              M.delay_kont "aut" ma
+                (fun a_virt ma ->
+                  check_pac_canonical a_virt ma mop mfault
+                )
             end
         | I_XPACI r | I_XPACD r
         ->

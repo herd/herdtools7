@@ -10,6 +10,7 @@ optional-ccopt = $(shell if $(CC) -Werror $(1) -S -o /dev/null -xc /dev/null > /
 GCCOPTS=-Wall -std=gnu99 -std=gnu99 -ffreestanding -I $(SRCDIR)/lib -I $(SRCDIR)/libfdt -Wall -Werror  -fomit-frame-pointer -Wno-frame-address   -fno-pic  -no-pie -Wmissing-parameter-type -Wold-style-declaration -Woverride-init -O2 $(call optional-ccopt, -mno-outline-atomics) -march=armv8.1-a
 LINKOPTS=
 SRC=\
+ example1.c\
 
 UTILS=litmus_rand.o utils.o kvm_timeofday.o
 EXE=$(SRC:.c=.flat)
