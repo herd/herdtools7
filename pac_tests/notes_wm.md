@@ -29,7 +29,7 @@ Here is an example if I understand correctly with `FEAT_Pauth2` the requested
 graph for the program `autda x0, x1` is (in case of success):
 
 ```mermaid
-graph TD:
+graph TD;
     A("R:X0=pac(x, da, 42)");
     B("R:X1=42");
     C("Branching(pac)");
@@ -51,7 +51,7 @@ if this is not the case, as example for `ldr x1,[x0]`:
 
 
 ```mermaid
-graph TD:
+graph TD;
     A("R:X0=x");
     B("Branching(mmu)");
     C("R[x]=0");
