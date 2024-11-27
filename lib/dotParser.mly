@@ -25,7 +25,7 @@ open ParsedDotGraph
 %token SEMI EQUAL
 %token COMMA
 %token LBRK RBRK LCURLY RCURLY
-%token GRAPH
+%token GRAPH SUBGRAPH
 
 %type <ParsedDotGraph.t> graph
 %type <ParsedDotGraph.t list> graph_list
@@ -35,6 +35,7 @@ open ParsedDotGraph
 %type <ParsedDotGraph.Attr.t> attr
 %type <ParsedDotGraph.Attr.t list> attr_list
 %type <ParsedDotGraph.Node.t> node
+%type <ParsedDotGraph.Subgraph.t> subgraph
 %start main
 %%
 
@@ -55,6 +56,7 @@ stmt_list:
 stmt:
 | attr SEMI { Stmt.Attr $1 }
 | node SEMI { Stmt.Node $1 }
+| subgraph { Stmt.Subgraph $1 }
 
 attr:
 | name=NAME EQUAL text=QUOTED_STRING { { Attr.name=name; Attr.value=text; } }
@@ -66,3 +68,6 @@ attr_list:
 
 node:
 | name=NAME LBRK attrs=attr_list RBRK { { Node.name=name; Node.attrs=attrs; } }
+
+subgraph:
+| SUBGRAPH name=NAME LCURLY stmts=stmt_list RCURLY { { Subgraph.name=name; Subgraph.stmts = stmts } }

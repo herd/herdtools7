@@ -43,6 +43,7 @@ rule token = parse
 | "=" { EQUAL }
 | "," { COMMA }
 | "digraph" { GRAPH }
+| "subgraph" { SUBGRAPH }
 | name as name { NAME name }
 | eof { EOF }
 
