@@ -1,0 +1,12 @@
+AArch64 example.litmus
+{
+0:X1=x; 0:X2=y;
+1:X1=y; 1:X2=x; 1:X4=1;
+}
+ P0          | P1          ;
+ LDR X0,[X1] |             ;
+ LDR X3,[X2] |             ;
+             | STR X4,[X1] ;
+             | STR X4,[X2] ;
+exists
+(0:X0=1 /\ 0:X3=0)

@@ -636,9 +636,20 @@ module Make
         M.choiceT cond (mfault ma mzero) (mok ma mv)
 
       (* PAC checking *)
-      let check_pac_canonical a ma mok mfault =
-        M.op1 Op.CheckCanonical a >>= fun cond ->
-        M.choiceT cond (mok ma) (mfault ma)
+      let check_pac_canonical a ma ii mok mfault =
+        (* M.op1 Op.CheckCanonical a >>= fun cond ->
+        M.choiceT cond (mok ma) (mfault ma) *)
+        let (+++) = M.data_input_union in
+        let commit = commit_pred_txt (Some "pac") ii in
+        let m =
+          M.op1 Op.CheckCanonical a +++ fun cond ->
+          commit +++
+          fun _ -> M.unitT cond in
+        M.delay_kont "check tag" m
+        (fun c m ->
+          let ma = ma >>== fun a -> m >>== fun _ -> M.unitT a in
+          M.choiceT c (mok ma) (mfault ma)
+        )
 
 
  (* Semantics has changed, no ctrl-dep on mv *)
@@ -1408,7 +1419,7 @@ module Make
                 ii >>! B.Exit
             in
 
-            check_pac_canonical a_virt ma mok mfault
+            check_pac_canonical a_virt ma ii mok mfault
           )
 
 
@@ -4332,7 +4343,7 @@ module Make
 
               M.delay_kont "aut" ma
                 (fun a_virt ma ->
-                  check_pac_canonical a_virt ma mop mfault
+                  check_pac_canonical a_virt ma ii mop mfault
                 )
             end
         | I_XPACI r | I_XPACD r

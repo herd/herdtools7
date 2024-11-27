@@ -1,0 +1,8 @@
+AArch64 example.litmus
+{
+0:X0=x;
+}
+ P0          ;
+ LDR X1,[X0] ;
+exists
+(0:X1=0)
