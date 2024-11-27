@@ -24,10 +24,22 @@ module Attr = struct
     Printf.sprintf "%s=\"%s\"" attr.name attr.value
 end
 
+module Node = struct
+  type t = {
+    name: string;
+    attrs: Attr.t list;
+  }
+
+  let pp node =
+    let printed_attrs = String.concat ", " (List.map Attr.pp node.attrs) in
+    Printf.sprintf "%s [%s]" node.name printed_attrs
+end
+
 module Stmt = struct
-  type t = Attr of Attr.t
+  type t = Node of Node.t | Attr of Attr.t
 
   let pp = function
+  | Node n -> Printf.sprintf "%s;" (Node.pp n)
   | Attr a -> Printf.sprintf "%s;" (Attr.pp a)
 end
 

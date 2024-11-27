@@ -23,7 +23,8 @@ open ParsedDotGraph
 %token <string> QUOTED_STRING
 
 %token SEMI EQUAL
-%token LCURLY RCURLY
+%token COMMA
+%token LBRK RBRK LCURLY RCURLY
 %token GRAPH
 
 %type <ParsedDotGraph.t> graph
@@ -32,6 +33,8 @@ open ParsedDotGraph
 %type <ParsedDotGraph.Stmt.t> stmt
 %type <ParsedDotGraph.Stmt.t list> stmt_list
 %type <ParsedDotGraph.Attr.t> attr
+%type <ParsedDotGraph.Attr.t list> attr_list
+%type <ParsedDotGraph.Node.t> node
 %start main
 %%
 
@@ -51,7 +54,15 @@ stmt_list:
 
 stmt:
 | attr SEMI { Stmt.Attr $1 }
+| node SEMI { Stmt.Node $1 }
 
 attr:
 | name=NAME EQUAL text=QUOTED_STRING { { Attr.name=name; Attr.value=text; } }
 | name=NAME EQUAL text=NAME { { Attr.name=name; Attr.value=text } }
+
+attr_list:
+| attr { [$1] }
+| attr COMMA attr_list { $1 :: $3 }
+
+node:
+| name=NAME LBRK attrs=attr_list RBRK { { Node.name=name; Node.attrs=attrs; } }
