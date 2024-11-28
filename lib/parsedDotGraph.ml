@@ -35,15 +35,28 @@ module Node = struct
     Printf.sprintf "%s [%s]" node.name printed_attrs
 end
 
+module Edge = struct
+  type t = {
+    left : string;
+    right : string;
+    attrs : Attr.t list;
+  }
+
+  let pp edge =
+    let printed_attrs = String.concat ", " (List.map Attr.pp edge.attrs) in
+    Printf.sprintf "%s -> %s [%s]" edge.left edge.right printed_attrs
+end
+
 module rec Stmt : sig
-  type t = Node of Node.t | Attr of Attr.t | Subgraph of Subgraph.t
+  type t = Node of Node.t | Attr of Attr.t | Edge of Edge.t | Subgraph of Subgraph.t
   val pp : t -> string
 end = struct
-  type t = Node of Node.t | Attr of Attr.t | Subgraph of Subgraph.t
+  type t = Node of Node.t | Attr of Attr.t | Edge of Edge.t | Subgraph of Subgraph.t
 
   let pp = function
   | Node n -> Printf.sprintf "%s;" (Node.pp n)
   | Attr a -> Printf.sprintf "%s;" (Attr.pp a)
+  | Edge e -> Printf.sprintf "%s;" (Edge.pp e)
   | Subgraph g -> Subgraph.pp g
 end
 
