@@ -104,7 +104,7 @@ begin
   let - = PSTATE();
   let - = PSTATE().N;
   let - = PSTATE().[N, Z];
-  PSTATE() = UNKNOWN: ProcState;
+  PSTATE() = ARBITRARY: ProcState;
   PSTATE().N = '1';
   PSTATE().[N, Z] = '00';
 

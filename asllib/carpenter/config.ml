@@ -49,7 +49,7 @@ module type Syntax = sig
   val e_getfields : bool
   val e_record : bool
   val e_tuple : bool
-  val e_unknown : bool
+  val e_arbitrary : bool
   val e_pattern : bool
   val pattern_all : bool
   val pattern_any : bool
@@ -170,7 +170,7 @@ module All : Syntax = struct
   let e_getfields = true
   let e_record = true
   let e_tuple = true
-  let e_unknown = true
+  let e_arbitrary = true
   let e_pattern = true
   let pattern_all = true
   let pattern_any = true
@@ -244,7 +244,7 @@ end
 module Stable : Syntax = struct
   include All
 
-  let e_unknown = false
+  let e_arbitrary = false
   let e_getarray = false
   let le_setarray = false
 end
@@ -306,7 +306,7 @@ module Parse = struct
         ("e_getfields", true);
         ("e_record", true);
         ("e_tuple", true);
-        ("e_unknown", true);
+        ("e_arbitrary", true);
         ("e_pattern", true);
         ("pattern_all", true);
         ("pattern_any", true);
@@ -427,7 +427,7 @@ module Parse = struct
       let e_getfields = Tbl.find tbl "e_getfields"
       let e_record = Tbl.find tbl "e_record"
       let e_tuple = Tbl.find tbl "e_tuple"
-      let e_unknown = Tbl.find tbl "e_unknown"
+      let e_arbitrary = Tbl.find tbl "e_arbitrary"
       let e_pattern = Tbl.find tbl "e_pattern"
       let pattern_all = Tbl.find tbl "pattern_all"
       let pattern_any = Tbl.find tbl "pattern_any"

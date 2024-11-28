@@ -279,7 +279,7 @@ let make_expr(sub_expr) ==
     | ~=sub_expr; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
     | e=sub_expr; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
 
-    | UNKNOWN; colon_for_type; ~=ty;                              < E_Unknown            >
+    | ARBITRARY; colon_for_type; ~=ty;                              < E_Arbitrary        >
     | e=pared(sub_expr);                                          { E_Tuple [ e ]        }
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));

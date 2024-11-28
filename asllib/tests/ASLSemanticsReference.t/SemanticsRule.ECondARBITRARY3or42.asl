@@ -6,7 +6,7 @@ end;
 func main () => integer
 begin
 
-  let x = if UNKNOWN: boolean then 3 else Return42();
+  let x = if ARBITRARY: boolean then 3 else Return42();
   assert x==3;
 
   return 0;

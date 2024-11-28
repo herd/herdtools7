@@ -372,7 +372,7 @@ module Domain = struct
           let f1 z2 z1 = Operations.binop_values e Error.Static op z1 z2 |> f in
           let f2 z2 = expr_fold approx env (f1 z2) e1 in
           expr_fold approx env f2 e2 acc
-      | E_Unknown t -> type_fold approx env f t acc
+      | E_Arbitrary t -> type_fold approx env f t acc
       | E_Cond (e1, e2, e3) ->
           let f' = function
             | L_Bool b -> expr_fold approx env f (if b then e2 else e3)

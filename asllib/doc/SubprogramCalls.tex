@@ -602,7 +602,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{other}):
   \begin{itemize}
-    \item $\ve$ is either a literal expression or an unknown value expression;
+    \item $\ve$ is either a literal expression or an arbitrary value expression;
     \item define $\newe$ as $\ve$.
   \end{itemize}
 \end{itemize}
@@ -755,7 +755,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[other]{
-  \astlabel(\ve) \in \{\ELiteral, \EUnknown\}\
+  \astlabel(\ve) \in \{\ELiteral, \EArbitrary\}\
 }{
   \substexpr(\tenv, \substs, \ve) \typearrow \overname{\ve}{\newe}
 }

@@ -581,7 +581,7 @@ module Typed (C : Config.S) = struct
     let e_get_array = (* TODO *) None in
     let e_get_fields = (* TODO *) None in
     let e_pattern = (* TODO *) None in
-    let e_unknown ty = E_Unknown ty |> annot |> pure |> Option.some in
+    let e_arbitrary ty = E_Arbitrary ty |> annot |> pure |> Option.some in
     let is_bits ty = match ty.desc with T_Bits _ -> true | _ -> false in
     let e_slices expr env n : expr gen =
       let* n2 = 1 -- n in
@@ -625,7 +625,7 @@ module Typed (C : Config.S) = struct
         (if C.Syntax.e_literal && can_construct_literal env ty_anon then
            Some (e_literal ty_anon)
          else None);
-        (if C.Syntax.e_unknown then e_unknown ty else None);
+        (if C.Syntax.e_arbitrary then e_arbitrary ty else None);
         (if C.Syntax.e_getarray then e_get_array else None);
         (if C.Syntax.e_getfields then e_get_fields else None);
         (if C.Syntax.e_pattern then e_pattern else None);

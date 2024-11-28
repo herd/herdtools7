@@ -13,7 +13,7 @@ for one type is included in the set of values for another type.
 We now define the concept of a \emph{dynamic domain} of a type
 and the \emph{static domain} of a type.
 Intuitively, domains assign potentially infinite sets of \nativevalues\ to types.
-Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{UNKNOWN: t}
+Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{ARBITRARY: t}
 by choosing a single value from the dynamic domain of $\vt$.
 Static domains are used to define subtype satisfaction in \secref{TypingRule.SubtypeSatisfaction}.
 
@@ -434,7 +434,7 @@ if the following condition holds:
 
 For example, consider the assignment
 \begin{center}
-\verb|var x : integer{1,2,3} = UNKNOWN : integer{1,2};|
+\verb|var x : integer{1,2,3} = ARBITRARY : integer{1,2};|
 \end{center}
 
 It is legal, since (in any static environment), the domain of \verb|integer{1,2,3}|
@@ -475,7 +475,7 @@ In other words, $\symsubsumes(\tenv, \vt, \vs)$ errs on the \emph{safe side} ---
 it never answers $\True$ when the real answer is $\False$, which would (undesirably)
 determine the following statement as well-typed:
 \begin{center}
-  \verb|var x : integer{1,2} = UNKNOWN: integer;|
+  \verb|var x : integer{1,2} = ARBITRARY: integer;|
 \end{center}
 
 A sound but trivial subsumption test is one that always returns $\False$.

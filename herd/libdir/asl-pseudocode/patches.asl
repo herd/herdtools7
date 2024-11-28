@@ -217,7 +217,7 @@ begin
    let branchtaken = FALSE;
    if IsFeatureImplemented(FEAT_SPE) then
      SPEBranch{64}
-       (UNKNOWN:bits(64), branchtype, branch_conditional, branchtaken);
+       (ARBITRARY:bits(64), branchtype, branch_conditional, branchtaken);
     end;
     return;
 end;

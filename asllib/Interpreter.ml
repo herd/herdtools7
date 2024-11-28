@@ -558,10 +558,10 @@ module Make (B : Backend.S) (C : Config) = struct
          | None -> unsupported_expr e_length)
         |: SemanticsRule.EArray
     (* End *)
-    (* Begin EvalEUnknown *)
-    | E_Unknown t ->
+    (* Begin EvalEArbitrary *)
+    | E_Arbitrary t ->
         let* v = B.v_unknown_of_type ~eval_expr_sef:(eval_expr_sef env) t in
-        return_normal (v, env) |: SemanticsRule.EUnknown
+        return_normal (v, env) |: SemanticsRule.EArbitrary
     (* End *)
     (* Begin EvalEPattern *)
     | E_Pattern (e, p) ->

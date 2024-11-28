@@ -1520,11 +1520,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         (ty, E_Record (ty, fields') |> here) |: TypingRule.ERecord
     (* End *)
-    (* Begin EUnknown *)
-    | E_Unknown ty ->
+    (* Begin EArbitrary *)
+    | E_Arbitrary ty ->
         let ty1 = annotate_type ~loc env ty in
         let ty2 = Types.get_structure env ty1 in
-        (ty1, E_Unknown ty2 |> here) |: TypingRule.EUnknown
+        (ty1, E_Arbitrary ty2 |> here) |: TypingRule.EArbitrary
     (* End *)
     | E_Slice (e', slices) -> (
         match e'.desc with

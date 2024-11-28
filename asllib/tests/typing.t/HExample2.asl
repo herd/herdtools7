@@ -1,5 +1,5 @@
 
-type ExtractType of enumeration {PLUS, COLON, ELEM, FUNC, UNKNOWN_OP, EXTEND};
+type ExtractType of enumeration {PLUS, COLON, ELEM, FUNC, ARBITRARY_OP, EXTEND};
 func Example{size}(op_type : ExtractType) => bits(8*size)
 begin
     var register : bits(8*size) = Ones{8*size};
@@ -16,8 +16,8 @@ begin
         when FUNC =>
             return register_read{size};
 
-        when UNKNOWN_OP =>
-            return UNKNOWN: bits(8*size);
+        when ARBITRARY_OP =>
+            return ARBITRARY: bits(8*size);
 
         when EXTEND =>
             if size == 32 then

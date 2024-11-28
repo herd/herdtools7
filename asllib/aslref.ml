@@ -31,6 +31,7 @@ type args = {
   opn : string option;
   allow_no_end_semicolon : bool;
   allow_double_underscore : bool;
+  allow_unknown : bool;
   print_ast : bool;
   print_serialized : bool;
   print_typed : bool;
@@ -48,6 +49,7 @@ let parse_args () =
   let exec = ref true in
   let allow_no_end_semicolon = ref false in
   let allow_double_underscore = ref false in
+  let allow_unknown = ref false in
   let print_ast = ref false in
   let print_serialized = ref false in
   let print_typed = ref false in
@@ -70,6 +72,9 @@ let parse_args () =
         Arg.Set allow_double_underscore,
         " Allow the usage of variables beginning with double underscores \
          ('__')." );
+      ( "--allow-unknown",
+        Arg.Set allow_unknown,
+        " Allow the usage of 'UNKNOWN' instead of 'ARBITRARY'." );
       ( "--print",
         Arg.Set print_ast,
         " Print the parsed AST to stdout before executing it." );
@@ -141,6 +146,7 @@ let parse_args () =
       opn = (match !opn with "" -> None | s -> Some s);
       allow_no_end_semicolon = !allow_no_end_semicolon;
       allow_double_underscore = !allow_double_underscore;
+      allow_unknown = !allow_unknown;
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
@@ -185,8 +191,9 @@ let () =
   let parser_config =
     let allow_no_end_semicolon = args.allow_no_end_semicolon in
     let allow_double_underscore = args.allow_double_underscore in
+    let allow_unknown = args.allow_unknown in
     let open Builder in
-    { allow_no_end_semicolon; allow_double_underscore }
+    { allow_no_end_semicolon; allow_double_underscore; allow_unknown }
   in
 
   let extra_main =

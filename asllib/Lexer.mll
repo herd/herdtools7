@@ -29,6 +29,7 @@ open Error
 module type CONFIG = sig
     (** Allow variables starting with a double underscore (__) *)
     val allow_double_underscore : bool
+    val allow_unknown : bool
 end
 
 module Make (Config : CONFIG) = struct
@@ -96,7 +97,10 @@ let tr_name s = match s with
 | "try"           -> TRY
 | "TRUE"          -> BOOL_LIT true
 | "type"          -> TYPE
-| "UNKNOWN"       -> UNKNOWN
+| "UNKNOWN"       ->
+    if Config.allow_unknown then ARBITRARY
+    else Error.fatal_unknown_pos @@ (Error.ObsoleteSyntax s)
+| "ARBITRARY"     -> ARBITRARY
 | "Unreachable"   -> UNREACHABLE
 | "until"         -> UNTIL
 | "var"           -> VAR

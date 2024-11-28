@@ -7,7 +7,7 @@ end;
 
 func Read{size}(address : integer, unknown : boolean) => bits(8*size)
 begin
-    var value : bits(size*8) = UNKNOWN : bits(size*8);
+    var value : bits(size*8) = ARBITRARY : bits(size*8);
     if !unknown then
         value = MemRead{size}(address);
     end;

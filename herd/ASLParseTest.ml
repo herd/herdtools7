@@ -43,6 +43,7 @@ module Make (Conf : RunTest.Config) (ModelConfig : MemCat.Config) = struct
     let lexer =
         let module Lexer = Asllib.Lexer.Make(struct
           let allow_double_underscore = false
+          let allow_unknown = false
         end) in
         Lexer.token
 

@@ -161,7 +161,7 @@ type expr_desc =
           This expression constructor is only part of the typed AST, i.e. it is
           only built by the type-checker, not any parser.
       *)
-  | E_Unknown of ty
+  | E_Arbitrary of ty
   | E_Pattern of expr * pattern
 
 and expr = expr_desc annotated

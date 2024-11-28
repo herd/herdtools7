@@ -379,7 +379,7 @@ let binop_expr(e, b) ==
       | ~=e; IN; ~=bpattern;                          < AST.E_Pattern   >
       | ~=e; EQ_EQ; ~=pattern_mask;                   < AST.E_Pattern   >
       | ~=e; ~=annotated(BANG_EQ; pm=pattern_mask; < AST.Pattern_Not >); < AST.E_Pattern >
-      | ~=annotated(ty_non_tuple); UNKNOWN;           < AST.E_Unknown   >
+      | ~=annotated(ty_non_tuple); UNKNOWN;           < AST.E_Arbitrary >
       (*
       | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
       *)

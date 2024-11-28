@@ -20,9 +20,9 @@ begin
   // E_Binop 2: the right-hand side of the assignment is
   //            a binay AND expression.
   // E_Concat 1: b0 :: b1 concatenates two bitvectors.
-  // E_Unknown 1: UNKNOWN: bits(8) represents an arbitrary
+  // E_Unknown 1: ARBITRARY: bits(8) represents an arbitrary
   //              8-bits bitvector
   var b8 = b0 :: b1;
-  b8 = (NOT b8) AND UNKNOWN: bits(8);
+  b8 = (NOT b8) AND ARBITRARY: bits(8);
   return 0;
 end;
