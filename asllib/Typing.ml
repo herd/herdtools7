@@ -560,45 +560,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> conflict loc [ T_Exception [] ] t_struct
   (* End *)
 
-  (* Begin StorageIsPure *)
-  let storage_is_immutable ~loc (env : env) s =
-    (* Definition DDYW:
-       Any expression consisting solely of an immutable storage element or a
-       literal value is a statically evaluable expression.
-    *)
-    match IMap.find_opt s env.local.storage_types with
-    | Some (_, (LDK_Constant | LDK_Let)) -> true
-    | Some (_, LDK_Var) -> false
-    | None -> (
-        match IMap.find_opt s env.global.storage_types with
-        | Some (_, (GDK_Constant | GDK_Config | GDK_Let)) -> true
-        | Some (_, GDK_Var) -> false
-        | None ->
-            if is_undefined s env then undefined_identifier loc s else true)
-  (* End *)
-
   (* Begin CheckStaticallyEvaluable *)
-  let is_immutable ~loc env ses =
-    SES.for_all_reads (storage_is_immutable ~loc env) ses
-
-  let is_statically_evaluable ~loc env ses =
-    (SES.is_pure ses && is_immutable ~loc env ses)
-    |: TypingRule.IsStaticallyEvaluable
-  (* End *)
-
-  (* Begin CheckStaticallyEvaluable *)
-  let check_statically_evaluable env e ses () =
-    if is_statically_evaluable ~loc:e env ses then
+  let check_statically_evaluable e ses () =
+    if SES.is_statically_evaluable ses then
       () |: TypingRule.CheckStaticallyEvaluable
     else fatal_from e (Error.ImpureExpression (e, ses))
   (* End *)
 
-  let check_is_pure ?(allow_assertions = false) ?(allow_non_determinism = false)
-      e ses () =
-    let ses = if allow_assertions then SES.remove_assertions ses else ses in
-    let ses =
-      if allow_non_determinism then SES.remove_non_determinism ses else ses
-    in
+  let check_is_deterministic e ses () =
+    if SES.is_deterministic ses then ()
+    else fatal_from e (Error.ImpureExpression (e, ses))
+
+  let check_is_pure e ses () =
     if SES.is_pure ses then ()
     else fatal_from e (Error.ImpureExpression (e, SES.remove_pure ses))
 
@@ -621,7 +594,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     function
     | TimeFrame.Constant -> check_is_constant_time
     | TimeFrame.Config -> check_is_config_time
-    | TimeFrame.Execution -> fun ~loc:_ _ -> ok
+    | TimeFrame.Execution _ -> fun ~loc:_ _ -> ok
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
@@ -1173,7 +1146,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TBits *)
     | T_Bits (e_width, bitfields) ->
         let t_width, e_width', ses_width = annotate_expr env e_width in
-        let+ () = check_statically_evaluable env e_width ses_width in
+        let+ () = check_statically_evaluable e_width ses_width in
         let+ () = check_constrained_integer ~loc:e_width env t_width in
         let bitfields', ses_bitfields =
           if bitfields = [] then (bitfields, SES.empty)
@@ -1264,7 +1237,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   and annotate_static_expr env e =
     let t, e', ses = annotate_expr env e in
-    let+ () = check_statically_evaluable env e ses in
+    let+ () = check_statically_evaluable e ses in
     (t, e', ses)
 
   (* Begin AnnotateStaticInteger *)
@@ -1315,7 +1288,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and t_length, length', ses_length = annotate_expr env length in
           let+ () = check_structure_integer offset' env t_offset in
           let+ () = check_constrained_integer ~loc:length' env t_length in
-          let+ () = check_statically_evaluable env length' ses_length in
+          let+ () = check_statically_evaluable length' ses_length in
           let length2 = StaticModel.try_normalize env length' in
           let ses = SES.union ses_length ses_offset in
           (Slice_Length (offset', length2), ses |: TypingRule.Slice)
@@ -1362,7 +1335,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin PSingle *)
     | Pattern_Single e ->
         let t_e, e', ses = annotate_expr env e in
-        let+ () = check_statically_evaluable env e ses in
+        let+ () = check_statically_evaluable e ses in
         let+ () =
          fun () ->
           let t_struct = Types.make_anonymous env t
@@ -1383,7 +1356,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin PGeq *)
     | Pattern_Geq e ->
         let t_e, e', ses = annotate_expr env e in
-        let+ () = check_statically_evaluable env e ses in
+        let+ () = check_statically_evaluable e ses in
         let+ () =
          fun () ->
           let t_struct = Types.get_structure env t
@@ -1397,7 +1370,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin PLeq *)
     | Pattern_Leq e ->
         let t_e, e', ses = annotate_expr env e in
-        let+ () = check_statically_evaluable env e ses in
+        let+ () = check_statically_evaluable e ses in
         let+ () =
          fun () ->
           let t_anon = Types.make_anonymous env t
@@ -1518,7 +1491,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       List.iter2
         (fun (name, ty_declared_opt) (ty_actual, e_actual, ses_actual) ->
-          let+ () = check_statically_evaluable env e_actual ses_actual in
+          let+ () = check_statically_evaluable e_actual ses_actual in
           let+ () = check_constrained_integer ~loc env ty_actual in
           match ty_declared_opt with
           | None ->
@@ -1644,7 +1617,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               (fun (p_name, _ty) -> String.equal callee_x p_name)
               callee.parameters
           then
-            let+ () = check_statically_evaluable env caller_e caller_ses in
+            let+ () = check_statically_evaluable caller_e caller_ses in
             let+ () = check_constrained_integer ~loc env caller_ty in
             (callee_x, caller_e) :: eqs
           else eqs)
@@ -2493,11 +2466,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if can_be_initialized_with env s t then () else conflict loc [ s.desc ] t
   (* End *)
 
+  let should_perform_expression_propagation ses =
+    let ses_non_assert = SES.remove_assertions ses in
+    SES.is_statically_evaluable ses_non_assert
+
   (* Begin AddImmutableExpr *)
-  let add_immutable_expressions ~loc env ldk typed_e_opt x =
+  let add_immutable_expressions env ldk typed_e_opt x =
     match (ldk, typed_e_opt) with
     | (LDK_Constant | LDK_Let), Some (_, e, ses_e)
-      when is_immutable ~loc env ses_e -> (
+      when should_perform_expression_propagation ses_e -> (
         match StaticModel.normalize_opt env e with
         | Some e' ->
             add_local_immutable_expr x e' env |: TypingRule.AddImmutableExpr
@@ -2553,7 +2530,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            which is already in scope at the point of declaration. *)
         let+ () = check_var_not_in_env loc env x in
         let env2 = add_local x ty ldk env in
-        let new_env = add_immutable_expressions ~loc env2 ldk e x in
+        let new_env = add_immutable_expressions env2 ldk e x in
         (new_env, LDI_Var x, SES.empty) |: TypingRule.LDVar
     (* End *)
     (* Begin LDTuple *)
@@ -2731,9 +2708,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin SAssert *)
     | S_Assert e ->
         let t_e', e', ses = annotate_expr env e in
-        let+ () =
-          check_is_pure e ~allow_assertions:true ~allow_non_determinism:true ses
-        in
+        let+ () = check_is_pure e ses in
         let+ () = check_type_satisfies s env t_e' boolean in
         let ses = SES.set_assertions_performed ses in
         (S_Assert e' |> here, env, ses) |: TypingRule.SAssert
@@ -2764,7 +2739,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           annotate_limit_expr ~warn:false ~loc env limit
         in
         let+ () = check_is_pure start_e ses_start in
+        let+ () = check_is_deterministic start_e ses_start in
         let+ () = check_is_pure end_e ses_end in
+        let+ () = check_is_deterministic end_e ses_end in
         let ses_cond = SES.union3 ses_start ses_end ses_limit in
         let start_struct = Types.make_anonymous env start_t
         and end_struct = Types.make_anonymous env end_t in
@@ -3646,7 +3623,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | GDK_Constant ->
           let+ () = check_is_constant_time ~loc typed_initial_value in
           try_add_global_constant name env1 initial_value'
-      | GDK_Let when is_statically_evaluable ~loc env1 ses_initial_value -> (
+      | GDK_Let when should_perform_expression_propagation ses_initial_value
+        -> (
           match StaticModel.normalize_opt env1 initial_value' with
           | Some e' -> add_global_immutable_expr name e' env1
           | None -> env1)

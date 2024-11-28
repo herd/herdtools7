@@ -4,12 +4,9 @@ module ISet = ASTUtils.ISet
 module IMap = ASTUtils.IMap
 
 module TimeFrame : sig
-  type t = Constant | Config | Execution
+  type t = Constant | Config | Execution of bool
 
-  val equal : t -> t -> bool
-  val compare : t -> t -> int
   val is_before : t -> t -> bool
-  val is_after : t -> t -> bool
   val max : t -> t -> t
   val maxs : t list -> t
   val of_ldk : AST.local_decl_keyword -> t
@@ -33,7 +30,10 @@ val compare : t -> t -> int
 val pp_print : Format.formatter -> t -> unit
 val time_frame : t -> TimeFrame.t
 val is_pure : t -> bool
+val is_immutable : t -> bool
+val is_statically_evaluable : t -> bool
 
+(** The module [SES] provides an abstraction over a set of side-effects. *)
 module SES : sig
   type t
   (** A side-effect set. *)
@@ -52,9 +52,9 @@ module SES : sig
   (* Properties *)
   val max_time_frame : t -> TimeFrame.t
   val is_pure : t -> bool
-  val mem : side_effect -> t -> bool
-  val cardinal : t -> int
+  val is_statically_evaluable : t -> bool
   val equal : t -> t -> bool
+  val is_deterministic : t -> bool
 
   (* Setters *)
   val add_local_read : identifier -> TimeFrame.t -> t -> t
@@ -88,7 +88,6 @@ module SES : sig
 
   (* Folders *)
   val fold_recursive_calls : (identifier -> 'a -> 'a) -> t -> 'a -> 'a
-  val for_all_reads : (identifier -> bool) -> t -> bool
 
   (* Input & output *)
   val to_side_effect_list : t -> side_effect list
