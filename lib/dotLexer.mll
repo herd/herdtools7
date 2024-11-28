@@ -42,6 +42,7 @@ rule token = parse
 | '}' { RCURLY }
 | "=" { EQUAL }
 | "," { COMMA }
+| "->" { ARROW }
 | "digraph" { GRAPH }
 | "subgraph" { SUBGRAPH }
 | name as name { NAME name }
