@@ -680,7 +680,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{unconstrained}):
   \begin{itemize}
-    \item $\vt$ is an unconstrained integer;
+    \item $\vt$ is an unconstrained integer or pending constrained integer;
     \item the result is a type error indicating that a constrained integer type is expected.
   \end{itemize}
 
@@ -707,9 +707,11 @@ One of the following applies:
   \checkconstrainedinteger(\tenv, \TInt(\parameterized(\Ignore))) \typearrow \True
 }
 \and
-\inferrule[unconstrained]{}
+\inferrule[unconstrained]{
+  \astlabel(\vc) = \unconstrained \;\lor\; \astlabel{\vc} = \pendingconstrained
+}
 {
-  \checkconstrainedinteger(\tenv, \TInt(\unconstrained(\Ignore))) \typearrow \\
+  \checkconstrainedinteger(\tenv, \TInt(\vc)) \typearrow \\
   \TypeErrorVal{ConstrainedIntegerExpected}
 }
 \and
@@ -730,6 +732,7 @@ One of the following applies:
         Specifically, the \hypertarget{def-unconstrainedintegertype}{\unconstrainedintegertype}.
   \item A constrained type with a non-empty constraint is \emph{well-constrained}.
   \hypertarget{def-parameterizedintegertype}
+  \item A \hypertarget{def-pendingconstrainedintegertype}{\emph{\pendingconstrainedintegertype}} is an integer type whose constraints will be inferred during type checking.
   \item A \emph{\parameterizedintegertype} is an implicit type of a subprogram parameter.
   \end{itemize}
 The widths of bitvector storage elements are constrained integers.

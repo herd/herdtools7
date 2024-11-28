@@ -81,6 +81,7 @@ type error_desc =
   | LoopLimitReached
   | RecursionLimitReached
   | EmptyConstraints
+  | UnexpectedPendingConstrained
 
 type error = error_desc annotated
 
@@ -166,6 +167,7 @@ let error_label = function
   | LoopLimitReached -> "LoopLimitReached"
   | RecursionLimitReached -> "RecursionLimitReached"
   | EmptyConstraints -> "EmptyConstraints"
+  | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -402,7 +404,10 @@ module PPrint = struct
     | EmptyConstraints ->
         fprintf f
           "ASL Typing error:@ a@ well-constrained@ integer@ cannot@ have@ \
-           empty@ constraints.");
+           empty@ constraints."
+    | UnexpectedPendingConstrained ->
+        pp_print_text f
+          "ASL Typing error: a pending constrained integer is illegal here.");
     pp_close_box f ()
 
   let pp_warning_desc f w =

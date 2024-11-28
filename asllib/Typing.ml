@@ -629,6 +629,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | ( (MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS),
         (T_Int c1, T_Int c2) ) -> (
         match (c1, c2) with
+        | PendingConstrained, _ | _, PendingConstrained -> assert false
         | UnConstrained, _ | _, UnConstrained -> T_Int UnConstrained |> with_loc
         | Parameterized _, _ | _, Parameterized _ ->
             let t1_well_constrained = Types.to_well_constrained t1
@@ -833,6 +834,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TInt *)
     | T_Int constraints ->
         (match constraints with
+        | PendingConstrained ->
+            fatal_from loc Error.UnexpectedPendingConstrained
         | WellConstrained [] -> fatal_from loc Error.EmptyConstraints
         | WellConstrained constraints ->
             let new_constraints =
@@ -1806,6 +1809,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         with Not_found -> assert false)
     | T_Int UnConstrained -> L_Int Z.zero |> lit
     | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos |> fatal_non_static
+    | T_Int PendingConstrained -> assert false
     | T_Int (WellConstrained cs) ->
         let constraint_abs_min = function
           | Constraint_Exact e -> Some (reduce_to_z e)
@@ -1861,7 +1865,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           }
         |> add_pos |> annotate_expr env |> snd
     | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos
-    | T_Int (WellConstrained []) -> assert false
+    | T_Int (WellConstrained [] | PendingConstrained) -> assert false
     | T_Int
         (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
       ->
@@ -2089,10 +2093,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> env
   (* End *)
 
-  let rec inherit_constrained_types ~loc lhs_ty rhs_ty =
+  let rec inherit_integer_constraints ~loc lhs_ty rhs_ty =
     match (lhs_ty.desc, rhs_ty.desc) with
-    | T_Int (WellConstrained []), T_Int (WellConstrained _) -> rhs_ty
-    | T_Int (WellConstrained []), _ ->
+    | T_Int PendingConstrained, T_Int (WellConstrained _) -> rhs_ty
+    | T_Int PendingConstrained, _ ->
         fatal_from loc (Error.ConstrainedIntegerExpected rhs_ty)
     | T_Tuple lhs_tys, T_Tuple rhs_tys ->
         if List.compare_lengths lhs_tys rhs_tys != 0 then
@@ -2105,7 +2109,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         else
           let lhs_tys' =
             List.map2
-              (inherit_constrained_types ~loc:(to_pos lhs_ty))
+              (inherit_integer_constraints ~loc:(to_pos lhs_ty))
               lhs_tys rhs_tys
           in
           T_Tuple lhs_tys' |> add_pos_from lhs_ty
@@ -2122,7 +2126,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin LDTyped *)
     | LDI_Typed (ldi', t) ->
         let ty' = Types.get_structure env ty in
-        let t = inherit_constrained_types ~loc t ty' in
+        let t = inherit_integer_constraints ~loc t ty' in
         let t' = annotate_type ~loc env t in
         let+ () = check_can_be_initialized_with loc env t' ty in
         let new_env, new_ldi' =

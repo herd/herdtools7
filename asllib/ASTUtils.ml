@@ -235,7 +235,7 @@ and use_slices slices = use_list use_slice slices
 and use_ty t =
   match t.desc with
   | T_Named s -> ISet.add s
-  | T_Int (UnConstrained | Parameterized _)
+  | T_Int (UnConstrained | Parameterized _ | PendingConstrained)
   | T_Enum _ | T_Bool | T_Real | T_String ->
       Fun.id
   | T_Int (WellConstrained cs) -> use_constraints cs
@@ -744,7 +744,8 @@ let rename_locals map_name ast =
     | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)
   and map_t t =
     map_desc_st' t @@ function
-    | T_Real | T_String | T_Bool | T_Enum _ | T_Named _ | T_Int UnConstrained ->
+    | T_Real | T_String | T_Bool | T_Enum _ | T_Named _
+    | T_Int (UnConstrained | PendingConstrained) ->
         t.desc
     | T_Int (Parameterized _) ->
         failwith "Not yet implemented: obfuscate parametrized types"

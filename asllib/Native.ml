@@ -482,7 +482,7 @@ module DeterministicBackend = struct
             NV_Literal (L_BitVector (Bitvector.zeros (Z.to_int n)))
         | _ -> (* Bad types *) assert false)
     | T_Enum _ | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ | T_Named _
-      ->
+    | T_Int PendingConstrained ->
         assert false
 
   let deterministic_unknown_of_type ~eval_expr_sef =

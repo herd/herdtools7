@@ -297,7 +297,9 @@ let colon_for_type == COLON | COLON_COLON
 (* Constrained types helpers *)
 
 let constraint_kind_opt == constraint_kind | { UnConstrained }
-let constraint_kind == ~=braced(clist(int_constraint)); < WellConstrained >
+let constraint_kind ==
+  | ~=braced(nclist(int_constraint)); < WellConstrained >
+  | braced(MINUS); { PendingConstrained }
 
 let int_constraint ==
   | ~=expr;                     < Constraint_Exact >
