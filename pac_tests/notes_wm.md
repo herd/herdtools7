@@ -74,12 +74,27 @@ graph TD;
     A("R:X0=x");
     B("Branching(mmu)");
     C("R[x]=0");
-    D("W:X1=x");
+    D("W:X1=0");
 
     A -->|data| B;
     A -->|data| C;
     B -->|ctrl| C;
     C -->|data| D;
+```
+
+And for `str x1, [x0]`:
+
+```mermaid
+graph TD;
+    A("R:X0=x");
+    B("Branching(mmu)");
+    C("W[x]=0");
+    D("R:X1=0");
+
+    A -->|data| B;
+    A -->|data| C;
+    B -->|ctrl| C;
+    D -->|data| C;
 ```
 
 
