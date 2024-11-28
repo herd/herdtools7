@@ -126,10 +126,9 @@ Named types
 Loops
   $ aslref --no-exec TPositive8.asl
   $ aslref --no-exec TPositive8-1.asl
-  File TPositive8-1.asl, line 4, characters 12 to 33:
-  ASL Typing error: a pure expression was expected,
-    found 100 as integer {8, 16}, which produces the following side-effects:
-    [PerformsAssertions].
+  File TPositive8-1.asl, line 5, characters 8 to 40:
+  ASL Typing error: a subtype of integer {8..31} was expected,
+    provided integer {100..110}.
   [1]
   $ aslref --no-exec TNegative8-0.asl
   File TNegative8-0.asl, line 5, characters 8 to 40:
