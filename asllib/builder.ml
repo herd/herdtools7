@@ -31,12 +31,17 @@ type version = [ `ASLv0 | `ASLv1 ]
 type parser_config = {
   allow_no_end_semicolon : bool;
   allow_double_underscore : bool;
+  allow_unknown : bool;
 }
 
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
 
 let default_parser_config =
-  { allow_no_end_semicolon = false; allow_double_underscore = false }
+  {
+    allow_no_end_semicolon = false;
+    allow_double_underscore = false;
+    allow_unknown = false;
+  }
 
 let select_type ~opn ~ast = function
   | Some `Opn -> opn
@@ -70,6 +75,7 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
       end) in
       let module Lexer = Lexer.Make (struct
         let allow_double_underscore = parser_config.allow_double_underscore
+        let allow_unknown = parser_config.allow_unknown
       end) in
       let parse = select_type ~opn:Parser.opn ~ast:Parser.spec ast_type in
       try parse Lexer.token lexbuf with

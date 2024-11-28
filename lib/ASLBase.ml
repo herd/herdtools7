@@ -226,6 +226,7 @@ let stmts_from_string s =
   end) in
   let module Lexer = Lexer.Make(struct
     let allow_double_underscore = false
+    let allow_unknown = false
   end) in
   try Parser.stmts Lexer.token lexbuf
   with e ->
