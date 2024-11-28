@@ -252,38 +252,33 @@ let e_else :=
   | annotated ( ELSIF; c=expr; THEN; e=expr; ~=e_else; <E_Cond> )
 
 let expr :=
-  | make_expr (expr)
-  | annotated (
-    | ~=plist2(expr);                                             < E_Tuple              >
-  )
-
-let make_expr(sub_expr) ==
   annotated (
     (* A union of cexpr, cexpr_cmp, cexpr_add_sub, cepxr mul_div, cexpr_pow,
        bexpr, expr_term, expr_atom *)
     | ~=value ;                                                   < E_Literal            >
     | ~=IDENTIFIER ;                                              < E_Var                >
-    | e1=sub_expr; op=binop; e2=expr;                             < e_binop              >
+    | e1=expr; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
     | ~=call;                                                     < e_call               >
-    | e=sub_expr; ~=slices;                                       < E_Slice              >
-    | e1=sub_expr; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
-    | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
-    | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
+    | e=expr; ~=slices;                                       < E_Slice              >
+    | e1=expr; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
+    | e=expr; DOT; x=IDENTIFIER;                              < E_GetField           >
+    | e=expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
 
-    | ~=sub_expr; AS; ~=ty;                                       < E_ATC                >
-    | ~=sub_expr; AS; ~=implicit_t_int;                           < E_ATC                >
+    | ~=expr; AS; ~=ty;                                       < E_ATC                >
+    | ~=expr; AS; ~=implicit_t_int;                           < E_ATC                >
 
-    | ~=sub_expr; IN; ~=pattern_set;                              < E_Pattern            >
-    | ~=sub_expr; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
-    | e=sub_expr; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
-
-    | ARBITRARY; colon_for_type; ~=ty;                              < E_Arbitrary        >
-    | e=pared(sub_expr);                                          { E_Tuple [ e ]        }
+    | ~=expr; IN; ~=pattern_set;                              < E_Pattern            >
+    | ~=expr; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
+    | e=expr; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
+    | ARBITRARY; colon_for_type; ~=ty;                        < E_Arbitrary        >
+    | e=pared(expr);                                          { E_Tuple [ e ]        }
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
+    (* Excluded from expr_pattern *)
+    | ~=plist2(expr);                                             < E_Tuple              >
   )
 
 (* ------------------------------------------------------------------------
@@ -306,7 +301,35 @@ let int_constraint ==
   | e1=expr; SLICING; e2=expr;  < Constraint_Range >
 
 
-let expr_pattern := make_expr (expr_pattern)
+let expr_pattern :=
+  annotated(
+    (* A union of cexpr, cexpr_cmp, cexpr_add_sub, cepxr mul_div, cexpr_pow,
+       bexpr, expr_term, expr_atom *)
+    | ~=value ;                                                   < E_Literal            >
+    | ~=IDENTIFIER ;                                              < E_Var                >
+    | e1=expr_pattern; op=binop; e2=expr;                             < e_binop              >
+    | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
+    | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
+    | ~=call;                                                     < e_call               >
+    | e=expr_pattern; ~=slices;                                       < E_Slice              >
+    | e1=expr_pattern; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
+    | e=expr_pattern; DOT; x=IDENTIFIER;                              < E_GetField           >
+    | e=expr_pattern; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
+
+    | ~=expr_pattern; AS; ~=ty;                                       < E_ATC                >
+    | ~=expr_pattern; AS; ~=implicit_t_int;                           < E_ATC                >
+
+    | ~=expr_pattern; IN; ~=pattern_set;                              < E_Pattern            >
+    | ~=expr_pattern; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
+    | e=expr_pattern; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
+
+    | ARBITRARY; colon_for_type; ~=ty;                                < E_Arbitrary        >
+    | e=pared(expr_pattern);                                          { E_Tuple [ e ]        }
+
+    | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
+        { E_Record (add_pos_from t (T_Named t.desc), fields) }
+  )
+
 let pattern_mask == annotated(~=MASK_LIT; < Pattern_Mask >)
 let pattern_list == annotated(~=nclist(pattern); < Pattern_Any >)
 
