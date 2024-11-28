@@ -2433,6 +2433,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let args' = List.map (fun e -> annotate_expr env e |> snd) args in
         (S_Print { args = args'; debug } |> here, env) |: TypingRule.SDebug
     (* End *)
+    (* Begin SPragma *)
+    | S_Pragma (_, args) ->
+        let () = List.iter (fun e -> annotate_expr env e |> ignore) args in
+        (S_Pass |> here, env) |: TypingRule.SPragma
+    (* End *)
     | S_Unreachable -> (s, env)
 
   (* Begin AnnotateLimitExpr *)
@@ -2836,7 +2841,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     *)
     let rec from_stmt s =
       match s.desc with
-      | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Call _ | S_Print _ ->
+      | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Call _ | S_Print _
+      | S_Pragma _ ->
           MayNotInterrupt |: TypingRule.ControlFlowFromStmt
       | S_Unreachable -> AssertedNotInterrupt
       | S_Return _ | S_Throw _ -> Interrupt
@@ -3112,8 +3118,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let new_genv = declare_type loc x ty s genv in
           (d, new_genv) |: TypingRule.TypecheckDecl
       (* End *)
+      | D_Pragma _ -> assert false
     in
     (new_d :: acc, new_genv)
+
+  (* Being CheckGlobalPragma *)
+  let check_global_pragma genv d =
+    match d.desc with
+    | D_Pragma (_, args) ->
+        List.iter
+          (fun e -> annotate_expr (with_empty_local genv) e |> ignore)
+          args
+        |: TypingRule.CheckGlobalPragma
+    | _ -> assert false
+  (* End *)
 
   (* Begin TypeCheckMutuallyRec *)
   let type_check_mutually_rec ds (acc, genv) =
@@ -3201,7 +3219,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let fold_topo ast acc = TopoSort.ASTFold.fold fold ast acc in
     fun env ast ->
-      let ast_rev, env = fold_topo ast ([], env) in
+      (* Type check D_Pragma declarations separately from the main AST
+         We can do this because no other declaration depends on a pragma *)
+      let is_pragma d = match d.desc with D_Pragma _ -> true | _ -> false in
+      let pragmas, others = List.partition is_pragma ast in
+      let ast_rev, env = fold_topo others ([], env) in
+      let () = List.iter (check_global_pragma env) pragmas in
       (List.rev ast_rev, env)
 
   let type_check_ast ast = type_check_ast_in_env empty_global ast

@@ -331,6 +331,9 @@ let rec pp_stmt f s =
   | S_Print { args; debug = true } ->
       fprintf f "@[<2>DEBUG@ %a;@]" (pp_comma_list pp_expr) args
   | S_Unreachable -> fprintf f "Unreachable();"
+  | S_Pragma (name, args) ->
+      fprintf f "@[<2>pragma@ %a %a;@]" pp_print_string name
+        (pp_comma_list pp_expr) args
 
 and pp_catcher f (name, ty, s) =
   match name with
@@ -409,6 +412,9 @@ let pp_decl f =
           "@[<2>type %s@ of %a@ subtypes %s@ with @[<hv 2>{@ %a@;<1 -2>}@];@]" x
           pp_ty ty s pp_fields fields
     | D_GlobalStorage decl -> fprintf f "@[<2>%a;@]" pp_global_storage decl
+    | D_Pragma (name, args) ->
+        fprintf f "@[<2>pragma@ %a %a;@]" pp_print_string name
+          (pp_comma_list pp_expr) args
 
 let pp_t f ast =
   let pp_blank_line f () =

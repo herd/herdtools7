@@ -49,7 +49,8 @@ Pragmas:
 \begin{flalign*}
 \decl \derives\ & \DFunc(\func) & \\
   |\ & \DGlobalStorage(\globaldecl) & \\
-  |\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &
+  |\ & \DTypeDecl(\Tidentifier, \ty, (\Tidentifier, \overtext{\Field^*}{with fields})?) & \\
+  |\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args}) &
 \end{flalign*}
 
 \subsubsection{ASTRule.GlobalDecl\label{sec:ASTRule.GlobalDecl}}
@@ -62,9 +63,12 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \hypertarget{build-globalpragma}{}
 \begin{mathpar}
-\inferrule[global\_pragma]{}
-{
-  \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\vx), \Clist{\Nexpr}, \Tsemicolon)}{\vparsednode}) \astarrow \overname{\tododefine{pragma\_node}}{\vastnode}
+\inferrule[global\_pragma]{
+  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+}{
+    \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\id), \namednode{\vargs}{\Clist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+    \overname{\DPragma(\id, \astversion{\vargs})}{\vastnode}
 }
 \end{mathpar}
 
@@ -271,7 +275,7 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{falls\_through}):
   \begin{itemize}
-    \item the AST label of $\vs$ is $\SPass$, $\SDecl$, $\SAssign$, $\SAssert$, $\SCall$, or $\SPrint$;
+    \item the AST label of $\vs$ is $\SPass$, $\SDecl$, $\SAssign$, $\SAssert$, $\SCall$, $\SPrint$ or $\SPragma$;
     \item $\vctrlflow$ is $\maynotinterrupt$;
   \end{itemize}
 
@@ -325,7 +329,7 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[falls\_through]{
-  \astlabel(\vs) \in \{\SPass, \SDecl, \SAssign, \SAssert, \SCall, \SPrint\}
+  \astlabel(\vs) \in \{\SPass, \SDecl, \SAssign, \SAssert, \SCall, \SPrint, \SPragma\}
 }{
   \controlflowfromstmt(\vs) \typearrow \overname{\maynotinterrupt}{\vctrlflow}
 }

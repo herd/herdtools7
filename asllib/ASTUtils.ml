@@ -278,6 +278,7 @@ let rec use_s s =
   | S_Try (s, catchers, s') ->
       use_s s $ use_option use_s s' $ use_catchers catchers
   | S_Print { args; debug = _ } -> use_es args
+  | S_Pragma (name, args) -> ISet.add name $ use_es args
   | S_Unreachable -> Fun.id
 
 and use_ldi = function
@@ -314,6 +315,7 @@ and use_decl d =
       $ use_option use_ty return_type
       $ use_named_list (use_option use_ty) parameters
       $ match body with SB_ASL s -> use_s s | SB_Primitive -> Fun.id)
+  | D_Pragma (name, args) -> ISet.add name $ use_es args
 
 and use_subtypes (x, subfields) = ISet.add x $ use_named_list use_ty subfields
 
@@ -607,8 +609,10 @@ let default_array_ty =
 
 let identifier_of_decl d =
   match d.desc with
-  | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
-    ->
+  | D_Func { name; _ }
+  | D_GlobalStorage { name; _ }
+  | D_TypeDecl (name, _, _)
+  | D_Pragma (name, _) ->
       name
 
 let patch ~src ~patches =
@@ -786,6 +790,9 @@ let rename_locals map_name ast =
     | S_Try (_, _, _) -> failwith "Not yet implemented: obfuscate try"
     | S_Print { args; debug } -> S_Print { args = List.map map_e args; debug }
     | S_Unreachable -> S_Unreachable
+    | S_Pragma (name, args) ->
+        let args = map_es args in
+        S_Pragma (name, args)
   and map_le le =
     map_desc_st' le @@ function
     | LE_Discard -> le.desc

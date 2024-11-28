@@ -192,6 +192,7 @@ module ASTFold = struct
     | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
       ->
         name
+    | D_Pragma _ -> assert false
 
   let use d = ASTUtils.use_decl d OSet.empty
 

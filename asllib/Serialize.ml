@@ -299,6 +299,8 @@ let rec pp_stmt =
         bprintf f "S_Print { args = %a; debug = %B }" (pp_list pp_expr) args
           debug
     | S_Unreachable -> addb f "S_Unreachable"
+    | S_Pragma (name, exprs) ->
+        bprintf f "S_Pragma (%S, %a)" name (pp_list pp_expr) exprs
   in
   fun f s -> pp_annotated pp_desc f s
 
@@ -339,6 +341,8 @@ let pp_decl f d =
       bprintf f "D_TypeDecl (%S, %a, %a)" name pp_ty type_desc
         (pp_option (pp_pair pp_string (pp_id_assoc pp_ty)))
         subty_opt
+  | D_Pragma (name, exprs) ->
+      bprintf f "D_Pragma (%S, %a)" name (pp_list pp_expr) exprs
 
 let pp_t f ast =
   addb f "let open AST in let annot = ASTUtils.add_dummy_pos in ";
