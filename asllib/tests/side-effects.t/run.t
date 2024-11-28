@@ -101,7 +101,7 @@
   $ aslref for-write.asl
   File for-write.asl, line 15, characters 15 to 25:
   ASL Typing error: a pure expression was expected, found write_X(), which
-    produces the following side-effects: [WriteGlobal "X"].
+    produces the following side-effects: [WriteGlobal "X", ReadGlobal "X"].
   [1]
   $ aslref for-write-throw.asl
   File for-write-throw.asl, line 13, characters 15 to 26:
@@ -166,7 +166,8 @@
   $ aslref assert-write.asl
   File assert-write.asl, line 12, characters 9 to 24:
   ASL Typing error: a pure expression was expected, found (write_X() == 0),
-    which produces the following side-effects: [WriteGlobal "X"].
+    which produces the following side-effects:
+    [WriteGlobal "X", ReadGlobal "X"].
   [1]
   $ aslref assert-throw.asl
   File assert-throw.asl, line 10, characters 9 to 25:
@@ -234,7 +235,8 @@
   $ aslref assert-write.asl
   File assert-write.asl, line 12, characters 9 to 24:
   ASL Typing error: a pure expression was expected, found (write_X() == 0),
-    which produces the following side-effects: [WriteGlobal "X"].
+    which produces the following side-effects:
+    [WriteGlobal "X", ReadGlobal "X"].
   [1]
   $ aslref assert-unknown.asl
 
@@ -242,7 +244,7 @@
   File rec-assert-throw.asl, line 15, characters 9 to 37:
   ASL Typing error: a pure expression was expected,
     found (throwing((n - 1), FALSE) == 3), which produces the following
-    side-effects: [RecursiveCall "throwing"].
+    side-effects: [RecursiveCall "throwing", ReadLocal "n"].
   [1]
   $ aslref rec-binop-atc-throw.asl
   File rec-binop-atc-throw.asl, line 15, characters 10 to 54:
