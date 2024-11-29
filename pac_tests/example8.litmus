@@ -3,6 +3,6 @@ AArch64 example.litmus
 0:X0=pac(x,da,0);
 }
  P0          ;
-AUTDZA X0;
+AUTDZA X0    ;
 exists
 (0:X1=0)
