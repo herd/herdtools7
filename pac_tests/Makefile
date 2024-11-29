@@ -5,18 +5,18 @@ all: #my_herd
 	dot -Tsvg build/$(NAME).dot > build/example.svg
 
 my_herd:
-	#		-show prop -doshow prop
 	../_build/install/default/bin/herd7 \
 		-gv $(NAME).litmus -o build \
 		-set-libdir ../herd/libdir \
 		-showevents all -show all \
-		-doshow iico_ctrl -doshow ctrl -doshow all
+		-doshow iico_ctrl -doshow ctrl -doshow all \
+		-squished true -fontsize 20
 
 herd:
 	herd7 \
 		-show prop -doshow prop -variant mte \
-		- gv $(NAME).litmus -o build \
-		-cat aarch64.cat -showevents all -show all
+		-cat aarch64.cat -showevents all -show all \
+		-preview $(NAME).litmus -o build
 
 litmus:
 	../_build/install/default/bin/litmus7 \

@@ -635,18 +635,6 @@ module Make
         M.op Op.Ne x V.zero >>= fun cond ->
         M.choiceT cond (mfault ma mzero) (mok ma mv)
 
-      (* PAC checking *)
-      let check_pac_canonical ma ii mok mfault =
-        let do_insert_commit m1 m2 ii =
-        (* Notice the complex dependency >>*==
-           from branch to instructions events *)
-          m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
-        in
-        do_insert_commit ma (fun a ->
-           M.op1 Op.CheckCanonical a >>= fun c ->
-           M.choiceT c (mok (M.unitT a)) (mfault (M.unitT a))
-        ) ii
-
 
  (* Semantics has changed, no ctrl-dep on mv *)
       let check_morello_perms a ma mv perms mok mfault =
@@ -1070,6 +1058,14 @@ module Make
             (fun loc v -> Act.tag_access quad Dir.W loc v) ii
         else m a
 
+(* Check that the PAC field of a virtual address is canonical *)
+      let check_pac_canonical ma ii mok mfault =
+        do_insert_commit ma (fun a ->
+           M.op1 Op.CheckCanonical a >>= fun c ->
+           M.choiceT c (mok (M.unitT a)) (mfault (M.unitT a))
+        ) ii
+
+
       let do_write_mem sz an anexp ac a v ii =
         check_morello_for_write
           (fun a -> check_mixed_write_mem sz an anexp ac a v ii)
@@ -1090,6 +1086,7 @@ module Make
 
 (* Page tables and TLBs *)
       let do_inv op a ii = inv_loc op (A.Location_global a) ii
+
 
 (************************)
 (* Conditions and flags *)

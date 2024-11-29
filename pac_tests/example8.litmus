@@ -1,8 +1,16 @@
 AArch64 example.litmus
 {
-0:X0=pac(x,da,0);
+int x = 1;
+int y = 2;
+0:X0=x; 1:X0=x;
+0:X1=y; 1:X1=y;
+
 }
- P0          ;
-AUTDZA X0    ;
+ P0           | P1 ;
+ ldr x10,[x0] | ldr x11, [x1] ;
+ pacda x0,x10 | dmb sy        ;
+ autda x0,x10 |               ;
+ str x11,[x1] | str x10, [x0] ;
+
 exists
-(0:X1=0)
+(1:X11=0 /\ 0:X10=0)
