@@ -1,12 +1,19 @@
 AArch64 example.litmus
 {
-0:X1=x; 0:X2=y;
-1:X1=y; 1:X2=x; 1:X4=1;
+  void* y=x;
+0:X0=x; 0:X10=y;
+1:X0=x; 1:X10=y;
 }
- P0          | P1          ;
- LDR X0,[X1] |             ;
- LDR X3,[X2] |             ;
-             | STR X4,[X1] ;
-             | STR X4,[X2] ;
+ P0                | P1    ;
+ mov x1,#0         | mov x1,#0        ;
+ mov x2,#1         | mov x2,#1        ;
+ casal x1,x2,[x0]  | casal x1,x2,[x0] ;
+ cmp x1,#1         | cmp x1,#1        ;
+ b.eq fail1        | b.eq fail2       ;
+
+ ldr x1,[x10]      | ldr x1,[x10]     ;
+ pacdza x1         | pacdza x1        ;
+ str x1,[x10]      | str x1,[x10]     ;
+fail1:             | fail2:           ;
 exists
-(0:X0=1 /\ 0:X3=0)
+(0:X1=pac(pac(x, da, 0), da, 0))

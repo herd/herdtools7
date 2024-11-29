@@ -636,20 +636,16 @@ module Make
         M.choiceT cond (mfault ma mzero) (mok ma mv)
 
       (* PAC checking *)
-      let check_pac_canonical a ma ii mok mfault =
-        (* M.op1 Op.CheckCanonical a >>= fun cond ->
-        M.choiceT cond (mok ma) (mfault ma) *)
-        let (+++) = M.data_input_union in
-        let commit = commit_pred_txt (Some "pac") ii in
-        let m =
-          M.op1 Op.CheckCanonical a +++ fun cond ->
-          commit +++
-          fun _ -> M.unitT cond in
-        M.delay_kont "check tag" m
-        (fun c m ->
-          let ma = ma >>== fun a -> m >>== fun _ -> M.unitT a in
-          M.choiceT c (mok ma) (mfault ma)
-        )
+      let check_pac_canonical ma ii mok mfault =
+        let do_insert_commit m1 m2 ii =
+        (* Notice the complex dependency >>*==
+           from branch to instructions events *)
+          m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
+        in
+        do_insert_commit ma (fun a ->
+           M.op1 Op.CheckCanonical a >>= fun c ->
+           M.choiceT c (mok (M.unitT a)) (mfault (M.unitT a))
+        ) ii
 
 
  (* Semantics has changed, no ctrl-dep on mv *)
@@ -1407,21 +1403,14 @@ module Make
       (* Check a pointer authentication code and perform the memory operation
          only if the check fail, otherwise return a memory traslation fault *)
       let lift_pac_virt mop ma dir an ii =
-        M.delay_kont "pac" ma
-          (fun a_virt ma ->
-            let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
-            let mfault ma =
-              do_insert_commit ma
-                (fun a ->
-                  mk_fault (Some a) dir an ii
-                    (Some (FaultType.AArch64.MMU FaultType.AArch64.Translation))
-                    None)
-                ii >>! B.Exit
-            in
-
-            check_pac_canonical a_virt ma ii mok mfault
-          )
-
+        let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
+        let mfault ma = ma >>= fun a ->
+          mk_fault (Some a) dir an ii
+            (Some (FaultType.AArch64.MMU FaultType.AArch64.Translation))
+            None
+          >>! B.Exit
+        in
+        check_pac_canonical ma ii mok mfault
 
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
@@ -4338,13 +4327,10 @@ module Make
               let ma =
                 read_reg_ord rd ii >>|
                 read_reg_ord rn ii >>= fun (addr, modifier) ->
-                M.op (Op.AddPAC key) addr modifier
+                M.op (Op.AutPAC key) addr modifier
               in
 
-              M.delay_kont "aut" ma
-                (fun a_virt ma ->
-                  check_pac_canonical a_virt ma ii mop mfault
-                )
+              check_pac_canonical ma ii mop mfault
             end
         | I_XPACI r | I_XPACD r
         ->

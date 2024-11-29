@@ -1,30 +1,32 @@
 digraph G {
 
 
+/* legend */
+label="Test example, Generic[withcatdep](Unknown)";
+
 
 /* init events */
-eiid1 [label="ix:W[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
+eiid0 [label="a: W[x]=0\lInit", shape="box", color="blue"];
 
 /* the unlocked events */
 subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-eiid0 [label="a: R[x]q=0", shape="none", fixedsize="false", height="0.194444", width="1.361111"];
-eiid2 [label="c: R0:X0q=x", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-eiid3 [label="d: Branching(pred)(pac)", shape="none", fixedsize="false", height="0.194444", width="3.888889"];
-eiid4 [label="e: W0:X1q=0", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
+eiid1 [label="b: R0:X0q=pac(x, da, 0x0, 0)\lproc:P0 poi:0\lAUTDA X0, XZR", shape="box", color="blue"];
+eiid2 [label="c: Branching(pred)\lproc:P0 poi:0\lAUTDA X0, XZR", shape="box", color="blue"];
+eiid3 [label="d: W0:X0q=x\lproc:P0 poi:0\lAUTDA X0, XZR", shape="box", color="blue"];
 }
 
 /* the intra_causality_data edges */
 
-eiid0 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
-eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+eiid1 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
+eiid1 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
 
 /* the intra_causality_control edges */
+eiid2 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
 
 /* the poi edges */
 /* the rfmap edges */
 
 
 /* The viewed-before edges */
-eiid1 -> eiid0 [label="rf", color="red", fontcolor="red"];
+eiid2 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
 }

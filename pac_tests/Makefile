@@ -1,20 +1,21 @@
-NAME = example1
+NAME = example8
 
 all: #my_herd
 	touch build/example.svg
 	dot -Tsvg build/$(NAME).dot > build/example.svg
 
 my_herd:
+	#		-show prop -doshow prop
 	../_build/install/default/bin/herd7 \
-		-show prop -doshow prop \
-		-conf graph.cfg -gv $(NAME).litmus -o build \
+		-gv $(NAME).litmus -o build \
 		-set-libdir ../herd/libdir \
-		-showevents all -show all
+		-showevents all -show all \
+		-doshow iico_ctrl -doshow ctrl -doshow all
 
 herd:
 	herd7 \
 		-show prop -doshow prop -variant mte \
-		-conf graph.cfg -gv $(NAME).litmus -o build \
+		- gv $(NAME).litmus -o build \
 		-cat aarch64.cat -showevents all -show all
 
 litmus:

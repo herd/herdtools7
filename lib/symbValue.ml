@@ -669,8 +669,23 @@ module
 
   (* Set the PAC field to a scalar *)
   (* Add a PAC field to a symbolic virtual address *)
-  (* Implement `FEAT_Pauth2`with `FEAT_CONSTPACFIELD` *)
+  (* Implement `FEAT_Pauth2` without `FEAT_CONSTPACFIELD` *)
   let addPAC key pointer modifier =
+    match pointer, modifier with
+    | Val (Symbolic (Virtual {pac})), Val _
+      when not (Constant.PAC.is_canonical pac) ->
+        Warn.user_error "addPAC: %s already contain a PAC field" (pp_v pointer)
+    | Val (Symbolic (Virtual ({pac; offset} as v))), Val m ->
+      let modifier = Cst.pp true m in
+      let pac = Constant.PAC.add key modifier offset pac in
+      Val (Symbolic (Virtual {v with pac}))
+    | Val _, Val _ ->
+        Warn.user_error "addPAC: %s is not a valid virtual address" (pp_v pointer)
+    | _, _ -> raise Undetermined
+
+  (* Implement the `aut*` instruction of `FEAT_Pauth2` and is usable with or
+     without `FEAT_FPAC` because it respect the XOR semantic of PAC *)
+  let autPAC key pointer modifier =
     match pointer, modifier with
     | Val (Symbolic (Virtual ({pac; offset} as v))), Val m ->
       let modifier = Cst.pp true m in
@@ -679,6 +694,7 @@ module
     | Val _, Val _ ->
         Warn.user_error "addPAC: %s is not a valid virtual address" (pp_v pointer)
     | _, _ -> raise Undetermined
+
 
   (* Check that the PAC field of a virtual address is canonical *)
   let checkCanonical = function
@@ -922,6 +938,7 @@ module
   let op op = match op with
   | Add -> add
   | AddPAC key -> addPAC key
+  | AutPAC key -> autPAC key
   | Alignd -> binop op alignd
   | Alignu -> binop op alignu
   | CapaAdd -> capaadd

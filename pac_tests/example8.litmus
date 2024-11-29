@@ -1,8 +1,8 @@
 AArch64 example.litmus
 {
-0:X0=x;
+0:X0=pac(x,da,0);
 }
  P0          ;
- LDR X1,[X0] ;
+AUTDZA X0;
 exists
 (0:X1=0)

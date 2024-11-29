@@ -37,6 +37,7 @@ type 'aop op =
   | ToInteger
   | ArchOp of 'aop
   | AddPAC of string
+  | AutPAC of string
 
 let pp_op o pp_aop =
   match o with
@@ -84,6 +85,7 @@ let pp_op o pp_aop =
   | ToInteger -> "ToInteger"
   | ArchOp aop -> pp_aop aop
   | AddPAC key -> sprintf "AddPac:%s" key
+  | AutPAC key -> sprintf "AutPAC:%s" key
 
 let is_infix = function
   | Add|Sub|Mul|Div|Rem|And|Or|Xor|ShiftLeft
@@ -94,7 +96,7 @@ let is_infix = function
   | CapaSub|CapaSubs|CapaSetTag|Unseal
   | Max|Min|UMax|UMin|SetTag|SquashMutable
   | CheckPerms _| ToInteger| ArchOp _
-  | AddPAC _
+  | AddPAC _ | AutPAC _
     -> false
 
 let pp_ptx_cmp_op = function

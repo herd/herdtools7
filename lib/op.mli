@@ -49,6 +49,7 @@ type 'aop op =
  * and the PAC signature of this address, and a modifier for a given key.
  *)
   | AddPAC of string
+  | AutPAC of string
 
 val pp_op : 'aop op -> ('aop -> string)-> string
 
