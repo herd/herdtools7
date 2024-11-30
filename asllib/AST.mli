@@ -245,14 +245,14 @@ and constraint_kind =
           function at compile time, with a unique identifier and the variable
           bearing its name. *)
 
+(* {bitfield_name; bitfield_slices; nested_bitfields; bitfield_opt_type} *)
+and bitfield = {
+  bitfield_name : identifier;
+  bitfield_slices : slice list;
+  nested_bitfields : bitfield list;
+  bitfield_opt_type : ty option;
+}
 (** Represent static slices on a given bitvector type. *)
-and bitfield =
-  | BitField_Simple of identifier * slice list
-      (** A name and its corresponding slice *)
-  | BitField_Nested of identifier * slice list * bitfield list
-      (** A name, its corresponding slice and some nested bitfields. *)
-  | BitField_Type of identifier * slice list * ty
-      (** A name, its corresponding slice and the type of the bitfield. *)
 
 (** The type of indexes for an array. *)
 and array_index =

@@ -344,9 +344,9 @@ let slice ==
 let bitfields_opt == loption(bitfields)
 let bitfields == braced(tclist(bitfield))
 let bitfield ==
-  | s=slices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
-  | s=slices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
-  | s=slices ; x=IDENTIFIER ; ty=as_ty     ;  { BitField_Type   (x, s, ty) }
+  | s=slices ; x=IDENTIFIER ;                 { {bitfield_name=x; bitfield_slices=s; nested_bitfields=[]; bitfield_opt_type=None}      }
+  | s=slices ; x=IDENTIFIER ; bf=bitfields ;  { {bitfield_name=x; bitfield_slices=s; nested_bitfields=bf; bitfield_opt_type=None}      }
+  | s=slices ; x=IDENTIFIER ; ty=as_ty     ;  { {bitfield_name=x; bitfield_slices=s; nested_bitfields=[]; bitfield_opt_type=Some(ty)}  }
 
 (* Also called ty in grammar.bnf *)
 let ty :=

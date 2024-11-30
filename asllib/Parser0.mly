@@ -313,7 +313,7 @@ let ty :=
   )
 
 let bitfields == braced(tclist(bitfield))
-let bitfield == s=nclist(slice); x=ident; { AST.BitField_Simple(x, s) }
+let bitfield == s=nclist(slice); x=ident; { AST. {bitfield_name=x; bitfield_slices=s; nested_bitfields=[]; bitfield_opt_type=None} }
 
 let ty_non_tuple ==
   | INTEGER;              { AST.(T_Int UnConstrained) }

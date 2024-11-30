@@ -438,19 +438,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     fun slices -> List.fold_right one slices []
 
-  (** Retrieves the slices associated with the given bitfield
-      without recursing into nested bitfields. *)
-  let slices_of_bitfield = function
-    | BitField_Simple (_, slices)
-    | BitField_Nested (_, slices, _)
-    | BitField_Type (_, slices, _) ->
-        slices
-
   (** Retrieves the slice of [Slice_Single] slices for each position
       of the bitfield [field], if it is found in [bf]. *)
   let field_to_single env bf field =
     match find_bitfield_opt field bf with
-    | Some bitfield -> to_singles env (slices_of_bitfield bitfield)
+    | Some bitfield -> to_singles env (bitfield_get_slices bitfield)
     | None -> raise NoSingleField
 
   (** Checks that all bitfields listed in [fields] are delcared in the
@@ -769,30 +761,33 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     else params
 
   (* Begin TBitField *)
-  let rec annotate_bitfield ~loc env width bitfield : bitfield =
-    match bitfield with
-    | BitField_Simple (name, slices) ->
-        let slices1 = annotate_slices env slices in
-        let+ () = check_slices_in_width loc env width slices1 in
-        BitField_Simple (name, slices1) |: TypingRule.TBitField
-    | BitField_Nested (name, slices, bitfields') ->
-        let slices1 = annotate_slices env slices in
-        let diet = disjoint_slices_to_positions loc env slices1 in
-        let+ () = check_diet_in_width loc slices1 width diet in
-        let width' = Diet.Int.cardinal diet |> expr_of_int in
-        let bitfields'' = annotate_bitfields ~loc env width' bitfields' in
-        BitField_Nested (name, slices1, bitfields'') |: TypingRule.TBitField
-    | BitField_Type (name, slices, ty) ->
-        let ty' = annotate_type ~loc env ty in
-        let slices1 = annotate_slices env slices in
-        let diet = disjoint_slices_to_positions loc env slices1 in
-        let+ () = check_diet_in_width loc slices1 width diet in
-        let width' = Diet.Int.cardinal diet |> expr_of_int in
-        let+ () =
-          t_bits_bitwidth width' |> add_dummy_annotation
-          |> check_bits_equal_width loc env ty
-        in
-        BitField_Type (name, slices1, ty') |: TypingRule.TBitField
+  let rec annotate_bitfield ~loc env width
+      { bitfield_name; bitfield_slices; nested_bitfields; bitfield_opt_type } :
+      bitfield =
+    let slices1 = annotate_slices env bitfield_slices in
+    let+ () = check_slices_in_width loc env width slices1 in
+    let diet = disjoint_slices_to_positions loc env slices1 in
+    let+ () = check_diet_in_width loc slices1 width diet in
+    let width' = Diet.Int.cardinal diet |> expr_of_int in
+    let bitfields' = annotate_bitfields ~loc env width' nested_bitfields in
+    let bitfield_opt_type' =
+      match bitfield_opt_type with
+      | None -> None
+      | Some ty ->
+          let ty' = annotate_type ~loc env ty in
+          let+ () =
+            t_bits_bitwidth width' |> add_dummy_annotation
+            |> check_bits_equal_width loc env ty
+          in
+          Some ty'
+    in
+    {
+      bitfield_name;
+      bitfield_slices = slices1;
+      nested_bitfields = bitfields';
+      bitfield_opt_type = bitfield_opt_type';
+    }
+    |: TypingRule.TBitField
   (* End *)
 
   (* Begin TBitFields *)
@@ -1613,30 +1608,25 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     |: TypingRule.EGetBadBitField
                 (* End *)
                 (* Begin EGetBitField *)
-                | Some (BitField_Simple (_field, slices)) ->
-                    let e3 = E_Slice (e1, slices) |> here in
-                    annotate_expr_ ~forbid_atcs env e3
-                    |: TypingRule.EGetBitField
-                (* End *)
-                (* Begin EGetBitFieldNested *)
-                | Some (BitField_Nested (_field, slices, bitfields')) ->
-                    let e3 = E_Slice (e1, slices) |> here in
-                    let t_e4, new_e = annotate_expr_ ~forbid_atcs env e3 in
+                | Some { bitfield_slices; nested_bitfields; bitfield_opt_type }
+                  -> (
+                    let e_base_slice = E_Slice (e1, bitfield_slices) |> here in
+                    let t_slice, new_e =
+                      annotate_expr_ ~forbid_atcs env e_base_slice
+                    in
                     let t_e5 =
-                      match t_e4.desc with
+                      match t_slice.desc with
                       | T_Bits (width, _bitfields) ->
-                          T_Bits (width, bitfields') |> add_pos_from t_e2
+                          T_Bits (width, nested_bitfields) |> add_pos_from t_e2
                       | _ -> assert false
                     in
-                    (t_e5, new_e) |: TypingRule.EGetBitFieldNested
-                (* End *)
-                (* Begin EGetBitFieldTyped *)
-                | Some (BitField_Type (_field, slices, t)) ->
-                    let e3 = E_Slice (e1, slices) |> here in
-                    let t_e4, new_e = annotate_expr_ ~forbid_atcs env e3 in
-                    let+ () = check_type_satisfies new_e env t_e4 t in
-                    (t, new_e) |: TypingRule.EGetBitFieldTyped
-                    (* End *))
+                    match bitfield_opt_type with
+                    | None -> (t_e5, new_e) |: TypingRule.EGetBitField
+                    | Some t_field ->
+                        let+ () =
+                          check_type_satisfies new_e env t_slice t_field
+                        in
+                        (t_field, new_e) |: TypingRule.EGetBitField))
             (* Begin EGetTupleItem *)
             | T_Tuple tys ->
                 let index =
@@ -2001,14 +1991,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              let t, slices =
                match find_bitfield_opt field bitfields with
                | None -> fatal_from le1 (Error.BadField (field, t_le1_struct))
-               | Some (BitField_Simple (_field, slices)) ->
-                   (bits slices [], slices)
-               | Some (BitField_Nested (_field, slices, bitfields')) ->
-                   (bits slices bitfields', slices)
-               | Some (BitField_Type (_field, slices, t)) ->
-                   let t' = bits slices [] in
-                   let+ () = check_type_satisfies le env t' t in
-                   (t, slices)
+               | Some { bitfield_slices; nested_bitfields; bitfield_opt_type }
+                 -> (
+                   match bitfield_opt_type with
+                   | None ->
+                       (bits bitfield_slices nested_bitfields, bitfield_slices)
+                   | Some t ->
+                       let t' = bits bitfield_slices [] in
+                       let+ () = check_type_satisfies le env t' t in
+                       (t, bitfield_slices))
              in
              let+ () = check_type_satisfies le1 env t_e t in
              let le3 = LE_Slice (le1, slices) |> here in

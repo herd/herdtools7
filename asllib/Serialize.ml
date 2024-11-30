@@ -201,14 +201,13 @@ and pp_array_length f = function
   | ArrayLength_Expr e -> bprintf f "ArrayLength_Expr (%a)" pp_expr e
   | ArrayLength_Enum (s, i) -> bprintf f "ArrayLength_Enum (%S, %i)" s i
 
-and pp_bitfield f = function
-  | BitField_Simple (name, slices) ->
-      bprintf f "BitField_Simple (%S, %a)" name pp_slice_list slices
-  | BitField_Nested (name, slices, bitfields) ->
-      bprintf f "BitField_Nested (%S, %a, %a)" name pp_slice_list slices
-        pp_bitfields bitfields
-  | BitField_Type (name, slices, ty) ->
-      bprintf f "BitField_Type (%S, %a, %a)" name pp_slice_list slices pp_ty ty
+and pp_bitfield f
+    { bitfield_name; bitfield_slices; nested_bitfields; bitfield_opt_type } =
+  bprintf f
+    "{ bitfield_name: %S; bitfield_slices: %a; nested_bitfields: %a; \
+     bitfield_opt_type: %a }"
+    bitfield_name pp_slice_list bitfield_slices pp_bitfields nested_bitfields
+    (pp_option pp_ty) bitfield_opt_type
 
 and pp_bitfields f bitfields = pp_list pp_bitfield f bitfields
 
