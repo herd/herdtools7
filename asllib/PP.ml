@@ -192,14 +192,21 @@ and pp_ty f t =
       fprintf f "@[exception { %a@;<1 -2>}@]" pp_fields record_ty
   | T_Named x -> pp_print_string f x
 
-and pp_bitfield f = function
-  | BitField_Simple (name, slices) ->
-      fprintf f "@[<h>[%a]@ %s@]" pp_slice_list slices name
-  | BitField_Nested (name, slices, bitfields) ->
-      fprintf f "@[<h>[%a]@ %s@ %a@]" pp_slice_list slices name pp_bitfields
-        bitfields
-  | BitField_Type (name, slices, ty) ->
-      fprintf f "@[<h>[%a]@ %s:@ %a@]" pp_slice_list slices name pp_ty ty
+and pp_bitfield f
+    { bitfield_name; bitfield_slices; nested_bitfields; bitfield_opt_type } =
+  match bitfield_opt_type with
+  (* Simple: *)
+  | None when ASTUtils.list_is_empty nested_bitfields ->
+      fprintf f "@[<h>[%a]@ %s@]" pp_slice_list bitfield_slices bitfield_name
+  (* Nested: *)
+  | None ->
+      let () = assert (not (ASTUtils.list_is_empty nested_bitfields)) in
+      fprintf f "@[<h>[%a]@ %s@ %a@]" pp_slice_list bitfield_slices
+        bitfield_name pp_bitfields nested_bitfields
+  (* Typed *)
+  | Some ty ->
+      fprintf f "@[<h>[%a]@ %s:@ %a@]" pp_slice_list bitfield_slices
+        bitfield_name pp_ty ty
 
 and pp_bitfields f bitfields =
   fprintf f "@[<hov 2>{@ %a@ }@]" (pp_comma_list pp_bitfield) bitfields

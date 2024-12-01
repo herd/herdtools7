@@ -354,8 +354,6 @@ module TypingRule = struct
     | EGetBadField
     | EGetBadBitField
     | EGetBadRecordField
-    | EGetBitFieldNested
-    | EGetBitFieldTyped
     | EGetTupleItem
     | EGetBitFields
     | EConcat
@@ -534,8 +532,6 @@ module TypingRule = struct
     | EGetBadField -> "EGetBadField"
     | EGetBadBitField -> "EGetBadBitField"
     | EGetBadRecordField -> "EGetBadRecordField"
-    | EGetBitFieldNested -> "EGetBitFieldNested"
-    | EGetBitFieldTyped -> "EGetBitFieldTyped"
     | EGetTupleItem -> "EGetTupleItem"
     | EGetBitFields -> "EGetBitFields"
     | EConcat -> "EConcat"
@@ -720,8 +716,6 @@ module TypingRule = struct
       EGetBadBitField;
       EGetBadRecordField;
       EGetBitField;
-      EGetBitFieldNested;
-      EGetBitFieldTyped;
       EGetTupleItem;
       EGetBitFields;
       EArbitrary;

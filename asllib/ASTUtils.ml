@@ -247,11 +247,12 @@ and use_ty t =
 
 and use_bitfields bitfields = use_list use_bitfield bitfields
 
-and use_bitfield = function
-  | BitField_Simple (_name, slices) -> use_slices slices
-  | BitField_Nested (_name, slices, bitfields) ->
-      use_bitfields bitfields $ use_slices slices
-  | BitField_Type (_name, slices, ty) -> use_ty ty $ use_slices slices
+and use_bitfield { bitfield_slices; nested_bitfields; bitfield_opt_type } =
+  use_slices bitfield_slices
+  $ use_bitfields nested_bitfields
+  $ use_option use_ty bitfield_opt_type
+
+(* use_ty field_type *)
 
 and use_constraint = function
   | Constraint_Exact e -> use_e e
@@ -325,6 +326,12 @@ let used_identifiers_stmt s = use_s s ISet.empty
 let canonical_fields li =
   let compare (x, _) (y, _) = String.compare x y in
   List.sort compare li
+
+let opt_equal eq opt1 opt2 =
+  match (opt1, opt2) with
+  | Some v1, Some v2 -> eq v1 v2
+  | None, None -> true
+  | _ -> false
 
 let literal_equal v1 v2 =
   v1 == v2
@@ -458,26 +465,10 @@ and bitfields_equal eq bf1 bf2 =
 
 and bitfield_equal eq bf1 bf2 =
   bf1 == bf2
-  ||
-  match (bf1, bf2) with
-  | BitField_Simple (name1, slices1), BitField_Simple (name2, slices2) ->
-      String.equal name1 name2 && slices_equal eq slices1 slices2
-  | ( BitField_Nested (name1, slices1, bf1'),
-      BitField_Nested (name2, slices2, bf2') ) ->
-      String.equal name1 name2
-      && slices_equal eq slices1 slices2
-      && bitfields_equal eq bf1' bf2'
-  | BitField_Type (name1, slices1, t1), BitField_Type (name2, slices2, t2) ->
-      String.equal name1 name2
-      && slices_equal eq slices1 slices2
-      && type_equal eq t1 t2
-  | BitField_Simple _, BitField_Nested _
-  | BitField_Simple _, BitField_Type _
-  | BitField_Nested _, BitField_Simple _
-  | BitField_Nested _, BitField_Type _
-  | BitField_Type _, BitField_Nested _
-  | BitField_Type _, BitField_Simple _ ->
-      false
+  || String.equal bf1.bitfield_name bf2.bitfield_name
+     && slices_equal eq bf1.bitfield_slices bf2.bitfield_slices
+     && bitfields_equal eq bf1.nested_bitfields bf2.nested_bitfields
+     && opt_equal (type_equal eq) bf1.bitfield_opt_type bf2.bitfield_opt_type
 
 let var_ x = E_Var x |> add_dummy_annotation
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
@@ -695,19 +686,13 @@ let rec is_simple_expr e =
       List.for_all (fun (_name, e) -> is_simple_expr e) fields
   | E_Call _ | E_Slice _ -> false
 
-let bitfield_get_name = function
-  | BitField_Simple (name, _)
-  | BitField_Nested (name, _, _)
-  | BitField_Type (name, _, _) ->
-      name
+let bitfield_get_name { bitfield_name } = bitfield_name
 
-let bitfield_get_slices = function
-  | BitField_Simple (_, slices)
-  | BitField_Nested (_, slices, _)
-  | BitField_Type (_, slices, _) ->
-      slices
+(** Retrieves the slices associated with the given bitfield,
+    without recursing into nested bitfields. *)
+let bitfield_get_slices { bitfield_slices } = bitfield_slices
 
-let has_name name bf = bitfield_get_name bf |> String.equal name
+let has_name name bf = String.equal bf.bitfield_name name
 
 (* Begin FindBitfieldOpt *)
 let find_bitfield_opt name bitfields = List.find_opt (has_name name) bitfields

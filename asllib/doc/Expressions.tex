@@ -1503,7 +1503,6 @@ All of the following apply:
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  % \item checking whether the field access with expression $\vtetwo$ and $\fieldname$ represents a call yields $\None$\ProseOrTypeError;
   \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
   \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$, that is, \\ $\BitFieldSimple(\Ignore, \slices)$;
   \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;

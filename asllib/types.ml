@@ -549,23 +549,13 @@ let rec bitfields_included env bfs1 bfs2 =
   let rec mem_bfs bfs2 bf1 =
     match find_bitfield_opt (bitfield_get_name bf1) bfs2 with
     | None -> false
-    | Some (BitField_Simple _ as bf2) -> bitfield_equal env bf1 bf2
-    | Some (BitField_Nested (name2, slices2, bfs2') as bf2) -> (
-        match bf1 with
-        | BitField_Simple _ -> bitfield_equal env bf1 bf2
-        | BitField_Nested (name1, slices1, bfs1) ->
-            String.equal name1 name2
-            && slices_equal env slices1 slices2
-            && incl_bfs bfs1 bfs2'
-        | BitField_Type _ -> false)
-    | Some (BitField_Type (name2, slices2, ty2) as bf2) -> (
-        match bf1 with
-        | BitField_Simple _ -> bitfield_equal env bf1 bf2
-        | BitField_Nested _ -> false
-        | BitField_Type (name1, slices1, ty1) ->
-            String.equal name1 name2
-            && slices_equal env slices1 slices2
-            && subtype_satisfies env ty1 ty2)
+    | Some bf2 ->
+        bitfield_equal env bf1 bf2
+        || String.equal bf1.bitfield_name bf2.bitfield_name
+           && slices_equal env bf1.bitfield_slices bf2.bitfield_slices
+           && incl_bfs bf1.nested_bitfields bf2.nested_bitfields
+           && subtype_satisfies_opt env bf1.bitfield_opt_type
+                bf2.bitfield_opt_type
   and incl_bfs bfs1 bfs2 = List.for_all (mem_bfs bfs2) bfs1 in
   incl_bfs bfs1 bfs2
 
@@ -653,6 +643,11 @@ and subtype_satisfies env t s =
   | T_Named _, _ -> assert false
   | _, _ -> false)
   |: TypingRule.SubtypeSatisfaction
+
+and subtype_satisfies_opt env t_opt s_opt =
+  match (t_opt, s_opt) with
+  | Some t', Some s' -> subtype_satisfies env t' s'
+  | _, _ -> false
 
 (* End *)
 (* Begin TypeSatisfaction *)
