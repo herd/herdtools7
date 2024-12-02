@@ -353,13 +353,13 @@ We also define the following helper rules:
 \begin{itemize}
   \item TypingRule.AnnotateAndDeclareFunc (see \secref{TypingRule.AnnotateAndDeclareFunc})
   \item TypingRule.AnnotateFuncSig (see \secref{TypingRule.AnnotateFuncSig})
+  \item TypingRule.AnnotateParams (see \secref{TypingRule.AnnotateParams})
+  \item TypingRule.AnnotateOneParam (see \secref{TypingRule.AnnotateOneParam})
   \item TypingRule.CheckParamDecls (see \secref{TypingRule.CheckParamDecls})
   \item TypingRule.TypesInFuncSig (see \secref{TypingRule.TypesInFuncSig})
   \item TypingRule.ParametersOfTy (see \secref{TypingRule.ParametersOfTy})
   \item TypingRule.ParametersOfExpr (see \secref{TypingRule.ParametersOfExpr})
   \item TypingRule.ParametersOfConstraint (see \secref{TypingRule.ParametersOfConstraint})
-  \item TypingRule.AnnotateParams (see \secref{TypingRule.AnnotateParams})
-  \item TypingRule.AnnotateOneParam (see \secref{TypingRule.AnnotateOneParam})
   \item TypingRule.AnnotateArgs (see \secref{TypingRule.AnnotateArgs})
   \item TypingRule.AnnotateOneArg (see \secref{TypingRule.AnnotateOneArg})
   \item TypingRule.AnnotateReturnType (see \secref{TypingRule.AnnotateReturnType})
@@ -424,8 +424,8 @@ All of the following apply:
   \item $\tenv$ is the static environment which comprises of the global static environment $\genv$ and an empty local environment;
   \item applying $\annotatelimitexpr$ to $\funcsig.\funcrecurselimit$ in $\tenvone$ yields \\
         $\vrecurselimit$\ProseOrTypeError;
-  \item checking that the parameters $\funcsig.\funcparameters$ are declared correctly using $\checkparamdecls$ yields $\True$\ProseOrTypeError;
   \item annotating and declaring the parameters $\funcsig.\funcparameters$ in $\tenv$ using \\ $\annotateparams$ yields environment $\tenvwithparams$ and the list of annotated parameters $\params$\ProseOrTypeError;
+  \item checking that the parameters $\funcsig.\funcparameters$ are declared correctly using $\checkparamdecls$ yields $\True$\ProseOrTypeError;
   \item annotating and declaring the arguments $\funcsig.\funcargs$ in $\tenvwithparams$ using $\annotateargs$ yields environment $\tenvwithargs$ and the list of annotated arguments $\vargs$\ProseOrTypeError;
   \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ yields the result environment $\newenv$ and the annotated return type $\vreturntype$\ProseOrTypeError;
   \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
@@ -437,13 +437,13 @@ All of the following apply:
 \inferrule{
   \withemptylocal(\genv) \typearrow \tenv\\
   \annotatelimitexpr(\tenvone, \funcsig.\funcrecurselimit) \typearrow \vrecurselimit \OrTypeError\\\\
-  \checkparamdecls(\tenv, \funcsig) \typearrow \True \OrTypeError \\
   {
     \begin{array}{r}
     \annotateparams(\tenv, \funcsig.\funcparameters, (\tenv, \emptylist)) \typearrow \\
     (\tenvwithparams, \params) \OrTypeError
     \end{array}
   }\\
+  \checkparamdecls(\tenv, \funcsig) \typearrow \True \OrTypeError \\
   {
     \begin{array}{r}
     \annotateargs(\tenvwithparams, \funcsig.\funcargs, (\tenvwithparams, \emptylist)) \typearrow \\
@@ -476,6 +476,133 @@ All of the following apply:
 }
 \end{mathpar}
 
+\subsubsection{TypingRule.AnnotateParams \label{sec:TypingRule.AnnotateParams}}
+\hypertarget{def-annotateparams}{}
+The function
+\[
+\begin{array}{r}
+\annotateparams(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{(\identifier \times \langle\ty\rangle)^*}{\params} \aslsep\
+  (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc})
+) \aslto \\
+(\overname{\staticenvs}{\tenvwithparams} \times \overname{\identifier\times\ty}{\paramsone})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates each parameter in $\params$ with respect to $\tenv$,
+and declares it in environment $\newtenv$.
+It returns the updated environment $\tenvwithparams$ and the annotated parameters $\paramsone$, together with any annotated parameters already in the accumulator $\acc$.
+\ProseOtherwiseTypeError
+
+\subsection{Example}
+In the following specification, the list of explicitly defined parameters
+of the function \texttt{signature\_example} is $\{\texttt{A},\texttt{B}\}$.
+Therefore, $\tenvwithparams$ effectively reflects the added declarations \verb|let A: integer{A}| and \verb|let B: integer{B}|.
+
+\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
+
+\subsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\params$ is the empty list;
+    \item $\tenvwithparams$ is $\newtenv$;
+    \item $\paramsone$ is $\acc$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\params$ is a list with $(\vx, \tyopt)$ as its \head\ and $\paramsp$ as its \tail;
+    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ with $\tenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\tty$\ProseOrTypeError;
+    \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \tty)$;
+    \item applying $\annotateparams$ to $\paramsp$ with $\tenv$, $\newtenvp$, and $\accp$ yields $\tenvwithparams$ and $\paramsone$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \annotateparams(\tenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
+  (\overname{\newtenv}{\tenvwithparams}, \overname{\acc}{\paramsone})
+}
+\and
+\inferrule[non\_empty]{
+  \params \eqname [(\vx,\tyopt)] \concat \paramsp\\\\
+  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \\\\
+  \accp \eqdef \acc \concat [(\vx, \tty)] \\\\
+  \annotateparams(\tenv, \paramsp, (\newtenvp, \accp)) \typearrow (\tenvwithparams, \paramsone) \OrTypeError
+}{
+  \annotateparams(\tenv, \params, (\newtenv, \acc)) \typearrow (\tenvwithparams, \paramsone)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.AnnotateOneParam \label{sec:TypingRule.AnnotateOneParam}}
+The function
+\hypertarget{def-annotateoneparam}{}
+\[
+\begin{array}{r}
+\annotateoneparam(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\staticenvs}{\newtenv} \aslsep
+  (\overname{\identifier}{\vx} \times \overname{\langle\ty\rangle}{\tyopt})
+) \aslto
+(\overname{\staticenvs}{\newtenvp} \times \overname{\ty}{\tty})
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the parameter given by $\vx$ and the \optional\ type $\tyopt$
+with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
+The updated environment $\newtenvp$ and annotated parameter type $\tty$ are returned.
+\ProseOtherwiseTypeError
+
+\subsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{type\_parameterized}):
+    \begin{itemize}
+      \item $\tyopt$ is either $\None$ or an \unconstrainedintegertype{};
+      \item $\tty$ is defined as the \parameterizedintegertype\ for the identifier $\vx$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{type\_annotated}):
+    \begin{itemize}
+      \item $\tyopt$ is the type $\langle\ttyp\rangle$, which is not the unconstrained integer type;
+      \item annotating $\ttyp$ in $\tenv$ yields $\tty$\ProseOrTypeError.
+    \end{itemize}
+  \end{itemize}
+  \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
+  \item checking that $\tty$ is a constrained integer in $\newtenv$ via $\checkconstrainedinteger$
+        yields $\True$\ProseOrTypeError;
+  \item adding the local storage element given by the identifier $\vx$, type $\tty$, and local declaration keyword
+        $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
+\end{itemize}
+
+\subsection{Formally}
+\begin{mathpar}
+\inferrule[type\_parameterized]{
+  (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
+  \tty \eqdef \TInt(\parameterized(\vx))\\
+  \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
+  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
+  \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
+}{
+  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty)
+}
+\and
+\inferrule[type\_annotated]{
+  \ttyp \neq \unconstrainedinteger\\
+  \annotatetype{\False, \tenv, \ttyp} \typearrow \tty \OrTypeError\\\\
+  \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
+  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
+  \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
+}{
+  \annotateoneparam(\tenv, \newtenv, (\vx, \langle\ttyp\rangle)) \typearrow (\newtenvp, \tty)
+}
+\end{mathpar}
 
 \subsubsection{TypingRule.CheckParamDecls \label{sec:TypingRule.CheckParamDecls}}
 The function
@@ -759,133 +886,6 @@ Finding parameters for each type in the signature of the function \texttt{signat
 \end{tabular}
 \end{center}
 
-\subsubsection{TypingRule.AnnotateParams \label{sec:TypingRule.AnnotateParams}}
-\hypertarget{def-annotateparams}{}
-The function
-\[
-\begin{array}{r}
-\annotateparams(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\identifier \times \langle\ty\rangle)^*}{\params} \aslsep\
-  (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc})
-) \aslto \\
-(\overname{\staticenvs}{\tenvwithparams} \times \overname{\identifier\times\ty}{\paramsone})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
-\end{array}
-\]
-annotates each parameter in $\params$ with respect to $\tenv$,
-and declares it in environment $\newtenv$.
-It returns the updated environment $\tenvwithparams$ and the annotated parameters $\paramsone$, together with any annotated parameters already in the accumulator $\acc$.
-\ProseOtherwiseTypeError
-
-\subsection{Example}
-In the following specification, the list of explicitly defined parameters
-of the function \texttt{signature\_example} is $\{\texttt{A},\texttt{B}\}$.
-Therefore, $\tenvwithparams$ effectively reflects the added declarations \verb|let A: integer{A}| and \verb|let B: integer{B}|.
-
-\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{empty}):
-  \begin{itemize}
-    \item $\params$ is the empty list;
-    \item $\tenvwithparams$ is $\newtenv$;
-    \item $\paramsone$ is $\acc$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{non\_empty}):
-  \begin{itemize}
-    \item $\params$ is a list with $(\vx, \tyopt)$ as its \head\ and $\paramsp$ as its \tail;
-    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ with $\tenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\tty$\ProseOrTypeError;
-    \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \tty)$;
-    \item applying $\annotateparams$ to $\paramsp$ with $\tenv$, $\newtenvp$, and $\accp$ yields $\tenvwithparams$ and $\paramsone$.
-  \end{itemize}
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[empty]{}{
-  \annotateparams(\tenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
-  (\overname{\newtenv}{\tenvwithparams}, \overname{\acc}{\paramsone})
-}
-\and
-\inferrule[non\_empty]{
-  \params \eqname [(\vx,\tyopt)] \concat \paramsp\\\\
-  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \\\\
-  \accp \eqdef \acc \concat [(\vx, \tty)] \\\\
-  \annotateparams(\tenv, \paramsp, (\newtenvp, \accp)) \typearrow (\tenvwithparams, \paramsone) \OrTypeError
-}{
-  \annotateparams(\tenv, \params, (\newtenv, \acc)) \typearrow (\tenvwithparams, \paramsone)
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.AnnotateOneParam \label{sec:TypingRule.AnnotateOneParam}}
-The function
-\hypertarget{def-annotateoneparam}{}
-\[
-\begin{array}{r}
-\annotateoneparam(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\staticenvs}{\newtenv} \aslsep
-  (\overname{\identifier}{\vx} \times \overname{\langle\ty\rangle}{\tyopt})
-) \aslto
-(\overname{\staticenvs}{\newtenvp} \times \overname{\ty}{\tty})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
-\end{array}
-\]
-annotates the parameter given by $\vx$ and the \optional\ type $\tyopt$
-with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
-The updated environment $\newtenvp$ and annotated parameter type $\tty$ are returned.
-\ProseOtherwiseTypeError
-
-\subsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item One of the following applies:
-  \begin{itemize}
-    \item All of the following apply (\textsc{type\_parameterized}):
-    \begin{itemize}
-      \item $\tyopt$ is either $\None$ or an \unconstrainedintegertype{};
-      \item $\tty$ is defined as the \parameterizedintegertype\ for the identifier $\vx$.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{type\_annotated}):
-    \begin{itemize}
-      \item $\tyopt$ is the type $\langle\ttyp\rangle$, which is not the unconstrained integer type;
-      \item annotating $\ttyp$ in $\tenv$ yields $\tty$\ProseOrTypeError.
-    \end{itemize}
-  \end{itemize}
-  \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
-  \item checking that $\tty$ is a constrained integer in $\newtenv$ via $\checkconstrainedinteger$
-        yields $\True$\ProseOrTypeError;
-  \item adding the local storage element given by the identifier $\vx$, type $\tty$, and local declaration keyword
-        $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
-\end{itemize}
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule[type\_parameterized]{
-  (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
-  \tty \eqdef \TInt(\parameterized(\vx))\\
-  \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
-  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
-  \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
-}{
-  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty)
-}
-\and
-\inferrule[type\_annotated]{
-  \ttyp \neq \unconstrainedinteger\\
-  \annotatetype{\False, \tenv, \ttyp} \typearrow \tty \OrTypeError\\\\
-  \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
-  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
-  \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
-}{
-  \annotateoneparam(\tenv, \newtenv, (\vx, \langle\ttyp\rangle)) \typearrow (\newtenvp, \tty)
-}
-\end{mathpar}
 
 \subsubsection{TypingRule.AnnotateArgs \label{sec:TypingRule.AnnotateArgs}}
 \hypertarget{def-annotateargs}{}

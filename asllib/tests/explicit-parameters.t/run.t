@@ -40,3 +40,8 @@ Explicit parameter tests:
   ASL Static Error: Arity error while calling 'Extend-1':
     2 parameters expected and 1 provided
   [1]
+
+  $ aslref shadowed-parameter.asl
+  File shadowed-parameter.asl, line 3, character 0 to line 6, character 4:
+  ASL Typing error: cannot declare already declared element "N".
+  [1]
