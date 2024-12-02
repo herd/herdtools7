@@ -295,9 +295,9 @@ let rec pp_stmt =
     | S_Try (s, catchers, otherwise) ->
         bprintf f "S_Try (%a, %a, %a)" pp_stmt s (pp_list pp_catcher) catchers
           (pp_option pp_stmt) otherwise
-    | S_Print { args; debug } ->
-        bprintf f "S_Print { args = %a; debug = %B }" (pp_list pp_expr) args
-          debug
+    | S_Print { args; newline; debug } ->
+        bprintf f "S_Print { args = %a; newline = %B; debug = %B }"
+          (pp_list pp_expr) args newline debug
     | S_Unreachable -> addb f "S_Unreachable"
     | S_Pragma (name, exprs) ->
         bprintf f "S_Pragma (%S, %a)" name (pp_list pp_expr) exprs

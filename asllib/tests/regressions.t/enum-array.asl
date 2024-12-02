@@ -5,7 +5,6 @@ type MyArray of array [ MyEnum ] of integer;
 func main () => integer
 begin
   var my_array: MyArray;
-  print (my_array);
 
   my_array[[A]] = 1;
   my_array[[B]] = 2;

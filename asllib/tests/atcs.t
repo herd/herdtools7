@@ -72,7 +72,7 @@ ATCs on other types
   $ aslref atcs6.asl
   File atcs6.asl, line 3, characters 11 to 25:
   ASL Execution error: Mismatch type:
-    value [42, '0000'] does not belong to type (integer {0..10}, bits(4)).
+    value [42, 0x0] does not belong to type (integer {0..10}, bits(4)).
   [1]
 
   $ cat > atcs7.asl <<EOF

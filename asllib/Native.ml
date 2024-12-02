@@ -48,8 +48,8 @@ let pp_literal f =
   | L_Int i -> Z.pp_print f i
   | L_Bool true -> pp_print_string f "TRUE"
   | L_Bool false -> pp_print_string f "FALSE"
-  | L_Real r -> Q.to_float r |> pp_print_float f
-  | L_BitVector bv -> Bitvector.pp_t f bv
+  | L_Real r -> Q.pp_print f r
+  | L_BitVector bv -> pp_print_string f (Bitvector.to_string_hexa bv)
   | L_String s -> pp_print_string f s
 
 let rec pp_native_value f =

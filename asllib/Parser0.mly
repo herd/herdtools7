@@ -635,7 +635,7 @@ let simple_stmt ==
       { AST.S_Call { name; args; params ; call_type = ST_Procedure } }
     | RETURN; ~=ioption(expr);                    < AST.S_Return >
     | ASSERT; ~=expr;                             < AST.S_Assert >
-    | DEBUG; e=expr;                              { AST.S_Print { args = [ e ]; debug = true } }
+    | DEBUG; e=expr;                              { AST.S_Print { args = [ e ]; newline = true; debug = true } }
 
     | unimplemented_stmts (
       | UNPREDICTABLE; ioption(pared(<>)); <>

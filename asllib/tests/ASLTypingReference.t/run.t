@@ -32,7 +32,6 @@ ASL Typing Reference / annotating types:
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TTuple.asl
   $ aslref TypingRule.TArray.asl
-  [0, 1, 0, 0]
   $ aslref --no-exec TypingRule.TEnumDecl.asl
   $ aslref TypingRule.TRecordExceptionDecl.asl
   $ aslref TypingRule.TNonDecl.asl

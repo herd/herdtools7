@@ -10,6 +10,6 @@ end;
 func main() => integer
 begin
   let x = f{8};
-  print(x);
+  println(x);
   return 0;
 end;

@@ -2,7 +2,7 @@ func main () => integer
 begin
 
   let x = 3 + 2;
-  print(x);
+  println(x);
 
   return 0;
 end; 

@@ -2,9 +2,9 @@
     begin
       if TRUE then
          let i = 3;
-         print (DecStr (i));
+         println (DecStr (i));
       end;
       let i = "Some text";
-      print (i);
+      println (i);
       return 0;
     end;

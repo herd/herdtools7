@@ -81,6 +81,10 @@ val to_string : t -> string
 (** Returns a string representing the bitvector, indexed from the right and
     delimited by apostrophes. *)
 
+val to_string_hexa : t -> string
+(** Returns a string representing the bitvector in hexadecimal, indexed from
+    the right and preceded by '0x'. *)
+
 val to_int : t -> int
 (** Returns an integer representing the bitvector, little-endian. Result
     unspecified if [length > Sys.int_size]. *)

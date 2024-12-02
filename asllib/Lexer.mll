@@ -82,6 +82,7 @@ let tr_name s = match s with
 | "otherwise"     -> OTHERWISE
 | "pass"          -> PASS
 | "pragma"        -> PRAGMA
+| "println"       -> PRINTLN
 | "print"         -> PRINT
 | "real"          -> REAL
 | "record"        -> RECORD

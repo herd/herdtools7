@@ -791,7 +791,8 @@ let rename_locals map_name ast =
     | S_Throw (Some (e, t)) -> S_Throw (Some (map_e e, Option.map map_t t))
     | S_Throw None -> s.desc
     | S_Try (_, _, _) -> failwith "Not yet implemented: obfuscate try"
-    | S_Print { args; debug } -> S_Print { args = List.map map_e args; debug }
+    | S_Print { args; newline; debug } ->
+        S_Print { args = List.map map_e args; newline; debug }
     | S_Unreachable -> S_Unreachable
     | S_Pragma (name, args) ->
         let args = map_es args in

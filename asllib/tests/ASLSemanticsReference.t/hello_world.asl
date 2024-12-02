@@ -1,5 +1,5 @@
 func main() => integer
 begin
-  print("Hello, world!");
+  println("Hello, world!");
   return 0;
 end;

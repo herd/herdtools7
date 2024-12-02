@@ -326,8 +326,10 @@ let rec pp_stmt f s =
       fprintf f "@[<2>try@ %a@ catch@ @[<v 2>%a@]@ end@]" pp_stmt s
         (pp_print_list ~pp_sep:pp_print_space pp_catcher)
         catchers
-  | S_Print { args; debug = false } ->
+  | S_Print { args; newline = false; debug = false } ->
       fprintf f "@[<2>print(%a);@]" (pp_comma_list pp_expr) args
+  | S_Print { args; newline = true; debug = false } ->
+      fprintf f "@[<2>println(%a);@]" (pp_comma_list pp_expr) args
   | S_Print { args; debug = true } ->
       fprintf f "@[<2>DEBUG@ %a;@]" (pp_comma_list pp_expr) args
   | S_Unreachable -> fprintf f "Unreachable();"
