@@ -614,7 +614,7 @@ D15347-2+2W+DMBST+DSB-ISB                      Forbidden
 F2.mod-with-type+BBM                           Forbidden
 CAS-AF                                         Required
 D15347-M-load-shoot+DMB.LD+VMALL               Forbidden
-CASAL+FAIL                                     Allowed
+CASAL+FAIL+FH                                  Forbidden
 Artem2+TLBIx-UCy+dsb.ish                       Allowed
 D15347-2+2WExpNExp+DMBST+DSB-ISB               Allowed
 Artem2+TLBIx-HDy+dsb.ish                       Forbidden
@@ -657,7 +657,7 @@ NT-11-ctrl+dsb                                 Forbidden
 NT-11-addr                                     Forbidden
 MP-ISB3+64                                     Forbidden
 NT-11-tlbi-allha                               Forbidden
-CASAL+FAIL2                                    Allowed
+CASAL+FAIL2+FH                                 Allowed
 NT-11-data                                     Forbidden
 LDR-BY2PTE-0-LLSC                              Forbidden
 NT-0B-af+OBS                                   Allowed

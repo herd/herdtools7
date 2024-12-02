@@ -618,7 +618,7 @@ D15347-2+2W+DMBST+DSB-ISB                      Forbidden
 D15347-M-load-shoot+acq-po+VMALL               Forbidden
 D15347-M-load-shoot+DMB.LD                     Forbidden
 D15347-M-load-shoot+addr                       Forbidden
-CASAL+FAIL                                     Allowed
+CASAL+FAIL+FH                                  Forbidden
 D15347-M-load-shoot+DMB.LD+VMALL               Forbidden
 Artem2+TLBIx-UCy+dsb.ish                       Forbidden
 Artem2+TLBIx-HDy+dsb.ish                       Forbidden
@@ -663,7 +663,7 @@ NT-11-dsb-allha+dsb                            Forbidden
 NT-11-ctrl-allha+dsb                           Forbidden
 RW+RR-DMBLD+DMBLD-SWP5                         Forbidden
 NT-11-dmb-allha                                Forbidden
-CASAL+FAIL2                                    Allowed
+CASAL+FAIL2+FH                                 Allowed
 IRIW-V2Vpte+64                                 Allowed
 NT-11-dmbld-allha+dsb                          Forbidden
 NT-11-dmb-allha+dsb                            Forbidden
