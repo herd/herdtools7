@@ -98,6 +98,9 @@ let binop_values pos t op v1 v2 =
   (* string -> string -> bool *)
   | EQ_OP, L_String s1, L_String s2 -> L_Bool (String.equal s1 s2)
   | NEQ, L_String s1, L_String s2 -> L_Bool (not (String.equal s1 s2))
+  (* enum -> enum -> bool *)
+  | EQ_OP, L_Label (s1, _), L_Label (s2, _) -> L_Bool (String.equal s1 s2)
+  | NEQ, L_Label (s1, _), L_Label (s2, _) -> L_Bool (not (String.equal s1 s2))
   (* Failure *)
   | _ -> fatal_from pos (Error.UnsupportedBinop (t, op, v1, v2))
 

@@ -88,12 +88,13 @@ let pp_binop : binop -> string = function
 let pp_unop = function BNOT -> "BNOT" | NOT -> "NOT" | NEG -> "NEG"
 
 let pp_literal f = function
-  | L_Int i -> bprintf f "V_Int (Z.of_string \"%a\")" Z.bprint i
-  | L_Bool b -> bprintf f "V_Bool %B" b
-  | L_Real r -> bprintf f "V_Real (Q.of_string \"%a\")" Q.bprint r
+  | L_Int i -> bprintf f "L_Int (Z.of_string \"%a\")" Z.bprint i
+  | L_Bool b -> bprintf f "L_Bool %B" b
+  | L_Real r -> bprintf f "L_Real (Q.of_string \"%a\")" Q.bprint r
   | L_BitVector bv ->
-      bprintf f "V_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
-  | L_String s -> bprintf f "V_String %S" s
+      bprintf f "L_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
+  | L_String s -> bprintf f "L_String %S" s
+  | L_Label (s, d) -> bprintf f "L_Label (%S, %d)" s d
 
 let subprogram_type_to_string = function
   | ST_Function -> "ST_Function"

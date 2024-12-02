@@ -108,6 +108,16 @@ type literal =
   | L_Real of Q.t
   | L_BitVector of Bitvector.t
   | L_String of string
+  | L_Label of (string * int)
+      (** An enumeration label, given by its name and its index in its type
+          definition.
+
+          For example, the declaration
+              type MyEnum of enumeration {LABEL_A, LABEL_B};
+          will result in the following labels:
+              L_Label ("LABEL_A", 0)
+              L_Label ("LABEL_B", 1)
+      *)
 
 (* -------------------------------------------------------------------------
 
@@ -345,7 +355,13 @@ type stmt_desc =
       (** The stmt option is the optional otherwise guard. *)
   | S_Print of { args : expr list; newline : bool; debug : bool }
       (** A call to print, as an explicit node as it does not require
-          type-checking. *)
+          type-checking.
+
+          [newline] indicates if the print statement should add an extra new
+          line after printing all the arguments.
+          [debug] indicates if the print statement has been made using the
+          ASLRef specific function [__debug].
+      *)
   | S_Unreachable
       (** The unreachable statement, as an explicit node as it has a specific
           control-flow behaviour. *)

@@ -189,6 +189,7 @@ module Make (C : Config) = struct
             Printf.eprintf "real: %s\n%!" (Q.to_string _f);
             Warn.fatal "Cannot use reals yet."
         | L_String _f -> Warn.fatal "Cannot strings in herd yet."
+        | L_Label (_, i) -> S_Int (Z.of_int i) |> concrete
       in
       fun v -> V.Val (tr v)
 
