@@ -444,7 +444,7 @@ end;
 
 // =============================================================================
 
-func PhysMemWriteV1{N}(
+func PhysMemWrite{N}(
   desc::AddressDescriptor,
   accdesc::AccessDescriptor,
   value::bits(8*N)
@@ -461,7 +461,7 @@ end;
 
 // =============================================================================
 
-func PhysMemReadV1{N}(
+func PhysMemRead{N}(
   desc::AddressDescriptor,
   accdesc::AccessDescriptor
 ) => (PhysMemRetStatus, bits(8*N))

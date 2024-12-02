@@ -28,14 +28,15 @@ _PC = bits(64) value
   return;
 
 // =============================================================================
-
+// Wrapper to the V1 function
 PhysMemRetStatus PhysMemWrite(AddressDescriptor desc, integer size, AccessDescriptor accdesc,
                               bits(8*size) value)
-  return PhysMemWriteV1{size}(desc,accdesc,value);
+  return PhysMemWrite{size}(desc,accdesc,value);
 
 // =============================================================================
+// Wrapper to the V1 function
 
 (PhysMemRetStatus, bits(8*size)) PhysMemRead(AddressDescriptor desc, integer size,
                                              AccessDescriptor accdesc)
-    (ret_status,value) = PhysMemReadV1{size}(desc,accdesc);
+    (ret_status,value) = PhysMemRead{size}(desc,accdesc);
     return (ret_status,value);
