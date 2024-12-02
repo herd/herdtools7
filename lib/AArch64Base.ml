@@ -1365,7 +1365,7 @@ type 'k kinstruction =
   | I_MOV_S of simd_variant * reg * reg * int
   | I_MOVI_V of reg * 'k * 'k s
   | I_MOVI_S of simd_variant * reg * 'k
-  | I_EOR_SIMD of reg * reg * reg
+  | I_OP3_SIMD of op * reg * reg * reg
   | I_ADD_SIMD of reg * reg * reg
   | I_ADD_SIMD_S of reg * reg * reg
   (* More loads *)
@@ -1571,7 +1571,7 @@ type 'k kinstruction =
   (* MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T> *)
   | I_MOVPRFX of reg * reg * reg
   (* EOR <Zd>.D, <Zn>.D, <Zm>.D, vectors, unpredicated *)
-  | I_EOR_SV of reg * reg * reg
+  | I_OP3_SV of op * reg * reg * reg
   (* INDEX <Zd>.<T>, <R><n>, #<imm> *)
   | I_INDEX_SI of reg * variant * reg * 'k
   (* INDEX <Zd>.<T>, #<imm>, <R><m> *)
@@ -2137,8 +2137,8 @@ let do_pp_instruction m =
       pp_vmem_shift "MOVI" r k s
   | I_MOVI_S (v,r,k) ->
       pp_sri "MOVI" v r k
-  | I_EOR_SIMD (r1,r2,r3) ->
-      pp_simd_rrr "EOR" r1 r2 r3
+  | I_OP3_SIMD (op,r1,r2,r3) ->
+      pp_simd_rrr (pp_op op) r1 r2 r3
   | I_ADD_SIMD (r1,r2,r3) ->
       pp_simd_rrr "ADD" r1 r2 r3
   | I_ADD_SIMD_S (r1,r2,r3) ->
@@ -2182,8 +2182,8 @@ let do_pp_instruction m =
     sprintf "NEG %s,%s,%s" (pp_zreg r1) (pp_preg r2) (pp_zreg r3)
   | I_MOVPRFX (r1,r2,r3) ->
     sprintf "MOVPRFX %s,%s,%s" (pp_zreg r1) (pp_preg r2) (pp_zreg r3)
-  | I_EOR_SV (r1,r2,r3) ->
-    sprintf "EOR %s,%s,%s" (pp_zreg r1) (pp_zreg r2) (pp_zreg r3)
+  | I_OP3_SV (op,r1,r2,r3) ->
+    sprintf "%s %s,%s,%s" (pp_op op) (pp_zreg r1) (pp_zreg r2) (pp_zreg r3)
   | I_INDEX_SI (r1,v,r2,k) ->
       sprintf "INDEX %s,%s,%s" (pp_zreg r1) (pp_vreg v r2) (m.pp_k k)
   | I_INDEX_IS (r1,v,k,r2) ->
@@ -2554,11 +2554,11 @@ let fold_regs (f_regs,f_sregs) =
   | I_SC (_,r1,r2,r3)
   | I_LDP_SIMD (_,_,r1,r2,r3,_)
   | I_STP_SIMD (_,_,r1,r2,r3,_)
-  | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
+  | I_OP3_SIMD (_,r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
   | I_LDXP (_,_,r1,r2,r3)
   | I_WHILELT (r1,_,r2,r3) | I_WHILELE (r1,_,r2,r3) | I_WHILELO (r1,_,r2,r3) | I_WHILELS (r1,_,r2,r3)
   | I_INDEX_SS(r1,_,r2,r3)
-  | I_UADDV (_,r1,r2,r3) | I_ADD_SV (r1,r2,r3) | I_NEG_SV (r1,r2,r3) | I_MOVPRFX (r1,r2,r3) | I_EOR_SV (r1,r2,r3)
+  | I_UADDV (_,r1,r2,r3) | I_ADD_SV (r1,r2,r3) | I_NEG_SV (r1,r2,r3) | I_MOVPRFX (r1,r2,r3) | I_OP3_SV (_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,_)
   | I_LDPSW (r1,r2,r3,_)
@@ -2760,8 +2760,8 @@ let map_regs f_reg f_symb =
       I_MOVI_V (map_reg r,k,os)
   | I_MOVI_S (v,r,k) ->
       I_MOVI_S (v,map_reg r,k)
-  | I_EOR_SIMD (r1,r2,r3) ->
-      I_EOR_SIMD(map_reg r1,map_reg r2,map_reg r3)
+  | I_OP3_SIMD (op,r1,r2,r3) ->
+      I_OP3_SIMD(op,map_reg r1,map_reg r2,map_reg r3)
   | I_ADD_SIMD (r1,r2,r3) ->
       I_ADD_SIMD (map_reg r1,map_reg r2,map_reg r3)
   | I_ADD_SIMD_S (r1,r2,r3) ->
@@ -2805,8 +2805,8 @@ let map_regs f_reg f_symb =
       I_NEG_SV (map_reg r1,map_reg r2,map_reg r3)
   | I_MOVPRFX (r1,r2,r3) ->
       I_MOVPRFX (map_reg r1,map_reg r2,map_reg r3)
-  | I_EOR_SV (r1,r2,r3) ->
-      I_EOR_SV (map_reg r1,map_reg r2,map_reg r3)
+  | I_OP3_SV (op,r1,r2,r3) ->
+      I_OP3_SV (op,map_reg r1,map_reg r2,map_reg r3)
   | I_INDEX_SI (r1,v,r2,k) ->
       I_INDEX_SI (map_reg r1,v,map_reg r2,k)
   | I_INDEX_IS (r1,v,k,r2) ->
@@ -3050,7 +3050,7 @@ let get_next =
   | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
-  | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
+  | I_OP3_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
   | I_LDXP _|I_STXP _|I_UDF _
   | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
   | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
@@ -3058,7 +3058,7 @@ let get_next =
   | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
   | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
   | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
-  | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
+  | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_OP3_SV _ | I_MOVPRFX _
   | I_LD1SPT _  | I_ST1SPT _ | I_SMSTART _ | I_SMSTOP _
   | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
     -> [Label.Next;]
@@ -3235,9 +3235,129 @@ let is_valid i =
     -> is_granule_offset k
   | I_STG _ | I_STZG _ | I_STZ2G _
     -> false
+  | I_LDAP1 ([Vreg(_,(0,64))],_,_,_)
+  | I_STL1 ([Vreg(_,(0,64))],_,_,_)
+    -> true
+  | I_LDAP1 _ | I_STL1 _
+    -> false
+  | I_OP3_SIMD (EOR,Vreg(_,(8,8)),Vreg(_,(8,8)),Vreg(_,(8,8)))
+  | I_OP3_SIMD (EOR,Vreg(_,(16,8)),Vreg(_,(16,8)),Vreg(_,(16,8)))
+     -> true
+  | I_OP3_SIMD _
+     -> false
+  | I_OP3_SV(EOR,Zreg(_,64),Zreg(_,64),Zreg(_,64))
+     -> true
+  | I_OP3_SV _
+     -> false
+  | I_INDEX_SI (Zreg(_,64),V64,_,_)
+  | I_INDEX_SI (Zreg(_,32),V32,_,_)
+  | I_INDEX_SI (Zreg(_,16),V32,_,_)
+  | I_INDEX_SI (Zreg(_,8),V32,_,_)
+  | I_INDEX_IS (Zreg(_,64),V64,_,_)
+  | I_INDEX_IS (Zreg(_,32),V32,_,_)
+  | I_INDEX_IS (Zreg(_,16),V32,_,_)
+  | I_INDEX_IS (Zreg(_,8),V32,_,_)
+  | I_INDEX_SS (Zreg(_,64),V64,_,_)
+  | I_INDEX_SS (Zreg(_,32),V32,_,_)
+  | I_INDEX_SS (Zreg(_,16),V32,_,_)
+  | I_INDEX_SS (Zreg(_,8),V32,_,_)
+     -> true
+  | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _
+     -> false
+  | I_ST1SP (v,_,_,_,ext) 
+  | I_LD1SP (v,_,_,_,ext) ->
+     let open MemExt in
+     begin match (v,ext) with
+     | (_,Imm (_,Idx))
+     | (VSIMD8,Reg (V64,_,LSL, 0))
+     | (VSIMD8,ZReg (_,LSL, 0))
+     | (VSIMD8,ZReg (_,UXTW, 0))
+     | (VSIMD8,ZReg (_,SXTW, 0))
+     | (VSIMD16,Reg (V64,_,LSL, 1))
+     | (VSIMD16,ZReg (_,LSL, 0))
+     | (VSIMD16,ZReg (_,UXTW, 0))
+     | (VSIMD16,ZReg (_,SXTW, 0))
+     | (VSIMD16,ZReg (_,LSL, 1))
+     | (VSIMD16,ZReg (_,UXTW, 1))
+     | (VSIMD16,ZReg (_,SXTW, 1))
+     | (VSIMD32,Reg (V64,_,LSL, 2))
+     | (VSIMD32,ZReg (_,LSL, 0))
+     | (VSIMD32,ZReg (_,UXTW, 0))
+     | (VSIMD32,ZReg (_,SXTW, 0))
+     | (VSIMD32,ZReg (_,LSL, 2))
+     | (VSIMD32,ZReg (_,UXTW, 2))
+     | (VSIMD32,ZReg (_,SXTW, 2))
+     | (VSIMD64,Reg (V64,_,LSL, 3))
+     | (VSIMD64,ZReg (_,LSL, 0))
+     | (VSIMD64,ZReg (_,UXTW, 0))
+     | (VSIMD64,ZReg (_,SXTW, 0))
+     | (VSIMD64,ZReg (_,LSL, 3))
+     | (VSIMD64,ZReg (_,UXTW, 3))
+     | (VSIMD64,ZReg (_,SXTW, 3))
+      -> true
+     | _ -> false
+    end
+  | I_ST2SP (v,_,_,_,ext)
+  | I_LD2SP (v,_,_,_,ext)
+  | I_ST3SP (v,_,_,_,ext)
+  | I_LD3SP (v,_,_,_,ext)
+  | I_ST4SP (v,_,_,_,ext)
+  | I_LD4SP (v,_,_,_,ext) ->
+    let open MemExt in
+    begin match (v,ext) with
+    | (_,Imm (_,Idx))
+    | (VSIMD8,Reg (V64,_,LSL, 0))
+    | (VSIMD16,Reg (V64,_,LSL, 1))
+    | (VSIMD32,Reg (V64,_,LSL, 2))
+    | (VSIMD64,Reg (V64,_,LSL, 3))
+     -> true
+    | _ -> false
+    end
+  | I_ST1SPT (v,reg,index,offset,_,_,ext)
+  | I_LD1SPT (v,reg,index,offset,_,_,ext) ->
+    let open MemExt in
+    let is_slice =
+      let is_index =
+        match index with
+        | Ireg R12 | Ireg R13 | Ireg R14 | Ireg R15
+          -> true
+        | _ -> false in
+      let is_offset =
+        match v with
+        | VSIMD8 when 0 <= offset && offset <= 15 -> true
+        | VSIMD16 when 0 <= offset && offset <= 7 -> true
+        | VSIMD32 when 0 <= offset && offset <= 3 -> true
+        | VSIMD64 when 0 <= offset && offset <= 1 -> true
+        | VSIMD128 when offset == 0 -> true
+        | _ -> false in
+      let is_tile tile =
+        match v with
+        | VSIMD8 when tile == 0 -> true
+        | VSIMD16 when 0 <= tile && tile <= 1 -> true
+        | VSIMD32 when 0 <= tile && tile <= 3 -> true
+        | VSIMD64 when 0 <= tile && tile <= 7 -> true
+        | VSIMD128 when 0 <= tile && tile <= 15 -> true
+        | _ -> false in
+      match reg with
+      | ZAreg (tile,Some _,_)
+        -> (is_tile tile) && is_offset && is_index
+      | _ -> false
+    in
+    begin match (v,ext) with
+    | (_,Imm (0,Idx))
+    | (VSIMD8,Reg (V64,_,LSL, 0))
+    | (VSIMD16,Reg (V64,_,LSL, 1))
+    | (VSIMD32,Reg (V64,_,LSL, 2))
+    | (VSIMD64,Reg (V64,_,LSL, 3))
+    | (VSIMD128,Reg (V64,_,LSL, 4))
+     -> is_slice
+    | _ -> false
+    end
+  | I_ADDA (_,ZAreg (_,None,_),_,_,_)
+    -> true
+  | I_ADDA _
+    -> false
   | _ -> true
-
-
 
 module PseudoI = struct
       type ins = instruction
@@ -3321,7 +3441,7 @@ module PseudoI = struct
         | I_WHILELT _ | I_WHILELE _ | I_WHILELO _| I_WHILELS _
         | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
         | I_ADD_SV _ | I_INDEX_SS _
-        | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
+        | I_NEG_SV _ | I_OP3_SV _ | I_MOVPRFX _
         | I_SMSTART _ | I_SMSTOP _ | I_ADDA _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
@@ -3387,7 +3507,7 @@ module PseudoI = struct
         | I_STLUR_SIMD (v,r1,r2,k) -> I_STLUR_SIMD (v,r1,r2,k_tr k)
         | I_MOVI_V (r,k,s) -> I_MOVI_V (r,k_tr k,ap_shift k_tr s)
         | I_MOVI_S (v,r,k) -> I_MOVI_S (v,r,k_tr k)
-        | I_EOR_SIMD (r1,r2,r3) -> I_EOR_SIMD (r1,r2,r3)
+        | I_OP3_SIMD (op,r1,r2,r3) -> I_OP3_SIMD (op,r1,r2,r3)
         | I_ADD_SIMD (r1,r2,r3) -> I_ADD_SIMD (r1,r2,r3)
         | I_ADD_SIMD_S (r1,r2,r3) -> I_ADD_SIMD_S (r1,r2,r3)
         | I_UDF k -> I_UDF (k_tr k)
@@ -3497,12 +3617,12 @@ module PseudoI = struct
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
         | I_MOVI_V _ | I_MOVI_S _
-        | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
+        | I_OP3_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
         | I_UDF _
         | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
         | I_PTRUE _
         | I_ADD_SV _ | I_UADDV _ | I_DUP_SV _
-        | I_NEG_SV _ | I_MOVPRFX _ | I_EOR_SV _
+        | I_NEG_SV _ | I_MOVPRFX _ | I_OP3_SV _
         | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
         | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
         | I_MOV_SV _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _

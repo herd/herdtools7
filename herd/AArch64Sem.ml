@@ -3433,7 +3433,7 @@ module Make
         | I_MOVI_S(var,r,k) ->
             check_neon inst;
             !(movi_s var r k ii)
-        | I_EOR_SIMD(r1,r2,r3) ->
+        | I_OP3_SIMD(EOR,r1,r2,r3) ->
             check_neon inst;
             let sz = neon_sz r1 in
             !(read_reg_neon false r3 ii >>|
@@ -3670,7 +3670,7 @@ module Make
         |  I_ADD_SV (r1,r2,r3) ->
           check_sve inst;
           !(add_sv r1 r2 r3 ii)
-        |  I_EOR_SV (r1,r2,r3) ->
+        |  I_OP3_SV (EOR,r1,r2,r3) ->
           check_sve inst;
           !(read_reg_scalable false r3 ii >>|
             read_reg_scalable false r2 ii >>= fun (v1,v2) ->
@@ -4252,6 +4252,7 @@ module Make
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _
+        | I_OP3_SIMD _ | I_OP3_SV _
         | I_LDR_SIMD _| I_STR_SIMD _
         | I_LD1SP _| I_LD2SP _| I_LD3SP _| I_LD4SP _
         | I_ST1SP _|I_ST2SP _|I_ST3SP _|I_ST4SP _
