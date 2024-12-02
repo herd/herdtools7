@@ -2679,18 +2679,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let recurse_limit =
       annotate_limit_expr ~warn:false ~loc env func_sig.recurse_limit
     in
-    (* Check parameters are declared correctly - in order and unique *)
-    let+ () =
-      let inferred_parameters = extract_parameters ~env func_sig in
-      let declared_parameters = List.map fst func_sig.parameters in
-      let all_parameters_declared =
-        list_equal String.equal inferred_parameters declared_parameters
-      in
-      check_true all_parameters_declared @@ fun () ->
-      fatal_from loc
-        (BadParameterDecl
-           (func_sig.name, inferred_parameters, declared_parameters))
-    in
     (* Annotate and declare parameters *)
     let env_with_params, parameters =
       let declare_parameter new_env (x, ty_opt) =
@@ -2707,6 +2695,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (add_local x ty LDK_Let new_env, (x, Some ty))
       in
       list_fold_left_map declare_parameter env func_sig.parameters
+    in
+    (* Check parameters are declared correctly - in order and unique *)
+    let+ () =
+      let inferred_parameters = extract_parameters ~env func_sig in
+      let declared_parameters = List.map fst func_sig.parameters in
+      let all_parameters_declared =
+        list_equal String.equal inferred_parameters declared_parameters
+      in
+      check_true all_parameters_declared @@ fun () ->
+      fatal_from loc
+        (BadParameterDecl
+           (func_sig.name, inferred_parameters, declared_parameters))
     in
     (* Annotate and declare arguments *)
     let env_with_args, args =
