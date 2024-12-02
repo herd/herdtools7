@@ -275,11 +275,23 @@ let convert_to_bool = function
   | S_BitVector _ as s ->
       Warn.fatal "ASLScalar invalid op: to_bool %s" (pp false s)
 
-let convert_to_bv = function
+(** Convert to bitvector of known size *)
+let convert_to_bv sz = function
+  | S_BitVector bv as v ->
+      let len = BV.length bv in
+      if sz < len then S_BitVector (BV.prefix bv sz)
+      else if sz > len then
+        let zs = BV.zeros (sz-len) in
+        S_BitVector (BV.concat [ zs; bv; ])
+      else v
+  | S_Int i -> S_BitVector (BV.of_z sz i)
+  | S_Bool false -> S_BitVector (BV.zeros sz)
+  | S_Bool true -> S_BitVector (BV.of_z sz Z.one)
+
+(** Transform to bitvector, size fixed to 64 if transformation occurs. *)
+let as_bv = function
   | S_BitVector _ as bv -> bv
-  | S_Int i -> S_BitVector (BV.of_z 64 i)
-  | S_Bool false -> S_BitVector (BV.zeros 64)
-  | S_Bool true -> S_BitVector (BV.of_z 64 Z.one)
+  | v -> convert_to_bv 64 v
 
 let try_extract_slice s positions =
   match s with

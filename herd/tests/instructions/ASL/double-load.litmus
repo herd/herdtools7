@@ -9,8 +9,8 @@ ASL double-load
 func main() => integer
 begin
   let addr_y = read_register(1);
-  let addr_x = read_memory (addr_y, 64);
-  let data_x = read_memory (addr_x, 32);
+  let addr_x = read_memory{64}(addr_y);
+  let data_x = read_memory{32}(addr_x);
   let three = UInt (data_x);
 
   return 0;

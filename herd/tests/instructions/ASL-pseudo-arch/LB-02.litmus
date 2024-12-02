@@ -11,14 +11,14 @@ constant one :: bits(64) = 1[63:0];
 
 func T0(x::bits(64), y:: bits(64))
 begin
-  let x0 = UInt(read_memory(x, 64));
-  write_memory(y, 64, one);
+  let x0 = UInt(read_memory{64}(x));
+  write_memory{64}(y, one);
 end;
 
 func T1(x::bits(64), y:: bits(64))
 begin
-  let x1 = UInt(read_memory(y, 64));
-  write_memory(x, 64, one);
+  let x1 = UInt(read_memory{64}(y));
+  write_memory{64}(x, one);
 end;
 
 func main() => integer

@@ -16,7 +16,7 @@ x=15;
 func main() => integer
 begin
   let x = read_register(0);  
-  let (a,b) = (1,UInt(read_memory(x,32)));
+  let (a,b) = (1,UInt(read_memory{32}(x)));
   let c = a+b;
   return 0;
 end;

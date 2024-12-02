@@ -175,8 +175,10 @@ module type S = sig
   val bitvector_length : value -> value m
   (** Get the length of a bitvector. *)
 
-  type primitive = value m list -> value m list m
-  (** primitive types that go with this AST. *)
+  type primitive = value m list -> value m list -> value m list m
+  (** primitive types that go with this AST.
+      First argument is list of parameters,
+      second argument is list of arguments. *)
 
   val primitives : (AST.func * primitive) list
   (** The list of primitives that a backend provides. *)

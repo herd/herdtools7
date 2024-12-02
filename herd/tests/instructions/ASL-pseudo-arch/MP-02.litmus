@@ -11,8 +11,8 @@ constant one :: bits(64) = 1[63:0];
 
 func T0(x::bits(64), y:: bits(64))
 begin
-  write_memory(x, 64, one);
-  write_memory(y, 64, one);
+  write_memory{64}(x, one);
+  write_memory{64}(y, one);
 end;
 
 var a: integer;
@@ -20,8 +20,8 @@ var b: integer;
 
 func T1(x::bits(64), y:: bits(64))
 begin
-  a = UInt(read_memory(y, 64));
-  b = UInt(read_memory(x, 64));
+  a = UInt(read_memory{64}(y));
+  b = UInt(read_memory{64}(x));
 end;
 
 func main() => integer

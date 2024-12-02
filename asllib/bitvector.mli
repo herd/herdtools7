@@ -138,6 +138,10 @@ val bitcount : t -> int
 val highest_set_bit : t -> int
 (** Returns the index of the highest set bit. *)
 
+val prefix : t -> int -> t
+(** [prefix src len] returns the prefix of size [len] of bitvector [src].
+    Will crash if [len] is strictly more then the size of [src]. *)
+
 val extract_slice : t -> int list -> t
 (** [extract_slice src positions] returns a bitvector whose [i]-th bit is the
     bit of [src] whose index is the [i]-th element of [positions].
