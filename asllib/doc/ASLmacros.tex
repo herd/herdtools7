@@ -1258,6 +1258,34 @@
 \newcommand\Prosebuilddependencies[2]{\hyperlink{def-builddependencies}{building} the \dependencygraphterm\ of #1 yields #2}
 \newcommand\decldependencies[0]{\hyperlink{def-decldependencies}{\textfunc{decl\_dependencies}}}
 
+% Macros related to side effects
+\newcommand\abstractdynerror[0]{\hyperlink{def-abstractdynerror}{\textsf{abstract\_dynerror}}}
+
+\newcommand\TTimeFrame[0]{\hyperlink{def-timeframetype}{\textsf{TimeFrame}}}
+\newcommand\timeframeconstant[0]{\hyperlink{def-timeframeconstant}{\textsf{Constant}}}
+\newcommand\timeframeconfig[0]{\hyperlink{def-timeframeconfig}{\textsf{Config}}}
+\newcommand\timeframeexecution[0]{\hyperlink{def-timeframeexecution}{\textsf{Execution}}}
+\newcommand\timeframeless[0]{\hyperlink{def-timeframeless}{<_{\text{time}}}}
+\newcommand\timeframeleq[0]{\hyperlink{def-timeframeleq}{\leq_{\text{time}}}}
+\newcommand\timeframemax[0]{\hyperlink{def-timeframemax}{\text{max}_{\text{time}}}}
+\newcommand\timeframeofldk[0]{\hyperlink{def-timeframeofldk}{\textfunc{time\_frame\_ldk}}}
+\newcommand\timeframeofgdk[0]{\hyperlink{def-timeframeofldk}{\textfunc{time\_frame\_gdk}}}
+
+\newcommand\TSideEffect[0]{\hyperlink{def-tsideeffect}{\textsf{TSideEffect}}}
+\newcommand\ReadLocal[0]{\hyperlink{def-readlocal}{\textsf{ReadLocal}}}
+\newcommand\WriteLocal[0]{\hyperlink{def-writelocal}{\textsf{WriteLocal}}}
+\newcommand\ReadGlobal[0]{\hyperlink{def-readglobal}{\textsf{ReadGlobal}}}
+\newcommand\WriteGlobal[0]{\hyperlink{def-writeglobal}{\textsf{WriteGlobal}}}
+\newcommand\ThrowException[0]{\hyperlink{def-throwexception}{\textsf{ThrowException}}}
+\newcommand\RecursiveCall[0]{\hyperlink{def-recursivecall}{\textsf{RecursiveCall}}}
+\newcommand\PerformsAssertions[0]{\hyperlink{def-performsassertions}{\textsf{PerformsAssertions}}}
+\newcommand\NonDeterministic[0]{\hyperlink{def-nondeterministic}{\textsf{NonDeterministic}}}
+
+\newcommand\timeframe[0]{\hyperlink{def-timeframe}{\textfunc{time\_frame}}}
+\newcommand\sideeffectispure[0]{\hyperlink{def-sideeffectispure}{\textfunc{is\_pure}}}
+\newcommand\sideeffectisimmutable[0]{\hyperlink{def-sideeffectisimmutable}{\textfunc{is\_immutable}}}
+\newcommand\sideeffectisstaticallyevaluable[0]{\hyperlink{def-sideeffectisstaticallyevaluable}{\textfunc{is\_statically\_evaluable}}}
+
 % Symbolic equivalence testing macros
 \newcommand\normalize[0]{\hyperlink{def-normalize}{\textfunc{normalize}}}
 \newcommand\typeequal[0]{\hyperlink{def-typeequal}{\textfunc{type\_equal}}}
@@ -1411,8 +1439,6 @@
 \newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
 \newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
 \newcommand\structureofinteger[0]{\hyperlink{def-checkstructureinteger}{structure of an integer}}
-\newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
-\newcommand\pure[0]{\hyperlink{def-storageispure}{pure}}
 \newcommand\wellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
 \newcommand\wellconstrainedversion[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
 \newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
@@ -1441,6 +1467,13 @@
 \newcommand\defusedependencyterm[0]{\hyperlink{def-builddependencies}{def-use dependency}}
 \newcommand\defusedependenciesterm[0]{\hyperlink{def-builddependencies}{def-use dependencies}}
 \newcommand\dependencygraphterm[0]{\hyperlink{def-builddependencies}{def-use dependency graph}}
+
+\newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
+\newcommand\pureterm[0]{\hyperlink{def-storageispure}{pure}}
+\newcommand\timeframeterm[0]{\hyperlink{def-timeframe}{time frame}}
+\newcommand\timeframesterm[0]{\hyperlink{def-timeframe}{time frames}}
+\newcommand\sideeffectdescriptorterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptor}}
+\newcommand\sideeffectdescriptorsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptors}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions

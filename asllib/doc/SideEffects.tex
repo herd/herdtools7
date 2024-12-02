@@ -1,0 +1,261 @@
+\chapter{Side Effects\label{chap:SideEffects}}
+
+This chapter defines a static \emph{side effect analysis}.
+The analysis \emph{soundly} determines which pairs of expressions are \emph{order independent}.
+By \emph{soundly}, we mean that the analysis proves that a \underline{sufficient condition}
+for \emph{order independence}.
+
+\begin{definition}[Order Independence]
+Two expressions $\veone$ and $\vetwo$ are \emph{order independent}
+if the following condition holds for every
+environment $\env \in \dynamicenvs$:
+\[
+\begin{array}{l}
+\{\ \abstractdynerror(C) \;|\; \evalexprlist{\env, [\veone, \vetwo]} \evalarrow C\ \} = \\
+\{\ \abstractdynerror(C) \;|\; \evalexprlist{\env, [\vetwo, \veone]} \evalarrow C\ \} \enspace.
+\end{array}
+\]
+where $\abstractdynerror$ abstracts away all dynamic error configurations into $\top$:
+\[
+\abstractdynerror(C) \triangleq \begin{cases}
+    C       & \text{if }\configdomain{C} \in \{\Normal, \Throwing\}\\
+    \top    & \text{else }C = \DynamicErrorVal{M}\\
+\end{cases}
+\]
+That is, evaluating the expressions results with the same set of configurations,
+ignoring the specific messages carried by dynamic error configurations.
+\end{definition}
+
+Along the way, we also define the concept of \emph{pure expressions} and \staticallyevaluable\ expressions.
+
+\section{Time Frames\label{sec:TimeFrames}}
+\hypertarget{def-timeframe}{}
+We divide side effects by \emph{\timeframesterm}, which indicate the phase where a side effect occurs:
+\begin{description}
+    \item[Constant] Contains effects that take place during static evaluation (see \chapref{staticevaluation}). That is, during type-checking.
+    \item[Configuration] Contains effects that take place while rewriting the initializing value of a \texttt{config} storage element.
+    \item[Execution] Contains effects that take place during semantic evaluation.
+\end{description}
+
+Formally, \timeframesterm\ are totally ordered via $\timeframeless$ as follows:
+\hypertarget{def-timeframetype}{}
+\hypertarget{def-timeframeless}{}
+\[
+\TTimeFrame \triangleq \{ \timeframeconstant \timeframeless \timeframeconfig \timeframeless \timeframeexecution \}
+\]
+Additionally, we define the less-than-or-equal ordering as follows:
+\[
+f \timeframeleq f' \triangleq f \timeframeless f' \land f \neq f' \enspace.
+\]
+
+We now define some helper functions for constructing time frames.
+
+\hypertarget{def-timeframemax}{}
+We define the maximum of a set of time frames $\timeframemax : \pow{\TTimeFrame} \rightarrow \TTimeFrame$
+as follows:
+\[
+    \timeframemax(T) \triangleq t \text{ such that } t\in T \land \forall t'\in T.\ t' \timeframeleq t \enspace.
+\]
+
+\subsubsection{TypingRule.TimeFrameLDK\label{sec:TypingRule.TimeFrameLDK}}
+\hypertarget{def-timeframeofldk}{}
+The function
+\[
+    \timeframeofldk(\overname{\localdeclkeyword}{\ldk}) \aslto \overname{\TTimeFrame}{\vt}
+\]
+constructs a \timeframeterm\ $\vt$ from a local declaration keyword $\ldk$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+    {
+        \timeframeofldk(\ldk) \typearrow
+    \begin{cases}
+        \timeframeconstant & \text{if }\ldk = \LDKConstant\\
+        \timeframeexecution & \text{if }\ldk = \LDKLet\\
+        \timeframeexecution & \text{if }\ldk = \LDKVar\\
+    \end{cases}
+    }
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.TimeFrameGDK\label{sec:TypingRule.TimeFrameGDK}}
+\hypertarget{def-timeframeofgdk}{}
+The function
+\[
+    \timeframeofgdk(\overname{\globaldeclkeyword}{\gdk}) \aslto \TTimeFrame
+\]
+constructs a \timeframeterm\ $\vt$ from a global declaration keyword $\gdk$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+    {
+        \timeframeofgdk(\gdk) \typearrow
+    \begin{cases}
+        \timeframeconstant  & \text{if }\gdk = \GDKConstant\\
+        \timeframeconfig & \text{if }\gdk = \GDKConfig\\
+        \timeframeexecution & \text{if }\gdk = \GDKLet\\
+        \timeframeexecution & \text{if }\gdk = \GDKVar\\
+    \end{cases}
+    }
+}
+\end{mathpar}
+
+\section{Side Effect Descriptors}
+We now define \hypertarget{def-sideeffectdescriptorsterm}{\sideeffectdescriptorterm},
+which are configurations used to describe side effects, as explained below:
+\hypertarget{def-readlocal}{}
+\hypertarget{def-writelocal}{}
+\hypertarget{def-readglobal}{}
+\hypertarget{def-writeglobal}{}
+\hypertarget{def-throwexception}{}
+\hypertarget{def-recursivecall}{}
+\hypertarget{def-performsassertions}{}
+\hypertarget{def-nondeterministic}{}
+\[
+\TSideEffect \triangleq \left\lbrace
+\begin{array}{ll}
+    \ReadLocal(\overname{\identifier}{\vx}, \overname{\TTimeFrame}{\vt}, \overname{\Bool}{\vm})     & \cup\\
+    \WriteLocal(\overname{\identifier}{\vx})                                            & \cup\\
+    \ReadGlobal(\overname{\identifier}{\vx}, \overname{\TTimeFrame}{\vt}, \overname{\Bool}{\vm})    & \cup\\
+    \WriteGlobal(\overname{\identifier}{\vx})                                           & \cup\\
+    \ThrowException(\overname{\identifier}{\vx})                                        & \cup\\
+    \RecursiveCall(\overname{\identifier}{\vf})                                         & \cup\\
+    \PerformsAssertions                                                 & \cup\\
+    \NonDeterministic                                                   &
+\end{array} \right.
+\]
+\begin{description}
+    \item[$\ReadLocal$] describes an evaluation of a construct that leads to reading the value of the local storage element
+                        $\vx$ at the \timeframeterm\ $\vt$ where $\vm$ is $\True$ if and only if $\vx$
+                        was declared as a mutable local storage element (that is, \texttt{var});
+    \item[$\WriteLocal$] describes an evaluation of a construct that leads to modifying the value of the local storage element
+        $\vx$ at the \timeframeterm\ $\vt$ where $\vm$ is $\True$ if and only if $\vx$
+        was declared as a mutable local storage element (that is, \texttt{var});
+    \item[$\ReadGlobal$] describes an evaluation of a construct that leads to reading the value of the global storage element
+        $\vx$ at the \timeframeterm\ $\vt$ where $\vm$ is $\True$ if and only if $\vx$
+        was declared as a mutable local storage element (that is, \texttt{var});
+    \item[$\WriteGlobal$] describes an evaluation of a construct that leads to modifying the value of the global storage element
+        $\vx$ at the \timeframeterm\ $\vt$ where $\vm$ is $\True$ if and only if $\vx$
+        was declared as a mutable local storage element (that is, \texttt{var});
+    \item[$\RecursiveCall$] describes an evaluation of a construct that leads to calling the recursive function $\vf$;
+    \item[$\PerformsAssertions$] describes an evaluation of a construct that leads to evaluating an \texttt{assert} statement;
+    \item[$\NonDeterministic$] describes an evaluation of a construct that leads to evaluating a non-deterministic
+        expression (either \texttt{UNKNOWN} or a library function call known to be non-deterministic).
+\end{description}
+
+We now define a few helper functions over \timeframesterm.
+
+\subsubsection{TypingRule.TimeFrame\label{sec:TypingRule.TimeFrame}}
+\hypertarget{def-timeframe}{}
+The function
+\[
+    \timeframe(\overname{\TSideEffect}{\vs}) \aslto \overname{\TTimeFrame}{\vt}
+\]
+retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+    \timeframe(\overname{\ReadLocal(\Ignore, \vt)}{\vs}) \typearrow \vt
+}
+\and
+\inferrule{}{
+    \timeframe(\overname{\ReadGlobal(\Ignore, \vt)}{\vs}) \typearrow \vt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+    {
+    \configdomain{\vs} \in \left\{
+        \begin{array}{c}
+            \WriteLocal, \\
+            \WriteGlobal, \\
+            \NonDeterministic, \\
+            \RecursiveCall, \\
+            \ThrowException
+        \end{array}
+    \right\}
+    }
+}{
+    \timeframe(\vs) \typearrow \overname{\timeframeexecution}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+    \timeframe(\overname{\PerformsAssertions}{\vs}) \typearrow \overname{\timeframeconstant}{\vt}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SideEffectIsPure\label{sec:TypingRule.SideEffectIsPure}}
+\hypertarget{def-sideeffectispure}{}
+\[
+    \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
+\]
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{pure},
+yielding the result in $\vb$.
+Intuitively, a \sideeffectdescriptorsterm\ is pure if it does not correspond evaluating
+a construct that modifies the value of any storage element.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \vb \eqdef \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\}
+}{
+    \sideeffectispure(\vt) \typearrow \vb
+}
+\end{mathpar}
+% NonDeterministic | RecursiveCall _ | ThrowException _ | PerformsAssertions -> false
+
+\subsubsection{TypingRule.SideEffectIsImmutable\label{sec:TypingRule.SideEffectIsImmutable}}
+\hypertarget{def-sideeffectisimmutable}{}
+\[
+    \sideeffectisimmutable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
+\]
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{immutable},
+yielding the result in $\vb$.
+Intuitively, a \sideeffectdescriptorsterm\ is immutable if ...
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+    \sideeffectisimmutable(\overname{\ReadLocal(\Ignore, \Ignore, \vb)}{\vs}) \typearrow \vb
+}
+\and
+\inferrule{}{
+    \sideeffectisimmutable(\overname{\ReadGlobal(\Ignore, \Ignore, \vb)}{\vs}) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+    \configdomain{\vs} \not\in \{\ReadLocal, \ReadGlobal\}
+}{
+    \sideeffectisimmutable(\vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+% NonDeterministic | ThrowException _ | PerformsAssertions -> false
+
+\subsubsection{TypingRule.SideEffectIsStaticallyEvaluable\label{sec:TypingRule.SideEffectIsStaticallyEvaluable}}
+\hypertarget{def-sideeffectisstaticallyevaluable}{}
+\[
+    \sideeffectisstaticallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
+\]
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{statically evaluable},
+yielding the result in $\vb$.
+Intuitively, a \sideeffectdescriptorsterm\ is statically evaluable if...
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \sideeffectispure(\vs) \typearrow \True \terminateas \False\\\\
+    \sideeffectisimmutable(\vs) \typearrow \True \terminateas \False
+}{
+    \sideeffectisstaticallyevaluable(\vs) \typearrow \vb
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.IsSideEffectFree\label{sec:TypingRule.IsSideEffectFree}}
