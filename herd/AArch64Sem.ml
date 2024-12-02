@@ -1058,12 +1058,23 @@ module Make
             (fun loc v -> Act.tag_access quad Dir.W loc v) ii
         else m a
 
-(* Check that the PAC field of a virtual address is canonical *)
-      let check_pac_canonical ma ii mok mfault =
-        do_insert_commit ma (fun a ->
-           M.op1 Op.CheckCanonical a >>= fun c ->
-           M.choiceT c (mok (M.unitT a)) (mfault (M.unitT a))
-        ) ii
+(* Check that the PAC field of a virtual address is canonical, if
+  ignore_non_virtual is true then the check is ignored if the address is not a
+  virtual addresse *)
+      let check_pac_canonical ignore_non_virtual ma ii mok mfault =
+        let mcheck ma =
+          do_insert_commit ma (fun a ->
+             M.op1 Op.CheckCanonical a >>= fun c ->
+             M.choiceT c (mok (M.unitT a)) (mfault (M.unitT a))
+          ) ii
+        in
+        if ignore_non_virtual then
+          M.delay_kont "pac check virtual" ma (fun a ma ->
+            M.op1 Op.IsVirtual a >>= fun virt ->
+            M.choiceT virt (mcheck ma) (mok ma)
+          )
+        else
+          mcheck ma
 
 
       let do_write_mem sz an anexp ac a v ii =
@@ -1407,7 +1418,7 @@ module Make
             None
           >>! B.Exit
         in
-        check_pac_canonical ma ii mok mfault
+        check_pac_canonical true ma ii mok mfault
 
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
@@ -4327,7 +4338,7 @@ module Make
                 M.op (Op.AutPAC key) addr modifier
               in
 
-              check_pac_canonical ma ii mop mfault
+              check_pac_canonical false ma ii mop mfault
             end
         | I_XPACI r | I_XPACD r
         ->

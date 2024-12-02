@@ -1,4 +1,4 @@
-NAME = example8
+NAME = example10
 
 all: #my_herd
 	touch build/example.svg
@@ -14,9 +14,9 @@ my_herd:
 
 herd:
 	herd7 \
-		-show prop -doshow prop -variant mte \
+		-show prop -doshow prop \
 		-cat aarch64.cat -showevents all -show all \
-		-preview $(NAME).litmus -o build
+		-gv $(NAME).litmus -o build -squished true
 
 litmus:
 	../_build/install/default/bin/litmus7 \
