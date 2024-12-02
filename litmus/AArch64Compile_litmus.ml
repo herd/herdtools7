@@ -1958,6 +1958,8 @@ module Make(V:Constant.S)(C:Config) =
       I_SEAL _|I_STCT _|I_UNSEAL _ ->
         Warn.fatal "No litmus output for instruction %s"
             (dump_instruction ins)
+    | I_SVC _ ->
+        { empty_ins with memo = ".word 0"; }::k
     | I_UDF _ ->
         { empty_ins with memo = ".word 0"; }::k
 

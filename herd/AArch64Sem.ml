@@ -3317,6 +3317,13 @@ module Make
              fun () -> read_reg_ord AArch64.elr_el1 ii >>=
              eret_to_addr
 
+        | I_SVC _ ->
+          let (>>!) = M.(>>!) in
+          let ft = Some FaultType.AArch64.SupervisorCall in
+          let m_fault = mk_fault None Dir.R Annot.N ii ft None in
+          let lbl_v = get_instr_label ii in
+          m_fault >>| set_elr_el1 lbl_v ii >>! B.Fault [AArch64Base.elr_el1, lbl_v]
+
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
               >>= is_zero
