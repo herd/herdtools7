@@ -36,3 +36,4 @@ type t = {
 }
 
 val tr: ParsedDotGraph.t -> t
+val describe : t -> string

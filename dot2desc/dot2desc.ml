@@ -25,7 +25,7 @@ let exec filename =
   end) in
   let graphs = Parse.parse_file filename in
   List.iteri (fun i g ->
-    Printf.printf "The content of graph %d is:\n%s\n" (i + 1) (ParsedDotGraph.pp g)
+    Printf.printf "The content of graph %d is:\n%s\n" (i + 1) (DotGraph.describe g)
   ) graphs
 
 let options = [

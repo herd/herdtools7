@@ -19,7 +19,7 @@ module type Config = sig
 end
 
 module Make(C: Config) : sig
-  val parse_file : string -> ParsedDotGraph.t list
+  val parse_file : string -> DotGraph.t list
 end = struct
   let do_parse_file channel =
     let module DotLexer = DotLexer.Make(struct
@@ -27,7 +27,8 @@ end = struct
     end) in
     let lexbuf = Lexing.from_channel channel in
     try
-      DotParser.main DotLexer.token lexbuf
+      let graphs = DotParser.main DotLexer.token lexbuf in
+      List.map DotGraph.tr graphs
     with
     | DotParser.Error ->
       Printf.eprintf "Syntax error at position %d\n" (Lexing.lexeme_start lexbuf);
