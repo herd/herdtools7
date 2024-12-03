@@ -1,8 +1,6 @@
-AArch64 A06
-Show that using a AUT* instruction on a different PAC field generate the
-XOR of the two PAC fields
-{ 0:X0=pac(x, da, 42) }
- P0            ;
-L0:            ;
- AUTDZA X0     ;
-forall (0:X0=pac(pac(x, da, 42), da, 0))
+AArch64 A06.litmus
+{ 0:x0=pac(x, da, 42); 0:x1=42; }
+P0           ;
+autda x0, x1 ;
+forall
+(0:x0=x)

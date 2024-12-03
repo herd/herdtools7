@@ -1,10 +1,10 @@
 Test A08 Required
 States 1
-0:X0=x;
+ Fault(P0,PacCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:X0=x)
+Condition forall (fault(P0,PacCheck))
 Observation A08 Always 1 0
-Hash=4f20ed5697549e96f4b443c66ccdaf1a
+Hash=51796409dce544aa7b74fa8820446623
 

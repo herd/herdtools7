@@ -1,8 +1,5 @@
-AArch64 A03
-Check that adding a PAC field to a canonical pointer unsing a PAC* instruction
-has the expected behaviour
-{ 0:X0=x }
- P0            ;
-L0:            ;
- PACDZA X0     ;
-forall (0:X0=pac(x, da, 0))
+AArch64 A03.litmus
+{ 0:x0=pac(x, da, 42, 7) }
+P0           ;
+mov x1, #42  ;
+pacda x0, x1 ;

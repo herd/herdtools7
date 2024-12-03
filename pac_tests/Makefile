@@ -1,4 +1,4 @@
-NAME = example10
+NAME = A03
 
 all: #my_herd
 	touch build/example.svg
@@ -11,6 +11,17 @@ my_herd:
 		-showevents all -show all \
 		-doshow iico_ctrl -doshow ctrl -doshow all \
 		-squished true -fontsize 20
+
+# Run my modified version of herd on a user given file
+%.expected:
+	../_build/install/default/bin/herd7 \
+		-gv $(@:.expected=).litmus -o build \
+		-set-libdir ../herd/libdir \
+		-showevents all -show all \
+		-doshow iico_ctrl -doshow ctrl -doshow all \
+		-squished true -fontsize 20 > $(@:.expected=.litmus.expected)
+	touch build/example.svg
+	dot -Tsvg build/$(@:.expected=).dot > build/example.svg
 
 herd:
 	herd7 \

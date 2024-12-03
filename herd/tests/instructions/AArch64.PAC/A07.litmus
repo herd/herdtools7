@@ -1,8 +1,6 @@
-AArch64 A07
-Show that using a PAC* instruction on a same PAC field generate the
-original PAC field
-{ 0:X0=pac(x, da, 42); 0:X1=42 }
- P0            ;
-L0:            ;
- AUTDA X0,X1   ;
-forall (0:X0=x)
+AArch64 A07.litmus
+{ 0:x0=pac(x, db, 42); 0:x1=42; }
+P0           ;
+autda x0, x1 ;
+forall
+(Fault(P0, PacCheck))

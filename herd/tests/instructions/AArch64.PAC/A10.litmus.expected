@@ -1,10 +1,10 @@
 Test A10 Required
 States 1
-0:X0=pac(x, da, 0x0, 42);
+0:X0=x;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:X0=pac(x, da, 0x0, 42))
+Condition forall (0:X0=x)
 Observation A10 Always 1 0
-Hash=f9bf8f827982e721e5a370e83edf8c1d
+Hash=7487355201762e8a5ad12f10b720a5e1
 

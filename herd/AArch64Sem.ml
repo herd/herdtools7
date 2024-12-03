@@ -4302,6 +4302,7 @@ module Make
               write_reg_dest rd v ii >>= fun v ->
               B.nextSetT rd v
             end
+        (* Implement `FEAT_FPAC`: raise a fault if the PAC field doesn't match *)
         | I_AUT_DA (rd, rn)
         | I_AUT_DB (rd, rn)
         | I_AUT_IA (rd, rn)
@@ -4318,12 +4319,11 @@ module Make
               in
 
               let mfault ma =
-                do_insert_commit ma
-                  (fun a ->
-                    mk_fault (Some a) Dir.R Annot.N ii
-                      (Some FaultType.AArch64.PacCheck)
-                      None)
-                  ii >>! B.Exit
+                  ma >>= fun _ ->
+                  mk_fault None Dir.R Annot.N ii
+                    (Some FaultType.AArch64.PacCheck)
+                    None
+                  >>! B.Exit
               in
 
               let mop ma =
@@ -4340,6 +4340,8 @@ module Make
 
               check_pac_canonical false ma ii mop mfault
             end
+        (* If address tagging and logical address tagging is not enabled then
+          xpacd and xpaci have the same behaviour *)
         | I_XPACI r | I_XPACD r
         ->
           begin

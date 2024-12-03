@@ -1,10 +1,10 @@
 Test A04 Required
 States 1
-0:X0=pac(pac(x, da, 0x2a, 0), da, 0x0, 0);
+ Fault(P0,PacCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:X0=pac(pac(x, da, 0x2a, 0), da, 0x0, 0))
+Condition forall (fault(P0,PacCheck))
 Observation A04 Always 1 0
-Hash=81f5a9a6ab7d96ca46ff5df4bd0a548c
+Hash=83d595d76a4b2aeb8a0bf24731fc5e1e
 

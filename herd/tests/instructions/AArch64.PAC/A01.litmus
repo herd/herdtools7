@@ -1,7 +1,6 @@
-AArch64 A01
-check that loads and stores from a valid pointer succed
-{ 0:X0=x; 0:X1=42 }
- P0          ;
- STR X1,[X0] ;
- LDR X2,[X0] ;
- forall (0:X2=42)
+AArch64 A01.litmus
+{ 0:x0=pac(x, da, 42, 7) }
+P0          ;
+ldr x1,[x0] ;
+forall
+(Fault(P0, MMU:Translation))
