@@ -76,10 +76,10 @@ expressions and statements.
 \subsection{Syntax\label{sec:IntegerTypesSyntax}}
 \begin{flalign*}
 \Nty \derives\ & \Tinteger \parsesep \Nconstraintkindopt &\\
-\Nconstraintkindopt \derivesinline\ & \Nconstraintkind \;|\; \emptysentence &\\
-\Nconstraintkind \derivesinline\ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &\\
+\Nconstraintkindopt \derives \ & \Nconstraintkind \;|\; \emptysentence &\\
+\Nconstraintkind \derives \ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &\\
 |\ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
-\Nintconstraint \derivesinline\ & \Nexpr &\\
+\Nintconstraint \derives \ & \Nexpr &\\
 |\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
 \end{flalign*}
 
@@ -438,9 +438,9 @@ In the following example, all the uses of \texttt{boolean} are well-typed:
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tbit &\\
-            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \maybeemptylist{\Nbitfields} &\\
-\Nbitfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &\\
-\Nbitfield \derivesinline\ & \Nslices \parsesep \Tidentifier &\\
+            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \optional{\Nbitfields} &\\
+\Nbitfields \derives \ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &\\
+\Nbitfield \derives \ & \Nslices \parsesep \Tidentifier &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
 \end{flalign*}

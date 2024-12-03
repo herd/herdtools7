@@ -987,7 +987,7 @@ conditional expression evaluates to the \texttt{else} expression.
 \end{flalign*}
 
 \begin{flalign*}
-\Ncall \derivesinline\
+\Ncall \derives \
      & \Tidentifier \parsesep \Plist{\Nexpr} &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr} &
@@ -2140,9 +2140,9 @@ Lists of patterns are also used in case statements.
 \Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
               |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
               |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
-\Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+\Npatternset \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
                   |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
-\Npatternlist \derivesinline\ & \NClist{\Npattern} &
+\Npatternlist \derives \ & \NClist{\Npattern} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -2381,7 +2381,7 @@ Notice that this rule introduces non-determinism.
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
-\Nfieldassign \derivesinline\ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
+\Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
