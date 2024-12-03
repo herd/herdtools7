@@ -1,0 +1,31 @@
+name: Run Litmus X86_64
+
+on:
+  schedule:
+    - cron: '0 10 * * 0'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - "5.1"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - run: |
+          opam install dune menhir zarith
+          opam exec -- make Version.ml
+          opam exec -- dune build litmus/litmus.exe
+          opam exec -- make litmus-x86_64-test LITMUS=$(pwd)/_build/default/litmus/litmus.exe X86_64_PREFIX=''
