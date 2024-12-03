@@ -56,10 +56,10 @@ KUT_CONFIG_PARAMS=--arch=arm64 --page-size=4k --cross-prefix=$(KUT_AARCH64_PREFF
 KUT_DIR_AARCH64:=$(shell mktemp -d)
 
 litmus-aarch64-dep:
-	cd $(KUT_DIR_AARCH64);							\
-	git clone -q https://gitlab.com/kvm-unit-tests/kvm-unit-tests.git;	\
-	cd kvm-unit-tests;							\
-	./configure $(KUT_CONFIG_PARAMS); 					\
+	cd $(KUT_DIR_AARCH64);                                             \
+	git clone -q https://gitlab.com/kvm-unit-tests/kvm-unit-tests.git; \
+	cd kvm-unit-tests;                                                 \
+	./configure $(KUT_CONFIG_PARAMS);                                  \
 	make $(SILENTOPT)
 
 litmus-aarch64-test:: litmus-cata-aarch64-test-kvm
@@ -71,7 +71,7 @@ litmus-cata-aarch64-test-kvm: litmus-aarch64-dep
 		-mach kvm-armv8.1 -a 4			\
 		catalogue/aarch64/tests/@all
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
-	if $(RUN_TESTS); then ( cd $(KUT_DIR)/kvm-unit-tests && sh t/run.sh ); fi
+	if $(RUN_TESTS); then ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ); fi
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64 tests: OK"
 
@@ -81,10 +81,10 @@ litmus-cata-aarch64-VMSA-test-kvm: litmus-aarch64-dep
 	$(LITMUS)					\
 		-set-libdir $(LITMUS_LIB_DIR)	        \
 		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	\
-		-mach kvm-armv8.1 -a 4			\
+		-mach kvm-armv8.1+rcpc -a 4			\
 		catalogue/aarch64-VMSA/tests/@all
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
-	if $(RUN_TESTS); then ( cd $(KUT_DIR)/kvm-unit-tests && sh t/run.sh ); fi
+	if $(RUN_TESTS); then ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ); fi
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-VMSA tests: OK"
 
@@ -97,7 +97,7 @@ litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 		-mach kvm-armv8.1 -variant self -a 4	\
 		catalogue/aarch64-ifetch/tests/@all
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
-	if $(RUN_TESTS); then ( cd $(KUT_DIR)/kvm-unit-tests && sh t/run.sh ); fi
+	if $(RUN_TESTS); then ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ); fi
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-ifetch tests: OK"
 
