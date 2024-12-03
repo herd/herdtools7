@@ -149,4 +149,6 @@ flag ~empty (if "sve" then _ else 0)
 flag ~empty (if "sme" then _ else 0)
   as Scalable-Matrix-Extensions-is-work-in-progress
 
+flag ~empty (if "shadowstack" then _ else 0)
+  as Guarded-Control-Stack-is-work-in-progress
 include "aarch64loc.cat"

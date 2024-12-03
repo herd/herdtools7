@@ -31,8 +31,19 @@ module type AArch64Sig = sig
     | Permission
     | Exclusive
 
+  type gcs_t =
+    | PRET
+    | POPM
+    | PRETAA
+    | PRETAB
+    | SS1
+    | SS2
+    | POPCX
+    | POPX
+
   type t =
     | MMU of mmu_t
+    | GCSCheck of gcs_t
     | TagCheck
     | UndefinedInstruction
     | SupervisorCall
@@ -48,14 +59,35 @@ module AArch64 = struct
     | Permission
     | Exclusive
 
+  type gcs_t =
+    | PRET
+    | POPM
+    | PRETAA
+    | PRETAB
+    | SS1
+    | SS2
+    | POPCX
+    | POPX
+
   let pp_mmu_t = function
     | Translation -> "Translation"
     | AccessFlag -> "AccessFlag"
     | Permission -> "Permission"
     | Exclusive -> "Exclusive"
 
+  let pp_gcs_t = function
+   | PRET -> "PRET"
+   | POPM -> "POPM"
+   | PRETAA -> "PRETAA"
+   | PRETAB -> "PRETAB"
+   | SS1 -> "SS1"
+   | SS2 -> "SS2"
+   | POPCX -> "POPCX"
+   | POPX -> "POPX"
+
   type t =
     | MMU of mmu_t
+    | GCSCheck of gcs_t
     | TagCheck
     | UndefinedInstruction
     | SupervisorCall
@@ -77,10 +109,19 @@ module AArch64 = struct
                    PacCheck PAC.IB];
       "UndefinedInstruction",[UndefinedInstruction];
       "SVC", [SupervisorCall];
+      "GCSCheck", [GCSCheck PRET;
+                   GCSCheck POPM;
+                   GCSCheck PRETAA;
+                   GCSCheck PRETAB;
+                   GCSCheck SS1;
+                   GCSCheck SS2;
+                   GCSCheck POPCX;
+                   GCSCheck POPX];
     ]
 
   let pp = function
     | MMU m -> Printf.sprintf "MMU:%s" (pp_mmu_t m)
+    | GCSCheck m -> Printf.sprintf "GCS:%s" (pp_gcs_t m)
     | TagCheck -> "TagCheck"
     | UndefinedInstruction -> "UndefinedInstruction"
     | SupervisorCall -> "SupervisorCall"
@@ -91,6 +132,14 @@ module AArch64 = struct
     | "MMU:AccessFlag" -> MMU AccessFlag
     | "MMU:Permission" -> MMU Permission
     | "MMU:Exclusive" -> MMU Exclusive
+    | "GCS:PRET" -> GCSCheck PRET
+    | "GCS:POPM" -> GCSCheck POPM
+    | "GCS:PRETAA" -> GCSCheck PRETAA
+    | "GCS:PRETAB" -> GCSCheck PRETAB
+    | "GCS:SS1" -> GCSCheck SS1
+    | "GCS:SS2" -> GCSCheck SS2
+    | "GCS:POPCX" -> GCSCheck POPCX
+    | "GCS:POPX" -> GCSCheck POPX
     | "TagCheck" -> TagCheck
     | "PacCheck:DA" -> PacCheck PAC.DA
     | "PacCheck:DB" -> PacCheck PAC.DB
