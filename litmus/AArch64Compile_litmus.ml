@@ -1976,6 +1976,7 @@ module Make(V:Constant.S)(C:Config) =
          sprintf "msr %s,%s" (Misc.lowercase (pp_sysreg sr)) f in
        {empty_ins with
          memo; outputs=r; reg_env=add_type quad r;}::k
+    | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
     | I_STG _| I_STZG _|I_STZ2G _|I_LDG _ ->
         Warn.fatal "No litmus output for instruction %s"
           (dump_instruction ins)
