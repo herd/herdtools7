@@ -765,7 +765,8 @@ module Make(C:Config) (I:I) : S with module I = I
                       tag=tag ;
                       cap=cap ;
                       offset=i*nbytes;
-                      pac=PAC.canonical} in
+                      pac=PAC.canonical;
+                      fixup_offset=false } in
                   of_symbolic_data sym_data,(TestType.Ty array_prim,I.V.cstToV v))
                 vs in
               List.fold_left
@@ -787,15 +788,20 @@ module Make(C:Config) (I:I) : S with module I = I
                * offset depends on the size of the vector type in the initial state.
                *)
               begin
-                let offset = s.Constant.offset in
-                let base = {s with Constant.offset = 0} in
-                let rloc = of_symbolic_data base in
-                let v = match look_type tenv rloc with
-                  | TestType.TyArray _ as ty -> scale_array_reference ty rloc offset
-                  | _ -> of_symbolic_data s in
-                match symbolic_data v with
-                | Some s -> state_add_if_undefined st loc (I.V.cstToV (Constant.of_symbolic_data s))
-                | _ -> assert false
+                if (s.Constant.fixup_offset) then
+                  begin
+                    let offset = s.Constant.offset in
+                    let base = {s with Constant.offset = 0; Constant.fixup_offset=false} in
+                    let rloc = of_symbolic_data base in
+                    let v = match look_type tenv rloc with
+                      | TestType.TyArray _ as ty -> scale_array_reference ty rloc offset
+                      | _ -> of_symbolic_data s in
+                    match symbolic_data v with
+                    | Some s -> state_add_if_undefined st loc (I.V.cstToV (Constant.of_symbolic_data s))
+                    | _ -> assert false
+                  end
+                else
+                  state_add_if_undefined st loc v
               end
             (* if we have a value, store it *)
             | _, _ -> state_add_if_undefined st loc v)
