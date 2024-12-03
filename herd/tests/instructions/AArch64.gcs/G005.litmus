@@ -1,0 +1,16 @@
+AArch64 G005
+variant=shadowstack
+{
+  SS(x,2);
+  SS(y,2) = ssval_t: {SSCap(y,1), 4};
+
+  0:GCSPR_EL1=&x[1];
+  0:X0=&y[0];
+}
+
+P0               ;
+GCSSS1 X0        ; (* GCSPR = y[0], y[0] = SSCap(x[1],5)  *)
+GCSSS2 X0        ; (* GCSPR = y[1], x = SSCap(x,1) *)
+GCSPOPM X1       ; (* Pop from y[1], must be 4 *)
+
+forall 0:X1=4 /\ ~fault(P0)

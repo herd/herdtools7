@@ -541,6 +541,12 @@ match name with
 | "seal"|"SEAL" -> SEAL
 | "stct"|"STCT" -> STCT
 | "unseal"|"UNSEAL" -> UNSEAL
+(* Guarded Control Stack *)
+| "gcspopm" | "GCSPOPM" -> GCSPOPM
+| "gcspushm" | "GCSPUSHM" -> GCSPUSHM
+| "gcsstr" | "GCSSTR" -> GCSSTR
+| "gcsss1" | "GCSSS1" -> GCSSS1
+| "gcsss2" | "GCSSS2" -> GCSSS2
 (* Misc *)
 | "csel"|"CSEL" -> CSEL
 | "csinc"|"CSINC" -> CSINC
@@ -553,6 +559,7 @@ match name with
 | "dmb"|"DMB" -> TOK_DMB
 | "dsb"|"DSB" -> TOK_DSB
 | "isb"|"ISB" -> TOK_ISB
+| "gcsb"|"GCSB" -> TOK_GCSB
 (* Fence Operands *)
 | "sy"|"SY" -> TOK_SY
 | "st"|"ST" -> TOK_ST
@@ -566,6 +573,7 @@ match name with
 | "nsh"|"NSH" -> TOK_NSH
 | "nshst"|"NSHST" -> TOK_NSHST
 | "nshld"|"NSHLD" -> TOK_NSHLD
+| "dsync" | "DSYNC" -> TOK_DSYNC
 (* inline barrel shift operands *)
 | "msl" | "MSL" -> TOK_MSL
 (* Cache maintenance *)
