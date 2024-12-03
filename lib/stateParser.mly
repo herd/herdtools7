@@ -58,6 +58,7 @@ let mk_lab (p,s) = mk_sym_virtual_label p s
 %token TOK_PTE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
+%token TOK_SS TOK_SSCAP TOK_SSVAL
 %token <string> INSTR
 %token <int * string> LABEL
 %token PTX_REG_DEC
@@ -160,6 +161,7 @@ maybev_notag:
 (* TODO: restrict to something like "NUM COLON BOOL"? *)
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
 | NAME LBRK NUM RBRK { Constant.mk_sym_with_index $1 (Misc.string_as_int $3) }
+| TOK_SSCAP LPAR NAME COMMA NUM RPAR { Constant.mk_sym_with_index $3 (Misc.string_as_int $5) }
 
 maybev_amper:
 | AMPER NAME { Constant.mk_sym $2 }
@@ -186,6 +188,10 @@ maybev_list:
 maybev_label:
 | maybev { $1 }
 | just_label { $1 }
+
+maybev_label_list:
+  | maybev_label COMMA maybev_label_list { $1::$3 }
+  | maybev_label { [$1] }
 
 %inline std_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
@@ -253,6 +259,19 @@ atom_init:
      else
        Warn.user_error
          "Declared size of array %s does not match initial value size"
+	 (dump_location t) }
+| ssspec
+   { let (t,sz) = $1 in
+     let v0 = Constant.mk_replicate sz ParsedConstant.zero in
+     (t,(TyArray ("uintptr_t",sz),v0)) }
+| ssspec EQUAL TOK_SSVAL LCURLY maybev_label_list RCURLY
+   { let (t,sz) = $1 and vs = $5 in
+     if sz = List.length vs then
+       let arr = (TyArray ("uintptr_t",sz),Constant.mk_vec sz vs) in
+       (t, arr)
+     else
+       Warn.user_error
+         "Declared size of shadow stack %s does not match initial value size"
 	 (dump_location t) }
 /* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
 | locindex EQUAL maybev { raise Parsing.Parse_error }
@@ -401,6 +420,10 @@ locindex:
 arrayspec:
 | NAME LBRK NUM RBRK
     { (Location_global (Constant.mk_sym $1),Misc.string_as_int $3) }
+
+ssspec:
+| TOK_SS LPAR NAME COMMA NUM RPAR
+    { (Location_global (Constant.mk_sym $3),Misc.string_as_int $5) }
 
 %inline equal:
 | EQUAL { () }

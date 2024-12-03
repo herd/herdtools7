@@ -1,0 +1,11 @@
+Test G006 Required
+States 1
+  ~Fault(P0);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Flag Guarded-Control-Stack-is-work-in-progress
+Condition forall (not (fault(P0)))
+Observation G006 Always 2 0
+Hash=28b2cd2cfd9fa18a88aab0bf42319cd8
+
