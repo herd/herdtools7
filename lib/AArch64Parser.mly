@@ -113,11 +113,12 @@ let check_op3 op e =
 %token <AArch64Base.MOPExt.op> MOPZ
 %token <AArch64Base.MOPExt.op> MOP
 %token CSEL CSINC CSINV CSNEG CSET CSETM CINC
-%token TOK_DMB TOK_DSB TOK_ISB
+%token TOK_DMB TOK_DSB TOK_ISB TOK_GCSB
 %token TOK_SY TOK_ST TOK_LD
 %token TOK_OSH TOK_OSHST TOK_OSHLD
 %token TOK_ISH TOK_ISHST TOK_ISHLD
 %token TOK_NSH TOK_NSHST TOK_NSHLD
+%token TOK_DSYNC
 %token CAS CASA CASL CASAL CASB CASAB CASLB CASALB CASH CASAH CASLH CASALH
 %token CASP CASPA CASPL CASPAL
 %token SWP SWPA SWPL SWPAL SWPB SWPAB SWPLB SWPALB SWPH SWPAH SWPLH SWPALH
@@ -139,6 +140,7 @@ let check_op3 op e =
 %token <AArch64Base.adda_op_variant> ADDA
 %token SMSTART SMSTOP TOK_SM TOK_ZA MOVA
 %token <AArch64Base.CTERM.cond> CTERM
+%token GCSPOPM GCSPUSHM GCSSTR GCSSS1 GCSSS2
 /*
 /*
 %token LDUMAX LDUMAXA LDUMAXL LDUMAXAL LDUMAXH LDUMAXAH LDUMAXLH LDUMAXALH
@@ -1544,6 +1546,19 @@ instr:
   { I_CSEL (V32,$2,$4,$4,inverse_cond $6,Inc) }
 | CINC xreg COMMA xreg COMMA cond
   { I_CSEL (V64,$2,$4,$4,inverse_cond $6,Inc) }
+/* Control Guarded Stack */
+| GCSPOPM xreg
+  { I_GCSPOPM $2 }
+| GCSPOPM
+  { I_GCSPOPM ZR }
+| GCSPUSHM xreg
+  { I_GCSPUSHM $2 }
+| GCSSTR xreg COMMA LBRK xreg RBRK
+  { I_GCSSTR ($2,$5) }
+| GCSSS1 xreg
+  { I_GCSSS1 $2 }
+| GCSSS2 xreg
+  { I_GCSSS2 $2 }
 /* Fences */
 | TOK_DMB fenceopt
   { let d,t = $2 in I_FENCE (DMB (d,t)) }
@@ -1551,6 +1566,8 @@ instr:
   { let d,t = $2 in I_FENCE (DSB (d,t)) }
 | TOK_ISB
   { I_FENCE ISB }
+| TOK_GCSB TOK_DSYNC
+  { I_FENCE GCSB }
 /* Cache Maintenance */
 | IC IC_OP
   { I_IC ($2,ZR) }

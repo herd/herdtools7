@@ -84,6 +84,9 @@ type t =
 (* CacheType features *)
   | DIC
   | IDC
+(* Shadow stack
+   AArch64: Guarded Control Stack *)
+  | ShadowStack
 (* Have cat interpreter to optimise generation of co's *)
   | CosOpt
 (* Test something *)
@@ -178,6 +181,7 @@ let parse s = match Misc.lowercase s with
 | "ifetch"|"self" -> Some Ifetch
 | "dic" -> None
 | "idc" -> None
+| "shadowstack" -> Some ShadowStack
 | "cos-opt" -> Some CosOpt
 | "test" -> Some Test
 | "asl" -> Some ASL
@@ -283,6 +287,7 @@ let pp = function
   | Ifetch -> "ifetch"
   | DIC -> "dic"
   | IDC -> "idc"
+  | ShadowStack -> "shadowstack"
   | CosOpt -> "cos-opt"
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n
