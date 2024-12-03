@@ -4,7 +4,7 @@ module ISet = ASTUtils.ISet
 module IMap = ASTUtils.IMap
 
 module TimeFrame : sig
-  type t = Constant | Config | Execution of bool
+  type t = Constant | Config | Execution
 
   val is_before : t -> t -> bool
   val max : t -> t -> t
@@ -13,10 +13,12 @@ module TimeFrame : sig
   val of_gdk : AST.global_decl_keyword -> t
 end
 
+type read = { name : identifier; time_frame : TimeFrame.t; immutable : bool }
+
 type t =
-  | ReadLocal of identifier * TimeFrame.t
+  | ReadLocal of read
   | WriteLocal of identifier
-  | ReadGlobal of identifier * TimeFrame.t
+  | ReadGlobal of read
   | WriteGlobal of identifier
   | ThrowException of identifier
   | RecursiveCall of identifier
@@ -40,9 +42,9 @@ module SES : sig
 
   (* Constructors *)
   val empty : t
-  val read_local : identifier -> TimeFrame.t -> t
+  val read_local : identifier -> TimeFrame.t -> bool -> t
   val write_local : identifier -> t
-  val read_global : identifier -> TimeFrame.t -> t
+  val read_global : identifier -> TimeFrame.t -> bool -> t
   val write_global : identifier -> t
   val throw_exception : identifier -> t
   val recursive_call : identifier -> t
@@ -57,9 +59,9 @@ module SES : sig
   val is_deterministic : t -> bool
 
   (* Setters *)
-  val add_local_read : identifier -> TimeFrame.t -> t -> t
+  val add_local_read : identifier -> TimeFrame.t -> bool -> t -> t
   val add_local_write : identifier -> t -> t
-  val add_global_read : identifier -> TimeFrame.t -> t -> t
+  val add_global_read : identifier -> TimeFrame.t -> bool -> t -> t
   val add_global_write : identifier -> t -> t
   val add_thrown_exception : identifier -> t -> t
   val add_recursive_call : identifier -> t -> t

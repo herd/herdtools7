@@ -356,6 +356,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let warn_from = warn_from
   end)
 
+  let ldk_is_immutable = function
+    | LDK_Constant | LDK_Let -> true
+    | LDK_Var -> false
+
+  let gdk_is_immutable = function
+    | GDK_Config | GDK_Constant | GDK_Let -> true
+    | GDK_Var -> false
+
   (* Begin ShouldReduceToCall *)
   let should_reduce_to_call env name st =
     match IMap.find_opt name env.global.overloaded_subprograms with
@@ -594,7 +602,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     function
     | TimeFrame.Constant -> check_is_constant_time
     | TimeFrame.Config -> check_is_config_time
-    | TimeFrame.Execution _ -> fun ~loc:_ _ -> ok
+    | TimeFrame.Execution -> fun ~loc:_ _ -> ok
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
@@ -1126,8 +1134,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | None ->
               let+ () = fun () -> undefined_identifier loc x in
               TimeFrame.Constant
-        in
-        (ty, SES.read_global x time_frame) |: TypingRule.TNamed
+        and immutable = true in
+        (ty, SES.read_global x time_frame immutable) |: TypingRule.TNamed
     (* Begin TInt *)
     | T_Int constraints ->
         (match constraints with
@@ -1140,7 +1148,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let ses = SES.unions sess in
             (T_Int (WellConstrained new_constraints) |> here, ses)
-        | Parameterized (_, name) -> (ty, SES.read_local name TimeFrame.Constant)
+        | Parameterized (_, name) ->
+            (ty, SES.read_local name TimeFrame.Constant true)
         | UnConstrained -> (ty, SES.empty))
         |: TypingRule.TInt
     (* Begin TBits *)
@@ -1767,7 +1776,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 let v = Storage.find x env.local.constant_values in
                 (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
             | ty, ldk ->
-                let ses = SES.read_local x (TimeFrame.of_ldk ldk) in
+                let ses =
+                  SES.read_local x (TimeFrame.of_ldk ldk) (ldk_is_immutable ldk)
+                in
                 (ty, e, ses) |: TypingRule.EVar
           with Not_found -> (
             try
@@ -1777,7 +1788,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   let v = Storage.find x env.global.constant_values in
                   (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
               | ty, gdk ->
-                  let ses = SES.read_global x (TimeFrame.of_gdk gdk) in
+                  let ses =
+                    SES.read_global x (TimeFrame.of_gdk gdk)
+                      (gdk_is_immutable gdk)
+                  in
                   (ty, e, ses) |: TypingRule.EVar
             with Not_found ->
               let () =

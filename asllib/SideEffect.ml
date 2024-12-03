@@ -4,48 +4,44 @@ module ISet = ASTUtils.ISet
 module IMap = ASTUtils.IMap
 
 module TimeFrame = struct
-  type t = Constant | Config | Execution of bool
+  type t = Constant | Config | Execution
 
   let equal t1 t2 =
     match (t1, t2) with
-    | Constant, Constant | Config, Config -> true
-    | Execution b1, Execution b2 -> Bool.equal b1 b2
-    | Constant, (Config | Execution _)
-    | Config, (Constant | Execution _)
-    | Execution _, (Config | Constant) ->
+    | Constant, Constant | Config, Config | Execution, Execution -> true
+    | Constant, (Config | Execution)
+    | Config, (Constant | Execution)
+    | Execution, (Config | Constant) ->
         false
 
   let is_before t1 t2 =
     match (t1, t2) with
-    | Constant, Constant | Config, Config | Execution _, Execution _ -> true
-    | Config, Execution _ | Constant, (Config | Execution _) -> true
-    | Execution _, Config | (Config | Execution _), Constant -> false
+    | Constant, Constant | Config, Config | Execution, Execution -> true
+    | Config, Execution | Constant, (Config | Execution) -> true
+    | Execution, Config | (Config | Execution), Constant -> false
 
   let max t1 t2 = if is_before t1 t2 then t2 else t1
 
   let of_ldk =
     let open AST in
-    function
-    | LDK_Constant -> Constant
-    | LDK_Let -> Execution false
-    | LDK_Var -> Execution true
+    function LDK_Constant -> Constant | LDK_Let | LDK_Var -> Execution
 
   let of_gdk =
     let open AST in
     function
     | GDK_Constant -> Constant
     | GDK_Config -> Config
-    | GDK_Let -> Execution false
-    | GDK_Var -> Execution true
+    | GDK_Let | GDK_Var -> Execution
 
   let maxs = List.fold_left max Constant
-  let is_immutable = function Constant | Config -> true | Execution b -> not b
 end
 
+type read = { name : identifier; time_frame : TimeFrame.t; immutable : bool }
+
 type t =
-  | ReadLocal of identifier * TimeFrame.t
+  | ReadLocal of read
   | WriteLocal of identifier
-  | ReadGlobal of identifier * TimeFrame.t
+  | ReadGlobal of read
   | WriteGlobal of identifier
   | ThrowException of identifier
   | RecursiveCall of identifier
@@ -56,9 +52,9 @@ type side_effect = t
 
 let equal (t1 : t) (t2 : t) : bool =
   match (t1, t2) with
-  | ReadLocal (s1, _), ReadLocal (s2, _)
+  | ReadLocal { name = s1 }, ReadLocal { name = s2 }
   | WriteLocal s1, WriteLocal s2
-  | ReadGlobal (s1, _), ReadGlobal (s2, _)
+  | ReadGlobal { name = s1 }, ReadGlobal { name = s2 }
   | WriteGlobal s1, WriteGlobal s2
   | ThrowException s1, ThrowException s2
   | RecursiveCall s1, RecursiveCall s2 ->
@@ -100,9 +96,9 @@ let equal (t1 : t) (t2 : t) : bool =
 
 let compare (t1 : t) (t2 : t) : int =
   match (t1, t2) with
-  | ReadLocal (s1, _), ReadLocal (s2, _)
+  | ReadLocal { name = s1 }, ReadLocal { name = s2 }
   | WriteLocal s1, WriteLocal s2
-  | ReadGlobal (s1, _), ReadGlobal (s2, _)
+  | ReadGlobal { name = s1 }, ReadGlobal { name = s2 }
   | WriteGlobal s1, WriteGlobal s2
   | ThrowException s1, ThrowException s2
   | RecursiveCall s1, RecursiveCall s2 ->
@@ -146,9 +142,9 @@ let compare (t1 : t) (t2 : t) : int =
 let pp_print f =
   let open Format in
   function
-  | ReadLocal (s, _) -> fprintf f "ReadLocal %S" s
+  | ReadLocal { name = s } -> fprintf f "ReadLocal %S" s
   | WriteLocal s -> fprintf f "WriteLocal %S" s
-  | ReadGlobal (s, _) -> fprintf f "ReadGlobal %S" s
+  | ReadGlobal { name = s } -> fprintf f "ReadGlobal %S" s
   | WriteGlobal s -> fprintf f "WriteGlobal %S" s
   | ThrowException s -> fprintf f "RaiseException %S" s
   | RecursiveCall s -> fprintf f "RecursiveCall %S" s
@@ -156,10 +152,10 @@ let pp_print f =
   | NonDeterministic -> fprintf f "NonDeterministic"
 
 let time_frame = function
-  | ReadLocal (_, t) | ReadGlobal (_, t) -> t
+  | ReadLocal { time_frame } | ReadGlobal { time_frame } -> time_frame
   | WriteLocal _ | WriteGlobal _ | NonDeterministic | RecursiveCall _
   | ThrowException _ ->
-      TimeFrame.Execution true
+      TimeFrame.Execution
   | PerformsAssertions -> TimeFrame.Constant
 
 let is_pure = function
@@ -169,7 +165,7 @@ let is_pure = function
       false
 
 let is_immutable = function
-  | ReadLocal (_, tf) | ReadGlobal (_, tf) -> TimeFrame.is_immutable tf
+  | ReadLocal { immutable } | ReadGlobal { immutable } -> immutable
   | WriteLocal _ | WriteGlobal _ | NonDeterministic | RecursiveCall _
   | ThrowException _ | PerformsAssertions ->
       false
@@ -222,7 +218,7 @@ module SES = struct
       TimeFrame.max
         (fst ses.max_global_read_time_frame)
         (fst ses.max_local_read_time_frame)
-    else TimeFrame.Execution true
+    else TimeFrame.Execution
 
   let is_pure ses =
     ISet.is_empty ses.local_writes
@@ -240,10 +236,9 @@ module SES = struct
 
   let is_deterministic ses = not ses.non_determinism
 
-  let add_local_read s time_frame ses =
+  let add_local_read s time_frame immutable ses =
     let local_reads =
-      if TimeFrame.is_immutable time_frame then ses.local_reads
-      else ISet.add s ses.local_reads
+      if immutable then ses.local_reads else ISet.add s ses.local_reads
     and max_local_read_time_frame =
       witnessed_time_frame_max (time_frame, s) ses.max_local_read_time_frame
     in
@@ -252,10 +247,9 @@ module SES = struct
   let add_local_write s ses =
     { ses with local_writes = ISet.add s ses.local_writes }
 
-  let add_global_read s time_frame ses =
+  let add_global_read s time_frame immutable ses =
     let global_reads =
-      if TimeFrame.is_immutable time_frame then ses.global_reads
-      else ISet.add s ses.global_reads
+      if immutable then ses.global_reads else ISet.add s ses.global_reads
     and max_global_read_time_frame =
       witnessed_time_frame_max (time_frame, s) ses.max_global_read_time_frame
     in
@@ -275,8 +269,10 @@ module SES = struct
 
   let add_side_effect se ses =
     match se with
-    | ReadLocal (s, t) -> add_local_read s t ses
-    | ReadGlobal (s, t) -> add_global_read s t ses
+    | ReadLocal { name; time_frame; immutable } ->
+        add_local_read name time_frame immutable ses
+    | ReadGlobal { name; time_frame; immutable } ->
+        add_global_read name time_frame immutable ses
     | WriteLocal s -> add_local_write s ses
     | WriteGlobal s -> add_global_write s ses
     | ThrowException s -> add_thrown_exception s ses
@@ -285,9 +281,9 @@ module SES = struct
     | NonDeterministic -> set_non_determinism ses
 
   (* Constructors *)
-  let read_local s t = add_local_read s t empty
+  let read_local s t immutable = add_local_read s t immutable empty
   let write_local s = add_local_write s empty
-  let read_global s t = add_global_read s t empty
+  let read_global s t immutable = add_global_read s t immutable empty
   let write_global s = add_global_write s empty
   let throw_exception s = add_thrown_exception s empty
   let recursive_call s = add_recursive_call s empty
@@ -374,15 +370,21 @@ module SES = struct
     else if ses.assertions_performed then PerformsAssertions
     else raise Not_found
 
+  let _make_read name =
+    { name; time_frame = TimeFrame.Execution; immutable = false }
+
+  let _make_read_local name = ReadLocal (_make_read name)
+  let _make_read_global name = ReadGlobal (_make_read name)
+
   let get_side_effect_with_reads ses =
     try get_side_effect ses
     with Not_found ->
       if not (ISet.is_empty ses.global_reads) then
         let name = ISet.choose ses.global_reads in
-        ReadGlobal (name, TimeFrame.Execution true)
+        _make_read_global name
       else if not (ISet.is_empty ses.local_reads) then
         let name = ISet.choose ses.local_reads in
-        ReadLocal (name, TimeFrame.Execution true)
+        _make_read_global name
       else raise Not_found
 
   let remove_pure ses =
@@ -391,7 +393,6 @@ module SES = struct
   let choose_inter s1 s2 = ISet.inter s1 s2 |> ISet.choose
 
   let get_conflicting_side_effects ses1 ses2 =
-    let time_frame = TimeFrame.Execution true in
     if not (ISet.is_empty ses1.thrown_exceptions) then
       (ThrowException (ISet.choose ses1.thrown_exceptions), get_side_effect ses2)
     else if not (ISet.is_empty ses2.thrown_exceptions) then
@@ -406,20 +407,20 @@ module SES = struct
       let s = choose_inter ses1.global_writes ses2.global_writes in
       (WriteGlobal s, WriteGlobal s)
     else if not (ISet.disjoint ses1.global_writes ses2.global_reads) then
-      let s = choose_inter ses1.global_writes ses2.global_reads in
-      (WriteGlobal s, ReadGlobal (s, time_frame))
+      let name = choose_inter ses1.global_writes ses2.global_reads in
+      (WriteGlobal name, _make_read_global name)
     else if not (ISet.disjoint ses1.global_reads ses2.global_writes) then
-      let s = choose_inter ses1.global_reads ses2.global_writes in
-      (ReadGlobal (s, time_frame), WriteGlobal s)
+      let name = choose_inter ses1.global_reads ses2.global_writes in
+      (_make_read_global name, WriteGlobal name)
     else if not (ISet.disjoint ses1.local_writes ses2.local_writes) then
       let s = choose_inter ses1.local_writes ses2.local_writes in
       (WriteLocal s, WriteLocal s)
     else if not (ISet.disjoint ses1.local_writes ses2.local_reads) then
-      let s = choose_inter ses1.local_writes ses2.local_reads in
-      (WriteLocal s, ReadLocal (s, time_frame))
+      let name = choose_inter ses1.local_writes ses2.local_reads in
+      (WriteLocal name, _make_read_local name)
     else if not (ISet.disjoint ses1.local_reads ses2.local_writes) then
       let s = choose_inter ses1.local_reads ses2.local_writes in
-      (ReadLocal (s, time_frame), WriteLocal s)
+      (_make_read_local s, WriteLocal s)
     else (get_side_effect ses1, get_side_effect ses2)
 
   let non_conflicting_union ~fail ses1 ses2 =
@@ -479,7 +480,6 @@ module SES = struct
   end)
 
   let to_side_effect_list ses =
-    let tf = TimeFrame.Execution true in
     let set_map_to_list f s = ISet.fold (fun elt accu -> f elt :: accu) s in
     let add_if elt test accu = if test then elt :: accu else accu in
     let add_from_tf f (t, w) set accu =
@@ -490,17 +490,19 @@ module SES = struct
     |> add_if PerformsAssertions ses.assertions_performed
     |> add_if NonDeterministic ses.non_determinism
     |> add_from_tf
-         (fun s tf -> ReadGlobal (s, tf))
+         (fun name time_frame ->
+           ReadGlobal { name; time_frame; immutable = true })
          ses.max_global_read_time_frame ses.global_reads
     |> add_from_tf
-         (fun s tf -> ReadLocal (s, tf))
+         (fun name time_frame ->
+           ReadLocal { name; time_frame; immutable = true })
          ses.max_local_read_time_frame ses.local_reads
     |> set_map_to_list (fun s -> RecursiveCall s) ses.recursive_calls
     |> set_map_to_list (fun s -> ThrowException s) ses.thrown_exceptions
     |> set_map_to_list (fun s -> WriteGlobal s) ses.global_writes
-    |> set_map_to_list (fun s -> ReadGlobal (s, tf)) ses.global_reads
+    |> set_map_to_list _make_read_global ses.global_reads
     |> set_map_to_list (fun s -> WriteLocal s) ses.local_writes
-    |> set_map_to_list (fun s -> ReadLocal (s, tf)) ses.local_reads
+    |> set_map_to_list _make_read_local ses.local_reads
 
   let to_side_effect_set ses = to_side_effect_list ses |> SESet.of_list
 
