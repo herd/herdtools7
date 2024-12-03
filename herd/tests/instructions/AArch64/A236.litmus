@@ -1,4 +1,4 @@
-AArch64 236
+AArch64 A236
 
 (* Tests MVN Register instruction *)
 (* Remember inverting 00 -> 11 which is 0 to -1 in 2s complement *)
