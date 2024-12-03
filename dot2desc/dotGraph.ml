@@ -255,3 +255,15 @@ let tr parsed_graph =
 
   let sorted_edges = List.sort cmp_edges translated.edges in
   { translated with edges = sorted_edges }
+
+let describe g =
+  let descs = List.map (fun edge ->
+    let desc_edge = edge.Edge.desc in
+    try
+      let lhs = StringMap.find edge.Edge.left g.nodes in
+      let rhs = StringMap.find edge.Edge.right g.nodes in
+      "There is " ^ desc_edge ^ " from " ^ lhs.Node.desc ^ " to " ^ rhs.Node.desc ^ ".\n"
+    with Not_found ->
+      Warn.fatal "Could not find one of the nodes for edge %s\n" (Edge.pp edge)
+    ) g.edges in
+  String.concat "\n" descs
