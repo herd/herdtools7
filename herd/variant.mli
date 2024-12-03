@@ -82,6 +82,9 @@ type t =
 (* CacheType features *)
   | DIC
   | IDC
+(* Shadow stack
+   AArch64: Guarded Control Stack *)
+  | ShadowStack
 (* Have cat interpreter to optimise generation of co's *)
   | CosOpt
 (* Test something *)

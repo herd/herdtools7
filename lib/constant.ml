@@ -77,6 +77,7 @@ type symbolic_data =
    cap : cap ;
    offset : offset ;
    pac : PAC.t ;
+   fixup_offset: bool;
   }
 
 let default_symbolic_data =
@@ -86,6 +87,7 @@ let default_symbolic_data =
    cap = 0x0L ;
    offset = 0 ;
    pac = PAC.canonical ;
+   fixup_offset = false ;
   }
 
 let capa_low c = Int64.shift_left (Int64.logand c 0x1ffffffffL)  3
@@ -453,6 +455,12 @@ let mk_sym_virtual s = Symbolic (do_mk_virtual s)
 let mk_sym s = Symbolic (do_mk_sym s)
 
 let mk_sym_with_index s i =
+  Symbolic
+    (Virtual
+      {default_symbolic_data
+      with name=Symbol.Data s; offset=i; fixup_offset=true})
+
+let mk_sym_with_offset s i =
   Symbolic
     (Virtual
       {default_symbolic_data

@@ -42,6 +42,7 @@ type symbolic_data =
    cap : cap ;
    offset : offset ;
    pac : PAC.t ;
+   fixup_offset: bool;
   }
 
 val default_symbolic_data : symbolic_data
@@ -154,6 +155,7 @@ val mk_sym_virtual_label_with_offset : Proc.t -> Label.t -> offset -> ('scalar,'
 val mk_sym_virtual : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_with_index : string -> int -> ('scalar, 'pte,'addrreg, 'instr) t
+val mk_sym_with_offset : string -> int -> ('scalar, 'pte,'addrreg,'instr) t
 val mk_sym_pte : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_pte2 : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_pa : string -> ('scalar,'pte,'addrreg,'instr) t
