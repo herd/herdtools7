@@ -33,6 +33,14 @@ module ISet = struct
     fprintf f "@[{@,%a}@]"
       (pp_print_list ~pp_sep:pp_comma pp_print_string)
       (elements t)
+
+  let rec unions =
+    let rec one_step acc = function
+      | [] -> acc
+      | [ x ] -> x :: acc
+      | x :: y :: li -> one_step (union x y :: acc) li
+    in
+    function [] -> empty | [ s ] -> s | li -> one_step [] li |> unions
 end
 
 module IMap = struct
@@ -852,3 +860,18 @@ let rename_locals map_name ast =
     map_desc_st' d @@ function D_Func f -> D_Func (map_func f) | d -> d
   in
   List.map map_decl ast
+
+(* Taken from lib/innerRel.ml *)
+let rec transitive_closure m0 =
+  let m1 =
+    IMap.fold
+      (fun x ys m ->
+        let zs =
+          ISet.fold
+            (fun y k -> try IMap.find y m :: k with Not_found -> k)
+            ys []
+        in
+        IMap.add x (ISet.unions zs) m)
+      m0 m0
+  in
+  if IMap.equal ISet.equal m0 m1 then m0 else transitive_closure m1

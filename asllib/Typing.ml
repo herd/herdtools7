@@ -33,14 +33,14 @@ let fatal_from = Error.fatal_from
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let invalid_expr e = fatal_from e (Error.InvalidExpr e)
 
-let conflicting_side_effects ~loc (s1, s2) =
+let conflicting_side_effects_error ~loc (s1, s2) =
   fatal_from loc Error.(ConflictingSideEffects (s1, s2))
 
 let ses_non_conflicting_union ~loc =
-  SES.non_conflicting_union ~fail:(conflicting_side_effects ~loc)
+  SES.non_conflicting_union ~fail:(conflicting_side_effects_error ~loc)
 
 let ses_non_conflicting_unions ~loc =
-  SES.non_conflicting_unions ~fail:(conflicting_side_effects ~loc)
+  SES.non_conflicting_unions ~fail:(conflicting_side_effects_error ~loc)
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
@@ -1059,7 +1059,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     then
       let width = get_bitvector_width loc env (List.hd arg_types) in
       let param_type = integer_exact' width |> add_pos_from width in
-      params @ [ (param_type, width, SES.empty) ]
+      let ses_param =
+        (* This is enough as the bitvector width is statically evaluable and
+           its timeframe is earlier than the argument itself. *)
+        SES.empty
+      in
+      params @ [ (param_type, width, ses_param) ]
     else params
 
   (* Begin TBitField *)
@@ -1135,7 +1140,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               let+ () = fun () -> undefined_identifier loc x in
               TimeFrame.Constant
         and immutable = true in
-        (ty, SES.read_global x time_frame immutable) |: TypingRule.TNamed
+        (ty, SES.reads_global x time_frame immutable) |: TypingRule.TNamed
     (* Begin TInt *)
     | T_Int constraints ->
         (match constraints with
@@ -1149,7 +1154,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let ses = SES.unions sess in
             (T_Int (WellConstrained new_constraints) |> here, ses)
         | Parameterized (_, name) ->
-            (ty, SES.read_local name TimeFrame.Constant true)
+            (ty, SES.reads_local name TimeFrame.Constant true)
         | UnConstrained -> (ty, SES.empty))
         |: TypingRule.TInt
     (* Begin TBits *)
@@ -1294,13 +1299,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           annotate_slice (Slice_Length (i, one_expr)) |: TypingRule.Slice
       | Slice_Length (offset, length) ->
           let t_offset, offset', ses_offset = annotate_expr env offset
-          and t_length, length', ses_length = annotate_expr env length in
+          and length', ses_length =
+            annotate_static_constrained_integer ~loc env length
+          in
           let+ () = check_structure_integer offset' env t_offset in
-          let+ () = check_constrained_integer ~loc:length' env t_length in
-          let+ () = check_statically_evaluable length' ses_length in
-          let length2 = StaticModel.try_normalize env length' in
           let ses = SES.union ses_length ses_offset in
-          (Slice_Length (offset', length2), ses |: TypingRule.Slice)
+          (Slice_Length (offset', length'), ses |: TypingRule.Slice)
       | Slice_Range (j, i) ->
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
@@ -1501,6 +1505,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       List.iter2
         (fun (name, ty_declared_opt) (ty_actual, e_actual, ses_actual) ->
           let+ () = check_statically_evaluable e_actual ses_actual in
+          (* That's enough of a check on Side Effects for parameters:
+             - parameters can't conflict with anything once they are statically
+               evaluable;
+             - the time-frame of parameters has to be earlier than the
+               arguments that use their types.
+          *)
           let+ () = check_constrained_integer ~loc env ty_actual in
           match ty_declared_opt with
           | None ->
@@ -1744,7 +1754,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           check_atc env t_struct ty_struct ~fail:(fun () ->
               fatal_from loc (BadATC (t, ty)))
         in
-        let ses = SES.union ses_ty @@ SES.set_assertions_performed ses_e in
+        let ses = SES.union ses_ty @@ SES.add_assertion ses_e in
         (if Types.subtype_satisfies env t_struct ty_struct then (ty', e'', ses_e)
          else (ty', E_ATC (e'', ty_struct) |> here, ses))
         |: TypingRule.ATC
@@ -1777,7 +1787,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
             | ty, ldk ->
                 let ses =
-                  SES.read_local x (TimeFrame.of_ldk ldk) (ldk_is_immutable ldk)
+                  SES.reads_local x (TimeFrame.of_ldk ldk)
+                    (ldk_is_immutable ldk)
                 in
                 (ty, e, ses) |: TypingRule.EVar
           with Not_found -> (
@@ -1789,7 +1800,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
               | ty, gdk ->
                   let ses =
-                    SES.read_global x (TimeFrame.of_gdk gdk)
+                    SES.reads_global x (TimeFrame.of_gdk gdk)
                       (gdk_is_immutable gdk)
                   in
                   (ty, e, ses) |: TypingRule.EVar
@@ -1901,7 +1912,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_Arbitrary ty ->
         let ty1, ses_ty = annotate_type ~loc env ty in
         let ty2 = Types.get_structure env ty1 in
-        let ses = SES.set_non_determinism ses_ty in
+        let ses = SES.add_non_determinism ses_ty in
         (ty1, E_Arbitrary ty2 |> here, ses) |: TypingRule.EArbitrary
     (* End *)
     | E_Slice (e', slices) -> (
@@ -2308,11 +2319,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | LE_Var x ->
         let ty, ses =
           match IMap.find_opt x env.local.storage_types with
-          | Some (ty, LDK_Var) -> (ty, SES.write_local x)
+          | Some (ty, LDK_Var) -> (ty, SES.writes_local x)
           | Some _ -> fatal_from le @@ Error.AssignToImmutable x
           | None -> (
               match IMap.find_opt x env.global.storage_types with
-              | Some (ty, GDK_Var) -> (ty, SES.write_global x)
+              | Some (ty, GDK_Var) -> (ty, SES.writes_global x)
               | Some _ -> fatal_from le @@ Error.AssignToImmutable x
               | None -> undefined_identifier le x)
         in
@@ -2480,7 +2491,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if can_be_initialized_with env s t then () else conflict loc [ s.desc ] t
   (* End *)
 
-  let should_perform_expression_propagation ses =
+  let should_remember_immutable_expression ses =
     let ses_non_assert = SES.remove_assertions ses in
     SES.is_statically_evaluable ses_non_assert
 
@@ -2488,7 +2499,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let add_immutable_expressions env ldk typed_e_opt x =
     match (ldk, typed_e_opt) with
     | (LDK_Constant | LDK_Let), Some (_, e, ses_e)
-      when should_perform_expression_propagation ses_e -> (
+      when should_remember_immutable_expression ses_e -> (
         match StaticModel.normalize_opt env e with
         | Some e' ->
             add_local_immutable_expr x e' env |: TypingRule.AddImmutableExpr
@@ -2724,7 +2735,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t_e', e', ses = annotate_expr env e in
         let+ () = check_is_pure e ses in
         let+ () = check_type_satisfies s env t_e' boolean in
-        let ses = SES.set_assertions_performed ses in
+        let ses = SES.add_assertion ses in
         (S_Assert e' |> here, env, ses) |: TypingRule.SAssert
     (* End *)
     (* Begin SWhile *)
@@ -2856,7 +2867,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (S_Throw (Some (e', Some t_e)) |> here, env, ses2) |: TypingRule.SThrow
     | S_Throw None ->
         (* TODO: verify that this is allowed? *)
-        (s, env, SES.throw_exception "TODO") |: TypingRule.SThrow
+        (s, env, SES.throws_exception "TODO") |: TypingRule.SThrow
         (* End *)
         (* Begin STry *)
     | S_Try (s', catchers, otherwise) ->
@@ -2902,7 +2913,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |> List.split
         in
         let ses =
-          SES.non_conflicting_unions sess ~fail:(conflicting_side_effects ~loc)
+          SES.non_conflicting_unions sess
+            ~fail:(conflicting_side_effects_error ~loc)
         in
         (S_Print { args = args'; newline; debug } |> here, env, ses)
         |: TypingRule.SPrint
@@ -2911,7 +2923,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_Pragma (_, args) ->
         let _, _, sess = List.map (annotate_expr env) args |> list_split3 in
         let ses =
-          SES.non_conflicting_unions sess ~fail:(conflicting_side_effects ~loc)
+          SES.non_conflicting_unions sess
+            ~fail:(conflicting_side_effects_error ~loc)
         in
         (S_Pass |> here, env, ses) |: TypingRule.SPragma
     (* End *)
@@ -3506,7 +3519,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let init_ses =
       match func_sig.body with
       | SB_ASL _ | SB_Primitive true ->
-          SES.add_recursive_call name' ses_func_sig
+          SES.add_calls_recursive name' ses_func_sig
       | SB_Primitive false -> ses_func_sig
     in
     (add_subprogram name' new_func_sig init_ses env1, new_func_sig)
@@ -3637,8 +3650,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | GDK_Constant ->
           let+ () = check_is_constant_time ~loc typed_initial_value in
           try_add_global_constant name env1 initial_value'
-      | GDK_Let when should_perform_expression_propagation ses_initial_value
-        -> (
+      | GDK_Let when should_remember_immutable_expression ses_initial_value -> (
           match StaticModel.normalize_opt env1 initial_value' with
           | Some e' -> add_global_immutable_expr name e' env1
           | None -> env1)
@@ -3677,7 +3689,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             annotate_and_declare_func ~loc f genv
           in
           let new_f, ses_f = try_annotate_subprogram env1 f1 ses_func_sig in
-          let ses_f = SES.remove_recursive_calls ses_f in
+          let ses_f = SES.remove_calls_recursives ses_f in
           (* TODO if recursive, check recursion annotation. *)
           let new_d = D_Func new_f |> here
           and new_env = StaticEnv.add_subprogram new_f.name new_f ses_f env1 in
@@ -3709,7 +3721,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> assert false
   (* End *)
 
-  let propagate_sess (sess : (func * SES.t) list) : (func * SES.t) list =
+  let propagate_recursive_calls_sess (sess : (func * SES.t) list) :
+      (func * SES.t) list =
     let () =
       if false then
         let open Format in
@@ -3723,34 +3736,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let map0 =
       List.map (fun ((f : func), ses) -> (f.name, ses)) sess |> IMap.of_list
     in
-    let process_one_recursive_call modified map1 callee_name caller_ses =
-      try
-        let callee_ses = IMap.find callee_name map1 in
-        let res = SES.union caller_ses callee_ses in
-        if not (SES.equal caller_ses res) then modified := true;
-        res
-      with Not_found -> caller_ses
+    let call_graph = IMap.map (fun ses -> SES.get_calls_recursives ses) map0 in
+    let transitive_call_graph = transitive_closure call_graph in
+    let map0_without_recursive_calls =
+      IMap.map (fun ses -> SES.remove_calls_recursives ses) map0
     in
-    let update_one modified map1 caller_ses =
-      SES.fold_recursive_calls
-        (process_one_recursive_call modified map1)
-        caller_ses caller_ses
-    in
-    let rec propagate map =
-      let modified = ref false in
-      let map' = IMap.map (update_one modified map) map in
-      if !modified then propagate map' else map'
-    in
-    let map3 = propagate map0 in
     let res =
       List.map
-        (fun ((f : func), _ses) ->
-          let ses =
-            try IMap.find f.name map3 with Not_found -> assert false
+        (fun ((func : func), ses) ->
+          let callees =
+            IMap.find func.name transitive_call_graph |> ISet.elements
           in
-          let new_ses = SES.remove_recursive_calls ses in
-          (* TODO: check that cycles have annotations *)
-          (f, new_ses))
+          let sess =
+            List.map (fun x -> IMap.find x map0_without_recursive_calls) callees
+          in
+          (func, SES.unions (SES.remove_calls_recursives ses :: sess)))
         sess
     in
     let () =
@@ -3825,14 +3825,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               (D_Func new_f |> here, (new_f, ses_f))
           | SB_Primitive side_effecting ->
               let ses =
-                if side_effecting then SES.recursive_call f.name else SES.empty
+                if side_effecting then SES.calls_recursive f.name else SES.empty
               in
               (D_Func f |> here, (f, ses)))
         env_and_fs2
     in
     (* AddSubprogramDecls( *)
     let env3 =
-      let sess = propagate_sess sess in
+      let sess = propagate_recursive_calls_sess sess in
       List.fold_left
         (fun env2 ((new_f : func), ses_f) ->
           StaticEnv.add_subprogram new_f.name new_f ses_f env2)
