@@ -262,7 +262,7 @@ val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 
 (** {1 Transformers} *)
 
-val lid_of_lexpr : lexpr -> local_decl_item option
+val ldi_of_lexpr : lexpr -> local_decl_item option
 val expr_of_lexpr : lexpr -> expr
 val desugar_case_stmt : stmt -> stmt
 val slice_is_single : slice -> bool
