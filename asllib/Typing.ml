@@ -735,6 +735,267 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.CheckSlicesInWidth
   (* End *)
 
+  (** A module for checking that all bitfields of a given bitvector type
+      that share the same name and exist in the same scope (defined below)
+      also define the same slice of the bitvector type.
+  *)
+  module CheckCommonBitfieldsAlign : sig
+    val check : ty -> StaticEnv.env -> bitfield list -> int -> unit
+  end = struct
+    type interval = int * int
+    (** [(i, j)] is the set of integers from [i] to [j], inclusive. *)
+
+    type absolute_bitfield = {
+      name : identifier;
+      abs_scope : identifier list;
+      abs_slices : interval list;
+    }
+    (** An absolute bitfield [abs_f] corresponds to a bitfield [f].
+        It consists of the following fields:
+        - [name] the name of the bitfield as declared;
+        - [abs_scope] is the list of names of ancestor bitfields, starting from the top; and
+        - [abs_slices] is a list of intervals that represent the sequence of indices,
+          corresponding to the slices defined for [f],
+          relative to the bitvector type that declares [f].
+
+        For example in
+        [
+          type Nested_Type of bits(3) {
+            [2:1] f1 {
+              [0] f2
+            }
+          };
+        ]
+        we have the follwing absolute fields:
+        [
+          {name="f1"; abs_cope=[];      abs_slices=[2:1]}
+          {name="f2"; abs_cope=["f1"];  abs_slices=[1:1]}
+        ]
+    *)
+
+    let pp_abs_name fmt abs_name =
+      let abs_name_minus_top =
+        match abs_name with
+        | h :: t ->
+            let () = assert (String.equal h "") in
+            t
+        | _ -> assert false
+      in
+      Format.pp_print_list
+        ~pp_sep:(fun fmt () -> Format.fprintf fmt ".")
+        (fun fmt id -> Format.fprintf fmt "%s" id)
+        fmt abs_name_minus_top
+
+    let pp_abs_slice fmt (from_idx, to_idx) =
+      Format.fprintf fmt "%i:%i" to_idx from_idx
+
+    let pp_abs_slices intervals =
+      Format.pp_print_list
+        ~pp_sep:(fun fmt () -> Format.fprintf fmt ", ")
+        pp_abs_slice intervals
+
+    let pp_absolute_bitfield fmt { name; abs_scope; abs_slices } =
+      Format.fprintf fmt "[%a] %a" pp_abs_slices abs_slices pp_abs_name
+        (List.append abs_scope [ name ])
+
+    let interval_equal (interval1 : interval) (interval2 : interval) =
+      let lo1, hi1 = interval1 in
+      let lo2, hi2 = interval2 in
+      lo1 == lo2 && hi1 == hi2
+
+    let intervals_equal intervals1 intervals2 =
+      list_equal interval_equal intervals1 intervals2
+
+    (** [either_prefix list1 list2] is true if either [list1] is a prefix of [list2] or
+        [list2] is a prefix of [list1].
+    *)
+    let rec either_prefix list1 list2 =
+      match (list1, list2) with
+      | [], _ | _, [] -> true
+      | h1 :: t1, h2 :: t2 -> String.equal h1 h2 && either_prefix t1 t2
+
+    let exist_in_same_scope abs_f1 abs_f2 =
+      either_prefix abs_f1.abs_scope abs_f2.abs_scope
+
+    (** {iter_ordered_pairs f [e_1;...;e_k]} applies [f e_i e_j] for every [1 <= i < j <= k].
+    *)
+    let rec iter_ordered_pairs f l =
+      match l with
+      | [] | [ _ ] -> ()
+      | h :: t ->
+          let () = List.iter (fun e_t -> f h e_t) t in
+          iter_ordered_pairs f t
+
+    (** Returns the sequence of indices given by [slice]
+        as an interval.
+    *)
+    let slice_to_indices env slice : interval =
+      match slice with
+      | Slice_Length (i, w) ->
+          let z_i = StaticInterpreter.static_eval_to_int env i in
+          let z_w = StaticInterpreter.static_eval_to_int env w in
+          (z_i, z_i + z_w - 1)
+      | _ ->
+          (* should have been de-sugated into Slice_Length *)
+          assert false
+
+    (** Merge all adjacent intervals that can be represented by a single interval.
+    *)
+    let coalesce_intervals intervals =
+      List.fold_left
+        (fun acc_intervals slice ->
+          match acc_intervals with
+          | [] -> [ slice ]
+          | _ ->
+              let split_prefix_last list =
+                match List.rev list with
+                | [] -> assert false
+                | h :: t -> (List.rev t, h)
+              in
+              let prefix, (last_lo, last_hi) =
+                split_prefix_last acc_intervals
+              in
+              let lo, hi = slice in
+              if lo == last_hi + 1 then List.append prefix [ (last_lo, hi) ]
+              else List.append acc_intervals [ slice ])
+        [] intervals
+
+    (** Assuming that [(int_lo, int_hi)] can be sliced with [(slice_lo, slice_hi)]
+            into a non-empty interval, return the sliced interval as [intersected]
+            and any indices of [(slice_lo, slice_hi)] that reach beyond
+            [(int_lo, int_hi)] in [remainder_opt], if ther are any.
+    *)
+    let slice_interval_by_slice (int_lo, int_hi) (slice_lo, slice_hi) :
+        interval * interval option =
+      let shifted_lo, shifted_hi = (slice_lo + int_lo, slice_hi + int_lo) in
+      let intersected = (shifted_lo, min shifted_hi int_hi) in
+      let remainder_lo = int_hi - int_lo + 1 in
+      let remainder_opt =
+        if int_hi < shifted_hi then Some (remainder_lo, slice_hi) else None
+      in
+      (intersected, remainder_opt)
+
+    (** Returns the slice of the sequence of indices represented by [intervals],
+        defined by the relative positions given by [slice].
+    *)
+    let rec slice_indices_by_slice acc intervals ((slice_lo, slice_hi) as slice)
+        =
+      (* slice_indices_by_slice [(9,12); (2,7)] (2,5) = [(11,12); (2,3)] *)
+      match intervals with
+      | [] -> []
+      | ((head_lo, head_hi) as head) :: intervals_tail -> (
+          let head_last_idx = head_hi - head_lo in
+          let head_len = head_last_idx + 1 in
+          if slice_lo > head_last_idx then
+            slice_indices_by_slice acc intervals_tail
+              (slice_lo - head_len, slice_hi - head_len)
+          else
+            let intersected, remainder_opt =
+              slice_interval_by_slice head slice
+            in
+            let next_acc = intersected :: acc in
+            match remainder_opt with
+            | None -> List.rev next_acc
+            | Some slice' -> slice_indices_by_slice next_acc intervals slice')
+
+    (** Returns the slice of the sequence of indices given by [indices],
+        defined by the relative positions given by [slices].
+    *)
+    let slice_indices indices slices =
+      list_concat_map (slice_indices_by_slice [] indices) slices
+      |> coalesce_intervals
+
+    (** Returns the list of absolute bitfields for the bitfield [bf]
+        given that [absolute_parent] is the absolute bitfield
+        for the bitfield where [bf] is declared.
+    *)
+    let rec bitfield_to_absolute env bf absolute_parent =
+      let { name; abs_scope; abs_slices } = absolute_parent in
+      let bf_name = bitfield_get_name bf in
+      let bf_scope = List.append abs_scope [ name ] in
+      let slices_as_indices =
+        List.map (slice_to_indices env) (bitfield_get_slices bf)
+      in
+      let bf_indices = slice_indices abs_slices slices_as_indices in
+      let bf_absolute =
+        { name = bf_name; abs_scope = bf_scope; abs_slices = bf_indices }
+      in
+      let nested = bitfield_get_nested bf in
+      bf_absolute :: bitfields_to_absolute env nested bf_absolute
+
+    (** Returns the list of absolute bitfields for the bitfields [bitfields]
+        given that [absolute_parent] is the absolute bitfield
+        where [bitfields] are declared.
+    *)
+    and bitfields_to_absolute env bitfields absolute_parent =
+      list_concat_map
+        (fun bf -> bitfield_to_absolute env bf absolute_parent)
+        bitfields
+
+    (** Tests whether absolute fields [f1] and [f2] are aligned.
+        If the two fields don't share a name or don't exist in the same
+        scope, the result is true.
+    *)
+    let absolute_fields_align f1 f2 =
+      if String.equal f1.name f2.name && exist_in_same_scope f1 f2 then
+        let { abs_slices = indices1 } = f1 in
+        let { abs_slices = indices2 } = f2 in
+        intervals_equal indices1 indices2
+      else true
+
+    (* Begin TypingRule.CheckCommonBitfieldsAlign *)
+    let check annot env bitfields width =
+      (* define a fake absolute field representing the entire bitvector. *)
+      let top_absolute =
+        { name = ""; abs_scope = []; abs_slices = [ (0, width - 1) ] }
+      in
+      let absolute_bitfields =
+        bitfields_to_absolute env bitfields top_absolute
+      in
+      let () =
+        if false then
+          List.iter
+            (fun f ->
+              Format.eprintf "absolute field %a@." pp_absolute_bitfield f)
+            absolute_bitfields
+      in
+      iter_ordered_pairs
+        (fun f1 f2 ->
+          let { name = name1; abs_scope = scope1; abs_slices = indices1 } =
+            f1
+          in
+          let { name = name2; abs_scope = scope2; abs_slices = indices2 } =
+            f2
+          in
+          let () =
+            if false then
+              Format.eprintf
+                "checking %a and %a | same scope: %b | same name: %b | equal \
+                 slices: %b@."
+                pp_absolute_bitfield f1 pp_absolute_bitfield f2
+                (exist_in_same_scope f1 f2)
+                (String.equal name1 name2)
+                (intervals_equal indices1 indices2)
+          in
+          if not (absolute_fields_align f1 f2) then
+            let abs_name1 = scope1 @ [ name1 ] in
+            let abs_name2 = scope2 @ [ name2 ] in
+            let abs_name1_str = Format.asprintf "%a" pp_abs_name abs_name1 in
+            let abs_name2_str = Format.asprintf "%a" pp_abs_name abs_name2 in
+            let indices1_str = Format.asprintf "[%a]" pp_abs_slices indices1 in
+            let indices2_str = Format.asprintf "[%a]" pp_abs_slices indices2 in
+            fatal_from annot
+              (Error.BitfieldsDontAlign
+                 {
+                   field1_absname = abs_name1_str;
+                   field2_absname = abs_name2_str;
+                   field1_absslices = indices1_str;
+                   field2_absslices = indices2_str;
+                 }))
+        absolute_bitfields
+    (* End *)
+  end
+
   (** Check for a standard library declaration name{n}(bits(n), ...) or
     name{m,n}(bits(n), ...). *)
   let can_omit_stdlib_param func_sig =
@@ -849,7 +1110,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let e_width' = annotate_static_constrained_integer ~loc env e_width in
         let bitfields' =
           if bitfields = [] then bitfields
-          else annotate_bitfields ~loc env e_width' bitfields
+          else
+            let annotated_bitfields =
+              annotate_bitfields ~loc env e_width' bitfields
+            in
+            let () =
+              let width =
+                match StaticInterpreter.static_eval env e_width' with
+                | L_Int i -> Z.to_int i
+                | _ -> assert false
+              in
+              CheckCommonBitfieldsAlign.check ty env annotated_bitfields width
+              |: TypingRule.CheckCommonBitfieldsAlign
+            in
+            annotated_bitfields
         in
         T_Bits (e_width', bitfields') |> here |: TypingRule.TBits
     (* Begin TTuple *)

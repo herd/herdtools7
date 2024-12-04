@@ -496,6 +496,7 @@ module TypingRule = struct
     | PossibleExtremitiesRight
     | ControlFlowSeq
     | ControlFlowJoin
+    | CheckCommonBitfieldsAlign
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -679,6 +680,7 @@ module TypingRule = struct
     | PossibleExtremitiesRight -> "PossibleExtremitiesRight"
     | ControlFlowSeq -> "ControlFlowSeq"
     | ControlFlowJoin -> "ControlFlowJoin"
+    | CheckCommonBitfieldsAlign -> "CheckCommonBitfieldsAlign"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -844,6 +846,7 @@ module TypingRule = struct
       PossibleExtremitiesRight;
       ControlFlowSeq;
       ControlFlowJoin;
+      CheckCommonBitfieldsAlign;
     ]
 
   let all_nb = List.length all

@@ -268,7 +268,7 @@
 \newcommand\uniquep[0]{\hyperlink{def-uniquep}{\textfunc{unique'}}}
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
-\newcommand\prepend[0]{\hyperlink{def-prepend}{{+}{+}}}
+\newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
 \newcommand\reverselist[0]{\hyperlink{def-reverselist}{\textfunc{reverse}}}
 \newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
 \newcommand\setcomprehension[2]{\{#1 : #2\}} % #1 is a set element predicate, #2 is the output set element.
@@ -1141,6 +1141,7 @@
 
 \newcommand\checkconstrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{\textfunc{check\_constrained\_integer}}}
 
+\newcommand\Prosestaticeval[3]{\hyperlink{def-staticeval}{statically evaluating} the expression #2 in the static environment #1 yields the literal #3}
 \newcommand\staticeval[0]{\hyperlink{def-staticeval}{\textfunc{static\_eval}}}
 \newcommand\staticenvtoenv[0]{\hyperlink{def-staticenvtoenv}{\textfunc{static\_env\_to\_env}}}
 
@@ -1164,6 +1165,8 @@
 \newcommand\subprogramclash[0]{\hyperlink{def-subprogramclash}{\textfunc{subprogram\_clash}}}
 \newcommand\argsclash[0]{\textfunc{args\_clash}}
 \newcommand\bitfieldgetname[0]{\hyperlink{def-bitfieldgetname}{\textfunc{bitfield\_get\_name}}}
+\newcommand\bitfieldgetslices[0]{\hyperlink{def-bitfieldgetslices}{\textfunc{bitfield\_get\_slices}}}
+\newcommand\bitfieldgetnested[0]{\hyperlink{def-bitfieldgetnested}{\textfunc{bitfield\_get\_nested}}}
 \newcommand\pairstomap[0]{\hyperlink{def-pairstomap}{\textfunc{pairs\_to\_map}}}
 \newcommand\assocopt[0]{\hyperlink{def-assocopt}{\textfunc{assoc\_opt}}}
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\textfunc{annotate\_field\_init}}}
@@ -1385,6 +1388,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\listprefixterm[0]{\hyperlink{def-listprefix}{prefix}}
+
 \newcommand\partialfunctionterm[0]{\hyperlink{def-partialfunctionterm}{partial function}}
 \newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
 \newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
@@ -1447,6 +1452,14 @@
 \newcommand\defusedependencyterm[0]{\hyperlink{def-builddependencies}{def-use dependency}}
 \newcommand\defusedependenciesterm[0]{\hyperlink{def-builddependencies}{def-use dependencies}}
 \newcommand\dependencygraphterm[0]{\hyperlink{def-builddependencies}{def-use dependency graph}}
+
+\newcommand\absolutenames[0]{\hyperlink{def-absolutename}{absolute names}}
+\newcommand\absolutename[0]{\hyperlink{def-absolutename}{absolute name}}
+\newcommand\absoluteslice[0]{\hyperlink{def-absoluteslice}{absolute slice}}
+\newcommand\absoluteslices[0]{\hyperlink{def-absoluteslice}{absolute slices}}
+\newcommand\absolutebitfield[0]{\hyperlink{def-absolutebitfield}{absolute bitfield}}
+\newcommand\absolutebitfields[0]{\hyperlink{def-absolutebitfield}{absolute bitfields}}
+\newcommand\bitfieldscope[0]{\hyperlink{def-bitfieldscope}{bitfield scope}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -1544,6 +1557,22 @@
 \newcommand\finddeducecheck[0]{\hyperlink{def-finddeducecheck}{\textfunc{find\_deduce\_check}}}
 \newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\textfunc{annotate\_bitfield}}}
 \newcommand\annotatebitfields[0]{\hyperlink{def-annotatebitfields}{\textfunc{annotate\_bitfields}}}
+\newcommand\Prosecheckcommonbitfieldsalign[3]{\hyperlink{def-checkcommonbitfieldsalign}{checking} that all pairs of bitfields in #2 that are in the same scope
+  and share the same name correspond to the same slice of the containing bitvector type in the static environment #1 yields $\True$}
+\newcommand\checkcommonbitfieldsalign[0]{\hyperlink{def-checkcommonbitfieldsalign}{\textfunc{check\_common\_bitfields\_align}}}
+\newcommand\absolutefieldsalign[0]{\hyperlink{def-absolutefieldsalign}{\textfunc{absolute\_fields\_align}}}
+\newcommand\TAbsField[0]{\hyperlink{def-tabsfield}{\mathbb{A}\mathbb{B}\mathbb{F}}}
+\newcommand\Prosebitfieldstoabsolute[4]{\hyperlink{def-bitfieldstoabsolute}{generating} the \absolutebitfields\ for the list of bitfields #2 and its nested bitfields
+  with #3 as the parent \absolutebitfield\ in the static environment #1 yields the set of fields #4}
+\newcommand\bitfieldstoabsolute[0]{\hyperlink{def-bitfieldstoabsolute}{\textfunc{bitfields\_to\_absolute}}}
+\newcommand\bitfieldtoabsolute[0]{\hyperlink{def-bitfieldtoabsolute}{\textfunc{bitfield\_to\_absolute}}}
+\newcommand\Proseslicetoindices[3]{\hyperlink{def-slicetoindices}{obtaining} the sequence of indices for a slice #1 in the static environment #2 yields #3}
+\newcommand\slicetoindices[0]{\hyperlink{def-slicetoindices}{\textfunc{slice\_to\_indices}}}
+\newcommand\Prosesliceindicesbyslices[3]{\hyperlink{def-sliceindicesbyslices}{slicing} the list of indices #1 according to #2 yields #3}
+\newcommand\sliceindicesbyslices[0]{\hyperlink{def-sliceindicesbyslices}{\textfunc{slice\_indices\_by\_slices}}}
+\newcommand\samename[0]{\hyperlink{def-samename}{\textfunc{same\_name}}}
+\newcommand\samescope[0]{\hyperlink{def-samescope}{\textfunc{same\_scope}}}
+
 \newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\textfunc{check\_no\_duplicates}}}
 \newcommand\typeofarraylength[0]{\hyperlink{def-typeofarraylength}{\textfunc{type\_of\_array\_length}}}
 \newcommand\addlocal[0]{\hyperlink{def-addlocal}{\textfunc{add\_local}}}
@@ -1581,6 +1610,7 @@
 
 %% Type Error Codes
 \newcommand\TypeErrorCode[1]{\texttt{TE\_#1}}
+\newcommand\BitfieldsNotAligned[0]{\hyperlink{def-bitfieldsnotaligned}{\TypeErrorCode{BNA}}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
 \newcommand\IdentifierAlreadyDeclared[0]{\hyperlink{def-identifieralreadydeclared}{\TypeErrorCode{IAD}}}
 \newcommand\LengthsMismatch[0]{\hyperlink{def-lengthsmismatch}{\TypeErrorCode{LMM}}}
@@ -1857,6 +1887,7 @@
 \newcommand\idthree[0]{\texttt{id3}}
 \newcommand\idtwo[0]{\texttt{id2}}
 \newcommand\indices[0]{\texttt{indices}}
+\newcommand\sliceindices[0]{\texttt{slice\_indices}}
 \newcommand\initializedfields[0]{\texttt{initialized\_fields}}
 \newcommand\initialvalue[0]{\texttt{initial\_value}}
 \newcommand\initialvaluep[0]{\texttt{initial\_value'}}
@@ -2067,6 +2098,7 @@
 \newcommand\tenvtwop[0]{\texttt{tenv2'}}
 \newcommand\tenvtwopp[0]{\texttt{tenv2''}}
 \newcommand\vtenv[0]{\texttt{tenv}}
+\newcommand\vtopabsolute[0]{\texttt{top\_absolute}}
 \newcommand\tenvwithparams[0]{\texttt{tenv\_with\_params}}
 \newcommand\tenvwithargs[0]{\texttt{tenv\_with\_args}}
 \newcommand\tep[0]{\texttt{t\_e'}}
@@ -2109,6 +2141,13 @@
 \newcommand\vap[0]{\texttt{a'}}
 \newcommand\vacc[0]{\texttt{acc}}
 \newcommand\vad[0]{\texttt{ad}}
+\newcommand\vabsname[0]{\texttt{absolute\_name}}
+\newcommand\vabsslice[0]{\texttt{absolute\_slice}}
+\newcommand\vabsslices[0]{\texttt{absolute\_slices}}
+\newcommand\vslicesasindices[0]{\texttt{slices\_as\_indices}}
+\newcommand\vabsoluteparent[0]{\texttt{absolute\_parent}}
+\newcommand\vabsbitfields[0]{\texttt{abs\_bitfields}}
+\newcommand\vabsbitfieldsone[0]{\texttt{abs\_bitfields1}}
 \newcommand\vdeclx[0]{\texttt{decl\_x}}
 \newcommand\vadecls[0]{\texttt{adecls}}
 \newcommand\vctrlflow[0]{\texttt{ctrl\_flow}}
@@ -2138,6 +2177,8 @@
 \newcommand\vastnode[0]{\texttt{ast\_node}}
 \newcommand\vasty[0]{\texttt{as\_ty}}
 \newcommand\vastyopt[0]{\texttt{as\_ty\_opt}}
+\newcommand\vsamescope[0]{\texttt{same\_scope}}
+\newcommand\vsamenameandscope[0]{\texttt{same\_name\_and\_scope}}
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\vbp[0]{\texttt{b'}}
 \newcommand\vbase[0]{\texttt{base}}
@@ -2145,6 +2186,9 @@
 \newcommand\vbequallength[0]{\texttt{b\_equal\_length}}
 \newcommand\vbexploding[0]{\texttt{b\_exploding}}
 \newcommand\vbf[0]{\texttt{bf}}
+\newcommand\vbfindices[0]{\texttt{bf\_indices}}
+\newcommand\vbfabsolute[0]{\texttt{bf\_absolute}}
+\newcommand\vbfname[0]{\texttt{bf\_name}}
 \newcommand\vbfone[0]{\texttt{bf1}}
 \newcommand\vbfopt[0]{\texttt{bf\_opt}}
 \newcommand\vbfour[0]{\texttt{b4}}
@@ -2248,6 +2292,7 @@
 \newcommand\vexprpattern[0]{\texttt{expr\_pattern}}
 \newcommand\vexprs[0]{\texttt{exprs}}
 \newcommand\vf[0]{\texttt{f}}
+\newcommand\vfs[0]{\texttt{fs}}
 \newcommand\vfsthree[0]{\texttt{fs3}}
 \newcommand\vfactor[0]{\texttt{v\_factor}}
 \newcommand\vfield[0]{\texttt{field}}
@@ -2304,6 +2349,7 @@
 \newcommand\vkeyword[0]{\texttt{keyword}}
 \newcommand\vl[0]{\texttt{l}}
 \newcommand\vlabels[0]{\texttt{labels}}
+\newcommand\vlastindex[0]{\texttt{last\_index}}
 \newcommand\vle[0]{\texttt{le}}
 \newcommand\vlelist[0]{\texttt{le\_list}}
 \newcommand\vlelistone[0]{\texttt{le\_list1}}
@@ -2342,6 +2388,7 @@
 \newcommand\vls[0]{\texttt{l\_s}}
 \newcommand\vlt[0]{\texttt{l\_t}}
 \newcommand\vltwo[0]{\texttt{l2}}
+\newcommand\vlthree[0]{\texttt{l3}}
 \newcommand\vm[0]{\texttt{m}}
 \newcommand\extpairs[0]{\texttt{extpairs}}
 \newcommand\extpairsab[0]{\texttt{extpairs\_a\_b}}
@@ -2363,6 +2410,7 @@
 \newcommand\vnamest[0]{\texttt{names\_t}}
 \newcommand\vnamet[0]{\texttt{name\_t}}
 \newcommand\vneg[0]{\texttt{neg}}
+\newcommand\vnested[0]{\texttt{nested}}
 \newcommand\vnextlimitopt[0]{\texttt{next\_limit\_opt}}
 \newcommand\vnewarg[0]{\texttt{new\_arg}}
 \newcommand\vnewargs[0]{\texttt{new\_args}}
@@ -2404,11 +2452,14 @@
 \newcommand\vret[0]{\texttt{ret}}
 \newcommand\vreturntype[0]{\texttt{return\_type}}
 \newcommand\vs[0]{\texttt{s}}
+\newcommand\vscopeone[0]{\texttt{scope1}}
+\newcommand\vscopetwo[0]{\texttt{scope2}}
 \newcommand\vscond[0]{\texttt{s\_cond}}
 \newcommand\vselse[0]{\texttt{s\_else}}
 \newcommand\vslice[0]{\texttt{slice}}
 \newcommand\vsliceasts[0]{\texttt{slice\_asts}}
 \newcommand\vsliceone[0]{\texttt{slice1}}
+\newcommand\vslicetwo[0]{\texttt{slice2}}
 \newcommand\vslices[0]{\texttt{slices}}
 \newcommand\vslicesone[0]{\texttt{slices1}}
 \newcommand\vsone[0]{\texttt{s1}}
