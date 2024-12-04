@@ -117,17 +117,19 @@ begin
   return if isZero then Zeros{N} else Ones{N};
 end;
 
+// Returns a bit vector of width N, containing (N DIV M) copies of input bit
+// vector x of width M. N must be exactly divisible by M.
 func Replicate{N,M}(x: bits(M)) => bits(N)
 begin
-  assert (N MOD M == 0);
-  if N == 1 then
-    return ReplicateBit{N}(IsZero(x));
+  if M == 1 then
+    return (if x[0] == '1' then Ones{N} else Zeros{N});
   else
-    var r: bits(N) = Zeros{}();
-    for i=0 to (N DIV M)-1 do
-      r[i*:M] = x;
+    let items = N DIV M; // must be exact
+    var result = Zeros{N};
+    for i = 0 to items - 1 do
+      result[i*:M] = x;
     end;
-    return r;
+    return result;
   end;
 end;
 
