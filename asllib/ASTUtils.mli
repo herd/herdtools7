@@ -30,6 +30,9 @@ open AST
 module ISet : sig
   include Set.S with type elt = identifier
 
+  val unions : t list -> t
+  (** Iterated union. *)
+
   val of_option : identifier option -> t
   val pp_print : Format.formatter -> t -> unit
 end
@@ -352,3 +355,6 @@ val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 
 val list_map_split : ('a -> 'b * 'c) -> 'a list -> 'b list * 'c list
 (** Composition of [List.map] and [List.split]. *)
+
+val transitive_closure : ISet.t IMap.t -> ISet.t IMap.t
+(** Returns the transitive closure of the graph. *)

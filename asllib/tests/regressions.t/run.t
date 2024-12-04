@@ -274,6 +274,7 @@ Parameters bugs:
   ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref bug2.asl
+  File bug2.asl, line 5, characters 10 to 17:
   ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref bug3.asl
