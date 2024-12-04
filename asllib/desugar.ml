@@ -38,7 +38,7 @@ let desugar_setter call fields rhs =
         let getter_call =
           E_Call { name; args; params; call_type = ST_Getter } |> here
         in
-        S_Decl (LDK_Var, LDI_Var temp, Some getter_call) |> here
+        S_Decl (LDK_Var, LDI_Var temp, None, Some getter_call) |> here
       in
       (* temp.field = rhs OR temp.[field1, field2, ...] = rhs; *)
       let modify =
@@ -58,10 +58,10 @@ let desugar_setter call fields rhs =
       in
       S_Seq (s_then read modify, write)
 
-let desugar_elided_parameter ldk lhs (call : call annotated) =
+let desugar_elided_parameter ldk lhs ty (call : call annotated) =
   let bits_e =
-    match lhs with
-    | LDI_Typed (_, { desc = T_Bits (bits_e, []) }) -> bits_e
+    match ty.desc with
+    | T_Bits (bits_e, []) -> bits_e
     | _ ->
         (* For example, let x = foo{,M}(args); cannot be desugared as there is
            no bits(_) annotation on the left-hand side *)
@@ -69,4 +69,4 @@ let desugar_elided_parameter ldk lhs (call : call annotated) =
   in
   let params = bits_e :: call.desc.params in
   let rhs = E_Call { call.desc with params } |> add_pos_from call in
-  S_Decl (ldk, lhs, Some rhs)
+  S_Decl (ldk, lhs, Some ty, Some rhs)

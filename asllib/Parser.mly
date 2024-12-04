@@ -62,7 +62,7 @@ let zero = E_Literal (L_Int Z.zero) |> add_dummy_annotation ~version
 
 let make_ldi_vars (xs, ty) =
   let make_one x =
-    S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None)
+    S_Decl (LDK_Var, LDI_Var x, Some ty, None)
     |> add_dummy_annotation ~version
   in
   List.map make_one xs |> stmt_from_list |> desc
@@ -429,14 +429,13 @@ let lexpr_atom := annotated(lexpr_atom_desc)
    on declarations. They cannot have setter calls or set record fields, they
    have to declare new variables. *)
 
-let decl_item :=
-  | ~=untyped_decl_item ; ~=as_ty ; < LDI_Typed   >
-  | untyped_decl_item
+let discard_or_identifier :=
+  | MINUS;         { fresh_var "__ldi_discard" }
+  | ~=IDENTIFIER;  <>
 
-let untyped_decl_item :=
-  | ~=IDENTIFIER          ; < LDI_Var     >
-  | MINUS                 ; { LDI_Discard }
-  | ~=plist2(decl_item)   ; < LDI_Tuple   >
+let decl_item :=
+  | ~=discard_or_identifier          ; < LDI_Var >
+  | ~=plist2(discard_or_identifier)  ; < LDI_Tuple >
 
 (* ------------------------------------------------------------------------- *)
 (* Statement helpers *)
@@ -498,7 +497,7 @@ let stmt :=
       | RETURN; ~=option(expr);                             < S_Return >
       | ~=call;                                              < s_call >
       | ASSERT; e=expr;                                      < S_Assert >
-      | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
+      | ~=local_decl_keyword; ~=decl_item; ~=ty_opt; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
       | call=annotated(call); EQ; rhs=expr;
         { desugar_setter call [] rhs }
@@ -506,12 +505,12 @@ let stmt :=
         { desugar_setter call [fld] rhs }
       | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
         { desugar_setter call flds rhs }
-      | ldk=local_decl_keyword; lhs=decl_item; EQ; call=annotated(elided_param_call);
-        { desugar_elided_parameter ldk lhs call}
-      | VAR; ldi=decl_item; e=option_eq_expr;              { S_Decl (LDK_Var, ldi, e) }
+      | ldk=local_decl_keyword; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
+        { desugar_elided_parameter ldk lhs ty call}
+      | VAR; ldi=decl_item; ty=ty_opt; e=option_eq_expr;      { S_Decl (LDK_Var, ldi, ty, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
-      | VAR; lhs=decl_item; EQ; call=annotated(elided_param_call);
-        { desugar_elided_parameter LDK_Var lhs call}
+      | VAR; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
+        { desugar_elided_parameter LDK_Var lhs ty call}
       | PRINTLN; args=plist(expr);                           { S_Print { args; newline = true; debug = false } }
       | PRINT; args=plist(expr);                             { S_Print { args; newline = false; debug = false } }
       | DEBUG; args=plist(expr);                             { S_Print { args; newline = true; debug = true } }

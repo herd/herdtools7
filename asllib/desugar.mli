@@ -37,7 +37,7 @@ val desugar_setter : call annotated -> identifier list -> expr -> stmt_desc
 *)
 
 val desugar_elided_parameter :
-  local_decl_keyword -> local_decl_item -> call annotated -> stmt_desc
+  local_decl_keyword -> local_decl_item -> ty -> call annotated -> stmt_desc
 (**
   Desugar an elided parameter, in particular:
   {[

@@ -74,7 +74,6 @@ module SemanticsRule = struct
     | PTuple
     | LDDiscard
     | LDVar
-    | LDTyped
     | LDTuple
     | SPass
     | SAssignCall
@@ -161,7 +160,6 @@ module SemanticsRule = struct
     | PTuple -> "PTuple"
     | LDDiscard -> "LDDiscard"
     | LDVar -> "LDVar"
-    | LDTyped -> "LDTyped"
     | LDTuple -> "LDTuple"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
@@ -251,7 +249,6 @@ module SemanticsRule = struct
       PTuple;
       LDDiscard;
       LDVar;
-      LDTyped;
       LDTuple;
       SPass;
       SAssignCall;
@@ -387,11 +384,9 @@ module TypingRule = struct
     | PTuple
     | LDDiscard
     | LDVar
-    | LDTyped
     | LDTuple
     | LDUninitialisedVar
     | LDUninitialisedTyped
-    | LDUninitialisedTuple
     | SPass
     | SAssignCall
     | SAssign
@@ -574,12 +569,10 @@ module TypingRule = struct
     | PMask -> "PMask"
     | PTuple -> "PTuple"
     | LDDiscard -> "LDDiscardNone"
-    | LDTyped -> "LDTyped"
     | LDVar -> "LDVar"
     | LDUninitialisedVar -> "LDUninitialisedVar"
     | LDUninitialisedTyped -> "LDUninitialisedTyped"
     | LDTuple -> "LDTuple"
-    | LDUninitialisedTuple -> "LDUninitialisedTuple"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
     | SAssign -> "SAssign"

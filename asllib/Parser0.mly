@@ -45,7 +45,7 @@
 
     let make_ldi_vars (ty, xs) =
       let make_one x =
-        S_Decl (LDK_Var, LDI_Typed (LDI_Var x, ty), None)
+        S_Decl (LDK_Var, LDI_Var x, Some ty, None)
         |> add_dummy_annotation ~version
       in
       List.map make_one xs |> stmt_from_list |> desc
@@ -650,27 +650,28 @@ let simple_stmt ==
     )
   ))
 
+let ident_or_record_or_discard ==
+  | ~=ident_plus_record; <>
+  | MINUS;               { ASTUtils.fresh_var "__ldi_discard" }
+
 let assignment_stmt ==
   annotated (
     terminated_by(SEMICOLON,
       | le=lexpr; EQ; e=expr; < AST.S_Assign >
-      | ldi=typed_le_ldi; EQ; ~=expr;
-        { AST.(S_Decl (LDK_Var, ldi, Some expr)) }
-      | CONSTANT; ldi=typed_le_ldi; EQ; ~=expr;
-        { AST.(S_Decl (LDK_Let, ldi, Some expr)) }
+      | ty=annotated(ty_non_tuple); x=ident_plus_record; EQ; ~=expr;
+        { AST.(S_Decl (LDK_Var, LDI_Var x, Some ty, Some expr)) }
+      | CONSTANT; ty=annotated(ty_non_tuple); x=ident_plus_record; EQ; ~=expr;
+        { AST.(S_Decl (LDK_Let, LDI_Var x, Some ty, Some expr)) }
       | CONSTANT; x=ident; EQ; ~=expr;
-        { AST.(S_Decl (LDK_Let, LDI_Var x, Some expr)) }
-      | CONSTANT; ldi=ldi_tuple ; EQ; e=expr;
-        { AST.S_Decl (LDK_Let, ldi, Some e) }
+        { AST.(S_Decl (LDK_Let, LDI_Var x, None, Some expr)) }
+      | CONSTANT; names=pared(nnclist(ident_or_record_or_discard)); EQ; e=expr;
+        { AST.S_Decl (LDK_Let, LDI_Tuple names, None, Some e) }
       | t=annotated(ty_non_tuple); li=nclist(ident); < make_ldi_vars >
       ))
 
 let le_var == ~=qualident; < AST.LE_Var >
 let lexpr_ignore == { AST.LE_Discard }
 let unimplemented_lexpr(x) == x; lexpr_ignore
-
-let typed_le_ldi ==
-  t=annotated(ty_non_tuple); x=ident_plus_record; { AST.(LDI_Typed (LDI_Var x, t)) }
 
 let lexpr :=
   annotated (
@@ -686,13 +687,6 @@ let lexpr :=
       | bracketed(nclist(lexpr)); <>
     )
   )
-
-let ldi :=
-   | MINUS; { AST.LDI_Discard }
-   | x=ident_plus_record; { AST.LDI_Var x }
-   | ldi_tuple
-
-let ldi_tuple == ldis=pared(nnclist(ldi)); { AST.LDI_Tuple ldis }
 
 let simple_if_stmt ==
     annotated (

@@ -93,10 +93,8 @@ module type Syntax = sig
   val ldk_var : bool
   val ldk_let : bool
   val ldk_constant : bool
-  val ldi_discard : bool
   val ldi_var : bool
   val ldi_tuple : bool
-  val ldi_typed : bool
   val up : bool
   val down : bool
   val s_pass : bool
@@ -214,10 +212,8 @@ module All : Syntax = struct
   let ldk_var = true
   let ldk_let = true
   let ldk_constant = true
-  let ldi_discard = true
   let ldi_var = true
   let ldi_tuple = true
-  let ldi_typed = true
   let up = true
   let down = true
   let s_pass = true
@@ -350,10 +346,8 @@ module Parse = struct
         ("ldk_var", true);
         ("ldk_let", true);
         ("ldk_constant", true);
-        ("ldi_discard", true);
         ("ldi_var", true);
         ("ldi_tuple", true);
-        ("ldi_typed", true);
         ("up", true);
         ("down", true);
         ("s_pass", true);
@@ -471,10 +465,8 @@ module Parse = struct
       let ldk_var = Tbl.find tbl "ldk_var"
       let ldk_let = Tbl.find tbl "ldk_let"
       let ldk_constant = Tbl.find tbl "ldk_constant"
-      let ldi_discard = Tbl.find tbl "ldi_discard"
       let ldi_var = Tbl.find tbl "ldi_var"
       let ldi_tuple = Tbl.find tbl "ldi_tuple"
-      let ldi_typed = Tbl.find tbl "ldi_typed"
       let up = Tbl.find tbl "up"
       let down = Tbl.find tbl "down"
       let s_pass = Tbl.find tbl "s_pass"
