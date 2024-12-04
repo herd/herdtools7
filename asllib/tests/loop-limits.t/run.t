@@ -89,12 +89,12 @@ Recursion limits:
 =================
 
   $ aslref recursion-no-limit.asl
-  Number of calls:  11
-  Number of calls:  11
+  Number of calls: 11
+  Number of calls: 11
 
   $ aslref recursion-correct.asl
-  Number of calls:  11
-  Number of calls:  11
+  Number of calls: 11
+  Number of calls: 11
 
   $ aslref recursion-incorrect.asl
   0
@@ -107,8 +107,8 @@ Recursion limits:
   [1]
 
   $ aslref recursion-exact.asl
-  Number of calls:  11
-  Number of calls:  11
+  Number of calls: 11
+  Number of calls: 11
 
   $ aslref recursion-exact-minus-one.asl
   File recursion-exact-minus-one.asl, line 5, characters 18 to 31:

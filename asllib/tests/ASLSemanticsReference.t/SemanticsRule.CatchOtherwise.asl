@@ -11,7 +11,7 @@ begin
        when MyExceptionType2 =>
          assert FALSE;
        otherwise =>
-         print("Otherwise");
+         println("Otherwise");
      end;
 
   return 0;

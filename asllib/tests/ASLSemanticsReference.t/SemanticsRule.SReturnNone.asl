@@ -1,6 +1,5 @@
-func print_me ()
+func println_me ()
 begin
-
   for i = 0 to 42 do
     if i >= 3 then
       return;
@@ -10,10 +9,9 @@ begin
 
 end;
 
-func main () => integer 
-begin 
+func main () => integer
+begin
+    println_me ();
 
-    print_me (); 
-
-    return 0; 
+    return 0;
 end;

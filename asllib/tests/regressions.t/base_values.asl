@@ -24,10 +24,10 @@ begin
   assert x3_bis == 2;
 
   var x4: integer {2, -2};
-  print ("base value of {2, -2} is", x4);
+  println ("base value of {2, -2} is", x4);
 
   var x4_bis: integer {-2, 2};
-  print ("base value of {-2, 2} is", x4_bis);
+  println ("base value of {-2, 2} is", x4_bis);
 
   var x5: integer {-2..2};
   assert x5 == 0;

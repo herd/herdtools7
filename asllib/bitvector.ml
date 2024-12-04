@@ -201,6 +201,47 @@ let to_string (length, data) =
   Buffer.add_char result '\'';
   Buffer.contents result
 
+let hex_number =
+  Array.get
+    [|
+      '0';
+      '1';
+      '2';
+      '3';
+      '4';
+      '5';
+      '6';
+      '7';
+      '8';
+      '9';
+      'a';
+      'b';
+      'c';
+      'd';
+      'e';
+      'f';
+    |]
+
+let buffer_add_hex result y = y mod 16 |> hex_number |> Buffer.add_char result
+
+let write_char_hex result c =
+  let x = Char.code c in
+  buffer_add_hex result (x lsr 4);
+  buffer_add_hex result x
+
+let to_string_hexa (length, data) =
+  let result = Buffer.create (2 * (length + 2)) in
+  let n = length / 8 and m = length mod 8 in
+  Buffer.add_string result "0x";
+  (if m <> 0 then
+     let c = String.get data n in
+     if m > 4 then write_char_hex result c
+     else c |> Char.code |> buffer_add_hex result);
+  for i = n - 1 downto 0 do
+    String.get data i |> write_char_hex result
+  done;
+  Buffer.contents result
+
 let to_int (length, data) =
   let result = ref 0 in
   let n = length / 8 and m = length mod 8 in

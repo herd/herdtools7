@@ -163,7 +163,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.LDDiscard.asl
 
   $ aslref EvalCatchers.asl
-  2 1
+  21
   $ aslref SemanticsRule.ATCNotDynamicErrorIfFalse.asl
   $ aslref SemanticsRule.ATCVariousErrors.asl
   File SemanticsRule.ATCVariousErrors.asl, line 4, characters 2 to 30:

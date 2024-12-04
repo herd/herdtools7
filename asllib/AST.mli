@@ -343,7 +343,7 @@ type stmt_desc =
           The outer option is used to represent the implicit throw, such as [throw;]. *)
   | S_Try of stmt * catcher list * stmt option
       (** The stmt option is the optional otherwise guard. *)
-  | S_Print of { args : expr list; debug : bool }
+  | S_Print of { args : expr list; newline : bool; debug : bool }
       (** A call to print, as an explicit node as it does not require
           type-checking. *)
   | S_Unreachable

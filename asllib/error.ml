@@ -88,6 +88,7 @@ type error_desc =
       field1_absslices : string;
       field2_absslices : string;
     }
+  | BadPrintType of ty
 
 type error = error_desc annotated
 
@@ -175,6 +176,7 @@ let error_label = function
   | EmptyConstraints -> "EmptyConstraints"
   | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
   | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
+  | BadPrintType _ -> "BadPrintType"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -412,6 +414,11 @@ module PPrint = struct
         fprintf f
           "ASL Typing error:@ a@ well-constrained@ integer@ cannot@ have@ \
            empty@ constraints."
+    | BadPrintType t ->
+        fprintf f
+          "ASL Typing error:@ print@ and@ println@ only@ accept@ singular@ \
+           types,@ found@ %a."
+          pp_ty t
     | UnexpectedPendingConstrained ->
         pp_print_text f
           "ASL Typing error: a pending constrained integer is illegal here."

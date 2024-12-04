@@ -16,7 +16,7 @@ begin
   catch
     when Bonga =>
       let coucou = 11 ;
-      print(coucou);
+      println(coucou);
   end;
   return 0;
 end;

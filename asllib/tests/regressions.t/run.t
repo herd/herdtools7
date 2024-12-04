@@ -154,7 +154,7 @@ Runtime checks:
   $ aslref runtime-type-sat2.asl
   File runtime-type-sat2.asl, line 2, characters 10 to 18:
   ASL Execution error: Mismatch type:
-    value '0000' does not belong to type bits(size).
+    value 0x0 does not belong to type bits(size).
   [1]
 
   $ aslref under-constrained-used.asl
@@ -192,10 +192,10 @@ Parameterized integers:
   [1]
 
   $ aslref named-types-in-slices.asl
-  '11111111'
+  0xff
 
   $ aslref empty-slice.asl
-  '000'
+  0x0
   ASL Dynamic error: Cannot extract from bitvector of length 0 slice 4+:-1.
   [1]
 
@@ -204,7 +204,7 @@ Parameterized integers:
   [1]
 
   $ aslref bad-shift.asl
-  '00000'
+  0x00
 
   $ aslref unreachable.asl
   File unreachable.asl, line 3, characters 2 to 17:
@@ -218,7 +218,7 @@ Parameterized integers:
 
   $ aslref equality.asl
   $ aslref bad-equality.asl
-  File bad-equality.asl, line 3, characters 8 to 23:
+  File bad-equality.asl, line 3, characters 10 to 25:
   ASL Typing error: Illegal application of operator == on types
     (integer {1}, integer {2}) and (integer {1}, integer {2}).
   [1]
@@ -261,7 +261,6 @@ Parameterized integers:
 
 Arrays indexed by enumerations
   $ aslref enum-array.asl
-  [0, 0, 0]
 
   $ aslref array-lca.asl
   $ aslref array-index-error.asl

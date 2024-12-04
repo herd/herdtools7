@@ -486,8 +486,9 @@ let stmt ==
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
       | VAR; lhs=decl_item; EQ; call=annotated(elided_param_call);
         { desugar_elided_parameter LDK_Var lhs call}
-      | PRINT; args=plist(expr);                             { S_Print { args; debug = false } }
-      | DEBUG; args=plist(expr);                             { S_Print { args; debug = true } }
+      | PRINTLN; args=plist(expr);                           { S_Print { args; newline = true; debug = false } }
+      | PRINT; args=plist(expr);                             { S_Print { args; newline = false; debug = false } }
+      | DEBUG; args=plist(expr);                             { S_Print { args; newline = true; debug = true } }
       | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
       | ARROBASE_LOOPLIMIT; looplimit=pared(expr); REPEAT; body=stmt_list; UNTIL; cond=expr;

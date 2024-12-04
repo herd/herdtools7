@@ -10,7 +10,7 @@ One slice cannot intersect itself:
   > end;
   > EOF
   $ aslref intersecting_slices1.asl
-  '0001'
+  0x1
 
 Two intersecting slices...
   $ cat >intersecting_slices2.asl <<EOF
@@ -62,8 +62,8 @@ Two maybe intersecting slices...
   > EOF
 
   $ aslref intersecting_slices3b.asl
-  '0111'
   ASL Dynamic error: overlapping slices x+:1, y+:1.
+  0x7
   [1]
 
 Two intersecting bitfields

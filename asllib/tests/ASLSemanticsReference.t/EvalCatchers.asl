@@ -15,7 +15,7 @@ begin
        update_and_throw();
      catch
        when MyExceptionType =>
-         print(x, g);
+         println(x, g);
      end;
   return 0;
 end;

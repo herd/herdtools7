@@ -91,7 +91,7 @@ module SemanticsRule = struct
     | SThrow
     | STry
     | SDecl
-    | SDebug
+    | SPrint
     | FUndefIdent
     | FPrimitive
     | FBadArity
@@ -178,7 +178,7 @@ module SemanticsRule = struct
     | SThrow -> "SThrow"
     | STry -> "STry"
     | SDecl -> "SDecl"
-    | SDebug -> "SDebug"
+    | SPrint -> "SPrint"
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
@@ -268,7 +268,7 @@ module SemanticsRule = struct
       SThrow;
       STry;
       SDecl;
-      SDebug;
+      SPrint;
       FUndefIdent;
       FPrimitive;
       FBadArity;
@@ -407,7 +407,7 @@ module TypingRule = struct
     | SThrow
     | STry
     | SDecl
-    | SDebug
+    | SPrint
     | SPragma
     | FUndefIdent
     | FPrimitive
@@ -591,7 +591,7 @@ module TypingRule = struct
     | SThrow -> "SThrow"
     | STry -> "STry"
     | SDecl -> "SDecl"
-    | SDebug -> "SDebug"
+    | SPrint -> "SPrint"
     | SPragma -> "SPragma"
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
@@ -761,7 +761,7 @@ module TypingRule = struct
       SThrow;
       STry;
       SDecl;
-      SDebug;
+      SPrint;
       SPragma;
       FUndefIdent;
       FPrimitive;

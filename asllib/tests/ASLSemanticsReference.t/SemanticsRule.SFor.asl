@@ -3,7 +3,7 @@ begin
 
   for i = 0 to 3 do
     assert i <= 3;
-    print(i);
+    println(i);
   end;
 
   return 0;

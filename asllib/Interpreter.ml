@@ -1023,7 +1023,8 @@ module Make (B : Backend.S) (C : Config) = struct
         return_continue new_env |: SemanticsRule.SDecl
     | S_Decl (_dlk, _ldi, None) -> fatal_from s TypeInferenceNeeded
     (* End *)
-    | S_Print { args; debug } ->
+    (* Begin EvalSPrint *)
+    | S_Print { args; newline; debug } ->
         let* vs = List.map (eval_expr_sef env) args |> sync_list in
         let () =
           if debug then
@@ -1035,10 +1036,11 @@ module Make (B : Backend.S) (C : Config) = struct
               (pp_print_list ~pp_sep:pp_print_space pp_value)
               vs
           else (
-            List.map B.debug_value vs |> String.concat " " |> print_string;
-            print_newline ())
+            List.map B.debug_value vs |> String.concat "" |> print_string;
+            if newline then print_newline () else ())
         in
-        return_continue env |: SemanticsRule.SDebug
+        return_continue env |: SemanticsRule.SPrint
+    (* End *)
     | S_Pragma _ -> assert false
     | S_Unreachable -> fatal_from s Error.UnreachableReached
 
