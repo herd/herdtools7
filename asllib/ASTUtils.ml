@@ -300,7 +300,8 @@ let rec use_s s =
       use_option use_e limit $ use_e start_e $ use_e end_e $ use_s body
   | S_While (e, limit, s) | S_Repeat (s, e, limit) ->
       use_option use_e limit $ use_s s $ use_e e
-  | S_Decl (_, ldi, e) -> use_option use_e e $ use_ldi ldi
+  | S_Decl (_, ldi, ty, e) ->
+      use_option use_e e $ use_option use_ty ty $ use_ldi ldi
   | S_Throw (Some (e, _)) -> use_e e
   | S_Throw None -> Fun.id
   | S_Try (s, catchers, s') ->
@@ -311,8 +312,7 @@ let rec use_s s =
 
 and use_ldi = function
   | LDI_Discard | LDI_Var _ -> Fun.id
-  | LDI_Typed (ldi, t) -> use_ty t $ use_ldi ldi
-  | LDI_Tuple ldis -> List.fold_right use_ldi ldis
+  | LDI_Tuple names -> use_list (use_option ISet.add) names
 
 and use_case { desc = { pattern; where; stmt }; _ } =
   use_option use_e where $ use_pattern pattern $ use_s stmt
@@ -553,11 +553,17 @@ module Infix = struct
 end
 
 let lid_of_lexpr =
-  let rec tr le =
+  let tr_tuple_var le =
+    match le.desc with
+    | LE_Var x -> Some x
+    | LE_Discard -> None
+    | _ -> raise Exit
+  in
+  let tr le =
     match le.desc with
     | LE_Discard -> LDI_Discard
     | LE_Var x -> LDI_Var x
-    | LE_Destructuring les -> LDI_Tuple (List.map tr les)
+    | LE_Destructuring les -> LDI_Tuple (List.map tr_tuple_var les)
     | _ -> raise Exit
   in
   fun le -> try Some (tr le) with Exit -> None
@@ -619,7 +625,9 @@ let desugar_case_stmt : stmt -> stmt =
         cases_to_cond ~loc:s e0 cases
     | S_Case (e, cases) ->
         let x = fresh_var "__case__linearisation" in
-        let decl_x = S_Decl (LDK_Let, LDI_Var x, Some e) |> add_pos_from e in
+        let decl_x =
+          S_Decl (LDK_Let, LDI_Var x, None, Some e) |> add_pos_from e
+        in
         S_Seq (decl_x, cases_to_cond ~loc:s (var_ x) cases) |> add_pos_from s
     | _ -> raise (Invalid_argument "desugar_case_stmt")
 (* End *)
@@ -800,7 +808,8 @@ let rename_locals map_name ast =
     map_desc_st' s @@ function
     | S_Pass -> s.desc
     | S_Seq (s1, s2) -> S_Seq (map_s s1, map_s s2)
-    | S_Decl (ldk, ldi, e) -> S_Decl (ldk, map_ldi ldi, Option.map map_e e)
+    | S_Decl (ldk, ldi, ty, e) ->
+        S_Decl (ldk, map_ldi ldi, Option.map map_t ty, Option.map map_e e)
     | S_Assign (le, e) -> S_Assign (map_le le, map_e e)
     | S_Call { name; args; params; call_type } ->
         S_Call { name; args = map_es args; params = map_es params; call_type }
@@ -839,8 +848,7 @@ let rename_locals map_name ast =
   and map_ldi = function
     | LDI_Discard as ldi -> ldi
     | LDI_Var x -> LDI_Var (map_name x)
-    | LDI_Typed (ldi, t) -> LDI_Typed (map_ldi ldi, map_t t)
-    | LDI_Tuple ldis -> LDI_Tuple (List.map map_ldi ldis)
+    | LDI_Tuple names -> LDI_Tuple (List.map (Option.map map_name) names)
   and map_body = function
     | SB_Primitive _ as b -> b
     | SB_ASL s -> SB_ASL (map_s s)
