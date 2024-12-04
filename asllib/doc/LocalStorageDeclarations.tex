@@ -65,16 +65,16 @@ from the perspective of the semantics of local storage elements, they are all tr
 \section{Syntax\label{sec:LocalStorageDeclarationsSyntax}}
 Declaring a local storage element is done via the following grammar rules:
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+\Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \begin{flalign*}
-\Nlocaldeclkeyword \derivesinline\ & \Tlet \;|\; \Tconstant&\\
+\Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&\\
 \Ndeclitem \derives\ & \Nuntypeddeclitem \parsesep \Nasty&\\
 |\ & \Nuntypeddeclitem  &\\
-\Nuntypeddeclitem \derivesinline\ & \Tidentifier &\\
+\Nuntypeddeclitem \derives \ & \Tidentifier &\\
 |\ & \Tminus &\\
 |\ & \Plisttwo{\Ndeclitem} &
 \end{flalign*}

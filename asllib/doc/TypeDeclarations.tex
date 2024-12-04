@@ -11,15 +11,15 @@ Type declarations have no associated semantics.
 \section{Syntax\label{sec:TypeDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derivesinline\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&\\
+\Ndecl  \derives \ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&\\
-\Nsubtypeopt           \derivesinline\ & \option{\Nsubtype} &\\
-\Nsubtype \derivesinline\ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
+\Nsubtypeopt           \derives \ & \option{\Nsubtype} &\\
+\Nsubtype \derives \ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
             |\              & \Tsubtypes \parsesep \Tidentifier &\\
-\Nfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Ntypedidentifier} \parsesep \Trbrace &\\
-\Nfieldsopt \derivesinline\ & \Nfields \;|\; \emptysentence &\\
-\Ntypedidentifier \derivesinline\ & \Tidentifier \parsesep \Nasty &\\
-\Nasty \derivesinline\ & \Tcolon \parsesep \Nty &
+\Nfields \derives \ & \Tlbrace \parsesep \TClist{\Ntypedidentifier} \parsesep \Trbrace &\\
+\Nfieldsopt \derives \ & \Nfields \;|\; \emptysentence &\\
+\Ntypedidentifier \derives \ & \Tidentifier \parsesep \Nasty &\\
+\Nasty \derives \ & \Tcolon \parsesep \Nty &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -181,19 +181,19 @@ We define the following parametric productions for various types of lists and op
 \paragraph{Comma-separated List With At Least Two Elements}
 \hypertarget{def-clisttwo}{}
 \begin{flalign*}
-\Clisttwo{x}   \derivesinline\ & x \parsesep \Tcomma \parsesep \NClist{x} &\\
+\Clisttwo{x}   \derives \ & x \parsesep \Tcomma \parsesep \NClist{x} &\\
 \end{flalign*}
 
 \paragraph{Possibly-empty Parenthesized, Comma-separated List}
 \hypertarget{def-plist}{}
 \begin{flalign*}
-\Plist{x}   \derivesinline\ & \Tlpar \parsesep \Clist{x} \parsesep \Trpar &\\
+\Plist{x}   \derives \ & \Tlpar \parsesep \Clist{x} \parsesep \Trpar &\\
 \end{flalign*}
 
 \paragraph{Parenthesized Comma-separated List With At Least Two Elements}
 \hypertarget{def-plisttwo}{}
 \begin{flalign*}
-\Plisttwo{x}   \derivesinline\ & \Tlpar \parsesep x \parsesep \Tcomma \parsesep \NClist{x} \parsesep \Trpar &\\
+\Plisttwo{x}   \derives \ & \Tlpar \parsesep x \parsesep \Tcomma \parsesep \NClist{x} \parsesep \Trpar &\\
 \end{flalign*}
 
 \paragraph{Non-empty Comma-separated Trailing List}
@@ -206,7 +206,7 @@ We define the following parametric productions for various types of lists and op
 \paragraph{Comma-separated Trailing List}
 \hypertarget{def-tclist}{}
 \begin{flalign*}
-\TClist{x}   \derivesinline\ & \option{\NTClist{x}} &\\
+\TClist{x}   \derives \ & \option{\NTClist{x}} &\\
 \end{flalign*}
 
 \section{ASL Grammar\label{sec:ASLGrammar}}
@@ -231,8 +231,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-ndecl}{}
 \hypertarget{def-funcdecl}{}
 \begin{flalign*}
-\Ndecl  \derivesinline\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
-                        & \wrappedline\ \Nfuncbody
+\Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
+                   & \wrappedline\ \Nfuncbody
 \hypertarget{def-proceduredecl}{}\\
 |\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &
 \hypertarget{def-getter}{}\\
@@ -255,50 +255,50 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nrecurselimit}{}
 \begin{flalign*}
-\Nrecurselimit   \derivesinline\ & \Trecurselimit \parsesep \Nexpr &\\
-|\              & \emptysentence &\\
+\Nrecurselimit   \derives \ & \Trecurselimit \parsesep \Nexpr &\\
+|\                          & \emptysentence &\\
 \end{flalign*}
 
 \hypertarget{def-nsubtype}{}
 \begin{flalign*}
-\Nsubtype \derivesinline\ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
-          |\              & \Tsubtypes \parsesep \Tidentifier &\\
+\Nsubtype \derives\ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
+          |\        & \Tsubtypes \parsesep \Tidentifier &\\
 \end{flalign*}
 
 \hypertarget{def-nsubtypeopt}{}
 \begin{flalign*}
-\Nsubtypeopt           \derivesinline\ & \option{\Nsubtype} &
+\Nsubtypeopt           \derives \ & \option{\Nsubtype} &
 \end{flalign*}
 
 \hypertarget{def-ntypedidentifier}{}
 \begin{flalign*}
-\Ntypedidentifier \derivesinline\ & \Tidentifier \parsesep \Nasty &
+\Ntypedidentifier \derives \ & \Tidentifier \parsesep \Nasty &
 \end{flalign*}
 
 \hypertarget{def-nopttypeidentifier}{}
 \begin{flalign*}
-\Nopttypedidentifier \derivesinline\ & \Tidentifier \parsesep \option{\Nasty} &
+\Nopttypedidentifier \derives \ & \Tidentifier \parsesep \option{\Nasty} &
 \end{flalign*}
 
 \hypertarget{def-nasty}{}
 \begin{flalign*}
-\Nasty \derivesinline\ & \Tcolon \parsesep \Nty &
+\Nasty \derives \ & \Tcolon \parsesep \Nty &
 \end{flalign*}
 
 \hypertarget{def-nreturntype}{}
 \begin{flalign*}
-\Nreturntype        \derivesinline\ & \Tarrow \parsesep \Nty &
+\Nreturntype        \derives \ & \Tarrow \parsesep \Nty &
 \end{flalign*}
 
 \hypertarget{def-nparamsopt}{}
 \begin{flalign*}
-\Nparamsopt \derivesinline\ & \emptysentence &\\
-                   |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &
+\Nparamsopt \derives \ & \emptysentence &\\
+                    |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-ncall}{}
 \begin{flalign*}
-\Ncall \derivesinline\
+\Ncall \derives \
      & \Tidentifier \parsesep \Plist{\Nexpr} &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr} &
@@ -306,7 +306,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nelidedparamcall}{}
 \begin{flalign*}
-\Nelidedparamcall \derivesinline\
+\Nelidedparamcall \derives \
      & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \Plist{\Nexpr} &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr}&
@@ -314,29 +314,29 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nfuncargs}{}
 \begin{flalign*}
-\Nfuncargs          \derivesinline\ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &
+    \Nfuncargs          \derives \ & \Plist{\Ntypedidentifier} &
 \end{flalign*}
 
 \hypertarget{def-nmaybeemptystmtlist}{}
 \begin{flalign*}
-\Nmaybeemptystmtlist          \derivesinline\ & \emptysentence \;|\; \Nstmtlist &
+\Nmaybeemptystmtlist          \derives \ & \emptysentence \;|\; \Nstmtlist &
 \end{flalign*}
 
 \hypertarget{def-nfuncbody}{}
 \begin{flalign*}
-\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &
+\Nfuncbody          \derives \ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &
 \end{flalign*}
 
 \hypertarget{def-nignoredoridentifier}{}
 \begin{flalign*}
-\Nignoredoridentifier \derivesinline\ & \Tminus \;|\; \Tidentifier &
+\Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
 \vspace*{-\baselineskip}
 \paragraph{Parsing note:} $\Tvar$ is not derived by $\Nlocaldeclkeyword$ to avoid an LR(1) conflict.
 \hypertarget{def-nlocaldeclkeyword}{}
 \begin{flalign*}
-\Nlocaldeclkeyword \derivesinline\ & \Tlet \;|\; \Tconstant&
+\Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&
 \end{flalign*}
 
 \hypertarget{def-nstoragekeyword}{}
@@ -346,23 +346,23 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-ndirection}{}
 \begin{flalign*}
-\Ndirection \derivesinline\ & \Tto \;|\; \Tdownto &
+\Ndirection \derives \ & \Tto \;|\; \Tdownto &
 \end{flalign*}
 
 \hypertarget{def-ncasealtlist}{}
 \begin{flalign*}
-\Ncasealtlist \derivesinline\ & \NClist{\Ncasealt} &\\
-                           |\ & \NClist{\Ncasealt} \parsesep \Ncaseotherwise &\\
+\Ncasealtlist \derives \ & \NClist{\Ncasealt} &\\
+                      |\ & \NClist{\Ncasealt} \parsesep \Ncaseotherwise &\\
 \end{flalign*}
 
 \hypertarget{def-ncasealt}{}
 \begin{flalign*}
-\Ncasealt \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &
+\Ncasealt \derives \ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
 \hypertarget{def-ncaseotherwise}{}
 \begin{flalign*}
-\Ncaseotherwise \derivesinline\ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
+\Ncaseotherwise \derives \ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
 \hypertarget{def-notherwiseopt}{}
@@ -372,25 +372,25 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-ncatcher}{}
 \begin{flalign*}
-\Ncatcher \derivesinline\ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\Ncatcher \derives      \ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
           |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
 \end{flalign*}
 
 \hypertarget{def-nloo}{}
 \begin{flalign*}
-\Ncatcher \derivesinline\ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\Ncatcher \derives      \ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
           |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
 \end{flalign*}
 
 \hypertarget{def-nlooplimit}{}
 \begin{flalign*}
-\Nlooplimit \derivesinline\ & \Tlooplimit \parsesep \Nexpr &\\
+\Nlooplimit \derives    \ & \Tlooplimit \parsesep \Nexpr &\\
           |\              & \emptysentence &\\
 \end{flalign*}
 
 \hypertarget{def-nstmt}{}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
+\Nstmt \derives \ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Twhile \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
@@ -420,7 +420,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nstmtlist}{}
 \begin{flalign*}
-\Nstmtlist \derivesinline\ & \nonemptylist{\Nstmt} &
+\Nstmtlist \derives \ & \nonemptylist{\Nstmt} &
 \end{flalign*}
 
 \hypertarget{def-nselse}{}
@@ -457,26 +457,26 @@ it must declare a new variable.
 
 \hypertarget{def-nuntypeddeclitem}{}
 \begin{flalign*}
-\Nuntypeddeclitem \derivesinline\ & \Tidentifier &\\
+\Nuntypeddeclitem \derives \ & \Tidentifier &\\
 |\ & \Tminus &\\
 |\ & \Plisttwo{\Ndeclitem} &
 \end{flalign*}
 
 \hypertarget{def-nintconstraintsopt}{}
 \begin{flalign*}
-\Nconstraintkindopt \derivesinline\ & \Nconstraintkind \;|\; \emptysentence &
+\Nconstraintkindopt \derives \ & \Nconstraintkind \;|\; \emptysentence &
 \end{flalign*}
 
 \hypertarget{def-nintconstraints}{}
 \begin{flalign*}
-\Nconstraintkind \derivesinline\ &
+\Nconstraintkind \derives \ &
        \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &\\
   |\ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-nintconstraint}{}
 \begin{flalign*}
-\Nintconstraint \derivesinline\ & \Nexpr &\\
+\Nintconstraint \derives \ & \Nexpr &\\
 |\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
 \end{flalign*}
 
@@ -507,13 +507,13 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-npatternset}{}
 \begin{flalign*}
-\Npatternset \derivesinline\  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+\Npatternset \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
                   |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-npatternlist}{}
 \begin{flalign*}
-\Npatternlist \derivesinline\ & \NClist{\Npattern} &
+\Npatternlist \derives \ & \NClist{\Npattern} &
 \end{flalign*}
 
 \hypertarget{def-npattern}{}
@@ -530,22 +530,22 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nfields}{}
 \begin{flalign*}
-\Nfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Ntypedidentifier} \parsesep \Trbrace &
+\Nfields \derives \ & \Tlbrace \parsesep \TClist{\Ntypedidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-nfieldsopt}{}
 \begin{flalign*}
-\Nfieldsopt \derivesinline\ & \Nfields \;|\; \emptysentence &
+\Nfieldsopt \derives \ & \Nfields \;|\; \emptysentence &
 \end{flalign*}
 
 \hypertarget{def-nslices}{}
 \begin{flalign*}
-\Nslices \derivesinline\ & \Tlbracket \parsesep \NClist{\Nslice} \parsesep \Trbracket &
+\Nslices \derives \ & \Tlbracket \parsesep \NClist{\Nslice} \parsesep \Trbracket &
 \end{flalign*}
 
 \hypertarget{def-nslice}{}
 \begin{flalign*}
-\Nslice \derivesinline\ & \Nexpr &\\
+\Nslice \derives \ & \Nexpr &\\
               |\  & \Nexpr \parsesep \Tcolon \parsesep \Nexpr &\\
               |\  & \Nexpr \parsesep \Tpluscolon \parsesep \Nexpr &\\
               |\  & \Nexpr \parsesep \Tstarcolon \parsesep \Nexpr &\\
@@ -554,12 +554,12 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nbitfields}{}
 \begin{flalign*}
-\Nbitfields \derivesinline\ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &
+\Nbitfields \derives \ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-nbitfield}{}
 \begin{flalign*}
-\Nbitfield \derivesinline\ & \Nslices \parsesep \Tidentifier &\\
+\Nbitfield \derives \ & \Nslices \parsesep \Tidentifier &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &
 \end{flalign*}
@@ -571,7 +571,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
             |\ & \Tstring &\\
             |\ & \Tboolean &\\
             |\ & \Tbit &\\
-            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \maybeemptylist{\Nbitfields} &\\
+            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \option{\Nbitfields} &\\
             |\ & \Plist{\Nty} &\\
             |\ & \Tidentifier &\\
             |\ & \Tarray \parsesep \Tlbracket \parsesep \Nexpr \parsesep \Trbracket \parsesep \Tof \parsesep \Nty &
@@ -587,7 +587,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nfieldassign}{}
 \begin{flalign*}
-\Nfieldassign \derivesinline\ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
+\Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
 \end{flalign*}
 
 \hypertarget{def-neelse}{}
@@ -621,7 +621,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nvalue}{}
 \begin{flalign*}
-\Nvalue \derivesinline\ & \Tintlit &\\
+\Nvalue \derives      \ & \Tintlit &\\
                      |\ & \Tboollit &\\
                      |\ & \Treallit &\\
                      |\ & \Tbitvectorlit &\\

@@ -12,7 +12,7 @@ The relation $\evalslices$ (see \nameref{sec:SemanticsRule.Slices}) evaluates a 
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nslices \derivesinline\ & \Tlbracket \parsesep \Clist{\Nslice} \parsesep \Trbracket &
+\Nslices \derives \ & \Tlbracket \parsesep \Clist{\Nslice} \parsesep \Trbracket &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -128,7 +128,7 @@ the function $\annotateslice$ (see \nameref{sec:TypingRule.Slice}) annotates a s
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nslice \derivesinline\ & \Nexpr &\\
+\Nslice \derives \ & \Nexpr &\\
             |\  & \Nexpr \parsesep \Tcolon \parsesep \Nexpr &\\
             |\  & \Nexpr \parsesep \Tpluscolon \parsesep \Nexpr &\\
             |\  & \Nexpr \parsesep \Tstarcolon \parsesep \Nexpr &\\

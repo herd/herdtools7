@@ -69,7 +69,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \section{Pass Statements\label{sec:PassStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tpass \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tpass \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -127,7 +127,7 @@ All of the following apply:
 \section{Assignment Statements\label{sec:AssignmentStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -261,7 +261,7 @@ We now define the evaluation of assigning from a subprogram call:
 \section{Setter Assignment Statements\label{sec:SetterAssignmentStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\
+\Nstmt \derives \
    & \Ncall \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
@@ -383,7 +383,7 @@ As given by applying the relevant rules to the desugared AST.
 \section{Declaration Statements\label{sec:DeclarationStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+\Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 \end{flalign*}
@@ -700,13 +700,13 @@ One of the following applies:
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\
+\Nstmt \derives \
    & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \begin{flalign*}
-\Nelidedparamcall \derivesinline\
+\Nelidedparamcall \derives \
      & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \Plist{\Nexpr} &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr}&
@@ -816,7 +816,7 @@ Otherwise, the result is a parse error.
 \end{mathpar}
 
 
-% \Nstmt \derivesinline\
+% \Nstmt \derives \
 %    & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 % |\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 
@@ -826,7 +826,7 @@ As given by the applying the relevant rules to the desugared AST (see \secref{De
 \section{Sequencing Statements\label{sec:SeuqncingStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmtlist \derivesinline\ & \nonemptylist{\Nstmt} &
+\Nstmtlist \derives \ & \nonemptylist{\Nstmt} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -959,7 +959,7 @@ All of the following apply:
 \section{Call Statements\label{sec:CallStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Ncall \Tsemicolon &
+\Nstmt \derives \ & \Ncall \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1041,7 +1041,7 @@ All of the following apply:
 \section{Conditional Statements\label{sec:ConditionalStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
+\Nstmt \derives \ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
 \Nselse \derives\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse &\\
         |\ & \Tpass &\\
         |\ & \Telse \parsesep \Nstmtlist &
@@ -1179,11 +1179,11 @@ as defined by \nameref{sec:TypingRule.DesugarCaseStmt}.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-\Ncasealtlist \derivesinline\ & \NClist{\Ncasealt} \parsesep &\\
+\Nstmt \derives \ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+\Ncasealtlist \derives \ & \NClist{\Ncasealt} \parsesep &\\
                            |\ & \NClist{\Ncasealt} \parsesep \Ncaseotherwise &\\
-\Ncasealt \derivesinline\ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
-\Ncaseotherwise \derivesinline\ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
+\Ncasealt \derives \ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\Ncaseotherwise \derives \ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1475,7 +1475,7 @@ they do not appear in the typed AST and thus are not associated with a semantics
 \section{Assertion Statements\label{sec:AssertionStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1571,7 +1571,7 @@ All of the following apply:
 \section{While Statements\label{sec:WhileStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Twhile \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Twhile \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1936,7 +1936,7 @@ One of the following applies:
 \section{Repeat Statements\label{sec:RepeatStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -2046,10 +2046,10 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
 \section{For Statements\label{sec:ForStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
+\Nstmt \derives \ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
                     \Nexpr \parsesep \Nlooplimit \parsesep \Tdo &\\
                         & \wrappedline\ \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-\Ndirection \derivesinline\ & \Tto \;|\; \Tdownto &
+\Ndirection \derives \ & \Tto \;|\; \Tdownto &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -2589,7 +2589,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \section{Throw Statements\label{sec:ThrowStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
+\Nstmt \derives \ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tthrow \parsesep \Tsemicolon &
 \end{flalign*}
 
@@ -2718,7 +2718,7 @@ One of the following applies:
 \section{Try Statements\label{sec:TryStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -2833,7 +2833,7 @@ All of the following apply:
 \section{Return Statements\label{sec:ReturnStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -3071,7 +3071,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 \section{Print Statements\label{sec:PrintStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -3096,7 +3096,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -3138,7 +3138,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 \section{Pragma Statements\label{sec:PragmaStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derivesinline\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}

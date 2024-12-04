@@ -12,7 +12,7 @@ Subprogram declarations have no associated semantics.
 \section{Syntax\label{sec:SubprogramDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derivesinline\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \\
+\Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \\
 & \wrappedline\ \parsesep \Nfuncbody &\\
 |\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
@@ -21,15 +21,15 @@ Subprogram declarations have no associated semantics.
 \end{flalign*}
 
 \begin{flalign*}
-\Nrecurselimit   \derivesinline\ & \Trecurselimit \parsesep \Nexpr &\\
+\Nrecurselimit   \derives \ & \Trecurselimit \parsesep \Nexpr &\\
 |\              & \emptysentence &\\
-\Nparamsopt \derivesinline\ & \emptysentence &\\
+\Nparamsopt \derives \ & \emptysentence &\\
                    |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &\\
-\Nopttypedidentifier \derivesinline\ & \Tidentifier \parsesep \option{\Nasty} &\\
-\Nfuncargs          \derivesinline\ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &\\
-\Nreturntype        \derivesinline\ & \Tarrow \parsesep \Nty &\\
-\Nfuncbody          \derivesinline\ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-\Nmaybeemptystmtlist \derivesinline\ & \emptysentence \;|\; \Nstmtlist &
+\Nopttypedidentifier \derives \ & \Tidentifier \parsesep \option{\Nasty} &\\
+\Nfuncargs          \derives \ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &\\
+\Nreturntype        \derives \ & \Tarrow \parsesep \Nty &\\
+\Nfuncbody          \derives \ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+\Nmaybeemptystmtlist \derives \ & \emptysentence \;|\; \Nstmtlist &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

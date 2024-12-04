@@ -14,7 +14,7 @@ The semantics of a single global storage declarations is defined in \nameref{sec
 \section{Syntax\label{sec:GlobalStorageDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derivesinline\ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+\Ndecl  \derives \ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
         & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
         |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
         |\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
@@ -22,7 +22,7 @@ The semantics of a single global storage declarations is defined in \nameref{sec
 
 \begin{flalign*}
 \Nstoragekeyword \derivesinline\ & \Tlet \;|\; \Tconstant \;|\; \Tvar \;|\; \Tconfig&\\
-\Nignoredoridentifier \derivesinline\ & \Tminus \;|\; \Tidentifier &
+\Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
