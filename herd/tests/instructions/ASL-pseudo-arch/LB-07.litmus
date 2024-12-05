@@ -7,9 +7,9 @@ ASL LB-pseudo-arch
   0: X2= y;
 }
 
-constant one :: bits(64) = 1[63:0];
+constant one : bits(64) = 1[63:0];
 
-func T0(x::bits(64), y:: bits(64))
+func T0(x:bits(64), y: bits(64))
 begin
   let read = read_memory{64}(x);
   let x0 = UInt(read);
@@ -17,14 +17,14 @@ begin
   write_memory{64}(y, data);
 end;
 
-func f(read::bits(64)) => bits(64)
+func f(read:bits(64)) => bits(64)
 begin
   var t = read;
   t[0] = '1';
   return t;
 end;
 
-func T1(x::bits(64), y:: bits(64))
+func T1(x:bits(64), y: bits(64))
 begin
   let read = read_memory{64}(y);
   let x1 = UInt(read);

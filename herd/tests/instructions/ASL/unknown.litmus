@@ -6,7 +6,7 @@ variant = ASL
 
 func random_bool () => boolean
 begin
-  return (ARBITRARY:: boolean);
+  return (ARBITRARY: boolean);
 end;
 
 func main () => integer

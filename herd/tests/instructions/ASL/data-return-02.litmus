@@ -2,7 +2,7 @@ ASL no data return
 
 {}
 
-func f(x::integer) => integer
+func f(x:integer) => integer
 begin
   let y = x;
   return 3;
