@@ -8,5 +8,5 @@ Witnesses
 Positive: 0 Negative: 3
 Condition exists (0:T0.0.x0=1 /\ 0:T1.0.x1=1)
 Observation LB-pseudo-arch Never 0 3
-Hash=f93f2a2ff7903c7286ba40e92ea9f570
+Hash=67ffa6c60f20578584e46071ec3b9096
 
