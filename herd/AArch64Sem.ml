@@ -1058,34 +1058,16 @@ module Make
             (fun loc v -> Act.tag_access quad Dir.W loc v) ii
         else m a
 
-(* Check that the PAC field of a virtual address is canonical, if
-  ignore_non_virtual is true then the check is ignored if the address is not a
-  virtual addresse *)
-      let check_pac_canonical ignore_non_virtual ma ii mok mfault =
-        let do_insert_commit m1 m2 ii =
-        (* Notice the complex dependency >>*==
-           from branch to instructions events *)
-          (* (m1 >>= fun _ -> commit_pred ii) >>*== fun _ -> m2 in *)
-          m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a in
-        let mcheck ma =
-          do_insert_commit ma (fun a ->
-             M.op1 Op.CheckCanonical a >>= fun c ->
-             M.choiceT c (mok (M.unitT a)) (mfault (M.unitT a))
-          ) ii
-        in
-        (*let mcheck ma =
-          do_insert_commit ma (M.delay_kont "pac break dep." ma (fun a ma ->
-             M.op1 Op.CheckCanonical a >>= fun c ->
-             M.choiceT c (mok ma) (mfault ma)
-          )) ii
-        in*)
-        if ignore_non_virtual then
-          M.delay_kont "pac check virtual" ma (fun a ma ->
-            M.op1 Op.IsVirtual a >>= fun virt ->
-            M.choiceT virt (mcheck ma) (mok ma)
+(* Check that the pac field of a virtual address is canonical in an aut*
+   instruction, the memory operations use a different function because their
+   faults need a data dependency with the address *)
+      let check_pac_canonical ma ii mok mfault =
+        let mfault ma = (ma >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault in
+        let mok ma = do_insert_commit ma (fun a -> mok (M.unitT a)) ii in
+          M.delay_kont "check pac" ma (fun a ma ->
+            M.op1 Op.CheckCanonical a >>= fun c ->
+            M.choiceT c (mok ma) (mfault ma)
           )
-        else
-          mcheck ma
 
 
       let do_write_mem sz an anexp ac a v ii =
@@ -1419,17 +1401,34 @@ module Make
                (lift_fault_memtag
                   (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
-      (* Check a pointer authentication code and perform the memory operation
-         only if the check fail, otherwise return a memory traslation fault *)
-      let lift_pac_virt mop ma dir an ii =
-        let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
-        let mfault ma = ma >>= fun a ->
-          mk_fault (Some a) dir an ii
-            (Some (FaultType.AArch64.MMU FaultType.AArch64.Translation))
-            None
+(* Check that the Pointer Authentication Code of a virtual address is canonical
+ * before a memory operation. Generate a Branching(pred) effect and an iico_ctrl
+ * +iico_data dependency between the event `ma` and `mop` or `mfault`, and an
+ * iico_data dependency between `mv` and `mop` in case of a success.
+ *)
+      let lift_pac_virt mop ma mv dir an ii =
+        let mok ma mv = mop Access.VIR ma mv >>= M.ignore >>= B.next1T in
+        let mfault ma =
+          do_insert_commit ma (fun a ->
+            mk_fault (Some a) dir an ii
+              (Some (FaultType.AArch64.MMU FaultType.AArch64.Translation))
+              None) ii
           >>! B.Exit
         in
-        check_pac_canonical true ma ii mok mfault
+        let mok2 ma mv =
+          M.bind_ctrldata_data
+            (ma >>== fun a -> commit_pred ii >>*== fun _ -> M.unitT a) mv
+            (fun a v -> mok (M.unitT a) (M.unitT v))
+        in
+        let mcheck ma mv =
+          M.delay_kont "pac check" ma (fun a ma ->
+            M.op1 Op.CheckCanonical a >>= fun c ->
+            M.choiceT c (mok2 ma mv) (mfault ma))
+        in
+        M.delay_kont "pac check virtual" ma (fun a ma ->
+          M.op1 Op.IsVirtual a >>= fun virt ->
+          M.choiceT virt (mcheck ma mv) (mok ma mv)
+        )
 
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
@@ -1472,8 +1471,8 @@ module Make
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
-          let mop = apply_mv mop mv in
           if kvm then
+            let mop = apply_mv mop mv in
             let mphy ma a_virt =
               let ma = get_oa a_virt ma in
               if pte2 then
@@ -1493,9 +1492,9 @@ module Make
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
           else if checked then
-            lift_memtag_virt mop ma dir an ii
+            lift_memtag_virt (apply_mv mop mv) ma dir an ii
           else
-            lift_pac_virt mop ma dir an ii
+            lift_pac_virt mop ma mv dir an ii
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
@@ -4329,7 +4328,7 @@ module Make
                 | _ -> assert false
               in
 
-              let mfault _ =
+              let mfault =
                   mk_fault None Dir.R Annot.N ii
                     (Some (FaultType.AArch64.PacCheck k_fault))
                     None
@@ -4348,7 +4347,7 @@ module Make
                 M.op (Op.AutPAC key) addr modifier
               in
 
-              check_pac_canonical false ma ii mop mfault
+              check_pac_canonical ma ii mop mfault
             end
         (* If address tagging and logical address tagging is not enabled then
           xpacd and xpaci have the same behaviour *)

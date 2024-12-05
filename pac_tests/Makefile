@@ -27,7 +27,7 @@ herd:
 	herd7 \
 		-show prop -doshow prop \
 		-cat aarch64.cat -showevents all -show all \
-		-gv $(NAME).litmus -o build -squished true
+		-gv $(NAME).litmus -o build -squished true -variant mte
 
 litmus:
 	../_build/install/default/bin/litmus7 \

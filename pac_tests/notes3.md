@@ -27,7 +27,7 @@ following simplified table:
 | x0:         | x                  | pac(x,da,0)        | pac(x,ia,0)        |
 |:------------|:-------------------|:-------------------|:-------------------|
 | ldr x1,[x0] | `x1 <- mem[x]`     | Fault(Translation) | Fault(Translation) |
-| pacdza x0   | pad(x,da,0)        | none deterministic | non deterministic  |
+| pacdza x0   | pad(x,da,0)        | non deterministic  | non deterministic  |
 | autdza x0   | Fault(PacCheck:DA) | x                  | Fault(PacCheck:DA) |
 | xpacd x0    | x                  | x                  | x                  |
 
