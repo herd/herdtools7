@@ -176,8 +176,5 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.LEGlobalVar.asl
   $ aslref SemanticsRule.SCond2.asl
   $ aslref SemanticsRule.SCond3.asl
-  File SemanticsRule.SCond3.asl, line 4, characters 0 to 3:
-  ASL Grammar error: Obsolete syntax: Missing ';' after 'end' keyword.
-  [1]
   $ aslref SemanticsRule.SCond4.asl
   $ aslref SemanticsRule.STry.asl
