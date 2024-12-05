@@ -1,16 +1,9 @@
 AArch64 example.litmus
 {
-int x = 1;
-int y = 2;
-0:X0=x; 1:X0=x;
-0:X1=y; 1:X1=y;
-
+  0:x0=x;
 }
- P0           | P1 ;
- ldr x10,[x0] | ldr x11, [x1] ;
- pacda x0,x10 | dmb sy        ;
- autda x0,x10 |               ;
- str x11,[x1] | str x10, [x0] ;
-
+P0               ;
+  pacdzb x0      ;
+  autdza x0      ;
 exists
-(1:X11=0 /\ 0:X10=0)
+(~Fault(P0, PacCheck:DA))

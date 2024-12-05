@@ -30,11 +30,13 @@ module type AArch64Sig = sig
     | AccessFlag  (* af: 0 *)
     | Permission  (* db: 0 *)
 
+  type key_t = DA | DB | IA | IB
+
   type t =
     | MMU of mmu_t
     | TagCheck
     | UndefinedInstruction
-    | PacCheck
+    | PacCheck of key_t
 
   include S with type t := t
 end

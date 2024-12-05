@@ -2011,6 +2011,34 @@ module Make
         O.oi "return ret;" ;
         O.o "}" ;
         O.o "" ;
+        O.o "void init_pauth_key_ia() {" ;
+        O.oi "unsigned long long x = 0xaaaaaaaaaaaaaaaa;" ;
+        O.oi "unsigned long long y = 0xaaaaaaaaaaaaaaaa;" ;
+        O.oi "asm __volatile__(\"msr APIAKeyHi_EL1, %[x]\":: [x] \"r\" (x));" ;
+        O.oi "asm __volatile__(\"msr APIAKeyLo_EL1, %[y]\":: [y] \"r\" (y));" ;
+        O.o "}" ;
+        O.o "" ;
+        O.o "void init_pauth_key_ib() {" ;
+        O.oi "unsigned long long x = 0x5555555555555555;" ;
+        O.oi "unsigned long long y = 0x5555555555555555;" ;
+        O.oi "asm __volatile__(\"msr APIBKeyHi_EL1, %[x]\":: [x] \"r\" (x));" ;
+        O.oi "asm __volatile__(\"msr APIBKeyLo_EL1, %[y]\":: [y] \"r\" (y));" ;
+        O.o "}" ;
+        O.o "" ;
+        O.o "void init_pauth_key_da() {" ;
+        O.oi "unsigned long long x = 0x5555555555555555;" ;
+        O.oi "unsigned long long y = 0xaaaaaaaaaaaaaaaa;" ;
+        O.oi "asm __volatile__(\"msr APDAKeyHi_EL1, %[x]\":: [x] \"r\" (x));" ;
+        O.oi "asm __volatile__(\"msr APDAKeyLo_EL1, %[y]\":: [y] \"r\" (y));" ;
+        O.o "}" ;
+        O.o "" ;
+        O.o "void init_pauth_key_db() {" ;
+        O.oi "unsigned long long x = 0xaaaaaaaaaaaaaaaa;" ;
+        O.oi "unsigned long long y = 0x5555555555555555;" ;
+        O.oi "asm __volatile__(\"msr APDBKeyHi_EL1, %[x]\":: [x] \"r\" (x));" ;
+        O.oi "asm __volatile__(\"msr APDBKeyLo_EL1, %[y]\":: [y] \"r\" (y));" ;
+        O.o "}" ;
+        O.o "" ;
         O.o "// update the SCTLR_EL1 status register" ;
         O.o "void write_sctlr_el1(unsigned long long x) {" ;
         O.oi "asm __volatile__(\"msr SCTLR_EL1, %[x]\":: [x] \"r\" (x));" ;
@@ -2023,6 +2051,10 @@ module Make
         O.oi "unsigned long long enDA = 1ULL << 27;" ;
         O.oi "unsigned long long enDB = 1ULL << 13;" ;
         O.oi "write_sctlr_el1(enIA | enIB | enDA | enDB | read_sctlr_el1());" ;
+        O.oi "init_pauth_key_ia();" ;
+        O.oi "init_pauth_key_ib();" ;
+        O.oi "init_pauth_key_da();" ;
+        O.oi "init_pauth_key_db();" ;
         O.o "}" ;
         O.o ""
 
@@ -2071,9 +2103,6 @@ module Make
               O.o "/* Fault handlers installation depends on user stacks */"
             end ;
             O.oi "install_fault_handler(id);" ;
-            O.oi "// install PAC exception handler here because KVM-unit-tests" ;
-            O.oi "// doesn't support `aut*` failure exception code 0b0001100" ;
-            O.oi "install_exception_handler(EL1H_SYNC, 0b011100, fault_handler);" ;
             if not (T.has_asmhandler test) then begin
               (* Set vector table once for all, as it does not depend on role *)
               O.oi "extern ins_t vector_table;" ;

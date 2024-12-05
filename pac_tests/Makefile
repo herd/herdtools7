@@ -1,4 +1,4 @@
-NAME = A03
+NAME = example8
 
 all: #my_herd
 	touch build/example.svg
@@ -39,7 +39,7 @@ litmus_kvm:
 	../_build/install/default/bin/litmus7 \
 		-set-libdir ../litmus/libdir \
 		$(NAME).litmus \
-		-mach kvm-m1 -variant fatal \
+		-mach kvm-m1 \
 		-o build/$(NAME).tar
 	#mkdir -p build/$(NAME)
 	#tar xmf build/$(NAME).tar -C build/$(NAME)

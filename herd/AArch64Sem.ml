@@ -1062,12 +1062,23 @@ module Make
   ignore_non_virtual is true then the check is ignored if the address is not a
   virtual addresse *)
       let check_pac_canonical ignore_non_virtual ma ii mok mfault =
+        let do_insert_commit m1 m2 ii =
+        (* Notice the complex dependency >>*==
+           from branch to instructions events *)
+          (* (m1 >>= fun _ -> commit_pred ii) >>*== fun _ -> m2 in *)
+          m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a in
         let mcheck ma =
           do_insert_commit ma (fun a ->
              M.op1 Op.CheckCanonical a >>= fun c ->
              M.choiceT c (mok (M.unitT a)) (mfault (M.unitT a))
           ) ii
         in
+        (*let mcheck ma =
+          do_insert_commit ma (M.delay_kont "pac break dep." ma (fun a ma ->
+             M.op1 Op.CheckCanonical a >>= fun c ->
+             M.choiceT c (mok ma) (mfault ma)
+          )) ii
+        in*)
         if ignore_non_virtual then
           M.delay_kont "pac check virtual" ma (fun a ma ->
             M.op1 Op.IsVirtual a >>= fun virt ->
@@ -4310,18 +4321,17 @@ module Make
         ->
             begin
               let (>>!) = M.(>>!) in
-              let key = match inst with
-                | I_AUT_IA _ -> "ia"
-                | I_AUT_IB _ -> "ib"
-                | I_AUT_DA _ -> "da"
-                | I_AUT_DB _ -> "db"
+              let (key, k_fault) = match inst with
+                | I_AUT_IA _ -> ("ia", FaultType.AArch64.IA)
+                | I_AUT_IB _ -> ("ib", FaultType.AArch64.IB)
+                | I_AUT_DA _ -> ("da", FaultType.AArch64.DA)
+                | I_AUT_DB _ -> ("db", FaultType.AArch64.DB)
                 | _ -> assert false
               in
 
-              let mfault ma =
-                  ma >>= fun _ ->
+              let mfault _ =
                   mk_fault None Dir.R Annot.N ii
-                    (Some FaultType.AArch64.PacCheck)
+                    (Some (FaultType.AArch64.PacCheck k_fault))
                     None
                   >>! B.Exit
               in

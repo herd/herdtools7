@@ -24,3 +24,4 @@ asllib/doc/*.toc
 asllib/doc/*.fls
 asllib/doc/*.fdb_latexmk
 pac_tests/build/*
+pac_tests/kvm-unit-tests
