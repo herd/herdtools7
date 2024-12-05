@@ -310,9 +310,9 @@ type SCTLRType of bits(64) {
 // the global Exclusives monitor for processorid.
 
 func MarkExclusiveGlobal
-  (paddress :: FullAddress,
-  processorid :: integer,
-  size :: integer)
+  (paddress : FullAddress,
+  processorid : integer,
+  size : integer)
 begin
   return;
 end;
@@ -325,9 +325,9 @@ end;
 // the local Exclusives monitor for processorid.
 
 func MarkExclusiveLocal
-  (paddress :: FullAddress,
-  processorid :: integer,
-  size :: integer)
+  (paddress : FullAddress,
+  processorid : integer,
+  size : integer)
 begin
   return;
 end;
@@ -342,7 +342,7 @@ end;
 var RESADDR : bits(64);
 
 func AArch64_MarkExclusiveVA
-(address :: bits(64), processorid :: integer, size :: integer)
+(address : bits(64), processorid : integer, size : integer)
 begin
   RESADDR = address;
 end;
@@ -363,7 +363,7 @@ end;
 var SuccessVA : boolean ;
 
 func AArch64_IsExclusiveVA
-(address :: bits(64), processorid :: integer, size :: integer) => boolean
+(address : bits(64), processorid : integer, size : integer) => boolean
 begin
   // Try both possibilties: write or not write
   SuccessVA = SomeBoolean();
@@ -396,7 +396,7 @@ end;
 // the physical address region of size bytes starting at paddress.
 
 func IsExclusiveLocal
-(paddress :: FullAddres, processorid :: integer, size :: integer) => boolean
+(paddress : FullAddres, processorid : integer, size : integer) => boolean
 begin
   return TRUE;
 end;
@@ -409,7 +409,7 @@ end;
 // the physical address region of size bytes starting at paddress.
 
 func IsExclusiveGlobal
-(paddress :: FullAddres, processorid :: integer, size :: integer) => boolean
+(paddress : FullAddres, processorid : integer, size : integer) => boolean
 begin
   return TRUE;
 end;
@@ -421,7 +421,7 @@ end;
 // =====================
 // Clear the local Exclusives monitor for the specified processorid.
 
-func ClearExclusiveLocal(processorid :: integer)
+func ClearExclusiveLocal(processorid : integer)
 begin
   return;
 end;
@@ -437,7 +437,7 @@ end;
 
 // =============================================================================
 
-func IsFeatureImplemented(f :: Feature) => boolean
+func IsFeatureImplemented(f : Feature) => boolean
 begin
     return FALSE;
 end;
@@ -445,9 +445,9 @@ end;
 // =============================================================================
 
 func PhysMemWrite{N}(
-  desc::AddressDescriptor,
-  accdesc::AccessDescriptor,
-  value::bits(8*N)
+  desc:AddressDescriptor,
+  accdesc:AccessDescriptor,
+  value:bits(8*N)
 ) => PhysMemRetStatus
 begin
   write_memory_gen {N*8}(desc.vaddress, value,accdesc);
@@ -462,8 +462,8 @@ end;
 // =============================================================================
 
 func PhysMemRead{N}(
-  desc::AddressDescriptor,
-  accdesc::AccessDescriptor
+  desc:AddressDescriptor,
+  accdesc:AccessDescriptor
 ) => (PhysMemRetStatus, bits(8*N))
 begin
   let value = read_memory_gen {N*8}(desc.vaddress,accdesc);
@@ -496,7 +496,7 @@ end;
 // ========
 // Return TRUE if Exception level 'el' is supported
 
-func HaveEL(el:: bits(2)) => boolean
+func HaveEL(el: bits(2)) => boolean
 begin
     if el IN {EL1,EL0} then
         return TRUE;                             // EL1 and EL0 must exist
@@ -514,19 +514,19 @@ end;
 // It is IMPLEMENTATION DEFINED whether the global Exclusives monitor for processorid
 // is also cleared if it records any part of the address region.
 
-func ClearExclusiveByAddress(paddress :: FullAddress, processorid :: integer, size :: integer)
+func ClearExclusiveByAddress(paddress : FullAddress, processorid : integer, size : integer)
 begin
   pass;
 end;
 
 // =============================================================================
 
-getter _R (n :: integer) => bits(64)
+getter _R (n : integer) => bits(64)
 begin
   return read_register(n);
 end;
 
-setter _R (n :: integer) = value :: bits(64)
+setter _R (n : integer) = value : bits(64)
 begin
   write_register(n, value);
 end;

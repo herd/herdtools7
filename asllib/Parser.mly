@@ -271,7 +271,7 @@ let expr :=
     | ~=expr; IN; ~=pattern_set;                              < E_Pattern            >
     | ~=expr; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
     | e=expr; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
-    | ARBITRARY; colon_for_type; ~=ty;                        < E_Arbitrary        >
+    | ARBITRARY; COLON; ~=ty;                                 < E_Arbitrary        >
     | e=pared(expr);                                          { E_Tuple [ e ]        }
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
@@ -285,8 +285,6 @@ let expr :=
                                 Types
 
   ------------------------------------------------------------------------- *)
-
-let colon_for_type == COLON | COLON_COLON
 
 (* Constrained types helpers *)
 
@@ -322,7 +320,7 @@ let expr_pattern :=
     | ~=expr_pattern; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
     | e=expr_pattern; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
 
-    | ARBITRARY; colon_for_type; ~=ty;                                < E_Arbitrary        >
+    | ARBITRARY; COLON; ~=ty;                                         < E_Arbitrary        >
     | e=pared(expr_pattern);                                          { E_Tuple [ e ]        }
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
@@ -393,7 +391,7 @@ let ty_decl := ty |
 
 (* Constructs on ty *)
 (* Begin AsTy *)
-let as_ty := colon_for_type; ty
+let as_ty := COLON; ty
 (* End *)
 
 (* Begin TypedIdentifier *)

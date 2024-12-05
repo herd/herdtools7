@@ -2,7 +2,7 @@ ASL case1
 
 {}
 
-func inv(i::integer) => integer
+func inv(i:integer) => integer
 begin
   case i of 
     when 0 => return 1;
