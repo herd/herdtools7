@@ -275,20 +275,7 @@ let to_int64_unsigned (length, data) =
   let _, data = remask (63, data) in
   to_int64_raw (64, data)
 
-let to_z_unsigned (sz, data) =
-  if sz = 0 then Z.zero
-  else
-    let rec do_rec r i =
-      if i < 0 then r
-      else
-        let c = String.unsafe_get data i |> Char.code |> Z.of_int in
-        let r = Z.logor c (Z.shift_left r 8) in
-        do_rec r (i - 1)
-    in
-    let n = (sz + 7) / 8 and m = sz mod 8 in
-    let mask = last_char_mask (if m = 0 then 8 else m) in
-    let c0 = String.unsafe_get data (n - 1) |> Char.code |> ( land ) mask in
-    do_rec (Z.of_int c0) (n - 2)
+let to_z_unsigned (_, data) = Z.of_bits data
 
 let to_z_signed ((sz, _) as bv) =
   let sgn = sign_bit bv in
