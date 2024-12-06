@@ -583,25 +583,25 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if SES.is_pure ses then ()
     else fatal_from e (Error.ImpureExpression (e, SES.remove_pure ses))
 
-  let is_config_time ses =
+  let leq_config_time ses =
     TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Config
 
-  let check_is_config_time ~loc (_, e, ses_e) () =
-    if is_config_time ses_e then ()
+  let check_leq_config_time ~loc (_, e, ses_e) () =
+    if leq_config_time ses_e then ()
     else fatal_from loc Error.(ConfigTimeBroken (e, ses_e))
 
-  let is_constant_time ses =
+  let leq_constant_time ses =
     TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Constant
 
-  let check_is_constant_time ~loc (_, e, ses_e) () =
-    if is_constant_time ses_e then ()
+  let check_leq_constant_time ~loc (_, e, ses_e) () =
+    if leq_constant_time ses_e then ()
     else fatal_from loc Error.(ConstantTimeBroken (e, ses_e))
 
   let check_is_time_frame =
     let open TimeFrame in
     function
-    | TimeFrame.Constant -> check_is_constant_time
-    | TimeFrame.Config -> check_is_config_time
+    | TimeFrame.Constant -> check_leq_constant_time
+    | TimeFrame.Config -> check_leq_config_time
     | TimeFrame.Execution -> fun ~loc:_ _ -> ok
 
   let check_bits_equal_width' env t1 t2 () =
@@ -1133,14 +1133,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Bool -> (ty, SES.empty) |: TypingRule.TBool
     (* Begin TNamed *)
     | T_Named x ->
-        let time_frame =
-          match IMap.find_opt x env.global.declared_types with
-          | Some (_, t) -> t
-          | None ->
-              let+ () = fun () -> undefined_identifier loc x in
-              TimeFrame.Constant
-        and immutable = true in
-        (ty, SES.reads_global x time_frame immutable) |: TypingRule.TNamed
+        let ses =
+          (* As expression on which types depend are statically evaluable,
+             using a named type is as reading a global immutable storage
+             element. *)
+          let time_frame =
+            match IMap.find_opt x env.global.declared_types with
+            | Some (_, t) -> t
+            | None -> undefined_identifier loc x
+          and immutable = true in
+          SES.reads_global x time_frame immutable
+        in
+        (ty, ses) |: TypingRule.TNamed
     (* Begin TInt *)
     | T_Int constraints ->
         (match constraints with
@@ -1184,7 +1188,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TTuple *)
     | T_Tuple tys ->
         let tys', sess = list_map_split (annotate_type ~loc env) tys in
-        let ses = ses_non_conflicting_unions ~loc sess in
+        let ses = SES.unions sess in
         (T_Tuple tys' |> here, ses) |: TypingRule.TTuple
     (* Begin TArray *)
     | T_Array (index, t) ->
@@ -1249,21 +1253,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |: TypingRule.TNonDecl
   (* End *)
 
-  and annotate_static_expr env e =
+  and annotate_statically_evaluable_expr env e =
     let t, e', ses = annotate_expr env e in
     let+ () = check_statically_evaluable e ses in
     (t, e', ses)
 
   (* Begin AnnotateStaticInteger *)
   and annotate_static_integer ~(loc : 'a annotated) env e =
-    let t, e', ses = annotate_static_expr env e in
+    let t, e', ses = annotate_statically_evaluable_expr env e in
     let+ () = check_structure_integer loc env t in
     (StaticModel.try_normalize env e', ses)
   (* End *)
 
   (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
-    let t, e', ses = annotate_static_expr env e in
+    let t, e', ses = annotate_statically_evaluable_expr env e in
     let+ () = check_constrained_integer ~loc env t in
     (StaticModel.try_normalize env e', ses)
   (* End *)
@@ -1335,8 +1339,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | Pattern_Any li ->
         let new_li, sess = list_map_split (annotate_pattern loc env t) li in
         let ses =
-          SES.unions
-            sess (* They can't be conflicting because they are static *)
+          (* They can't be conflicting because they are statically evaluable *)
+          SES.unions sess
         in
         (Pattern_Any new_li |> here, ses) |: TypingRule.PAny
     (* End *)
@@ -1396,11 +1400,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin PRange *)
     | Pattern_Range (e1, e2) ->
-        let t_e1, e1', ses1 = annotate_static_expr env e1
-        and t_e2, e2', ses2 = annotate_static_expr env e2 in
+        let t_e1, e1', ses1 = annotate_statically_evaluable_expr env e1
+        and t_e2, e2', ses2 = annotate_statically_evaluable_expr env e2 in
         let ses =
-          SES.union ses1
-            ses2 (* They can't be conflicting because they are static *)
+          (* They can't be conflicting because they are statically evaluable *)
+          SES.union ses1 ses2
         in
         let+ () =
          fun () ->
@@ -1693,7 +1697,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 | Some e -> e
               in
               let caller_param_t, _, _ =
-                annotate_static_expr env caller_param_e
+                annotate_statically_evaluable_expr env caller_param_e
               in
               let () =
                 if false then
@@ -2374,7 +2378,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               check_true (not (list_is_empty slices)) @@ fun () ->
               fatal_from le Error.EmptySlice
             in
-            let ses = SES.union ses1 ses2 in
+            let ses = ses_non_conflicting_union ~loc ses1 ses2 in
             (LE_Slice (le2, slices2) |> here, ses |: TypingRule.LESlice)
         (* End *)
         | T_Array (size, t) when le.version = V0 -> (
@@ -2496,7 +2500,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     SES.is_statically_evaluable ses_non_assert
 
   (* Begin AddImmutableExpr *)
-  let add_immutable_expressions env ldk typed_e_opt x =
+  let add_immutable_expression env ldk typed_e_opt x =
     match (ldk, typed_e_opt) with
     | (LDK_Constant | LDK_Let), Some (_, e, ses_e)
       when should_remember_immutable_expression ses_e -> (
@@ -2555,7 +2559,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            which is already in scope at the point of declaration. *)
         let+ () = check_var_not_in_env loc env x in
         let env2 = add_local x ty ldk env in
-        let new_env = add_immutable_expressions env2 ldk e x in
+        let new_env = add_immutable_expression env2 ldk e x in
         (new_env, LDI_Var x, SES.empty) |: TypingRule.LDVar
     (* End *)
     (* Begin LDTuple *)
@@ -2836,7 +2840,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               match ldk with
               | LDK_Let | LDK_Var -> env1
               | LDK_Constant -> (
-                  let+ () = check_is_constant_time ~loc:s typed_e in
+                  let+ () = check_leq_constant_time ~loc:s typed_e in
                   try
                     let v = StaticInterpreter.static_eval env1 e in
                     declare_local_constant env1 v ldi1
@@ -3648,14 +3652,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env2 =
       match keyword with
       | GDK_Constant ->
-          let+ () = check_is_constant_time ~loc typed_initial_value in
+          let+ () = check_leq_constant_time ~loc typed_initial_value in
           try_add_global_constant name env1 initial_value'
       | GDK_Let when should_remember_immutable_expression ses_initial_value -> (
           match StaticModel.normalize_opt env1 initial_value' with
           | Some e' -> add_global_immutable_expr name e' env1
           | None -> env1)
       | GDK_Config ->
-          let+ () = check_is_config_time ~loc typed_initial_value in
+          let+ () = check_leq_config_time ~loc typed_initial_value in
           env1
       | _ -> env1
       (* UpdateGlobalStorage) *)

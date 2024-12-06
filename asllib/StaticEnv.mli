@@ -27,7 +27,14 @@ open ASTUtils
 
 type global = {
   declared_types : (ty * SideEffect.TimeFrame.t) IMap.t;
-      (** Maps a type name t to its declaration and its time-frame. *)
+      (** Maps a type name t to its declaration and its time-frame.
+
+        As expressions on which a type depends need to be statically evaluable,
+        the only effects allowed in a type are statically evaluable, so need to
+        be reading immutable (global) storage elements. This makes it possible
+        only to store the time-frame of the type, and not the whole side-effect
+        set.
+    *)
   constant_values : literal Storage.t;
       (** Maps a global constant name to its value. *)
   storage_types : (ty * global_decl_keyword) IMap.t;
@@ -38,8 +45,8 @@ type global = {
       (** Maps each subprogram runtime name to its signature and the
           side-effects inferred for it. *)
   overloaded_subprograms : ISet.t IMap.t;
-      (** Maps the name of each declared subprogram to the equivalence class of all
-          the subprogram runtime names that were declared with this name. *)
+      (** Maps the name of each declared subprogram to the equivalence class of
+          all the subprogram runtime names that were declared with this name. *)
   expr_equiv : expr IMap.t;
       (** Maps every expression to a reduced immutable form. *)
 }
