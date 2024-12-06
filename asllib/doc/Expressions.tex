@@ -129,7 +129,7 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateliteral{\vv} \typearrow \vt
+  \annotateliteral{\vv, \tenv} \typearrow \vt
 }{
   \annotateexpr{\tenv, \overname{\ELiteral(\vv)}{\ve}} \typearrow (\vt, \overname{\ELiteral(\vv)}{\newe})
 }

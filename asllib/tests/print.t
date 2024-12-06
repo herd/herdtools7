@@ -53,7 +53,7 @@
   1
   -1
   0
-  0
+  HELLOWORLD_ENUM
   20
 
   $ cat >print4.asl <<EOF

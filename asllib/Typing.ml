@@ -98,12 +98,15 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
 (* End *)
 
 (* Begin Lit *)
-let annotate_literal = function
+let annotate_literal env = function
   | L_Int _ as v -> integer_exact' (literal v)
   | L_Bool _ -> T_Bool
   | L_Real _ -> T_Real
   | L_String _ -> T_String
   | L_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
+  | L_Label (l, _) -> (
+      try IMap.find l env.global.storage_types |> fst |> desc
+      with Not_found -> assert false)
 (* End *)
 
 let get_first_duplicate extractor li =
@@ -1641,7 +1644,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let here x = add_pos_from e x and loc = to_pos e in
     match e.desc with
     (* Begin ELit *)
-    | E_Literal v -> (annotate_literal v |> here, e) |: TypingRule.ELit
+    | E_Literal v -> (annotate_literal env v |> here, e) |: TypingRule.ELit
     (* End *)
     (* Begin ATC *)
     | E_ATC (e', ty) ->
@@ -2078,9 +2081,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let length = reduce_to_z e |> Z.to_int in
         L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum [] -> assert false
-    | T_Enum (name :: _) -> (
-        try Storage.find name env.global.constant_values |> lit
-        with Not_found -> assert false)
+    | T_Enum (name :: _) -> lookup_constants env name |> lit
     | T_Int UnConstrained -> L_Int Z.zero |> lit
     | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos |> fatal_non_static
     | T_Int PendingConstrained -> assert false
@@ -3313,10 +3314,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match t2.desc with
       | T_Enum ids ->
           let t = T_Named name |> add_pos_from ty in
-          let declare_one (env2, i) x =
-            (declare_const loc x t (L_Int (Z.of_int i)) env2, succ i)
+          let declare_one i env2 x =
+            declare_const loc x t (L_Label (x, i)) env2
           in
-          let genv3, _ = List.fold_left declare_one (env2.global, 0) ids in
+          let genv3 = list_fold_lefti declare_one env2.global ids in
           { env2 with global = genv3 }
       | _ -> env2
     in

@@ -336,6 +336,9 @@ val list_concat_map : ('a -> 'b list) -> 'a list -> 'b list
     Taken from stdlib 4.10.
 *)
 
+val list_fold_lefti : (int -> 'acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
+(** Same as [List.fold_left] but takes a index. *)
+
 val list_fold_left_map :
   ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
 (** [fold_left_map] is a combination of [fold_left] and [map] that threads an

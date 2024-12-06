@@ -1,7 +1,7 @@
 func UNPREDICTABLE ()
 begin
   assert FALSE;
-end
+end;
 
 func main () => integer
 begin

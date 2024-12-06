@@ -103,6 +103,9 @@ let list_fold_left_map f accu l =
   in
   aux accu [] l
 
+let list_fold_lefti f accu l =
+  List.fold_left (fun (i, accu) elt -> (i + 1, f i accu elt)) (0, accu) l |> snd
+
 (* Straigh out of stdlib v4.10 *)
 let list_concat_map f l =
   let open List in
@@ -340,6 +343,8 @@ let literal_equal v1 v2 =
   | L_BitVector _, _ -> false
   | L_String s1, L_String s2 -> String.equal s1 s2
   | L_String _, _ -> false
+  | L_Label (l1, _), L_Label (l2, _) -> String.equal l1 l2
+  | L_Label _, _ -> false
 
 let rec expr_equal eq e1 e2 =
   e1 == e2 || eq e1 e2

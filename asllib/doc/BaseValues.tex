@@ -135,9 +135,9 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[t\_enum]{
-    G^\tenv.\constantvalues(\name) = \vl
-}{
+\inferrule[t\_enum]{%
+    \lookupconstant(\tenv, \name) \typearrow \vl
+}{%
     \basevalue(\tenv, \overname{\TEnum(\name \concat \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\vl)}{\veinit}
 }
 \end{mathpar}

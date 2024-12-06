@@ -174,10 +174,8 @@ as well as a unique name.
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
-\Teqop  & \lint & \lint & \lbool & \eqenum\\
-\Tneq   & \lint & \lint & \lbool & \neenum\\
-% \Teqop  & \lenum & \lenum & \lbool & \eqenum\\
-% \Tneq   & \lenum & \lenum & \lbool & \neenum\\
+\Teqop  & \llabel & \llabel & \lbool & \eqenum\\
+\Tneq   & \llabel & \llabel & \lbool & \neenum\\
 \hline
 \end{tabular}
 \end{table}
@@ -561,6 +559,10 @@ argument types for a given binary operator:
   (\BVCONCAT  &,& \lbitvector &,& \lbitvector)&,\\
   (\MINUS     &,& \lbitvector &,& \lint)&,\\
   (\PLUS      &,& \lbitvector &,& \lint)&\\
+  (\EQOP      &,& \lstring &,& \lstring)&,\\
+  (\NEQ       &,& \lstring &,& \lstring)&,\\
+  (\EQOP      &,& \llabel &,& \llabel)&,\\
+  (\NEQ       &,& \llabel &,& \llabel)&,\\
 \end{array}
 \right\}
 \]
@@ -893,6 +895,31 @@ One of the following applies:
     \item define $c$ as the two's complement little endian representation of $y-b$ in $\listlen{a}$ bits;
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_string}):
+  \begin{itemize}
+    \item $\op$ is $\EQOP$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ne\_string}):
+  \begin{itemize}
+    \item $\op$ is $\NEQ$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{eq\_label}):
+  \begin{itemize}
+    \item $\op$ is $\EQOP$, $\vlone$ is the literal label for $a$, and $\vltwo$ is the literal label for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{ne\_label}):
+  \begin{itemize}
+    \item $\op$ is $\NEQ$, $\vlone$ is the literal label for $a$, and $\vltwo$ is the literal label for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
+  \end{itemize}
+
 \end{itemize}
 
 \subsubsection{Formally}
@@ -1247,6 +1274,32 @@ of \texttt{width} bits.
 }
 \end{mathpar}
 
+\subsubsection{Operators Over String Values \label{sec:StringOperations}}
+\begin{mathpar}
+\inferrule[eq\_string]{}{
+  \binopliterals(\overname{\EQOP}{\op}, \overname{\lstring(a)}{\vvone}, \overname{\lstring(b)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ne\_string]{}{
+  \binopliterals(\overname{\NEQ}{\op}, \overname{\lstring(a)}{\vvone}, \overname{\lstring(b)}{\vvtwo}) \typearrow \overname{\lbool(a \neq b)}{\vr}
+}
+\end{mathpar}
+
+\subsubsection{Operators Over Label Values \label{sec:LabelOperations}}
+\begin{mathpar}
+\inferrule[eq\_label]{}{
+  \binopliterals(\overname{\EQOP}{\op}, \overname{\llabel(a, \Ignore)}{\vvone}, \overname{\llabel(b, \Ignore)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[ne\_label]{}{
+  \binopliterals(\overname{\NEQ}{\op}, \overname{\llabel(a, \Ignore)}{\vvone}, \overname{\llabel(b, \Ignore)}{\vvtwo}) \typearrow \overname{\lbool(a \neq b)}{\vr}
+}
+\end{mathpar}
+
 \section{Semantics}
 
 \subsection{SemanticsRule.UnopValues \label{sec:SemanticsRule.UnopValues}}
@@ -1428,6 +1481,22 @@ One of the following applies:
     \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
     \item the result is a dynamic error with message $m$.
   \end{itemize}
+  \item All of the following apply (\textsc{string\_rel}):
+  \begin{itemize}
+    \item $\vvone$ is a literal string for $a$;
+    \item $\vvtwo$ is a literal string for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{label\_rel}):
+  \begin{itemize}
+    \item $\vvone$ is a literal label for $a$;
+    \item $\vvtwo$ is a literal label for $b$;
+    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
+    \item $\vr$ is the native Boolean value for $c$.
+  \end{itemize}
+
 \end{itemize}
 
 \subsubsection{Formally}
@@ -1516,5 +1585,21 @@ One of the following applies:
   \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \TypeError(m)
 }{
   \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \Error(m)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[string\_rel]{
+  \binopliterals(\op, \lstring(a), \lstring(b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\lstring(a)}{\vvone}, \overname{\lstring(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[label\_rel]{
+  \binopliterals(\op, \llabel(a, i_a), \llabel(b, i_b)) \typearrow \lbool(c)
+}{
+  \binoprel(\op, \overname{\llabel(a, i_a)}{\vvone}, \overname{\llabel(b, i_b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
 }
 \end{mathpar}

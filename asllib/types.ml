@@ -326,7 +326,12 @@ module Domain = struct
 
   let mem v d =
     match (v, d) with
-    | L_Bool _, _ | L_Real _, _ | L_String _, _ | L_BitVector _, _ -> false
+    | L_Bool _, _
+    | L_Real _, _
+    | L_String _, _
+    | L_BitVector _, _
+    | L_Label _, _ ->
+        false
     | L_Int _, Top -> true
     | L_Int i, Finite intset -> IntSet.mem i intset
     | L_Int _, _ -> false
