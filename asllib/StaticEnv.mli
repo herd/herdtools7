@@ -26,15 +26,17 @@ open ASTUtils
 (** Static Environment used for type-checking (cf {!Typing}. *)
 
 type global = {
-  declared_types : ty IMap.t;  (** Maps a type name t to its declaration. *)
+  declared_types : (ty * SideEffect.TimeFrame.t) IMap.t;
+      (** Maps a type name t to its declaration and its time-frame. *)
   constant_values : literal Storage.t;
       (** Maps a global constant name to its value. *)
   storage_types : (ty * global_decl_keyword) IMap.t;
       (** Maps global declared storage elements to their types. *)
   subtypes : identifier IMap.t;
       (** Maps an identifier s to its parent in the subtype relation. *)
-  subprograms : func IMap.t;
-      (** Maps each subprogram runtime name to its signature. *)
+  subprograms : (AST.func * SideEffect.SES.t) IMap.t;
+      (** Maps each subprogram runtime name to its signature and the
+          side-effects inferred for it. *)
   overloaded_subprograms : ISet.t IMap.t;
       (** Maps the name of each declared subprogram to the equivalence class of all
           the subprogram runtime names that were declared with this name. *)
@@ -81,13 +83,13 @@ val type_of_opt : env -> identifier -> ty option
 val lookup_immutable_expr : env -> identifier -> expr
 val lookup_immutable_expr_opt : env -> identifier -> expr option
 val mem_constants : env -> identifier -> bool
-val add_subprogram : identifier -> AST.func -> env -> env
+val add_subprogram : identifier -> AST.func -> SideEffect.SES.t -> env -> env
 val set_renamings : identifier -> ISet.t -> env -> env
 
 val add_global_storage :
   identifier -> ty -> global_decl_keyword -> global -> global
 
-val add_type : identifier -> ty -> env -> env
+val add_type : identifier -> ty -> SideEffect.TimeFrame.t -> env -> env
 val add_global_constant : identifier -> literal -> global -> global
 val add_local_constant : identifier -> literal -> env -> env
 

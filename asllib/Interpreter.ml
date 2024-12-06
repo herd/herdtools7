@@ -1259,7 +1259,7 @@ module Make (B : Backend.S) (C : Config) = struct
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin EvalFPrimitive *)
-    | Some { body = SB_Primitive; _ } ->
+    | Some ({ body = SB_Primitive _; _ }, _) ->
         let scope = B.Scope.new_local name in
         let body = Hashtbl.find primitive_runtimes name in
         let* ms = body params args in
@@ -1283,13 +1283,13 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (vs, genv) |: SemanticsRule.FPrimitive
     (* End *)
     (* Begin EvalFBadArity *)
-    | Some { args = arg_decls; _ } when List.compare_lengths args arg_decls <> 0
-      ->
+    | Some ({ args = arg_decls; _ }, _)
+      when List.compare_lengths args arg_decls <> 0 ->
         fatal_from pos
         @@ Error.BadArity
              (Dynamic, name, List.length arg_decls, List.length args)
         |: SemanticsRule.FBadArity
-    | Some { parameters = parameter_decls; _ }
+    | Some ({ parameters = parameter_decls; _ }, _)
       when List.compare_lengths params parameter_decls <> 0 ->
         fatal_from pos
         @@ Error.BadParameterArity
@@ -1298,13 +1298,14 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalFCall *)
     | Some
-        {
-          body = SB_ASL body;
-          args = arg_decls;
-          parameters = param_decls;
-          recurse_limit;
-          _;
-        } ->
+        ( {
+            body = SB_ASL body;
+            args = arg_decls;
+            parameters = param_decls;
+            recurse_limit;
+            _;
+          },
+          _ ) ->
         (let () = if false then Format.eprintf "Evaluating %s.@." name in
          let scope = B.Scope.new_local name in
          let env1 = IEnv.{ global = genv; local = local_empty_scoped scope } in

@@ -115,7 +115,14 @@ end
 (** {2 Orders on types} *)
 
 val subtypes : env -> ty -> ty -> bool
-(** Subtypes definition as per declarations in the AST. *)
+(** [subtypes env t1 t2] is true if and only if [t1] is a declared subtype of [t2]. *)
+
+val subtypes_names : env -> identifier -> identifier -> bool
+(** [subtypes_names env s1 s2] is true if and only if the type named [s1] is a
+    declared subtype of the type named [s2].
+
+    Equivalent to [subtypes env (T_Named s1 |> here) (T_Named s2 |> here)].
+    *)
 
 val subtype_satisfies : env -> ty -> ty -> bool
 (** Subtype-satisfation as per Definition TRVR. *)

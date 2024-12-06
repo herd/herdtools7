@@ -17,7 +17,9 @@ begin
     if n < 2 then
         return 1;
     else
-        return Fib(n - 1) + Fib(n - 2);
+        let fib_n_1 = Fib (n-1);
+        let fib_n_2 = Fib (n-2);
+        return fib_n_1 + fib_n_2;
     end;
 end;
 

@@ -54,7 +54,7 @@ type error_desc =
   | TooManyCallCandidates of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
-  | ImpureExpression of expr
+  | ImpureExpression of expr * SideEffect.SES.t
   | UnreconciliableTypes of ty * ty
   | AssignToImmutable of string
   | AlreadyDeclaredIdentifier of string
@@ -76,6 +76,7 @@ type error_desc =
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
+  | ConflictingSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
   | UnreachableReached
   | LoopLimitReached
@@ -89,6 +90,8 @@ type error_desc =
       field2_absslices : string;
     }
   | BadPrintType of ty
+  | ConfigTimeBroken of expr * SideEffect.SES.t
+  | ConstantTimeBroken of expr * SideEffect.SES.t
 
 type error = error_desc annotated
 
@@ -177,6 +180,9 @@ let error_label = function
   | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
   | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
   | BadPrintType _ -> "BadPrintType"
+  | ConflictingSideEffects _ -> "ConflictingSideEffects"
+  | ConfigTimeBroken _ -> "ConfigTimeBroken"
+  | ConstantTimeBroken _ -> "ConstantTimeBroken"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -315,10 +321,11 @@ module PPrint = struct
           "ASL Evaluation error: circular definition of constants, including \
            %S."
           x
-    | ImpureExpression e ->
+    | ImpureExpression (e, ses) ->
         fprintf f
-          "ASL Typing error:@ a pure expression was expected,@ found@ %a."
-          pp_expr e
+          "ASL Typing error:@ a pure expression was expected,@ found %a,@ \
+           which@ produces@ the@ following@ side-effects:@ %a."
+          pp_expr e SideEffect.SES.pp_print ses
     | UnreconciliableTypes (t1, t2) ->
         fprintf f
           "ASL Typing error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ \
@@ -405,6 +412,19 @@ module PPrint = struct
         pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->
         pp_print_text f "ASL Dynamic error: loop limit reached."
+    | ConflictingSideEffects (s1, s2) ->
+        fprintf f "ASL Typing error: conflicting side effects %a and %a"
+          SideEffect.pp_print s1 SideEffect.pp_print s2
+    | ConfigTimeBroken (e, ses) ->
+        fprintf f
+          "ASL Typing error:@ expected@ config-time@ expression,@ got@ %a,@ \
+           which@ produces@ the@ following@ side-effects:@ %a."
+          pp_expr e SideEffect.SES.pp_print ses
+    | ConstantTimeBroken (e, ses) ->
+        fprintf f
+          "ASL Typing error:@ expected@ constant-time@ expression,@ got@ %a,@ \
+           which@ produces@ the@ following@ side-effects:@ %a."
+          pp_expr e SideEffect.SES.pp_print ses
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
