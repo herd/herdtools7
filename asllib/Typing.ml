@@ -580,25 +580,25 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if SES.is_pure ses then ()
     else fatal_from e (Error.ImpureExpression (e, SES.remove_pure ses))
 
-  let is_config_time ses =
+  let leq_config_time ses =
     TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Config
 
-  let check_is_config_time ~loc (_, e, ses_e) () =
-    if is_config_time ses_e then ()
+  let check_leq_config_time ~loc (_, e, ses_e) () =
+    if leq_config_time ses_e then ()
     else fatal_from loc Error.(ConfigTimeBroken (e, ses_e))
 
-  let is_constant_time ses =
+  let leq_constant_time ses =
     TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Constant
 
-  let check_is_constant_time ~loc (_, e, ses_e) () =
-    if is_constant_time ses_e then ()
+  let check_leq_constant_time ~loc (_, e, ses_e) () =
+    if leq_constant_time ses_e then ()
     else fatal_from loc Error.(ConstantTimeBroken (e, ses_e))
 
   let check_is_time_frame =
     let open TimeFrame in
     function
-    | TimeFrame.Constant -> check_is_constant_time
-    | TimeFrame.Config -> check_is_config_time
+    | TimeFrame.Constant -> check_leq_constant_time
+    | TimeFrame.Config -> check_leq_config_time
     | TimeFrame.Execution -> fun ~loc:_ _ -> ok
 
   let check_bits_equal_width' env t1 t2 () =
@@ -1133,9 +1133,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let time_frame =
           match IMap.find_opt x env.global.declared_types with
           | Some (_, t) -> t
-          | None ->
-              let+ () = fun () -> undefined_identifier loc x in
-              TimeFrame.Constant
+          | None -> undefined_identifier loc x
         and immutable = true in
         (ty, SES.reads_global x time_frame immutable) |: TypingRule.TNamed
     (* Begin TInt *)
@@ -2835,7 +2833,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               match ldk with
               | LDK_Let | LDK_Var -> env1
               | LDK_Constant -> (
-                  let+ () = check_is_constant_time ~loc:s typed_e in
+                  let+ () = check_leq_constant_time ~loc:s typed_e in
                   try
                     let v = StaticInterpreter.static_eval env1 e in
                     declare_local_constant env1 v ldi1
@@ -3647,14 +3645,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env2 =
       match keyword with
       | GDK_Constant ->
-          let+ () = check_is_constant_time ~loc typed_initial_value in
+          let+ () = check_leq_constant_time ~loc typed_initial_value in
           try_add_global_constant name env1 initial_value'
       | GDK_Let when should_remember_immutable_expression ses_initial_value -> (
           match StaticModel.normalize_opt env1 initial_value' with
           | Some e' -> add_global_immutable_expr name e' env1
           | None -> env1)
       | GDK_Config ->
-          let+ () = check_is_config_time ~loc typed_initial_value in
+          let+ () = check_leq_config_time ~loc typed_initial_value in
           env1
       | _ -> env1
       (* UpdateGlobalStorage) *)
