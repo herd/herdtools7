@@ -2705,19 +2705,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin SPrint *)
     | S_Print { args; newline; debug } ->
-        let check_supported_print_type loc env ty =
-          let ty_anon = Types.make_anonymous env ty in
-          match ty_anon.desc with
-          | T_Int _ | T_Bits _ | T_Real | T_String | T_Bool | T_Enum _ -> ()
-          | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ ->
-              Error.fatal_from loc (Error.BadPrintType ty)
-          | T_Named _ -> assert false
-        in
         let args' =
           List.map
             (fun e ->
               let ty, annot_e = annotate_expr env e in
-              let () = check_supported_print_type (to_pos e) env ty in
+              let+ () =
+                check_true (Types.is_singular env ty) @@ fun () ->
+                Error.fatal_from e (Error.BadPrintType ty)
+              in
               annot_e)
             args
         in
