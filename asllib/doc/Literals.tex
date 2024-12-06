@@ -132,3 +132,29 @@ The following example shows literals and their corresponding types in comments:
 
 \section{Semantics}
 A literal $\vl$ can be converted to the \nativevalue\ $\nvliteral{\vl}$.
+
+\subsection{Printing}%
+\hypertarget{print-literals}{}
+
+The following table describes how literals can be printed to a command line.
+%
+Please note that surrounding quotations mark for $\lstring(S)$ are not included
+in $S$, so they will not be printed.
+
+\begin{tabular}{rl}
+  \textbf{literal} & \textbf{prints} \\
+  \hline
+  $\lint(n)$ & $n$ in decimal format, without any leading zeros, \\
+             & preceded by a ``\texttt{-}'' sign if $n$ is negative. \\
+  $\lbool(\True)$ & ``\texttt{TRUE}'' \\
+  $\lbool(\False)$ & ``\texttt{FALSE}'' \\
+  $\lreal(q)$ & $q$ as an irreducible fraction of positive integers, \\
+              & preceded by a ``\texttt{-}'' sign when $q$ is negative, \\
+              & with the denominator omitted if it is equal to 1. \\
+  $\lbitvector(b)$ & $b$ in hexadecimal, preceded by ``\texttt{0x}'', with enough leading zeros \\
+                   & to make the number of hexadecimal digits printed equal the width \\ 
+                   & of $b$ divided by 4, and rounded up to the following integer. \\
+  $\lstring(S)$ & $S$. \\
+  $\llabel(s, \Ignore)$ & $s$. \\
+\end{tabular}
+

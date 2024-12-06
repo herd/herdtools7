@@ -55,6 +55,7 @@
       pass,
       pragma,
       print,
+      println,
       real,
       record,
       recurselimit,
@@ -397,6 +398,7 @@
 \newcommand\Tpow[0]{\verbatimterminal{POW}{\^{}}}
 \newcommand\Tpragma[0]{\verbatimterminal{PRAGMA}{pragma}}
 \newcommand\Tprint[0]{\verbatimterminal{PRINT}{print}}
+\newcommand\Tprintln[0]{\verbatimterminal{PRINTLN}{println}}
 \newcommand\Tunreachable[0]{\verbatimterminal{UNREACHABLE}{Unreachable}}
 \newcommand\Trbrace[0]{\verbatimterminal{RBRACE}{\}}}
 \newcommand\Trbracket[0]{\verbatimterminal{RBRACKET}{]}}
@@ -1094,6 +1096,7 @@
 \newcommand\integerconstraintsatisfied[0]{\hyperlink{def-integerconstraintsatisfied}{\textfunc{int\_constraint\_sat}}}
 \newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\textfunc{read\_value\_from}}}
 \newcommand\writeretvals[0]{\hyperlink{def-writeretvals}{\textfunc{write\_ret\_vals}}}
+\newcommand\outputtoconsole[0]{\hyperlink{print-literals}{\textfunc{output\_to\_console}}}
 
 \newcommand\unoprel[0]{\hyperlink{def-unoprel}{\textfunc{unop}}}
 \newcommand\binoprel[0]{\hyperlink{def-binoprel}{\textfunc{binop}}}
@@ -1611,6 +1614,7 @@
 
 %% Type Error Codes
 \newcommand\TypeErrorCode[1]{\texttt{TE\_#1}}
+\newcommand\BadPrintType[0]{\hyperlink{def-badprinttype}{\TypeErrorCode{BPT}}}
 \newcommand\BitfieldsNotAligned[0]{\hyperlink{def-bitfieldsnotaligned}{\TypeErrorCode{BNA}}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
 \newcommand\IdentifierAlreadyDeclared[0]{\hyperlink{def-identifieralreadydeclared}{\TypeErrorCode{IAD}}}
@@ -2416,6 +2420,7 @@
 \newcommand\vnewarg[0]{\texttt{new\_arg}}
 \newcommand\vnewargs[0]{\texttt{new\_args}}
 \newcommand\vnonspassstmts[0]{\texttt{non\_spass\_stmts}}
+\newcommand\vnewline[0]{\texttt{newline}}
 \newcommand\vo[0]{\texttt{o}}
 \newcommand\voptfields[0]{\texttt{opt\_fields}}
 \newcommand\voptlimit[0]{\texttt{opt\_limit}}

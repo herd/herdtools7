@@ -1,3 +1,4 @@
+type MyEnum of enumeration { LABEL_A, LABEL_B, LABEL_C };
 func main () => integer
 begin
   var n1 = 5; // type: integer{5}
@@ -11,5 +12,6 @@ begin
   var s2 = ""; // type: string
   var bv1 = '11 01'; // type: bits(4)
   var bv2 = ''; // type: bits(0)
+  var l1 : MyEnum = LABEL_B; // type: MyEnum
   return 0;
 end;
