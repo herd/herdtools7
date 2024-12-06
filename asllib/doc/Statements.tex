@@ -3130,12 +3130,23 @@ All of the following apply:
 
 \subsection{Semantics}
 
+Not all ASL backends support printing to a console.
+%
+Therefore, the semantics is parameterized by the function $\outputtoconsole$,
+which takes a string and communicates it to a console, where one exists.%
+\footnote{%
+  Formally, the console can be modelled by adding a string-typed component to
+  the global dybamic environment, which concatenates all strings that were sent
+  to it. For brevity, and since it is only used for print statements, we omit
+  this component from our definition of a dynamic environment.%
+}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\vnewline$;
   \item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
-  \item \hyperlink{print-literals}{prints} all the elements in $\elist$, without separator;
+  \item \hyperlink{def-outputtoconsole}{prints} all the elements in $\elist$, without separator;
   \item if $\vnewline$ is $\True$, prints a newline character;
   \item $\newenv$ is $\env$.
 \end{itemize}
