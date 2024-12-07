@@ -1986,7 +1986,7 @@ module Make
             if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
             else rmw_amo_read sz rmw ac a ii
           and write_mem a v = rmw_amo_write sz rmw ac a v ii in
-            M.aarch64_cas_no_with_writeback is_phy ma read_rs write_rs
+          M.aarch64_cas_no_with_writeback is_phy ma read_rs write_rs
                                       read_mem write_mem branch M.neqT
         in
         let mop_success ac ma mv =
