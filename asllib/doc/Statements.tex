@@ -3071,27 +3071,78 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 \section{Print Statements\label{sec:PrintStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon & \\
+\Nstmt \derives \ & \Tprintln \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon & \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\stmt \derives\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug}) &
+  \stmt \derives\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline}, \overtext{\Bool}{debug}) &
 \end{flalign*}
 
 \subsubsection{ASTRule.SPrint}
 \begin{mathpar}
 \inferrule{
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \vnewline \eqdef \False \\
+  \vdebug \eqdef \False \\
 }{
   \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
-  \overname{\SPrint(\astversion{\vargs})}{\vastnode}
+  \overname{\SPrint(\astversion{\vargs}, \vnewline, \vdebug)}{\vastnode}
+}
+\\
+\inferrule{%
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \vnewline \eqdef \False \\
+  \vdebug \eqdef \False \\
+}{%
+  \buildstmt(\overname{\Nstmt(\Tprintln, \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SPrint(\astversion{\vargs}, \vnewline, \vdebug)}{\vastnode}
 }
 \end{mathpar}
 
 \subsection{Typing}
+
+\subsubsection{TypingRule.SPrint\label{sec:TypingRule.SPrint}}
+
+\paragraph{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ denotes the print statement with arguments $\vargs$;
+  \item annotating each expression $\vargs_i$ in $\tenv$ yields $(\vt_i, \vargsp_i)$\ProseOrTypeError, for $i=1..k$;
+  \item checking that $\vt_i$ is a singular type yields $\True$\ProseOrTypeError, for each $i=1..k$;
+  \item $\news$ denotes the print statement with arguments $\vargsp$;
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+
+\paragraph{Formally}
+\begin{mathpar}
+  \inferrule{%
+    k \eqdef |\vargs| \\
+    i=1..k: \annotateexpr{\vargs_i, \tenv} \typearrow (\vt_i, \vargsp_i)\OrTypeError \\
+    i=1..k: \checktrans{\issingular(\vt_i)}{\BadPrintType} \typearrow \True \OrTypeError \\
+  }{%
+    \annotatestmt (\tenv, \SPrint(\vargs, \vnewline, \vb)) \typearrow (\SPrint(\vargsp, \vnewline, \vb), \tenv)
+  }
+\end{mathpar}
+
+\CodeSubsection{\SPrintBegin}{\SPrintEnd}{../Typing.ml}
+
 \subsection{Semantics}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\vnewline$;
+  \item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
+  \item \hyperlink{print-literals}{prints} all the elements in $\elist$, without separator;
+  \item if $\vnewline$ is $\True$, prints a newline character;
+  \item $\newenv$ is $\env$.
+\end{itemize}
+
+\CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
 
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
 \subsection{Syntax}

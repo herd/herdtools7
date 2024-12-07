@@ -132,3 +132,22 @@ The following example shows literals and their corresponding types in comments:
 
 \section{Semantics}
 A literal $\vl$ can be converted to the \nativevalue\ $\nvliteral{\vl}$.
+
+\subsection{Printing}%
+\hypertarget{print-literals}{}
+
+\begin{tabular}{rcl}
+  $\lint(n)$ & prints & $n$ in decimal format, maybe preceded by a ``\texttt{-}'' sign, without any leading zeros. \\
+  $\lbool(\True)$ & prints & ``\texttt{TRUE}'' \\
+  $\lbool(\False)$ & prints & ``\texttt{FALSE}'' \\
+  $\lreal(q)$ & prints &
+    $q$ as an irreducible fractions of positive integers, maybe preceded by a
+    ``\texttt{-}'' sign, with the denominator omitted if it is equal to 1. \\
+  $\lbitvector(b)$ & prints &
+    $b$ in hexadecimal, preceded by ``\texttt{0x}'', with enough leading zeros
+    to make the number of hexadecimal digits printed equal the width of $b$
+    divided by 4, rounded up to the following integer. \\
+  $\lstring(S)$ & prints & $S$. \\
+  $\llabel(s, \Ignore)$ & prints & $s$. \\
+\end{tabular}
+
