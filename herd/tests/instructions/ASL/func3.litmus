@@ -8,18 +8,18 @@ begin
   return 3;
 end;
 
-setter f1() = v :: integer
+setter f1() = v : integer
 begin
   pass;
   // Hahaha, as if I was to do anything with the value
 end;
 
-getter f2(x::integer) => integer
+getter f2(x:integer) => integer
 begin
   return f1() + x;
 end;
 
-setter f2(x::integer) = v :: integer
+setter f2(x:integer) = v : integer
 begin
   f1() = v + x;
 end;
@@ -27,22 +27,22 @@ end;
 var f3_storage: integer = -1;
 var f4_storage: integer = -1;
 
-getter f3(x::integer) => integer
+getter f3(x:integer) => integer
 begin
   return f3_storage;
 end;
 
-setter f3(x::integer) = v :: integer
+setter f3(x:integer) = v : integer
 begin
   f3_storage = x;
 end;
 
-getter f4(x::integer) => integer
+getter f4(x:integer) => integer
 begin
   return f4_storage;
 end;
 
-setter f4(x::integer) = v :: integer
+setter f4(x:integer) = v : integer
 begin
   f4_storage = v;
 end;
