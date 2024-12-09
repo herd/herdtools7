@@ -430,6 +430,10 @@ let discard_or_sliced_basic_lexpr :=
   | MINUS;                { None }
   | ~=sliced_basic_lexpr; < Some >
 
+let discard_or_field :=
+  | MINUS;                   { None }
+  | ~=annotated(IDENTIFIER); < Some >
+
 let lexpr :=
   | ~=sliced_basic_lexpr; < desugar_lhs_access >
   | ~=annotated(pared(clist2(discard_or_sliced_basic_lexpr))); < desugar_lhs_tuple >
@@ -437,6 +441,8 @@ let lexpr :=
     | MINUS; { LE_Discard }
     | x=annotated(IDENTIFIER); DOT; flds=bracketed(clist2(IDENTIFIER));
       { LE_SetFields (le_var x, flds, []) }
+    | x=annotated(IDENTIFIER); DOT; flds=pared(clist2(discard_or_field));
+      { desugar_lhs_fields_tuple x flds }
   )
 
 (* Decl items are another kind of left-hand-side expressions, which appear only

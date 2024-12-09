@@ -75,3 +75,9 @@ val desugar_lhs_tuple : lhs_access option list annotated -> lexpr
     desugared using [desugar_lhs_access].
     Also check that none of the entries share a base variable, i.e. none of them
     attempt to write the the same variable. *)
+
+val desugar_lhs_fields_tuple :
+  identifier annotated -> lhs_field option list -> lexpr_desc
+(** [desugar_lhs_fields_tuple x flds] desugards a left-hand side of the form
+    [x.(fld1, ..., fldk)] to [(x.fld1, ..., x.fldk)], ensuring that the [flds]
+    are unique. *)
